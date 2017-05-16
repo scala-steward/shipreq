@@ -23,13 +23,13 @@ object CreateContentCmd {
                            tags    : Set[ApplicableTagId],
                            impSrcs : Set[ReqId]) extends CreateContentCmd
 
-  case class CreateReqCodeGroup(code : ReqCode.Value,
-                                title: Text.ReqCodeGroupTitle.OptionalText) extends CreateContentCmd
+  case class CreateCodeGroup(code : ReqCode.Value,
+                             title: Text.CodeGroupTitle.OptionalText) extends CreateContentCmd
 
-  implicit val pickleCreateGenericReq  : Pickler[CreateGenericReq  ] = pickleCaseClass
-  implicit val pickleCreateUseCase     : Pickler[CreateUseCase     ] = pickleCaseClass
-  implicit val pickleCreateReqCodeGroup: Pickler[CreateReqCodeGroup] = pickleCaseClass
-  implicit val pickleCmd               : Pickler[CreateContentCmd  ] = pickleADT
+  implicit val pickleCreateGenericReq: Pickler[CreateGenericReq] = pickleCaseClass
+  implicit val pickleCreateUseCase   : Pickler[CreateUseCase   ] = pickleCaseClass
+  implicit val pickleCreateCodeGroup : Pickler[CreateCodeGroup ] = pickleCaseClass
+  implicit val pickleCmd             : Pickler[CreateContentCmd] = pickleADT
 }
 
 object CreateContentFn extends RemoteFn.ToVE[CreateContentCmd]

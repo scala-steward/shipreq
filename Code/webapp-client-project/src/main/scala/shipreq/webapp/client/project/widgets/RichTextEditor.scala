@@ -147,7 +147,7 @@ object RichTextEditor {
 
   object UseCaseTitle extends RichTextEditor("UCT", Text.UseCaseTitle)
 
-  object ReqCodeGroupTitle extends RichTextEditor("RCGT", Text.ReqCodeGroupTitle)
+  object CodeGroupTitle extends RichTextEditor("CGT", Text.CodeGroupTitle)
 
   object CustomTextField extends RichTextEditor("CTF", Text.CustomTextField)
 

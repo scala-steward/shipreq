@@ -40,9 +40,9 @@ object ProjectDslInternals {
       ReqCodeId(newMaxReqCodeId)
     }
 
-    def newActiveGroup(id: Option[ReqCodeId], t: Text.ReqCodeGroupTitle.OptionalText) =
+    def newActiveGroup(id: Option[ReqCodeId], t: Text.CodeGroupTitle.OptionalText) =
       ReqCode.ActiveGroup(
-        LiveReqCodeGroup(id getOrElse nextReqCodeId(), t),
+        LiveCodeGroup(id getOrElse nextReqCodeId(), t),
         ReqCode.emptyReqInactive)
 
     def assignReqCodeToReq(t: ReqCode.Trie, c: ReqCode.Value, id: Option[ReqCodeId], reqId: ReqId, reqLive: Live): ReqCode.Trie = {
@@ -174,9 +174,9 @@ object ProjectDsl {
 
   case class RCGroup(code : ReqCode.Value,
                      id   : Option[ReqCodeId] = None,
-                     title: Text.ReqCodeGroupTitle.OptionalText = Vector.empty) extends ToState {
-    def state: Mod[LiveReqCodeGroup] =
-      State[ProjectState, LiveReqCodeGroup]{ p =>
+                     title: Text.CodeGroupTitle.OptionalText = Vector.empty) extends ToState {
+    def state: Mod[LiveCodeGroup] =
+      State[ProjectState, LiveCodeGroup]{ p =>
         val ad = p.newActiveGroup(id, title)
         val t  = p.reqCodeTrie.modify(code)(_.fold(ad)(old => ad.copy(reqInactive = old.reqInactive)))
         val p2 = p.copy(reqCodeTrie = t, maxReqCodeId = p.newMaxReqCodeId)
@@ -200,7 +200,7 @@ object ProjectDsl {
         val t = p.reqCodeTrie.modify(code) { o =>
           val d = o.getOrElse(ReqCode.Data.empty)
           oldReqId match {
-            case None    => TestOptics.reqCodeDataDeadGroup.set(Some(DeadReqCodeGroup(id, title)))(d)
+            case None    => TestOptics.reqCodeDataDeadGroup.set(Some(DeadCodeGroup(id, title)))(d)
             case Some(r) => TestOptics.reqCodeDataReqInactive.modify(_.add(r, id))(d)
           }
         }

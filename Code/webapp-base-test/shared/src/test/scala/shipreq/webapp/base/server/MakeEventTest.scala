@@ -56,10 +56,10 @@ object MakeEventTest extends TestSuite {
     val t = new Tester()
     import t._
 
-    'CreateReqCodeGroup {
-      import CreateContentCmd.{CreateReqCodeGroup => Cmd}
+    'CreateCodeGroup {
+      import CreateContentCmd.{CreateCodeGroup => Cmd}
       def apply(cmd: Cmd) =
-        assertApplies(assertMakeEvent(_.createContent(cmd, _), {case e: ReqCodeGroupCreate => e}))
+        assertApplies(assertMakeEvent(_.createContent(cmd, _), {case e: CodeGroupCreate => e}))
 
       // Vacant code
       val cmd1 = Cmd("some.code", ∅)
@@ -70,7 +70,7 @@ object MakeEventTest extends TestSuite {
       assertMakeEventFails(_.createContent(cmd1, _))
 
       // Vacant code. Reference first code
-      val cmd2 = Cmd("some", Vector(Text.ReqCodeGroupTitle.CodeRef(1)))
+      val cmd2 = Cmd("some", Vector(Text.CodeGroupTitle.CodeRef(1)))
       val e2 = apply(cmd2)
       assertEq(e2.id, ReqCodeId(2))
 
@@ -80,7 +80,7 @@ object MakeEventTest extends TestSuite {
       assertEq(e3.id, ReqCodeId(3))
 
       // Should reuse ID on restore
-      assertApplies(ReqCodeGroupsDelete(e1.id))
+      assertApplies(CodeGroupsDelete(e1.id))
       val e1b = apply(cmd1)
       assertEq(e1b.id, e1.id)
     }

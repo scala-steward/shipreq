@@ -229,15 +229,15 @@ final case class UseCaseStepRestore   (id: UseCaseStepId)                       
 // Content: ReqCode groups
 
 @CreateGenericData
-object ReqCodeGroupGD extends GenericData {
+object CodeGroupGD extends GenericData {
   val Code  = defAttr[ReqCode.Value]
-  val Title = defAttr[ReqCodeGroupTitle.OptionalText]
+  val Title = defAttr[CodeGroupTitle.OptionalText]
 }
 
-final case class ReqCodeGroupCreate(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
-final case class ReqCodeGroupUpdate(id: ReqCodeId, vs: ReqCodeGroupGD.NonEmptyValues) extends ActiveEvent
+final case class CodeGroupCreate(id: ReqCodeId, vs: CodeGroupGD.NonEmptyValues) extends ActiveEvent
+final case class CodeGroupUpdate(id: ReqCodeId, vs: CodeGroupGD.NonEmptyValues) extends ActiveEvent
 
-final case class ReqCodeGroupsDelete(ids: NonEmptySet[ReqCodeId]) extends ActiveEvent
+final case class CodeGroupsDelete(ids: NonEmptySet[ReqCodeId]) extends ActiveEvent
 
 // =====================================================================================================================
 // Content: Shared
@@ -270,9 +270,9 @@ final case class ReqFieldCustomTextSet(id   : ReqId,
                                        value: CustomTextField.OptionalText) extends ActiveEvent
 
 final case class ReqsDelete(reqs         : NonEmptySet[ReqId],
-                            reqCodeGroups: Set[ReqCodeId],
+                            codeGroups: Set[ReqCodeId],
                             reason       : DeletionReason.OptionalText) extends ActiveEvent
 
-// TODO Would it be better to have a ReqCodeGroupId which is a subtype of ReqCodeId?
+// TODO Would it be better to have a CodeGroupId which is a subtype of ReqCodeId?
 final case class ContentRestore(reqs         : Set[ReqId],
-                                reqCodeGroups: Set[ReqCodeId]) extends ActiveEvent
+                                codeGroups: Set[ReqCodeId]) extends ActiveEvent

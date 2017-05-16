@@ -137,9 +137,9 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
   implicit def autoText_InlineIssueDescN(s: String): Text.InlineIssueDesc.NonEmptyText = NonEmptyVector one s
   implicit def autoText_InlineIssueDescO(s: String): Text.InlineIssueDesc.OptionalText = Vector1(s)
 
-  implicit def autoText_ReqCodeGroupTitleA(s: String): Text.ReqCodeGroupTitle.Atom = Text.ReqCodeGroupTitle Literal __checkLiteral(s)
-  implicit def autoText_ReqCodeGroupTitleN(s: String): Text.ReqCodeGroupTitle.NonEmptyText = NonEmptyVector one s
-  implicit def autoText_ReqCodeGroupTitleO(s: String): Text.ReqCodeGroupTitle.OptionalText = Vector1(s)
+  implicit def autoText_CodeGroupTitleA(s: String): Text.CodeGroupTitle.Atom = Text.CodeGroupTitle Literal __checkLiteral(s)
+  implicit def autoText_CodeGroupTitleN(s: String): Text.CodeGroupTitle.NonEmptyText = NonEmptyVector one s
+  implicit def autoText_CodeGroupTitleO(s: String): Text.CodeGroupTitle.OptionalText = Vector1(s)
 
   implicit def autoText_UseCaseTitleA(s: String): Text.UseCaseTitle.Atom = Text.UseCaseTitle Literal __checkLiteral(s)
   implicit def autoText_UseCaseTitleN(s: String): Text.UseCaseTitle.NonEmptyText = NonEmptyVector one s

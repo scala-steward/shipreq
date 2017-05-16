@@ -656,11 +656,11 @@ object RandomData {
       Gen.chooseGenNE(gs.result())
     }
 
-    def reqCodeGroupTitleAtom(r: Option[Gen[ReqId]],
+    def codeGroupTitleAtom(r: Option[Gen[ReqId]],
                               u: Option[Gen[UseCaseStepId]],
                               c: Option[Gen[ReqCodeId]],
-                              i: Option[Gen[CustomIssueTypeId]]): Gen[ReqCodeGroupTitle.Atom] = {
-      @inline implicit def t: ReqCodeGroupTitle.type = ReqCodeGroupTitle
+                              i: Option[Gen[CustomIssueTypeId]]): Gen[CodeGroupTitle.Atom] = {
+      @inline implicit def t: CodeGroupTitle.type = CodeGroupTitle
       val gs = NonEmptyVector newBuilderNE singleLineGens(t)
       gs ++= reqRefs(r, c)
       gs ++= u.map(useCaseStepRef(_))
@@ -1016,11 +1016,11 @@ object RandomData {
     val gEmptyReqInactive: Gen[ReqInactive] =
       Gen pure emptyReqInactive
 
-    private val gEmptyText: Gen[Text.ReqCodeGroupTitle.OptionalText] =
+    private val gEmptyText: Gen[Text.CodeGroupTitle.OptionalText] =
       Gen pure Vector.empty
 
     def data(ogLiveReqId: Option[Gen[ReqId]], ogReqId: Option[Gen[ReqId]],
-             gGroupText: Gen[Text.ReqCodeGroupTitle.OptionalText] = gEmptyText)(implicit ss: SizeSpec): Gen[Data] =
+             gGroupText: Gen[Text.CodeGroupTitle.OptionalText] = gEmptyText)(implicit ss: SizeSpec): Gen[Data] =
 
       ss.gen flatMap { sz =>
         val gReqInactive: Gen[ReqInactive] =
@@ -1029,26 +1029,26 @@ object RandomData {
             case None    => gEmptyReqInactive
           }
 
-        val gLiveReqCodeGroup: Gen[LiveReqCodeGroup] =
-          Gen.apply2(LiveReqCodeGroup.apply)(id, gGroupText)
+        val gLiveCodeGroup: Gen[LiveCodeGroup] =
+          Gen.apply2(LiveCodeGroup.apply)(id, gGroupText)
 
-        val gDeadReqCodeGroup: Gen[DeadReqCodeGroup] =
-          Gen.apply2(DeadReqCodeGroup.apply)(id, gGroupText)
+        val gDeadCodeGroup: Gen[DeadCodeGroup] =
+          Gen.apply2(DeadCodeGroup.apply)(id, gGroupText)
 
         val gDeadGroup: Gen[DeadGroup] =
-          gDeadReqCodeGroup.option
+          gDeadCodeGroup.option
 
         val gInactive: Gen[Inactive] =
           Gen.apply2(Inactive.apply)(gDeadGroup, gReqInactive)
             .flatMap(i =>
               if (i.deadGroup.isEmpty && i.reqInactive.isEmpty)
-                gDeadReqCodeGroup.map(d => Inactive(Some(d), i.reqInactive))
+                gDeadCodeGroup.map(d => Inactive(Some(d), i.reqInactive))
               else
                 Gen.pure(i)
             )
 
         val gActiveGroup: Gen[ActiveGroup] =
-          Gen.apply2(ActiveGroup.apply)(gLiveReqCodeGroup, gReqInactive)
+          Gen.apply2(ActiveGroup.apply)(gLiveCodeGroup, gReqInactive)
 
         val gActiveReq: Option[Gen[ActiveReq]] =
           ogLiveReqId map (gReqId =>
@@ -1068,7 +1068,7 @@ object RandomData {
     def codeSet(maxDepth: Int): Gen[CodeSet] =
       genMTrie(node, Gen.unit, maxDepth)
 
-    def updateGroupText(gt: Gen[Text.ReqCodeGroupTitle.OptionalText])(src: Trie): Gen[Trie] = {
+    def updateGroupText(gt: Gen[Text.CodeGroupTitle.OptionalText])(src: Trie): Gen[Trie] = {
       type F = EndoFn[Trie]
       type G = Gen[F]
 
@@ -1158,7 +1158,7 @@ object RandomData {
     val reqIdG         = Gen tryGenChoose reqIdSet.toIndexedSeq
     def ucStepIds      = reqsWithoutText.useCases.stepIterator.map(_.id)
     val ucStepIdG      = Gen tryGenChoose ucStepIds.toIndexedSeq
-    val rcgTitleText   = TextGen.reqCodeGroupTitleAtom(reqIdG, ucStepIdG, activeCodeIdG, cissueIdG).text
+    val rcgTitleText   = TextGen.codeGroupTitleAtom(reqIdG, ucStepIdG, activeCodeIdG, cissueIdG).text
     val delReasonText  = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.DeletionReason)
     for {
       name      ← projectName
@@ -1531,7 +1531,7 @@ object RandomData {
     private[this] val a = Some(applicableTagId)
 
     val customTextField     = TextGen.customTextFieldAtom(r, u, c, i, a).text
-    val reqCodeGroupTitle   = TextGen.reqCodeGroupTitleAtom(r, u, c, i).text
+    val codeGroupTitle      = TextGen.codeGroupTitleAtom(r, u, c, i).text
     val genericReqTitleAtom = TextGen.genericReqTitleAtom(r, u, c, i, a)
     val genericReqTitle     = genericReqTitleAtom.text
     val genericReqTitle1    = genericReqTitleAtom.text1(Text.GenericReqTitle)
@@ -1614,11 +1614,11 @@ object RandomData {
       }
     }
 
-    object reqCodeGroupGD extends GenericDataGen(ReqCodeGroupGD) {
+    object codeGroupGD extends GenericDataGen(CodeGroupGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
         case Code  => reqCode.value     map Code .apply
-        case Title => reqCodeGroupTitle map Title.apply
+        case Title => codeGroupTitle map Title.apply
       }
     }
 
@@ -1686,8 +1686,8 @@ object RandomData {
     val genGenericReqCreate: Gen[GenericReqCreate] =
       Gen.apply3(GenericReqCreate)(genericReqId, customReqTypeId, genericReqGD.values)
 
-    val genReqCodeGroupCreate: Gen[ReqCodeGroupCreate] =
-      Gen.apply2(ReqCodeGroupCreate)(reqCode.id, reqCodeGroupGD.nonEmptyValues)
+    val genCodeGroupCreate: Gen[CodeGroupCreate] =
+      Gen.apply2(CodeGroupCreate)(reqCode.id, codeGroupGD.nonEmptyValues)
 
     val genTagGroupCreate: Gen[TagGroupCreate] =
       Gen.apply2(TagGroupCreate)(tagGroupId, tagGroupGD.nonEmptyValues)
@@ -1713,8 +1713,8 @@ object RandomData {
     val genCustomReqTypeRestore: Gen[CustomReqTypeRestore] =
       customReqTypeId map CustomReqTypeRestore
 
-    val genReqCodeGroupsDelete: Gen[ReqCodeGroupsDelete] =
-      reqCode.id.nes map ReqCodeGroupsDelete
+    val genCodeGroupsDelete: Gen[CodeGroupsDelete] =
+      reqCode.id.nes map CodeGroupsDelete
 
     val genReqsDelete: Gen[ReqsDelete] =
       Gen.apply3(ReqsDelete)(reqId.nes, reqCode.id.set, deletionReason)
@@ -1793,8 +1793,8 @@ object RandomData {
     val genFieldCustomTextUpdate: Gen[FieldCustomTextUpdate] =
       Gen.apply2(FieldCustomTextUpdate)(customFieldTextId, customTextFieldGD.nonEmptyValues)
 
-    val genReqCodeGroupUpdate: Gen[ReqCodeGroupUpdate] =
-      Gen.apply2(ReqCodeGroupUpdate)(reqCode.id, reqCodeGroupGD.nonEmptyValues)
+    val genCodeGroupUpdate: Gen[CodeGroupUpdate] =
+      Gen.apply2(CodeGroupUpdate)(reqCode.id, codeGroupGD.nonEmptyValues)
 
     val genTagGroupUpdate: Gen[TagGroupUpdate] =
       Gen.apply2(TagGroupUpdate)(tagGroupId, tagGroupGD.nonEmptyValues)
@@ -1834,9 +1834,9 @@ object RandomData {
         case _: GenericReqTypeSet      => genGenericReqTypeSet
         case _: ProjectNameSet         => genProjectNameSet
         case _: ProjectTemplateApply   => genProjectTemplateApply
-        case _: ReqCodeGroupCreate     => genReqCodeGroupCreate
-        case _: ReqCodeGroupsDelete    => genReqCodeGroupsDelete
-        case _: ReqCodeGroupUpdate     => genReqCodeGroupUpdate
+        case _: CodeGroupCreate        => genCodeGroupCreate
+        case _: CodeGroupsDelete       => genCodeGroupsDelete
+        case _: CodeGroupUpdate        => genCodeGroupUpdate
         case _: ReqCodesPatch          => genReqCodesPatch
         case _: ReqFieldCustomTextSet  => genReqFieldCustomTextSet
         case _: ReqImplicationsPatch   => genReqImplicationsPatch

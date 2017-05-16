@@ -40,11 +40,11 @@ class TextTC[TC[_]](a: AtomTC[TC]) {
 
   private lazy val issue3 = generateTypeclasses(Text.InlineIssueDesc)
 
-  implicit val (  inlineIssueDescA,   inlineIssueDescO,   inlineIssueDescN) = issue3
-  implicit val (  genericReqTitleA,   genericReqTitleO,   genericReqTitleN) = generateTypeclasses(Text.GenericReqTitle)
-  implicit val (reqCodeGroupTitleA, reqCodeGroupTitleO, reqCodeGroupTitleN) = generateTypeclasses(Text.ReqCodeGroupTitle)
-  implicit val (  customTextFieldA,   customTextFieldO,   customTextFieldN) = generateTypeclasses(Text.CustomTextField)
-  implicit val (   deletionReasonA,    deletionReasonO,    deletionReasonN) = generateTypeclasses(Text.DeletionReason)
-  implicit val (      useCaseStepA,       useCaseStepO,       useCaseStepN) = generateTypeclasses(Text.UseCaseStep)
-  implicit val (     useCaseTitleA,      useCaseTitleO,      useCaseTitleN) = generateTypeclasses(Text.UseCaseTitle)
+  implicit val (inlineIssueDescA, inlineIssueDescO, inlineIssueDescN) = issue3
+  implicit val (genericReqTitleA, genericReqTitleO, genericReqTitleN) = generateTypeclasses(Text.GenericReqTitle)
+  implicit val ( codeGroupTitleA,  codeGroupTitleO,  codeGroupTitleN) = generateTypeclasses(Text.CodeGroupTitle)
+  implicit val (customTextFieldA, customTextFieldO, customTextFieldN) = generateTypeclasses(Text.CustomTextField)
+  implicit val ( deletionReasonA,  deletionReasonO,  deletionReasonN) = generateTypeclasses(Text.DeletionReason)
+  implicit val (    useCaseStepA,     useCaseStepO,     useCaseStepN) = generateTypeclasses(Text.UseCaseStep)
+  implicit val (   useCaseTitleA,    useCaseTitleO,    useCaseTitleN) = generateTypeclasses(Text.UseCaseTitle)
 }

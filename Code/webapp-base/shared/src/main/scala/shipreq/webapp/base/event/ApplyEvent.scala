@@ -196,9 +196,9 @@ final class ApplyEvent(implicit val trust: Trust)
       case e: GenericReqTitleSet     => GenericReqEvents       applyGenericReqTitleSet    e
       case e: GenericReqTypeSet      => GenericReqEvents       applyGenericReqTypeSet     e
       case e: ProjectNameSet         => OtherEvents            applyProjectNameSet        e
-      case e: ReqCodeGroupCreate     => ReqCodeGroupEvents     applyCreate                e
-      case e: ReqCodeGroupsDelete    => ReqCodeGroupEvents     applyDelete                e
-      case e: ReqCodeGroupUpdate     => ReqCodeGroupEvents     applyUpdate                e
+      case e: CodeGroupCreate        => CodeGroupEvents        applyCreate                e
+      case e: CodeGroupsDelete       => CodeGroupEvents        applyDelete                e
+      case e: CodeGroupUpdate        => CodeGroupEvents        applyUpdate                e
       case e: ReqCodesPatch          => ReqCodeLogic           applyReqCodesPatch         e
       case e: ReqFieldCustomTextSet  => ContentCommon          applyReqFieldCustomTextSet e
       case e: ReqImplicationsPatch   => ContentCommon          applyReqImplicationsPatch  e

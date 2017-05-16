@@ -11,7 +11,7 @@ import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.text.Text
 import ApplyEventTestFns._
 import MTrie.Ops
-import Text.{GenericReqTitle => GRT, CustomTextField => CTF, InlineIssueDesc => IID, ReqCodeGroupTitle}
+import Text.{GenericReqTitle => GRT, CustomTextField => CTF, InlineIssueDesc => IID, CodeGroupTitle}
 import ContentEventTestHelp._
 import AutoNES._
 
@@ -42,7 +42,7 @@ object ContentEventTest extends TestSuite {
         def add(typ: String, id: ReqCodeId, tgt: AnyRef) = {
           val t = Option(tgt) match {
             case Some(x: ReqId)        => s"Req(#${x.value.toChar.toString})"
-            case Some(g: ReqCodeGroup) => "Grp"
+            case Some(g: CodeGroup) => "Grp"
             case None                  => ""
             case Some(_)               => ???
           }
@@ -121,23 +121,23 @@ object ContentEventTest extends TestSuite {
         // Adding a new RCG should clear out .lastGroup
         val p = _assertPass(createRCG(1, "abc.def", "old"), delRCG1, createRCG(2, "abc.def", "new"))
         val d = assertSoleReqCode(p, "abc.def")
-        assertEq(d, ReqCode.ActiveGroup(LiveReqCodeGroup(2, "new"), ReqCode.emptyReqInactive))
+        assertEq(d, ReqCode.ActiveGroup(LiveCodeGroup(2, "new"), ReqCode.emptyReqInactive))
       }
     }
 
     'updateCodeGroup {
       'title {
-        import ReqCodeGroupGD._
-        val t = Vector(ReqCodeGroupTitle.Literal("hi there"))
-        val p = _assertPass(createRCG(1, "a"), ReqCodeGroupUpdate(1, nev(Title(t))))
+        import CodeGroupGD._
+        val t = Vector(CodeGroupTitle.Literal("hi there"))
+        val p = _assertPass(createRCG(1, "a"), CodeGroupUpdate(1, nev(Title(t))))
         assertEq(p.reqCodes.groups.head.title, t)
       }
 
       'code {
-        import ReqCodeGroupGD._
-        val p = _assertPass(createRCG(1, "hehe.grr", "Ze Title"), ReqCodeGroupUpdate(1, nev(Code("fine.then"))))
+        import CodeGroupGD._
+        val p = _assertPass(createRCG(1, "hehe.grr", "Ze Title"), CodeGroupUpdate(1, nev(Code("fine.then"))))
         val d = assertSoleReqCode(p, "fine.then")
-        assertEq(d, ReqCode.ActiveGroup(LiveReqCodeGroup(1, "Ze Title"), ReqCode.emptyReqInactive))
+        assertEq(d, ReqCode.ActiveGroup(LiveCodeGroup(1, "Ze Title"), ReqCode.emptyReqInactive))
       }
 
       'badCode    - assertFail("code")     (createRCG(1, "a"), updateRCGCode(1, "!!"))
@@ -586,17 +586,17 @@ object ContentEventTest extends TestSuite {
           // It's more work to check for text references to decide whether or not to retain empty RCGs. Just keep em.
           // assertEq("No CodeRefs & no title = no need to retain anything.", p.reqCodes.trie.isEmpty, true)
           val d = assertSoleReqCode(p, "abc.def")
-          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadReqCodeGroup(1, ∅))))
+          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadCodeGroup(1, ∅))))
         }
         'emptyTitleWithRefs - {
           val p = _assertPass(emptyGR1, createRCG(3, "qwe.zxc"), createRefToCode3, delRCG3)
           val d = assertSoleReqCode(p, "qwe.zxc")
-          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadReqCodeGroup(3, ∅))))
+          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadCodeGroup(3, ∅))))
         }
         'nonEmptyTitle - {
           val p = _assertPass(createRCG(1, "abc.def", "hehe"), delRCG1)
           val d = assertSoleReqCode(p, "abc.def")
-          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadReqCodeGroup(1, "hehe"))))
+          assertEq(d, ReqCode.Data.empty.copy(deadGroup = Some(DeadCodeGroup(1, "hehe"))))
         }
       }
 

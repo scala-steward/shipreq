@@ -21,16 +21,16 @@ object UpdateContentCmd {
   case class PatchReqCodes       (id: ReqId, patch: SetDiff.NE[ReqCode.Value])         extends UpdateContentCmd
 
   case class SetGenericReqType   (id: GenericReqId, value: CustomReqTypeId) extends UpdateContentCmd
-  case class SetReqCodeGroupCode (id: ReqCodeId,    value: ReqCode.Value)   extends UpdateContentCmd
+  case class SetCodeGroupCode (id: ReqCodeId,    value: ReqCode.Value)   extends UpdateContentCmd
 
-  case class SetReqCodeGroupTitle(id: ReqCodeId,                              value: Text.ReqCodeGroupTitle.OptionalText) extends UpdateContentCmd
+  case class SetCodeGroupTitle(id: ReqCodeId,                              value: Text.CodeGroupTitle.OptionalText) extends UpdateContentCmd
   case class SetGenericReqTitle  (id: GenericReqId,                           value: Text.GenericReqTitle  .OptionalText) extends UpdateContentCmd
   case class SetUseCaseTitle     (id: UseCaseId,                              value: Text.UseCaseTitle     .OptionalText) extends UpdateContentCmd
   case class SetCustomTextField  (id: ReqId,        fid: CustomField.Text.Id, value: Text.CustomTextField  .OptionalText) extends UpdateContentCmd
 
-  case class DeleteReqs         (reqs: NonEmptySet[ReqId], reqCodeGroups: Set[ReqCodeId], reason: Text.DeletionReason.OptionalText) extends UpdateContentCmd
-  case class DeleteReqCodeGroups(ids: NonEmptySet[ReqCodeId])                                                                       extends UpdateContentCmd
-  case class RestoreContent     (reqs: Set[ReqId], reqCodeGroups: Set[ReqCodeId])                                                   extends UpdateContentCmd
+  case class DeleteReqs         (reqs: NonEmptySet[ReqId], codeGroups: Set[ReqCodeId], reason: Text.DeletionReason.OptionalText) extends UpdateContentCmd
+  case class DeleteCodeGroups(ids: NonEmptySet[ReqCodeId])                                                                       extends UpdateContentCmd
+  case class RestoreContent     (reqs: Set[ReqId], codeGroups: Set[ReqCodeId])                                                   extends UpdateContentCmd
 
   sealed abstract class ForUseCaseStep extends UpdateContentCmd
 
@@ -48,13 +48,13 @@ object UpdateContentCmd {
   implicit val picklePatchImplications    : Pickler[PatchImplications    ] = pickleCaseClass
   implicit val picklePatchReqCodes        : Pickler[PatchReqCodes        ] = pickleCaseClass
   implicit val pickleSetGenericReqType    : Pickler[SetGenericReqType    ] = pickleCaseClass
-  implicit val pickleSetReqCodeGroupCode  : Pickler[SetReqCodeGroupCode  ] = pickleCaseClass
-  implicit val pickleSetReqCodeGroupTitle : Pickler[SetReqCodeGroupTitle ] = pickleCaseClass
+  implicit val pickleSetCodeGroupCode     : Pickler[SetCodeGroupCode     ] = pickleCaseClass
+  implicit val pickleSetCodeGroupTitle    : Pickler[SetCodeGroupTitle    ] = pickleCaseClass
   implicit val pickleSetGenericReqTitle   : Pickler[SetGenericReqTitle   ] = pickleCaseClass
   implicit val pickleSetUseCaseTitle      : Pickler[SetUseCaseTitle      ] = pickleCaseClass
   implicit val pickleSetCustomTextField   : Pickler[SetCustomTextField   ] = pickleCaseClass
   implicit val pickleDeleteReqs           : Pickler[DeleteReqs           ] = pickleCaseClass
-  implicit val pickleDeleteReqCodeGroups  : Pickler[DeleteReqCodeGroups  ] = pickleCaseClass
+  implicit val pickleDeleteCodeGroups     : Pickler[DeleteCodeGroups     ] = pickleCaseClass
   implicit val pickleRestoreContent       : Pickler[RestoreContent       ] = pickleCaseClass
   implicit val pickleAddUseCaseStep       : Pickler[AddUseCaseStep       ] = pickleCaseClass
   implicit val pickleShiftUseCaseStepLeft : Pickler[ShiftUseCaseStepLeft ] = pickleCaseClass

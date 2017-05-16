@@ -34,11 +34,11 @@ object ProjectText {
   /** Judgement on how a ReqCode-based reference (eg. [email.failure]) should be displayed */
   sealed trait ReqCodeResolution
   object ReqCodeResolution {
-    case class ActiveCodeToReq     (code: ReqCode.Value, reqId: ReqId)            extends ReqCodeResolution
-    case class ReqWithAltCode      (code: ReqCode.Value, reqId: ReqId)            extends ReqCodeResolution
-    case class ReqWithoutActiveCode(code: ReqCode.Value, reqId: ReqId)            extends ReqCodeResolution
-    case class ActiveCodeToGroup   (code: ReqCode.Value, group: LiveReqCodeGroup) extends ReqCodeResolution
-    case class DeadGroup           (code: ReqCode.Value, group: DeadReqCodeGroup) extends ReqCodeResolution
+    case class ActiveCodeToReq     (code: ReqCode.Value, reqId: ReqId)         extends ReqCodeResolution
+    case class ReqWithAltCode      (code: ReqCode.Value, reqId: ReqId)         extends ReqCodeResolution
+    case class ReqWithoutActiveCode(code: ReqCode.Value, reqId: ReqId)         extends ReqCodeResolution
+    case class ActiveCodeToGroup   (code: ReqCode.Value, group: LiveCodeGroup) extends ReqCodeResolution
+    case class DeadGroup           (code: ReqCode.Value, group: DeadCodeGroup) extends ReqCodeResolution
   }
 
   /**
@@ -117,7 +117,7 @@ object ProjectText {
           }
       }
 
-    final def forReqCodeGroup: Output =
+    final def forCodeGroup: Output =
       None
   }
 }
@@ -142,8 +142,8 @@ abstract class ProjectText[Out](project: Project, val ctx: ProjectText.Context) 
       case uc: UseCase    => format(uc.liveUC, uc.title)
     }
 
-  val reqCodeGroupTitle: ReqCodeGroup => Out =
-    Memo.by((_: ReqCodeGroup).id)(g =>
+  val codeGroupTitle: CodeGroup => Out =
+    Memo.by((_: CodeGroup).id)(g =>
       format(g.live, g.title))
 
   def reqTitleById(id: ReqId): Out =

@@ -338,13 +338,13 @@ object ShowSrcDataImp {
     (z intoVar name, n intoVar name)
   }
 
-  implicit      val (     useCaseTitleZ,      useCaseTitleN) = text2(Text.UseCaseTitle     )("UCT")
-  implicit      val (      useCaseStepZ,       useCaseStepN) = text2(Text.UseCaseStep      )("UCST")
-  implicit      val (reqCodeGroupTitleZ, reqCodeGroupTitleN) = text2(Text.ReqCodeGroupTitle)("RCGT")
-  implicit      val (  genericReqTitleZ,   genericReqTitleN) = text2(Text.GenericReqTitle  )("GRT")
-  implicit      val (  customTextFieldZ,   customTextFieldN) = text2(Text.CustomTextField  )("CTF")
-  implicit      val (   deletionReasonZ,    deletionReasonN) = text2(Text.DeletionReason   )("DR")
-  implicit lazy val (  inlineIssueDescZ,   inlineIssueDescN) = text (Text.InlineIssueDesc  )("IID")
+  implicit      val (   useCaseTitleZ,    useCaseTitleN) = text2(Text.UseCaseTitle   )("UCT")
+  implicit      val (    useCaseStepZ,     useCaseStepN) = text2(Text.UseCaseStep    )("UCST")
+  implicit      val ( codeGroupTitleZ,  codeGroupTitleN) = text2(Text.CodeGroupTitle )("CGT")
+  implicit      val (genericReqTitleZ, genericReqTitleN) = text2(Text.GenericReqTitle)("GRT")
+  implicit      val (customTextFieldZ, customTextFieldN) = text2(Text.CustomTextField)("CTF")
+  implicit      val ( deletionReasonZ,  deletionReasonN) = text2(Text.DeletionReason )("DR")
+  implicit lazy val (inlineIssueDescZ, inlineIssueDescN) = text (Text.InlineIssueDesc)("IID")
 
   implicit lazy val reqDataText: ShowSrc[ReqData.Text] = {
     implicit val vs =
@@ -357,19 +357,19 @@ object ShowSrcDataImp {
   implicit val reqCodeNode: ShowSrc[ReqCode.Node] =
     data((s, n) => s.fn1("ReqCode.Node", n.value))
 
-  implicit val deadReqCodeGroup: ShowSrc[DeadReqCodeGroup] =
-    data((s, g) => s.cc2("DeadReqCodeGroup", DeadReqCodeGroup unapply g)(reqCodeId, reqCodeGroupTitleZ))
+  implicit val deadCodeGroup: ShowSrc[DeadCodeGroup] =
+    data((s, g) => s.cc2("DeadCodeGroup", DeadCodeGroup unapply g)(reqCodeId, codeGroupTitleZ))
 
-  implicit val deadReqCodeGroupField: ShowSrc[ReqCode.DeadGroup] =
-    option(deadReqCodeGroup)
+  implicit val deadCodeGroupField: ShowSrc[ReqCode.DeadGroup] =
+    option(deadCodeGroup)
 
-  implicit val liveReqCodeGroup: ShowSrc[LiveReqCodeGroup] =
-    data((s, g) => s.cc2("LiveReqCodeGroup", LiveReqCodeGroup unapply g)(reqCodeId, reqCodeGroupTitleZ))
+  implicit val liveCodeGroup: ShowSrc[LiveCodeGroup] =
+    data((s, g) => s.cc2("LiveCodeGroup", LiveCodeGroup unapply g)(reqCodeId, codeGroupTitleZ))
 
-  implicit val reqCodeGroup: ShowSrc[ReqCodeGroup] =
+  implicit val codeGroup: ShowSrc[CodeGroup] =
     data((s, t) => t match {
-      case g: LiveReqCodeGroup => s <~ g
-      case g: DeadReqCodeGroup => s <~ g
+      case g: LiveCodeGroup => s <~ g
+      case g: DeadCodeGroup => s <~ g
     })
 
   implicit val reqCodeDataReqInactive: ShowSrc[ReqCode.ReqInactive] =

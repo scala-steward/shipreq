@@ -228,9 +228,9 @@ object Sorter {
   @inline def stringNormalise: EndoFn[String] =
     DataLogic.normaliseStringForSorting
 
-  // ReqCodeGroups are only displayed when sorting by code.
-  // ReqCodeGroups cannot have a blank code.
-  // Therefore, ReqCodeGroups cannot affect the conclusivity of a Pubid sort.
+  // CodeGroups are only displayed when sorting by code.
+  // CodeGroups cannot have a blank code.
+  // Therefore, CodeGroups cannot affect the conclusivity of a Pubid sort.
   val pubidSorter = Sorter[(Int, Int)](
     prep =
       setup => {
@@ -238,7 +238,7 @@ object Sorter {
         val `n/a` = (-1, -1)
         ;{
           case r: ReqRow          => n(r.req.pubid)
-          case r: ReqCodeGroupRow => `n/a`
+          case r: CodeGroupRow => `n/a`
         }
       },
     sort = SortFn.intPair
@@ -259,7 +259,7 @@ object Sorter {
   val reqTypeSorter = Sorter[Int](
     prep = setup => {
       case r: ReqRow          => setup.reqTypesToMnemonicOrder(r.req.pubid.reqTypeId)
-      case r: ReqCodeGroupRow => -1
+      case r: CodeGroupRow => -1
     },
     sort = SortFn.int
   )
@@ -298,19 +298,19 @@ object Sorter {
   def customTextFieldSorter(id: CustomField.Text.Id, c: Column): SorterForSMCB =
     textSorter(c, p => {
       case r: ReqRow          => p.customTextField(id)(r.req) getOrElse ""
-      case r: ReqCodeGroupRow => ""
+      case r: CodeGroupRow => ""
     })
 
   val titleSorter: SorterForSMCB =
     textSorter(C.Title, p => {
       case r: ReqRow          => p.reqTitle(r.req)
-      case r: ReqCodeGroupRow => p.reqCodeGroupTitle(r.group)
+      case r: CodeGroupRow => p.codeGroupTitle(r.group)
     })
 
   def deletionReasonSorter: SorterForSMCB =
     textSorterS(C.DeletionReason, s => pt => {
       case r: ReqRow          => SortableDeletionReason.forReq(r.req)(s.p.config.reqTypes, pt) getOrElse ""
-      case _: ReqCodeGroupRow => SortableDeletionReason.forReqCodeGroup getOrElse ""
+      case _: CodeGroupRow => SortableDeletionReason.forCodeGroup getOrElse ""
     })
 
   // ===================================================================================================================

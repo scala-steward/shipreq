@@ -117,9 +117,9 @@ case class ReqRow(req: Req, live: Live, exp: Expansion, mv: MultiValues, instanc
   override def toString = s"\n$req\n$exp\n$mv\n"
 }
 
-case class ReqCodeGroupRow(group: ReqCodeGroup, reqCode: ReqCode.Value, reqCodeTreeItem: Option[ReqCodeTreeItem]) extends Row {
-  override val id       = Row.ReqCodeGroupRowId(reqCodeId)
-  override def sourceId = Row.ReqCodeGroupRowSourceId(reqCodeId)
+case class CodeGroupRow(group: CodeGroup, reqCode: ReqCode.Value, reqCodeTreeItem: Option[ReqCodeTreeItem]) extends Row {
+  override val id       = Row.CodeGroupRowId(reqCodeId)
+  override def sourceId = Row.CodeGroupRowSourceId(reqCodeId)
   override def live     = group.live
   def reqCodeId         = group.id
 }
@@ -130,7 +130,7 @@ object Row {
     override def applicable(row: Row, f: ReqTypeId => Applicable) =
       row match {
         case r: ReqRow          => Applicability.SubjectReq.applicable(r.req, f)
-        case _: ReqCodeGroupRow => NotApplicable
+        case _: CodeGroupRow => NotApplicable
       }
   }
 
@@ -156,13 +156,13 @@ object Row {
         reqId.value.toString + (' ' + instanceId).toChar.toString
   }
 
-  case class ReqCodeGroupRowId(value: ReqCodeId) extends Id {
+  case class CodeGroupRowId(value: ReqCodeId) extends Id {
     override def key =
       "C" + value.value
   }
 
   implicit def idEqualityR  : UnivEq[ReqRowId]          = UnivEq.derive
-  implicit def idEqualityG  : UnivEq[ReqCodeGroupRowId] = UnivEq.derive
+  implicit def idEqualityG  : UnivEq[CodeGroupRowId] = UnivEq.derive
   implicit def idEquality   : UnivEq[Id]                = UnivEq.derive
   implicit val idReusability: Reusability[Id]           = Reusability.byUnivEq
 
@@ -173,61 +173,61 @@ object Row {
    */
   sealed trait SourceId
   case class ReqRowSourceId(reqId: ReqId) extends SourceId
-  case class ReqCodeGroupRowSourceId(value: ReqCodeId) extends SourceId
+  case class CodeGroupRowSourceId(value: ReqCodeId) extends SourceId
 
   implicit def sourceIdEqualityR  : UnivEq[ReqRowSourceId]          = UnivEq.derive
-  implicit def sourceIdEqualityG  : UnivEq[ReqCodeGroupRowSourceId] = UnivEq.derive
+  implicit def sourceIdEqualityG  : UnivEq[CodeGroupRowSourceId] = UnivEq.derive
   implicit def sourceIdEquality   : UnivEq[SourceId]                = UnivEq.derive
   implicit val sourceIdReusability: Reusability[SourceId]           = Reusability.byUnivEq
 
   val SourceIdToEditorRow = Intersection[SourceId, RowKey] {
     case ReqRowSourceId         (id) => Some(RowKey.Req         (id))
-    case ReqCodeGroupRowSourceId(id) => Some(RowKey.ReqCodeGroup(id))
+    case CodeGroupRowSourceId(id) => Some(RowKey.CodeGroup(id))
   } {
     case RowKey.Req         (id) => Some(ReqRowSourceId         (id))
-    case RowKey.ReqCodeGroup(id) => Some(ReqCodeGroupRowSourceId(id))
+    case RowKey.CodeGroup(id) => Some(CodeGroupRowSourceId(id))
     case RowKey.UseCaseSteps     => None
   }
 
   // ===================================================================================================================
 
   implicit def rowEqualityR  : UnivEq[ReqRow]            = UnivEq.derive
-  implicit def rowEqualityG  : UnivEq[ReqCodeGroupRow]   = UnivEq.derive
+  implicit def rowEqualityG  : UnivEq[CodeGroupRow]   = UnivEq.derive
   implicit def rowEquality   : UnivEq[Row]               = UnivEq.derive
   implicit val rowReusability: Reusability[Row]          = Reusability.byRefOrUnivEq
 
   val expansion = Optional[Row, Expansion] {
     case r: ReqRow          => Some(r.exp)
-    case _: ReqCodeGroupRow => None
+    case _: CodeGroupRow => None
   }(nv => {
     case ReqRow(r, l, _, m, i) => ReqRow(r, l, nv, m, i)
-    case r: ReqCodeGroupRow    => r
+    case r: CodeGroupRow    => r
   })
 
   val multiValues = Optional[Row, MultiValues] {
     case r: ReqRow          => Some(r.mv)
-    case _: ReqCodeGroupRow => None
+    case _: CodeGroupRow => None
   }(nv => {
     case ReqRow(r, l, e, _, i) => ReqRow(r, l, e, nv, i)
-    case r: ReqCodeGroupRow    => r
+    case r: CodeGroupRow    => r
   })
 
   val reqCodes = Lens[Row, Vector[ReqCode.Value]] {
     case r: ReqRow          => r.exp.reqCodes
-    case r: ReqCodeGroupRow => Vector1(r.reqCode)
+    case r: CodeGroupRow => Vector1(r.reqCode)
   }(nv => {
     case ReqRow(r, l, e, m, i)                => ReqRow(r, l, e.copyReqCodes(nv), m, i)
-    case r: ReqCodeGroupRow if nv.length == 1 => r.copy(reqCode = nv.head)
-    case r: ReqCodeGroupRow if nv.length != 1 => assert(false, s"Can't apply $nv to $r") ;r
+    case r: CodeGroupRow if nv.length == 1 => r.copy(reqCode = nv.head)
+    case r: CodeGroupRow if nv.length != 1 => assert(false, s"Can't apply $nv to $r") ;r
   })
   val reqCodesO = reqCodes.asOptional
 
   val reqCodeTree = Lens[Row, Vector[ReqCodeTreeItem]] {
     case r: ReqRow          => r.exp.reqCodeTree
-    case r: ReqCodeGroupRow => r.reqCodeTreeItem.toVector
+    case r: CodeGroupRow => r.reqCodeTreeItem.toVector
   }(nv => {
     case ReqRow(r, l, e, m, i) => ReqRow(r, l, e.copyReqCodeTree(nv), m, i)
-    case r: ReqCodeGroupRow => nv.length match {
+    case r: CodeGroupRow => nv.length match {
       case 1 => r.copy(reqCodeTreeItem = Some(nv.head))
       case 0 => r.copy(reqCodeTreeItem = None)
       case _ => assert(false, s"Can't apply $nv to $r") ;r

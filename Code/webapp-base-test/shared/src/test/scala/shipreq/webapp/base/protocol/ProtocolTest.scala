@@ -113,10 +113,10 @@ object ProtocolTest extends TestSuite {
         def gc = $.reqCode.id
         def gi = $.customIssueTypeId
         def ga = $.applicableTagId
-        'ReqCodeGroupTitle - test("ReqCodeGroupTitle", $.TextGen.reqCodeGroupTitleAtom(gr, gu, gc, gi    ).text)
-        'GenericReqTitle   - test("GenericReqTitle",   $.TextGen.genericReqTitleAtom  (gr, gu, gc, gi, ga).text)
-        'InlineIssueDesc   - test("InlineIssueDesc",   $.TextGen.inlineIssueDescAtom  (gr, gu, gc        ).text)
-        'CustomTextField   - test("CustomTextField",   $.TextGen.customTextFieldAtom  (gr, gu, gc, gi, ga).text1(CustomTextField))
+        'CodeGroupTitle  - test("CodeGroupTitle" , $.TextGen.codeGroupTitleAtom (gr, gu, gc, gi    ).text)
+        'GenericReqTitle - test("GenericReqTitle", $.TextGen.genericReqTitleAtom(gr, gu, gc, gi, ga).text)
+        'InlineIssueDesc - test("InlineIssueDesc", $.TextGen.inlineIssueDescAtom(gr, gu, gc        ).text)
+        'CustomTextField - test("CustomTextField", $.TextGen.customTextFieldAtom(gr, gu, gc, gi, ga).text1(CustomTextField))
       }
     }
 

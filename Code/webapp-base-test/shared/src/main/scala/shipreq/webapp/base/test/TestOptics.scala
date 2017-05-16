@@ -26,13 +26,13 @@ object TestOptics {
   private val reqCodeDataDeadGroupSome = reqCodeDataDeadGroup ^<-? atSome
 
   val reqCodeDataDeadGroupId: Optional[Data, ReqCodeId] =
-    reqCodeDataDeadGroupSome ^|-> DeadReqCodeGroup.id
+    reqCodeDataDeadGroupSome ^|-> DeadCodeGroup.id
 
   private val reqCodeActiveGroupId: Lens[ActiveGroup, ReqCodeId] =
-    ActiveGroup.group ^|-> LiveReqCodeGroup.id
+    ActiveGroup.group ^|-> LiveCodeGroup.id
 
-  private val reqCodeActiveGroupTitle: Lens[ActiveGroup, Text.ReqCodeGroupTitle.OptionalText] =
-    ActiveGroup.group ^|-> LiveReqCodeGroup.title
+  private val reqCodeActiveGroupTitle: Lens[ActiveGroup, Text.CodeGroupTitle.OptionalText] =
+    ActiveGroup.group ^|-> LiveCodeGroup.title
 
   val reqCodeDataActiveId = Optional[Data, ReqCodeId]({
     case d: ActiveReq   => Some(d.id)
@@ -50,14 +50,14 @@ object TestOptics {
     case d: Inactive    => d.copy(reqInactive = n)
   })
 
-  val reqCodeDataGroupTitle = Optional[Data, Text.ReqCodeGroupTitle.OptionalText]({
+  val reqCodeDataGroupTitle = Optional[Data, Text.CodeGroupTitle.OptionalText]({
     case d: ActiveGroup => Some(d.group.title)
     case d: ActiveReq   => d.deadGroup.map(_.title)
     case d: Inactive    => d.deadGroup.map(_.title)
   })(n => {
     case d: ActiveGroup => reqCodeActiveGroupTitle.set(n)(d)
-    case d: ActiveReq   => d.copy(deadGroup = d.deadGroup.map(DeadReqCodeGroup.title set n))
-    case d: Inactive    => d.copy(deadGroup = d.deadGroup.map(DeadReqCodeGroup.title set n))
+    case d: ActiveReq   => d.copy(deadGroup = d.deadGroup.map(DeadCodeGroup.title set n))
+    case d: Inactive    => d.copy(deadGroup = d.deadGroup.map(DeadCodeGroup.title set n))
   })
 
   private val reqCodeTrieFixK = Trie.fixk

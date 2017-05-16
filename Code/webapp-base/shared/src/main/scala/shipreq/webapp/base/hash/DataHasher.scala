@@ -154,9 +154,9 @@ sealed abstract class DataHasher extends GenericDashHasher {
 
   implicit val hashReqDataText       : Hash[ReqData.Text       ] = withName("RDText", hashMap)
   implicit val hashReqCodeNode       : Hash[ReqCode.Node       ] = hashCaseClass
-  implicit val hashLiveReqCodeGroup  : Hash[LiveReqCodeGroup   ] = hashCaseClass
-  implicit val hashDeadReqCodeGroup  : Hash[DeadReqCodeGroup   ] = hashCaseClass
-  implicit val hashReqCodeGroup      : Hash[ReqCodeGroup       ] = hashADT
+  implicit val hashLiveCodeGroup     : Hash[LiveCodeGroup      ] = hashCaseClass
+  implicit val hashDeadCodeGroup     : Hash[DeadCodeGroup      ] = hashCaseClass
+  implicit val hashCodeGroup         : Hash[CodeGroup          ] = hashADT
   implicit val hashReqCodeInactive   : Hash[ReqCode.Inactive   ] = hashCaseClass
   implicit val hashReqCodeActiveGroup: Hash[ReqCode.ActiveGroup] = hashCaseClass
   implicit val hashReqCodeActiveReq  : Hash[ReqCode.ActiveReq  ] = hashCaseClass

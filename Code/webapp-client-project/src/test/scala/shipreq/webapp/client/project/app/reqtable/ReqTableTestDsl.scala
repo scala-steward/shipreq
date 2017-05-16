@@ -244,7 +244,7 @@ object ReqTableTestDsl {
     applyViewSettings("Show all columns.", s => {
       val vs = s.viewSettings
       val cs = selectVisibleColumns(_ => true, s.project.config, fd)
-      val o  = vs.order.copy(init = Vector.empty) // remove ReqCodeGroups
+      val o  = vs.order.copy(init = Vector.empty) // remove CodeGroups
       vs.copy(columns = cs, order = o, filterDead = fd)
     })
 

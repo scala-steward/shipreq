@@ -113,7 +113,7 @@ object ReqCodeEditor {
   // ===================================================================================================================
 
   /**
-    * Editor for a single ReqCode (as is the case in ReqCodeGroups).
+    * Editor for a single ReqCode (as is the case in CodeGroups).
     */
   object Single extends ReqCodeEditor[ReqCode.Value, ReqCode.Value] {
     override val textEditor                          = TextEditor.Input

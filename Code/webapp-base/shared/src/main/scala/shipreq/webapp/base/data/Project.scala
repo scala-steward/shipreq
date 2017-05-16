@@ -83,7 +83,7 @@ final case class Project(name           : Project.Name,
   /** Dead or alive */
   def allRichText: List[(String, Iterator[Text.AnyOptional])] =
     ("Deletion reasons",  deletionReasons.reasons.iterator.map(_.whole))                 ::
-    ("ReqCodeGroups",     reqCodes.groups.iterator.map(_.title))                         ::
+    ("CodeGroups",        reqCodes.groups.iterator.map(_.title))                         ::
     ("GenericReq titles", reqs.genericReqs.valuesIterator.map(_.title))                  ::
     ("UseCase titles",    reqs.useCases.imap.valuesIterator.map(_.title))                ::
     ("UseCase steps",     reqs.useCases.stepIterator.map(_.titleExplicitly))             ::
