@@ -18,16 +18,13 @@ object Feature {
   type AsyncState = AsyncFeature.Read.D0[AsyncError]
 
   /** This is not safe for reusability because the implementation calls `CallbackTo#runNow()`. */
-  trait Editor {
-    type Change
+  trait Editor[+Change] {
     def render(p: Permission, a: AsyncState): Option[VdomElement]
     def change(): PotentialChange[Invalidity, Change]
   }
 
   object Editor {
-    type Over[C] = Editor { type Change = C }
-
-    implicit val reusability: Reusability[Editor] =
+    implicit def reusability[C]: Reusability[Editor[C]] =
       Reusability.never // ∵ Editor is not safe for reusability
   }
 
@@ -40,9 +37,10 @@ object Feature {
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   object State {
-    type ForCell    = Option[Editor]
-    type ForRow     = Map[FieldKey, Editor]
-    type ForProject = Map[RowKey, ForRow]
+    type ForEditor[+C] = Option[Editor[C]]
+    type ForCell       = ForEditor[Any]
+    type ForRow        = Map[FieldKey, Editor[Any]]
+    type ForProject    = Map[RowKey, ForRow]
 
     def initForProject: ForProject =
       UnivEq.emptyMap
