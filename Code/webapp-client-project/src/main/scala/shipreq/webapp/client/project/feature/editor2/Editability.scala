@@ -44,11 +44,11 @@ object Editability {
     }
   }
 
-  sealed abstract class ForRow[R <: RowKey] {
-    def apply(field: R#FieldKey): Permission
+  sealed abstract class ForFields[-FK <: FieldKey] {
+    def apply(field: FK): Permission
   }
 
-  final case class ForGenericReq(whenReqIsLive: Option[(ProjectConfig, CustomReqTypeId)]) extends ForRow[RowKey.GenericReq] {
+  final case class ForGenericReq(whenReqIsLive: Option[(ProjectConfig, CustomReqTypeId)]) extends ForFields[FieldKey.ForGenericReq] {
     override def apply(k: FieldKey.ForGenericReq): Permission =
       whenReqIsLive match {
         case Some((cfg, reqTypeId)) =>
@@ -66,7 +66,7 @@ object Editability {
       }
   }
 
-  final case class ForUseCase(whenReqIsLive: Option[ProjectConfig]) extends ForRow[RowKey.UseCase] {
+  final case class ForUseCase(whenReqIsLive: Option[ProjectConfig]) extends ForFields[FieldKey.ForUseCase] {
     private def reqTypeId = StaticReqType.UseCase
 
     override def apply(k: FieldKey.ForUseCase): Permission =
@@ -103,7 +103,7 @@ object Editability {
       )
   }
 
-  final case class ForCodeGroup(permission: Permission) extends ForRow[RowKey.CodeGroup] {
+  final case class ForCodeGroup(permission: Permission) extends ForFields[FieldKey.ForCodeGroup] {
     def apply(k: FieldKey.ForCodeGroup): Permission =
       k match {
         case FieldKey.Code
@@ -111,7 +111,7 @@ object Editability {
       }
   }
 
-  final case class ForUseCaseSteps(useCases: UseCases) extends ForRow[RowKey.UseCaseSteps.type] {
+  final case class ForUseCaseSteps(useCases: UseCases) extends ForFields[FieldKey.UseCaseStep] {
     def apply(k: FieldKey.UseCaseStep): Permission =
       Allow when useCases.focusStep(k.id).live.is(Live)
   }
