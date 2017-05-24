@@ -62,6 +62,7 @@ object RowKey {
  */
 sealed trait FieldKey {
   type Change
+  @inline final def cast2[F[_], G[_]](f: F[G[Any]]) = f.asInstanceOf[F[G[Change]]]
 }
 
 object FieldKey {
@@ -133,7 +134,7 @@ object FieldKey {
   type Aux[C] = FieldKey { type Change = C }
 
   /** This shit is required to workaround Scala failing to be check exhaustivity when pattern-matching on Aux */
-  trait Fold[FK <: FieldKey, F[_]] {
+  trait Fold[-FK <: FieldKey, F[_]] {
     def apply(f: FK): F[f.Change]
     def map[G[_]](t: F ~> G): Fold[FK, G]
   }
