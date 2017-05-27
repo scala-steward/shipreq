@@ -80,10 +80,10 @@ object ContentEventTestHelp {
                impTgts: Set[ReqId]                     = ∅) = {
     import GenericReqGD._
     var vs = emptyValues
-    NonEmptySet   .maybe(codes,   ())(vs += ReqCodes(_))
-    NonEmptyVector.maybe(title,   ())(vs += Title   (_))
+    NonEmptySet   .maybe(codes,   ())(vs += Codes   (_))
     NonEmptySet   .maybe(impSrcs, ())(vs += ImpSrcs (_))
     NonEmptySet   .maybe(impTgts, ())(vs += ImpTgts (_))
+    NonEmptyVector.maybe(title,   ())(vs += Title   (_))
     GenericReqCreate(id, rt, vs)
   }
 
@@ -116,10 +116,10 @@ object ContentEventTestHelp {
 
   val patchRcAdd0 = Multimap.empty[ReqCode.Value, Set, ReqCodeId]
 
-  def patchReqCodes(id     : ReqId,
-                    remove : Set[ReqCodeId]                          = Set.empty,
-                    restore: Set[ReqCodeId]                          = Set.empty,
-                    add    : Multimap[ReqCode.Value, Set, ReqCodeId] = patchRcAdd0) =
+  def patchCodes(id     : ReqId,
+                 remove : Set[ReqCodeId]                          = Set.empty,
+                 restore: Set[ReqCodeId]                          = Set.empty,
+                 add    : Multimap[ReqCode.Value, Set, ReqCodeId] = patchRcAdd0) =
     ReqCodesPatch(id, remove = remove, restore = restore, add)
 
   case class PatchReqCodeB(id: ReqId) extends AnyVal {

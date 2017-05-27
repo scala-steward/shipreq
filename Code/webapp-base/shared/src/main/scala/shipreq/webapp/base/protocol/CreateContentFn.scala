@@ -19,11 +19,30 @@ import AtomPicklers.instances._
 sealed trait CreateContentCmd
 object CreateContentCmd {
 
-  final case class CreateGenericReq(rt      : CustomReqTypeId,
-                                    title   : Text.GenericReqTitle.OptionalText,
-                                    reqCodes: Set[ReqCode.Value],
-                                    tags    : Set[ApplicableTagId],
-                                    impSrcs : Set[ReqId]) extends CreateContentCmd
+  final case class CreateGenericReq(codes     : Set[ReqCode.Value],
+                                    customText: Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText],
+                                    imps      : Direction.Values[Set[ReqId]],
+                                    reqType   : CustomReqTypeId,
+                                    tags      : Set[ApplicableTagId],
+                                    title     : Text.GenericReqTitle.OptionalText) extends CreateContentCmd {
+
+    def addCustomText(f: CustomField.Text.Id, t: Text.CustomTextField.NonEmptyText): CreateGenericReq =
+      copy(customText = customText.updated(f, t))
+
+    def addCustomText(f: CustomField.Text.Id, t: Text.CustomTextField.OptionalText): CreateGenericReq =
+      NonEmptyVector.maybe(t, this)(addCustomText(f, _))
+
+    def addImps(d: Direction, add: Set[ReqId]): CreateGenericReq =
+      copy(imps = imps.mod(d, add ++ _))
+
+    def addTags(add: Set[ApplicableTagId]): CreateGenericReq =
+      copy(tags = add ++ tags)
+  }
+
+  object CreateGenericReq {
+    def empty(reqType: CustomReqTypeId): CreateGenericReq =
+      apply(Set.empty, UnivEq.emptyMap, Direction.Values.both(Set.empty), reqType, Set.empty, Vector.empty)
+  }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

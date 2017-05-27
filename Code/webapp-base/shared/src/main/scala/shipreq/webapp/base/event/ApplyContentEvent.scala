@@ -182,12 +182,13 @@ trait ApplyContentEvent {
 
       def foreachValue(id: GenericReqId, vs: ^.Values): SE[Unit] =
         SE.foldMapRun(vs.values) {
-          case ^.ValueForTitle   (v) => SE.nop // Handled below
-          case ^.ValueForTags    (v) => setReqTags   (id, v)
-          case ^.ValueForImpTgts (v) => setReqImpTgts(id, v)
-          case ^.ValueForImpSrcs (v) => setReqImpSrcs(id, v)
-          case ^.ValueForReqCodes(v) => setReqCodes  (id, v)
-      }
+          case ^.ValueForCodes     (v) => setReqCodes          (id, v)
+          case ^.ValueForCustomText(v) => setCustomTextValueMap(id, v)
+          case ^.ValueForImpSrcs   (v) => setReqImpSrcs        (id, v)
+          case ^.ValueForImpTgts   (v) => setReqImpTgts        (id, v)
+          case ^.ValueForTags      (v) => setReqTags           (id, v)
+          case ^.ValueForTitle     (v) => SE.nop // Handled below
+        }
 
       @inline def emptyTitle: Text.GenericReqTitle.OptionalText =
         Vector.empty

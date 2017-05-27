@@ -466,11 +466,12 @@ object EventDbCodecs {
     implicit val x = pickleReqCodeIdAndValueNES
     // Using "T" for reqtype
     gdMPickler(GenericReqGD, false) {
-      case GenericReqGD.Title    => "t"
-      case GenericReqGD.ReqCodes => "c"
-      case GenericReqGD.Tags     => "#"
-      case GenericReqGD.ImpSrcs  => ">"
-      case GenericReqGD.ImpTgts  => "<"
+      case GenericReqGD.Codes      => "c"
+      case GenericReqGD.CustomText => "x"
+      case GenericReqGD.ImpSrcs    => ">"
+      case GenericReqGD.ImpTgts    => "<"
+      case GenericReqGD.Tags       => "#"
+      case GenericReqGD.Title      => "t"
     }
   } values
 

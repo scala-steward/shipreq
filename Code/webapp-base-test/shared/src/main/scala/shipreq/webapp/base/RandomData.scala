@@ -1603,11 +1603,12 @@ object RandomData {
     object genericReqGD extends GenericDataGen(GenericReqGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case Title    => genericReqTitle1      map Title   .apply
-        case ReqCodes => reqCodeIdAndValue.nes map ReqCodes.apply
-        case Tags     => applicableTagId.nes   map Tags    .apply
-        case ImpSrcs  => reqId.nes             map ImpSrcs .apply
-        case ImpTgts  => reqId.nes             map ImpTgts .apply
+        case Codes      => reqCodeIdAndValue.nes map Codes     .apply
+        case CustomText => nonEmptyCustomTextMap map CustomText.apply
+        case ImpSrcs    => reqId.nes             map ImpSrcs   .apply
+        case ImpTgts    => reqId.nes             map ImpTgts   .apply
+        case Tags       => applicableTagId.nes   map Tags      .apply
+        case Title      => genericReqTitle1      map Title     .apply
       }
     }
 

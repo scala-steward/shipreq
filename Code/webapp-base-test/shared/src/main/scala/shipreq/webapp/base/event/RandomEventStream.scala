@@ -351,11 +351,12 @@ class ApplicableEventGen(p: Project) {
   object createGenericReqGD extends GenericDataOptionGen(GenericReqGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Title    => genericReqTitle1                 map Title   .apply
-      case ReqCodes => newReqCodeIdAndValue        .nes map ReqCodes.apply
-      case Tags     => applicableTagId(Live) map (_.nes map Tags    .apply)
-      case ImpSrcs  => liveReqId             map (_.nes map ImpSrcs .apply)
-      case ImpTgts  => liveReqId             map (_.nes map ImpTgts .apply)
+      case Codes      => newReqCodeIdAndValue        .nes map Codes     .apply
+      case CustomText => nonEmptyCustomTextMap map (_     map CustomText.apply)
+      case ImpSrcs    => liveReqId             map (_.nes map ImpSrcs   .apply)
+      case ImpTgts    => liveReqId             map (_.nes map ImpTgts   .apply)
+      case Tags       => applicableTagId(Live) map (_.nes map Tags      .apply)
+      case Title      => genericReqTitle1                 map Title     .apply
     }
   }
 

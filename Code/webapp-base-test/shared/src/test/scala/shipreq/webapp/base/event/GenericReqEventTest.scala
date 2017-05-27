@@ -57,7 +57,7 @@ object GenericReqEventTest extends TestSuite {
 
       'reqCodes {
         val rcs = NonEmptySet[ReqCode.IdAndValue](7 -> "a.b.c", 8 -> "d")
-        val p = _assertPass(emptyGR1.copy(vs = nev(ReqCodes(rcs))))
+        val p = _assertPass(emptyGR1.copy(vs = nev(Codes(rcs))))
         assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live), reqCodes = rcs.whole.map(_.value))
         assertEq(p.reqCodes.reqCodesById, rcs.whole.map(_.toTupleIV).toMap)
       }
@@ -75,8 +75,8 @@ object GenericReqEventTest extends TestSuite {
       'impSrcSelf         - assertFail("")(emptyGR1.copy(vs = nev(ImpSrcs(1))))
       'impTgtSelf         - assertFail("")(emptyGR1.copy(vs = nev(ImpTgts(1))))
       'impCycle           - assertFail("")(emptyGR1, impliedGR2, GenericReqCreate(3, mf, nev(ImpSrcs(2), ImpTgts(1))))
-      'codeBad            - assertFail("")(emptyGR1.copy(vs = nev(ReqCodes(8 -> "!"))))
-      'codeBadCaps        - assertFail("")(emptyGR1.copy(vs = nev(ReqCodes(8 -> "NO"))))
+      'codeBad            - assertFail("")(emptyGR1.copy(vs = nev(Codes(8 -> "!"))))
+      'codeBadCaps        - assertFail("")(emptyGR1.copy(vs = nev(Codes(8 -> "NO"))))
       'codeIdInUseByGR    - assertFail("")(createGR(1, codes = Set(5 -> "a"))      , createGR(2, codes = Set(5 -> "b")))
       'codeIdInUseByUC    - assertFail("")(createUC(1.UC, 1, codes = Set(5 -> "a")), createGR(2, codes = Set(5 -> "b")))
       'codeIdInUseByRCG   - assertFail("")(createRCG(5, "a")                       , createGR(2, codes = Set(5 -> "b")))
