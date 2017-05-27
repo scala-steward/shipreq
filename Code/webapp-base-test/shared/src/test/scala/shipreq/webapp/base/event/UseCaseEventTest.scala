@@ -99,6 +99,24 @@ object UseCaseEventTest extends TestSuite {
         assertEq(p.reqCodes.reqCodesById, rcs.whole.map(_.toTupleIV).toMap)
       }
 
+      def customText: Event.NonEmptyCustomTextMap = NonEmpty.force(Map(cf1 -> "1", cf2 -> "2"))
+      def createReqWithCustomText = emptyUC1.copy(vs = CustomText(customText))
+      'customText {
+        val p = _assertPass(createReqWithCustomText)
+        assertUC(p, 1)(UC1, customText = customText)
+      }
+
+      'customTextOnDeadField {
+        assertFail("dead")(FieldCustomDelete(cf1), createReqWithCustomText)
+      }
+
+//      // This should technically fail - allow it for now
+//      'customTextOnNonApplicableField {
+//        import CustomTextFieldGD._
+//        val makeNA = FieldCustomTextUpdate(cf1, ReqTypes(onlyReqTypes(fr)))
+//        assertFail("")(makeNA, createReqWithCustomText)
+//      }
+
       'badId           - assertBadIdsRejected(i => emptyUC1.copy(id = i))
       'idInUseByGR     - assertFail("unique req id")(createGR(emptyUC1.id.value.GR), emptyUC1)
       'idInUseByUC     - assertFail("exists")(emptyUC1, emptyUC1.copy(stepId = 234))
