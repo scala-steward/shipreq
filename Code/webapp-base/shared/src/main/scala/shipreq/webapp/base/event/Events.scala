@@ -2,6 +2,7 @@ package shipreq.webapp.base.event
 
 import japgolly.microlibs.nonempty._
 import nyaya.util.Multimap
+import scala.collection.immutable.ListMap
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
@@ -41,6 +42,8 @@ object Event {
   def reqCreationEventSamples = List[ActiveEvent](
     GenericReqCreate(null, null, null),
     UseCaseCreate(null, null, null))
+
+  type NonEmptyCustomTextMap = NonEmpty[Map[CustomField.Text.Id, CustomTextField.NonEmptyText]]
 }
 
 /**
@@ -193,11 +196,12 @@ final case class GenericReqTitleSet(id: GenericReqId, value: GenericReqTitle.Opt
  */
 @CreateGenericData
 object UseCaseGD extends GenericData {
-  val Title    = defAttr[UseCaseTitle.NonEmptyText]
-  val ReqCodes = defAttr[NonEmptySet[ReqCode.IdAndValue]]
-  val Tags     = defAttr[NonEmptySet[ApplicableTagId]]
-  val ImpSrcs  = defAttr[NonEmptySet[ReqId]]
-  val ImpTgts  = defAttr[NonEmptySet[ReqId]]
+  val Codes      = defAttr[NonEmptySet[ReqCode.IdAndValue]]
+  val CustomText = defAttr[Event.NonEmptyCustomTextMap]
+  val ImpSrcs    = defAttr[NonEmptySet[ReqId]]
+  val ImpTgts    = defAttr[NonEmptySet[ReqId]]
+  val Tags       = defAttr[NonEmptySet[ApplicableTagId]]
+  val Title      = defAttr[UseCaseTitle.NonEmptyText]
 }
 
 /**

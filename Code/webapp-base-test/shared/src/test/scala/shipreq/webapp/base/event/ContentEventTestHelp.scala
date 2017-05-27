@@ -95,10 +95,10 @@ object ContentEventTestHelp {
                impTgts: Set[ReqId]                  = ∅) = {
     import UseCaseGD._
     var vs = emptyValues
-    NonEmptySet   .maybe(codes,   ())(vs += ReqCodes(_))
-    NonEmptyVector.maybe(title,   ())(vs += Title   (_))
+    NonEmptySet   .maybe(codes,   ())(vs += Codes   (_))
     NonEmptySet   .maybe(impSrcs, ())(vs += ImpSrcs (_))
     NonEmptySet   .maybe(impTgts, ())(vs += ImpTgts (_))
+    NonEmptyVector.maybe(title,   ())(vs += Title   (_))
     UseCaseCreate(id, stepId, vs)
   }
 

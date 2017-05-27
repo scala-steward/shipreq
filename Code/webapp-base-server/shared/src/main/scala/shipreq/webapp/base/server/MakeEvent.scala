@@ -296,14 +296,16 @@ object MakeEvent {
 
       case i: CreateContentCmd.CreateUseCase =>
         var vs = UseCaseGD.emptyValues
-        for (v <- NonEmptyVector.option(i.title)) vs += UseCaseGD.Title(v)
-        for (v <- NonEmptySet.option(i.tags))     vs += UseCaseGD.Tags(v)
-        for (v <- NonEmptySet.option(i.impSrcs))  vs += UseCaseGD.ImpSrcs(v)
-        for (cs <- NonEmptySet.option(i.reqCodes)) {
+        for (cs <- NonEmptySet.option(i.codes)) {
           // If a code is in use, ApplyEvent will catch it
           val v = cs.map(c => ReqCode.IdAndValue(nextCodeId(), c))
-          vs += UseCaseGD.ReqCodes(v)
+          vs += UseCaseGD.Codes(v)
         }
+        for (v <- NonEmpty(i.customText))                vs += UseCaseGD.CustomText(v)
+        for (v <- NonEmptySet.option(i.imps(Backwards))) vs += UseCaseGD.ImpSrcs(v)
+        for (v <- NonEmptySet.option(i.imps(Forwards)))  vs += UseCaseGD.ImpTgts(v)
+        for (v <- NonEmptyVector.option(i.title))        vs += UseCaseGD.Title(v)
+        for (v <- NonEmptySet.option(i.tags))            vs += UseCaseGD.Tags(v)
         val id = UseCaseId(project.idCeilings.req + 1)
         val stepId = UseCaseStepId(project.idCeilings.useCaseStep + 1)
         UseCaseCreate(id, stepId, vs)

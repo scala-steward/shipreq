@@ -94,7 +94,7 @@ object UseCaseEventTest extends TestSuite {
 
       'reqCodes {
         val rcs = NonEmptySet[ReqCode.IdAndValue](7 -> "a.b.c", 8 -> "d")
-        val p = _assertPass(emptyUC1.copy(vs = nev(ReqCodes(rcs))))
+        val p = _assertPass(emptyUC1.copy(vs = nev(Codes(rcs))))
         assertUC(p, 1)(UC1, reqCodes = rcs.whole.map(_.value))
         assertEq(p.reqCodes.reqCodesById, rcs.whole.map(_.toTupleIV).toMap)
       }
@@ -110,8 +110,8 @@ object UseCaseEventTest extends TestSuite {
       'impSrcSelf         - assertFail("")(emptyUC1.copy(vs = nev(ImpSrcs(1.UC))))
       'impTgtSelf         - assertFail("")(emptyUC1.copy(vs = nev(ImpTgts(1.UC))))
       'impCycle           - assertFail("")(emptyUC1, impliedUC2, UseCaseCreate(3, 9, nev(ImpSrcs(2.UC), ImpTgts(1.UC))))
-      'codeBad            - assertFail("")(emptyUC1.copy(vs = nev(ReqCodes(8 -> "!"))))
-      'codeBadCaps        - assertFail("")(emptyUC1.copy(vs = nev(ReqCodes(8 -> "NO"))))
+      'codeBad            - assertFail("")(emptyUC1.copy(vs = nev(Codes(8 -> "!"))))
+      'codeBadCaps        - assertFail("")(emptyUC1.copy(vs = nev(Codes(8 -> "NO"))))
       'codeIdInUseByGR    - assertFail("")(createGR(1, codes = Set(5 -> "a"))   , createUC(2, 2, codes = Set(5 -> "b")))
       'codeIdInUseByUC    - assertFail("")(createUC(1, 1, codes = Set(5 -> "a")), createUC(2, 2, codes = Set(5 -> "b")))
       'codeIdInUseByGrp   - assertFail("")(createRCG(5, "a")                    , createUC(2, 2, codes = Set(5 -> "b")))
