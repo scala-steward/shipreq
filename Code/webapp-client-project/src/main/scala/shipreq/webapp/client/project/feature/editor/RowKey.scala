@@ -42,8 +42,6 @@ object RowKey {
   def req(id: ReqId): RowKey =
     id.foldReqId(GenericReq, UseCase)
 
-  type Aux[F <: FieldKey] = RowKey { type FieldKey = F }
-
   /** This shit is required to workaround Scala failing to be check exhaustivity when pattern-matching on Aux */
   case class Fold[F[_ <: FieldKey]](codeGroup   : CodeGroup  => F[CodeGroup   #FieldKey],
                                     genericReq  : GenericReq => F[GenericReq  #FieldKey],

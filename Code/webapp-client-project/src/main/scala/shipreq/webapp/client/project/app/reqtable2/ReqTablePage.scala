@@ -51,19 +51,16 @@ object ReqTablePage {
   final case class State(tableSettings: TableSettings,
                          filter       : FilterEditor.State,
                          selection    : RowSelection,
-                         newButton    : NewButton.State,
+                         newStuff     : NewStuff.State,
                          modal        : Modal.State)
 
   object State {
-    implicit val reusability: Reusability[State] =
-      Reusability.caseClass
-
     def init: State =
       State(
         TableSettings.default,
         FilterEditor.State.init,
         Selection.empty,
-        NewButton.initState,
+        NewStuff.State.init,
         Modal.none)
 
     val validFilter: Lens[State, Option[ValidFilter]] =
@@ -77,9 +74,10 @@ object ReqTablePage {
     import sp._
     import cd.pxProject
 
-    val modSettings    : ModFn[TableSettings] = Reusable.fn.state(stateAccess zoomStateL State.tableSettings).mod
-    val setSelection   : SetFn[RowSelection ] = Reusable.fn.state(stateAccess zoomStateL State.selection).set
-    val setSortCriteria: SetFn[SortCriteria ] = Reusable.fn.state(stateAccess zoomStateL State.sortCriteria).set
+    val modSettings    : ModFn[TableSettings ] = Reusable.fn.state(stateAccess zoomStateL State.tableSettings).mod
+    val setNewStuff    : SetFn[NewStuff.State] = Reusable.fn.state(stateAccess zoomStateL State.newStuff).set
+    val setSelection   : SetFn[RowSelection  ] = Reusable.fn.state(stateAccess zoomStateL State.selection).set
+    val setSortCriteria: SetFn[SortCriteria  ] = Reusable.fn.state(stateAccess zoomStateL State.sortCriteria).set
 
     private var manualRefresh = List.empty[Px.ThunkM[_]]
     private def pxProps[A: Reusability](f: Props => A): Px.ThunkM[A] = {
@@ -160,21 +158,18 @@ object ReqTablePage {
         c <- pxColumnPlusAll
       } yield SortCriteriaEditor.Props(s.order, setSortCriteria, c).render
 
-    val newButtonUpdate: Reusable[NewButton.Update] =
-      Reusable.byRef(
-        NewButton.Update(
-          stateAccess.zoomStateL(State.newButton).setState(_),
-          c => Callback.alert("Create: " + c)))
-
     def render(p: Props): VdomElement = {
       Px.refresh(manualRefresh: _*)
 
-      val newButton = NewButton.Props(
-        p.state.newButton,
+      val activeColumnsPlus = pxActiveColumnsPlus.value()
+
+      val newStuff = new NewStuff(
+        p.state.newStuff,
+        setNewStuff,
         pxProject.value().config.reqTypes,
         Allow when p.state.tableSettings.viewCodeGroups,
-        Some(newButtonUpdate),
-      ).render
+        p.create,
+        activeColumnsPlus)
 
       val filterEditor = FilterEditor.Props(
         p.state.filter,
@@ -184,7 +179,7 @@ object ReqTablePage {
 
       val table = Table.Whole.Props(
         pxRows.value(),
-        pxActiveColumnsPlus.value(),
+        activeColumnsPlus,
         pxRowSelectionVisible.value(),
         p.editor,
         p.rowAsync.read,
@@ -198,7 +193,7 @@ object ReqTablePage {
         ViewsMenu.Component(p.filterDead),
 
         <.div(*.actionCtrls,
-          newButton,
+          newStuff.buttonProps.render,
           <.div(*.summary, pxPageSummary.value())),
 
         <.div(*.viewCtrls,
@@ -206,6 +201,8 @@ object ReqTablePage {
           <.div(*.flexGap),
           filterEditor,
           pxColumnSelector.value()),
+
+        newStuff.form.whenDefined,
 
         table)
     }

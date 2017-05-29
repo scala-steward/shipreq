@@ -11,7 +11,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data
 import shipreq.webapp.client.base.lib.KeyGen
-import shipreq.webapp.client.project.feature.EditorFeature
+import shipreq.webapp.client.project.feature.{CreateFeature, EditorFeature}
 
 sealed trait Column {
   // Ensure correct attribute traits are mixed in
@@ -142,6 +142,15 @@ object Column {
     case EditorFeature.FieldKey.Tags(Some(id))         => Some(Column.CustomField(id))
     case EditorFeature.FieldKey.CustomTextField(id)    => Some(Column.CustomField(id))
   }
+
+  val creationFieldCG: Intersection[Column, CreateFeature.FieldKey.ForCodeGroup] =
+    editorFieldCG <=> CreateFeature.FieldKey.editorFieldCG
+
+  val creationFieldGR: Intersection[Column, CreateFeature.FieldKey.ForGenericReq] =
+    editorFieldGR <=> CreateFeature.FieldKey.editorFieldGR
+
+  val creationFieldUC: Intersection[Column, CreateFeature.FieldKey.ForUseCase] =
+    editorFieldUC <=> CreateFeature.FieldKey.editorFieldUC
 
   def applicabilityForReq[Data](a: Applicability[FieldId, Data]): Applicability[Column, Data] =
     Applicability {

@@ -34,7 +34,11 @@ object RowKey {
   implicit val reusability: Reusability[RowKey] =
     Reusability.byUnivEq
 
-  type Aux[F <: FieldKey] = RowKey { type FieldKey = F }
+  def req(id: ReqTypeId): RowKey =
+    id match {
+      case i: CustomReqTypeId    => GenericReq(i)
+      case StaticReqType.UseCase => UseCase
+    }
 
   /** This shit is required to workaround Scala failing to be check exhaustivity when pattern-matching on Aux */
   case class Fold[F[_ <: FieldKey]](codeGroup   : CodeGroup .type => F[CodeGroup .FieldKey],
