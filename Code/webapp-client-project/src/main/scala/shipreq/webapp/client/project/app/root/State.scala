@@ -16,14 +16,21 @@ import reqdetail.ReqDetail
 sealed trait PreviewId
 object PreviewId {
 
-  case class Editor(id: EditorFeature.PreviewId) extends PreviewId
+  case class CF(id: CreateFeature.PreviewId) extends PreviewId
+  case class EF(id: EditorFeature.PreviewId) extends PreviewId
 
   implicit def equality: UnivEq[PreviewId] = UnivEq.derive
   implicit val reusability: Reusability[PreviewId] = Reusability.byUnivEq
 
+  val ToCreate = Intersection[PreviewId, CreateFeature.PreviewId] {
+    case CF(e) => Some(e)
+    case _: EF => None
+  }(e => Some(CF(e)))
+
   val ToEditor = Intersection[PreviewId, EditorFeature.PreviewId] {
-    case Editor(e) => Some(e)
-  }(e => Some(Editor(e)))
+    case EF(e) => Some(e)
+    case _: CF => None
+  }(e => Some(EF(e)))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -79,8 +86,10 @@ object AsyncKey {
 @Lenses
 case class State(projectName : ProjectItem.WithEditableName.State,
                  reqLookup   : String,
-                 editors     : EditorFeature.State.ForProject,
-                 async       : AsyncFeature.State.D2[EditorFeature.RowKey, AsyncKey, EditorFeature.AsyncError],
+                 create      : CreateFeature.State.ForProject,
+                 createAsync : AsyncFeature.State.D1[CreateFeature.RowKey, CreateFeature.AsyncError],
+                 edit        : EditorFeature.State.ForProject,
+                 editAsync   : AsyncFeature.State.D2[EditorFeature.RowKey, AsyncKey, EditorFeature.AsyncError],
                  preview     : PreviewFeature.State[PreviewId],
                  filterDead  : FilterDead,
                  reqTable    : reqtable2.ReqTablePage.State,
@@ -91,6 +100,8 @@ object State {
     State(
       ProjectItem.WithEditableName.State.init,
       "",
+      CreateFeature.State.initForProject,
+      AsyncFeature.State.initD1,
       EditorFeature.State.initForProject,
       AsyncFeature.State.initD2,
       PreviewFeature.State.init,

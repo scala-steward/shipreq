@@ -42,18 +42,34 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
     val setFilterDead: FilterDead ~=> Callback =
       Reusable.fn.state($ zoomStateL State.filterDead).set
 
-    val pxPlainText      = pxProject.map(PlainText(_, ProjectText.Context.None))
-    val pxTextSearch     = Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
-    val pxProjectWidgets = Px.apply2(pxProject, pxPlainText)(ProjectWidgets(_, _, reqDetailRC))
-    val pxEditability    = pxProject.map(EditorFeature.Editability.apply)
+    val pxPlainText         = pxProject.map(PlainText(_, ProjectText.Context.None))
+    val pxTextSearch        = Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
+    val pxProjectWidgets    = Px.apply2(pxProject, pxPlainText)(ProjectWidgets(_, _, reqDetailRC))
+    val pxCreateEditability = pxProject.map(p => CreateFeature.Editability(p.config))
+    val pxEditEditability   = pxProject.map(EditorFeature.Editability.apply)
 
     val previewW: PreviewFeature.Write.Composite[PreviewId] =
       PreviewFeature.Write.Composite.init($ zoomStateL State.preview)
 
-    val asyncW: AsyncFeature.Write.D2[EditorFeature.RowKey, AsyncKey, String] =
-      AsyncFeature.Write.D2.init($ zoomStateL State.async)
+    val createAsyncW: AsyncFeature.Write.D1[CreateFeature.RowKey, String] =
+      AsyncFeature.Write.D1.init($ zoomStateL State.createAsync)
 
-    val editorW: EditorFeature.Write.ForProject =
+    val createW: CreateFeature.Write.ForProject =
+      CreateFeature.Write.ForProject(
+        CreateFeature.Static(
+          previewW.mapId(PreviewId.ToCreate),
+          pxProject,
+          pxPlainText,
+          pxProjectWidgets,
+          pxTextSearch),
+        $ zoomStateL State.create,
+        createAsyncW,
+        ServerCall.to(initData.createContent, cp, cd))
+
+    val editAsyncW: AsyncFeature.Write.D2[EditorFeature.RowKey, AsyncKey, String] =
+      AsyncFeature.Write.D2.init($ zoomStateL State.editAsync)
+
+    val editW: EditorFeature.Write.ForProject =
       EditorFeature.Write.ForProject(
         EditorFeature.Static(
           previewW.mapId(PreviewId.ToEditor),
@@ -62,8 +78,8 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
           pxProjectWidgets,
           pxTextSearch,
           ServerCall.to(initData.updateContent, cp, cd)),
-        $ zoomStateL State.editors,
-        asyncW.mapKey1(AsyncKey.ToEditor))
+        $ zoomStateL State.edit,
+        editAsyncW.mapKey1(AsyncKey.ToEditor))
 
     val reqTable = ReqTablePage(
       ReqTablePage.StaticProps(
@@ -76,18 +92,18 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
 
     val pxReqDetailReqProps: Px[Option[State => ReqDetail.ReqProps]] =
       for {
-        editability <- pxEditability
+        editability <- pxEditEditability
         reqDetailId <- pxReqDetailId
       } yield reqDetailId.map { id =>
         val row = EditorFeature.RowKey.req(id)
-        val aw = asyncW(row).mapKey(AsyncKey.ToReqDetail)
-        val ew = editorW.forReq(id)
+        val aw = editAsyncW(row).mapKey(AsyncKey.ToReqDetail)
+        val ew = editW.forReq(id)
 
         (s: State) => {
-          val as = s.async.toRead
+          val as = s.editAsync.toRead
           val ar = as(row).mapKey(AsyncKey.ToReqDetail)
           val af = aw.toReadWrite(ar)
-          val er = EditorFeature.Read.ForProject(s.editors, editability, as.mapKey1(AsyncKey.ToEditor)).forReq(id)
+          val er = EditorFeature.Read.ForProject(s.edit, editability, as.mapKey1(AsyncKey.ToEditor)).forReq(id)
           val ef = EditorFeature.ReadWrite.ForFields(er, ew)
           ReqDetail.ReqProps(ef, af)
         }
@@ -132,12 +148,13 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
       }
 
     def render(p: Props, s: State): VdomElement = {
-      def filterDeadSnapshot = StateSnapshot.withReuse(s.filterDead)(setFilterDead)
-
-      lazy val asyncState = s.async.toRead
-      def editorR = EditorFeature.Read.ForProject(s.editors, pxEditability.value(), asyncState.mapKey1(AsyncKey.ToEditor))
-      def editorRW = editorW.toReadWrite(editorR)
-      def previewRW = previewW.toReadWrite(s.preview)
+      lazy val editAsyncState = s.editAsync.toRead
+      def createR      = CreateFeature.Read.ForProject(s.create, pxCreateEditability.value(), s.createAsync.toRead)
+      def createRW     = createW.toReadWrite(createR)
+      def editR        = EditorFeature.Read.ForProject(s.edit, pxEditEditability.value(), editAsyncState.mapKey1(AsyncKey.ToEditor))
+      def editRW       = editW.toReadWrite(editR)
+      def filterDeadSS = StateSnapshot.withReuse(s.filterDead)(setFilterDead)
+      // def previewRW = previewW.toReadWrite(s.preview)
 
       val content: VdomElement = p.page match {
 
@@ -157,37 +174,38 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
           ProjectHome.Props(pname, index).render
 
         case Page.CfgFields =>
-          cfg.fields.CfgFields.Props(cp, initData.fieldCrud, cd, filterDeadSnapshot).component
+          cfg.fields.CfgFields.Props(cp, initData.fieldCrud, cd, filterDeadSS).component
 
         case Page.CfgIssues =>
           cfg.issues.CfgIssues.Props(
-            cp, initData.issueTypeCrud, initData.reqTypeImpMod, initData.fieldMandMod, cd, filterDeadSnapshot, usageShow)
+            cp, initData.issueTypeCrud, initData.reqTypeImpMod, initData.fieldMandMod, cd, filterDeadSS, usageShow)
             .component
 
         case Page.CfgReqTypes =>
-          cfg.reqtypes.CfgReqTypes.Props(cp, initData.reqTypeCrud, cd, filterDeadSnapshot, usageShow).component
+          cfg.reqtypes.CfgReqTypes.Props(cp, initData.reqTypeCrud, cd, filterDeadSS, usageShow).component
 
         case Page.CfgTags =>
-          cfg.tags.CfgTags.Props(cp, initData.tagCrud, cd, filterDeadSnapshot).component
+          cfg.tags.CfgTags.Props(cp, initData.tagCrud, cd, filterDeadSS).component
 
         case Page.ReqTable =>
-          val rowAsync = asyncW
-            .toReadWrite(asyncState)
+          val rowAsync = editAsyncW
+            .toReadWrite(editAsyncState)
             .mapKey2(reqtable2.Row.SourceId.ToEditorRow.reverse)
             .withKey1(AsyncKey.WholeReq)
           reqTable(
             ReqTablePage.Props(
-              editorRW,
+              createRW,
+              editRW,
               rowAsync,
-              filterDeadSnapshot,
+              filterDeadSS,
               s.reqTable))
 
         case Page.ReqDetail(pubid) =>
           val props = ReqDetail.DynamicProps(
             pubid,
-            filterDeadSnapshot,
+            filterDeadSS,
             reqDetailReqPropsFn(s),
-            editorRW.forUseCaseSteps,
+            editRW.forUseCaseSteps,
             StateSnapshot.withReuse(s.reqDetail)(reqDetailSetState))
           reqDetail(props)
 

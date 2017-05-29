@@ -14,16 +14,13 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.Allow
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.ValidFilter
-import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.client.base.feature.AsyncFeature
 import shipreq.webapp.client.base.lib.DataReusability._
-import shipreq.webapp.client.base.protocol.ClientProtocol
 import shipreq.webapp.client.base.ui.BaseStyles
-import shipreq.webapp.client.project.app.state.{Changes, ClientData}
+import shipreq.webapp.client.project.app.state.ClientData
 import shipreq.webapp.client.project.app.Style.reqtable2.{page => *}
 import shipreq.webapp.client.project.feature._
-import shipreq.webapp.client.project.protocol.ServerCall
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 object ReqTablePage {
@@ -39,23 +36,16 @@ object ReqTablePage {
 
   final case class StaticProps(stateAccess     : StateAccessPure[State],
                                cd              : ClientData,
-//                               cp              : ClientProtocol,
-//                               createContentFn : CreateContentFn.Instance,
-//                               updateContentFn : UpdateContentFn.Instance,
                                pxPlainText     : Px[PlainText.ForProject],
                                pxTextSearch    : Px[TextSearch],
                                pxProjectWidgets: Px[ProjectWidgets],
                                reqDetailRC     : RouterCtl[ExternalPubid])
 
-  final case class Props(editor    : EditorFeature.ReadWrite.ForProject,
+  final case class Props(create    : CreateFeature.ReadWrite.ForProject,
+                         editor    : EditorFeature.ReadWrite.ForProject,
                          rowAsync  : AsyncFeature.ReadWrite.D1[Row.SourceId, String],
                          filterDead: StateSnapshot[FilterDead],
                          state     : State)
-
-  object Props {
-    implicit val reusability: Reusability[Props] =
-      Reusability.caseClass
-  }
 
   @Lenses
   final case class State(tableSettings: TableSettings,

@@ -279,6 +279,9 @@ object AsyncFeature {
                     lensAt(sk).set(value)(s))) })
         })
 
+      def init[K: UnivEq : ClassTag, F]($: StateAccessPure[State.D1[K, F]]): D1[K, F] =
+        apply(Reusable.byRef($), Intersection.id)
+
       def doNothing[K]: D1[K, Any] =
         withDoNothingReusability(new Interface[K, Any] {
           override def apply(k: K)                                   = D0.doNothing
