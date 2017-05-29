@@ -5,12 +5,14 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scala.annotation.tailrec
+import scalacss.ScalaCssReact._
 import scalaz.Scalaz.Id
 import scalaz.{-\/, \/-}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.{CustomReqType, ReqType, StaticReqType}
 import shipreq.webapp.base.protocol.CreateContentCmd
-import shipreq.webapp.client.base.ui.semantic.{Button, Colour, Icon}
+import shipreq.webapp.client.base.ui.semantic.{Button, Colour, Icon, Table => SemTable}
+import shipreq.webapp.client.project.app.Style.reqtable2.{creation => *}
 import shipreq.webapp.client.project.feature.CreateFeature
 import shipreq.webapp.client.project.feature.CreateFeature.FieldKey
 import shipreq.webapp.client.project.lib.DataReusability._
@@ -147,15 +149,14 @@ sealed trait NewForm {
       Button(
         tipe = Button.Type.BasicIconAndText(Icon.Remove, "Close"),
         colour = Colour.Black)
-        .tag(
-          // #new-form-cancel(style="margin-right:2ex")
+        .tag(*.formCancelButton,
           ^.onClick --> $.props.flatMap(_.cancel))
 
     def render(p: Props): VdomElement = {
 
       val editorCells: VdomArray =
         p.editableCols.whole.toVdomArray { case (cp, e) =>
-          <.td( // .mid-edit
+          <.td(
             ^.key := cp.column.key,
             e.value.render())
         }
@@ -165,18 +166,19 @@ sealed trait NewForm {
           tipe = Button.Type.BasicIconAndText(Icon.Plus, createButtonLabel(p.input)),
           colour = Colour.Green,
           state = Button.State.enabledWhen(p.create.isDefined))
-          .tag(
-            // #new-form-create
+          .tag(*.formCreateButton,
             ^.onClick -->? p.create)
 
-      <.section( // %section#new-form
-        <.table( // %table.ui.table.celled.compact.unstackable
+      <.section(*.formOuter,
+        SemTable.celledCompactUnstackable(
+          *.formTable,
           Header.Component(p.editableCols.map(_._1)),
           <.tbody(
-            <.tr( //%tr#new-edit-row
+            <.tr(*.formMiddleRow,
               editorCells),
             <.tr(
-              <.td(^.colSpan := p.editableCols.length, // %td(colspan=5 style="text-align:right")
+              <.td(*.formBottomRow,
+                ^.colSpan := p.editableCols.length,
                 cancelButton,
                 createButton)))))
     }
@@ -196,7 +198,7 @@ sealed trait NewForm {
       <.thead(
         <.tr(
           p.whole.toTagMod(col =>
-            <.th(col.name))))
+            <.th(*.formHeaderCell, col.name))))
 
     val Component = ScalaComponent.builder[Props]("Header")
       .render_P(render)

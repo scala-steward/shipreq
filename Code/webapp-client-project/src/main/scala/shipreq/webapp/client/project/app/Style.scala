@@ -139,14 +139,14 @@ object Style extends StyleSheet.Inline {
 
     // nearly everything here is !important because of stupid Semantic UI
 
-    object page {
+    private def pageVGap = 1.25 em
 
-      private def vgap = 1.25 em
+    object page {
 
       val viewCtrls = style(
         display.flex,
         alignContent.center,
-        margin(v = vgap, h = `0`),
+        margin(v = pageVGap, h = `0`),
         unsafeChild("> *:not(:first-child)")(marginLeft(1 ex)))
 
       def actionCtrls = viewCtrls
@@ -166,6 +166,41 @@ object Style extends StyleSheet.Inline {
       val buttonDropdown = style(
         color(c"#eee").important,
         backgroundColor(c"#00a632").important)
+
+      val formOuter = style(
+        margin(v = pageVGap, h = `0`))
+
+      val formTable = style(
+        margin(`0`),
+        (boxShadow := "0 2px 4px 0 rgba(20,60,20,.16),0 2px 10px 0 rgba(20,60,20,.12)").important,
+        unsafeChild(">tbody>tr>td")(
+          borderTop.none.important,
+          borderLeft.none.important,
+          borderRight.none.important))
+
+      val formHeaderCell = style(
+        borderLeft.none.important,
+        borderRight.none.important,
+        paddingTop(0.4 em).important,
+        paddingBottom(0.4 em).important)
+
+      val formMiddleRow = style(
+        verticalAlign.top)
+
+      val formBottomRow = style(
+        textAlign.right.important)
+
+      val formCancelButton = style(
+        (background := "#fff").important,
+        borderColor(c"#27292a").important,
+        marginRight(2 ex))
+
+      val formCreateButton = style(
+        (background := "#fff").important,
+        color(c"#080").important,
+        borderColor(c"#080").important,
+        marginRight(`0`).important,
+        fontWeight.bold.important)
     }
 
     object table {
