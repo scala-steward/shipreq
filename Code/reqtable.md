@@ -1,25 +1,20 @@
-# ReqTable Upgrade: Planning and Progress
+Table modes:
+  1. Empty
+  2. All dead & HideDead
+  3. All filtered out
+  4. Main
 
-### Planning
+Styles:
+  * Table row height
+  * Row columns @ dead * selected
+  * DeletionForm styles
+  * Hide dead from stats when HideDead
+  * Spinner for locked rows
 
-
-
-### Progress
-
-* Older TODOs:
-  * No content.
-  * All dead.
-  * All filtered out.
-  * New button & form.
-  * Sort form.
-  * Filter form (∅,ok,ko) & help.
-  * Summary math.
-  * Column selection.
-  * Delete/restore buttons.
-  * Restore reusability on ReqTable and editors
-  * Redo ReqTable rowlocking async
-
-* Newer TODOs:
+Branch TODOs
+  * Keyboard nav
+  * Restore tests
+  * Test new stuff
   * LoadedRoot: Sync ReqTable state on Project change
   * LoadedRoot: Sync ReqTable state on FilterDead change
   * Fix 'Usage' links in config tables

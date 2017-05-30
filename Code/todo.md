@@ -6,6 +6,9 @@ Frontend
     * Katex.js can be loaded on demand. Only the CSS is required for rendering.
 
 Misc
+  * Keyboard nav for ReqDetail
+  * Show past IDs in ReqDetail
+  * Show past IDs in ReqTable?
   * Group req types in filter from ALL to ANY.
   * Say "no implications" in imp graph
 
@@ -14,18 +17,6 @@ Misc
   * We have implications fields and implication columns.
     We don't seem to need all-imps vs non-field-imps...should tags not work the same way?
     Or is there similar deficiency in imps cols too?
-
-* ReqTable
-  * No content.
-  * All dead.
-  * All filtered out.
-  * New button & form.
-  * Sort form.
-  * Filter form (∅,ok,ko) & help.
-  * Summary math.
-  * Column selection.
-  * Delete/restore buttons.
-  * Restore reusability on ReqTable and editors
 
 * Determine UI for:
   * ReqDetail load failure
