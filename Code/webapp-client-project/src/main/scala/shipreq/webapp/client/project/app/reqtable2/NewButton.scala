@@ -97,6 +97,7 @@ object NewButton {
             i.mnemonic.fold("")(_.value + ": ") + i.name))
 
       <.div(
+        *.buttonOuter,
         ^.cls := "ui labeled button",
         (^.cls := "disabled").when(p.update.isEmpty),
         renderButton,

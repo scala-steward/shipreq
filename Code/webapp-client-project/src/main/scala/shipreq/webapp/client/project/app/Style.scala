@@ -143,13 +143,18 @@ object Style extends StyleSheet.Inline {
 
     object page {
 
+      val ctrlHGap = 1.2 ex
+
       val viewCtrls = style(
         display.flex,
         alignContent.center,
         margin(v = pageVGap, h = `0`),
-        unsafeChild("> *:not(:first-child)")(marginLeft(1 ex)))
+        unsafeChild("> *:not(:first-child)")(marginLeft(ctrlHGap)))
 
       def actionCtrls = viewCtrls
+
+      val actionCtrlButton = style(
+        marginRight(ctrlHGap).important)
 
       val summary = style(
         flexGrow(1),
@@ -162,6 +167,9 @@ object Style extends StyleSheet.Inline {
     }
 
     object creation {
+
+      val buttonOuter = style(
+        marginRight(`0`).important)
 
       val buttonDropdown = style(
         color(c"#eee").important,

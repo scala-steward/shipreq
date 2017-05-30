@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.reqtable2
 
-import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
+import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react.vdom.html_<^._
@@ -14,6 +14,7 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.Allow
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.ValidFilter
+import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.client.base.feature.AsyncFeature
 import shipreq.webapp.client.base.lib.DataReusability._
@@ -21,6 +22,7 @@ import shipreq.webapp.client.base.ui.BaseStyles
 import shipreq.webapp.client.project.app.state.ClientData
 import shipreq.webapp.client.project.app.Style.reqtable2.{page => *}
 import shipreq.webapp.client.project.feature._
+import shipreq.webapp.client.project.protocol.ServerCall
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 object ReqTablePage {
@@ -39,11 +41,13 @@ object ReqTablePage {
                                pxPlainText     : Px[PlainText.ForProject],
                                pxTextSearch    : Px[TextSearch],
                                pxProjectWidgets: Px[ProjectWidgets],
-                               reqDetailRC     : RouterCtl[ExternalPubid])
+                               reqDetailRC     : RouterCtl[ExternalPubid],
+                               updateIO        : ServerCall[UpdateContentCmd],
+                               rowAsyncW       : AsyncFeature.Write.D1[Row.SourceId, String])
 
   final case class Props(create    : CreateFeature.ReadWrite.ForProject,
                          editor    : EditorFeature.ReadWrite.ForProject,
-                         rowAsync  : AsyncFeature.ReadWrite.D1[Row.SourceId, String],
+                         rowAsync  : AsyncFeature.Read.D1[Row.SourceId, String],
                          filterDead: StateSnapshot[FilterDead],
                          state     : State)
 
@@ -70,6 +74,8 @@ object ReqTablePage {
       tableSettings ^|-> TableSettings.order
   }
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   final class Backend(sp: StaticProps, $: BackendScope[Props, Unit]) {
     import sp._
     import cd.pxProject
@@ -78,6 +84,7 @@ object ReqTablePage {
     val setNewStuff    : SetFn[NewStuff.State] = Reusable.fn.state(stateAccess zoomStateL State.newStuff).set
     val setSelection   : SetFn[RowSelection  ] = Reusable.fn.state(stateAccess zoomStateL State.selection).set
     val setSortCriteria: SetFn[SortCriteria  ] = Reusable.fn.state(stateAccess zoomStateL State.sortCriteria).set
+    val setModal       : SetFn[Modal.State   ] = Reusable.fn.state(stateAccess zoomStateL State.modal).set
 
     private var manualRefresh = List.empty[Px.ThunkM[_]]
     private def pxProps[A: Reusability](f: Props => A): Px.ThunkM[A] = {
@@ -101,8 +108,12 @@ object ReqTablePage {
       } yield Logic.rowsForTable(p, s, fd, pt, ts)
 
     val pxRowIdsWithWholeRowAsync: Px[Set[Row.SourceId]] =
-      pxProps(_.rowAsync.read.keySet)
+      pxProps(_.rowAsync.keySet)
 
+    /** Rows which the user has selected that:
+      * - are currently visible (i.e. ignoring filtered out)
+      * - aren't currently busy with some async action (in which case the selection checkbox is replaced with a spinner)
+      */
     val pxRowSelectionVisible: Px[RowSelectionVisible] =
       for {
         rs <- pxRows
@@ -150,7 +161,9 @@ object ReqTablePage {
       for {
         stats <- pxTableContentStats
         sel   <- pxRowSelectionVisible
-      } yield PageSummary.Props(stats, sel.legalSelection.size).render
+      } yield
+        // `legalSelection` because the same sourceId can appear more than once
+        PageSummary.Props(stats, sel.legalSelection.size).render
 
     val pxSortCriteriaEditor: Px[VdomElement] =
       for {
@@ -158,9 +171,25 @@ object ReqTablePage {
         c <- pxColumnPlusAll
       } yield SortCriteriaEditor.Props(s.order, setSortCriteria, c).render
 
+    val pxSelectionCtrls: Px[SelectionCtrls.Props] =
+      for {
+        project        <- pxProject
+        projectWidgets <- pxProjectWidgets
+        projectText    <- pxPlainText
+        textSearch     <- pxTextSearch
+        rows           <- pxRows
+        sel            <- pxRowSelectionVisible
+      } yield SelectionCtrls.Props(
+        sel, rows, setModal, project, projectWidgets, projectText, textSearch, updateIO, rowAsyncW)
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     def render(p: Props): VdomElement = {
       Px.refresh(manualRefresh: _*)
+      p.state.modal renderOrElse renderMain(p)
+    }
 
+    def renderMain(p: Props): VdomElement = {
       val activeColumnsPlus = pxActiveColumnsPlus.value()
 
       val newStuff = new NewStuff(
@@ -182,7 +211,7 @@ object ReqTablePage {
         activeColumnsPlus,
         pxRowSelectionVisible.value(),
         p.editor,
-        p.rowAsync.read,
+        p.rowAsync,
         pxProject.value().config,
         pxProjectWidgets.value(),
         modSettings,
@@ -194,6 +223,7 @@ object ReqTablePage {
 
         <.div(*.actionCtrls,
           newStuff.buttonProps.render,
+          pxSelectionCtrls.value().render,
           <.div(*.summary, pxPageSummary.value())),
 
         <.div(*.viewCtrls,

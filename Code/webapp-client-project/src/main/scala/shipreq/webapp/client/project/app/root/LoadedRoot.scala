@@ -8,7 +8,7 @@ import japgolly.scalajs.react.vdom.VdomElement
 import shipreq.base.util.{Allow, Intersection}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, ReqId}
-import shipreq.webapp.base.protocol.InitDataForProjectSpa
+import shipreq.webapp.base.protocol.{InitDataForProjectSpa, UpdateContentCmd}
 import shipreq.webapp.base.text.{PlainText, ProjectText, TextSearch}
 import shipreq.webapp.client.base.feature._
 import shipreq.webapp.client.base.protocol.ClientProtocol
@@ -48,6 +48,9 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
     val pxCreateEditability = pxProject.map(p => CreateFeature.Editability(p.config))
     val pxEditEditability   = pxProject.map(EditorFeature.Editability.apply)
 
+    val updateIO: ServerCall[UpdateContentCmd] =
+      ServerCall.to(initData.updateContent, cp, cd)
+
     val previewW: PreviewFeature.Write.Composite[PreviewId] =
       PreviewFeature.Write.Composite.init($ zoomStateL State.preview)
 
@@ -77,16 +80,21 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
           pxPlainText,
           pxProjectWidgets,
           pxTextSearch,
-          ServerCall.to(initData.updateContent, cp, cd)),
+          updateIO),
         $ zoomStateL State.edit,
         editAsyncW.mapKey1(AsyncKey.ToEditor))
+
+    val rowAsyncW: AsyncFeature.Write.D1[EditorFeature.RowKey, String] =
+      editAsyncW.withKey1(AsyncKey.WholeReq)
 
     val reqTable = ReqTablePage(
       ReqTablePage.StaticProps(
         $ zoomStateL State.reqTable,
         cd,
         pxPlainText, pxTextSearch, pxProjectWidgets,
-        reqDetailRC))
+        reqDetailRC,
+        updateIO,
+        rowAsyncW.mapKey(reqtable2.Row.SourceId.ToEditorRow.reverse)))
 
     val pxReqDetailId = Px[Option[ReqId]](None).withReuse.manualUpdate
 
@@ -188,8 +196,7 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
           cfg.tags.CfgTags.Props(cp, initData.tagCrud, cd, filterDeadSS).component
 
         case Page.ReqTable =>
-          val rowAsync = editAsyncW
-            .toReadWrite(editAsyncState)
+          val rowAsync = editAsyncState
             .mapKey2(reqtable2.Row.SourceId.ToEditorRow.reverse)
             .withKey1(AsyncKey.WholeReq)
           reqTable(
