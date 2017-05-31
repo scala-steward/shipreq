@@ -13,6 +13,9 @@ final case class LiveDeadStat[A] private[LiveDeadStat](live: A, dead: A, all: A)
 
   def +(c: LiveDeadStat[A])(implicit a: Semigroup[A]): LiveDeadStat[A] =
     LiveDeadStat(live |+| c.live, dead |+| c.dead)
+
+  def clearDead(implicit a: Monoid[A]): LiveDeadStat[A] =
+    new LiveDeadStat(live, a.zero, live)
 }
 
 object LiveDeadStat {

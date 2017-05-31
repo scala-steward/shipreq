@@ -52,8 +52,11 @@ object Selection {
   sealed trait HasLegalSubset[A] extends Base[A] {
     val legal: Set[A]
 
-    val (legalSelection, hiddenSelection) =
+    final val (legalSelection, hiddenSelection) =
       selected partition legal.contains
+
+    final lazy val legalSelectionSize: Int =
+      legalSelection.size
   }
 
   // These are specialised and so don't extend Base

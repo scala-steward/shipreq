@@ -6,7 +6,6 @@ Table modes:
 
 Styles:
   * DeletionForm styles
-  * Hide dead from stats when HideDead
   * Spinner for locked rows
 
 Branch TODOs

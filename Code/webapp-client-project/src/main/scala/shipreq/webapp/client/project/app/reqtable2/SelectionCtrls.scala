@@ -57,7 +57,6 @@ object SelectionCtrls {
   final class Backend($: BackendScope[Props, Unit]) {
 
     def derive(p: Props): Derived = {
-      var total     = 0 // sel.legalSelection.size is O(n) so we increment this as we traverse
       var remaining = p.sel.legalSelection // because the same sourceId can appear more than once in Rows
       var delRq     = Vector.empty[Req]
       var delCG     = Vector.empty[CodeGroup]
@@ -72,7 +71,6 @@ object SelectionCtrls {
         val id = row.sourceId
         if (remaining contains id) {
           remaining -= id
-          total += 1
           row match {
             case Row.ForReq(r, Live, _, _, _) =>
               delRq :+= r
@@ -90,7 +88,7 @@ object SelectionCtrls {
       assert(remaining.isEmpty)
 
       Derived(
-        totalSelected = total,
+        totalSelected = p.sel.legalSelectionSize,
         delete        = deleteReqsAndCodeGroupsAction(p, delRq, delCG) orElse deleteCodeGroupsAction(delCG),
         restore       = restoreAction(resRq, resCG))
     }

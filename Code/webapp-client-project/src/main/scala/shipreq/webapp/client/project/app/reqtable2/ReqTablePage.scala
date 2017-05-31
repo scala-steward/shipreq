@@ -159,11 +159,14 @@ object ReqTablePage {
 
     val pxPageSummary: Px[VdomElement] =
       for {
+        fd    <- pxFilterDead
         stats <- pxTableContentStats
         sel   <- pxRowSelectionVisible
-      } yield
+      } yield {
         // `legalSelection` because the same sourceId can appear more than once
-        PageSummary.Props(stats, sel.legalSelection.size).render
+        val totalSelected = sel.legalSelectionSize
+        PageSummary.Props(stats, totalSelected, fd).render
+      }
 
     val pxSortCriteriaEditor: Px[VdomElement] =
       for {

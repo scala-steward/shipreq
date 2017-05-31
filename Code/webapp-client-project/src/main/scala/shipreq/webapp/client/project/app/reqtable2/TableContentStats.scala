@@ -14,6 +14,11 @@ final case class TableContentStats(uniqueReqsInTable: LiveDeadStat[Int],
                                    expansionRows    : Int,
                                    codeGroups       : Int) {
 
+  def clearDead: TableContentStats =
+    copy(
+      uniqueReqsInTable = uniqueReqsInTable.clearDead,
+      reqsFilteredOut = reqsFilteredOut.clearDead)
+
   val reqsInProject: LiveDeadStat[Int] =
     uniqueReqsInTable + reqsFilteredOut
 

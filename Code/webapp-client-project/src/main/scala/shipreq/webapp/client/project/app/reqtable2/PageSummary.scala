@@ -4,8 +4,11 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.extra._
+import japgolly.univeq.UnivEq
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.UiText.EnglishIntExt
+import shipreq.webapp.base.data.{FilterDead, HideDead, ShowDead}
+import shipreq.webapp.client.base.lib.DataReusability._
 import shipreq.webapp.client.base.ui.semantic.Icon
 
 /**
@@ -13,19 +16,35 @@ import shipreq.webapp.client.base.ui.semantic.Icon
   */
 object PageSummary {
 
-  final case class Props(table: TableContentStats, selectedRows: Int) {
+  final case class Props(table       : TableContentStats,
+                         selectedRows: Int,
+                         filterDead  : FilterDead) {
     @inline def render = Component(this)
+
+    def tableFD: TableContentStats =
+      filterDead match {
+        case HideDead => table.clearDead
+        case ShowDead => table
+      }
   }
 
-  implicit val reusabilityProps: Reusability[Props] =
-    Reusability.byRef || Reusability.caseClass
+  object Props {
+    implicit def equality: UnivEq[Props] =
+      UnivEq.derive
 
-  private val iconReqs   = Icon.Cubes        .tag(^.title := "requirements")
-  private val iconRCGs   = Icon.FolderOutline.tag(^.title := UiText.codeGroups.toLowerCase)
-  private val iconDelete = Icon.TrashOutline .tag(^.title := "deleted")
-  private val iconFilter = Icon.Filter       .tag(^.title := "excluded by the filter")
-  private val iconReapp  = Icon.Copy         .tag(^.title := "reappearances due to sorting")
-  private val iconSelect = Icon.CheckmarkBox .tag(^.title := "selected", ^.marginRight := "0")
+    implicit val reusability: Reusability[Props] =
+      Reusability.byRefOrUnivEq
+  }
+
+  private def icon(icon: Icon, title: String): VdomTag =
+    icon.tag(^.title := title, ^.marginRight := "0")
+
+  private val iconReqs   = icon(Icon.Cubes        , "requirements")(^.marginLeft := "0.1ex")
+  private val iconRCGs   = icon(Icon.FolderOutline, UiText.codeGroups.toLowerCase)
+  private val iconDelete = icon(Icon.TrashOutline , "deleted")
+  private val iconFilter = icon(Icon.Filter       , "excluded by the filter")
+  private val iconReapp  = icon(Icon.Copy         , "reappearances due to sorting")
+  private val iconSelect = icon(Icon.CheckmarkBox , "selected")
 
   private val fakeLine = <.span("_", ^.visibility.hidden)
 
@@ -69,8 +88,7 @@ object PageSummary {
       s"Showing ${totalRowsInTable.unitsOf("row")}",
       s": ${uniqueReqsInTable.all}", iconReqs,
       reqBreakdown.whenDefined,
-      rcgs.whenDefined,
-      ".")
+      rcgs.whenDefined)
   }
 
   def summariseSelected(n: Int): Option[TagMod] =
@@ -79,7 +97,7 @@ object PageSummary {
 
   def render(p: Props): VdomElement =
     <.div(
-      summariseContent(p.table),
+      summariseContent(p.tableFD),
       <.br,
       summariseSelected(p.selectedRows) getOrElse fakeLine)
 
