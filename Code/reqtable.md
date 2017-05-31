@@ -6,7 +6,6 @@ Table modes:
 
 Styles:
   * DeletionForm styles
-  * Spinner for locked rows
 
 Branch TODOs
   * Keyboard nav

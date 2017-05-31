@@ -262,10 +262,7 @@ object Table {
 
       def renderLocked = {
         val colCells = mkColumnCells(_ => EditorFeature.ReadWrite.ForEditor.doNothing)
-
-        val lockedSel = <.div(^.cls := "locked", "LOCKED")
-
-        rowBase(selBase(lockedSel), colCells)
+        rowBase(selBase(EditTheme.spinner), colCells)
       }
 
       p.rowAsync match {
