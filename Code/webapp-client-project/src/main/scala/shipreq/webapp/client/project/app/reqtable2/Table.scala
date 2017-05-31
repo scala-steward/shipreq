@@ -9,7 +9,7 @@ import org.scalajs.dom.ext.KeyCode
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{Applicable, NotApplicable}
 import shipreq.webapp.base.data._
-import shipreq.webapp.client.base.data.Plain
+import shipreq.webapp.client.base.data.{Off, On, Plain}
 import shipreq.webapp.client.base.feature.AsyncFeature
 import shipreq.webapp.client.base.lib.DomUtil._
 import shipreq.webapp.client.base.ui.{EditTheme, semantic}
@@ -20,6 +20,7 @@ import shipreq.webapp.client.project.lib.DataReusability._
 import EditorFeature.FieldKey
 
 object Table {
+  import Shared._
 
   object Whole {
 
@@ -215,13 +216,14 @@ object Table {
     protected final val reusabilityView: Reusability[(RowData, ViewInput, Column)] =
       implicitly
 
+    private val rowBase = <.tr
     private val selBase = <.td(*.selectionColumnBody)
 
     final def render(p: Props): VdomElement = {
-      val row = p.row
-      val sel = p.selection
-
-      val rowBase = <.tr(*.dataRow(row.live, sel.get))
+      val row         = p.row
+      val sel         = p.selection
+      val rowSelected = sel.get
+      val cellStateFn = CellState(rowSelected)
 
       def selCellKeyDown(e: ReactKeyboardEventFromHtml): Callback =
         focusKeyHandlers(e)
@@ -232,11 +234,20 @@ object Table {
       def mkProps(c: Column, ok: Reusable[TagMod] => Cell.Props): Cell.Props =
         p.applicability(row, c) match {
           case Applicable    => ok(mkViewWhenApplicable(c))
-          case NotApplicable => Cell.Props.NA
+          case NotApplicable => Cell.Props.`n/a`(rowSelected)
+        }
+
+      def mkColumnCells(columnEditor: Column => EditorFeature.ReadWrite.ForEditor[Any]): VdomArray =
+        p.cols.whole.toVdomArray { colPlus =>
+          val col    = colPlus.column
+          def editor = columnEditor(col)
+          val cs     = cellStateFn(row.live & colPlus.live)
+          val cp     = mkProps(col, Cell.Props(cs, editor, _))
+          Cell.Component.withKey(col.key)(cp)
         }
 
       def renderNormal = {
-        def selCell =
+        val selCell =
           selBase(
             ^.onKeyDown ==> selCellKeyDown,
             sel.onClick,
@@ -244,27 +255,15 @@ object Table {
 
         val columnToEditorField = rowToColumnToEditorField(p.row)
 
-        def colCells =
-          p.cols.whole.toVdomArray { colPlus =>
-            val col    = colPlus.column
-            def editor = p.editor.optional(columnToEditorField(col))
-            val cp     = mkProps(col, Cell.Props(editor, _))
-            Cell.Component.withKey(col.key)(cp)
-          }
+        val colCells = mkColumnCells(col => p.editor.optional(columnToEditorField(col)))
 
         rowBase(selCell, colCells)
       }
 
       def renderLocked = {
-        def colCells =
-          p.cols.whole.toVdomArray { colPlus =>
-            val col    = colPlus.column
-            def editor = EditorFeature.ReadWrite.ForEditor.doNothing
-            val cp     = mkProps(col, Cell.Props(editor, _))
-            Cell.Component.withKey(col.key)(cp)
-          }
+        val colCells = mkColumnCells(_ => EditorFeature.ReadWrite.ForEditor.doNothing)
 
-        def lockedSel = <.div(^.cls := "locked", "LOCKED")
+        val lockedSel = <.div(^.cls := "locked", "LOCKED")
 
         rowBase(selBase(lockedSel), colCells)
       }
@@ -336,7 +335,7 @@ object Table {
         case Column.Implications(dir) => viewReq.imps(dir)
         case Column.Code              => renderCodes
         case Column.Pubid             => pubidFmt(row.req)
-        case Column.DeletionReason    => viewReq.deletionReason getOrElse `N/A`
+        case Column.DeletionReason    => viewReq.deletionReason getOrElse `n/a`
       }
       c => Reusable.explicitly((row, vi, c))(reusabilityView).map(_ => view(c))
     }
@@ -384,16 +383,25 @@ object Table {
 
   private object Cell {
 
-    final case class Props(editor: EditorFeature.ReadWrite.ForEditor[Any], view: Reusable[TagMod])
+    final case class Props(cellState: CellState,
+                           editor   : EditorFeature.ReadWrite.ForEditor[Any],
+                           view     : Reusable[TagMod])
 
     object Props {
-      implicit val reusability: Reusability[Props] =
+      implicit val reusability: Reusability[Props] = {
+        implicit val cs: Reusability[CellState] = Reusability.byRef
         Reusability.caseClass
+      }
 
-      val NA = Props(EditorFeature.ReadWrite.ForEditor.doNothing, reusableNA)
+      val `n/a`: On => Props =
+        On.memo(on =>
+          Props(
+            CellState(on)(Dead),
+            EditorFeature.ReadWrite.ForEditor.doNothing,
+            reusableNA))
     }
 
-    val cellBase = <.td(*.dataCell, ^.tabIndex := -1)
+    val cellBase = <.td(^.tabIndex := -1)
 
     type $ = ScalaComponent.Lifecycle.RenderScope[Props, Unit, Unit]
     type N = dom.html.TableDataCell
@@ -421,6 +429,7 @@ object Table {
 
     def render($: $, p: Props): VdomElement =
       cellBase(
+        *.dataCell(p.cellState),
         ^.onKeyDown ==> onKeyDown($.props.editor),
         p.editor.themedRenderOr(p.view))
 
@@ -432,44 +441,50 @@ object Table {
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-  // Shared
+  private object Shared {
 
-  private implicit val reusabilityApplicability: Reusability[Applicability[Column, Row]] =
-    Reusability.byRef
+    type CellState = (Live, On)
 
-  private val `N/A`: VdomTag =
-    <.span(*.`N/A`, "–")
+    val CellState: On => Live => CellState =
+      On.memo(on => Live.memo((_, on)))
 
-  private val reusableNA: Reusable[TagMod] =
-    Reusable.byRef(`N/A`)
+    implicit val reusabilityApplicability: Reusability[Applicability[Column, Row]] =
+      Reusability.byRef
 
-  private def moveFocus(cur: dom.html.Element, ↔ : Movement = Movement.None, ↕ : Movement = Movement.None): Callback =
-    Callback {
-      val cell: dom.html.Element =
-        if ("INPUT" == cur.tagName) // Selection checkbox
-          cur.parentElement
-        else
-          cur
-      val z = TableCellZipper(cell) move_- ↔ move_| ↕
-      val f: dom.html.Element =
-        if (z.colIndex == 0)
-          z.focus.children(0).domAsHtml // Selection checkbox
-        else
-          z.focus
-      f.focus()
-    }
+    val `n/a`: VdomTag =
+      <.span(*.`N/A`, "–")
 
-  private def focusKeyHandlers(e: ReactKeyboardEventFromHtml): CallbackOption[Unit] =
-    keyCodeSwitch(e) {
-      case KeyCode.Up     => moveFocus(e.currentTarget, ↕ = Movement.Prev)
-      case KeyCode.Down   => moveFocus(e.currentTarget, ↕ = Movement.Next)
-      case KeyCode.Left   => moveFocus(e.currentTarget, ↔ = Movement.Prev)
-      case KeyCode.Right  => moveFocus(e.currentTarget, ↔ = Movement.Next)
-      case KeyCode.Home   => moveFocus(e.currentTarget, ↔ = Movement.Head)
-      case KeyCode.End    => moveFocus(e.currentTarget, ↔ = Movement.Last)
-      case KeyCode.Escape => Callback(e.target.blur())
-    } | keyCodeSwitch(e, ctrlKey = true) {
-      case KeyCode.Home   => moveFocus(e.currentTarget, Movement.Head, Movement.Head)
-      case KeyCode.End    => moveFocus(e.currentTarget, Movement.Last, Movement.Last)
-    }
+    val reusableNA: Reusable[TagMod] =
+      Reusable.byRef(`n/a`)
+
+    def moveFocus(cur: dom.html.Element, ↔ : Movement = Movement.None, ↕ : Movement = Movement.None): Callback =
+      Callback {
+        val cell: dom.html.Element =
+          if ("INPUT" == cur.tagName) // Selection checkbox
+            cur.parentElement
+          else
+            cur
+        val z = TableCellZipper(cell) move_- ↔ move_| ↕
+        val f: dom.html.Element =
+          if (z.colIndex == 0)
+            z.focus.children(0).domAsHtml // Selection checkbox
+          else
+            z.focus
+        f.focus()
+      }
+
+    def focusKeyHandlers(e: ReactKeyboardEventFromHtml): CallbackOption[Unit] =
+      keyCodeSwitch(e) {
+        case KeyCode.Up     => moveFocus(e.currentTarget, ↕ = Movement.Prev)
+        case KeyCode.Down   => moveFocus(e.currentTarget, ↕ = Movement.Next)
+        case KeyCode.Left   => moveFocus(e.currentTarget, ↔ = Movement.Prev)
+        case KeyCode.Right  => moveFocus(e.currentTarget, ↔ = Movement.Next)
+        case KeyCode.Home   => moveFocus(e.currentTarget, ↔ = Movement.Head)
+        case KeyCode.End    => moveFocus(e.currentTarget, ↔ = Movement.Last)
+        case KeyCode.Escape => Callback(e.target.blur())
+      } | keyCodeSwitch(e, ctrlKey = true) {
+        case KeyCode.Home   => moveFocus(e.currentTarget, Movement.Head, Movement.Head)
+        case KeyCode.End    => moveFocus(e.currentTarget, Movement.Last, Movement.Last)
+      }
+  }
 }

@@ -251,15 +251,15 @@ object Style extends StyleSheet.Inline {
         color(c"#666"),
         margin.horizontal(auto))
 
-      // On = selected
-      val dataRow = styleF(D.`live * on`) {
-        case (Live, Off) => mixin()
-        case (Dead, Off) => mixin(backgroundColor(c"#f5f5f5"))
-        case (Live, On ) => mixin(backgroundColor(c"#ffc"))
-        case (Dead, On ) => mixin(backgroundColor(c"#f5f5c4"))
-      }
-
-      def dataCell = bodyBase
+      val dataCell = styleF(D.`live * on`)(i => styleS(
+        bodyBase,
+        i match {
+          case (Live, Off) => mixin()
+          case (Dead, Off) => mixin(backgroundColor(c"#f5f5f5"))
+          case (Live, On ) => mixin(backgroundColor(c"#ffc"))
+          case (Dead, On ) => mixin(backgroundColor(c"#f5f5c4"))
+        }
+      ))
     }
 
     object filterEditor {
