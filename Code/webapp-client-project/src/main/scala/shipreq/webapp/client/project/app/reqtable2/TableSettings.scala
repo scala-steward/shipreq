@@ -30,9 +30,6 @@ final case class TableSettings(columns: NonEmptyVector[Column],
   def filterColumns(f: Column => Boolean): TableSettings =
     tryFilterColumns(f) getOrElse TableSettings.default
 
-//  def setFilterDead(fd: FilterDead): TableSettings =
-//    copy(filterDead = fd).filterColumns(Column filterDead fd)
-
   def setColumns(newCols0: NonEmptyVector[Column]): TableSettings = {
     // Ensure mandatory columns are present
     val set = newCols0.toNES

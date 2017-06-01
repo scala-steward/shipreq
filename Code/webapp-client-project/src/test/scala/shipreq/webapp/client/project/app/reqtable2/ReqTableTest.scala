@@ -283,6 +283,14 @@ object ReqTableTest extends TestSuite {
       // TODO Test jumping from textarea ↔ table
   ) named "Keyboard navigation"
 
+//  def newUseCaseWithMinimalColumns: *.Actions = Plan.action(
+//    // select minimal columns
+//    // select UC in new dropdown
+//    // open form
+//    // hit new
+//    // confirm new UC exists
+//  )
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = TestSuite {
@@ -319,5 +327,10 @@ object ReqTableTest extends TestSuite {
     }
 
     'kbNav - runTest(testKeyboardNavigation)
+
+//    'new {
+//      'useCaseWithMinimalColumns - ???
+//      'codeGroupWithMinimalColumns - ???
+//    }
   }
 }
