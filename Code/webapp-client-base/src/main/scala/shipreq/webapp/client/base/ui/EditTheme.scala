@@ -68,5 +68,6 @@ object EditTheme {
     p.reactCollapse(wantOpen)(
       <.div(*.richTextPreview,
         <.div(*.richTextPreviewHeader, "Preview"),
-        <.div(*.richTextPreviewBody, view)))
+        <.div(*.richTextPreviewBodyOuter,
+          <.div(*.richTextPreviewBodyInner, view))))
 }
