@@ -4,18 +4,16 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html
-import scalacss.ScalaCssReact._
 import shipreq.base.util.{PotentialChange, Validity}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.text._
-import shipreq.webapp.client.base.feature.EditorStatus
+import shipreq.webapp.client.base.feature.{EditorStatus, PreviewFeature}
 import shipreq.webapp.client.base.lib.{KeyboardTheme, AbortCommit => AbortCommit2}
 import shipreq.webapp.client.base.ui.{AutosizeTextarea, EditTheme}
-import shipreq.webapp.client.project.app.Style.{widgets => *}
-import shipreq.webapp.client.project.feature._
+import shipreq.webapp.client.project.feature.AutoCompleteFeature
 import shipreq.webapp.client.project.lib.AutoComplete
 import shipreq.webapp.client.project.lib.DataReusability._
 import RichTextEditor.hardcodedLive
@@ -103,7 +101,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         p.projectWidgets.format(hardcodedLive, p.richText)
 
       def preview: VdomNode =
-        RichTextEditor.renderPreview(p.preview, p.wantPreview, richText)
+        EditTheme.renderPreview(p.preview, p.wantPreview, richText)
 
       EditTheme.renderEditor(p.status, editor, richText, instructions, preview)
     }
@@ -136,13 +134,6 @@ object RichTextEditor {
     case SingleLine => ^.rows := 1
     case MultiLine  => ^.rows := 3
   }
-
-  // TODO Move to EditTheme or similar
-  def renderPreview(p: PreviewFeature.ReadWrite.Single, wantOpen: => Boolean, view: => VdomNode): VdomNode =
-    p.reactCollapse(wantOpen)(
-      <.div(*.richTextPreview,
-        <.div(*.richTextPreviewHeader, "Preview"),
-        <.div(*.richTextPreviewBody, view)))
 
   // This is an editor - you can't edit Dead stuff. Assume all content is Live.
   @inline def hardcodedLive = Live

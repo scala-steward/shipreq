@@ -12,7 +12,6 @@ import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text._
 import shipreq.webapp.client.base.feature._
 import shipreq.webapp.client.base.lib.AbortCommit
-import shipreq.webapp.client.project.feature.PreviewFeature
 import shipreq.webapp.client.project.protocol.ServerCall
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import Feature.{AsyncError, AsyncState, Editor, PreviewId, State}

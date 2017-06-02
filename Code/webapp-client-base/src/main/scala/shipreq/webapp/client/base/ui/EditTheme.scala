@@ -5,7 +5,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.UiText
-import shipreq.webapp.client.base.feature.EditorStatus
+import shipreq.webapp.client.base.feature.{EditorStatus, PreviewFeature}
 import shipreq.webapp.client.base.ui.semantic.Icon
 import shipreq.webapp.client.base.ui.{BaseStyles => *}
 
@@ -64,4 +64,9 @@ object EditTheme {
     }
   }
 
+  def renderPreview(p: PreviewFeature.ReadWrite.Single, wantOpen: => Boolean, view: => VdomNode): VdomNode =
+    p.reactCollapse(wantOpen)(
+      <.div(*.richTextPreview,
+        <.div(*.richTextPreviewHeader, "Preview"),
+        <.div(*.richTextPreviewBody, view)))
 }

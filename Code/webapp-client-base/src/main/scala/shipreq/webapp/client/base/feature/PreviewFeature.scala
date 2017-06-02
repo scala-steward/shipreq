@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.feature
+package shipreq.webapp.client.base.feature
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.MonocleReact._
