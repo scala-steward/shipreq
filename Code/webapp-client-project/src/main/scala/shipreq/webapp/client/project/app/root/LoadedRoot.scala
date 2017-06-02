@@ -8,6 +8,7 @@ import japgolly.scalajs.react.vdom.VdomElement
 import shipreq.base.util.{Allow, Intersection}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, ReqId}
+import shipreq.webapp.base.filter.PotentialFilter
 import shipreq.webapp.base.protocol.{InitDataForProjectSpa, UpdateContentCmd}
 import shipreq.webapp.base.text.{PlainText, ProjectText, TextSearch}
 import shipreq.webapp.client.base.feature._
@@ -20,11 +21,11 @@ import shipreq.webapp.client.project.app.reqtable2.ReqTablePage
 import shipreq.webapp.client.project.app.cfg.shared.Usage
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.protocol.ServerCall
 import shipreq.webapp.client.project.widgets.{ImplicationGraph, ProjectWidgets}
 import AsyncFeature.Implicits._
 import Routes.{Page, RouterCtl}
 import LoadedRoot._
-import shipreq.webapp.client.project.protocol.ServerCall
 
 object LoadedRoot {
   case class Props(page: Page, routerCtl: RouterCtl)
@@ -131,10 +132,16 @@ final class LoadedRoot(initData: InitDataForProjectSpa, cp: ClientProtocol, cd: 
     val reqDetailSetState: ReqDetail.State ~=> Callback =
       Reusable.fn.state($ zoomStateL State.reqDetail).set
 
+    def setReqTableView(fd: FilterDead, pf: PotentialFilter): Callback =
+      pxProject.toCallback.flatMap(project =>
+        $.modState(s => s.copy(
+          filterDead = fd,
+          reqTable = s.reqTable.setFilter(pf, PotentialFilter.validator(project)))))
+
     val usageShow =
-      Usage.Show((fd, fs) =>
+      Usage.Show((fd, pf) =>
         routerCtl
-          // TODO .onSet($.modState(State.reqTable.modify(_.setFilterDead(fd).setFilterSpec(fs()))) >> _)
+          .onSet(setReqTableView(fd, pf()) >> _)
           .link(Page.ReqTable))
 
     lazy val projectNameAF =

@@ -14,7 +14,7 @@ import org.scalajs.dom.document
 import scalacss.ScalaCssReact._
 import shipreq.base.util.Allow
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.filter.ValidFilter
+import shipreq.webapp.base.filter.{PotentialFilter, ValidFilter}
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.client.base.feature.AsyncFeature
@@ -25,7 +25,7 @@ import shipreq.webapp.client.project.app.state.ClientData
 import shipreq.webapp.client.project.app.Style.reqtable2.{page => *}
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.protocol.ServerCall
-import shipreq.webapp.client.project.widgets.{FilterDeadButton, ProjectWidgets}
+import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 object ReqTablePage {
 
@@ -58,7 +58,13 @@ object ReqTablePage {
                          filter       : FilterEditor.State,
                          selection    : RowSelection,
                          newStuff     : NewStuff.State,
-                         modal        : Modal.State)
+                         modal        : Modal.State) {
+
+    def setFilter(pf: PotentialFilter, v: PotentialFilter.Validator): State = {
+      val r = FilterEditor.parseGenerated(pf, v)
+      copy(filter = r._1, tableSettings = tableSettings.copy(filter = r._2))
+    }
+  }
 
   object State {
     def init: State =

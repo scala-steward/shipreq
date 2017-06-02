@@ -59,6 +59,8 @@ object ReqTableTestDsl {
 
   val filterDead = *.focus("FilterDead").value(_.obs.filterDead)
 
+  val filterText = *.focus("Filter text").value(_.obs.filterValue)
+
   val tablePubids = *.focus("Visible pubids").collection(_.obs.table.rowPubids)
 
   val svrReqs = *.focus("Server requests").value(_.obs.svrReqs.length)

@@ -62,15 +62,24 @@ object FilterEditor {
 
   def parse(input: String, validator: PotentialFilter.Validator): (Validity, Option[ValidFilter]) =
     FilterParser.parse(correctInput(input)) match {
-      case FilterParser.Result.Filter(pf) =>
-        validator.run(pf) match {
-          case \/-(f) => (Valid, Some(f))
-          case -\/(_) => (Invalid, None)
-        }
+      case FilterParser.Result.Filter(pf)           => parsePF(pf, validator)
       case FilterParser.Result.GeneralException(_)
          | FilterParser.Result.ParseException(_, _) => (Invalid, None)
       case FilterParser.Result.BlankFilter          => (Valid, None)
     }
+
+  def parsePF(pf: PotentialFilter, validator: PotentialFilter.Validator): (Validity, Option[ValidFilter]) =
+    validator.run(pf) match {
+      case \/-(f) => (Valid, Some(f))
+      case -\/(_) => (Invalid, None)
+    }
+
+  /** Generated meaning the filter was created by code internally rather than being supplied externally */
+  def parseGenerated(pf: PotentialFilter, validator: PotentialFilter.Validator): (State, Option[ValidFilter]) = {
+    val txt = PotentialFilter.toText(pf)
+    val p = parsePF(pf, validator)
+    (State(txt, p._1), p._2)
+  }
 
   final class Backend($: BackendScope[Props, Unit]) {
     var inputNode: html.Input = _
