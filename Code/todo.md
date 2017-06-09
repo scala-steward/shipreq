@@ -11,6 +11,8 @@ Backlog
   * The popup is far away from the textarea
   * Ideally replace jquery-textcomplete with textcomplete (problems encountered)
   * Maybe write my own based on React
+* Improve load times, maybe defer stuff? Or maybe on-demand loading?
+  * Katex.js can be loaded on demand. Only the CSS is required for rendering.
 
 ### Nice UI
 * Cfg Fields
@@ -39,39 +41,38 @@ Backlog
 * Test env: Use different DBs for each module
 * Switch to semantic-react
 * Remove jQuery
+* Rewrite front pages with scalajs-react (?)
+* Remove unused styles
+* Change ScalaCSS to generate Scala.JS without the runtime/JS-size overhead
 
 
 ------------------------------------------------------------------------------------------------------------------------
 Phase 2
 =======
 
-### UX
-* Improve load times, maybe defer stuff? Or maybe on-demand loading?
-  * Katex.js can be loaded on demand. Only the CSS is required for rendering.
-
 ### Mechanics
 * Add new column type: all tags (as opposed to non-field tags)
 * We have implications fields and implication columns.
   We don't seem to need all-imps vs non-field-imps...should tags not work the same way?
   Or is there similar deficiency in imps cols too?
+* Re-evaluate config: some data is useless (i.e. key of custom text fields)
 
-### Nice UI
+### UI/UX
 * ReqDetail load failure
 * Deletion screen
 * Front pages
+* User name: name as one field is fine, call it "full name" like credit cards
+* Add create-and-close button to NewForm
 
-### Front pages
-* Rewrite with scalajs-react?
-* name as one field is fine, call it "full name" like credit cards
+### Features
+* User profile page
+* Issues
+* Saved views
 
 ### Devops & Deployment
-* New amazon accounts
+* New AWS/GCP accounts
 * Automate deployment
 * Add healthchecks
 * Send logs to service
 * Add proper metrics
-
-### Tech
 * Do more with errors, eg. ClientData.{init,applyEvents}
-* Remove unused styles
-
