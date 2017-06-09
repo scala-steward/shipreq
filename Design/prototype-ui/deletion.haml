@@ -1,0 +1,421 @@
+!!! 5
+%html
+  %head
+    -# %meta(http-equiv="refresh" content="1")
+    %title CardBoard | ShipReq
+    %script{src: "../node_modules/jquery/dist/jquery.min.js"}
+    %link{href:  "../semantic/dist/semantic.min.css", rel: "stylesheet", type: "text/css"}/
+    %script{src: "../semantic/dist/semantic.min.js"}
+    :css
+      body {padding:1rem}
+      .ui.menu.inverted .ui.breadcrumb a {color: #63c0ff}
+      .ui.menu.inverted .ui.breadcrumb a:hover {color: #9bf3ff}
+      .ui.menu.inverted .ui.breadcrumb > i {color: #ddd; margin-left: 0.8em; margin-right: 0.8em;}
+
+      .texteditor {
+        width:100%;
+        margin: 0;
+        -webkit-appearance: none;
+        tap-highlight-color: rgba(255,255,255,0);
+        padding: .78571429em 1em;
+        outline: 0;
+        color: rgba(0,0,0,.87);
+        border-radius: .28571429rem;
+        box-shadow: 0 0 0 0 rgba(0, 0, 0, 0) inset;
+        -webkit-transition: color .1s ease,border-color .1s ease;
+        transition: color .1s ease,border-color .1s ease;
+        font-size: 1em;
+        line-height: 1.2857;
+        /*overflow: scroll;*/
+        resize: none;
+        padding:.3em .4em !important;
+        background: #fffad7 !important;
+        border:solid 1px rgba(239,207,9,0.6) !important;
+      }
+      .instructions {
+        font-size: 0.75rem;
+        line-height: 1em;
+        color: #a4a6a8;
+        text-align: right;
+        margin-bottom: 0.4em;
+      }
+      .instructions i {
+        margin-left: 0.4ex !important;
+        margin-right: 0 !important;
+        cursor: pointer;
+      }
+      .preview-cont {margin:0 !important}
+      .preview-header {padding-top: 0.3em !important; padding-bottom: 0.3em !important; background:#89d6e5!important; color:#0d1516!important}
+      .preview-body {
+        background-clip: border-box !important;
+        background-color: rgba(0, 0, 0, 0)  !important;
+        background-image: repeating-linear-gradient(-225deg,
+          rgba(0, 0, 0, 0),
+          rgba(0, 0, 0, 0)        5ex,
+          rgba(137,214,229, 0.1)  5ex,
+          rgba(137,214,229, 0.1) 10ex) !important;
+        background-origin: padding-box  !important;
+      }
+
+      #main > table {margin-bottom:4em}
+
+      #table1 >thead>tr>th,
+      #table1 >tbody>tr>td {padding:.44em!important}
+      #table1 >tbody>tr>td {line-height: 1em}
+      #table1 .col-sel {width:24px; text-align:center}
+      #table1 .pointer {cursor:pointer}
+      #table1 td.col-title {display:flex}
+      #table1 td.col-title .indent-1 {width: 1.5ex}
+      #table1 td.col-title .indent-2 {width: 4.5ex}
+      #table1 td.col-title .prefix::before {content:"↳"}
+      #table1 td.col-title .title {flex-grow:1; padding-left:1ex}
+      #table1 .imp {white-space:nowrap}
+      #table1 .imp:not(:first-child) {margin-left:1ex}
+      #table1 .imp:not(:last-child)::after {content:","}
+      #table1 .imp.dead {color:red}
+      #table1 .imp.live {}
+      #table1 tr.live:hover {background-color:rgba(0,0,0,.08)}
+      #table1 tr.dead {background-color:rgba(255,0,0,.05)}
+      #table1 tr.dead:hover {background-color:rgba(255,0,0,.13)}
+      #table1 tr.dead .col-title {color:red}
+
+      #table2 >thead>tr>th,
+      #table2 >tbody>tr>td {padding:.44em!important}
+      #table2 >tbody>tr>td {line-height: 1em}
+      #table2 .col-sel {width:24px; text-align:center}
+      #table2 .pointer {cursor:pointer}
+      #table2 td.col-id {display:flex; white-space:nowrap}
+      #table2 td.col-id .indent-1 {width: 0ex}
+      #table2 td.col-id .indent-2 {width: 2ex}
+      #table2 td.col-id .prefix {color:#a8a8a8}
+      #table2 td.col-id .prefix::before {content:"↳"}
+      #table2 td.col-id .id:not(:first-child) {flex-grow:1; padding-left:0.5ex}
+      #table2 .imp {white-space:nowrap}
+      #table2 .imp:not(:first-child) {margin-left:1ex}
+      #table2 .imp:not(:last-child)::after {content:","}
+      #table2 tr.live:hover {background-color:rgba(0,192,0,.08)}
+      #table2 tr.dead {background-color:hsla(0, 71%, 50%, .06)}
+      #table2 tr.dead:hover {background-color:hsla(0, 71%, 50%, .15)}
+      #table2 .imp.dead,
+      #table2 tr.dead .col-id .id,
+      #table2 tr.dead .col-title {color:hsl(0, 71%, 50%)}
+
+      #table3 {margin-top:1ex}
+      #table3 >thead>tr>th:last-child {text-align:center}
+      #table3 >thead>tr:nth-child(2)>th {text-align:center; padding-top:0!important}
+      #table3 >thead i.icon {margin:0!important}
+      #table3 >thead>tr>th,
+      #table3 >tbody>tr>td {padding:.44em!important}
+      #table3 >tbody>tr>td {line-height: 1em}
+      /*#table3 >tbody>tr>td:last-child {border-left:none!important}*/
+      #table3 .col-sel {width:24px; text-align:center}
+      #table3 .pointer {cursor:pointer}
+      #table3 td.col-id {display:flex; white-space:nowrap}
+      #table3 td.col-id .indent-1 {width: 0ex}
+      #table3 td.col-id .indent-2 {width: 2ex}
+      #table3 td.col-id .prefix {color:#a8a8a8}
+      #table3 td.col-id .prefix::before {content:"↳"}
+      #table3 td.col-id .id:not(:first-child) {flex-grow:1; padding-left:0.5ex}
+      #table3 .imps span {white-space:nowrap}
+      #table3 .imps span:not(:first-child) {margin-left:1ex}
+      #table3 .imps span:not(:last-child)::after {content:","}
+      #table3 tr.live:hover {background-color:rgba(0,192,0,.08)}
+      #table3 tr.dead {background-color:hsla(0, 71%, 50%, .06)}
+      #table3 tr.dead:hover {background-color:hsla(0, 71%, 50%, .15)}
+      #table3 .col-imp.dead span,
+      #table3 tr.dead .col-id .id,
+      #table3 tr.dead .col-title {color:hsl(0, 71%, 50%)}
+
+  %body
+
+    %nav(style="margin-bottom:5rem")
+      .ui.menu.borderless.fixed.inverted
+        .item
+          %img{src: "logo-only-dark2.svg"}
+
+        .item
+          .ui.breadcrumb
+            %a.section{href: "projects.haml.html"} Projects
+            %i.divider.icon.right.angle
+            .ui.dropdown.inline
+              CardBoard&nbsp;
+              %i.icon.dropdown
+              .menu
+                .item.active CardBoard
+                .item ShipReq
+
+        .item.ui.right.dropdown.simple
+          @japgolly
+          -# %i.dropdown.icon
+          .menu
+            %a.item{href: "account.haml.html"} Account
+            .item Logout
+
+    -# =============================================================================================
+    .ui.container#main
+
+      %h2 You are about to delete the following requirements:
+
+      .reqHelp(style="margin-top:2em")
+        In addition to those you selected, implied requirements are also presented with exclusively-implied requirements auto-selected for deletion.
+
+      -# %table.ui.table.celled.compact.unstackable#table1
+        %thead
+          %tr
+            %th.col-sel
+            %th.col-title Requirement
+            %th.col-imp Implied By
+        %tbody
+          %tr.dead
+            %td.col-sel
+              %input(type="checkbox" disabled=1 checked=1)
+            %td.col-title
+              UC-4: Pellentesque et iaculis ex, id pellentesque libero
+            %td.col-imp
+          %tr.live
+            %td.col-sel.pointer
+              %input(type="checkbox")
+            %td.col-title
+              .indent-1
+              .prefix
+              .title FR-2: Phasellus vitae venenatis quam, a pretium ligula
+            %td.col-imp
+              .imps
+                %span.imp.live UC-1
+                %span.imp.dead UC-4
+          %tr.live
+            %td.col-sel.pointer
+              %input(type="checkbox")
+            %td.col-title
+              .indent-2
+              .prefix
+              .title FR-8: Duis varius, magna eget varius vehicula, tellus erat aliquam urna, in tristique nisi tortor sed ex.
+            %td.col-imp
+              .imps
+                %span.imp.live FR-2
+          %tr.dead
+            %td.col-sel.pointer
+              %input(type="checkbox" checked=1)
+            %td.col-title
+              .indent-1
+              .prefix
+              .title CO-1: Fusce vel lobortis sapien
+            %td.col-imp
+              .imps
+                %span.imp.dead UC-4
+          %tr.dead
+            %td.col-sel.pointer
+              %input(type="checkbox" checked=1)
+            %td.col-title
+              .indent-2
+              .prefix
+              .title FR-13: Nulla bibendum finibus dui in cursus
+            %td.col-imp
+              .imps
+                %span.imp.dead CO-1
+
+      -# %table.ui.table.celled.compact.unstackable#table2
+        %thead
+          %tr
+            %th.col-sel
+              %input.indeterminate(type="checkbox")
+            %th.col-id ID
+            %th.col-title Title
+            %th.col-imp Implied By
+        %tbody
+          %tr.dead
+            %td.col-sel
+              %input(type="checkbox" disabled=1 checked=1)
+            %td.col-id
+              .id UC-4
+            %td.col-title
+              Pellentesque et iaculis ex, id pellentesque libero
+            %td.col-imp
+          %tr.live
+            %td.col-sel.pointer
+              %input(type="checkbox")
+            %td.col-id
+              .indent-1
+              .prefix
+              .id FR-2
+            %td.col-title
+              Phasellus vitae venenatis quam, a pretium ligula
+            %td.col-imp
+              .imps
+                %span.imp.live UC-1
+                %span.imp.dead UC-4
+          %tr.live
+            %td.col-sel.pointer
+              %input(type="checkbox")
+            %td.col-id
+              .indent-2
+              .prefix
+              .id FR-8
+            %td.col-title
+              Duis varius, magna eget varius vehicula, tellus erat aliquam urna, in tristique nisi tortor sed ex.
+            %td.col-imp
+              .imps
+                %span.imp.live FR-2
+          %tr.dead
+            %td.col-sel.pointer
+              %input(type="checkbox" checked=1)
+            %td.col-id
+              .indent-1
+              .prefix
+              .id CO-1
+            %td.col-title
+              Fusce vel lobortis sapien
+            %td.col-imp
+              .imps
+                %span.imp.dead UC-4
+          %tr.dead
+            %td.col-sel.pointer
+              %input(type="checkbox" checked=1)
+            %td.col-id
+              .indent-2
+              .prefix
+              .id FR-13
+            %td.col-title
+              Nulla bibendum finibus dui in cursus
+            %td.col-imp
+              .imps
+                %span.imp.dead CO-1
+
+      %table.ui.table.celled.compact.unstackable#table3
+        %thead
+          %tr
+            %th.col-sel(rowspan=2)
+              %input.indeterminate(type="checkbox")
+            %th.col-id(rowspan=2) ID
+            %th.col-title(rowspan=2) Title
+            %th(colspan=2 style="border-bottom:none") Implied By
+          %tr
+            %th.col-imp.dead(style="border-left: 1px solid rgba(34,36,38,.1);")
+              %i.icon.trash.outline.red
+            %th.col-imp.live(style="border-left:none")
+              %i.icon.unhide
+        %tbody
+          %tr.dead
+            %td.col-sel
+              %input(type="checkbox" disabled=1 checked=1)
+            %td.col-id
+              .id UC-4
+            %td.col-title
+              Pellentesque et iaculis ex, id pellentesque libero
+            %td.col-imp.dead
+            %td.col-imp.live
+          %tr.live
+            %td.col-sel.pointer
+              %input(type="checkbox")
+            %td.col-id
+              .indent-1
+              .prefix
+              .id FR-2
+            %td.col-title
+              Phasellus vitae venenatis quam, a pretium ligula
+            %td.col-imp.dead
+              .imps
+                %span UC-4
+            %td.col-imp.live
+              .imps
+                %span UC-1
+          %tr.live
+            %td.col-sel.pointer
+              %input(type="checkbox")
+            %td.col-id
+              .indent-2
+              .prefix
+              .id FR-8
+            %td.col-title
+              Duis varius, magna eget varius vehicula, tellus erat aliquam urna, in tristique nisi tortor sed ex.
+            %td.col-imp.dead
+            %td.col-imp.live
+              .imps
+                %span FR-2
+          %tr.dead
+            %td.col-sel.pointer
+              %input(type="checkbox" checked=1)
+            %td.col-id
+              .indent-1
+              .prefix
+              .id CO-1
+            %td.col-title
+              Fusce vel lobortis sapien
+            %td.col-imp.dead
+              .imps
+                %span UC-4
+            %td.col-imp.live
+          %tr.dead
+            %td.col-sel.pointer
+              %input(type="checkbox" checked=1)
+            %td.col-id
+              .indent-2
+              .prefix
+              .id FR-13
+            %td.col-title
+              Nulla bibendum finibus dui in cursus
+            %td.col-imp.dead
+              .imps
+                %span CO-1
+            %td.col-imp.live
+
+
+      -# .div code groups
+
+      -# %section
+        %textarea.texteditor This has been replaced by [uc19]
+        .instructions
+          %span enter for new line.
+          %i.icon.help.circle
+        .ui.segments.preview-cont.raised
+          .ui.segment.preview-header.inverted
+            Preview
+          .ui.segment.preview-body
+            = "This has been replaced by "
+            %a{href:"#"} UC-19
+
+      -# %section(style="display:flex")
+        %div(style="width:50%; padding-right:0.6em")
+          %textarea.texteditor This has been replaced by [uc19]
+        %div(style="width:50%; padding-left:0.6em")
+          .ui.segments.preview-cont.raised
+            .ui.segment.preview-header.inverted
+              Preview
+            .ui.segment.preview-body
+              = "This has been replaced by "
+              %a{href:"#"} UC-19
+
+      -# .buttons(style="text-align:right")
+        %button.ui.button.basic.black(style="margin-right:2ex")
+          %i.icon.remove
+          Cancel
+        %button.ui.button.basic.red(style="margin-right:0")
+          %i.icon.trash
+          Delete
+
+      %section(style="display:flex")
+        %div(style="flex-grow:1; align-self: flex-end")
+          %section
+            %h4(style="margin-bottom:0.4em") Deletion Reason:
+            %textarea.texteditor This has been replaced by [uc19]
+            .instructions
+              %span enter for new line.
+              %i.icon.help.circle
+            .ui.segments.preview-cont.raised
+              .ui.segment.preview-header.inverted
+                Preview
+              .ui.segment.preview-body
+                = "This has been replaced by "
+                %a{href:"#"} UC-19
+        .buttons(style="padding-left:6em; align-self: flex-end")
+          %button.ui.button.basic.black(style="margin-bottom:1.2em")
+            %i.icon.remove
+            Cancel
+          %br
+          %button.ui.button.basic.red
+            %i.icon.trash
+            Delete
+
+  :javascript
+    $('.ui.dropdown').dropdown();
+    $('.indeterminate').toArray().forEach(i => i.indeterminate = true);
