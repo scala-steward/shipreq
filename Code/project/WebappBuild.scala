@@ -33,21 +33,9 @@ object WebappBuild {
     def scalaJsPathWw      = scalaJsPath("Ww")
   }
 
-  // TODO This is obsolete
-  lazy val webappSettings =
-    Common.settings.andThen(_.configure(webappCmdAliases))
-
-  lazy val webappCmdAliases = {
-    def WS = "webapp-server"
-    addCommandAliases(
-      "js"  -> s"$WS/webappPrepare",                // compile JavaScript
-      "up"  -> s";$WS/jetty:stop ;$WS/jetty:start", // webapp: UP
-      "d"   -> s"$WS/jetty:stop")                   // webapp: Down
-  }
-
   lazy val webapp =
     project("webapp")
-      .configure(webappSettings)
+      .configure(Common.settings)
       .aggregate(
         webappMacroJvm, webappBaseJvm, webappBaseServerJvm, webappBaseTestJvm, webappGenJvm,
         webappMacroJs , webappBaseJs , webappBaseServerJs , webappBaseTestJs , webappGenJs ,
@@ -59,7 +47,7 @@ object WebappBuild {
 
   lazy val webappClient =
     project("webapp-client")
-      .configure(webappSettings)
+      .configure(Common.settings)
       .aggregate(
         webappClientBase, webappClientBaseTest,
         webappClientHome,
@@ -71,8 +59,7 @@ object WebappBuild {
     crossProject("webapp-macro")
       .configureBoth(
         Common.macroModuleSettings,
-        useMacroParadise,
-        webappCmdAliases)
+        useMacroParadise)
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoTests))
       .dependsOn(baseUtil)
@@ -87,7 +74,7 @@ object WebappBuild {
   lazy val webappBaseJs  = webappBase.js
   lazy val webappBase =
     crossProject("webapp-base")
-      .configureBoth(webappSettings)
+      .configureBoth(Common.settings)
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoTests))
       .depsForBoth(
@@ -102,7 +89,7 @@ object WebappBuild {
   lazy val webappBaseServerJs  = webappBaseServer.js
   lazy val webappBaseServer =
     crossProject("webapp-base-server")
-      .configureBoth(webappSettings)
+      .configureBoth(Common.settings)
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoDom))
       .depsForBoth(testScope(μTest ++ Nyaya.test))
@@ -112,7 +99,7 @@ object WebappBuild {
   lazy val webappBaseTestJs  = webappBaseTest.js
   lazy val webappBaseTest =
     crossProject("webapp-base-test")
-      .configureBoth(Common.testModuleSettings, webappCmdAliases)
+      .configureBoth(Common.testModuleSettings)
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoDom))
       .depsForBoth(μTest ++ Nyaya.test)
@@ -127,7 +114,7 @@ object WebappBuild {
         μPickle ++ boopickle)
       .configure(
         Common.jsSettings(NeedDom),
-        webappSettings,
+        Common.settings,
         useMacroParadise)
         // Common.jsFastDevSettings,
 
@@ -140,7 +127,7 @@ object WebappBuild {
         React.test ++ μTest ++ Nyaya.test)
       .configure(
         Common.jsSettings(NeedDom),
-        webappSettings,
+        Common.settings,
         useMacroParadise)
         // Common.jsFastDevSettings,
 
@@ -156,7 +143,7 @@ object WebappBuild {
           React.test ++ μTest ++ Nyaya.test))
       .configure(
         Common.jsSettings(NeedDom),
-        webappSettings,
+        Common.settings,
         useMacroParadise)
         // Common.jsFastDevSettings,
       .settings(
@@ -171,7 +158,7 @@ object WebappBuild {
         testScope(μTest))
       .configure(
         Common.jsSettings(NeedDom),
-        webappSettings)
+        Common.settings)
 
   lazy val webappClientWw =
     project("webapp-client-ww")
@@ -182,7 +169,7 @@ object WebappBuild {
         testScope(μTest))
       .configure(
         Common.jsSettings(NeedDom),
-        webappSettings)
+        Common.settings)
       .settings(
         scalaJSUseMainModuleInitializer := true,
         mainClass in Compile := Some("shipreq.webapp.client.ww.Main"))
@@ -199,7 +186,7 @@ object WebappBuild {
           React.test ++ μTest ++ Nyaya.test))
       .configure(
         Common.jsSettings(NeedDom),
-        webappSettings,
+        Common.settings,
         useMacroParadise)
         // Common.jsFastDevSettings,
       .settings(
@@ -452,6 +439,12 @@ object WebappBuild {
             (start in Jetty).dependsOn(DockerEnv.dev.devEnvStart).value
         )
 
+    def webappCmdAliases: Project => Project =
+      addCommandAliases(
+        "js" -> "webappPrepare",            // compile JavaScript
+        "up" -> ";jetty:stop ;jetty:start", // webapp Up
+        "d"  -> "jetty:stop")               // webapp Down
+
     def definition = (_: Project)
       .enablePlugins(JettyPlugin, WarPlugin, DockerPlugin)
       .dependsOn(baseDb, taskmanApi, webappBaseJvm, webappBaseServerJvm, webappGenJvm)
@@ -461,8 +454,9 @@ object WebappBuild {
         (LibJetty.webapp % "test") ++
         (LibJetty.servletApi % "test,provided"))
       .configure(
-        webappSettings,
+        Common.settings,
         Common.jvmSettings,
+        webappCmdAliases,
         assetSettings,
         testSettings,
         connectToDockerDevEnv,
