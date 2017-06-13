@@ -115,15 +115,6 @@ object Common {
       minForcegcInterval          := 3.minutes,
       triggeredMessage            := Watched.clearWhenTriggered,
       target                      := redirectTargetDir(target.value))
-    .settings(
-      // TODO Temp hack due to bug in sbt-git
-      git.gitUncommittedChanges in ThisBuild :=
-        Process("git status --porcelain")
-          .lines
-          .map(_.split(" ").headOption)
-          .filter(_ != Some("??"))
-          .nonEmpty
-    )
     .configure(
       packageBinaryOnly,
       dockerLayerReuse,
