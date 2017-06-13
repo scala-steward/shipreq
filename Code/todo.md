@@ -65,13 +65,14 @@ Phase 2 (dev-complete)
 Phase 2 (dev)
 =============
 
-### Mechanics
+### Functionality
 * Add new column type: all tags (as opposed to non-field tags)
 * We have implications fields and implication columns.
   We don't seem to need all-imps vs non-field-imps...should tags not work the same way?
   Or is there similar deficiency in imps cols too?
 * Re-evaluate config: some data is useless (i.e. key of custom text fields)
 * Bug: Create-and-close closes on ajax error
+* Server doesn't push changes yet - multiple tabs breaks things
 
 ### UI/UX
 * Front pages
