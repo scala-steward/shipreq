@@ -161,12 +161,41 @@ object Common {
         "ct"  -> ";clean;test"))
 
   /** Common settings used by standard modules - not benchmarks, not test modules */
-  lazy val settings = (p: Project) => settingsMin(p)
+  private def settings: Project => Project =
+    _.configure(settingsMin)
+      .settings(
+        scalacOptions in Test ++= scalacTestFlags,
+        testOptions   in Test  += Tests.Cleanup(shutdownTestDb(_)))
+      .configure(
+        debugOrRelease(debugSettings, optimisationSettings))
+
+  lazy val jvmSettings: Project => Project =
+    _.configure(settings, InBrowserTesting.jvm)
+
+  def jsSettings(t: JsTestType): Project => Project =
+    _.configure(
+      settings,
+      jsTests(t),
+      debugOrRelease(jsDevSettings, jsProdSettings),
+      InBrowserTesting.js)
+    .depsForJs(Dependencies.scalajsJavaTime)
     .settings(
-      scalacOptions in Test ++= scalacTestFlags,
-      testOptions   in Test  += Tests.Cleanup(shutdownTestDb(_)))
-    .configure(
-      debugOrRelease(debugSettings, optimisationSettings))
+      parallelExecution in testOnly := false,
+      // scalaJSOptimizerOptions in fullOptJS ~= (_ withPrettyPrintFullOptJS true),
+      scalaJSSemantics in fullOptJS ~= (_
+        .withRuntimeClassName(_ => "")
+        .withAsInstanceOfs(CheckedBehavior.Unchecked)))
+
+  private def jsDevSettings: Project => Project =
+    _.settings(emitSourceMaps := true)
+
+  private def jsProdSettings: Project => Project =
+    _.settings(
+      emitSourceMaps := false,
+      scalaJSStage := FullOptStage,
+      scalaJSOptimizerOptions ~= (_
+        .withBatchMode(true)
+        .withCheckScalaJSIR(true)))
 
   lazy val testModuleSettings = (p: Project) => settingsMin(p)
     .settings(
@@ -184,38 +213,6 @@ object Common {
     _.settings(
       scalacOptions += "-language:experimental.macros",
       libraryDependencies ++= Dependencies.Scala.macroDef(JVM))
-
-  def jvmSettings: Project => Project =
-    _.configure(
-      InBrowserTesting.jvm)
-//    _.settings(
-//      scalacOptions       ++= Seq("-Ybackend:GenBCode", "-Ydelambdafy:method"),
-//      libraryDependencies  += Dependencies.Scala.java8compat)
-
-  def jsSettings(t: JsTestType): Project => Project =
-    _.configure(
-      jsTests(t),
-      debugOrRelease(jsDevSettings, jsProdSettings),
-      InBrowserTesting.js)
-    .depsForJs(Dependencies.scalajsJavaTime)
-    .settings(
-      parallelExecution in testOnly := false,
-      // scalaJSOptimizerOptions in fullOptJS ~= (_ withPrettyPrintFullOptJS true),
-      scalaJSSemantics in fullOptJS ~= (_
-        .withRuntimeClassName(_ => "")
-        .withAsInstanceOfs(CheckedBehavior.Unchecked)
-        ))
-
-  private def jsDevSettings = (_: Project).settings(
-    emitSourceMaps := true)
-
-  private def jsProdSettings = (_: Project).settings(
-    emitSourceMaps := false,
-    scalaJSStage := FullOptStage,
-    scalaJSOptimizerOptions ~= (_
-      .withBatchMode(true)
-      .withCheckScalaJSIR(true)
-      ))
 
   // Compile-scope only
   def jsFastDevSettings = (_: Project).settings(

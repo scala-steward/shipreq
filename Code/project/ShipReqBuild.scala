@@ -17,7 +17,7 @@ object ShipReqBuild {
 
   lazy val root =
     Project("root", file("."))
-      .configure(Common.settings, IdeSettings.settingsForRoot)
+      .configure(Common.jvmSettings, IdeSettings.settingsForRoot)
       .aggregate(base, taskman, webapp, utils, benchmarkJvm, benchmarkJs)
 
   // ===================================================================================================================
@@ -25,14 +25,13 @@ object ShipReqBuild {
 
   lazy val base =
     project("base")
-      .configure(Common.settings)
+      .configure(Common.jvmSettings)
       .aggregate(baseUtilJvm, baseUtilJs, baseDb, baseTestJvm, baseTestJs)
 
   lazy val baseUtilJvm = baseUtil.jvm
   lazy val baseUtilJs  = baseUtil.js
   lazy val baseUtil =
     crossProject("base-util")
-      .configureBoth(Common.settings)
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoDom))
       .depsForBoth(
@@ -47,7 +46,6 @@ object ShipReqBuild {
   lazy val baseDb =
     project("base-db")
       .configure(
-        Common.settings,
         Common.jvmSettings,
         Common.macroModuleSettings)
       .deps(postgresql ++ Doobie.main ++ hikariCP ++ flyway ++ logback ++ Microlibs.macroUtils)
@@ -74,17 +72,15 @@ object ShipReqBuild {
 
   lazy val utils =
     project("utils")
-      .configure(Common.settings)
+      .configure(Common.jvmSettings)
       .deps(
         commonsLang ++ Nyaya.test ++
-        testScope(twitterEval)
-      )
+        testScope(twitterEval))
       .dependsOn(webappBaseTestJvm)
       .settings(
         connectInput in run  := true,
         fork         in run  := true,
-        javaOptions  in run ++= Seq("-Xmx4g", "-Xss4m")
-      )
+        javaOptions  in run ++= Seq("-Xmx4g", "-Xss4m"))
 
   object Benchmark {
     def commonSettings: Project => Project =

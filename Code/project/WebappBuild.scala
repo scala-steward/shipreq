@@ -35,7 +35,7 @@ object WebappBuild {
 
   lazy val webapp =
     project("webapp")
-      .configure(Common.settings)
+      .configure(Common.jvmSettings)
       .aggregate(
         webappMacroJvm, webappBaseJvm, webappBaseServerJvm, webappBaseTestJvm, webappGenJvm,
         webappMacroJs , webappBaseJs , webappBaseServerJs , webappBaseTestJs , webappGenJs ,
@@ -47,7 +47,7 @@ object WebappBuild {
 
   lazy val webappClient =
     project("webapp-client")
-      .configure(Common.settings)
+      .configure(Common.jvmSettings)
       .aggregate(
         webappClientBase, webappClientBaseTest,
         webappClientHome,
@@ -74,7 +74,6 @@ object WebappBuild {
   lazy val webappBaseJs  = webappBase.js
   lazy val webappBase =
     crossProject("webapp-base")
-      .configureBoth(Common.settings)
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoTests))
       .depsForBoth(
@@ -89,7 +88,6 @@ object WebappBuild {
   lazy val webappBaseServerJs  = webappBaseServer.js
   lazy val webappBaseServer =
     crossProject("webapp-base-server")
-      .configureBoth(Common.settings)
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoDom))
       .depsForBoth(testScope(μTest ++ Nyaya.test))
@@ -114,26 +112,22 @@ object WebappBuild {
         μPickle ++ boopickle)
       .configure(
         Common.jsSettings(NeedDom),
-        Common.settings,
         useMacroParadise)
         // Common.jsFastDevSettings,
 
   lazy val webappClientBaseTest =
     project("webapp-client-base-test")
       .enablePlugins(ScalaJSPlugin)
+      .configure(Common.jsSettings(NeedDom), useMacroParadise)
       .dependsOn(webappClientBase, webappBaseServerJs, webappBaseTestJs)
       .depsForJs(
         TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact ++
         React.test ++ μTest ++ Nyaya.test)
-      .configure(
-        Common.jsSettings(NeedDom),
-        Common.settings,
-        useMacroParadise)
-        // Common.jsFastDevSettings,
 
   lazy val webappClientHome =
     project("webapp-client-home")
       .enablePlugins(ScalaJSPlugin)
+      .configure(Common.jsSettings(NeedDom), useMacroParadise)
       .dependsOn(webappClientBase, webappClientBaseTest % "test->compile")
       .depsForJs(
         Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++
@@ -141,35 +135,26 @@ object WebappBuild {
         testScope(
           TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact ++
           React.test ++ μTest ++ Nyaya.test))
-      .configure(
-        Common.jsSettings(NeedDom),
-        Common.settings,
-        useMacroParadise)
-        // Common.jsFastDevSettings,
       .settings(
         jsDependencies in Test += ProvidedJS / "webapp-client-test.js")
 
   lazy val webappClientWwApi =
     project("webapp-client-ww-api")
       .enablePlugins(ScalaJSPlugin)
+      .configure(Common.jsSettings(NeedDom))
       .dependsOn(webappBaseJs)
       .depsForJs(
         boopickle ++ scalajsDom ++
         testScope(μTest))
-      .configure(
-        Common.jsSettings(NeedDom),
-        Common.settings)
 
   lazy val webappClientWw =
     project("webapp-client-ww")
       .enablePlugins(ScalaJSPlugin)
+      .configure(Common.jsSettings(NeedDom))
       .dependsOn(webappClientWwApi, webappClientBaseTest % "test->compile")
       .depsForJs(
         boopickle ++ scalajsDom ++
         testScope(μTest))
-      .configure(
-        Common.jsSettings(NeedDom),
-        Common.settings)
       .settings(
         scalaJSUseMainModuleInitializer := true,
         mainClass in Compile := Some("shipreq.webapp.client.ww.Main"))
@@ -177,6 +162,7 @@ object WebappBuild {
   lazy val webappClientProject =
     project("webapp-client-project")
       .enablePlugins(ScalaJSPlugin)
+      .configure(Common.jsSettings(NeedDom), useMacroParadise)
       .dependsOn(webappClientBase, webappClientWwApi, webappClientBaseTest % "test->compile")
       .depsForJs(
         Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++ scalajsDom ++
@@ -184,11 +170,6 @@ object WebappBuild {
         testScope(
           TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact ++
           React.test ++ μTest ++ Nyaya.test))
-      .configure(
-        Common.jsSettings(NeedDom),
-        Common.settings,
-        useMacroParadise)
-        // Common.jsFastDevSettings,
       .settings(
         jsDependencies in Test += ProvidedJS / "webapp-client-test.js")
 
@@ -196,7 +177,6 @@ object WebappBuild {
   lazy val webappGenJs  = webappGen.js
   lazy val webappGen =
     crossProject("webapp-gen")
-      .configureBoth(Common.settings)
       .configureJvm(Common.jvmSettings, _.dependsOn(webappBaseJvm)).depsForJvm(Lift.webkit)
       .configureJs(
         Common.jsSettings(NeedDom),
@@ -454,7 +434,6 @@ object WebappBuild {
         (LibJetty.webapp % "test") ++
         (LibJetty.servletApi % "test,provided"))
       .configure(
-        Common.settings,
         Common.jvmSettings,
         webappCmdAliases,
         assetSettings,

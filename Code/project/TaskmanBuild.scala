@@ -12,13 +12,13 @@ object TaskmanBuild {
 
   lazy val taskman =
     project("taskman")
-      .configure(Common.settings)
+      .configure(Common.jvmSettings)
       .aggregate(taskmanApi, taskmanServer)
       .dependsOn(taskmanApi, taskmanServer)
 
   lazy val taskmanApiLogic =
     project("taskman-api-logic")
-      .configure(Common.settings, Common.jvmSettings)
+      .configure(Common.jvmSettings)
       .deps(
         Scalaz.core ++ Scalaz.effect ++
         testScope(μTest ++ scalaCheck ++ Scala.reflect ++ Microlibs.testUtil))
@@ -26,7 +26,7 @@ object TaskmanBuild {
 
   lazy val taskmanApiImpl =
     project("taskman-api-impl")
-      .configure(Common.settings, Common.jvmSettings, DockerEnv.test.required)
+      .configure(Common.jvmSettings, DockerEnv.test.required)
       .deps(
         Json4s.jackson ++
         testScope(Specs2.combo ++ scalaCheck ++ Scala.reflect))
@@ -37,20 +37,20 @@ object TaskmanBuild {
 
   lazy val taskmanApi =
     project("taskman-api")
-      .configure(Common.settings, Common.jvmSettings)
+      .configure(Common.jvmSettings)
       .aggregate(taskmanApiLogic, taskmanApiImpl)
       .dependsOn(taskmanApiLogic, taskmanApiImpl)
 
   lazy val taskmanServerLogic =
     project("taskman-server-logic")
-      .configure(Common.settings, Common.jvmSettings)
+      .configure(Common.jvmSettings)
       .deps(logback ++ testScope(Specs2.combo))
       .dependsOn(taskmanApiLogic)
       .dependsOn(baseTestJvm % "test")
 
   lazy val taskmanServerSchema =
     project("taskman-server-schema")
-      .configure(Common.settings, Common.jvmSettings)
+      .configure(Common.jvmSettings)
       .dependsOn(baseDb)
 
   lazy val taskmanServerImpl = {
@@ -71,7 +71,7 @@ object TaskmanBuild {
 
     project("taskman-server-impl")
       .enablePlugins(JavaAppPackaging, DockerPlugin)
-      .configure(Common.settings, Common.jvmSettings, DockerEnv.test.required)
+      .configure(Common.jvmSettings, DockerEnv.test.required)
       .deps(
         Akka.actor ++ javaMail ++ okHttp ++ httpCore ++
         testScope(Akka.testkit ++ Specs2.combo))
@@ -135,7 +135,7 @@ object TaskmanBuild {
 
   lazy val taskmanServer =
     project("taskman-server")
-      .configure(Common.settings, Common.jvmSettings)
+      .configure(Common.jvmSettings)
       .aggregate(taskmanServerLogic, taskmanServerImpl, taskmanServerSchema)
       .dependsOn(taskmanServerLogic, taskmanServerImpl, taskmanServerSchema)
 
