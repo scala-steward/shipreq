@@ -136,6 +136,7 @@ object Common {
         "WCH" -> "project webapp-client-home",
         "WCP" -> "project webapp-client-project",
         "WCW" -> "project webapp-client-ww",
+        "WSL" -> "project webapp-server-logic-jvm",
         "WS"  -> "project webapp-server",
         "BM"  -> "project benchmark-jvm",
         "BMJ" -> "project benchmark-js",

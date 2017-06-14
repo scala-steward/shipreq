@@ -2,6 +2,7 @@
 
 import Control.Monad
 import Data.List
+import Debug.Trace (trace)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import System.Directory
@@ -105,15 +106,15 @@ gatherAllStats = do dirs <- dirsIn "."
 
 deps = M.fromList [
          ("webapp-gen",              []) , -- I'm lazy
-         ("webapp-server",           ["webapp-gen", "webapp-base-test", "base-db", "taskman-api"]) ,
+         ("webapp-server-logic",     ["webapp-base"]) ,
+         ("webapp-server",           ["webapp-gen", "webapp-server-logic", "webapp-base-test", "base-db", "taskman-api"]) ,
          ("webapp-client-base",      ["webapp-base-test", "base-util"]) ,
          ("webapp-client-base-test", ["webapp-base-test", "webapp-client-base"]) ,
          ("webapp-client-home",      ["webapp-client-base-test"]) ,
          ("webapp-client-ww-api",    ["webapp-base"]) ,
          ("webapp-client-ww",        ["webapp-client-base-test", "webapp-client-ww-api"]) ,
          ("webapp-client-project",   ["webapp-client-base-test", "webapp-client-ww-api"]) ,
-         ("webapp-base-test",        ["webapp-base-server"]) ,
-         ("webapp-base-server",      ["webapp-base"]),
+         ("webapp-base-test",        ["webapp-base"]) ,
          ("webapp-base",             ["webapp-macro", "base-util"]) ,
          ("webapp-macro",            ["base-util"]) ,
          ("taskman",                 ["taskman-api", "taskman-server"]) ,
@@ -202,15 +203,19 @@ fmtBreakdowns = intercalate sepLine
 
 headerIL = "Logic & Impl            |    L    I    ∑  |      L      I      ∑  (I:L)\n"
 
+modulesWithSuffix :: Foldable t => String -> t GroupD -> [(Module, Stats)]
 modulesWithSuffix suf = filter (isSuffixOf suf . fst) . concatMap modstats
 
-dropr n = reverse . drop n . reverse
-
+modulesWithSuffix' :: Foldable t => String -> t GroupD -> [(Module, Stats)]
 modulesWithSuffix' suf = map (mapFst $ dropr $ length suf) . modulesWithSuffix suf
 
+dropr :: Int -> [a] -> [a]
+dropr n = reverse . drop n . reverse
+
+logicAndImpl :: Foldable t => t GroupD -> [GroupD]
 logicAndImpl gs = let l = modulesWithSuffix' "-logic" gs
                       i = modulesWithSuffix' "-impl" gs
-                      keys = sort $ nub $ map fst $ l ++ i
+                      keys = sort $ nub $ filter ("webapp-server" /=) $ map fst $ l ++ i
                       get xs k = s where Just (_,(s,_)) = find ((== k) . fst) xs
                       getLI k = singleModuleGroup k (get l k, get i k)
                   in  map getLI keys

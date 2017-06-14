@@ -1,4 +1,4 @@
-package shipreq.webapp.base.server
+package shipreq.webapp.server.logic
 
 import japgolly.microlibs.nonempty._
 import nyaya.util.Multimap

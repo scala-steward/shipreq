@@ -37,8 +37,8 @@ object WebappBuild {
     project("webapp")
       .configure(Common.jvmSettings)
       .aggregate(
-        webappMacroJvm, webappBaseJvm, webappBaseServerJvm, webappBaseTestJvm, webappGenJvm,
-        webappMacroJs , webappBaseJs , webappBaseServerJs , webappBaseTestJs , webappGenJs ,
+        webappMacroJvm, webappBaseJvm, webappServerLogicJvm, webappBaseTestJvm, webappGenJvm,
+        webappMacroJs , webappBaseJs , webappServerLogicJs , webappBaseTestJs , webappGenJs ,
         webappClient, webappServer)
       .settings(
         jsSizesFast := jsSizesTask(Stage.FastOpt).value,
@@ -84,15 +84,6 @@ object WebappBuild {
       .settings(
         unmanagedSourceDirectories in Compile += baseDirectory.value / ".." / Frontend.scala)
 
-  lazy val webappBaseServerJvm = webappBaseServer.jvm
-  lazy val webappBaseServerJs  = webappBaseServer.js
-  lazy val webappBaseServer =
-    crossProject("webapp-base-server")
-      .configureJvm(Common.jvmSettings)
-      .configureJs(Common.jsSettings(NoDom))
-      .depsForBoth(testScope(μTest ++ Nyaya.test))
-      .dependsOn(webappBase)
-
   lazy val webappBaseTestJvm = webappBaseTest.jvm
   lazy val webappBaseTestJs  = webappBaseTest.js
   lazy val webappBaseTest =
@@ -101,7 +92,7 @@ object WebappBuild {
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoDom))
       .depsForBoth(μTest ++ Nyaya.test)
-      .dependsOn(baseTest, webappBase, webappBaseServer)
+      .dependsOn(baseTest, webappBase)
 
   lazy val webappClientBase =
     project("webapp-client-base")
@@ -119,7 +110,7 @@ object WebappBuild {
     project("webapp-client-base-test")
       .enablePlugins(ScalaJSPlugin)
       .configure(Common.jsSettings(NeedDom), useMacroParadise)
-      .dependsOn(webappClientBase, webappBaseServerJs, webappBaseTestJs)
+      .dependsOn(webappClientBase, webappServerLogicJs, webappBaseTestJs)
       .depsForJs(
         TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact ++
         React.test ++ μTest ++ Nyaya.test)
@@ -185,6 +176,15 @@ object WebappBuild {
             jsDependencies += ProvidedJS / "webapp-gen-deps.js"))
       .depsForBoth(testScope(μTest))
       .dependsOn(webappBaseTest % "test")
+
+  lazy val webappServerLogicJvm = webappServerLogic.jvm
+  lazy val webappServerLogicJs  = webappServerLogic.js
+  lazy val webappServerLogic =
+    crossProject("webapp-server-logic")
+      .configureJvm(Common.jvmSettings)
+      .configureJs(Common.jsSettings(NoDom))
+      .dependsOn(webappBase, baseTest % "test", webappBaseTest % "test")
+      .depsForBoth(testScope(μTest ++ Nyaya.test))
 
   lazy val webappServer =
     project("webapp-server").configure(Server.definition)
@@ -425,9 +425,9 @@ object WebappBuild {
         "up" -> ";jetty:stop ;jetty:start", // webapp Up
         "d"  -> "jetty:stop")               // webapp Down
 
-    def definition = (_: Project)
+    def definition: Project => Project = _
       .enablePlugins(JettyPlugin, WarPlugin, DockerPlugin)
-      .dependsOn(baseDb, taskmanApi, webappBaseJvm, webappBaseServerJvm, webappGenJvm)
+      .dependsOn(baseDb, taskmanApi, webappServerLogicJvm, webappGenJvm)
       .deps(
         Scalaz.core ++ Lift.webkit ++ Shiro.all ++ commonsLang ++
         testScope(μTest ++ scalaTest ++ scalaCheck ++ Lift.testkit ++ commonsIo ++ twitterEval) ++

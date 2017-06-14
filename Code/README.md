@@ -80,7 +80,6 @@ taskman-server-logic  - Taskman server (pure: types and logic)
 taskman-server-schema - Taskman DB schema
 
 webapp-base             - Shared code between front- and back-end.
-webapp-base-server      - Shared code backend and frontend tests. Exposure to non-test frontend would be a security flaw.
 webapp-base-test        - Shared code for webapp testing. Tests for webapp-base.
 webapp-client-base      - Shared code for frontend projects.
 webapp-client-base-test - Shared code for testing frontend projects.
@@ -90,6 +89,7 @@ webapp-client-ww        - WebWorkers for big background tasks like graphviz→SV
 webapp-client-ww-api    - API to above.
 webapp-gen              - Provides a hardcoded loading screen for webapp-client-home to serve until the read JS loads and replaces it.
 webapp-macro            - Macros used in webapp-base.
+webapp-server-logic     - Webapp server logic. Agnostic to web-server library. Compiled to JS for use in frontend tests.
 webapp-server           - Webapp server. Exported via Docker.
 
 benchmark - Various benchmarks.

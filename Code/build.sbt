@@ -24,8 +24,6 @@ val webappMacroJvm       = WebappBuild.webappMacroJvm
 val webappMacroJs        = WebappBuild.webappMacroJs
 val webappBaseJvm        = WebappBuild.webappBaseJvm
 val webappBaseJs         = WebappBuild.webappBaseJs
-val webappBaseServerJvm  = WebappBuild.webappBaseServerJvm
-val webappBaseServerJs   = WebappBuild.webappBaseServerJs
 val webappBaseTestJvm    = WebappBuild.webappBaseTestJvm
 val webappBaseTestJs     = WebappBuild.webappBaseTestJs
 val webappClient         = WebappBuild.webappClient
@@ -37,6 +35,8 @@ val webappClientWw       = WebappBuild.webappClientWw
 val webappClientProject  = WebappBuild.webappClientProject
 val webappGenJvm         = WebappBuild.webappGenJvm
 val webappGenJs          = WebappBuild.webappGenJs
+val webappServerLogicJvm = WebappBuild.webappServerLogicJvm
+val webappServerLogiJsc  = WebappBuild.webappServerLogicJs
 val webappServer         = WebappBuild.webappServer
 
 val benchmarkJvm         = ShipReqBuild.benchmarkJvm

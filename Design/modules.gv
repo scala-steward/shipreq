@@ -37,7 +37,7 @@ subgraph cluster_t {
     webapp [label="[aggregate]\nwebapp" fillcolor="#ffff80"]
     webappMacro [label="webapp-macro\n(Scala & JS)"]
     webappBase [label="webapp-base\n(Scala & JS)"]
-    webappBaseServer [label="webapp-base-server\n(Scala & JS)"]
+    webappServerLogic [label="webapp-server-logic\n(Scala & JS)"]
     webappClientBase [label="webapp-client-base\n(JS)"]
     webappClientHome [label="webapp-client-home\n(JS)"]
     webappClientWwApi [label="webapp-client-ww-api\n(JS)"]
@@ -86,8 +86,9 @@ taskmanServer -> taskmanServerImpl
 
 webappMacro -> baseUtil
 webappBase -> webappMacro
-webappBaseServer -> webappBase
-webappBaseTest -> baseTest,webappBaseServer [color="#111111"]
+webappServerLogic -> webappBase
+webappServerLogic -> webappBaseTest [color="#111111" style=dashed label="test"]
+webappBaseTest -> baseTest,webappBase [color="#111111"]
 webappClientBase -> webappBase
 webappClientBase -> webappBaseTest [color="#111111" style=dashed label="test"]
 webappClientBaseTest -> webappClientBase,webappBaseTest [color="#111111"]
@@ -101,7 +102,7 @@ webappClientProject -> webappClientBaseTest [color="#111111" style=dashed label=
 webappGen -> webappBase
 webappGen -> webappClientProject [color="#111111" style=dashed label="run"]
 webappGen -> webappBaseTest [color="#111111" style=dashed label="test"]
-webappServer -> taskmanApi,webappBase,webappBaseServer,webappGen
+webappServer -> taskmanApi,webappServerLogic,webappGen
 webappServer:e -> baseDb
 webappServer -> webappClientHome,webappClientProject,webappClientWw [style=dashed]
 
