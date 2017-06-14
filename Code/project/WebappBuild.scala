@@ -106,7 +106,7 @@ object WebappBuild {
   lazy val webappClientBase =
     project("webapp-client-base")
       .enablePlugins(ScalaJSPlugin)
-      .dependsOn(baseUtilJs, webappBaseJs, webappBaseTestJs % "test->compile")
+      .dependsOn(baseUtilJs, webappBaseJs, webappBaseTestJs % "test")
       .depsForJs(
         Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++ scalajsDom ++
         μPickle ++ boopickle)
@@ -128,7 +128,7 @@ object WebappBuild {
     project("webapp-client-home")
       .enablePlugins(ScalaJSPlugin)
       .configure(Common.jsSettings(NeedDom), useMacroParadise)
-      .dependsOn(webappClientBase, webappClientBaseTest % "test->compile")
+      .dependsOn(webappClientBase, webappClientBaseTest % "test")
       .depsForJs(
         Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++
         μPickle ++ boopickle ++
@@ -151,7 +151,7 @@ object WebappBuild {
     project("webapp-client-ww")
       .enablePlugins(ScalaJSPlugin)
       .configure(Common.jsSettings(NeedDom))
-      .dependsOn(webappClientWwApi, webappClientBaseTest % "test->compile")
+      .dependsOn(webappClientWwApi, webappClientBaseTest % "test")
       .depsForJs(
         boopickle ++ scalajsDom ++
         testScope(μTest))
@@ -163,7 +163,7 @@ object WebappBuild {
     project("webapp-client-project")
       .enablePlugins(ScalaJSPlugin)
       .configure(Common.jsSettings(NeedDom), useMacroParadise)
-      .dependsOn(webappClientBase, webappClientWwApi, webappClientBaseTest % "test->compile")
+      .dependsOn(webappClientBase, webappClientWwApi, webappClientBaseTest % "test")
       .depsForJs(
         Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++ scalajsDom ++
         μPickle ++ boopickle ++ shapeless ++ Nyaya.prop ++ parboiled ++
@@ -184,7 +184,7 @@ object WebappBuild {
           .settings(
             jsDependencies += ProvidedJS / "webapp-gen-deps.js"))
       .depsForBoth(testScope(μTest))
-      .dependsOn(webappBaseTest % "test->compile")
+      .dependsOn(webappBaseTest % "test")
 
   lazy val webappServer =
     project("webapp-server").configure(Server.definition)
@@ -226,7 +226,7 @@ object WebappBuild {
 
     def testSettings = (_: Project)
       .configure(DockerEnv.test.required)
-      .dependsOn(webappBaseTestJvm % "test->compile")
+      .dependsOn(webappBaseTestJvm % "test")
       .settings(inConfig(Test)(Seq(
         fork                         := true,
         javaOptions                  += "-Drun.mode=test",
