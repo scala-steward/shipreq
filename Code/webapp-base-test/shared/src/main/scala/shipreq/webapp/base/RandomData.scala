@@ -1208,9 +1208,9 @@ object RandomData {
     shortText1
 
   lazy val instantPast: Gen[Instant] = {
-    import scala.concurrent.duration._
     val now = Instant.now()
-    Gen.chooseLong(0, (365 * 5).day.toSeconds).map(i => now.minusMillis(i.seconds.toMillis))
+    val secPerDay = 86400
+    Gen.chooseLong(0, 365 * 5 * secPerDay).map(now.minusSeconds)
   }
 
   lazy val projectCatalogueItem: Gen[ProjectCatalogue.Item] =
