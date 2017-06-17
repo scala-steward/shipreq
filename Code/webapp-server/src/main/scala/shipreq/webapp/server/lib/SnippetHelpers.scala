@@ -202,10 +202,14 @@ trait SnippetHelpers extends StaticSnippetHelpers with Misc with DI with HasLogg
   }
 }
 
-/**
- * A stateful snippet with only one rendering method.
- */
+/** A stateful snippet with only one rendering method. */
 abstract class SingleOpStatefulSnippet extends StatefulSnippet with SnippetHelpers {
+  override def dispatch = { case _ => render }
+  def render: NodeSeq => NodeSeq
+}
+
+/** A stateless snippet with only one rendering method. */
+abstract class SingleOpStatelessSnippet extends DispatchSnippet with SnippetHelpers {
   override def dispatch = { case _ => render }
   def render: NodeSeq => NodeSeq
 }

@@ -14,7 +14,7 @@ import shipreq.base.util.{Props => ShipReqProps}
 import shipreq.base.util.effect.IoUtils._
 import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.server.ServerConfig
-import shipreq.webapp.server.app.{AppSiteMap, DI, ExceptionHandler}
+import shipreq.webapp.server.app._
 import shipreq.webapp.server.feature.SessionStats
 import shipreq.webapp.server.lib.{Taskman, TaskmanImpl}
 import shipreq.webapp.server.security.Oshiro
@@ -38,6 +38,7 @@ class Boot extends DI {
     runMode foreach setRunMode
     initServerConfig(appConfig.server)
     initOshiro()
+    initServerLogic()
     configureLift()
     preloadTemplates()
     initDatabase(appConfig.db)
@@ -139,6 +140,10 @@ class Boot extends DI {
 
   def initServerConfig(s: ServerConfig): Unit = {
     DI.serverConfig = s
+  }
+
+  def initServerLogic(): Unit = {
+    DI.projectServer = Interpreters.projectServer
   }
 
   def initTaskman(s: ServerConfig): Unit = {
