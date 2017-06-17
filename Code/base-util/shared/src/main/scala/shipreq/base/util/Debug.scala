@@ -34,6 +34,20 @@ object Debug {
     val timeInMs = (end - start).toDouble / 1000000
     printf("[%s] Completed in %.3f ms.\n", name, timeInMs)
   }
+
+  def loggerWithColour[A](colour: String): A => String => Unit = {
+    import Console._
+    a => msg => println(s"$BOLD$colour[$a]$RESET$colour $msg$RESET")
+  }
+
+  def loggerBlack[A] = loggerWithColour[A](Console.BLACK)
+  def loggerBlue[A] = loggerWithColour[A](Console.BLUE)
+  def loggerCyan[A] = loggerWithColour[A](Console.CYAN)
+  def loggerGreen[A] = loggerWithColour[A](Console.GREEN)
+  def loggerMagenta[A] = loggerWithColour[A](Console.MAGENTA)
+  def loggerRed[A] = loggerWithColour[A](Console.RED)
+  def loggerWhite[A] = loggerWithColour[A](Console.WHITE)
+  def loggerYellow[A] = loggerWithColour[A](Console.YELLOW)
 }
 
 trait DebugImplicits {
