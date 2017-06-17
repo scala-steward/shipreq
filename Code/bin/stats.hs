@@ -97,6 +97,9 @@ groupD dirs g = let
   d = filter (not . areEmpty . snd) <$> c
   in GroupD g <$> d
 
+modifyGroupDName :: (Group -> Group) -> GroupD -> GroupD
+modifyGroupDName f g = g { gname = f $ gname g }
+
 gatherAllStats :: IO [GroupD]
 gatherAllStats = do dirs <- dirsIn "."
                     mapM (groupD dirs) groups
@@ -201,21 +204,22 @@ fmtBreakdowns = intercalate sepLine
 
 -- Logic vs Impl
 
-headerIL = "Logic & Impl            |    L    I    ∑  |      L      I      ∑  (I:L)\n"
+headerIL = "Logic & Impl                |    L    I    ∑  |      L      I      ∑  (I:L)\n"
 
-modulesWithSuffix :: Foldable t => String -> t GroupD -> [(Module, Stats)]
+modulesWithSuffix :: String -> [GroupD] -> [(Module, Stats)]
 modulesWithSuffix suf = filter (isSuffixOf suf . fst) . concatMap modstats
 
-modulesWithSuffix' :: Foldable t => String -> t GroupD -> [(Module, Stats)]
+modulesWithSuffix' :: String -> [GroupD] -> [(Module, Stats)]
 modulesWithSuffix' suf = map (mapFst $ dropr $ length suf) . modulesWithSuffix suf
 
 dropr :: Int -> [a] -> [a]
 dropr n = reverse . drop n . reverse
 
-logicAndImpl :: Foldable t => t GroupD -> [GroupD]
+logicAndImpl :: [GroupD] -> [GroupD]
 logicAndImpl gs = let l = modulesWithSuffix' "-logic" gs
-                      i = modulesWithSuffix' "-impl" gs
-                      keys = sort $ nub $ filter ("webapp-server" /=) $ map fst $ l ++ i
+                      hack = ("webapp-server", snd $ head $ modulesWithSuffix' "webapp-server" gs)
+                      i = hack : (modulesWithSuffix' "-impl" gs)
+                      keys = sort $ nub $ map fst $ l ++ i
                       get xs k = s where Just (_,(s,_)) = find ((== k) . fst) xs
                       getLI k = singleModuleGroup k (get l k, get i k)
                   in  map getLI keys
