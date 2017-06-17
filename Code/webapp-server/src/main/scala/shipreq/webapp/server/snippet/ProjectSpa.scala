@@ -25,7 +25,7 @@ final class ProjectSpa(projectId: ProjectId) extends SingleOpStatelessSnippet {
     val user = currentUser_!()
 
     val comet: ProjectSpaComet =
-      ProjectSpaComet(projectId).openOr(respondImmediately(InternalServerErrorResponse())) // TODO do more!
+      ProjectSpaComet(projectId) openOr shouldNeverHappen_!
 
     val logic = projectServer()
 
@@ -37,7 +37,7 @@ final class ProjectSpa(projectId: ProjectId) extends SingleOpStatelessSnippet {
           case \/-(id)                            => id
           case -\/(ProjectServer.AccessDenied)    => respondImmediately(ForbiddenResponse())
           case -\/(ProjectServer.ProjectNotFound) => respondImmediately(NotFoundResponse())
-          case -\/(_: ProjectServer.BuildError)   => respondImmediately(InternalServerErrorResponse()) // TODO do more!
+          case -\/(_: ProjectServer.BuildError)   => shouldNeverHappen_!
         }
 
       comet ! ProjectSpaComet.AddRegistrant(newRegId)

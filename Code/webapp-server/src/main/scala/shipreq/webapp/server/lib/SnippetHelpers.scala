@@ -81,52 +81,52 @@ trait StaticSnippetHelpers extends HasLogger {
   def redirectTo(page: Menu.Menuable)                   : Nothing = S.redirectTo(page.relativeUrl)
   def redirectTo[T](page: Menu.ParamMenuable[T])(arg: T): Nothing = S.redirectTo(page.relativeUrl(arg))
 
-  def respondImmediately(response: LiftResponse): Nothing = throw ResponseShortcutException.shortcutResponse(response)
+  def respondImmediately(response: LiftResponse): Nothing =
+    throw ResponseShortcutException.shortcutResponse(response)
 
-  def shouldNeverHappen_! = respondImmediately(ShouldNeverHappenResponse())
+  def shouldNeverHappen_! : Nothing =
+  respondImmediately(ShouldNeverHappenResponse) // TODO do more! notify Tasman! etc
 
-  def shouldNeverHappen_!(msg: String) = respondImmediately(ShouldNeverHappenResponse(msg))
-
-  def shouldNeverHappen_swallowInProd[T](fallback: T)(msg: String): T = {
-    import Props.RunModes._
-    Props.mode match {
-      case Production | Pilot | Staging =>
-        log.error(msg)
-        fallback
-      case Test | Development | Profile =>
-        shouldNeverHappen_!(msg)
-    }
-  }
-
-  def requireResultO_![T](o: Option[T], fallbackErrorReaction: => Nothing = redirectHome()): T = o match {
-    case Some(t) => t
-    case None    => fallbackErrorReaction
-  }
-
-  def requireResult_![T](box: Box[T], fallbackErrorReaction: => Nothing = redirectHome()): T = box match {
-    case Full(t)                                 => t
-    case Empty                                   => fallbackErrorReaction
-    case ParamFailure(_, _, _, r: LiftResponse)  => respondImmediately(r)
-    case ParamFailure(_, _, _, m: Menu)          => redirectTo(m)
-    case ParamFailure(_, _, _, m: Menu.Menuable) => redirectTo(m)
-    case ParamFailure(_, _, _, NotFoundResponse) => respondImmediately(NotFoundResponse())
-    case _                                       => log.error(s"Don't know how to react to $box"); shouldNeverHappen_!
-  }
+//  def shouldNeverHappen_swallowInProd[T](fallback: T)(msg: String): T = {
+//    import Props.RunModes._
+//    Props.mode match {
+//      case Production | Pilot | Staging =>
+//        log.error(msg)
+//        fallback
+//      case Test | Development | Profile =>
+//        shouldNeverHappen_!(msg)
+//    }
+//  }
+//
+//  def requireResultO_![T](o: Option[T], fallbackErrorReaction: => Nothing = redirectHome()): T = o match {
+//    case Some(t) => t
+//    case None    => fallbackErrorReaction
+//  }
+//
+//  def requireResult_![T](box: Box[T], fallbackErrorReaction: => Nothing = redirectHome()): T = box match {
+//    case Full(t)                                 => t
+//    case Empty                                   => fallbackErrorReaction
+//    case ParamFailure(_, _, _, r: LiftResponse)  => respondImmediately(r)
+//    case ParamFailure(_, _, _, m: Menu)          => redirectTo(m)
+//    case ParamFailure(_, _, _, m: Menu.Menuable) => redirectTo(m)
+//    case ParamFailure(_, _, _, NotFoundResponse) => respondImmediately(NotFoundResponse())
+//    case _                                       => log.error(s"Don't know how to react to $box"); shouldNeverHappen_!
+//  }
 
   // -------------------------------------------------------------------------------------------------------------------
   // Error propagation and Alerts
 
-  @inline private def appendAlert(alert: NodeSeq)(implicit nc: NoticeContainerExp): JsCmd =
+  private def appendAlert(alert: NodeSeq)(implicit nc: NoticeContainerExp): JsCmd =
     JqExpr(alert) ~> JqAppendTo(nc) ~> JqHighlight()
 
-  @inline private def removeAlert(id: String): JsCmd = {
+  private def removeAlert(id: String): JsCmd = {
     if (id eq null)
       implicitly[Monoid[JsCmd]].zero
     else
       JqId(id) ~> JqRemove
   }
 
-  @inline private def showAlert(id: String, alert: NodeSeq)(implicit nc: NoticeContainerExp): JsCmd =
+  private def showAlert(id: String, alert: NodeSeq)(implicit nc: NoticeContainerExp): JsCmd =
     removeAlert(id) |+| appendAlert(applyIdToAlert(id, alert))
 
   private def applyIdToAlert(id: String, alert: NodeSeq): NodeSeq =
@@ -143,27 +143,27 @@ trait StaticSnippetHelpers extends HasLogger {
   def jsShowError(errMsg: NodeSeq)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
     showAlert(id, Notices.renderSingle(AlertTypeError, errMsg))
 
-  def jsShowErrors(errMsgs: Seq[NodeSeq])(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd = errMsgs match {
-    case Nil                => jsClearError
-    case singleError :: Nil => jsShowError(singleError)
-    case _                  => showAlert(id, Notices.renderMsgs(AlertTypeError, errMsgs))
-  }
+//  def jsShowErrors(errMsgs: Seq[NodeSeq])(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd = errMsgs match {
+//    case Nil                => jsClearError
+//    case singleError :: Nil => jsShowError(singleError)
+//    case _                  => showAlert(id, Notices.renderMsgs(AlertTypeError, errMsgs))
+//  }
 
-  def jsPossibleError[T](box: Box[T])(successJs: T => JsCmd, failureJs: => JsCmd = Noop)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
-    box match {
-      case Full(v)            => jsClearError                       |+| successJs(v)
-      case Empty              => jsShowError(ErrorMessages.Generic) |+| failureJs
-      case FailBox(err, _, _) => jsShowError(err)                   |+| failureJs
-    }
+//  def jsPossibleError[T](box: Box[T])(successJs: T => JsCmd, failureJs: => JsCmd = Noop)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
+//    box match {
+//      case Full(v)            => jsClearError                       |+| successJs(v)
+//      case Empty              => jsShowError(ErrorMessages.Generic) |+| failureJs
+//      case FailBox(err, _, _) => jsShowError(err)                   |+| failureJs
+//    }
 
-  def jsShowSimpleInvalidity(f: Simple.Invalidity)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
-    jsShowError(InvalidityHtml.simple(f))(id, nc)
-
-  def handleSimpleInvalidity[T](v: Simple.Invalidity \/ T)(f: T => JsCmd)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
-    v match {
-      case \/-(s) => jsClearError & f(s)
-      case -\/(e) => jsShowSimpleInvalidity(e)
-    }
+//  def jsShowSimpleInvalidity(f: Simple.Invalidity)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
+//    jsShowError(InvalidityHtml.simple(f))(id, nc)
+//
+//  def handleSimpleInvalidity[T](v: Simple.Invalidity \/ T)(f: T => JsCmd)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
+//    v match {
+//      case \/-(s) => jsClearError & f(s)
+//      case -\/(e) => jsShowSimpleInvalidity(e)
+//    }
 
   def jsShowCompositeInvalidity(f: Composite.Invalidity)(implicit id: ErrorAlertId, nc: NoticeContainerExp): JsCmd =
     jsShowError(InvalidityHtml.composite(f))(id, nc)
@@ -174,8 +174,8 @@ trait StaticSnippetHelpers extends HasLogger {
       case -\/(e) => jsShowCompositeInvalidity(e)
     }
 
-  def jsShowNotice(content: NodeSeq, id: String = null)(implicit nc: NoticeContainerExp): JsCmd =
-    showAlert(id, Notices.renderSingle(AlertTypeSuccess, content))
+//  def jsShowNotice(content: NodeSeq, id: String = null)(implicit nc: NoticeContainerExp): JsCmd =
+//    showAlert(id, Notices.renderSingle(AlertTypeSuccess, content))
 }
 
 // =====================================================================================================================
