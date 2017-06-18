@@ -8,7 +8,7 @@ import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.protocol.CreateContentCmd
 import shipreq.webapp.client.base.feature._
-import shipreq.webapp.client.project.protocol.ServerCall
+import shipreq.webapp.client.base.protocol.ServerSideProcInvoker
 
 /** Nothing here has `Reusability` because:
   *
@@ -102,7 +102,7 @@ object Feature {
     final case class ForRow[-FK <: FieldKey](rowAccess : StateAccessPure[State.ForFields],
                                              rowEditors: NewEditor.ForFields[FK],
                                              async     : AsyncFeature.Write.D0[AsyncError],
-                                             createIO  : ServerCall[CreateContentCmd]) {
+                                             createIO  : ServerSideProcInvoker[CreateContentCmd, Any]) {
       def startEditor(field: FK): Editor[field.Value] = {
         val stateAccess: StateAccessPure[State.ForEditor[Any]] = rowAccess zoomStateL Optics.mapValue(field)
         val ctx = NewEditor.Ctx[field.Value](field.cast2(stateAccess))
@@ -111,13 +111,13 @@ object Feature {
 
       /** Initiates a call to the server to create content for this row. */
       def create(cmd: CreateContentCmd, onSuccess: Callback = Callback.empty): Callback =
-        async((s, f) => createIO(cmd, s >> onSuccess, f))
+        async((s, f) => createIO(cmd, _ => s >> onSuccess, f))
     }
 
     final case class ForProject(static     : NewEditor.Static,
                                 stateAccess: StateAccessPure[State.ForProject],
                                 async      : AsyncFeature.Write.D1[RowKey, AsyncError],
-                                createIO   : ServerCall[CreateContentCmd]) {
+                                createIO   : ServerSideProcInvoker[CreateContentCmd, Any]) {
       def apply(row: RowKey): ForRow[row.FieldKey] =
         ForRow[row.FieldKey](
           stateAccess zoomStateL Optics.innerMap(row),

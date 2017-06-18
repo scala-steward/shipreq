@@ -11,19 +11,17 @@ import scalaz.{-\/, \/, \/-}
 import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.{UpdateContentCmd, ProjectSpaProtocols}
+import shipreq.webapp.base.protocol.{ProjectSpaProtocols, UpdateContentCmd}
 import shipreq.webapp.base.text._
 import shipreq.webapp.client.base.data._
 import shipreq.webapp.client.base.feature.AsyncFeature
-import shipreq.webapp.client.base.protocol.ClientProtocol
+import shipreq.webapp.client.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.client.base.ui.BaseStyles
 import shipreq.webapp.client.base.ui.semantic.{Header, Icon, Message}
-import shipreq.webapp.client.project.app.state.ClientData
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.protocol.ServerCall
 import shipreq.webapp.client.project.widgets._
 import ExternalPubid.LookupFailure
 import ProjectWidgets.emptySpan
@@ -36,11 +34,11 @@ object ReqDetail {
       .renderBackend
       .build
 
-  case class StaticProps(cd                   : ClientData,
-                         cp                   : ClientProtocol,
+  case class StaticProps(updateIO             : ServerSideProcInvoker[UpdateContentCmd, Any],
                          reqDetailRC          : RouterCtl[ExternalPubid],
                          webWorker            : WebWorkerClient,
                          updateContentFn      : ProjectSpaProtocols.UpdateContent.Instance,
+                         pxProject            : Px[Project],
                          pxPlainTextNoCtx     : Px[PlainText.ForProject],
                          pxTextSearch         : Px[TextSearch],
                          pxProjectWidgetsNoCtx: Px[ProjectWidgets])
@@ -128,7 +126,6 @@ object ReqDetail {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   final class Backend(SP: StaticProps, $: BackendScope[DynamicProps, Unit]) {
     import SP._
-    import cd.pxProject
 
     val pxFieldNameFn = pxProject.map(Field.nameByIdFromProject)
     val pxExtPubid    = Px.props($).map(_.extPubid).withReuse.manualRefresh
@@ -145,14 +142,11 @@ object ReqDetail {
     val setFilterDead: FilterDead ~=> Callback =
       Reusable.fn(v => $.props.flatMap(_.filterDead setState v))
 
-    val updateIO: ServerCall[UpdateContentCmd] =
-      ServerCall.to(updateContentFn, cp, cd)
-
     val runCmd = Reusable.fn[ReqId, Cell, UpdateContentCmd, Callback](
       (reqId, cell, cmd) =>
         $.props >>= (p =>
           p.reqProps(reqId).async.write(cell)((s, f) =>
-            updateIO(cmd, s, f))))
+            updateIO(cmd, _ => s, f))))
 
     def setModal(modal: Modal.State): Callback =
       $.props >>= (_.state setState modal)
@@ -350,7 +344,7 @@ object ReqDetail {
     }
 
     def runActionNoAsync(cmd: UpdateContentCmd): Callback =
-      updateIO(cmd, TCB.Success.nop, f => TCB.Failure(Callback.alert(f)))
+      updateIO(cmd, TCB.Success._nop, f => TCB.Failure(Callback.alert(f)))
 
     def delete(id: ReqId): Callback =
       CallbackTo {

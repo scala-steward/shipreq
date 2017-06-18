@@ -13,7 +13,7 @@ import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text._
 import shipreq.webapp.client.base.feature._
 import shipreq.webapp.client.base.lib.AbortCommit
-import shipreq.webapp.client.project.protocol.ServerCall
+import shipreq.webapp.client.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import Feature.{AsyncError, AsyncState, Editor, PreviewId, State}
 import shipreq.webapp.base.event.UseCaseStepGD
@@ -46,7 +46,7 @@ object NewEditor {
                           pxPlainText     : Px[PlainText.ForProject],
                           pxProjectWidgets: Px[ProjectWidgets],
                           pxTextSearch    : Px[TextSearch],
-                          saveIO          : ServerCall[UpdateContentCmd]) {
+                          saveIO          : ServerSideProcInvoker[UpdateContentCmd, Any]) {
 
     private[NewEditor] val internal = new Internal(this)
   }
@@ -148,7 +148,7 @@ object NewEditor {
         stateAccess.setState(None, hooks.onClose)
 
       def commit(cmd: UpdateContentCmd, hooks: Hooks): Callback =
-        asyncFeature((s, f) => saveIO(cmd, s >> abort(hooks), f))
+        asyncFeature((s, f) => saveIO(cmd, _ => s >> abort(hooks), f))
 
       def makeAbortCommit[A](cmd: A => UpdateContentCmd, hooks: Hooks): Some[AbortCommit[Callback, A ~=> Callback]] =
         Some(AbortCommit(abort(hooks), Reusable.fn(v => commit(cmd(v), hooks))))

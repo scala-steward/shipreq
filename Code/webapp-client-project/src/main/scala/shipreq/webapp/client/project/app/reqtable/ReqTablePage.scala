@@ -19,12 +19,12 @@ import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.client.base.feature.AsyncFeature
 import shipreq.webapp.client.base.lib.DataReusability._
+import shipreq.webapp.client.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.client.base.ui.BaseStyles
 import shipreq.webapp.client.base.ui.semantic.{Icon, Message}
 import shipreq.webapp.client.project.app.state.ClientData
 import shipreq.webapp.client.project.app.Style.reqtable.{page => *}
 import shipreq.webapp.client.project.feature._
-import shipreq.webapp.client.project.protocol.ServerCall
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 object ReqTablePage {
@@ -44,7 +44,7 @@ object ReqTablePage {
                                pxTextSearch    : Px[TextSearch],
                                pxProjectWidgets: Px[ProjectWidgets],
                                reqDetailRC     : RouterCtl[ExternalPubid],
-                               updateIO        : ServerCall[UpdateContentCmd],
+                               updateIO        : ServerSideProcInvoker[UpdateContentCmd, Any],
                                rowAsyncW       : AsyncFeature.Write.D1[Row.SourceId, String])
 
   final case class Props(create    : CreateFeature.ReadWrite.ForProject,

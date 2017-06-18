@@ -8,11 +8,12 @@ import japgolly.scalajs.react.vdom.VdomElement
 import shipreq.base.util.{Allow, Intersection}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, ReqId}
+import shipreq.webapp.base.event.VerifiedEvents
 import shipreq.webapp.base.filter.PotentialFilter
 import shipreq.webapp.base.protocol.{ProjectSpaProtocols, UpdateContentCmd}
 import shipreq.webapp.base.text.{PlainText, ProjectText, TextSearch}
 import shipreq.webapp.client.base.feature._
-import shipreq.webapp.client.base.protocol.ClientProtocol
+import shipreq.webapp.client.base.protocol.{ClientProtocol, ServerSideProcInvoker}
 import shipreq.webapp.client.base.ui.ProjectItem
 import shipreq.webapp.client.project.app.state._
 import shipreq.webapp.client.project.app._
@@ -21,7 +22,6 @@ import shipreq.webapp.client.project.app.reqtable.ReqTablePage
 import shipreq.webapp.client.project.app.cfg.shared.Usage
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.protocol.ServerCall
 import shipreq.webapp.client.project.widgets.{ImplicationGraph, ProjectWidgets}
 import AsyncFeature.Implicits._
 import Routes.{Page, RouterCtl}
@@ -49,8 +49,8 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitClient, cp: ClientProto
     val pxCreateEditability = pxProject.map(p => CreateFeature.Editability(p.config))
     val pxEditEditability   = pxProject.map(EditorFeature.Editability.apply)
 
-    val updateIO: ServerCall[UpdateContentCmd] =
-      ServerCall.to(initData.updateContent, cp, cd)
+    val updateIO: ServerSideProcInvoker[UpdateContentCmd, VerifiedEvents] =
+      cd.serverSideProcToEvents(initData.updateContent, cp)
 
     val previewW: PreviewFeature.Write.Composite[PreviewId] =
       PreviewFeature.Write.Composite($ zoomStateL State.preview)
@@ -68,7 +68,7 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitClient, cp: ClientProto
           pxTextSearch),
         $ zoomStateL State.create,
         createAsyncW,
-        ServerCall.to(initData.createContent, cp, cd))
+        cd.serverSideProcToEvents(initData.createContent, cp))
 
     val editAsyncW: AsyncFeature.Write.D2[EditorFeature.RowKey, AsyncKey, String] =
       AsyncFeature.Write.D2.init($ zoomStateL State.editAsync)
@@ -126,8 +126,8 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitClient, cp: ClientProto
     def ww = WebWorkerClient.Instance
 
     val reqDetail = ReqDetail(ReqDetail.StaticProps(
-      cd, cp, reqDetailRC, ww, initData.updateContent,
-      pxPlainText, pxTextSearch, pxProjectWidgets))
+      updateIO, reqDetailRC, ww, initData.updateContent,
+      pxProject, pxPlainText, pxTextSearch, pxProjectWidgets))
 
     val reqDetailSetState: ReqDetail.State ~=> Callback =
       Reusable.fn.state($ zoomStateL State.reqDetail).set
@@ -150,17 +150,14 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitClient, cp: ClientProto
           $.modStateFn[AsyncFeature.State.D0[String]](s =>
             State.projectName.modify(ProjectItem.WithEditableName.State setAsync s))))
 
-
-    val setProjectNameIO: String => Callback =
+    val setProjectNameIO: String => Callback = {
+      val proc = cd.serverSideProcToEvents(initData.projectNameSet, cp)
       newName => {
         def close = $.modState(State.projectName set None)
-        def save = projectNameAF((onSuccess, onFailure) =>
-          cp.call(initData.projectNameSet)(
-            newName,
-            cd.applyEventsS(_) >> onSuccess >> close,
-            _ consumeAnd onFailure))
+        def save = projectNameAF((s, f) => proc(newName, _ => s >> close, f))
         cd.projectCB >>= (p => if (p.name ==* newName) close else save)
       }
+    }
 
     def render(p: Props, s: State): VdomElement = {
       lazy val editAsyncState = s.editAsync.toRead

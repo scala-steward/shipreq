@@ -75,6 +75,8 @@ object ProtocolTest extends TestSuite {
 
   override def tests = TestSuite {
 
+    // TODO Add more procs
+
     'ServerSideProcs {
       type CrudFn[I] = ServerSideProc.Protocol.Aux[ErrorMsg, I, VerifiedEvents]
 

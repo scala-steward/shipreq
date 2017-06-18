@@ -35,9 +35,9 @@ object RemoteFailure {
 
   final case class Format[A](format: (Throwable \/ A) => String) extends AnyVal
 
-  implicit val formatErrorMsg =
+  implicit val formatErrorMsg: Format[ErrorMsg] =
     Format[ErrorMsg] {
-      case -\/(t) => Option(t.getMessage) match {
+      case -\/(t) => Option(t.getMessage).filter(_.nonEmpty) match {
         case Some(m) => "AJAX error occurred: " + m
         case None    => "AJAX error occurred."
       }

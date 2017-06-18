@@ -6,10 +6,10 @@ import java.time.Instant
 import scalaz.{-\/, \/-}
 import shipreq.webapp.base.data.{Project, ProjectCatalogue}
 import shipreq.webapp.base.event.{ApplyEvent, Event, VerifiedEvents}
-import shipreq.webapp.base.protocol.ProjectSpaProtocols
+import shipreq.webapp.base.protocol.{ErrorMsg, ProjectSpaProtocols, ServerSideProc}
 import shipreq.webapp.client.base.data.TCB
 import shipreq.webapp.client.base.lib.Logger
-import shipreq.webapp.client.base.protocol.ClientProtocol
+import shipreq.webapp.client.base.protocol.{ClientProtocol, ServerSideProcInvoker}
 import shipreq.webapp.client.project.lib.DataReusability.reusabilityProject
 
 abstract class ClientData extends Broadcaster[Changes] {
@@ -39,6 +39,9 @@ abstract class ClientData extends Broadcaster[Changes] {
         reqCount      = o.reqCount + ves.count(Event reqCreationEventFilter _.event),
         lastUpdatedAt = Some(Instant.now()))
     }
+
+  def serverSideProcToEvents[I](proc: ServerSideProc.Aux[ErrorMsg, I, VerifiedEvents], cp: ClientProtocol): ServerSideProcInvoker[I, VerifiedEvents] =
+    new ServerSideProcInvoker((i, s, f) => cp.call(proc)(i, e => applyEventsS(e) >> s(e), _ consumeAnd f))
 }
 
 object ClientData {

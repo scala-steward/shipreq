@@ -28,6 +28,8 @@ sealed trait ServerSideProc {
 object ServerSideProc {
 
   type For[P <: Protocol] = ServerSideProc {val protocol: P}
+  type Aux[F, I, O] = For[Protocol.Aux[F, I, O]]
+  type Typical = For[Protocol.Typical[_, _]]
 
   def apply(_key: String, p: Protocol): For[p.type] =
     new ServerSideProc {
@@ -65,9 +67,10 @@ object ServerSideProc {
 
   object Protocol {
     type Aux[F, I, O] = Protocol {type Failure = F; type Input = I; type Output = O}
+    type Typical[I, O] = Aux[ErrorMsg, I, O]
 
     // Everything just uses ErrorMsg at the moment
-    private[protocol] def apply[I: Pickler, O: Pickler]: Aux[ErrorMsg, I, O] = {
+    private[protocol] def apply[I: Pickler, O: Pickler]: Typical[I, O] = {
       implicit val r = BinCodecGeneric.pickleXor[ErrorMsg, O]
       _apply[ErrorMsg, I, O]
     }
