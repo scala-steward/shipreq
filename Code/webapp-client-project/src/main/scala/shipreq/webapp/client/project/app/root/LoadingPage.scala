@@ -3,15 +3,14 @@ package shipreq.webapp.client.project.app.root
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.Reusable
 import japgolly.scalajs.react.vdom.html_<^._
-import shipreq.webapp.base.data.{ProjectCatalogue, Username}
+import shipreq.webapp.base.data.{ProjectMetaData, Username}
 import shipreq.webapp.client.base.ui.semantic.{Breadcrumb, UsesSemanticUiManually}
 import shipreq.webapp.client.base.ui.{BaseStyles, MemberNavBar}
 
 object LoadingPage {
 
-  final case class Props(username: Username,
-                         project: ProjectCatalogue.Item) {
-    @inline def render = Component(this)
+  final case class Props(username: Username, project: ProjectMetaData) {
+    @inline def render: VdomElement = Component(this)
   }
 
   def layout(p: Props)(content: VdomElement): VdomElement =

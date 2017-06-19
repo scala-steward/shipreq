@@ -33,18 +33,18 @@ object ProjectSpaProtocols {
   import TagCrud.Protocol     .{pickleInstance => _i9}
   import FieldCrud.Protocol   .{pickleInstance => _i10}
 
-  final case class InitClient(username      : Username,
-                              project       : ProjectCatalogue.Item,
-                              projectInit   : ProjectInit          .Instance,
-                              issueTypeCrud : CustomIssueTypeCrud  .Instance,
-                              reqTypeCrud   : CustomReqTypeCrud    .Instance,
-                              reqTypeImpMod : ReqTypeImplicationMod.Instance,
-                              fieldMandMod  : FieldMandatorinessMod.Instance,
-                              fieldCrud     : FieldCrud.Protocol   .Instance,
-                              tagCrud       : TagCrud.Protocol     .Instance,
-                              createContent : CreateContent        .Instance,
-                              updateContent : UpdateContent        .Instance,
-                              projectNameSet: ProjectNameSet       .Instance)
+  final case class InitClient(username       : Username,
+                              projectMetaData: ProjectMetaData,
+                              projectInit    : ProjectInit          .Instance,
+                              issueTypeCrud  : CustomIssueTypeCrud  .Instance,
+                              reqTypeCrud    : CustomReqTypeCrud    .Instance,
+                              reqTypeImpMod  : ReqTypeImplicationMod.Instance,
+                              fieldMandMod   : FieldMandatorinessMod.Instance,
+                              fieldCrud      : FieldCrud.Protocol   .Instance,
+                              tagCrud        : TagCrud.Protocol     .Instance,
+                              createContent  : CreateContent        .Instance,
+                              updateContent  : UpdateContent        .Instance,
+                              projectNameSet : ProjectNameSet       .Instance)
 
   implicit val picklerInitClient = pickleCaseClass[InitClient]
 

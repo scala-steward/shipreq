@@ -10,12 +10,12 @@ import BinCodecData._
   */
 object HomeSpaProtocols {
 
-  val CreateProject = ServerSideProc.Protocol[String, ProjectCatalogue.Item]
+  val CreateProject = ServerSideProc.Protocol[String, ProjectMetaData]
 
   import CreateProject.{pickleInstance => _i1}
 
   final case class InitClient(username     : Username,
-                              projects     : ProjectCatalogue,
+                              projects     : List[ProjectMetaData],
                               createProject: CreateProject.Instance)
 
   implicit val picklerInitClient = pickleCaseClass[InitClient]

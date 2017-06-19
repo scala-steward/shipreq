@@ -1,15 +1,15 @@
 package shipreq.webapp.server.db
 
 import utest._
-import shipreq.webapp.base.data.{Project, ProjectCatalogueProps}
+import shipreq.webapp.base.data.{Project, ProjectMetaDataProps}
 import shipreq.webapp.base.event.{ActiveEvent, RandomEventStream, VerifiedEvent}
 import shipreq.webapp.server.logic.EventSeq
 import shipreq.webapp.server.test.DbUtil
 import shipreq.webapp.server.test.WebappServerTestUtil._
 
-/** Ensures that ProjectCatalogue.Item content always matches project content.
+/** Ensures that ProjectMetaData content always matches project content.
   */
-object ProjectCatalogueTest extends TestSuite {
+object ProjectMetaDataTest extends TestSuite {
 
   override def tests = TestSuite {
 
@@ -42,11 +42,13 @@ object ProjectCatalogueTest extends TestSuite {
           writeEvent(ve, seq)
           p = applyEventSuccessfully(p, ve.event)
 
-          val i = xa ! DbLogic.project.findCatalogueItem(uid, pid) getOrElse
-            fail(s"ProjectCatalogueItem not found for ($uid,$pid).")
+          val (i, uid2) = xa ! DbLogic.project.findProjectMetaDataAndUser(pid) getOrElse
+            fail(s"ProjectMetaData not found for $pid.")
+
+          assert(uid2 == uid)
 
           val e = (seq + 1 - RandomEventStream.InitialEventCount) max 0
-          ProjectCatalogueProps(i, p, e).assert()
+          ProjectMetaDataProps(i, p, e).assert()
         }
       }
     }

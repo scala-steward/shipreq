@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.app.root
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
-import shipreq.webapp.base.data.{ProjectCatalogue, Username}
+import shipreq.webapp.base.data.{ProjectMetaData, Username}
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.base.lib.DataReusability._
 import shipreq.webapp.client.base.ui._
@@ -14,14 +14,14 @@ import Routes.{Page, RouterCtl}
 object Layout {
 
   final case class Props(username: Username,
-                         project : ProjectCatalogue.Item,
+                         project : ProjectMetaData,
                          rc      : RouterCtl,
                          page    : Page,
                          content : VdomElement) {
     @inline def render = Component(this)
   }
 
-  private type NavBarLeftInput = (Page, ProjectCatalogue.Item, RouterCtl)
+  private type NavBarLeftInput = (Page, ProjectMetaData, RouterCtl)
 
   private val reusabilityNavBarLeftInput: Reusability[NavBarLeftInput] =
     implicitly[Reusability[NavBarLeftInput]]

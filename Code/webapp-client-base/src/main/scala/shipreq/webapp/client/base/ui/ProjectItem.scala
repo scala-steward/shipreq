@@ -8,7 +8,7 @@ import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.webapp.base.URLs
 import shipreq.webapp.base.UiText.EnglishStringExt
-import shipreq.webapp.base.data.{ProjectCatalogue, DataValidators}
+import shipreq.webapp.base.data.{ProjectMetaData, DataValidators}
 import shipreq.webapp.client.base.feature.{AsyncFeature, EditorStatus}
 import shipreq.webapp.client.base.jsfacade.MomentJs
 import shipreq.webapp.client.base.ui.semantic.{Icon, Size, Statistic, StatisticGroup}
@@ -28,18 +28,18 @@ object ProjectItem {
   private def stat(i: Icon, n: Int, s: String) =
     Statistic.simple(TagMod(i.tag, " ", n), s.pluralise(n))
 
-  private def renderLeftContent(p: ProjectCatalogue.Item)(leftContent: TagMod): VdomTag =
+  private def renderLeftContent(p: ProjectMetaData)(leftContent: TagMod): VdomTag =
     <.div(*.item,
       <.div(*.itemLeft, leftContent),
       <.div(renderStats(p)))
 
-  private def renderMeta(p: ProjectCatalogue.Item): VdomTag =
+  private def renderMeta(p: ProjectMetaData): VdomTag =
     <.div(*.itemMeta,
       "Updated ",
       TimeAgo.Component(MomentJs fromInstant p.lastUpdatedOrCreatedAt),
       ".")
 
-  private def renderStats(p: ProjectCatalogue.Item) =
+  private def renderStats(p: ProjectMetaData) =
     StatisticGroup.Props(
       statGroupStyle,
       stat(Icon.Write, p.eventCount, "change") ::
@@ -49,7 +49,7 @@ object ProjectItem {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   object AsLink {
-    type Props = ProjectCatalogue.Item
+    type Props = ProjectMetaData
 
     private def render(p: Props): VdomElement =
       renderLeftContent(p) {
@@ -68,7 +68,7 @@ object ProjectItem {
 
   object WithEditableName {
 
-    final case class Props(item           : ProjectCatalogue.Item,
+    final case class Props(item           : ProjectMetaData,
                            state          : StateSnapshot[State],
                            renameProjectIO: String => Callback) {
       @inline def render = Component(this)

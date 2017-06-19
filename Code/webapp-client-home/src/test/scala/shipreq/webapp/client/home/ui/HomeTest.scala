@@ -6,7 +6,7 @@ import java.time.temporal.ChronoUnit._
 import monocle.macros.Lenses
 import org.scalajs.dom.html
 import utest._
-import shipreq.webapp.base.data.{ProjectCatalogue, Username}
+import shipreq.webapp.base.data.{ProjectMetaData, Username}
 import shipreq.webapp.base.protocol.HomeSpaProtocols.InitClient
 import shipreq.webapp.base.test.MockRemotes
 import shipreq.webapp.client.base.test.TestClientProtocol
@@ -89,7 +89,7 @@ object HomeTestDsl {
   val ajaxFailLast =
     *.action("Simulate AJAX error")(_.ref.failLast())
 
-  def ajaxCreatedProject(p: ProjectCatalogue.Item) =
+  def ajaxCreatedProject(p: ProjectMetaData) =
     *.action("Simulate project-creation AJAX")(_.ref.respondToLast(MockRemotes.createProjectFn)(p))
       .updateState(State.projects.modify(_ :+ p.name) compose clearCP)
 }
@@ -101,14 +101,14 @@ object HomeTest extends TestSuite {
 
   PrepareEnv()
 
-  def run(pc: ProjectCatalogue)(plan: *.Plan): Report[String] = {
+  def run(ps: List[ProjectMetaData])(plan: *.Plan): Report[String] = {
     val cp = new TestClientProtocol(false)
-    val init = InitClient(Username("thatguy"), pc, MockRemotes.createProjectFn)
+    val init = InitClient(Username("thatguy"), ps, MockRemotes.createProjectFn)
     val props = Home.Props(init, cp)
     ReactTestUtils.withRenderedIntoDocument(props.render)(c =>
       plan
         .addInvariants(invariants)
-        .withInitialState(State("", CPState.Blank, pc.items.map(_.name)(collection.breakOut), 0))
+        .withInitialState(State("", CPState.Blank, ps.map(_.name)(collection.breakOut), 0))
         .test(Observer(new HomeObs(_, c.htmlDomZipper)))
         .run(cp)
     )
@@ -117,10 +117,10 @@ object HomeTest extends TestSuite {
   object Data {
     import shipreq.webapp.base.test.UnsafeTypes._
     val now = Instant.now()
-    val piE = ProjectCatalogue.Item("abeF", "Empty", 0, 0, now.minus(18, DAYS), None)
-    val piO = ProjectCatalogue.Item("qwe3F", "Old", 1579, 340, now.minus(92, DAYS), Some(now.minus(7, MINUTES)))
-    val piN = ProjectCatalogue.Item("wenkj", "New", 0, 0, now, None)
-    val pc  = ProjectCatalogue(List(piE, piO))
+    val piE = ProjectMetaData("abeF", "Empty", 0, 0, now.minus(18, DAYS), None)
+    val piO = ProjectMetaData("qwe3F", "Old", 1579, 340, now.minus(92, DAYS), Some(now.minus(7, MINUTES)))
+    val piN = ProjectMetaData("wenkj", "New", 0, 0, now, None)
+    val pc  = List(piE, piO)
   }
 
   override def tests = TestSuite {

@@ -9,7 +9,7 @@ import scalaz.{-\/, Monad, \/, \/-, ~>}
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.taskman.api.UserId
-import shipreq.webapp.base.data.{Project, ProjectCatalogue, Username}
+import shipreq.webapp.base.data.{Project, ProjectMetaData, Username}
 import shipreq.webapp.base.event.{ApplyEvent, VerifiedEvent, VerifiedEvents}
 import shipreq.webapp.base.protocol.ProjectSpaProtocols
 import ProjectServer._
@@ -41,17 +41,17 @@ object ProjectServer {
     * @param userId The only user with access to the project.
     *               This will change in Phase 3 when collaborative features are added.
     */
-  final case class State(userId : UserId,
-                         summary: ProjectCatalogue.Item,
-                         project: Project,
-                         nextSeq: EventSeq) {
+  final case class State(userId         : UserId,
+                         projectMetaData: ProjectMetaData,
+                         project        : Project,
+                         nextSeq        : EventSeq) {
     def update(project: Project, latestSeq: EventSeq, updatedAt: Instant): State = {
-      val newSummary = ProjectCatalogue.Item(
-        id            = summary.id,
-        name          = summary.name,
-        eventCount    = summary.eventCount + 1,
+      val newSummary = ProjectMetaData(
+        id            = projectMetaData.id,
+        name          = projectMetaData.name,
+        createdAt     = projectMetaData.createdAt,
+        eventCount    = projectMetaData.eventCount + 1,
         reqCount      = project.reqs.size,
-        createdAt     = summary.createdAt,
         lastUpdatedAt = Some(updatedAt))
       State(userId, newSummary, project, latestSeq.succ)
     }
@@ -109,10 +109,10 @@ object ProjectServer {
       def register(pid: ProjectId, userId: UserId, recv: Recv[F]): F[RegistrationError \/ RegId] = {
         def initState: D[RegistrationError \/ State] =
           db.inDbTransaction(
-            db.loadProjectSummary(pid).flatMap {
-              case Some((summary, uid)) =>
+            db.loadProjectMetaDataAndUser(pid).flatMap {
+              case Some((md, uid)) =>
                 if (userId ==* uid)
-                  db.loadProject(pid).map(buildProject(_).map(b => State(uid, summary, b._1, b._2)))
+                  db.loadProject(pid).map(buildProject(_).map(b => State(uid, md, b._1, b._2)))
                 else
                   D point -\/(AccessDenied)
               case None =>
@@ -163,7 +163,7 @@ object ProjectServer {
           projectNameSet        ← f(ProjectNameSet       )(i => updProj(_ ⇒ MakeEvent.projectNameSetFn(i)))
         } yield InitClient(
           username,
-          s.summary,
+          s.projectMetaData,
           projectInit,
           customIssueTypeCrud,
           customReqTypeCrud,

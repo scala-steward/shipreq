@@ -2,11 +2,11 @@ package shipreq.webapp.client.project.app.state
 
 import japgolly.scalajs.react.Callback
 import utest._
-import shipreq.webapp.base.data.{Project, ProjectCatalogueProps}
+import shipreq.webapp.base.data.{Project, ProjectMetaDataProps}
 import shipreq.webapp.base.event.RandomEventStream
 import shipreq.webapp.base.test.WebappTestUtil._
 
-/** Ensures that ClientData keeps its projectSummary() up-to-date correctly.
+/** Ensures that ClientData keeps its projectMetaData() up-to-date correctly.
   */
 object ClientDataTest extends TestSuite {
 
@@ -28,9 +28,9 @@ object ClientDataTest extends TestSuite {
       cd.applyEvents(Vector.empty :+ ve).runNow()
       assertEq("Processed events", processed, before + 1)
 
-      val i = cd.projectSummary()
+      val i = cd.projectMetaData()
 
-      ProjectCatalogueProps(i, cd.project(), idx + 1).assert()
+      ProjectMetaDataProps(i, cd.project(), idx + 1).assert()
     }
   }
 }

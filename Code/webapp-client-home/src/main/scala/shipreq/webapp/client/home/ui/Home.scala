@@ -6,7 +6,7 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.data.{ProjectCatalogue, Username, DataValidators}
+import shipreq.webapp.base.data.{ProjectMetaData, Username, DataValidators}
 import shipreq.webapp.base.protocol.HomeSpaProtocols
 import shipreq.webapp.client.base.ClientConfig
 import shipreq.webapp.client.base.feature.{AsyncFeature, EditorStatus}
@@ -22,7 +22,7 @@ object Home {
   @Lenses
   final case class State(createProjectText: String,
                          createProjectAAS : AsyncFeature.Read.D0[String],
-                         projects         : ProjectCatalogue)
+                         projects         : List[ProjectMetaData])
 
   final class Backend($: BackendScope[Props, State]) {
 
@@ -32,8 +32,8 @@ object Home {
     val createProjectAF: AsyncFeature.Write.D0[String] =
       AsyncFeature.Write.D0.init($ zoomStateL State.createProjectAAS)
 
-    def addProject(i: ProjectCatalogue.Item): Callback =
-      $.modState(State.projects.modify(p => ProjectCatalogue(p.items :+ i)))
+    def addProject(i: ProjectMetaData): Callback =
+      $.modState(State.projects.modify(_ :+ i))
 
     val createProjectIO: String => Callback =
       name =>
@@ -65,7 +65,7 @@ object Home {
 object HomeContent {
 
   final case class Props(username         : Username,
-                         projects         : ProjectCatalogue,
+                         projects         : List[ProjectMetaData],
                          createProjectText: StateSnapshot[String],
                          createProjectAS  : AsyncFeature.Read.D0[String],
                          createProjectIO  : String => Callback) {
@@ -99,7 +99,7 @@ object HomeContent {
           .render
       }
 
-      val projectList = p.projects.items.sortBy(_.name).map(ProjectItem.AsLink.Component(_))
+      val projectList = p.projects.sortBy(_.name).map(ProjectItem.AsLink.Component(_))
 
       <.div(
         menu,

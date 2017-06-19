@@ -58,7 +58,7 @@ final class ProjectSpa(projectId: ProjectId) extends SingleOpStatelessSnippet {
       logic.initialClient(regId, user.username).unsafePerformIO()
 
     "*" #> (
-      ProjectSpaLoader.xml(user.username, init.project) :+
+      ProjectSpaLoader.xml(user.username, init.projectMetaData) :+
         EntryPoint.invokeOnLoadHtml(init))
     // ClientFn.ProjectSpa.htmlToLoadJsAndRun(Assets.ProjectSpa)(initData(user.username, p)))
   }

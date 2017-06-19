@@ -1213,7 +1213,7 @@ object RandomData {
     Gen.chooseLong(0, 365 * 5 * secPerDay).map(now.minusSeconds)
   }
 
-  lazy val projectCatalogueItem: Gen[ProjectCatalogue.Item] =
+  lazy val projectMetaData: Gen[ProjectMetaData] =
     for {
       id            <- projectXId
       name          <- projectName
@@ -1222,7 +1222,7 @@ object RandomData {
       createdAt     <- instantPast
       lastUpdatedAt <- instantPast.option.map(_.filter(_ isAfter createdAt))
     } yield
-      ProjectCatalogue.Item(id, name, eventCount, reqCount, createdAt, lastUpdatedAt)
+      ProjectMetaData(id, name, eventCount, reqCount, createdAt, lastUpdatedAt)
 
   // ===================================================================================================================
   // Protocol
@@ -1285,7 +1285,7 @@ object RandomData {
     val projectSpa: Gen[ProjectSpaProtocols.InitClient] =
       for {
         u <- username
-        a <- projectCatalogueItem
+        a <- projectMetaData
         b <- remoteFn(ProjectSpaProtocols.ProjectInit)
         c <- remoteFn(ProjectSpaProtocols.CustomIssueTypeCrud)
         d <- remoteFn(ProjectSpaProtocols.CustomReqTypeCrud)

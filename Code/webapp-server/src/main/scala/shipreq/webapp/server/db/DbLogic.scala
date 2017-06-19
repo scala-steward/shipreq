@@ -188,7 +188,7 @@ object DbLogic {
     def findOwner(id: ProjectId): ConnectionIO[Option[UserId]] =
       sqlSelectOwner.toQuery0(id).option
 
-    private def projectCatalogueSql(projectCond: String, extraCols: String = "") = {
+    private def sqlProjectMetaData(projectCond: String, extraCols: String = ""): String = {
       import shipreq.webapp.base.event._
 
       def eventTypeId(e: ActiveEvent): Short =
@@ -243,23 +243,17 @@ object DbLogic {
       """.sql
     }
 
-    private[db] val sqlSelectCatalogue = Query[UserId, ProjectCatalogue.Item](
-      projectCatalogueSql("WHERE usr_id=?"))
+    private[db] val sqlSelectAllProjectMetaDataForUser = Query[UserId, ProjectMetaData](
+      sqlProjectMetaData("WHERE usr_id=?"))
 
-    def getCatalogue(uid: UserId): ConnectionIO[ProjectCatalogue] =
-      sqlSelectCatalogue.toQuery0(uid).list.map(ProjectCatalogue.apply)
+    def findAllProjectMetaDataForUser(uid: UserId): ConnectionIO[List[ProjectMetaData]] =
+      sqlSelectAllProjectMetaDataForUser.toQuery0(uid).list
 
-    private[db] val sqlSelectCatalogueItem = Query[(UserId, ProjectId), ProjectCatalogue.Item](
-      projectCatalogueSql("WHERE usr_id=? AND id=?"))
+    private[db] val sqlSelectProjectMetaDataAndUser = Query[ProjectId, (ProjectMetaData, UserId)](
+      sqlProjectMetaData("WHERE id=?", "usr_id"))
 
-    def findCatalogueItem(uid: UserId, pid: ProjectId): ConnectionIO[Option[ProjectCatalogue.Item]] =
-      sqlSelectCatalogueItem.toQuery0(uid, pid).option
-
-    private[db] val sqlSelectCatalogueItemAndUserId = Query[ProjectId, (ProjectCatalogue.Item, UserId)](
-      projectCatalogueSql("WHERE id=?", "usr_id"))
-
-    def findCatalogueItemAndUserId(pid: ProjectId): ConnectionIO[Option[(ProjectCatalogue.Item, UserId)]] =
-      sqlSelectCatalogueItemAndUserId.toQuery0(pid).option
+    def findProjectMetaDataAndUser(pid: ProjectId): ConnectionIO[Option[(ProjectMetaData, UserId)]] =
+      sqlSelectProjectMetaDataAndUser.toQuery0(pid).option
   }
 
   // ===================================================================================================================

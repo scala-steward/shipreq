@@ -2,7 +2,7 @@ package shipreq.webapp.base.test
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import shipreq.webapp.base.data.{ExternalId, Project, ProjectCatalogue, Username}
+import shipreq.webapp.base.data.{ExternalId, Project, ProjectMetaData, Username}
 import shipreq.webapp.base.protocol._
 
 object MockRemotes {
@@ -16,7 +16,7 @@ object MockRemotes {
 
   def projectSpa(p: Project, username: Username): ProjectSpaProtocols.InitClient = {
     val now = Instant.now()
-    val pi = ProjectCatalogue.Item(
+    val pi = ProjectMetaData(
       ExternalId("test"),
       p.name,
       1000,
@@ -26,10 +26,10 @@ object MockRemotes {
     projectSpa(pi, username)
   }
 
-  def projectSpa(p: ProjectCatalogue.Item): ProjectSpaProtocols.InitClient =
+  def projectSpa(p: ProjectMetaData): ProjectSpaProtocols.InitClient =
     projectSpa(p, mockUsername)
 
-  def projectSpa(p: ProjectCatalogue.Item, username: Username): ProjectSpaProtocols.InitClient = {
+  def projectSpa(p: ProjectMetaData, username: Username): ProjectSpaProtocols.InitClient = {
     import ProjectSpaProtocols._
     ProjectSpaProtocols.InitClient(
       username,

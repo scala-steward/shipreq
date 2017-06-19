@@ -179,7 +179,7 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitClient, cp: ClientProto
           val index = ProjectIndex.Props(lookup, routerCtl)
 
           val pname = ProjectItem.WithEditableName.Props(
-            cd.projectSummary(),
+            cd.projectMetaData(),
             StateSnapshot.zoomL(State.projectName)(s).setStateVia($),
             setProjectNameIO)
 
@@ -231,7 +231,7 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitClient, cp: ClientProto
           ImplicationGraphPage.Props(g, setFilterDead).render
       }
 
-      Layout.Props(initData.username, cd.projectSummary(), routerCtl, p.page, content).render
+      Layout.Props(initData.username, cd.projectMetaData(), routerCtl, p.page, content).render
     }
 
     def onProjectChange(c: Changes): Callback = // TODO I don't like this

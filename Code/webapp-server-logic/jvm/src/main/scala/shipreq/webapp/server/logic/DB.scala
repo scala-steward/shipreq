@@ -2,7 +2,7 @@ package shipreq.webapp.server.logic
 
 import scala.collection.immutable.SortedMap
 import shipreq.taskman.api.UserId
-import shipreq.webapp.base.data.ProjectCatalogue
+import shipreq.webapp.base.data.ProjectMetaData
 import shipreq.webapp.base.event.{ActiveEvent, VerifiedEvent}
 import shipreq.webapp.base.hash.HashRec
 
@@ -11,7 +11,7 @@ object DB {
 
   trait Algebra[F[_]] {
 
-    def loadProjectSummary(id: ProjectId): F[Option[(ProjectCatalogue.Item, UserId)]]
+    def loadProjectMetaDataAndUser(id: ProjectId): F[Option[(ProjectMetaData, UserId)]]
 
     def loadProject(id: ProjectId): F[ProjectLoad]
 

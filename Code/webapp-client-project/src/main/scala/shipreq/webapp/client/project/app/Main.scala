@@ -25,7 +25,7 @@ object Main extends ClientSideProcImpl(ProjectSpaProtocols.EntryPoint) {
     val cp = ClientProtocol.Default
     BaseStyles.addToDocument()
     Style.addToDocument()
-    ClientData.init(i.project, cp, i.projectInit)(onSuccess, onFailure).runNow()
+    ClientData.init(i.projectMetaData, cp, i.projectInit)(onSuccess, onFailure).runNow()
 
     def domTarget() =
       dom.document.getElementById("tgt")
@@ -41,7 +41,7 @@ object Main extends ClientSideProcImpl(ProjectSpaProtocols.EntryPoint) {
 
     def onFailure(error: String): Callback =
       Callback {
-        val lp = LoadingPage.Props(i.username, i.project)
+        val lp = LoadingPage.Props(i.username, i.projectMetaData)
         val lf = LoadFailedPage.Props(lp, error)
         LoadFailedPage.Component(lf).renderIntoDOM(domTarget())
       }

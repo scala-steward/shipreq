@@ -2,7 +2,7 @@ package shipreq.webapp.server.snippet
 
 import java.time.Instant
 import utest._
-import shipreq.webapp.base.data.{Project, ProjectCatalogue, StaticField}
+import shipreq.webapp.base.data.{Project, ProjectMetaData, StaticField}
 import shipreq.webapp.base.event.FieldStaticRemove
 import shipreq.webapp.server.db.DbLogic
 import shipreq.webapp.server.logic.ProjectId
@@ -20,7 +20,7 @@ object HomeSpaTest extends TestSuite {
           val uid = uf.user1.id
 
           // Confirm starting empty
-          assertEq(xa ! DbLogic.project.getCatalogue(uid), ProjectCatalogue(Nil))
+          assertEq(xa ! DbLogic.project.findAllProjectMetaDataForUser(uid), Nil)
 
           // Create
           val pi = xa ! HomeSpa.createProject(uid, name, Instant.now())
@@ -35,9 +35,9 @@ object HomeSpaTest extends TestSuite {
           assertEq("Immediate reqCount", pi.reqCount, 0)
 
           // Reloaded result
-          val pc = xa ! DbLogic.project.getCatalogue(uid)
-          assertEq(pc.items.length, 1)
-          val a = pc.items.head
+          val pc = xa ! DbLogic.project.findAllProjectMetaDataForUser(uid)
+          assertEq(pc.length, 1)
+          val a = pc.head
           assertFields(pi, a)
             .assertEq(_.id)
             .assertEq("Reloaded name", _.name)
@@ -51,7 +51,7 @@ object HomeSpaTest extends TestSuite {
           val e = FieldStaticRemove(StaticField.StepGraph)
           val ve = verifyEvent(p, e)
           xa ! DbLogic.event.create(pid, nextSeq, e, ve.hashRecs)
-          val a2 = (xa ! DbLogic.project.getCatalogue(uid)).items.head
+          val a2 = (xa ! DbLogic.project.findAllProjectMetaDataForUser(uid)).head
           assertEq("Next eventCount", a2.eventCount, a.eventCount + 1)
           loadProject()
         }

@@ -21,8 +21,8 @@ object WebappTestUtil extends WebappTestEquality with WebappTestUtil
 
 trait WebappTestUtil extends BaseTestUtil {
 
-  def summariseProject(p: Project, eventCount: Int = 123): ProjectCatalogue.Item =
-    ProjectCatalogue.Item(
+  def summariseProject(p: Project, eventCount: Int = 123): ProjectMetaData =
+    ProjectMetaData(
       ExternalId("t3sT"),
       p.name,
       eventCount,

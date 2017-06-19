@@ -28,14 +28,14 @@ object SqlHelpers {
   implicit val doobieCompositeUserRegistrationInfo: Composite[UserRegistrationInfo] =
     Composite.generic
 
-  implicit val doobieCompositeUserDescriptor =
+  implicit val doobieCompositeUserDescriptor: Composite[UserDescriptor] =
     Composite[(UserId, Username, EmailAddr, Option[String])]
       .readOnly(r => UserDescriptor(r._1, r._2, r._3, userRoles(r._4)))
 
-  implicit val doobieCompositeProjectCatalogueItem =
+  implicit val doobieCompositeProjectMetaData: Composite[ProjectMetaData] =
     Composite[(ProjectId, String, Int, Int, Instant, Option[Instant])].readOnly {
       case(id, name, evCount, reqCount, createdAt, lastUpdatedAt) =>
-        ProjectCatalogue.Item(ProjectId.Extern(id), name unNull "", evCount, reqCount, createdAt, lastUpdatedAt)
+        ProjectMetaData(ProjectId.Extern(id), name unNull "", evCount, reqCount, createdAt, lastUpdatedAt)
     }
 
   def userRoles(r: Option[String]): Set[String] =
