@@ -11,6 +11,9 @@ final case class FreeOption[+A >: Null](getOrNull: A) extends AnyVal {
   def getOrElse[B >: A](fallback: => B): B =
     if (isEmpty) fallback else getOrNull
 
+  def orElse[B >: A](fallback: => FreeOption[B]): FreeOption[B] =
+    if (isEmpty) fallback else this
+
   def map[B >: Null](f: A => B): FreeOption[B] =
     FreeOption(if (isEmpty) null else f(getOrNull))
 
@@ -31,6 +34,9 @@ final case class FreeOption[+A >: Null](getOrNull: A) extends AnyVal {
 
   def foreach(f: A => Unit): Unit =
     if (nonEmpty) f(getOrNull)
+
+  def toOption: Option[A] =
+    Option(getOrNull)
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -38,6 +44,9 @@ final case class FreeOption[+A >: Null](getOrNull: A) extends AnyVal {
 object FreeOption {
   @inline def empty[A >: Null]: FreeOption[A] =
     apply(null)
+
+  def fromOption[A >: Null](o: Option[A]): FreeOption[A] =
+    apply(o.orNull)
 
   def when[A >: Null](cond: Boolean, a: => A): FreeOption[A] =
     apply(if (cond) a else null)

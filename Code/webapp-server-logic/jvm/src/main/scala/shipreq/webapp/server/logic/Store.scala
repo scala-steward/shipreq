@@ -17,7 +17,49 @@ object Store {
     def storeGet(key: K): F[Option[V]]
     def storeEntryMod(key: K)(f: FreeOption[V] => FreeOption[V]): F[Option[V]]
     def storeEntrySet(key: K)(f: FreeOption[V] => V): F[V]
-    def storeValueMod(key: K)(f: V => V): F[Option[V]]
+
+    final def storeValueMod(key: K)(f: V => V): F[Option[V]] =
+      storeEntryMod(key)(_.map(f))
+
+    final def storeEntryMod2[OptionV <: Option[V]](key: K)(f: FreeOption[V] => OptionV): F[OptionV] = {
+      val x: F[Option[V]] = storeEntryMod(key)(FreeOption fromOption f(_))
+      x.asInstanceOf[F[OptionV]]
+    }
+
+    final def storeUpdateQuickOrLong[E, A, OK <: Option[V]](key        : K,
+                                                            tryQuick   : FreeOption[V] => FreeOption[V],
+                                                            quickWorked: Option[V] => F[E \/ A] \/ OK)
+                                                           (applyLong  : (Option[V], A) => OK)
+                                                           (implicit F : Monad[F]): F[E \/ OK] =
+      storeEntryMod(key)(tryQuick)
+        .flatMap(quickWorked(_) match {
+          case ok: \/-[OK] => F pure ok
+          case -\/(fea) => fea flatMap {
+            case \/-(a) =>
+              storeEntryMod2(key)(fo => {
+                val o = fo.toOption
+                quickWorked(o).getOrElse(applyLong(o, a))
+              }).map(\/-(_))
+            case e@ -\/(_) =>
+              F pure e
+          }
+        })
+
+    final def storeUpdateQuickOrSetLong[E, A](key        : K,
+                                              tryQuick   : FreeOption[V] => FreeOption[V],
+                                              quickWorked: Option[V] => F[E \/ A] \/ V)
+                                             (applyLong  : (Option[V], A) => V)
+                                             (implicit F : Monad[F]): F[E \/ V] =
+      storeUpdateQuickOrLong[E, A, Some[V]](
+        key,
+        tryQuick,
+        quickWorked(_).map(Some(_)))(
+        (o, a) => Some(applyLong(o, a))).map(_.map(_.value))
+
+    final def storeModOrTryInit[E](key: K, mod: V => V, tryInit: => F[E \/ V])(implicit F: Monad[F]): F[E \/ V] = {
+      lazy val tryInit2 = tryInit
+      storeUpdateQuickOrSetLong[E, V](key, _.map(mod), _ \/> tryInit2)(_ getOrElse _)
+    }
   }
 
   object Algebra {
@@ -32,9 +74,6 @@ object Store {
 
         override def storeEntrySet(key: K)(f: FreeOption[V] => V): F[V] =
           F point map.compute(key, (_, v) => f(FreeOption(v)))
-
-        override def storeValueMod(key: K)(f: V => V): F[Option[V]] =
-          F point Option(map.computeIfPresent(key, (_, v) => f(v)))
       }
   }
 
@@ -97,21 +136,9 @@ object Store {
       def valueMod(key: K)(f: V => V): F[Option[V]] =
         alg.storeValueMod(key)(_.modValue(f)).map(_.map(_.value))
 
-      def registerAttempt[E](key: K, registrantData: A, init: => F[E \/ V], verify: V => Option[E]): F[E \/ RegId[K]] = {
-        def success(node: Node[V, A]): E \/ RegId[K] =
-          verify(node.value) <\/ RegId(key, node.maxRegId)
-
-        def tryGet: F[Option[Node[V, A]]] =
-          alg.storeValueMod(key)(_.register(registrantData))
-
-        def getOrSet: F[E \/ RegId[K]] =
-          init.flatMap {
-            case    \/-(v) => alg.storeEntrySet(key)(_.fold(Node.init(v, registrantData), _.register(registrantData))).map(success)
-            case e@ -\/(_) => F pure e
-          }
-
-        tryGet.flatMap(_.fold(getOrSet)(F pure success(_)))
-      }
+      def registerAttempt[E](key: K, registrantData: A, init: => F[E \/ V], verify: V => Option[E]): F[E \/ RegId[K]] =
+        alg.storeModOrTryInit(key, _.register(registrantData), init.map(_.map(v => Node.init(v, registrantData))))
+          .map(_.flatMap(n => verify(n.value) <\/ RegId(key, n.maxRegId)))
 
       def unregister(r: RegId[K]): F[Unit] =
         alg.storeEntryMod(r.key)(_.map(_.unregister(r.id)).filter(_.registrants.nonEmpty)).void
