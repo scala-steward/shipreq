@@ -12,14 +12,14 @@ import shipreq.base.util.ScalaExt._
 import shipreq.taskman.api.UserId
 import shipreq.webapp.base.data.{Project, ProjectMetaData, Username}
 import shipreq.webapp.base.event.{ApplyEvent, EventOrd, VerifiedEvent}
-import shipreq.webapp.base.protocol.ProjectSpaProtocols
+import shipreq.webapp.base.protocol.{ErrorMsg, ProjectSpaProtocols}
 import ProjectServer._
 import Server.Retries
 
 trait ProjectServer[F[_]] {
   def register(pid: ProjectId, userId: UserId, onChange: OnChange[F]): F[RegistrationError \/ RegId]
   def unregister(r: RegId): F[Unit]
-  def initialClient(r: RegId, username: Username): F[ProjectSpaProtocols.InitData]
+  def initialClient(r: RegId, username: Username): F[NotRegistered \/ ProjectSpaProtocols.InitData]
 }
 
 object ProjectServer {
@@ -38,8 +38,6 @@ object ProjectServer {
   implicit def univEqSortedSet[A: UnivEq]: UnivEq[SortedSet[A]] = UnivEq.force // TODO Move to UnivEq
   implicit def univEqRegistrationError: UnivEq[RegistrationError] = UnivEq.derive
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
   /**
     * @param userId The only user with access to the project.
     *               This will change in Phase 3 when collaborative features are added.
@@ -55,9 +53,19 @@ object ProjectServer {
     }
   }
 
-  sealed trait AddEventError
-  final case class SaveError(opsInfo: String, error: Throwable) extends AddEventError
-  final case class EventRejected(reason: String) extends AddEventError
+  sealed trait AddEventError {
+    def errorMsg: ErrorMsg
+  }
+  final case class SaveError(opsInfo: String, error: Throwable) extends AddEventError  {
+    override val errorMsg = ErrorMsg("Something went wrong on our end trying to update the project.")
+  }
+  final case class EventRejected(reason: String) extends AddEventError  {
+    override def errorMsg = ErrorMsg(reason)
+  }
+  case object NotRegistered extends AddEventError {
+    override val errorMsg = ErrorMsg("Session expired.")
+  }
+  type NotRegistered = NotRegistered.type
 
   val SaveRetries: Retries =
     Server.retriesFrom(15.millis)
@@ -90,6 +98,8 @@ object ProjectServer {
     }
   }
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   def apply[D[_], F[_]](broadcastTo: BroadcastTo)
                        (implicit db: DB.Algebra[D],
                         store: StoreAlgebra[F],
@@ -105,7 +115,7 @@ object ProjectServer {
 
       val register = new Store.Register.Dsl[F, ProjectId, State, OnChange[F]]
 
-      def register(pid: ProjectId, userId: UserId, onChange: OnChange[F]): F[RegistrationError \/ RegId] = {
+      override def register(pid: ProjectId, userId: UserId, onChange: OnChange[F]): F[RegistrationError \/ RegId] = {
         def initState: D[RegistrationError \/ State] =
           db.inDbTransaction(
             db.loadProjectMetaDataAndUser(pid).flatMap {
@@ -122,19 +132,21 @@ object ProjectServer {
         register.registerAttempt(pid, onChange, runDB(initState), v => Option.when(v.userId !=* userId)(AccessDenied))
       }
 
-      def unregister(r: RegId): F[Unit] =
+      override def unregister(r: RegId): F[Unit] =
         register.unregister(r)
 
-      // TODO Handle null ↓ Should never happen but in the world of concurrency stranger things have happened
-      private def readState(r: RegId): F[State] =
-        register.get(r.key).map(_.getOrNull)
+      private def readState(r: RegId): F[NotRegistered \/ State] =
+        register.get(r.key).map(_.fold(-\/(NotRegistered), \/-(_)))
 
-      def initialClient(r: RegId, username: Username): F[ProjectSpaProtocols.InitData] =
-        readState(r).flatMap(initDataForProjectSpa(r, username, _))
+      override def initialClient(r: RegId, username: Username): F[NotRegistered \/ ProjectSpaProtocols.InitData] =
+        readState(r).flatMap {
+          case \/-(s) => initDataForProjectSpa(r, username, s).map(\/-(_))
+          case e@ -\/(_) => F pure e
+        }
 
-      def initAsyncData(r: RegId): F[ProjectSpaProtocols.InitAsyncData] =
-        readState(r).map(s => ProjectSpaProtocols.InitAsyncData(
-          s.project, s.nextOrd - 1))
+      def initAsyncData(r: RegId): F[ProjectSpaProtocols.InitAsync.Response] =
+        readState(r).map(_.bimap(_.errorMsg,
+          s => ProjectSpaProtocols.InitAsyncData(s.project, s.nextOrd - 1)))
 
       private def initDataForProjectSpa(r: RegId, username: Username, s: State): F[ProjectSpaProtocols.InitData] = {
         import shipreq.webapp.base.protocol._
@@ -144,17 +156,12 @@ object ProjectServer {
           addEvent(r, mkEvent, SaveRetries).map {
             case PotentialChange.Success(es) => \/-(es)
             case PotentialChange.Unchanged   => \/-(VerifiedEvent.EmptySeq)
-            case PotentialChange.Failure(e)  =>
-              val msg: String = e match {
-                case EventRejected(reason) => reason
-                case _: SaveError          => "Something went wrong on our end trying to update the project."
-              }
-              -\/(ErrorMsg(msg))
+            case PotentialChange.Failure(e)  => -\/(e.errorMsg)
           }
 
         import svr.{createServerSideProc => f}
         for {
-          projectInit           ← f(InitAsync            )(_ => initAsyncData(r).map(\/-(_)))
+          projectInit           ← f(InitAsync            )(_ => initAsyncData(r))
           customReqTypeCrud     ← f(CustomReqTypeCrud    )(i => updProj(p ⇒ MakeEvent.customReqTypeCrud(i, p)))
           reqTypeImplicationMod ← f(ReqTypeImplicationMod)(i => updProj(_ ⇒ MakeEvent.reqTypeImplicationMod(i)))
           customIssueTypeCrud   ← f(CustomIssueTypeCrud  )(i => updProj(p ⇒ MakeEvent.customIssueTypeCrud(i, p)))
@@ -181,38 +188,42 @@ object ProjectServer {
 
       private def addEvent(r: RegId, mkEvent: Project => MakeEvent.Result, retries: Retries): F[PotentialChange[AddEventError, VerifiedEvent.NonEmptySeq]] =
         // Non-atomicity guarded by DB constraint on eventOrd
-        readState(r).flatMap(s1 =>
-          ApplyNewEvent(mkEvent(s1.project), s1.project) match {
-            case PotentialChange.Success(updated) =>
-              val ord = s1.nextOrd
-              runDB(db.saveProjectEvent(r.key, ord, updated.ae, updated.ve.hashRecs)).flatMap {
+        readState(r).flatMap {
+          case \/-(s1) =>
+            ApplyNewEvent(mkEvent(s1.project), s1.project) match {
+              case PotentialChange.Success(updated) =>
+                val ord = s1.nextOrd
+                runDB(db.saveProjectEvent(r.key, ord, updated.ae, updated.ve.hashRecs)).flatMap {
 
-                case None =>
-                  val ves = VerifiedEvent.NonEmptySeq.one(ord, updated.ve)
-                  for {
-                    now <- svr.now
-                    s2 <- store.storeValueMod(r.key)(_.modValue(_.update(updated.project, updated.ve, ord, now)))
-                    _ <- s2.fold(fUnit, broadcastEvents(r, ves, _))
-                  } yield PotentialChange.Success(ves)
+                  case None =>
+                    val ves = VerifiedEvent.NonEmptySeq.one(ord, updated.ve)
+                    for {
+                      now <- svr.now
+                      s2  <- store.storeValueMod(r.key)(_.modValue(_.update(updated.project, updated.ve, ord, now)))
+                      _   <- s2.fold(fUnit, broadcastEvents(r, ves, _))
+                    } yield PotentialChange.Success(ves)
 
-                case Some(error) =>
-                  retries match {
-                    case Nil =>
-                      val opsInfo = s"Error saving new event ${updated.ae} to project ${r.key.value} with ordinal #${ord.value}."
-                      F pure PotentialChange.Failure(SaveError(opsInfo, error))
-                    case delay :: nextRetries =>
-                      val retry = addEvent(r, mkEvent, nextRetries)
-                      svr.delay(retry, delay)
-                  }
-              }
+                  case Some(error) =>
+                    retries match {
+                      case Nil =>
+                        val opsInfo = s"Error saving new event ${updated.ae} to project ${r.key.value} with ordinal #${ord.value}."
+                        F pure PotentialChange.Failure(SaveError(opsInfo, error))
+                      case delay :: nextRetries =>
+                        val retry = addEvent(r, mkEvent, nextRetries)
+                        svr.delay(retry, delay)
+                    }
+                }
 
-            case PotentialChange.Unchanged =>
-              F pure PotentialChange.Unchanged
+              case PotentialChange.Unchanged =>
+                F pure PotentialChange.Unchanged
 
-            case PotentialChange.Failure(reason) =>
-              F pure PotentialChange.Failure(EventRejected(reason))
-          }
-        )
+              case PotentialChange.Failure(reason) =>
+                F pure PotentialChange.Failure(EventRejected(reason))
+            }
+
+          case -\/(e) =>
+            F pure PotentialChange.Failure(e)
+        }
 
       val broadcastEvents: (RegId, VerifiedEvent.NonEmptySeq, Node) => F[Unit] = {
         def go(allow: Long => Boolean, verifiedEvents: VerifiedEvent.NonEmptySeq, state: Node): F[Unit] = {

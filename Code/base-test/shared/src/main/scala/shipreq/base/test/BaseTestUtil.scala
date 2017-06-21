@@ -16,6 +16,8 @@ object BaseTestUtil extends BaseTestEquality with BaseTestUtil {
   }
 
   final class BaseTestUtilOpsDisj[A, B](private val d: A \/ B) extends AnyVal {
+    def needLeft: A =
+      d.fold(Identity.apply, sys error _.toString)
     def needRight: B =
       d.fold(sys error _.toString, Identity.apply)
   }

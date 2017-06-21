@@ -55,7 +55,10 @@ final class ProjectSpa(projectId: ProjectId) extends SingleOpStatelessSnippet {
       comet.getRegId getOrElse newRegId()
 
     val init: ProjectSpaProtocols.InitData =
-      logic.initialClient(regId, user.username).unsafePerformIO()
+      logic.initialClient(regId, user.username).unsafePerformIO() match {
+        case \/-(ok)                          => ok
+        case -\/(ProjectServer.NotRegistered) => shouldNeverHappen_!
+      }
 
     "*" #> (
       ProjectSpaLoader.xml(user.username, init.projectMetaData) :+

@@ -86,11 +86,21 @@ final class MockDb extends DB.Algebra[Id] {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 final class MockSvr extends Server.Algebra[Id] {
-//    private var fns: Map[ServerSideProc.Protocol, String] =
-//      UnivEq.emptyMap
+  private var prevFn = 0
+  private var fns: Map[String, Any] =
+    UnivEq.emptyMap
 
-  override def createServerSideProc(p: ServerSideProc.Protocol)(localFn: p.Input => p.Response): p.Instance =
-    ServerSideProc(p.toString, p)
+  override def createServerSideProc(p: ServerSideProc.Protocol)(localFn: p.Input => p.Response): p.Instance = {
+    prevFn += 1
+    val key = prevFn.toString
+    fns = fns.updated(key, localFn)
+    ServerSideProc(key, p)
+  }
+
+  def run(p: ServerSideProc)(i: p.protocol.Input): p.protocol.Response = {
+    val f = fns(p.key).asInstanceOf[p.protocol.Input => p.protocol.Response]
+    f(i)
+  }
 
   override def now: Instant =
     Instant.now()

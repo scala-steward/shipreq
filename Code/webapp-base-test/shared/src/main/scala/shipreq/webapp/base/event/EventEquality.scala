@@ -56,4 +56,10 @@ trait EventEquality {
   implicit val equalUseCaseTitleSet       : Equal[UseCaseTitleSet       ] = ScalazMacros.deriveEqual
 
   implicit val equalActiveEvent: Equal[ActiveEvent] = ScalazMacros.deriveEqual
+  implicit val equalEvent      : Equal[Event      ] = ScalazMacros.deriveEqual
+
+  implicit val equalVerifiedEvent    : Equal[VerifiedEvent              ] = ScalazMacros.deriveEqual
+  implicit val equalVerifiedEventSeq1: Equal[VerifiedEvent.NonEmptySeq  ] = ScalazMacros.deriveEqual
+  implicit val equalVerifiedEventSeq0: Equal[VerifiedEvent.EmptySeq.type] = ScalazMacros.deriveEqual
+  implicit val equalVerifiedEventSeq : Equal[VerifiedEvent.Seq          ] = ScalazMacros.deriveEqual
 }
