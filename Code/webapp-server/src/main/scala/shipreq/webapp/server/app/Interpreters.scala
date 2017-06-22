@@ -2,6 +2,7 @@ package shipreq.webapp.server.app
 
 import doobie.imports.ConnectionIO
 import java.time.{Duration, Instant}
+import net.liftweb.actor.LAScheduler
 import scalaz.effect.IO
 import scalaz.syntax.all._
 import scalaz.~>
@@ -50,6 +51,9 @@ object Interpreters {
 
       override def delay[A](f: IO[A], d: Duration): IO[A] =
         IO(Thread.sleep(d.toMillis)) >> f // TODO Thread.sleep lolz
+
+      override def fork[A](f: IO[A]): IO[Unit] =
+        IO(LAScheduler.execute(() => f.unsafePerformIO()))
     }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

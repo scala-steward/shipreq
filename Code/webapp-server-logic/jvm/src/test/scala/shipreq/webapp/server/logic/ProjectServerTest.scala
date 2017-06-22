@@ -35,20 +35,22 @@ object ProjectServerTest extends TestSuite {
     'registrationAndLoading {
       val t = new Tester; import t._
       db.addProject(pid, uid)()
-      def test(storeSize: Int, dbLoadM: Int, dbLoadE: Int): Unit = {
-        assertEq("store size", storeMap.size, storeSize)
-        db.assertLoadCounts(dbLoadM, dbLoadE)
-      }
+      def test(id: String, storeSize: Int, dbLoadMD: Int, dbLoadEv: Int): Unit =
+        assertEq(id,
+          (storeMap.size, db.loadProjectMetaDataAndUserLog.length, db.loadProjectLog.length),
+          (storeSize, dbLoadMD, dbLoadEv))
 
-      test(0, 0, 0); val regId1 = logic.register(pid, uid, nop).value.needRight
-      test(1, 1, 1); val regId2 = logic.register(pid, uid, nop).value.needRight
-      test(1, 1, 1);              logic.unregister(regId1).value
-      test(1, 1, 1); val regId3 = logic.register(pid, uid, nop).value.needRight
-      test(1, 1, 1);              logic.unregister(regId3).value
-      test(1, 1, 1);              logic.unregister(regId3).value // ignored
-      test(1, 1, 1);              logic.unregister(regId2).value
-      test(0, 1, 1); val regId4 = logic.register(pid, uid, nop).value.needRight
-      test(1, 2, 2)
+      test("[A]", 0, 0, 0); val regId1 = logic.register(pid, uid, nop).value.needRight
+      test("[B]", 1, 1, 0);              svr.runForked()
+      test("[C]", 1, 2, 1); val regId2 = logic.register(pid, uid, nop).value.needRight; svr.runForked()
+      test("[D]", 1, 2, 1);              logic.unregister(regId1).value
+      test("[E]", 1, 2, 1); val regId3 = logic.register(pid, uid, nop).value.needRight; svr.runForked()
+      test("[F]", 1, 2, 1);              logic.unregister(regId3).value
+      test("[G]", 1, 2, 1);              logic.unregister(regId3).value // ignored
+      test("[H]", 1, 2, 1);              logic.unregister(regId2).value
+      test("[I]", 0, 2, 1); val regId4 = logic.register(pid, uid, nop).value.needRight
+      test("[J]", 1, 3, 1);              svr.runForked()
+      test("[K]", 1, 4, 2)
     }
 
     'registerNoProject {

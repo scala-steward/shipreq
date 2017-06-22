@@ -8,6 +8,7 @@ object Server {
   trait Time[F[_]] {
     def now: F[Instant]
     def delay[A](f: F[A], d: Duration): F[A]
+    def fork[A](f: F[A]): F[Unit]
   }
 
   trait Protocol[F[_]] {

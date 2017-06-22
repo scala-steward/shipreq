@@ -12,9 +12,6 @@ import BinCodecEvents._
   */
 object ProjectSpaProtocols {
 
-  // TODO The purpose of InitAsync was so the page (without the Project) could load fast and responsively,
-  // and then the Project could be loaded, built remotely and sent over next.
-  // Now with the `ProjectServer` logic, the project is loaded immediately. Will have to think about that... [TODO]
   final case class InitAsyncData(project: Project, latestEventOrd: EventOrd)
   implicit val picklerInitAsyncData = pickleCaseClass[InitAsyncData]
 

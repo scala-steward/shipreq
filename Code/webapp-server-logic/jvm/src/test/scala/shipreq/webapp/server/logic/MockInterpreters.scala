@@ -116,4 +116,13 @@ final class MockServer extends Server.Algebra[Name] {
     }
     f.value
   }
+
+  var forked = Vector.empty[Name[Any]]
+  override def fork[A](f: Name[A]) = Name[Unit] {
+    forked :+= f
+  }
+  def runForked(): Unit = {
+    forked.foreach(_.value)
+    forked = Vector.empty
+  }
 }

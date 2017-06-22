@@ -4,6 +4,7 @@ import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import java.time.Instant
+import monocle.macros.Lenses
 import scala.collection.immutable.SortedSet
 import scalaz.syntax.monad._
 import scalaz.syntax.std.option._
@@ -31,30 +32,46 @@ object ProjectServer {
   sealed trait RegistrationError
   case object ProjectNotFound extends RegistrationError
   case object AccessDenied extends RegistrationError
-  final case class BuildError(error: String, events: SortedSet[EventOrd]) extends RegistrationError {
+
+  sealed trait LoadError {
+    def errorMsg: ErrorMsg
+  }
+  case object LoadNotStarted extends LoadError {
+    def errorMsg = Server.ErrorMsgs.ShouldNeverHappen
+  }
+  final case class BuildError(error: String, events: SortedSet[EventOrd]) extends LoadError {
+    def errorMsg = Server.ErrorMsgs.ShouldNeverHappen
     def eventRange: String =
       NonEmptySet.maybe(events.map(_.value), "∅")(ConciseIntSetFormat.spaced)
   }
   implicit def univEqSortedSet[A: UnivEq]: UnivEq[SortedSet[A]] = UnivEq.force // TODO Move to UnivEq
   implicit def univEqRegistrationError: UnivEq[RegistrationError] = UnivEq.derive
 
+  final case class LoadedState(project: Project, projectMetaData: ProjectMetaData, nextOrd: EventOrd) {
+    def update(project: Project, ve: VerifiedEvent, latestOrd: EventOrd, when: Instant): LoadedState = {
+      val md = projectMetaData.applyEvent(ve, when)
+      LoadedState(project, md, latestOrd + 1)
+    }
+  }
+
   /**
     * @param userId The only user with access to the project.
     *               This will change in Phase 3 when collaborative features are added.
     */
+  @Lenses
   final case class State(userId         : UserId,
                          projectMetaData: ProjectMetaData,
-                         project        : Project,
-                         nextOrd        : EventOrd) {
+                         loadedState    : Promise[LoadError, LoadedState]) {
 
-    def update(project: Project, ve: VerifiedEvent, latestOrd: EventOrd, when: Instant): State = {
-      val md = projectMetaData.applyEvent(ve, when)
-      State(userId, md, project, latestOrd + 1)
-    }
+    def set(s: LoadedState): State =
+      copy(projectMetaData = s.projectMetaData, loadedState = Promise.Available(s))
   }
 
   sealed trait AddEventError {
     def errorMsg: ErrorMsg
+  }
+  final case class PostLoadError(error: Promise.GetOrSet.Failure[LoadError]) extends AddEventError {
+    override def errorMsg = errorMsgForPromise(error)(_.errorMsg)
   }
   final case class SaveError(opsInfo: String, error: Throwable) extends AddEventError  {
     override val errorMsg = ErrorMsg("Something went wrong on our end trying to update the project.")
@@ -67,7 +84,18 @@ object ProjectServer {
   }
   type NotRegistered = NotRegistered.type
 
-  // PT7.665S = PT0.015S + PT0.03S + PT0.06S + PT0.12S + PT0.24S + PT0.48S + PT0.96S + PT1.92S + PT3.84S
+  def errorMsgForPromise[E](a: Promise.GetOrSet.Failure[E])(f: E => ErrorMsg): ErrorMsg =
+    a match {
+      case Promise.GetOrSet.CustomFailure(e) => f(e)
+      case Promise.GetOrSet.NoPromise        => NotRegistered.errorMsg
+      case Promise.GetOrSet.Timeout          => Server.ErrorMsgs.Timeout
+    }
+
+  // 21.138s = 0.015s + 0.027s + 0.0486s + 0.0864s + 0.1548s + 0.2772s + 0.4986s + 0.8964s + 1.6128s + 2.9016s + 5.2218s + 9.3978s
+  val LoadRetries: Retries =
+    Retries.exponentiallyFrom(15.millis, factor = 1.8)(_.toMillis <= 10.seconds.toMillis)
+
+  // 7.665s = 0.015s + 0.03s + 0.06s + 0.12s + 0.24s + 0.48s + 0.96s + 1.92s + 3.84s
   val SaveRetries: Retries =
     Retries.exponentiallyFrom(15.millis)(_.toMillis <= 4.seconds.toMillis)
 
@@ -84,7 +112,8 @@ object ProjectServer {
     }
 
   type StoreAlgebra[F[_]] = Store.Register.Algebra[F, ProjectId, State, OnChange[F]]
-  type StoreMap[F[_], M[_, _]] = M[ProjectId, Store.Register.Node[State, OnChange[F]]]
+  type StoreNode[F[_]] = Store.Register.Node[State, OnChange[F]]
+  type StoreMap[F[_], M[_, _]] = M[ProjectId, StoreNode[F]]
 
   sealed abstract class BroadcastTo
   object BroadcastTo {
@@ -108,27 +137,37 @@ object ProjectServer {
                         D: Monad[D]): ProjectServer[F] =
     new ProjectServer[F] {
 
-      type Node = Store.Register.Node[State, OnChange[F]]
+      type Node = StoreNode[F]
 
       val fUnit: F[Unit] = F.pure(())
+      val _fUnit: Any => F[Unit] = _ => fUnit
+
+      val nodeToState: monocle.Optional[Option[Node], State] =
+        monocle.std.option.some[Node] ^|-> Store.Register.Node.value
+
+      val promiseOptics = Promise.Optics(nodeToState, State.loadedState)
 
       val register = new Store.Register.Dsl[F, ProjectId, State, OnChange[F]]
 
       override def register(pid: ProjectId, userId: UserId, onChange: OnChange[F]): F[RegistrationError \/ RegId] = {
-        def initState: D[RegistrationError \/ State] =
-          db.inDbTransaction(
-            db.loadProjectMetaDataAndUser(pid).flatMap {
-              case Some((md, uid)) =>
-                if (userId ==* uid)
-                  db.loadProject(pid).map(buildProject(_).map(b => State(uid, md, b._1, b._2)))
-                else
-                  D point -\/(AccessDenied)
-              case None =>
-                D point -\/(ProjectNotFound)
-            }
-          )
+        def loadState: D[RegistrationError \/ State] =
+          db.loadProjectMetaDataAndUser(pid).map {
+            case Some((md, uid)) =>
+              if (userId ==* uid)
+                \/-(State(uid, md, Promise.Failure(LoadNotStarted)))
+              else
+                -\/(AccessDenied)
+            case None =>
+              -\/(ProjectNotFound)
+          }
 
-        register.registerAttempt(pid, onChange, runDB(initState), v => Option.when(v.userId !=* userId)(AccessDenied))
+        def init: F[RegistrationError \/ State] =
+          runDB(loadState)
+
+        for {
+          x <- register.registerAttempt(pid, onChange, init, v => Option.when(v.userId !=* userId)(AccessDenied))
+          _ <- x.fold(_fUnit, loadStateInBackground)
+        } yield x
       }
 
       override def unregister(r: RegId): F[Unit] =
@@ -137,15 +176,32 @@ object ProjectServer {
       private def readState(r: RegId): F[NotRegistered \/ State] =
         register.get(r.key).map(_ \/> NotRegistered)
 
+      private def getOrSetLoadedState(regId: RegId): F[Promise.GetOrSet[LoadError, (State, LoadedState)]] = {
+        val pid = regId.key
+
+        def init: F[LoadError \/ LoadedState] =
+          runDB(db.inDbTransaction(for {
+            l <- db.loadProject(pid)
+            md <- db.loadProjectMetaDataAndUser(pid)
+          } yield buildProject(l).map(b => LoadedState(b._1, md.get._1, b._2))))
+
+        Promise.getOrSet(store, promiseOptics)(regId.key, LoadRetries, _ => Some(init))
+      }
+
+      private def loadStateInBackground(regId: RegId): F[Unit] =
+        svr.fork(getOrSetLoadedState(regId))
+
       override def initialClient(r: RegId, username: Username): F[NotRegistered \/ ProjectSpaProtocols.InitData] =
         readState(r).flatMap {
           case \/-(s) => initDataForProjectSpa(r, username, s).map(\/-(_))
           case e@ -\/(_) => F pure e
         }
 
-      def initAsyncData(r: RegId): F[ProjectSpaProtocols.InitAsync.Response] =
-        readState(r).map(_.bimap(_.errorMsg,
-          s => ProjectSpaProtocols.InitAsyncData(s.project, s.nextOrd - 1)))
+      private def initAsyncData(r: RegId): F[ProjectSpaProtocols.InitAsync.Response] =
+        getOrSetLoadedState(r) map {
+          case Promise.GetOrSet.Success((_, s))       => \/-(ProjectSpaProtocols.InitAsyncData(s.project, s.nextOrd - 1))
+          case e: Promise.GetOrSet.Failure[LoadError] => -\/(errorMsgForPromise(e)(_.errorMsg))
+        }
 
       private def initDataForProjectSpa(r: RegId, username: Username, s: State): F[ProjectSpaProtocols.InitData] = {
         import shipreq.webapp.base.protocol._
@@ -187,8 +243,8 @@ object ProjectServer {
 
       private def addEvent(r: RegId, mkEvent: Project => MakeEvent.Result, retries: Retries): F[PotentialChange[AddEventError, VerifiedEvent.NonEmptySeq]] =
         // Non-atomicity guarded by DB constraint on eventOrd
-        readState(r).flatMap {
-          case \/-(s1) =>
+        getOrSetLoadedState(r).flatMap {
+          case Promise.GetOrSet.Success((_, s1)) =>
             ApplyNewEvent(mkEvent(s1.project), s1.project) match {
               case PotentialChange.Success(updated) =>
                 val ord = s1.nextOrd
@@ -198,7 +254,8 @@ object ProjectServer {
                     val ves = VerifiedEvent.NonEmptySeq.one(ord, updated.ve)
                     for {
                       now <- svr.now
-                      s2  <- store.storeModIfPresent(r.key)(_.modValue(_.update(updated.project, updated.ve, ord, now)))
+                      s2a = s1.update(updated.project, updated.ve, ord, now)
+                      s2  <- store.storeModIfPresent(r.key)(_.modValue(_ set s2a))
                       _   <- s2.fold(fUnit)(broadcastEvents(r, ves, _))
                     } yield PotentialChange.Success(ves)
 
@@ -220,8 +277,8 @@ object ProjectServer {
                 F pure PotentialChange.Failure(EventRejected(reason))
             }
 
-          case -\/(e) =>
-            F pure PotentialChange.Failure(e)
+          case e: Promise.GetOrSet.Failure[LoadError] =>
+            F pure PotentialChange.Failure(PostLoadError(e))
         }
 
       val broadcastEvents: (RegId, VerifiedEvent.NonEmptySeq, Node) => F[Unit] = {

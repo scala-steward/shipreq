@@ -43,7 +43,6 @@ final class ProjectSpa(projectId: ProjectId) extends SingleOpStatelessSnippet {
           case \/-(id)                            => id
           case -\/(ProjectServer.AccessDenied)    => respondImmediately(ForbiddenResponse())
           case -\/(ProjectServer.ProjectNotFound) => respondImmediately(NotFoundResponse())
-          case -\/(_: ProjectServer.BuildError)   => shouldNeverHappen_!
         }
 
       comet ! ProjectSpaComet.AddRegistrant(newRegId)
