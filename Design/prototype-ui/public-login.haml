@@ -77,14 +77,14 @@
 
       %header#header2
         .left
-          %img(src="logo-only-dark.svg" title="Link to /" style="cursor:pointer")
+          %img(src="logo-only-dark.svg" onclick="location.href='public-home.haml.html'" style="cursor:pointer")
         .mid
           %nav
             -# %a(href: "x") Home
             -# %span.sep |
             %span.active Login
             %span.sep |
-            %a(href="x") Register
+            %a(href="public-register.haml.html") Register
         .right
 
       -# %header#header3
@@ -123,7 +123,7 @@
               %label
                 %div(style="display:flex; justify-content:space-between")
                   %div Password
-                  %a(href="x" style="font-weight:normal") Forgot password?
+                  %a(href="public-resetpw2.haml.html" style="font-weight:normal") Forgot password?
               .ui.left.icon.input
                 %input(type="password" autofocus=1)
                 %i.lock.icon
@@ -145,8 +145,8 @@
       %footer#footer1
         %span.txt © 2013-2017 Bearded Logic
         %span.sep |
-        %a(href="x") About
+        %a(href="public-about.haml.html") About
         %span.sep |
-        %a(href="x") Terms
+        %a(href="public-tos.haml.html") Terms
         %span.sep |
-        %a(href="x") Privacy
+        %a(href="public-privacy.haml.html") Privacy
