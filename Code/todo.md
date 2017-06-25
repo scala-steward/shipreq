@@ -79,7 +79,7 @@ Phase 2 (dev)
   * [ ] LandingPage
   * [x] Login/ResetPassword
   * [x] ResetPassword2
-  * [ ] Register
+  * [x] Register
   * [ ] Register2
   * [ ] Privacy/ToS
   * [ ] About

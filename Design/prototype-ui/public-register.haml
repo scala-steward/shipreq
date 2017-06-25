@@ -21,8 +21,8 @@
       #header2 > .mid { flex:1; text-align:center; padding-top:0.2em}
       #header2 > .mid .sep { padding:0 1em; color:#aaa }
 
-      #part1 {width:38ex; margin:8em auto 0 auto}
-      #part2 {width:54ex; margin:8em auto 0 auto}
+      #part1 {width:48ex; margin:8em auto 0 auto}
+      #part2 {width:64ex; margin:8em auto 0 auto}
 
       #footer1 {
         font-size:0.85rem;
@@ -40,12 +40,6 @@
       #layout > main {flex:1; padding-bottom:2em}
       #layout > footer {}
 
-      .validation-errmsg {
-        color: #9f3a38;
-        padding-top: 0.15rem;
-        font-size: 92%;
-      }
-
   %body
     #layout
 
@@ -56,7 +50,7 @@
           %nav
             %a(href="public-login.haml.html") Login
             %span.sep |
-            %a(href="public-register.haml.html") Register
+            %span.active Register
         .right
 
       %main
@@ -64,45 +58,22 @@
         #part1
           .ui.form
             .field
-              %label New password
+              %label Email address
               .ui.left.icon.input
-                %input(type="password" autofocus=1)
-                %i.icon.lock
-            .field
-              %label Confirm new password
-              .ui.left.icon.input
-                %input(type="password")
-                %i.icon.lock
-            .div(style="text-align:right; padding-top:0.4em")
-              .ui.blue.submit.button.large(style="margin-right:0!important")
-                Change Password
-
-        #part1
-          .ui.form
-            .field.error
-              %label New password
-              .ui.left.icon.input
-                %input(type="password" value="abc")
-                %i.icon.lock
-              .validation-errmsg Must be at least 8 characters long.
-            .field
-              %label Confirm new password
-              .ui.left.icon.input
-                %input(type="password")
-                %i.icon.lock
-            .div(style="text-align:right; padding-top:0.4em")
-              .ui.blue.submit.button.large.disabled(style="margin-right:0!important")
-                Change Password
+                %input(type="text" autofocus=1)
+                %i.icon.mail
+            .div(style="text-align:right")
+              .ui.blue.submit.button.large(style="margin-right:0!important" onclick="location.href='public-register2.haml.html'")
+                Register
 
         #part2
           .ui.message.icon.success
-            %i.icon.lock
+            %i.icon.mail.outline
             .content
               .header
-                Changed Password
+                Check your email
               %p
-                Your password was updated successfully.
-
+                You'll soon receive an email with a link to continue the registration process.
 
       %footer#footer1
         %span.txt © 2013-2017 Bearded Logic

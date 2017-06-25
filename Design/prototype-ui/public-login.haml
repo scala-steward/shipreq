@@ -42,7 +42,8 @@
       }
       #header3 > .sep { padding:0 1em; color:#aaa }
 
-      #main1 {width:52ex; margin:8em auto 0 auto}
+      #part1 {width:48ex; margin:8em auto 0 auto}
+      #part2 {width:70ex; margin:8em auto 0 auto}
 
       #footer1 {
         font-size:0.85rem;
@@ -95,7 +96,8 @@
         %a(href="x") Register
 
       %main
-        #main1
+
+        #part1
 
           -# .ui.message.error(style="margin-bottom:4em")
             %i.close.icon
@@ -103,15 +105,6 @@
               Login failed
             %p
               Invalid username or password.
-
-          .ui.message.icon.error(style="margin-bottom:4em")
-            %i.icon.ban
-            .content
-              .header
-                Login failed
-              %p
-                Invalid username or password.
-            %i.close.icon
 
           .ui.form
             .field
@@ -141,6 +134,28 @@
             -#     .ui.blue.submit.button.large.disabled(style="margin-right:0!important") Login
             -# .div(style="text-align:right; margin-top:1em")
             -#     .ui.blue.submit.button.large.disabled.loading(style="margin-right:0!important") Login
+
+          .ui.message.icon.error(style="margin-top:4em")
+            %i.icon.ban
+            .content
+              .header
+                Login failed
+              %p
+                Invalid username or password.
+            %i.close.icon
+
+        #part2
+          .ui.message.icon.info
+            %i.icon.mail.outline
+            .content
+              .header
+                Check your email
+              %p
+                <em>If your email address was valid,</em> you'll soon receive an email with a link to reset your password.
+              -# %p(style="margin-top:.8em")
+                If your email address was valid, you'll soon receive an email with a link to reset your password.
+              -# %p
+                If you don't receive an email, verify that you entered your email address correctly and try again.
 
       %footer#footer1
         %span.txt © 2013-2017 Bearded Logic
