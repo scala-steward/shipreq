@@ -77,7 +77,7 @@ Phase 2 (dev)
 ### UI/UX
 * Add info/help to MemberHome when no projects exist
 * Front pages
-  * [ ] LandingPage
+  * [x] LandingPage
   * [x] Login/ResetPassword
   * [x] ResetPassword2
   * [x] Register
