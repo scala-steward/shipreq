@@ -115,19 +115,26 @@ object WebappBuild {
         TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact ++
         React.test ++ μTest ++ Nyaya.test)
 
-  lazy val webappClientHome =
-    project("webapp-client-home")
-      .enablePlugins(ScalaJSPlugin)
+  /** Settings for client SPA projects.
+    *
+    * ScalaCss is deliberately missing because it's too heavy for the public SPA.
+    */
+  private lazy val clientSpa: Project => Project =
+    _.enablePlugins(ScalaJSPlugin)
       .configure(Common.jsSettings(NeedDom), useMacroParadise)
       .dependsOn(webappClientBase, webappClientBaseTest % "test")
       .depsForJs(
-        Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++
-        μPickle ++ boopickle ++
+        Scalaz.effect ++ React.most ++ Monocle.macros ++ scalajsDom ++ boopickle ++
         testScope(
           TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact ++
           React.test ++ μTest ++ Nyaya.test))
       .settings(
         jsDependencies in Test += ProvidedJS / "webapp-client-test.js")
+
+  lazy val webappClientHome =
+    project("webapp-client-home")
+      .configure(clientSpa)
+      .depsForJs(ScalaCSS.react)
 
   lazy val webappClientWwApi =
     project("webapp-client-ww-api")
@@ -152,17 +159,9 @@ object WebappBuild {
 
   lazy val webappClientProject =
     project("webapp-client-project")
-      .enablePlugins(ScalaJSPlugin)
-      .configure(Common.jsSettings(NeedDom), useMacroParadise)
-      .dependsOn(webappClientBase, webappClientWwApi, webappClientBaseTest % "test")
-      .depsForJs(
-        Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++ scalajsDom ++
-        μPickle ++ boopickle ++ shapeless ++ Nyaya.prop ++ parboiled ++
-        testScope(
-          TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact ++
-          React.test ++ μTest ++ Nyaya.test))
-      .settings(
-        jsDependencies in Test += ProvidedJS / "webapp-client-test.js")
+      .configure(clientSpa)
+      .dependsOn(webappClientWwApi)
+      .depsForJs(ScalaCSS.react ++ scalajsDom ++ μPickle ++ shapeless ++ Nyaya.prop ++ parboiled)
 
   lazy val webappGenJvm = webappGen.jvm
   lazy val webappGenJs  = webappGen.js
