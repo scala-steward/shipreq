@@ -45,6 +45,10 @@ const makeConfig = ({ mode, name, sjsPath, htmlMinifyOptions }) => {
         'vizJs',
       ],
 
+      webappClientPublic: [
+        { type: 'external', path: sjsPath('public'), manifest: 'webappClientPublicJs' },
+      ],
+
       webappClientHome: [
         { type: 'external', path: sjsPath('home'), manifest: 'webappClientHomeJs' },
         'member',

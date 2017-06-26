@@ -21,5 +21,7 @@ object AssetManifest {
 
   def webappClientProjectJs = "/shipreq-project.js";
 
+  def webappClientPublicJs = "/shipreq-public.js";
+
   def webappClientWwJs = "/shipreq-ww.js";
 }

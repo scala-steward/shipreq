@@ -39,6 +39,7 @@ subgraph cluster_t {
     webappBase [label="webapp-base\n(Scala & JS)"]
     webappServerLogic [label="webapp-server-logic\n(Scala & JS)"]
     webappClientBase [label="webapp-client-base\n(JS)"]
+    webappClientPublic [label="webapp-client-public\n(JS)"]
     webappClientHome [label="webapp-client-home\n(JS)"]
     webappClientWwApi [label="webapp-client-ww-api\n(JS)"]
     webappClientWw [label="webapp-client-ww\n(JS)"]
@@ -94,6 +95,8 @@ webappClientBase -> webappBaseTest [color="#111111" style=dashed label="test"]
 webappClientBaseTest -> webappClientBase,webappBaseTest [color="#111111"]
 webappClientHome -> webappClientBase
 webappClientHome -> webappClientBaseTest [color="#111111" style=dashed label="test"]
+webappClientPublic -> webappClientBase
+webappClientPublic -> webappClientBaseTest [color="#111111" style=dashed label="test"]
 webappClientWwApi -> webappBase
 webappClientWw -> webappClientWwApi
 webappClientWw -> webappClientBaseTest [color="#111111" style=dashed label="test"]
@@ -104,7 +107,7 @@ webappGen -> webappClientProject [color="#111111" style=dashed label="run"]
 webappGen -> webappBaseTest [color="#111111" style=dashed label="test"]
 webappServer -> taskmanApi,webappServerLogic,webappGen
 webappServer -> baseDb
-webappServer -> webappClientHome,webappClientProject,webappClientWw [style=dashed]
+webappServer -> webappClientPublic,webappClientHome,webappClientProject,webappClientWw [style=dashed]
 
 benchmarkJvm,benchmarkJs -> benchmarkShared
 benchmarkJvm -> webappServer

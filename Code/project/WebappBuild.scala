@@ -28,6 +28,7 @@ object WebappBuild {
     def scalaJsPath(name: String) = Def.setting {
       manifestPath(s"webappClient${name}Js").value
     }
+    def scalaJsPathPublic  = scalaJsPath("Public")
     def scalaJsPathHome    = scalaJsPath("Home")
     def scalaJsPathProject = scalaJsPath("Project")
     def scalaJsPathWw      = scalaJsPath("Ww")
@@ -40,6 +41,7 @@ object WebappBuild {
         webappMacroJvm, webappBaseJvm, webappServerLogicJvm, webappBaseTestJvm, webappGenJvm,
         webappMacroJs , webappBaseJs , webappServerLogicJs , webappBaseTestJs , webappGenJs ,
         webappClientBase, webappClientBaseTest,
+        webappClientPublic,
         webappClientHome,
         webappClientWwApi, webappClientWw, webappClientProject,
         webappServer)
@@ -94,8 +96,8 @@ object WebappBuild {
       .enablePlugins(ScalaJSPlugin)
       .dependsOn(baseUtilJs, webappBaseJs, webappBaseTestJs % "test")
       .depsForJs(
-        Scalaz.effect ++ React.most ++ Monocle.macros ++ ScalaCSS.react ++ scalajsDom ++
-        μPickle ++ boopickle)
+        Scalaz.effect ++ React.most ++ Monocle.macros ++ scalajsDom ++ boopickle ++
+        providedScope(ScalaCSS.react))
       .configure(
         Common.jsSettings(NeedDom),
         useMacroParadise)
@@ -108,7 +110,7 @@ object WebappBuild {
       .dependsOn(webappClientBase, webappServerLogicJs, webappBaseTestJs)
       .depsForJs(
         TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact ++
-        React.test ++ μTest ++ Nyaya.test)
+        React.test ++ ScalaCSS.react ++ μTest ++ Nyaya.test)
 
   /** Settings for client SPA projects.
     *
@@ -125,6 +127,10 @@ object WebappBuild {
           React.test ++ μTest ++ Nyaya.test))
       .settings(
         jsDependencies in Test += ProvidedJS / "webapp-client-test.js")
+
+  lazy val webappClientPublic =
+    project("webapp-client-public")
+      .configure(clientSpa)
 
   lazy val webappClientHome =
     project("webapp-client-home")
@@ -208,6 +214,7 @@ object WebappBuild {
               case other =>
                 sys.error("Unsupported virtual file type: " + other)
             }
+          copyScalaJs((scalaJSLinkedFile in Compile in webappClientPublic ).value, Frontend.scalaJsPathPublic .value)
           copyScalaJs((scalaJSLinkedFile in Compile in webappClientHome   ).value, Frontend.scalaJsPathHome   .value)
           copyScalaJs((scalaJSLinkedFile in Compile in webappClientProject).value, Frontend.scalaJsPathProject.value)
           copyScalaJs((scalaJSLinkedFile in Compile in webappClientWw     ).value, Frontend.scalaJsPathWw     .value)
@@ -280,6 +287,7 @@ object WebappBuild {
           // Prepare exploded WAR
           val tmpWar = prepareTmpDir("war")
           val warTiers = {
+            val scalaJsPathPublic  = Frontend.scalaJsPathPublic .value
             val scalaJsPathHome    = Frontend.scalaJsPathHome   .value
             val scalaJsPathProject = Frontend.scalaJsPathProject.value
             val scalaJsPathWw      = Frontend.scalaJsPathWw     .value
@@ -298,6 +306,7 @@ object WebappBuild {
                 case (p, None)    if p endsWith   ".html"             => (96, false) // -
                 case (p, None)    if p ==          scalaJsPathProject => (88, false) // 3.3M ***
                 case (p, None)    if p ==          scalaJsPathHome    => (86, false) // 840K *
+                case (p, None)    if p ==          scalaJsPathPublic  => (85, false)
                 case (p, None)    if p ==          scalaJsPathWw      => (84, false) // 472K
               //case (p, None)    if p endsWith   ".js"               => (83, false) // 808K *
                 case (_, Some(l)) if l startsWith "webapp-server"     => (76, true)  // 1.1M *
@@ -469,6 +478,7 @@ object WebappBuild {
     println()
     println(header)
     println("=" * header.length)
+    report((moduleName in webappClientPublic ).value, (stageKeys(stage) in Compile in webappClientPublic ).value)
     report((moduleName in webappClientHome   ).value, (stageKeys(stage) in Compile in webappClientHome   ).value)
     report((moduleName in webappClientProject).value, (stageKeys(stage) in Compile in webappClientProject).value)
     report((moduleName in webappClientWw     ).value, (stageKeys(stage) in Compile in webappClientWw     ).value)

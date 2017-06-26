@@ -28,6 +28,7 @@ val webappBaseTestJvm    = WebappBuild.webappBaseTestJvm
 val webappBaseTestJs     = WebappBuild.webappBaseTestJs
 val webappClientBase     = WebappBuild.webappClientBase
 val webappClientBaseTest = WebappBuild.webappClientBaseTest
+val webappClientPublic   = WebappBuild.webappClientPublic
 val webappClientHome     = WebappBuild.webappClientHome
 val webappClientWwApi    = WebappBuild.webappClientWwApi
 val webappClientWw       = WebappBuild.webappClientWw

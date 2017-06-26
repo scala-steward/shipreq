@@ -21,5 +21,7 @@ object AssetManifest {
 
   def webappClientProjectJs = "/p.js";
 
+  def webappClientPublicJs = "/a.js";
+
   def webappClientWwJs = "/w.js";
 }

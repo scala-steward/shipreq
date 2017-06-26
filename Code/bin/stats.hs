@@ -113,6 +113,7 @@ deps = M.fromList [
          ("webapp-server",           ["webapp-gen", "webapp-server-logic", "webapp-base-test", "base-db", "taskman-api-impl"]) ,
          ("webapp-client-base",      ["webapp-base-test", "base-util"]) ,
          ("webapp-client-base-test", ["webapp-base-test", "webapp-client-base"]) ,
+         ("webapp-client-public",    ["webapp-client-base-test"]) ,
          ("webapp-client-home",      ["webapp-client-base-test"]) ,
          ("webapp-client-ww-api",    ["webapp-base"]) ,
          ("webapp-client-ww",        ["webapp-client-base-test", "webapp-client-ww-api"]) ,
@@ -133,6 +134,7 @@ deps = M.fromList [
 
 topLevelModules = [
   "taskman",
+  "webapp-client-public",
   "webapp-client-home",
   "webapp-client-ww",
   "webapp-client-project",
