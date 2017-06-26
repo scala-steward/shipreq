@@ -66,31 +66,29 @@ Phase 2 (dev-complete)
 Phase 2 (dev)
 =============
 
-### Functionality
+### Small'ish stuff
 * Add new column type: all tags (as opposed to non-field tags)
 * We have implications fields and implication columns.
   We don't seem to need all-imps vs non-field-imps...should tags not work the same way?
   Or is there similar deficiency in imps cols too?
 * Re-evaluate config: some data is useless (i.e. key of custom text fields)
 * Bug: Create-and-close closes on ajax error
-
-### UI/UX
 * Add info/help to MemberHome when no projects exist
-* Front pages
-  * [x] LandingPage
-  * [x] Login/ResetPassword
-  * [x] ResetPassword2
-  * [x] Register
-  * [x] Register2
-  * [x] Privacy/ToS
-  * [ ] About
+
+### Front pages
+* Implement new front pages
+  * [ ] LandingPage
+  * [ ] Login/ResetPassword
+  * [ ] ResetPassword2
+  * [ ] Register
+  * [ ] Register2
+  * [ ] Privacy/ToS
 * User name: name as one field is fine, call it "full name" like credit cards
 * Forms: autofocus input, disable buttons when KO, no red/error for empty
 * LandingPage form: perma-disable button after successful submission
-* Reorder Ship/Req text. "Ship better products with better requirements"?
 * Login failed: `Invalid <username|email> or ...`
 
-### Features
+### New Features
 * User profile page
 * Issues
 * Saved views
