@@ -59,6 +59,7 @@ Phase 2 (dev-complete)
 * Add healthchecks
 * Send logs to service
 * Add proper metrics
+* Britoli support
 * Do more with errors, eg. ClientData.{init,applyEvents}
 
 ------------------------------------------------------------------------------------------------------------------------
