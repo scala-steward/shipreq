@@ -22,7 +22,7 @@ object Taskman {
   def updateCfg: List[ApiOp[Unit]] = List(
     CfgPut(K.appName,  WebappConfig.appName),
     CfgPut(K.homeUrl,  SM.Home.absoluteUrl),
-    CfgPut(K.loginUrl, SM.Login.absoluteUrl)
+    CfgPut(K.loginUrl, SM.LoginAbsoluteUrl)
   )
 
   def errorMsg(e: Throwable, url: Option[String], suppInfo: String) =

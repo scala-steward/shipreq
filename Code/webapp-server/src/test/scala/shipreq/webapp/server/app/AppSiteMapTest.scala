@@ -9,13 +9,13 @@ object AppSiteMapTest extends TestSuite {
 
   val homeRel = "/"
   val homeAbs = "http://localhost:8090"
-  val loginRel = "/login"
-  val loginAbs = "http://localhost:8090/login"
+  val logoutRel = "/logout"
+  val logoutAbs = "http://localhost:8090/logout"
 
   override def tests = TestSuite {
     "Home relativeUrl" - assertEq(Home.relativeUrl, homeRel)
     "Home absoluteUrl" - assertEq(Home.absoluteUrl, homeAbs)
-    "Login relativeUrl" - assertEq(Login.relativeUrl, loginRel)
-    "Login absoluteUrl" - assertEq(Login.absoluteUrl, loginAbs)
+    "Logout relativeUrl" - assertEq(Logout.relativeUrl, logoutRel)
+    "Logout absoluteUrl" - assertEq(Logout.absoluteUrl, logoutAbs)
   }
 }

@@ -16,7 +16,7 @@ import shipreq.webapp.server.logic._
 import shipreq.webapp.server.security.Permission.RequestVarPermExt
 import shipreq.webapp.server.security.{Oshiro, Permission, Permissions}
 
-object AppSiteMap {
+object AppSiteMap { // TODO Cleanup
   type PM[T] = Menu.ParamMenuable[T]
 
   // TODO SiteMap effects have a requested order. Right now they're unenforced.
@@ -25,7 +25,7 @@ object AppSiteMap {
     def setByParam(pm: PM[T], desc: String) = setReqVar(rv, pm, desc)
   }
 
-  private val landingPageTemplate = "public/landing_page"
+  private val publicTemplate = "public"
 
   // -------------------------------------------------------------------------------------------------------------------
   // Menu.i(NAME_AND_TITLE) / PATH_FOR_URL_AND_TEMPLATE
@@ -34,46 +34,27 @@ object AppSiteMap {
 
   val Home =
     pageWithStaticUrl("home", defaultTitle, "Home")(_ / URLs.ForLift.memberHome
-      >> UseEitherTemplate(Oshiro.isAuthenticated(), "members/home")(landingPageTemplate))
+      >> UseEitherTemplate(Oshiro.isAuthenticated(), "members/home")(publicTemplate))
 
-  val LandingPageViaBusinessCard =
-    pageWithStaticUrl("land-bc", "")(_ / "bc" >> UseTemplate(landingPageTemplate))
-
-  val About =
-    pageWithStaticUrl("about", "About")(_ / "about" >> UseTemplate("public/about"))
-
-  val TermsOfService =
-    pageWithStaticUrl("tos", mkTitle("Terms of Service"), "Terms")(_ / "tos" >> UseTemplate("public/tos"))
-
-  val PrivacyPolicy =
-    pageWithStaticUrl("privacy", mkTitle("Privacy Policy"), "Privacy")(_ / "privacy" >> UseTemplate("public/privacy"))
-
-  val Login =
-    pageWithStaticUrl("login", "Login")(_ / "login" >> UseTemplate("public/login"))
+//  val LandingPageViaBusinessCard =
+//    pageWithStaticUrl("land-bc", "")(_ / "bc" >> UseTemplate(publicTemplate))
 
   val Logout =
     pageWithStaticUrl("logout", defaultTitle, "Logout")(_ / URLs.ForLift.logout >> EarlyResponse(() => logout()))
 
-  val Register1 =
-    pageWithStaticUrl("register1", mkTitle("Register"), "Register")(_ / "register" >> UseTemplate("public/register1"))
+//  val Register2 =
+//    (Menu.param[String]("register2", "", i => Full(i), o => o) / "register" / *
+//      >> StaticTitle(mkTitle("Register"))
+//      >> UseTemplate("public/register2")
+//      >> Hidden)
 
-  val Register2 =
-    (Menu.param[String]("register2", "", i => Full(i), o => o) / "register" / *
-      >> StaticTitle(mkTitle("Register"))
-      >> UseTemplate("public/register2")
-      >> Hidden)
-
-  private def ResetPasswordTitle = mkTitle("Password Reset")
-
-  val ResetPassword1 =
-    pageWithStaticUrl("resetpw1", ResetPasswordTitle, "Forgotten Your Password?")(_ / "resetpw"
-      >> UseTemplate("public/resetpw1"))
-
-  val ResetPassword2 =
-    (Menu.param[String]("resetpw2", "", i => Full(i), o => o) / "resetpw" / *
-      >> StaticTitle(ResetPasswordTitle)
-      >> UseTemplate("public/resetpw2")
-      >> Hidden)
+//  private def ResetPasswordTitle = mkTitle("Password Reset")
+//
+//  val ResetPassword2 =
+//    (Menu.param[String]("resetpw2", "", i => Full(i), o => o) / "resetpw" / *
+//      >> StaticTitle(ResetPasswordTitle)
+//      >> UseTemplate("public/resetpw2")
+//      >> Hidden)
 
   val Project: PM[ProjectId] =
     (MenuWithIdParam(ProjectId.Extern)("project") / URLs.ForLift.project / * / **
@@ -90,10 +71,10 @@ object AppSiteMap {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  val AllProdPages: List[ConvertableToMenu] = List(
+  private def AllProdPages: List[ConvertableToMenu] = List(
     Home,
-    About, TermsOfService, PrivacyPolicy, LandingPageViaBusinessCard,
-    Login, Logout, Register1, Register2, ResetPassword1, ResetPassword2,
+//    LandingPageViaBusinessCard,
+    Logout,
     Project,
     AdminStats
   ) ++ DiagnosticEndpoints.Endpoints
@@ -105,7 +86,7 @@ object AppSiteMap {
     def autoLogin = Menu.i("x") / "x" >> EarlyResponse(() => {
       getSubject.login(new UsernamePasswordToken("devuser", "dev123123"))
       SessionStats.onLogin(S.session, Oshiro.loggedInUser().get)
-      Full(redirectHomeResp)
+      Full(redirectHome)
       // Full(RedirectResponse("/project/oLctx/table"))
     })
 
@@ -179,12 +160,16 @@ object AppSiteMap {
   // -------------------------------------------------------------------------------------------------------------------
   import Implicits._
 
-  def redirectHomeResp = RedirectResponse(Home.relativeUrl)
+  lazy val redirectHome = RedirectResponse(Home.relativeUrl)
+
+  val LoginRelativeUrl = URLs.login
+  def LoginAbsoluteUrl = DI.serverConfig.baseUrl + LoginRelativeUrl
+  val redirectToLogin = RedirectResponse(LoginRelativeUrl)
 
   def logout(): Box[LiftResponse] = {
     Oshiro.logout()
     SessionStats.onLogout(S.session)
-    Full(redirectHomeResp)
+    Full(redirectHome)
   }
 
   @inline final def defaultTitle = WebappConfig.appName
@@ -235,9 +220,9 @@ object AppSiteMap {
     If(() => Oshiro.isAuthenticated(),
       // The # here is to clear the hash fragment from logged-in pages.
       // Means that /project/abcd#reqs/UC-1 is redirected to /login# instead of /login#reqs/UC-1
-      () => RedirectResponse(Login.relativeUrl + "#"))
+      () => redirectToLogin)
 
-  private def PermissionRequired(checker: => Permission.Checker, failResp: LiftResponse = redirectHomeResp) =
+  private def PermissionRequired(checker: => Permission.Checker, failResp: LiftResponse = redirectHome) =
     If(() => checker.isPass, () => failResp)
 
   private def ProjectPermissionRequired =
