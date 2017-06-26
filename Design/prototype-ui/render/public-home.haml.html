@@ -38,7 +38,7 @@ body {background:#fdfeff}
 #tagline {
   margin-top: 0.6rem;
   font-family: Georgia,"Times New Roman",Times,serif;
-  font-size: 2.3rem;
+  font-size: 2.3em;
   color: #252a2f;
   line-height:1em;
 }
@@ -48,19 +48,20 @@ body {background:#fdfeff}
 }
 #yap {
   flex:1;
-  padding:2.5rem;
+  padding:2.5em;
 }
 #yap1 {
   color: hsl(209, 100%, 15%); /* "Ship" in ShipReq with lower L% */
-  font-size: 1.6rem;
+  font-size: 1.6em;
   line-height: 1.3em;
 }
 #yap2 {
   color:hsl(207, 100%, 5%); /* "Req" in ShipReq with lower L% */
-  font-size: 1.15rem;
-  margin-top: 3rem;
+  font-size: 1.15em;
+  margin-top: 3em;
   line-height: 1.5em;
 }
+
 span.arrow-r {
   -webkit-transform: rotate(360deg);
   border-style: dashed;
@@ -77,6 +78,8 @@ span.arrow-r {
   border-left: solid 1em #9fc4e8;
   left: .25em;
 }
+
+#form-cont {width:44ex; max-width:60%}
 #form {
   background:#e5edf3;
   border:solid 1px #c0d6e9;
@@ -85,4 +88,12 @@ span.arrow-r {
   padding:1em;
 }
 
-</style></head><body><div id="layout"><header id="header2"><div class="left"></div><div class="mid"><nav><a href="public-login.haml.html">Login</a><span class="sep">|</span><a href="public-register.haml.html">Register</a></nav></div><div class="right"></div></header><main><div id="main"><div><img src="logo-title.svg" style="width:80%" /></div><div id="tagline">Ship better products with better requirements.</div><div id="part2"><div id="yap"><div id="yap1">ShipReq is a modern, online tool<br/>for requirements development and management,<br/>currently in private beta phase.</div><div id="yap2">Would you like to know more, or participate in the beta?<br/>Get in touch!<span class="arrow-r"></span></div></div><div style="width:42ex"><div id="form"><div class="ui form"><div class="field"><div class="ui left icon input"><input type="text" placeholder="Your name" /><i class="icon user"></i></div></div><div class="field"><div class="ui left icon input"><input type="email" placeholder="Your email address" /><i class="icon mail"></i></div></div><div class="field"><textarea rows="12" placeholder="What would you like to say?"></textarea></div><div style="text-align:center" class="field"><div class="ui checkbox"><input type="checkbox" tabindex="0" class="hidden" checked="1" /><label>Subscribe to newsletter</label></div></div><div style="text-align:center" class="field"><div style="margin-right:0!important" class="ui blue submit button large">Express Interest</div></div></div></div></div></div></div></main><footer id="footer1"><span class="txt">© 2013-2017 Bearded Logic</span><span class="sep">|</span><a href="public-about.haml.html">About</a><span class="sep">|</span><a href="public-tos.haml.html">Terms</a><span class="sep">|</span><a href="public-privacy.haml.html">Privacy</a></footer></div></body></html>
+@media screen and (max-width: 128ex) {
+  #tagline { font-size: 3.4vw; }
+}
+@media screen and (max-width: 75ex) {
+  #yap { font-size: 2.0vw; padding:2em;}
+}
+
+
+</style></head><body><div id="layout"><header id="header2"><div class="left"></div><div class="mid"><nav><a href="public-login.haml.html">Login</a><span class="sep">|</span><a href="public-register.haml.html">Register</a></nav></div><div class="right"></div></header><main><div id="main"><div><img src="logo-title.svg" style="width:80%" /></div><div id="tagline">Ship better products with better requirements.</div><div id="part2"><div id="yap"><div id="yap1">ShipReq is a modern, online tool<br/>for requirements development and management,<br/>currently in private beta phase.</div><div id="yap2">Would you like to know more, or participate in the beta?<br/>Get in touch!<span class="arrow-r"></span></div></div><div id="form-cont"><div id="form"><div class="ui form"><div class="field"><div class="ui left icon input"><input type="text" placeholder="Your name" /><i class="icon user"></i></div></div><div class="field"><div class="ui left icon input"><input type="email" placeholder="Your email address" /><i class="icon mail"></i></div></div><div class="field"><textarea rows="12" placeholder="What would you like to say?"></textarea></div><div style="text-align:center" class="field"><div class="ui checkbox"><input type="checkbox" tabindex="0" class="hidden" checked="1" /><label>Subscribe to newsletter</label></div></div><div style="text-align:center" class="field"><div style="margin-right:0!important" class="ui blue submit button large">Express Interest</div></div></div></div></div></div></div></main><footer id="footer1"><span class="txt">© 2013-2017 Bearded Logic</span><span class="sep">|</span><a href="public-about.haml.html">About</a><span class="sep">|</span><a href="public-tos.haml.html">Terms</a><span class="sep">|</span><a href="public-privacy.haml.html">Privacy</a></footer></div></body></html>

@@ -45,7 +45,7 @@
       #tagline {
         margin-top: 0.6rem;
         font-family: Georgia,"Times New Roman",Times,serif;
-        font-size: 2.3rem;
+        font-size: 2.3em;
         color: #252a2f;
         line-height:1em;
       }
@@ -55,19 +55,20 @@
       }
       #yap {
         flex:1;
-        padding:2.5rem;
+        padding:2.5em;
       }
       #yap1 {
         color: hsl(209, 100%, 15%); /* "Ship" in ShipReq with lower L% */
-        font-size: 1.6rem;
+        font-size: 1.6em;
         line-height: 1.3em;
       }
       #yap2 {
         color:hsl(207, 100%, 5%); /* "Req" in ShipReq with lower L% */
-        font-size: 1.15rem;
-        margin-top: 3rem;
+        font-size: 1.15em;
+        margin-top: 3em;
         line-height: 1.5em;
       }
+
       span.arrow-r {
         -webkit-transform: rotate(360deg);
         border-style: dashed;
@@ -84,6 +85,8 @@
         border-left: solid 1em #9fc4e8;
         left: .25em;
       }
+
+      #form-cont {width:44ex; max-width:60%}
       #form {
         background:#e5edf3;
         border:solid 1px #c0d6e9;
@@ -91,6 +94,14 @@
         border-radius: .28571429rem;
         padding:1em;
       }
+
+      @media screen and (max-width: 128ex) {
+        #tagline { font-size: 3.4vw; }
+      }
+      @media screen and (max-width: 75ex) {
+        #yap { font-size: 2.0vw; padding:2em;}
+      }
+
 
   %body
     #layout
@@ -125,7 +136,7 @@
                 Get in touch!
                 %span.arrow-r
 
-            %div(style="width:42ex")
+            %div#form-cont
               -# .ui.raised.segment#form
               #form
                 .ui.form
