@@ -9,7 +9,7 @@ import scalacss.ScalaCssReact._
 import shipreq.webapp.base.protocol.ProjectSpaProtocols
 import shipreq.webapp.client.base.protocol.{ClientSideProcImpl, ClientProtocol}
 import shipreq.webapp.client.base.ui.BaseStyles
-import shipreq.webapp.client.project.app.root.{LoadFailedPage, LoadedRoot, LoadingPage, Routes}
+import shipreq.webapp.client.project.app.root._
 import shipreq.webapp.client.project.app.state.ClientData
 
 @JSExportTopLevel(ProjectSpaProtocols.EntryPointName)

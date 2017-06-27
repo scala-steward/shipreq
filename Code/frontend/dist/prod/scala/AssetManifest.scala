@@ -9,7 +9,7 @@ object AssetManifest {
 
   def shipreqCircleDarkSvg = "/9d27a4cbeeeb2bf77a147504169b2d98.svg";
 
-  def shipreqHugePng = "/193ce6486f40b10170929b403464115c.png";
+  def shipreqLogoSvg = "/5259565faa231db77f2c6725e964a78f.svg";
 
   def sortAscSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDIwIDIwIj48cGF0aCBkPSJNLjUgMjBMMTAgMGw5LjUgMjAiLz48L3N2Zz4=";
 

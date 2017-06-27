@@ -175,12 +175,10 @@ object AppSiteMap { // TODO Cleanup
     Full(redirectHome)
   }
 
-  @inline final def defaultTitle = WebappConfig.appName
+  def defaultTitle = WebappConfig.appName
 
-  @inline final def mkTitle(title: String): String = title match {
-    case "" => defaultTitle
-    case _  => s"$title | ${WebappConfig.appName}"
-  }
+  def mkTitle(title: String): String =
+    if (title.isEmpty) defaultTitle else WebappConfig.makePageTitle(title)
 
   private def StaticTitle[T](title: String) = {
     val titleXml: NodeSeq = Text(title)

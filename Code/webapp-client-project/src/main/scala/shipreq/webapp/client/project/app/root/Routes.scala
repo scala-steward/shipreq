@@ -79,11 +79,8 @@ object Routes {
       def reqDetailRoute =
         dynamicRouteCT(reqTablePath / remainingPath.pmapL(Page.ReqDetail.stringPrism)) ~> dynPage autoCorrect
 
-      def title(p: Page): String = {
-        val bits: List[String] =
-          Page.title(p) ::: rootInstance.cd.project().name :: WebappConfig.appName :: Nil
-        bits.mkString(" | ")
-      }
+      def title(p: Page): String =
+        WebappConfig.makePageTitle(Page.title(p) :+ rootInstance.cd.project().name: _*)
 
       ( staticPage(dsl.root       , Page.Index      )
       | staticPage(reqTablePath   , Page.ReqTable   )
