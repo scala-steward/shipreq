@@ -71,6 +71,7 @@ object Interpreters {
     Store.Algebra.concurrentHashMap()
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  val homeSpaLogic : HomeSpaLogic [IO] = HomeSpaLogic [ConnectionIO, IO]
-  val projectServer: ProjectServer[IO] = ProjectServer[ConnectionIO, IO](ProjectServer.BroadcastTo.All)
+  val publicSpaLogic: PublicSpaLogic[IO] = PublicSpaLogic[ConnectionIO, IO]
+  val homeSpaLogic  : HomeSpaLogic  [IO] = HomeSpaLogic  [ConnectionIO, IO]
+  val projectServer : ProjectServer [IO] = ProjectServer [ConnectionIO, IO](ProjectServer.BroadcastTo.All)
 }

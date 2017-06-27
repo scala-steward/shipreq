@@ -24,11 +24,12 @@ object DI extends SimpleInjector {
   val StatLogger: Inject[StatLogger] =
     inject(StatLoggerImpl)
 
-  var dbAccess     : DbAccess          = null
-  var taskman      : TaskmanInterface  = null
-  var homeSpaLogic : HomeSpaLogic[IO]  = null
-  var projectServer: ProjectServer[IO] = null
-  var serverConfig : ServerConfig      = null
+  var dbAccess      : DbAccess           = null
+  var taskman       : TaskmanInterface   = null
+  var publicSpaLogic: PublicSpaLogic[IO] = null
+  var homeSpaLogic  : HomeSpaLogic  [IO] = null
+  var projectServer : ProjectServer [IO] = null
+  var serverConfig  : ServerConfig       = null
 }
 
 /**
@@ -36,6 +37,7 @@ object DI extends SimpleInjector {
  */
 trait DI {
   @inline final def db()               = DI.dbAccess
+  @inline final def publicSpaLogic()   = DI.publicSpaLogic
   @inline final def homeSpaLogic()     = DI.homeSpaLogic
   @inline final def projectServer()    = DI.projectServer
   @inline final def securityProvider() = DI.SecurityProvider.vend

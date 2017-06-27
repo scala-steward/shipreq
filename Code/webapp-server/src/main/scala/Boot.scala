@@ -143,8 +143,9 @@ class Boot extends DI {
   }
 
   def initServerLogic(): Unit = {
-    DI.homeSpaLogic = Interpreters.homeSpaLogic
-    DI.projectServer = Interpreters.projectServer
+    DI.publicSpaLogic = Interpreters.publicSpaLogic
+    DI.homeSpaLogic   = Interpreters.homeSpaLogic
+    DI.projectServer  = Interpreters.projectServer
   }
 
   def initTaskman(s: ServerConfig): Unit = {

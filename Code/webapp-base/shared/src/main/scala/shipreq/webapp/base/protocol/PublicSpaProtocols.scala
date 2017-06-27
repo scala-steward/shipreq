@@ -7,6 +7,8 @@ import BinCodecGeneric._
   */
 object PublicSpaProtocols {
 
+  type InitData = Unit
+
   final val EntryPointName = "A"
-  val EntryPoint = ClientSideProc[Unit](EntryPointName)
+  val EntryPoint = ClientSideProc[InitData](EntryPointName)
 }

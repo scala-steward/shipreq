@@ -41,6 +41,8 @@ object DB {
                          hashes: HashRec.Collection): F[Option[Throwable]]
   }
 
+  trait ForPublicSpa[F[_]] extends Base[F]
+
   trait ForHomeSpa[F[_]] extends Base[F] with SaveProjectEvent[F] {
     def createEmptyProject          (id: UserId): F[ProjectId]
     def getAllProjectMetaDataForUser(id: UserId): F[List[ProjectMetaData]]
@@ -53,5 +55,8 @@ object DB {
   }
   type ProjectEvents = SortedMap[EventOrd, VerifiedEvent]
 
-  trait Algebra[F[_]] extends ForHomeSpa[F] with ForProjectSpa[F]
+  trait Algebra[F[_]]
+    extends ForPublicSpa[F]
+       with ForHomeSpa[F]
+       with ForProjectSpa[F]
 }

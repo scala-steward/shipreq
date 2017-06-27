@@ -12,7 +12,7 @@ object Main extends ClientSideProcImpl(PublicSpaProtocols.EntryPoint) {
 
 //    Styles.addToDocument()
 
-    page.LandingPage.Props().render
+    pages.LandingPage.Props().render
       .renderIntoDOM(dom.document.getElementById("tgt"))
   }
 }
