@@ -135,7 +135,7 @@ object FilterEditor {
         onRight    = TagMod(clearButton, onRight)
       }
 
-      Input.IconTextRight(
+      Input.Text.iconAndRightAction(
         filterIcon,
         input.ref(inputNode = _),
         onRight,

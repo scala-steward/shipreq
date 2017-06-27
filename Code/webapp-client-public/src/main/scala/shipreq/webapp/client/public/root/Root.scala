@@ -18,8 +18,16 @@ final class Root(cp: ClientProtocol) {
     .build
 
   final class Backend($: BackendScope[Props, State]) {
-    def render(p: Props, s: State): VdomElement =
-      Layout.Component(Layout.Props(p.page, p.routerCtl))
+    def render(p: Props, s: State): VdomElement = {
+      import shipreq.webapp.client.public.pages._
+
+      val content: VdomElement =
+        p.page match {
+          case Page.LandingPage => LandingPage.Props().render
+        }
+
+      Layout.Component(Layout.Props(p.page, p.routerCtl, content))
+    }
   }
 
 }

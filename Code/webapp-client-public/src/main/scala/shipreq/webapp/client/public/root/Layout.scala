@@ -11,14 +11,14 @@ import shipreq.webapp.client.public.Styles.{layout => *}
 
 object Layout {
 
-  final case class Props(currentPage: Page, routerCtl: RouterCtl) {
+  final case class Props(currentPage: Page, routerCtl: RouterCtl, content: VdomElement) {
     @inline def render: VdomElement = Component(this)
   }
 
   private def render(p: Props): VdomElement =
     <.div(*.cont,
       Header.Component(p),
-      <.main(*.main, p.toString),
+      <.main(*.main, p.content),
       Footer.Component(p))
 
   val Component = ScalaComponent.builder[Props]("Layout")

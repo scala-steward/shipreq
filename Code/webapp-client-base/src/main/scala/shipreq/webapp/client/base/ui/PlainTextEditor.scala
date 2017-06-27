@@ -73,7 +73,7 @@ object PlainTextEditor {
           case EditorStatus.InTransit =>
             <.div(
               <.div(
-                Input.loadingDisabled(p.text)(p.inputContMod)))
+                Input.Text.loadingDisabled(p.text)(p.inputContMod)))
 
           case EditorStatus.Invalid(err) =>
             renderWithError(err)

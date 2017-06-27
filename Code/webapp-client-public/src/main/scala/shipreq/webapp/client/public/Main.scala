@@ -14,6 +14,7 @@ object Main extends ClientSideProcImpl(PublicSpaProtocols.EntryPoint) {
     val root    = new Root(cp)
     val baseUrl = BaseUrl.fromWindowOrigin
     val router  = Router(baseUrl, Routes.routerConfig(root))
+    Styles.addToDocument()
     router().renderIntoDOM(`#root`)
   }
 }
