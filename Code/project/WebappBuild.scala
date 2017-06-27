@@ -423,11 +423,13 @@ object WebappBuild {
             (start in Jetty).dependsOn(DockerEnv.dev.devEnvStart).value
         )
 
-    def webappCmdAliases: Project => Project =
+    def webappCmdAliases: Project => Project = {
+      val w = "webapp-server"
       addCommandAliases(
-        "js" -> "webappPrepare",            // compile JavaScript
-        "up" -> ";jetty:stop ;jetty:start", // webapp Up
-        "d"  -> "jetty:stop")               // webapp Down
+        "js" -> s"$w/webappPrepare",               // compile JavaScript
+        "up" -> s";$w/jetty:stop ;$w/jetty:start", // webapp Up
+        "d"  -> s"$w/jetty:stop")                  // webapp Down
+    }
 
     def definition: Project => Project = _
       .enablePlugins(JettyPlugin, WarPlugin, DockerPlugin)
