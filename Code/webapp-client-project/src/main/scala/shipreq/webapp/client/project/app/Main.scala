@@ -27,23 +27,20 @@ object Main extends ClientSideProcImpl(ProjectSpaProtocols.EntryPoint) {
     Style.addToDocument()
     ClientData.initAsync(cp, i.initAsync)(onSuccess, onFailure).runNow()
 
-    def domTarget() =
-      dom.document.getElementById("tgt")
-
     def onSuccess(cd: ClientData): Callback =
       Callback {
         CometListener.init(cd)
         val root    = new LoadedRoot(i, cp, cd)
         val baseUrl = determineBaseUrl(dom.window.location.href)
         val router  = Router(baseUrl, Routes.routerConfig(root))
-        router().renderIntoDOM(domTarget())
+        router().renderIntoDOM(`#root`)
       }
 
     def onFailure(error: String): Callback =
       Callback {
         val lp = LoadingPage.Props(i.username, i.projectName)
         val lf = LoadFailedPage.Props(lp, error)
-        LoadFailedPage.Component(lf).renderIntoDOM(domTarget())
+        LoadFailedPage.Component(lf).renderIntoDOM(`#root`)
       }
   }
 }

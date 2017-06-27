@@ -1,6 +1,5 @@
 package shipreq.webapp.client.public
 
-import org.scalajs.dom
 import scala.scalajs.js.annotation.JSExportTopLevel
 import shipreq.webapp.base.protocol.PublicSpaProtocols
 import shipreq.webapp.client.base.protocol.{ClientSideProcImpl, ClientProtocol}
@@ -12,7 +11,6 @@ object Main extends ClientSideProcImpl(PublicSpaProtocols.EntryPoint) {
 
 //    Styles.addToDocument()
 
-    pages.LandingPage.Props().render
-      .renderIntoDOM(dom.document.getElementById("tgt"))
+    pages.LandingPage.Props().render.renderIntoDOM(`#root`)
   }
 }

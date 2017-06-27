@@ -1,6 +1,5 @@
 package shipreq.webapp.client.home
 
-import org.scalajs.dom
 import scala.scalajs.js.annotation.JSExportTopLevel
 import shipreq.webapp.client.base.CssSettings._
 import scalacss.ScalaCssReact._
@@ -17,8 +16,7 @@ object Main extends ClientSideProcImpl(HomeSpaProtocols.EntryPoint) {
     BaseStyles.addToDocument()
     Styles.addToDocument()
 
-    Home.Props(i, ClientProtocol.Default).render
-      .renderIntoDOM(dom.document.getElementById("tgt"))
+    Home.Props(i, ClientProtocol.Default).render.renderIntoDOM(`#root`)
   }
 }
 

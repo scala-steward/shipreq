@@ -1,6 +1,7 @@
 package shipreq.webapp.client.base.protocol
 
 import boopickle.UnpickleImpl
+import org.scalajs.dom
 import scala.scalajs.js.annotation.JSExport
 import shipreq.webapp.base.protocol.ClientSideProc
 
@@ -12,6 +13,8 @@ abstract class ClientSideProcImpl[Input](proc: ClientSideProc[Input]) {
 
   final def decodeInput(s: String): Input =
     UnpickleImpl(proc.pickler) fromBytes ClientProtocol.Default.base64ToBinary(s)
+
+  protected def `#root` = dom.document.getElementById("root")
 
   def run(i: Input): Unit
 }
