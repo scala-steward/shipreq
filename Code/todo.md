@@ -44,7 +44,7 @@ Backlog
 * Rewrite front pages with scalajs-react (?)
 * Remove unused styles
 * Change ScalaCSS to generate Scala.JS without the runtime/JS-size overhead
-
+* Fix packages after removal of webapp-client-base modules
 
 ------------------------------------------------------------------------------------------------------------------------
 Phase 2 (dev-complete)

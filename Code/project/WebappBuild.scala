@@ -40,7 +40,6 @@ object WebappBuild {
       .aggregate(
         webappMacroJvm, webappBaseJvm, webappServerLogicJvm, webappBaseTestJvm, webappGenJvm,
         webappMacroJs , webappBaseJs , webappServerLogicJs , webappBaseTestJs , webappGenJs ,
-        webappClientBase, webappClientBaseTest,
         webappClientPublic,
         webappClientHome,
         webappClientWwApi, webappClientWw, webappClientProject,
@@ -73,13 +72,11 @@ object WebappBuild {
     crossProject("webapp-base")
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoTests))
-      .depsForBoth(
-        μPickle ++ Monocle.macros ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle ++
-        testScope(μTest)) // TODO Move tests into this
       .dependsOn(baseUtil, webappMacro)
       .configureBoth(useMacroParadise)
-      .settings(
-        unmanagedSourceDirectories in Compile += baseDirectory.value / ".." / Frontend.scala)
+      .depsForBoth(Monocle.macros ++ shapeless ++ Nyaya.prop ++ parboiled ++ boopickle)
+      .depsForJs(React.most ++ scalajsDom ++ providedScope(ScalaCSS.react))
+      .settings(unmanagedSourceDirectories in Compile += baseDirectory.value / ".." / Frontend.scala)
 
   lazy val webappBaseTestJvm = webappBaseTest.jvm
   lazy val webappBaseTestJs  = webappBaseTest.js
@@ -87,30 +84,12 @@ object WebappBuild {
     crossProject("webapp-base-test")
       .configureBoth(Common.testModuleSettings)
       .configureJvm(Common.jvmSettings)
-      .configureJs(Common.jsSettings(NoDom))
-      .depsForBoth(μTest ++ Nyaya.test)
+      .configureJs(Common.jsSettings(NeedDom))
       .dependsOn(baseTest, webappBase)
-
-  lazy val webappClientBase =
-    project("webapp-client-base")
-      .enablePlugins(ScalaJSPlugin)
-      .dependsOn(baseUtilJs, webappBaseJs, webappBaseTestJs % "test")
+      .depsForBoth(μTest ++ Nyaya.test)
       .depsForJs(
-        Scalaz.effect ++ React.most ++ Monocle.macros ++ scalajsDom ++ boopickle ++
-        providedScope(ScalaCSS.react))
-      .configure(
-        Common.jsSettings(NeedDom),
-        useMacroParadise)
-        // Common.jsFastDevSettings,
-
-  lazy val webappClientBaseTest =
-    project("webapp-client-base-test")
-      .enablePlugins(ScalaJSPlugin)
-      .configure(Common.jsSettings(NeedDom), useMacroParadise)
-      .dependsOn(webappClientBase, webappServerLogicJs, webappBaseTestJs)
-      .depsForJs(
-        TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact ++
-        React.test ++ ScalaCSS.react ++ μTest ++ Nyaya.test)
+        React.test ++ ScalaCSS.react ++
+        TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact)
 
   /** Settings for client SPA projects.
     *
@@ -119,14 +98,8 @@ object WebappBuild {
   private lazy val clientSpa: Project => Project =
     _.enablePlugins(ScalaJSPlugin)
       .configure(Common.jsSettings(NeedDom), useMacroParadise)
-      .dependsOn(webappClientBase, webappClientBaseTest % "test")
-      .depsForJs(
-        Scalaz.effect ++ React.most ++ Monocle.macros ++ scalajsDom ++ boopickle ++
-        testScope(
-          TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact ++
-          React.test ++ μTest ++ Nyaya.test))
-      .settings(
-        jsDependencies in Test += ProvidedJS / "webapp-client-test.js")
+      .dependsOn(webappBaseJs, webappBaseTestJs % "test", webappServerLogicJs % "test")
+      .settings(jsDependencies in Test += ProvidedJS / "webapp-client-test.js")
 
   lazy val webappClientPublic =
     project("webapp-client-public")
@@ -150,7 +123,7 @@ object WebappBuild {
     project("webapp-client-ww")
       .enablePlugins(ScalaJSPlugin)
       .configure(Common.jsSettings(NeedDom))
-      .dependsOn(webappClientWwApi, webappClientBaseTest % "test")
+      .dependsOn(webappClientWwApi, webappBaseTestJs % "test")
       .depsForJs(
         boopickle ++ scalajsDom ++
         testScope(μTest))
@@ -182,7 +155,7 @@ object WebappBuild {
   lazy val webappServerLogic =
     crossProject("webapp-server-logic")
       .configureJvm(Common.jvmSettings, _.dependsOn(taskmanApiLogic), useMacroParadise)
-      .configureJs(Common.jsSettings(NoDom))
+      .configureJs(Common.jsSettings(NeedDom)) // TODO NeedDom isn't true but required cos webappBaseTest loads in Sizzle
       .dependsOn(webappBase)
       .dependsOn(baseTest % "test", webappBaseTest % "test")
       .depsForBoth(testScope(μTest ++ Nyaya.test))

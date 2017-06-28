@@ -38,7 +38,6 @@ subgraph cluster_t {
     webappMacro [label="webapp-macro\n(Scala & JS)"]
     webappBase [label="webapp-base\n(Scala & JS)"]
     webappServerLogic [label="webapp-server-logic\n(Scala & JS)"]
-    webappClientBase [label="webapp-client-base\n(JS)"]
     webappClientPublic [label="webapp-client-public\n(JS)"]
     webappClientHome [label="webapp-client-home\n(JS)"]
     webappClientWwApi [label="webapp-client-ww-api\n(JS)"]
@@ -49,7 +48,6 @@ subgraph cluster_t {
 
     node[fillcolor=white color=blue]
     webappBaseTest [label="webapp-base-test\n(Scala & JS)"]
-    webappClientBaseTest [label="webapp-client-base-test\n(JS)"]
   }
 
   taskman [label="[aggregate]\ntaskman" fillcolor="#ffff80"]
@@ -90,18 +88,15 @@ webappBase -> webappMacro
 webappServerLogic -> webappBase,taskmanApi
 webappServerLogic -> webappBaseTest [color="#111111" style=dashed label="test"]
 webappBaseTest -> baseTest,webappBase [color="#111111"]
-webappClientBase -> webappBase
-webappClientBase -> webappBaseTest [color="#111111" style=dashed label="test"]
-webappClientBaseTest -> webappClientBase,webappBaseTest [color="#111111"]
-webappClientHome -> webappClientBase
-webappClientHome -> webappClientBaseTest [color="#111111" style=dashed label="test"]
-webappClientPublic -> webappClientBase
-webappClientPublic -> webappClientBaseTest [color="#111111" style=dashed label="test"]
+webappClientHome -> webappBase
+webappClientHome -> webappBaseTest [color="#111111" style=dashed label="test"]
+webappClientPublic -> webappBase
+webappClientPublic -> webappBaseTest [color="#111111" style=dashed label="test"]
 webappClientWwApi -> webappBase
 webappClientWw -> webappClientWwApi
-webappClientWw -> webappClientBaseTest [color="#111111" style=dashed label="test"]
-webappClientProject -> webappClientBase,webappClientWwApi
-webappClientProject -> webappClientBaseTest [color="#111111" style=dashed label="test"]
+webappClientWw -> webappBaseTest [color="#111111" style=dashed label="test"]
+webappClientProject -> webappBase,webappClientWwApi
+webappClientProject -> webappBaseTest [color="#111111" style=dashed label="test"]
 webappGen -> webappBase
 webappGen -> webappClientProject [color="#111111" style=dashed label="run"]
 webappGen -> webappBaseTest [color="#111111" style=dashed label="test"]

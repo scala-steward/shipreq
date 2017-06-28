@@ -111,13 +111,11 @@ deps = M.fromList [
          ("webapp-gen",              []) , -- I'm lazy
          ("webapp-server-logic",     ["webapp-base", "taskman-api-logic"]) ,
          ("webapp-server",           ["webapp-gen", "webapp-server-logic", "webapp-base-test", "base-db", "taskman-api-impl"]) ,
-         ("webapp-client-base",      ["webapp-base-test", "base-util"]) ,
-         ("webapp-client-base-test", ["webapp-base-test", "webapp-client-base"]) ,
-         ("webapp-client-public",    ["webapp-client-base-test"]) ,
-         ("webapp-client-home",      ["webapp-client-base-test"]) ,
+         ("webapp-client-public",    ["webapp-base-test"]) ,
+         ("webapp-client-home",      ["webapp-base-test"]) ,
          ("webapp-client-ww-api",    ["webapp-base"]) ,
-         ("webapp-client-ww",        ["webapp-client-base-test", "webapp-client-ww-api"]) ,
-         ("webapp-client-project",   ["webapp-client-base-test", "webapp-client-ww-api"]) ,
+         ("webapp-client-ww",        ["webapp-base-test", "webapp-client-ww-api"]) ,
+         ("webapp-client-project",   ["webapp-base-test", "webapp-client-ww-api"]) ,
          ("webapp-base-test",        ["webapp-base"]) ,
          ("webapp-base",             ["webapp-macro", "base-util"]) ,
          ("webapp-macro",            ["base-util"]) ,
@@ -239,8 +237,7 @@ topLevelModuleStatReport gs =
 customiseDetailedView :: [GroupD] -> [GroupD]
 customiseDetailedView gs =
   let w1                           = customiseDetailedView' "webapp" "webapp-base"
-      w2                           = customiseDetailedView' "webapp" "webapp-client-base"
-      f g@ GroupD {gname="webapp"} = (w1 . w2) g
+      f g@ GroupD {gname="webapp"} = w1 g
       f g@ GroupD {}               = g
   in map f gs
 

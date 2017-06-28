@@ -79,10 +79,8 @@ taskman-server-impl   - Taskman server (real: side-effects). Exported via Docker
 taskman-server-logic  - Taskman server (pure: types and logic)
 taskman-server-schema - Taskman DB schema
 
-webapp-base             - Shared code between front- and back-end.
-webapp-base-test        - Shared code for webapp testing. Tests for webapp-base.
-webapp-client-base      - Shared code for frontend projects.
-webapp-client-base-test - Shared code for testing frontend projects.
+webapp-base             - Shared code between client and/or server modules.
+webapp-base-test        - Shared code for testing client and/or server modules. Tests for webapp-base.
 webapp-client-home      - SPA for when a user logs in. Project CRUDL, view/edit account, etc.
 webapp-client-project   - SPA for working with a Project.
 webapp-client-ww        - WebWorkers for big background tasks like graphviz→SVG generation.
