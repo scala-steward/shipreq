@@ -3,7 +3,7 @@ package shipreq.webapp.client.public.root
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.extra._
-import shipreq.webapp.client.base.protocol.ClientProtocol
+import shipreq.webapp.base.protocol.ClientProtocol
 
 object Root {
   final case class Props(page: Page, routerCtl: RouterCtl)

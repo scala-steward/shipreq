@@ -6,9 +6,9 @@ import shipreq.base.util.PotentialChange._
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.protocol._
-import shipreq.webapp.client.base.data.TCB
-import shipreq.webapp.client.base.protocol.RemoteFailure
-import shipreq.webapp.client.base.test._
+import shipreq.webapp.base.data.TCB
+import shipreq.webapp.base.protocol.RemoteFailure
+import shipreq.webapp.base.test._
 import shipreq.webapp.server.logic._
 import ProjectSpaProtocols._
 import TestClientProtocol.Req

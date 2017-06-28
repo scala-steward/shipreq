@@ -3,7 +3,7 @@ package shipreq.webapp.client.public.pages
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.webapp.base.{AssetManifest, WebappConfig}
-import shipreq.webapp.client.base.ui.semantic.{Button, Colour, Form, Icon, Input, Size}
+import shipreq.webapp.base.ui.semantic.{Button, Colour, Form, Icon, Input, Size}
 import shipreq.webapp.client.public.Styles.{landingPage => *}
 
 object LandingPage {

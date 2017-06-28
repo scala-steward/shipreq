@@ -9,9 +9,9 @@ import utest._
 import shipreq.webapp.base.data.{ProjectMetaData, Username}
 import shipreq.webapp.base.protocol.HomeSpaProtocols.InitData
 import shipreq.webapp.base.test.MockRemotes
-import shipreq.webapp.client.base.test.TestClientProtocol
-import shipreq.webapp.client.base.test.TestState._
-import shipreq.webapp.client.base.ui.BaseStyles
+import shipreq.webapp.base.test.TestClientProtocol
+import shipreq.webapp.base.test.TestState._
+import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.client.home.test.PrepareEnv
 
 final class HomeObs(cp: TestClientProtocol, $: HtmlDomZipper) {
