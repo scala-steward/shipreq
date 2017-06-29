@@ -67,7 +67,7 @@ final case class UserFixture(xa: SingleConnectionXA) {
     val i1 = Query[(String, String, String, String, Option[String]), Long]("INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at, roles) VALUES(?,?,?,?,NOW(),NOW(),NOW(),?) RETURNING id")
     val inserts1: List[IO[Unit]] =
       for (u <- users) yield {
-        i1.toQuery0(u.username.value, u.email.value, u.hashedPassword.value, u.salt, UserFixture.roleStr(u.roles))
+        i1.toQuery0(u.username.value, u.email.value, u.hashedPassword.value, u.salt.toBase64, UserFixture.roleStr(u.roles))
           .unique
           .map { rawId =>
             val id = UserId(rawId)

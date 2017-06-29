@@ -19,8 +19,8 @@ object SqlHelpers {
 
   implicit val doobieCompositePasswordAndSalt =
     Composite[(HashedStr, String)].xmap[PasswordAndSalt](
-      (PasswordAndSalt.restore _).tupled,
-      v => (v.hashedPassword, v.salt))
+      p => PasswordAndSalt(p._1, Salt.fromBase64(p._2)),
+      v => (v.hashedPassword, v.salt.toBase64))
 
   implicit val doobieCompositeResetPasswordInfo: Composite[ResetPasswordInfo] =
     Composite.generic
@@ -49,14 +49,14 @@ object SqlHelpers {
                                            email         : EmailAddr,
                                            rolesStr      : Option[String],
                                            hashedPassword: Option[HashedStr],
-                                           saltBytes     : Option[String]) {
+                                           saltBase64    : Option[String]) {
     def resolve: Option[(User, PasswordAndSalt)] =
       for {
         u <- username
         a <- hashedPassword
-        b <- saltBytes
+        b <- saltBase64
         roles = rolesStr.fold(Set.empty[String])(_.split(',').toSet)
-      } yield (User(id, u, email, roles), PasswordAndSalt.restore(a, b))
+      } yield (User(id, u, email, roles), PasswordAndSalt(a, Salt.fromBase64(b)))
   }
 
   implicit val doobieCompositeUserDescAndPasswordInDb: Composite[UserDescAndPasswordInDb] =

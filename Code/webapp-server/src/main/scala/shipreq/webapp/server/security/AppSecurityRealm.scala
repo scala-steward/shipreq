@@ -1,9 +1,8 @@
-package shipreq.webapp.server
-package security
+package shipreq.webapp.server.security
 
 import org.apache.shiro.realm.AuthenticatingRealm
 import org.apache.shiro.authc._
-import app.Global
+import shipreq.webapp.server.app.Global
 import shipreq.webapp.server.db.DbLogic
 
 /**
@@ -25,7 +24,7 @@ class AppSecurityRealm extends AuthenticatingRealm {
 
     // Result
     val info = new SimpleAuthenticationInfo(Some(user), cred.hashedPassword.value, getName)
-    info.setCredentialsSalt(cred.saltBytes)
+    info.setCredentialsSalt(cred.salt.byteSource)
     info
   }
 }

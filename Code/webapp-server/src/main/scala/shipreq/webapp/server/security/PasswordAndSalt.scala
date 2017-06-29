@@ -1,25 +1,42 @@
 package shipreq.webapp.server.security
 
+import japgolly.univeq._
 import org.apache.shiro.util.ByteSource
 import org.apache.shiro.codec.Base64
 import org.apache.shiro.crypto.hash.SimpleHash
 import Oshiro._
 
-/** Marks a password as being hashed. */
+/** A hashed string. */
 final case class HashedStr(value: String) extends AnyVal
+object HashedStr {
+  implicit def univEq: UnivEq[HashedStr] = UnivEq.derive
+}
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+final case class Salt(byteSource: ByteSource) extends AnyVal {
+  def toBase64: String =
+    byteSource.toBase64
+
+  def hash(plainTextPassword: String): HashedStr =
+    HashedStr(new SimpleHash(HashingAlgorithm, plainTextPassword, byteSource, HashingIterations).toBase64)
+}
+object Salt {
+  def random(): Salt =
+    apply(RNG.nextBytes())
+
+  def fromBase64(base64: String): Salt =
+    apply(ByteSource.Util.bytes(Base64.decode(base64)))
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /**
  * A hashed password and the salt used to generate the hash.
  */
-final case class PasswordAndSalt(hashedPassword: HashedStr, saltBytes: ByteSource) {
-  def salt = saltBytes.toBase64
-
-  def hash(plainTextPassword: String): HashedStr =
-    PasswordAndSalt.hash(plainTextPassword, saltBytes)
-
+final case class PasswordAndSalt(hashedPassword: HashedStr, salt: Salt) {
   def matches(plainTextPassword: String): Boolean =
-    hash(plainTextPassword) == hashedPassword
+    salt.hash(plainTextPassword) ==* hashedPassword
 }
 
 /**
@@ -27,18 +44,9 @@ final case class PasswordAndSalt(hashedPassword: HashedStr, saltBytes: ByteSourc
  */
 object PasswordAndSalt {
 
-  def create(plainTextPassword: String, salt: ByteSource): PasswordAndSalt =
-    PasswordAndSalt(hash(plainTextPassword, salt), salt)
+  def create(plainTextPassword: String, salt: Salt): PasswordAndSalt =
+    PasswordAndSalt(salt.hash(plainTextPassword), salt)
 
   def createWithRandomSalt(plainTextPassword: String): PasswordAndSalt =
-    create(plainTextPassword, RNG.nextBytes())
-
-  def hash(plainTextPassword: String, salt: ByteSource): HashedStr =
-    HashedStr(new SimpleHash(HashingAlgorithm, plainTextPassword, salt, HashingIterations).toBase64)
-
-  def salt(salt: String): ByteSource =
-    ByteSource.Util.bytes(Base64.decode(salt))
-
-  def restore(password: HashedStr, saltStr: String): PasswordAndSalt =
-    PasswordAndSalt(password, salt(saltStr))
+    create(plainTextPassword, Salt.random())
 }
