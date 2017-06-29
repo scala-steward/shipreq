@@ -18,8 +18,8 @@ import shipreq.webapp.base.util.TextMod
 import shipreq.webapp.base.validation.{CommonValidation => V, _}
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.WebappConfig
-import Simple._
-import Simple.Implicits._
+import shipreq.webapp.base.validation.Simple._
+import shipreq.webapp.base.validation.Implicits._
 import Uniqueness.Util._
 
 object DataValidators {

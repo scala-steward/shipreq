@@ -10,8 +10,8 @@ import shipreq.webapp.base.data.Username
 import shipreq.webapp.base.util.TextMod
 import shipreq.webapp.server.security.PasswordAndSalt
 import shipreq.webapp.base.validation.{CommonValidation => CV, _}
-import Simple._
-import Simple.Implicits._
+import shipreq.webapp.base.validation.Simple._
+import shipreq.webapp.base.validation.Implicits._
 
 object ServerSideValidators { // TODO
 

@@ -10,7 +10,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data.{DataValidators => V, _}
 import shipreq.webapp.base.text.{Grammar, Text}
-import shipreq.webapp.base.validation.Simple.Implicits._
+import shipreq.webapp.base.validation.Implicits._
 import ApplyEventLib._
 import DataImplicits._
 import MTrie.Ops
