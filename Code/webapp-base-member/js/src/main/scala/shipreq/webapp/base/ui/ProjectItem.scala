@@ -56,7 +56,7 @@ object ProjectItem {
 
         val header =
           <.h1(*.itemHeaderRO,
-            <.a(^.href := MemberUrls.project(p.id), p.name))
+            <.a(^.href := MemberUrls.project(p.id).relativeUrl, p.name))
 
         TagMod(header, renderMeta(p))
       }

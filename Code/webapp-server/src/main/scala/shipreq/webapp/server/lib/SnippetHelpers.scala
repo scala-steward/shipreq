@@ -2,11 +2,10 @@ package shipreq.webapp.server.lib
 
 import net.liftweb.http._
 import net.liftweb.json.{NoTypeHints, Serialization, Serializer}
-import net.liftweb.sitemap.Menu
 import scala.xml.NodeSeq
+import shipreq.base.util.Url
 import shipreq.base.util.log.HasLogger
 import shipreq.webapp.base.user._
-import shipreq.webapp.server.app.AppSiteMap.Implicits._
 import shipreq.webapp.server.app.{AppSiteMap, Global}
 import shipreq.webapp.server.util.HttpResponses.ShouldNeverHappenResponse
 import shipreq.webapp.server.util.JsExt._
@@ -31,7 +30,6 @@ object SnippetHelpers extends StaticSnippetHelpers {
   }
 
   final val DefaultJsonFormat = Serialization.formats(NoTypeHints) + JqExprJsonSerializer + NodeSeqJsonSerializer
-
 }
 
 /**
@@ -42,11 +40,9 @@ trait StaticSnippetHelpers extends HasLogger {
   def respondImmediately(response: LiftResponse): Nothing =
     throw ResponseShortcutException.shortcutResponse(response)
 
-  def redirectHome()                                    : Nothing = respondImmediately(AppSiteMap.redirectHome)
-  def redirectToLogin()                                 : Nothing = respondImmediately(AppSiteMap.redirectToLogin)
-  def redirectTo(page: Menu)                            : Nothing = S.redirectTo(page.relativeUrl)
-  def redirectTo(page: Menu.Menuable)                   : Nothing = S.redirectTo(page.relativeUrl)
-  def redirectTo[T](page: Menu.ParamMenuable[T])(arg: T): Nothing = S.redirectTo(page.relativeUrl(arg))
+  def redirectHome()               : Nothing = respondImmediately(AppSiteMap.redirectHome)
+  def redirectToLogin()            : Nothing = respondImmediately(AppSiteMap.redirectToLogin)
+  def redirectTo(url: Url.Relative): Nothing = S.redirectTo(url.relativeUrl)
 
   def shouldNeverHappen_! : Nothing =
     respondImmediately(ShouldNeverHappenResponse) // TODO do more! notify Taskman! etc
@@ -71,14 +67,8 @@ trait SnippetHelpers extends StaticSnippetHelpers with Misc with HasLogger {
     currentUser() getOrElse redirectToLogin()
 }
 
-/** A stateful snippet with only one rendering method. */
-abstract class SingleOpStatefulSnippet extends StatefulSnippet with SnippetHelpers {
-  override def dispatch = { case _ => render }
-  def render: NodeSeq => NodeSeq
-}
-
 /** A stateless snippet with only one rendering method. */
 abstract class SingleOpStatelessSnippet extends DispatchSnippet with SnippetHelpers {
-  override def dispatch = { case _ => render }
+  final override def dispatch = { case _ => render }
   def render: NodeSeq => NodeSeq
 }

@@ -2,9 +2,8 @@ package shipreq.webapp.server.app
 
 import org.apache.commons.httpclient.{HttpClient, HttpMethodBase}
 import org.scalatest.FunSpec
-import shipreq.webapp.base.AssetManifest
-import shipreq.webapp.server.app.AppSiteMap.Implicits._
-import shipreq.webapp.server.app.AppSiteMap._
+import shipreq.webapp.base.{AssetManifest, MemberUrls, PublicUrls}
+import shipreq.webapp.server.logic.ProjectId
 import shipreq.webapp.server.test.UserFixture.TestUser
 import shipreq.webapp.server.test.{DbUtil, LiveTest, UserFixture}
 
@@ -33,7 +32,7 @@ class LivePermissionTest extends FunSpec with LiveTest {
     post("/login.api", "user" -> user.username.value, "pass" -> user.password) !@ "Failed to log in"
 
   def loginShouldBeRequiredFor(url: String) =
-    get(url) shouldRedirectTo LoginRelativeUrl
+    get(url) shouldRedirectTo PublicUrls.login.relativeUrl
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -55,7 +54,7 @@ class LivePermissionTest extends FunSpec with LiveTest {
   }*/
 
   describe("/project") {
-    lazy val url = Project.relativeUrl(pid)
+    lazy val url = MemberUrls.project(ProjectId.Extern(pid)).relativeUrl
 
     it("should deny anon") {
       loginShouldBeRequiredFor(url)

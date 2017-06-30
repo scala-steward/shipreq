@@ -8,7 +8,7 @@ import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
 import scala.xml.{NodeSeq, Text}
 import scalaz.{Name, Need}
-import shipreq.base.util.Memo
+import shipreq.base.util.{Memo, Url}
 import shipreq.webapp.base._
 import shipreq.webapp.server.data._
 import shipreq.webapp.server.feature.{DiagnosticEndpoints, SessionStats}
@@ -25,6 +25,16 @@ object AppSiteMap { // TODO Cleanup
     def setByParam(pm: PM[T], desc: String) = setReqVar(rv, pm, desc)
   }
 
+  private implicit def UrlExt(self: Url.Relative) = new UrlExt(self.relativeUrl)
+  private class UrlExt(private val s: String) extends AnyVal {
+    def toLift: String = if (s.length == 1) "index" else s.substring(1)
+    def redirectResponse = RedirectResponse(s)
+  }
+  private implicit class PreMenuExt(private val self: Menu.PreMenu) extends AnyVal {
+    import Menu._
+    def /(u: Url.Relative): Menuable with WithSlash = self / u.toLift
+  }
+
   private val publicTemplate = "public"
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -33,14 +43,14 @@ object AppSiteMap { // TODO Cleanup
   // Menu.param[PARAM_TYPE(S)](NAME, TITLE, URL_TO_PARAM, PARAM_TO_URL) / PATH_FOR_URL_AND_TEMPLATE
 
   val Home =
-    pageWithStaticUrl("home", defaultTitle, "Home")(_ / MemberUrls.ForLift.home
+    pageWithStaticUrl("home", defaultTitle, "Home")(_ / PublicUrls.home
       >> UseEitherTemplate(Oshiro.isAuthenticated(), "members-home")(publicTemplate))
 
 //  val LandingPageViaBusinessCard =
 //    pageWithStaticUrl("land-bc", "")(_ / "bc" >> UseTemplate(publicTemplate))
 
   val Logout =
-    pageWithStaticUrl("logout", defaultTitle, "Logout")(_ / MemberUrls.ForLift.logout >> EarlyResponse(() => logout()))
+    pageWithStaticUrl("logout", defaultTitle, "Logout")(_ / MemberUrls.logout >> EarlyResponse(() => logout()))
 
 //  val Register2 =
 //    (Menu.param[String]("register2", "", i => Full(i), o => o) / "register" / *
@@ -57,7 +67,7 @@ object AppSiteMap { // TODO Cleanup
 //      >> Hidden)
 
   val Project: PM[ProjectId] =
-    (MenuWithIdParam(ProjectId.Extern)("project") / MemberUrls.ForLift.project / * / **
+    (MenuWithIdParam(ProjectId.Extern)("project") / MemberUrls.project.prefix.toLift / * / **
       >> StaticTitle(defaultTitle)
       >> AuthenticationRequired >> ProjectPermissionRequired
       >> UseTemplate("members-project")
@@ -115,59 +125,9 @@ object AppSiteMap { // TODO Cleanup
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  object Implicits {
-    private def BaseUrl = Global.config.baseUrl
+  lazy val redirectHome = PublicUrls.home.redirectResponse
 
-    private def newUrlMemo(f: Loc[_] => String): Loc[_] => String =
-      Memo.byRef(f)
-
-    private val relUrlMemo = newUrlMemo { loc =>
-      val s = loc.calcDefaultHref
-      if (s.endsWith("/index"))
-        if (s.length == 6)
-          "/"
-        else
-          s.substring(0, s.length - 6)
-      else
-        s
-    }
-
-    private val absUrlMemo = newUrlMemo(
-      _.relativeUrl match {
-        case "/" => BaseUrl
-        case s   => BaseUrl + s
-      }
-    )
-
-    implicit class LocExt(val loc: Loc[_]) extends AnyVal {
-      def relativeUrl: String = relUrlMemo(loc)
-      def absoluteUrl: String = absUrlMemo(loc)
-    }
-
-    implicit class MenuExt(val menu: Menu) extends AnyVal {
-      def relativeUrl: String = menu.loc.relativeUrl
-      def absoluteUrl: String = menu.loc.absoluteUrl
-    }
-
-    implicit class MenuableExt(val menu: Menu.Menuable) extends AnyVal {
-      def relativeUrl: String = menu.loc.relativeUrl
-      def absoluteUrl: String = menu.loc.absoluteUrl
-    }
-
-    implicit class ParamMenuableExt[T](val menu: Menu.ParamMenuable[T]) extends AnyVal {
-      def relativeUrl(arg: T): String = menu.calcHref(arg)
-      def absoluteUrl(arg: T): String = BaseUrl + relativeUrl(arg)
-    }
-  }
-
-  // -------------------------------------------------------------------------------------------------------------------
-  import Implicits._
-
-  lazy val redirectHome = RedirectResponse(Home.relativeUrl)
-
-  val LoginRelativeUrl = PublicUrls.login
-  def LoginAbsoluteUrl = Global.config.baseUrl + LoginRelativeUrl
-  val redirectToLogin = RedirectResponse(LoginRelativeUrl)
+  val redirectToLogin = PublicUrls.login.redirectResponse
 
   def logout(): Box[LiftResponse] = {
     Oshiro.logout()
@@ -197,7 +157,7 @@ object AppSiteMap { // TODO Cleanup
 //  private def TitleFromProjectName[T] =
 //    DynamicTitle[T](mkTitle(RequestVars.Project.get.value.name))
 
-  private def MenuWithIdParam[Id <: AnyRef](scheme: ExternalId.Scheme[_, Id])(name: String) = {
+  private def MenuWithIdParam[Id <: AnyRef](scheme: ExternalId.Scheme[_, Id])(name: String): Menu.PreParamMenu[Id] = {
     val parseB: String => Box[Id] = s => Box(scheme.parseOption(s))
     Menu.param[Id](name, "", parseB, scheme.toExternal(_).value)
   }

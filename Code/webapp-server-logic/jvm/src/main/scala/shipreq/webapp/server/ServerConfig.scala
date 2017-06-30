@@ -11,7 +11,7 @@ final case class ServerConfig(
 
   supportEmailAddress: String,
 
-  baseUrl: String,
+  baseUrl: Url.Absolute.Base,
 
   /** A short amount of time, unnoticeable to humans, to sleep in order to frustrate automated security attacks. */
   attackFrustrationDelay: Duration,
@@ -48,7 +48,7 @@ object ServerConfig {
 
   def config: Config[ServerConfig] =
     ( Config.need[String]("support.email") |@|
-      Config.need[String]("url") |@|
+      Config.need[String]("url").map(Url.Absolute.Base.apply) |@|
       Config.need[Duration]("attack_frustration_delay") |@|
       Config.need[Int]("token.length") |@|
       Config.need[String]("taskman.schema") |@|

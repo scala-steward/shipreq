@@ -48,7 +48,7 @@ object MemberNavBar {
 
   private val dropdownLogout =
     Dropdown.Item.Link(
-      <.a(^.href := MemberUrls.logout, "Logout"))
+      <.a(^.href := MemberUrls.logout.relativeUrl, "Logout"))
 
   final class Backend($: BackendScope[Props, Unit]) {
 
@@ -84,7 +84,7 @@ object MemberNavBar {
   val MemberHome =
     Breadcrumb.Item.Link(
       <.a(
-        ^.href := MemberUrls.home,
+        ^.href := MemberUrls.home.relativeUrl,
         ClientConfig.BreadcrumbNameMemberHome))
 
   val Divider =

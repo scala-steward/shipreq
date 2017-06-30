@@ -1,16 +1,8 @@
 package shipreq.webapp.base
 
-object PublicUrls {
-  def home : String = "/"
-  def login: String = "/login"
+import shipreq.base.util.Url
 
-  /** This is for Lift in webapp-server and will be DCE'd from JS */
-  object ForLift {
-    private def toLift(s: String): String = {
-      val ss = s.replaceFirst("^/", "")
-      if (ss.isEmpty) "index" else ss
-    }
-    def home : String = toLift(PublicUrls.home)
-    def login: String = toLift(PublicUrls.login)
-  }
+object PublicUrls {
+  val home  = Url.Relative("/")
+  val login = Url.Relative("/login")
 }

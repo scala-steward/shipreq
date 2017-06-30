@@ -1,24 +1,20 @@
 package shipreq.webapp.server.lib
 
-import scalaz.Monad
 import scalaz.effect.IO
 import shipreq.base.util.Error
 import shipreq.taskman.api.Msg.WebappErrorOccurred
-import shipreq.taskman.api.TaskmanApi
-import shipreq.webapp.base.WebappConfig
+import shipreq.webapp.base.{PublicUrls, WebappConfig}
 import shipreq.webapp.server.app.Global
 import shipreq.webapp.server.logic.WebappTaskmanConverters._
 
 object Taskman {
   import shipreq.taskman.api.CfgKeys.{Webapp => K}
-  import shipreq.webapp.server.app.{AppSiteMap => SM}
-  import SM.Implicits._
 
-  def updateCfg[F[_]: Monad](api: TaskmanApi[F]): F[Unit] =
-    api.cfgPutBulk(
+  def updateCfg(g: Global): IO[Unit] =
+    g.taskman.cfgPutBulk(
       K.appName  -> WebappConfig.appName,
-      K.homeUrl  -> SM.Home.absoluteUrl,
-      K.loginUrl -> SM.LoginAbsoluteUrl)
+      K.homeUrl  -> g.config.baseUrl.value,
+      K.loginUrl -> (g.config.baseUrl / PublicUrls.login).absoluteUrl)
 
   def webappErrorOccurred(e: Throwable, url: Option[String], suppInfo: String): WebappErrorOccurred =
     WebappErrorOccurred(
