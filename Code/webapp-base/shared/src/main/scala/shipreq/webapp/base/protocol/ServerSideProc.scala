@@ -68,7 +68,7 @@ object ServerSideProc {
     type Typical[I, O] = Aux[ErrorMsg, I, O]
 
     // Everything just uses ErrorMsg at the moment
-    private[protocol] def apply[I: Pickler, O: Pickler]: Typical[I, O] = {
+    def apply[I: Pickler, O: Pickler]: Typical[I, O] = {
       implicit val r = BinCodecGeneric.pickleXor[ErrorMsg, O]
       lowLevel[ErrorMsg, I, O]
     }

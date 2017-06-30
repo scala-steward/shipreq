@@ -1,6 +1,7 @@
 package shipreq.webapp.server.logic
 
 import scalaz.{Monad, ~>}
+import shipreq.taskman.api.TaskmanApi
 
 /**
   * All server logic.
@@ -11,8 +12,8 @@ final case class ServerLogic[F[_]](publicSpa    : PublicSpaLogic[F],
 
 object ServerLogic {
 
-  def create[D[_] : DB.Algebra : Monad,
-             F[_] : ProjectServer.StoreAlgebra : Server.Algebra : Monad]
+  def create[D[_] : Monad : DB.Algebra,
+             F[_] : Monad : ProjectServer.StoreAlgebra : Server.Algebra : TaskmanApi]
             (b: ProjectServer.BroadcastTo)
             (implicit runDB: D ~> F)
             : ServerLogic[F] =

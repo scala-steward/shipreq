@@ -33,6 +33,7 @@ object Global {
   def default(implicit db: DbAccess, config: ServerConfig): Global = {
     assert(db ne null, "DbAccess is null, sir.")
     val taskmanCtx = TaskmanApiImpl.Context(Some(config.taskmanSchema))
+    implicit val taskman = TaskmanApiImpl(taskmanCtx, db.io.trans)
     import Interpreters._
     Global(
       config     = config,
@@ -40,6 +41,6 @@ object Global {
       logic      = ServerLogic.create[ConnectionIO, IO](ProjectServer.BroadcastTo.All),
       security   = defaultSecurity,
       statLogger = defaultStatLogger,
-      taskman    = TaskmanApiImpl(taskmanCtx, db.io.trans))
+      taskman    = taskman)
     }
 }
