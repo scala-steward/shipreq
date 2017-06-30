@@ -20,5 +20,10 @@ object BinCodecBaseData {
   implicit lazy val pickleDirection: Pickler[Direction] =
     pickleBool(Forwards)
 
+  implicit lazy val picklePermission: Pickler[Permission] =
+    pickleBool(Allow)
+
+  implicit lazy val pickleValidity: Pickler[Validity] =
+    pickleBool(Valid)
 
 }

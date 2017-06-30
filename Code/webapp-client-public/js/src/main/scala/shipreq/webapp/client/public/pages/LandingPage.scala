@@ -5,7 +5,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.webapp.base.{AssetManifest, WebappConfig}
 import shipreq.webapp.base.ui.semantic._
 import shipreq.webapp.client.public.Styles.{landingPage => *}
-import shipreq.webapp.client.public.protocol.LandingPageProtocol.Request
+import shipreq.webapp.client.public.PublicSpaProtocols.LandingPage.Request
 
 object LandingPage {
 

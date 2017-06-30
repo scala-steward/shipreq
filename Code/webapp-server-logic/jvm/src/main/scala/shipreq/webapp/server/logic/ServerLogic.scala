@@ -1,6 +1,7 @@
 package shipreq.webapp.server.logic
 
 import scalaz.{Monad, ~>}
+import shipreq.base.util.Permission
 import shipreq.taskman.api.TaskmanApi
 
 /**
@@ -14,11 +15,11 @@ object ServerLogic {
 
   def create[D[_] : Monad : DB.Algebra,
              F[_] : Monad : ProjectServer.StoreAlgebra : Server.Algebra : TaskmanApi]
-            (b: ProjectServer.BroadcastTo)
+            (publicRegistration: Permission, b: ProjectServer.BroadcastTo)
             (implicit runDB: D ~> F)
             : ServerLogic[F] =
     ServerLogic(
-      PublicSpaLogic[D, F],
+      PublicSpaLogic[D, F](publicRegistration),
       HomeSpaLogic[D, F],
       ProjectServer[D, F](b))
 }

@@ -3,6 +3,7 @@ package shipreq.webapp.server.app
 import doobie.imports.ConnectionIO
 import scalaz.effect.IO
 import shipreq.base.db.DbAccess
+import shipreq.base.util.Allow
 import shipreq.taskman.api.TaskmanApi
 import shipreq.taskman.api.impl.TaskmanApiImpl
 import shipreq.webapp.server.ServerConfig
@@ -38,7 +39,7 @@ object Global {
     Global(
       config     = config,
       db         = db,
-      logic      = ServerLogic.create[ConnectionIO, IO](ProjectServer.BroadcastTo.All),
+      logic      = ServerLogic.create[ConnectionIO, IO](Allow when config.allowRegister, ProjectServer.BroadcastTo.All),
       security   = defaultSecurity,
       statLogger = defaultStatLogger,
       taskman    = taskman)
