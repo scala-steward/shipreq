@@ -1,6 +1,5 @@
 package shipreq.webapp.server.security
 
-import shipreq.webapp.server.app.Global
 import Permission.Ctx
 
 object Permissions {
@@ -14,18 +13,6 @@ object Permissions {
         p <- ctx.project
       } yield
         cmp(p.owner, u.id, "project.owner == user.id")
-  }
-
-  val userRegistration: Permission = new TypicalPermission {
-    override def name = "userRegistration"
-    override def warnOnFailure = false
-    override def check(ctx: Ctx) =
-      if (Global.config.allowRegister)
-        True
-      else if (ctx.user.exists(_ hasRole Roles.Admin.name))
-        True
-      else
-        False
   }
 
   val admin = new TypicalPermission {

@@ -39,7 +39,7 @@ object Global {
     Global(
       config     = config,
       db         = db,
-      logic      = ServerLogic.create[ConnectionIO, IO](Allow when config.allowRegister, ProjectServer.BroadcastTo.All),
+      logic      = ServerLogic.create[ConnectionIO, IO](ProjectServer.BroadcastTo.All),
       security   = defaultSecurity,
       statLogger = defaultStatLogger,
       taskman    = taskman)

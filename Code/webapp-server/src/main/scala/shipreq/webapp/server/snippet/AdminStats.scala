@@ -10,11 +10,11 @@ import scala.collection.JavaConverters._
 import scala.sys.process._
 import scala.util.Properties
 import scala.xml.{NodeSeq, Text}
+import shipreq.base.util.{CacheFn, ExpireAfter}
 import shipreq.webapp.server.app.Global
 import shipreq.webapp.server.db.DbLogic
 import shipreq.webapp.server.feature.SessionStats
 import shipreq.webapp.server.lib.SnippetHelpers
-import shipreq.webapp.server.util.{CacheFn, ExpireAfter}
 
 object AdminStats extends SnippetHelpers {
 

@@ -1,4 +1,4 @@
-package shipreq.webapp.server.util
+package shipreq.base.util
 
 import java.time._
 

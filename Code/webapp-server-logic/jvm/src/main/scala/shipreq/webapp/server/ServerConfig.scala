@@ -1,12 +1,11 @@
 package shipreq.webapp.server
 
 import japgolly.microlibs.config._
+import japgolly.microlibs.config.ConfigParser.Implicits.Defaults._
+import japgolly.microlibs.config.JavaTimeConfigParsers._
 import java.time.Duration
 import scalaz.syntax.applicative._
-import shipreq.base.util.RetryCriteria
-import shipreq.webapp.server.util.{CachePolicy, ExpireAfter}
-import ConfigParser.Implicits.Defaults._
-import JavaTimeConfigParsers._
+import shipreq.base.util._
 
 final case class ServerConfig(
 
@@ -33,15 +32,13 @@ final case class ServerConfig(
     * Whether or not new registrations are allowed.
     * (Registration tokens already issued will still be accepted.)
     */
-  allowRegister: Boolean,
+  allowRegister: Permission,
 
   initTaskmanOnBoot: Boolean,
   initTaskmanRetry: RetryCriteria,
 
   /** Maximum time a flash variable will be retained. (default) */
-  flashVarTTL: Duration,
-
-  quoteCachePolicy: CachePolicy[Any]) {
+  flashVarTTL: Duration) {
 
   val attackFrustrationDelayMs: Long =
     attackFrustrationDelay.toMillis
@@ -57,11 +54,10 @@ object ServerConfig {
       Config.need[String]("taskman.schema") |@|
       Config.need[Duration]("token.lifespan.email_conf") |@|
       Config.need[Duration]("token.lifespan.resetpw") |@|
-      Config.getOrUse[Boolean]("allow.register", true) |@|
+      Config.getOrUse[Boolean]("allow.register", true).map(Allow.when) |@|
       Config.getOrUse[Boolean]("taskman.init", true) |@|
       RetryCriteria.config.withPrefix("taskman.init.retry.") |@|
-      Duration.ofMinutes(12).pure[Config] |@|
-      ExpireAfter(Duration ofMinutes 30).pure[Config]
+      Duration.ofMinutes(12).pure[Config]
     ) (apply).withPrefix("shipreq.")
 
 }
