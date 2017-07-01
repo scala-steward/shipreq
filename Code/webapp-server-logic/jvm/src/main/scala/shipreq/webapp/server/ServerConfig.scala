@@ -19,11 +19,8 @@ final case class ServerConfig(
   /** Number of characters in tokens used for email & reset-password verification. */
   confirmationTokenLength: Int,
 
-  /** The DB schema in which the Taskman interfaces reside. */
-  taskmanSchema: String,
-
   /** How long confirmation tokens are valid for after issuing. */
-  tokenLifespan: Duration,
+  confirmationTokenLifespan: Duration,
 
   /** How long password-reset tokens are valid for after issuing. */
   passwordResetTokenLifespan: Duration,
@@ -33,6 +30,9 @@ final case class ServerConfig(
     * (Registration tokens already issued will still be accepted.)
     */
   allowRegister: Permission,
+
+  /** The DB schema in which the Taskman interfaces reside. */
+  taskmanSchema: String,
 
   initTaskmanOnBoot: Boolean,
   initTaskmanRetry: RetryCriteria,
@@ -47,15 +47,15 @@ final case class ServerConfig(
 object ServerConfig {
 
   def config: Config[ServerConfig] =
-    ( Config.need[String]("support.email") |@|
-      Config.need[String]("url").map(Url.Absolute.Base.apply) |@|
-      Config.need[Duration]("attack_frustration_delay") |@|
-      Config.need[Int]("token.length") |@|
-      Config.need[String]("taskman.schema") |@|
-      Config.need[Duration]("token.lifespan.email_conf") |@|
-      Config.need[Duration]("token.lifespan.resetpw") |@|
-      Config.getOrUse[Boolean]("allow.register", true).map(Allow.when) |@|
-      Config.getOrUse[Boolean]("taskman.init", true) |@|
+    ( Config.need    [String  ]      ("support.email") |@|
+      Config.need    [String  ]      ("url").map(Url.Absolute.Base.apply) |@|
+      Config.need    [Duration]      ("attack_frustration_delay") |@|
+      Config.need    [Int     ]      ("token.length") |@|
+      Config.need    [Duration]      ("token.lifespan.email_conf") |@|
+      Config.need    [Duration]      ("token.lifespan.resetpw") |@|
+      Config.getOrUse[Boolean ]      ("allow.register", true).map(Allow.when) |@|
+      Config.need    [String  ]      ("taskman.schema") |@|
+      Config.getOrUse[Boolean ]      ("taskman.init", true) |@|
       RetryCriteria.config.withPrefix("taskman.init.retry.") |@|
       Duration.ofMinutes(12).pure[Config]
     ) (apply).withPrefix("shipreq.")

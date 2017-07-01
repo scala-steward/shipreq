@@ -31,6 +31,8 @@ object Url {
     final case class Base(value: String) extends AnyVal {
       def /(r: Relative): Absolute =
         Absolute(value + r.relativeUrl)
+      def /[A](r: Relative.Param1[A]): Absolute.Param1[A] =
+        Absolute.Param1(this / r.prefix, r.suffix)
     }
     object Base {
       def apply(value: String): Base =

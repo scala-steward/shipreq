@@ -1,0 +1,12 @@
+Login
+// loginToken.setRememberMe(false)
+//-        try {
+//-          SecurityUtils.getSubject.login(loginToken)
+//-          onSuccessfulLogin()
+//-        } catch {
+//-          case _: AuthenticationException => jsShowError(invalidLogin)
+//-        }
+//-    statLogger().updateSessionStatsOnLogin(S.session, currentUser_!())
+//-    statLogger() ! LogUserLogin(currentUserId_!())
+//-    redirectHome()
+

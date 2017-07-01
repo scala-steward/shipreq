@@ -25,8 +25,8 @@ object PublicSpaProtocols {
                              msg       : Option[String],
                              newsletter: Boolean) {
 
-      def toValidatorInput: Request.ValidatorInput =
-        (name.value, email.value, msg getOrElse "", newsletter)
+      def validate: Composite.Invalidity \/ Request =
+        Request.validator((name.value, email.value, msg getOrElse "", newsletter))
     }
 
     object Request {
@@ -39,9 +39,7 @@ object PublicSpaProtocols {
       def validatorEmail = UserValidators.emailAddr.unnamed
       def validatorMsg   = CommonValidation.optionalLargeText
 
-      type ValidatorInput = (String, String, String, Boolean)
-
-      lazy val validator: Composite.Validator[ValidatorInput, _, Request] =
+      lazy val validator: Composite.Validator[(String, String, String, Boolean), _, Request] =
         validatorName.named(labelName).named
           .tuple(validatorEmail.named(labelEmail).named)
           .tuple(validatorMsg.named("Your message").named)
@@ -59,7 +57,7 @@ object PublicSpaProtocols {
     final case class Request(token     : SecurityToken,
                              personName: PersonName,
                              username  : Username,
-                             password  : String,
+                             password  : PlainTextPassword,
                              newsletter: Boolean)
     implicit val pickler: Pickler[Request] = pickleCaseClass[Request]
 
@@ -69,9 +67,20 @@ object PublicSpaProtocols {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object Login {
-    final case class Request(who: Username \/ EmailAddr, password: String)
-    implicit val pickler: Pickler[Request] = pickleCaseClass[Request]
-    val Fn = ServerSideProc.Protocol[Request, Validity]
+    final case class Request(user: Username \/ EmailAddr, password: PlainTextPassword) {
+      def validate: Composite.Invalidity \/ Request =
+        Request.validator((user.fold(_.value, _.value), password.value))
+    }
+
+    object Request {
+      implicit val pickler: Pickler[Request] = pickleCaseClass[Request]
+
+      lazy val validator: Composite.Validator[(String, String), _, Request] =
+        UserValidators.usernameOrEmail
+          .tuple(UserValidators.password.named)
+          .mapValid((Request.apply _).tupled)
+    }
+    val Fn = ServerSideProc.Protocol[Request, Permission]
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -79,7 +88,7 @@ object PublicSpaProtocols {
     val Fn1 = ServerSideProc.Protocol[Username \/ EmailAddr, Unit]
 
     // Failure responses? Expired etc
-    final case class Request(token: SecurityToken, newPassword: String)
+    final case class Request(token: SecurityToken, newPassword: PlainTextPassword)
     implicit val pickler: Pickler[Request] = pickleCaseClass[Request]
 
     val Fn2 = ServerSideProc.Protocol[Request, Unit]

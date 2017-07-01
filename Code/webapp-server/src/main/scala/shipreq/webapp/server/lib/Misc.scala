@@ -1,12 +1,10 @@
 package shipreq.webapp.server.lib
 
 import java.time.format.DateTimeFormatter
-import java.time.{Duration, Instant, ZoneOffset}
+import java.time.{Instant, ZoneOffset}
 import net.liftweb.http.S
-import scala.annotation.tailrec
 import scala.util.Random
 import shipreq.base.util.log.HasLogger
-import shipreq.webapp.server.app.Global
 
 object Misc extends Misc {
 
@@ -33,15 +31,6 @@ trait Misc extends HasLogger {
     // println("X-Real-IP: " + req.header("X-Real-IP"))
     // println("X-Forwarded-For: " + req.header("X-Forwarded-For"))
     )
-
-  def isExpired_?(startTime: Instant, timeToLive: Duration, now: Instant = Instant.now()): Boolean =
-    startTime plus timeToLive isBefore now
-
-  def randomString(length: Int): String =
-    RNG.alphanumeric.take(length).mkString
-
-  def randomConfirmationToken(): String =
-    randomString(Global.config.confirmationTokenLength)
 
 //  @tailrec
 //  final def retry[T](n: Int, firstError: Option[Throwable] = None)(fn: => T): T = {

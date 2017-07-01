@@ -1,7 +1,8 @@
 package shipreq.webapp.server.logic
 
+import java.time.Instant
 import scala.collection.immutable.SortedMap
-import shipreq.webapp.base.data.ProjectMetaData
+import shipreq.webapp.base.data.{ProjectMetaData, SecurityToken}
 import shipreq.webapp.base.event.{ActiveEvent, EventOrd, VerifiedEvent}
 import shipreq.webapp.base.hash.HashRec
 import shipreq.webapp.base.user._
@@ -30,6 +31,17 @@ import shipreq.webapp.base.user._
   */
 object DB {
 
+  sealed trait UserRegistration {
+    val id: UserId
+  }
+
+  object UserRegistration {
+    final case class Pending(id: UserId, token: SecurityToken, tokenSentAt: Instant) extends UserRegistration
+    final case class Complete(id: UserId, confirmationAt: Instant) extends UserRegistration
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   trait Base[F[_]] {
     def inDbTransaction[A](f: F[A]): F[A]
   }
@@ -41,7 +53,14 @@ object DB {
                          hashes: HashRec.Collection): F[Option[Throwable]]
   }
 
-  trait ForPublicSpa[F[_]] extends Base[F]
+  trait ForPublicSpa[F[_]] extends Base[F] {
+    def getUserRegistration(e: EmailAddr): F[Option[UserRegistration]]
+
+    /** Creates an unconfirmed user account. No username, no password until email confirmed. */
+    def createUserPlaceholder(e: EmailAddr): F[SecurityToken]
+
+    def updateUserRegistrationToken(id: UserId): F[SecurityToken]
+  }
 
   trait ForHomeSpa[F[_]] extends Base[F] with SaveProjectEvent[F] {
     def createEmptyProject          (id: UserId): F[ProjectId]

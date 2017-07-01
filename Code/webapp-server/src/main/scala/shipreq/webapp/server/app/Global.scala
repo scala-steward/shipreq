@@ -3,7 +3,6 @@ package shipreq.webapp.server.app
 import doobie.imports.ConnectionIO
 import scalaz.effect.IO
 import shipreq.base.db.DbAccess
-import shipreq.base.util.Allow
 import shipreq.taskman.api.TaskmanApi
 import shipreq.taskman.api.impl.TaskmanApiImpl
 import shipreq.webapp.server.ServerConfig

@@ -11,12 +11,7 @@ import shipreq.webapp.base.user._
 
 object ProjectServerTest extends TestSuite {
 
-  class Tester {
-    implicit val storeMap: ProjectServer.StoreMap[Name, ConcurrentHashMap] = new ConcurrentHashMap()
-    implicit val store: ProjectServer.StoreAlgebra[Name] = Store.Algebra.concurrentHashMap(storeMap)
-    implicit val svr = new MockServer
-    implicit val db = new MockDb
-    implicit val nameToName: Name ~> Name = NaturalTransformation.refl
+  class Tester extends MockInterpreters {
     val logic = ProjectServer[Name, Name](ProjectServer.BroadcastTo.All)
   }
 

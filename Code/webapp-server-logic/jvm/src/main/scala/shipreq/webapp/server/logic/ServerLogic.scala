@@ -14,12 +14,12 @@ final case class ServerLogic[F[_]](publicSpa    : PublicSpaLogic[F],
 object ServerLogic {
 
   def create[D[_] : Monad : DB.Algebra,
-             F[_] : Monad : ProjectServer.StoreAlgebra : Server.Algebra : TaskmanApi]
+             F[_] : Monad : ProjectServer.StoreAlgebra : Security.Algebra : Server.Algebra : TaskmanApi]
             (b: ProjectServer.BroadcastTo)
             (implicit runDB: D ~> F, config: ServerConfig)
             : ServerLogic[F] =
     ServerLogic(
-      PublicSpaLogic[D, F](config.allowRegister),
+      PublicSpaLogic[D, F],
       HomeSpaLogic[D, F],
       ProjectServer[D, F](b))
 }

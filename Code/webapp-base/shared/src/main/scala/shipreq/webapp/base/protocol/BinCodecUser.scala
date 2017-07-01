@@ -8,9 +8,10 @@ import BoopickleMacros._
 
 object BinCodecUser {
 
-  implicit lazy val pickleEmailAddr : Pickler[EmailAddr ] = pickleCaseClass
-  implicit lazy val picklePersonName: Pickler[PersonName] = pickleCaseClass
-  implicit lazy val pickleUsername  : Pickler[Username  ] = pickleCaseClass
+  implicit lazy val pickleEmailAddr        : Pickler[EmailAddr        ] = pickleCaseClass
+  implicit lazy val picklePersonName       : Pickler[PersonName       ] = pickleCaseClass
+  implicit lazy val picklePlainTextPassword: Pickler[PlainTextPassword] = pickleCaseClass
+  implicit lazy val pickleUsername         : Pickler[Username         ] = pickleCaseClass
 
   implicit lazy val pickleUsernameOrEmailAddr: Pickler[Username \/ EmailAddr] = pickleXor
 
