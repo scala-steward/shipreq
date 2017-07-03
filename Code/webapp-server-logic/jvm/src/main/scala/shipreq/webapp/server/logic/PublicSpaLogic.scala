@@ -62,6 +62,12 @@ object PublicSpaLogic {
       )
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    val loginFn: F[Login.Fn.Instance] =
+      svr.createServerSideProc(Login.Fn)(
+        security.protectFn(req =>
+          security.attemptLogin(req.user, req.password).map(\/-(_))))
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     val registerFn1: F[Register.Fn1.Instance] = {
       import DB.UserRegistration
 
@@ -167,13 +173,6 @@ object PublicSpaLogic {
         ))
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    val loginFn: F[Login.Fn.Instance] =
-      svr.createServerSideProc(Login.Fn)(
-        security.protectFn(
-          _.validate.onValid(req => // TODO Why bother?
-            security.attemptLogin(req.user, req.password).map(\/-(_)))))
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     val resetPasswordFn1: F[ResetPassword.Fn1.Instance] =
       svr.createServerSideProc(ResetPassword.Fn1)(i =>
 //-    def onSubmit(): JsCmd = {
@@ -232,7 +231,6 @@ object PublicSpaLogic {
         ???
       )
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     val resetPasswordFn2: F[ResetPassword.Fn2.Instance] =
       svr.createServerSideProc(ResetPassword.Fn2)(i =>
 //-  def isTokenExpired(dateIssued: Instant): Boolean =
