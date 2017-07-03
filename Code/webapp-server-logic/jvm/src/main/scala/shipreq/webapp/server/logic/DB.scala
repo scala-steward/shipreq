@@ -28,6 +28,12 @@ import shipreq.webapp.base.user._
   *
   * - `save`   = A -> (Error \/)? Unit
   * - `create` = A -> (Error \/)? B
+  *
+  * =======
+  * UPDATE:
+  * =======
+  *
+  * - `update` = A -> _
   */
 object DB {
 
@@ -39,6 +45,15 @@ object DB {
     final case class Pending(id: UserId, token: SecurityToken, tokenSentAt: Instant) extends UserRegistration
     final case class Complete(id: UserId, confirmationAt: Instant) extends UserRegistration
   }
+
+  sealed trait UserRegistrationResult
+  object UserRegistrationResult {
+    final case class Success(userId: UserId) extends UserRegistrationResult
+    case object TokenNotFound extends UserRegistrationResult
+    case object UsernameTaken extends UserRegistrationResult
+  }
+
+
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -60,6 +75,15 @@ object DB {
     def createUserPlaceholder(e: EmailAddr): F[SecurityToken]
 
     def updateUserRegistrationToken(id: UserId): F[SecurityToken]
+
+    def getUserRegistrationTokenIssueDate(t: SecurityToken): F[Option[Instant]]
+
+    def completeUserRegistration(token     : SecurityToken,
+                                 name      : PersonName,
+                                 username  : Username,
+                                 ps        : PasswordAndSalt,
+                                 newsletter: Boolean,
+                                 ip        : Option[IP]): F[UserRegistrationResult]
   }
 
   trait ForHomeSpa[F[_]] extends Base[F] with SaveProjectEvent[F] {

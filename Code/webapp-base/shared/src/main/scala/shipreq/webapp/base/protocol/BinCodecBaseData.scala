@@ -30,4 +30,11 @@ object BinCodecBaseData {
   implicit lazy val picklerSecurityToken: Pickler[SecurityToken] =
     pickleCaseClass[SecurityToken]
 
+  // TODO Fix pickleADT so I don't have to create ConstPicklers for every case object
+  private implicit def picklerSecurityTokenStatusValid   = ConstPickler(SecurityToken.Status.Valid)
+  private implicit def picklerSecurityTokenStatusInvalid = ConstPickler(SecurityToken.Status.Invalid)
+  private implicit def picklerSecurityTokenStatusExpired = ConstPickler(SecurityToken.Status.Expired)
+  implicit lazy val picklerSecurityTokenStatus: Pickler[SecurityToken.Status] =
+    pickleADT[SecurityToken.Status]
+
 }

@@ -10,3 +10,42 @@ Login
 //-    statLogger() ! LogUserLogin(currentUserId_!())
 //-    redirectHome()
 
+
+Register2
+//-      case None =>
+//-        S.error("Invalid registration token. Please re-register your email address.")
+//-        redirectTo(AppSiteMap.Register1)
+//-
+//-      case Some(issued) if isTokenExpired(issued) =>
+//-        S.error("Your registration token has expired. Please re-register your email address to get a new token.")
+//-        redirectTo(AppSiteMap.Register1)
+----
+//      'validateToken {
+//        def inEnv[A](f: UserFixture => A): A =
+//          inLiftSession(UserFixture.Transaction.runNow(f))
+//
+//        "redirect to Register1 with error when token is invalid" - {
+//          inEnv { _ =>
+//            intercept[ResponseShortcutException] {new Reg2Tester("blah").snippet.validateToken_!()}
+//            assertSingleError("invalid")
+//          }
+//        }
+//
+//        "redirect to Register1 with error when token has expired" - {
+//          inEnv { uf =>
+//            intercept[ResponseShortcutException] {new Reg2Tester(uf.userWithExpiredToken.token).snippet.validateToken_!()}
+//            assertSingleError("expired")
+//          }
+//        }
+//
+//        "render new-user form when token is valid" - {
+//          inEnv { uf =>
+//            new Reg2Tester(uf.userWithCurrentToken.token).snippet.validateToken_!()
+//            assert(S.errors.isEmpty)
+//          }
+//        }
+//      } // validateToken
+
+
+
+SecurityUtils.getSubject.login(new UsernamePasswordToken(username.value, password))

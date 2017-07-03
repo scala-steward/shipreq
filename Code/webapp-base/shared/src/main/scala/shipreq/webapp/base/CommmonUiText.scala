@@ -6,4 +6,5 @@ object CommmonUiText {
   def currentPassword = "Current password"
   def username = "Username"
   def usernameOrEmail = "Username or email"
+  def userPersonName = "Full name"
 }

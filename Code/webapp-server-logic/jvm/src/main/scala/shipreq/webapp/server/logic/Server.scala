@@ -15,7 +15,14 @@ object Server {
     def createServerSideProc(p: ServerSideProc.Protocol)(localFn: p.Input => F[p.Response]): F[p.Instance]
   }
 
-  trait Algebra[F[_]] extends Time[F] with Protocol[F]
+  trait Session[F[_]] {
+    val clientIP: F[Option[IP]]
+  }
+
+  trait Algebra[F[_]]
+    extends Time[F]
+       with Protocol[F]
+       with Session[F]
 
   object ErrorMsgs {
     val ShouldNeverHappen: ErrorMsg =

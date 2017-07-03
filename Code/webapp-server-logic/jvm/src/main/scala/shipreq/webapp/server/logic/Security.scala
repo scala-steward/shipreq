@@ -21,6 +21,8 @@ object Security {
       a => protect(vulnerable(a))
 
     def attemptLogin(user: Username \/ EmailAddr, password: PlainTextPassword): F[Permission]
+
+    def hashPassword(p: PlainTextPassword): F[PasswordAndSalt]
   }
 
 }

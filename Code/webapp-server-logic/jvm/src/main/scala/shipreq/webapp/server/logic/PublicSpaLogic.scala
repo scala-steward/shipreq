@@ -4,24 +4,23 @@ import java.time.{Duration, Instant}
 import scalaz.{-\/, Monad, \/, \/-, ~>}
 import scalaz.syntax.monad._
 import shipreq.base.util._
-import shipreq.webapp.base.protocol.ErrorMsg
-import shipreq.webapp.base.user._
-import shipreq.webapp.base.validation._
-import shipreq.webapp.base.validation.Implicits._
-import shipreq.webapp.client.public._
-import shipreq.webapp.client.public.PublicSpaProtocols._
 import shipreq.taskman.api.{Msg, TaskmanApi}
-import WebappTaskmanConverters._
-import Implicits._
 import shipreq.webapp.base.PublicUrls
 import shipreq.webapp.base.data.SecurityToken
+import shipreq.webapp.base.protocol.ErrorMsg
+import shipreq.webapp.base.user._
+import shipreq.webapp.client.public.PublicSpaProtocols._
 import shipreq.webapp.server.ServerConfig
+import WebappTaskmanConverters._
+import Implicits._
 
 trait PublicSpaLogic[F[_]] {
   val initData: F[InitData]
 }
 
 object PublicSpaLogic {
+
+  private[this] val rightUnit = \/-(())
 
   def apply[D[_], F[_]](implicit config  : ServerConfig,
                                  db      : DB.ForPublicSpa[D],
@@ -41,6 +40,14 @@ object PublicSpaLogic {
     def isConfirmationTokenExpired(dateIssued: Instant, now: Instant): Boolean =
       isExpired_?(dateIssued, config.confirmationTokenLifespan, now)
 
+    def registrationProc[A, B](f: A => F[ErrorMsg \/ B]): A => F[ErrorMsg \/ B] =
+      security.protectFn(
+        config.allowRegister match {
+          case Allow => f
+          case Deny  => _ => F.pure(-\/(ErrorMsg("Registration is disabled.")))
+        }
+      )
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     val landingPageFn: F[LandingPage.Fn.Instance] =
       svr.createServerSideProc(LandingPage.Fn)(
@@ -50,7 +57,7 @@ object PublicSpaLogic {
             email      = req.email.toTaskman,
             msg        = req.msg,
             newsletter = req.newsletter)
-          taskman.submitMsg(msg).void
+          taskman.submitMsg(msg).map(_ => rightUnit)
         }
       )
 
@@ -92,84 +99,79 @@ object PublicSpaLogic {
         Msg.RegistrationRequested(email.toTaskman, absUrlRegister2(token).absoluteUrl)
 
       svr.createServerSideProc(Register.Fn1)(
-        security.protectFn(
-          config.allowRegister match {
-
-            case Allow => i =>
-              UserValidators.emailAddr.unnamed(i.value).onValid(emailAddr =>
-                for {
-                  now <- svr.now
-                  msg <- runDB(registerInDb(emailAddr, now))
-                  _   <- taskman.submitMsg(msg)
-                } yield ()
-              )
-
-            case Deny =>
-              _ => F.pure(-\/(ErrorMsg("Registration is disabled.")))
-          }
-        )
-      )
+        registrationProc(i =>
+          UserValidators.emailAddr.unnamed(i.value).onValid(emailAddr =>
+            for {
+              now <- svr.now
+              msg <- runDB(registerInDb(emailAddr, now))
+              _   <- taskman.submitMsg(msg)
+            } yield rightUnit
+          )))
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    val registerFn2: F[Register.Fn2.Instance] =
-      svr.createServerSideProc(Register.Fn2)(i =>
-//-  def render = {
-//-    securityProvider().enforceHumanSpeed()
-//-    validateToken_!()
-//-    form.csssel(vars, vars = _) & ":submit" #> ajaxSubmitOnClick(() => onSubmit())
-//-  }
-//-
-//-  def validateToken_!(): Unit =
-//-    db().io.trans(DbLogic.user.findConfirmationTokenIssuedDate(token)).unsafePerformIO() match {
-//-      case None =>
-//-        S.error("Invalid registration token. Please re-register your email address.")
-//-        redirectTo(AppSiteMap.Register1)
-//-
-//-      case Some(issued) if isTokenExpired(issued) =>
-//-        S.error("Your registration token has expired. Please re-register your email address to get a new token.")
-//-        redirectTo(AppSiteMap.Register1)
-//-
-//-      case _ => () // valid
-//-    }
-//-
-//-  def onSubmit(): JsCmd =
-//-    try {
-//-      import UserRegistrationResult._
-//-
-//-      handleCompositeInvalidity(form validate vars)(r => {
-//-        val (name, username, password, newsletter, _) = r
-//-        val ps = PasswordAndSalt.createWithRandomSalt(password)
-//-
-//-        val dbPlan = DbLogic.user.performRegistration(token)(username, ps, clientIp().getOrElse("?"))(name, newsletter)
-//-        db().io.trans(dbPlan).unsafePerformIO() match {
-//-
-//-          case UsernameTaken =>
-//-            jsShowError("Username is already taken.")
-//-
-//-          case NoMatchingConfToken =>
-//-            S.error("Your registration token disappeared.")
-//-            redirectTo(AppSiteMap.Login)
-//-
-//-          // Registration complete
-//-          case DbSuccess(id) =>
-//-            log.info(s"Registered new user: $username")
-//-            taskman().submitMsg(Msg.RegistrationCompleted(id)).unsafePerformIO()
-//-            SecurityUtils.getSubject.login(new UsernamePasswordToken(username.value, password))
-//-            JqExpr("#regComplete,#register2") ~> JqToggle
-//-        }
-//-      })
-//-    } finally
-//-      vars = vars put3 FormVar.emptyPasswordPair // Let's not keep the plaintext passwords around
-        ???
-      )
+    def getUserRegistrationTokenStatus(t: SecurityToken): F[SecurityToken.Status] =
+      runDB(db.getUserRegistrationTokenIssueDate(t)).flatMap {
+        case Some(i) => svr.now.map(now =>
+          if (isConfirmationTokenExpired(i, now))
+            SecurityToken.Status.Expired
+          else
+            SecurityToken.Status.Valid
+        )
+        case None => F pure SecurityToken.Status.Invalid
+      }
+
+    val registerFn2A: F[Register.Fn2A.Instance] =
+      svr.createServerSideProc(Register.Fn2A)(
+        security.protectFn(
+          getUserRegistrationTokenStatus(_).map(\/-(_))))
+
+    val registerFn2B: F[Register.Fn2B.Instance] =
+      svr.createServerSideProc(Register.Fn2B)(
+        registrationProc(
+          _.validate.onValid { req =>
+
+            import Register.Response
+            val stack = MonadEE[F, ErrorMsg, Response]
+            import stack._
+
+            val validateToken: Stack[Unit] =
+              getUserRegistrationTokenStatus(req.token).mapToStack {
+                case SecurityToken.Status.Valid   => rightUnit
+                case SecurityToken.Status.Invalid => -\/(\/-(Response.TokenInvalid))
+                case SecurityToken.Status.Expired => -\/(\/-(Response.TokenExpired))
+              }
+
+            def register(ps: PasswordAndSalt, ip: Option[IP]): Stack[UserId] =
+              runDB(db.completeUserRegistration(req.token, req.personName, req.username, ps, req.newsletter, ip)).mapToStack {
+                case DB.UserRegistrationResult.Success(i)    => \/-(i)
+                case DB.UserRegistrationResult.TokenNotFound => -\/(\/-(Response.TokenInvalid))
+                case DB.UserRegistrationResult.UsernameTaken => -\/(\/-(Response.UsernameTaken))
+              }
+
+            val login: Stack[Unit] =
+              security.attemptLogin(-\/(req.username), req.password).mapToStack {
+                case Allow => rightUnit
+                case Deny => -\/(-\/(ErrorMsg("Registration completed but login failed.")))
+              }
+
+            (for {
+              _  <- validateToken
+              ps <- security.hashPassword(req.password).toStack
+              ip <- svr.clientIP.toStack
+              id <- register(ps, ip)
+              _  <- svr.fork(taskman.submitMsg(Msg.RegistrationCompleted(id.toTaskman))).toStack
+              _  <- login
+            } yield Response.Success)
+              .unstackFailure(\/-(_))
+          }
+        ))
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     val loginFn: F[Login.Fn.Instance] =
       svr.createServerSideProc(Login.Fn)(
         security.protectFn(
           _.validate.onValid(req => // TODO Why bother?
-            security.attemptLogin(req.user, req.password))))
+            security.attemptLogin(req.user, req.password).map(\/-(_)))))
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     val resetPasswordFn1: F[ResetPassword.Fn1.Instance] =
@@ -272,11 +274,12 @@ object PublicSpaLogic {
         for {
           a <- landingPageFn
           b <- registerFn1
-          c <- registerFn2
-          d <- loginFn
-          e <- resetPasswordFn1
-          f <- resetPasswordFn2
-        } yield InitData(a, config.allowRegister, b, c, d, e, f)
+          c <- registerFn2A
+          d <- registerFn2B
+          e <- loginFn
+          f <- resetPasswordFn1
+          g <- resetPasswordFn2
+        } yield InitData(a, config.allowRegister, b, c, d, e, f, g)
     }
   }
 }

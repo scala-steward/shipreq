@@ -1,10 +1,12 @@
 package shipreq.webapp.client.public
 
-import boopickle.Pickler
+import boopickle.{ConstPickler, Pickler}
+import japgolly.univeq.UnivEq
 import scalaz.\/
 import shipreq.base.util._
-import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.CommmonUiText
 import shipreq.webapp.base.data.SecurityToken
+import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.user._
 import shipreq.webapp.base.validation._
 import shipreq.webapp.base.validation.Implicits._
@@ -54,15 +56,48 @@ object PublicSpaProtocols {
   object Register {
     val Fn1 = ServerSideProc.Protocol[EmailAddr, Unit]
 
+    val Fn2A = ServerSideProc.Protocol[SecurityToken, SecurityToken.Status]
+
     final case class Request(token     : SecurityToken,
                              personName: PersonName,
                              username  : Username,
                              password  : PlainTextPassword,
-                             newsletter: Boolean)
-    implicit val pickler: Pickler[Request] = pickleCaseClass[Request]
+                             newsletter: Boolean) {
+
+      def validate: Composite.Invalidity \/ Request =
+        Request.validator((token, personName.value, username.value, password.value, newsletter))
+    }
+
+    object Request {
+      implicit val pickler: Pickler[Request] = pickleCaseClass
+
+      lazy val validator: Composite.Validator[(SecurityToken, String, String, String, Boolean), _, Request] =
+        Composite.Validator.id[SecurityToken]
+          .tuple(UserValidators.personName.named(CommmonUiText.userPersonName).named)
+          .tuple(UserValidators.username.named)
+          .tuple(UserValidators.password.named)
+          .tuple(Composite.Validator.id[Boolean])
+          .mapValid((Request.apply _).tupled)
+    }
+
+    sealed trait Response
+    object Response {
+      case object Success       extends Response
+      case object TokenInvalid  extends Response
+      case object TokenExpired  extends Response
+      case object UsernameTaken extends Response
+
+      // TODO Fix pickleADT so I don't have to create ConstPicklers for every case object
+      private implicit def picklerSuccess       = ConstPickler(Success      )
+      private implicit def picklerTokenInvalid  = ConstPickler(TokenInvalid )
+      private implicit def picklerTokenExpired  = ConstPickler(TokenExpired )
+      private implicit def picklerUsernameTaken = ConstPickler(UsernameTaken)
+      implicit val pickler: Pickler[Response] = pickleADT[Response]
+      implicit def univEq: UnivEq[Response] = UnivEq.derive
+    }
 
     /** Upon successful submission the user account is activated. */
-    val Fn2 = ServerSideProc.Protocol[Request, Unit]
+    val Fn2B = ServerSideProc.Protocol[Request, Response]
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -99,17 +134,19 @@ object PublicSpaProtocols {
   final case class InitData(landingPage   : LandingPage.Fn.Instance,
                             allowRegister : Permission,
                             register1     : Register.Fn1.Instance,
-                            register2     : Register.Fn2.Instance,
+                            register2A    : Register.Fn2A.Instance,
+                            register2B    : Register.Fn2B.Instance,
                             login         : Login.Fn.Instance,
                             resetPassword1: ResetPassword.Fn1.Instance,
                             resetPassword2: ResetPassword.Fn2.Instance)
 
-  import LandingPage  .Fn .{pickleInstance => _i1}
-  import Register     .Fn1.{pickleInstance => _i2}
-  import Register     .Fn2.{pickleInstance => _i3}
-  import Login        .Fn .{pickleInstance => _i4}
-  import ResetPassword.Fn1.{pickleInstance => _i5}
-  import ResetPassword.Fn2.{pickleInstance => _i6}
+  import LandingPage  .Fn  .{pickleInstance => _i1}
+  import Register     .Fn1 .{pickleInstance => _i2}
+  import Register     .Fn2A.{pickleInstance => _i3}
+  import Register     .Fn2B.{pickleInstance => _i4}
+  import Login        .Fn  .{pickleInstance => _i5}
+  import ResetPassword.Fn1 .{pickleInstance => _i6}
+  import ResetPassword.Fn2 .{pickleInstance => _i7}
   implicit val picklerInitData = pickleCaseClass[InitData]
 
   final val EntryPointName = "A"

@@ -18,17 +18,17 @@ private[logic] object Implicits {
   }
 
   implicit class LeftSimpleInvalidityExt[A](private val d: Simple.Invalidity \/ A) extends AnyVal {
-    def onValid[F[_], B](g: A => F[B])(implicit F: Monad[F]): F[ErrorMsg \/ B] =
+    def onValid[F[_], B](g: A => F[ErrorMsg \/ B])(implicit F: Monad[F]): F[ErrorMsg \/ B] =
       d match {
-        case \/-(a) => g(a).map(\/-(_))
+        case \/-(a) => g(a)
         case -\/(e) => F pure -\/(e.toErrorMsg)
       }
   }
 
   implicit class LeftCompositeInvalidityExt[A](private val d: Composite.Invalidity \/ A) extends AnyVal {
-    def onValid[F[_], B](g: A => F[B])(implicit F: Monad[F]): F[ErrorMsg \/ B] =
+    def onValid[F[_], B](g: A => F[ErrorMsg \/ B])(implicit F: Monad[F]): F[ErrorMsg \/ B] =
       d match {
-        case \/-(a) => g(a).map(\/-(_))
+        case \/-(a) => g(a)
         case -\/(e) => F pure -\/(e.toErrorMsg)
       }
   }

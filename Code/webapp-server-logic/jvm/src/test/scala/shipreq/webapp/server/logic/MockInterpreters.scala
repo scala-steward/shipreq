@@ -1,9 +1,10 @@
 package shipreq.webapp.server.logic
 
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.{Duration, Instant}
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.SortedMap
-import scalaz.{Name, NaturalTransformation, \/, ~>}
+import scalaz.{-\/, Name, NaturalTransformation, \/, \/-, ~>}
 import scalaz.syntax.monad._
 import shipreq.base.util._
 import shipreq.taskman.api.{Msg, MsgId, MsgStatus, TaskmanApi}
@@ -16,11 +17,17 @@ import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.server.ServerConfig
 
 object MockDb {
-  final case class Entry(projectId    : ProjectId,
-                         userId       : UserId,
-                         events       : VerifiedEvent.Seq,
-                         createdAt    : Instant,
-                         lastUpdatedAt: Option[Instant]) {
+  final case class UserEntry(userId   : UserId,
+                             username : Username,
+                             emailAddr: EmailAddr,
+                             ps       : PasswordAndSalt,
+                             createdAt: Instant)
+
+  final case class ProjectEntry(projectId    : ProjectId,
+                                userId       : UserId,
+                                events       : VerifiedEvent.Seq,
+                                createdAt    : Instant,
+                                lastUpdatedAt: Option[Instant]) {
 
     lazy val project: Project =
       ApplyEvent.trusted.applyVerified(events.eventVector)(Project.empty).needRight
@@ -54,7 +61,7 @@ final class MockDb(now: Name[Instant]) extends DB.Algebra[Name] {
   def assertTokensIssued(expect: Int): Unit =
     assertEq("assertTokensIssued", prevTokenId, expect)
 
-  var userPlaceholders = Map.empty[EmailAddr, DB.UserRegistration]
+  var userPlaceholders = Map.empty[EmailAddr, DB.UserRegistration.Pending]
   override def createUserPlaceholder(e: EmailAddr) =
     now.map { n =>
       assert(!userPlaceholders.contains(e))
@@ -64,28 +71,57 @@ final class MockDb(now: Name[Instant]) extends DB.Algebra[Name] {
     }
 
   override def getUserRegistration(e: EmailAddr) = Name[Option[DB.UserRegistration]] {
-    userPlaceholders get e
+    userPlaceholders.get(e) orElse
+      getUser(\/-(e)).map(x => DB.UserRegistration.Complete(x.userId, x.createdAt))
   }
 
   override def updateUserRegistrationToken(id: UserId) =
     now.map { n =>
-      val (e, u) = userPlaceholders.iterator.find(_._2.id ==* id) getOrElse sys.error("User not found")
-      u match {
-        case r: DB.UserRegistration.Complete => fail("Registration complete")
-        case r: DB.UserRegistration.Pending =>
-          val t = nextToken()
-          userPlaceholders += e -> r.copy(token = t, tokenSentAt = n)
-          t
+      val (e, r) = userPlaceholders.iterator.find(_._2.id ==* id) getOrElse sys.error("User not found")
+      val t = nextToken()
+      userPlaceholders += e -> r.copy(token = t, tokenSentAt = n)
+      t
+    }
+
+  def getPendingUserRegistration(t: SecurityToken): Option[(EmailAddr, DB.UserRegistration.Pending)] =
+    userPlaceholders.iterator.collect {
+      case (ea, p: DB.UserRegistration.Pending) => (ea, p)
+    }.nextOption()
+
+  override def getUserRegistrationTokenIssueDate(t: SecurityToken) = Name[Option[Instant]] {
+    getPendingUserRegistration(t).map(_._2.tokenSentAt)
+  }
+
+
+  var users = List.empty[MockDb.UserEntry]
+
+  def getUser(u: Username \/ EmailAddr): Option[MockDb.UserEntry] =
+    users.find(e => u.fold(_ ==* e.username, _ ==* e.emailAddr))
+
+  override def completeUserRegistration(token: SecurityToken,
+                                        name: PersonName,
+                                        username: Username,
+                                        ps: PasswordAndSalt,
+                                        newsletter: Boolean,
+                                        ip: RelPos[IP]) =
+    now.map { n =>
+      (getPendingUserRegistration(token), getUser(-\/(username))) match {
+        case (None, _)          => DB.UserRegistrationResult.TokenNotFound
+        case (Some(_), Some(_)) => DB.UserRegistrationResult.UsernameTaken
+        case (Some((ea, reg)), None) =>
+          userPlaceholders = userPlaceholders - ea
+          users ::= MockDb.UserEntry(reg.id, username, ea, ps, n)
+          DB.UserRegistrationResult.Success(reg.id)
       }
     }
 
-  private var projects: IMap[ProjectId, MockDb.Entry] =
+  private var projects: IMap[ProjectId, MockDb.ProjectEntry] =
     IMap.empty(_.projectId)
 
   def addProject(projectId: ProjectId, userId: UserId)(events: Event*): Unit = {
     val ves = VerifiedEvent.Seq(EventOrd(1), verifyEvents(Project.empty)(events: _*))
     val now = Instant.now()
-    val mde = MockDb.Entry(projectId, userId, ves, now, Some(now))
+    val mde = MockDb.ProjectEntry(projectId, userId, ves, now, Some(now))
     projects = projects.add(mde)
   }
 
@@ -190,6 +226,9 @@ final class MockServer extends Server.Algebra[Name] {
     forked.foreach(_.value)
     forked = Vector.empty
   }
+
+  var nextClientIP = Option.empty[IP]
+  override val clientIP = Name(nextClientIP)
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -230,14 +269,29 @@ final class MockTaskman extends TaskmanApi[Name] {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-final class MockSecurity extends Security.Algebra[Name] {
+final class MockSecurity(db: MockDb) extends Security.Algebra[Name] {
 
+  var protectedActions = 0
   override def protect[A](vulnerable: Name[A]): Name[A] =
-    vulnerable
+    vulnerable.map { a =>
+      protectedActions += 1
+      a
+    }
 
-  override def attemptLogin(user: Username \/ EmailAddr, password: PlainTextPassword) = Name[Permission] {
-    Deny
+  var loggedIn = Option.empty[MockDb.UserEntry]
+  override def attemptLogin(u: Username \/ EmailAddr, p: PlainTextPassword) = Name[Permission] {
+    loggedIn = db.getUser(u).filter(e => e.ps ==* mkPasswordAndSalt(p, e.ps.salt))
+    Allow when loggedIn.isDefined
   }
+
+  var prevSalt = 0
+  override def hashPassword(p: PlainTextPassword) = Name[PasswordAndSalt] {
+    prevSalt += 1
+    mkPasswordAndSalt(p, Salt(prevSalt.toString))
+  }
+
+  def mkPasswordAndSalt(p: PlainTextPassword, salt: Salt): PasswordAndSalt =
+    PasswordAndSalt(PasswordHash(s"${salt.base64}:${p.value}"), salt)
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -265,7 +319,10 @@ class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerCon
   implicit val store      = Store.Algebra.concurrentHashMap(storeMap): ProjectServer.StoreAlgebra[Name]
   implicit val svr        = new MockServer
   implicit val db         = new MockDb(svr.now)
-  implicit val security   = new MockSecurity
+  implicit val security   = new MockSecurity(db)
   implicit val taskman    = new MockTaskman
   implicit val nameToName = NaturalTransformation.refl[Name]
+
+  def assertProtected[A](a: => A): A =
+    assertDifference("Protected actions", security.protectedActions)(1)(a)
 }
