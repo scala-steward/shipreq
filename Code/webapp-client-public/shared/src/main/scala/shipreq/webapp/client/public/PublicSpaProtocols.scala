@@ -1,6 +1,6 @@
 package shipreq.webapp.client.public
 
-import boopickle.{ConstPickler, Pickler}
+import boopickle.Pickler
 import japgolly.univeq.UnivEq
 import scalaz.\/
 import shipreq.base.util._
@@ -87,12 +87,7 @@ object PublicSpaProtocols {
       case object TokenExpired  extends Response
       case object UsernameTaken extends Response
 
-      // TODO Fix pickleADT so I don't have to create ConstPicklers for every case object
-      private implicit def picklerSuccess       = ConstPickler(Success      )
-      private implicit def picklerTokenInvalid  = ConstPickler(TokenInvalid )
-      private implicit def picklerTokenExpired  = ConstPickler(TokenExpired )
-      private implicit def picklerUsernameTaken = ConstPickler(UsernameTaken)
-      implicit val pickler: Pickler[Response] = pickleADT[Response]
+      implicit val pickler: Pickler[Response] = derivePickler[Response]
       implicit def univEq: UnivEq[Response] = UnivEq.derive
     }
 
