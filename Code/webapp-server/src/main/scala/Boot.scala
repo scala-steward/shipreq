@@ -17,7 +17,7 @@ import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.app._
 import shipreq.webapp.server.feature.SessionStats
 import shipreq.webapp.server.lib.Taskman
-import shipreq.webapp.server.security.Oshiro
+import shipreq.webapp.server.security.AppSecurityRealm
 
 final case class AppConfig(db: DbConfig, server: ServerConfig, report: ConfigReport)
 
@@ -42,7 +42,7 @@ class Boot {
     // Create services
     implicit val serverConfig = appConfig.server
     implicit val dbAccess = initDatabase(appConfig.db)
-    initOshiro()
+    initShiro()
     configureLift()
     Global.Instance = Global.default
 
@@ -133,8 +133,8 @@ class Boot {
     }
   }
 
-  def initOshiro(): Unit =
-    Oshiro.init()
+  def initShiro(): Unit =
+    AppSecurityRealm.init()
 
   def initDatabase(dbConfig: DbConfig): DbAccess = {
     val access = DbAccess.fromCfg(dbConfig).unsafePerformIO()

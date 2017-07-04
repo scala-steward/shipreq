@@ -11,7 +11,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.db.DbLogic
 import shipreq.webapp.server.logic._
-import shipreq.webapp.server.security.{PasswordAndSalt, Roles}
+import shipreq.webapp.server.security.{AppSecurityRealm, Roles}
 import shipreq.webapp.server.test.UserFixture._
 import shipreq.webapp.server.test.WebappServerTestUtil._
 
@@ -32,13 +32,13 @@ object UserFixture {
                             email     : EmailAddr,
                             password  : PlainTextPassword,
                             roles     : Set[String],
-                            name      : String,
+                            name      : PersonName,
                             newsletter: Boolean) {
     var _id: Option[UserId] = None
     def id: UserId = _id.getOrElse(sys error s"UserId unavailable for $this")
-    val pws = PasswordAndSalt.createWithRandomSalt(password)
-    def hashedPassword = pws.hashedPassword
-    def salt = pws.salt
+    val ps = AppSecurityRealm.randomHashFn(password)
+    def hashedPassword = ps.passwordHash
+    def salt = ps.salt
     def toUserDescriptor = User(id, username, email, roles)
 
     def withLoggedIn[A](a: => A): A =
@@ -56,8 +56,8 @@ object UserFixture {
 
 final case class UserFixture(xa: SingleConnectionXA) {
 
-  val user1 = TestUser(Username("golly"), EmailAddr("g@g.com"), PlainTextPassword("hello1234"), Set(Roles.Admin.name), "User One", true)
-  val user2 = TestUser(Username("deepti"), EmailAddr("d@d.com"), PlainTextPassword("harvest321"), Set.empty, "User Two", false)
+  val user1 = TestUser(Username("golly"), EmailAddr("g@g.com"), PlainTextPassword("hello1234"), Set(Roles.Admin.name), PersonName("User One"), true)
+  val user2 = TestUser(Username("deepti"), EmailAddr("d@d.com"), PlainTextPassword("harvest321"), Set.empty, PersonName("User Two"), false)
   val users = List(user1, user2)
 
   val userWithCurrentToken = PendingTestUser(EmailAddr("a@p.com"), "abc123abc123", 5.minutes.ago)
@@ -66,13 +66,12 @@ final case class UserFixture(xa: SingleConnectionXA) {
 
   def setup: IO[Unit] = {
     // Insert mock users (registered)
-    val i1 = Query[(String, String, String, String, Option[String]), Long]("INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at, roles) VALUES(?,?,?,?,NOW(),NOW(),NOW(),?) RETURNING id")
+    val i1 = Query[(Username, EmailAddr, PasswordAndSalt, Option[String]), UserId]("INSERT INTO usr(username, email, password, password_salt, password_changed_at, confirmation_sent_at, confirmed_at, roles) VALUES(?,?,?,?,NOW(),NOW(),NOW(),?) RETURNING id")
     val inserts1: List[IO[Unit]] =
       for (u <- users) yield {
-        i1.toQuery0(u.username.value, u.email.value, u.hashedPassword.value, u.salt.toBase64, UserFixture.roleStr(u.roles))
+        i1.toQuery0(u.username, u.email, u.ps, UserFixture.roleStr(u.roles))
           .unique
-          .map { rawId =>
-            val id = UserId(rawId)
+          .map { id =>
             u._id = Some(id)
             id
           }

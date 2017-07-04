@@ -1,7 +1,7 @@
 package shipreq.webapp.server.test
 
+import java.time.Duration
 import shipreq.webapp.server.app.Global
-import shipreq.webapp.server.security.SecurityProvider
 
 object PrepareEnv {
   private val boot = new bootstrap.liftweb.Boot
@@ -19,29 +19,18 @@ object PrepareEnv {
   }
 
   Global.Instance = Global(
-    config     = cfg.server,
-    db         = null,
-    logic      = null,
-    security   = Global.defaultSecurity,
-    statLogger = Global.defaultStatLogger,
-    taskman    = null)
+    config  = cfg.server.copy(attackFrustrationDelay = Duration.ZERO),
+    db      = null,
+    logic   = null,
+    taskman = null)
 
-
-  val oshiro: () => Unit = once {
-    boot.initOshiro()
-
-    // Disable SecurityProvider.enforceHumanSpeed()
-    val oldSecurity = Global.security
-    val newSecurity = new SecurityProvider {
-      override def loggedInUser() = oldSecurity.loggedInUser()
-      override def enforceHumanSpeed() = ()
-    }
-    Global.modify(_.copy(security = newSecurity))
+  val shiro: () => Unit = once {
+    boot.initShiro()
   }
 
   val lift: () => Unit = once {
     // if (!LiftRules.doneBoot) {
-    oshiro()
+    shiro()
     boot.configureLift()
     boot.preloadTemplates()
   }

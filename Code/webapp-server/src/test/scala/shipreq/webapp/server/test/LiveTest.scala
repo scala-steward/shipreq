@@ -20,7 +20,7 @@ trait LiveTest extends TestKit with LiveTestHelpers with BeforeAndAfterAll with 
   }
 
   override def beforeAll(): Unit = {
-    PrepareEnv.oshiro()
+    PrepareEnv.shiro()
     PrepareEnv.lift()
     TestDb.init()
     jetty.start()

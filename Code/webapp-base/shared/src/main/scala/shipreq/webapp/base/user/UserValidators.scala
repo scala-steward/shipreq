@@ -64,6 +64,7 @@ object UserValidators {
   val username: Composite.Stateless[String, String, Username] =
     CV.endoValidator.lengthInRange(WebappConfig.usernameLength)
       .prependCorrector(TextMod.noWhitespace.andThen(TextMod.lowerCase).correctLive)
+      .appendCorrector(TextMod.removeTrailingChar('@').correctFull)
       .addInvalidator(CV.invalidator.whitelistCharRangeRegex("a-z0-9_")(Invalidity("Can only contain letters, numbers and underscores.")))
       .addInvalidator(CV.invalidator.startsWithRegex("[a-z]")(Invalidity("Must start with a letter.")))
       .addInvalidator(CV.invalidator.endsWithRegex("[a-z0-9]")(Invalidity("Must end with a letter or a number.")))
@@ -75,7 +76,7 @@ object UserValidators {
     type R = Username \/ EmailAddr
     val vu = username.named.mapValid(-\/(_): R)
     val ve = emailAddr.named.mapValid(\/-(_): R)
-    Validator.choose(s => if (s.indexOf('@') == -1) vu else ve)
+    Validator.choose(s => if (EmailAddr.isEmailAddr(s)) ve else vu)
   }
 
   val personName: Validator[String, String, PersonName] =

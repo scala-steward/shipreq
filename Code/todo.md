@@ -95,6 +95,18 @@ Phase 2 (dev)
 * Forms: autofocus input, disable buttons when KO, no red/error for empty
 * LandingPage form: perma-disable button after successful submission
 * Login failed: `Invalid <username|email> or ...`
+* Server changes
+  * Clean up db package, remove DbLogic
+  * Split Interpreters file, probably into packages
+  * Tests and/or laws for server logic - test impls
+  * Remove sitemap
+  * Move member auth checks into server logic
+  * Remove WS .security.Permission{,s}
+  * Re-enable the disabled DB tests
+  * Enforce the token constraints in DB (see ??? in DbLogic), also ensure that no updates attempt to violate them
+  * Ensure Option[IP] in DbLogic matches schema
+  * `usr_login_log` - if stat logger is dead does it never get populated? No DB trigger?
+
 
 ### New Features
 * User profile page

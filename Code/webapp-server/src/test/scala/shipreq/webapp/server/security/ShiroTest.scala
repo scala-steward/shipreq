@@ -6,10 +6,10 @@ import shipreq.webapp.base.user.PlainTextPassword
 import shipreq.webapp.server.test.UserFixture
 import shipreq.webapp.server.test.WebappServerTestUtil._
 
-object OshiroTest extends TestSuite {
+object ShiroTest extends TestSuite {
 
   def runTest[A](test: UserFixture => A): A =
-    UserFixture.Transaction.runNow(withOshiro(test))
+    UserFixture.Transaction.runNow(withShiro(test))
 
   override def tests = TestSuite {
 

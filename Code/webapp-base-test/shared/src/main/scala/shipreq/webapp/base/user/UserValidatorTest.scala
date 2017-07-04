@@ -109,7 +109,9 @@ object UserValidatorTest extends TestSuite {
       val test = Tester(UserValidators.username.unnamed.mapValid(_.value))
       * - test("hehe", "HEHE", "  Hehe  ")(pass)
       * - test("a" * 3)(pass)
-      * - test("@#$%::p1_")(fail("can only contain"))
+      * - test("#$%::p1_")(fail("can only contain"))
+      * - test("asd@")(fail("can only contain"))
+      * - test("golly", "@golly", " @ golly ")(pass)
       * - test("")(fail(" long."))
       * - test("ab")(fail(" long.")) // too short
       * - assertEq(test.v.auditor.validity("a" * 33), Invalid) // too long

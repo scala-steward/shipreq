@@ -8,13 +8,11 @@ import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes.{Development, Test => TestMode}
 import scala.xml.{NodeSeq, Text}
 import scalaz.{Name, Need}
-import shipreq.base.util.{Memo, Url}
+import shipreq.base.util.Url
 import shipreq.webapp.base._
-import shipreq.webapp.server.data._
 import shipreq.webapp.server.feature.{DiagnosticEndpoints, SessionStats}
 import shipreq.webapp.server.logic._
-import shipreq.webapp.server.security.Permission.RequestVarPermExt
-import shipreq.webapp.server.security.{Oshiro, Permission, Permissions}
+import shipreq.webapp.server.security.{AppSecurityRealm, Permission, Permissions}
 
 object AppSiteMap { // TODO Cleanup
   type PM[T] = Menu.ParamMenuable[T]
@@ -44,7 +42,7 @@ object AppSiteMap { // TODO Cleanup
 
   val Home =
     pageWithStaticUrl("home", defaultTitle, "Home")(_ / PublicUrls.home
-      >> UseEitherTemplate(Oshiro.isAuthenticated(), "members-home")(publicTemplate))
+      >> UseEitherTemplate(AppSecurityRealm.isAuthenticated(), "members-home")(publicTemplate))
 
 //  val LandingPageViaBusinessCard =
 //    pageWithStaticUrl("land-bc", "")(_ / "bc" >> UseTemplate(publicTemplate))
@@ -98,7 +96,7 @@ object AppSiteMap { // TODO Cleanup
 
     def autoLogin = Menu.i("x") / "x" >> EarlyResponse(() => {
       getSubject.login(new UsernamePasswordToken("devuser", "dev123123"))
-      SessionStats.onLogin(S.session, Oshiro.loggedInUser().get)
+      SessionStats.onLogin(S.session, AppSecurityRealm.authenticatedUser().get)
       Full(redirectHome)
       // Full(RedirectResponse("/project/oLctx/table"))
     })
@@ -130,7 +128,7 @@ object AppSiteMap { // TODO Cleanup
   val redirectToLogin = PublicUrls.login.redirectResponse
 
   def logout(): Box[LiftResponse] = {
-    Oshiro.logout()
+    AppSecurityRealm.logout()
     SessionStats.onLogout(S.session)
     Full(redirectHome)
   }
@@ -178,7 +176,7 @@ object AppSiteMap { // TODO Cleanup
   }
 
   private def AuthenticationRequired =
-    If(() => Oshiro.isAuthenticated(),
+    If(() => AppSecurityRealm.isAuthenticated(),
       // The # here is to clear the hash fragment from logged-in pages.
       // Means that /project/abcd#reqs/UC-1 is redirected to /login# instead of /login#reqs/UC-1
       () => redirectToLogin)

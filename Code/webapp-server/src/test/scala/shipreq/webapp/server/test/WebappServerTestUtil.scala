@@ -3,10 +3,13 @@ package shipreq.webapp.server.test
 import java.time._
 import org.apache.shiro.SecurityUtils
 import org.apache.shiro.authc.UsernamePasswordToken
+import org.apache.shiro.codec.Base64
+import org.apache.shiro.util.ByteSource
 import utest.asserts._
 import shipreq.webapp.base.test.{WebappTestEquality, WebappTestUtil}
 import shipreq.webapp.base.user.{PlainTextPassword, User, Username}
-import shipreq.webapp.server.security.Oshiro
+import shipreq.webapp.server.logic.PasswordAndSalt
+import shipreq.webapp.server.security.AppSecurityRealm
 
 trait WebappServerTestEquality extends WebappTestEquality {
 }
@@ -25,29 +28,29 @@ trait WebappServerTestUtil extends WebappTestUtil {
     try a finally logout()
   }
 
-  def withOshiro[A](a: => A): A = {
-    PrepareEnv.oshiro()
-    Oshiro.logout()
-    try a
-    finally Oshiro.logout()
+  def withShiro[A](a: => A): A = {
+    PrepareEnv.shiro()
+    AppSecurityRealm.logout()
+    try a finally AppSecurityRealm.logout()
   }
 
   def assertUserLoggedIn(u: User): Unit =
-    assertEq(Oshiro.loggedInUser(), Some(u))
+    assertEq(AppSecurityRealm.authenticatedUser(), Some(u))
 
   def assertLoggedIn(): User = {
-    val user = Oshiro.loggedInUser()
+    val user = AppSecurityRealm.authenticatedUser()
     assert(user.isDefined)
     user.get
   }
 
   def assertNotLoggedIn(): Unit = {
-    val user = Oshiro.loggedInUser()
+    val user = AppSecurityRealm.authenticatedUser()
     assert(user.isEmpty)
   }
 
   implicit def toWSTU_IntExt(i: Int) = new WSTU_IntExt(i)
   implicit def toWSTU_DurationExt(d: Duration) = new WSTU_DurationExt(d)
+  implicit def PasswordAndSaltExt(d: PasswordAndSalt) = new PasswordAndSaltExt(d)
 }
 
 object WebappServerTestUtil
@@ -69,5 +72,13 @@ object WebappServerTestUtil
 
   class WSTU_DurationExt(private val d: Duration) extends AnyVal {
     def ago: Instant = Instant.now().minus(d)
+  }
+
+  class PasswordAndSaltExt(private val ps: PasswordAndSalt) extends AnyVal {
+    def matches(p: PlainTextPassword): Boolean = {
+      val saltBytes = ByteSource.Util.bytes(Base64.decode(ps.salt.base64))
+      val hash2 = AppSecurityRealm.pureHashFn(p, saltBytes)
+      ps.passwordHash ==* hash2.passwordHash
+    }
   }
 }

@@ -7,38 +7,33 @@ import java.time.Duration
 import scalaz.syntax.applicative._
 import shipreq.base.util._
 
-final case class ServerConfig(
+final case class ServerConfig(supportEmailAddress: String,
 
-  supportEmailAddress: String,
+                              baseUrl: Url.Absolute.Base,
 
-  baseUrl: Url.Absolute.Base,
+                              /** A short amount of time, unnoticeable to humans, to sleep in order to frustrate automated security attacks. */
+                              attackFrustrationDelay: Duration,
 
-  /** A short amount of time, unnoticeable to humans, to sleep in order to frustrate automated security attacks. */
-  attackFrustrationDelay: Duration,
+                              /** Number of characters in tokens used for email & reset-password verification. */
+                              securityTokenLength: Int,
 
-  /** Number of characters in tokens used for email & reset-password verification. */
-  confirmationTokenLength: Int,
+                              /** How long confirmation tokens are valid for after issuing. */
+                              confirmationTokenLifespan: Duration,
 
-  /** How long confirmation tokens are valid for after issuing. */
-  confirmationTokenLifespan: Duration,
+                              /** How long password-reset tokens are valid for after issuing. */
+                              passwordResetTokenLifespan: Duration,
 
-  /** How long password-reset tokens are valid for after issuing. */
-  passwordResetTokenLifespan: Duration,
+                              /**
+                                * Whether or not new registrations are allowed.
+                                * (Registration tokens already issued will still be accepted.)
+                                */
+                              allowRegister: Permission,
 
-  /**
-    * Whether or not new registrations are allowed.
-    * (Registration tokens already issued will still be accepted.)
-    */
-  allowRegister: Permission,
+                              /** The DB schema in which the Taskman interfaces reside. */
+                              taskmanSchema: String,
 
-  /** The DB schema in which the Taskman interfaces reside. */
-  taskmanSchema: String,
-
-  initTaskmanOnBoot: Boolean,
-  initTaskmanRetry: RetryCriteria,
-
-  /** Maximum time a flash variable will be retained. (default) */
-  flashVarTTL: Duration) {
+                              initTaskmanOnBoot: Boolean,
+                              initTaskmanRetry: RetryCriteria) {
 
   val attackFrustrationDelayMs: Long =
     attackFrustrationDelay.toMillis
@@ -56,8 +51,7 @@ object ServerConfig {
       Config.getOrUse[Boolean ]      ("allow.register", true).map(Allow.when) |@|
       Config.need    [String  ]      ("taskman.schema") |@|
       Config.getOrUse[Boolean ]      ("taskman.init", true) |@|
-      RetryCriteria.config.withPrefix("taskman.init.retry.") |@|
-      Duration.ofMinutes(12).pure[Config]
+      RetryCriteria.config.withPrefix("taskman.init.retry.")
     ) (apply).withPrefix("shipreq.")
 
 }

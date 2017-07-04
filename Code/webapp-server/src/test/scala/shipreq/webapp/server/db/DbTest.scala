@@ -18,8 +18,7 @@ import shipreq.webapp.base.event._
 import shipreq.webapp.base.hash.HashRec
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.base.user._
-import shipreq.webapp.server.data._
-import shipreq.webapp.server.security.PasswordAndSalt
+import shipreq.webapp.server.security.AppSecurityRealm
 import shipreq.webapp.server.test.{DbUtil, TestDb}
 import shipreq.webapp.server.test.WebappServerTestUtil._
 
@@ -139,7 +138,7 @@ object DbTest extends TestSuite {
         val dbu = DbUtil(xa)
         val u = dbu.newUserId()
         val username = xa ! Query0[String](s"select username from usr where id=${u.value: Long}").unique
-        val token = xa ! DbLogic.user.performInstallNewResetPasswordToken(u, () => s"token.$u")
+        val token = xa ! DbLogic.user.performInstallNewResetPasswordToken(u, () => SecurityToken(s"token.$u"))
 
         val date = xa ! DbLogic.user.findResetPasswordTokenIssuedDate(token)
 //        assert(!ResetPassword.isTokenExpired(date.get)) TODO
@@ -149,8 +148,8 @@ object DbTest extends TestSuite {
 //        assert(!ResetPassword.isTokenExpired(date2.get)) TODO
 
         val p = PlainTextPassword("hehegreat100")
-        val ps = PasswordAndSalt.createWithRandomSalt(p)
-        xa ! DbLogic.user.performPasswordReset(ps, token)
+        val ps = AppSecurityRealm.randomHashFn(p)
+        xa ! DbLogic.user.performPasswordReset(token, ps)
 
         assertEq(xa ! DbLogic.user.findResetPasswordTokenIssuedDate(token), None)
         val ps2 = (xa ! DbLogic.user.findDescAndCredentials(username)).get._2

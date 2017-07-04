@@ -431,7 +431,7 @@ object WebappBuild {
       .enablePlugins(JettyPlugin, WarPlugin, DockerPlugin)
       .dependsOn(baseDb, taskmanApiImpl, webappServerLogicJvm, webappGenJvm)
       .deps(
-        Scalaz.core ++ Lift.webkit ++ Shiro.all ++ commonsLang ++
+        Scalaz.core ++ Lift.webkit ++ Shiro.all ++ commonsLang ++ Nyaya.gen ++
         testScope(μTest ++ scalaTest ++ scalaCheck ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
         (LibJetty.webapp % "test") ++
         (LibJetty.servletApi % "test,provided"))

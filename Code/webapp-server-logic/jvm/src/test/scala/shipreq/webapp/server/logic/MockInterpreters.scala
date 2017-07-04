@@ -371,14 +371,13 @@ object MockInterpreters {
     supportEmailAddress        = "test@shipreq.com",
     baseUrl                    = Url.Absolute.Base("https://test.shipreq.com"),
     attackFrustrationDelay     = 1 hour,
-    confirmationTokenLength    = 8,
+    securityTokenLength        = 8,
     confirmationTokenLifespan  = 7 days,
     passwordResetTokenLifespan = 4 days,
     allowRegister              = Allow,
     taskmanSchema              = "test_taskman",
     initTaskmanOnBoot          = false,
-    initTaskmanRetry           = RetryCriteria(2 hour, Some(666)),
-    flashVarTTL                = 100 days)
+    initTaskmanRetry           = RetryCriteria(2 hour, Some(666)))
 }
 
 class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerConfig]) {

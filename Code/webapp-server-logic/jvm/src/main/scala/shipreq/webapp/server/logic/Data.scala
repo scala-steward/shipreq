@@ -37,7 +37,7 @@ object Salt {
 }
 
 /** A hashed password and the salt used to generate the hash. */
-final case class PasswordAndSalt(password: PasswordHash, salt: Salt)
+final case class PasswordAndSalt(passwordHash: PasswordHash, salt: Salt)
 object PasswordAndSalt {
   implicit def univEq: UnivEq[PasswordAndSalt] = UnivEq.derive
 }

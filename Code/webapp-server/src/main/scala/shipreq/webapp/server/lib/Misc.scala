@@ -2,13 +2,9 @@ package shipreq.webapp.server.lib
 
 import java.time.format.DateTimeFormatter
 import java.time.{Instant, ZoneOffset}
-import net.liftweb.http.S
-import scala.util.Random
 import shipreq.base.util.log.HasLogger
 
 object Misc extends Misc {
-
-  val RNG = new Random()
 
   val Iso8601Format = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC)
 
@@ -23,24 +19,4 @@ trait Misc extends HasLogger {
 
   implicit def InstantExt(v: Instant): InstantExt =
     new InstantExt(v)
-
-  def clientIp(): Option[String] = (
-    S.originalRequest.filter(_.request ne null).map(_.remoteAddr)
-      or S.containerRequest.map(_.remoteAddress)
-      or S.request.filter(_.request ne null).map(_.remoteAddr)
-    // println("X-Real-IP: " + req.header("X-Real-IP"))
-    // println("X-Forwarded-For: " + req.header("X-Forwarded-For"))
-    )
-
-//  @tailrec
-//  final def retry[T](n: Int, firstError: Option[Throwable] = None)(fn: => T): T = {
-//    import scala.util.{Failure, Success, Try}
-//    Try { fn } match {
-//      case Success(result)      => result
-//      case Failure(e) if n > 0  => retry(n - 1, firstError orElse Some(e))(fn)
-//      case Failure(e) if n <= 0 =>
-//        firstError.foreach(log.debug("First retry failure.", _))
-//        throw e
-//    }
-//  }
 }
