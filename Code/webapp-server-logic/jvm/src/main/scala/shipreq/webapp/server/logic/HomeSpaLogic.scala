@@ -24,8 +24,10 @@ object HomeSpaLogic {
       for {
         pid ← db.createEmptyProject(userId)
         e1  = ApplyNewEvent.mustApply(ProjectNameSet(name), InitProject.project)
-        _   ← db.saveProjectEvent(pid)(EventOrd(0), InitProject.ae, InitProject.ve.hashRecs)
-        _   ← db.saveProjectEvent(pid)(EventOrd(1), e1.ae, e1.ve.hashRecs)
+        _   ← db.saveProjectEvents(pid)(
+                DB.SaveProjectEventCmd(EventOrd(0), InitProject.ae, InitProject.ve.hashRecs) ::
+                DB.SaveProjectEventCmd(EventOrd(1), e1.ae, e1.ve.hashRecs) ::
+                Nil)
       } yield ProjectMetaData(ProjectId Extern pid, name, 0, 0, now, None))
 
   def apply[D[_], F[_]](implicit db: DB.ForHomeSpa[D],

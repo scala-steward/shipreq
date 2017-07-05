@@ -236,6 +236,7 @@ object DbInterpreter {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   trait SaveProjectEvent extends DB.SaveProjectEvent[ConnectionIO] {
+    import DB.SaveProjectEventCmd
     import EventSqlHelpers._
 
     // select coalesce(max(ord)+1,1) from event where project_id=?
@@ -245,11 +246,14 @@ object DbInterpreter {
     private final val insertEventHashSql =
       Update[(ProjectId, EventOrd, HashRec)](s"INSERT INTO event_hash(project_id,ord,$eventHR) VALUES(?,?,${eventHR_?})")
 
-    override final def saveProjectEvent(p: ProjectId)
-                                       (o: EventOrd, e: ActiveEvent, hs: HashRec.Collection): ConnectionIO[Option[Throwable]] = {
-      val addEvent = insertEventSql.toUpdate0(p, o, e).run
-      val addHashes = insertEventHashSql.executeBatch(hs.iterator.map((p, o, _)))
-      (addEvent *> addHashes).inTransaction.attemptVoid
+    override final def saveProjectEvents(id: ProjectId)(cmds: Traversable[SaveProjectEventCmd]): ConnectionIO[Option[Throwable]] = {
+      val addEvents = insertEventSql.executeBatch(
+        cmds.toIterator.map(c => (id, c.ord, c.event)))
+
+      val addHashes = insertEventHashSql.executeBatch(
+        cmds.toIterator.flatMap(c => c.hashes.iterator.map(h => (id, c.ord, h))))
+
+      (addEvents *> addHashes).inTransaction.attemptVoid
     }
   }
 

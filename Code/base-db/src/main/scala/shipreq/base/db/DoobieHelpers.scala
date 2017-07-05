@@ -75,12 +75,22 @@ object DoobieHelpers {
   }
 
   implicit class UpdateExt[A](private val self: Update[A]) extends AnyVal {
-    def executeBatch(as: TraversableOnce[A])(implicit c: Composite[A]): ConnectionIO[Array[Int]] =
-      if (as.isEmpty)
-        Free.pure(Array.empty[Int])
-      else {
-        val addBatches = as.toIterator.map(HPS.set(_) *> FPS.addBatch).reduce(_ *> _)
-        HC.prepareStatement(self.sql)(addBatches *> FPS.executeBatch)
+    def executeBatch(as: TraversableOnce[A])(implicit c: Composite[A]): ConnectionIO[Unit] =
+      if (as.isEmpty) {
+        // 0 rows
+        ConnectionIoUnit
+      } else {
+        val it = as.toIterator
+        val first = it.next()
+        if (it.isEmpty) {
+          // 1 row
+          self.toUpdate0(first).execute
+        } else {
+          // 2 or more rows
+          val addBatch = (a: A) => HPS.set(a) *> FPS.addBatch
+          val addBatches = it.map(addBatch).foldLeft(addBatch(first))(_ *> _)
+          HC.prepareStatement(self.sql)(addBatches *> FPS.executeBatch).void
+        }
       }
   }
 

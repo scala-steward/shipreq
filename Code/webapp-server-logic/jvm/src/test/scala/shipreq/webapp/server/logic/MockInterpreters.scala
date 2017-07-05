@@ -233,7 +233,7 @@ final class MockDb(now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecur
     projects.need(id).projectLoad
   }
 
-  override def saveProjectEvent(id: ProjectId)(ord: EventOrd, e: ActiveEvent, hrs: HashRec.Collection) = Name[Option[Throwable]] {
+  private def _saveProjectEvent(id: ProjectId)(ord: EventOrd, e: ActiveEvent, hrs: HashRec.Collection) = Name[Option[Throwable]] {
     val entry = projects.need(id)
     def update(events: VerifiedEvent.Seq): Unit =
       projects = projects + entry.copy(events = events, lastUpdatedAt = Some(Instant.now()))
@@ -249,6 +249,12 @@ final class MockDb(now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecur
         update(VerifiedEvent.NonEmptySeq.one(ord, ve))
         None
     }
+  }
+
+  override def saveProjectEvents(id: ProjectId)(cmds: Traversable[DB.SaveProjectEventCmd]) = Name[Option[Throwable]] {
+    cmds.toIterator
+      .map(c => _saveProjectEvent(id)(c.ord, c.event, c.hashes).value)
+      .foldLeft[Option[Throwable]](None)(_ orElse _)
   }
 
   override def inDbTransaction[A](f: Name[A]) = f

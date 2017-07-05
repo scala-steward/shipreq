@@ -61,6 +61,8 @@ object DB {
     final case class TokenExists(reg: UserRegistration.Complete, token: SecurityToken, tokenSentAt: Instant) extends PasswordResetState
   }
 
+  final case class SaveProjectEventCmd(ord: EventOrd, event: ActiveEvent, hashes: HashRec.Collection)
+
   type ProjectEvents = SortedMap[EventOrd, VerifiedEvent]
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -135,11 +137,13 @@ object DB {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   trait SaveProjectEvent[F[_]] {
-    // TODO Make accept multiple events and execute in bulk
-    def saveProjectEvent(id    : ProjectId)
-                        (ord   : EventOrd,
-                         event : ActiveEvent,
-                         hashes: HashRec.Collection): F[Option[Throwable]]
+    def saveProjectEvents(id: ProjectId)(cmds: Traversable[SaveProjectEventCmd]): F[Option[Throwable]]
+
+    final def saveProjectEvent(id    : ProjectId)
+                              (ord   : EventOrd,
+                               event : ActiveEvent,
+                               hashes: HashRec.Collection): F[Option[Throwable]] =
+      saveProjectEvents(id)(SaveProjectEventCmd(ord, event, hashes) :: Nil)
   }
 
   trait ForHomeSpa[F[_]] extends Base[F] with SaveProjectEvent[F] {
