@@ -74,7 +74,7 @@ final case class UserFixture(xa: SingleConnectionXA) {
       for (u <- users) yield
         (for {
           token <- dbAlgebra.createUserPlaceholder(u.email)
-          res <- dbAlgebra.completeUserRegistration(token, u.name, u.username, u.ps, u.newsletter, None)
+          res <- dbAlgebra.completeUserRegistration(token, u.name, u.username, u.ps, u.newsletter)
           _ <- setRoles(u.email, u.roles)
         } yield res match {
           case DB.UserRegistrationResult.Success(id) => u._id = Some(id)

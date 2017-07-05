@@ -1,7 +1,6 @@
 package shipreq.webapp.server.logic
 
 import scalaz.\/
-import shipreq.base.util.Permission
 import shipreq.webapp.base.user._
 
 object Security {
@@ -22,7 +21,7 @@ object Security {
     final def protectFn[A, B](vulnerable: A => F[B]): A => F[B] =
       a => protect(vulnerable(a))
 
-    def attemptLogin(user: Username \/ EmailAddr, password: PlainTextPassword): F[Permission]
+    def attemptLogin(user: Username \/ EmailAddr, password: PlainTextPassword): F[Option[User]]
 
     def hashPassword(p: PlainTextPassword): F[PasswordAndSalt]
   }

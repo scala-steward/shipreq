@@ -103,7 +103,6 @@ Phase 2 (dev)
   * Move member auth checks into server logic
   * Remove WS .security.Permission{,s}
   * Re-enable the disabled DB tests
-  * Populate `usr_login_log` on login (and stop doing it onRegister)
   * Logic and interpreter both seem to be wrapping everything in txns
 
 

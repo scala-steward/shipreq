@@ -134,14 +134,12 @@ object DbInterpreter {
     override final def getUserRegistrationTokenIssueDate(t: SecurityToken): ConnectionIO[Option[Instant]] =
       getUserRegistrationTokenIssueDateSql.toQuery0(t).option
 
-    // TODO This shouldn't be updating the login stuff directly, it should be done via login -> usr_login_log trigger
     private final val sqlRegisterUser =
-      Query[(Username, PasswordAndSalt, Option[IP], SecurityToken), UserId](
+      Query[(Username, PasswordAndSalt, SecurityToken), UserId](
         """
           UPDATE usr SET username = ?
             ,password = ?, password_salt = ?, password_changed_at = NOW()
             ,confirmation_token = NULL, confirmed_at = NOW()
-            ,login_count = 1, last_login_at = NOW(), last_login_ip = ?
           WHERE confirmation_token = ?
           RETURNING id""".sql)
 
@@ -152,11 +150,10 @@ object DbInterpreter {
                                                 name      : PersonName,
                                                 username  : Username,
                                                 ps        : PasswordAndSalt,
-                                                newsletter: Boolean,
-                                                ip        : Option[IP]): ConnectionIO[UserRegistrationResult] = {
+                                                newsletter: Boolean): ConnectionIO[UserRegistrationResult] = {
       import UserRegistrationResult._
       val plan: ConnectionIO[UserRegistrationResult] =
-        sqlRegisterUser.toQuery0(username, ps, ip, token).option.attemptSql flatMap {
+        sqlRegisterUser.toQuery0(username, ps, token).option.attemptSql flatMap {
           case \/-(Some(id)) =>
             sqlInsertUsrd.toUpdate0(id, name, newsletter).run.map(_ => Success(id))
 

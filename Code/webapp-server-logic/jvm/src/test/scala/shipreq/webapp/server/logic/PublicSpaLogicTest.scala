@@ -22,6 +22,16 @@ object PublicSpaLogicTest extends TestSuite {
     def forwardTimeToEndOfPasswordResetWindow(v: Validity): Unit =
       svr.forwardTimeToEndOfWindow(config.passwordResetTokenLifespan, v)
 
+    def runLogin(i: Login.Fn.Input): Login.Fn.Response = assertProtected(svr.run(initData.login)(i))
+//    def runLogin(usernameOrEmail: String, password: String): Login.Fn.Response = {
+//      val u: Username \/ EmailAddr =
+//        if (EmailAddr.isEmailAddr(usernameOrEmail))
+//          \/-(EmailAddr(usernameOrEmail))
+//        else
+//          -\/(Username(usernameOrEmail))
+//      runLogin(Login.Request(u, PlainTextPassword(password)))
+//    }
+
     def runRegister1 (i: Register.Fn1 .Input): Register.Fn1 .Response = assertProtected(svr.run(initData.register1)(i))
     def runRegister2A(i: Register.Fn2A.Input): Register.Fn2A.Response = assertProtected(svr.run(initData.register2A)(i))
     def runRegister2B(i: Register.Fn2B.Input): Register.Fn2B.Response = assertProtected(svr.run(initData.register2B)(i))
@@ -30,11 +40,12 @@ object PublicSpaLogicTest extends TestSuite {
     def runResetPassword2A(i: ResetPassword.Fn2A.Input): ResetPassword.Fn2A.Response = assertProtected(svr.run(initData.resetPassword2A)(i))
     def runResetPassword2B(i: ResetPassword.Fn2B.Input): ResetPassword.Fn2B.Response = assertProtected(svr.run(initData.resetPassword2B)(i))
 
+    val user2password = PlainTextPassword("blurp12345")
     val user2 = MockDb.UserEntry(
       UserId(7),
       Username("blurp"),
       EmailAddr("blurp@bar.com"),
-      security.hashPassword(PlainTextPassword("blurp12345")).value,
+      security.hashPassword(user2password).value,
       svr.clock minus Duration.ofDays(5))
 
     db.users ::= user2
@@ -50,6 +61,23 @@ object PublicSpaLogicTest extends TestSuite {
   }
 
   override def tests = TestSuite {
+
+    'login {
+      implicit val t = new Tester(); import t._
+
+      def test(usernameOrEmail: Username \/ EmailAddr, password: PlainTextPassword)(expect: Permission) =
+        assertDifference("usrLoginLog", db.usrLoginLog.length)(if (expect is Allow) 1 else 0) {
+          assertEq(runLogin(Login.Request(usernameOrEmail, password)), \/-(expect))
+          svr.runForked()
+        }
+
+      'badAccountU  - test(-\/(Username("nope")), user2password)(Deny)
+      'badAccountE  - test(\/-(EmailAddr("w@w.com")), user2password)(Deny)
+      'badPasswordU - test(-\/(user2.username), PlainTextPassword("qweoiru1234SDFG"))(Deny)
+      'badPasswordE - test(\/-(user2.emailAddr), PlainTextPassword("qweoiru1234SDFG"))(Deny)
+      'successU - test(-\/(user2.username), user2password)(Allow)
+      'successE - test(\/-(user2.emailAddr), user2password)(Allow)
+    }
 
     'register1 {
       implicit val t = new Tester(); import t._
@@ -105,12 +133,14 @@ object PublicSpaLogicTest extends TestSuite {
       val req = Request(token, PersonName("Big Bob"), Username("bob"), PlainTextPassword("big_BOB_123!"), false)
 
       'success - {
-        assertDifference("taskman", taskman.msgs.length)(1) {
-          assertDifference("userPlaceholders", db.userPlaceholders.size)(-1)(
-            assertDifference("users", db.users.length)(1)(
-              assertEq(\/-(Response.Success), runRegister2B(req))))
-          svr.runForked()
-        }
+        assertDifference("usrLoginLog", db.usrLoginLog.length)(1)(
+          assertDifference("taskman", taskman.msgs.length)(1) {
+            assertDifference("userPlaceholders", db.userPlaceholders.size)(-1)(
+              assertDifference("users", db.users.length)(1)(
+                assertEq(\/-(Response.Success), runRegister2B(req))))
+            svr.runForked()
+          }
+        )
         assertEq(security.loggedIn.map(_.username), Some(req.username))
         taskman.assertLastSubmitted { case r: Msg.RegistrationCompleted => () }
       }
@@ -212,9 +242,9 @@ object PublicSpaLogicTest extends TestSuite {
       val p2 = PlainTextPassword("asdjhf2314sdfajk")
 
       "update the password when valid" - {
-        assertEq(security.attemptLogin(i, p2).value, Deny)
+        assertEq(security.attemptLogin(i, p2).value, None)
         assertEq(runResetPassword2B(Request(token, p2)), \/-(Response.Success))
-        assertEq(security.attemptLogin(i, p2).value, Allow)
+        assertEq(security.attemptLogin(i, p2).value.isDefined, true)
       }
 
       "reject invalid passwords" -

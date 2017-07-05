@@ -25,6 +25,12 @@ object MockDb {
                              resetPassword: Option[(SecurityToken, Instant)] = None) {
     def pubids: List[Username \/ EmailAddr] =
       -\/(username) :: \/-(emailAddr) :: Nil
+
+    def toUser: User =
+      User(userId, username, emailAddr, Set.empty)
+
+    def toUserAndPassword: (User, PasswordAndSalt) =
+      (toUser, ps)
   }
 
   final case class ProjectEntry(projectId    : ProjectId,
@@ -49,7 +55,20 @@ object MockDb {
   }
 }
 
-final class MockDb(now: Name[Instant]) extends DB.Algebra[Name] {
+final class MockDb(now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecurity[Name] {
+
+  override def getUserAndPasswordByEmail(email: EmailAddr) = Name[Option[(User, PasswordAndSalt)]] {
+    getUser(\/-(email)).map(_.toUserAndPassword)
+  }
+
+  override def getUserAndPasswordByUsername(username: Username) = Name[Option[(User, PasswordAndSalt)]] {
+    getUser(-\/(username)).map(_.toUserAndPassword)
+  }
+
+  var usrLoginLog = Vector.empty[(UserId, Option[IP])]
+  override def logLoginSuccess(id: UserId, ip: Option[IP]) = Name[Unit] {
+    usrLoginLog :+= ((id, ip))
+  }
 
   var prevTokenId = 0
   private def nextToken(): SecurityToken = {
@@ -124,8 +143,7 @@ final class MockDb(now: Name[Instant]) extends DB.Algebra[Name] {
                                         name: PersonName,
                                         username: Username,
                                         ps: PasswordAndSalt,
-                                        newsletter: Boolean,
-                                        ip: RelPos[IP]) =
+                                        newsletter: Boolean) =
     now.map { n =>
       (getPendingUserRegistration(token), getUser(-\/(username))) match {
         case (None, _)          => DB.UserRegistrationResult.TokenNotFound
@@ -337,7 +355,7 @@ final class MockTaskman extends TaskmanApi[Name] {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-final class MockSecurity(db: MockDb) extends Security.Algebra[Name] {
+final class MockSecurity(override val db: MockDb) extends Security.Algebra[Name] {
 
   var protectedActions = 0
   override def protect[A](vulnerable: Name[A]): Name[A] =
@@ -347,9 +365,9 @@ final class MockSecurity(db: MockDb) extends Security.Algebra[Name] {
     }
 
   var loggedIn = Option.empty[MockDb.UserEntry]
-  override def attemptLogin(u: Username \/ EmailAddr, p: PlainTextPassword) = Name[Permission] {
+  override def attemptLogin(u: Username \/ EmailAddr, p: PlainTextPassword) = Name[Option[User]] {
     loggedIn = db.getUser(u).filter(e => e.ps ==* mkPasswordAndSalt(p, e.ps.salt))
-    Allow when loggedIn.isDefined
+    loggedIn.map(_.toUser)
   }
 
   var prevSalt = 0

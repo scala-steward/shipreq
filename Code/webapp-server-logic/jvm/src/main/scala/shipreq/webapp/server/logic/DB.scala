@@ -114,8 +114,7 @@ object DB {
                                  name      : PersonName,
                                  username  : Username,
                                  ps        : PasswordAndSalt,
-                                 newsletter: Boolean,
-                                 ip        : Option[IP]): F[UserRegistrationResult]
+                                 newsletter: Boolean): F[UserRegistrationResult]
   }
 
   trait ForPasswordReset[F[_]] extends Base[F] {

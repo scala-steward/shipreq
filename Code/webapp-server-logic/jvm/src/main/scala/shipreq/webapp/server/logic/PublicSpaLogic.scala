@@ -62,10 +62,28 @@ object PublicSpaLogic {
       )
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    val loginPass: F[Permission] = F pure Allow
+    val loginFail: F[Permission] = F pure Deny
+
+    def attemptLogin(id: Username \/ EmailAddr, password: PlainTextPassword): F[Permission] =
+      security.attemptLogin(id, password).flatMap {
+
+        case r@ Some(u) =>
+          // Login succeeded
+          svr.clientIP.flatMap(ip =>
+            svr.fork(security.db.logLoginSuccess(u.id, ip)).flatMap(_ =>
+              loginPass))
+
+        case None =>
+          // User not found, or password didn't match
+          // The inability to distinguish is a security feature
+          loginFail
+      }
+
     val loginFn: F[Login.Fn.Instance] =
       svr.createServerSideProc(Login.Fn)(
         security.protectFn(req =>
-          security.attemptLogin(req.user, req.password).map(\/-(_))))
+          attemptLogin(req.user, req.password).map(\/-(_))))
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     object RegisterFns {
@@ -151,15 +169,15 @@ object PublicSpaLogic {
                   case SecurityToken.Status.Expired => -\/(\/-(Response.TokenExpired))
                 }
 
-              def register(ps: PasswordAndSalt, ip: Option[IP]): Stack[UserId] =
-                runDB(db.completeUserRegistration(req.token, req.personName, req.username, ps, req.newsletter, ip)).mapToStack {
+              def register(ps: PasswordAndSalt): Stack[UserId] =
+                runDB(db.completeUserRegistration(req.token, req.personName, req.username, ps, req.newsletter)).mapToStack {
                   case DB.UserRegistrationResult.Success(i)    => \/-(i)
                   case DB.UserRegistrationResult.TokenNotFound => -\/(\/-(Response.TokenInvalid))
                   case DB.UserRegistrationResult.UsernameTaken => -\/(\/-(Response.UsernameTaken))
                 }
 
               val login: Stack[Unit] =
-                security.attemptLogin(-\/(req.username), req.password).mapToStack {
+                attemptLogin(-\/(req.username), req.password).mapToStack {
                   case Allow => rightUnit
                   case Deny => -\/(-\/(ErrorMsg("Registration completed but login failed.")))
                 }
@@ -167,8 +185,7 @@ object PublicSpaLogic {
               (for {
                 _  <- validateToken
                 ps <- security.hashPassword(req.password).toStack
-                ip <- svr.clientIP.toStack
-                id <- register(ps, ip)
+                id <- register(ps)
                 _  <- svr.fork(taskman.submitMsg(Msg.RegistrationCompleted(id.toTaskman))).toStack
                 _  <- login
               } yield Response.Success)
