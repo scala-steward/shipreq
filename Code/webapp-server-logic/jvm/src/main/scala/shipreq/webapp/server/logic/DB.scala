@@ -135,6 +135,7 @@ object DB {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   trait SaveProjectEvent[F[_]] {
+    // TODO Make accept multiple events and execute in bulk
     def saveProjectEvent(id    : ProjectId)
                         (ord   : EventOrd,
                          event : ActiveEvent,

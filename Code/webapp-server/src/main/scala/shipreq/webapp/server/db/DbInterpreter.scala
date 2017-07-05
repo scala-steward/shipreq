@@ -346,30 +346,39 @@ object DbInterpreter {
       getProjectHeaderSql.toQuery0((id, id)).option
 
     private final val sqlSelectAllEvents =
-      Query[ProjectId, (EventOrd, Event)](s"SELECT ord,$eventE FROM event WHERE project_id=? ORDER BY ord")
+      Query[ProjectId, (EventOrd, Event)](s"SELECT ord,$eventE FROM event WHERE project_id=?")
 
     private final val sqlSelectAllEventHashes =
       Query[ProjectId, (EventOrd, HashRec)](s"SELECT ord,$eventHR FROM event_hash WHERE project_id=?")
 
+    private final class TmpForGetAllProjectEvents(val e: Event) { var hrs = HashRec.emptyCollection }
+
     /** @return Events in order from lowest to highest ord. */
     override final def getAllProjectEvents(p: ProjectId): ConnectionIO[ProjectEvents] = {
-      // TODO getAllProjectEvents impl is shit
-      class Tmp(val e: Event) {
-        var hrs = HashRec.emptyCollection
-      }
       (for {
         events <- sqlSelectAllEvents.toQuery0(p).list
         hashes <- sqlSelectAllEventHashes.toQuery0(p).list
       } yield {
-        val map = collection.mutable.HashMap.empty[EventOrd, Tmp]
-        for (t <- events)
-          map.put(t._1, new Tmp(t._2))
-        for (t <- hashes)
-          map(t._1).hrs += t._2
+
+        // Create: EventOrd -> (Event, HashRec.Collection)
+        // mutable.HashMap.get/put is effectively constant
+        // immutable.ListSet.add = linear O(H) where H is hashes per event by (HashScope,LogicVer,HashScheme)
+        // time = O(e + h.H)
+        val map = collection.mutable.HashMap.empty[EventOrd, TmpForGetAllProjectEvents]
+        for (t <- events) map.put(t._1, new TmpForGetAllProjectEvents(t._2))
+        for (t <- hashes) map(t._1).hrs += t._2
+
+        // time = O(e log e)
         val result = SortedMap.newBuilder[EventOrd, VerifiedEvent]
         for ((ord, tmp) <- map)
           result += ((ord, VerifiedEvent(tmp.e, tmp.hrs)))
         result.result()
+
+        // TODO Improve getAllProjectEvents. Currently server time = O(e.log(e) + e + h.H)
+        // Ideas: Server (currently) much more constrained in resources than DB.
+        // Maybe: have DB sort both queries by ord then traverse both at once | server time ~ O(e.log(e) + h.H)
+        // Maybe: do it all in DB and return hash recs as array               | server time ~ O(e.log(e) + h.H)
+
       }).inTransaction
     }
   }
