@@ -3,6 +3,9 @@ package shipreq.webapp.server.test
 import net.liftweb.http.testing._
 import org.apache.commons.httpclient.{HttpClient, HttpMethodBase}
 import shipreq.base.test.BaseTestUtil._
+import shipreq.webapp.base.protocol.ClientSideProc
+import shipreq.webapp.server.app.Global
+import shipreq.webapp.server.db.DbInterpreter
 import shipreq.webapp.server.logic.DispatchLogic
 
 /**
@@ -47,6 +50,8 @@ object LiveTestUtils {
   def newDbConnection() = TestDb.newConnection()
   lazy val dbUtil = DbUtil(newDbConnection())
   lazy val userFixture = UserFixture(dbUtil.xa)
+  implicit lazy val dbAlgebra = new DbInterpreter()(Global.config)
+  def xa = userFixture.xa
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -108,6 +113,12 @@ object LiveTestUtils {
 
     def assertBodyContains(s: String) = tap(_ => assertContains(bodyString, s))
     def assertBodyTitle(s: String) = tap2(_.bodyTitle)(assertEq(_, s))
+
+    def assertSpa(spaJs: String, spaEP: ClientSideProc[_]) = this
+        .assertOk
+        .assertContentTypeHtml
+        .assertBodyContains(spaJs)
+        .assertBodyContains(spaEP.objectAndMethod + "(")
   }
 
   implicit def toLiveTestHttpResponse(a: HttpResponse): LiveTestHttpResponse =

@@ -1,9 +1,7 @@
 package shipreq.webapp.server.snippet
 
-import japgolly.microlibs.nonempty.NonEmptyVector
 import net.liftweb.common.{Box, Full}
 import net.liftweb.http._
-import net.liftweb.http.js.{JsCmd, JsCmds}
 import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
 import scalaz.effect.IO
@@ -20,11 +18,16 @@ import shipreq.webapp.server.protocol._
 import ProjectSpa._
 
 object ProjectSpa {
+  object ProjectIdVar extends RequestVar[ProjectId](null)
+
   val EntryPoint = ClientSideProcInvoker(ProjectSpaProtocols.EntryPoint)
   val CometListener = ClientSideProcInvoker(ProjectSpaProtocols.CometListener)
 }
 
-final class ProjectSpa(projectId: ProjectId) extends SingleOpStatelessSnippet {
+final class ProjectSpa extends SingleOpStatelessSnippet {
+
+  val projectId = ProjectIdVar.is
+  assert(projectId != null, "Project SPA snippet invoked without a ProjectId")
 
   override def render: NodeSeq => NodeSeq = {
 

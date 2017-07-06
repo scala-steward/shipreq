@@ -9,6 +9,7 @@ import scalaz.effect.IO
 import shipreq.base.util.Url
 import shipreq.webapp.base.MemberUrls
 import shipreq.webapp.server.logic.DispatchLogic
+import shipreq.webapp.server.snippet.ProjectSpa.ProjectIdVar
 
 object LiftDispatcher {
   final case class StatusOnlyResponse(status: Int) extends LiftResponse with HeaderDefaults {
@@ -79,7 +80,7 @@ final class LiftDispatcher(global: Global) {
     response match {
       case ServePublicSpa       => render(req, templatePublic)
       case ServeHomeSpa         => render(req, templateHome)
-      case ProjectSpa.Serve     => render(req, templateProject)
+      case ProjectSpa.Serve(id) => ProjectIdVar.set(id); render(req, templateProject)
       case ProjectSpa.NotOwner
          | ProjectSpa.InvalidId => Full(RedirectResponse(MemberUrls.home.relativeUrl))
       case Redirect(to)         => Full(RedirectResponse(to.relativeUrl))

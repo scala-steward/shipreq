@@ -29,7 +29,7 @@ object DispatchLogic {
     case object ServeHomeSpa extends Response
     case object ServePublicSpa extends Response
     object ProjectSpa {
-      case object Serve extends Response
+      final case class Serve(id: ProjectId) extends Response
       case object NotOwner extends Response
       case object InvalidId extends Response
     }
@@ -172,7 +172,7 @@ final class DispatchLogic[F[_]](implicit F: Monad[F], security: Security.Algebra
         needAuth(u =>
           // TODO Check ProjectStore first
           security.db.getProjectOwner(projectId).map {
-            case Some(o) if o ==* u.id => ProjectSpa.Serve
+            case Some(o) if o ==* u.id => ProjectSpa.Serve(projectId)
             case Some(_)               => ProjectSpa.NotOwner
             case None                  => ProjectSpa.InvalidId
           }

@@ -106,7 +106,6 @@ Phase 2 (dev)
   * On auth fail, redirect back after login
   * Restore route: AdminStats
   * Restore route: DiagnosticEndpoints.Endpoints
-  * Confirm project SPA works (cos it needs a param)
   * Restore /bc ?
   * Remove SessionStats
 

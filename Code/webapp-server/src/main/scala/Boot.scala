@@ -49,6 +49,7 @@ class Boot {
     Global.Instance = Global.default
 
     // Prepare services
+    preloadTemplates()
     initRoutes(Global.Instance)
     initTaskman(Global.Instance)
   }
@@ -151,6 +152,13 @@ class Boot {
           Thread sleep d.toMillis
         }))
         .unsafePerformIO()
+
+  def preloadTemplates(): Unit = {
+    import shipreq.webapp.server.snippet._
+    AdminStats
+    HomeSpa
+    ProjectSpa
+  }
 
   def initRoutes(g: Global): Unit = {
     // (Must be done after Global is ready)
