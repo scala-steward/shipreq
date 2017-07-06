@@ -7,7 +7,7 @@ import shipreq.base.util.Url
 import shipreq.base.util.log.HasLogger
 import shipreq.webapp.base.PublicUrls
 import shipreq.webapp.base.user._
-import shipreq.webapp.server.app.Global
+import shipreq.webapp.server.app.{Global, LiftDispatcher}
 import shipreq.webapp.server.util.HttpResponses.ShouldNeverHappenResponse
 import shipreq.webapp.server.util.JsExt._
 
@@ -41,11 +41,11 @@ trait StaticSnippetHelpers extends HasLogger {
   def respondImmediately(response: LiftResponse): Nothing =
     throw ResponseShortcutException.shortcutResponse(response)
 
-  def redirectToLogin(): Nothing =
-    redirectTo(PublicUrls.login)
-
-  def redirectTo(url: Url.Relative): Nothing =
-    S.redirectTo(url.relativeUrl)
+//  def redirectToLogin(): Nothing =
+//    redirectTo(PublicUrls.login)
+//
+//  def redirectTo(url: Url.Relative): Nothing =
+//    S.redirectTo(url.relativeUrl)
 
   def shouldNeverHappen_! : Nothing =
     respondImmediately(ShouldNeverHappenResponse) // TODO do more! notify Taskman! etc
@@ -60,14 +60,14 @@ trait StaticSnippetHelpers extends HasLogger {
  */
 trait SnippetHelpers extends StaticSnippetHelpers with Misc with HasLogger {
 
-  @inline final def currentUser(): Option[User] =
-    Global.securityImpure.loggedInUser()
-
   @inline final def currentUserId_!() : UserId =
     currentUser_!().id
 
-  final def currentUser_!(): User =
-    currentUser() getOrElse redirectToLogin()
+  final def currentUser_!(): User = {
+    val user = LiftDispatcher.UserVar.is
+    assert(user != null, "LiftDispatcher.UserVar isn't set!")
+    user
+  }
 }
 
 /** A stateless snippet with only one rendering method. */

@@ -55,19 +55,19 @@ object AppSecurityRealm {
   @inline private def Principal(u: User): Principal = Some(u)
   @inline private def principalOrNull(): Principal = subject().getPrincipal.asInstanceOf[Principal]
 
-  def authenticatedUser(): Option[User] = {
+  private[security] def authenticatedUser(): Option[User] = {
     val p = principalOrNull()
     if (p eq null) None else p
   }
 
   /** throws AuthenticationException */
-  def loginOrThrow(usernameOrEmail: String, password: PlainTextPassword): Unit =
+  private[security] def loginOrThrow(usernameOrEmail: String, password: PlainTextPassword): Unit =
     SecurityUtils.getSubject.login(new UsernamePasswordToken(usernameOrEmail, password.value))
 
-  def logout(): Unit =
+  private[security] def logout(): Unit =
     subject().logout()
 
-  def isAuthenticated(): Boolean =
+  private[security] def isAuthenticated(): Boolean =
     subject().isAuthenticated
 
   lazy val pureHashFn: (PlainTextPassword, ByteSource) => PasswordAndSalt = {

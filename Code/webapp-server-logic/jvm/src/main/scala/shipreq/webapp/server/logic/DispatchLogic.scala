@@ -26,10 +26,10 @@ object DispatchLogic {
 
   sealed trait Response
   object Response {
-    case object ServeHomeSpa extends Response
     case object ServePublicSpa extends Response
+    final case class ServeHomeSpa(user: User) extends Response
     object ProjectSpa {
-      final case class Serve(id: ProjectId) extends Response
+      final case class Serve(user: User, projectId: ProjectId) extends Response
       case object NotOwner extends Response
       case object InvalidId extends Response
     }
@@ -132,13 +132,10 @@ final class DispatchLogic[F[_]](implicit F: Monad[F], security: Security.Algebra
   private def whenUrl(url: Url.Relative, ok: Request => FR): Route =
     when(_.path ==* url)(ok)
 
-  private def needAuth(resp: Response): FR =
-    security.isAuthenticated.map(auth => if (auth) resp else redirectToLogin)
+  private def needAuth(f: User => Response): FR =
+    security.authenticatedUser.map(_.fold[Response](redirectToLogin)(f))
 
-  private def needAuth(resp: FR): FR =
-    security.isAuthenticated.flatMap(auth => if (auth) resp else fRedirectToLogin)
-
-  private def needAuth(f: User => FR): FR =
+  private def needAuthF(f: User => FR): FR =
     security.authenticatedUser.flatMap(_.fold(fRedirectToLogin)(f))
 
   private def get(url: Url.Relative, resp: FR): Route =
@@ -162,19 +159,17 @@ final class DispatchLogic[F[_]](implicit F: Monad[F], security: Security.Algebra
       .reduce(_ | _)
 
   val memberHomeSpa: Route =
-    spa(MemberUrls.home)(
-      needAuth(
-        ServeHomeSpa))
+    spa(MemberUrls.home)(needAuth(ServeHomeSpa))
 
   val projectSpa: Route =
     spaId(MemberUrls.project)(ProjectId.Extern) {
       case \/-(projectId) =>
-        needAuth(u =>
+        needAuthF(user =>
           // TODO Check ProjectStore first
           security.db.getProjectOwner(projectId).map {
-            case Some(o) if o ==* u.id => ProjectSpa.Serve(projectId)
-            case Some(_)               => ProjectSpa.NotOwner
-            case None                  => ProjectSpa.InvalidId
+            case Some(o) if o ==* user.id => ProjectSpa.Serve(user, projectId)
+            case Some(_)                  => ProjectSpa.NotOwner
+            case None                     => ProjectSpa.InvalidId
           }
         )
       case -\/(_) => F pure ProjectSpa.InvalidId

@@ -1,6 +1,5 @@
 package shipreq.webapp.server.security
 
-import org.apache.shiro.authc._
 import utest._
 import shipreq.webapp.base.user.PlainTextPassword
 import shipreq.webapp.server.test.UserFixture
@@ -8,7 +7,7 @@ import shipreq.webapp.server.test.WebappServerTestUtil._
 
 object ShiroTest extends TestSuite {
 
-  def runTest[A](test: UserFixture => A): A =
+  def runTest[A](test: UserFixture => A): Unit =
     UserFixture.Session.runNow(withShiro(test))
 
   override def tests = TestSuite {
@@ -23,15 +22,15 @@ object ShiroTest extends TestSuite {
       }
 
       'notFound - runTest { uf =>
-        intercept[UnknownAccountException](login("blah", uf.user1.password))
+        intercept[RuntimeException](login("blah", uf.user1.password))
       }
 
       'badPassword - runTest { uf =>
-        intercept[IncorrectCredentialsException](login(uf.user1.username.value, uf.user2.password))
+        intercept[RuntimeException](login(uf.user1.username.value, uf.user2.password))
       }
 
       'unregistered - runTest { uf =>
-        intercept[UnknownAccountException](login(uf.userWithCurrentToken.email.value, PlainTextPassword("")))
+        intercept[RuntimeException](login(uf.userWithCurrentToken.email.value, PlainTextPassword("")))
       }
     }
 

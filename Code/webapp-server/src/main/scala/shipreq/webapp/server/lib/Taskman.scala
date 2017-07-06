@@ -18,7 +18,7 @@ object Taskman {
 
   def webappErrorOccurred(e: Throwable, url: Option[String], suppInfo: String): WebappErrorOccurred =
     WebappErrorOccurred(
-      Global.securityImpure.loggedInUser().map(_.id.toTaskman),
+      Global.security.authenticatedUser.unsafePerformIO().map(_.id.toTaskman),
       url,
       s"${Error stackTraceStr e}\n\nSUPP: $suppInfo")
 

@@ -7,11 +7,14 @@ import net.liftweb.util.Props
 import scala.xml.NodeSeq
 import scalaz.effect.IO
 import shipreq.base.util.Url
+import shipreq.webapp.base.user.User
 import shipreq.webapp.base.{MemberUrls, WebappConfig}
-import shipreq.webapp.server.logic.DispatchLogic
-import shipreq.webapp.server.snippet.ProjectSpa.ProjectIdVar
+import shipreq.webapp.server.logic.{DispatchLogic, ProjectId}
 
 object LiftDispatcher {
+  object ProjectIdVar extends RequestVar[ProjectId](null)
+  object UserVar      extends RequestVar[User     ](null)
+
   final case class StatusOnlyResponse(status: Int) extends LiftResponse with HeaderDefaults {
     def toResponse = InMemoryResponse(Array.empty, headers, cookies, status)
   }
@@ -88,14 +91,14 @@ final class LiftDispatcher(global: Global) {
   private def liftResponse(req: LiftReq, response: DispatchLogic.Response): Box[LiftResponse] = {
     import DispatchLogic.Response._
     response match {
-      case ServePublicSpa       => render(req, templatePublic)
-      case ServeHomeSpa         => render(req, templateHome)
-      case ProjectSpa.Serve(id) => ProjectIdVar.set(id); render(req, templateProject)
+      case ServePublicSpa         => render(req, templatePublic)
+      case ServeHomeSpa(u)        => UserVar.set(u); render(req, templateHome)
+      case ProjectSpa.Serve(u, p) => UserVar.set(u); ProjectIdVar.set(p); render(req, templateProject)
       case ProjectSpa.NotOwner
-         | ProjectSpa.InvalidId => Full(RedirectResponse(MemberUrls.home.relativeUrl))
-      case Redirect(to)         => Full(RedirectResponse(to.relativeUrl))
-      case MethodNotAllowed     => Full(MethodNotAllowedResponse())
-      case StatusOnly(s)        => Full(StatusOnlyResponse(s))
+         | ProjectSpa.InvalidId   => Full(RedirectResponse(MemberUrls.home.relativeUrl))
+      case Redirect(to)           => Full(RedirectResponse(to.relativeUrl))
+      case MethodNotAllowed       => Full(MethodNotAllowedResponse())
+      case StatusOnly(s)          => Full(StatusOnlyResponse(s))
     }
   }
 }

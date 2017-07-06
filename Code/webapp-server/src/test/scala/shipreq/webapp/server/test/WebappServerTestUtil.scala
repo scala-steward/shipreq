@@ -1,8 +1,6 @@
 package shipreq.webapp.server.test
 
 import java.time._
-import org.apache.shiro.SecurityUtils
-import org.apache.shiro.authc.UsernamePasswordToken
 import org.apache.shiro.codec.Base64
 import org.apache.shiro.util.ByteSource
 import utest.asserts._
@@ -16,12 +14,16 @@ trait WebappServerTestEquality extends WebappTestEquality {
 
 trait WebappServerTestUtil extends WebappTestUtil {
   import WebappServerTestUtil._
+  import PrepareEnv.security
 
   def login(usernameOrEmail: String, password: PlainTextPassword): Unit =
-    SecurityUtils.getSubject.login(new UsernamePasswordToken(usernameOrEmail, password.value))
+    security.attemptLogin(Username.orEmail(usernameOrEmail), password).unsafePerformIO() match {
+      case Some(_) => ()
+      case None    => sys error s"Login failed for [$usernameOrEmail] [$password]"
+    }
 
   def logout(): Unit =
-    SecurityUtils.getSubject.logout()
+    security.logout.unsafePerformIO()
 
   def withLoggedIn[A](username: Username, password: PlainTextPassword)(a: => A): A = {
     login(username.value, password)
@@ -30,21 +32,21 @@ trait WebappServerTestUtil extends WebappTestUtil {
 
   def withShiro[A](a: => A): A = {
     PrepareEnv.shiro()
-    AppSecurityRealm.logout()
-    try a finally AppSecurityRealm.logout()
+    logout()
+    try a finally logout()
   }
 
   def assertUserLoggedIn(u: User): Unit =
-    assertEq(AppSecurityRealm.authenticatedUser(), Some(u))
+    assertEq(security.authenticatedUser.unsafePerformIO(), Some(u))
 
   def assertLoggedIn(): User = {
-    val user = AppSecurityRealm.authenticatedUser()
+    val user = security.authenticatedUser.unsafePerformIO()
     assert(user.isDefined)
     user.get
   }
 
   def assertNotLoggedIn(): Unit = {
-    val user = AppSecurityRealm.authenticatedUser()
+    val user = security.authenticatedUser.unsafePerformIO()
     assert(user.isEmpty)
   }
 

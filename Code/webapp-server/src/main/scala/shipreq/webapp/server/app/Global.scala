@@ -8,20 +8,13 @@ import shipreq.taskman.api.impl.TaskmanApiImpl
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.db.DbInterpreter
 import shipreq.webapp.server.logic._
-import shipreq.webapp.server.security.{AppSecurityRealm, SecurityInterpreter}
+import shipreq.webapp.server.security.SecurityInterpreter
 
 final case class Global(config  : ServerConfig,
                         db      : DbAccess,
                         logic   : ServerLogic[IO],
                         security: Security.Algebra[IO],
-                        taskman : TaskmanApi[IO]) {
-
-  object securityImpure {
-    def loggedInUser()    = AppSecurityRealm.authenticatedUser()
-    def logout()          = AppSecurityRealm.logout()
-    def isAuthenticated() = AppSecurityRealm.isAuthenticated()
-  }
-}
+                        taskman : TaskmanApi[IO])
 
 object Global {
   var Instance: Global = _

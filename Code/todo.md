@@ -102,7 +102,6 @@ Phase 2 (dev)
   * Re-enable the disabled DB tests
   * Handle user being logged in in PublicSpa
 
-  * Have Home/Project SPAs get the current user themselves
   * On auth fail, redirect back after login
   * Restore route: AdminStats
   * Restore route: DiagnosticEndpoints.Endpoints

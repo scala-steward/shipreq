@@ -11,25 +11,18 @@ import shipreq.base.util.FreeOption
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.protocol.ProjectSpaProtocols
 import shipreq.webapp.gen.transform.ProjectSpaLoader
-import shipreq.webapp.server.app.Global
+import shipreq.webapp.server.app.{Global, LiftDispatcher}
 import shipreq.webapp.server.lib.SingleOpStatelessSnippet
 import shipreq.webapp.server.logic._
 import shipreq.webapp.server.protocol._
-import ProjectSpa._
 
-object ProjectSpa {
-  object ProjectIdVar extends RequestVar[ProjectId](null)
+object ProjectSpa extends SingleOpStatelessSnippet {
 
   val EntryPoint = ClientSideProcInvoker(ProjectSpaProtocols.EntryPoint)
-  val CometListener = ClientSideProcInvoker(ProjectSpaProtocols.CometListener)
-}
 
-final class ProjectSpa extends SingleOpStatelessSnippet {
-
-  val projectId = ProjectIdVar.is
-  assert(projectId != null, "Project SPA snippet invoked without a ProjectId")
-
-  override def render: NodeSeq => NodeSeq = {
+  override def render = {
+    val projectId = LiftDispatcher.ProjectIdVar.is
+    assert(projectId != null, "Project SPA snippet invoked without a ProjectId")
 
     val user = currentUser_!()
 
@@ -72,6 +65,8 @@ final class ProjectSpa extends SingleOpStatelessSnippet {
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
 object ProjectSpaComet {
+
+  val CometListener = ClientSideProcInvoker(ProjectSpaProtocols.CometListener)
 
   /** This also attaches (subscribes) the current req to the comet */
   def apply(projectId: ProjectId): Box[ProjectSpaComet] =
