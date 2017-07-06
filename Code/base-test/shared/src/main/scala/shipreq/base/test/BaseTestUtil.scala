@@ -53,6 +53,11 @@ trait BaseTestUtil
     }
   }
 
+  def once[A](a: => A): () => Unit = {
+    lazy val o = {a; ()}
+    () => o
+  }
+
   def assertFields[A](actual: A, expect: A) =
     new BaseTestUtil.FieldAssert(actual, expect)
 

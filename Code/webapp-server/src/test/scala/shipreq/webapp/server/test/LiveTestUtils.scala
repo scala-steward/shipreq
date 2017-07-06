@@ -1,0 +1,83 @@
+package shipreq.webapp.server.test
+
+import net.liftweb.http.testing._
+import org.apache.commons.httpclient.{HttpClient, HttpMethodBase}
+import shipreq.base.test.BaseTestUtil._
+
+/**
+ * A test case that requires connectivity to a running Jetty instance.
+ */
+object LiveTestUtils {
+
+  private def jetty = TestJetty
+
+  val init: () => Unit = once {
+    PrepareEnv.shiro()
+    PrepareEnv.db()
+    PrepareEnv.routes()
+    jetty.start()
+    _shutdown = once {
+      import Console._
+      println(s"$BLUE_B$BOLD${WHITE}SHUTTING DOWN!$RESET")
+      jetty.shutdown()
+      TestDb.shutdown()
+    }
+  }
+
+  private var _shutdown: () => Unit =
+    () => ()
+
+  def shutdown(): Unit =
+    _shutdown()
+
+  lazy val testKit: TestKit =
+    new TestKit {
+      init()
+
+      override def baseUrl = jetty.url
+
+      implicit override def responseCapture(fullUrl: String, httpClient: HttpClient, getter: HttpMethodBase) = {
+        getter.setFollowRedirects(false)
+        super.responseCapture(fullUrl, httpClient, getter)
+      }
+    }
+  import testKit.responseCapture
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  def get(url: String,
+          headers: List[(String, String)] = Nil,
+          params: List[(String, String)] = Nil): HttpResponse =
+    testKit.get(url, testKit.theHttpClient, headers, params: _*).asInstanceOf[HttpResponse]
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  final class LiveTestHttpResponse(private val resp: HttpResponse) extends AnyVal {
+    def bodyString: String =
+      resp.bodyAsString.openOrThrowException(s"Unable to read body from ${resp.body}")
+
+    def redirectedTo: Option[String] =
+      resp.headers.get("Location").flatMap(_.headOption)
+
+    def tap(f: HttpResponse => Any): HttpResponse = { f(resp); resp }
+    def tap2[A](f: HttpResponse => A)(g: A => Any): HttpResponse = { g(f(resp)); resp }
+
+    def assertStatus(expect: Int) = tap(_ =>
+      if (resp.code != expect)
+        fail(s"Expected status $expect, got ${resp.code}.\nHeaders: ${resp.headers}\nBody: $bodyString"))
+
+    def assertOk = assertStatus(200)
+    def assertRedirect = assertStatus(302)
+    def assertRedirectTo(url: String) = assertRedirect.tap2(_.redirectedTo)(assertEq(_, Some(url)))
+
+    def assertContentTypeContains(s: String) = tap2(_.contentType)(assertContains(_, s))
+    def assertContentType        (s: String) = tap2(_.contentType)(assertEq(_, s))
+    def assertContentTypeHtml                = assertContentTypeContains("text/html")
+    def assertContentTypeJs                  = assertContentTypeContains("application/javascript")
+
+    def assertBodyContains(s: String) = tap(_ => assertContains(bodyString, s))
+  }
+
+  implicit def toLiveTestHttpResponse(a: HttpResponse): LiveTestHttpResponse =
+    new LiveTestHttpResponse(a)
+}

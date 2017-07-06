@@ -228,6 +228,7 @@ object WebappBuild {
       .settings(inConfig(Test)(Seq(
         fork                         := true,
         javaOptions                  += "-Drun.mode=test",
+        javaOptions                  += s"-Dshipreq.assets=${(baseDirectory.value / Frontend.serve).absolutePath}",
         unmanagedResourceDirectories += baseDirectory.value / Frontend.serve,
         unmanagedResourceDirectories += baseDirectory.value / "src/main/webapp",
         parallelExecution            := false) // Due to UserFixture+Oshiro and LiveTest

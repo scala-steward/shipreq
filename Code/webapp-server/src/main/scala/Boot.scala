@@ -49,7 +49,7 @@ class Boot {
     Global.Instance = Global.default
 
     // Prepare services
-    preloadTemplates()
+    initRoutes()
     initTaskman(Global.Instance)
   }
 
@@ -88,9 +88,6 @@ class Boot {
 
     // Customise URL paths for built-in resources & AJAX requests
     LiftRules.liftContextRelativePath = WebappConfig.liftPath
-
-    // Register routes
-    LiftRules.dispatch.append((new LiftDispatcher).dispatchPF)
 
     // Force requests to be UTF-8
     LiftRules.early.append(_ setCharacterEncoding "UTF-8")
@@ -155,10 +152,8 @@ class Boot {
         }))
         .unsafePerformIO()
 
-  def preloadTemplates(): Unit = {
-    import shipreq.webapp.server.snippet._
-    AdminStats
-    HomeSpa
-    ProjectSpa
+  def initRoutes(): Unit = {
+    // (Must be done after Global is ready)
+    LiftRules.dispatch.append((new LiftDispatcher).dispatchPF)
   }
 }

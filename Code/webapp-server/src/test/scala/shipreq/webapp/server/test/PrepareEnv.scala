@@ -5,6 +5,7 @@ import java.time.Duration
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.app.Global
 import shipreq.webapp.server.db.DbInterpreter
+import shipreq.base.test.BaseTestUtil.once
 
 object PrepareEnv {
   private val boot = new bootstrap.liftweb.Boot
@@ -15,11 +16,6 @@ object PrepareEnv {
     appConfig = (AppConfig.server ^|-> ServerConfig.attackFrustrationDelay).set(Duration.ZERO)(appConfig)
     println("webapp-server test config:\n" + appConfig.report.reportUsed)
     appConfig
-  }
-
-  private def once[A](a: => A): () => Unit = {
-    lazy val o = {a; ()}
-    () => o
   }
 
   Global.Instance = Global(
@@ -39,12 +35,16 @@ object PrepareEnv {
     // if (!LiftRules.doneBoot) {
     shiro()
     boot.configureLift()
-    boot.preloadTemplates()
   }
 
   def db(): Unit = {
     TestDb.init()
     TestDb.useInLift()
+  }
+
+  val routes: () => Unit = once {
+    db()
+    boot.initRoutes()
   }
 
   lazy val dbAlgebra = new DbInterpreter()(global().config)
