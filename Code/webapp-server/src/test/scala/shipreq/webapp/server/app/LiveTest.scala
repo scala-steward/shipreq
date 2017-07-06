@@ -16,7 +16,7 @@ object LiveTest extends TestSuite {
 
   var pid = Option.empty[ProjectId]
 
-  val prepare = once {
+  val prepare = onceUnit {
     LiveTestUtils.init()
     userFixture.setup.unsafePerformIO()
     pid = Some(xa ! dbAlgebra.createEmptyProject(user1.id))

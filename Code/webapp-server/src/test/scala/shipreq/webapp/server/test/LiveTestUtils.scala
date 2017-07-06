@@ -15,12 +15,12 @@ object LiveTestUtils {
 
   private def jetty = TestJetty
 
-  val init: () => Unit = once {
+  val init: () => Unit = onceUnit {
     PrepareEnv.shiro()
     PrepareEnv.db()
     PrepareEnv.routes()
     jetty.start()
-    _shutdown = once {
+    _shutdown = onceUnit {
       //import Console._
       //println(s"$BLUE_B$BOLD${WHITE}SHUTTING DOWN!$RESET")
       jetty.shutdown()

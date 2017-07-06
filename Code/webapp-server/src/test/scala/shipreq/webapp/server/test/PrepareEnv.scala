@@ -5,7 +5,7 @@ import java.time.Duration
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.app.Global
 import shipreq.webapp.server.db.DbInterpreter
-import shipreq.base.test.BaseTestUtil.once
+import shipreq.base.test.BaseTestUtil.onceUnit
 
 object PrepareEnv {
   private val boot = new bootstrap.liftweb.Boot
@@ -27,11 +27,11 @@ object PrepareEnv {
 
   def global() = Global.Instance
 
-  val shiro: () => Unit = once {
+  val shiro: () => Unit = onceUnit {
     boot.initShiro()
   }
 
-  val lift: () => Unit = once {
+  val lift: () => Unit = onceUnit {
     // if (!LiftRules.doneBoot) {
     shiro()
     boot.configureLift()
@@ -42,7 +42,7 @@ object PrepareEnv {
     TestDb.useInLift()
   }
 
-  val routes: () => Unit = once {
+  val routes: () => Unit = onceUnit {
     db()
     boot.initRoutes(global())
   }
