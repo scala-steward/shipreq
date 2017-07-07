@@ -4,14 +4,12 @@ import java.time.Instant
 import utest._
 import shipreq.webapp.base.data.{Project, StaticField}
 import shipreq.webapp.base.event.FieldStaticRemove
-import shipreq.webapp.server.app.Global
-import shipreq.webapp.server.db.DbInterpreter
 import shipreq.webapp.server.logic.{HomeSpaLogic, ProjectId}
 import shipreq.webapp.server.test.WebappServerTestUtil._
 import shipreq.webapp.server.test._
 
 object HomeSpaTest extends TestSuite {
-  import PrepareEnv.dbAlgebra
+  implicit def db = PrepareEnv.dbAlgebra
 
   override def tests = TestSuite {
 
@@ -19,17 +17,16 @@ object HomeSpaTest extends TestSuite {
       def test(name: String): Unit =
         UserFixture.Transaction.runNow { uf =>
           import uf.xa
-          implicit val db = new DbInterpreter()(Global.config)
           val uid = uf.user1.id
 
           // Confirm starting empty
-          assertEq(xa ! dbAlgebra.getAllProjectMetaDataForUser(uid), Nil)
+          assertEq(xa ! db.getAllProjectMetaDataForUser(uid), Nil)
 
           // Create
           val pi = xa ! HomeSpaLogic.createProject(uid, name, Instant.now())
 
           val pid = ProjectId.Extern.parseOption(pi.id.value).get
-          def events() = (xa ! dbAlgebra.getAllProjectEvents(pid)).toVector
+          def events() = (xa ! db.getAllProjectEvents(pid)).toVector
           def loadProject() = applyVerifiedEventSuccessfully(Project.empty, events().map(_._2): _*)
 
           // Immediate result
@@ -38,7 +35,7 @@ object HomeSpaTest extends TestSuite {
           assertEq("Immediate reqCount", pi.reqCount, 0)
 
           // Reloaded result
-          val pc = xa ! dbAlgebra.getAllProjectMetaDataForUser(uid)
+          val pc = xa ! db.getAllProjectMetaDataForUser(uid)
           assertEq(pc.length, 1)
           val a = pc.head
           assertFields(pi, a)
@@ -53,8 +50,8 @@ object HomeSpaTest extends TestSuite {
           val p = loadProject()
           val e = FieldStaticRemove(StaticField.StepGraph)
           val ve = verifyEvent(p, e)
-          xa ! dbAlgebra.saveProjectEvent(pid)(nextOrd, e, ve.hashRecs)
-          val a2 = (xa ! dbAlgebra.getAllProjectMetaDataForUser(uid)).head
+          xa ! db.saveProjectEvent(pid)(nextOrd, e, ve.hashRecs)
+          val a2 = (xa ! db.getAllProjectMetaDataForUser(uid)).head
           assertEq("Next eventCount", a2.eventCount, a.eventCount + 1)
           loadProject()
         }

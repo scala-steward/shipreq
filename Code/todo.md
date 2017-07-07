@@ -46,6 +46,7 @@ Backlog
 * Change ScalaCSS to generate Scala.JS without the runtime/JS-size overhead
 * webapp-base-member shares packages with webapp-base, plus most of that stuff should be under .project as well
 * Extract webapp-base-member-test
+* Add laws for webapp-server-logic and test in webapp-server
 
 ------------------------------------------------------------------------------------------------------------------------
 Phase 2 (dev-complete)
@@ -99,10 +100,7 @@ Phase 2 (dev)
 * Forms: autofocus input, disable buttons when KO, no red/error for empty
 * LandingPage form: perma-disable button after successful submission
 * Login failed: `Invalid <username|email> or ...`
-* Server changes
-  * Tests and/or laws for server logic - test impls
-  * Re-enable the disabled DB tests
-  * Handle user being logged in in PublicSpa
+* Handle user being logged in in PublicSpa
 
 ### New Features
 * User profile page

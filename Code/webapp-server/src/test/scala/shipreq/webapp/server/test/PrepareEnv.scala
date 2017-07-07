@@ -14,7 +14,7 @@ object PrepareEnv {
     var (appConfig, runMode) = boot.readConfig()
     runMode foreach boot.setRunMode
     appConfig = (AppConfig.server ^|-> ServerConfig.attackFrustrationDelay).set(Duration.ZERO)(appConfig)
-    println("webapp-server test config:\n" + appConfig.report.reportUsed)
+    // println("webapp-server test config:\n" + appConfig.report.reportUsed)
     appConfig
   }
 

@@ -50,7 +50,7 @@ object LiveTestUtils {
   def newDbConnection() = TestDb.newConnection()
   lazy val dbUtil = DbUtil(newDbConnection())
   lazy val userFixture = UserFixture(dbUtil.xa)
-  implicit lazy val dbAlgebra = new DbInterpreter()(Global.config)
+  implicit def dbAlgebra = PrepareEnv.dbAlgebra
   def xa = userFixture.xa
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
