@@ -155,9 +155,9 @@ class Boot {
 
   def preloadTemplates(): Unit = {
     import shipreq.webapp.server.snippet._
-    AdminStats
     HomeSpa
     ProjectSpa
+    PublicSpa
   }
 
   def initRoutes(g: Global): Unit = {

@@ -169,7 +169,6 @@ object Dependencies {
   val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.6")
   val commonsIo   = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val twitterEval = jvmOnly("com.twitter"                %% "util-eval"             % "6.43.0")
-  val scalaTest   = jvmOnly("org.scalatest"              %% "scalatest"             % "3.0.3")
   val scalaCheck  = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.13.5")
 
   val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)

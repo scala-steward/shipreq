@@ -1,3 +1,4 @@
+/*
 package shipreq.webapp.server.snippet
 
 import org.scalatest.FunSuite
@@ -15,3 +16,4 @@ class AdminStatsTest extends FunSuite {
     html should not include(" class=\"err\">")
   }
 }
+*/

@@ -433,7 +433,7 @@ object WebappBuild {
       .dependsOn(baseDb, taskmanApiImpl, webappServerLogicJvm, webappGenJvm)
       .deps(
         Scalaz.core ++ Lift.webkit ++ Shiro.all ++ commonsLang ++ Nyaya.gen ++
-        testScope(μTest ++ scalaTest ++ scalaCheck ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
+        testScope(μTest ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
         (LibJetty.webapp % "test") ++
         (LibJetty.servletApi % "test,provided"))
       .configure(

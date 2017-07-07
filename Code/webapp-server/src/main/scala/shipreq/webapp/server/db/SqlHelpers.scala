@@ -22,7 +22,7 @@ object SqlHelpers {
   implicit val doobieCompositePasswordAndSalt: Composite[PasswordAndSalt] =
     Composite.generic
 
-  implicit val doobieCompositeUserDescriptor: Composite[User] =
+  implicit val doobieCompositeUser: Composite[User] =
     Composite[(UserId, Username, EmailAddr, Option[String])]
       .readOnly(r => User(r._1, r._2, r._3, userRoles(r._4)))
 

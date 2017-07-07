@@ -9,7 +9,6 @@ import shipreq.base.db.DoobieHelpers._
 import shipreq.base.test.db.{SingleConnectionXA, Usable}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
-import shipreq.webapp.server.db.DbLogic
 import shipreq.webapp.server.logic._
 import shipreq.webapp.server.security.{AppSecurityRealm, Roles}
 import shipreq.webapp.server.test.UserFixture._

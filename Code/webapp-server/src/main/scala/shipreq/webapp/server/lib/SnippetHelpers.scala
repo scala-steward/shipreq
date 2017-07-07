@@ -9,20 +9,10 @@ import shipreq.webapp.base.PublicUrls
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.app.{Global, LiftDispatcher}
 import shipreq.webapp.server.util.HttpResponses.ShouldNeverHappenResponse
-import shipreq.webapp.server.util.JsExt._
 
 object SnippetHelpers extends StaticSnippetHelpers {
 
-  final val JqExprJsonSerializer: Serializer[JqExpr] = new Serializer[JqExpr] {
-    // TODO Change over to Argonaut. Actually acks [Jj]son
-    import net.liftweb.json._
-    def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), JqExpr] = ???
-    def serialize(implicit format: Formats): PartialFunction[Any, JValue] = {
-      case expr: JqExpr => JString(expr.toJsCmd)
-    }
-  }
-
-  final val NodeSeqJsonSerializer: Serializer[NodeSeq] = new Serializer[NodeSeq] {
+  lazy val NodeSeqJsonSerializer: Serializer[NodeSeq] = new Serializer[NodeSeq] {
     import net.liftweb.json._
     def deserialize(implicit format: Formats): PartialFunction[(TypeInfo, JValue), NodeSeq] = ???
     def serialize(implicit format: Formats): PartialFunction[Any, JValue] = {
@@ -30,7 +20,7 @@ object SnippetHelpers extends StaticSnippetHelpers {
     }
   }
 
-  final val DefaultJsonFormat = Serialization.formats(NoTypeHints) + JqExprJsonSerializer + NodeSeqJsonSerializer
+  final val DefaultJsonFormat = Serialization.formats(NoTypeHints) + NodeSeqJsonSerializer
 }
 
 /**

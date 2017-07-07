@@ -82,6 +82,10 @@ Phase 2 (dev)
 * Add DB indicies
 * Add server logic benchmarks (using MockInterpreters?)
 * Switch from scalaz.effect.IO to Monix tasks
+* Restore AdminStats
+* Restore DiagnosticEndpoints
+* Remove SessionStats
+* On auth fail, redirect back after login
 
 ### Front pages
 * Implement new front pages
@@ -101,12 +105,6 @@ Phase 2 (dev)
   * Tests and/or laws for server logic - test impls
   * Re-enable the disabled DB tests
   * Handle user being logged in in PublicSpa
-
-  * On auth fail, redirect back after login
-  * Restore route: AdminStats
-  * Restore route: DiagnosticEndpoints.Endpoints
-  * Restore /bc ?
-  * Remove SessionStats
 
 ### New Features
 * User profile page

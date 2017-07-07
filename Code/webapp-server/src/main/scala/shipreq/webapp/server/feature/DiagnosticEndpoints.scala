@@ -1,5 +1,5 @@
 package shipreq.webapp.server.feature
-
+/*
 import java.lang.{Long => JLong}
 import java.time.{Duration, Instant}
 import net.liftweb.common._
@@ -126,3 +126,4 @@ object DiagnosticEndpoints {
         }
       )
 }
+*/
