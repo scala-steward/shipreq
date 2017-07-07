@@ -4,14 +4,16 @@ import scalaz.Name
 import utest._
 import shipreq.base.util.Url
 import shipreq.base.test.BaseTestUtil._
-import DispatchLogic._
 import shipreq.webapp.base.data.SecurityToken
 import shipreq.webapp.base.{MemberUrls, PublicUrls}
+import DispatchLogic._
+import Method._
 
 object DispatchLogicTest extends TestSuite {
 
   object Tester extends MockInterpreters {
     val dispatcher = new DispatchLogic[Name]
+    val dispatch = dispatcher.main.withFallback(dispatcher.fallback)
     db.users ::= user2
     db.users ::= user3
     val pid = ProjectId(9)
@@ -21,21 +23,24 @@ object DispatchLogicTest extends TestSuite {
 
   implicit def autoRelUrl(s: String): Url.Relative = Url.Relative(s)
 
-  def run(url: Url.Relative, get: Boolean = true)
+  def run(url: Url.Relative, method: Method = Get)
          (implicit logIn: MockDb.UserEntry = null): Response = {
     security.loggedIn = Option(logIn)
-    dispatcher.all(Request(get, url)).value
+    dispatch(Request(method, url, _ => None)).value
   }
 
-  def testRun(expect: Response, u: Url.Relative, get: Boolean = true)
+  def testRun(expect: Response, u: Url.Relative, method: Method = Get)
              (implicit logIn: MockDb.UserEntry = null): Unit =
-    assertEq(u.relativeUrl, run(u, get)(logIn), expect)
+    assertEq(u.relativeUrl, run(u, method)(logIn), expect)
 
   def testNonGet(url: Url.Relative): Unit =
-    for (logIn <- List[MockDb.UserEntry](null, user2)) {
-      testRun(Response.MethodNotAllowed, url, get = false)(logIn)
-      assertEq("405 shouldn't log user out", security.loggedIn, Option(logIn))
-    }
+    for {
+      method <- List[Method](Post, Other)
+      logIn <- List[MockDb.UserEntry](null, user2)
+    } {
+        testRun(Response.MethodNotAllowed, url, method)(logIn)
+        assertEq("405 shouldn't log user out", security.loggedIn, Option(logIn))
+      }
 
   def testNeedAuth(url: Url.Relative): Unit =
     testRun(Response.redirectToLogin, url)
@@ -64,7 +69,7 @@ object DispatchLogicTest extends TestSuite {
 
     'memberHomeSpa {
       def urls = spaUrls(MemberUrls.home)
-      'auth   - urls.foreach(testRun(Response.ServeHomeSpa, _)(user2))
+      'auth   - urls.foreach(testRun(Response.ServeHomeSpa(user2.toUser), _)(user2))
       'anon   - urls.foreach(testNeedAuth)
       'nonGet - urls.foreach(testNonGet)
     }
@@ -74,7 +79,7 @@ object DispatchLogicTest extends TestSuite {
       'projectExists {
         def urls = spaUrls(MemberUrls.project(pid))
         'anon     - urls.foreach(testNeedAuth)
-        'auth     - urls.foreach(testRun(Response.ProjectSpa.Serve, _)(user2))
+        'auth     - urls.foreach(testRun(Response.ProjectSpa.Serve(user2.toUser, pid), _)(user2))
         'notOwner - urls.foreach(testRun(Response.ProjectSpa.NotOwner, _)(user3))
         'nonGet   - urls.foreach(testNonGet)
       }
