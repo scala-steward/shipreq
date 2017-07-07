@@ -32,10 +32,10 @@ object Global {
     implicit val taskman       = TaskmanApiImpl(taskmanCtx, dbAccess.io.trans)
     implicit val dbAlgebra     = new DbInterpreter()
     implicit val dbForSecurity = DB.ForSecurity.trans(DbInterpreter.ForSecurity)(dbAccess.io.trans)
-    implicit val runDB         = Interpreters.runDB
+    implicit val runDB         = dbAccess.trans
     implicit val projectStore  = Store.Algebra.concurrentHashMap(): ProjectServer.StoreAlgebra[IO]
     implicit val security      = new SecurityInterpreter[IO]
-    implicit val server        = Interpreters.serverAlgebra
+    implicit val server        = ServerInterpreter
     Global(
       config   = config,
       db       = dbAccess,

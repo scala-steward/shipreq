@@ -100,8 +100,6 @@ Phase 2 (dev)
 * LandingPage form: perma-disable button after successful submission
 * Login failed: `Invalid <username|email> or ...`
 * Server changes
-  * Clean up db package, remove DbLogic
-  * Split Interpreters file, probably into packages
   * Tests and/or laws for server logic - test impls
   * Re-enable the disabled DB tests
   * Handle user being logged in in PublicSpa
