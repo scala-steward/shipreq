@@ -5,7 +5,6 @@ import org.scalajs.dom.html
 import utest._
 import shipreq.base.util._
 import shipreq.webapp.base.data.{Disabled, Enabled}
-import shipreq.webapp.base.protocol.ServerSideProc
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.public.spa._
@@ -104,29 +103,10 @@ object LandingPageTest extends TestSuite {
     test(Plan(actions, invariants))
 
   def test(plan: *.Plan): Unit = {
-    val cp = new TestClientProtocol(false)
+    val t = new PublicSpaTestUtil.ForTestState
+    import t.cp
     cp.addAutoResponse(PublicSpaProtocols.LandingPage.Fn)(_.success(()))
-
-    val i = PublicSpaProtocols.InitData(
-      landingPage     = ServerSideProc("landingPage    ", PublicSpaProtocols.LandingPage.Fn),
-      allowRegister   = Allow,
-      register1       = ServerSideProc("register1      ", PublicSpaProtocols.Register.Fn1),
-      register2A      = ServerSideProc("register2A     ", PublicSpaProtocols.Register.Fn2A),
-      register2B      = ServerSideProc("register2B     ", PublicSpaProtocols.Register.Fn2B),
-      login           = ServerSideProc("login          ", PublicSpaProtocols.Login.Fn),
-      resetPassword1  = ServerSideProc("resetPassword1 ", PublicSpaProtocols.ResetPassword.Fn1),
-      resetPassword2A = ServerSideProc("resetPassword2A", PublicSpaProtocols.ResetPassword.Fn2A),
-      resetPassword2B = ServerSideProc("resetPassword2B", PublicSpaProtocols.ResetPassword.Fn2B))
-
-    val spa   = new PublicSpa(i, cp)
-    val rc    = MockRouterCtl[Page]()
-    val props = PublicSpa.Props(Page.Home, rc)
-
-    ReactTestUtils.withRenderedIntoBody(spa.Component(props)) { m =>
-      val t = plan.test(Observer.watch(new Obs(m.htmlDomZipper, cp)))
-      val r = t.run((), cp)
-      assertTestState(r)
-    }
+    t(Page.Home)(h => plan.test(Observer.watch(new Obs(h, cp))).run((), cp))
   }
 
   override def tests = TestSuite {
