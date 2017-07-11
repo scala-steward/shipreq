@@ -8,6 +8,7 @@ import shipreq.webapp.base.data.{Disabled, Enabled}
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.public.spa._
+import PublicSpaTestUtil.semanticUiDisabled
 
 object LandingPageTester {
 
@@ -18,7 +19,7 @@ object LandingPageTester {
   class TextFieldObs($: HtmlDomZipper) {
     val input              = $("input,textarea").forceDomAs[html.Input]
     val text    : String   = input.value
-    val enabled : Enabled  = Disabled.when(input.disabled || $.dom.classList.contains("disabled"))
+    val enabled : Enabled  = Disabled.when(input.disabled || semanticUiDisabled($.dom))
     val validity: Validity = Invalid when $.dom.classList.contains("error")
   }
 
@@ -34,7 +35,7 @@ object LandingPageTester {
 
     val submitField                = field(5)
     val submit       : html.Button = form("button").domAs[html.Button]
-    val submitEnabled: Enabled     = Disabled.when(submit.disabled || submitField.dom.classList.contains("disabled"))
+    val submitEnabled: Enabled     = Disabled.when(submit.disabled || semanticUiDisabled(submitField.dom))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

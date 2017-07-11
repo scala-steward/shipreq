@@ -119,6 +119,7 @@ object Common {
         "WB"  -> "project webapp-base-jvm",
         "WT"  -> "project webapp-base-test-jvm",
         "WC"  -> "project webapp-client",
+        "WCA" -> "project webapp-client-public-js", // A for Anonymous
         "WCB" -> "project webapp-client-base",
         "WCH" -> "project webapp-client-home",
         "WCP" -> "project webapp-client-project",

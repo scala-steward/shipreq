@@ -1,6 +1,8 @@
 package shipreq.webapp.client.public
 
 import japgolly.scalajs.react.test.{MockRouterCtl, ReactTestUtils}
+import org.scalajs.dom.html
+import scala.annotation.tailrec
 import shipreq.base.util.Allow
 import shipreq.webapp.base.protocol.ServerSideProc
 import shipreq.webapp.base.test.TestClientProtocol
@@ -27,7 +29,7 @@ object PublicSpaTestUtil {
 
     def render[A](initPage: Page)(f: HtmlDomZipper => A): A = {
       val spa = new PublicSpa(initData, cp)
-      ReactTestUtils.withRenderedIntoBody(spa.Component(PublicSpa.Props(initPage, rc))) { m =>
+      ReactTestUtils.withRenderedIntoDocument(spa.Component(PublicSpa.Props(initPage, rc))) { m =>
         f(m.htmlDomZipper)
       }
     }
@@ -39,4 +41,16 @@ object PublicSpaTestUtil {
         ()
       }
   }
+
+  @tailrec
+  def semanticUiDisabled(h: html.Element): Boolean =
+    if (h.classList.contains("disabled"))
+      true
+    else {
+      val n = h.parentElement
+      if (n eq null)
+        false
+      else
+        semanticUiDisabled(n)
+    }
 }

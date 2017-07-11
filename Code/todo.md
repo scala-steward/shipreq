@@ -95,7 +95,6 @@ Phase 2 (dev)
   * Register2
   * Privacy/ToS
 * Test new front pages
-  * Login/ResetPassword
   * ResetPassword2
   * Register
   * Register2

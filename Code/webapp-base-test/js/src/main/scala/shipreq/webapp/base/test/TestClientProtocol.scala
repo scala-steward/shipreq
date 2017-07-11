@@ -18,8 +18,15 @@ object TestClientProtocol {
     override def toString =
       "Req[%08X]:%s(%s)".format(##, proc.key.trim, input)
 
-    def force(p2: ServerSideProc) =
+    def force(p2: ServerSideProc) = {
+      assertEq[ServerSideProc.Protocol](proc.protocol, p2.protocol)
       this.asInstanceOf[Req {val proc: p2.type}]
+    }
+
+    def forceP(p2: ServerSideProc.Protocol) = {
+      assertEq[ServerSideProc.Protocol](proc.protocol, p2)
+      this.asInstanceOf[ReqP[p2.type]]
+    }
 
     var _pendingResponse = true
     def responsePending = _pendingResponse
@@ -85,6 +92,9 @@ class TestClientProtocol(autoRespondArg: Boolean) extends ClientProtocol {
 
   def respondToLast(p: ServerSideProc)(o: p.protocol.Output): Unit =
     last.force(p).success(o).runNow()
+
+  def respondToLastP(p: ServerSideProc.Protocol)(o: p.Output): Unit =
+    last.forceP(p).success(o).runNow()
 
   def autoRespondToLast(): Unit = {
     val r = last
