@@ -13,7 +13,6 @@ import shipreq.webapp.base.util.ShowSize
 import DataImplicits._
 
 object Project {
-  type XId  = ExternalId[Project]
   type Name = String
 
   val customIssueTypes    : Lens[Project, CustomIssueTypeIMap] = config ^|-> ProjectConfig.customIssueTypes

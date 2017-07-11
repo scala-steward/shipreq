@@ -1,19 +1,8 @@
 package shipreq.webapp.server.logic
 
 import japgolly.univeq.UnivEq
-import shipreq.base.util.TaggedTypes.TaggedLong
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
-
-final case class ProjectId(value: Long) extends TaggedLong // not AnyVal, it gets boxed
-
-object ProjectId {
-  val Extern = ExternalId.scheme[Project, ProjectId](
-    ProjectId.apply, _.value,
-    "F4XBvt0i2cnHQ6dIaAomLjPE3MOrsbxReq1W9pgZyzNY7SkGf5UlwJCTKuVD8h")
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 /**
   * @param userId The only user with access to the project.

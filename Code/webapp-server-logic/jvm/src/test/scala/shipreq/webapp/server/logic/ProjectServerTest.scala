@@ -4,6 +4,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scalaz.{-\/, Name, NaturalTransformation, ~>}
 import utest._
 import shipreq.base.util.Direction
+import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.protocol.CreateContentCmd
 import shipreq.webapp.base.test.WebappTestUtil._

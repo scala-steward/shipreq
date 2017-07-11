@@ -18,7 +18,7 @@ abstract class DataReusability extends BaseReusability {
   implicit def reusabilityMomentJs: Reusability[MomentJs] =
     Reusability.by(_.toEpochMilli)
 
-  implicit def reusabilityExternalId[A]: Reusability[ExternalId[A]] =
+  implicit def reusabilityObfuscated[A]: Reusability[Obfuscated[A]] =
     Reusability.caseClass
 
   implicit def reusabilityUsername: Reusability[Username] =

@@ -3,7 +3,7 @@ package shipreq.webapp.server.logic
 import java.time.Instant
 import scala.collection.immutable.SortedMap
 import scalaz.{\/, ~>}
-import shipreq.webapp.base.data.{ProjectMetaData, SecurityToken}
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{ActiveEvent, EventOrd, VerifiedEvent}
 import shipreq.webapp.base.hash.HashRec
 import shipreq.webapp.base.user._

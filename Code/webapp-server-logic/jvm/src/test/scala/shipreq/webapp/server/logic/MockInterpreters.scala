@@ -46,7 +46,7 @@ object MockDb {
       ApplyEvent.trusted.applyVerified(events.eventVector)(Project.empty).needRight
 
     lazy val projectMetaData: ProjectMetaData =
-      ProjectMetaData(id            = ProjectId.Extern(projectId),
+      ProjectMetaData(id            = Obfuscators.projectId.obfuscate(projectId),
                       name          = project.name,
                       eventCount    = events.eventVector.length,
                       reqCount      = project.reqs.size,

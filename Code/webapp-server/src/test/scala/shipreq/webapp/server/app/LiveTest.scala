@@ -2,11 +2,12 @@ package shipreq.webapp.server.app
 
 import utest._
 import shipreq.base.test.BaseTestUtil._
-import shipreq.webapp.base.{AssetManifest, MemberUrls, WebappConfig}
+import shipreq.webapp.base.{AssetManifest, Urls, WebappConfig}
 import shipreq.webapp.base.WebappConfig.liftPath
+import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.client.public.PublicSpaProtocols
-import shipreq.webapp.server.logic.ProjectId
+import shipreq.webapp.server.logic.Obfuscators
 import shipreq.webapp.server.test.LiveTestUtils._
 import shipreq.webapp.server.test._
 
@@ -65,21 +66,21 @@ object LiveTest extends TestSuite {
     }
 
     'logout - {
-      get(MemberUrls.logout.relativeUrl)
+      get(Urls.logout.relativeUrl)
         .assertRedirectTo("/")
       ()
     }
 
     'membersHome {
-      get(MemberUrls.home.relativeUrl, headers = retainSession(login(user1)))
+      get(Urls.memberHome.relativeUrl, headers = retainSession(login(user1)))
         .assertSpa(AssetManifest.webappClientHomeJs, HomeSpaProtocols.EntryPoint)
         .assertBodyTitle(WebappConfig.makePageTitle())
       ()
     }
 
     'projectSpa {
-      val p = ProjectId.Extern(pid.get)
-      get(MemberUrls.project(p).relativeUrl, headers = retainSession(login(user1)))
+      val p = Obfuscators.projectId.obfuscate(pid.get)
+      get(Urls.project(p).relativeUrl, headers = retainSession(login(user1)))
         .assertSpa(AssetManifest.webappClientProjectJs, ProjectSpaProtocols.EntryPoint)
       ()
     }

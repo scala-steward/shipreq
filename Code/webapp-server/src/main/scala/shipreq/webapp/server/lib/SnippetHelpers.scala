@@ -3,11 +3,9 @@ package shipreq.webapp.server.lib
 import net.liftweb.http._
 import net.liftweb.json.{NoTypeHints, Serialization, Serializer}
 import scala.xml.NodeSeq
-import shipreq.base.util.Url
 import shipreq.base.util.log.HasLogger
-import shipreq.webapp.base.PublicUrls
 import shipreq.webapp.base.user._
-import shipreq.webapp.server.app.{Global, LiftDispatcher}
+import shipreq.webapp.server.app.LiftDispatcher
 import shipreq.webapp.server.util.HttpResponses.ShouldNeverHappenResponse
 
 object SnippetHelpers extends StaticSnippetHelpers {

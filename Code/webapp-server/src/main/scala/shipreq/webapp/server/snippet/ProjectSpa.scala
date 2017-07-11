@@ -8,6 +8,7 @@ import scalaz.effect.IO
 import scalaz.syntax.all._
 import scalaz.{-\/, \/-}
 import shipreq.base.util.FreeOption
+import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.protocol.ProjectSpaProtocols
 import shipreq.webapp.gen.transform.ProjectSpaLoader

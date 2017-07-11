@@ -2,9 +2,9 @@ package shipreq.webapp.server.snippet
 
 import java.time.Instant
 import utest._
-import shipreq.webapp.base.data.{Project, StaticField}
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.FieldStaticRemove
-import shipreq.webapp.server.logic.{HomeSpaLogic, ProjectId}
+import shipreq.webapp.server.logic.{HomeSpaLogic, Obfuscators}
 import shipreq.webapp.server.test.WebappServerTestUtil._
 import shipreq.webapp.server.test._
 
@@ -25,7 +25,7 @@ object HomeSpaTest extends TestSuite {
           // Create
           val pi = xa ! HomeSpaLogic.createProject(uid, name, Instant.now())
 
-          val pid = ProjectId.Extern.parseOption(pi.id.value).get
+          val pid = Obfuscators.projectId.deobfuscate(pi.id).toOption.get
           def events() = (xa ! db.getAllProjectEvents(pid)).toVector
           def loadProject() = applyVerifiedEventSuccessfully(Project.empty, events().map(_._2): _*)
 

@@ -39,8 +39,6 @@ object BinCodecMemberData {
   implicit lazy val pickleFieldRefKey              = pickleTaggedS(FieldRefKey               )
   implicit lazy val pickleReqTypeMnemonic          = pickleTaggedS(ReqType.Mnemonic          )
 
-  implicit def pickleExternalId[T]: Pickler[ExternalId[T]] = pickleCaseClass
-
   implicit lazy val pickleProjectMetaData: Pickler[ProjectMetaData] = pickleCaseClass
 
   implicit lazy val pickleReqId        : Pickler[ReqId        ] = pickleADT

@@ -3,7 +3,7 @@ package shipreq.webapp.server.lib
 import scalaz.effect.IO
 import shipreq.base.util.Error
 import shipreq.taskman.api.Msg.WebappErrorOccurred
-import shipreq.webapp.base.{PublicUrls, WebappConfig}
+import shipreq.webapp.base.{Urls, WebappConfig}
 import shipreq.webapp.server.app.Global
 import shipreq.webapp.server.logic.WebappTaskmanConverters._
 
@@ -14,7 +14,7 @@ object Taskman {
     g.taskman.cfgPutBulk(
       K.appName  -> WebappConfig.appName,
       K.homeUrl  -> g.config.baseUrl.value,
-      K.loginUrl -> (g.config.baseUrl / PublicUrls.login).absoluteUrl)
+      K.loginUrl -> (g.config.baseUrl / Urls.login).absoluteUrl)
 
   def webappErrorOccurred(e: Throwable, url: Option[String], suppInfo: String): WebappErrorOccurred =
     WebappErrorOccurred(

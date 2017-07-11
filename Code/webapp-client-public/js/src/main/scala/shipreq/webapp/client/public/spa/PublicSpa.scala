@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.MonocleReact._
-import shipreq.webapp.base.PublicUrls.SpaRoute
+import shipreq.webapp.base.Urls.PublicSpaRoute
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.client.public.{PublicSpaProtocols => P}
@@ -32,7 +32,7 @@ final class PublicSpa(initData: P.InitData, cp: ClientProtocol) {
       val content: VdomElement =
         p.page match {
 
-          case Page.Static(SpaRoute.Home) =>
+          case Page.Static(PublicSpaRoute.Home) =>
             val ss = StateSnapshot.zoomL(State.landingPage)(s).setStateVia($)
             LandingPage.Props(ss, landingPageAW, landingPageIO).render
 

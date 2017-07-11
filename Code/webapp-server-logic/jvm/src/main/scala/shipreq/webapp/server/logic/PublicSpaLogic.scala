@@ -7,7 +7,7 @@ import scalaz.std.option.optionInstance
 import scalaz.syntax.monad._
 import shipreq.base.util._
 import shipreq.taskman.api.{Msg, TaskmanApi}
-import shipreq.webapp.base.PublicUrls
+import shipreq.webapp.base.Urls
 import shipreq.webapp.base.data.SecurityToken
 import shipreq.webapp.base.protocol.ErrorMsg
 import shipreq.webapp.base.user._
@@ -86,7 +86,7 @@ object PublicSpaLogic {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     object RegisterFns {
 
-      private val absUrlRegister2 = config.baseUrl / PublicUrls.SpaRoute.Register2.url
+      private val absUrlRegister2 = config.baseUrl / Urls.PublicSpaRoute.Register2.url
 
       private def registrationProc[A, B](f: A => F[ErrorMsg \/ B]): A => F[ErrorMsg \/ B] =
         security.protectFn(
@@ -199,7 +199,7 @@ object PublicSpaLogic {
         runDB(db.getResetPasswordTokenIssueDate(t))
           .flatMap(tokenStatus(config.passwordResetTokenLifespan))
 
-      private val absUrlRegister2 = config.baseUrl / PublicUrls.SpaRoute.ResetPassword.url
+      private val absUrlRegister2 = config.baseUrl / Urls.PublicSpaRoute.ResetPassword.url
 
       val resetPasswordFn1: F[ResetPassword.Fn1.Instance] =
         svr.createServerSideProc(ResetPassword.Fn1)(

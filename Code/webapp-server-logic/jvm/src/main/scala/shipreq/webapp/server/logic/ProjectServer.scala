@@ -11,7 +11,7 @@ import scalaz.syntax.std.option._
 import scalaz.{-\/, Monad, \/, \/-, ~>}
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.data.{Project, ProjectMetaData}
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{ApplyEvent, EventOrd, VerifiedEvent}
 import shipreq.webapp.base.protocol.{ErrorMsg, ProjectSpaProtocols}
 import shipreq.webapp.base.user._

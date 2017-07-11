@@ -9,6 +9,9 @@ import BoopickleMacros._
 
 object BinCodecBaseData {
 
+  implicit def pickleObfuscated[T]: Pickler[Obfuscated[T]] =
+    pickleCaseClass
+
   implicit lazy val pickleInstant: Pickler[Instant] =
     xmap(Instant.ofEpochMilli)(_.toEpochMilli)
 

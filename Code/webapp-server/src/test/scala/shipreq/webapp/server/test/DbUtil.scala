@@ -8,10 +8,10 @@ import scalaz.effect.IO
 import shipreq.base.db.DoobieHelpers._
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.db.SingleConnectionXA
+import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.user.UserId
 import shipreq.webapp.server.db.SqlHelpers._
 import shipreq.webapp.server.db._
-import shipreq.webapp.server.logic.ProjectId
 
 object DbUtil {
 

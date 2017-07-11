@@ -7,9 +7,10 @@ import net.liftweb.util.Props
 import scala.xml.NodeSeq
 import scalaz.effect.IO
 import shipreq.base.util.Url
+import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.user.User
-import shipreq.webapp.base.{MemberUrls, WebappConfig}
-import shipreq.webapp.server.logic.{DispatchLogic, ProjectId}
+import shipreq.webapp.base.{Urls, WebappConfig}
+import shipreq.webapp.server.logic.DispatchLogic
 
 object LiftDispatcher {
   object ProjectIdVar extends RequestVar[ProjectId](null)
@@ -95,7 +96,7 @@ final class LiftDispatcher(global: Global) {
       case ServeHomeSpa(u)        => UserVar.set(u); render(req, templateHome)
       case ProjectSpa.Serve(u, p) => UserVar.set(u); ProjectIdVar.set(p); render(req, templateProject)
       case ProjectSpa.NotOwner
-         | ProjectSpa.InvalidId   => Full(RedirectResponse(MemberUrls.home.relativeUrl))
+         | ProjectSpa.InvalidId   => Full(RedirectResponse(Urls.memberHome.relativeUrl))
       case Redirect(to)           => Full(RedirectResponse(to.relativeUrl))
       case MethodNotAllowed       => Full(MethodNotAllowedResponse())
       case StatusOnly(s)          => Full(StatusOnlyResponse(s))

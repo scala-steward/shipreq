@@ -4,43 +4,43 @@ import japgolly.scalajs.react.extra.Reusability
 import japgolly.scalajs.react.extra.router.{RouterCtl => _, _}
 import japgolly.scalajs.react.vdom.Implicits._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.PublicUrls.SpaRoute
+import shipreq.webapp.base.Urls.PublicSpaRoute
 import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.base.lib.BaseReusability._
 
 sealed trait Page {
-  val route: SpaRoute
+  val route: PublicSpaRoute
   val linkTitle: String
   val pageTitle: List[String]
 }
 object Page {
 
-  final case class Static(route: SpaRoute.Static) extends Page {
+  final case class Static(route: PublicSpaRoute.Static) extends Page {
     override val linkTitle: String =
       route match {
-        case SpaRoute.Home           => "Home"
-        case SpaRoute.Login          => "Login"
-        case SpaRoute.Privacy        => "Privacy"
-        case SpaRoute.Register1      => "Register"
-        case SpaRoute.TermsOfService => "Terms"
+        case PublicSpaRoute.Home           => "Home"
+        case PublicSpaRoute.Login          => "Login"
+        case PublicSpaRoute.Privacy        => "Privacy"
+        case PublicSpaRoute.Register1      => "Register"
+        case PublicSpaRoute.TermsOfService => "Terms"
       }
 
     val pageTitle: List[String] =
       route match {
-        case SpaRoute.Home => Nil
-        case _             => linkTitle :: Nil
+        case PublicSpaRoute.Home => Nil
+        case _                   => linkTitle :: Nil
       }
   }
 
   implicit def equality: UnivEq[Page] = UnivEq.derive
   implicit def reusability: Reusability[Page] = Reusability.byUnivEq
-  val static = SpaRoute.static.map(Static)
+  val static = PublicSpaRoute.static.map(Static)
 
-  val Home           = Static(SpaRoute.Home)
-  val Login          = Static(SpaRoute.Login)
-  val Privacy        = Static(SpaRoute.Privacy)
-  val Register1      = Static(SpaRoute.Register1)
-  val TermsOfService = Static(SpaRoute.TermsOfService)
+  val Home           = Static(PublicSpaRoute.Home)
+  val Login          = Static(PublicSpaRoute.Login)
+  val Privacy        = Static(PublicSpaRoute.Privacy)
+  val Register1      = Static(PublicSpaRoute.Register1)
+  val TermsOfService = Static(PublicSpaRoute.TermsOfService)
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

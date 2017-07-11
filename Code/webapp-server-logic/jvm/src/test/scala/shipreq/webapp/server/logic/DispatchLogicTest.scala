@@ -4,8 +4,8 @@ import scalaz.Name
 import utest._
 import shipreq.base.util.Url
 import shipreq.base.test.BaseTestUtil._
-import shipreq.webapp.base.data.SecurityToken
-import shipreq.webapp.base.{MemberUrls, PublicUrls}
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.Urls
 import DispatchLogic._
 import Method._
 
@@ -56,41 +56,41 @@ object DispatchLogicTest extends TestSuite {
   def spaUrls(spaUrl: Url.Relative): List[Url.Relative] =
     spaSuffixes.map(s => Url.Relative(spaUrl.relativeUrlNoHeadOrTailSlash + s))
 
-  val fallbackResponse = Response.Redirect(PublicUrls.home)
+  val fallbackResponse = Response.Redirect(Urls.publicHome)
 
   override def tests = TestSuite {
 
     'publicSpa {
-      import PublicUrls.SpaRoute._
+      import Urls.PublicSpaRoute._
       'pages0 - static.foreach(p => testRun(Response.ServePublicSpa, p.url))
       'pages1 - needsToken.foreach(p => testRun(Response.ServePublicSpa, p.url(SecurityToken("x"))))
       'nonGet - static.foreach(p => testNonGet(p.url))
     }
 
     'memberHomeSpa {
-      def urls = spaUrls(MemberUrls.home)
+      def urls = spaUrls(Urls.memberHome)
       'auth   - urls.foreach(testRun(Response.ServeHomeSpa(user2.toUser), _)(user2))
       'anon   - urls.foreach(testNeedAuth)
       'nonGet - urls.foreach(testNonGet)
     }
 
     'projectSpa {
-      implicit def autoXID(p: ProjectId) = ProjectId.Extern(p)
+      implicit def autoXID(p: ProjectId): ProjectId.Public = Obfuscators.projectId.obfuscate(p)
       'projectExists {
-        def urls = spaUrls(MemberUrls.project(pid))
+        def urls = spaUrls(Urls.project(pid))
         'anon     - urls.foreach(testNeedAuth)
         'auth     - urls.foreach(testRun(Response.ProjectSpa.Serve(user2.toUser, pid), _)(user2))
         'notOwner - urls.foreach(testRun(Response.ProjectSpa.NotOwner, _)(user3))
         'nonGet   - urls.foreach(testNonGet)
       }
       'noProject {
-        def urls = spaUrls(MemberUrls.project(ProjectId(1324675)))
+        def urls = spaUrls(Urls.project(ProjectId(1324675)))
         'anon     - urls.foreach(testNeedAuth)
         'auth     - urls.foreach(testRun(Response.ProjectSpa.InvalidId, _)(user2))
         'nonGet   - urls.foreach(testNonGet)
       }
       'invalidXId {
-        def urls = List("@_@", "@").flatMap(x => spaUrls(s"${MemberUrls.project.prefix.relativeUrl}/$x"))
+        def urls = List("@_@", "@").flatMap(x => spaUrls(s"${Urls.project.prefix.relativeUrl}/$x"))
         'anon     - urls.foreach(testRun(Response.ProjectSpa.InvalidId, _))
         'auth     - urls.foreach(testRun(Response.ProjectSpa.InvalidId, _)(user2))
         'nonGet   - urls.foreach(testNonGet)
@@ -99,12 +99,12 @@ object DispatchLogicTest extends TestSuite {
 
     'logout {
       def test(logIn: MockDb.UserEntry = null): Unit = {
-        testRun(Response.redirectToPublicHome, MemberUrls.logout)(logIn)
+        testRun(Response.redirectToPublicHome, Urls.logout)(logIn)
         assert(security.loggedIn.isEmpty)
       }
       'anon   - test()
       'auth   - test(user2)
-      'nonGet - testNonGet(MemberUrls.logout)
+      'nonGet - testNonGet(Urls.logout)
     }
 
     'fallback {
@@ -115,7 +115,7 @@ object DispatchLogicTest extends TestSuite {
         "/hom",
         "/homeX",
         "/projectX",
-        MemberUrls.home.relativeUrlNoHeadOrTailSlash + "x")
+        Urls.memberHome.relativeUrlNoHeadOrTailSlash + "x")
       def test(logIn: MockDb.UserEntry = null): Unit = {
         for (u <- unrecognisedPaths) {
           testRun(fallbackResponse, u)(logIn)

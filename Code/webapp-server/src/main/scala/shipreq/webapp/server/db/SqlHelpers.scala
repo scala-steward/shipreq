@@ -35,7 +35,13 @@ object SqlHelpers {
   implicit val doobieCompositeProjectMetaData: Composite[ProjectMetaData] =
     Composite[(ProjectId, String, Int, Int, Instant, Option[Instant])].readOnly {
       case(id, name, evCount, reqCount, createdAt, lastUpdatedAt) =>
-        ProjectMetaData(ProjectId.Extern(id), name unNull "", evCount, reqCount, createdAt, lastUpdatedAt)
+        ProjectMetaData(
+          Obfuscators.projectId.obfuscate(id),
+          name unNull "",
+          evCount,
+          reqCount,
+          createdAt,
+          lastUpdatedAt)
     }
 
 }

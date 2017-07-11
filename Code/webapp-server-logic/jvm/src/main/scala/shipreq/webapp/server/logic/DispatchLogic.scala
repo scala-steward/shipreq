@@ -5,8 +5,8 @@ import japgolly.univeq._
 import scalaz.{-\/, Monad, \/, \/-}
 import scalaz.syntax.monad._
 import shipreq.base.util._
-import shipreq.webapp.base.{MemberUrls, PublicUrls}
-import shipreq.webapp.base.data.{SecurityToken, ExternalId => XId}
+import shipreq.webapp.base.Urls
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
 
 object DispatchLogic {
@@ -39,8 +39,8 @@ object DispatchLogic {
 
     implicit def univEq: UnivEq[Response] = UnivEq.derive
 
-    val redirectToPublicHome = Redirect(PublicUrls.home)
-    val redirectToLogin      = Redirect(PublicUrls.login)
+    val redirectToPublicHome = Redirect(Urls.publicHome)
+    val redirectToLogin      = Redirect(Urls.login)
   }
 
   @inline private[this] def isSepChar(c: Char): Boolean =
@@ -96,7 +96,7 @@ object DispatchLogic {
     def config =
       ( Config.need[String]("USER").map(Username.orEmail) |@|
         Config.need[String]("PASS").map(PlainTextPassword(_)) |@|
-        Config.get [String]("GOTO").map(_.fold(MemberUrls.home)(Url.Relative(_)))
+        Config.get [String]("GOTO").map(_.fold(Urls.memberHome)(Url.Relative(_)))
       )(apply).withPrefix("SHIPREQ_DEV_")
 
     def get(): Option[QuickDev] =
@@ -144,26 +144,27 @@ final class DispatchLogic[F[_]](implicit F: Monad[F], security: Security.Algebra
   private def spa(root: Url.Relative): FR => Route =
     fr => when(spaTest(root))(onGet(fr))
 
-  private def spaId[T, I](url: Url.Relative.Param1[XId[T]])
-                         (scheme: ExternalId.Scheme[T, I])
-                         (response: String \/ I => FR): Route =
-    FnWithFallback.extract(spaTest1(url))(req => str => onGet(response(scheme.parse(str)))(req))
+  private def spaWithObfuscatedParam[A](url       : Url.Relative.Param1[Obfuscated[A]])
+                                       (obfuscator: Obfuscator[A])
+                                       (response  : String \/ A => FR): Route =
+    FnWithFallback.extract(spaTest1(url))(req => str =>
+      onGet(response(obfuscator.deobfuscate(Obfuscated(str))))(req))
 
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   val publicSpa: Route = {
     val fr: FR = F pure ServePublicSpa
-    val route1 = PublicUrls.SpaRoute.static.map(s => spa(s.url)(fr))
-    val route2 = PublicUrls.SpaRoute.needsToken.map(s => FnWithFallback.extract(spaTest1(s.url))(req => _ => onGet(fr)(req)))
+    val route1 = Urls.PublicSpaRoute.static.map(s => spa(s.url)(fr))
+    val route2 = Urls.PublicSpaRoute.needsToken.map(s => FnWithFallback.extract(spaTest1(s.url))(req => _ => onGet(fr)(req)))
     (route1 ++ route2).reduce(_ | _)
   }
 
   val memberHomeSpa: Route =
-    spa(MemberUrls.home)(needAuth(ServeHomeSpa))
+    spa(Urls.memberHome)(needAuth(ServeHomeSpa))
 
   val projectSpa: Route =
-    spaId(MemberUrls.project)(ProjectId.Extern) {
+    spaWithObfuscatedParam(Urls.project)(Obfuscators.projectId) {
       case \/-(projectId) =>
         needAuthF(user =>
           // TODO Check ProjectStore first
@@ -177,7 +178,7 @@ final class DispatchLogic[F[_]](implicit F: Monad[F], security: Security.Algebra
     }
 
   val logout: Route =
-    get(MemberUrls.logout,
+    get(Urls.logout,
       security.logout >| redirectToPublicHome)
 
   val main: Request ?=> F[Response] =
