@@ -1,4 +1,4 @@
-package shipreq.webapp.client.public
+package shipreq.webapp.client.public.pages
 
 import japgolly.scalajs.react.test._
 import org.scalajs.dom.{html, window}
@@ -7,9 +7,9 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.test.TestState._
+import shipreq.webapp.client.public._
 import shipreq.webapp.client.public.spa._
 import PublicSpaTestUtil.semanticUiDisabled
-import shipreq.webapp.client.public.{PublicSpaProtocols => P}
 
 object LoginTester {
 
@@ -72,14 +72,14 @@ object LoginTester {
       .addCheck(loginEnabled.assert(Enabled).before)
 
   def serverLoginResponse(p: Permission): *.Actions =
-    *.action(s"Server responds to login: $p")(_.ref.respondToLastP(P.Login.Fn)(p)) <+ reqsSent.assert.not.equal(0)
+    *.action(s"Server responds to login: $p")(_.ref.respondToLastP(PublicSpaProtocols.Login.Fn)(p)) <+ reqsSent.assert.not.equal(0)
 
   def clickForgotPwd: *.Actions =
     *.action("Click 'Forgot password'")(Simulate click _.obs.form.get.forgotPwd)
       .addCheck(forgotPwdEnabled.assert(Enabled).before)
 
   def serverForgotPwdResponse: *.Actions =
-    *.action("Server responds to forgot-pwd")(_.ref.respondToLastP(P.ResetPassword.Fn1)(())) <+ reqsSent.assert.not.equal(0)
+    *.action("Server responds to forgot-pwd")(_.ref.respondToLastP(PublicSpaProtocols.ResetPassword.Fn1)(())) <+ reqsSent.assert.not.equal(0)
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
