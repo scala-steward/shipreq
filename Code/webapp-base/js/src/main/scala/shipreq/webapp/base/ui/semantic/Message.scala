@@ -6,6 +6,8 @@ import japgolly.univeq.UnivEq
 /** http://semantic-ui.com/collections/message.html */
 object Message {
 
+  def jquerySel = ".ui.message"
+
   sealed abstract class Attr(cls: ClassName) extends HasClass(cls)
   object Attr {
     case object Floating extends Attr("floating")

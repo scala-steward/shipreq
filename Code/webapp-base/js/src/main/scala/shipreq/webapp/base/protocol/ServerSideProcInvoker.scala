@@ -14,7 +14,7 @@ final class ServerSideProcInvoker[-I, +O](val fn: (I, O => TCB.Success, String =
 
 object ServerSideProcInvoker {
 
-  def apply[I, O](proc: ServerSideProc.Aux[ErrorMsg, I, O], cp: ClientProtocol): ServerSideProcInvoker[I, O] =
+  def apply[I, O](cp: ClientProtocol, proc: ServerSideProc.Aux[ErrorMsg, I, O]): ServerSideProcInvoker[I, O] =
     new ServerSideProcInvoker((i, s, f) => cp.call(proc)(i, s, _ consumeAnd f))
 
   implicit def reusability[I, O]: Reusability[ServerSideProcInvoker[I, O]] =

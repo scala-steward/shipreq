@@ -64,7 +64,7 @@
     //"sidebar",
     //"sticky",
     //"tab",
-    "transition",  // Required by dropdown
+    "transition",  // Required by dropdown, also used to flash errors in PublicSpa
     //"api",
     //"form",
     //"state",

@@ -88,6 +88,11 @@ object KeyHandler {
 
     implicit def toSet(m: Criterion): Criteria =
       Criteria.empty + m
+
+    import org.scalajs.dom.ext.KeyCode
+    val Escape    = Criterion(EventType.KeyDown, KeyCode.Escape)
+    val Enter     = Criterion(EventType.KeyDown, KeyCode.Enter)
+    val CtrlEnter = Criterion(EventType.KeyDown, KeyCode.Enter, ModKey.Ctrl)
   }
 
   type Criteria = ListSet[Criterion]

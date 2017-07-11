@@ -109,16 +109,23 @@ object PublicSpaProtocols {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object Login {
     final case class Request(user: Username \/ EmailAddr, password: PlainTextPassword) {
-      def validate: Composite.Invalidity \/ Request =
-        Request.validator((user.fold(_.value, _.value), password.value))
+      def untyped: Request.Untyped =
+        Request.Untyped(user.fold(_.value, _.value), password.value)
     }
 
     object Request {
       implicit val pickler: Pickler[Request] = pickleCaseClass[Request]
 
-      lazy val validator: Composite.Validator[(String, String), _, Request] =
+      @Lenses
+      final case class Untyped(user: String, password: String) {
+        def validate: Composite.Invalidity \/ Request =
+          Request.validator(this)
+      }
+
+      lazy val validator: Composite.Validator[Untyped, _, Request] =
         UserValidators.usernameOrEmail
           .tuple(UserValidators.password.named)
+          .imapInput(GenIso.fields[Untyped])
           .mapValid((Request.apply _).tupled)
     }
     val Fn = ServerSideProc.Protocol[Request, Permission]

@@ -43,8 +43,8 @@
       }
       #header3 > .sep { padding:0 1em; color:#aaa }
 
-      #part1 {width:48ex; margin:8em auto 0 auto}
-      #part2 {width:70ex; margin:8em auto 0 auto}
+      #part1 {width:46ex; margin:4em auto 0 auto}
+      #part2 {width:70ex; margin:6em auto 0 auto}
 
       #footer1 {
         font-size:0.85rem;
@@ -100,14 +100,16 @@
 
         #part1
 
-          -# .ui.message.error(style="margin-bottom:4em")
-            %i.close.icon
-            .header
-              Login failed
-            %p
-              Invalid username or password.
+          .ui.message.icon.error#xx(style="display:none")
+            %i.icon.ban
+            .content
+              .header
+                Forgotten password
+              %p
+                Invalid email address or password.
+            -# %i.close.icon
 
-          .ui.form
+          .ui.form(style="padding-top:3em;")
             .field
               %label Username or email
               .ui.left.icon.input
@@ -130,13 +132,13 @@
                 -#   %input(type="checkbox")
                 -#   Remember me
               .div(style="text-align:right")
-                .ui.blue.submit.button.large(style="margin-right:0!important") Login
+                .ui.blue.button.large(style="margin-right:0!important" onclick="$('#xx').show().transition('pulse', '320ms')") Login
             -# .div(style="text-align:right; margin-top:1em")
             -#     .ui.blue.submit.button.large.disabled(style="margin-right:0!important") Login
             -# .div(style="text-align:right; margin-top:1em")
             -#     .ui.blue.submit.button.large.disabled.loading(style="margin-right:0!important") Login
 
-          .ui.message.icon.error(style="margin-top:4em")
+          -# .ui.message.icon.error(style="margin-top:4em")
             %i.icon.ban
             .content
               .header

@@ -24,8 +24,12 @@ final class PublicSpa(initData: P.InitData, cp: ClientProtocol) {
   final class Backend($: BackendScope[Props, State]) {
     import shipreq.webapp.client.public.pages._
 
-    val landingPageAW = AsyncFeature.Write.D0.init($.zoomStateL(State.landingPage ^|-> LandingPage.State.async))
-    val landingPageIO = ServerSideProcInvoker(initData.landingPage, cp)
+    val sspLandingPage    = ServerSideProcInvoker(cp, initData.landingPage)
+    val sspLogin          = ServerSideProcInvoker(cp, initData.login)
+    val sspResetPassword1 = ServerSideProcInvoker(cp, initData.resetPassword1)
+
+    val awLandingPage = AsyncFeature.Write.D0.init($.zoomStateL(State.landingPage ^|-> LandingPage.State.async))
+    val awLogin       = AsyncFeature.Write.D0.init($.zoomStateL(State.login ^|-> Login.State.async))
 
     def render(p: Props, s: State): VdomElement = {
 
@@ -34,7 +38,11 @@ final class PublicSpa(initData: P.InitData, cp: ClientProtocol) {
 
           case Page.Static(PublicSpaRoute.Home) =>
             val ss = StateSnapshot.zoomL(State.landingPage)(s).setStateVia($)
-            LandingPage.Props(ss, landingPageAW, landingPageIO).render
+            LandingPage.Props(ss, awLandingPage, sspLandingPage).render
+
+          case Page.Static(PublicSpaRoute.Login) =>
+            val ss = StateSnapshot.zoomL(State.login)(s).setStateVia($)
+            Login.Props(ss, awLogin, sspLogin, sspResetPassword1).render
 
         }
 

@@ -8,30 +8,32 @@ import scalaz.\/
 sealed trait ValidationUX {
   import ValidationUX.Outcome
 
-  def outcome[E](error: Option[E]): Outcome[E]
+  def outcome[E](error: => Option[E]): Outcome[E]
 
-  final def outcome[E](validated: E \/ Any): Outcome[E] =
-    validated.fold(e => outcome(Some(e)), _ => Outcome.Valid)
+  final def outcomeD[E](validated: => (E \/ Any)): Outcome[E] =
+    outcome(validated.fold(Some(_), _ => None))
 }
 
 object ValidationUX {
 
   /** Users receive no indication that their data is valid or invalid. */
   case object Off extends ValidationUX {
-    override def outcome[E](error: Option[E]) =
+    override def outcome[E](error: => Option[E]) =
       Outcome.Valid
   }
 
   /** Subject is highlighted when invalid, usually just coloured red */
   case object Highlight extends ValidationUX {
-    override def outcome[E](error: Option[E]) =
+    override def outcome[E](error: => Option[E]) =
       if (error.isEmpty) Outcome.Valid else Outcome.Invalid(None)
   }
 
   /** Subject is highlighted when invalid, and the reason for invalidity is explained. */
   case object Full extends ValidationUX {
-    override def outcome[E](error: Option[E]) =
-      if (error.isEmpty) Outcome.Valid else Outcome.Invalid(error)
+    override def outcome[E](error: => Option[E]) = {
+      val e = error
+      if (e.isEmpty) Outcome.Valid else Outcome.Invalid(e)
+    }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

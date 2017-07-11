@@ -59,6 +59,8 @@ object Styles {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object layout {
 
+    cssBuilder.add(_ => "body {background:#fbfcfd}")
+
     val cont = TagMod(
       display.flex,
       flexDirection.column,
@@ -109,6 +111,7 @@ object Styles {
       flex := "1",
       paddingBottom := "2em")
   }
+  layout // eager eval
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object landingPage {
@@ -192,4 +195,17 @@ object Styles {
   }
   landingPage // eager eval
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  object login {
+    val part1          = TagMod(width := "46ex", margin := "4em auto 0 auto")
+    val part2          = TagMod(width := "70ex", margin := "6em auto 0 auto")
+    val form           = TagMod(paddingTop := "3em")
+    val passwordLabel  = TagMod(display.flex, justifyContent.spaceBetween)
+    val forgotPassword = TagMod(fontWeight.normal, cursor.pointer)
+    val bottomRow      = TagMod(display.flex, width := "100%", alignItems.baseline)
+    val rememberMe     = TagMod(flex := "1")
+    val submitCont     = TagMod(textAlign.right)
+    val submitButton   = TagMod(marginRight := "0")
+  }
+  login // eager eval
 }

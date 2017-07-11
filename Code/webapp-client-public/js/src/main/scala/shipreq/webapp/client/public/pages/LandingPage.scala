@@ -92,11 +92,7 @@ object LandingPage {
       // - already submitted; 1 msg/user is enough, if they really want to send another msg they can hit reload
       // - submission in progress
       val enabled: Enabled =
-        (s.submitted, s.async) match {
-          case (true, _)
-             | (_, Some(AsyncFeature.Status.InProgress)) => Disabled
-          case _                                         => Enabled
-        }
+        Disabled.when(s.submitted || AsyncFeature.isInProgress(s.async))
 
       val onSubmit: Option[Callback] =
         (enabled, s.req.validate, s.vux) match {

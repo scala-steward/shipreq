@@ -42,6 +42,12 @@ import shipreq.webapp.base.lib.BaseReusability._
   */
 object AsyncFeature {
 
+  def isInProgress(s: State.D0[Any]): Boolean =
+    s.exists {
+      case Status.InProgress => true
+      case _                 => false
+    }
+
   /**
     * @tparam F An explanation of why some async action failed.
     */

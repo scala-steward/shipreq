@@ -2,7 +2,6 @@ package shipreq.webapp.base.lib
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
-import org.scalajs.dom.ext.KeyCode
 import scalacss.ScalaCssReact._
 import scala.scalajs.js
 import shipreq.webapp.base.text.{LineCardinality, MultiLine, SingleLine}
@@ -14,11 +13,8 @@ import shipreq.webapp.base.ui.semantic.Icon
   * Keyboard functionality consistent throughout the entire app.
   */
 object KeyboardTheme {
-  val Escape    = Criterion(EventType.KeyDown , KeyCode.Escape)
-  val Enter     = Criterion(EventType.KeyPress, KeyCode.Enter)
-  val CtrlEnter = Criterion(EventType.KeyDown , KeyCode.Enter, ModKey.Ctrl)
 
-  @inline def abortCriterion = Escape
+  @inline def abortCriterion = Criterion.Escape
 
   def abort(abort: Callback): KeyHandler =
     abortCriterion.handle(abort)
@@ -29,7 +25,7 @@ object KeyboardTheme {
     * in a text editor, just not everywhere. The penalty for trying to insert a newline into a single-line editor is
     * now nil, in that nothing happens; where as previously it would trigger a save which can be very annoying.
     */
-  @inline def commitCriterion = CtrlEnter
+  @inline def commitCriterion = Criterion.CtrlEnter
 
   def commitO(commit: => Option[Callback], lc: LineCardinality): KeyHandler = {
     // LineCardinality is no longer used here but will be kept as an arg for a while longer until confidence in the new

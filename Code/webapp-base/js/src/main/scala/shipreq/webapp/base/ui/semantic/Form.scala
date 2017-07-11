@@ -65,10 +65,18 @@ object Form {
             ^.onChange ==> onChange))
 
         val error =
-          vux.outcome(vali(value)).map(UiUtil.renderSimpleInvalidity)
+          vux.outcomeD(vali(value)).map(UiUtil.renderSimpleInvalidity)
 
         TextField(label, editor, error)
       }
+
+    /** Note: DO NOT use this with Reusability.
+      * StateSnapshot + Lens + Reusability = NO!
+      */
+    def unvalidated[S](lens : Lens[S, String],
+                       input: TagMod => VdomTag = <.input.text(_),
+                       label: Option[TagMod]    = None): StateSnapshot[S] => TextField =
+      highLevel(lens, Simple.Validator.id, input, label)(ValidationUX.Off)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -80,6 +88,14 @@ object Form {
       Field.center(
         Field.disabled.unless(enabled is Enabled),
         content)
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  /** You're a LIAR! */
+  final case class NotAField(render: VdomTag) extends Field {
+    override def fieldCopy(enabled: Enabled = enabled) = this // argh, why even bother anymore?
+    override def enabled = Enabled
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

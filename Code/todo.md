@@ -90,13 +90,15 @@ Phase 2 (dev)
 
 ### Front pages
 * Implement new front pages
-  * Login/ResetPassword
   * ResetPassword2
   * Register
   * Register2
   * Privacy/ToS
-* Implement new front pages
-  * LandingPage
+* Test new front pages
+  * Login/ResetPassword
+  * ResetPassword2
+  * Register
+  * Register2
 * Forms: autofocus input, disable buttons when KO, no red/error for empty
 * Login failed: `Invalid <username|email> or ...`
 * Handle user being logged in in PublicSpa
