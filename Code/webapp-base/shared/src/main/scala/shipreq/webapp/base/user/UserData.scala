@@ -10,7 +10,10 @@ object PlainTextPassword {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-final case class EmailAddr(value: String)
+final case class EmailAddr(value: String) {
+  def mailto: String =
+    "mailto:" + value
+}
 object EmailAddr {
   implicit def univEq: UnivEq[EmailAddr] = UnivEq.derive
 

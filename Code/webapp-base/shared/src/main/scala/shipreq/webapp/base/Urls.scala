@@ -20,7 +20,7 @@ object Urls {
     case object Login          extends Static(Url.Relative("/login"))
     case object Privacy        extends Static(Url.Relative("/privacy"))
     case object Register1      extends Static(Url.Relative("/register"))
-    case object TermsOfService extends Static(Url.Relative("/tos"))
+    case object TermsOfService extends Static(Url.Relative("/terms"))
 
     case object Register2      extends NeedsToken(Register1.url)
     case object ResetPassword  extends NeedsToken(Url.Relative("/reset/password"))

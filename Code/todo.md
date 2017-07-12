@@ -93,7 +93,6 @@ Phase 2 (dev)
 * Implement new front pages
   * Register
   * Register2
-  * Privacy/ToS
 * Test new front pages
   * Register
   * Register2

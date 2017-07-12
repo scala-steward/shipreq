@@ -48,6 +48,11 @@ final class PublicSpa(initData: P.InitData, cp: ClientProtocol) {
           case Page.Token(PublicSpaRoute.ResetPassword, token) =>
             ResetPassword.Props(token, sspResetPassword2).render
 
+          case Page.Static(PublicSpaRoute.Privacy) =>
+            Legal.Privacy(p.routerCtl)
+
+          case Page.Static(PublicSpaRoute.TermsOfService) =>
+            Legal.TermsOfService(p.routerCtl)
         }
 
       Layout.Component(Layout.Props(p.page, p.routerCtl, content))

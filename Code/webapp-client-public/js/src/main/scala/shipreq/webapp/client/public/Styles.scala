@@ -218,4 +218,30 @@ object Styles {
   }
   resetPassword // eager eval
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  object legal {
+    val cont: TagMod =
+      cssBuilder.addClass(c =>
+        s"""
+           |$c {
+           |  max-width:144ex;
+           |  margin: 1em auto 0 auto;
+           |  padding:0 4vw;
+           |  color: #444;
+           |}
+           |$c section {margin-top: 2em}
+           |$c section .h { color: #000; font-weight:bold; }
+           |$c section .p { margin-top:0.7ex; }
+           |$c section ul { margin-top:1ex; }
+           |$c section li { margin-top:0.7ex; }
+           |$c section li .a { text-decoration: underline; }
+           |$c footer {margin-top: 2em}
+           |$c footer .g { font-size: 0.72em; color: #bbb; }
+         """.stripMargin)
+    val sectionH = cls := "h"
+    val sectionP = cls := "p"
+    val liA = cls := "a"
+    val generatedBy = cls := "g"
+  }
+  legal // eager eval
 }
