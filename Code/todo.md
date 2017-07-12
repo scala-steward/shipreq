@@ -93,7 +93,6 @@ Phase 2 (dev)
 * Implement new front pages
   * Register2
 * Test new front pages
-  * Register
   * Register2
 * Handle user being logged in in PublicSpa
 
