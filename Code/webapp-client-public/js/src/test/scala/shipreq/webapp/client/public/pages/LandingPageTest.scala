@@ -54,7 +54,7 @@ object LandingPageTester {
   val reqsSent      = *.focus("Requests sent").value(_.obs.reqsSent.length)
   val name          = new TextFieldDsl("Name", _.name)
   val email         = new TextFieldDsl("Email", _.email)
-  val submitEnabled = *.focus("Submit button enabled").value(_.obs.submitEnabled)
+  val submitEnabled = *.focus("Submit button").value(_.obs.submitEnabled)
 
   def initialState: *.Points =
     name.state.assert("", Valid) & email.state.assert("", Valid)

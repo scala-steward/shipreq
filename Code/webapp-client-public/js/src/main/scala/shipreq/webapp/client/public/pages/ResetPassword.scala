@@ -94,6 +94,9 @@ object ResetPassword {
       var fields: NonEmptyVector[Form.Field] =
         NonEmptyVector(fieldPassword1, fieldPassword2).map(_(ss))
 
+      if (s.formEnabled is Disabled)
+        fields = fields.map(_.disable)
+
       fields :+= Form.NotAField(<.div(*.submitCont, submit))
 
       <.div(*.part1, Form(fields))
