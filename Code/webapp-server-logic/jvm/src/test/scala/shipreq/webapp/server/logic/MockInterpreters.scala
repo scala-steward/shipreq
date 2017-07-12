@@ -403,7 +403,6 @@ object MockInterpreters {
   import JavaTimeHelpers._
 
   val config = ServerConfig(
-    supportEmailAddress        = "test@shipreq.com",
     baseUrl                    = Url.Absolute.Base("https://test.shipreq.com"),
     attackFrustrationDelay     = 1 hour,
     securityTokenLength        = 8,

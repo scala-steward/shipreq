@@ -9,9 +9,7 @@ import scalaz.syntax.applicative._
 import shipreq.base.util._
 
 @Lenses
-final case class ServerConfig(supportEmailAddress: String,
-
-                              baseUrl: Url.Absolute.Base,
+final case class ServerConfig(baseUrl: Url.Absolute.Base,
 
                               /** A short amount of time, unnoticeable to humans, to sleep in order to frustrate automated security attacks. */
                               attackFrustrationDelay: Duration,
@@ -44,8 +42,7 @@ final case class ServerConfig(supportEmailAddress: String,
 object ServerConfig {
 
   def config: Config[ServerConfig] =
-    ( Config.need    [String  ]      ("support.email") |@|
-      Config.need    [String  ]      ("url").map(Url.Absolute.Base.apply) |@|
+    ( Config.need    [String  ]      ("url").map(Url.Absolute.Base.apply) |@|
       Config.need    [Duration]      ("attack_frustration_delay") |@|
       Config.need    [Int     ]      ("token.length") |@|
       Config.need    [Duration]      ("token.lifespan.email_conf") |@|

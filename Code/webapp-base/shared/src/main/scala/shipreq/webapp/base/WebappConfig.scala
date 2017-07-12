@@ -1,8 +1,12 @@
 package shipreq.webapp.base
 
+import shipreq.webapp.base.user.EmailAddr
+
 object WebappConfig {
 
   val appName = "ShipReq"
+
+  val supportEmailAddress = EmailAddr("contact@shipreq.com")
 
   /** The URL path under which AJAX requests are serviced. */
   final val liftPath = "L"
