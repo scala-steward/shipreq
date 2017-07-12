@@ -444,6 +444,9 @@ class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerCon
   def assertProtected[A](a: => A): A =
     assertDifference("Protected actions", security.protectedActions)(1)(a)
 
+  def assertUnprotected[A](a: => A): A =
+    assertNoChange("Protected actions", security.protectedActions)(a)
+
   def forwardTimeToEndOfConfirmationWindow(v: Validity): Unit =
     svr.forwardTimeToEndOfWindow(config.confirmationTokenLifespan, v)
 

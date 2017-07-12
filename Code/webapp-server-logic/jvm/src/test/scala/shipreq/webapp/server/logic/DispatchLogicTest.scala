@@ -64,28 +64,28 @@ object DispatchLogicTest extends TestSuite {
     'publicSpa {
       import Urls.PublicSpaRoute._
 
-      'nullary - static.foreach(p => testRun(Response.ServePublicSpa, p.url))
+      'nullary - static.foreach(p => assertUnprotected(testRun(Response.ServePublicSpa, p.url)))
       'nonGet - static.foreach(p => testNonGet(p.url))
 
       'resetPassword2 {
         svr.run(PublicSpaLogic[Name, Name].initData.value.resetPassword1)(\/-(user2.emailAddr)).needRight
 
-        'invalid - testRun(Response.redirectToPublicHome, ResetPassword.url(SecurityToken("wwwweeeeeeeeeee33333")))
-        'valid   - testRun(Response.ServePublicSpa, ResetPassword.url(db.prevToken()))
+        'invalid - assertProtected(testRun(Response.redirectToPublicHome, ResetPassword.url(SecurityToken("wwwweeeeeeeeeee33333"))))
+        'valid   - assertProtected(testRun(Response.ServePublicSpa, ResetPassword.url(db.prevToken())))
         'expired {
           forwardTimeToEndOfPasswordResetWindow(Invalid)
-          testRun(Response.redirectToPublicHome, ResetPassword.url(db.prevToken()))
+          assertProtected(testRun(Response.redirectToPublicHome, ResetPassword.url(db.prevToken())))
         }
       }
 
       'register2 {
         svr.run(PublicSpaLogic[Name, Name].initData.value.register1)(EmailAddr("x@x.io")).needRight
 
-        'invalid - testRun(Response.redirectToPublicHome, Register2.url(SecurityToken("wwwweeeeeeeeeee66666")))
-        'valid   - testRun(Response.ServePublicSpa, Register2.url(db.prevToken()))
+        'invalid - assertProtected(testRun(Response.redirectToPublicHome, Register2.url(SecurityToken("wwwweeeeeeeeeee66666"))))
+        'valid   - assertProtected(testRun(Response.ServePublicSpa, Register2.url(db.prevToken())))
         'expired {
           forwardTimeToEndOfConfirmationWindow(Invalid)
-          testRun(Response.redirectToPublicHome, Register2.url(db.prevToken()))
+          assertProtected(testRun(Response.redirectToPublicHome, Register2.url(db.prevToken())))
         }
       }
 

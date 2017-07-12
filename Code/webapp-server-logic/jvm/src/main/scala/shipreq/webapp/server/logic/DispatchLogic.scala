@@ -188,7 +188,8 @@ final class DispatchLogic[F[_]](implicit F: Monad[F],
     val securityTokenRoutes: Route =
       R.needsToken.map { r =>
         val getTokenStatus = securityTokenFn(r)
-        extractFlip(spaTest1(r.url))(t => onGet(getTokenStatus(SecurityToken(t)).map(onSecurityTokenStatus)))
+        def respond(t: SecurityToken): FR = security.protect(getTokenStatus(t).map(onSecurityTokenStatus))
+        extractFlip(spaTest1(r.url))(t => onGet(respond(SecurityToken(t))))
       }.reduce(_ | _)
 
     staticRoutes | securityTokenRoutes
