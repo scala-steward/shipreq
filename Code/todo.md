@@ -87,6 +87,7 @@ Phase 2 (dev)
 * Restore DiagnosticEndpoints
 * Remove SessionStats
 * On auth fail, redirect back after login
+* Remove unused SemanticUI CSS: colours, input[radio], etc
 
 ### Front pages
 * Implement new front pages
