@@ -82,7 +82,24 @@ object DbInterpreter {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  trait ForPublicSpa extends DB.ForPublicSpa[ConnectionIO] {
+  object SecurityTokenReadOnly extends SecurityTokenReadOnly
+  trait SecurityTokenReadOnly extends DB.SecurityTokenReadOnly[ConnectionIO] {
+
+    private final val getUserRegistrationTokenIssueDateSql =
+      Query[SecurityToken, Instant]("SELECT confirmation_sent_at FROM usr WHERE confirmation_token=?")
+
+    override final def getUserRegistrationTokenIssueDate(t: SecurityToken): ConnectionIO[Option[Instant]] =
+      getUserRegistrationTokenIssueDateSql.toQuery0(t).option
+
+    private final val getResetPasswordTokenIssueDateSql =
+      Query[SecurityToken, Option[Instant]]("SELECT reset_password_sent_at FROM usr WHERE reset_password_token=?")
+
+    override final def getResetPasswordTokenIssueDate(t: SecurityToken): ConnectionIO[Option[Instant]] =
+      getResetPasswordTokenIssueDateSql.toQuery0(t).option.map(_.flatten)
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  trait ForPublicSpa extends DB.ForPublicSpa[ConnectionIO] with SecurityTokenReadOnly {
     import DB.{PasswordResetState, UserRegistration, UserRegistrationResult}
 
     protected val tokenGen: () => SecurityToken
@@ -123,12 +140,6 @@ object DbInterpreter {
 
     override final def updateUserRegistrationToken(id: UserId): ConnectionIO[SecurityToken] =
       tokenAttempt(updateUserRegistrationTokenSql.toUpdate0(_, id).execute)
-
-    private final val getUserRegistrationTokenIssueDateSql =
-      Query[SecurityToken, Instant]("SELECT confirmation_sent_at FROM usr WHERE confirmation_token=?")
-
-    override final def getUserRegistrationTokenIssueDate(t: SecurityToken): ConnectionIO[Option[Instant]] =
-      getUserRegistrationTokenIssueDateSql.toQuery0(t).option
 
     private final val sqlRegisterUser =
       Query[(Username, PasswordAndSalt, SecurityToken), UserId](
@@ -198,12 +209,6 @@ object DbInterpreter {
         case \/-(e) => getPasswordResetStateByEmail(e).map(_.map((e, _)))
         case -\/(u) => getPasswordResetStateByUsername(u)
       }
-
-    private final val getResetPasswordTokenIssueDateSql =
-      Query[SecurityToken, Option[Instant]]("SELECT reset_password_sent_at FROM usr WHERE reset_password_token=?")
-
-    override final def getResetPasswordTokenIssueDate(t: SecurityToken): ConnectionIO[Option[Instant]] =
-      getResetPasswordTokenIssueDateSql.toQuery0(t).option.map(_.flatten)
 
     private final val createResetPasswordTokenSql =
       Update[(SecurityToken, UserId)]("UPDATE usr SET reset_password_token = ?, reset_password_sent_at = NOW(), reset_password_req_count = reset_password_req_count + 1 WHERE id=?")

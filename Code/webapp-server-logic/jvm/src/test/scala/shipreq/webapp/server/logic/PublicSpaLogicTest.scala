@@ -15,12 +15,6 @@ object PublicSpaLogicTest extends TestSuite {
     val logic = PublicSpaLogic[Name, Name]
     val initData = logic.initData.value
 
-    def forwardTimeToEndOfConfirmationWindow(v: Validity): Unit =
-      svr.forwardTimeToEndOfWindow(config.confirmationTokenLifespan, v)
-
-    def forwardTimeToEndOfPasswordResetWindow(v: Validity): Unit =
-      svr.forwardTimeToEndOfWindow(config.passwordResetTokenLifespan, v)
-
     def runLogin(i: Login.Fn.Input): Login.Fn.Response = assertProtected(svr.run(initData.login)(i))
 //    def runLogin(usernameOrEmail: String, password: String): Login.Fn.Response = {
 //      val u: Username \/ EmailAddr =
@@ -31,13 +25,11 @@ object PublicSpaLogicTest extends TestSuite {
 //      runLogin(Login.Request(u, PlainTextPassword(password)))
 //    }
 
-    def runRegister1 (i: Register.Fn1 .Input): Register.Fn1 .Response = assertProtected(svr.run(initData.register1)(i))
-    def runRegister2A(i: Register.Fn2A.Input): Register.Fn2A.Response = assertProtected(svr.run(initData.register2A)(i))
-    def runRegister2B(i: Register.Fn2B.Input): Register.Fn2B.Response = assertProtected(svr.run(initData.register2B)(i))
+    def runRegister1(i: Register.Fn1.Input): Register.Fn1.Response = assertProtected(svr.run(initData.register1)(i))
+    def runRegister2(i: Register.Fn2.Input): Register.Fn2.Response = assertProtected(svr.run(initData.register2)(i))
 
-    def runResetPassword1 (i: ResetPassword.Fn1 .Input): ResetPassword.Fn1 .Response = assertProtected(svr.run(initData.resetPassword1)(i))
-    def runResetPassword2A(i: ResetPassword.Fn2A.Input): ResetPassword.Fn2A.Response = assertProtected(svr.run(initData.resetPassword2A)(i))
-    def runResetPassword2B(i: ResetPassword.Fn2B.Input): ResetPassword.Fn2B.Response = assertProtected(svr.run(initData.resetPassword2B)(i))
+    def runResetPassword1(i: ResetPassword.Fn1.Input): ResetPassword.Fn1.Response = assertProtected(svr.run(initData.resetPassword1)(i))
+    def runResetPassword2(i: ResetPassword.Fn2.Input): ResetPassword.Fn2.Response = assertProtected(svr.run(initData.resetPassword2)(i))
 
     db.users ::= user2
   }
@@ -114,7 +106,7 @@ object PublicSpaLogicTest extends TestSuite {
       }
     }
 
-    'register2B {
+    'register2 {
       import Register._
       val t = new Tester(); import t._
 
@@ -128,7 +120,7 @@ object PublicSpaLogicTest extends TestSuite {
           assertDifference("taskman", taskman.msgs.length)(1) {
             assertDifference("userPlaceholders", db.userPlaceholders.size)(-1)(
               assertDifference("users", db.users.length)(1)(
-                assertEq(\/-(Response.Success), runRegister2B(req))))
+                assertEq(\/-(Response.Success), runRegister2(req))))
             svr.runForked()
           }
         )
@@ -136,11 +128,11 @@ object PublicSpaLogicTest extends TestSuite {
         taskman.assertLastSubmitted { case r: Msg.RegistrationCompleted => () }
       }
 
-      def assertFailure(req: Request): Fn2B.Response =
+      def assertFailure(req: Request): Fn2.Response =
         assertDifference(db.userPlaceholders.size)(0)(
           assertDifference(db.users.length)(0)(
             assertDifference(taskman.msgs.length)(0)(
-              runRegister2B(req))))
+              runRegister2(req))))
 
       "reject an invalid name" -
         assertFailure(req.copy(personName = PersonName(""))).needLeft
@@ -157,7 +149,7 @@ object PublicSpaLogicTest extends TestSuite {
       'registrationsOff {
         val t = new Tester(Deny); import t._
         db.userPlaceholders = Map(ea -> DB.UserRegistration.Pending(UserId(2), token, svr.clock))
-        runRegister2B(req).needLeft
+        runRegister2(req).needLeft
       }
     }
 
@@ -234,19 +226,19 @@ object PublicSpaLogicTest extends TestSuite {
 
       "update the password when valid" - {
         assertEq(security.attemptLogin(i, p2).value, None)
-        assertEq(runResetPassword2B(Request(token, p2)), \/-(Response.Success))
+        assertEq(runResetPassword2(Request(token, p2)), \/-(Response.Success))
         assertEq(security.attemptLogin(i, p2).value.isDefined, true)
       }
 
       "reject invalid passwords" -
-        runResetPassword2B(Request(token, PlainTextPassword("x"))).needLeft
+        runResetPassword2(Request(token, PlainTextPassword("x"))).needLeft
 
       "reject invalid tokens" -
-        assertEq(runResetPassword2B(Request(SecurityToken("xxxx"), p2)), \/-(Response.TokenInvalid))
+        assertEq(runResetPassword2(Request(SecurityToken("xxxx"), p2)), \/-(Response.TokenInvalid))
 
       "reject expired tokens" - {
         forwardTimeToEndOfPasswordResetWindow(Invalid)
-        assertEq(runResetPassword2B(Request(token, p2)), \/-(Response.TokenExpired))
+        assertEq(runResetPassword2(Request(token, p2)), \/-(Response.TokenExpired))
       }
     }
 

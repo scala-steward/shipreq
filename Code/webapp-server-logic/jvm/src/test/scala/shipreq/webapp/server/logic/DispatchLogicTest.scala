@@ -1,13 +1,14 @@
 package shipreq.webapp.server.logic
 
-import scalaz.Name
+import scalaz.{Name, \/-}
 import utest._
-import shipreq.base.util.Url
+import shipreq.base.util.{Invalid, Url}
 import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.Urls
 import DispatchLogic._
 import Method._
+import shipreq.webapp.base.user.EmailAddr
 
 object DispatchLogicTest extends TestSuite {
 
@@ -62,9 +63,32 @@ object DispatchLogicTest extends TestSuite {
 
     'publicSpa {
       import Urls.PublicSpaRoute._
-      'pages0 - static.foreach(p => testRun(Response.ServePublicSpa, p.url))
-      'pages1 - needsToken.foreach(p => testRun(Response.ServePublicSpa, p.url(SecurityToken("x"))))
+
+      'nullary - static.foreach(p => testRun(Response.ServePublicSpa, p.url))
       'nonGet - static.foreach(p => testNonGet(p.url))
+
+      'resetPassword2 {
+        svr.run(PublicSpaLogic[Name, Name].initData.value.resetPassword1)(\/-(user2.emailAddr)).needRight
+
+        'invalid - testRun(Response.redirectToPublicHome, ResetPassword.url(SecurityToken("wwwweeeeeeeeeee33333")))
+        'valid   - testRun(Response.ServePublicSpa, ResetPassword.url(db.prevToken()))
+        'expired {
+          forwardTimeToEndOfPasswordResetWindow(Invalid)
+          testRun(Response.redirectToPublicHome, ResetPassword.url(db.prevToken()))
+        }
+      }
+
+      'register2 {
+        svr.run(PublicSpaLogic[Name, Name].initData.value.register1)(EmailAddr("x@x.io")).needRight
+
+        'invalid - testRun(Response.redirectToPublicHome, Register2.url(SecurityToken("wwwweeeeeeeeeee66666")))
+        'valid   - testRun(Response.ServePublicSpa, Register2.url(db.prevToken()))
+        'expired {
+          forwardTimeToEndOfConfirmationWindow(Invalid)
+          testRun(Response.redirectToPublicHome, Register2.url(db.prevToken()))
+        }
+      }
+
     }
 
     'memberHomeSpa {

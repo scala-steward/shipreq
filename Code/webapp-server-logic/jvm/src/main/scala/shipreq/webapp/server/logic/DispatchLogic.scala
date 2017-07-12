@@ -1,5 +1,6 @@
 package shipreq.webapp.server.logic
 
+import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import scalaz.{-\/, Monad, \/, \/-}
@@ -8,6 +9,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.Urls
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
+import shipreq.webapp.server.ServerConfig
 
 object DispatchLogic {
 
@@ -104,7 +106,11 @@ object DispatchLogic {
   }
 }
 
-final class DispatchLogic[F[_]](implicit F: Monad[F], security: Security.Algebra[F]) {
+final class DispatchLogic[F[_]](implicit F: Monad[F],
+                                config    : ServerConfig,
+                                security  : Security.Algebra[F],
+                                db        : DB.SecurityTokenReadOnly[F],
+                                svr       : Server.Time[F]) {
   import DispatchLogic._
   import Method._
   import Response._
@@ -124,13 +130,22 @@ final class DispatchLogic[F[_]](implicit F: Monad[F], security: Security.Algebra
     req => if (req.method eq m) f(req) else fMethodNotAllowed
 
   private def onGet(resp: FR)        : Request => FR = onMethod(Get, resp)
-  private def onGet(f: Request => FR): Request => FR = onMethod(Get)(f)
+  //private def onGet(f: Request => FR): Request => FR = onMethod(Get)(f)
 
   // Occasional type inference problem
   @inline private def when(cond: Request => Boolean)(ok: Request => FR): Route = FnWithFallback.when(cond)(ok)
+  @inline private def extract[E](cond: Request => Option[E])(ok: Request => E => FR): Route = FnWithFallback.extract(cond)(ok)
+  @inline private def extractFlip[E](cond: Request => Option[E])(ok: E => Request => FR): Route = FnWithFallback.extract(cond)(r => ok(_)(r))
 
-  private def whenUrl(url: Url.Relative, ok: Request => FR): Route =
-    when(_.path ==* url)(ok)
+  private def whenUrlIs(url: Url.Relative): (Request => FR) => Route =
+    when(_.path ==* url)
+
+  private def whenUrlIsAnyOf(urls: NonEmptySet[Url.Relative]): (Request => FR) => Route = {
+    import Url.dropTailSlashes
+    val norm: Url.Relative => String = u => dropTailSlashes(u.underlying)
+    val lookup = Util.quickStringLookup(urls.whole.map(norm))
+    when(r => lookup(norm(r.path)))
+  }
 
   private def needAuth(f: User => Response): FR =
     security.authenticatedUser.map(_.fold[Response](redirectToLogin)(f))
@@ -139,7 +154,7 @@ final class DispatchLogic[F[_]](implicit F: Monad[F], security: Security.Algebra
     security.authenticatedUser.flatMap(_.fold(fRedirectToLogin)(f))
 
   private def get(url: Url.Relative, resp: FR): Route =
-    whenUrl(url, onGet(resp))
+    whenUrlIs(url)(onGet(resp))
 
   private def spa(root: Url.Relative): FR => Route =
     fr => when(spaTest(root))(onGet(fr))
@@ -147,17 +162,36 @@ final class DispatchLogic[F[_]](implicit F: Monad[F], security: Security.Algebra
   private def spaWithObfuscatedParam[A](url       : Url.Relative.Param1[Obfuscated[A]])
                                        (obfuscator: Obfuscator[A])
                                        (response  : String \/ A => FR): Route =
-    FnWithFallback.extract(spaTest1(url))(req => str =>
-      onGet(response(obfuscator.deobfuscate(Obfuscated(str))))(req))
+    extractFlip(spaTest1(url))(param =>
+      onGet(response(obfuscator.deobfuscate(Obfuscated(param)))))
 
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   val publicSpa: Route = {
-    val fr: FR = F pure ServePublicSpa
-    val route1 = Urls.PublicSpaRoute.static.map(s => spa(s.url)(fr))
-    val route2 = Urls.PublicSpaRoute.needsToken.map(s => FnWithFallback.extract(spaTest1(s.url))(req => _ => onGet(fr)(req)))
-    (route1 ++ route2).reduce(_ | _)
+    import Urls.{PublicSpaRoute => R}
+
+    val staticRoutes: Route =
+      whenUrlIsAnyOf(R.static.map(_.url).toNES)(onGet(F pure ServePublicSpa))
+
+    val securityTokenFn: R.NeedsToken => SecurityToken => F[SecurityToken.Status] = {
+      case R.Register2     => PublicSpaLogic.tokenStatusFn(db.getUserRegistrationTokenIssueDate, config.confirmationTokenLifespan)
+      case R.ResetPassword => PublicSpaLogic.tokenStatusFn(db.getResetPasswordTokenIssueDate, config.passwordResetTokenLifespan)
+    }
+
+    val onSecurityTokenStatus: SecurityToken.Status => Response = {
+      case SecurityToken.Status.Valid   => ServePublicSpa
+      case SecurityToken.Status.Invalid => redirectToPublicHome
+      case SecurityToken.Status.Expired => redirectToPublicHome // could be better but good enough
+    }
+
+    val securityTokenRoutes: Route =
+      R.needsToken.map { r =>
+        val getTokenStatus = securityTokenFn(r)
+        extractFlip(spaTest1(r.url))(t => onGet(getTokenStatus(SecurityToken(t)).map(onSecurityTokenStatus)))
+      }.reduce(_ | _)
+
+    staticRoutes | securityTokenRoutes
   }
 
   val memberHomeSpa: Route =
@@ -191,7 +225,7 @@ final class DispatchLogic[F[_]](implicit F: Monad[F], security: Security.Algebra
 
   /** For tests only. Not meant for production */
   val loginApi: Route =
-    whenUrl(loginApiUrl,
+    whenUrlIs(loginApiUrl)(
       onMethod(Post) { req =>
 
         val credentials = for {

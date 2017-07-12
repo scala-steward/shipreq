@@ -114,7 +114,7 @@ final class MockDb(now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecur
 
   def getPendingUserRegistration(t: SecurityToken): Option[(EmailAddr, DB.UserRegistration.Pending)] =
     userPlaceholders.iterator.collect {
-      case (ea, p: DB.UserRegistration.Pending) => (ea, p)
+      case (ea, p: DB.UserRegistration.Pending) if p.token ==* t => (ea, p)
     }.nextOption()
 
   override def getUserRegistrationTokenIssueDate(t: SecurityToken) = Name[Option[Instant]] {
@@ -443,4 +443,10 @@ class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerCon
 
   def assertProtected[A](a: => A): A =
     assertDifference("Protected actions", security.protectedActions)(1)(a)
+
+  def forwardTimeToEndOfConfirmationWindow(v: Validity): Unit =
+    svr.forwardTimeToEndOfWindow(config.confirmationTokenLifespan, v)
+
+  def forwardTimeToEndOfPasswordResetWindow(v: Validity): Unit =
+    svr.forwardTimeToEndOfWindow(config.passwordResetTokenLifespan, v)
 }

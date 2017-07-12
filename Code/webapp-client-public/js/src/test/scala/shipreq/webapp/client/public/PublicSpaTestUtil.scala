@@ -12,15 +12,13 @@ import shipreq.webapp.client.public.spa.{Page, PublicSpa}
 object PublicSpaTestUtil {
 
   val initData = PublicSpaProtocols.InitData(
-    allowRegister   = Allow,
-    landingPage     = ServerSideProc("landingPage"    , PublicSpaProtocols.LandingPage.Fn),
-    register1       = ServerSideProc("register1"      , PublicSpaProtocols.Register.Fn1),
-    register2A      = ServerSideProc("register2A"     , PublicSpaProtocols.Register.Fn2A),
-    register2B      = ServerSideProc("register2B"     , PublicSpaProtocols.Register.Fn2B),
-    login           = ServerSideProc("login"          , PublicSpaProtocols.Login.Fn),
-    resetPassword1  = ServerSideProc("resetPassword1" , PublicSpaProtocols.ResetPassword.Fn1),
-    resetPassword2A = ServerSideProc("resetPassword2A", PublicSpaProtocols.ResetPassword.Fn2A),
-    resetPassword2B = ServerSideProc("resetPassword2B", PublicSpaProtocols.ResetPassword.Fn2B))
+    allowRegister  = Allow,
+    landingPage    = ServerSideProc("landingPage"   , PublicSpaProtocols.LandingPage.Fn),
+    register1      = ServerSideProc("register1"     , PublicSpaProtocols.Register.Fn1),
+    register2      = ServerSideProc("register2"     , PublicSpaProtocols.Register.Fn2),
+    login          = ServerSideProc("login"         , PublicSpaProtocols.Login.Fn),
+    resetPassword1 = ServerSideProc("resetPassword1", PublicSpaProtocols.ResetPassword.Fn1),
+    resetPassword2 = ServerSideProc("resetPassword2", PublicSpaProtocols.ResetPassword.Fn2))
 
   class ForTestState {
     val cp       = new TestClientProtocol(false)

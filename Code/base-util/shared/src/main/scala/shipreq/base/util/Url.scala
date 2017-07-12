@@ -9,6 +9,9 @@ object Url {
     * @param relativeUrlNoHeadSlash The URL without a leading slash.
     */
   final case class Relative private[Relative](relativeUrlNoHeadSlash: String) extends AnyVal {
+    override def toString = relativeUrl
+
+    def underlying                  : String = relativeUrlNoHeadSlash
     def relativeUrlNoHeadOrTailSlash: String = dropTailSlashes(relativeUrlNoHeadSlash)
     def relativeUrlNoTailSlash      : String = "/" + relativeUrlNoHeadOrTailSlash
     def relativeUrl                 : String = "/" + relativeUrlNoHeadSlash

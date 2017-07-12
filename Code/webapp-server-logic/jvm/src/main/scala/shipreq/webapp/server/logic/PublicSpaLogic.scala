@@ -24,6 +24,31 @@ object PublicSpaLogic {
 
   private[this] val rightUnit = \/-(())
 
+  def isExpired_?(startTime: Instant, timeToLive: Duration, now: Instant): Boolean =
+    startTime plus timeToLive isBefore now
+
+  def tokenStatus[F[_]](ttl: Duration)
+                       (implicit F: Monad[F], svr: Server.Time[F]): Option[Instant] => F[SecurityToken.Status] = {
+    val invalid: F[SecurityToken.Status] =
+      F pure SecurityToken.Status.Invalid
+
+    val check: Instant => F[SecurityToken.Status] = i =>
+      for (now <- svr.now) yield
+        if (isExpired_?(i, ttl, now))
+          SecurityToken.Status.Expired
+        else
+          SecurityToken.Status.Valid
+
+    _.fold(invalid)(check)
+  }
+
+  def tokenStatusFn[F[_] : Monad : Server.Time](issueDate: SecurityToken => F[Option[Instant]],
+                                                ttl: Duration): SecurityToken => F[SecurityToken.Status] = {
+    val f = tokenStatus[F](ttl)
+    issueDate(_).flatMap(f)
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   def apply[D[_], F[_]](implicit config  : ServerConfig,
                                  db      : DB.ForPublicSpa[D],
                                  runDB   : D ~> F,
@@ -32,19 +57,6 @@ object PublicSpaLogic {
                                  taskman : TaskmanApi[F],
                                  D       : Monad[D],
                                  F       : Monad[F]): PublicSpaLogic[F] = {
-
-    def isExpired_?(startTime: Instant, timeToLive: Duration, now: Instant): Boolean =
-      startTime plus timeToLive isBefore now
-
-    def tokenStatus(ttl: Duration): Option[Instant] => F[SecurityToken.Status] = {
-      case Some(i) => svr.now.map(now =>
-        if (isExpired_?(i, ttl, now))
-          SecurityToken.Status.Expired
-        else
-          SecurityToken.Status.Valid
-      )
-      case None => F pure SecurityToken.Status.Invalid
-    }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     val landingPageFn: F[LandingPage.Fn.Instance] =
@@ -96,9 +108,8 @@ object PublicSpaLogic {
           }
         )
 
-      private def getTokenStatus(t: SecurityToken): F[SecurityToken.Status] =
-        runDB(db.getUserRegistrationTokenIssueDate(t))
-          .flatMap(tokenStatus(config.confirmationTokenLifespan))
+      private val getTokenStatus: SecurityToken => F[SecurityToken.Status] =
+        tokenStatusFn(t => runDB(db.getUserRegistrationTokenIssueDate(t)), config.confirmationTokenLifespan)
 
       def preRegistrationMsg(email: EmailAddr, u: DB.UserRegistration, now: Instant): D[Msg] =
         u match {
@@ -146,13 +157,8 @@ object PublicSpaLogic {
             )))
       }
 
-      val registerFn2A: F[Register.Fn2A.Instance] =
-        svr.createServerSideProc(Register.Fn2A)(
-          registrationProc(
-            getTokenStatus(_).map(\/-(_))))
-
-      val registerFn2B: F[Register.Fn2B.Instance] =
-        svr.createServerSideProc(Register.Fn2B)(
+      val registerFn2: F[Register.Fn2.Instance] =
+        svr.createServerSideProc(Register.Fn2)(
           registrationProc(
             _.validate.onValid { req =>
 
@@ -195,9 +201,8 @@ object PublicSpaLogic {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     object ResetPasswordFns {
 
-      private def getTokenStatus(t: SecurityToken): F[SecurityToken.Status] =
-        runDB(db.getResetPasswordTokenIssueDate(t))
-          .flatMap(tokenStatus(config.passwordResetTokenLifespan))
+      private val getTokenStatus: SecurityToken => F[SecurityToken.Status] =
+        tokenStatusFn(t => runDB(db.getResetPasswordTokenIssueDate(t)), config.passwordResetTokenLifespan)
 
       private val absUrlRegister2 = config.baseUrl / Urls.PublicSpaRoute.ResetPassword.url
 
@@ -242,13 +247,8 @@ object PublicSpaLogic {
             } yield rightUnit
           })
 
-      val resetPasswordFn2A: F[ResetPassword.Fn2A.Instance] =
-        svr.createServerSideProc(ResetPassword.Fn2A)(
-          security.protectFn(
-            getTokenStatus(_).map(\/-(_))))
-
-      val resetPasswordFn2B: F[ResetPassword.Fn2B.Instance] =
-        svr.createServerSideProc(ResetPassword.Fn2B)(
+      val resetPasswordFn2: F[ResetPassword.Fn2.Instance] =
+        svr.createServerSideProc(ResetPassword.Fn2)(
           security.protectFn(req =>
             UserValidators.password.named(req.newPassword.value).onValid { newPassword =>
 
@@ -278,13 +278,11 @@ object PublicSpaLogic {
         for {
           a <- landingPageFn
           b <- RegisterFns.registerFn1
-          c <- RegisterFns.registerFn2A
-          d <- RegisterFns.registerFn2B
-          e <- loginFn
-          f <- ResetPasswordFns.resetPasswordFn1
-          g <- ResetPasswordFns.resetPasswordFn2A
-          h <- ResetPasswordFns.resetPasswordFn2B
-        } yield InitData(a, config.allowRegister, b, c, d, e, f, g, h)
+          c <- RegisterFns.registerFn2
+          d <- loginFn
+          e <- ResetPasswordFns.resetPasswordFn1
+          f <- ResetPasswordFns.resetPasswordFn2
+        } yield InitData(a, config.allowRegister, b, c, d, e, f)
     }
   }
 }

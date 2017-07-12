@@ -104,15 +104,28 @@ object DB {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  trait ForUserRegistration[F[_]] extends Base[F] {
+  trait SecurityTokenReadOnly[F[_]] {
+    def getUserRegistrationTokenIssueDate(t: SecurityToken): F[Option[Instant]]
+    def getResetPasswordTokenIssueDate   (t: SecurityToken): F[Option[Instant]]
+  }
+
+  object SecurityTokenReadOnly {
+    def trans[F[_], G[_]](f: SecurityTokenReadOnly[F])(g: F ~> G): SecurityTokenReadOnly[G] =
+      new SecurityTokenReadOnly[G] {
+        override def getUserRegistrationTokenIssueDate(t: SecurityToken) = g(f.getUserRegistrationTokenIssueDate(t))
+        override def getResetPasswordTokenIssueDate   (t: SecurityToken) = g(f.getResetPasswordTokenIssueDate   (t))
+      }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  trait ForUserRegistration[F[_]] extends Base[F] with SecurityTokenReadOnly[F] {
     def getUserRegistration(e: EmailAddr): F[Option[UserRegistration]]
 
     /** Creates an unconfirmed user account. No username, no password until email confirmed. */
     def createUserPlaceholder(e: EmailAddr): F[SecurityToken]
 
     def updateUserRegistrationToken(id: UserId): F[SecurityToken]
-
-    def getUserRegistrationTokenIssueDate(t: SecurityToken): F[Option[Instant]]
 
     def completeUserRegistration(token     : SecurityToken,
                                  name      : PersonName,
@@ -121,10 +134,8 @@ object DB {
                                  newsletter: Boolean): F[UserRegistrationResult]
   }
 
-  trait ForPasswordReset[F[_]] extends Base[F] {
+  trait ForPasswordReset[F[_]] extends Base[F] with SecurityTokenReadOnly[F] {
     def getPasswordResetState(u: Username \/ EmailAddr): F[Option[(EmailAddr, PasswordResetState)]]
-
-    def getResetPasswordTokenIssueDate(t: SecurityToken): F[Option[Instant]]
 
     def createResetPasswordToken(id: UserId): F[SecurityToken]
 

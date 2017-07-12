@@ -7,6 +7,9 @@ object Server {
 
   trait Time[F[_]] {
     def now: F[Instant]
+  }
+
+  trait Schedule[F[_]] extends Time[F] {
     def delay[A](f: F[A], d: Duration): F[A]
     def fork[A](f: F[A]): F[Unit]
   }
@@ -21,6 +24,7 @@ object Server {
 
   trait Algebra[F[_]]
     extends Time[F]
+       with Schedule[F]
        with Protocol[F]
        with Session[F]
 
