@@ -8,10 +8,9 @@ import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import shipreq.webapp.base.data.{Disabled, Enabled, SecurityToken}
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.lib.KeyHandler.Criterion
 import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.ui.semantic.{Button, Colour, Form, Icon, Input, Message, Size}
+import shipreq.webapp.base.ui.semantic.{Form, Icon, Input, Message}
 import shipreq.webapp.base.user.{PlainTextPassword, UserValidators}
 import shipreq.webapp.client.public.PublicSpaProtocols.{ResetPassword => P}
 import shipreq.webapp.client.public.Styles.{resetPassword => *}
@@ -61,7 +60,7 @@ object ResetPassword {
         $.state.flatMap(s =>
           submitCB(p, s).getOrEmpty))
 
-    val submitOnEnter = Criterion.Enter.handle(attemptSubmit) + Criterion.CtrlEnter.handle(attemptSubmit)
+    val submitOnEnter = Common.submitOnEnter(attemptSubmit)
 
     val fieldPassword1 = Form.TextField.highLevel(
       State.password1,

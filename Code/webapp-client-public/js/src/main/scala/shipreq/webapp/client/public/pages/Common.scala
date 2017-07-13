@@ -2,6 +2,8 @@ package shipreq.webapp.client.public.pages
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
+import shipreq.webapp.base.lib.KeyHandler.Criterion
+import shipreq.webapp.base.lib.KeyHandlers
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Message, Size}
 import shipreq.webapp.client.public.Styles.{common => *}
 
@@ -25,4 +27,7 @@ private[pages] object Common {
       *.submitButton,
       title,
       ^.onClick -->? submitCB)
+
+  def submitOnEnter(submit: Callback): KeyHandlers =
+    Criterion.Enter.handle(submit) + Criterion.CtrlEnter.handle(submit)
 }

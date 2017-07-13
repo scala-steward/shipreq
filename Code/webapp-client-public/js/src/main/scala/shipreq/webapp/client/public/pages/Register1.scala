@@ -8,7 +8,6 @@ import shipreq.base.util.{Deny, Permission}
 import shipreq.webapp.base.CommmonUiText
 import shipreq.webapp.base.data.{Disabled, Enabled}
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.lib.KeyHandler.Criterion
 import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.semantic.{Form, Icon, Input, Message}
@@ -58,7 +57,7 @@ object Register1 {
     private val attemptSubmit: Callback =
       $.props.flatMap(submitCB(_).getOrEmpty)
 
-    private val submitOnEnter = Criterion.Enter.handle(attemptSubmit) + Criterion.CtrlEnter.handle(attemptSubmit)
+    private val submitOnEnter = Common.submitOnEnter(attemptSubmit)
 
     private val fieldEmail = Form.TextField.highLevel(
       State.email,
