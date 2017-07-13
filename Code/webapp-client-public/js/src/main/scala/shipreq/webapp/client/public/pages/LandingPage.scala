@@ -111,13 +111,7 @@ object LandingPage {
           "Subscribe to newsletter"))
 
       fields :+= Form.CenteredField(
-        Button(
-          colour = Colour.Blue,
-          state = Button.State.enabledWhen(onSubmit.isDefined),
-          size = Size.Large)
-          .tag(*.formSubmit,
-            ^.onClick -->? onSubmit,
-            "Express Interest"))
+        Common.submitButton("Express Interest", onSubmit))
 
       if (enabled is Disabled)
         fields = fields.map(_.disable)

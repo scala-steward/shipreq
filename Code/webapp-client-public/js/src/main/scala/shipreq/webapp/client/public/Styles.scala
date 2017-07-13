@@ -184,8 +184,6 @@ object Styles {
       borderRadius := ".28571429rem",
       padding := "1em")
 
-    val formSubmit = marginRight := "0"
-
     val yap =
       cssBuilder.addClass(c =>
         s"""
@@ -205,26 +203,23 @@ object Styles {
     val bottomRow      = TagMod(display.flex, width := "100%", alignItems.baseline)
     val rememberMe     = TagMod(flex := "1")
     val submitCont     = TagMod(textAlign.right, paddingTop := "0.4em")
-    val submitButton   = TagMod(marginRight := "0")
   }
   login // eager eval
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object resetPassword {
-    val part1          = login.part1
-    val part2          = TagMod(width := "54ex", margin := "6em auto 0 auto")
-    val submitCont     = login.submitCont
-    val submitButton   = login.submitButton
+    def part1        = login.part1
+    val part2        = TagMod(width := "54ex", margin := "6em auto 0 auto")
+    def submitCont   = login.submitCont
   }
   resetPassword // eager eval
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object register1 {
-    val part1          = TagMod(width := "48ex", margin := "5em auto 0 auto")
-    val part2          = TagMod(width := "60ex", margin := "6em auto 0 auto")
-    val part0          = TagMod(width := "66ex", margin := "6em auto 0 auto")
-    val submitCont     = login.submitCont
-    val submitButton   = login.submitButton
+    val part1        = TagMod(width := "48ex", margin := "5em auto 0 auto")
+    val part2        = TagMod(width := "60ex", margin := "6em auto 0 auto")
+    val part0        = TagMod(width := "66ex", margin := "6em auto 0 auto")
+    def submitCont   = login.submitCont
   }
   register1 // eager eval
 
@@ -254,4 +249,10 @@ object Styles {
     val generatedBy = cls := "g"
   }
   legal // eager eval
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  object common {
+    def tokenInvalidCont = resetPassword.part2
+    val submitButton     = marginRight := "0"
+  }
 }

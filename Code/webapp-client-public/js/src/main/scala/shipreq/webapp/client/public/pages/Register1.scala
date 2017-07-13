@@ -11,7 +11,7 @@ import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.KeyHandler.Criterion
 import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.ui.semantic.{Button, Colour, Form, Icon, Input, Message, Size}
+import shipreq.webapp.base.ui.semantic.{Form, Icon, Input, Message}
 import shipreq.webapp.base.user.{EmailAddr, UserValidators}
 import shipreq.webapp.client.public.Styles.{register1 => *}
 import shipreq.webapp.client.public.spa.{Page, RouterCtl}
@@ -70,22 +70,13 @@ object Register1 {
     private def renderForm(p: Props): VdomElement = {
       val s = p.state.value
 
-      val submitCB: Option[Callback] =
-        this.submitCB(p)
-
-      val submit =
-        Button(
-          state = Button.State.enabledWhen(submitCB.isDefined),
-          colour = Colour.Blue,
-          size = Size.Large).tag(
-          *.submitButton,
-          "Register",
-          ^.onClick -->? submitCB)
+      val submitButton =
+        Common.submitButton("Register", submitCB(p))
 
       <.div(*.part1,
         Form(
           fieldEmail(p.state).fieldCopy(enabled = s.formEnabled),
-          Form.NotAField(<.div(*.submitCont, submit))))
+          Form.NotAField(<.div(*.submitCont, submitButton))))
     }
 
     private def renderSuccess: VdomElement =

@@ -201,22 +201,13 @@ object Login {
       if (p.formEnabled is Disabled)
         fields = fields.map(_.disable)
 
-      val submitCB =
-        Option.when(p.formEnabled is Enabled)(attemptLogin)
-
-      val submit =
-        Button(
-          state = Button.State.enabledWhen(submitCB.isDefined),
-          colour = Colour.Blue,
-          size = Size.Large).tag(
-          *.submitButton,
-          "Login",
-          ^.onClick -->? submitCB)
+      val submitButton =
+        Common.submitButton("Login", Option.when(p.formEnabled is Enabled)(attemptLogin))
 
       val bottomRow =
         <.div(*.bottomRow,
           <.div(*.rememberMe, Input.Checkbox.fromStateSnapshot(State.rememberMe, p.state, "Remember me")),
-          <.div(*.submitCont, submit))
+          <.div(*.submitCont, submitButton))
 
       fields :+= Form.NotAField(bottomRow)
 

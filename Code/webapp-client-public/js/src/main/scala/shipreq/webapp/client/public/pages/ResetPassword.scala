@@ -77,17 +77,8 @@ object ResetPassword {
         m => Input.Text.icon(Icon.Lock.tag, <.input.password(m, submitOnEnter)),
         Some("Confirm new password"))(ValidationUX.Highlight)
 
-      val submitCB: Option[Callback] =
-        this.submitCB(p, s)
-
-      val submit =
-        Button(
-          state = Button.State.enabledWhen(submitCB.isDefined),
-          colour = Colour.Blue,
-          size = Size.Large).tag(
-          *.submitButton,
-          "Change Password",
-          ^.onClick -->? submitCB)
+      val submitButton =
+        Common.submitButton("Change Password", submitCB(p, s))
 
       val ss = StateSnapshot(s).setStateVia($)
 
@@ -97,33 +88,23 @@ object ResetPassword {
       if (s.formEnabled is Disabled)
         fields = fields.map(_.disable)
 
-      fields :+= Form.NotAField(<.div(*.submitCont, submit))
+      fields :+= Form.NotAField(<.div(*.submitCont, submitButton))
 
       <.div(*.part1, Form(fields))
     }
 
-    def renderResponse(r: P.Response): VdomElement = {
-      val msg: VdomTag = r match {
-
+    def renderResponse(r: P.Response): VdomElement =
+      r match {
+        case P.Response.TokenExpired => Common.renderTokenExpired
+        case P.Response.TokenInvalid => Common.renderTokenInvalid
         case P.Response.Success =>
-          Message(
-            Message.Style(Message.Type.Success),
-            Icon.Lock,
-            "Changed Password",
-            "Your password was updated successfully.")
-
-        case P.Response.TokenExpired | P.Response.TokenInvalid =>
-          Message(
-            Message.Style(Message.Type.Error),
-            Icon.Warning,
-            "Invalid token",
-            TagMod(
-              "The link emailed to you is no longer valid.", <.br,
-              "Please request a new one from the login page."))
+          <.div(*.part2,
+            Message(
+              Message.Style(Message.Type.Success),
+              Icon.Lock,
+              "Changed Password",
+              "Your password was updated successfully."))
       }
-
-      <.div(*.part2, msg)
-    }
 
     def render(p: Props, s: State): VdomElement =
       s.response.fold(renderForm(p, s))(renderResponse)
