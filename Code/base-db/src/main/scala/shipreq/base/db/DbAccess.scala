@@ -37,7 +37,6 @@ final case class DbAccess(cfg               : DbConfig,
   def desc: String =
     s"$host/$databaseName" + schema.map(":" + _).getOrElse("")
 
-  @deprecated("Use Fx!","")
   val io = abstractTransactor[IO]
   val fx = abstractTransactor[Fx]
 
