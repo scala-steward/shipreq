@@ -6,6 +6,7 @@ import org.specs2.execute.{AsResult, Result}
 import org.specs2.mutable.Specification
 import org.specs2.specification.AroundEach
 import shipreq.base.test.db._
+import shipreq.base.util.FxModule._
 
 trait DatabaseTest extends AroundEach {
   this: Specification =>
@@ -16,10 +17,10 @@ trait DatabaseTest extends AroundEach {
   final def xa: SingleConnectionXA = _xa getOrElse sys.error("DB connection not established.")
 
   def dbExec[A](c: ConnectionIO[A]): A =
-    xa.trans(c).unsafePerformIO()
+    xa.trans(c).unsafeRun()
 
   implicit final class ConnIoExt[A](private val self: ConnectionIO[A]) {
-    def runNow(): A = self.transact(xa).unsafePerformIO()
+    def runNow(): A = self.transact(xa).unsafeRun()
   }
 
   def mutex: Option[Lock] = None

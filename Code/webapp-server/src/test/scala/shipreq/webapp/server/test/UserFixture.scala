@@ -2,10 +2,10 @@ package shipreq.webapp.server.test
 
 import doobie.imports._
 import java.time.Instant
-import scalaz.effect.IO
 import scalaz.syntax.bind.ToBindOps
 import scalaz.syntax.traverse._
 import shipreq.base.db.DoobieHelpers._
+import shipreq.base.util.FxModule._
 import shipreq.base.test.db.{SingleConnectionXA, Usable}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
@@ -18,13 +18,13 @@ object UserFixture {
 
   val Session: Usable[UserFixture] =
     TestDb(inTransaction = false)
-      .map(xa => IO(apply(xa)))
+      .map(xa => Fx(apply(xa)))
       .before(_.setup)
       .after(_.teardown)
 
   val Transaction: Usable[UserFixture] =
     TestDb(inTransaction = true)
-      .map(xa => IO(apply(xa)))
+      .map(xa => Fx(apply(xa)))
       .before(_.setup)
 
   final case class TestUser(username  : Username,
@@ -67,9 +67,9 @@ final case class UserFixture(xa: SingleConnectionXA) {
   private def setRoles(emailAddr: EmailAddr, roles: Set[String]): ConnectionIO[Unit] =
     sql"UPDATE usr set roles=${Option(roles.mkString(",")).filter(_.nonEmpty)} WHERE email=${emailAddr.value}".update.execute.void
 
-  def setup: IO[Unit] = {
+  def setup: Fx[Unit] = {
     // Insert mock users (registered)
-    val inserts1: List[IO[Unit]] =
+    val inserts1: List[Fx[Unit]] =
       for (u <- users) yield
         (for {
           token <- dbAlgebra.createUserPlaceholder(u.email)
@@ -86,30 +86,30 @@ final case class UserFixture(xa: SingleConnectionXA) {
     (inserts1 ::: inserts2).sequence_
   }
 
-  def teardown: IO[Unit] =
+  def teardown: Fx[Unit] =
     (users.map(deleteTestUser) ::: pendingUsers.map(deletePendingTestUser))
       .sequence_
 
-  def insertPendingTestUser(user: PendingTestUser): IO[Unit] =
+  def insertPendingTestUser(user: PendingTestUser): Fx[Unit] =
     sql"INSERT INTO usr(email, confirmation_token, confirmation_sent_at) VALUES(${user.email.value}, ${user.token}, ${user.tokenCreatedAt})"
       .update.execute.transact(xa)
 
-  def deleteTestUser(u: TestUser): IO[Unit] =
-    IO(u._id) flatMap {
-      case None => IO.ioUnit
+  def deleteTestUser(u: TestUser): Fx[Unit] =
+    Fx(u._id) flatMap {
+      case None => Fx.unit
       case Some(id) => deleteUser(id.value).map(_ => u._id = None)
     }
 
-  def deletePendingTestUser(u: PendingTestUser): IO[Unit] =
+  def deletePendingTestUser(u: PendingTestUser): Fx[Unit] =
     deleteUserByEmail(u.email.value)
 
-  def deleteUser(id: Long): IO[Unit] =
+  def deleteUser(id: Long): Fx[Unit] =
     sql"DELETE FROM usrh_name WHERE usr_id = $id".update.run.transact(xa) >>
     sql"DELETE FROM usrd WHERE usr_id = $id".update.run.transact(xa) >>
     sql"DELETE FROM usr WHERE id = $id".update.execute.transact(xa)
 
-  def deleteUserByEmail(email: String): IO[Unit] = {
-    val q: IO[Option[Long]] = sql"SELECT id FROM usr WHERE email = $email".query[Long].option.transact(xa)
-    q.flatMap(_.fold(IO.ioUnit)(deleteUser))
+  def deleteUserByEmail(email: String): Fx[Unit] = {
+    val q: Fx[Option[Long]] = sql"SELECT id FROM usr WHERE email = $email".query[Long].option.transact(xa)
+    q.flatMap(_.fold(Fx.unit)(deleteUser))
   }
 }

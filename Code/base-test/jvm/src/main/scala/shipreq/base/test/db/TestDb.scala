@@ -1,15 +1,15 @@
 package shipreq.base.test.db
 
 import java.util.concurrent.locks.Lock
-import scalaz.effect.IO
 import scalaz.syntax.apply._
 import shipreq.base.db.{DbAccess, DbConfig}
+import shipreq.base.util.FxModule._
 import shipreq.base.util._
 
 object TestDb extends TestDb
 
 trait TestDb extends DbTemplate with TestDbUsageDefaults[Usable[SingleConnectionXA]] {
-  lazy val (dbCfg, dbCfgReport) = DbConfig.config.withReport.run(Props.sources).unsafePerformIO().getOrDie()
+  lazy val (dbCfg, dbCfgReport) = DbConfig.config.withReport.run(Props.sources).unsafeRun().getOrDie()
   // println(dbCfgReport.reportUsed)
   lazy val dbAccess = DbAccess.fromCfgWithoutPool(dbCfg)
 
@@ -21,8 +21,8 @@ trait TestDb extends DbTemplate with TestDbUsageDefaults[Usable[SingleConnection
     super.unsafeInit()
   }
 
-  protected final val cleanIfRequired: IO[Unit] =
-    IO {
+  protected final val cleanIfRequired: Fx[Unit] =
+    Fx {
       if (cleanRequired) {
         log.debug("Cleaning DB.")
         unsafeClean()
@@ -34,20 +34,20 @@ trait TestDb extends DbTemplate with TestDbUsageDefaults[Usable[SingleConnection
   protected def unsafeClean(): Unit =
     ()
 
-  private val initIO = IO(init())
-  private val requireClean = IO(cleanRequired = true)
+  private val initFx = Fx(init())
+  private val requireClean = Fx(cleanRequired = true)
 
   override def apply(inTransaction: Boolean = true, mutex: Option[Lock] = None): Usable[SingleConnectionXA] =
     new Usable[SingleConnectionXA] {
-      override def apply[X](block: SingleConnectionXA => IO[X]): IO[X] =
-        initIO *> cleanIfRequired *> LockUtils.maybeInMutexIO(mutex) {
+      override def apply[X](block: SingleConnectionXA => Fx[X]): Fx[X] =
+        initFx *> cleanIfRequired *> LockUtils.maybeInMutexFx(mutex) {
           val xa = SingleConnectionXA(dbAccess.ds.getConnection)
-          val io =
+          val fx =
             if (inTransaction)
               xa.useAndRollback(wrapTransaction(xa, block(xa)))
             else
               xa.useWithAutoCommit(block(xa)) ensuring requireClean
-          io ensuring xa.close
+          fx ensuring xa.close
         }
     }
 
@@ -57,7 +57,7 @@ trait TestDb extends DbTemplate with TestDbUsageDefaults[Usable[SingleConnection
     SingleConnectionXA(dbAccess.ds.getConnection)
   }
 
-  def wrapTransaction[A](xa: SingleConnectionXA, io: IO[A]): IO[A] =
+  def wrapTransaction[A](xa: SingleConnectionXA, io: Fx[A]): Fx[A] =
     io
 }
 
@@ -74,26 +74,26 @@ trait TestDbUsageDefaults[+A] {
 }
 
 trait Usable[+A] {
-  def apply[X](f: A => IO[X]): IO[X]
+  def apply[X](f: A => Fx[X]): Fx[X]
 
   def runNow[X](f: A => X): X =
-    apply(a => IO(f(a))).unsafePerformIO()
+    apply(a => Fx(f(a))).unsafeRun()
 
-  def map[B](f1: A => IO[B]): Usable[B] = {
+  def map[B](f1: A => Fx[B]): Usable[B] = {
     val self = this
     new Usable[B] {
-      override def apply[X](f: B => IO[X]): IO[X] =
+      override def apply[X](f: B => Fx[X]): Fx[X] =
         self(f1(_).flatMap(f))
     }
   }
 
-  def before[B](f: A => IO[B]): Usable[A] =
+  def before[B](f: A => Fx[B]): Usable[A] =
     map[A](a => f(a).map(_ => a))
 
-  def after[B](f2: A => IO[B]): Usable[A] = {
+  def after[B](f2: A => Fx[B]): Usable[A] = {
     val self = this
     new Usable[A] {
-      override def apply[X](f: A => IO[X]): IO[X] =
+      override def apply[X](f: A => Fx[X]): Fx[X] =
         self(a => for {
           x <- f(a)
           _ <- f2(a)

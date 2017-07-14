@@ -1,6 +1,6 @@
 package shipreq.taskman.server.app
 
-import scalaz.effect.IO
+import shipreq.base.util.FxModule._
 
 /**
  * Performs any pending database migrations.
@@ -8,5 +8,5 @@ import scalaz.effect.IO
 object DatabaseMigration extends MainTemplate {
 
   def main(args: Array[String]): Unit =
-    withDatabase(_ => IO.ioUnit).unsafePerformIO()
+    withDatabase(_ => Fx.unit).unsafeRun()
 }

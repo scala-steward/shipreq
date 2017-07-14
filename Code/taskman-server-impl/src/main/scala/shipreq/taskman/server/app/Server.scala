@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.routing.FromConfig
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import scalaz.effect.IO
+import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.server.akka._
 import shipreq.taskman.server.TaskmanCtx
@@ -17,8 +17,8 @@ object Server extends MainTemplate {
 
   def main(args: Array[String]): Unit =
     withTaskmanCtx(ctx =>
-      IO(run(ctx)(s => Await.result(s.system.whenTerminated, Duration.Inf)))
-    ).unsafePerformIO()
+      Fx(run(ctx)(s => Await.result(s.system.whenTerminated, Duration.Inf)))
+    ).unsafeRun()
 
   def run(ctx: TaskmanCtx, testConnections: Boolean = true)(f: System => Unit): Unit = {
     if (testConnections) ctx.testConnections()

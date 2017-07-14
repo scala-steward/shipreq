@@ -102,8 +102,10 @@ object DispatchLogic {
         Config.get [String]("GOTO").map(_.fold(Urls.memberHome)(Url.Relative(_)))
       )(apply).withPrefix("SHIPREQ_DEV_")
 
-    def get(): Option[QuickDev] =
-      config.run(Props.sources).unsafePerformIO().toDisjunction.toOption
+    def get(): Option[QuickDev] = {
+      import FxModule._
+      config.run(Props.sources).unsafeRun().toDisjunction.toOption
+    }
   }
 }
 

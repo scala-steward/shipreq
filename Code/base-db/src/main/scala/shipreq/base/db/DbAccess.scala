@@ -11,7 +11,6 @@ import scalaz.effect.IO
 import shipreq.base.db.DbAccess.AbstractTransactor
 import shipreq.base.util.ErrorOr
 import shipreq.base.util.FxModule._
-import shipreq.base.util.effect.IoUtils._
 import shipreq.base.util.log.HasLogger
 import DbAccess.fxCapture
 
@@ -38,6 +37,7 @@ final case class DbAccess(cfg               : DbConfig,
   def desc: String =
     s"$host/$databaseName" + schema.map(":" + _).getOrElse("")
 
+  @deprecated("Use Fx!","")
   val io = abstractTransactor[IO]
   val fx = abstractTransactor[Fx]
 
@@ -81,17 +81,17 @@ object DbAccess extends HasLogger {
   }
 
   /** When using docker-compose, sometimes the DB image needs more time to initialise. This adds a small retry. */
-  def fromCfg(cfg: DbConfig): IO[DbAccess] = {
-    val delay = IO {
+  def fromCfg(cfg: DbConfig): Fx[DbAccess] = {
+    val delay = Fx {
       log.info("DbAccess initialisation failed. Retrying...")
       Thread.sleep(2000)
     }
     fromCfgWithoutRetry(cfg).retryOnException((n, _) => if (n < 4) Some(delay) else None)
   }
 
-  // This is in IO because HikariDataSource connects to the DB (and throws when unable) on construction.
-  def fromCfgWithoutRetry(cfg: DbConfig): IO[DbAccess] =
-    IO {
+  // This is in Fx because HikariDataSource connects to the DB (and throws when unable) on construction.
+  def fromCfgWithoutRetry(cfg: DbConfig): Fx[DbAccess] =
+    Fx {
       val ds = new HikariDataSource(cfg.hikariConfig)
       val xa = AbstractTransactor.hikari(ds)
       val migrator = SchemaMigrator(ds, cfg.schema)

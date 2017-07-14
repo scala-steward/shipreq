@@ -1,20 +1,20 @@
 package shipreq.taskman.server.app
 
 import java.time.Instant
-import scalaz.effect.IO
 import shipreq.taskman.api._
+import shipreq.base.util.Error
+import shipreq.base.util.ErrorOr.Implicits._
+import shipreq.base.util.FxModule._
 import shipreq.base.util.TaggedTypes._
 import shipreq.taskman.server._
 import shipreq.taskman.server.business._
-import shipreq.base.util.Error
-import shipreq.base.util.ErrorOr.Implicits._
 import MailingList.API._
 import Support.API._
 
 object Tmp extends MainTemplate {
 
   def main(args: Array[String]): Unit =
-    withTaskmanCtx(ctx => IO {
+    withTaskmanCtx(ctx => Fx {
       //ctx.testConnections()
 
       /*
@@ -56,5 +56,5 @@ object Tmp extends MainTemplate {
       val m = MsgDetail(MsgHeader(MsgId(0), Priority.Medium, now), Msg.RegistrationCompleted(UserId(0)), 0)
       val f = Sop.NotifySupportWorkerFailed(now, m ,Error("Test from Tmp", new RuntimeException))
       ctx.sopReifier(f).unsafePerformIO()
-    }).unsafePerformIO()
+    }).unsafeRun()
 }

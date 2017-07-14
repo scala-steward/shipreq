@@ -1,10 +1,10 @@
 package shipreq.taskman.server.app
 
-import scalaz.effect.IO
 import scalaz.{-\/, \/-}
 import scalaz.std.list._
 import shipreq.base.util.ErrorOr
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import shipreq.base.util.FxModule._
 import shipreq.base.util.TaggedTypes.JsonStr
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.{MsgType => T, _}
@@ -16,13 +16,13 @@ abstract class ManualSubmitBase extends HasLogger {
 
   def serialise  : Msg => JsonStr[Msg]
   def deserialise: (T, JsonStr[Msg]) => ErrorOr[Msg]
-  def runner     : (TaskmanApi[IO] => IO[Unit]) => IO[Unit]
+  def runner     : (TaskmanApi[Fx] => Fx[Unit]) => Fx[Unit]
 
   def main(args: Array[String]): Unit =
     parseA(args) match {
       case Ok(Nil) | Help => println(helpText)
       case ParseError(e)  => println(s"ERROR: $e"); System exit 1
-      case Ok(msgs)       => runner(submitAll(msgs)).unsafePerformIO()
+      case Ok(msgs)       => runner(submitAll(msgs)).unsafeRun()
     }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -103,13 +103,13 @@ abstract class ManualSubmitBase extends HasLogger {
   // -------------------------------------------------------------------------------------------------------------------
   // Submission
 
-  def submitAll(msgs: List[Msg]): TaskmanApi[IO] => IO[Unit] =
-    api => IO {
+  def submitAll(msgs: List[Msg]): TaskmanApi[Fx] => Fx[Unit] =
+    api => Fx {
       val msgCount = msgs.size
       log info ""
 
       log info "Submitting..."
-      val results = api.submitMsgs(msgs).unsafePerformIO()
+      val results = api.submitMsgs(msgs).unsafeRun()
       for (((m,id),i) <- results.zipWithIndex.map(_.map2(_+1))) {
         log info s"[$i/$msgCount] $id <= $m"
       }

@@ -10,6 +10,7 @@ import scalaz.syntax.catchable._
 import scalaz.syntax.traverse._
 import shipreq.base.db.DbAccess
 import shipreq.base.util.ErrorOr
+import shipreq.base.util.FxModule._
 import shipreq.base.util.effect.IoUtils
 import shipreq.taskman.api.{Msg, MsgId, Priority}
 import shipreq.taskman.api.impl.Serialisation
@@ -182,10 +183,10 @@ object SopImpl {
       cfgGetAllQ.list
   }
 
-  def configSource(dbAccess: DbAccess): config.Source[IO] =
-    config.Source[IO](
+  def configSource(dbAccess: DbAccess): config.Source[Fx] =
+    config.Source[Fx](
       config.SourceName(dbAccess.desc),
-      dbAccess.io.trans(Dao.cfgGetAll)
+      dbAccess.fx.trans(Dao.cfgGetAll)
         .attempt
         .map(_.bimap(_.toString, kvs => config.ConfigStore.stringMap(kvs.toMap))))
 }

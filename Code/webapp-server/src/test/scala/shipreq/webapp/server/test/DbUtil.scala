@@ -4,10 +4,10 @@ import doobie.imports._
 import japgolly.microlibs.stdlib_ext.AsciiTable
 import org.postgresql.util.PSQLException
 import scala.util.Random
-import scalaz.effect.IO
 import shipreq.base.db.DoobieHelpers._
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.db.SingleConnectionXA
+import shipreq.base.util.FxModule._
 import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.user.UserId
 import shipreq.webapp.server.db.SqlHelpers._
@@ -15,7 +15,7 @@ import shipreq.webapp.server.db._
 
 object DbUtil {
 
-  val use = TestDb.mapUsage(_.map(xa => IO(apply(xa))))
+  val use = TestDb.mapUsage(_.map(xa => Fx(apply(xa))))
 
   val Random = new Random()
 }

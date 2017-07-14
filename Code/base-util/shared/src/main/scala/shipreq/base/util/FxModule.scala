@@ -85,6 +85,31 @@ object FxModule {
       */
     def retryOnException(continue: (Int, Throwable) => Option[Fx[Unit]]): Fx[A] =
       fx.attempt.retry(identity)(continue).map(_.fold(throw _, identity))
+
+    //=============================
+    // ↓ Copied from MonadCatchIO ↓
+    //=============================
+
+    /** Executes the handler if an exception is raised. */
+    def except(handler: Throwable => Fx[A]): Fx[A] =
+      fx.attempt.flatMap {
+        case \/-(a) => Fx.pure(a)
+        case -\/(e) => handler(e)
+      }
+
+    /**Like "finally", but only performs the final action if there was an exception. */
+    def onException[B](action: Fx[B]): Fx[A] =
+      except(e =>
+        for {
+          _ <- action
+          a <- (throw e): Fx[A]
+        } yield a)
+
+    def ensuring[B](finallyClause: Fx[B]): Fx[A] =
+      for {
+        r <- onException(finallyClause)
+        _ <- finallyClause
+      } yield r
   }
 
 }

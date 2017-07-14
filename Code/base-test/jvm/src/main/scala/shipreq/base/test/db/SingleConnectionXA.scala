@@ -5,27 +5,28 @@ import doobie.imports._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.io.{PrintWriter, StringWriter}
 import java.sql.Connection
-import scalaz.effect.IO
 import scalaz.syntax.apply._
 import scalaz.syntax.catchable._
 import scalaz.{-\/, Catchable, Free, Monad, \/, \/-}
 import shipreq.base.db.DbAccess
 import shipreq.base.db.DbAccess.AbstractTransactor
+import shipreq.base.util.FxModule._
 import shipreq.base.test.db.SingleConnectionXA._
+import DbAccess.fxCapture
 
 object SingleConnectionXA {
   val DoNothing = Free.pure[ConnectionOp, Unit](())
   val BeginTran = setAutoCommit(false) *> setSavepoint
 }
 
-final case class SingleConnectionXA(realConn: Connection) extends Transactor[IO] {
+final case class SingleConnectionXA(realConn: Connection) extends Transactor[Fx] {
 
   val conn: Connection =
     new DelegateConnection(realConn) {
       override def close(): Unit = ()
     }
 
-  override val connect = IO(conn)
+  override val connect = Fx(conn)
   override def before = DoNothing
   override def after = DoNothing
   override def oops = DoNothing
@@ -49,29 +50,29 @@ final case class SingleConnectionXA(realConn: Connection) extends Transactor[IO]
       abstractTransactor,
       other.migrator)
 
-  def useWithAutoCommit[A](use: IO[A]): IO[A] =
+  def useWithAutoCommit[A](use: Fx[A]): Fx[A] =
     for {
       _ <- setAutoCommit(true).transact(this)
       r <- use
     } yield r
 
-  def useAndRollback[A](use: IO[A]): IO[A] =
+  def useAndRollback[A](use: Fx[A]): Fx[A] =
     for {
       p <- BeginTran.transact(this)
       r <- use ensuring rollback(p).transact(this)
     } yield r
 
-  def close: IO[Unit] =
-    IO {
+  def close: Fx[Unit] =
+    Fx {
       \/.fromTryCatchNonFatal(realConn.close()).leftMap(_.printStackTrace)
       ()
     }
 
   def !![A](c: ConnectionIO[A]): A =
-    c.transact(this).unsafePerformIO()
+    c.transact(this).unsafeRun()
 
   def ![A](c: ConnectionIO[A]): A =
-    c.transact(this).attempt.unsafePerformIO() match {
+    c.transact(this).attempt.unsafeRun() match {
       case \/-(a) => a
       case -\/(t) =>
         val stackTrace = t.stackTraceAsStringWithLineMod {

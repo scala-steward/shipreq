@@ -1,6 +1,6 @@
 package shipreq.webapp.server.test
 
-import scalaz.effect.IO
+import shipreq.base.util.FxModule._
 import shipreq.base.test.db.SingleConnectionXA
 import shipreq.webapp.server.app.Global
 
@@ -8,7 +8,7 @@ object TestDb extends shipreq.base.test.db.TestDb {
 
   override protected def unsafeInit(): Unit = {
     super.unsafeInit()
-    dbAccess.io.trans(DbTable.validate(dbAccess.absoluteSchema)).unsafePerformIO()
+    dbAccess.fx.trans(DbTable.validate(dbAccess.absoluteSchema)).unsafeRun()
     useInLift()
   }
 
@@ -23,19 +23,19 @@ object TestDb extends shipreq.base.test.db.TestDb {
     g3
   }
 
-  lazy val truncate: IO[Unit] =
-    dbAccess.io trans DbTable.truncateAll
+  lazy val truncate: Fx[Unit] =
+    dbAccess.fx trans DbTable.truncateAll
 
   override protected def unsafeClean(): Unit = {
     super.unsafeClean()
-    truncate.unsafePerformIO()
+    truncate.unsafeRun()
   }
 
-  override def wrapTransaction[A](xa: SingleConnectionXA, io: IO[A]): IO[A] =
+  override def wrapTransaction[A](xa: SingleConnectionXA, io: Fx[A]): Fx[A] =
     for {
-      orig <- IO(Global.db)
-      _ <- IO(Global.modify(_.copy(db = xa.dbAccess(dbAccess))))
-      a <- io ensuring IO(Global.modify(_.copy(db = orig)))
+      orig <- Fx(Global.db)
+      _ <- Fx(Global.modify(_.copy(db = xa.dbAccess(dbAccess))))
+      a <- io ensuring Fx(Global.modify(_.copy(db = orig)))
     } yield a
 
 }

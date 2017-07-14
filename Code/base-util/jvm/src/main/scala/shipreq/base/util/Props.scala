@@ -1,16 +1,16 @@
 package shipreq.base.util
 
 import japgolly.microlibs.config._
-import scalaz.effect.IO
 import scalaz.std.list.listInstance
+import shipreq.base.util.FxModule._
 
 object Props {
 
-  def fileSources: Sources[IO] =
-    Source.propFileOnClasspath[IO]("shipreq.properties", optional = true)
+  def fileSources: Sources[Fx] =
+    Source.propFileOnClasspath[Fx]("shipreq.properties", optional = true)
 
-  def sources: Sources[IO] =
-    Source.environment[IO] >
+  def sources: Sources[Fx] =
+    Source.environment[Fx] >
     fileSources >
-    Source.system[IO]
+    Source.system[Fx]
 }

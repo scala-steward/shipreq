@@ -8,7 +8,6 @@ import net.liftweb.common.Logger
 import net.liftweb.http._
 import net.liftweb.util.Props
 import net.liftweb.util.Props.RunModes
-import scalaz.effect.IO
 import scalaz.syntax.applicative._
 import shipreq.base.db.{DbAccess, DbConfig}
 import shipreq.base.util.FxModule._
@@ -66,7 +65,7 @@ class Boot {
     val plan = (DbConfig.config |@| ServerConfig.config |@| cfgRunMode).tupled.withReport
       .map { case ((a, b, r), z) => (AppConfig(a, b, z), r) }
 
-    plan.run(ShipReqProps.sources).unsafePerformIO().getOrDie()
+    plan.run(ShipReqProps.sources).unsafeRun().getOrDie()
   }
 
   def setRunMode(runMode: RunModes.Value): Unit = {
@@ -137,10 +136,10 @@ class Boot {
     AppSecurityRealm.init()
 
   def initDatabase(dbConfig: DbConfig): DbAccess = {
-    val access = DbAccess.fromCfg(dbConfig).unsafePerformIO()
+    val access = DbAccess.fromCfg(dbConfig).unsafeRun()
     logger.info(s"Connecting to DB: ${access.desc}")
     access.verifyConnectivity()
-    access.migrator.migrate[IO].unsafePerformIO()
+    access.migrator.migrate[Fx].unsafeRun()
     access
   }
 

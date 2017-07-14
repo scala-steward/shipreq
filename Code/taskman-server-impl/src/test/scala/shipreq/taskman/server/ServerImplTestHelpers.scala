@@ -3,6 +3,7 @@ package shipreq.taskman.server
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import scalaz.effect.IO
 import shipreq.base.test.db.{SingleConnectionXA, TestDb}
+import shipreq.base.util.FxModule._
 import shipreq.base.util.Props
 import shipreq.taskman.api.TaskmanApi
 import shipreq.taskman.server.ServerImplTestHelpers._
@@ -23,7 +24,7 @@ trait ServerImplTestHelpers {
 
   def reify[A](op: Sop[A]): IO[A] = sopReifier(op)
 
-  def runApi[A](f: TaskmanApi[IO] => IO[A]): A = f(taskmanApi).unsafePerformIO()
+  def runApi[A](f: TaskmanApi[Fx] => Fx[A]): A = f(taskmanApi).unsafeRun()
   def run[A](op: Sop[A]): A = reify(op).unsafePerformIO()
 }
 
@@ -36,7 +37,7 @@ object ServerImplTestHelpers {
   private[server] def cfgSrc = Props.sources
 
   lazy val (taskmanConfig, taskmanConfigReport) =
-    TaskmanConfig.config.withReport.run(cfgSrc).unsafePerformIO().getOrDie()
+    TaskmanConfig.config.withReport.run(cfgSrc).unsafeRun().getOrDie()
 
   def apply(_xa: SingleConnectionXA): ServerImplTestHelpers =
     new ServerImplTestHelpers {

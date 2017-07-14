@@ -2,6 +2,7 @@ package shipreq.webapp.server.app
 
 import utest._
 import shipreq.base.test.BaseTestUtil._
+import shipreq.base.util.FxModule._
 import shipreq.webapp.base.{AssetManifest, Urls, WebappConfig}
 import shipreq.webapp.base.WebappConfig.liftPath
 import shipreq.webapp.base.data.ProjectId
@@ -19,7 +20,7 @@ object LiveTest extends TestSuite {
 
   val prepare = onceUnit {
     LiveTestUtils.init()
-    userFixture.setup.unsafePerformIO()
+    userFixture.setup.unsafeRun()
     pid = Some(xa ! dbAlgebra.createEmptyProject(user1.id))
   }
 
@@ -96,7 +97,7 @@ object LiveTest extends TestSuite {
       xa ! DbTable.EventHash.truncate
       xa ! DbTable.Event.truncate
       xa ! DbTable.Project.truncate
-      userFixture.teardown.unsafePerformIO()
+      userFixture.teardown.unsafeRun()
     }
   }
 }
