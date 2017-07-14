@@ -91,6 +91,7 @@ object ShipReqBuild {
       _.enablePlugins(SbtJmh)
         .dependsOn(webappServer)
         .configure(Common.jvmSettings)
+        .settings(libraryDependencies += "io.monix" %% "monix-eval" % "2.3.0")
     }
 
     def jsSettings: Project => Project = {

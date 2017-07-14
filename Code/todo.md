@@ -81,7 +81,6 @@ Phase 2 (dev)
 * Rename webappClientHome now that its ambiguous in regards to the public pages
 * Only create a single Lift function per SPA instead of one per ServerSideProc
 * Add DB indicies
-* Add server logic benchmarks (using MockInterpreters?)
 * Switch from scalaz.effect.IO to Monix tasks
 * Restore AdminStats
 * Restore DiagnosticEndpoints
