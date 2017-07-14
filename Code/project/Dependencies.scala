@@ -133,7 +133,7 @@ object Dependencies {
   }
 
   object Specs2 {
-    private val mm = MultiModule.scala("org.specs2", "3.9.1")
+    private val mm = MultiModule.scala("org.specs2", "3.9.2")
     val combo = mm("specs2-core") ++ mm("specs2-scalacheck")
   }
 
@@ -148,21 +148,20 @@ object Dependencies {
     val servletApi = jvmOnly("javax.servlet" % "javax.servlet-api" % "3.1.0")
   }
 
-  val scalajsDom       = jsOnly("org.scala-js"                          %%%! "scalajs-dom"       % "0.9.2")
-//val scalajsJavaTime  = jsOnly("org.scala-js"                          %%%! "scalajs-java-time" % "0.1.0")
+  val scalajsDom       = jsOnly("org.scala-js"                          %%%! "scalajs-dom"       % "0.9.3")
   val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %%%! "benchmark"         % "0.2.4")
-  val scalajsJavaTime  = jsOnly("org.scala-js"                          %%%! "scalajs-java-time" % "0.2.1")
+  val scalajsJavaTime  = jsOnly("org.scala-js"                          %%%! "scalajs-java-time" % "0.2.2")
 
   val boopickle = jvmAndJs("me.chrons",                        "boopickle", "1.2.5")
   val parboiled = jvmAndJs("org.parboiled",                    "parboiled", "2.1.4")
   val shapeless = jvmAndJs("com.chuusai",                      "shapeless", "2.3.2")
   val μPickle   = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",   "custom-7")
-  val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.4.7")
+  val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.4.8")
 
   val okHttp      = jvmOnly("com.squareup.okhttp"         % "okhttp"                % "1.5.4")
   val httpCore    = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.6")
   val javaMail    = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.5.6")
-  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "42.1.1")
+  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "42.1.2")
   val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.6.3")
   val flyway      = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
   val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.2.3")
