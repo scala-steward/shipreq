@@ -27,6 +27,7 @@
     "gulp-minify-css": "^1.2.4",
     "json5": "^0.5.1",
     "less-loader": "^4.0.4",
+    "postcss": "^6.0.6",
     "react-addons-test-utils": "^15.4.2",
     "style-loader": "^0.18.2",
     "svgo": "^0.7.2",
