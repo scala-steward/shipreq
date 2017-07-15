@@ -79,6 +79,24 @@ const readLines = filename =>
 const usedIcons = new Set(readLines(files.iconsUsed));
 const unusedIcons = readLines(files.iconsAll).filter(s => !usedIcons.has(s));
 
+// TODO Be more specific by combining with component
+const unusedColours = [
+  // 'black',
+  // 'blue',
+  'brown',
+  // 'green',
+  // 'grey',
+  'olive',
+  'orange',
+  'pink',
+  'purple',
+  // 'red',
+  'teal',
+  'violet',
+  // 'white',
+  // 'yellow',
+];
+
 const unusedTransitions = [
   'scale',
   'fade',
@@ -170,9 +188,11 @@ function run() {
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // Remove rules
 
-      const ruleMatcher1 = anyRegexMatcher(unusedTransitions.map(n => new RegExp(`[" .]${n}(?:[" .]|$)`)))
-      const ruleMatcher2 = anyRegexMatcher(unusedIcons.map(n => new RegExp(`\\.icon${n.replace('.', '\\.')}(?:[^a-zA-Z]|$)`)))
-      const ruleMatcher = s => ruleMatcher1(s) || ruleMatcher2(s);
+      const ruleMatchers = [];
+      ruleMatchers.push(anyRegexMatcher(unusedTransitions.map(n => new RegExp(`[" .]${n}(?:[" .]|$)`))));
+      ruleMatchers.push(anyRegexMatcher(unusedIcons.map(n => new RegExp(`\\.icon${n.replace('.', '\\.')}(?:[^a-zA-Z]|$)`))));
+      ruleMatchers.push(anyRegexMatcher(unusedColours.map(n => new RegExp(`\\.${n}`))));
+      const ruleMatcher = s => ruleMatchers.exists(f => f(s));
       css.walkRules(rule => {
         // rule keys : raws,type,nodes,parent,source,selector,lastEach,indexes
         // console.log(Object.keys(rule.parent))
