@@ -8,6 +8,7 @@
 .*.swn
 .metadata
 .idea
+.tern-project
 
 # git worktree
 *.wt
