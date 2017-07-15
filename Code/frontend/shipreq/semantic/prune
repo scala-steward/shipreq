@@ -51,8 +51,8 @@ const unusedMisc = [
 ];
 
 const unusedTransitions = [
-  'scale',
-  'fade',
+  // 'scale', -- used indirectly in ReqTable by popups & modals
+  // 'fade', -- used indirectly in ReqTable by popups & modals
   'flip',
   'drop',
   'fly',
