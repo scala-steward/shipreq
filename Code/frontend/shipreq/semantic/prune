@@ -99,10 +99,22 @@ Array.prototype.forall = function(f) {
   return !this.exists(b => !f(b));
 }
 
+Array.prototype.filterNot = function(f) {
+  return this.filter(b => !f(b));
+}
+
+Array.prototype.partition = function(f) {
+  return [this.filter(f), this.filterNot(f)]; // Lol, "efficiency"?! Never heard of it!
+}
+
 // [Regex] => String => Bool
 function anyRegexMatcher(regexs) {
   return str => regexs.exists(r => r.test(str));
 }
+
+// [String] => String
+// eg. ['a', 'b'] => '(?:a|b)'
+const regexUnion = a => `(?:${a.join('|')})`
 
 const postcss = require('postcss');
 
@@ -164,11 +176,13 @@ function run() {
       // Remove rules
 
       const ruleMatchers = [].concat(manualRemovals);
-      ruleMatchers.push(anyRegexMatcher(unusedTransitions.map(n => new RegExp(`[" .]${n}(?:[" .]|$)`))));
-      ruleMatchers.push(anyRegexMatcher(unusedIcons.map(n => new RegExp(`\\.icon${n.replace('.', '\\.')}(?:[^a-zA-Z]|$)`))));
-      ruleMatchers.push(anyRegexMatcher(unusedColours.map(n => new RegExp(`\\.${n}`))));
-      ruleMatchers.push(anyRegexMatcher(unusedSizes.map(n => new RegExp(`\\.${n}(?:[^a-zA-Z]|$)`))));
-      ruleMatchers.push(anyRegexMatcher(unusedMisc.map(n => new RegExp(`(?:^|[^a-zA-Z])${n}(?:[^a-zA-Z]|$)`))));
+      ruleMatchers.push(anyRegexMatcher([
+        new RegExp(`[" .]${regexUnion(unusedTransitions)}(?:[" .]|$)`),
+        new RegExp(`\\.icon${regexUnion(unusedIcons.map(n => n.replace('.', '\\.')))}(?:[^a-zA-Z]|$)`),
+        new RegExp(`\\.${regexUnion(unusedColours)}`),
+        new RegExp(`\\.${regexUnion(unusedSizes)}(?:[^a-zA-Z]|$)`),
+        new RegExp(`(?:^|[^a-zA-Z])${regexUnion(unusedMisc)}(?:[^a-zA-Z]|$)`),
+      ]));
       const ruleMatcher = s => !/:not/.test(s) && ruleMatchers.exists(f => f(s));
       css.walkRules(rule => {
         // rule keys : raws,type,nodes,parent,source,selector,lastEach,indexes
@@ -177,8 +191,19 @@ function run() {
         let desc = rule.selector;
         if (rule.parent.type === 'atrule')
           desc = `${descAtRule(rule.parent)} ${desc}`;
-        const remove = rule.selectors.forall(ruleMatcher);
-        judge(rule, remove, desc);
+
+        const [removed, kept] = rule.selectors.partition(ruleMatcher);
+        const partial = kept.length > 0 && removed.length > 0;
+        const remove = kept.length === 0;
+        if (partial) {
+          const desc = a => a.join(", ");
+          // console.log(`From: ${rule.selectors}\nKeep: ${desc(kept)}\nDrop: ${desc(removed)}\n\n`)
+          rule.selectors = kept;
+          log(false, desc(removed));
+          log(true, desc(kept));
+        } else
+          judge(rule, remove, desc);
+
       });
 
     }
