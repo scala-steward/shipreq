@@ -10,8 +10,6 @@ const files = { //
   iconsUsed: 'shipreq/semantic/icons-used',
 };
 
-//       'compact',
-//
 //       'three',
 //       'four',
 //       'five',
@@ -20,8 +18,6 @@ const files = { //
 //       'eight',
 //       'nine',
 //       'ten',
-//
-//       'inverted',
 
 const fs = require('fs');
 
@@ -62,6 +58,14 @@ const unusedSizes = [
 
 const unusedMisc = [
   'radio',
+  'facebook',
+  'twitter',
+  'linkedin',
+  'youtube',
+  'instagram',
+  'google',
+  'pinterest',
+  'vk',
 ];
 
 const unusedTransitions = [
@@ -83,6 +87,7 @@ const unusedTransitions = [
 
 const manualRemovals = [
   s => /\.inverted/.test(s) && !/\.(?:dimmer|segment|menu)/.test(s),
+  s => /\.compact/.test(s) && !/\.(?:table)/.test(s),
 ];
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
