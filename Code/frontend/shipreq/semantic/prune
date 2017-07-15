@@ -10,33 +10,6 @@ const files = { //
   iconsUsed: 'shipreq/semantic/icons-used',
 };
 
-// const cssByeByeOptions = {
-//   rulesToRemove:
-//     //  ['.ui.red.button'],
-//
-//     [
-//       // 'red',
-//       'orange',
-//       'yellow',
-//       'olive',
-//       // 'green',
-//       'teal',
-//       // 'blue',
-//       'violet',
-//       'purple',
-//       'pink',
-//       'brown',
-//       'black',
-//
-//       'mini',
-//       'tiny',
-//       'small',
-//       'medium',
-//       // 'large',
-//       'big',
-//       'huge',
-//       'massive',
-//
 //       'compact',
 //
 //       'three',
@@ -48,28 +21,7 @@ const files = { //
 //       'nine',
 //       'ten',
 //
-//       'scale',
-//       'fade',
-//       'flip',
-//       'drop',
-//       'fly',
-//       'swing',
-//       'browse',
-//       'slide',
-//
-//       'jiggle',
-//       'flash',
-//       'shake',
-//       'pulse',
-//       'tada',
-//       'bounce',
-//
 //       'inverted',
-//     ]
-//     .map(c => new RegExp(`.*\\.${c}.*`)),
-//
-//   map: false, // source map
-// };
 
 const fs = require('fs');
 
@@ -95,6 +47,17 @@ const unusedColours = [
   'violet',
   // 'white',
   // 'yellow',
+];
+
+const unusedSizes = [
+  'mini',
+  // 'tiny',
+  'small',
+  'medium',
+  // 'large',
+  'big',
+  'huge',
+  'massive',
 ];
 
 const unusedTransitions = [
@@ -192,6 +155,7 @@ function run() {
       ruleMatchers.push(anyRegexMatcher(unusedTransitions.map(n => new RegExp(`[" .]${n}(?:[" .]|$)`))));
       ruleMatchers.push(anyRegexMatcher(unusedIcons.map(n => new RegExp(`\\.icon${n.replace('.', '\\.')}(?:[^a-zA-Z]|$)`))));
       ruleMatchers.push(anyRegexMatcher(unusedColours.map(n => new RegExp(`\\.${n}`))));
+      ruleMatchers.push(anyRegexMatcher(unusedSizes.map(n => new RegExp(`\\.${n}(?:[^a-zA-Z]|$)`))));
       const ruleMatcher = s => ruleMatchers.exists(f => f(s));
       css.walkRules(rule => {
         // rule keys : raws,type,nodes,parent,source,selector,lastEach,indexes
