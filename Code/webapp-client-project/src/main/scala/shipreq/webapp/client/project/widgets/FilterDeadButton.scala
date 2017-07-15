@@ -12,8 +12,8 @@ object FilterDeadButton {
     FilterDead.memo[VdomTag] { fd =>
 
       val (btnColour, iconColour, tipText) = fd match {
-        case HideDead => (Colour.Default, Colour.Grey , "Click to show deleted content.")
-        case ShowDead => (Colour.Red    , Colour.White, "Showing deleted content.")
+        case HideDead => (Colour.Default, Colour.Grey   , "Click to show deleted content.")
+        case ShowDead => (Colour.Red    , Colour.Default, "Showing deleted content.")
       }
 
       val icon  = Icon.TrashOutline.withSize(Size.Large).withColour(iconColour)
