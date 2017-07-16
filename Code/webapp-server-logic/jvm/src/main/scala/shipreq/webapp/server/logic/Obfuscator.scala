@@ -40,7 +40,14 @@ object Obfuscator {
       }
 
     val validate: Obfuscated[A] => Validity =
-      o => Valid when Pattern.matcher(o.value).matches()
+      o => Valid.when {
+        val n = o.value.length
+        n >= 4 && n <= 11 && o.value.forall(c =>
+          (c >= 'a' && c <= 'z')
+            || (c >= 'A' && c <= 'Z')
+            || (c >= '0' && c <= '9')
+        )
+      }
 
     val deobfuscate: Obfuscated[A] => String \/ A =
       o =>
@@ -60,8 +67,6 @@ object Obfuscator {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   private object Internal {
-    val Pattern = "^[a-zA-Z0-9]{4,11}$".r.pattern
-
     @inline def longHi(x: Long): Int = (x >>> 32).toInt
     @inline def longLo(x: Long): Int = x.toInt & 0xffffffff
     @inline def xorness(b: Int): Int = b ^ ((b & 0x7e7) << 12)

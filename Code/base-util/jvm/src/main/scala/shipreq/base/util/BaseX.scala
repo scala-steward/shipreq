@@ -1,6 +1,7 @@
 package shipreq.base.util
 
 import java.math.BigInteger
+import scala.reflect.ClassTag
 import BaseX._
 
 object BaseX {
@@ -13,10 +14,44 @@ object BaseX {
  */
 final class BaseX(val dictionaryStr: String, minStrLen: Int = 1) {
 
-  private val dictionary = dictionaryStr.toCharArray
-  private val charMap = dictionaryStr.toList.zipWithIndex.map(t => (t._1, BigInteger.valueOf(t._2))).toMap
+  private val dictionary: Array[Char] = dictionaryStr.toCharArray
+
+  private val dictMin: Char = dictionary.min
+  private val dictMax: Char = dictionary.max
+
+  private def cacheByChar[A: ClassTag](f: (Char, Int) => A): Char => A = {
+    val m = dictionaryStr.toList.zipWithIndex.map(t => (t._1, f(t._1, t._2))).toMap
+    val a = new Array[A](dictMax - dictMin + 1)
+    for ((c, b) <- m)
+      a(c - dictMin) = b
+    c => a(c - dictMin)
+  }
+
+  private def cacheByPower[A: ClassTag](f: Int => A): Int => A = {
+    val n = 11 // can't remember why but in Obfuscator.scala encoded strings are expected to always be [4,11] chars
+    val a = new Array[A](n)
+    for (i <- a.indices)
+      a(i) = f(i)
+    a.apply
+  }
+
+  // Cache 1: +100,000 ops/s
+  private val charMap: Char => BigInteger =
+    cacheByChar((_, i) => BigInteger.valueOf(i))
+
   val base = BigInteger.valueOf(dictionary.length)
-  private val offsetForMinStrLen = base.pow(minStrLen - 1)
+
+  // Cache 2: +1,000,000 ops/s
+  private val powerCache: Int => BigInteger =
+    cacheByPower(base.pow)
+
+  // Cache 3: +1,600,000 ops/s
+  private val decodeMap: (Char, Int) => BigInteger = {
+    val a = cacheByPower(i => cacheByChar((c, _) => charMap(c).multiply(powerCache(i))))
+    (c, i) => a(i)(c)
+  }
+
+  private val offsetForMinStrLen = powerCache(minStrLen - 1)
 
   def encode(longValue: Long): String = {
     var value = BigInteger.valueOf(longValue)
@@ -42,14 +77,11 @@ final class BaseX(val dictionaryStr: String, minStrLen: Int = 1) {
     val len_m_1 = encoded.length - 1
     var i = 0
     for (ch <- encoded) {
-      val digit = charMap(ch)
-      result = result.add(digit.multiply(base.pow(len_m_1 - i)))
+      result = result add decodeMap(ch, len_m_1 - i)
       i += 1
     }
-
     result = result.subtract(offsetForMinStrLen)
     if (result.compareTo(LongSpectrum) != -1) result = result.subtract(LongSpectrum)
-
     result.longValue
   }
 }
