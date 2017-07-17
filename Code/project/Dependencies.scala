@@ -133,7 +133,7 @@ object Dependencies {
   }
 
   object Specs2 {
-    private val mm = MultiModule.scala("org.specs2", "3.9.2")
+    private val mm = MultiModule.scala("org.specs2", "3.9.4")
     val combo = mm("specs2-core") ++ mm("specs2-scalacheck")
   }
 
@@ -161,7 +161,7 @@ object Dependencies {
   val okHttp      = jvmOnly("com.squareup.okhttp"         % "okhttp"                % "1.5.4")
   val httpCore    = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.6")
   val javaMail    = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.5.6")
-  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "42.1.2")
+  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "42.1.3")
   val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.6.3")
   val flyway      = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
   val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.2.3")
