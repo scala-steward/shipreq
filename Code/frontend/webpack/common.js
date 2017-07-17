@@ -13,7 +13,7 @@ const config = ({ mode }) => ({
 
   entry: {
 
-    semantic: './shipreq/semantic/require',
+    semantic: `./shipreq/semantic/require-${mode}`,
 
     public: entryPoints([
       mode == 'dev' && 'expose-loader?Perf!react-addons-perf',

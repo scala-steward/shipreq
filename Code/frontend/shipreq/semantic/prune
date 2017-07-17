@@ -58,7 +58,7 @@ const unusedTransitions = [
   'fly',
   'swing',
   'browse',
-  'slide',
+  // 'slide', -- used by dropdown component
   'jiggle',
   'flash',
   'shake',
