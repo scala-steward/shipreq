@@ -80,7 +80,6 @@ Phase 2
 * Re-evaluate config: some data is useless (i.e. key of custom text fields)
 
 ### Tech
-* Bug: Create-and-close closes on ajax error
 * Only create a single Lift function per SPA instead of one per ServerSideProc
 * Fix member layout using flex instead of whatever stupidity exists atm
 

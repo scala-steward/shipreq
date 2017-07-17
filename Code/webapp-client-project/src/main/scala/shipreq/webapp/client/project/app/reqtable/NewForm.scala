@@ -124,10 +124,10 @@ sealed trait NewForm {
           .filterDefined
           .toVector)
 
-    val create: Option[Callback] =
+    def create: Option[Callback => Callback] =
       validOutput(editableCols.iterator.map(_._2))
         .flatMap(createCmd(input, _))
-        .map(createFeature.create(_))
+        .map(cmd => onSuccess => createFeature.create(cmd, onSuccess))
   }
 
   /** @return None if any fields have invalid contents */
@@ -170,7 +170,7 @@ sealed trait NewForm {
           colour = Colour.Green,
           state = Button.State.enabledWhen(p.create.isDefined))
           .tag(*.formCreateButton,
-            ^.onClick -->? p.create)
+            ^.onClick -->? p.create.map(_(Callback.empty)))
 
       val createAndCloseButton: VdomElement =
         Button(
@@ -178,7 +178,7 @@ sealed trait NewForm {
           colour = Colour.Green,
           state = Button.State.enabledWhen(p.create.isDefined))
           .tag(*.formCreateButton,
-            ^.onClick -->? p.create.map(_ >> p.cancel))
+            ^.onClick -->? p.create.map(_(p.cancel)))
 
       <.section(*.formOuter,
         SemTable.celledCompactUnstackable(
