@@ -47,10 +47,12 @@ Backlog
 * Extract webapp-base-member-test
 * Add laws for webapp-server-logic and test in webapp-server
 * Change Taskman algebras from initial to final encodings
+* Rename webapp-client-{home ⇒ member} now that its ambiguous in regards to the public pages
+
 
 ------------------------------------------------------------------------------------------------------------------------
-Phase 2 (dev-complete)
-======================
+Phase 2
+=======
 
 ### Social
 * Presentation
@@ -65,25 +67,23 @@ Phase 2 (dev-complete)
 * Do more with errors, eg. ClientData.{init,applyEvents}
 * Proper 404/500 pages
 * Duplication between public.js and member.js
+* Add DB indicies
+* Restore AdminStats
+* Restore DiagnosticEndpoints
+* Remove SessionStats
 
-------------------------------------------------------------------------------------------------------------------------
-Phase 2 (dev)
-=============
-
-### Small'ish stuff
+### User-Functional Design
 * Add new column type: all tags (as opposed to non-field tags)
 * We have implications fields and implication columns.
   We don't seem to need all-imps vs non-field-imps...should tags not work the same way?
   Or is there similar deficiency in imps cols too?
 * Re-evaluate config: some data is useless (i.e. key of custom text fields)
+
+### Tech
 * Bug: Create-and-close closes on ajax error
 * Add info/help to MemberHome when no projects exist
-* Rename webappClientHome now that its ambiguous in regards to the public pages
 * Only create a single Lift function per SPA instead of one per ServerSideProc
-* Add DB indicies
-* Restore AdminStats
-* Restore DiagnosticEndpoints
-* Remove SessionStats
+* Fix member layout using flex instead of whatever stupidity exists atm
 
 ### New Features
 * User profile page
