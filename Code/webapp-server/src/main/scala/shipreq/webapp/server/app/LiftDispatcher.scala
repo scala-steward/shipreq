@@ -27,16 +27,18 @@ final class LiftDispatcher(global: Global) {
 
   private[this] final val liftPathPart = WebappConfig.liftPath
 
-  @inline private def isLiftRequest(r: LiftReq): Boolean = {
-    val pp = r.path.partPath
+  /** Is a request by/to Lift (eg. Ajax, Comet) */
+  private def isLiftRequest(r: LiftReq): Boolean = {
+    val pp = r.path.partPath // path separated by slashes
     pp.nonEmpty && pp.head == liftPathPart
   }
 
+  private def noFileExtension(r: LiftReq): Boolean =
+    r.path.suffix.isEmpty && // Fast path
+      r.request.uri.indexOf('.') == -1 // Because r.path.suffix is empty when more than one '.' exists
+
   def dispatchPF: LiftRules.DispatchPF = {
-    case r
-      if r.path.suffix.isEmpty // Only handle requests with no file extension
-      && !isLiftRequest(r)     // Exclude requests by/to Lift
-      => dispatchLiftReq(r)
+    case r if noFileExtension(r) && !isLiftRequest(r) => dispatchLiftReq(r)
   }
 
   val logic: DispatchLogic[Fx] = {

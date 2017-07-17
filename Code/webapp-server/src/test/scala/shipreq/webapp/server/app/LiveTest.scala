@@ -93,6 +93,12 @@ object LiveTest extends TestSuite {
       ()
     }
 
+    // Lift parses x.y.z as having no extension
+    'sourceMaps {
+      get("/blah.js.map").assertStatus(404)
+      ()
+    }
+
     'teardown {
       xa ! DbTable.EventHash.truncate
       xa ! DbTable.Event.truncate
