@@ -11,8 +11,6 @@ Backlog
   * The popup is far away from the textarea
   * Ideally replace jquery-textcomplete with textcomplete (problems encountered)
   * Maybe write my own based on React
-* Improve load times, maybe defer stuff? Or maybe on-demand loading?
-  * Katex.js can be loaded on demand. Only the CSS is required for rendering.
 
 ### Nice UI
 * Cfg Fields
@@ -81,8 +79,10 @@ Phase 2
 
 ### Tech
 * Only create a single Lift function per SPA instead of one per ServerSideProc
-* Fix member layout using flex instead of whatever stupidity exists atm
 * Switch to textcomplete
+* Improve load times, maybe defer stuff? Or maybe on-demand loading?
+  * Katex.js can be loaded on demand. Only the CSS is required for rendering.
+  * Create and use HomeSpaLoader
 
 ### New Features
 * User profile page

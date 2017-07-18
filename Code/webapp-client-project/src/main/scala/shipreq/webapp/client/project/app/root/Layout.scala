@@ -54,11 +54,14 @@ object Layout {
     }
 
   private def render(p: Props): VdomElement =
-    <.div(
-      FilterHelp.modal.render,
-      RichTextEditorHelp.modal.render,
-      MemberNavBar.Props(p.username, navBarLeft(p.page, p.project, p.rc)).render,
-      p.content)
+    MemberLayout.Props(
+      MemberNavBar.Props(p.username, navBarLeft(p.page, p.project, p.rc)),
+      <.div(
+        _,
+        FilterHelp.modal.render,
+        RichTextEditorHelp.modal.render,
+        p.content))
+      .render
 
   val Component = ScalaFnComponent(render)
 }

@@ -36,20 +36,20 @@ object BaseStyles extends StyleSheet.Inline {
     def glowOutline = styleS(BoxShadow, outline(solid, 1 px, BorderColour))
     def glowBorder = styleS(BoxShadow, border(solid, 1 px, BorderColour))
   }
+  focus // eager eval
 
   object editor {
     val backgroundColor = c"#fffad7" // = rgba(255, 227, 58, .2)
     val borderColor = rgba(239, 207, 9, .6)
   }
+  editor // eager eval
 
   val inlineEdit = style(
     &.hover(
       cursor.pointer,
       backgroundColor(editor.backgroundColor).important))
 
-  val projectItems = new ProjectItems
-  final class ProjectItems {
-
+  object projectItems {
     def vspace = 2 rem
 
     val item = style(
@@ -87,6 +87,7 @@ object BaseStyles extends StyleSheet.Inline {
       lineHeight(1 em),
       color(rgba(0, 0, 0, 0.6)))
   }
+  projectItems // eager eval
 
   val textEditor = styleF(EditorState.domain) { state =>
     styleS(
@@ -163,9 +164,7 @@ object BaseStyles extends StyleSheet.Inline {
   private def editorInstructionMarginV = 0.4 em
 
   // ctrl-enter to save, esc to cancel.
-  val editorInstructions = new EditorInstructions
-  class EditorInstructions {
-
+  object editorInstructions {
     private def textColour = color(c"#a4a6a8")
 
     val container = style(
@@ -196,28 +195,39 @@ object BaseStyles extends StyleSheet.Inline {
       cursor.pointer,
       &.hover(color(hoverColour)))
   }
+  editorInstructions // eager eval
 
   def pageMargin = 1 rem
   def pageMarginStr = "1rem"
 
-  val containerFull = style(
-    margin.horizontal(pageMargin),
-    marginBottom(pageMargin))
-
-  val navBarContainer =
-    ^^.marginBottom := "5rem"
-
-  val breadcrumbDivider = TagMod(
-    ^^.color       := "#ddd",
-    ^^.marginLeft  := "0.8em",
-    ^^.marginRight := "0.8em")
-
   val containerLarge = TagMod(
-    ^^.marginLeft   := "auto",
-    ^^.marginRight  := "auto",
-    ^^.marginBottom := pageMarginStr,
-    ^^.paddingLeft  := "1em",
-    ^^.paddingRight := "1em",
-    ^^.maxWidth     := "calc(723px + 2em)",
-    ^^.width        := "100%")
+    ^^.marginLeft.auto,
+    ^^.marginRight.auto,
+    ^^.maxWidth := s"calc(723px + $pageMarginStr + $pageMarginStr)")
+
+  def containerFull = EmptyVdom
+
+  object layout {
+    val root = TagMod(
+      ^^.display.flex,
+      ^^.flexDirection.column,
+      ^^.alignItems.stretch,
+      ^^.minHeight := "100%")
+
+    val navMenu = TagMod(
+      ^^.borderRadius := "0")
+
+    val navBreadcrumbDivider = TagMod(
+      ^^.color       := "#ddd",
+      ^^.marginLeft  := "0.8em",
+      ^^.marginRight := "0.8em")
+
+    val main = TagMod(
+      ^^.flex         := "1",
+      ^^.marginTop    := pageMarginStr,
+      ^^.marginBottom := pageMarginStr,
+      ^^.padding      := s"0 $pageMarginStr",
+      ^^.width        := "100%")
+  }
+  layout // eager eval
 }

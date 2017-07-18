@@ -11,7 +11,7 @@ import shipreq.webapp.client.project.app.root.Routes.Page
 import shipreq.webapp.client.project.test._
 
 class ProjectHomeObs($: HtmlDomZipper) {
-  private val projectArea = $(">*", 1 of 2)
+  private val projectArea = $(">section", 1 of 2)
 
   val projectNameViewDom: Option[html.Element] =
     projectArea.collect01("h1").asHtml.doms

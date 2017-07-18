@@ -40,8 +40,8 @@ object ProjectSpaTestDsl {
   case class Ref(cd: TestClientData, svr: MockServer, tester: ComponentTester[Props, State, _]) {
     def observe(): Obs = {
       val $ = tester.component.htmlDomZipper
-      val nav = new NavObs($("nav:contains('Logout')"))
-      def inner = $(">*", 2 of 2) // navBar & body
+      val nav = new NavObs($(">nav"))
+      val inner = $(">div")(">div,>main")
 
       val empty: Obs = {
         val e = Left("Chosen page is: " + nav.page)

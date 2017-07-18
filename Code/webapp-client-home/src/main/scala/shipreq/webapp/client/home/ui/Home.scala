@@ -7,13 +7,11 @@ import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.webapp.base.data.{DataValidators, ProjectMetaData}
-import shipreq.webapp.base.user.Username
-import shipreq.webapp.base.protocol.HomeSpaProtocols
-import shipreq.webapp.base.{ClientConfig, WebappConfig}
 import shipreq.webapp.base.feature.{AsyncFeature, EditorStatus}
-import shipreq.webapp.base.protocol.ClientProtocol
-import shipreq.webapp.base.ui.{BaseStyles, MemberNavBar, PlainTextEditor, ProjectItem}
+import shipreq.webapp.base.protocol.{ClientProtocol, HomeSpaProtocols}
+import shipreq.webapp.base.ui._
 import shipreq.webapp.base.ui.semantic.{Breadcrumb, Colour, Icon, Message}
+import shipreq.webapp.base.{ClientConfig, WebappConfig}
 
 object Home {
   final case class Props(data: HomeSpaProtocols.InitData, cp: ClientProtocol) {
@@ -45,14 +43,24 @@ object Home {
               i => onSuccess >> setCreateProjectText("") >> addProject(i),
               _ consumeAnd onFailure)))
 
-    def render(p: Props, s: State): VdomElement =
-      HomeContent.Props(
-        p.data.username,
-        s.projects,
-        StateSnapshot.withReuse(s.createProjectText)(setCreateProjectText),
-        s.createProjectAAS,
-        createProjectIO)
-        .render
+    val navBarLeft: MemberNavBar.LeftProps =
+      Reusable.byRef(Breadcrumb.Item.Div(ClientConfig.BreadcrumbNameMemberHome) :: Nil)
+
+    def render(p: Props, s: State): VdomElement = {
+      val navBar = MemberNavBar.Props(p.data.username, navBarLeft)
+
+      def mainContent(m: TagMod): VdomElement =
+        HomeContent.Props(
+          s.projects,
+          StateSnapshot.withReuse(s.createProjectText)(setCreateProjectText),
+          s.createProjectAAS,
+          createProjectIO,
+          m)
+          .render
+
+      MemberLayout.Props(navBar, mainContent).render
+    }
+
   }
 
   val Component = ScalaComponent.builder[Props]("Home")
@@ -65,24 +73,21 @@ object Home {
 
 object HomeContent {
 
-  final case class Props(username         : Username,
-                         projects         : List[ProjectMetaData],
+  final case class Props(projects         : List[ProjectMetaData],
                          createProjectText: StateSnapshot[String],
                          createProjectAS  : AsyncFeature.Read.D0[String],
-                         createProjectIO  : String => Callback) {
+                         createProjectIO  : String => Callback,
+                         tagMod           : TagMod) {
     @inline def render = Component(this)
   }
 
   final class Backend($: BackendScope[Props, Unit]) {
 
-    val navBarLeft: MemberNavBar.LeftProps =
-      Reusable.byRef(Breadcrumb.Item.Div(ClientConfig.BreadcrumbNameMemberHome) :: Nil)
 
     val inputMod: TagMod =
       TagMod(^.placeholder := "New project name", Styles.createProjectInput)
 
     def render(p: Props): VdomElement = {
-      val menu = MemberNavBar.Props(p.username, navBarLeft).render
 
       val noProjects = p.projects.isEmpty
 
@@ -117,11 +122,11 @@ object HomeContent {
         <.div(Styles.projectList,
           p.projects.sortBy(_.name).toTagMod(ProjectItem.AsLink.Component(_)))
 
-      <.div(
-        menu,
-        <.main(BaseStyles.containerLarge,
-          createProject,
-          if (noProjects) noProjectGreeting else projectList))
+      <.main(
+        BaseStyles.containerLarge,
+        p.tagMod,
+        createProject,
+        if (noProjects) noProjectGreeting else projectList)
     }
   }
 

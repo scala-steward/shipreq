@@ -9,6 +9,7 @@ import shipreq.webapp.base.{AssetManifest, Urls, WebappConfig}
 import shipreq.webapp.base.ClientConfig
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.ui.semantic.{Breadcrumb, Dropdown, Icon, Menu, SemExtAny}
+import BaseStyles.{layout => *}
 
 /** At top of member (logged-in) screens:
   *
@@ -35,7 +36,9 @@ object MemberNavBar {
     Reusable.byRef(Nil)
 
   private val menuStyle =
-    Menu.Style(Menu.Attr.Borderless + Menu.Attr.Fixed + Menu.Attr.Inverted)
+    Menu.Style(
+      attr = Menu.Attr.Borderless + Menu.Attr.Inverted,
+      tagMod = *.navMenu)
 
   private val itemLogo =
     Menu.Item.Div(
@@ -67,9 +70,7 @@ object MemberNavBar {
         itemLogo :: leftBreadcrumb :: Nil,
         rightDropdown :: Nil)
 
-      <.nav(
-        BaseStyles.navBarContainer,
-        menu.render)
+      <.nav(menu.render)
     }
   }
 
@@ -90,5 +91,5 @@ object MemberNavBar {
   val Divider =
     Breadcrumb.Item.DividerIcon(
       Icon.AngleRight,
-      BaseStyles.breadcrumbDivider)
+      *.navBreadcrumbDivider)
 }

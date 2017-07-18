@@ -32,10 +32,11 @@ object Menu {
 //    implicit def univEq: UnivEq[Type] = UnivEq.derive
 //  }
 
-  case class Style(attr: Multiple[Attr] = Multiple.empty,
-                   size: Size           = Size.Default) {
+  case class Style(attr  : Multiple[Attr] = Multiple.empty,
+                   size  : Size           = Size.Default,
+                   tagMod: TagMod         = EmptyVdom) {
 
-    val cont = divCls("ui menu" <+ attr <+ size)
+    val cont = divCls("ui menu" <+ attr <+ size)(tagMod)
   }
 
   sealed abstract class ItemState(c: ClassName) extends HasClass(c)
