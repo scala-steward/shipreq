@@ -7,7 +7,7 @@ import net.liftweb.http.{BadRequestResponse, InternalServerErrorResponse, LiftRe
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
-import shipreq.webapp.base.protocol.ServerSideProc
+import shipreq.webapp.base.protocol._
 
 object ServerProtocol extends HasLogger {
 
@@ -64,6 +64,6 @@ object ServerProtocol extends HasLogger {
     val fnName = S.formFuncName
     S.addFunctionMap(fnName, proc)
 
-    ServerSideProc(fnName, p)
+    ServerSideProc(ServerSideProcId(fnName), p)
   }
 }

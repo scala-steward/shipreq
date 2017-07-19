@@ -14,7 +14,7 @@ object TestClientProtocol {
     val onResponse: Throwable \/ proc.protocol.Output => Callback
 
     override def toString =
-      "Req[%08X]:%s(%s)".format(##, proc.key.trim, input)
+      "Req[%08X]:%s(%s)".format(##, proc.id.value.trim, input)
 
     def force[I, O](p2: ServerSideProc[I, O]) = {
 //      assertEq[ServerSideProc.Protocol[_, _]](proc.protocol, p2.protocol)

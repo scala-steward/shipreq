@@ -1277,11 +1277,11 @@ object RandomData {
     import ServerSideProc.Protocol._
     import RandomData.protocol._
 
-    val remoteFnKey =
-      Gen.alphaNumeric.string(4)
+    val remoteFnId: Gen[ServerSideProcId] =
+      Gen.alphaNumeric.string(4).map(ServerSideProcId.apply)
 
     def remoteFn[I, O](f: ServerSideProc.Protocol[I, O]): Gen[ServerSideProc[I, O]] =
-      remoteFnKey.map(ServerSideProc(_, f))
+      remoteFnId.map(ServerSideProc(_, f))
 
     def projectSpaInitAsyncData: Gen[ProjectSpaProtocols.InitAsyncData] =
       for {

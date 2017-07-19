@@ -12,7 +12,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.user._
 import shipreq.webapp.base.hash.HashRec
-import shipreq.webapp.base.protocol.ServerSideProc
+import shipreq.webapp.base.protocol.{ServerSideProc, ServerSideProcId}
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.server.ServerConfig
 
@@ -285,11 +285,11 @@ final class MockServer extends Server.Algebra[Name] {
     prevFn += 1
     val key = prevFn.toString
     fns = fns.updated(key, localFn)
-    ServerSideProc(key, p)
+    ServerSideProc(ServerSideProcId(key), p)
   }
 
   def run[I, O](p: ServerSideProc[I, O])(i: I): O = {
-    val f = fns(p.key).asInstanceOf[I => Name[O]]
+    val f = fns(p.id.value).asInstanceOf[I => Name[O]]
     f(i).value
   }
 

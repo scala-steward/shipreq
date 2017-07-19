@@ -71,7 +71,7 @@ object ClientProtocol {
                            (input     : I,
                             onResponse: Throwable \/ O => Callback) = Callback {
       import proc.protocol._
-      val url = LiftAjax.calcAjaxUrl(ajaxPath, null) + "?" + proc.key
+      val url = LiftAjax.calcAjaxUrl(ajaxPath, null) + "?" + proc.id.value
       val bin = PickleImpl.intoBytes(input)
       val res = postBinary(url, bin).map(UnpickleImpl(pickleOutput) fromBytes _)
       res.onComplete {

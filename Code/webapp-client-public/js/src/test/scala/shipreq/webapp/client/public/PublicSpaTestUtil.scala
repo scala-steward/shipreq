@@ -9,6 +9,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.ServerSideProc
 import shipreq.webapp.base.test.TestClientProtocol
 import shipreq.webapp.base.test.TestState._
+import shipreq.webapp.base.test.UnsafeTypes.autoServerSideProcId
 import shipreq.webapp.client.public.spa.{Page, PublicSpa}
 
 object PublicSpaTestUtil {

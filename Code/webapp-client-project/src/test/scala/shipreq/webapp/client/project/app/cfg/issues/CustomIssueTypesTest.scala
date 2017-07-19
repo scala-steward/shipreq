@@ -5,7 +5,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.test._
 import org.scalajs.dom.html
 import shipreq.webapp.base.data.{FilterDead, HideDead}
-import shipreq.webapp.base.protocol.ServerSideProc
+import shipreq.webapp.base.protocol.{ServerSideProc, ServerSideProcId}
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.CustomIssueTypeCrud
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.base.test.TestClientProtocol
@@ -20,7 +20,7 @@ object CustomIssueTypesTest extends TestSuite {
 
   override def tests = TestSuite {
     val filterDead = ReactTestVar[FilterDead](HideDead)
-    val remote     = ServerSideProc("x", CustomIssueTypeCrud)
+    val remote     = ServerSideProc(ServerSideProcId("x"), CustomIssueTypeCrud)
     val clientData = TestClientData(SampleProject.project)
     val cp         = new TestClientProtocol(true)
     val props      = new CustomIssueTypes.Props(cp, remote, clientData, filterDead.stateSnapshotWithReuse(), Usage.Show((_, _) => <.a))

@@ -52,7 +52,7 @@ abstract class BaseReusability {
     Reusability.byRef || Reusability.by(_.whole)
 
   implicit def reusabilityServerSideProc[I, O]: Reusability[ServerSideProc[I, O]] =
-    Reusability.by(_.key)
+    Reusability.by(_.id.value)
 
   //implicit def reusabilityValidation[S, I, C, V]: Reusability[Validator[S, I, C, V]] =
   //  Reusability.byRef
