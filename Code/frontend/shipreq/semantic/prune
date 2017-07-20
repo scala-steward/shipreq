@@ -10,15 +10,6 @@ const files = { //
   iconsUsed: 'shipreq/semantic/icons-used',
 };
 
-//       'three',
-//       'four',
-//       'five',
-//       'six',
-//       'seven',
-//       'eight',
-//       'nine',
-//       'ten',
-
 const fs = require('fs');
 
 const readLines = filename =>
@@ -48,6 +39,26 @@ const unusedMisc = [
   'google',
   'pinterest',
   'vk',
+
+  // Confirm:
+  // 'vertical',
+  // 'sortable',
+  // 'secondary',
+  // 'two',
+  // 'three',
+  // 'four',
+  // 'five',
+  // 'six',
+  // 'seven',
+  // 'eight',
+  // 'nine',
+  // 'ten',
+  // 'eleven',
+  // 'twelve',
+  // 'thirteen',
+  // 'fourteen',
+  // 'fifteen',
+  // 'sixteen',
 ];
 
 const unusedTransitions = [
@@ -122,24 +133,26 @@ function run() {
 
   const logCfg = { //
     reset: "\033[0m",
-    prefixRemove: "\033[31m[remove] \033[31;1m",
-    prefixRetain: "\033[30;1m[keep  ] ",
+    prefixRemove: "\033[31m[remove]\033[31;1m",
+    prefixRetain: "\033[30;1m[keep  ]",
+    sizeColour: keep => keep ? '\033[33;1m' : '\033[31m',
   };
 
   let logVar = '';
 
-  function log(keep, content) {
-    const c = content.replace(/\s+/g, ' ');
+  function log(keep, content, size) {
     const p = keep ? logCfg.prefixRetain : logCfg.prefixRemove;
-    const l = `${p}${c}${logCfg.reset}`;
+    const s = logCfg.sizeColour(keep) + ('' + size).padStart(6);
+    const c = content.replace(/\s+/g, ' ');
+    const l = `${s} ${p} ${c}${logCfg.reset}`;
     logVar += `${l}\n`;
-    // console.log(l);
+    console.log(l);
   }
 
   const descAtRule = rule => `@${rule.name} ${rule.params}`;
 
-  function judge(rule, remove, desc) {
-    log(!remove, desc);
+  function judge(rule, remove, desc, size) {
+    log(!remove, desc, size);
     if (remove)
       rule.remove();
   }
@@ -159,17 +172,18 @@ function run() {
       const keyframeMatcher = anyRegexMatcher(unusedTransitions.map(n => new RegExp(n, 'i')))
       css.walkAtRules(rule => {
 
+        let remove = false;
         if (/keyframes$/.test(rule.name)) {
-          const remove = keyframeMatcher(rule.params);
-          judge(rule, remove, descAtRule(rule));
+          remove = keyframeMatcher(rule.params);
         }
         //  else if (rule.name == 'media') {
         //   // Wouldn't really remove all media queries...
         //   // But removing *all* of them saves 10,819 bytes...
         //   logRemove(n);
         //   rule.remove();
-        // } else
-        //   console.log(`UNKNOWN ATRULE: ${rule.name}`);
+
+        const size = rule.toString().length;
+        judge(rule, remove, descAtRule(rule), size);
       });
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -192,6 +206,7 @@ function run() {
         if (rule.parent.type === 'atrule')
           desc = `${descAtRule(rule.parent)} ${desc}`;
 
+        const size = rule.toString().length;
         const [removed, kept] = rule.selectors.partition(ruleMatcher);
         const partial = kept.length > 0 && removed.length > 0;
         const remove = kept.length === 0;
@@ -199,10 +214,11 @@ function run() {
           const desc = a => a.join(", ");
           // console.log(`From: ${rule.selectors}\nKeep: ${desc(kept)}\nDrop: ${desc(removed)}\n\n`)
           rule.selectors = kept;
-          log(false, desc(removed));
-          log(true, desc(kept));
+          const size2 = removed.map(s => s.length + 1).reduce((a, b) => a + b) - 1;
+          log(false, desc(removed), size2);
+          log(true, desc(kept), size - size2);
         } else
-          judge(rule, remove, desc);
+          judge(rule, remove, desc, size);
 
       });
 
