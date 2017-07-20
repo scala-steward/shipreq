@@ -74,7 +74,6 @@ Phase 2
 * Re-evaluate config: some data is useless (i.e. key of custom text fields)
 
 ### Tech
-* Only create a single Lift function per SPA instead of one per ServerSideProc
 * Improve load times, maybe defer stuff? Or maybe on-demand loading?
   * Katex.js can be loaded on demand. Only the CSS is required for rendering.
   * Create and use HomeSpaLoader
