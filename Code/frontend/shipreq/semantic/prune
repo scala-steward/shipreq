@@ -129,11 +129,17 @@ const postcss = require('postcss');
 
 function run() {
 
-  const logCfg = { //
+  const logCfgColour = { //
     reset: "\033[0m",
     prefixRemove: "\033[31m[remove]\033[31;1m",
     prefixRetain: "\033[30;1m[keep  ]",
     sizeColour: keep => keep ? '\033[33;1m' : '\033[31m',
+  };
+  const logCfg = { //
+    reset: "",
+    prefixRemove: "[remove]",
+    prefixRetain: "[keep  ]",
+    sizeColour: keep => '',
   };
 
   let logVar = '';
@@ -144,7 +150,7 @@ function run() {
     const c = content.replace(/\s+/g, ' ');
     const l = `${s} ${p} ${c}${logCfg.reset}`;
     logVar += `${l}\n`;
-    console.log(l);
+    // console.log(l);
   }
 
   const descAtRule = rule => `@${rule.name} ${rule.params}`;
@@ -161,7 +167,7 @@ function run() {
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // Remove all comments
       css.walkComments(comment => {
-        judge(comment, true, comment.text);
+        judge(comment, true, comment.text, comment.text.length);
       });
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
