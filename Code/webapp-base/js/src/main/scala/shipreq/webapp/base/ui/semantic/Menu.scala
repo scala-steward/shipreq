@@ -17,7 +17,7 @@ object Menu {
     case object Inverted   extends Attr("inverted")
     case object Pointing   extends Attr("pointing")
     case object Secondary  extends Attr("secondary")
-    case object Vertical   extends Attr("vertical")
+    // case object Vertical   extends Attr("vertical") pruned from CSS
     implicit def univEq: UnivEq[Attr] = UnivEq.derive
   }
 

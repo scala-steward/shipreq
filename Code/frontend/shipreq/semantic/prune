@@ -39,26 +39,24 @@ const unusedMisc = [
   'google',
   'pinterest',
   'vk',
-
-  // Confirm:
-  // 'vertical',
-  // 'sortable',
-  // 'secondary',
-  // 'two',
-  // 'three',
-  // 'four',
-  // 'five',
-  // 'six',
-  // 'seven',
-  // 'eight',
-  // 'nine',
-  // 'ten',
-  // 'eleven',
-  // 'twelve',
-  // 'thirteen',
-  // 'fourteen',
-  // 'fifteen',
-  // 'sixteen',
+  'vertical',
+  'sortable',
+  // 'secondary', IN USE - reqtable/ViewsMenu.scala
+  // 'two',       IN USE - .ui.form .two.fields
+  // 'three',     IN USE - .ui.cards.three
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+  'thirteen',
+  'fourteen',
+  'fifteen',
+  'sixteen',
 ];
 
 const unusedTransitions = [
