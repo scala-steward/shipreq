@@ -9,6 +9,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.{AssetManifest, Urls}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
+import shipreq.webapp.base.util.Preload
 import shipreq.webapp.server.ServerConfig
 
 object DispatchLogic {
@@ -36,16 +37,19 @@ object DispatchLogic {
     private def linkHeader(params: TraversableOnce[String]): Header =
       ("Link", params.mkString(", "))
 
-    private def preloadCss(url: String): String = {
-      val x = s"<$url>; rel=preload; as=style"
-      if (url.contains("://")) x else s"$x; nopush"
+    private def preloadToHeader(p: Preload): String = {
+      var h = s"<${p.href}>; rel=${p.rel.value}; as=${p.as.value}"
+      if (p.`type`.nonEmpty) h = h + "; type=\"" + p.`type` + "\""
+      if (p.crossorigin)     h = h + "; crossorigin"
+      if (p.relativeHref)    h = h + "; nopush"
+      h
     }
 
     case object ServePublicSpa extends Response {
       override val headers: Headers = {
-        val cssUrls = AssetManifest.semanticCssUrls.filter(_ contains "css")
-        val links = cssUrls.map(preloadCss)
-        linkHeader(links) :: Nil
+        val preloads: List[Preload] =
+          AssetManifest.semanticCssUrls.filter(_ contains "css").map(Preload.style) // avoids waiting until semantic.css has been fetched and parsed
+        linkHeader(preloads map preloadToHeader) :: Nil
       }
     }
 
