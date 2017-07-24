@@ -19,7 +19,7 @@ object AssetManifest {
     "icons.svg#icons" ::
     Nil
 
-  def semanticJs = "/f1cf5857c2cdbff2eaac9ef5db6e2b8c.js"
+  def semanticJs = "/439840bb2a1360a10d17f19b937c0f50.js"
 
   def shipreqBannerSvg = "/878536f0a4ad0029794669f88dbf5f35.svg"
 

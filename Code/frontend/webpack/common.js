@@ -15,33 +15,15 @@ const config = ({ mode }) => ({
 
     semantic: `./shipreq/semantic/require-${mode}`,
 
-    public: entryPoints([
-      mode == 'dev' && 'expose-loader?Perf!react-addons-perf',
-      'expose-loader?React!react',
-      'expose-loader?ReactDOM!react-dom',
-      'expose-loader?loadjs!loadjs',
-    ]),
-
     member: entryPoints([
-      mode == 'dev' && 'expose-loader?Perf!react-addons-perf',
-      'expose-loader?React!react',
-      'expose-loader?ReactDOM!react-dom',
-      'expose-loader?ReactDOMServer!react-dom/server',
       'expose-loader?ReactCollapse!react-collapse',
-      'expose-loader?loadjs!loadjs',
       'expose-loader?moment!moment',
       'expose-loader?autosize!autosize',
       'expose-loader?TextComplete!textcomplete/lib/textcomplete',
       'expose-loader?TextCompleteTA!textcomplete/lib/textarea',
-      'expose-loader?jQuery!jquery', // for Semantic UI
-      'expose-loader?$!jquery', // for Semantic UI
     ]),
 
     admin: './shipreq/styles/admin.less',
-  },
-
-  externals: {
-    jquery: 'jQuery',
   },
 
   output: {

@@ -25,6 +25,18 @@ const makeConfig = ({ mode, name, sjsPath, htmlMinifyOptions }) => {
   const svgo = new Svgo();
   const webpackOutput = `/tmp/shipreq.webpack.${mode}`;
   const fromWebpack = o => Object.assign({ type: 'local', src: webpackOutput }, o);
+  const dotMin = mode == 'dev' ? '' : '.min';
+
+  const fromCdnjs = (lib, filename, manifest) => {
+    const libC = lib.cdn || lib;
+    const libN = lib.npm || lib;
+    return {
+      type: 'cdn',
+      url: `https://cdnjs.cloudflare.com/ajax/libs/${libC}/${moduleVer(libN)}/${filename}`,
+      integrity: { files: `node_modules/${libN}/dist/${filename}` },
+      manifest,
+    };
+  };
 
   return {
 
@@ -73,36 +85,33 @@ const makeConfig = ({ mode, name, sjsPath, htmlMinifyOptions }) => {
         fromWebpack({ files: 'icons.*', transitive: true }),
       ],
 
-      publicBundle: [
-        fromWebpack({ files: 'public.js' }),
-        'jquery',
-      ],
-
       public: [
-        'publicBundle',
+        'react',
+        'jquery',
         'semantic',
       ],
 
-      memberBundle: [
+      member: [
+        'reactDomSvr',
         fromWebpack({ files: 'member.js' }),
         'jquery',
-      ],
-
-      member: [
-        'memberBundle',
         'semantic',
         'katex',
       ],
 
-      jquery: {
-        type: 'cdn',
-        url: `https://cdnjs.cloudflare.com/ajax/libs/jquery/${moduleVer('jquery')}/jquery.min.js`,
-        integrity: { files: 'node_modules/jquery/dist/jquery.min.js' },
-      },
+      jquery: fromCdnjs('jquery', 'jquery.min.js'),
+
+      react: [
+        fromCdnjs('react', mode == 'dev' ? 'react-with-addons.js' : 'react.min.js'),
+        fromCdnjs({cdn: 'react', npm: 'react-dom'}, `react-dom${dotMin}.js`),
+      ],
+      reactDomSvr: ['react', fromCdnjs({cdn: 'react', npm: 'react-dom'}, `react-dom-server${dotMin}.js`)],
 
       katex: [
-        { type: 'local', src: 'node_modules/katex/dist', files: '*.min.{js,css}' },
-        { type: 'local', src: 'node_modules/katex/dist', files: 'fonts/**/*', transitive: true },
+        fromCdnjs({cdn: 'KaTeX', npm: 'katex'}, `katex.min.js`),
+        fromCdnjs({cdn: 'KaTeX', npm: 'katex'}, `katex.min.css`),
+        // { type: 'local', src: 'node_modules/katex/dist', files: '*.min.{js,css}' },
+        // { type: 'local', src: 'node_modules/katex/dist', files: 'fonts/**/*', transitive: true },
       ],
 
       vizJs: { type: 'local', files: 'vendor/viz.js', manifest: true },
