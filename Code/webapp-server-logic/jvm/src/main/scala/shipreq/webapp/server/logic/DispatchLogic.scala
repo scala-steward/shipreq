@@ -48,19 +48,7 @@ object DispatchLogic {
       }
     }
 
-    case object ServePublicSpa extends Response {
-      override val headers: Headers = {
-        var hints = List.empty[ResourceHint]
-
-        // Semantic uses Google Fonts which the host instructs not to cache
-        // preload is useless and results in double queries
-        val googleFonts = "https://fonts.googleapis.com"
-        require(AssetManifest.semanticCssUrls.exists(_ startsWith googleFonts), "Is Google Fonts not in use anymore?")
-        hints ::= ResourceHint.Preconnect(googleFonts)
-
-        linkHeader(hints.map(_.headerValue)) :: Nil
-      }
-    }
+    case object ServePublicSpa extends Response
 
     final case class ServeHomeSpa(user: User) extends Response
 

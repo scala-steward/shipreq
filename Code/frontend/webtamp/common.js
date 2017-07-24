@@ -1,6 +1,7 @@
 const
   CamelCase = require('camelcase'),
   Deasync = require('deasync'),
+  EscapeRegexp = require('escape-string-regexp'),
   Path = require('path'),
   Svgo = require('svgo'),
   Webtamp = require(process.env.WEBTAMP ? `${process.env.WEBTAMP}/src/main` : 'webtamp');
@@ -19,6 +20,8 @@ function svgoOptimizeSync(svgo, content) {
   if (res.error) throw Error(res.error)
   return res.data;
 }
+
+const semanticUiImport = 'https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic&subset=latin';
 
 const makeConfig = ({ mode, name, sjsPath, htmlMinifyOptions }) => {
 
@@ -81,6 +84,7 @@ const makeConfig = ({ mode, name, sjsPath, htmlMinifyOptions }) => {
 
     optional: {
       semantic: [
+        { type: 'cdn', url: semanticUiImport, as: 'style' },
         fromWebpack({ files: 'semantic.*', manifest: CamelCase }),
         fromWebpack({ files: 'icons.*', transitive: true }),
       ],
@@ -118,6 +122,13 @@ const makeConfig = ({ mode, name, sjsPath, htmlMinifyOptions }) => {
     },
 
     plugins: [
+
+      // Remove @import from Semantic UI
+      Webtamp.plugins.Modify.content(
+        /semantic.*css$/,
+        c => c.replace(new RegExp(`@import *url *\\(['" ]*${EscapeRegexp(semanticUiImport)}['" ]*\\)[ ;]*`), ''),
+        { failUnlessChange: true }
+      ),
 
       // Minify SVGs
       Webtamp.plugins.Modify.content(/\.svg$/, c => svgoOptimizeSync(svgo, c)),

@@ -10,7 +10,6 @@ object AssetManifest {
   def semanticCss = "/semantic.css"
 
   def semanticCssUrls: List[String] =
-    "https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic&subset=latin" ::
     "icons.eot" ::
     "icons.eot?#iefix" ::
     "icons.woff2" ::

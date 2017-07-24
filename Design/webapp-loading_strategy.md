@@ -16,7 +16,7 @@ Loading Strategy for Web Pages
 Specifically:
 =============
 
-* DispatchLogic adds Link header to preload Google font declared in Semantic CSS.
+* Extract Google Fonts @import from semantic.css and place in HTML for early discovery and fetching
 
 ### TODO
 
