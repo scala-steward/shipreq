@@ -17,13 +17,13 @@ Specifically:
 =============
 
 * Extract Google Fonts @import from semantic.css and place in HTML for early discovery and fetching
-* PublicSpa.{Login,Register2} prefetchs assets for MembersHome
+* PublicSpa.{Login,Register2} prefetches assets for MemberSpa
+* MemberSpa HTML prefetches ProjectSpa
+* ProjectSpa HTML prefetches WebWorker & GraphViz
 
 ### TODO
 
 * ClientSideProcInvoker must wait until async JS available
 * add async JS lib support in SJS, initially just for Katex
 * add loading pages for public & home?
-* HomeSpa prefetch ProjectSpa (either in HTML or SJS)
-* ProjectSpa prefetch [ww,viz]. (either in HTML or SJS)
 
