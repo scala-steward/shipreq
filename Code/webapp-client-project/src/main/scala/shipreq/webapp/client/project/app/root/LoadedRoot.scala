@@ -26,6 +26,7 @@ import shipreq.webapp.client.project.widgets.{ImplicationGraph, ProjectWidgets}
 import AsyncFeature.Implicits._
 import Routes.{Page, RouterCtl}
 import LoadedRoot._
+import shipreq.webapp.base.lib.LazyResources
 
 object LoadedRoot {
   case class Props(page: Page, routerCtl: RouterCtl)
@@ -242,5 +243,6 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitData, cp: ClientProtoco
     .initialState(State.init(cd))
     .renderBackend[Backend]
     .configure(Listenable.listen(_ => cd, _.backend.onProjectChange))
+    .componentDidMount($ => LazyResources.katex.onLoad(_ => $.forceUpdate, runIfAlreadyLoaded = false))
     .build
 }
