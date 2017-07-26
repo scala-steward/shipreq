@@ -27,6 +27,9 @@ Backlog
     * Should they even be supported?
     * Where/how should they be stored?
 
+### New features
+* Anonymous shares and read-only/presentation mode
+
 ### Tech
 * Stop using scalaz.std.anything which brings in too much other stuff;
   use custom instances that have the minimum typeclasses needed.
@@ -44,7 +47,7 @@ Backlog
 * Add laws for webapp-server-logic and test in webapp-server
 * Rename webapp-client-{home ⇒ member} now that its ambiguous in regards to the public pages
 * Make webtamp hash filenames of urls in Semantic CSS (icons.*)
-
+* Add DB indicies (don't look at code! metrics dashboard should indicate)
 
 ------------------------------------------------------------------------------------------------------------------------
 Phase 2
@@ -54,17 +57,51 @@ Phase 2
 * Presentation
 
 ### Devops & Deployment
-* New AWS/GCP accounts
-* Automate deployment
-* Add healthchecks
-* Send logs to service
-* Add proper metrics
-* Do more with errors, eg. ClientData.{init,applyEvents}
+* Document
+  * env/infra diagram
+  * each service's details
+  * everything below both wrt ShipReq employee, and as personal study notes
+* Services - create/confirm, cleanse, configure accounts
+  * Mailchimp
+  * ZenDesk
+  * GCP
+    * Compute
+    * DB
+    * Monitoring
+    * Logging
+    * Metrics
+    * Alerting
+    * Docker repo
+    * DNS
+    * SMTP
+  * Email addresses
+  * Google Analytics
+* Env
+  * Automate provisioning
+  * Automate deployment
+  * Automate releases
+  * Automate ops (dashboards, alerts, etc)
+* Devops
+  * Code to send logs
+  * Code to send metrics
+  * Revise all logging
+  * Determine and implement valuable metrics (tech & business)
+  * Add healthchecks
+  * Do more with errors (client & server), eg. ClientData.{init,applyEvents}
+  * Restore or delete AdminStats
+  * Restore or delete DiagnosticEndpoints
+  * Restore or delete SessionStats
+* Recovery
+  * Create app rollback plan
+  * Create db rollback plan
+* Security
+  * SSL in Docker - resolve TODO in WebappBuild.scala
+  * Upgrade JDK and audit crypto mechanisms
+
+### Misc
+* Remove the spa HTML template
 * Proper 404/500 pages
-* Add DB indicies
-* Restore AdminStats
-* Restore DiagnosticEndpoints
-* Remove SessionStats
+* Confirm caching directives for hash-named static assets & SJS output
 
 ### User-Functional Design
 * Add new column type: all tags (as opposed to non-field tags)
@@ -74,7 +111,6 @@ Phase 2
 * Re-evaluate config: some data is useless (i.e. key of custom text fields)
 
 ### New Features
-* User profile page
+* User profile page (and remove newsletter from Register2)
 * Issues
 * Saved views
-* Anonymous shares
