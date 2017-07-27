@@ -23,14 +23,14 @@ function svgoOptimizeSync(svgo, content) {
 
 const semanticUiImport = 'https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic&subset=latin';
 
-const makeConfig = ({ mode, name, sjsName, htmlMinifyOptions }) => {
+// SJS resources all go in /j/ as is configured in web.xml
+const sjsDir = 'j';
 
-  // static resources all go in /s/ as is configured in web.xml
-  const staticDir = 's';
+const makeConfig = ({ mode, name, sjsName, staticDir, htmlMinifyOptions }) => {
 
   const sjs = (name, manifest) => ({
     type: 'external',
-    path: `${staticDir}/${sjsName(name)}`,
+    path: `${sjsDir}/${sjsName(name)}`,
     manifest,
   });
 

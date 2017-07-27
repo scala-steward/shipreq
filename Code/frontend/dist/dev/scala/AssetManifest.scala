@@ -5,7 +5,7 @@ object AssetManifest {
 
   final case class CDN(href: String, integrity: Option[String])
 
-  def favicon = "/s/favicon.ico"
+  def favicon = "/assets/favicon.ico"
 
   def jqueryJs = CDN(
     href = "https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js",
@@ -21,9 +21,9 @@ object AssetManifest {
 
   def loadingSpinSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjMjJjIj48cGF0aCBvcGFjaXR5PSIuMjUiIGQ9Ik0xNiAwYTE2IDE2IDAgMCAwIDAgMzIgMTYgMTYgMCAwIDAgMC0zMm0wIDRhMTIgMTIgMCAwIDEgMCAyNCAxMiAxMiAwIDAgMSAwLTI0Ii8+PHBhdGggZD0iTTE2IDBhMTYgMTYgMCAwIDEgMTYgMTZoLTRBMTIgMTIgMCAwIDAgMTYgNHoiPjxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0icm90YXRlIiBmcm9tPSIwIDE2IDE2IiB0bz0iMzYwIDE2IDE2IiBkdXI9IjAuNXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIi8+PC9wYXRoPjwvc3ZnPg=="
 
-  def loadjs = "/s/loadjs.js"
+  def loadjs = "/assets/loadjs.js"
 
-  def memberLibBundleJs = "/s/member-lib-bundle.js"
+  def memberLibBundleJs = "/assets/member-lib-bundle.js"
 
   def reactDomJs = CDN(
     href = "https://cdnjs.cloudflare.com/ajax/libs/react/15.6.1/react-dom.js",
@@ -37,7 +37,7 @@ object AssetManifest {
     href = "https://cdnjs.cloudflare.com/ajax/libs/react/15.6.1/react-with-addons.js",
     integrity = Some("sha256-GdxdbWnN6rbFzpGfbpeXgpUk6njkre8gLdXTQ4OZF+o="))
 
-  def semanticCss = "/s/semantic.css"
+  def semanticCss = "/assets/semantic.css"
 
   def semanticCssUrls: List[String] =
     "icons.eot" ::
@@ -48,9 +48,9 @@ object AssetManifest {
     "icons.svg#icons" ::
     Nil
 
-  def semanticJs = "/s/semantic.js"
+  def semanticJs = "/assets/semantic.js"
 
-  def shipreqBannerSvg = "/s/shipreq-banner.svg"
+  def shipreqBannerSvg = "/assets/shipreq-banner.svg"
 
   def shipreqCircleDarkSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMTYuMzIiIGhlaWdodD0iMzE5LjMyNiI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJhIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiNlODY2MDAiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNlZWZmMjMiIHN0b3Atb3BhY2l0eT0iLjI2OCIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxlbGxpcHNlIGN4PSIxNDkuOTUiIGN5PSIxNTAuMDUiIHJ4PSIxNTguMTYiIHJ5PSIxNTkuNjYzIiBmaWxsPSIjZmZmIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg4LjIxIDkuNjEzKSIvPjxwYXRoIGQ9Ik0xNjUuNTYyIDE5OC40NzdsMTkuNDgyLTIxLjQzMS0xOS40ODIgMTEuODU2LTM1LjAwNS0yNS41MzQgMzUuMDA1IDM1LjEwOSIgZmlsbD0iI2E4ZWRmZiIgZmlsbC1ydWxlPSJldmVub2RkIi8+PGcgZmlsbD0iIzAwNWRiMyIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMTIyLjA3NSAyMDIuMDY3bDIuMDggMjIuNzEzLTU2LjUxNSAyMC4zNzcgMi4yMjItMjQuMjYyIDUyLjIxMy0xOC44MjhNMTE2LjE4NiAxMzcuNzJsMi4wNzggMjIuNzEtNDQuMzMyIDE1Ljk4NyAyLjIyMS0yNC4yNjEgNDAuMDMzLTE0LjQzNU04MS42OCA5MS43NjdoMzAuM2wuMzk1IDQuMzE2LTMyLjE1MiAxMS41OTQgMS40NTctMTUuOTFNOTYuODMgNzcuOTQ3SDgxLjY4YzAtOC40NTcgNi43ODItMTUuMzEzIDE1LjE1LTE1LjMxMyA4LjM2NiAwIDE1LjE0OCA2Ljg1NiAxNS4xNDggMTUuMzEzSDk2LjgzTTE2NC4xODggMTAuNzcyYzAgMTguOTI5IDEwLjM5NiA0MS45NjcgMjMuODk1IDY2Ljg5OGg5Mi43ODZjLTI1LjI0My0zOC40MDUtNjcuNTk2LTY0LjkyMi0xMTYuNjgxLTY2Ljg5OHptMzYuMzE1IDg5LjE4M2M0NC4yIDc3LjcxMiA5Ny41NjggMTY2LjkzLTM2LjMxNSAyMDguNDk0IDc4LjYyLTMuMTY3IDE0MS4zOTItNjguNTg3IDE0MS4zOTItMTQ4LjgzOCAwLTE3LjE4My0yLjk5Ny0zMy44NjMtOC41MS00OS40NGwtOTYuNTY3LTEwLjIxNnoiLz48L2c+PGcgZmlsbD0iIzAwMmQ1MSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBkPSJNMTE5LjEzIDE2OS44OTNsMi4wNzkgMjIuNzEzLTUwLjQyIDE4LjE4MSAyLjIxOC0yNC4yNjEgNDYuMTIzLTE2LjYzM00xMTMuMjQgMTA1LjU0NmwyLjA4IDIyLjcxLTM4LjI0MiAxMy43OTEgMi4yMjEtMjQuMjYyIDMzLjk0LTEyLjI0TTc0LjM4NiA4OC4xOTZoNDQuODg5di03LjE0M0g3NC4zODZ2Ny4xNDN6Ii8+PHBhdGggZD0iTTE1OC4yMDMgMTAuNjQ5YzEuMTg3IDAgMi4zOC4wMTIgMy41NTUuMDQyLTQ4LjM3MiA2Ljk3Ni0xMzAuNzQgMzYuNTY2LTEzMC43NCAxNDguOTIgMCA0OC4wOTIgMjUuOTQ3IDczLjc1IDY0LjUxNCA4NS4zMDVsMzAuMjUtMTAuODY0LS4xMTYtOS40NDMgMTcuOTMzLTEyLjI5IDE4LjE1OSAxMi4zODkuMTY0IDI5LjUyaC0uMTY0djU0LjMwOGMtMS4xNzUuMDMtMi4zNjguMDQyLTMuNTU1LjA0Mi04MS4zODMgMC0xNDcuMzY0LTY2LjY5Ni0xNDcuMzY0LTE0OC45NjcgMC04Mi4yNzggNjUuOTgxLTE0OC45NjIgMTQ3LjM2NC0xNDguOTYyIi8+PHBhdGggZD0iTTExOS43MDcgODQuNTIzbDE3NC42MTMgMTguNDkyYy0yLjYzOC02LjM5My01LjczLTEyLjU1NS05LjE5Ny0xOC40OTJIMTE5LjcwN3oiLz48L2c+PC9zdmc+"
 
@@ -64,13 +64,13 @@ object AssetManifest {
 
   def tileQuestionSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzNTg0IiBoZWlnaHQ9IjM1ODQiIHZpZXdCb3g9IjAgMCAzNTg0IDM1ODQiPjxkZWZzPjxmaWx0ZXIgaWQ9ImEiIHg9Ii0uMDc1IiB3aWR0aD0iMS4xNSIgeT0iLS4wNTQiIGhlaWdodD0iMS4xMDkiIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiI+PGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMjguOTQiLz48L2ZpbHRlcj48ZmlsdGVyIGlkPSJiIiB4PSItLjA3NSIgd2lkdGg9IjEuMTUiIHk9Ii0uMDU0IiBoZWlnaHQ9IjEuMTA5IiBjb2xvci1pbnRlcnBvbGF0aW9uLWZpbHRlcnM9InNSR0IiPjxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjI4Ljk0Ii8+PC9maWx0ZXI+PC9kZWZzPjxwYXRoIGQ9Ik0yODgwIDMwNDh2MjQwcTAgMTYtMTIgMjh0LTI4IDEyaC0yNDBxLTE2IDAtMjgtMTJ0LTEyLTI4di0yNDBxMC0xNiAxMi0yOHQyOC0xMmgyNDBxMTYgMCAyOCAxMnQxMiAyOHptMzE2LTYwMHEwIDU0LTE1LjUgMTAxdC0zNSA3Ni41cS0xOS41IDI5LjUtNTUgNTkuNXQtNTcuNSA0My41cS0yMiAxMy41LTYxIDM1LjUtNDEgMjMtNjguNSA2NXQtMjcuNSA2N3EwIDE3LTEyIDMyLjV0LTI4IDE1LjVoLTI0MHEtMTUgMC0yNS41LTE4LjVUMjU2MCAyODg4di00NXEwLTgzIDY1LTE1Ni41dDE0My0xMDguNXE1OS0yNyA4NC01NnQyNS03NnEwLTQyLTQ2LjUtNzR0LTEwNy41LTMycS02NSAwLTEwOCAyOS0zNSAyNS0xMDcgMTE1LTEzIDE2LTMxIDE2LTEyIDAtMjUtOGwtMTY0LTEyNXEtMTMtMTAtMTUuNS0yNXQ1LjUtMjhxMTYwLTI2NiA0NjQtMjY2IDgwIDAgMTYxIDMxdDE0NiA4M3E2NSA1MiAxMDYgMTI3LjV0NDEgMTU4LjV6IiBvcGFjaXR5PSIuMDI1IiBmaWx0ZXI9InVybCgjYSkiLz48cGF0aCBkPSJNMTA4OCAxMjU2djI0MHEwIDE2LTEyIDI4dC0yOCAxMkg4MDhxLTE2IDAtMjgtMTJ0LTEyLTI4di0yNDBxMC0xNiAxMi0yOHQyOC0xMmgyNDBxMTYgMCAyOCAxMnQxMiAyOHptMzE2LTYwMHEwIDU0LTE1LjUgMTAxdC0zNSA3Ni41cS0xOS41IDI5LjUtNTUgNTkuNXQtNTcuNSA0My41cS0yMiAxMy41LTYxIDM1LjUtNDEgMjMtNjguNSA2NXQtMjcuNSA2N3EwIDE3LTEyIDMyLjV0LTI4IDE1LjVIODA0cS0xNSAwLTI1LjUtMTguNVQ3NjggMTA5NnYtNDVxMC04MyA2NS0xNTYuNVQ5NzYgNzg2cTU5LTI3IDg0LTU2dDI1LTc2cTAtNDItNDYuNS03NFQ5MzEgNTQ4cS02NSAwLTEwOCAyOS0zNSAyNS0xMDcgMTE1LTEzIDE2LTMxIDE2LTEyIDAtMjUtOEw0OTYgNTc1cS0xMy0xMC0xNS41LTI1dDUuNS0yOHExNjAtMjY2IDQ2NC0yNjYgODAgMCAxNjEgMzF0MTQ2IDgzcTY1IDUyIDEwNiAxMjcuNXQ0MSAxNTguNXoiIG9wYWNpdHk9Ii4wMjUiIGZpbHRlcj0idXJsKCNiKSIvPjwvc3ZnPg=="
 
-  def vizJs = "/s/viz.js"
+  def vizJs = "/assets/viz.js"
 
-  def webappClientHomeJs = "/s/shipreq-home.js"
+  def webappClientHomeJs = "/j/shipreq-home.js"
 
-  def webappClientProjectJs = "/s/shipreq-project.js"
+  def webappClientProjectJs = "/j/shipreq-project.js"
 
-  def webappClientPublicJs = "/s/shipreq-public.js"
+  def webappClientPublicJs = "/j/shipreq-public.js"
 
-  def webappClientWwJs = "/s/shipreq-ww.js"
+  def webappClientWwJs = "/j/shipreq-ww.js"
 }

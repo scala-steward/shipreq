@@ -98,9 +98,6 @@ Phase 2
   * SSL in Docker - resolve TODO in WebappBuild.scala
   * Upgrade JDK and audit crypto mechanisms
 
-### Misc
-* Confirm caching directives for hash-named static assets & SJS output
-
 ### User-Functional Design
 * Add new column type: all tags (as opposed to non-field tags)
 * We have implications fields and implication columns.

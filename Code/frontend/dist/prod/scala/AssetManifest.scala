@@ -66,11 +66,11 @@ object AssetManifest {
 
   def vizJs = "/s/89ebc70c1db15261e3688b68ab62b513.js"
 
-  def webappClientHomeJs = "/s/h.js"
+  def webappClientHomeJs = "/j/h.js"
 
-  def webappClientProjectJs = "/s/p.js"
+  def webappClientProjectJs = "/j/p.js"
 
-  def webappClientPublicJs = "/s/a.js"
+  def webappClientPublicJs = "/j/a.js"
 
-  def webappClientWwJs = "/s/w.js"
+  def webappClientWwJs = "/j/w.js"
 }

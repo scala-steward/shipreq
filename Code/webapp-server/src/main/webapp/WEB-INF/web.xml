@@ -5,20 +5,67 @@
   version="2.5"
   xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
 
+    <!--
+    Caching.
+    * etags are content hashes. Client includes cached etag in GET, server responds 304 if etag still valid.
+    * Cache-Control:
+        * no-cache : client can cache (!) but must revalidate with each use. Good with etags
+        * must-revalidate : AFTER THE RESOURCE HAS EXPIRED, client must revalidate
+        * max-age=n : maximum time in seconds the response is allowed to be reused from the time of the request
+    -->
+
     <servlet>
-      <description>Serves static content using pre-gzipped resources when available.</description>
-      <servlet-name>static</servlet-name>
-      <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
-      <init-param><param-name>precompressed</param-name><param-value>br=.br,gzip=.gz</param-value></init-param>
-      <init-param><param-name>dirAllowed</param-name><param-value>false</param-value></init-param>
-      <init-param><param-name>etags</param-name><param-value>true</param-value></init-param>
-      <init-param><param-name>cacheControl</param-name><param-value>must-revalidate</param-value></init-param>
-      <init-param><param-name>maxCacheSize</param-name><param-value>16777216</param-value></init-param>
-      <load-on-startup>0</load-on-startup>
+        <servlet-name>static</servlet-name>
+        <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
+        <init-param>
+            <param-name>precompressed</param-name>
+            <param-value>br=.br,gzip=.gz</param-value>
+        </init-param>
+        <init-param>
+            <param-name>dirAllowed</param-name>
+            <param-value>false</param-value>
+        </init-param>
+        <init-param>
+            <param-name>etags</param-name>
+            <param-value>false</param-value>
+        </init-param>
+        <init-param>
+            <param-name>cacheControl</param-name>
+            <!-- Cache for 1 year without revalidation -->
+            <param-value>public,max-age=31536000</param-value>
+        </init-param>
+        <load-on-startup>0</load-on-startup>
     </servlet>
     <servlet-mapping>
         <servlet-name>static</servlet-name>
         <url-pattern>/s/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>sjs</servlet-name>
+        <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
+        <init-param>
+            <param-name>precompressed</param-name>
+            <param-value>br=.br,gzip=.gz</param-value>
+        </init-param>
+        <init-param>
+            <param-name>dirAllowed</param-name>
+            <param-value>false</param-value>
+        </init-param>
+        <init-param>
+            <param-name>etags</param-name>
+            <param-value>true</param-value>
+        </init-param>
+        <init-param>
+            <param-name>cacheControl</param-name>
+            <!-- Cache by etag and check etag on each request -->
+            <param-value>private,no-cache,must-revalidate</param-value>
+        </init-param>
+        <load-on-startup>0</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>sjs</servlet-name>
+        <url-pattern>/j/*</url-pattern>
     </servlet-mapping>
 
     <!-- Avoid TLD Scans. https://www.eclipse.org/jetty/documentation/current/quickstart-webapp.html -->
@@ -79,8 +126,6 @@
     <!-- =========================================================================================================== -->
 
     <filter>
-      <description>The Filter that intercepts lift calls</description>
-      <display-name>Lift Filter</display-name>
       <filter-name>LiftFilter</filter-name>
       <filter-class>net.liftweb.http.LiftFilter</filter-class>
     </filter>
