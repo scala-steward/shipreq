@@ -37,8 +37,12 @@ final class LiftDispatcher(global: Global) {
     r.path.suffix.isEmpty && // Fast path
       r.request.uri.indexOf('.') == -1 // Because r.path.suffix is empty when more than one '.' exists
 
+  private def hasHtmlFileExtension(r: LiftReq): Boolean =
+    r.request.uri endsWith ".html"
+
   def dispatchPF: LiftRules.DispatchPF = {
     case r if noFileExtension(r) && !isLiftRequest(r) => dispatchLiftReq(r)
+    case r if hasHtmlFileExtension(r)                 => () => Full(r.createNotFound)
   }
 
   val logic: DispatchLogic[Fx] = {

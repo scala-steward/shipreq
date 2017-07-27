@@ -99,6 +99,17 @@ object LiveTest extends TestSuite {
       ()
     }
 
+    'templateAccess {
+      val templates = List(
+        "admin-stats.html",
+        "404.html",
+        "public.html",
+        "members-home.html",
+        "templates-hidden/blank.html")
+      for (t <- templates)
+        get(s"/$t").assertStatus(404)
+    }
+
     'teardown {
       xa ! DbTable.EventHash.truncate
       xa ! DbTable.Event.truncate
