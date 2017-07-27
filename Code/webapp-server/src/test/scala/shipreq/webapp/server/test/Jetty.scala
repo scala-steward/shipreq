@@ -60,7 +60,8 @@ class Jetty(val port: Int) extends Logger {
     val assetDir = System.getProperty("shipreq.assets")
     def assetFile(s: String) = new File(s"$assetDir/$s")
     def warFile(s: String) = new File(s"${tmpWarDir.getAbsolutePath}/$s")
-    FileUtils.copyFileToDirectory(assetFile(AssetManifest.favicon), tmpWarDir)
+    def copyAsset(s: String) = FileUtils.copyFile(assetFile(s), new File(s"$tmpWarDir/$s"))
+    copyAsset(AssetManifest.favicon)
     FileUtils.write(warFile(AssetManifest.webappClientPublicJs), "function public(){}") // Fake content
     FileUtils.write(warFile(AssetManifest.webappClientHomeJs), "function home(){}") // Fake content
     FileUtils.write(warFile(AssetManifest.webappClientProjectJs), "function project(){}") // Fake content
