@@ -76,30 +76,6 @@ class Boot {
       throw new IllegalStateException(s"Run mode (${Props.mode}) ≠ desired run mode ($runMode)")
   }
 
-  // Stateful - adds Lift.js etc
-//  def httpStatusResponder(status: Int): () => Box[LiftResponse] = {
-//    val t = Templates(status.toString :: Nil)
-//    assert(t.isDefined, s"Template not found for status $status: $t")
-//    () => for {
-//      s <- S.session
-//      i <- S.request
-//      o <- s.processTemplate(t, i, i.path, status)
-//    } yield o
-//  }
-
-
-  val httpStatusResponseHeaders: List[(String, String)] =
-    "Content-Type" -> "text/html;charset=utf-8" ::
-    "Cache-Control" -> "no-cache,private,no-store" ::
-    "Pragma" -> "no-cache" ::
-    Nil
-
-  def httpStatusResponse(status: Int): Req => InMemoryResponse = {
-    val f = s"/$status.html"
-    val d = LiftRules.loadResource(f).openOrThrowException(s"Template not found: $f")
-    _ => InMemoryResponse(d, httpStatusResponseHeaders, S.responseCookies, status)
-  }
-
   def configureLift(): Unit = {
 
     // Collect session stats
@@ -152,27 +128,8 @@ class Boot {
     val supplementalHeaders = LiftRules.supplementalHeaders.default.get().filterNot(_._1 == "X-Lift-Version")
     LiftRules.supplementalHeaders.default.set(() => supplementalHeaders)
 
-    // Custom 404
-    LiftRules.uriNotFound.prepend {
-//      val template = NotFoundAsTemplate(ParsePath("404" :: Nil, "html", absolute = true, endSlash = false))
-      val response = httpStatusResponse(404)
-      NamedPF("404") { case (req, _) => NotFoundAsResponse(response(req)) }
-    }
-
-    // Custom 500 (TODO cleanup this mess)
-//    LiftRules.responseTransformers.append {
-//      val on500 = httpStatusResponse(500)
-//      r => if (r.toResponse.code == 500) on500(r) else r
-//    }
-    val on500 = httpStatusResponse(500)
-    LiftRules.exceptionHandler.prepend {
-      case (_, req, exception) =>
-        logger.error(s"500 Error serving ${req.request.uri}", exception)
-        on500(req)
-//         ExceptionHandler.handleServerError(req, e)
-//        val content = req.normalizeHtml(S.render(<lift:embed what="500"/>, req.request))
-//        XmlResponse(content.head, 500, "text/html", req.cookies)
-    }
+    // Handle 404s, 500s, etc
+    HttpStatusHandler.init()
   }
 
   def initShiro(): Unit =
