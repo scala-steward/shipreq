@@ -99,7 +99,6 @@ Phase 2
   * Upgrade JDK and audit crypto mechanisms
 
 ### Misc
-* Remove the spa HTML template
 * Confirm caching directives for hash-named static assets & SJS output
 
 ### User-Functional Design
