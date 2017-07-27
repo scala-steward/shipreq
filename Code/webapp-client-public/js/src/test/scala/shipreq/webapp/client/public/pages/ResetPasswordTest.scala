@@ -108,7 +108,7 @@ object ResetPasswordTest extends TestSuite {
     'success - test(
       assertForm("", Invalid, "", Invalid, Enabled)
         +> submitEnabled.assert(Disabled)
-        +> password1F.assert(Some("Must be between 8 and 128 characters long."))
+        +> password1F.assert(Some("Must be between 8 and 255 characters long."))
         +> password2F.assert(None)
 
         +> enterPassword1("x" * 8) +> assertForm("x" * 8, Invalid, "", Invalid, Enabled) +> submitEnabled.assert(Disabled)

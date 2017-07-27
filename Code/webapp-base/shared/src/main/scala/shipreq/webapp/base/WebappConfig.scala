@@ -12,7 +12,7 @@ object WebappConfig {
   final val liftPath = "L"
 
   /** Passwords' min & max lengths. */
-  val passwordLength = 8 to 128
+  val passwordLength = 8 to 255
 
   /** Usernames' min & max lengths. */
   val usernameLength = 3 to 32
