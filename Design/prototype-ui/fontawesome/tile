@@ -1,0 +1,21 @@
+#!/bin/bash
+cd "$(dirname "$(readlink -e "$0")")" || exit 1
+
+fs="$@"
+[ $# -eq 0 ] && fs=(*.svg)
+
+for i in "${fs[@]}"; do
+  identify $i
+
+  # Trim and reduce opacity
+  p=gen/pre-$i
+  convert $i +flatten -trim +repage -alpha on -channel A -evaluate set 2.2% +channel $p
+  identify $p
+
+  # Tile
+  t=gen/tile-$i
+  montage $p null: null: $p -tile 2x2 -geometry 100x100+0+0 $t
+  identify $t
+
+  echo
+done
