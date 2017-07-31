@@ -1,3 +1,0 @@
-#!/bin/bash
-
-yaourt -S --needed --noconfirm jdk7-compat

@@ -1,3 +1,0 @@
-#!/bin/bash
-
-perl -pi -e 's!^#?TMPDIR.+!TMPDIR=/var/tmp!' /etc/yaourtrc

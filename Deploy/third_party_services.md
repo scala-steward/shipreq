@@ -1,14 +1,5 @@
-ShipReq Production Deployment Instructions
-==========================================
-
-1. [Setup AWS](aws/README.md).
-2. [Setup OS & environment](env/README.md).
-3. [Deploy ShipReq Webapp](webapp/README.md).
-4. [Deploy Taskman](taskman/README.md).
-
-
-Third-Party Setup
-=================
+Third-Party Services
+====================
 
 ## MailChimp
 
@@ -46,4 +37,3 @@ Third-Party Setup
     * Type --> [x] Required when closing, RFI|RFC|Incident|Problem|Lead|Other
 4. Security
     * SSL --> On
-
