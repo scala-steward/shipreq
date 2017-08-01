@@ -27,8 +27,8 @@ services:
       - db.database=shipreq_dev
       - db.username=dev
       - db.password=sqd
-    mem_limit: 600m
-    cpuset: "1"
+    mem_limit: 448m
+    cpuset: "1,2"
 
   webapp:
     image: shipreq/webapp
@@ -48,5 +48,5 @@ services:
       - run.mode=staging
       - shipreq.url=https://localhost:14443
       - external.port.ssl=14443
-    mem_limit: 1741m
-    cpuset: "2"
+    mem_limit: 1856m # 2.25*1024 - 448 for Taskman
+    cpuset: "1,2"
