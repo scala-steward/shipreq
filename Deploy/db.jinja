@@ -1,5 +1,5 @@
 resources:
-- name: postgres
+- name: shipreq-db
   type: sqladmin.v1beta4.instance
   properties:
     region: {{ properties['zone'][:-2] }}
@@ -16,8 +16,8 @@ resources:
       maintenanceWindow:
         day: 6
         hour: 16
-- name: shipreq-db
+- name: shipreq-db-shipreq
   type: sqladmin.v1beta4.database
   properties:
-    instance: $(ref.postgres.name)
+    instance: $(ref.shipreq-db.name)
     name: shipreq
