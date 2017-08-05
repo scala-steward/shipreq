@@ -73,35 +73,3 @@ Run manually once per env
 TODO!
 * env
 * secrets
-
-
-=========================================
-Taskman SQL access
-
-Enable Cloud SQL Administration API - https://console.cloud.google.com/flows/enableapi?apiid=sqladmin&redirect=https://console.cloud.google.com&_ga=1.69095313.1440849751.1500257608
-
-
-gcloud iam service-accounts create taskman --display-name 'Taskman service account'
-
-gcloud projects add-iam-policy-binding shipreq-dev --member serviceAccount:taskman@shipreq-dev.iam.gserviceaccount.com --role roles/cloudsql.client
-
-gcloud iam service-accounts keys create .taskman-key.json --iam-account taskman@shipreq-dev.iam.gserviceaccount.com
-
-kubectl create secret generic taskman-credentials --from-file=credentials.json=.taskman-key.json
-
-TASKMAN_DB_USERNAME=taskman
-TASKMAN_DB_PASSWORD=$(pwgen 64 1)
-
-gcloud sql users create $TASKMAN_DB_USERNAME host --instance=shipreq-db --password=$TASKMAN_DB_PASSWORD
-
-# kubectl create secret generic taskman-db-props --from-literal=db.username=$TASKMAN_DB_USERNAME --from-literal=db.password=$TASKMAN_DB_PASSWORD
-
-echo -n "db.username=$TASKMAN_DB_USERNAME\ndb.password=$TASKMAN_DB_PASSWORD\n" > taskman-secret.properties
-
-echo "
-db.host     = localhost
-db.database = shipreq
-db.username = $TASKMAN_DB_USERNAME
-db.password = $TASKMAN_DB_PASSWORD
-" > taskman-secret.properties
-kubectl create secret generic taskman-secrets --from-file=secret.properties=taskman-secret.properties

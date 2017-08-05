@@ -1,0 +1,58 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: taskman
+  # labels:
+    # app: taskman
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: taskman
+    spec:
+      containers:
+      - name: taskman
+        image: "$GCP_GCR_IO/$GCP_PROJECT/taskman:latest"
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: "0.5"
+            memory: "365Mi"
+          limits:
+            cpu: "1"
+            memory: "448Mi"
+        volumeMounts:
+        - name: taskman-props
+          mountPath: /taskman/conf
+        - name: taskman-secrets
+          mountPath: /taskman/secrets
+      - name: cloudsql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.09
+        command: ["/cloud_sql_proxy", "--dir=/cloudsql",
+                  "-instances=$GCP_PROJECT:$GCP_REGION:$DB_INSTANCE=tcp:5432",
+                  "-credential_file=/secrets/cloudsql/credentials.json"]
+        volumeMounts:
+          - name: cloudsql-credentials
+            mountPath: /secrets/cloudsql
+            readOnly: true
+          - name: ssl-certs
+            mountPath: /etc/ssl/certs
+          - name: cloudsql
+            mountPath: /cloudsql
+      volumes:
+      - name: taskman-props
+        configMap:
+          name: taskman-props
+      - name: taskman-secrets
+        secret:
+          secretName: taskman-secrets
+      - name: cloudsql-credentials
+        secret:
+          secretName: taskman-service-account
+      - name: ssl-certs
+        hostPath:
+          path: /etc/ssl/certs
+      - name: cloudsql
+        emptyDir:
+      restartPolicy: Always
