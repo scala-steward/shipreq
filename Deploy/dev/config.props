@@ -4,5 +4,5 @@ GCP_REGION   = australia-southeast1
 GCP_ZONE     = australia-southeast1-b
 
 INFRA_NAME   = infra-dev
-DB_INSTANCE  = postgres-dev
+DB_INSTANCE  = postgres-dev3
 CLUSTER_NAME = app-cluster-dev

@@ -15,12 +15,15 @@ OLDDOTDIR="$ZDOTDIR"
 for f in .zshenv .zprofile .zshrc .zlogin .zlogout; do
   [ -e "$OLDDOTDIR/$f" ] && cp -p "$OLDDOTDIR/$f" $tmp
 done
-sed '/^ *$/d' $c | perl -pe 's/ *= */=/; s/^/export /' >> $tmp/.zshenv
-echo "export ENVNAME=$1"                               >> $tmp/.zshenv
-echo "export ENVTMP=$tmp"                              >> $tmp/.zshenv
-echo "export KUBECONFIG=$tmp/kube-config"              >> $tmp/.zshenv
-echo 'export gcloud="gcloud --project $GCP_PROJECT"'   >> $tmp/.zshenv
-echo 'export PROMPT="[$GCP_PROJECT] $PROMPT"'          >> $tmp/.zshrc
+cfg="$(sed '/^ *$/d' $c | perl -pe 's/ *= */=/')"
+echo "$cfg" | perl -pe 's/^/export /'                >> $tmp/.zshenv
+echo "$cfg" | perl -pe 's/^/export TF_VAR_/'         >> $tmp/.zshenv
+echo "export ENVNAME=$1"                             >> $tmp/.zshenv
+echo "export ENVTMP=$tmp"                            >> $tmp/.zshenv
+echo "export KUBECONFIG=$tmp/kube-config"            >> $tmp/.zshenv
+echo 'export gcloud="gcloud --project $GCP_PROJECT"' >> $tmp/.zshenv
+echo 'export PROMPT="[$GCP_PROJECT] $PROMPT"'        >> $tmp/.zshrc
+echo 'alias gcloud="$gcloud"'                        >> $tmp/.zshrc
 
 ZDOTDIR=$tmp zsh -i
 

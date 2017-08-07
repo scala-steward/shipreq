@@ -13,11 +13,7 @@ log "Logging Kubernetes into cluster..."
 
 ./cluster-login
 
-log "Creating service account..."
-
-$gcloud iam service-accounts create taskman --display-name 'Taskman service account'
-
-$gcloud projects add-iam-policy-binding $GCP_PROJECT --member serviceAccount:taskman@$GCP_PROJECT.iam.gserviceaccount.com --role roles/cloudsql.client
+log "Creating service account key..."
 
 $gcloud iam service-accounts keys create $ENVTMP/taskman-key.json --iam-account taskman@$GCP_PROJECT.iam.gserviceaccount.com
 

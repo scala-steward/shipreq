@@ -11,9 +11,8 @@ Create Projects from UI:
 ## Local setup
 
 yaourt -S --needed --noconfirm aur/google-cloud-sdk
-sudo pacman -S --needed pwgen
+sudo pacman -S --needed pwgen terraform
 
-sudo gcloud components update
 sudo gcloud components install kubectl
 sudo gcloud components install beta
 sudo gcloud components install alpha
@@ -56,7 +55,9 @@ Decide which environment you want to target, then enter a shell configured to ta
 ## 3. Provision infrastructure
 
 ```
-./infra [--preview]
+./terraform-init
+terraform plan # Shows you what the next step will do
+terraform apply
 ```
 
 ## 4. Configure cluster
