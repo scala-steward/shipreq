@@ -295,6 +295,7 @@ object WebappBuild {
               val x = "WEB-INF/lib/"
               (path, Option(path).filter(_ startsWith x).map(_ drop x.length))
             }
+            // for f in $(seq 19); do find /tmp/shipreq.sbt/webapp-server/target/docker/$f/bucket-* -type f |sort|xargs du -sch; echo; done
             // for f in $(seq 19); do find /tmp/shipreq-release.sbt/webapp-server/target/docker/$f/bucket-* -type f |sort|xargs du -sch; echo; done
             webappPrepare.value
               .filterNot(_._1.isDirectory)
@@ -314,7 +315,7 @@ object WebappBuild {
               //case (p, None)    if p endsWith   ".css"              => (35, false) // 392K
               //case (p, None)    if p matches     images             => (33, false) // 136K
               //case (_, Some(_))               /* 3rd party jars */  => (23, false) // 30M  ******************************
-                case (p, None)    if p startsWith "icons."            => (22, false) // 976K *
+                case (p, None)    if p contains   "/icons."           => (22, false) // 976K *
                 case (p, None)    if p startsWith "fonts/"            => (20, false) // 2.6M ***
                 case (_, Some(l)) if l startsWith "lift"              => (14, false) // 5.7M ******
                 case (_, Some(l)) if l matches    "^scalap?-.*"       => (12, false) // 19M  *******************
@@ -331,9 +332,9 @@ object WebappBuild {
             .sortBy(_._1._1)
             .map { case ((bucket, fixJars), fs) => (bucket, fixJars, fs.sortBy(_._2)) }
           }
-          // printFileBatches(warTiers.map(_.map(_._1)))
+          printFileBatches(warTiers.map(_._3.map(_._1)))
 
-          val compGz = s"pigz -k -${if (releaseMode) 11 else 9}"
+          val compGz = s"pigz -kT${if (releaseMode) 11 else 9}"
           val compBr = s"bro --quality ${if (releaseMode) 11 else 9} --input {} --output {}.br"
 
           val warStages =
@@ -366,9 +367,14 @@ object WebappBuild {
               stage
             }
 
+          // Clear file timestamps to allow Docker layer caching
+          // execInBash(s"""find "${tmp.getAbsolutePath}" -exec touch -t 201304010000 {} +""")
+
           // println(sys.process.Process(List("tree", tmp.getAbsolutePath)).!!)
 
           val warExplode = s"$base/webapps/ROOT"
+
+          println(s"Copying buckets from: ${tmpWar.getAbsolutePath}")
 
           new Dockerfile {
             def runInBash(cmds: String*) = run("/bin/bash", "-c", cmds.mkString(";"))

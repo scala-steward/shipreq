@@ -315,14 +315,15 @@ object Common {
     val sizes = batches.map(_.map(_.length()).foldLeft(0L)(_ + _)).toVector
     (batches zip sizes).foreach { case (files, size) =>
       files.foreach(println)
-      printf("= %,d bytes\n", size)
+      printf("%,94d bytes\n", size)
       println(sep)
     }
     println("Sizes:")
     sizes.foreach { size =>
       printf("  %,12d bytes\n", size)
     }
-    printf("Σ %,12d bytes\n", sizes.sum)
+//    println("    ----------------")
+//    printf("Σ %,12d bytes\n", sizes.sum)
     println(sep)
   }
 
