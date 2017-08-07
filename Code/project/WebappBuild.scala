@@ -357,7 +357,7 @@ object WebappBuild {
               // Redirect HTTP to HTTPS
               val stagedWebXml = stage / webXml
               if (stagedWebXml.exists())
-                execInBash("""perl -pi -e 's!(?<=<transport-guarantee>)\s*NONE\s*(?=<)!CONFIDENTIAL!' """ + stagedWebXml.getAbsolutePath)
+                execInBash("""sed -i '/transport-guarantee.*HTTPS/s/NONE/CONFIDENTIAL/' """ + stagedWebXml.getAbsolutePath)
 
               // Jetty's WebAppClassLoader doesn't seem to access resources in lib jars which prevents FlyWay from
               // finding the db migrations

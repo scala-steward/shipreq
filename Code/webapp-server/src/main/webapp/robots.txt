@@ -1,3 +1,6 @@
 User-agent: *
-Disallow: /register/
-
+Disallow: /classpath/
+Disallow: /L/
+Disallow: /a/
+Disallow: /s/
+Disallow: /j/
