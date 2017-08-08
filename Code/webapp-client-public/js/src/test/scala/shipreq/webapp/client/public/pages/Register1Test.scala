@@ -64,12 +64,12 @@ object Register1Test extends TestSuite {
     *.focus("Form or message, not both").value(x => List(x.obs.form.isDefined, x.obs.message.isDefined).sorted)
       .assert(List(false, true))
 
-  def test(actions: *.Actions, allowRegister: Permission = Allow): Unit =
-    testPlan(Plan(actions, invariants), allowRegister)
+  def test(actions: *.Actions, publicRegistration: Permission = Allow): Unit =
+    testPlan(Plan(actions, invariants), publicRegistration)
 
-  def testPlan(plan: *.Plan, allowRegister: Permission = Allow): Unit = {
+  def testPlan(plan: *.Plan, publicRegistration: Permission = Allow): Unit = {
     val t = new PublicSpaTestUtil.ForTestState
-    t.initData = t.initData.copy(allowRegister = allowRegister)
+    t.initData = t.initData.copy(publicRegistration = publicRegistration)
     import t.cp
     t(Page.Register1)(h => plan.test(Observer.watch(new Obs(h, cp))).run((), cp))
   }

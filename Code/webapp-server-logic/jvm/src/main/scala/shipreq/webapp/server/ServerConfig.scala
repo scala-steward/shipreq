@@ -17,17 +17,17 @@ final case class ServerConfig(baseUrl: Url.Absolute.Base,
                               /** Number of characters in tokens used for email & reset-password verification. */
                               securityTokenLength: Int,
 
-                              /** How long confirmation tokens are valid for after issuing. */
-                              confirmationTokenLifespan: Duration,
+                              /** How long registration tokens are valid for after issuing. */
+                              registrationTokenLifespan: Duration,
 
                               /** How long password-reset tokens are valid for after issuing. */
                               passwordResetTokenLifespan: Duration,
 
                               /**
-                                * Whether or not new registrations are allowed.
+                                * Whether or not public registrations are allowed.
                                 * (Registration tokens already issued will still be accepted.)
                                 */
-                              allowRegister: Permission,
+                              publicRegistration: Permission,
 
                               /** The DB schema in which the Taskman interfaces reside. */
                               taskmanSchema: String,
@@ -45,9 +45,9 @@ object ServerConfig {
     ( Config.need    [String  ]      ("url").map(Url.Absolute.Base.apply) |@|
       Config.need    [Duration]      ("attack_frustration_delay") |@|
       Config.need    [Int     ]      ("token.length") |@|
-      Config.need    [Duration]      ("token.lifespan.email_conf") |@|
+      Config.need    [Duration]      ("token.lifespan.register") |@|
       Config.need    [Duration]      ("token.lifespan.resetpw") |@|
-      Config.getOrUse[Boolean ]      ("allow.register", true).map(Allow.when) |@|
+      Config.getOrUse[Boolean ]      ("feature.publicRegistration", true).map(Allow.when) |@|
       Config.need    [String  ]      ("taskman.schema") |@|
       Config.getOrUse[Boolean ]      ("taskman.init", true) |@|
       RetryCriteria.config.withPrefix("taskman.init.retry.")

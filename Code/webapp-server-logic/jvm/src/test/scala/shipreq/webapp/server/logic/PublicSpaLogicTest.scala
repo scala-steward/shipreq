@@ -11,7 +11,7 @@ import shipreq.webapp.client.public.PublicSpaProtocols._
 
 object PublicSpaLogicTest extends TestSuite {
 
-  class Tester(allowRegister: Permission = Allow) extends MockInterpreters(_.copy(allowRegister = allowRegister)) {
+  class Tester(publicRegistration: Permission = Allow) extends MockInterpreters(_.copy(publicRegistration = publicRegistration)) {
     val logic = PublicSpaLogic[Name, Name]
     val initData = logic.initData.value
 

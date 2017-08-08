@@ -101,21 +101,21 @@ object PublicSpaLogic {
 
       private def registrationProc[A, B](f: A => F[ErrorMsg \/ B]): A => F[ErrorMsg \/ B] =
         security.protectFn(
-          config.allowRegister match {
+          config.publicRegistration match {
             case Allow => f
             case Deny  => _ => F.pure(-\/(ErrorMsg("Registration is disabled.")))
           }
         )
 
       private val getTokenStatus: SecurityToken => F[SecurityToken.Status] =
-        tokenStatusFn(t => runDB(db.getUserRegistrationTokenIssueDate(t)), config.confirmationTokenLifespan)
+        tokenStatusFn(t => runDB(db.getUserRegistrationTokenIssueDate(t)), config.registrationTokenLifespan)
 
       def preRegistrationMsg(email: EmailAddr, u: DB.UserRegistration, now: Instant): D[Msg] =
         u match {
           case _: DB.UserRegistration.Complete =>
             D pure onAlreadyRegistered(email)
           case r: DB.UserRegistration.Pending =>
-            if (isExpired_?(r.tokenSentAt, config.confirmationTokenLifespan, now))
+            if (isExpired_?(r.tokenSentAt, config.registrationTokenLifespan, now))
               onTokenExpired(email, r.id)
             else
               D pure onTokenReusable(email, r.token)
@@ -282,7 +282,7 @@ object PublicSpaLogic {
           d <- loginFn
           e <- ResetPasswordFns.resetPasswordFn1
           f <- ResetPasswordFns.resetPasswordFn2
-        } yield InitData(config.allowRegister, u.map(_.username), a, b, c, d, e, f)
+        } yield InitData(config.publicRegistration, u.map(_.username), a, b, c, d, e, f)
     }
   }
 }

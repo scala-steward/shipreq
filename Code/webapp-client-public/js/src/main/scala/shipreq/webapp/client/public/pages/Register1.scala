@@ -17,11 +17,11 @@ import shipreq.webapp.client.public.spa.{Page, RouterCtl}
 
 object Register1 {
 
-  final case class Props(allowRegister: Permission,
-                         rc           : RouterCtl,
-                         state        : StateSnapshot[State],
-                         asyncW       : AsyncFeature.Write.D0[ErrorMsg],
-                         submit       : ServerSideProcInvoker[EmailAddr, ErrorMsg, Unit]) {
+  final case class Props(publicRegistration: Permission,
+                         rc                : RouterCtl,
+                         state             : StateSnapshot[State],
+                         asyncW            : AsyncFeature.Write.D0[ErrorMsg],
+                         submit            : ServerSideProcInvoker[EmailAddr, ErrorMsg, Unit]) {
     @inline def render: VdomElement = Component(this)
   }
 
@@ -98,7 +98,7 @@ object Register1 {
             "Check back later or contact us ", rc.link(Page.Home)("here"), ".")))
 
     def render(p: Props): VdomElement =
-      if (p.allowRegister is Deny)
+      if (p.publicRegistration is Deny)
         renderDisabled(p.rc)
       else if (p.state.value.submitted)
         renderSuccess

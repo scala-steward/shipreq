@@ -233,7 +233,7 @@ final class DispatchLogic[F[_]](implicit F: Monad[F],
     }
 
     val securityTokenFn: R.NeedsToken => SecurityToken => F[SecurityToken.Status] = {
-      case R.Register2     => PublicSpaLogic.tokenStatusFn(db.getUserRegistrationTokenIssueDate, config.confirmationTokenLifespan)
+      case R.Register2     => PublicSpaLogic.tokenStatusFn(db.getUserRegistrationTokenIssueDate, config.registrationTokenLifespan)
       case R.ResetPassword => PublicSpaLogic.tokenStatusFn(db.getResetPasswordTokenIssueDate, config.passwordResetTokenLifespan)
     }
 

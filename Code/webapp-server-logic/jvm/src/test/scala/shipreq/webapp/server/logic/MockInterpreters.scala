@@ -412,9 +412,9 @@ object MockInterpreters {
     baseUrl                    = Url.Absolute.Base("https://test.shipreq.com"),
     attackFrustrationDelay     = 1 hour,
     securityTokenLength        = 8,
-    confirmationTokenLifespan  = 7 days,
+    registrationTokenLifespan  = 7 days,
     passwordResetTokenLifespan = 4 days,
-    allowRegister              = Allow,
+    publicRegistration         = Allow,
     taskmanSchema              = "test_taskman",
     initTaskmanOnBoot          = false,
     initTaskmanRetry           = RetryCriteria(2 hour, Some(666)))
@@ -453,7 +453,7 @@ class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerCon
     assertNoChange("Protected actions", security.protectedActions)(a)
 
   def forwardTimeToEndOfConfirmationWindow(v: Validity): Unit =
-    svr.forwardTimeToEndOfWindow(config.confirmationTokenLifespan, v)
+    svr.forwardTimeToEndOfWindow(config.registrationTokenLifespan, v)
 
   def forwardTimeToEndOfPasswordResetWindow(v: Validity): Unit =
     svr.forwardTimeToEndOfWindow(config.passwordResetTokenLifespan, v)

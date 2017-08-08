@@ -152,14 +152,14 @@ object PublicSpaProtocols {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final case class InitData(allowRegister : Permission,
-                            loggedInUser  : Option[Username],
-                            landingPage   : LandingPage.Fn.Instance,
-                            register1     : Register.Fn1.Instance,
-                            register2     : Register.Fn2.Instance,
-                            login         : Login.Fn.Instance,
-                            resetPassword1: ResetPassword.Fn1.Instance,
-                            resetPassword2: ResetPassword.Fn2.Instance)
+  final case class InitData(publicRegistration: Permission,
+                            loggedInUser      : Option[Username],
+                            landingPage       : LandingPage.Fn.Instance,
+                            register1         : Register.Fn1.Instance,
+                            register2         : Register.Fn2.Instance,
+                            login             : Login.Fn.Instance,
+                            resetPassword1    : ResetPassword.Fn1.Instance,
+                            resetPassword2    : ResetPassword.Fn2.Instance)
 
   import LandingPage  .Fn .{pickleInstance => _i1}
   import Register     .Fn1.{pickleInstance => _i2}

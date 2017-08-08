@@ -75,7 +75,7 @@ final class PublicSpa(val initData: P.InitData, cp: ClientProtocol) {
 
           case Page.Static(PublicSpaRoute.Register1) =>
             val ss = StateSnapshot.zoomL(State.register1)(s).setStateVia($)
-            Register1.Props(initData.allowRegister, p.routerCtl, ss, awRegister1, sspRegister1).render
+            Register1.Props(initData.publicRegistration, p.routerCtl, ss, awRegister1, sspRegister1).render
 
           case Page.Token(PublicSpaRoute.Register2, token) =>
             Register2.Props(token, sspRegister2).render
