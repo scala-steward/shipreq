@@ -1,7 +1,8 @@
 #!/bin/bash
 
-[ -e "$JETTY_BASE/conf"    ] && cp -vLr "$JETTY_BASE/conf/."    "$JETTY_BASE/resources/."
-[ -e "$JETTY_BASE/secrets" ] && cp -vLr "$JETTY_BASE/secrets/." "$JETTY_BASE/resources/."
+[ -e "$JETTY_BASE/conf"     ] && cp -Lr "$JETTY_BASE/conf/."     "$JETTY_BASE/resources/."
+[ -e "$JETTY_BASE/secrets1" ] && cp -Lr "$JETTY_BASE/secrets1/." "$JETTY_BASE/resources/."
+[ -e "$JETTY_BASE/secrets2" ] && cp -Lr "$JETTY_BASE/secrets2/." "$JETTY_BASE/resources/."
 
 declare -a args=()
 

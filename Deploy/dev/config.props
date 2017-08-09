@@ -1,8 +1,10 @@
-GCP_PROJECT  = shipreq-dev
-GCP_GCR_IO   = asia.gcr.io
-GCP_REGION   = australia-southeast1
-GCP_ZONE     = australia-southeast1-b
+GCP_PROJECT     = shipreq-dev
+GCP_GCR_IO      = asia.gcr.io
+GCP_REGION      = australia-southeast1
+GCP_ZONE        = australia-southeast1-b
 
-INFRA_NAME   = infra-dev
-DB_INSTANCE  = postgres-dev3
-CLUSTER_NAME = app-cluster-dev
+ACCT_APPSQL     = app-sql
+CLUSTER_NAME    = app-cluster-dev
+SERVICE_DBPROXY = db-proxy
+DB_INSTANCE     = postgres-dev4
+DB_USERNAME     = app

@@ -17,8 +17,8 @@ spec:
         image: "$GCP_GCR_IO/$GCP_PROJECT/webapp:latest"
         imagePullPolicy: Always
         env:
-        - name: db_port
-          value: "5200"
+        - name: db_host
+          value: $SERVICE_DBPROXY
         - name: shipreq_url
           value: https://dev.shipreq.com
         - name: EXTERNAL_PORT_SSL
@@ -33,11 +33,6 @@ spec:
         ports:
         - containerPort: 8080
         - containerPort: 8443
-        volumeMounts:
-        - name: webapp-props
-          mountPath: /shipreq/conf
-        - name: webapp-secrets
-          mountPath: /shipreq/secrets
         livenessProbe:
           httpGet:
             path: /ops/ok
@@ -45,36 +40,24 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 40
           timeoutSeconds: 2
-
-      - name: webapp-sql-proxy
-        image: gcr.io/cloudsql-docker/gce-proxy:1.09
-        command: ["/cloud_sql_proxy", "--dir=/cloudsql",
-                  "-instances=$GCP_PROJECT:$GCP_REGION:$DB_INSTANCE=tcp:5200",
-                  "-credential_file=/secrets/cloudsql/credentials.json"]
         volumeMounts:
-          - name: webapp-sql-credentials
-            mountPath: /secrets/cloudsql
-            readOnly: true
-          - name: webapp-sql
-            mountPath: /cloudsql
-          - name: ssl-certs
-            mountPath: /etc/ssl/certs
+        - name: webapp-props
+          mountPath: /shipreq/conf
+        # - name: webapp-secrets
+        #   mountPath: /shipreq/secrets1
+        - name: db-props
+          mountPath: /shipreq/secrets2
 
       volumes:
-      - name: ssl-certs
-        hostPath:
-          path: /etc/ssl/certs
       - name: webapp-props
         configMap:
           name: webapp-props
-      - name: webapp-secrets
+      # - name: webapp-secrets
+      #   secret:
+      #     secretName: webapp-secrets
+      - name: db-props
         secret:
-          secretName: webapp-secrets
-      - name: webapp-sql-credentials
-        secret:
-          secretName: webapp-service-account
-      - name: webapp-sql
-        emptyDir:
+          secretName: db-props
 
 ---
 apiVersion: v1

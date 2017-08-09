@@ -1,8 +1,9 @@
+variable "ACCT_APPSQL" {}
+variable "CLUSTER_NAME" {}
+variable "DB_INSTANCE" {}
 variable "GCP_PROJECT" {}
 variable "GCP_REGION" {}
 variable "GCP_ZONE" {}
-variable "CLUSTER_NAME" {}
-variable "DB_INSTANCE" {}
 
 provider "google" {
   project = "${var.GCP_PROJECT}"
@@ -82,47 +83,22 @@ resource "google_container_cluster" "apps" {
 }
 
 ################################################################################
-# Taskman account
+# SQL account
 ################################################################################
 
-resource "google_service_account" "taskman" {
-  account_id   = "taskman"
-  display_name = "Taskman service account"
+resource "google_service_account" "app-sql" {
+  account_id   = "${var.ACCT_APPSQL}"
+  display_name = "Application SQL service account."
 }
 
-resource "google_project_iam_policy" "taskman" {
+resource "google_project_iam_policy" "app-sql" {
   project     = "${var.GCP_PROJECT}"
-  policy_data = "${data.google_iam_policy.taskman.policy_data}"
+  policy_data = "${data.google_iam_policy.app-sql.policy_data}"
 }
 
-data "google_iam_policy" "taskman" {
+data "google_iam_policy" "app-sql" {
   binding {
-    role = "roles/cloudsql.client"
-    members = [
-      "serviceAccount:${google_service_account.taskman.email}",
-    ]
-  }
-}
-
-################################################################################
-# Webapp account
-################################################################################
-
-resource "google_service_account" "webapp" {
-  account_id   = "webapp"
-  display_name = "Webapp service account"
-}
-
-resource "google_project_iam_policy" "webapp" {
-  project     = "${var.GCP_PROJECT}"
-  policy_data = "${data.google_iam_policy.webapp.policy_data}"
-}
-
-data "google_iam_policy" "webapp" {
-  binding {
-    role = "roles/cloudsql.client"
-    members = [
-      "serviceAccount:${google_service_account.webapp.email}",
-    ]
+    role    = "roles/cloudsql.client"
+    members = [ "serviceAccount:${google_service_account.app-sql.email}" ]
   }
 }
