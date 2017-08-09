@@ -1,0 +1,39 @@
+#!/bin/bash
+cd "$(dirname "$(readlink -e "$0")")" || exit 1
+[ -z "$GCP_PROJECT" ] && echo "Use ./target to target an environment first." && exit 1
+
+set -e
+
+function log { echo -e "\033[1;33m$*\033[0m" ;}
+
+# Ensure pwgen installed
+pwgen 16 1 >/dev/null
+
+log "Logging Kubernetes into cluster..."
+
+./cluster-login
+
+log "Creating service account key..."
+
+$gcloud iam service-accounts keys create $ENVTMP/webapp-key.json --iam-account webapp@$GCP_PROJECT.iam.gserviceaccount.com
+
+kubectl create secret generic webapp-service-account --from-file=credentials.json=$ENVTMP/webapp-key.json
+
+log "Creating DB account..."
+
+WEBAPP_DB_USERNAME=webapp
+
+WEBAPP_DB_PASSWORD=$(pwgen 64 1)
+
+$gcloud sql users create $WEBAPP_DB_USERNAME host --instance=$DB_INSTANCE --password=$WEBAPP_DB_PASSWORD
+
+echo "
+db.host     = localhost
+db.database = shipreq
+db.username = $WEBAPP_DB_USERNAME
+db.password = $WEBAPP_DB_PASSWORD
+" > $ENVTMP/webapp-secret.properties
+
+kubectl create secret generic webapp-secrets --from-file=secret.properties=$ENVTMP/webapp-secret.properties
+
+log "Done."

@@ -65,8 +65,9 @@ terraform apply
 Enable Cloud SQL Administration API - https://console.cloud.google.com/flows/enableapi?apiid=sqladmin&redirect=https://console.cloud.google.com&_ga=1.69095313.1440849751.1500257608
 
 ```
-./cluster-taskman-init
-./cluster-taskman-apply
+./cluster-init-taskman
+./cluster-init-webapp
+./cluster-apply
 ```
 
 ## 5. Deploy

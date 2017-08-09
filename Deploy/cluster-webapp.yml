@@ -1,0 +1,74 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: webapp
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        name: webapp
+    spec:
+      containers:
+
+      - name: webapp
+        image: "$GCP_GCR_IO/$GCP_PROJECT/webapp:latest"
+        imagePullPolicy: Always
+        env:
+        - name: db_port
+          value: "5200"
+        - name: shipreq_url
+          value: https://dev.shipreq.com
+        - name: EXTERNAL_PORT_SSL
+          value: "443"
+        - name: RUN_MODE
+          value: staging
+        resources:
+          requests:
+            memory: "1300Mi"
+          limits:
+            memory: "1856Mi"
+        volumeMounts:
+        - name: webapp-props
+          mountPath: /shipreq/conf
+        - name: webapp-secrets
+          mountPath: /shipreq/secrets
+        livenessProbe:
+          httpGet:
+            path: /ops/ok
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 40
+          timeoutSeconds: 2
+
+      - name: webapp-sql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.09
+        command: ["/cloud_sql_proxy", "--dir=/cloudsql",
+                  "-instances=$GCP_PROJECT:$GCP_REGION:$DB_INSTANCE=tcp:5200",
+                  "-credential_file=/secrets/cloudsql/credentials.json"]
+        volumeMounts:
+          - name: webapp-sql-credentials
+            mountPath: /secrets/cloudsql
+            readOnly: true
+          - name: webapp-sql
+            mountPath: /cloudsql
+          - name: ssl-certs
+            mountPath: /etc/ssl/certs
+
+      volumes:
+      - name: ssl-certs
+        hostPath:
+          path: /etc/ssl/certs
+      - name: webapp-props
+        configMap:
+          name: webapp-props
+      - name: webapp-secrets
+        secret:
+          secretName: webapp-secrets
+      - name: webapp-sql-credentials
+        secret:
+          secretName: webapp-service-account
+      - name: webapp-sql
+        emptyDir:

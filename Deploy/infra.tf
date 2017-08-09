@@ -90,7 +90,7 @@ resource "google_service_account" "taskman" {
   display_name = "Taskman service account"
 }
 
-resource "google_project_iam_policy" "project_owner" {
+resource "google_project_iam_policy" "taskman" {
   project     = "${var.GCP_PROJECT}"
   policy_data = "${data.google_iam_policy.taskman.policy_data}"
 }
@@ -100,6 +100,29 @@ data "google_iam_policy" "taskman" {
     role = "roles/cloudsql.client"
     members = [
       "serviceAccount:${google_service_account.taskman.email}",
+    ]
+  }
+}
+
+################################################################################
+# Webapp account
+################################################################################
+
+resource "google_service_account" "webapp" {
+  account_id   = "webapp"
+  display_name = "Webapp service account"
+}
+
+resource "google_project_iam_policy" "webapp" {
+  project     = "${var.GCP_PROJECT}"
+  policy_data = "${data.google_iam_policy.webapp.policy_data}"
+}
+
+data "google_iam_policy" "webapp" {
+  binding {
+    role = "roles/cloudsql.client"
+    members = [
+      "serviceAccount:${google_service_account.webapp.email}",
     ]
   }
 }

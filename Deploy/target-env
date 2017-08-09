@@ -24,6 +24,7 @@ echo "export KUBECONFIG=$tmp/kube-config"            >> $tmp/.zshenv
 echo 'export gcloud="gcloud --project $GCP_PROJECT"' >> $tmp/.zshenv
 echo 'export PROMPT="[$GCP_PROJECT] $PROMPT"'        >> $tmp/.zshrc
 echo 'alias gcloud="$gcloud"'                        >> $tmp/.zshrc
+echo 'alias k=kubectl'                               >> $tmp/.zshrc
 
 ZDOTDIR=$tmp zsh -i
 

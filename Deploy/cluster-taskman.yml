@@ -2,26 +2,29 @@ apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
   name: taskman
-  # labels:
-    # app: taskman
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
-        app: taskman
+        name: taskman
     spec:
       containers:
 
       - name: taskman
         image: "$GCP_GCR_IO/$GCP_PROJECT/taskman:latest"
         imagePullPolicy: Always
+        env:
+        - name: db_port
+          value: "5100"
         resources:
           requests:
-            cpu: "0.5"
+            cpu: "0.3"
             memory: "365Mi"
           limits:
-            cpu: "1"
+            cpu: "0.5"
             memory: "448Mi"
         volumeMounts:
         - name: taskman-props
@@ -36,33 +39,32 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 60
 
-      - name: cloudsql-proxy
+      - name: taskman-sql-proxy
         image: gcr.io/cloudsql-docker/gce-proxy:1.09
         command: ["/cloud_sql_proxy", "--dir=/cloudsql",
-                  "-instances=$GCP_PROJECT:$GCP_REGION:$DB_INSTANCE=tcp:5432",
+                  "-instances=$GCP_PROJECT:$GCP_REGION:$DB_INSTANCE=tcp:5100",
                   "-credential_file=/secrets/cloudsql/credentials.json"]
         volumeMounts:
-          - name: cloudsql-credentials
+          - name: taskman-sql-credentials
             mountPath: /secrets/cloudsql
             readOnly: true
+          - name: taskman-sql
+            mountPath: /cloudsql
           - name: ssl-certs
             mountPath: /etc/ssl/certs
-          - name: cloudsql
-            mountPath: /cloudsql
 
       volumes:
+      - name: ssl-certs
+        hostPath:
+          path: /etc/ssl/certs
       - name: taskman-props
         configMap:
           name: taskman-props
       - name: taskman-secrets
         secret:
           secretName: taskman-secrets
-      - name: cloudsql-credentials
+      - name: taskman-sql-credentials
         secret:
           secretName: taskman-service-account
-      - name: ssl-certs
-        hostPath:
-          path: /etc/ssl/certs
-      - name: cloudsql
+      - name: taskman-sql
         emptyDir:
-      restartPolicy: Always
