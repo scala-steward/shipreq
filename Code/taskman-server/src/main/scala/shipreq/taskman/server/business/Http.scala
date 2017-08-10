@@ -1,7 +1,6 @@
 package shipreq.taskman.server.business
 
-import com.squareup.okhttp.OkHttpClient
-import com.squareup.okhttp.OkAuthenticator.Credential
+import com.squareup.okhttp._
 import java.io.InputStream
 import java.net.{HttpURLConnection, URL}
 import java.nio.charset.Charset
@@ -15,7 +14,6 @@ import shipreq.base.util.FxModule._
 import shipreq.base.util.{Error, ErrorOr}
 import shipreq.base.util.effect._
 import shipreq.base.util.log.Logger
-import shipreq.base.util.ScalaExt.BaseUtilExtAny
 import ErrorOr.Implicits._
 
 object Http {
@@ -25,6 +23,12 @@ object Http {
   case object Put extends Method("PUT")
   case object Post extends Method("POST")
   case object Delete extends Method("DELETE")
+
+  final case class Credential(getHeaderValue: String)
+  object Credential {
+    def basic(username: String, password: String): Credential =
+      Credential(Credentials.basic(username, password))
+  }
 
   final case class Endpoint(url: URL, method: Method, credential: Option[Credential])
 
@@ -64,7 +68,7 @@ object Http {
     sendRequest(httpClient)(req) <<^ log(req)
 
   def openConn(httpClient: OkHttpClient, e: Endpoint): FxE[HttpURLConnection] = FxE {
-    val conn = httpClient.open(e.url)
+    val conn = new OkUrlFactory(httpClient).open(e.url)
     conn.setRequestProperty("Content-Type", contentTypeJson)
     conn.setRequestMethod(e.method.value)
     for (c <- e.credential) conn.addRequestProperty("Authorization", c.getHeaderValue)

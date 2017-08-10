@@ -132,6 +132,12 @@ object Dependencies {
     val testkit = mm("akka-testkit")
   }
 
+  object OkHttp {
+    private val mm = MultiModule.java("com.squareup.okhttp", "2.5.0")
+    val core          = mm("okhttp")
+    val urlConnection = mm("okhttp-urlconnection") ++ core
+  }
+
   object Specs2 {
     private val mm = MultiModule.scala("org.specs2", "3.9.4")
     val combo = mm("specs2-core") ++ mm("specs2-scalacheck")
@@ -158,7 +164,6 @@ object Dependencies {
   val μPickle   = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",   "custom-7")
   val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.4.8")
 
-  val okHttp      = jvmOnly("com.squareup.okhttp"         % "okhttp"                % "1.5.4")
   val httpCore    = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.6")
   val javaMail    = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.5.6")
   val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "42.1.3")

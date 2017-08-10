@@ -1,7 +1,6 @@
 package shipreq.taskman.server.business
 
-import com.squareup.okhttp.OkHttpClient
-import com.squareup.okhttp.OkAuthenticator.Credential
+import com.squareup.okhttp._
 import japgolly.microlibs.config.ConfigParser
 import java.net.URL
 import org.json4s._
