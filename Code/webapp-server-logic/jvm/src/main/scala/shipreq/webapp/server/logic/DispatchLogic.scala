@@ -3,6 +3,7 @@ package shipreq.webapp.server.logic
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
+import monocle.macros.Lenses
 import scalaz.{-\/, Monad, \/, \/-}
 import scalaz.syntax.monad._
 import shipreq.base.util._
@@ -13,6 +14,20 @@ import shipreq.webapp.base.util.ResourceHint
 import shipreq.webapp.server.ServerConfig
 
 object DispatchLogic {
+
+  /** A request to the server.
+    *
+    * @param path Does *NOT* include query params
+    */
+  @Lenses
+  final case class Request(method: Method, path: Url.Relative, param: String => Option[String])
+
+  sealed abstract class Method
+  object Method {
+    case object Get   extends Method
+    case object Post  extends Method
+    case object Other extends Method
+  }
 
   sealed trait Response {
     def headers: Response.Headers = Nil
@@ -75,7 +90,7 @@ object DispatchLogic {
     * /home/…
     * /home#…
     */
-  def spaTest(au: Url.Relative): HttpRequest => Boolean = {
+  def spaTest(au: Url.Relative): Request => Boolean = {
     val a = au.relativeUrlNoHeadSlash
     val aLen = a.length
     req => {
@@ -89,7 +104,7 @@ object DispatchLogic {
     }
   }
 
-  def spaTest1(au: Url.Relative.Param1[_]): HttpRequest => Option[String] = {
+  def spaTest1(au: Url.Relative.Param1[_]): Request => Option[String] = {
     val prefix = au.prefixNoHeadSlash
     val prefixLen = prefix.length
     req => {
@@ -134,62 +149,62 @@ object DispatchLogic {
 
 import DispatchLogic._
 
-final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => HttpRequest,
+final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Request,
                                                   makeRealRes: (RealReq, Response) => F[RealRes])
                                                  (implicit F: Monad[F],
                                                   config    : ServerConfig,
                                                   security  : Security.Algebra[F],
                                                   db        : DB.SecurityTokenReadOnly[F],
                                                   svr       : Server.Time[F]) {
-  import HttpMethod._
+  import Method._
   import Response._
 
-  type Route = HttpRequest ?=> F[Response]
+  type Route = Request ?=> F[Response]
 
   private type FR = F[Response]
 
   private val fRedirectToPublicHome: FR = F pure redirectToPublicHome
   private val fMethodNotAllowed    : FR = F pure MethodNotAllowed
 
-  private def onMethod(m: HttpMethod)(f: HttpRequest => FR): HttpRequest => FR =
+  private def onMethod(m: Method)(f: Request => FR): Request => FR =
     req => if (req.method eq m) f(req) else fMethodNotAllowed
 
-  private def onGet(f: HttpRequest => FR): HttpRequest => FR =
+  private def onGet(f: Request => FR): Request => FR =
     onMethod(Get)(f)
 
   // Occasional type inference problem
-  @inline private def when(cond: HttpRequest => Boolean)(ok: HttpRequest => FR): Route = FnWithFallback.when(cond)(ok)
-  @inline private def extract[E](cond: HttpRequest => Option[E])(ok: HttpRequest => E => FR): Route = FnWithFallback.extract(cond)(ok)
-  @inline private def extractFlip[E](cond: HttpRequest => Option[E])(ok: E => HttpRequest => FR): Route = FnWithFallback.extract(cond)(r => ok(_)(r))
+  @inline private def when(cond: Request => Boolean)(ok: Request => FR): Route = FnWithFallback.when(cond)(ok)
+  @inline private def extract[E](cond: Request => Option[E])(ok: Request => E => FR): Route = FnWithFallback.extract(cond)(ok)
+  @inline private def extractFlip[E](cond: Request => Option[E])(ok: E => Request => FR): Route = FnWithFallback.extract(cond)(r => ok(_)(r))
 
-  private def whenUrlIs(url: Url.Relative): (HttpRequest => FR) => Route =
+  private def whenUrlIs(url: Url.Relative): (Request => FR) => Route =
     when(_.path ==* url)
 
-  private def whenUrlIsAnyOf(urls: NonEmptySet[Url.Relative]): (HttpRequest => FR) => Route = {
+  private def whenUrlIsAnyOf(urls: NonEmptySet[Url.Relative]): (Request => FR) => Route = {
     import Url.dropTailSlashes
     val norm: Url.Relative => String = u => dropTailSlashes(u.underlying)
     val lookup = Util.quickStringExists(urls.whole.map(norm))
     when(r => lookup(norm(r.path)))
   }
 
-  private def onAuthFail(req: HttpRequest): Response =
+  private def onAuthFail(req: Request): Response =
     Redirect(Urls.login / req.path.relativeUrlNoHeadSlash)
 
-  private def needAuth(f: User => Response): HttpRequest => FR =
+  private def needAuth(f: User => Response): Request => FR =
     req => security.authenticatedUser.map(_.fold(onAuthFail(req))(f))
 
-  private def needAuthF(f: User => FR): HttpRequest => FR =
+  private def needAuthF(f: User => FR): Request => FR =
     req => security.authenticatedUser.flatMap(_.fold(F pure onAuthFail(req))(f))
 
   private def get(url: Url.Relative, resp: FR): Route =
     whenUrlIs(url)(onGet(_ => resp))
 
-  private def spa(root: Url.Relative)(f: HttpRequest => FR): Route =
+  private def spa(root: Url.Relative)(f: Request => FR): Route =
     when(spaTest(root))(onGet(f))
 
   private def spaWithObfuscatedParam[A](url       : Url.Relative.Param1[Obfuscated[A]])
                                        (obfuscator: Obfuscator[A])
-                                       (response  : String \/ A => HttpRequest => FR): Route =
+                                       (response  : String \/ A => Request => FR): Route =
     extractFlip(spaTest1(url))(param =>
       onGet(response(obfuscator.deobfuscate(Obfuscated(param)))))
 
@@ -201,10 +216,10 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => HttpRe
   private def scope(prefix: Url.Relative, routes: Route): Route = {
     val test = prefix.isEqualToOrParentOf
     val mod = prefix.removeSelfOrParent
-    routes.embed(r => test(r.path), HttpRequest.path.modify(mod))
+    routes.embed(r => test(r.path), Request.path.modify(mod))
   }
 
-  def makeReal(d: HttpRequest => F[Response]): RealReq => F[RealRes] =
+  def makeReal(d: Request => F[Response]): RealReq => F[RealRes] =
     realReq => {
       val req = readRealReq(realReq)
       d(req).flatMap(makeRealRes(realReq, _))
@@ -268,17 +283,17 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => HttpRe
     get(Urls.logout,
       security.logout >| redirectToPublicHome)
 
-  val mainRoutes: HttpRequest ?=> F[Response] =
+  val mainRoutes: Request ?=> F[Response] =
     publicSpa | memberHomeSpa | projectSpa | logout
 
-  val mainFallback: HttpRequest => F[Response] =
+  val mainFallback: Request => F[Response] =
     onGet(_ => fRedirectToPublicHome)
 
-  def cacheUsualPaths(f: HttpRequest => F[Response]): HttpRequest => F[Response] = {
+  def cacheUsualPaths(f: Request => F[Response]): Request => F[Response] = {
     // Caching ignores params - beware
     val noParams: String => Option[String] = _ => None
     val urls = Urls.PublicSpaRoute.static.map(_.url) ++ Urls.MemberRoute.static.map(_.url)
-    val cacheMap = urls.iterator.map(u => u.underlying -> f(HttpRequest(Get, u, noParams))).toMap
+    val cacheMap = urls.iterator.map(u => u.underlying -> f(Request(Get, u, noParams))).toMap
     val cache = Util.quickStringLookup(cacheMap)
     req => cache(req.path.underlying).fold(f(req))(
       cachedResponse => if (req.method eq Get) cachedResponse else fMethodNotAllowed)
@@ -308,7 +323,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => HttpRe
       whenUrlIs(Url.Relative("ok"))(onGet(_ => response))
     }
 
-    val routes: HttpRequest ?=> F[Response] =
+    val routes: Request ?=> F[Response] =
       scope(opsRoot, ok)
 
     val total: RealReq => F[RealRes] =

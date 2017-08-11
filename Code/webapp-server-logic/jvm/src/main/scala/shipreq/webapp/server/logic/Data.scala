@@ -1,8 +1,6 @@
 package shipreq.webapp.server.logic
 
 import japgolly.univeq.UnivEq
-import monocle.macros.Lenses
-import shipreq.base.util.Url
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
 
@@ -35,22 +33,4 @@ object PasswordAndSalt {
 final case class IP(value: String)
 object IP {
   implicit def univEq: UnivEq[IP] = UnivEq.derive
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-/** A request to the server.
-  *
-  * @param path Does *NOT* include query params
-  */
-@Lenses
-final case class HttpRequest(method: HttpMethod, path: Url.Relative, param: String => Option[String])
-
-sealed abstract class HttpMethod
-object HttpMethod {
-  case object Get   extends HttpMethod
-  case object Post  extends HttpMethod
-  case object Other extends HttpMethod // HEAD, PUT, DELETE, CONNECT, OPTIONS, TRACE, PATCH
-
-  implicit def univEq: UnivEq[HttpMethod] = UnivEq.derive
 }
