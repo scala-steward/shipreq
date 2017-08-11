@@ -12,7 +12,7 @@ import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.user.User
 import shipreq.webapp.base.{Urls, WebappConfig}
 import shipreq.webapp.server.db.DbInterpreter
-import shipreq.webapp.server.logic.{DB, DispatchLogic}
+import shipreq.webapp.server.logic._
 
 object LiftDispatcher {
   object ProjectIdVar extends RequestVar[ProjectId](null)
@@ -44,14 +44,14 @@ final class LiftDispatcher(global: Global) {
   private def liftReqUrl(r: LiftReq): Url.Relative =
     Url.Relative(r.request.uri)
 
-  def parseReq(r: LiftReq): DispatchLogic.Request = {
-    val m: DispatchLogic.Method =
-      if (r.get_?)       DispatchLogic.Method.Get
-      else if (r.post_?) DispatchLogic.Method.Post
-      else               DispatchLogic.Method.Other
+  def parseReq(r: LiftReq): HttpRequest = {
+    val m: HttpMethod =
+      if (r.get_?)       HttpMethod.Get
+      else if (r.post_?) HttpMethod.Post
+      else               HttpMethod.Other
 
     val url = liftReqUrl(r)
-    DispatchLogic.Request(m, url, paramFn)
+    HttpRequest(m, url, paramFn)
   }
 
   val makeResponse: (LiftReq, DispatchLogic.Response) => Fx[Box[LiftResponse]] = {

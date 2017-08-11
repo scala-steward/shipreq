@@ -7,13 +7,13 @@ import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.Urls
 import DispatchLogic._
-import Method._
+import HttpMethod._
 import shipreq.webapp.base.user.EmailAddr
 
 object DispatchLogicTest extends TestSuite {
 
   object Tester extends MockInterpreters {
-    val dispatcher = new DispatchLogic[Name, Request, Response](r => r, (_, r) => Name(r))
+    val dispatcher = new DispatchLogic[Name, HttpRequest, Response](r => r, (_, r) => Name(r))
     val dispatch = dispatcher.mainDispatcher(false, false)
     db.users ::= user2
     db.users ::= user3
@@ -24,10 +24,10 @@ object DispatchLogicTest extends TestSuite {
 
   implicit def autoRelUrl(s: String): Url.Relative = Url.Relative(s)
 
-  def run(url: Url.Relative, method: Method = Get)
+  def run(url: Url.Relative, method: HttpMethod = Get)
          (implicit logIn: MockDb.UserEntry = null): Response = {
     security.loggedIn = Option(logIn)
-    val req = Request(method, url, _ => None)
+    val req = HttpRequest(method, url, _ => None)
     val d = if (dispatcher.OpsRoutes.candidate(url))
       dispatcher.OpsRoutes.total
     else
@@ -35,13 +35,13 @@ object DispatchLogicTest extends TestSuite {
     d(req).value
   }
 
-  def testRun(expect: Response, u: Url.Relative, method: Method = Get)
+  def testRun(expect: Response, u: Url.Relative, method: HttpMethod = Get)
              (implicit logIn: MockDb.UserEntry = null): Unit =
     assertEq(u.relativeUrl, run(u, method)(logIn), expect)
 
   def testNonGet(url: Url.Relative): Unit =
     for {
-      method <- List[Method](Post, Other)
+      method <- List[HttpMethod](Post, Other)
       logIn <- List[MockDb.UserEntry](null, user2)
     } {
         testRun(Response.MethodNotAllowed, url, method)(logIn)

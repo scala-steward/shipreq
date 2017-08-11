@@ -86,7 +86,7 @@ class DispatchBM {
 //  @Benchmark def name       = test(DispatchBM.name)
 //  @Benchmark def trampoline = test(DispatchBM.trampoline)
 
-  def test[F[_]](i: Interpreters[F])(f: Interpreters[F] => Request => F[Response]): Any = {
+  def test[F[_]](i: Interpreters[F])(f: Interpreters[F] => HttpRequest => F[Response]): Any = {
     val d = f(i)
     DispatchRequests.map(r => i.run(d(r)))
   }
@@ -150,7 +150,7 @@ object DispatchBM {
       override val now = F point Instant.now()
     }
 
-    val dispatchLogic = new DispatchLogic[F, Request, Response](r => r, (_, r) => F.point(r))
+    val dispatchLogic = new DispatchLogic[F, HttpRequest, Response](r => r, (_, r) => F.point(r))
 
     val dispatcher1 = dispatchLogic.mainRoutes.withFallback(dispatchLogic.mainFallback)
     val dispatcher2 = dispatchLogic.cacheUsualPaths(dispatcher1)
@@ -158,15 +158,15 @@ object DispatchBM {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  val DispatchRequests: List[Request] = {
-    import Method._
+  val DispatchRequests: List[HttpRequest] = {
+    import HttpMethod._
     implicit def autoXID(p: ProjectId): ProjectId.Public = Obfuscators.projectId.obfuscate(p)
     val param: String => Option[String] = _ => None
     val token = SecurityToken("MnVC8cvPX9b1jiCpyxoYLk4RqQ8idHlV4lf7OHzIQctHLgw6C")
-    val b = List.newBuilder[Request]
-    b ++= Urls.PublicSpaRoute.static.whole.toList.map(r => Request(Get, r.url, param))
-    b ++= Urls.MemberRoute.static.whole.toList.map(r => Request(Get, r.url, param))
-    b ++= Urls.PublicSpaRoute.needsToken.whole.toList.map(r => Request(Get, r.url(token), param))
+    val b = List.newBuilder[HttpRequest]
+    b ++= Urls.PublicSpaRoute.static.whole.toList.map(r => HttpRequest(Get, r.url, param))
+    b ++= Urls.MemberRoute.static.whole.toList.map(r => HttpRequest(Get, r.url, param))
+    b ++= Urls.PublicSpaRoute.needsToken.whole.toList.map(r => HttpRequest(Get, r.url(token), param))
 //    b ++= (1 to 10).map(i => Request(Get, Urls.project(ProjectId(i)), param))
     val rs = b.result()
     List.fill(10)(rs).flatten
