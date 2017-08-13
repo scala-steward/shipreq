@@ -6,6 +6,7 @@ val root                  = ShipReqBuild.root
 val base                  = ShipReqBuild.base
 val baseUtilJvm           = ShipReqBuild.baseUtilJvm
 val baseUtilJs            = ShipReqBuild.baseUtilJs
+val baseOps               = ShipReqBuild.baseOps
 val baseDb                = ShipReqBuild.baseDb
 val baseTestJvm           = ShipReqBuild.baseTestJvm
 val baseTestJs            = ShipReqBuild.baseTestJs

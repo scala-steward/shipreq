@@ -1,11 +1,12 @@
 package shipreq.webapp.server.test
 
-import bootstrap.liftweb.AppConfig
+import bootstrap.liftweb.BootConfig
 import java.time.Duration
+import shipreq.base.test.BaseTestUtil.onceUnit
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.app.Global
 import shipreq.webapp.server.db.DbInterpreter
-import shipreq.base.test.BaseTestUtil.onceUnit
+import shipreq.webapp.server.logic.Trace
 
 object PrepareEnv {
   private val boot = new bootstrap.liftweb.Boot
@@ -13,7 +14,7 @@ object PrepareEnv {
   private lazy val cfg = {
     var (appConfig, runMode) = boot.readConfig()
     runMode foreach boot.setRunMode
-    appConfig = (AppConfig.server ^|-> ServerConfig.attackFrustrationDelay).set(Duration.ZERO)(appConfig)
+    appConfig = (BootConfig.server ^|-> ServerConfig.attackFrustrationDelay).set(Duration.ZERO)(appConfig)
     // println("webapp-server test config:\n" + appConfig.report.reportUsed)
     appConfig
   }
@@ -23,7 +24,8 @@ object PrepareEnv {
     db       = null,
     logic    = null,
     security = null,
-    taskman  = null)
+    taskman  = null,
+    trace    = Trace.off)
 
   def global() = Global.Instance
 

@@ -26,7 +26,7 @@ object ShipReqBuild {
   lazy val base =
     project("base")
       .configure(Common.jvmSettings)
-      .aggregate(baseUtilJvm, baseUtilJs, baseDb, baseTestJvm, baseTestJs)
+      .aggregate(baseUtilJvm, baseUtilJs, baseOps, baseDb, baseTestJvm, baseTestJs)
 
   lazy val baseUtilJvm = baseUtil.jvm
   lazy val baseUtilJs  = baseUtil.js
@@ -43,13 +43,21 @@ object ShipReqBuild {
         providedScope(logback) ++
         testScope(Specs2.combo ++ Scalaz.scalacheck)).jvmSettings()
 
+  lazy val baseOps =
+    project("base-ops")
+      .configure(
+        Common.jvmSettings,
+        Common.macroModuleSettings)
+      .dependsOn(baseUtilJvm)
+      .deps(GoogleCloudTrace.all)
+
   lazy val baseDb =
     project("base-db")
       .configure(
         Common.jvmSettings,
         Common.macroModuleSettings)
+      .dependsOn(baseOps)
       .deps(postgresql ++ Doobie.main ++ hikariCP ++ flyway ++ logback ++ Microlibs.macroUtils)
-      .dependsOn(baseUtilJvm)
 
   lazy val baseTestJvm = baseTest.jvm
   lazy val baseTestJs  = baseTest.js

@@ -13,6 +13,7 @@ import shipreq.webapp.base.user._
 object ProjectServerTest extends TestSuite {
 
   class Tester extends MockInterpreters {
+    implicit val trace: Trace.Basic[Name] = Trace.off[Name, Nothing, Nothing]
     val logic = ProjectServer[Name, Name](ProjectServer.BroadcastTo.All)
   }
 

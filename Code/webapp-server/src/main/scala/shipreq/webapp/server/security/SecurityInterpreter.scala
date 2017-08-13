@@ -5,18 +5,19 @@ import scalaz.syntax.monad._
 import scalaz.{Monad, \/}
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.ServerConfig
-import shipreq.webapp.server.logic.{DB, PasswordAndSalt, Security}
+import shipreq.webapp.server.logic.{DB, PasswordAndSalt, Security, Trace}
 
 final class SecurityInterpreter[F[_]](implicit F     : Monad[F],
+                                               config: ServerConfig,
                                                secDb : DB.ForSecurity[F],
-                                               config: ServerConfig) extends Security.Algebra[F] {
+                                               trace : Trace.Basic[F]) extends Security.Algebra[F] {
 
   override val db = secDb
 
   private[this] val delay: F[Unit] =
     config.attackFrustrationDelayMs match {
-      case 0 => F.point(())
-      case ms => F.point(Thread.sleep(ms))
+      case 0  => F.point(())
+      case ms => val f = F.point(Thread.sleep(ms)); trace.sub("Security delay")(f)
     }
 
   override def protect[A](vulnerable: F[A]): F[A] =

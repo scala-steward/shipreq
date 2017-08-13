@@ -42,7 +42,7 @@ object Dependencies {
   }
 
   object Microlibs {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "1.8")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "1.9")
     val adtMacros  = mm("adt-macros")
     val config     = mm("config")
     val macroUtils = mm("macro-utils")
@@ -152,6 +152,18 @@ object Dependencies {
     // Upgrade this in step with Jetty or else java.lang.SecurityExceptions will abound.
     // It's a transitive dependency of jetty-server
     val servletApi = jvmOnly("javax.servlet" % "javax.servlet-api" % "3.1.0")
+  }
+
+  object GoogleCloudTrace {
+    private val mm = MultiModule.java("com.github.japgolly.fork.google-cloud-trace", "0.3.3")
+    val core                = mm("core")
+    val traceGrpcApiService = mm("trace-grpc-api-service")
+
+    val googleOauth2 = jvmOnly("com.google.auth" % "google-auth-library-oauth2-http" % "0.7.1")
+    val grpcNetty    = jvmOnly("io.grpc"         % "grpc-netty"                      % "1.5.0")
+    val nettySsl     = jvmOnly("io.netty"        % "netty-tcnative-boringssl-static" % "2.0.5.Final") // % Runtime)
+
+    val all = core ++ traceGrpcApiService ++ googleOauth2 ++ grpcNetty ++ nettySsl
   }
 
   val scalajsDom       = jsOnly("org.scala-js"                          %%%! "scalajs-dom"       % "0.9.3")

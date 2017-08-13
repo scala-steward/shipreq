@@ -20,7 +20,7 @@ import shipreq.webapp.server.lib.Taskman
 import shipreq.webapp.server.security.AppSecurityRealm
 
 @Lenses
-final case class AppConfig(db: DbConfig, server: ServerConfig, report: ConfigReport)
+final case class BootConfig(db: DbConfig, server: ServerConfig, report: ConfigReport)
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -54,7 +54,7 @@ class Boot {
     initTaskman(Global.Instance)
   }
 
-  def readConfig(): (AppConfig, Option[RunModes.Value]) = {
+  def readConfig(): (BootConfig, Option[RunModes.Value]) = {
     import ConfigParser.Implicits.Defaults._
 
     val cfgRunMode: Config[Option[RunModes.Value]] =
@@ -64,7 +64,7 @@ class Boot {
       }
 
     val plan = (DbConfig.config |@| ServerConfig.config |@| cfgRunMode).tupled.withReport
-      .map { case ((a, b, r), z) => (AppConfig(a, b, z), r) }
+      .map { case ((a, b, r), z) => (BootConfig(a, b, z), r) }
 
     plan.run(ShipReqProps.sources).unsafeRun().getOrDie()
   }

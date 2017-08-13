@@ -283,7 +283,7 @@ final class MockServer extends Server.Algebra[Name] {
   private var fns: Map[String, ByteBuffer => Name[Server.ProtocolError \/ ByteBuffer]] =
     UnivEq.emptyMap
 
-  override val registerServerSideProc = localFn => Name {
+  override val registerServerSideProc = (fnName, localFn) => Name {
     prevFn += 1
     val key = prevFn.toString
     fns = fns.updated(key, localFn)
@@ -417,7 +417,8 @@ object MockInterpreters {
     publicRegistration         = Allow,
     taskmanSchema              = "test_taskman",
     initTaskmanOnBoot          = false,
-    initTaskmanRetry           = RetryCriteria(2 hours, Some(666)))
+    initTaskmanRetry           = RetryCriteria(2 hours, Some(666)),
+    trace                      = None)
 }
 
 class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerConfig]) {

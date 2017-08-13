@@ -109,7 +109,8 @@ object DispatchBM {
     publicRegistration         = Allow,
     taskmanSchema              = "test_taskman",
     initTaskmanOnBoot          = false,
-    initTaskmanRetry           = RetryCriteria(2 hours, Some(666)))
+    initTaskmanRetry           = RetryCriteria(2 hours, Some(666)),
+    trace                      = None)
 
   val user = User(UserId(1), Username("asds"), EmailAddr("x@x.com"), Set.empty)
   val ps = PasswordAndSalt(PasswordHash("wdsef34r"), Salt("32165498bdef"))
@@ -149,6 +150,9 @@ object DispatchBM {
     implicit val svr: Server.Time[F] = new Server.Time[F] {
       override val now = F point Instant.now()
     }
+
+    implicit val trace: Trace.Algebra[F, Request, Response] =
+      Trace.off
 
     val dispatchLogic = new DispatchLogic[F, Request, Response](r => r, (_, r) => F.point(r))
 

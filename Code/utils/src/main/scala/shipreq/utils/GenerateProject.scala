@@ -113,7 +113,7 @@ object GenerateProject {
       @tailrec def prompt(): Option[A] = {
         println("This ok?")
         System.out.flush()
-        val ch = Option(io.StdIn.readLine()).flatMap(_.trim.toLowerCase.headOption).getOrElse(lastPromptResponse)
+        val ch = Option(scala.io.StdIn.readLine()).flatMap(_.trim.toLowerCase.headOption).getOrElse(lastPromptResponse)
         lastPromptResponse = ch
         ch match {
           case 'y' => Some(a)

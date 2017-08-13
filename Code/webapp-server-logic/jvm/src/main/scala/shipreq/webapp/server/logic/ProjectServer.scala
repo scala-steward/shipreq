@@ -132,6 +132,7 @@ object ProjectServer {
                        (implicit db: DB.ForProjectSpa[D],
                         store: StoreAlgebra[F],
                         svr: Server.Algebra[F],
+                        trace: Trace.Basic[F],
                         runDB: D ~> F,
                         F: Monad[F],
                         D: Monad[D]): ProjectServer[F] =
@@ -215,11 +216,13 @@ object ProjectServer {
         import ProjectSpaProtocols._
 
         def updProj(mkEvent: Project => MakeEvent.Result): F[ErrorMsg \/ VerifiedEvent.Seq] =
-          addEvent(r, mkEvent, SaveRetries).map {
-            case PotentialChange.Success(es) => \/-(es)
-            case PotentialChange.Unchanged   => \/-(VerifiedEvent.EmptySeq)
-            case PotentialChange.Failure(e)  => -\/(e.errorMsg)
-          }
+          trace.sub("UpdateProject")(
+            addEvent(r, mkEvent, SaveRetries).map {
+              case PotentialChange.Success(es) => \/-(es)
+              case PotentialChange.Unchanged   => \/-(VerifiedEvent.EmptySeq)
+              case PotentialChange.Failure(e)  => -\/(e.errorMsg)
+            }
+          )
 
         import svr.{createServerSideProc => f}
         for {
@@ -252,7 +255,7 @@ object ProjectServer {
         // Non-atomicity guarded by DB constraint on eventOrd
         getOrSetLoadedState(r).flatMap {
           case Promise.GetOrSet.Success((_, s1)) =>
-            ApplyNewEvent(mkEvent(s1.project), s1.project) match {
+            trace.sub("MakeEvent")(F pure ApplyNewEvent(mkEvent(s1.project), s1.project)) flatMap {
               case PotentialChange.Success(updated) =>
                 val ord = s1.nextOrd
                 runDB(db.saveProjectEvent(r.key)(ord, updated.ae, updated.ve.hashRecs)).flatMap {

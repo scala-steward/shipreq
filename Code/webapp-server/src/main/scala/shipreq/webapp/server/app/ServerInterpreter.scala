@@ -11,7 +11,7 @@ import shipreq.webapp.server.protocol.ServerProtocol
 
 object ServerInterpreter extends Server.Algebra[Fx] {
 
-  override val registerServerSideProc = localFn =>
+  override val registerServerSideProc = (name, localFn) =>
     Fx(ServerProtocol.registerServerSideProc(localFn))
 
   override val now: Fx[Instant] =

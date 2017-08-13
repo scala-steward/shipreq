@@ -6,34 +6,39 @@ import japgolly.microlibs.config.JavaTimeConfigParsers._
 import java.time.Duration
 import monocle.macros.Lenses
 import scalaz.syntax.applicative._
+import shipreq.base.ops.StackdriverTrace
 import shipreq.base.util._
 
 @Lenses
-final case class ServerConfig(baseUrl: Url.Absolute.Base,
+final case class ServerConfig(
 
-                              /** A short amount of time, unnoticeable to humans, to sleep in order to frustrate automated security attacks. */
-                              attackFrustrationDelay: Duration,
+    baseUrl: Url.Absolute.Base,
 
-                              /** Number of characters in tokens used for email & reset-password verification. */
-                              securityTokenLength: Int,
+    /** A short amount of time, unnoticeable to humans, to sleep in order to frustrate automated security attacks. */
+    attackFrustrationDelay: Duration,
 
-                              /** How long registration tokens are valid for after issuing. */
-                              registrationTokenLifespan: Duration,
+    /** Number of characters in tokens used for email & reset-password verification. */
+    securityTokenLength: Int,
 
-                              /** How long password-reset tokens are valid for after issuing. */
-                              passwordResetTokenLifespan: Duration,
+    /** How long registration tokens are valid for after issuing. */
+    registrationTokenLifespan: Duration,
 
-                              /**
-                                * Whether or not public registrations are allowed.
-                                * (Registration tokens already issued will still be accepted.)
-                                */
-                              publicRegistration: Permission,
+    /** How long password-reset tokens are valid for after issuing. */
+    passwordResetTokenLifespan: Duration,
 
-                              /** The DB schema in which the Taskman interfaces reside. */
-                              taskmanSchema: String,
+    /**
+    * Whether or not public registrations are allowed.
+    * (Registration tokens already issued will still be accepted.)
+    */
+    publicRegistration: Permission,
 
-                              initTaskmanOnBoot: Boolean,
-                              initTaskmanRetry: RetryCriteria) {
+    /** The DB schema in which the Taskman interfaces reside. */
+    taskmanSchema: String,
+
+    initTaskmanOnBoot: Boolean,
+    initTaskmanRetry: RetryCriteria,
+
+    trace: Option[StackdriverTrace.Cfg]) {
 
   val attackFrustrationDelayMs: Long =
     attackFrustrationDelay.toMillis
@@ -50,7 +55,8 @@ object ServerConfig {
       Config.getOrUse[Boolean ]      ("feature.publicRegistration", true).map(Allow.when) |@|
       Config.need    [String  ]      ("taskman.schema") |@|
       Config.getOrUse[Boolean ]      ("taskman.init", true) |@|
-      RetryCriteria.config.withPrefix("taskman.init.retry.")
+      RetryCriteria.config.withPrefix("taskman.init.retry.") |@|
+      StackdriverTrace.config.withPrefix("trace.")
     ) (apply).withPrefix("shipreq.")
 
 }

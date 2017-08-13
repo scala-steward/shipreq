@@ -155,7 +155,8 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
                                                   config    : ServerConfig,
                                                   security  : Security.Algebra[F],
                                                   db        : DB.SecurityTokenReadOnly[F],
-                                                  svr       : Server.Time[F]) {
+                                                  svr       : Server.Time[F],
+                                                  tracer    : Trace.Algebra[F, RealReq, RealRes]) {
   import Method._
   import Response._
 
@@ -219,11 +220,16 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
     routes.embed(r => test(r.path), Request.path.modify(mod))
   }
 
-  def makeReal(d: Request => F[Response]): RealReq => F[RealRes] =
-    realReq => {
-      val req = readRealReq(realReq)
-      d(req).flatMap(makeRealRes(realReq, _))
-    }
+  def makeReal(trace: Boolean)(d: Request => F[Response]): RealReq => F[RealRes] =
+    if (trace)
+      realReq => {
+        val req = readRealReq(realReq)
+        tracer.http(realReq, req.path)(
+          d(req).flatMap(makeRealRes(realReq, _)))
+      }
+    else
+      realReq => d(readRealReq(realReq)).flatMap(makeRealRes(realReq, _))
+
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
@@ -300,7 +306,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
   }
 
   def mainDispatcher(devMode: Boolean, testMode: Boolean): RealReq => F[RealRes] =
-    makeReal(
+    makeReal(trace = true)(
       cacheUsualPaths(
         ( mainRoutes
         | Option.when(testMode)(loginApi)
@@ -327,7 +333,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
       scope(opsRoot, ok)
 
     val total: RealReq => F[RealRes] =
-      makeReal {
+      makeReal(trace = false) {
         val notFound: FR = F pure Response.Generic(404, "Not found.")
         routes.withFallback(onGet(_ => notFound))
       }

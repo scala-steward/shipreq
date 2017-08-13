@@ -14,7 +14,8 @@ final case class Global(config  : ServerConfig,
                         db      : DbAccess,
                         logic   : ServerLogic[Fx],
                         security: Security.Algebra[Fx],
-                        taskman : TaskmanApi[Fx])
+                        taskman : TaskmanApi[Fx],
+                        trace   : TraceInterpreter.ForLift[Fx])
 
 object Global {
   var Instance: Global = _
@@ -28,19 +29,21 @@ object Global {
 
   def default(implicit dbAccess: DbAccess, config: ServerConfig): Global = {
     assert(dbAccess ne null, "DbAccess is null, sir.")
-    implicit val runDB         = dbAccess.fx.trans
+    implicit val trace         = config.trace.map(TraceInterpreter.apply).getOrElse(Trace.off) //.compose(Trace.logToStdout)
+    implicit val runDB         = trace.db(dbAccess.fx.trans)
              val taskmanCtx    = TaskmanApiImpl.Context(Some(config.taskmanSchema))
     implicit val taskman       = TaskmanApiImpl(taskmanCtx, runDB)
     implicit val dbAlgebra     = new DbInterpreter()
     implicit val dbForSecurity = DB.ForSecurity.trans(DbInterpreter.ForSecurity)(runDB)
     implicit val projectStore  = Store.Algebra.concurrentHashMap(): ProjectServer.StoreAlgebra[Fx]
     implicit val security      = new SecurityInterpreter[Fx]
-    implicit val server        = ServerInterpreter
+    implicit val server        = trace.server(ServerInterpreter)
     Global(
       config   = config,
       db       = dbAccess,
       logic    = ServerLogic.create[ConnectionIO, Fx](ProjectServer.BroadcastTo.All),
       security = security,
-      taskman  = taskman)
+      taskman  = taskman,
+      trace    = trace)
     }
 }
