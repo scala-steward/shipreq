@@ -17,7 +17,7 @@ object TraceInterpreter {
   def apply(traceConfig: StackdriverTrace.Cfg): ForLift[Fx] =
     new ForLift[Fx] {
 
-      val tracer = traceConfig.init()
+      val tracer = traceConfig.getTracer()
 
       val component = "webapp"
 

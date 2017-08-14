@@ -2,12 +2,13 @@ package shipreq.base.ops
 
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.cloud.trace.{Trace, Tracer}
-import com.google.cloud.trace.core.{ConstantTraceOptionsFactory, RateLimitingTraceOptionsFactory}
+import com.google.cloud.trace.core.{ConstantTraceOptionsFactory, Labels, RateLimitingTraceOptionsFactory, ThrowableStackTraceHelper}
 import com.google.cloud.trace.service.TraceGrpcApiService
 import japgolly.microlibs.config.ConfigParser.Implicits.Defaults._
 import japgolly.microlibs.config._
 import java.io.FileInputStream
 import scalaz.syntax.applicative._
+import shipreq.base.util.Memo
 
 object StackdriverTrace {
 
@@ -52,10 +53,16 @@ object StackdriverTrace {
       b.build()
     }
 
-    def init(): Tracer = {
-      Trace.init(traceService)
+    val init: () => Unit =
+      Memo.fn0(Trace.init(traceService))
+
+    def getTracer(): Tracer = {
+      init()
       Trace.getTracer()
     }
+
+    def sqlTracer() =
+      StackdriverTrace.sqlTracer(getTracer())
   }
 
   def config: Config[Option[Cfg]] =
@@ -95,4 +102,34 @@ object StackdriverTrace {
     final val Stacktrace         = "/stacktrace"
     final val Tid                = "/tid"
   }
+
+  def sqlTracer(tracer: Tracer): SqlTracer =
+    new SqlTracer {
+      override def executePreparedStatement[@specialized(Boolean, Int, Long) A](method : String,
+                                                                                sql    : String,
+                                                                                batches: Int,
+                                                                                run    : () => A): A = {
+        val ctx = tracer.startSpan("JDBC")
+        val labels = Labels.builder()
+          .add("/jdbc/class", "PreparedStatement")
+          .add("/jdbc/method", method)
+          .add("/jdbc/sql", sql)
+          .add("/jdbc/batches", batches.toString)
+
+        try {
+          val a = run()
+          tracer.annotateSpan(ctx, labels.build())
+          tracer.endSpan(ctx)
+          a
+
+        } catch {
+          case t: Throwable =>
+            labels.add(Label.ErrorMessage, t.getMessage)
+            tracer.setStackTrace(ctx, ThrowableStackTraceHelper.createBuilder(t).build)
+            tracer.annotateSpan(ctx, labels.build())
+            tracer.endSpan(ctx)
+            throw t
+        }
+      }
+    }
 }

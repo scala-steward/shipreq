@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level
 import com.zaxxer.hikari.HikariConfig
 import japgolly.microlibs.config.ConfigParser.Implicits.Defaults._
 import japgolly.microlibs.config._
+import javax.sql.DataSource
 import org.postgresql.ds.PGSimpleDataSource
 import scalaz.syntax.apply._
 import scalaz.{-\/, \/, \/-}
@@ -11,7 +12,11 @@ import scalaz.{-\/, \/, \/-}
 final case class DbConfig(
   pgDataSource: PGSimpleDataSource,
   hikariConfig: HikariConfig,
-  schema      : Option[String])
+  schema      : Option[String]) {
+
+  def modifyHikariDataSource(f: DataSource => DataSource): Unit =
+    hikariConfig.setDataSource(f(hikariConfig.getDataSource))
+}
 
 object DbConfig {
 

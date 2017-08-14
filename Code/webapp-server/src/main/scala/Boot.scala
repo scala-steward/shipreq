@@ -36,14 +36,14 @@ class Boot {
   def boot(): Unit = {
 
     // Read config
-    val (appConfig, runMode) = readConfig()
-    logger.info(appConfig.report.report)
+    val (cfg, runMode) = readConfig()
+    logger.info(cfg.report.report)
     runMode foreach setRunMode
     logger.info(s"RunMode = ${Props.mode}")
 
     // Create services
-    implicit val serverConfig = appConfig.server
-    implicit val dbAccess = initDatabase(appConfig.db)
+    implicit val serverConfig = cfg.server
+    implicit val dbAccess = initDatabase(cfg)
     initShiro()
     configureLift()
     Global.Instance = Global.default
@@ -64,7 +64,10 @@ class Boot {
       }
 
     val plan = (DbConfig.config |@| ServerConfig.config |@| cfgRunMode).tupled.withReport
-      .map { case ((a, b, r), z) => (BootConfig(a, b, z), r) }
+      .map { case ((db, svr, runMode), report) =>
+        val cfg = BootConfig(db, svr, report)
+        (cfg, runMode)
+      }
 
     plan.run(ShipReqProps.sources).unsafeRun().getOrDie()
   }
@@ -135,8 +138,10 @@ class Boot {
   def initShiro(): Unit =
     AppSecurityRealm.init()
 
-  def initDatabase(dbConfig: DbConfig): DbAccess = {
-    val access = DbAccess.fromCfg(dbConfig).unsafeRun()
+  def initDatabase(cfg: BootConfig): DbAccess = {
+    for (t <- cfg.server.trace.map(_.sqlTracer()))
+      cfg.db.modifyHikariDataSource(t.apply)
+    val access = DbAccess.fromCfg(cfg.db).unsafeRun()
     logger.info(s"Connecting to DB: ${access.desc}")
     access.verifyConnectivity()
     access.migrator.migrate[Fx].unsafeRun()
