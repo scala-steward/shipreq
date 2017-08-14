@@ -126,7 +126,8 @@ depsJvm = M.fromList [
          ("taskman-server",          ["taskman-server-logic", "taskman-server-schema", "taskman-api"]) ,
          ("taskman-server-schema",   ["base-db"]) ,
          ("taskman-server-logic",    ["taskman-api-logic"]) ,
-         ("base-db",                 ["base-util"]) ,
+         ("base-db",                 ["base-ops"]) ,
+         ("base-ops",                ["base-util"]) ,
          ("base-util",               []) ]
 depsJs = M.fromList [
          ("webapp-gen",              ["webapp-client-project"]),

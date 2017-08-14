@@ -76,6 +76,7 @@ Modules
 =======
 
 base-db   - Reusable utility code for DB access.
+base-ops  - Reusable utility code for dev-ops purposes.
 base-test - Reusable utility code for testing.
 base-util - Reusable utility code, general purpose.
 

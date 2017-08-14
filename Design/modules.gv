@@ -8,6 +8,7 @@ subgraph cluster_base {
   baseMacro [label="base-macro\n(JVM & JS)"]
   baseUtil [label="base-util\n(JVM & JS)"]
   baseDb [label="base-db\n(JVM)"]
+  baseOps [label="base-ops\n(JVM)"]
 
   node[fillcolor=white color=darkgreen]
   baseTest [label="base-test\n(JVM & JS)"]
@@ -70,7 +71,8 @@ root [label="[aggregate]\nroot" fillcolor="#cccccc"]
 
 // Deps
 baseUtil -> baseMacro
-baseDb -> baseUtil
+baseOps -> baseUtil
+baseDb -> baseOps
 baseTest -> baseUtil [color="#111111"]
 baseTest -> baseDb [color="#111111" style=dashed label="provided"]
 
