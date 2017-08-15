@@ -1,0 +1,8 @@
+{
+  "name": "shipreq-business",
+  "version": "2.0.0",
+  "private": true,
+  "dependencies": {
+    "backslide": "^1.2.1"
+  }
+}
