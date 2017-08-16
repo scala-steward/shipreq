@@ -96,10 +96,11 @@ Phase 2
 * Security
   * Upgrade JDK and audit crypto mechanisms
 
-### User-Functional Design
+### Dev
 * Allow refs to custom text fields (e.g. [UC-1.detail])
 * Clicking a UCRef should open the UC in ReqDetail (just like ReqRefs)
 * Consider previous mnemonics in PastIds field
+* Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
 
 ### New Features
 * User profile page
