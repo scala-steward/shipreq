@@ -8,32 +8,37 @@ digraph G {
 
   // -----------------------------------------------------------------------------------------------
 
-  mail_archive [label="Archive.\nshipreq@gmail.com" shape=folder style=filled fillcolor="#aabbff"]
-  staff_mail   [label="Staff's\npersonal email" shape=folder style=filled fillcolor="#aabbff"]
+  staff_mail [label="Staff's\npersonal email" shape=folder style=filled fillcolor="#aabbff"]
 
   subgraph cluster_gandi {
     fillcolor="#ccddcc"
     label="gandi.net"
-    gandi_dns [label="DNS"]
-    gandi_mx [label="Mail fwd"]
-    {node[shape=folder style=filled fillcolor="#c0c8e0"]
-      ea_contact [label="contact@\nshipreq.com"]
-      ea_news    [label="news@\nshipreq.com"]
-      ea_notice  [label="notice@\nshipreq.com"]
-      ea_support [label="support@\nshipreq.com"]
-      ea_noreply [label="no-reply@\nshipreq.com"]
+    gandi_dns [label="shipreq.com\nName Servers"]
+  }
+
+  subgraph cluster_gcp {
+    fillcolor="#ccddcc"
+    label="Google Cloud Platform"
+    cloud_dns [label="Cloud DNS"]
+    cloud_sql [label="Cloud SQL\nPostgres"]
+    subgraph cluster_gke {
+      fillcolor="#aabbaa"
+      label="GKE Cluster"
+      webapp  [fillcolor="hotpink" label="webapp"]
+      taskman [fillcolor="#ff9900" label="taskman"]
+      cloudsqlproxy [label="cloudsql-proxy"]
     }
   }
 
-  subgraph cluster_aws {
+  subgraph cluster_gsuite {
     fillcolor="#ccddcc"
-    label="Amazon Web Services"
-    aws_r53 [label="Route 53"]
-    aws_rds [label="RDS"]
-    aws_ses [label="SES"]
-    {node[fillcolor=pink]
-      webapp  [label="webapp"]
-      taskman [label="taskman"]
+    label="G-Suite"
+    gsuite_mail [label="GMail"]
+    gsuite_route [label="Mail\nRouting"]
+    gsuite_smtp [label="SMTP"]
+    gsuite_web [label="Web interface" shape=tab fillcolor=burlywood]
+    {node[shape=folder style=filled fillcolor="#c0c8e0"]
+      gsuite_groups [label="archive@shipreq.com\rnews@shipreq.com\rnotice@shipreq.com\r"]
     }
   }
 
@@ -41,43 +46,53 @@ digraph G {
     fillcolor="#ccddcc"
     label="MailChimp"
     mc_api [label="API"]
-    mc_web [label="Web interface" shape=tab]
+    mc_web [label="Web interface" shape=tab fillcolor=burlywood]
   }
 
   subgraph cluster_fd {
     fillcolor="#ccddcc"
     label="Freshdesk"
-    fd_mail [label="Mailbox" shape=folder style=filled fillcolor="#aabbff"]
-    fd_web [label="Web interface" shape=tab]
+    fd_mail [label="shipreqcomcontact@\nshipreq.freshdesk.com" shape=folder style=filled fillcolor="#aabbff"]
+    fd_web [label="Web interface" shape=tab fillcolor=burlywood]
     fd_api [label="API"]
   }
 
   // -----------------------------------------------------------------------------------------------
 
-  // DNS
-  gandi_dns    -> aws_r53   [label="Delegates DNS"]
-  aws_r53:w    -> aws_r53:w [label="DNS:www " dir=back]
-  aws_r53      -> webapp    [label="DNS:APEX"]
+  cloud_dns     -> gsuite_mail [label="MX"]
+  cloud_dns     -> webapp      [label="A:<ip>"]
+  cloud_dns:w   -> cloud_dns:w [label="CNAME:www " dir=back]
+  cloudsqlproxy -> cloud_sql
+  fd_web        -> fd_mail
+  fd_web        -> gsuite_groups [label="bcc:archive@"]
+  fd_web        -> staff_mail
+  gandi_dns     -> cloud_dns
+  gsuite_route  -> fd_mail
+  gsuite_smtp   -> gsuite_mail
+  gsuite_web    -> gsuite_mail,gsuite_groups,gsuite_route
+  mc_web        -> gsuite_groups [style=dashed label="from:notice@\lfrom:news@\l"]
 
-  // Email forwarding
-  aws_r53      -> gandi_mx [label="DNS:MX"]
-  gandi_mx     -> ea_support,ea_noreply,ea_contact,ea_news,ea_notice [label="Catch"]
-  gandi_mx     -> fd_mail [label="Fwd"]
-  mail_archive -> gandi_mx [label="Fwd" dir=back]
+  edge[color="#ff9900" penwidth=2]
+  taskman       -> cloudsqlproxy
+  taskman       -> fd_api
+  taskman       -> gsuite_groups [label="bcc:archive@"]
+  taskman       -> gsuite_smtp
+  taskman       -> mc_api
 
-  webapp       -> aws_rds
-  webapp       -> ea_contact [style=dashed]
+  edge[color=hotpink penwidth=2]
+  webapp        -> cloudsqlproxy
+  webapp        -> gsuite_route  [label="mailto:contact@"]
 
-  taskman      -> aws_ses
-  taskman      -> aws_rds
-  taskman      -> mc_api
-  taskman      -> fd_api
-  taskman      -> ea_noreply [style=dashed]
-  mail_archive -> taskman [dir=back]
+/*
+  // Email from users
+  {
+    edge [style=dashed color=red fontcolor=red]
+  }
 
-  mc_web       -> ea_news,ea_notice [style=dashed]
-
-  fd_web       -> staff_mail
-  mail_archive -> fd_web [label="Fwd" dir=back]
+  // Email to users
+  {
+    edge [style=dashed color="#000099" fontcolor="#000099"]
+  }
+*/
 
 }

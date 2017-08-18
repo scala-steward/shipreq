@@ -1,5 +1,5 @@
 digraph G {
-  compound=true
+  //compound=true
   labelloc=t
   label="ShipReq System Diagram: Emails & Comms\n(arrows denote flow of data from one component to another)\n(ignores which component instigates the data transfer)\n(red = comm from user, blue = comm to user)\n"
   style=filled fillcolor="#e2ffe2"
@@ -8,101 +8,132 @@ digraph G {
 
   // -----------------------------------------------------------------------------------------------
 
-  mail_archive [label="Archive.\nshipreq@gmail.com" shape=folder style=filled fillcolor="#aabbff"]
-
   subgraph cluster_staff {
     style=filled
     fillcolor="#e6ffe6"
     node [style=filled fillcolor="#ccaa66"]
     label="Staff"
+    staff_web [label="Staff member's\nweb browser" shape=tab fillcolor=burlywood]
+    staff_mail [label="Staff member's\nemail address" shape=folder style=filled fillcolor="#aabbff"]
     staff [shape=proteinstab style=filled fillcolor="#aabbff" label="\nStaff"]
-    staff_mail   [label="Staff's\npersonal email" shape=folder style=filled fillcolor="#aabbff"]
   }
 
   subgraph cluster_usr {
     style=filled
     fillcolor="#eeeeaa"
-    node [style=filled fillcolor="#ccaa66"]
+    node [style=filled]
     label="Userland"
-    usr_web [label="User's\nweb browser" shape=tab]
+    usr_web [label="User's\nweb browser" shape=tab fillcolor=burlywood]
     usr_mail [label="User's\nemail" shape=folder fillcolor="#aabbff"]
     usr [shape=proteinstab style=filled label="\nUser"]
   }
 
-  subgraph cluster_gandi {
+  subgraph cluster_gsuite {
     fillcolor="#ebebeb"
-    label="gandi.net"
+    label="G-Suite"
+    smtp [label="SMTP"]
     node[shape=folder style=filled fillcolor="#c0c8e0"]
-    ea_contact [label="contact@\nshipreq.com"]
-    ea_news    [label="news@\nshipreq.com"]
-    ea_notice  [label="notice@\nshipreq.com"]
-    ea_support [label="support@\nshipreq.com"]
-    ea_noreply [label="no-reply@\nshipreq.com"]
+    ea_contact   [label="contact@shipreq.com\n(Routing rule)"]
+    ea_broadcast [label="news@shipreq.com\rnotice@shipreq.com\r(Group)"]
+    //ea_noreply   [label="no-reply@shipreq.com\n(Group)"]
+    ea_archive   [label="archive@shipreq.com\n(Group)"]
+    gsuite_web   [label="Web interface" shape=tab fillcolor=burlywood]
   }
 
-  subgraph cluster_aws {
+  subgraph cluster_gcp {
     fillcolor="#ebebeb"
-    label="Amazon Web Services"
-    aws_rds [label="RDS"]
-    {node[fillcolor=pink]
-      wb  [label="webapp"]
-      taskman [label="taskman"]
-    }
+    label="Google Cloud Platform"
+    cloud_sql [label="PostgreSQL"]
+    webapp  [fillcolor="#ffff99" label="webapp"]
+    taskman [fillcolor="#ffff99" label="taskman"]
   }
 
   subgraph cluster_mc {
     fillcolor="#ebebeb"
     label="MailChimp"
     mc_api [label="API"]
-    mc_web [label="Web interface" shape=tab]
+    mc_web [label="Web interface" shape=tab fillcolor=burlywood]
   }
 
   subgraph cluster_fd {
     fillcolor="#ebebeb"
     label="Freshdesk"
-    fd_mail [label="Mailbox" shape=folder style=filled fillcolor="#aabbff"]
-    fd_web [label="Web interface" shape=tab]
+    fd_mail [label="shipreqcomcontact@\nshipreq.freshdesk.com" shape=folder style=filled fillcolor="#aabbff"]
+    fd_web [label="Web interface" shape=tab fillcolor=burlywood]
     fd_api [label="API"]
   }
 
   // -----------------------------------------------------------------------------------------------
 
-  fd_api -> fd_web
-  mc_api -> mc_web
-  taskman -> aws_rds [dir=both]
-  taskman -> mc_api
-  wb -> aws_rds [dir=both]
-  wb -> usr_web [dir=both]
-
-  // Email flows (incoming)
+  // Comms from user to staff
   {edge[color=red]
-    ea_contact -> fd_mail
-    mail_archive -> ea_contact [dir=back]
-    ea_noreply,ea_news,ea_notice,ea_support -> ea_contact
-    fd_mail -> fd_web
-    fd_web -> staff
-    fd_web -> staff_mail -> staff
-    taskman -> fd_api
-    mail_archive -> taskman [dir=back]
-    usr_mail -> ea_contact
-    usr_mail -> usr_web [dir=back]
-    usr_web -> usr [dir=back]
-    usr_web -> wb -> aws_rds -> taskman
+
+    // User sends message through landing page
+    usr -> usr_web -> webapp -> cloud_sql -> taskman -> fd_api -> fd_web
+    // taskman -> mc_api -> mc_web --- This isn't comms
+
+    // User sends email
+    usr_web -> usr_mail -> ea_contact,ea_broadcast
+    ea_contact -> fd_mail -> fd_web
+    // usr_mail -> ea_noreply -> gsuite_web
+
+    // User visits FreshDesk
+    usr_web -> fd_web
+
+    // User's comms read by staff in Freshdesk UI
+    fd_web -> staff_web:e
+    staff_web -> staff
+
+    // FreshDesk emails assigned staff
+    fd_web -> staff_mail -> staff_web
+
+    // Staff can check groups
+    ea_broadcast -> gsuite_web -> staff_web
+
+    // BCC to archive
+    ea_contact -> ea_archive -> gsuite_web
+    // ea_broadcast?
+    // landing page mails?
   }
 
-  // Email flows (outgoing)
-  {edge[color="#000099"]
-    fd_web -> staff [dir=back]
-    fd_web -> usr_mail
-    mail_archive -> fd_web [dir=back]
-    mc_web -> staff [dir=back]
-    mc_web -> usr_mail
-    taskman -> mc_api -> mc_web [dir=back]
-    taskman:e -> usr_mail:n
-    mail_archive -> taskman [dir=back]
-    usr_mail -> usr_web
-    usr_web -> usr
-    wb -> aws_rds -> taskman
+  // Comms from staff to user
+  {edge[color="#000099" dir=back]
+
+    // User reads their email
+    usr -> usr_web -> usr_mail
+
+    // Staff responds to user issues (via UI)
+    usr_mail -> ea_contact -> fd_web -> staff_web -> staff
+
+    // Staff responds to user issues (via email)
+    ea_contact -> staff_mail [style=dashed]
+    staff_mail -> staff_web
+
+    // Staff broadcasts
+    usr_mail -> ea_broadcast
+    ea_broadcast -> mc_web [style=dashed]
+    mc_web -> staff_web:w
+
+    // Staff replies to user emails
+    ea_broadcast -> gsuite_web -> staff_web
+
+    // BCC to archive
+    gsuite_web -> ea_archive -> fd_web
+    // TODO MailChimp can BCC too?
+    // ea_archive -> gsuite_web -> staff_web -> staff [dir=foward]
+  }
+
+  // Email flows (system to user)
+  {edge[color="#22bbdd" dir=back]
+
+    // User reads their email
+    usr -> usr_web -> usr_mail
+
+    // Automated comms (reset password, register1)
+    usr_mail -> smtp -> taskman
+
+    // BCC to archive
+    smtp -> ea_archive -> gsuite_web -> staff_web -> staff [dir=foward]
   }
 
 }

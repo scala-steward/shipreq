@@ -68,16 +68,12 @@ Phase 2
   * each service's details
   * everything below both wrt ShipReq employee, and as personal study notes
 * Services - create/confirm, cleanse, configure accounts
-  * Mailchimp
-  * ZenDesk
   * GCP
     * Monitoring
     * Logging
     * Metrics
     * Alerting
-    * DNS
     * SMTP
-  * Email addresses
   * Google Analytics
 * Env
   * Automate releases
@@ -100,6 +96,7 @@ Phase 2
 * Allow refs to custom text fields (e.g. [UC-1.detail])
 * Clicking a UCRef should open the UC in ReqDetail (just like ReqRefs)
 * Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
+* Redirect out of www. subdomain
 
 ### New Features
 * User profile page

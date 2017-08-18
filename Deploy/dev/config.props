@@ -6,5 +6,5 @@ GCP_ZONE        = australia-southeast1-b
 ACCT_APPSQL     = app-sql
 CLUSTER_NAME    = app-cluster-dev
 SERVICE_DBPROXY = db-proxy
-DB_INSTANCE     = postgres-dev4
+DB_INSTANCE     = postgres-dev
 DB_USERNAME     = app
