@@ -100,6 +100,7 @@ object Common {
       dependencyUpdatesFilter     -= moduleFilter(name = regexFilter("^(jetty-(server|websocket)|ammonite)$")),
       dependencyUpdatesFilter     -= moduleFilter(organization = regexFilter("^org.scala-lang$")),
       testFrameworks              += new TestFramework("utest.runner.Framework"),
+      cancelable in Global        := true, // Allows ctrl-c to kill apps started with run without exiting SBT
       minForcegcInterval          := 3.minutes,
       triggeredMessage            := Watched.clearWhenTriggered,
       target                      := redirectTargetDir(target.value))

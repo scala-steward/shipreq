@@ -1,4 +1,5 @@
 import sbt._, Keys._
+import Common.releaseMode
 
 object DockerEnv {
   import sys.process._
@@ -32,6 +33,9 @@ object DockerEnv {
       .filter(_.nonEmpty)
       .map("-D" + _)
       .toList
+
+  def dockerEnvsRoot(baseDirectory: File): File =
+    baseDirectory / "../docker"
 
   class ServiceRef(startFn: () => Unit, stopFn: () => Unit) {
     private var up = false
@@ -68,6 +72,21 @@ object DockerEnv {
       _.settings(
         devEnvStart in ThisBuild := env.start(),
         devEnvStop in ThisBuild := env.stop())
+
+    def envRoot(baseDirectory: File): File =
+      DockerEnv.dockerEnvsRoot(baseDirectory) / "dev"
+
+    private def runMode =
+      if (releaseMode) "production" else "development"
+
+    def javaOptions(serviceName: String, baseDirectory: File): List[String] =
+      "-Ddb.port=14032" ::
+      s"-Drun.mode=$runMode" ::
+      DockerEnv.javaOptionsFromDockerComposeEnv(serviceName, envRoot(baseDirectory) / "docker-compose.yml")
+        .filterNot(s => s.startsWith("-Ddb.host=") || s.startsWith("-Drun.mode="))
+
+    def resDir(serviceName: String, baseDirectory: File): File =
+      envRoot(baseDirectory) / serviceName
   }
 
   // ===================================================================================================================

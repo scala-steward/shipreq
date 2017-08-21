@@ -412,25 +412,12 @@ object WebappBuild {
         }
       )
 
-    def runMode =
-      if (releaseMode) "production" else "development"
-
     def connectToDockerDevEnv: Project => Project =
       _.configure(DockerEnv.dev.commands)
         .settings(
-
-          containerArgs in Jetty ++=
-            "--classes" :: (baseDirectory.value / s"../docker/dev/webapp").absolutePath :: Nil,
-
-          javaOptions in Jetty ++=
-            "-Ddb.port=14032" ::
-            s"-Drun.mode=$runMode" ::
-              DockerEnv.javaOptionsFromDockerComposeEnv("webapp", baseDirectory.value / "../docker/dev/docker-compose.yml")
-                .filterNot(s => s.startsWith("-Ddb.host=") || s.startsWith("-Drun.mode=")),
-
-          start in Jetty :=
-            (start in Jetty).dependsOn(DockerEnv.dev.devEnvStart).value
-        )
+          containerArgs in Jetty ++= "--classes" :: DockerEnv.dev.resDir("webapp", baseDirectory.value).absolutePath :: Nil,
+          javaOptions   in Jetty ++= DockerEnv.dev.javaOptions("webapp", baseDirectory.value),
+          start         in Jetty  := (start in Jetty).dependsOn(DockerEnv.dev.devEnvStart).value)
 
     def webappCmdAliases: Project => Project = {
       val w = "webapp-server"

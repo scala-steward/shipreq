@@ -61,6 +61,15 @@ object TaskmanBuild {
       case n => n
     })
 
+    // Integrate run/runMain with the Docker dev env
+    def runWithDockerDev: Project => Project =
+      _.configure(DockerEnv.dev.commands)
+      .settings(
+        fork          in (Compile, run)  := true,
+        fullClasspath in Runtime         += DockerEnv.dev.resDir("taskman", baseDirectory.value),
+        javaOptions   in (Compile, run) ++= DockerEnv.dev.javaOptions("taskman", baseDirectory.value),
+        runner        in (Compile, run)  := (runner in (Compile, run)).dependsOn(DockerEnv.dev.devEnvStart).value)
+
     project("taskman-server")
       .enablePlugins(JavaAppPackaging, DockerPlugin)
       .configure(Common.jvmSettings, DockerEnv.test.required)
@@ -70,6 +79,7 @@ object TaskmanBuild {
       .dependsOn(taskmanServerLogic, taskmanServerSchema, taskmanApi)
       .dependsOn(baseTestJvm % "test")
       .configure(Common.dockerBaseSettings("taskman"))
+      .configure(runWithDockerDev)
       .settings(
         initialCommands += consoleCmds,
         mainClass := Some(serverClass),
