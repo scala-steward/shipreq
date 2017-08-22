@@ -1,4 +1,4 @@
-package shipreq.taskman.server
+package shipreq.taskman.server.logic
 
 import java.time.Duration
 import java.time.temporal.ChronoUnit

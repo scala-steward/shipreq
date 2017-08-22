@@ -44,6 +44,9 @@ object FxModule {
     def fail[A](err: Throwable): Fx[A] =
       Fx(throw err)
 
+    def lift[A](fa: Throwable \/ A): Fx[A] =
+      fa.fold(fail, pure)
+
     val unit: Fx[Unit] =
       Free.pure(())
 
@@ -112,6 +115,9 @@ object FxModule {
     def recoverArticulateError[AA >: A](handler: ArticulateError => Fx[AA]): Fx[AA] =
       recoverException(t => handler(ArticulateError(t)))
 
+//    def attemptArticulateError: Fx[ArticulateError \/ A] =
+//      fx.attempt.map(_.leftMap(ArticulateError(_)))
+
     def mapArticulateError(f: ArticulateError => Throwable): Fx[A] =
       recoverArticulateError(e => Fx.fail(f(e)))
 
@@ -136,7 +142,6 @@ object FxModule {
       val useAndRelease = use.andFinally(release)
       fx.flatMap(_ => useAndRelease)
     }
-
   }
 
 }
