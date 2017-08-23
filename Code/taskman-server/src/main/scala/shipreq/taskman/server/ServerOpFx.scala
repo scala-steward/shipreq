@@ -3,18 +3,18 @@ package shipreq.taskman.server
 import doobie.imports._
 import japgolly.microlibs.config
 import java.time.Duration
-import scalaz.\/-
+import scalaz.{-\/, \/, \/-, ~>}
 import scalaz.std.option.optionInstance
 import scalaz.syntax.catchable._
 import scalaz.syntax.traverse._
 import shipreq.base.db.DbAccess
-import shipreq.base.util.ErrorOr
 import shipreq.base.util.FxModule._
+import shipreq.base.util.TaggedTypes.JsonStr
 import shipreq.taskman.api.{Msg, MsgId, Priority}
 import shipreq.taskman.api.impl.Serialisation
-import shipreq.base.util.TaggedTypes.JsonStr
+import shipreq.taskman.server.logic._
 
-object SopImpl {
+object ServerOpFx {
 
   sealed trait ArchiveIntent {
     def resultFlag: Char
@@ -157,9 +157,8 @@ object SopImpl {
     def getMsgAssignWorker(node: NodeId, worker: WorkerId, hdr: MsgHeader): ConnectionIO[Option[MsgDetail]] =
       getMsgAssignWorkerQ.toQuery0(worker, hdr.id, node).option.map(_ map {
         case (msgType, msgData, failureCount) =>
-          ErrorOr.require_!(
-            Serialisation.deserialise(msgType, msgData).map(msg =>
-              MsgDetail(hdr, msg, failureCount)))
+          Serialisation.deserialise(msgType, msgData)
+            .fold(throw _, MsgDetail(hdr, _, failureCount))
       })
 
     def reassignWorker(n: NodeId, w: WorkerId, m: MsgId): ConnectionIO[Boolean] =
@@ -191,9 +190,9 @@ object SopImpl {
 
 // =====================================================================================================================
 
-final class SopImpl[EA](db: Transactor[Fx], fh: Worker.FailureHandler) extends SopReifier {
+final class ServerOpFx[EA](db: Transactor[Fx], fh: Worker.FailureHandler) extends (ServerOp ~> Fx) {
   import ServerOp._
-  import SopImpl._
+  import ServerOpFx._
 
   def getNextNodeId = db trans Dao.getNextNodeId
 
@@ -206,16 +205,16 @@ final class SopImpl[EA](db: Transactor[Fx], fh: Worker.FailureHandler) extends S
       db trans Dao.getMsgAssignWorker(node, worker, hdr)
 
     case ReassignWorker(n, w, m) =>
-      db trans Dao.reassignWorker(n, w, m)
+      db trans Dao.reassignWorker(n, w, m.id)
 
     case UpdateMsgSuccess(n, w, m) =>
-      db trans Dao.archiveMsg(n, w, m, Succeeded)
+      db trans Dao.archiveMsg(n, w, m.id, Succeeded)
 
     case UpdateMsgRetry(n, w, m, delay) =>
-      db trans Dao.failAndRetry(n, w, m, delay)
+      db trans Dao.failAndRetry(n, w, m.id, delay)
 
     case UpdateMsgAbort(n, w, m) =>
-      db trans Dao.archiveMsg(n, w, m, FailAndAbort)
+      db trans Dao.archiveMsg(n, w, m.id, FailAndAbort)
 
     case CfgGet(k) =>
       db trans Dao.cfgGet(k)

@@ -67,6 +67,9 @@ object FxModule {
         _ <- f(a)
       } yield a
 
+    def tap_[B](f: Fx[B]): Fx[A] =
+      tap(_ => f)
+
     def unsafeTap[B](f: A => B): Fx[A] =
       tap(a => Fx(f(a)))
 
@@ -142,6 +145,16 @@ object FxModule {
       val useAndRelease = use.andFinally(release)
       fx.flatMap(_ => useAndRelease)
     }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  implicit class FxOptionOps[A](private val fx: Fx[Option[A]]) extends AnyVal {
+    def getOrFail(errMsg: => String): Fx[A] =
+      fx.flatMap {
+        case Some(a) => Fx pure a
+        case None    => Fx fail ArticulateError(errMsg)
+      }
   }
 
 }

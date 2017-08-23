@@ -4,7 +4,7 @@ import org.specs2.mutable.Specification
 import shipreq.base.test.db.SqlTester.test
 import shipreq.base.test.specs2.AllowUnitAsResult._
 import shipreq.base.test.specs2.db.DatabaseTest
-import shipreq.taskman.server.SopImpl.Sql._
+import shipreq.taskman.server.ServerOpFx.Sql._
 
 class SopSqlTest extends Specification with DatabaseTest {
   sequential

@@ -5,7 +5,6 @@ import java.time.Duration
 import org.specs2.matcher.Matcher
 import org.specs2.mutable._
 import shipreq.base.util.ArticulateError
-import shipreq.base.util.ArticulateError.Deterministic
 import TestHelpers._
 import ServerOp._
 import Failure._
@@ -14,7 +13,7 @@ import Worker._
 class FailureTest extends Specification {
 
   val genericError = ArticulateError("NO!")
-  val deterministicError = ArticulateError("ALWAYS NO!").tag(Deterministic)
+  val deterministicError = ArticulateError("ALWAYS NO!").tagDeterministic
   val ctx_det = FailureCtx(node1, worker2, md_1, deterministicError, timeNow)
   val ctx_nd = FailureCtx(node1, worker2, md_1, genericError, timeNow)
 

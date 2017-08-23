@@ -77,10 +77,7 @@ final class BusinessLogic[F[_]](emails        : Emails,
     import MailingList._
 
     def get(id: UserId): Fx[ShipReqUser] =
-      run(FindShipReqUser(-\/(id))).flatMap {
-        case Some(u) => Fx pure u
-        case None    => Fx fail ArticulateError(s"User not found: $id")
-      }
+      run(FindShipReqUser(-\/(id))) getOrFail s"User not found: $id"
 
     def tryDesc(id: UserId): Fx[String] =
       get(id).attempt.map {

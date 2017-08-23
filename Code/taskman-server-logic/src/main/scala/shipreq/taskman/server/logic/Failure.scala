@@ -2,7 +2,6 @@ package shipreq.taskman.server.logic
 
 import java.time.Duration
 import japgolly.microlibs.stdlib_ext.StdlibExt._
-import shipreq.base.util.ArticulateError.Deterministic
 import shipreq.base.util.{?=>, FnWithFallback}
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.Msg.DummyMsg
@@ -56,14 +55,14 @@ object Failure extends HasLogger {
     ctx => FailureResponse(UpdateMsgAbort(ctx.node, ctx.worker, ctx.msg), notifySupport(ctx) :: Nil)
 
   def abortDeterministicErrors: Rule =
-    FnWithFallback.when((_: FailureCtx).err is Deterministic)(abortAndNotify)
+    FnWithFallback.when((_: FailureCtx).err.isDeterministic)(abortAndNotify)
 
   def dummyMsgRules: Rule =
     FnWithFallback(f => (ctx: FailureCtx) =>
       ctx.msg.msg match {
-        case _: DummyMsg if ctx.err is Deterministic => abortAndDontNotify(ctx)
-        case m: DummyMsg                             => retryResponse(ctx, m.retryDelaySec seconds)
-        case _                                       => f(ctx)
+        case _: DummyMsg if ctx.err.isDeterministic => abortAndDontNotify(ctx)
+        case m: DummyMsg                            => retryResponse(ctx, m.retryDelaySec seconds)
+        case _                                      => f(ctx)
       }
     )
 

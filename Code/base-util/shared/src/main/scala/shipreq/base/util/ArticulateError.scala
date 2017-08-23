@@ -3,7 +3,7 @@ package shipreq.base.util
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.stdlib_ext.MutableArray
 import scala.collection.immutable.SortedSet
-import scalaz.\&/
+import scalaz.{-\/, \&/, \/, \/-}
 
 /** An error intended to be articulate and comprehensible.
   *
@@ -21,6 +21,13 @@ final class ArticulateError(val cause: String \&/ Throwable,
            hints: SortedSet[String]        = hints): ArticulateError =
     new ArticulateError(cause, tags, hints)
 
+  def setErrorMsg(msg: String): ArticulateError =
+    copy(cause = cause match {
+      case \&/.This(_)    => \&/.This(msg)
+      case \&/.That(e)    => \&/.Both(msg, e)
+      case \&/.Both(_, e) => \&/.Both(msg, e)
+    })
+
   def replaceCause(msg: String): ArticulateError =
     copy(cause = \&/.This(msg))
 
@@ -32,6 +39,15 @@ final class ArticulateError(val cause: String \&/ Throwable,
 
   def hint(h1: String, hn: String*): ArticulateError =
     copy(hints = hints ++ hn + h1)
+
+  def isDeterministic: Boolean =
+    is(ArticulateError.Deterministic)
+
+  def isNonDeterministic: Boolean =
+    !isDeterministic
+
+  def tagDeterministic: ArticulateError =
+    tag(ArticulateError.Deterministic)
 
   override def toString: String =
     s"ArticulateError($cause, $tags, $hints)"
@@ -77,6 +93,15 @@ object ArticulateError {
       case e: ArticulateError => e
       case _                  => new ArticulateError(\&/.That(t), Set.empty, SortedSet.empty)
     }
+
+  def attempt[A](a: => A): ArticulateError \/ A =
+    safe(\/-(a))
+
+  def safe[A](f: => (ArticulateError \/ A)): ArticulateError \/ A =
+    try f catch { case t: Throwable => -\/(apply(t)) }
+
+  def fromOption[A](o: Option[A], errMsg: => String): ArticulateError \/ A =
+    o.fold[ArticulateError \/ A](-\/(apply(errMsg)))(\/-(_))
 
   /** @since 2014 */
   private[ArticulateError] def getMessage(cause: String \&/ Throwable): String = {

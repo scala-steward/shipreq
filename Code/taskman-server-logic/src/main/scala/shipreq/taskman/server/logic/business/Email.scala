@@ -1,6 +1,7 @@
 package shipreq.taskman.server.logic.business
 
 import java.time.{Instant, ZoneId, ZoneOffset}
+import scalaz.{\/, \/-}
 import scalaz.old.NonEmptyList
 import shipreq.base.util.ScalaExt.StringBuilderExt
 import shipreq.base.util.{ArticulateError, Util}
@@ -19,11 +20,11 @@ object Email {
         case Some(p) => s"${p.getClass.getSimpleName}($p)"
       }
 
-//    def tryParse[P](reuse: PartialFunction[AnyRef, P], parse: EmailAddr => ErrorOr[P]): ErrorOr[P] =
-//      preParsed match {
-//        case Some(p) if reuse.isDefinedAt(p) => ErrorOr(reuse(p))
-//        case _ => parse(addr)
-//      }
+    def tryParse[E, P](reuse: PartialFunction[AnyRef, P], parse: EmailAddr => E \/ P): E \/ P =
+      preParsed match {
+        case Some(p) if reuse.isDefinedAt(p) => \/-(reuse(p))
+        case _                               => parse(addr)
+      }
   }
 
   final case class EnvelopeProps(publicFrom: Addr, archiveAddrs: List[Addr])

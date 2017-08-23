@@ -21,7 +21,7 @@ trait ServerImplTestHelpers {
   lazy val taskmanApi = ctx.taskmanApi
   import ctx._
 
-  def reify[A](op: ServerOp[A]): Fx[A] = sopReifier(op)
+  def reify[A](op: ServerOp[A]): Fx[A] = serverOpFx(op)
 
   def runApi[A](f: TaskmanApi[Fx] => Fx[A]): A = f(taskmanApi).unsafeRun()
   def run[A](op: ServerOp[A]): A = reify(op).unsafeRun()
