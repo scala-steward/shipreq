@@ -14,7 +14,7 @@ import shipreq.taskman.api.EmailAddr
 import shipreq.taskman.server.logic.business.BusinessOp.SendEmail
 import shipreq.taskman.server.logic.business.Email._
 
-object EmailImpl extends HasLogger {
+object JavaMail extends HasLogger {
 
   val getParsed: PartialFunction[AnyRef, Address] = {
     case a: Address => a
@@ -70,10 +70,10 @@ object EmailImpl extends HasLogger {
   }
 }
 
-final class EmailImpl(val mailSession: Session) extends HasLogger {
-  import EmailImpl._
+final class JavaMail(val mailSession: Session) extends HasLogger {
+  import JavaMail._
 
-  val charset = "UTF-8"
+  private[this] final val charset = "UTF-8"
 
   def buildEmail(e: Envelope, c: Content): ArticulateError \/ MimeMessage = {
     val r = for {

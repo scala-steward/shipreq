@@ -10,7 +10,7 @@ import shipreq.taskman.server.logic.business.BusinessOp
 import shipreq.taskman.server.logic.business.BusinessOp._
 
 final class BusinessOpFx(db           : Transactor[Fx],
-                         emailer      : EmailImpl,
+                         emailer      : JavaMail,
                          mailchimp    : MailChimp,
                          freshDesk    : FreshDesk,
                          shipreqSchema: Option[String]) extends (BusinessOp ~> Fx) with HasLogger {

@@ -13,7 +13,7 @@ import shipreq.base.util.log.LogLevel.configParserShipReqLogLevel
 import shipreq.base.util.log.{HasLogger, LogLevel}
 import shipreq.taskman.api.CfgKeys
 import shipreq.taskman.server.business._
-import shipreq.taskman.server.business.EmailImpl.ConfigParsers._
+import shipreq.taskman.server.business.JavaMail.ConfigParsers._
 import shipreq.taskman.server.business.FreshDesk.ConfigParsers._
 import shipreq.taskman.server.logic._
 import shipreq.taskman.server.logic.business._

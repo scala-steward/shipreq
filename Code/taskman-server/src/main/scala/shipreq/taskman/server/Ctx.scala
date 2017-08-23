@@ -47,7 +47,7 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
   private def getMailChimpListId(name: String): Fx[MailingList.ListId] =
     mailchimp.run(MailingList.API.GetListId(name)) getOrFail s"Mailing list not found: $name"
 
-  val email      = new EmailImpl(config.mail.sessionFn())
+  val email      = new JavaMail(config.mail.sessionFn())
   val emails     = new Emails(config.mail.envelopeProps, emailTokens)
   val http       = new OkHttpClient()
   val mailchimp  = new MailChimp(http, config.mailchimp)
