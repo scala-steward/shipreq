@@ -5,7 +5,8 @@ import shipreq.base.test.db.{SingleConnectionXA, TestDb}
 import shipreq.base.util.FxModule._
 import shipreq.base.util.Props
 import shipreq.taskman.api.TaskmanApi
-import shipreq.taskman.server.ServerImplTestHelpers._
+import shipreq.taskman.server.logic.ServerOp
+import ServerImplTestHelpers._
 
 trait ServerImplTestHelpers {
   def xa: SingleConnectionXA

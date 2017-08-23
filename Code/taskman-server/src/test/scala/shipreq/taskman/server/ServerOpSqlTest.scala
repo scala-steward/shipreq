@@ -6,7 +6,7 @@ import shipreq.base.test.specs2.AllowUnitAsResult._
 import shipreq.base.test.specs2.db.DatabaseTest
 import shipreq.taskman.server.ServerOpFx.Sql._
 
-class SopSqlTest extends Specification with DatabaseTest {
+class ServerOpSqlTest extends Specification with DatabaseTest {
   sequential
 
 //  "getNextNodeIdQ" in test(getNextNodeIdQ)

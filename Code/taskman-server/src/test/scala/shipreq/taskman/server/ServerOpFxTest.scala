@@ -11,6 +11,7 @@ import shipreq.base.test.specs2.db.DatabaseTest
 import shipreq.base.util.TaggedTypes.JsonStr
 import shipreq.taskman.api.impl.Serialisation
 import shipreq.taskman.api._
+import shipreq.taskman.server.logic.{MsgDetail, MsgHeader, NodeId, WorkerId}
 import Msg.ReRegistrationAttempted
 import ServerOpFx.Sql._
 
