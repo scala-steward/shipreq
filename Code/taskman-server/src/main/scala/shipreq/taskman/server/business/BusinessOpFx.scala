@@ -6,13 +6,13 @@ import scalaz.{-\/, \/, \/-, ~>}
 import scalaz.syntax.catchable._
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
-import shipreq.taskman.server.logic.business.BusinessOp
+import shipreq.taskman.server.logic.business._
 import shipreq.taskman.server.logic.business.BusinessOp._
 
-final class BusinessOpFx(db           : Transactor[Fx],
-                         emailer      : JavaMail,
-                         mailchimp    : MailChimp,
-                         freshDesk    : FreshDesk,
+final class BusinessOpFx(sendMailFx   : BusinessOp.SendEmail => Fx[Unit],
+                         mailingListFx: MailingList.API ~> Fx,
+                         supportFx    : Support.API ~> Fx,
+                         db           : Transactor[Fx],
                          shipreqSchema: Option[String]) extends (BusinessOp ~> Fx) with HasLogger {
 
   private[this] val sri = ShipReqInterface(shipreqSchema)
@@ -33,9 +33,9 @@ final class BusinessOpFx(db           : Transactor[Fx],
 
   def applyUntimed[A](bop: BusinessOp[A]): Fx[A] =
     bop match {
-      case s: SendEmail              => emailer.send(s)
-      case MailingListOp(op)         => mailchimp.run(op)
-      case SupportOp(op)             => freshDesk.run(op)
+      case s: SendEmail              => sendMailFx(s)
+      case MailingListOp(op)         => mailingListFx(op)
+      case SupportOp(op)             => supportFx(op)
       case FindShipReqUser(-\/(id))  => db.trans(sri.findUserById(id))
       case FindShipReqUser(\/-(ea))  => db.trans(sri.findUserByEmail(ea))
       case FindShipReqUsers(None)    => db.trans(sri.findAllUsers)

@@ -4,10 +4,8 @@ import com.squareup.okhttp.OkHttpClient
 import japgolly.microlibs.config.{Sources => ConfigSources}
 import java.time.{Clock, Duration, Instant}
 import java.util.concurrent.{ExecutorService, TimeUnit}
-import scalaz.-\/
 import scalaz.syntax.catchable._
 import shipreq.base.db.DbAccess
-import shipreq.base.util.ArticulateError
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.impl.TaskmanApiImpl
@@ -45,7 +43,7 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
   log.info(emailTokensReport.report)
 
   private def getMailChimpListId(name: String): Fx[MailingList.ListId] =
-    mailchimp.run(MailingList.API.GetListId(name)) getOrFail s"Mailing list not found: $name"
+    mailchimp(MailingList.API.GetListId(name)) getOrFail s"Mailing list not found: $name"
 
   val email      = new JavaMail(config.mail.sessionFn())
   val emails     = new Emails(config.mail.envelopeProps, emailTokens)
@@ -60,7 +58,7 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
 
   implicit def trustPeriod   = config.taskman.trustPeriod
   implicit val taskmanApi    = TaskmanApiImpl(TaskmanApiImpl.Context(None), dbAccess.fx.trans)
-  implicit val businessOpFx  = new BusinessOpFx(dbAccess.fx, email, mailchimp, freshdesk, config.shipreq.schema)
+  implicit val businessOpFx  = new BusinessOpFx(email, mailchimp, freshdesk, dbAccess.fx, config.shipreq.schema)
   implicit val serverOpFx    = new ServerOpFx(dbAccess.fx, new Worker.FailureHandler(emails)(businessOpFx))
   implicit val msgProcessor  = new BusinessLogic(emails, async.email, mailingListId)(businessOpFx)
   implicit val failurePolicy = Failure.failurePolicy

@@ -1,11 +1,11 @@
 package shipreq.taskman.server.business
 
 import com.squareup.okhttp.OkHttpClient
-import java.net.URL
+import java.net.{HttpURLConnection, URL}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.JsonDSL._
-import scalaz.{-\/, \/, \/-}
+import scalaz.{-\/, \/, \/-, ~>}
 import shipreq.base.util.ArticulateError
 import shipreq.base.util.FxModule._
 import shipreq.base.util.ScalaExt.BaseUtilExtAny
@@ -14,6 +14,7 @@ import shipreq.taskman.api.EmailAddr
 import shipreq.taskman.server.logic.business.MailingList._
 import shipreq.taskman.server.logic.business.MailingList.API._
 import Http._
+import shipreq.taskman.server.logic.business.MailingList
 
 object MailChimp {
 
@@ -180,7 +181,7 @@ object MailChimp {
 
 import MailChimp._
 
-final class MailChimp(httpClient: OkHttpClient, props: Props) extends HasLogger {
+final class MailChimp(httpClient: OkHttpClient, props: Props) extends (MailingList.API ~> Fx) with HasLogger {
   private val (logRequest, logResponse, logResult) = httpLoggers(log.atLevel(props.logLevel))
 
   private val endpoints  = new Endpoints(s"https://${props.dc}.api.mailchimp.com/2.0")
@@ -189,14 +190,14 @@ final class MailChimp(httpClient: OkHttpClient, props: Props) extends HasLogger 
   private val requestBuilder =
     buildRequest(e => j => Req(e(endpoints), apikeyJson merge j))
 
-  def run[A](api: API[A]): Fx[A] =
-    send(api) flatMap recv(api) tap logResult
-
-  @inline private def send[A](api: API[A]) =
+  private def send[A](api: API[A]): Fx[HttpURLConnection] =
     requestBuilder(api) |> sendRequestAndLog(httpClient, logRequest)
 
-  @inline private def recv[A](api: API[A]) =
+  private def recv[A](api: API[A]): HttpURLConnection => Fx[A] =
     recvResponseE[A, ApiFailure.Total](ApiFailure.Total.errParser, interpretApiFailure(api))(
       logResponse,
       catchPartialFailures(_) flatMap parseResponse(api))
+
+  override def apply[A](api: API[A]): Fx[A] =
+    send(api) flatMap recv(api) tap logResult
 }

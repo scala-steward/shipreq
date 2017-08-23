@@ -26,7 +26,7 @@ object Tmp extends MainTemplate {
         Email.Content(
           subject = "Email Test",
           body = "Hello"))
-      val result = ctx.email.send(op).unsafeRun()
+      val result = ctx.email(op).unsafeRun()
       println(result)
 
       /*

@@ -6,7 +6,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.net.URL
 import org.json4s._
 import org.json4s.JsonDSL._
-import scalaz.\/
+import scalaz.{\/, ~>}
 import scalaz.std.list.listInstance
 import scalaz.syntax.traverse._
 import scalaz.syntax.bind._
@@ -16,6 +16,7 @@ import shipreq.base.util.log.{HasLogger, LogLevel}
 import shipreq.taskman.server.logic.business.Support._
 import shipreq.taskman.server.logic.business.Support.API._
 import Http._
+import shipreq.taskman.server.logic.business.Support
 
 object FreshDesk {
 
@@ -135,7 +136,6 @@ object FreshDesk {
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-
 import FreshDesk._
 
 /**
@@ -172,7 +172,8 @@ sealed class FreshDesk0(httpClient: OkHttpClient, props: Props) extends HasLogge
 /**
  * Full interpreter for `Support.API` ops.
  */
-final class FreshDesk(httpClient: OkHttpClient, props: Props, val verifiedProps: VerifiedProps) extends FreshDesk0(httpClient, props) {
+final class FreshDesk(httpClient: OkHttpClient, props: Props, val verifiedProps: VerifiedProps)
+  extends FreshDesk0(httpClient, props) with (Support.API ~> Fx) {
 
   private def createTicketReq(t: NewTicket) =
     Req(endpoints.createTicket, t.json)
@@ -186,6 +187,6 @@ final class FreshDesk(httpClient: OkHttpClient, props: Props, val verifiedProps:
       createTicketReq(NewTicket(props.taskmanEmail, subject, desc, priority, verifiedProps.failure))
   }
 
-  def run[A](api: API[A]): Fx[A] =
+  override def apply[A](api: API[A]): Fx[A] =
     run(buildRequest(api), parseResponse(api))
 }

@@ -3,6 +3,7 @@ package shipreq.taskman.server.business
 import japgolly.microlibs.config.{Config, ConfigParser}
 import javax.mail._
 import javax.mail.internet.{InternetAddress, MimeMessage}
+import scala.runtime.AbstractFunction1
 import scalaz.{-\/, Traverse, \/, \/-}
 import scalaz.old.NonEmptyList
 import scalaz.std.list._
@@ -11,6 +12,7 @@ import shipreq.base.util.ArticulateError
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.EmailAddr
+import shipreq.taskman.server.logic.business.BusinessOp
 import shipreq.taskman.server.logic.business.BusinessOp.SendEmail
 import shipreq.taskman.server.logic.business.Email._
 
@@ -70,12 +72,12 @@ object JavaMail extends HasLogger {
   }
 }
 
-final class JavaMail(val mailSession: Session) extends HasLogger {
+final class JavaMail(val mailSession: Session) extends AbstractFunction1[BusinessOp.SendEmail, Fx[Unit]] with HasLogger {
   import JavaMail._
 
   private[this] final val charset = "UTF-8"
 
-  def buildEmail(e: Envelope, c: Content): ArticulateError \/ MimeMessage = {
+  private def buildEmail(e: Envelope, c: Content): ArticulateError \/ MimeMessage = {
     val r = for {
       from <- e.from.parsed
       to   <- e.to.parsed
@@ -97,7 +99,7 @@ final class JavaMail(val mailSession: Session) extends HasLogger {
     r.join
   }
 
-  def send(op: SendEmail): Fx[Unit] =
+  override def apply(op: SendEmail): Fx[Unit] =
     for {
       m <- Fx.lift(buildEmail(op.envelope, op.content))
       _ <- Fx(Transport.send(m))
