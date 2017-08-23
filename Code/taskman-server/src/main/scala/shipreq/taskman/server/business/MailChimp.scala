@@ -17,6 +17,9 @@ import Http._
 
 object MailChimp {
 
+  /**
+    * @param dc MailChimp data center
+    */
   final case class Props(dc        : String,
                          key       : String,
                          masterList: String,
@@ -30,16 +33,22 @@ object MailChimp {
   @inline def boolAsInt(b: Boolean) = if (b) i1 else i0
 
   def subscribeOptions(sendConfEmail: Boolean, updExisting: Boolean) =
-    ("double_optin" -> sendConfEmail) ~ ("update_existing" -> updExisting) ~ ("send_welcome" -> false)
+    ("double_optin" -> sendConfEmail) ~
+    ("update_existing" -> updExisting) ~
+    ("send_welcome" -> false)
 
   val batchSubscribeStatic = subscribeOptions(false, true)
 
   def buildReqSubscription(s: Subscription) =
-    ("email" -> ("email" -> s.addr.value)) ~ ("merge_vars" ->
-      ("NAME" -> s.name) ~ ("NEWSLETTER" -> boolAsInt(s.newsletter)) ~ ("ACCT" -> s.status.remoteValue))
+    ("email" ->
+      ("email" -> s.addr.value)) ~
+    ("merge_vars" ->
+      ("NAME" -> s.name) ~
+      ("NEWSLETTER" -> boolAsInt(s.newsletter)) ~
+      ("ACCT" -> s.status.remoteValue))
 
   final class Endpoints(urlPrefix: String) {
-    private[this] def url(path: String) = Endpoint(new URL(s"$urlPrefix/$path.json"), Post, None)
+    private def url(path: String) = Endpoint(new URL(s"$urlPrefix/$path.json"), Post, None)
     object lists {
       val list           = url("lists/list")
       val batchSubscribe = url("lists/batch-subscribe")
@@ -52,19 +61,26 @@ object MailChimp {
 
     case GetListId(name) =>
       req(_.lists.list)(
-        "filters" -> ("list_name" -> name) ~ ("exact" -> true))
+        "filters" ->
+          ("list_name" -> name) ~
+          ("exact" -> true))
 
     case BatchSubscribe(ListId(listId), ss) =>
       req(_.lists.batchSubscribe)(
-        ("id" -> listId) ~ ("batch" -> ss.list.map(buildReqSubscription)) ~ batchSubscribeStatic)
+        ("id" -> listId) ~
+        ("batch" -> ss.list.map(buildReqSubscription)) ~
+        batchSubscribeStatic)
 
     case Subscribe(ListId(listId), s, sendConfEmail) =>
       req(_.lists.subscribe)(
-        ("id" -> listId) ~ buildReqSubscription(s) ~ subscribeOptions(sendConfEmail, false))
+        ("id" -> listId) ~
+        buildReqSubscription(s) ~
+        subscribeOptions(sendConfEmail, false))
 
     case UpdateMember(ListId(listId), s) =>
       req(_.lists.updateMember)(
-        ("id" -> listId) ~ buildReqSubscription(s))
+        ("id" -> listId) ~
+        buildReqSubscription(s))
   }
 
   // ---------------------------------------------------------------------------
