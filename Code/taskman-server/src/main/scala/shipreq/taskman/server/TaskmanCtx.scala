@@ -48,8 +48,8 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
   val email      = new JavaMail(config.mail.sessionFn())
   val emails     = new Emails(config.mail.envelopeProps, emailTokens)
   val http       = new OkHttpClient()
-  val mailchimp  = new MailChimp(http, config.mailchimp)
-  val freshdesk0 = new FreshDesk0(http, config.freshdesk)
+  val mailchimp  = new MailChimp(config.mailchimp)(http)
+  val freshdesk0 = new FreshDesk0(config.freshdesk)(http)
 
   val freshdesk     = freshdesk0.upgrade.unsafeRun()
   val mailingListId = getMailChimpListId(config.mailchimp.masterList).unsafeRun()

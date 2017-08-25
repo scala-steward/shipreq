@@ -1,20 +1,23 @@
 package shipreq.taskman.server.business
 
 import com.squareup.okhttp.OkHttpClient
-import java.net.{HttpURLConnection, URL}
+import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.univeq._
+import java.net.HttpURLConnection
+import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-import org.json4s.JsonDSL._
+import scalaz.syntax.std.option._
 import scalaz.{-\/, \/, \/-, ~>}
 import shipreq.base.util.ArticulateError
 import shipreq.base.util.FxModule._
-import shipreq.base.util.ScalaExt.BaseUtilExtAny
 import shipreq.base.util.log.{HasLogger, LogLevel}
 import shipreq.taskman.api.EmailAddr
-import shipreq.taskman.server.logic.business.MailingList._
-import shipreq.taskman.server.logic.business.MailingList.API._
-import Http._
 import shipreq.taskman.server.logic.business.MailingList
+import shipreq.taskman.server.logic.business.MailingList.API._
+import shipreq.taskman.server.logic.business.MailingList._
+import Http._
+import MailChimp._
 
 object MailChimp {
 
@@ -26,8 +29,8 @@ object MailChimp {
                          masterList: String,
                          logLevel  : LogLevel)
 
-  // ---------------------------------------------------------------------------
-  // Request
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Protocol
 
   val i0 = JInt(0)
   val i1 = JInt(1)
@@ -48,70 +51,85 @@ object MailChimp {
       ("NEWSLETTER" -> boolAsInt(s.newsletter)) ~
       ("ACCT" -> s.status.remoteValue))
 
-  final class Endpoints(urlPrefix: String) {
-    private def url(path: String) = Endpoint(new URL(s"$urlPrefix/$path.json"), Post, None)
+  object Endpoints {
+    def apply(props: Props): Endpoints =
+      new Endpoints(s"https://${props.dc}.api.mailchimp.com/2.0", props.key)
+  }
+
+  final class Endpoints(urlPrefix: String, apiKey: String) {
+    private val apiKeyJson = render("apikey" -> apiKey)
+
+    private def endpoint(path: String): Http[JObject, (HttpURLConnection, JValue \/ JValue)] =
+      Post(s"$urlPrefix/$path.json")
+        .jsonRequest
+        .contramap[JObject](apiKeyJson merge _)
+        .jsonResponse
+        .and(_.flatMap {
+          case x@ (_, \/-(j)) => Fx.lift(ApiFailure.Partial.extract(j) <\/ x)
+          case x              => Fx pure x
+        })
+
     object lists {
-      val list           = url("lists/list")
-      val batchSubscribe = url("lists/batch-subscribe")
-      val subscribe      = url("lists/subscribe")
-      val updateMember   = url("lists/update-member")
-    }
-  }
 
-  def buildRequest(req: (Endpoints => Endpoint) => JValue => Req): API[_] => Req = {
+      val list: Http[GetListId, Option[ListId]] =
+        endpoint("lists/list")
+          .contramap[GetListId](i =>
+            "filters" ->
+              ("list_name" -> i.name) ~
+              ("exact" -> true))
+          .parseJsonResponse(
+            ok = parseResponseForGetListId,
+            ko = ApiFailure.Total.handle)
 
-    case GetListId(name) =>
-      req(_.lists.list)(
-        "filters" ->
-          ("list_name" -> name) ~
-          ("exact" -> true))
+      val batchSubscribe: Http[BatchSubscribe, Unit] =
+        endpoint("lists/batch-subscribe")
+          .contramap[BatchSubscribe](i =>
+            ("id" -> i.listId.value) ~
+            ("batch" -> i.subs.list.map(buildReqSubscription)) ~
+            batchSubscribeStatic)
+          .parseJsonResponse(
+            ok = _ => \/-(()),
+            ko = ApiFailure.Total.handle)
 
-    case BatchSubscribe(ListId(listId), ss) =>
-      req(_.lists.batchSubscribe)(
-        ("id" -> listId) ~
-        ("batch" -> ss.list.map(buildReqSubscription)) ~
-        batchSubscribeStatic)
+      val subscribe: Http[Subscribe, SubscribeResult] =
+        endpoint("lists/subscribe")
+          .contramap[Subscribe](i =>
+            ("id" -> i.listId.value) ~
+            buildReqSubscription(i.sub) ~
+            subscribeOptions(i.sendConfEmail, false))
+          .parseJsonResponse(
+            ok = _ => \/-(Ok),
+            ko = parseErrorForSubscribe)
 
-    case Subscribe(ListId(listId), s, sendConfEmail) =>
-      req(_.lists.subscribe)(
-        ("id" -> listId) ~
-        buildReqSubscription(s) ~
-        subscribeOptions(sendConfEmail, false))
+      val updateMember: Http[UpdateMember, UpdateMemberResult] =
+        endpoint("lists/update-member")
+          .contramap[UpdateMember](i =>
+            ("id" -> i.listId.value) ~
+            buildReqSubscription(i.sub))
+          .parseJsonResponse(
+            ok = _ => \/-(Ok),
+            ko = ApiFailure.Total.recoverOrHandle(f =>
+              Option.when(f.name ==* "List_NotSubscribed")(NotSubscribed)))
 
-    case UpdateMember(ListId(listId), s) =>
-      req(_.lists.updateMember)(
-        ("id" -> listId) ~
-        buildReqSubscription(s))
-  }
-
-  // ---------------------------------------------------------------------------
-  // Response
-
-  def parseResponse[A](a: API[A]): JValue => ArticulateError \/ A =
-    j => ArticulateError.attempt(a match {
-
-      case _: GetListId =>
-        val JInt(total) = j \ "total"
-        total.toInt match {
-          case 0 => None
-          case 1 =>
-            val JString(id) = (j \ "data")(0) \ "id"
-            Some(ListId(id))
-        }
-
-      case _: BatchSubscribe => ()
-      case _: Subscribe      => Ok
-      case _: UpdateMember   => Ok
-    })
-
-  def interpretApiFailure[A](a: API[A])(f: ApiFailure.Total): Option[A] =
-    a match {
-      case _: Subscribe    if f.name == "List_AlreadySubscribed" => Some(AlreadySubscribed)
-      case _: UpdateMember if f.name == "List_NotSubscribed"     => Some(NotSubscribed)
-      case _                                                     => None
     }
 
-  // ---------------------------------------------------------------------------
+  }
+
+  def parseResponseForGetListId(j: JValue): ArticulateError \/ Option[ListId] =
+    ArticulateError.attempt {
+      val JInt(total) = j \ "total"
+      total.toInt match {
+        case 0 => None
+        case 1 =>
+          val JString(id) = (j \ "data") (0) \ "id"
+          Some(ListId(id))
+      }
+    }
+
+  def parseErrorForSubscribe: (HttpURLConnection, JValue) => Fx[SubscribeResult] =
+    ApiFailure.Total.recoverOrHandle(f => Option.when(f.name ==* "List_AlreadySubscribed")(AlreadySubscribed))
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Error handling
 
   object ApiFailure {
@@ -125,9 +143,7 @@ object MailChimp {
     }
 
     object Total {
-      val errParser = ErrParser[Total](parseHttpErrorJson, _.toArticulateError)
-
-      def parseHttpErrorJson(j: JValue): ArticulateError \/ Total =
+      def parse(j: JValue): ArticulateError \/ Total =
         ArticulateError.safe(
           (j \ "status") match {
             case JString("error") =>
@@ -138,6 +154,18 @@ object MailChimp {
             case _ => -\/(ArticulateError("Not an error."))
           }
         )
+
+      def recoverOrHandle[O](tryRecover: Total => Option[O])(conn: HttpURLConnection, j: JValue): Fx[O] =
+        ApiFailure.Total.parse(j) match {
+          case \/-(f) => tryRecover(f) match {
+            case Some(o) => Fx pure o
+            case None    => Fx fail f.toArticulateError
+          }
+          case -\/(_) => Http.genericResponseErrorHandler[O](conn, j)
+        }
+
+      def handle[O](conn: HttpURLConnection, j: JValue): Fx[O] =
+        recoverOrHandle[O](_ => None)(conn, j)
     }
 
     final case class Partial(code: Int, msg: String, email: Option[EmailAddr]) {
@@ -167,37 +195,32 @@ object MailChimp {
             Partial(code.toInt, msg, opEmail)
           }
         )
+
+      /** Detects partial failures in a successful result and if present, returns a \/-(ArticulateError(…)) */
+      def extract(j: JValue): Option[ArticulateError] =
+        parse(j) match {
+          case \/-(Nil)    => None
+          case \/-(h :: t) => Some(toArticulateError(h, t))
+          case -\/(e)      => Some(e)
+        }
     }
   }
-
-  def catchPartialFailures(j: JValue): ArticulateError \/ JValue =
-    ApiFailure.Partial.parse(j).flatMap {
-      case Nil    => \/-(j)
-      case h :: t => -\/(ApiFailure.Partial.toArticulateError(h, t))
-    }
 }
 
-// =====================================================================================================================
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-import MailChimp._
+final class MailChimp(props: Props)(implicit httpClient: OkHttpClient) extends (MailingList.API ~> Fx) with HasLogger {
+  private implicit val httpLoggers: HttpLoggers =
+    HttpLoggers(log.atLevel(props.logLevel))
 
-final class MailChimp(httpClient: OkHttpClient, props: Props) extends (MailingList.API ~> Fx) with HasLogger {
-  private val (logRequest, logResponse, logResult) = httpLoggers(log.atLevel(props.logLevel))
-
-  private val endpoints  = new Endpoints(s"https://${props.dc}.api.mailchimp.com/2.0")
-  private val apikeyJson = render("apikey" -> props.key)
-
-  private val requestBuilder =
-    buildRequest(e => j => Req(e(endpoints), apikeyJson merge j))
-
-  private def send[A](api: API[A]): Fx[HttpURLConnection] =
-    requestBuilder(api) |> sendRequestAndLog(httpClient, logRequest)
-
-  private def recv[A](api: API[A]): HttpURLConnection => Fx[A] =
-    recvResponseE[A, ApiFailure.Total](ApiFailure.Total.errParser, interpretApiFailure(api))(
-      logResponse,
-      catchPartialFailures(_) flatMap parseResponse(api))
+  private val endpoints: Endpoints =
+    Endpoints(props)
 
   override def apply[A](api: API[A]): Fx[A] =
-    send(api) flatMap recv(api) tap logResult
+    api match {
+      case a: GetListId      => endpoints.lists.list          .run(a)
+      case a: BatchSubscribe => endpoints.lists.batchSubscribe.run(a)
+      case a: Subscribe      => endpoints.lists.subscribe     .run(a)
+      case a: UpdateMember   => endpoints.lists.updateMember  .run(a)
+    }
 }

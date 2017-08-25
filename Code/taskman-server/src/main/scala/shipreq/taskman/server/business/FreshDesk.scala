@@ -1,22 +1,20 @@
 package shipreq.taskman.server.business
 
-import com.squareup.okhttp._
+import com.squareup.okhttp.OkHttpClient
 import japgolly.microlibs.config.ConfigParser
-import japgolly.microlibs.stdlib_ext.StdlibExt._
-import java.net.URL
-import org.json4s._
+import japgolly.univeq._
+import java.net.HttpURLConnection
 import org.json4s.JsonDSL._
+import org.json4s._
 import scalaz.{\/, ~>}
-import scalaz.std.list.listInstance
-import scalaz.syntax.traverse._
-import scalaz.syntax.bind._
 import shipreq.base.util.ArticulateError
 import shipreq.base.util.FxModule._
-import shipreq.base.util.log.{HasLogger, LogLevel}
-import shipreq.taskman.server.logic.business.Support._
-import shipreq.taskman.server.logic.business.Support.API._
-import Http._
+import shipreq.base.util.log.{HasLogger, LogLevel, Logger}
 import shipreq.taskman.server.logic.business.Support
+import shipreq.taskman.server.logic.business.Support.API._
+import shipreq.taskman.server.logic.business.Support._
+import Http._
+import FreshDesk._
 
 object FreshDesk {
 
@@ -70,8 +68,8 @@ object FreshDesk {
     case Priority.Urgent => 4
   }
 
-  // ---------------------------------------------------------------------------
-  // Request
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Protocol
 
   final case class NewTicket(email   : String,
                              subject : String,
@@ -92,101 +90,88 @@ object FreshDesk {
   }
 
   final class Endpoints(urlPrefix: String, key: String) {
-    private val cred = Some(Credential.basic(key, "X"))
-    private def ep(m: Method, path: String) = Endpoint(new URL(s"$urlPrefix/$path.json"), m, cred)
+    private val creds = Credential.basic(key, "X")
 
-    val createTicket = ep(Post, "helpdesk/tickets")
-    val getGroups    = ep(Get,  "groups")
+    private def endpoint(method: Method, path: String): Http[JValue, (HttpURLConnection, JValue \/ JValue)] =
+      method(s"$urlPrefix/$path.json")
+        .authWith(creds)
+        .jsonRequest
+        .jsonResponse
+
+    val getGroups: Http[Unit, List[Group]] =
+      endpoint(Get, "groups")
+        .contramap[Unit](_ => JNothing)
+        .parseJsonResponse(parseGroups)
+
+    val createTicket: Http[NewTicket, TicketId] =
+      endpoint(Post, "helpdesk/tickets")
+        .contramap[NewTicket](_.json)
+        .parseJsonResponse(parseTicketResponse)
   }
 
-  def getGroupsReq(e: Endpoints) =
-    Req(e.getGroups, JNothing)
+  def parseGroups(j: JValue): ArticulateError \/ List[Group] =
+    ArticulateError.attempt(
+      (j \\ "group").children.map { g =>
+        val JString(name) = g \ "name"
+        val JInt(id) = g \ "id"
+        Group(id.toLong, name)
+      })
 
-  // ---------------------------------------------------------------------------
-  // Response
-
-  def parseRespGetGroups(names: List[String])(j: JValue): ArticulateError \/ List[Group] =
-    names.traverse[ArticulateError \/ ?, Group](parseRespGetGroup(_)(j))
-
-  def parseRespGetGroup(name: String)(j: JValue): ArticulateError \/ Group = {
-    val gs = (j \\ "group")
-      .children
-      .iterator
-      .map(jj => (jj \ "name", jj \ "id"))
-      .map {
-        case (JString(`name`), JInt(id)) => Some(Group(id.toLong, name))
-        case _                           => None
-      }.filterDefined
-    ArticulateError.fromOption(gs.nextOption(), s"FreshDesk group not found: $name")
-  }
-
-  def parseCreateTicketResponse(j: JValue): ArticulateError \/ TicketId =
+  def parseTicketResponse(j: JValue): ArticulateError \/ TicketId =
     ArticulateError.attempt {
       val JInt(id) = j \ "helpdesk_ticket" \ "display_id"
       TicketId(id.toLong)
     }
 
-  def parseResponse[A](a: API[A])(j: JValue): ArticulateError \/ A =
-    a match {
-      case _: ReportFailure
-         | _: NotifyLandingPage => parseCreateTicketResponse(j)
-    }
+  def getGroup(groups: List[Group], n: String): ArticulateError \/ Group =
+    ArticulateError.fromOption(groups.find(_.name ==* n), s"FreshDesk group not found: $n")
 
+  def verifyTicketOrg(groups: List[Group], u: UnverifiedTicketOrg): ArticulateError \/ TicketOrg =
+    getGroup(groups, u.groupName).map(TicketOrg(_, u.ticketType))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-import FreshDesk._
-
 /**
  * Can connect to FreshDesk but lacks data required to interpret `Support.API` ops.
  */
-sealed class FreshDesk0(httpClient: OkHttpClient, props: Props) extends HasLogger {
-  protected final val (logRequest, logResponse, logResult) = httpLoggers(log.atLevel(props.logLevel))
+sealed class FreshDesk0(props: Props)(implicit httpClient: OkHttpClient) extends HasLogger {
 
-  protected final val endpoints =
+  protected final implicit val httpLoggers: HttpLoggers =
+    HttpLoggers(log.atLevel(props.logLevel))
+
+  protected final val endpoints: Endpoints =
     new Endpoints(s"https://${props.domain}.freshdesk.com", props.key)
 
   /**
    * Turns this into a full instance that can interpret `Support.API` ops.
    */
-  def upgrade: Fx[FreshDesk] = {
-    def parse(j: JValue): ArticulateError \/ FreshDesk = {
-      val unverifiedOrgs = List(props.failure, props.landingPage)
-      parseRespGetGroups(unverifiedOrgs.map(_.groupName))(j).map { groups =>
-        val ticketOrgs = groups.zip(unverifiedOrgs).map(x => TicketOrg(x._1, x._2.ticketType))
-        val failureOrg :: landingPageOrg :: Nil = ticketOrgs
-        val verifiedProps = VerifiedProps(failure = failureOrg, landingPage = landingPageOrg)
-        new FreshDesk(httpClient, props, verifiedProps)
-      }
+  def upgrade: Fx[FreshDesk] =
+    for {
+      groups      <- endpoints.getGroups.run(())
+      failure     <- Fx lift verifyTicketOrg(groups, props.failure)
+      landingPage <- Fx lift verifyTicketOrg(groups, props.landingPage)
+    } yield {
+      val verifiedProps = VerifiedProps(failure = failure, landingPage = landingPage)
+      new FreshDesk(props, verifiedProps)
     }
-    run(getGroupsReq(endpoints), parse)
-  }
-
-  protected final def run[A](r: Req, p: JValue => ArticulateError \/ A): Fx[A] =
-    sendRequestAndLog(httpClient, logRequest)(r)
-      .flatMap(recvResponse[A](logResponse, p))
-      .tap(logResult)
 }
 
 /**
  * Full interpreter for `Support.API` ops.
  */
-final class FreshDesk(httpClient: OkHttpClient, props: Props, val verifiedProps: VerifiedProps)
-  extends FreshDesk0(httpClient, props) with (Support.API ~> Fx) {
+final class FreshDesk(props: Props, val verifiedProps: VerifiedProps)
+                     (implicit httpClient: OkHttpClient) extends FreshDesk0(props) with (Support.API ~> Fx) {
 
-  private def createTicketReq(t: NewTicket) =
-    Req(endpoints.createTicket, t.json)
-
-  val buildRequest: API[_] => Req = {
-
-    case NotifyLandingPage(email, subject, desc, priority) =>
-      createTicketReq(NewTicket(email, subject, desc, priority, verifiedProps.landingPage))
-
-    case ReportFailure(subject, desc, priority) =>
-      createTicketReq(NewTicket(props.taskmanEmail, subject, desc, priority, verifiedProps.failure))
-  }
+  private def createTicket(t: NewTicket): Fx[TicketId] =
+    endpoints.createTicket.run(t)
 
   override def apply[A](api: API[A]): Fx[A] =
-    run(buildRequest(api), parseResponse(api))
+    api match {
+      case NotifyLandingPage(email, subject, desc, priority) =>
+        createTicket(NewTicket(email, subject, desc, priority, verifiedProps.landingPage))
+
+      case ReportFailure(subject, desc, priority) =>
+        createTicket(NewTicket(props.taskmanEmail, subject, desc, priority, verifiedProps.failure))
+    }
 }

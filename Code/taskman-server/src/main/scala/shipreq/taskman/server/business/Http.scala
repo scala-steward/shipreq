@@ -1,28 +1,40 @@
 package shipreq.taskman.server.business
 
-import com.squareup.okhttp._
-import java.io.InputStream
+import com.squareup.okhttp.{Credentials, OkHttpClient, OkUrlFactory}
+import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.univeq._
+import java.io.{InputStream, OutputStream}
 import java.net.{HttpURLConnection, URL}
 import java.nio.charset.Charset
-import org.apache.http.entity._
 import org.apache.http.HttpEntity
+import org.apache.http.entity.{ContentType, InputStreamEntity}
 import org.apache.http.util.EntityUtils
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-import japgolly.univeq._
+import scalaz.syntax.bind._
 import scalaz.{-\/, \/, \/-}
-import scalaz.syntax.applicative._
 import shipreq.base.util.ArticulateError
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.Logger
 
-object Http {
+final case class Http[I, O](runFn: (I, OkHttpClient, HttpLoggers) => Fx[O]) /*extends AnyVal*/ {
 
-  sealed abstract class Method(val value: String)
-  case object Get extends Method("GET")
-  case object Put extends Method("PUT")
-  case object Post extends Method("POST")
-  case object Delete extends Method("DELETE")
+  def run(i: I)(implicit client: OkHttpClient, log: HttpLoggers): Fx[O] =
+    log.result(runFn(i, client, log))
+
+  def contramap[A](f: A => I): Http[A, O] =
+    Http((a, c, l) => runFn(f(a), c, l))
+
+  def and[A](f: Fx[O] => Fx[A]): Http[I, A] =
+    Http((i, c, l) => f(runFn(i, c, l)))
+
+  def tap[A](f: O => A): Http[I, O] =
+    and(_.unsafeTap(f))
+}
+
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+object Http {
 
   final case class Credential(getHeaderValue: String)
   object Credential {
@@ -30,126 +42,121 @@ object Http {
       Credential(Credentials.basic(username, password))
   }
 
-  final case class Endpoint(url: URL, method: Method, credential: Option[Credential])
-
-  final case class Req(e: Endpoint, bodyJ: JValue) {
-    val bodyS = compact(bodyJ)
-    def bodyB = bodyS.getBytes(defaultCharset)
+  sealed abstract class Method(val value: String) {
+    def apply(url: String): Http[Unit, HttpURLConnection] =
+      Http[Unit, HttpURLConnection]((_, client, _) => Fx(new OkUrlFactory(client).open(new URL(url))))
+        .tap(_.setRequestMethod(value))
   }
+  case object Get extends Method("GET")
+  case object Put extends Method("PUT")
+  case object Post extends Method("POST")
+  case object Delete extends Method("DELETE")
 
-  def httpLoggers(log: Logger#AtLevel) = {
-    val p = log.printer[Fx]
-    def s(prefix: String, str: String) = if (str.isEmpty) "" else prefix + str
-    val logRequest  = (r: Req)    => p(s"HTTP request: ${r.e.method.value} ${r.e.url}${s(" ~ ", r.bodyS)}")
-    val logResponse = (r: String) => p(s"HTTP response: $r")
-    val logResult   = (r: Any)    => p(s"Op result: $r")
-    (logRequest, logResponse, logResult)
-  }
+  val DefaultCharset = Charset.forName("UTF-8")
+  val ContentTypeJson = s"application/json;charset=${DefaultCharset.name}"
 
-  val defaultCharset = Charset.forName("UTF-8")
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  val contentTypeJson = s"application/json;charset=${defaultCharset.name}"
-
-  def parseIntoJson(str: String): ArticulateError \/ JValue =
-    ArticulateError.attempt(parse(str))
-
-  // ---------------------------------------------------------------------------
-  // Request
-
-  def sendRequest(httpClient: OkHttpClient)(req: Req): Fx[HttpURLConnection] = {
-    val open = openConn(httpClient, req.e)
-    if (req.bodyS.isEmpty)
-      open
-    else
-      open tap writeRequestBody(req.bodyB)
-  }
-
-  def sendRequestAndLog(httpClient: OkHttpClient, log: Req => Fx[Unit])(req: Req): Fx[HttpURLConnection] =
-    sendRequest(httpClient)(req) tap_ log(req)
-
-  def openConn(httpClient: OkHttpClient, e: Endpoint): Fx[HttpURLConnection] =
-    Fx {
-      val conn = new OkUrlFactory(httpClient).open(e.url)
-      conn.setRequestProperty("Content-Type", contentTypeJson)
-      conn.setRequestMethod(e.method.value)
-      for (c <- e.credential) conn.addRequestProperty("Authorization", c.getHeaderValue)
-      conn
-    }
-
-  def writeRequestBody(body: Array[Byte])(conn: HttpURLConnection): Fx[Unit] =
-    Fx(conn.getOutputStream).bracket(
-      release = c => Fx(c.close()),
-      use     = c => Fx(c write body))
-
-  // ---------------------------------------------------------------------------
-  // Response
-
-  def recv(f: HttpURLConnection => InputStream): HttpURLConnection => Fx[String] = conn =>
-    Fx(f(conn)).bracket(
+  def readResponseStream(conn: HttpURLConnection, stream: HttpURLConnection => InputStream): Fx[String] =
+    Fx(stream(conn)).bracket(
       release = i => Fx(i.close()),
       use = i => Fx {
         val entity: HttpEntity = new InputStreamEntity(i)
-        val charset = Option(ContentType get entity).fold(defaultCharset)(_.getCharset)
+        val charset = Option(ContentType get entity).fold(DefaultCharset)(_.getCharset)
         val bytes = EntityUtils.toByteArray(entity)
         new String(bytes, charset)
       })
 
-  val recvResponseInput = recv(_.getInputStream)
+  def genericResponseErrorHandler[A](c: HttpURLConnection, response: Any): Fx[A] =
+    Fx.fail(ArticulateError(s"Unexpected HTTP response: ${c.getResponseCode} ${c.getResponseMessage}. Response: $response"))
 
-  val recvResponseError = recv(_.getErrorStream)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  def getResponseCode(conn: HttpURLConnection): Fx[Int] =
-    Fx(conn.getResponseCode)
+  implicit class HttpExt1(private val http: Http[Unit, HttpURLConnection]) extends AnyVal {
+    def authWith(c: Credential): Http[Unit, HttpURLConnection] =
+      http.tap(_.addRequestProperty("Authorization", c.getHeaderValue))
 
-  def recvResponseG[A](ko: (HttpURLConnection, String) => Fx[A])
-                      (log: String => Fx[Unit], ok: JValue => ArticulateError \/ A)
-                      (conn: HttpURLConnection): Fx[A] =
-    getResponseCode(conn).flatMap(code =>
-      if (code ==* HttpURLConnection.HTTP_OK)
+    def request[I](prep: (HttpLoggers, HttpURLConnection, I) => Fx[Option[OutputStream => Fx[Unit]]]): Http[I, HttpURLConnection] =
+      Http { (i, client, log) =>
+
+        def writeRequestContent(conn: HttpURLConnection, w: OutputStream => Fx[Unit]): Fx[Unit] =
+          Fx(conn.getOutputStream).bracket(release = c => Fx(c.close()), use = w)
+
         for {
-          s <- recvResponseInput(conn)
-          _ <- log(s)
-          a <- Fx.lift(parseIntoJson(s).flatMap(ok))
-        } yield a
-      else
+          conn  <- http.runFn((), client, log)
+          reqFn <- prep(log, conn, i)
+          _     <- reqFn.fold(Fx.unit)(writeRequestContent(conn, _))
+        } yield conn
+      }
+
+    def jsonRequest: Http[JValue, HttpURLConnection] =
+      request[JValue]((log, conn, i) =>
         for {
-          s <- recvResponseError(conn)
-          _ <- log(s)
-          a <- ko(conn, s)
-        } yield a
-    )
+          _   <- Fx(conn.setRequestProperty("Content-Type", ContentTypeJson))
+          str <- Fx(compact(i))
+          _   <- log.request(conn, str)
+        } yield
+          Option.unless(str.isEmpty)(o => Fx(o write str.getBytes(DefaultCharset)))
+        )
+  }
 
-  def recvResponse[R] = recvResponseG[R](genericHttpErrorN) _
+  implicit class HttpExt2[I](private val http: Http[I, HttpURLConnection]) extends AnyVal {
+    def readResponse: Http[I, (HttpURLConnection, String \/ String)] =
+      Http((i, client, log) =>
+        log.response(
+          http.runFn(i, client, log).flatMap(conn =>
+            if (conn.getResponseCode ==* HttpURLConnection.HTTP_OK)
+              readResponseStream(conn, _.getInputStream).map(r => (conn, \/-(r)))
+            else
+              readResponseStream(conn, _.getErrorStream).map(r => (conn, -\/(r))))))
 
-  def recvResponseE[R, E](ep: ErrParser[E], er: E => Option[R]) =
-    recvResponseG[R]((conn, resp) => handleErrorResponse(ep)(er)(genericHttpErrorN(conn, _), resp)) _
-
-  // ---------------------------------------------------------------------------
-  // Error handling
-
-  final case class ErrParser[E](parse: JValue => ArticulateError \/ E,
-                                mkError: E => ArticulateError)
-
-  def handleErrorResponse[R, E](ep: ErrParser[E])(mkResult: E => Option[R])(fallback: String => Fx[R], resp: String): Fx[R] =
-    Fx.lift(parseIntoJson(resp)).flatMap(j =>
-      parseErrorJson(ep, mkResult, j) match {
-        case \/-(-\/(e)) => Fx.fail(ep.mkError(e))
-        case \/-(\/-(r)) => Fx.pure(r)
-        case -\/(_)      => fallback(resp)
+    def jsonResponse: Http[I, (HttpURLConnection, JValue \/ JValue)] =
+      readResponse.and(_.flatMap {
+        case (conn, \/-(str)) => Fx(parse(str)).map(j => (conn, \/-(j)))
+        case (conn, -\/(str)) => Fx(parse(str)).map(j => (conn, -\/(j)))
       })
+  }
 
-  def parseErrorJson[R, E](ep: ErrParser[E], mkResult: E => Option[R], json: JValue): ArticulateError \/ (E \/ R) =
-    ep.parse(json).map(tryMkResult(mkResult))
+  implicit class HttpExt3[I](private val http: Http[I, (HttpURLConnection, JValue \/ JValue)]) extends AnyVal {
+    def parseJsonResponse[O](ok: JValue => ArticulateError \/ O,
+                             ko: (HttpURLConnection, JValue) => Fx[O] = genericResponseErrorHandler[O](_, _)): Http[I, O] =
+      http.and(_.flatMap {
+        case (_, \/-(j)) => Fx.lift(ok(j)).mapArticulateError(_.hint(s"Response = $j"))
+        case (c, -\/(j)) => ko(c, j).mapArticulateError(_.hint(s"Response = $j", s"Code = ${c.getResponseCode}"))
+      })
+  }
 
-  def tryMkResult[R, E](mkResult: E => Option[R])(e: E): E \/ R =
-    mkResult(e) match {
-      case Some(r) => \/-(r)
-      case None    => -\/(e)
-    }
+}
 
-  def genericHttpError(c: HttpURLConnection, resp: String): Fx[ArticulateError] =
-    Fx(ArticulateError(s"Unexpected HTTP response: ${c.getResponseCode} ${c.getResponseMessage}. Response: $resp"))
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-  def genericHttpErrorN[N](c: HttpURLConnection, resp: String): Fx[N] =
-    genericHttpError(c, resp).flatMap(Fx.fail)
+object HttpLoggers {
+  def apply(logger: Logger#AtLevel): HttpLoggers =
+    new HttpLoggers(logger)
+}
+final class HttpLoggers(logger: Logger#AtLevel) {
+  private[this] val enabled = logger.?
+  private def p(prefix: String, str: String) = if (str.isEmpty) "" else prefix + str
+
+  private val log: (=> String) => Fx[Unit] =
+    if (enabled)
+      s => Fx(logger.z(s))
+    else
+      _ => Fx.unit
+
+  val request: (HttpURLConnection, String) => Fx[Unit] =
+    (c, body) => log(s"HTTP request: ${c.getRequestMethod} ${c.getURL.toExternalForm}${p(" ~ ", body)}")
+
+  def response[A](fx: Fx[(HttpURLConnection, A)]): Fx[(HttpURLConnection, A)] =
+    if (enabled)
+      fx.unsafeTap(x =>
+        log(s"HTTP response: ${x._1.getResponseCode} ${x._1.getResponseMessage}${p(" ~ ", x._2.toString)}"))
+    else
+      fx
+
+  def result[A](fx: Fx[A]): Fx[A] =
+    if (enabled)
+      fx.attemptArticulateError.flatMap(r => log(s"HTTP result: $r") >> Fx.lift(r))
+    else
+      fx
 }
