@@ -1,6 +1,6 @@
 package shipreq.taskman.server
 
-import com.squareup.okhttp.OkHttpClient
+import okhttp3.OkHttpClient
 import japgolly.microlibs.config.{Sources => ConfigSources}
 import java.time.{Clock, Duration, Instant}
 import java.util.concurrent.{ExecutorService, TimeUnit}

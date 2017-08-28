@@ -1,6 +1,5 @@
 package shipreq.taskman.server.business
 
-import com.squareup.okhttp.OkHttpClient
 import japgolly.microlibs.config.ConfigParser
 import japgolly.univeq._
 import java.net.HttpURLConnection
@@ -135,7 +134,7 @@ object FreshDesk {
 /**
  * Can connect to FreshDesk but lacks data required to interpret `Support.API` ops.
  */
-sealed class FreshDesk0(props: Props)(implicit httpClient: OkHttpClient) extends HasLogger {
+sealed class FreshDesk0(props: Props)(implicit httpClient: HttpClient) extends HasLogger {
 
   protected final implicit val httpLoggers: HttpLoggers =
     HttpLoggers(log.atLevel(props.logLevel))
@@ -161,7 +160,7 @@ sealed class FreshDesk0(props: Props)(implicit httpClient: OkHttpClient) extends
  * Full interpreter for `Support.API` ops.
  */
 final class FreshDesk(props: Props, val verifiedProps: VerifiedProps)
-                     (implicit httpClient: OkHttpClient) extends FreshDesk0(props) with (Support.API ~> Fx) {
+                     (implicit httpClient: HttpClient) extends FreshDesk0(props) with (Support.API ~> Fx) {
 
   private def createTicket(t: NewTicket): Fx[TicketId] =
     endpoints.createTicket.run(t)

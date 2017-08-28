@@ -1,11 +1,11 @@
 package shipreq.taskman.server.business
 
-import com.squareup.okhttp.{Credentials, OkHttpClient, OkUrlFactory}
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import java.io.{InputStream, OutputStream}
 import java.net.{HttpURLConnection, URL}
 import java.nio.charset.Charset
+import okhttp3.{Credentials, OkHttpClient, OkUrlFactory}
 import org.apache.http.HttpEntity
 import org.apache.http.entity.{ContentType, InputStreamEntity}
 import org.apache.http.util.EntityUtils
@@ -16,10 +16,11 @@ import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{ArticulateError, Identity}
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.Logger
+import Http.HttpClient
 
-final case class Http[I, O](runFn: (I, OkHttpClient, HttpLoggers) => Fx[O]) /*extends AnyVal*/ {
+final case class Http[I, O](runFn: (I, HttpClient, HttpLoggers) => Fx[O]) /*extends AnyVal*/ {
 
-  def run(i: I)(implicit client: OkHttpClient, log: HttpLoggers): Fx[O] =
+  def run(i: I)(implicit client: HttpClient, log: HttpLoggers): Fx[O] =
     log.result(runFn(i, client, log))
 
   def contramap[A](f: A => I): Http[A, O] =
@@ -35,6 +36,8 @@ final case class Http[I, O](runFn: (I, OkHttpClient, HttpLoggers) => Fx[O]) /*ex
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
 object Http {
+
+  type HttpClient = OkHttpClient
 
   final case class Credential(getHeaderValue: String)
   object Credential {

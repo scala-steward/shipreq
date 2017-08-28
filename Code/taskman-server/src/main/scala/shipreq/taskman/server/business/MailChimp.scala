@@ -1,6 +1,5 @@
 package shipreq.taskman.server.business
 
-import com.squareup.okhttp.OkHttpClient
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import java.net.HttpURLConnection
@@ -209,7 +208,7 @@ object MailChimp {
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-final class MailChimp(props: Props)(implicit httpClient: OkHttpClient) extends (MailingList.API ~> Fx) with HasLogger {
+final class MailChimp(props: Props)(implicit httpClient: HttpClient) extends (MailingList.API ~> Fx) with HasLogger {
   private implicit val httpLoggers: HttpLoggers =
     HttpLoggers(log.atLevel(props.logLevel), _.replace(props.key, "<KEY>"))
 
