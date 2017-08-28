@@ -1,6 +1,7 @@
 package shipreq.webapp.server.app
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.univeq._
 import java.nio.charset.Charset
 import net.liftweb.common.{Box, Full}
 import net.liftweb.http.{Req => LiftReq, _}
@@ -34,6 +35,7 @@ final class LiftDispatcher(global: Global) {
   def init(): Unit = {
     LiftRules.dispatch.append(mainDispatchPF)
     LiftRules.statelessDispatch.prepend(opsDispatchPF)
+    LiftRules.statelessDispatch.prepend(removeWwwSubdomainPF)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -119,8 +121,8 @@ final class LiftDispatcher(global: Global) {
     val dispatch = logic.mainDispatcher(devMode = Props.devMode, testMode = Props.testMode)
 
     {
-      case r if noFileExtension(r) && !isLiftRequest(r) => () => dispatch(r).unsafeRun()
-      case r if hasHtmlFileExtension(r)                 => () => Full(r.createNotFound)
+      case r if (r.request ne null) && noFileExtension(r) && !isLiftRequest(r) => () => dispatch(r).unsafeRun()
+      case r if (r.request ne null) && hasHtmlFileExtension(r)                 => () => Full(r.createNotFound)
     }
   }
 
@@ -131,7 +133,14 @@ final class LiftDispatcher(global: Global) {
     val candidate = logic.Ops.candidate
 
     {
-      case r if candidate(liftReqUrl(r)) => () => dispatch(r).unsafeRun()
+      case r if (r.request ne null) && candidate(liftReqUrl(r)) => () => dispatch(r).unsafeRun()
     }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  val removeWwwSubdomainPF: LiftRules.DispatchPF = {
+    case r if (r.request ne null) && r.request.serverName.startsWith("www.") =>
+      () => Full(RedirectResponse(r.request.url.replace("://www.", "://")))
   }
 }

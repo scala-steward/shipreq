@@ -95,7 +95,6 @@ Phase 2
 * Allow refs to custom text fields (e.g. [UC-1.detail])
 * Clicking a UCRef should open the UC in ReqDetail (just like ReqRefs)
 * Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
-* Redirect out of www. subdomain
 
 ### New Features
 * User profile page
