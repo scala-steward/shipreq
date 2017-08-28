@@ -1,14 +1,8 @@
 package shipreq.taskman.server.business
 
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
-import java.io.{InputStream, OutputStream}
-import java.net.{HttpURLConnection, URL}
 import java.nio.charset.Charset
-import okhttp3.{Credentials, OkHttpClient, OkUrlFactory}
-import org.apache.http.HttpEntity
-import org.apache.http.entity.{ContentType, InputStreamEntity}
-import org.apache.http.util.EntityUtils
+import okhttp3._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 import scalaz.syntax.bind._
@@ -16,21 +10,30 @@ import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{ArticulateError, Identity}
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.Logger
-import Http.HttpClient
+import Http._
 
-final case class Http[I, O](runFn: (I, HttpClient, HttpLoggers) => Fx[O]) /*extends AnyVal*/ {
+final case class Http[I, O](prep: (I, HttpClient, HttpLoggers) => Fx[Request],
+                            recv: (Response, String) => Fx[O]) {
 
   def run(i: I)(implicit client: HttpClient, log: HttpLoggers): Fx[O] =
-    log.result(runFn(i, client, log))
+    log.result(
+      prep(i, client, log)
+        .map(req => client.newCall(req).execute())
+        .bracket(
+          release = r => Fx(r.close()),
+          use = r =>
+            Fx(r.body.string())
+              .tap(log.response(r, _))
+              .flatMap(recv(r, _))))
 
   def contramap[A](f: A => I): Http[A, O] =
-    Http((a, c, l) => runFn(f(a), c, l))
+    Http((a, c, l) => prep(f(a), c, l), recv)
 
   def and[A](f: Fx[O] => Fx[A]): Http[I, A] =
-    Http((i, c, l) => f(runFn(i, c, l)))
+    Http(prep, (r, s) => f(recv(r, s)))
 
-  def tap[A](f: O => A): Http[I, O] =
-    and(_.unsafeTap(f))
+  def and[A](f: (Response, Fx[O]) => Fx[A]): Http[I, A] =
+    Http(prep, (r, s) => f(r, recv(r, s)))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -45,90 +48,94 @@ object Http {
       Credential(Credentials.basic(username, password))
   }
 
-  sealed abstract class Method(val value: String) {
-    def apply(url: String): Http[Unit, HttpURLConnection] =
-      Http[Unit, HttpURLConnection]((_, client, _) => Fx(new OkUrlFactory(client).open(new URL(url))))
-        .tap(_.setRequestMethod(value))
+  sealed abstract class Method(val value: String)
+  case object Get extends Method("GET") {
+    def apply(url: String): PreCallGet =
+      PreCallGet((_, _) => Fx(new Request.Builder().url(url)))
   }
-  case object Get extends Method("GET")
-  case object Put extends Method("PUT")
-  case object Post extends Method("POST")
-  case object Delete extends Method("DELETE")
+  case object Put extends Method.WithRequest("PUT")
+  case object Post extends Method.WithRequest("POST")
+  case object Delete extends Method.WithRequest("DELETE")
+  object Method {
+    sealed abstract class WithRequest(value: String) extends Method(value) {
+      final def apply(url: String): PreCall[Unit] =
+        PreCall((_, _, _) => Fx(new Request.Builder().url(url)), this)
+    }
+    implicit def univEqMethod: UnivEq[Method] = UnivEq.derive
+  }
 
   val DefaultCharset = Charset.forName("UTF-8")
-  val ContentTypeJson = s"application/json;charset=${DefaultCharset.name}"
+  val MediaTypeJson = MediaType.parse(s"application/json;charset=${DefaultCharset.name}")
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  def readResponseStream(conn: HttpURLConnection, stream: HttpURLConnection => InputStream): Fx[String] =
-    Fx(stream(conn)).bracket(
-      release = i => Fx(i.close()),
-      use = i => Fx {
-        val entity: HttpEntity = new InputStreamEntity(i)
-        val charset = Option(ContentType get entity).fold(DefaultCharset)(_.getCharset)
-        val bytes = EntityUtils.toByteArray(entity)
-        new String(bytes, charset)
-      })
+  final case class PreCallGet(prep: (HttpClient, HttpLoggers) => Fx[Request.Builder]) {
+    def map(f: Request.Builder => Request.Builder): PreCallGet =
+      PreCallGet(prep(_, _) map f)
 
-  def genericResponseErrorHandler[A](c: HttpURLConnection, response: Any): Fx[A] =
-    Fx.fail(ArticulateError(s"Unexpected HTTP response: ${c.getResponseCode} ${c.getResponseMessage}. Response: $response"))
+    def authWith(c: Credential): PreCallGet =
+      map(_.addHeader("Authorization", c.getHeaderValue))
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  implicit class HttpExt1(private val http: Http[Unit, HttpURLConnection]) extends AnyVal {
-    def authWith(c: Credential): Http[Unit, HttpURLConnection] =
-      http.tap(_.addRequestProperty("Authorization", c.getHeaderValue))
-
-    def request[I](prep: (HttpLoggers, HttpURLConnection, I) => Fx[Option[OutputStream => Fx[Unit]]]): Http[I, HttpURLConnection] =
-      Http { (i, client, log) =>
-
-        def writeRequestContent(conn: HttpURLConnection, w: OutputStream => Fx[Unit]): Fx[Unit] =
-          Fx(conn.getOutputStream).bracket(release = c => Fx(c.close()), use = w)
-
-        for {
-          conn  <- http.runFn((), client, log)
-          reqFn <- prep(log, conn, i)
-          _     <- reqFn.fold(Fx.unit)(writeRequestContent(conn, _))
-        } yield conn
-      }
-
-    def jsonRequest: Http[JValue, HttpURLConnection] =
-      request[JValue]((log, conn, i) =>
-        for {
-          _   <- Fx(conn.setRequestProperty("Content-Type", ContentTypeJson))
-          str <- Fx(compact(i))
-          _   <- log.request(conn, str)
-        } yield
-          Option.unless(str.isEmpty)(o => Fx(o write str.getBytes(DefaultCharset)))
-        )
+    def noRequest: Http[Unit, Unit] =
+      Http(
+        (_, c, log) => prep(c, log).map(_.build).tap(log.request(_, "")),
+        (_, _) => Fx.unit)
   }
 
-  implicit class HttpExt2[I](private val http: Http[I, HttpURLConnection]) extends AnyVal {
-    def readResponse: Http[I, (HttpURLConnection, String \/ String)] =
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  final case class PreCall[I](prep: (I, HttpClient, HttpLoggers) => Fx[Request.Builder], method: Method) {
+    def contramap[A](f: A => I): PreCall[A] =
+      PreCall((a, c, l) => prep(f(a), c, l), method)
+
+    def map(f: Request.Builder => Request.Builder): PreCall[I] =
+      PreCall(prep(_, _, _) map f, method)
+
+    def authWith(c: Credential): PreCall[I] =
+      map(_.addHeader("Authorization", c.getHeaderValue))
+  }
+
+  implicit class PreCallExt1(private val http: PreCall[Unit]) extends AnyVal {
+    def request[I](buildReq: (Request.Builder, I) => Fx[(Request, String)]): Http[I, Unit] =
       Http((i, client, log) =>
-        log.response(
-          http.runFn(i, client, log).flatMap(conn =>
-            if (conn.getResponseCode ==* HttpURLConnection.HTTP_OK)
-              readResponseStream(conn, _.getInputStream).map(r => (conn, \/-(r)))
-            else
-              readResponseStream(conn, _.getErrorStream).map(r => (conn, -\/(r))))))
+        for {
+          reqBuilder  ← http.prep((), client, log)
+          built       ← buildReq(reqBuilder, i)
+          (req, body) = built
+          _           ← log.request(req, body)
+        } yield req,
+        (_, _) => Fx.unit)
 
-    def jsonResponse: Http[I, (HttpURLConnection, JValue \/ JValue)] =
-      readResponse.and(_.flatMap {
-        case (conn, \/-(str)) => Fx(parse(str)).map(j => (conn, \/-(j)))
-        case (conn, -\/(str)) => Fx(parse(str)).map(j => (conn, -\/(j)))
+    def jsonRequest: Http[JValue, Unit] =
+      request[JValue]((b, i) => Fx {
+        val str = compact(i)
+        val body = RequestBody.create(MediaTypeJson, str.getBytes(DefaultCharset))
+        val req = b.method(http.method.value, body).build
+        (req, str)
       })
   }
 
-  implicit class HttpExt3[I](private val http: Http[I, (HttpURLConnection, JValue \/ JValue)]) extends AnyVal {
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  implicit class HttpExt1[I](private val http: Http[I, Unit]) extends AnyVal {
+    def jsonResponse: Http[I, JValue \/ JValue] =
+      http.copy(recv = (resp, body) => Fx {
+        val json = parse(body)
+        if (resp.code ==* 200) \/-(json) else -\/(json)
+      })
+  }
+
+  implicit class HttpExt2[I](private val http: Http[I, JValue \/ JValue]) extends AnyVal {
     def parseJsonResponse[O](ok: JValue => ArticulateError \/ O,
-                             ko: (HttpURLConnection, JValue) => Fx[O] = genericResponseErrorHandler[O](_, _)): Http[I, O] =
-      http.and(_.flatMap {
-        case (_, \/-(j)) => Fx.lift(ok(j)).mapArticulateError(_.hint(s"Response = $j"))
-        case (c, -\/(j)) => ko(c, j).mapArticulateError(_.hint(s"Response = $j", s"Code = ${c.getResponseCode}"))
+                             ko: (Response, JValue) => Fx[O] = genericResponseErrorHandler[O](_, _)): Http[I, O] =
+      http.and((r, fx) => fx.flatMap {
+        case \/-(j) => Fx.lift(ok(j)).mapArticulateError(_.hint(s"Response = $j"))
+        case -\/(j) => ko(r, j).mapArticulateError(_.hint(s"Response = $j", s"Code = ${r.code}"))
       })
   }
 
+  def genericResponseErrorHandler[A](r: Response, response: Any): Fx[A] =
+    Fx.fail(ArticulateError(s"Unexpected HTTP response: ${r.code} ${r.message}. Response: $response"))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -150,15 +157,11 @@ final class HttpLoggers(logger: Logger#AtLevel, mod: String => String) {
     else
       _ => Fx.unit
 
-  val request: (HttpURLConnection, String) => Fx[Unit] =
-    (c, body) => logIfEnabled(s"HTTP request: ${c.getRequestMethod} ${c.getURL.toExternalForm}${p(" ← ", body)}")
+  val request: (Request, String) => Fx[Unit] =
+    (r, body) => logIfEnabled(s"HTTP request: ${r.method} ${r.url.url.toExternalForm}${p(" ← ", body)}")
 
-  def response[A](fx: Fx[(HttpURLConnection, A)]): Fx[(HttpURLConnection, A)] =
-    if (enabled)
-      fx.tap(x =>
-        logFx(s"HTTP response: ${x._1.getResponseCode} ${x._1.getResponseMessage}${p(" → ", x._2.toString)}"))
-    else
-      fx
+  val response: (Response, String) => Fx[Unit] =
+    (r, body) => logIfEnabled(s"HTTP response: ${r.code} ${r.message}${p(" → ", body)}")
 
   def result[A](fx: Fx[A]): Fx[A] =
     if (enabled)

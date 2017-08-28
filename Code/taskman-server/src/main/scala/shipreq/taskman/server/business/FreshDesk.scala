@@ -2,13 +2,12 @@ package shipreq.taskman.server.business
 
 import japgolly.microlibs.config.ConfigParser
 import japgolly.univeq._
-import java.net.HttpURLConnection
 import org.json4s.JsonDSL._
 import org.json4s._
 import scalaz.{\/, ~>}
 import shipreq.base.util.ArticulateError
 import shipreq.base.util.FxModule._
-import shipreq.base.util.log.{HasLogger, LogLevel, Logger}
+import shipreq.base.util.log.{HasLogger, LogLevel}
 import shipreq.taskman.server.logic.business.Support
 import shipreq.taskman.server.logic.business.Support.API._
 import shipreq.taskman.server.logic.business.Support._
@@ -91,19 +90,18 @@ object FreshDesk {
   final class Endpoints(urlPrefix: String, key: String) {
     private val creds = Credential.basic(key, "X")
 
-    private def endpoint(method: Method, path: String): Http[JValue, (HttpURLConnection, JValue \/ JValue)] =
-      method(s"$urlPrefix/$path.json")
-        .authWith(creds)
-        .jsonRequest
-        .jsonResponse
-
     val getGroups: Http[Unit, List[Group]] =
-      endpoint(Get, "groups")
-        .contramap[Unit](_ => JNothing)
+      Get(s"$urlPrefix/groups.json")
+        .authWith(creds)
+        .noRequest
+        .jsonResponse
         .parseJsonResponse(parseGroups)
 
     val createTicket: Http[NewTicket, TicketId] =
-      endpoint(Post, "helpdesk/tickets")
+      Post(s"$urlPrefix/helpdesk/tickets.json")
+        .authWith(creds)
+        .jsonRequest
+        .jsonResponse
         .contramap[NewTicket](_.json)
         .parseJsonResponse(parseTicketResponse)
   }

@@ -135,7 +135,7 @@ object Dependencies {
   object OkHttp {
     private val mm = MultiModule.java("com.squareup.okhttp3", "3.8.1")
     val core          = mm("okhttp")
-    val urlConnection = mm("okhttp-urlconnection") ++ core
+    // val urlConnection = mm("okhttp-urlconnection") ++ core
   }
 
   object Specs2 {

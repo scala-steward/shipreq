@@ -2,7 +2,7 @@ package shipreq.taskman.server.business
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
-import java.net.HttpURLConnection
+import okhttp3.Response
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -58,14 +58,14 @@ object MailChimp {
   final class Endpoints(urlPrefix: String, apiKey: String) {
     private val apiKeyJson = render("apikey" -> apiKey)
 
-    private def endpoint(path: String): Http[JObject, (HttpURLConnection, JValue \/ JValue)] =
+    private def endpoint(path: String): Http[JObject, JValue \/ JValue] =
       Post(s"$urlPrefix/$path.json")
         .jsonRequest
         .contramap[JObject](apiKeyJson merge _)
         .jsonResponse
         .and(_.flatMap {
-          case x@ (_, \/-(j)) => Fx.lift(ApiFailure.Partial.extract(j) <\/ x)
-          case x              => Fx pure x
+          case x@ \/-(j) => Fx.lift(ApiFailure.Partial.extract(j) <\/ x)
+          case x         => Fx pure x
         })
 
     object lists {
@@ -125,7 +125,7 @@ object MailChimp {
       }
     }
 
-  def parseErrorForSubscribe: (HttpURLConnection, JValue) => Fx[SubscribeResult] =
+  def parseErrorForSubscribe: (Response, JValue) => Fx[SubscribeResult] =
     ApiFailure.Total.recoverOrHandle(f => Option.when(f.name ==* "List_AlreadySubscribed")(AlreadySubscribed))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -154,17 +154,17 @@ object MailChimp {
           }
         )
 
-      def recoverOrHandle[O](tryRecover: Total => Option[O])(conn: HttpURLConnection, j: JValue): Fx[O] =
+      def recoverOrHandle[O](tryRecover: Total => Option[O])(resp: Response, j: JValue): Fx[O] =
         ApiFailure.Total.parse(j) match {
           case \/-(f) => tryRecover(f) match {
             case Some(o) => Fx pure o
             case None    => Fx fail f.toArticulateError
           }
-          case -\/(_) => Http.genericResponseErrorHandler[O](conn, j)
+          case -\/(_) => Http.genericResponseErrorHandler[O](resp, j)
         }
 
-      def handle[O](conn: HttpURLConnection, j: JValue): Fx[O] =
-        recoverOrHandle[O](_ => None)(conn, j)
+      def handle[O](resp: Response, j: JValue): Fx[O] =
+        recoverOrHandle[O](_ => None)(resp, j)
     }
 
     final case class Partial(code: Int, msg: String, email: Option[EmailAddr]) {
