@@ -129,3 +129,6 @@ https://stackoverflow.com/questions/26386483/is-there-a-way-to-move-google-analy
   * name = "ShipReq: Test"
   * url = "http://local.shipreq.com"
   * enable "Enable Users Metric in Reporting"
+6. For both properties, add custom dimensions and metrics as described in
+    https://github.com/philipwalton/analyticsjs-boilerplate/pull/15/files
+   but only for dimensions [1,8] and metrics [1,3]

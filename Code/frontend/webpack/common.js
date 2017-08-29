@@ -24,6 +24,8 @@ const config = ({ mode }) => ({
     ]),
 
     admin: './shipreq/styles/admin.less',
+
+    analytics: './shipreq/js/analytics.js',
   },
 
   output: {
@@ -39,6 +41,16 @@ const config = ({ mode }) => ({
 
   module: {
     rules: [ //
+      {
+        resource: { test: /analytics\.js$/ },
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: [['es2015', {'modules': false}]],
+            // plugins: ['dynamic-import-system-import'],
+          },
+        },
+      },
       {
         test: /\.less$/,
         use: extractLess.extract({

@@ -1,0 +1,31 @@
+package shipreq.webapp.server.snippet
+
+import net.liftweb.util.Helpers._
+import scala.xml._
+import shipreq.base.util.Identity
+import shipreq.webapp.base.AssetManifest
+import shipreq.webapp.server.app.Global
+import shipreq.webapp.server.lib.SingleOpStatelessSnippet
+
+/**
+  * Enables Google Analytics if the server was started with a tracking ID.
+  */
+object Analytics extends SingleOpStatelessSnippet {
+
+  override val render: NodeSeq => NodeSeq =
+    Global.config.googleAnalyticsTrackingId match {
+      case Some(id) => enable(id)
+      case None     => Identity.apply
+    }
+
+  def enable(trackingId: String): NodeSeq => NodeSeq = {
+    val initErrorListener = "addEventListener('error',window.__e=function f(e){f.q=f.q||[];f.q.push(e)})"
+    val initMain = s"ga2.i('$trackingId')" // window.ga2 is created at the bottom of analyticsJs
+    val html = Group(
+      <script type="text/javascript" data-lift="head">{initErrorListener}</script> ::
+      <script type="text/javascript" async="async" src={AssetManifest.analyticsJs} onload={initMain}></script> ::
+      <script type="text/javascript" async="async" src="https://www.google-analytics.com/analytics.js"></script> ::
+      Nil)
+    "*" #> html
+  }
+}

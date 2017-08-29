@@ -5,6 +5,8 @@ object AssetManifest {
 
   final case class CDN(href: String, integrity: Option[String])
 
+  def analyticsJs = "/s/9d71541980c2165f12e70e03d0b1e2be.js"
+
   def favicon = "/s/286b75985993da80759cbdc5142de4d3.ico"
 
   def jqueryJs = CDN(

@@ -95,6 +95,8 @@ const makeConfig = ({ mode, name, sjsName, staticDir, htmlMinifyOptions }) => {
 
       admin: fromWebpack({ files: 'admin.css' }),
 
+      analytics: fromWebpack({ files: 'analytics.js', manifest: CamelCase }),
+
       // ---------------------------------------------------------------------------------------------------------------
       // BE ADVISED that when you changes these bundles, you may need to change how assets are used from Scala.
       // grep Scala source code for AssetManifest.

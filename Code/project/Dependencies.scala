@@ -18,11 +18,11 @@ object Dependencies {
   object Scala {
     private val mm = scalaItself(version)
     def version  = "2.12.3"
-    val compiler = mm("scala-compiler")
     val library  = mm("scala-library")
     val reflect  = mm("scala-reflect")
-    val p        = mm("scalap")
-    val all      = compiler ++ library ++ reflect ++ p
+    val compiler = mm("scala-compiler") ++ reflect ++ scalaXml
+    val p        = mm("scalap") ++ compiler
+    val all      = reflect ++ library ++ p
     val macroDef = reflect ++ library ++ (compiler % "provided")
   }
 
@@ -176,6 +176,7 @@ object Dependencies {
   val μPickle   = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",   "custom-7")
   val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.4.8")
 
+  val scalaXml    = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.0.6")
   val httpCore    = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.6")
   val javaMail    = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.5.6")
   val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "42.1.4")

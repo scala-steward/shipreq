@@ -32,6 +32,8 @@ final case class ServerConfig(
     */
     publicRegistration: Permission,
 
+    googleAnalyticsTrackingId: Option[String],
+
     /** The DB schema in which the Taskman interfaces reside. */
     taskmanSchema: String,
 
@@ -53,6 +55,7 @@ object ServerConfig {
       Config.need    [Duration]      ("token.lifespan.register") |@|
       Config.need    [Duration]      ("token.lifespan.resetpw") |@|
       Config.getOrUse[Boolean ]      ("feature.publicRegistration", true).map(Allow.when) |@|
+      Config.get     [String  ]      ("googleAnalytics.trackingId") |@|
       Config.need    [String  ]      ("taskman.schema") |@|
       Config.getOrUse[Boolean ]      ("taskman.init", true) |@|
       RetryCriteria.config.withPrefix("taskman.init.retry.") |@|

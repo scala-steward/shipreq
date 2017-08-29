@@ -63,13 +63,11 @@ Phase 2
 * Presentation
 
 ### Devops & Deployment
-* Services - create/confirm, cleanse, configure accounts
-  * GCP
-    * Monitoring
-    * Logging
-    * Metrics
-    * Alerting
-  * Google Analytics
+* StackDriver
+  * Monitoring
+  * Logging
+  * Metrics
+  * Alerting
 * Env
   * Automate releases
   * Automate ops (dashboards, alerts, etc)
