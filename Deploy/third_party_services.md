@@ -129,6 +129,35 @@ https://stackoverflow.com/questions/26386483/is-there-a-way-to-move-google-analy
   * name = "ShipReq: Test"
   * url = "http://local.shipreq.com"
   * enable "Enable Users Metric in Reporting"
-6. For both properties, add custom dimensions and metrics as described in
-    https://github.com/philipwalton/analyticsjs-boilerplate/pull/15/files
-   but only for dimensions [1,8] and metrics [1,3]
+6. For both properties, add custom dimensions and metrics as described below.
+
+#### Custom dimensions
+
+These can be set up on Google Analytics by going to the `Admin` section, clicking on `Custom Definitions` in the `PROPERTY` column will reveal a link to `Custom Dimensions`.
+
+The index values are important as they align with the values in `../Code/frontend/shipreq/js/analytics.js`.
+
+| Name             | Index | Scope |
+| :--------------- | :---- | :---- |
+| Tracking Version | 1     | Hit   |
+| Client ID        | 2     | User  |
+| Window ID        | 3     | Hit   |
+| Hit ID           | 4     | Hit   |
+| Hit Time         | 5     | Hit   |
+| Hit Type         | 6     | Hit   |
+| Hit Source       | 7     | Hit   |
+| Visibility State | 8     | Hit   |
+
+#### Custom metrics
+
+These can be set up on Google Analytics by going to the `Admin` section, clicking on `Custom Definitions` in the `PROPERTY` column will reveal a link to `Custom Metrics`.
+
+The index values are important as they align with the values in `../Code/frontend/shipreq/js/analytics.js`.
+
+| Name              | Index | Scope | Formatting Type |
+| :---------------- | :---- | :---- | :-------------- |
+| Response End Time | 1     | Hit   | Integer         |
+| DOM Load Time     | 2     | Hit   | Integer         |
+| Window Load Time  | 3     | Hit   | Integer         |
+| Page Visible      | 4     | Hit   | Integer         |
+| Page Loads        | 5     | Hit   | Integer         |

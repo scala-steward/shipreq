@@ -1,16 +1,17 @@
 /*
-Copied from: https://github.com/philipwalton/analyticsjs-boilerplate/blob/master/src/analytics/base.js
+Originally copied from: https://github.com/philipwalton/analyticsjs-boilerplate/blob/master/src/analytics/autotrack.js
 Commit: c6717f3d99650cd5faebb7b94ad27eb9510e62c1
 
 See https://philipwalton.com/articles/the-google-analytics-setup-i-use-on-every-site-i-build/
-
-CHANGES TO ORIGINAL:
-- Removed TRACKING_ID and pass it in through init()
-- Removed "export" from init & trackError and instead expose them via window.ga2
 */
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-/* global ga */
+// ShipReq-specific
+
+import 'autotrack/lib/plugins/clean-url-tracker';
+import 'autotrack/lib/plugins/outbound-link-tracker';
+import 'autotrack/lib/plugins/page-visibility-tracker';
+import 'autotrack/lib/plugins/url-change-tracker';
 
 /**
  * Bump this when making backwards incompatible changes to the tracking
@@ -19,18 +20,9 @@ CHANGES TO ORIGINAL:
  */
 const TRACKING_VERSION = '1';
 
+const TIMEZONE = 'Australia/Sydney';
 
-/**
- * A default value for dimensions so unset values always are reported as
- * something. This is needed since Google Analytics will drop empty dimension
- * values in reports.
- */
-const NULL_VALUE = '(not set)';
-
-
-/**
- * A mapping between custom dimension names and their indexes.
- */
+// A mapping between custom dimension names and their indexes.
 const dimensions = {
   TRACKING_VERSION: 'dimension1',
   CLIENT_ID       : 'dimension2',
@@ -42,16 +34,57 @@ const dimensions = {
   VISIBILITY_STATE: 'dimension8',
 };
 
-
-/**
- * A mapping between custom metric names and their indexes.
- */
+// A mapping between custom metric names and their indexes.
 const metrics = {
   RESPONSE_END_TIME: 'metric1',
   DOM_LOAD_TIME    : 'metric2',
   WINDOW_LOAD_TIME : 'metric3',
+  PAGE_VISIBLE     : 'metric4',
+  PAGE_LOADS       : 'metric5',
 };
 
+const requireAutotrackPlugins = () => {
+
+  ga('require', 'cleanUrlTracker', {
+    stripQuery: true,
+    trailingSlash: 'remove',
+    urlFieldsFilter: function(fieldsObj, parseUrl) {
+      fieldsObj.page = parseUrl(fieldsObj.page).pathname
+        .replace(/^\/login\/.*/, '/login')
+        .replace(/^\/project\/[a-zA-Z0-9]+/, '/project/<id>');
+      return fieldsObj;
+    },
+  });
+
+  ga('require', 'outboundLinkTracker', {
+    // Capture: Left-click, Middle-click, Right-click
+    events: ['click', 'auxclick', 'contextmenu'],
+  });
+
+  ga('require', 'pageVisibilityTracker', {
+    sendInitialPageview: true, // replaces ga('send','pageview')
+    pageLoadsMetricIndex: getDefinitionIndex(metrics.PAGE_LOADS),
+    visibleMetricIndex: getDefinitionIndex(metrics.PAGE_VISIBLE),
+    timeZone: TIMEZONE,
+    fieldsObj: {[dimensions.HIT_SOURCE]: 'pageVisibilityTracker'},
+  });
+
+  ga('require', 'urlChangeTracker', {
+    fieldsObj: {[dimensions.HIT_SOURCE]: 'urlChangeTracker'},
+  });
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Generic, mostly identical with original source
+
+/* global ga */
+
+/**
+ * A default value for dimensions so unset values always are reported as
+ * something. This is needed since Google Analytics will drop empty dimension
+ * values in reports.
+ */
+const NULL_VALUE = '(not set)';
 
 /**
  * Initializes all the analytics setup. Creates trackers and sets initial
@@ -64,7 +97,7 @@ const init = TRACKING_ID => {
   createTracker(TRACKING_ID);
   trackErrors();
   trackCustomDimensions();
-  sendInitialPageview();
+  requireAutotrackPlugins();
   sendNavigationTimingMetrics();
 };
 
@@ -79,7 +112,7 @@ const init = TRACKING_ID => {
  * @param {(Error|Object)=} err
  * @param {Object=} fieldsObj
  */
-const trackError = (err = {}, fieldsObj = {}) => {
+export const trackError = (err = {}, fieldsObj = {}) => {
   ga('send', 'event', Object.assign({
     eventCategory: 'Error',
     eventAction: err.name || '(no error name)',
@@ -94,7 +127,10 @@ const trackError = (err = {}, fieldsObj = {}) => {
  * version fields. In non-production environments it also logs hits.
  */
 const createTracker = TRACKING_ID => {
-  ga('create', TRACKING_ID, 'auto');
+  ga('create', TRACKING_ID, {
+    // 100% of users will send site speed stats
+    'siteSpeedSampleRate': 100,
+  });
 
   // Ensures all hits are sent via `navigator.sendBeacon()`.
   ga('set', 'transport', 'beacon');
@@ -171,14 +207,6 @@ const trackCustomDimensions = () => {
 
 
 /**
- * Sends the initial pageview to Google Analytics.
- */
-const sendInitialPageview = () => {
-  ga('send', 'pageview', {[dimensions.HIT_SOURCE]: 'pageload'});
-};
-
-
-/**
  * Gets the DOM and window load times and sends them as custom metrics to
  * Google Analytics via an event hit.
  */
@@ -220,6 +248,14 @@ const sendNavigationTimingMetrics = () => {
 
 
 /**
+ * Accepts a custom dimension or metric and returns it's numerical index.
+ * @param {string} definition The definition string (e.g. 'dimension1').
+ * @return {number} The definition index.
+ */
+const getDefinitionIndex = (definition) => +/\d+$/.exec(definition)[0];
+
+
+/**
  * Generates a UUID.
  * https://gist.github.com/jed/982883
  * @param {string|undefined=} a
@@ -231,5 +267,6 @@ const uuid = function b(a) {
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Expose for Lift snippet, Analytics.scala
 
-window.ga2={i:init,trackError};
+window.ga2={i:init};

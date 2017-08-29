@@ -5,7 +5,7 @@ object AssetManifest {
 
   final case class CDN(href: String, integrity: Option[String])
 
-  def analyticsJs = "/s/9d71541980c2165f12e70e03d0b1e2be.js"
+  def analyticsJs = "/s/a119a37a3f7e2dc4a8782787581e7a29.js"
 
   def favicon = "/s/286b75985993da80759cbdc5142de4d3.ico"
 
@@ -25,7 +25,7 @@ object AssetManifest {
 
   def loadjs = "/s/d8dd38ec39012a0dbad02f9e639bbad2.js"
 
-  def memberLibBundleJs = "/s/51ede128351d2b67e9e590569bf424af.js"
+  def memberLibBundleJs = "/s/9debde90bc3bcae2d7821c2f726135ee.js"
 
   def reactDomJs = CDN(
     href = "https://cdnjs.cloudflare.com/ajax/libs/react/15.6.1/react-dom.min.js",
@@ -50,7 +50,7 @@ object AssetManifest {
     "icons.svg#icons" ::
     Nil
 
-  def semanticJs = "/s/439840bb2a1360a10d17f19b937c0f50.js"
+  def semanticJs = "/s/067708e90337097fed469b427c06911c.js"
 
   def shipreqBannerSvg = "/s/878536f0a4ad0029794669f88dbf5f35.svg"
 

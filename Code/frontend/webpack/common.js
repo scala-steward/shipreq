@@ -40,9 +40,12 @@ const config = ({ mode }) => ({
   resolveLoader: { modules: [NodeModules] },
 
   module: {
-    rules: [ //
+    rules: [
+
+      // Transpile our analytics.js & libs autotrack & dom-utils out of ES6
+      // See: https://github.com/googleanalytics/autotrack/issues/137
       {
-        resource: { test: /analytics\.js$/ },
+        resource: { test: /node_modules\/(autotrack|dom-utils)\/|analytics\.js$/ },
         use: {
           loader: 'babel-loader',
           options: {
@@ -51,6 +54,7 @@ const config = ({ mode }) => ({
           },
         },
       },
+
       {
         test: /\.less$/,
         use: extractLess.extract({
@@ -58,6 +62,7 @@ const config = ({ mode }) => ({
           fallback: "style-loader",
         }),
       },
+
       {
         test: /.css$/,
         use: extractCss.extract({
@@ -68,6 +73,7 @@ const config = ({ mode }) => ({
           fallback: 'style-loader',
         }),
       },
+
       {
         test: /\.(ico|png|svg|eot|ttf|woff2?)$/,
         use: [{ loader: 'file-loader', options: { name: '[name].[ext]' } }],
