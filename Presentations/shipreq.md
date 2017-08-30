@@ -269,129 +269,223 @@ TODO Screenshot of a use case in ShipReq
 # Features
 
 (and product demo)
+
+*new project → req table → create a few reqs*
 ---
 
+## Requirement Types
+* Use Cases
+* User-defined *(show cfg/reqtypes)*
+---
+
+## Rich text
+* Refs *(show hover)*
+* Lists
+* Links (web/mail)
+* Math
+* More features later...
+---
+
+## UX
+* **ReqTable**
+  * Excel-like
+  * bulk mindset
+  * edit many in parallel
+
+* **ReqDetail**
+  * single focus
+  * detailed mindset
+---
+
+## UX
+* FAST! Even on poor networks.
+* Network activity only when a change is made.
+* Network activity non-blocking.
+* Switch back-and-forth (ReqTable↔ReqDetail) instantly, even mid-edit
+
+*ReqDetail → CfgFields → change order, mod text field → ReqDetail*
+---
+
+## UX
+#### Real-time!
+* Real-time responses to nearly all operations (by avoiding network)
+* Real-time updates between users/devices/tabs (server push)
+---
+
+## Use Cases
+
+*Create flow → show flow diagram*
+---
+
+## Tags
+* in Tags column
+* in text
+* in own columns (many:many & transitive)
+---
+
+## Implications
+<br>
+### "A implies B"
+
+* If requirement A is valid, requirement B is valid too.
+* If requirement A isn't valid, requirement B might not be valid either.
+---
+
+## Implication Demonstration 1
+* New UC
+* New tab, create GRs implied by the UC
+* Create a GR implied by a GR
+* Show implication graph in ReqDetail
+* Show project implication graph
+---
+
+## Implication Demonstration 2
+* Create MF and imply UC
+* Show columns "Implies" & MF
+* Show transitivity from MF
+* Create implication column
+---
+
+## Comprehensibility & Maintainability
+
+* Becomes more important as project grows
+* Implications turn a flat list of requirements into a *comprehensible* web.
+* Implications support maintainability too.
+  * *Delete UC: Show implied reqs auto-selected*
+---
+
+## Comprehensibility
+* Req Codes
+
+<br>
+*open demo project, show with/without*<br>
+*note reappearances in cross-concerns*
+---
+
+## Comprehensibility
+* Power filter
+* Instant search feedback
+---
+
+## Comprehensibility & Maintainability
+
+* Distribution manager (pending)
+
+  * See how a unit of organisation (tags / implications) is distributed amongst requirements
+
+  * Redistribute quickly and easily to achieve balance
+---
+
+## Data Integrity
+Huge problem as requirements projects grow.
+1. Preventable errors.
+1. Detectable errors.
+1. Security.
+---
+name: preventable-errors
+
+## Preventable errors
+
+ShipReq prevents these from occurring.
+<br>
+<br>
+---
+
+template: preventable-errors
+
+* Requirement relationships
+
+  * References in text (req, UC step, code)
+
+  * Implications
+
+  * Use case steps
+---
+
+template: preventable-errors
+
+* IDs are never lost/forgotten
+* IDs are never ambiguous
+
+<br>
+*(change req type, reqtype mnemonic)*
+---
+name: detectable-errors
+
+## Detectable errors
+
+ShipReq tracks these and presents them to user for resolution.
+<br>
+<br>
+---
+
+template: detectable-errors
+
+* mandatory fields
+* tag conflicts
+* dead refs
+* live reqs where all implying reqs are dead
+* user-defined issues
+* loose issues
+---
+
+template: detectable-errors
+
+There will be an Issues screen (in progress).
+
+* See all outstanding issues.
+* Resolve them inline without needing to change pages.
+---
+
+## Security
+
+* Completed in Phase 2
+  * Audit history
+  * Tamper-proof (similar to crypto-currencies like Bitcoin)
+  * Data is never discarded or lost
+
+* Planned for future phases
+  * UI to explore history
+  * Save points-in-time; create baselines; mark versions
+  * Expose integrity tokens/proofs
+---
+
+We have:
+* Strong Data Integrity
+* UX: ease of use
+* UX: feedback speed
+
+We gain:
+* Near zero cost for user mistakes / experimentation / failure
+* Delete / undelete anything at will
+* Reconfigure views without affecting content (eg. tag/imp fields)
+---
+
+# Features
+
+That's the gist of Phase 2.
+
+<br>
+One final feature...
+
+## Meta-Feature: Consistent Principals
+* Quality
+* Attention to detail
+* Ease of use
+* Capability
+---
+
+class: middle, center
+
+![x](logo-title.svg)
+
+<br><br><br>
+Thank You
 
 
 
 ---
 exclude: true
-
-====================================================================================================
-
-* Defining attributes
-  * Quality
-  * Attn to detail
-  * Ease of use
-  * Capability
-
-*new project → req table → create a few reqs*
-
-* Requirement Types
-  * Use Cases
-  * User-defined (show cfg/reqtypes)
-
-* Rich text
-  * Refs (show hover)
-  * Lists
-  * Links (web/mail)
-  * Math
-  * More features later
-
-* Use Cases
-  * Create flow
-  * Show diagram
-
-* UX
-  * ReqTable: Excel-like, bulk mindset, edit many in parallel
-  * ReqDetail: single focus, detailed mindset
-
-* UX
-  * FAST! Even on poor networks.
-  * Only network activity when a change is made. Non-blocking.
-  * Switch back-and-forth (Table↔Detail), even mid-edit
-* *ReqDetail → CfgFields → change order, mod text field → ReqDetail*
-
-* UX: Real-time
-  * Real-time responses to nearly all operations (by avoiding network)
-  * Real-time updates between users/devices/tabs (server push)
-
-* Tags
-  * in Tags column
-  * in text
-  * in own columns (many:many & transitive)
-
-* Implications
-  A → B
-  If requirement A exists, requirement B must exist too.
-  If requirement A doesn't exist, requirement B might not need to exist.
-  Turns a flat list of requirements into an explicable web
-
-* Implication Demonstration 1
-  * New Use Case
-  * New tab, create GRs implied by the UC
-  * Create a GR implied by a GR
-  * Show locality graph in ReqDetail
-  * Show project ImpGraph
-
-* Implication Demonstration 2
-  * Create a MF and imply UC
-  * Show transitivity: MF → UC → FRs
-  * Create imp column
-
-* Comprehensibility & maintainability
-  * Becomes more important as project grows
-  * Implications aid comprehensibility, especially with business reqs (demonstrate)
-
-* Delete UC: Show implied reqs auto-selected
-
-* Comprehensibility
-  * Another tool: req codes
-    * open demo project, show with/without
-    * show reappearance for cross-concerns
-
-* Comprehensibility
-  * Power filter
-  * Instant search feedback
-
-* Comprehensibility
-  * Distribution manager (planned)
-
-# Data Integrity
-Huge problem as requirements projects grow.
-1. Preventable errors.
-1. Detectable errors.
-1. Security.
-
-* Preventable errors
-  * Links between requirements
-    * References in text (req, UC step, code)
-    * Implications
-    * Use case flow
-
-* Preventable errors
-  * IDs never lost (change req type, reqtype mnemonic)
-
-* Detectable errors
-  * mandatory fields
-  * tag conflicts
-  * dead refs
-  * all implying reqs are dead
-  * user-defined issues
-  * loose issues
-
-* Detectable errors
-  * Issues screen WIP
-
-* Security
-  * Audit history
-  * Tamper-proof (similar to crypto-currencies like Bitcoin) and exposable
-  * UI pending
-
-Data Integrity & UX (ease-of-use + feedback speed) mean:
-* Cost of user failure/play/experimentation nearly zero
-  * Delete/undelete anything at will
-  * Tag/imp fields are dynamic views, detached from storage
 
 ====================================================================================================
 
