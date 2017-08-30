@@ -13,9 +13,9 @@ object GoogleAnalytics {
 
   def onRouteChange[P: UnivEq](prev: Option[P], current: P)(path: P => Url.Relative): Callback =
     Callback.when(prev.forall(_ !=* current))(
-      sendPageview(path(current)))
+      sendPageview(path(current), "SPA Router"))
 
-  private def sendPageview(path: Url.Relative): Callback =
+  private def sendPageview(path: Url.Relative, source: String): Callback =
     GA.map { ga =>
 
       ga("set", "page", path.relativeUrl)
@@ -23,7 +23,7 @@ object GoogleAnalytics {
       ga("send", "pageview", {
         val o = new js.Object()
         val d = o.asInstanceOf[js.Dictionary[String]]
-        d.update(dimensions.HIT_SOURCE, "SPA Router")
+        d.update(dimensions.HIT_SOURCE, source)
         o
       })
 
