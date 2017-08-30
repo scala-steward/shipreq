@@ -6828,7 +6828,7 @@ var Collapse = exports.Collapse = function (_React$PureComponent) {
         return;
       }
 
-      if (this.state.currentState === RESTING) {
+      if (this.state.currentState === RESTING || this.state.currentState === WAITING) {
         this.setState({ currentState: IDLING, from: from, to: to });
       }
     }

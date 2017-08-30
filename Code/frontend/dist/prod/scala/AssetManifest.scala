@@ -23,9 +23,9 @@ object AssetManifest {
 
   def loadingSpinSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjMjJjIj48cGF0aCBvcGFjaXR5PSIuMjUiIGQ9Ik0xNiAwYTE2IDE2IDAgMCAwIDAgMzIgMTYgMTYgMCAwIDAgMC0zMm0wIDRhMTIgMTIgMCAwIDEgMCAyNCAxMiAxMiAwIDAgMSAwLTI0Ii8+PHBhdGggZD0iTTE2IDBhMTYgMTYgMCAwIDEgMTYgMTZoLTRBMTIgMTIgMCAwIDAgMTYgNHoiPjxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0icm90YXRlIiBmcm9tPSIwIDE2IDE2IiB0bz0iMzYwIDE2IDE2IiBkdXI9IjAuNXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIi8+PC9wYXRoPjwvc3ZnPg=="
 
-  def loadjs = "/s/d8dd38ec39012a0dbad02f9e639bbad2.js"
+  def loadjs = "/s/7f8f2966a3634ba5d1b206bc19d7c7ec.js"
 
-  def memberLibBundleJs = "/s/8add205090b19b58368059d715127bc9.js"
+  def memberLibBundleJs = "/s/ee37f1fed6947742b810ded90acba3e5.js"
 
   def reactDomJs = CDN(
     href = "https://cdnjs.cloudflare.com/ajax/libs/react/15.6.1/react-dom.min.js",
@@ -39,7 +39,7 @@ object AssetManifest {
     href = "https://cdnjs.cloudflare.com/ajax/libs/react/15.6.1/react.min.js",
     integrity = Some("sha256-ivdPAn5h6U67z6OPgwfiLM9ug6levxmYFqWNxNCV0YE="))
 
-  def semanticCss = "/s/00c37cfd0db0e4b788791d59affb06e9.css"
+  def semanticCss = "/s/f8e5b58650754812d3d9ee09b8a170d7.css"
 
   def semanticCssUrls: List[String] =
     "icons.eot" ::
@@ -50,7 +50,7 @@ object AssetManifest {
     "icons.svg#icons" ::
     Nil
 
-  def semanticJs = "/s/067708e90337097fed469b427c06911c.js"
+  def semanticJs = "/s/74429bb8686aa776ef428b88b1a36c6b.js"
 
   def shipreqBannerSvg = "/s/878536f0a4ad0029794669f88dbf5f35.svg"
 
