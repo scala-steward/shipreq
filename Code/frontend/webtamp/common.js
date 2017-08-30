@@ -161,6 +161,7 @@ const makeConfig = ({ mode, name, sjsName, staticDir, htmlMinifyOptions }) => {
         fromCdnjs({cdn: 'KaTeX', npm: 'katex'}, `katex.min.css`, 'katexCss'),
         // { type: 'local', src: 'node_modules/katex/dist', files: '*.min.{js,css}' },
         // { type: 'local', src: 'node_modules/katex/dist', files: 'fonts/**/*', transitive: true },
+        // { type: 'local', src: 'node_modules/katex/dist', files: 'images/**/*', transitive: true },
       ],
 
       vizJs: { type: 'local', files: 'vendor/viz.js', manifest: true },
