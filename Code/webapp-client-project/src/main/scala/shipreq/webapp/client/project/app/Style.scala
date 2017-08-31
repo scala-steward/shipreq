@@ -161,6 +161,20 @@ object Style extends StyleSheet.Inline {
       unsafeChild(">table>*>*>td:nth-child(1) input")(monospace, width((Grammar.reqTypeMnemonic.length.total.last + 1).ch)),
       unsafeChild(">table>*>*>td:nth-child(2)")(width(100 %%)),
       unsafeChild(">table>*>*>td:nth-child(2) input")(width(100 %%)))
+
+    // HACK!
+    val tags = style(
+      unsafeChild(">table>*>*>td:nth-child(1)")(width(50 %%)),
+      unsafeChild(">table>*>*>td:nth-child(1) input")(width(100 %%)),
+      unsafeChild(">table>*>*>td:nth-child(2)")(monospace),
+      unsafeChild(">table>*>*>td:nth-child(2) input")(monospace, width((Grammar.hashRefKey.length.total.last + 1).ch)),
+      unsafeChild(">table>*>*>td:nth-child(4)")(width(50 %%)),
+      unsafeChild(">table>*>*>td:nth-child(4) textarea")(width(100 %%)),
+      unsafeChild(">table>*>*>td:nth-child(5)")(whiteSpace.nowrap),
+      unsafeChild(">table>*>*>td:nth-child(5) button+button")(marginLeft(1.ex)),
+      unsafeChild(">table .focusrow>td")(backgroundColor(c"#f0f8ff")),
+      unsafeChild(">section table td+td")(paddingLeft(3 em)),
+    )
   }
 
   // ===================================================================================================================

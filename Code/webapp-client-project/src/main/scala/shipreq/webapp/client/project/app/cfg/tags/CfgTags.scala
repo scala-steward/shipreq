@@ -11,6 +11,7 @@ import nyaya.prop.CycleDetector
 import nyaya.util.Multimap
 import scala.annotation.tailrec
 import scala.language.reflectiveCalls
+import scalacss.ScalaCssReact._
 import scalajs.js.{UndefOr, undefined}
 import scalaz.\&/
 import shipreq.base.util.ScalaExt._
@@ -30,6 +31,9 @@ import shipreq.webapp.client.project.lib.DND
 import shipreq.webapp.client.project.widgets.{Checkbox, FilterDeadButton}
 import FlatTag.FilterPolicy
 import TagInTree.Relations
+import shipreq.webapp.base.ui.{AutosizeTextarea, BaseStyles}
+import shipreq.webapp.base.ui.semantic.Table
+import shipreq.webapp.client.project.app.Style
 
 object CfgTags {
   case class Props(cp        : ClientProtocol,
@@ -159,6 +163,7 @@ private[tags] object MainTable {
       .initialStateFromProps(initialState)
       .renderBackend[Backend]
       .configure(changeListener.install(_.clientData))
+      .configure(AutosizeTextarea.applyToChildren("textarea"))
       .build
 
   val rowIdFromEditorInput: ((V.State, Any)) => Option[Id] = _._1.subject
@@ -224,12 +229,9 @@ private[tags] object MainTable {
     def renderDeadDesc(d: Option[String]): VdomNode =
       d getOrElse[String] ""
 
-    val indentation = {
-      @tailrec def indent(d: Int, n: Indenter): Indenter =
-        if (d == 0) n
-        else indent(d - 1, r => <.div(^.cls := "indent", n(r)))
-      Memo.int[Indenter](indent(_, identity))
-    }
+    def indentation(d: Int): Indenter = r =>
+      if (d == 0) r
+      else <.div(^.paddingLeft := s"${d * 3.4}ex", r)
 
     def rows(fd: FilterDead, s: State): TagMod = {
       val renderers = (tg_renderer.all(s) #::: at_renderer.all(s)).foldLeft(UnivEq.emptyMap[Id, F])(_ + _)
@@ -250,11 +252,16 @@ private[tags] object MainTable {
     def render(p: Props, s: State): VdomElement = {
       val fd = p.filterDead.value
       <.div(
-        NewTagControl.Component(newTagControlProps(s)),
-        FilterDeadButton.Component(StateSnapshot(fd)(v => $.props.flatMap(_.filterDead setState v))),
-        <.table(
+        BaseStyles.containerFull, Style.cfg.tags,
+
+        <.div(^.display.flex,
+          <.div(^.flex := "1", NewTagControl.Component(newTagControlProps(s))),
+          <.div(FilterDeadButton.Component(StateSnapshot(fd)(v => $.props.flatMap(_.filterDead setState v))))),
+
+        Table.celledCompactUnstackable(
           headerRow,
           <.tbody(rows(fd, s))),
+
         DetailPaneFns.render(
           s, crudIO.value().updateIO,
           parentSel = $ setStateFnL State.detailRowSelParent,
