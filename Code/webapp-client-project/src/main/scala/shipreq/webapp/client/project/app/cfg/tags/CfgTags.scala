@@ -1,6 +1,9 @@
 package shipreq.webapp.client.project.app.cfg.tags
 
-import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._, MonocleReact._
+import japgolly.scalajs.react._
+import vdom.html_<^._
+import ScalazReact._
+import MonocleReact._
 import japgolly.scalajs.react.extra._
 import monocle.macros.Lenses
 import monocle.std.option.some
@@ -8,23 +11,23 @@ import nyaya.prop.CycleDetector
 import nyaya.util.Multimap
 import scala.annotation.tailrec
 import scala.language.reflectiveCalls
-import scalajs.js.{undefined, UndefOr}
+import scalajs.js.{UndefOr, undefined}
 import scalaz.\&/
-
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{MMTree, Memo}
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.{TagId => Id, _}, DataImplicits._
-import shipreq.webapp.base.data.DataValidators.{tag => V, hashRefKey => VH}
+import shipreq.webapp.base.data.{TagId => Id, _}
+import DataImplicits._
+import shipreq.webapp.base.data.DataValidators.{hashRefKey => VH, tag => V}
 import shipreq.webapp.base.protocol.TagCrud
 import shipreq.webapp.base.UiText.FieldNames
-import shipreq.webapp.base.data.{TCB, Disabled, On}
+import shipreq.webapp.base.data.{Disabled, On, TCB}
 import shipreq.webapp.base.protocol.ClientProtocol
 import shipreq.webapp.client.project.app.cfg.shared._
-import shipreq.webapp.client.project.app.state.{ClientData, ChangeListener}
+import shipreq.webapp.client.project.app.state.{ChangeListener, ClientData}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.DND
-import shipreq.webapp.client.project.widgets.Checkbox
+import shipreq.webapp.client.project.widgets.{Checkbox, FilterDeadButton}
 import FlatTag.FilterPolicy
 import TagInTree.Relations
 
@@ -244,17 +247,14 @@ private[tags] object MainTable {
       results
     }
 
-    val filterDeadCheckbox = Checkbox.filterDead(v => $.props.flatMap(_.filterDead setState v))
-
     def render(p: Props, s: State): VdomElement = {
       val fd = p.filterDead.value
       <.div(
         NewTagControl.Component(newTagControlProps(s)),
-        filterDeadCheckbox(fd),
+        FilterDeadButton.Component(StateSnapshot(fd)(v => $.props.flatMap(_.filterDead setState v))),
         <.table(
           headerRow,
-          <.tbody(rows(fd, s))
-        ),
+          <.tbody(rows(fd, s))),
         DetailPaneFns.render(
           s, crudIO.value().updateIO,
           parentSel = $ setStateFnL State.detailRowSelParent,

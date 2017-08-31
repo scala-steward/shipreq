@@ -1,11 +1,12 @@
 package shipreq.webapp.client.project.app.cfg.shared
 
-import japgolly.scalajs.react._, vdom.html_<^._
+import japgolly.scalajs.react._
+import vdom.html_<^._
 import japgolly.univeq.UnivEq
 import japgolly.microlibs.nonempty.NonEmptyVector
 import shipreq.webapp.base.data.{Dead, Live}
-import Deletion._
 import shipreq.webapp.base.protocol.CrudAction
+import shipreq.webapp.client.project.widgets.LifeButton
 
 // This now disgusts me.
 
@@ -43,8 +44,11 @@ object Deletion {
   }
 }
 
-class Deletion[K](delIO: (K, DeletionAction) => Callback) {
+final case class Deletion[K](delIO: (K, DeletionAction) => Callback) extends AnyVal {
 
   def button(k: K, a: DeletionAction): VdomTag =
-    <.button(buttonLabel(a), ^.onClick --> delIO(k, a))
+    a match {
+      case Delete  => LifeButton.Delete(delIO(k, a))
+      case Restore => LifeButton.Restore(delIO(k, a))
+    }
 }

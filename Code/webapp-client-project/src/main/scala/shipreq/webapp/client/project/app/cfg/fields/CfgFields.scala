@@ -303,12 +303,10 @@ private[fields] object MainTable {
         abortNewButton($ modState abortNew)
     }
 
-    val filterDeadCheckbox = Checkbox.filterDead(v => $.props.flatMap(_.filterDead setState v))
-
     def render(fd: FilterDead, s: S) =
       <.div(
         newFieldControl(s),
-        filterDeadCheckbox(fd),
+        FilterDeadButton.Component(StateSnapshot(fd)(v => $.props.flatMap(_.filterDead setState v))),
         <.table(
           headerRow,
           <.tbody(renderNewField(s).whenDefined, renderFields(fd, s))))

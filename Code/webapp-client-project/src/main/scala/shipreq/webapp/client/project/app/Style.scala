@@ -33,6 +33,9 @@ object Style extends StyleSheet.Inline {
     val ucStepIndent = Domain.ofRange(0 until StaticField.useCaseStepTrees.iterator.map(_.maxDepth).max)
   }
 
+  private def monospace =
+    fontFamily :=! "monospace"
+
   /** Drag'n'drop handle Ξ */
   private val dragHnd = style(
     color(c"#000"))
@@ -134,8 +137,16 @@ object Style extends StyleSheet.Inline {
   object cfg {
 
     val deadMnemonic = style(
+      marginTop(0.4 ex),
       color(c"#aaa"),
       textDecoration := ^.lineThrough)
+
+    // HACK!
+    val reqTypes = style(
+      unsafeChild(">table>*>*>td:nth-child(1)")(monospace),
+      unsafeChild(">table>*>*>td:nth-child(1) input")(monospace, width((Grammar.reqTypeMnemonic.length.total.last + 1).ch)),
+      unsafeChild(">table>*>*>td:nth-child(2)")(width(100 %%)),
+      unsafeChild(">table>*>*>td:nth-child(2) input")(width(100 %%)))
   }
 
   // ===================================================================================================================
@@ -204,10 +215,6 @@ object Style extends StyleSheet.Inline {
         unsafeChild(">*")(
           &.not(_.lastChild)(marginRight(2 ex).important),
           &.lastChild(marginRight(`0`).important)))
-
-      val formCancelButton = style(
-        (background := "#fff").important,
-        borderColor(c"#27292a").important)
 
       val formCreateButton = style(
         (background := "#fff").important,

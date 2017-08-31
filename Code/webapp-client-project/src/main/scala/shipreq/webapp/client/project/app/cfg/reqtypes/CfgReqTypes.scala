@@ -1,7 +1,9 @@
 package shipreq.webapp.client.project.app.cfg.reqtypes
 
 import japgolly.microlibs.stdlib_ext.MutableArray
-import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._
+import japgolly.scalajs.react._
+import vdom.html_<^._
+import ScalazReact._
 import japgolly.scalajs.react.extra._
 import scala.language.reflectiveCalls
 import scalacss.ScalaCssReact._
@@ -9,12 +11,14 @@ import scalaz.std.string.stringInstance
 import scalaz.std.tuple._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText.FieldNames
-import shipreq.webapp.base.data._, DataImplicits._
+import shipreq.webapp.base.data._
+import DataImplicits._
 import shipreq.webapp.base.data.DataValidators.{reqType => V}
 import shipreq.webapp.base.filter.PotentialFilter
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.CustomReqTypeCrud
 import shipreq.webapp.base.data.On
 import shipreq.webapp.base.protocol.ClientProtocol
+import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.cfg.shared._
 import shipreq.webapp.client.project.app.state.{ChangeListener, ClientData}
@@ -139,10 +143,10 @@ object CfgReqTypes {
     }
 
     val table = {
-      val headerRow = CfgTable.header(List(
+      val headerRow = CfgTable.header(List[TagMod](
         FieldNames.mnemonic,
         FieldNames.name,
-        FieldNames.implicationRequired,
+        TagMod("Implication", <.br, "Required"),
         FieldNames.usage))
 
       val staticRows: cfgTable.RowStream = {
@@ -155,15 +159,16 @@ object CfgReqTypes {
         StaticReqType.values.toStream.map(r => r.mnemonic -> rr(r))
       }
 
-      () => cfgTable.table(headerRow, staticRows)
+      () => cfgTable.justTheTable(headerRow, staticRows)
     }
-
-    val outer =
-      cfgTable.wrapWithFilterDeadCheckbox(fd => $.props.flatMap(_.filterDead setState fd))
 
     def render: VdomElement = {
       Px.refresh(project, filterDead, usageShow)
-      outer(table())
+      cfgTable.wrapWithFilterDeadCheckbox2(
+        fd => $.props.flatMap(_.filterDead setState fd),
+        cfgTable.newButton,
+        table())(
+        BaseStyles.containerLarge, Style.cfg.reqTypes)
     }
   }
 }

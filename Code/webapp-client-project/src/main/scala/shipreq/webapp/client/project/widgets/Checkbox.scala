@@ -1,10 +1,9 @@
 package shipreq.webapp.client.project.widgets
 
-import japgolly.scalajs.react._, vdom.html_<^._
+import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util.IsoBool
-import shipreq.webapp.base.data.{FilterDead, ShowDead}
-import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.On
 
 object Checkbox {
@@ -20,16 +19,5 @@ object Checkbox {
       }
       .configure(Reusability.shouldComponentUpdate)
       .build
-  }
-
-  // TODO Deprecate Checkbox.filterDead
-  def filterDeadChecked = ShowDead
-
-  def filterDead(set: FilterDead => Callback) =
-    Checkbox(filterDeadChecked)(set, _ => chk => <.label(chk, UiText.Life.showDead))
-
-  def filterDead_$($: StateAccessPure[FilterDead]): () => VdomElement = {
-    val component = filterDead($ setState _)
-    () => component($.state.runNow())
   }
 }

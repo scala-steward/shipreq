@@ -16,6 +16,7 @@ import shipreq.webapp.client.project.app.Style.reqtable.{creation => *}
 import shipreq.webapp.client.project.feature.CreateFeature
 import shipreq.webapp.client.project.feature.CreateFeature.FieldKey
 import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.widgets.CancelButton
 
 object NewForm {
 
@@ -149,11 +150,7 @@ sealed trait NewForm {
   final class Backend($: BackendScope[Props, Unit]) {
 
     private val cancelButton: VdomElement =
-      Button(
-        tipe = Button.Type.BasicIconAndText(Icon.Remove, "Cancel"),
-        colour = Colour.Black)
-        .tag(*.formCancelButton,
-          ^.onClick --> $.props.flatMap(_.cancel))
+      CancelButton($.props.flatMap(_.cancel))
 
     def render(p: Props): VdomElement = {
 

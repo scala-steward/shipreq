@@ -1,12 +1,15 @@
 package shipreq.webapp.client.project.app.cfg.shared
 
 import japgolly.microlibs.stdlib_ext.MutableArray
-import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._
+import japgolly.scalajs.react._
+import vdom.html_<^._
+import ScalazReact._
 import japgolly.scalajs.react.extra._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.webapp.base.data.{DataIdAux, Dead, FilterDead, Live}
 import shipreq.webapp.base.data.DataImplicits._
-import shipreq.webapp.client.project.widgets.Checkbox
+import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Table}
+import shipreq.webapp.client.project.widgets.{CancelButton, FilterDeadButton}
 
 // TODO So many c.state.runNow()s in CfgTable
 object CfgTable {
@@ -30,8 +33,8 @@ object CfgTable {
         new CfgTable(editor, savedStore, newStore, rowkey, rr, newRowA, savedRowA, del, live, filterDeadCB, c)
     }
 
-  def header(headers: List[String]): VdomElement =
-    <.thead(<.tr(headers.toTagMod(<.th(_)), <.th("Ctrls")))
+  def header(headers: List[TagMod]): VdomElement =
+    <.thead(<.tr(headers.toTagMod(<.th(_)), <.th()))
 
   /**
    * @tparam P Persisted data. Data known to be saved.
@@ -78,15 +81,14 @@ final class CfgTable[S, K <: TaggedInt, P, I, A, B, C, V, RowKey, R](editor     
     editor render EditorI(a, "", editable(rs))
 
   def newButton: VdomElement =
-    <.button(
-      ^.onClick --> run(newStore.enableEdit),
-      ^.disabled := newStore.editing(c.state.runNow()),
-      "New")
+    Button(
+      tipe = Button.Type.IconAndText(Icon.Plus, "New"),
+      colour = Colour.Green,
+      state = Button.State.disabledWhen(newStore.editing(c.state.runNow())))
+      .tag(^.onClick --> run(newStore.enableEdit))
 
   def newCancelButton: VdomElement =
-    <.button(
-      ^.onClick --> run(newStore.remove),
-      "Cancel")
+    CancelButton(run(newStore.remove))
 
   def row(classArg: String, rs: RowStatus, content: RowContent, ctrls: => TagMod): VdomTag = {
     val cls2 = rowStatusRowClass(rs)
@@ -142,12 +144,25 @@ final class CfgTable[S, K <: TaggedInt, P, I, A, B, C, V, RowKey, R](editor     
   def table(header: VdomElement, static: RowStream): VdomElement =
     <.div(
       newButton,
-      <.table(
-        header,
-        <.tbody(newRow, allSortableRows(static))))
+      justTheTable(header, static))
+
+  // I don't care - all this shit will go in the bin soon anyway
+  def justTheTable(header: VdomElement, static: RowStream): VdomElement =
+    Table.celledCompactUnstackable(
+      header,
+      <.tbody(newRow, allSortableRows(static)))
 
   def wrapWithFilterDeadCheckbox(set: FilterDead => Callback): VdomElement => VdomElement = {
-    val checkbox = Checkbox.filterDead(Reusable.fn(set))
-    inner => <.div(checkbox(filterDeadCB.runNow()), inner)
+    def props: FilterDeadButton.Props =
+      StateSnapshot(filterDeadCB.runNow())(set)
+    inner => <.div(FilterDeadButton.Component(props), inner)
   }
+
+  // I don't care - all this shit will go in the bin soon anyway
+  def wrapWithFilterDeadCheckbox2(setFD: FilterDead => Callback, left: VdomElement, table: VdomElement): VdomTag =
+    <.div(
+      <.div(^.display.flex,
+        <.div(^.flex := "1", left),
+        <.div(FilterDeadButton.Component(StateSnapshot(filterDeadCB.runNow())(setFD)))),
+      table)
 }
