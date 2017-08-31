@@ -142,6 +142,13 @@ object Style extends StyleSheet.Inline {
       textDecoration := ^.lineThrough)
 
     // HACK!
+    val fields = style(
+      unsafeChild(">table>*>*>td:nth-child(1)")(padding(1 ex).important, textAlign.center),
+      unsafeChild(">table>*>*>td:nth-child(1) .draghandle:hover")(cursor.grab),
+      unsafeChild(">table>*>*>td:nth-child(4) input")(monospace, width((Grammar.fieldRefKey.length.total.last + 1).ch)),
+      unsafeChild(">table>*>*>td:nth-child(6) button")(marginLeft(1 ex)))
+
+    // HACK!
     val reqTypes = style(
       unsafeChild(">table>*>*>td:nth-child(1)")(monospace),
       unsafeChild(">table>*>*>td:nth-child(1) input")(monospace, width((Grammar.reqTypeMnemonic.length.total.last + 1).ch)),
