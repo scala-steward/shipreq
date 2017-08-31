@@ -54,7 +54,7 @@ case class Button(attr  : Multiple[Attr] = Multiple.empty,
       t = t(^.disabled := true)
 
     t = tipe match {
-      case Type.BasicIconAndText(i, x) => t(i.tag, x)
+      case Type.BasicIconAndText(i, x) => t(i.tag, x, ^.whiteSpace.pre) // whiteSpace.pre keeps icon & text on same line
       case Type.IconAndText     (i, x) => t(i.tag, x)
       case Type.IconOnly        (i)    => t(i.tag)
       case _                           => t

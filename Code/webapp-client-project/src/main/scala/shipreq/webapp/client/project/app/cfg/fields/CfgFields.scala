@@ -9,6 +9,7 @@ import MonocleReact._
 import japgolly.scalajs.react.extra._
 import monocle.macros.Lenses
 import scala.language.reflectiveCalls
+import scalacss.ScalaCssReact._
 import scalajs.js.{UndefOr, undefined}
 import scalaz.{-\/, Equal, \/, \/-}
 import shipreq.base.util._
@@ -20,12 +21,15 @@ import shipreq.webapp.base.protocol.{ClientProtocol, FieldCrud, ServerSideProcIn
 import shipreq.webapp.base.UiText
 import UiText.FieldNames
 import shipreq.webapp.base.data._
+import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.cfg.shared.{FieldSet => _, _}
 import shipreq.webapp.client.project.app.state.{ChangeListener, ClientData}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.DND
 import shipreq.webapp.client.project.widgets._
 import Field.ApplicableReqTypes
+import shipreq.webapp.base.ui.BaseStyles
+import shipreq.webapp.base.ui.semantic.Table
 
 object CfgFields {
   final case class Props(cp        : ClientProtocol,
@@ -303,13 +307,13 @@ private[fields] object MainTable {
         abortNewButton($ modState abortNew)
     }
 
-    val filterDeadCheckbox = Checkbox.filterDead(v => $.props.flatMap(_.filterDead setState v))
-
     def render(fd: FilterDead, s: S) =
       <.div(
-        newFieldControl(s),
-        filterDeadCheckbox(fd),
-        <.table(
+        BaseStyles.containerFull, Style.cfg.fields,
+        <.div(^.display.flex,
+          <.div(^.flex := "1", newFieldControl(s)),
+          <.div(FilterDeadButton.Component(StateSnapshot(fd)(v => $.props.flatMap(_.filterDead setState v))))),
+        Table.celledCompactUnstackable(
           headerRow,
           <.tbody(renderNewField(s).whenDefined, renderFields(fd, s))))
 
@@ -360,7 +364,7 @@ private[fields] object MainTable {
     def renderRow(rs: RowStatus)(dragHandle: UndefOr[VdomTag], name: TagMod, refkey: TagMod, mandatory: TagMod,
                                  reqtypes: TagMod, ctrls: => TagMod)(implicit ftype: FieldType): VdomTag =
       <.tr(^.cls := rowStatusRowClass(rs),
-        <.td(^.cls := "dndh", dragHandle.whenDefined),
+        <.td(dragHandle.whenDefined),
         <.td(^.cls := "name", name),
         <.td(ftype.name),
         <.td(^.cls := "key", refkey),

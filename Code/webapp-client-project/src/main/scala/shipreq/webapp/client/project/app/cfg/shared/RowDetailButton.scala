@@ -1,8 +1,10 @@
 package shipreq.webapp.client.project.app.cfg.shared
 
-import japgolly.scalajs.react._, vdom.html_<^._
+import japgolly.scalajs.react._
+import vdom.html_<^._
 import scalaz.Equal
 import scalaz.syntax.equal._
+import shipreq.webapp.base.ui.semantic.{Button, Colour}
 
 object RowDetailButton {
 
@@ -25,8 +27,7 @@ object RowDetailButton {
     .build
 
   def render(p: Props): VdomElement =
-    <.button(
-      ^.cls := "detail",
+    Button(tipe = Button.Type.Basic, colour = Colour.Black).tag(
       ^.onClick --> p.onChange,
       "Detail")
 }

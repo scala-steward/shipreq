@@ -213,6 +213,10 @@ object BaseStyles extends StyleSheet.Inline {
   }
   editorInstructions // eager eval
 
+  val cancelButton = style(
+    (background := "#fff").important,
+    borderColor(c"#27292a").important)
+
   def pageMargin = 1 rem
   def pageMarginStr = "1rem"
 
