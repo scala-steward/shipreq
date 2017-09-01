@@ -10,13 +10,10 @@ object DataReusability extends shipreq.webapp.base.lib.DataReusability {
   implicit def reusabilitySVG: Reusability[SVG] =
     Reusability.caseClass
 
-  implicit def reusabilityProjectWidgets: Reusability[ProjectWidgets] =
+  implicit def reusabilityProjectWidgets[C <: ProjectText.Context]: Reusability[ProjectWidgets[C]] =
     Reusability.byRef
 
-  implicit def reusabilityProjectWidgetsC[C <: ProjectText.Context]: Reusability[ProjectWidgets.WithCtx[C]] =
-    Reusability.byRef
-
-  implicit def reusabilityProjectWidgetsPubidFormat: Reusability[ProjectWidgets#PubidFormat] =
+  implicit def reusabilityProjectWidgetsPubidFormat[C <: ProjectText.Context]: Reusability[ProjectWidgets[C]#PubidFormat] =
     Reusability.byRef
 
 }
