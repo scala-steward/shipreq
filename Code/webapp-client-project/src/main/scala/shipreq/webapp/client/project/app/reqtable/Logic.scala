@@ -416,8 +416,7 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject.NoCtx)
-          (rows: Iterable[Row]): MutableArray[Row] = {
+  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject.NoCtx)(rows: Iterable[Row]): MutableArray[Row] = {
     import Sorter._
 
     val sorter  = new FusedSorters(ts.order.init map inconclusive, ts.order.last |> conclusive)

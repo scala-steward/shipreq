@@ -21,7 +21,6 @@ import shipreq.webapp.client.project.feature.{EditorFeature, Selection}
 import shipreq.webapp.client.project.widgets.{DragToReorder, ProjectWidgets, ViewReq}
 import shipreq.webapp.client.project.lib.DataReusability._
 import EditorFeature.FieldKey
-import shipreq.webapp.base.text.ProjectText
 
 object Table {
   import Shared._

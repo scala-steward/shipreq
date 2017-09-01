@@ -47,9 +47,7 @@ object DeletionForm {
                          widgets   : ProjectWidgets.NoCtx,
                          textSearch: TextSearch,
                          perform   : DeleteReqs => Callback,
-                         cancel    : Callback) {
-    // def projectText = widgets.plainText
-  }
+                         cancel    : Callback)
 
   final case class ReqRow(req: Req, indent: Int, impliedBy: Vector[Req])
 
