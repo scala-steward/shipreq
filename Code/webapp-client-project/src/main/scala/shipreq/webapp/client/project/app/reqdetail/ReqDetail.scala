@@ -40,7 +40,7 @@ object ReqDetail {
                          updateContentFn      : ProjectSpaProtocols.UpdateContent.Instance,
                          pxProject            : Px[Project],
                          pxTextSearch         : Px[TextSearch],
-                         pxProjectWidgetsNoCtx: Px[ProjectWidgets[ProjectText.Context.Project]])
+                         pxProjectWidgetsNoCtx: Px[ProjectWidgets[ProjectText.Context.None]])
 
   case class DynamicProps(extPubid  : ExternalPubid,
                           filterDead: StateSnapshot[FilterDead],

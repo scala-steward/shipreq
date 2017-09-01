@@ -65,7 +65,7 @@ object Table {
                            editor     : EditorFeature.ReadWrite.ForProject,
                            rowAsync   : AsyncFeature.Read.D1[Row.SourceId, ErrorMsg],
                            config     : ProjectConfig,
-                           pw         : ProjectWidgets[ProjectText.Context.Project],
+                           pw         : ProjectWidgets[ProjectText.Context.None],
                            modSettings: ModFn[TableSettings]) {
       @inline def render = Component(this)
     }

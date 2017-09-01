@@ -73,6 +73,6 @@ object SampleProject2 {
     contentByDsl ! project0
   }
 
-  lazy val plainText  = PlainText.ForProject(project, ProjectText.Context.Project)
+  lazy val plainText  = PlainText.ForProject.noCtx(project)
   lazy val textSearch = TextSearch(project, plainText)
 }

@@ -32,7 +32,7 @@ object LogicPropTest extends TestSuite {
       else
         _ => true
 
-    val plainText   = PlainText.ForProject(p, ProjectText.Context.Project)
+    val plainText   = PlainText.ForProject(p, ProjectText.Context.None)
     val textSearch  = TextSearch(p, plainText)
     val gathered    = Logic.gather[Vector](p, ts, fd, plainText, textSearch)
     val gatheredG   = gathered.iterator.filterSubType[Row.ForReq].toList

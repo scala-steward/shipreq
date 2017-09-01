@@ -19,9 +19,13 @@ object PlainText {
 
   object ForProject {
     type AnyCtx = ForProject[_ <: ProjectText.Context]
+    type NoCtx  = ForProject[ProjectText.Context.None]
 
     def apply[Ctx <: ProjectText.Context](p: Project, ctx: Ctx): ForProject[Ctx] =
       new ForProject(p, ctx)
+
+    def noCtx(p: Project): NoCtx =
+      apply(p, ProjectText.Context.None)
   }
 
   def reqCodeIndentation(is: NonEmptyVector[ReqCodeTreeItem.Indent]): String = {
@@ -159,7 +163,7 @@ object PlainText {
     def useCaseStepLabel(focus: UseCaseStep.Focus): String = {
       import focus._
       val mne = byCtx {
-        case ProjectText.Context.Project    => true
+        case ProjectText.Context.None       => true
         case ProjectText.Context.UseCase(i) => i !=* uc.id
       }
       field.stepLabel(uc.pubid.pos, ploc, mnemonicPrefix = mne)

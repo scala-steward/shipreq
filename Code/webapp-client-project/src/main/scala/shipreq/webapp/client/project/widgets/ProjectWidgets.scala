@@ -27,12 +27,13 @@ import shipreq.webapp.client.project.app.Style.{widgets => *}
 object ProjectWidgets {
 
   type AnyCtx = ProjectWidgets[_ <: ProjectText.Context]
+  type NoCtx  = ProjectWidgets[ProjectText.Context.None]
 
   def apply[Ctx <: ProjectText.Context](project    : Project,
                                         plainText  : PlainText.ForProject[Ctx],
                                         reqDetailRC: RouterCtl[ExternalPubid]): ProjectWidgets[Ctx] =
     new ProjectWidgets(project, plainText, reqDetailRC)
-  
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   val emptySpan: VdomTag =

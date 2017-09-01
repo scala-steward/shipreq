@@ -19,8 +19,8 @@ object ProjectText {
   object Context {
 
     /** User is looking at the entire project. */
-    case object Project extends Context
-    type Project = Project.type
+    case object None extends Context
+    type None = None.type
 
     /** User is looking at a single UC. */
     final case class UseCase(id: UseCaseId) extends Context

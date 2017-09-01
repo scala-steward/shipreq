@@ -51,7 +51,7 @@ object ParsersTest extends TestSuite {
 
     val E = EvalOver(this)
 
-    val txt2str = PlainText.ForProject(p, ProjectText.Context.Project).text(_: Text.AnyOptional, Live)
+    val txt2str = PlainText.ForProject.noCtx(p).text(_: Text.AnyOptional, Live)
 
     val genericReqTitles =
       p.reqs.reqIterator
@@ -220,7 +220,7 @@ object ParsersTest extends TestSuite {
       def testT[A <: AnyAtom](p: Project, parse: Project => String => Vector[A], text: String)(as: A*): Unit = {
         val e = as.toVector
         assertEq(quoteStringForDisplay(preprocessStr(text, MultiLine)), parse(p)(text), e)
-        val text2 = PlainText.ForProject(p, ProjectText.Context.Project).text(e, Live)
+        val text2 = PlainText.ForProject.noCtx(p).text(e, Live)
         assertEq(text2, parse(p)(text2), e)
       }
 

@@ -201,7 +201,7 @@ private[reqtable] object Logic {
   def gather[C[_]](p : Project,
                    s : TableSettings,
                    fd: FilterDead,
-                   pt: PlainText.ForProject[ProjectText.Context.Project],
+                   pt: PlainText.ForProject[ProjectText.Context.None],
                    ts: TextSearch)
                   (implicit cbf: CanBuildFrom[Nothing, Row, C[Row]]): C[Row] = {
 
@@ -335,7 +335,7 @@ private[reqtable] object Logic {
    */
   def filter(vf         : ValidFilter,
              p          : Project,
-             pt         : PlainText.ForProject[ProjectText.Context.Project],
+             pt         : PlainText.ForProject[ProjectText.Context.None],
              ts         : TextSearch,
              issueLookup: IssueLookup,
              tagLookup  : TagLookup): Option[Filters] = {
@@ -416,7 +416,7 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject[ProjectText.Context.Project])
+  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject[ProjectText.Context.None])
           (rows: Iterable[Row]): MutableArray[Row] = {
     import Sorter._
 
@@ -579,7 +579,7 @@ private[reqtable] object Logic {
   def rowsForTable(p: Project,
                    s: TableSettings,
                    fd: FilterDead,
-                   pt: PlainText.ForProject[ProjectText.Context.Project],
+                   pt: PlainText.ForProject[ProjectText.Context.None],
                    ts: TextSearch): Vector[Row] = {
 
     def r1: Array       [Row] = gather(p, s, fd, pt, ts)
