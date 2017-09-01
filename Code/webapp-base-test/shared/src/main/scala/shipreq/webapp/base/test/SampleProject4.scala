@@ -88,6 +88,6 @@ object SampleProject4 {
     p2
   }
 
-  lazy val plainText  = PlainText(project, ProjectText.Context.None)
+  lazy val plainText  = PlainText.ForProject.noCtx(project)
   lazy val textSearch = TextSearch(project, plainText)
 }

@@ -32,7 +32,7 @@ object LogicPropTest extends TestSuite {
       else
         _ => true
 
-    val plainText   = PlainText(p, ProjectText.Context.None)
+    val plainText   = PlainText.ForProject.noCtx(p)
     val textSearch  = TextSearch(p, plainText)
     val gathered    = Logic.gather[Vector](p, ts, fd, plainText, textSearch)
     val gatheredG   = gathered.iterator.filterSubType[Row.ForReq].toList
@@ -85,7 +85,7 @@ object LogicPropTest extends TestSuite {
     // Sorting
 
     implicit def textOrd[T <: Atom.Base] =
-      implicitly[Ordering[String]].on[T#OptionalText](t => plainText.format(Live, t).toLowerCase)
+      implicitly[Ordering[String]].on[T#OptionalText](t => plainText.text(t, Live).toLowerCase)
 
     def universalSort = {
       val revOrder  = ts.order.reverse

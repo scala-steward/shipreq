@@ -43,8 +43,8 @@ object NewEditor {
 
   final case class Static(previewW        : PreviewFeature.Write.Composite[PreviewId],
                           pxProject       : Px[Project],
-                          pxPlainText     : Px[PlainText.ForProject],
-                          pxProjectWidgets: Px[ProjectWidgets],
+                          pxPlainTextNoCtx: Px[PlainText.ForProject.NoCtx],
+                          pxProjectWidgets: Px[ProjectWidgets.NoCtx], // TODO
                           pxTextSearch    : Px[TextSearch],
                           saveIO          : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any]) {
 
@@ -338,7 +338,7 @@ object NewEditor {
       import shipreq.webapp.client.project.widgets.ImplicationEditor
       import ImplicationEditor.{Lookup, ValidationFn}
 
-      val pxLookupAll = Px.apply2(pxProject, pxPlainText)(ImplicationEditor.Lookup.all)
+      val pxLookupAll = Px.apply2(pxProject, pxPlainTextNoCtx)(ImplicationEditor.Lookup.all)
 
       override type Change = ImplicationEditor.Output
 
@@ -470,10 +470,10 @@ object NewEditor {
 
           val initCB =
             for {
-              initialValue <- initialValueCB
-              plainText    <- pxPlainText.toCallback.toCBO
+              initialValue   <- initialValueCB
+              projectWidgets <- pxProjectWidgets.toCallback.toCBO
             } yield {
-              val initialText = plainText.format(RichTextEditor.hardcodedLive, initialValue)
+              val initialText = projectWidgets.plainText.text(initialValue, RichTextEditor.hardcodedLive)
               (initialValue, initialText)
             }
 
@@ -493,12 +493,12 @@ object NewEditor {
             for {
               previewRW      <- previewW.toReadWriteCB
               project        <- pxProject.toCallback
-              plainText      <- pxPlainText.toCallback
+              plainTextNoCtx <- pxPlainTextNoCtx.toCallback
               textSearch     <- pxTextSearch.toCallback
               projectWidgets <- pxProjectWidgets.toCallback
             } yield editor.Props(
               project,
-              plainText,
+              plainTextNoCtx,
               textSearch,
               projectWidgets,
               ss,
@@ -558,11 +558,11 @@ object NewEditor {
 
         val pxInit: Px[(UseCaseStepEditor.InitialValue, String)] =
           for {
-            stepFocus <- pxStepFocus
-            plainText <- pxPlainText
+            stepFocus      <- pxStepFocus
+            projectWidgets <- pxProjectWidgets
           } yield {
             val initialValue = TextAndFlow(stepFocus.step.titleExplicitly, stepFocus.flow)
-            val initialText = plainText.useCaseStep(hardcodedLive, initialValue)
+            val initialText = projectWidgets.plainText.useCaseStepTextAndFlow(initialValue, hardcodedLive)
             (initialValue, initialText)
           }
 
@@ -583,12 +583,12 @@ object NewEditor {
           for {
             previewRW      <- previewW.toReadWriteCB
             project        <- pxProject.toCallback
-            plainText      <- pxPlainText.toCallback
+            plainTextNoCtx <- pxPlainTextNoCtx.toCallback
             textSearch     <- pxTextSearch.toCallback
             projectWidgets <- pxProjectWidgets.toCallback
           } yield UseCaseStepEditor.Props(
             project,
-            plainText,
+            plainTextNoCtx,
             textSearch,
             projectWidgets,
             ss,

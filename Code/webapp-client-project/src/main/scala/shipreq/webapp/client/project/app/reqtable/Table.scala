@@ -64,7 +64,7 @@ object Table {
                            editor     : EditorFeature.ReadWrite.ForProject,
                            rowAsync   : AsyncFeature.Read.D1[Row.SourceId, ErrorMsg],
                            config     : ProjectConfig,
-                           pw         : ProjectWidgets,
+                           pw         : ProjectWidgets.NoCtx,
                            modSettings: ModFn[TableSettings]) {
       @inline def render = Component(this)
     }
@@ -77,7 +77,7 @@ object Table {
       val pxProjectWidgets = Px.props($).map(_.pw).withReuse.manualRefresh
       val pxProjectConfig  = Px.props($).map(_.config).withReuse.manualRefresh
 
-      val pxPubidFmt: Px[ProjectWidgets#PubidFormat] =
+      val pxPubidFmt: Px[ProjectWidgets.NoCtx#PubidFormat] =
         pxProjectWidgets.map(_.PubidFormat(Plain, *.pubidColumnValue(_), titleFn = _ => None))
 
       val pxApplicability: Px[Applicability[Column, Row]] =
@@ -336,7 +336,7 @@ object Table {
   private object ReqRow extends RowTemplate[
       Row.ForReq,
       FieldKey.ForSomeReq,
-      (ReqTypes, ProjectWidgets, ProjectWidgets#PubidFormat),
+      (ReqTypes, ProjectWidgets.NoCtx, ProjectWidgets.NoCtx#PubidFormat),
     ]("ReqRow") {
 
     override protected val rowToColumnToEditorField =
@@ -357,8 +357,7 @@ object Table {
         row.exp.cfTags.getOrElse(_, Vector.empty),
         row.exp.implications.apply,
         row.exp.cfImps.getOrElse(_, Vector.empty),
-        SortedSet.empty[ExternalPubid], // ReqTable doesn't display pastPubids
-        reqTypes)
+        SortedSet.empty[ExternalPubid]) // ReqTable doesn't display pastPubids
         .apply(pw)
 
       def renderCodes: VdomElement =
@@ -386,7 +385,7 @@ object Table {
   private object CodeGroupRow extends RowTemplate[
       Row.ForCodeGroup,
       FieldKey.ForCodeGroup,
-      ProjectWidgets,
+      ProjectWidgets.NoCtx,
     ]("CodeGroupRow") {
 
     override protected val rowToColumnToEditorField =

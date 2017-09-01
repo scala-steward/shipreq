@@ -30,15 +30,14 @@ import shipreq.webapp.client.project.widgets.{DeletionForm, ProjectWidgets}
   */
 object SelectionCtrls {
 
-  final case class Props(sel        : RowSelectionVisible,
-                         rows       : Vector[Row],
-                         setModal   : Modal.SetFn,
-                         project    : Project,
-                         widgets    : ProjectWidgets,
-                         projectText: PlainText.ForProject,
-                         textSearch : TextSearch,
-                         updateIO   : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
-                         async      : AsyncFeature.Write.D1[Row.SourceId, Nothing]) {
+  final case class Props(sel       : RowSelectionVisible,
+                         rows      : Vector[Row],
+                         setModal  : Modal.SetFn,
+                         project   : Project,
+                         widgets   : ProjectWidgets.NoCtx,
+                         textSearch: TextSearch,
+                         updateIO  : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
+                         async     : AsyncFeature.Write.D1[Row.SourceId, Nothing]) {
     @inline def render: VdomElement = Component(this)
   }
 
@@ -108,7 +107,7 @@ object SelectionCtrls {
 
       private def modal(p: Props, reqs: NonEmptySet[ReqId]): Modal = {
         val data = DeletionForm.Data.forReqs(p.project, reqs)
-        val props = DeletionForm.Props(data, p.widgets, p.projectText, p.textSearch, io, clearModal)
+        val props = DeletionForm.Props(data, p.widgets, p.textSearch, io, clearModal)
         Modal(DeletionForm.Component(props))
       }
 

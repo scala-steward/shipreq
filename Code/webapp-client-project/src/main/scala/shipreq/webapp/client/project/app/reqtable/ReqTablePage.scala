@@ -40,9 +40,8 @@ object ReqTablePage {
 
   final case class StaticProps(stateAccess     : StateAccessPure[State],
                                cd              : ClientData,
-                               pxPlainText     : Px[PlainText.ForProject],
                                pxTextSearch    : Px[TextSearch],
-                               pxProjectWidgets: Px[ProjectWidgets],
+                               pxProjectWidgets: Px[ProjectWidgets.NoCtx],
                                reqDetailRC     : RouterCtl[ExternalPubid],
                                updateIO        : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
                                rowAsyncW       : AsyncFeature.Write.D1[Row.SourceId, ErrorMsg])
@@ -120,9 +119,9 @@ object ReqTablePage {
         p  <- pxProject
         s  <- pxTableSettings
         fd <- pxFilterDead
-        pt <- pxPlainText
+        pw <- pxProjectWidgets
         ts <- pxTextSearch
-      } yield Logic.rowsForTable(p, s, fd, pt, ts)
+      } yield Logic.rowsForTable(p, s, fd, pw.plainText, ts)
 
     val pxRowIdsWithWholeRowAsync: Px[Set[Row.SourceId]] =
       pxProps(_.rowAsync.keySet)
@@ -195,12 +194,11 @@ object ReqTablePage {
       for {
         project        <- pxProject
         projectWidgets <- pxProjectWidgets
-        projectText    <- pxPlainText
         textSearch     <- pxTextSearch
         rows           <- pxRows
         sel            <- pxRowSelectionVisible
       } yield SelectionCtrls.Props(
-        sel, rows, setModal, project, projectWidgets, projectText, textSearch, updateIO, rowAsyncW)
+        sel, rows, setModal, project, projectWidgets, textSearch, updateIO, rowAsyncW)
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

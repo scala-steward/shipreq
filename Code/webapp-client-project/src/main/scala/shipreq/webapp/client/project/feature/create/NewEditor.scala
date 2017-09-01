@@ -15,8 +15,8 @@ object NewEditor {
 
   final case class Static(previewW        : PreviewFeature.Write.Composite[PreviewId],
                           pxProject       : Px[Project],
-                          pxPlainText     : Px[PlainText.ForProject],
-                          pxProjectWidgets: Px[ProjectWidgets],
+                          pxPlainTextNoCtx: Px[PlainText.ForProject.NoCtx],
+                          pxProjectWidgets: Px[ProjectWidgets.NoCtx], // TODO
                           pxTextSearch    : Px[TextSearch]) {
 
     private[NewEditor] val internal = new Internal(this)
@@ -179,7 +179,10 @@ object NewEditor {
       import shipreq.webapp.client.project.widgets.ImplicationEditor
       import ImplicationEditor.{Lookup, ValidationFn}
 
-      val pxLookupAll = Px.apply2(pxProject, pxPlainText)(ImplicationEditor.Lookup.all)
+      val pxLookupAll = for {
+        p <- pxProject
+        w <- pxProjectWidgets
+      } yield ImplicationEditor.Lookup.all(p, w.plainText)
 
       override type Value = FieldKey.Implications#Value
 
@@ -273,12 +276,12 @@ object NewEditor {
             for {
               previewRW      <- previewW.toReadWriteCB
               project        <- pxProject.toCallback
-              plainText      <- pxPlainText.toCallback
+              plainTextNoCtx <- pxPlainTextNoCtx.toCallback
               textSearch     <- pxTextSearch.toCallback
               projectWidgets <- pxProjectWidgets.toCallback
             } yield editor.Props(
               project,
-              plainText,
+              plainTextNoCtx,
               textSearch,
               projectWidgets,
               ss,

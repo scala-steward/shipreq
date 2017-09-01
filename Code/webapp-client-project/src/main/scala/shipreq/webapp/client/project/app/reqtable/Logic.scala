@@ -201,7 +201,7 @@ private[reqtable] object Logic {
   def gather[C[_]](p : Project,
                    s : TableSettings,
                    fd: FilterDead,
-                   pt: PlainText.ForProject,
+                   pt: PlainText.ForProject.NoCtx,
                    ts: TextSearch)
                   (implicit cbf: CanBuildFrom[Nothing, Row, C[Row]]): C[Row] = {
 
@@ -335,7 +335,7 @@ private[reqtable] object Logic {
    */
   def filter(vf         : ValidFilter,
              p          : Project,
-             pt         : PlainText.ForProject,
+             pt         : PlainText.ForProject.NoCtx,
              ts         : TextSearch,
              issueLookup: IssueLookup,
              tagLookup  : TagLookup): Option[Filters] = {
@@ -416,7 +416,7 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject)(rows: Iterable[Row]): MutableArray[Row] = {
+  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject.NoCtx)(rows: Iterable[Row]): MutableArray[Row] = {
     import Sorter._
 
     val sorter  = new FusedSorters(ts.order.init map inconclusive, ts.order.last |> conclusive)
@@ -575,7 +575,12 @@ private[reqtable] object Logic {
   }
 
   // ===================================================================================================================
-  def rowsForTable(p: Project, s: TableSettings, fd: FilterDead, pt: PlainText.ForProject, ts: TextSearch): Vector[Row] = {
+  def rowsForTable(p: Project,
+                   s: TableSettings,
+                   fd: FilterDead,
+                   pt: PlainText.ForProject.NoCtx,
+                   ts: TextSearch): Vector[Row] = {
+
     def r1: Array       [Row] = gather(p, s, fd, pt, ts)
     def r2: MutableArray[Row] = sort(p, s, pt)(r1)
     val r3: Vector      [Row] = consolidateAdjacentDups(r2.iterator)

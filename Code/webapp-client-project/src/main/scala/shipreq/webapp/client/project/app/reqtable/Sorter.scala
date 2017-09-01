@@ -205,9 +205,9 @@ object Sorter {
   /**
    * Project data prepared in a way that various sorts will use.
    */
-  final class Setup(val p: Project, plainText: PlainText.ForProject) {
+  final class Setup(val p: Project, plainText: PlainText.ForProject.NoCtx) {
 
-    def normalisedText(f: PlainText.ForProject => String) =
+    def normalisedText(f: PlainText.ForProject.NoCtx => String) =
       stringNormalise(f(plainText))
 
     val applicability: Applicability[Column, Row] =
@@ -283,7 +283,7 @@ object Sorter {
         sort   = SortFn.intVector(bp)
     ))
 
-  def textSorterS(c: Column, f: Setup => PlainText.ForProject => Row => String): SorterForSMCB =
+  def textSorterS(c: Column, f: Setup => PlainText.ForProject.NoCtx => Row => String): SorterForSMCB =
     SorterForSMCB(bp =>
       Sorter[String](
         prep = setup => {
@@ -297,7 +297,7 @@ object Sorter {
         sort = SortFn.string(bp)
       ))
 
-  def textSorter(c: Column, f: PlainText.ForProject => Row => String): SorterForSMCB =
+  def textSorter(c: Column, f: PlainText.ForProject.NoCtx => Row => String): SorterForSMCB =
     textSorterS(c, _ => f)
 
   def customTextFieldSorter(id: CustomField.Text.Id, c: Column): SorterForSMCB =
@@ -314,8 +314,8 @@ object Sorter {
 
   def deletionReasonSorter: SorterForSMCB =
     textSorterS(C.DeletionReason, s => pt => {
-      case r: Row.ForReq       => PlainText.DeletionReason.forReq(r.req)(s.p.config.reqTypes, pt) getOrElse ""
-      case _: Row.ForCodeGroup => PlainText.DeletionReason.forCodeGroup getOrElse ""
+      case r: Row.ForReq       => pt.deleteReasonForReq(r.req) getOrElse ""
+      case _: Row.ForCodeGroup => pt.deleteReasonForCodeGroup getOrElse ""
     })
 
   // ===================================================================================================================

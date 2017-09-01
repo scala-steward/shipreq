@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.widgets
 
 import japgolly.microlibs.nonempty.NonEmptyVector
-import japgolly.scalajs.react._
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
@@ -19,103 +19,101 @@ import shipreq.webapp.base.util.ReqCodeTreeItem
 import shipreq.webapp.base.data.{Contextualise, Plain}
 import shipreq.webapp.base.jsfacade.KaTeX
 import shipreq.webapp.base.lib.ClientUtil.{renderSeq, renderVector, sepComma, sepSpace}
+import shipreq.webapp.base.text.Text.AnyOptional
 import shipreq.webapp.client.project.app.Style.{widgets => *}
-import ProjectWidgets.{apply => _, _}
 
 object ProjectWidgets {
-  def apply(project: Project, plainText: PlainText.ForProject, reqDetailRC: RouterCtl[ExternalPubid]) =
+
+  type AnyCtx = ProjectWidgets[_ <: ProjectText.Context]
+  type NoCtx  = ProjectWidgets[ProjectText.Context.None]
+
+  def apply[Ctx <: ProjectText.Context](project    : Project,
+                                        plainText  : PlainText.ForProject[Ctx],
+                                        reqDetailRC: RouterCtl[ExternalPubid]): ProjectWidgets[Ctx] =
     new ProjectWidgets(project, plainText, reqDetailRC)
 
-  val deadValidity: Validity => Live => (Live, Validity) =
-    Validity.memo(validityWhenDead =>
-      Live.memo {
-        case Live => (Live, Valid)
-        case Dead => (Dead, validityWhenDead)
-      }
-    )
-
-  val invalidWhenDead: Live => (Live, Validity) =
-    deadValidity(Invalid)
-
-  val stepFlowArrow: Direction => VdomTag =
-    Direction.memo {
-      case Forwards  => <.span("→")
-      case Backwards => <.span("←")
-    }
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   val emptySpan: VdomTag =
     <.span
 
-  // Keep in sync with PlainText.DeletionReason because they're used together for sorting/rendering in ReqTable
-  object DeletionReason extends ProjectText.DeletionReasonFormatter[VdomTag] {
-    override type PT = ProjectWidgets
+  private[ProjectWidgets] object Internal {
 
-    override protected def noReasonGiven =
-      emptySpan
+    val deadValidity: Validity => Live => (Live, Validity) =
+      Validity.memo(validityWhenDead =>
+        Live.memo {
+          case Live => (Live, Valid)
+          case Dead => (Dead, validityWhenDead)
+        }
+      )
 
-    override protected def reqTypeIsDead(rt: ReqType)(pt: PT) =
-      <.span(
-        UiText.ColumnNames.reqType + " ",
-        pt.reqTypeShort(rt.reqTypeId),
-        " is deleted.")
+    val invalidWhenDead: Live => (Live, Validity) =
+      deadValidity(Invalid)
+
+    val stepFlowArrow: Direction => VdomTag =
+      Direction.memo {
+        case Forwards  => <.span("→")
+        case Backwards => <.span("←")
+      }
+
+    @inline implicit def surroundDisplay(s: GrammarSpec.Surrounds): GrammarSpec.Surround =
+      s.display
+
+    @inline def memo[A: UnivEq](f: A => VdomElement): A => VdomElement =
+      Memo(f)
+
+    val issueDescSurroundPrefix = G.issueDescSurround.prefix.trim
+    val issueDescSurroundSuffix = G.issueDescSurround.suffix.trim
   }
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-final class ProjectWidgets private(project    : Project,
-                                   plainText  : PlainText.ForProject,
-                                   reqDetailRC: RouterCtl[ExternalPubid])
-    extends ProjectText[VdomTag](project, plainText.ctx) {
+final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
+                                                       val plainText: PlainText.ForProject[Ctx],
+                                                       reqDetailRC  : RouterCtl[ExternalPubid])
+    extends ProjectText[Ctx, VdomTag](project, plainText.ctx) {
 
-  override def withCtx(newCtx: ProjectText.Context): ProjectWidgets =
-    withPlainText(plainText withCtx newCtx)
+  import ProjectWidgets.Internal._
 
-  def withPlainText(newPlainText: PlainText.ForProject): ProjectWidgets =
-    new ProjectWidgets(project, newPlainText, reqDetailRC)
+  def withCtx[Ctx2 <: ProjectText.Context](newCtx: Ctx2): ProjectWidgets[Ctx2] =
+    if (newCtx ==* ctx)
+      this.asInstanceOf[ProjectWidgets[Ctx2]]
+    else
+      ProjectWidgets(project, plainText withCtx newCtx, reqDetailRC)
 
-  private implicit def surroundDisplay(s: GrammarSpec.Surrounds): GrammarSpec.Surround = s.display
+  override def text(text: AnyOptional, live: Live): VdomTag =
+    <.span(text map textByLive(live): _*)
 
-  @inline private def memo[A: UnivEq](f: A => VdomElement) = Memo(f)
-
-  def issueO(liveText: Live, id: CustomIssueTypeId, desc: Text.InlineIssueDesc.OptionalText): VdomElement =
-    NonEmptyVector.maybe(desc, issue(id))(issue1(liveText, id, _))
-
-  val issue: CustomIssueTypeId => VdomElement =
-    memo { id =>
-      val i = project.config.customIssueType(id)
-      <.span(
-        *.issue,
-        G.hashRefKey.prefix ~ i.key.value)
+  private val textByLive: Live => Atom.AnyAtom => TagMod =
+    Live.memo { live =>
+      import Atom._
+      lazy val atom: AnyAtom => TagMod = {
+        case a: Literal         # Literal        => <.span(a.value)
+        case a: NewLine         # BlankLine      => <.div(*.blankLine)
+        case a: TagRef          # TagRef         => tagInText(live)(a.value)
+        case a: PlainTextMarkup # WebAddress     => <.a(^.href := a.value, a.value)
+        case a: PlainTextMarkup # EmailAddress   => <.a(^.href := "mailto:" ~ a.value, a.value)
+        case a: PlainTextMarkup # MathTeX        => katex(a)
+        case a: ListMarkup      # UnorderedList  => <.ul(*.ul, a.items.whole.toTagMod(row => <.li(row toTagMod atom)))
+        case a: ReqRef          # ReqRef         => reqRefInValidText(a.value)
+        case a: ReqRef          # CodeRef        => codeRef(a.value)
+        case a: UseCaseStepRef  # UseCaseStepRef => useCaseStepRef(a.value)
+        case a: Issue           # Issue          => issue(a.typ, a.desc, live)
+      }
+      atom
     }
 
-  private val issueDescSurroundPrefix = G.issueDescSurround.prefix.trim
-  private val issueDescSurroundSuffix = G.issueDescSurround.suffix.trim
-  def issue1(liveText: Live, id: CustomIssueTypeId, desc: Text.InlineIssueDesc.NonEmptyText): VdomElement = {
-    val i = project.config.customIssueType(id)
-    <.span(
-      *.issue,
-      G.hashRefKey.prefix ~ i.key.value ~ issueDescSurroundPrefix,
-      format1(liveText, desc)(*.issueDesc),
-      issueDescSurroundSuffix)
-  }
-
-  @inline def reqRefInValidText: PubidFormat =
+  @inline private def reqRefInValidText: PubidFormat =
     PubidFormat.invalidWhenDeadWithCtx
 
-  def implicationList(ids: Vector[Pubid]): VdomElement =
-    PubidFormat.validWhenDead.pubids(ids)
-
-  def pastPubids(ids: SortedSet[ExternalPubid]): VdomElement =
-    renderSeq(
-      ids.toIterator.map(ep => <.span(*.pastPubid, PlainText.pubid(ep))),
-      sepComma)
-
   /** Contextualised */
-  val codeRef: ReqCodeId => VdomElement =
+  private val codeRef: ReqCodeId => VdomElement =
     memo { id =>
       import ProjectText.ReqCodeResolution._
-      implicit def liveWithValidity(a: Live): (Live, Validity) = invalidWhenDead(a)
+
+      implicit def liveWithValidity(a: Live): (Live, Validity) =
+        invalidWhenDead(a)
 
       def toRef(c: ReqCode.Value, r: ReqId): VdomElement = {
         val req = project.reqs.need(r)
@@ -131,7 +129,7 @@ final class ProjectWidgets private(project    : Project,
           ^.title :=? title,
           G.reflinkSurround(PlainText reqCode c))
 
-      ProjectText.resolveReqCode(id, project.reqCodes) match {
+      ProjectText.ReqCodeResolution(id, project.reqCodes) match {
         case ActiveCodeToReq     (c, r) => toRef(c, r)
         case ActiveCodeToGroup   (c, g) => toGroup(c, g)
         case DeadGroup           (c, g) => toGroup(c, g)
@@ -140,29 +138,18 @@ final class ProjectWidgets private(project    : Project,
       }
     }
 
-  /** eg. "UC: Use Case" */
-  val reqTypeFull: ReqTypeId => VdomElement =
-    id => {
-      val rt = project.config.reqTypes.need(id)
-      <.span(s"${rt.mnemonic.value}: ${rt.name}")
+  private def useCaseStepRef(id: UseCaseStepId): VdomTag =
+    useCaseFlowElement(project.reqs.useCases.focusStep(id))
+
+  private val tagInText: Live => ApplicableTagId => VdomElement =
+    Live.memo { liveText =>
+      memo[ApplicableTagId] { id =>
+        val tag = project.config.atag(id)
+        val liveTag = tag.live
+        val valid = Invalid.when(liveText.is(Live) && liveTag.is(Dead))
+        tagWithoutStyle(Contextualise, tag)(*.tagInText(liveTag, valid))
+      }
     }
-
-  /** eg. "UC" */
-  val reqTypeShort: ReqTypeId => VdomElement =
-    memo { id =>
-      val rt = project.config.reqTypes.need(id)
-      <.span(
-        *.reqTypeShort(rt.live),
-        ^.title := rt.name,
-        rt.mnemonic.value)
-    }
-
-  def useCaseStepRef(id: UseCaseStepId): VdomTag =
-    useCaseStepLabelMemo(project.reqs.useCases.focusStep(id))
-
-  /** eg. "1.p" instead of "1.0" */
-  def erroneousUseCaseStepRef(s: String): VdomTag =
-  <.span(*.erroneousUseCaseStepRef, s)
 
   private def tagWithoutStyle(c: Contextualise, t: ApplicableTag): VdomTag = {
     var desc = if (t.name.compareToIgnoreCase(t.key.value) == 0) "" else t.name
@@ -181,53 +168,113 @@ final class ProjectWidgets private(project    : Project,
       displayTxt)
   }
 
-  val tagPlain: ApplicableTagId => VdomElement =
+  private def issue(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.OptionalText, liveText: Live): VdomElement =
+    NonEmptyVector.maybe(desc, issueWithoutDesc(id))(issueWithDesc(id, _, liveText))
+
+  private val issueWithoutDesc: CustomIssueTypeId => VdomElement =
     memo { id =>
-      val tag = project.config.atag(id)
-      tagWithoutStyle(Plain, tag)(*.tag(tag.live))
+      val issueType = cfg.customIssueType(id)
+      <.span(
+        *.issue,
+        G.hashRefKey.prefix ~ issueType.key.value)
     }
 
-  def tagList(ids: Vector[ApplicableTagId]): VdomElement =
-    renderVector(ids, sepSpace)(tagPlain)
+  private def issueWithDesc(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.NonEmptyText, liveText: Live): VdomElement = {
+    val issueType = project.config.customIssueType(id)
+    <.span(
+      *.issue,
+      G.hashRefKey.prefix ~ issueType.key.value ~ issueDescSurroundPrefix,
+      text(desc, liveText)(*.issueDesc),
+      issueDescSurroundSuffix)
+  }
 
-  val tagInText: Live => ApplicableTagId => VdomElement =
-    Live.memo { liveText =>
-      memo[ApplicableTagId] { id =>
-        val tag = project.config.atag(id)
-        val liveTag = tag.live
-        val valid = Invalid.when(liveText.is(Live) && liveTag.is(Dead))
-        tagWithoutStyle(Contextualise, tag)(*.tagInText(liveTag, valid))
-      }
-    }
-
-  def katex(m: Atom.PlainTextMarkup#MathTeX): VdomTag =
+  private def katex(m: Atom.PlainTextMarkup#MathTeX): VdomTag =
     try
       <.span(*.math, ^.dangerouslySetInnerHtml := KaTeX.renderToStringUnsafe(m.value))
     catch {
       case _: Throwable => <.span(*.mathFail, UiText.mathFailed)
     }
 
-  override val format: ProjectText.FormatAtomFn[VdomTag] = (live, input) => {
-    import Atom._
-
-    lazy val atom: AnyAtom => TagMod = {
-      case a: Literal         # Literal        => <.span(a.value)
-      case a: NewLine         # BlankLine      => <.div(*.blankLine)
-      case a: TagRef          # TagRef         => tagInText(live)(a.value)
-      case a: PlainTextMarkup # WebAddress     => <.a(^.href := a.value, a.value)
-      case a: PlainTextMarkup # EmailAddress   => <.a(^.href := "mailto:" ~ a.value, a.value)
-      case a: PlainTextMarkup # MathTeX        => katex(a)
-      case a: ListMarkup      # UnorderedList  => <.ul(*.ul, a.items.whole.toTagMod(row => <.li(row toTagMod atom)))
-      case a: ReqRef          # ReqRef         => reqRefInValidText(a.value)
-      case a: ReqRef          # CodeRef        => codeRef(a.value)
-      case a: UseCaseStepRef  # UseCaseStepRef => useCaseStepRef(a.value)
-      case a: Issue           # Issue          => issueO(live, a.typ, a.desc)
+  /** eg. "UC" */
+  val reqTypeShort: ReqTypeId => VdomElement =
+    memo { id =>
+      val rt = project.config.reqTypes.need(id)
+      <.span(
+        *.reqTypeShort(rt.live),
+        ^.title := rt.name,
+        rt.mnemonic.value)
     }
 
-    <.span(input map atom: _*)
+  override def useCaseStepTextAndFlow(step: UseCaseStepFlowText.TextAndFlow[AnyOptional, Set[UseCaseStepId]], live: Live): VdomTag =
+    makeUseCaseStepTextAndFlow(step, live)(useCaseFlowElementsById(_).iterator)
+
+  private def makeUseCaseStepTextAndFlow[C[x] <: TraversableOnce[x], A](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[A]],
+                                                                        l: Live)
+                                                                       (f: C[A] => TraversableOnce[VdomTag]): VdomTag = {
+
+    val stepText = text(s.text, l)
+
+    def stepFlow(dir: Direction): Option[VdomElement] = {
+      val ca = s flow dir
+      Option.unless(ca.isEmpty)(
+        stepFlowArrow(dir)(TagMod.fromTraversableOnce(f(ca))))
+    }
+
+    val List(f1, f2) = UseCaseStepFlowText.DefaultArrowOrder.map(stepFlow)
+
+    if (f1.isEmpty && f2.isEmpty)
+      stepText
+    else
+      <.table(
+        <.tbody(
+          <.tr(
+            <.td(*.useCaseStepLayoutCell, stepText),
+            <.td(*.useCaseStepLayoutCell, f1.whenDefined, f2.whenDefined))))
   }
 
-  val reqCodeTreeIdentation: NonEmptyVector[ReqCodeTreeItem.Indent] => VdomElement =
+  override protected val useCaseFlowElement: UseCaseStep.Focus => VdomTag =
+    Memo.by((_: UseCaseStep.Focus).id) { f =>
+      val label = plainText.useCaseStepLabel(f)
+      val title = plainText.text(f.titleA, f.live)
+      val ld = deadValidity(Invalid)(f.live)
+      <.span(
+        *.useCaseStepRef(ld),
+        ^.title := title,
+        label)
+    }
+
+  // Keep in sync with PlainText because it's used together for sorting/rendering in ReqTable
+  override protected def deletionReasonWhenNoneGiven: VdomTag =
+    ProjectWidgets.emptySpan
+
+  // Keep in sync with PlainText because it's used together for sorting/rendering in ReqTable
+  override protected def deletionReasonWhenReqTypeIsDead(rt: ReqType): VdomTag =
+    <.span(
+      UiText.ColumnNames.reqType + " ",
+      reqTypeShort(rt.reqTypeId),
+      " is deleted.")
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Public additions not part of ProjectText
+
+  def implicationList(ids: Vector[Pubid]): VdomElement =
+    PubidFormat.validWhenDead.pubids(ids)
+
+  def pastPubids(ids: SortedSet[ExternalPubid]): VdomElement =
+    renderSeq(
+      ids.toIterator.map(ep => <.span(*.pastPubid, PlainText.pubid(ep))),
+      sepComma)
+
+  def reqCode(c: ReqCode.Value): VdomTag =
+    <.pre(*.reqCodeFlat, PlainText reqCode c)
+
+  def reqCodes(reqCodes: TraversableOnce[ReqCode.Value]): VdomTag =
+    <.div(reqCodes toTagMod reqCode)
+
+  def reqCodeTree(items: Vector[ReqCodeTreeItem]): VdomTag =
+    <.div(items toTagMod reqCodeTreeItem)
+
+  private val reqCodeTreeIdentation: NonEmptyVector[ReqCodeTreeItem.Indent] => VdomElement =
     memo(is =>
       <.pre(*.reqCodeTreeIndent, PlainText reqCodeIndentation is))
 
@@ -241,71 +288,42 @@ final class ProjectWidgets private(project    : Project,
       <.pre(*.reqCodeTreeCode, code))
   }
 
-  def reqCodeTree(items: Vector[ReqCodeTreeItem]): VdomTag =
-    <.div(items toTagMod reqCodeTreeItem)
-
-  def reqCode(c: ReqCode.Value): VdomTag =
-    <.pre(*.reqCodeFlat, PlainText reqCode c)
-
-  def reqCodes(reqCodes: TraversableOnce[ReqCode.Value]): VdomTag =
-    <.div(reqCodes toTagMod reqCode)
-
-  override def useCaseStep(l: Live, s: UseCaseStep[Set[UseCaseStepId]]): VdomTag =
-    useCaseStepA(l, s)(useCaseFlowStepsOrdered)
-
-  def useCaseStepE[C[x] <: Traversable[x]](l: Live, s: UseCaseStep[C[String \/ UseCaseStepId]]): VdomTag =
-    useCaseStepA(l, s)(
-      _.map(_.fold(erroneousUseCaseStepRef, useCaseFlowStepId))(collection.breakOut))
-
-  private def useCaseStepA[C[x] <: TraversableOnce[x], A](l: Live, s: UseCaseStep[C[A]])
-                                                         (f: C[A] => Seq[VdomTag]): VdomTag = {
-
-    val text = format(l, s.text)
-
-    def stepFlow(dir: Direction): Option[VdomElement] = {
-      val ca = s flow dir
-      if (ca.isEmpty)
-        None
-      else
-        Some(stepFlowArrow(dir)(f(ca): _*))
+  /** eg. "UC: Use Case" */
+  val reqTypeFull: ReqTypeId => VdomElement =
+    id => {
+      val rt = project.config.reqTypes.need(id)
+      <.span(s"${rt.mnemonic.value}: ${rt.name}")
     }
 
-    val List(f1, f2) = UseCaseStepFlowText.DefaultArrowOrder.map(stepFlow)
+  private val tagPlain: ApplicableTagId => VdomElement =
+    memo { id =>
+      val tag = project.config.atag(id)
+      tagWithoutStyle(Plain, tag)(*.tag(tag.live))
+    }
 
-    if (f1.isEmpty && f2.isEmpty)
-      text
-    else
-      <.table(
-        <.tbody(
-          <.tr(
-            <.td(*.useCaseStepLayoutCell, text),
-            <.td(*.useCaseStepLayoutCell, f1.whenDefined, f2.whenDefined))))
+  def tagList(ids: Vector[ApplicableTagId]): VdomElement =
+    renderVector(ids, sepSpace)(tagPlain)
+
+  def useCaseStepTextAndMaybeInvalidFlow[C[x] <: Traversable[x]](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[String \/ UseCaseStepId]],
+                                                                 l: Live): VdomTag = {
+    /** eg. "1.p" instead of "1.0" */
+    def erroneousUseCaseStepRef(s: String): VdomTag =
+      <.span(*.erroneousUseCaseStepRef, s)
+
+    makeUseCaseStepTextAndFlow(s, l)(
+      _.map(_.fold(erroneousUseCaseStepRef, useCaseFlowElementById))(collection.breakOut))
   }
-
-  private val useCaseStepLabelMemo: UseCaseStep.Focus => VdomTag =
-    Memo.by((_: UseCaseStep.Focus).id) { f =>
-      val label = plainText.useCaseStepLabel(f)
-      val title = plainText.format(f.live, f.titleA)
-      val ld = deadValidity(Invalid)(f.live)
-      <.span(
-        *.useCaseStepRef(ld),
-        ^.title := title,
-        label)
-    }
-
-  override protected def useCaseFlowStep(f: UseCaseStep.Focus): VdomTag =
-    useCaseStepLabelMemo(f)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final class PubidFormat private[PubidFormat](ctx    : Contextualise,
-                                               styleFn: Live => TagMod,
-                                               titleFn: PubidFormat.TitleFn,
-                                               liveFn : PubidFormat.LiveFn) {
+  final class PubidFormat private[PubidFormat](contextualise: Contextualise,
+                                               styleFn      : Live => TagMod,
+                                               titleFn      : PubidFormat.TitleFn,
+                                               liveFn       : PubidFormat.LiveFn) {
 
     private val label: ExternalPubid => String = {
       val txt = PlainText.pubid(_: ExternalPubid)
-      ctx match {
+      contextualise match {
         case Contextualise => G.reflinkSurround compose txt
         case Plain         => txt
       }
@@ -338,7 +356,7 @@ final class ProjectWidgets private(project    : Project,
       apply(project.reqs.reqIdByPubid(pubid))
 
     private val sep: TagMod =
-      ctx match {
+      contextualise match {
         case Contextualise => sepSpace
         case Plain         => sepComma
       }

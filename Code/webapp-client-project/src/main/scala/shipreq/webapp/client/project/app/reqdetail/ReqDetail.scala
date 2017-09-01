@@ -39,9 +39,8 @@ object ReqDetail {
                          webWorker            : WebWorkerClient,
                          updateContentFn      : ProjectSpaProtocols.UpdateContent.Instance,
                          pxProject            : Px[Project],
-                         pxPlainTextNoCtx     : Px[PlainText.ForProject],
                          pxTextSearch         : Px[TextSearch],
-                         pxProjectWidgetsNoCtx: Px[ProjectWidgets])
+                         pxProjectWidgetsNoCtx: Px[ProjectWidgets.NoCtx])
 
   case class DynamicProps(extPubid  : ExternalPubid,
                           filterDead: StateSnapshot[FilterDead],
@@ -67,19 +66,14 @@ object ReqDetail {
          val req       : Req,
              upstreamFD: FilterDead) {
 
-    val (pxPlainText, pxProjectWidgets) = {
-      val textCtx: Option[ProjectText.Context] = req match {
-        case uc: UseCase    => Some(ProjectText.Context.UseCase(uc.id))
-        case _ : GenericReq => None
+    val pxProjectWidgets: Px[ProjectWidgets.AnyCtx] =
+      req match {
+        case uc: UseCase    => sp.pxProjectWidgetsNoCtx.map(_ withCtx ProjectText.Context.UseCase(uc.id))
+        case _ : GenericReq => sp.pxProjectWidgetsNoCtx.map(a => a)
       }
-      var t = sp.pxPlainTextNoCtx
-      var w = sp.pxProjectWidgetsNoCtx
-      for (c <- textCtx) {
-        t = t.map(_ withCtx c)
-        w = Px.apply2(w, t)(_ withPlainText _)
-      }
-      (t, w)
-    }
+
+    val pxPlainText: Px[PlainText.ForProject.AnyCtx] =
+      pxProjectWidgets.map(_.plainText)
 
     val live = req.live(project.config.reqTypes)
 
@@ -325,7 +319,7 @@ object ReqDetail {
       def renderStepTree(ucData: UseCaseData, stepData: UseCaseStepTree.StepData) = {
         val renderBody: UseCaseStepTree.RenderBodyFn = (id, live, textAndFlow) =>
           props.editorUCS(EditorFeature.FieldKey.UseCaseStep(id)).themedRenderOr(
-            pw.useCaseStep(live, textAndFlow))
+            pw.useCaseStepTextAndFlow(textAndFlow, live))
 
         UseCaseStepTree.Props(
           ucData.uc,
@@ -351,7 +345,7 @@ object ReqDetail {
         def run(cmd: UpdateContentCmd): Callback = runActionNoAsync(cmd) >> clearModal
         import Px.AutoValue._
         val data = DeletionForm.Data.forReqs(pxProject, NonEmptySet one id)
-        val props = DeletionForm.Props(data, pxProjectWidgetsNoCtx, pxPlainTextNoCtx, pxTextSearch, run, clearModal)
+        val props = DeletionForm.Props(data, pxProjectWidgetsNoCtx, pxTextSearch, run, clearModal)
         Some(Modal(DeletionForm.Component(props)))
       } >>= setModal
 

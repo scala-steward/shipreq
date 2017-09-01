@@ -99,6 +99,6 @@ object SampleProject3 {
     (contentByDsl ! project0).copy(deletionReasons = dr)
   }
 
-  lazy val plainText  = PlainText(project, ProjectText.Context.None)
+  lazy val plainText  = PlainText.ForProject.noCtx(project)
   lazy val textSearch = TextSearch(project, plainText)
 }
