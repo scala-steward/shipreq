@@ -23,11 +23,14 @@ import TestUtil._
 
 object CfgTagsTest extends TestSuite {
 
+  PrepareEnv()
+
   @tailrec def nameCellToText(d: Element, prefix: String): String =
     d match {
-      case _ if d.tagName == "INPUT"                       => prefix + d.asInstanceOf[HTMLInputElement].value
-      case h: HTMLElement if h.className contains "indent" => nameCellToText(d.firstElementChild, prefix + "- ")
-      case _                                               => nameCellToText(d.firstElementChild, prefix)
+      case _ if d.tagName == "INPUT" => prefix + d.asInstanceOf[HTMLInputElement].value
+      case h: HTMLElement            =>
+        val i = Option(h.attributes.getNamedItem("data-indent")).fold(0)(_.value.toInt)
+        nameCellToText(d.firstElementChild, prefix + ("- " * i))
     }
 
   def nameAsTextTree(c: GenericComponent.MountedRaw) =

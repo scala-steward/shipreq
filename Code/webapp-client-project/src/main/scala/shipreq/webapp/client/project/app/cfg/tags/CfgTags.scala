@@ -229,9 +229,10 @@ private[tags] object MainTable {
     def renderDeadDesc(d: Option[String]): VdomNode =
       d getOrElse[String] ""
 
+    private val indentAttr = VdomAttr.devOnly[Int]("data-indent")
     def indentation(d: Int): Indenter = r =>
       if (d == 0) r
-      else <.div(^.paddingLeft := s"${d * 3.4}ex", r)
+      else <.div(^.paddingLeft := s"${d * 3.4}ex", r, indentAttr := d)
 
     def rows(fd: FilterDead, s: State): TagMod = {
       val renderers = (tg_renderer.all(s) #::: at_renderer.all(s)).foldLeft(UnivEq.emptyMap[Id, F])(_ + _)
