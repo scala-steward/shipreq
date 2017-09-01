@@ -24,18 +24,21 @@ import shipreq.webapp.base.lib.ClientUtil.{renderSeq, renderVector, sepComma, se
 import shipreq.webapp.base.text.Text.AnyOptional
 import shipreq.webapp.client.project.app.Style.{widgets => *}
 
-object ProjectWidgets2 {
+object ProjectWidgets {
 
-  type AnyCtx = ProjectWidgets2[_ <: ProjectText2.Context]
+  type AnyCtx = ProjectWidgets[_ <: ProjectText.Context]
 
-  def apply[Ctx <: ProjectText2.Context](project    : Project,
-                                         plainText  : PlainText2.ForProject[Ctx],
-                                         reqDetailRC: RouterCtl[ExternalPubid]): ProjectWidgets2[Ctx] =
-    new ProjectWidgets2(project, plainText, reqDetailRC)
+  def apply[Ctx <: ProjectText.Context](project    : Project,
+                                         plainText  : PlainText.ForProject[Ctx],
+                                         reqDetailRC: RouterCtl[ExternalPubid]): ProjectWidgets[Ctx] =
+    new ProjectWidgets(project, plainText, reqDetailRC)
   
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private[ProjectWidgets2] object Internal {
+  val emptySpan: VdomTag =
+    <.span
+
+  private[ProjectWidgets] object Internal {
 
     val deadValidity: Validity => Live => (Live, Validity) =
       Validity.memo(validityWhenDead =>
@@ -54,9 +57,6 @@ object ProjectWidgets2 {
         case Backwards => <.span("←")
       }
 
-    val emptySpan: VdomTag =
-      <.span
-
     @inline implicit def surroundDisplay(s: GrammarSpec.Surrounds): GrammarSpec.Surround =
       s.display
 
@@ -70,15 +70,15 @@ object ProjectWidgets2 {
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-final class ProjectWidgets2[Ctx <: ProjectText2.Context](project    : Project,
-                                                         plainText  : PlainText2.ForProject[Ctx],
+final class ProjectWidgets[Ctx <: ProjectText.Context](project    : Project,
+                                                         plainText  : PlainText.ForProject[Ctx],
                                                          reqDetailRC: RouterCtl[ExternalPubid])
-    extends ProjectText2[Ctx, VdomTag](project, plainText.ctx) {
+    extends ProjectText[Ctx, VdomTag](project, plainText.ctx) {
 
-  import ProjectWidgets2.Internal._
+  import ProjectWidgets.Internal._
 
-  def withCtx[Ctx2 <: ProjectText2.Context](newCtx: Ctx2): ProjectWidgets2[Ctx2] =
-    new ProjectWidgets2(project, plainText withCtx newCtx, reqDetailRC)
+  def withCtx[Ctx2 <: ProjectText.Context](newCtx: Ctx2): ProjectWidgets[Ctx2] =
+    new ProjectWidgets(project, plainText withCtx newCtx, reqDetailRC)
 
   override def text(text: AnyOptional, live: Live): VdomTag =
     <.span(text map textByLive(live): _*)
@@ -108,7 +108,7 @@ final class ProjectWidgets2[Ctx <: ProjectText2.Context](project    : Project,
   /** Contextualised */
   private val codeRef: ReqCodeId => VdomElement =
     memo { id =>
-      import ProjectText2.ReqCodeResolution._
+      import ProjectText.ReqCodeResolution._
 
       implicit def liveWithValidity(a: Live): (Live, Validity) =
         invalidWhenDead(a)
@@ -127,7 +127,7 @@ final class ProjectWidgets2[Ctx <: ProjectText2.Context](project    : Project,
           ^.title :=? title,
           G.reflinkSurround(PlainText reqCode c))
 
-      ProjectText2.ReqCodeResolution(id, project.reqCodes) match {
+      ProjectText.ReqCodeResolution(id, project.reqCodes) match {
         case ActiveCodeToReq     (c, r) => toRef(c, r)
         case ActiveCodeToGroup   (c, g) => toGroup(c, g)
         case DeadGroup           (c, g) => toGroup(c, g)
@@ -243,7 +243,7 @@ final class ProjectWidgets2[Ctx <: ProjectText2.Context](project    : Project,
 
   // Keep in sync with PlainText because it's used together for sorting/rendering in ReqTable
   override protected def deletionReasonWhenNoneGiven: VdomTag =
-    emptySpan
+    ProjectWidgets.emptySpan
 
   // Keep in sync with PlainText because it's used together for sorting/rendering in ReqTable
   override protected def deletionReasonWhenReqTypeIsDead(rt: ReqType): VdomTag =
@@ -264,7 +264,7 @@ final class ProjectWidgets2[Ctx <: ProjectText2.Context](project    : Project,
 
   def pastPubids(ids: SortedSet[ExternalPubid]): VdomElement =
     renderSeq(
-      ids.toIterator.map(ep => <.span(*.pastPubid, PlainText2.pubid(ep))),
+      ids.toIterator.map(ep => <.span(*.pastPubid, PlainText.pubid(ep))),
       sepComma)
 
   def reqCode(c: ReqCode.Value): VdomTag =
@@ -282,7 +282,7 @@ final class ProjectWidgets2[Ctx <: ProjectText2.Context](project    : Project,
 //
 //  def reqCodeTreeItem(item: ReqCodeTreeItem): VdomElement = {
 //    val indentation = NonEmptyVector.option(item.indent)
-//    var code = PlainText2.reqCode(item.suffix)
+//    var code = PlainText.reqCode(item.suffix)
 //    if (indentation.isDefined)
 //      code = G.reqCode.nodeSeparator ~ code
 //    <.div(
@@ -318,7 +318,7 @@ final class ProjectWidgets2[Ctx <: ProjectText2.Context](project    : Project,
                                                        liveFn       : PubidFormat.LiveFn) {
 
     private val label: ExternalPubid => String = {
-      val txt = PlainText2.pubid(_: ExternalPubid)
+      val txt = PlainText.pubid(_: ExternalPubid)
       contextualise match {
         case Contextualise => G.reflinkSurround compose txt
         case Plain         => txt

@@ -15,9 +15,9 @@ import Atom.AnyAtom
 /**
  * Turns elements of data into user-facing plain text.
  */
-object PlainText2 {
+object PlainText {
 
-  def apply[Ctx <: ProjectText2.Context](p: Project, ctx: Ctx): ForProject[Ctx] =
+  def apply[Ctx <: ProjectText.Context](p: Project, ctx: Ctx): ForProject[Ctx] =
     new ForProject(p, ctx)
 
   def reqCodeIndentation(is: NonEmptyVector[ReqCodeTreeItem.Indent]): String = {
@@ -83,9 +83,9 @@ object PlainText2 {
   // Don't make this final! I'm using eq below.
   private val outOfListNewline = "\n\n"
 
-  final class ForProject[Ctx <: ProjectText2.Context](p: Project, ctx: Ctx) extends ProjectText2[Ctx, String](p, ctx) {
+  final class ForProject[Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
 
-    def withCtx[Ctx2 <: ProjectText2.Context](newCtx: Ctx2): ForProject[Ctx2] =
+    def withCtx[Ctx2 <: ProjectText.Context](newCtx: Ctx2): ForProject[Ctx2] =
       new ForProject(p, newCtx)
 
     override def text(text: Text.AnyOptional, live: Live): String =
@@ -129,7 +129,7 @@ object PlainText2 {
     }
 
     private def codeRef(id: ReqCodeId): String = {
-      import ProjectText2.ReqCodeResolution, ReqCodeResolution._
+      import ProjectText.ReqCodeResolution, ReqCodeResolution._
       ReqCodeResolution(id, p.reqCodes) match {
         case ActiveCodeToReq     (c, _) => G reflinkSurround reqCode(c)
         case ActiveCodeToGroup   (c, _) => G reflinkSurround reqCode(c)
@@ -155,8 +155,8 @@ object PlainText2 {
     def useCaseStepLabel(focus: UseCaseStep.Focus): String = {
       import focus._
       val mne = byCtx {
-        case ProjectText2.Context.Project    => true
-        case ProjectText2.Context.UseCase(i) => i !=* uc.id
+        case ProjectText.Context.Project    => true
+        case ProjectText.Context.UseCase(i) => i !=* uc.id
       }
       field.stepLabel(uc.pubid.pos, ploc, mnemonicPrefix = mne)
     }

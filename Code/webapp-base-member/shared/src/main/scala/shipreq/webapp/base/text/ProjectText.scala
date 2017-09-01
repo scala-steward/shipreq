@@ -6,11 +6,11 @@ import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.Must._
-import ProjectText2._
+import ProjectText._
 
-object ProjectText2 {
+object ProjectText {
 
-  /** The context in which the user will view the [[ProjectText2]] output.
+  /** The context in which the user will view the [[ProjectText]] output.
     *
     * Different elements of the project are presented in different ways depending on the context in which they are
     * presented.
@@ -81,7 +81,7 @@ object ProjectText2 {
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-abstract class ProjectText2[Ctx <: Context, Out](project: Project, final val ctx: Ctx) {
+abstract class ProjectText[Ctx <: Context, Out](project: Project, final val ctx: Ctx) {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Abstract
@@ -108,7 +108,7 @@ abstract class ProjectText2[Ctx <: Context, Out](project: Project, final val ctx
   protected final val cfg = project.config
 
   // Avoids need to explicitly down-cast to pattern-match
-  @inline protected final def byCtx[A](f: ProjectText2.Context => A): A =
+  @inline protected final def byCtx[A](f: ProjectText.Context => A): A =
     f(ctx)
 
   protected final def memoByReqId = Memo.by[Req, ReqId](_.id)
