@@ -43,7 +43,7 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitData, cp: ClientProtoco
     val setFilterDead: FilterDead ~=> Callback =
       Reusable.fn.state($ zoomStateL State.filterDead).set
 
-    val pxPlainText         = pxProject.map(PlainText.ForProject(_, ProjectText.Context.None))
+    val pxPlainText         = pxProject.map(PlainText.ForProject.noCtx)
     val pxTextSearch        = Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
     val pxProjectWidgets    = Px.apply2(pxProject, pxPlainText)(ProjectWidgets(_, _, reqDetailRC))
     val pxCreateEditability = pxProject.map(p => CreateFeature.Editability(p.config))
@@ -92,7 +92,7 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitData, cp: ClientProtoco
       ReqTablePage.StaticProps(
         $ zoomStateL State.reqTable,
         cd,
-        pxPlainText, pxTextSearch, pxProjectWidgets,
+        pxTextSearch, pxProjectWidgets,
         reqDetailRC,
         updateIO,
         rowAsyncW.mapKey(reqtable.Row.SourceId.ToEditorRow.reverse)))
@@ -127,7 +127,7 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitData, cp: ClientProtoco
 
     val reqDetail = ReqDetail(ReqDetail.StaticProps(
       updateIO, reqDetailRC, ww, initData.updateContent,
-      pxProject, pxPlainText, pxTextSearch, pxProjectWidgets))
+      pxProject, pxTextSearch, pxProjectWidgets))
 
     val reqDetailSetState: ReqDetail.State ~=> Callback =
       Reusable.fn.state($ zoomStateL State.reqDetail).set

@@ -22,9 +22,9 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
   type AbortCommit = Option[AbortCommit2[Callback, CommitFn]]
 
   case class Props(project         : Project,
-                   plainText       : PlainText.ForProject,
+                   plainTextNoCtx  : PlainText.ForProject.NoCtx,
                    textSearch      : TextSearch,
-                   projectWidgets  : ProjectWidgets,
+                   projectWidgets  : ProjectWidgets.AnyCtx,
                    edit            : StateSnapshot[String],
                    asyncStatus     : Option[EditorStatus.Async],
                    abortCommit     : AbortCommit,
@@ -33,7 +33,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
                    showInstructions: Boolean) {
 
     val richText    = text.parse(project)(edit.value)
-    val parseResult = DataValidators.genericRichText(plainText).audit(richText)
+    val parseResult = DataValidators.genericRichText(plainTextNoCtx).audit(richText)
     val validated   = PotentialChange.fromDisjunction(parseResult).ignoreOption(preEditValue)
     def abort       = abortCommit.map(_.abort)
     def commit      = (t: text.OptionalText) => abortCommit.map(_ commit t)
@@ -51,7 +51,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.EditorBackend {
     private val pxProject    = Px.props($).map(_.project).withReuse.autoRefresh
-    private val pxPlainText  = Px.props($).map(_.plainText).withReuse.autoRefresh
+    private val pxPlainText  = Px.props($).map(_.projectWidgets.plainText).withReuse.autoRefresh
     private val pxTextSearch = Px.props($).map(_.textSearch).withReuse.autoRefresh
 
     override val pxAutoComplete =
@@ -90,7 +90,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
             Some(RichTextEditorHelp.modal.show)))
 
       def richText: VdomTag =
-        p.projectWidgets.format(hardcodedLive, p.richText)
+        p.projectWidgets.text(p.richText, hardcodedLive)
 
       def preview: VdomNode =
         EditTheme.renderPreview(p.preview, p.wantPreview, richText)

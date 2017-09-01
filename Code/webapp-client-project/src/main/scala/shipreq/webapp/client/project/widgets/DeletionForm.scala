@@ -43,12 +43,12 @@ object DeletionForm {
                          selectedGroups: Selection[ReqCodeId],
                          reason        : String)
 
-  final case class Props(data           : Data,
-                         widgets        : ProjectWidgets.AnyCtx,
-                         textSearch     : TextSearch,
-                         perform        : DeleteReqs => Callback,
-                         cancel         : Callback) {
-    def projectText = widgets.plainText
+  final case class Props(data      : Data,
+                         widgets   : ProjectWidgets.NoCtx,
+                         textSearch: TextSearch,
+                         perform   : DeleteReqs => Callback,
+                         cancel    : Callback) {
+    // def projectText = widgets.plainText
   }
 
   final case class ReqRow(req: Req, indent: Int, impliedBy: Vector[Req])
@@ -308,7 +308,7 @@ object DeletionForm {
     def reasonEditorProps(p: Props, s: State): RichTextEditor.DeletionReason.Props =
       RichTextEditor.DeletionReason.Props(
         project          = p.data.project,
-        plainText        = p.projectText,
+        plainTextNoCtx   = p.widgets.plainText,
         textSearch       = p.textSearch,
         projectWidgets   = p.widgets,
         edit             = StateSnapshot.withReuse(s.reason)(setReason),

@@ -38,9 +38,9 @@ object UseCaseStepEditor {
   type CommitFn = UseCaseStepGD.NonEmptyValues ~=> Callback
 
   case class Props(project       : Project,
-                   plainText     : PlainText.ForProject,
+                   plainTextNoCtx: PlainText.ForProject.NoCtx,
                    textSearch    : TextSearch,
-                   projectWidgets: ProjectWidgets,
+                   projectWidgets: ProjectWidgets.AnyCtx, // TODO
                    edit          : StateSnapshot[String],
                    asyncStatus   : Option[EditorStatus.Async],
                    abort         : Callback,
@@ -61,7 +61,7 @@ object UseCaseStepEditor {
 
     val valResult: TextAndFlow[Invalidity \/ OptionalText, Invalidity \/ Set[UseCaseStepId]] =
       parsed.bimap(
-        DataValidators.genericRichText(plainText).audit(_),
+        DataValidators.genericRichText(plainTextNoCtx).audit(_),
         _.map(_.leftMap(txt => Invalidity("Invalid step: " + txt)))
           .sequence[Invalidity \/ ?, UseCaseStepId](implicitly, Invalidity.applicative)
           .map(_.toSet))
@@ -104,7 +104,7 @@ object UseCaseStepEditor {
 
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.EditorBackend {
     private val pxProject    = Px.props($).map(_.project).withReuse.autoRefresh
-    private val pxPlainText  = Px.props($).map(_.plainText).withReuse.autoRefresh
+    private val pxPlainText  = Px.props($).map(_.projectWidgets.plainText).withReuse.autoRefresh
     private val pxTextSearch = Px.props($).map(_.textSearch).withReuse.autoRefresh
 
     override val pxAutoComplete =
@@ -141,7 +141,7 @@ object UseCaseStepEditor {
           Some(RichTextEditorHelp.modal.show))
 
       def richText =
-        p.projectWidgets.useCaseStepE(hardcodedLive, p.parsed)
+        p.projectWidgets.useCaseStepE(p.parsed, hardcodedLive)
 
       def preview =
         EditTheme.renderPreview(p.preview, p.wantPreview, richText)

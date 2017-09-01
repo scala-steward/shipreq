@@ -20,7 +20,7 @@ object ImplicationGraph {
                          imps       : Implications.BiDir,
                          reqs       : Requirements,
                          reqTypes   : ReqTypes,
-                         plainText  : PlainText.ForProject,
+                         plainText  : PlainText.ForProject.NoCtx,
                          reqDetailRC: RouterCtl[ExternalPubid],
                          webWorker  : WebWorkerClient) extends HasWebWorker {
     @inline def render = Component(this)

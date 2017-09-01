@@ -40,7 +40,7 @@ object ReqDetail {
                          updateContentFn      : ProjectSpaProtocols.UpdateContent.Instance,
                          pxProject            : Px[Project],
                          pxTextSearch         : Px[TextSearch],
-                         pxProjectWidgetsNoCtx: Px[ProjectWidgets[ProjectText.Context.None]])
+                         pxProjectWidgetsNoCtx: Px[ProjectWidgets.NoCtx])
 
   case class DynamicProps(extPubid  : ExternalPubid,
                           filterDead: StateSnapshot[FilterDead],
@@ -345,7 +345,7 @@ object ReqDetail {
         def run(cmd: UpdateContentCmd): Callback = runActionNoAsync(cmd) >> clearModal
         import Px.AutoValue._
         val data = DeletionForm.Data.forReqs(pxProject, NonEmptySet one id)
-        val props = DeletionForm.Props(data, pxProjectWidgetsNoCtx, pxPlainTextNoCtx, pxTextSearch, run, clearModal)
+        val props = DeletionForm.Props(data, pxProjectWidgetsNoCtx, pxTextSearch, run, clearModal)
         Some(Modal(DeletionForm.Component(props)))
       } >>= setModal
 

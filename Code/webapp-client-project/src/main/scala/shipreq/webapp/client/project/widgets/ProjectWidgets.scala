@@ -274,22 +274,22 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
   def reqCodes(reqCodes: TraversableOnce[ReqCode.Value]): VdomTag =
     <.div(reqCodes toTagMod reqCode)
 
-//  def reqCodeTree(items: Vector[ReqCodeTreeItem]): VdomTag =
-//    <.div(items toTagMod reqCodeTreeItem)
-//
-//  val reqCodeTreeIdentation: NonEmptyVector[ReqCodeTreeItem.Indent] => VdomElement =
-//    memo(is =>
-//      <.pre(*.reqCodeTreeIndent, PlainText reqCodeIndentation is))
-//
-//  def reqCodeTreeItem(item: ReqCodeTreeItem): VdomElement = {
-//    val indentation = NonEmptyVector.option(item.indent)
-//    var code = PlainText.reqCode(item.suffix)
-//    if (indentation.isDefined)
-//      code = G.reqCode.nodeSeparator ~ code
-//    <.div(
-//      indentation.whenDefined(reqCodeTreeIdentation),
-//      <.pre(*.reqCodeTreeCode, code))
-//  }
+  def reqCodeTree(items: Vector[ReqCodeTreeItem]): VdomTag =
+    <.div(items toTagMod reqCodeTreeItem)
+
+  private val reqCodeTreeIdentation: NonEmptyVector[ReqCodeTreeItem.Indent] => VdomElement =
+    memo(is =>
+      <.pre(*.reqCodeTreeIndent, PlainText reqCodeIndentation is))
+
+  def reqCodeTreeItem(item: ReqCodeTreeItem): VdomElement = {
+    val indentation = NonEmptyVector.option(item.indent)
+    var code = PlainText.reqCode(item.suffix)
+    if (indentation.isDefined)
+      code = G.reqCode.nodeSeparator ~ code
+    <.div(
+      indentation.whenDefined(reqCodeTreeIdentation),
+      <.pre(*.reqCodeTreeCode, code))
+  }
 
   /** eg. "UC: Use Case" */
   val reqTypeFull: ReqTypeId => VdomElement =
@@ -313,10 +313,10 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private final class PubidFormat private[PubidFormat](contextualise: Contextualise,
-                                                       styleFn      : Live => TagMod,
-                                                       titleFn      : PubidFormat.TitleFn,
-                                                       liveFn       : PubidFormat.LiveFn) {
+  final class PubidFormat private[PubidFormat](contextualise: Contextualise,
+                                               styleFn      : Live => TagMod,
+                                               titleFn      : PubidFormat.TitleFn,
+                                               liveFn       : PubidFormat.LiveFn) {
 
     private val label: ExternalPubid => String = {
       val txt = PlainText.pubid(_: ExternalPubid)
@@ -365,7 +365,7 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
       renderVector(v, sep)(apply)
   }
 
-  private object PubidFormat {
+  object PubidFormat {
     type LiveFn  = Req => Live
     type TitleFn = Req => Option[String]
 

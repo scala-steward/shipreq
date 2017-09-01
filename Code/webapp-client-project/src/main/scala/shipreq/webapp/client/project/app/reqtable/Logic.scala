@@ -18,7 +18,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.ValidFilter
 import shipreq.webapp.base.text.Atom.AnyIssue
-import shipreq.webapp.base.text.{PlainText, ProjectText, TextSearch}
+import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.base.util.ReqCodeTreeItem
 import DataImplicits._
 import DataLogic.{ReqTags, TagLookup}
@@ -201,7 +201,7 @@ private[reqtable] object Logic {
   def gather[C[_]](p : Project,
                    s : TableSettings,
                    fd: FilterDead,
-                   pt: PlainText.ForProject[ProjectText.Context.None],
+                   pt: PlainText.ForProject.NoCtx,
                    ts: TextSearch)
                   (implicit cbf: CanBuildFrom[Nothing, Row, C[Row]]): C[Row] = {
 
@@ -335,7 +335,7 @@ private[reqtable] object Logic {
    */
   def filter(vf         : ValidFilter,
              p          : Project,
-             pt         : PlainText.ForProject[ProjectText.Context.None],
+             pt         : PlainText.ForProject.NoCtx,
              ts         : TextSearch,
              issueLookup: IssueLookup,
              tagLookup  : TagLookup): Option[Filters] = {
@@ -416,7 +416,7 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject[ProjectText.Context.None])
+  def sort(p: Project, ts: TableSettings, pt: PlainText.ForProject.NoCtx)
           (rows: Iterable[Row]): MutableArray[Row] = {
     import Sorter._
 
@@ -579,7 +579,7 @@ private[reqtable] object Logic {
   def rowsForTable(p: Project,
                    s: TableSettings,
                    fd: FilterDead,
-                   pt: PlainText.ForProject[ProjectText.Context.None],
+                   pt: PlainText.ForProject.NoCtx,
                    ts: TextSearch): Vector[Row] = {
 
     def r1: Array       [Row] = gather(p, s, fd, pt, ts)
