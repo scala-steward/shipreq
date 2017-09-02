@@ -18,4 +18,5 @@ args+=("-Djetty.httpConfig.securePort=$EXTERNAL_PORT_SSL")
 
 args+=("$@")
 
+"$JETTY_BASE/bin/jetty" "${args[@]}" --list-config | grep -iv password
 exec "$JETTY_BASE/bin/jetty" "${args[@]}"
