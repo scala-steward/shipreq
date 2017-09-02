@@ -97,4 +97,9 @@ object UiText {
   def buttonRetry = "Retry"
 
   def doubleClickToEdit = "double-click to edit"
+
+  // An empty string cannot be used as a hover, nothing appears which leaves the impression (as a user) that the hover
+  // isn't popping up properly or they haven't hovered long enough.
+  def hoverText(t: String): String =
+    if (t.isEmpty) "<blank>" else t
 }

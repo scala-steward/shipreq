@@ -644,7 +644,11 @@ object Style extends StyleSheet.Inline {
     val useCaseStepTextAndFlow_flow = style()
 
     val useCaseStepFlowClause = style(marginLeft(0.5 ex), display.inline)
-    val useCaseStepFlowElement = style(marginLeft(0.5 ex))
+
+    val useCaseStepFlowElement = styleF(D.`live * validity`)(i => styleS(
+      hoverShowsInfo,
+      marginLeft(0.5 ex),
+      reqRef(i)))
 
     object reqTypeSelector {
       val dropdown = style(

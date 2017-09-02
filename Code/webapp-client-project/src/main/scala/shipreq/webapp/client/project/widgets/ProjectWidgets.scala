@@ -250,11 +250,10 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
   override protected val useCaseFlowElement: UseCaseStep.Focus => VdomTag =
     Memo.by((_: UseCaseStep.Focus).id) { f =>
       val label = plainText.useCaseStepLabel(f)
-      val title = plainText.text(f.titleA, f.live)
+      val title = UiText.hoverText(plainText.text(f.titleA, f.live))
       val ld = deadValidity(Invalid)(f.live)
       <.span(
-        *.useCaseStepFlowElement,
-        *.useCaseStepRef(ld),
+        *.useCaseStepFlowElement(ld),
         ^.title := title,
         label)
     }
