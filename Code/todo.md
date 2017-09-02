@@ -56,6 +56,8 @@ Backlog
 * Hide Tags/Imps columns when guaranteed to be empty & useless.
   (i.e. all possible tags/imps are allocated to columns)
   Also consider FilterDead=ShowDead when designing this.
+* UseCase exception levels are off-by-one. 4.E.1.a.i should be 4.E.1.1.a (should it though?)
+* Allow project deletion. Maybe soft delete with ShowFilterButton. What about unique name constraint?
 
 ------------------------------------------------------------------------------------------------------------------------
 Phase 2
@@ -86,20 +88,11 @@ Phase 2
 
 ### Dev
 * Allow refs to custom text fields (e.g. [UC-1.detail])
-* Clicking a UCRef should open the UC in ReqDetail (just like ReqRefs)
 * Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
 * Upgrade JDK and audit crypto mechanisms (pending next Jetty release)
 * Warn when closing page and there are open, dirty editors
-* Delete projects
-* Use Case Steps
-  * fix rendering of steps in text
-  * exception levels are off-by-one. 4.E.1.a.i should be 4.E.1.1.a
-  * KB shortcuts: <<, >>, ↑, ↓, +, (save,+,↓)
-
-TODO context affects:
-* UC steps             - UC-4.0.1 vs 4.0.1 vs .0.1
-* req/code/ucstep refs - text vs link
-
+* ReqDetail KB shortcuts: ↑, ↓
+* UseCaseStep KB shortcuts: <<, >>, +, (save,+,↓)
 
 ### New Features
 * User profile page
