@@ -105,10 +105,20 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
         case a: ListMarkup      # UnorderedList  => <.ul(*.ul, a.items.whole.toTagMod(row => <.li(row toTagMod atom)))
         case a: ReqRef          # ReqRef         => reqRefInValidText(a.value)
         case a: ReqRef          # CodeRef        => codeRef(a.value)
-        case a: UseCaseStepRef  # UseCaseStepRef => useCaseStepRef(a.value)
+        case a: UseCaseStepRef  # UseCaseStepRef => useCaseStepRefById(a.value)
         case a: Issue           # Issue          => issue(a.typ, a.desc, live)
       }
       atom
+    }
+
+  private def linkOrSpan(req: Req): VdomTag =
+    linkOrSpan(req, req.pubid.external(project))
+
+  private def linkOrSpan(req: Req, ep: ExternalPubid): VdomTag =
+    gctx match {
+      case ProjectText.Context.Req(id) if req.id ==* id => ProjectWidgets.emptySpan
+      case ProjectText.Context.None
+         | _: ProjectText.Context.Req                   => reqDetailRC.link(ep)
     }
 
   @inline private def reqRefInValidText: PubidFormat =
@@ -122,19 +132,21 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
       implicit def liveWithValidity(a: Live): (Live, Validity) =
         invalidWhenDead(a)
 
-      def toRef(c: ReqCode.Value, r: ReqId): VdomElement = {
+      def toRef(code: ReqCode.Value, r: ReqId): VdomElement = {
         val req = project.reqs.need(r)
-        ref(c, *.reqRef(req live project.config.reqTypes), plainText reqTitle req)
+        ref(
+          linkOrSpan(req)(*.reqRef(req live project.config.reqTypes)),
+          code,
+          plainText reqTitle req)
       }
 
-      def toGroup(c: ReqCode.Value, g: CodeGroup): VdomElement =
-        ref(c, *.codeGroupRef(g.live), plainText.codeGroupTitle(g))
+      def toGroup(code: ReqCode.Value, g: CodeGroup): VdomElement =
+        ref(<.span(*.codeGroupRef(g.live)), code, plainText.codeGroupTitle(g))
 
-      def ref(c: ReqCode.Value, style: StyleA, title: UndefOr[String]): VdomElement =
-        <.span(
-          style,
-          ^.title :=? title,
-          G.reflinkSurround(PlainText reqCode c))
+      def ref(base: VdomTag, code: ReqCode.Value, title: String): VdomTag =
+        base(
+          ^.title := UiText.hoverText(title),
+          G.reflinkSurround(PlainText reqCode code))
 
       ProjectText.ReqCodeResolution(id, project.reqCodes) match {
         case ActiveCodeToReq     (c, r) => toRef(c, r)
@@ -145,8 +157,23 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
       }
     }
 
-  private def useCaseStepRef(id: UseCaseStepId): VdomTag =
-    useCaseFlowElement(project.reqs.useCases.focusStep(id))
+  private def useCaseStepRefById(id: UseCaseStepId): VdomTag =
+    useCaseStepRef(project.reqs.useCases.focusStep(id))
+
+  private val useCaseStepRef: UseCaseStep.Focus => VdomTag =
+    Memo.by((_: UseCaseStep.Focus).id)(
+      mkUseCaseStep((base, ld, label) =>
+        base(
+          *.useCaseStepRef(ld),
+          G.reflinkSurround(label))))
+
+  private def mkUseCaseStep[A](r: (VdomTag, (Live, Validity), String) => A)(f: UseCaseStep.Focus): A = {
+    val label = plainText.useCaseStepLabel(f)
+    val title = UiText.hoverText(plainText.text(f.titleA, f.live))
+    val ld = deadValidity(Invalid)(f.live)
+    val base = linkOrSpan(f.uc)(^.title := title)
+    r(base, ld, label)
+  }
 
   private val tagInText: Live => ApplicableTagId => VdomElement =
     Live.memo { liveText =>
@@ -248,15 +275,11 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
   }
 
   override protected val useCaseFlowElement: UseCaseStep.Focus => VdomTag =
-    Memo.by((_: UseCaseStep.Focus).id) { f =>
-      val label = plainText.useCaseStepLabel(f)
-      val title = UiText.hoverText(plainText.text(f.titleA, f.live))
-      val ld = deadValidity(Invalid)(f.live)
-      <.span(
-        *.useCaseStepFlowElement(ld),
-        ^.title := title,
-        label)
-    }
+    Memo.by((_: UseCaseStep.Focus).id)(
+      mkUseCaseStep((base, ld, label) =>
+        base(
+          *.useCaseStepFlowElement(ld),
+          label)))
 
   // Keep in sync with PlainText because it's used together for sorting/rendering in ReqTable
   override protected def deletionReasonWhenNoneGiven: VdomTag =
@@ -350,12 +373,12 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
 
     private val memo: ReqId => Out =
       Memo { reqId =>
-        val req   = project.reqs.need(reqId)
-        val ep    = req.pubid.external(project)
-        val txt   = label(ep)
-        val live  = liveFn(req)
+        val req  = project.reqs.need(reqId)
+        val ep   = req.pubid.external(project)
+        val txt  = label(ep)
+        val live = liveFn(req)
 
-        reqDetailRC.link(ep)(
+        linkOrSpan(req, ep)(
           styleMemo(live),
           ^.title :=? titleFn(req),
           txt)
@@ -391,7 +414,7 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
       _.live(project.config.reqTypes)
 
     private val defaultTitleFn: TitleFn =
-      r => Some(plainText.reqTitle(r))
+      r => Some(UiText.hoverText(plainText.reqTitle(r)))
 
     def apply(ctx    : Contextualise,
               styleFn: Live => TagMod,

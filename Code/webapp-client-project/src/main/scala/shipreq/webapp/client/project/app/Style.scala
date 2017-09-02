@@ -609,7 +609,7 @@ object Style extends StyleSheet.Inline {
     val pastPubid = style(deadMaybeValid(Valid))
 
     val reqRef = styleF(D.`live * validity`){ case (l, v) => styleS(
-      // hoverShowsInfo, // It's a link to ReqDetail now
+      unsafeExt("span" + _)(hoverShowsInfo), // usually tag is <a> which links to ReqDetail
       mixinIf(l is Live)(refColour),
       mixinIf(l is Dead)(deadMaybeValid(v))
     )}

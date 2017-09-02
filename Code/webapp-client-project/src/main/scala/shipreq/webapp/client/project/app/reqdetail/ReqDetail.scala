@@ -68,10 +68,7 @@ object ReqDetail {
 
     val pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]] =
       Reusable.byRef(
-        req match {
-          case uc: UseCase    => sp.pxProjectWidgetsNoCtx.map(_ withCtx ProjectText.Context.UseCase(uc.id))
-          case _ : GenericReq => sp.pxProjectWidgetsNoCtx.map(a => a)
-        })
+        sp.pxProjectWidgetsNoCtx.map(_ withCtx ProjectText.Context.Req(req.id)))
 
     val pxPlainText: Px[PlainText.ForProject.AnyCtx] =
       pxProjectWidgets.value.map(_.plainText)

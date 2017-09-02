@@ -18,8 +18,9 @@ object ProjectText {
   sealed trait Context {
     final def ucNum(p: Project): Option[ReqTypePos] =
       this match {
-        case ProjectText.Context.UseCase(uc) => Some(p.reqs.need(uc).pubid.pos)
-        case ProjectText.Context.None        => None
+        case ProjectText.Context.None
+           | ProjectText.Context.Req(_: GenericReqId) => None
+        case ProjectText.Context.Req(uc: UseCaseId)   => Some(p.reqs.need(uc).pubid.pos)
       }
   }
   object Context {
@@ -28,8 +29,8 @@ object ProjectText {
     case object None extends Context
     type None = None.type
 
-    /** User is looking at a single UC. */
-    final case class UseCase(id: UseCaseId) extends Context
+    /** User is looking at a single req. */
+    final case class Req(id: ReqId) extends Context
 
     implicit def univEq: UnivEq[Context] = UnivEq.derive
   }

@@ -8,8 +8,8 @@ import Values._
 
 object PlainTextTest extends TestSuite {
 
-  def ctxUc1 = ProjectText.Context.UseCase(uc1 )
-  def ctxUc0 = ProjectText.Context.UseCase(0.UC)
+  def ctxUc1 = ProjectText.Context.Req(uc1 )
+  def ctxUc0 = ProjectText.Context.Req(0.UC)
 
   override def tests = TestSuite {
     'useCaseStepRefs {
