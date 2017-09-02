@@ -90,7 +90,7 @@ object UseCaseStepEditor {
       validated.fold(_.validity)(_ & _.validity)
 
     val wantPreview: Boolean =
-      Text isRich parsed.text
+      parsed.flow.exists(_.nonEmpty) || Text.isRich(parsed.text)
 
     val status: EditorStatus =
       asyncStatus.getOrElse(

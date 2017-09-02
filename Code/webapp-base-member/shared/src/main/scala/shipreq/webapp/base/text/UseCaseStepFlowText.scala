@@ -135,21 +135,16 @@ object UseCaseStepFlowText {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final case class TextAndFlow[+T, +S](text: T, flowForwards: S, flowBackwards: S) {
-
-    val flow: Direction => S = {
-      case Forwards  => flowForwards
-      case Backwards => flowBackwards
-    }
+  final case class TextAndFlow[+T, +S](text: T, flow: Direction.Values[S]) {
 
     def fold[A](f: T => A)(g: (A, S) => A): A =
       g(g(f(text), flow(Forwards)), flow(Backwards))
 
     def bimap[TT, SS](f: T => TT, g: S => SS): TextAndFlow[TT, SS] =
-      TextAndFlow(f(text), g compose flow)
+      TextAndFlow(f(text), flow.map(g))
 
     def bimapD[TT, SS](f: T => TT, g: Direction => S => SS): TextAndFlow[TT, SS] =
-      TextAndFlow(f(text), d => g(d)(flow(d)))
+      TextAndFlow(f(text), Direction.Values(d => g(d)(flow(d))))
 
 //    def compose[T2, S2, X, Y](that: TextAndFlow[T2, S2])
 //                             (f: (T, T2) => X, g: (S, S2) => Y): TextAndFlow[X, Y] =
@@ -162,16 +157,13 @@ object UseCaseStepFlowText {
                                     (implicit F: Functor[F]): TextAndFlow[X, Y] =
       TextAndFlow(
         f(this.text, F.map(that)(_.text)),
-        d => g(this flow d, F.map(that)(_ flow d)))
+        Direction.Values(d => g(this flow d, F.map(that)(_ flow d))))
 
 //    def zip[T2, S2, X, Y](that: TextAndFlow[T2, S2]): TextAndFlow[(T, T2), (S, S2)] =
 //      compose(that)((_, _), (_, _))
   }
 
   object TextAndFlow {
-    def apply[T, S](text: T, flow: Direction => S): TextAndFlow[T, S] =
-      TextAndFlow(text, flow(Forwards), flow(Backwards))
-
     implicit def univEq[T: UnivEq, S: UnivEq]: UnivEq[TextAndFlow[T, S]] = UnivEq.derive
   }
 
@@ -188,7 +180,10 @@ object UseCaseStepFlowText {
         case Backwards => bck :+= step
       }
     }
-    TextAndFlow(t, fwd, bck)
+    TextAndFlow(t, Direction.Values {
+      case Forwards  => fwd
+      case Backwards => bck
+    })
   }
 
 }

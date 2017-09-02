@@ -145,6 +145,10 @@ object IsoBool {
       Values(pos = f(pos), neg = f(neg))
     def ap[C, D](other: Values[B, C])(f: (A, C) => D): Values[B, D] =
       Values(pos = f(pos, other.pos), neg = f(neg, other.neg))
+    def exists(f: A => Boolean): Boolean =
+      f(pos) || f(neg)
+    def forall(f: A => Boolean): Boolean =
+      f(pos) && f(neg)
   }
 
   trait ValuesLowPri {

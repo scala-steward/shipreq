@@ -575,7 +575,7 @@ object NewEditor {
             stepFocus      <- pxStepFocus
             projectWidgets <- args.pxProjectWidgets.value
           } yield {
-            val initialValue = TextAndFlow(stepFocus.step.titleExplicitly, stepFocus.flow)
+            val initialValue = TextAndFlow(stepFocus.step.titleExplicitly, Direction.Values(stepFocus.flow))
             val initialText = projectWidgets.plainText.useCaseStepTextAndFlow(initialValue, hardcodedLive)
             (initialValue, initialText)
           }

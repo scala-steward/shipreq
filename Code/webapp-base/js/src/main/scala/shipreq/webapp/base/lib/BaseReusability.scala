@@ -45,6 +45,9 @@ abstract class BaseReusability {
   implicit def reusabilityIsoBool[B <: IsoBool[B]: UnivEq]: Reusability[B] =
     Reusability.byUnivEq
 
+  implicit def reusabilityIsoBoolValues[B <: IsoBool[B], A: Reusability]: Reusability[IsoBool.Values[B, A]] =
+    Reusability((x, y) => (x.pos ~=~ y.pos) && (x.neg ~=~ y.neg))
+
   implicit def reusabilityNonEmptyVector[A: Reusability]: Reusability[NonEmptyVector[A]] =
     Reusability.byRef || Reusability.by(_.whole)
 

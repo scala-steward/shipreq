@@ -92,7 +92,6 @@ Phase 2
 * Warn when closing page and there are open, dirty editors
 * Delete projects
 * Use Case Steps
-  * preview should show when flow exists (or better: just always)
   * fix rendering of steps in text
   * exception levels are off-by-one. 4.E.1.a.i should be 4.E.1.1.a
   * KB shortcuts: <<, >>, ↑, ↓, +, (save,+,↓)

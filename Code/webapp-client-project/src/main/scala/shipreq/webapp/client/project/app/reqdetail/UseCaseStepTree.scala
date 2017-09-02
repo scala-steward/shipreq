@@ -65,7 +65,7 @@ object UseCaseStepTree {
 
         def text =
           stepBodyBase(
-            renderBody(id, live, TextAndFlow(step.titleA(uc), flow(_)(id))))
+            renderBody(id, live, TextAndFlow(step.titleA(uc), Direction.Values(flow(_)(id)))))
 
         def ctrls: VdomElement =
           uc.liveUC match {
