@@ -91,7 +91,7 @@ object ReqDetailTest extends TestSuite {
           >> editStepText("1.1.1", "uc ref to step [.0.3]  <---- ")
           +> stepText("1.1").assert("No food?←1.0.2")
           +> stepText("1.0.2").assert("Put in mouth→1.1")
-          +> stepText("1.1.1").assert("uc ref to step 1.0.3")
+          +> stepText("1.1.1").assert("uc ref to step [1.0.3]")
           +> stepText("1.0.3").assert("Still hungry?→1.0.1")
       ))
 
