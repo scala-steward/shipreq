@@ -13,11 +13,15 @@ import Feature.{AsyncState, Editor, PreviewId, State}
 
 object NewEditor {
 
+  // This requires NoCtx in ProjectWidgets.
+  // Would it ever even make sense to create a new requirement in the context of another? Unlikely.
   final case class Static(previewW        : PreviewFeature.Write.Composite[PreviewId],
                           pxProject       : Px[Project],
-                          pxPlainTextNoCtx: Px[PlainText.ForProject.NoCtx],
-                          pxProjectWidgets: Px[ProjectWidgets.NoCtx], // TODO
+                          pxProjectWidgets: Px[ProjectWidgets.NoCtx],
                           pxTextSearch    : Px[TextSearch]) {
+
+    val pxPlainTextNoCtx: Px[PlainText.ForProject.NoCtx] =
+      pxProjectWidgets.map(_.plainText)
 
     private[NewEditor] val internal = new Internal(this)
   }

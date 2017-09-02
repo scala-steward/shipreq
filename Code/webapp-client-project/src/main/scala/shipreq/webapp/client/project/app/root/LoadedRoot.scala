@@ -72,7 +72,6 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitData, cp: ClientProtoco
         CreateFeature.Static(
           previewW.mapId(PreviewId.ToCreate),
           pxProject,
-          pxPlainText,
           pxProjectWidgets,
           pxTextSearch),
         $ zoomStateL State.create,
