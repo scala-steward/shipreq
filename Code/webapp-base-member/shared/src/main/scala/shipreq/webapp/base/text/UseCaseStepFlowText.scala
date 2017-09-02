@@ -46,8 +46,18 @@ object UseCaseStepFlowText {
     case Backwards => "<--"
   }
 
-  val DefaultArrowOrder: List[Direction] =
-    Backwards :: Forwards :: Nil
+  object DefaultArrowOrder {
+    val _1 = Backwards
+    val _2 = Forwards
+
+    def map[A](f: Direction => A): (A, A) =
+      (f(_1), f(_2))
+
+    def foreach[A](f: Direction => A): Unit = {
+      f(_1)
+      f(_2)
+    }
+  }
 
   /**
     * @return `Text` is never an empty string.

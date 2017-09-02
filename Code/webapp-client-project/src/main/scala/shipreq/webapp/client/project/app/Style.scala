@@ -639,8 +639,12 @@ object Style extends StyleSheet.Inline {
     val reqCodeTreeCode = style(reqCodeTreePre)
     val reqCodeFlat = style(reqCodePre, display.block, overflowY.hidden)
 
-    val useCaseStepLayoutCell = style(
-      border.none.important)
+    val useCaseStepTextAndFlow_cont = style(display.flex)
+    val useCaseStepTextAndFlow_text = style()
+    val useCaseStepTextAndFlow_flow = style()
+
+    val useCaseStepFlowClause = style(marginLeft(0.5 ex), display.inline)
+    val useCaseStepFlowElement = style(marginLeft(0.5 ex))
 
     object reqTypeSelector {
       val dropdown = style(

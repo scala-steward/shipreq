@@ -74,8 +74,8 @@ object ReqDetailTest extends TestSuite {
 
           +> editStepText("1.1", "No food? --> 1.0.2 <-- 1.1.1 ")
           +> stepText("1.1").assert("No food?←1.1.1→1.0.2")
-          +> stepText("1.0.2").assert("Put in mouth←1.11.1.1")
-          +> stepText("1.1.1").assert("Steal food→1.0.21.1")
+          +> stepText("1.0.2").assert("Put in mouth←1.1, 1.1.1")
+          +> stepText("1.1.1").assert("Steal food→1.0.2, 1.1")
 
           >> editStepText("1.1", "No food? <--1.0.2-->1.1.1")
           +> stepText("1.1").assert("No food?←1.0.2→1.1.1")

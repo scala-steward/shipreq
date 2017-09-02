@@ -55,11 +55,13 @@ object ProjectWidgets {
     val invalidWhenDead: Live => (Live, Validity) =
       deadValidity(Invalid)
 
-    val stepFlowArrow: Direction => VdomTag =
+    val stepFlowClauseBase: Direction => VdomTag = {
+      val base = <.div(*.useCaseStepFlowClause)
       Direction.memo {
-        case Forwards  => <.span("→")
-        case Backwards => <.span("←")
+        case Forwards  => base("→")
+        case Backwards => base("←")
       }
+    }
 
     @inline implicit def surroundDisplay(s: GrammarSpec.Surrounds): GrammarSpec.Surround =
       s.display
@@ -215,26 +217,34 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
 
   private def makeUseCaseStepTextAndFlow[C[x] <: TraversableOnce[x], A](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[A]],
                                                                         l: Live)
-                                                                       (f: C[A] => TraversableOnce[VdomTag]): VdomTag = {
+                                                                       (render: C[A] => TraversableOnce[VdomTag]): VdomTag = {
 
     val stepText = text(s.text, l)
 
-    def stepFlow(dir: Direction): Option[VdomElement] = {
-      val ca = s flow dir
-      Option.unless(ca.isEmpty)(
-        stepFlowArrow(dir)(TagMod.fromTraversableOnce(f(ca))))
+    def flowClause(dir: Direction): Option[VdomElement] = {
+      val flowElements = s flow dir
+      Option.unless(flowElements.isEmpty)(
+        stepFlowClauseBase(dir)(
+          TagMod.fromTraversableOnce(
+            render(flowElements).toIterator.map(t => t: TagMod).intersperse(sepComma))))
     }
 
-    val List(f1, f2) = UseCaseStepFlowText.DefaultArrowOrder.map(stepFlow)
+    val flowsMaybe: Option[TagMod] =
+      UseCaseStepFlowText.DefaultArrowOrder.map(flowClause) match {
+        case (None   , None   ) => None
+        case (Some(f), None   ) => Some(f)
+        case (None   , Some(f)) => Some(f)
+        case (Some(a), Some(b)) => Some(TagMod(a, b))
+      }
 
-    if (f1.isEmpty && f2.isEmpty)
-      stepText
-    else
-      <.table(
-        <.tbody(
-          <.tr(
-            <.td(*.useCaseStepLayoutCell, stepText),
-            <.td(*.useCaseStepLayoutCell, f1.whenDefined, f2.whenDefined))))
+    flowsMaybe match {
+      case None =>
+        stepText
+      case Some(flows) =>
+        <.div(*.useCaseStepTextAndFlow_cont,
+          <.div(*.useCaseStepTextAndFlow_text, stepText),
+          <.div(*.useCaseStepTextAndFlow_flow, flows))
+    }
   }
 
   override protected val useCaseFlowElement: UseCaseStep.Focus => VdomTag =
@@ -243,6 +253,7 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
       val title = plainText.text(f.titleA, f.live)
       val ld = deadValidity(Invalid)(f.live)
       <.span(
+        *.useCaseStepFlowElement,
         *.useCaseStepRef(ld),
         ^.title := title,
         label)
