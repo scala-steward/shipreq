@@ -202,6 +202,8 @@ object ParsersTest extends TestSuite {
   val optBool: List[Option[Boolean]] =
     None :: Some(true) :: Some(false) :: Nil
 
+  val maybeSpace = List("", " ")
+
   override val tests = TestSuite {
     'preprocess {
       // This isn't a standard trim - see preprocess() for explanation
@@ -266,16 +268,16 @@ object ParsersTest extends TestSuite {
           val stepLabelUC = wrapString(stepLabel).takeWhile(Character.isDigit).toInt
           val expect = T.UseCaseStepRef(id)
           for {
-            ucCtx    <- List[Option[ReqTypePos]](None, Some(1), Some(99999))
-            prefix   <- "" :: "UC-" :: "uc" :: " Uc - " :: Nil
-            suffix   <- "" :: " " :: Nil
-            dotNoise <- null :: " ." :: ". " :: "  .  " :: Nil
-            chCase   <- optBool
-            padZero  <- false :: true :: Nil
+            ucCtx    ← List[Option[ReqTypePos]](None, Some(1), Some(99999))
+            useCtx   = ucCtx.exists(_.value ==* stepLabelUC)
+            stepStr  = if (useCtx) wrapString(stepLabel).dropWhile(Character.isDigit).self else stepLabel
+            prefix   ← if (useCtx) maybeSpace else List("", "UC-", "uc", " Uc - ")
+            suffix   ← maybeSpace
+            dotNoise ← null :: " ." :: ". " :: "  .  " :: Nil
+            chCase   ← optBool
+            padZero  ← false :: true :: Nil
           } {
-            var s = stepLabel
-            if (ucCtx.exists(_.value ==* stepLabelUC))
-              s = wrapString(s).dropWhile(Character.isDigit)
+            var s = stepStr
             chCase match {
               case Some(true)  => s = s.toLowerCase.replace(".x.", ".X.")
               case Some(false) => s = s.toUpperCase
@@ -288,8 +290,12 @@ object ParsersTest extends TestSuite {
           }
         }
 
-        'liveN - testU(19, step19_label)
-        'liveE - testU(18, step18_label)
+        'liveN1 - testU(10, step10_label)
+        'liveN2 - testU(11, step11_label)
+        'liveN3 - testU(14, step14_label)
+        'liveN4 - testU(19, step19_label)
+        'liveE1 - testU(18, step18_label)
+        'liveE2 - testWithUcCtx("[E.1]", Some(1))(T.UseCaseStepRef(18))
         'deadN - testU(16, step16_label)
         'deadN - testU(20, step20_label)
         'deadE - testU(17, step17_label)

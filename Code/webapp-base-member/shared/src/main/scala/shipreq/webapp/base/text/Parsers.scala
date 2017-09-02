@@ -172,28 +172,39 @@ object Parsers {
     /** Expects no leading whitespace.
       * Gobbles any trailing whitespace.
       */
-    def useCaseStepLabel: Rule1[UseCaseStepId] = rule(
-        ((ch('U')|'u') ~ (ch('C')|'c') ~ OWS ~ ('-' ~ OWS).?).?  // UC-
-        ~ ((reqTypePos ~ OWS) | pushOptional(currentUseCase))    // 1
-        ~ ('.' ~ OWS ~ capture(CP.Alpha.+ | CP.Digit.+) ~ OWS).+ // .E.0.X.1.a.ii
-        ~> lookupStep ~ popOptional[UseCaseStepId])
+    def useCaseStepLabel: Rule1[UseCaseStepId] = {
 
-    val lookupStep: (ReqTypePos, Seq[String]) => Option[UseCaseStepId] =
-      (pos, nodes) => {
+      def dotStep: Rule1[String] =
+        rule('.' ~ OWS ~ capture(CP.Alpha.+ | CP.Digit.+) ~ OWS)
 
-        var ns = nodes
+      def ctxFree: Rule1[UseCaseStepId] = rule(
+        ((ch('U')|'u') ~ (ch('C')|'c') ~ OWS ~ ('-' ~ OWS).?).? // UC-
+          ~ reqTypePos ~ OWS                                    // 1
+          ~ dotStep ~ dotStep.*                                 // .0.X.1.a.ii
+          ~> lookupStep ~ popOptional[UseCaseStepId])
 
-        val f =
-          nodes.headOption.flatMap { prefix0 =>
-            val prefix = prefix0.toUpperCase
-            StaticField.useCaseStepTrees.find(_.stepLabelPrefix.exists(_ ==* prefix))
-          } match {
-            case Some(sf) => ns = ns.tail; sf
-            case None     => StaticField.NormalAltStepTree
+      def withCtx: Rule1[UseCaseStepId] = rule(
+        pushOptional(currentUseCase)
+          ~ (dotStep | (capture(CP.Alpha.+) ~ OWS)) // .0 | E
+          ~ dotStep.*                               // .0.X.1.a.ii
+          ~> lookupStep ~ popOptional[UseCaseStepId])
+
+      rule(ctxFree | withCtx)
+    }
+
+    val lookupStep: (ReqTypePos, String, Seq[String]) => Option[UseCaseStepId] =
+      (pos, nodeHead, nodeTail) => {
+
+        val prefix = nodeHead.toUpperCase
+
+        val (nodes, field) =
+          StaticField.useCaseStepTrees.find(_.stepLabelPrefix.exists(_ ==* prefix)) match {
+            case Some(sf) => (nodeTail, sf)
+            case None     => (nodeHead +: nodeTail, StaticField.NormalAltStepTree)
           }
 
         def parseNodes(f: StaticField.UseCaseStepTree): Option[PartialLocation] = {
-          val it = ns.iterator
+          val it = nodes.iterator
           @tailrec def go(q: Vector[Int], v: Validity, l: Int): Option[PartialLocation] =
             if (it.hasNext) {
               val node = it.next()
@@ -219,8 +230,8 @@ object Parsers {
 
         for {
           uc ← reqs.getUseCaseByPos(pos)
-          pl ← parseNodes(f)
-          id ← f.useCaseSteps.get(uc).partialLocSteps.getOption(pl)
+          pl ← parseNodes(field)
+          id ← field.useCaseSteps.get(uc).partialLocSteps.getOption(pl)
         } yield id
       }
   }
