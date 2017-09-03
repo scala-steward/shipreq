@@ -93,6 +93,12 @@ Phase 2
 * Warn when closing page and there are open, dirty editors
 * ReqDetail KB shortcuts: ↑, ↓
 * UseCaseStep KB shortcuts: <<, >>, +, (save,+,↓)
+* Filter doesn't support explicit reqs eg. `{-MF MF-5}`
+* Filter shouldn't need dash in `impliedBy:MF-5`
+* Imp/Code editors are way too wide in NewReqForm
+* Allow ctrl-enter in NewForm editors to create (and not close)
+* Default ReqType in ReqTable NewForm should be the one with the most reqs
+* New Form preview.show? shouldn't consider focus
 
 ### New Features
 * User profile page
