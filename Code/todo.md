@@ -58,6 +58,10 @@ Backlog
   Also consider FilterDead=ShowDead when designing this.
 * UseCase exception levels are off-by-one. 4.E.1.a.i should be 4.E.1.1.a (should it though?)
 * Allow project deletion. Maybe soft delete with ShowFilterButton. What about unique name constraint?
+* On new project, only NewForm displays. Default columns are shit and can't be changed.
+* New Form preview.show? shouldn't consider focus (?)
+* Warn when closing page and there are open, dirty editors
+* Imp/Code editors are way too wide in NewReqForm
 
 ------------------------------------------------------------------------------------------------------------------------
 Phase 2
@@ -90,15 +94,14 @@ Phase 2
 * Allow refs to custom text fields (e.g. [UC-1.detail])
 * Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
 * Upgrade JDK and audit crypto mechanisms (pending next Jetty release)
-* Warn when closing page and there are open, dirty editors
 * ReqDetail KB shortcuts: ↑, ↓
 * UseCaseStep KB shortcuts: <<, >>, +, (save,+,↓)
 * Filter doesn't support explicit reqs eg. `{-MF MF-5}`
 * Filter shouldn't need dash in `impliedBy:MF-5`
-* Imp/Code editors are way too wide in NewReqForm
 * Allow ctrl-enter in NewForm editors to create (and not close)
 * Default ReqType in ReqTable NewForm should be the one with the most reqs
-* New Form preview.show? shouldn't consider focus
+* Put hover text on nodes in UC flow graph
+* Don't allow wrap on pubid in ReqDetail
 
 ### New Features
 * User profile page
