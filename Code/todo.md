@@ -58,7 +58,6 @@ Backlog
   Also consider FilterDead=ShowDead when designing this.
 * UseCase exception levels are off-by-one. 4.E.1.a.i should be 4.E.1.1.a (should it though?)
 * Allow project deletion. Maybe soft delete with ShowFilterButton. What about unique name constraint?
-* On new project, only NewForm displays. Default columns are shit and can't be changed.
 * New Form preview.show? shouldn't consider focus (?)
 * Warn when closing page and there are open, dirty editors
 * Imp/Code editors are way too wide in NewReqForm
@@ -69,7 +68,6 @@ Phase 2
 
 ### Social
 * Co-founder criteria
-* Presentation
 
 ### Devops & Deployment
 * StackDriver
@@ -91,14 +89,19 @@ Phase 2
   * Restore or delete SessionStats
 
 ### Dev
-* Allow refs to custom text fields (e.g. [UC-1.detail])
-* Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
-* Upgrade JDK and audit crypto mechanisms (pending next Jetty release)
-* ReqDetail KB shortcuts: ↑, ↓
-* UseCaseStep KB shortcuts: <<, >>, +, (save,+,↓)
 * Filter doesn't support explicit reqs eg. `{-MF MF-5}`
 * Filter shouldn't need dash in `impliedBy:MF-5`
 * Allow ctrl-enter in NewForm editors to create (and not close)
+
+### Backlog
+* Allow refs to custom text fields (e.g. [UC-1.detail])
+* Revise default columns
+  * On new project, only NewForm displays. Default columns are shit and can't be changed.
+* Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
+* Upgrade JDK and audit crypto mechanisms (pending next Jetty release)
+* ReqDetail KB shortcuts
+  * All rows: ↑, ↓, F2, Tab in/out
+  * UseCaseSteps: <<, >>, +, (save,+,↓)
 
 ### New Features
 * User profile page
