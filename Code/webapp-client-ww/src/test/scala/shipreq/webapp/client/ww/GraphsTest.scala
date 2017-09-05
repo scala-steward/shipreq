@@ -6,6 +6,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.test._
+import shipreq.webapp.base.text.ProjectText
 import GraphViz.DOT
 import WebappTestUtil._
 
@@ -42,16 +43,16 @@ object GraphsTest extends TestSuite {
         import UnsafeTypes._
         val uc = UseCaseId(1)
         val project = applyEventsSuccessfully(Project.empty, UseCaseCreate(uc, 2, UseCaseGD.emptyValues))
-        val actual = Graphs.useCaseStepFlow(uc, project.reqs.useCases)
+        val actual = Graphs.useCaseStepFlow(uc, project, ProjectText.Context.Req(uc))
         val expect = DOT(
           """
             |digraph G{bgcolor=transparent;rankdir=LR;ranksep=0.28;
             |
-            |S[shape=circle style=filled color=black fontsize=1 height=.3]
-            |E[shape=doublecircle style=filled color=black fontsize=1 height=.3]
+            |S[shape=circle tooltip=Start style=filled color=black fontsize=1 height=.3]
+            |E[shape=doublecircle tooltip=End style=filled color=black fontsize=1 height=.3]
             |
             |{node[fillcolor=lawngreen style=filled shape=invhouse]
-            |  2[label="1.0"]
+            |  2[label="1.0" tooltip="<blank>"]
             |}
             |
             |{edge[weight=9]S->2->E;}
@@ -63,33 +64,33 @@ object GraphsTest extends TestSuite {
 
       'sp6 {
         import SampleProject6._, Values._
-        val actual = Graphs.useCaseStepFlow(uc1, project.reqs.useCases)
+        val actual = Graphs.useCaseStepFlow(uc1, project, ProjectText.Context.Req(uc1))
         val expect = DOT(
           """
             |digraph G{bgcolor=transparent;rankdir=LR;ranksep=0.28;
             |
-            |S[shape=circle style=filled color=black fontsize=1 height=.3]
-            |E[shape=doublecircle style=filled color=black fontsize=1 height=.3]
+            |S[shape=circle tooltip=Start style=filled color=black fontsize=1 height=.3]
+            |E[shape=doublecircle tooltip=End style=filled color=black fontsize=1 height=.3]
             |
             |{node[fillcolor=lawngreen style=filled shape=invhouse]
-            |  10[label="1.0"]
+            |  10[label="1.0" tooltip="[1.0.X.1] and [1.E.X.1] are dead. [1.0.2.a] and [1.E.1] are not."]
             |}
             |{node[fillcolor=lawngreen style=filled shape=ellipse]
-            |  11[label="1.0.1"]
-            |  12[label="1.0.2"]
-            |  19[label="1.0.2.a"]
-            |  13[label="1.0.3"]
+            |  11[label="1.0.1" tooltip="Get food"]
+            |  12[label="1.0.2" tooltip="Put in mouth"]
+            |  19[label="1.0.2.a" tooltip="<blank>"]
+            |  13[label="1.0.3" tooltip="Still hungry?"]
             |}
             |
             |{node[fillcolor=skyblue style=filled shape=invhouse]
-            |  14[label="1.1"]
+            |  14[label="1.1" tooltip="Have no food"]
             |}
             |{node[fillcolor=skyblue style="filled,rounded" shape=box]
-            |  15[label="1.1.1"]
+            |  15[label="1.1.1" tooltip="Steal food"]
             |}
             |
             |{node[fillcolor=tomato style=filled shape=octagon]
-            |  18[label="1.E.1"]
+            |  18[label="1.E.1" tooltip="<blank>"]
             |}
             |
             |{edge[weight=9]S->10->11->12->19->13->E;}

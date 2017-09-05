@@ -100,7 +100,6 @@ Phase 2
 * Filter shouldn't need dash in `impliedBy:MF-5`
 * Allow ctrl-enter in NewForm editors to create (and not close)
 * Default ReqType in ReqTable NewForm should be the one with the most reqs
-* Put hover text on nodes in UC flow graph
 
 ### New Features
 * User profile page

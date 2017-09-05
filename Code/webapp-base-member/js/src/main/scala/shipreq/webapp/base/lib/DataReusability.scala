@@ -58,6 +58,9 @@ abstract class DataReusability extends BaseReusability {
   implicit def reusabilityReqTypes: Reusability[ReqTypes] =
     Reusability.byRefOrUnivEq
 
+  implicit def reusabilityProjectTextCtx: Reusability[ProjectText.Context] =
+    Reusability.byUnivEq
+
   implicit def reusabilityPlainText_ : Reusability[PlainText.ForProject.AnyCtx] =
     Reusability.byRef
 

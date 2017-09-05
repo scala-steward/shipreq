@@ -5,6 +5,7 @@ import boopickle._
 import shipreq.webapp.base.protocol.BoopickleMacros._
 import shipreq.webapp.base.protocol.BinCodecGeneric._
 import shipreq.webapp.base.protocol.BinCodecMemberData._
+import shipreq.webapp.base.text.ProjectText
 
 // Another idea could be to maintain a separate ClientData instance in the WW thread and feed it all the same updates
 // that the main thread processes.
@@ -14,7 +15,9 @@ sealed abstract class Cmd[Result](implicit r: Pickler[Result]) {
 }
 
 object Cmd {
-  case class GraphUseCaseStepFlow(id: UseCaseId, useCases: UseCases) extends Cmd[SVG]
+  case class GraphUseCaseStepFlow(id     : UseCaseId,
+                                  project: Project,
+                                  ctx    : ProjectText.Context) extends Cmd[SVG]
 
   case class GraphAllImplications(filterDead: FilterDead,
                                   imps      : Implications.BiDir,

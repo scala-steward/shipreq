@@ -300,7 +300,7 @@ object ReqDetail {
 
           case Row.StepGraph =>
             val ucId = data.useCaseData.get.uc.id
-            UseCaseStepFlowGraph.Props(ucId, project.reqs.useCases, webWorker).render
+            UseCaseStepFlowGraph.Props(ucId, project, pw.ctx, webWorker).render
 
           case Row.Life =>
             data.live match {

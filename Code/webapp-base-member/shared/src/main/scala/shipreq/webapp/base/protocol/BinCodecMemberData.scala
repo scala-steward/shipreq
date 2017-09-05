@@ -5,7 +5,7 @@ import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.univeq.UnivEq
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.AtomTC
+import shipreq.webapp.base.text.{AtomTC, ProjectText}
 import DataImplicits._
 import BinCodecGeneric._
 import BinCodecBaseData._
@@ -91,6 +91,10 @@ object BinCodecMemberData {
   }
 
   import AtomPicklers.instances._
+
+  implicit lazy val pickleProjectTextContextReq : Pickler[ProjectText.Context.Req ] = pickleCaseClass
+  implicit lazy val pickleProjectTextContextNone: Pickler[ProjectText.Context.None] = pickleCaseClass
+  implicit lazy val pickleProjectTextContext    : Pickler[ProjectText.Context     ] = pickleADT
 
   implicit lazy val pickleReqDataText       : Pickler[ReqData.Text       ] = pickleMap
   implicit lazy val pickleReqCodeNode       : Pickler[ReqCode.Node       ] = pickleCaseClass // xmap[String] already reuses

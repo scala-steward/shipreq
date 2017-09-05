@@ -4,12 +4,14 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.scalajs.js.JSON
 import shipreq.base.util.univeq._
 import shipreq.base.util.VectorTree.PartialLocation
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.base.text.{PlainText, ProjectText}
 import GraphViz.DOT
+import shipreq.webapp.base.UiText
 
 object Graphs {
 
@@ -42,17 +44,23 @@ object Graphs {
     sb append ']'
   }
 
+  @inline private def escapeAttrValue(s: String): String =
+    JSON.stringify(s)
+
   private def setLabel(label: String)(implicit sb: StringBuilder): Unit = {
-    sb append "label=\""
-    sb append label
-    sb append '"'
+    sb append "label="
+    sb append escapeAttrValue(label)
   }
 
   /** [label="x"] */
   private def labelAttr(label: String)(implicit sb: StringBuilder): Unit =
-    attrBlock {
-      setLabel(label)
-    }
+    attrBlock(setLabel(label))
+
+  /** hover text. TITLE in HTML */
+  private def setTooltip(tooltip: String)(implicit sb: StringBuilder): Unit = {
+    sb append "tooltip="
+    sb append escapeAttrValue(UiText.hoverText(tooltip))
+  }
 
   /*
   Having flow like `1 -> 2,3,4` works fine in the latest versions of GraphViz, but (sometimes) causes problems with the
@@ -124,12 +132,14 @@ object Graphs {
    *
    * Currently only graphs intra-usecase flow. Flow to or from other UseCases is currently ignored.
    */
-  def useCaseStepFlow(id: UseCaseId, useCases: UseCases): DOT = {
+  def useCaseStepFlow(id: UseCaseId, project: Project, ctx: ProjectText.Context): DOT = {
     import StaticField.{ExceptionStepTree => E, NormalAltStepTree => NA, UseCaseStepTree => F}
 
     val StartNode = "S"
     val EndNode   = "E"
 
+    val ptext    = PlainText.ForProject(project, ctx)
+    val useCases = project.reqs.useCases
     val uc       = useCases.imap.need(id)
     val stepsNA  = NA.useCaseSteps get uc
     val stepsE   = E .useCaseSteps get uc
@@ -162,13 +172,13 @@ object Graphs {
       val terminalStyleEnd = " style=filled color=black fontsize=1 height=.3]"
       def startNode(): Unit = {
         sb append StartNode
-        sb append "[shape=circle"
+        sb append "[shape=circle tooltip=Start"
         sb append terminalStyleEnd
       }
 
       def endNode(): Unit = {
         sb append EndNode
-        sb append "[shape=doublecircle"
+        sb append "[shape=doublecircle tooltip=End"
         sb append terminalStyleEnd
       }
 
@@ -185,7 +195,11 @@ object Graphs {
             register(step.id, node)
             val nodeDOT: Content = () => {
               sb append node
-              labelAttr(label)
+              attrBlock {
+                setLabel(label)
+                sb append ' '
+                setTooltip(ptext.text(step.titleA(uc), UseCaseStep.live(uc, ploc)))
+              }
             }
             (ploc, nodeDOT)
           } else
