@@ -99,7 +99,6 @@ Phase 2
 * Filter doesn't support explicit reqs eg. `{-MF MF-5}`
 * Filter shouldn't need dash in `impliedBy:MF-5`
 * Allow ctrl-enter in NewForm editors to create (and not close)
-* Default ReqType in ReqTable NewForm should be the one with the most reqs
 
 ### New Features
 * User profile page

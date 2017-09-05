@@ -27,6 +27,7 @@ object NewButton {
   final case class Props(state   : State,
                          reqTypes: ReqTypes,
                          allowRCG: Permission,
+                         default : Option[RowKey],
                          update  : Option[Reusable[Update]]) {
     @inline def render: VdomElement = Component(this)
 
@@ -70,7 +71,9 @@ object NewButton {
       val dropdownItems = p.dropdownItems
 
       val selected: DropdownItem =
-        p.selectedDropdownItem.getOrElse(dropdownItems.head)
+        p.selectedDropdownItem
+          .orElse(p.default.flatMap(k => dropdownItems.find(_.value ==* k)))
+          .getOrElse(dropdownItems.head)
 
       def renderButton: VdomTag =
         <.a(
