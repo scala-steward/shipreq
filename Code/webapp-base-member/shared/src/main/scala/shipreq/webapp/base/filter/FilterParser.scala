@@ -3,7 +3,7 @@ package shipreq.webapp.base.filter
 import japgolly.microlibs.nonempty._
 import org.parboiled2.{Parser => _, _}
 import scala.util.{Failure, Success}
-import shipreq.webapp.base.data.HashRefKey
+import shipreq.webapp.base.data.{ExternalPubid, HashRefKey, ReqTypePos}
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.util.{ParsingUtil, PreProcessed, PreProcessor}
 import ParsingUtil._
@@ -72,6 +72,7 @@ object FilterParser {
   private val mkImplies  : ImpType = Implies
   private val mkImpliedBy: ImpType = ImpliedBy
   private val mkImplication: (ImpType, Reqs) => PotentialFilter = _(_)
+  private val mkReq: (Mnemonic, ReqTypePos) => Req = (m, p) => Req(ExternalPubid(m, p))
 
   private val mkClause: (PotentialFilter, Seq[PotentialFilter]) => NonEmptyVector[PotentialFilter] =
     (h, t) => NonEmptyVector(h, t: _*)
@@ -135,6 +136,9 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
   def hashRef: Rule1[HashRef] =
     rule(hashRefStr_! ~ end ~> HashRefKey ~> HashRef)
 
+  def req: Rule1[Req] =
+    rule(reqTypeMnemonicCS ~ '-'.? ~ reqTypePos ~> mkReq)
+
   def reqType: Rule1[ReqType] =
     rule(reqTypeMnemonicCS ~ end ~> ReqType)
 
@@ -154,7 +158,7 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
       ) ~ ':' ~!~ reqs ~ end ~> mkImplication)
 
   def positive: Rule1[PotentialFilter] =
-    rule(allOf | anyOf | quotedText | regex | hashRef | presence | lack | implication | reqType | simpleText)
+    rule(allOf | anyOf | quotedText | regex | hashRef | presence | lack | implication | req | reqType | simpleText)
 
   def negative: Rule1[PotentialFilter] =
     rule('-' ~!~ (('-' ~!~ expr) | (expr ~> Not)))

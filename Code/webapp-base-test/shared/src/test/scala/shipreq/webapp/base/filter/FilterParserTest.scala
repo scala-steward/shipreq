@@ -10,7 +10,7 @@ import utest._
 import shipreq.base.util.Debug._
 import shipreq.base.util._
 import shipreq.webapp.base.{RandomData => $}
-import shipreq.webapp.base.data.HashRefKey
+import shipreq.webapp.base.data.{ExternalPubid, HashRefKey, ReqTypePos}
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.test.WebappTestUtil._
 import PotentialFilter._
@@ -19,6 +19,7 @@ object FilterParserTest extends TestSuite {
 
   implicit def equality: UnivEq[PotentialFilter] = UnivEq.force
 
+  implicit def autoRTP(i: Int) = ReqTypePos(i)
   implicit def autoSome(f: PotentialFilter) = Option(f)
   implicit def autoMne(s: String) = Mnemonic(s)
   implicit def autoHRK(s: String) = HashRefKey(s)
@@ -127,6 +128,13 @@ object FilterParserTest extends TestSuite {
       'simple - test("/a/", Regex("a"))
       'qchars - test("/'.*`.*`'/", Regex("'.*`.*`'"))
       'escape - test("""/\\ \. \d \s \n \/ \W/""", Regex("""\\ \. \d \s \n / \W"""))
+    }
+
+    'req {
+      'exact     - test("MF-3",   Req(ExternalPubid("MF", 3)))
+      'noDash    - test("MF3",    Req(ExternalPubid("MF", 3)))
+      'lowerCase - test("mf-3",   SimpleText("mf-3"))
+      'quoted    - test("'MF-3'", QuotedText("MF-3", '\''))
     }
 
     'reqType {

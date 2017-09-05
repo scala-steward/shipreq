@@ -89,7 +89,6 @@ Phase 2
   * Restore or delete SessionStats
 
 ### Dev
-* Filter doesn't support explicit reqs eg. `{-MF MF-5}`
 * Allow ctrl-enter in NewForm editors to create (and not close)
 
 ### Backlog

@@ -42,6 +42,7 @@ object ValidFilter {
 
   case class Presence      (attr: Attr)                  extends ValidFilter
   case class Lack          (attr: Attr)                  extends ValidFilter
+  case class Req           (id: data.ReqId)              extends ValidFilter
   case class ReqType       (id: data.ReqTypeId)          extends ValidFilter
   case class Tag           (id: data.ApplicableTagId)    extends ValidFilter
   case class CustomIssue   (id: data.CustomIssueTypeId)  extends ValidFilter
@@ -135,6 +136,7 @@ object ValidFilter {
       a match {
         case _: Presence
            | _: Lack
+           | _: Req
            | _: ReqType
            | _: Tag
            | _: ImpliesAnyOf

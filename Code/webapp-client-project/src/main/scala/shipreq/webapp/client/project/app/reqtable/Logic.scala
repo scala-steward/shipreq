@@ -382,6 +382,7 @@ private[reqtable] object Logic {
 
     def interpret(subj: ValidFilter): R =
       subj match {
+        case Req(id)              => Filters(req = _.id ==* id)
         case ReqType(rt)          => Filters(req = _.reqTypeId ==* rt)
         case Tag(tag)             => byTag(_ contains tag)
         case Presence(AnyTag)     => byTag(_.nonEmpty)

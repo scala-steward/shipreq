@@ -32,6 +32,19 @@ object FilterHelp {
       )("/.*next[ -]*day.*/", "/(?i).*next[ -]*day.*/")),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    Group("Reqs & Types")(
+
+      Example(
+        "To filter by the type of requirements, enter the type's mnemonic (in upper-case)."
+      )("FR", "UC"),
+
+      Example(
+        "To select a specific requirement, enter its ID (in upper-case).",
+        <.br,
+        <.br, "Note: If you want to specify a requirements ID as text, either use lower-case or wrap it as a phrase.",
+      )("FR-30", "UC-6")),
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     Group("Issues & Tags")(
 
       Example(
@@ -51,13 +64,6 @@ object FilterHelp {
         "Like above, you can also search for requirements that ", <.em("don't"),
         " have any issues or tags by changing ", code("has"), " to ", code("no"), "."
       )("no:issues", "no:tags")),
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    Group("Req Type")(
-
-      Example(
-        "To filter by the type of requirements, enter the type's mnemonic (in upper-case)."
-      )("FR", "UC")),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     Group("Implication")(

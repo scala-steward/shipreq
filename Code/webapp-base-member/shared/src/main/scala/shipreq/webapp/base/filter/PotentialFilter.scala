@@ -5,9 +5,9 @@ import scalaz.{-\/, \/, \/-}
 import scalaz.syntax.traverse1._
 import shipreq.base.util.{ConciseIntSetFormat, Min2Set}
 import shipreq.webapp.base.data
-import shipreq.webapp.base.data.{HashRefKey, Project}
+import shipreq.webapp.base.data.{ExternalPubid, HashRefKey, Project}
 import shipreq.webapp.base.data.ReqType.Mnemonic
-import shipreq.webapp.base.text.Grammar
+import shipreq.webapp.base.text.{Grammar, PlainText}
 
 /**
  * Parsed filter text. May be invalid.
@@ -25,6 +25,7 @@ object PotentialFilter {
   case class SimpleText(text: String)                           extends PotentialFilter
   case class QuotedText(text: String, quoteChar: Char)          extends PotentialFilter
   case class Regex     (text: String)                           extends PotentialFilter
+  case class Req       (value: ExternalPubid)                   extends PotentialFilter
   case class ReqType   (value: Mnemonic)                        extends PotentialFilter
   case class HashRef   (text: HashRefKey)                       extends PotentialFilter
   case class Implies   (reqs: Reqs)                             extends PotentialFilter
@@ -63,6 +64,7 @@ object PotentialFilter {
         case SimpleText(text)        => text
         case QuotedText(text, qChar) => qChar ~ text ~ qChar
         case Regex     (text)        => '/' ~ text.replace("/", "\\/") ~ '/'
+        case Req       (value)       => value.mnemonic.value ~ '-' ~ value.pos.value
         case ReqType   (value)       => value.value
         case HashRef   (text)        => Grammar.hashRefKey.prefix ~ text.value
         case Implies   (reqs)        => "implies:" ~ fmtReqs(reqs)
@@ -121,12 +123,16 @@ object PotentialFilter {
       specs.traverse(translate).map( v =>
         Min2Set.maybe1(v.toNES)(identity)(f))
 
+    def reqIdLookupErrorMsg(ep: ExternalPubid, l: ExternalPubid.LookupFailure): String =
+      s"Req ${PlainText.pubid(ep)} doesn't exist."
+
     def translate(pf: PotentialFilter): R =
       pf match {
         case SimpleText(text)    => ValidFilter.Text(text)
         case QuotedText(text, _) => ValidFilter.Text(text)
         case Presence(attr)      => byAttr(ValidFilter.Presence, attr)
         case Lack(attr)          => byAttr(ValidFilter.Lack, attr)
+        case Req(ep)             => ep.lookup(p).bimap(reqIdLookupErrorMsg(ep, _), req => ValidFilter.Req(req.id))
         case ReqType(mn)         => lookupReqType(mn).map(rt => ValidFilter.ReqType(rt.reqTypeId))
         case Implies(reqs)       => byReqs(ValidFilter.ImpliesAnyOf, reqs)
         case ImpliedBy(reqs)     => byReqs(ValidFilter.ImpliedByAnyOf, reqs)
