@@ -101,7 +101,6 @@ Phase 2
 * Allow ctrl-enter in NewForm editors to create (and not close)
 * Default ReqType in ReqTable NewForm should be the one with the most reqs
 * Put hover text on nodes in UC flow graph
-* Don't allow wrap on pubid in ReqDetail
 
 ### New Features
 * User profile page

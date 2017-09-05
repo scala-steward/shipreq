@@ -456,6 +456,7 @@ object Style extends StyleSheet.Inline {
       display.flex)
 
     val headerPubid = style(
+      whiteSpace.nowrap,
       paddingRight(0.4 rem))
 
     val headerTitle = style(
