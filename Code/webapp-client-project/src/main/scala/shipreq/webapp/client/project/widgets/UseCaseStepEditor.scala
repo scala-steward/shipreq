@@ -137,11 +137,11 @@ object UseCaseStepEditor {
         editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, textareaConst))
 
       def instructions =
-        KeyboardTheme.instructionsForCommitAbort(
+        KeyboardTheme.Instructions.forTextEditor(
           lineCardinality,
-          p.status.getCommit,
-          Some(p.abort),
-          Some(RichTextEditorHelp.modal.show))
+          commit = p.status.getCommit,
+          abort = Some(p.abort),
+          help = Some(RichTextEditorHelp.modal.show))
 
       def richText =
         p.projectWidgets.useCaseStepTextAndMaybeInvalidFlow(p.parsed, hardcodedLive)

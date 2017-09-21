@@ -12,7 +12,7 @@ import shipreq.webapp.base.feature.{EditorStatus, PreviewFeature}
 import shipreq.webapp.base.lib.{KeyboardTheme, AbortCommit => AbortCommit2}
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.text._
-import shipreq.webapp.base.ui.{AutosizeTextarea, EditTheme}
+import shipreq.webapp.base.ui.EditTheme
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.RichTextEditor.hardcodedLive
 
@@ -84,11 +84,11 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
       def instructions: TagMod =
         TagMod.when(p.showInstructions)(
-          KeyboardTheme.instructionsForCommitAbort(
+          KeyboardTheme.Instructions.forTextEditor(
             text.lineCardinality,
-            p.status.getCommit,
-            p.abort,
-            Some(RichTextEditorHelp.modal.show)))
+            commit = p.status.getCommit,
+            abort = p.abort,
+            help = Some(RichTextEditorHelp.modal.show)))
 
       def richText: VdomTag =
         p.projectWidgets.text(p.richText, hardcodedLive)

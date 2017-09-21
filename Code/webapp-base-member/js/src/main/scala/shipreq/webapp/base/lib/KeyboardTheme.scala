@@ -1,9 +1,9 @@
 package shipreq.webapp.base.lib
 
+import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import scala.scalajs.js
 import shipreq.webapp.base.text.{LineCardinality, MultiLine, SingleLine}
 import shipreq.webapp.base.lib.KeyHandler._
 import shipreq.webapp.base.ui.BaseStyles.{editorInstructions => *}
@@ -15,6 +15,7 @@ import shipreq.webapp.base.ui.semantic.Icon
 object KeyboardTheme {
 
   @inline def abortCriterion = Criterion.Escape
+  @inline def abortKeyDesc   = "esc"
 
   def abort(abort: Callback): KeyHandler =
     abortCriterion.handle(abort)
@@ -26,6 +27,7 @@ object KeyboardTheme {
     * now nil, in that nothing happens; where as previously it would trigger a save which can be very annoying.
     */
   @inline def commitCriterion = Criterion.CtrlEnter
+  @inline def commitKeyDesc   = "ctrl-enter"
 
   def commitO(commit: => Option[Callback], lc: LineCardinality): KeyHandler = {
     // LineCardinality is no longer used here but will be kept as an arg for a while longer until confidence in the new
@@ -36,60 +38,83 @@ object KeyboardTheme {
   def commitCO(commit: CallbackTo[Option[Callback]], lc: LineCardinality): KeyHandler =
     commitCriterion.handle(commit >>= (Callback sequenceOption _))
 
-  private val container: VdomTag = <.div(*.container)
-  private val link     : VdomTag = <.a(*.link)
-  private val clause   : VdomTag = <.span(*.clause)
-  private val comma    : TagMod  = ","
-  private val fullStop : TagMod  = "."
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  object Instructions {
+    sealed trait Atom
+    final case class Vdom(value: TagMod) extends Atom
+    final case class Link(label: TagMod, onClick: Callback) extends Atom
 
-  private val helpIcon = Icon.HelpCircle.tag(*.helpIcon)
+    type Clause = NonEmptyVector[Atom]
+    object Clause {
 
-  def instructionsForCommitAbort(lc    : LineCardinality,
-                                 commit: Option[Callback],
-                                 abort : Option[Callback],
-                                 help  : Option[Callback]): VdomTag = {
+      def keyToAction(key: String)(action: String, actionCB: Callback): Clause =
+        NonEmptyVector(Vdom(key + " to "), Vector.empty :+ Link(action, actionCB))
 
-    val main: js.UndefOr[TagMod.Composite] = {
-      var clauses = Vector.empty[TagMod]
+      def abort(c: Callback): Clause =
+        keyToAction(abortKeyDesc)("cancel", c)
 
-      def add(m: TagMod*): Unit =
-        clauses :+= TagMod.Composite(m.toVector)
+      def commit(c: Callback): Clause =
+        keyToAction(commitKeyDesc)("save", c)
+
+      val multiLine: Clause =
+        NonEmptyVector one Vdom("enter for new line")
+    }
+
+    private val container : VdomTag = <.div(*.container)
+    private val link      : VdomTag = <.a(*.link)
+    private val clauseCont: VdomTag = <.span(*.clause)
+    private val comma     : TagMod  = ","
+    private val fullStop  : TagMod  = "."
+    private val helpIcon  : VdomTag = Icon.HelpCircle.tag(*.helpIcon)
+
+    private val renderAtom: Atom => TagMod = {
+      case Vdom(v)    => v
+      case Link(v, c) => link(^.onClick --> c, v)
+    }
+
+    def apply(clauses: TraversableOnce[Clause], help: Option[Callback]): VdomTag = {
+      val text =
+        TagMod.when(clauses.nonEmpty) {
+          val rendered = Vector.newBuilder[TagMod]
+          val it = clauses.toIterator
+          while (it.hasNext) {
+            val clause = it.next()
+            val suffix = if (it.hasNext) comma else fullStop
+            rendered  += clauseCont(TagMod.Composite(clause.whole.map(renderAtom) :+ suffix))
+          }
+          TagMod.Composite(rendered.result())
+        }
+
+      val helpButton =
+        help.whenDefined { h =>
+          val eh = (e: ReactEvent) => e.stopPropagationCB >> e.preventDefaultCB >> h
+          helpIcon(^.onClick ==> eh)
+        }
+
+      container(text, helpButton)
+    }
+
+    def forTextEditor(lc    : LineCardinality,
+                      commit: Option[Callback],
+                      abort : Option[Callback],
+                      help  : Option[Callback]): VdomTag =
+      apply(clausesForTextEditor(lc, commit = commit, abort = abort), help = help)
+
+    def clausesForTextEditor(lc    : LineCardinality,
+                             commit: Option[Callback],
+                             abort : Option[Callback]): List[Clause] = {
+      var clauses = List.empty[Clause]
+
+      abort.foreach(clauses ::= Clause.abort(_))
+
+      commit.foreach(clauses ::= Clause.commit(_))
 
       lc match {
         case SingleLine => ()
-        case MultiLine  => add("enter for new line")
+        case MultiLine  => clauses ::= Clause.multiLine
       }
 
-      for (c <- commit) {
-        add("ctrl-enter to ", link(^.onClick --> c, "save"))
-      }
-
-      for (a <- abort) {
-        add("esc to ", link(^.onClick --> a, "cancel"))
-      }
-
-      if (clauses.isEmpty)
-        js.undefined
-      else {
-        val last = clauses.length - 1
-        var i = 0
-        while (i <= last) {
-          val a = clauses(i)
-          val b = if (i == last) fullStop else comma
-          clauses = clauses.updated(i, clause(a, b))
-          i += 1
-        }
-        TagMod.Composite(clauses)
-      }
-    }
-
-    help match {
-      case Some(h) =>
-        val eh = (e: ReactEvent) => e.stopPropagationCB >> e.preventDefaultCB >> h
-        container(main.whenDefined, helpIcon(^.onClick ==> eh))
-      case None =>
-        // main.fold(EmptyVdom)(container(_))
-        container(main.whenDefined)
+      clauses
     }
   }
 }

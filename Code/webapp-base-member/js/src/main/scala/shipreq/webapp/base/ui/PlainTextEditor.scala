@@ -54,8 +54,13 @@ object PlainTextEditor {
 
       def render(p: Props): VdomElement = {
 
-        def input        = base(p.inputMod, ^.value := p.text)
-        def instructions = KeyboardTheme.instructionsForCommitAbort(SingleLine, p.status.getCommit, p.abort, None)
+        def input = base(p.inputMod, ^.value := p.text)
+
+        def instructions = KeyboardTheme.Instructions.forTextEditor(
+          SingleLine,
+          commit = p.status.getCommit,
+          abort = p.abort,
+          help = None)
 
         def renderWithError(err: TagMod) =
           <.div(

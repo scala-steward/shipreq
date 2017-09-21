@@ -157,11 +157,11 @@ object ImplicationEditor {
 
       def instructions: TagMod =
         TagMod.when(p.showInstructions)(
-          KeyboardTheme.instructionsForCommitAbort(
+          KeyboardTheme.Instructions.forTextEditor(
             lineCardinality,
-            p.status.getCommit,
-            p.abort,
-            None))
+            commit = p.status.getCommit,
+            abort = p.abort,
+            help = None))
 
       EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)
     }
