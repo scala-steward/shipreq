@@ -45,6 +45,11 @@ object UpdateContentCmd {
   case class DeleteUseCaseStep    (id: UseCaseStepId) extends ForUseCaseStep
   case class RestoreUseCaseStep   (id: UseCaseStepId) extends ForUseCaseStep
   case class UpdateUseCaseStep    (id: UseCaseStepId, vs: UseCaseStepGD.NonEmptyValues) extends ForUseCaseStep
+  def ShiftUseCaseStep(id: UseCaseStepId, dir: LeftRight): ForUseCaseStep =
+    dir match {
+      case LeftRight.Left  => ShiftUseCaseStepLeft (id)
+      case LeftRight.Right => ShiftUseCaseStepRight(id)
+    }
 
   implicit val equalForUseCaseStep  : UnivEq[ForUseCaseStep  ] = UnivEq.derive
   implicit val equalUpdateContentCmd: UnivEq[UpdateContentCmd] = UnivEq.derive

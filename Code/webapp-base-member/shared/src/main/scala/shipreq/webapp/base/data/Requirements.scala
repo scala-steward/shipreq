@@ -235,17 +235,47 @@ object UseCaseStep {
    * Focus on a particular [[UseCaseStep]] and provide related data.
    */
   final class Focus(useCases: UseCases, val id: UseCaseStepId) {
-            val key       = useCases.stepIndex(id)
-    @inline def field     = key.field
-    @inline def useCaseId = key.useCaseId
-            val uc        = useCases.imap.need(key.useCaseId)
-            val ucSteps   = key.field.useCaseSteps.get(uc)
-       lazy val loc       = ucSteps.stepLocs.forward(id)
-       lazy val ploc      = ucSteps.stepPartialLocs.get(id)
-       lazy val step      = ucSteps.tree.needAtLocation(loc)
-       lazy val live      = UseCaseStep.live(uc, ploc)
-            def title     = step.title(uc)
-            def titleA    = step.titleA(uc)
+
+    val key: UseCases.StepTreeKey =
+      useCases.stepIndex(id)
+
+    @inline def field: StaticField.UseCaseStepTree =
+      key.field
+
+    @inline def useCaseId: UseCaseId =
+      key.useCaseId
+
+    val uc: UseCase =
+      useCases.imap.need(key.useCaseId)
+
+    val ucSteps: UseCaseSteps =
+      key.field.useCaseSteps.get(uc)
+
+    lazy val loc: VectorTree.Location =
+      ucSteps.stepLocs.forward(id)
+
+    lazy val ploc: VectorTree.PartialLocation =
+      ucSteps.stepPartialLocs.get(id)
+
+    lazy val step: UseCaseStep =
+      ucSteps.tree.needAtLocation(loc)
+
+    lazy val live: Live =
+      UseCaseStep.live(uc, ploc)
+
+    def title: UseCaseStep.Title =
+      step.title(uc)
+
+    def titleA: Text.AnyOptional =
+      step.titleA(uc)
+
+    val canShift: LeftRight => Permission = {
+      lazy val canShiftRight = field.canShiftRight(loc, ucSteps.locValidity, ucSteps.tree.maxDepthTree);
+      {
+        case LeftRight.Right => canShiftRight
+        case LeftRight.Left  => field.canShiftLeft(loc)
+      }
+    }
 
     def flow(d: Direction): Set[UseCaseStepId] =
       useCases.stepFlow(d)(id)

@@ -4,6 +4,7 @@ import scalacss.ScalaCssReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.StyleA
+import shipreq.base.util.LeftRight
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.ui.semantic.{Button, Icon}
 import shipreq.webapp.client.project.app.Style.reqdetail.{useCaseStep => *}
@@ -33,18 +34,20 @@ object UseCaseStepControls {
   }
 
   // ===================================================================================================================
+  import LeftRight.{Left, Right}
 
-  val IconDelete     = Icon.Trash
-  val IconRestore    = Icon.Undo
-  val IconShiftLeft  = Icon.AngleDoubleLeft
-  val IconShiftRight = Icon.AngleDoubleRight
-  val IconAdd        = Icon.Plus
+  val IconDelete  = Icon.Trash
+  val IconRestore = Icon.Undo
+  val IconAdd     = Icon.Plus
+  val IconShift   = LeftRight.Values {
+    case Left  =>  Icon.AngleDoubleLeft
+    case Right =>  Icon.AngleDoubleRight
+  }
 
   sealed abstract class CurStepButtons
   object CurStepButtons {
-    case class WhenLive(delete    : Option[ButtonDesc],
-                        shiftLeft : Option[ButtonDesc],
-                        shiftRight: Option[ButtonDesc]) extends CurStepButtons
+    case class WhenLive(delete: Option[ButtonDesc],
+                        shift : LeftRight.Values[Option[ButtonDesc]]) extends CurStepButtons
 
     case class WhenDead(restore: ButtonDesc) extends CurStepButtons
   }
@@ -57,17 +60,17 @@ object UseCaseStepControls {
     val buttons = curStepButtons match {
 
       case b: CurStepButtons.WhenLive =>
-        mkButton(curStepAsync, *.ctrlButtonDelete    , IconDelete,     b.delete) ::
-        mkButton(curStepAsync, *.ctrlButtonShiftLeft , IconShiftLeft,  b.shiftLeft) ::
-        mkButton(curStepAsync, *.ctrlButtonShiftRight, IconShiftRight, b.shiftRight) ::
-        mkButton(insertAsync,  *.ctrlButtonInsert    , IconAdd,        insertButton) ::
+        mkButton(curStepAsync, *.ctrlButtonDelete,       IconDelete,       b.delete) ::
+        mkButton(curStepAsync, *.ctrlButtonShift(Left),  IconShift(Left),  b.shift(Left)) ::
+        mkButton(curStepAsync, *.ctrlButtonShift(Right), IconShift(Right), b.shift(Right)) ::
+        mkButton(insertAsync,  *.ctrlButtonInsert,       IconAdd,          insertButton) ::
         Nil
 
       case CurStepButtons.WhenDead(r) =>
-        mkButton(curStepAsync, *.ctrlButtonRestore   , IconRestore,   Some(r)) ::
-        mkButton(curStepAsync, *.ctrlButtonShiftLeft , IconShiftLeft, None) ::
-        mkButton(curStepAsync, *.ctrlButtonShiftRight, IconShiftRight,None) ::
-        mkButton(insertAsync,  *.ctrlButtonInsert    , IconAdd,       None) ::
+        mkButton(curStepAsync, *.ctrlButtonRestore,      IconRestore,      Some(r)) ::
+        mkButton(curStepAsync, *.ctrlButtonShift(Left),  IconShift(Left),  None) ::
+        mkButton(curStepAsync, *.ctrlButtonShift(Right), IconShift(Right), None) ::
+        mkButton(insertAsync,  *.ctrlButtonInsert,       IconAdd,          None) ::
         Nil
     }
 

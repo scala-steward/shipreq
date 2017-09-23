@@ -562,8 +562,8 @@ object Style extends StyleSheet.Inline {
       val ctrlButtonInsert     = style(ctrlButton, &.hover(color(c"#21BA45").important))
       val ctrlButtonDelete     = style(ctrlButton, &.hover(color(c"#DB2828").important))
       def ctrlButtonRestore    = ctrlButtonInsert
-      def ctrlButtonShiftLeft  = ctrlButton
-      def ctrlButtonShiftRight = ctrlButton
+
+      def ctrlButtonShift(d: LeftRight) = ctrlButton
     }
   }
 

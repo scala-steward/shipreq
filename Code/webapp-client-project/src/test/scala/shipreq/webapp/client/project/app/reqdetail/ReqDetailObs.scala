@@ -1,15 +1,16 @@
 package shipreq.webapp.client.project.app.reqdetail
 
+import japgolly.univeq._
 import org.scalajs.dom.html
+import shipreq.base.util.LeftRight
 import shipreq.webapp.base.UiText
-import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.{Dead, FilterDead, Live, ShowDead}
+import shipreq.webapp.base.data.{Dead, Live, ShowDead}
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.ui.semantic.Icon
+import shipreq.webapp.client.project.app.TestMarker
 import shipreq.webapp.client.project.widgets.DeletionFormObs
 import ReqDetailTestDsl.Mode
 import ReqDetailObs.NAE
-import shipreq.webapp.client.project.app.TestMarker
 
 object ReqDetailObs {
 
@@ -105,8 +106,8 @@ final class ReqDetailObs($: HtmlDomZipper) {
 
       val del   = ctrl(UseCaseStepControls.IconDelete)
       val rest  = ctrl(UseCaseStepControls.IconRestore)
-      val left  = ctrl(UseCaseStepControls.IconShiftLeft)
-      val right = ctrl(UseCaseStepControls.IconShiftRight)
+      val left  = ctrl(UseCaseStepControls.IconShift(LeftRight.Left))
+      val right = ctrl(UseCaseStepControls.IconShift(LeftRight.Right))
       val add   = ctrl(UseCaseStepControls.IconAdd)
 
       val buttons = List(del, rest, left, right, add).flatMap(_.toList)

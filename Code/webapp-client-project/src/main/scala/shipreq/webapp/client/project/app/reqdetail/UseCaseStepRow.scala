@@ -99,14 +99,21 @@ object UseCaseStepRow {
 
       val curStepButtons: CurStepButtons =
         live match {
+
           case Live =>
+            val delete     = field.canDelete(loc)   .option(ButtonDesc(runCtrl(DeleteUseCaseStep    (id)), "Delete "   + label))
+            val shiftLeft  = field.canShiftLeft(loc).option(ButtonDesc(runCtrl(ShiftUseCaseStepLeft (id)), "Unindent " + label))
+            val shiftRight = canShiftRight          .option(ButtonDesc(runCtrl(ShiftUseCaseStepRight(id)), "Indent "   + label))
             CurStepButtons.WhenLive(
-              delete     = field.canDelete(loc).option(ButtonDesc(runCtrl(DeleteUseCaseStep(id)), "Delete " + label)),
-              shiftLeft  = field.canShiftLeft(loc).option(ButtonDesc(runCtrl(ShiftUseCaseStepLeft(id)), "Unindent " + label)),
-              shiftRight = canShiftRight.option(ButtonDesc(runCtrl(ShiftUseCaseStepRight(id)), "Indent " + label)))
+              delete = delete,
+              shift = LeftRight.Values {
+                case LeftRight.Left  => shiftLeft
+                case LeftRight.Right => shiftRight
+              })
+
           case Dead =>
             CurStepButtons.WhenDead(
-              ButtonDesc(runCtrl(RestoreUseCaseStep(id)), "Restore " + label))
+              restore = ButtonDesc(runCtrl(RestoreUseCaseStep(id)), "Restore " + label))
         }
 
       val addButton = field.canInsertAfter(loc).option(
