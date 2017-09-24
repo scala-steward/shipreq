@@ -142,8 +142,7 @@ object UseCaseStepEditor {
     val textareaConst: TagMod = {
       def shiftStepKeyHandler(d: LeftRight): KeyHandler =
         shiftKeyCriterion(d).handle(
-          $.props.flatMap(_.shift(d).getOrEmpty)
-        ).asEventDefault
+          $.props.flatMap(_.shift(d).getOrEmpty))
 
       val keys = (
         LeftRight.mapReduce(shiftStepKeyHandler)(_ + _)

@@ -6,9 +6,10 @@ import japgolly.univeq._
 import scala.collection.immutable.ListSet
 import shipreq.webapp.base.lib.KeyHandler._
 
-case class KeyHandler(criteria: Criteria, response: Response) {
-  def asEventDefault: KeyHandler =
-    KeyHandler(criteria, e => CallbackOption.asEventDefault(e, response(e)))
+final case class KeyHandler(criteria: Criteria, response: Response, eventDefault: Boolean = true) {
+
+  def asNonDefault: KeyHandler =
+    copy(eventDefault = false)
 
   def toKeyHandlers: KeyHandlers =
     KeyHandlers(this :: Nil)
@@ -65,7 +66,7 @@ object KeyHandler {
 
   // Technically this should be (EventType, List[Criterion])
   // where Criterion = KeyCode | KeyValue | KeyMod*
-  case class Criterion(eventType: EventType, keyCode: Int, modKeys: ModKeys = ModKeys.empty) {
+  final case class Criterion(eventType: EventType, keyCode: Int, modKeys: ModKeys = ModKeys.empty) {
     def satisfiedBy(e: ReactKeyboardEvent): Boolean =
       (e.keyCode ==* keyCode) &&
       ModKeys.All.forall(k => k.isPressed(e) ==* modKeys.contains(k))
@@ -106,7 +107,7 @@ object KeyHandler {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-case class KeyHandlers(handlers: List[KeyHandler]) extends AnyVal {
+final case class KeyHandlers(handlers: List[KeyHandler]) extends AnyVal {
 
   def +(k: KeyHandler): KeyHandlers =
     KeyHandlers(k :: handlers)
@@ -124,7 +125,13 @@ case class KeyHandlers(handlers: List[KeyHandler]) extends AnyVal {
       c <- h.criteria
     } {
       val response: Response =
-        e => Callback.when(c satisfiedBy e)(h response e)
+        e => Callback.when(c satisfiedBy e) {
+          val r = h response e
+          if (h.eventDefault)
+            CallbackOption.asEventDefault(e, r)
+          else
+            r
+        }
       val cur = map.getOrElse(c.eventType, Nil)
       map = map.updated(c.eventType, response :: cur)
     }
