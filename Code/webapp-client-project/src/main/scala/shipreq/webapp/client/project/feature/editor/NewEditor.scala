@@ -615,11 +615,15 @@ object NewEditor {
             projectWidgets <- projectWidgetsCB
             stepFocus      <- stepFocusCB
           } yield {
-            val shiftRun: LeftRight.Values[Option[Callback]] =
-              LeftRight.Values { d =>
-                def cmd = UpdateContentCmd.ShiftUseCaseStep(stepFocus.id, d)
-                stepFocus.canShift(d).option(args.shiftRun(cmd))
-              }
+
+            val shiftRunner: AsyncFeature.Runner.D0O[LeftRight, Any] =
+              AsyncFeature.Runner.D0O[LeftRight, Any](
+                args.ctrlRunner.asyncState,
+                Reusable.never { d =>
+                  def cmd = UpdateContentCmd.ShiftUseCaseStep(stepFocus.id, d)
+                  stepFocus.canShift(d).option(args.ctrlRunner.run(cmd))
+                }
+              )
 
             UseCaseStepEditor.Props(
               project,
@@ -630,7 +634,7 @@ object NewEditor {
               EditorStatus.async(asyncState),
               abort,
               commit,
-              UseCaseStepEditor.ShiftProps(args.shiftAsyncState, shiftRun),
+              shiftRunner,
               previewRW(pid),
               initial)
           }

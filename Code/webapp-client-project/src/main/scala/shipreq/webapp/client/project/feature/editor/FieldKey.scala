@@ -101,11 +101,8 @@ object FieldKey {
     def foldUCS[F[_, _]](f: FoldForUseCaseSteps[F]): F[Args, Change] = f.step(this)
   }
   object UseCaseStep {
-    /** @param shiftAsyncState Async state as pertains to shifting the step left/right.
-      * @param shiftRun        Action to shift the step left/right.
-      */
-    final case class Args(shiftAsyncState: AsyncFeature.Read.D0[Any],
-                          shiftRun       : UpdateContentCmd.ForUseCaseStep => Callback)
+    /** @param ctrlRunner so users can shift the step left/right via keyboard shortcuts. */
+    final case class Args(ctrlRunner: AsyncFeature.Runner.D0[UpdateContentCmd.ForUseCaseStep, Any])
   }
 
   case object UseCaseTitle extends ForUseCase {

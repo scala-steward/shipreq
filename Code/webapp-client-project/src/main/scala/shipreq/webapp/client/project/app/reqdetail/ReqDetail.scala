@@ -192,7 +192,7 @@ object ReqDetail {
       val reqProps  = props.reqProps(req.id)
       val reqEditor = reqProps.editor
       val fieldName = pxFieldNameFn.value()
-      val runCmd    = this.runCmd(req.id)
+      val cmdRunner = AsyncFeature.Runner.D1(reqProps.async.read, runCmd(req.id))
       val view      = data.viewData(pw).copy(fmtReqTypeShort = false)
 
       def renderEditable(key: EditorFeature.FieldKey.ForSomeReq): TagMod =
@@ -320,7 +320,7 @@ object ReqDetail {
         val renderBody: UseCaseStepTree.RenderBodyFn = (id, live, textAndFlow) => {
           import EditorFeature.FieldKey.UseCaseStep
           val ctrlCell = Cell.UseCaseStepCtrls(id)
-          def args = UseCaseStep.Args(reqProps.async.read(ctrlCell), runCmd(ctrlCell))
+          def args = UseCaseStep.Args(cmdRunner(ctrlCell))
 
           props.editorUCS(UseCaseStep(id), data.pxProjectWidgets)
             .themedRenderOr(args)(
@@ -333,8 +333,7 @@ object ReqDetail {
           data.filterDead,
           project.reqs.useCases.stepFlow,
           renderBody,
-          reqProps.async.read,
-          runCmd)
+          cmdRunner)
           .render
       }
 

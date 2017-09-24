@@ -39,12 +39,6 @@ object UseCaseStepEditor {
 
   type CommitFn = UseCaseStepGD.NonEmptyValues ~=> Callback
 
-  final case class ShiftProps(asyncState: AsyncFeature.Read.D0[Any],
-                              run       : LeftRight.Values[Option[Callback]]) {
-    def apply(d: LeftRight): Option[Callback] =
-      if (asyncState.isEmpty) run(d) else None
-  }
-
   final case class Props(project        : Project,
                          plainTextNoCtx : PlainText.ForProject.NoCtx,
                          textSearch     : TextSearch,
@@ -53,7 +47,7 @@ object UseCaseStepEditor {
                          asyncStatus    : Option[EditorStatus.Async],
                          abort          : Callback,
                          commit         : CommitFn,
-                         shift          : ShiftProps,
+                         shiftRunner    : AsyncFeature.Runner.D0O[LeftRight, Any],
                          preview        : PreviewFeature.ReadWrite.Single,
                          preEditValue   : Option[InitialValue]) {
 
@@ -142,7 +136,7 @@ object UseCaseStepEditor {
     val textareaConst: TagMod = {
       def shiftStepKeyHandler(d: LeftRight): KeyHandler =
         shiftKeyCriterion(d).handle(
-          $.props.flatMap(_.shift(d).getOrEmpty))
+          $.props.flatMap(_.shiftRunner.runOrDoNothing(d)))
 
       val keys = (
         LeftRight.mapReduce(shiftStepKeyHandler)(_ + _)
@@ -173,7 +167,7 @@ object UseCaseStepEditor {
       // Shift left/right clauses
       for {
         d  <- rightLeft
-        cb <- p.shift(d)
+        cb <- p.shiftRunner.runOption(d)
       } clauses ::=
         KeyboardTheme.Instructions.Clause.keyToAction(shiftKeyDesc(d))(UiText.useCaseStepShift(d).toLowerCase, cb)
 

@@ -32,8 +32,7 @@ object UseCaseStepTree {
                          filterDead: FilterDead,
                          flow      : UseCases.StepFlow,
                          renderBody: RenderBodyFn, // TODO <------------------ prevents Reuse. Underlying fn uses state.
-                         asyncState: AsyncFeature.Read.D1[Cell, Any],
-                         runCmd    : Cell ~=> (UpdateContentCmd ~=> Callback)) {
+                         cmdRunner : AsyncFeature.Runner.D1[Cell, UpdateContentCmd, Any]) {
     @inline def render = Component(this)
   }
 
@@ -74,9 +73,9 @@ object UseCaseStepTree {
               val cellAdd   = Cell.AddUseCaseStep(id)
               UseCaseStepRow.LiveControls.Props(
                 uc.id, field, id, fullLabel, live, loc,
-                field.canShiftRight(loc, steps.locValidity, stepData.mdt),
-                asyncState(cellCtrls), runCmd(cellCtrls),
-                asyncState(cellAdd  ), runCmd(cellAdd  )
+                canShiftRight = field.canShiftRight(loc, steps.locValidity, stepData.mdt),
+                runCtrl       = cmdRunner(cellCtrls),
+                runAdd        = cmdRunner(cellAdd),
               ).render
 
             case Dead =>
@@ -98,8 +97,8 @@ object UseCaseStepTree {
       val lbl   = field.stepLabel(pos, ploc, UseCaseStepLabelFmt.`N.m`)
       def cmd   = UpdateContentCmd.AddUseCaseStep(uc.id, field, VectorTree.ParentLocation.Empty)
       val cell  = Cell.AddUseCaseTailStep(row)
-      val cb    = runCmd(cell)(cmd)
-      val as    = asyncState(cell)
+      val cb    = cmdRunner(cell).run(cmd)
+      val as    = cmdRunner.asyncState(cell)
       val bd    = UseCaseStepControls.ButtonDesc(cb, "Create " + lbl)
       val ctrls = UseCaseStepControls.renderTailStep(bd, as)
       results  += tailStepBase(ctrls)

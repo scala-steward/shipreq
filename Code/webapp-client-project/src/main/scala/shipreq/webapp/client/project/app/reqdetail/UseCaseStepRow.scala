@@ -8,6 +8,7 @@ import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.{UiText, WebappConfig}
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.client.project.app.Style.reqdetail.{useCaseStep => *}
 import shipreq.webapp.client.project.app.TestMarker
@@ -70,17 +71,15 @@ object UseCaseStepRow {
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   object LiveControls {
-    final case class Props(ucId           : UseCaseId,
-                           field          : StaticField.UseCaseStepTree,
-                           id             : UseCaseStepId,
-                           label          : String,
-                           live           : Live,
-                           loc            : VectorTree.Location,
-                           canShiftRight  : Permission,
-                           ctrlsAsyncState: UseCaseStepControls.AsyncState,
-                           runCtrl        : UpdateContentCmd.ForUseCaseStep ~=> Callback,
-                           addAsyncState  : UseCaseStepControls.AsyncState,
-                           runAdd         : UpdateContentCmd.AddUseCaseStep ~=> Callback) {
+    final case class Props(ucId         : UseCaseId,
+                           field        : StaticField.UseCaseStepTree,
+                           id           : UseCaseStepId,
+                           label        : String,
+                           live         : Live,
+                           loc          : VectorTree.Location,
+                           canShiftRight: Permission,
+                           runCtrl      : AsyncFeature.Runner.D0[UpdateContentCmd.ForUseCaseStep, Any],
+                           runAdd       : AsyncFeature.Runner.D0[UpdateContentCmd.AddUseCaseStep, Any]) {
       @inline def render = Component(this)
     }
 
@@ -105,19 +104,23 @@ object UseCaseStepRow {
               case LeftRight.Right => canShiftRight
             }
             CurStepButtons.WhenLive(
-              delete = field.canDelete(loc).option(ButtonDesc(runCtrl(DeleteUseCaseStep(id)), "Delete " + label)),
+              delete = field.canDelete(loc).option(ButtonDesc(runCtrl.run(DeleteUseCaseStep(id)), "Delete " + label)),
               shift = LeftRight.Values(d => canShift(d).option(
-                ButtonDesc(runCtrl(ShiftUseCaseStep(id, d)), UiText.useCaseStepShift(d) + " " + label))))
+                ButtonDesc(runCtrl.run(ShiftUseCaseStep(id, d)), UiText.useCaseStepShift(d) + " " + label))))
 
           case Dead =>
             CurStepButtons.WhenDead(
-              restore = ButtonDesc(runCtrl(RestoreUseCaseStep(id)), "Restore " + label))
+              restore = ButtonDesc(runCtrl.run(RestoreUseCaseStep(id)), "Restore " + label))
         }
 
       val addButton = field.canInsertAfter(loc).option(
-        ButtonDesc(runAdd(AddUseCaseStep(ucId, field, loc.asParentLoc)), "Insert after " + label))
+        ButtonDesc(runAdd.run(AddUseCaseStep(ucId, field, loc.asParentLoc)), "Insert after " + label))
 
-      UseCaseStepControls.renderStep(curStepButtons, ctrlsAsyncState, addButton, addAsyncState)
+      UseCaseStepControls.renderStep(
+        curStepButtons = curStepButtons,
+        curStepAsync   = runCtrl.asyncState,
+        insertButton   = addButton,
+        insertAsync    = runAdd.asyncState)
     }
 
     val Component = ScalaComponent.builder[Props]("UseCaseStep.LiveCtrls")

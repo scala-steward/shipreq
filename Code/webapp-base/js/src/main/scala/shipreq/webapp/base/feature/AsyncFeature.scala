@@ -391,4 +391,57 @@ object AsyncFeature {
     implicit def reusabilityD1[K, F]     : Reusability[D1[K, F]]      = Reusability.caseClass
     implicit def reusabilityD2[K2, K1, F]: Reusability[D2[K2, K1, F]] = Reusability.caseClass
   }
+
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+  /** It's extremely common to pass around async state and a `I ~=> Callback` already wired with async write logic.
+    *
+    * Because both data are related by async key, it's safer to tie them together at the type level rather than by
+    * field names.
+    */
+  object Runner {
+
+    final case class D0[-I, +F](asyncState: Read.D0[F], run: I ~=> Callback) {
+      @inline def runnable: Boolean =
+        asyncState.isEmpty
+
+      def runOption(i: I): Option[Callback] =
+        if (runnable) Some(run(i)) else None
+
+      def runOrDoNothing(i: I): Callback =
+        if (runnable) run(i) else Callback.empty
+
+//      def contramapNoReuse[A](f: A => I): D0[A, F] =
+//        D0(asyncState, Reusable.never(run.value compose f))
+//
+//      def toD0O: D0O[I, F] =
+//        D0O(asyncState, run.map(_.andThen(Some(_))))
+    }
+
+    /** D0 + O for Option. run becomes tryRun with the result being Option[Callback] */
+    final case class D0O[-I, +F](asyncState: Read.D0[F], tryRun: I ~=> Option[Callback]) {
+      @inline def runnable: Boolean =
+        asyncState.isEmpty
+
+      def runOption(i: I): Option[Callback] =
+        if (runnable) tryRun(i) else None
+
+      def runOrDoNothing(i: I): Callback =
+        if (runnable) tryRun(i).getOrEmpty else Callback.empty
+
+//      def contramapNoReuse[A](f: A => I): D0O[A, F] =
+//        D0O(asyncState, Reusable.never(tryRun.value compose f))
+    }
+
+    final case class D1[K, -I, +F](asyncState: Read.D1[K, F], run: K ~=> (I ~=> Callback)) {
+      def apply(k: K): D0[I, F] =
+        D0(asyncState(k), run(k))
+    }
+
+    private val reusabilityAny0 = Reusability.caseClass[D0[Nothing, Any]]
+    private val reusabilityAny1 = Reusability.caseClass[D1[Any, Nothing, Any]]
+    implicit def reusabilityD0   [I, F]: Reusability[D0   [I, F]] = reusabilityAny0.narrow
+    implicit def reusabilityD1[K, I, F]: Reusability[D1[K, I, F]] = reusabilityAny1.asInstanceOf[Reusability[D1[K, I, F]]]
+  }
+
 }
