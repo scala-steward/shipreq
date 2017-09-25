@@ -143,8 +143,8 @@ object ReqDetail {
     val setFilterDead: FilterDead ~=> Callback =
       Reusable.fn(v => $.props.flatMap(_.filterDead setState v))
 
-    private def mkRunCmdFn(onSuccess: (VerifiedEvent.Seq, Callback) => Callback): ReqId ~=> (Cell ~=> (UpdateContentCmd ~=> Callback)) =
-      Reusable.fn[ReqId, Cell, UpdateContentCmd, Callback](
+    private def mkRunCmdFn[Cmd <: UpdateContentCmd](onSuccess: (VerifiedEvent.Seq, Callback) => Callback) =
+      Reusable.fn[ReqId, Cell, Cmd, Callback](
         (reqId, cell, cmd) =>
           $.props >>= (p =>
             p.reqProps(reqId).async.write(cell)((s, f) =>
@@ -153,7 +153,7 @@ object ReqDetail {
     val runCmd: ReqId ~=> (Cell ~=> (UpdateContentCmd ~=> Callback)) =
       mkRunCmdFn((_, s) => s)
 
-    val runCmdAndEditNewUseCaseStep: ReqId ~=> (Cell ~=> (UpdateContentCmd ~=> Callback)) =
+    val runAddAndEditNewUseCaseStep: ReqId ~=> (Cell ~=> (UpdateContentCmd.AddUseCaseStep ~=> Callback)) =
       mkRunCmdFn { (ves, onSuccess) =>
 
         val startEditor: Callback =
@@ -348,14 +348,14 @@ object ReqDetail {
       }
 
       def renderStepTree(ucData: UseCaseData, stepData: UseCaseStepTree.StepData) = {
-        val cmdRunner  = AsyncFeature.Runner.D1(reqProps.async.read, runCmd(req.id))
-        val cmdRunner2 = AsyncFeature.Runner.D1(reqProps.async.read, runCmdAndEditNewUseCaseStep(req.id))
+        val cmdRunner    = AsyncFeature.Runner.D1(reqProps.async.read, runCmd(req.id))
+        val addCmdRunner = AsyncFeature.Runner.D1(reqProps.async.read, runAddAndEditNewUseCaseStep(req.id))
 
         val renderBody: UseCaseStepTree.RenderBodyFn = (id, live, textAndFlow) => {
           import EditorFeature.FieldKey.UseCaseStep
           def args = UseCaseStep.Args(
             cmdRunner(Cell.UseCaseStepCtrls(id)),
-            cmdRunner2(Cell.AddUseCaseStep(id)))
+            addCmdRunner(Cell.AddUseCaseStep(id)))
 
           props.editorUCS(UseCaseStep(id), data.pxProjectWidgets)
             .themedRenderOr(args)(
@@ -368,8 +368,9 @@ object ReqDetail {
           data.filterDead,
           project.reqs.useCases.stepFlow,
           renderBody,
-          cmdRunner)
-          .render
+          cmdRunner,
+          addCmdRunner,
+        ).render
       }
 
       <.div(

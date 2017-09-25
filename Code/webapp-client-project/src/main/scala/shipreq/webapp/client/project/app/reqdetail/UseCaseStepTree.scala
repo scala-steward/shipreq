@@ -27,12 +27,13 @@ object UseCaseStepTree {
 
   type RenderBodyFn = (UseCaseStepId, Live, TextAndFlow[Text.AnyOptional, Set[UseCaseStepId]]) => TagMod
 
-  final case class Props(uc        : UseCase,
-                         stepData  : StepData,
-                         filterDead: FilterDead,
-                         flow      : UseCases.StepFlow,
-                         renderBody: RenderBodyFn, // TODO <------------------ prevents Reuse. Underlying fn uses state.
-                         cmdRunner : AsyncFeature.Runner.D1[Cell, UpdateContentCmd, Any]) {
+  final case class Props(uc          : UseCase,
+                         stepData    : StepData,
+                         filterDead  : FilterDead,
+                         flow        : UseCases.StepFlow,
+                         renderBody  : RenderBodyFn, // TODO <------------------ prevents Reuse. Underlying fn uses state.
+                         cmdRunner   : AsyncFeature.Runner.D1[Cell, UpdateContentCmd.ForUseCaseStep, Any],
+                         addCmdRunner: AsyncFeature.Runner.D1[Cell, UpdateContentCmd.AddUseCaseStep, Any]) {
     @inline def render = Component(this)
   }
 
@@ -75,7 +76,7 @@ object UseCaseStepTree {
                 uc.id, field, id, fullLabel, live, loc,
                 canShiftRight = field.canShiftRight(loc, steps.locValidity, stepData.mdt),
                 runCtrl       = cmdRunner(cellCtrls),
-                runAdd        = cmdRunner(cellAdd),
+                runAdd        = addCmdRunner(cellAdd),
               ).render
 
             case Dead =>
@@ -97,8 +98,8 @@ object UseCaseStepTree {
       val lbl   = field.stepLabel(pos, ploc, UseCaseStepLabelFmt.`N.m`)
       def cmd   = UpdateContentCmd.AddUseCaseStep(uc.id, field, VectorTree.ParentLocation.Empty)
       val cell  = Cell.AddUseCaseTailStep(row)
-      val cb    = cmdRunner(cell).run(cmd)
-      val as    = cmdRunner.asyncState(cell)
+      val cb    = addCmdRunner(cell).run(cmd)
+      val as    = addCmdRunner.asyncState(cell)
       val bd    = UseCaseStepControls.ButtonDesc(cb, "Create " + lbl)
       val ctrls = UseCaseStepControls.renderTailStep(bd, as)
       results  += tailStepBase(ctrls)
