@@ -1,32 +1,50 @@
 digraph G {
 
+// ACTIONS:
+// create
+// delete
+// list -> activate
+// make_default
+// modify view
+// rename
+// revert
+// update
+
+START [shape=circle,style=filled,color=black,fontsize=1,height=.3]
+
 {
   node[style=filled fillcolor=skyblue]
-  unsaved [label="Unsaved\nDirty"]
-  saved_clean [label="Saved\nClean"]
-  saved_dirty [label="Saved\nDirty"]
+  {
+    rank=same
+    ud [label="Unsaved\nDirty"]
+    sc [label="Saved\nClean"]
+  }
+  sd [label="Saved\nDirty"]
 }
 
 node[shape=rect style=filled fillcolor=yellow]
-change0 [fillcolor="#cccccc" label="Change\nview"]
-change [fillcolor="#cccccc" label="Change\nview"]
+mod1 [fillcolor="#cccccc" label="Modify\nview"]
+mod2 [fillcolor="#cccccc" label="Modify\nview"]
 make_default [label="make\ndefault"]
+list_activate [label="list &\nactivate"]
 
-unsaved -> change0 [dir=both]
-unsaved -> create -> saved_clean
-saved_clean -> list -> activate -> saved_clean
-saved_clean -> rename [dir=both]
-saved_clean -> make_default [dir=both]
-saved_clean -> delete [dir=both label="¬∅"]
-delete -> unsaved [label="∅"]
-saved_clean -> change [dir=both]
-saved_dirty -> change [dir=both]
-saved_dirty -> update -> saved_clean
-saved_dirty -> revert -> saved_clean
-saved_dirty -> list [color=red]
+START -> ud,sc [penwidth=2]
 
-// this is a problem because the next saved item would be selected
-// we should allow UnsavedDirty while other saves exist
-saved_dirty -> delete [dir=both label=dirty]
+edge [color="#2288cc"]
+ud,sd -> create
+sc -> create
+create -> sc [color=black]
+sc,sd -> delete
+delete -> ud [color=black]
+ud,sc,sd -> list_activate
+list_activate -> sc [color=black]
+sc -> make_default [style=dashed]
+sd -> make_default [style=dashed color=red fontcolor=red label=maybe]
+ud -> mod1 [dir=both color="#2288cc"]
+sc,sd -> mod2 [dir=both]
+sc -> rename [style=dashed]
+sd -> rename [style=dashed color=red fontcolor=red label=maybe]
+sd -> revert,update
+revert,update -> sc [color=black]
 
 }
