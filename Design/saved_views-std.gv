@@ -1,0 +1,32 @@
+digraph G {
+
+{
+  node[style=filled fillcolor=skyblue]
+  unsaved [label="Unsaved\nDirty"]
+  saved_clean [label="Saved\nClean"]
+  saved_dirty [label="Saved\nDirty"]
+}
+
+node[shape=rect style=filled fillcolor=yellow]
+change0 [fillcolor="#cccccc" label="Change\nview"]
+change [fillcolor="#cccccc" label="Change\nview"]
+make_default [label="make\ndefault"]
+
+unsaved -> change0 [dir=both]
+unsaved -> create -> saved_clean
+saved_clean -> list -> activate -> saved_clean
+saved_clean -> rename [dir=both]
+saved_clean -> make_default [dir=both]
+saved_clean -> delete [dir=both label="¬∅"]
+delete -> unsaved [label="∅"]
+saved_clean -> change [dir=both]
+saved_dirty -> change [dir=both]
+saved_dirty -> update -> saved_clean
+saved_dirty -> revert -> saved_clean
+saved_dirty -> list [color=red]
+
+// this is a problem because the next saved item would be selected
+// we should allow UnsavedDirty while other saves exist
+saved_dirty -> delete [dir=both label=dirty]
+
+}
