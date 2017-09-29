@@ -3,12 +3,16 @@ digraph G {
 // ACTIONS:
 // create
 // delete
-// list -> activate
+// list & activate
 // make_default
 // modify view
 // rename
 // revert
 // update
+
+// ALWAYS: create, list_activate
+// SAVED: delete
+// SAVED C|D: update|rename, revert|make_default
 
 START [shape=circle,style=filled,color=black,fontsize=1,height=.3]
 
@@ -23,8 +27,7 @@ START [shape=circle,style=filled,color=black,fontsize=1,height=.3]
 }
 
 node[shape=rect style=filled fillcolor=yellow]
-mod1 [fillcolor="#cccccc" label="Modify\nview"]
-mod2 [fillcolor="#cccccc" label="Modify\nview"]
+create [label="create\n(save as…)"]
 make_default [label="make\ndefault"]
 list_activate [label="list &\nactivate"]
 
@@ -34,16 +37,16 @@ edge [color="#2288cc"]
 ud,sd -> create
 sc -> create
 create -> sc [color=black]
-sc,sd -> delete
+sc -> delete
+sd -> delete:w
 delete -> ud [color=black]
 ud,sc,sd -> list_activate
 list_activate -> sc [color=black]
-sc -> make_default [style=dashed]
-sd -> make_default [style=dashed color=red fontcolor=red label=maybe]
-ud -> mod1 [dir=both color="#2288cc"]
-sc,sd -> mod2 [dir=both]
-sc -> rename [style=dashed]
-sd -> rename [style=dashed color=red fontcolor=red label=maybe]
+make_default -> sc [style=dashed dir=back]
+// sd -> make_default [style=dashed color=red fontcolor=red label=maybe]
+sd -> sc [dir=both color=black]
+rename -> sc [style=dashed dir=back]
+// sd -> rename [style=dashed color=red fontcolor=red label=maybe]
 sd -> revert,update
 revert,update -> sc [color=black]
 
