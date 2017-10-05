@@ -12,7 +12,11 @@ digraph G {
 
 // ALWAYS: create, list_activate
 // SAVED: delete
-// SAVED C|D: update|rename, revert|make_default
+// SAVED C|D: (make_default,rename) | (update,revert)
+
+// Also need to:
+// * visually indicate which view is the default (eg. maybe a star icon, maybe always left-most)
+// * visually indicate which view is currently selected
 
 START [shape=circle,style=filled,color=black,fontsize=1,height=.3]
 

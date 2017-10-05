@@ -1,0 +1,304 @@
+!!! 5
+%html
+  %head
+    -# %meta(http-equiv="refresh" content="1")
+    %title Saved Views
+    %script{src: "../node_modules/jquery/dist/jquery.min.js"}
+    %link{href:  "../semantic/dist/semantic.min.css", rel: "stylesheet", type: "text/css"}/
+    %script{src: "../semantic/dist/semantic.js"}
+    :css
+      body {padding:1rem}
+
+      /** workaround for https://github.com/Semantic-Org/Semantic-UI/issues/2978 */
+      .active-hack {font-weight:700!important; box-shadow: none!important;}
+      .active-hack.red {border-color: #DB2828!important; color: #DB2828!important;}
+      .active-hack.orange {border-color: #F2711C!important; color: #F2711C!important;}
+
+      section.sample {margin-top: 1rem; margin-bottom: 4rem}
+      /* section.sample > .ui.menu {padding-bottom:0.6em; overflow-x:auto; overflow-y:none} */
+
+      #overflow-eg1 {display:flex; flex-wrap:wrap;}
+      #overflow-eg1 > div {}
+
+  %body
+
+
+    %section.sample
+      .ui.secondary.pointing.menu
+        .item.orange.ui.dropdown.onhover.active-hack
+          Unsaved view
+          .menu
+            .item
+              %i.icon.save
+              Save as...
+        .right.menu#FilterDeadButton
+          .item{style: "padding-right:0 !important"}
+            %button.ui.button.icon.has-popup{data-content: "Click to show deleted content."}
+              %i.icon.trash.outline.large.grey
+
+
+    %section.sample
+      .ui.secondary.pointing.menu
+        %a.item.ui.dropdown.onhover.active-hack.orange
+          %i.icon.star.yellow
+          My Favs
+          .menu
+            .item
+              %i.icon.write
+              Rename...
+            .item
+              %i.icon.copy
+              Save as...
+            .item
+              %i.icon.trash
+              Delete
+        %a.item.ui.dropdown.onhover#other
+          Other
+          .menu
+            .item
+              %i.icon.star
+              Set as default
+            .item
+              %i.icon.write
+              Rename...
+            .item
+              %i.icon.copy
+              Save as...
+            .item
+              %i.icon.trash
+              Delete
+        .right.menu
+          .item{style: "padding-right:0 !important"}
+            %button.ui.button.icon.has-popup{data-content: "Click to show deleted content."}
+              %i.icon.trash.outline.large.grey
+
+
+    %section.sample
+      .ui.secondary.pointing.menu
+        %a.item.ui.dropdown.onhover.active-hack.orange
+          %i.icon.star.yellow
+          My Favs
+          %span(style="font-style:italic; margin-left:1ex") (changed)
+          .menu
+            .item
+              %i.icon.save
+              Save
+            .item
+              %i.icon.save
+              Save as...
+            .item
+              %i.icon.undo
+              Revert changes
+            .item
+              %i.icon.trash
+              Delete
+        .right.menu
+          .item{style: "padding-right:0 !important"}
+            %button.ui.button.icon.has-popup{data-content: "Click to show deleted content."}
+              %i.icon.trash.outline.large.grey
+
+
+    %section.sample
+      %div(style="text-align:center; color:#555") or
+      .ui.secondary.pointing.menu
+        .item.orange.ui.dropdown.onhover.active-hack
+          Unsaved view
+          .menu
+            .item
+              %i.icon.save
+              Save as My Favs
+            .item
+              %i.icon.save
+              Save as...
+        %a.item.ui.dropdown.onhover
+          %i.icon.star.yellow
+          My Favs
+          .menu
+            .item
+              %i.icon.copy
+              Save as...
+            .item
+              %i.icon.trash
+              Delete
+        .right.menu
+          .item{style: "padding-right:0 !important"}
+            %button.ui.button.icon.has-popup{data-content: "Click to show deleted content."}
+              %i.icon.trash.outline.large.grey
+
+
+    %section.sample#overflow-eg0(style="margin-top:6rem")
+      .ui.secondary.pointing.menu(style="display:flex;flex-wrap:wrap")
+        %a.item.ui.dropdown.onhover.active-hack.orange
+          %i.icon.star.yellow
+          Blah
+          .menu
+            .item
+              %i.icon.write
+              Rename...
+            .item
+              %i.icon.copy
+              Save as...
+            .item
+              %i.icon.trash
+              Delete
+        -# %a.item MRU #2
+        -# %a.item MRU #3
+        -# %a.item Overflow!!!
+        -# %a.item Overflow!!!
+        -# %a.item Overflow!!!
+        -# %a.item Overflow!!!
+        -# %a.item Overflow!!!
+        -# %a.item Overflow!!!
+        -# %a.item Overflow!!!
+        -# %a.item Overflow!!!
+        -# %a.item Overflow!!!
+        -# %a.item Overflow!!!
+        -# %a.item Overflow!!!
+        -# %a.item Overflow!!!
+        -# .right.menu
+          .item{style: "padding-right:0 !important"}
+            %button.ui.button.icon.has-popup{data-content: "Click to show deleted content."}
+              %i.icon.trash.outline.large.grey
+    -# %section.sample
+      .ui.secondary.pointing.menu(style="display:flex;flex-wrap:wrap")
+        %a.item.ui.dropdown.onhover
+          %i.icon.star.yellow
+          MRU #1
+          .menu
+            .item
+              %i.icon.write
+              Rename...
+            .item
+              %i.icon.copy
+              Save as...
+            .item
+              %i.icon.trash
+              Delete
+        %a.item MRU #1
+        %a.item MRU #2
+        %a.item MRU #3
+        %a.item Overflow!!!
+        %a.item Overflow!!!
+        %a.item Overflow!!!
+        %a.item Overflow!!!
+        %a.item Overflow!!!
+        %a.item Overflow!!!
+        %a.item Overflow!!!
+        %a.item Overflow!!!
+        %a.item Overflow!!!
+        %a.item.active-hack.orange Overflow!!!
+        %a.item Overflow!!!
+        %a.item Overflow!!!
+        .right.menu
+          .item{style: "padding-right:0 !important"}
+            %button.ui.button.icon.has-popup{data-content: "Click to show deleted content."}
+              %i.icon.trash.outline.large.grey
+
+      -# %div#overflow-eg1
+        .ui.simple.dropdown
+          Overflow
+          .menu
+            .item
+              %i.icon.star
+              Set as default
+            .item
+              %i.icon.write
+              Rename...
+            .item
+              %i.icon.copy
+              Save as...
+            .item
+              %i.icon.trash
+              Delete
+
+
+
+
+
+
+    %section(style="padding-top:6rem")
+      Must:
+      %ul
+        %li indicate which view is the default (has star)
+        %li indicate which view is currently selected (orange and left-most)
+        %li indicate whether the view is clean/dirty
+        %li handle overflow
+      Should:
+      %ul
+        %li changing view selection shouldn't affect layout
+        %li views should be ordered automatically and predicably (i.e. A-Z, maybe default at head)
+      %ul
+        %li font & line colour (clear once, doesn't affect layout)
+        %li(style="color:#bbb") background colour (clear once, doesn't affect layout, looks shit visually noise and inconsistent)
+        %li icon (clear once, affects layout)
+        %li(style="color:#bbb") style (bold/italics) (even once probably too subtle, affects layout)
+        %li(style="color:#bbb") prefix/suffix char/text (text might be clear, affects layout)
+      Problems/Ideas:
+      %ul
+        %li bar extending to FilterDeadButton might be confusing (purpose conflation)
+        %li(style="color:#bbb") Maybe just show Unsaved + 3 MRU in top bar, button to expand/collapse section underneath with all views A-Z ← NO, just use flex-wrap
+        %li(style="color:#bbb") SavedDirty: one or two items? ← 1. Everything A-Z, "Unsaved view" item {,dis}appearing and selection changing = too much change
+
+      %div(style="min-height:20rem")
+        .ui.simple.dropdown
+          simple.dropdown
+          .menu
+            .item
+              %i.icon.star
+              Set as default
+            .item
+              %i.icon.write
+              Rename...
+            .item
+              %i.icon.copy
+              Save as...
+            .item
+              %i.icon.trash
+              Delete
+        .ui.compact.menu
+          .ui.simple.dropdown.item
+            compact.menu
+            .menu
+              .item
+                %i.icon.star
+                Set as default
+              .item
+                %i.icon.write
+                Rename...
+              .item
+                %i.icon.copy
+                Save as...
+              .item
+                %i.icon.trash
+                Delete
+        .ui.compact.selection.dropdown
+          .text compact.selection.dropdown (needs JS)
+          .menu
+            .item
+              %i.icon.star
+              Set as default
+            .item
+              %i.icon.write
+              Rename...
+            .item
+              %i.icon.copy
+              Save as...
+            .item
+              %i.icon.trash
+              Delete
+
+  :javascript
+    const times=(n,f)=>{while(n-->0)f();};
+
+    times(5, () => $('#overflow-eg1 .ui').clone().appendTo('#overflow-eg1'));
+
+    times(20, () => $('#other').clone().appendTo('#overflow-eg0 > *'));
+    $('#FilterDeadButton').clone().appendTo('#overflow-eg0 > *');
+    $('#overflow-eg0 > * > .item').click(function(e){
+      $('#overflow-eg0 > * > .item').removeClass('orange').removeClass('active-hack');
+      $(e.target).addClass('orange').addClass('active-hack');
+    });
+
+    // 400 feels a bit too fast in the overflow example
+    $('.ui.dropdown.onhover').dropdown({on:"hover", delay: { show: 500 }});
+    $('.ui.has-popup').popup({delay: { show: 400, hide: 0 }});
