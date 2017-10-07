@@ -212,6 +212,18 @@
               Delete
 
 
+    %section.sample
+      .ui.secondary.pointing.menu
+        %a.item.ui.dropdown.onhover.active-hack.orange.disabled
+          %i.icon.star.yellow
+          My Favs
+        %a.item.ui.dropdown.onhover.disabled
+          %i.icon.spinner.loading.black
+          Other
+        .right.menu
+          .item{style: "padding-right:0 !important"}
+            %button.ui.button.icon.has-popup{data-content: "Click to show deleted content."}
+              %i.icon.trash.outline.large.grey
 
 
 
@@ -233,11 +245,18 @@
         %li icon (clear once, affects layout)
         %li(style="color:#bbb") style (bold/italics) (even once probably too subtle, affects layout)
         %li(style="color:#bbb") prefix/suffix char/text (text might be clear, affects layout)
+      Async:
+      %ul
+        %li When InProgress, disable entire menu, put spinner beside relevant menu items. (Don't bother disabling view changes.)
+        %li On failure, open confirm dlg to retry/cancel
+        %li On failure, say exactly what was being attempted "eg. Renaming view 'xxx' to 'yyy'"
       Problems/Ideas:
       %ul
         %li bar extending to FilterDeadButton might be confusing (purpose conflation)
         %li(style="color:#bbb") Maybe just show Unsaved + 3 MRU in top bar, button to expand/collapse section underneath with all views A-Z ← NO, just use flex-wrap
         %li(style="color:#bbb") SavedDirty: one or two items? ← 1. Everything A-Z, "Unsaved view" item {,dis}appearing and selection changing = too much change
+        %li abstract properly using final or initial encoding. Test without UI.
+        %li which version of SavedDirty is better? Consider two use cases (mod saved, create new), UI change quantity & intuitiveness
 
       %div(style="min-height:20rem")
         .ui.simple.dropdown
