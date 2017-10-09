@@ -7,15 +7,6 @@ Add an issue count column.
 # Req Detail
 Add issues field with Σ and <ul>.
 
-# Req Table & Req Detail
-
-* Mark mandatory empty fields red.
-  Hover with issue reason.
-
-* Mark choice tag fields with more than one value red.
-  If no custom field, mark the Tags column red.
-  Hover with issue reason.
-
 # Both issue views
 * [FR-113] Show Req id
 * [FR-61 ] Show Req title
@@ -42,15 +33,12 @@ All
 
 # By-Type view
 
-# Other
-* [FR-307] Deleted tags in text-based columns of live reqs should be rendered red or similar to indicate an issue.
-* Issue tag in text: live = that issue, dead = dead tag in use.
 
 # TBD
 * Add a list of created/resolved ORDER BY creation/resolution date DESC
-* Allow issue tag deletion when in use? If yes, explain impact
 * Confirm the purpose/needs for each view and whether there need to be two views.
 * Prototype each type of issue in each view
+* Consider UC steps empty if `.text.isEmpty && .flow.nonEmpty`?
 
 # Real, underlying requirements for issue views
 *
