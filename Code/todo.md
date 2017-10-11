@@ -88,9 +88,8 @@ Phase 2
   * Restore or delete DiagnosticEndpoints
   * Restore or delete SessionStats
 
-### Dev
-
-### Backlog
+### Misc
+* Fix bug with autocompletion popup not closing on blur and then blocking the whole UI
 * UseCase exception levels are off-by-one. 4.E.1.a.i should be 4.E.1.1.a (should it though?)
 * Allow refs to custom text fields (e.g. [UC-1.detail])
 * Revise default columns: on new project, only NewForm is visible; default columns are shit and can't be changed.
