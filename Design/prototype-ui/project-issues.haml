@@ -32,6 +32,7 @@
       .pubid {white-space:nowrap}
       td.fedit.issue-blank {min-width:40ex}
       .issue-blank {background:#fdd /*hsl(0, 90%, 80%)*/}
+      .issue-issuetag ,
       .issue-liveRef_deadreq ,
       .issue-liveRef_deadUC_deadStep ,
       .issue-liveRef_deadUC_liveStep ,
@@ -262,7 +263,7 @@
             %td.fname Priority
             %td.fedit.can-edit.issue-blank
             %td.actions
-            %td.pri
+            %td.pri.issue-blank
 
           %tr
             %td.id %a(href="project-reqdetail.haml.html") UC-1
@@ -403,9 +404,9 @@
           %tr
             %td.issue(rowspan=2) User-defined: #PENDING
             %td.id %a(href="project-reqdetail.haml.html") CO-12
-            %td.title Max login/hr = <span class="issue-deadissuetag">#PENDING{ ask Bob }</span>
+            %td.title Max login/hr = <span class="issue-issuetag">#PENDING{ ask Bob }</span>
             %td.fname Title
-            %td.fedit.can-edit Max login/hr = <span class="issue-deadissuetag">#PENDING{ ask Bob }</span>
+            %td.fedit.can-edit Max login/hr = <span class="issue-issuetag">#PENDING{ ask Bob }</span>
             %td.actions
             %td.pri.na
 
@@ -414,7 +415,7 @@
             %td.title User logs in via fax
             %td.fname Detail
             %td.fedit.can-edit
-              <span class="issue-deadissuetag">#PENDING{ talk to Bob }</span>
+              <span class="issue-issuetag">#PENDING{ talk to Bob }</span>
             %td.actions
             %td.pri .ui.label.blue.is-tag urgent
 
@@ -431,7 +432,9 @@
             %td.pri.na
 
   :javascript
-    $('td.na').append('<span>–</span>');
-
     $('td[rowspan]').each((_,a) =>
       $(a).append('<div class="mergesum">(<span>'+a.rowSpan+'</span>)</div>'))
+
+    $('td.actions').filter((_,a) => a.textContent == '').addClass('na');
+
+    $('td.na').append('<span>–</span>');
