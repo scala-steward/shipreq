@@ -1,7 +1,7 @@
 !!! 5
 %html
   %head
-    %meta(http-equiv="refresh" content="1")
+    -# %meta(http-equiv="refresh" content="1")
     %title Issues | ShipReq
     %script{src: "../node_modules/jquery/dist/jquery.min.js"}
     %link{href:  "../semantic/dist/semantic.min.css", rel: "stylesheet", type: "text/css"}/
@@ -14,20 +14,9 @@
 
       h3.ui.header {margin-top: 2em; padding-bottom: 0.3em !important}
 
-      .content.pic {text-align:center; padding-top:2.2em !important}
-      .content.pic > i {font-size:3rem}
-
-      /** workaround for https://github.com/Semantic-Org/Semantic-UI/issues/2978 */
-      .active-hack {font-weight:700!important; box-shadow: none!important;}
-      .active-hack.red {border-color: #DB2828!important; color: #DB2828!important;}
-      .active-hack.orange {border-color: #F2711C!important; color: #F2711C!important;}
-
       #view-ctrls > div:not(:first-child) {margin-left: 1em}
       .sort > button {margin-left: 1ex !important}
       #cols-popup label {white-space: nowrap !important}
-
-      .status i {margin-right:0}
-
       .sortCriterion:not(i) {cursor:move}
 
       #reqtable {        margin-bottom: 1rem; }
@@ -39,37 +28,34 @@
       .tagRef {color:#2185D0!important}
       .issueRef {color:#db2828!important}
 
-      #reqtable > tbody > tr > td:nth-child(2) {white-space:nowrap}
+      #reqtable .id {white-space:nowrap}
+      .pubid {white-space:nowrap}
+      td.fedit.issue-blank {min-width:40ex}
+      .issue-blank {background:hsl(0, 90%, 80%)}
+      .issue-deadtag, .issue-deadissuetag {color:#d00; text-decoration: line-through;}
+      .issue-liveRef_deadreq ,
+      .issue-liveRef_deadUC_deadStep ,
+      .issue-liveRef_deadUC_liveStep ,
+      .issue-liveRef_liveUC_deadStep {color:#d00}
 
-      .syntax-help .h {font-weight:bold}
-      .syntax-help table {margin-bottom:1em}
-      .syntax-help tr:nth-child(odd)  td.e {background:#fffde8}
-      .syntax-help tr:nth-child(even) td.e {background:#def2fc}
-      .syntax-help tr:nth-child(odd)  td.d {background:#fcf8e3}
-      .syntax-help tr:nth-child(even) td.d {background:#d9edf7}
-      .syntax-help .d {}
-      .syntax-help .d code {background:#fff; font-family: monospace}
-      .syntax-help .e {font-family: monospace; white-space:nowrap; color:#f39}
+      x.ui.button {white-space:nowrap}
 
-      .inline-edit:hover {
+      td.na {
+        padding: 4px !important;
+        vertical-align: top !important;
+        background-color: #f5f5f5;
+      }
+      td.na > span {
+        color: #666;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .can-edit:hover {
         cursor:pointer;
         outline:dotted 2px #FFA622;
         background: #fff4e3 !important;
-        }
-      .can-focus:hover {
-      /*
-        xcursor:pointer;
-        xoutline:solid 1px #00b5ad;
-        outline:solid 1px #a333c8;
-      */
       }
-      .has-focus {
-        xoutline:solid 2px #00b5ad;
-        outline:solid 2px #a333c8;
-        xoutline:solid 2px #6435c9;
-      }
-
-      #reqtableX >tbody >tr:hover > td {background: rgba(0,15,30,.03)}
 
       .texteditor {
         width:100%;
@@ -120,16 +106,6 @@
         background-origin: padding-box  !important;
       }
 
-      .ui.dropdown.reqtype {
-        background: #fff4e3 !important;
-        border-color: rgba(255, 166, 34, .5) !important;
-      }
-
-      .reqtype .ui.buttons button:first-child:hover {color:#21BA45}
-      .reqtype .ui.buttons button:last-child:hover {color:#DB2828}
-
-      .blueHover:hover {color:#2185D0!important}
-
   %body
 
     .ui.menu.borderless.fixed.inverted
@@ -174,28 +150,34 @@
     -# =============================================================================================
     %main{style: "margin-top:4rem"}
 
-
       -# =============================================================================================
       %section#action-ctrls{style: "display:flex; align-content: center; margin: 2em 0"}
+        %div(style="padding-top:1em")
+          %h1.ui.header.red
+            %i.icon.warning.sign.red
+            21 Issues
+
         %div.status{style: "text-align: right; flex-grow: 1"}
-          -# Showing 21 rows: 19 reqs (17 live + 3 dead - 1 filtered) + 2 dups.
-          = "Showing 21 rows: 18"
-          %i.icon.cubes{title: "requirements"}
-          = " (17 - 1"
-          %i.icon.filter{title: "excluded by the filter"}
-          = " + 2"
-          %i.icon.copy{title: "reappearances due to sorting"}
-          = ") + 3"
+          = "Showing 21 issues: 1"
+          %i.icon.setting{title: "config"}
+          -# = " + 19 "
+          -# %i.icon.file.text.outline{title: "content"}
+          = "+ 18 "
+          %i.icon.cubes{title: "reqs"}
+          = " + 1 "
           %i.icon.open.folder.outline{title: "code groups"}
-          .
+          = " + 1 "
+          -# %i.icon.unordered.list{title: "loose"}
+          -# %i.icon.calendar.outline{title: "loose"}
+          %i.icon.comment.outline{title: "loose"}
 
       -# =============================================================================================
       %section#view-ctrls{style: "display:flex; align-content: center; margin-top: 2em"}
         .sort
           Sort:
           %button.ui.button.right.labeled.icon.tiny.basic.sortCriterion
-            %i.icon.sort.descending
-            Priority
+            %i.icon.sort.ascending
+            Issue
           %button.ui.button.right.labeled.icon.tiny.basic.sortCriterion
             %i.icon.sort.ascending
             ID
@@ -238,30 +220,230 @@
       %table#reqtable.ui.table.celled.compact.unstackable
         %thead
           %tr
-            %th.selcol
-              %input{type: "checkbox"}
-            %th ID
-            %th Title
-            %th Priority
-            %th Major Feature
-            %th Tags
+            %th.issue Issue
+            %th.id ID
+            %th.title Title
+            %th.fname Field Name
+            %th.fedit Field Editor
+            %th.actions Actions
+            %th.pri Priority
         %tbody
 
           %tr
-            %td.selcol.can-focus
-              %input{type: "checkbox"}
-            %td.has-focus
-              %a{href:"project-reqdetail.haml.html"} FR-1
-            %td.inline-edit
-              = "Fix "
-              %span.tagRef focus
-              = " and keyboard nav."
-            %td.inline-edit
-              .ui.label.blue.is-tag should
-            %td.inline-edit
-              %a{href:"#"} MF-7
-            %td.inline-edit
-              .ui.label.blue.is-tag bug
-              .ui.label.blue.is-tag focus
+            %td.issue Blank field: Detail
+            %td.id %a(href="project-reqdetail.haml.html") UC-3
+            %td.title User logs in via smartphone
+            %td.fname Detail
+            %td.fedit.can-edit.issue-blank
+            %td.actions
+            %td.pri .ui.label.blue.is-tag high
+
+          %tr
+            %td.issue Blank field: Implications
+            %td.id %a(href="project-reqdetail.haml.html") UC-3
+            %td.title User logs in via smartphone
+            %td.fname Implications
+            %td.fedit.can-edit.issue-blank
+            %td.actions
+            %td.pri .ui.label.blue.is-tag high
+
+          %tr
+            %td.issue Blank field: Major Feature
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
+            %td.fname Major Feature
+            %td.fedit.can-edit.issue-blank
+            %td.actions
+            %td.pri .ui.label.blue.is-tag urgent
+
+          %tr
+            %td.issue Blank field: Priority
+            %td.id %a(href="project-reqdetail.haml.html") UC-8
+            %td.title User logs in via shouting
+            %td.fname Priority
+            %td.fedit.can-edit.issue-blank
+            %td.actions
+            %td.pri
+
+          %tr
+            %td.issue Blank field: Title
+            %td.id %a(href="project-reqdetail.haml.html") UC-1
+            %td.title
+            %td.fname Title
+            %td.fedit.can-edit.issue-blank
+            %td.actions
+            %td.pri .ui.label.blue.is-tag critical
+
+          %tr
+            %td.issue Blank field: UC step
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
+            %td.fname Step 4.E.1
+            %td.fedit.can-edit.issue-blank
+            %td.actions
+            %td.pri .ui.label.blue.is-tag urgent
+
+          %tr
+            %td.issue Code group has nothing to group.
+            %td.id %a(href="project-reqtable.haml.html") backend.tasks
+            %td.title Backend Tasks
+            %td.fname.na
+            %td.fedit.na
+            %td.actions
+              .ui.button.negative.basic
+                %i.icon.trash
+                Delete backend.tasks
+            %td.pri.na
+
+          %tr
+            %td.issue Conflicting Priority tags
+            %td.id %a(href="project-reqdetail.haml.html") FR-14
+            %td.title Admin must be able to connect 100 fax machines simultaneously.
+            %td.fname Tags
+            %td.fedit.can-edit
+              .ui.label.red.is-tag critical
+              .ui.label.red.is-tag urgent
+              .ui.label.blue.is-tag wip
+            %td.actions
+            %td.pri.na
+
+          %tr
+            %td.issue Conflicting Priority tags
+            %td.id %a(href="project-reqdetail.haml.html") UC-5
+            %td.title User logs in via stern eye contact
+            %td.fname Priority
+            %td.fedit.can-edit
+              .ui.label.red.is-tag urgent
+              .ui.label.red.is-tag critical
+            %td.actions
+            %td.pri
+              .ui.label.red.is-tag urgent
+              .ui.label.red.is-tag critical
+
+          %tr
+            %td.issue Deleted issue tag in use: #TBD
+            %td.id %a(href="project-reqdetail.haml.html") CO-12
+            %td.title Max login/hr = <span class="issue-deadissuetag">#TBD{ ask Bob }</span>
+            %td.fname Title
+            %td.fedit.can-edit Max login/hr = <span class="issue-deadissuetag">#TBD{ ask Bob }</span>
+            %td.actions
+              .ui.button.green
+                %i.icon.undo
+                Restore #TBD
+            %td.pri.na
+
+          %tr
+            %td.issue Deleted issue tag in use: #TBD
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
+            %td.fname Detail
+            %td.fedit.can-edit
+              <span class="issue-deadissuetag">#TBD{ talk to Bob }</span>
+            %td.actions
+              .ui.button.green
+                %i.icon.undo
+                Restore #TBD
+            %td.pri .ui.label.blue.is-tag urgent
+
+          %tr
+            %td.issue Deleted tag in use: #backend
+            %td.id %a(href="project-reqdetail.haml.html") UC-5
+            %td.title User logs in via stern eye contact
+            %td.fname Detail
+            %td.fedit.can-edit Part of <span class="issue-deadtag">#backend</span>
+            %td.actions
+              .ui.button.green
+                %i.icon.undo
+                Restore #backend
+            %td.pri .ui.label.blue.is-tag urgent
+
+          %tr
+            %td.issue Reference to deleted data
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
+            %td.fname Detail
+            %td.fedit.can-edit See <span class="issue-liveRef_deadreq">[FR-99]</span>.
+            %td.actions
+              .ui.button.green
+                %i.icon.undo
+                Restore <span class="pubid">FR-99</span>
+            %td.pri .ui.label.blue.is-tag urgent
+
+          %tr
+            %td.issue Reference to deleted data
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
+            %td.fname Step 4.1
+            %td.fedit.can-edit See <span class="issue-liveRef_liveUC_deadStep">[UC-17.E.2.a]</span>.
+            %td.actions
+              .ui.button.green
+                %i.icon.undo
+                Restore <span class="pubid">UC-17.E.2.a</span>
+            %td.pri .ui.label.blue.is-tag urgent
+
+          %tr
+            %td.issue Reference to deleted data
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
+            %td.fname Step 4.2
+            %td.fedit.can-edit See <span class="issue-liveRef_deadUC_liveStep">[UC-18.E.3]</span>.
+            %td.actions
+              .ui.button.green
+                %i.icon.undo
+                Restore <span class="pubid">UC-18</span>
+            %td.pri .ui.label.blue.is-tag urgent
+
+          %tr
+            %td.issue Reference to deleted data
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
+            %td.fname Step 4.3
+            %td.fedit.can-edit See <span class="issue-liveRef_deadUC_deadStep">[UC-18.E.X.1]</span>.
+            %td.actions
+            %td.pri .ui.label.blue.is-tag urgent
+
+          %tr
+            %td.issue Status field has no tags
+            %td.id.na
+            %td.title.na
+            %td.fname.na
+            %td.fedit.na
+            %td.actions
+              .ui.button.negative.basic
+                %i.icon.trash
+                Delete Status
+            %td.pri.na
+
+          %tr
+            %td.issue User-defined: #PENDING
+            %td.id %a(href="project-reqdetail.haml.html") CO-12
+            %td.title Max login/hr = <span class="issue-deadissuetag">#PENDING{ ask Bob }</span>
+            %td.fname Title
+            %td.fedit.can-edit Max login/hr = <span class="issue-deadissuetag">#PENDING{ ask Bob }</span>
+            %td.actions
+            %td.pri.na
+
+          %tr
+            %td.issue User-defined: #PENDING
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
+            %td.fname Detail
+            %td.fedit.can-edit
+              <span class="issue-deadissuetag">#PENDING{ talk to Bob }</span>
+            %td.actions
+            %td.pri .ui.label.blue.is-tag urgent
+
+          %tr.issue-loose
+            %td.issue User-defined: loose
+            %td.id.na
+            %td.title.na
+            %td.fname.na
+            %td.fedit.can-edit Revise all Major Features
+            %td.actions
+              .ui.button.negative.basic
+                %i.icon.remove.circle
+                Close issue
+            %td.pri.na
 
   :javascript
+    $('td.na').append('<span>–</span>');
