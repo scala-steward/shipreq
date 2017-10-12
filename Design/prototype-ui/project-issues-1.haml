@@ -40,10 +40,6 @@
 
       x.ui.button {white-space:nowrap}
 
-      .mergesum {display:none; }
-      .issue .mergesum {display:inline; color:#999; padding-left:1ex; white-space:nowrap}
-      .mergesum span {color:#c66}
-
       td.na {
         padding: 4px !important;
         vertical-align: top !important;
@@ -234,21 +230,25 @@
         %tbody
 
           %tr
-            %td.issue(rowspan=6) Blank field
-            %td.id(rowspan=2) %a(href="project-reqdetail.haml.html") UC-3
-            %td.title(rowspan=2) User logs in via smartphone
+            %td.issue Blank field: Detail
+            %td.id %a(href="project-reqdetail.haml.html") UC-3
+            %td.title User logs in via smartphone
             %td.fname Detail
             %td.fedit.can-edit.issue-blank
             %td.actions
             %td.pri .ui.label.blue.is-tag high
 
           %tr
+            %td.issue Blank field: Implications
+            %td.id %a(href="project-reqdetail.haml.html") UC-3
+            %td.title User logs in via smartphone
             %td.fname Implications
             %td.fedit.can-edit.issue-blank
             %td.actions
             %td.pri .ui.label.blue.is-tag high
 
           %tr
+            %td.issue Blank field: Major Feature
             %td.id %a(href="project-reqdetail.haml.html") UC-4
             %td.title User logs in via fax
             %td.fname Major Feature
@@ -257,6 +257,7 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
+            %td.issue Blank field: Priority
             %td.id %a(href="project-reqdetail.haml.html") UC-8
             %td.title User logs in via shouting
             %td.fname Priority
@@ -265,6 +266,7 @@
             %td.pri
 
           %tr
+            %td.issue Blank field: Title
             %td.id %a(href="project-reqdetail.haml.html") UC-1
             %td.title
             %td.fname Title
@@ -273,6 +275,7 @@
             %td.pri .ui.label.blue.is-tag critical
 
           %tr
+            %td.issue Blank field: UC step
             %td.id %a(href="project-reqdetail.haml.html") UC-4
             %td.title User logs in via fax
             %td.fname Step 4.E.1
@@ -293,7 +296,7 @@
             %td.pri.na
 
           %tr
-            %td.issue(rowspan=2) Conflicting Priority tags
+            %td.issue Conflicting Priority tags
             %td.id %a(href="project-reqdetail.haml.html") FR-14
             %td.title Admin must be able to connect 100 fax machines simultaneously.
             %td.fname Tags
@@ -305,6 +308,7 @@
             %td.pri.na
 
           %tr
+            %td.issue Conflicting Priority tags
             %td.id %a(href="project-reqdetail.haml.html") UC-5
             %td.title User logs in via stern eye contact
             %td.fname Priority
@@ -317,7 +321,7 @@
               .ui.label.red.is-tag critical
 
           %tr
-            %td.issue(rowspan=2) Deleted issue tag in use: #TBD
+            %td.issue Deleted issue tag in use: #TBD
             %td.id %a(href="project-reqdetail.haml.html") CO-12
             %td.title Max login/hr = <span class="issue-deadissuetag">#TBD{ ask Bob }</span>
             %td.fname Title
@@ -329,6 +333,7 @@
             %td.pri.na
 
           %tr
+            %td.issue Deleted issue tag in use: #TBD
             %td.id %a(href="project-reqdetail.haml.html") UC-4
             %td.title User logs in via fax
             %td.fname Detail
@@ -353,9 +358,9 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
-            %td.issue(rowspan=4) Reference to deleted data
-            %td.id(rowspan=4) %a(href="project-reqdetail.haml.html") UC-4
-            %td.title(rowspan=4) User logs in via fax
+            %td.issue Reference to deleted data
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
             %td.fname Detail
             %td.fedit.can-edit See <span class="issue-liveRef_deadreq">[FR-99]</span>.
             %td.actions
@@ -365,6 +370,9 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
+            %td.issue Reference to deleted data
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
             %td.fname Step 4.1
             %td.fedit.can-edit See <span class="issue-liveRef_liveUC_deadStep">[UC-17.E.2.a]</span>.
             %td.actions
@@ -374,6 +382,9 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
+            %td.issue Reference to deleted data
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
             %td.fname Step 4.2
             %td.fedit.can-edit See <span class="issue-liveRef_deadUC_liveStep">[UC-18.E.3]</span>.
             %td.actions
@@ -383,6 +394,9 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
+            %td.issue Reference to deleted data
+            %td.id %a(href="project-reqdetail.haml.html") UC-4
+            %td.title User logs in via fax
             %td.fname Step 4.3
             %td.fedit.can-edit See <span class="issue-liveRef_deadUC_deadStep">[UC-18.E.X.1]</span>.
             %td.actions
@@ -401,7 +415,7 @@
             %td.pri.na
 
           %tr
-            %td.issue(rowspan=2) User-defined: #PENDING
+            %td.issue User-defined: #PENDING
             %td.id %a(href="project-reqdetail.haml.html") CO-12
             %td.title Max login/hr = <span class="issue-deadissuetag">#PENDING{ ask Bob }</span>
             %td.fname Title
@@ -410,6 +424,7 @@
             %td.pri.na
 
           %tr
+            %td.issue User-defined: #PENDING
             %td.id %a(href="project-reqdetail.haml.html") UC-4
             %td.title User logs in via fax
             %td.fname Detail
@@ -432,6 +447,3 @@
 
   :javascript
     $('td.na').append('<span>–</span>');
-
-    $('td[rowspan]').each((_,a) =>
-      $(a).append('<div class="mergesum">(<span>'+a.rowSpan+'</span>)</div>'))

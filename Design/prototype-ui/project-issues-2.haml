@@ -40,9 +40,8 @@
 
       x.ui.button {white-space:nowrap}
 
-      .mergesum {display:none; }
-      .issue .mergesum {display:inline; color:#999; padding-left:1ex; white-space:nowrap}
-      .mergesum span {color:#c66}
+      .mergesum {display:none; xtext-align:center; color:#888}
+      .mergesum span {color:#d88}
 
       td.na {
         padding: 4px !important;
@@ -234,7 +233,7 @@
         %tbody
 
           %tr
-            %td.issue(rowspan=6) Blank field
+            %td.issue Blank field: Detail
             %td.id(rowspan=2) %a(href="project-reqdetail.haml.html") UC-3
             %td.title(rowspan=2) User logs in via smartphone
             %td.fname Detail
@@ -243,12 +242,14 @@
             %td.pri .ui.label.blue.is-tag high
 
           %tr
+            %td.issue Blank field: Implications
             %td.fname Implications
             %td.fedit.can-edit.issue-blank
             %td.actions
             %td.pri .ui.label.blue.is-tag high
 
           %tr
+            %td.issue Blank field: Major Feature
             %td.id %a(href="project-reqdetail.haml.html") UC-4
             %td.title User logs in via fax
             %td.fname Major Feature
@@ -257,6 +258,7 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
+            %td.issue Blank field: Priority
             %td.id %a(href="project-reqdetail.haml.html") UC-8
             %td.title User logs in via shouting
             %td.fname Priority
@@ -265,6 +267,7 @@
             %td.pri
 
           %tr
+            %td.issue Blank field: Title
             %td.id %a(href="project-reqdetail.haml.html") UC-1
             %td.title
             %td.fname Title
@@ -273,6 +276,7 @@
             %td.pri .ui.label.blue.is-tag critical
 
           %tr
+            %td.issue Blank field: UC step
             %td.id %a(href="project-reqdetail.haml.html") UC-4
             %td.title User logs in via fax
             %td.fname Step 4.E.1
