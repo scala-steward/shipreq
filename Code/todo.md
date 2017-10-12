@@ -49,7 +49,7 @@ Backlog
 * Extract webapp-base-member-test
 * Add laws for webapp-server-logic and test in webapp-server
 * Rename webapp-client-{home ⇒ member} now that its ambiguous in regards to the public pages
-* Make webtamp hash filenames of urls in Semantic CSS (icons.*)
+* Make webtamp hash filenames of urls in Semantic CSS (`icons.*`)
 * Add DB indicies (don't look at code! metrics dashboard should indicate)
 * SSL shouldn't be in Docker - resolve TODO in WebappBuild.scala
 * Hide Tags/Imps columns when guaranteed to be empty & useless.
@@ -101,6 +101,9 @@ Phase 2
 * CfgReqTypes restore button allows icon/text wrap. Fix CSS.
 * Add and use RestorationForm just like the DeletionForm
 * Add LastUpdated field
+* send feedback (with screenshot). Add link beside @username in top bar
+* NewForm is opening at the wrong row! Move up one! Should be above sort,filter,cols
+* Add icons to project navbar dropdown (reqtable,impgraph etc) and sync to dashboard order (not A-Z)
 
 ### New Features
 * User profile page
