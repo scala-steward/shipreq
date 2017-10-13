@@ -61,6 +61,8 @@ Backlog
 * Warn when closing page and there are open, dirty editors
 * Imp/Code editors are way too wide in NewReqForm
 * Allow users to choose template when creating a project
+* Add LastUpdated field to ReqTable/Detail
+* Add Change Count field to ReqTable/Detail (help find most volatile/unstable reqs)
 
 ------------------------------------------------------------------------------------------------------------------------
 Phase 2
@@ -100,12 +102,11 @@ Phase 2
 * Allow alt-enter in NewForm editors to create and not close.
 * CfgReqTypes restore button allows icon/text wrap. Fix CSS.
 * Add and use RestorationForm just like the DeletionForm
-* Add LastUpdated field
-* send feedback (with screenshot). Add link beside @username in top bar
 * NewForm is opening at the wrong row! Move up one! Should be above sort,filter,cols
 * Add icons to project navbar dropdown (reqtable,impgraph etc) and sync to dashboard order (not A-Z)
 
 ### New Features
-* User profile page
 * Issues
 * Saved views
+* Send feedback (with screenshot). Add link beside @username in top bar
+* User profile page

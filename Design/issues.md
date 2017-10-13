@@ -42,14 +42,16 @@
 * [T-] Add an issue count column.
     Postponing for now because it introduces too much overlap with the Issues table.
     It might even be removed from scope entirely later.
+    Although the count could be a link that opens the Issues screen filtered to that req.
+    How often would people really use that though? You could just open it in ReqDetail and chase all the red.
 
 * [T-] (?) Add a footer row and so user can see total/sum number of issues in scope
-           What else would go in the footer in other columns?
+           What else would go in the footer in other columns? (A: NOTHING)
            #low-pri. Skip for now & add to back
 
 * Ideas to address the accidently-resolve-find-undo scenario:
  * Add a list of created/resolved ORDER BY creation/resolution date DESC
- * Add last-updated column to ReqTable
+ * Add last-updated column to ReqTable (doesn't cover loose issues)
  * Add event log screen. Actually the [n changes] text in the dashboard could be a good link
 
 # Rejected
