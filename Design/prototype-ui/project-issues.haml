@@ -164,18 +164,36 @@
     %main{style: "margin-top:4rem"}
 
       -# =============================================================================================
-      %section#action-ctrls{style: "display:flex; align-content: center; margin: 2em 0"}
-        %div(style="padding-top:1em")
-          %h1.ui.header.red
-            %i.icon.warning.sign.red
-            21 Issues
+      %section{style: "display:flex; margin: 2em 0"}
+        %div(style="flex:1")
 
-        %div.status{style: "text-align: right; flex-grow: 1"}
-          = "Showing 21 issues: 1"
+          #new-closed
+            %button.ui.button.orange
+              %i.icon.plus
+              New loose issue
+          #new-open{style: "display:flex"}
+            %div
+              %button.ui.button.orange.disabled
+                %i.icon.plus
+                New loose issue
+            %div(style="flex:1; padding-left:1ex")
+              %textarea.texteditor
+                Remove Bob's reqs? (eg. [fr3] and [fr18])
+              <div class="_ah"><span class="_ai"><!-- react-text: 2158 -->ctrl-enter to <!-- /react-text --><a class="_aj">save</a><!-- react-text: 2160 -->,<!-- /react-text --></span><span class="_ai"><!-- react-text: 2162 -->esc to <!-- /react-text --><a class="_aj">cancel</a><!-- react-text: 2164 -->.<!-- /react-text --></span><i class="icon help circle _ak"></i></div>
+              .ui.segments.preview-cont.raised
+                .ui.segment.preview-header.inverted
+                  Preview
+                .ui.segment.preview-body
+                  = "Remove Bob's reqs? (eg. "
+                  %a{href:"#"} FR-3
+                  = " and "
+                  %a{href:"#"} FR-18
+                  )
+
+        %div.status(style="text-align: right; padding-left:2em; xcolor:#800")
+          = "Showing 20 issues: 1"
           %i.icon.setting{title: "config"}
-          -# = " + 19 "
-          -# %i.icon.file.text.outline{title: "content"}
-          = "+ 18 "
+          = "+ 17 "
           %i.icon.cubes{title: "reqs"}
           = " + 1 "
           %i.icon.open.folder.outline{title: "code groups"}
@@ -183,31 +201,6 @@
           -# %i.icon.unordered.list{title: "loose"}
           -# %i.icon.calendar.outline{title: "loose"}
           %i.icon.comment.outline{title: "loose"}
-
-      -# =============================================================================================
-      %section#new-closed{style: "display:flex; margin: 2em 0"}
-        %div
-          %button.ui.button.green
-            %i.icon.plus
-            New loose issue
-      %section#new-open{style: "display:flex; margin: 2em 0"}
-        %div
-          %button.ui.button.green.disabled
-            %i.icon.plus
-            New loose issue
-        %div(style="flex:1; padding-left:1ex")
-          %textarea.texteditor
-            Remove Bob's reqs? (eg. [fr3] and [fr18])
-          <div class="_ah"><span class="_ai"><!-- react-text: 2158 -->ctrl-enter to <!-- /react-text --><a class="_aj">save</a><!-- react-text: 2160 -->,<!-- /react-text --></span><span class="_ai"><!-- react-text: 2162 -->esc to <!-- /react-text --><a class="_aj">cancel</a><!-- react-text: 2164 -->.<!-- /react-text --></span><i class="icon help circle _ak"></i></div>
-          .ui.segments.preview-cont.raised
-            .ui.segment.preview-header.inverted
-              Preview
-            .ui.segment.preview-body
-              = "Remove Bob's reqs? (eg. "
-              %a{href:"#"} FR-3
-              = " and "
-              %a{href:"#"} FR-18
-              )
 
       -# =============================================================================================
       %section#view-ctrls{style: "display:flex; align-content: center; margin-top: 2em"}

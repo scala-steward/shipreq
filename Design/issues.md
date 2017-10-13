@@ -36,6 +36,9 @@
 
 # For the backlog
 
+* How to see/undo closed loose issues?
+  Leave it for now
+
 * [T-] Add an issue count column.
     Postponing for now because it introduces too much overlap with the Issues table.
     It might even be removed from scope entirely later.
