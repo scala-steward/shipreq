@@ -16,7 +16,7 @@
     "react-height": "3.0.0",
     "react-motion": "^0.5.1",
     "semantic-ui": "^2.2.13",
-    "textcomplete": "^0.13.1"
+    "textcomplete": "^0.14.2"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",

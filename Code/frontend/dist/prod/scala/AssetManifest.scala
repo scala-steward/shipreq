@@ -25,7 +25,7 @@ object AssetManifest {
 
   def loadjs = "/s/7f8f2966a3634ba5d1b206bc19d7c7ec.js"
 
-  def memberLibBundleJs = "/s/ee37f1fed6947742b810ded90acba3e5.js"
+  def memberLibBundleJs = "/s/a8cfff540e7e78449d623a72d3620851.js"
 
   def reactDomJs = CDN(
     href = "https://cdnjs.cloudflare.com/ajax/libs/react/15.6.1/react-dom.min.js",

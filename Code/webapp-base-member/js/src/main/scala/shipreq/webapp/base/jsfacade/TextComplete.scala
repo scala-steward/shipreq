@@ -15,7 +15,9 @@ final class TextComplete(editor: Editor, options: Options = js.native) extends j
 
   def trigger(text: String): this.type = js.native
 
-  def finalize(finalizeEditor: Boolean = true): this.type = js.native
+  def destroy(destroyEditor: Boolean = true): this.type = js.native
+
+  val dropdown: Dropdown = js.native
 }
 
 object TextComplete {
@@ -26,6 +28,11 @@ object TextComplete {
   @js.native
   @JSGlobal("TextCompleteTA.default")
   final class TextArea(element: html.TextArea) extends Editor
+
+  @js.native
+  sealed trait Dropdown extends js.Object {
+    def deactivate(): this.type = js.native
+  }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

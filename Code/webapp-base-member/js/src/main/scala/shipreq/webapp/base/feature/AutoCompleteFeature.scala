@@ -13,7 +13,8 @@ import shipreq.webapp.base.ui.AutosizeTextarea
   * 1. `import AutoCompleteFeature._`
   * 2. Have your component's backend extends `AutoComplete.Backend[D]` where D is the dom type.
   * 3. Implement required method(s).
-  * 4. Add `.configure(AutoComplete.install)` to your component builder.
+  * 4. Wire up your editor: `^.onBlur --> autoCompleteBlur`
+  * 5. Add `.configure(AutoComplete.install)` to your component builder.
   */
 object AutoCompleteFeature extends autocomplete.Implicits {
 

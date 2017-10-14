@@ -107,6 +107,7 @@ object TagEditor {
       TagMod(
         ^.autoFocus := true,
         ^.spellCheck := false,
+        ^.onBlur   --> autoCompleteBlur,
         ^.onChange ==> updateState,
         RichTextEditor.minRows(lineCardinality),
         keys)

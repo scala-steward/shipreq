@@ -70,8 +70,8 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
       TagMod(
         ^.autoFocus := true,
+        ^.onBlur   --> (autoCompleteBlur >> $.props.flatMap(_.preview.onBlur)),
         ^.onChange ==> updateState,
-        ^.onBlur   --> $.props.flatMap(_.preview.onBlur),
         ^.onFocus  --> $.props.flatMap(p => p.preview.onFocus(p.wantPreview)),
         RichTextEditor.minRows(text.lineCardinality),
         keys)

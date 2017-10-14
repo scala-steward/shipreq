@@ -65,11 +65,14 @@ object ForComponent {
 
     final def autoCompleteUnmount: Callback =
       Callback(
-        textComplete.foreach(_.finalize())
+        textComplete.foreach(_.destroy())
       ).attempt >> Callback {
         textComplete = None
         textCompletePrev = None
       }
+
+    final protected val autoCompleteBlur: Callback =
+      Callback(textComplete.foreach(_.dropdown.deactivate())).attempt.void
   }
 
   def install[P, C <: Children, S, B <: Backend[D], D <: AnyRef: AutoCompletable]: ScalaComponent.Config[P, C, S, B] =

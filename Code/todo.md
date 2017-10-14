@@ -92,7 +92,6 @@ Phase 2
   * Restore or delete SessionStats
 
 ### Misc
-* Fix bug with autocompletion popup not closing on blur and then blocking the whole UI
 * UseCase exception levels are off-by-one. 4.E.1.a.i should be 4.E.1.1.a (should it though?)
 * Revise default columns: on new project, only NewForm is visible; default columns are shit and can't be changed.
 * Revise ProjectTemplate - reduce reqtypes, BL without BR is weird

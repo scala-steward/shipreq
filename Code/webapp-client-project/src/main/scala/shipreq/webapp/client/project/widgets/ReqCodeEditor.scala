@@ -72,6 +72,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
 
       TagMod(
         ^.autoFocus := true,
+        ^.onBlur   --> autoCompleteBlur,
         ^.onChange ==> updateState,
         RichTextEditor.minRows(lineCardinality),
         keys)

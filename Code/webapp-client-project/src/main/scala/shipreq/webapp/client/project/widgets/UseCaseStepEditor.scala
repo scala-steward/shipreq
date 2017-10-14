@@ -162,8 +162,8 @@ object UseCaseStepEditor {
 
       TagMod(
         ^.autoFocus := true,
+        ^.onBlur   --> (autoCompleteBlur >> $.props.flatMap(_.preview.onBlur)),
         ^.onChange ==> updateState,
-        ^.onBlur   --> $.props.flatMap(_.preview.onBlur),
         ^.onFocus  --> $.props.flatMap(p => p.preview.onFocus(p.wantPreview)),
         RichTextEditor.minRows(lineCardinality),
         keys)

@@ -5050,7 +5050,7 @@ var SearchResult = function () {
   }
 
   _createClass(SearchResult, [{
-    key: 'replace',
+    key: "replace",
     value: function replace(beforeCursor, afterCursor) {
       var replacement = this.strategy.replace(this.data);
       if (replacement !== null) {
@@ -5063,12 +5063,12 @@ var SearchResult = function () {
           replacement = replacement.replace(/\$&/g, match[0]).replace(/\$(\d+)/g, function (_, p1) {
             return match[parseInt(p1, 10)];
           });
-          return [[beforeCursor.slice(0, match.index), replacement, beforeCursor.slice(match.index + match[0].length)].join(''), afterCursor];
+          return [[beforeCursor.slice(0, match.index), replacement, beforeCursor.slice(match.index + match[0].length)].join(""), afterCursor];
         }
       }
     }
   }, {
-    key: 'render',
+    key: "render",
     value: function render() {
       return this.strategy.template(this.data, this.term);
     }
@@ -5794,7 +5794,7 @@ var Strategy = function () {
 
 
   _createClass(Strategy, [{
-    key: 'destroy',
+    key: "destroy",
     value: function destroy() {
       this.cache = null;
       return this;
@@ -5807,11 +5807,11 @@ var Strategy = function () {
      */
 
   }, {
-    key: 'buildQuery',
+    key: "buildQuery",
     value: function buildQuery(text) {
-      if (typeof this.props.context === 'function') {
+      if (typeof this.props.context === "function") {
         var _context = this.props.context(text);
-        if (typeof _context === 'string') {
+        if (typeof _context === "string") {
           text = _context;
         } else if (!_context) {
           return null;
@@ -5821,7 +5821,7 @@ var Strategy = function () {
       return match ? new _query2.default(this, match[this.index], match) : null;
     }
   }, {
-    key: 'search',
+    key: "search",
     value: function search(term, callback, match) {
       if (this.cache) {
         this.searchWithCache(term, callback, match);
@@ -5835,7 +5835,7 @@ var Strategy = function () {
      */
 
   }, {
-    key: 'replace',
+    key: "replace",
     value: function replace(data) {
       return this.props.replace(data);
     }
@@ -5843,7 +5843,7 @@ var Strategy = function () {
     /** @private */
 
   }, {
-    key: 'searchWithCache',
+    key: "searchWithCache",
     value: function searchWithCache(term, callback, match) {
       var _this = this;
 
@@ -5862,9 +5862,9 @@ var Strategy = function () {
     /** @private */
 
   }, {
-    key: 'matchText',
+    key: "matchText",
     value: function matchText(text) {
-      if (typeof this.match === 'function') {
+      if (typeof this.match === "function") {
         return this.match(text);
       } else {
         return text.match(this.match);
@@ -5874,7 +5874,7 @@ var Strategy = function () {
     /** @private */
 
   }, {
-    key: 'match',
+    key: "match",
     get: function get() {
       return this.props.match;
     }
@@ -5882,12 +5882,12 @@ var Strategy = function () {
     /** @private */
 
   }, {
-    key: 'index',
+    key: "index",
     get: function get() {
-      return typeof this.props.index === 'number' ? this.props.index : DEFAULT_INDEX;
+      return typeof this.props.index === "number" ? this.props.index : DEFAULT_INDEX;
     }
   }, {
-    key: 'template',
+    key: "template",
     get: function get() {
       return this.props.template || DEFAULT_TEMPLATE;
     }
@@ -6609,7 +6609,7 @@ exports.getLineHeightPx = getLineHeightPx;
  * @private
  */
 var createCustomEvent = exports.createCustomEvent = function () {
-  if (typeof window.CustomEvent === 'function') {
+  if (typeof window.CustomEvent === "function") {
     return function (type, options) {
       return new document.defaultView.CustomEvent(type, {
         cancelable: options && options.cancelable || false,
@@ -6620,26 +6620,29 @@ var createCustomEvent = exports.createCustomEvent = function () {
     // Custom event polyfill from
     // https://developer.mozilla.org/en-US/docs/Web/API/CustomEvent/CustomEvent#polyfill
     return function (type, options) {
-      var event = document.createEvent('CustomEvent');
+      var event = document.createEvent("CustomEvent");
       event.initCustomEvent(type,
       /* bubbles */false, options && options.cancelable || false, options && options.detail || undefined);
       return event;
     };
   }
-}();
+}
 
 /**
  * Get the current coordinates of the `el` relative to the document.
  *
  * @private
  */
-function calculateElementOffset(el) {
+();function calculateElementOffset(el) {
   var rect = el.getBoundingClientRect();
   var _el$ownerDocument = el.ownerDocument,
       defaultView = _el$ownerDocument.defaultView,
       documentElement = _el$ownerDocument.documentElement;
 
-  var offset = { top: rect.top + defaultView.pageYOffset, left: rect.left + defaultView.pageXOffset };
+  var offset = {
+    top: rect.top + defaultView.pageYOffset,
+    left: rect.left + defaultView.pageXOffset
+  };
   if (documentElement) {
     offset.top -= documentElement.clientTop;
     offset.left -= documentElement.clientLeft;
@@ -6647,8 +6650,8 @@ function calculateElementOffset(el) {
   return offset;
 }
 
-var CHAR_CODE_ZERO = '0'.charCodeAt(0);
-var CHAR_CODE_NINE = '9'.charCodeAt(0);
+var CHAR_CODE_ZERO = "0".charCodeAt(0);
+var CHAR_CODE_NINE = "9".charCodeAt(0);
 
 function isDigit(charCode) {
   return charCode >= CHAR_CODE_ZERO && charCode <= CHAR_CODE_NINE;
@@ -6660,13 +6663,13 @@ function isDigit(charCode) {
  * @private
  */
 function getLineHeightPx(node) {
-  var computedStyle = window.getComputedStyle(node);
+  var computedStyle = window.getComputedStyle(node
 
   // If the char code starts with a digit, it is either a value in pixels,
   // or unitless, as per:
   // https://drafts.csswg.org/css2/visudet.html#propdef-line-height
   // https://drafts.csswg.org/css2/cascade.html#computed-value
-  if (isDigit(computedStyle.lineHeight.charCodeAt(0))) {
+  );if (isDigit(computedStyle.lineHeight.charCodeAt(0))) {
     // In real browsers the value is *always* in pixels, even for unit-less
     // line-heights. However, we still check as per the spec.
     if (isDigit(computedStyle.lineHeight.charCodeAt(computedStyle.lineHeight.length - 1))) {
@@ -6683,12 +6686,12 @@ function getLineHeightPx(node) {
     return 0;
   }
   var tempNode = document.createElement(node.nodeName);
-  tempNode.innerHTML = '&nbsp;';
+  tempNode.innerHTML = "&nbsp;";
   tempNode.style.fontSize = computedStyle.fontSize;
   tempNode.style.fontFamily = computedStyle.fontFamily;
-  body.appendChild(tempNode);
+  body.appendChild(tempNode
   // Assume the height of the element is the line-height
-  var height = tempNode.offsetHeight;
+  );var height = tempNode.offsetHeight;
   body.removeChild(tempNode);
   return height;
 }
@@ -19441,8 +19444,11 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 /**
  * Abstract class representing a editor target.
  *
- * Editor classes must implement `#applySearchResult`, `#getCursorOffset`,
- * `#getBeforeCursor` and `#getAfterCursor` methods.
+ * Editor classes must implement `#applySearchResult`, `#getCursorOffset` and
+ * `#getBeforeCursor` methods.
+ *
+ * Editor classes must invoke `#emitMoveEvent`, `#emitEnterEvent`,
+ * `#emitChangeEvent` and `#emitEscEvent` at proper timing.
  *
  * @abstract
  */
@@ -19459,7 +19465,7 @@ var Editor = function (_EventEmitter) {
   }
 
   _createClass(Editor, [{
-    key: 'destroy',
+    key: "destroy",
 
     /**
      * It is called when associated textcomplete object is destroyed.
@@ -19475,9 +19481,9 @@ var Editor = function (_EventEmitter) {
      */
 
   }, {
-    key: 'applySearchResult',
+    key: "applySearchResult",
     value: function applySearchResult(_) {
-      throw new Error('Not implemented.');
+      throw new Error("Not implemented.");
     }
 
     /**
@@ -19486,99 +19492,108 @@ var Editor = function (_EventEmitter) {
      */
 
   }, {
-    key: 'getCursorOffset',
+    key: "getCursorOffset",
     value: function getCursorOffset() {
-      throw new Error('Not implemented.');
+      throw new Error("Not implemented.");
     }
 
     /**
      * Editor string value from head to cursor.
+     * Returns null if selection type is range not cursor.
      */
 
   }, {
-    key: 'getBeforeCursor',
+    key: "getBeforeCursor",
     value: function getBeforeCursor() {
-      throw new Error('Not implemented.');
+      throw new Error("Not implemented.");
     }
 
     /**
-     * Editor string value from cursor to tail.
+     * Emit a move event, which moves active dropdown element.
+     * Child class must call this method at proper timing with proper parameter.
+     *
+     * @see {@link Textarea} for live example.
      */
 
   }, {
-    key: 'getAfterCursor',
-    value: function getAfterCursor() {
-      throw new Error('Not implemented.');
-    }
-
-    /** @private */
-
-  }, {
-    key: 'emitMoveEvent',
+    key: "emitMoveEvent",
     value: function emitMoveEvent(code) {
-      var moveEvent = (0, _utils.createCustomEvent)('move', {
+      var moveEvent = (0, _utils.createCustomEvent)("move", {
         cancelable: true,
         detail: {
           code: code
         }
       });
-      this.emit('move', moveEvent);
+      this.emit("move", moveEvent);
       return moveEvent;
     }
 
-    /** @private */
+    /**
+     * Emit a enter event, which selects current search result.
+     * Child class must call this method at proper timing.
+     *
+     * @see {@link Textarea} for live example.
+     */
 
   }, {
-    key: 'emitEnterEvent',
+    key: "emitEnterEvent",
     value: function emitEnterEvent() {
-      var enterEvent = (0, _utils.createCustomEvent)('enter', { cancelable: true });
-      this.emit('enter', enterEvent);
+      var enterEvent = (0, _utils.createCustomEvent)("enter", { cancelable: true });
+      this.emit("enter", enterEvent);
       return enterEvent;
     }
 
-    /** @private */
+    /**
+     * Emit a change event, which triggers auto completion.
+     * Child class must call this method at proper timing.
+     *
+     * @see {@link Textarea} for live example.
+     */
 
   }, {
-    key: 'emitChangeEvent',
+    key: "emitChangeEvent",
     value: function emitChangeEvent() {
-      var changeEvent = (0, _utils.createCustomEvent)('change', {
+      var changeEvent = (0, _utils.createCustomEvent)("change", {
         detail: {
           beforeCursor: this.getBeforeCursor()
         }
       });
-      this.emit('change', changeEvent);
+      this.emit("change", changeEvent);
       return changeEvent;
     }
 
-    /** @private */
+    /**
+     * Emit a esc event, which hides dropdown element.
+     * Child class must call this method at proper timing.
+     *
+     * @see {@link Textarea} for live example.
+     */
 
   }, {
-    key: 'emitEscEvent',
+    key: "emitEscEvent",
     value: function emitEscEvent() {
-      var escEvent = (0, _utils.createCustomEvent)('esc', { cancelable: true });
-      this.emit('esc', escEvent);
+      var escEvent = (0, _utils.createCustomEvent)("esc", { cancelable: true });
+      this.emit("esc", escEvent);
       return escEvent;
     }
 
-    /** @private */
+    /**
+     * Helper method for parsing KeyboardEvent.
+     *
+     * @see {@link Textarea} for live example.
+     */
 
   }, {
-    key: 'getCode',
+    key: "getCode",
     value: function getCode(e) {
-      return e.keyCode === 8 ? 'BS' // backspace
-      : e.keyCode === 9 ? 'ENTER' // tab
-      : e.keyCode === 13 ? 'ENTER' // enter
-      : e.keyCode === 16 ? 'META' // shift
-      : e.keyCode === 17 ? 'META' // ctrl
-      : e.keyCode === 18 ? 'META' // alt
-      : e.keyCode === 27 ? 'ESC' // esc
-      : e.keyCode === 38 ? 'UP' // up
-      : e.keyCode === 40 ? 'DOWN' // down
-      : e.keyCode === 78 && e.ctrlKey ? 'DOWN' // ctrl-n
-      : e.keyCode === 80 && e.ctrlKey ? 'UP' // ctrl-p
-      : e.keyCode === 91 ? 'META' // left command
-      : e.keyCode === 93 ? 'META' // right command
-      : 'OTHER';
+      return e.keyCode === 9 ? "ENTER" // tab
+      : e.keyCode === 13 ? "ENTER" // enter
+      : e.keyCode === 27 ? "ESC" // esc
+      : e.keyCode === 38 ? "UP" // up
+      : e.keyCode === 40 ? "DOWN" // down
+      : e.keyCode === 78 && e.ctrlKey ? "DOWN" // ctrl-n
+      : e.keyCode === 80 && e.ctrlKey ? "UP" // ctrl-p
+      : "OTHER";
     }
   }]);
 
@@ -19623,7 +19638,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var DEFAULT_CLASS_NAME = 'dropdown-menu textcomplete-dropdown';
+var DEFAULT_CLASS_NAME = "dropdown-menu textcomplete-dropdown";
 
 /** @typedef */
 
@@ -19637,13 +19652,13 @@ var Dropdown = function (_EventEmitter) {
   _inherits(Dropdown, _EventEmitter);
 
   _createClass(Dropdown, null, [{
-    key: 'createElement',
+    key: "createElement",
     value: function createElement() {
-      var el = document.createElement('ul');
+      var el = document.createElement("ul");
       var style = el.style;
-      style.display = 'none';
-      style.position = 'absolute';
-      style.zIndex = '10000';
+      style.display = "none";
+      style.position = "absolute";
+      style.zIndex = "10000";
       var body = document.body;
       if (body) {
         body.appendChild(el);
@@ -19663,12 +19678,12 @@ var Dropdown = function (_EventEmitter) {
     _this.header = options.header;
     _this.maxCount = options.maxCount || 10;
     _this.el.className = options.className || DEFAULT_CLASS_NAME;
-    _this.rotate = options.hasOwnProperty('rotate') ? options.rotate : true;
+    _this.rotate = options.hasOwnProperty("rotate") ? options.rotate : true;
     _this.placement = options.placement;
     var style = options.style;
     if (style) {
       Object.keys(style).forEach(function (key) {
-        _this.el.style[key] = style[key];
+        ;_this.el.style[key] = style[key];
       });
     }
     return _this;
@@ -19680,7 +19695,7 @@ var Dropdown = function (_EventEmitter) {
 
 
   _createClass(Dropdown, [{
-    key: 'destroy',
+    key: "destroy",
     value: function destroy() {
       var parentNode = this.el.parentNode;
       if (parentNode) {
@@ -19690,7 +19705,7 @@ var Dropdown = function (_EventEmitter) {
       return this;
     }
   }, {
-    key: 'render',
+    key: "render",
 
 
     /**
@@ -19699,8 +19714,8 @@ var Dropdown = function (_EventEmitter) {
      * @return {this}
      */
     value: function render(searchResults, cursorOffset) {
-      var renderEvent = (0, _utils.createCustomEvent)('render', { cancelable: true });
-      this.emit('render', renderEvent);
+      var renderEvent = (0, _utils.createCustomEvent)("render", { cancelable: true });
+      this.emit("render", renderEvent);
       if (renderEvent.defaultPrevented) {
         return this;
       }
@@ -19710,8 +19725,8 @@ var Dropdown = function (_EventEmitter) {
       var dropdownItems = searchResults.slice(0, this.maxCount || searchResults.length).map(function (searchResult) {
         return new _dropdown_item2.default(searchResult);
       });
-      this.clear().setStrategyId(searchResults[0]).renderEdge(rawResults, 'header').append(dropdownItems).renderEdge(rawResults, 'footer').setOffset(cursorOffset).show();
-      this.emit('rendered', (0, _utils.createCustomEvent)('rendered'));
+      this.clear().setStrategyId(searchResults[0]).renderEdge(rawResults, "header").append(dropdownItems).renderEdge(rawResults, "footer").setOffset(cursorOffset).show();
+      this.emit("rendered", (0, _utils.createCustomEvent)("rendered"));
       return this;
     }
 
@@ -19722,7 +19737,7 @@ var Dropdown = function (_EventEmitter) {
      */
 
   }, {
-    key: 'deactivate',
+    key: "deactivate",
     value: function deactivate() {
       return this.hide().clear();
     }
@@ -19732,16 +19747,19 @@ var Dropdown = function (_EventEmitter) {
      */
 
   }, {
-    key: 'select',
+    key: "select",
     value: function select(dropdownItem) {
       var detail = { searchResult: dropdownItem.searchResult };
-      var selectEvent = (0, _utils.createCustomEvent)('select', { cancelable: true, detail: detail });
-      this.emit('select', selectEvent);
+      var selectEvent = (0, _utils.createCustomEvent)("select", {
+        cancelable: true,
+        detail: detail
+      });
+      this.emit("select", selectEvent);
       if (selectEvent.defaultPrevented) {
         return this;
       }
       this.deactivate();
-      this.emit('selected', (0, _utils.createCustomEvent)('selected', { detail: detail }));
+      this.emit("selected", (0, _utils.createCustomEvent)("selected", { detail: detail }));
       return this;
     }
 
@@ -19750,9 +19768,9 @@ var Dropdown = function (_EventEmitter) {
      */
 
   }, {
-    key: 'up',
+    key: "up",
     value: function up(e) {
-      return this.shown ? this.moveActiveItem('prev', e) : this;
+      return this.shown ? this.moveActiveItem("prev", e) : this;
     }
 
     /**
@@ -19760,9 +19778,9 @@ var Dropdown = function (_EventEmitter) {
      */
 
   }, {
-    key: 'down',
+    key: "down",
     value: function down(e) {
-      return this.shown ? this.moveActiveItem('next', e) : this;
+      return this.shown ? this.moveActiveItem("next", e) : this;
     }
 
     /**
@@ -19770,7 +19788,7 @@ var Dropdown = function (_EventEmitter) {
      */
 
   }, {
-    key: 'getActiveItem',
+    key: "getActiveItem",
     value: function getActiveItem() {
       return this.items.find(function (item) {
         return item.active;
@@ -19784,7 +19802,7 @@ var Dropdown = function (_EventEmitter) {
      */
 
   }, {
-    key: 'append',
+    key: "append",
     value: function append(items) {
       var _this2 = this;
 
@@ -19801,20 +19819,20 @@ var Dropdown = function (_EventEmitter) {
     /** @private */
 
   }, {
-    key: 'setOffset',
+    key: "setOffset",
     value: function setOffset(cursorOffset) {
       if (cursorOffset.left) {
-        this.el.style.left = cursorOffset.left + 'px';
+        this.el.style.left = cursorOffset.left + "px";
       } else if (cursorOffset.right) {
-        this.el.style.right = cursorOffset.right + 'px';
+        this.el.style.right = cursorOffset.right + "px";
       }
       if (this.isPlacementTop()) {
         var element = document.documentElement;
         if (element) {
-          this.el.style.bottom = element.clientHeight - cursorOffset.top + cursorOffset.lineHeight + 'px';
+          this.el.style.bottom = element.clientHeight - cursorOffset.top + cursorOffset.lineHeight + "px";
         }
       } else {
-        this.el.style.top = cursorOffset.top + 'px';
+        this.el.style.top = cursorOffset.top + "px";
       }
       return this;
     }
@@ -19826,17 +19844,17 @@ var Dropdown = function (_EventEmitter) {
      */
 
   }, {
-    key: 'show',
+    key: "show",
     value: function show() {
       if (!this.shown) {
-        var showEvent = (0, _utils.createCustomEvent)('show', { cancelable: true });
-        this.emit('show', showEvent);
+        var showEvent = (0, _utils.createCustomEvent)("show", { cancelable: true });
+        this.emit("show", showEvent);
         if (showEvent.defaultPrevented) {
           return this;
         }
-        this.el.style.display = 'block';
+        this.el.style.display = "block";
         this.shown = true;
-        this.emit('shown', (0, _utils.createCustomEvent)('shown'));
+        this.emit("shown", (0, _utils.createCustomEvent)("shown"));
       }
       return this;
     }
@@ -19848,17 +19866,17 @@ var Dropdown = function (_EventEmitter) {
      */
 
   }, {
-    key: 'hide',
+    key: "hide",
     value: function hide() {
       if (this.shown) {
-        var hideEvent = (0, _utils.createCustomEvent)('hide', { cancelable: true });
-        this.emit('hide', hideEvent);
+        var hideEvent = (0, _utils.createCustomEvent)("hide", { cancelable: true });
+        this.emit("hide", hideEvent);
         if (hideEvent.defaultPrevented) {
           return this;
         }
-        this.el.style.display = 'none';
+        this.el.style.display = "none";
         this.shown = false;
-        this.emit('hidden', (0, _utils.createCustomEvent)('hidden'));
+        this.emit("hidden", (0, _utils.createCustomEvent)("hidden"));
       }
       return this;
     }
@@ -19870,9 +19888,9 @@ var Dropdown = function (_EventEmitter) {
      */
 
   }, {
-    key: 'clear',
+    key: "clear",
     value: function clear() {
-      this.el.innerHTML = '';
+      this.el.innerHTML = "";
       this.items.forEach(function (item) {
         return item.destroy();
       });
@@ -19883,14 +19901,14 @@ var Dropdown = function (_EventEmitter) {
     /** @private */
 
   }, {
-    key: 'moveActiveItem',
+    key: "moveActiveItem",
     value: function moveActiveItem(name, e) {
       var activeItem = this.getActiveItem();
       var nextActiveItem = void 0;
       if (activeItem) {
         nextActiveItem = activeItem[name];
       } else {
-        nextActiveItem = name === 'next' ? this.items[0] : this.items[this.items.length - 1];
+        nextActiveItem = name === "next" ? this.items[0] : this.items[this.items.length - 1];
       }
       if (nextActiveItem) {
         nextActiveItem.activate();
@@ -19902,13 +19920,13 @@ var Dropdown = function (_EventEmitter) {
     /** @private */
 
   }, {
-    key: 'setStrategyId',
+    key: "setStrategyId",
     value: function setStrategyId(searchResult) {
       var strategyId = searchResult && searchResult.strategy.props.id;
       if (strategyId) {
-        this.el.setAttribute('data-strategy', strategyId);
+        this.el.setAttribute("data-strategy", strategyId);
       } else {
-        this.el.removeAttribute('data-strategy');
+        this.el.removeAttribute("data-strategy");
       }
       return this;
     }
@@ -19919,12 +19937,12 @@ var Dropdown = function (_EventEmitter) {
      */
 
   }, {
-    key: 'renderEdge',
+    key: "renderEdge",
     value: function renderEdge(rawResults, type) {
-      var source = (type === 'header' ? this.header : this.footer) || '';
-      var content = typeof source === 'function' ? source(rawResults) : source;
-      var li = document.createElement('li');
-      li.classList.add('textcomplete-' + type);
+      var source = (type === "header" ? this.header : this.footer) || "";
+      var content = typeof source === "function" ? source(rawResults) : source;
+      var li = document.createElement("li");
+      li.classList.add("textcomplete-" + type);
       li.innerHTML = content;
       this.el.appendChild(li);
       return this;
@@ -19933,12 +19951,12 @@ var Dropdown = function (_EventEmitter) {
     /** @private */
 
   }, {
-    key: 'isPlacementTop',
+    key: "isPlacementTop",
     value: function isPlacementTop() {
-      return this.placement === 'top';
+      return this.placement === "top";
     }
   }, {
-    key: 'el',
+    key: "el",
     get: function get() {
       if (!this._el) {
         this._el = Dropdown.createElement();
@@ -24154,7 +24172,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var CALLBACK_METHODS = ['handleChange', 'handleEnter', 'handleEsc', 'handleHit', 'handleMove', 'handleSelect'];
+var CALLBACK_METHODS = ["handleChange", "handleEnter", "handleEsc", "handleHit", "handleMove", "handleSelect"];
 
 /** @typedef */
 
@@ -24182,7 +24200,7 @@ var Textcomplete = function (_EventEmitter) {
     _this.options = options;
 
     CALLBACK_METHODS.forEach(function (method) {
-      _this[method] = _this[method].bind(_this);
+      ;_this[method] = _this[method].bind(_this);
     });
 
     _this.startListening();
@@ -24195,7 +24213,7 @@ var Textcomplete = function (_EventEmitter) {
 
 
   _createClass(Textcomplete, [{
-    key: 'destroy',
+    key: "destroy",
     value: function destroy() {
       var destroyEditor = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
 
@@ -24225,7 +24243,7 @@ var Textcomplete = function (_EventEmitter) {
      */
 
   }, {
-    key: 'register',
+    key: "register",
     value: function register(strategyPropsArray) {
       var _this2 = this;
 
@@ -24243,7 +24261,7 @@ var Textcomplete = function (_EventEmitter) {
      */
 
   }, {
-    key: 'trigger',
+    key: "trigger",
     value: function trigger(text) {
       if (this.isQueryInFlight) {
         this.nextPendingQuery = text;
@@ -24258,7 +24276,7 @@ var Textcomplete = function (_EventEmitter) {
     /** @private */
 
   }, {
-    key: 'handleHit',
+    key: "handleHit",
     value: function handleHit(_ref) {
       var searchResults = _ref.searchResults;
 
@@ -24276,27 +24294,29 @@ var Textcomplete = function (_EventEmitter) {
     /** @private */
 
   }, {
-    key: 'handleMove',
+    key: "handleMove",
     value: function handleMove(e) {
-      e.detail.code === 'UP' ? this.dropdown.up(e) : this.dropdown.down(e);
+      e.detail.code === "UP" ? this.dropdown.up(e) : this.dropdown.down(e);
     }
 
     /** @private */
 
   }, {
-    key: 'handleEnter',
+    key: "handleEnter",
     value: function handleEnter(e) {
       var activeItem = this.dropdown.getActiveItem();
       if (activeItem) {
         this.dropdown.select(activeItem);
         e.preventDefault();
+      } else {
+        this.dropdown.deactivate();
       }
     }
 
     /** @private */
 
   }, {
-    key: 'handleEsc',
+    key: "handleEsc",
     value: function handleEsc(e) {
       if (this.dropdown.shown) {
         this.dropdown.deactivate();
@@ -24307,17 +24327,21 @@ var Textcomplete = function (_EventEmitter) {
     /** @private */
 
   }, {
-    key: 'handleChange',
+    key: "handleChange",
     value: function handleChange(e) {
-      this.trigger(e.detail.beforeCursor);
+      if (e.detail.beforeCursor != null) {
+        this.trigger(e.detail.beforeCursor);
+      } else {
+        this.dropdown.deactivate();
+      }
     }
 
     /** @private */
 
   }, {
-    key: 'handleSelect',
+    key: "handleSelect",
     value: function handleSelect(selectEvent) {
-      this.emit('select', selectEvent);
+      this.emit("select", selectEvent);
       if (!selectEvent.defaultPrevented) {
         this.editor.applySearchResult(selectEvent.detail.searchResult);
       }
@@ -24326,28 +24350,27 @@ var Textcomplete = function (_EventEmitter) {
     /** @private */
 
   }, {
-    key: 'startListening',
+    key: "startListening",
     value: function startListening() {
       var _this3 = this;
 
-      this.editor.on('move', this.handleMove).on('enter', this.handleEnter).on('esc', this.handleEsc).on('change', this.handleChange);
-      this.dropdown.on('select', this.handleSelect);
-      ['show', 'shown', 'render', 'rendered', 'selected', 'hidden', 'hide'].forEach(function (eventName) {
+      this.editor.on("move", this.handleMove).on("enter", this.handleEnter).on("esc", this.handleEsc).on("change", this.handleChange);
+      this.dropdown.on("select", this.handleSelect);["show", "shown", "render", "rendered", "selected", "hidden", "hide"].forEach(function (eventName) {
         _this3.dropdown.on(eventName, function () {
           return _this3.emit(eventName);
         });
       });
-      this.completer.on('hit', this.handleHit);
+      this.completer.on("hit", this.handleHit);
     }
 
     /** @private */
 
   }, {
-    key: 'stopListening',
+    key: "stopListening",
     value: function stopListening() {
       this.completer.removeAllListeners();
       this.dropdown.removeAllListeners();
-      this.editor.removeListener('move', this.handleMove).removeListener('enter', this.handleEnter).removeListener('esc', this.handleEsc).removeListener('change', this.handleChange);
+      this.editor.removeListener("move", this.handleMove).removeListener("enter", this.handleEnter).removeListener("esc", this.handleEsc).removeListener("change", this.handleChange);
     }
   }]);
 
@@ -24390,7 +24413,7 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var CALLBACK_METHODS = ['handleQueryResult'];
+var CALLBACK_METHODS = ["handleQueryResult"];
 
 /**
  * Complete engine.
@@ -24407,7 +24430,7 @@ var Completer = function (_EventEmitter) {
     _this.strategies = [];
 
     CALLBACK_METHODS.forEach(function (method) {
-      _this[method] = _this[method].bind(_this);
+      ;_this[method] = _this[method].bind(_this);
     });
     return _this;
   }
@@ -24418,7 +24441,7 @@ var Completer = function (_EventEmitter) {
 
 
   _createClass(Completer, [{
-    key: 'destroy',
+    key: "destroy",
     value: function destroy() {
       this.strategies.forEach(function (strategy) {
         return strategy.destroy();
@@ -24433,7 +24456,7 @@ var Completer = function (_EventEmitter) {
      */
 
   }, {
-    key: 'registerStrategy',
+    key: "registerStrategy",
     value: function registerStrategy(strategy) {
       this.strategies.push(strategy);
       return this;
@@ -24444,7 +24467,7 @@ var Completer = function (_EventEmitter) {
      */
 
   }, {
-    key: 'run',
+    key: "run",
     value: function run(text) {
       var query = this.extractQuery(text);
       if (query) {
@@ -24461,7 +24484,7 @@ var Completer = function (_EventEmitter) {
      */
 
   }, {
-    key: 'extractQuery',
+    key: "extractQuery",
     value: function extractQuery(text) {
       for (var i = 0; i < this.strategies.length; i++) {
         var query = this.strategies[i].buildQuery(text);
@@ -24479,9 +24502,9 @@ var Completer = function (_EventEmitter) {
      */
 
   }, {
-    key: 'handleQueryResult',
+    key: "handleQueryResult",
     value: function handleQueryResult(searchResults) {
-      this.emit('hit', { searchResults: searchResults });
+      this.emit("hit", { searchResults: searchResults });
     }
   }]);
 
@@ -24534,7 +24557,7 @@ var Query = function () {
 
 
   _createClass(Query, [{
-    key: 'execute',
+    key: "execute",
     value: function execute(callback) {
       var _this = this;
 
@@ -24578,9 +24601,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var CLASS_NAME = exports.CLASS_NAME = 'textcomplete-item';
-var ACTIVE_CLASS_NAME = CLASS_NAME + ' active';
-var CALLBACK_METHODS = ['onClick', 'onMouseover'];
+var CLASS_NAME = exports.CLASS_NAME = "textcomplete-item";
+var ACTIVE_CLASS_NAME = CLASS_NAME + " active";
+var CALLBACK_METHODS = ["onClick", "onMouseover"];
 
 /**
  * Encapsulate an item of dropdown.
@@ -24596,23 +24619,23 @@ var DropdownItem = function () {
     this.active = false;
 
     CALLBACK_METHODS.forEach(function (method) {
-      _this[method] = _this[method].bind(_this);
+      ;_this[method] = _this[method].bind(_this);
     });
   }
 
   _createClass(DropdownItem, [{
-    key: 'destroy',
+    key: "destroy",
 
 
     /**
      * Try to free resources and perform other cleanup operations.
      */
     value: function destroy() {
-      this.el.removeEventListener('mousedown', this.onClick, false);
-      this.el.removeEventListener('mouseover', this.onMouseover, false);
-      this.el.removeEventListener('touchstart', this.onClick, false);
+      this.el.removeEventListener("mousedown", this.onClick, false);
+      this.el.removeEventListener("mouseover", this.onMouseover, false);
+      this.el.removeEventListener("touchstart", this.onClick, false
       // This element has already been removed by {@link Dropdown#clear}.
-      this._el = null;
+      );this._el = null;
     }
 
     /**
@@ -24622,7 +24645,7 @@ var DropdownItem = function () {
      */
 
   }, {
-    key: 'appended',
+    key: "appended",
     value: function appended(dropdown) {
       this.dropdown = dropdown;
       this.siblings = dropdown.items;
@@ -24636,7 +24659,7 @@ var DropdownItem = function () {
      */
 
   }, {
-    key: 'activate',
+    key: "activate",
     value: function activate() {
       if (!this.active) {
         var activeItem = this.dropdown.getActiveItem();
@@ -24654,7 +24677,7 @@ var DropdownItem = function () {
      */
 
   }, {
-    key: 'deactivate',
+    key: "deactivate",
 
 
     /** @private */
@@ -24669,38 +24692,38 @@ var DropdownItem = function () {
     /** @private */
 
   }, {
-    key: 'onClick',
+    key: "onClick",
     value: function onClick(e) {
-      e.preventDefault(); // Prevent blur event
-      this.dropdown.select(this);
+      e.preventDefault // Prevent blur event
+      ();this.dropdown.select(this);
     }
 
     /** @private */
 
   }, {
-    key: 'onMouseover',
+    key: "onMouseover",
     value: function onMouseover(_) {
       this.activate();
     }
   }, {
-    key: 'el',
+    key: "el",
     get: function get() {
       if (this._el) {
         return this._el;
       }
-      var li = document.createElement('li');
+      var li = document.createElement("li");
       li.className = this.active ? ACTIVE_CLASS_NAME : CLASS_NAME;
-      var a = document.createElement('a');
+      var a = document.createElement("a");
       a.innerHTML = this.searchResult.render();
       li.appendChild(a);
       this._el = li;
-      li.addEventListener('mousedown', this.onClick);
-      li.addEventListener('mouseover', this.onMouseover);
-      li.addEventListener('touchstart', this.onClick);
+      li.addEventListener("mousedown", this.onClick);
+      li.addEventListener("mouseover", this.onMouseover);
+      li.addEventListener("touchstart", this.onClick);
       return li;
     }
   }, {
-    key: 'next',
+    key: "next",
     get: function get() {
       var nextIndex = void 0;
       if (this.index === this.siblings.length - 1) {
@@ -24719,7 +24742,7 @@ var DropdownItem = function () {
      */
 
   }, {
-    key: 'prev',
+    key: "prev",
     get: function get() {
       var nextIndex = void 0;
       if (this.index === 0) {
@@ -24786,7 +24809,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var getCaretCoordinates = __webpack_require__(208);
 
-var CALLBACK_METHODS = ['onInput', 'onKeydown'];
+var CALLBACK_METHODS = ["onInput", "onKeydown"];
 
 /**
  * Encapsulate the target textarea element.
@@ -24806,7 +24829,7 @@ var Textarea = function (_Editor) {
     _this.el = el;
 
     CALLBACK_METHODS.forEach(function (method) {
-      _this[method] = _this[method].bind(_this);
+      ;_this[method] = _this[method].bind(_this);
     });
 
     _this.startListening();
@@ -24819,12 +24842,12 @@ var Textarea = function (_Editor) {
 
 
   _createClass(Textarea, [{
-    key: 'destroy',
+    key: "destroy",
     value: function destroy() {
-      _get(Textarea.prototype.__proto__ || Object.getPrototypeOf(Textarea.prototype), 'destroy', this).call(this);
-      this.stopListening();
+      _get(Textarea.prototype.__proto__ || Object.getPrototypeOf(Textarea.prototype), "destroy", this).call(this);
+      this.stopListening
       // Release the element reference early to help garbage collection.
-      this.el = null;
+      ();this.el = null;
       return this;
     }
 
@@ -24833,13 +24856,16 @@ var Textarea = function (_Editor) {
      */
 
   }, {
-    key: 'applySearchResult',
+    key: "applySearchResult",
     value: function applySearchResult(searchResult) {
-      var replace = searchResult.replace(this.getBeforeCursor(), this.getAfterCursor());
-      this.el.focus(); // Clicking a dropdown item removes focus from the element.
-      if (Array.isArray(replace)) {
-        (0, _update2.default)(this.el, replace[0], replace[1]);
-        this.el.dispatchEvent(new Event('input'));
+      var before = this.getBeforeCursor();
+      if (before != null) {
+        var replace = searchResult.replace(before, this.getAfterCursor());
+        this.el.focus // Clicking a dropdown item removes focus from the element.
+        ();if (Array.isArray(replace)) {
+          (0, _update2.default)(this.el, replace[0], replace[1]);
+          this.el.dispatchEvent(new Event("input"));
+        }
       }
     }
 
@@ -24848,7 +24874,7 @@ var Textarea = function (_Editor) {
      */
 
   }, {
-    key: 'getCursorOffset',
+    key: "getCursorOffset",
     value: function getCursorOffset() {
       var elOffset = (0, _utils.calculateElementOffset)(this.el);
       var elScroll = this.getElScroll();
@@ -24856,7 +24882,7 @@ var Textarea = function (_Editor) {
       var lineHeight = (0, _utils.getLineHeightPx)(this.el);
       var top = elOffset.top - elScroll.top + cursorPosition.top + lineHeight;
       var left = elOffset.left - elScroll.left + cursorPosition.left;
-      if (this.el.dir !== 'rtl') {
+      if (this.el.dir !== "rtl") {
         return { top: top, left: left, lineHeight: lineHeight };
       } else {
         var right = document.documentElement ? document.documentElement.clientWidth - left : 0;
@@ -24869,17 +24895,15 @@ var Textarea = function (_Editor) {
      */
 
   }, {
-    key: 'getBeforeCursor',
+    key: "getBeforeCursor",
     value: function getBeforeCursor() {
-      return this.el.value.substring(0, this.el.selectionEnd);
+      return this.el.selectionStart !== this.el.selectionEnd ? null : this.el.value.substring(0, this.el.selectionEnd);
     }
 
-    /**
-     * Implementation for {@link Editor#getAfterCursor}
-     */
+    /** @private */
 
   }, {
-    key: 'getAfterCursor',
+    key: "getAfterCursor",
     value: function getAfterCursor() {
       return this.el.value.substring(this.el.selectionEnd);
     }
@@ -24887,7 +24911,7 @@ var Textarea = function (_Editor) {
     /** @private */
 
   }, {
-    key: 'getElScroll',
+    key: "getElScroll",
     value: function getElScroll() {
       return { top: this.el.scrollTop, left: this.el.scrollLeft };
     }
@@ -24900,7 +24924,7 @@ var Textarea = function (_Editor) {
      */
 
   }, {
-    key: 'getCursorPosition',
+    key: "getCursorPosition",
     value: function getCursorPosition() {
       return getCaretCoordinates(this.el, this.el.selectionEnd);
     }
@@ -24908,7 +24932,7 @@ var Textarea = function (_Editor) {
     /** @private */
 
   }, {
-    key: 'onInput',
+    key: "onInput",
     value: function onInput(_) {
       this.emitChangeEvent();
     }
@@ -24916,15 +24940,15 @@ var Textarea = function (_Editor) {
     /** @private */
 
   }, {
-    key: 'onKeydown',
+    key: "onKeydown",
     value: function onKeydown(e) {
       var code = this.getCode(e);
       var event = void 0;
-      if (code === 'UP' || code === 'DOWN') {
+      if (code === "UP" || code === "DOWN") {
         event = this.emitMoveEvent(code);
-      } else if (code === 'ENTER') {
+      } else if (code === "ENTER") {
         event = this.emitEnterEvent();
-      } else if (code === 'ESC') {
+      } else if (code === "ESC") {
         event = this.emitEscEvent();
       }
       if (event && event.defaultPrevented) {
@@ -24935,19 +24959,19 @@ var Textarea = function (_Editor) {
     /** @private */
 
   }, {
-    key: 'startListening',
+    key: "startListening",
     value: function startListening() {
-      this.el.addEventListener('input', this.onInput);
-      this.el.addEventListener('keydown', this.onKeydown);
+      this.el.addEventListener("input", this.onInput);
+      this.el.addEventListener("keydown", this.onKeydown);
     }
 
     /** @private */
 
   }, {
-    key: 'stopListening',
+    key: "stopListening",
     value: function stopListening() {
-      this.el.removeEventListener('input', this.onInput);
-      this.el.removeEventListener('keydown', this.onKeydown);
+      this.el.removeEventListener("input", this.onInput);
+      this.el.removeEventListener("keydown", this.onKeydown);
     }
   }]);
 

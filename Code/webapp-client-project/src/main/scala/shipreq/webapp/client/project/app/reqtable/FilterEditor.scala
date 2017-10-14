@@ -130,9 +130,10 @@ object FilterEditor {
 
       var input =
         <.input.text(
+          ^.onBlur     --> autoCompleteBlur,
+          ^.onChange   ==> onChange,
           ^.placeholder := "Filter...",
-          ^.value := p.state.text,
-          ^.onChange ==> onChange)
+          ^.value       := p.state.text)
 
       var onRight: TagMod =
         helpButton
