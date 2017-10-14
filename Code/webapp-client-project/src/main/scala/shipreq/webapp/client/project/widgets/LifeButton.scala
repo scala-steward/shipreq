@@ -13,7 +13,7 @@ import shipreq.webapp.base.ui.semantic.{Button, Colour, ColourPlus, Icon}
   * Dead. [Restore]
   */
 sealed abstract class LifeButton(status: String, button: Button) {
-  private val base = button.tag
+  private val base = button.tag(^.whiteSpace.nowrap)
 
   def apply(onClick: Callback): VdomTag =
     base(^.onClick --> onClick)
