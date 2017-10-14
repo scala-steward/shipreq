@@ -92,7 +92,7 @@ object NewEditor {
       *      (eg. Alice renders start-edit button, Bob deletes req, Alice attempts to start editor)
       */
     type Init[FieldArgs, Change] = CreationArgs => CallbackOption[Editor[FieldArgs, Change]]
-    
+
     trait EditorImpl[Args, Change] extends Editor[Args, Change] {
       protected type Props
       protected val props: (Args, AsyncState) => CallbackTo[Props]
@@ -118,7 +118,7 @@ object NewEditor {
     import static._
 
     val perRow: RowKey.Fold[ForFields] = {
-      type LogicPerField[A, Change] = InternalCtx[A, Change] => Internal.Init[A, Change]
+      type LogicPerField[Args, Change] = InternalCtx[Args, Change] => Internal.Init[Args, Change]
 
       val logicToPerField: LogicPerField ~~> ForEditor =
         new (LogicPerField ~~> ForEditor) {

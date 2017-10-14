@@ -20,6 +20,8 @@ import shipreq.webapp.client.project.widgets.CancelButton
 
 object NewForm {
 
+  private type ValueConsumer[A, V] = V => Unit
+
   object ForCodeGroup extends NewForm {
     override type Input            = Unit
     override type FK               = FieldKey.ForCodeGroup
@@ -28,7 +30,7 @@ object NewForm {
     override protected def createCmd(i: Input, o: Output): Option[CreateContentCmd] = {
       var _code: Option[FieldKey.Code.Value] = None
       var title: FieldKey.CodeGroupTitle.Value = Vector.empty
-      val fold = FieldKey.FoldForCodeGroup[? => Unit](
+      val fold = FieldKey.FoldForCodeGroup[ValueConsumer](
         f => (v: f.Value) => _code = Some(v),
         f => (v: f.Value) => title = v)
       o.foreach(_.foldValue(fold))
@@ -43,7 +45,7 @@ object NewForm {
     override val createButtonLabel = NewForm.createButtonLabel(_)
     override protected def createCmd(i: Input, o: Output): Option[CreateContentCmd] = {
       var c = CreateContentCmd.CreateGenericReq.empty(i.id)
-      val fold = FieldKey.FoldForGenericReq[? => Unit](
+      val fold = FieldKey.FoldForGenericReq[ValueConsumer](
         codes           = f => (v: f.Value) => c = c.copy(codes = v),
         customTextField = f => (v: f.Value) => c = c.addCustomText(f.field, v),
         implications    = f => (v: f.Value) => c = c.addImps(f.dir, v),
@@ -61,7 +63,7 @@ object NewForm {
     override val createButtonLabel = Function const NewForm.createButtonLabel(StaticReqType.UseCase)
     override protected def createCmd(i: Input, o: Output): Option[CreateContentCmd] = {
       var c = CreateContentCmd.CreateUseCase.empty
-      val fold = FieldKey.FoldForUseCase[? => Unit](
+      val fold = FieldKey.FoldForUseCase[ValueConsumer](
         codes           = f => (v: f.Value) => c = c.copy(codes = v),
         customTextField = f => (v: f.Value) => c = c.addCustomText(f.field, v),
         implications    = f => (v: f.Value) => c = c.addImps(f.dir, v),
@@ -100,7 +102,8 @@ sealed trait NewForm {
     * 1. Map to a visible column
     * 2. Are applicable to the creation subject
     */
-  final type Output = List[FK#AndValue[Id]]
+  final type Output = List[FK#AndValue[FieldValue]]
+  final type FieldValue[A, V] = V
 
   final type Editor = FK#AndValue[CreateFeature.ReadWrite.ForEditor]
 
@@ -111,11 +114,9 @@ sealed trait NewForm {
                           activeColumns: NonEmptyVector[ColumnPlus],
                           createFeature: CreateFeature.ReadWrite.ForRow[FK],
                           cancel       : Callback) {
-    def render: VdomElement = Component(this)
 
-    // TODO test with mandatory columns only
     val editableCols: NonEmptyVector[(ColumnPlus, Editor)] =
-      NonEmptyVector.force(
+      NonEmptyVector.force( // TODO test with mandatory columns only
         activeColumns
           .iterator
           .map(cp => columnToField(cp.column).flatMap(f => createFeature(f) match {
@@ -129,6 +130,8 @@ sealed trait NewForm {
       validOutput(editableCols.iterator.map(_._2))
         .flatMap(createCmd(input, _))
         .map(cmd => onSuccess => createFeature.create(cmd, onSuccess))
+
+    def render: VdomElement = Component(this)
   }
 
   /** @return None if any fields have invalid contents */
@@ -140,7 +143,7 @@ sealed trait NewForm {
       else {
         val e = es.next()
         e.value.value() match {
-          case \/-(v) => go(e.withValue[Id](v) :: o)
+          case \/-(v) => go(e.withValue[FieldValue](v) :: o)
           case -\/(_) => None // Invalidity found -- abort everything
         }
       }

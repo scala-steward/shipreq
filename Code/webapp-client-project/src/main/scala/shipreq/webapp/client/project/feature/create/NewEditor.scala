@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.feature.create
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
-import scalaz.~>
+import scalaz.~~>
 import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text._
@@ -26,11 +26,11 @@ object NewEditor {
     private[NewEditor] val internal = new Internal(this)
   }
 
-  final case class Ctx[Value](stateAccess: StateAccessPure[State.ForEditor[Value]]) extends AnyVal
+  final case class Ctx[Args, Value](stateAccess: StateAccessPure[State.ForEditor[Args, Value]]) extends AnyVal
 
   type ForFields[-FK <: FieldKey] = FieldKey.Fold[FK, ForEditor]
 
-  type ForEditor[Value] = Ctx[Value] ⇒ Editor[Value]
+  type ForEditor[Args, Value] = Ctx[Args, Value] => Editor[Args, Value]
 
   def forRow(static: Static, rowKey: RowKey): ForFields[rowKey.FieldKey] =
     static.internal.perRow(rowKey)
@@ -44,19 +44,19 @@ object NewEditor {
       * Unlike the `Init` used in `EditorFeature`, here we have no need for initial data because all editors are for
       * new content. Therefore, success is assured, total, and pure.
       */
-    type Init[Value] = Editor[Value]
+    type Init[Args, Value] = Editor[Args, Value]
 
-    trait EditorImpl[Value] extends Editor[Value] {
+    trait EditorImpl[Args, Value] extends Editor[Args, Value] {
       protected type Props
-      protected val props: AsyncState => CallbackTo[Props]
+      protected val props: (Args, AsyncState) => CallbackTo[Props]
       protected def renderImpl: Props => VdomElement
       protected def valueImpl: Props => Editor.Value[Value]
 
-      final override def render(a: AsyncState)(): VdomElement =
-        renderImpl(props(a).runNow())
+      final override def render(as: AsyncState, args: Args)(): VdomElement =
+        renderImpl(props(args, as).runNow())
 
-      final override def value() =
-        valueImpl(props(None).runNow())
+      final override def value(args: Args) =
+        valueImpl(props(args, None).runNow())
     }
 
     final val ShowInstructions = true
@@ -69,23 +69,26 @@ object NewEditor {
     import static._
 
     val perRow: RowKey.Fold[ForFields] = {
-      type EditorLogic[Value] = InternalCtx[Value] => Internal.Init[Value]
+      type LogicPerField[Args, Value] = InternalCtx[Args, Value] => Internal.Init[Args, Value]
 
-      val forEditor: EditorLogic ~> ForEditor =
-        λ[EditorLogic ~> ForEditor](f => ctx => f(new InternalCtx(ctx)))
+      val logicToPerField: LogicPerField ~~> ForEditor =
+        new (LogicPerField ~~> ForEditor) {
+          override def apply[A, V](init: LogicPerField[A, V]): ForEditor[A, V] =
+            ctx => init(new InternalCtx[A, V](ctx))
+        }
 
-      def prepareCG(r: RowKey.CodeGroup.type) = FieldKey.FoldForCodeGroup[EditorLogic](
+      def prepareCG(r: RowKey.CodeGroup.type) = FieldKey.FoldForCodeGroup[LogicPerField](
         _ => EditReqCodes.Single.apply,
         f => EditRichText.CodeGroupTitle(PreviewId(RowKey.CodeGroup, f)))
 
-      def prepareGR(r: RowKey.GenericReq) = FieldKey.FoldForGenericReq[EditorLogic](
+      def prepareGR(r: RowKey.GenericReq) = FieldKey.FoldForGenericReq[LogicPerField](
         _ => EditReqCodes.Multiple.apply,
         f => EditRichText.CustomTextField(PreviewId(r, f)),
         f => EditImplications(f.scope),
         f => EditTags(f.field),
         f => EditRichText.GenericReqTitle(PreviewId(r, f)))
 
-      def prepareUC(r: RowKey.UseCase.type) = FieldKey.FoldForUseCase[EditorLogic](
+      def prepareUC(r: RowKey.UseCase.type) = FieldKey.FoldForUseCase[LogicPerField](
         _ => EditReqCodes.Multiple.apply,
         f => EditRichText.CustomTextField(PreviewId(r, f)),
         f => EditImplications(f.scope),
@@ -93,20 +96,20 @@ object NewEditor {
         f => EditRichText.UseCaseTitle(PreviewId(r, f)))
 
       RowKey.Fold[ForFields](
-        codeGroup    = prepareCG(_).map(forEditor),
-        genericReq   = prepareGR(_).map(forEditor),
-        useCase      = prepareUC(_).map(forEditor))
+        codeGroup    = prepareCG(_).map(logicToPerField),
+        genericReq   = prepareGR(_).map(logicToPerField),
+        useCase      = prepareUC(_).map(logicToPerField))
     }
 
-    final class InternalCtx[C](val ctx: Ctx[C]) {
+    final class InternalCtx[A, V](val ctx: Ctx[A, V]) {
       import ctx._
 
-      def startWithStateSnapshot[A: Reusability, E <: Editor[C]](initialValue: A)
-                                                                (editor: StateSnapshot[A] => E): E = {
-        lazy val update: A ~=> Callback =
+      def startWithStateSnapshot[B: Reusability, E <: Editor[A, V]](initialValue: B)
+                                                                   (editor: StateSnapshot[B] => E): E = {
+        lazy val update: B ~=> Callback =
           Reusable.fn(b => stateAccess.setState(Some(newEditor(b))))
 
-        def newEditor: A => E =
+        def newEditor: B => E =
           a => editor(StateSnapshot.withReuse(a)(update))
 
         newEditor(initialValue)
@@ -114,10 +117,11 @@ object NewEditor {
     }
 
     trait ForValueType {
+      final type Args = Unit
       type Value
-      final type EditorImpl = Internal.EditorImpl[Value]
-      final type Init       = Internal.Init[Value]
-      final type InitFn     = InternalCtx[Value] => Init
+      final type EditorImpl = Internal.EditorImpl[Args, Value]
+      final type Init       = Internal.Init[Args, Value]
+      final type InitFn     = InternalCtx[Args, Value] => Init
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -139,14 +143,14 @@ object NewEditor {
           override type Props = RCE.Props
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
-          override val props = as =>
+          override val props = (_, asyncState) =>
             for {
               trie <- trieCB
             } yield RCE.Props(
               ss,
               None,
               trie,
-              EditorStatus.async(as),
+              EditorStatus.async(asyncState),
               None,
               showInstructions = ShowInstructions)
         }
@@ -164,14 +168,14 @@ object NewEditor {
           override type Props = RCE.Props
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
-          override val props = as =>
+          override val props = (_, asyncState) =>
             for {
               trie <- trieCB
             } yield RCE.Props(
               ss,
               None,
               trie,
-              EditorStatus.async(as),
+              EditorStatus.async(asyncState),
               None,
               showInstructions = ShowInstructions)
         }
@@ -212,7 +216,7 @@ object NewEditor {
         override type Props = ImplicationEditor.Props
         override def renderImpl = _.render
         override def valueImpl = _.parseResult.map(_.added)
-        override val props = as =>
+        override val props = (_, asyncState) =>
           for {
             lookup     <- pxLookup.toCallback
             valFn      <- pxValFn.toCallback
@@ -221,7 +225,7 @@ object NewEditor {
             ss,
             lookup,
             valFn,
-            EditorStatus.async(as),
+            EditorStatus.async(asyncState),
             None,
             textSearch,
             showInstructions = ShowInstructions)
@@ -246,14 +250,14 @@ object NewEditor {
         override type Props = TagEditor.Props
         override def renderImpl = _.render
         override def valueImpl = _.parseResultSet
-        override val props = as =>
+        override val props = (_, asyncState) =>
           for {
             lookup <- pxLookup.toCallback
           } yield TagEditor.Props(
             None,
             ss,
             lookup,
-            EditorStatus.async(as),
+            EditorStatus.async(asyncState),
             None,
             showInstructions = ShowInstructions)
       }
@@ -276,7 +280,7 @@ object NewEditor {
           override type Props = editor.Props
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
-          override val props = as =>
+          override val props = (_, asyncState) =>
             for {
               previewRW      <- previewW.toReadWriteCB
               project        <- pxProject.toCallback
@@ -289,7 +293,7 @@ object NewEditor {
               textSearch,
               projectWidgets,
               ss,
-              EditorStatus.async(as),
+              EditorStatus.async(asyncState),
               None,
               previewRW(pid),
               None,
