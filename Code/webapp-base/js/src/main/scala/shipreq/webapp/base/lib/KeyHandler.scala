@@ -66,7 +66,11 @@ object KeyHandler {
 
   // Technically this should be (EventType, List[Criterion])
   // where Criterion = KeyCode | KeyValue | KeyMod*
-  final case class Criterion(eventType: EventType, keyCode: Int, modKeys: ModKeys = ModKeys.empty) {
+  final case class Criterion(desc     : String,
+                             eventType: EventType,
+                             keyCode  : Int,
+                             modKeys  : ModKeys = ModKeys.empty) {
+
     def satisfiedBy(e: ReactKeyboardEvent): Boolean =
       (e.keyCode ==* keyCode) &&
       ModKeys.All.forall(k => k.isPressed(e) ==* modKeys.contains(k))
@@ -91,10 +95,10 @@ object KeyHandler {
       Criteria.empty + m
 
     import org.scalajs.dom.ext.KeyCode
-    val Escape    = Criterion(EventType.KeyDown, KeyCode.Escape)
-    val Enter     = Criterion(EventType.KeyDown, KeyCode.Enter)
-    val AltEnter  = Criterion(EventType.KeyDown, KeyCode.Enter, ModKey.Alt)
-    val CtrlEnter = Criterion(EventType.KeyDown, KeyCode.Enter, ModKey.Ctrl)
+    val Escape    = Criterion("esc",        EventType.KeyDown, KeyCode.Escape)
+    val Enter     = Criterion("enter",      EventType.KeyDown, KeyCode.Enter)
+    val AltEnter  = Criterion("alt-enter",  EventType.KeyDown, KeyCode.Enter, ModKey.Alt)
+    val CtrlEnter = Criterion("ctrl-enter", EventType.KeyDown, KeyCode.Enter, ModKey.Ctrl)
   }
 
   type Criteria = ListSet[Criterion]
@@ -145,13 +149,23 @@ final case class KeyHandlers(handlers: List[KeyHandler]) extends AnyVal {
         et.domKey ==> combinedResponse
       })
   }
+
+  def baseToReact: KeyHandlers => TagMod = {
+    val none = toReact
+    more => if (more.handlers.isEmpty)
+      none
+    else
+      (this ++ more).toReact
+  }
 }
 
 object KeyHandlers {
 
   def empty = KeyHandlers(Nil)
 
-  @inline implicit def autoToRect(k: KeyHandlers): TagMod =
+  @inline implicit def autoToReact(k: KeyHandlers): TagMod =
     k.toReact
 
+  @inline def base(keyHandlers: KeyHandlers): KeyHandlers => TagMod =
+    keyHandlers.baseToReact
 }

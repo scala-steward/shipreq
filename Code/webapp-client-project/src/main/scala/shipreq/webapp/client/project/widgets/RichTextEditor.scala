@@ -9,7 +9,7 @@ import shipreq.base.util.{PotentialChange, Validity}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.feature.{EditorStatus, PreviewFeature}
-import shipreq.webapp.base.lib.{KeyboardTheme, AbortCommit => AbortCommit2}
+import shipreq.webapp.base.lib.{KeyHandlers, KeyboardTheme}
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.ui.EditTheme
@@ -19,7 +19,6 @@ import shipreq.webapp.client.project.widgets.RichTextEditor.hardcodedLive
 sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, final val text: TextType) {
 
   type CommitFn    = text.OptionalText ~=> Callback
-  type AbortCommit = Option[AbortCommit2[Callback, CommitFn]]
 
   case class Props(project         : Project,
                    plainTextNoCtx  : PlainText.ForProject.NoCtx,
@@ -27,17 +26,19 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
                    projectWidgets  : ProjectWidgets.AnyCtx,
                    edit            : StateSnapshot[String],
                    asyncStatus     : Option[EditorStatus.Async],
-                   abortCommit     : AbortCommit,
+                   abort           : Option[Callback],
+                   commitFn        : Option[CommitFn],
+                   commitVerb      : String,
                    preview         : PreviewFeature.ReadWrite.Single,
                    preEditValue    : Option[text.OptionalText],
+                   extraKbShortcuts: KeyboardTheme.Shortcuts,
                    showInstructions: Boolean) {
 
     val ucNum       = projectWidgets.ctx.ucNum(project)
     val richText    = text.parse(project, ucNum)(edit.value)
     val parseResult = DataValidators.genericRichText(plainTextNoCtx).audit(richText)
     val validated   = PotentialChange.fromDisjunction(parseResult).ignoreOption(preEditValue)
-    def abort       = abortCommit.map(_.abort)
-    def commit      = (t: text.OptionalText) => abortCommit.map(_ commit t)
+    def commit      = (t: text.OptionalText) => commitFn.map(_ apply t)
     val status      = asyncStatus getOrElse EditorStatus.fromValidatedChange(validated)(commit, abort)
     val wantPreview = Text isRich richText
 
@@ -58,11 +59,12 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
     override val pxAutoComplete =
       Px.apply3(pxProject, pxPlainText, pxTextSearch)(AutoComplete.Project.richText(text))
 
-    val textareaConst: TagMod = {
-      val keys =
+    private val keyHandlerBase =
+      KeyHandlers.base(
         KeyboardTheme.abortCriterion.handleWhenDefined($.props.map(_.abort)) +
-        KeyboardTheme.commitCO($.props.map(_.status.getCommit), text.lineCardinality)
+        KeyboardTheme.commitCO($.props.map(_.status.getCommit), text.lineCardinality))
 
+    val textareaConst: TagMod = {
       val updateState: ReactEventFromTextArea => Callback =
         e => $.props >>= (p =>
           p.status.wrapEdit(p.edit.setState(liveCorrect(e.target.value)) >>
@@ -73,21 +75,25 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         ^.onBlur   --> (autoCompleteBlur >> $.props.flatMap(_.preview.onBlur)),
         ^.onChange ==> updateState,
         ^.onFocus  --> $.props.flatMap(p => p.preview.onFocus(p.wantPreview)),
-        RichTextEditor.minRows(text.lineCardinality),
-        keys)
+        RichTextEditor.minRows(text.lineCardinality))
     }
 
     def render(p: Props) = {
 
-      def editor(validity: Validity): VdomElement =
-        editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, textareaConst))
+      def editor(validity: Validity): VdomElement = {
+        val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
+        val base = textareaConst(keys)
+        editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, base))
+      }
 
       def instructions: TagMod =
         TagMod.when(p.showInstructions)(
-          KeyboardTheme.Instructions.forTextEditor(
-            text.lineCardinality,
-            commit = p.status.getCommit,
-            abort = p.abort,
+          KeyboardTheme.Instructions(
+            p.extraKbShortcuts.instructions ::: KeyboardTheme.Instructions.Clauses.forTextEditor(
+              text.lineCardinality,
+              commit = p.status.getCommit,
+              commitVerb = p.commitVerb,
+              abort = p.abort),
             help = Some(RichTextEditorHelp.modal.show)))
 
       def richText: VdomTag =

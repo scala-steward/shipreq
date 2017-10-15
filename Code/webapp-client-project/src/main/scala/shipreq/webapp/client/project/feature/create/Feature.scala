@@ -27,19 +27,19 @@ object Feature {
     *
     * Editability is not checked here, it's the responsibility of the `Feature` API.
     */
-  trait Editor[+Value] {
-    def render(a: AsyncState)(): VdomElement
-    def value(): Editor.Value[Value]
+  trait Editor[-Args, +Value] {
+    def render(as: AsyncState, args: Args)(): VdomElement
+    def value(args: Args): Editor.Value[Value]
   }
 
   object Editor {
     type Invalidity = shipreq.webapp.base.validation.Simple.Invalidity
     type Value[+A] = Invalidity \/ A
 
-    def fromCallback[V](cb: CallbackTo[Editor[V]]): Editor[V] =
-      new Editor[V] {
-        override def render(a: AsyncState)() = cb.runNow().render(a)()
-        override def value() = cb.runNow().value()
+    def fromCallback[A, V](cb: CallbackTo[Editor[A, V]]): Editor[A, V] =
+      new Editor[A, V] {
+        override def render(as: AsyncState, args: A)() = cb.runNow().render(as, args)()
+        override def value(args: A) = cb.runNow().value(args)
       }
   }
 
@@ -52,15 +52,15 @@ object Feature {
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   object State {
-    type ForEditor[+V] = Option[Editor[V]]
-    type ForFields     = Map[FieldKey, Editor[Any]]
-    type ForProject    = Map[RowKey, ForFields]
+    type ForEditor[-A, +V] = Option[Editor[A, V]]
+    type ForFields         = Map[FieldKey, Editor[Nothing, Any]]
+    type ForProject        = Map[RowKey, ForFields]
 
     def initForProject: ForProject =
       UnivEq.emptyMap
 
     final case class ForSpecificRow[-FK <: FieldKey](state: ForFields) extends AnyVal {
-      @inline def get(f: FK): ForEditor[f.Value] =
+      @inline def get(f: FK): ForEditor[f.Args, f.Value] =
         f.cast2(state.get(f))
     }
   }
@@ -71,9 +71,14 @@ object Feature {
 
     /** An instance of this implies that Editability has already established.
       */
-    final case class ForEditor[+V](editor: Editor[V], async: AsyncState) {
-      def render(): VdomElement    = editor.render(async)()
-      def value(): Editor.Value[V] = editor.value()
+    final case class ForEditor[-A, +V](editor: Editor[A, V], async: AsyncState) {
+      /** impure */
+      def render(args: A): VdomElement =
+        editor.render(async, args)()
+
+      /** impure */
+      def value(args: A): Editor.Value[V] =
+        editor.value(args)
     }
 
     final case class ForFields[-FK <: FieldKey](_state     : State.ForFields,
@@ -82,7 +87,7 @@ object Feature {
       def state: State.ForSpecificRow[FK] =
         State.ForSpecificRow(_state)
 
-      def apply(f: FK)(newEditor: => Editor[f.Value]): Permission.DeniedOr[ForEditor[f.Value]] =
+      def apply(f: FK)(newEditor: => Editor[f.Args, f.Value]): Permission.DeniedOr[ForEditor[f.Args, f.Value]] =
         editability(f)(
           ForEditor(state.get(f).getOrElse(newEditor), async))
     }
@@ -102,9 +107,9 @@ object Feature {
                                              rowEditors: NewEditor.ForFields[FK],
                                              async     : AsyncFeature.Write.D0[AsyncError],
                                              createIO  : ServerSideProcInvoker[CreateContentCmd, ErrorMsg, Any]) {
-      def startEditor(field: FK): Editor[field.Value] = {
-        val stateAccess: StateAccessPure[State.ForEditor[Any]] = rowAccess zoomStateL Optics.mapValue(field)
-        val ctx = NewEditor.Ctx[field.Value](field.cast2(stateAccess))
+      def startEditor(field: FK): Editor[field.Args, field.Value] = {
+        val stateAccess: StateAccessPure[State.ForEditor[Nothing, Any]] = rowAccess zoomStateL Optics.mapValue(field)
+        val ctx = NewEditor.Ctx[field.Args, field.Value](field.cast2(stateAccess))
         rowEditors(field)(ctx)
       }
 
@@ -131,10 +136,10 @@ object Feature {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object ReadWrite {
-    type ForEditor[+V] = Read.ForEditor[V]
+    type ForEditor[-A, +V] = Read.ForEditor[A, V]
 
     final case class ForRow[-FK <: FieldKey](read: Read.ForFields[FK], write: Write.ForRow[FK]) {
-      def apply(f: FK): Permission.DeniedOr[ForEditor[f.Value]] =
+      def apply(f: FK): Permission.DeniedOr[ForEditor[f.Args, f.Value]] =
         read(f)(write.startEditor(f))
 
       /** Initiates a call to the server to create content for this row. */

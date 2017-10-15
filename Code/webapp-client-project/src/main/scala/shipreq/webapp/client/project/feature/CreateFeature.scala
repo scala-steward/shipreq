@@ -42,8 +42,11 @@ object CreateFeature {
   type FieldKey = create.FieldKey
   val  FieldKey = create.FieldKey
 
-  type Editor[+Value] = create.Feature.Editor[Value]
-  val  Editor         = create.Feature.Editor
+  type Editor[-Args, +Value] = create.Feature.Editor[Args, Value]
+  val  Editor                = create.Feature.Editor
+
+  type EditorArgs = create.NewEditorArgs
+  val  EditorArgs = create.NewEditorArgs
 
   type PreviewId = create.Feature.PreviewId
   val  PreviewId = create.Feature.PreviewId

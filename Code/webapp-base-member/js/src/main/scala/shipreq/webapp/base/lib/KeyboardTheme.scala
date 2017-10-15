@@ -15,7 +15,6 @@ import shipreq.webapp.base.ui.semantic.Icon
 object KeyboardTheme {
 
   @inline def abortCriterion = Criterion.Escape
-  @inline def abortKeyDesc   = "esc"
 
   def abort(abort: Callback): KeyHandler =
     abortCriterion.handle(abort)
@@ -27,7 +26,6 @@ object KeyboardTheme {
     * now nil, in that nothing happens; where as previously it would trigger a save which can be very annoying.
     */
   @inline def commitCriterion = Criterion.CtrlEnter
-  @inline def commitKeyDesc   = "ctrl-enter"
 
   def commitO(commit: => Option[Callback], lc: LineCardinality): KeyHandler = {
     // LineCardinality is no longer used here but will be kept as an arg for a while longer until confidence in the new
@@ -37,6 +35,14 @@ object KeyboardTheme {
 
   def commitCO(commit: CallbackTo[Option[Callback]], lc: LineCardinality): KeyHandler =
     commitCriterion.handle(commit >>= (Callback sequenceOption _))
+
+  /** Commit and progress, as in "save and let's move on".
+    *
+    * Progress is different depending on the context.
+    * For UC steps, it means close the current step, create a new child step and focus it.
+    * For fields in the ReqTable new requirement form, it means save and move onto next new req (i.e. keep open).
+    */
+  def commitAndProgressCriterion = KeyHandler.Criterion.AltEnter
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object Instructions {
@@ -51,13 +57,35 @@ object KeyboardTheme {
         NonEmptyVector(Vdom(key + " to "), Vector.empty :+ Link(action, actionCB))
 
       def abort(c: Callback): Clause =
-        keyToAction(abortKeyDesc)("cancel", c)
+        keyToAction(abortCriterion.desc)("cancel", c)
 
-      def commit(c: Callback): Clause =
-        keyToAction(commitKeyDesc)("save", c)
+      def commit(c: Callback, verb: String): Clause =
+        keyToAction(commitCriterion.desc)(verb, c)
 
       val multiLine: Clause =
         NonEmptyVector one Vdom("enter for new line")
+    }
+
+    def defaultCommitVerb = "save"
+
+    object Clauses {
+      def forTextEditor(lc        : LineCardinality,
+                        commit    : Option[Callback],
+                        commitVerb: String,
+                        abort     : Option[Callback]): List[Clause] = {
+        var clauses = List.empty[Clause]
+
+        abort.foreach(clauses ::= Clause.abort(_))
+
+        commit.foreach(clauses ::= Clause.commit(_, commitVerb))
+
+        lc match {
+          case SingleLine => ()
+          case MultiLine  => clauses ::= Clause.multiLine
+        }
+
+        clauses
+      }
     }
 
     private val container : VdomTag = <.div(*.container)
@@ -94,27 +122,38 @@ object KeyboardTheme {
       container(text, helpButton)
     }
 
-    def forTextEditor(lc    : LineCardinality,
-                      commit: Option[Callback],
-                      abort : Option[Callback],
-                      help  : Option[Callback]): VdomTag =
-      apply(clausesForTextEditor(lc, commit = commit, abort = abort), help = help)
+    def forTextEditor(lc        : LineCardinality,
+                      commit    : Option[Callback],
+                      commitVerb: String,
+                      abort     : Option[Callback],
+                      help      : Option[Callback]): VdomTag =
+      apply(Clauses.forTextEditor(lc, commit = commit, commitVerb = commitVerb, abort = abort), help = help)
+  }
 
-    def clausesForTextEditor(lc    : LineCardinality,
-                             commit: Option[Callback],
-                             abort : Option[Callback]): List[Clause] = {
-      var clauses = List.empty[Clause]
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      abort.foreach(clauses ::= Clause.abort(_))
+  object Shortcut {
+    def apply(keyHandlers: KeyHandler, instructions: Option[Instructions.Clause]): Shortcuts =
+      Shortcuts(keyHandlers.toKeyHandlers, instructions.toList)
 
-      commit.foreach(clauses ::= Clause.commit(_))
+    def option(criterion: Criterion, actionDesc: String, actionOption: Option[Callback]): Shortcuts =
+      apply(
+        criterion.handleWhenDefined(actionOption),
+        actionOption.map(Instructions.Clause.keyToAction(criterion.desc)(actionDesc, _)))
+  }
 
-      lc match {
-        case SingleLine => ()
-        case MultiLine  => clauses ::= Clause.multiLine
-      }
+  /**
+    * @param instructions These will be prepended to the typical editor instructions.
+    */
+  final case class Shortcuts(keyHandlers: KeyHandlers, instructions: List[Instructions.Clause]) {
+    def ++(that: Shortcuts): Shortcuts =
+      Shortcuts(
+        this.keyHandlers ++ that.keyHandlers,
+        this.instructions ::: that.instructions)
+  }
 
-      clauses
-    }
+  object Shortcuts {
+    val empty: Shortcuts =
+      apply(KeyHandlers.empty, Nil)
   }
 }

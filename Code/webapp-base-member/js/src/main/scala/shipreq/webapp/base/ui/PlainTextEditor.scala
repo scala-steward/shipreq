@@ -59,6 +59,7 @@ object PlainTextEditor {
         def instructions = KeyboardTheme.Instructions.forTextEditor(
           SingleLine,
           commit = p.status.getCommit,
+          commitVerb = KeyboardTheme.Instructions.defaultCommitVerb,
           abort = p.abort,
           help = None)
 

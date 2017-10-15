@@ -14,9 +14,9 @@ import shipreq.webapp.base.data.{Plain, _}
 import shipreq.webapp.base.feature.AutoCompleteFeature.AutoComplete.Project.ReqItem
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.feature.EditorStatus
-import shipreq.webapp.base.lib.{KeyboardTheme, AbortCommit => AbortCommit2}
+import shipreq.webapp.base.lib.{KeyHandlers, KeyboardTheme}
 import shipreq.webapp.base.text.{Grammar, PlainText, SingleLine, TextSearch}
-import shipreq.webapp.base.ui.{AutosizeTextarea, EditTheme}
+import shipreq.webapp.base.ui.EditTheme
 import shipreq.webapp.base.validation.Simple._
 import shipreq.webapp.base.validation._
 import shipreq.webapp.client.project.lib.DataReusability._
@@ -68,22 +68,23 @@ object ImplicationEditor {
     (reqs.map(_.id).toSet, text)
   }
 
-  type Output      = SetDiff.NE[ReqId]
-  type CommitFn    = Output ~=> Callback
-  type AbortCommit = Option[AbortCommit2[Callback, CommitFn]]
+  type Output   = SetDiff.NE[ReqId]
+  type CommitFn = Output ~=> Callback
 
   case class Props(edit            : StateSnapshot[String],
                    lookup          : Lookup,
                    validationFn    : ValidationFn,
                    asyncStatus     : Option[EditorStatus.Async],
-                   abortCommit     : AbortCommit,
+                   abort           : Option[Callback],
+                   commitFn        : Option[CommitFn],
+                   commitVerb      : String,
                    textSearch      : TextSearch,
+                   extraKbShortcuts: KeyboardTheme.Shortcuts,
                    showInstructions: Boolean) {
 
     val parseResult = validationFn(lookup)(edit.value)
     val validated   = PotentialChange.fromDisjunction(parseResult).ignoreEmpty
-    def abort       = abortCommit.map(_.abort)
-    def commit      = (r: Output) => abortCommit.map(_ commit r)
+    def commit      = (r: Output) => commitFn.map(_ apply r)
     val status      = asyncStatus getOrElse EditorStatus.fromValidatedChange(validated)(commit, abort)
 
     @inline def render: VdomElement = Component(this)
@@ -134,11 +135,12 @@ object ImplicationEditor {
 
     @inline private def lineCardinality = SingleLine
 
-    val textareaConst: TagMod = {
-      val keys =
+    private val keyHandlerBase =
+      KeyHandlers.base(
         KeyboardTheme.abortCriterion.handleWhenDefined($.props.map(_.abort)) +
-        KeyboardTheme.commitCO($.props.map(_.status.getCommit), lineCardinality)
+        KeyboardTheme.commitCO($.props.map(_.status.getCommit), lineCardinality))
 
+    val textareaConst: TagMod = {
       val updateState: ReactEventFromTextArea => Callback =
         e => $.props >>= (p =>
           p.status.wrapEdit(p.edit.setState(e.target.value.replace("\n", ""))))
@@ -148,20 +150,24 @@ object ImplicationEditor {
         ^.onBlur    --> autoCompleteBlur,
         ^.onChange  ==> updateState,
         ^.spellCheck := false,
-        RichTextEditor.minRows(lineCardinality),
-        keys)
+        RichTextEditor.minRows(lineCardinality))
     }
 
     def render(p: Props) = {
-      def editor(validity: Validity): VdomElement =
-        editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, textareaConst))
+      def editor(validity: Validity): VdomElement = {
+        val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
+        val base = textareaConst(keys)
+        editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, base))
+      }
 
       def instructions: TagMod =
         TagMod.when(p.showInstructions)(
-          KeyboardTheme.Instructions.forTextEditor(
-            lineCardinality,
-            commit = p.status.getCommit,
-            abort = p.abort,
+          KeyboardTheme.Instructions(
+            p.extraKbShortcuts.instructions ::: KeyboardTheme.Instructions.Clauses.forTextEditor(
+              lineCardinality,
+              commit = p.status.getCommit,
+              commitVerb = p.commitVerb,
+              abort = p.abort),
             help = None))
 
       EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)

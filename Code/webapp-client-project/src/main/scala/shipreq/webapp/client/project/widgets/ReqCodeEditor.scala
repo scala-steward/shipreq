@@ -10,10 +10,10 @@ import shipreq.webapp.base.data.DataValidators.{reqCode => V}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.feature.EditorStatus
-import shipreq.webapp.base.lib.{KeyboardTheme, AbortCommit => AbortCommit2}
+import shipreq.webapp.base.lib.{KeyHandlers, KeyboardTheme}
 import shipreq.webapp.base.text.GrammarSpec.SeqFormat
 import shipreq.webapp.base.text.{LineCardinality, MultiLine, SingleLine}
-import shipreq.webapp.base.ui.{AutosizeTextarea, EditTheme}
+import shipreq.webapp.base.ui.EditTheme
 import shipreq.webapp.base.validation.Simple._
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.TextEditor
@@ -33,20 +33,21 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
 
   val lineCardinality: LineCardinality
 
-  type CommitFn    = Out ~=> Callback
-  type AbortCommit = Option[AbortCommit2[Callback, CommitFn]]
+  type CommitFn = Out ~=> Callback
 
   case class Props(edit            : StateSnapshot[String],
                    initialValue    : Option[In],
                    trie            : ReqCode.Trie,
                    asyncStatus     : Option[EditorStatus.Async],
-                   abortCommit     : AbortCommit,
+                   abort           : Option[Callback],
+                   commitFn        : Option[CommitFn],
+                   commitVerb      : String,
+                   extraKbShortcuts: KeyboardTheme.Shortcuts,
                    showInstructions: Boolean) {
 
     val parseResult = validator(V.State(trie, dataToSet(initialValue)))(edit.value)
     val validated   = validate(parseResult, initialValue)
-    def abort       = abortCommit.map(_.abort)
-    def commit      = (r: Out) => abortCommit.map(_ commit r)
+    def commit      = (r: Out) => commitFn.map(_ apply r)
     val status      = asyncStatus getOrElse EditorStatus.fromValidatedChange(validated)(commit, abort)
 
     def render: VdomElement = Component(this)
@@ -61,11 +62,12 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
     override val pxAutoComplete = pxTrie.map(t =>
       AutoComplete.Project.reqCode.prefixes(t))
 
-    val textareaConst: TagMod = {
-      val keys =
+    private val keyHandlerBase =
+      KeyHandlers.base(
         KeyboardTheme.abortCriterion.handleWhenDefined($.props.map(_.abort)) +
-        KeyboardTheme.commitCO($.props.map(_.status.getCommit), lineCardinality)
+        KeyboardTheme.commitCO($.props.map(_.status.getCommit), lineCardinality))
 
+    val textareaConst: TagMod = {
       val updateState: ReactEventFromTextArea => Callback =
         e => $.props >>= (p =>
           p.status.wrapEdit(p.edit.setState(liveCorrect(e.target.value))))
@@ -74,20 +76,24 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
         ^.autoFocus := true,
         ^.onBlur   --> autoCompleteBlur,
         ^.onChange ==> updateState,
-        RichTextEditor.minRows(lineCardinality),
-        keys)
+        RichTextEditor.minRows(lineCardinality))
     }
 
     def render(p: Props) = {
-      def editor(validity: Validity): VdomElement =
-        editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, textareaConst))
+      def editor(validity: Validity): VdomElement = {
+        val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
+        val base = textareaConst(keys)
+        editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, base))
+      }
 
       def instructions: TagMod =
         TagMod.when(p.showInstructions)(
-          KeyboardTheme.Instructions.forTextEditor(
-            lineCardinality,
-            commit = p.status.getCommit,
-            abort = p.abort,
+          KeyboardTheme.Instructions(
+            p.extraKbShortcuts.instructions ::: KeyboardTheme.Instructions.Clauses.forTextEditor(
+              lineCardinality,
+              commit = p.status.getCommit,
+              commitVerb = p.commitVerb,
+              abort = p.abort),
             help = None))
 
       EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)
