@@ -300,13 +300,13 @@ object ReqTablePage {
           pxSelectionCtrls.value().render,
           <.div(*.summary, pxPageSummary.value()).unless(mode ==* Mode.EmptyProject || mode ==* Mode.NoContentCosHideDead)
         ),
+        newStuff.form.whenDefined,
         <.div(*.viewCtrls,
           pxSortCriteriaEditor.value(),
           <.div(*.flexGap),
           filterEditor,
           pxColumnSelector.value()
         ).unless(mode ==* Mode.EmptyProject || mode ==* Mode.NoContentCosHideDead),
-        newStuff.form.whenDefined,
         body)
     }
 
