@@ -6,10 +6,10 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scala.annotation.tailrec
 import scalacss.ScalaCssReact._
-import scalaz.Scalaz.Id
 import scalaz.{-\/, \/-}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.{CustomReqType, ReqType, StaticReqType}
+import shipreq.webapp.base.lib.KeyboardTheme
 import shipreq.webapp.base.protocol.CreateContentCmd
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Table => SemTable}
 import shipreq.webapp.client.project.app.Style.reqtable.{creation => *}
@@ -126,15 +126,12 @@ sealed trait NewForm {
           .filterDefined
           .toVector)
 
-    def create: Option[Callback => Callback] =
-      validOutput(editableCols.iterator.map(_._2))
-        .flatMap(createCmd(input, _))
-        .map(cmd => onSuccess => createFeature.create(cmd, onSuccess))
-
     def render: VdomElement = Component(this)
   }
 
-  /** @return None if any fields have invalid contents */
+  /** impure
+    * @return None if any fields have invalid contents
+    */
   private def validOutput(es: Iterator[Editor]): Option[Output] = {
     @tailrec
     def go(o: Output): Option[Output] =
@@ -142,7 +139,7 @@ sealed trait NewForm {
         Some(o)
       else {
         val e = es.next()
-        e.value.value() match {
+        e.value.value(CreateFeature.EditorArgs.empty) match {
           case \/-(v) => go(e.withValue[FieldValue](v) :: o)
           case -\/(_) => None // Invalidity found -- abort everything
         }
@@ -157,28 +154,47 @@ sealed trait NewForm {
 
     def render(p: Props): VdomElement = {
 
+      val create: Option[Callback => Callback] =
+        validOutput(p.editableCols.iterator.map(_._2))
+          .flatMap(createCmd(p.input, _))
+          .map(cmd => onSuccess => p.createFeature.create(cmd, onSuccess))
+
+      val createAndKeepFormOpen: Option[Callback] =
+        create.map(_(Callback.empty))
+
+      val createAndCloseForm: Option[Callback] =
+        create.map(_(p.cancel))
+
+      val renderArgs =
+        CreateFeature.EditorArgs(
+          abort            = Some(p.cancel),
+          commit           = createAndCloseForm,
+          commitVerb       = "create and close",
+          extraKbShortcuts = KeyboardTheme.Shortcut.option(
+            KeyboardTheme.commitAndProgressCriterion, "create without closing", createAndKeepFormOpen))
+
       val editorCells: VdomArray =
         p.editableCols.whole.toVdomArray { case (cp, e) =>
           <.td(
             ^.key := cp.column.key,
-            e.value.render())
+            e.value.render(renderArgs))
         }
 
       val createButton: VdomElement =
         Button(
           tipe = Button.Type.BasicIconAndText(Icon.Plus, createButtonLabel(p.input)),
           colour = Colour.Green,
-          state = Button.State.enabledWhen(p.create.isDefined))
+          state = Button.State.enabledWhen(createAndKeepFormOpen.isDefined))
           .tag(*.formCreateButton,
-            ^.onClick -->? p.create.map(_(Callback.empty)))
+            ^.onClick -->? createAndKeepFormOpen)
 
       val createAndCloseButton: VdomElement =
         Button(
           tipe = Button.Type.BasicIconAndText(Icon.Plus, createAndCloseButtonLabel(p.input)),
           colour = Colour.Green,
-          state = Button.State.enabledWhen(p.create.isDefined))
+          state = Button.State.enabledWhen(createAndCloseForm.isDefined))
           .tag(*.formCreateButton,
-            ^.onClick -->? p.create.map(_(p.cancel)))
+            ^.onClick -->? createAndCloseForm)
 
       <.section(*.formOuter,
         SemTable.celledCompactUnstackable(

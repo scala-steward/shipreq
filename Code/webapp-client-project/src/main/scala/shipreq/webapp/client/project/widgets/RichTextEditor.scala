@@ -28,6 +28,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
                    asyncStatus     : Option[EditorStatus.Async],
                    abort           : Option[Callback],
                    commitFn        : Option[CommitFn],
+                   commitVerb      : String,
                    preview         : PreviewFeature.ReadWrite.Single,
                    preEditValue    : Option[text.OptionalText],
                    extraKbShortcuts: KeyboardTheme.Shortcuts,
@@ -89,9 +90,10 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       def instructions: TagMod =
         TagMod.when(p.showInstructions)(
           KeyboardTheme.Instructions(
-            p.extraKbShortcuts.instructions ::: KeyboardTheme.Instructions.clausesForTextEditor(
+            p.extraKbShortcuts.instructions ::: KeyboardTheme.Instructions.Clauses.forTextEditor(
               text.lineCardinality,
               commit = p.status.getCommit,
+              commitVerb = p.commitVerb,
               abort = p.abort),
             help = Some(RichTextEditorHelp.modal.show)))
 

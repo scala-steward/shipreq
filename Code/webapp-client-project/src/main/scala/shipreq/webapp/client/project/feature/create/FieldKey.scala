@@ -17,7 +17,7 @@ import shipreq.webapp.client.project.feature.editor.{FieldKey => E}
 sealed trait FieldKey {
 
   /** Arguments required for every .render call */
-  final type Args = Unit // TODO
+  final type Args = NewEditorArgs
 
   type Value
 

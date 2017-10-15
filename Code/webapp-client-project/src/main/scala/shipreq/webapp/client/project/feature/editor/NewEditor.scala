@@ -211,6 +211,8 @@ object NewEditor {
     def getCustomReqTypeCB(id: CustomReqTypeId): CallbackOption[CustomReqType] =
       pxProject.toCallback.map(_.config.reqTypes.custom.get(id)).asCBO
 
+    def commitVerb = KeyboardTheme.Instructions.defaultCommitVerb
+
     trait ForChangeType {
       type Args
       type Change
@@ -314,6 +316,7 @@ object NewEditor {
               asyncStatus      = EditorStatus.async(asyncState),
               abort            = abort,
               commitFn         = commitFn,
+              commitVerb       = commitVerb,
               showInstructions = true)
         }
       }
@@ -355,6 +358,7 @@ object NewEditor {
               asyncStatus      = EditorStatus.async(asyncState),
               abort            = abort,
               commitFn         = commitFn,
+              commitVerb       = commitVerb,
               showInstructions = true)
         }
       }
@@ -428,6 +432,7 @@ object NewEditor {
             asyncStatus      = EditorStatus.async(asyncState),
             abort            = abort,
             commitFn         = commitFn,
+            commitVerb       = commitVerb,
             textSearch       = textSearch,
             showInstructions = true)
       }
@@ -479,6 +484,7 @@ object NewEditor {
             asyncStatus      = EditorStatus.async(asyncState),
             abort            = abort,
             commitFn         = commitFn,
+            commitVerb       = commitVerb,
             showInstructions = true)
       }
     }
@@ -541,6 +547,7 @@ object NewEditor {
               asyncStatus      = EditorStatus.async(asyncState),
               abort            = abort,
               commitFn         = commitFn,
+              commitVerb       = commitVerb,
               preview          = previewRW(pid),
               preEditValue     = initial,
               extraKbShortcuts = KeyboardTheme.Shortcuts.empty,

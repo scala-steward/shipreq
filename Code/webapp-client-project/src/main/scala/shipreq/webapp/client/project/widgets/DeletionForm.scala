@@ -313,6 +313,7 @@ object DeletionForm {
         asyncStatus      = None,
         abort            = None,
         commitFn         = None,
+        commitVerb       = "",
         preview          = PreviewFeature.ReadWrite.Single.alwaysShow,
         preEditValue     = None,
         extraKbShortcuts = KeyboardTheme.Shortcuts.empty,

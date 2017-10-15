@@ -40,7 +40,7 @@ object KeyboardTheme {
     *
     * Progress is different depending on the context.
     * For UC steps, it means close the current step, create a new child step and focus it.
-    * For fields in the ReqTable new requirement form, it means close the form (implicitly yielding focus to the table).
+    * For fields in the ReqTable new requirement form, it means save and move onto next new req (i.e. keep open).
     */
   def commitAndProgressCriterion = KeyHandler.Criterion.AltEnter
 
@@ -59,11 +59,33 @@ object KeyboardTheme {
       def abort(c: Callback): Clause =
         keyToAction(abortCriterion.desc)("cancel", c)
 
-      def commit(c: Callback): Clause =
-        keyToAction(commitCriterion.desc)("save", c)
+      def commit(c: Callback, verb: String): Clause =
+        keyToAction(commitCriterion.desc)(verb, c)
 
       val multiLine: Clause =
         NonEmptyVector one Vdom("enter for new line")
+    }
+
+    def defaultCommitVerb = "save"
+
+    object Clauses {
+      def forTextEditor(lc        : LineCardinality,
+                        commit    : Option[Callback],
+                        commitVerb: String,
+                        abort     : Option[Callback]): List[Clause] = {
+        var clauses = List.empty[Clause]
+
+        abort.foreach(clauses ::= Clause.abort(_))
+
+        commit.foreach(clauses ::= Clause.commit(_, commitVerb))
+
+        lc match {
+          case SingleLine => ()
+          case MultiLine  => clauses ::= Clause.multiLine
+        }
+
+        clauses
+      }
     }
 
     private val container : VdomTag = <.div(*.container)
@@ -100,31 +122,25 @@ object KeyboardTheme {
       container(text, helpButton)
     }
 
-    def forTextEditor(lc    : LineCardinality,
-                      commit: Option[Callback],
-                      abort : Option[Callback],
-                      help  : Option[Callback]): VdomTag =
-      apply(clausesForTextEditor(lc, commit = commit, abort = abort), help = help)
-
-    def clausesForTextEditor(lc    : LineCardinality,
-                             commit: Option[Callback],
-                             abort : Option[Callback]): List[Clause] = {
-      var clauses = List.empty[Clause]
-
-      abort.foreach(clauses ::= Clause.abort(_))
-
-      commit.foreach(clauses ::= Clause.commit(_))
-
-      lc match {
-        case SingleLine => ()
-        case MultiLine  => clauses ::= Clause.multiLine
-      }
-
-      clauses
-    }
+    def forTextEditor(lc        : LineCardinality,
+                      commit    : Option[Callback],
+                      commitVerb: String,
+                      abort     : Option[Callback],
+                      help      : Option[Callback]): VdomTag =
+      apply(Clauses.forTextEditor(lc, commit = commit, commitVerb = commitVerb, abort = abort), help = help)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  object Shortcut {
+    def apply(keyHandlers: KeyHandler, instructions: Option[Instructions.Clause]): Shortcuts =
+      Shortcuts(keyHandlers.toKeyHandlers, instructions.toList)
+
+    def option(criterion: Criterion, actionDesc: String, actionOption: Option[Callback]): Shortcuts =
+      apply(
+        criterion.handleWhenDefined(actionOption),
+        actionOption.map(Instructions.Clause.keyToAction(criterion.desc)(actionDesc, _)))
+  }
 
   /**
     * @param instructions These will be prepended to the typical editor instructions.
@@ -140,7 +156,4 @@ object KeyboardTheme {
     val empty: Shortcuts =
       apply(KeyHandlers.empty, Nil)
   }
-
-  def Shortcut[A](keyHandlers: KeyHandler, instructions: Option[Instructions.Clause]): Shortcuts =
-    Shortcuts(keyHandlers.toKeyHandlers, instructions.toList)
 }

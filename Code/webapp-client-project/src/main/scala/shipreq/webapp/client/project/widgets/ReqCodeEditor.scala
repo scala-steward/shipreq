@@ -41,6 +41,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
                    asyncStatus     : Option[EditorStatus.Async],
                    abort           : Option[Callback],
                    commitFn        : Option[CommitFn],
+                   commitVerb      : String,
                    showInstructions: Boolean) {
 
     val parseResult = validator(V.State(trie, dataToSet(initialValue)))(edit.value)
@@ -86,6 +87,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
           KeyboardTheme.Instructions.forTextEditor(
             lineCardinality,
             commit = p.status.getCommit,
+            commitVerb = p.commitVerb,
             abort = p.abort,
             help = None))
 

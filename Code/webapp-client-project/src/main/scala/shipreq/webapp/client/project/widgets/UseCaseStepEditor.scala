@@ -168,9 +168,10 @@ object UseCaseStepEditor {
       import KeyboardTheme.Instructions
 
       // Usual clauses
-      var clauses = Instructions.clausesForTextEditor(
+      var clauses = Instructions.Clauses.forTextEditor(
         lineCardinality,
         commit = p.status.getCommit,
+        commitVerb = Instructions.defaultCommitVerb,
         abort = Some(p.abort))
 
       // Save-and-add

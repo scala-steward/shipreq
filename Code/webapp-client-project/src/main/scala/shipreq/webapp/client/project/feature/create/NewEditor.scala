@@ -118,7 +118,7 @@ object NewEditor {
     }
 
     trait ForValueType {
-      final type Args = Unit
+      final type Args = FieldKey#Args
       type Value
       final type EditorImpl = Internal.EditorImpl[Args, Value]
       final type Init       = Internal.Init[Args, Value]
@@ -144,7 +144,7 @@ object NewEditor {
           override type Props = RCE.Props
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
-          override val props = (_, asyncState) =>
+          override val props = (args, asyncState) =>
             for {
               trie <- trieCB
             } yield RCE.Props(
@@ -152,8 +152,9 @@ object NewEditor {
               initialValue     = None,
               trie             = trie,
               asyncStatus      = EditorStatus.async(asyncState),
-              abort            = None,
-              commitFn         = None,
+              abort            = args.abort,
+              commitFn         = args.commitFn,
+              commitVerb       = args.commitVerb,
               showInstructions = ShowInstructions)
         }
       }
@@ -170,7 +171,7 @@ object NewEditor {
           override type Props = RCE.Props
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
-          override val props = (_, asyncState) =>
+          override val props = (args, asyncState) =>
             for {
               trie <- trieCB
             } yield RCE.Props(
@@ -178,8 +179,9 @@ object NewEditor {
               initialValue     = None,
               trie             = trie,
               asyncStatus      = EditorStatus.async(asyncState),
-              abort            = None,
-              commitFn         = None,
+              abort            = args.abort,
+              commitFn         = args.commitFn,
+              commitVerb       = args.commitVerb,
               showInstructions = ShowInstructions)
         }
       }
@@ -219,7 +221,7 @@ object NewEditor {
         override type Props = ImplicationEditor.Props
         override def renderImpl = _.render
         override def valueImpl = _.parseResult.map(_.added)
-        override val props = (_, asyncState) =>
+        override val props = (args, asyncState) =>
           for {
             lookup     <- pxLookup.toCallback
             valFn      <- pxValFn.toCallback
@@ -229,8 +231,9 @@ object NewEditor {
             lookup           = lookup,
             validationFn     = valFn,
             asyncStatus      = EditorStatus.async(asyncState),
-            abort            = None,
-            commitFn         = None,
+            abort            = args.abort,
+            commitFn         = args.commitFn,
+            commitVerb       = args.commitVerb,
             textSearch       = textSearch,
             showInstructions = ShowInstructions)
       }
@@ -254,7 +257,7 @@ object NewEditor {
         override type Props = TagEditor.Props
         override def renderImpl = _.render
         override def valueImpl = _.parseResultSet
-        override val props = (_, asyncState) =>
+        override val props = (args, asyncState) =>
           for {
             lookup <- pxLookup.toCallback
           } yield TagEditor.Props(
@@ -262,8 +265,9 @@ object NewEditor {
             edit             = ss,
             lookup           = lookup,
             asyncStatus      = EditorStatus.async(asyncState),
-            abort            = None,
-            commitFn         = None,
+            abort            = args.abort,
+            commitFn         = args.commitFn,
+            commitVerb       = args.commitVerb,
             showInstructions = ShowInstructions)
       }
     }
@@ -285,7 +289,7 @@ object NewEditor {
           override type Props = editor.Props
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
-          override val props = (_, asyncState) =>
+          override val props = (args, asyncState) =>
             for {
               previewRW      <- previewW.toReadWriteCB
               project        <- pxProject.toCallback
@@ -299,11 +303,12 @@ object NewEditor {
               projectWidgets   = projectWidgets,
               edit             = ss,
               asyncStatus      = EditorStatus.async(asyncState),
-              abort            = None,
-              commitFn         = None,
+              abort            = args.abort,
+              commitFn         = args.commitFn,
+              commitVerb       = args.commitVerb,
               preview          = previewRW(pid),
               preEditValue     = None,
-              extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
+              extraKbShortcuts = args.extraKbShortcuts,
               showInstructions = ShowInstructions)
         }
       }

@@ -64,6 +64,7 @@ object TagEditor {
                    asyncStatus     : Option[EditorStatus.Async],
                    abort           : Option[Callback],
                    commitFn        : Option[CommitFn],
+                   commitVerb      : String,
                    showInstructions: Boolean) {
 
     // TODO Really? Stream?
@@ -122,6 +123,7 @@ object TagEditor {
           KeyboardTheme.Instructions.forTextEditor(
             lineCardinality,
             commit = p.status.getCommit,
+            commitVerb = p.commitVerb,
             abort = p.abort,
             help = None))
 
