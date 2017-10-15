@@ -9,7 +9,7 @@ import shipreq.base.util.{PotentialChange, Validity}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.feature.{EditorStatus, PreviewFeature}
-import shipreq.webapp.base.lib.KeyboardTheme
+import shipreq.webapp.base.lib.{KeyHandlers, KeyboardTheme}
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.ui.EditTheme
@@ -60,12 +60,11 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       Px.apply3(pxProject, pxPlainText, pxTextSearch)(AutoComplete.Project.richText(text))
 
     private val keyHandlerBase =
-      (KeyboardTheme.abortCriterion.handleWhenDefined($.props.map(_.abort)) +
+      KeyHandlers.base(
+        KeyboardTheme.abortCriterion.handleWhenDefined($.props.map(_.abort)) +
         KeyboardTheme.commitCO($.props.map(_.status.getCommit), text.lineCardinality))
-        .baseToReact
 
     val textareaConst: TagMod = {
-
       val updateState: ReactEventFromTextArea => Callback =
         e => $.props >>= (p =>
           p.status.wrapEdit(p.edit.setState(liveCorrect(e.target.value)) >>

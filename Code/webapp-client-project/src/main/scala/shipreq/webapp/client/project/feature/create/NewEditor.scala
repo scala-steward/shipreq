@@ -155,6 +155,7 @@ object NewEditor {
               abort            = args.abort,
               commitFn         = args.commitFn,
               commitVerb       = args.commitVerb,
+              extraKbShortcuts = args.extraKbShortcuts,
               showInstructions = ShowInstructions)
         }
       }
@@ -182,6 +183,7 @@ object NewEditor {
               abort            = args.abort,
               commitFn         = args.commitFn,
               commitVerb       = args.commitVerb,
+              extraKbShortcuts = args.extraKbShortcuts,
               showInstructions = ShowInstructions)
         }
       }
@@ -235,6 +237,7 @@ object NewEditor {
             commitFn         = args.commitFn,
             commitVerb       = args.commitVerb,
             textSearch       = textSearch,
+            extraKbShortcuts = args.extraKbShortcuts,
             showInstructions = ShowInstructions)
       }
     }
@@ -268,6 +271,7 @@ object NewEditor {
             abort            = args.abort,
             commitFn         = args.commitFn,
             commitVerb       = args.commitVerb,
+            extraKbShortcuts = args.extraKbShortcuts,
             showInstructions = ShowInstructions)
       }
     }

@@ -317,6 +317,7 @@ object NewEditor {
               abort            = abort,
               commitFn         = commitFn,
               commitVerb       = commitVerb,
+              extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
         }
       }
@@ -359,6 +360,7 @@ object NewEditor {
               abort            = abort,
               commitFn         = commitFn,
               commitVerb       = commitVerb,
+              extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
         }
       }
@@ -434,6 +436,7 @@ object NewEditor {
             commitFn         = commitFn,
             commitVerb       = commitVerb,
             textSearch       = textSearch,
+            extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
             showInstructions = true)
       }
     }
@@ -485,6 +488,7 @@ object NewEditor {
             abort            = abort,
             commitFn         = commitFn,
             commitVerb       = commitVerb,
+            extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
             showInstructions = true)
       }
     }

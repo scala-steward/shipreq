@@ -14,7 +14,7 @@ import shipreq.webapp.base.data.{Plain, _}
 import shipreq.webapp.base.feature.AutoCompleteFeature.AutoComplete.Project.ReqItem
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.feature.EditorStatus
-import shipreq.webapp.base.lib.KeyboardTheme
+import shipreq.webapp.base.lib.{KeyHandlers, KeyboardTheme}
 import shipreq.webapp.base.text.{Grammar, PlainText, SingleLine, TextSearch}
 import shipreq.webapp.base.ui.EditTheme
 import shipreq.webapp.base.validation.Simple._
@@ -79,6 +79,7 @@ object ImplicationEditor {
                    commitFn        : Option[CommitFn],
                    commitVerb      : String,
                    textSearch      : TextSearch,
+                   extraKbShortcuts: KeyboardTheme.Shortcuts,
                    showInstructions: Boolean) {
 
     val parseResult = validationFn(lookup)(edit.value)
@@ -134,11 +135,12 @@ object ImplicationEditor {
 
     @inline private def lineCardinality = SingleLine
 
-    val textareaConst: TagMod = {
-      val keys =
+    private val keyHandlerBase =
+      KeyHandlers.base(
         KeyboardTheme.abortCriterion.handleWhenDefined($.props.map(_.abort)) +
-        KeyboardTheme.commitCO($.props.map(_.status.getCommit), lineCardinality)
+        KeyboardTheme.commitCO($.props.map(_.status.getCommit), lineCardinality))
 
+    val textareaConst: TagMod = {
       val updateState: ReactEventFromTextArea => Callback =
         e => $.props >>= (p =>
           p.status.wrapEdit(p.edit.setState(e.target.value.replace("\n", ""))))
@@ -148,21 +150,24 @@ object ImplicationEditor {
         ^.onBlur    --> autoCompleteBlur,
         ^.onChange  ==> updateState,
         ^.spellCheck := false,
-        RichTextEditor.minRows(lineCardinality),
-        keys)
+        RichTextEditor.minRows(lineCardinality))
     }
 
     def render(p: Props) = {
-      def editor(validity: Validity): VdomElement =
-        editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, textareaConst))
+      def editor(validity: Validity): VdomElement = {
+        val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
+        val base = textareaConst(keys)
+        editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, base))
+      }
 
       def instructions: TagMod =
         TagMod.when(p.showInstructions)(
-          KeyboardTheme.Instructions.forTextEditor(
-            lineCardinality,
-            commit = p.status.getCommit,
-            commitVerb = p.commitVerb,
-            abort = p.abort,
+          KeyboardTheme.Instructions(
+            p.extraKbShortcuts.instructions ::: KeyboardTheme.Instructions.Clauses.forTextEditor(
+              lineCardinality,
+              commit = p.status.getCommit,
+              commitVerb = p.commitVerb,
+              abort = p.abort),
             help = None))
 
       EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)

@@ -163,7 +163,9 @@ object KeyHandlers {
 
   def empty = KeyHandlers(Nil)
 
-  @inline implicit def autoToRect(k: KeyHandlers): TagMod =
+  @inline implicit def autoToReact(k: KeyHandlers): TagMod =
     k.toReact
 
+  @inline def base(keyHandlers: KeyHandlers): KeyHandlers => TagMod =
+    keyHandlers.baseToReact
 }
