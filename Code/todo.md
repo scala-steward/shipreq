@@ -98,6 +98,9 @@ Phase 2
 * Upgrade JDK and audit crypto mechanisms (pending next Jetty release)
 * ReqDetail KB shortcuts: ↑, ↓, F2, Tab in/out
 * Add and use RestorationForm just like the DeletionForm
+* Clear DataHasher history
+* Revise the HashScheme evolution stuff. Seems a bit too complicated (and had to determine correct)...
+* Add HashScheme test that covers SavedViews
 
 ### New Features
 * Issues

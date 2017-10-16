@@ -46,6 +46,7 @@ object Project {
       ReqData.emptyTags,
       Implications.emptyBiDir,
       DeletionReasons.empty,
+      reqtable.SavedViews.empty,
       IdCeilings.zero)
 }
 
@@ -58,6 +59,7 @@ final case class Project(name           : Project.Name,
                          reqTags        : ReqData.Tags,
                          implications   : Implications.BiDir,
                          deletionReasons: DeletionReasons,
+                         reqtableViews  : reqtable.SavedViews.Optional,
                          idCeilings     : IdCeilings) {
 
   override def toString =

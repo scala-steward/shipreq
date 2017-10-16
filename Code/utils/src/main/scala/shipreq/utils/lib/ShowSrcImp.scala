@@ -573,7 +573,9 @@ object ShowSrcDataImp {
     data((s, a) => s.cc4("ProjectConfig", ProjectConfig unapply a, "\n    "))
 //    source((s, a) => s.cc4("ProjectConfig", ProjectConfig unapply a))
 
-  implicit val project: ShowSrc[Project] =
-    data((s, a) => s.cc9("Project", Project unapply a, "\n  "))
+  implicit val project: ShowSrc[Project] = {
+    implicit val x: ShowSrc[reqtable.SavedViews.Optional] = ShowSrc.const(_ append "None") // TODO
+    data((s, a) => s.cc10("Project", Project unapply a, "\n  "))
 //    source((s, a) => s.cc6("Project", Project unapply a))
+  }
 }

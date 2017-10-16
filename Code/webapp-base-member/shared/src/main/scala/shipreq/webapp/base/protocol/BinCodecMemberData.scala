@@ -5,6 +5,7 @@ import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.univeq.UnivEq
 import shipreq.base.util._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.filter.ValidFilter
 import shipreq.webapp.base.text.{AtomTC, ProjectText}
 import DataImplicits._
 import BinCodecGeneric._
@@ -164,6 +165,100 @@ object BinCodecMemberData {
 
   implicit lazy val pickleDeletionReasonIdO = optionPickler(pickleTaggedI(DeletionReasonId)).reuseByUnivEq
   implicit lazy val pickleDeletionReasons   = pickleCaseClass[DeletionReasons]
+
+  object ReqTableDataPicklers {
+    import reqtable._
+
+    implicit val pickleColumnCode          : Pickler[Column.Code          .type] = pickleObject
+    implicit val pickleColumnCustomField   : Pickler[Column.CustomField        ] = pickleCaseClass
+    implicit val pickleColumnDeletionReason: Pickler[Column.DeletionReason.type] = pickleObject
+    implicit val pickleColumnImplications  : Pickler[Column.Implications       ] = pickleCaseClass
+    implicit val pickleColumnPubid         : Pickler[Column.Pubid         .type] = pickleObject
+    implicit val pickleColumnReqType       : Pickler[Column.ReqType       .type] = pickleObject
+    implicit val pickleColumnTags          : Pickler[Column.Tags          .type] = pickleObject
+    implicit val pickleColumnTitle         : Pickler[Column.Title         .type] = pickleObject
+
+    implicit val pickleColumnIB: Pickler[Column.SortInconclusive with Column.HasBlanks] = {
+      type T = Column.SortInconclusive with Column.HasBlanks
+      implicit def upcast[A <: T](p: Pickler[A]) = p.asInstanceOf[Pickler[T]]
+      val all = Array[Pickler[T]](
+        pickleColumnCode,
+        pickleColumnCustomField,
+        pickleColumnDeletionReason,
+        pickleColumnImplications,
+        pickleColumnTags,
+        pickleColumnTitle)
+      def index(t: T): Int = t match {
+        case _: Column.Code.type           => 0
+        case _: Column.CustomField         => 1
+        case _: Column.DeletionReason.type => 2
+        case _: Column.Implications        => 3
+        case _: Column.Tags.type           => 4
+        case _: Column.Title.type          => 5
+      }
+      new Selector[T](all, index)
+    }
+
+    implicit val pickleColumnIN: Pickler[Column.SortInconclusive with Column.NoBlanks] = {
+      type T = Column.SortInconclusive with Column.NoBlanks
+      implicit def upcast[A <: T](p: Pickler[A]) = p.asInstanceOf[Pickler[T]]
+      val all = Array[Pickler[T]](
+        pickleColumnReqType)
+      def index(t: T): Int = t match {
+        case _: Column.ReqType.type => 0
+      }
+      new Selector[T](all, index)
+    }
+
+    implicit val pickleColumnSI : Pickler[Column.SortInconclusive        ] = pickleADT
+    implicit val pickleColumnSC : Pickler[Column.SortConclusive          ] = pickleADT
+    implicit val pickleColumnSIs: Pickler[Vector[Column.SortInconclusive]] = iterablePickler
+    implicit val pickleColumn   : Pickler[Column                         ] = pickleADT
+
+    implicit val pickleSortMethodAsc           : Pickler[SortMethod.Asc           .type] = pickleObject
+    implicit val pickleSortMethodAscThenBlanks : Pickler[SortMethod.AscThenBlanks .type] = pickleObject
+    implicit val pickleSortMethodBlanksThenAsc : Pickler[SortMethod.BlanksThenAsc .type] = pickleObject
+    implicit val pickleSortMethodBlanksThenDesc: Pickler[SortMethod.BlanksThenDesc.type] = pickleObject
+    implicit val pickleSortMethodDesc          : Pickler[SortMethod.Desc          .type] = pickleObject
+    implicit val pickleSortMethodDescThenBlanks: Pickler[SortMethod.DescThenBlanks.type] = pickleObject
+    implicit val pickleSortMethodIB            : Pickler[SortMethod.IgnoreBlanks       ] = pickleADT
+    implicit val pickleSortMethodCB            : Pickler[SortMethod.ConsiderBlanks     ] = pickleADT
+    implicit val pickleSortMethod              : Pickler[SortMethod                    ] = pickleADT
+
+    implicit val pickleSortCriterionICB: Pickler[SortCriterion.InconclusiveCB      ] = pickleCaseClass
+    implicit val pickleSortCriterionIIB: Pickler[SortCriterion.InconclusiveIB      ] = pickleCaseClass
+    implicit val pickleSortCriterionC  : Pickler[SortCriterion.Conclusive          ] = pickleCaseClass
+    implicit val pickleSortCriterionI  : Pickler[SortCriterion.Inconclusive        ] = pickleADT
+    implicit val pickleSortCriterionIs : Pickler[Vector[SortCriterion.Inconclusive]] = iterablePickler
+    implicit val pickleSortCriterion   : Pickler[SortCriterion                     ] = pickleADT
+    implicit val pickleSortCriteria    : Pickler[SortCriteria                      ] = pickleCaseClass
+
+    implicit val pickleSavedViewName: Pickler[SavedView.Name     ] = pickleCaseClass
+    implicit val pickleSavedView    : Pickler[SavedView          ] = pickleCaseClass
+    implicit val pickleSavedViews   : Pickler[SavedViews.NonEmpty] = pickleCaseClass
+  }
+  import ReqTableDataPicklers.pickleSavedViews
+
+  private class BinCodecValidFilter {
+    import ValidFilter._
+    implicit val pickleVF_Min2Filters   : Pickler[Min2Set[ValidFilter]] = pickleMin2Set
+    implicit val pickleVF_Attr          : Pickler[Attr                ] = derivePickler
+    implicit val pickleVF_Presence      : Pickler[Presence            ] = pickleCaseClass
+    implicit val pickleVF_Lack          : Pickler[Lack                ] = pickleCaseClass
+    implicit val pickleVF_Reqs          : Pickler[Reqs                ] = pickleCaseClass
+    implicit val pickleVF_ReqType       : Pickler[ReqType             ] = pickleCaseClass
+    implicit val pickleVF_Tag           : Pickler[Tag                 ] = pickleCaseClass
+    implicit val pickleVF_CustomIssue   : Pickler[CustomIssue         ] = pickleCaseClass
+    implicit val pickleVF_Text          : Pickler[Text                ] = pickleCaseClass
+    implicit val pickleVF_ImpliesAnyOf  : Pickler[ImpliesAnyOf        ] = pickleCaseClass
+    implicit val pickleVF_ImpliedByAnyOf: Pickler[ImpliedByAnyOf      ] = pickleCaseClass
+    implicit val pickleVF_AllOf         : Pickler[AllOf               ] = pickleCaseClass
+    implicit val pickleVF_AnyOf         : Pickler[AnyOf               ] = pickleCaseClass
+    implicit val pickleVF_Not           : Pickler[Not                 ] = pickleCaseClass
+    implicit val pickleVF_TextPattern   : Pickler[TextPattern         ] = pickleCaseClass
+             val pickler                : Pickler[ValidFilter         ] = pickleADT
+  }
+  implicit lazy val pickleValidFilter: Pickler[ValidFilter] = pickleLazily((new BinCodecValidFilter).pickler)
 
   implicit lazy val pickleIdCeilings   : Pickler[IdCeilings   ] = pickleCaseClass
   implicit lazy val pickleProjectConfig: Pickler[ProjectConfig] = pickleCaseClass

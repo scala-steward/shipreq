@@ -43,6 +43,11 @@ object Hash {
   @inline def unsupported[A]: Hash[A] =
     const(UnsupportedValue)
 
+  def lazily[A](hash: => Hash[A]): Hash[A] = {
+    lazy val h = hash
+    fn(h.hash(_))
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
 
   trait Algorithm extends HashMacros {

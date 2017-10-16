@@ -64,6 +64,11 @@ object Column {
       Implications(Forwards), Implications(Backwards),
       DeletionReason)
 
+  val isMandatory: Column => Boolean = {
+    case _: Mandatory   => true
+    case _              => false
+  }
+
   def applicabilityForReq[Data](a: Applicability[FieldId, Data]): Applicability[Column, Data] =
     Applicability {
       case ReqType

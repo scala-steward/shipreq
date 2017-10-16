@@ -268,7 +268,7 @@ object LogicPropTest extends TestSuite {
   def gen: Gen[LogicTests] =
     for {
       p  <- RandomData.project
-      fd <- RandomReqTableData.filterDead
+      fd <- RandomData.filterDead
       ts <- RandomReqTableData.tableSettings(p, allowFilter = false)
     } yield
       LogicTests(ts, fd, p)

@@ -15,8 +15,7 @@ final case class HashSchemeId(value: Char) extends AnyVal
  * - Create a new `DataHasherVₙ` class to do what [[DataHasherCurrent]] used to before your data structure change.
  *   This will likely mean excluding a newly-added field.
  *
- * - Add the new `DataHasherVₙ` class to `HashScheme.raw`. It should be inserted before [[DataHasherCurrent]],
- *   i.e. second-last.
+ * - Add the new `DataHasherVₙ` class to `HashScheme.all`.
  *
  * - Update `HashSchemeTest`. Rename `latest` to `vₙ` and add a new `latest` test with values that consider the
  *   newly-added data structure changes.
@@ -51,7 +50,12 @@ object HashScheme {
 
     // APPEND-ONLY. DO NOT ALTER POSITION OF EXISTING ENTRIES.
     NonEmptyVector(
-      make(new DataHasherCurrent(MurmurHash3))(_ => Valid))
+      make(new DataHasherCurrent(MurmurHash3))(_ => Valid),
+      make(new DataHasherV1(MurmurHash3)) {
+        case HashScope.Other => Invalid
+        case _ => Valid
+      },
+    )
   }
 
   val latest: HashScheme =

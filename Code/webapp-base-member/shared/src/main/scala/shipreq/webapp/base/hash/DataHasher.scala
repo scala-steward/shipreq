@@ -1,11 +1,13 @@
 package shipreq.webapp.base.hash
 
 import japgolly.microlibs.nonempty._
+import java.util.regex.Pattern
 import nyaya.util.Multimap
 import scalaz.\/
 import shipreq.base.util.TaggedTypes.TaggedType
 import shipreq.base.util._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.filter.ValidFilter
 import shipreq.webapp.base.text.{AtomTC, Text}
 import Hash.HashableValueOps
 
@@ -66,6 +68,9 @@ sealed abstract class GenericDashHasher {
   implicit def hashIMap[K, V: Hash]: Hash[IMap[K, V]] =
     hashUnordered[Iterable, V].cmap(_.values)
 
+  implicit def hashMin2Set[A](implicit ha: Hash[A]): Hash[Min2Set[A]] =
+    Hash.by(_.whole)
+
   implicit def disjunction[A: Hash, B: Hash]: Hash[A \/ B] = {
     val l = withName("!", Hash[A])
     val r = Hash[B]
@@ -85,10 +90,15 @@ sealed abstract class GenericDashHasher {
 sealed abstract class DataHasher extends GenericDashHasher {
   import algorithm._
 
+  implicit val hashPattern: Hash[Pattern] =
+    Hash.by(p => (p.flags, p.pattern))
+
   implicit val hashLive         : Hash[Live]                = Hash by Live.from
   implicit val hashImplRequired : Hash[ImplicationRequired] = Hash by ImplicationRequired.from
   implicit val hashMandatory    : Hash[Mandatory]           = Hash by Mandatory.from
   implicit val hashDeletable    : Hash[Deletable]           = Hash by Deletable.from
+  implicit val hashDirection    : Hash[Direction]           = Hash by Forwards.from
+  implicit val hashFilterDead   : Hash[FilterDead]          = Hash by ShowDead.from
   implicit val hashMutexChildren: Hash[MutexChildren]       = Hash by MutexChildren.from
 
   implicit val hashUseCaseStepId            = hashTaggedType[UseCaseStepId]
@@ -220,11 +230,88 @@ sealed abstract class DataHasher extends GenericDashHasher {
 
   implicit val hashDeletionReasons: Hash[DeletionReasons] = hashCaseClass
 
+  private object ReqTableData {
+    import reqtable._
+
+    implicit val hashColumnCode          : Hash[Column.Code          .type] = hashConstClass("RC")
+    implicit val hashColumnCustomField   : Hash[Column.CustomField        ] = hashCaseClass
+    implicit val hashColumnDeletionReason: Hash[Column.DeletionReason.type] = hashConstClass("DR")
+    implicit val hashColumnImplications  : Hash[Column.Implications       ] = hashCaseClass
+    implicit val hashColumnPubid         : Hash[Column.Pubid         .type] = hashConstClass("Id")
+    implicit val hashColumnReqType       : Hash[Column.ReqType       .type] = hashConstClass("RT")
+    implicit val hashColumnTags          : Hash[Column.Tags          .type] = hashConstClass("Ta")
+    implicit val hashColumnTitle         : Hash[Column.Title         .type] = hashConstClass("Ti")
+
+    implicit val hashColumnIB: Hash[Column.SortInconclusive with Column.HasBlanks] =
+      Hash.fn {
+        case a: Column.Code.type           => hashColumnCode          .hash(a)
+        case a: Column.CustomField         => hashColumnCustomField   .hash(a)
+        case a: Column.DeletionReason.type => hashColumnDeletionReason.hash(a)
+        case a: Column.Implications        => hashColumnImplications  .hash(a)
+        case a: Column.Tags.type           => hashColumnTags          .hash(a)
+        case a: Column.Title.type          => hashColumnTitle         .hash(a)
+      }
+
+    implicit val hashColumnIN: Hash[Column.SortInconclusive with Column.NoBlanks] =
+      Hash.fn {
+        case a: Column.ReqType.type => hashColumnReqType.hash(a)
+      }
+
+    implicit val hashColumnSI: Hash[Column.SortInconclusive] = hashADT
+    implicit val hashColumnSC: Hash[Column.SortConclusive  ] = hashADT
+    implicit val hashColumn  : Hash[Column                 ] = hashADT
+
+    implicit val hashSortMethodAsc           : Hash[SortMethod.Asc           .type] = hashConstClass("A")
+    implicit val hashSortMethodAscThenBlanks : Hash[SortMethod.AscThenBlanks .type] = hashConstClass("AB")
+    implicit val hashSortMethodBlanksThenAsc : Hash[SortMethod.BlanksThenAsc .type] = hashConstClass("BA")
+    implicit val hashSortMethodBlanksThenDesc: Hash[SortMethod.BlanksThenDesc.type] = hashConstClass("BD")
+    implicit val hashSortMethodDesc          : Hash[SortMethod.Desc          .type] = hashConstClass("D")
+    implicit val hashSortMethodDescThenBlanks: Hash[SortMethod.DescThenBlanks.type] = hashConstClass("DB")
+    implicit val hashSortMethodIB            : Hash[SortMethod.IgnoreBlanks       ] = hashADT
+    implicit val hashSortMethodCB            : Hash[SortMethod.ConsiderBlanks     ] = hashADT
+    implicit val hashSortMethod              : Hash[SortMethod                    ] = hashADT
+
+    implicit val hashSortCriterionICB: Hash[SortCriterion.InconclusiveCB] = hashCaseClass
+    implicit val hashSortCriterionIIB: Hash[SortCriterion.InconclusiveIB] = hashCaseClass
+    implicit val hashSortCriterionC  : Hash[SortCriterion.Conclusive    ] = hashCaseClass
+    implicit val hashSortCriterionI  : Hash[SortCriterion.Inconclusive  ] = hashADT
+    implicit val hashSortCriterion   : Hash[SortCriterion               ] = hashADT
+    implicit val hashSortCriteria    : Hash[SortCriteria                ] = hashCaseClass
+
+    implicit val hashSavedViewName: Hash[SavedView.Name     ] = hashCaseClass
+    implicit val hashSavedView    : Hash[SavedView          ] = hashCaseClass
+    implicit val hashSavedViews   : Hash[SavedViews.NonEmpty] = hashCaseClass
+  }
+  @inline implicit def hashSavedViews = ReqTableData.hashSavedViews
+
+  private class HashValidFilter {
+    import ValidFilter._
+    implicit val hashVF_Min2Filters   : Hash[Min2Set[ValidFilter]] = hashMin2Set
+    implicit val hashVF_AttrI         : Hash[Attr.AnyIssue.type  ] = hashConstClass("I")
+    implicit val hashVF_AttrT         : Hash[Attr.AnyTag.type    ] = hashConstClass("T")
+    implicit val hashVF_Attr          : Hash[Attr                ] = hashADT
+    implicit val hashVF_Presence      : Hash[Presence            ] = hashCaseClass
+    implicit val hashVF_Lack          : Hash[Lack                ] = hashCaseClass
+    implicit val hashVF_Reqs          : Hash[Reqs                ] = hashCaseClass
+    implicit val hashVF_ReqType       : Hash[ReqType             ] = hashCaseClass
+    implicit val hashVF_Tag           : Hash[Tag                 ] = hashCaseClass
+    implicit val hashVF_CustomIssue   : Hash[CustomIssue         ] = hashCaseClass
+    implicit val hashVF_Text          : Hash[Text                ] = hashCaseClass
+    implicit val hashVF_ImpliesAnyOf  : Hash[ImpliesAnyOf        ] = hashCaseClass
+    implicit val hashVF_ImpliedByAnyOf: Hash[ImpliedByAnyOf      ] = hashCaseClass
+    implicit val hashVF_AllOf         : Hash[AllOf               ] = hashCaseClass
+    implicit val hashVF_AnyOf         : Hash[AnyOf               ] = hashCaseClass
+    implicit val hashVF_Not           : Hash[Not                 ] = hashCaseClass
+    implicit val hashVF_TextPattern   : Hash[TextPattern         ] = hashCaseClass
+             val hash                 : Hash[ValidFilter         ] = hashADT
+  }
+  implicit val hashValidFilter: Hash[ValidFilter] = Hash.lazily((new HashValidFilter).hash)
+
   implicit val hashIdCeilings    : Hash[IdCeilings   ] = hashCaseClass
   implicit val hashProjectConfig : Hash[ProjectConfig] = hashCaseClass
 
   val hashProjectContent: Hash[Project] =
-    hashCaseClassExcept('name, 'config)
+    hashCaseClassExcept('name, 'config, 'reqtableViews)
 
   val hashProjectOther: Hash[Project] =
     hashCaseClassExcept(
@@ -236,9 +323,34 @@ sealed abstract class DataHasher extends GenericDashHasher {
       'reqTags        ,
       'implications   ,
       'deletionReasons,
+      // reqtableViews is included
       'idCeilings     )
 
   implicit val hashProject: Hash[Project] =
+    Hash.fn[Project](p => joinHashes(
+      hashProjectContent.hash(p)        ::
+      hashProjectConfig .hash(p.config) ::
+      hashProjectOther  .hash(p)        ::
+      Nil))
+}
+
+final class DataHasherV1(protected val algorithm: Hash.Algorithm) extends DataHasher { // TODO DELETE
+  import algorithm._
+
+  override val hashProjectOther: Hash[Project] =
+    hashCaseClassExcept(
+      // name is included
+      'config         ,
+      'reqs           ,
+      'reqCodes       ,
+      'reqText        ,
+      'reqTags        ,
+      'implications   ,
+      'deletionReasons,
+      'reqtableViews  ,
+      'idCeilings     )
+
+  override implicit val hashProject: Hash[Project] =
     Hash.fn[Project](p => joinHashes(
       hashProjectContent.hash(p)        ::
       hashProjectConfig .hash(p.config) ::

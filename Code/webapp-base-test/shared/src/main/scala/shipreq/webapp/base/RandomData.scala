@@ -172,6 +172,9 @@ object RandomData {
   val dir =
     Gen.choose[Direction](Forwards, Backwards)
 
+  val filterDead =
+    Gen.choose[FilterDead](ShowDead, HideDead)
+
   def obfuscated[A]: Gen[Obfuscated[A]] =
     Gen.alphaNumeric.string(4 to 12).map(Obfuscated.apply[A])
 
@@ -1165,23 +1168,25 @@ object RandomData {
     val rcgTitleText   = TextGen.codeGroupTitleAtom(reqIdG, ucStepIdG, activeCodeIdG, cissueIdG).text
     val delReasonText  = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.DeletionReason)
     for {
-      name      ← projectName
-      reqText   ← reqFieldDataText2(reqIdSet, textColIds, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
-      reqs      ← setReqText(reqsWithoutText, reqIdG, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
-      reqCodes2 ← reqCode.updateGroupText(rcgTitleText)(reqCodes1.trie)
-      dr        ← deletionReasons(reqIdG, delReasonText)
-    } yield
-      IdCeilings.supply(
-        Project(
-          name,
-          cfg,
-          reqs,
-          ReqCodes(reqCodes2),
-          reqText,
-          reqTags,
-          reqImps,
-          dr,
-          _))
+      name       ← projectName
+      reqText    ← reqFieldDataText2(reqIdSet, textColIds, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
+      reqs       ← setReqText(reqsWithoutText, reqIdG, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
+      reqCodes2  ← reqCode.updateGroupText(rcgTitleText)(reqCodes1.trie)
+      dr         ← deletionReasons(reqIdG, delReasonText)
+      p1         = IdCeilings.supply(
+                    Project(
+                      name,
+                      cfg,
+                      reqs,
+                      ReqCodes(reqCodes2),
+                      reqText,
+                      reqTags,
+                      reqImps,
+                      dr,
+                      reqtable.SavedViews.empty,
+                      _))
+      savedViews ← reqtableData.savedViewsForProject(p1)
+    } yield p1.copy(reqtableViews = savedViews)
   }
 
   lazy val project: Gen[Project] =
@@ -1224,6 +1229,114 @@ object RandomData {
       lastUpdatedAt <- instantPast.option.map(_.filter(_ isAfter createdAt))
     } yield
       ProjectMetaData(id, name, eventCount, reqCount, createdAt, lastUpdatedAt)
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  object reqtableData {
+    import reqtable._
+
+    def visibleColumns(p: Project): Gen[NonEmptyVector[Column]] =
+      for {
+        long ← Gen.long
+        all  = Column all p.config
+        cols ← Gen shuffle all.whole.toVector
+      } yield {
+        var i = long
+        val vs = cols.filter(c =>
+          if (Column isMandatory c)
+            true
+          else {
+            val j = i
+            i = i >>> 1
+            if (i == 0) i = System.currentTimeMillis()
+            (j & 1) == 1
+          }
+        )
+        NonEmptyVector force vs
+    }
+
+    def sortMethodI: Gen[SortMethod.IgnoreBlanks] =
+      Gen.chooseNE(SortMethod.ignoreBlanks)
+
+    def sortMethodB: Gen[SortMethod.ConsiderBlanks] =
+      Gen.chooseNE(SortMethod.considerBlanks)
+
+    def columnC: Gen[Column.SortConclusive] =
+      Gen pure Column.Pubid
+
+    private def `change ↖columnCon↖ if more conclusive criteria added`: Column.SortConclusive => Unit = {
+      case Column.Pubid => ()
+    }
+
+    def sortCriteriaC: Gen[SortCriterion.Conclusive] =
+      Gen.apply2(SortCriterion.Conclusive)(columnC, sortMethodI)
+
+    val builtInColumnIs: NonEmptyVector[Column.SortInconclusive] =
+      NonEmptyVector force (Column.builtInValues.whole: Vector[Column]).iterator.filterSubType[Column.SortInconclusive].toVector
+
+    val builtInColumnIsG: Gen[Column.SortInconclusive] =
+      Gen.chooseNE(builtInColumnIs)
+
+    case class ColumnIGen(legalCustomFieldColumns: Vector[Column.CustomField]) {
+      val legalCustomFieldColumnNEV = NonEmptyVector option legalCustomFieldColumns
+
+      val legalColumnIs: NonEmptyVector[Column.SortInconclusive] =
+        builtInColumnIs ++ legalCustomFieldColumns
+
+      def columnI: Gen[Column.SortInconclusive] =
+        Gen.chooseNE(legalColumnIs)
+
+      def colIs: Gen[Vector[Column.SortInconclusive]] =
+        Gen.subset(legalColumnIs.whole).shuffle
+
+      def sortCriIs: Gen[Vector[SortCriterion.Inconclusive]] =
+        colIs flatMap reqtableData.sortCriIs
+    }
+
+    def customFieldColumn: Gen[Column.CustomField] =
+      RandomData.customFieldId.map(Column.CustomField)
+
+    def sortCriI(colI: Column.SortInconclusive): Gen[SortCriterion.Inconclusive] =
+      Gen.chooseNE(SortCriterion possibilitiesI colI)
+
+    def sortCriIsFromAllCols(allCols: NonEmptyVector[Column]): Gen[Vector[SortCriterion.Inconclusive]] = {
+      val icols = allCols.iterator.filterSubType[Column.SortInconclusive].toVector
+      Gen.subset(icols).shuffle flatMap sortCriIs
+    }
+
+    def sortCriIs(colIs: Vector[Column.SortInconclusive]): Gen[Vector[SortCriterion.Inconclusive]] =
+      Gen.sequence(colIs map sortCriI)
+
+    def sortCriteria(allCols: NonEmptyVector[Column]): Gen[SortCriteria] =
+      sortCriIsFromAllCols(allCols).flatMap(sortCriteria)
+
+    def sortCriteria(scIs: Vector[SortCriterion.Inconclusive]): Gen[SortCriteria] =
+      sortCriteriaC.map(SortCriteria(scIs, _))
+
+    val savedViewName: Gen[SavedView.Name] =
+      for {
+        a <- Gen.alpha
+        b <- Gen.unicode.vector(SavedView.Name.lengthRange.map(_ - 1))
+        c <- Gen.shuffle(b :+ a)
+        d  = String.valueOf(c.toArray)
+      } yield SavedView.Name.validator(d).valueOr(e => sys error s"$e: '${SavedView.Name.validator.corrector.full(d)}' ← '$d'")
+
+    def savedViewForProject(p: Project): Gen[SavedView] =
+      for {
+        a <- savedViewName
+        b <- filterDead
+        c <- visibleColumns(p)
+        d <- sortCriteria(c)
+        e <- filter.valid.forProject(p).option
+      } yield SavedView(a, b, c, d, e)
+
+    def nonEmptySavedViewsForProject(p: Project): Gen[SavedViews.NonEmpty] = {
+      val gen = savedViewForProject(p)
+      Gen.apply2(SavedViews.NonEmpty)(gen, gen.vector(0 to 4))
+    }
+
+    def savedViewsForProject(p: Project): Gen[SavedViews.Optional] =
+      nonEmptySavedViewsForProject(p).option
+  }
 
   // ===================================================================================================================
   // Protocol

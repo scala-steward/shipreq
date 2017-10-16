@@ -4,6 +4,7 @@ import japgolly.scalajs.react.test.SimEvent.{Keyboard => KB}
 import nyaya.test.PropTest._
 import utest._
 import shipreq.base.util._
+import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.UiText.ColumnNames
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.SampleProject.Values._
@@ -56,7 +57,7 @@ object ReqTableTest extends TestSuite {
     *.genActionsBy("testDeadToggleInvariants")(i =>
         for {
           ts <- RandomReqTableData.tableSettings(i.state, allowFilter = true)
-          fd <- RandomReqTableData.filterDead
+          fd <- RandomData.filterDead
         } yield setViewSettings("Apply random view settings", fd, (_, _) => ts) >> filterDeadShowHide)
 
   def testDeadNotEditable =

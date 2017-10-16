@@ -124,4 +124,8 @@ object BinCodecGeneric extends BasicImplicitPicklers with TuplePicklers {
       case _: Both[A, B] => 2
     }
   }
+
+  implicit def pickleMin2Set[A: UnivEq](implicit p: Pickler[Set[A]]): Pickler[Min2Set[A]] =
+    p.xmap(Min2Set.force(_))(_.whole)
+
 }

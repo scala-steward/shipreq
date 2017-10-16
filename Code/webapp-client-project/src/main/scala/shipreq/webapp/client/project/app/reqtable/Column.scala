@@ -29,11 +29,6 @@ object ColumnExt {
       case m: Mandatory => m
     }.toSet
 
-  val isMandatory: Column => Boolean = {
-    case _: Mandatory   => true
-    case _              => false
-  }
-
   val editorFieldCG = Intersection[Column, EditorFeature.FieldKey.ForCodeGroup] {
     case Column.Code            => Some(EditorFeature.FieldKey.Code)
     case Column.Title           => Some(EditorFeature.FieldKey.CodeGroupTitle)
