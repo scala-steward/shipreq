@@ -92,7 +92,9 @@ object BinCodecMemberData {
 
   import AtomPicklers.instances._
 
-  implicit lazy val pickleProjectTextContext: Pickler[ProjectText.Context] = derivePickler
+  implicit lazy val pickleProjectTextContextReq : Pickler[ProjectText.Context.Req ] = pickleCaseClass
+  implicit lazy val pickleProjectTextContextNone: Pickler[ProjectText.Context.None] = pickleCaseClass
+  implicit lazy val pickleProjectTextContext    : Pickler[ProjectText.Context     ] = pickleADT
 
   implicit lazy val pickleReqDataText       : Pickler[ReqData.Text       ] = pickleMap
   implicit lazy val pickleReqCodeNode       : Pickler[ReqCode.Node       ] = pickleCaseClass // xmap[String] already reuses
