@@ -119,6 +119,7 @@ object Common {
         "TS"  -> "project taskman-server",
         "TSL" -> "project taskman-server-logic",
         "WB"  -> "project webapp-base-jvm",
+        "WBM" -> "project webapp-base-member-jvm",
         "WT"  -> "project webapp-base-test-jvm",
         "WC"  -> "project webapp-client",
         "WCA" -> "project webapp-client-public-js", // A for Anonymous
