@@ -81,6 +81,9 @@ class BoopickleMacroImpls(val c: Context) extends MacroUtils {
   import BoopickleMacros._
   import c.universe._
 
+  def PicklerType(t: Type): Type =
+    appliedType(c.typeOf[Pickler[_]], t)
+
   def quietObject[T: c.WeakTypeTag]: c.Expr[Pickler[T]] = implObject[T](false)
   def debugObject[T: c.WeakTypeTag]: c.Expr[Pickler[T]] = implObject[T](true)
   def implObject[T: c.WeakTypeTag](debug: Boolean): c.Expr[Pickler[T]] = {
@@ -125,18 +128,15 @@ class BoopickleMacroImpls(val c: Context) extends MacroUtils {
           q"_root_.shipreq.webapp.base.protocol.BoopickleMacros.xmap[$T,$t]($apply)(_.$n)"
 
         case _ =>
-          var fieldPicklers  = Vector.empty[ValDef]
+          val init = Init()
           var pickleFields   = Vector.empty[Tree]
           var unpickleFields = Vector.empty[Tree]
 
           for (p <- params) {
             val (n, t) = nameAndType(T, p)
-            val fp = TermName(c.freshName())
-            fieldPicklers  :+= q"val $fp = implicitly[Pickler[$t]]"
+            val fp = init.valImp(PicklerType(t))
             pickleFields   :+= q"state.pickle(value.$n)($fp)"
             unpickleFields :+= q"state.unpickle($fp)"
-            // pickleFields   :+= q"state.pickle[$t](value.$n)"
-            // unpickleFields :+= q"state.unpickle[$t]"
           }
 
           def pickleImpl = q"..$pickleFields"
@@ -144,7 +144,7 @@ class BoopickleMacroImpls(val c: Context) extends MacroUtils {
 
           q""" {
             import _root_.boopickle.{Pickler, PickleState, UnpickleState}
-            ..$fieldPicklers
+            ..$init
             ${newPickler(T, pickleImpl, unpickleImpl)}
           } """
       }
@@ -196,16 +196,15 @@ class BoopickleMacroImpls(val c: Context) extends MacroUtils {
     var cases        = Vector.empty[CaseDef]
 
     var index = 0
-    val picklerType = c.typeOf[Pickler[_]]
+    val picklerType =
     for (t <- types) {
       val t2 = fixAdtTypeForCaseDef(t)
       val fp = TermName(c.freshName())
-      val picklerImpl: Tree = if (derive)
-        tryInferImplicit(appliedType(picklerType, t)) getOrElse {
-          implCaseClass(false)(c.WeakTypeTag(t)).tree
-        }
-      else
-        q"implicitly[Pickler[$t]]"
+      val picklerImpl: Tree =
+        if (derive)
+          tryInferImplicit(PicklerType(t)) getOrElse implDerive(false)(c.WeakTypeTag(t)).tree
+        else
+          needInferImplicit(PicklerType(t))
 
       picklerNames :+= fp
       picklers :+= q"val $fp = $picklerImpl.asInstanceOf[Pickler[$T]]"
