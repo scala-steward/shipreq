@@ -1,0 +1,163 @@
+#!/bin/env scala
+// vim: set ft=scala :
+
+def writeToFile(filename: String, content: String): Unit = {
+  import java.io._
+  val file = new File(filename)
+  val bw = new BufferedWriter(new FileWriter(file))
+  bw.write(content)
+  bw.close()
+}
+
+object Gen {
+
+  private def attrAndValue(attrName: String, attrType: String): String = {
+    val valueName = "ValueFor" + attrName
+
+    s"""
+       |  case object $attrName extends Attr {
+       |    override type Data = $attrType
+       |    override def apply(data: Data) = $valueName(data)
+       |    val dataEquality: Equal[Data] = implicitly[Equal[$attrType]]
+       |  }
+       |  final case class $valueName(value: $attrName.Data) extends Value {
+       |    override val attr: $attrName.type = $attrName
+       |    override def equals(o: Any): Boolean = o match {
+       |      case v2: $valueName => $attrName.dataEquality.equal(value, v2.value)
+       |      case _ => false
+       |    }
+       |  }
+     """.stripMargin
+  }
+
+  def apply(objName: String)(fields: (String, String)*): String = {
+    val attrNames = fields.map(_._1).sorted.mkString(", ")
+
+    s"""
+      |object $objName extends GenericData {
+      |  sealed abstract class Attr extends AttrBase
+      |  sealed abstract class Value extends ValueBase
+      |
+      |  ${fields.sortBy(_._1).map((attrAndValue _).tupled).mkString.trim}
+      |
+      |  override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
+      |    Util.univEqAndArbitraryOrder(Vector($attrNames))
+      |
+      |  @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
+      |
+      |  override val attrs = NonEmptySet[Attr]($attrNames)
+      |}
+    """.stripMargin
+  }
+
+}
+
+val gens = List(
+
+  Gen("CodeGroupGD")(
+    "Code"  -> "ReqCode.Value",
+    "Title" -> "Text.CodeGroupTitle.OptionalText",
+  ),
+  Gen("CustomIssueTypeGD")(
+    "Key"  -> "HashRefKey",
+    "Desc" -> "Option[String]",
+  ),
+  Gen("CustomReqTypeGD")(
+    "Mnemonic" -> "ReqType.Mnemonic",
+    "Name"     -> "String",
+    "Imp"      -> "ImplicationRequired",
+  ),
+  Gen("TagGroupGD")(
+    "Name"          -> "String",
+    "Desc"          -> "Option[String]",
+    "MutexChildren" -> "MutexChildren",
+    "Parents"       -> "TagInTree.Parents",
+    "Children"      -> "TagInTree.Children",
+  ),
+  Gen("ApplicableTagGD")(
+    "Name"     -> "String",
+    "Desc"     -> "Option[String]",
+    "Key"      -> "HashRefKey",
+    "Parents"  -> "TagInTree.Parents",
+    "Children" -> "TagInTree.Children",
+  ),
+  Gen("CustomTextFieldGD")(
+    "Name"      -> "String",
+    "Key"       -> "FieldRefKey",
+    "Mandatory" -> "Mandatory",
+    "ReqTypes"  -> "Field.ApplicableReqTypes",
+  ),
+  Gen("CustomTagFieldGD")(
+    "TagId"     -> "TagId",
+    "Mandatory" -> "Mandatory",
+    "ReqTypes"  -> "Field.ApplicableReqTypes",
+  ),
+  Gen("CustomImpFieldGD")(
+    "ReqTypeId" -> "ReqTypeId",
+    "Mandatory" -> "Mandatory",
+    "ReqTypes"  -> "Field.ApplicableReqTypes",
+  ),
+  """
+    |/**
+    | * This is only used in [[GenericReqCreate]].
+    | * All fields are optional; any mandatory data is required in the [[GenericReqCreate]] constructor directly. Thus,
+    | * when a field is provided, its value must be non-empty (with emptiness representable by omitting the field).
+    | */
+  """.stripMargin.trim +
+  Gen("GenericReqGD")(
+    "Codes"      -> "NonEmptySet[ReqCode.IdAndValue]",
+    "CustomText" -> "Event.NonEmptyCustomTextMap",
+    "ImpSrcs"    -> "NonEmptySet[ReqId]",
+    "ImpTgts"    -> "NonEmptySet[ReqId]",
+    "Tags"       -> "NonEmptySet[ApplicableTagId]",
+    "Title"      -> "Text.GenericReqTitle.NonEmptyText",
+  ),
+  """
+    |/**
+    | * This is only used in [[UseCaseCreate]].
+    | * All fields are optional; any mandatory data is required in the [[UseCaseCreate]] constructor directly. Thus,
+    | * when a field is provided, its value must be non-empty (with emptiness representable by omitting the field).
+    | */
+  """.stripMargin.trim +
+  Gen("UseCaseGD")(
+    "Codes"      -> "NonEmptySet[ReqCode.IdAndValue]",
+    "CustomText" -> "Event.NonEmptyCustomTextMap",
+    "ImpSrcs"    -> "NonEmptySet[ReqId]",
+    "ImpTgts"    -> "NonEmptySet[ReqId]",
+    "Tags"       -> "NonEmptySet[ApplicableTagId]",
+    "Title"      -> "Text.UseCaseTitle.NonEmptyText",
+  ),
+  Gen("UseCaseStepGD")(
+    "Title"   -> "Text.UseCaseStep.OptionalText",
+    "FlowIn"  -> "SetDiff.NE[UseCaseStepId]",
+    "FlowOut" -> "SetDiff.NE[UseCaseStepId]",
+  ),
+)
+
+
+val header = "// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████\n\n"
+
+val content =
+  s"""
+     |package shipreq.webapp.base.event
+     |
+     |import japgolly.microlibs.nonempty.NonEmptySet
+     |import scalaz.{Equal, Order}
+     |import shipreq.base.util.{SetDiff, Util}
+     |import shipreq.base.util.univeq._
+     |import shipreq.webapp.base.data._
+     |import shipreq.webapp.base.util._
+     |import shipreq.webapp.base.text.Text
+     |import Text.Equality._
+     |
+     |// DO NOT EDIT THIS
+     |// This file is generated in its entirety by bin/gen-generic_data
+     |
+     |${gens.map(header + _.trim).sortBy(_.replaceFirst("^[^\u0000]+?object ", "")).mkString("\n\n")}
+   """.stripMargin.trim
+
+// println(content)
+
+val targetFile = "webapp-base-member/shared/src/main/scala/shipreq/webapp/base/event/GenericData.scala"
+println(s"Writing ${content.split('\n').size + 1} lines to $targetFile")
+writeToFile(targetFile, content)

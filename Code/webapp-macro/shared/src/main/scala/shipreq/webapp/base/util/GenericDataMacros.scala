@@ -1,9 +1,6 @@
 package shipreq.webapp.base.util
 
 import japgolly.microlibs.macro_utils._
-import scalaz.Equal
-import scala.annotation.StaticAnnotation
-import scala.annotation.compileTimeOnly
 import shipreq.webapp.base.protocol.MPickleMacroUtils
 import boopickle._
 import upickle._
@@ -20,101 +17,6 @@ object GenericDataMacros {
 
   def binpickler (d: GenericData): d.ValueTypeClasses[Pickler] = macro GenericDataMacroImpls.quietBinPickler
   def _binpickler(d: GenericData): d.ValueTypeClasses[Pickler] = macro GenericDataMacroImpls.debugBinPickler
-}
-
-@compileTimeOnly("Enable macro paradise to expand macro annotations")
-class CreateGenericData extends StaticAnnotation {
-  def macroTransform(annottees: Any*): Any = macro GenericDataMacroImplsW.objectImpl
-}
-
-class GenericDataMacroImplsW(val c: scala.reflect.macros.whitebox.Context) extends WhiteboxMacroUtils {
-  import c.universe._
-
-  /**
-   * Populates the body of a [[GenericData]] object.
-   */
-  def objectImpl(annottees: c.Expr[Any]*) = {
-    val equal     = c.typeOf[Equal[_]]
-    var attrNames = Vector.empty[TermName]
-    var attrDefns = List.empty[Tree]
-    var unused    = Vector.empty[Tree]
-
-    def processBody(body: List[Tree]): Unit = {
-      body.foreach {
-        case q"val ${n: TermName} = defAttr[$attrType]" =>
-
-          val prefix     = n.toString
-          val attrName   = prefix
-          val attrNameT  = TermName(attrName)
-          val valueName  = "ValueFor" + prefix
-          val valueNameT = TermName(valueName)
-          val valueNameY = TypeName(valueName)
-
-          val defn =
-            q"""
-              case object $attrNameT extends Attr {
-                override type Data = $attrType
-                override def apply(data: Data) = $valueNameT(data)
-                val dataEquality: Equal[Data] = implicitly[Equal[$attrType]]
-              }
-              final case class $valueNameY(value: $attrNameT.Data) extends Value {
-                override val attr: $attrNameT.type = $attrNameT
-                override def equals(o: Any): Boolean = o match {
-                  case $valueNameT(v2) => $attrNameT.dataEquality.equal(value, v2)
-                  case _ => false
-                }
-              }
-            """
-
-          attrNames :+= attrNameT
-          attrDefns ::= defn
-
-        case x if x.isEmpty => ()
-        case x => unused :+= x
-      }
-    }
-
-    val impl = annottees.map(_.tree) match {
-      case List(q"object $objName extends $parent { ..$body }") =>
-
-        processBody(body)
-
-        if (unused.nonEmpty) {
-          for (u <- unused)
-            println(showRaw(u))
-          val expl = unused.map(" - " + _.toString) mkString "\n"
-          fail(s"Unrecognised field declarations found.\n$expl")
-        }
-
-        q"""
-          object $objName extends $parent {
-            import japgolly.microlibs.nonempty.NonEmptySet
-            import scalaz.{Equal, Order}
-            import shipreq.base.util.Util
-            import shipreq.base.util.univeq._
-
-            sealed abstract class Attr extends AttrBase
-            sealed abstract class Value extends ValueBase
-
-            ..${flattenBlocks(attrDefns)}
-
-            override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-              Util.univEqAndArbitraryOrder(Vector(..$attrNames))
-
-            @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
-
-            override val attrs = NonEmptySet[Attr](..$attrNames)
-          }
-         """
-
-      case _ => fail("You must annotate an object definition.")
-    }
-
-//    val sep = ("="*120)+"\n"
-//    println(sep + impl + "\n" + sep)
-
-    c.Expr[Any](impl)
-  }
 }
 
 class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extends MacroUtils with MPickleMacroUtils {
