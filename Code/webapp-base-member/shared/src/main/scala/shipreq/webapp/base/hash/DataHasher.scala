@@ -242,24 +242,11 @@ sealed abstract class DataHasher extends GenericDashHasher {
     implicit val hashColumnTags          : Hash[Column.Tags          .type] = hashConstClass("Ta")
     implicit val hashColumnTitle         : Hash[Column.Title         .type] = hashConstClass("Ti")
 
-    implicit val hashColumnIB: Hash[Column.SortInconclusive with Column.HasBlanks] =
-      Hash.fn {
-        case a: Column.Code.type           => hashColumnCode          .hash(a)
-        case a: Column.CustomField         => hashColumnCustomField   .hash(a)
-        case a: Column.DeletionReason.type => hashColumnDeletionReason.hash(a)
-        case a: Column.Implications        => hashColumnImplications  .hash(a)
-        case a: Column.Tags.type           => hashColumnTags          .hash(a)
-        case a: Column.Title.type          => hashColumnTitle         .hash(a)
-      }
-
-    implicit val hashColumnIN: Hash[Column.SortInconclusive with Column.NoBlanks] =
-      Hash.fn {
-        case a: Column.ReqType.type => hashColumnReqType.hash(a)
-      }
-
-    implicit val hashColumnSI: Hash[Column.SortInconclusive] = hashADT
-    implicit val hashColumnSC: Hash[Column.SortConclusive  ] = hashADT
-    implicit val hashColumn  : Hash[Column                 ] = hashADT
+    implicit val hashColumnSIB: Hash[Column.SortInconclusiveHasBlanks] = hashADT
+    implicit val hashColumnSIN: Hash[Column.SortInconclusiveNoBlanks ] = hashADT
+    implicit val hashColumnSI : Hash[Column.SortInconclusive         ] = hashADT
+    implicit val hashColumnSC : Hash[Column.SortConclusive           ] = hashADT
+    implicit val hashColumn   : Hash[Column                          ] = hashADT
 
     implicit val hashSortMethodAsc           : Hash[SortMethod.Asc           .type] = hashConstClass("A")
     implicit val hashSortMethodAscThenBlanks : Hash[SortMethod.AscThenBlanks .type] = hashConstClass("AB")

@@ -321,11 +321,11 @@ object Sorter {
   // ===================================================================================================================
   // Sort criteria
 
-  val inconclusiveIB: C.SortInconclusive with C.NoBlanks => SorterForSMIB = {
+  val inconclusiveIB: C.SortInconclusiveNoBlanks => SorterForSMIB = {
     case C.ReqType => SorterForSMIB(reqTypeSorter)
   }
 
-  val inconclusiveCB: C.SortInconclusive with C.HasBlanks => SorterForSMCB = {
+  val inconclusiveCB: C.SortInconclusiveHasBlanks => SorterForSMCB = {
     case c: C.CustomField =>
       c.id match {
         case id: CustomField.Text       .Id => customTextFieldSorter(id, c)
@@ -361,8 +361,8 @@ object Sorter {
         .filterSubType[C.SortInconclusive]
         .filterNot(ts.isOrdered)
         .map({
-          case c: C.HasBlanks => inconclusiveCB(c)(SM.BlanksThenAsc)
-          case c: C.NoBlanks  => inconclusiveIB(c)(SM.Asc)
+          case c: C.SortInconclusiveHasBlanks => inconclusiveCB(c)(SM.BlanksThenAsc)
+          case c: C.SortInconclusiveNoBlanks  => inconclusiveIB(c)(SM.Asc)
         })
         .map(_.rowModFn)
 

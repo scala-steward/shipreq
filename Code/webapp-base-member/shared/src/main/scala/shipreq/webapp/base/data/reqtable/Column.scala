@@ -17,8 +17,10 @@ object Column {
   sealed trait HasBlanks        extends Column   { final protected def __blankable = ??? }
   sealed trait NoBlanks         extends Column   { final protected def __blankable = ??? }
 
-  sealed trait SortInconclusive extends Column   { final protected def __sortConcl = ??? }
-  sealed trait SortConclusive   extends NoBlanks { final protected def __sortConcl = ??? }
+  sealed trait SortConclusive            extends NoBlanks { final protected def __sortConcl = ??? }
+  sealed trait SortInconclusive          extends Column   { final protected def __sortConcl = ??? }
+  sealed trait SortInconclusiveHasBlanks extends SortInconclusive with HasBlanks
+  sealed trait SortInconclusiveNoBlanks  extends SortInconclusive with NoBlanks
 
   sealed trait BuiltIn extends Column
   sealed trait Mandatory extends BuiltIn {self: BuiltIn => }
@@ -26,18 +28,18 @@ object Column {
   // -------------------------------------------------------------------------------------------------------------------
 
   // NOTE: Keep .builtInValues in sync
-  case object Pubid                       extends BuiltIn with SortConclusive                  with Mandatory
-  case object Code                        extends BuiltIn with SortInconclusive with HasBlanks
-  case object Title                       extends BuiltIn with SortInconclusive with HasBlanks with Mandatory
-  case object ReqType                     extends BuiltIn with SortInconclusive with NoBlanks
-  case object Tags                        extends BuiltIn with SortInconclusive with HasBlanks
-  case class Implications(dir: Direction) extends BuiltIn with SortInconclusive with HasBlanks
-  case object DeletionReason              extends BuiltIn with SortInconclusive with HasBlanks
+  case object Pubid                       extends BuiltIn with SortConclusive            with Mandatory
+  case object Code                        extends BuiltIn with SortInconclusiveHasBlanks
+  case object Title                       extends BuiltIn with SortInconclusiveHasBlanks with Mandatory
+  case object ReqType                     extends BuiltIn with SortInconclusiveNoBlanks
+  case object Tags                        extends BuiltIn with SortInconclusiveHasBlanks
+  case class Implications(dir: Direction) extends BuiltIn with SortInconclusiveHasBlanks
+  case object DeletionReason              extends BuiltIn with SortInconclusiveHasBlanks
 
   // Field columns
   // - No applicable StaticFields, else they'd be added manually here.
   // - Currently allows any type of CustomField; this may change in future.
-  case class CustomField(id: CustomFieldId) extends SortInconclusive with HasBlanks
+  case class CustomField(id: CustomFieldId) extends SortInconclusiveHasBlanks
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -46,13 +48,13 @@ object Column {
     def apply(d: Direction): Implications = memo(d)
   }
 
-  @inline implicit def equalityCF : UnivEq[CustomField]                     = UnivEq.derive
-  @inline implicit def equalityIHB: UnivEq[SortInconclusive with HasBlanks] = UnivEq.force
-  @inline implicit def equalityINB: UnivEq[SortInconclusive with NoBlanks]  = UnivEq.force
-  @inline implicit def equalityI  : UnivEq[SortInconclusive]                = UnivEq.derive
-  @inline implicit def equalityC  : UnivEq[SortConclusive]                  = UnivEq.derive
-  @inline implicit def equalityB  : UnivEq[BuiltIn]                         = UnivEq.derive
-  @inline implicit def equality   : UnivEq[Column]                          = UnivEq.derive
+  @inline implicit def equalityCF : UnivEq[CustomField]               = UnivEq.derive
+  @inline implicit def equalityIHB: UnivEq[SortInconclusiveHasBlanks] = UnivEq.force
+  @inline implicit def equalityINB: UnivEq[SortInconclusiveNoBlanks]  = UnivEq.force
+  @inline implicit def equalityI  : UnivEq[SortInconclusive]          = UnivEq.derive
+  @inline implicit def equalityC  : UnivEq[SortConclusive]            = UnivEq.derive
+  @inline implicit def equalityB  : UnivEq[BuiltIn]                   = UnivEq.derive
+  @inline implicit def equality   : UnivEq[Column]                    = UnivEq.derive
 
   val builtInValues: NonEmptyVector[BuiltIn] =
     AdtMacros.adtValuesManually[BuiltIn](

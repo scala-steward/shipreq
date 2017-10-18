@@ -178,42 +178,12 @@ object BinCodecMemberData {
     implicit val pickleColumnTags          : Pickler[Column.Tags          .type] = pickleObject
     implicit val pickleColumnTitle         : Pickler[Column.Title         .type] = pickleObject
 
-    implicit val pickleColumnIB: Pickler[Column.SortInconclusive with Column.HasBlanks] = {
-      type T = Column.SortInconclusive with Column.HasBlanks
-      implicit def upcast[A <: T](p: Pickler[A]) = p.asInstanceOf[Pickler[T]]
-      val all = Array[Pickler[T]](
-        pickleColumnCode,
-        pickleColumnCustomField,
-        pickleColumnDeletionReason,
-        pickleColumnImplications,
-        pickleColumnTags,
-        pickleColumnTitle)
-      def index(t: T): Int = t match {
-        case _: Column.Code.type           => 0
-        case _: Column.CustomField         => 1
-        case _: Column.DeletionReason.type => 2
-        case _: Column.Implications        => 3
-        case _: Column.Tags.type           => 4
-        case _: Column.Title.type          => 5
-      }
-      new Selector[T](all, index)
-    }
-
-    implicit val pickleColumnIN: Pickler[Column.SortInconclusive with Column.NoBlanks] = {
-      type T = Column.SortInconclusive with Column.NoBlanks
-      implicit def upcast[A <: T](p: Pickler[A]) = p.asInstanceOf[Pickler[T]]
-      val all = Array[Pickler[T]](
-        pickleColumnReqType)
-      def index(t: T): Int = t match {
-        case _: Column.ReqType.type => 0
-      }
-      new Selector[T](all, index)
-    }
-
-    implicit val pickleColumnSI : Pickler[Column.SortInconclusive        ] = pickleADT
-    implicit val pickleColumnSC : Pickler[Column.SortConclusive          ] = pickleADT
-    implicit val pickleColumnSIs: Pickler[Vector[Column.SortInconclusive]] = iterablePickler
-    implicit val pickleColumn   : Pickler[Column                         ] = pickleADT
+    implicit val pickleColumnIB : Pickler[Column.SortInconclusiveHasBlanks] = pickleADT
+    implicit val pickleColumnIN : Pickler[Column.SortInconclusiveNoBlanks ] = pickleADT
+    implicit val pickleColumnSI : Pickler[Column.SortInconclusive         ] = pickleADT
+    implicit val pickleColumnSC : Pickler[Column.SortConclusive           ] = pickleADT
+    implicit val pickleColumnSIs: Pickler[Vector[Column.SortInconclusive] ] = iterablePickler
+    implicit val pickleColumn   : Pickler[Column                          ] = pickleADT
 
     implicit val pickleSortMethodAsc           : Pickler[SortMethod.Asc           .type] = pickleObject
     implicit val pickleSortMethodAscThenBlanks : Pickler[SortMethod.AscThenBlanks .type] = pickleObject

@@ -119,10 +119,10 @@ object LogicTest extends TestSuite {
     assertEq(extract(r), expect)
   }
 
-  private def vsSortedByCB(p: Project, c: C.SortInconclusive with C.HasBlanks, sm: ConsiderBlanks, f: Filter): TableSettings =
+  private def vsSortedByCB(p: Project, c: C.SortInconclusiveHasBlanks, sm: ConsiderBlanks, f: Filter): TableSettings =
     TableSettings(columnState(p, c), defaultOrder.copy(init = Vector(SC.InconclusiveCB(c, sm))), f)
 
-  private def testCB[A: Equal](p: Project, c: C.SortInconclusive with C.HasBlanks, f: Filter, fd: FilterDead, extract: Rows => A)(tests: Seq[(ConsiderBlanks, A)]) = {
+  private def testCB[A: Equal](p: Project, c: C.SortInconclusiveHasBlanks, f: Filter, fd: FilterDead, extract: Rows => A)(tests: Seq[(ConsiderBlanks, A)]) = {
     val pc = pcache(p)
     import pc.{pt, ts}
     for ((sm, expect) <- tests) {
@@ -144,10 +144,10 @@ object LogicTest extends TestSuite {
   private def allSortsCB(zcount: Int, asc: String, desc: String): Seq[(ConsiderBlanks, String)] =
     allSortsCBA(z, zcount)(_ + sep + _, asc, desc)
 
-  private def vsSortedByIB(p: Project, c: C.SortInconclusive with C.NoBlanks, sm: IgnoreBlanks, f: Filter): TableSettings =
+  private def vsSortedByIB(p: Project, c: C.SortInconclusiveNoBlanks, sm: IgnoreBlanks, f: Filter): TableSettings =
     TableSettings(columnState(p, c), defaultOrder.copy(init = Vector(SC.InconclusiveIB(c, sm))), f)
 
-  private def testIB[A: Equal](p: Project, c: C.SortInconclusive with C.NoBlanks, f: Filter, fd: FilterDead, extract: Rows => A)(tests: Seq[(IgnoreBlanks, A)]) = {
+  private def testIB[A: Equal](p: Project, c: C.SortInconclusiveNoBlanks, f: Filter, fd: FilterDead, extract: Rows => A)(tests: Seq[(IgnoreBlanks, A)]) = {
     val pc = pcache(p)
     import pc.{pt, ts}
     for ((sm, expect) <- tests) {
