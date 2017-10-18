@@ -1271,16 +1271,23 @@ object RandomData {
       Gen.apply2(SortCriterion.Conclusive)(columnC, sortMethodI)
 
     val builtInColumnIs: NonEmptyVector[Column.SortInconclusive] =
-      NonEmptyVector force (Column.builtInValues.whole: Vector[Column]).iterator.filterSubType[Column.SortInconclusive].toVector
+      NonEmptyVector force
+        (Column.builtInValues.whole: Vector[Column])
+          .iterator
+          .filterSubType[Column.SortInconclusive].toVector
 
     val builtInColumnIsG: Gen[Column.SortInconclusive] =
       Gen.chooseNE(builtInColumnIs)
 
     case class ColumnIGen(legalCustomFieldColumns: Vector[Column.CustomField]) {
-      val legalCustomFieldColumnNEV = NonEmptyVector option legalCustomFieldColumns
+      val legalCustomFieldColumnNEV: Option[NonEmptyVector[Column.CustomField]] =
+        NonEmptyVector option legalCustomFieldColumns
 
       val legalColumnIs: NonEmptyVector[Column.SortInconclusive] =
         builtInColumnIs ++ legalCustomFieldColumns
+
+      val legalColumns: NonEmptyVector[Column] =
+        Column.builtInValues ++ legalCustomFieldColumns
 
       def columnI: Gen[Column.SortInconclusive] =
         Gen.chooseNE(legalColumnIs)
@@ -1290,7 +1297,11 @@ object RandomData {
 
       def sortCriIs: Gen[Vector[SortCriterion.Inconclusive]] =
         colIs flatMap reqtableData.sortCriIs
-    }
+
+      def columnNEV: Gen[NonEmptyVector[Column]] =
+        Gen.subset1(legalColumns.whole).shuffle[Vector, Column].map(NonEmptyVector.force)
+
+    } // end ColumnIGen
 
     def customFieldColumn: Gen[Column.CustomField] =
       RandomData.customFieldId.map(Column.CustomField)
@@ -1312,6 +1323,9 @@ object RandomData {
     def sortCriteria(scIs: Vector[SortCriterion.Inconclusive]): Gen[SortCriteria] =
       sortCriteriaC.map(SortCriteria(scIs, _))
 
+    val savedViewId: Gen[SavedView.Id] =
+      id.map(SavedView.Id)
+
     val savedViewName: Gen[SavedView.Name] =
       for {
         a <- Gen.alpha
@@ -1322,7 +1336,7 @@ object RandomData {
 
     def savedViewForProject(p: Project): Gen[SavedView] =
       for {
-        i <- id.map(SavedView.Id)
+        i <- savedViewId
         a <- savedViewName
         b <- filterDead
         c <- visibleColumns(p)
@@ -1619,7 +1633,7 @@ object RandomData {
           Gen.chooseGenNE(gens :+ allOf :+ anyOf :+ not)
         }
 
-      def gen(flatGens: NonEmptyVector[Gen[ValidFilter]]): Gen[ValidFilter] =
+      private def gen(flatGens: NonEmptyVector[Gen[ValidFilter]]): Gen[ValidFilter] =
         expr(flatGens, 4 `JVM|JS` 3)
 
       def forProject(p: Project): Gen[ValidFilter] = {
@@ -1627,6 +1641,14 @@ object RandomData {
         val gy: Option[Gen[ReqTypeId]]         = Gen tryGenChoose p.config.reqTypes.all.whole.map(_.reqTypeId)
         val gt: Option[Gen[ApplicableTagId]]   = Gen tryGenChoose p.config.atagIterator.map(_.id)
         val gi: Option[Gen[CustomIssueTypeId]] = Gen tryGenChoose p.config.customIssueTypes.keys.toVector
+        gen(flatGens(gr, gy, gt, gi))
+      }
+
+      lazy val arbitrary: Gen[ValidFilter] = {
+        val gr: Option[Gen[ReqId]]             = Some(reqId)
+        val gy: Option[Gen[ReqTypeId]]         = Some(reqTypeId)
+        val gt: Option[Gen[ApplicableTagId]]   = Some(applicableTagId)
+        val gi: Option[Gen[CustomIssueTypeId]] = Some(customIssueTypeId)
         gen(flatGens(gr, gy, gt, gi))
       }
     }
@@ -1791,6 +1813,19 @@ object RandomData {
       }
     }
 
+    object savedViewGD extends GenericDataGen(SavedViewGD) {
+      import gd._
+      import reqtableData._
+      private val colNev = customFieldColumn.vector.map(ColumnIGen).flatMap(_.columnNEV)
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Columns      => colNev                        map Columns     .apply
+        case Filter       => filter.valid.arbitrary.option map Filter      .apply
+        case FilterDead   => filterDead                    map FilterDead  .apply
+        case Name         => savedViewName                 map Name        .apply
+        case SortCriteria => colNev.flatMap(sortCriteria)  map SortCriteria.apply
+      }
+    }
+
     val genUseCaseStepCreate: Gen[UseCaseStepCreate] =
       Gen.apply4(UseCaseStepCreate)(useCaseStepId, useCaseId, useCaseStepTreeField, genVectorTreeParLoc)
 
@@ -1940,6 +1975,18 @@ object RandomData {
     val genUseCaseStepUpdate: Gen[UseCaseStepUpdate] =
       Gen.apply2(UseCaseStepUpdate)(useCaseStepId, useCaseStepGD.nonEmptyValues)
 
+    val genSavedViewCreate: Gen[SavedViewCreate] =
+      Gen.apply2(SavedViewCreate)(reqtableData.savedViewId, savedViewGD.nonEmptyValues)
+
+    val genSavedViewDefaultSet: Gen[SavedViewDefaultSet] =
+      reqtableData.savedViewId map SavedViewDefaultSet
+
+    val genSavedViewDelete: Gen[SavedViewDelete] =
+      reqtableData.savedViewId map SavedViewDelete
+
+    val genSavedViewUpdate: Gen[SavedViewUpdate] =
+      Gen.apply2(SavedViewUpdate)(reqtableData.savedViewId, savedViewGD.nonEmptyValues)
+
     val genProjectNameSet: Gen[ProjectNameSet] =
       projectName map ProjectNameSet
 
@@ -1980,6 +2027,10 @@ object RandomData {
         case _: ReqImplicationsPatch   => genReqImplicationsPatch
         case _: ReqsDelete             => genReqsDelete
         case _: ReqTagsPatch           => genReqTagsPatch
+        case _: SavedViewCreate        => genSavedViewCreate
+        case _: SavedViewDefaultSet    => genSavedViewDefaultSet
+        case _: SavedViewDelete        => genSavedViewDelete
+        case _: SavedViewUpdate        => genSavedViewUpdate
         case _: TagDelete              => genTagDelete
         case _: TagGroupCreate         => genTagGroupCreate
         case _: TagGroupUpdate         => genTagGroupUpdate
