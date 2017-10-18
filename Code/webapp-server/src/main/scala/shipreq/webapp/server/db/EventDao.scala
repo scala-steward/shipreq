@@ -12,11 +12,13 @@ import ApplyEvent.LogicVer
 import TaggedTypes.JsonStr
 
 object EventDbCodecs {
+  import java.util.regex.Pattern
   import nyaya.util.{Multimap, MultiValues}
   import upickle._
   import upickle.Fns._
   import upickle.BaseCodecs.StringRW
   import shipreq.webapp.base.data._
+  import shipreq.webapp.base.data.reqtable.SavedView
   import shipreq.webapp.base.protocol.MPickleMacros._
   import shipreq.webapp.base.text.{AtomTC, Text}
   import shipreq.webapp.base.util.GenericDataMacros._
@@ -27,6 +29,11 @@ object EventDbCodecs {
 
   implicit val pickleInt: ReadWriter[Int] =
     ReadWriter(i => Js.Num(i), { case Js.Num(i) => i.toInt })
+
+  implicit val picklePattern: ReadWriter[Pattern] =
+    ReadWriter(
+      p => Js.Arr(Js.Str(p.pattern), Js.Num(p.flags)),
+      { case Js.Arr(Js.Str(p), Js.Num(f)) => Pattern.compile(p, f.toInt) })
 
   private def isOneElemCollection[A](c: Iterable[A]): Boolean = {
     val i = c.iterator
@@ -56,6 +63,9 @@ object EventDbCodecs {
         r1 orElse rws.read)
     }
 
+    def min2Set(implicit ev: UnivEq[A]): ReadWriter[Min2Set[A]] =
+      set.xmap(Min2Set.force(_))(_.whole)
+
     def vector: ReadWriter[Vector[A]] =
       ReadWriter.merge(SeqishR[A, Vector], SeqishW[A, Vector])
 
@@ -73,6 +83,11 @@ object EventDbCodecs {
 
     def nev: ReadWriter[NonEmptyVector[A]] =
       pickleNEV(vector)
+
+    /** A single-value nes is stored as just that sole value directly.
+      * Unambiguous as long as A itself never encodes to a Js.Arr. */
+    def nevNice: ReadWriter[NonEmptyVector[A]] =
+      pickleNEV(vectorNice)
 
     /** A single-value nes is stored as just that sole value directly.
       * Unambiguous as long as A itself never encodes to a Js.Arr. */
@@ -125,6 +140,11 @@ object EventDbCodecs {
     })
   }
 
+  def pickleLazily[A](a: => ReadWriter[A]): ReadWriter[A] = {
+    lazy val b = a
+    ReadWriter(a => b write a, { case j => b read j })
+  }
+
   def pickleNonEmpty[N, E](f: N => E)(implicit rw: ReadWriter[E], proof: NonEmpty.Proof[E, N]): ReadWriter[N] =
     ReadWriter.xmapf(f)(NonEmpty require_! _)
 
@@ -151,21 +171,21 @@ object EventDbCodecs {
   implicit val pickleDeletable     = boolCase(Deletable)
   implicit val pickleMutexChildren = boolCase(MutexChildren)
 
-  implicit val pickleUseCaseId               : ReadWriter[UseCaseId                 ] = caseClass
-  implicit val pickleUseCaseStepId           : ReadWriter[UseCaseStepId             ] = caseClass
-  implicit val pickleGenericReqId            : ReadWriter[GenericReqId              ] = caseClass
-  implicit val pickleReqCodeId               : ReadWriter[ReqCodeId                 ] = caseClass
-  implicit val pickleCustomReqTypeId         : ReadWriter[CustomReqTypeId           ] = caseClass
-  implicit val pickleCustomIssueTypeId       : ReadWriter[CustomIssueTypeId         ] = caseClass
-  implicit val pickleApplicableTagId         : ReadWriter[ApplicableTagId           ] = caseClass
-  implicit val pickleTagGroupId              : ReadWriter[TagGroupId                ] = caseClass
-  implicit val pickleCustomFieldTagId        : ReadWriter[CustomField.Tag.Id        ] = caseClass
-  implicit val pickleCustomFieldTextId       : ReadWriter[CustomField.Text.Id       ] = caseClass
-  implicit val pickleCustomFieldImplicationId: ReadWriter[CustomField.Implication.Id] = caseClass
-  implicit val pickleReqTypePos              : ReadWriter[ReqTypePos                ] = caseClass
-  implicit val pickleHashRefKey              : ReadWriter[HashRefKey                ] = caseClass
-  implicit val pickleFieldRefKey             : ReadWriter[FieldRefKey               ] = caseClass
-  implicit val pickleReqTypeMnemonic         : ReadWriter[ReqType.Mnemonic          ] = caseClass
+  implicit val pickleUseCaseId               : ReadWriter[UseCaseId                 ] = caseClass1
+  implicit val pickleUseCaseStepId           : ReadWriter[UseCaseStepId             ] = caseClass1
+  implicit val pickleGenericReqId            : ReadWriter[GenericReqId              ] = caseClass1
+  implicit val pickleReqCodeId               : ReadWriter[ReqCodeId                 ] = caseClass1
+  implicit val pickleCustomReqTypeId         : ReadWriter[CustomReqTypeId           ] = caseClass1
+  implicit val pickleCustomIssueTypeId       : ReadWriter[CustomIssueTypeId         ] = caseClass1
+  implicit val pickleApplicableTagId         : ReadWriter[ApplicableTagId           ] = caseClass1
+  implicit val pickleTagGroupId              : ReadWriter[TagGroupId                ] = caseClass1
+  implicit val pickleCustomFieldTagId        : ReadWriter[CustomField.Tag.Id        ] = caseClass1
+  implicit val pickleCustomFieldTextId       : ReadWriter[CustomField.Text.Id       ] = caseClass1
+  implicit val pickleCustomFieldImplicationId: ReadWriter[CustomField.Implication.Id] = caseClass1
+  implicit val pickleReqTypePos              : ReadWriter[ReqTypePos                ] = caseClass1
+  implicit val pickleHashRefKey              : ReadWriter[HashRefKey                ] = caseClass1
+  implicit val pickleFieldRefKey             : ReadWriter[FieldRefKey               ] = caseClass1
+  implicit val pickleReqTypeMnemonic         : ReadWriter[ReqType.Mnemonic          ] = caseClass1
 
   implicit val pickleReqId: ReadWriter[ReqId] = pickleAdtOS {
     case _: GenericReqId => ""
@@ -193,6 +213,11 @@ object EventDbCodecs {
     case Backwards => "b"
   }
 
+  implicit val pickleFilterDead: ReadWriter[FilterDead] = pickleAdtOS {
+    case ShowDead => "s"
+    case HideDead => "h"
+  }
+
   implicit val pickleUseCaseStepTreeField: ReadWriter[StaticField.UseCaseStepTree] = pickleAdtOS {
     case StaticField.NormalAltStepTree => "n"
     case StaticField.ExceptionStepTree => "e"
@@ -206,6 +231,12 @@ object EventDbCodecs {
     case StaticField.ExceptionStepTree => "e"
     case StaticField.StepGraph         => "g"
     case StaticField.ImplicationGraph  => "I"
+  }
+
+  implicit val pickleCustomFieldId: ReadWriter[CustomFieldId] = pickleAdtOS {
+    case _: CustomField.Text       .Id => "x"
+    case _: CustomField.Tag        .Id => "t"
+    case _: CustomField.Implication.Id => "i"
   }
 
   implicit val pickleFieldIdPosition: ReadWriter[RelPos[FieldId]] =
@@ -276,8 +307,8 @@ object EventDbCodecs {
   def pickleISubsetNice[A: UnivEq : ReadWriter]: ReadWriter[ISubset[A]] = {
     import ISubset._
     implicit val as = implicitly[ReadWriter[A]].nesNice
-    implicit val o: ReadWriter[Only[A]] = caseClass
-    implicit val n: ReadWriter[Not [A]] = caseClass
+    implicit val o: ReadWriter[Only[A]] = caseClass1
+    implicit val n: ReadWriter[Not [A]] = caseClass1
     pickleAdtOS {
       case _: All [A] => "*"
       case _: Only[A] => "+"
@@ -381,7 +412,8 @@ object EventDbCodecs {
   }
   import TextCodecs.instances._
 
-  implicit val pickleOptionString: ReadWriter[Option[String]] =
+  // TODO pickleOptionNonEmptyString being the default for Option[String] seems dangerous
+  implicit val pickleOptionNonEmptyString: ReadWriter[Option[String]] =
     ReadWriter.xmap((s: String) => if (s.isEmpty) None else Some(s))(_ getOrElse "")
 
   implicit val pickleApplicableTagIdNES: ReadWriter[NonEmptySet[ApplicableTagId]] =
@@ -499,6 +531,123 @@ object EventDbCodecs {
     case UseCaseStepGD.FlowOut => ">"
   } nev
 
+  object ReqTableData {
+    import shipreq.webapp.base.filter.ValidFilter
+    import reqtable._
+
+    private class ForValidFilter {
+      import ValidFilter._
+      implicit val pickleVF_Attr: ReadWriter[Attr] = pickleAdtOS {
+        case Attr.AnyIssue => "i"
+        case Attr.AnyTag   => "t"
+      }
+      implicit val pickleVF_Min2Filters   : ReadWriter[Min2Set[ValidFilter]] = pickleValidFilter.min2Set
+      implicit val pickleVF_Presence      : ReadWriter[Presence            ] = caseClass1
+      implicit val pickleVF_Lack          : ReadWriter[Lack                ] = caseClass1
+      implicit val pickleVF_Reqs          : ReadWriter[Reqs                ] = caseClass1
+      implicit val pickleVF_ReqType       : ReadWriter[ReqType             ] = caseClass1
+      implicit val pickleVF_Tag           : ReadWriter[Tag                 ] = caseClass1
+      implicit val pickleVF_CustomIssue   : ReadWriter[CustomIssue         ] = caseClass1
+      implicit val pickleVF_Text          : ReadWriter[Text                ] = caseClass1
+      implicit val pickleVF_ImpliesAnyOf  : ReadWriter[ImpliesAnyOf        ] = caseClass1
+      implicit val pickleVF_ImpliedByAnyOf: ReadWriter[ImpliedByAnyOf      ] = caseClass1
+      implicit val pickleVF_AllOf         : ReadWriter[AllOf               ] = caseClass1
+      implicit val pickleVF_AnyOf         : ReadWriter[AnyOf               ] = caseClass1
+      implicit val pickleVF_Not           : ReadWriter[Not                 ] = caseClass1
+      implicit val pickleVF_TextPattern   : ReadWriter[TextPattern         ] = caseClass1
+      val pickler: ReadWriter[ValidFilter] = pickleAdtOS {
+        case _: AllOf          => "&"
+        case _: AnyOf          => "|"
+        case _: Not            => "!"
+        case _: CustomIssue    => "i"
+        case _: ImpliedByAnyOf => "<"
+        case _: ImpliesAnyOf   => ">"
+        case _: Lack           => "0"
+        case _: Presence       => "1"
+        case _: Reqs           => "r"
+        case _: ReqType        => "T"
+        case _: Tag            => "t"
+        case _: Text           => "x"
+        case _: TextPattern    => "p"
+      }
+    }
+    implicit lazy val pickleValidFilter: ReadWriter[ValidFilter] = pickleLazily((new ForValidFilter).pickler)
+    implicit val pickleOptionValidFilter: ReadWriter[Option[ValidFilter]] = addOptionWithNoneAs0(pickleValidFilter)
+
+    implicit val pickleColumnCustomField : ReadWriter[Column.CustomField ] = caseClass1
+    implicit val pickleColumnImplications: ReadWriter[Column.Implications] = caseClass1
+    implicit val pickleColumnIB: ReadWriter[Column.SortInconclusiveHasBlanks] = pickleAdtOS {
+      case Column.Code            => "c"
+      case Column.Title           => "t"
+      case Column.Tags            => "#"
+      case Column.DeletionReason  => "d"
+      case _: Column.Implications => "i"
+      case _: Column.CustomField  => "f"
+    }
+    implicit val pickleColumnIN: ReadWriter[Column.SortInconclusiveNoBlanks] = pickleAdtOS {
+      case Column.ReqType         => "T"
+    }
+    implicit val pickleColumnC: ReadWriter[Column.SortConclusive] = pickleAdtOS {
+      case Column.Pubid           => "I"
+    }
+    implicit val pickleColumn: ReadWriter[Column] = pickleAdtOS {
+      case Column.Code            => "c"
+      case Column.Title           => "t"
+      case Column.Tags            => "#"
+      case Column.DeletionReason  => "d"
+      case _: Column.Implications => "i"
+      case _: Column.CustomField  => "f"
+      case Column.ReqType         => "T"
+      case Column.Pubid           => "I"
+    }
+    implicit val pickleColumnNEV: ReadWriter[NonEmptyVector[Column]] = pickleColumn.nev
+
+    implicit val pickleSortMethodCB: ReadWriter[SortMethod.ConsiderBlanks] = pickleAdtOS {
+      case SortMethod.AscThenBlanks  => "a_"
+      case SortMethod.BlanksThenAsc  => "_a"
+      case SortMethod.BlanksThenDesc => "_d"
+      case SortMethod.DescThenBlanks => "d_"
+    }
+    implicit val pickleSortMethodIB: ReadWriter[SortMethod.IgnoreBlanks] = pickleAdtOS {
+      case SortMethod.Asc            => "a"
+      case SortMethod.Desc           => "d"
+    }
+    implicit val pickleSortMethod: ReadWriter[SortMethod] = pickleAdtOS {
+      case SortMethod.Asc            => "a"
+      case SortMethod.AscThenBlanks  => "a_"
+      case SortMethod.BlanksThenAsc  => "_a"
+      case SortMethod.BlanksThenDesc => "_d"
+      case SortMethod.Desc           => "d"
+      case SortMethod.DescThenBlanks => "d_"
+    }
+
+    implicit val pickleSortCriterionICB: ReadWriter[SortCriterion.InconclusiveCB      ] = caseClassAsArray('column, 'method)
+    implicit val pickleSortCriterionIIB: ReadWriter[SortCriterion.InconclusiveIB      ] = caseClassAsArray('column, 'method)
+    implicit val pickleSortCriterionC  : ReadWriter[SortCriterion.Conclusive          ] = caseClassAsArray('column, 'method)
+    implicit val pickleSortCriterionI  : ReadWriter[SortCriterion.Inconclusive        ] = pickleAdtOS {
+      case _: SortCriterion.InconclusiveCB => "_"
+      case _: SortCriterion.InconclusiveIB => "i"
+    }
+    implicit val pickleSortCriterion   : ReadWriter[SortCriterion                     ] = pickleAdtOS {
+      case _: SortCriterion.InconclusiveCB => "_"
+      case _: SortCriterion.InconclusiveIB => "i"
+      case _: SortCriterion.Conclusive     => "c"
+    }
+    implicit val pickleSortCriterionIs : ReadWriter[Vector[SortCriterion.Inconclusive]] = pickleSortCriterionI.vector
+    implicit val pickleSortCriteria    : ReadWriter[SortCriteria                      ] = caseClassAsArray('init, 'last)
+
+    implicit val pickleSavedViewName: ReadWriter[SavedView.Name] = caseClass1
+
+    implicit val pickleSavedViewGD = gdMPickler(SavedViewGD, true) {
+      case SavedViewGD.Columns      => "c"
+      case SavedViewGD.Filter       => "f"
+      case SavedViewGD.FilterDead   => "x"
+      case SavedViewGD.Name         => "n"
+      case SavedViewGD.SortCriteria => "s"
+    } nev
+  }
+  import ReqTableData.pickleSavedViewGD
+
   implicit val pickleReqCodeValueToIds: ReadWriter[Multimap[ReqCode.Value, Set, ReqCodeId]] = {
     val empty = UnivEq.emptySetMultimap[ReqCode.Value, ReqCodeId]
     ReadWriter(mm => {
@@ -551,6 +700,8 @@ object EventDbCodecs {
   implicit val idTypeCustomFieldTagId         = DbCodec.monoId('t', CustomField.Tag.Id)
   implicit val idTypeCustomFieldImplicationId = DbCodec.monoId('i', CustomField.Implication.Id)
   implicit val idTypeCustomFieldId            = DbCodec.polyId[CustomFieldId]
+
+  implicit val idTypeSavedViewId              = DbCodec.monoId(noDataIdType, SavedView.Id)
 
   implicit val idTypeStaticField: DbCodec.MonoId[StaticField] =
     new DbCodec.MonoId[StaticField]('s', {
@@ -612,6 +763,10 @@ object EventDbCodecs {
   implicit val dbCodecReqImplicationsPatch  : DbCodec[ReqImplicationsPatch  ] = dbCodecIdAnd('dir -> "d", 'patch -> "")
   implicit val dbCodecReqsDelete            : DbCodec[ReqsDelete            ] = dbCodecJust('reqs -> "r", 'codeGroups_? -> "g", 'reason_? -> "j")
   implicit val dbCodecReqTagsPatch          : DbCodec[ReqTagsPatch          ] = dbCodec2
+  implicit val dbCodecSavedViewCreate       : DbCodec[SavedViewCreate       ] = dbCodec2
+  implicit val dbCodecSavedViewDefaultSet   : DbCodec[SavedViewDefaultSet   ] = dbCodecIdOnly
+  implicit val dbCodecSavedViewDelete       : DbCodec[SavedViewDelete       ] = dbCodecIdOnly
+  implicit val dbCodecSavedViewUpdate       : DbCodec[SavedViewUpdate       ] = dbCodec2
   implicit val dbCodecTagDelete             : DbCodec[TagDelete             ] = dbCodecIdOnly
   implicit val dbCodecTagGroupCreate        : DbCodec[TagGroupCreate        ] = dbCodec2
   implicit val dbCodecTagGroupUpdate        : DbCodec[TagGroupUpdate        ] = dbCodec2
@@ -701,6 +856,15 @@ object EventDbCodecs {
     case _: FieldCustomTagUpdate   => 1133
     case _: FieldCustomTextCreate  => 1134
     case _: FieldCustomTextUpdate  => 1135
+
+    // =====================================
+    // Other: Shared Views
+    // =====================================
+
+    case _: SavedViewCreate        => 2100
+    case _: SavedViewUpdate        => 2101
+    case _: SavedViewDelete        => 2102
+    case _: SavedViewDefaultSet    => 2103
 
     // =====================================
     // Cosmetic. No impact on content/config
