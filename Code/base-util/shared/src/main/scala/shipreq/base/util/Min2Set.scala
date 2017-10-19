@@ -92,8 +92,8 @@ final class Min2Set[A] private[util] (val head: A, val tail: NonEmptySet[A]) {
 object Min2Set {
   type Maybe[A] = NonEmptySet[A] \/ Min2Set[A]
 
-  def apply[A: UnivEq](h1: A, h2: A, t: A*): Maybe[A] =
-    apply(NonEmptySet(h1, t.toSet + h2))
+  def apply[A: UnivEq](h1: A, h2: A, t: A*): Min2Set[A] =
+    new Min2Set(h1, NonEmptySet(h2, t: _*))
 
   def apply[A: UnivEq](s: NonEmptySet[A]): Maybe[A] =
     NonEmptySet.maybe(s.tail, -\/(s): Maybe[A])(t =>

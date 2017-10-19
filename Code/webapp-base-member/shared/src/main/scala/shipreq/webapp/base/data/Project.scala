@@ -2,8 +2,9 @@ package shipreq.webapp.base.data
 
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import japgolly.microlibs.stdlib_ext.StdlibExt._
-import monocle.Lens
+import monocle.{Lens, Optional}
 import monocle.macros.Lenses
+import monocle.std.option.pSome
 import scalaz.{-\/, Equal, \/, \/-}
 import scalaz.std.anyVal.intInstance
 import shipreq.base.util._
@@ -28,6 +29,12 @@ object Project {
   val implicationsSrcToTgt: Lens[Project, Implications.UniDir] = implications ^<-> Implications.biToUni
   val useCaseIMap         : Lens[Project, UseCaseIMap        ] = useCases ^|-> UseCases.imap
   val useCaseStepIndex    : Lens[Project, UseCases.StepIndex ] = useCases ^|-> UseCases.stepIndex
+
+  val reqtableViewsNE: Optional[Project, reqtable.SavedViews.NonEmpty] =
+    reqtableViews ^<-? pSome
+
+  def reqtableView(id: reqtable.SavedView.Id): Optional[Project, reqtable.SavedView] =
+    reqtableViewsNE ^|-? reqtable.SavedViews.NonEmpty.at(id)
 
   import ReqData._ // for equality
   implicit lazy val equality: Equal[Project] = ScalazMacros.deriveEqual

@@ -1,9 +1,13 @@
 package shipreq.webapp.base.data.reqtable
 
 import japgolly.microlibs.nonempty.NonEmptyVector
-import japgolly.univeq.UnivEq
+import monocle.Lens
+import monocle.macros.Lenses
+import scalaz.Equal
+import shipreq.base.util.univeq._
 import shipreq.base.util.IMap
 import shipreq.base.util.TaggedTypes.TaggedInt
+import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.FilterDead
 import shipreq.webapp.base.filter.ValidFilter
 import shipreq.webapp.base.validation.{CommonValidation => V, _}
@@ -17,6 +21,7 @@ import shipreq.webapp.base.validation.Implicits._
   * For example, one of the columns visible in the saved view could be later deleted, in which case it would have to
   * be ignored when the saved view is used henceforth.
   */
+@Lenses
 final case class SavedView(id          : SavedView.Id,
                            name        : SavedView.Name,
                            filterDead  : FilterDead,
@@ -35,12 +40,20 @@ object SavedView {
 
     final val lengthRange = 1 to 40
 
-    val validator: Validator[String, String, Name] =
+    val validator: Composite.Stateful[State, String, String, Name] =
       V.endoCorrector.singleLineWhitespace
         .withInvalidator(V.invalidator.lengthInRange(lengthRange) merge V.invalidator.containsAlpha)
         .mapInvalidator(V.invalidator.nonEmpty.whenValid)
         .toValidator
         .mapValid(apply)
+        .named(UiText.FieldNames.savedViewName)
+        .stateful(_ appendInvalidator _.invalidator)
+
+    final case class State(subject: Option[Id], data: () => TraversableOnce[(Option[Id], Name)]) {
+      private implicit def equality = Equal.equal[Name](_.value equalsIgnoreCase _.value)
+      def invalidator: Invalidator[Name] =
+        Uniqueness.optionalKeyWithValue(data)(subject)
+    }
   }
 
   implicit def univEq: UnivEq[SavedView] = UnivEq.derive
@@ -59,16 +72,44 @@ object SavedViews {
   val emptyNonDefault: NonDefault =
     IMap.empty(_.id)
 
+  @Lenses
   final case class NonEmpty(default: SavedView, nonDefault: NonDefault) {
+
+    def get(id: SavedView.Id): Option[SavedView] =
+      if (default.id ==* id)
+        Some(default)
+      else
+        nonDefault.get(id)
+
+    def size: Int =
+      nonDefault.size + 1
+
+    def +(aNonDefault: SavedView): NonEmpty =
+      NonEmpty(default, nonDefault + aNonDefault)
+
+    def ++(moreNonDefaults: TraversableOnce[SavedView]): NonEmpty =
+      NonEmpty(default, nonDefault ++ moreNonDefaults)
+
     def iterator: Iterator[SavedView] =
       Iterator.single(default) ++ nonDefault.valuesIterator
   }
 
   object NonEmpty {
-    def single(default: SavedView): NonEmpty =
-      NonEmpty(default, emptyNonDefault)
-
     implicit def univEq: UnivEq[NonEmpty] = UnivEq.derive
+
+    def at(id: SavedView.Id): monocle.Optional[NonEmpty, SavedView] =
+      monocle.Optional[NonEmpty, SavedView](_.get(id))(
+        newView => ne =>
+          if (ne.default.id ==* id)
+            ne.copy(default = newView) // replace default
+          else if (id ==* newView.id)
+            nonDefault.modify(_ + newView)(ne) // id didn't change, replace non-default
+          else if (ne.default.id ==* newView.id)
+            NonEmpty(newView, ne.nonDefault - id) // id changed to default, replace it, remove old id
+          else
+            nonDefault.modify(_ - id + newView)(ne)) // id changed within non-default, replace it, remove old id
   }
 
+  def apply(default: SavedView): NonEmpty =
+    NonEmpty(default, emptyNonDefault)
 }

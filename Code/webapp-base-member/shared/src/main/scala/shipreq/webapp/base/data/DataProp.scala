@@ -465,23 +465,28 @@ object DataProp {
   object savedViews {
     import reqtable._
 
-    private def single: Prop[SavedView] = {
+    private def single(allViews: SavedViews.NonEmpty): Prop[SavedView] = {
+
       val viewId: Prop[SavedView] =
         id[SavedView.Id].contramap(_.id)
 
       val name: Prop[SavedView] =
-        Prop.equal("name")(s => \/-(s.name), SavedView.Name.validator apply _.name.value)
+        Prop.equal("name")(s => \/-(s.name), s =>
+          SavedView.Name.validator(SavedView.Name.State(Some(s.id), () => allViews.iterator.map(v => (Some(v.id), v.name))))
+            .unnamed apply s.name.value)
 
-      val uniqueColumnsVisible: Prop[SavedView] =
-        Prop.distinct("Columns", _.columns.whole)
+      val visibleColumnsUnique: Prop[SavedView] =
+        Prop.distinct("Column", _.columns.whole)
 
       val sortByVisibleColumns: Prop[SavedView] =
-        Prop.whitelist("column")(_.columns.whole.toSet, _.sortCriteria.all.iterator.map(_.column))
+        Prop.whitelist[SavedView]("column")(_.columns.whole.toSet, _.sortCriteria.all.iterator.map(_.column))
+          .rename("All sort columns are visible")
 
-      val uniqueColumnsInSort: Prop[SavedView] =
-        Prop.distinctI("Sort Columns", _.sortCriteria.all.iterator.map(_.column))
+      val sortColumnsUnique: Prop[SavedView] =
+        Prop.distinctI("Sort Column", _.sortCriteria.all.iterator.map(_.column))
 
-      viewId & name & uniqueColumnsVisible & sortByVisibleColumns & uniqueColumnsInSort
+      (viewId & name & visibleColumnsUnique & sortByVisibleColumns & sortColumnsUnique)
+        .rename("SavedView")
     }
 
     private def nonEmpty: Prop[SavedViews.NonEmpty] = {
@@ -489,7 +494,7 @@ object DataProp {
         Prop.blacklist("non-default")(_.nonDefault.keySet, _.default.id :: Nil)
 
       val all: Prop[SavedViews.NonEmpty] =
-        single.forallF[Iterator].contramap(_.iterator)
+        Prop.forall((_: SavedViews.NonEmpty).iterator)(single)
 
       noDup ∧ all
     }

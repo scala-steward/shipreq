@@ -1173,20 +1173,19 @@ object RandomData {
       reqs       ← setReqText(reqsWithoutText, reqIdG, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
       reqCodes2  ← reqCode.updateGroupText(rcgTitleText)(reqCodes1.trie)
       dr         ← deletionReasons(reqIdG, delReasonText)
-      p1         = IdCeilings.supply(
-                    Project(
-                      name,
-                      cfg,
-                      reqs,
-                      ReqCodes(reqCodes2),
-                      reqText,
-                      reqTags,
-                      reqImps,
-                      dr,
-                      reqtable.SavedViews.empty,
-                      _))
+      p1         = Project(
+                     name,
+                     cfg,
+                     reqs,
+                     ReqCodes(reqCodes2),
+                     reqText,
+                     reqTags,
+                     reqImps,
+                     dr,
+                     reqtable.SavedViews.empty,
+                     IdCeilings.zero)
       savedViews ← reqtableData.savedViewsForProject(p1)
-    } yield p1.copy(reqtableViews = savedViews)
+    } yield IdCeilings.supply(ic => p1.copy(reqtableViews = savedViews, idCeilings = ic))
   }
 
   lazy val project: Gen[Project] =
@@ -1332,7 +1331,8 @@ object RandomData {
         b <- Gen.unicode.vector(SavedView.Name.lengthRange.map(_ - 1))
         c <- Gen.shuffle(b :+ a)
         d  = String.valueOf(c.toArray)
-      } yield SavedView.Name.validator(d).valueOr(e => sys error s"$e: '${SavedView.Name.validator.corrector.full(d)}' ← '$d'")
+      } yield SavedView.Name.validator.stateless.unnamed(d)
+        .valueOr(e => sys error s"$e: '${SavedView.Name.validator.stateless.corrector.full(d)}' ← '$d'")
 
     def savedViewForProject(p: Project): Gen[SavedView] =
       for {
@@ -1346,7 +1346,10 @@ object RandomData {
 
     def nonEmptySavedViewsForProject(p: Project): Gen[SavedViews.NonEmpty] = {
       val gen = savedViewForProject(p)
-      Gen.apply2(SavedViews.NonEmpty.apply)(gen, gen.vector(0 to 4).map(SavedViews.emptyNonDefault ++ _))
+      for {
+        d  <- gen
+        vs <- gen.vector(0 to 4).map(_.filter(v => v.id !=* d.id && !v.name.value.equalsIgnoreCase(d.name.value)))
+      } yield SavedViews(d) ++ vs
     }
 
     def savedViewsForProject(p: Project): Gen[SavedViews.Optional] =

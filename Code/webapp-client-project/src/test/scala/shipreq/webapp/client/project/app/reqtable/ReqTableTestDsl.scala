@@ -36,7 +36,7 @@ object ReqTableTestDsl {
   def selectVisibleColumns(isOn: Column => Boolean, p: Project, fd: FilterDead): NonEmptyVector[Column] = {
     // I want Pubid as the first column so that obs.table.entireContent is readable
     val set: Set[Column] =
-      Column.mandatory ++ ColumnPlus.All(p, fd).columns.whole.map(_.column).filter(isOn) - Column.Pubid
+      Column.mandatory.whole ++ ColumnPlus.All(p, fd).columns.whole.map(_.column).filter(isOn) - Column.Pubid
     NonEmptyVector(Column.Pubid, set.toVector)
   }
 

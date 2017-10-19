@@ -33,7 +33,7 @@ final case class TableSettings(columns: NonEmptyVector[Column],
   def setColumns(newCols0: NonEmptyVector[Column]): TableSettings = {
     // Ensure mandatory columns are present
     val set = newCols0.toNES
-    val newCols = newCols0 ++ Column.mandatory.filterNot(set.contains)
+    val newCols = newCols0 ++ Column.mandatory.iterator.filterNot(set.contains)
 
     // Filter order
     val icols = newCols.foldLeft(UnivEq.emptySet[Column.SortInconclusive])((q, c) => c match {

@@ -49,11 +49,12 @@ object Column {
   }
 
   @inline implicit def equalityCF : UnivEq[CustomField]               = UnivEq.derive
-  @inline implicit def equalityIHB: UnivEq[SortInconclusiveHasBlanks] = UnivEq.force
-  @inline implicit def equalityINB: UnivEq[SortInconclusiveNoBlanks]  = UnivEq.force
+  @inline implicit def equalityIHB: UnivEq[SortInconclusiveHasBlanks] = UnivEq.derive
+  @inline implicit def equalityINB: UnivEq[SortInconclusiveNoBlanks]  = UnivEq.derive
   @inline implicit def equalityI  : UnivEq[SortInconclusive]          = UnivEq.derive
   @inline implicit def equalityC  : UnivEq[SortConclusive]            = UnivEq.derive
   @inline implicit def equalityB  : UnivEq[BuiltIn]                   = UnivEq.derive
+  @inline implicit def equalityM  : UnivEq[Mandatory]                 = UnivEq.derive
   @inline implicit def equality   : UnivEq[Column]                    = UnivEq.derive
 
   val builtInValues: NonEmptyVector[BuiltIn] =
@@ -70,6 +71,9 @@ object Column {
     case _: Mandatory   => true
     case _              => false
   }
+
+  val mandatory: NonEmptySet[Mandatory] =
+    NonEmptySet(Pubid, builtInValues.iterator.collect { case m: Mandatory => m }.toSet)
 
   def applicabilityForReq[Data](a: Applicability[FieldId, Data]): Applicability[Column, Data] =
     Applicability {

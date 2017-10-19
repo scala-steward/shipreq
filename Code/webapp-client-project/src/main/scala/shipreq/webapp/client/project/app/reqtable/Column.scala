@@ -24,11 +24,6 @@ object ColumnExt {
     }
   }
 
-  val mandatory: Set[Mandatory] =
-    builtInValues.iterator.collect {
-      case m: Mandatory => m
-    }.toSet
-
   val editorFieldCG = Intersection[Column, EditorFeature.FieldKey.ForCodeGroup] {
     case Column.Code            => Some(EditorFeature.FieldKey.Code)
     case Column.Title           => Some(EditorFeature.FieldKey.CodeGroupTitle)
