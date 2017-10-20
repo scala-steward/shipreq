@@ -1328,7 +1328,7 @@ object RandomData {
     val savedViewName: Gen[SavedView.Name] =
       for {
         a <- Gen.alpha
-        b <- Gen.unicode.vector(SavedView.Name.lengthRange.map(_ - 1))
+        b <- Gen.ascii.vector(SavedView.Name.lengthRange.map(_ - 1))
         c <- Gen.shuffle(b :+ a)
         d  = String.valueOf(c.toArray)
       } yield SavedView.Name.validator.stateless.unnamed(d)
