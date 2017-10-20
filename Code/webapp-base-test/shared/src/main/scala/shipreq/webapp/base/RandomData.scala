@@ -2075,7 +2075,7 @@ object RandomData {
       Gen.chooseInt(100000).map(EventOrd(_))
 
     val hashScheme: Gen[HashScheme] =
-      Gen.chooseNE(HashScheme.all)
+      Gen.chooseNE(HashScheme.allOldToNew)
 
     val hash: Gen[Int] = Gen.int
 

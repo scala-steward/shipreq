@@ -31,7 +31,7 @@ object HashTestUtil {
       case None    => HashScheme.latest.invalidScopes
       case Some(f) => HashScope.all.iterator.filter(f(_) is Invalid).toSet
     }
-    val hasher = new DataHasherCurrent(new XorAlgorithm(MurmurHash3, xor))
+    val hasher = new HashScheme.Latest(new XorAlgorithm(MurmurHash3, xor))
     HashScheme(hasher, HashSchemeId(id), invalidScopes)
   }
 
@@ -41,7 +41,7 @@ object HashTestUtil {
   def fakeHashScheme(id: Char): HashScheme = fakeHashSchemeV(id, null)
 
   val hashSchemes: NonEmptyVector[HashScheme] =
-    (1 to 3).map(i => fakeHashScheme((32 + i).toChar)).toVector ++: HashScheme.all
+    (1 to 3).map(i => fakeHashScheme((32 + i).toChar)).toVector ++: HashScheme.allOldToNew
 
   // Ensure no duplicate IDs
   assert(hashSchemes.iterator.map(_.id).toSet.size == hashSchemes.length)

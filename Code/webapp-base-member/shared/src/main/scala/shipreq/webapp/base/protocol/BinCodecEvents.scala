@@ -85,7 +85,7 @@ object BinCodecEvents {
   implicit val pickleActiveEvent: Pickler[ActiveEvent] = pickleADT
   implicit val pickleEvent      : Pickler[Event      ] = pickleADT
 
-  implicit val pickleHashScheme: Pickler[HashScheme         ] = pickleEnum(HashScheme.all)
+  implicit val pickleHashScheme: Pickler[HashScheme         ] = pickleEnum(HashScheme.allOldToNew)
   implicit val pickleHashScope : Pickler[HashScope          ] = pickleEnum(HashScope.all)
   implicit val pickleLogicVer  : Pickler[ApplyEvent.LogicVer] = ConstPickler(ApplyEvent.LogicVer.Current)
 

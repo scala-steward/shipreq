@@ -16,14 +16,14 @@ import WebappTestUtil._
  */
 object HashSchemeTest extends TestSuite {
 
-  lazy val Vector(hL, h1) = HashScheme.all.whole
+  lazy val Vector(h1, h2) = HashScheme.allOldToNew.whole
 
   val PE = Project.empty.copy(name = "Empty")
   lazy val P3 = SampleProject3.project
   lazy val P4 = SampleProject4.project
 
   def hashes(h: HashScheme, p: Project): Map[HashScope, Int] =
-    HashScope.all.whole.map(s => s -> HashScope.hash(s, h.value, p)).toMap
+    HashScope.all.whole.map(s => s -> h.hasher(s, p)).toMap
 
   def makeSet(m: Map[HashScope, Int]) =
     HashScope.all.toStream
@@ -37,7 +37,7 @@ object HashSchemeTest extends TestSuite {
       .mkString(", ")
 
   def assertHashes(h: HashScheme, p: Project, ts: (HashScope, Int)*): Unit = {
-    def nameH = if (h eq hL) "latest" else h.toString
+    def nameH = if (h eq HashScheme.latest) "latest" else h.toString
     def nameP = if (p eq PE) "PE" else if (p eq P3) "P3" else if (p eq P4) "P4" else p.toString
     def name = s"$nameH : $nameP"
     var a = makeSet(hashes(h, p))
@@ -54,8 +54,9 @@ object HashSchemeTest extends TestSuite {
   }
 
   override def tests = TestSuite {
-    'latest - {
-      'PE - assertHashes(hL, PE,
+    'V2 - {
+      def h = h2
+      'PE - assertHashes(h, PE,
         0x19f80db3 ~ CfgFields,
         0x8929e247 ~ CfgIssueTypes,
         0x53a65700 ~ CfgReqTypes,
@@ -74,7 +75,7 @@ object HashSchemeTest extends TestSuite {
         0xa6e5739e ~ Other,
         0xf928182a ~ WholeProject)
 
-      'P3 - assertHashes(hL, P3,
+      'P3 - assertHashes(h, P3,
         0x3e1ac0cb ~ CfgFields,
         0x25b0e4e6 ~ CfgIssueTypes,
         0x36b43113 ~ CfgReqTypes,
@@ -93,7 +94,7 @@ object HashSchemeTest extends TestSuite {
         0x72616aee ~ Other,
         0xfd0c1006 ~ WholeProject)
 
-      'P4 - assertHashes(hL, P4,
+      'P4 - assertHashes(h, P4,
         0x3e1ac0cb ~ CfgFields,
         0x25b0e4e6 ~ CfgIssueTypes,
         0x36b43113 ~ CfgReqTypes,
@@ -113,8 +114,10 @@ object HashSchemeTest extends TestSuite {
         0x5e192406 ~ WholeProject)
       // TODO Add SampleProject and hash tests that cover SavedViews
     }
-    'h1 - {
-      'PE - assertHashes(h1, PE,
+
+    'V1 - {
+      def h = h1
+      'PE - assertHashes(h, PE,
         0x19f80db3 ~ CfgFields,
         0x8929e247 ~ CfgIssueTypes,
         0x53a65700 ~ CfgReqTypes,
@@ -133,7 +136,7 @@ object HashSchemeTest extends TestSuite {
         0x969d43a3 ~ Other,
         0x5e028afd ~ WholeProject)
 
-      'P3 - assertHashes(h1, P3,
+      'P3 - assertHashes(h, P3,
         0x3e1ac0cb ~ CfgFields,
         0x25b0e4e6 ~ CfgIssueTypes,
         0x36b43113 ~ CfgReqTypes,
@@ -152,7 +155,7 @@ object HashSchemeTest extends TestSuite {
         0x3ae9403b ~ Other,
         0xb0dc05f9 ~ WholeProject)
 
-      'P4 - assertHashes(h1, P4,
+      'P4 - assertHashes(h, P4,
         0x3e1ac0cb ~ CfgFields,
         0x25b0e4e6 ~ CfgIssueTypes,
         0x36b43113 ~ CfgReqTypes,
