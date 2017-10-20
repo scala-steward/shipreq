@@ -63,8 +63,7 @@ object ScalaExt extends Platform.ScalaExt {
     def flatMapSB(f: (Char, StringBuilder) => Unit): String =
       Util.quickSB(sb => s.foreach(c => f(c, sb)))
 
-    // TODO Move into microlibs
-    def indent(i: String): String =
+    def indent(i: String): String = // TODO Delete after next microlibs release
       if (i.isEmpty)
         s
       else

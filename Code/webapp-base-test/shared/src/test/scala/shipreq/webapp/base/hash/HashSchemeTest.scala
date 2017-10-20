@@ -71,8 +71,8 @@ object HashSchemeTest extends TestSuite {
         0x46a5c86e ~ TagData,
         0xc32727ce ~ TextFieldData,
         0x43b92d0f ~ UseCases,
-        0x0e8d9033 ~ Other,
-        0x3a3899d2 ~ WholeProject)
+        0xa6e5739e ~ Other,
+        0xf928182a ~ WholeProject)
 
       'P3 - assertHashes(hL, P3,
         0x3e1ac0cb ~ CfgFields,
@@ -90,8 +90,8 @@ object HashSchemeTest extends TestSuite {
         0x174ee061 ~ TagData,
         0xc32727ce ~ TextFieldData, // Note: same as empty, P3 doesn't use
         0x43b92d0f ~ UseCases,      // Note: same as empty, P3 doesn't use
-        0xd6b122e9 ~ Other,
-        0x9c9a1236 ~ WholeProject)
+        0x72616aee ~ Other,
+        0xfd0c1006 ~ WholeProject)
 
       'P4 - assertHashes(hL, P4,
         0x3e1ac0cb ~ CfgFields,
@@ -109,8 +109,8 @@ object HashSchemeTest extends TestSuite {
         0x174ee061 ~ TagData,
         0xcef27507 ~ TextFieldData,
         0x73fb17ff ~ UseCases,
-        0x1b1ade36 ~ Other,
-        0x080d4ab6 ~ WholeProject)
+        0x3b05441a ~ Other,
+        0x5e192406 ~ WholeProject)
       // TODO Add SampleProject and hash tests that cover SavedViews
     }
     'h1 - {

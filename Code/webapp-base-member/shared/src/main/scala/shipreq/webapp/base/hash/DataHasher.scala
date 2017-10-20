@@ -188,7 +188,7 @@ sealed abstract class DataHasher extends GenericDashHasher {
   implicit val hashUseCase               : Hash[UseCase          ] = hashCaseClass
   implicit val hashUseCaseIMap           : Hash[UseCaseIMap      ] = withName("UCs", hashIMap)
   implicit val hashUseCasesStepFlow      : Hash[UseCases.StepFlow] = hashCaseClass
-  implicit val hashUseCases              : Hash[UseCases         ] = hashCaseClassExcept('stepIndex)
+  implicit val hashUseCases              : Hash[UseCases         ] = hashCaseClassSubset('imap -> true, 'stepFlow -> true, 'stepIndex -> false)
   implicit val hashReq                   : Hash[Req              ] = hashADT
   implicit val hashRequirements          : Hash[Requirements     ] = hashCaseClass
 
@@ -295,24 +295,55 @@ sealed abstract class DataHasher extends GenericDashHasher {
   }
   implicit val hashValidFilter: Hash[ValidFilter] = Hash.lazily((new HashValidFilter).hash)
 
-  implicit val hashIdCeilings    : Hash[IdCeilings   ] = hashCaseClass
   implicit val hashProjectConfig : Hash[ProjectConfig] = hashCaseClass
 
-  val hashProjectContent: Hash[Project] =
-    hashCaseClassExcept('name, 'config, 'reqtableViews)
+  val hashProjectContent: Hash[Project] = {
+    implicit val hashIdCeilings: Hash[IdCeilings] =
+      hashCaseClassSubset(
+        'customIssueType -> true,
+        'customReqType   -> true,
+        'customField     -> true,
+        'tag             -> true,
+        'req             -> true,
+        'useCaseStep     -> true,
+        'reqCode         -> true,
+        'reqtableView    -> false)
+    hashCaseClassSubset(
+      'name            -> false,
+      'config          -> false,
+      'reqs            -> true,
+      'reqCodes        -> true,
+      'reqText         -> true,
+      'reqTags         -> true,
+      'implications    -> true,
+      'deletionReasons -> true,
+      'reqtableViews   -> false,
+      'idCeilings      -> true)
+  }
 
-  val hashProjectOther: Hash[Project] =
-    hashCaseClassExcept(
-      // name is included
-      'config         ,
-      'reqs           ,
-      'reqCodes       ,
-      'reqText        ,
-      'reqTags        ,
-      'implications   ,
-      'deletionReasons,
-      // reqtableViews is included
-      'idCeilings     )
+  val hashProjectOther: Hash[Project] = {
+    implicit val hashIdCeilings: Hash[IdCeilings] =
+      hashCaseClassSubset(
+        'customIssueType -> false,
+        'customReqType   -> false,
+        'customField     -> false,
+        'tag             -> false,
+        'req             -> false,
+        'useCaseStep     -> false,
+        'reqCode         -> false,
+        'reqtableView    -> true)
+    hashCaseClassSubset(
+      'name            -> true,
+      'config          -> false,
+      'reqs            -> false,
+      'reqCodes        -> false,
+      'reqText         -> false,
+      'reqTags         -> false,
+      'implications    -> false,
+      'deletionReasons -> false,
+      'reqtableViews   -> true,
+      'idCeilings      -> true)
+  }
 
   implicit val hashProject: Hash[Project] =
     Hash.fn[Project](p => joinHashes(
@@ -321,22 +352,46 @@ sealed abstract class DataHasher extends GenericDashHasher {
       hashProjectOther  .hash(p)        ::
       Nil))
 }
-
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 final class DataHasherV1(protected val algorithm: Hash.Algorithm) extends DataHasher { // TODO DELETE
   import algorithm._
 
+  override val hashProjectContent: Hash[Project] = {
+    implicit val hashIdCeilings: Hash[IdCeilings] =
+      hashCaseClassSubset(
+        'customIssueType -> true,
+        'customReqType   -> true,
+        'customField     -> true,
+        'tag             -> true,
+        'req             -> true,
+        'useCaseStep     -> true,
+        'reqCode         -> true,
+        'reqtableView    -> false)
+    hashCaseClassSubset(
+      'name            -> false,
+      'config          -> false,
+      'reqs            -> true,
+      'reqCodes        -> true,
+      'reqText         -> true,
+      'reqTags         -> true,
+      'implications    -> true,
+      'deletionReasons -> true,
+      'reqtableViews   -> false,
+      'idCeilings      -> true)
+  }
+
   override val hashProjectOther: Hash[Project] =
-    hashCaseClassExcept(
-      // name is included
-      'config         ,
-      'reqs           ,
-      'reqCodes       ,
-      'reqText        ,
-      'reqTags        ,
-      'implications   ,
-      'deletionReasons,
-      'reqtableViews  ,
-      'idCeilings     )
+    hashCaseClassSubset(
+      'name            -> true,
+      'config          -> false,
+      'reqs            -> false,
+      'reqCodes        -> false,
+      'reqText         -> false,
+      'reqTags         -> false,
+      'implications    -> false,
+      'deletionReasons -> false,
+      'reqtableViews   -> false,
+      'idCeilings      -> false)
 
   override implicit val hashProject: Hash[Project] =
     Hash.fn[Project](p => joinHashes(
