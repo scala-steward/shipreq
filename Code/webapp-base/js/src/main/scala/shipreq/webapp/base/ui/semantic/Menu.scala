@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq.UnivEq
 import org.scalajs.dom.html
-import scala.scalajs.js
+import shipreq.webapp.base.ui.semantic.{Dropdown => SDropdown}
 
 /** http://semantic-ui.com/collections/menu.html
   */
@@ -47,34 +47,59 @@ object Menu {
     implicit def univEq: UnivEq[ItemState] = UnivEq.derive
   }
 
-  sealed abstract class Item {
-    val cont: VdomTag
+  sealed trait ItemType {
+    def cont: VdomTag
+
+    final def toItem: Item =
+      toItem()
+
+    final def toItem(state : ItemState = ItemState.Default,
+                     colour: Colour    = Colour.Default,
+                     tagMod: TagMod    = EmptyVdom): Item =
+      Item(this, state, colour, tagMod)
+  }
+  object ItemType {
+    private val item            = "item"
+    private val divItem         = divCls(item)
+    private val divItemDropdown = divItem.addClass("ui dropdown")
+    private val divMenu         = divCls("menu")
+
+    final case class Div(content: TagMod) extends ItemType {
+      override def cont = divItem(content)
+    }
+    final case class Link(a: VdomTagOf[html.Anchor]) extends ItemType {
+      override def cont = a.addClass(item)
+    }
+    final case class Dropdown(`type` : DropdownType,
+                              content: TagMod,
+                              items  : SDropdown.Items) extends ItemType {
+      override def cont = divItemDropdown(content, divMenu(items.map(_.tag): _*)) <+ `type`
+    }
   }
 
-  object Item {
-    private val item                  = "item"
-    private val divItem               = divCls(item)
-    private val divItemDropdownSimple = divItem.addClass("ui dropdown simple")
-    private val divMenu               = divCls("menu")
+  sealed abstract class DropdownType(c: ClassName) extends HasClass(c) {
+    @inline final def apply(content: TagMod, items: SDropdown.Items) =
+      ItemType.Dropdown(this, content, items)
+  }
+  object DropdownType {
+    case object Simple extends DropdownType("simple")
+    case object OnHover extends DropdownType("onhover")
+  }
 
-    case class Div(content: TagMod, state: ItemState = ItemState.Default) extends Item {
-      override val cont = divItem(content) <+ state
-    }
-
-    case class Link(a: VdomTagOf[html.Anchor], state: ItemState = ItemState.Default) extends Item {
-      override val cont = a.addClass(item) <+ state
-    }
-
-    case class DropdownSimple(content: TagMod, items: Dropdown.Items) extends Item {
-      override val cont = divItemDropdownSimple(content, divMenu(items.map(_.tag): _*))
-    }
+  final case class Item(`type`: ItemType,
+                        state : ItemState = ItemState.Default,
+                        colour: Colour    = Colour.Default,
+                        tagMod: TagMod    = EmptyVdom) {
+    val cont: VdomTag =
+      (`type`.cont <+ state <+ colour)(tagMod)
   }
 
   type Items = Seq[Item]
 
-  final case class Props(style     : Style,
-                         leftItems : Items,
-                         rightItems: Items = Nil) {
+  final case class Props(style          : Style,
+                         leftItems      : Items,
+                         rightItems     : Items               = Nil,
+                         dropdownOptions: SDropdown.JsOptions = null) {
     @inline def render = Component(this)
   }
 
@@ -85,23 +110,21 @@ object Menu {
 
   final class Backend($: BackendScope[Props, Unit]) {
 
-    val options: Dropdown.JsOptions =
-      new Dropdown.JsOptions {
-        override val action = Dropdown.JsOptions.Action.Hide
-      }
+    val dropdownOptions: CallbackOption[SDropdown.JsOptions] =
+      $.props.map(p => Option(p.dropdownOptions)).asCBO
 
     val enableDropdowns: Callback =
-      $.getDOMNode.map { node =>
-        JQuery(node).find(".ui.dropdown").dropdown(options)
-      }
+      for {
+        o <- dropdownOptions
+        n <- $.getDOMNode.toCBO
+      } yield
+        JQuery(n).find(".ui.dropdown").dropdown(o)
 
     def render(p: Props) =
       p.style.cont(
         TagMod(p.leftItems.map(_.cont): _*),
-        if (p.rightItems.isEmpty)
-          EmptyVdom
-        else
-          divRightMenu(p.rightItems.map(_.cont): _*))
+        TagMod.unless(p.rightItems.isEmpty)(
+          divRightMenu(p.rightItems.map(_.cont): _*)))
   }
 
   val Component = ScalaComponent.builder[Props]("Menu")

@@ -28,7 +28,7 @@ import shipreq.webapp.base.ui.semantic.{Icon, Message}
 import shipreq.webapp.client.project.app.state.ClientData
 import shipreq.webapp.client.project.app.Style.reqtable.{page => *}
 import shipreq.webapp.client.project.feature._
-import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.client.project.widgets.{FilterDeadButton, ProjectWidgets}
 
 object ReqTablePage {
 
@@ -320,6 +320,12 @@ object ReqTablePage {
         else
           Mode.NoContentCosFilter
 
+      val filterDeadButton: VdomElement =
+        if (mode ==* Mode.EmptyProject)
+          FilterDeadButton.ForceHideDead
+        else
+          FilterDeadButton.Component(StateSnapshot.withReuse(activeView.filterDead)(setFilterDeadFn))
+
       val newStuff = new NewStuff(
         p.state.newStuff,
         setNewStuff,
@@ -328,6 +334,13 @@ object ReqTablePage {
         defaultNewType,
         p.create,
         activeColumnsPlus)
+
+      val savedViews = SavedViewsUI.Props(
+        SavedViewLogic.Menu.determine(
+          project.reqtableViews,
+          p.state.view,
+          activeView)
+      ).render
 
       val filterEditor = FilterEditor.Props(
         p.state.filter,
@@ -354,11 +367,10 @@ object ReqTablePage {
           case Mode.EmptyProject         => renderEmptyProject
         }
 
-      val ssFilterDead: StateSnapshot[FilterDead] =
-        StateSnapshot.withReuse(activeView.filterDead)(setFilterDeadFn)
-
       mainBase(
-        ViewsMenu.Component(Option.unless(mode ==* Mode.EmptyProject)(ssFilterDead)),
+        <.div(*.viewRow,
+          <.div(*.viewRowSV, savedViews),
+          <.div(*.filterDeadButtonContainer, filterDeadButton)),
         <.div(*.actionCtrls,
           newStuff.buttonProps.render,
           pxSelectionCtrls.value().render,
