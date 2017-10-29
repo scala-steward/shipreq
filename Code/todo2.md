@@ -4,8 +4,6 @@ TODO NOW (?)
 * add an 'other' section to DataProp
 
 * Reusability.shouldComponentUpdate for SavedViewUI
-* Cache SVUI Props
-* SVUI IO error handling
 * SVUI async
 
 

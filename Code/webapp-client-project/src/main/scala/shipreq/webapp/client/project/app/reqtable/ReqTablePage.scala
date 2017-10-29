@@ -273,6 +273,14 @@ object ReqTablePage {
       } yield SelectionCtrls.Props(
         sel, rows, setModal, project, projectWidgets, textSearch, updateIO, rowAsyncW)
 
+    val pxSavedViewsMenu: Px[SavedViewLogic.Menu] =
+      for {
+        savedViews <- pxSavedViews
+        viewState  <- pxViewState
+        activeView <- pxActiveView
+      } yield SavedViewLogic.menu(savedViews, viewState, activeView)
+
+
     val reqTable = new Table(pxProjectWidgets)
 
     // Not Px because we don't want it to jitter.
@@ -356,10 +364,11 @@ object ReqTablePage {
         p.create,
         activeColumnsPlus)
 
-      val savedViews = {
-        val menu = SavedViewLogic.menu(project.reqtableViews, p.state.view, activeView) // TODO Cache
-        SavedViewsUI.Props(menu, runSavedViewAction, savedViewIO).render
-      }
+      val savedViews = SavedViewsUI.Props(
+        pxSavedViewsMenu.value(),
+        runSavedViewAction,
+        savedViewIO,
+      ).render
 
       val filterEditor = FilterEditor.Props(
         p.state.filter,
