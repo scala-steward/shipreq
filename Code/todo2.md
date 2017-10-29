@@ -7,7 +7,6 @@ TODO NOW (?)
 * Cache SVUI Props
 * SVUI IO error handling
 * SVUI async
-* Prohibit in name validation
 
 
 TODO POST-MERGE

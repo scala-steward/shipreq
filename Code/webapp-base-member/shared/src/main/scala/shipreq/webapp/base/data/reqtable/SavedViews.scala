@@ -33,11 +33,20 @@ object SavedView {
   object Name {
     implicit def univEq: UnivEq[Name] = UnivEq.derive
 
-    final val lengthRange = 1 to 40
+    val unsaved = apply("Unsaved view")
+
+    val lengthRange = 1 to 40
+
+    private def isReserved(s: String) =
+      s.equalsIgnoreCase(unsaved.value) ||
+        s.equalsIgnoreCase("unsaved") // just in case
 
     val validator: Composite.Stateful[State, String, String, Name] =
       V.endoCorrector.singleLineWhitespace
-        .withInvalidator(V.invalidator.lengthInRange(lengthRange) merge V.invalidator.containsAlpha)
+        .withInvalidator(
+          V.invalidator.lengthInRange(lengthRange) merge
+          V.invalidator.containsAlpha merge
+          Invalidator.test(!isReserved(_), Invalidity("Reserved.")))
         .mapInvalidator(V.invalidator.nonEmpty.whenValid)
         .toValidator
         .mapValid(apply)

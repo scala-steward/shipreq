@@ -116,7 +116,7 @@ object SavedViewLogic {
     final case class Unsaved(saveAsNew: MenuAction.SaveAsNew,
                              replace  : Option[MenuAction.Replace]) extends MenuItem {
       override def optionId = None
-      override def name = Name("Unsaved view") // TODO Prohibit in name validation
+      override def name = Name.unsaved
       override def default = false
       override val actions = replace.fold(NonEmptyVector.one[MenuAction](saveAsNew))(NonEmptyVector(saveAsNew, _))
     }
