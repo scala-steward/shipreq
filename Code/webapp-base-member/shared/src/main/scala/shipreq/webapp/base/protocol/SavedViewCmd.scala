@@ -1,8 +1,12 @@
 package shipreq.webapp.base.protocol
 
+import boopickle.Pickler
 import japgolly.univeq.UnivEq
 import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.event.SavedViewGD
+import BinCodecMemberData.ReqTableDataPicklers._
+import BinCodecEvents._
+import BoopickleMacros._
 
 sealed trait SavedViewCmd
 object SavedViewCmd {
@@ -20,4 +24,6 @@ object SavedViewCmd {
   implicit def univEqU: UnivEq[Update      ] = UnivEq.derive
   implicit def univEqD: UnivEq[Delete      ] = UnivEq.derive
   implicit def univEq : UnivEq[SavedViewCmd] = UnivEq.derive
+
+  implicit val pickleCmd: Pickler[SavedViewCmd] = derivePickler
 }

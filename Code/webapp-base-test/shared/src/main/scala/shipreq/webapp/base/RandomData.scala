@@ -1440,8 +1440,9 @@ object RandomData {
         h <- remoteFn(TagCrud.Protocol)
         i <- remoteFn(ProjectSpaProtocols.CreateContent)
         j <- remoteFn(ProjectSpaProtocols.UpdateContent)
-        k <- remoteFn(ProjectSpaProtocols.ProjectNameSet)
-      } yield ProjectSpaProtocols.InitData(u, a, b, c, d, e, f, g, h, i, j, k)
+        k <- remoteFn(ProjectSpaProtocols.UpdateSavedViews)
+        l <- remoteFn(ProjectSpaProtocols.ProjectNameSet)
+      } yield ProjectSpaProtocols.InitData(u, a, b, c, d, e, f, g, h, i, j, k, l)
 
     class CrudActionGens[I, V](c: CrudProtocol[I, V])(idG: Gen[I], vG: Gen[V]) {
       lazy val create  = vG.map(CrudAction.Create[I, V])
