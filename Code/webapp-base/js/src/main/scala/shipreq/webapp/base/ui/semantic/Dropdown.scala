@@ -1,8 +1,9 @@
 package shipreq.webapp.base.ui.semantic
 
+import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq.UnivEq
-import org.scalajs.dom.{html, Node}
+import org.scalajs.dom.{Node, html}
 import scala.scalajs.js
 import scala.scalajs.js.annotation.ScalaJSDefined
 
@@ -38,6 +39,16 @@ object Dropdown {
 
     case class Div(content: TagMod, state: ItemState = ItemState.Default) extends Item {
       override val tag = divItem(content) <+ state
+
+      /** Registers an onClick listener in such a way that avoids annoying Semantic UI settings a selected flag on the
+        * item when clicked.
+        */
+      def withOnClick(getDOMNode: CallbackTo[Node], onClick: Callback) = {
+        // Semantic UI doesn't respect CallbackOption.asEventDefault
+        def onClick2: Callback =
+          onClick >> getDOMNode.map(Dropdown.jquery(_).dropdown("clear"))
+        copy(content = content(^.onClick --> onClick2))
+      }
     }
 
     case class Link(a: VdomTagOf[html.Anchor], state: ItemState = ItemState.Default) extends Item {

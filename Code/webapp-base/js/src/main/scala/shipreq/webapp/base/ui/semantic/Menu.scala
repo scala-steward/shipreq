@@ -93,9 +93,14 @@ object Menu {
     val cont: VdomTag =
       (`type`.cont <+ state <+ colour)(tagMod)
 
+    /** Registers an onClick listener that only triggers when this item is clicked (and not its children or items in its
+      * dropdown menu).
+      */
     def withOnClick(getDOMNode: CallbackTo[Node], cb: Callback): Item = {
-      val onClick = cb >> getDOMNode.map(Dropdown.jquery(_).dropdown("hide"))
-      copy(tagMod = tagMod(^.onClick --> onClick))
+      val onClick: ReactEvent => Callback =
+        e => Callback.when(e.target == e.currentTarget)(
+          cb >> getDOMNode.map(Dropdown.jquery(_).dropdown("hide")))
+      copy(tagMod = tagMod(^.onClick ==> onClick))
     }
   }
 
@@ -125,6 +130,9 @@ object Menu {
       } yield
         Dropdown.jquery(n).dropdown(o)
 
+    def disableDropdown: Callback =
+      $.getDOMNode.map(Dropdown.jquery(_).dropdown("hide"))
+
     def render(p: Props) =
       p.style.cont(
         TagMod(p.leftItems.map(_.cont): _*),
@@ -136,5 +144,6 @@ object Menu {
     .renderBackend[Backend]
     .componentDidMount(_.backend.enableDropdowns)
     .componentDidUpdate(_.backend.enableDropdowns)
+    .componentWillUnmount(_.backend.disableDropdown)
     .build
 }
