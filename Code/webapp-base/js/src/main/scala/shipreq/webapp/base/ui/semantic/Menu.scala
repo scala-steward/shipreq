@@ -41,10 +41,14 @@ object Menu {
 
   sealed abstract class ItemState(c: ClassName) extends HasClass(c)
   object ItemState {
-    case object Active  extends ItemState("active")
-    case object Default extends ItemState(NoClass)
-    case object Down    extends ItemState("down")
+    case object Active   extends ItemState("active")
+    case object Default  extends ItemState(NoClass)
+    case object Disabled extends ItemState("disabled")
+    case object Down     extends ItemState("down")
     implicit def univEq: UnivEq[ItemState] = UnivEq.derive
+
+    def disabledWhen(b: Boolean): ItemState =
+      if (b) Disabled else Default
   }
 
   sealed trait ItemType {

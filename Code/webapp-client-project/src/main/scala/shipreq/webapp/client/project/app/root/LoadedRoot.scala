@@ -97,6 +97,9 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitData, cp: ClientProtoco
     val rowAsyncW: AsyncFeature.Write.D1[EditorFeature.RowKey, ErrorMsg] =
       editAsyncW.withKey1(AsyncKey.WholeReq)
 
+    val savedViewAsyncW: AsyncFeature.Write.D0[ErrorMsg] =
+      AsyncFeature.Write.D0.init($ zoomStateL State.savedViewAsync)
+
     val reqTable = ReqTablePage(
       ReqTablePage.StaticProps(
         $ zoomStateL State.reqTable,
@@ -105,7 +108,8 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitData, cp: ClientProtoco
         reqDetailRC,
         updateIO,
         savedViewIO,
-        rowAsyncW.mapKey(reqtable.Row.SourceId.ToEditorRow.reverse)))
+        rowAsyncW.mapKey(reqtable.Row.SourceId.ToEditorRow.reverse),
+        savedViewAsyncW))
 
     val pxReqDetailId = Px[Option[ReqId]](None).withReuse.manualUpdate
 
@@ -219,6 +223,7 @@ final class LoadedRoot(initData: ProjectSpaProtocols.InitData, cp: ClientProtoco
               createRW,
               editRW,
               rowAsync,
+              s.savedViewAsync,
               filterDeadSS,
               s.reqTable))
 

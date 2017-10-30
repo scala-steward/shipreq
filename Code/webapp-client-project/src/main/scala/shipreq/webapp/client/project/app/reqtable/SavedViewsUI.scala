@@ -6,15 +6,17 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.event.{Event, SavedViewCreate, VerifiedEvent}
+import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.{SavedViewCmd, ServerSideProcInvoker}
 import shipreq.webapp.base.ui.semantic.Dropdown.JsOptionsOps
-import shipreq.webapp.base.ui.semantic.{Colour, Dropdown, Icon, Menu => SemUiMenu, SemExtAny}
+import shipreq.webapp.base.ui.semantic.{Colour, Dropdown, Icon, SemExtAny, Menu => SemUiMenu}
 import shipreq.webapp.client.project.app.Style.reqtable.{savedViews => *}
 import SavedViewLogic._
 
 object SavedViewsUI {
 
   final case class Props(menu       : Menu,
+                         asyncRW    : AsyncFeature.ReadWrite.D0[ErrorMsg],
                          runAction  : Action ~=> Callback,
                          savedViewIO: ServerSideProcInvoker[SavedViewCmd, ErrorMsg, VerifiedEvent.Seq]) {
     @inline def render: VdomElement = Component(this)
@@ -38,32 +40,37 @@ object SavedViewsUI {
 
   final class Backend($: BackendScope[Props, Unit]) {
 
-    private def interpretMenu(interpretMenuItem: (MenuItem, Boolean) => SemUiMenu.Item)
-                             (m: Menu): SemUiMenu.Props =
-      SemUiMenu.Props(
+    private def interpretMenu(interpretMenuItem: (MenuItem, Boolean) => SemUiMenu.Item): Menu => SemUiMenu.Props =
+      m => SemUiMenu.Props(
         menuStyle,
         m.items.whole.map(i => interpretMenuItem(i, m.isActive(i))),
         dropdownOptions = dropdownOptions)
 
     private def interpretMenuItem(runAction          : Action => Callback,
-                                  interpretMenuAction: MenuAction => Dropdown.Item)
-                                 (mi                 : MenuItem,
-                                  active             : Boolean): SemUiMenu.Item = {
-      val label: TagMod =
-        if (mi.default)
-          TagMod(defaultIcon, mi.name.value)
-        else
-          mi.name.value
+                                  asyncR             : AsyncFeature.Read.D0[Any],
+                                  interpretMenuAction: MenuAction => Dropdown.Item): (MenuItem, Boolean) => SemUiMenu.Item = {
 
-      val actions =
-        mi.actions.whole.map(interpretMenuAction)
+      val itemState =
+        SemUiMenu.ItemState.disabledWhen(asyncR.nonEmpty)
 
-      SemUiMenu.DropdownType.OnHover(label, actions)
-        .toItem(tagMod = *.activeItem.when(active))
-        .withOnClick($.getDOMNode, mi.optionId.map(id => runAction(Action.Select(id))).getOrEmpty)
+      (mi, active) => {
+        val label: TagMod =
+          if (mi.default)
+            TagMod(defaultIcon, mi.name.value)
+          else
+            mi.name.value
+
+        val actions =
+          mi.actions.whole.map(interpretMenuAction)
+
+        SemUiMenu.DropdownType.OnHover(label, actions)
+          .toItem(itemState, tagMod = *.activeItem.when(active))
+          .withOnClick($.getDOMNode, mi.optionId.map(id => runAction(Action.Select(id))).getOrEmpty)
+      }
     }
 
     private def interpretMenuAction(runAction  : Action => Callback,
+                                    asyncW     : AsyncFeature.Write.D0[ErrorMsg],
                                     savedViewIO: ServerSideProcInvoker[SavedViewCmd, ErrorMsg, VerifiedEvent.Seq]): MenuAction => Dropdown.Item = {
 
       def item(icon: Icon, label: String, onClick: Callback) =
@@ -75,11 +82,8 @@ object SavedViewsUI {
       def runActionOnSuccess(f: PartialFunction[Event, Action]): VerifiedEvent.Seq => Callback =
         _.eventVector.lastOption.map(_.event).collect(f).map(runAction).getOrEmpty
 
-      def onFailure: ErrorMsg => Callback =
-        e => Callback.alert("Failed to update saved views.\n\n" + e.value)
-
       def runCmd(cmd: SavedViewCmd, onSuccess: OnSuccess = _ => Callback.empty): Callback =
-        savedViewIO(cmd, onSuccess, onFailure)
+        asyncW((s, f) => savedViewIO(cmd, s >> onSuccess(_), f))
 
       def promptThenRun(prompt   : CallbackTo[Option[String]],
                         validate : String => Either[String, Option[SavedViewCmd]],
@@ -126,14 +130,29 @@ object SavedViewsUI {
     }
 
     def render(p: Props): VdomElement = {
-      interpretMenu(
-        interpretMenuItem(p.runAction,
-          interpretMenuAction(p.runAction, p.savedViewIO)))(p.menu).render
+      val i = interpretMenu(
+        interpretMenuItem(p.runAction, p.asyncRW.read,
+          interpretMenuAction(p.runAction, p.asyncRW.write, p.savedViewIO)))
+      val semUiMenu = i(p.menu)
+      semUiMenu.render
     }
+
+    private def onFailure(f: AsyncFeature.Status.Failed[ErrorMsg]): Callback =
+      CallbackTo.confirm(s"Failed to update saved views:\n${f.failure.value}\n\nRetry?")
+        .flatMap {
+          case true  => f.retry
+          case false => f.cancel
+        }
+
+    val handleAsyncError: Callback =
+      $.props.flatMap(p =>
+        p.asyncRW.read.collect { case f: AsyncFeature.Status.Failed[ErrorMsg] => onFailure(f) }
+          .getOrEmpty)
   }
 
   val Component = ScalaComponent.builder[Props]("SavedViewsUI")
     .renderBackend[Backend]
+    .componentDidUpdate(_.backend.handleAsyncError)
     //.configure(Reusability.shouldComponentUpdate) TODO
     .build
 }

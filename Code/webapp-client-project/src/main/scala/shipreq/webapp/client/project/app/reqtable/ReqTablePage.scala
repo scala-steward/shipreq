@@ -49,13 +49,15 @@ object ReqTablePage {
                                reqDetailRC     : RouterCtl[ExternalPubid],
                                updateIO        : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
                                savedViewIO     : ServerSideProcInvoker[SavedViewCmd, ErrorMsg, VerifiedEvent.Seq],
-                               rowAsyncW       : AsyncFeature.Write.D1[Row.SourceId, ErrorMsg])
+                               rowAsyncW       : AsyncFeature.Write.D1[Row.SourceId, ErrorMsg],
+                               savedViewAsyncW : AsyncFeature.Write.D0[ErrorMsg])
 
-  final case class Props(create    : CreateFeature.ReadWrite.ForProject,
-                         editor    : EditorFeature.ReadWrite.ForProject,
-                         rowAsync  : AsyncFeature.Read.D1[Row.SourceId, ErrorMsg],
-                         filterDead: StateSnapshot[FilterDead],
-                         state     : State)
+  final case class Props(create        : CreateFeature.ReadWrite.ForProject,
+                         editor        : EditorFeature.ReadWrite.ForProject,
+                         rowAsync      : AsyncFeature.Read.D1[Row.SourceId, ErrorMsg],
+                         savedViewAsync: AsyncFeature.Read.D0[ErrorMsg],
+                         filterDead    : StateSnapshot[FilterDead],
+                         state         : State)
 
   @Lenses
   final case class State(view     : SavedViewLogic.State,
@@ -366,6 +368,7 @@ object ReqTablePage {
 
       val savedViews = SavedViewsUI.Props(
         pxSavedViewsMenu.value(),
+        AsyncFeature.ReadWrite.D0(savedViewAsyncW, p.savedViewAsync),
         runSavedViewAction,
         savedViewIO,
       ).render
