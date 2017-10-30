@@ -1,6 +1,8 @@
 package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.microlibs.scalaz_ext.ScalazMacros._
+import japgolly.scalajs.react.{CallbackOption, CallbackTo}
+import japgolly.scalajs.react.extra.Reusable
 import scalaz.{-\/, Equal, \/, \/-}
 import utest._
 import shipreq.base.test.BaseTestUtil._
@@ -80,6 +82,12 @@ object SavedViewLogicTest extends TestSuite {
   implicit def autoSome[A](a: A): Option[A] =
     Some(a)
 
+  implicit def autoReusableCallbackTo[A](a: A): Reusable[CallbackTo[A]] =
+    Reusable.never(CallbackTo pure a)
+
+  implicit def autoReusableCallbackOption[A](a: A): Reusable[CallbackOption[A]] =
+    Reusable.never(CallbackOption pure a)
+
   implicit def savedViewToFilterDead(v: SavedView): FilterDead =
     v.view.filterDead
 
@@ -90,11 +98,14 @@ object SavedViewLogicTest extends TestSuite {
   val leftTaken = -\/("Invalid name: Already in use.")
 
   implicit final class SavedViewTestExt(private val sv: SavedView) extends AnyVal {
-    private def nv = nameValidationFn(
-      sva = if (sv eq SVa) \/-(SVa.name) else leftTaken,
-      svb = if (sv eq SVb) \/-(SVb.name) else leftTaken,
-      svc = if (sv eq SVc) \/-(SVc.name) else leftTaken,
-    )
+    private def nv: NameValidator =
+      nvForId(Some(sv.id))(
+        nameValidationFn(
+          sva = if (sv eq SVa) \/-(SVa.name) else leftTaken,
+          svb = if (sv eq SVb) \/-(SVb.name) else leftTaken,
+          svc = if (sv eq SVc) \/-(SVc.name) else leftTaken,
+        )
+      )
 
     def asDefault(implicit state: State, svs: SavedViews.NonEmpty): MenuItem.Default =
       MenuItem.default(nv, state, svs)(sv)
@@ -130,7 +141,13 @@ object SavedViewLogicTest extends TestSuite {
                        xxx: String \/ SavedView.Name = null): String => String \/ SavedView.Name =
     testNameFn[String \/ SavedView.Name](\/-(_))(sva = sva, svb = svb, svc = svc, xxx = xxx, empty = leftBlank)
 
-  implicit def nameFnEquality[A: Equal]: Equal[String => A] =
+  def nvForId(expect: Option[SavedView.Id])(f: String => String \/ SavedView.Name): NameValidator =
+    Reusable.never { id =>
+      assert(id ==* expect)
+      f
+    }
+
+  implicit def equalNameFn[A: Equal]: Equal[String => A] =
     Equal.equal((f, g) => testNames.forall { nn =>
       val n = nn.value
       val pass = Equal[A].equal(f(n), g(n))
@@ -140,7 +157,15 @@ object SavedViewLogicTest extends TestSuite {
       pass
     })
 
-  implicit val equalActionDelete         : Equal[Action.Delete         ] = deriveEqual
+  implicit def equalReusable[A: Equal]: Equal[Reusable[A]] =
+    Equal.equalBy(_.value) // we're not testing reusability here
+
+  implicit def equalCallback[A: Equal]: Equal[CallbackTo[A]] =
+    Equal.equalBy(_.runNow()) // we're not using impure state changes in these tests
+
+  implicit def equalCallbackOption[A: Equal]: Equal[CallbackOption[A]] =
+    Equal.equalBy(_.asCallback.runNow()) // we're not using impure state changes in these tests
+
   implicit val equalMenuActionReplace    : Equal[MenuAction.Replace    ] = deriveEqual
   implicit val equalMenuActionDelete     : Equal[MenuAction.Delete     ] = deriveEqual
   implicit val equalMenuActionMakeDefault: Equal[MenuAction.MakeDefault] = deriveEqual
@@ -210,17 +235,19 @@ object SavedViewLogicTest extends TestSuite {
     'menu {
       import Menu._
 
-      def testNE(filterDeadFallback: FilterDead)(implicit s: State, svs: SavedViews.NonEmpty): Menu =
-        menu(Some(svs), s, s.activeView(Some(svs), filterDeadFallback))
+      def testNE(filterDeadFallback: FilterDead)(implicit s: State, svs: SavedViews.NonEmpty): Menu = {
+        val av = s.activeView(Some(svs), filterDeadFallback)
+        menu(Some(svs), s, av, av)
+      }
 
       def dirtyAnon(activeView: View): MenuItem.Unsaved = {
-        val nv        = nameValidationFn(sva = leftTaken, svb = leftTaken, svc = leftTaken)
+        val nv        = nvForId(None)(nameValidationFn(sva = leftTaken, svb = leftTaken, svc = leftTaken))
         val saveAsNew = MenuAction.saveAsNew(nv, activeView)
         MenuItem.Unsaved(saveAsNew, None)
       }
 
       def dirty(ref: SavedView, changes: SavedViewGD.NonEmptyValues, activeView: View): MenuItem.Unsaved = {
-        val nv        = nameValidationFn(sva = leftTaken, svb = leftTaken, svc = leftTaken)
+        val nv        = nvForId(None)(nameValidationFn(sva = leftTaken, svb = leftTaken, svc = leftTaken))
         val saveAsNew = MenuAction.saveAsNew(nv, activeView)
         val replace   = MenuAction.Replace(ref.name, Cmd.Update(ref.id, changes))
         MenuItem.Unsaved(saveAsNew, Some(replace))
@@ -234,10 +261,11 @@ object SavedViewLogicTest extends TestSuite {
                  referenceView: Option[SavedView.Id]): Menu = {
           val s = State(manualView, referenceView)
           val savedViews = None
-          menu(savedViews, s, s.activeView(savedViews, filterDeadFallback))
+          val av = s.activeView(savedViews, filterDeadFallback)
+          menu(savedViews, s, av, av)
         }
 
-        def saveAsNew(v: View) = MenuAction.saveAsNew(nameValidationFn(), v)
+        def saveAsNew(v: View) = MenuAction.saveAsNew(nvForId(None)(nameValidationFn()), v)
 
         'clean {
           val fd = HideDead

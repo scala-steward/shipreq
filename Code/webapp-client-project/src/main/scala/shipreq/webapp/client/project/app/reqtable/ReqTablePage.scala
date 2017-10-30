@@ -158,6 +158,11 @@ object ReqTablePage {
       } yield vs.activeView(sv, fd)
         ).withReuse
 
+    val activeViewCB: Reusable[CallbackTo[View]] = {
+      val f = pxActiveView.toCallback.toScalaFn
+      Reusable.byRef(f).map(CallbackTo.lift)
+    }
+
     val pxActiveColumns: Px[NonEmptyVector[Column]] =
       pxActiveView.map(_.columns).withReuse
 
@@ -280,7 +285,7 @@ object ReqTablePage {
         savedViews <- pxSavedViews
         viewState  <- pxViewState
         activeView <- pxActiveView
-      } yield SavedViewLogic.menu(savedViews, viewState, activeView)
+      } yield SavedViewLogic.menu(savedViews, viewState, activeView, activeViewCB)
 
 
     val reqTable = new Table(pxProjectWidgets)

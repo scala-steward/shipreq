@@ -22,8 +22,12 @@ object SavedViewsUI {
     @inline def render: VdomElement = Component(this)
   }
 
-  //implicit val reusabilityProps: Reusability[Props] =
-  //  Reusability.caseClass
+  /** This is really important because without this, every time an unchanged view is updated (eg. the user is typing in
+    * to the filter) this view will change which will cause the Semantic UI menu to refresh which causes it to run
+    * Semantic UI's shitty `$(...).dropdown` JS which VERY NOTICEABLY slows down the UX.
+    */
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.derive
 
   private val menuStyle =
     SemUiMenu.Style(
@@ -86,12 +90,13 @@ object SavedViewsUI {
         asyncW((s, f) => savedViewIO(cmd, s >> onSuccess(_), f))
 
       def promptThenRun(prompt   : CallbackTo[Option[String]],
-                        validate : String => Either[String, Option[SavedViewCmd]],
+                        validate : CallbackTo[String => Either[String, Option[SavedViewCmd]]],
                         onSuccess: OnSuccess = _ => Callback.empty): CallbackOption[Unit] =
         for {
+          v <- validate
           cmd <- CallbackTo.retryUntilRight(
                    prompt.map {
-                     case Some(s) => validate(s)
+                     case Some(s) => v(s)
                      case None    => Right(None)
                    }
                  )(Callback.alert).asCBO
@@ -103,12 +108,12 @@ object SavedViewsUI {
           item(Icon.Plus, "Save as new...",
             promptThenRun(
               prompt    = CallbackTo.prompt("Enter a name for this view"),
-              validate  = cmdFn(_).map(Some(_)).toEither,
+              validate  = cmdFn.value.map(_.andThen(_.map(Some(_)).toEither)),
               onSuccess = runActionOnSuccess { case e: SavedViewCreate => Action.Select(e.id) }))
 
-        case MenuAction.Replace(name, cmd) =>
+        case MenuAction.Replace(name, cmdCB) =>
           item(Icon.Save, s"Replace ${name.value}",
-            runCmd(cmd))
+            cmdCB.value.flatMap(runCmd(_).toCBO))
 
         case MenuAction.MakeDefault(cmd) =>
           item(Icon.Star, "Set as default",
@@ -125,7 +130,7 @@ object SavedViewsUI {
           item(Icon.Write, "Rename...",
             promptThenRun(
               prompt   = CallbackTo.prompt(s"Enter a new name for ${name.value}", name.value),
-              validate = cmdFn(_).toDisjOption.toEither))
+              validate = CallbackTo.pure(cmdFn(_).toDisjOption.toEither)))
       }
     }
 
@@ -153,6 +158,6 @@ object SavedViewsUI {
   val Component = ScalaComponent.builder[Props]("SavedViewsUI")
     .renderBackend[Backend]
     .componentDidUpdate(_.backend.handleAsyncError)
-    //.configure(Reusability.shouldComponentUpdate) TODO
+    .configure(Reusability.shouldComponentUpdate)
     .build
 }

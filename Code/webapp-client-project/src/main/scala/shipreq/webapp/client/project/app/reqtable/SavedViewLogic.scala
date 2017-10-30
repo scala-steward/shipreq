@@ -2,7 +2,8 @@ package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.microlibs.nonempty.{NonEmpty, NonEmptyVector}
 import japgolly.microlibs.stdlib_ext.StdlibExt._
-import japgolly.scalajs.react.extra.Reusability
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.extra.{Reusability, Reusable}
 import japgolly.univeq._
 import monocle.Lens
 import monocle.macros.Lenses
@@ -144,19 +145,19 @@ object SavedViewLogic {
       override val actions = NonEmptyVector(makeDefault, rename, delete)
     }
 
-    def default(validate: String => String \/ Name, state: State, svs: SavedViews.NonEmpty)(sv: SavedView): Default =
+    def default(validate: NameValidator, state: State, svs: SavedViews.NonEmpty)(sv: SavedView): Default =
       MenuItem.Default(
         sv.id,
         sv.name,
-        MenuAction.rename(validate, sv),
+        MenuAction.rename(validate, Reusable.implicitly((sv.id, sv.name))),
         MenuAction.delete(sv, state, svs))
 
-    def nonDefault(validate: String => String \/ Name, state: State, svs: SavedViews.NonEmpty)(sv: SavedView): NonDefault =
+    def nonDefault(validate: NameValidator, state: State, svs: SavedViews.NonEmpty)(sv: SavedView): NonDefault =
       MenuItem.NonDefault(
         sv.id,
         sv.name,
         MenuAction.makeDefault(sv.id),
-        MenuAction.rename(validate, sv),
+        MenuAction.rename(validate, Reusable.implicitly((sv.id, sv.name))),
         MenuAction.delete(sv, state, svs))
   }
 
@@ -166,18 +167,23 @@ object SavedViewLogic {
     sealed trait Unsaved extends MenuAction
     sealed trait Saved   extends MenuAction
 
-    final case class SaveAsNew(cmd: String => String \/ SavedViewCmd.Create) extends Unsaved
+    final case class SaveAsNew(cmdFn: Reusable[CallbackTo[String => String \/ SavedViewCmd.Create]]) extends Unsaved
 
-    final case class Replace(name: Name, cmd: SavedViewCmd.Update) extends Unsaved
+    final case class Replace(name: Name, cmd: Reusable[CallbackOption[SavedViewCmd.Update]]) extends Unsaved
 
-    final case class Rename(name: Name, cmd: String => PotentialChange[String, SavedViewCmd.Update]) extends Saved
+    final case class Rename(name: Name, cmdFn: Reusable[String => PotentialChange[String, SavedViewCmd.Update]]) extends Saved
 
     final case class MakeDefault(cmd: SavedViewCmd.MakeDefault) extends Saved
 
     final case class Delete(name: Name, cmd: SavedViewCmd.Delete, action: Action.Delete) extends Saved
 
-    def saveAsNew(validate: String => String \/ Name, view: View): SaveAsNew =
-      SaveAsNew(validate(_).map(SavedViewCmd.Create(_, view)))
+    def saveAsNew(nameValidator: NameValidator, activeViewCB: Reusable[CallbackTo[View]]): SaveAsNew =
+      SaveAsNew(
+        Reusable.ap(nameValidator, activeViewCB) { (validate, viewCB) =>
+          val nv = validate(None)
+          viewCB.map(view => (s: String) => nv(s).map(SavedViewCmd.Create(_, view)))
+        }
+      )
 
     def makeDefault(id: Id): MakeDefault =
       MakeDefault(SavedViewCmd.MakeDefault(id))
@@ -190,11 +196,16 @@ object SavedViewLogic {
         Action.Delete(sv.id, Option.when(visible ==* sv.id)(sv.view)))
     }
 
-    def rename(validate: String => String \/ Name, sv: SavedView): Rename =
-      Rename(sv.name, i =>
-        PotentialChange.fromDisjunction(validate(i))
-          .ignore(_ ==* sv.name)
-          .map(n => SavedViewCmd.Update(sv.id, SavedViewGD.Name(n))))
+    def rename(nameValidator: NameValidator, svArgs: Reusable[(SavedView.Id, SavedView.Name)]): Rename = {
+      val cmdFn = Reusable.ap(nameValidator, svArgs) { case (nv, (id, name)) =>
+        val validate = nv(Some(id))
+        (i: String) =>
+          PotentialChange.fromDisjunction(validate(i))
+            .ignore(_ ==* name)
+            .map(n => SavedViewCmd.Update(id, SavedViewGD.Name(n)))
+      }
+      Rename(svArgs.value._2, cmdFn)
+    }
   }
 
   private def diff(ref: SavedView, activeView: View): Option[SavedViewGD.NonEmptyValues] = {
@@ -215,18 +226,24 @@ object SavedViewLogic {
         }.filterDefined))
   }
 
-  def menu(savedViews: SavedViews.Optional,
-           state     : State,
-           activeView: View): Menu = {
+  type NameValidator = Reusable[Option[Id] => String => String \/ Name]
 
-    def validateName(id: Option[Id], name: String): String \/ Name =
+  def nameValidator(savedViews: SavedViews.Optional): NameValidator =
+    Reusable.implicitly(savedViews).map(_ => id => name =>
       Name.validator(Name.State(id, savedViews))
         .unnamed
         .apply(name)
-        .leftMap("Invalid name: " + Simple.Invalidity.toText(_))
+        .leftMap("Invalid name: " + Simple.Invalidity.toText(_)))
+
+  def menu(savedViews  : SavedViews.Optional,
+           state       : State,
+           activeView  : View,
+           activeViewCB: Reusable[CallbackTo[View]]): Menu = {
+
+    val nameValidator = this.nameValidator(savedViews)
 
     def saveAsNew: MenuAction.SaveAsNew =
-      MenuAction.saveAsNew(validateName(None, _), activeView)
+      MenuAction.saveAsNew(nameValidator, activeViewCB)
 
     savedViews match {
       case None =>
@@ -236,12 +253,12 @@ object SavedViewLogic {
 
         val default = {
           val sv = svs.default
-          MenuItem.default(validateName(Some(sv.id), _), state, svs)(sv)
+          MenuItem.default(nameValidator, state, svs)(sv)
         }
 
         val nonDefaults = svs.nonDefault
           .valuesIterator
-          .map(sv => MenuItem.nonDefault(validateName(Some(sv.id), _), state, svs)(sv))
+          .map(sv => MenuItem.nonDefault(nameValidator, state, svs)(sv))
           .toVector
 
         state.referenceViewId.flatMap(svs.get) match {
@@ -257,13 +274,45 @@ object SavedViewLogic {
             diff(ref, activeView) match {
               case None =>
                 Menu.SavedClean(default, nonDefaults, ref.id)
-              case Some(changes) =>
-                val replace   = MenuAction.Replace(ref.name, SavedViewCmd.Update(ref.id, changes))
+              case Some(_) =>
+                val updateCB = Reusable.ap(Reusable.implicitly(ref), activeViewCB)((_, viewCB) =>
+                                 viewCB.map(diff(ref, _)).asCBO.map(SavedViewCmd.Update(ref.id, _)))
+                val replace   = MenuAction.Replace(ref.name, updateCB)
                 val dirtyItem = MenuItem.Unsaved(saveAsNew, Some(replace))
                 Menu.SavedDirty(default, nonDefaults, dirtyItem)
             }
         }
     }
   }
+
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+  implicit def univEqActionModify              : UnivEq[Action.Modify              ] = UnivEq.derive
+  implicit def univEqActionSelect              : UnivEq[Action.Select              ] = UnivEq.derive
+  implicit def univEqActionDelete              : UnivEq[Action.Delete              ] = UnivEq.derive
+  implicit def univEqAction                    : UnivEq[Action                     ] = UnivEq.derive
+  implicit def univEqMenuActionMakeDefault     : UnivEq[MenuAction.MakeDefault     ] = UnivEq.derive
+  implicit def univEqMenuActionDelete          : UnivEq[MenuAction.Delete          ] = UnivEq.derive
+  implicit val reusabilityActionModify         : Reusability[Action.Modify         ] = Reusability.byUnivEq
+  implicit val reusabilityActionSelect         : Reusability[Action.Select         ] = Reusability.byUnivEq
+  implicit val reusabilityActionDelete         : Reusability[Action.Delete         ] = Reusability.byUnivEq
+  implicit val reusabilityAction               : Reusability[Action                ] = Reusability.byUnivEq
+  implicit val reusabilityMenuActionSaveAsNew  : Reusability[MenuAction.SaveAsNew  ] = Reusability.derive
+  implicit val reusabilityMenuActionReplace    : Reusability[MenuAction.Replace    ] = Reusability.derive
+  implicit val reusabilityMenuActionRename     : Reusability[MenuAction.Rename     ] = Reusability.derive
+  implicit val reusabilityMenuActionMakeDefault: Reusability[MenuAction.MakeDefault] = Reusability.byUnivEq
+  implicit val reusabilityMenuActionDelete     : Reusability[MenuAction.Delete     ] = Reusability.derive
+  implicit val reusabilityMenuActionUnsaved    : Reusability[MenuAction.Unsaved    ] = Reusability.derive
+  implicit val reusabilityMenuActionSaved      : Reusability[MenuAction.Saved      ] = Reusability.derive
+  implicit val reusabilityMenuAction           : Reusability[MenuAction            ] = Reusability.derive
+  implicit val reusabilityMenuItemUnsaved      : Reusability[MenuItem.Unsaved      ] = Reusability.derive
+  implicit val reusabilityMenuItemDefault      : Reusability[MenuItem.Default      ] = Reusability.derive
+  implicit val reusabilityMenuItemNonDefault   : Reusability[MenuItem.NonDefault   ] = Reusability.derive
+  implicit val reusabilityMenuItemSaved        : Reusability[MenuItem.Saved        ] = Reusability.derive
+  implicit val reusabilityMenuItem             : Reusability[MenuItem              ] = Reusability.derive
+  implicit val reusabilityMenuNoSaved          : Reusability[Menu.NoSaved          ] = Reusability.derive
+  implicit val reusabilityMenuSavedClean       : Reusability[Menu.SavedClean       ] = Reusability.byRef || Reusability.derive
+  implicit val reusabilityMenuSavedDirty       : Reusability[Menu.SavedDirty       ] = Reusability.byRef || Reusability.derive
+  implicit val reusabilityMenu                 : Reusability[Menu                  ] = Reusability.byRef || Reusability.derive
 
 }

@@ -3,8 +3,6 @@ TODO NOW (?)
 * add SavedViews as a sub-hash of Other?
 * add an 'other' section to DataProp
 
-* Reusability.shouldComponentUpdate for SavedViewUI
-
 
 TODO POST-MERGE
 ===============
