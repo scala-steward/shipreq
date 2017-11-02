@@ -8,7 +8,6 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.Valid
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{DataProp, Project}
-import shipreq.webapp.base.hash.HashRec
 import ApplyEventLib._, SE.SE
 import ApplyEvent.{Events, Result}
 
@@ -77,6 +76,69 @@ final class ApplyEvent(implicit val trust: Trust)
           Some(e.report)
       }
     }
+
+
+
+
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  private object H2 {
+    import shipreq.webapp.base.hash2._
+    final case class VerifiedEvent(event: Event, hashRecs: HashRecs)
+
+    def applyVerified(ves: Vector[VerifiedEvent])(p: Project): Result =
+      if (ves.isEmpty)
+        \/-(p)
+      else {
+        // debug(ves, p)
+
+        val plan: SE[Unit] =
+          applyEventBatches(batcher optimal ves)
+            .improveFailure(applyEventBatches(batcher oneByOne ves)) {
+              case (_, -\/(e)) => e
+              case (e, \/-(_)) => s"Batch application failed but incremental application passed (!)\n$e"
+            }
+
+        plan.exec(p)
+      }
+
+    private val batcher = HashLogic.Batcher[VerifiedEvent, Event](_.event, _.hashRecs)
+
+    private def applyEventBatches(batches: HashLogic.Batches[Event]): SE[Unit] =
+      SE.foldMapRun(batches)(applyEventBatch)
+
+    private val applyEventBatch: HashLogic.Batch[Event] => SE[Unit] =
+      eb => applyAllSafe(eb._1) >> validateHashRecs(eb._2)
+
+    // TODO pass in more info so that failures can point to the exact events that fail
+    // TODO delete findFirstFailure
+    private def validateHashRecs(hashRecs: HashRecs): SE[Unit] =
+      ???
+//      SE.testO(p =>
+//        if (recs.forall(_.validate(p) is Valid))
+//          None
+//        else {
+//          ???
+////          val failures = recs.iterator
+////            .map(r => (r, r validateF p))
+////            .filterDefined_2
+////            .map { case (r, f) => s"$r failed: ${f.msg}" }
+////            .toVector
+////            .sorted
+////          Some(s"Hash Mismatch. ${failures.size} mismatches:${failures.map("\n  - " + _) mkString ""}")
+//        }
+//      )
+  }
+
+  import shipreq.webapp.base.hash.HashRec
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
 
   def applyVerified(ves: Iterable[VerifiedEvent])(p: Project): Result =
     if (ves.isEmpty)
