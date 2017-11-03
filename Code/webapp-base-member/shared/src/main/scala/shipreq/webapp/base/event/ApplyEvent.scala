@@ -91,7 +91,7 @@ final class ApplyEvent(implicit val trust: Trust)
     import shipreq.webapp.base.hash2._
     private val batcher = HashLogic.Batcher((_: VerifiedEvent).event, (_: VerifiedEvent).hashRecs, HashSchemes)
 
-    final case class VerifiedEvent(event: Event, hashRecs: HashRecs)
+    case class VerifiedEvent(event: Event, hashRecs: HashRecs)
 
     def applyVerified(ves: Vector[VerifiedEvent])(p: Project): Result =
       if (ves.isEmpty)
@@ -113,26 +113,21 @@ final class ApplyEvent(implicit val trust: Trust)
       SE.foldMapRun(batches)(applyEventBatch)
 
     private val applyEventBatch: batcher.Batch => SE[Unit] =
-      eb => applyAllSafe(eb.elements) >> validateHashRecs(eb.recs)
+      eb =>
+        SE.get.flatMap(p1 =>
+          applyAllSafe(eb.elements) >> SE.testO { p2 =>
+            val errs = HashLogic.validate(eb.recs, before = p1, current = p2)
+            if (errs.isEmpty)
+              None
+            else Some {
+              val each = errs.map("* " + _.msg).mkString("\n")
+              val events = eb.elements.map("* " + _).mkString("\n")
+              s"Hash Discrepancy:\n$each\nEvents:\n$events"
+            }
+          }
+        )
 
-    // TODO pass in more info so that failures can point to the exact events that fail
     // TODO delete findFirstFailure
-    private def validateHashRecs(hashRecs: HashRecs): SE[Unit] =
-      ???
-//      SE.testO(p =>
-//        if (recs.forall(_.validate(p) is Valid))
-//          None
-//        else {
-//          ???
-////          val failures = recs.iterator
-////            .map(r => (r, r validateF p))
-////            .filterDefined_2
-////            .map { case (r, f) => s"$r failed: ${f.msg}" }
-////            .toVector
-////            .sorted
-////          Some(s"Hash Mismatch. ${failures.size} mismatches:${failures.map("\n  - " + _) mkString ""}")
-//        }
-//      )
   }
 
   import shipreq.webapp.base.hash.HashRec

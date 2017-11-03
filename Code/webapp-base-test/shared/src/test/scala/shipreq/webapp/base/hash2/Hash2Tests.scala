@@ -1,6 +1,7 @@
 package shipreq.webapp.base.hash2
 
 import japgolly.microlibs.nonempty.NonEmptyVector
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import nyaya.gen._
 import nyaya.prop._
 import nyaya.test._
@@ -122,6 +123,8 @@ object Hash2Tests extends TestSuite {
     val Y1 = hr(0, A -> 11, B -> 12, C -> 13)
     val Y2 = hr(1, B -> 12, C -> 15, D -> 16)
     val Y12 = Y1 ++ Y2
+
+    val none = Option.empty[Int]
   }
 
   override def tests = TestSuite {
@@ -173,6 +176,68 @@ object Hash2Tests extends TestSuite {
         "2-2" - test(X12, Y12)(Y12)
         "1-2" - test(X1, Y12)(X1, Y12)
         "2-1" - test(X12, Y2)(X12, Y2)
+      }
+    }
+
+    'validate {
+      import Manual._
+      import FakeScope._
+      import FakeModule._
+
+      def testPass(before: FakeData, current: FakeData, recs: HashRecs): Unit =
+        _test(before, current, recs)()
+
+      def testFail(before: FakeData, current: FakeData, recs: HashRecs)(e: (Int, List[VersionedHashFn]), ee: (Int, List[VersionedHashFn])*): Unit =
+        _test(before, current, recs)(e +: ee: _*)
+
+      def _test(before: FakeData, current: FakeData, recs: HashRecs)(expectedErrors: (Int, List[VersionedHashFn])*): Unit = {
+        val actual: List[HashDiscrepancy] =
+          HashLogic.validate(recs, before = before, current = current)
+
+        val actual2: Map[Scheme, Set[VersionedHashFn]] =
+          actual.groupBy(_.scheme).mapValuesNow(_.map(d => d.scheme.hashFns(d.scope)).toSet)
+
+        val expect2: Map[Scheme, Set[VersionedHashFn]] =
+          expectedErrors.map(_.map1(schemeRegistry.schemes.whole.apply)).groupBy(_._1).mapValuesNow(_.flatMap(_._2).toSet)
+
+        // TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
+        implicit val qwefsdafga32wewe: UnivEq[VersionedHashFn] = UnivEq.force
+
+        assertEq(actual2, expect2)
+      }
+
+      // A1 B1 C1 -
+      //  -  | C2 D1
+
+      'allChanged {
+        val x = FakeData(1, 2, 3, 4)
+        val y = FakeData(9, 8, 7, 6)
+        'empty  - testPass(x, y, HashRecs.empty) // think about it...
+        'all0   - testPass(x, y, hr(0, A -> 109, B -> 108, C -> 107))
+        'all1   - testPass(x, y, hr(1, B -> 108, C -> 207, D -> 106))
+        'all01  - testPass(x, y, hr2(A -> 109, B -> 108, C -> 107)(B -> 108, C -> 207, D -> 106))
+        'bad0   - testFail(x, y, hr(0, A -> 109, B -> 0, C -> 107))(0 -> List(B1))
+        'bad1   - testFail(x, y, hr(1, B -> 108, C -> 0, D -> 0))(1 -> List(C2, D1))
+        'miss0  - testFail(x, y, hr(0, A -> 109, C -> 107))(0 -> List(B1))
+        'miss1  - testFail(x, y, hr(1, D -> 106))(1 -> List(B1, C2))
+        'fail01 - testFail(x, y, hr2(A -> 0, B -> 108)(C -> 207))(0 -> List(A1, C1), 1 -> List(B1, D1))
+      }
+
+      'noneChanged {
+        val x = FakeData(1, 2, 3, 4)
+        'empty  - testPass(x, x, HashRecs.empty)
+        'all0   - testPass(x, x, hr(0, A -> 101, B -> 102, C -> 103))
+        'all1   - testPass(x, x, hr(1, B -> 102, C -> 203, D -> 104))
+        'all01  - testPass(x, x, hr2(A -> 101, B -> 102, C -> 103)(B -> 102, C -> 203, D -> 104))
+        'bad01  - testFail(x, x, hr2(A -> 101, B -> 0, C -> 103)(B -> 102, C -> 0, D -> 104))(0 -> List(B1), 1 -> List(C2))
+        'miss0  - testPass(x, x, hr(0, A -> 101))
+        'miss01 - testPass(x, x, hr2(A -> 101)(B -> 102))
+        'miss01 - testPass(x, x, hr2(B -> 102)(C -> 203))
+      }
+
+      'forcePass {
+        'pass0 - testPass(FakeData(1, 2, 3, 4), FakeData(9, 8, 7, 6), hr(0, A -> none, B -> none, C -> 107))
+        'bad0  - testFail(FakeData(1, 2, 3, 4), FakeData(9, 8, 7, 6), hr(0, A -> none, B -> none, C -> 0))(0 -> List(C1))
       }
     }
 

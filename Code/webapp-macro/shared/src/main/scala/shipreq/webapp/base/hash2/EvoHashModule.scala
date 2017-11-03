@@ -84,6 +84,11 @@ object EvoHashModule {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   final case class VersionedHashFn[A](ver: ScopeVer, hashFn: HashFn[A]) {
+    // override def toString = s"VersionedHashFn(${ver.value})"
+
+    @inline def apply(a: A): Int =
+      hashFn.hashFn(a)
+
     def addEvolution(hashFn: HashFn[A]): VersionedHashFn[A] =
       VersionedHashFn(ver.inc, hashFn)
   }

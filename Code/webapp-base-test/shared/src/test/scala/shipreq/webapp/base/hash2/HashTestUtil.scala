@@ -116,22 +116,28 @@ object HashTestUtil {
   }
 
   object FakeModule extends EvoHashModule[FakeScope, FakeData] {
-    private val h1 = InternalHash.hashInt
-    private val h2 = XorAlgorithm(InternalHash, 1).hashInt
+    private val v1 = HashFn[Int](_ + 100)
+    private val v2 = HashFn[Int](_ + 200)
 
     // A B C1 -
     // - | C2 D
     override val schemeRegistry =
       initSchemes(
-        FakeScope.A -> h1.contramap[FakeData](_.a),
-        FakeScope.B -> h1.contramap[FakeData](_.b),
-        FakeScope.C -> h1.contramap[FakeData](_.c))
+        FakeScope.A -> v1.contramap[FakeData](_.a),
+        FakeScope.B -> v1.contramap[FakeData](_.b),
+        FakeScope.C -> v1.contramap[FakeData](_.c))
       .addEvolution(
         EvolutionOp.Drop  (FakeScope.A),
-        EvolutionOp.Evolve(FakeScope.C -> h2.contramap[FakeData](_.c)),
-        EvolutionOp.Add   (FakeScope.D -> h2.contramap[FakeData](_.d)))
+        EvolutionOp.Evolve(FakeScope.C -> v2.contramap[FakeData](_.c)),
+        EvolutionOp.Add   (FakeScope.D -> v1.contramap[FakeData](_.d)))
 
     val batcher: HashLogic.Batcher[Scope, Data, (HashRecs, Int), Int] =
       HashLogic.Batcher(_._2, _._1, schemeRegistry)
+
+    val A1: VersionedHashFn = schemeRegistry.schemes.whole(0).hashFns(FakeScope.A)
+    val B1: VersionedHashFn = schemeRegistry.schemes.whole(0).hashFns(FakeScope.B)
+    val C1: VersionedHashFn = schemeRegistry.schemes.whole(0).hashFns(FakeScope.C)
+    val C2: VersionedHashFn = schemeRegistry.schemes.whole(1).hashFns(FakeScope.C)
+    val D1: VersionedHashFn = schemeRegistry.schemes.whole(1).hashFns(FakeScope.D)
   }
 }

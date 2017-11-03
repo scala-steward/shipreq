@@ -158,66 +158,19 @@ object HashLogic {
     }
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-//  /**
-//    * Rules:
-//    * - All arguments must correspond to the same HashScheme
-//    * - prev & actual must contain values for all HashScopes in the HashScheme
-//    */
-//  def validateSingleScheme(hashScheme: HashScheme,
-//                           prev      : HashScope.To[Int],
-//                           actual    : HashScope.To[Int],
-//                           expect    : HashScope.To[Option[Int]]): List[HashDiscrepancy] = {
-//
-//    assert(
-//      expect.scopeIterator.forall(actual.contains),
-//      s"HashScheme previously provided the hash for a scope, which seems to have been removed. THIS IS AGAINST ITS LAWS.")
-//
-//    var errors = List.empty[HashDiscrepancy]
-//
-//    def cmp(hashScope: HashScope, actual: Int, expect: Int) =
-//      if (expect !=* actual)
-//        errors ::= HashDiscrepancy(hashScheme, hashScope, expect = expect, actual = actual)
-//
-//    actual.foreach {x =>
-//      val s = x._1
-//      val ha = x._2
-//      expect.get(s) match {
-//        case Some(Some(he)) => cmp(s, actual = ha, expect = he)
-//        case None           => cmp(s, actual = ha, expect = prev.need(s))
-//        case Some(None)     => () // expectation of None means force pass - TODO SHOULD CARRY OVER UNTIL OVERRIDDEN?
-//      }
-//    }
-//
-//    errors
-//  }
-//
-//  def validateMultiScheme(prevProject: Project, p: Project, recs: HashRec.Collection): List[HashDiscrepancy] = {
-//    val byScheme = recs.groupBy(_.scheme)
-//    var errors = List.empty[HashDiscrepancy]
-//    for ((scheme, recs) <- byScheme) {
-//      val prev  : HashScope.To[Int] = scheme.hash(prevProject)
-//      val actual: HashScope.To[Int] = scheme.hash(p)
-//      val expect: HashScope.To[Option[Int]] = HashScope.To(recs.map(r => r.scope -> r.hash).toMap)
-//      val es = validateSingleScheme(scheme, prev, actual, expect)
-//      if (es.nonEmpty)
-//        errors :::= es
-//    }
-//    errors
-//  }
-
-//  def validateBatchHashes(p: Project, batchHashes: BatchHashes): List[HashDiscrepancy] = {
-//    var errs = List.empty[HashDiscrepancy]
-//    for {
-//      (scheme, hashFns) <- batchHashes
-//      (scope, hashOption) <- hashFns
-//      hash <- hashOption
-//      actual = scheme.hashFns.need(scope).hashFn(p)
-//      err <- HashDiscrepancy.cmp(scheme, scope, actual = actual, expect = hash)
-//    } errs ::= err
-//      errs
-//  }
+  def validate[Scope, Data](recs   : EvoHashModule.HashRecs[Scope, Data],
+                            before : Data,
+                            current: Data): List[HashDiscrepancy[Scope, Data]] = {
+    var errs = List.empty[HashDiscrepancy[Scope, Data]]
+    for {
+      (scheme, expects) ← recs
+      (scope, hashFn)   ← scheme.hashFns
+      expect            ← expects.getOrElse(scope, Some(hashFn(before)))
+      actual            = hashFn(current)
+      err               ← HashDiscrepancy.cmp(scheme, scope, actual = actual, expect = expect)
+    } errs ::= err
+    errs
+  }
 }
 
 /*
