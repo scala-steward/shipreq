@@ -89,6 +89,8 @@ final class ApplyEvent(implicit val trust: Trust)
 
   private object H2 {
     import shipreq.webapp.base.hash2._
+    private val batcher = HashLogic.Batcher((_: VerifiedEvent).event, (_: VerifiedEvent).hashRecs, HashSchemes)
+
     final case class VerifiedEvent(event: Event, hashRecs: HashRecs)
 
     def applyVerified(ves: Vector[VerifiedEvent])(p: Project): Result =
@@ -107,13 +109,11 @@ final class ApplyEvent(implicit val trust: Trust)
         plan.exec(p)
       }
 
-    private val batcher = HashLogic.Batcher[VerifiedEvent, Event](_.event, _.hashRecs, ???)
-
-    private def applyEventBatches(batches: HashLogic.Batches[Event]): SE[Unit] =
+    private def applyEventBatches(batches: batcher.Batches): SE[Unit] =
       SE.foldMapRun(batches)(applyEventBatch)
 
-    private val applyEventBatch: HashLogic.Batch[Event] => SE[Unit] =
-      eb => applyAllSafe(eb._1) >> validateHashRecs(eb._2)
+    private val applyEventBatch: batcher.Batch => SE[Unit] =
+      eb => applyAllSafe(eb.elements) >> validateHashRecs(eb.recs)
 
     // TODO pass in more info so that failures can point to the exact events that fail
     // TODO delete findFirstFailure

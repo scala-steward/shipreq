@@ -1,10 +1,10 @@
 package shipreq.webapp.base.hash2
 
-import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
-import shipreq.webapp.base.data.Project
+import EvoHashModule2._
 
+/*
 final case class HashDiscrepancy(scheme: HashScheme,
                                  scope : HashScope,
                                  expect: Int,
@@ -25,9 +25,9 @@ object HashDiscrepancy {
     Option.when(expect !=* actual)(
       HashDiscrepancy(hashScheme, hashScope, expect = expect, actual = actual))
 }
+ */
 
 object HashLogic {
-
 //  /**
 //    * Rules:
 //    * - All arguments must correspond to the same HashScheme
@@ -83,9 +83,9 @@ object HashLogic {
 
   // - Make HashScope.To lazy (and specialised)
 
-//  def consolidate[A, B](as: Vector[A])(hashRecs: A => HashRec.Collection, ab: A => B): List[(NonEmptyVector[B], HashRec.Collection)] = {
+  //  def consolidate[A, B](as: Vector[A])(hashRecs: A => HashRec.Collection, ab: A => B): List[(NonEmptyVector[B], HashRec.Collection)] = {
   // TODO BM list ::= vs Vector.slice?
-//  def consolidate[A, B](as: Vector[A])(hashRecs: A => HashRec.Collection, ab: A => B): List[(List[B], HashRec.Collection)] = {
+  //  def consolidate[A, B](as: Vector[A])(hashRecs: A => HashRec.Collection, ab: A => B): List[(List[B], HashRec.Collection)] = {
 
 
   // TOOD BatchHashes is actually isomorphic to (old) HashRec.Collection....
@@ -94,66 +94,75 @@ object HashLogic {
   // - changes :: Project -> Project -> HashRec.Collection
 
 
-  type Batch[A] = (List[A], HashRecs)
-  type Batches[A] = List[Batch[A]]
+  final case class Batch[Scope, Data, +A](elements: List[A], recs: HashRecs[Scope, Data])
 
-  final case class Batcher[A, B](ab: A => B, hashRecs: A => HashRecs, schemeRegistry: HashSchemes) {
+  type Batches[Scope, Data, +A] = List[Batch[Scope, Data, A]]
 
-    private val forcePass =
-      HashRecs(
-        schemeRegistry
-          .schemes
-          .iterator
-          .map(scheme => HashRecs.ByScheme(scheme, scheme.hashFns.map(_ => Option.empty[Int])))
-          .toList)
+  final case class Batcher[Scope: UnivEq, Data, A, B](ab: A => B,
+                                                      hashRecs: A => EvoHashModule2.HashRecs[Scope, Data],
+                                                      schemeRegistry: EvoHashModule2.Schemes[Scope, Data]) {
 
-    // TODO Shouldn't need HashRecs
-    private val propogation: HashScheme => HashRecs => HashScope.To[Option[Int]] =
+    type VersionedHashFn = EvoHashModule2.VersionedHashFn[Data]
+    type Scheme          = EvoHashModule2.Scheme[Scope, Data]
+    type Schemes         = EvoHashModule2.Schemes[Scope, Data]
+    type ScopeMap[+X]    = EvoHashModule2.ScopeMap[Scope, X]
+    type HashRecs        = EvoHashModule2.HashRecs[Scope, Data]
+    type Batch           = HashLogic.Batch[Scope, Data, B]
+    type Batches         = HashLogic.Batches[Scope, Data, B]
+
+    private val forcePass: HashRecs =
+      schemeRegistry
+        .schemes
+        .iterator
+        .map(s => s -> s.hashFns.mapValuesNow(_ => Option.empty[Int]))
+        .toMap
+
+    private val emptyScopeMap: ScopeMap[Nothing] =
+      UnivEq.emptyMap[Scope, Nothing]
+
+    private val _emptyScopeMap: Any => ScopeMap[Nothing] =
+      _ => emptyScopeMap
+
+    private val propogation: Scheme => HashRecs => ScopeMap[Option[Int]] =
       if (schemeRegistry.schemes.length ==* 1)
-        _ => _ => HashScope.To(Map.empty)
+        _ => _emptyScopeMap
       else {
 
         val om =
-        for {
-          s1 <- schemeRegistry.schemes.whole
-          s2 <- schemeRegistry.schemes.whole if s2 !=* s1
-          hashFns = s2.hashFns.filter((scope, hashFn) => s1.hashFns.get(scope).exists(_.version.value <= hashFn.version.value))
-        } yield s1 -> (s2 -> hashFns)
+          for {
+            s1 <- schemeRegistry.schemes.whole
+            s2 <- schemeRegistry.schemes.whole if s2 !=* s1
+            hashFns = s2.hashFns.filter { case (scope, h) => s1.hashFns.get(scope).exists(_.ver <= h.ver) }
+          } yield s1 -> (s2 -> hashFns)
 
-        val omg: Map[HashScheme, Vector[(HashScheme, HashScope.To[HashScope.VersionedHashFn])]] =
-          om.groupBy(_._1).mapValuesNow(_.map(_._2).filter(_._2.scopeSet.nonEmpty))
+        val omg: Map[Scheme, Vector[(Scheme, ScopeMap[VersionedHashFn])]] =
+          om.groupBy(_._1).mapValuesNow(_.map(_._2).filter(_._2.nonEmpty))
 
-//            for ((a, b) <- omg)
-//              println(s"$a -- ${b.map(_.map2(_.map(_.version)))}")
+        //            for ((a, b) <- omg)
+        //              println(s"$a -- ${b.map(_.map2(_.map(_.version)))}")
 
 
         scheme => {
           omg.get(scheme) match {
             case None =>
-              _ => HashScope.To(Map.empty)
+              _emptyScopeMap
+
             case Some(xx) =>
-
-              hrs => {
-                val qqqqqqqqq =
-                  xx.iterator
-                    .map { case (scheme2, hashFns) => hrs(scheme2).map(_ -> hashFns) }
-                    .filterDefined
-                    .flatMap { case (hr2, hf) => hf.scopeIterator.map(s => hr2.hashes.get(s).map((s, _))).filterDefined }
+              hrs =>
+                xx.iterator
+                  .map { case (scheme2, hashFns) => hrs.get(scheme2).map(_ -> hashFns) }
+                  .filterDefined
+                  .flatMap { case (hr2, hf) => hf.keysIterator.map(s => hr2.get(s).map((s, _))).filterDefined }
                   .toMap
-
-                HashScope.To(qqqqqqqqq)
-              }
           }
         }
       }
 
-    val oneByOne: Vector[A] => Batches[B] =
-      _.map(a => (ab(a) :: Nil, hashRecs(a)))(collection.breakOut)
+    val oneByOne: Vector[A] => Batches =
+      _.map(a => Batch(ab(a) :: Nil, hashRecs(a)))(collection.breakOut)
 
-    val optimal: Vector[A] => Batches[B] = as => {
-
-      var results: Batches[B] = Nil
-
+    val optimal: Vector[A] => Batches = as => {
+      var results: Batches = Nil
       var i = as.length
       while (i > 0) {
         i -= 1
@@ -168,55 +177,50 @@ object HashLogic {
               forcePass
             else
               curSRs
-            (b :: Nil, hrs) :: Nil
+            Batch(b :: Nil, hrs) :: Nil
 
-          case (nextBs, nextSRs) :: nextResults =>
+          case Batch(nextBs, nextSRs) :: nextResults =>
 
-            if (nextSRs.values eq forcePass.values) {
+            if (nextSRs eq forcePass) {
               if (curSRs.values.isEmpty)
-                (b :: nextBs, forcePass) :: nextResults
+                Batch(b :: nextBs, forcePass) :: nextResults
               else
-                (b :: Nil, curSRs) :: results
+                Batch(b :: Nil, curSRs) :: results
 
-            } else if (curSRs.values.map(_.scheme).toSet ==* nextSRs.values.map(_.scheme).toSet) {
+            } else if (curSRs.keySet ==* nextSRs.keySet) {
               val xx =
-                curSRs.values.map { curHashesByScheme =>
-                  val scheme = curHashesByScheme.scheme
-                  val nextRs = nextSRs(scheme).get // TODO !
-                var nextHashes = nextRs.hashes
-                  curHashesByScheme.hashes.foreach { case (s, h) =>
-                    if (!nextRs.hashes.contains(s))
+                curSRs.map { case (scheme, curRs) =>
+                  val nextRs = nextSRs(scheme) // TODO ! unsafe
+                var nextHashes = nextRs
+                  curRs.foreach { case (s, h) =>
+                    if (!nextRs.contains(s))
                       nextHashes = nextHashes.updated(s, h)
                   }
-                  HashRecs.ByScheme(scheme, nextHashes)
+                  scheme -> nextHashes
                 }
-              (b :: nextBs, HashRecs(xx)) :: nextResults
+              Batch(b :: nextBs, xx) :: nextResults
 
             } else if (curSRs.values.isEmpty)
-              (b :: Nil, forcePass) :: results
+              Batch(b :: Nil, forcePass) :: results
 
             else {
-              val isThereSchemeOverlap = curSRs.values.exists(bs => nextSRs.values.exists(_.scheme ==* bs.scheme))
+              val isThereSchemeOverlap = curSRs.keysIterator.exists(nextSRs.contains)
               if (isThereSchemeOverlap) {
-                (b :: Nil, curSRs) :: results
+                Batch(b :: Nil, curSRs) :: results
               } else {
                 val nextSRs2 =
-                  HashRecs(
-                    nextSRs.values.map { byScheme =>
-                      val scheme = byScheme.scheme
-                      var hashes2 = byScheme.hashes.temp
-                      propogation(scheme)(curSRs).temp.foreach { case (scope, hash) =>
-                        if (!hashes2.contains(scope))
-                          hashes2 = hashes2.updated(scope, hash)
-                      }
-                      HashRecs.ByScheme(scheme, HashScope.To(hashes2))
+                  nextSRs.map { case (scheme, byScheme) =>
+                    var hashes2 = byScheme
+                    propogation(scheme)(curSRs).foreach { case (scope, hash) =>
+                      if (!hashes2.contains(scope))
+                        hashes2 = hashes2.updated(scope, hash)
                     }
-                  )
-                (b :: Nil, curSRs) :: (nextBs, nextSRs2) :: nextResults
+                    scheme -> hashes2
+                  }
+                Batch(b :: Nil, curSRs) :: Batch(nextBs, nextSRs2) :: nextResults
               }
             }
         }
-
       }
 
       results
