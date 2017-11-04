@@ -1,4 +1,4 @@
-package shipreq.webapp.base.hash
+package shipreq.webapp.base.hash2
 
 import japgolly.microlibs.macro_utils.MacroUtils
 import scala.reflect.macros.blackbox.Context
@@ -7,24 +7,24 @@ import shipreq.base.util.{SetDiff, Util}
 trait HashMacros {
   def joinHashes(hashes: List[Int]): Int
 
-  final def  hashCaseClass[T]: Hash[T] = macro HashMacroImpls.quietCaseClass[T]
-  final def _hashCaseClass[T]: Hash[T] = macro HashMacroImpls.debugCaseClass[T]
+  final def  hashCaseClass[T]: HashFn[T] = macro HashMacroImpls.quietCaseClass[T]
+  final def _hashCaseClass[T]: HashFn[T] = macro HashMacroImpls.debugCaseClass[T]
 
-  final def  hashCaseClassSubset[T](include: (Symbol, Boolean)*): Hash[T] = macro HashMacroImpls.quietCaseClassSubset[T]
-  final def _hashCaseClassSubset[T](include: (Symbol, Boolean)*): Hash[T] = macro HashMacroImpls.debugCaseClassSubset[T]
+  final def  hashCaseClassSubset[T](include: (Symbol, Boolean)*): HashFn[T] = macro HashMacroImpls.quietCaseClassSubset[T]
+  final def _hashCaseClassSubset[T](include: (Symbol, Boolean)*): HashFn[T] = macro HashMacroImpls.debugCaseClassSubset[T]
 
-  final def  hashConstClass[T](key: String): Hash[T] = macro HashMacroImpls.quietConstClass[T]
-  final def _hashConstClass[T](key: String): Hash[T] = macro HashMacroImpls.debugConstClass[T]
+  final def  hashConstClass[T](key: String): HashFn[T] = macro HashMacroImpls.quietConstClass[T]
+  final def _hashConstClass[T](key: String): HashFn[T] = macro HashMacroImpls.debugConstClass[T]
 
-  final def  hashADT[T]: Hash[T] = macro HashMacroImpls.quietADT[T]
-  final def _hashADT[T]: Hash[T] = macro HashMacroImpls.debugADT[T]
+  final def  hashADT[T]: HashFn[T] = macro HashMacroImpls.quietADT[T]
+  final def _hashADT[T]: HashFn[T] = macro HashMacroImpls.debugADT[T]
 }
 
 class HashMacroImpls(val c: Context) extends MacroUtils {
   import c.universe._
 
-  private def Hash =
-    c.universe.Ident(c.mirror staticModule "shipreq.webapp.base.hash.Hash")
+  private def HashFn =
+    c.universe.Ident(c.mirror staticModule "shipreq.webapp.base.hash2.HashFn")
 
   /**
    * Constraints:
@@ -32,12 +32,12 @@ class HashMacroImpls(val c: Context) extends MacroUtils {
    * - Type must have a primary constructor.
    * - Primary constructor must have more than 0 params.
    */
-  def quietCaseClass[T: c.WeakTypeTag]: c.Expr[Hash[T]] = implCaseClass[T](false, identity)
-  def debugCaseClass[T: c.WeakTypeTag]: c.Expr[Hash[T]] = implCaseClass[T](true , identity)
-  def implCaseClass[T: c.WeakTypeTag](debug: Boolean, preprocessParams: List[NameAndType] => List[NameAndType]): c.Expr[Hash[T]] = {
+  def quietCaseClass[T: c.WeakTypeTag]: c.Expr[HashFn[T]] = implCaseClass[T](false, identity)
+  def debugCaseClass[T: c.WeakTypeTag]: c.Expr[HashFn[T]] = implCaseClass[T](true , identity)
+  def implCaseClass[T: c.WeakTypeTag](debug: Boolean, preprocessParams: List[NameAndType] => List[NameAndType]): c.Expr[HashFn[T]] = {
     val T      = concreteWeakTypeOf[T]
     val params = preprocessParams(primaryConstructorParams(T).map(nameAndType(T, _)))
-    val Hash   = this.Hash
+    val HashFn = this.HashFn
 
     val impl =
       params match {
@@ -46,24 +46,24 @@ class HashMacroImpls(val c: Context) extends MacroUtils {
 
         case (pName, pType) :: Nil =>
           val h = needInferImplicit(HashType(pType))
-          q"$h.cmap[$T](_.$pName)"
+          q"$h.contramap[$T](_.$pName)"
 
         case _ =>
           val init = new Init
           val hashes = params.foldLeft(LitNil: c.universe.Tree) { case (q, (pName, pType)) =>
             val h = init.valImp(HashType(pType))
-            q"$q.::($h hash t.$pName)"
+            q"$q.::($h hashFn t.$pName)"
           }
-          q"..$init; $Hash.fn[$T](t => joinHashes($hashes))"
+          q"..$init; $HashFn[$T](t => joinHashes($hashes))"
       }
 
     if (debug) println("\n" + showCode(impl) + "\n")
-    c.Expr[Hash[T]](impl)
+    c.Expr[HashFn[T]](impl)
   }
 
-  def quietCaseClassSubset[T: c.WeakTypeTag](include: c.Expr[(scala.Symbol, Boolean)]*): c.Expr[Hash[T]] = implCaseClassSubset[T](false, include)
-  def debugCaseClassSubset[T: c.WeakTypeTag](include: c.Expr[(scala.Symbol, Boolean)]*): c.Expr[Hash[T]] = implCaseClassSubset[T](true , include)
-  def implCaseClassSubset[T: c.WeakTypeTag](debug: Boolean, include: Seq[c.Expr[(scala.Symbol, Boolean)]]): c.Expr[Hash[T]] = {
+  def quietCaseClassSubset[T: c.WeakTypeTag](include: c.Expr[(scala.Symbol, Boolean)]*): c.Expr[HashFn[T]] = implCaseClassSubset[T](false, include)
+  def debugCaseClassSubset[T: c.WeakTypeTag](include: c.Expr[(scala.Symbol, Boolean)]*): c.Expr[HashFn[T]] = implCaseClassSubset[T](true , include)
+  def implCaseClassSubset[T: c.WeakTypeTag](debug: Boolean, include: Seq[c.Expr[(scala.Symbol, Boolean)]]): c.Expr[HashFn[T]] = {
     val spec: Vector[(String, Boolean)] = include.map(readMacroArg_symbolBoolean)(collection.breakOut)
     if (debug) println(s"Subset spec: $spec")
 
@@ -85,24 +85,24 @@ class HashMacroImpls(val c: Context) extends MacroUtils {
    * - Type must have a primary constructor.
    * - Primary constructor must have 0 params.
    */
-  def quietConstClass[T: c.WeakTypeTag](key: c.Expr[String]): c.Expr[Hash[T]] = implConstClass[T](false)(key)
-  def debugConstClass[T: c.WeakTypeTag](key: c.Expr[String]): c.Expr[Hash[T]] = implConstClass[T](true)(key)
-  def implConstClass[T: c.WeakTypeTag](debug: Boolean)(key: c.Expr[String]): c.Expr[Hash[T]] = {
+  def quietConstClass[T: c.WeakTypeTag](key: c.Expr[String]): c.Expr[HashFn[T]] = implConstClass[T](false)(key)
+  def debugConstClass[T: c.WeakTypeTag](key: c.Expr[String]): c.Expr[HashFn[T]] = implConstClass[T](true)(key)
+  def implConstClass[T: c.WeakTypeTag](debug: Boolean)(key: c.Expr[String]): c.Expr[HashFn[T]] = {
     val T      = concreteWeakTypeOf[T]
     val params = primaryConstructorParams(T)
-    val Hash   = this.Hash
+    val HashFn = this.HashFn
 
     val impl =
       params match {
         case Nil =>
-          q"$Hash.constOf[String,$T]($key)"
+          q"$HashFn.constByHashing[String,$T]($key)"
 
         case _ =>
           fail(s"Class constructor has ${params.length} parameters. Expected 0.")
       }
 
     if (debug) println("\n" + showCode(impl) + "\n")
-    c.Expr[Hash[T]](impl)
+    c.Expr[HashFn[T]](impl)
   }
 
   /**
@@ -110,23 +110,24 @@ class HashMacroImpls(val c: Context) extends MacroUtils {
    * - Type must be sealed.
    * - Type must be abstract or a trait.
    */
-  def quietADT[T: c.WeakTypeTag]: c.Expr[Hash[T]] = implADT[T](false)
-  def debugADT[T: c.WeakTypeTag]: c.Expr[Hash[T]] = implADT[T](true)
-  def implADT[T: c.WeakTypeTag](debug: Boolean): c.Expr[Hash[T]] = {
-    val T     = weakTypeOf[T]
-    val types = findConcreteAdtTypesNE(T, DirectOnly)
-    val a     = TermName("a")
-    val init  = new Init
-    val cases = types.map { t =>
+  def quietADT[T: c.WeakTypeTag]: c.Expr[HashFn[T]] = implADT[T](false)
+  def debugADT[T: c.WeakTypeTag]: c.Expr[HashFn[T]] = implADT[T](true)
+  def implADT[T: c.WeakTypeTag](debug: Boolean): c.Expr[HashFn[T]] = {
+    val T      = weakTypeOf[T]
+    val types  = findConcreteAdtTypesNE(T, DirectOnly)
+    val a      = TermName("a")
+    val init   = new Init
+    val HashFn = this.HashFn
+    val cases  = types.map { t =>
       val h = init.valImp(HashType(t))
-      cq"$a : $t => $h.hash($a)"
+      cq"$a : $t => $h.hashFn($a)"
     }
-    val impl = q"..$init; Hash.fn[$T]{ case ..$cases }"
+    val impl = q"..$init; $HashFn[$T]{ case ..$cases }"
 
     if (debug) println("\n" + showCode(impl) + "\n")
-    c.Expr[Hash[T]](impl)
+    c.Expr[HashFn[T]](impl)
   }
 
   def HashType(t: Type): Type =
-    appliedType(c.typeOf[Hash[_]], t)
+    appliedType(c.typeOf[HashFn[_]], t)
 }

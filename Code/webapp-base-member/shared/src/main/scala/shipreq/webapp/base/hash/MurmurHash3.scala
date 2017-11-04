@@ -1,7 +1,6 @@
-package shipreq.webapp.base.hash
+package shipreq.webapp.base.hash2
 
 import scala.util.hashing.{MurmurHash3 => *}
-import Hash.HashableValueOps
 import *.{mix, mixLast, finalizeHash}
 
 /**
@@ -27,18 +26,33 @@ object MurmurHash3 extends Hash.Algorithm {
     finalizeHash(h, n)
   }
 
-  implicit override val hashBoolean                  : Hash[Boolean]   = Hash.fn(a => if (a) 1231 else 1237)
-  implicit override val hashString                   : Hash[String]    = Hash.fn(*.stringHash)
-  override implicit def hashPair   [A: Hash, B: Hash]: Hash[(A, B)]    = Hash.fn(t => mixLast(t._1.hash, t._2.hash))
-  implicit override def hashMap    [K: Hash, V: Hash]: Hash[Map[K, V]] = Hash.fn(unorderedHash(_, *.mapSeed))
-  implicit override def hashSet    [A: Hash]         : Hash[Set[A]]    = Hash.fn(unorderedHash(_, *.setSeed))
-  implicit override def hashList   [A: Hash]         : Hash[List[A]]   = Hash.fn(listHash(_, *.seqSeed))
-  implicit override def hashVector [A: Hash]         : Hash[Vector[A]] = Hash.fn(orderedHash(_, *.seqSeed))
+  override implicit val hashBoolean: HashFn[Boolean] =
+    HashFn(a => if (a) 1231 else 1237)
 
-  override def hashUnordered[T[x] <: TraversableOnce[x], A: Hash]: Hash[T[A]] =
-    Hash.fn(unorderedHash(_, unordSeed))
+  override implicit val hashString: HashFn[String] =
+    HashFn(*.stringHash)
 
-  implicit override val hashChar: Hash[Char] = Hash.fn { a =>
+  override implicit def hashMap[K: HashFn, V: HashFn]: HashFn[Map[K, V]] =
+    HashFn(unorderedHash(_, *.mapSeed))
+
+  override implicit def hashSet[A: HashFn]: HashFn[Set[A]] =
+    HashFn(unorderedHash(_, *.setSeed))
+
+  override implicit def hashList[A: HashFn]: HashFn[List[A]] =
+    HashFn(listHash(_, *.seqSeed))
+
+  override implicit def hashVector[A: HashFn]: HashFn[Vector[A]] =
+    HashFn(orderedHash(_, *.seqSeed))
+
+  override protected def _hashPair[
+      @specialized(Int, Long, Char, Boolean) A: HashFn,
+      @specialized(Int, Long, Char, Boolean) B: HashFn]: HashFn[(A, B)] =
+    HashFn(t => mixLast(Hash(t._1), Hash(t._2)))
+
+  override def hashUnordered[T[x] <: TraversableOnce[x], A: HashFn]: HashFn[T[A]] =
+    HashFn(unorderedHash(_, unordSeed))
+
+  override implicit val hashChar: HashFn[Char] = HashFn { a =>
     val h = mix(0, a.toInt)
     finalizeHash(h, 2)
   }
@@ -48,12 +62,12 @@ object MurmurHash3 extends Hash.Algorithm {
   // Changed to remove special case for 0.
   // https://github.com/clojure/clojure/blob/6aaaa0a88da15fb814e12a8a4e9af864edfafd6f/src/jvm/clojure/lang/Murmur3.java
 
-  implicit override val hashInt: Hash[Int] = Hash.fn { a =>
+  override implicit val hashInt: HashFn[Int] = HashFn { a =>
     val h = mix(0, a)
     finalizeHash(h, 4)
   }
 
-  implicit override val hashLong: Hash[Long] = Hash.fn { a =>
+  override implicit val hashLong: HashFn[Long] = HashFn { a =>
     val low  = a.toInt
     val high = (a >>> 32).toInt
     var h = mix(0, low)
@@ -70,11 +84,11 @@ object MurmurHash3 extends Hash.Algorithm {
     *  where the order of appearance of elements does not matter.
     *  This is useful for hashing sets, for example.
     */
-  private final def unorderedHash[A: Hash](xs: TraversableOnce[A], seed: Int): Int = {
+  private final def unorderedHash[A: HashFn](xs: TraversableOnce[A], seed: Int): Int = {
     var a, b, n = 0
     var c = 1
     xs foreach { x =>
-      val h = x.hash
+      val h = Hash(x)
       a += h
       b ^= h
       if (h != 0) c *= h
@@ -89,24 +103,24 @@ object MurmurHash3 extends Hash.Algorithm {
 
   /** Compute a hash that depends on the order of its arguments.
     */
-  private final def orderedHash[A: Hash](xs: TraversableOnce[A], seed: Int): Int = {
+  private final def orderedHash[A: HashFn](xs: TraversableOnce[A], seed: Int): Int = {
     var n = 0
     var h = seed
     xs foreach { x =>
-      h = mix(h, x.hash)
+      h = mix(h, Hash(x))
       n += 1
     }
     finalizeHash(h, n)
   }
 
-  private final def listHash[A: Hash](xs: scala.collection.immutable.List[A], seed: Int): Int = {
+  private final def listHash[A: HashFn](xs: scala.collection.immutable.List[A], seed: Int): Int = {
     var n = 0
     var h = seed
     var elems = xs
     while (!elems.isEmpty) {
       val head = elems.head
       val tail = elems.tail
-      h = mix(h, head.hash)
+      h = mix(h, Hash(head))
       n += 1
       elems = tail
     }
