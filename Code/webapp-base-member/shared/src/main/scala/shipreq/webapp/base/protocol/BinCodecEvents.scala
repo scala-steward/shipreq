@@ -85,9 +85,13 @@ object BinCodecEvents {
   implicit val pickleActiveEvent: Pickler[ActiveEvent] = pickleADT
   implicit val pickleEvent      : Pickler[Event      ] = pickleADT
 
-  implicit val pickleHashScheme: Pickler[HashScheme] = intPickler.xmap(HashSchemes unsafeGet HashSchemeId(_))(_.id.index)
-  implicit val pickleHashScope : Pickler[HashScope ] = pickleEnum(HashScope.all)
-  implicit val pickleHashRecs  : Pickler[HashRecs  ] = {
+  implicit val pickleHashScheme: Pickler[HashScheme] =
+    intPickler.xmap(HashSchemes unsafeGet HashSchemeId(_))(_.id.index)
+
+  implicit val pickleHashScope: Pickler[HashScope] =
+    pickleEnum(HashScope.all)
+
+  implicit val pickleHashRecs: Pickler[HashRecs] = {
     implicit val pickleHashRecs2: Pickler[HashRecsForScheme] = mapPickler
     mapPickler[HashScheme, HashRecsForScheme, Map]
   }

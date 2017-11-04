@@ -8,7 +8,6 @@ import scalaz.syntax.applicative._
 import shipreq.base.test.BaseUtilGen._
 
 object HashTestUtil {
-  import EvoHashModule.SchemeId
 
   final case class XorAlgorithm(a: Hash.Algorithm, xor: Int) extends Hash.Algorithm {
     private def modI(i: Int): Int =

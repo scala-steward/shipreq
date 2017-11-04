@@ -5,7 +5,7 @@ import scala.collection.immutable.SortedMap
 import scalaz.{\/, ~>}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{ActiveEvent, EventOrd, VerifiedEvent}
-import shipreq.webapp.base.hash.HashRec
+import shipreq.webapp.base.hash.HashRecs
 import shipreq.webapp.base.user._
 
 /**
@@ -61,7 +61,10 @@ object DB {
     final case class TokenExists(reg: UserRegistration.Complete, token: SecurityToken, tokenSentAt: Instant) extends PasswordResetState
   }
 
-  final case class SaveProjectEventCmd(ord: EventOrd, event: ActiveEvent, hashes: HashRec.Collection)
+  final case class SaveProjectEventCmd(ord: EventOrd, event: ActiveEvent, hashes: HashRecs) {
+    assert(hashes.nonEmpty, s"At least one hash is required: $this")
+    assert(hashes.forall(_._2.nonEmpty), s"Empty hash set found: $this")
+  }
 
   type ProjectEvents = SortedMap[EventOrd, VerifiedEvent]
 
@@ -155,7 +158,7 @@ object DB {
     final def saveProjectEvent(id    : ProjectId)
                               (ord   : EventOrd,
                                event : ActiveEvent,
-                               hashes: HashRec.Collection): F[Option[Throwable]] =
+                               hashes: HashRecs): F[Option[Throwable]] =
       saveProjectEvents(id)(SaveProjectEventCmd(ord, event, hashes) :: Nil)
   }
 
