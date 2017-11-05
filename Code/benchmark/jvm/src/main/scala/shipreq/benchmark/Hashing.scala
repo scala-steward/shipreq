@@ -1,19 +1,30 @@
 package shipreq.benchmark
 
+import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import shipreq.webapp.base.data.Project
-import shipreq.webapp.base.hash.{HashScheme, HashScope}
+import shipreq.webapp.base.event.ApplyEvent
+import shipreq.webapp.base.feature.hash.HashLogic
+import shipreq.webapp.base.hash._
 
+@Warmup(iterations = 20)
+@Measurement(iterations = 20)
+@Fork(2)
+@BenchmarkMode(Array(Mode.AverageTime))
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Benchmark)
 class Hashing {
 
-  val projectHash: Project => Int = HashScheme.latest.hasher(HashScope.WholeProject, _)
-  val p100  = data.project_100
-//  val p1000 = data.project_1000
+  val p = data.project_100
 
-  @Benchmark
-  def hash_100 = projectHash(p100)
+  @Benchmark def hashFull = HashSchemes.latest.hash(p)
 
-//  @Benchmark
-//  def hash_1000 = projectHash(p1000)
+  @Benchmark def changes = HashSchemes.latest.changes(Project.empty, p)
+
+  val ves = data.EventStreamSample.ves
+  @Benchmark def batch = ApplyEvent.eventBatcher.optimal(ves)
+
+  val recs = HashSchemes.latest.changes(Project.empty, p)
+  @Benchmark def validate = HashLogic.validate(recs, Project.empty, p)
+
 }
