@@ -81,7 +81,7 @@ final class ApplyEvent(implicit val trust: Trust)
       }
     }
 
-  def applyVerified(ves: Vector[VerifiedEvent])(p: Project): Result =
+  def applyVerified(ves: IndexedSeq[VerifiedEvent])(p: Project): Result =
     if (ves.isEmpty)
       \/-(p)
     else {

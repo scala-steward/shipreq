@@ -124,7 +124,8 @@ object EvoHashModule {
     val latestId: HashSchemeId =
       latest.id
 
-    private[this] val allWhole = schemes.whole
+    private[this] val allWhole =
+      schemes.whole
 
     def unsafeGet(id: HashSchemeId): Scheme[Scope, Data] =
       allWhole(id.index)

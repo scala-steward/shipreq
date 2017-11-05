@@ -6,6 +6,7 @@ import japgolly.univeq._
 import java.time.Instant
 import monocle.macros.Lenses
 import scala.collection.immutable.SortedSet
+import scala.collection.mutable
 import scalaz.syntax.monad._
 import scalaz.syntax.std.option._
 import scalaz.{-\/, Monad, \/, \/-, ~>}
@@ -116,15 +117,20 @@ object ProjectServer {
     Retries.exponentiallyFrom(15.millis)(_.toMillis <= 4.seconds.toMillis)
 
   def buildProject(load: DB.ProjectEvents): BuildError \/ (Project, EventOrd) =
-    ApplyEvent.trusted.applyVerified(load.values)(Project.empty) match {
-      case \/-(p) =>
-        val seq = if (load.isEmpty)
-          EventOrd(1) // Nice to reserve 0 for ApplyTemplate.
-        else
-          load.lastKey + 1
-        \/-((p, seq))
-      case -\/(e) =>
-        -\/(BuildError(e, load.keySet))
+    if (load.isEmpty) {
+      val ord = EventOrd(1) // Nice to reserve 0 for ApplyTemplate.
+      \/-((Project.empty, ord))
+    } else {
+      val verifiedEvents: IndexedSeq[VerifiedEvent] = {
+        val b = new mutable.ArrayBuilder.ofRef[VerifiedEvent]
+        b.sizeHint(load.lastKey.value - load.firstKey.value + 1)
+        b ++= load.values
+        b.result()
+      }
+      ApplyEvent.trusted.applyVerified(verifiedEvents)(Project.empty) match {
+        case \/-(p) => \/-((p, load.lastKey + 1))
+        case -\/(e) => -\/(BuildError(e, load.keySet))
+      }
     }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

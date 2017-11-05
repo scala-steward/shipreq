@@ -1,6 +1,8 @@
 package shipreq.webapp.server.db
 
 import doobie.imports._
+import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.univeq._
 import java.time.Instant
 import nyaya.gen.Gen
 import org.postgresql.util.PSQLException
@@ -10,8 +12,9 @@ import scalaz.{-\/, Free, \/, \/-}
 import shipreq.base.db.DoobieHelpers._
 import shipreq.base.db.SqlHelpers._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.event.ApplyEvent.LogicVer
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.hash.HashRec
+import shipreq.webapp.base.hash._
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.db.DbInterpreter._
@@ -245,14 +248,18 @@ object DbInterpreter {
       Update[(ProjectId, EventOrd, ActiveEvent)](s"INSERT INTO event(project_id,ord,$eventE) VALUES(?,?,${eventE_?})")
 
     private final val insertEventHashSql =
-      Update[(ProjectId, EventOrd, HashRec)](s"INSERT INTO event_hash(project_id,ord,$eventHR) VALUES(?,?,${eventHR_?})")
+      Update[(ProjectId, EventOrd, HashRecRow)](s"INSERT INTO event_hash(project_id,ord,$sqlHashRecRow) VALUES(?,?,${sqlHashRecRow_?})")
 
     override final def saveProjectEvents(id: ProjectId)(cmds: Traversable[SaveProjectEventCmd]): ConnectionIO[Option[Throwable]] = {
       val addEvents = insertEventSql.executeBatch(
         cmds.toIterator.map(c => (id, c.ord, c.event)))
 
       val addHashes = insertEventHashSql.executeBatch(
-        cmds.toIterator.flatMap(c => c.hashes.iterator.map(h => (id, c.ord, h))))
+        for {
+          cmd                    <- cmds.toIterator
+          (scheme, schemeHashes) <- cmd.hashes.iterator
+          (scope, hash)          <- schemeHashes.iterator
+        } yield (id, cmd.ord, (scope, LogicVer.SoleInstance, scheme, hash)))
 
       (addEvents *> addHashes).inTransaction.attemptVoid
     }
@@ -354,9 +361,33 @@ object DbInterpreter {
       Query[ProjectId, (EventOrd, Event)](s"SELECT ord,$eventE FROM event WHERE project_id=?")
 
     private final val sqlSelectAllEventHashes =
-      Query[ProjectId, (EventOrd, HashRec)](s"SELECT ord,$eventHR FROM event_hash WHERE project_id=?")
+      Query[ProjectId, (EventOrd, HashRecRow)](s"SELECT ord,$sqlHashRecRow FROM event_hash WHERE project_id=?")
 
-    private final class TmpForGetAllProjectEvents(val e: Event) { var hrs = HashRec.emptyCollection }
+    private final class TmpForGetAllProjectEvents(val e: Event) {
+      private val recsByScheme =
+        Array.fill(HashSchemes.schemes.length)(Map.empty: HashRecsForScheme)
+
+      def add(r: HashRecRow): Unit = {
+        val i = r._3.id.index
+        assert(r._2 ==* LogicVer.SoleInstance)
+        val n = recsByScheme(i).updated(r._1, r._4)
+        recsByScheme.update(i, n)
+      }
+
+      def result(): HashRecs = {
+        var hashRecs = HashRecs.empty
+        var i = recsByScheme.length
+        while (i > 0) {
+          i -= 1
+          val r = recsByScheme(i)
+          if (r.nonEmpty) {
+            val id = HashSchemeId(index = i)
+            hashRecs = hashRecs.updated(HashSchemes.unsafeGet(id), r)
+          }
+        }
+        hashRecs
+      }
+    }
 
     /** @return Events in order from lowest to highest ord. */
     override final def getAllProjectEvents(p: ProjectId): ConnectionIO[ProjectEvents] = {
@@ -371,12 +402,12 @@ object DbInterpreter {
         // time = O(e + h.H)
         val map = collection.mutable.HashMap.empty[EventOrd, TmpForGetAllProjectEvents]
         for (t <- events) map.put(t._1, new TmpForGetAllProjectEvents(t._2))
-        for (t <- hashes) map(t._1).hrs += t._2
+        for (t <- hashes) map(t._1).add(t._2)
 
         // time = O(e log e)
         val result = SortedMap.newBuilder[EventOrd, VerifiedEvent]
         for ((ord, tmp) <- map)
-          result += ((ord, VerifiedEvent(tmp.e, tmp.hrs)))
+          result += ((ord, VerifiedEvent(tmp.e, tmp.result())))
         result.result()
 
         // TODO Improve getAllProjectEvents. Currently server time = O(e.log(e) + e + h.H)

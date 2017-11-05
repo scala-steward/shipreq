@@ -26,6 +26,7 @@ package object hash {
 
   type HashRecsForScheme = EvoHashModule.ScopeMap[HashScope, Option[Int]]
   type HashRecs          = ProjectHashModule.HashRecs
+  val  HashRecs          = ProjectHashModule.HashRecs
   type HashScheme        = ProjectHashModule.Scheme
   val  HashSchemes       = ProjectHashModule.schemeRegistry
 }

@@ -16,7 +16,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.hash.HashRec
+import shipreq.webapp.base.hash._
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.base.user._
@@ -233,7 +233,7 @@ object DbTest extends TestSuite {
 
         val ordCounter = new AtomicInteger()
 
-        val prop = Prop.equal[(ActiveEvent, HashRec.Collection)]("load . save = id")(
+        val prop = Prop.equal[(ActiveEvent, HashRecs)]("load . save = id")(
           i => TestDb().runNow { xa =>
             val dbu = DbUtil(xa)
             val projectId = dbu.newProjectId()

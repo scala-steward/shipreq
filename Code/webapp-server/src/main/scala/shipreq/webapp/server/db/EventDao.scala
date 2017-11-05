@@ -9,7 +9,7 @@ import scalaz.Isomorphism.<=>
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.hash2._
+import shipreq.webapp.base.hash._
 import ApplyEvent.LogicVer
 import TaggedTypes.JsonStr
 
@@ -922,43 +922,38 @@ object EventSqlHelpers {
     doobieMetaCaseClass[EventOrd]
 
   implicit val doobieMetaHashScheme: Meta[HashScheme] =
-    doobieMetaChar.xmap(HashScheme unsafeGet HashSchemeId(_), _.id.value)
+    doobieMetaChar.xmap(HashSchemes unsafeGet HashSchemeId.fromChar(_), _.id.asChar)
 
   private val (hashScopeToChar, charToHashScope, _, _) =
     AdtMacros.adtIso[HashScope, Char] {
-      case HashScope.WholeProject    => '*'
-      case HashScope.Config          => '?'
       case HashScope.CfgIssueTypes   => 'I'
       case HashScope.CfgReqTypes     => 'R'
       case HashScope.CfgFields       => 'F'
       case HashScope.CfgTags         => 'T'
-      case HashScope.Content         => '!'
-      case HashScope.Reqs            => 'r'
+      case HashScope.DeletionReasons => 'd'
       case HashScope.GenericReqs     => 'g'
-      case HashScope.UseCases        => 'u'
+      case HashScope.ImplicationData => 'i'
+      case HashScope.ProjectName     => 'n'
       case HashScope.PubidRegister   => 'p'
       case HashScope.ReqCodes        => 'c'
-      case HashScope.TextFieldData   => 'x'
+      case HashScope.SavedViews      => 'v'
       case HashScope.TagData         => 't'
-      case HashScope.ImplicationData => 'i'
-      case HashScope.DeletionReasons => 'd'
-      case HashScope.Other           => '0'
+      case HashScope.TextFieldData   => 'x'
+      case HashScope.UseCases        => 'u'
     }
+
   implicit val doobieMetaHashScope: Meta[HashScope] =
     doobieMetaChar.xmap(charToHashScope, hashScopeToChar)
 
   implicit val doobieMetaLogicVer: Meta[LogicVer] =
-    doobieMetaChar.xmap(LogicVer.apply, _.value)
+    doobieMetaChar.xmap(c => {
+      assert(c ==* LogicVer.SoleInstance.value)
+      LogicVer.SoleInstance
+    }, _.value)
 
-  final val eventHR = "scope,logic_ver,hash_scheme,hash"
-  final val eventHR_? = "?,?,?,?"
-  implicit val doobieCompositeHashRec: Composite[HashRec] =
-    Composite[(HashScope, LogicVer, HashScheme, Option[Int])].xmap[HashRec](
-      db => {
-        assert(db._2 ==* LogicVer.SoleInstance)
-        HashRec(db._3, db._1)(db._4)
-      },
-      hr => (hr.scope, hr.logicVer, hr.scheme, hr.hash))
+  type HashRecRow = (HashScope, LogicVer, HashScheme, Option[Int])
+  final val sqlHashRecRow = "scope,logic_ver,hash_scheme,hash"
+  final val sqlHashRecRow_? = "?,?,?,?"
 
   private type MsgJson = JsonStr[Any]
   private implicit val doobieMetaMsgJson: Meta[MsgJson] = jsonStr

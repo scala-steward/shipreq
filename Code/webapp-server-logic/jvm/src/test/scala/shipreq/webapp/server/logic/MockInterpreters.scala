@@ -13,7 +13,7 @@ import shipreq.taskman.api.{Msg, MsgId, MsgStatus, TaskmanApi}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.user._
-import shipreq.webapp.base.hash.HashRec
+import shipreq.webapp.base.hash.HashRecs
 import shipreq.webapp.base.protocol.{ServerSideProc, ServerSideProcId}
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.server.ServerConfig
@@ -242,7 +242,7 @@ final class MockDb(now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecur
     projects.need(id).projectLoad
   }
 
-  private def _saveProjectEvent(id: ProjectId)(ord: EventOrd, e: ActiveEvent, hrs: HashRec.Collection) = Name[Option[Throwable]] {
+  private def _saveProjectEvent(id: ProjectId)(ord: EventOrd, e: ActiveEvent, hrs: HashRecs) = Name[Option[Throwable]] {
     val entry = projects.need(id)
     def update(events: VerifiedEvent.Seq): Unit =
       projects = projects + entry.copy(events = events, lastUpdatedAt = Some(Instant.now()))
