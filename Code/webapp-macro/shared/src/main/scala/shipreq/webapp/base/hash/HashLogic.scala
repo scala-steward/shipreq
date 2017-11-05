@@ -58,16 +58,17 @@ object HashLogic {
             }
 
             else if (curSRs.keySet ==* nextSRs.keySet) {
-              val hrs: HashRecs =
-                curSRs.map { case (scheme, curRs) =>
-                  val nextRs = nextSRs(scheme)
-                  var nextHashes = nextRs
-                  curRs.foreach { case (s, h) =>
-                    if (!nextRs.contains(s))
-                      nextHashes = nextHashes.updated(s, h)
-                  }
-                  scheme -> nextHashes
+              var hrs: HashRecs = UnivEq.emptyMap
+              curSRs.foreach { case (scheme, curRs) =>
+                val nextRs = nextSRs(scheme)
+                var nextHashes = nextRs
+                curRs.foreach { case (s, h) =>
+                  if (!nextRs.contains(s))
+                    nextHashes = nextHashes.updated(s, h)
                 }
+                if (nextHashes.nonEmpty)
+                  hrs = hrs.updated(scheme, nextHashes)
+              }
               Batch(b :: nextBs, hrs) :: nextResults
             }
 

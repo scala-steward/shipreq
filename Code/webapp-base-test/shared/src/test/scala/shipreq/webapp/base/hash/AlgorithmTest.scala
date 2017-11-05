@@ -11,15 +11,45 @@ import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.protocol.BinCodecMemberData._
+import japgolly.univeq.UnivEq
 
-object HashTest extends TestSuite {
+import utest._
 
-  implicit val settings = DefaultSettings.propSettings
-    .setSampleSize(80 `JVM|JS` 40).setGenSize(20)
-//    .setDebug
+object AlgorithmTest extends TestSuite {
 
-  // ===================================================================================================================
-  // Hash algorithms
+  case class AlgorithmResults(booleanT     : Int,
+                              booleanF     : Int,
+                              int          : Int,
+                              long         : Int,
+                              string       : Int,
+                              pair         : Int,
+                              map          : Int,
+                              set          : Int,
+                              list         : Int,
+                              vector       : Int,
+                              hashUnordered: Int,
+                              joinHashes   : Int)
+
+  object AlgorithmResults {
+    implicit def equality: UnivEq[AlgorithmResults] = UnivEq.derive
+
+    def calc(a: Hash.Algorithm) = {
+      import a._
+      AlgorithmResults(
+        booleanT      = a.hashBoolean                      apply true,
+        booleanF      = a.hashBoolean                      apply false,
+        int           = a.hashInt                          apply 1000,
+        long          = a.hashLong                         apply 3000000000L,
+        string        = a.hashString                       apply "stringy",
+        pair          = a.hashPair      [Int, String]      apply ((3, "omg")),
+        map           = a.hashMap       [Int, String]      apply Map(3 -> "yay", 4 -> "no"),
+        set           = a.hashSet       [String]           apply Set("more", "on"),
+        list          = a.hashList      [String]           apply List("\u2048", "hehe\nno!"),
+        vector        = a.hashVector    [String]           apply Vector("\u00f2", "\n? w"),
+        hashUnordered = a.hashUnordered [Iterable, String] apply Map(3 -> "yay", 4 -> "no").values,
+        joinHashes    = a joinHashes                             List(1,2,4))
+    }
+  }
 
   val nv = (0 to 10 by 2).toVector
   val ef = nv.map(_.toString)
@@ -81,52 +111,11 @@ object HashTest extends TestSuite {
   def testAlgo(a: Hash.Algorithm, expect: AlgorithmResults): Unit =
     algorithmProp(expect).assert(a)
 
-  val murmur3 = AlgorithmResults(1231,1237,-3506311,528568105,1842429670,607967924,438654265,-1390910323,586134407,2075563892,-1936667874,-1122530123)
-
-  // ===================================================================================================================
-  // Data hashing
-
-  /*
-  case class DataHashTest[A: HashFn : Pickler](a1: A, a2: A, a3: A) {
-    val E = EvalOver(this)
-
-    val h1 = Hash(a1)
-    val h2 = Hash(a2)
-    val h3 = Hash(a3)
-
-    def consistent(h: Int, a: A) = {
-      val bb = PickleImpl.intoBytes(a)
-      val a2 = UnpickleImpl[A].fromBytes(bb)
-      E.equal("consistent: hash(a) = hash(deser(ser(a)))", h, Hash(a2))
-    }
-
-    def allConsistent =
-      consistent(h1, a1) ∧ consistent(h2, a2) ∧ consistent(h3, a3)
-
-    def hashesDiffer =
-      E.test("Hashes must differ", Set(h1, h2, h3).size >= 2)
-
-    def main =
-      allConsistent ∧ hashesDiffer
-  }
-
-  def dataHashTest[A] = Prop.eval[DataHashTest[A]](_.main)
-
-  def testData[A: HashFn : Pickler](g: Gen[A]): Unit = {
-    val t = for {a <- g; b <- g; c <- g} yield DataHashTest(a, b, c)
-    dataHashTest[A] mustBeSatisfiedBy t
-  }
-  */
-
-  // ===================================================================================================================
   override def tests = TestSuite {
-    'algorithms {
-      'murmur3 - testAlgo(MurmurHash3, murmur3)
-    }
-//    'data {
-//      Should we redo this by HashScope? It seems to be pretty low value
-//      //implicit val h = Hash.fn[Project](HashScheme.latest.hasher(HashScope.WholeProject, _))
-//      'project - testData(RandomData.project)
-//    }
+
+    'murmur3 - testAlgo(
+      MurmurHash3,
+      AlgorithmResults(1231,1237,-3506311,528568105,1842429670,607967924,438654265,-1390910323,586134407,2075563892,-1936667874,-1122530123))
+
   }
 }

@@ -14,7 +14,7 @@ import WebappTestUtil._
  *
  * If this is (correctly) breaking due to a data structure change, follow the instructions in [[HashScheme]].
  */
-object HashSchemeTest extends TestSuite {
+object HashSchemeStabilityTest extends TestSuite {
 
   lazy val Vector(h1) = HashSchemes.schemes.whole
 

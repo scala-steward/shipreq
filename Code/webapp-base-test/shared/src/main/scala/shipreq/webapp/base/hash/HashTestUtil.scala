@@ -98,7 +98,7 @@ object HashTestUtil {
       for {
         ss <- Gen.chooseGen(Gen.subset(schemes.schemes.whole).map(_.toList), Gen.pure(schemes.latest :: Nil))
         rs <- Gen.traverse(ss)(genRecsByScheme)
-      } yield rs.toMap
+      } yield rs.filter(_._2.nonEmpty).toMap
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
