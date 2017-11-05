@@ -1,7 +1,10 @@
 package shipreq.webapp.base.hash
 
 import utest._
-import shipreq.webapp.base.data.Project
+import shipreq.webapp.base.data.{HideDead, Project, ShowDead}
+import shipreq.webapp.base.data.reqtable._
+import shipreq.webapp.base.event._
+import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.test._
 import WebappTestUtil._
 
@@ -19,8 +22,24 @@ object HashSchemeStabilityTest extends TestSuite {
   lazy val Vector(h1) = HashSchemes.schemes.whole
 
   val PE = Project.empty.copy(name = "Empty")
-  lazy val P3 = SampleProject3.project
-  lazy val P4 = SampleProject4.project
+
+  lazy val P3 = applyEventSuccessfully(SampleProject3.project,
+    SavedViewCreate(
+      SavedView.Id(1),
+      SavedView.Name("Blah"),
+      Column.builtInValues,
+      SortCriteria.byPubidOnly,
+      HideDead,
+      Some(Filter.Valid.text("great"))))
+
+  lazy val P4 = applyEventSuccessfully(SampleProject4.project,
+    SavedViewCreate(
+      SavedView.Id(2),
+      SavedView.Name("Blah4"),
+      Column.builtInValues.reverse,
+      SortCriteria.byPubidOnly.want(Column.Title),
+      ShowDead,
+      Some(Filter.Valid.anyOf(Filter.Valid.regex("a-z"), Filter.Valid.not(Filter.Valid.text("qwe"))))))
 
   def makeSet(m: Map[HashScope, Int]) =
     HashScope.all.iterator
@@ -83,7 +102,7 @@ object HashSchemeStabilityTest extends TestSuite {
         0x3ae9403b ~ ProjectName,
         0x084cb8cc ~ PubidRegister,
         0x6f1d8f9b ~ ReqCodes,
-        0x17e3e911 ~ SavedViews,
+        0xd5070a49 ~ SavedViews,
         0x174ee061 ~ TagData,
         0xc32727ce ~ TextFieldData, // Note: same as empty, P3 doesn't use
         0x43b92d0f ~ UseCases,      // Note: same as empty, P3 doesn't use
@@ -100,13 +119,12 @@ object HashSchemeStabilityTest extends TestSuite {
         0x537726aa ~ ProjectName,
         0x719d13b1 ~ PubidRegister,
         0x6f1d8f9b ~ ReqCodes,
-        0x17e3e911 ~ SavedViews,
+        0x22a50bab ~ SavedViews,
         0x174ee061 ~ TagData,
         0xcef27507 ~ TextFieldData,
         0x73fb17ff ~ UseCases,
       )
 
-      // TODO Add SampleProject and hash tests that cover SavedViews
     }
   }
 }
