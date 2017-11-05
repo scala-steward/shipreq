@@ -1,4 +1,4 @@
-package shipreq.webapp.base.hash
+package shipreq.webapp.base.feature.hash
 
 import japgolly.univeq.UnivEq
 

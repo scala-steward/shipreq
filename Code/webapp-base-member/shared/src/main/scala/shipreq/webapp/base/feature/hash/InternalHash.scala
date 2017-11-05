@@ -1,4 +1,4 @@
-package shipreq.webapp.base.hash
+package shipreq.webapp.base.feature.hash
 
 /**
  * Hash just using values' internal hash codes.

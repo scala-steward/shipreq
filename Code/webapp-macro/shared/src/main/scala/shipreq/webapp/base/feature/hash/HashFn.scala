@@ -1,4 +1,4 @@
-package shipreq.webapp.base.hash
+package shipreq.webapp.base.feature.hash
 
 /**
  * Provides a 32-bit hash of a value inhabiting an invariant type.
@@ -20,14 +20,16 @@ object HashFn {
   def apply[@specialized(Int, Long, Char, Boolean) A](f: A => Int): HashFn[A] =
     new HashFn(f)
 
-  @inline def by[@specialized(Int, Long, Char, Boolean) A, @specialized(Int, Long, Char, Boolean) B](f: A => B)(implicit h: HashFn[B]): HashFn[A] =
+  @inline def by[@specialized(Int, Long, Char, Boolean) A,
+                 @specialized(Int, Long, Char, Boolean) B](f: A => B)(implicit h: HashFn[B]): HashFn[A] =
     h contramap f
 
   @inline def const[@specialized(Int, Long, Char, Boolean) A](hash: Int): HashFn[A] =
     apply[A](_ => hash)
 
-  def constByHashing[@specialized(Int, Long, Char, Boolean) A: HashFn, @specialized(Int, Long, Char, Boolean) B](a: A): HashFn[B] =
-    const[B](Hash(a))
+  def constByHashing[@specialized(Int, Long, Char, Boolean) A,
+                     @specialized(Int, Long, Char, Boolean) B](a: A)(implicit h: HashFn[A]): HashFn[B] =
+    const[B](h.hashFn(a))
 
   def lazily[@specialized(Int, Long, Char, Boolean) A](hash: => HashFn[A]): HashFn[A] = {
     lazy val h = hash

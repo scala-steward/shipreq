@@ -9,6 +9,7 @@ import shipreq.base.util.Valid
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{DataProp, Project}
 import shipreq.webapp.base.hash._
+import shipreq.webapp.base.feature.hash.HashLogic
 import ApplyEventLib._, SE.SE
 import ApplyEvent.{Events, Result, eventBatcher}
 

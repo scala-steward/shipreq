@@ -3,6 +3,7 @@ package shipreq.webapp.base.hash
 import japgolly.microlibs.nonempty._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.feature.hash._
 import shipreq.webapp.base.filter.{Filter, FilterAst, IntensionalReqSet}
 import shipreq.webapp.base.filter.Filter.Implicits._
 import shipreq.webapp.base.text.AtomTC

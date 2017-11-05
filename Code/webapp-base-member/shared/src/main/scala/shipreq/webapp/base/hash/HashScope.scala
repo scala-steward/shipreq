@@ -3,6 +3,7 @@ package shipreq.webapp.base.hash
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.univeq.UnivEq
 import shipreq.webapp.base.data.Project
+import shipreq.webapp.base.feature.hash.HashFn
 
 sealed abstract class HashScope
 
