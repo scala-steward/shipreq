@@ -4,7 +4,7 @@ import scalaz.{-\/, \/-}
 import shipreq.base.util.PotentialChange
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.hash.HashRec
+import shipreq.webapp.base.hash.HashSchemes
 import PotentialChange._
 
 object ApplyNewEvent {
@@ -16,7 +16,7 @@ object ApplyNewEvent {
   def apply(e: ActiveEvent, p1: Project): Result =
     ApplyEvent.untrusted.apply1(e)(p1) match {
       case \/-(p2) =>
-        val hrs = HashRec.changes(p1, p2)
+        val hrs = HashSchemes.latest.changes(p1, p2)
         if (hrs.isEmpty)
           Unchanged
         else {

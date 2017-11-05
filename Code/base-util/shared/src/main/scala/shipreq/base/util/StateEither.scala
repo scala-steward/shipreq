@@ -81,6 +81,10 @@ final class StateEither[S, E, +A](val run: S => Result[S, E, A]) extends AnyVal 
   def foldMapBind[AA >: A, B](bs: TraversableOnce[B])(f: B => AA => StateEither[S, E, AA]): StateEither[S, E, AA] =
     bs.foldLeft(this: StateEither[S, E, AA])(_ >>= f(_))
 
+  def improveFailure[E2, E3, B](onFailure: => StateEither[S, E2, B])
+                               (mergeResults: (E, E2 \/ (S, B)) => E3): StateEither[S, E3, A] =
+    StateEither(s1 => run(s1).leftMap(e => mergeResults(e, onFailure.run(s1).toDisj)))
+
   /** Alias for `map`. */
   @inline def |>[B](f: A => B): StateEither[S, E, B] =
     map(f)
@@ -194,9 +198,11 @@ object StateEither {
   // ===================================================================================================================
   sealed abstract class Result[+S, +E, +A] {
     def map     [B            ](f: A => B                   ): Result[S, E, B]
+    def leftMap [B            ](f: E => B                   ): Result[S, B, A]
     def flatMap [T>:S, F>:E, B](f: A => Result[T, F, B]     ): Result[T, F, B]
     def flatMap2[T>:S, F>:E, B](f: (S, A) => Result[T, F, B]): Result[T, F, B]
     def >>      [T>:S, F>:E, B](f: Result[T, F, B]          ): Result[T, F, B]
+    def toDisj                                               : E \/ (S, A)
 
     final def flatTap[T>:S, F>:E, B](f: A => Result[T, F, B]): Result[T, F, A] =
       for {a <- this; _ <- f(a)} yield a
@@ -214,16 +220,20 @@ object StateEither {
     type S = Nothing
     type A = Nothing
     override def map     [B            ](f: A => B                   ) = this
+    override def leftMap [B            ](f: E => B                   ) = Failure(f(failure))
     override def flatMap [T>:S, F>:E, B](f: A => Result[T, F, B]     ) = this
     override def flatMap2[T>:S, F>:E, B](f: (S, A) => Result[T, F, B]) = this
     override def >>      [T>:S, F>:E, B](f: Result[T, F, B]          ) = this
+    override def toDisj                                                = -\/(failure)
   }
 
   final case class Ok[+S, +A](state: S, value: A) extends Result[S, Nothing, A] {
     type E = Nothing
     override def map     [B            ](f: A => B                   ) = Ok(state, f(value))
+    override def leftMap [B            ](f: E => B                   ) = this
     override def flatMap [T>:S, F>:E, B](f: A => Result[T, F, B]     ) = f(value)
     override def flatMap2[T>:S, F>:E, B](f: (S, A) => Result[T, F, B]) = f(state, value)
     override def >>      [T>:S, F>:E, B](f: Result[T, F, B]          ) = f
+    override def toDisj                                                = \/-((state, value))
   }
 }

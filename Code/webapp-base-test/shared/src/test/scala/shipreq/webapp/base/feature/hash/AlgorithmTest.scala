@@ -1,4 +1,4 @@
-package shipreq.webapp.base.hash
+package shipreq.webapp.base.feature.hash
 
 import boopickle._
 import nyaya.gen.Gen
@@ -11,16 +11,45 @@ import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.protocol.BinCodecMemberData._
-import Hash.HashableValueOps
+import japgolly.univeq.UnivEq
 
-object HashTest extends TestSuite {
+import utest._
 
-  implicit val settings = DefaultSettings.propSettings
-    .setSampleSize(80 `JVM|JS` 40).setGenSize(20)
-//    .setDebug
+object AlgorithmTest extends TestSuite {
 
-  // ===================================================================================================================
-  // Hash algorithms
+  case class AlgorithmResults(booleanT     : Int,
+                              booleanF     : Int,
+                              int          : Int,
+                              long         : Int,
+                              string       : Int,
+                              pair         : Int,
+                              map          : Int,
+                              set          : Int,
+                              list         : Int,
+                              vector       : Int,
+                              hashUnordered: Int,
+                              joinHashes   : Int)
+
+  object AlgorithmResults {
+    implicit def equality: UnivEq[AlgorithmResults] = UnivEq.derive
+
+    def calc(a: Hash.Algorithm) = {
+      import a._
+      AlgorithmResults(
+        booleanT      = a.hashBoolean                      apply true,
+        booleanF      = a.hashBoolean                      apply false,
+        int           = a.hashInt                          apply 1000,
+        long          = a.hashLong                         apply 3000000000L,
+        string        = a.hashString                       apply "stringy",
+        pair          = a.hashPair      [Int, String]      apply ((3, "omg")),
+        map           = a.hashMap       [Int, String]      apply Map(3 -> "yay", 4 -> "no"),
+        set           = a.hashSet       [String]           apply Set("more", "on"),
+        list          = a.hashList      [String]           apply List("\u2048", "hehe\nno!"),
+        vector        = a.hashVector    [String]           apply Vector("\u00f2", "\n? w"),
+        hashUnordered = a.hashUnordered [Iterable, String] apply Map(3 -> "yay", 4 -> "no").values,
+        joinHashes    = a joinHashes                             List(1,2,4))
+    }
+  }
 
   val nv = (0 to 10 by 2).toVector
   val ef = nv.map(_.toString)
@@ -43,19 +72,19 @@ object HashTest extends TestSuite {
     def unorderedHashIgnoresOrder = Prop.atom[A]("unorderedHash ignores order", a => {
       import a.hashString
       val h = a.hashUnordered[Vector, String]
-      val hs = vs.map(h.hash).toSet
+      val hs = vs.map(h.hashFn).toSet
       if (hs.size == 1)
         None
       else
         Some(s"${hs.size} distinct hashes returned.")
     })
 
-    def noCollisions[B](name: String, f: A => Hash[B])(b1: B, b2: B, bn: B*): Prop[A] =
+    def noCollisions[B](name: String, f: A => HashFn[B])(b1: B, b2: B, bn: B*): Prop[A] =
       Prop.atom[A](s"hashValuesDiffer: $name", a => {
         val bs = bn.toVector :+ b1 :+ b2
         val h  = f(a)
         var hs = Set.empty[Int]
-        bs foreach (hs += h hash _)
+        bs foreach (hs += h(_))
         val c = bs.size - hs.size
         if (c == 0)
           None
@@ -82,49 +111,11 @@ object HashTest extends TestSuite {
   def testAlgo(a: Hash.Algorithm, expect: AlgorithmResults): Unit =
     algorithmProp(expect).assert(a)
 
-  val murmur3 = AlgorithmResults(1231,1237,-3506311,528568105,1842429670,607967924,438654265,-1390910323,586134407,2075563892,-1936667874,-1122530123)
-
-  // ===================================================================================================================
-  // Data hashing
-
-  case class DataHashTest[A: Hash : Pickler](a1: A, a2: A, a3: A) {
-    val E = EvalOver(this)
-
-    val h1 = a1.hash
-    val h2 = a2.hash
-    val h3 = a3.hash
-
-    def consistent(h: Int, a: A) = {
-      val bb = PickleImpl.intoBytes(a)
-      val a2 = UnpickleImpl[A].fromBytes(bb)
-      E.equal("consistent: hash(a) = hash(deser(ser(a)))", h, a2.hash)
-    }
-
-    def allConsistent =
-      consistent(h1, a1) ∧ consistent(h2, a2) ∧ consistent(h3, a3)
-
-    def hashesDiffer =
-      E.test("Hashes must differ", Set(h1, h2, h3).size >= 2)
-
-    def main =
-      allConsistent ∧ hashesDiffer
-  }
-
-  def dataHashTest[A] = Prop.eval[DataHashTest[A]](_.main)
-
-  def testData[A: Hash : Pickler](g: Gen[A]): Unit = {
-    val t = for {a <- g; b <- g; c <- g} yield DataHashTest(a, b, c)
-    dataHashTest[A] mustBeSatisfiedBy t
-  }
-
-  // ===================================================================================================================
   override def tests = TestSuite {
-    'algorithms {
-      'murmur3 - testAlgo(MurmurHash3, murmur3)
-    }
-    'data {
-      implicit val h = Hash.fn[Project](HashScheme.latest.hasher(HashScope.WholeProject, _))
-      'project - testData(RandomData.project)
-    }
+
+    'murmur3 - testAlgo(
+      MurmurHash3,
+      AlgorithmResults(1231,1237,-3506311,528568105,1842429670,607967924,438654265,-1390910323,586134407,2075563892,-1936667874,-1122530123))
+
   }
 }
