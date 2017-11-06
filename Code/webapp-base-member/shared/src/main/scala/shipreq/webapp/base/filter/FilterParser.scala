@@ -41,13 +41,13 @@ object FilterParser {
 
   // Allows ' / -
   val simpleTextChar =
-    CharPredicate("""#:"`(){}""".toCharArray).negated -- Whitespace -- EOI
+    CharPredicate("""#:"`()|""".toCharArray).negated -- Whitespace -- EOI
 
   val attrChar =
     CharPredicate.AlphaNum
 
   private val endGap =
-    CharPredicate("""#(){}""".toCharArray) ++ Whitespace ++ EOI
+    CharPredicate("""#()|""".toCharArray) ++ Whitespace ++ EOI
 
   private val mkIntSet1: Int => NonEmptySet[Int] =
     NonEmptySet.one[Int]
@@ -79,12 +79,12 @@ object FilterParser {
   private val mkClause: (Potential, Seq[Potential]) => NonEmptyVector[Potential] =
     (h, t) => NonEmptyVector(h, t: _*)
 
-  private val mkMain: Option[NonEmptyVector[Potential]] => Option[Potential] =
-    _.map(nev =>
+  private val mkImplicitAllOf: NonEmptyVector[Potential] => Potential =
+    nev =>
       if (nev.tail.isEmpty)
         nev.head
       else
-        Fix(AllOf(nev)))
+        Fix(AllOf(nev))
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -124,60 +124,74 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
   private val quote2 = QuoteRule('\'')
   private val quote3 = QuoteRule('`')
 
-  def quotedText: Rule1[Potential] =
+  private def quotedText: Rule1[Potential] =
     rule((quote1.toRule | quote2.toRule | quote3.toRule) ~ end)
 
-  def simpleText: Rule1[Potential] =
+  private def simpleText: Rule1[Potential] =
     rule(capture(simpleTextChar.+) ~ end ~> ((s: String) => Potential.text(s: String)))
 
-  def regexChar: Rule0 =
+  private def regexChar: Rule0 =
     rule(!'/' ~ '\\'.? ~ ANY)
 
-  def regex: Rule1[Potential] =
+  private def regex: Rule1[Potential] =
     rule('/' ~!~ capture(regexChar.+) ~!~ '/' ~!~ end ~> ((s: String) => Potential.regex(s.replace("\\/", "/"))))
 
-  def hashRef: Rule1[Potential] =
+  private def hashRef: Rule1[Potential] =
     rule(hashRefStr_! ~ end ~> ((s: String) => Potential.hashRef(data.HashRefKey(s))))
 
-  def reqs: Rule1[Potential] =
+  private def reqs: Rule1[Potential] =
     rule(reqTypeMnemonicCS ~ '-'.? ~ numberOrRange ~ end ~> mkReqs)
 
-  def reqType: Rule1[Potential] =
+  private def reqType: Rule1[Potential] =
     rule(reqTypeMnemonicCS ~ end ~> ((i: Mnemonic) => Potential.reqType(i)))
 
-  def attr: Rule1[String] =
+  private def attr: Rule1[String] =
     rule(capture(attrChar.+) ~ end)
 
-  def presence: Rule1[Potential] =
+  private def presence: Rule1[Potential] =
     rule("has:" ~!~ attr ~> ((i: String) => Potential.presence(i)))
 
-  def lack: Rule1[Potential] =
+  private def lack: Rule1[Potential] =
     rule("no:" ~!~ attr ~> ((i: String) => Potential.lack(i)))
 
   /** implies:MF or impliedBy:FR,CC-1 */
-  def implication: Rule1[Potential] =
+  private def implication: Rule1[Potential] =
     rule("implie" ~ (
       ('s' ~ push(mkImplies)) | ("dBy" ~ push(mkImpliedBy))
       ) ~ ':' ~!~ reqSpecs ~ end ~> mkImplication)
 
-  def positive: Rule1[Potential] =
-    rule(allOf | anyOf | quotedText | regex | hashRef | presence | lack | implication | reqs | reqType | simpleText)
+  private def positive: Rule1[Potential] =
+    rule(anyOf | allOf | quotedText | regex | hashRef | presence | lack | implication | reqs | reqType | simpleText)
 
-  def negative: Rule1[Potential] =
+  private def negative: Rule1[Potential] =
     rule('-' ~!~ (('-' ~!~ expr) | (expr ~> ((f: Potential) => Potential.not(f)))))
 
-  def expr: Rule1[Potential] =
+  private def expr: Rule1[Potential] =
     rule(negative | positive)
 
-  def clause: Rule1[NonEmptyVector[Potential]] =
+  private def clause: Rule1[NonEmptyVector[Potential]] =
     rule(OWS ~ expr ~ zeroOrMore(OWS ~ expr) ~ OWS ~> mkClause)
 
-  def allOf: Rule1[Potential] =
+  /** `( a b c )` */
+  private def allOf: Rule1[Potential] =
     rule('(' ~!~ clause ~ ')' ~> ((f: NonEmptyVector[Potential]) => Potential(AllOf(f))))
 
-  def anyOf: Rule1[Potential] =
-    rule('{' ~!~ clause ~ '}' ~> ((f: NonEmptyVector[Potential]) => Potential(AnyOf(f))))
+  /** `a b c` - no parens */
+  private def allOfImplicit: Rule1[Potential] =
+    rule(clause ~> mkImplicitAllOf)
+
+  /** `( a | b | c )` */
+  private def anyOf: Rule1[Potential] =
+    rule('(' ~ anyOfImplicit ~ ')')
+
+  /** `a | b | c` - no parens */
+  private def anyOfImplicit: Rule1[Potential] =
+    rule(allOfImplicit ~ oneOrMore('|' ~!~ allOfImplicit)
+      ~ popSeqToNEV[Potential] ~> ((a: Potential, b: NonEmptyVector[Potential]) => Potential(AnyOf(a, b))))
+
+  private def mainNonEmpty: Rule1[Potential] =
+    rule(anyOfImplicit | (clause ~> mkImplicitAllOf))
 
   def main: Rule1[Option[Potential]] =
-    rule(OWS ~ clause.? ~ EOI ~> mkMain)
+    rule(mainNonEmpty.? ~ EOI)
 }

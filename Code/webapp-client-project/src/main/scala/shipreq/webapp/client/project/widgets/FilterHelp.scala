@@ -116,13 +116,15 @@ object FilterHelp {
 
       Example(
         "You can also combine multiple filters so that if ", <.em("any"), " match, the whole filter matches.", <.br,
-        "To do so, wrap the filters in braces ", code("{…}"), ".", <.br,
-        "For example, ", code("{#v1.0 #v1.1}"), " will match:",
+        "To do so, separate the filters by pipes ", code("|"), ".", <.br,
+        "For example, ", code("#v1.0 | #v1.1"), " will match:",
         <.ul(
           <.li("requirements tagged with v1.0"),
           <.li("requirements tagged with v1.1"),
-          <.li("requirements tagged with v1.0 and v1.1"))
-      )("{MF FR}", "{has:issues #bug}")),
+          <.li("requirements tagged with v1.0 and v1.1")),
+          "Like above, you can also wrap them in parenthesis ", code("(…)"),
+          " and treat it as a single filter (which allows you to do things like negate the whole thing).",
+      )("MF | FR | UC", "has:issues | #bug", "(#v1.0 | #v1.1)")),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     Group("Examples")(
@@ -135,5 +137,5 @@ object FilterHelp {
           <.li("do not have both ", code("#business_ok"), " and ", code("#ops_ok"), " tags")),
         "In more natural language:", <.br,
         <.em("all functional requirements and use cases released without business and/or ops acceptance.")
-      )("#released {FR UC} -(#business_ok #ops_ok)"))))
+      )("#released (FR | UC) -(#business_ok #ops_ok)"))))
 }

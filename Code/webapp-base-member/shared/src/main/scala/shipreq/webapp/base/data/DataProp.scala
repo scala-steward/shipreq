@@ -611,7 +611,7 @@ object DataProp {
         case FilterAst.HashRef       (-\/(issue))    => Refs.empty addCustomIssueTypeId issue
         case FilterAst.HashRef       (\/-(tag))      => Refs.empty addTagId tag
         case FilterAst.AllOf         (fs)            => fs.reduce(_ ++ _)
-        case FilterAst.AnyOf         (fs)            => fs.reduce(_ ++ _)
+        case FilterAst.AnyOf         (f, fs)         => f ++ fs.reduce(_ ++ _)
         case FilterAst.Not           (f)             => f
         case _: FilterAst.Text
            | _: FilterAst.Regex

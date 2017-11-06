@@ -1569,7 +1569,7 @@ object RandomData {
             var gens: NonEmptyVector[Gen[PotentialF[Int]]] = flatGens
             gens :+= Gen.pure(FilterAst.Not(next))
             gens :+= genNEV.map(FilterAst.AllOf(_))
-            gens :+= genNEV.map(FilterAst.AnyOf(_))
+            gens :+= genNEV.map(FilterAst.AnyOf(next, _))
             Gen.chooseGenNE(flatGens)
           }
         }
@@ -1639,7 +1639,7 @@ object RandomData {
             var gens: NonEmptyVector[Gen[ValidF[Int]]] = flatGens
             gens :+= Gen.pure(FilterAst.Not(next))
             gens :+= genNEV.map(FilterAst.AllOf(_))
-            gens :+= genNEV.map(FilterAst.AnyOf(_))
+            gens :+= genNEV.map(FilterAst.AnyOf(next, _))
             Gen.chooseGenNE(flatGens)
           }
       }

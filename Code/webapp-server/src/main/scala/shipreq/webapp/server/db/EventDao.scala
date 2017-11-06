@@ -581,7 +581,7 @@ object EventDbCodecs {
       implicit val pickleValidImpliesAnyOf  : ReadWriter[FilterAst.ImpliesAnyOf  [Valid.ReqSet] ] = caseClass1
       implicit val pickleValidImpliedByAnyOf: ReadWriter[FilterAst.ImpliedByAnyOf[Valid.ReqSet] ] = caseClass1
       implicit val pickleValidAllOf         : ReadWriter[FilterAst.AllOf         [Js.Value]     ] = caseClass1
-      implicit val pickleValidAnyOf         : ReadWriter[FilterAst.AnyOf         [Js.Value]     ] = caseClass1
+      implicit val pickleValidAnyOf         : ReadWriter[FilterAst.AnyOf         [Js.Value]     ] = pickleNonEmptyVectorJs.xmap(x => FilterAst.AnyOf(x.head, NonEmptyVector force x.tail))(x => x.head +: x.tail)
       implicit val pickleValidNot           : ReadWriter[FilterAst.Not           [Js.Value]     ] = caseClass1
       implicit val pickleValidF             : ReadWriter[ValidF                  [Js.Value]     ] = pickleAdtOS {
         case _: Text                          => "x"

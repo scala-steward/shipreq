@@ -176,7 +176,7 @@ object ProjectHasher {
     implicit val hashValidImpliesAnyOf  : HashFn[FilterAst.ImpliesAnyOf  [Valid.ReqSet] ] = hashCaseClass
     implicit val hashValidImpliedByAnyOf: HashFn[FilterAst.ImpliedByAnyOf[Valid.ReqSet] ] = hashCaseClass
     implicit val hashValidAllOf         : HashFn[FilterAst.AllOf         [Int]          ] = hashCaseClass
-    implicit val hashValidAnyOf         : HashFn[FilterAst.AnyOf         [Int]          ] = hashCaseClass
+    implicit val hashValidAnyOf         : HashFn[FilterAst.AnyOf         [Int]          ] = HashFn.by(x => x.head +: x.tail)
     implicit val hashValidNot           : HashFn[FilterAst.Not           [Int]          ] = hashCaseClass
              val hashValidInt           : HashFn[ValidF                  [Int]          ] = hashADT
     hashFix(hashValidInt.hashFn)

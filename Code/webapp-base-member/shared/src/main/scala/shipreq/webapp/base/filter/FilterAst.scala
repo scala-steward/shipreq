@@ -20,7 +20,7 @@ object FilterAst {
   final case class ReqType       [A](reqType: A)                            extends FilterAst[Nothing, Nothing, Nothing, A      , Nothing]
   final case class Not           [A](clause: A)                             extends FilterAst[Nothing, Nothing, Nothing, Nothing, A      ]
   final case class AllOf         [A](clauses: NonEmptyVector[A])            extends FilterAst[Nothing, Nothing, Nothing, Nothing, A      ]
-  final case class AnyOf         [A](clauses: NonEmptyVector[A])            extends FilterAst[Nothing, Nothing, Nothing, Nothing, A      ]
+  final case class AnyOf         [A](head: A, tail: NonEmptyVector[A])      extends FilterAst[Nothing, Nothing, Nothing, Nothing, A      ]
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -74,7 +74,7 @@ object FilterAst {
         case c: ReqType       [RT]      => c
         case c: Not           [A]       => Not  (f(c.clause))
         case c: AllOf         [A]       => AllOf(c.clauses map f)
-        case c: AnyOf         [A]       => AnyOf(c.clauses map f)
+        case c: AnyOf         [A]       => AnyOf(f(c.head), c.tail map f)
       }
 
       override def traverseImpl[G[_], A, B](fa: F[A])(f: A => G[B])(implicit G: Applicative[G]): G[F[B]] = fa match {
@@ -89,7 +89,7 @@ object FilterAst {
         case c: ReqType       [RT]      => G pure c
         case c: Not           [A]       => G.map(f(c.clause))(Not(_))
         case c: AllOf         [A]       => G.map(Traverse1[NonEmptyVector].traverse1(c.clauses)(f))(AllOf(_))
-        case c: AnyOf         [A]       => G.map(Traverse1[NonEmptyVector].traverse1(c.clauses)(f))(AnyOf(_))
+        case c: AnyOf         [A]       => G.apply2(f(c.head), Traverse1[NonEmptyVector].traverse1(c.tail)(f))(AnyOf(_, _))
       }
     }
 
@@ -116,7 +116,7 @@ object FilterAst {
     def reqType       (reqType: ReqType)                     : Fix[F] = Fix[F](ReqType       (reqType))
     def not           (clause: Fix[F])                       : Fix[F] = Fix[F](Not           (clause))
     def allOf         (c1: Fix[F], cn: Fix[F]*)              : Fix[F] = Fix[F](AllOf         (NonEmptyVector(c1, cn.toVector)))
-    def anyOf         (c1: Fix[F], cn: Fix[F]*)              : Fix[F] = Fix[F](AnyOf         (NonEmptyVector(c1, cn.toVector)))
+    def anyOf         (c1: Fix[F], c2: Fix[F], cn: Fix[F]*)  : Fix[F] = Fix[F](AnyOf         (c1, NonEmptyVector(c2, cn.toVector)))
   }
 
 }

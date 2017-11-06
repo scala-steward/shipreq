@@ -33,7 +33,6 @@ object FilterParserTest extends TestSuite {
   def postProcess(pf: Potential): Potential =
     pf.unfix match {
       case FilterAst.AllOf(as) if as.length == 1 => postProcess(as.head)
-      case FilterAst.AnyOf(as) if as.length == 1 => postProcess(as.head)
       case _ => pf
     }
 
@@ -203,15 +202,15 @@ object FilterParserTest extends TestSuite {
     }
 
     'anyOf {
-      'empty1 - testFail("{}")
-      'empty2 - testFail("{  }")
-      'open1  - testFail("{")
-      'open2  - testFail("{MF")
-      'one    - test("{MF}",        anyOf(reqType("MF")))
-      'oneWS  - test("{   MF  }",   anyOf(reqType("MF")))
-      'two    - test("{MF BR}",     anyOf(reqType("MF"), reqType("BR")))
-      'three  - test("{#X #Y yay}", anyOf(hashRef("X"), hashRef("Y"), text("yay")))
-      'nest   - test("{{MF}}",      anyOf(anyOf(reqType("MF"))))
+      'empty1 - testFail("|")
+      'empty2 - testFail("   |    ")
+      'missR  - testFail("MF |")
+      'missL  - testFail("| MF")
+      'double - testFail("MF || BR")
+      'double - testFail("MF | | BR")
+      'two    - test("MF | BR",       anyOf(reqType("MF"), reqType("BR")))
+      'three  - test("#X | #Y | yay", anyOf(hashRef("X"), hashRef("Y"), text("yay")))
+      'tight  - test("#X|#Y|MF|nice", anyOf(hashRef("X"), hashRef("Y"), reqType("MF"), text("nice")))
     }
 
     'not {
@@ -227,22 +226,25 @@ object FilterParserTest extends TestSuite {
       'presence   - test("-has:face",       not(presence      ("face")))
       'lack       - test("-no:hair",        not(lack          ("hair")))
       'allOf      - test("-(my god)",       not(allOf         (text("my"), text("god"))))
-      'anyOf      - test("-{my god}",       not(anyOf         (text("my"), text("god"))))
+      'anyOf      - test("-(my|god)",       not(anyOf         (text("my"), text("god"))))
       'not        - test("--whip",          text("whip"))
     }
 
     // TODO {has,no,implies,impliedBy}: etc case insensitive
 
-    // TODO MF FR should warn and recommend {MF FR}
+    // TODO MF FR should warn and recommend (MF FR)
     // Or do it automatically if parsing isn't live
 
     'combos {
-      'anyAll - test("{(MF)}",      anyOf(allOf(reqType("MF"))))
-      'allAny - test("({MF})",      allOf(anyOf(reqType("MF"))))
+      'spaces - test("a b | c d | 'e|f'", anyOf(allOf(text("a"), text("b")), allOf(text("c"), text("d")), text("e|f", '\'')))
+
+      'parens1 - test("(a b) | (c d)", anyOf(allOf(text("a"), text("b")), allOf(text("c"), text("d"))))
+
+      'parens2 - test("a (b | c) d", allOf(text("a"), anyOf(text("b"), text("c")), text("d")))
 
       * - test(" a b_c ", allOf(text("a"), text("b_c")))
 
-      * - test("abc  {MF FR}  -( eat drink {has:a has:b})", allOf(
+      * - test("abc  (MF|FR)  -( eat drink (has:a|has:b))", allOf(
             text("abc"),
             anyOf(reqType("MF"), reqType("FR")),
             not(allOf(text("eat"), text("drink"), anyOf(presence("a"), presence("b"))))

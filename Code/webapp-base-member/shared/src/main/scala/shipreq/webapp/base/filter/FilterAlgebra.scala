@@ -56,9 +56,9 @@ object FilterAlgebra {
       case Reqs          (reqs)              => fmtReqs(reqs, ' ')
       case Presence      (attr)              => "has:" ~ attr
       case Lack          (attr)              => "no:" ~ attr
-      case AllOf         (clauses)           => composite("(", clauses.iterator.map(_.atom).mkString(" "),  ")")
-      case AnyOf         (clauses)           => composite("{", clauses.iterator.map(_.atom).mkString(" "),  "}")
       case Not           (clause)            => '-' ~ clause.atom
+      case AllOf         (clauses)           => composite("(", clauses.iterator.map(_.atom).mkString(" "),  ")")
+      case AnyOf         (c, cs)             => composite("(", (c +: cs).iterator.map(_.atom).mkString(" | "),  ")")
     }
   }
 
@@ -258,7 +258,7 @@ object FilterAlgebra {
       case Lack          (a)             => !alg(Presence(a))
       case Regex         (regex)         => byRegex(regex)
       case AllOf         (fs)            => fs.reduce(_ && _)
-      case AnyOf         (fs)            => fs.reduce(_ || _)
+      case AnyOf         (f, fs)         => f || fs.reduce(_ || _)
       case Not           (f)             => !f
     }
     alg
