@@ -27,7 +27,7 @@ object Dependencies {
   }
 
   object Scalaz {
-    private val mm = MultiModule.jvmAndJs("org.scalaz", "7.2.15")
+    private val mm = MultiModule.jvmAndJs("org.scalaz", "7.2.16")
     val core       = mm("scalaz-core")
     val effect     = mm("scalaz-effect") ++ core
     val concurrent = mm("scalaz-concurrent") ++ effect
@@ -89,7 +89,7 @@ object Dependencies {
   }
 
   object ScalaCSS {
-    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.5.3")
+    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.5.4")
     val core  = mm("core")
     val react = mm("ext-react") ++ core
   }
@@ -106,7 +106,7 @@ object Dependencies {
   }
 
   object Lift {
-    private val mm = MultiModule.scala("net.liftweb", "3.1.0")
+    private val mm = MultiModule.scala("net.liftweb", "3.1.1")
     val webkit  = mm("lift-webkit") ++ Scala.all // because it contains lift-json
     val testkit = mm("lift-testkit")
   }
@@ -174,13 +174,13 @@ object Dependencies {
   val parboiled = jvmAndJs("org.parboiled",                    "parboiled", "2.1.4")
   val shapeless = jvmAndJs("com.chuusai",                      "shapeless", "2.3.2")
   val μPickle   = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",   "custom-7")
-  val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.4.8")
+  val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.4.8") // 0.5.4+ breaks PhantomJS in webapp-base-test-js
 
   val scalaXml    = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.0.6")
   val httpCore    = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.6")
   val javaMail    = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.5.6")
   val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "42.1.4")
-  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.6.3")
+  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.7.2")
   val flyway      = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
   val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.2.3")
   val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.6")
