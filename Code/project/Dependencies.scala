@@ -7,8 +7,8 @@ object Dependencies {
 
   object Java {
     val major = 8
-    val minor = 121
-    val build = 13
+    val minor = 144
+    val build = "01"
   }
 
   object Docker {
@@ -144,7 +144,7 @@ object Dependencies {
   }
 
   object LibJetty {
-    private val mm = MultiModule.java("org.eclipse.jetty", "9.4.6.v20170531")
+    private val mm = MultiModule.java("org.eclipse.jetty", "9.4.7.v20170914")
     val webapp = mm("jetty-webapp")
     val runner = mm("jetty-runner")
     val dist   = mm("jetty-distribution").modAll(_.artifacts(Artifact("jetty-distribution", "tar.gz", "tar.gz")).intransitive())
