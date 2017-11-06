@@ -12,6 +12,7 @@ import shipreq.webapp.base.test.WebappTestUtil._
 import utest._
 import ShowSrcDataImp._
 
+/*
 object ShowSrcTest extends TestSuite {
 
   def eval[T](code: String): Try[T] =
@@ -71,3 +72,4 @@ object ShowSrcTest extends TestSuite {
 //    * - { RandomData.project.mustSatisfy(showSrcIso)(settings.setSeed(8)) }
   }
 }
+*/
