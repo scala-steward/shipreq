@@ -92,17 +92,16 @@ Phase 2
   * Restore or delete SessionStats
 
 ### Misc
-* UseCase exception levels are off-by-one. 4.E.1.a.i should be 4.E.1.1.a (should it though?)
-* After SavedViews done, add a nice Default view with some custom fields included
-* Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
+* Revise defaults
+  * Add a nice Default saved view
+  * Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
 * Upgrade JDK and audit crypto mechanisms (pending next Jetty release)
 * ReqDetail KB shortcuts: ↑, ↓, F2, Tab in/out
 * Add and use RestorationForm just like the DeletionForm
-* Prevent -- (not not) in the FilterParser?
+* Prevent -- (not not) in the FilterParser? Or allow /\-+/ and auto-correct on blur?
 * Add ProjectContent, similar to ProjectConfig?
 
 ### New Features
 * Issues
-* Saved views
 * Send feedback (with screenshot). Add link beside @username in top bar
 * User profile page
