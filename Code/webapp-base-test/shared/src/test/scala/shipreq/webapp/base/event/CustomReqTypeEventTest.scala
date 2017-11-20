@@ -91,8 +91,29 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
         testImpFieldLiveness(Dead, Dead)(c1, CustomImpFieldEventTest.c1, use1, CustomImpFieldEventTest.sd1, sd1, r1)
       }
       'hardDelete {
-        val p = _assertPass(c1, sd1)
-        assertEq(p.config.reqTypes.custom.values.toList, Nil)
+        'notInUse {
+          val p = _assertPass(c1, sd1)
+          assertEq(p.config.reqTypes.custom.values.toList, Nil)
+        }
+        'inUseAsField {
+          val p = _assertPass(c1, CustomImpFieldEventSharedTests.c1, sd1)
+          assertEq(p.config.reqTypes.custom.values.toList, Nil)
+          assertEq(p.config.customImpFields.filter(_.reqTypeId == c1.id), Nil)
+        }
+        'inUseAsFieldApplicability {
+          def test(before: Field.ApplicableReqTypes, after: Field.ApplicableReqTypes) = {
+            import CustomTextFieldGD._
+            val f  = FieldCustomTextCreate(2, nev(Name("R"), Key("r"), Mandatory(false), ReqTypes(before)))
+            val p = _assertPass(c1, c2, f, sd1)
+            assertEq(p.config.reqTypes.custom.values.toList.map(_.reqTypeId), c2.id :: Nil)
+            assertEq(p.config.customTextFields.size, 1)
+            assertEq(p.config.customTextFields.head.reqTypes, after)
+          }
+          'not1   - test(notReqTypes(1), allReqTypes)
+          'only1  - test(onlyReqTypes(1), allReqTypes)
+          'not12  - test(notReqTypes(1, 2), notReqTypes(2))
+          'only12 - test(onlyReqTypes(1, 2), onlyReqTypes(2))
+        }
       }
 
       'deleteRestoreReqsAndReqCodes {

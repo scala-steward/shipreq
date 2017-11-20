@@ -428,6 +428,12 @@ object CustomField {
     case f: Implication         => f
   })
 
+  def applicableReqTypes = Lens[CustomField, ApplicableReqTypes](_.reqTypes)(n => {
+    case f: Tag         => f.copy(reqTypes = n)
+    case f: Text        => f.copy(reqTypes = n)
+    case f: Implication => f.copy(reqTypes = n)
+  })
+
   def mandatory = Lens[CustomField, Mandatory](_.mandatory)(n => {
     case f: Text        => f.copy(mandatory = n)
     case f: Tag         => f.copy(mandatory = n)
@@ -465,8 +471,8 @@ object FieldId {
  * @param order Can include dead custom-fields.
  */
 @Lenses
-case class FieldSet(customFields: FieldSet.CustomFields,
-                    order       : FieldSet.Order) {
+final case class FieldSet(customFields: FieldSet.CustomFields,
+                          order       : FieldSet.Order) {
 
   def get(id: FieldId): Option[Field] =
     id match {
@@ -492,6 +498,9 @@ object FieldSet {
   type Order = Vector[FieldId]
   type CustomFields = IMap[CustomFieldId, CustomField]
   def emptyCustomFields: CustomFields = IMap.empty(_.id)
+
+  def customFieldsTraversal: Traversal[CustomFields, CustomField] =
+    IMap.traversal[CustomFieldId, CustomField]
 
   implicit val equality: Equal[FieldSet] = ScalazMacros.deriveEqual
 }

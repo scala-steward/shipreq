@@ -50,14 +50,13 @@ trait ApplyConfigEvent {
 
   // ===================================================================================================================
   object CustomReqTypeEvents {
-    val ^    = CustomReqTypeGD
-    val GD   = GenericDataApp[CustomReqType](^)
-    val imap = IMapStoreL(Project.reqTypes ^|-> ReqTypes.custom)(CustomReqType.live)
+    private val ^    = CustomReqTypeGD
+    private val GD   = GenericDataApp[CustomReqType](^)
+            val imap = IMapStoreL(Project.reqTypes ^|-> ReqTypes.custom)(CustomReqType.live)
 
-    val validateName     = validateA(V.reqType.name.stateless)
-    val validateMnemonic = validateI(V.reqType.mnemonic.stateless)(_.value)
-
-    val updateIdCeiling = updateIdCeilingFn(IdCeilings.customReqType)
+    private val validateName     = validateA(V.reqType.name.stateless)
+    private val validateMnemonic = validateI(V.reqType.mnemonic.stateless)(_.value)
+    private val updateIdCeiling  = updateIdCeilingFn(IdCeilings.customReqType)
 
     def applyCreate(e: CustomReqTypeCreate): SE[Unit] =
       for {
@@ -68,11 +67,11 @@ trait ApplyConfigEvent {
         _ <- updateIdCeiling(e.id)
       } yield ()
 
-    val updateName     = validateName >>=@ CustomReqType.name
-    val updateMnemonic = Memo.bool(validateMnemonic >>=@ CustomReqType.mnemonic(_))
-    val updateImp      = fieldUpdateFn(CustomReqType.imp)
+    private val updateName     = validateName >>=@ CustomReqType.name
+    private val updateMnemonic = Memo.bool(validateMnemonic >>=@ CustomReqType.mnemonic(_))
+    private val updateImp      = fieldUpdateFn(CustomReqType.imp)
 
-    val updateValues = Memo.bool(retainMnemonic =>
+    private val updateValues = Memo.bool(retainMnemonic =>
       GD.updateEachValue {
         case v: ^.ValueForName     => updateName    (v.value)
         case v: ^.ValueForImp      => updateImp     (v.value)
@@ -83,9 +82,25 @@ trait ApplyConfigEvent {
       isInUse(e.id).flatMap(inUse =>
         imap.updateLive(e.id, updateValues(inUse)(e.vs)))
 
+    /**
+      * If there is no content associated with a req type, then it is hard-deleted and references to it are hard-deleted
+      * from config.
+      *
+      * This is a slight deviation from UX consistency. Normally users can delete anything and then restore it back to
+      * it's previous state, "state" including related entities so that change/error is cheap from the user's PoV.
+      *
+      * In this instance, deleting a req type with that's never been associated with any content deletes:
+      *   - the req type itself
+      *   - custom implication fields based on the req type
+      *   - references to the req type in fields' ReqTypeApplicability
+      *
+      * The tradeoff is that it allows users to mess around with req type config without mnemonics being permanently
+      * consumed within the project. It also allows us to create nice ProjectTemplates whilst giving users the freedom
+      * to properly remove what they don't want.
+      */
     def applyDelete(e: CustomReqTypeDelete): SE[Unit] =
       ifInUse(e.id,
-        notInUse  = imap.hardDelete(e.id),
+        notInUse  = hardDelete(e.id),
         whenInUse = deleteOrRestore(e.id, Dead, ReqCodeLogic.inactivateBelongingToReqs))
 
     def applyRestore(e: CustomReqTypeRestore): SE[Unit] =
@@ -104,10 +119,28 @@ trait ApplyConfigEvent {
 
     private def reqsToCascadeReqTypeLiveChange(id: CustomReqTypeId): SE[Set[ReqId]] =
       SE.get(_.content.reqs.genericReqs
-        .values.toStream
+        .valuesIterator
         .filter(r => r.reqTypeId ==* id && r.liveExplicitly ==* Live)
         .map(_.id: ReqId)
         .toSet)
+
+    private val reqTypeApplicability =
+      FieldSet.customFieldsTraversal ^|-> CustomField.applicableReqTypes
+
+    private def hardDelete(id: CustomReqTypeId): SE[Unit] = {
+      def deleteImpFields: SE[Unit] =
+        SE.get(_.config.customImpFields.filter(_.reqTypeId ==* id))
+          .flatMap(SE.foldMapRun(_)(f => FieldEvents.hardDelete(f.id)))
+
+      def removeFromReqTypeApplicability: SE[Unit] =
+        Project.customFields.modify(
+          reqTypeApplicability.modify(_ remove id))
+
+      def deleteReqType: SE[Unit] =
+        imap.hardDelete(id)
+
+      deleteImpFields >> removeFromReqTypeApplicability >> deleteReqType
+    }
   }
 
   // ===================================================================================================================
@@ -290,8 +323,7 @@ trait ApplyConfigEvent {
 
   // ===================================================================================================================
   object FieldEvents {
-    private val customFieldsL = Project.fields ^|-> FieldSet.customFields
-    private val fieldOrderL   = Project.fields ^|-> FieldSet.order
+    private val fieldOrderL = Project.fields ^|-> FieldSet.order
 
     val updateIdCeiling = updateIdCeilingFn(IdCeilings.customField)
 
@@ -310,12 +342,12 @@ trait ApplyConfigEvent {
     def update[CF <: CustomField : ClassTag](id: CustomFieldId, mod: CF => SE[CF]): SE[Unit] =
       for {
         p  ← SE.get
-        m  = customFieldsL get p
+        m  = Project.customFields get p
         f1 ← imapNeed(m)(id)
         f2 ← narrowCC[CustomField, CF](f1)
         _  ← ensureLive(f2 live p.config)(show(id))
         f3 ← mod(f2)
-        _  ← customFieldsL set (m + f3)
+        _  ← Project.customFields set (m + f3)
       } yield ()
 
     private val repositionField = repositionFn[FieldId]
@@ -348,11 +380,17 @@ trait ApplyConfigEvent {
     private def deleteOrRestoreCF(id: CustomFieldId, targetState: Live): SE[Unit] =
       for {
         p  ← SE.get
-        m  = customFieldsL get p
+        m  = Project.customFields get p
         f1 ← imapNeed(m)(id)
         f2 ← toggleLiveCheckBeforeAfter(f1, targetState)(_ live p.config, CustomField.liveExplicitly.set, show(f1))
-        _  ← customFieldsL set (m + f2)
+        _  ← Project.customFields set (m + f2)
       } yield ()
+
+    def hardDelete(id: CustomFieldId): SE[Unit] =
+      Project.fields.modify(f =>
+        FieldSet(
+          f.customFields - id,
+          f.order.filter(_.foldId(_ => true, _ !=* id))))
   }
 
   // -----------------------------------------------------------------------------------------------

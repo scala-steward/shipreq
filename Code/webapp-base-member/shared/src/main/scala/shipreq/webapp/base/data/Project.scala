@@ -13,23 +13,24 @@ import DataImplicits._
 object Project {
   type Name = String
 
-  val customIssueTypes    : Lens[Project, CustomIssueTypeIMap] = config  ^|-> ProjectConfig.customIssueTypes
-  val reqTypes            : Lens[Project, ReqTypes           ] = config  ^|-> ProjectConfig.reqTypes
-  val fields              : Lens[Project, FieldSet           ] = config  ^|-> ProjectConfig.fields
-  val tags                : Lens[Project, TagTree            ] = config  ^|-> ProjectConfig.tags
-  val reqs                : Lens[Project, Requirements       ] = content ^|-> ProjectContent.reqs
-  val reqCodes            : Lens[Project, ReqCodes           ] = content ^|-> ProjectContent.reqCodes
-  val reqText             : Lens[Project, ReqData.Text       ] = content ^|-> ProjectContent.reqText
-  val reqTags             : Lens[Project, ReqData.Tags       ] = content ^|-> ProjectContent.reqTags
-  val implications        : Lens[Project, Implications.BiDir ] = content ^|-> ProjectContent.implications
-  val deletionReasons     : Lens[Project, DeletionReasons    ] = content ^|-> ProjectContent.deletionReasons
-  val genericReqs         : Lens[Project, GenericReqIMap     ] = content ^|-> ProjectContent.genericReqs
-  val useCases            : Lens[Project, UseCases           ] = content ^|-> ProjectContent.useCases
-  val pubidRegister       : Lens[Project, PubidRegister      ] = content ^|-> ProjectContent.pubidRegister
-  val reqCodeTrie         : Lens[Project, ReqCode.Trie       ] = content ^|-> ProjectContent.reqCodeTrie
-  val implicationsSrcToTgt: Lens[Project, Implications.UniDir] = content ^|-> ProjectContent.implicationsSrcToTgt
-  val useCaseIMap         : Lens[Project, UseCaseIMap        ] = content ^|-> ProjectContent.useCaseIMap
-  val useCaseStepIndex    : Lens[Project, UseCases.StepIndex ] = content ^|-> ProjectContent.useCaseStepIndex
+  val customIssueTypes    : Lens[Project, CustomIssueTypeIMap  ] = config  ^|-> ProjectConfig.customIssueTypes
+  val reqTypes            : Lens[Project, ReqTypes             ] = config  ^|-> ProjectConfig.reqTypes
+  val fields              : Lens[Project, FieldSet             ] = config  ^|-> ProjectConfig.fields
+  val tags                : Lens[Project, TagTree              ] = config  ^|-> ProjectConfig.tags
+  val customFields        : Lens[Project, FieldSet.CustomFields] = fields ^|-> FieldSet.customFields
+  val reqs                : Lens[Project, Requirements         ] = content ^|-> ProjectContent.reqs
+  val reqCodes            : Lens[Project, ReqCodes             ] = content ^|-> ProjectContent.reqCodes
+  val reqText             : Lens[Project, ReqData.Text         ] = content ^|-> ProjectContent.reqText
+  val reqTags             : Lens[Project, ReqData.Tags         ] = content ^|-> ProjectContent.reqTags
+  val implications        : Lens[Project, Implications.BiDir   ] = content ^|-> ProjectContent.implications
+  val deletionReasons     : Lens[Project, DeletionReasons      ] = content ^|-> ProjectContent.deletionReasons
+  val genericReqs         : Lens[Project, GenericReqIMap       ] = content ^|-> ProjectContent.genericReqs
+  val useCases            : Lens[Project, UseCases             ] = content ^|-> ProjectContent.useCases
+  val pubidRegister       : Lens[Project, PubidRegister        ] = content ^|-> ProjectContent.pubidRegister
+  val reqCodeTrie         : Lens[Project, ReqCode.Trie         ] = content ^|-> ProjectContent.reqCodeTrie
+  val implicationsSrcToTgt: Lens[Project, Implications.UniDir  ] = content ^|-> ProjectContent.implicationsSrcToTgt
+  val useCaseIMap         : Lens[Project, UseCaseIMap          ] = content ^|-> ProjectContent.useCaseIMap
+  val useCaseStepIndex    : Lens[Project, UseCases.StepIndex   ] = content ^|-> ProjectContent.useCaseStepIndex
 
   val reqtableViewsNE: Optional[Project, reqtable.SavedViews.NonEmpty] =
     reqtableViews ^<-? pSome
