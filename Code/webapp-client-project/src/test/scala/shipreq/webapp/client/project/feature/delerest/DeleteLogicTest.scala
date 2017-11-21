@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.widgets
+package shipreq.webapp.client.project.feature.delerest
 
 import utest._
 import japgolly.microlibs.nonempty._
@@ -7,11 +7,11 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{IMap, Util}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test._
-import WebappTestUtil._
-import DeletionForm.{Data, GroupRow}
+import DeleteLogic.{Data, GroupRow}
 import UnsafeTypes._
+import WebappTestUtil._
 
-object DeletionFormTestData {
+object DeleteLogicTestData {
   import ProjectDsl._
   import ProjectDslInternals.{ToState, Composite}
   import SampleProject.Values._
@@ -199,7 +199,7 @@ object DeletionFormTestData {
     |. 512 <- 510 511
   """.stripMargin.trim
 
-  lazy val result               = DeletionForm.Data.forReqsAndCodeGroups__TEST_ONLY(p, NonEmptySet force _selectedReqIds, _selectedRCGs)
+  lazy val result               = Data.forReqsAndCodeGroups__TEST_ONLY(p, NonEmptySet force _selectedReqIds, _selectedRCGs)
   lazy val expectInitialReqs    = _expectInitialReqs
   lazy val expectInitialRCGs    = _expectInitialRCGs
   lazy val expectUnselectedReqs = _expectUnselectedReqs
@@ -224,8 +224,8 @@ object DeletionFormTestData {
     }
 }
 
-object DeletionFormTest extends TestSuite {
-  import DeletionFormTestData._
+object DeleteLogicTest extends TestSuite {
+  import DeleteLogicTestData._
 
   implicit val rcgRowEquality = UnivEq.derive[GroupRow]
 

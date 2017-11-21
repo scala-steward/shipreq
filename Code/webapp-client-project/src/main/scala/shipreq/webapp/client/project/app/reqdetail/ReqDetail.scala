@@ -385,9 +385,9 @@ object ReqDetail {
       CallbackTo {
         def run(cmd: UpdateContentCmd): Callback = runActionNoAsync(cmd) >> clearModal
         import Px.AutoValue._
-        val data = DeletionForm.Data.forReqs(pxProject, NonEmptySet one id)
-        val props = DeletionForm.Props(data, pxProjectWidgetsNoCtx, pxTextSearch, run, clearModal)
-        Some(Modal(DeletionForm.Component(props)))
+        val data = DeleteRestoreFeature.DeleteLogic.forReqs(pxProject, NonEmptySet one id)
+        val props = DeleteRestoreFeature.DeleteProps(data, pxProjectWidgetsNoCtx, pxTextSearch, run, clearModal)
+        Some(Modal(props.render))
       } >>= setModal
 
     def restore(id: ReqId): Callback =

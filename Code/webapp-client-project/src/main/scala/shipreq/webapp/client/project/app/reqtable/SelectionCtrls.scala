@@ -17,9 +17,9 @@ import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.semantic.{Button, Icon}
 import shipreq.webapp.client.project.app.Style.reqtable.{page => *}
-import shipreq.webapp.client.project.feature.Modal
+import shipreq.webapp.client.project.feature.{DeleteRestoreFeature, Modal}
 import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.widgets.{DeletionForm, ProjectWidgets}
+import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 /**
   * Provides users with means to apply actions in bulk, across selected requirements.
@@ -49,7 +49,7 @@ object SelectionCtrls {
   final case class ActionInfo(affects: Int, perform: Callback)
 
   implicit def reusabilityProps: Reusability[Props] =
-    Reusability.byRef || Reusability.caseClass
+    Reusability.byRef || Reusability.derive
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -106,9 +106,9 @@ object SelectionCtrls {
         }
 
       private def modal(p: Props, reqs: NonEmptySet[ReqId]): Modal = {
-        val data = DeletionForm.Data.forReqs(p.project, reqs)
-        val props = DeletionForm.Props(data, p.widgets, p.textSearch, io, clearModal)
-        Modal(DeletionForm.Component(props))
+        val data = DeleteRestoreFeature.DeleteLogic.forReqs(p.project, reqs)
+        val props = DeleteRestoreFeature.DeleteProps(data, p.widgets, p.textSearch, io, clearModal)
+        Modal(props.render)
       }
 
       private def io(cmd: UpdateContentCmd.DeleteReqs): Callback = {
