@@ -1,4 +1,4 @@
-package shipreq.webapp.base.data.deletion
+package shipreq.webapp.client.project.feature.deletion
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.nonempty.NonEmptySet

@@ -1,4 +1,4 @@
-package shipreq.webapp.base.data.deletion
+package shipreq.webapp.client.project.feature.deletion
 
 import nyaya.prop.Prop
 import nyaya.test.DefaultSettings
@@ -263,7 +263,7 @@ object DeletionLogicTest extends TestSuite {
 
     'props - {
       val g = DeletionProps.RandomData(Delete).genProps
-      g.mustSatisfyE(_.allProps)(DefaultSettings.propSettings.setSampleSize(7 * 1))
+      g.mustSatisfyE(_.allProps)(DefaultSettings.propSettings.setSampleSize(3))
       // scala.util.Try(g.bugHunt(10009, 8)(Prop.eval(_.allProps))(DefaultSettings.propSettings.setDebug)); ()
     }
   }

@@ -17,7 +17,7 @@ import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.semantic.{Button, Icon}
 import shipreq.webapp.client.project.app.Style.reqtable.{page => *}
-import shipreq.webapp.client.project.feature.{DeleteRestoreFeature, Modal}
+import shipreq.webapp.client.project.feature.{DeletionFeature, Modal}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 
@@ -106,8 +106,8 @@ object SelectionCtrls {
         }
 
       private def modal(p: Props, reqs: NonEmptySet[ReqId]): Modal = {
-        val data = DeleteRestoreFeature.DeleteLogic.forReqs(p.project, reqs)
-        val props = DeleteRestoreFeature.DeleteProps(data, p.widgets, p.textSearch, io, clearModal)
+        val data = DeletionFeature.deletionData(p.project, reqs)
+        val props = DeletionFeature.DeletionFormProps(data, p.widgets, p.textSearch, io, clearModal)
         Modal(props.render)
       }
 

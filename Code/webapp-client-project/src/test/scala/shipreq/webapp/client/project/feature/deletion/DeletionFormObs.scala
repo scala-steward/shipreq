@@ -1,10 +1,10 @@
-package shipreq.webapp.client.project.feature.delerest
+package shipreq.webapp.client.project.feature.deletion
 
 import org.scalajs.dom.html
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.app.TestMarker
 
-object DeleteFormObs {
+object DeletionFormObs {
 
   def option($: DomZipper): Option[DeletionFormObs] =
     $.findSelfOrChildWithAttribute(TestMarker.deletionForm.name)

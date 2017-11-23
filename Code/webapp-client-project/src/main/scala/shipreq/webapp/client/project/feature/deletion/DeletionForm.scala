@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.feature.delerest
+package shipreq.webapp.client.project.feature.deletion
 
 import japgolly.microlibs.nonempty._
 import japgolly.scalajs.react.MonocleReact._
@@ -11,7 +11,6 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.deletion._
 import shipreq.webapp.base.feature.PreviewFeature
 import shipreq.webapp.base.lib.KeyboardTheme
 import shipreq.webapp.base.protocol.UpdateContentCmd.DeleteReqs
@@ -22,8 +21,8 @@ import shipreq.webapp.client.project.app.TestMarker
 import shipreq.webapp.client.project.feature.Selection
 import shipreq.webapp.client.project.widgets.{ProjectWidgets, RichTextEditor, Widgets}
 
-object DeleteForm {
-  import DeletionLogic._
+object DeletionForm {
+  import DeletionRestorationLogic.{Data, ReqRow}
 
   final case class Props(data      : Data,
                          widgets   : ProjectWidgets.NoCtx,
@@ -132,7 +131,7 @@ object DeleteForm {
       Table.celledCompactUnstackable(
         *.reqTable,
         header,
-        <.tbody(p.data.deletableReqs.toVdomArray(reqRow)))
+        <.tbody(p.data.actionableReqs.toVdomArray(reqRow)))
     }
 
     val cancelButton: VdomTag =
@@ -142,7 +141,7 @@ object DeleteForm {
       ).tag(*.cancelButton, ^.onClick --> $.props.flatMap(_.cancel))
 
     def render(p: Props, s: State): VdomElement = {
-      assert(p.data.deletableGroups.isEmpty,
+      assert(p.data.actionableGroups.isEmpty,
         "Since proper UI/UX implementation, DeletionForm no longer accepts deletable code-groups")
 
       val reasonTextProps = reasonEditorProps(p, s)

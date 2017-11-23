@@ -1,4 +1,4 @@
-package shipreq.webapp.base.data.deletion
+package shipreq.webapp.client.project.feature.deletion
 
 import japgolly.microlibs.nonempty._
 import japgolly.univeq._
