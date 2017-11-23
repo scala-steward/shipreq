@@ -6,19 +6,19 @@ import nyaya.gen._
 import nyaya.prop._
 import scalaz.std.set.setInstance
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.event.{ContentRestore, Event, ReqsDelete}
 import shipreq.webapp.base.test.TestOptics
 import shipreq.webapp.base.test.WebappTestUtil._
 
 /**
-  *
   * @param mode Mode being tested
   * @param projectFree Any random project
   * @param projectBasic A project with max 1 imp/req, and everything is mode.from
   */
-final class DeleRestProps(mode: Mode,
+final class DeletionProps(mode: DeleteOrRestore,
                           projectFree: Project,
                           projectBasic: Project) {
-  import DeleRestProps._
+  import DeletionProps._
 
   private def invariants(T: Results) = {
     import T._
@@ -33,7 +33,7 @@ final class DeleRestProps(mode: Mode,
 
     def allLive =
       E.forall(all)(id =>
-        E.equal(s"$id.live", p.content.reqs.need(id).live(p.config.reqTypes), mode.from))
+        E.equal(s"$id.live", p.content.reqs.need(id).live(p.config.reqTypes), mode.fromState))
 
     def extraSubsetOfOptional =
       E.whitelist("extra ⊆ optional", result.optionalReqIds, extra)
@@ -49,20 +49,20 @@ final class DeleRestProps(mode: Mode,
           p.implicationTgtToSrcTC(id).exists(parent => input.contains(parent))))
 
     def ifAutosActioned: EvalL =
-      mode.perform(autoAndInput).map { event =>
+      perform(mode, autoAndInput).map { event =>
         val p2 = applyEventSuccessfully(p, event)
 
         // deleted have no live imps (live imps would make deletion necessity ambiguous)
         // restored have no dead imps (dead imps would make restoration necessity ambiguous)
         E.forall(auto)(id =>
-          E.test(s"Everything that implies $id is now ${mode.to}",
+          E.test(s"Everything that implies $id is now ${mode.toState}",
             p2.content.implications.backwards(id).forall(parent =>
-              p2.content.reqs.need(parent).live(p2.config.reqTypes) ==* mode.to)))
+              p2.content.reqs.need(parent).live(p2.config.reqTypes) ==* mode.toState)))
 
       }.getOrElse(E.pass).rename("ifAutosActioned")
 
     def ifAllActioned: EvalL =
-      mode.perform(all).map { event =>
+      perform(mode, all).map { event =>
         val p2 = applyEventSuccessfully(p, event)
 
 //        println("="*120)
@@ -74,9 +74,9 @@ final class DeleRestProps(mode: Mode,
 
         // inputs have no dead imps
         E.forall(input.whole)(id =>
-          E.test(s"All transitive implications of input $id are now ${mode.to}",
+          E.test(s"All transitive implications of input $id are now ${mode.toState}",
             p2.implicationSrcToTgtTC(id).forall(child =>
-              p2.content.reqs.need(child).live(p2.config.reqTypes) ==* mode.to)))
+              p2.content.reqs.need(child).live(p2.config.reqTypes) ==* mode.toState)))
 
       }.getOrElse(E.pass).rename("ifAllActioned")
 
@@ -129,18 +129,21 @@ final class DeleRestProps(mode: Mode,
 
   def allProps =
     testWithInputs(projectBasic, _ => true, basic).rename("projectBasic") &
-      testWithInputs(projectFree, _.live(projectFree.config.reqTypes) is mode.from, free).rename("projectFree")
+      testWithInputs(projectFree, _.live(projectFree.config.reqTypes) is mode.fromState, free).rename("projectFree")
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-object DeleRestProps {
+object DeletionProps {
 
-  final class Results(mode: Mode, val input: NonEmptySet[ReqId], val p: Project) {
+  final class Results(mode: DeleteOrRestore, val input: NonEmptySet[ReqId], val p: Project) {
     val E = EvalOver(input)
 
     val result: DeletionLogic.Data =
-      DeletionLogic.Data.forReqs(p, input)
+      if (mode ==* Delete)
+        DeletionLogic.Data.forReqs(p, input)
+      else
+        ???
 
     val auto: Set[ReqId] =
       result.initialReqs -- input.whole
@@ -158,6 +161,12 @@ object DeleRestProps {
       auto ++ input.whole
   }
 
+  def perform(mode: DeleteOrRestore, reqIds: Set[ReqId]): Option[Event] =
+    mode match {
+      case Delete  => NonEmptySet.option(reqIds).map(ReqsDelete(_, Set.empty, Vector.empty))
+      case Restore => Some(ContentRestore(reqIds, Set.empty))
+    }
+
   def chooseInputs(p: Project, f: Req => Boolean): List[NonEmptySet[ReqId]] = {
     val ids     = p.content.reqs.reqIterator.filter(f).map(_.id).toList
     val idCount = ids.size
@@ -174,7 +183,7 @@ object DeleRestProps {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final case class RandomData(mode: Mode) {
+  final case class RandomData(mode: DeleteOrRestore) {
     private val * = shipreq.webapp.base.RandomData
 
     /** A project with max 1 imp/req, and everything is mode.from */
@@ -186,7 +195,7 @@ object DeleRestProps {
         reqCount  ← Gen.chooseInt(40)
         ucCount   ← Gen.chooseSize map (_ >> 1)
         reqs1     ← *.reqsWithoutText(config, reqCount, ucCount)
-        reqs2     = (TestOptics.grsLive.set(mode.from) compose TestOptics.ucsLive.set(mode.from))(reqs1)
+        reqs2     = (TestOptics.grsLive.set(mode.fromState) compose TestOptics.ucsLive.set(mode.fromState))(reqs1)
         imps1     ← *.reqFieldDataImplications(reqs2.idIterator.toSet)
         imps2     = imps1.forwards.m.mapValuesNow(_.take(1))
         imps3     = Implications.BiDir(Implications.UniDir(imps2).reverse) // reverse ensures take(1) is on parent side
@@ -197,10 +206,10 @@ object DeleRestProps {
     val genProjectFree: Gen[Project] =
       *.project
 
-    val genProps: Gen[DeleRestProps] =
+    val genProps: Gen[DeletionProps] =
       for {
         basic <- genProjectBasic
         free  <- genProjectFree
-      } yield new DeleRestProps(mode, projectFree = free, projectBasic = basic)
+      } yield new DeletionProps(mode, projectFree = free, projectBasic = basic)
   }
 }

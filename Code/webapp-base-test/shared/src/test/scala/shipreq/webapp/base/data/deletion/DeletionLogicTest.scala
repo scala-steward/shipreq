@@ -1,5 +1,8 @@
 package shipreq.webapp.base.data.deletion
 
+import nyaya.prop.Prop
+import nyaya.test.DefaultSettings
+import nyaya.test.PropTest._
 import utest._
 import japgolly.microlibs.nonempty._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
@@ -257,5 +260,11 @@ object DeletionLogicTest extends TestSuite {
 
     'initialReqs   - assertSet("Initial reqs"  , result.initialReqs, expectInitialReqs)
     'initialGroups - assertSet("Initial groups", result.initialGroups, expectInitialRCGs)
+
+    'props - {
+      val g = DeletionProps.RandomData(Delete).genProps
+      g.mustSatisfyE(_.allProps)(DefaultSettings.propSettings.setSampleSize(7 * 1))
+      // scala.util.Try(g.bugHunt(10009, 8)(Prop.eval(_.allProps))(DefaultSettings.propSettings.setDebug)); ()
+    }
   }
 }
