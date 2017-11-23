@@ -140,26 +140,24 @@ final class DeletionProps(mode: DeleteOrRestore,
     def autoIsEverythingImplied =
       E.equal("auto = TC", auto, input.iterator.map(impSrcToTgtTC(_)).reduce(_ ++ _) -- input.whole)
 
-      // TODO Pending: Restore
-//    def performReverse = {
-//      val apply   = mode.perform(result.initialReqs).get
-//      val p2      = applyEventSuccessfully(p, apply)
-//      val t2      = new Results(!mode, input, p2)
-//      val reverse = (!mode).perform(t2.result.initialReqs).get
-//      val p3      = applyEventSuccessfully(p2, reverse)
-//      def norm(p: Project) = p.content.copy(deletionReasons = DeletionReasons.empty)
-//
+    def performReverse = {
+      val apply   = perform(mode, result.initialReqs).get
+      val p2      = applyEventSuccessfully(p, apply)
+      val t2      = new Results(!mode, input, p2)
+      val reverse = perform(!mode, t2.result.initialReqs).get
+      val p3      = applyEventSuccessfully(p2, reverse)
+      def norm(p: Project) = p.content.copy(deletionReasons = DeletionReasons.empty)
+
 //      println("=" * 120)
 //      println("Apply: " + apply)
 //      println("Reverse: " + reverse)
 //      println(p3.prettyPrintImplicationGraph)
 //      println()
-//
-//      E.equal("apply.reverse = id", norm(p3), norm(p))
-//      E.equal("apply.reverse = id", true, false)
-//    }
 
-    (invariants(T) & noneOff & autoIsEverythingImplied ) // TODO & performReverse)
+      E.equal("apply.reverse = id", norm(p3), norm(p))
+    }
+
+    (invariants(T) & noneOff & autoIsEverythingImplied & performReverse)
       .rename(s"basic(${input.whole.map(_.value).mkString(",")})")
   }
 
