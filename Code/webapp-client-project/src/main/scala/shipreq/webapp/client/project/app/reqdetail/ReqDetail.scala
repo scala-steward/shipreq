@@ -391,7 +391,13 @@ object ReqDetail {
       } >>= setModal
 
     def restore(id: ReqId): Callback =
-      runActionNoAsync(UpdateContentCmd.RestoreContent(Set(id), Set.empty))
+      CallbackTo {
+        def run(cmd: UpdateContentCmd): Callback = runActionNoAsync(cmd) >> clearModal
+        import Px.AutoValue._
+        val data = DeletionFeature.restorationData(pxProject, NonEmptySet one id)
+        val props = DeletionFeature.RestorationFormProps(data, pxProjectWidgetsNoCtx, run, clearModal)
+        Some(Modal(props.render))
+      } >>= setModal
 
   } // Backend
 }

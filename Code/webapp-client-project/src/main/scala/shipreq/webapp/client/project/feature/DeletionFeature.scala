@@ -22,4 +22,10 @@ object DeletionFeature {
 
   val DeletionFormProps = deletion.DeletionForm.Props
 
+  // Might want to add some logic here later to not bother showing the dialog if there are no implied reqs
+  // to select.
+  // On the other hand, it's probably better UX to always present users with the same Cancel/Restore choice before
+  // taking action.
+  val RestorationFormProps = deletion.RestorationForm.Props
+
 }

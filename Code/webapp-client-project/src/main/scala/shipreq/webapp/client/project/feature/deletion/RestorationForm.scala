@@ -1,69 +1,44 @@
 package shipreq.webapp.client.project.feature.deletion
 
 import japgolly.microlibs.nonempty._
-import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
-import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.feature.PreviewFeature
-import shipreq.webapp.base.lib.KeyboardTheme
-import shipreq.webapp.base.protocol.UpdateContentCmd.DeleteReqs
+import shipreq.webapp.base.protocol.UpdateContentCmd.RestoreContent
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Table}
-import shipreq.webapp.client.project.app.Style.{deletionForm => *}
+import shipreq.webapp.client.project.app.Style.{restorationForm => *}
 import shipreq.webapp.client.project.app.TestMarker
 import shipreq.webapp.client.project.feature.Selection
-import shipreq.webapp.client.project.widgets.{ProjectWidgets, RichTextEditor, Widgets}
+import shipreq.webapp.client.project.widgets.{ProjectWidgets, Widgets}
 
-object DeletionForm {
+object RestorationForm {
   import DeletionRestorationLogic.{Data, ReqRow}
 
-  final case class Props(data      : Data,
-                         widgets   : ProjectWidgets.NoCtx,
-                         textSearch: TextSearch,
-                         perform   : DeleteReqs => Callback,
-                         cancel    : Callback) {
+  final case class Props(data   : Data,
+                         widgets: ProjectWidgets.NoCtx,
+                         perform: RestoreContent => Callback,
+                         cancel : Callback) {
     def render: VdomElement = Component(this)
   }
 
-  @Lenses
-  final case class State(selectedReqs: Selection[ReqId], reason: String)
+  type State = Selection[ReqId]
 
-  object State {
-    def init(p: Props): State =
-      apply(Selection(p.data.initialReqs), "")
-  }
+  def stateInit(p: Props): State =
+    Selection(p.data.initialReqs)
 
   final class Backend($: BackendScope[Props, State]) {
-    private val setReqSel = Reusable.fn($ setStateFnL State.selectedReqs)
-    private val setReason = Reusable.fn($ setStateFnL State.reason)
+    private val setReqSel = Reusable.fn.state($).set
 
-    private def reasonEditorProps(p: Props, s: State): RichTextEditor.DeletionReason.Props =
-      RichTextEditor.DeletionReason.Props(
-        project          = p.data.project,
-        plainTextNoCtx   = p.widgets.plainText,
-        textSearch       = p.textSearch,
-        projectWidgets   = p.widgets,
-        edit             = StateSnapshot.withReuse(s.reason)(setReason),
-        asyncStatus      = None,
-        abort            = None,
-        commitFn         = None,
-        commitVerb       = "",
-        preview          = PreviewFeature.ReadWrite.Single.alwaysShow,
-        preEditValue     = None,
-        extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
-        showInstructions = true)
-
-    private def renderReqTable(p: Props, s: State): VdomElement = {
+    private def renderReqTable(p: Props, selectedReqs: State): VdomElement = {
       val project        = p.data.project
       val customReqTypes = project.config.reqTypes
-      val selection      = s.selectedReqs.updateBy(setReqSel).legal(p.data.optionalReqIds)
+      val selection      = selectedReqs.updateBy(setReqSel).legal(p.data.optionalReqIds)
 
       val header: VdomTag =
         <.thead(
@@ -81,7 +56,7 @@ object DeletionForm {
               Icon.Unhide.tag(*.reqTableHeaderImpsIcon))))
 
       val liveGivenState: Req => Live =
-        r => Dead when s.selectedReqs.selected.contains(r.id)
+        r => Live when selectedReqs.selected.contains(r.id)
 
       val renderImpliedByItem =
         p.widgets.PubidFormat(Plain, *.reqTableImps(_), liveFn = liveGivenState)
@@ -134,47 +109,40 @@ object DeletionForm {
       Button(
         tipe = Button.Type.BasicIconAndText(Icon.Remove, UiText.buttonAbortChange),
         colour = Colour.Black
-      ).tag(*.cancelButton, ^.onClick --> $.props.flatMap(_.cancel))
+      ).tag(^.onClick --> $.props.flatMap(_.cancel))
 
-    def render(p: Props, s: State): VdomElement = {
+    def render(p: Props, selectedReqs: State): VdomElement = {
       assert(p.data.actionableGroups.isEmpty,
-        "Since proper UI/UX implementation, DeletionForm no longer accepts deletable code-groups")
-
-      val reasonTextProps = reasonEditorProps(p, s)
-
-      val deletionReason: VdomTag =
-        <.section(
-          <.h4(*.deletionReasonHeader, UiText.ColumnNames.deletionReason + ":"),
-          RichTextEditor.DeletionReason.Component(reasonTextProps))
+        "Since proper UI/UX implementation, Restoration no longer accepts deletable code-groups")
 
       val commit: Option[Callback] =
         for {
-          reqs   ← NonEmptySet.option(s.selectedReqs.selected)
-          reason ← reasonTextProps.validated.toOption
-        } yield p.perform(DeleteReqs(reqs, Set.empty, reason))
+          reqs ← NonEmptySet.option(selectedReqs.selected)
+        } yield p.perform(RestoreContent(reqs.whole, Set.empty))
 
-      val deleteButton: VdomTag =
+      val restoreButton: VdomTag =
         Button(
-          tipe = Button.Type.BasicIconAndText(Icon.Trash, UiText.Life.delete),
+          tipe = Button.Type.BasicIconAndText(Icon.Undo, UiText.Life.restore),
           state = Button.State.enabledWhen(commit.isDefined),
-          colour = Colour.Red
+          colour = Colour.Green
         ).tag(^.onClick -->? commit)
 
       <.main(
         *.main,
-        TestMarker.deletionForm.tagMod,
-        <.h2("You are about to delete the following requirements:"),
+        TestMarker.restorationForm.tagMod,
+        <.h2("You are about to restore the following requirements:"),
         <.section(
-          <.div(*.reqHelp, "In addition to those you selected, implied requirements are also presented with exclusively-implied requirements auto-selected for deletion."),
-          renderReqTable(p, s)),
-        <.div(*.bottomSections,
-          <.div(*.bottomSectionL, deletionReason),
-          <.div(*.bottomSectionR, cancelButton, <.br, deleteButton)))
+          <.div(*.reqHelp, "In addition to those you selected, implied requirements are also presented with exclusively-implied requirements auto-selected for restoration."),
+          renderReqTable(p, selectedReqs)),
+        <.div(*.bottomSection,
+          cancelButton,
+          <.div(*.buttonGap), // curse Semantic UI!
+          restoreButton))
     }
   }
 
-  val Component = ScalaComponent.builder[Props]("Deletion")
-    .initialStateFromProps(State.init)
+  val Component = ScalaComponent.builder[Props]("Restoration")
+    .initialStateFromProps(stateInit)
     .renderBackend[Backend]
     .build
 
