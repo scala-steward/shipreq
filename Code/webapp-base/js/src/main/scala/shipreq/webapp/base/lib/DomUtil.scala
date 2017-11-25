@@ -69,6 +69,18 @@ object DomUtil {
       iterator ++ iterator.flatMap(_.children.deepIteratorBreadthFirst)
   }
 
+  @inline implicit class NodeIteratorExt[N >: html.Element <: Node](private val it: Iterator[N]) extends AnyVal {
+    def filterHtml: Iterator[html.Element] =
+      it.filterSubType[html.Element]
+    def focusable: Iterator[html.Element] =
+      filterHtml.focusable
+  }
+
+  @inline implicit class IteratorHtmlElementExt(private val it: Iterator[html.Element]) extends AnyVal {
+    def focusable: Iterator[html.Element] =
+      it.filter(isFocusable)
+  }
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Functions
 
@@ -79,12 +91,13 @@ object DomUtil {
         .filterNot(_ eq document.body))
 
   def focusableChildren(e: Element): Iterator[html.Element] =
-    focusable(e.children.deepIteratorDepthFirst)
+    e.children.deepIteratorDepthFirst.focusable
 
-  def focusable(es: Iterator[Element]): Iterator[html.Element] =
-    es.filterSubType[html.Element]
-      .filter(_.tabIndex >= 0)
-      .filter(_._disabled.forall(!_)) // ignore disabled
+  def isFocusable(e: html.Element): Boolean =
+    (e.tabIndex >= 0
+      || e.hasAttribute("tabIndex") // .tabIndex == -1 when unspecified too. Thus check if specified.
+      ) && !e._disabled.exists(identity) // ignore disabled
+
 
   def isDragWithinNode(e: ReactDragEvent, node: Node): Boolean = {
     @inline def between(value: Double, from: Double, to: Double) =
