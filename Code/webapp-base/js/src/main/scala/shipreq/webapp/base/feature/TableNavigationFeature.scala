@@ -9,7 +9,7 @@ import scalajs.js
 import org.scalajs.dom.{Element, console, html}
 import scalaz.{-\/, \/, \/-}
 import scalaz.syntax.std.option._
-import shipreq.base.util.Util
+import shipreq.base.util.{Identity, Util}
 import shipreq.webapp.base.lib.DomUtil.{TableCellZipper => _, _}
 
 object TableNavigationFeature {
@@ -94,9 +94,9 @@ object TableNavigationFeature {
           case Axis.LeftRight =>
             for {
               tr        <- cellAtSuperPos(pos)
-              rowResults = rowContentsIterator(tr, pos).toVector
-              i         <- findFocusIndex(rowResults)(_._1)
-            } yield _move(m, i, rowResults)(_._1)
+              rowResults = rowContentsIterator(tr, pos).map(_._1).filterNot(subMoveOnly).toVector
+              i         <- findFocusIndex(rowResults)(Identity.apply)
+            } yield _move(m, i, rowResults)(Identity.apply)
         }
       )
 
@@ -173,11 +173,10 @@ object TableNavigationFeature {
         rs
       }
 
+    /** excludes argument from results */
     private def cellContentsIterator(cell: html.Element): Iterator[(html.Element, PosXY)] =
-      cell.querySelectorAll("input")
-        .iterator
-        .map(_.domCast[html.Input])
-        .filter(i => i.`type` == "checkbox")
+      cell.children.deepIteratorDepthFirst
+        .asHtml
         .focusable
         .zipWithIndex
         .map { case (e, j) => e -> PosXY(j, 0) }
@@ -200,6 +199,12 @@ object TableNavigationFeature {
       val j = Util.fitCollectionIndex(m adjustIndex i, as.length)
       val e2 = element(as(j))
       TableCellZipper(e2)
+    }
+
+    private def subMoveOnly: html.Element => Boolean = {
+      case i: html.Input    => i.`type` ==* "text"
+      case _: html.TextArea => true
+      case _                => false
     }
   }
 }
