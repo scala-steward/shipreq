@@ -69,6 +69,8 @@ object TableNavigationFeatureTest extends TestSuite {
 
   case class TestMoves(moveTests: List[List[TablePos]], subTests: List[List[TablePos]])
 
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
   /**
     * LR = Left to Right = header cells on the left, data cells on the right
     */
@@ -193,14 +195,102 @@ object TableNavigationFeatureTest extends TestSuite {
       .result()
   }
 
+  /**
+    * TD = TopDown = header row at the top, data below
+    */
+  object TD {
+    final class Backend($: BackendScope[Unit, Unit]) {
+      implicit def renderTablePos(p: TablePos): TagMod = p.toString
+      def render: VdomElement =
+        <.table(
+          <.thead(
+            <.tr(
+              <.th(TablePos(0, 0, 0, None), <.input.checkbox),
+              <.th(TablePos(0, 0, 1, None), focusable),
+              <.th(TablePos(0, 0, 2, None), focusable),
+              <.th(TablePos(0, 0, 3, None)),
+              <.th(TablePos(0, 0, 4, None), focusable),
+            ),
+          ),
+          <.tbody(
+            <.tr(
+              <.td(TablePos(1, 0, 0, None), <.input.checkbox),
+              <.td(TablePos(1, 0, 1, None), focusable),
+              <.td(TablePos(1, 0, 2, None), focusable),
+              <.td(TablePos(1, 0, 3, None), focusable),
+              <.td(TablePos(1, 0, 4, None)),
+            ),
+            <.tr(
+              <.td(TablePos(1, 1, 0, None), <.input.checkbox),
+              <.td(TablePos(1, 1, 1, None), focusable),
+              <.td(TablePos(1, 1, 2, None), focusable),
+              <.td(TablePos(1, 1, 3, None), focusable),
+              <.td(TablePos(1, 1, 4, None)),
+            ),
+          )
+        )
+    }
+
+    val Component = ScalaComponent.builder[Unit]("TD")
+      .renderBackend[Backend]
+      .build
+
+    val rightMoves = MovesBuilder()
+      .general(TablePos(0, 0, 0, Some(PosXY(0, 0))))
+      .general(TablePos(0, 0, 1, None))
+      .general(TablePos(0, 0, 2, None))
+      .general(TablePos(0, 0, 4, None))
+      .general(TablePos(0, 0, 0, Some(PosXY(0, 0))))
+      .result()
+
+    val downMoves = MovesBuilder()
+      .general(TablePos(0, 0, 0, Some(PosXY(0, 0))))
+      .general(TablePos(1, 0, 0, Some(PosXY(0, 0))))
+      .general(TablePos(1, 1, 0, Some(PosXY(0, 0))))
+      .general(TablePos(0, 0, 0, Some(PosXY(0, 0))))
+      .newBatch()
+      .general(TablePos(0, 0, 1, None))
+      .general(TablePos(1, 0, 1, None))
+      .general(TablePos(1, 1, 1, None))
+      .general(TablePos(0, 0, 1, None))
+      .result()
+  }
+
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
   lazy val lr: html.Table = {
     val root = ReactTestUtils.newBodyElement()
     LR.Component().renderIntoDOM(root).getDOMNode.domCast[html.Table]
   }
 
+  lazy val td: html.Table = {
+    val root = ReactTestUtils.newBodyElement()
+    TD.Component().renderIntoDOM(root).getDOMNode.domCast[html.Table]
+  }
+
   val changeDir: Direction => List[TablePos] => List[TablePos] = {
     case Forwards  => identity
     case Backwards => _.reverse
+  }
+
+  def testCellLabels(table: html.Table): Unit = {
+    def text(e: html.Element): String =
+      ReactTestUtils.removeReactInternals(e.innerHTML).replaceFirst("\\).+", ")")
+
+    val cells = table.querySelectorAll("td,th").iterator.focusable.toList
+    assert(cells.nonEmpty)
+    for (c <- cells) {
+      val z = TableCellZipper(c)
+      val pos = z.focusPos.needRight
+      val tableRoot = z.root.needRight
+      assertEq(pos.toString, text(c))
+      assert(tableRoot == table)
+
+      val z2 = z.goto(pos).needRight
+      val pos2 = z2.focusPos.needRight
+      assertEq(pos2.toString, text(c))
+      assertEq(pos2, pos)
+    }
   }
 
   def init(table: html.Table): TableCellZipper =
@@ -253,32 +343,29 @@ object TableNavigationFeatureTest extends TestSuite {
 
   override def tests = TestSuite {
 
-    'posDetection {
-      def text(e: html.Element): String =
-        ReactTestUtils.removeReactInternals(e.innerHTML).replaceFirst("\\).+", ")")
-
-      val cells = lr.querySelectorAll("td,th").iterator.focusable.toList
-      assert(cells.nonEmpty)
-      for (c <- cells) {
-        val z = TableCellZipper(c)
-        val pos = z.focusPos.needRight
-        val tableRoot = z.root.needRight
-        assertEq(pos.toString, text(c))
-        assert(tableRoot == lr)
-
-        val z2 = z.goto(pos).needRight
-        val pos2 = z2.focusPos.needRight
-        assertEq(pos2.toString, text(c))
-        assertEq(pos2, pos)
-      }
+    'lr {
+      def t = lr
+      def T = LR
+      'posDetection - testCellLabels(t)
+      'moveRight    - testMoves(t, Axis.LeftRight, Movement.Next, T.rightMoves, Forwards)
+      'moveLeft     - testMoves(t, Axis.LeftRight, Movement.Prev, T.rightMoves, Backwards)
+      'moveDown     - testMoves(t, Axis.UpDown   , Movement.Next, T.downMoves , Forwards)
+      'moveUp       - testMoves(t, Axis.UpDown   , Movement.Prev, T.upMoves   , Forwards)
+      'subMoveLeft  - testSubMoves(t, Movement.Prev, T.rightMoves, Backwards)
+      'subMoveRight - testSubMoves(t, Movement.Next, T.rightMoves, Forwards)
     }
 
-    'moveRight - testMoves(lr, Axis.LeftRight, Movement.Next, LR.rightMoves, Forwards)
-    'moveLeft  - testMoves(lr, Axis.LeftRight, Movement.Prev, LR.rightMoves, Backwards)
-    'moveDown  - testMoves(lr, Axis.UpDown   , Movement.Next, LR.downMoves , Forwards)
-    'moveUp    - testMoves(lr, Axis.UpDown   , Movement.Prev, LR.upMoves   , Forwards)
+    'td {
+      def t = td
+      def T = TD
+      'posDetection - testCellLabels(t)
+      'moveRight    - testMoves(t, Axis.LeftRight, Movement.Next, T.rightMoves, Forwards)
+      'moveLeft     - testMoves(t, Axis.LeftRight, Movement.Prev, T.rightMoves, Backwards)
+      'moveDown     - testMoves(t, Axis.UpDown   , Movement.Next, T.downMoves , Forwards)
+      'moveUp       - testMoves(t, Axis.UpDown   , Movement.Prev, T.downMoves , Backwards)
+      'subMoveLeft  - testSubMoves(t, Movement.Prev, T.rightMoves, Backwards)
+      'subMoveRight - testSubMoves(t, Movement.Next, T.rightMoves, Forwards)
+    }
 
-    'subMoveLeft  - testSubMoves(lr, Movement.Prev, LR.rightMoves, Backwards)
-    'subMoveRight - testSubMoves(lr, Movement.Next, LR.rightMoves, Forwards)
   }
 }

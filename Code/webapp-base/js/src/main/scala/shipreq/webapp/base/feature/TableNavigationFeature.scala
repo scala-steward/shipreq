@@ -88,6 +88,16 @@ object TableNavigationFeature {
           -\/("Unable to determine table structure")
       }
 
+    def rowIterator(table: html.Table): Iterator[html.TableRow] =
+      table
+        .children.iterator
+        .filter(t => t.tagName ==* "TBODY" || t.tagName ==* "THEAD")
+        .flatMap(_.domAsHtml
+          .children.iterator
+          .filter(_.tagName ==* "TR")
+          .map(_.domCast[html.TableRow])
+          .filter(rowContentsIterator(_).nonEmpty))
+
     def rowContentsIterator(tr: html.Element): Iterator[(html.Element, (Int, Option[PosXY]))] =
       (0 until tr.children.length).iterator.flatMap { i =>
         val h = tr.children(i).domAsHtml
@@ -108,23 +118,10 @@ object TableNavigationFeature {
         .zipWithIndex
         .map { case (e, j) => e -> PosXY(j, 0) }
 
-//    def _move(m: Movement, i: Int, as: IndexedSeq[html.Element]) =
-//      _moveA(m, i, as)(Identity.apply)
-//
-//    def _moveA[A](m: Movement, i: Int, as: IndexedSeq[A])(element: A => html.Element) = {
-//      val j = Util.fitCollectionIndex(m adjustIndex i, as.length)
-//      val e2 = element(as(j))
-//      TableCellZipper(e2)
-//    }
-//
-//    def __moveA[A](m: Movement, i: Int, as: IndexedSeq[A])(element: A => html.Element): A = {
-//      val j = Util.fitCollectionIndex(m adjustIndex i, as.length)
-//      element(as(j))
-//    }
-
     def subMoveOnly: html.Element => Boolean = {
-      case i: html.Input    => i.`type` ==* "text"
-      case _: html.TextArea => true
+      case i: html.Input    => i.`type` !=* "checkbox"
+      case _: html.Select
+         | _: html.TextArea => true
       case _                => false
     }
 
@@ -177,30 +174,17 @@ object TableNavigationFeature {
             } yield TableCellZipper(m(rowResults, i))
 
           case Axis.UpDown =>
-
             for {
-              pos        ← focusPos
-              table <- root
-              tbody <- table.child(pos.body)
-              tr    <- tbody.child(pos.row)
-              td    <- tr.child(pos.cell)
-
-              rows: Vector[html.TableRow] =
-                table
-                  .children.iterator
-                  .filter(t => t.tagName ==* "TBODY" || t.tagName ==* "THEAD")
-                  .flatMap(_.domAsHtml
-                    .children.iterator
-                    .filter(_.tagName ==* "TR")
-                    .map(_.domCast[html.TableRow])
-                    .filter(rowContentsIterator(_).nonEmpty))
-                  .toVector
-
-              rowIndex <- indexWhereF(rows)(_ eq tr, "Focus row not found")
-
+              pos      ← focusPos
+              table    ← root
+              tbody    ← table.child(pos.body)
+              tr       ← tbody.child(pos.row)
+              rows     = rowIterator(table).toVector
+              rowIndex ← indexWhereF(rows)(_ eq tr, "Focus row not found")
             } yield {
 
-              // TODO ↓ ignores moving up/down within the same cell ↓
+              // This ignores moving up/down within the same cell
+              // …which is fine for now because there's no logic to create more than one sub-row in a cell
               val newRow = m(rows, rowIndex)
 
               newRow.child(pos.cell) match {
@@ -208,9 +192,12 @@ object TableNavigationFeature {
                   TableCellZipper(cell)
 
                 case _ =>
+                  // Note: If I ever add logic to start making use of the Y in PosXY this logic will need some
+                  // adjustment. It doesn't consider height wrapping. If the user presses down in the last row and the
+                  // top row cells have sub-items with PosXY.y > 0 the distance fn will rank the bottom ones is being
+                  // closer to the currentFocus which doesn't make sense; in such a case the user would expect pressing
+                  // down from the very bottom will go the very top, not the bottom of the top-most row.
                   val distRectFn = distanceRect(focus.getBoundingClientRect())
-                  // TODO closest doesn't consider wrap and movement dir
-                  // eg. moving up from top should select furthest Y
                   val closest = rowContentsIterator(newRow)
                     .map(_._1)
                     .filterNot(subMoveOnly)
