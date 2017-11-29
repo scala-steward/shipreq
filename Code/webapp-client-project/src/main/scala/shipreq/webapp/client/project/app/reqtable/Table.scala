@@ -412,26 +412,13 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
     type Mounted = ScalaComponent.MountedPure[Props, Unit, Unit]
     type Dom = dom.html.TableDataCell
 
-    def domCB($: Mounted): CallbackTo[Dom] =
-      $.getDOMNode.map(_.domCast[Dom])
-
-    def focus($: Mounted): Callback =
-      for {
-        focused <- activeHtmlElement
-        cell <- domCB($)
-      } yield
-        // If this cell's child is focused, or there is no focus at all, then focus this cell.
-        // Otherwise, don't steal another element's focus
-        if (focused.forall(cell.contains))
-          cell.focus()
-
     def onKeyDown(editor: EditorFeature.ReadWrite.ForAnyEditor): ReactKeyboardEventFromHtml => Callback =
       e => TableNavigationFeature.Keys(e) | EditorFeature.Keys(editor)(e)
 
     val cellBase = <.td(^.tabIndex := -1)
 
     def render($: RenderScope, p: Props): VdomElement = {
-      val editor = p.editor.onClose(focus($.mountedPure))
+      val editor = p.editor.onClose(focusParentOnChildClose($.mountedPure.getDOMNode))
       cellBase(
         *.dataCell(p.cellState),
         ^.onKeyDown ==> onKeyDown(editor),
