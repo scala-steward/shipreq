@@ -41,7 +41,7 @@ object UseCaseStepTree {
     .render_P(render)
     .build
 
-  private val stepBodyBase = <.div(*.body, TestMarker.useCaseStepText.tagMod)
+  private val stepBodyBase = <.div(*.body, TestMarker.useCaseStepText.tagMod, ^.tabIndex := -1)
   private val tailStepBase = <.div(*.container, ^.key := "TS", TestMarker.useCaseTailStep.tagMod)
 
   private val stepFilterM: FilterDead => VectorTree.PartialLocation => Boolean =

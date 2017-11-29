@@ -1,0 +1,38 @@
+package shipreq.webapp.client.project.app.reqdetail
+
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.html_<^._
+import shipreq.webapp.base.feature.TableNavigationFeature
+import shipreq.webapp.base.lib.DomUtil
+import shipreq.webapp.client.project.feature.EditorFeature
+
+/** This is effectively a hack so that `$.getDOMNode` provides access to the cell, which can then be used to refocus the
+  * cell when the editor closes.
+  */
+private[reqdetail] object EditableCell {
+
+  final case class Props(cellBase: VdomTag,
+                         editor  : EditorFeature.ReadWrite.ForEditor[Unit, Any],
+                         view    : () => TagMod) {
+    @inline def render: VdomElement = Component(this)
+  }
+
+  private def render($: ScalaComponent.Lifecycle.RenderScope[Props, Unit, Unit], p: Props): VdomElement = {
+
+    // This is the main point of this component
+    val editorOnClose = DomUtil.focusParentOnChildClose($.mountedPure.getDOMNode)
+
+    val editor = p.editor.onClose(editorOnClose)
+
+    def onKeyDown: ReactKeyboardEventFromHtml => Callback =
+      e => TableNavigationFeature.Keys(e) | EditorFeature.Keys(editor)(e)
+
+    p.cellBase(
+      ^.onKeyDown ==> onKeyDown,
+      editor.themedRenderOr(())(p.view()))
+  }
+
+  val Component = ScalaComponent.builder[Props]("EditableCell")
+    .renderP(render)
+    .build
+}
