@@ -11,6 +11,10 @@ import shipreq.base.util.{Deny, Permission}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.lib.DomUtil._
 
+object Attrs {
+  val NestedTable = "data-tnf-nt"
+}
+
 private[tablenav] object Logic {
 
   val allowMove: html.Element => Boolean = {
@@ -46,7 +50,7 @@ private[tablenav] object Logic {
 
   @tailrec
   def findRootAndPos(parentStream: ParentStream, sub: Boolean, focus: html.Element): F[(html.Table, TablePos)] =
-    parentStream.map(_._1.tagName) match {
+    parentStream.map(t => if (t._1.hasAttribute(Attrs.NestedTable)) "" else t._1.tagName) match {
 
       case ("TD" | "TH") #:: "TR" #:: ("TBODY" | "THEAD") #:: "TABLE" #:: _ =>
         val (td #:: tr #:: tbody #:: table #:: _) = parentStream

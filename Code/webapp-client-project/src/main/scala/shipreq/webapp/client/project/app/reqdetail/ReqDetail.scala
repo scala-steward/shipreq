@@ -27,7 +27,6 @@ import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets._
 import ExternalPubid.LookupFailure
 import ProjectWidgets.emptySpan
-import shipreq.webapp.base.lib.DomUtil
 
 object ReqDetail {
 
@@ -197,6 +196,9 @@ object ReqDetail {
 
     val emptyRow: VdomElement = <.span
 
+    val impRowSubBase =
+      <.td(*.generalImpsSide, ^.tabIndex := -1)
+
     def render(p: DynamicProps): VdomElement =
       <.main(
         BaseStyles.containerFull,
@@ -343,18 +345,20 @@ object ReqDetail {
             nonDirectlyEditableCell(view.pastPubids)
 
           case Row.Implications =>
-
-            // TODO ====================================================================================================
-            def renderEditable(key: FieldKey.ForSomeReq): TagMod =
-              reqEditor(key, data.pxProjectWidgets).themedRenderOr(())(view.editable(key))
-            def one(dir: Direction) = renderEditable(FieldKey.Implications(\/-(dir)))
+            def renderHalf(dir: Direction) = {
+              val key = FieldKey.Implications(\/-(dir))
+              EditableCell.Props(impRowSubBase, reqEditor(key, data.pxProjectWidgets), () => view.editable(key))
+                .render
+            }
             nonDirectlyEditableCell(
-              <.table(*.generalImpsCont,
+              <.table(
+                TableNavigationFeature.nestedTable,
+                *.generalImpsCont,
                 <.tbody(
                   <.tr(
-                    <.td(*.generalImpsSide, one(Backwards)),
+                    renderHalf(Backwards),
                     <.td(*.generalImpsMiddle, s"→ $pubidText →"),
-                    <.td(*.generalImpsSide, one(Forwards))))))
+                    renderHalf(Forwards)))))
 
           case Row.ImplicationGraph =>
             nonDirectlyEditableCell(

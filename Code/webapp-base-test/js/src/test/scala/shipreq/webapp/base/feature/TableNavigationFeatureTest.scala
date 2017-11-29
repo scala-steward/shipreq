@@ -123,6 +123,7 @@ object TableNavigationFeatureTest extends TestSuite {
             <.tr(
               <.td(TablePos(0, 6, 0, None), focusable, <.div(focusable), <.div, <.div(focusable)), // ignore cell focusability cos of sub-movable
               <.td(TablePos(0, 6, 1, None), focusable, <.div(focusable), <.div, <.div(focusable)), // ignore cell focusability cos of sub-movable
+              <.td(TablePos(0, 6, 2, None), <.table(TableNavigationFeature.nestedTable, <.tbody(<.tr(<.td(<.div(focusable)), <.td(<.div(focusable)))))), // nested table
             ),
           )
         )
@@ -178,6 +179,9 @@ object TableNavigationFeatureTest extends TestSuite {
       .general(TablePos(0, 0, 1, None))
       .general(TablePos(0, 1, 1, None))
       .general(TablePos(0, 2, 1, None))
+      .newBatch()
+      .general(TablePos(0, 5, 2, Some(PosXY(0, 0))))
+      .general(TablePos(0, 6, 2, Some(PosXY(0, 0))))
       .result()
 
     val downMoves = downShared ++ MovesBuilder()
