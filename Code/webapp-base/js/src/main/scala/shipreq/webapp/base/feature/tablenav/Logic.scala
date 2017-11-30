@@ -13,6 +13,8 @@ import shipreq.webapp.base.lib.DomUtil._
 
 object Attrs {
   val NestedTable = "data-tnf-nt"
+
+  val NewRow = "data-tnf-nr"
 }
 
 private[tablenav] object Logic {
@@ -80,27 +82,14 @@ private[tablenav] object Logic {
         -\/("Unable to determine table structure")
     }
 
-  def movableRowIterator(table: html.Table): Iterator[html.TableRow] =
+  def rowIterator(table: html.Table): Iterator[html.TableRow] =
     table
       .children.iterator
       .filter(t => t.tagName ==* "TBODY" || t.tagName ==* "THEAD")
       .flatMap(_.domAsHtml
         .children.iterator
         .filter(_.tagName ==* "TR")
-        .map(_.domCast[html.TableRow])
-        .filter(rowMovableElementsIterator(_).nonEmpty))
-
-  def rowMovableElementsIterator(tr: html.Element): Iterator[html.Element] =
-    (0 until tr.children.length).iterator.flatMap { i =>
-      val cell = tr.children(i).domAsHtml
-      val children = focusableChildren(cell).filter(allowMove)
-      if (children.nonEmpty)
-        children
-      else if (isFocusable(cell))
-        cell :: Nil
-      else
-        Nil
-    }
+        .map(_.domCast[html.TableRow]))
 
   type RowContent = (html.Element, (Int, Option[PosXY]))
 
@@ -111,10 +100,17 @@ private[tablenav] object Logic {
     }
 
   def cellContentsIterator(cell: html.Element, includeSelf: Boolean): Iterator[(html.Element, Option[PosXY])] = {
+    var x = -1
+    var y = 0
     val it: Iterator[(html.Element, Option[PosXY])] =
-      focusableChildren(cell)
-        .zipWithIndex
-        .map { case (e, j) => e -> Some(PosXY(j, 0)) }
+      focusableChildren(cell).map { e =>
+        if (e.hasAttribute(Attrs.NewRow) && x != -1) {
+          y += 1
+          x = 0
+        } else
+          x += 1
+        e -> Some(PosXY(x, y))
+      }
     if (includeSelf && isFocusable(cell))
       Iterator.single(cell -> None) ++ it
     else
@@ -145,22 +141,8 @@ private[tablenav] object Logic {
     hypotenuse(a._1 - b._1, a._2 - b._2)
   */
 
-  // PosXY#Y component isn't used right now, so only the X-axis is needed
-  def distanceRect(a: ClientRect): ClientRect => Double =
+  def distanceRectX(a: ClientRect): ClientRect => Double =
     b => Math.abs((a.left + a.width / 2) - (b.left + b.width / 2))
-
-  def focusClosest(focus: html.Element, candidates: Iterator[html.Element]): Option[TableCellZipper] = {
-    // Note: If I ever add logic to start making use of the Y in PosXY this logic will need some
-    // adjustment. It doesn't consider height wrapping. If the user presses down in the last row and the
-    // top row cells have sub-items with PosXY.y > 0 the distance fn will rank the bottom ones is being
-    // closer to the currentFocus which doesn't make sense; in such a case the user would expect pressing
-    // down from the very bottom will go the very top, not the bottom of the top-most row.
-    val distRectFn = distanceRect(focus.getBoundingClientRect())
-    val closest = candidates
-      .filter(allowMove)
-      .minOptionBy(e => distRectFn(e.getBoundingClientRect()))
-    closest.map(TableCellZipper(_))
-  }
 
   /** Special-case: When a table cell contains sub-items that are focusable and satisfy allowMove (i.e. can be accessed
     * via arrow keys, not just tab), then the table cell itself should be excluded from move consideration.

@@ -11,7 +11,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.feature.AsyncFeature
+import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
 import shipreq.webapp.client.project.app.Style.reqdetail.{useCaseStep => *}
 import shipreq.webapp.client.project.app.TestMarker
 import shipreq.webapp.client.project.feature._
@@ -41,8 +41,18 @@ object UseCaseStepTree {
     .render_P(render)
     .build
 
-  private val stepBodyBase = <.div(*.body, TestMarker.useCaseStepText.tagMod, ^.tabIndex := -1)
-  private val tailStepBase = <.div(*.container, ^.key := "TS", TestMarker.useCaseTailStep.tagMod)
+  private val stepBodyBase =
+    <.div(
+      *.body,
+      TestMarker.useCaseStepText.tagMod,
+      ^.tabIndex := -1,
+      TableNavigationFeature.newRow)
+
+  private val tailStepBase =
+    <.div(
+      *.container,
+      ^.key := "TS",
+      TestMarker.useCaseTailStep.tagMod)
 
   private val stepFilterM: FilterDead => VectorTree.PartialLocation => Boolean =
     FilterDead.memo(_.filterFnBy(Live whenValid _.validity))

@@ -8,6 +8,9 @@ object TableNavigationFeature {
   val nestedTable: TagMod =
     VdomAttr(tablenav.Attrs.NestedTable) := 1
 
+  val newRow: TagMod =
+    VdomAttr(tablenav.Attrs.NewRow) := 1
+
   val Keys = tablenav.TableNavKeys
 
   type Zipper = tablenav.TableCellZipper
