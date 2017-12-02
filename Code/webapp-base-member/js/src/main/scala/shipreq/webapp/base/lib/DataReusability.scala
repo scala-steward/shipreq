@@ -23,13 +23,13 @@ abstract class DataReusability extends BaseReusability {
     Reusability.by(_.toEpochMilli)
 
   implicit def reusabilityObfuscated[A]: Reusability[Obfuscated[A]] =
-    Reusability.caseClass
+    Reusability.derive
 
   implicit def reusabilityUsername: Reusability[Username] =
-    Reusability.caseClass
+    Reusability.derive
 
   implicit lazy val reusabilityProjectMetaData: Reusability[ProjectMetaData] =
-    Reusability.byRef || Reusability.caseClass
+    Reusability.byRef || Reusability.derive
 
   implicit def reusabilityProject: Reusability[Project] =
     Reusability.byRef
@@ -47,7 +47,7 @@ abstract class DataReusability extends BaseReusability {
     Reusability.byRef
 
   implicit def reusabilityReqCodes: Reusability[ReqCodes] =
-    Reusability.caseClass
+    Reusability.derive
 
   implicit def reusabilityReqCodeValue: Reusability[ReqCode.Value] =
     Reusability.byRefOrUnivEq
@@ -95,6 +95,6 @@ abstract class DataReusability extends BaseReusability {
     Reusability.byUnivEq
 
   implicit def reusabilityTextAndFlow[T: Reusability, S: Reusability]: Reusability[TextAndFlow[T, S]] =
-    Reusability.caseClass
+    Reusability.derive
 }
 

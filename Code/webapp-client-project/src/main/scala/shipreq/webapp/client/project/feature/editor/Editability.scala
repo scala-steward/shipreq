@@ -124,11 +124,11 @@ object Editability {
       Allow when useCases.focusStep(k.id).live.is(Live)
   }
 
-  implicit val reusabilityForProject     : Reusability[ForProject     ] = Reusability.caseClass
-  implicit val reusabilityForReqs        : Reusability[ForReqs        ] = Reusability.caseClass
-  implicit val reusabilityForGenericReq  : Reusability[ForGenericReq  ] = Reusability.caseClass
-  implicit val reusabilityForUseCase     : Reusability[ForUseCase     ] = Reusability.caseClass
-  implicit val reusabilityForCodeGroups  : Reusability[ForCodeGroups  ] = Reusability.caseClass
-  implicit val reusabilityForCodeGroup   : Reusability[ForCodeGroup   ] = Reusability.caseClass
-  implicit val reusabilityForUseCaseSteps: Reusability[ForUseCaseSteps] = Reusability.caseClass
+  implicit val reusabilityForProject     : Reusability[ForProject     ] = Reusability.derive
+  implicit val reusabilityForReqs        : Reusability[ForReqs        ] = Reusability.derive
+  implicit val reusabilityForGenericReq  : Reusability[ForGenericReq  ] = Reusability.derive
+  implicit val reusabilityForUseCase     : Reusability[ForUseCase     ] = Reusability.derive
+  implicit val reusabilityForCodeGroups  : Reusability[ForCodeGroups  ] = Reusability.derive
+  implicit val reusabilityForCodeGroup   : Reusability[ForCodeGroup   ] = Reusability.derive
+  implicit val reusabilityForUseCaseSteps: Reusability[ForUseCaseSteps] = Reusability.derive
 }

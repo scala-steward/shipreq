@@ -31,7 +31,7 @@ object MemberNavBar {
   }
 
   implicit val reusabilityProps: Reusability[Props] =
-    Reusability.caseClass
+    Reusability.derive
 
   val onlyUsernameOnTheRight: RightProps =
     Reusable.byRef(Nil)

@@ -86,7 +86,7 @@ object TagEditor {
     Reusability.byRef[Lookup] || Reusability.byUnivEq(_.underlyingMap)
 
 //  implicit val reusabilityProps: Reusability[Props] =
-//    Reusability.never // TODO Reusability.caseClass
+//    Reusability.never // TODO Reusability.derive
 
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.EditorBackend {
     private val pxLookup = Px.props($).map(_.lookup).withReuse.autoRefresh

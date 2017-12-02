@@ -40,7 +40,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
     }
 
     implicit val reusabilityProps: Reusability[Props] =
-      Reusability.caseClass
+      Reusability.derive
 
     final class Backend($: BackendScope[Props, Unit]) {
 
@@ -130,7 +130,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
                      reorder  : NonEmptyVector[ColumnPlus] ~=> Callback,
                      clickSort: ColumnPlus ~=> Callback)
 
-    implicit val reusabilityProps = Reusability.caseClass[Props]
+    implicit val reusabilityProps = Reusability.derive[Props]
 
     final class Backend($: BackendScope[Props, Unit]) {
 
@@ -220,7 +220,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
 
     implicit final val reusabilityProps: Reusability[Props] = {
       implicit val a = reusabilityRowEditor
-      Reusability.caseClass
+      Reusability.derive
     }
 
     protected final val reusabilityView: Reusability[(RowData, ViewInput, Column)] =
@@ -397,7 +397,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
     object Props {
       implicit val reusability: Reusability[Props] = {
         implicit val cs: Reusability[CellState] = Reusability.byRef
-        Reusability.caseClass
+        Reusability.derive
       }
 
       val `n/a`: On => Props =
@@ -451,7 +451,7 @@ object Table {
     }
 
     private val reusabilityNormal: Reusability[Normal] =
-      Reusability.caseClass
+      Reusability.derive
 
     implicit val reusability: Reusability[Mode] =
       Reusability((a, b) => // TODO Replace with Reusability.derive

@@ -110,7 +110,7 @@ object UseCaseStepEditor {
   }
 
 //  implicit val reusabilityProps: Reusability[Props] =
-//    Reusability.never // TODO Reusability.caseClass
+//    Reusability.never // TODO Reusability.derive
 
   val liveCorrect: EndoFn[String] =
     RichTextEditor.liveCorrect(Text.UseCaseStep)

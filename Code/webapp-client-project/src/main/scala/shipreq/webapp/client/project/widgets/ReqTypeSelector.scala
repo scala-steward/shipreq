@@ -38,7 +38,7 @@ object ReqTypeSelector {
   }
 
   // implicit val reusabilityProps: Reusability[Props] =
-  //   Reusability.caseClass
+  //   Reusability.derive
 
   private def key(rt: RT): Select.OptionKey =
     rt.id.value.toString

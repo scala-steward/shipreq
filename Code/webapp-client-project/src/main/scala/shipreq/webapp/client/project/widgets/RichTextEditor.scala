@@ -46,7 +46,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
   }
 
 //  implicit val reusabilityProps: Reusability[Props] =
-//    Reusability.never // TODO Reusability.caseClass
+//    Reusability.never // TODO Reusability.derive
 
   val liveCorrect: EndoFn[String] =
     RichTextEditor.liveCorrect(text)

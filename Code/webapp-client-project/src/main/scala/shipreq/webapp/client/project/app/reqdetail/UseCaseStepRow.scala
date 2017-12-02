@@ -25,7 +25,7 @@ object UseCaseStepRow {
     }
 
     implicit val reusabilityProps: Reusability[Props] =
-      Reusability.caseClass
+      Reusability.derive
 
     private val baseTag =
       <.div(TestMarker.useCaseStepLabel.tagMod)
@@ -84,7 +84,7 @@ object UseCaseStepRow {
     }
 
     implicit val reusabilityProps: Reusability[Props] =
-      Reusability.caseClass
+      Reusability.derive
 
     private def render(p: Props) = {
       import UpdateContentCmd._

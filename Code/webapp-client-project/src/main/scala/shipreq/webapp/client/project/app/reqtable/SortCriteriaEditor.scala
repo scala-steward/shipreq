@@ -29,7 +29,7 @@ object SortCriteriaEditor {
   }
 
   implicit val reusability: Reusability[Props] =
-    Reusability.byRef || Reusability.caseClass
+    Reusability.byRef || Reusability.derive
 
   private val renderSortMethod = Memo[SortMethod, VdomElement] { m =>
     import ClientResources._

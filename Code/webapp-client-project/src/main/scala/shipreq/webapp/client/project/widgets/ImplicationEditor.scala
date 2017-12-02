@@ -180,7 +180,7 @@ object ImplicationEditor {
     Reusability.byRef[Lookup] || Reusability.byUnivEq
 
 //  implicit val reusabilityProps: Reusability[Props] =
-//    Reusability.never // TODO Reusability.caseClass
+//    Reusability.never // TODO Reusability.derive
 
   val Component =
     ScalaComponent.builder[Props]("ImpEditor")

@@ -129,14 +129,14 @@ object Feature {
         forRow(RowKey.UseCaseSteps)(Reusable implicitly editability.forUseCaseSteps)
     }
 
-             val reusabilityForEditorAny   : Reusability[ForAnyEditor   ] = Reusability.caseClass
+             val reusabilityForEditorAny   : Reusability[ForAnyEditor   ] = Reusability.derive
     implicit def reusabilityForEditor[A, C]: Reusability[ForEditor[A, C]] = reusabilityForEditorAny.narrow
-    implicit val reusabilityForCodeGroup   : Reusability[ForCodeGroup   ] = Reusability.caseClass
-    implicit val reusabilityForGenericReq  : Reusability[ForGenericReq  ] = Reusability.caseClass
-    implicit val reusabilityForReq         : Reusability[ForReq         ] = Reusability.caseClass
-    implicit val reusabilityForUseCase     : Reusability[ForUseCase     ] = Reusability.caseClass
-    implicit val reusabilityForUseCaseSteps: Reusability[ForUseCaseSteps] = Reusability.caseClass
-    implicit val reusabilityForProject     : Reusability[ForProject     ] = Reusability.caseClass
+    implicit val reusabilityForCodeGroup   : Reusability[ForCodeGroup   ] = Reusability.derive
+    implicit val reusabilityForGenericReq  : Reusability[ForGenericReq  ] = Reusability.derive
+    implicit val reusabilityForReq         : Reusability[ForReq         ] = Reusability.derive
+    implicit val reusabilityForUseCase     : Reusability[ForUseCase     ] = Reusability.derive
+    implicit val reusabilityForUseCaseSteps: Reusability[ForUseCaseSteps] = Reusability.derive
+    implicit val reusabilityForProject     : Reusability[ForProject     ] = Reusability.derive
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -243,7 +243,7 @@ object Feature {
         ReadWrite.ForProject(r, this)
     }
 
-    implicit val reusabilityForEditor: Reusability[ForEditor] = Reusability.caseClass
+    implicit val reusabilityForEditor: Reusability[ForEditor] = Reusability.derive
     implicit val reusabilityForProject: Reusability[ForProject] = Reusability.byRef
   }
 
@@ -339,13 +339,13 @@ object Feature {
       def asyncState = read.async
     }
 
-             val reusabilityForAnyEditor   : Reusability[ForAnyEditor   ] = Reusability.caseClass
+             val reusabilityForAnyEditor   : Reusability[ForAnyEditor   ] = Reusability.derive
     implicit def reusabilityForEditor[A, C]: Reusability[ForEditor[A, C]] = reusabilityForAnyEditor.narrow
-    implicit val reusabilityForCodeGroup   : Reusability[ForCodeGroup   ] = Reusability.caseClass
-    implicit val reusabilityForGenericReq  : Reusability[ForGenericReq  ] = Reusability.caseClass
-    implicit val reusabilityForReq         : Reusability[ForReq         ] = Reusability.caseClass
-    implicit val reusabilityForUseCase     : Reusability[ForUseCase     ] = Reusability.caseClass
-    implicit val reusabilityForUseCaseSteps: Reusability[ForUseCaseSteps] = Reusability.caseClass
-    implicit val reusabilityForProject     : Reusability[ForProject     ] = Reusability.caseClass
+    implicit val reusabilityForCodeGroup   : Reusability[ForCodeGroup   ] = Reusability.derive
+    implicit val reusabilityForGenericReq  : Reusability[ForGenericReq  ] = Reusability.derive
+    implicit val reusabilityForReq         : Reusability[ForReq         ] = Reusability.derive
+    implicit val reusabilityForUseCase     : Reusability[ForUseCase     ] = Reusability.derive
+    implicit val reusabilityForUseCaseSteps: Reusability[ForUseCaseSteps] = Reusability.derive
+    implicit val reusabilityForProject     : Reusability[ForProject     ] = Reusability.derive
   }
 }

@@ -40,7 +40,7 @@ object CfgFields {
     def component = MainTable.Component(this)
   }
 
-  implicit val reusability = Reusability.caseClass[Props]
+  implicit val reusability = Reusability.derive[Props]
 }
 
 import CfgFields.Props
@@ -226,7 +226,7 @@ private[fields] object MainTable {
     val staticDeletion = new Deletion[StaticField](
       deleteIO(_, _)(TCB.Success.nop, TCB.Failure.nop))
   }
-  // implicit val protocolBackendReusability = Reusability.caseClass[ProtocolBackend]
+  // implicit val protocolBackendReusability = Reusability.derive[ProtocolBackend]
 
   // ===================================================================================================================
   final class ProjectBackend(backend: Backend, project: Project) {

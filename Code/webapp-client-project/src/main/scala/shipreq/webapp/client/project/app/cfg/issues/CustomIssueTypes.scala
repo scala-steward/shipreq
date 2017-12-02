@@ -32,7 +32,7 @@ private[issues] object CustomIssueTypes {
                          usageShow : Usage.Show) {
     @inline def component = Component(this)
   }
-  implicit val reusability = Reusability.caseClass[Props]
+  implicit val reusability = Reusability.derive[Props]
 
   val fields = FieldSet2[CustomIssueType](_.key.value, _.desc getOrElse "")(("", ""))
   val storesAndState = TypicalStoresAndState(fields).keyedBy[CustomIssueTypeId]

@@ -43,8 +43,8 @@ final case class CheckboxList[A: Reusability](renderFn: RenderFn) {
       }
   }
 
-  implicit def reusabilityItem: Reusability[Item] = Reusability.caseClass
-  implicit def reusabilityProps: Reusability[Props] = Reusability.caseClass
+  implicit def reusabilityItem: Reusability[Item] = Reusability.derive
+  implicit def reusabilityProps: Reusability[Props] = Reusability.derive
 
   private def render(p: Props): VdomElement =
     renderFn(

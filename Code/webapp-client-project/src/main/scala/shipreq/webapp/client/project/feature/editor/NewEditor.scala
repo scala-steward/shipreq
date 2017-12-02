@@ -40,7 +40,7 @@ object NewEditor {
     val onStart = hooks ^|-> Hooks.onStart
 
     implicit val reusability: Reusability[CreationArgs] =
-      Reusability.byRef || Reusability.caseClass
+      Reusability.byRef || Reusability.derive
   }
 
   @Lenses
@@ -52,7 +52,7 @@ object NewEditor {
 
     implicit val reusability: Reusability[Hooks] = {
       implicit val x: Reusability[Callback] = Reusability.by((_: Callback).toScalaFn)(Reusability.byRef) // TODO Use Reusability.callbackByRef
-      Reusability.byRef || Reusability.caseClass
+      Reusability.byRef || Reusability.derive
     }
   }
 

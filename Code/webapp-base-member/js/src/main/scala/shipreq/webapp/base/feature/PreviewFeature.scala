@@ -97,7 +97,7 @@ object PreviewFeature {
     }
 
     implicit def reusabilityFocusData[Id: Reusability]: Reusability[FocusData[Id]] =
-      Reusability.caseClass
+      Reusability.derive
 
     def status[Id: Equal](id: Id): Lens[State[Id], Option[Status]] =
       Lens[State[Id], Option[Status]](

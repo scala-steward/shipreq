@@ -34,7 +34,7 @@ object ColumnSelector {
   }
 
   implicit val reusabilityProps: Reusability[Props] =
-    Reusability.caseClass
+    Reusability.derive
 
   private val popupOptions: Popup.Js.Options =
     new Popup.Js.Options {

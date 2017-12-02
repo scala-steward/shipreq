@@ -28,7 +28,7 @@ object ImplicationGraph {
 
   implicit val reusabilityProps: Reusability[Props] = {
     implicit def a: Reusability[Implications.BiDir] = Reusability.byRef
-    Reusability.caseClass
+    Reusability.derive
   }
 
   final class Backend($: BackendScope[Props, State]) extends GraphBackend($) {

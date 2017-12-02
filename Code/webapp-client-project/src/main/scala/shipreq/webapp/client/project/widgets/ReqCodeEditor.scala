@@ -54,7 +54,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
   }
 
 //  implicit lazy val reusabilityProps: Reusability[Props] =
-//    Reusability.never // TODO Reusability.caseClass
+//    Reusability.never // TODO Reusability.derive
 
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.EditorBackend {
     private val pxTrie = Px.props($).map(_.trie).withReuse.autoRefresh

@@ -56,7 +56,7 @@ object NewButton {
   final case class Update(setState: State => Callback, create: RowKey => Callback)
 
   implicit val reusabilityProps: Reusability[Props] =
-    Reusability.caseClass
+    Reusability.derive
 
   private case class DropdownItem(mnemonic: Option[Mnemonic],
                                   name    : String,

@@ -76,7 +76,7 @@ object ProjectItem {
     }
 
     // implicit val reusabilityProps: Reusability[Props] =
-    //   Reusability.caseClass
+    //   Reusability.derive
 
     @Lenses
     case class EditState(edit: String, async: AsyncFeature.State.D0[ErrorMsg])

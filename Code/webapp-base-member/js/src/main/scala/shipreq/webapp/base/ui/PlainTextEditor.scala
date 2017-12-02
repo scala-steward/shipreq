@@ -33,7 +33,7 @@ object PlainTextEditor {
     }
 
     //  implicit val reusabilityProps: Reusability[Props] =
-    //    Reusability.caseClass
+    //    Reusability.derive
 
     final class Backend($: BackendScope[Props, Unit]) {
 
@@ -115,7 +115,7 @@ object PlainTextEditor {
     }
 
     //  implicit val reusabilityProps: Reusability[Props] =
-    //    Reusability.caseClass
+    //    Reusability.derive
 
     final class Backend($: BackendScope[Props, Unit]) {
 

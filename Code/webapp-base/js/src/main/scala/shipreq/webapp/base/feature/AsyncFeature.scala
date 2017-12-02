@@ -387,9 +387,9 @@ object AsyncFeature {
         D1(write.withKey1(k), read.withKey1(k))
     }
 
-    implicit def reusabilityD0[F]        : Reusability[D0[F]]         = Reusability.caseClass
-    implicit def reusabilityD1[K, F]     : Reusability[D1[K, F]]      = Reusability.caseClass
-    implicit def reusabilityD2[K2, K1, F]: Reusability[D2[K2, K1, F]] = Reusability.caseClass
+    implicit def reusabilityD0[F]        : Reusability[D0[F]]         = Reusability.derive
+    implicit def reusabilityD1[K, F]     : Reusability[D1[K, F]]      = Reusability.derive
+    implicit def reusabilityD2[K2, K1, F]: Reusability[D2[K2, K1, F]] = Reusability.derive
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -441,8 +441,8 @@ object AsyncFeature {
         D0(asyncState(k), run(k))
     }
 
-    private val reusabilityAny0 = Reusability.caseClass[D0[Nothing, Any]]
-    private val reusabilityAny1 = Reusability.caseClass[D1[Any, Nothing, Any]]
+    private val reusabilityAny0 = Reusability.derive[D0[Nothing, Any]]
+    private val reusabilityAny1 = Reusability.derive[D1[Any, Nothing, Any]]
     implicit def reusabilityD0   [I, F]: Reusability[D0   [I, F]] = reusabilityAny0.narrow
     implicit def reusabilityD1[K, I, F]: Reusability[D1[K, I, F]] = reusabilityAny1.asInstanceOf[Reusability[D1[K, I, F]]]
   }

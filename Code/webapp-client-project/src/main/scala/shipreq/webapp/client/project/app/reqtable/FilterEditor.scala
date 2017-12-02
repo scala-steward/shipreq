@@ -39,7 +39,7 @@ object FilterEditor {
       State("", Valid)
 
     implicit val reusability: Reusability[State] =
-      Reusability.caseClass
+      Reusability.derive
   }
 
   private val autoCompleteKeywords: AutoComplete.Strategy =

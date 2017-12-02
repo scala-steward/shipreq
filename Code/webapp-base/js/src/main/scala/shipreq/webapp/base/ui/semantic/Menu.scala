@@ -120,7 +120,7 @@ object Menu {
   private val divRightMenu = divCls("right menu")
 
   // implicit val reusabilityProps: Reusability[Props] =
-  //   Reusability.caseClass
+  //   Reusability.derive
 
   final class Backend($: BackendScope[Props, Unit]) {
 

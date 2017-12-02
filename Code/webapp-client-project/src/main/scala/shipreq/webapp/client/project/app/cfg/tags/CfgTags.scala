@@ -42,7 +42,7 @@ object CfgTags {
                    filterDead: StateSnapshot[FilterDead]) {
     def component = MainTable.Component(this)
   }
-  implicit val reusability = Reusability.caseClass[Props]
+  implicit val reusability = Reusability.derive[Props]
 }
 
 import CfgTags.Props

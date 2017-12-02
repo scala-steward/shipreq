@@ -34,7 +34,7 @@ object CfgReqTypes {
                    usageShow : Usage.Show) {
     def component = Component(this)
   }
-  implicit val reusability = Reusability.caseClass[Props]
+  implicit val reusability = Reusability.derive[Props]
 
   val fields = FieldSet3[CustomReqType](_.mnemonic.value, _.name, _.imp)(("", "", ImplicationRequired.Not))
   val storesAndState = TypicalStoresAndState(fields).keyedBy[CustomReqTypeId]

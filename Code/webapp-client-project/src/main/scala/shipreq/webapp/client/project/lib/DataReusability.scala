@@ -8,7 +8,7 @@ import shipreq.webapp.client.ww.api.Svg
 object DataReusability extends shipreq.webapp.base.lib.DataReusability {
 
   implicit def reusabilitySvg: Reusability[Svg] =
-    Reusability.caseClass
+    Reusability.derive
 
   implicit def reusabilityProjectWidgets_ : Reusability[ProjectWidgets.AnyCtx] =
     Reusability.byRef
