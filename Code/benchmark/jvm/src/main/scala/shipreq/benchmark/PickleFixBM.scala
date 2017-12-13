@@ -97,7 +97,7 @@ object PickleFixBM extends BasicImplicitPicklers {
   val p3: Pickler[Calc] = FixpointPickler3.pickleFix
 
   case class Spec(width: Int, depth: Int)
-  val gen: Coalgebra[CalcF, Spec] = {
+  val gen: FCoalgebra[CalcF, Spec] = {
     case Spec(_, 0) => Num('A')
     case Spec(w, d) => val s = Spec(w, d - 1); Add(s, Vector.fill(w - 1)(s))
   }

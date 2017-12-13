@@ -1560,7 +1560,7 @@ object RandomData {
       private val flatGen: Gen[PotentialF[Nothing]] =
         Gen.chooseGenNE(flatGens)
 
-      private val coalgebra: CoalgebraM[Gen, PotentialF, Int] =
+      private val coalgebra: FCoalgebraM[Gen, PotentialF, Int] =
         remainingDepth => {
           if (remainingDepth <= 0)
             flatGen
@@ -1629,7 +1629,7 @@ object RandomData {
           greqs.map(impliedBy)
       }
 
-      private def coalgebra(flatGens: FlatGens): CoalgebraM[Gen, ValidF, Int] = {
+      private def coalgebra(flatGens: FlatGens): FCoalgebraM[Gen, ValidF, Int] = {
         val flatGen = Gen.chooseGenNE(flatGens)
         remainingDepth =>
           if (remainingDepth <= 0)

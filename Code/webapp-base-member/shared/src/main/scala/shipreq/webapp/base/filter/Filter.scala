@@ -10,7 +10,7 @@ import shipreq.webapp.base.text.{PlainText, TextSearch}
 object Filter {
   import Implicits._
 
-  type Validator = AlgebraM[String \/ ?, PotentialF, Valid]
+  type Validator = FAlgebraM[String \/ ?, PotentialF, Valid]
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

@@ -80,6 +80,6 @@ final class GenericDashHasher(algorithm: Hash.Algorithm) {
     hashADT
   }
 
-  def hashFix[F[_]: Functor](algebra: Algebra[F, Int]): HashFn[Fix[F]] =
+  def hashFix[F[_]: Functor](algebra: FAlgebra[F, Int]): HashFn[Fix[F]] =
     HashFn(Recursion.cata(algebra))
 }

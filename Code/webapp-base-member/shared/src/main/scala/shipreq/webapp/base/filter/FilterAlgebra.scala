@@ -14,15 +14,15 @@ import FilterAst._
 
 /** Algebras:
   *
-  * unparse        : Algebra [             PotentialF,   AtomOrComposite[String]]
-  * validate       : AlgebraM[String \/ ?, PotentialF,   Valid                  ]
-  * unvalidate     : Algebra [             ValidF,       Potential              ]
-  * makeExtensional: Algebra [             ValidF,       Extensional            ]
-  * compile        : Algebra [             ExtensionalF, CompiledFilter         ]
+  * unparse        : FAlgebra [             PotentialF,   AtomOrComposite[String]]
+  * validate       : FAlgebraM[String \/ ?, PotentialF,   Valid                  ]
+  * unvalidate     : FAlgebra [             ValidF,       Potential              ]
+  * makeExtensional: FAlgebra [             ValidF,       Extensional            ]
+  * compile        : FAlgebra [             ExtensionalF, CompiledFilter         ]
   */
 object FilterAlgebra {
 
-  val unparse: Algebra[PotentialF, AtomOrComposite[String]] = {
+  val unparse: FAlgebra[PotentialF, AtomOrComposite[String]] = {
     import shipreq.base.util.SafeStringOps._
     import AtomOrComposite.string._
     implicit def autoAtom(s: String) = atom(s)
@@ -64,7 +64,7 @@ object FilterAlgebra {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  def validate(cfg: data.ProjectConfig): AlgebraM[String \/ ?, PotentialF, Valid] = {
+  def validate(cfg: data.ProjectConfig): FAlgebraM[String \/ ?, PotentialF, Valid] = {
     type R = String \/ Valid
 
     def byAttr(attrStr: String, f: Attr => ValidF[Nothing]): R =
@@ -125,7 +125,7 @@ object FilterAlgebra {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  def unvalidate(cfg: data.ProjectConfig): Algebra[ValidF, Potential] = {
+  def unvalidate(cfg: data.ProjectConfig): FAlgebra[ValidF, Potential] = {
     val convReqType: data.ReqTypeId => data.ReqType.Mnemonic =
       cfg.reqTypes.need(_).mnemonic
 
@@ -151,7 +151,7 @@ object FilterAlgebra {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  def makeExtensional(p: data.Project): Algebra[ValidF, Extensional] = {
+  def makeExtensional(p: data.Project): FAlgebra[ValidF, Extensional] = {
 
     def lookupSomeReqs(reqTypeId: data.ReqTypeId, nums: NonEmptySet[Int]): Set[data.ReqId] = {
       val vec = p.content.reqs.pubids.value(reqTypeId)
@@ -189,7 +189,7 @@ object FilterAlgebra {
               projectText: PlainText.ForProject.NoCtx,
               textSearch : TextSearch,
               issueLookup: IssueLookup,
-              tagLookup  : TagLookup): Algebra[ExtensionalF, CompiledFilter] = {
+              tagLookup  : TagLookup): FAlgebra[ExtensionalF, CompiledFilter] = {
 
     // Possible optimisations:
     // - overlap between has Tag & Presence/Lack(AnyTag)

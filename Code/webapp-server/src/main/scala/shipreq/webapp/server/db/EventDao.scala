@@ -165,8 +165,8 @@ object EventDbCodecs {
     )
 
   def pickleFix[F[_]: Functor](implicit rw: ReadWriter[F[Js.Value]]): ReadWriter[Fix[F]] = {
-    val algebra  : Algebra  [F, Js.Value] = rw.write
-    val coalgebra: Coalgebra[F, Js.Value] = rw.read
+    val algebra  : FAlgebra  [F, Js.Value] = rw.write
+    val coalgebra: FCoalgebra[F, Js.Value] = rw.read
     ReadWriter[Fix[F]](
       Recursion.cata(algebra)(_),
       { case j => Recursion.ana(coalgebra)(j) })
