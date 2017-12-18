@@ -64,6 +64,10 @@ Backlog
 * Add LastUpdated field to ReqTable/Detail
 * Add Change Count field to ReqTable/Detail (help find most volatile/unstable reqs)
 * Allow refs to custom text fields (e.g. [UC-1.detail])
+* Prevent -- (not not) in the FilterParser? Or allow /\-+/ and auto-correct on blur?
+* Add KB shortcut to move colums in ReqTable
+* Firefox: ctrl-home space doesn't work properly
+* Firefox: UC step graph doesn't shrink
 
 ------------------------------------------------------------------------------------------------------------------------
 Phase 2
@@ -96,10 +100,6 @@ Phase 2
   * Add a nice Default saved view
   * Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
 * Upgrade JDK and audit crypto mechanisms (pending next Jetty release)
-* Prevent -- (not not) in the FilterParser? Or allow /\-+/ and auto-correct on blur?
-* Add KB shortcut to move colums in ReqTable
-* Firefox: ctrl-home space doesn't work properly
-* Firefox: UC step graph doesn't shrink
 
 ### New Features
 * Issues
