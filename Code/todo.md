@@ -97,7 +97,6 @@ Phase 2
   * Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
 * Upgrade JDK and audit crypto mechanisms (pending next Jetty release)
 * Prevent -- (not not) in the FilterParser? Or allow /\-+/ and auto-correct on blur?
-* Hard-deletion of field (via hard-deletion of ReqType) breaks SavedViews!
 * Add KB shortcut to move colums in ReqTable
 * Firefox: ctrl-home space doesn't work properly
 * Firefox: UC step graph doesn't shrink

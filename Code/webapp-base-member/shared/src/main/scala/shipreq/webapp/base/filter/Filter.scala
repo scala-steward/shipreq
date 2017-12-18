@@ -3,6 +3,7 @@ package shipreq.webapp.base.filter
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.recursion._
 import scalaz.{-\/, Traverse, \/, \/-}
+import shipreq.base.util.Identity
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data
 import shipreq.webapp.base.text.{PlainText, TextSearch}
@@ -63,6 +64,27 @@ object Filter {
 
     def tag  (id: data.ApplicableTagId)  : Valid = apply(FilterAst.HashRef(\/-(id)))
     def issue(id: data.CustomIssueTypeId): Valid = apply(FilterAst.HashRef(-\/(id)))
+
+    def exists(text   : FilterAst.Text  => Boolean,
+               regex  : FilterAst.Regex => Boolean,
+               hashRef: HashTag         => Boolean,
+               attr   : Attr            => Boolean,
+               reqSet : ReqSet          => Boolean,
+               reqType: ReqType         => Boolean): Valid => Boolean =
+      RecursionFn.cata[ValidF, Boolean] {
+        case c: FilterAst.Text                    => text (c)
+        case c: FilterAst.Regex                   => regex(c)
+        case c: FilterAst.HashRef       [HashTag] => hashRef(c.value)
+        case c: FilterAst.Presence      [Attr]    => attr(c.attr)
+        case c: FilterAst.Lack          [Attr]    => attr(c.attr)
+        case c: FilterAst.ReqType       [ReqType] => reqType(c.reqType)
+        case c: FilterAst.ImpliesAnyOf  [ReqSet]  => reqSet(c.reqs)
+        case c: FilterAst.ImpliedByAnyOf[ReqSet]  => reqSet(c.reqs)
+        case c: FilterAst.Reqs          [ReqSet]  => reqSet(c.reqs)
+        case c: FilterAst.Not           [Boolean] => c.clause
+        case c: FilterAst.AllOf         [Boolean] => c.clauses.exists(Identity.apply)
+        case c: FilterAst.AnyOf         [Boolean] => c.head || c.tail.exists(Identity.apply)
+      }
 
     def toText(cfg: data.ProjectConfig, f: Valid): String =
       Potential.toText(

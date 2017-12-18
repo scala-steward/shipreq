@@ -107,7 +107,24 @@ trait ApplyConfigEvent {
       deleteOrRestore(e.id, Live, ReqCodeLogic.restoreBelongingToReqs)
 
     private def isInUse(id: CustomReqTypeId): SE[Boolean] =
-      SE.get(_.content.reqs.pubids.value(id).nonEmpty)
+      SE.get { p =>
+
+        def hasReqs =
+          p.content.reqs.pubids.value(id).nonEmpty
+
+        lazy val customFields =
+          p.config.fields.customFields.valuesIterator
+            .filter(CustomField.referencesCustomReqType(id))
+            .map(f => reqtable.Column.CustomField(f.id))
+            .toList
+
+        def inSavedViews =
+          p.reqtableViewIterator.exists(sv =>
+            sv.view.referencesReqType(id) ||
+              customFields.exists(sv.view.referencesColumn))
+
+        hasReqs || inSavedViews
+      }
 
     private def ifInUse[A](id       : CustomReqTypeId,
                            notInUse : => SE[A],

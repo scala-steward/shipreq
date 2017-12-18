@@ -31,6 +31,13 @@ sealed abstract class ISubset[A] {
       case b                         => b
     }
   }
+
+  final def toSet: Set[A] =
+    this match {
+      case All()   => Set.empty
+      case Only(v) => v.whole
+      case Not (v) => v.whole
+    }
 }
 
 object ISubset {

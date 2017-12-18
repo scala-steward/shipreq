@@ -3,7 +3,7 @@ package shipreq.webapp.base.data.reqtable
 import japgolly.microlibs.nonempty.NonEmptyVector
 import monocle.macros.Lenses
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.{FilterDead, HideDead, Live}
+import shipreq.webapp.base.data.{FilterDead, HideDead, Live, ReqTypeId}
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.filter.Filter.Implicits._
 
@@ -12,6 +12,20 @@ final case class View(columns   : NonEmptyVector[Column],
                       order     : SortCriteria,
                       filterDead: FilterDead,
                       filter    : Option[Filter.Valid]) {
+
+  def referencesColumn(c: Column): Boolean =
+    columns.exists(_ ==* c) ||
+    order.init.exists(_.column ==* c) ||
+    order.last.column ==* c
+
+  def referencesReqType(id: ReqTypeId): Boolean =
+    filter.exists(Filter.Valid.exists(
+      text    = _ => false,
+      regex   = _ => false,
+      hashRef = _ => false,
+      attr    = _ => false,
+      reqSet  = _.exists(_.reqType ==* id),
+      reqType = _ ==* id))
 
   def isVisible(c: Column): Boolean =
     isVisible(_ ==* c)

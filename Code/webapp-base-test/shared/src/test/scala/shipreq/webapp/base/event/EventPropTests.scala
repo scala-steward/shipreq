@@ -5,6 +5,7 @@ import nyaya.prop._
 import nyaya.test.PropTest._
 import scalaz.\/-
 import scalaz.std.list.listInstance
+import scalaz.std.vector.vectorInstance
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
@@ -15,13 +16,13 @@ object EventPropTests extends TestSuite {
 
   val AE = ApplyEvent.untrusted
 
-  class Tester(p: Project) {
-    val E = EvalOver(p)
+  final class Tester(p: Project) {
+    private val E = EvalOver(p)
 
     // Ensure project is valid. Only need to do this once globally and here it is.
     p assertSatisfies DataProp.project.allIncludingConfig
 
-    val deletableStepProps =
+    private def deletableStepProps =
       E.forall(p.useCaseStepsDeletable.map(_.id).toList) { id =>
         val a = UseCaseStepDelete (id)
         val b = UseCaseStepRestore(id)
@@ -30,7 +31,18 @@ object EventPropTests extends TestSuite {
           expect = \/-(p))
         }
 
-    def all = deletableStepProps
+    // Any live custom req-types can be deleted
+    // Whether deletion is soft or hard doesn't matter, so long as the event succeeds and the resulting project is valid
+    // This is to catch the case that a req-type is hard-deleted but still referenced elsewhere in the project
+    private def customReqTypeDeletion =
+      E.forall(p.config.reqTypes.liveCustomReqTypes) { rt =>
+        val event = CustomReqTypeDelete(rt.id)
+        val error = ApplyEvent.untrusted.apply1(event)(p).swap.toOption
+        E.equal(s"$event must succeed", error, None)
+      }
+
+    def all: EvalL =
+      customReqTypeDeletion & deletableStepProps
   }
 
   val prop = Prop.eval((p: Project) => new Tester(p).all)

@@ -4,7 +4,9 @@ import japgolly.microlibs.nonempty.NonEmptySet
 import scalaz.{Applicative, Traverse}
 import shipreq.base.util.univeq.UnivEq
 
-sealed trait IntensionalReqSet[+RT]
+sealed trait IntensionalReqSet[+RT] {
+  val reqType: RT
+}
 object IntensionalReqSet {
 
   final case class WholeType [+RT](reqType: RT)                            extends IntensionalReqSet[RT]

@@ -337,6 +337,12 @@ object CustomField {
     override val unapplyData: AnyRef => Option[CustomField] = {case r: CustomField => Some(r); case _ => None}
   }
 
+  def referencesCustomReqType(id: CustomReqTypeId): CustomField => Boolean = {
+    case _: CustomField.Tag
+       | _: CustomField.Text        => false
+    case f: CustomField.Implication => f.reqTypeId.foldId(_ => false, _ ==* id)
+  }
+
   // -------------------------------------------------------------------------------------------------------------------
   @Lenses
   case class Text(id            : Text.Id,
