@@ -185,7 +185,7 @@ object ApplyEventTest extends TestSuite {
 
       'checkUnspecifiedScopes {
         import Data1._
-        val (_, ve) = verifyEvent(Project.empty, ProjectTemplateApply(ProjectTemplate.Default))
+        val (_, ve) = verifyEvent(Project.empty, ProjectTemplateApply(ProjectTemplate.default))
         val vef = ve.copy(hashRecs = ve.hashRecs.mapValuesNow(_.drop(1)))
         assertApplicationFailure(vef, Project.empty)
       }

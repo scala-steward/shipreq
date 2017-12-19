@@ -707,7 +707,8 @@ object EventDbCodecs {
   }
 
   implicit val pickleProjectTemplate: ReadWriter[ProjectTemplate] = pickleAdtN {
-    case ProjectTemplate.Default => 1
+    case ProjectTemplate.V1 => 1
+    case ProjectTemplate.V2 => 2
   }
 
   implicit val idTypeReqCodeId                = DbCodec.monoId(noDataIdType, ReqCodeId)

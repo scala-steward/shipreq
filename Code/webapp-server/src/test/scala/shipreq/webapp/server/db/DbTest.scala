@@ -267,7 +267,7 @@ object DbTest extends TestSuite {
         }
 
         'ProjectTemplateApply {
-          testRW(ProjectTemplateApply(ProjectTemplate.Default), 1000, None, ' ', """1""")
+          testRW(ProjectTemplateApply(ProjectTemplate.default), 1000, None, ' ', """2""")
         }
 
         //'createApplicableTag    - demo(RandomData.events.createApplicableTag   )

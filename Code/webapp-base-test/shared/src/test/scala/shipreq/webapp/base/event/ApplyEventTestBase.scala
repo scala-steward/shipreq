@@ -82,11 +82,17 @@ object ApplyEventTestFns {
       case e: CodeGroupsDelete   => activeRCGs -= e.ids.size
 
       case ProjectTemplateApply(t) => t match {
-        case ProjectTemplate.Default =>
+        case ProjectTemplate.V1 =>
           customReqTypes   +=  9
           customIssueTypes +=  3
           tags             += 16
           customFields     +=  5
+        case ProjectTemplate.V2 =>
+          customReqTypes   += 5
+          customIssueTypes += 2
+          tags             += 8
+          customFields     += 4
+          savedViews       += 2
       }
 
       case d: ReqsDelete =>

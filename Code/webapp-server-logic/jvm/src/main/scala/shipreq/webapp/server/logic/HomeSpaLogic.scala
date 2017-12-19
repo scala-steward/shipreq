@@ -13,7 +13,7 @@ trait HomeSpaLogic[F[_]] {
 }
 
 object HomeSpaLogic {
-  val InitProjectEvent = ProjectTemplateApply(ProjectTemplate.Default)
+  val InitProjectEvent = ProjectTemplateApply(ProjectTemplate.default)
   val InitProject      = ApplyNewEvent.mustApply(InitProjectEvent, Project.empty)
 
   def createProject[D[_]](userId: UserId,

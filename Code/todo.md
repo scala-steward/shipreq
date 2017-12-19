@@ -96,9 +96,6 @@ Phase 2
   * Restore or delete SessionStats
 
 ### Misc
-* Revise defaults
-  * Add a nice Default saved view
-  * Revise ProjectTemplate - reduce reqtypes, BL without BR is weird
 
 ### New Features
 * Issues
