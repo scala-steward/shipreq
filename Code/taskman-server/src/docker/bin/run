@@ -12,6 +12,9 @@ java_opt=(
   -XX:+UnlockExperimentalVMOptions
   -XX:+UseCGroupMemoryLimitForHeap
 
+  # Prepare heap on startup rather than incrementally at runtime
+  -XX:+AlwaysPreTouch
+
   # Default in Java 9, may as well use it now
   -XX:+UseG1GC
 )
