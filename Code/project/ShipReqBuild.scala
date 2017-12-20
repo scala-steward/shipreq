@@ -19,6 +19,7 @@ object ShipReqBuild {
     Project("root", file("."))
       .configure(Common.jvmSettings, IdeSettings.settingsForRoot)
       .aggregate(base, taskman, webapp, utils, benchmarkJvm, benchmarkJs)
+      .settings(addCommandAlias("dockers", ";taskman-server/docker ;webapp-server/docker"))
 
   // ===================================================================================================================
   // base-* : General utils for taskman, webapp, benchmarking, etc.
