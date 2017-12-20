@@ -11,6 +11,9 @@ java_opt=(
   # This will one day be enabled by default
   -XX:+UnlockExperimentalVMOptions
   -XX:+UseCGroupMemoryLimitForHeap
+
+  # Default in Java 9, may as well use it now
+  -XX:+UseG1GC
 )
 
 if [ -z "$client" ]; then
