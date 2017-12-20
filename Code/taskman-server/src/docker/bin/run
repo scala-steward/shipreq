@@ -7,11 +7,19 @@ cd /taskman || exit 1
 main="$1"; shift
 cp=conf/:secrets1/:secrets2/:{{cp}}
 
-java_opt=(-cp "$cp")
+java_opt=(
+  # This will one day be enabled by default
+  -XX:+UnlockExperimentalVMOptions
+  -XX:+UseCGroupMemoryLimitForHeap
+)
+
 if [ -z "$client" ]; then
   java_opt+=(-server)
 else
   java_opt+=(-client)
 fi
 
+java_opt+=(-cp "$cp")
+
+echo "> java $JAVA_OPTS ${java_opt[@]} $main $@"
 exec java $JAVA_OPTS "${java_opt[@]}" $main "$@"
