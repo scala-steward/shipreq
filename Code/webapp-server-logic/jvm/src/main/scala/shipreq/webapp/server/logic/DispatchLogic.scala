@@ -11,9 +11,18 @@ import shipreq.webapp.base.{AssetManifest, Urls}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
 import shipreq.webapp.base.util.ResourceHint
-import shipreq.webapp.base.validation.Simple
 import shipreq.webapp.server.ServerConfig
 
+/**
+  * Usage
+  * =====
+  *
+  * 1. Wire up [[DispatchLogic.Ops]] to session-less dispatch.
+  *    Use [[DispatchLogic.Ops.candidate]] as the condition and [[DispatchLogic.Ops.total]] as the handler.
+  *
+  * 2. Wire up [[DispatchLogic.mainDispatcher()]] to normal (session-dependent) dispatch.
+  *
+  */
 object DispatchLogic {
 
   /** A request to the server.
@@ -28,6 +37,7 @@ object DispatchLogic {
     case object Get   extends Method
     case object Post  extends Method
     case object Other extends Method
+    implicit def univEq: UnivEq[Method] = UnivEq.derive
   }
 
   sealed trait Response {
@@ -128,25 +138,20 @@ object DispatchLogic {
     }
   }
 
-  /** This is a lazy, hardcoded password to validate admin access. When ShipReq gets serious this shit will be
-    * replaced with proper authentication and authorisation.
-    */
-  val apiSecretAdmin = PlainTextPassword("Hooquail2aehiey1viemiefaayengeiGhuch8Eishee3OHu4aiKieth3lieshaid")
-
-  /** API for invoking the first part of the registration process (regardless of whether public registrations are
-    * enabled or not).
-    *
-    * Meant for admin/ops only.
-    */
-  val apiUrlRegister1 = Url.Relative("/api/register1")
-
-  /** For tests only. Not meant for production */
-  val apiUrlLogin = Url.Relative("/api/login")
-
   /** Prefix for all ops routes */
   val opsRoot = Url.Relative("/ops")
 
-  /** For dev only. Not meant for production */
+  val opsSecretKey = "secret"
+
+  /** This is a lazy, hardcoded password to validate admin access. When ShipReq gets serious this shit will be
+    * replaced with proper authentication and authorisation.
+    */
+  val opsSecretValue = PlainTextPassword("Hooquail2aehiey1viemiefaayengeiGhuch8Eishee3OHu4aiKieth3lieshaid")
+
+  /** FOR UNIT-TESTS ONLY */
+  val unitTestLoginUrl = Url.Relative("/c8c8f430-93b2-43fe-a072-11f9a1ab52a0")
+
+  /** DEV-MODE ONLY */
   val quickDevUrl = Url.Relative("/x")
   final case class QuickDev(user: Username \/ EmailAddr,
                             pass: PlainTextPassword,
@@ -246,17 +251,6 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
     routes.embed(r => test(r.path), Request.path.modify(mod))
   }
 
-  private def protectedPostApi(url: Url.Relative)(f: Request => FR): Route =
-    whenUrlIs(url)(onMethod(Post)(security.protectFn(f)))
-
-  private def secretPostApi(url: Url.Relative)(f: Request => FR): Route =
-    protectedPostApi(url)(req =>
-      parseParams(req.param("secret"))(s =>
-        if (s ==* apiSecretAdmin.value)
-          f(req)
-        else
-          F pure StatusOnly(StatusCode.Unauthorized)))
-
   private def parseParams[A](parsed: Option[A])(f: A => FR): FR =
     parsed match {
       case Some(a) => f(a)
@@ -350,27 +344,37 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  object Api {
+  // Ops & Diagnostics
 
-    /** For tests only. Not meant for production */
-    val login: Route =
-      protectedPostApi(apiUrlLogin)(req =>
-        parseParams(
-          for {
-            u <- req.param("user")
-            p <- req.param("pass")
-          } yield (Username.orEmail(u), PlainTextPassword(p))
-        ) { case (u, p) =>
-          security.attemptLogin(u, p).map {
-            case Some(_) => StatusOnly(StatusCode.OK)
-            case None    => StatusOnly(StatusCode.Unauthorized)
-          }
+  object Ops {
+
+    private val notFoundSecure: FR =
+      security.protect( // prevent response-time hacking to discover endpoints (meaning ops URLs)
+        F pure Response.Generic(404, "Not found."))
+
+    private def post(url: Url.Relative)(resp: Request => FR): Route =
+      whenUrlIs(url)(req =>
+        req.param(opsSecretKey) match {
+          case Some(key) if key ==* opsSecretValue.value && req.method ==* Post =>
+            security.protect(resp(req))
+          case _ =>
+            notFoundSecure
         }
       )
 
-    // TODO This doesn't need a session, it should be in with the "stateless" routes which is currently just Ops.routes
-    val register1: Route =
-      secretPostApi(apiUrlRegister1)(req =>
+    /** Return a static 200.
+      * Useful to test that the web-server is up and serving requests.
+      * Used for container health-checks.
+      */
+    private val ok: Route =
+      get(Url.Relative("ok"),
+        F pure Response.Generic(200, "OK."))
+
+    /** API for invoking the first part of the registration process
+      * (regardless of whether public registrations are enabled or not).
+      */
+    private val register1: Route =
+      post(Url.Relative("register1"))(req =>
         parseParams(req.param("email"))(e =>
           publicApi.register1(e).map {
             case \/-(_) => StatusOnly(StatusCode.OK)
@@ -379,39 +383,22 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
         )
       )
 
-    def routes(testMode: Boolean): Route =
-      register1 | Option.when(testMode)(login)
-  }
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // Ops & Diagnostics
-
-  object Ops {
+    private def routes: Route =
+      scope(opsRoot, ok | register1)
 
     /** Is the request a candidate for ops route parsing? */
     val candidate: Url.Relative => Boolean =
       opsRoot.isEqualToOrParentOf
 
-    val ok: Route = {
-      val response: FR = F pure Response.Generic(200, "OK.")
-      whenUrlIs(Url.Relative("ok"))(onGet(_ => response))
-    }
-
-    val routes: Request ?=> F[Response] =
-      scope(opsRoot, ok)
-
     val total: RealReq => F[RealRes] =
-      makeReal(trace = false) {
-        val notFound: FR = F pure Response.Generic(404, "Not found.")
-        routes.withFallback(onGet(_ => notFound))
-      }
+      makeReal(trace = false)(routes.withFallback(_ => notFoundSecure))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Other
 
-  /** For dev only. Not meant for production */
-  val quickDev: Option[Route] =
+  /** DEV-MODE ONLY */
+  private val quickDev: Option[Route] =
     QuickDev.get().map(q =>
       get(quickDevUrl,
         security.attemptLogin(q.user, q.pass).map {
@@ -421,12 +408,29 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
       )
     )
 
+  /** FOR UNIT-TESTS ONLY */
+  private val unitTestLogin: Route =
+    whenUrlIs(unitTestLoginUrl)(onMethod(Post)(req => security.protect(
+      parseParams(
+        for {
+          u <- req.param("user")
+          p <- req.param("pass")
+        } yield (Username.orEmail(u), PlainTextPassword(p))
+      ) { case (u, p) =>
+        security.attemptLogin(u, p).map {
+          case Some(_) => StatusOnly(StatusCode.OK)
+          case None    => StatusOnly(StatusCode.Unauthorized)
+        }
+      }
+    )))
+
+  /** Stateful routes (i.e. using a session) */
   def mainDispatcher(devMode: Boolean, testMode: Boolean): RealReq => F[RealRes] =
     makeReal(trace = true)(
       Main.cacheUsualPaths(
         ( Main.routes
-        | Api.routes(testMode = testMode)
         | Option.when(devMode)(quickDev).flatten
+        | Option.when(testMode)(unitTestLogin)
         ).withFallback(Main.fallback)
       )
     )

@@ -25,10 +25,12 @@ object DispatchLogicTest extends TestSuite {
 
   implicit def autoRelUrl(s: String): Url.Relative = Url.Relative(s)
 
-  def run(url: Url.Relative, method: Method = Get)
+  def run(url   : Url.Relative,
+          method: Method              = Get,
+          params: Map[String, String] = Map.empty)
          (implicit logIn: MockDb.UserEntry = null): Response = {
     security.loggedIn = Option(logIn)
-    val req = Request(method, url, _ => None)
+    val req = Request(method, url, params.get)
     val d = if (dispatcher.Ops.candidate(url))
       dispatcher.Ops.total
     else
@@ -36,9 +38,12 @@ object DispatchLogicTest extends TestSuite {
     d(req).value
   }
 
-  def testRun(expect: Response, u: Url.Relative, method: Method = Get)
+  def testRun(expect: Response,
+              url   : Url.Relative,
+              method: Method              = Get,
+              params: Map[String, String] = Map.empty)
              (implicit logIn: MockDb.UserEntry = null): Unit =
-    assertEq(u.relativeUrl, run(u, method)(logIn), expect)
+    assertEq(url.relativeUrl, run(url, method, params)(logIn), expect)
 
   def testNonGet(url: Url.Relative): Unit =
     for {
@@ -152,9 +157,25 @@ object DispatchLogicTest extends TestSuite {
     }
 
     'ops {
-      'ok   - testRun(Response.Generic(200, "OK."), "/ops/ok")
-      'what - testRun(Response.Generic(404, "Not found."), "/ops/what")
-      'root - testRun(Response.Generic(404, "Not found."), "/ops")
+      'ok - testRun(Response.Generic(200, "OK."), "/ops/ok")
+
+      def register1Url = opsRoot / "register1"
+      def register1Params = Map(opsSecretKey -> opsSecretValue.value, "email" -> "a@bc.com")
+      'register1 - assertProtected(testRun(Response.StatusOnly(200), register1Url, Post, register1Params))
+
+      // For security reasons, the same response is observed for all failures.
+      // This prevents hackers determining:
+      // - valid URLs
+      // - the secret key param
+      // - the secret key value
+      def testKO(url: Url.Relative, method: Method, params: Map[String, String] = Map.empty) =
+        assertProtected(testRun(Response.Generic(404, "Not found."), url, method, params))
+
+      'root      - testKO("/ops", Get)
+      'notFound  - testKO("/ops/what", Get)
+      'notPost   - testKO(register1Url, Get, register1Params)
+      'noSecret  - testKO(register1Url, Post, register1Params - opsSecretKey)
+      'badSecret - testKO(register1Url, Post, register1Params + (opsSecretKey -> "admin"))
     }
 
     'fallback {

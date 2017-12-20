@@ -111,7 +111,7 @@ You can trigger PublicSpa.Register1 from the CLI.
 This is intended to be used by admin when public registration is off to issue registration tokens on others' behalves.
 
 ```
-curl -v https://shipreq.com/api/register1 -X POST -d "secret=Hooquail2aehiey1viemiefaayengeiGhuch8Eishee3OHu4aiKieth3lieshaid&email=japgolly@gmail.com"
+curl -v https://shipreq.com/ops/register1 -X POST -d "secret=Hooquail2aehiey1viemiefaayengeiGhuch8Eishee3OHu4aiKieth3lieshaid&email=japgolly@gmail.com"
 ```
 
 The secret is currently just a hardcoded value.

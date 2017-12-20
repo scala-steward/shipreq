@@ -133,7 +133,8 @@ final class LiftDispatcher(global: Global) {
     val candidate = logic.Ops.candidate
 
     {
-      case r if (r.request ne null) && candidate(liftReqUrl(r)) => () => dispatch(r).unsafeRun()
+      case r if (r.request ne null) && candidate(liftReqUrl(r)) =>
+        () => dispatch(r).unsafeRun()
     }
   }
 
