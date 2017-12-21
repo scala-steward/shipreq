@@ -381,6 +381,9 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
         case -\/(e) => Response.Text(StatusCode.BadRequest, e.value)
       }
 
+    private def jsonResponse(r: OpsLogic.HasJsValue): Response =
+      Response.Json(StatusCode.OK, r.toJsValue)
+
     /** Return a static 200.
       * Useful to test that the web-server is up and serving requests.
       * Used for container health-checks.
@@ -398,22 +401,20 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
           whenValid(publicApi.register1(email))(id =>
             Response.Json(StatusCode.OK, Js.Obj("taskId" -> Js.Num(id.value))))))
 
-    private val statsDb: Route = {
-      val action: FR = ops.dbStats.map(r => Response.Json(StatusCode.OK, r.toJsValue))
-      endpoint(Post, Url.Relative("stats/db"))(_ => action)
-    }
+    private val statsDb: Route =
+      endpoint(Post, Url.Relative("stats/db"))(
+        Function const ops.dbStats.map(jsonResponse))
 
-    private val statsUsers: Route = {
-      val action: FR = ops.userStats.map(r => Response.Json(StatusCode.OK, r.toJsValue))
-      endpoint(Post, Url.Relative("stats/users"))(_ => action)
-    }
+    private val statsUsers: Route =
+      endpoint(Post, Url.Relative("stats/users"))(
+        Function const ops.userStats.map(jsonResponse))
 
     /** API to inspect the status of a Taskman message. */
     private val task: Route =
       endpoint(Post, Url.Relative("task"))(req =>
         parseParams(req.param("id") flatMap ParseLong.unapply)(id =>
           ops.taskmanMsgStatus(MsgId(id)).map {
-            case Some(r) => Response.Json(StatusCode.OK, r.toJsValue)
+            case Some(r) => jsonResponse(r)
             case None    => Response.StatusOnly(StatusCode.NotFound)
           }
         )
@@ -422,8 +423,8 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
     private val testSendMail: Route =
       endpoint(Post, Url.Relative("test-sendmail"))(req =>
         parseParams(req.param("email"))(email =>
-          whenValid(ops.sendMail(email))(r =>
-            Response.Json(StatusCode.OK, r.toJsValue))))
+          whenValid(ops.sendMail(email))(
+            jsonResponse)))
 
     private def routes: Route =
       scope(opsRoot, ok | register1 | statsDb | statsUsers | task | testSendMail)

@@ -87,7 +87,11 @@ object OpsLogic {
   private def jsInstant(i: Instant): Js.Value =
     Js.Str(i.toStringIso8601)
 
-  final case class MsgStatusResult(id: MsgId, status: String, archived: Boolean) {
+  trait HasJsValue {
+    def toJsValue: Js.Value
+  }
+
+  final case class MsgStatusResult(id: MsgId, status: String, archived: Boolean) extends HasJsValue {
     def toJsValue: Js.Value =
       Js.Obj(
         "id" -> Js.Num(id.value),
@@ -95,7 +99,7 @@ object OpsLogic {
         "archived" -> jsBool(archived))
   }
 
-  final case class SendMailResult(id: MsgId, time: Duration, token: String) {
+  final case class SendMailResult(id: MsgId, time: Duration, token: String) extends HasJsValue {
     def toJsValue: Js.Value =
       Js.Obj(
         "id" -> Js.Num(id.value),
@@ -103,7 +107,7 @@ object OpsLogic {
         "time" -> jsDuration(time))
   }
 
-  final case class UserStats(stats: DB.ForOps.UserStats) {
+  final case class UserStats(stats: DB.ForOps.UserStats) extends HasJsValue {
     def toJsValue: Js.Value =
       Js.Obj(
         "registered" -> Js.Num(stats.registered),
@@ -115,7 +119,7 @@ object OpsLogic {
                            latency1  : Duration,
                            latency2  : Duration,
                            tableStats: List[DB.ForOps.TableStat],
-                           dbSize    : Long) {
+                           dbSize    : Long) extends HasJsValue {
     import DB.ForOps.TableStat
     def toJsValue: Js.Value = {
       val tables = {
