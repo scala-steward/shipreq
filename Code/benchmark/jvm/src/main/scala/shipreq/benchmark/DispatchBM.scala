@@ -159,6 +159,10 @@ object DispatchBM {
     implicit val publicApi: PublicSpaLogic.ForApi[F] =
       _ => F.pure(\/-(MsgId(1000)))
 
+    implicit object ops extends OpsLogic[F] {
+      override def taskmanMsgStatus(id: MsgId) = F point None
+    }
+
     val dispatchLogic = new DispatchLogic[F, Request, Response](r => r, (_, r) => F.point(r))
 
     val dispatcher1 = dispatchLogic.Main.routes.withFallback(dispatchLogic.Main.fallback)

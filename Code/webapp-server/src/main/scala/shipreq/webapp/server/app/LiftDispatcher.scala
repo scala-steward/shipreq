@@ -13,7 +13,7 @@ import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.user.User
 import shipreq.webapp.base.{Urls, WebappConfig}
 import shipreq.webapp.server.db.DbInterpreter
-import shipreq.webapp.server.logic.{DB, DispatchLogic, Trace}
+import shipreq.webapp.server.logic.{DB, DispatchLogic, OpsLogic, Trace}
 
 object LiftDispatcher {
   object ProjectIdVar extends RequestVar[ProjectId](null)
@@ -100,8 +100,10 @@ final class LiftDispatcher(global: Global) {
   val logic: DispatchLogic[Fx, LiftReq, Box[LiftResponse]] = {
     implicit val config    = global.config
     implicit val trace     = global.trace
+    implicit val taskman   = global.taskman
     implicit val security  = global.security
     implicit val publicApi = global.logic.publicApi
+    implicit val ops       = OpsLogic[Fx]
     implicit val db        = DB.SecurityTokenReadOnly.trans(DbInterpreter.SecurityTokenReadOnly)(global.db.fx.trans)
     implicit val server    = ServerInterpreter
     new DispatchLogic(parseReq, makeResponse)

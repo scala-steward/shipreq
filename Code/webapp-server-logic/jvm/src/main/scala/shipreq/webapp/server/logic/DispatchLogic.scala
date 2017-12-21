@@ -1,6 +1,7 @@
 package shipreq.webapp.server.logic
 
 import japgolly.microlibs.nonempty.NonEmptySet
+import japgolly.microlibs.stdlib_ext.ParseLong
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import monocle.macros.Lenses
@@ -188,6 +189,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
                                                  (implicit F: Monad[F],
                                                   config    : ServerConfig,
                                                   db        : DB.SecurityTokenReadOnly[F],
+                                                  ops       : OpsLogic[F],
                                                   publicApi : PublicSpaLogic.ForApi[F],
                                                   security  : Security.Algebra[F],
                                                   svr       : Server.Time[F],
@@ -355,6 +357,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
 
   object Ops {
     import upickle.Js
+    import shipreq.taskman.api.MsgId
 
     private val notFoundSecure: FR =
       security.protect( // prevent response-time hacking to discover endpoints (meaning ops URLs)
@@ -391,8 +394,19 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
         )
       )
 
+    /** API to inspect the status of a Taskman message. */
+    private val task: Route =
+      endpoint(Post, Url.Relative("task"))(req =>
+        parseParams(req.param("id") flatMap ParseLong.unapply)(id =>
+          ops.taskmanMsgStatus(MsgId(id)).map {
+            case Some(r) => Response.Json(StatusCode.OK, r.toJsValue)
+            case None    => Response.StatusOnly(StatusCode.NotFound)
+          }
+        )
+      )
+
     private def routes: Route =
-      scope(opsRoot, ok | register1)
+      scope(opsRoot, ok | register1 | task)
 
     /** Is the request a candidate for ops route parsing? */
     val candidate: Url.Relative => Boolean =

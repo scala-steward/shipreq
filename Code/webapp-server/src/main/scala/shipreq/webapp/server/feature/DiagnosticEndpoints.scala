@@ -106,24 +106,5 @@ object DiagnosticEndpoints {
         Full(jsonResponse(EmailSendResult(msgId.value, dur, token)))
       case _ => Full(BadRequestResponse())
     })
-
-  // -------------------------------------------------------------------------------------------------------------------
-  // Taskman & msgs
-
-  case class MsgStatusResult(id: Long, status: String, archived: Boolean)
-
-  val MsgStatus: PM[JLong] =
-    Menu.param[JLong]("diag.msg.status", "", parseJLong, _.toString) / "diag" / "msg" / * >>
-      Hidden >> Stateless >> denyNonHttps >> EarlyResponse(() =>
-        MsgStatus.currentValue match {
-          case Full(l) =>
-            val id = MsgId(l)
-            Global.taskman.queryMsgStatus(id).unsafePerformIO() match {
-              case Some(status) => Full(jsonResponse(MsgStatusResult(id.value, status.toString, status.isArchived)))
-              case None         => Full(NotFoundResponse("Msg not found."))
-            }
-          case _ => Full(BadRequestResponse())
-        }
-      )
 }
 */
