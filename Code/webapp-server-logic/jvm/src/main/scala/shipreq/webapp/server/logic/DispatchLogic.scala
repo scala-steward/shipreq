@@ -403,6 +403,11 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
       endpoint(Post, Url.Relative("stats/db"))(_ => action)
     }
 
+    private val statsUsers: Route = {
+      val action: FR = ops.userStats.map(r => Response.Json(StatusCode.OK, r.toJsValue))
+      endpoint(Post, Url.Relative("stats/users"))(_ => action)
+    }
+
     /** API to inspect the status of a Taskman message. */
     private val task: Route =
       endpoint(Post, Url.Relative("task"))(req =>
@@ -421,7 +426,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
             Response.Json(StatusCode.OK, r.toJsValue))))
 
     private def routes: Route =
-      scope(opsRoot, ok | register1 | statsDb | task | testSendMail)
+      scope(opsRoot, ok | register1 | statsDb | statsUsers | task | testSendMail)
 
     /** Is the request a candidate for ops route parsing? */
     val candidate: Url.Relative => Boolean =

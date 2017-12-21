@@ -14,6 +14,8 @@ trait OpsLogic[F[_]] {
 
   def dbStats: F[DbStats]
 
+  def userStats: F[UserStats]
+
   def taskmanMsgStatus(id: MsgId): F[Option[MsgStatusResult]]
 
   def sendMail(emailAddr: String): F[ErrorMsg \/ SendMailResult]
@@ -43,7 +45,6 @@ object OpsLogic {
       override def dbStats =
         for {
           first   <- measureDuration(db.now)
-          users   <- db.userStats
           tables  <- db.tableStats
           dbSize  <- db.dbSize
           last    <- measureDuration(db.now)
@@ -51,9 +52,11 @@ object OpsLogic {
           now        = first._1,
           latency1   = first._2,
           latency2   = last._2,
-          userStats  = users,
           tableStats = tables,
           dbSize     = dbSize)
+
+      override def userStats =
+        db.userStats.map(UserStats)
 
       override def taskmanMsgStatus(id: MsgId) =
         taskman.queryMsgStatus(id).map(_.map(status =>
@@ -100,20 +103,21 @@ object OpsLogic {
         "time" -> jsDuration(time))
   }
 
+  final case class UserStats(stats: DB.ForOps.UserStats) {
+    def toJsValue: Js.Value =
+      Js.Obj(
+        "registered" -> Js.Num(stats.registered),
+        "pending"    -> Js.Num(stats.pendingRegistration),
+        "total"      -> Js.Num(stats.total))
+  }
+
   final case class DbStats(now       : Instant,
                            latency1  : Duration,
                            latency2  : Duration,
-                           userStats : DB.ForOps.UserStats,
                            tableStats: List[DB.ForOps.TableStat],
                            dbSize    : Long) {
     import DB.ForOps.TableStat
-
     def toJsValue: Js.Value = {
-      val users = Js.Obj(
-        "registered" -> Js.Num(userStats.registered),
-        "pending"    -> Js.Num(userStats.pendingRegistration),
-        "total"      -> Js.Num(userStats.total))
-
       val tables = {
         val fields = List.newBuilder[(String, Js.Value)]
         def add(t: TableStat): Unit =
@@ -138,8 +142,7 @@ object OpsLogic {
         "now"     -> jsInstant(now),
         "latency" -> Js.Arr(jsDuration(latency1), jsDuration(latency2)),
         "tables"  -> tables,
-        "dbSize"  -> Js.Num(dbSize),
-        "users"   -> users)
+        "dbSize"  -> Js.Num(dbSize))
     }
   }
 }
