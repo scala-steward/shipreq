@@ -19,7 +19,7 @@ function post {
   params="$3"
 
   cmd=(curl -s -o - -X POST)
-  cmd+=(-w '\n\nhttp-code=%{http_code}, content-type=%{content_type}, time=%{time_total}\n')
+  cmd+=(-w '\nhttp-code=%{http_code}, content-type=%{content_type}, time=%{time_total}')
 
   case "$1" in
     dev) cmd+=(-k);; # Ignore invalid HTTPS
@@ -31,7 +31,15 @@ function post {
 
   cmd+=("$(envUrl "$1")$urlPath")
 
-  echo "> ${cmd[@]}"
-  echo
-  "${cmd[@]}"
+  #echo "> ${cmd[@]}"
+
+  result="$( "${cmd[@]}" )"
+  attrs="$(echo "$result" | tail -1)"
+  body="$(echo "$result" | head -n -1)"
+
+  echo "$attrs"
+  case "$attrs" in
+    *json*) echo "$body" | jq . ;;
+    *) echo "$body"
+  esac
 }
