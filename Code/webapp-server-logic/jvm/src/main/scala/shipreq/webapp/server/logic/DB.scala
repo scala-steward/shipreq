@@ -173,6 +173,34 @@ object DB {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  trait ForOps[F[_]] {
+    val now: F[Instant]
+    val userStats: F[ForOps.UserStats]
+    val tableStats: F[List[ForOps.TableStat]]
+  }
+
+  object ForOps {
+
+    final case class UserStats(registered: Long, total: Long) {
+      def pendingRegistration: Long =
+        total - registered
+    }
+
+    final case class TableStat(name: String, tableSize: Long, indexesSize: Long) {
+      def totalSize: Long =
+        tableSize + indexesSize
+    }
+
+    def trans[F[_], G[_]](f: ForOps[F])(t: F ~> G): ForOps[G] =
+      new ForOps[G] {
+        override val now        = t(f.now)
+        override val userStats  = t(f.userStats)
+        override val tableStats = t(f.tableStats)
+      }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   trait Algebra[F[_]]
     extends ForPublicSpa[F]
        with ForHomeSpa[F]

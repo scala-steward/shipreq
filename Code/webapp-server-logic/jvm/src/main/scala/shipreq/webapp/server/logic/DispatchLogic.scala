@@ -182,6 +182,8 @@ object DispatchLogic {
   }
 }
 
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
 import DispatchLogic._
 
 final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Request,
@@ -396,6 +398,11 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
           whenValid(publicApi.register1(email))(id =>
             Response.Json(StatusCode.OK, Js.Obj("taskId" -> Js.Num(id.value))))))
 
+    private val statsDb: Route = {
+      val action: FR = ops.dbStats.map(r => Response.Json(StatusCode.OK, r.toJsValue))
+      endpoint(Post, Url.Relative("stats/db"))(_ => action)
+    }
+
     /** API to inspect the status of a Taskman message. */
     private val task: Route =
       endpoint(Post, Url.Relative("task"))(req =>
@@ -414,7 +421,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
             Response.Json(StatusCode.OK, r.toJsValue))))
 
     private def routes: Route =
-      scope(opsRoot, ok | register1 | task | testSendMail)
+      scope(opsRoot, ok | register1 | statsDb | task | testSendMail)
 
     /** Is the request a candidate for ops route parsing? */
     val candidate: Url.Relative => Boolean =

@@ -60,7 +60,11 @@ object MockDb {
   }
 }
 
-final class MockDb(now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecurity[Name] {
+final class MockDb(_now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecurity[Name] with DB.ForOps[Name] {
+  import DB.ForOps
+
+  override val now: Name[Instant] =
+    _now
 
   override def getUserAndPasswordByEmail(email: EmailAddr) = Name[Option[(User, PasswordAndSalt)]] {
     getUser(\/-(email)).map(_.toUserAndPassword)
@@ -271,6 +275,14 @@ final class MockDb(now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecur
       assertNoChange("assertNoChange:users", users.mkString("\n"))(
         assertNoChange("assertNoChange:projects", projects.values.mkString("\n"))(
           a)))
+
+  override val userStats: Name[ForOps.UserStats] =
+    Name(ForOps.UserStats(
+      registered = users.size,
+      total = users.size + userPlaceholders.size))
+
+  override val tableStats =
+    Name(Nil)
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

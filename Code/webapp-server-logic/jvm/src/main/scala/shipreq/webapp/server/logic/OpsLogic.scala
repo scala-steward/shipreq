@@ -1,6 +1,7 @@
 package shipreq.webapp.server.logic
 
-import java.time.Duration
+import japgolly.microlibs.stdlib_ext.StdlibExt._
+import java.time.{Duration, Instant}
 import upickle.Js
 import scalaz.{Monad, \/, \/-}
 import scalaz.syntax.monad._
@@ -11,6 +12,8 @@ import shipreq.webapp.base.user.{EmailAddr, UserValidators}
 trait OpsLogic[F[_]] {
   import OpsLogic._
 
+  def dbStats: F[DbStats]
+
   def taskmanMsgStatus(id: MsgId): F[Option[MsgStatusResult]]
 
   def sendMail(emailAddr: String): F[ErrorMsg \/ SendMailResult]
@@ -20,13 +23,14 @@ trait OpsLogic[F[_]] {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 object OpsLogic {
+  import Implicits._
 
   def apply[F[_]](randomToken: F[String])
                  (implicit F: Monad[F],
+                  db: DB.ForOps[F],
                   svr: Server.Time[F],
                   taskman: TaskmanApi[F]): OpsLogic[F] =
     new OpsLogic[F] {
-      import Implicits._
       import WebappTaskmanConverters._
 
       private def measureDuration[A](f: F[A]): F[(A, Duration)] =
@@ -35,6 +39,19 @@ object OpsLogic {
           a  <- f
           t2 <- svr.now
         } yield (a, Duration.between(t1, t2))
+
+      override def dbStats =
+        for {
+          first   <- measureDuration(db.now)
+          users   <- db.userStats
+          tables  <- db.tableStats
+          last    <- measureDuration(db.now)
+        } yield DbStats(
+          now        = first._1,
+          latency1   = first._2,
+          latency2   = last._2,
+          userStats  = users,
+          tableStats = tables)
 
       override def taskmanMsgStatus(id: MsgId) =
         taskman.queryMsgStatus(id).map(_.map(status =>
@@ -62,6 +79,9 @@ object OpsLogic {
   private def jsDuration(d: Duration): Js.Value =
     Js.Num(d.toMillis.toDouble / 1000 + d.getNano.toDouble / 1000000000)
 
+  private def jsInstant(i: Instant): Js.Value =
+    Js.Str(i.toStringIso8601)
+
   final case class MsgStatusResult(id: MsgId, status: String, archived: Boolean) {
     def toJsValue: Js.Value =
       Js.Obj(
@@ -76,5 +96,46 @@ object OpsLogic {
         "id" -> Js.Num(id.value),
         "token" -> Js.Str(token),
         "time" -> jsDuration(time))
+  }
+
+  final case class DbStats(now       : Instant,
+                           latency1  : Duration,
+                           latency2  : Duration,
+                           userStats : DB.ForOps.UserStats,
+                           tableStats: List[DB.ForOps.TableStat]) {
+    import DB.ForOps.TableStat
+
+    def toJsValue: Js.Value = {
+      val users = Js.Obj(
+        "registered" -> Js.Num(userStats.registered),
+        "pending"    -> Js.Num(userStats.pendingRegistration),
+        "total"      -> Js.Num(userStats.total))
+
+      val tables = {
+        val fields = List.newBuilder[(String, Js.Value)]
+        def add(t: TableStat): Unit =
+          fields +=
+            t.name -> Js.Obj(
+              "size" -> Js.Obj(
+                "table"   -> Js.Num(t.tableSize),
+                "indexes" -> Js.Num(t.indexesSize),
+                "total"   -> Js.Num(t.totalSize)))
+        var tableSize = 0L
+        var indexesSize = 0L
+        for (t <- tableStats) {
+          tableSize += t.tableSize
+          indexesSize += t.indexesSize
+          add(t)
+        }
+        add(TableStat("TOTAL", tableSize = tableSize, indexesSize = indexesSize))
+        Js.Obj(fields.result(): _*)
+      }
+
+      Js.Obj(
+        "now"     -> jsInstant(now),
+        "latency" -> Js.Arr(jsDuration(latency1), jsDuration(latency2)),
+        "tables"  -> tables,
+        "users"   -> users)
+    }
   }
 }

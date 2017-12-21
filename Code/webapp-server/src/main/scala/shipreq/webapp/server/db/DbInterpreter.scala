@@ -46,6 +46,16 @@ final class DbInterpreter(implicit config: ServerConfig)
 object DbInterpreter {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  trait Base extends DB.Base[ConnectionIO] {
+
+    override final def inDbTransaction[A](f: ConnectionIO[A]): ConnectionIO[A] =
+      f.inTransaction
+
+    override final def inDbTransaction[A](level: Int, f: ConnectionIO[A]): ConnectionIO[A] =
+      f.inTransaction.withTransactionLevel(level)
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object ForSecurity extends DB.ForSecurity[ConnectionIO] {
     private final def colsUserAndPasswordInfo = "id,username,email,roles,password,password_salt"
     private final type UserAndPasswordInfo = (UserId, Option[Username], EmailAddr, Option[String], Option[PasswordHash], Option[Salt])
@@ -419,12 +429,41 @@ object DbInterpreter {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  trait Base extends DB.Base[ConnectionIO] {
+  object ForOps extends DB.ForOps[ConnectionIO] {
+    import DB.ForOps._
 
-    override final def inDbTransaction[A](f: ConnectionIO[A]): ConnectionIO[A] =
-      f.inTransaction
+    override val now: ConnectionIO[Instant] =
+      Query0[Instant]("select now()").unique
 
-    override final def inDbTransaction[A](level: Int, f: ConnectionIO[A]): ConnectionIO[A] =
-      f.inTransaction.withTransactionLevel(level)
+    override val userStats: ConnectionIO[UserStats] =
+      Query0[(Long, Long)]("select count(username), count(1) from usr")
+        .unique
+        .map((UserStats.apply _).tupled)
+
+    override val tableStats: ConnectionIO[List[TableStat]] =
+      Query0[(String, Long, Long)](
+        """
+          |SELECT
+          |    table_name,
+          |    pg_table_size(table_name) AS table_size,
+          |    pg_indexes_size(table_name) AS indexes_size
+          |FROM (
+          |    SELECT
+          |      (table_schema || '.' || table_name) AS table_name,
+          |      table_type
+          |    FROM information_schema.tables
+          |    WHERE table_schema not like 'pg_%'
+          |      AND table_schema <> 'information_schema'
+          |) AS all_tables
+          |WHERE NOT(table_type = 'VIEW' AND pg_total_relation_size(table_name) = 0)
+          |ORDER BY 1
+        """.stripMargin.sql)
+        .list
+        .map(_.map((TableStat.apply _).tupled))
+
+//    def statsDatabaseSize(dbName: String): ConnectionIO[Long] =
+//      Query[String, Long]("SELECT pg_database_size(?)")
+//        .toQuery0(dbName.replaceFirst("^.*/", ""))
+//        .unique
   }
 }
