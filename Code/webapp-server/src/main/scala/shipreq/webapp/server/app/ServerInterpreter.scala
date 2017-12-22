@@ -3,13 +3,14 @@ package shipreq.webapp.server.app
 import java.time.{Duration, Instant}
 import net.liftweb.actor.LAScheduler
 import net.liftweb.common._
-import net.liftweb.http.S
+import net.liftweb.http.{LiftSession, S}
 import scalaz.syntax.monad._
 import shipreq.base.util.FxModule._
+import shipreq.base.util.log.HasLogger
 import shipreq.webapp.server.logic._
 import shipreq.webapp.server.protocol.ServerProtocol
 
-object ServerInterpreter extends Server.Algebra[Fx] {
+object ServerInterpreter extends Server.Algebra[Fx] with HasLogger {
 
   override val registerServerSideProc = (name, localFn) =>
     Fx(ServerProtocol.registerServerSideProc(localFn))
@@ -38,4 +39,15 @@ object ServerInterpreter extends Server.Algebra[Fx] {
       }
     }
 
+  override val sessionId: Fx[Option[SessionId]] =
+    Fx {
+      S.session match {
+        case Full(s)    => Some(getSessionId(s))
+        case Empty      => log.warn("Session expected but Empty"); None
+        case f: Failure => log.warn("Session unavailable: " + f.msg); None
+      }
+    }
+
+  def getSessionId(s: LiftSession): SessionId =
+    SessionId(s.uniqueId)
 }

@@ -18,6 +18,7 @@ object TestDb extends shipreq.base.test.db.TestDb {
     val g3 = Global.modify(_.copy(
       db       = g2.db,
       logic    = g2.logic,
+      ops      = g2.ops,
       security = g2.security,
       taskman  = g2.taskman))
     g3

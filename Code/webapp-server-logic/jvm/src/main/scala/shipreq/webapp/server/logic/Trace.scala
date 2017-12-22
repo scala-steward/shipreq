@@ -46,6 +46,7 @@ object Trace {
         override def delay[A](f: F[A], d: Duration) = orig.delay(f, d)
         override def fork[A](f: F[A])               = orig.fork(f)
         override val clientIP                       = orig.clientIP
+        override val sessionId                      = orig.sessionId
         override def now                            = orig.now
         // Customisation:
         override val registerServerSideProc = (name, f) =>

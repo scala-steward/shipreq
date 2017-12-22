@@ -343,6 +343,9 @@ final class MockServer extends Server.Algebra[Name] {
 
   var nextClientIP = Option.empty[IP]
   override val clientIP = Name(nextClientIP)
+
+  var nextSessionId = Option.empty[SessionId]
+  override val sessionId = Name(nextSessionId)
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -447,7 +450,9 @@ class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerCon
 
   implicit object ops extends OpsLogic.Base[Name] {
     override val randomToken = Name("blah")
-    override val sessionStats = Name(OpsLogic.SessionStats(0, None))
+    override val sessionStats = Name(OpsLogic.SessionStats(0, 0, 0, None))
+    override def trackLogin(sessionId: SessionId, user: User) = Name(())
+    override def trackLogout(sessionId: SessionId) = Name(())
   }
 
   val user2password = PlainTextPassword("blurp12345")

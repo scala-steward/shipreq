@@ -21,6 +21,7 @@ object Security {
     final def protectFn[A, B](vulnerable: A => F[B]): A => F[B] =
       a => protect(vulnerable(a))
 
+    // You're expected to call OpsLogic.trackLogin within
     def attemptLogin(user: Username \/ EmailAddr, password: PlainTextPassword): F[Option[User]]
 
     def hashPassword(p: PlainTextPassword): F[PasswordAndSalt]
@@ -29,6 +30,7 @@ object Security {
 
     val authenticatedUser: F[Option[User]]
 
+    // You're expected to call OpsLogic.trackLogout within
     val logout: F[Unit]
   }
 

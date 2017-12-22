@@ -50,7 +50,8 @@ object PrepareEnv {
     boot.initRoutes(global())
   }
 
-  lazy val dbAlgebra = new DbInterpreter()(global().config)
+  lazy val dbAlgebra =
+    new DbInterpreter()(global().config)
 
   lazy val security = {
     PrepareEnv.shiro()

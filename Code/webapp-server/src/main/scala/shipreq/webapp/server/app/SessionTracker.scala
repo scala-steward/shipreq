@@ -7,7 +7,9 @@ import net.liftweb.http.{LiftHacks, LiftRules, LiftSession, Req}
 import scala.collection.JavaConverters._
 import shipreq.base.util.log.HasLogger
 import shipreq.webapp.base.user._
+import shipreq.webapp.server.logic.SessionId
 
+// TODO Most of SessionTracker should be moved into webapp-server-logic
 final class SessionTracker extends HasLogger {
 
   // I don't care about thread-safety here
@@ -17,8 +19,8 @@ final class SessionTracker extends HasLogger {
   private[this] val _activeSessionCount =
     new AtomicLong(0)
 
-// private[this] val _loggedInUsers =
-//   new ConcurrentHashMap[String, User]
+  private[this] val _loggedInUsers =
+    new ConcurrentHashMap[String, User]
 
   val onSessionCreation: (LiftSession, Req) => Unit =
     (session, _) => {
@@ -29,28 +31,28 @@ final class SessionTracker extends HasLogger {
     }
 
   val onSessionExpiration: LiftSession => Unit =
-    _ => {
+    session => {
       val i = _activeSessionCount.decrementAndGet()
-//      logout(session)
       log.debug("Session count: (↓) " + i)
+      logout(ServerInterpreter.getSessionId(session))
     }
 
-//  def login(s: LiftSession, user: User): Unit =
-//    _loggedInUsers.put(s.uniqueId, user)
-//
-//  def logout(s: LiftSession): Unit =
-//    _loggedInUsers.remove(s.uniqueId)
+  def login(s: SessionId, u: User): Unit =
+    _loggedInUsers.put(s.value, u)
+
+  def logout(s: SessionId): Unit =
+    _loggedInUsers.remove(s.value)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   def activeSessionCount(): Long =
     _activeSessionCount.get()
 
-//  def loggedInSessionCount(): Long =
-//    _loggedInUsers.size
-//
-//  def uniqueUserCount(): Long =
-//    _loggedInUsers.values.asScala.toSet.size
+  def loggedInSessionCount(): Long =
+    _loggedInUsers.size
+
+  def uniqueUserCount(): Long =
+    _loggedInUsers.values.asScala.toSet.size
 
   def timeout(): Option[Duration] =
     _timeout

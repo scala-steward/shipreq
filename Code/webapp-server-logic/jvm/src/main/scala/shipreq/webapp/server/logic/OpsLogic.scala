@@ -1,13 +1,12 @@
 package shipreq.webapp.server.logic
 
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.{Duration, Instant}
 import upickle.Js
 import scalaz.{Monad, \/, \/-}
 import scalaz.syntax.monad._
 import shipreq.base.util.ErrorMsg
 import shipreq.taskman.api.{Msg, MsgId, TaskmanApi}
-import shipreq.webapp.base.user.{EmailAddr, UserValidators}
+import shipreq.webapp.base.user.{User, UserValidators}
 
 trait OpsLogic[F[_]] {
   import OpsLogic._
@@ -22,6 +21,9 @@ trait OpsLogic[F[_]] {
 
   def sendMail(emailAddr: String): F[ErrorMsg \/ SendMailResult]
 
+  def trackLogin(sessionId: SessionId, user: User): F[Unit]
+
+  def trackLogout(sessionId: SessionId): F[Unit]
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -112,20 +114,19 @@ object OpsLogic {
   }
 
   final case class SessionStats(active     : Long,
-//                                loggedIn   : Long,
-//                                uniqueUsers: Long,
+                                loggedIn   : Long,
+                                uniqueUsers: Long,
                                 timeout    : Option[Duration]) extends HasJsValue {
-//    def anonymous: Long =
-//      active - loggedIn
+    def anonymous: Long =
+      active - loggedIn
 
     def toJsValue: Js.Value =
       Js.Obj(
         "active" -> Js.Obj(
-//          "anonymous"   -> Js.Num(anonymous),
-//          "loggedIn"    -> Js.Num(loggedIn),
+          "anonymous"   -> Js.Num(anonymous),
+          "loggedIn"    -> Js.Num(loggedIn),
           "total"       -> Js.Num(active),
-//          "uniqueUsers" -> Js.Num(uniqueUsers)),
-        ),
+          "uniqueUsers" -> Js.Num(uniqueUsers)),
         "timeout" -> timeout.fold[Js.Value](Js.Str("?"))(jsDuration))
   }
 

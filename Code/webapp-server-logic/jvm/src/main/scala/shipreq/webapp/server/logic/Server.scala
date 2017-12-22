@@ -64,6 +64,7 @@ object Server {
 
   trait Session[F[_]] {
     val clientIP: F[Option[IP]]
+    val sessionId: F[Option[SessionId]]
   }
 
   trait Algebra[F[_]]

@@ -38,9 +38,9 @@ object Global {
     implicit val dbForSecurity = DB.ForSecurity.trans(DbInterpreter.ForSecurity)(runDB)
     implicit val dbForOps      = DB.ForOps.trans(new DbInterpreter.ForOps(dbAccess.databaseName))(runDB)
     implicit val projectStore  = Store.Algebra.concurrentHashMap(): ProjectServer.StoreAlgebra[Fx]
-    implicit val security      = new SecurityInterpreter[Fx]
     implicit val server        = trace.server(ServerInterpreter)
     implicit val ops           = new OpsInterpreter()
+    implicit val security      = new SecurityInterpreter[Fx]
     Global(
       config   = config,
       db       = dbAccess,

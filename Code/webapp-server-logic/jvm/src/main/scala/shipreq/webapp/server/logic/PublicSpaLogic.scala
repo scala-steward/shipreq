@@ -88,11 +88,10 @@ object PublicSpaLogic {
     def attemptLogin(id: Username \/ EmailAddr, password: PlainTextPassword): F[Permission] =
       security.attemptLogin(id, password).flatMap {
 
-        case r@ Some(u) =>
+        case Some(user) =>
           // Login succeeded
-          svr.clientIP.flatMap(ip =>
-            svr.fork(security.db.logLoginSuccess(u.id, ip)).flatMap(_ =>
-              loginPass))
+          val logInDb = svr.clientIP.flatMap(ip => svr.fork(security.db.logLoginSuccess(user.id, ip)))
+          logInDb >> loginPass
 
         case None =>
           // User not found, or password didn't match
