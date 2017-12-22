@@ -160,7 +160,13 @@ object DispatchBM {
       _ => F.pure(\/-(MsgId(1000)))
 
     implicit object ops extends OpsLogic[F] {
-      override def taskmanMsgStatus(id: MsgId) = F point None
+      override def dbStats                           = F.pure(null)
+      override def sessionStats                      = F.pure(null)
+      override def userStats                         = F.pure(null)
+      override def taskmanMsgStatus(id: MsgId)       = F.pure(null)
+      override def sendMail(e: String)               = F.pure(null)
+      override def trackLogin(s: SessionId, u: User) = F.pure(())
+      override def trackLogout(s: SessionId)         = F.pure(())
     }
 
     val dispatchLogic = new DispatchLogic[F, Request, Response](r => r, (_, r) => F.point(r))
