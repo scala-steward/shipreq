@@ -24,6 +24,7 @@ for mode in ${args[@]}; do
       # Webpack
       $webpack webpack/$mode.js || exit $?
       rm -f $target1/{admin}.js # These are empty. Their entrypoints in webpack exist for CSS only.
+      dos2unix $target1/*.{css,js}
       echo
 
       # Webtamp
