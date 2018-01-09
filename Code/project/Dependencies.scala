@@ -121,7 +121,7 @@ object Dependencies {
 
   object Shiro {
     private val mm = MultiModule.java("org.apache.shiro", "1.3.2")
-    val core = mm("shiro-core") ++ SLF4J.jcl // slf4j required in place of commons-logging
+    val core = mm("shiro-core") ++ SLF4J.jcl // Use SLF4J in place of commons-logging
     val web  = mm("shiro-web")
     val all  = core ++ web
   }
@@ -159,7 +159,7 @@ object Dependencies {
     // val trace = mm("google-cloud-trace")
     // ↑ This is not enough. It's just REST API wrappers. Doesn't do batching and rate-limiting etc
 
-    val trace = jvmOnly("com.google.cloud.trace" % "trace-grpc-api-service" % "0.5.0")
+    val trace = jvmOnly("com.google.cloud.trace" % "trace-grpc-api-service" % "0.5.0") ++ SLF4J.jcl // Use SLF4J in place of commons-logging
   }
 
   val scalajsDom       = jsOnly("org.scala-js"                          %%%! "scalajs-dom"       % "0.9.4")

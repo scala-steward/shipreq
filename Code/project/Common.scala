@@ -147,7 +147,9 @@ object Common {
   /** Common settings used by standard modules - not benchmarks, not test modules */
   private def settings: Project => Project =
     _.configure(settingsMin)
-      .settings(scalacOptions in Test ++= scalacTestFlags)
+      .settings(
+        excludeDependencies += "commons-logging" % "commons-logging", // commons-logging should be replaced by jcl-over-slf4j
+        scalacOptions in Test ++= scalacTestFlags)
       .configure(debugOrRelease(debugSettings, optimisationSettings))
 
   lazy val jvmSettings: Project => Project =
