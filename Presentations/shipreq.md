@@ -153,30 +153,26 @@ my primary expertise and strength.
 * vendor product
 --
 
-* mental
+* mental / word-of-mouth
 
 ---
 
-# Problems
+# Problems (1/2)
 
 --
 
-* ease of access
+* ease of access <span style="color:#bbb">*(Windows apps, internal NFS, physical boards)*</span>
 --
 
 * ease of use
 --
 
   * wrong solution fit
---
-
   * flexibility
---
-
   * UX
 --
 
-* data integrity
+* data integrity <span style="color:#bbb">*(double-entry, "dumb" system)*</span>
 --
 
 * doesn't scale
@@ -191,18 +187,29 @@ my primary expertise and strength.
   * too many requirements = hard to socialise
 --
 
-  * too many requirements = loss of faith, resort to offline
+  * too many requirements = **loss of faith, abandonment**
 
 ---
 
-# Problems
+# Problems (2/2)
 
-* social
+* social & organisational
+--
+
   * miscommunication
-  * information socialisation (esp wrt change)
+--
+
+  * information socialisation (esp wrt change management)
+--
+
   * lack of transparency
   * lack of accountability
-  * The Blame Game
+--
+
+  * **The Blame Game**
+--
+
+  * Wastes people's time, reduces morale, harms culture
 
 ---
 
@@ -300,7 +307,7 @@ class: fullscreenImg
   * MVP in terms of business scope
 --
 
-  * quite featureful within scope, not a toy
+  * real product in terms of features and implementation (not a prototype)
 --
 
   * *we're here now*
@@ -311,8 +318,8 @@ class: fullscreenImg
 
 * v1.0: Use Cases *[Q1 2014]*
 * v1.1: Support & Community *[Q3 2014]*
-* v2.0: General Requirements *[Oct 2017]*
-* Find co-founder. Business-mode: on. *[Nov 2017]*
+* v2.0: General Requirements *[Q4 2017]*
+* Find co-founder. Business-mode: on. *[2018]*
 --
 
 * v3.0: Collaboration, enterprise, social
@@ -333,7 +340,7 @@ class: middle
 ---
 
 ## Requirement Types
-* Use Cases
+* Use Cases *(don't show ReqDetail yet)*
 * User-defined *(show cfg/reqtypes)*
 ---
 
@@ -358,6 +365,7 @@ class: middle
 
 ## UX
 * FAST! Even on poor networks.
+* Close to being an offline app
 * Network activity only when a change is made.
 * Network activity non-blocking.
 * Switch back-and-forth (ReqTable↔ReqDetail) instantly, even mid-edit
@@ -424,6 +432,7 @@ class: middle
 ## Comprehensibility
 * Power filter
 * Instant search feedback
+* Saved views
 ---
 
 ## Comprehensibility & Maintainability
@@ -443,9 +452,9 @@ Huge problem as requirements projects grow.
 ---
 name: preventable-errors
 
-## Preventable errors
+### Data Integrity: Preventable errors
 
-ShipReq prevents these from occurring.
+ShipReq prevents from occurring.
 <br>
 <br>
 ---
@@ -471,32 +480,38 @@ template: preventable-errors
 ---
 name: detectable-errors
 
-## Detectable errors
+### Data Integrity: Detectable errors
 
-ShipReq tracks these and presents them to user for resolution.
+ShipReq tracks and presents to user for resolution.
 <br>
 <br>
 ---
 
 template: detectable-errors
 
-* mandatory fields
+* blank mandatory fields
 * tag conflicts
-* dead refs
-* live reqs where all implying reqs are dead
-* user-defined issues
-* loose issues
+* dead refs/tags
+* empty tag/code groups
+* live reqs implied by dead reqs
+* user-defined issues (tags & loose)
 ---
 
 template: detectable-errors
 
-There will be an Issues screen (in progress).
+Prototype complete, implementation pending.
 
-* See all outstanding issues.
-* Resolve them inline without needing to change pages.
+* Integration
+  * Dashboard
+  * ReqTable
+  * ReqDetail
+* Issues page
+  * See all outstanding issues
+  * Resolve inline, no need to change pages
+
 ---
 
-## Security
+### Data Integrity: Security
 
 * Completed in Phase 2
   * Audit history
@@ -504,20 +519,22 @@ There will be an Issues screen (in progress).
   * Data is never discarded or lost
 
 * Planned for future phases
-  * UI to explore history
+  * UI to explore history & audit trail
   * Save points-in-time; create baselines; mark versions
-  * Expose integrity tokens/proofs
+  * Expose integrity proofs (tokens)
 ---
 
-We have:
-* Strong Data Integrity
-* UX: ease of use
-* UX: feedback speed
+## Forgiving Failure
 
-We gain:
-* Near zero cost for user mistakes / experimentation / failure
+Because ShipReq has:
+* Strong data integrity
+* Dedicated UX: ease of use & feedback speed
+* Requirements-specific models
+
+ShipReq users have:
+* Near-zero cost for user mistakes / experimentation / failure
 * Delete / undelete anything at will
-* Reconfigure views without affecting content (eg. tag/imp fields)
+* Reconfigure views and config without affecting content (eg. tag/imp fields)
 ---
 
 # Features
