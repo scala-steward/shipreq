@@ -493,7 +493,6 @@ template: detectable-errors
 * tag conflicts
 * dead refs/tags
 * empty tag/code groups
-* live reqs implied by dead reqs
 * user-defined issues (tags & loose)
 ---
 
