@@ -102,6 +102,8 @@ webapp-server           - Webapp server. Exported via Docker.
 benchmark - Various benchmarks.
 utils     - Utilities for devs to run manually. Not really used anymore.
 
+
+
 Security
 ========
 
@@ -118,3 +120,19 @@ testssl shipreq.com:14443
 
 Ignore LUCKY13 (CVE-2013-0169), it's fixed in Java 8.
 https://www.oracle.com/technetwork/topics/security/javacpufeb2013update-1905892.html
+
+
+
+Copying Docker Database
+=======================
+
+Make sure docker images are up.
+
+    docker ps
+
+Find the DB image volume location on source and dest machines:
+
+    docker inspect shipreq_dev_postgres | jq '.[0].Mounts[0].Source' | perl -pe 's/^"|\/_data"$//g'
+
+Simply replace the contents of one with the other.
+
