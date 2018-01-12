@@ -446,22 +446,25 @@ class: middle
 
 ## Data Integrity
 Huge problem as requirements projects grow.
-1. Preventable errors.
-1. Detectable errors.
-1. Security.
+1. Preventable errors
+1. Detectable errors
+1. Security
 ---
 name: preventable-errors
 
 ### Data Integrity: Preventable errors
 
-ShipReq prevents from occurring.
+ShipReq ensures that many errors *never* occur.
 <br>
 <br>
 ---
 
 template: preventable-errors
 
-* Requirement relationships
+* Renames not propagating
+--
+
+* Non-existent data, now and forever
 
   * References in text (req, UC step, code)
 
@@ -482,14 +485,15 @@ name: detectable-errors
 
 ### Data Integrity: Detectable errors
 
-ShipReq tracks and presents to user for resolution.
+ShipReq tracks other potential errors.<br>
+It presents to user and makes resolution easy as possible.
 <br>
 <br>
 ---
 
 template: detectable-errors
 
-* blank mandatory fields
+* data required (mandatory fields that are blank)
 * tag conflicts
 * dead refs/tags
 * empty tag/code groups
@@ -498,29 +502,32 @@ template: detectable-errors
 
 template: detectable-errors
 
-Prototype complete, implementation pending.
-
+* Issues page
+  * See all outstanding issues
+  * Resolve inline, no need to change pages
 * Integration
   * Dashboard
   * ReqTable
   * ReqDetail
-* Issues page
-  * See all outstanding issues
-  * Resolve inline, no need to change pages
+
+*(Prototype complete; implementation pending.)*
 
 ---
 
 ### Data Integrity: Security
 
-* Completed in Phase 2
-  * Audit history
-  * Tamper-proof (similar to crypto-currencies like Bitcoin)
-  * Data is never discarded or lost
 
-* Planned for future phases
-  * UI to explore history & audit trail
-  * Save points-in-time; create baselines; mark versions
-  * Expose integrity proofs (tokens)
+Completed in Phase 2
+* Audit history
+* Tamper-proof (similar to crypto-currencies like Bitcoin)
+* Data is never discarded or lost
+
+--
+
+Planned for future phases
+* UI to explore history & audit trail
+* Save points-in-time; create baselines; mark versions
+* Expose integrity proofs (tokens)
 ---
 
 ## Forgiving Failure
@@ -529,6 +536,8 @@ Because ShipReq has:
 * Strong data integrity
 * Dedicated UX: ease of use & feedback speed
 * Requirements-specific models
+
+--
 
 ShipReq users have:
 * Near-zero cost for user mistakes / experimentation / failure
@@ -549,6 +558,18 @@ One final feature...
 * Attention to detail
 * User experience
 * Capability
+---
+
+# Next steps
+
+<br>
+
+* Find business co-founder
+  <br><br>Get funding and/or angel users
+
+<br>
+
+* v3.0: Collaboration, enterprise, social
 ---
 
 class: middle, center
