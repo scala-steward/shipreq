@@ -6,7 +6,6 @@ import org.scalajs.core.tools.sem._
 import org.scalajs.jsenv.phantomjs.PhantomJSEnv
 import org.scalajs.sbtplugin.cross.CrossProject
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
-import com.timushev.sbt.updates.UpdatesPlugin.autoImport._
 import sbtdocker.DockerPlugin, DockerPlugin.autoImport._
 import LibDependency.{Dep, HasBoth, HasJs, HasJvm, JS, JVM, ModDepScope}
 
@@ -59,8 +58,6 @@ object Common {
         }
     }
 
-  def regexFilter(r: String) = new PatternFilter(r.r.pattern)
-
   private def versionFn(gitSha: Option[String], snapshot: Boolean): String = {
     var v = gitSha.getOrElse("UNKNOWN")
     if (devMode) v += "-dev"
@@ -85,7 +82,6 @@ object Common {
 
   /** Minimal settings used by benchmark modules too */
   lazy val settingsMin = (p: Project) => p
-    .enablePlugins(net.virtualvoid.sbt.graph.DependencyGraphPlugin)
     .settings(
       organization                := "com.beardedlogic.shipreq",
       organizationName            := "Bearded Logic",
@@ -98,8 +94,6 @@ object Common {
       scalaVersion                := Dependencies.Scala.version,
       javacOptions               ++= javacFlags,
       scalacOptions              ++= scalacFlags,
-      dependencyUpdatesFilter     -= moduleFilter(name = regexFilter("^(jetty-(server|websocket)|ammonite)$")),
-      dependencyUpdatesFilter     -= moduleFilter(organization = regexFilter("^org.scala-lang$")),
       testFrameworks              += new TestFramework("utest.runner.Framework"),
     //cancelable in Global        := true, // Allows ctrl-c to kill apps started with run without exiting SBT
       minForcegcInterval          := 3.minutes,
@@ -110,6 +104,7 @@ object Common {
       dockerLayerReuse,
       Dependencies.useKindProjector,
       addCommandAliases(
+        "/"   -> "project root",
         "B"   -> "project base",
         "BU"  -> "project base-util-jvm",
         "BT"  -> "project base-test-jvm",
@@ -132,17 +127,8 @@ object Common {
         "WS"  -> "project webapp-server",
         "BM"  -> "project benchmark-jvm",
         "BMJ" -> "project benchmark-js",
-        "/"   -> "project root",
         "C"   -> "root/clean",
-        "T"   -> ";root/clean;root/test",
-        "c"   -> "compile",
-        "tc"  -> "test:compile",
-        "t"   -> "test",
-        "to"  -> "test-only",
-        "tq"  -> "testQuick",
-        "cc"  -> ";clean;compile",
-        "ctc" -> ";clean;test:compile",
-        "ct"  -> ";clean;test"))
+        "CT"  -> ";root/clean;root/test"))
 
   /** Common settings used by standard modules - not benchmarks, not test modules */
   private def settings: Project => Project =
