@@ -50,3 +50,86 @@ services:
       - EXTERNAL_PORT_SSL=14443
     mem_limit: 1856m # 2.25*1024 - 448 for Taskman
     cpuset: "1,2"
+
+  prometheus:
+    image: prom/prometheus:v2.1.0
+    container_name: shipreq_dev_prometheus
+    ports:
+      - "14100:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    links:
+      - cadvisor:cadvisor
+
+  grafana:
+    image: grafana/grafana
+    container_name: shipreq_dev_grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "14101:3000"
+    volumes:
+      - ./grafana-ds-prometheus.json:/etc/grafana/datasources/prometheus.json
+
+  node-exporter:
+    image: prom/node-exporter
+    container_name: shipreq_dev_nodeexporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      - "14102:9100"
+    restart: always
+
+  cadvisor:
+    image: google/cadvisor
+    container_name: shipreq_dev_cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - "14103:8080"
+    restart: always
+
+  # sudo sysctl -w vm.max_map_count=262144
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.1.2
+    container_name: shipreq_dev_elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.1.2
+    container_name: shipreq_dev_kibana
+    links:
+      - "elasticsearch"
+    ports:
+      - "14104:5601"
+
+  fluentd:
+    image: fluent/fluentd
+    container_name: shipreq_dev_fluentd
+    links:
+      - "elasticsearch"
+    # ports:
+    #   - "24224:24224"
+    #   - "24224:24224/udp"
+
+
+# TODO jaeger
+# TODO influxDB (?) (for Prometheus)
+# TODO alertmanager
+# TODO postgres metrics
+
+
+# Doesn't work: (https://github.com/moby/moby/issues/20370)
+    # logging:
+    #   driver: fluentd
+    #   options:
+    #     fluentd-address: fluentd:24224
