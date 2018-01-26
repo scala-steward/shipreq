@@ -1,7 +1,7 @@
 digraph G {
 
 services [label="ShipReq\nservices" fillcolor=lightblue style=filled]
-kamon,fluentd [fillcolor=lightblue style=filled]
+kamon,logstash [fillcolor=lightblue style=filled]
 
 // Devops cluster
 subgraph cluster_devops {
@@ -22,7 +22,9 @@ subgraph cluster_devops {
 }
 
 // App
-services -> kamon,fluentd [arrowhead=none]
+services -> kamon,logstash [arrowhead=none]
+portal -> services [constraint=false]
+mailchimp,gsuite,freshdesk,mailgun,gcp -> portal [dir=back]
 
 // Monitoring & Alerting
 prometheus -> services,kamon,alertmanager
@@ -31,7 +33,7 @@ alertmanager -> email,slack,sms
 prometheus -> prometheus_storage [style=dotted]
 
 // Logging
-fluentd,kibana -> es
+logstash,kibana -> es
 
 // Tracing
 kamon -> jaeger
