@@ -13,10 +13,19 @@
     </filter>
   </appender>
 
+  <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+    <destination>logstash:14500</destination>
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+      <customFields>{"app":"webapp"}</customFields>
+    </encoder>
+    <keepAliveDuration>5 minutes</keepAliveDuration>
+  </appender>
+
   <logger name="org.apache.commons" level="WARN" />
   <logger name="shipreq" level="DEBUG" />
 
   <root level="INFO">
     <appender-ref ref="STDOUT" />
+    <appender-ref ref="LOGSTASH" />
   </root>
 </configuration>

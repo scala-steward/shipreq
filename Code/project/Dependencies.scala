@@ -105,6 +105,16 @@ object Dependencies {
     val jcl = mm("jcl-over-slf4j")
   }
 
+  object Logback {
+    val version = "1.2.3"
+    private val mm = MultiModule.java("ch.qos.logback", version)
+
+    val core = mm("logback-classic") ++ mm("logback-core")
+
+    val withPlugins = core ++
+      jvmOnly("net.logstash.logback" % "logstash-logback-encoder" % "4.11")
+  }
+
   object Lift {
     private val mm = MultiModule.scala("net.liftweb", "3.1.1")
     val webkit  = mm("lift-webkit") ++ Scala.all // because it contains lift-json
@@ -178,7 +188,6 @@ object Dependencies {
   val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "42.1.4")
   val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.7.4")
   val flyway      = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
-  val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.2.3")
   val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.7")
   val commonsIo   = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val twitterEval = jvmOnly("com.twitter"                %% "util-eval"             % "6.43.0")

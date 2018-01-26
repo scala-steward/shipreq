@@ -36,7 +36,7 @@ object TaskmanBuild {
   lazy val taskmanServerLogic =
     project("taskman-server-logic")
       .configure(Common.jvmSettings)
-      .deps(logback ++ testScope(Specs2.combo))
+      .deps(Logback.withPlugins ++ testScope(Specs2.combo))
       .dependsOn(taskmanApiLogic)
       .dependsOn(baseTestJvm % "test")
 
@@ -74,7 +74,7 @@ object TaskmanBuild {
       .enablePlugins(JavaAppPackaging, DockerPlugin)
       .configure(Common.jvmSettings, DockerEnv.test.required)
       .deps(
-        Akka.actor ++ javaMail ++ OkHttp.core ++ httpCore ++ commonsIo ++
+        Akka.actor ++ javaMail ++ OkHttp.core ++ httpCore ++ commonsIo ++ Logback.withPlugins ++
         testScope(Akka.testkit ++ Specs2.combo))
       .dependsOn(taskmanServerLogic, taskmanServerSchema, taskmanApi)
       .dependsOn(baseTestJvm % "test")

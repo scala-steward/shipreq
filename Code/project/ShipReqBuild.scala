@@ -42,7 +42,7 @@ object ShipReqBuild {
         testScope(μTest ++ Nyaya.test ++ Microlibs.testUtil))
       .depsForJvm(
         SLF4J.api ++
-        providedScope(logback) ++
+        providedScope(Logback.core) ++
         testScope(Specs2.combo ++ Scalaz.scalacheck))
 
   lazy val baseOps =
@@ -59,7 +59,7 @@ object ShipReqBuild {
         Common.jvmSettings,
         Common.macroModuleSettings)
       .dependsOn(baseOps)
-      .deps(postgresql ++ Doobie.main ++ hikariCP ++ flyway ++ logback ++ Microlibs.macroUtils)
+      .deps(postgresql ++ Doobie.main ++ hikariCP ++ flyway ++ Logback.core ++ Microlibs.macroUtils)
 
   lazy val baseTestJvm = baseTest.jvm
   lazy val baseTestJs  = baseTest.js

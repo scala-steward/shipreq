@@ -384,6 +384,8 @@ object WebappBuild {
 
             env("JETTY_HOME" -> jettyHome, "JETTY_BASE" -> base)
 
+            copy(srcDocker / "home", "/root/")
+
             copy(tmpJetty, s"$jettyHome/")
 
             // TODO Maybe not needed after use of quickstart
@@ -400,9 +402,10 @@ object WebappBuild {
 
             // Download required libs
             workDir(base)
+
             runRaw(
               """
-                |bin/jetty --approve-all-licenses --add-to-start=http,http2,webapp,gzip,resources,logging-logback,deploy,client 2>&1 &&
+                |bin/jetty --approve-all-licenses --add-to-start=http,http2,webapp,gzip,resources,deploy,client 2>&1 &&
                 |bin/jetty --add-to-start=server,websocket 2>&1
               """.stripMargin.trim.replaceAll("\n\\s*", " "))
 
@@ -432,7 +435,7 @@ object WebappBuild {
       .enablePlugins(JettyPlugin, WarPlugin, DockerPlugin)
       .dependsOn(baseDb, baseOps, taskmanApi, webappServerLogicJvm, webappGenJvm)
       .deps(
-        Scalaz.core ++ Lift.webkit ++ Shiro.all ++ commonsLang ++ Nyaya.gen ++
+        Scalaz.core ++ Lift.webkit ++ Shiro.all ++ commonsLang ++ Nyaya.gen ++ Logback.withPlugins ++
         testScope(μTest ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
         (LibJetty.webapp % "test") ++
         (LibJetty.servletApi % "test,provided"))

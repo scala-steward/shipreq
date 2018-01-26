@@ -20,6 +20,7 @@ services:
     container_name: shipreq_dev_taskman
     links:
       - postgres
+      - logstash
     volumes:
       - ./taskman:/taskman/conf:ro
     environment:
@@ -35,6 +36,7 @@ services:
     container_name: shipreq_dev_webapp
     links:
       - postgres
+      - logstash
     ports:
       - "14080:8080"
       - "14443:8443"
@@ -59,33 +61,32 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     links:
-      - cadvisor:cadvisor
+      - cadvisor
 
   grafana:
     image: grafana/grafana
     container_name: shipreq_dev_grafana
-    depends_on:
+    links:
       - prometheus
     ports:
       - "14101:3000"
     volumes:
       - ./grafana-ds-prometheus.json:/etc/grafana/datasources/prometheus.json
 
-  node-exporter:
-    image: prom/node-exporter
-    container_name: shipreq_dev_nodeexporter
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - --collector.filesystem.ignored-mount-points
-      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
-    ports:
-      - "14102:9100"
-    restart: always
+#  node-exporter:
+#    image: prom/node-exporter
+#    container_name: shipreq_dev_nodeexporter
+#    volumes:
+#      - /proc:/host/proc:ro
+#      - /sys:/host/sys:ro
+#      - /:/rootfs:ro
+#    command:
+#      - '--path.procfs=/host/proc'
+#      - '--path.sysfs=/host/sys'
+#      - --collector.filesystem.ignored-mount-points
+#      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+#    ports:
+#      - "14102:9100"
 
   cadvisor:
     image: google/cadvisor
@@ -97,29 +98,31 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     ports:
       - "14103:8080"
-    restart: always
 
   # sudo sysctl -w vm.max_map_count=262144
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.1.2
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.1.2
     container_name: shipreq_dev_elasticsearch
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:6.1.2
+    image: docker.elastic.co/kibana/kibana-oss:6.1.2
     container_name: shipreq_dev_kibana
     links:
-      - "elasticsearch"
+      - elasticsearch
     ports:
       - "14104:5601"
+    logging:
+      driver: none
 
-  fluentd:
-    image: fluent/fluentd
-    container_name: shipreq_dev_fluentd
+  logstash:
+    image: docker.elastic.co/logstash/logstash-oss:6.1.2
+    container_name: shipreq_dev_logstash
     links:
-      - "elasticsearch"
-    # ports:
-    #   - "24224:24224"
-    #   - "24224:24224/udp"
+      - elasticsearch
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - "14500:14500"
 
 
 # TODO jaeger
@@ -128,8 +131,5 @@ services:
 # TODO postgres metrics
 
 
+# Can't get docker to send logs to logstash
 # Doesn't work: (https://github.com/moby/moby/issues/20370)
-    # logging:
-    #   driver: fluentd
-    #   options:
-    #     fluentd-address: fluentd:24224
