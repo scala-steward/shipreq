@@ -12,7 +12,7 @@ final class SecurityInterpreter[F[_]](implicit F     : Monad[F],
                                                ops   : OpsLogic[F],
                                                secDb : DB.ForSecurity[F],
                                                svr   : Server.Session[F],
-                                               trace : Trace.Basic[F]) extends Security.Algebra[F] {
+                                               trace : Trace.Algebra[F]) extends Security.Algebra[F] {
 
   override val db = secDb
 
@@ -21,7 +21,9 @@ final class SecurityInterpreter[F[_]](implicit F     : Monad[F],
   private[this] val delay: F[Unit] =
     config.attackFrustrationDelayMs match {
       case 0  => fUnit
-      case ms => val f = F.point(Thread.sleep(ms)); trace.sub("Security delay")(f)
+      case ms =>
+        val f = F.point(Thread.sleep(ms))
+        trace.newSpan("Security delay")(_ => f)
     }
 
   override def protect[A](vulnerable: F[A]): F[A] =

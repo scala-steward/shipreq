@@ -195,7 +195,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
                                                   publicApi : PublicSpaLogic.ForApi[F],
                                                   security  : Security.Algebra[F],
                                                   svr       : Server.Time[F],
-                                                  tracer    : Trace.Algebra[F, RealReq, RealRes]) {
+                                                  tracer    : Trace.Logic[F, RealReq, RealRes]) {
   import Method._
 
   type Route = Request ?=> F[Response]
@@ -272,7 +272,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
     if (trace)
       realReq => {
         val req = readRealReq(realReq)
-        tracer.http(realReq, req.path)(
+        tracer.http("TODO", realReq, req.path)(_ =>
           d(req).flatMap(makeRealRes(realReq, _)))
       }
     else

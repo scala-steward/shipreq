@@ -106,6 +106,12 @@ object StackdriverTrace {
     final val Pid                = "/pid"
     final val Stacktrace         = "/stacktrace"
     final val Tid                = "/tid"
+
+    // Custom
+    final val EndpointName       = "/endpoint/name"
+    final val HttpUri            = "/http/uri"
+    final val ShipReqUserId      = "/shipreq/user_id"
+    final val ShipReqProjectId   = "/shipreq/project_id"
   }
 
   def sqlTracer(tracer: Tracer): SqlTracer =

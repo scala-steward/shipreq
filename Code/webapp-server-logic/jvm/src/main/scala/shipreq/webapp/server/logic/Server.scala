@@ -22,11 +22,11 @@ object Server {
   final case class RequestPickleError(exception: Throwable) extends ProtocolError
   final case class ResponsePickleError(exception: Throwable) extends ProtocolError
 
-  type SspResponse[F[_]] = F[ProtocolError \/ ByteBuffer]
+  type SspResponse = ProtocolError \/ ByteBuffer
 
   trait Protocol[F[_]] {
 
-    val registerServerSideProc: (String, ByteBuffer => SspResponse[F]) => F[ServerSideProcId]
+    val registerServerSideProc: (String, ByteBuffer => F[SspResponse]) => F[ServerSideProcId]
 
     final def createServerSideProc[I, O](p: ServerSideProc.Protocol[I, O])
                                         (localFn: I => F[O])

@@ -1,7 +1,6 @@
 package shipreq.webapp.server.app
 
 import doobie.imports.ConnectionIO
-import japgolly.microlibs.nonempty.NonEmptyVector
 import shipreq.base.db.DbAccess
 import shipreq.base.util.FxModule._
 import shipreq.taskman.api.TaskmanApi
@@ -32,20 +31,22 @@ object Global {
   def default(implicit dbAccess: DbAccess, config: ServerConfig): Global = {
     assert(dbAccess ne null, "DbAccess is null, sir.")
 
-    var tracers = Vector.empty[TraceInterpreter.ForLift[Fx]]
-    config.trace.foreach(tracers :+= TraceInterpreter.stackdriver(_))
-     tracers :+= TraceInterpreter.kamon
-    // tracers :+= Trace.logToStdout
+    import TraceInterpreter.Implicits._
+    var traceAlgebras = Vector.empty[Trace.Algebra[Fx]]
+    config.trace.foreach(traceAlgebras :+= TraceInterpreter.stackdriverAlgebra(_))
+    traceAlgebras :+= TraceInterpreter.KamonAlgebra
+    // traceAlgebras :+= Trace.Algebra.logToStdout
 
-    implicit val trace         = NonEmptyVector.option(tracers).map(_.reduce(_.compose(_))).getOrElse(Trace.off)
-    implicit val runDB         = trace.db(dbAccess.fx.trans)
+    implicit val traceAlgebra  = Trace.Algebra(traceAlgebras)
+    implicit val trace         = new Trace.Logic: TraceInterpreter.ForLift[Fx]
+    implicit val runDB         = trace.injectDb(dbAccess.fx.trans)
              val taskmanCtx    = TaskmanApiImpl.Context(Some(config.taskmanSchema))
     implicit val taskman       = TaskmanApiImpl(taskmanCtx, runDB)
     implicit val dbAlgebra     = new DbInterpreter()
     implicit val dbForSecurity = DB.ForSecurity.trans(DbInterpreter.ForSecurity)(runDB)
     implicit val dbForOps      = DB.ForOps.trans(new DbInterpreter.ForOps(dbAccess.databaseName))(runDB)
     implicit val projectStore  = Store.Algebra.concurrentHashMap(): ProjectServer.StoreAlgebra[Fx]
-    implicit val server        = trace.server(ServerInterpreter)
+    implicit val server        = trace.injectServer(ServerInterpreter)
     implicit val ops           = new OpsInterpreter()
     implicit val security      = new SecurityInterpreter[Fx]
     Global(

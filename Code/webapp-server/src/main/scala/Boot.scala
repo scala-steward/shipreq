@@ -38,11 +38,11 @@ class Boot {
     import com.typesafe.config.ConfigFactory
     import kamon._
     Kamon.reconfigure(ConfigFactory.load("kamon"))
-    Kamon.addReporter(new kamon.prometheus.PrometheusReporter)
-    Kamon.addReporter(new kamon.zipkin.ZipkinReporter)
+//    Kamon.addReporter(new kamon.prometheus.PrometheusReporter)
+//    Kamon.addReporter(new kamon.zipkin.ZipkinReporter)
     Kamon.addReporter(new kamon.jaeger.JaegerReporter)
-    val myTaggedCounter = Kamon.counter("test.counter").refine("env" -> "test")
-    myTaggedCounter.increment(17)
+//    val myTaggedCounter = Kamon.counter("test.counter").refine("env" -> "test")
+//    myTaggedCounter.increment(17)
 
 
     // Read config

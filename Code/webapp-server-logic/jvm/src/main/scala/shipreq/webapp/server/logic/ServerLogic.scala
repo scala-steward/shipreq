@@ -18,7 +18,7 @@ final case class ServerLogic[F[_]](publicSpa    : PublicSpaLogic[F],
 object ServerLogic {
 
   def create[D[_] : Monad : DB.Algebra,
-             F[_] : Monad : ProjectServer.StoreAlgebra : Security.Algebra : Server.Algebra : TaskmanApi : Trace.Basic]
+             F[_] : Monad : ProjectServer.StoreAlgebra : Security.Algebra : Server.Algebra : TaskmanApi: Trace.Algebra]
             (b: ProjectServer.BroadcastTo)
             (implicit runDB: D ~> F, config: ServerConfig)
             : ServerLogic[F] =
