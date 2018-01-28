@@ -184,6 +184,11 @@ object Dependencies {
     val jaeger        = jvmOnly("io.kamon" %%  "kamon-jaeger"                % "1.0.1")
   }
 
+  object Jaeger {
+    private val mm = MultiModule.java("com.uber.jaeger", "0.23.0")
+    val core = mm("jaeger-core")
+  }
+
   val scalajsDom       = jsOnly("org.scala-js"                          %%%! "scalajs-dom"       % "0.9.4")
   val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %%%! "benchmark"         % "0.2.5")
   val scalajsJavaTime  = jsOnly("org.scala-js"                          %%%! "scalajs-java-time" % "0.2.3")

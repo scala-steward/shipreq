@@ -158,9 +158,10 @@ class Boot {
 
   def initDatabase(cfg: BootConfig): DbAccess = {
 
-    cfg.db.modifyHikariDataSource(KamonBased.sqlTracer.apply)
-    for (t <- cfg.server.trace.map(_.sqlTracer()))
-      cfg.db.modifyHikariDataSource(t.apply)
+    // TODO Reenable JDBC tracing - although it should be done be Trace.Logic#injectDb
+//     cfg.db.modifyHikariDataSource(KamonBased.sqlTracer.apply)
+//    for (t <- cfg.server.trace.map(_.sqlTracer()))
+//      cfg.db.modifyHikariDataSource(t.apply)
 
     val access = DbAccess.fromCfg(cfg.db).unsafeRun()
     logger.info(s"Connecting to DB: ${access.desc}")

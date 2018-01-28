@@ -34,7 +34,8 @@ object Global {
     import TraceInterpreter.Implicits._
     var traceAlgebras = Vector.empty[Trace.Algebra[Fx]]
     config.trace.foreach(traceAlgebras :+= TraceInterpreter.stackdriverAlgebra(_))
-    traceAlgebras :+= TraceInterpreter.KamonAlgebra
+    // traceAlgebras :+= TraceInterpreter.Kamon``Algebra
+    traceAlgebras :+= TraceInterpreter.jaegerAlgebra
     // traceAlgebras :+= Trace.Algebra.logToStdout
 
     implicit val traceAlgebra  = Trace.Algebra(traceAlgebras)

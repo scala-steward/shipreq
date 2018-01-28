@@ -1,5 +1,6 @@
 package shipreq.webapp.server.app
 
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import javax.servlet.http.HttpServletRequest
 import net.liftweb.common.{Box, Empty, Failure, Full}
 import net.liftweb.http.LiftResponse
@@ -137,5 +138,76 @@ object TraceInterpreter {
 
     override def addAttrs(attrs: List[Trace.Attr])(implicit span: Span): Unit =
       attrs.foreach(attrInterpretter(span, _))
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  final class OpenTracingAlgebra(tracer: io.opentracing.Tracer) extends Trace.Algebra[Fx] {
+    override type Span = io.opentracing.Span
+
+    private def withSpan[A](span: Span)(f: Span => Fx[A]): Fx[A] =
+      Fx {
+        val scope = tracer.scopeManager.activate(span, true)
+        try
+          f(span).unsafeRun()
+        catch {
+          case t: Throwable =>
+            setError(span, t)
+            throw t
+        } finally
+          scope.close()
+      }
+
+    private def setError(span: Span, err: Throwable): Unit = {
+      span.setTag("error", true)
+      span.setTag("error.kind", err.getClass.getName)
+      span.setTag("error.message", err.getMessage)
+      span.setTag("error.stacktrace", err.stackTraceAsString)
+    }
+
+    override def newSpan[A](name: String)(f: Span => Fx[A]): Fx[A] =
+      withSpan(tracer.buildSpan(name).start())(f)
+
+    override def newSubSpan[A](name: String, parent: Span)(f: Span => Fx[A]): Fx[A] =
+      withSpan(tracer.buildSpan(name).asChildOf(parent).start())(f)
+
+    private[this] val attrInterpretter = Trace.Attr.interpret[Span, Unit](
+        shipReqUserId    = (s, a) => s.setTag("shipreq.user_id", a.value),
+        shipReqProjectId = (s, a) => s.setTag("shipreq.project_id", a.value),
+        endpointName     = (s, a) => s.setTag("endpoint.name", a.value),
+        httpMethod       = (s, a) => s.setTag("http.method", a.value),
+        httpUrl          = (s, a) => s.setTag("http.url", a.value),
+        httpUri          = (s, a) => s.setTag("http.uri", a.value),
+        httpUserAgent    = (s, a) => s.setTag("http.user_agent", a.value),
+        httpStatusCode   = (s, a) => s.setTag("http.status_code", a.value),
+        httpRequestSize  = (s, a) => s.setTag("http.request_size", a.value),
+        httpResponseSize = (s, a) => s.setTag("http.response_size", a.value),
+        error            = (s, a) => setError(s, a.value))
+
+    override def addAttrs(attrs: List[Trace.Attr])(implicit span: Span): Unit =
+      attrs.foreach(attrInterpretter(span, _))
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  def jaegerAlgebra: Trace.Algebra[Fx] = {
+    import com.uber.jaeger.Configuration
+    import com.uber.jaeger.Tracer
+    import com.uber.jaeger.samplers.ConstSampler
+    import com.uber.jaeger.reporters.RemoteReporter
+    import io.opentracing.References
+
+    System.setProperty(Configuration.JAEGER_AGENT_HOST, "localhost")
+    System.setProperty(Configuration.JAEGER_AGENT_PORT, "6831")
+
+    ////    private[this] val config = new Configuration("webapp", Configuration.SamplerConfiguration.fromEnv(), null)
+    //    val reporter = new Configuration("webapp", null, null).getTracerBuilder.build().
+    //    private[this] val tracer = new Tracer.Builder("webapp", new ConstSampler(true), reporter)
+
+    val config = new Configuration("webapp",
+      new Configuration.SamplerConfiguration("const", 1, null),
+      Configuration.ReporterConfiguration.fromEnv())
+    val tracer = config.getTracer()
+    new OpenTracingAlgebra(tracer)
   }
 }

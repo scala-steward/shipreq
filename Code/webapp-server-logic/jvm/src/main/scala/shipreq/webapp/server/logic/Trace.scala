@@ -215,6 +215,10 @@ object Trace {
       * Creates a top-level trace.
       */
     def serverSideProc(sspName: String, parent: Span, input: ByteBuffer)(respond: Span => F[Server.SspResponse]): F[Server.SspResponse] =
+      // Making this a child span ruins the times of both the initial HTTP request, and the AJAX call when searching and
+      // filtering....which is ok.
+      // Use metrics system for timings of HTTP/AJAX, tracing is for debugging and/or perspective of higher-level
+      // processes...
       newSubSpan("AJAX: " + sspName, parent) { implicit span =>
         addAttrs(
           Attr.EndpointName(sspName) ::
