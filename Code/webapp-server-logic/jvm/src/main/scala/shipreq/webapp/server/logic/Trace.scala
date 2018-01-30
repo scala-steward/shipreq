@@ -111,6 +111,8 @@ object Trace {
   }
 
   object AttrFor {
+    def none[A]: AttrFor[A] =
+      _ => Nil
 
     val sspRequest: List[Attr] =
       Attr.HttpMethod("POST") :: Nil
@@ -186,6 +188,11 @@ object Trace {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  object Logic {
+    def off[F[_], HttpReq, HttpRes](implicit F: Monad[F]): Logic[F, HttpReq, HttpRes] =
+      new Logic[F, HttpReq, HttpRes]()(F, Algebra.off, AttrFor.none, AttrFor.none)
+  }
 
   final class Logic[F[_], HttpReq, HttpRes](implicit F: Monad[F],
                                             val alg: Algebra[F],

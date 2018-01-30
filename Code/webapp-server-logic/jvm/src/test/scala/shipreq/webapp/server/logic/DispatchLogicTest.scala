@@ -14,8 +14,9 @@ import shipreq.webapp.base.user.EmailAddr
 object DispatchLogicTest extends TestSuite {
 
   object Tester extends MockInterpreters {
-    implicit val trace = Trace.off[Name, Request, Response]
-    val dispatcher = new DispatchLogic[Name, Request, Response](r => r, (_, r) => Name(r))
+    implicit val trace = Trace.Logic.off[Name, Request[Unit], Response]
+    val dispatcher = new DispatchLogic[Name, Request[Unit], Response](
+      r => Request(r.method, r.path, r.param, r), (_, r) => Name(r))
     val dispatch = dispatcher.mainDispatcher(false, false)
     db.users ::= user2
     db.users ::= user3
@@ -31,7 +32,7 @@ object DispatchLogicTest extends TestSuite {
           params: Map[String, String] = Map.empty)
          (implicit logIn: MockDb.UserEntry = null): Response = {
     security.loggedIn = Option(logIn)
-    val req = Request(method, url, params.get)
+    val req = Request(method, url, params.get, ())
     val d = if (dispatcher.Ops.candidate(url))
       dispatcher.Ops.total
     else
