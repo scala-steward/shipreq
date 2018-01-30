@@ -51,14 +51,14 @@ final class LiftDispatcher(global: Global) {
   private def liftReqUrl(r: LiftReq): Url.Relative =
     Url.Relative(r.request.uri)
 
-  def parseReq(r: LiftReq): DispatchLogic.Request = {
+  def parseReq(r: LiftReq): DispatchLogic.Request[LiftReq] = {
     val m: DispatchLogic.Method =
       if (r.get_?)       DispatchLogic.Method.Get
       else if (r.post_?) DispatchLogic.Method.Post
       else               DispatchLogic.Method.Other
 
     val url = liftReqUrl(r)
-    DispatchLogic.Request(m, url, paramFn)
+    DispatchLogic.Request(m, url, paramFn, r)
   }
 
   val makeResponse: (LiftReq, DispatchLogic.Response) => Fx[Box[LiftResponse]] = {

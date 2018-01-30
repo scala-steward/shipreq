@@ -4,7 +4,6 @@ import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.ParseLong
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
-import monocle.macros.Lenses
 import scalaz.{-\/, Monad, \/, \/-}
 import scalaz.syntax.monad._
 import shipreq.base.util._
@@ -30,8 +29,10 @@ object DispatchLogic {
     *
     * @param path Does *NOT* include query params
     */
-  @Lenses
-  final case class Request(method: Method, path: Url.Relative, param: String => Option[String])
+  final case class Request[+Real](method: Method,
+                                  path  : Url.Relative,
+                                  param : String => Option[String],
+                                  real  : Real)
 
   sealed abstract class Method
   object Method {
@@ -109,6 +110,8 @@ object DispatchLogic {
     final val NotFound     = 404
   }
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   @inline private[this] def isSepChar(c: Char): Boolean =
     c == '/' || c == '#'
 
@@ -118,7 +121,7 @@ object DispatchLogic {
     * /home/…
     * /home#…
     */
-  def spaTest(au: Url.Relative): Request => Boolean = {
+  def spaTest(au: Url.Relative): Request[Any] => Boolean = {
     val a = au.relativeUrlNoHeadSlash
     val aLen = a.length
     req => {
@@ -132,7 +135,7 @@ object DispatchLogic {
     }
   }
 
-  def spaTest1(au: Url.Relative.Param1[_]): Request => Option[String] = {
+  def spaTest1(au: Url.Relative.Param1[_]): Request[Any] => Option[String] = {
     val prefix = au.prefixNoHeadSlash
     val prefixLen = prefix.length
     req => {
@@ -146,6 +149,8 @@ object DispatchLogic {
       }
     }
   }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   /** Prefix for all ops routes */
   val opsRoot = Url.Relative("/ops")
@@ -184,10 +189,8 @@ object DispatchLogic {
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-import DispatchLogic._
-
-final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Request,
-                                                  makeRealRes: (RealReq, Response) => F[RealRes])
+final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => DispatchLogic.Request[RealReq],
+                                                  makeRealRes: (RealReq, DispatchLogic.Response) => F[RealRes])
                                                  (implicit F: Monad[F],
                                                   config    : ServerConfig,
                                                   db        : DB.SecurityTokenReadOnly[F],
@@ -196,103 +199,107 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
                                                   security  : Security.Algebra[F],
                                                   svr       : Server.Time[F],
                                                   tracer    : Trace.Logic[F, RealReq, RealRes]) {
-  import Method._
 
-  type Route = Request ?=> F[Response]
+  import DispatchLogic.{Request => _, Response => AbsRes, _}
+  import DispatchLogic.Method._
 
-  private type FR = F[Response]
+  private type Request = DispatchLogic.Request[RealReq]
+  private[this] val Response = DispatchLogic.Response
 
-  private val fRedirectToPublicHome: FR = F pure Response.redirectToPublicHome
-  private val fMethodNotAllowed    : FR = F pure Response.MethodNotAllowed
+  @inline private def makeReal(r: AbsRes)(implicit req: Request): F[RealRes] =
+    makeRealRes(req.real, r)
 
-  private def onMethod(m: Method)(f: Request => FR): Request => FR =
-    req => if (req.method eq m) f(req) else fMethodNotAllowed
+  @inline private def makeRealF(f: F[AbsRes])(implicit req: Request): F[RealRes] =
+    F.bind(f)(makeRealRes(req.real, _))
 
-  private def onGet(f: Request => FR): Request => FR =
-    onMethod(Get)(f)
+  @inline private def traceUrl(url: Url.Relative, f: F[RealRes])(implicit req: Request): F[RealRes] =
+    tracer.http(url.relativeUrl, req.real, req.path)(_ => f)
+
+  private def onMethod(m: Method, f: F[AbsRes])(implicit req: Request): F[RealRes] =
+    if (req.method eq m)
+      makeRealF(f)
+    else
+      makeReal(AbsRes.MethodNotAllowed)
 
   // Occasional type inference problem
-  @inline private def when(cond: Request => Boolean)(ok: Request => FR): Route = FnWithFallback.when(cond)(ok)
-  @inline private def extract[E](cond: Request => Option[E])(ok: Request => E => FR): Route = FnWithFallback.extract(cond)(ok)
-  @inline private def extractFlip[E](cond: Request => Option[E])(ok: E => Request => FR): Route = FnWithFallback.extract(cond)(r => ok(_)(r))
+  @inline private def when[A](cond: Request => Boolean)(ok: Request => F[A]): Request ?=> F[A] = FnWithFallback.when(cond)(ok)
+  @inline private def extract[E, A](cond: Request => Option[E])(ok: Request => E => F[A]): Request ?=> F[A] = FnWithFallback.extract(cond)(ok)
 
-  private def whenUrlIs(url: Url.Relative): (Request => FR) => Route =
+  private def whenUrlIs[A](url: Url.Relative): (Request => F[A]) => Request ?=> F[A] =
     when(_.path ==* url)
 
-  private def whenUrlIsAnyOf(urls: NonEmptySet[Url.Relative]): (Request => FR) => Route = {
+  private def whenUrlIsAnyOf[A](urls: NonEmptySet[Url.Relative]): (Request => F[A]) => Request ?=> F[A] = {
     import Url.dropTailSlashes
     val norm: Url.Relative => String = u => dropTailSlashes(u.underlying)
     val lookup = Util.quickStringExists(urls.whole.map(norm))
     when(r => lookup(norm(r.path)))
   }
 
-  private def onAuthFail(req: Request): Response =
+  private def loginRequired(implicit req: Request): AbsRes =
     Response.Redirect(
       if (req.path ==* Urls.memberHome)
         Urls.login
       else
         Urls.login / req.path.relativeUrlNoHeadSlash)
 
-  private def needAuth(f: User => Response): Request => FR =
-    req => security.authenticatedUser.map(_.fold(onAuthFail(req))(f))
+  private def needAuth(f: User => AbsRes)(implicit req: Request): F[AbsRes] =
+    security.authenticatedUser.map(_.fold(loginRequired)(f))
 
-  private def needAuthF(f: User => FR): Request => FR =
-    req => security.authenticatedUser.flatMap(_.fold(F pure onAuthFail(req))(f))
+  private def needAuthF(f: User => F[AbsRes])(implicit req: Request): F[AbsRes] =
+    security.authenticatedUser.flatMap(_.fold(F pure loginRequired)(f))
 
-  private def get(url: Url.Relative, resp: FR): Route =
-    whenUrlIs(url)(onGet(_ => resp))
+  private def get(url: Url.Relative, resp: F[AbsRes]): Request ?=> F[RealRes] =
+    whenUrlIs(url)(implicit req =>
+      traceUrl(req.path,
+        onMethod(Get, resp)))
 
-  private def spa(root: Url.Relative)(f: Request => FR): Route =
-    when(spaTest(root))(onGet(f))
+  private def spa(root: Url.Relative, onGet: Request => F[AbsRes]): Request ?=> F[RealRes] =
+    when(spaTest(root))(implicit req =>
+      traceUrl(root,
+        onMethod(Get, onGet(req))))
 
   private def spaWithObfuscatedParam[A](url       : Url.Relative.Param1[Obfuscated[A]])
                                        (obfuscator: Obfuscator[A])
-                                       (response  : String \/ A => Request => FR): Route =
-    extractFlip(spaTest1(url))(param =>
-      onGet(response(obfuscator.deobfuscate(Obfuscated(param)))))
+                                       (onGet     : Request => String \/ A => F[AbsRes]): Request ?=> F[RealRes] =
+    extract(spaTest1(url))(implicit req => param =>
+      traceUrl(url.prefix,
+        onMethod(Get, onGet(req)(obfuscator.deobfuscate(Obfuscated(param))))))
+
+  private def parseParams[A](parsed: Option[A])(f: A => F[AbsRes]): F[AbsRes] =
+    parsed match {
+      case Some(a) => f(a)
+      case None    => F pure Response.StatusOnly(StatusCode.BadRequest)
+    }
 
   /**
     * Re-scopes routes so that they must first match a prefix.
     *
     * Eg. /a & /b can be re-scoped under /x resulting in /x/a and /x/b
     */
-  private def scope(prefix: Url.Relative, routes: Route): Route = {
+  private def scope[A](prefix: Url.Relative, routes: Request ?=> A): Request ?=> A = {
     val test = prefix.isEqualToOrParentOf
     val mod = prefix.removeSelfOrParent
-    routes.embed(r => test(r.path), Request.path.modify(mod))
+    routes.embed(r => test(r.path), r => r.copy(path = mod(r.path)))
   }
-
-  private def parseParams[A](parsed: Option[A])(f: A => FR): FR =
-    parsed match {
-      case Some(a) => f(a)
-      case None    => F pure Response.StatusOnly(StatusCode.BadRequest)
-    }
-
-  def makeReal(trace: Boolean)(d: Request => F[Response]): RealReq => F[RealRes] =
-    if (trace)
-      realReq => {
-        val req = readRealReq(realReq)
-        tracer.http("TODO", realReq, req.path)(_ =>
-          d(req).flatMap(makeRealRes(realReq, _)))
-      }
-    else
-      realReq => d(readRealReq(realReq)).flatMap(makeRealRes(realReq, _))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object Main {
 
-    val publicSpa: Route = {
+    val publicSpa: Request ?=> F[RealRes] = {
       import Urls.{PublicSpaRoute => R}
 
       // This logic is mirrored in .public.spa.Routes
-      val login: Route =
-        spa(R.Login.url)(_ =>
+      val login: Request ?=> F[RealRes] =
+        spa(R.Login.url, _ =>
           security.isAuthenticated.map(a =>
             if (a) Response.redirectToMemberHome else Response.ServePublicSpa))
 
-      val staticRoutes: Route = {
-        val fr: FR = F pure Response.ServePublicSpa
-        whenUrlIsAnyOf(R.static.filterNot(_ ==* R.Login).get.map(_.url).toNES)(onGet(_ => fr))
+      val staticRoutes: Request ?=> F[RealRes] = {
+        val serve: F[AbsRes] = F pure Response.ServePublicSpa
+        whenUrlIsAnyOf(R.static.filterNot(_ ==* R.Login).get.map(_.url).toNES) { implicit req =>
+          traceUrl(req.path,
+            onMethod(Get, serve))
+        }
       }
 
       val securityTokenFn: R.NeedsToken => SecurityToken => F[SecurityToken.Status] = {
@@ -300,27 +307,32 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
         case R.ResetPassword => PublicSpaLogic.tokenStatusFn(db.getResetPasswordTokenIssueDate, config.passwordResetTokenLifespan)
       }
 
-      val onSecurityTokenStatus: SecurityToken.Status => Response = {
+      val onSecurityTokenStatus: SecurityToken.Status => AbsRes = {
         case SecurityToken.Status.Valid   => Response.ServePublicSpa
         case SecurityToken.Status.Invalid => Response.redirectToPublicHome
         case SecurityToken.Status.Expired => Response.redirectToPublicHome // could be better but good enough
       }
 
-      val securityTokenRoutes: Route =
+      val securityTokenRoutes: Request ?=> F[RealRes] =
         R.needsToken.map { r =>
           val getTokenStatus = securityTokenFn(r)
-          def respond(t: SecurityToken): FR = security.protect(getTokenStatus(t).map(onSecurityTokenStatus))
-          extractFlip(spaTest1(r.url))(t => onGet(_ => respond(SecurityToken(t))))
+          extract(spaTest1(r.url)) { implicit req => param =>
+            val token = SecurityToken(param)
+            traceUrl(r.url.prefix,
+              onMethod(Get,
+                security.protect(
+                  getTokenStatus(token).map(onSecurityTokenStatus))))
+          }
         }.reduce(_ | _)
 
       login | staticRoutes | securityTokenRoutes
     }
 
-    val memberHomeSpa: Route =
-      spa(Urls.memberHome)(needAuth(Response.ServeHomeSpa))
+    val memberHomeSpa: Request ?=> F[RealRes] =
+      spa(Urls.memberHome, needAuth(Response.ServeHomeSpa)(_))
 
-    val projectSpa: Route =
-      spaWithObfuscatedParam(Urls.project)(Obfuscators.projectId) {
+    val projectSpa: Request ?=> F[RealRes] =
+      spaWithObfuscatedParam(Urls.project)(Obfuscators.projectId) { implicit req => {
         case \/-(projectId) =>
           needAuthF(user =>
             // TODO Check ProjectStore first
@@ -330,28 +342,33 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
               case None                     => Response.ProjectSpa.InvalidId
             }
           )
-        case -\/(_) => _ => F pure Response.ProjectSpa.InvalidId
-      }
+        case -\/(_) => F pure Response.ProjectSpa.InvalidId
+      }}
 
-    val logout: Route =
+    val logout: Request ?=> F[RealRes] =
       get(Urls.logout,
         security.logout >| Response.redirectToPublicHome)
 
-    val routes: Request ?=> F[Response] =
+    val routes: Request ?=> F[RealRes] =
       publicSpa | memberHomeSpa | projectSpa | logout
 
-    val fallback: Request => F[Response] =
-      onGet(_ => fRedirectToPublicHome)
-
-    def cacheUsualPaths(f: Request => F[Response]): Request => F[Response] = {
-      // Caching ignores params - beware
-      val noParams: String => Option[String] = _ => None
-      val urls = Urls.PublicSpaRoute.static.map(_.url) ++ Urls.MemberRoute.static.map(_.url)
-      val cacheMap = urls.iterator.map(u => u.underlying -> f(Request(Get, u, noParams))).toMap
-      val cache = Util.quickStringLookup(cacheMap)
-      req => cache(req.path.underlying).fold(f(req))(
-        cachedResponse => if (req.method eq Get) cachedResponse else fMethodNotAllowed)
+    val fallback: Request => F[RealRes] = { implicit req =>
+      makeReal(
+        if (req.method eq Get)
+          AbsRes.redirectToPublicHome
+        else
+          AbsRes.MethodNotAllowed)
     }
+
+//    def cacheUsualPaths(f: Request => F[RealRes]): Request => F[RealRes] = {
+//      // Caching ignores params - beware
+//      val noParams: String => Option[String] = _ => None
+//      val urls = Urls.PublicSpaRoute.static.map(_.url) ++ Urls.MemberRoute.static.map(_.url)
+//      val cacheMap = urls.iterator.map(u => u.underlying -> f(Request(Get, u, noParams))).toMap
+//      val cache = Util.quickStringLookup(cacheMap)
+//      req => cache(req.path.underlying).fold(f(req))(
+//        cachedResponse => if (req.method eq Get) cachedResponse else fMethodNotAllowed)
+//    }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -361,60 +378,62 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
     import upickle.Js
     import shipreq.taskman.api.MsgId
 
-    private val notFoundSecure: FR =
+    private val notFoundSecure: F[AbsRes] =
       security.protect( // prevent response-time hacking to discover endpoints (meaning ops URLs)
         F pure Response.Text(404, "Not found."))
 
-    private def endpoint(method: Method, url: Url.Relative)(resp: Request => FR): Route =
-      whenUrlIs(url)(req =>
-        req.param(opsSecretKey) match {
-          case Some(key) if key ==* opsSecretValue.value && req.method ==* method =>
-            security.protect(resp(req))
-          case _ =>
-            notFoundSecure
-        }
-      )
+    private def endpoint(method: Method, url: Url.Relative)(resp: Request => F[AbsRes]): Request ?=> F[RealRes] =
+      whenUrlIs(url) { implicit req =>
+        traceUrl(req.path,
+          makeRealF(req.param(opsSecretKey) match {
+            case Some(key) if key ==* opsSecretValue.value && req.method ==* method =>
+              security.protect(resp(req))
+            case _ =>
+              notFoundSecure
+          })
+        )
+      }
 
-    private def whenValid[A](fa: F[ErrorMsg \/ A])(f: A => Response): FR =
+    private def whenValid[A](fa: F[ErrorMsg \/ A])(f: A => AbsRes): F[AbsRes] =
       fa.map {
         case \/-(a) => f(a)
         case -\/(e) => Response.Text(StatusCode.BadRequest, e.value)
       }
 
-    private def jsonResponse(r: OpsLogic.HasJsValue): Response =
+    private def jsonResponse(r: OpsLogic.HasJsValue): AbsRes =
       Response.Json(StatusCode.OK, r.toJsValue)
 
     /** Return a static 200.
       * Useful to test that the web-server is up and serving requests.
       * Used for container health-checks.
       */
-    private val ok: Route =
+    private val ok: Request ?=> F[RealRes] =
       get(Url.Relative("ok"),
         F pure Response.Text(StatusCode.OK, "OK."))
 
     /** API for invoking the first part of the registration process
       * (regardless of whether public registrations are enabled or not).
       */
-    private val register1: Route =
+    private val register1: Request ?=> F[RealRes] =
       endpoint(Post, Url.Relative("register1"))(req =>
         parseParams(req.param("email"))(email =>
           whenValid(publicApi.register1(email))(id =>
             Response.Json(StatusCode.OK, Js.Obj("taskId" -> Js.Num(id.value))))))
 
-    private val statsDb: Route =
+    private val statsDb: Request ?=> F[RealRes] =
       endpoint(Post, Url.Relative("stats/db"))(
         Function const ops.dbStats.map(jsonResponse))
 
-    private val statsSessions: Route =
+    private val statsSessions: Request ?=> F[RealRes] =
       endpoint(Post, Url.Relative("stats/sessions"))(
         Function const ops.sessionStats.map(jsonResponse))
 
-    private val statsUsers: Route =
+    private val statsUsers: Request ?=> F[RealRes] =
       endpoint(Post, Url.Relative("stats/users"))(
         Function const ops.userStats.map(jsonResponse))
 
     /** API to inspect the status of a Taskman message. */
-    private val task: Route =
+    private val task: Request ?=> F[RealRes] =
       endpoint(Post, Url.Relative("task"))(req =>
         parseParams(req.param("id") flatMap ParseLong.unapply)(id =>
           ops.taskmanMsgStatus(MsgId(id)).map {
@@ -424,28 +443,32 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
         )
       )
 
-    private val testSendMail: Route =
+    private val testSendMail: Request ?=> F[RealRes] =
       endpoint(Post, Url.Relative("test-sendmail"))(req =>
         parseParams(req.param("email"))(email =>
           whenValid(ops.sendMail(email))(
             jsonResponse)))
 
-    private def routes: Route =
+    private def routes: Request ?=> F[RealRes] =
       scope(opsRoot, ok | register1 | statsDb | statsSessions | statsUsers | task | testSendMail)
 
     /** Is the request a candidate for ops route parsing? */
     val candidate: Url.Relative => Boolean =
       opsRoot.isEqualToOrParentOf
 
+    private def fallback: Request => F[RealRes] = { implicit req =>
+      makeRealF(notFoundSecure)
+    }
+
     val total: RealReq => F[RealRes] =
-      makeReal(trace = false)(routes.withFallback(_ => notFoundSecure))
+      routes.withFallback(fallback).compose(readRealReq)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Other
 
   /** DEV-MODE ONLY */
-  private val quickDev: Option[Route] =
+  private val quickDev: Option[Request ?=> F[RealRes]] =
     QuickDev.get().map(q =>
       get(quickDevUrl,
         security.attemptLogin(q.user, q.pass).map {
@@ -456,30 +479,29 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Reques
     )
 
   /** FOR UNIT-TESTS ONLY */
-  private val unitTestLogin: Route =
-    whenUrlIs(unitTestLoginUrl)(onMethod(Post)(req => security.protect(
-      parseParams(
-        for {
-          u <- req.param("user")
-          p <- req.param("pass")
-        } yield (Username.orEmail(u), PlainTextPassword(p))
-      ) { case (u, p) =>
-        security.attemptLogin(u, p).map {
-          case Some(_) => Response.StatusOnly(StatusCode.OK)
-          case None    => Response.StatusOnly(StatusCode.Unauthorized)
+  private val unitTestLogin: Request ?=> F[RealRes] =
+    whenUrlIs(unitTestLoginUrl){ implicit req =>
+      onMethod(Post, security.protect(
+        parseParams(
+          for {
+            u <- req.param("user")
+            p <- req.param("pass")
+          } yield (Username.orEmail(u), PlainTextPassword(p))
+        ) { case (u, p) =>
+          security.attemptLogin(u, p).map {
+            case Some(_) => Response.StatusOnly(StatusCode.OK)
+            case None    => Response.StatusOnly(StatusCode.Unauthorized)
+          }
         }
-      }
-    )))
+      ))
+    }
 
   /** Stateful routes (i.e. using a session) */
   def mainDispatcher(devMode: Boolean, testMode: Boolean): RealReq => F[RealRes] =
-    makeReal(trace = true)(
-      Main.cacheUsualPaths(
-        ( Main.routes
-        | Option.when(devMode)(quickDev).flatten
-        | Option.when(testMode)(unitTestLogin)
-        ).withFallback(Main.fallback)
-      )
-    )
+    ( Main.routes
+    | Option.when(devMode)(quickDev).flatten
+    | Option.when(testMode)(unitTestLogin)
+    ).withFallback(Main.fallback)
+      .compose(readRealReq)
 
 }
