@@ -21,12 +21,34 @@ object TraceInterpreter {
   object Implicits {
 
     implicit val attrForHttpReq: Trace.AttrFor[HttpReq] =
-      req =>
-        Trace.Attr.HttpMethod(req.requestType.method) ::
-          Trace.Attr.HttpUrl(req.request.url) ::
-          // TODO asInstanceOf ↓
-          Trace.Attr.HttpRequestSize(req.request.asInstanceOf[HTTPRequestServlet].req.asInstanceOf[HttpServletRequest].getContentLengthLong) ::
-          req.userAgent.toList.map(Trace.Attr.HttpUserAgent)
+      req => {
+
+        var attrs =
+          Trace.Attr.HttpMethod(req.requestType.method) ::
+            Trace.Attr.HttpUrl(req.request.url) ::
+            req.userAgent.toList.map(Trace.Attr.HttpUserAgent)
+
+        req.request match {
+          case x: HTTPRequestServlet =>
+            attrs ::= Trace.Attr.HttpRequestSize(x.req.getContentLengthLong)
+          case _ => ()
+        }
+
+        println()
+        println()
+        println()
+//        println("RA: " + req.request.remoteAddress)
+        println("RH: " + req.request.remoteHost)
+        println("RP: " + req.request.remotePort)
+        println("SI: " + req.request.sessionId)
+        println()
+        println()
+        println()
+//        IP (remote addr/port/host)
+//        session ID
+
+        attrs
+      }
 
     implicit val attrForHttpRes: Trace.AttrFor[HttpRes] = {
       case f: Full[LiftResponse] =>
@@ -144,6 +166,10 @@ object TraceInterpreter {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   final class OpenTracingAlgebra(tracer: io.opentracing.Tracer) extends Trace.Algebra[Fx] {
+    import com.google.common.collect.ImmutableMap
+    import io.opentracing.log.Fields
+    import io.opentracing.tag.Tags
+
     override type Span = io.opentracing.Span
 
     private def withSpan[A](span: Span)(f: Span => Fx[A]): Fx[A] =
@@ -160,10 +186,13 @@ object TraceInterpreter {
       }
 
     private def setError(span: Span, err: Throwable): Unit = {
-      span.setTag("error", true)
-      span.setTag("error.kind", err.getClass.getName)
-      span.setTag("error.message", err.getMessage)
-      span.setTag("error.stacktrace", err.stackTraceAsString)
+      Tags.ERROR.set(span, true)
+      span.log(new ImmutableMap.Builder()
+        .put(Fields.EVENT, "error")
+        .put(Fields.ERROR_KIND, err.getClass.getName)
+        .put(Fields.MESSAGE, err.getMessage)
+        .put(Fields.STACK, err.stackTraceAsString)
+        .build())
     }
 
     override def newSpan[A](name: String)(f: Span => Fx[A]): Fx[A] =
