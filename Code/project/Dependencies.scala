@@ -174,9 +174,9 @@ object Dependencies {
   }
 
   object Kamon {
-    val core          = jvmOnly("io.kamon" %%  "kamon-core"                  % "1.0.0")
+    val core          = jvmOnly("io.kamon" %%  "kamon-core"                  % "1.0.1")
     val jdbc          = jvmOnly("io.kamon" %%  "kamon-jdbc"                  % "1.0.0")
-    val akka          = jvmOnly("io.kamon" %% s"kamon-akka-${Akka.shortVer}" % "1.0.0")
+    val akka          = jvmOnly("io.kamon" %% s"kamon-akka-${Akka.shortVer}" % "1.0.1")
     val systemMetrics = jvmOnly("io.kamon" %%  "kamon-system-metrics"        % "1.0.0")
     val logback       = jvmOnly("io.kamon" %%  "kamon-logback"               % "1.0.0")
     val prometheus    = jvmOnly("io.kamon" %%  "kamon-prometheus"            % "1.0.0")
