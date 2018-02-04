@@ -1,14 +1,15 @@
 package shipreq.base.ops
 
 import com.google.auth.oauth2.GoogleCredentials
-import com.google.cloud.trace.{Trace => T, Tracer}
-import com.google.cloud.trace.core.{ConstantTraceOptionsFactory, Labels, RateLimitingTraceOptionsFactory, ThrowableStackTraceHelper}
+import com.google.cloud.trace.{Tracer, Trace => T}
+import com.google.cloud.trace.core.{ConstantTraceOptionsFactory, Labels, RateLimitingTraceOptionsFactory, ThrowableStackTraceHelper, TraceContext}
 import com.google.cloud.trace.service.TraceGrpcApiService
 import japgolly.microlibs.config.ConfigParser.Implicits.Defaults._
 import japgolly.microlibs.config._
 import java.io.FileInputStream
 import scalaz.syntax.applicative._
-import shipreq.base.util.Memo
+import shipreq.base.util.FxModule._
+import shipreq.base.util.{Identity, Memo}
 
 object TraceWithStackdriver {
 
@@ -65,9 +66,6 @@ object TraceWithStackdriver {
       init()
       T.getTracer()
     }
-
-    def sqlTracer() =
-      TraceWithStackdriver.sqlTracer(getTracer())
   }
 
   def config: Config[Option[Cfg]] =
@@ -117,92 +115,95 @@ object TraceWithStackdriver {
     final val ShipReqUserId      = "/shipreq/user_id"
   }
 
-//  def stackdriverAlgebra(cfg: StackdriverTrace.Cfg): Trace.Algebra[Fx] =
-//    new Trace.Algebra[Fx] {
-//      import com.google.cloud.trace.core._
-//
-//      private[this] val tracer = cfg.getTracer()
-//
-//      override type Span = TraceContext
-//
-//      override def newSpan[A](name: String)(f: Span => Fx[A]): Fx[A] =
-//        for {
-//          span <- Fx(tracer.startSpan(name))
-//          res <- f(span)
-//        } yield {
-//          tracer.endSpan(span) -- handle exceptions
-//          res
-//        }
-//
-////      private val getSpanContext: Fx[SpanContext] =
-////        Fx(com.google.cloud.trace.Trace.getSpanContextHandler.current)
-////
-////      override def sub[A](name: String)(f: => Fx[A]) =
-////        getSpanContext.flatMap(ctx =>
-////          if (ctx.getTraceId == TraceId.invalid)
-////            f // Don't trace
-////          else
-////            generic(name)(f))
-//
-//      override def newSubSpan[A](name: String, parent: Span)(f: Span => Fx[A]): Fx[A] =
-//        how to use parent span
-//        newSpan(name)(f)
-//
-//      private[this] val attrInterpretter = Trace.Attr.interpret[Labels.Builder, Throwable](
-//          endpointName     = (l, a) => {l.add(StackdriverTrace.Label.EndpointName, a.value); null},
-//          error            = (l, a) => {l.add(StackdriverTrace.Label.ErrorMessage, a.value.getMessage); a.value},
-//          httpMethod       = (l, a) => {l.add(StackdriverTrace.Label.HttpMethod, a.value); null},
-//          httpRemoteHost   = (l, a) => {l.add(StackdriverTrace.Label.HttpRemoteHost, a.value); null},
-//          httpRemotePort   = (l, a) => {l.add(StackdriverTrace.Label.HttpRemotePort, a.value.toString); null},
-//          httpRequestSize  = (l, a) => {l.add(StackdriverTrace.Label.HttpRequestSize, a.value.toString); null},
-//          httpResponseSize = (l, a) => {l.add(StackdriverTrace.Label.HttpResponseSize, a.value.toString); null},
-//          httpSessionId    = (l, a) => {l.add(StackdriverTrace.Label.HttpSessionId, a.value); null},
-//          httpStatusCode   = (l, a) => {l.add(StackdriverTrace.Label.HttpStatusCode, a.str); null},
-//          httpUri          = (l, a) => {l.add(StackdriverTrace.Label.HttpUri, a.value); null},
-//          httpUrl          = (l, a) => {l.add(StackdriverTrace.Label.HttpUrl, a.value); null},
-//          httpUserAgent    = (l, a) => {l.add(StackdriverTrace.Label.HttpUserAgent, a.value); null},
-//          shipReqProjectId = (l, a) => {l.add(StackdriverTrace.Label.ShipReqProjectId, a.value.toString); null},
-//          shipReqUserId    = (l, a) => {l.add(StackdriverTrace.Label.ShipReqUserId, a.value.toString); null})
-//
-//      override def addAttrs(attrs: List[Trace.Attr])(implicit span: Span): Fx[Unit] =
-//        Fx {
-//          val labels = Labels.builder()
-//          for (a <- attrs) {
-//            val t = attrInterpretter(labels, a)
-//            if (t ne null)
-//              tracer.setStackTrace(span, ThrowableStackTraceHelper.createBuilder(t).build)
-//          }
-//          tracer.annotateSpan(span, labels.build())
-//        }
-//    }
+  def algebraFx(cfg: Cfg): Trace.Algebra[Fx] =
+    new Trace.Algebra[Fx] {
 
-  def sqlTracer(tracer: Tracer): SqlTracer =
-    new SqlTracer {
-      override def executePreparedStatement[@specialized(Boolean, Int, Long) A](method : String,
-                                                                                sql    : String,
-                                                                                batches: Int,
-                                                                                run    : () => A): A = {
-        val ctx = tracer.startSpan("JDBC")
-        val labels = Labels.builder()
-          .add("/jdbc/class", "PreparedStatement")
-          .add("/jdbc/method", method)
-          .add("/jdbc/sql", sql)
-          .add("/jdbc/batches", batches.toString)
+      private[this] val tracer = cfg.getTracer()
 
-        try {
-          val a = run()
-          tracer.annotateSpan(ctx, labels.build())
-          tracer.endSpan(ctx)
-          a
+      override type Span = TraceContext
 
-        } catch {
-          case t: Throwable =>
-            labels.add(Label.ErrorMessage, t.getMessage)
-            tracer.setStackTrace(ctx, ThrowableStackTraceHelper.createBuilder(t).build)
-            tracer.annotateSpan(ctx, labels.build())
-            tracer.endSpan(ctx)
-            throw t
+      override def newSpan[A](name: String)(f: Span => Fx[A]): Fx[A] =
+        for {
+          span <- Fx(tracer.startSpan(name))
+          res <- f(span)
+        } yield {
+          tracer.endSpan(span) // TODO handle exceptions
+          res
         }
-      }
+
+//      private val getSpanContext: Fx[SpanContext] =
+//        Fx(com.google.cloud.trace.Trace.getSpanContextHandler.current)
+//
+//      override def sub[A](name: String)(f: => Fx[A]) =
+//        getSpanContext.flatMap(ctx =>
+//          if (ctx.getTraceId == TraceId.invalid)
+//            f // Don't trace
+//          else
+//            generic(name)(f))
+
+      override def newSubSpan[A](name: String, parent: Span)(f: Span => Fx[A]): Fx[A] =
+        // TODO how to use parent span?
+        newSpan(name)(f)
+
+      override protected def _propagateCtx[A]: Fx[Fx[A] => Fx[A]] =
+        Fx(Identity.apply) // TODO
+
+      private[this] val attrInterpretter = Trace.Attr.interpret[Labels.Builder, Throwable](
+          endpointName     = (l, a) => {l.add(Label.EndpointName, a.value); null},
+          error            = (l, a) => {l.add(Label.ErrorMessage, a.value.getMessage); a.value},
+          httpMethod       = (l, a) => {l.add(Label.HttpMethod, a.value); null},
+          httpRemoteHost   = (l, a) => {l.add(Label.HttpRemoteHost, a.value); null},
+          httpRemotePort   = (l, a) => {l.add(Label.HttpRemotePort, a.value.toString); null},
+          httpRequestSize  = (l, a) => {l.add(Label.HttpRequestSize, a.value.toString); null},
+          httpResponseSize = (l, a) => {l.add(Label.HttpResponseSize, a.value.toString); null},
+          httpSessionId    = (l, a) => {l.add(Label.HttpSessionId, a.value); null},
+          httpStatusCode   = (l, a) => {l.add(Label.HttpStatusCode, a.str); null},
+          httpUri          = (l, a) => {l.add(Label.HttpUri, a.value); null},
+          httpUrl          = (l, a) => {l.add(Label.HttpUrl, a.value); null},
+          httpUserAgent    = (l, a) => {l.add(Label.HttpUserAgent, a.value); null},
+          shipReqProjectId = (l, a) => {l.add(Label.ShipReqProjectId, a.value.toString); null},
+          shipReqUserId    = (l, a) => {l.add(Label.ShipReqUserId, a.value.toString); null})
+
+      override def addAttrs(attrs: List[Trace.Attr])(implicit span: Span): Fx[Unit] =
+        Fx {
+          val labels = Labels.builder()
+          for (a <- attrs) {
+            val t = attrInterpretter(labels, a)
+            if (t ne null)
+              tracer.setStackTrace(span, ThrowableStackTraceHelper.createBuilder(t).build)
+          }
+          tracer.annotateSpan(span, labels.build())
+        }
+
+      override def sqlTracer(spanName: String) =
+        Some(new SqlTracer {
+          override def executePreparedStatement[@specialized(Boolean, Int, Long) A](method : String,
+                                                                                    sql    : String,
+                                                                                    batches: Int,
+                                                                                    run    : () => A): A = {
+            val ctx = tracer.startSpan(spanName)
+            val labels = Labels.builder()
+              .add("/jdbc/class", "PreparedStatement")
+              .add("/jdbc/method", method)
+              .add("/jdbc/sql", sql)
+              .add("/jdbc/batches", batches.toString)
+
+            try {
+              val a = run()
+              tracer.annotateSpan(ctx, labels.build())
+              tracer.endSpan(ctx)
+              a
+
+            } catch {
+              case t: Throwable =>
+                labels.add(Label.ErrorMessage, t.getMessage)
+                tracer.setStackTrace(ctx, ThrowableStackTraceHelper.createBuilder(t).build)
+                tracer.annotateSpan(ctx, labels.build())
+                tracer.endSpan(ctx)
+                throw t
+            }
+          }
+        })
     }
+
 }

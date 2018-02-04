@@ -75,32 +75,29 @@ object TraceWithKamon {
 
       override def addAttrs(attrs: List[Trace.Attr])(implicit span: Span): Fx[Unit] =
         Fx(attrs.foreach(attrInterpretter(span, _)))
-    }
 
-  val sqlTracer: SqlTracer =
-    new SqlTracer {
-      override def executePreparedStatement[@specialized(Boolean, Int, Long) A](method: String,
-                                                                                sql: String,
-                                                                                batches: Int,
-                                                                                run: () => A): A = {
-        val span = Kamon.buildSpan("JDBC").start()
+      override def sqlTracer(spanName: String) =
+        Some(new SqlTracer {
+          override def executePreparedStatement[@specialized(Boolean, Int, Long) A](method: String,
+                                                                                    sql: String,
+                                                                                    batches: Int,
+                                                                                    run: () => A): A = {
+            val span = Kamon.buildSpan(spanName).start()
+            try {
+              span.tag("jdbc.class", "PreparedStatement")
+              span.tag("jdbc.method", method)
+              span.tag("jdbc.sql", sql)
+              span.tag("jdbc.batches", batches: Long)
+              run()
+            } catch {
+              case t: Throwable =>
+                setError(span, t)
+                throw t
+            } finally
+              span.finish()
+          }
+        })
 
-        try {
-          span.tag("jdbc.class", "PreparedStatement")
-          span.tag("jdbc.method", method)
-          span.tag("jdbc.sql", sql)
-          span.tag("jdbc.batches", batches: Long)
-          val a = run()
-          span.finish()
-          a
-
-        } catch {
-          case t: Throwable =>
-            span.addError(t.getMessage, t)
-            span.finish()
-            throw t
-        }
-      }
     }
 
 }

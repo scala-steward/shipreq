@@ -3,6 +3,8 @@ package shipreq.base.ops
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptyVector
 import scalaz.Monad
+import scalaz.std.option.optionMonoid
+import scalaz.syntax.semigroup._
 import scalaz.syntax.monad._
 import shipreq.base.util.Identity
 
@@ -16,10 +18,12 @@ object Trace {
     def addAttrs(attrs: List[Trace.Attr])(implicit span: Span): F[Unit]
 
     protected def _propagateCtx[A]: F[F[A] => F[A]]
-
     private[this] final val _propagateCtxInstance = _propagateCtx[Any]
     final def propagateCtx[A]: F[F[A] => F[A]] =
       _propagateCtxInstance.asInstanceOf[F[F[A] => F[A]]]
+
+    /** @param spanName Name of spans created for all JDBC operations. */
+    def sqlTracer(spanName: String): Option[SqlTracer]
 
     def compose(inner: Algebra[F])(implicit F: Monad[F]): Algebra[F] =
       new Algebra[F] {
@@ -42,6 +46,8 @@ object Trace {
             g <- i
           } yield g compose f
         }
+        override def sqlTracer(spanName: String) =
+          outer.sqlTracer(spanName) |+| inner.sqlTracer(spanName)
       }
   }
 
@@ -63,6 +69,7 @@ object Trace {
         override def addAttrs(a: List[Trace.Attr])(implicit span: Span) = fUnit
         override def compose(a: Algebra[F])(implicit F: Monad[F])       = a
         override def _propagateCtx[A]                                   = F point Identity.apply
+        override def sqlTracer(spanName: String)                        = None
       }
 
     def logToStdout[F[_]](implicit F: Monad[F]): Algebra[F] =
@@ -73,6 +80,7 @@ object Trace {
         override def newSubSpan[A](n: String, p: Span)(f: Span => F[A]) = this(n, f)
         override def addAttrs(a: List[Trace.Attr])(implicit span: Span) = fUnit
         override def _propagateCtx[A]                                   = F point Identity.apply
+        override def sqlTracer(spanName: String)                        = None
         private def apply[A](name: String, f: Span => F[A]) =
           for {
             start <- F point System.nanoTime()

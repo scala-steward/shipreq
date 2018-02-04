@@ -434,7 +434,8 @@ object MockInterpreters {
     taskmanSchema              = "test_taskman",
     initTaskmanOnBoot          = false,
     initTaskmanRetry           = RetryCriteria(2 hours, Some(666)),
-    trace                      = None)
+    traceWithKamon             = false,
+    traceWithStackdriver       = None)
 }
 
 class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerConfig]) {

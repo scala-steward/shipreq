@@ -3,47 +3,53 @@ package shipreq.webapp.server
 import japgolly.microlibs.config._
 import japgolly.microlibs.config.ConfigParser.Implicits.Defaults._
 import japgolly.microlibs.config.JavaTimeConfigParsers._
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.Duration
 import monocle.macros.Lenses
 import scalaz.syntax.applicative._
-import shipreq.base.ops.TraceWithStackdriver
+import shipreq.base.ops._
 import shipreq.base.util._
+import shipreq.base.util.FxModule._
 
 @Lenses
-final case class ServerConfig(
+final case class ServerConfig(baseUrl: Url.Absolute.Base,
 
-    baseUrl: Url.Absolute.Base,
+                              /** A short amount of time, unnoticeable to humans, to sleep in order to frustrate automated security attacks. */
+                              attackFrustrationDelay: Duration,
 
-    /** A short amount of time, unnoticeable to humans, to sleep in order to frustrate automated security attacks. */
-    attackFrustrationDelay: Duration,
+                              /** Number of characters in tokens used for email & reset-password verification. */
+                              securityTokenLength: Int,
 
-    /** Number of characters in tokens used for email & reset-password verification. */
-    securityTokenLength: Int,
+                              /** How long registration tokens are valid for after issuing. */
+                              registrationTokenLifespan: Duration,
 
-    /** How long registration tokens are valid for after issuing. */
-    registrationTokenLifespan: Duration,
+                              /** How long password-reset tokens are valid for after issuing. */
+                              passwordResetTokenLifespan: Duration,
 
-    /** How long password-reset tokens are valid for after issuing. */
-    passwordResetTokenLifespan: Duration,
+                              /** Whether or not public registrations are allowed.
+                                * (Registration tokens already issued will still be accepted.)
+                                */
+                              publicRegistration: Permission,
 
-    /**
-    * Whether or not public registrations are allowed.
-    * (Registration tokens already issued will still be accepted.)
-    */
-    publicRegistration: Permission,
+                              googleAnalyticsTrackingId: Option[String],
 
-    googleAnalyticsTrackingId: Option[String],
+                              /** The DB schema in which the Taskman interfaces reside. */
+                              taskmanSchema: String,
 
-    /** The DB schema in which the Taskman interfaces reside. */
-    taskmanSchema: String,
+                              initTaskmanOnBoot: Boolean,
+                              initTaskmanRetry: RetryCriteria,
 
-    initTaskmanOnBoot: Boolean,
-    initTaskmanRetry: RetryCriteria,
+                              traceWithKamon: Boolean,
 
-    trace: Option[TraceWithStackdriver.Cfg]) {
+                              traceWithStackdriver: Option[TraceWithStackdriver.Cfg]) {
 
   val attackFrustrationDelayMs: Long =
     attackFrustrationDelay.toMillis
+
+  lazy val traceAlgebraFx: Trace.Algebra[Fx] =
+    Trace.Algebra(
+      Option.when(traceWithKamon)(TraceWithKamon.algebraFx).toList :::
+      traceWithStackdriver.map(TraceWithStackdriver.algebraFx).toList)
 }
 
 object ServerConfig {
@@ -59,7 +65,8 @@ object ServerConfig {
       Config.need    [String  ]      ("taskman.schema") |@|
       Config.getOrUse[Boolean ]      ("taskman.init", true) |@|
       RetryCriteria.config.withPrefix("taskman.init.retry.") |@|
-      TraceWithStackdriver.config.withPrefix("trace.")
+      Config.getOrUse[Boolean ]      ("trace.kamon", true) |@|
+      TraceWithStackdriver.config.withPrefix("trace.stackdriver.")
     ) (apply).withPrefix("shipreq.")
 
 }

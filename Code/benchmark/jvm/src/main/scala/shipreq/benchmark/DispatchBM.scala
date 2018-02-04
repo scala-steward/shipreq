@@ -115,7 +115,8 @@ object DispatchBM {
     taskmanSchema              = "test_taskman",
     initTaskmanOnBoot          = false,
     initTaskmanRetry           = RetryCriteria(2 hours, Some(666)),
-    trace                      = None)
+    traceWithKamon             = false,
+    traceWithStackdriver       = None)
 
   val user = User(UserId(1), Username("asds"), EmailAddr("x@x.com"), Set.empty)
   val ps = PasswordAndSalt(PasswordHash("wdsef34r"), Salt("32165498bdef"))

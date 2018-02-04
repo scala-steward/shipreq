@@ -10,7 +10,7 @@ import net.liftweb.util._
 import net.liftweb.util.Props.RunModes
 import scalaz.syntax.applicative._
 import shipreq.base.db.{DbAccess, DbConfig}
-import shipreq.base.ops.TraceWithKamon
+import shipreq.base.ops.Trace
 import shipreq.base.util.FxModule._
 import shipreq.base.util.{Props => ShipReqProps}
 import shipreq.webapp.base.WebappConfig
@@ -33,15 +33,6 @@ class Boot {
   val packageRoot = "shipreq.webapp.server"
   lazy val logger = Logger(s"$packageRoot.Boot")
 
-  def initKamon(): Unit = {
-    import com.typesafe.config.ConfigFactory
-    import kamon._
-    Kamon.reconfigure(ConfigFactory.load("kamon"))
-    //    Kamon.addReporter(new kamon.prometheus.PrometheusReporter)
-    //    Kamon.addReporter(new kamon.zipkin.ZipkinReporter)
-    Kamon.addReporter(new kamon.jaeger.JaegerReporter)
-  }
-
   def boot(): Unit = {
     // Read config
     val (cfg, runMode) = readConfig()
@@ -62,7 +53,9 @@ class Boot {
     initRoutes(Global.Instance)
     initTaskman(Global.Instance)
 
-    initKamon()
+    // Start services
+    if (cfg.server.traceWithKamon)
+      initKamon() // keep this after initTaskman() - don't want that SQL traced
   }
 
   def readConfig(): (BootConfig, Option[RunModes.Value]) = {
@@ -157,12 +150,8 @@ class Boot {
     AppSecurityRealm.init()
 
   def initDatabase(cfg: BootConfig): DbAccess = {
-
-    // TODO Reenable JDBC tracing - although it should be done be Trace.Logic#injectDb
-     cfg.db.modifyHikariDataSource(TraceWithKamon.sqlTracer.apply)
-//    for (t <- cfg.server.trace.map(_.sqlTracer()))
-//      cfg.db.modifyHikariDataSource(t.apply)
-
+    for (t <- cfg.server.traceAlgebraFx.sqlTracer("JDBC"))
+     cfg.db.modifyHikariDataSource(t.inject)
     val access = DbAccess.fromCfg(cfg.db).unsafeRun()
     logger.info(s"Connecting to DB: ${access.desc}")
     access.verifyConnectivity()
@@ -195,4 +184,12 @@ class Boot {
     // (Must be done after Global is ready)
     new LiftDispatcher(g).init()
   }
+
+  def initKamon(): Unit = {
+    import com.typesafe.config.ConfigFactory
+    import kamon.Kamon
+    Kamon.reconfigure(ConfigFactory.load("kamon")) // loads kamon.conf on the classpath
+    Kamon.loadReportersFromConfig()
+  }
+
 }

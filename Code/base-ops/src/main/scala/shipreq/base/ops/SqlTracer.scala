@@ -8,20 +8,35 @@ import java.{sql, util}
 import java.util.concurrent.Executor
 import java.util.logging.Logger
 import javax.sql.DataSource
+import scalaz.Semigroup
 
-trait SqlTracer {
-  final def apply(ds: DataSource): DataSource =
+trait SqlTracer { outer =>
+  final def inject(ds: DataSource): DataSource =
     new SqlTracer.DataSourceProxy(ds)(this)
 
   def executePreparedStatement[@specialized(Boolean, Int, Long) A](method : String,
                                                                    sql    : String,
                                                                    batches: Int,
                                                                    run    : () => A): A
+
+  final def compose(inner: SqlTracer): SqlTracer =
+    new SqlTracer {
+      override def executePreparedStatement[@specialized(Boolean, Int, Long) A](method : String,
+                                                                                sql    : String,
+                                                                                batches: Int,
+                                                                                run    : () => A): A =
+        outer.executePreparedStatement(method, sql, batches, () =>
+          inner.executePreparedStatement(method, sql, batches,
+            run))
+    }
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
 object SqlTracer {
+
+  implicit val semigroup: Semigroup[SqlTracer] =
+    _ compose _
 
   final class DataSourceProxy(underlying: DataSource)(implicit tracer: SqlTracer) extends DataSource with Closeable {
     def proxyC(c: Connection) = new ConnectionProxy(c)
