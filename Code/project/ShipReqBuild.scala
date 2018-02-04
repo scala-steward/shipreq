@@ -51,7 +51,10 @@ object ShipReqBuild {
         Common.jvmSettings,
         Common.macroModuleSettings)
       .dependsOn(baseUtilJvm)
-      .deps(GoogleCloud.trace ++ Kamon.core ++ Jaeger.core) // TODO Why all traces here but logback routers in T/WS only?
+      .deps(
+        GoogleCloud.trace ++
+        Kamon.core ++
+        Kamon.jaeger)
 
   lazy val baseDb =
     project("base-db")

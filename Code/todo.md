@@ -123,7 +123,6 @@ Generically:
   sub  - nested only or WARN
   Some means to add attributes where the attribute differs by provider
 
-Remove jaeger direct client
 Prefix logic fns like makeEvent
 Add more tags to logic fns (eg. event being applied) (?)
 
