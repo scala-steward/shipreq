@@ -10,7 +10,7 @@ import net.liftweb.util._
 import net.liftweb.util.Props.RunModes
 import scalaz.syntax.applicative._
 import shipreq.base.db.{DbAccess, DbConfig}
-import shipreq.base.ops.KamonBased
+import shipreq.base.ops.TraceWithKamon
 import shipreq.base.util.FxModule._
 import shipreq.base.util.{Props => ShipReqProps}
 import shipreq.webapp.base.WebappConfig
@@ -159,7 +159,7 @@ class Boot {
   def initDatabase(cfg: BootConfig): DbAccess = {
 
     // TODO Reenable JDBC tracing - although it should be done be Trace.Logic#injectDb
-     cfg.db.modifyHikariDataSource(KamonBased.sqlTracer.apply)
+     cfg.db.modifyHikariDataSource(TraceWithKamon.sqlTracer.apply)
 //    for (t <- cfg.server.trace.map(_.sqlTracer()))
 //      cfg.db.modifyHikariDataSource(t.apply)
 

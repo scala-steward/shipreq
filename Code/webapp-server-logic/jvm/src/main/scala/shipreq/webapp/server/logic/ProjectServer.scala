@@ -1,15 +1,13 @@
 package shipreq.webapp.server.logic
 
-import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import java.time.Instant
 import monocle.macros.Lenses
-import scala.collection.immutable.SortedSet
-import scala.collection.mutable
 import scalaz.syntax.monad._
 import scalaz.syntax.std.option._
 import scalaz.{-\/, Monad, \/, \/-, ~>}
+import shipreq.base.ops.Trace
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._

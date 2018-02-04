@@ -6,6 +6,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import scalaz.{-\/, Monad, \/, \/-}
 import scalaz.syntax.monad._
+import shipreq.base.ops.Trace
 import shipreq.base.util._
 import shipreq.webapp.base.{AssetManifest, Urls}
 import shipreq.webapp.base.data._
@@ -198,7 +199,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
                                                   publicApi : PublicSpaLogic.ForApi[F],
                                                   security  : Security.Algebra[F],
                                                   svr       : Server.Time[F],
-                                                  tracer    : Trace.Logic[F, RealReq, RealRes]) {
+                                                  tracer    : WebappTrace.Logic[F, RealReq, RealRes]) {
 
   import DispatchLogic.{Request => _, Response => AbsRes, _}
   import DispatchLogic.Method._

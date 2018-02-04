@@ -6,7 +6,7 @@ import japgolly.microlibs.config.JavaTimeConfigParsers._
 import java.time.Duration
 import monocle.macros.Lenses
 import scalaz.syntax.applicative._
-import shipreq.base.ops.StackdriverTrace
+import shipreq.base.ops.TraceWithStackdriver
 import shipreq.base.util._
 
 @Lenses
@@ -40,7 +40,7 @@ final case class ServerConfig(
     initTaskmanOnBoot: Boolean,
     initTaskmanRetry: RetryCriteria,
 
-    trace: Option[StackdriverTrace.Cfg]) {
+    trace: Option[TraceWithStackdriver.Cfg]) {
 
   val attackFrustrationDelayMs: Long =
     attackFrustrationDelay.toMillis
@@ -59,7 +59,7 @@ object ServerConfig {
       Config.need    [String  ]      ("taskman.schema") |@|
       Config.getOrUse[Boolean ]      ("taskman.init", true) |@|
       RetryCriteria.config.withPrefix("taskman.init.retry.") |@|
-      StackdriverTrace.config.withPrefix("trace.")
+      TraceWithStackdriver.config.withPrefix("trace.")
     ) (apply).withPrefix("shipreq.")
 
 }

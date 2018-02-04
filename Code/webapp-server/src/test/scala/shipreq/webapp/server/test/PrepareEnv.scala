@@ -6,7 +6,7 @@ import shipreq.base.test.BaseTestUtil.onceUnit
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.app.Global
 import shipreq.webapp.server.db.DbInterpreter
-import shipreq.webapp.server.logic.Trace
+import shipreq.webapp.server.logic.WebappTrace
 
 object PrepareEnv {
   private val boot = new bootstrap.liftweb.Boot
@@ -26,7 +26,7 @@ object PrepareEnv {
     ops      = null,
     security = null,
     taskman  = null,
-    trace    = Trace.Logic.off)
+    trace    = WebappTrace.Logic.off)
 
   def global() = Global.Instance
 

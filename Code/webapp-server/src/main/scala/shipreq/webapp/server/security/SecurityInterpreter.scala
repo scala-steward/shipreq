@@ -3,6 +3,7 @@ package shipreq.webapp.server.security
 import org.apache.shiro.authc.AuthenticationException
 import scalaz.syntax.monad._
 import scalaz.{Monad, \/}
+import shipreq.base.ops.Trace
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.logic._

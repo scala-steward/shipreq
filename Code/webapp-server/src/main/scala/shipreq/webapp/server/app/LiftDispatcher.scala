@@ -13,7 +13,7 @@ import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.user.User
 import shipreq.webapp.base.{Urls, WebappConfig}
 import shipreq.webapp.server.db.DbInterpreter
-import shipreq.webapp.server.logic.{DB, DispatchLogic, OpsLogic, Trace}
+import shipreq.webapp.server.logic.{DB, DispatchLogic}
 
 object LiftDispatcher {
   object ProjectIdVar extends RequestVar[ProjectId](null)

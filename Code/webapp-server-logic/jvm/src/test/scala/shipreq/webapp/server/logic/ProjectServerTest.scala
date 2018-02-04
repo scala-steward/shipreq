@@ -3,6 +3,7 @@ package shipreq.webapp.server.logic
 import java.util.concurrent.ConcurrentHashMap
 import scalaz.{-\/, Name, NaturalTransformation, ~>}
 import utest._
+import shipreq.base.ops.Trace
 import shipreq.base.util.Direction
 import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.event.VerifiedEvent

@@ -14,7 +14,7 @@ import shipreq.webapp.base.user.EmailAddr
 object DispatchLogicTest extends TestSuite {
 
   object Tester extends MockInterpreters {
-    implicit val trace = Trace.Logic.off[Name, Request[Unit], Response]
+    implicit val trace = WebappTrace.Logic.off[Name, Request[Unit], Response]
     val dispatcher = new DispatchLogic[Name, Request[Unit], Response](
       r => Request(r.method, r.path, r.param, r), (_, r) => Name(r))
     val dispatch = dispatcher.mainDispatcher(false, false)

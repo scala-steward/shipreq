@@ -2,6 +2,7 @@ package shipreq.webapp.server.app
 
 import doobie.imports.ConnectionIO
 import shipreq.base.db.DbAccess
+import shipreq.base.ops._
 import shipreq.base.util.FxModule._
 import shipreq.taskman.api.TaskmanApi
 import shipreq.taskman.api.impl.TaskmanApiImpl
@@ -36,10 +37,10 @@ object Global {
 //    config.trace.foreach(traceAlgebras :+= TraceInterpreter.stackdriverAlgebra(_))
 //    traceAlgebras :+= TraceInterpreter.jaegerAlgebra
     // traceAlgebras :+= Trace.Algebra.logToStdout
-    traceAlgebras :+= TraceInterpreter.KamonAlgebra
+    traceAlgebras :+= TraceWithKamon.algebraFx
 
     implicit val traceAlgebra  = Trace.Algebra(traceAlgebras)
-    implicit val trace         = new Trace.Logic: TraceInterpreter.ForLift[Fx]
+    implicit val trace         = new WebappTrace.Logic: TraceInterpreter.ForLift[Fx]
     implicit val runDB         = trace.injectDb(dbAccess.fx.trans)
              val taskmanCtx    = TaskmanApiImpl.Context(Some(config.taskmanSchema))
     implicit val taskman       = TaskmanApiImpl(taskmanCtx, runDB)
