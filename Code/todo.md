@@ -102,27 +102,16 @@ Phase 2
   new version is deployed.
 * Issues prototype: add collapse/expand by issue{type,} columns
 
+================================================
 
-SQL makes no sense as a top-level
-remove /login/xxx
-remove /project/xxx
-prefix all URLs with "URL: "
-JDBC top-level? maybe suffix with method
-RegisterSSP.xxx shouldn't be a top-level. at least move the proc path into tag
-SSP.xxx -- move the proc path into tag. Change to ExecuteSSP or AJAX something.
+Add tracing to Taskman
+
 Code top levels? Security dely, MakeEvent, UpdateProject. Prefix with "Fn: " or something?
 Add user id tag to everything
-JDBC (and maybe SQL) should be a different component (i.e. not webapp)
-Link AJAX to initial request?
-
-
-What I need.
-
-Generically:
-  span - top-level or nested
-  sub  - nested only or WARN
-  Some means to add attributes where the attribute differs by provider
-
+Failed login attempts - add tags for username/email field, and password hash, maybe also for reason for failure?
 Prefix logic fns like makeEvent
 Add more tags to logic fns (eg. event being applied) (?)
+Accept host/port for jaeger
 
+Add jaeger to docker-compose
+Find out how to handle dev/local with/without tracing
