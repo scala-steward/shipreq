@@ -5,7 +5,7 @@ services:
     image: postgres:9.6.1
     container_name: shipreq_dev_postgres
     ports:
-      - "14032:5432"
+      - $PORT_POSTGRES:5432
     environment:
       - POSTGRES_DB=shipreq_dev
       - POSTGRES_USER=dev
@@ -38,8 +38,8 @@ services:
       - postgres
       - logstash
     ports:
-      - "14080:8080"
-      - "14443:8443"
+      - $PORT_SHIPREQ_WEBAPP_HTTP:8080
+      - $PORT_SHIPREQ_WEBAPP_HTTPS:8443
     volumes:
       - ./webapp:/shipreq/conf:ro
     environment:
@@ -48,8 +48,8 @@ services:
       - db.username=dev
       - db.password=sqd
       - run.mode=staging
-      - shipreq.url=https://localhost:14443
-      - EXTERNAL_PORT_SSL=14443
+      - shipreq.url=https://localhost:$PORT_SHIPREQ_WEBAPP_HTTPS
+      - EXTERNAL_PORT_SSL=$PORT_SHIPREQ_WEBAPP_HTTPS
     mem_limit: 1856m # 2.25*1024 - 448 for Taskman
     cpuset: "1,2"
 
@@ -57,19 +57,19 @@ services:
     image: prom/prometheus:v2.1.0
     container_name: shipreq_dev_prometheus
     ports:
-      - "14100:9090"
+      - $PORT_PROMETHEUS_HTTP:9090
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    links:
-      - cadvisor
+    # links:
+    #   - cadvisor
 
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:4.6.3
     container_name: shipreq_dev_grafana
     links:
       - prometheus
     ports:
-      - "14101:3000"
+      - $PORT_GRAFANA_HTTP:3000
     volumes:
       - ./grafana-ds-prometheus.json:/etc/grafana/datasources/prometheus.json
 
@@ -88,16 +88,16 @@ services:
 #    ports:
 #      - "14102:9100"
 
-  cadvisor:
-    image: google/cadvisor
-    container_name: shipreq_dev_cadvisor
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    ports:
-      - "14103:8080"
+  # cadvisor:
+  #   image: google/cadvisor
+  #   container_name: shipreq_dev_cadvisor
+  #   volumes:
+  #     - /:/rootfs:ro
+  #     - /var/run:/var/run:rw
+  #     - /sys:/sys:ro
+  #     - /var/lib/docker/:/var/lib/docker:ro
+  #   ports:
+  #     - "14103:8080"
 
   # sudo sysctl -w vm.max_map_count=262144
   elasticsearch:
@@ -110,7 +110,7 @@ services:
     links:
       - elasticsearch
     ports:
-      - "14104:5601"
+      - $PORT_KIBANA_HTTP:5601
     logging:
       driver: none
 
@@ -122,10 +122,52 @@ services:
     volumes:
       - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
     ports:
-      - "14500:14500"
+      - $PORT_LOGSTASH:14500
+
+  # You wouldn't do this in prod
+  jaeger:
+    image: jaegertracing/all-in-one:1.1.0
+    container_name: shipreq_dev_jaeger
+    ports:
+      - $PORT_JAEGER_HTTP:16686
+      - $PORT_JAEGER_COLLECTOR:14268
+
+# This is what a full Jaeger setup would look like. 1.1.0 only supports ElasticSearch 5 and not 6 though...
+# jaeger-collector:
+#   image: jaegertracing/jaeger-collector:1.1.0
+#   command: ["/go/bin/collector-linux", "--span-storage.type=elasticsearch", "--es.server-urls=http://elasticsearch:9200"]
+#   ports:
+#     - "14269"
+#     - "14268:14268"
+#     - "14267"
+#     - "9411:9411"
+#   # restart: on-failure
+#   depends_on:
+#     - elasticsearch
+#
+# jaeger-agent:
+#   image: jaegertracing/jaeger-agent:1.1.0
+#   command: ["/go/bin/agent-linux", "--collector.host-port=jaeger-collector:14267"]
+#   ports:
+#     - "5775:5775/udp"
+#     - "6831:6831/udp"
+#     - "6832:6832/udp"
+#     - "5778:5778"
+#   # restart: on-failure
+#   depends_on:
+#     - jaeger-collector
+#
+# jaeger-query:
+#   image: jaegertracing/jaeger-query:1.1.0
+#   command: ["/go/bin/query-linux", "--query.static-files=/go/jaeger-ui/", "--span-storage.type=elasticsearch", "--es.server-urls=http://elasticsearch:9200"]
+#   ports:
+#     - "16686:16686"
+#     - "16687"
+#   # restart: on-failure
+#   depends_on:
+#     - elasticsearch
 
 
-# TODO jaeger
 # TODO influxDB (?) (for Prometheus)
 # TODO alertmanager
 # TODO postgres metrics

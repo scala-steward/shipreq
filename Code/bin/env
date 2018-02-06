@@ -15,11 +15,10 @@ fi
 env="$1"
 shift
 
-dc="$env/docker-compose.yml"
-[ ! -e "$dc" ] && echo "File not found: $(pwd)/$dc" && exit 2
+[ ! -e "$env" ] && echo "File not found: $(pwd)/$env" && exit 2
+cd "$env"
 
 # In project name (-p) dashes and underscores and removed automatically
 exec docker-compose \
-  -f "$dc" \
   -p shipreq$env \
   "$@"
