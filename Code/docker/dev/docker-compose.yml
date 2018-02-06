@@ -172,6 +172,14 @@ services:
 # TODO alertmanager
 # TODO postgres metrics
 
+  portal:
+    image: nginx:1
+    container_name: shipreq_dev_portal
+    ports:
+      - $PORT_PORTAL_HTTP:80
+    volumes:
+      - ./portal.html:/usr/share/nginx/html/index.html:ro
+
 
 # Can't get docker to send logs to logstash
 # Doesn't work: (https://github.com/moby/moby/issues/20370)
