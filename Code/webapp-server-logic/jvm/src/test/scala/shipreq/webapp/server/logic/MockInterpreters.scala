@@ -432,9 +432,9 @@ object MockInterpreters {
     publicRegistration         = Allow,
     googleAnalyticsTrackingId  = None,
     taskmanSchema              = "test_taskman",
+    kamonConfFile              = None,
     initTaskmanOnBoot          = false,
-    initTaskmanRetry           = RetryCriteria(2 hours, Some(666)),
-    traceWithKamon             = false)
+    initTaskmanRetry           = RetryCriteria(2 hours, Some(666)))
 }
 
 class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerConfig]) {

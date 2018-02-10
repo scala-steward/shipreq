@@ -113,9 +113,9 @@ object DispatchBM {
     publicRegistration         = Allow,
     googleAnalyticsTrackingId  = None,
     taskmanSchema              = "test_taskman",
+    kamonConfFile              = None,
     initTaskmanOnBoot          = false,
-    initTaskmanRetry           = RetryCriteria(2 hours, Some(666)),
-    traceWithKamon             = false)
+    initTaskmanRetry           = RetryCriteria(2 hours, Some(666)))
 
   val user = User(UserId(1), Username("asds"), EmailAddr("x@x.com"), Set.empty)
   val ps = PasswordAndSalt(PasswordHash("wdsef34r"), Salt("32165498bdef"))

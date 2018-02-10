@@ -33,20 +33,21 @@ final case class ServerConfig(baseUrl: Url.Absolute.Base,
 
                               googleAnalyticsTrackingId: Option[String],
 
+                              /** Filename or classpath-resource-name of Kamon config */
+                              kamonConfFile: Option[String],
+
                               /** The DB schema in which the Taskman interfaces reside. */
                               taskmanSchema: String,
 
                               initTaskmanOnBoot: Boolean,
-                              initTaskmanRetry: RetryCriteria,
-
-                              traceWithKamon: Boolean) {
+                              initTaskmanRetry: RetryCriteria) {
 
   val attackFrustrationDelayMs: Long =
     attackFrustrationDelay.toMillis
 
   lazy val traceAlgebraFx: Trace.Algebra[Fx] =
     Trace.Algebra(
-      Option.when(traceWithKamon)(TraceWithKamon.algebraFx).toList)
+      kamonConfFile.map(_ => TraceWithKamon.algebraFx).toList)
 }
 
 object ServerConfig {
@@ -59,10 +60,10 @@ object ServerConfig {
       Config.need    [Duration]      ("token.lifespan.resetpw") |@|
       Config.getOrUse[Boolean ]      ("feature.publicRegistration", true).map(Allow.when) |@|
       Config.get     [String  ]      ("googleAnalytics.trackingId") |@|
+      Config.get     [String  ]      ("kamon.conf") |@|
       Config.need    [String  ]      ("taskman.schema") |@|
       Config.getOrUse[Boolean ]      ("taskman.init", true) |@|
-      RetryCriteria.config.withPrefix("taskman.init.retry.") |@|
-      Config.getOrUse[Boolean ]      ("trace.kamon", true)
+      RetryCriteria.config.withPrefix("taskman.init.retry.")
     ) (apply).withPrefix("shipreq.")
 
 }

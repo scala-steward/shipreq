@@ -54,8 +54,7 @@ class Boot {
     initTaskman(Global.Instance)
 
     // Start services
-    if (cfg.server.traceWithKamon)
-      initKamon() // keep this after initTaskman() - don't want that SQL traced
+    cfg.server.kamonConfFile.foreach(initKamon) // keep this after initTaskman() - don't want that SQL traced
   }
 
   def readConfig(): (BootConfig, Option[RunModes.Value]) = {
@@ -185,10 +184,16 @@ class Boot {
     new LiftDispatcher(g).init()
   }
 
-  def initKamon(): Unit = {
+  def initKamon(confName: String): Unit = {
     import com.typesafe.config.ConfigFactory
     import kamon.Kamon
-    Kamon.reconfigure(ConfigFactory.load("kamon")) // loads kamon.conf on the classpath
+    val file = new java.io.File(confName)
+    val config =
+      if (file.exists())
+        ConfigFactory.parseFile(file)
+      else
+        ConfigFactory.load(confName)
+    Kamon.reconfigure(config)
     Kamon.loadReportersFromConfig()
   }
 

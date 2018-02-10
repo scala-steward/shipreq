@@ -48,6 +48,7 @@ services:
       - db.username=dev
       - db.password=sqd
       - run.mode=staging
+      - shipreq.kamon.conf=kamon
       - shipreq.url=https://localhost:$PORT_SHIPREQ_WEBAPP_HTTPS
       - EXTERNAL_PORT_SSL=$PORT_SHIPREQ_WEBAPP_HTTPS
     mem_limit: 1856m # 2.25*1024 - 448 for Taskman
