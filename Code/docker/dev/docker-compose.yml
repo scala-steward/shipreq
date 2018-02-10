@@ -37,6 +37,7 @@ services:
     links:
       - postgres
       - logstash
+      - jaeger
     ports:
       - $PORT_SHIPREQ_WEBAPP_HTTP:8080
       - $PORT_SHIPREQ_WEBAPP_HTTPS:8443
@@ -52,6 +53,8 @@ services:
       - shipreq.kamon.conf=kamon
       - shipreq.url=https://localhost:$PORT_SHIPREQ_WEBAPP_HTTPS
       - EXTERNAL_PORT_SSL=$PORT_SHIPREQ_WEBAPP_HTTPS
+      - JAEGER_HOST=jaeger
+      - JAEGER_PORT=14268
     mem_limit: 1856m # 2.25*1024 - 448 for Taskman
     cpuset: "1,2"
 

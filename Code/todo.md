@@ -112,5 +112,4 @@ Failed login attempts - add tags for username/email field, and password hash, ma
 Prefix logic fns like makeEvent
 Add more tags to logic fns (eg. event being applied) (?)
 Serve Prometheus metrics via Lift instead of embedded http
-Handle dev/local with/without tracing
 Abort if sysctl vm whatever isn't set (needed for ES)

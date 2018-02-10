@@ -4,20 +4,20 @@ import Common.releaseMode
 object DockerEnv {
   import sys.process._
 
-  def javaOptionsFromDockerComposeEnv(serviceName: String, dockerComposeYml: File): List[String] =
-    javaOptionsFromDockerComposeEnv(serviceName, IO readLines dockerComposeYml)
-
-  def javaOptionsFromDockerComposeEnv(serviceName: String, dockerComposeYml: List[String]): List[String] = {
+  def javaOptionsFromDockerComposeEnv(serviceName: String, envRoot: File, filename: String = "docker-compose.yml"): List[String] = {
+    val service = s"  $serviceName:"
+    val envVar = "\\$\\{?([A-Za-z0-9_]+)\\}?".r
+    def processEntry(e: String) =
+      envVar.replaceAllIn(e, m => envFileValue(envRoot, m group 1))
     var inService = false
     var inEnv = false
     val b = List.newBuilder[String]
-    val service = s"  $serviceName:"
-    dockerComposeYml foreach {
+    IO.readLines(envRoot / filename) foreach {
       case `service`                                           => inService = true
       case s if s.matches("^  [a-z].*:")                       => inService = false; inEnv = false
       case "    environment:"                                  => inEnv = true
       case s if s.matches("^    [a-z].*:")                     => inEnv = false
-      case s if inService && inEnv && s.startsWith("      - ") => b += "-D" + s.drop(8)
+      case s if inService && inEnv && s.startsWith("      - ") => b += "-D" + processEntry(s.drop(8).trim)
       case _                                                   => ()
     }
     b.result()
@@ -37,7 +37,21 @@ object DockerEnv {
   def dockerEnvsRoot(baseDirectory: File): File =
     baseDirectory / "../docker"
 
-  class ServiceRef(startFn: () => Unit, stopFn: () => Unit) {
+  def envFileValue(envRoot: File, key: String): String = {
+    val k = key + "="
+    val f = envRoot / ".env"
+    IO.readLines(f)
+      .find(_.startsWith(k))
+      .getOrElse(sys error s"Can't find $k in ${f.absolutePath}")
+      .drop(k.length)
+  }
+
+  final case class Options(value: List[String]) {
+    def add(k: String, v: String): Options =
+      Options(s"-D$k=$v" :: value.filterNot(_ startsWith s"-D$k="))
+  }
+
+  final class ServiceRef(startFn: () => Unit, stopFn: () => Unit) {
     private var up = false
 
     val start: () => Unit = () =>
@@ -66,7 +80,7 @@ object DockerEnv {
     val devEnvStart = taskKey[Unit]("Starts up the dev environment.")
     val devEnvStop = taskKey[Unit]("Stops the dev environment.")
 
-    private val env = envRef("dev", "postgres")
+    private val env = envRef("dev", "postgres", "jaeger")
 
     val commands: Project => Project =
       _.settings(
@@ -79,11 +93,16 @@ object DockerEnv {
     private def runMode =
       if (releaseMode) "production" else "development"
 
-    def javaOptions(serviceName: String, baseDirectory: File): List[String] =
-      "-Ddb.port=14032" ::
-      s"-Drun.mode=$runMode" ::
-      DockerEnv.javaOptionsFromDockerComposeEnv(serviceName, envRoot(baseDirectory) / "docker-compose.yml")
-        .filterNot(s => s.startsWith("-Ddb.host=") || s.startsWith("-Drun.mode="))
+    def javaOptions(serviceName: String, baseDirectory: File): List[String] = {
+      val envRoot = this.envRoot(baseDirectory)
+      Options(DockerEnv.javaOptionsFromDockerComposeEnv(serviceName, envRoot))
+        .add("db.host", "localhost")
+        .add("db.port", envFileValue(envRoot, "PORT_POSTGRES"))
+        .add("JAEGER_HOST", "localhost")
+        .add("JAEGER_PORT", envFileValue(envRoot, "PORT_JAEGER_COLLECTOR"))
+        .add("run.mode", runMode)
+        .value
+    }
 
     def resDir(serviceName: String, baseDirectory: File): File =
       envRoot(baseDirectory) / serviceName
