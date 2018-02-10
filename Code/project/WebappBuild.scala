@@ -410,7 +410,11 @@ object WebappBuild {
                 |bin/jetty --add-to-start=server,websocket 2>&1
               """.stripMargin.trim.replaceAll("\n\\s*", " "))
 
-            expose(8080, 8443)
+            expose(
+              8080, // HTTP
+              8443, // HTTPS
+              9095) // Prometheus
+
             env(Common.dockerBaseEnv.value: _*)
             cmd("bin/webapp")
           }

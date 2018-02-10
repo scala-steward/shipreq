@@ -111,7 +111,6 @@ Add user id tag to everything
 Failed login attempts - add tags for username/email field, and password hash, maybe also for reason for failure?
 Prefix logic fns like makeEvent
 Add more tags to logic fns (eg. event being applied) (?)
-Accept host/port for jaeger
-
-Add jaeger to docker-compose
-Find out how to handle dev/local with/without tracing
+Serve Prometheus metrics via Lift instead of embedded http
+Handle dev/local with/without tracing
+Abort if sysctl vm whatever isn't set (needed for ES)
