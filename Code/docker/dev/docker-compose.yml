@@ -60,8 +60,6 @@ services:
       - $PORT_PROMETHEUS_HTTP:9090
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    # links:
-    #   - cadvisor
 
   grafana:
     image: grafana/grafana:4.6.3
@@ -72,32 +70,6 @@ services:
       - $PORT_GRAFANA_HTTP:3000
     volumes:
       - ./grafana-ds-prometheus.json:/etc/grafana/datasources/prometheus.json
-
-#  node-exporter:
-#    image: prom/node-exporter
-#    container_name: shipreq_dev_nodeexporter
-#    volumes:
-#      - /proc:/host/proc:ro
-#      - /sys:/host/sys:ro
-#      - /:/rootfs:ro
-#    command:
-#      - '--path.procfs=/host/proc'
-#      - '--path.sysfs=/host/sys'
-#      - --collector.filesystem.ignored-mount-points
-#      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
-#    ports:
-#      - "14102:9100"
-
-  # cadvisor:
-  #   image: google/cadvisor
-  #   container_name: shipreq_dev_cadvisor
-  #   volumes:
-  #     - /:/rootfs:ro
-  #     - /var/run:/var/run:rw
-  #     - /sys:/sys:ro
-  #     - /var/lib/docker/:/var/lib/docker:ro
-  #   ports:
-  #     - "14103:8080"
 
   # sudo sysctl -w vm.max_map_count=262144
   elasticsearch:
@@ -124,50 +96,13 @@ services:
     ports:
       - $PORT_LOGSTASH:14500
 
-  # # You wouldn't do this in prod
-  # jaeger:
-  #   image: jaegertracing/all-in-one:1.2.0
-  #   container_name: shipreq_dev_jaeger
-  #   ports:
-  #     - $PORT_JAEGER_HTTP:16686
-  #     - $PORT_JAEGER_COLLECTOR:14268
-
-  # This is what a full Jaeger setup would look like. 1.2.0 only supports ElasticSearch 5 and not 6 though...
-  jaeger-collector:
-    image: jaegertracing/jaeger-collector:1.2.0
-    container_name: shipreq_dev_jaeger_collector
-    command: ["/go/bin/collector-linux", "--cassandra.servers=cassandra"] # "--cassandra.keyspace=jaeger"
+  # You wouldn't do this in prod - it uses in-memory storage
+  jaeger:
+    image: jaegertracing/all-in-one:1.2.0
+    container_name: shipreq_dev_jaeger
     ports:
-      - "14269"
-      - "14268:14268"
-      - "14267"
-      - "9411:9411"
-    environment:
-      - SPAN_STORAGE_TYPE=cassandra
-    depends_on:
-      - cassandra
-      - jaeger-cassandra-schema
-
-  jaeger-query:
-    image: jaegertracing/jaeger-query:1.2.0
-    container_name: shipreq_dev_jaeger_query
-    command: ["/go/bin/query-linux", "--query.static-files=/go/jaeger-ui/", "--cassandra.servers=cassandra"] # "--cassandra.keyspace=jaeger"
-    ports:
-      - "16686:16686"
-      - "16687"
-    depends_on:
-      - cassandra
-      - jaeger-cassandra-schema
-
-  cassandra:
-    image: cassandra:3.11.1
-    container_name: shipreq_dev_cassandra
-
-  jaeger-cassandra-schema:
-    image: jaegertracing/jaeger-cassandra-schema:1.2.0
-    container_name: shipreq_dev_cassandra_schema
-    depends_on:
-      - cassandra
+      - $PORT_JAEGER_HTTP:16686
+      - $PORT_JAEGER_COLLECTOR:14268
 
 
 # TODO influxDB (?) (for Prometheus)
