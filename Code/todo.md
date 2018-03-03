@@ -87,12 +87,17 @@ Phase 2
   * Determine and implement valuable metrics (tech & business)
   * Do more with errors (client & server), eg. ClientData.{init,applyEvents}
 
+### Tech
+* Upgrade to new scalajs-react
+* Add component error handling and possibly report to server
+
 ### New Features
 * Issues
 * Send feedback (with screenshot). Add link beside @username in top bar
 * User profile page
 
 ### Other
+* Cell copy-and-paste on Req{Table,Detail}
 * Allow system to add new field/columns in future without breaking existing projects.
   eg. User adds a "Last Updated" custom field, later ShipReq provides an auto-populated
   column with the same name. System needs a way to rename user's field without
