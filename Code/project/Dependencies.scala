@@ -89,7 +89,7 @@ object Dependencies {
   }
 
   object ScalaCSS {
-    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.5.4")
+    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.5.5")
     val core  = mm("core")
     val react = mm("ext-react") ++ core
   }
@@ -127,7 +127,7 @@ object Dependencies {
   }
 
   object Akka {
-    private val mm = MultiModule.scala("com.typesafe.akka", "2.5.8")
+    private val mm = MultiModule.scala("com.typesafe.akka", "2.5.11")
     val actor   = mm("akka-actor") ++ mm("akka-slf4j")
     val testkit = mm("akka-testkit")
   }
@@ -173,10 +173,10 @@ object Dependencies {
   val μTest     = jvmAndJs("com.lihaoyi",                      "utest",     "0.4.8") // 0.5.4+ breaks PhantomJS in webapp-base-test-js
 
   val scalaXml    = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.0.6")
-  val httpCore    = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.8")
+  val httpCore    = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.9")
   val javaMail    = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.5.6")
-  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "42.1.4")
-  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.7.4")
+  val postgresql  = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.2")
+  val hikariCP    = jvmOnly("com.zaxxer"                  % "HikariCP"              % "2.7.8")
   val flyway      = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
   val logback     = jvmOnly("ch.qos.logback"              % "logback-classic"       % "1.2.3")
   val commonsLang = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.7")
@@ -187,7 +187,7 @@ object Dependencies {
   val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
   val useMacroParadise = (_: Project).settings(addCompilerPlugin(macroParadise))
 
-  val kindProjector = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.5")
+  val kindProjector = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6")
   val useKindProjector = (_: Project).settings(addCompilerPlugin(kindProjector))
 
 //  import sbt.Keys._
