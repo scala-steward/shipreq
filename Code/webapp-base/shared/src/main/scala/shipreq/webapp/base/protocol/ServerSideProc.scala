@@ -1,8 +1,8 @@
 package shipreq.webapp.base.protocol
 
 import boopickle.Pickler
+import japgolly.microlibs.utils.EqualsByRef
 import japgolly.univeq._
-import shipreq.base.util.EqualsByRef
 import BoopickleMacros._
 import BinCodecGeneric.stringPickler
 

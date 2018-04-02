@@ -2,6 +2,7 @@ package shipreq.webapp.base.data
 
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptyVector
+import japgolly.microlibs.utils.Memo
 import nyaya.prop.CycleDetector
 import monocle.Lens
 import monocle.macros.{GenLens, Lenses}

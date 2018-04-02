@@ -42,7 +42,7 @@ object Dependencies {
   }
 
   object Microlibs {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "1.13")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "1.14")
     val adtMacros  = mm("adt-macros")
     val config     = mm("config")
     val macroUtils = mm("macro-utils")
@@ -51,6 +51,7 @@ object Dependencies {
     val scalazExt  = mm("scalaz-ext")
     val stdlibExt  = mm("stdlib-ext")
     val testUtil   = mm("test-util")
+    val utils      = mm("utils")
   }
 
   object Nyaya {

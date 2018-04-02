@@ -1,6 +1,7 @@
 package shipreq.base.util
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.microlibs.utils.Memo
 import japgolly.univeq.UnivEq
 import java.net.URL
 import scalaz.Order

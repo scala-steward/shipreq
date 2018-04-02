@@ -4,6 +4,7 @@ package shipreq.webapp.base.data
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.MutableArray
+import japgolly.microlibs.utils.Memo
 import monocle.Lens
 import monocle.macros.{GenLens, Lenses}
 import scalaz.Order

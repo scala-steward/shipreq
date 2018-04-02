@@ -1,6 +1,7 @@
 package shipreq.base.util
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.microlibs.utils.BiMap
 import monocle._
 import scala.collection.generic.CanBuildFrom
 import scala.collection.mutable.Builder
@@ -19,6 +20,14 @@ object Optics {
         t.modifyF(_ => f)(s)
     }
   }
+
+  /** Isomorphism between A and B.
+    *
+    * If the bimap doesn't contain ALL possible `A` and all possible `B`s, then usage may result in an exception
+    * (via `Map#apply`).
+    */
+  def biMapIso_![A, B](m: BiMap[A, B]): Iso[A, B] =
+    Iso(m.forward.apply)(m.backward.apply)
 
   def cbfTraversal[M[x] <: Traversable[x], A, N[_], B](implicit cbf: CanBuildFrom[M[A], B, N[B]]): PTraversal[M[A], N[B], A, B] =
     new PTraversal[M[A], N[B], A, B] {

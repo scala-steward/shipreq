@@ -1,13 +1,12 @@
 package shipreq.webapp.client.project.app.state
 
-import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
+import japgolly.microlibs.utils.ConciseIntSetFormat
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import japgolly.scalajs.react.extra.Px
 import java.time.Instant
 import org.scalajs.dom.console
 import scala.annotation.tailrec
 import scalaz.{-\/, \/-}
-import shipreq.base.util.ConciseIntSetFormat
 import shipreq.webapp.base.data.{Project, ProjectMetaData}
 import shipreq.webapp.base.event.{ApplyEvent, EventOrd, VerifiedEvent}
 import shipreq.webapp.base.data.TCB
@@ -32,8 +31,7 @@ final case class ProjectState(project        : Project,
     copy(futureEvents = futureEvents ++ es.dropWhile(_.ord <= latestEventOrd))
 
   def futureEventRange: String =
-    NonEmptySet.maybe(futureEvents.iterator.map(_.ord.value).toSet, "[]")(
-      "[" + ConciseIntSetFormat.short(_) + "]")
+    "[" + ConciseIntSetFormat(futureEvents.iterator.map(_.ord.value).toSet) + "]"
 }
 
 object ProjectState {

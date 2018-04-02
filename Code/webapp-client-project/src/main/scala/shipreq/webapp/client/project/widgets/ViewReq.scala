@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.widgets
 
 import japgolly.microlibs.stdlib_ext.MutableArray
+import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react.vdom.html_<^._
 import scala.collection.immutable.SortedSet
 import shipreq.base.util._

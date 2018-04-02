@@ -6,9 +6,9 @@ import com.google.cloud.trace.core.{ConstantTraceOptionsFactory, Labels, RateLim
 import com.google.cloud.trace.service.TraceGrpcApiService
 import japgolly.microlibs.config.ConfigParser.Implicits.Defaults._
 import japgolly.microlibs.config._
+import japgolly.microlibs.utils.Memo
 import java.io.FileInputStream
 import scalaz.syntax.applicative._
-import shipreq.base.util.Memo
 
 object StackdriverTrace {
 
@@ -59,7 +59,7 @@ object StackdriverTrace {
     }
 
     val init: () => Unit =
-      Memo.fn0(Trace.init(traceService))
+      Memo.thunk(Trace.init(traceService))
 
     def getTracer(): Tracer = {
       init()
