@@ -1,14 +1,16 @@
 package shipreq.webapp.base.data
 
 import japgolly.microlibs.scalaz_ext.ScalazMacros
+import japgolly.microlibs.utils.BiMap
 import monocle.{Iso, Traversal}
 import monocle.macros.Lenses
 import nyaya.util.Multimap
-import scalaz.{Equal, -\/, \/, \/-}
+import scalaz.{-\/, Equal, \/, \/-}
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.text.Text, Text.Equality._
+import shipreq.webapp.base.text.Text
+import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.util.Must._
 import DataImplicits._
 
@@ -312,10 +314,10 @@ case class UseCaseSteps(tree: UseCaseSteps.Tree) {
     l => partialLocs.forward(l).validity
 
   lazy val stepPartialLocs: Iso[UseCaseStepId, PartialLocation] =
-    stepLocs.iso_! ^<-> partialLocs.iso_!
+    Optics.biMapIso_!(stepLocs) ^<-> Optics.biMapIso_!(partialLocs)
 
   lazy val partialLocSteps: Intersection[PartialLocation, UseCaseStepId] =
-    (stepLocs.intersection <=> partialLocs.intersection).reverse
+    (Intersection.fromBiMap(stepLocs) <=> Intersection.fromBiMap(partialLocs)).reverse
 }
 
 object UseCaseSteps {

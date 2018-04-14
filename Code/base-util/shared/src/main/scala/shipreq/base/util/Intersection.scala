@@ -1,5 +1,6 @@
 package shipreq.base.util
 
+import japgolly.microlibs.utils.BiMap
 import monocle._
 import scala.annotation.elidable
 import scalaz.{-\/, \/, \/-}
@@ -153,6 +154,9 @@ object Intersection {
       }
     ab
   }
+
+  def fromBiMap[A, B](m: BiMap[A, B]): Intersection[A, B] =
+    apply(m.forward.get)(m.backward.get)
 
   def fromPrism[A, B](p: Prism[A, B]): Intersection[A, B] =
     apply(p.getOption)(b => Some(p reverseGet b))

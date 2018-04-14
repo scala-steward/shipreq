@@ -1,10 +1,10 @@
 package shipreq.webapp.client.project.app.reqtable
 
-import scalacss.ScalaCssReact._
+import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.extra._
-import shipreq.base.util.Memo
+import scalacss.ScalaCssReact._
 import shipreq.webapp.base.ClientResources
 import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.client.project.app.Style.reqtable.{sortEditor => *}

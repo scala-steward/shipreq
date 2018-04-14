@@ -1,7 +1,8 @@
 package shipreq.webapp.base.data
 
+import japgolly.microlibs.utils.Memo
 import japgolly.univeq.UnivEq
-import shipreq.base.util.{Applicable, Memo}
+import shipreq.base.util.Applicable
 
 /**
   * @see [[ProjectConfig.applicability]] for a starting point

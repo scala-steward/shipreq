@@ -1,10 +1,10 @@
 package shipreq.webapp.base.text
 
+import japgolly.microlibs.utils.Memo
 import nyaya.prop._
 import nyaya.test._
 import nyaya.test.PropTest._
 import utest._
-import shipreq.base.util.Memo
 import shipreq.webapp.base.test.WebappTestUtil._
 import TextSearch._
 

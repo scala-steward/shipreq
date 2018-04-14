@@ -2,6 +2,7 @@ package shipreq.webapp.base.data
 
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.scalaz_ext.ScalazMacros
+import japgolly.microlibs.utils.Memo
 import nyaya.util.Multimap
 import monocle.macros.Lenses
 import scalaz.{Equal, Order}

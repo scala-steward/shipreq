@@ -6,7 +6,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
-import shipreq.base.util.{Ref => _, _}
+import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.data.{Live, ReqTypes}

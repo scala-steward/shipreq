@@ -2,6 +2,7 @@ package shipreq.webapp.client.ww
 
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.microlibs.utils.Memo
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.scalajs.js.JSON

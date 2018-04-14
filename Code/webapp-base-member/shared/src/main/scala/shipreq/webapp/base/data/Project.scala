@@ -3,6 +3,7 @@ package shipreq.webapp.base.data
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import japgolly.microlibs.stdlib_ext.MutableArray
+import japgolly.microlibs.utils.Memo
 import monocle.{Lens, Optional}
 import monocle.macros.Lenses
 import monocle.std.option.pSome

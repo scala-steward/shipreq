@@ -1,9 +1,10 @@
 package shipreq.webapp.client.project.widgets
 
-import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.html_<^._
+import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react.vdom.TagMod
 import org.scalajs.dom.raw.DragEffect
-import shipreq.base.util.Memo
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.lib.DomUtil._
 import shipreq.webapp.client.project.lib.DND

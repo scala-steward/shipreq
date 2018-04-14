@@ -1,7 +1,7 @@
 package shipreq.webapp.base.data
 
-import shipreq.base.util.Memo
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.microlibs.utils.Memo
 import shipreq.webapp.base.data.DataImplicits._
 
 /**

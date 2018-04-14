@@ -2,10 +2,11 @@ package shipreq.webapp.base.filter
 
 import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.microlibs.recursion._
+import japgolly.microlibs.utils.ConciseIntSetFormat
 import japgolly.univeq._
 import java.util.regex.Pattern
 import scalaz.{-\/, Functor, Traverse, Traverse1, \/, \/-}
-import shipreq.base.util.{ConciseIntSetFormat, OptionalBoolFn, TransitiveClosure}
+import shipreq.base.util.{OptionalBoolFn, TransitiveClosure}
 import shipreq.webapp.base.data
 import shipreq.webapp.base.data.DataLogic.{IssueLookup, TagLookup}
 import shipreq.webapp.base.text.{Atom, Grammar, PlainText, TextSearch}
@@ -41,7 +42,7 @@ object FilterAlgebra {
         if (ns.tail.isEmpty)
           ns.head.toString
         else
-          '{' ~ ConciseIntSetFormat.short(ns) ~ '}'
+          '{' ~ ConciseIntSetFormat(ns.whole) ~ '}'
       m.value ~ '-' ~ n
     }
 

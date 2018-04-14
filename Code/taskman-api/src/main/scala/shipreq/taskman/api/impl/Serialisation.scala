@@ -1,10 +1,11 @@
 package shipreq.taskman.api.impl
 
+import japgolly.microlibs.utils.BiMap
 import org.json4s._
 import org.json4s.jackson.Serialization
 import org.json4s.jackson.Serialization.{read, write}
 import scalaz.{-\/, \/}
-import shipreq.base.util.{ArticulateError, BiMap}
+import shipreq.base.util.ArticulateError
 import shipreq.base.util.TaggedTypes._
 import shipreq.taskman.api._
 import Msg._

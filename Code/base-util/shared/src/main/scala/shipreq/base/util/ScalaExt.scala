@@ -2,11 +2,10 @@ package shipreq.base.util
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq.UnivEq
-import java.time.Duration
 import scala.collection.GenTraversable
 import scalaz.Semigroup
 
-object ScalaExt extends Platform.ScalaExt {
+object ScalaExt extends PlatformExt {
 
   type EndoFn[A] = A => A
 

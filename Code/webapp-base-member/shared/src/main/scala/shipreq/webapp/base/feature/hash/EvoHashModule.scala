@@ -2,8 +2,8 @@ package shipreq.webapp.base.feature.hash
 
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.microlibs.utils.EqualsByRef
 import japgolly.univeq._
-import shipreq.base.util.EqualsByRef
 
 /** Module for hashing with scheme evolutions.
   */

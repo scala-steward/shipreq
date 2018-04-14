@@ -1,5 +1,6 @@
 package shipreq.webapp.base.event
 
+import japgolly.microlibs.utils.Memo
 import scala.reflect.ClassTag
 import shipreq.base.util._
 import shipreq.base.util.univeq._
