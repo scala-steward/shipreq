@@ -73,6 +73,8 @@ services:
     container_name: shipreq_dev_prometheus
     ports:
       - $PORT_PROMETHEUS_HTTP:9090
+    extra_hosts:
+     - parent-host:$DOCKER0
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     cpus: 2

@@ -7,4 +7,5 @@ scrape_configs:
   #     - targets: ['localhost:9090']
   - job_name: 'webapp'
     static_configs:
+      - targets: ['parent-host:9095']
       - targets: ['webapp:9095']

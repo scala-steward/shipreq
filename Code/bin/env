@@ -18,6 +18,10 @@ shift
 [ ! -e "$env" ] && echo "File not found: $(pwd)/$env" && exit 2
 cd "$env"
 
+# Expose localhost so that prometheus can collect metrics when running via SBT
+export DOCKER0="$(ip route show | grep docker0 | awk '{print $9}')"
+[[ ! "$DOCKER0" =~ ^[0-9][0-9.]*$ ]] && echo "Invalid docker0 ip: $DOCKER0" && exit 3
+
 # In project name (-p) dashes and underscores and removed automatically
 exec docker-compose \
   -p shipreq$env \
