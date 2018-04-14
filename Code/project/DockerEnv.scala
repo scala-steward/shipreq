@@ -66,7 +66,7 @@ object DockerEnv {
     }
   }
 
-  def envRef(env: String, services: String*) = {
+  def envRef(env: String)(services: String*) = {
     val ss = services.mkString(" ")
     new ServiceRef(
       () => s"bin/env $env up -d $ss".!!,
@@ -80,7 +80,7 @@ object DockerEnv {
     val devEnvStart = taskKey[Unit]("Starts up the dev environment.")
     val devEnvStop = taskKey[Unit]("Stops the dev environment.")
 
-    private val env = envRef("dev", "postgres", "jaeger")
+    private val env = envRef("dev")("postgres", "jaeger")
 
     val commands: Project => Project =
       _.settings(
@@ -114,7 +114,7 @@ object DockerEnv {
 
     val testEnvStart = taskKey[Unit]("Starts up a test environment.")
 
-    private val env = envRef("test")
+    private val env = envRef("test")()
 
     val required: Project => Project =
       _.settings(

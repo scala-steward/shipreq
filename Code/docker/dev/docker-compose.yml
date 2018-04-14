@@ -1,4 +1,4 @@
-version: '2'
+version: '2.4'
 services:
 
   postgres:
@@ -12,8 +12,8 @@ services:
       - POSTGRES_PASSWORD=sqd
     logging:
       driver: none
-    mem_limit: 600m
-    cpuset: "0"
+    cpus: 1
+    mem_limit: 400m
 
   taskman:
     image: shipreq/taskman
@@ -28,8 +28,8 @@ services:
       - db.database=shipreq_dev
       - db.username=dev
       - db.password=sqd
+    cpus: 2
     mem_limit: 448m
-    cpuset: "1,2"
 
   webapp:
     image: shipreq/webapp
@@ -55,8 +55,18 @@ services:
       - EXTERNAL_PORT_SSL=$PORT_SHIPREQ_WEBAPP_HTTPS
       - JAEGER_HOST=jaeger
       - JAEGER_PORT=14268
+    cpus: 2
     mem_limit: 1856m # 2.25*1024 - 448 for Taskman
-    cpuset: "1,2"
+
+  portal:
+    image: nginx:1
+    container_name: shipreq_dev_portal
+    ports:
+      - $PORT_PORTAL_HTTP:80
+    volumes:
+      - ./portal.html:/usr/share/nginx/html/index.html:ro
+    cpus: 0.1
+    mem_limit: 4m
 
   prometheus:
     image: prom/prometheus:v2.2.1
@@ -65,6 +75,8 @@ services:
       - $PORT_PROMETHEUS_HTTP:9090
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    cpus: 2
+    mem_limit: 100m
 
   grafana:
     image: grafana/grafana:5.0.4
@@ -75,11 +87,14 @@ services:
       - $PORT_GRAFANA_HTTP:3000
     volumes:
       - ./grafana-ds-prometheus.json:/etc/grafana/datasources/prometheus.json
+    cpus: 2
+    mem_limit: 100m
 
   # sudo sysctl -w vm.max_map_count=262144
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.3
     container_name: shipreq_dev_elasticsearch
+    mem_limit: 1g
 
   kibana:
     image: docker.elastic.co/kibana/kibana-oss:6.2.3
@@ -90,6 +105,7 @@ services:
       - $PORT_KIBANA_HTTP:5601
     logging:
       driver: none
+    mem_limit: 200m
 
   logstash:
     image: docker.elastic.co/logstash/logstash-oss:6.2.3
@@ -100,6 +116,7 @@ services:
       - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
     ports:
       - $PORT_LOGSTASH:14500
+    mem_limit: 500m
 
   # You wouldn't do this in prod - it uses in-memory storage
   jaeger:
@@ -108,20 +125,7 @@ services:
     ports:
       - $PORT_JAEGER_HTTP:16686
       - $PORT_JAEGER_COLLECTOR:14268
-
-
-# TODO influxDB (?) (for Prometheus)
-# TODO alertmanager
-# TODO postgres metrics
-
-  portal:
-    image: nginx:1
-    container_name: shipreq_dev_portal
-    ports:
-      - $PORT_PORTAL_HTTP:80
-    volumes:
-      - ./portal.html:/usr/share/nginx/html/index.html:ro
-
+    mem_limit: 200m
 
 # Can't get docker to send logs to logstash
 # Doesn't work: (https://github.com/moby/moby/issues/20370)

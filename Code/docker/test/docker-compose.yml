@@ -1,9 +1,9 @@
-version: '2'
+version: '2.4'
 services:
 
   postgres:
     image: postgres:9.6.1
-    container_name: shipreq_test
+    container_name: shipreq_test_postgres
     ports:
       - "13032:5432"
     environment:
@@ -12,3 +12,4 @@ services:
       - POSTGRES_PASSWORD=sqt
     logging:
       driver: none
+    mem_limit: 400m
