@@ -15,4 +15,5 @@ addSbtPlugin("se.marcuslonnberg"  % "sbt-docker"           % "1.5.0")
 
 // https://github.com/JetBrains/sbt-ide-settings
 resolvers += Resolver.url("jetbrains-bintray", url("http://dl.bintray.com/jetbrains/sbt-plugins/"))(Resolver.ivyStylePatterns)
-addSbtPlugin("org.jetbrains" % "sbt-ide-settings" % "0.1.1")
+resolvers += Resolver.typesafeIvyRepo("releases")
+addSbtPlugin("org.jetbrains" % "sbt-ide-settings" % "1.0.0")
