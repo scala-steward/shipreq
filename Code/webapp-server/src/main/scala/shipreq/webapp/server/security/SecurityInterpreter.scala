@@ -1,6 +1,7 @@
 package shipreq.webapp.server.security
 
 import org.apache.shiro.authc.AuthenticationException
+import scala.concurrent.blocking
 import scalaz.syntax.monad._
 import scalaz.{Monad, \/}
 import shipreq.base.ops.Trace
@@ -23,7 +24,7 @@ final class SecurityInterpreter[F[_]](implicit F     : Monad[F],
     config.attackFrustrationDelayMs match {
       case 0  => fUnit
       case ms =>
-        val f = F.point(Thread.sleep(ms))
+        val f = F.point(blocking(Thread.sleep(ms)))
         trace.newSpan("Security delay")(_ => f)
     }
 

@@ -4,6 +4,7 @@ import java.time.{Duration, Instant}
 import net.liftweb.actor.LAScheduler
 import net.liftweb.common._
 import net.liftweb.http.{LiftSession, S}
+import scala.concurrent.blocking
 import scalaz.syntax.monad._
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
@@ -19,7 +20,7 @@ object ServerInterpreter extends Server.Algebra[Fx] with HasLogger {
     Fx.now
 
   override def delay[A](f: Fx[A], d: Duration): Fx[A] =
-    Fx(Thread.sleep(d.toMillis)) >> f // TODO Thread.sleep lolz
+    Fx(blocking(Thread.sleep(d.toMillis))) >> f // TODO Thread.sleep lolz
 
   override def fork[A](f: Fx[A]): Fx[Unit] =
     Fx(LAScheduler.execute(() => f.unsafeRun()))
