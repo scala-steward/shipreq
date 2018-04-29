@@ -433,7 +433,7 @@ object MockInterpreters {
     googleAnalyticsTrackingId  = None,
     taskmanSchema              = "test_taskman",
     kamonConfFile              = None,
-    prometheus                 = ServerConfig.Prometheus(true, true, "/ops/metrics"),
+    prometheus                 = ServerConfig.Prometheus.default,
     initTaskmanOnBoot          = false,
     initTaskmanRetry           = RetryCriteria(2 hours, Some(666)))
 }
@@ -449,10 +449,16 @@ class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerCon
   implicit val nameToName = NaturalTransformation.refl[Name]
   implicit val publicApi  = PublicSpaLogic[Name, Name]: PublicSpaLogic.ForApi[Name]
 
-  implicit object ops extends OpsLogic.Base[Name] {
+  implicit object metrics extends MetricsLogic[Name] {
+    private val noop = Name(())
+    override def sessionStart(sessionId: SessionId): Name[Unit] = noop
+    override def sessionEnd(sessionId: SessionId): Name[Unit] = noop
+    override def login(sessionId: SessionId, user: User) = noop
+    override def logout(sessionId: SessionId) = noop
+  }
+
+  implicit object ops extends OpsEndpoints.Base[Name] {
     override val randomToken = Name("blah")
-    override def trackLogin(sessionId: SessionId, user: User) = Name(())
-    override def trackLogout(sessionId: SessionId) = Name(())
   }
 
   val user2password = PlainTextPassword("blurp12345")

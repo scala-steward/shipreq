@@ -195,7 +195,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
                                                  (implicit F: Monad[F],
                                                   config    : ServerConfig,
                                                   db        : DB.SecurityTokenReadOnly[F],
-                                                  ops       : OpsLogic[F],
+                                                  ops       : OpsEndpoints[F],
                                                   publicApi : PublicSpaLogic.ForApi[F],
                                                   security  : Security.Algebra[F],
                                                   svr       : Server.Time[F],
@@ -407,7 +407,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
         case -\/(e) => Response.Text(StatusCode.BadRequest, e.value)
       }
 
-    private def jsonResponse(r: OpsLogic.HasJsValue): AbsRes =
+    private def jsonResponse(r: OpsEndpoints.HasJsValue): AbsRes =
       Response.Json(StatusCode.OK, r.toJsValue)
 
     /** Return a static 200.

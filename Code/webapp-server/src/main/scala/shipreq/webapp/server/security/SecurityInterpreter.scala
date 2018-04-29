@@ -9,12 +9,12 @@ import shipreq.webapp.base.user._
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.logic._
 
-final class SecurityInterpreter[F[_]](implicit F     : Monad[F],
-                                               config: ServerConfig,
-                                               ops   : OpsLogic[F],
-                                               secDb : DB.ForSecurity[F],
-                                               svr   : Server.Session[F],
-                                               trace : Trace.Algebra[F]) extends Security.Algebra[F] {
+final class SecurityInterpreter[F[_]](implicit F: Monad[F],
+                                      config : ServerConfig,
+                                      metrics: MetricsLogic[F],
+                                      secDb  : DB.ForSecurity[F],
+                                      svr    : Server.Session[F],
+                                      trace  : Trace.Algebra[F]) extends Security.Algebra[F] {
 
   override val db = secDb
 
@@ -44,7 +44,7 @@ final class SecurityInterpreter[F[_]](implicit F     : Monad[F],
       }
 
     def trackLogin(user: User): F[Unit] =
-      svr.sessionId.flatMap(_.fold(fUnit)(ops.trackLogin(_, user)))
+      svr.sessionId.flatMap(_.fold(fUnit)(metrics.login(_, user)))
 
     for {
       ou <- login
@@ -65,7 +65,7 @@ final class SecurityInterpreter[F[_]](implicit F     : Monad[F],
 
   override val logout: F[Unit] = {
     val updateShiro = F.point(AppSecurityRealm.logout())
-    val updateOps   = svr.sessionId.flatMap(_.fold(fUnit)(ops.trackLogout))
+    val updateOps   = svr.sessionId.flatMap(_.fold(fUnit)(metrics.logout))
     updateShiro >> updateOps
   }
 }

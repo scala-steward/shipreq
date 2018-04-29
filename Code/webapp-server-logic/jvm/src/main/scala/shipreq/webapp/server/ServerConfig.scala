@@ -60,10 +60,11 @@ object ServerConfig {
 
   final case class Prometheus(enabled: Boolean, hotspot: Boolean, path: String)
   object Prometheus {
+    val default = apply(enabled = true, hotspot = true, path = "/ops/metrics")
     def config: Config[Prometheus] =
-      ( Config.getOrUse[Boolean]("enabled", true) |@|
-        Config.getOrUse[Boolean]("hotspot", true) |@|
-        Config.getOrUse[String ]("path", "/ops/metrics").map(_.replaceFirst("^/*", "/"))
+      ( Config.getOrUse[Boolean]("enabled", default.enabled) |@|
+        Config.getOrUse[Boolean]("hotspot", default.hotspot) |@|
+        Config.getOrUse[String ]("path", default.path).map(_.replaceFirst("^/*", "/"))
     ) (apply)
   }
 

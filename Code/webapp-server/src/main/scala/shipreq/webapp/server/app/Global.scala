@@ -13,7 +13,8 @@ import shipreq.webapp.server.security.SecurityInterpreter
 final case class Global(config  : ServerConfig,
                         db      : DbAccess,
                         logic   : ServerLogic[Fx],
-                        ops     : OpsInterpreter,
+                        metrics : MetricsLogic[Fx],
+                        ops     : OpsEndpointInterpreter,
                         security: Security.Algebra[Fx],
                         taskman : TaskmanApi[Fx],
                         trace   : TraceInterpreter.ForLift[Fx])
@@ -31,6 +32,13 @@ object Global {
   def default(implicit dbAccess: DbAccess, config: ServerConfig): Global = {
     assert(dbAccess ne null, "DbAccess is null, sir.")
     import TraceInterpreter.Implicits._
+
+    implicit val metrics: MetricsLogic[Fx] =
+      if (config.prometheus.enabled)
+        new PrometheusMetrics
+      else
+        MetricsLogic.const(Fx.unit)
+
     implicit val traceAlgebra  = config.traceAlgebraFx
     implicit val trace         = new TraceLogic.Logic: TraceInterpreter.ForLift[Fx]
     implicit val runDB         = trace.injectDb(dbAccess.fx.trans)
@@ -41,12 +49,14 @@ object Global {
     implicit val dbForOps      = DB.ForOps.trans(new DbInterpreter.ForOps(dbAccess.databaseName))(runDB)
     implicit val projectStore  = Store.Algebra.concurrentHashMap(): ProjectServer.StoreAlgebra[Fx]
     implicit val server        = trace.injectServer(ServerInterpreter)
-    implicit val ops           = new OpsInterpreter()
+    implicit val ops           = new OpsEndpointInterpreter()
     implicit val security      = new SecurityInterpreter[Fx]
+
     Global(
       config   = config,
       db       = dbAccess,
       logic    = ServerLogic.create[ConnectionIO, Fx](ProjectServer.BroadcastTo.All),
+      metrics  = metrics,
       ops      = ops,
       security = security,
       taskman  = taskman,

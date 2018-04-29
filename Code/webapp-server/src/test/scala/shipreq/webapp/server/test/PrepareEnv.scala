@@ -3,10 +3,11 @@ package shipreq.webapp.server.test
 import bootstrap.liftweb.BootConfig
 import java.time.Duration
 import shipreq.base.test.BaseTestUtil.onceUnit
+import shipreq.base.util.FxModule.Fx
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.app.Global
 import shipreq.webapp.server.db.DbInterpreter
-import shipreq.webapp.server.logic.TraceLogic
+import shipreq.webapp.server.logic.{MetricsLogic, TraceLogic}
 
 object PrepareEnv {
   private val boot = new bootstrap.liftweb.Boot
@@ -23,6 +24,7 @@ object PrepareEnv {
     config   = cfg.server,
     db       = null,
     logic    = null,
+    metrics  = MetricsLogic.const(Fx.unit),
     ops      = null,
     security = null,
     taskman  = null,

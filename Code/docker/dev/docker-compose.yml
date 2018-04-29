@@ -81,7 +81,7 @@ services:
     mem_limit: 100m
 
   grafana:
-    image: grafana/grafana:5.0.4
+    image: grafana/grafana:5.1.0
     container_name: shipreq_dev_grafana
     links:
       - prometheus

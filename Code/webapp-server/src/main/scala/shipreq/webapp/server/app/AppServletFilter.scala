@@ -21,25 +21,25 @@ final class AppServletFilter extends LiftFilter {
 
     // Initialise Lift (which in turn boots ShipReq and populates Global)
     super.init(config)
+    val g = Global.Instance
 
     // Initialise Prometheus
-    val p = Global.config.prometheus
+    val p = g.config.prometheus
     if (p.enabled)
-      doFilterFn = doFilterFnWithMetrics(p.path)
+      doFilterFn = doFilterFnWithMetrics(new PrometheusMetrics.Unsafe(p), p.path)
   }
 
   override def doFilter(req: ServletRequest, res: ServletResponse, chain: FilterChain): Unit =
     doFilterFn(req, res, chain)
 
-  private def doFilterFnWithMetrics(metricsPath: String): DoFilterFn = {
+  private def doFilterFnWithMetrics(metrics: PrometheusMetrics.Unsafe, metricsPath: String): DoFilterFn = {
     val metricsServlet = new PrometheusMetricsServlet
-    val metrics = new PrometheusMetrics
 
     (req, res, chain) =>
       (req, res) match {
         case (hreq: HttpServletRequest, hres: HttpServletResponse) =>
           metrics.unsafeObserveHttp(hreq, hres)(
-            if (metricsPath == hreq.getServletPath)
+            if (metricsPath == hreq.getRequestURI)
               metricsServlet.service(hreq, hres)
             else
               super.doFilter(req, res, chain))

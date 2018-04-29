@@ -175,8 +175,16 @@ class Boot {
   }
 
   def initOps(g: Global): Unit = {
-    LiftSession.afterSessionCreate ::= g.ops.sessionTracker.onSessionCreation
-    LiftSession.onShutdownSession ::= g.ops.sessionTracker.onSessionExpiration
+    val m = g.metrics
+
+    val sessionStart: (LiftSession, Req) => Unit =
+      (s, _) => m.sessionStart(ServerInterpreter.getSessionId(s)).unsafeRun()
+
+    val sessionEnd: LiftSession => Unit =
+      s => m.sessionEnd(ServerInterpreter.getSessionId(s)).unsafeRun()
+
+    LiftSession.afterSessionCreate ::= sessionStart
+    LiftSession.onShutdownSession ::= sessionEnd
   }
 
   def initRoutes(g: Global): Unit = {

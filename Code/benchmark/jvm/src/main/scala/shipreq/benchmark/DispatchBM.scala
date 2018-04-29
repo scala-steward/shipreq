@@ -113,6 +113,7 @@ object DispatchBM {
     publicRegistration         = Allow,
     googleAnalyticsTrackingId  = None,
     taskmanSchema              = "test_taskman",
+    prometheus                 = ServerConfig.Prometheus.default.copy(enabled = false),
     kamonConfFile              = None,
     initTaskmanOnBoot          = false,
     initTaskmanRetry           = RetryCriteria(2 hours, Some(666)))
@@ -162,14 +163,11 @@ object DispatchBM {
     implicit val publicApi: PublicSpaLogic.ForApi[F] =
       _ => F.pure(\/-(MsgId(1000)))
 
-    implicit object ops extends OpsLogic[F] {
+    implicit object ops extends OpsEndpoints[F] {
       override def dbStats                           = F.pure(null)
-      override def sessionStats                      = F.pure(null)
       override def userStats                         = F.pure(null)
       override def taskmanMsgStatus(id: MsgId)       = F.pure(null)
       override def sendMail(e: String)               = F.pure(null)
-      override def trackLogin(s: SessionId, u: User) = F.pure(())
-      override def trackLogout(s: SessionId)         = F.pure(())
     }
 
     val dispatchLogic = new DispatchLogic[F, Request[Unit], Response](

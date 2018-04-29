@@ -6,10 +6,10 @@ import scalaz.{Monad, \/, \/-}
 import scalaz.syntax.monad._
 import shipreq.base.util.ErrorMsg
 import shipreq.taskman.api.{Msg, MsgId, TaskmanApi}
-import shipreq.webapp.base.user.{User, UserValidators}
+import shipreq.webapp.base.user.UserValidators
 
-trait OpsLogic[F[_]] {
-  import OpsLogic._
+trait OpsEndpoints[F[_]] {
+  import OpsEndpoints._
 
   def dbStats: F[DbStats]
 
@@ -18,21 +18,17 @@ trait OpsLogic[F[_]] {
   def taskmanMsgStatus(id: MsgId): F[Option[MsgStatusResult]]
 
   def sendMail(emailAddr: String): F[ErrorMsg \/ SendMailResult]
-
-  def trackLogin(sessionId: SessionId, user: User): F[Unit]
-
-  def trackLogout(sessionId: SessionId): F[Unit]
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-object OpsLogic {
+object OpsEndpoints {
   import Implicits._
 
   abstract class Base[F[_]](implicit F: Monad[F],
                             db: DB.ForOps[F],
                             svr: Server.Time[F],
-                            taskman: TaskmanApi[F]) extends OpsLogic[F] {
+                            taskman: TaskmanApi[F]) extends OpsEndpoints[F] {
 
     import WebappTaskmanConverters._
 
