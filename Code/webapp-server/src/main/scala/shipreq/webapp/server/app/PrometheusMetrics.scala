@@ -42,6 +42,7 @@ object PrometheusMetrics extends HasLogger {
     final val Method     = "method"
     final val Name       = "name"
     final val StatusCode = "status_code"
+    final val Type       = "type"
     final val Unique     = "unique"
   }
 
@@ -61,17 +62,17 @@ object PrometheusMetrics extends HasLogger {
     final class HttpRequests private[Metrics] {
       private[this] val m =
         Counter.build(prefix + "http_requests_total", "Total HTTP requests received")
-          .labelNames(Label.Method, Label.Name, Label.StatusCode)
+          .labelNames(Label.Method, Label.Name, Label.StatusCode, Label.Type)
           .register()
       def apply(implicit method: HttpMethod, endpoint: Endpoint, statusCode: StatusCode) =
-        m.labels(method.value, endpoint.value, statusCode.value)
+        m.labels(method.value, endpoint.name, statusCode.value, endpoint.`type`)
     }
 
     val HttpDuration = new HttpDuration
     final class HttpDuration private[Metrics] {
       private[this] val m =
         Histogram.build(prefix + "http_response_duration_seconds", "Duration of HTTP request in seconds")
-          .labelNames(Label.Method, Label.Name, Label.StatusCode) // TODO Delay
+          .labelNames(Label.Method, Label.Name, Label.StatusCode, Label.Type) // TODO Delay
           .buckets(
             0.005, 0.010, 0.025, 0.050, 0.075, 0.100, // no security delay
             0.125, 0.130, 0.145, 0.170, 0.195, 0.220, // with 120 ms security delay (see ServerConfig)
@@ -79,17 +80,17 @@ object PrometheusMetrics extends HasLogger {
             1, 2, 3, 5, 8, 12)
           .register()
       def apply(implicit method: HttpMethod, endpoint: Endpoint, statusCode: StatusCode) =
-        m.labels(method.value, endpoint.value, statusCode.value)
+        m.labels(method.value, endpoint.name, statusCode.value, endpoint.`type`)
     }
 
     val HttpIO = new HttpIO
     final class HttpIO private[Metrics] {
       private[this] val m =
         Counter.build(prefix + "http_bytes_total", "Size of HTTP content in bytes")
-          .labelNames(Label.Dir, Label.Method, Label.Name, Label.StatusCode)
+          .labelNames(Label.Dir, Label.Method, Label.Name, Label.StatusCode, Label.Type)
           .register()
       def apply(dir: CommDir)(implicit method: HttpMethod, endpoint: Endpoint, statusCode: StatusCode) =
-        m.labels(dir, method.value, endpoint.value, statusCode.value)
+        m.labels(dir, method.value, endpoint.name, statusCode.value, endpoint.`type`)
     }
 
     val HttpSessionsActive =
@@ -124,7 +125,7 @@ object PrometheusMetrics extends HasLogger {
   }
 
   private[PrometheusMetrics] object Unsafe {
-    val endpointVar = new ThreadLocal[String]()
+    val endpointVar = new ThreadLocal[Endpoint]()
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -161,8 +162,7 @@ object PrometheusMetrics extends HasLogger {
                 log.warn(s"Unknown endpoint: ${method.value} $path")
                 Endpoint.Unknown
               }
-            case s =>
-              Endpoint.Specified(s)
+            case e => e
           }
 
         // printf(s"--- %-60s ---> %s\n", path, endpoint.toString)
@@ -210,10 +210,10 @@ final class PrometheusMetrics extends MetricsLogic[Fx] {
     new AtomicLong(0)
 
   override def setHttpName(name: String): Fx[Unit] =
-    Fx(endpointVar.set(name))
+    Fx(endpointVar.set(Endpoint.Page(name)))
 
   override def setServerSideProcName(name: String): Fx[Unit] =
-    Fx(endpointVar.set(name))
+    Fx(endpointVar.set(Endpoint.ServerSideProc(name)))
 
   // Replace this in future with more variables and prop-test to ensure the larger set of vars don't go out of sync
   private def updateActiveLogins(): Unit = {

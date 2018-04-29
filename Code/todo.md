@@ -129,4 +129,3 @@ Phase 2
 
 * Rename TraceLogic.Logic to TraceLogic
 * Add ThreadLocal delay flag
-* Split Endpoint into type={page|asset|lift|comet|ajax}

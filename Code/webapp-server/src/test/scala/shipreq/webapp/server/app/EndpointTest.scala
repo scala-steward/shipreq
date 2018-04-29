@@ -30,6 +30,10 @@ object EndpointTest extends TestSuite {
       test(Endpoint.LiftJsDynamic, "/L/page/F1958527133110FJNA.js")
     }
 
+    'liftAjax {
+      test(Endpoint.LiftAjax, "/L/ajax/F765233147536NT4IDN/")
+    }
+
     'metrics {
       test(Endpoint.Metrics, metricsPath)
     }
