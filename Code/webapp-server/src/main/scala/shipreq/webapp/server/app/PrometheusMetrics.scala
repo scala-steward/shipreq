@@ -119,9 +119,9 @@ object PrometheusMetrics extends HasLogger {
 //          .register()
 //    }
 
-    val ProjectsActive =
-      Gauge.build(prefix + "projects_active", "Projects currently being served")
-        .register()
+//    val ProjectsActive =
+//      Gauge.build(prefix + "projects_active", "Projects currently being served")
+//        .register()
   }
 
   private[PrometheusMetrics] object Unsafe {

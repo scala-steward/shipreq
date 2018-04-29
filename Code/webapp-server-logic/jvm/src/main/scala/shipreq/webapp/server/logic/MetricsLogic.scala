@@ -8,20 +8,14 @@ trait MetricsLogic[F[_]] {
 
   // {HttpRequests, HttpIO, HttpDuration} done directly in webapp-server
   // Here we just set the names
-
   def setHttpName(name: String): F[Unit]
   def setServerSideProcName(name: String): F[Unit]
 
   def sessionStart(sessionId: SessionId): F[Unit]
-
   def sessionEnd(sessionId: SessionId): F[Unit]
 
   def login(sessionId: SessionId, user: User): F[Unit]
-
   def logout(sessionId: SessionId): F[Unit]
-
-//    val ProjectsActive =
-//      Gauge.build(prefix + "projects_active", "Projects currently being served")
 
   final def injectServer(orig: Server.Algebra[F])(implicit F: Monad[F]): Server.Algebra[F] =
     new Server.Delegate(orig) {
@@ -29,7 +23,6 @@ trait MetricsLogic[F[_]] {
         orig.registerServerSideProc(name, i =>
           setServerSideProcName(name) >> f(i))
     }
-
 }
 
 object MetricsLogic {

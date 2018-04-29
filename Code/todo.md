@@ -110,7 +110,7 @@ Phase 2
 
 * Replace loggers with lightbend logger
 
-* Add tracing to Taskman
+* Add metrics & tracing to Taskman
 
 * Naming convention for code top-levels {Security delay, MakeEvent, UpdateProject}. Prefix with "Fn: " or something?
 * Add user id tag to sub-spans. Only on top-level atm
@@ -118,13 +118,11 @@ Phase 2
   Should use metrics & logs
 * Add more tags to logic fns (eg. event being applied) (?)
   Will be needed for metrics too
-* Serve Prometheus metrics via Lift instead of embedded http
 * [bin/env] Abort if sysctl vm whatever isn't set (needed for ES)
 * Revise all logging, especially around user login/password-{change,forget,reset} etc and log IPs
-* Determine real metrics desired and implement through to the dashboard
-* Metrics through HTTPS
 * Metrics need secret key
-* Remove Prometheus port from Docker EXPOSE
 * Only allow ops/ok in web.xml HTTP whitelist (at least outside of dev-mode)
-
-* Add ThreadLocal delay flag
+* Ops pages should have metrics type=ops not type=page
+* Add ThreadLocal security-delay flag and affect metrics
+# Add secure event metrics
+# Add active project gauge
