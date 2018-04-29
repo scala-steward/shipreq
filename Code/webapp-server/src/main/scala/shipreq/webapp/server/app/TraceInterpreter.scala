@@ -4,14 +4,14 @@ import net.liftweb.common.{Box, Empty, Failure, Full}
 import net.liftweb.http.LiftResponse
 import net.liftweb.http.provider.servlet.HTTPRequestServlet
 import shipreq.base.ops.Trace._
-import shipreq.webapp.server.logic.WebappTrace
+import shipreq.webapp.server.logic.TraceLogic
 
 object TraceInterpreter {
 
   type HttpReq = net.liftweb.http.Req
   type HttpRes = Box[LiftResponse]
 
-  type ForLift[F[_]] = WebappTrace.Logic[F, HttpReq, HttpRes]
+  type ForLift[F[_]] = TraceLogic.Logic[F, HttpReq, HttpRes]
 
   object Implicits {
 

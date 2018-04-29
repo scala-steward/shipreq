@@ -8,7 +8,7 @@ import scalaz.{-\/, Monad, \/-, ~>}
 import shipreq.base.ops.Trace._
 import shipreq.base.util.Url
 
-object WebappTrace {
+object TraceLogic {
 
   object AttrFor {
     def none[A]: AttrFor[A] =

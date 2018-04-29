@@ -32,7 +32,7 @@ object Global {
     assert(dbAccess ne null, "DbAccess is null, sir.")
     import TraceInterpreter.Implicits._
     implicit val traceAlgebra  = config.traceAlgebraFx
-    implicit val trace         = new WebappTrace.Logic: TraceInterpreter.ForLift[Fx]
+    implicit val trace         = new TraceLogic.Logic: TraceInterpreter.ForLift[Fx]
     implicit val runDB         = trace.injectDb(dbAccess.fx.trans)
              val taskmanCtx    = TaskmanApiImpl.Context(Some(config.taskmanSchema))
     implicit val taskman       = TaskmanApiImpl(taskmanCtx, runDB)
