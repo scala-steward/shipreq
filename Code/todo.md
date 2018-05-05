@@ -63,6 +63,7 @@ Backlog
 * Prevent -- (not not) in the FilterParser? Or allow /\-+/ and auto-correct on blur?
 * Firefox: ctrl-home space doesn't work properly
 * Firefox: UC step graph doesn't shrink
+* `bin/env`: Abort if sysctl vm whatever isn't set (needed for ES)
 
 ------------------------------------------------------------------------------------------------------------------------
 Phase 2
@@ -71,24 +72,29 @@ Phase 2
 ### Social
 * Co-founder criteria
 
-### Devops & Deployment
-* StackDriver
-  * Monitoring
-  * Logging
-  * Metrics
-  * Alerting
-* Env
-  * Automate releases
-  * Automate ops (dashboards, alerts, etc)
-* Devops
-  * Code to send logs
-  * Code to send metrics
-  * Revise all logging
-  * Determine and implement valuable metrics (tech & business)
-  * Do more with errors (client & server), eg. ClientData.{init,applyEvents}
+### Deployment
+* Automate ShipReq releases
+* Automate deployment of DevOps services (Prometheus etc)
+* Automate config of DevOps services (dashboards, alerts, etc)
 
-### Tech
-* Add component error handling and possibly report to server
+### Ops
+* Process
+  * Do more with errors (client & server), eg. ClientData.{init,applyEvents}
+  * Add React component error handling and possibly report to server
+* Logging
+  * Replace loggers with lightbend logger
+  * Revise all logging
+  * Security events - log with much detail including IP, username/email field, and password hash, failure reason
+* Metrics
+  * Metrics endpoint needs secret key
+  * Add ThreadLocal security-delay flag and affect metrics
+  * Security event metrics - include detail such as failure reason
+  * Taskman metrics
+  * Business metrics (see metrics.md)
+* Tracing
+  * Add user id tag to sub-spans. Only on top-level atm
+  * Add tracing to Taskman
+  * Naming convention for code top-levels {Security delay, MakeEvent, UpdateProject}. Prefix with "Fn: " or something?
 
 ### New Features
 * Issues
@@ -97,6 +103,7 @@ Phase 2
 
 ### Other
 * Cell copy-and-paste on Req{Table,Detail}
+* Issues prototype: add collapse/expand by issue{type,} columns
 * Allow system to add new field/columns in future without breaking existing projects.
   eg. User adds a "Last Updated" custom field, later ShipReq provides an auto-populated
   column with the same name. System needs a way to rename user's field without
@@ -104,22 +111,3 @@ Phase 2
   Maybe a dynamic approach that compares versions, or maybe a migration task
   that adds a new event to everyone's projects to do the rename once when the
   new version is deployed.
-* Issues prototype: add collapse/expand by issue{type,} columns
-
-================================================
-
-* Replace loggers with lightbend logger
-
-* Add metrics & tracing to Taskman
-
-* Naming convention for code top-levels {Security delay, MakeEvent, UpdateProject}. Prefix with "Fn: " or something?
-* Add user id tag to sub-spans. Only on top-level atm
-* Failed login attempts - add tags for username/email field, and password hash, maybe also for reason for failure?
-  Should use metrics & logs
-* Add more tags to logic fns (eg. event being applied) (?)
-  Will be needed for metrics too
-* [bin/env] Abort if sysctl vm whatever isn't set (needed for ES)
-* Revise all logging, especially around user login/password-{change,forget,reset} etc and log IPs
-* Metrics need secret key
-* Add ThreadLocal security-delay flag and affect metrics
-* Add secure event metrics
