@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 import scala.collection.JavaConverters._
+import shipreq.base.util.FreeOption
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
 import shipreq.webapp.base.user.User
@@ -154,15 +155,13 @@ object PrometheusMetrics extends HasLogger {
         implicit val method     = HttpMethod(req.getMethod)
         implicit val statusCode = StatusCode(status)
 
-        implicit val endpoint: Endpoint =
-          endpointVar.get() match {
-            case null =>
-              getEndpoint(path).getOrElse {
-                log.warn(s"Unknown endpoint: ${method.value} $path")
-                Endpoint.Unknown
-              }
-            case e => e
+        implicit val endpoint: Endpoint = {
+          val provided = FreeOption(endpointVar.get())
+          getEndpoint(path, provided).getOrElse {
+            log.warn(s"Unknown endpoint: ${method.value} $path")
+            Endpoint.Unknown
           }
+        }
 
         // printf(s"--- %-60s ---> %s\n", path, endpoint.toString)
 

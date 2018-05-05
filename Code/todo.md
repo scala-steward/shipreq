@@ -122,6 +122,5 @@ Phase 2
 * Revise all logging, especially around user login/password-{change,forget,reset} etc and log IPs
 * Metrics need secret key
 * Only allow ops/ok in web.xml HTTP whitelist (at least outside of dev-mode)
-* Ops pages should have metrics type=ops not type=page
 * Add ThreadLocal security-delay flag and affect metrics
 * Add secure event metrics

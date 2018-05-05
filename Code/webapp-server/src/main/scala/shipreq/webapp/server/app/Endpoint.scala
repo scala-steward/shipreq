@@ -5,6 +5,7 @@ import scala.collection.JavaConverters._
 import shipreq.webapp.base.AssetManifest
 import shipreq.base.util.FreeOption
 import shipreq.webapp.base.WebappConfig
+import shipreq.webapp.server.logic.DispatchLogic
 
 sealed abstract class Endpoint(final val `type`: String, final val name: String)
 object Endpoint {
@@ -18,6 +19,7 @@ object Endpoint {
   final case class AssetGeneric  (ext: String)                    extends Endpoint("asset", s"asset-$ext")
   final case class AssetSpecific (ext: String, assetName: String) extends Endpoint("asset", s"asset-$ext-$assetName")
   final case class Page          (pageName: String)               extends Endpoint("page", pageName)
+  final case class OpsPage       (pageName: String)               extends Endpoint("ops", pageName)
   final case class ServerSideProc(procName: String)               extends Endpoint("ajax", procName)
 
   private[this] val liftAjaxPrefix      = s"/${WebappConfig.liftPath1}/ajax/"
@@ -25,8 +27,10 @@ object Endpoint {
   private[this] val cometPrefix         = s"/${WebappConfig.liftPath1}/comet/"
   private[this] val liftRegex           = "^/[lL]/.*".r.pattern
   private[this] val assetRegex          = "^/.+/[^/.]*\\.([^/]+)$".r
+  private[this] val opsPrefix           = DispatchLogic.opsRoot.relativeUrlNoTailSlash + "/"
+  private[this] val isSlash             = (_: Char) == '/'
 
-  def resolver(metricsPath: String): String => FreeOption[Endpoint] = {
+  def resolver(metricsPath: String): (String, FreeOption[Endpoint]) => FreeOption[Endpoint] = {
     val exactMatches = new java.util.HashMap[String, Endpoint]
     exactMatches.put(metricsPath                          , Metrics)
     exactMatches.put(s"/${WebappConfig.liftPath2}/lift.js", LiftJsStatic)
@@ -43,25 +47,34 @@ object Endpoint {
     exactMatches.put(AssetManifest.semanticCss            , AssetSpecific("css", "semantic"))
     exactMatches.put(AssetManifest.shipreqBannerSvg       , AssetGeneric("svg"))
 
-    path => {
-      val exact = FreeOption(exactMatches.get(path))
-      if (exact.nonEmpty)
-        exact
-      else if (path startsWith liftJsDynamicPrefix)
-        FreeOption(LiftJsDynamic)
-      else if (path startsWith liftAjaxPrefix)
-        FreeOption(LiftAjax)
-      else if (path startsWith cometPrefix)
-        FreeOption(Comet)
-      else if (liftRegex.matcher(path).matches)
-        FreeOption.empty
-      else path match {
-        case assetRegex(ext) =>
-          FreeOption(AssetGeneric(ext))
-        case _ =>
+    (path, provided) =>
+      if (provided.nonEmpty) {
+        if (path startsWith opsPrefix)
+          provided.getOrNull match {
+            case Page(n) => FreeOption(OpsPage(n.dropWhile(isSlash)))
+            case _       => provided
+          }
+        else
+          provided
+      } else {
+        val exact = FreeOption(exactMatches.get(path))
+        if (exact.nonEmpty)
+          exact
+        else if (path startsWith liftJsDynamicPrefix)
+          FreeOption(LiftJsDynamic)
+        else if (path startsWith liftAjaxPrefix)
+          FreeOption(LiftAjax)
+        else if (path startsWith cometPrefix)
+          FreeOption(Comet)
+        else if (liftRegex.matcher(path).matches)
           FreeOption.empty
+        else path match {
+          case assetRegex(ext) =>
+            FreeOption(AssetGeneric(ext))
+          case _ =>
+            FreeOption.empty
+        }
       }
-    }
   }
 
   implicit def univEq: UnivEq[Endpoint] = UnivEq.derive

@@ -3,6 +3,7 @@ package shipreq.webapp.server.app
 import utest._
 import japgolly.microlibs.testutil.TestUtil._
 import shipreq.base.util.univeq._
+import shipreq.base.util.FreeOption
 import shipreq.webapp.base.{AssetManifest, WebappConfig}
 
 object EndpointTest extends TestSuite {
@@ -10,8 +11,8 @@ object EndpointTest extends TestSuite {
   private val metricsPath = "/opsssss/metric"
   private val endpoint = Endpoint.resolver(metricsPath)
 
-  def test(expect: Endpoint, path: String): Unit =
-    assertEq(path, endpoint(path).toOption, Some(expect))
+  def test(expect: Endpoint, path: String, providedOrNull: Endpoint = null): Unit =
+    assertEq(path, endpoint(path, FreeOption(providedOrNull)).toOption, Some(expect))
 
   override def tests = TestSuite {
 
@@ -34,8 +35,14 @@ object EndpointTest extends TestSuite {
       test(Endpoint.LiftAjax, "/L/ajax/F765233147536NT4IDN/")
     }
 
-    'metrics {
-      test(Endpoint.Metrics, metricsPath)
+    'page {
+      'root - test(Endpoint.Page("/"), "/", Endpoint.Page("/"))
+      'home - test(Endpoint.Page("/home"), "/home", Endpoint.Page("/home"))
+    }
+
+    'ops {
+      'ok - test(Endpoint.OpsPage("ok"), "/ops/ok", Endpoint.Page("/ok"))
+      'metrics - test(Endpoint.Metrics, metricsPath)
     }
 
     'webappClientHomeJs    - test(Endpoint.AssetSpecific("ico", "favicon"),          AssetManifest.favicon)
@@ -62,7 +69,7 @@ object EndpointTest extends TestSuite {
 
     'unknown {
       def test(path: String): Unit =
-        assertEq(path, endpoint(path).toOption, None)
+        assertEq(path, endpoint(path, FreeOption.empty).toOption, None)
 
       'noAssetPath - test("/blah.js")
       'unknownLift1 - test(s"/${WebappConfig.liftPath1}/blah.js")
