@@ -124,5 +124,4 @@ Phase 2
 * Only allow ops/ok in web.xml HTTP whitelist (at least outside of dev-mode)
 * Ops pages should have metrics type=ops not type=page
 * Add ThreadLocal security-delay flag and affect metrics
-# Add secure event metrics
-# Add active project gauge
+* Add secure event metrics

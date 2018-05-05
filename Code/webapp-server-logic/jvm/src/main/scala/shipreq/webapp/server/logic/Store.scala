@@ -16,6 +16,10 @@ object Store {
 
   /** All ops are atomic */
   trait Algebra[F[_], K, V >: Null] {
+
+    /** Number of keys currently in the store */
+    val storeKeyCount: F[Int]
+
     def storeGet(key: K): F[Option[V]]
     def storeMod(key: K)(f: FreeOption[V] => FreeOption[V]): F[Option[V]]
     def storeModSet(key: K)(f: FreeOption[V] => V): F[V]
@@ -71,6 +75,9 @@ object Store {
     def concurrentHashMap[F[_], K: UnivEq, V >: Null](map: ConcurrentHashMap[K, V] = new ConcurrentHashMap[K, V])
                                                      (implicit F: Applicative[F]): Algebra[F, K, V] =
       new Algebra[F, K, V] {
+        override val storeKeyCount: F[Int] =
+          F point map.size()
+
         override def storeGet(key: K): F[Option[V]] =
           F point Option(map.get(key))
 

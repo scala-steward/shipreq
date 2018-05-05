@@ -448,16 +448,7 @@ class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerCon
   implicit val taskman    = new MockTaskman
   implicit val nameToName = NaturalTransformation.refl[Name]
   implicit val publicApi  = PublicSpaLogic[Name, Name]: PublicSpaLogic.ForApi[Name]
-
-  implicit object metrics extends MetricsLogic[Name] {
-    private val noop = Name(())
-    override def setHttpName(name: String) = noop
-    override def setServerSideProcName(name: String) = noop
-    override def sessionStart(sessionId: SessionId): Name[Unit] = noop
-    override def sessionEnd(sessionId: SessionId): Name[Unit] = noop
-    override def login(sessionId: SessionId, user: User) = noop
-    override def logout(sessionId: SessionId) = noop
-  }
+  implicit val metrics    = MetricsLogic.const(Name(()))
 
   implicit object ops extends OpsEndpoints.Base[Name] {
     override val randomToken = Name("blah")
