@@ -9,6 +9,7 @@ import scalaz.syntax.applicative._
 import shipreq.base.ops._
 import shipreq.base.util._
 import shipreq.base.util.FxModule._
+import shipreq.webapp.server.logic.DispatchLogic
 
 @Lenses
 final case class ServerConfig(baseUrl: Url.Absolute.Base,
@@ -60,7 +61,11 @@ object ServerConfig {
 
   final case class Prometheus(enabled: Boolean, hotspot: Boolean, path: String)
   object Prometheus {
-    val default = apply(enabled = true, hotspot = true, path = "/ops/metrics")
+    val default = apply(
+      enabled = true,
+      hotspot = true,
+      path = (DispatchLogic.opsRoot / "metrics").relativeUrl)
+
     def config: Config[Prometheus] =
       ( Config.getOrUse[Boolean]("enabled", default.enabled) |@|
         Config.getOrUse[Boolean]("hotspot", default.hotspot) |@|
