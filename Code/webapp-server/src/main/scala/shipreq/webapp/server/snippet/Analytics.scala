@@ -15,7 +15,8 @@ object Analytics extends DispatchSnippet {
 
       case None =>
         val remove: NodeSeq => NodeSeq = Function const Group(Nil)
-        PartialFunction(_ => remove)
+
+        { case _ => remove }
 
       case Some(trackingId) =>
 

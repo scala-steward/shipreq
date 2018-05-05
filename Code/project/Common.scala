@@ -28,6 +28,9 @@ object Common {
     "-Ypartial-unification",
     "-Ypatmat-exhaust-depth", "off",
     "-Ywarn-inaccessible",
+    "-Ybackend-parallelism", "8",
+    "-Ycache-plugin-class-loader:last-modified",
+    "-Ycache-macro-class-loader:last-modified",
     "-feature", "-language:postfixOps", "-language:implicitConversions", "-language:higherKinds", "-language:existentials")
 
   def scalacTestFlags = Seq("-language:reflectiveCalls")
