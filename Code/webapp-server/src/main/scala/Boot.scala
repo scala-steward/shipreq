@@ -96,7 +96,7 @@ class Boot {
     // Customise URL paths for lift.js
     LiftRules.resourceServerPath = WebappConfig.liftPath2
 
-    // Disable request logging - we have metrics for that
+    // Disable built-in request logging
     LiftRules.logServiceRequestTiming = false
 
     // Force requests to be UTF-8
