@@ -1,39 +1,44 @@
 package shipreq.base.util.log
 
-import org.slf4j.{MDC => slf4jMDC}
-import org.slf4j.spi.MDCAdapter
+import org.slf4j.{MDC => M}
+import scalaz.Applicative
+import scalaz.syntax.applicative._
 
 object MDC {
 
-  @inline def apply(kvs: (String, Any)*): Ctx = apply(kvs)
+  final class Ctx(private val add: () => Unit, remove: () => Unit) {
 
-  def apply(kvs: TraversableOnce[(String, Any)]): Ctx = {
-    val map = new java.util.HashMap[String, String]
-    for ((k,v) <- kvs)
-      map.put(k, v.toString)
-    new Ctx(_ setContextMap map)
-  }
-
-  final class Ctx(private val m: MDCAdapter => Unit) extends AnyVal {
-
-    def apply[A](f: => A): A = {
-      val mdc = slf4jMDC.getMDCAdapter
-      val old = mdc.getCopyOfContextMap
-      try {
-        m(mdc)
-        f
-      } finally
-        if (null eq old)
-          mdc.clear()
-        else
-          mdc setContextMap old
+    def apply[F[_], A](fa: F[A])(implicit F: Applicative[F]): F[A] = {
+      F.point(add()) *> fa <* F.point(remove())
     }
 
-    def f[A, B](f: A => B): A => B =
-      a => apply(f(a))
+    def impure[A](a: => A): A = {
+      add()
+      try a finally remove()
+    }
 
-    def pf[A, B](f: PartialFunction[A, B]): PartialFunction[A, B] = {
-      case a => apply(f(a))
+    def impureWrapPF[A, B](f: PartialFunction[A, B]): PartialFunction[A, B] = {
+      case a => impure(f(a))
     }
   }
+
+  // ===================================================================================================================
+
+  def apply[A](key: String, value: String): Ctx =
+    new Ctx(() => {
+      M.put(key, value)
+    }, () => {
+      M.remove(key)
+    })
+
+  def apply[A](key1: String, value1: String,
+               key2: String, value2: String): Ctx =
+    new Ctx(() => {
+      M.put(key1, value1)
+      M.put(key2, value2)
+    }, () => {
+      M.remove(key1)
+      M.remove(key2)
+    })
+
 }

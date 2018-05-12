@@ -36,7 +36,7 @@ class SourceActor(ctx: TaskmanCtx) extends Actor with HasLogger {
       case Some(f) => () => FileUtils.touch(f)
     }
 
-  override def receive = mdc.pf {
+  override def receive = mdc.impureWrapPF {
     case RequestForWork(qs) =>
       val (s2, msgs) = source.poll(qs).run(state).unsafeRun()
       state = s2
@@ -70,7 +70,7 @@ class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with HasLogg
 
   override def postStop() = poller.cancel()
 
-  override def receive = mdc.pf {
+  override def receive = mdc.impureWrapPF {
 
     case PollSource =>
       source ! SourceActor.RequestForWork(queue.status)
@@ -113,7 +113,7 @@ class WorkerActor(ctx: TaskmanCtx, manager: ActorRef) extends Actor with HasLogg
   private def requestWork(): Unit =
     manager ! RequestForWork
 
-  override def receive = mdc.pf {
+  override def receive = mdc.impureWrapPF {
 
     case WorkAvailable =>
       requestWork()

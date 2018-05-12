@@ -11,7 +11,7 @@ object TaskmanLogging {
   type MdcValues = String
 
   def mdc(who: String): MDC.Ctx =
-    MDC(whoKey -> who)
+    MDC(whoKey, who)
 
   val readMdc: Fx[MdcValues] =
     Fx(SMDC get whoKey)
