@@ -106,6 +106,7 @@ object Common {
       packageBinaryOnly,
       dockerLayerReuse,
       Dependencies.useKindProjector,
+      Dependencies.useBetterMonadicFor,
       addCommandAliases(
         "/"   -> "project root",
         "B"   -> "project base",

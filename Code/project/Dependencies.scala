@@ -204,6 +204,9 @@ object Dependencies {
   val twitterEval  = jvmOnly("com.twitter"                %% "util-eval"             % "6.43.0")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.13.5")
 
+  val betterMonadicFor = compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.2.4")
+  val useBetterMonadicFor = (_: Project).settings(addCompilerPlugin(betterMonadicFor))
+
   val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
   val useMacroParadise = (_: Project).settings(addCompilerPlugin(macroParadise))
 

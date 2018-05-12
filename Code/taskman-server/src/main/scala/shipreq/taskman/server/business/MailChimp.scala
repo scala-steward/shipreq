@@ -143,7 +143,7 @@ object MailChimp {
     object Total {
       def parse(j: JValue): ArticulateError \/ Total =
         ArticulateError.safe(
-          (j \ "status") match {
+          j \ "status"match {
             case JString("error") =>
               val JInt(code)    = j \ "code"
               val JString(name) = j \ "name"
@@ -179,20 +179,27 @@ object MailChimp {
           .hint(h.fullMsg, t.map(_.fullMsg): _*)
 
       def parse(j: JValue): ArticulateError \/ List[Partial] =
-        ArticulateError.attempt(
-          for {
-            JArray(errors) <- j \ "errors"
-            e <- errors
-          } yield {
-            val JInt(code) = e \ "code"
-            val JString(msg) = e \ "error"
-            val opEmail = (e \ "email").toOption.map { i =>
-              val JString(email) = i \ "email"
-              EmailAddr(email)
-            }
-            Partial(code.toInt, msg, opEmail)
+        ArticulateError.safe {
+          j \ "errors" match {
+
+            case JNothing =>
+              \/-(Nil)
+
+            case JArray(errors) =>
+              \/-(errors.map { e =>
+                val JInt(code) = e \ "code"
+                val JString(msg) = e \ "error"
+                val opEmail = (e \ "email").toOption.map { i =>
+                  val JString(email) = i \ "email"
+                  EmailAddr(email)
+                }
+                Partial(code.toInt, msg, opEmail)
+              })
+
+            case x =>
+              -\/(ArticulateError(s"Unable to parse 'errors': $x"))
           }
-        )
+        }
 
       /** Detects partial failures in a successful result and if present, returns a \/-(ArticulateError(…)) */
       def extract(j: JValue): Option[ArticulateError] =
