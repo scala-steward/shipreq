@@ -122,7 +122,7 @@ object TaskmanConfig extends HasLogger {
       ) { (remoteCfgRetry, qs, tp, pollEvery, pollGapO, healthFile) =>
       val pollGap = pollGapO getOrElse pollEvery
       if (pollGap isLongerThan pollEvery)
-        log.warn(s"The minimum poll gap ($pollGap) is larger than the poll time ($pollEvery). Wasteful.")
+        logger.warn(s"The minimum poll gap ($pollGap) is larger than the poll time ($pollEvery). Wasteful.")
       Taskman(remoteCfgRetry, qs, AssignmentTrustPeriod(tp), pollEvery, pollGap, healthFile)
     }
       .withPrefix("taskman.")

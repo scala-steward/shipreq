@@ -93,9 +93,9 @@ final class AppServletFilter extends LiftFilter with HasLogger {
         val durMs = System.currentTimeMillis() - startMs
         if ((hreq ne null) && res.isInstanceOf[HttpServletResponse]) {
           val hres = res.asInstanceOf[HttpServletResponse]
-          log.info(s"Served ${hres.getStatus} ${hreq.getRequestURI} in $durMs ms")
+          logger.info(s"Served ${hres.getStatus} ${hreq.getRequestURI} in $durMs ms")
         } else
-          log.info(s"Served non-HTTP request in $durMs ms")
+          logger.info(s"Served non-HTTP request in $durMs ms")
       }
       finally
         MDC.clear()

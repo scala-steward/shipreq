@@ -98,10 +98,10 @@ final class BusinessLogic[F[_]](emails        : Emails,
     def syncToML(sqlCond: Option[String]): Fx[Unit] =
       run(FindShipReqUsers(sqlCond)).map(_ map subscription).flatMap {
         case Nil =>
-          Fx(log info "No users to sync to mailing list.")
+          Fx(logger info "No users to sync to mailing list.")
         case h :: t =>
           val ss = NonEmptyList.nel(h, t)
-          Fx(log info s"Syncing ${ss.size} users to mailing list...") >>
+          Fx(logger info s"Syncing ${ss.size} users to mailing list...") >>
             run(API.BatchSubscribe(mailingListId, ss))
       }
   }

@@ -74,7 +74,7 @@ object Worker extends HasLogger {
 
     def handleFailedWorker(f: NotifySupportWorkerFailed): Fx[Unit] = {
       def logError(e: ArticulateError): Fx[Unit] =
-        Fx(log.error(
+        Fx(logger.error(
           s"""
              |FAILED TO NOTIFY SUPPORT OF FAILED WORKER.
              |
@@ -97,7 +97,7 @@ object Worker extends HasLogger {
 
     def handleFailedTaskman(f: NotifySupportTaskmanError): Fx[Unit] = {
       def logError(e: ArticulateError): Fx[Unit] =
-        Fx(log.error(
+        Fx(logger.error(
           s"""
              |FAILED TO NOTIFY SUPPORT OF TASKMAN FAILURE. FUCK.
              |
@@ -184,7 +184,7 @@ final class Worker[F[_]](msgProcessor : MsgProcessor[F])
     }
 
   private def logWorkStart(md: MsgDetail): Fx[Unit] =
-    Fx(log.debug(s"Starting work: $md"))
+    Fx(logger.debug(s"Starting work: $md"))
 
   private def performWork(m: MsgDetail)(assignedSince: Instant): Fx[WorkResult[F]] =
     Fx.safe(msgProcessor(m)).attemptArticulateError flatMap taskEnd(m, assignedSince)
@@ -212,23 +212,23 @@ final class Worker[F[_]](msgProcessor : MsgProcessor[F])
   private def logWorkResult(r: WorkResult[F], dur: Duration): Fx[Unit] =
     Fx(r match {
       case CouldntAssign(m) =>
-        log.debug(s"Couldn't assign: $m")
+        logger.debug(s"Couldn't assign: $m")
       case CouldntReassign(m) =>
-        log.warn(s"Couldn't reassign: $m")
+        logger.warn(s"Couldn't reassign: $m")
       case Completed(m) =>
-        log.info(s"Successfully completed in ${dur.toMillis}ms: $m")
+        logger.info(s"Successfully completed in ${dur.toMillis}ms: $m")
       case Scheduled(_, m) =>
-        log.debug(s"Scheduled to run asynchronously: $m")
+        logger.debug(s"Scheduled to run asynchronously: $m")
       case WorkerFailed(_, e, f) =>
         // f contains m so no need to print separately
         if (e is Deliberate)
-          log.warn(s"Worker deliberately failed: ${e.getMessage} // $f")
+          logger.warn(s"Worker deliberately failed: ${e.getMessage} // $f")
         else
-          log.error(s"Worker failed after ${dur.toMillis}ms: $f", e)
+          logger.error(s"Worker failed after ${dur.toMillis}ms: $f", e)
       case TaskmanFailed(e, Some(m)) =>
-        log.error(s"Taskman error occurred processing $m", e)
+        logger.error(s"Taskman error occurred processing $m", e)
       case TaskmanFailed(e, None) =>
-        log.error("Taskman error occurred! (no msg)", e)
+        logger.error("Taskman error occurred! (no msg)", e)
     })
 
   private def wrapAsync(m: MsgDetail, assignedSince: Instant)(work: Fx[ProcessorResult[F]]): Fx[WorkResult[F]] =

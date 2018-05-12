@@ -34,11 +34,11 @@ final class MailGun(props: Props)(implicit httpClient: HttpClient)
     extends AbstractFunction1[BusinessOp.SendEmail, Fx[Unit]] with HasLogger {
 
   private implicit val httpLogger: HttpLogger =
-    HttpLogger(log)
+    HttpLogger(logger)
 
   private val endpoints = new Endpoints(props.domain, props.key)
 
   override def apply(op: SendEmail): Fx[Unit] =
     endpoints.send.run(op) >>
-      Fx(log.info(s"Email sent: ${op.envelope.showTo} [${op.content.subject}]"))
+      Fx(logger.info(s"Email sent: ${op.envelope.showTo} [${op.content.subject}]"))
 }

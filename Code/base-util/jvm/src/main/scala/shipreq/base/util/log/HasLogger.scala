@@ -3,7 +3,7 @@ package shipreq.base.util.log
 import com.typesafe.scalalogging.{Logger => ScalaLogger}
 import java.util.concurrent.ConcurrentHashMap
 
-object Logger {
+object HasLogger {
   private[this] val cache =
     new ConcurrentHashMap[Class[_], ScalaLogger]()
 
@@ -22,5 +22,5 @@ object Logger {
 }
 
 trait HasLogger {
-  final protected val log = Logger.forClass(getClass)
+  final protected val logger = HasLogger.forClass(getClass)
 }

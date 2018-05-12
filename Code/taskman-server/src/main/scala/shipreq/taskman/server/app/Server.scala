@@ -24,7 +24,7 @@ object Server extends MainTemplate {
     if (testConnections) ctx.testConnections()
     val s = new System(ctx)
     s.manager.tell(ManagerActor.RegisterWorker, s.workers)
-    log.info("Taskman started.")
+    logger.info("Taskman started.")
     f(s)
   }
 
@@ -35,7 +35,7 @@ object Server extends MainTemplate {
     val workers = system.actorOf(FromConfig.props(WorkerActor.props(ctx, manager)).withDispatcher("work"), "workers")
 
     def shutdown(): Unit = {
-      log.info("Shutting down...")
+      logger.info("Shutting down...")
       system.terminate()
     }
   }

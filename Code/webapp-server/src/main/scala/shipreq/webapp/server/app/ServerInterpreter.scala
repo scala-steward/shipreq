@@ -44,8 +44,8 @@ object ServerInterpreter extends Server.Algebra[Fx] with HasLogger {
     Fx {
       S.session match {
         case Full(s)    => Some(getSessionId(s))
-        case Empty      => log.warn("Session expected but Empty"); None
-        case f: Failure => log.warn("Session unavailable: " + f.msg); None
+        case Empty      => logger.warn("Session expected but Empty"); None
+        case f: Failure => logger.warn("Session unavailable: " + f.msg); None
       }
     }
 

@@ -39,7 +39,7 @@ final case class DbAccess(cfg               : DbConfig,
   val fx = abstractTransactor[Fx]
 
   def verifyConnectivity(): Unit = {
-    log.info(s"Connecting to database: $desc")
+    logger.info(s"Connecting to database: $desc")
     ds.getConnection().close()
   }
 
@@ -49,7 +49,7 @@ final case class DbAccess(cfg               : DbConfig,
         case h: HikariDataSource => h.close()
         case _ => ()
       }
-    ).swap.foreach(log.warn("Error closing database connections.", _))
+    ).swap.foreach(logger.warn("Error closing database connections.", _))
 
   def setupRunShutdown[M[_] : Catchable : Capture : Monad, A](app: => M[A]): M[A] =
     for {
@@ -80,7 +80,7 @@ object DbAccess extends HasLogger {
   /** When using docker-compose, sometimes the DB image needs more time to initialise. This adds a small retry. */
   def fromCfg(cfg: DbConfig): Fx[DbAccess] = {
     val delay = Fx {
-      log.warn("DbAccess initialisation failed. Retrying...")
+      logger.warn("DbAccess initialisation failed. Retrying...")
       Thread.sleep(2000)
     }
     fromCfgWithoutRetry(cfg).retryOnException((n, _) => if (n < 4) Some(delay) else None)

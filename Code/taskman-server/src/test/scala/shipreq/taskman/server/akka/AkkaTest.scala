@@ -42,21 +42,21 @@ class AkkaTest extends Specification with DatabaseTest with HasLogger with Serve
           Await.result(s.system.whenTerminated, 10.seconds)
         })
       catch {
-        case e: Throwable => log.error("Akka crashed", e)
+        case e: Throwable => logger.error("Akka crashed", e)
       })
 
       // submit jobs
       val dummy1 = runApi(_.submitMsg(DummyMsg("#1: Pass immediately")))
       val dummy2 = runApi(_.submitMsg(DummyMsg("#2: Fail immediately", retryCount = 1, failureMsg = Some("Deliberate fail."))))
       val dummy3 = runApi(_.submitMsg(DummyMsg("#3: Async pass", async = true)))
-      log.debug(s"Dummy job ids: ${dummy1.value}, ${dummy2.value}, ${dummy3.value}")
+      logger.debug(s"Dummy job ids: ${dummy1.value}, ${dummy2.value}, ${dummy3.value}")
 
       // wait for results
       val expect = List(Succeeded, FailAndAbort, Succeeded).map(Some(_))
       List(dummy1, dummy2, dummy3).map(lookupHistory) must be_==(expect).eventually(20, 1.second)
 
     } finally {
-      log.info("Finished in %.3fs".format((System.currentTimeMillis() - startTime) / 1000.0))
+      logger.info("Finished in %.3fs".format((System.currentTimeMillis() - startTime) / 1000.0))
       shutdownLatch.countDown()
       es.shutdown()
       es.awaitTermination(10, TimeUnit.SECONDS)

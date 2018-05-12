@@ -34,12 +34,12 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
       .run(emailTokenSource)
       .map(_.getOrDie())
       .retryOnException((n, t) => config.taskman.remoteCfgRetry(n).map(d => Fx {
-        log.warn(s"Remote config error occurred. Retrying...\n${t.getMessage}")
+        logger.warn(s"Remote config error occurred. Retrying...\n${t.getMessage}")
         Thread sleep d.toMillis
       }))
       .unsafeRun()
 
-  log.info(emailTokensReport.report)
+  logger.info(emailTokensReport.report)
 
   private object async {
     val (emailExecutorService, emailScheduler) = Async.newPool("email", config.mail.concurrencyMax)
@@ -73,7 +73,7 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
   implicit val nodeId        = serverOpFx.getNextNodeId.unsafeRun()
 
   def testConnections(): Unit = {
-    log debug "Testing connections..."
+    logger debug "Testing connections..."
     businessOpFx.applyUntimed(BusinessOp.FindShipReqUsers(None)).unsafeRun()
   }
 
@@ -94,5 +94,5 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
       async.each(_.shutdownNow())
     }
       .attempt
-      .map(_.swap.foreach(log.warn("Error shutting down ctx.", _)))
+      .map(_.swap.foreach(logger.warn("Error shutting down ctx.", _)))
 }

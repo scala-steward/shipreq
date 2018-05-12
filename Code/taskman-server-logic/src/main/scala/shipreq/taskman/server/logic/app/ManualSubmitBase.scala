@@ -106,15 +106,15 @@ abstract class ManualSubmitBase extends HasLogger {
   def submitAll(msgs: List[Msg]): TaskmanApi[Fx] => Fx[Unit] =
     api => Fx {
       val msgCount = msgs.size
-      log info ""
+      logger info ""
 
-      log info "Submitting..."
+      logger info "Submitting..."
       val results = api.submitMsgs(msgs).unsafeRun()
       for (((m,id),i) <- results.zipWithIndex.map(_.map2(_+1))) {
-        log info s"[$i/$msgCount] $id <= $m"
+        logger info s"[$i/$msgCount] $id <= $m"
       }
-      log info "Success."
+      logger info "Success."
 
-      log info ""
+      logger info ""
     }
 }

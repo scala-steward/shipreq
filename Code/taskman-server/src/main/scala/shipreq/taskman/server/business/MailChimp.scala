@@ -209,7 +209,7 @@ object MailChimp {
 
 final class MailChimp(props: Props)(implicit httpClient: HttpClient) extends (MailingList.API ~> Fx) with HasLogger {
   private implicit val httpLogger: HttpLogger =
-    HttpLogger(log, _.replace(props.key, "<KEY>"))
+    HttpLogger(logger, _.replace(props.key, "<KEY>"))
 
   private val endpoints: Endpoints =
     Endpoints(props)

@@ -134,7 +134,7 @@ object FreshDesk {
 sealed class FreshDesk0(props: Props)(implicit httpClient: HttpClient) extends HasLogger {
 
   protected final implicit val httpLogger: HttpLogger =
-    HttpLogger(log)
+    HttpLogger(logger)
 
   protected final val endpoints: Endpoints =
     new Endpoints(s"https://${props.domain}.freshdesk.com", props.key)

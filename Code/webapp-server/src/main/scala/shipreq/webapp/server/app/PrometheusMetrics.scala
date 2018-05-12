@@ -158,7 +158,7 @@ object PrometheusMetrics extends HasLogger {
         implicit val endpoint: Endpoint = {
           val provided = FreeOption(endpointVar.get())
           getEndpoint(path, provided).getOrElse {
-            log.warn(s"Unknown endpoint: ${method.value} $path")
+            logger.warn(s"Unknown endpoint: ${method.value} $path")
             Endpoint.Unknown
           }
         }
@@ -183,12 +183,12 @@ object PrometheusMetrics extends HasLogger {
             else if (endpoint == Endpoint.Metrics)
               () // /ops/metrics writes directly to output without calculating size - ignore for now
             else
-              log.warn(s"No Content-Length for request: ${req.getMethod} ${req.getRequestURI} ${resp.getStatus}")
+              logger.warn(s"No Content-Length for request: ${req.getMethod} ${req.getRequestURI} ${resp.getStatus}")
           case ParseLong(len) =>
             if (len > 0)
               HttpIO(CommDir.Send).inc(len)
           case str =>
-            log.warn(s"Unable to parse ${method.value} $path response's Content-Length ($str) as Long.")
+            logger.warn(s"Unable to parse ${method.value} $path response's Content-Length ($str) as Long.")
         }
       }
     }

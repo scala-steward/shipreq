@@ -37,10 +37,10 @@ trait DbTemplate extends HasLogger {
     if (initPending)
       initLock.synchronized(
         if (initPending) {
-          log.info("Database initialising...")
+          logger.info("Database initialising...")
           _connection = dbCfg.pgDataSource.getConnection()
           unsafeInit()
-          log.info("Database initialised.")
+          logger.info("Database initialised.")
         }
       )
 
@@ -50,7 +50,7 @@ trait DbTemplate extends HasLogger {
       val allowed = "shipreq_test"
       if (databaseName != allowed)
         sys.error(s"You're trying to wipe $databaseName. Only $allowed is allowed to be wiped.")
-      log.info(s"Wiping database: $databaseName")
+      logger.info(s"Wiping database: $databaseName")
       migrator.drop[Id]
     }
 
@@ -58,10 +58,10 @@ trait DbTemplate extends HasLogger {
     if (initialised)
       initLock.synchronized(
         if (initialised) {
-          log.info("Database shutting down...")
+          logger.info("Database shutting down...")
           unsafeShutdown()
           _connection = null
-          log.info("Database shut down.")
+          logger.info("Database shut down.")
         }
       )
 }
