@@ -42,8 +42,7 @@ object Global {
     implicit val traceAlgebra  = config.traceAlgebraFx
     implicit val trace         = new TraceLogic: TraceInterpreter.ForLift[Fx]
     implicit val runDB         = trace.injectDb(dbAccess.fx.trans)
-             val taskmanCtx    = TaskmanApiImpl.Context(Some(config.taskmanSchema))
-    implicit val taskman       = TaskmanApiImpl(taskmanCtx, runDB)
+    implicit val taskman       = TaskmanApi.addLogging(TaskmanApiImpl(Some(config.taskmanSchema)).trans(runDB))
     implicit val dbAlgebra     = new DbInterpreter()
     implicit val dbForSecurity = DB.ForSecurity.trans(DbInterpreter.ForSecurity)(runDB)
     implicit val dbForOps      = DB.ForOps.trans(new DbInterpreter.ForOps(dbAccess.databaseName))(runDB)

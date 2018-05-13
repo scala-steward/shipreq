@@ -17,8 +17,13 @@ object HasLogger {
       ScalaLogger(n)
     }
 
-  private[log] def forClass(c: Class[_]): ScalaLogger =
+  private[HasLogger] def forClass(c: Class[_]): ScalaLogger =
     cache.computeIfAbsent(c, create)
+
+  abstract class ForClass(loggerCls: Class[_]) {
+    final protected implicit val logger: ScalaLogger =
+      HasLogger.forClass(loggerCls)
+  }
 }
 
 trait HasLogger {

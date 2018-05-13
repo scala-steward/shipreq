@@ -8,7 +8,7 @@ trait ApiImplTestHelpers {
   this: DatabaseTest =>
 
   lazy val apiImpl: TaskmanApi[Fx] =
-    TaskmanApiImpl(TaskmanApiImpl.Context(None), xa.trans)
+    TaskmanApiImpl(None).trans(xa.trans)
 
   def run[A](f: TaskmanApi[Fx] => Fx[A]): A =
     f(apiImpl).unsafeRun()

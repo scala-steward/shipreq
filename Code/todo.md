@@ -81,7 +81,6 @@ Phase 2
   * Do more with errors (client & server), eg. ClientData.{init,applyEvents}
   * Add React component error handling and possibly report to server
 * Logging
-  * Add to webapp: TaskmanApi
   * Add to webapp: DB
   * Add to webapp: project events
 * Metrics

@@ -9,6 +9,7 @@ import scalaz.syntax.catchable._
 import shipreq.base.db.DbAccess
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
+import shipreq.taskman.api.TaskmanApi
 import shipreq.taskman.api.impl.TaskmanApiImpl
 import shipreq.taskman.server.business._
 import shipreq.taskman.server.logic._
@@ -64,7 +65,7 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
   private val clockClock = Clock.systemUTC()
 
   implicit def trustPeriod   = config.taskman.trustPeriod
-  implicit val taskmanApi    = TaskmanApiImpl(TaskmanApiImpl.Context(None), dbAccess.fx.trans)
+  implicit val taskmanApi    = TaskmanApi.addLogging(TaskmanApiImpl(None).trans(dbAccess.fx.trans))
   implicit val businessOpFx  = new BusinessOpFx(sendMail, mailchimp, freshdesk, dbAccess.fx, config.shipreq.schema)
   implicit val serverOpFx    = new ServerOpFx(dbAccess.fx, new Worker.FailureHandler(emails)(businessOpFx))
   implicit val msgProcessor  = new BusinessLogic(emails, async.emailScheduler, mailingListId)(businessOpFx)
