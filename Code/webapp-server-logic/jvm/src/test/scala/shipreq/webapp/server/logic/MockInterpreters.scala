@@ -452,6 +452,7 @@ class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerCon
   implicit val nameToName = NaturalTransformation.refl[Name]
   implicit val metrics    = MetricsLogic.const(Name(()))
   implicit val publicApi  = PublicSpaLogic[Name, Name]: PublicSpaLogic.ForApi[Name]
+  implicit val fxOps      = FxOps.fromMonad[Name]
 
   implicit object ops extends OpsEndpoints.Base[Name] {
     override val randomToken = Name("blah")

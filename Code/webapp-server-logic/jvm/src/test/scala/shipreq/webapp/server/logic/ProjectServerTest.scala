@@ -1,7 +1,6 @@
 package shipreq.webapp.server.logic
 
-import java.util.concurrent.ConcurrentHashMap
-import scalaz.{-\/, Name, NaturalTransformation, ~>}
+import scalaz.{-\/, Name}
 import utest._
 import shipreq.base.ops.Trace
 import shipreq.base.util.Direction

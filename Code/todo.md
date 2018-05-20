@@ -82,7 +82,6 @@ Phase 2
   * Add React component error handling and possibly report to server
 * Logging
   * Add to webapp: DB
-  * Add to webapp: project events
 * Metrics
   * Metrics endpoint needs secret key
   * Add ThreadLocal security-delay flag and affect metrics

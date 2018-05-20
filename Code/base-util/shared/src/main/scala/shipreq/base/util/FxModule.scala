@@ -56,7 +56,12 @@ object FxModule {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  implicit class FxOps[A](private val fx: Fx[A]) extends AnyVal {
+  implicit val FxOpsInstance: FxOps[Fx] =
+    new FxOps[Fx] {
+      def apply[A](f: Fx[A]) = new FxOpsSyntax(f)
+    }
+
+  implicit class FxOpsSyntax[A](private val fx: Fx[A]) extends AnyVal with FxOps.Syntax[Fx, A] {
 
     @inline def unsafeRun(): A =
       fx.go(_())
@@ -66,9 +71,6 @@ object FxModule {
         a <- fx
         _ <- f(a)
       } yield a
-
-    def tap_[B](f: Fx[B]): Fx[A] =
-      tap(_ => f)
 
     def unsafeTap[B](f: A => B): Fx[A] =
       tap(a => Fx(f(a)))

@@ -2,27 +2,29 @@ package shipreq.webapp.server.logic
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
-import java.time.Instant
+import java.time.{Duration, Instant}
 import monocle.macros.Lenses
 import scalaz.syntax.monad._
 import scalaz.syntax.std.option._
 import scalaz.{-\/, Monad, \/, \/-, ~>}
 import shipreq.base.ops.Trace
 import shipreq.base.util._
+import shipreq.base.util.FxOps.Implicits._
+import shipreq.base.util.log.HasLogger
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{ApplyEvent, EventOrd, VerifiedEvent}
 import shipreq.webapp.base.protocol.ProjectSpaProtocols
 import shipreq.webapp.base.user._
-import ProjectServer._
 
 trait ProjectServer[F[_]] {
+  import ProjectServer._
   def register(pid: ProjectId, userId: UserId, onChange: OnChange[F]): F[RegistrationError \/ RegId]
   def unregister(r: RegId): F[Unit]
   def initialClient(r: RegId, username: Username): F[NotRegistered \/ ProjectSpaProtocols.InitData]
 }
 
-object ProjectServer {
+object ProjectServer extends HasLogger {
 
   type RegId = Store.Register.RegId[ProjectId]
 
@@ -132,6 +134,7 @@ object ProjectServer {
                         svr: Server.Algebra[F],
                         trace: Trace.Algebra[F],
                         runDB: D ~> F,
+                        fxOps: FxOps[F],
                         F: Monad[F],
                         D: Monad[D]): ProjectServer[F] =
     new ProjectServer[F] {
@@ -181,11 +184,27 @@ object ProjectServer {
       private def getOrSetLoadedState(regId: RegId): F[Promise.GetOrSet[LoadError, (State, LoadedState)]] = {
         val pid = regId.key
 
+        def init0: F[LoadError \/ LoadedState] =
+          runDB(
+            db.inDbTransaction(for {
+              pl <- db.getAllProjectEvents(pid)
+              md <- db.getProjectMetaData(pid) // only really need createdAt and lastUpdatedAt
+            } yield (pl, md))
+          ).map { case (pl, md) =>
+            // Build outside of DB transaction
+            buildProject(pl).map(b => LoadedState(b._1, md.get, b._2))
+          }
+
         def init: F[LoadError \/ LoadedState] =
-          runDB(db.inDbTransaction(for {
-            pl <- db.getAllProjectEvents(pid)
-            md <- db.getProjectMetaData(pid) // only really need createdAt and lastUpdatedAt
-          } yield buildProject(pl).map(b => LoadedState(b._1, md.get, b._2))))
+          for {
+            (result, dur) <- init0.measureDuration
+            _ <- F.point {
+              result match {
+                case \/-(_) => logger.info(s"Loaded project #${pid.value} in ${dur.toMillis} ms")
+                case -\/(e) => logger.warn(s"Failed to load project #${pid.value}: $e")
+              }
+            }
+          } yield result
 
         Promise.getOrSet(store, promiseOptics)(regId.key, LoadRetries, _ => Some(init))
       }
@@ -255,40 +274,61 @@ object ProjectServer {
         // Non-atomicity guarded by DB constraint on eventOrd
         getOrSetLoadedState(r).flatMap {
           case Promise.GetOrSet.Success((_, s1)) =>
-            trace.newSpan("makeEvent") { implicit span =>
-              F pure ApplyNewEvent(mkEvent(s1.project), s1.project)
-            }.flatMap {
-              case PotentialChange.Success(updated) =>
-                val ord = s1.nextOrd
-                runDB(db.saveProjectEvent(r.key)(ord, updated.event, updated.hashRecs)).flatMap {
 
-                  case None =>
-                    val ve = VerifiedEvent(ord, updated.event, updated.hashRecs)
-                    val ves = VerifiedEvent.NonEmptySeq.one(ve)
-                    for {
-                      now <- svr.now
-                      s2a = s1.update(updated.project, ve, now)
-                      s2  <- store.storeModIfPresent(r.key)(_.modValue(_ set s2a))
-                      _   <- s2.fold(fUnit)(broadcastEvents(r, ves, _))
-                    } yield PotentialChange.Success(ves)
+            val makeEvent: F[ApplyNewEvent.Result] =
+              trace.newSpan("makeEvent") { implicit span =>
+                F pure ApplyNewEvent(mkEvent(s1.project), s1.project)
+              }
 
-                  case Some(error) =>
-                    retries.pop match {
-                      case Some((delay, nextRetries)) =>
-                        val retry = addEvent(r, mkEvent, nextRetries)
-                        svr.delay(retry, delay)
-                      case None =>
-                        val opsInfo = s"Error saving new event ${updated.event} to project ${r.key.value} with ordinal #${ord.value}."
-                        F pure PotentialChange.Failure(SaveError(opsInfo, error))
-                    }
-                }
+            def onSave(dur: Duration, updated: ApplyNewEvent.Updated, ord: EventOrd, oe: Option[Throwable]): F[PotentialChange[AddEventError, VerifiedEvent.NonEmptySeq]] =
+              oe match {
+                case None =>
+                  val ve = VerifiedEvent(ord, updated.event, updated.hashRecs)
+                  val ves = VerifiedEvent.NonEmptySeq.one(ve)
+                  for {
+                    _   <- F.point(logger.info(s"Saved project #${r.key.value} event #${ord.value} ${updated.event} in ${dur.toMillis} ms"))
+                    now <- svr.now
+                    s2a = s1.update(updated.project, ve, now)
+                    s2  <- store.storeModIfPresent(r.key)(_.modValue(_ set s2a))
+                    _   <- s2.fold(fUnit)(broadcastEvents(r, ves, _))
+                  } yield PotentialChange.Success(ves)
 
-              case PotentialChange.Unchanged =>
-                F pure PotentialChange.Unchanged
+                case Some(error) =>
+                  retries.pop match {
+                    case Some((delay, nextRetries)) =>
+                      val warn = F.point(logger.warn(s"Failed to save project #${r.key.value} event #${ord.value}: ${updated.event}. Retrying in $delay...", error))
+                      val retry = addEvent(r, mkEvent, nextRetries)
+                      warn >> svr.delay(retry, delay)
+                    case None =>
+                      val errMsg = s"Error saving project #${r.key.value} event #${ord.value}: ${updated.event}"
+                      F.point {
+                        logger.error(errMsg, error)
+                        PotentialChange.Failure(SaveError(errMsg, error))
+                      }
+                  }
+              }
 
-              case PotentialChange.Failure(reason) =>
-                F pure PotentialChange.Failure(EventRejected(reason))
-            }
+            for {
+              startTime <- svr.now
+              makeResult <- makeEvent
+              result <- makeResult match {
+
+                case PotentialChange.Success(updated) =>
+                  val ord = s1.nextOrd
+                  for {
+                    oe      <- runDB(db.saveProjectEvent(r.key)(ord, updated.event, updated.hashRecs))
+                    endTime <- svr.now
+                    dur      = Duration.between(startTime, endTime)
+                    pc      <- onSave(dur, updated, ord, oe)
+                  } yield pc
+
+                case PotentialChange.Unchanged =>
+                  F pure PotentialChange.Unchanged
+
+                case PotentialChange.Failure(reason) =>
+                  F pure PotentialChange.Failure(EventRejected(reason))
+              }
+            } yield result
 
           case e: Promise.GetOrSet.Failure[LoadError] =>
             F pure PotentialChange.Failure(PostLoadError(e))
