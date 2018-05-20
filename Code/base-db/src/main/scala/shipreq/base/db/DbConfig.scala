@@ -1,6 +1,5 @@
 package shipreq.base.db
 
-import ch.qos.logback.classic.Level
 import com.zaxxer.hikari.HikariConfig
 import japgolly.microlibs.config.ConfigParser.Implicits.Defaults._
 import japgolly.microlibs.config._

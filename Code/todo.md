@@ -85,7 +85,6 @@ Phase 2
 * Metrics
   * Metrics endpoint needs secret key
   * Add ThreadLocal security-delay flag and affect metrics
-  * HikariCP metrics
   * Taskman metrics
   * Business metrics (see metrics.md)
 * Tracing

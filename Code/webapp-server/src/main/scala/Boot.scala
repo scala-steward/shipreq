@@ -1,5 +1,7 @@
 package bootstrap.liftweb
 
+import com.zaxxer.hikari.HikariDataSource
+import com.zaxxer.hikari.metrics.prometheus.PrometheusMetricsTrackerFactory
 import japgolly.microlibs.config.{Config, ConfigParser, ConfigReport}
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
@@ -155,9 +157,12 @@ class Boot {
     AppSecurityRealm.init()
 
   def initDatabase(cfg: BootConfig): DbAccess = {
+    val dbCfg = cfg.db
+    if (cfg.server.prometheus.enabled && cfg.server.prometheus.hikaricp)
+      dbCfg.hikariConfig.setMetricsTrackerFactory(new PrometheusMetricsTrackerFactory())
     for (t <- cfg.server.traceAlgebraFx.sqlTracer("JDBC"))
-     cfg.db.modifyHikariDataSource(t.inject)
-    val access = DbAccess.fromCfg(cfg.db).unsafeRun()
+      dbCfg.modifyHikariDataSource(t.inject)
+    val access = DbAccess.fromCfg(dbCfg).unsafeRun()
     logger.info(s"Connecting to DB: ${access.desc}")
     access.verifyConnectivity()
     access.migrator.migrate[Fx].unsafeRun()
@@ -215,6 +220,8 @@ class Boot {
     if (cfg.enabled) {
       if (cfg.hotspot)
         io.prometheus.client.hotspot.DefaultExports.initialize()
-      // More occurs in AppServletFilter
+      // See also:
+      // - initDatabase()
+      // - AppServletFilter
     }
 }
