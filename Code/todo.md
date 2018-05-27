@@ -80,8 +80,6 @@ Phase 2
 * Process
   * Do more with errors (client & server), eg. ClientData.{init,applyEvents}
   * Add React component error handling and possibly report to server
-* Logging
-  * Add to webapp: DB
 * Metrics
   * Metrics endpoint needs secret key
   * Add ThreadLocal security-delay flag and affect metrics

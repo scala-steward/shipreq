@@ -12,6 +12,7 @@ import net.liftweb.util._
 import net.liftweb.util.Props.RunModes
 import scalaz.syntax.applicative._
 import shipreq.base.db.{DbAccess, DbConfig}
+import shipreq.base.ops.{JdbcLogging, JdbcMetrics, SqlTracer}
 import shipreq.base.util.FxModule._
 import shipreq.base.util.{Props => ShipReqProps}
 import shipreq.webapp.base.WebappConfig
@@ -158,10 +159,19 @@ class Boot {
 
   def initDatabase(cfg: BootConfig): DbAccess = {
     val dbCfg = cfg.db
+
+    // Hikari
     if (cfg.server.prometheus.enabled && cfg.server.prometheus.hikaricp)
       dbCfg.hikariConfig.setMetricsTrackerFactory(new PrometheusMetricsTrackerFactory())
+
+    // DataSource
+    var sqlTracer: SqlTracer = JdbcLogging
+    if (cfg.server.prometheus.enabled && cfg.server.prometheus.jdbc)
+      sqlTracer = sqlTracer compose JdbcMetrics.sqlTracer("webapp")
     for (t <- cfg.server.traceAlgebraFx.sqlTracer("JDBC"))
-      dbCfg.modifyHikariDataSource(t.inject)
+      sqlTracer = sqlTracer compose t
+    dbCfg.modifyHikariDataSource(sqlTracer.inject)
+
     val access = DbAccess.fromCfg(dbCfg).unsafeRun()
     logger.info(s"Connecting to DB: ${access.desc}")
     access.verifyConnectivity()

@@ -59,18 +59,20 @@ final case class ServerConfig(baseUrl: Url.Absolute.Base,
 
 object ServerConfig {
 
-  final case class Prometheus(enabled: Boolean, hikaricp: Boolean, hotspot: Boolean, path: String)
+  final case class Prometheus(enabled: Boolean, hikaricp: Boolean, hotspot: Boolean, jdbc: Boolean, path: String)
   object Prometheus {
     val default = apply(
       enabled = true,
       hikaricp = true,
       hotspot = true,
+      jdbc = true,
       path = (DispatchLogic.opsRoot / "metrics").relativeUrl)
 
     def config: Config[Prometheus] =
       ( Config.getOrUse[Boolean]("enabled", default.enabled) |@|
         Config.getOrUse[Boolean]("hikaricp", default.hikaricp) |@|
         Config.getOrUse[Boolean]("hotspot", default.hotspot) |@|
+        Config.getOrUse[Boolean]("jdbc", default.hotspot) |@|
         Config.getOrUse[String ]("path", default.path).map(_.replaceFirst("^/*", "/"))
     ) (apply)
   }

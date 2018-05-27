@@ -175,7 +175,7 @@ object Dependencies {
   }
 
   object Prometheus {
-    private val mm = MultiModule.java("io.prometheus", "0.3.0")
+    private val mm = MultiModule.java("io.prometheus", "0.4.0")
     val client     = mm("simpleclient")
     val hotspot    = mm("simpleclient_hotspot")
     val httpserver = mm("simpleclient_httpserver")

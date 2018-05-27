@@ -1,6 +1,7 @@
 package shipreq.base.ops
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import java.time.Instant
 import kamon.Kamon
 import shipreq.base.util.FxModule._
 
@@ -78,23 +79,17 @@ object TraceWithKamon {
 
       override def sqlTracer(spanName: String) =
         Some(new SqlTracer {
-          override def executePreparedStatement[@specialized(Boolean, Int, Long) A](method: String,
-                                                                                    sql: String,
-                                                                                    batches: Int,
-                                                                                    run: () => A): A = {
-            val span = Kamon.buildSpan(spanName).start()
-            try {
-              span.tag("jdbc.class", "PreparedStatement")
-              span.tag("jdbc.method", method)
-              span.tag("jdbc.sql", sql)
-              span.tag("jdbc.batches", batches: Long)
-              run()
-            } catch {
-              case t: Throwable =>
-                setError(span, t)
-                throw t
-            } finally
-              span.finish()
+          override def logExecute(method: String, sql: String, batches: Int,
+                                  err: Option[Throwable], startTimeNs: Long, endTimeNs: Long): Unit = {
+            val from = Instant.ofEpochMilli(startTimeNs / 1000000)
+            val end = from.plusNanos(endTimeNs - startTimeNs)
+            val span = Kamon.buildSpan(spanName).withFrom(from).start()
+            span.tag("jdbc.class", "PreparedStatement")
+            span.tag("jdbc.method", method)
+            span.tag("jdbc.sql", sql)
+            span.tag("jdbc.batches", batches: Long)
+            err.foreach(setError(span, _))
+            span.finish(end)
           }
         })
 
