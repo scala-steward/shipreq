@@ -7,4 +7,5 @@ target
 *.err
 .cache
 .target
+.bloop
 project/sjsincoptbench.sbt
