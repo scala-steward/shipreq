@@ -1,7 +1,7 @@
 import sbt._
 import scala.languageFeature._
-import org.scalajs.sbtplugin.ScalaJSPlugin
-import ScalaJSPlugin.autoImport._
+import org.scalajs.sbtplugin.ScalaJSCrossVersion
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
 
 object LibDependency {
 
@@ -83,13 +83,13 @@ object LibDependency {
     Dep(JVM, m)
 
   def jsOnly(m: ModuleID): Dep[HasJs] =
-    Dep(JS, m)
+    Dep(JS, m cross ScalaJSCrossVersion.binary)
 
   def jvmAndJs(group: String, name: String, ver: String): Dep[HasBoth] =
-    Dep(JVM, group %% name % ver) mergeDialects Dep(JS, group %%%! name % ver)
+    Dep(JVM, group %% name % ver) mergeDialects Dep(JS, group %% name % ver cross ScalaJSCrossVersion.binary)
 
   def jvmAndJsFork(jvmGroup: String, name: String, ver: String)(jsGroup: String, jsVerSuffix: String = ""): Dep[HasBoth] =
-    Dep(JVM, jvmGroup %% name % ver) mergeDialects Dep(JS, jsGroup %%%! name % (ver + jsVerSuffix))
+    Dep(JVM, jvmGroup %% name % ver) mergeDialects Dep(JS, jsGroup %% name % (ver + jsVerSuffix) cross ScalaJSCrossVersion.binary)
 
   /*
   // Test
@@ -124,7 +124,7 @@ object LibDependency {
       MultiModule(JVM, group %% _ % ver)
 
     def js(group: String, ver: String): MultiModule[HasJs] =
-      MultiModule(JS, group %%%! _ % ver)
+      MultiModule(JS, group %% _ % ver cross ScalaJSCrossVersion.binary)
 
     def jvmAndJs(group: String, ver: String): MultiModule[HasBoth] =
       scala(group, ver) mergeDialects js(group, ver)

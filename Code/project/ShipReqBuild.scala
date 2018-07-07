@@ -1,7 +1,8 @@
 import sbt._, Keys._
-import org.scalajs.sbtplugin.ScalaJSPlugin
-import org.scalajs.sbtplugin.cross.{CrossProject, CrossType}
-import ScalaJSPlugin.autoImport.{crossProject => _, _}
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
+import sbtcrossproject.CrossProject
+import sbtcrossproject.CrossPlugin.autoImport.{crossProject => _, _}
+import scalajscrossproject.ScalaJSCrossPlugin.autoImport._
 import Common._
 import Dependencies._
 import TaskmanBuild._
@@ -9,11 +10,14 @@ import WebappBuild._
 
 object ShipReqBuild {
 
-  def project(dir: String) =
+  def project(dir: String): Project =
     Project(dir, file(dir))
 
-  def crossProject(dir: String) =
-    CrossProject(dir + "-jvm", dir + "-js", file(dir), CrossType.Full).settings(name := dir)
+  def crossProject(dir: String): CrossProject =
+    CrossProject(dir, file(dir))(JVMPlatform, JSPlatform)
+      .jvmConfigure(_.copy(id = dir + "-jvm"))
+      .jsConfigure(_.copy(id = dir + "-js"))
+      .settings(name := dir)
 
   lazy val root =
     Project("root", file("."))

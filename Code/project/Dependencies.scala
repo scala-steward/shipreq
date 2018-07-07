@@ -1,7 +1,8 @@
 import sbt._
 import scala.languageFeature._
 import LibDependency._
-import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.toScalaJSGroupID
+import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{CrossType => _, crossProject => _, _}
 
 object Dependencies {
 
@@ -181,9 +182,9 @@ object Dependencies {
     val servlet    = mm("simpleclient_servlet")
   }
 
-  val scalajsDom       = jsOnly("org.scala-js"                          %%%! "scalajs-dom"       % "0.9.5")
-  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %%%! "benchmark"         % "0.2.5")
-  val scalajsJavaTime  = jsOnly("org.scala-js"                          %%%! "scalajs-java-time" % "0.2.4")
+  val scalajsDom       = jsOnly("org.scala-js"                          %% "scalajs-dom"       % "0.9.5")
+  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.2.5")
+  val scalajsJavaTime  = jsOnly("org.scala-js"                          %% "scalajs-java-time" % "0.2.4")
 
   val boopickle   = jvmAndJs("me.chrons",                        "boopickle", "1.2.5")
   val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",      "1.2.1")

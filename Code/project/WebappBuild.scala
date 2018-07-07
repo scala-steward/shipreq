@@ -1,7 +1,10 @@
 import sbt.{project => _, _}, Keys._
 import org.scalajs.core.tools.io.{IO => _, _}
-import org.scalajs.sbtplugin.{ScalaJSPlugin, Stage}, ScalaJSPlugin.autoImport.{crossProject => _, _}
+import org.scalajs.sbtplugin.{ScalaJSPlugin, Stage}
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
 import org.scalajs.sbtplugin.ScalaJSPluginInternal.stageKeys
+import sbtcrossproject.CrossPlugin.autoImport.{crossProject => _, _}
+import scalajscrossproject.ScalaJSCrossPlugin.autoImport._
 import sbtdocker.DockerPlugin, DockerPlugin.autoImport._
 import Common._
 import Dependencies._
