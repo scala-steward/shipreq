@@ -3,7 +3,7 @@ addSbtPlugin("com.typesafe.sbt"   % "sbt-git"                  % "0.9.3")
 addSbtPlugin("com.typesafe.sbt"   % "sbt-native-packager"      % "1.3.2")
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "0.5.0")
 addSbtPlugin("org.scala-js"       % "sbt-scalajs"              % "0.6.24")
-addSbtPlugin("pl.project13.scala" % "sbt-jmh"                  % "0.3.3")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh"                  % "0.3.4")
 addSbtPlugin("se.marcuslonnberg"  % "sbt-docker"               % "1.5.0")
 
 //addSbtPlugin("org.scoverage"      % "sbt-scoverage"        % "1.5.0")
