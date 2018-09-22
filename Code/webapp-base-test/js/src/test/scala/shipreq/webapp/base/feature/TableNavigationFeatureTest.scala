@@ -311,12 +311,12 @@ object TableNavigationFeatureTest extends TestSuite {
 
   lazy val lr: html.Table = {
     val root = ReactTestUtils.newBodyElement()
-    LR.Component().renderIntoDOM(root).getDOMNode.domCast[html.Table]
+    LR.Component().renderIntoDOM(root).getDOMNode.asMounted().domCast[html.Table]
   }
 
   lazy val td: html.Table = {
     val root = ReactTestUtils.newBodyElement()
-    TD.Component().renderIntoDOM(root).getDOMNode.domCast[html.Table]
+    TD.Component().renderIntoDOM(root).getDOMNode.asMounted().domCast[html.Table]
   }
 
   val changeDir: Direction => List[TablePos] => List[TablePos] = {

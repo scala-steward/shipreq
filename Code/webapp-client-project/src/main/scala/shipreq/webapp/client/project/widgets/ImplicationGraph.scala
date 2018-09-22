@@ -40,7 +40,7 @@ object ImplicationGraph {
 
 
     override def enrich(p: Props): Callback =
-      $.getDOMNode.map(_.asElement).map { root =>
+      $.getDOMNode.map(_.toElement.foreach { root =>
         for (node <- graphNodeIterator(root)) {
           val pubid = node.querySelector("text").textContent
           for {
@@ -62,7 +62,7 @@ object ImplicationGraph {
               node.style.cursor = "pointer"
             }
         }
-      }
+      })
   }
 
   val Component = ScalaComponent.builder[Props]("ImplicationGraph")

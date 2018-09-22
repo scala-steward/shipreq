@@ -100,7 +100,7 @@ object Menu {
     /** Registers an onClick listener that only triggers when this item is clicked (and not its children or items in its
       * dropdown menu).
       */
-    def withOnClick(getDOMNode: CallbackTo[Node], cb: Callback): Item = {
+    def withOnClick(getDOMNode: CallbackOption[Node], cb: Callback): Item = {
       val onClick: ReactEvent => Callback =
         e => Callback.when(e.target == e.currentTarget)(
           cb >> getDOMNode.map(Dropdown.jquery(_).dropdown("hide")))
@@ -130,12 +130,12 @@ object Menu {
     val enableDropdowns: Callback =
       for {
         o <- dropdownOptions
-        n <- $.getDOMNode.map(_.asElement).toCBO
+        n <- $.getDOMNode.map(_.toElement).asCBO
       } yield
         Dropdown.jquery(n).dropdown(o)
 
     def disableDropdown: Callback =
-      $.getDOMNode.map(n => Dropdown.jquery(n.asElement).dropdown("hide"))
+      $.getDOMNode.map(_.toElement.foreach(Dropdown.jquery(_).dropdown("hide")))
 
     def render(p: Props) =
       p.style.cont(

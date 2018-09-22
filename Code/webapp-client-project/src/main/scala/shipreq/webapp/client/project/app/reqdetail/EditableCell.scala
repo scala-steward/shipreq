@@ -45,7 +45,8 @@ private[reqdetail] object EditableCell {
   private def render($: ScalaComponent.Lifecycle.RenderScope[Props, Unit, Unit], p: Props): VdomElement = {
 
     // This is the main point of this component
-    val editorOnClose = DomUtil.focusParentOnChildClose($.mountedPure.getDOMNode.map(_.asElement))
+    val editorOnClose: Callback =
+      $.mountedPure.getDOMNode.map(_.toHtml).asCBO.flatMapCB(DomUtil.focusParentOnChildClose)
 
     val editor = p.editor.onClose(editorOnClose)
 

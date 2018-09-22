@@ -19,11 +19,11 @@ object EditorKeys {
       if (editor.read.editor.isDefined) focusChild else editor.startEdit.getOrEmpty
 
     def cellEvents: CallbackOption[Unit] =
-      CallbackOption.asEventDefault(e,
-        CallbackOption.require(doesEventTargetCell(e)) >>
-          CallbackOption.keyCodeSwitch(e) {
-            case KeyCode.F2 => focusOrStartEditor
-          })
+      ( CallbackOption.require(doesEventTargetCell(e)) >>
+        CallbackOption.keyCodeSwitch(e) {
+          case KeyCode.F2 => focusOrStartEditor
+        }
+      ).asEventDefault(e)
 
     cellEvents
   }

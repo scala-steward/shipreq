@@ -33,7 +33,7 @@ object AutoCompleteFeature extends autocomplete.Implicits {
     type Strategies           = autocomplete.Utils.Strategies
     val  Utils                = autocomplete.Utils
 
-    def install[P, C <: Children, S, B <: Backend[D], D <: AnyRef : AutoCompletable]: ScalaComponent.Config[P, C, S, B] =
+    def install[P, C <: Children, S, B <: Backend[D], D <: AnyRef : AutoCompletable] =
       autocomplete.ForComponent.install[P, C, S, B, D]
 
     /** Most editors just use this */
@@ -46,7 +46,7 @@ object AutoCompleteFeature extends autocomplete.Implicits {
       override final val autoCompleteCtx =
         for {
           r <- editorRef.get
-          n <- r.withEffectsPure.getDOMNode.map(_.toOption).asCBO
+          n <- r.withEffectsPure.getDOMNode.map(_.toElement).asCBO
         } yield Ctx(pxAutoComplete.value(), n.domCast[html.TextArea])
     }
 

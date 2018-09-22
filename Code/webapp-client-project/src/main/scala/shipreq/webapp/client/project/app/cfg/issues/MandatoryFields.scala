@@ -29,10 +29,8 @@ private[issues] object MandatoryFields {
   val Component = ScalaComponent.builder[Props]("MandatoryFields")
     .initialStateFromProps(initialState)
     .renderBackend[Backend]
-    .configure(
-      changeListener.install(_.clientData),
-      ChangeListener.refreshWhenFieldNamesChange.install(_.clientData)
-    )
+    .configure(changeListener.install(_.clientData))
+    .configure(ChangeListener.refreshWhenFieldNamesChange.install(_.clientData))
     .build
 
   private def initialState(p: Props) =

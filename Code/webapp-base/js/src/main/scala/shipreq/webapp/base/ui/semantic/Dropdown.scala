@@ -42,7 +42,7 @@ object Dropdown {
       /** Registers an onClick listener in such a way that avoids annoying Semantic UI settings a selected flag on the
         * item when clicked.
         */
-      def withOnClick(getDOMNode: CallbackTo[Node], onClick: Callback) = {
+      def withOnClick(getDOMNode: CallbackOption[Node], onClick: Callback) = {
         // Semantic UI doesn't respect CallbackOption.asEventDefault
         def onClick2: Callback =
           onClick >> getDOMNode.map(Dropdown.jquery(_).dropdown("clear"))

@@ -128,16 +128,12 @@ object DomUtil {
     e.target == e.currentTarget ||
       (try e.target.tabIndex < 0 catch { case _: Throwable => false }) // .tabIndex is undefined from tests
 
-  def focusParentOnChildClose(parentCB: CallbackTo[Element]): Callback =
-    for {
-      focused <- activeHtmlElement
-      parentE <- parentCB
-    } yield
-      for (parent <- parentE.domToHtml)
-        // If this cell's child is focused, or there is no focus at all, then focus this cell.
-        // Otherwise, don't steal another element's focus
-        if (focused.forall(parent.contains))
-          parent.focus()
+  def focusParentOnChildClose(parent: html.Element): Callback =
+    for (focused <- activeHtmlElement) yield
+      // If this cell's child is focused, or there is no focus at all, then focus this cell.
+      // Otherwise, don't steal another element's focus
+      if (focused.forall(parent.contains))
+        parent.focus()
 
   /**
    * Determine the index of an element amongst its parent's children.

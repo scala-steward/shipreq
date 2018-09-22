@@ -139,9 +139,9 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
           $.props.flatMap(_ reorder newCols))
 
       private def dataColKeyDown(col: ColumnPlus)(e: ReactKeyboardEventFromHtml): Callback =
-        TableNavigationFeature.Keys(e) | CallbackOption.asEventDefault(e, CallbackOption.keyCodeSwitch(e) {
+        TableNavigationFeature.Keys(e) | CallbackOption.keyCodeSwitch(e) {
           case KeyCode.Space => $.props.flatMap(_ clickSort col)
-        })
+        }.asEventDefault(e)
 
       private def renderFn(p: Props, content: DragToReorder.Content[ColumnPlus]): VdomElement = {
         val selectionCell =
@@ -418,7 +418,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
     val cellBase = <.td(^.tabIndex := -1)
 
     def render($: RenderScope, p: Props): VdomElement = {
-      val editor = p.editor.onClose(focusParentOnChildClose($.mountedPure.getDOMNode.map(_.asElement)))
+      val editor = p.editor.onClose($.mountedPure.getDOMNode.map(_.toHtml).asCBO.flatMapCB(focusParentOnChildClose))
       cellBase(
         *.dataCell(p.cellState),
         ^.onKeyDown ==> onKeyDown(editor),

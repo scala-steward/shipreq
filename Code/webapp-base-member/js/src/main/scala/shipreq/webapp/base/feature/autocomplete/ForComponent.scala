@@ -75,7 +75,7 @@ object ForComponent {
       Callback(textComplete.foreach(_.dropdown.deactivate())).attempt.void
   }
 
-  def install[P, C <: Children, S, B <: Backend[D], D <: AnyRef: AutoCompletable]: ScalaComponent.Config[P, C, S, B] =
+  def install[P, C <: Children, S, B <: Backend[D], D <: AnyRef: AutoCompletable]: ScalaComponent.Config[P, C, S, B, UpdateSnapshot.None, UpdateSnapshot.Some[Unit]] =
     _.componentDidMount(_.backend.autoCompleteMount)
       .componentDidUpdate(_.backend.autoCompleteUpdate)
       .componentWillUnmount(_.backend.autoCompleteUnmount)

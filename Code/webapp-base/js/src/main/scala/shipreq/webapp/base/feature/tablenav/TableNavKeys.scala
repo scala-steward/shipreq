@@ -42,7 +42,7 @@ object TableNavKeys {
         case KeyCode.Tab    => subMove(e, Movement.Prev)
       }
 
-    CallbackOption.asEventDefault(e, outerOnly | outerAndInner)
+    (outerOnly | outerAndInner).asEventDefault(e)
   }
 
   val handler: ReactKeyboardEventFromHtml => Callback =

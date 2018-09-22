@@ -53,7 +53,7 @@ object AutoCompleteTest extends TestSuite {
     val m = ReactTestUtils renderIntoBody Tester(ac)
     new Editor {
       override def setState(s: String) = m.setState(s)
-      override def getDOMNode: N       = m.getDOMNode.domCast[N]
+      override def getDOMNode: N       = m.getDOMNode.asMounted().domCast[N]
     }
 
 //    val n = document.createElement("textarea").asInstanceOf[HTMLTextAreaElement]

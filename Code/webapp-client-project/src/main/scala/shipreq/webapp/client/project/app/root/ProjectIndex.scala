@@ -102,10 +102,10 @@ object ProjectIndex {
     private val dimIt = "xd"
 
     def enableDimmer: Callback =
-      $.getDOMNode.map(_.asElement).map { node =>
+      $.getDOMNode.map(_.toElement.foreach { node =>
         val opt = js.Dynamic.literal(on = "hover")
         JQuery(node).find("." + dimIt).dimmer(opt)
-      }
+      })
 
     def renderCard(p: Props, cat: Category, item: Item): TagMod = {
       val base = <.div(^.cls := "ui card " + (cat.cardColour.cls: String))

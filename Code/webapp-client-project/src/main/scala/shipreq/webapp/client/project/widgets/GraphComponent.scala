@@ -52,7 +52,7 @@ object GraphComponent {
       root.querySelectorAll("g.node").iterator.map(_.domCast[dom.svg.G])
   }
 
-  def graphConfig[P <: HasWebWorker : Reusability, C <: Children, B <: GraphBackend[P]]: ScalaComponent.Config[P, C, State, B] =
+  def graphConfig[P <: HasWebWorker : Reusability, C <: Children, B <: GraphBackend[P]]: ScalaComponent.Config[P, C, State, B, UpdateSnapshot.None, UpdateSnapshot.Some[Unit]] =
     _.configure(Reusability.shouldComponentUpdate)
       .componentWillMount($ => $.backend.refresh($.props))
       .componentWillReceiveProps(i => Callback.when(i.currentProps ~/~ i.nextProps)(i.backend.refresh(i.nextProps)))

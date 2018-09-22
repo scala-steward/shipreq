@@ -144,8 +144,8 @@ private[fields] object MainTable {
     ScalaComponent.builder[Props]("Cfg: Fields")
       .initialStateFromProps(initialState)
       .renderBackend[Backend]
+      .configure(customFieldChangeListener.install(_.clientData))
       .configure(
-        customFieldChangeListener.install(_.clientData),
         ChangeListener.refreshWhen(c =>
           c.fieldOrder
           || c.staticFields // TODO should this trigger a clearAppReqTypesEditorState(i)?

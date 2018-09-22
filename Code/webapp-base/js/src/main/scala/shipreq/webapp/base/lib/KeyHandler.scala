@@ -133,7 +133,7 @@ final case class KeyHandlers(handlers: List[KeyHandler]) extends AnyVal {
         e => Callback.when(c satisfiedBy e) {
           val r = h response e
           if (h.eventDefault)
-            CallbackOption.asEventDefault(e, r)
+            r.asEventDefault(e).void
           else
             r
         }
