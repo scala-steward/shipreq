@@ -57,9 +57,17 @@ const makeConfig = ({ mode, name, sjsName, staticDir, htmlMinifyOptions }) => {
     const pathO = opts.path || {};
     const pathC = addSlash(pathO.cdn || opts.path || '');
     const pathN = addSlash(pathO.npm || opts.path || 'dist');
+
+    const name  = libC;
+    const ver   = moduleVer(libN);
+    const path  = `${pathC}${filename}`;
+
+    const jsdelivr = `https://cdn.jsdelivr.net/npm/${name}@${ver}/${path}`;
+    const unpkg    = `https://unpkg.com/${name}@${ver}/${path}`;
+
     return {
       type: 'cdn',
-      url: `https://cdnjs.cloudflare.com/ajax/libs/${libC}/${moduleVer(libN)}/${pathC}${filename}`,
+      url: jsdelivr,
       integrity: { files: `node_modules/${libN}/${pathN}${filename}` },
       manifest: opts.manifest,
     };
@@ -159,7 +167,7 @@ const makeConfig = ({ mode, name, sjsName, staticDir, htmlMinifyOptions }) => {
         'katex',
       ],
 
-      jquery: fromCdnjs('jquery', 'jquery.min.js', {manifest: 'jqueryJs'}),
+      jquery: fromCdnjs('jquery', 'jquery.min.js', {manifest: 'jqueryJs', path: 'dist'}),
 
       react: [
         reactLib('react', 'react', {manifest: 'reactJs'}),
@@ -172,8 +180,8 @@ const makeConfig = ({ mode, name, sjsName, staticDir, htmlMinifyOptions }) => {
       ],
 
       katex: [
-        fromCdnjs({cdn: 'KaTeX', npm: 'katex'}, `katex.min.js`, {manifest: 'katexJs'}),
-        fromCdnjs({cdn: 'KaTeX', npm: 'katex'}, `katex.min.css`, {manifest: 'katexCss'}),
+        fromCdnjs('katex', 'katex.min.js', {manifest: 'katexJs', path: 'dist'}),
+        fromCdnjs('katex', 'katex.min.css', {manifest: 'katexCss', path: 'dist'}),
         // { type: 'local', src: 'node_modules/katex/dist', files: '*.min.{js,css}' },
         // { type: 'local', src: 'node_modules/katex/dist', files: 'fonts/**/*', transitive: true },
         // { type: 'local', src: 'node_modules/katex/dist', files: 'images/**/*', transitive: true },

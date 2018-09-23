@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 185);
+/******/ 	return __webpack_require__(__webpack_require__.s = 181);
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -302,7 +302,7 @@ function getOrCreateMethodChain(context, methodName) {
 
 /***/ }),
 
-/***/ 146:
+/***/ 143:
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -313,11 +313,11 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = closest;
 
-var _matches = __webpack_require__(21);
+var _matches = __webpack_require__(18);
 
 var _matches2 = _interopRequireDefault(_matches);
 
-var _parents = __webpack_require__(147);
+var _parents = __webpack_require__(144);
 
 var _parents2 = _interopRequireDefault(_parents);
 
@@ -344,7 +344,7 @@ function closest(element, selector) {
 
 /***/ }),
 
-/***/ 147:
+/***/ 144:
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -371,11 +371,11 @@ function parents(element) {
 
 /***/ }),
 
-/***/ 148:
+/***/ 145:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__event_emitter__ = __webpack_require__(194);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__event_emitter__ = __webpack_require__(190);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utilities__ = __webpack_require__(3);
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -663,15 +663,123 @@ function parse(source) {
 
 /***/ }),
 
-/***/ 185:
+/***/ 17:
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.parseUrl = exports.parents = exports.matches = exports.getAttributes = exports.dispatch = exports.delegate = exports.closest = undefined;
+
+var _closest = __webpack_require__(143);
+
+var _closest2 = _interopRequireDefault(_closest);
+
+var _delegate = __webpack_require__(183);
+
+var _delegate2 = _interopRequireDefault(_delegate);
+
+var _dispatch = __webpack_require__(184);
+
+var _dispatch2 = _interopRequireDefault(_dispatch);
+
+var _getAttributes = __webpack_require__(185);
+
+var _getAttributes2 = _interopRequireDefault(_getAttributes);
+
+var _matches = __webpack_require__(18);
+
+var _matches2 = _interopRequireDefault(_matches);
+
+var _parents = __webpack_require__(144);
+
+var _parents2 = _interopRequireDefault(_parents);
+
+var _parseUrl = __webpack_require__(186);
+
+var _parseUrl2 = _interopRequireDefault(_parseUrl);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.closest = _closest2.default;
+exports.delegate = _delegate2.default;
+exports.dispatch = _dispatch2.default;
+exports.getAttributes = _getAttributes2.default;
+exports.matches = _matches2.default;
+exports.parents = _parents2.default;
+exports.parseUrl = _parseUrl2.default;
+
+/***/ }),
+
+/***/ 18:
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = matches;
+var proto = window.Element.prototype;
+var nativeMatches = proto.matches || proto.matchesSelector || proto.webkitMatchesSelector || proto.mozMatchesSelector || proto.msMatchesSelector || proto.oMatchesSelector;
+
+/**
+ * Tests if a DOM elements matches any of the test DOM elements or selectors.
+ * @param {Element} element The DOM element to test.
+ * @param {Element|string|Array<Element|string>} test A DOM element, a CSS
+ *     selector, or an array of DOM elements or CSS selectors to match against.
+ * @return {boolean} True of any part of the test matches.
+ */
+function matches(element, test) {
+  // Validate input.
+  if (element && element.nodeType == 1 && test) {
+    // if test is a string or DOM element test it.
+    if (typeof test == 'string' || test.nodeType == 1) {
+      return element == test || matchesSelector(element, /** @type {string} */test);
+    } else if ('length' in test) {
+      // if it has a length property iterate over the items
+      // and return true if any match.
+      for (var i = 0, item; item = test[i]; i++) {
+        if (element == item || matchesSelector(element, item)) return true;
+      }
+    }
+  }
+  // Still here? Return false
+  return false;
+}
+
+/**
+ * Tests whether a DOM element matches a selector. This polyfills the native
+ * Element.prototype.matches method across browsers.
+ * @param {!Element} element The DOM element to test.
+ * @param {string} selector The CSS selector to test element against.
+ * @return {boolean} True if the selector matches.
+ */
+function matchesSelector(element, selector) {
+  if (typeof selector != 'string') return false;
+  if (nativeMatches) return nativeMatches.call(element, selector);
+  var nodes = element.parentNode.querySelectorAll(selector);
+  for (var i = 0, node; node = nodes[i]; i++) {
+    if (node == element) return true;
+  }
+  return false;
+}
+
+/***/ }),
+
+/***/ 181:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "trackError", function() { return trackError; });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_autotrack_lib_plugins_clean_url_tracker__ = __webpack_require__(186);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_autotrack_lib_plugins_outbound_link_tracker__ = __webpack_require__(191);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_autotrack_lib_plugins_page_visibility_tracker__ = __webpack_require__(192);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_autotrack_lib_plugins_clean_url_tracker__ = __webpack_require__(182);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_autotrack_lib_plugins_outbound_link_tracker__ = __webpack_require__(187);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_autotrack_lib_plugins_page_visibility_tracker__ = __webpack_require__(188);
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 /*
@@ -961,16 +1069,16 @@ window.ga2 = { i: init };
 
 /***/ }),
 
-/***/ 186:
+/***/ 182:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_dom_utils__ = __webpack_require__(20);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_dom_utils__ = __webpack_require__(17);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_dom_utils___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_dom_utils__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__constants__ = __webpack_require__(10);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__method_chain__ = __webpack_require__(11);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__provide__ = __webpack_require__(22);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__usage__ = __webpack_require__(23);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__provide__ = __webpack_require__(19);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__usage__ = __webpack_require__(20);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__utilities__ = __webpack_require__(3);
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 
@@ -1214,7 +1322,7 @@ Object(__WEBPACK_IMPORTED_MODULE_3__provide__["a" /* default */])('cleanUrlTrack
 
 /***/ }),
 
-/***/ 187:
+/***/ 183:
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1225,11 +1333,11 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = delegate;
 
-var _closest = __webpack_require__(146);
+var _closest = __webpack_require__(143);
 
 var _closest2 = _interopRequireDefault(_closest);
 
-var _matches = __webpack_require__(21);
+var _matches = __webpack_require__(18);
 
 var _matches2 = _interopRequireDefault(_matches);
 
@@ -1284,7 +1392,7 @@ function delegate(ancestor, eventType, selector, callback) {
 
 /***/ }),
 
-/***/ 188:
+/***/ 184:
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1346,7 +1454,7 @@ function dispatch(element, eventType) {
 
 /***/ }),
 
-/***/ 189:
+/***/ 185:
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1381,7 +1489,7 @@ function getAttributes(element) {
 
 /***/ }),
 
-/***/ 190:
+/***/ 186:
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1453,14 +1561,14 @@ function parseUrl(url) {
 
 /***/ }),
 
-/***/ 191:
+/***/ 187:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_dom_utils__ = __webpack_require__(20);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_dom_utils__ = __webpack_require__(17);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_dom_utils___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_dom_utils__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__provide__ = __webpack_require__(22);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__usage__ = __webpack_require__(23);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__provide__ = __webpack_require__(19);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__usage__ = __webpack_require__(20);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__utilities__ = __webpack_require__(3);
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -1661,16 +1769,16 @@ function linkClickWillUnloadCurrentPage(event, link) {
 
 /***/ }),
 
-/***/ 192:
+/***/ 188:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__constants__ = __webpack_require__(10);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__method_chain__ = __webpack_require__(11);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__provide__ = __webpack_require__(22);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__session__ = __webpack_require__(193);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__store__ = __webpack_require__(148);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__usage__ = __webpack_require__(23);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__provide__ = __webpack_require__(19);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__session__ = __webpack_require__(189);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__store__ = __webpack_require__(145);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__usage__ = __webpack_require__(20);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_6__utilities__ = __webpack_require__(3);
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -2098,12 +2206,12 @@ Object(__WEBPACK_IMPORTED_MODULE_2__provide__["a" /* default */])('pageVisibilit
 
 /***/ }),
 
-/***/ 193:
+/***/ 189:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__method_chain__ = __webpack_require__(11);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__store__ = __webpack_require__(148);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__store__ = __webpack_require__(145);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__utilities__ = __webpack_require__(3);
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -2359,7 +2467,65 @@ Session.DEFAULT_TIMEOUT = 30; // minutes
 
 /***/ }),
 
-/***/ 194:
+/***/ 19:
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony export (immutable) */ __webpack_exports__["a"] = provide;
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__constants__ = __webpack_require__(10);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utilities__ = __webpack_require__(3);
+/**
+ * Copyright 2016 Google Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+
+
+/**
+ * Provides a plugin for use with analytics.js, accounting for the possibility
+ * that the global command queue has been renamed or not yet defined.
+ * @param {string} pluginName The plugin name identifier.
+ * @param {Function} pluginConstructor The plugin constructor function.
+ */
+function provide(pluginName, pluginConstructor) {
+  var gaAlias = window.GoogleAnalyticsObject || 'ga';
+  window[gaAlias] = window[gaAlias] || function () {
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    (window[gaAlias].q = window[gaAlias].q || []).push(args);
+  };
+
+  // Adds the autotrack dev ID if not already included.
+  window.gaDevIds = window.gaDevIds || [];
+  if (window.gaDevIds.indexOf(__WEBPACK_IMPORTED_MODULE_0__constants__["a" /* DEV_ID */]) < 0) {
+    window.gaDevIds.push(__WEBPACK_IMPORTED_MODULE_0__constants__["a" /* DEV_ID */]);
+  }
+
+  // Formally provides the plugin for use with analytics.js.
+  window[gaAlias]('provide', pluginName, pluginConstructor);
+
+  // Registers the plugin on the global gaplugins object.
+  window.gaplugins = window.gaplugins || {};
+  window.gaplugins[Object(__WEBPACK_IMPORTED_MODULE_1__utilities__["b" /* capitalize */])(pluginName)] = pluginConstructor;
+}
+
+/***/ }),
+
+/***/ 190:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -2492,172 +2658,6 @@ var EventEmitter = function () {
 /***/ }),
 
 /***/ 20:
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.parseUrl = exports.parents = exports.matches = exports.getAttributes = exports.dispatch = exports.delegate = exports.closest = undefined;
-
-var _closest = __webpack_require__(146);
-
-var _closest2 = _interopRequireDefault(_closest);
-
-var _delegate = __webpack_require__(187);
-
-var _delegate2 = _interopRequireDefault(_delegate);
-
-var _dispatch = __webpack_require__(188);
-
-var _dispatch2 = _interopRequireDefault(_dispatch);
-
-var _getAttributes = __webpack_require__(189);
-
-var _getAttributes2 = _interopRequireDefault(_getAttributes);
-
-var _matches = __webpack_require__(21);
-
-var _matches2 = _interopRequireDefault(_matches);
-
-var _parents = __webpack_require__(147);
-
-var _parents2 = _interopRequireDefault(_parents);
-
-var _parseUrl = __webpack_require__(190);
-
-var _parseUrl2 = _interopRequireDefault(_parseUrl);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-exports.closest = _closest2.default;
-exports.delegate = _delegate2.default;
-exports.dispatch = _dispatch2.default;
-exports.getAttributes = _getAttributes2.default;
-exports.matches = _matches2.default;
-exports.parents = _parents2.default;
-exports.parseUrl = _parseUrl2.default;
-
-/***/ }),
-
-/***/ 21:
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = matches;
-var proto = window.Element.prototype;
-var nativeMatches = proto.matches || proto.matchesSelector || proto.webkitMatchesSelector || proto.mozMatchesSelector || proto.msMatchesSelector || proto.oMatchesSelector;
-
-/**
- * Tests if a DOM elements matches any of the test DOM elements or selectors.
- * @param {Element} element The DOM element to test.
- * @param {Element|string|Array<Element|string>} test A DOM element, a CSS
- *     selector, or an array of DOM elements or CSS selectors to match against.
- * @return {boolean} True of any part of the test matches.
- */
-function matches(element, test) {
-  // Validate input.
-  if (element && element.nodeType == 1 && test) {
-    // if test is a string or DOM element test it.
-    if (typeof test == 'string' || test.nodeType == 1) {
-      return element == test || matchesSelector(element, /** @type {string} */test);
-    } else if ('length' in test) {
-      // if it has a length property iterate over the items
-      // and return true if any match.
-      for (var i = 0, item; item = test[i]; i++) {
-        if (element == item || matchesSelector(element, item)) return true;
-      }
-    }
-  }
-  // Still here? Return false
-  return false;
-}
-
-/**
- * Tests whether a DOM element matches a selector. This polyfills the native
- * Element.prototype.matches method across browsers.
- * @param {!Element} element The DOM element to test.
- * @param {string} selector The CSS selector to test element against.
- * @return {boolean} True if the selector matches.
- */
-function matchesSelector(element, selector) {
-  if (typeof selector != 'string') return false;
-  if (nativeMatches) return nativeMatches.call(element, selector);
-  var nodes = element.parentNode.querySelectorAll(selector);
-  for (var i = 0, node; node = nodes[i]; i++) {
-    if (node == element) return true;
-  }
-  return false;
-}
-
-/***/ }),
-
-/***/ 22:
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony export (immutable) */ __webpack_exports__["a"] = provide;
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__constants__ = __webpack_require__(10);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__utilities__ = __webpack_require__(3);
-/**
- * Copyright 2016 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-
-
-
-/**
- * Provides a plugin for use with analytics.js, accounting for the possibility
- * that the global command queue has been renamed or not yet defined.
- * @param {string} pluginName The plugin name identifier.
- * @param {Function} pluginConstructor The plugin constructor function.
- */
-function provide(pluginName, pluginConstructor) {
-  var gaAlias = window.GoogleAnalyticsObject || 'ga';
-  window[gaAlias] = window[gaAlias] || function () {
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
-
-    (window[gaAlias].q = window[gaAlias].q || []).push(args);
-  };
-
-  // Adds the autotrack dev ID if not already included.
-  window.gaDevIds = window.gaDevIds || [];
-  if (window.gaDevIds.indexOf(__WEBPACK_IMPORTED_MODULE_0__constants__["a" /* DEV_ID */]) < 0) {
-    window.gaDevIds.push(__WEBPACK_IMPORTED_MODULE_0__constants__["a" /* DEV_ID */]);
-  }
-
-  // Formally provides the plugin for use with analytics.js.
-  window[gaAlias]('provide', pluginName, pluginConstructor);
-
-  // Registers the plugin on the global gaplugins object.
-  window.gaplugins = window.gaplugins || {};
-  window.gaplugins[Object(__WEBPACK_IMPORTED_MODULE_1__utilities__["b" /* capitalize */])(pluginName)] = pluginConstructor;
-}
-
-/***/ }),
-
-/***/ 23:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -2798,7 +2798,7 @@ function trackVersion(tracker) {
 /* unused harmony export toArray */
 /* harmony export (immutable) */ __webpack_exports__["g"] = now;
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "h", function() { return uuid; });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_dom_utils__ = __webpack_require__(20);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_dom_utils__ = __webpack_require__(17);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_dom_utils___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_dom_utils__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__method_chain__ = __webpack_require__(11);
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };

@@ -10,15 +10,15 @@ object AssetManifest {
   def favicon = "/assets/favicon.ico"
 
   def jqueryJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js",
+    href = "https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js",
     integrity = Some("sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="))
 
   def katexCss = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.8.3/katex.min.css",
+    href = "https://cdn.jsdelivr.net/npm/katex@0.8.3/dist/katex.min.css",
     integrity = Some("sha256-kAbX9Z5ZMhjo34PRGEMc7RiueevlbmDilvUt1NsZGAI="))
 
   def katexJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.8.3/katex.min.js",
+    href = "https://cdn.jsdelivr.net/npm/katex@0.8.3/dist/katex.min.js",
     integrity = Some("sha256-Jv5VrSHYxxBmh18hQUviB4OiVzOkDHdO0uY4GtrCMDQ="))
 
   def loadingSpinSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjMjJjIj48cGF0aCBvcGFjaXR5PSIuMjUiIGQ9Ik0xNiAwYTE2IDE2IDAgMCAwIDAgMzIgMTYgMTYgMCAwIDAgMC0zMm0wIDRhMTIgMTIgMCAwIDEgMCAyNCAxMiAxMiAwIDAgMSAwLTI0Ii8+PHBhdGggZD0iTTE2IDBhMTYgMTYgMCAwIDEgMTYgMTZoLTRBMTIgMTIgMCAwIDAgMTYgNHoiPjxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0icm90YXRlIiBmcm9tPSIwIDE2IDE2IiB0bz0iMzYwIDE2IDE2IiBkdXI9IjAuNXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIi8+PC9wYXRoPjwvc3ZnPg=="
@@ -28,16 +28,16 @@ object AssetManifest {
   def memberLibBundleJs = "/assets/member-lib-bundle.js"
 
   def reactDomJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.2.0/umd/react-dom.development.js",
-    integrity = Some("sha256-MENkb7k+X0cdQau8EP2kECRfc0A4Lq9uo6QGSnWgK0o="))
+    href = "https://cdn.jsdelivr.net/npm/react-dom@16.5.2/umd/react-dom.development.js",
+    integrity = Some("sha256-8wd2P2Yj4wkD78XfzxVjDjEFKYEWR3jgZKgNCGUW9rI="))
 
   def reactDomServerJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.2.0/umd/react-dom-server.browser.development.js",
-    integrity = Some("sha256-R+MLr9ozphm831YSmYynV29oV/IPCnLE19vzF4jCkmc="))
+    href = "https://cdn.jsdelivr.net/npm/react-dom@16.5.2/umd/react-dom-server.browser.development.js",
+    integrity = Some("sha256-eFwB7hPkzpDLVOqUdaWb4w6U5bSw0B4PvbWc6nvEN7Y="))
 
   def reactJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react/16.2.0/umd/react.development.js",
-    integrity = Some("sha256-oK7yxCBxbvB6f0k30sHQEN7rIMklxeiFkzO/xOqA054="))
+    href = "https://cdn.jsdelivr.net/npm/react@16.5.2/umd/react.development.js",
+    integrity = Some("sha256-VitF3nhtwS4oxyddypEINBEyVS3xyk0Ngmk0daEnick="))
 
   def semanticCss = "/assets/semantic.css"
 

@@ -5,41 +5,41 @@ object AssetManifest {
 
   final case class CDN(href: String, integrity: Option[String])
 
-  def analyticsJs = "/s/fbc0ca70f2a34deabef8bec7f441a4fc.js"
+  def analyticsJs = "/s/c9a95a59bbdd769beb5e13275cef2ed2.js"
 
   def favicon = "/s/286b75985993da80759cbdc5142de4d3.ico"
 
   def jqueryJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js",
+    href = "https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js",
     integrity = Some("sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="))
 
   def katexCss = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.8.3/katex.min.css",
+    href = "https://cdn.jsdelivr.net/npm/katex@0.8.3/dist/katex.min.css",
     integrity = Some("sha256-kAbX9Z5ZMhjo34PRGEMc7RiueevlbmDilvUt1NsZGAI="))
 
   def katexJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.8.3/katex.min.js",
+    href = "https://cdn.jsdelivr.net/npm/katex@0.8.3/dist/katex.min.js",
     integrity = Some("sha256-Jv5VrSHYxxBmh18hQUviB4OiVzOkDHdO0uY4GtrCMDQ="))
 
   def loadingSpinSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjMjJjIj48cGF0aCBvcGFjaXR5PSIuMjUiIGQ9Ik0xNiAwYTE2IDE2IDAgMCAwIDAgMzIgMTYgMTYgMCAwIDAgMC0zMm0wIDRhMTIgMTIgMCAwIDEgMCAyNCAxMiAxMiAwIDAgMSAwLTI0Ii8+PHBhdGggZD0iTTE2IDBhMTYgMTYgMCAwIDEgMTYgMTZoLTRBMTIgMTIgMCAwIDAgMTYgNHoiPjxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0icm90YXRlIiBmcm9tPSIwIDE2IDE2IiB0bz0iMzYwIDE2IDE2IiBkdXI9IjAuNXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIi8+PC9wYXRoPjwvc3ZnPg=="
 
   def loadjs = "/s/7f8f2966a3634ba5d1b206bc19d7c7ec.js"
 
-  def memberLibBundleJs = "/s/2e8cc8f395057cb878944b110fdcd5f5.js"
+  def memberLibBundleJs = "/s/6c5973d205cd756b2106e3780e6d548c.js"
 
   def reactDomJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.2.0/umd/react-dom.production.min.js",
-    integrity = Some("sha256-9hrJxD4IQsWHdNpzLkJKYGiY/SEZFJJSUqyeZPNKd8g="))
+    href = "https://cdn.jsdelivr.net/npm/react-dom@16.5.2/umd/react-dom.production.min.js",
+    integrity = Some("sha256-zxLuhMQXy7QBCD8nJT0FQaZN2GBcdEL4zooi/jAmu60="))
 
   def reactDomServerJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.2.0/umd/react-dom-server.browser.production.min.js",
-    integrity = Some("sha256-KWr3upHriTeIBt/QL9rtKDIVhIvcS5M0k7cMKYyx9CE="))
+    href = "https://cdn.jsdelivr.net/npm/react-dom@16.5.2/umd/react-dom-server.browser.production.min.js",
+    integrity = Some("sha256-/NDqhnQY7p3A1c28Bg/+4EBXrU6jR90I/epnapti35Y="))
 
   def reactJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react/16.2.0/umd/react.production.min.js",
-    integrity = Some("sha256-wouRkivKKXA3y6AuyFwcDcF50alCNV8LbghfYCH6Z98="))
+    href = "https://cdn.jsdelivr.net/npm/react@16.5.2/umd/react.production.min.js",
+    integrity = Some("sha256-alJnAKUY0Ruhf55K/C+sCyz6zaipGhl1kxuzDW3jtHk="))
 
-  def semanticCss = "/s/d089664b79dd957f6d571adaef052e8c.css"
+  def semanticCss = "/s/56bc2bca25c1a231b323f2358dd2cbf3.css"
 
   def semanticCssUrls: List[String] =
     "icons.eot" ::
@@ -50,7 +50,7 @@ object AssetManifest {
     "icons.svg#icons" ::
     Nil
 
-  def semanticJs = "/s/f834308b873788dc184cf56bf73f4a69.js"
+  def semanticJs = "/s/6e6d9e0dd7f0e311b023e520755a176d.js"
 
   def shipreqBannerSvg = "/s/878536f0a4ad0029794669f88dbf5f35.svg"
 
