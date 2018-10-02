@@ -47,7 +47,7 @@ final class ReqDetailObs($: DomZipperJs) {
 
     val pubid = headerRow(">*", 1 of 3).innerText.replace(":", "").trim
 
-    val titleDom = headerRow(">*", 2 of 3).asHtml.dom
+    val titleDom = headerRow(">*", 2 of 3).domAsHtml
 
     val filterDeadButton = headerRow(">*", 3 of 3)("button").domAs[html.Button]
 
@@ -97,9 +97,9 @@ final class ReqDetailObs($: DomZipperJs) {
         $.dom.hasAttribute(TestMarker.useCaseTailStep.name)
 
       val label: Option[String] =
-        $.collect01(s"*[${TestMarker.useCaseStepLabel.name}]").asHtml.mapDoms(_.title)
+        $.collect01(s"*[${TestMarker.useCaseStepLabel.name}]").mapDoms(_.title)
 
-      lazy val textContainer = $(s"*[${TestMarker.useCaseStepText.name}]").asHtml
+      lazy val textContainer = $(s"*[${TestMarker.useCaseStepText.name}]")
 
       lazy val text = textContainer.innerText
 

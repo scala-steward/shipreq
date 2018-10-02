@@ -75,7 +75,7 @@ final class ReqTableObs(cp: TestClientProtocol, $: DomZipperJs) {
     }
 
     val entirety: Vector[ColumnDom] =
-      root.collect1n("div.ui.checkbox").asHtml.map(ColumnDom)
+      root.collect1n("div.ui.checkbox").map(ColumnDom)
 
     def column(name: String): ColumnDom =
       findOne(name, entirety)(_.name)

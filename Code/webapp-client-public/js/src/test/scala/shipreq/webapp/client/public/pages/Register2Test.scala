@@ -30,7 +30,7 @@ object Register2Tester {
   }
 
   final class FormObs($: DomZipperJs) {
-    private def field(i: Int)           = $(".field", i of 7).asHtml
+    private def field(i: Int)           = $(".field", i of 7)
     val name         : TextFieldObs     = new TextFieldObs(field(1))
     val username     : TextFieldObs     = new TextFieldObs(field(2))
     val password1    : TextFieldObs     = new TextFieldObs(field(3))

@@ -13,7 +13,7 @@ import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.test._
 import shipreq.webapp.client.project.test._
-import teststate.domzipper.DomZipperModule.EditableSel
+import teststate.domzipper.DomZipper.EditableSel
 import TestState._
 
 object ReqTableTestDsl {
