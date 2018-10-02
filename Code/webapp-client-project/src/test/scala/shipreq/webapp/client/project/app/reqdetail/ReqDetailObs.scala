@@ -29,7 +29,7 @@ object ReqDetailObs {
   val TreeNames = NAE(useCaseStepTreeN, useCaseStepTreeA, useCaseStepTreeE)
 }
 
-final class ReqDetailObs($: HtmlDomZipper) {
+final class ReqDetailObs($: DomZipperJs) {
 
   private val errorRoot = $.failToOption(".ui.error.message")
 
@@ -86,7 +86,7 @@ final class ReqDetailObs($: HtmlDomZipper) {
     val stepRows: NAE[Vector[StepRow]] =
       treeCells.map(_.collect0n(">div>div").map(StepRow))
 
-    case class StepRow($: HtmlDomZipper) {
+    case class StepRow($: DomZipperJs) {
       private def ctrl(icon: Icon, icon2: Icon = null): Option[html.Button] = {
         val is  = (icon :: Option(icon2).toList).map(_.clsName.replace(' ', '.'))
         val sel = is.map(i => s"button:has(i.icon.$i)") mkString ","

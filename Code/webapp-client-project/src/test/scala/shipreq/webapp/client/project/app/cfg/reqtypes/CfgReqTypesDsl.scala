@@ -7,7 +7,7 @@ import shipreq.webapp.base.test.TestState._
 
 object CfgReqTypesObs {
 
-  final case class Row(row: HtmlDomZipper) {
+  final case class Row(row: DomZipperJs) {
 
     val mnemonic: String = {
       val mnemonicCell = row(">td:first")
@@ -31,10 +31,10 @@ object CfgReqTypesObs {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-final class CfgReqTypesObs($: HtmlDomZipper) {
+final class CfgReqTypesObs($: DomZipperJs) {
   import CfgReqTypesObs._
 
-  val table: HtmlDomZipper =
+  val table: DomZipperJs =
     $("table:contains(Usage)")
 
   val rowByMnemonic: Map[String, Row] =

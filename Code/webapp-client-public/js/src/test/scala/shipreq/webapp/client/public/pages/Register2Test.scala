@@ -19,7 +19,7 @@ object Register2Tester {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final class Obs($: HtmlDomZipper, cp: TestClientProtocol) {
+  final class Obs($: DomZipperJs, cp: TestClientProtocol) {
     val reqsSent = cp.reqs
 
     val form: Option[FormObs] =
@@ -29,7 +29,7 @@ object Register2Tester {
       $.collect01(".ui.message .header").innerTexts
   }
 
-  final class FormObs($: HtmlDomZipper) {
+  final class FormObs($: DomZipperJs) {
     private def field(i: Int)           = $(".field", i of 7).asHtml
     val name         : TextFieldObs     = new TextFieldObs(field(1))
     val username     : TextFieldObs     = new TextFieldObs(field(2))

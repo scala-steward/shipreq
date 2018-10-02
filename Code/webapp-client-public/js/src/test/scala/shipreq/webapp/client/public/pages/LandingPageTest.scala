@@ -18,7 +18,7 @@ object LandingPageTester {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final class Obs($: HtmlDomZipper, cp: TestClientProtocol) {
+  final class Obs($: DomZipperJs, cp: TestClientProtocol) {
     val reqsSent = cp.reqs
 
     private val form              = $(".ui.form")

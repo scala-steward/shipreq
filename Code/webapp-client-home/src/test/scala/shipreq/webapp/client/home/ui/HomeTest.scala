@@ -14,7 +14,7 @@ import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.base.user._
 import shipreq.webapp.client.home.test.PrepareEnv
 
-final class HomeObs(cp: TestClientProtocol, $: HtmlDomZipper) {
+final class HomeObs(cp: TestClientProtocol, $: DomZipperJs) {
 
   val reqs = cp.reqs.length
 
@@ -109,7 +109,7 @@ object HomeTest extends TestSuite {
       plan
         .addInvariants(invariants)
         .withInitialState(State("", CPState.Blank, ps.map(_.name)(collection.breakOut), 0))
-        .test(Observer(new HomeObs(_, c.htmlDomZipper)))
+        .test(Observer(new HomeObs(_, c.domZipper)))
         .withRef(cp)
         .run()
     )

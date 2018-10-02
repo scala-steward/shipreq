@@ -18,14 +18,14 @@ object LoginTester {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final class Obs(val $: HtmlDomZipper, cp: TestClientProtocol) {
+  final class Obs(val $: DomZipperJs, cp: TestClientProtocol) {
     val reqsSent = cp.reqs
 
     val form: Option[FormObs] =
       $.collect01(".ui.form").doms.map(_ => new FormObs($))
   }
 
-  final class FormObs($: HtmlDomZipper) {
+  final class FormObs($: DomZipperJs) {
     val usernameInput    = $("input[type=text]").domAs[html.Input]
     val passwordInput    = $("input[type=password]").domAs[html.Input]
     val rememberMeInput  = $("input[type=checkbox]").domAs[html.Input]

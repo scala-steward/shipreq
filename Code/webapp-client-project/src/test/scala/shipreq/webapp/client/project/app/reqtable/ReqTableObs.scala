@@ -52,7 +52,7 @@ object ReqTableObs {
  *
  * Inspects actual DOM to derive values.
  */
-final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
+final class ReqTableObs(cp: TestClientProtocol, $: DomZipperJs) {
   import ReqTableObs._
 
   val activeElement = document.activeElement
@@ -68,7 +68,7 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
   object columnSelector {
     val root = $(".ui.popup:has(.ui.checkbox)")
 
-    case class ColumnDom(outer: HtmlDomZipper) {
+    case class ColumnDom(outer: DomZipperJs) {
       val checkbox: html.Input = outer("input").domAs[html.Input]
       val on      : On         = On when checkbox.checked
       val name    : String     = outer("label").innerText
@@ -113,7 +113,7 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
 //    private val readSortMethodIB: String => SortMethod.IgnoreBlanks =
 //      s => SortMethod.ignoreBlanks.whole.find(_.optionLabel == s).getOrElse(sys error s"Unknown sort method: $s")
 
-    val $: HtmlDomZipper =
+    val $: DomZipperJs =
       ReqTableObs.this.$("Sort row", Style.reqtable.sortEditor.dragArea.selector)
 
     case class CriteriaDom(nameDom: html.Element, orderDom: html.Element) {

@@ -39,7 +39,7 @@ object ProjectSpaTestDsl {
 
   case class Ref(cd: TestClientData, svr: MockServer, tester: ComponentTester[Props, State, _]) {
     def observe(): Obs = {
-      val $ = tester.component.htmlDomZipper
+      val $ = tester.component.domZipper
       val nav = new NavObs($(">nav"))
       val inner = $(">div")(">div,>main")
 
@@ -58,7 +58,7 @@ object ProjectSpaTestDsl {
     }
   }
 
-  class NavObs(nav: HtmlDomZipper) {
+  class NavObs(nav: DomZipperJs) {
     val breadcrumbs = nav(".ui.breadcrumb").collect0n(".section")
     // println(nav.innerHTML)
 

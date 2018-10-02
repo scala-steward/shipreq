@@ -10,7 +10,7 @@ import shipreq.webapp.client.project.app.ProjectSpaTestDsl
 import shipreq.webapp.client.project.app.root.Routes.Page
 import shipreq.webapp.client.project.test._
 
-class ProjectHomeObs($: HtmlDomZipper) {
+class ProjectHomeObs($: DomZipperJs) {
   private val projectArea = $(">section", 1 of 2)
 
   val projectNameViewDom: Option[html.Element] =
