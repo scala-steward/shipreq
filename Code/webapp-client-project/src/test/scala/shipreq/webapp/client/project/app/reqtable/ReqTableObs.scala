@@ -121,8 +121,8 @@ final class ReqTableObs(cp: TestClientProtocol, $: DomZipperJs) {
     }
 
     val criteriaDom = $.collect1n("tr").map(tr => CriteriaDom(
-      tr("td", 1 of 2).dom,
-      tr("td", 2 of 2)("*[title]").dom))
+      tr("td", 1 of 2).domAsHtml,
+      tr("td", 2 of 2)("*[title]").domAsHtml))
 
     val names: Vector[String] =
       criteriaDom.map(_.name)
@@ -155,7 +155,7 @@ final class ReqTableObs(cp: TestClientProtocol, $: DomZipperJs) {
     }
 
     val columnDoms: Vector[ColumnDom] =
-      thead.collect1n("th").as[html.TableCell].map(ColumnDom)
+      thead.collect1n("th").map(ColumnDom)
 
     val columns: Vector[String] =
       columnDoms.map(_.name)

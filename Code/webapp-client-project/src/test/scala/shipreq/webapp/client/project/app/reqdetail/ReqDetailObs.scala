@@ -57,9 +57,9 @@ final class ReqDetailObs($: DomZipperJs) {
 
     val table = root(">table")
 
-    val fields: Map[String, HtmlDomZipperAt[html.TableCell]] =
+    val fields: Map[String, DomZipperJs] =
       table(">tbody").collect1n(">tr")
-        .map(z => z(">th").innerText -> z(">td").as[html.TableCell])
+        .map(z => z(">th").innerText -> z(">td"))
         .toMap
 
     val lifeRow = fields(UiText.Life.field)
@@ -97,7 +97,7 @@ final class ReqDetailObs($: DomZipperJs) {
         $.dom.hasAttribute(TestMarker.useCaseTailStep.name)
 
       val label: Option[String] =
-        $.collect01(s"*[${TestMarker.useCaseStepLabel.name}]").mapDoms(_.title)
+        $.collect01(s"*[${TestMarker.useCaseStepLabel.name}]").domsAsHtml.map(_.title)
 
       lazy val textContainer = $(s"*[${TestMarker.useCaseStepText.name}]")
 
