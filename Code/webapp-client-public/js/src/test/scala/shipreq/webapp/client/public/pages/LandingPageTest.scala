@@ -18,11 +18,11 @@ object LandingPageTester {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final class Obs($: HtmlDomZipper, cp: TestClientProtocol) {
+  final class Obs($: DomZipperJs, cp: TestClientProtocol) {
     val reqsSent = cp.reqs
 
     private val form              = $(".ui.form")
-    private def field(i: Int)     = form(">.field", i of 5).asHtml
+    private def field(i: Int)     = form(">.field", i of 5)
     private def textField(i: Int) = new TextFieldObs(field(i))
 
     val name  = textField(1)
@@ -30,7 +30,7 @@ object LandingPageTester {
 
     val submitField                = field(5)
     val submit       : html.Button = form("button").domAs[html.Button]
-    val submitEnabled: Enabled     = Disabled.when(submit.disabled || semanticUiDisabled(submitField.dom))
+    val submitEnabled: Enabled     = Disabled.when(submit.disabled || semanticUiDisabled(submitField.domAsHtml))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

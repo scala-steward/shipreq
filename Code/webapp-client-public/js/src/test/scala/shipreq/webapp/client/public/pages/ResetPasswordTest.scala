@@ -19,7 +19,7 @@ object ResetPasswordTester {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final class Obs($: HtmlDomZipper, cp: TestClientProtocol) {
+  final class Obs($: DomZipperJs, cp: TestClientProtocol) {
     val reqsSent = cp.reqs
 
     val form: Option[FormObs] =
@@ -29,7 +29,7 @@ object ResetPasswordTester {
       $.collect01(".ui.message .header").innerTexts
   }
 
-  final class FormObs($: HtmlDomZipper) {
+  final class FormObs($: DomZipperJs) {
     val password1     = new PublicSpaTestUtil.TextFieldObs($(".field", 1 of 2))
     val password2     = new PublicSpaTestUtil.TextFieldObs($(".field", 2 of 2))
     val submit        = $("button").domAs[html.Button]

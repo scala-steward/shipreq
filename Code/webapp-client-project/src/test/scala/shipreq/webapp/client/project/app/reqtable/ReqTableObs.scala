@@ -52,7 +52,7 @@ object ReqTableObs {
  *
  * Inspects actual DOM to derive values.
  */
-final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
+final class ReqTableObs(cp: TestClientProtocol, $: DomZipperJs) {
   import ReqTableObs._
 
   val activeElement = document.activeElement
@@ -68,14 +68,14 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
   object columnSelector {
     val root = $(".ui.popup:has(.ui.checkbox)")
 
-    case class ColumnDom(outer: HtmlDomZipper) {
+    case class ColumnDom(outer: DomZipperJs) {
       val checkbox: html.Input = outer("input").domAs[html.Input]
       val on      : On         = On when checkbox.checked
       val name    : String     = outer("label").innerText
     }
 
     val entirety: Vector[ColumnDom] =
-      root.collect1n("div.ui.checkbox").asHtml.map(ColumnDom)
+      root.collect1n("div.ui.checkbox").map(ColumnDom)
 
     def column(name: String): ColumnDom =
       findOne(name, entirety)(_.name)
@@ -113,7 +113,7 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
 //    private val readSortMethodIB: String => SortMethod.IgnoreBlanks =
 //      s => SortMethod.ignoreBlanks.whole.find(_.optionLabel == s).getOrElse(sys error s"Unknown sort method: $s")
 
-    val $: HtmlDomZipper =
+    val $: DomZipperJs =
       ReqTableObs.this.$("Sort row", Style.reqtable.sortEditor.dragArea.selector)
 
     case class CriteriaDom(nameDom: html.Element, orderDom: html.Element) {
@@ -121,8 +121,8 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
     }
 
     val criteriaDom = $.collect1n("tr").map(tr => CriteriaDom(
-      tr("td", 1 of 2).dom,
-      tr("td", 2 of 2)("*[title]").dom))
+      tr("td", 1 of 2).domAsHtml,
+      tr("td", 2 of 2)("*[title]").domAsHtml))
 
     val names: Vector[String] =
       criteriaDom.map(_.name)
@@ -149,13 +149,13 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
     val thead = $("ReqTable", ">thead")
     val tbody = $("ReqTable", ">tbody")
 
-    case class ColumnDom(zipper: HtmlDomZipperAt[html.TableCell]) {
+    case class ColumnDom(zipper: DomZipperJs) {
       val headerCell = zipper.dom
       val name = headerCell.textContent
     }
 
     val columnDoms: Vector[ColumnDom] =
-      thead.collect1n("th").as[html.TableCell].map(ColumnDom)
+      thead.collect1n("th").map(ColumnDom)
 
     val columns: Vector[String] =
       columnDoms.map(_.name)
@@ -181,7 +181,7 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
 //    }
 
     val allRows : Vector[html.TableRow] =
-      tbody.collect0n(">tr").as[html.TableRow].doms
+      tbody.collect0n(">tr").domsAs[html.TableRow]
 
     // Existence of a Live cell means the row is Live
     // Existence of a Dead cell does NOT mean the row is Dead
@@ -226,18 +226,18 @@ final class ReqTableObs(cp: TestClientProtocol, $: HtmlDomZipper) {
     def rowIndexByPubid(pubid: String): Int =
       findIndex(pubid, rowPubids, s"Row with pubid [$pubid] not found.")
 
-    def cell(loc: CellLoc): HtmlDomZipperAt[html.TableCell] =
+    def cell(loc: CellLoc): DomZipperJs =
       cell(row = loc.row, col = loc.col)
 
-    def cell(row: Int, col: Int): HtmlDomZipperAt[html.TableCell] = {
+    def cell(row: Int, col: Int): DomZipperJs = {
       var c = col
       if (c < 0) c += columns.length
       var r = row
       if (r < 0) r += allRows.size
-      tbody(s">tr:nth-child(${r + 1}) >td:nth-child(${c + 1})").as[html.TableCell]
+      tbody(s">tr:nth-child(${r + 1}) >td:nth-child(${c + 1})")
     }
 
-    def cell(pubid: String, col: String): HtmlDomZipperAt[html.TableCell] =
+    def cell(pubid: String, col: String): DomZipperJs =
       cell(cellLoc(pubid, col))
 
     def cellLoc(pubid: String, col: String): CellLoc =

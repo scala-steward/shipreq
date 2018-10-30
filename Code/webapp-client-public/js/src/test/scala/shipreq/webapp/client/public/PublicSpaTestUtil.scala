@@ -29,14 +29,14 @@ object PublicSpaTestUtil {
     val rc       = MockRouterCtl[Page]()
     var initData = PublicSpaTestUtil.initData
 
-    def render[A](initPage: Page)(f: HtmlDomZipper => A): A = {
+    def render[A](initPage: Page)(f: DomZipperJs => A): A = {
       val spa = new PublicSpa(initData, cp)
       ReactTestUtils.withRenderedIntoDocument(spa.Component(PublicSpa.Props(initPage, rc))) { m =>
-        f(m.htmlDomZipper)
+        f(m.domZipper)
       }
     }
 
-    def apply(initPage: Page)(f: HtmlDomZipper => Report[String]): Unit =
+    def apply(initPage: Page)(f: DomZipperJs => Report[String]): Unit =
       render(initPage) { h =>
         val r = f(h)
         assertTestState(r)
@@ -46,18 +46,18 @@ object PublicSpaTestUtil {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  abstract class InputFieldObs($: HtmlDomZipper, val input: html.Input) {
+  abstract class InputFieldObs($: DomZipperJs, val input: html.Input) {
     val failure : Option[String] = $.collect01(">div:not(.ui),>span").innerTexts
-    val enabled : Enabled        = Disabled.when(input.disabled || semanticUiDisabled($.dom))
+    val enabled : Enabled        = Disabled.when(input.disabled || semanticUiDisabled($.domAsHtml))
     val validity: Validity       = Invalid when $.domAsHtml.classList.contains("error")
   }
 
-  class TextFieldObs($: HtmlDomZipper) extends InputFieldObs($,
+  class TextFieldObs($: DomZipperJs) extends InputFieldObs($,
     $("input[type=text],input[type=email],input[type=password],textarea").domAs[html.Input]) {
     val value: String = input.value
   }
 
-  class CheckboxFieldObs($: HtmlDomZipper) extends InputFieldObs($,
+  class CheckboxFieldObs($: DomZipperJs) extends InputFieldObs($,
     $("input[type=checkbox]").domAs[html.Input]) {
     val checked: Boolean = input.checked
   }

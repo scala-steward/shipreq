@@ -18,7 +18,7 @@ object Register1Tester {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final class Obs($: HtmlDomZipper, cp: TestClientProtocol) {
+  final class Obs($: DomZipperJs, cp: TestClientProtocol) {
     val reqsSent = cp.reqs
 
     val form: Option[FormObs] =
@@ -28,7 +28,7 @@ object Register1Tester {
       $.collect01(".ui.message .header").innerTexts
   }
 
-  final class FormObs($: HtmlDomZipper) {
+  final class FormObs($: DomZipperJs) {
     val emailInput   : html.Input  = $("input[type=email]").domAs[html.Input]
     val emailValue   : String      = emailInput.value
     val emailEnabled : Enabled     = Disabled.when(emailInput.disabled || semanticUiDisabled(emailInput))

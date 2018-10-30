@@ -29,7 +29,7 @@ object ReqDetailObs {
   val TreeNames = NAE(useCaseStepTreeN, useCaseStepTreeA, useCaseStepTreeE)
 }
 
-final class ReqDetailObs($: HtmlDomZipper) {
+final class ReqDetailObs($: DomZipperJs) {
 
   private val errorRoot = $.failToOption(".ui.error.message")
 
@@ -47,7 +47,7 @@ final class ReqDetailObs($: HtmlDomZipper) {
 
     val pubid = headerRow(">*", 1 of 3).innerText.replace(":", "").trim
 
-    val titleDom = headerRow(">*", 2 of 3).asHtml.dom
+    val titleDom = headerRow(">*", 2 of 3).domAsHtml
 
     val filterDeadButton = headerRow(">*", 3 of 3)("button").domAs[html.Button]
 
@@ -57,9 +57,9 @@ final class ReqDetailObs($: HtmlDomZipper) {
 
     val table = root(">table")
 
-    val fields: Map[String, HtmlDomZipperAt[html.TableCell]] =
+    val fields: Map[String, DomZipperJs] =
       table(">tbody").collect1n(">tr")
-        .map(z => z(">th").innerText -> z(">td").as[html.TableCell])
+        .map(z => z(">th").innerText -> z(">td"))
         .toMap
 
     val lifeRow = fields(UiText.Life.field)
@@ -75,7 +75,7 @@ final class ReqDetailObs($: HtmlDomZipper) {
     }
 
     val lifeChangeButton: Option[html.Button] =
-      lifeRow.collect01("button").as[html.Button].doms
+      lifeRow.collect01("button").domsAs[html.Button]
   }
 
   object uc {
@@ -86,20 +86,20 @@ final class ReqDetailObs($: HtmlDomZipper) {
     val stepRows: NAE[Vector[StepRow]] =
       treeCells.map(_.collect0n(">div>div").map(StepRow))
 
-    case class StepRow($: HtmlDomZipper) {
+    case class StepRow($: DomZipperJs) {
       private def ctrl(icon: Icon, icon2: Icon = null): Option[html.Button] = {
         val is  = (icon :: Option(icon2).toList).map(_.clsName.replace(' ', '.'))
         val sel = is.map(i => s"button:has(i.icon.$i)") mkString ","
-        $.collect01(sel).as[html.Button].doms
+        $.collect01(sel).domsAs[html.Button]
       }
 
       val isTailStepRow: Boolean =
         $.dom.hasAttribute(TestMarker.useCaseTailStep.name)
 
       val label: Option[String] =
-        $.collect01(s"*[${TestMarker.useCaseStepLabel.name}]").asHtml.mapDoms(_.title)
+        $.collect01(s"*[${TestMarker.useCaseStepLabel.name}]").domsAsHtml.map(_.title)
 
-      lazy val textContainer = $(s"*[${TestMarker.useCaseStepText.name}]").asHtml
+      lazy val textContainer = $(s"*[${TestMarker.useCaseStepText.name}]")
 
       lazy val text = textContainer.innerText
 
