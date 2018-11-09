@@ -28,7 +28,7 @@ object Dependencies {
   }
 
   object Scalaz {
-    private val mm = MultiModule.jvmAndJs("org.scalaz", "7.2.26")
+    private val mm = MultiModule.jvmAndJs("org.scalaz", "7.2.27")
     val core       = mm("scalaz-core")
     val effect     = mm("scalaz-effect") ++ core
     val concurrent = mm("scalaz-concurrent") ++ effect
@@ -41,7 +41,7 @@ object Dependencies {
   }
 
   object Microlibs {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "1.17")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "1.18")
     val adtMacros  = mm("adt-macros")
     val macroUtils = mm("macro-utils")
     val nonempty   = mm("nonempty")
@@ -94,7 +94,7 @@ object Dependencies {
   }
 
   object Json4s {
-    private val mm = MultiModule.scala("org.json4s", "3.6.1")
+    private val mm = MultiModule.scala("org.json4s", "3.6.2")
     val jackson = mm("json4s-jackson") ++ Scala.all
   }
 
@@ -137,13 +137,13 @@ object Dependencies {
 
   object Akka {
     val shortVer = "2.5"
-    private val mm = MultiModule.scala("com.typesafe.akka", shortVer + ".16")
+    private val mm = MultiModule.scala("com.typesafe.akka", shortVer + ".18")
     val actor   = mm("akka-actor") ++ mm("akka-slf4j")
     val testkit = mm("akka-testkit")
   }
 
   object OkHttp {
-    private val mm = MultiModule.java("com.squareup.okhttp3", "3.8.1")
+    private val mm = MultiModule.java("com.squareup.okhttp3", "3.11.0")
     val core = mm("okhttp")
     // val urlConnection = mm("okhttp-urlconnection") ++ core
   }
@@ -191,16 +191,16 @@ object Dependencies {
   val parboiled   = jvmAndJs("org.parboiled",                    "parboiled", "2.1.5")
   val shapeless   = jvmAndJs("com.chuusai",                      "shapeless", "2.3.3")
   val μPickle     = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",   "custom-7")
-  val μTest       = jvmAndJs("com.lihaoyi",                      "utest",     "0.6.5") // 0.5.4+ breaks PhantomJS in webapp-base-test-js
+  val μTest       = jvmAndJs("com.lihaoyi",                      "utest",     "0.6.6")
 
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.0")
-  val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.1.0")
+  val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.1.1")
   val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.10")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
   val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.5")
   val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "3.2.0")
   val flyway       = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
-  val commonsLang  = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.8")
+  val commonsLang  = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.8.1")
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val twitterEval  = jvmOnly("com.twitter"                %% "util-eval"             % "6.43.0")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.13.5")
@@ -211,7 +211,7 @@ object Dependencies {
   val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
   val useMacroParadise = (_: Project).settings(addCompilerPlugin(macroParadise))
 
-  val kindProjector = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7")
+  val kindProjector = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8")
   val useKindProjector = (_: Project).settings(addCompilerPlugin(kindProjector))
 
 //  import sbt.Keys._
