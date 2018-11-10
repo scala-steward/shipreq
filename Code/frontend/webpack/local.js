@@ -42,6 +42,14 @@ const config = {
       'expose-loader?$!expose-loader?jQuery!jquery', // for Semantic UI -- must precede it! order in this array matters
       './semantic/dist/semantic.min', //.js
     ],
+
+    // webappSsrJvm accesses this via symlink in src/main/resources
+    'webapp-ssr-deps': [
+      'expose-loader?React!react',
+      'expose-loader?ReactDOMServer!react-dom/server',
+      // 'expose-loader?React!react/umd/react.production.min.js',
+      // 'expose-loader?ReactDOMServer!react-dom/umd/react-dom-server.browser.production.min.js',
+    ],
   },
 
   output: {
