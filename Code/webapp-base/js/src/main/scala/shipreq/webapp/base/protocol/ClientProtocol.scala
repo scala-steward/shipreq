@@ -80,4 +80,12 @@ object ClientProtocol {
       }
     }
   }
+
+  object Noop extends ClientProtocol {
+    override def call[I, O](proc: ServerSideProc[I, O])
+                           (input: I,
+                            onResponse: Throwable \/ O => Callback): Callback =
+      Callback.empty
+  }
+
 }

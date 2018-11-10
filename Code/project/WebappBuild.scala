@@ -176,13 +176,25 @@ object WebappBuild {
       .depsForBoth(testScope(μTest))
       .dependsOn(webappBaseTest % Test)
 
-  lazy val webappSsrJvm = webappSsr.jvm
-  lazy val webappSsrJs  = webappSsr.js
   lazy val webappSsr =
     crossProject("webapp-ssr")
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NeedDom))
       .dependsOn(webappClientPublic)
+      .depsForBoth(ScalaGraal.extBoopickle)
+      .jsSettings(
+        emitSourceMaps := false,
+        artifactPath in (Compile, fastOptJS) := (crossTarget.value / "webapp-ssr.js"),
+        artifactPath in (Compile, fullOptJS) := (crossTarget.value / "webapp-ssr.js"))
+
+  lazy val webappSsrJs  = webappSsr.js
+
+  lazy val webappSsrJvm = webappSsr.jvm
+    .settings(unmanagedResources in Compile += Def.taskDyn {
+      val stage = (scalaJSStage in Compile).value
+      val task = stageKeys(stage)
+      Def.task((task in Compile in webappSsrJs).value.data)
+    }.value)
 
   lazy val webappServerLogicJvm = webappServerLogic.jvm
   lazy val webappServerLogicJs  = webappServerLogic.js

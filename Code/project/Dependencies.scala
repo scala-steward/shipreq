@@ -60,6 +60,11 @@ object Dependencies {
     val test = mm("nyaya-test")
   }
 
+  object ScalaGraal {
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.scala-graal", "0.1.0-SNAPSHOT")
+    val extBoopickle = mm("ext-boopickle")
+  }
+
   object TestState {
     val Ver = "2.3.0"
     private val mm = MultiModule.jvmAndJs("com.github.japgolly.test-state", Ver)
