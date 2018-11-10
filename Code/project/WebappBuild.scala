@@ -46,6 +46,7 @@ object WebappBuild {
         webappClientPublicJvm, webappClientPublicJs,
         webappClientHome,
         webappClientWwApi, webappClientWw, webappClientProject,
+        webappSsrJvm, webappSsrJs,
         webappServer)
       .settings(
         jsSizesFast := jsSizesTask(Stage.FastOpt).value,
@@ -160,6 +161,7 @@ object WebappBuild {
       .dependsOn(webappClientWwApi)
       .depsForJs(ScalaCSS.react ++ scalajsDom ++ μPickle ++ shapeless ++ Nyaya.prop ++ parboiled)
 
+  // TODO Replace webappGen with webappSsr
   lazy val webappGenJvm = webappGen.jvm
   lazy val webappGenJs  = webappGen.js
   lazy val webappGen =
@@ -174,13 +176,21 @@ object WebappBuild {
       .depsForBoth(testScope(μTest))
       .dependsOn(webappBaseTest % Test)
 
+  lazy val webappSsrJvm = webappSsr.jvm
+  lazy val webappSsrJs  = webappSsr.js
+  lazy val webappSsr =
+    crossProject("webapp-ssr")
+      .configureJvm(Common.jvmSettings)
+      .configureJs(Common.jsSettings(NeedDom))
+      .dependsOn(webappClientPublic)
+
   lazy val webappServerLogicJvm = webappServerLogic.jvm
   lazy val webappServerLogicJs  = webappServerLogic.js
   lazy val webappServerLogic =
     crossProject("webapp-server-logic")
       .configureJvm(
         Common.jvmSettings,
-        _.dependsOn(taskmanApiLogic, webappClientPublicJvm),
+        _.dependsOn(taskmanApiLogic, webappClientPublicJvm, webappSsrJvm),
         useMacroParadise)
       .configureJs(Common.jsSettings(NeedDom)) // TODO NeedDom isn't true but required cos webappBaseTest loads in Sizzle
       .dependsOn(webappBaseMember)
