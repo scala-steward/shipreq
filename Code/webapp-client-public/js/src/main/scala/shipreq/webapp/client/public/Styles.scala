@@ -147,12 +147,12 @@ object Styles {
       marginTop := "5em")
 
     val yap1 = TagMod(
-      color := "hsl(209, 100%, 15%)", // "Ship" in ShipReq with lower L%
+      color := "hsl(209,100%,15%)", // "Ship" in ShipReq with lower L%
       fontSize := "1.6em",
       lineHeight := "1.3em")
 
     val yap2 = TagMod(
-      color := "hsl(207, 100%, 5%)", // "Req" in ShipReq with lower L%
+      color := "hsl(207,100%,5%)", // "Req" in ShipReq with lower L%
       fontSize := "1.15em",
       marginTop := "3em",
       lineHeight := "1.5em")
@@ -184,7 +184,7 @@ object Styles {
     val form = TagMod(
       background := "#e5edf3",
       border := "solid 1px #c0d6e9",
-      boxShadow := "0 2px 4px 0 rgba(192, 214, 233, .15), 0 2px 10px 0 rgba(192, 214, 233, .25)",
+      boxShadow := "0 2px 4px 0 rgba(192,214,233,.15), 0 2px 10px 0 rgba(192,214,233,.25)",
       borderRadius := ".28571429rem",
       padding := "1em")
 
