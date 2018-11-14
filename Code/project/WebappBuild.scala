@@ -182,6 +182,7 @@ object WebappBuild {
       .configureJs(Common.jsSettings(NeedDom))
       .dependsOn(webappClientPublic)
       .depsForBoth(ScalaGraal.extBoopickle)
+      .depsForJvm(ScalaGraal.extPrometheus)
       .jsSettings(
         emitSourceMaps := false,
         artifactPath in (Compile, fastOptJS) := (crossTarget.value / "webapp-ssr.js"),

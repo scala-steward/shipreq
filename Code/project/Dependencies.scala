@@ -61,8 +61,11 @@ object Dependencies {
   }
 
   object ScalaGraal {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.scala-graal", "0.1.0-SNAPSHOT")
-    val extBoopickle = mm("ext-boopickle")
+    private val ver = "0.1.0-SNAPSHOT"
+    private val jvm  = MultiModule.scala("com.github.japgolly.scala-graal", ver)
+    private val both = MultiModule.jvmAndJs("com.github.japgolly.scala-graal", ver)
+    val extBoopickle  = both("ext-boopickle")
+    val extPrometheus = jvm("ext-prometheus")
   }
 
   object TestState {

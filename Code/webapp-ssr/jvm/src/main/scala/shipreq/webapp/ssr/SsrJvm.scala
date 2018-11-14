@@ -31,12 +31,13 @@ object SsrJvm {
       >> Expr.requireFileOnClasspath("webapp-ssr-deps.js")
       >> Expr.requireFileOnClasspath("webapp-ssr.js"))
 
-    val ctx = ContextSync()
-    ctx.eval(init).left.toOption.foreach(e => throw e.underlying)
+    val prometheus = GraalPrometheus.Builder().registerAndBuild()
 
-    // TODO wait what? This would be around each eval, not each context!
-    // Rename with aroundEval, add {before|after}Eval?
-    //.withAround(ContextSync.Around.before(init(_).left.toOption.foreach(e => throw e.underlying)))
+    val ctx = ContextSync.Builder.fixedContext()
+      .onContextCreate(init)
+      .writeMetrics(prometheus)
+      .writeMetrics(ContextMetrics.Print())
+      .build()
 
     new SsrJvm(ctx)
   }
