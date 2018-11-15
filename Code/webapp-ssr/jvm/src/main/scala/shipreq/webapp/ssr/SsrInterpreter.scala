@@ -4,27 +4,38 @@ import com.typesafe.scalalogging.StrictLogging
 import japgolly.scalagraal._
 import japgolly.scalagraal.GraalJs._
 import japgolly.scalagraal.GraalBoopickle._
+import scala.util.control.NonFatal
 import shipreq.base.util.FxModule._
 import SsrAlgebra.Types._
 
 final class SsrInterpreter(ctx: ContextSync) extends SsrAlgebra[Fx] with StrictLogging {
 
-  private[this] val exprPublic =
-    Expr.compileFnCall1[PublicInitData]("public")(_.asString.timed)
-
-  override def public(i: PublicInitData) = Fx {
-    // TODO Add evalOrThrow
-    ctx.eval(exprPublic(i)) match {
-
-      case Right((time, html)) =>
-        // TODO evalTimed would be better than timed on the Expr (what about a MetricsWriter?)
-        logger.info("SSR:public completed in %,d ms".format(time.toMillis))
-        Html(html)
-
-      case Left(e) =>
-        throw e.underlying
-    }
+  private def runner[A](name: String, expr: A => Expr[String]): A => Fx[Option[Html]] = {
+    val logHead = s"Rendered $name in "
+    val mw = ContextMetrics.Writer(s => logger.info(logHead + s.total.toStrMs))
+    a => run(expr(a), mw, name)
   }
+
+  private def run(expr: Expr[String], mw: ContextMetrics.Writer, name: String): Fx[Option[Html]] =
+    Fx {
+      try
+        ctx.eval(expr, mw) match {
+          case Right(html) => Some(Html(html))
+          case Left(e)     =>
+            logger.warn(s"ExprError occurred rendering $name", e)
+            None
+        }
+      catch {
+        case NonFatal(t) =>
+          logger.warn(s"Unhandled exception occurred rendering $name", t)
+          None
+      }
+    }
+
+  private[this] val publicRunner =
+    runner("public", Expr.compileFnCall1[PublicInitData]("public")(_.asString))
+
+  override def public(i: PublicInitData) = publicRunner(i)
 }
 
 object SsrInterpreter {
@@ -43,9 +54,7 @@ object SsrInterpreter {
       ctxBuilder = ctxBuilder.writeMetrics(w)
     }
 
-    val ctx = ctxBuilder
-      .writeMetrics(ContextMetrics.Print())
-      .build()
+    val ctx = ctxBuilder.build()
 
     new SsrInterpreter(ctx)
   }

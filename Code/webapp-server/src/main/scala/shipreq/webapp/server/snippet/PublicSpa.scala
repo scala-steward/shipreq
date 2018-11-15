@@ -21,11 +21,11 @@ object PublicSpa extends SnippetHelpers {
         initData <- Global.logic.publicSpa.initData
         html <- Global.ssr.traverse(_.public(initData))
       } yield {
-        html.foreach { x =>
-          println()
-          println(x)
-          println()
-        }
+//        html.foreach { x =>
+//          println()
+//          println(x)
+//          println()
+//        }
         initData
       }
 

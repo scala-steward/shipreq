@@ -5,7 +5,7 @@ trait SsrAlgebra[F[_]] {
 
   // TODO Take url and userAgent too
 
-  def public(i: PublicInitData): F[Html]
+  def public(i: PublicInitData): F[Option[Html]]
 }
 
 object SsrAlgebra {
