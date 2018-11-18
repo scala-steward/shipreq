@@ -8,12 +8,14 @@ object Dependencies {
 
   object Java {
     val major = 8
-    val minor = 152
-    val build = "16"
+  }
+
+  object Graal {
+    val ver = "1.0.0-rc9"
   }
 
   object Docker {
-    val baseImage = s"anapsix/alpine-java:${Java.major}u${Java.minor}b${Java.build}_server-jre_unlimited"
+    val baseImage = s"shipreq/base:latest-graal-${Graal.ver}"
   }
 
   object Scala {
@@ -61,11 +63,12 @@ object Dependencies {
   }
 
   object ScalaGraal {
-    private val ver = "0.1.0-SNAPSHOT"
-    private val jvm  = MultiModule.scala("com.github.japgolly.scala-graal", ver)
-    private val both = MultiModule.jvmAndJs("com.github.japgolly.scala-graal", ver)
+    private val ver   = "0.1.0-SNAPSHOT"
+    private val jvm   = MultiModule.scala("com.github.japgolly.scala-graal", ver)
+    private val both  = MultiModule.jvmAndJs("com.github.japgolly.scala-graal", ver)
+    val graal         = jvmOnly("org.graalvm.sdk" % "graal-sdk" % Graal.ver)
     val extBoopickle  = both("ext-boopickle")
-    val extPrometheus = jvm("ext-prometheus")
+    val extPrometheus = jvm("ext-prometheus") ++ graal
   }
 
   object TestState {
@@ -162,7 +165,7 @@ object Dependencies {
   }
 
   object LibJetty {
-    private val mm = MultiModule.java("org.eclipse.jetty", "9.4.12.v20180830")
+    private val mm = MultiModule.java("org.eclipse.jetty", "9.4.14.v20181114")
     val webapp = mm("jetty-webapp")
     val runner = mm("jetty-runner")
     val dist   = mm("jetty-distribution").modAll(_.artifacts(Artifact("jetty-distribution", "tar.gz", "tar.gz")).intransitive())

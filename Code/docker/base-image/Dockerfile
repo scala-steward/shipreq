@@ -70,7 +70,7 @@ RUN mkdir /opt \
  && cd /opt \
  && wget https://github.com/oracle/graal/releases/download/vm-$GRAAL_VERSION/graalvm-ce-$GRAAL_VERSION-linux-amd64.tar.gz \
  && tar xzf graalvm-ce-$GRAAL_VERSION-linux-amd64.tar.gz \
- && rm graalvm-ce-$GRAAL_VERSION-linux-amd64.tar.gz \
+ && rm graalvm-ce-$GRAAL_VERSION-linux-amd64.tar.gz /root/.wget-hsts \
  && ln -s graalvm-ce-${GRAAL_VERSION} graal \
  && cd graal \
  && rm -rf *src.zip \
@@ -108,19 +108,20 @@ RUN mkdir /opt \
            jre/languages/llvm
 
 RUN cd /opt/graal \
- && sed -i 's/#networkaddress.cache.ttl=-1/networkaddress.cache.ttl=10/' jre/lib/security/java.security \
- && echo 'export PATH="${PATH}:/opt/graal/bin"' > /etc/profile.d/path-graal.sh
+ && sed -i 's/#networkaddress.cache.ttl=-1/networkaddress.cache.ttl=10/' jre/lib/security/java.security
 
-ENV JAVA_HOME=/opt/graal
+ENV JAVA_HOME /opt/graal
+ENV PATH ${PATH}:/opt/graal/bin
 
 #=============#
 # Environment #
 #=============#
 
 RUN apk --no-cache add \
+    bash \
     htop \
     procps \
     tree \
     vim
 
-COPY .profile /root/.profile
+COPY .bashrc /root/.bashrc
