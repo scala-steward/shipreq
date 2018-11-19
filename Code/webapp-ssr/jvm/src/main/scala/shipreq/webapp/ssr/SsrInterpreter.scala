@@ -11,6 +11,35 @@ import shipreq.base.util.Url
 
 final class SsrInterpreter(ctx: ContextSync) extends SsrAlgebra[Fx] with StrictLogging {
 
+  private def samplePublicInitData: PublicInitData = {
+    import shipreq.base.util.Allow
+    import shipreq.webapp.base.protocol.{ServerSideProc, ServerSideProcId}
+    import shipreq.webapp.client.public.PublicSpaProtocols._
+    val sspId = ServerSideProcId("X")
+    PublicInitData(
+      publicRegistration = Allow,
+      loggedInUser = None,
+      landingPage = ServerSideProc(sspId, LandingPage.Fn),
+      register1 = ServerSideProc(sspId, Register.Fn1),
+      register2 = ServerSideProc(sspId, Register.Fn2),
+      login = ServerSideProc(sspId, Login.Fn),
+      resetPassword1 = ServerSideProc(sspId, ResetPassword.Fn1),
+      resetPassword2 = ServerSideProc(sspId, ResetPassword.Fn2))
+  }
+
+  override def warmup = Fx {
+    logger.info("Warming up SSR....")
+
+    ctx.eval(setUrl("https://shipreq.com"))
+
+    Warmup.sync(ctx)(10, publicExpr(samplePublicInitData), s => {
+      logger.info(s"SSR $s")
+      s.lastEvalAverage(10).millis < 40 || s.totalWarmupTime.seconds > 30 || s.totalInnerReps >= 1000
+    })
+
+    logger.info("Warming up done.")
+  }
+
   private val setUrl = Expr.compileFnCall1[String]("setUrl")(identity)
 
   private def runner[A](name: String, expr: A => Expr[String]): (Url.Absolute, A) => Fx[Option[Html]] = {
@@ -35,7 +64,8 @@ final class SsrInterpreter(ctx: ContextSync) extends SsrAlgebra[Fx] with StrictL
       }
     }
 
-  override val public = runner("public", Expr.compileFnCall1[PublicInitData]("public")(_.asString))
+  private val publicExpr = Expr.compileFnCall1[PublicInitData]("public")(_.asString)
+  override val public = runner("public", publicExpr)
 }
 
 object SsrInterpreter {
@@ -58,35 +88,4 @@ object SsrInterpreter {
 
     new SsrInterpreter(ctx)
   }
-
-//  // TODO Remove SsrInterpreter.main
-//  def main(args: Array[String]): Unit = {
-//    val ssr = apply(false)
-//
-//    import shipreq.base.util.Allow
-//    import shipreq.webapp.base.protocol.{ServerSideProc, ServerSideProcId}
-//    import shipreq.webapp.client.public.PublicSpaProtocols._
-//
-//    val sspId = ServerSideProcId("")
-//
-//    val landingPage = ServerSideProc(sspId, LandingPage.Fn)
-//    val register1 = ServerSideProc(sspId, Register.Fn1)
-//    val register2 = ServerSideProc(sspId, Register.Fn2)
-//    val login = ServerSideProc(sspId, Login.Fn)
-//    val resetPassword1 = ServerSideProc(sspId, ResetPassword.Fn1)
-//    val resetPassword2 = ServerSideProc(sspId, ResetPassword.Fn2)
-//
-//    val i = PublicInitData(
-//      publicRegistration = Allow,
-//      loggedInUser = None,
-//      landingPage = landingPage,
-//      register1 = register1,
-//      register2 = register2,
-//      login = login,
-//      resetPassword1 = resetPassword1,
-//      resetPassword2 = resetPassword2)
-//
-//    (0 to 10).foreach(_ => ssr.public(i))
-//    println(ssr.public(i))
-//  }
 }

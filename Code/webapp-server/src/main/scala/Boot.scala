@@ -57,6 +57,9 @@ class Boot {
     // Start services
     cfg.server.kamonConfFile.foreach(initKamon) // keep this after initTaskman() - don't want that SQL traced
     initPrometheus(cfg.server.prometheus)
+
+    // Warmup
+    Global.Instance.ssr.warmup.unsafeRun()
   }
 
   def readConfig(): (BootConfig, Option[RunModes.Value]) = {
