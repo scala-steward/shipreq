@@ -19,6 +19,7 @@ import shipreq.webapp.base.data.{ProjectId, SecurityToken}
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.logic._
+import shipreq.webapp.ssr.SsrInterpreter
 import DispatchLogic._
 
 /**
@@ -114,7 +115,7 @@ object DispatchBM {
     googleAnalyticsTrackingId  = None,
     taskmanSchema              = "test_taskman",
     prometheus                 = ServerConfig.Prometheus.default.copy(enabled = false),
-    ssrEnabled                 = false,
+    ssr                        = SsrInterpreter.Config.default.copy(enabled = false),
     kamonConfFile              = None,
     initTaskmanOnBoot          = false,
     initTaskmanRetry           = RetryCriteria(2 hours, Some(666)))

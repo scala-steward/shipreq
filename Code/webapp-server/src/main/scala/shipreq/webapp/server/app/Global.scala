@@ -54,6 +54,7 @@ object Global {
     implicit val security      = new SecurityInterpreter[Fx]
 
     val ssrPrometheus = config.prometheus.enabled && config.prometheus.ssr
+    val ssr           = if (config.ssr.enabled) SsrInterpreter(config.ssr, ssrPrometheus) else SsrAlgebra.Off
 
     Global(
       config   = config,
@@ -62,7 +63,7 @@ object Global {
       metrics  = metrics,
       ops      = ops,
       security = security,
-      ssr      = if (config.ssrEnabled) SsrInterpreter(ssrPrometheus) else SsrAlgebra.Off,
+      ssr      = ssr,
       taskman  = taskman,
       trace    = trace)
     }

@@ -8,6 +8,7 @@ import shipreq.base.ops._
 import shipreq.base.util._
 import shipreq.base.util.FxModule._
 import shipreq.webapp.server.logic.DispatchLogic
+import shipreq.webapp.ssr.SsrInterpreter
 
 @Lenses
 final case class ServerConfig(baseUrl: Url.Absolute.Base,
@@ -41,7 +42,7 @@ final case class ServerConfig(baseUrl: Url.Absolute.Base,
 
                               prometheus: ServerConfig.Prometheus,
 
-                              ssrEnabled: Boolean,
+                              ssr: SsrInterpreter.Config,
 
                               /** The DB schema in which the Taskman interfaces reside. */
                               taskmanSchema: String,
@@ -94,7 +95,7 @@ object ServerConfig {
       ConfigDef.get     [String  ]("googleAnalytics.trackingId")).tupled |@| (
       ConfigDef.get     [String  ]("kamon.conf") |@|
       Prometheus.config.withPrefix("prometheus.") |@|
-      ConfigDef.getOrUse[Boolean ]("ssr", true) |@|
+      SsrInterpreter.Config.configDef.withPrefix("ssr.") |@|
       ConfigDef.need    [String  ]("taskman.schema") |@|
       ConfigDef.getOrUse[Boolean ]("taskman.init", true) |@|
       RetryCriteria.config.withPrefix("taskman.init.retry.")
@@ -109,7 +110,7 @@ object ServerConfig {
           googleAnalyticsTrackingId), (
           kamonConfFile,
           prometheus,
-          ssrEnabled,
+          ssr,
           taskmanSchema,
           initTaskmanOnBoot,
           initTaskmanRetry,
@@ -124,7 +125,7 @@ object ServerConfig {
           googleAnalyticsTrackingId  = googleAnalyticsTrackingId,
           kamonConfFile              = kamonConfFile,
           prometheus                 = prometheus,
-          ssrEnabled                 = ssrEnabled,
+          ssr                        = ssr,
           taskmanSchema              = taskmanSchema,
           initTaskmanOnBoot          = initTaskmanOnBoot,
           initTaskmanRetry           = initTaskmanRetry,

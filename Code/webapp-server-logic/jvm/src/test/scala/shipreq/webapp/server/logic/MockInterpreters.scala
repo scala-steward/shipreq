@@ -17,6 +17,7 @@ import shipreq.webapp.base.hash.HashRecs
 import shipreq.webapp.base.protocol.{ServerSideProc, ServerSideProcId}
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.server.ServerConfig
+import shipreq.webapp.ssr.SsrInterpreter
 
 object MockDb {
   final case class UserEntry(id           : UserId,
@@ -449,7 +450,7 @@ object MockInterpreters {
     taskmanSchema              = "test_taskman",
     kamonConfFile              = None,
     prometheus                 = ServerConfig.Prometheus.default,
-    ssrEnabled                 = true,
+    ssr                        = SsrInterpreter.Config.default,
     initTaskmanOnBoot          = false,
     initTaskmanRetry           = RetryCriteria(2 hours, Some(666)))
 }

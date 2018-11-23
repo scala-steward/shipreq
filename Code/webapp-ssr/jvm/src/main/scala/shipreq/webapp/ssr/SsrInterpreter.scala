@@ -1,15 +1,59 @@
 package shipreq.webapp.ssr
 
 import com.typesafe.scalalogging.StrictLogging
+import japgolly.clearconfig.ConfigDef
 import japgolly.scalagraal._
 import japgolly.scalagraal.GraalJs._
 import japgolly.scalagraal.GraalBoopickle._
+import scala.concurrent.{Await, TimeoutException}
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
+import scalaz.syntax.applicative._
 import shipreq.base.util.FxModule._
-import SsrAlgebra.Types._
 import shipreq.base.util.Url
+import SsrAlgebra.Types._
 
-final class SsrInterpreter(ctx: ContextSync) extends SsrAlgebra[Fx] with StrictLogging {
+object SsrInterpreter {
+
+  final case class Config(enabled: Boolean,
+                          poolSize: Int,
+                          timeoutPublic: FiniteDuration)
+  object Config {
+    val default = apply(
+      enabled = true,
+      poolSize = 2,
+      timeoutPublic = 64 millis)
+
+    def configDef: ConfigDef[Config] =
+      ( ConfigDef.getOrUse("enabled",        default.enabled) |@|
+        ConfigDef.getOrUse("pool.size",      default.poolSize) |@|
+        ConfigDef.getOrUse("timeout.public", default.timeoutPublic)
+      ) (apply)
+  }
+
+  def apply(cfg: Config, prometheus: Boolean): SsrInterpreter = {
+    val setup = (
+      Expr("window = {console: console, navigator: {userAgent:''}}")
+       >> Expr.requireFileOnClasspath("webapp-ssr-deps.js")
+       >> Expr.requireFileOnClasspath("webapp-ssr.js"))
+
+    val ctx = ContextPool.Builder.fixedThreadPool(2)
+      .fixedContextPerThread()
+      .configure { b0 =>
+        var b = b0.onContextCreate(setup)
+        if (prometheus) b = b.writeMetrics(prometheusWriter)
+        b
+      }
+      .build()
+
+    new SsrInterpreter(ctx, cfg)
+  }
+
+  private lazy val prometheusWriter =
+    GraalPrometheus.Builder().registerAndBuild()
+}
+
+final class SsrInterpreter(ctx: ContextPool, cfg: SsrInterpreter.Config) extends SsrAlgebra[Fx] with StrictLogging {
 
   private def samplePublicInitData: PublicInitData = {
     import shipreq.base.util.Allow
@@ -30,62 +74,55 @@ final class SsrInterpreter(ctx: ContextSync) extends SsrAlgebra[Fx] with StrictL
   override def warmup = Fx {
     logger.info("Warming up SSR....")
 
-    ctx.eval(setUrl("https://shipreq.com"))
+    val expr = setUrl("https://shipreq.com") >> publicExpr(samplePublicInitData)
 
-    Warmup.sync(ctx)(10, publicExpr(samplePublicInitData), s => {
-      logger.info(s"SSR $s")
-      s.lastEvalAverage(10).millis < 40 || s.totalWarmupTime.seconds > 30 || s.totalInnerReps >= 1000
-    })
+    // TODO Warmup config hardcoded
+    val warmupFutures =
+      Warmup.pool(ctx)(20, expr, s => {
+        logger.info(s"SSR $s")
+        s.lastEvalAverage(10).millis < 34 || s.totalWarmupTime.seconds > 30
+      })
 
-    logger.info("Warming up done.")
+    Await.result(warmupFutures.done, 60 seconds)
+    logger.info("Warm up complete.")
   }
 
   private val setUrl = Expr.compileFnCall1[String]("setUrl")(identity)
 
-  private def runner[A](name: String, expr: A => Expr[String]): (Url.Absolute, A) => Fx[Option[Html]] = {
+  private def runner[A](name: String, timeout: Duration, expr: A => Expr[String]): (Url.Absolute, A) => Fx[Option[Html]] = {
     val logHead = s"Rendered $name in "
     val mw = ContextMetrics.Writer(s => logger.info(logHead + s.total.toStrMs))
-    (url, a) => run(setUrl(url.absoluteUrl) >> expr(a), mw, name)
+    (url, a) => run(setUrl(url.absoluteUrl) >> expr(a), timeout, mw, name)
   }
 
-  private def run(expr: Expr[String], mw: ContextMetrics.Writer, name: String): Fx[Option[Html]] =
+  private def run(expr   : Expr[String],
+                  timeout: Duration,
+                  mw     : ContextMetrics.Writer,
+                  name   : String): Fx[Option[Html]] =
     Fx {
-      try
-        ctx.eval(expr, mw) match {
+      @volatile var cancel = false
+      try {
+        val maybeCancel = Expr.byName(if (cancel) Expr.unit else expr)
+        val expr2       = maybeCancel >> expr
+        val future      = ctx.eval(expr2, mw)
+        Await.result(future, timeout) match {
           case Right(html) => Some(Html(html))
-          case Left(e)     =>
+          case Left(e) =>
             logger.warn(s"ExprError occurred rendering $name", e)
             None
         }
-      catch {
+      } catch {
+        case _: TimeoutException =>
+          cancel = true
+          logger.warn(s"Timeout rendering $name")
+          None
         case NonFatal(t) =>
+          cancel = true
           logger.warn(s"Unhandled exception occurred rendering $name", t)
           None
       }
     }
 
   private val publicExpr = Expr.compileFnCall1[PublicInitData]("public")(_.asString)
-  override val public = runner("public", publicExpr)
-}
-
-object SsrInterpreter {
-
-  def apply(prometheus: Boolean): SsrInterpreter = {
-    val setup = (
-      Expr("window = {console: console, navigator: {userAgent:''}}")
-       >> Expr.requireFileOnClasspath("webapp-ssr-deps.js")
-       >> Expr.requireFileOnClasspath("webapp-ssr.js"))
-
-    var ctxBuilder = ContextSync.Builder.fixedContext()
-      .onContextCreate(setup)
-
-    if (prometheus) {
-      val w = GraalPrometheus.Builder().registerAndBuild()
-      ctxBuilder = ctxBuilder.writeMetrics(w)
-    }
-
-    val ctx = ctxBuilder.build()
-
-    new SsrInterpreter(ctx)
-  }
+  override val public = runner("public", cfg.timeoutPublic, publicExpr)
 }
