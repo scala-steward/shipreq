@@ -398,8 +398,6 @@ object WebappBuild {
 
             env("JETTY_HOME" -> jettyHome, "JETTY_BASE" -> base)
 
-            copy(srcDocker / "home", "/root/")
-
             copy(tmpJetty, s"$jettyHome/")
 
             // TODO Maybe not needed after use of quickstart
