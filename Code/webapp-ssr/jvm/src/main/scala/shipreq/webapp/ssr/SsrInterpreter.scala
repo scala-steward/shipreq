@@ -117,8 +117,10 @@ final class SsrInterpreter(ctx: ContextPool, cfg: SsrInterpreter.Config) extends
   }
 
   private def runnerU[A](name: String, timeout: Duration, expr: A => Expr[String]): (Url.Absolute, A) => Fx[Option[Html]] = {
-    val mw = metricLogger(name)
-    (url, a) => run(setUrl(url.absoluteUrl) >> expr(a), timeout, mw, name)
+    (url, a) => {
+      val mw = ContextMetrics.Writer(s => logger.info(s"Rendered $name @ ${url.absoluteUrl} in ${s.total}"))
+      run(setUrl(url.absoluteUrl) >> expr(a), timeout, mw, name)
+    }
   }
 
   private def run(expr   : Expr[String],
