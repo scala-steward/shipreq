@@ -26,6 +26,8 @@ object SsrInterpreterTest extends TestSuite {
 
   override def tests = Tests {
 
+//    'warmup - ssr.warmup.unsafeRun()
+
     'public - {
 
       def run(path: String, username: String = null): String = {
