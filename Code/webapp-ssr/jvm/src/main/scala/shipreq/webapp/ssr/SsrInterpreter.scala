@@ -50,7 +50,20 @@ object SsrInterpreter {
   }
 
   private lazy val prometheusWriter =
-    GraalPrometheus.Builder().registerAndBuild()
+    GraalPrometheus.Builder()
+      .configureByMetric {
+        case ContextMetrics.Metric.Wait =>
+          _.bucketsInMs(.01, .1, 1, 2, 4, 8, 16, 32, 48, 100, 1000)
+
+        case ContextMetrics.Metric.Pre
+           | ContextMetrics.Metric.Post =>
+          _.bucketsInMs(.01, .1, 1, 10, 100)
+
+        case ContextMetrics.Metric.Body
+           | ContextMetrics.Metric.Total =>
+          _.bucketsInMs(.5, 1, 2, 4, 8, 12, 20, 30, 40, 50, 60, 75, 100, 250, 500, 750, 1000)
+      }
+      .registerAndBuild()
 }
 
 final class SsrInterpreter(ctx: ContextPool, cfg: SsrInterpreter.Config) extends SsrAlgebra[Fx] with StrictLogging {

@@ -1,4 +1,3 @@
-* prometheus buckets
 * replace webapp-gen with ssr (means it becomes mandatory instead of optional (?) or maybe some crap default)
 
 * Router in SSR tries to pushState/replaceState
