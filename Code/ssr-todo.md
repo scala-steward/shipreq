@@ -1,7 +1,5 @@
 * warmup on idle (not just ssr)
 
-* update modules doc
-
 * Router in SSR tries to pushState/replaceState
   - let it crash and hide from logs?
   - or, have the router be SSR aware and....?

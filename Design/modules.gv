@@ -40,7 +40,9 @@ subgraph cluster_base {
     webappBaseMember [label="webapp-base-member\n(JVM & JS)"]
     webappServerLogic [label="webapp-server-logic\n(JVM & JS)"]
     webappClientWwApi [label="webapp-client-ww-api\n(JS)"]
-    webappGen [label="webapp-gen\n(JVM & JS)"]
+    webappSsrShared [label="webapp-ssr\n(JVM & JS)"]
+    webappSsrJvm [label="webapp-ssr\n(JVM)"]
+    webappSsrJs [label="webapp-ssr\n(JS)"]
 
     node[fillcolor="#00ccff"]
     webappClientPublic [label="webapp-client-public\n(JVM & JS)"]
@@ -87,7 +89,7 @@ taskmanServer -> taskmanServerLogic,taskmanApi,taskmanDb
 
 webappMacro -> baseUtil
 webappBase -> webappMacro
-webappServerLogic -> webappBase,taskmanApiLogic,webappClientPublic
+webappServerLogic -> webappBaseMember,taskmanApiLogic,webappClientPublic,webappSsrJvm
 webappServerLogic -> webappBaseTest [color="#111111" style=dashed label="test"]
 webappBaseMember -> webappBase
 webappBaseTest -> baseTest,webappBaseMember [color="#111111"]
@@ -100,10 +102,11 @@ webappClientWw -> webappClientWwApi
 webappClientWw -> webappBaseTest [color="#111111" style=dashed label="test"]
 webappClientProject -> webappClientWwApi
 webappClientProject -> webappBaseTest [color="#111111" style=dashed label="test"]
-webappGen -> webappBaseMember
-webappGen -> webappClientProject [color="#111111" style=dashed label="run"]
-webappGen -> webappBaseTest [color="#111111" style=dashed label="test"]
-webappServer -> taskmanApi,webappServerLogic,webappGen
+webappSsrShared -> webappBaseMember,webappClientPublic
+webappSsrJvm,webappSsrJs -> webappSsrShared
+webappSsrJs -> webappClientHome,webappClientProject
+webappSsrJvm -> webappSsrJs [color="#111111" style=dashed label="JS"]
+webappServer -> taskmanApi,webappServerLogic,webappSsr
 // webappServer -> baseDb // transitive through taskman-api
 webappServer -> webappClientPublic,webappClientHome,webappClientProject,webappClientWw [style=dashed]
 
