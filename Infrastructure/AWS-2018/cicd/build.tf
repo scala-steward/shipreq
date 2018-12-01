@@ -75,8 +75,12 @@ resource "aws_iam_role_policy" "build" {
       "Resource": [ "${aws_ecr_repository.build.arn}" ],
       "Action": [
         "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
         "ecr:CompleteLayerUpload",
+        "ecr:DescribeImages",
+        "ecr:GetDownloadUrlForLayer",
         "ecr:InitiateLayerUpload",
+        "ecr:ListImages",
         "ecr:PutImage",
         "ecr:UploadLayerPart"
       ]
