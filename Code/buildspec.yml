@@ -4,6 +4,7 @@ phases:
   pre_build:
     commands:
       - cd Code
+      - export JAVA_OPTS="-Xms512m -Xmx4g -Xss2m"
       - env|sort
   build:
     commands:
