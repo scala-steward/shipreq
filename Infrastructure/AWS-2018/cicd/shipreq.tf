@@ -8,7 +8,7 @@ data "aws_ecr_repository" "webapp" {
 
 resource "aws_codebuild_project" "shipreq" {
   name         = "shipreq"
-  description  = "ShipReq"
+  description  = "Taskman & Webapp"
   service_role = "${aws_iam_role.shipreq.arn}"
 
   environment {
