@@ -312,6 +312,21 @@ object Common {
       IO.delete(to)
     }
 
+  def gzipLength(in: File): Long = {
+    import java.io._
+    import java.util.zip._
+    val bos = new ByteArrayOutputStream()
+    try {
+      val gzip = new GZIPOutputStream(bos) { this.`def`.setLevel(Deflater.BEST_COMPRESSION) }
+      try
+        IO.transfer(in, gzip)
+      finally
+        gzip.close()
+    } finally
+      bos.close()
+    bos.toByteArray.length
+  }
+
   def printFileBatches(batchesT: Traversable[Traversable[File]]): Unit = {
     val sep = "=" * 100
     println(sep)

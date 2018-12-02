@@ -1,5 +1,5 @@
 import sbt.{project => _, _}, Keys._
-import org.scalajs.core.tools.io.{IO => _, _}
+import org.scalajs.core.tools.io.{FileVirtualJSFile, VirtualJSFile}
 import org.scalajs.sbtplugin.{ScalaJSPlugin, Stage}
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
 import org.scalajs.sbtplugin.ScalaJSPluginInternal.stageKeys
@@ -303,21 +303,6 @@ object WebappBuild {
 
   val jsSizesFast = TaskKey[Unit]("jsSizesFast", "Print JS sizes (using fastOptJS).")
   val jsSizesFull = TaskKey[Unit]("jsSizesFull", "Print JS sizes (using fullOptJS).")
-
-  def gzipLength(in: File): Long = {
-    import java.io._
-    import java.util.zip._
-    val bos = new ByteArrayOutputStream()
-    try {
-      val gzip = new GZIPOutputStream(bos) { this.`def`.setLevel(Deflater.BEST_COMPRESSION) }
-      try
-        IO.transfer(in, gzip)
-      finally
-        gzip.close()
-    } finally
-      bos.close()
-    bos.toByteArray.length
-  }
 
   def jsSizesTask(stage: Stage) = Def.task[Unit] {
     def report(name: String, f: Attributed[File]): Unit =
