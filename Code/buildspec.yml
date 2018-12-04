@@ -25,9 +25,10 @@ phases:
         webapp-server-logic-js/test:fullOptJS
         test
     finally:
-      - find /root/.ivy2 /root/.sbt -name '*.lock' -type f -exec rm -fv {} +
+      - find /root/.coursier /root/.ivy2 /root/.sbt -name '*.lock' -type f -exec rm -fv {} +
 
 cache:
   paths:
+    - '/root/.coursier/**/*'
     - '/root/.ivy2/**/*'
     - '/root/.sbt/**/*'
