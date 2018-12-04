@@ -24,6 +24,7 @@ phases:
         webapp-gen-js/test:fullOptJS
         webapp-server-logic-js/test:fullOptJS
         test
+        | sed -r 's~\x01?(\x1B\(B)?\x1B\[([0-9;]*)?[JKmsu]\x02?~~g'
     finally:
       - find /root/.coursier /root/.ivy2 /root/.sbt -name '*.lock' -type f -exec rm -fv {} +
 
