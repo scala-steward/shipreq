@@ -5,7 +5,6 @@ phases:
     commands:
       - cd Code
       - export JAVA_OPTS="-Xms512m -Xmx4g -Xss2m"
-      - export SHIPREQ_RELEASE_TARGET=/shipreq.out
   build:
     commands:
       - >
@@ -34,4 +33,3 @@ cache:
     - '/root/.cache/coursier/**/*'
     - '/root/.ivy2/**/*'
     - '/root/.sbt/**/*'
-    - '/shipreq.out/**/*'
