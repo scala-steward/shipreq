@@ -158,6 +158,44 @@ RUN set -ex \
     && rm -fr /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     && apt-get clean
 
+ ##############
+ # Phantom JS #
+ ##############
+
+RUN export PHANTOM_JS="phantomjs-2.1.1-linux-x86_64" \
+ && wget https://github.com/Medium/phantomjs/releases/download/v2.1.1/$PHANTOM_JS.tar.bz2 \
+ && tar xvjf $PHANTOM_JS.tar.bz2 \
+ && rm $PHANTOM_JS.tar.bz2 \
+ && mv $PHANTOM_JS /usr/local/share \
+ && ln -s /usr/local/share/$PHANTOM_JS/bin/phantomjs /usr/bin
+
+ ##################
+ # SBT & Scala.JS #
+ ##################
+
+RUN echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list \
+ && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823 \
+ && apt-get update \
+ && apt-get install sbt \
+ && rm -fr /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+ && apt-get clean
+
+RUN mkdir -p /root/.sbt/0.13/plugins/ \
+ && echo 'addSbtPlugin("io.get-coursier" % "sbt-coursier" % "1.0.3")' >> /root/.sbt/0.13/plugins/plugins.sbt \
+ && mkdir /tmp/scala \
+ && cd /tmp/scala \
+ && mkdir project \
+ && echo 'sbt.version=0.13.17' > project/build.properties \
+ && echo 'scalaVersion := "2.12.8"' > build.sbt \
+ && echo 'object M{}' > M.scala \
+ && sbt test \
+ && cd / \
+ && rm -rf /tmp/scala
+
+RUN npm install -g jsdom@9.12.0
+
+ENV NODE_PATH=/usr/local/lib/node_modules
+
 ###########################
 # Tools for Docker builds #
 ###########################
@@ -182,47 +220,9 @@ RUN mkdir /tmp/brotli \
  && cd / \
  && rm -rf /tmp/brotli
 
- ##################
- # SBT & Scala.JS #
- ##################
-
-RUN npm install -g jsdom@9.12.0
-
-RUN echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list \
- && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2EE0EA64E40A89B84B2DF73499E82A75642AC823 \
- && apt-get update \
- && apt-get install sbt \
- && rm -fr /var/lib/apt/lists/* /tmp/* /var/tmp/* \
- && apt-get clean
-
-RUN mkdir -p /root/.sbt/0.13/plugins/ \
- && echo 'addSbtPlugin("io.get-coursier" % "sbt-coursier" % "1.0.3")' >> /root/.sbt/0.13/plugins/plugins.sbt \
- && mkdir /tmp/scala \
- && cd /tmp/scala \
- && mkdir project \
- && echo 'sbt.version=0.13.17' > project/build.properties \
- && echo 'scalaVersion := "2.12.8"' > build.sbt \
- && echo 'object M{}' > M.scala \
- && sbt test \
- && cd / \
- && rm -rf /tmp/scala
-
- ##############
- # Phantom JS #
- ##############
-
-RUN export PHANTOM_JS="phantomjs-2.1.1-linux-x86_64" \
- && wget https://github.com/Medium/phantomjs/releases/download/v2.1.1/$PHANTOM_JS.tar.bz2 \
- && tar xvjf $PHANTOM_JS.tar.bz2 \
- && rm $PHANTOM_JS.tar.bz2 \
- && mv $PHANTOM_JS /usr/local/share \
- && ln -s /usr/local/share/$PHANTOM_JS/bin/phantomjs /usr/bin
-
  ##############
  # Misc small #
  ##############
-
- ENV NODE_PATH=/usr/local/lib/node_modules
 
 ENV SBT_OPTS="-XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC"
 
