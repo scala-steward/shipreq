@@ -26,16 +26,15 @@ object TaskmanBuild {
       .configure(Common.jvmSettings, DockerEnv.test.required)
       .deps(
         Json4s.jackson ++
-        testScope(Specs2.combo ++ scalaCheck ++ Scala.reflect))
+        testScope(μTest ++ scalaCheck ++ Scala.reflect))
       .dependsOn(taskmanApiLogic, baseDb)
       .dependsOn(taskmanServerSchema % Test)
       .dependsOn(baseTestJvm % Test)
-    .settings(fork in Test := true) // else modules using specs2 v3+ seem to interfere with each other
 
   lazy val taskmanServerLogic =
     project("taskman-server-logic")
       .configure(Common.jvmSettings)
-      .deps(Logback.withPlugins ++ testScope(Specs2.combo))
+      .deps(Logback.withPlugins ++ testScope(μTest ++ scalaCheck))
       .dependsOn(taskmanApiLogic)
       .dependsOn(baseTestJvm % Test)
 
@@ -77,7 +76,7 @@ object TaskmanBuild {
       .configure(Common.jvmSettings, DockerEnv.test.required)
       .deps(
         Akka.actor ++ javaMail ++ OkHttp.core ++ httpCore ++ commonsIo ++ Logback.withPlugins ++
-        testScope(Akka.testkit ++ Specs2.combo))
+        testScope(Akka.testkit ++ μTest))
       .dependsOn(taskmanServerLogic, taskmanServerSchema, taskmanApi)
       .dependsOn(baseTestJvm % Test)
       .configure(Common.dockerBaseSettings("taskman"))
@@ -93,7 +92,6 @@ object TaskmanBuild {
             case (f, n) => (f, fixJarFilename.value(n))
           },
 
-        fork in Test := true, // else modules using specs2 v3+ seem to interfere with each other
         parallelExecution in Test := false)
       .configure(dontInline) // because Akka docs
   }

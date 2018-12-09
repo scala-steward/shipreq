@@ -3,17 +3,14 @@ package shipreq.taskman.server.business
 import org.json4s.JsonAST.JValue
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-import org.specs2.mutable.Specification
-import scalaz.\/
+import scalaz.{\/, \/-}
 import scalaz.syntax.std.option._
-import shipreq.base.test.specs2.BaseMatchers._
 import shipreq.base.util.ArticulateError
 import shipreq.base.util.FxModule._
 import shipreq.taskman.api.EmailAddr
 import shipreq.taskman.server.business.MailChimp._
 import shipreq.taskman.server.logic.business.MailingList._
-
-class MailChimpTest extends Specification {
+import utest._
 
 /*
 [info] 10:15:32.814 INFO  [s.t.server.business.MailChimp   ] {          } HTTP request: POST https://us8.api.mailchimp.com/2.0/lists/list.json ← {"apikey":"<KEY>","filters":{"list_name":"Master","exact":true}}
@@ -41,73 +38,82 @@ class MailChimpTest extends Specification {
 [info] ✓ Subscribe existing (AlreadySubscribed)
 [info] ✓ Update existing (Ok)
 */
+object MailChimpTest extends TestSuite {
 
-  def testParse[A](f: JValue => ArticulateError \/ A, txt: String): A =
-    f(parse(txt)).fold(throw _, identity)
-
-  "Total API failures" >> {
-
-    "parseHttpErrorJson" in {
-      testParse(ApiFailure.Total.parse,
-        """{"status":"error","code":553,"name":"Invalid_PagingLimit","error":"Page Limit Number must be greater than or equal to 0"}"""
-      ) ==== ApiFailure.Total(553, "Invalid_PagingLimit", "Page Limit Number must be greater than or equal to 0")
-    }
+  private def assertParse[A](f: JValue => ArticulateError \/ A, txt: String)(expect: A): Unit = {
+    val actual = f(parse(txt)).fold(throw _, identity)
+    assert(actual == expect)
   }
 
-  "Partial API failures" >> {
-    "No 'errors' field" in {
-      testParse(ApiFailure.Partial.parse, """{"blah":0}""") ==== Nil
+  override def tests = Tests {
+
+    "Total API failures" - {
+
+      "parseHttpErrorJson" - {
+        val json = """{"status":"error","code":553,"name":"Invalid_PagingLimit","error":"Page Limit Number must be greater than or equal to 0"}"""
+        val expect = ApiFailure.Total(553, "Invalid_PagingLimit", "Page Limit Number must be greater than or equal to 0")
+        assertParse(ApiFailure.Total.parse, json)(expect)
+      }
     }
 
-    "Single with email" in {
-      testParse(ApiFailure.Partial.parse,
-        """{"add_count":0,"adds":[],"update_count":0,"updates":[],"error_count":1,"errors":[{"code":250,"error":"ACCT must be provided - Value must be one of: Never, Active (not Activ)","email":{"email":"great@yay.com"}}]}"""
-      ) ==== List(ApiFailure.Partial(250, "ACCT must be provided - Value must be one of: Never, Active (not Activ)", Some(EmailAddr("great@yay.com"))))
+    "Partial API failures" - {
+      "No 'errors' field" - {
+        assertParse(ApiFailure.Partial.parse, """{"blah":0}""")(Nil)
+      }
+
+      "Single with email" - {
+        val json = """{"add_count":0,"adds":[],"update_count":0,"updates":[],"error_count":1,"errors":[{"code":250,"error":"ACCT must be provided - Value must be one of: Never, Active (not Activ)","email":{"email":"great@yay.com"}}]}"""
+        val expect = List(ApiFailure.Partial(250, "ACCT must be provided - Value must be one of: Never, Active (not Activ)", Some(EmailAddr("great@yay.com"))))
+        assertParse(ApiFailure.Partial.parse, json)(expect)
+      }
+
+      "Single without email" - {
+        val json = """{"add_count":0,"adds":[],"update_count":0,"updates":[],"error_count":1,"errors":[{"code":250,"error":"ACCT must be provided - Value must be one of: Never, Active (not Activ)"}]}"""
+        val expect = List(ApiFailure.Partial(250, "ACCT must be provided - Value must be one of: Never, Active (not Activ)", None))
+        assertParse(ApiFailure.Partial.parse, json)(expect)
+      }
     }
 
-    "Single without email" in {
-      testParse(ApiFailure.Partial.parse,
-        """{"add_count":0,"adds":[],"update_count":0,"updates":[],"error_count":1,"errors":[{"code":250,"error":"ACCT must be provided - Value must be one of: Never, Active (not Activ)"}]}"""
-      ) ==== List(ApiFailure.Partial(250, "ACCT must be provided - Value must be one of: Never, Active (not Activ)", None))
-    }
-  }
+    "lists/list" - {
+      "ok" - {
+        val json = """{"total":1,"data":[{"id":"270dff4105","web_id":340229,"name":"Master","date_created":"2014-04-16 07:20:13","email_type_option":false,"use_awesomebar":true,"default_from_name":"Yoar Mum","default_from_email":"yoar.mum@gmail.com","default_subject":"","default_language":"en","list_rating":0,"subscribe_url_short":"http:\/\/eepurl.com\/SKedX","subscribe_url_long":"http:\/\/twitter.us8.list-manage.com\/subscribe?u=53543f1bb4e0a0dacc73d54e2&id=270dff4105","beamer_address":"us8-0b1dbef7ba-68b7f9f73e@inbound.mailchimp.com","visibility":"pub","stats":{"member_count":0,"unsubscribe_count":0,"cleaned_count":0,"member_count_since_send":0,"unsubscribe_count_since_send":0,"cleaned_count_since_send":0,"campaign_count":0,"grouping_count":0,"group_count":0,"merge_var_count":3,"avg_sub_rate":0,"avg_unsub_rate":0,"target_sub_rate":0,"open_rate":0,"click_rate":0,"date_last_campaign":null},"modules":[]}],"errors":[]}"""
+        assertParse(parseResponseForGetListId, json)(Some(ListId("270dff4105")))
+      }
 
-  "lists/list" >> {
-    "ok" in {
-      testParse(parseResponseForGetListId,
-        """{"total":1,"data":[{"id":"270dff4105","web_id":340229,"name":"Master","date_created":"2014-04-16 07:20:13","email_type_option":false,"use_awesomebar":true,"default_from_name":"Yoar Mum","default_from_email":"yoar.mum@gmail.com","default_subject":"","default_language":"en","list_rating":0,"subscribe_url_short":"http:\/\/eepurl.com\/SKedX","subscribe_url_long":"http:\/\/twitter.us8.list-manage.com\/subscribe?u=53543f1bb4e0a0dacc73d54e2&id=270dff4105","beamer_address":"us8-0b1dbef7ba-68b7f9f73e@inbound.mailchimp.com","visibility":"pub","stats":{"member_count":0,"unsubscribe_count":0,"cleaned_count":0,"member_count_since_send":0,"unsubscribe_count_since_send":0,"cleaned_count_since_send":0,"campaign_count":0,"grouping_count":0,"group_count":0,"merge_var_count":3,"avg_sub_rate":0,"avg_unsub_rate":0,"target_sub_rate":0,"open_rate":0,"click_rate":0,"date_last_campaign":null},"modules":[]}],"errors":[]}"""
-      ) must beSome(ListId("270dff4105"))
+      "no match" - {
+        assertParse(parseResponseForGetListId, """{"total":0,"data":[],"errors":[]}""")(None)
+      }
     }
 
-    "no match" in {
-      testParse(parseResponseForGetListId, """{"total":0,"data":[],"errors":[]}""") must beNone
-    }
-  }
+    "lists/batch-subscribe" - {
+      //    "new user" - {
+      //      testParse(parseResponse(BatchSubscribe(null, null)),
+      //        """{"add_count":1,"adds":[{"email":"great@yay.com","euid":"1fbc6c212e","leid":"147450781"}],"update_count":0,"updates":[],"error_count":0,"errors":[]}"""
+      //      ) ==== (())
+      //    }
+      //
+      //    "update user" - {
+      //      testParse(parseResponse(BatchSubscribe(null, null)),
+      //        """{"add_count":0,"adds":[],"update_count":1,"updates":[{"email":"great@yay.com","euid":"1fbc6c212e","leid":"147450781"}],"error_count":0,"errors":[]}"""
+      //      ) ==== (())
+      //    }
 
-  "lists/batch-subscribe" >> {
-//    "new user" in {
-//      testParse(parseResponse(BatchSubscribe(null, null)),
-//        """{"add_count":1,"adds":[{"email":"great@yay.com","euid":"1fbc6c212e","leid":"147450781"}],"update_count":0,"updates":[],"error_count":0,"errors":[]}"""
-//      ) ==== (())
-//    }
-//
-//    "update user" in {
-//      testParse(parseResponse(BatchSubscribe(null, null)),
-//        """{"add_count":0,"adds":[],"update_count":1,"updates":[{"email":"great@yay.com","euid":"1fbc6c212e","leid":"147450781"}],"error_count":0,"errors":[]}"""
-//      ) ==== (())
-//    }
-
-    "error" in {
-      ArticulateError.attempt(parse("""{"add_count":0,"adds":[],"update_count":0,"updates":[],"error_count":1,"errors":[{"code":250,"error":"ACCT must be provided - Value must be one of: Never, Active (not Activ)","email":{"email":"great@yay.com"}}]}"""))
-        .flatMap(j => ApiFailure.Partial.extract(j) <\/ j)
-        .must(beAnError)
+      "error" - {
+        val json = """{"add_count":0,"adds":[],"update_count":0,"updates":[],"error_count":1,"errors":[{"code":250,"error":"ACCT must be provided - Value must be one of: Never, Active (not Activ)","email":{"email":"great@yay.com"}}]}"""
+        val result = ArticulateError.attempt(parse(json)).flatMap(j => ApiFailure.Partial.extract(j) <\/ j)
+        assert(result.isLeft)
+      }
     }
-  }
 
-  "lists/subscribe" >> {
-    "error parsing" in {
-      val json = parse("""{"status":"error","code":214,"name":"List_AlreadySubscribed","error":"tmp-mailchimp-app@shipreq.com is already subscribed to list Master. Click here to update your profile."}""")
-      parseErrorForSubscribe(null, json).attemptArticulateError.unsafeRun() must beNonErrorOf(AlreadySubscribed)
+    "lists/subscribe" - {
+      "error parsing" - {
+        val json = """{"status":"error","code":214,"name":"List_AlreadySubscribed","error":"tmp-mailchimp-app@shipreq.com is already subscribed to list Master. Click here to update your profile."}"""
+        val result = parseErrorForSubscribe(null, parse(json)).attemptArticulateError.unsafeRun()
+        assert(result == \/-(AlreadySubscribed))
+      }
     }
+
   }
 }
+
+

@@ -2,100 +2,105 @@ package shipreq.taskman.server
 
 import doobie.imports._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
-import org.specs2.matcher.ThrownExpectations
-import org.specs2.mutable.Specification
-import shipreq.base.test.specs2.db.DatabaseTest
-import shipreq.taskman.api.{EmailAddr, MsgStatus, MsgId}
+import shipreq.base.util.FxModule._
+import shipreq.taskman.api.{EmailAddr, MsgId, MsgStatus}
 import shipreq.taskman.api.Msg.ReRegistrationAttempted
 import shipreq.taskman.server.logic._
 import shipreq.taskman.server.logic.ServerOp._
+import utest._
 
-class WorkflowTest extends Specification with DatabaseTest with ThrownExpectations
-    with ServerImplTestHelpers {
+object WorkflowTest extends TestSuite {
+  private val n = NodeId(123)
+  private val w = WorkerId(666)
+  private val defaultMsg = ReRegistrationAttempted(EmailAddr("haha cool"))
 
-  override def mutex = dbMutexR
+  private val assignNode = GetMsgsAssignNode(n, 10, 1 minutes, None)
 
-  val n = NodeId(123)
-  val w = WorkerId(666)
-  val defaultMsg = ReRegistrationAttempted(EmailAddr("haha cool"))
+  private def findAndStartWork(implicit helper: ServerImplTestHelpers) = {
+    import helper._
 
-  val assignNode = GetMsgsAssignNode(n, 10, 1 minutes, None)
-
-  def findAndStartWork = {
     // assign node -> cant(assign node)
     val q = run(assignNode)
-    q must have size 1
-    runApi(_.queryMsgStatus(q.head.id)) must beSome(MsgStatus.NodeAssigned)
-    run(assignNode) must beEmpty
+    assert(q.size == 1)
+    runApi(_.queryMsgStatus(q.head.id)) ==> Some(MsgStatus.NodeAssigned)
+    run(assignNode) ==> Nil
 
     // assign worker -> cant(assign node, assign worker)
     val assignWorker = GetMsgAssignWorker(n, w, q.head)
     val mo = run(assignWorker)
-    mo must beSome
+    assert(mo.isDefined)
     val m = mo.get
-    run(assignNode) must beEmpty
-    run(assignWorker) must beNone
-    runApi(_.queryMsgStatus(m.hdr.id)) must beSome(MsgStatus.Working)
+    run(assignNode) ==> Nil
+    run(assignWorker) ==> None
+    runApi(_.queryMsgStatus(m.hdr.id)) ==> Some(MsgStatus.Working)
 
     (m, assignWorker)
   }
 
-  def queryHistory(id: MsgId) =
+  private def queryHistory(id: MsgId)(implicit helper: ServerImplTestHelpers) =
     sql"select result,failure_count from msg_history where id=${id.value}".query[(String, Int)]
-      .option.runNow()
+      .option.transact(helper.xa).unsafeRun()
 
-  "Workflow: fail then pass" in {
-    // new
-    val id = runApi(_.submitMsg(defaultMsg))
-    runApi(_.queryMsgStatus(id)) must beSome(MsgStatus.Unassigned)
+  override def tests = Tests {
 
-    // assign node -> assign worker
-    val (m1, assignWorker1) = findAndStartWork
-    m1.failureCount must_== 0
+    "fail then pass" - ServerImplTestHelpers.imperative() { implicit helper =>
+      import helper._
 
-    // fail:retry -> cant(assign worker)
-    run(UpdateMsgRetry(n, w, m1, 0 seconds))
-    run(assignWorker1) must beNone
-    runApi(_.queryMsgStatus(id)) must beSome(MsgStatus.Unassigned)
+      // new
+      val id = runApi(_.submitMsg(defaultMsg))
+      runApi(_.queryMsgStatus(id)) ==> Some(MsgStatus.Unassigned)
 
-    // assign node -> assign worker
-    val (m2, assignWorker2) = findAndStartWork
-    m2.failureCount must_== 1
+      // assign node -> assign worker
+      val (m1, assignWorker1) = findAndStartWork
+      m1.failureCount ==> 0
 
-    // pass -> cant(assign node, assign worker)
-    run(UpdateMsgSuccess(n, w, m2))
-    run(assignNode) must beEmpty
-    run(assignWorker2) must beNone
-    runApi(_.queryMsgStatus(id)) must beSome(MsgStatus.Complete)
+      // fail:retry -> cant(assign worker)
+      run(UpdateMsgRetry(n, w, m1, 0 seconds))
+      run(assignWorker1) ==> None
+      runApi(_.queryMsgStatus(id)) ==> Some(MsgStatus.Unassigned)
 
-    queryHistory(id) must_== Some(("s", 1))
-  }
+      // assign node -> assign worker
+      val (m2, assignWorker2) = findAndStartWork
+      m2.failureCount ==> 1
 
-  "Workflow: fail+delay then abort" in {
-    // new
-    val id = runApi(_.submitMsg(defaultMsg))
-    runApi(_.queryMsgStatus(id)) must beSome(MsgStatus.Unassigned)
+      // pass -> cant(assign node, assign worker)
+      run(UpdateMsgSuccess(n, w, m2))
+      run(assignNode) ==> Nil
+      run(assignWorker2) ==> None
+      runApi(_.queryMsgStatus(id)) ==> Some(MsgStatus.Complete)
 
-    // assign node -> assign worker
-    val (m1, assignWorker1) = findAndStartWork
-    m1.failureCount must_== 0
+      queryHistory(id) ==> Some(("s", 1))
+    }
 
-    // fail:retry -> cant(assign worker) while delay
-    run(UpdateMsgRetry(n, w, m1, 1 seconds))
-    run(assignWorker1) must beNone
-    run(assignNode) must beEmpty
-    Thread.sleep(1050)
+    "fail+delay then abort" - ServerImplTestHelpers.imperative() { implicit helper =>
+      import helper._
 
-    // assign node -> assign worker
-    val (m2, assignWorker2) = findAndStartWork
-    m2.failureCount must_== 1
+      // new
+      val id = runApi(_.submitMsg(defaultMsg))
+      runApi(_.queryMsgStatus(id)) ==> Some(MsgStatus.Unassigned)
 
-    // pass -> cant(assign node, assign worker)
-    run(UpdateMsgAbort(n, w, m2))
-    run(assignNode) must beEmpty
-    run(assignWorker2) must beNone
-    runApi(_.queryMsgStatus(id)) must beSome(MsgStatus.Aborted)
+      // assign node -> assign worker
+      val (m1, assignWorker1) = findAndStartWork
+      m1.failureCount ==> 0
 
-    queryHistory(id) must_== Some(("f", 2))
+      // fail:retry -> cant(assign worker) while delay
+      run(UpdateMsgRetry(n, w, m1, 1 seconds))
+      run(assignWorker1) ==> None
+      run(assignNode) ==> Nil
+      Thread.sleep(1050)
+
+      // assign node -> assign worker
+      val (m2, assignWorker2) = findAndStartWork
+      m2.failureCount ==> 1
+
+      // pass -> cant(assign node, assign worker)
+      run(UpdateMsgAbort(n, w, m2))
+      run(assignNode) ==> Nil
+      run(assignWorker2) ==> None
+      runApi(_.queryMsgStatus(id)) ==> Some(MsgStatus.Aborted)
+
+      queryHistory(id) ==> Some(("f", 2))
+    }
+
   }
 }

@@ -148,11 +148,6 @@ object Dependencies {
     // val urlConnection = mm("okhttp-urlconnection") ++ core
   }
 
-  object Specs2 {
-    private val mm = MultiModule.scala("org.specs2", "3.9.5")
-    val combo = mm("specs2-core") ++ mm("specs2-scalacheck")
-  }
-
   object LibJetty {
     private val mm = MultiModule.java("org.eclipse.jetty", "9.4.12.v20180830")
     val webapp = mm("jetty-webapp")

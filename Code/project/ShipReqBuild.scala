@@ -45,8 +45,7 @@ object ShipReqBuild {
         Microlibs.scalazExt ++ Microlibs.stdlibExt ++ Microlibs.utils ++
         testScope(μTest ++ Nyaya.test ++ Microlibs.testUtil))
       .depsForJvm(
-        SLF4J.api ++ Logback.core ++ scalaLogging ++ clearConfig ++
-        testScope(Specs2.combo))
+        SLF4J.api ++ Logback.core ++ scalaLogging ++ clearConfig)
 
   lazy val baseOps =
     project("base-ops")
@@ -72,13 +71,12 @@ object ShipReqBuild {
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoDom))
       .dependsOn(baseUtil)
+      .configureJvm(_.dependsOn(baseDb % Provided))
       .depsForBoth(
         Microlibs.testUtil ++
-        providedScope(Nyaya.gen) ++
+        providedScope(μTest ++ Nyaya.gen) ++
         testScope(μTest ++ Nyaya.test))
-      .configureJvm(_
-        .deps(providedScope(Specs2.combo))
-        .dependsOn(baseDb % Provided))
+      .depsForJvm(providedScope(scalaCheck))
 
   // ===================================================================================================================
   // utils & benchmark-*

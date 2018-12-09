@@ -1,5 +1,6 @@
 package shipreq.base.test.db
 
+import doobie.imports._
 import java.util.concurrent.locks.Lock
 import scalaz.syntax.apply._
 import shipreq.base.db.{DbAccess, DbConfig}
@@ -59,6 +60,9 @@ trait TestDb extends DbTemplate with TestDbUsageDefaults[Usable[SingleConnection
 
   def wrapTransaction[A](xa: SingleConnectionXA, io: Fx[A]): Fx[A] =
     io
+
+  def runNow[A](f: ConnectionIO[A], inTransaction: Boolean = true, mutex: Option[Lock] = None): A =
+    apply(inTransaction, mutex)(f.transact(_)).unsafeRun()
 }
 
 trait TestDbUsageDefaults[+A] {

@@ -1,37 +1,38 @@
 package shipreq.taskman.server.logic
 
-import org.specs2.mutable._
-import org.specs2.ScalaCheck
+import org.scalacheck.Prop.BooleanOperators
+import shipreq.base.test.MTestScalaCheck
 import shipreq.taskman.api.{MsgId, Priority}
+import utest._
 import Manager._
 import TestHelpers._
 
-class ManagerTest extends Specification with ScalaCheck {
+object ManagerTest extends TestSuite with MTestScalaCheck {
 
-  val a = MsgHeader(MsgId(1), Priority(6), timePast)
-  val b = MsgHeader(MsgId(2), Priority(6), timeNow)
-  val c = MsgHeader(MsgId(3), Priority(5), timePast)
-  val d = MsgHeader(MsgId(4), Priority(5), timeNow)
+  private val a = MsgHeader(MsgId(1), Priority(6), timePast)
+  private val b = MsgHeader(MsgId(2), Priority(6), timeNow)
+  private val c = MsgHeader(MsgId(3), Priority(5), timePast)
+  private val d = MsgHeader(MsgId(4), Priority(5), timeNow)
 
-  val eg4 = Manager.empty + c + a + d + b
+  private val eg4 = Manager.empty + c + a + d + b
 
-  def haveItems(ms: MsgHeader*) = be_==(ms.toList) ^^ { (q: JobQueue) => q.q.toList }
+  override def tests = Tests {
 
-  "JoeQueue" should {
-    "prefer highest priority, then oldest" in {
-      eg4 must haveItems(a,b,c,d)
-    }
+    "JoeQueue" - {
+      "prefer highest priority, then oldest" - {
+        eg4.q.toList ==> List(a, b, c, d)
+      }
 
-    "add" ! prop { (q: JobQueue, ms: List[MsgHeader]) =>
-      add(ms).run(q)._1.q.toList must containAllOf(q.q.toList) and containAllOf(ms.distinct)
-    }
+      "add" - scalaCheck(_.forAll { (q: JobQueue, ms: List[MsgHeader]) =>
+        val r = add(ms).run(q)._1.q.toList
+        (q.q.toList ::: ms.distinct).forall(r.contains)
+      })
 
-    "queue status" in {
-      eg4.status ==== Some((Priority(6), 4))
-    }
+      "queue status" - {
+        eg4.status ==> Some((Priority(6), 4))
+      }
 
-    "pop" ! prop {
-      (q: JobQueue) => {
+      "pop" - scalaCheck(_.forAll { (q: JobQueue) =>
         val (r,(a,b)) = (for (x <- pop; y <- pop) yield (x,y)).run(q)
         (r.q.size == (q.q.size - 2).max(0)) :| "Size" &&
         ((a.toList ++ b.toList ++ r.q.toList) == q.q.toList) :| "Reconstruction" && (
@@ -40,7 +41,8 @@ class ManagerTest extends Specification with ScalaCheck {
           case (None, Some(_))    => false :| "No-pop followed by pop??"
           case _                  => true
         })
-      }
+      })
+
     }
   }
 }

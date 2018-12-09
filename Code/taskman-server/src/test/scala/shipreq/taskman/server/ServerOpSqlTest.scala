@@ -1,21 +1,22 @@
 package shipreq.taskman.server
 
-import org.specs2.mutable.Specification
 import shipreq.base.test.db.SqlTester.test
-import shipreq.base.test.specs2.AllowUnitAsResult._
-import shipreq.base.test.specs2.db.DatabaseTest
 import shipreq.taskman.server.ServerOpFx.Sql._
+import utest._
 
-class ServerOpSqlTest extends Specification with DatabaseTest {
-  sequential
+object ServerOpSqlTest extends TestSuite {
 
-//  "getNextNodeIdQ" in test(getNextNodeIdQ)
-  "cfgGetQ" in test(cfgGetQ)
-//  "getMsgsAssignNodeZ" in test(getMsgsAssignNodeZ)
-//  "getMsgsAssignNodeF" in test(getMsgsAssignNodeF)
-//  "getMsgsAssignNodeP" in test(getMsgsAssignNodeP)
-//  "getMsgAssignWorkerQ" in test(getMsgAssignWorkerQ)
-  "reassignWorkerQ" in test(reassignWorkerQ)
-  "failAndRetryQ" in test(failAndRetryQ)
-//  "archiveMsgQ" in test(archiveMsgQ)
+  override def tests = Tests {
+
+    //  "getNextNodeIdQ" - test(getNextNodeIdQ)
+    "cfgGetQ" - test(cfgGetQ)
+    //  "getMsgsAssignNodeZ" - test(getMsgsAssignNodeZ)
+    //  "getMsgsAssignNodeF" - test(getMsgsAssignNodeF)
+    //  "getMsgsAssignNodeP" - test(getMsgsAssignNodeP)
+    //  "getMsgAssignWorkerQ" - test(getMsgAssignWorkerQ)
+    "reassignWorkerQ" - test(reassignWorkerQ)
+    "failAndRetryQ" - test(failAndRetryQ)
+    //  "archiveMsgQ" - test(archiveMsgQ)
+
+  }
 }

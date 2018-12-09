@@ -30,6 +30,39 @@ trait MockOpTransformerResults[Op[_]] {
 
   def opTypeProvider: OpTypeProvider[Op]
   def opClassTag[A](o: Op[A]) = opTypeProvider.apply(o).asInstanceOf[ClassTag[Op[A]]]
+
+  def assertOpTypes(expected: ClassTag[_ <: Op[_]]*): Unit = {
+    val actual = allOpTypes
+    val expect = expected.toVector
+    assert(actual == expect)
+  }
+
+  private def CT[A](implicit m: ClassTag[A]) = m
+
+  def assertOpTypes1[A <: Op[_]: ClassTag] =
+    assertOpTypes(CT[A])
+
+  def assertOpTypes2[A <: Op[_]: ClassTag, B <: Op[_]: ClassTag] =
+    assertOpTypes(CT[A], CT[B])
+
+  def assertOpTypes3[A <: Op[_]: ClassTag, B <: Op[_]: ClassTag, C <: Op[_]: ClassTag] =
+    assertOpTypes(CT[A], CT[B], CT[C])
+
+  def assertOpTypes4[A <: Op[_]: ClassTag, B <: Op[_]: ClassTag, C <: Op[_]: ClassTag, D <: Op[_]: ClassTag] =
+    assertOpTypes(CT[A], CT[B], CT[C], CT[D])
+
+  def assertOpTypes5[A <: Op[_]: ClassTag, B <: Op[_]: ClassTag, C <: Op[_]: ClassTag, D <: Op[_]: ClassTag, E <: Op[_]: ClassTag] =
+    assertOpTypes(CT[A], CT[B], CT[C], CT[D], CT[E])
+
+  def assertOpTypes6[A <: Op[_]: ClassTag, B <: Op[_]: ClassTag, C <: Op[_]: ClassTag, D <: Op[_]: ClassTag, E <: Op[_]: ClassTag, F <: Op[_]: ClassTag] =
+    assertOpTypes(CT[A], CT[B], CT[C], CT[D], CT[E], CT[F])
+
+  def assertAnyOpsBut(notExp: ClassTag[_ <: Op[_]]*): Unit = {
+    val matching = allOpTypes.filter(x => notExp.exists(y => isSubtype(x, y)))
+    assert(matching.isEmpty)
+  }
+
+  def assertAnyOpsBut1[A <: Op[_]: ClassTag] = assertAnyOpsBut(CT[A])
 }
 
 abstract class MockOpTransformer[Op[_], I[_]] extends (Op ~> I) with MockOpTransformerResults[Op] {

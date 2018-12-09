@@ -1,28 +1,44 @@
 package shipreq.taskman.api.impl
 
 import doobie.imports._
-import org.specs2.mutable.Specification
-import shipreq.base.test.specs2.db.DatabaseTest
-import shipreq.taskman.api.{EmailAddr, MsgStatus, MsgId, Msg}
+import utest._
+import shipreq.base.test.db.TestDb
+import shipreq.base.util.FxModule._
+import shipreq.taskman.api.{EmailAddr, Msg, MsgId, MsgStatus}
 
-class ApiOpTest extends Specification with DatabaseTest with ApiImplTestHelpers {
+object ApiOpTest extends TestSuite with ApiImplTestHelpers {
 
-  "Task submission" >> {
-    "Submits a task" in {
-      run_(_.submitMsg(Msg.RegistrationRequested(EmailAddr("a@b.com"), "http://x")))
-      Query0[Int]("select count(1) from msgq").unique.runNow() ==== 1
+  override def tests = Tests {
+
+    "Task submission" - {
+      "Submits a task" - {
+        val r: Int = TestDb() { xa =>
+          for {
+            _ <- taskmanApi(xa).submitMsg(Msg.RegistrationRequested(EmailAddr("a@b.com"), "http://x"))
+            c <- Query0[Int]("select count(1) from msgq").unique.transact(xa)
+          } yield c
+        }.unsafeRun()
+        assert(r == 1)
+      }
     }
+
+    "Query msg status" - {
+
+      "When msg doesn't exist" - {
+        val r = run(_.queryMsgStatus(MsgId(123456)))
+        assert(r == None)
+      }
+
+      "On new msg" - {
+        val r = run(api =>
+          for {
+            id <- api.submitMsg(Msg.RegistrationRequested(EmailAddr("a@b.com"), "http://x"))
+            s <- api.queryMsgStatus(id)
+          } yield s
+        )
+        assert(r == Some(MsgStatus.Unassigned))
+      }
+    }
+
   }
-
-  "Query msg status" >> {
-    "When msg doesn't exist" in {
-      run(_.queryMsgStatus(MsgId(123456))) must beNone
-    }
-
-    "On new msg" in {
-      val id = run(_.submitMsg(Msg.RegistrationRequested(EmailAddr("a@b.com"), "http://x")))
-      run(_.queryMsgStatus(id)) must beSome(MsgStatus.Unassigned)
-    }
-  }
-
 }

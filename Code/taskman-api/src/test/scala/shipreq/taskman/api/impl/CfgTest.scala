@@ -1,24 +1,40 @@
 package shipreq.taskman.api.impl
 
-import org.specs2.mutable.Specification
 import doobie.imports._
-import shipreq.base.test.specs2.db.DatabaseTest
 
-class CfgTest extends Specification with DatabaseTest with ApiImplTestHelpers {
+import utest._
 
-  "_.cfgPut" should {
+object CfgTest extends TestSuite with ApiImplTestHelpers {
 
-    lazy val q = Query0[(String,String)]("select k,v from cfg where k in ('a','b')")
+  private lazy val q = Query0[(String, String)]("select k,v from cfg where k in ('a','b') order by 1")
 
-    "insert new" in {
-      run_(_.cfgPut("a", "start"), _.cfgPut("b", "omg"))
-      q.list.runNow() ==== List(("a", "start"), ("b", "omg"))
+  override def tests = Tests {
+
+    'cfgPut - {
+
+      'insert - {
+        val result = run(xa =>
+          for {
+            _ <- xa.cfgPut("a", "start")
+            _ <- xa.cfgPut("b", "omg")
+            r <- q.list.transact(xa)
+          } yield r
+        )
+        assert(result == List(("a", "start"), ("b", "omg")))
+      }
+
+      'update - {
+        val result = run(xa =>
+          for {
+            _ <- xa.cfgPut("a", "start")
+            _ <- xa.cfgPut("b", "omg")
+            _ <- xa.cfgPut("a", "heheh")
+            r <- q.list.transact(xa)
+          } yield r
+        )
+        assert(result == List(("a", "heheh"), ("b", "omg")))
+      }
     }
 
-    "update existing" in {
-      run_(_.cfgPut("a", "start"), _.cfgPut("b", "omg"), _.cfgPut("a", "heheh"))
-      q.list.runNow() ==== List(("a", "heheh"), ("b", "omg"))
-    }
   }
-
 }
