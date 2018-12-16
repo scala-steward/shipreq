@@ -8,15 +8,9 @@ const ctx = {
 }
 
 const config = WebpackMerge(common(ctx), {
-
-  plugins: [
-
-    new Webpack.DefinePlugin({
-      'process.env.NODE_ENV': JSON.stringify('development')
-    }),
-
-  ],
-
+  mode: 'development',
 });
+
+// console.log("CONFIG: ", config)
 
 module.exports = config;

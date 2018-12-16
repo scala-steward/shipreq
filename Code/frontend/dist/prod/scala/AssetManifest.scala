@@ -5,7 +5,7 @@ object AssetManifest {
 
   final case class CDN(href: String, integrity: Option[String])
 
-  def analyticsJs = "/s/1e1acd1eeb548adedf62ebaf90b4aa35.js"
+  def analyticsJs = "/s/dce87165b3df779a542fc2aa5b2d871c.js"
 
   def favicon = "/s/286b75985993da80759cbdc5142de4d3.ico"
 
@@ -25,7 +25,7 @@ object AssetManifest {
 
   def loadjs = "/s/6d841ef3b98aa6f28ca432788c6430b0.js"
 
-  def memberLibBundleJs = "/s/18c7e8119e3afeff7a18b2540c0ccff6.js"
+  def memberLibBundleJs = "/s/8612f4eb457b6ed781a67634a77e015c.js"
 
   def reactDomJs = CDN(
     href = "https://cdn.jsdelivr.net/npm/react-dom@16.5.2/umd/react-dom.production.min.js",
@@ -39,7 +39,7 @@ object AssetManifest {
     href = "https://cdn.jsdelivr.net/npm/react@16.5.2/umd/react.production.min.js",
     integrity = Some("sha256-alJnAKUY0Ruhf55K/C+sCyz6zaipGhl1kxuzDW3jtHk="))
 
-  def semanticCss = "/s/56bc2bca25c1a231b323f2358dd2cbf3.css"
+  def semanticCss = "/s/3ec16c23779eb60e25c99b2616e7b3a3.css"
 
   def semanticCssUrls: List[String] =
     "icons.eot" ::
@@ -50,7 +50,7 @@ object AssetManifest {
     "icons.svg#icons" ::
     Nil
 
-  def semanticJs = "/s/011c89ea9149c17eaca3d8307bea13bd.js"
+  def semanticJs = "/s/3aec14cc9c7e7fe1dc0b2c0a579fc7c2.js"
 
   def shipreqBannerSvg = "/s/878536f0a4ad0029794669f88dbf5f35.svg"
 
