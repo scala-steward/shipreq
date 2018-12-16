@@ -185,7 +185,7 @@ RUN mkdir -p /root/.sbt/0.13/plugins/ \
  && mkdir /tmp/scala \
  && cd /tmp/scala \
  && mkdir project \
- && echo 'sbt.version=0.13.17' > project/build.properties \
+ && echo 'sbt.version=1.2.7' > project/build.properties \
  && echo 'scalaVersion := "2.12.8"' > build.sbt \
  && echo 'object M{}' > M.scala \
  && sbt test \
