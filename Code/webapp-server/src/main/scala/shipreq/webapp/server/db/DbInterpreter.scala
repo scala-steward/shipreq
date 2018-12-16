@@ -1,7 +1,6 @@
 package shipreq.webapp.server.db
 
 import doobie.imports._
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import java.time.Instant
 import nyaya.gen.Gen
@@ -69,25 +68,25 @@ object DbInterpreter {
         } yield (User(id, u, e, r), PasswordAndSalt(p, s))
     }
 
-    private final val getUserAndPasswordByEmailSql =
+    private[db] final val getUserAndPasswordByEmailSql =
       Query[EmailAddr, UserAndPasswordInfo](s"SELECT $colsUserAndPasswordInfo FROM usr WHERE email=? AND password IS NOT NULL")
 
     override final def getUserAndPasswordByEmail(email: EmailAddr): ConnectionIO[Option[(User, PasswordAndSalt)]] =
       getUserAndPasswordByEmailSql.toQuery0(email).option.map(_.flatMap(parseUserAndPasswordInfo))
 
-    private final val getUserAndPasswordByUsernameSql =
+    private[db] final val getUserAndPasswordByUsernameSql =
       Query[Username, UserAndPasswordInfo](s"SELECT $colsUserAndPasswordInfo FROM usr WHERE username=?")
 
     override final def getUserAndPasswordByUsername(username: Username): ConnectionIO[Option[(User, PasswordAndSalt)]] =
       getUserAndPasswordByUsernameSql.toQuery0(username).option.map(_.flatMap(parseUserAndPasswordInfo))
 
-    private final val logLoginSuccessSql =
+    private[db] final val logLoginSuccessSql =
       Update[(UserId, Option[IP])]("INSERT INTO usr_login_log(usr_id,ip) VALUES(?,?)")
 
     override final def logLoginSuccess(id: UserId, ip: Option[IP]): ConnectionIO[Unit] =
       logLoginSuccessSql.toUpdate0((id, ip)).execute
 
-    private final val getProjectOwnerSql =
+    private[db] final val getProjectOwnerSql =
       Query[ProjectId, UserId]("SELECT usr_id FROM project WHERE id=?")
 
     override final def getProjectOwner(id: ProjectId): ConnectionIO[Option[UserId]] =
@@ -98,13 +97,13 @@ object DbInterpreter {
   object SecurityTokenReadOnly extends SecurityTokenReadOnly
   trait SecurityTokenReadOnly extends DB.SecurityTokenReadOnly[ConnectionIO] {
 
-    private final val getUserRegistrationTokenIssueDateSql =
+    private[db] final val getUserRegistrationTokenIssueDateSql =
       Query[SecurityToken, Instant]("SELECT confirmation_sent_at FROM usr WHERE confirmation_token=?")
 
     override final def getUserRegistrationTokenIssueDate(t: SecurityToken): ConnectionIO[Option[Instant]] =
       getUserRegistrationTokenIssueDateSql.toQuery0(t).option
 
-    private final val getResetPasswordTokenIssueDateSql =
+    private[db] final val getResetPasswordTokenIssueDateSql =
       Query[SecurityToken, Option[Instant]]("SELECT reset_password_sent_at FROM usr WHERE reset_password_token=?")
 
     override final def getResetPasswordTokenIssueDate(t: SecurityToken): ConnectionIO[Option[Instant]] =
@@ -136,25 +135,25 @@ object DbInterpreter {
       case _ => ??? // Protected against this case by TABLE CONSTRAINT usr_confirmation_invariants
     }
 
-    private final val getUserRegistrationSql =
+    private[db] final val getUserRegistrationSql =
       Query[EmailAddr, RegInfo](s"SELECT $colsRegInfo FROM usr WHERE email=?").map(parseRegInfo)
 
     override final def getUserRegistration(e: EmailAddr): ConnectionIO[Option[UserRegistration]] =
       getUserRegistrationSql.toQuery0(e).option
 
-    private final val createUserPlaceholderSql =
+    private[db] final val createUserPlaceholderSql =
       Update[(EmailAddr, SecurityToken)]("INSERT INTO usr(email, confirmation_token, confirmation_sent_at) VALUES(?,?,NOW())")
 
     override final def createUserPlaceholder(e: EmailAddr): ConnectionIO[SecurityToken] =
       tokenAttempt(createUserPlaceholderSql.toUpdate0(e, _).execute)
 
-    private final val updateUserRegistrationTokenSql =
+    private[db] final val updateUserRegistrationTokenSql =
       Update[(SecurityToken, UserId)]("UPDATE usr SET confirmation_token = ?, confirmation_sent_at = NOW() WHERE id=?")
 
     override final def updateUserRegistrationToken(id: UserId): ConnectionIO[SecurityToken] =
       tokenAttempt(updateUserRegistrationTokenSql.toUpdate0(_, id).execute)
 
-    private final val sqlRegisterUser =
+    private[db] final val sqlRegisterUser =
       Query[(Username, PasswordAndSalt, SecurityToken), UserId](
         """
           UPDATE usr SET username = ?
@@ -163,7 +162,7 @@ object DbInterpreter {
           WHERE confirmation_token = ?
           RETURNING id""".sql)
 
-    private final val sqlInsertUsrd =
+    private[db] final val sqlInsertUsrd =
       Update[(UserId, PersonName, Boolean)]("INSERT INTO usrd VALUES(?,?,?)")
 
     override final def completeUserRegistration(token     : SecurityToken,
@@ -203,14 +202,14 @@ object DbInterpreter {
       a => f(parseRegInfo(a._1), a._2)
     }
 
-    private final val getPasswordResetStateByEmailSql =
+    private[db] final val getPasswordResetStateByEmailSql =
       Query[EmailAddr, PasswordResetStateInfo](s"SELECT $colsPasswordResetStateInfo FROM usr WHERE email=?")
         .map(parsePasswordResetState)
 
     private final def getPasswordResetStateByEmail(email: EmailAddr): ConnectionIO[Option[DB.PasswordResetState]] =
       getPasswordResetStateByEmailSql.toQuery0(email).option
 
-    private final val getPasswordResetStateByUsernameSql =
+    private[db] final val getPasswordResetStateByUsernameSql =
       Query[Username, (EmailAddr, PasswordResetStateInfo)](s"SELECT email,$colsPasswordResetStateInfo FROM usr WHERE username=?")
       .map(x => (x._1, parsePasswordResetState(x._2)))
 
@@ -223,20 +222,20 @@ object DbInterpreter {
         case -\/(u) => getPasswordResetStateByUsername(u)
       }
 
-    private final val createResetPasswordTokenSql =
+    private[db] final val createResetPasswordTokenSql =
       Update[(SecurityToken, UserId)]("UPDATE usr SET reset_password_token = ?, reset_password_sent_at = NOW(), reset_password_req_count = reset_password_req_count + 1 WHERE id=?")
 
     override final def createResetPasswordToken(id: UserId): ConnectionIO[SecurityToken] =
       tokenAttempt(createResetPasswordTokenSql.toUpdate0(_, id).execute)
 
-    private final val updateResetPasswordTokenOnReissueSql =
+    private[db] final val updateResetPasswordTokenOnReissueSql =
       Update[UserId]("UPDATE usr SET reset_password_sent_at = NOW(), reset_password_req_count = reset_password_req_count + 1 WHERE id=?")
 
     /** Updates the sent-count and sent-at attributes of an existing reset-password token. */
     override final def updateResetPasswordTokenOnReissue(id: UserId): ConnectionIO[Unit] =
       updateResetPasswordTokenOnReissueSql.toUpdate0(id).execute
 
-    private final val updateUserPasswordSql =
+    private[db] final val updateUserPasswordSql =
       Query[(PasswordAndSalt, SecurityToken), UserId]("""
         UPDATE usr SET
           password = ?, password_salt = ?, password_changed_at = NOW(),
@@ -256,10 +255,10 @@ object DbInterpreter {
     import EventSqlHelpers._
 
     // select coalesce(max(ord)+1,1) from event where project_id=?
-    private final val insertEventSql =
+    private[db] final val insertEventSql =
       Update[(ProjectId, EventOrd, ActiveEvent)](s"INSERT INTO event(project_id,ord,$eventE) VALUES(?,?,${eventE_?})")
 
-    private final val insertEventHashSql =
+    private[db] final val insertEventHashSql =
       Update[(ProjectId, EventOrd, HashRecRow)](s"INSERT INTO event_hash(project_id,ord,$sqlHashRecRow) VALUES(?,?,${sqlHashRecRow_?})")
 
     override final def saveProjectEvents(id: ProjectId)(cmds: Traversable[SaveProjectEventCmd]): ConnectionIO[Option[Throwable]] = {
@@ -281,7 +280,7 @@ object DbInterpreter {
   trait ForMembers extends DB.ForHomeSpa[ConnectionIO] with DB.ForProjectSpa[ConnectionIO] {
     import EventSqlHelpers._
 
-    private final val createEmptyProjectSql =
+    private[db] final val createEmptyProjectSql =
       Query[UserId, ProjectId]("INSERT INTO project(usr_id) VALUES(?) RETURNING id")
 
     override final def createEmptyProject(id: UserId): ConnectionIO[ProjectId] =
@@ -335,19 +334,19 @@ object DbInterpreter {
       """.sql
     }
 
-    private final val getAllProjectMetaDataForUserSql =
+    private[db] final val getAllProjectMetaDataForUserSql =
       Query[UserId, ProjectMetaData](sqlProjectMetaData("WHERE usr_id=?"))
 
     override final def getAllProjectMetaDataForUser(id: UserId): ConnectionIO[List[ProjectMetaData]] =
       getAllProjectMetaDataForUserSql.toQuery0(id).list
 
-    private final val getProjectMetaDataSql =
+    private[db] final val getProjectMetaDataSql =
       Query[ProjectId, ProjectMetaData](sqlProjectMetaData("WHERE id=?"))
 
     override final def getProjectMetaData(id: ProjectId): ConnectionIO[Option[ProjectMetaData]] =
       getProjectMetaDataSql.toQuery0(id).option
 
-    private final val getProjectHeaderSql: Query[(ProjectId, ProjectId), ProjectHeader] = {
+    private[db] final val getProjectHeaderSql: Query[(ProjectId, ProjectId), ProjectHeader] = {
       val sql =
         s"""
            |SELECT
@@ -368,10 +367,10 @@ object DbInterpreter {
     override final def getProjectHeader(id: ProjectId): ConnectionIO[Option[ProjectHeader]] =
       getProjectHeaderSql.toQuery0((id, id)).option
 
-    private final val sqlSelectAllEvents =
+    private[db] final val sqlSelectAllEvents =
       Query[ProjectId, (EventOrd, Event)](s"SELECT ord,$eventE FROM event WHERE project_id=?")
 
-    private final val sqlSelectAllEventHashes =
+    private[db] final val sqlSelectAllEventHashes =
       Query[ProjectId, (EventOrd, HashRecRow)](s"SELECT ord,$sqlHashRecRow FROM event_hash WHERE project_id=?")
 
     private final class TmpForGetAllProjectEvents(val e: Event) {
@@ -434,15 +433,21 @@ object DbInterpreter {
   class ForOps(dbName: String) extends DB.ForOps[ConnectionIO] {
     import DB.ForOps._
 
-    override val now: ConnectionIO[Instant] =
-      Query0[Instant]("select now()").unique
+    private[db] final val nowSql =
+      Query0[Instant]("select now()")
 
-    override val userStats: ConnectionIO[UserStats] =
+    override final val now: ConnectionIO[Instant] =
+      nowSql.unique
+
+    private[db] final val userStatsSql =
       Query0[(Long, Long)]("select count(username), count(1) from usr")
+
+    override final val userStats: ConnectionIO[UserStats] =
+      userStatsSql
         .unique
         .map((UserStats.apply _).tupled)
 
-    override val tableStats: ConnectionIO[List[TableStat]] =
+    private[db] final val tableStatsSql =
       Query0[(String, Long, Long)](
         """
           |SELECT
@@ -460,11 +465,17 @@ object DbInterpreter {
           |WHERE NOT(table_type = 'VIEW' AND pg_total_relation_size(table_name) = 0)
           |ORDER BY 1
         """.stripMargin.sql)
+
+    override final val tableStats: ConnectionIO[List[TableStat]] =
+      tableStatsSql
         .list
         .map(_.map((TableStat.apply _).tupled))
 
-    override val dbSize: ConnectionIO[Long] =
+    private[db] final val dbSizeSql =
       Query[String, Long]("SELECT pg_database_size(?)")
+
+    override final val dbSize: ConnectionIO[Long] =
+      dbSizeSql
         .toQuery0(dbName.replaceFirst("^.*/", ""))
         .unique
   }
