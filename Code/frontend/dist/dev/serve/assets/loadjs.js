@@ -79,6 +79,21 @@ function publish(bundleId, pathsNotFound) {
 
 
 /**
+ * Execute callbacks.
+ * @param {Object or Function} args - The callback args
+ * @param {string[]} depsNotFound - List of dependencies not found
+ */
+function executeCallbacks(args, depsNotFound) {
+  // accept function as argument
+  if (args.call) args = {success: args};
+
+  // success and error callbacks
+  if (depsNotFound.length) (args.error || devnull)(depsNotFound);
+  else (args.success || devnull)(args);
+}
+
+
+/**
  * Load individual file.
  * @param {string} path - The file path
  * @param {Function} callbackFn - The callback function
@@ -88,6 +103,7 @@ function loadFile(path, callbackFn, args, numTries) {
       async = args.async,
       maxTries = (args.numRetries || 0) + 1,
       beforeCallbackFn = args.before || devnull,
+      pathStripped = path.replace(/^(css|img)!/, ''),
       isCss,
       e;
 
@@ -99,7 +115,11 @@ function loadFile(path, callbackFn, args, numTries) {
     // css
     e = doc.createElement('link');
     e.rel = 'stylesheet';
-    e.href = path.replace(/^css!/, '');  // remove "css!" prefix
+    e.href = pathStripped; //.replace(/^css!/, '');  // remove "css!" prefix
+  } else if (/(^img!|\.(png|gif|jpg|svg)$)/.test(path)) {
+    // image
+    e = doc.createElement('img');
+    e.src = pathStripped;    
   } else {
     // javascript
     e = doc.createElement('script');
@@ -117,8 +137,8 @@ function loadFile(path, callbackFn, args, numTries) {
         if (!e.sheet.cssText.length) result = 'e';
       } catch (x) {
         // sheets objects created from load errors don't allow access to
-        // `cssText`
-        result = 'e';
+        // `cssText` (unless error is Code:18 SecurityError)
+        if (x.code != 18) result = 'e';
       }
     }
 
@@ -206,9 +226,8 @@ function loadjs(paths, arg1, arg2) {
 
   // load scripts
   loadFiles(paths, function (pathsNotFound) {
-    // success and error callbacks
-    if (pathsNotFound.length) (args.error || devnull)(pathsNotFound);
-    else (args.success || devnull)();
+    // execute callbacks
+    executeCallbacks(args, pathsNotFound);
 
     // publish bundle load event
     publish(bundleId, pathsNotFound);
@@ -225,8 +244,7 @@ loadjs.ready = function ready(deps, args) {
   // subscribe to bundle load event
   subscribe(deps, function (depsNotFound) {
     // execute callbacks
-    if (depsNotFound.length) (args.error || devnull)(depsNotFound);
-    else (args.success || devnull)();
+    executeCallbacks(args, depsNotFound);
   });
 
   return loadjs;
