@@ -1,6 +1,6 @@
 package shipreq.webapp.base.feature.autocomplete
 
-import japgolly.scalajs.react.extra.Reusability
+import japgolly.scalajs.react.Reusability
 import org.scalajs.dom.html
 import shipreq.webapp.base.jsfacade.TextComplete
 import ForComponent.AutoCompletable

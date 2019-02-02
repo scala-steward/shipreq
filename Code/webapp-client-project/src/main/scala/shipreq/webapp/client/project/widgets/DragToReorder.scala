@@ -154,7 +154,7 @@ final class DragToReorder[A](updateItems: Vector[A] => Callback,
           e => for {
             _  ← unless(e.defaultPrevented)
             is ← $.props
-            _  ← $.setState(DragState(is, i, InChild(i), is.indices.toVector)).async
+            _  ← $.setState(DragState(is, i, InChild(i), is.indices.toVector)).async.toCallback
           } yield {
             val dt = e.dataTransfer
             dt.setData(ownMimeType, "")

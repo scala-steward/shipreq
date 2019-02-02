@@ -18,7 +18,7 @@ object EditTheme {
       ^.title := UiText.doubleClickToEdit)
 
   def editableInline(startEdit: Callback): TagMod =
-    editableInline(^.onDblClick --> startEdit)
+    TagMod(editableInline, ^.onDblClick --> startEdit)
 
   def editableInline(startEdit: Option[Callback]): TagMod =
     startEdit.fold(TagMod.empty)(editableInline(_))

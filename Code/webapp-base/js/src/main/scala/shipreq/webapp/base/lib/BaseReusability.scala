@@ -1,7 +1,7 @@
 package shipreq.webapp.base.lib
 
 import japgolly.microlibs.nonempty._
-import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react._
 import java.time.Instant
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util._

@@ -1,7 +1,7 @@
 package shipreq.webapp.base.lib
 
 import japgolly.scalajs.react.ScalazReact._
-import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react._
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._

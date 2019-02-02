@@ -31,6 +31,6 @@ package object reqtable {
 
   @inline def shouldComponentUpdate[P: Reusability, C <: Children, S: Reusability, B, U <: UpdateSnapshot]: ScalaComponent.Config[P, C, S, B, U, U] =
     shipreq.webapp.client.project.app.shouldComponentUpdate[P, C, S, B, U]
-//   Reusability.shouldComponentUpdateWithOverlay[P, C, S, B]
+//   ReusabilityOverlay.install[P, C, S, B]
 
 }

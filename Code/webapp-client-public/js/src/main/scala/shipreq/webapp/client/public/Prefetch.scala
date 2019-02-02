@@ -20,7 +20,7 @@ object Prefetch {
 //        ResourceHint.Prefetch.script(AssetManifest.katexCss) ::
 //        ResourceHint.Prefetch.script(AssetManifest.katexJs) ::
         Nil
-      Callback(res.foreach(_.install())).delayMs(200).runNow()
+      Callback(res.foreach(_.install())).delayMs(200).toCallback.runNow()
     }
 
 }

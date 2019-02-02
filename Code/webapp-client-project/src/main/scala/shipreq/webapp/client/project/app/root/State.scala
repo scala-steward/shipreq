@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.root
 
-import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react._
 import monocle.macros._
 import shipreq.base.util._
 import shipreq.base.util.univeq._

@@ -118,7 +118,7 @@ object TagEditor {
 
       def editor(validity: Validity): VdomElement = {
         val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
-        val base = textareaConst(keys)
+        val base = TagMod(textareaConst, keys)
         editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, base))
       }
 

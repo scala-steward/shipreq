@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.app
 
 import japgolly.scalajs.react.Callback
-import japgolly.scalajs.react.extra.Reusability
+import japgolly.scalajs.react.Reusability
 import org.scalajs.dom.webworkers.Worker
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

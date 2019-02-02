@@ -1,7 +1,8 @@
 package shipreq.webapp.client.project.app.cfg.shared
 
-import japgolly.scalajs.react._, ScalazReact._
-import japgolly.scalajs.react.extra.{Reusability, Px}
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.ScalazReact._
+import japgolly.scalajs.react.extra.Px
 import scalaz.Equal
 import Persistence.Realise
 

@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.microlibs.scalaz_ext.ScalazMacros._
 import japgolly.scalajs.react.{CallbackOption, CallbackTo}
-import japgolly.scalajs.react.extra.Reusable
+import japgolly.scalajs.react.Reusable
 import scalaz.{-\/, Equal, \/, \/-}
 import utest._
 import shipreq.base.test.BaseTestUtil._

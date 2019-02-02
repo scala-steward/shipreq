@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.app.state
 
-import japgolly.scalajs.react.extra.{Broadcaster, Px, Reusability}
-import japgolly.scalajs.react.{Callback, CallbackTo}
+import japgolly.scalajs.react.extra.{Broadcaster, Px}
+import japgolly.scalajs.react.{Callback, CallbackTo, Reusability}
 import scalaz.\/
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.{Project, ProjectMetaData}
