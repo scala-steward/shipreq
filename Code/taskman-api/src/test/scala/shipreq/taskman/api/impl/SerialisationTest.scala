@@ -1,38 +1,44 @@
 package shipreq.taskman.api.impl
 
-import org.specs2.mutable._
-import org.specs2.ScalaCheck
-import scalaz.{-\/, \/-}
+import japgolly.microlibs.testutil.TestUtil._
+import scalaz.\/-
+import scalaz.std.string._
+import utest._
+import shipreq.base.test.MTestScalaCheck
 import shipreq.base.util.TaggedTypes.JsonStr
 import shipreq.taskman.api.TestHelpers._
+import shipreq.taskman.api.impl.Serialisation._
 import shipreq.taskman.api.{EmailAddr, Msg, MsgType, UserId}
-import Serialisation._
 
-class SerialisationTest extends Specification with ScalaCheck {
+object SerialisationTest extends TestSuite with MTestScalaCheck {
 
   implicit def jstr(s: String): Ser = JsonStr[Msg](s)
 
-  "Serialisation" should {
-    "serialise and deserialise back" ! prop{ (m: Msg) =>
-      deserialise(MsgType.lookup(m).id, serialise(m)) ==== \/-(m)
-    }
+  override def tests = Tests {
 
-    "serialise Msg.RegistrationCompleted" in {
+    "serialise and deserialise back" - scalaCheck(_.forAll((m: Msg) =>
+      deserialise(MsgType.lookup(m).id, serialise(m)) == \/-(m)
+    ))
+
+    "serialise Msg.RegistrationCompleted" - {
       val m = Msg.RegistrationCompleted(UserId(666))
-      serialise(m).value ==== """{"u":666}"""
+      assertEq(serialise(m).value, """{"u":666}""")
     }
 
-    "serialise Msg.ReRegistrationAttempted" in {
+    "serialise Msg.ReRegistrationAttempted" - {
       val m = Msg.ReRegistrationAttempted(EmailAddr("x@x.com"))
-      serialise(m).value ==== """{"e":"x@x.com"}"""
+      assertEq(serialise(m).value, """{"e":"x@x.com"}""")
     }
 
-    "return an error for unknown task types" in {
-      deserialise(-500.toShort, "") must beLike{ case -\/(e) if e.toString contains "-500" => ok }
+    "return an error for unknown task types" - {
+      val r = deserialise(-500.toShort, "")
+      assert(r.toEither.left.exists(_.toString  contains "-500"))
     }
 
-    "return an error if data fails parsing" in {
-      deserialise(MsgType.RegistrationRequested.id, """{"x":1}""") must beLike{ case -\/(_) => ok }
+    "return an error if data fails parsing" - {
+      val r = deserialise(MsgType.RegistrationRequested.id, """{"x":1}""")
+      assert(r.isLeft)
     }
+
   }
 }

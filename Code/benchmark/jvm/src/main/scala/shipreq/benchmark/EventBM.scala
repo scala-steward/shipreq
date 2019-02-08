@@ -75,37 +75,41 @@ package shipreq.benchmark
  * EventBM.untrusted:·gc.time                          thrpt  200      605.000                   ms
  */
 
-/*
+
 import org.openjdk.jmh.annotations._
 import scalaz.{-\/, \/-}
-import shipreq.webapp.base.data.Project
+import shipreq.webapp.base.data.{Project, ProjectId}
 import shipreq.webapp.base.event.ApplyEvent
-import shipreq.webapp.server.db.DB
-import shipreq.webapp.server.lib.Types.ProjectId
+import shipreq.webapp.server.db.DbInterpreter
 
 object EventBM {
-  DB.init()
-  val seqsAndEvents = DB.DaoProvider.withSession(_.findAllEvents(ProjectId(5)))
-  val events = seqsAndEvents.map(_._2)
-  println(s"Loaded ${events.size} events.")
+
+  // TODO Instead of loading events from the DB there should be...
+  // 1) An export from DB to JSON (with text scrubbing)
+  // 2) This should load a fixed JSON for the benchmark
+
+//  DB.init()
+//  private val seqsAndEvents = DB.DaoProvider.withSession(_.findAllEvents(ProjectId(5)))
+//  val events = seqsAndEvents.map(_._2)
+//  println(s"Loaded ${events.size} events.")
+
 }
 
-@State(Scope.Benchmark)
-class EventBM {
-
-  val events = EventBM.events
-  val pe = Project.empty
-
-  val ae_trusted = ApplyEvent.trusted
-  val ae_untrusted = ApplyEvent.untrusted
-
-  def go(ae: ApplyEvent): Project =
-    ae_untrusted.applyVerified(events)(pe) match {
-      case \/-(p) => p
-      case -\/(e) => println(e); sys.error(e)
-    }
-
-  @Benchmark def untrusted = go(ae_untrusted)
-  @Benchmark def trusted   = go(ae_trusted)
-}
-*/
+//@State(Scope.Benchmark)
+//class EventBM {
+//
+//  val events = EventBM.events
+//  val pe = Project.empty
+//
+//  val ae_trusted = ApplyEvent.trusted
+//  val ae_untrusted = ApplyEvent.untrusted
+//
+//  def go(ae: ApplyEvent): Project =
+//    ae_untrusted.applyVerified(events)(pe) match {
+//      case \/-(p) => p
+//      case -\/(e) => println(e); sys.error(e)
+//    }
+//
+//  @Benchmark def untrusted = go(ae_untrusted)
+//  @Benchmark def trusted   = go(ae_trusted)
+//}

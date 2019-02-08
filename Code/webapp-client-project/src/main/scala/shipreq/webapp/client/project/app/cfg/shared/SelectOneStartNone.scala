@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.app.cfg.shared
 import scalaz.Equal
 import scalaz.std.option._
 import japgolly.microlibs.nonempty.NonEmptyVector
-import japgolly.scalajs.react.vdom.Implicits._
+
 import shipreq.webapp.base.data.Enabled
 import shipreq.webapp.client.project.widgets.SelectOne
 import SelectOne.{Props, Choice}

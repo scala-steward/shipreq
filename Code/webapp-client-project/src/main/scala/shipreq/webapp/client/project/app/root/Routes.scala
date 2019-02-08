@@ -3,9 +3,9 @@ package shipreq.webapp.client.project.app.root
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.MonocleReact._
-import japgolly.scalajs.react.extra.Reusability
+import japgolly.scalajs.react.Reusability
 import japgolly.scalajs.react.extra.router.{RouterCtl => RouterCtl_, _}
-import japgolly.scalajs.react.vdom.Implicits._
+
 import monocle._
 import monocle.macros._
 import scala.annotation.elidable

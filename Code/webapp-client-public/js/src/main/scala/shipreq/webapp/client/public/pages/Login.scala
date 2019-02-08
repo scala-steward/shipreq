@@ -103,7 +103,7 @@ object Login {
     Prefetch.memberHome()
 
     def readCredentials: Callback =
-      $.props.flatMap(_.state.modState(_(LocalStorage.read()))) >> focusForm(3).delayMs(20).void
+      $.props.flatMap(_.state.modState(_(LocalStorage.read()))) >> focusForm(3).delayMs(20).toCallback
 
     /** Stores the current state in client's local storage according to the remember-me setting */
     val writeCredentials: Callback =
@@ -119,7 +119,7 @@ object Login {
         val ref = if (p.state.value.req.user.isEmpty) refUser else refPassword
         ref.get.filterNot(_.disabled).asCallback.flatMap {
           case Some(i) => Callback(i.focus())
-          case None    => focusForm(retries - 1).delayMs(20).when_(retries > 1)
+          case None    => focusForm(retries - 1).delayMs(20).toCallback.when_(retries > 1)
         }
       }
 
@@ -130,7 +130,7 @@ object Login {
       for {
         p <- $.props
         _ <- p.state.modState(_.copy(errorFlash = Some(ErrorFlash(title, content))))
-        _ <- $.getDOMNode.map(_.toElement.foreach(JQuery(_).find(Message.jquerySel).transition(Transition.pulse, "320ms"))).delayMs(10)
+        _ <- $.getDOMNode.map(_.toElement.foreach(JQuery(_).find(Message.jquerySel).transition(Transition.pulse, "320ms"))).delayMs(10).toCallback
       } yield ()
 
     private val attemptLogin: Callback =

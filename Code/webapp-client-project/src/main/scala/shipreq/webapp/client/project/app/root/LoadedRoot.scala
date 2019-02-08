@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.app.root
 import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
-import japgolly.scalajs.react.vdom.Implicits._
+
 import japgolly.scalajs.react.vdom.VdomElement
 import shipreq.base.util.{Allow, ErrorMsg, Intersection}
 import shipreq.base.util.univeq._

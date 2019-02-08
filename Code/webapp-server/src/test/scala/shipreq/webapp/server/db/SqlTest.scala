@@ -2,52 +2,63 @@ package shipreq.webapp.server.db
 
 import utest._
 import shipreq.base.test.db.SqlTester.test
-/*
+import shipreq.webapp.server.test.PrepareEnv
+
 object SqlTest extends TestSuite {
+  import DbInterpreter._
+
+  private lazy val db = new DbInterpreter()(PrepareEnv.global().config)
 
   override def tests = Tests {
 
-    'user {
-      import DbLogic.user._
-      'sqlInsertPlaceholder - test(sqlInsertPlaceholder)
-      'sqlUpdateConfirmationToken - test(sqlUpdateConfirmationToken)
-      'sqlSelectDescCredByUsername - test(sqlSelectDescCredByUsername)
-      'sqlSelectDescCredByEmail - test(sqlSelectDescCredByEmail)
-      'sqlSelectRegInfo - test(sqlSelectRegInfo)
-      'sqlSelectRegAndResetPwInfo - test(sqlSelectRegAndResetPwInfo)
-      'sqlSelectConfirmationTokenIssuedDate - test(sqlSelectConfirmationTokenIssuedDate)
-      'sqlRegisterUser - test(sqlRegisterUser)
-      'sqlInsertUsrd - test(sqlInsertUsrd)
-      'sqlInsertLogin - test(sqlInsertLogin)
-      'sqlUpdatePassword - test(sqlUpdatePassword)
-      'sqlReuseResetPasswordToken - test(sqlReuseResetPasswordToken)
-      'sqlSelectResetPasswordTokenIssuedDate - test(sqlSelectResetPasswordTokenIssuedDate)
-      'sqlResetPassword - test(sqlResetPassword)
+    'security {
+      val db = ForSecurity
+      'getUserAndPasswordByEmailSql    - test(db.getUserAndPasswordByEmailSql)
+      'getUserAndPasswordByUsernameSql - test(db.getUserAndPasswordByUsernameSql)
+      'logLoginSuccessSql              - test(db.logLoginSuccessSql)
+      'getProjectOwnerSql              - test(db.getProjectOwnerSql)
     }
 
-    'project {
-      import DbLogic.project._
-      'sqlCreate - test(sqlCreate)
-      'sqlSelectOwner - test(sqlSelectOwner)
-      'sqlSelectProjectHeader - test(sqlSelectProjectHeader)
-//      'sqlSelectProjectMetaData - test(sqlSelectProjectMetaData)
-//      'sqlSelectCatalogue - test(sqlSelectCatalogue)
-//      'sqlSelectCatalogueItem - test(sqlSelectCatalogueItem)
+    'securityTokenReadOnly {
+      val db = SecurityTokenReadOnly
+      'getUserRegistrationTokenIssueDateSql - test(db.getUserRegistrationTokenIssueDateSql)
+      'getResetPasswordTokenIssueDateSql    - test(db.getResetPasswordTokenIssueDateSql)
     }
 
-    'event {
-      import DbLogic.event._
-      'sqlInsert - test(sqlInsert)
-      'sqlInsertHashRecs - test(sqlInsertHashRecs)
-      'sqlSelectAll - test(sqlSelectAll)
-      'sqlSelectAllHashes - test(sqlSelectAllHashes)
+    'publicSpa {
+      'getUserRegistrationSql               - test(db.getUserRegistrationSql)
+      'createUserPlaceholderSql             - test(db.createUserPlaceholderSql)
+      'updateUserRegistrationTokenSql       - test(db.updateUserRegistrationTokenSql)
+      'sqlRegisterUser                      - test(db.sqlRegisterUser)
+      'sqlInsertUsrd                        - test(db.sqlInsertUsrd)
+      'getPasswordResetStateByEmailSql      - test(db.getPasswordResetStateByEmailSql)
+      'getPasswordResetStateByUsernameSql   - test(db.getPasswordResetStateByUsernameSql)
+      'createResetPasswordTokenSql          - test(db.createResetPasswordTokenSql)
+      'updateResetPasswordTokenOnReissueSql - test(db.updateResetPasswordTokenOnReissueSql)
+      'updateUserPasswordSql                - test(db.updateUserPasswordSql)
     }
 
-    'admin {
-      import DbLogic.admin._
-//      'sqlStatsSizesByTypes - test(sqlStatsSizesByTypes)
+    'saveProjectEvent {
+      'insertEventSql     - test(db.insertEventSql)
+      'insertEventHashSql - test(db.insertEventHashSql)
+    }
+
+    'members {
+      'createEmptyProjectSql           - test(db.createEmptyProjectSql)
+      'getAllProjectMetaDataForUserSql - test(db.getAllProjectMetaDataForUserSql)
+      'getProjectMetaDataSql           - test(db.getProjectMetaDataSql)
+      'getProjectHeaderSql             - test(db.getProjectHeaderSql)
+      'sqlSelectAllEvents              - test(db.sqlSelectAllEvents)
+      'sqlSelectAllEventHashes         - test(db.sqlSelectAllEventHashes)
+    }
+
+    'ops {
+      val db = new ForOps("blah")
+      'nowSql        - test(db.nowSql)
+      'userStatsSql  - test(db.userStatsSql)
+      'tableStatsSql - test(db.tableStatsSql)
+      'dbSizeSql     - test(db.dbSizeSql)
     }
 
   }
 }
-*/

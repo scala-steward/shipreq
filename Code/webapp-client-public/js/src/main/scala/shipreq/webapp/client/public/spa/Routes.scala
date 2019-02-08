@@ -1,9 +1,9 @@
 package shipreq.webapp.client.public.spa
 
 import japgolly.scalajs.react.Callback
-import japgolly.scalajs.react.extra.Reusability
+import japgolly.scalajs.react.Reusability
 import japgolly.scalajs.react.extra.router.{RouterCtl => _, _}
-import japgolly.scalajs.react.vdom.Implicits._
+
 import shipreq.base.util.Url
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.{AnalyticsConfig, Urls, WebappConfig}

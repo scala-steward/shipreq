@@ -107,7 +107,7 @@ object HomeContent {
             status,
             Colour.Green,
             buttonLabel = "Create Project",
-            inputMod = inputMod((^.autoFocus := true).when(noProjects)))
+            inputMod = TagMod(inputMod, (^.autoFocus := true).when(noProjects)))
             .render)
       }
 

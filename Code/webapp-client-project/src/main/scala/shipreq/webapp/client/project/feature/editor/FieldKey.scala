@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.feature.editor
 
 import japgolly.scalajs.react.Callback
-import japgolly.scalajs.react.extra.Reusability
+import japgolly.scalajs.react.Reusability
 import scala.reflect.ClassTag
 import scalaz.~~>
 import shipreq.base.util._

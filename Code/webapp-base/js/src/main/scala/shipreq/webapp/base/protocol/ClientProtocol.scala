@@ -1,7 +1,7 @@
 package shipreq.webapp.base.protocol
 
 import japgolly.scalajs.react.Callback
-import japgolly.scalajs.react.extra.Reusability
+import japgolly.scalajs.react.Reusability
 import scala.util.{Failure, Success}
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.ErrorMsg

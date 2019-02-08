@@ -13,7 +13,7 @@ import shipreq.webapp.ssr.SsrAlgebra
 object PrepareEnv {
   private val boot = new bootstrap.liftweb.Boot
 
-  private lazy val cfg = {
+  private val cfg = {
     var (appConfig, runMode) = boot.readConfig()
     runMode foreach boot.setRunMode
     appConfig = (BootConfig.server ^|-> ServerConfig.attackFrustrationDelay).set(Duration.ZERO)(appConfig)

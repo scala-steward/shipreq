@@ -46,7 +46,7 @@ object Dropdown {
         // Semantic UI doesn't respect CallbackOption.asEventDefault
         def onClick2: Callback =
           onClick >> getDOMNode.map(Dropdown.jquery(_).dropdown("clear"))
-        copy(content = content(^.onClick --> onClick2))
+        copy(content = TagMod(content, ^.onClick --> onClick2))
       }
     }
 

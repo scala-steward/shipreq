@@ -1,6 +1,6 @@
 package shipreq.taskman.server
 
-import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.concurrent.locks.ReentrantLock
 import shipreq.base.test.db.{SingleConnectionXA, TestDb}
 import shipreq.base.util.FxModule._
 import shipreq.base.util.Props
@@ -8,11 +8,7 @@ import shipreq.taskman.api.TaskmanApi
 import shipreq.taskman.server.logic.ServerOp
 import ServerImplTestHelpers._
 
-trait ServerImplTestHelpers {
-  def xa: SingleConnectionXA
-
-  final def dbMutexR = ServerImplTestHelpers.dbMutexR
-  final def dbMutexW = ServerImplTestHelpers.dbMutexW
+final case class ServerImplTestHelpers(xa: SingleConnectionXA) {
 
   lazy val ctx = TaskmanCtx(
     xa dbAccess TestDb.dbAccess,
@@ -29,18 +25,13 @@ trait ServerImplTestHelpers {
 }
 
 object ServerImplTestHelpers {
-
-  val dbLockRW = new ReentrantReadWriteLock
-  val dbMutexR = Some(dbLockRW.readLock)
-  val dbMutexW = Some(dbLockRW.writeLock)
+  private val mutex = Some(new ReentrantLock())
 
   private[server] def cfgSrc = Props.sources
 
   lazy val (taskmanConfig, taskmanConfigReport) =
     TaskmanConfig.config.withReport.run(cfgSrc).unsafeRun().getOrDie()
 
-  def apply(_xa: SingleConnectionXA): ServerImplTestHelpers =
-    new ServerImplTestHelpers {
-      override def xa = _xa
-    }
+  def imperative(inTransaction: Boolean = true)(f: ServerImplTestHelpers => Any): Unit =
+    TestDb(inTransaction, mutex)(xa => Fx(f(apply(xa)))).unsafeRun()
 }

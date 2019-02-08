@@ -1,7 +1,6 @@
 package shipreq.webapp.client.project.feature.create
 
-import japgolly.scalajs.react.Callback
-import japgolly.scalajs.react.extra.{Reusable, ~=>}
+import japgolly.scalajs.react.{Callback, Reusable, ~=>}
 import shipreq.webapp.base.lib.KeyboardTheme
 
 final case class NewEditorArgs(abort           : Option[Callback],

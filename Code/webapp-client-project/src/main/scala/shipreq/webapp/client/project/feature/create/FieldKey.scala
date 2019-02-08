@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.feature.create
 
-import japgolly.scalajs.react.extra.Reusability
+import japgolly.scalajs.react.Reusability
 import monocle.{Iso, Prism}
 import scalaz.~~>
 import shipreq.base.util.Direction

@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.reqtable
 
-import japgolly.scalajs.react.extra.Reusability
+import japgolly.scalajs.react.Reusability
 import japgolly.univeq.UnivEq
 import nyaya.prop._
 import scalaz.std.anyVal.intInstance

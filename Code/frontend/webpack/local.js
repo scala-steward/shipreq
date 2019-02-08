@@ -3,6 +3,7 @@
 const
   Path = require('path'),
   Webpack = require('webpack'),
+  TerserPlugin = require('terser-webpack-plugin'),
   NodeModules = Path.resolve(__dirname, '../node_modules');
 
 const config = {
@@ -55,26 +56,27 @@ const config = {
   resolve: { modules: [NodeModules] },
   resolveLoader: { modules: [NodeModules] },
 
-  plugins: [
-    new Webpack.NoEmitOnErrorsPlugin(),
+  mode: 'production',
 
+  performance: {
+    hints: false
+  },
+
+  optimization: {
+    minimizer: [new TerserPlugin({
+      cache: true,
+      parallel: true,
+      terserOptions: {
+        output: {
+          comments: false,
+        }
+      },
+    })]
+  },
+
+  plugins: [
     new Webpack.LoaderOptionsPlugin({
       minimize: true,
-    }),
-
-    new Webpack.DefinePlugin({
-      'process.env.NODE_ENV': JSON.stringify('production')
-    }),
-
-    new Webpack.optimize.UglifyJsPlugin({
-      compress: {
-        screw_ie8: true,
-        warnings: false,
-      },
-      output: {
-        comments: false,
-      },
-      sourceMap: false,
     }),
   ],
 

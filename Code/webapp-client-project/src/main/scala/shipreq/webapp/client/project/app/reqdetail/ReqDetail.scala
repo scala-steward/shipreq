@@ -158,7 +158,7 @@ object ReqDetail {
 
         val startEditor: Callback =
           ves.iterator.map(_.event).collect {
-            case e: UseCaseStepCreate => startUseCaseStepEditor(e.id).delayMs(50).void
+            case e: UseCaseStepCreate => startUseCaseStepEditor(e.id).delayMs(50).toCallback
           }.nextOption().getOrEmpty
 
         onSuccess >> startEditor

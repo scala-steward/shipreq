@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.scalajs.react.Key
 import japgolly.scalajs.react.ScalazReact._
-import japgolly.scalajs.react.extra.Reusability
+import japgolly.scalajs.react.Reusability
 import monocle.{Lens, Optional}
 import monocle.macros.Lenses
 import scalaz.{Equal, Monoid, Semigroup}

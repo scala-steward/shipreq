@@ -5,7 +5,7 @@ object AssetManifest {
 
   final case class CDN(href: String, integrity: Option[String])
 
-  def analyticsJs = "/s/c9a95a59bbdd769beb5e13275cef2ed2.js"
+  def analyticsJs = "/s/dce87165b3df779a542fc2aa5b2d871c.js"
 
   def favicon = "/s/286b75985993da80759cbdc5142de4d3.ico"
 
@@ -23,9 +23,9 @@ object AssetManifest {
 
   def loadingSpinSvg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiBmaWxsPSIjMjJjIj48cGF0aCBvcGFjaXR5PSIuMjUiIGQ9Ik0xNiAwYTE2IDE2IDAgMCAwIDAgMzIgMTYgMTYgMCAwIDAgMC0zMm0wIDRhMTIgMTIgMCAwIDEgMCAyNCAxMiAxMiAwIDAgMSAwLTI0Ii8+PHBhdGggZD0iTTE2IDBhMTYgMTYgMCAwIDEgMTYgMTZoLTRBMTIgMTIgMCAwIDAgMTYgNHoiPjxhbmltYXRlVHJhbnNmb3JtIGF0dHJpYnV0ZU5hbWU9InRyYW5zZm9ybSIgdHlwZT0icm90YXRlIiBmcm9tPSIwIDE2IDE2IiB0bz0iMzYwIDE2IDE2IiBkdXI9IjAuNXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIi8+PC9wYXRoPjwvc3ZnPg=="
 
-  def loadjs = "/s/7f8f2966a3634ba5d1b206bc19d7c7ec.js"
+  def loadjs = "/s/6d841ef3b98aa6f28ca432788c6430b0.js"
 
-  def memberLibBundleJs = "/s/6c5973d205cd756b2106e3780e6d548c.js"
+  def memberLibBundleJs = "/s/8612f4eb457b6ed781a67634a77e015c.js"
 
   def reactDomJs = CDN(
     href = "https://cdn.jsdelivr.net/npm/react-dom@16.5.2/umd/react-dom.production.min.js",
@@ -39,7 +39,7 @@ object AssetManifest {
     href = "https://cdn.jsdelivr.net/npm/react@16.5.2/umd/react.production.min.js",
     integrity = Some("sha256-alJnAKUY0Ruhf55K/C+sCyz6zaipGhl1kxuzDW3jtHk="))
 
-  def semanticCss = "/s/56bc2bca25c1a231b323f2358dd2cbf3.css"
+  def semanticCss = "/s/3ec16c23779eb60e25c99b2616e7b3a3.css"
 
   def semanticCssUrls: List[String] =
     "icons.eot" ::
@@ -50,7 +50,7 @@ object AssetManifest {
     "icons.svg#icons" ::
     Nil
 
-  def semanticJs = "/s/6e6d9e0dd7f0e311b023e520755a176d.js"
+  def semanticJs = "/s/3aec14cc9c7e7fe1dc0b2c0a579fc7c2.js"
 
   def shipreqBannerSvg = "/s/878536f0a4ad0029794669f88dbf5f35.svg"
 

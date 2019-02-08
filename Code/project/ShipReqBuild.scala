@@ -15,15 +15,32 @@ object ShipReqBuild {
 
   def crossProject(dir: String): CrossProject =
     CrossProject(dir, file(dir))(JVMPlatform, JSPlatform)
-      .jvmConfigure(_.copy(id = dir + "-jvm"))
-      .jsConfigure(_.copy(id = dir + "-js"))
+      .jvmConfigure(_.withId(dir + "-jvm"))
+      .jsConfigure(_.withId(dir + "-js"))
       .settings(name := dir)
 
   lazy val root =
     Project("root", file("."))
-      .configure(Common.jvmSettings, IdeSettings.settingsForRoot)
+      .configure(Common.jvmSettings)
       .aggregate(base, taskman, webapp, utils, benchmarkJvm, benchmarkJs)
       .settings(addCommandAlias("dockers", ";root/compile ;taskman-server/docker ;webapp-server/docker"))
+
+  /** All JS modules */
+  lazy val js =
+    Project("js", file(".js"))
+      .configure(Common.jvmSettings)
+      .aggregate(
+        webappMacroJs,
+        webappBaseJs,
+        webappBaseMemberJs,
+        webappBaseTestJs,
+        webappClientPublicJs,
+        webappClientHome,
+        webappClientWwApi,
+        webappClientWw,
+        webappClientProject,
+        webappGenJs,
+        webappServerLogicJs)
 
   // ===================================================================================================================
   // base-* : General utils for taskman, webapp, benchmarking, etc.
@@ -45,8 +62,7 @@ object ShipReqBuild {
         Microlibs.scalazExt ++ Microlibs.stdlibExt ++ Microlibs.utils ++
         testScope(μTest ++ Nyaya.test ++ Microlibs.testUtil))
       .depsForJvm(
-        SLF4J.api ++ Logback.core ++ scalaLogging ++ clearConfig ++
-        testScope(Specs2.combo))
+        SLF4J.api ++ Logback.core ++ scalaLogging ++ clearConfig)
 
   lazy val baseOps =
     project("base-ops")
@@ -72,13 +88,12 @@ object ShipReqBuild {
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoDom))
       .dependsOn(baseUtil)
+      .configureJvm(_.dependsOn(baseDb % Provided))
       .depsForBoth(
         Microlibs.testUtil ++
-        providedScope(Nyaya.gen) ++
+        providedScope(μTest ++ Nyaya.gen) ++
         testScope(μTest ++ Nyaya.test))
-      .configureJvm(_
-        .deps(providedScope(Specs2.combo))
-        .dependsOn(baseDb % Provided))
+      .depsForJvm(providedScope(scalaCheck))
 
   // ===================================================================================================================
   // utils & benchmark-*

@@ -20,7 +20,7 @@ object Dependencies {
 
   object Scala {
     private val mm = scalaItself(version)
-    def version  = "2.12.6"
+    def version  = "2.12.8"
     val library  = mm("scala-library")
     val reflect  = mm("scala-reflect")
     val compiler = mm("scala-compiler") ++ reflect ++ scalaXml
@@ -83,13 +83,13 @@ object Dependencies {
   }
 
   object UnivEq {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.univeq", "1.0.4")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.univeq", "1.0.5")
     val univeq = mm("univeq")
     val scalaz = mm("univeq-scalaz") ++ univeq ++ Scalaz.core
   }
 
   object React {
-    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "1.3.1")
+    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "1.4.0")
     val core    = mm("core")
     val test    = mm("test")
     val scalaz  = mm("ext-scalaz72") ++ Scalaz.effect
@@ -105,7 +105,7 @@ object Dependencies {
   }
 
   object Json4s {
-    private val mm = MultiModule.scala("org.json4s", "3.6.2")
+    private val mm = MultiModule.scala("org.json4s", "3.6.4")
     val jackson = mm("json4s-jackson") ++ Scala.all
   }
 
@@ -122,7 +122,7 @@ object Dependencies {
     val core = mm("logback-classic") ++ mm("logback-core")
 
     val withPlugins = core ++
-      jvmOnly("net.logstash.logback" % "logstash-logback-encoder" % "5.2")
+      jvmOnly("net.logstash.logback" % "logstash-logback-encoder" % "5.3")
   }
 
   object Lift {
@@ -148,7 +148,7 @@ object Dependencies {
 
   object Akka {
     val shortVer = "2.5"
-    private val mm = MultiModule.scala("com.typesafe.akka", shortVer + ".18")
+    private val mm = MultiModule.scala("com.typesafe.akka", shortVer + ".20")
     val actor   = mm("akka-actor") ++ mm("akka-slf4j")
     val testkit = mm("akka-testkit")
   }
@@ -157,11 +157,6 @@ object Dependencies {
     private val mm = MultiModule.java("com.squareup.okhttp3", "3.11.0")
     val core = mm("okhttp")
     // val urlConnection = mm("okhttp-urlconnection") ++ core
-  }
-
-  object Specs2 {
-    private val mm = MultiModule.scala("org.specs2", "3.9.5")
-    val combo = mm("specs2-core") ++ mm("specs2-scalacheck")
   }
 
   object LibJetty {
@@ -176,7 +171,7 @@ object Dependencies {
   }
 
   object Kamon {
-    val core          = jvmOnly("io.kamon" %%  "kamon-core"                  % "1.1.3")
+    val core          = jvmOnly("io.kamon" %%  "kamon-core"                  % "1.1.5")
   //val jdbc          = jvmOnly("io.kamon" %%  "kamon-jdbc"                  % "1.0.0") // requires agent
   //val akka          = jvmOnly("io.kamon" %% s"kamon-akka-${Akka.shortVer}" % "1.0.1")
   //val systemMetrics = jvmOnly("io.kamon" %%  "kamon-system-metrics"        % "1.0.0") // requires Sigar
@@ -186,7 +181,7 @@ object Dependencies {
   }
 
   object Prometheus {
-    private val mm = MultiModule.java("io.prometheus", "0.5.0")
+    private val mm = MultiModule.java("io.prometheus", "0.6.0")
     val client     = mm("simpleclient")
     val hotspot    = mm("simpleclient_hotspot")
     val httpserver = mm("simpleclient_httpserver")
@@ -194,35 +189,35 @@ object Dependencies {
   }
 
   val scalajsDom       = jsOnly("org.scala-js"                          %% "scalajs-dom"       % "0.9.6")
-  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.2.5")
+  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.2.6")
   val scalajsJavaTime  = jsOnly("org.scala-js"                          %% "scalajs-java-time" % "0.2.5")
 
   val boopickle   = jvmAndJs("io.suzaku",                        "boopickle", "1.3.0")
-  val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",      "1.2.1")
+  val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",      "1.2.2")
   val parboiled   = jvmAndJs("org.parboiled",                    "parboiled", "2.1.5")
   val shapeless   = jvmAndJs("com.chuusai",                      "shapeless", "2.3.3")
   val μPickle     = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",   "custom-7")
   val μTest       = jvmAndJs("com.lihaoyi",                      "utest",     "0.6.6")
 
-  val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.0")
+  val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.2")
   val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.1.1")
-  val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.10")
+  val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.11")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
   val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.5")
-  val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "3.2.0")
+  val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "3.3.0")
   val flyway       = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
   val commonsLang  = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.8.1")
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val twitterEval  = jvmOnly("com.twitter"                %% "util-eval"             % "6.43.0")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.13.5")
 
-  val betterMonadicFor = compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.2.4")
+  val betterMonadicFor = compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.0-M4")
   val useBetterMonadicFor = (_: Project).settings(addCompilerPlugin(betterMonadicFor))
 
   val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
   val useMacroParadise = (_: Project).settings(addCompilerPlugin(macroParadise))
 
-  val kindProjector = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.8")
+  val kindProjector = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.9")
   val useKindProjector = (_: Project).settings(addCompilerPlugin(kindProjector))
 
 //  import sbt.Keys._

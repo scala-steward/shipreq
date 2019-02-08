@@ -1,6 +1,7 @@
 const
   Webpack = require('webpack'),
   WebpackMerge = require('webpack-merge'),
+  TerserPlugin = require('terser-webpack-plugin'),
   common = require('./common');
 
 const ctx = {
@@ -9,27 +10,28 @@ const ctx = {
 
 const config = WebpackMerge(common(ctx), {
 
-  plugins: [
+  mode: 'production',
 
+  performance: {
+    hints: false
+  },
+
+  optimization: {
+    minimizer: [new TerserPlugin({
+      cache: true,
+      parallel: true,
+      terserOptions: {
+        output: {
+          comments: false,
+        }
+      },
+    })]
+  },
+
+  plugins: [
     new Webpack.LoaderOptionsPlugin({
       minimize: true,
     }),
-
-    new Webpack.DefinePlugin({
-      'process.env.NODE_ENV': JSON.stringify('production')
-    }),
-
-    new Webpack.optimize.UglifyJsPlugin({
-      compress: {
-        screw_ie8: true,
-        warnings: false,
-      },
-      output: {
-        comments: false,
-      },
-      sourceMap: false,
-    }),
-
   ],
 
 });

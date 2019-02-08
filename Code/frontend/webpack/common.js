@@ -1,11 +1,8 @@
 const
   Path = require('path'),
   Webpack = require('webpack'),
-  ExtractTextPlugin = require("extract-text-webpack-plugin"),
+  MiniCssExtractPlugin = require('mini-css-extract-plugin'),
   NodeModules = Path.resolve(__dirname, '../node_modules');
-
-const extractCss = new ExtractTextPlugin({ filename: '[name].css' });
-const extractLess = new ExtractTextPlugin({ filename: '[name].css' });
 
 const entryPoints = es => es.filter(e => !!e);
 
@@ -49,29 +46,27 @@ const config = ({ mode }) => ({
         use: {
           loader: 'babel-loader',
           options: {
-            presets: [['es2015', {'modules': false}]],
-            // plugins: ['dynamic-import-system-import'],
+            presets: ['@babel/preset-env'],
           },
         },
       },
 
       {
         test: /\.less$/,
-        use: extractLess.extract({
-          use: [{ loader: "css-loader" }, { loader: "less-loader" }],
-          fallback: "style-loader",
-        }),
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          'less-loader',
+        ],
       },
 
       {
         test: /.css$/,
-        use: extractCss.extract({
-          use: [
-            { loader: 'css-loader', options: { importLoaders: 1, } },
-            { loader: 'postcss-loader' },
-          ],
-          fallback: 'style-loader',
-        }),
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          'postcss-loader',
+        ],
       },
 
       {
@@ -82,9 +77,7 @@ const config = ({ mode }) => ({
   },
 
   plugins: [
-    new Webpack.NoEmitOnErrorsPlugin(),
-    extractCss,
-    extractLess,
+    new MiniCssExtractPlugin({ filename: '[name].css' }),
   ],
 
   bail: true,

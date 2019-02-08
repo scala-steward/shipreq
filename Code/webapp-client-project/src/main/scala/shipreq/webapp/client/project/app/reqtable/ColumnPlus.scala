@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
-import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react._
 import japgolly.univeq.UnivEq
 import shipreq.webapp.base.UiText.ColumnNames
 import shipreq.webapp.base.data._

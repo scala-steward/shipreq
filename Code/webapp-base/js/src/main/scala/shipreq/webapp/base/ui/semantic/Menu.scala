@@ -104,7 +104,7 @@ object Menu {
       val onClick: ReactEvent => Callback =
         e => Callback.when(e.target == e.currentTarget)(
           cb >> getDOMNode.map(Dropdown.jquery(_).dropdown("hide")))
-      copy(tagMod = tagMod(^.onClick ==> onClick))
+      copy(tagMod = TagMod(tagMod, ^.onClick ==> onClick))
     }
   }
 

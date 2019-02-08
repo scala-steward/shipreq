@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.reqtable
 
-import japgolly.scalajs.react.extra.Reusability
+import japgolly.scalajs.react.Reusability
 import shipreq.base.util.univeq.UnivEq
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.lib.DataReusability._
