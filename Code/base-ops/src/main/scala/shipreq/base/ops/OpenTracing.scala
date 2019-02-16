@@ -14,14 +14,14 @@ object OpenTracing {
       private def withNewSpan[A](createSpan: => Span)(f: Span => Fx[A]): Fx[A] =
         Fx {
           val span = createSpan
-          unsafeWithActiveSpan(span)(f(span).unsafeRun())
+          unsafeWithSpanActivated(span, true)(f(span).unsafeRun())
         }
 
-      private def withActiveSpan[A](span: Span, f: Fx[A]): Fx[A] =
-        Fx(unsafeWithActiveSpan(span)(f.unsafeRun()))
+      private def withSpanActivated[A](span: Span, closeSpan: Boolean, f: Fx[A]): Fx[A] =
+        Fx(unsafeWithSpanActivated(span, closeSpan)(f.unsafeRun()))
 
-      private def unsafeWithActiveSpan[A](span: Span)(body: => A): A = {
-        val scope = tracer.scopeManager().activate(span, true)
+      private def unsafeWithSpanActivated[A](span: Span, closeSpan: Boolean)(body: => A): A = {
+        val scope = tracer.scopeManager().activate(span, closeSpan)
         try
           body
         catch {
@@ -53,7 +53,7 @@ object OpenTracing {
           if (span eq null)
             f
           else
-            withActiveSpan(span, f)
+            withSpanActivated(span, false, f)
         })
 
       private[this] val attrInterpretter = Trace.Attr.interpret[Span, Unit](
