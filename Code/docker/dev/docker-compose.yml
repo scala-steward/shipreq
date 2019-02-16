@@ -70,7 +70,7 @@ services:
     mem_limit: 10m
 
   prometheus:
-    image: prom/prometheus:v2.2.1
+    image: prom/prometheus:v2.7.1
     container_name: shipreq_dev_prometheus
     ports:
       - $PORT_PROMETHEUS_HTTP:9090
@@ -82,7 +82,7 @@ services:
     mem_limit: 100m
 
   grafana:
-    image: grafana/grafana:5.1.0
+    image: grafana/grafana:5.4.3
     container_name: shipreq_dev_grafana
     links:
       - prometheus
@@ -95,12 +95,12 @@ services:
 
   # sudo sysctl -w vm.max_map_count=262144
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.3
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.6.0
     container_name: shipreq_dev_elasticsearch
     mem_limit: 1g
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:6.2.3
+    image: docker.elastic.co/kibana/kibana-oss:6.6.0
     container_name: shipreq_dev_kibana
     links:
       - elasticsearch
@@ -111,7 +111,7 @@ services:
     mem_limit: 200m
 
   logstash:
-    image: docker.elastic.co/logstash/logstash-oss:6.2.3
+    image: docker.elastic.co/logstash/logstash-oss:6.6.0
     container_name: shipreq_dev_logstash
     links:
       - elasticsearch
@@ -123,7 +123,7 @@ services:
 
   # You wouldn't do this in prod - it uses in-memory storage
   jaeger:
-    image: jaegertracing/all-in-one:1.3.0
+    image: jaegertracing/all-in-one:1.10.0
     container_name: shipreq_dev_jaeger
     ports:
       - $PORT_JAEGER_HTTP:16686
