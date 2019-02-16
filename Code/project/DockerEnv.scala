@@ -80,7 +80,7 @@ object DockerEnv {
     val devEnvStart = taskKey[Unit]("Starts up the dev environment.")
     val devEnvStop = taskKey[Unit]("Stops the dev environment.")
 
-    private val env = envRef("dev")("postgres", "jaeger", "prometheus", "elasticsearch", "logstash")
+    private val env = envRef("dev")("postgres", "jaeger", "prometheus", "elasticsearch")
 
     val commands: Project => Project =
       _.settings(
@@ -100,6 +100,7 @@ object DockerEnv {
         .add("db.host", "localhost")
         .add("db.port", envFileValue(envRoot, "PORT_POSTGRES"))
         .add("JAEGER_ENDPOINT", s"http://localhost:$jaegerPort/api/traces")
+        .add("ELASTICSEARCH_REST_URL", "http://localhost:14500")
         .add("run.mode", runMode)
         .value
     }

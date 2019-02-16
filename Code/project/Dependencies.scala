@@ -111,7 +111,7 @@ object Dependencies {
     val core = mm("logback-classic") ++ mm("logback-core")
 
     val withPlugins = core ++
-      jvmOnly("net.logstash.logback" % "logstash-logback-encoder" % "5.3")
+      jvmOnly("com.internetitem" % "logback-elasticsearch-appender" % "1.6")
   }
 
   object Lift {

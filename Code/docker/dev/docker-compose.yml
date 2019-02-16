@@ -19,8 +19,8 @@ services:
     image: shipreq/taskman
     container_name: shipreq_dev_taskman
     links:
+      - elasticsearch
       - postgres
-      - logstash
     volumes:
       - ./taskman:/taskman/conf:ro
     environment:
@@ -35,9 +35,9 @@ services:
     image: shipreq/webapp
     container_name: shipreq_dev_webapp
     links:
-      - postgres
-      - logstash
+      - elasticsearch
       - jaeger
+      - postgres
     ports:
       - $PORT_SHIPREQ_WEBAPP_HTTP:8080
       - $PORT_SHIPREQ_WEBAPP_HTTPS:8443
@@ -55,6 +55,7 @@ services:
       - JAEGER_REPORTER_FLUSH_INTERVAL=2000
       - JAEGER_SAMPLER_TYPE=const
       - JAEGER_SAMPLER_PARAM=1
+      - ELASTICSEARCH_REST_URL=http://elasticsearch:9200
       - EXTERNAL_PORT_SSL=$PORT_SHIPREQ_WEBAPP_HTTPS
     cpus: 2
     mem_limit: 1856m # 2.25*1024 - 448 for Taskman
@@ -98,6 +99,8 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.6.0
     container_name: shipreq_dev_elasticsearch
     mem_limit: 1g
+    ports:
+      - $PORT_ELASTICSEARCH:9200
 
   kibana:
     image: docker.elastic.co/kibana/kibana-oss:6.6.0
@@ -110,17 +113,6 @@ services:
       driver: none
     mem_limit: 200m
 
-  logstash:
-    image: docker.elastic.co/logstash/logstash-oss:6.6.0
-    container_name: shipreq_dev_logstash
-    links:
-      - elasticsearch
-    volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
-    ports:
-      - $PORT_LOGSTASH:14500
-    mem_limit: 500m
-
   # You wouldn't do this in prod - it uses in-memory storage
   jaeger:
     image: jaegertracing/all-in-one:1.10.0
@@ -130,5 +122,3 @@ services:
       - $PORT_JAEGER_COLLECTOR:14268
     mem_limit: 200m
 
-# Can't get docker to send logs to logstash
-# Doesn't work: (https://github.com/moby/moby/issues/20370)
