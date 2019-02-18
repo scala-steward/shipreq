@@ -41,18 +41,19 @@ TARGET STATE
 * Server-side procs
   * Scala.JS makes regular ajax calls
   * auth via JWT
-  * organise as one of the following
-    * single endpoint, cmd type -> cmd -> resp
-    * endpoint/spa,    cmd type -> cmd -> resp
-    * endpoint/cmd,                cmd -> resp
+  * single endpoint, cmd type -> cmd -> resp
 
-* Event subscription
-  * Use Redis project channels and pub/sub
+* Event pub/sub
+  * Use Redis channels
   * webapp-server publishes new events to Redis
   * webapp-server subscribes and receives events, then publishes to clients through existing connections
-  * webapp-server maintains connections with clients using one of two options:
-    1. Keep Lift just for comets (and have all HTTP be stateless routes)
-    2. Use websockets directly
+  * webapp-server maintains connections with clients via websockets
+  * send new project modification commands from client to server thru open websocket
+  * webapp-server-logic to get websocket & redis abstractions
+  * use websockets & redis to provide user with social real-time data such as:
+    * connected users
+    * local & remote uncommitted dirty fields
+  * auto/manual reconnect (and catchup) on broken connection
 
 * Project caching (for quick responses to new events & project loads)
   * Use Redis
