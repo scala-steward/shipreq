@@ -56,7 +56,9 @@ TARGET STATE
   * auto/manual reconnect (and catchup) on broken connection
 
 * Project caching (for quick responses to new events & project loads)
-  * Use Redis
+  * Use AWS Redis
+    * Initially in non-cluster mode because no need to scale
+    * Later in cluster node which supports online up/down scaling of shards and/or replicas
   * Details TBD wrt snapshot/events & concurrency/traffic-size & DB/staleness
 
 
