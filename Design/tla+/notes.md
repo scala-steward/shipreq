@@ -28,3 +28,7 @@ make TLC stop.
 It's not enough to just stop when events have been flushed/drained, to really confirm our
 expected behaviour, add a test to ensure all users have the expected/correct content.
 I added a new invariant: `MCDone => AllUsersUpToDate`
+
+There is no need for this model to handle pub/sub potentially failing and msgs being lost.
+Here we can just assume it works correctly and if it needs verification of its own,
+it can be modelled separately. It's orthogonal. Relying on assumptions is common & beneficial.

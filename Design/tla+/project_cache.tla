@@ -34,6 +34,7 @@ TypeInvariants ==
        User -> [
          online : BOOLEAN,
          ver    : Nat,              \* The version of the built Project
+         future : SUBSET Nat,       \* Future events that can't be applied cos intermediate event is missing
          reqs   : SUBSET Request ]] \* Requests for which a response hasn't be received
 
 RedisVer == IF redis.events = {}
@@ -42,17 +43,19 @@ RedisVer == IF redis.events = {}
 
 DataInvariants ==
   /\ \A u \in User :
-    /\ userState[u].online => userState[u].ver > 0
-    /\ userState[u].ver <= db.ver
+    LET s == userState[u]
+    IN /\ s.online => s.ver > 0
+       /\ s.ver <= db.ver
+       /\ \A e \in s.future : e > s.ver + 1
   /\ \A p \in procs : userState[p.user].online
   /\ \A e \in redis.events : e - 1 \in ({redis.ver} \union redis.events)
   /\ RedisVer <= db.ver
 
-
 OfflineUser == [
   online |-> FALSE,
-  reqs   |-> {},
-  ver    |-> 0]
+  ver    |-> 0,
+  future |-> {},
+  reqs   |-> {}]
 
 Init ==
   /\ db        = [ver |-> 1]
@@ -60,7 +63,6 @@ Init ==
   /\ procs     = {}
   /\ pub       = {}
   /\ userState = [u \in User |-> OfflineUser]
-
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -148,18 +150,22 @@ ModRespond ==
   \/ Respond_Done
 
 Publish ==
-  /\ pub /= {}
-  /\ \E <<u,v>> \in pub :
-    \* TODO Remove ver check, add futureEvents to userState
-    \* TODO This doesn't cause a failure because that user will eventually just disconnect
-    /\ IF userState[u].online /\ (userState[u].ver = v - 1)
-       THEN /\ userState' = [userState EXCEPT ![u].ver = v]
-\*            /\ PrintT([ok |-> TRUE, u |->  userState[u].ver, v |-> v])
-       ELSE /\ UNCHANGED userState
-\*            /\ PrintT([ok |-> FALSE, u |->  userState[u].ver, v |-> v])
-    /\ pub' = Remove(pub, <<u,v>>)
-    /\ UNCHANGED << db, redis, procs >>
-
+  LET ApplyFutureEvents[v \in Nat, f \in SUBSET Nat] ==
+        LET n == v + 1
+        IN IF n \in f
+           THEN ApplyFutureEvents[n, f \ {n}]
+           ELSE <<v,f>>
+      RecvEvent(s, v) ==
+        IF v <= s.ver
+        THEN s
+        ELSE LET r == ApplyFutureEvents[s.ver, s.future \union {v}]
+             IN [s EXCEPT !.ver = r[1], !.future = r[2]]
+  IN
+    /\ pub /= {}
+    /\ \E <<u,v>> \in pub :
+      /\ userState' = [userState EXCEPT ![u] = RecvEvent(@, v)]
+      /\ pub' = Remove(pub, <<u,v>>)
+      /\ UNCHANGED << db, redis, procs >>
 
 ActionAct ==
   \/ UserConnect
