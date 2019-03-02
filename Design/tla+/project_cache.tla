@@ -74,7 +74,8 @@ Replace(set, old, new) == { IF a = old THEN new ELSE a : a \in set}
 \* In reality this is: open page, establish websocket, receive project, subscribe to pub/sub channel
 UserConnect == \E u \in User :
   /\ ~userState[u].online
-  /\ \A p \in procs : p.user /= u \* This is a model constraint, not a reflection of reality - TODO think
+  /\ \A p \in procs : p.user /= u \* A new user (connection) is distinct.
+                                  \* If the model value is still being used in an orphan proc, it can be recycled here yet
   /\ userState' = [userState EXCEPT ![u].online = TRUE, ![u].ver = db.ver]
   /\ UNCHANGED << db, redis, procs, pub >>
 
@@ -162,7 +163,6 @@ Publish ==
   IN
     /\ pub /= {}
     /\ \E <<u,v>> \in pub :
-      /\ PrintT(userState[u])
       /\ IF userState[u].online
          THEN userState' = [userState EXCEPT ![u] = RecvEvent(@, v)]
          ELSE UNCHANGED userState

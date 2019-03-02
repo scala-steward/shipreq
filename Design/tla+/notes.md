@@ -32,3 +32,10 @@ I added a new invariant: `MCDone => AllUsersUpToDate`
 There is no need for this model to handle pub/sub potentially failing and msgs being lost.
 Here we can just assume it works correctly and if it needs verification of its own,
 it can be modelled separately. It's orthogonal. Relying on assumptions is common & beneficial.
+
+
+Summary
+* hard to write a spec for exactly what you want
+  * safety props vs lifeness
+  * many of the props in our head are implicit - your spec could pass but there's an implicit property you haven't specified that's being violated (e.g. all users have latest project)
+  * adding props is like guiding a horse to water without interacting with it, but by modifying its env, eg. adding fences
