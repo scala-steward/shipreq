@@ -37,18 +37,16 @@ TypeInvariants ==
          future : SUBSET Nat,       \* Future events that can't be applied cos intermediate event is missing
          reqs   : SUBSET Request ]] \* Requests for which a response hasn't be received
 
-RedisVer == IF redis.events = {}
-            THEN redis.ver
-            ELSE CHOOSE e \in redis.events : \A f \in redis.events : e >= f
-
 DataInvariants ==
   /\ \A u \in User :
     LET s == userState[u]
     IN /\ s.online => s.ver > 0
        /\ s.ver <= db.ver
        /\ \A e \in s.future : e > s.ver + 1
-  /\ \A e \in redis.events : e - 1 \in ({redis.ver} \union redis.events)
-  /\ RedisVer <= db.ver
+  /\ redis.ver <= db.ver
+  /\ \A e \in redis.events :
+    /\ e - 1 \in ({redis.ver} \union redis.events) \* No gaps in Redis events
+    /\ e <= db.ver
 
 OfflineUser == [
   online |-> FALSE,
@@ -68,6 +66,19 @@ Init ==
 Remove(set, el) == {a \in set : a /= el}
 
 Replace(set, old, new) == { IF a = old THEN new ELSE a : a \in set}
+
+ApplyEvents[v \in Nat, es \in SUBSET Nat] ==
+  LET n == v + 1
+  IN IF n \in es
+     THEN ApplyEvents[n, es \ {n}]
+     ELSE <<v,es>>
+
+RedisVer ==
+  IF redis.events = {}
+  THEN redis.ver
+  ELSE CHOOSE e \in redis.events : \A e2 \in redis.events : e >= e2
+
+OnlineUsers == {u \in User : userState[u].online}
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -107,7 +118,7 @@ Respond_ReadDB == procs /= {} /\ \E p \in procs :
 
 Respond_InitRedis == \E p \in procs :
   /\ p.status = "init-redis"
-  /\ IF p.ver >= RedisVer
+  /\ IF p.ver > RedisVer
      THEN /\ redis' = [ver |-> p.ver, events |-> {}]
           /\ procs' = Replace(procs, p, [p EXCEPT !.status = "create"])
      ELSE \* Redis has a more recent state than this proc
@@ -118,18 +129,27 @@ Respond_InitRedis == \E p \in procs :
 Respond_NewEventWriteDB == procs /= {} /\ \E p \in procs :
   /\ p.status = "create"
   /\ IF p.ver = db.ver
-     THEN /\ db'    = [ver |-> p.ver + 1]
-          /\ procs' = Replace(procs, p, [p EXCEPT !.status = "post-create", !.ver = @ + 1])
-     ELSE \* DB has been updated without our knowledge
+     THEN LET newVer == db.ver + 1
+          IN /\ db'    = [ver |-> newVer]
+             /\ procs' = Replace(procs, p, [p EXCEPT !.status = "post-create", !.ver = newVer])
+     ELSE \* DB has been updated without our knowledge; INSERT fails
           /\ procs' = Replace(procs, p, [p EXCEPT !.status = "ready"])
           /\ UNCHANGED db
   /\ UNCHANGED << redis, pub, userState >>
 
 Respond_WriteRedis == procs /= {} /\ \E p \in procs :
   /\ p.status = "post-create"
-  /\ pub'     = pub \union { <<u, p.ver>> : u \in {u \in User : userState[u].online} }
-  /\ redis'   = [ver |-> p.ver, events |-> {}] \* TODO: Write to Redis properly
-  /\ procs'   = Replace(procs, p, [p EXCEPT !.status = "done"])
+  /\ pub' = pub \union { <<p.user, p.ver>> }                \* Proc does this
+                \union { <<u, p.ver>> : u \in OnlineUsers } \* Redis does this
+  /\ \/ \* Send a snapshot to Redis
+        IF p.ver > RedisVer
+        THEN redis' = [ver |-> p.ver, events |-> {}]
+        ELSE UNCHANGED redis
+     \/ \* Send an event to Redis
+        IF p.ver > redis.ver
+        THEN redis' = [redis EXCEPT !.events = @ \union {p.ver}]
+        ELSE UNCHANGED redis
+  /\ procs' = Replace(procs, p, [p EXCEPT !.status = "done"])
   /\ UNCHANGED << db, userState >>
 
 \* Responds to user
@@ -150,15 +170,10 @@ ModRespond ==
   \/ Respond_Done
 
 Publish ==
-  LET ApplyFutureEvents[v \in Nat, f \in SUBSET Nat] ==
-        LET n == v + 1
-        IN IF n \in f
-           THEN ApplyFutureEvents[n, f \ {n}]
-           ELSE <<v,f>>
-      RecvEvent(s, v) ==
+  LET RecvEvent(s, v) ==
         IF v <= s.ver
         THEN s
-        ELSE LET r == ApplyFutureEvents[s.ver, s.future \union {v}]
+        ELSE LET r == ApplyEvents[s.ver, s.future \union {v}]
              IN [s EXCEPT !.ver = r[1], !.future = r[2]]
   IN
     /\ pub /= {}
@@ -171,8 +186,9 @@ Publish ==
 
 ActionAct ==
   \/ UserConnect
-  \/ UserDisconnect
   \/ ModRequest
+\* \/ UserDisconnect
+\* Test Redis removing keys
 
 ActionReact ==
   \/ ModRespond

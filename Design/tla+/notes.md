@@ -33,6 +33,17 @@ There is no need for this model to handle pub/sub potentially failing and msgs b
 Here we can just assume it works correctly and if it needs verification of its own,
 it can be modelled separately. It's orthogonal. Relying on assumptions is common & beneficial.
 
+Something fantastic about TLA+ is that you have some conditional logic, you can choose to not even include the condition in the model,
+and just say "both cases can occur here". Eg. when updating the cache you might have some logic that decides whether you just store your
+new event, or you update the snapshot. How you choose might be simply every-n-events, or binary size comparison of snapshot vs events,
+but it doesn't matter. Just declare in the logic that both are possibilities.
+
+Not sure how to test efficiency... Eg. if I have a bug in my spec/logic that results in 90% cache misses
+
+Catches crazy edge caches. Like I've just created a new event, my very next action is to update the cache
+then I found out it's already up-to-date (!).
+Also off-by-1 errors but not in arithmetic, in comparison. eg < vs <=
+
 
 Summary
 * hard to write a spec for exactly what you want
