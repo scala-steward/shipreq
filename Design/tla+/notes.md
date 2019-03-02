@@ -41,9 +41,12 @@ but it doesn't matter. Just declare in the logic that both are possibilities.
 Not sure how to test efficiency... Eg. if I have a bug in my spec/logic that results in 90% cache misses
 
 Catches crazy edge caches. Like I've just created a new event, my very next action is to update the cache
-then I found out it's already up-to-date (!).
+then I found out it's already up-to-date, and with a snapshot to boot (!).
 Also off-by-1 errors but not in arithmetic, in comparison. eg < vs <=
 
+Add cache eviction by Redis. It's quickly proved that my logic is insufficient.
+It's been great up until to verify my own logic. Once happy it took 1 min to introduce Redis' logic (eviction).
+Once I get this working the confidence I'll have is fantastic. This is been an extremely valuable exercise.
 
 Summary
 * hard to write a spec for exactly what you want

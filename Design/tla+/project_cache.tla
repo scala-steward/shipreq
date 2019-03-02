@@ -45,7 +45,8 @@ DataInvariants ==
        /\ \A e \in s.future : e > s.ver + 1
   /\ redis.ver <= db.ver
   /\ \A e \in redis.events :
-    /\ e - 1 \in ({redis.ver} \union redis.events) \* No gaps in Redis events
+    /\ redis.ver > 0 => \* Snapshot may have been evicted by Redis
+       (e - 1) \in ({redis.ver} \union redis.events)
     /\ e <= db.ver
 
 OfflineUser == [
@@ -146,7 +147,7 @@ Respond_WriteRedis == procs /= {} /\ \E p \in procs :
         THEN redis' = [ver |-> p.ver, events |-> {}]
         ELSE UNCHANGED redis
      \/ \* Send an event to Redis
-        IF p.ver > redis.ver
+        IF p.ver = RedisVer + 1
         THEN redis' = [redis EXCEPT !.events = @ \union {p.ver}]
         ELSE UNCHANGED redis
   /\ procs' = Replace(procs, p, [p EXCEPT !.status = "done"])
@@ -184,11 +185,16 @@ Publish ==
       /\ pub' = Remove(pub, <<u,v>>)
       /\ UNCHANGED << db, redis, procs >>
 
+RedisEviction ==
+  /\ \/ redis' = [redis EXCEPT !.ver = 0]
+     \/ redis' = [redis EXCEPT !.events = {}]
+  /\ UNCHANGED << db, procs, pub, userState >>
+
 ActionAct ==
   \/ UserConnect
   \/ ModRequest
 \* \/ UserDisconnect
-\* Test Redis removing keys
+ \/ RedisEviction
 
 ActionReact ==
   \/ ModRespond
