@@ -4,13 +4,16 @@ EXTENDS Naturals,
         TLC
 
 CONSTANT Request,
-         User
+         User,
+         IncludeUserDisconnect
 
 VARIABLES db,       \* The state of the DB
           redis,    \* The state of Redis
           procs,    \* The state of request processors (i.e. threads in webapps)
           pub,      \* Set of events being published
           userState \* Users' states
+
+ASSUME IncludeUserDisconnect \in {TRUE,FALSE}
 
 vars == << db, redis, procs, pub, userState >>
 
@@ -94,10 +97,12 @@ UserConnect == \E u \in User :
 
 \* This is the websocket being closed and not being restablished (i.e. user closes tab)
 \* TODO: If the tab remains open on a disconnect, the client should reestablish a websocket and say where it's up to
-UserDisconnect == \E u \in User : userState[u].online
-  /\ userState' = [userState EXCEPT ![u] = OfflineUser]
-  /\ pub'       = {usrEvt \in pub : usrEvt[1] /= u}
-  /\ UNCHANGED << db, redis, procs >>
+UserDisconnect ==
+  /\ IncludeUserDisconnect
+  /\ \E u \in User : userState[u].online
+    /\ userState' = [userState EXCEPT ![u] = OfflineUser]
+    /\ pub'       = {usrEvt \in pub : usrEvt[1] /= u}
+    /\ UNCHANGED << db, redis, procs >>
 
 ModRequest == \E u \in User : userState[u].online                  \* For an online user
   /\ \E r \in Request : \A i \in User : r \notin userState[i].reqs \* get a unique req Id
@@ -206,8 +211,8 @@ RedisEviction ==
 ActionAct ==
   \/ UserConnect
   \/ ModRequest
-\* \/ UserDisconnect
- \/ RedisEviction
+  \/ RedisEviction
+  \/ UserDisconnect
 
 ActionReact ==
   \/ ModRespond
