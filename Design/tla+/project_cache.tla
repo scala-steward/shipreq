@@ -1,19 +1,22 @@
 ------------------------------------------------- MODULE project_cache -------------------------------------------------
 
-EXTENDS Naturals,
+EXTENDS FiniteSets,
+        Naturals,
         TLC
 
-CONSTANT Request,
-         User,
+CONSTANT User,
+         Request,
          IncludeUserDisconnect
+
+ASSUME /\ IsFiniteSet(User)
+       /\ IsFiniteSet(Request)
+       /\ IncludeUserDisconnect \in BOOLEAN
 
 VARIABLES db,       \* The state of the DB
           redis,    \* The state of Redis
           procs,    \* The state of request processors (i.e. threads in webapps)
           pub,      \* Set of events being published
           userState \* Users' states
-
-ASSUME IncludeUserDisconnect \in BOOLEAN
 
 vars == << db, redis, procs, pub, userState >>
 
