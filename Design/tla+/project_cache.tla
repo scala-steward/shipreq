@@ -38,7 +38,7 @@ ApplyEvents[v \in Nat, es \in SUBSET Nat] ==
 RedisPartialVer == IF redis.events = {} THEN redis.ver ELSE Max[redis.events]
 RedisTotalVer   == IF redis.ver    = 0  THEN 0         ELSE RedisPartialVer
 
-OnlineUsers == {u \in User : userState[u].online}
+OnlineUsers == {u \in User : userState[u].status /= "offline"}
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -56,7 +56,7 @@ TypeInvariants ==
        ver     : Nat] \* The version of the Project in memory (0=none)
   /\ userState \in [
        User -> [
-         online : BOOLEAN,
+         status : {"offline", "loading", "active"},
          ver    : Nat,              \* The version of the built Project
          future : SUBSET Nat,       \* Future events that can't be applied cos intermediate event is missing
          reqs   : SUBSET Request ]] \* Requests for which a response hasn't be received
@@ -64,7 +64,7 @@ TypeInvariants ==
 DataInvariants ==
   /\ \A u \in User :
     LET s == userState[u]
-    IN /\ s.online => s.ver > 0
+    IN /\ s.status = "active" => s.ver > 0
        /\ s.ver <= db.ver
        /\ \A e \in s.future : e > s.ver + 1
   /\ redis.ver <= db.ver
@@ -75,7 +75,7 @@ DataInvariants ==
        ELSE (e - 1) \in (redis.events) \/ e = Min[redis.events]
 
 OfflineUser == [
-  online |-> FALSE,
+  status |-> "offline",
   ver    |-> 0,
   future |-> {},
   reqs   |-> {}]
@@ -91,22 +91,18 @@ Init ==
 
 \* In reality this is: open page, establish websocket, receive project, subscribe to pub/sub channel
 UserConnect == \E u \in User :
-  /\ ~userState[u].online
+  /\ userState[u].status = "offline"
   /\ \A p \in procs : p.user /= u \* A new user (connection) is distinct.
                                   \* If the model value is still being used in an orphan proc, it can be recycled here yet
-  /\ userState' = [userState EXCEPT ![u].online = TRUE, ![u].ver = db.ver]
+  /\ userState' = [userState EXCEPT ![u].status = "active",
+                                    ![u].ver = db.ver]
+\* TODO ^^ No, what's the real algorithm?
+\* Also model the fact that i'll start preloading on HTTP GET before the websocket connects
   /\ UNCHANGED << db, redis, procs, pub >>
 
-\* This is the websocket being closed and not being restablished (i.e. user closes tab)
-\* TODO: If the tab remains open on a disconnect, the client should reestablish a websocket and say where it's up to
-UserDisconnect ==
-  /\ IncludeUserDisconnect
-  /\ \E u \in User : userState[u].online
-    /\ userState' = [userState EXCEPT ![u] = OfflineUser]
-    /\ pub'       = {usrEvt \in pub : usrEvt[1] /= u}
-    /\ UNCHANGED << db, redis, procs >>
+------------------------------------------------------------------------------------------------------------------------
 
-ModRequest == \E u \in User : userState[u].online                  \* For an online user
+ModRequest == \E u \in User : userState[u].status = "active"       \* For an online user
   /\ \E r \in Request : \A i \in User : r \notin userState[i].reqs \* get a unique req Id
     /\ userState' = [userState EXCEPT ![u].reqs = @ \union {r}]
     /\ procs'     = procs \union {[user |-> u, req |-> r, status |-> "ReadRedis", redisVer |-> 0, ver |-> 0]}
@@ -180,7 +176,7 @@ Respond_WriteRedis2 == procs /= {} /\ \E p \in procs :
 \* Responds to user
 Respond_Done == procs /= {} /\ \E p \in procs :
   /\ p.status = "Done"
-  /\ IF userState[p.user].online
+  /\ IF userState[p.user].status = "active"
      THEN userState' = [userState EXCEPT ![p.user].reqs = Remove(@, p.req)]
      ELSE UNCHANGED userState
   /\ procs' = Remove(procs, p)
@@ -194,6 +190,8 @@ ModRespond ==
   \/ Respond_WriteRedis2
   \/ Respond_Done
 
+------------------------------------------------------------------------------------------------------------------------
+
 Publish ==
   LET RecvEvent(s, v) ==
         IF v <= s.ver
@@ -203,30 +201,53 @@ Publish ==
   IN
     /\ pub /= {}
     /\ \E <<u,v>> \in pub :
-      /\ IF userState[u].online
+      /\ IF userState[u].status /= "offline"
          THEN userState' = [userState EXCEPT ![u] = RecvEvent(@, v)]
          ELSE UNCHANGED userState
       /\ pub' = Remove(pub, <<u,v>>)
       /\ UNCHANGED << db, redis, procs >>
+
+\* This is the websocket being closed and not being restablished (i.e. user closes tab)
+\* TODO: If the tab remains open on a disconnect, the client should reestablish a websocket and say where it's up to
+UserDisconnect ==
+  /\ IncludeUserDisconnect
+  /\ \E u \in User : userState[u].status /= "offline"
+    /\ userState' = [userState EXCEPT ![u] = OfflineUser]
+    /\ pub'       = {usrEvt \in pub : usrEvt[1] /= u}
+    /\ UNCHANGED << db, redis, procs >>
 
 RedisEviction ==
   /\ \/ redis' = [redis EXCEPT !.ver = 0]
      \/ redis' = [redis EXCEPT !.events = {}]
   /\ UNCHANGED << db, procs, pub, userState >>
 
+WebappDeath ==
+  \* Start with a subset of users because each user communicates through a websocket which is tied to a specific worker
+  \* Also remember the user isn't a ShipReq user; it's a browser tab, a session.
+  /\ OnlineUsers /= {}
+  /\ \E affectedUsers \in SUBSET(OnlineUsers) :
+    /\ affectedUsers /= {}
+    /\ userState' = [u \in User |-> IF u \in affectedUsers
+                                    THEN [userState[u] EXCEPT !.online = FALSE, !.reqs = {}]
+                                    ELSE userState[u]]
+    /\ procs' = {p \in procs : p.user \notin affectedUsers}
+    /\ pub' = {usrEvt \in pub : usrEvt[1] \notin affectedUsers}
+    /\ UNCHANGED << db, redis >>
+
+------------------------------------------------------------------------------------------------------------------------
+
 ActionAct ==
   \/ UserConnect
   \/ ModRequest
   \/ RedisEviction
   \/ UserDisconnect
+\*  \/ WebappDeath
 
 ActionReact ==
   \/ ModRespond
   \/ Publish
 
 Action == ActionAct \/ ActionReact
-
-------------------------------------------------------------------------------------------------------------------------
 
 Fairness ==
   /\ WF_vars(ModRequest)
@@ -245,7 +266,9 @@ NothingInFlight ==
   /\ \A u \in User : userState[u].reqs = {}
 
 AllUsersUpToDate ==
-  \A u \in User : userState[u].online => userState[u].ver = db.ver
+  \A u \in User :
+    /\ userState[u].status = "active" => userState[u].ver = db.ver
+    /\ ~userState[u].status = "loading"
 
 CONSTANT MCVerLimit
 
