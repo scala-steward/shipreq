@@ -93,3 +93,14 @@ With TLC
 - this error is caught on every single run (deterministic & exhaustive)
 - it takes < 1 sec to catch
 - the happenings of the entire universe from start to crash is presented and can fit on one screen
+
+Another example error:
+* 2+ servers
+* User #1 connects via Server #1
+* User #2 connects via Server #2
+* User #1 makes a change
+* Server #1 crashes just after a successful write to the DB
+* Either
+  * User #1 loses the WebSocket so they reconnect, get the latest version and are fine
+  * They ragequit and never connect again
+* User #2 never receives the change because it wasn't published to the topic
