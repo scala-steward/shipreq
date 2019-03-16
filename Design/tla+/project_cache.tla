@@ -190,14 +190,14 @@ UpdateRequest ==
         /\ procsU'    = procsU \union {[user |-> u, req |-> r, status |-> "ReadRedis", redisVer |-> 0, ver |-> 0]}
         /\ UNCHANGED << db, redis, pub, procsL >>
 
-Update_ReadRedis == procsU /= {} /\ \E p \in procsU :
+Update_ReadRedis == \E p \in procsU :
   /\ p.status = "ReadRedis"
   /\ procsU' = Replace(procsU, p, [p EXCEPT !.ver      = RedisTotalVer,
                                             !.redisVer = RedisTotalVer,
                                             !.status   = IF RedisTotalVer > p.ver THEN "WriteDB" ELSE "ReadDB"])
   /\ UNCHANGED << db, redis, pub, userState, procsL >>
 
-Update_ReadDB == procsU /= {} /\ \E p \in procsU :
+Update_ReadDB == \E p \in procsU :
   /\ p.status = "ReadDB"
   /\ procsU' = Replace(procsU, p, [p EXCEPT !.ver = db.ver, !.status = "WriteRedis1"])
   /\ UNCHANGED << db, redis, pub, userState, procsL >>
@@ -219,7 +219,7 @@ Update_WriteRedis1 == \E p \in procsU :
         \/ WriteEvents
   /\ UNCHANGED << db, pub, userState, procsL >>
 
-Update_WriteDB == procsU /= {} /\ \E p \in procsU :
+Update_WriteDB == \E p \in procsU :
   /\ p.status = "WriteDB"
   /\ \/ \* Request is valid
         /\ IF p.ver = db.ver
@@ -234,7 +234,7 @@ Update_WriteDB == procsU /= {} /\ \E p \in procsU :
         /\ procsU' = Replace(procsU, p, [p EXCEPT !.status = "Respond"])
         /\ UNCHANGED << db, redis, procsL, pub, userState >>
 
-Update_WriteRedis2 == procsU /= {} /\ \E p \in procsU :
+Update_WriteRedis2 == \E p \in procsU :
   /\ p.status = "WriteRedis2"
   /\ pub' = pub \union { <<p.user, p.ver>> }                \* Proc does this
                 \union { <<u, p.ver>> : u \in OnlineUsers } \* Redis does this
@@ -250,7 +250,7 @@ Update_WriteRedis2 == procsU /= {} /\ \E p \in procsU :
   /\ UNCHANGED << db, procsL, userState >>
 
 \* Responds to user
-Update_Respond == procsU /= {} /\ \E p \in procsU :
+Update_Respond == \E p \in procsU :
   /\ p.status = "Respond"
   /\ IF userState[p.user].status = "active"
      THEN userState' = [userState EXCEPT ![p.user].reqs = @ \ {p.req}]
@@ -275,7 +275,6 @@ Publish ==
         ELSE LET r == ApplyEvents[s.ver, s.future \union {v}]
              IN [s EXCEPT !.ver = r[1], !.future = r[2]]
   IN
-    /\ pub /= {}
     /\ \E <<u,v>> \in pub :
       /\ IF userState[u].status /= "offline" \* status=loading included because as soon as the websocket is established, the loading proc subscribes
          THEN userState' = [userState EXCEPT ![u] = RecvEvent(@, v)]
