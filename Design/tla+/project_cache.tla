@@ -2,6 +2,7 @@
 
 EXTENDS FiniteSets,
         Naturals,
+        Sequences,
         TLC
 
 CONSTANT User,
@@ -33,10 +34,7 @@ varDesc == [db        |-> db.ver,
 Min[as \in SUBSET Nat] == CHOOSE a \in as : \A b \in as : a <= b
 Max[as \in SUBSET Nat] == CHOOSE a \in as : \A b \in as : a >= b
 
-\* Remove(set, el) == {a \in set : a /= el}
-Remove(set, el) == set \ {el}
-
-Replace(set, old, new) == { IF a = old THEN new ELSE a : a \in set}
+Replace(set, old, new) == { IF a = old THEN new ELSE a : a \in set }
 
 ApplyEvents[v \in Nat, es \in SUBSET Nat] ==
   LET n == v + 1
@@ -129,38 +127,31 @@ UserConnect == \E u \in User :
 
 \* TODO Also model the fact that i'll start preloading on HTTP GET before the websocket connects
 
-Load_ReadRedis == \E p \in procsI :
-  /\ p.status = "ReadRedis"
-  /\ procsI' = Replace(procsI, p, [p EXCEPT !.ver    = RedisTotalVer,
-                                            !.status = IF RedisTotalVer = 0 THEN "ReadDB" ELSE "Respond"])
-  /\ UNCHANGED << db, redis, procs, pub, userState >>
+Load == \E p \in procsI :
+  /\ CASE p.status = "ReadRedis" ->
+            /\ procsI' = Replace(procsI, p, [p EXCEPT !.ver    = RedisTotalVer,
+                                                      !.status = IF RedisTotalVer = 0 THEN "ReadDB" ELSE "Respond"])
+            /\ UNCHANGED << redis, userState >>
 
-Load_ReadDB == \E p \in procsI :
-  /\ p.status = "ReadDB"
-  /\ procsI' = Replace(procsI, p, [p EXCEPT !.ver    = db.ver,
-                                            !.status = "WriteRedis"])
-  /\ UNCHANGED << db, redis, procs, pub, userState >>
+       [] p.status = "ReadDB" ->
+            /\ procsI' = Replace(procsI, p, [p EXCEPT !.ver    = db.ver,
+                                                      !.status = "WriteRedis"])
+            /\ UNCHANGED << redis, userState >>
 
-Load_WriteRedis == \E p \in procsI :
-  /\ p.status = "WriteRedis"
-  /\ procsI' = Replace(procsI, p, [p EXCEPT !.status = "Respond"])
-  /\ RedisWriteSnapshot(p.ver, TRUE, TRUE)
-  /\ UNCHANGED << db, procs, pub, userState >>
+       [] p.status = "WriteRedis" ->
+            /\ procsI' = Replace(procsI, p, [p EXCEPT !.status = "Respond"])
+            /\ RedisWriteSnapshot(p.ver, TRUE, TRUE)
+            /\ UNCHANGED userState
 
-Load_Respond == \E p \in procsI :
-  /\ p.status = "Respond"
-  /\ procsI' = Remove(procsI, p)
-  /\ LET us == userState[p.user]
-         r  == ApplyEvents[p.ver, us.future \ {p.ver}]
-         us2 == [us EXCEPT !.ver = r[1], !.future = r[2], !.status = "active"]
-     IN userState' = [userState EXCEPT ![p.user] = us2]
-  /\ UNCHANGED << db, redis, procs, pub >>
+       [] p.status = "Respond" ->
+            /\ procsI' = procsI \ {p}
+            /\ LET us == userState[p.user]
+                   r  == ApplyEvents[p.ver, us.future \ {p.ver}]
+                   us2 == [us EXCEPT !.ver = r[1], !.future = r[2], !.status = "active"]
+               IN userState' = [userState EXCEPT ![p.user] = us2]
+            /\ UNCHANGED redis
 
-Load ==
-  \/ Load_ReadRedis
-  \/ Load_ReadDB
-  \/ Load_WriteRedis
-  \/ Load_Respond
+  /\ UNCHANGED << db, procs, pub >>
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -233,9 +224,9 @@ Respond_WriteRedis2 == procs /= {} /\ \E p \in procs :
 Respond_Done == procs /= {} /\ \E p \in procs :
   /\ p.status = "Done"
   /\ IF userState[p.user].status = "active"
-     THEN userState' = [userState EXCEPT ![p.user].reqs = Remove(@, p.req)]
+     THEN userState' = [userState EXCEPT ![p.user].reqs = @ \ {p.req}]
      ELSE UNCHANGED userState
-  /\ procs' = Remove(procs, p)
+  /\ procs' = procs \ {p}
   /\ UNCHANGED << db, redis, procsI, pub >>
 
 ModRespond ==
@@ -260,7 +251,7 @@ Publish ==
       /\ IF userState[u].status /= "offline" \* status=loading included because as soon as the websocket is established, the loading proc subscribes
          THEN userState' = [userState EXCEPT ![u] = RecvEvent(@, v)]
          ELSE UNCHANGED userState
-      /\ pub' = Remove(pub, <<u,v>>)
+      /\ pub' = pub \ {<<u,v>>}
       /\ UNCHANGED << db, redis, procs, procsI >>
 
 \* This is the websocket being closed and not being restablished (i.e. user closes tab)
@@ -284,7 +275,7 @@ WebappDeath ==
   /\ \E affectedUsers \in SUBSET(OnlineUsers) :
     /\ affectedUsers /= {}
     /\ userState' = [u \in User |-> IF u \in affectedUsers
-                                    THEN [userState[u] EXCEPT !.online = FALSE, !.reqs = {}]
+                                    THEN [userState[u] EXCEPT !.status = "offline", !.reqs = {}]
                                     ELSE userState[u]]
     /\ procs' = {p \in procs : p.user \notin affectedUsers}
     /\ pub' = {usrEvt \in pub : usrEvt[1] \notin affectedUsers}
@@ -297,7 +288,7 @@ ActionAct ==
   \/ ModRequest
   \/ RedisEviction
   \/ UserDisconnect
-\*  \/ WebappDeath
+  \/ WebappDeath
 
 ActionReact ==
   \/ Load
@@ -306,12 +297,12 @@ ActionReact ==
 
 Action == ActionAct \/ ActionReact
 
-Fairness ==
-  /\ WF_vars(ModRequest)
+\*Fairness ==
+\*  /\ WF_vars(ModRequest)
 \*  /\ SF_vars(Load)
 \*  /\ UserConnect ~> Load_Respond
-  /\ SF_vars(ModRespond)
-  /\ SF_vars(Publish)
+\*  /\ SF_vars(ModRespond)
+\*  /\ SF_vars(Publish)
 
 Spec == Init /\ [][Action]_<<vars>> \* /\ Fairness
 
@@ -320,14 +311,18 @@ THEOREM  Spec => [](TypeInvariants /\ DataInvariants)
 ------------------------------------------------------------------------------------------------------------------------
 
 NothingInFlight ==
-  /\ procs = {}
-  /\ pub = {}
+  /\ procsI = {}
+  /\ procs  = {}
+  /\ pub    = {}
   /\ \A u \in User : userState[u].reqs = {}
 
 AllUsersUpToDate ==
-  \A u \in User :
-    /\ userState[u].status = "active" => userState[u].ver = db.ver
-    /\ ~userState[u].status = "loading"
+  \A user \in User :
+    /\ LET u == userState[user]
+           s == u.status
+       IN CASE s = "offline" -> TRUE
+            [] s = "loading" -> FALSE
+            [] s = "active"  -> u.ver = db.ver
 
 CONSTANT MCVerLimit
 
@@ -337,6 +332,6 @@ MCDone            == MCLimitReached /\ NothingInFlight
 MCFinalInvariants == MCDone => AllUsersUpToDate
 MCContinue        == ~MCDone
 MCAction          == (~MCLimitReached /\ ActionAct) \/ ActionReact
-MCSpec            == Init /\ [][MCAction]_<<vars>> /\ Fairness
+MCSpec            == Init /\ [][MCAction]_<<vars>> \* /\ Fairness
 
 ========================================================================================================================
