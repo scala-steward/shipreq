@@ -70,13 +70,6 @@ varDesc == [db        |-> db.ver,
 
 EmptyProcsS == [u \in User |-> {}]
 
-NothingInFlight ==
-  /\ procsL = {}
-  /\ procsU = {}
-  /\ procsS = EmptyProcsS
-  /\ pub    = {}
-  /\ \A u \in User : userState[u].reqs = {}
-
 AllUsersUpToDate ==
   \A user \in User :
     /\ LET u == userState[user]
@@ -329,9 +322,12 @@ SyncPush ==
   \E u \in User : LET events == procsS[u] IN
     /\ events /= {}
     /\ procsS' = [procsS EXCEPT ![u] = {}]
-    /\ redis'  = [redis EXCEPT !.events = @ \union {e \in events : e > redis.ver}]
     /\ pub'    = pub \union (OnlineUsers \X events)
-    /\ UNCHANGED << db, procsU, procsL, userState >>
+    /\ UNCHANGED << db, procsU, procsL, userState, redis >>
+    \* Writing to redis.events can invalidate the invariant that redis has no gaps
+    \* Not sure how valuable that invariant is but OTOH,
+    \* not sure how valuable it would be to write non-latest events...
+    \* /\ redis'  = [redis EXCEPT !.events = @ \union {e \in events : e > redis.ver}]
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -408,7 +404,7 @@ Next == Act \/ React
 Spec == Init /\ [][Next]_<<vars>> \* /\ Fairness
 
 MCSymmetry == Permutations(User) \union Permutations(Request)
-MCDone     == ~MCAllowAct /\ NothingInFlight /\ ~ENABLED(SyncRequest)
+MCDone     == ~MCAllowAct /\ ~ENABLED(React)
 MCContinue == ~MCDone
 FinalInvariants == MCDone => AllUsersUpToDate
 
