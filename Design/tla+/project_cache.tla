@@ -16,7 +16,7 @@ ASSUME /\ IsFiniteSet(User)
        /\ MCVerLimit > 1
        /\ MCAllowUserDisconnect \in BOOLEAN
 
-VARIABLES db,       \* The state of the DB
+VARIABLES db,       \* The state of the Db
           redis,    \* The state of Redis
           procsL,   \* The state of load processors (i.e. threads in webapps)
           procsU,   \* The state of update processors (i.e. threads in webapps)
@@ -30,12 +30,14 @@ TypeInvariants ==
        events: SUBSET Nat] \* A set of events represented by their version numbers
   /\ pub \in SUBSET (User \X Nat) \* Set of (target user, event)
   /\ procsL \in SUBSET [
-       status  : {"ReadRedis", "ReadDB", "WriteRedis", "Respond"},
-       user    : User,
-       ver     : Nat] \* The version of the Project in memory (0=none)
+       status     : {"ReadDbVer", "ReadRedis", "ReadDbFull", "WriteRedis", "Respond"},
+       user       : User,
+       dbLatestVer: Nat, \* Latest known version in Db (just the seq number, not the event)
+       dbVer      : Nat, \* Snapshot + events loaded from Db
+       respondVer : Nat] \* Snapshot + events to send to the user
   /\ procsU \in SUBSET [
        req     : Request,
-       status  : {"ReadRedis", "ReadDB", "WriteRedis1", "WriteDB", "WriteRedis2", "Respond"},
+       status  : {"ReadRedis", "ReadDb", "WriteRedis1", "WriteDb", "WriteRedis2", "Respond"},
        user    : User,
        redisVer: Nat, \* The version of Redis at the last read from Redis
        ver     : Nat] \* The version of the Project in memory (0=none)
@@ -98,6 +100,13 @@ OfflineUserState == [
   future |-> {},
   reqs   |-> {}]
 
+InitProcL(u) == [
+  user        |-> u,
+  status      |-> "ReadRedis",
+  dbLatestVer |-> 0,
+  dbVer       |-> 0,
+  respondVer  |-> 0]
+
 OnlineUsers == {u \in User : userState[u].status /= "offline"}
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -119,6 +128,8 @@ DataInvariants ==
        /\ s.ver <= db.ver
        /\ \A e \in s.future : e > s.ver + 1
   /\ redis.ver <= db.ver
+  /\ \A p \in procsL :
+    /\ p.respondVer /= 0 <=> p.status = "Respond"
   /\ \A e \in redis.events :
     /\ \* No gaps in Redis events
        IF redis.ver > 0
@@ -149,41 +160,50 @@ UserConnect ==
      /\ \A p \in procsU : p.user /= u \* A new user (connection) is distinct.
                                       \* If the model value is still being used in an orphan proc, it can be recycled here yet
      /\ userState' = [userState EXCEPT ![u].status = "loading"]
-     /\ procsL' = procsL \union {[user |-> u, status |-> "ReadRedis", ver |-> 0]}
+     /\ procsL' = procsL \union {InitProcL(u)}
      /\ UNCHANGED << db, redis, procsU, pub >>
 
 \* TODO Also model the fact that i'll start preloading on HTTP GET before the websocket connects
 
-Load_ReadRedis == \E p \in procsL :
-  /\ p.status = "ReadRedis"
-  /\ procsL' = Replace(procsL, p, [p EXCEPT !.ver    = RedisTotalVer,
-                                            !.status = IF RedisTotalVer = 0 THEN "ReadDB" ELSE "Respond"])
+Load_ReadDbVer == \E p \in procsL :
+  /\ p.status = "ReadDbVer"
+  /\ procsL' = Replace(procsL, p, [p EXCEPT !.dbLatestVer = db.ver, !.status = "ReadRedis"])
   /\ UNCHANGED << db, procsU, pub, redis, userState >>
 
-Load_ReadDB == \E p \in procsL :
-  /\ p.status = "ReadDB"
-  /\ procsL' = Replace(procsL, p, [p EXCEPT !.ver    = db.ver,
-                                            !.status = "WriteRedis"])
+Load_ReadRedis == \E p \in procsL :
+  /\ p.status = "ReadRedis"
+  /\ LET cacheHit == RedisTotalVer > 0 /\ RedisTotalVer = p.dbLatestVer
+         p2 == IF cacheHit
+               THEN [p EXCEPT !.status = "Respond", !.respondVer = RedisTotalVer]
+               ELSE [p EXCEPT !.status = "ReadDbFull"]
+     IN procsL' = Replace(procsL, p, p2)
+  /\ UNCHANGED << db, procsU, pub, redis, userState >>
+
+Load_ReadDbFull == \E p \in procsL :
+  /\ p.status = "ReadDbFull"
+  /\ procsL' = Replace(procsL, p, [p EXCEPT !.dbVer  = db.ver, !.status = "WriteRedis"])
   /\ UNCHANGED << db, procsU, pub, redis, userState >>
 
 Load_WriteRedis == \E p \in procsL :
   /\ p.status = "WriteRedis"
-  /\ procsL' = Replace(procsL, p, [p EXCEPT !.status = "Respond"])
-  /\ RedisWriteSnapshot(p.ver, TRUE, TRUE)
+  /\ procsL' = Replace(procsL, p, [p EXCEPT !.status = "Respond", !.respondVer = p.dbVer])
+  /\ RedisWriteSnapshot(p.dbVer, TRUE, TRUE)
   /\ UNCHANGED << db, procsU, pub, userState >>
 
 Load_Respond == \E p \in procsL :
   /\ p.status = "Respond"
   /\ procsL' = procsL \ {p}
-  /\ LET us == userState[p.user]
-         r  == ApplyEvents[p.ver, {e \in us.future : e > p.ver}]
+  /\ LET us  == userState[p.user]
+         v   == p.respondVer
+         r   == ApplyEvents[v, {e \in us.future : e > v}]
          us2 == [us EXCEPT !.ver = r[1], !.future = r[2], !.status = "active"]
      IN userState' = [userState EXCEPT ![p.user] = us2]
   /\ UNCHANGED << db, procsU, pub, redis >>
 
 Load ==
+  \/ Load_ReadDbVer
   \/ Load_ReadRedis
-  \/ Load_ReadDB
+  \/ Load_ReadDbFull
   \/ Load_WriteRedis
   \/ Load_Respond
 
@@ -201,17 +221,17 @@ Update_ReadRedis == \E p \in procsU :
   /\ p.status = "ReadRedis"
   /\ procsU' = Replace(procsU, p, [p EXCEPT !.ver      = RedisTotalVer,
                                             !.redisVer = RedisTotalVer,
-                                            !.status   = IF RedisTotalVer > p.ver THEN "WriteDB" ELSE "ReadDB"])
+                                            !.status   = IF RedisTotalVer > p.ver THEN "WriteDb" ELSE "ReadDb"])
   /\ UNCHANGED << db, redis, pub, userState, procsL >>
 
-Update_ReadDB == \E p \in procsU :
-  /\ p.status = "ReadDB"
+Update_ReadDb == \E p \in procsU :
+  /\ p.status = "ReadDb"
   /\ procsU' = Replace(procsU, p, [p EXCEPT !.ver = db.ver, !.status = "WriteRedis1"])
   /\ UNCHANGED << db, redis, pub, userState, procsL >>
 
 Update_WriteRedis1 == \E p \in procsU :
   /\ p.status = "WriteRedis1"
-  /\ LET Continue == procsU' = Replace(procsU, p, [p EXCEPT !.status = "WriteDB"])
+  /\ LET Continue == procsU' = Replace(procsU, p, [p EXCEPT !.status = "WriteDb"])
          Retry    == procsU' = Replace(procsU, p, [p EXCEPT !.status = "ReadRedis"])
          WriteEvents ==
            LET firstEvent == p.redisVer + 1
@@ -226,14 +246,14 @@ Update_WriteRedis1 == \E p \in procsU :
         \/ WriteEvents
   /\ UNCHANGED << db, pub, userState, procsL >>
 
-Update_WriteDB == \E p \in procsU :
-  /\ p.status = "WriteDB"
+Update_WriteDb == \E p \in procsU :
+  /\ p.status = "WriteDb"
   /\ \/ \* Request is valid
         /\ IF p.ver = db.ver
            THEN LET newVer == db.ver + 1
                 IN /\ db'     = [ver |-> newVer]
                    /\ procsU' = Replace(procsU, p, [p EXCEPT !.status = "WriteRedis2", !.ver = newVer])
-           ELSE \* DB has been updated without our knowledge; INSERT fails
+           ELSE \* Db has been updated without our knowledge; INSERT fails
                 /\ procsU' = Replace(procsU, p, [p EXCEPT !.status = "ReadRedis"])
                 /\ UNCHANGED db
         /\ UNCHANGED << redis, procsL, pub, userState >>
@@ -267,9 +287,9 @@ Update_Respond == \E p \in procsU :
 
 UpdateRespond ==
   \/ Update_ReadRedis
-  \/ Update_ReadDB
+  \/ Update_ReadDb
   \/ Update_WriteRedis1
-  \/ Update_WriteDB
+  \/ Update_WriteDb
   \/ Update_WriteRedis2
   \/ Update_Respond
 

@@ -1,0 +1,28 @@
+digraph G {
+
+  node [style=filled fillcolor="#e6e6e6"]
+
+  Start
+  {
+    rank=max
+    Respond [fillcolor="#bbee77"]
+    node [fillcolor="#ddddff"]
+    DB
+    Redis
+  }
+
+  node [style=filled fillcolor="#bbee77"]
+
+  Start      -> ReadDB1
+  ReadDB1    -> ReadRedis
+  ReadRedis  -> Respond [label="redis = db"]
+  ReadRedis  -> ReadDB2 [label="redis < db"]
+  ReadDB2    -> WriteRedis
+  WriteRedis -> Respond
+
+  {
+    edge[color="#ccccff" style=dashed dir=none]
+    ReadDB1,ReadDB2 -> DB
+    WriteRedis      -> Redis
+  }
+}
