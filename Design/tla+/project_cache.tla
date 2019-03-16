@@ -114,8 +114,10 @@ OnlineUsers == {u \in User : userState[u].status /= "offline"}
 ------------------------------------------------------------------------------------------------------------------------
 
 Init ==
-  /\ db        = [ver |-> 1]
-  /\ redis     = [ver |-> 0, events |-> {}]
+  /\ db    \in [ver: 1..MCVerLimit]
+  /\ redis \in UNION { { [ver |-> v, events |-> {}]} \union
+                       { [ver |-> v, events |-> (v+1)..e2] : e2 \in (v+1)..(db.ver) }
+                     : v \in 0..(db.ver) }
   /\ procsL    = {}
   /\ procsU    = {}
   /\ procsS    = EmptyProcsS
