@@ -32,6 +32,7 @@ TypeInvariants ==
        ver   : Nat,        \* The version of a Project snapshot, or 0 if cache empty
        events: SUBSET Nat] \* A set of events represented by their version numbers
 
+  \* TODO Should be modelled by User
   /\ procsL \in SUBSET [
        status     : {"ReadDbVer", "ReadRedis", "ReadDbFull", "WriteRedis", "Respond"},
        user       : User,
@@ -39,6 +40,7 @@ TypeInvariants ==
        dbVer      : Nat, \* Snapshot + events loaded from Db
        respondVer : Nat] \* Snapshot + events to send to the user
 
+  \* TODO Should be modelled by Request
   /\ procsU \in SUBSET [
        req     : Request,
        status  : {"ReadRedis", "ReadDb", "WriteRedis1", "WriteDb", "WriteRedis2", "Respond"},
@@ -115,6 +117,7 @@ DataInvariants ==
        /\ s.status /= "active" => s.reqs = {}
        /\ s.ver <= db.ver
        /\ \A e \in s.future : e > s.ver + 1
+       /\ (\E p \in procsL : p.user = u) => s.status \in {"offline","loading"}
   /\ redis.ver <= db.ver
   /\ \A p \in procsL :
     /\ p.respondVer /= 0 <=> p.status = "Respond"
@@ -153,6 +156,9 @@ UserConnect ==
      /\ userState[u].status = "offline"
      /\ \A p \in procsU : p.user /= u \* A new user (connection) is distinct.
                                       \* If the model value is still being used in an orphan proc, it can be recycled here yet
+     /\ \A p \in procsL : p.user /= u \* A new user (connection) is distinct.
+                                      \* If the model value is still being used in an orphan proc, it can be recycled here yet
+     /\ procsS[u] = {}
      /\ userState' = [userState EXCEPT ![u].status = "loading"]
      /\ procsL' = procsL \union {InitProcL(u)}
      /\ UNCHANGED << db, redis, procsU, procsS, pub >>
@@ -191,7 +197,8 @@ Load_Respond == \E p \in procsL :
          v   == p.respondVer
          r   == ApplyEvents[v, {e \in us.future : e > v}]
          us2 == [us EXCEPT !.ver = r[1], !.future = r[2], !.status = "active"]
-     IN userState' = [userState EXCEPT ![p.user] = us2]
+     IN CASE us.status = "offline" -> UNCHANGED userState
+          [] us.status = "loading" -> userState' = [userState EXCEPT ![p.user] = us2]
   /\ UNCHANGED << db, procsU, procsS, pub, redis >>
 
 Load ==

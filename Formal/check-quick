@@ -1,0 +1,53 @@
+#!/bin/bash
+
+tmp=/tmp/$(date +%Y%m%d-%H%M%S)-$$
+
+tlc="$pub/tla-tools/tlc-colour -workers 8 -difftrace"
+
+most='
+SPECIFICATION Spec
+
+INVARIANTS TypeInvariants
+           DataInvariants
+           FinalInvariants
+
+CONSTRAINT MCContinue
+
+SYMMETRY MCSymmetry
+'
+
+tests=(
+'
+CONSTANTS User                  = {u1,u2}
+          Request               = {r1}
+          MCVerLimit            = 2
+          MCAllowUserDisconnect = TRUE
+'
+'
+CONSTANTS User                  = {u1}
+          Request               = {r1,r2}
+          MCVerLimit            = 3
+          MCAllowUserDisconnect = TRUE
+'
+'
+CONSTANTS User                  = {u1,u2}
+          Request               = {r1,r2}
+          MCVerLimit            = 3
+          MCAllowUserDisconnect = FALSE
+'
+)
+
+first=1
+for t in "${tests[@]}"; do
+
+  if [ -z "$first" ]; then
+    echo -e "\e[46m========================================================================================================================\e[0m"
+  else
+    first=
+  fi
+
+  echo "$most" > $tmp.cfg
+  echo "$t" >> $tmp.cfg
+  $tlc -config $tmp.cfg project
+
+done
