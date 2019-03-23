@@ -112,17 +112,3 @@ Phase 2B
   Any free tool?
 
 * Benchmark ZIO to back Fx
-
-### Architecture
-
-This architecture doesn't need to be implemented but I'm feeling increasingly uncomfortable without
-it planned.
-
-* Where I want to be
-  * Horizontal scalability (for both handling scale and zero-downtime deploys)
-  * User management + enterprise support
-    * multiple login/signup methods (oauth?)
-    * mailing list ~~~ system accounts ~~~ ownership/perms wrt relation to data
-    * groups/org etc for phase 3
-  * Encryption
-  * Fast SSR (caching or node)

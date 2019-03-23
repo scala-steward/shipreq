@@ -28,6 +28,38 @@ CURRENT STATE
   * ajax request handlers
 
 
+UNDER CONSIDERATION
+===================
+
+* AWS Cognito
+  * would get:
+    * ability to sign up / login via other services (FB, whatever)
+    * MFA
+    * verification (eg. SMS)
+    * users can manage own accounts (change password, email address, etc)
+    * admin console
+    * analytics
+  * what about …?
+    * roles - definition, management by users & admin
+    * organisations - definition, management by users & admin
+    * mailchimp sync
+    * local envs - dev & test
+
+* Encryption
+  * One of the following:
+    * use an `F[_]` in event types for {,un}encrypted
+    * separate structure & content, encrypt content only (holistically? ∃ only snapshots & events right?)
+  * Support different types of encryption
+  * Keys
+    * Store on the server and link to users and/or projects? (they can just store though)
+    * User's problem - means impossible for us to decrypt - probably a requirement for Telstra
+    * Some other hybrid? Like users/roles/owners/perms? Where a central key is stored with us, but it's encrypted,
+      maybe stored multiple times under different keys? eg. 4 users have keys and there are 4 encrypted versions
+      of the master key, this would allow for user-facing key management without the need to reencrypt events.
+    * Use "secret sharing"? Like Shamir's Secret Sharing
+  * Requirements = ?
+    * Telstra: No PII ever sent to ShipReq (this means S encrypting with a secret master key is not allowed)
+
 TARGET STATE
 ============
 
@@ -59,7 +91,7 @@ TARGET STATE
   * Use AWS Redis
     * Initially in non-cluster mode because no need to scale
     * Later in cluster node which supports online up/down scaling of shards and/or replicas
-  * Algorithm for snapshot/event caching detailed in `tla+/project_cache.*`
+  * Algorithm for snapshot/event caching detailed in `Format/project.tla`
 
 
 REJECTED / FUTURE IDEAS
