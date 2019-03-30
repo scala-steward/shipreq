@@ -3,7 +3,8 @@ package shipreq.webapp.server.app
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import java.nio.charset.Charset
-import net.liftweb.common.{Box, Full}
+import net.liftweb.common.{Box, Empty, Full}
+import net.liftweb.http.provider.HTTPCookie
 import net.liftweb.http.{Req => LiftReq, _}
 import net.liftweb.util.Props
 import scala.xml.NodeSeq
@@ -48,6 +49,9 @@ final class LiftDispatcher(global: Global) {
   private val paramFn: String => Option[String] =
     S.param(_).toOption
 
+  private val cookieFn: String => Option[String] =
+    S.cookieValue(_).toOption
+
   private def liftReqUrl(r: LiftReq): Url.Relative =
     Url.Relative(r.request.uri)
 
@@ -58,7 +62,7 @@ final class LiftDispatcher(global: Global) {
       else               DispatchLogic.Method.Other
 
     val url = liftReqUrl(r)
-    DispatchLogic.Request(m, url, paramFn, r)
+    DispatchLogic.Request(m, url, paramFn, cookieFn, r)
   }
 
   val makeResponse: (LiftReq, DispatchLogic.Response) => Fx[Box[LiftResponse]] = {
@@ -73,11 +77,29 @@ final class LiftDispatcher(global: Global) {
     val setHeader: ((String, String)) => Unit =
       x => S.setHeader(x._1, x._2)
 
+    val deleteCookie: String => Unit =
+      S.deleteCookie
+
+    val addCookie: DispatchLogic.Response.Cookie => Unit =
+      c => S.addCookie(new HTTPCookie(
+        name     = c.name,
+        value    = Full(c.value),
+        maxAge   = c.maxAgeInSec,
+        secure_? = c.secure,
+        httpOnly = c.httpOnly,
+        domain   = Empty,
+        path     = Empty,
+        version  = Empty))
+
     (req, response) => {
       import DispatchLogic.Response._
 
       val setHeaders: Fx[Unit] =
-        Fx(response.headers.foreach(setHeader))
+        Fx {
+          response.headers.foreach(setHeader)
+          response.cookiesToRemove.foreach(deleteCookie)
+          response.cookiesToAdd.foreach(addCookie)
+        }
 
       val respond: Fx[Box[LiftResponse]] =
         response match {

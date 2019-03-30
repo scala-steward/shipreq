@@ -34,6 +34,7 @@ object DispatchLogic {
   final case class Request[+Real](method: Method,
                                   path  : Url.Relative,
                                   param : String => Option[String],
+                                  cookie: String => Option[String],
                                   real  : Real)
 
   sealed abstract class Method
@@ -45,9 +46,19 @@ object DispatchLogic {
   }
 
   sealed trait Response {
-    def headers: Response.Headers = Nil
+    def cookiesToAdd   : List[Response.Cookie] = Nil
+    def cookiesToRemove: List[String]          = Nil
+    def headers        : Response.Headers      = Nil
   }
+
   object Response {
+
+    final case class Cookie(name       : String,
+                            value      : String,
+                            maxAgeInSec: Option[Int],
+                            httpOnly   : Option[Boolean],
+                            secure     : Option[Boolean])
+
     type Header = (String, String)
     type Headers = List[Header]
 
