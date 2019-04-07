@@ -34,5 +34,6 @@ object Main extends ClientSideProcImpl(EntryPoint) {
       send1.runNow()
       send2.runNow()
     }
+    js.timers.setInterval(3000)(ws.sendNothing.runNow())
   }
 }

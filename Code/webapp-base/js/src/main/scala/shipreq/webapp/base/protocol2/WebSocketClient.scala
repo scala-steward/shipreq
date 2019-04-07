@@ -6,6 +6,7 @@ import java.nio.ByteBuffer
 import org.scalajs.dom.{CloseEvent, Event, MessageEvent, WebSocket}
 import org.scalajs.dom.console
 import scala.scalajs.js
+import scala.scalajs.js.typedarray.ArrayBuffer
 import scala.util.{Failure, Success, Try}
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.JsExt._
@@ -61,6 +62,14 @@ final class WebSocketClient[
     */
   def onclose(e: CloseEvent): Unit = {
     console.log(s"[${ws.readyState}] onclose: ", e)
+  }
+
+  /** Useful for preventing server-side timeout and keeping the connection alive */
+  val sendNothing: Callback = {
+    val ab = new ArrayBuffer(0)
+    Callback {
+      ws.send(ab)
+    }
   }
 
   def send(p: ReqRes)(request: p.RequestType): CallbackTo[AsyncCallback[p.ResponseType]] =

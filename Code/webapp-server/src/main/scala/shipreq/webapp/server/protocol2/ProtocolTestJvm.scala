@@ -71,16 +71,14 @@ class EventSocket {
 
   @OnMessage
   def onMessage(s: Session, bb: ByteBuffer): Unit = {
-//    bb.mark()
     println(s"Received message: (${bb.limit()}) ${bb.array().toList.map(_.toInt)}")
-//    bb.reset()
-    val recv = UnpickleImpl(protocolCS).fromBytes(bb)
-    println(s"RECV: " + recv)
-    val (reqId, req) = recv
-    val res = \/-(reqId, respond(req))
-    println(s"RESP: " + res)
-    val resBB = toByteBuffer(protocolSC)(res)
-    s.getBasicRemote.sendBinary(resBB)
+    if (bb.limit() != 0) {
+      val recv = UnpickleImpl(protocolCS).fromBytes(bb)
+      val (reqId, req) = recv
+      val res = \/-(reqId, respond(req))
+      val resBB = toByteBuffer(protocolSC)(res)
+      s.getBasicRemote.sendBinary(resBB)
+    }
   }
 
   @OnClose
