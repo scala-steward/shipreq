@@ -157,14 +157,23 @@ object Dependencies {
   }
 
   object LibJetty {
-    private val mm = MultiModule.java("org.eclipse.jetty", "9.4.15.v20190215")
-    val webapp = mm("jetty-webapp")
-    val runner = mm("jetty-runner")
-    val dist   = mm("jetty-distribution").modAll(_.artifacts(Artifact("jetty-distribution", "tar.gz", "tar.gz")).intransitive())
+    private def ver = "9.4.15.v20190215"
+    private val mm = MultiModule.java("org.eclipse.jetty", ver)
+    private val ws = MultiModule.java("org.eclipse.jetty.websocket", ver)
 
-    // Upgrade this in step with Jetty or else java.lang.SecurityExceptions will abound.
-    // It's a transitive dependency of jetty-server
-    val servletApi = jvmOnly("javax.servlet" % "javax.servlet-api" % "3.1.0")
+    val webapp                   = mm("jetty-webapp")
+    val runner                   = mm("jetty-runner")
+    val distTarGz                = mm("jetty-distribution").modAll(_.artifacts(Artifact("jetty-distribution", "tar.gz", "tar.gz")).intransitive())
+    val websocketApi             = ws("websocket-api")
+    val websocketServer          = ws("websocket-server")
+    val websocketServlet         = ws("websocket-servlet")
+    val javaxWebsocketServerImpl = ws("javax-websocket-server-impl")
+
+    // Upgrade in step with Jetty else java.lang.SecurityExceptions will abound
+    val javaxServletApi   = jvmOnly("javax.servlet"   % "javax.servlet-api"   % "3.1.0")
+    val javaxWebsocketApi = jvmOnly("javax.websocket" % "javax.websocket-api" % "1.0")
+
+    val devRun = runner.modAll(_.intransitive()) ++ javaxWebsocketServerImpl
   }
 
   object Prometheus {

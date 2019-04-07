@@ -258,7 +258,7 @@ object WebappBuild {
       .enablePlugins(DockerPlugin)
       .configs(DockerDeps)
       .configure(Common.dockerBaseSettings("webapp"))
-      .deps(LibJetty.dist % DockerDeps)
+      .deps(LibJetty.distTarGz % DockerDeps)
       .settings(
         cleanFiles += baseDirectory.value / "target",
         classpathTypes in DockerDeps += "tar.gz", // for jetty-distribution
@@ -291,7 +291,8 @@ object WebappBuild {
       .dependsOn(baseDb, baseOps, taskmanApi, webappServerLogicJvm, webappGenJvm)
       .deps(
         Scalaz.core ++ Lift.webkit ++ Shiro.all ++ commonsLang ++ Nyaya.gen ++ Logback.withPlugins ++ JJWT.all ++
-        Prometheus.client ++ Prometheus.hotspot ++ Prometheus.servlet ++ LibJetty.servletApi ++
+        Prometheus.client ++ Prometheus.hotspot ++ Prometheus.servlet ++
+        providedScope(LibJetty.javaxServletApi ++ LibJetty.javaxWebsocketApi) ++
         testScope(μTest ++ Lift.testkit ++ commonsIo ++ twitterEval) ++
         (LibJetty.webapp % Test))
       .configure(
@@ -304,7 +305,7 @@ object WebappBuild {
         dockerSettings)
       .settings(
         scalacOptions -= "-Xcheckinit", // TODO https://github.com/scala/bug/issues/10437
-        containerLibs in Jetty := LibJetty.runner(JVM).map(_.intransitive()), // Specify Jetty version
+        containerLibs in Jetty := LibJetty.devRun(JVM),
         javaOptions in Jetty += "-Xmx1g",
         javaOptions in Jetty += "-XX:+UseG1GC", // Default in Java 9, may as well use it now
         initialCommands += consoleCmds,
