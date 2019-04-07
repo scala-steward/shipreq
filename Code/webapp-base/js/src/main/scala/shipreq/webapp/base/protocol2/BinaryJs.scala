@@ -10,12 +10,6 @@ object BinaryJs {
   def encodeToArrayBuffer[A: Pickler](a: A): ArrayBuffer =
     byteBufferToArrayBuffer(PickleImpl.intoBytes(a))
 
-  def encodeToArrayBufferP(p: Protocol.AndValue[Pickler]): ArrayBuffer =
-    byteBufferToArrayBuffer(encodeToByteBufferP(p))
-
-  def encodeToByteBufferP(p: Protocol.AndValue[Pickler]): ByteBuffer =
-    PickleImpl.intoBytes(p.value)(implicitly, p.codec)
-
   // ===================================================================================================================
 
   def decodeFromArrayBuffer[A: Pickler](ab: ArrayBuffer): A = {

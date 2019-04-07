@@ -6,19 +6,19 @@ import japgolly.scalajs.react.extra.Ajax
 import org.scalajs.dom.ext.AjaxException
 
 trait AjaxClient[F[_]] {
-  def apply[Req, Res](p: Protocol.Ajax[F, Req, Res])
-                     (req: p.protocol.RequestType): AsyncCallback[p.protocol.ResponseType]
+  def apply(p: Protocol.Ajax[F])
+           (req: p.protocol.RequestType): AsyncCallback[p.protocol.ResponseType]
 }
 
 object AjaxClient {
 
   object Binary extends AjaxClient[Pickler] {
-    override def apply[Req, Res](p: Protocol.Ajax[Pickler, Req, Res])
-                                (req: p.protocol.RequestType): AsyncCallback[p.protocol.ResponseType] = {
+    override def apply(p: Protocol.Ajax[Pickler])
+                      (req: p.protocol.RequestType): AsyncCallback[p.protocol.ResponseType] = {
 
       val prep = p.protocol.prepareSend(req)
 
-      val reqAB = BinaryJs.encodeToArrayBufferP(prep.request)
+      val reqAB = BinaryJs.encodeToArrayBuffer(prep.request)(p.protocol.protocolPreparedReq.codec)
 
       Ajax("POST", p.url.relativeUrl)
         .setRequestHeader("Content-Type", "application/octet-stream")

@@ -11,7 +11,7 @@ object WebSocketShared {
   implicit def byteBufferPickler: Pickler[ByteBuffer] =
     BinCodecGeneric.byteBufferPickler
 
-  val protocolCS: Pickler[(Int, ByteBuffer)] =
+  def protocolCS[Req: Pickler]: Pickler[(Int, Req)] =
     Tuple2Pickler
 
   def protocolSC[Push: Pickler]: Pickler[Push \/ (Int, ByteBuffer)] = {

@@ -46,6 +46,7 @@ object Protocol {
 
     final type PreparedSend = RequestResponse.PreparedSend.Of[F, PreparedRequestType, ResponseType]
     type PreparedRequestType
+    val protocolPreparedReq: Protocol.Of[F, PreparedRequestType]
     def prepareSend(r: RequestType): PreparedSend
   }
 
@@ -58,19 +59,19 @@ object Protocol {
 
     // -----------------------------------------------------------------------------------------------------------------
 
-    trait PreparedSend[F[_]] {
-      val request : Protocol.AndValue[F]
+    trait PreparedSend[F[_], Req] {
+      val request : Req
       val response: Protocol[F]
     }
 
     object PreparedSend {
-      type Of[F[_], Req, Res] = PreparedSend[F] {
-        val request : Protocol.AndValue.Of[F, Req]
+      type Of[F[_], Req, Res] = PreparedSend[F, Req] {
+        val request : Req
         val response: Protocol.Of[F, Res]
       }
 
-      def apply[F[_], Req, Res](req: Protocol.AndValue.Of[F, Req], res: Protocol.Of[F, Res]): Of[F, Req, Res] =
-        new PreparedSend[F] {
+      def apply[F[_], Req, Res](req: Req, res: Protocol.Of[F, Res]): Of[F, Req, Res] =
+        new PreparedSend[F, Req] {
           override val request  = req
           override val response = res
         }
@@ -79,8 +80,10 @@ object Protocol {
 
   // ===================================================================================================================
 
-  final case class Ajax[F[_], Req, Res](url     : Url.Relative,
-                                        protocol: RequestResponse.Of[F, Req, Res])
+  trait Ajax[F[_]] {
+    val url     : Url.Relative
+    val protocol: RequestResponse[F]
+  }
 
   // ===================================================================================================================
 

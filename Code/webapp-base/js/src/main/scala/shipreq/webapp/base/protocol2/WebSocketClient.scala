@@ -12,11 +12,12 @@ import shipreq.base.util.JsExt._
 import shipreq.base.util.Url
 
 final class WebSocketClient[
-    ReqRes <: Protocol.RequestResponse[Pickler],
+    Req,
+    ReqRes <: Protocol.RequestResponse[Pickler] { type PreparedRequestType = Req },
     Push](
     ws: WebSocket,
 //    createWS: CallbackTo[WebSocket],
-    protocolCS: Pickler[(Int, ByteBuffer)], // ByteBuffer is actually ReqRes#PreparedRequestType
+    protocolCS: Pickler[(Int, Req)],
     protocolSC: Pickler[Push \/ (Int, ByteBuffer)],
     recvPush    : Push => Callback) {
 
@@ -67,8 +68,7 @@ final class WebSocketClient[
       // TODO unregister on err below
       CallbackTo {
         val prep      = p.prepareSend(request)
-        val reqBB     = BinaryJs.encodeToByteBufferP(prep.request)
-        val msgValue  = (reqId, reqBB)
+        val msgValue  = (reqId, prep.request)
         val msgAB     = BinaryJs.encodeToArrayBuffer(msgValue)(protocolCS)
         ws.send(msgAB)
         callback.map(UnpickleImpl(prep.response.codec).fromBytes(_))
@@ -93,8 +93,9 @@ object WebSocketClient {
 
   def apply(urlBase: Url.Absolute.Base,
             protocol: Protocol.WebSocket.ClientReqServerPush[Pickler])
-           (recvPush: protocol.Push => Callback): WebSocketClient[protocol.ReqRes, protocol.Push] = {
+           (recvPush: protocol.Push => Callback): WebSocketClient[protocol.Req, protocol.ReqRes, protocol.Push] = {
     import WebSocketShared._
+    implicit def protocolReq : Pickler[protocol.Req] = protocol.protocolReq.codec
     implicit def protocolPush: Pickler[protocol.Push] = protocol.protocolPush.codec
     val url = (urlBase / protocol.url).absoluteUrl
     val ws = new WebSocket(url)

@@ -12,8 +12,6 @@ object SampleProtocol {
     protected[SampleProtocol] val protocolRes: Protocol.Of[Pickler, ResponseType]
     protected[SampleProtocol] val key: Int
 
-    override final type PreparedRequestType = ReqRes.AndReq
-
     final type AndReq = ReqRes.AndReq { val reqRes: self.type }
     final def AndReq(r: RequestType): AndReq =
       new ReqRes.AndReq {
@@ -21,10 +19,12 @@ object SampleProtocol {
         override val req = r
       }
 
+    override final type PreparedRequestType = ReqRes.AndReq
+    override final val protocolPreparedReq = ReqRes.AndReq.protocol
+
     override final def prepareSend(r: RequestType): PreparedSend = {
       val req = AndReq(r)
-      val protocolAndReq = ReqRes.AndReq.protocol.andValue(req)
-      Protocol.RequestResponse.PreparedSend(protocolAndReq, protocolRes)
+      Protocol.RequestResponse.PreparedSend(req, protocolRes)
     }
 
     def fold[F[_ <: ReqRes], G[_ <: ReqRes]](f: ReqRes.Fold[F, G])(r: F[this.type]): G[this.type]
