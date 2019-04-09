@@ -1,21 +1,52 @@
 package shipreq.webapp.base.protocol2
 
-import boopickle.Pickler
-import java.nio.ByteBuffer
-import scalaz.\/
-import shipreq.webapp.base.protocol.BinCodecGeneric
+import boopickle.{PickleState, Pickler, UnpickleState}
+import scalaz.{-\/, \/, \/-}
+import shipreq.webapp.base.protocol.BinCodecGeneric.{intPickler, Tuple2Pickler}
 
 object WebSocketShared {
-  import BinCodecGeneric.{byteBufferPickler => _, _}
 
-  implicit def byteBufferPickler: Pickler[ByteBuffer] =
-    BinCodecGeneric.byteBufferPickler
+  final case class ReqId(value: Int)
 
-  def protocolCS[Req: Pickler]: Pickler[(Int, Req)] =
+  implicit val picklerReqId: Pickler[ReqId] =
+    intPickler.xmap(ReqId)(_.value)
+
+  /** Client to Server */
+  def protocolCS[Req: Pickler]: Pickler[(ReqId, Req)] =
     Tuple2Pickler
 
-  def protocolSC[Push: Pickler]: Pickler[Push \/ (Int, ByteBuffer)] = {
-    implicit val r: Pickler[(Int, ByteBuffer)] = Tuple2Pickler
-    pickleXor[Push, (Int, ByteBuffer)]
-  }
+  /** Server to Client */
+  type ServerToClient[Push] = Push \/ (ReqId, Protocol.AndValue[Pickler])
+
+  def protocolSC[Push: Pickler](requestUnpickler: ReqId => Protocol[Pickler]): Pickler[ServerToClient[Push]] =
+    new Pickler[ServerToClient[Push]] {
+
+      override def pickle(obj: ServerToClient[Push])(implicit state: PickleState): Unit =
+        obj match {
+          case \/-((i, pv)) =>
+            state.enc.writeLong(i.value.toLong << 1)
+            pv.codec.pickle(pv.value)
+          case -\/(push) =>
+            state.enc.writeLong(1)
+            state.pickle(push)
+        }
+
+      override def unpickle(implicit state: UnpickleState): ServerToClient[Push] = {
+        val header = state.dec.readLong
+        if (header == 1)
+          -\/(state.unpickle[Push])
+        else {
+          val reqId = ReqId((header >> 1).toInt)
+          val protocol = requestUnpickler(reqId)
+          val pav: Protocol.AndValue[Pickler] =
+            if (protocol eq null)
+              null
+            else {
+              val v = state.unpickle(protocol.codec)
+              protocol.andValue(v)
+            }
+          \/-((reqId, pav))
+        }
+      }
+    }
 }

@@ -2,7 +2,6 @@ package shipreq.webapp.base.protocol2
 
 import boopickle._
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
-import java.nio.ByteBuffer
 import org.scalajs.dom.{CloseEvent, Event, MessageEvent, WebSocket}
 import org.scalajs.dom.console
 import scala.scalajs.js
@@ -11,6 +10,7 @@ import scala.util.{Failure, Success, Try}
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.JsExt._
 import shipreq.base.util.Url
+import shipreq.webapp.base.protocol2.WebSocketShared.{ReqId, ServerToClient}
 
 final class WebSocketClient[
     Req,
@@ -18,14 +18,17 @@ final class WebSocketClient[
     Push](
     ws: WebSocket,
 //    createWS: CallbackTo[WebSocket],
-    protocolCS: Pickler[(Int, Req)],
-    protocolSC: Pickler[Push \/ (Int, ByteBuffer)],
+    protocolCS: Pickler[(ReqId, Req)],
+    mkProtocolSC: (ReqId => Protocol[Pickler]) => Pickler[ServerToClient[Push]],
     recvPush    : Push => Callback) {
 
 //  private var wsInstance = Option.empty[WebSocket]
 
-  private val requestManager: WebSocketClient.RequestManager[Int, ByteBuffer] =
+  private val requestManager: WebSocketClient.RequestManager[ReqId, Protocol.AndValue[Pickler], Protocol[Pickler]] =
     WebSocketClient.RequestManager.arrayStore
+
+  private val protocolSC: Pickler[ServerToClient[Push]] =
+    mkProtocolSC(requestManager.getState(_).orNull)
 
 //  private def reconnect(): Unit =
 //    createWS.attempt.async.toCallback.runNow()
@@ -72,20 +75,21 @@ final class WebSocketClient[
     }
   }
 
-  def send(p: ReqRes)(request: p.RequestType): CallbackTo[AsyncCallback[p.ResponseType]] =
-    requestManager.newRequest.flatMap { case (reqId, callback) =>
+  def send(p: ReqRes)(request: p.RequestType): CallbackTo[AsyncCallback[p.ResponseType]] = {
+    val prep = p.prepareSend(request)
+    requestManager.newRequest(prep.response).flatMap { case (reqId, callback) =>
       // TODO unregister on err below
       CallbackTo {
-        val prep      = p.prepareSend(request)
         val msgValue  = (reqId, prep.request)
         val msgAB     = BinaryJs.encodeToArrayBuffer(msgValue)(protocolCS)
         ws.send(msgAB)
-        callback.map(UnpickleImpl(prep.response.codec).fromBytes(_))
+        callback.map(_.unsafeForceType[p.ResponseType].value)
       }
     }
+  }
 
   def onmessage(e: MessageEvent): Unit = {
-//    console.log(s"[${ws.readyState}] onmessage: ", e)
+//    console.log(s"[${ws.readyState}] onmessage: ", e.data.asInstanceOf[ArrayBuffer])
     val handler: Callback =
       CallbackTo(BinaryJs.decodeFromArrayBufferUnsafe(e.data)(protocolSC)).flatMap {
         case \/-((id, res)) => requestManager.complete(id, Success(res)) // TODO what about Failure??
@@ -108,44 +112,58 @@ object WebSocketClient {
     implicit def protocolPush: Pickler[protocol.Push] = protocol.protocolPush.codec
     val url = (urlBase / protocol.url).absoluteUrl
     val ws = new WebSocket(url)
-    new WebSocketClient(ws, protocolCS, protocolSC, recvPush)
+    new WebSocketClient(ws, protocolCS, protocolSC(_), recvPush)
   }
 
   // ===================================================================================================================
 
-  private[WebSocketClient] trait RequestManager[Id, A] {
-    val newRequest: CallbackTo[(Id, AsyncCallback[A])]
+  private[WebSocketClient] trait RequestManager[Id, A, S] {
+    def newRequest(state: S): CallbackTo[(Id, AsyncCallback[A])]
+    def getState(id: Id): Option[S]
     def complete(id: Id, a: Try[A]): Callback
     def completeAll(t: Try[A]): CallbackTo[List[Throwable]]
   }
 
   private[WebSocketClient] object RequestManager {
-    private final class ArrayStore[A] extends RequestManager[Int, A] {
+    private final class ArrayStore[A, S] extends RequestManager[ReqId, A, S] {
       private var prevId = 0
       private var size = 0
-      private var state = new js.Array[Try[A] => Callback]
+      private var state = new js.Array[(S, Try[A] => Callback)]
 
-      override val newRequest: CallbackTo[(Int, AsyncCallback[A])] =
+      private def get(id: ReqId): Option[(S, Try[A] => Callback)] = {
+        val e = state(id.value)
+        if (js.isUndefined(e))
+          None
+        else
+          Option(e)
+      }
+
+      override def newRequest(s: S): CallbackTo[(ReqId, AsyncCallback[A])] =
         CallbackTo {
           prevId += 1
           val id = prevId
           val (ac, tryToCb) = AsyncCallback.promise[A].runNow()
-          state(id) = tryToCb
+          state(id) = (s, tryToCb)
           size += 1
-          (id, ac)
+          (ReqId(id), ac)
         }
 
-      override def complete(id: Int, a: Try[A]): Callback =
+      override def getState(id: ReqId): Option[S] =
+        get(id).map(_._1)
+
+      override def complete(reqId: ReqId, a: Try[A]): Callback =
         Callback {
-          val f = state(id)
-          if (!js.isUndefined(f)) {
-            assert(size > 0)
-            size -= 1
-            if (size == 0)
-              state = new js.Array
-            else
-              js.special.delete(state, id)
-            f(a).runNow()
+          get(reqId) match {
+            case Some((_, f)) =>
+              assert(size > 0)
+              size -= 1
+              if (size == 0)
+                state = new js.Array
+              else
+                js.special.delete(state, reqId.value)
+              f(a).runNow()
+            case None =>
+              ()
           }
         }
 
@@ -153,7 +171,7 @@ object WebSocketClient {
         CallbackTo {
           // Extract handlers
           var l = List.empty[Try[A] => Callback]
-          state.forEachJs(l ::= _)
+          state.forEachJs(l ::= _._2)
 
           // Clear state
           state = new js.Array
@@ -164,8 +182,8 @@ object WebSocketClient {
         }
     }
 
-    def arrayStore[A]: RequestManager[Int, A] =
-      new ArrayStore[A]
+    def arrayStore[A, S]: RequestManager[ReqId, A, S] =
+      new ArrayStore[A, S]
   }
 
   // ===================================================================================================================

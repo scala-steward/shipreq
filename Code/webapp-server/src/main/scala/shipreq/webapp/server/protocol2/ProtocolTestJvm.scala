@@ -5,14 +5,12 @@ import java.nio.ByteBuffer
 import javax.websocket._
 import scalaz.{\/, \/-}
 import shipreq.webapp.base.Urls
+import shipreq.webapp.base.protocol2.WebSocketShared.{ReqId, ServerToClient}
 import shipreq.webapp.base.protocol2._
 
-class WebSocketSvr[Req, Push](val protocolCS: Pickler[(Int, Req)],
-                              val protocolSC: Pickler[Push \/ (Int, ByteBuffer)],
-                              val respond   : Req => ByteBuffer) extends Endpoint {
-
-  private def toByteBuffer[A](p: Pickler[A])(a: A): ByteBuffer =
-    PickleImpl.intoBytes(a)(implicitly, p)
+class WebSocketSvr[Req, Push](val protocolCS: Pickler[(ReqId, Req)],
+                              val protocolSC: Pickler[ServerToClient[Push]],
+                              val respond   : Req => Protocol.AndValue[Pickler]) extends Endpoint {
 
   override def onOpen(session: Session, config: EndpointConfig): Unit = {
     // TODO Don't forget auth
@@ -38,12 +36,12 @@ class WebSocketSvr[Req, Push](val protocolCS: Pickler[(Int, Req)],
 
 object WebSocketSvr {
   def apply(protocol: Protocol.WebSocket.ClientReqServerPush[Pickler])
-           (respond : protocol.Req => ByteBuffer): WebSocketSvr[protocol.Req, protocol.Push] = {
+           (respond : protocol.Req => Protocol.AndValue[Pickler]): WebSocketSvr[protocol.Req, protocol.Push] = {
     import WebSocketShared._
     import protocol._
     implicit def protocolReq: Pickler[Req] = protocol.protocolReq.codec
     implicit def protocolPush: Pickler[Push] = protocol.protocolPush.codec
-    new WebSocketSvr[Req, Push](protocolCS, protocolSC, respond)
+    new WebSocketSvr[Req, Push](protocolCS, protocolSC(_ => ???), respond)
   }
 }
 

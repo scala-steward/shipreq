@@ -5,6 +5,15 @@ import shipreq.base.util.Url
 trait Protocol[F[_]] { self =>
   type Type
   val codec: F[Type]
+
+  final type AndValue = Protocol.AndValue[F] { type Type = self.Type }
+
+  final def andValue(v: Type): AndValue =
+    new Protocol.AndValue[F] {
+      override type Type = self.Type
+      override val codec = self.codec
+      override val value = v
+    }
 }
 
 object Protocol {
@@ -19,6 +28,21 @@ object Protocol {
 
   // ===================================================================================================================
 
+  trait AndValue[F[_]] {
+    type Type
+    val codec: F[Type]
+    val value: Type
+
+    def unsafeForceType[A]: AndValue.Of[F, A] =
+      this.asInstanceOf[AndValue.Of[F, A]]
+  }
+
+  object AndValue {
+    type Of[F[_], A] = AndValue[F] { type Type = A }
+  }
+
+  // ===================================================================================================================
+
   trait RequestResponse[F[_]] {
     type RequestType
     type ResponseType
@@ -30,6 +54,8 @@ object Protocol {
 
   object RequestResponse {
 
+
+    // -----------------------------------------------------------------------------------------------------------------
     trait PreparedSend[F[_], Req] {
       val request : Req
       val response: Protocol[F]

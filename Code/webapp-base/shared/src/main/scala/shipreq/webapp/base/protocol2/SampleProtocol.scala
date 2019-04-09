@@ -1,6 +1,7 @@
 package shipreq.webapp.base.protocol2
 
 import boopickle.DefaultBasic._
+import boopickle.Pickler
 import japgolly.microlibs.adt_macros.AdtMacros
 import java.nio.ByteBuffer
 import shipreq.webapp.base.Urls
@@ -102,10 +103,9 @@ object SampleProtocol {
     isEven = r => (r&1)==0,
     xs     = r => ("x." * r).dropRight(1),
   )
-  def respond(r: ReqRes.AndReq): ByteBuffer = {
+  def respond(r: ReqRes.AndReq): Protocol.AndValue[Pickler] = {
     val res = r.reqRes.fold(respondFold)(r.req)
-    val bb = Pickle.intoBytes(res)(implicitly, r.reqRes.protocolRes.codec)
-    bb
+    r.reqRes.protocolRes.andValue(res)
   }
 
 }
