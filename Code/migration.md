@@ -5,8 +5,8 @@ MIGRATION
     * [x] Read/write cookies
     * [ ] Read JWT from request
     * [ ] Add JWT to response (or at least update expiry time)
-    * [ ] New SSPs
-      * [ ] New defns, new types, new codecs
+    * [ ] New SSPs (AJAX)
+      * [x] New defns, new types, new codecs
       * [ ] Server-side JWT check
       * [ ] Client side AJAX (compare with Lift's. Add features? Auto retry maybe?)
   * [ ] Replace:
@@ -17,12 +17,12 @@ MIGRATION
   * [ ] use Lift stateless dispatch
 * [ ] ProjectSpa
   * [ ] Capabilities:
-    * [ ] Establish WebSocket
+    * [x] Establish WebSocket
     * [ ] Re-establish WebSocket on loss
-    * [ ] Generic req/respond over WebSocket (eg. (ReqId, Req) => | => (ReqId, Resp))
-    * [ ] Server push (and typed protocol)
-    * [ ] Typed WS protocol combining req/resp & push/recv
-  * [ ] New ProjectSpa logic - implement TLA spec without caching
+    * [x] Generic req/respond over WebSocket (eg. (ReqId, Req) => | => (ReqId, Resp))
+    * [x] Server push (and typed protocol)
+    * [x] Typed WS protocol combining req/resp & push/recv
+  * [ ] New ProjectSpa logic - implement TLA spec (minus caching)
   * [ ] Replace:
     * [ ] Use JWT
     * [ ] Use WebSocket
