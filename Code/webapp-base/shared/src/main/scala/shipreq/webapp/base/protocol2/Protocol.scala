@@ -92,12 +92,12 @@ object Protocol {
       */
     trait ClientReqServerPush[F[_]] {
       type ReqId
-      type Req
       type ReqRes <: Protocol.RequestResponse[F] { type PreparedRequestType = Req }
-      type Push
-      val url         : Url.Relative
-      val protocolReq : Protocol.Of[F, Req]
-      val protocolPush: Protocol.Of[F, Push]
+      final type Req = req.Type
+      final type Push = push.Type
+      val url: Url.Relative
+      val req: Protocol[F]
+      val push: Protocol[F]
     }
   }
 }

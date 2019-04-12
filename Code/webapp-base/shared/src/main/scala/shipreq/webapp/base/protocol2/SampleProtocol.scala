@@ -3,7 +3,6 @@ package shipreq.webapp.base.protocol2
 import boopickle.DefaultBasic._
 import boopickle.Pickler
 import japgolly.microlibs.adt_macros.AdtMacros
-import java.nio.ByteBuffer
 import shipreq.webapp.base.Urls
 
 object SampleProtocol {
@@ -88,13 +87,11 @@ object SampleProtocol {
   }
 
   object WS extends Protocol.WebSocket.ClientReqServerPush[Pickler] {
-    override type ReqId        = Int
-    override type Req          = ReqRes.AndReq
-    override type ReqRes       = SampleProtocol.ReqRes
-    override type Push         = String
-    override val  url          = Urls.projectSpaWebSocket
-    override val  protocolReq  = ReqRes.AndReq.protocol
-    override val  protocolPush = Protocol[Pickler, Push](implicitly)
+    override type ReqId  = Int
+    override type ReqRes = SampleProtocol.ReqRes
+    override val  url    = Urls.projectSpaWebSocket
+    override val  req    = ReqRes.AndReq.protocol
+    override val  push   = Protocol[Pickler, String](implicitly)
   }
 
   type F[R <: ReqRes] = R#RequestType

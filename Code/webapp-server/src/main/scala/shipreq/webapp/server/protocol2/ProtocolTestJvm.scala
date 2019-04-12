@@ -39,8 +39,8 @@ object WebSocketSvr {
            (respond : protocol.Req => Protocol.AndValue[Pickler]): WebSocketSvr[protocol.Req, protocol.Push] = {
     import WebSocketShared._
     import protocol._
-    implicit def protocolReq: Pickler[Req] = protocol.protocolReq.codec
-    implicit def protocolPush: Pickler[Push] = protocol.protocolPush.codec
+    implicit def picklerReq: Pickler[Req] = protocol.req.codec
+    implicit def picklerPush: Pickler[Push] = protocol.push.codec
     new WebSocketSvr[Req, Push](protocolCS, protocolSC(_ => ???), respond)
   }
 }

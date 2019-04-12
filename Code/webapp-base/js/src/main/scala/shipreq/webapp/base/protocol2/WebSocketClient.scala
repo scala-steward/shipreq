@@ -108,8 +108,8 @@ object WebSocketClient {
             protocol: Protocol.WebSocket.ClientReqServerPush[Pickler])
            (recvPush: protocol.Push => Callback): WebSocketClient[protocol.Req, protocol.ReqRes, protocol.Push] = {
     import WebSocketShared._
-    implicit def protocolReq : Pickler[protocol.Req] = protocol.protocolReq.codec
-    implicit def protocolPush: Pickler[protocol.Push] = protocol.protocolPush.codec
+    implicit def picklerReq: Pickler[protocol.Req] = protocol.req.codec
+    implicit def picklerPush: Pickler[protocol.Push] = protocol.push.codec
     val url = (urlBase / protocol.url).absoluteUrl
     val ws = new WebSocket(url)
     new WebSocketClient(ws, protocolCS, protocolSC(_), recvPush)
