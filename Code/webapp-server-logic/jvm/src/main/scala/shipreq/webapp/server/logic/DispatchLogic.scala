@@ -436,24 +436,24 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object Ajax extends StrictLogging {
 
-    private type Handler = BinaryData => F[Response \/ BinaryData]
+    private type Handler = (Security.SessionToken, BinaryData) => F[Response]
 
     private val _library = {
       val handlerMap = new Url.Relative.MutableMap[Handler]
       var nameMap = Map.empty[Url.Relative, String]
 
-      def register(p: Protocol.Ajax[Pickler])(f: p.ServerSideFn[F], name: String): Unit = {
+      def _register[A](p: Protocol.Ajax[Pickler], name: String)
+                      (f: (Security.SessionToken, p.protocol.PreparedRequestType) => F[Response]): Unit = {
         assert(p.url.underlying startsWith Urls.ajaxRoot.underlying, s"${p.url} must start with ${Urls.ajaxRoot}")
 
-        val h: Handler = reqBin =>
+        val h: Handler = (token, reqBin) =>
           BinaryJvm.attemptDecode(reqBin, p.prepReq) match {
             case Success(req) =>
-              val responseProtocol = p.responseProtocol(req)
-              f(req).map(res => \/-(BinaryJvm.encode(responseProtocol)(res)))
+              f(token, req)
             case Failure(t) =>
               F.point {
                 logger.warn("Failed to decode ajax binary body.", t)
-                -\/(ResponseCmd.StatusOnly.BadRequest.withoutCookieUpdate)
+                ResponseCmd.StatusOnly.BadRequest.withoutCookieUpdate
               }
           }
 
@@ -461,13 +461,35 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
         nameMap += (p.url -> name)
       }
 
+      def register(p: Protocol.Ajax[Pickler])(name: String, f: p.ServerSideFn[F]): Unit =
+        _register(p, name)((token, req) =>
+          for {
+            out   <- f(req)
+            outBin = BinaryJvm.encode(p.responseProtocol(req))(out)
+            resCmd = ResponseCmd.Binary(StatusCode.OK, outBin)
+            cu    <- security.sessionPersist(token)
+          } yield Response(resCmd, cu)
+        )
+
+      def registerA[A](p: Protocol.Ajax[Pickler])
+                      (name: String, f: p.ServerSideFnA[F, A])
+                      (g: (Security.SessionToken, ResponseCmd, A) => F[Response]): Unit =
+        _register(p, name)((token, req) =>
+          for {
+            (out, a) <- f(req)
+            outBin    = BinaryJvm.encode(p.responseProtocol(req))(out)
+            resCmd    = ResponseCmd.Binary(StatusCode.OK, outBin)
+            res      <- g(token, resCmd, a)
+          } yield res
+        )
+
       // Register endpoints
-      register(PublicSpaProtocols.landingPage   )(publicSpa.ajaxLandingPage   , "landingPage")
-      register(PublicSpaProtocols.login         )(publicSpa.ajaxLogin         , "login")
-      register(PublicSpaProtocols.register1     )(publicSpa.ajaxRegister1     , "register1")
-      register(PublicSpaProtocols.register2     )(publicSpa.ajaxRegister2     , "register2")
-      register(PublicSpaProtocols.resetPassword1)(publicSpa.ajaxResetPassword1, "resetPassword1")
-      register(PublicSpaProtocols.resetPassword2)(publicSpa.ajaxResetPassword2, "resetPassword2")
+      register (PublicSpaProtocols.landingPage   )("landingPage"   , publicSpa.ajaxLandingPage   )
+      registerA(PublicSpaProtocols.login         )("login"         , publicSpa.ajaxLogin         )(useNewToken)
+      register (PublicSpaProtocols.register1     )("register1"     , publicSpa.ajaxRegister1     )
+      registerA(PublicSpaProtocols.register2     )("register2"     , publicSpa.ajaxRegister2     )(useNewToken)
+      register (PublicSpaProtocols.resetPassword1)("resetPassword1", publicSpa.ajaxResetPassword1)
+      register (PublicSpaProtocols.resetPassword2)("resetPassword2", publicSpa.ajaxResetPassword2)
 
       (handlerMap.toMapNoHeadSlash, nameMap)
     }
@@ -477,6 +499,9 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
 
     val pathsToNames: Map[Url.Relative, String] =
       _library._2
+
+    private def useNewToken(oldToken: Security.SessionToken, res: ResponseCmd, newToken: Option[Security.SessionToken]): F[Response] =
+      security.sessionPersist(newToken getOrElse oldToken).map(Response(res, _))
 
     private val notFound: Response =
       Response(ResponseCmd.StatusOnly.NotFound, Cookie.Update.empty)
@@ -494,13 +519,8 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
               requireSession(s =>
                 if (req.method eq Post)
                   req.body.value match {
-                    case Some(reqBin) =>
-                      handler(reqBin).flatMap {
-                        case \/-(resBin) => security.sessionPersist(s).map(Response(ResponseCmd.Binary(StatusCode.OK, resBin), _))
-                        case -\/(resp)   => F pure resp
-                      }
-                    case None =>
-                      F pure ResponseCmd.StatusOnly.BadRequest.withoutCookieUpdate
+                    case Some(reqBin) => handler(s, reqBin)
+                    case None         => F pure ResponseCmd.StatusOnly.BadRequest.withoutCookieUpdate
                   }
                 else
                   F pure ResponseCmd.StatusOnly.MethodNotAllowed.withoutCookieUpdate

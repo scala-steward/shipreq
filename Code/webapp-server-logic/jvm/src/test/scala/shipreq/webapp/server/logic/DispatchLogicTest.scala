@@ -1,7 +1,7 @@
 package shipreq.webapp.server.logic
 
 import boopickle.Pickler
-import scalaz.{Name, Need, \/-}
+import scalaz.{-\/, Name, Need, \/-}
 import upickle.Js
 import utest._
 import shipreq.base.test.BaseTestUtil._
@@ -141,6 +141,14 @@ object DispatchLogicTest extends TestSuite {
 
       'nonGet - static.foreach(p => testNonGet(p.url))
 
+      'logIn - {
+        val u = user2
+        val req = PublicSpaProtocols.Login.Request(-\/(u.username), user2password)
+        val res = runAjax(PublicSpaProtocols.login)(req)(Security.SessionToken.anonymous)._2
+        val tok = security2.sessionRestore(res.cookies.get).value
+        assertEq(tok, Some(user2.token))
+      }
+
       'loggedIn {
         implicit def token = user2.token
         'loginRedirects - assertUnprotected(testRun(ResponseCmd.redirectToMemberHome, Login.url))
@@ -172,7 +180,6 @@ object DispatchLogicTest extends TestSuite {
           assertProtected(testRun(ResponseCmd.redirectToPublicHome, Register2.url(db.prevToken())))
         }
       }
-
     }
 
     'memberHomeSpa {

@@ -38,18 +38,20 @@ object PublicSpaLogicTest extends TestSuite {
       import PublicSpaProtocols.Login._
       implicit val t = new Tester(); import t._
 
-      def test(usernameOrEmail: Username \/ EmailAddr, password: PlainTextPassword)(expect: Permission) =
-        assertDifference("usrLoginLog", db.usrLoginLog.length)(if (expect is Allow) 1 else 0) {
-          assertEq(runLogin(Request(usernameOrEmail, password)), expect)
+      def test(usernameOrEmail: Username \/ EmailAddr, password: PlainTextPassword)
+              (expectResp: Permission, expectToken: Option[Security.SessionToken]) =
+        assertDifference("usrLoginLog", db.usrLoginLog.length)(if (expectResp is Allow) 1 else 0) {
+          val r = runLogin(Request(usernameOrEmail, password))
+          assertEq(r, (expectResp, expectToken))
           svr.runForked()
         }
 
-      'badAccountU  - test(-\/(Username("nope")), user2password)(Deny)
-      'badAccountE  - test(\/-(EmailAddr("w@w.com")), user2password)(Deny)
-      'badPasswordU - test(-\/(user2.username), PlainTextPassword("qweoiru1234SDFG"))(Deny)
-      'badPasswordE - test(\/-(user2.emailAddr), PlainTextPassword("qweoiru1234SDFG"))(Deny)
-      'successU - test(-\/(user2.username), user2password)(Allow)
-      'successE - test(\/-(user2.emailAddr), user2password)(Allow)
+      'badAccountU  - test(-\/(Username("nope")), user2password)(Deny, None)
+      'badAccountE  - test(\/-(EmailAddr("w@w.com")), user2password)(Deny, None)
+      'badPasswordU - test(-\/(user2.username), PlainTextPassword("qweoiru1234SDFG"))(Deny, None)
+      'badPasswordE - test(\/-(user2.emailAddr), PlainTextPassword("qweoiru1234SDFG"))(Deny, None)
+      'successU - test(-\/(user2.username), user2password)(Allow, Some(user2.token))
+      'successE - test(\/-(user2.emailAddr), user2password)(Allow, Some(user2.token))
     }
 
     'register1 {
@@ -106,23 +108,31 @@ object PublicSpaLogicTest extends TestSuite {
       val req = Request(token, PersonName("Big Bob"), Username("bob"), PlainTextPassword("big_BOB_123!"), false)
 
       'success - {
-        assertDifference("usrLoginLog", db.usrLoginLog.length)(1)(
-          assertDifference("taskman", taskman.msgs.length)(1) {
-            assertDifference("userPlaceholders", db.userPlaceholders.size)(-1)(
-              assertDifference("users", db.users.length)(1)(
-                assertEq(\/-(Response.Success), runRegister2(req))))
-            svr.runForked()
-          }
-        )
-        assertEq(security.loggedIn.map(_.username), Some(req.username))
+        val r =
+          assertDifference("usrLoginLog", db.usrLoginLog.length)(1)(
+            assertDifference("taskman", taskman.msgs.length)(1) {
+              val r =
+                assertDifference("userPlaceholders", db.userPlaceholders.size)(-1)(
+                  assertDifference("users", db.users.length)(1)(
+                    runRegister2(req)))
+              svr.runForked()
+              r
+            }
+          )
+        val u = db.getUser(-\/(req.username)).getOrElse(sys error "User not found")
+        assertEq(r, (\/-(Response.Success), Some(u.token)))
         taskman.assertLastSubmitted { case r: Msg.RegistrationCompleted => () }
       }
 
-      def assertFailure(req: Request) =
-        assertDifference(db.userPlaceholders.size)(0)(
-          assertDifference(db.users.length)(0)(
-            assertDifference(taskman.msgs.length)(0)(
-              runRegister2(req))))
+      def assertFailure(req: Request) = {
+        val r =
+          assertDifference(db.userPlaceholders.size)(0)(
+            assertDifference(db.users.length)(0)(
+              assertDifference(taskman.msgs.length)(0)(
+                runRegister2(req))))
+        assertEq(r._2, None)
+        r._1
+      }
 
       "reject an invalid name" -
         assertFailure(req.copy(personName = PersonName(""))).needLeft
@@ -139,7 +149,9 @@ object PublicSpaLogicTest extends TestSuite {
       'registrationsOff {
         val t = new Tester(Deny); import t._
         db.userPlaceholders = Map(ea -> DB.UserRegistration.Pending(UserId(2), token, svr.clock))
-        runRegister2(req).needLeft
+        val r = runRegister2(req)
+        r._1.needLeft
+        assertEq(r._2, None)
       }
     }
 

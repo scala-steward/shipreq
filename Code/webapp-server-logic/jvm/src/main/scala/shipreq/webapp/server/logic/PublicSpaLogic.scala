@@ -21,9 +21,9 @@ import Implicits._
 trait PublicSpaLogic[F[_]] {
 
   val ajaxLandingPage   : PublicSpaProtocols.landingPage   .ServerSideFn[F]
-  val ajaxLogin         : PublicSpaProtocols.login         .ServerSideFn[F]
+  val ajaxLogin         : PublicSpaProtocols.login         .ServerSideFnA[F, Option[Security.SessionToken]]
   val ajaxRegister1     : PublicSpaProtocols.register1     .ServerSideFn[F]
-  val ajaxRegister2     : PublicSpaProtocols.register2     .ServerSideFn[F]
+  val ajaxRegister2     : PublicSpaProtocols.register2     .ServerSideFnA[F, Option[Security.SessionToken]]
   val ajaxResetPassword1: PublicSpaProtocols.resetPassword1.ServerSideFn[F]
   val ajaxResetPassword2: PublicSpaProtocols.resetPassword2.ServerSideFn[F]
 
@@ -88,10 +88,10 @@ object PublicSpaLogic extends HasLogger {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      private[this] val loginPass: F[Permission] = F pure Allow
-      private[this] val loginFail: F[Permission] = F pure Deny
+      private type LoginResult = (Permission, Option[Security.SessionToken])
+      private[this] val loginFail: F[LoginResult] = {val x = (Deny, None); F pure x}
 
-      private def attemptLogin(id: Username \/ EmailAddr, password: PlainTextPassword): F[Permission] =
+      private def attemptLogin(id: Username \/ EmailAddr, password: PlainTextPassword): F[LoginResult] =
         security.attemptLogin(id, password).flatMap {
 
           case Some(user) =>
@@ -104,9 +104,8 @@ object PublicSpaLogic extends HasLogger {
                   case Some(s) => metrics.login(s, user)
                   case None    => F.point(logger.warn("Login succeeded but session unavailable."))
                 }
-
-            // TODO set cookies
-            log >> logToDB >> updateMetrics >> loginPass
+            val token = Security.SessionToken(Some(user))
+            log >> logToDB >> updateMetrics >| (Allow, Some(token))
 
           case None =>
             // User not found, or password didn't match
@@ -199,65 +198,74 @@ object PublicSpaLogic extends HasLogger {
           registrationProc(Security.Event.Register1, i =>
             register1(i.value).map(_.void))
 
-        val register2: PublicSpaProtocols.register2.ServerSideFn[F] =
-          registrationProc(Security.Event.Register2,
-            _.validate.onValid(req =>
-              MDC(MdcSecurityToken, req.token.value) {
+        val register2: PublicSpaProtocols.register2.ServerSideFnA[F, Option[Security.SessionToken]] = {
+          type T = Option[Security.SessionToken]
+          import PublicSpaProtocols.Register.{Request, Response}
+          val stack = MonadEE[F, ErrorMsg, Response]
+          import stack._
 
-                import PublicSpaProtocols.Register.Response
-                val stack = MonadEE[F, ErrorMsg, Response]
-                import stack._
+          val body: Request => F[ErrorMsg \/ (Response, T)] =
+            registrationProc[Request, (Response, T)](Security.Event.Register2, unvalidatedReq => {
 
-                val validateToken: Stack[Unit] =
-                  getTokenStatus(req.token).mapToStack {
-                    case SecurityToken.Status.Valid   => rightUnit
-                    case SecurityToken.Status.Invalid => -\/(\/-(Response.TokenInvalid))
-                    case SecurityToken.Status.Expired => -\/(\/-(Response.TokenExpired))
-                  }
+              unvalidatedReq.validate.onValid[F, (Response, T)](req =>
+                MDC(MdcSecurityToken, req.token.value) {
 
-                def register(ps: PasswordAndSalt): Stack[UserId] =
-                  runDB(db.completeUserRegistration(req.token, req.personName, req.username, ps, req.newsletter)).mapToStack {
-                    case DB.UserRegistrationResult.Success(i)    => \/-(i)
-                    case DB.UserRegistrationResult.TokenNotFound => -\/(\/-(Response.TokenInvalid))
-                    case DB.UserRegistrationResult.UsernameTaken => -\/(\/-(Response.UsernameTaken))
-                  }
+                  val validateToken: Stack[Unit] =
+                    getTokenStatus(req.token).mapToStack {
+                      case SecurityToken.Status.Valid   => rightUnit
+                      case SecurityToken.Status.Invalid => -\/(\/-(Response.TokenInvalid))
+                      case SecurityToken.Status.Expired => -\/(\/-(Response.TokenExpired))
+                    }
 
-                val login: Stack[Unit] =
-                  attemptLogin(-\/(req.username), req.password).mapToStack {
-                    case Allow => rightUnit
-                    case Deny => -\/(-\/(ErrorMsg("Registration completed but login failed.")))
-                  }
+                  def register(ps: PasswordAndSalt): Stack[UserId] =
+                    runDB(db.completeUserRegistration(req.token, req.personName, req.username, ps, req.newsletter)).mapToStack {
+                      case DB.UserRegistrationResult.Success(i)    => \/-(i)
+                      case DB.UserRegistrationResult.TokenNotFound => -\/(\/-(Response.TokenInvalid))
+                      case DB.UserRegistrationResult.UsernameTaken => -\/(\/-(Response.UsernameTaken))
+                    }
 
-                val main: Stack[Response.Success.type] =
+                  val login: Stack[Option[Security.SessionToken]] =
+                    attemptLogin(-\/(req.username), req.password).mapToStack {
+                      case (Allow, t) => \/-(t)
+                      case (Deny, _) => -\/(-\/(ErrorMsg("Registration completed but login failed.")))
+                    }
+
+                  val main: Stack[Option[Security.SessionToken]] =
+                    for {
+                      _  <- validateToken
+                      ps <- security.hashPassword(req.password).toStack
+                      id <- register(ps)
+                      _  <- svr.fork(taskman.submitMsg(Msg.RegistrationCompleted(id.toTaskman))).toStack
+                      t  <- login
+                    } yield t
+
+                  def logAndMap(i: StackLeft \/ Option[Security.SessionToken]): F[(ErrorMsg \/ (Response, Option[Security.SessionToken]), Security.Result)] =
+                    F.point(i match {
+                      case \/-(t) =>
+                        logger.info(s"${req.username.with_@} completed user registration.")
+                        (\/-((Response.Success, t)), Security.Result.Success)
+                      case -\/(\/-(f)) =>
+                        logger.warn(s"${req.username.with_@} failed to complete user registration: $f")
+                        (\/-((f, None)), Security.Result.Failure)
+                      case -\/(r@ -\/(e)) =>
+                        logger.warn(s"${req.username.with_@} failed to complete user registration: ${e.value}")
+                        (r, Security.Result.Failure)
+                    })
+
                   for {
-                    _  <- validateToken
-                    ps <- security.hashPassword(req.password).toStack
-                    id <- register(ps)
-                    _  <- svr.fork(taskman.submitMsg(Msg.RegistrationCompleted(id.toTaskman))).toStack
-                    _  <- login
-                  } yield Response.Success
+                    stackRes      <- main.underlying
+                    (res, secRes) <- logAndMap(stackRes)
+                    _             <- metrics.securityEvent(Security.Event.Register2, secRes)
+                  } yield res
+                }
+              )
+            })
 
-                def logAndMap(i: StackLeft \/ Response.Success.type): F[(ErrorMsg \/ Response, Security.Result)] =
-                  F.point(i match {
-                    case r@ \/-(_) =>
-                      logger.info(s"${req.username.with_@} completed user registration.")
-                      (r, Security.Result.Success)
-                    case -\/(r@ \/-(f)) =>
-                      logger.warn(s"${req.username.with_@} failed to complete user registration: $f")
-                      (r, Security.Result.Failure)
-                    case -\/(r@ -\/(e)) =>
-                      logger.warn(s"${req.username.with_@} failed to complete user registration: ${e.value}")
-                      (r, Security.Result.Failure)
-                  })
-
-                for {
-                  stackRes      <- main.underlying
-                  (res, secRes) <- logAndMap(stackRes)
-                  _             <- metrics.securityEvent(Security.Event.Register2, secRes)
-                } yield res
-              }
-            )
-          )
+          body(_).map {
+            case \/-((r, t)) => (\/-(r), t)
+            case e@ -\/(_)   => (e, None)
+          }
+        }
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

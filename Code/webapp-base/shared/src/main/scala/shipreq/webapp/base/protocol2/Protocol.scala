@@ -98,6 +98,7 @@ object Protocol {
     def responseProtocol(req: protocol.PreparedRequestType): Protocol.Of[F, protocol.ResponseType]
 
     final type ServerSideFn[G[_]] = protocol.PreparedRequestType => G[protocol.ResponseType]
+    final type ServerSideFnA[G[_], A] = protocol.PreparedRequestType => G[(protocol.ResponseType, A)]
   }
 
   object Ajax {
