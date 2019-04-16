@@ -3,7 +3,7 @@ package shipreq.webapp.base.test
 import boopickle.Pickler
 import japgolly.scalajs.react.{AsyncCallback, Callback}
 import org.scalajs.dom.console
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.protocol2._
@@ -66,26 +66,40 @@ class TestAjaxClient(autoRespondArg: Boolean) extends AjaxClient.Binary {
     }
 
   override def apply(p: Protocol.Ajax[Pickler])
-                    (req: p.protocol.RequestType): AsyncCallback[p.protocol.ResponseType] =
-    for {
-      (promise, complete) <- AsyncCallback.promise[p.protocol.ResponseType].asAsyncCallback
+                    (req: p.protocol.RequestType): AsyncCallback[p.protocol.ResponseType] = {
 
-      _ <- AsyncCallback.point {
-        val r = new Req {
-          override val ajax: p.type = p
-          override val input = req
-          override val onResponse = {
-            case \/-(o) => complete(Success(o))
-            case -\/(t) => complete(Failure(t))
-          }
+    var callbacks: List[Try[p.protocol.ResponseType] => Callback] =
+      Nil
+
+    var result: Try[p.protocol.ResponseType] =
+      null
+
+    def reactNow(): Unit = {
+      if (result ne null)
+        callbacks.foreach(_(result).runNow())
+    }
+
+    def newReq(): Unit = {
+      val r = new Req {
+        override val ajax: p.type = p
+        override val input = req
+        override val onResponse = i => Callback {
+          result = i.fold(Failure(_), Success(_))
+          reactNow()
         }
-        reqs :+= r
-        if (autoRespond)
-          autoRespondToLast()
       }
+      reqs :+= r
+      if (autoRespond)
+        autoRespondToLast()
+    }
 
-      result <- promise
-    } yield result
+    AsyncCallback[p.protocol.ResponseType](f =>
+      Callback {
+        callbacks ::= f
+        newReq()
+      })
+  }
+
 
   def assertReqsSent(count: Int): Unit =
     assertEq("AJAX requests", reqs.size, count)

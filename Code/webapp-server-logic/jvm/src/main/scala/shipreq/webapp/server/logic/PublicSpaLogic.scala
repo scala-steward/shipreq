@@ -20,12 +20,12 @@ import Implicits._
 
 trait PublicSpaLogic[F[_]] {
 
-  val ajaxLandingPage   : PublicSpaProtocols.landingPage   .ServerSideFn[F]
-  val ajaxLogin         : PublicSpaProtocols.login         .ServerSideFnA[F, Option[Security.SessionToken]]
-  val ajaxRegister1     : PublicSpaProtocols.register1     .ServerSideFn[F]
-  val ajaxRegister2     : PublicSpaProtocols.register2     .ServerSideFnA[F, Option[Security.SessionToken]]
-  val ajaxResetPassword1: PublicSpaProtocols.resetPassword1.ServerSideFn[F]
-  val ajaxResetPassword2: PublicSpaProtocols.resetPassword2.ServerSideFn[F]
+  val ajaxLandingPage   : PublicSpaProtocols.landingPage   .ServerSideFn [F]
+  val ajaxLogin         : PublicSpaProtocols.login         .ServerSideFnO[F, Option[Security.SessionToken]]
+  val ajaxRegister1     : PublicSpaProtocols.register1     .ServerSideFn [F]
+  val ajaxRegister2     : PublicSpaProtocols.register2     .ServerSideFnO[F, Option[Security.SessionToken]]
+  val ajaxResetPassword1: PublicSpaProtocols.resetPassword1.ServerSideFn [F]
+  val ajaxResetPassword2: PublicSpaProtocols.resetPassword2.ServerSideFn [F]
 
   /** Ignores publicRegistration setting.
     * Lacks security protection.
@@ -198,7 +198,7 @@ object PublicSpaLogic extends HasLogger {
           registrationProc(Security.Event.Register1, i =>
             register1(i.value).map(_.void))
 
-        val register2: PublicSpaProtocols.register2.ServerSideFnA[F, Option[Security.SessionToken]] = {
+        val register2: PublicSpaProtocols.register2.ServerSideFnO[F, Option[Security.SessionToken]] = {
           type T = Option[Security.SessionToken]
           import PublicSpaProtocols.Register.{Request, Response}
           val stack = MonadEE[F, ErrorMsg, Response]

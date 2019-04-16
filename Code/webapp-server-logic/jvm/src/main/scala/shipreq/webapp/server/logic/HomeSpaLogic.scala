@@ -5,14 +5,19 @@ import scalaz.syntax.monad._
 import scalaz.{Monad, \/-, ~>}
 import shipreq.webapp.base.data.{Project, ProjectMetaData}
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.protocol.HomeSpaProtocols
+import shipreq.webapp.base.protocol2.HomeSpaProtocols
 import shipreq.webapp.base.user._
 
-trait HomeSpaLogic[F[_]] {
+trait HomeSpaLogic[F[_]] extends HomeSpaLogic.Ajax[F] {
   def initData(user: User): F[HomeSpaProtocols.InitData]
 }
 
 object HomeSpaLogic {
+
+  trait Ajax[F[_]] {
+    val ajaxCreateProject: HomeSpaProtocols.createProject.ServerSideFnI[F, User]
+  }
+
   val InitProjectEvent = ProjectTemplateApply(ProjectTemplate.default)
   val InitProject      = ApplyNewEvent.mustApply(InitProjectEvent, Project.empty)
 
@@ -37,17 +42,12 @@ object HomeSpaLogic {
                         F: Monad[F]): HomeSpaLogic[F] =
     new HomeSpaLogic[F] {
 
-      def initData(user: User): F[HomeSpaProtocols.InitData] = {
-
-        val createProjectFn: F[HomeSpaProtocols.CreateProject.Instance] =
-          svr.createServerSideProc(HomeSpaProtocols.CreateProject)(name =>
-            svr.now.flatMap(now => runDB(createProject(user.id, name, now))))
-
+      override def initData(user: User): F[HomeSpaProtocols.InitData] =
         for {
           p <- runDB(db.getAllProjectMetaDataForUser(user.id))
-          f <- createProjectFn
-        } yield HomeSpaProtocols.InitData(user.username, p, f)
-      }
+        } yield HomeSpaProtocols.InitData(user.username, p)
 
+      override val ajaxCreateProject =
+        (user, name) => svr.now.flatMap(now => runDB(createProject(user.id, name, now)))
     }
 }

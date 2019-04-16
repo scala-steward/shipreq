@@ -8,6 +8,7 @@ import shipreq.webapp.base.{AssetManifest, Urls, WebappConfig}
 import shipreq.webapp.base.WebappConfig.liftPath1
 import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.protocol2.HomeSpaProtocols
 import shipreq.webapp.client.public.PublicSpaProtocols
 import shipreq.webapp.server.logic.{Obfuscators, Security}
 import shipreq.webapp.server.test.LiveTestUtils._

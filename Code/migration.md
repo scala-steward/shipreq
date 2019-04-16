@@ -12,10 +12,8 @@ MIGRATION
   * [x] Replace:
     * [x] Shiro with JWT
     * [x] Use JWT & new SSPs
-    * [x] Use Lift stateless dispatch
-* [ ] HomeSpa
-  * [ ] Use JWT & new SSPs
-  * [ ] use Lift stateless dispatch
+* [x] HomeSpa
+  * [x] Use JWT & new SSPs
 * [ ] ProjectSpa
   * [ ] Capabilities:
     * [x] Establish WebSocket
@@ -29,7 +27,7 @@ MIGRATION
     * [ ] Use WebSocket
     * [ ] Project AJAX over WS
     * [ ] Push events over WS
-  * [ ] use Lift stateless dispatch
+* [ ] only use Lift stateless dispatch
 * [ ] Remove
   * [ ] Old SSP
   * [x] Shiro
@@ -38,6 +36,7 @@ MIGRATION
   * [ ] webapp-logic: Server.Session
   * [ ] Remove comets
   * [ ] Remove Promse logic (probably)
+
 * [ ] Implement protocol & caching according to TLA+ spec
   * [ ] Add async typeclass and/or support to Fx
   * [ ] Add Redis

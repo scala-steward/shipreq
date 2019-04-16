@@ -7,8 +7,6 @@ import UnsafeTypes._
 
 object MockRemotes {
 
-  lazy val createProjectFn = ServerSideProc("CreateProject", HomeSpaProtocols.CreateProject)
-
   def mockUsername = Username("testuser")
 
   def projectSpa(p: Project                    ): ProjectSpaProtocols.InitData = projectSpa(p, mockUsername)

@@ -7,14 +7,14 @@ import monocle.macros.Lenses
 import org.scalajs.dom.html
 import utest._
 import shipreq.webapp.base.data.ProjectMetaData
-import shipreq.webapp.base.protocol.HomeSpaProtocols.InitData
-import shipreq.webapp.base.test.{MockRemotes, TestClientProtocol}
+import shipreq.webapp.base.protocol2.HomeSpaProtocols
+import shipreq.webapp.base.test.TestAjaxClient
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.base.user._
 import shipreq.webapp.client.home.test.PrepareEnv
 
-final class HomeObs(cp: TestClientProtocol, $: DomZipperJs) {
+final class HomeObs(cp: TestAjaxClient, $: DomZipperJs) {
 
   val reqs = cp.reqs.length
 
@@ -53,7 +53,7 @@ object HomeTestDsl {
 
   val clearCP = State.cpText.set("") compose State.cpState.set(CPState.Blank)
 
-  val * = Dsl[TestClientProtocol, HomeObs, State]
+  val * = Dsl[TestAjaxClient, HomeObs, State]
 
   private def cpState(inputDisabled: Boolean, buttonDisabled: Boolean, hasError: Boolean) =
     *.focus("CreateProject input disabled") .value(_.obs.createProject.inputDisabled  ).assert(inputDisabled) &
@@ -90,7 +90,7 @@ object HomeTestDsl {
     *.action("Simulate AJAX error")(_.ref.failLast())
 
   def ajaxCreatedProject(p: ProjectMetaData) =
-    *.action("Simulate project-creation AJAX")(_.ref.respondToLast(MockRemotes.createProjectFn)(p))
+    *.action("Simulate project-creation AJAX")(_.ref.respondToLast(HomeSpaProtocols.createProject)(p))
       .updateState(State.projects.modify(_ :+ p.name) compose clearCP)
 }
 
@@ -102,8 +102,8 @@ object HomeTest extends TestSuite {
   PrepareEnv()
 
   def run(ps: List[ProjectMetaData])(plan: *.Plan): Report[String] = {
-    val cp = new TestClientProtocol(false)
-    val init = InitData(Username("thatguy"), ps, MockRemotes.createProjectFn)
+    val cp = new TestAjaxClient(false)
+    val init = HomeSpaProtocols.InitData(Username("thatguy"), ps)
     val props = Home.Props(init, cp)
     ReactTestUtils.withRenderedIntoDocument(props.render)(c =>
       plan

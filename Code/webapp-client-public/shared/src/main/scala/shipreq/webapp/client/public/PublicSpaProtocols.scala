@@ -22,7 +22,7 @@ import shipreq.webapp.base.Urls
   */
 object PublicSpaProtocols {
 
-  private def newAjax[Req: Pickler, Res: Pickler](path: String): Protocol.Ajax.Simple[Pickler, Req, Res] =
+  private def ajax[Req: Pickler, Res: Pickler](path: String): Protocol.Ajax.Simple[Pickler, Req, Res] =
     Protocol.Ajax.Simple(Urls.ajaxRoot / "pub" / path, Protocol(implicitly), Protocol(implicitly))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -64,7 +64,7 @@ object PublicSpaProtocols {
     }
   }
 
-  val landingPage = newAjax[LandingPage.Request, ErrorMsg \/ Unit]("lp")
+  val landingPage = ajax[LandingPage.Request, ErrorMsg \/ Unit]("lp")
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object Register {
@@ -104,8 +104,8 @@ object PublicSpaProtocols {
     }
   }
 
-  val register1 = newAjax[EmailAddr, ErrorMsg \/ Unit]("reg1")
-  val register2 = newAjax[Register.Request, ErrorMsg \/ Register.Response]("reg2")
+  val register1 = ajax[EmailAddr, ErrorMsg \/ Unit]("rg1")
+  val register2 = ajax[Register.Request, ErrorMsg \/ Register.Response]("rg2")
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object Login {
@@ -131,7 +131,7 @@ object PublicSpaProtocols {
     }
   }
 
-  val login = newAjax[Login.Request, Permission]("l")
+  val login = ajax[Login.Request, Permission]("l")
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object ResetPassword {
@@ -149,8 +149,8 @@ object PublicSpaProtocols {
     }
   }
 
-  val resetPassword1 = newAjax[Username \/ EmailAddr, Unit]("rp1")
-  val resetPassword2 = newAjax[ResetPassword.Request, ErrorMsg \/ ResetPassword.Response]("rp2")
+  val resetPassword1 = ajax[Username \/ EmailAddr, Unit]("rp1")
+  val resetPassword2 = ajax[ResetPassword.Request, ErrorMsg \/ ResetPassword.Response]("rp2")
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

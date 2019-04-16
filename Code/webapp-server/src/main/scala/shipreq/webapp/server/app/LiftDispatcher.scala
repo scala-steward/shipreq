@@ -148,6 +148,7 @@ final class LiftDispatcher(global: Global) extends StrictLogging {
     implicit val taskman   = global.taskman
     implicit val security  = global.security
     implicit val publicSpa = global.logic.publicSpa
+    implicit val homeSpa   = global.logic.homeSpa
     implicit val ops       = global.ops
     implicit val db        = DB.SecurityTokenReadOnly.trans(DbInterpreter.SecurityTokenReadOnly)(global.db.fx.trans)
     implicit val server    = ServerInterpreter

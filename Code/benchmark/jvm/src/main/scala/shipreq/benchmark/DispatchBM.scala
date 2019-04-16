@@ -191,7 +191,7 @@ object DispatchBM {
     implicit val trace: TraceLogic[F, Request[Unit], Response] =
       TraceLogic.off
 
-    implicit object publicApi extends PublicSpaLogic[F] {
+    implicit object publicSpa extends PublicSpaLogic[F] {
       override def apiRegister1(emailAddr: String) = F.pure(\/-(MsgId(1000)))
       override val ajaxLandingPage    = _ => ???
       override val ajaxLogin          = _ => ???
@@ -199,6 +199,10 @@ object DispatchBM {
       override val ajaxRegister2      = _ => ???
       override val ajaxResetPassword1 = _ => ???
       override val ajaxResetPassword2 = _ => ???
+    }
+
+    implicit object homeSpa extends HomeSpaLogic.Ajax[F] {
+      override val ajaxCreateProject = (_, _) => ???
     }
 
     implicit object ops extends OpsEndpoints[F] {

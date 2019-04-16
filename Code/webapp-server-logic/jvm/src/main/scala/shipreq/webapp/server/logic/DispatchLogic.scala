@@ -14,7 +14,7 @@ import shipreq.base.ops.Trace
 import shipreq.base.util._
 import shipreq.webapp.base.{AssetManifest, Urls}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol2.{BinaryJvm, Protocol}
+import shipreq.webapp.base.protocol2.{BinaryJvm, MemberProtocols, Protocol}
 import shipreq.webapp.base.user._
 import shipreq.webapp.base.util.ResourceHint
 import shipreq.webapp.client.public.PublicSpaProtocols
@@ -222,6 +222,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
                                                   metrics   : MetricsLogic[F],
                                                   ops       : OpsEndpoints[F],
                                                   publicSpa : PublicSpaLogic[F],
+                                                  homeSpa   : HomeSpaLogic.Ajax[F],
                                                   security  : Security.Algebra[F],
                                                   svrS      : Server.Session[F],
                                                   svr       : Server.Time[F],
@@ -436,6 +437,9 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object Ajax extends StrictLogging {
 
+    private val authRequired =
+      F pure Response(ResponseCmd.StatusOnly.Forbidden, Cookie.Update.empty)
+
     private type Handler = (Security.SessionToken, BinaryData) => F[Response]
 
     private val _library = {
@@ -461,35 +465,61 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
         nameMap += (p.url -> name)
       }
 
-      def register(p: Protocol.Ajax[Pickler])(name: String, f: p.ServerSideFn[F]): Unit =
+      def responseCmd(p: Protocol.Ajax[Pickler])(req: p.protocol.PreparedRequestType, out: p.protocol.ResponseType) = {
+        val outBin = BinaryJvm.encode(p.responseProtocol(req))(out)
+        ResponseCmd.Binary(StatusCode.OK, outBin)
+      }
+
+      def anon(p: Protocol.Ajax[Pickler])(name: String, f: p.ServerSideFn[F]): Unit =
         _register(p, name)((token, req) =>
           for {
             out   <- f(req)
-            outBin = BinaryJvm.encode(p.responseProtocol(req))(out)
-            resCmd = ResponseCmd.Binary(StatusCode.OK, outBin)
+            resCmd = responseCmd(p)(req, out)
             cu    <- security.sessionPersist(token)
           } yield Response(resCmd, cu)
         )
 
-      def registerA[A](p: Protocol.Ajax[Pickler])
-                      (name: String, f: p.ServerSideFnA[F, A])
+      def anonO[A](p: Protocol.Ajax[Pickler])
+                      (name: String, f: p.ServerSideFnO[F, A])
                       (g: (Security.SessionToken, ResponseCmd, A) => F[Response]): Unit =
         _register(p, name)((token, req) =>
           for {
             (out, a) <- f(req)
-            outBin    = BinaryJvm.encode(p.responseProtocol(req))(out)
-            resCmd    = ResponseCmd.Binary(StatusCode.OK, outBin)
+            resCmd    = responseCmd(p)(req, out)
             res      <- g(token, resCmd, a)
           } yield res
         )
 
+      def auth(p: Protocol.Ajax[Pickler])(name: String, f: p.ServerSideFnI[F, User]): Unit =
+        _register(p, name)((token, req) =>
+          token.authenticatedUser match {
+            case Some(user) =>
+              for {
+                out   <- f(user, req)
+                resCmd = responseCmd(p)(req, out)
+                cu    <- security.sessionPersist(token)
+              } yield Response(resCmd, cu)
+            case None =>
+              authRequired
+          }
+        )
+
       // Register endpoints
-      register (PublicSpaProtocols.landingPage   )("landingPage"   , publicSpa.ajaxLandingPage   )
-      registerA(PublicSpaProtocols.login         )("login"         , publicSpa.ajaxLogin         )(useNewToken)
-      register (PublicSpaProtocols.register1     )("register1"     , publicSpa.ajaxRegister1     )
-      registerA(PublicSpaProtocols.register2     )("register2"     , publicSpa.ajaxRegister2     )(useNewToken)
-      register (PublicSpaProtocols.resetPassword1)("resetPassword1", publicSpa.ajaxResetPassword1)
-      register (PublicSpaProtocols.resetPassword2)("resetPassword2", publicSpa.ajaxResetPassword2)
+      anon (PublicSpaProtocols.landingPage   )("landingPage"   , publicSpa.ajaxLandingPage   )
+      anonO(PublicSpaProtocols.login         )("login"         , publicSpa.ajaxLogin         )(useNewToken)
+      anon (PublicSpaProtocols.register1     )("register1"     , publicSpa.ajaxRegister1     )
+      anonO(PublicSpaProtocols.register2     )("register2"     , publicSpa.ajaxRegister2     )(useNewToken)
+      anon (PublicSpaProtocols.resetPassword1)("resetPassword1", publicSpa.ajaxResetPassword1)
+      anon (PublicSpaProtocols.resetPassword2)("resetPassword2", publicSpa.ajaxResetPassword2)
+      auth (MemberProtocols.createProject    )("createProject" , homeSpa.ajaxCreateProject)
+//      register (MemberProtocols.projectNameSet       )("projectNameSet"       , )
+//      register (MemberProtocols.fieldMandatorinessMod)("fieldMandatorinessMod", )
+//      register (MemberProtocols.reqTypeImplicationMod)("reqTypeImplicationMod", )
+//      register (MemberProtocols.createContent        )("createContent"        , )
+//      register (MemberProtocols.updateContent        )("updateContent"        , )
+//      register (MemberProtocols.updateSavedViews     )("updateSavedViews"     , )
+//      register (MemberProtocols.customIssueTypeCrud  )("customIssueTypeCrud"  , )
+//      register (MemberProtocols.customReqTypeCrud    )("customReqTypeCrud"    , )
 
       (handlerMap.toMapNoHeadSlash, nameMap)
     }
