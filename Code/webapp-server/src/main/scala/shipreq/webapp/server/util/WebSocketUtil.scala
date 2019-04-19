@@ -46,4 +46,9 @@ object WebSocketUtil {
       else
         Some(header.substring(startIdx + k.length).takeWhile(_ != ';'))
     }
+
+  def pathParam(req: HandshakeRequest, name: String): String =
+    req.getParameterMap.get(name).asScala.headOption.getOrElse {
+      throw new IllegalStateException(s"WebSocket PathParam '$name' not found. uri=${req.getRequestURI}")
+    }
 }
