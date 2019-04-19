@@ -89,7 +89,7 @@ object SampleProtocol {
   object WS extends Protocol.WebSocket.ClientReqServerPush[Pickler] {
     override type ReqId  = Int
     override type ReqRes = SampleProtocol.ReqRes
-    override val  url    = Urls.projectSpaWebSocket
+    override val  url    = Urls.projectSpaWebSocket.prefix
     override val  req    = ReqRes.AndReq.protocol
     override val  push   = Protocol[Pickler, String](implicitly)
   }

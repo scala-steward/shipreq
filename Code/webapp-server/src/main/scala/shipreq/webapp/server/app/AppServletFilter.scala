@@ -36,7 +36,10 @@ final class AppServletFilter extends LiftFilter with HasLogger {
     }
 
     // Don't handle websockets
-    ignore(_ == Urls._projectSpaWebSocket)
+    ignore {
+      val root = Urls.projectSpaWebSocketBase + "/"
+      _.startsWith(root)
+    }
 
     // Initialise logging
     installLogging()

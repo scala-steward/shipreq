@@ -56,8 +56,8 @@ object Urls {
 
   val ajaxRoot = Url.Relative("/x")
 
-  final val _projectSpaWebSocket = "/w/p"
-  val projectSpaWebSocket = Url.Relative(_projectSpaWebSocket)
+  final val projectSpaWebSocketBase = "/w/p"
+  val projectSpaWebSocket = Url.Relative(projectSpaWebSocketBase).thenParam[ProjectId.Public](_.value)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
