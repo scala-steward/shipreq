@@ -512,14 +512,6 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
       anon (PublicSpaProtocols.resetPassword1)("resetPassword1", publicSpa.ajaxResetPassword1)
       anon (PublicSpaProtocols.resetPassword2)("resetPassword2", publicSpa.ajaxResetPassword2)
       auth (HomeSpaProtocols  .createProject )("createProject" , homeSpa  .ajaxCreateProject )
-//      register (MemberProtocols.projectNameSet       )("projectNameSet"       , )
-//      register (MemberProtocols.fieldMandatorinessMod)("fieldMandatorinessMod", )
-//      register (MemberProtocols.reqTypeImplicationMod)("reqTypeImplicationMod", )
-//      register (MemberProtocols.createContent        )("createContent"        , )
-//      register (MemberProtocols.updateContent        )("updateContent"        , )
-//      register (MemberProtocols.updateSavedViews     )("updateSavedViews"     , )
-//      register (MemberProtocols.customIssueTypeCrud  )("customIssueTypeCrud"  , )
-//      register (MemberProtocols.customReqTypeCrud    )("customReqTypeCrud"    , )
 
       (handlerMap.toMapNoHeadSlash, nameMap)
     }
