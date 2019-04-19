@@ -31,10 +31,11 @@ object ProjectSpaProtocols {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   final case class WebSocket(projectId: ProjectId.Public) extends Protocol.WebSocket.ClientReqServerPush[Pickler] {
-    override val  url    = Urls.projectSpaWebSocket(projectId)
+    override val  url    = Urls.ProjectSpaWebSocket.url(projectId)
     override type ReqId  = WebSocketShared.ReqId
-    override val  push   = WebSocket.pushProtocol
+    override type ReqRes = WsReqRes
     override val  req    = WsReqRes.AndReq.protocol
+    override val  push   = WebSocket.pushProtocol
   }
 
   object WebSocket {
