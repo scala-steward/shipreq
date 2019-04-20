@@ -418,14 +418,8 @@ SyncPush ==
   \E u \in User : LET events == procsS[u] IN
     /\ events /= {}
     /\ procsS' = [procsS EXCEPT ![u] = {}]
-    /\ PublishEvents(events)
-    /\ UNCHANGED << db, procsU, procsL, procsR, userState, redis, sub >>
-    \* Writing to redis.events can invalidate the invariant that redis has no gaps
-    \* Not sure how valuable that invariant is but OTOH,
-    \* not sure how valuable it would be to write non-latest events...
-    \* /\ redis'  = [redis EXCEPT !.events = @ \union {e \in events : e > redis.ver}]
-
-    \* TODO TRY AGAIN ↑
+    /\ RedisWriteEvents({}, events, TRUE, TRUE)
+    /\ UNCHANGED << db, procsU, procsL, procsR, userState, sub >>
 
 ------------------------------------------------------------------------------------------------------------------------
 
