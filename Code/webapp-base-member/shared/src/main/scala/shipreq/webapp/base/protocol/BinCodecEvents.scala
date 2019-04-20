@@ -98,6 +98,7 @@ object BinCodecEvents {
   }
 
   implicit val pickleEventOrd        : Pickler[EventOrd                 ] = pickleCaseClass
+  implicit val pickleEventOrdLatest  : Pickler[EventOrd.Latest          ] = pickleCaseClass
   implicit val pickleVerifiedEvent   : Pickler[VerifiedEvent            ] = pickleCaseClass
   implicit val pickleVerifiedEventSeq: Pickler[VerifiedEvent.Seq        ] = iterablePickler
   implicit val pickleVerifiedEventNES: Pickler[VerifiedEvent.NonEmptySeq] = pickleCaseClass

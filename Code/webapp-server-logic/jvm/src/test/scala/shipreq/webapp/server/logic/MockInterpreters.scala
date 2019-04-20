@@ -494,6 +494,7 @@ class MockInterpreters(modCfg: ServerConfig => ServerConfig = Identity[ServerCon
   implicit val taskman        = new MockTaskman
   implicit val nameToName     = NaturalTransformation.refl[Name]
   implicit val metrics        = MetricsLogic.const(Name(()))
+  implicit val redis          = new Redis.InMemory[Name]
   implicit val publicSpa      = PublicSpaLogic[Name, Name]
   implicit val homeSpa        = HomeSpaLogic[Name, Name]
   implicit val projectSpa     = ProjectSpaLogic[Name, Name]

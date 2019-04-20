@@ -1,5 +1,9 @@
 package shipreq.webapp.server.logic
 
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.JavaConverters._
+import scalaz.{-\/, BindRec, Monad, \/-}
+import scalaz.syntax.monad._
 import shipreq.webapp.base.data.{Project, ProjectId}
 import shipreq.webapp.base.event.{EventOrd, VerifiedEvent}
 
@@ -24,7 +28,20 @@ object Redis {
     @inline def nonEmpty = !isEmpty
   }
 
+  object ProjectCache {
+    val empty = apply(None, VerifiedEvent.Seq.empty)
+  }
+
+  final case class Subscription[F[_]](unsubscribe: F[Unit])
+
   trait ProjectAlgebra[F[_]] {
+
+    /** [TLA+] Used by:
+      *          - Load_Subscribe
+      *          - Reload_Subscribe
+      */
+    def subscribe(id      : ProjectId,
+                  listener: VerifiedEvent => F[Unit]): F[Subscription[F]]
 
     /** [TLA+] Used by:
       *          - Load_ReadRedis
@@ -50,6 +67,7 @@ object Redis {
       *          - RedisWriteEvents
       *            - Update_WriteRedis1
       *            - Update_WriteRedis2
+      *            - SyncPush
       *
       * @param cacheOnly       Events to save, and not publish.
       * @param cacheAndPublish Events to save, and publish to the project's topic.
@@ -59,12 +77,124 @@ object Redis {
     def writeEvents(id             : ProjectId,
                     cacheOnly      : VerifiedEvent.Seq,
                     cacheAndPublish: VerifiedEvent.Seq): F[Boolean]
-
-    /** [TLA+] Used by:
-      *          - SyncPush
-      */
-    def publish(id    : ProjectId,
-                events: VerifiedEvent.NonEmptySeq): F[Unit]
   }
 
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  object InMemory {
+    private[InMemory] final case class State[F[_]](cache: ProjectCache,
+                                                   subs: List[(VerifiedEvent => F[Unit], Subscription[F])],
+                                                   pub: List[F[Unit]]) {
+
+      def modSubs(f: List[(VerifiedEvent => F[Unit], Subscription[F])] => List[(VerifiedEvent => F[Unit], Subscription[F])]) =
+        copy(subs = f(subs))
+
+      def publish(es: Traversable[VerifiedEvent]) = {
+        var pub2 = pub
+        for {
+          e <- es
+          s <- subs
+        } pub2 ::= s._1(e)
+        pub2
+      }
+    }
+  }
+
+  final class InMemory[F[_]](implicit F: Monad[F] with BindRec[F]) extends ProjectAlgebra[F] {
+    import InMemory.State
+
+    private[this] val globalState = new ConcurrentHashMap[ProjectId, State[F]]()
+    private[this] val emptyState = State[F](ProjectCache.empty, Nil, Nil)
+    private[this] val fUnit = F.pure(())
+
+    private def mod[A](id: ProjectId)(f: State[F] => (State[F], A)): F[A] =
+      F.point(unsafeModNow(id)(f))
+
+    private def unsafeModNow[A](id: ProjectId)(f: State[F] => (State[F], A)): A = {
+      @volatile var result: Any = null
+      globalState.compute(id, (_, ostate) => {
+        val state = Option(ostate).getOrElse(emptyState)
+        val (state2, a) = f(state)
+        result = a
+        state2
+      })
+      result.asInstanceOf[A]
+    }
+
+    override def subscribe(id: ProjectId, f: VerifiedEvent => F[Unit]) =
+      mod(id) { state =>
+        lazy val sub: Subscription[F] = Subscription[F](mod(id)(s => (s.modSubs(_.filter(_._2 ne sub)), ())))
+        val state2 = state.modSubs((f, sub) :: _)
+        (state2, sub)
+      }
+
+    override def read(id: ProjectId) = F.point {
+      globalState.getOrDefault(id, emptyState).cache
+    }
+
+    override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq) =
+      mod(id) { state =>
+        val cache = state.cache
+
+        val (result, cache2) =
+          if (cache.snapshot.forall(snapshot.ord > _.ord))
+            (true, ProjectCache(Some(snapshot), cache.events.filter(_.ord > snapshot.ord)))
+          else
+            (false, cache)
+
+        val pub2 = state.publish(publishOnly)
+
+        (State(cache2, state.subs, pub2), result)
+      }
+
+    override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq) =
+      mod(id) { state =>
+        val cache = state.cache
+
+        val newEvents = cache.ord match {
+          case Some(o) => VerifiedEvent.Seq.empty ++ (cacheOnly.iterator ++ cacheAndPublish).filter(_.ord > o)
+          case None    => cacheOnly ++ cacheAndPublish
+        }
+
+        val (result, cache2) =
+          if (newEvents.isEmpty || cache.ord.exists(newEvents.min.ord > _ + 1))
+            (false, cache)
+          else
+            (true, cache.copy(events = cache.events ++ newEvents))
+
+
+        val pub2 = state.publish(cacheAndPublish)
+
+        (State(cache2, state.subs, pub2), result)
+      }
+
+    /** Simulates Redis publishing events to listeners */
+    val publishAll: F[Unit] = {
+      type L = List[ProjectId]
+
+      def getKeys: F[L] =
+        F.point(globalState.keySet().asScala.toList)
+
+      def run(l: L): F[Unit] =
+        F.tailrecM[L, Unit]({
+          case ids @ id :: nextIds =>
+            for {
+              callback <- mod(id)(s => s.pub match {
+                            case h :: t => (s.copy(pub = t), Some(h))
+                            case Nil    => (s, None)
+                          })
+              _ <- callback.getOrElse(fUnit)
+            } yield callback match {
+              case Some(_) => -\/(ids)
+              case None    => -\/(nextIds)
+            }
+          case Nil => F.pure(\/-(()))
+        })(l)
+
+      for {
+        keys <- getKeys
+        _    <- run(keys)
+      } yield ()
+    }
+  }
 }

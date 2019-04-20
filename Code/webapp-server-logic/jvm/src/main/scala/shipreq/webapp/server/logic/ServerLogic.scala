@@ -20,6 +20,7 @@ object ServerLogic {
              F[_] : Monad
                   : MetricsLogic
                   : ProjectServer.StoreAlgebra
+                  : Redis.ProjectAlgebra
                   : Security.Algebra
                   : Server.Algebra
                   : TaskmanApi

@@ -8,6 +8,7 @@ import scalaz.syntax.monad._
 import shipreq.base.util.{BinaryData, ErrorMsg, Monads}
 import shipreq.webapp.base.data.{Obfuscated, Project, ProjectId}
 import shipreq.webapp.base.event.{ApplyEvent, EventOrd, VerifiedEvent}
+import shipreq.webapp.base.protocol2.ProjectSpaProtocols.WsReqRes.EventResult
 import shipreq.webapp.base.protocol2.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol2.{BinaryJvm, ProjectSpaProtocols, WebSocketServerHelper}
 import shipreq.webapp.base.user.User
@@ -55,14 +56,14 @@ object ProjectSpaLogic extends StrictLogging {
     implicit def univEq: UnivEq[MsgError] = UnivEq.derive
   }
 
-//  final case class Req[R <: ReqRes](req: R#RequestType, state: WebSocketState, user: User)
-//  final case class Res[R <: ReqRes](res: R#ResponseType, stateUpdate: Option[WebSocketState])
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   def apply[D[_], F[_]](implicit
-                        D: Monad[D],
-                        F: Monad[F],
-                        db: DB.ForProjectSpa[D],
-                        runDB: D ~> F,
+                        D       : Monad[D],
+                        F       : Monad[F],
+                        redis   : Redis.ProjectAlgebra[F],
+                        db      : DB.ForProjectSpa[D],
+                        runDB   : D ~> F,
                         security: Security.Algebra[F]): ProjectSpaLogic[F] = {
 
     val webSocketHelper = WebSocketServerHelper(ProjectSpaProtocols.WebSocket(Obfuscated(null)))
@@ -92,6 +93,9 @@ object ProjectSpaLogic extends StrictLogging {
 
         security.protect(main.value)
       }
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // Message responding
 
       override def onMessage(static: WebSocketStatic)
                             (state : WebSocketState,
@@ -127,7 +131,7 @@ object ProjectSpaLogic extends StrictLogging {
 
       private val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
         onInitApp               = onInitApp.tupled,
-        onProjectNameSet        = _ => ???,
+        onProjectNameSet        = onProjectNameSet.tupled,
         onFieldMandatorinessMod = _ => ???,
         onReqTypeImplicationMod = _ => ???,
         onCreateContent         = _ => ???,
@@ -135,18 +139,18 @@ object ProjectSpaLogic extends StrictLogging {
         onUpdateSavedViews      = _ => ???,
       )
 
-      // final case class LoadedState(project: Project, projectMetaData: ProjectMetaData, nextOrd: EventOrd) {
-      // final case class InitAppData(project: Project, projectMetaData: ProjectMetaData, latestEventOrd: EventOrd)
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
       private def onInitApp: MsgFn[Unit, ErrorMsg \/ InitAppData] = (_, static) => {
         val pid = static.projectId
 
-        def buildProject(load: VerifiedEvent.Seq): ErrorMsg \/ (Project, EventOrd) =
+        def buildProject(load: VerifiedEvent.Seq): ErrorMsg \/ (Project, EventOrd.Latest) =
           if (load.isEmpty) {
-            val ord = EventOrd(1) // Nice to reserve 0 for ApplyTemplate.
+            val ord = EventOrd.Latest(1) // Nice to reserve 0 for ApplyTemplate.
             \/-((Project.empty, ord))
           } else
             ApplyEvent.trusted.applyVerified(load)(Project.empty) match {
-              case \/-(p) => \/-((p, load.lastKey.ord))
+              case \/-(p) => \/-((p, load.lastKey.ord.asLatest))
               case -\/(e) =>
                 logger.error(s"Failed to apply events [${load.head.ord},${load.last.ord}] on project #${pid.value}: $e")
                 -\/(ErrorMsg(s"${Server.ErrorMsgs.ShouldNeverHappen.value}\n\nEvent application failure.\n$e"))
@@ -168,6 +172,12 @@ object ProjectSpaLogic extends StrictLogging {
         } yield (result, None)
       }
 
-    }
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      private def onProjectNameSet: MsgFn[String, EventResult] = (newName, static) => {
+        ???
+      }
+
+    } // new ProjectSpaLogic
   }
 }

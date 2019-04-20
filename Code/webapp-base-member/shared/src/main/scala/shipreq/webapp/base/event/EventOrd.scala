@@ -18,9 +18,15 @@ final case class EventOrd(value: Int) extends AnyVal {
 
   def immediatelyFollows(o: EventOrd): Boolean =
     (o.value + 1) ==* this.value
+
+  def asLatest = EventOrd.Latest(value)
 }
 
 object EventOrd {
-  implicit def univEq: UnivEq[EventOrd] =
-    UnivEq.derive
+  implicit def univEq: UnivEq[EventOrd] = UnivEq.derive
+
+  final case class Latest(value: Int) extends AnyVal
+
+  implicit def latestExtendsEventOrd(l: Latest): EventOrd = new EventOrd(l.value)
+  implicit def univEqLatest: UnivEq[Latest] = UnivEq.derive
 }

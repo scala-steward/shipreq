@@ -44,7 +44,7 @@ object ProjectSpaProtocols {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final case class InitAppData(project: Project, projectMetaData: ProjectMetaData, latestEventOrd: EventOrd)
+  final case class InitAppData(project: Project, projectMetaData: ProjectMetaData, latestEventOrd: EventOrd.Latest)
 
   implicit val picklerInitAppData = pickleCaseClass[InitAppData]
 
