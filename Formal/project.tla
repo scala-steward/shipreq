@@ -488,13 +488,6 @@ React ==
 
 Next == Act \/ React
 
-\*Fairness ==
-\*  /\ WF_vars(UpdateRequest)
-\*  /\ SF_vars(Load)
-\*  /\ UserConnect ~> Load_Respond
-\*  /\ SF_vars(UpdateRespond)
-\*  /\ SF_vars(Publish)
-
 Spec == Init /\ [][Next]_<<vars>>
 
 MCDone     == ~MCAllowAct /\ ~ENABLED(React)
