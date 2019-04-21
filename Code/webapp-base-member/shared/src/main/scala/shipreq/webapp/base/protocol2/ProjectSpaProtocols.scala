@@ -2,6 +2,7 @@ package shipreq.webapp.base.protocol2
 
 import boopickle.{PickleState, Pickler, UnpickleState}
 import japgolly.microlibs.adt_macros.AdtMacros
+import java.time.Instant
 import scalaz.\/
 import shipreq.base.util.{ErrorMsg, StaticLookupFn}
 import shipreq.webapp.base.data._
@@ -44,7 +45,9 @@ object ProjectSpaProtocols {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final case class InitAppData(project: Project, projectMetaData: ProjectMetaData, latestEventOrd: EventOrd.Latest)
+  final case class InitAppData(project       : Project,
+                               latestEventOrd: EventOrd.Latest,
+                               lastUpdatedAt : Instant)
 
   implicit val picklerInitAppData = pickleCaseClass[InitAppData]
 

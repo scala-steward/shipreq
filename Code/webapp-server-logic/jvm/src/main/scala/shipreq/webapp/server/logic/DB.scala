@@ -1,7 +1,6 @@
 package shipreq.webapp.server.logic
 
 import java.time.Instant
-import scala.collection.immutable.SortedMap
 import scalaz.{\/, ~>}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{ActiveEvent, EventOrd, VerifiedEvent}
@@ -166,9 +165,18 @@ object DB {
   }
 
   trait ForProjectSpa[F[_]] extends Base[F] with SaveProjectEvent[F] {
+    // TODO Remove these
     def getProjectHeader   (id: ProjectId): F[Option[ProjectHeader]]
     def getProjectMetaData (id: ProjectId): F[Option[ProjectMetaData]]
     def getAllProjectEvents(id: ProjectId): F[VerifiedEvent.Seq]
+    def getProjectSpa1     (id: ProjectId): F[ProjectSpaData1]
+  }
+
+  final case class ProjectSpaData1(createdAt    : Instant,
+                                   firstOrd     : Option[EventOrd],
+                                   latestOrd    : Option[EventOrd.Latest],
+                                   lastUpdatedAt: Option[Instant]) {
+    val lastUpdatedOrCreatedAt = lastUpdatedAt.getOrElse(createdAt)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

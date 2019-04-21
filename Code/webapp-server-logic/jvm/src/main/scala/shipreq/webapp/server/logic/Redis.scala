@@ -1,6 +1,7 @@
 package shipreq.webapp.server.logic
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.JavaConverters._
 import scalaz.{-\/, BindRec, Monad, \/-}
 import scalaz.syntax.monad._
@@ -18,9 +19,9 @@ object Redis {
   final case class ProjectCache(snapshot: Option[ProjectSnapshot], events: VerifiedEvent.Seq) {
 
     /** [TLA+] This is RedisTotalVer */
-    val ord: Option[EventOrd] =
+    val ord: Option[EventOrd.Latest] =
       if (events.nonEmpty)
-        Some(events.last.ord)
+        Some(events.last.ord.asLatest)
       else
         snapshot.map(_.ord)
 
@@ -103,9 +104,10 @@ object Redis {
   final class InMemory[F[_]](implicit F: Monad[F] with BindRec[F]) extends ProjectAlgebra[F] {
     import InMemory.State
 
-    private[this] val globalState = new ConcurrentHashMap[ProjectId, State[F]]()
-    private[this] val emptyState = State[F](ProjectCache.empty, Nil, Nil)
-    private[this] val fUnit = F.pure(())
+    private[this] val globalState  = new ConcurrentHashMap[ProjectId, State[F]]()
+    private[this] val emptyState   = State[F](ProjectCache.empty, Nil, Nil)
+    private[this] val writeCounter = new AtomicInteger(0)
+    private[this] val fUnit        = F.pure(())
 
     private def mod[A](id: ProjectId)(f: State[F] => (State[F], A)): F[A] =
       F.point(unsafeModNow(id)(f))
@@ -134,6 +136,8 @@ object Redis {
 
     override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq) =
       mod(id) { state =>
+        writeCounter.getAndIncrement()
+
         val cache = state.cache
 
         val (result, cache2) =
@@ -149,6 +153,8 @@ object Redis {
 
     override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq) =
       mod(id) { state =>
+        writeCounter.getAndIncrement()
+
         val cache = state.cache
 
         val newEvents = cache.ord match {
@@ -157,7 +163,7 @@ object Redis {
         }
 
         val (result, cache2) =
-          if (newEvents.isEmpty || cache.ord.exists(newEvents.min.ord > _ + 1))
+          if (newEvents.isEmpty || cache.ord.exists(newEvents.min.ord.value > _.value + 1))
             (false, cache)
           else
             (true, cache.copy(events = cache.events ++ newEvents))
@@ -167,6 +173,11 @@ object Redis {
 
         (State(cache2, state.subs, pub2), result)
       }
+
+    // =================================================================================================================
+    // Test/utility additions
+
+    def writeCount() = writeCounter.get()
 
     /** Simulates Redis publishing events to listeners */
     val publishAll: F[Unit] = {

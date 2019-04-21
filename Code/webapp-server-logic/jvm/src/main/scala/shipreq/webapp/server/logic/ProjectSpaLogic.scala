@@ -172,36 +172,90 @@ object ProjectSpaLogic extends StrictLogging {
       )
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // InitApp
+
+      private val latestOrdWhenEmpty = EventOrd.Latest(1) // Nice to reserve 0 for ApplyTemplate
 
       private def onInitApp: MsgFn[Unit, ErrorMsg \/ InitAppData] = (_, static) => {
         val pid = static.projectId
 
-        def buildProject(load: VerifiedEvent.Seq): ErrorMsg \/ (Project, EventOrd.Latest) =
-          if (load.isEmpty) {
-            val ord = EventOrd.Latest(1) // Nice to reserve 0 for ApplyTemplate.
-            \/-((Project.empty, ord))
-          } else
-            ApplyEvent.trusted.applyVerified(load)(Project.empty) match {
-              case \/-(p) => \/-((p, load.lastKey.ord.asLatest))
+        type Result = ErrorMsg \/ InitAppData
+
+        def projectAppend(p: Project, latest: EventOrd.Latest, events: VerifiedEvent.Seq): ErrorMsg \/ (Project, EventOrd.Latest) =
+          if (events.isEmpty)
+            \/-((p, latest))
+          else
+            ApplyEvent.trusted.applyVerified(events)(p) match {
+              case \/-(p2) => \/-((p2, events.lastKey.ord.asLatest))
               case -\/(e) =>
-                logger.error(s"Failed to apply events [${load.head.ord},${load.last.ord}] on project #${pid.value}: $e")
+                logger.error(s"Failed to apply events [${events.head.ord},${events.last.ord}] on project #${pid.value}: $e")
                 -\/(ErrorMsg(s"${Server.ErrorMsgs.ShouldNeverHappen.value}\n\nEvent application failure.\n$e"))
             }
 
-        def load: F[ErrorMsg \/ InitAppData] =
+        def projectCreate(events: VerifiedEvent.Seq): ErrorMsg \/ (Project, EventOrd.Latest) =
+          projectAppend(Project.empty, latestOrdWhenEmpty, events)
+
+        def useCache(c: Redis.ProjectCache, md: DB.ProjectSpaData1): Result = {
+          val buildResult = {
+            var p = Project.empty
+            var l = latestOrdWhenEmpty
+            for (ss <- c.snapshot) {
+              p = ss.value
+              l = ss.ord
+            }
+            projectAppend(p, l, c.events)
+          }
+          buildResult.map(r => InitAppData(r._1, r._2, md.lastUpdatedOrCreatedAt))
+        }
+
+        def readDbFull: F[Result] =
           runDB(
             db.inDbTransaction(for {
+              md <- db.getProjectSpa1(pid)
               pl <- db.getAllProjectEvents(pid)
-              md <- db.getProjectMetaData(pid) // only really need createdAt and lastUpdatedAt
             } yield (pl, md))
           ).map { case (pl, md) =>
             // Build outside of DB transaction
-            buildProject(pl).map(b => InitAppData(b._1, md.get, b._2))
+            projectCreate(pl).map(r => InitAppData(r._1, r._2, md.lastUpdatedOrCreatedAt))
+          }
+
+        def writeRedis(i: InitAppData): F[Boolean] =
+          // TODO Maybe write events instead of snapshot
+          redis.writeSnapshot(pid, Redis.ProjectSnapshot(i.project, i.latestEventOrd), VerifiedEvent.Seq.empty)
+
+        def chooseStrategy(md: DB.ProjectSpaData1, cache: Redis.ProjectCache): F[Result] =
+          (md.firstOrd, md.latestOrd) match {
+            case (Some(dbFirst), Some(dbLast)) =>
+
+              def ignoreCache: F[Result] =
+                // TODO This could be smarter by using the cache and reading only the remainder from the DB
+                for {
+                  result <- readDbFull
+                  _      <- result.fold[F[_]](_ => fUnit, writeRedis)
+                } yield result
+
+              cache.ord match {
+                case Some(cacheLast) =>
+                  def firstOk = cache.snapshot.isDefined || cache.events.headOption.exists(_.ord ==* dbFirst)
+                  def lastOk = cacheLast ==* dbLast
+                  if (lastOk && firstOk)
+                    F pure useCache(cache, md)
+                  else
+                    ignoreCache // Cache is stale
+                case None =>
+                  ignoreCache // Cache is empty
+              }
+
+            case (_, _) =>
+              // No events exist
+              F pure \/-(InitAppData(Project.empty, latestOrdWhenEmpty, md.lastUpdatedOrCreatedAt))
           }
 
         for {
-          result <- load
-        } yield (result, None)
+          cache <- redis.read(pid)
+          md    <- runDB(db.getProjectSpa1(pid))
+          r     <- chooseStrategy(md, cache)
+        } yield (r, None)
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

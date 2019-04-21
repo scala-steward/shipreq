@@ -226,6 +226,15 @@ final class MockDb(_now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecu
     pid
   }
 
+  override def getProjectSpa1(id: ProjectId) = Name[DB.ProjectSpaData1] {
+    val p = projects.need(id)
+    DB.ProjectSpaData1(
+      p.createdAt,
+      p.events.headOption.map(_.ord),
+      p.events.lastOption.map(_.ord.asLatest),
+      p.lastUpdatedAt)
+  }
+
   override def getAllProjectMetaDataForUser(id: UserId) = Name[List[ProjectMetaData]] {
     projects.valuesIterator
       .filter(_.userId ==* id)

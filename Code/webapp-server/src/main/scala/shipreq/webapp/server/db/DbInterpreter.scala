@@ -367,6 +367,22 @@ object DbInterpreter {
     override final def getProjectHeader(id: ProjectId): ConnectionIO[Option[ProjectHeader]] =
       getProjectHeaderSql.toQuery0((id, id)).option
 
+    private[db] final val sqlProjectSpa1: Query[(ProjectId, ProjectId), (Instant, Option[EventOrd], Option[EventOrd.Latest], Option[Instant])] = {
+      val sql =
+        """
+          |SELECT
+          |  (SELECT created_at FROM project WHERE id = ?) c,
+          |  MIN(ord) x,
+          |  MAX(ord) y,
+          |  MAX(created_at) t
+          |FROM event WHERE project_id = ?
+        """.stripMargin.sql
+      Query(sql)
+    }
+
+    override final def getProjectSpa1(id: ProjectId): ConnectionIO[DB.ProjectSpaData1] =
+      sqlProjectSpa1.toQuery0((id, id)).unique.map(x => DB.ProjectSpaData1(x._1, x._2, x._3, x._4))
+
     private[db] final val sqlSelectAllEvents =
       Query[ProjectId, (EventOrd, Event)](s"SELECT ord,$eventE FROM event WHERE project_id=?")
 
