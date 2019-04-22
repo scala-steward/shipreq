@@ -137,8 +137,7 @@ object Redis {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   object InMemory {
-    private[InMemory] final case class State[F[_]](cache: ProjectCache,
-                                                   subs: List[(VerifiedEvent => F[Unit], Subscription[F])],
+    private[InMemory] final case class State[F[_]](subs: List[(VerifiedEvent => F[Unit], Subscription[F])],
                                                    pub: List[F[Unit]]) {
 
       def modSubs(f: List[(VerifiedEvent => F[Unit], Subscription[F])] => List[(VerifiedEvent => F[Unit], Subscription[F])]) =
@@ -156,12 +155,18 @@ object Redis {
   }
 
   final class InMemory[F[_]](implicit FF: Monad[F] with BindRec[F]) extends ProjectAlgebra[F] {
+    import com.github.blemale.scaffeine._
     import InMemory.State
 
     override protected def F = FF
 
+    private[this] val globalCache: Cache[ProjectId, ProjectCache] =
+      Scaffeine()
+        .softValues()
+        .build()
+
     private[this] val globalState  = new ConcurrentHashMap[ProjectId, State[F]]()
-    private[this] val emptyState   = State[F](ProjectCache.empty, Nil, Nil)
+    private[this] val emptyState   = State[F](Nil, Nil)
     private[this] val writeCounter = new AtomicInteger(0)
     private[this] val fUnit        = F.pure(())
 
@@ -186,48 +191,55 @@ object Redis {
         (state2, sub)
       }
 
+    private def readNow(id: ProjectId) =
+      globalCache.getIfPresent(id).getOrElse(ProjectCache.empty)
+
     override def read(id: ProjectId) = F.point {
-      globalState.getOrDefault(id, emptyState).cache
+      readNow(id)
     }
 
     override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq) =
       mod(id) { state =>
         writeCounter.getAndIncrement()
 
-        val cache = state.cache
+        val cache = readNow(id)
 
-        val (result, cache2) =
-          if (cache.snapshot.forall(snapshot.ord > _.ord))
-            (true, ProjectCache(Some(snapshot), cache.events.filter(_.ord > snapshot.ord)))
-          else
-            (false, cache)
+        val result =
+          if (cache.snapshot.forall(snapshot.ord > _.ord)) {
+            val cache2 = ProjectCache(Some(snapshot), cache.events.filter(_.ord > snapshot.ord))
+            globalCache.put(id, cache2)
+            true
+          } else
+            false
 
         val pub2 = state.publish(publishOnly)
 
-        (State(cache2, state.subs, pub2), result)
+        (State(state.subs, pub2), result)
       }
 
     override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq) =
       mod(id) { state =>
         writeCounter.getAndIncrement()
 
-        val cache = state.cache
+        val cache = readNow(id)
 
         val newEvents = cache.ord match {
           case Some(o) => VerifiedEvent.Seq.empty ++ (cacheOnly.iterator ++ cacheAndPublish).filter(_.ord > o)
           case None    => cacheOnly ++ cacheAndPublish
         }
 
-        val (result, cache2) =
+        val result =
           if (newEvents.isEmpty || cache.ord.exists(newEvents.min.ord.value > _.value + 1))
-            (false, cache)
-          else
-            (true, cache.copy(events = cache.events ++ newEvents))
-
+            false
+          else {
+            val cache2 = cache.copy(events = cache.events ++ newEvents)
+            globalCache.put(id, cache2)
+            true
+          }
 
         val pub2 = state.publish(cacheAndPublish)
 
-        (State(cache2, state.subs, pub2), result)
+        (State(state.subs, pub2), result)
       }
 
     // =================================================================================================================

@@ -196,6 +196,7 @@ object Dependencies {
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "0.33.1")
   val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.5")
+  val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "2.6.0")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.13.5")
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.2")
   val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.1.1")
