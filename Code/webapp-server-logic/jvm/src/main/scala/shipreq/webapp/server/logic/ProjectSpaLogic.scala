@@ -177,29 +177,15 @@ object ProjectSpaLogic extends StrictLogging {
 
         type Result = ErrorMsg \/ InitAppData
 
-        def projectAppend(p: Project, latest: Option[EventOrd.Latest], events: VerifiedEvent.Seq): ErrorMsg \/ (Project, Option[EventOrd.Latest]) =
-          if (events.isEmpty)
-            \/-((p, latest))
-          else
-            ApplyEvent.trusted.applyVerified(events)(p) match {
-              case \/-(p2) => \/-((p2, Some(events.lastKey.ord.asLatest)))
-              case -\/(e) =>
-                logger.error(s"Failed to apply events [${events.head.ord},${events.last.ord}] on project #${pid.value}: $e")
-                -\/(ErrorMsg(s"${Server.ErrorMsgs.ShouldNeverHappen.value}\n\nEvent application failure.\n$e"))
-            }
-
-        def projectCreate(events: VerifiedEvent.Seq): ErrorMsg \/ (Project, Option[EventOrd.Latest]) =
-          projectAppend(Project.empty, None, events)
-
         def readDbFull: F[Result] =
           runDB(
             db.inDbTransaction(for {
               md <- db.projectSpaInitApp(pid)
-              pl <- db.getAllProjectEvents(pid)
-            } yield (pl, md))
-          ).map { case (pl, md) =>
+              es <- db.getAllProjectEvents(pid)
+            } yield (es, md))
+          ).map { case (es, md) =>
             // Build outside of DB transaction
-            projectCreate(pl).map(r => InitAppData(r._1, r._2, md.lastUpdatedOrCreatedAt))
+            ApplyEvents.create(pid, es).map(r => InitAppData(r._1, r._2, md.lastUpdatedOrCreatedAt))
           }
 
         def writeRedis(i: InitAppData): F[Boolean] =
@@ -220,12 +206,7 @@ object ProjectSpaLogic extends StrictLogging {
           } yield result
 
         def useCache(c: Redis.ProjectCache, md: DB.ProjectSpaInitApp): F[Result] = {
-          val buildResult =
-            c.snapshot match {
-              case Some(ss) => projectAppend(ss.value, Some(ss.ord), c.events)
-              case None     => projectAppend(Project.empty, None, c.events)
-            }
-          val result = buildResult.map(r => InitAppData(r._1, r._2, md.lastUpdatedOrCreatedAt))
+          val result = c.build(pid).map(r => InitAppData(r._1, r._2, md.lastUpdatedOrCreatedAt))
           F pure result
         }
 

@@ -45,6 +45,12 @@ object Redis {
         case Some(l) => isCompleteTo(l)
         case None    => isEmpty
       }
+
+    def build(pid: ProjectId) =
+      snapshot match {
+        case Some(ss) => ApplyEvents.append(pid, ss.value, Some(ss.ord), events)
+        case None     => ApplyEvents.append(pid, Project.empty, None, events)
+      }
   }
 
   object ProjectCache {
