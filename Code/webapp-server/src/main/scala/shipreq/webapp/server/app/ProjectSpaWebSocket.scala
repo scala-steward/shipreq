@@ -88,16 +88,13 @@ final class ProjectSpaWebSocket extends StrictLogging {
     } else {
       val userProps = s.getUserProperties
       val static    = staticL.get(userProps)
-      val setState  = stateL.set(userProps, _)
-      val state     = stateL.get(userProps)
       val remote    = s.getBasicRemote
       val binIn     = BinaryData.unsafeFromArray(messageBytes)
       try {
-        projectSpaLogic.onMessage(static)(state, binIn).unsafeRun() match {
+        projectSpaLogic.onMessage(static, binIn).unsafeRun() match {
 
-          case \/-((binOut, state2)) =>
+          case \/-(binOut) =>
             remote.sendBinary(binOut.toByteBuffer)
-            state2.foreach(setState)
 
           case -\/(MsgError.DecodingFailure) =>
             logger.warn(s"Error parsing message: ${messageBytes.mkString("[", ",", "]")}")

@@ -89,19 +89,19 @@ object ProjectSpaLogicTest extends TestSuite {
       Protocol(WebSocketShared.protocolSC(responseUnpickler)))
   }
 
-  private def sendMsg(msg: WsReqRes.AndReq, static: WebSocketStatic)(implicit t: Tester): MsgError \/ (msg.reqRes.ResponseType, Option[WebSocketState]) = {
+  private def sendMsg(msg: WsReqRes.AndReq, static: WebSocketStatic)(implicit t: Tester): MsgError \/ msg.reqRes.ResponseType = {
     import t._
     val reqId = ReqId(7)
     val h = wsHelper(reqId, msg.reqRes)
     val msgBin = BinaryJvm.encode(h.protocolCS)((reqId, msg))
-    val resp = projectSpa.onMessage(static)(emptyState, msgBin).value
+    val resp = projectSpa.onMessage(static, msgBin).value
     resp match {
-      case \/-((b, s)) =>
+      case \/-(b) =>
         BinaryJvm.unsafeDecode(b, h.protocolSC) match {
           case \/-((reqId2, protocolAndValue)) =>
             assertEq(reqId2, reqId)
             val result = protocolAndValue.unsafeForceType[msg.reqRes.ResponseType].value
-            \/-((result, s))
+            \/-(result)
           case -\/(push) =>
             fail("Received push: " + push)
         }
@@ -138,7 +138,7 @@ object ProjectSpaLogicTest extends TestSuite {
 
             val actual = sendMsg(WsReqRes.InitApp.AndReq(()), p1.static)
             val expect = \/-(p1.initAppData)
-            assertEq(actual, \/-((expect, None)))
+            assertEq(actual, \/-(expect))
 
             val cache = redis.read(p1.id).value
             assertEq(cache.ord, Some(p1.latestOrd))

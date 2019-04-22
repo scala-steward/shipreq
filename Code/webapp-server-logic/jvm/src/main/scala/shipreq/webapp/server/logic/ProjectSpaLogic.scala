@@ -23,9 +23,8 @@ trait ProjectSpaLogic[F[_]] {
              state: WebSocketState[F],
              push : BinaryData => F[Unit]): F[WebSocketState[F]]
 
-  def onMessage(static: WebSocketStatic)
-               (state : WebSocketState[F],
-                msg   : BinaryData): F[MsgError \/ (BinaryData, Option[WebSocketState[F]])]
+  def onMessage(static: WebSocketStatic,
+                msg   : BinaryData): F[MsgError \/ BinaryData]
 
   def onClose(state : WebSocketState[F]): F[Unit]
 }
@@ -129,20 +128,19 @@ object ProjectSpaLogic extends StrictLogging {
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // Message responding
 
-      override def onMessage(static: WebSocketStatic)
-                            (state : WebSocketState[F],
+      override def onMessage(static: WebSocketStatic,
                              msg   : BinaryData) = {
         val M = OnMsgError
 
-        val main: M.Result[(BinaryData, Option[WebSocketState[F]])] =
+        val main: M.Result[BinaryData] =
           for {
             (reqId, req)  <- M.lift(parseMsg(msg))
-            (res, state2) <- M.rightF(req.reqRes.fold(msgFold)((req.req, static)))
+             res          <- M.rightF(req.reqRes.fold(msgFold)((req.req, static)))
           } yield {
             val protocolAndRes = req.reqRes.protocolRes.andValue(res)
             val fullRes        = \/-((reqId, protocolAndRes))
             val resBin         = BinaryJvm.encode(webSocketHelper.protocolSC)(fullRes)
-            (resBin, state2)
+            resBin
           }
 
         main.value
@@ -156,7 +154,7 @@ object ProjectSpaLogic extends StrictLogging {
       }
 
       private type MsgFnIn[I] = (I, WebSocketStatic)
-      private type MsgFnOut[O] = F[(O, Option[WebSocketState[F]])]
+      private type MsgFnOut[O] = F[O]
       private type MsgFn[I, O] = (I, WebSocketStatic) => MsgFnOut[O]
       private type MsgFoldIn[R <: WsReqRes] = MsgFnIn[R#RequestType]
       private type MsgFoldOut[R <: WsReqRes] = MsgFnOut[R#ResponseType]
@@ -235,7 +233,7 @@ object ProjectSpaLogic extends StrictLogging {
           cache <- redis.read(pid)
           md    <- runDB(db.projectSpaInitApp(pid))
           r     <- if (cache.isCompleteTo(md.latestOrd)) useCache(cache, md) else ignoreCache
-        } yield (r, None)
+        } yield r
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
