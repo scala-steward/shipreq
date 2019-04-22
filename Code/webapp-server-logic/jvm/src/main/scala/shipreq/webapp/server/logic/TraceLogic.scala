@@ -4,11 +4,12 @@ import doobie.imports.ConnectionIO
 import java.nio.ByteBuffer
 import scalaz.syntax.monad._
 import scalaz.{-\/, Monad, \/-, ~>}
-import shipreq.base.ops.Trace._
+import shipreq.base.ops.Trace
+import shipreq.base.ops.Trace.{Attr, AttrFor}
 import shipreq.base.util.Url
 
 final class TraceLogic[F[_], HttpReq, HttpRes](implicit F: Monad[F],
-                                               val alg: Algebra[F],
+                                               val alg: Trace.Algebra[F],
                                                attrForHttpReq: AttrFor[HttpReq],
                                                attrForHttpRes: AttrFor[HttpRes]) {
   import TraceLogic.AttrFor
@@ -89,5 +90,5 @@ object TraceLogic {
   }
 
   def off[F[_], HttpReq, HttpRes](implicit F: Monad[F]): TraceLogic[F, HttpReq, HttpRes] =
-    new TraceLogic[F, HttpReq, HttpRes]()(F, Algebra.off, AttrFor.none, AttrFor.none)
+    new TraceLogic[F, HttpReq, HttpRes]()(F, Trace.Algebra.off, AttrFor.none, AttrFor.none)
 }
