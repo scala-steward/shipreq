@@ -2,6 +2,9 @@ package shipreq.webapp.server.db
 
 import utest._
 import shipreq.base.test.db.SqlTester.test
+import shipreq.webapp.base.data.ProjectId
+import shipreq.webapp.base.event.EventOrd
+import shipreq.webapp.server.logic.DB
 import shipreq.webapp.server.test.PrepareEnv
 
 object SqlTest extends TestSuite {
@@ -44,12 +47,15 @@ object SqlTest extends TestSuite {
     }
 
     'members {
+      val pid = ProjectId(123)
       'createEmptyProjectSql           - test(db.createEmptyProjectSql)
       'getAllProjectMetaDataForUserSql - test(db.getAllProjectMetaDataForUserSql)
       'getProjectMetaDataSql           - test(db.getProjectMetaDataSql)
       'getProjectHeaderSql             - test(db.getProjectHeaderSql)
-      'sqlSelectAllEvents              - test(db.sqlSelectAllEvents)
+      'sqlSelectEventsAll              - test(db.sqlSelectEvents(DB.EventFilter.IncludeAll)(pid))
+      'sqlSelectEventsExcludeUpTo      - test(db.sqlSelectEvents(DB.EventFilter.ExcludeUpTo(EventOrd(2)))(pid))
       'sqlSelectAllEventHashes         - test(db.sqlSelectAllEventHashes)
+      'projectSpaInitAppSql            - test(db.projectSpaInitAppSql)
     }
 
     'ops {
