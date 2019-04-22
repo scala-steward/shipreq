@@ -4,6 +4,7 @@ import java.time.Instant
 import utest._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.FieldStaticRemove
+import shipreq.webapp.server.logic.DB.SaveProjectEventCmd
 import shipreq.webapp.server.logic.{HomeSpaLogic, Obfuscators}
 import shipreq.webapp.server.test.WebappServerTestUtil._
 import shipreq.webapp.server.test._
@@ -53,7 +54,8 @@ object HomeSpaTest extends TestSuite {
           val p = loadProject()
           val e = FieldStaticRemove(StaticField.StepGraph)
           val ve = verifyEvent(p, e)
-          xa ! db.saveProjectEvent(pid)(nextOrd, e, ve.hashRecs)
+          val cmd = SaveProjectEventCmd(nextOrd, e, ve.hashRecs)
+          xa ! db.saveProjectEvent(pid, cmd)
           val a2 = (xa ! db.getAllProjectMetaDataForUser(uid)).head
           assertEq("Next.nonInitEventCount", a2.nonInitEventCount, a.nonInitEventCount + 1)
           loadProject()

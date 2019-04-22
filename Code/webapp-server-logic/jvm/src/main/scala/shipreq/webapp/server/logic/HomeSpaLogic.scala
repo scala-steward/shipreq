@@ -35,7 +35,8 @@ object HomeSpaLogic {
     db.inDbTransaction(
       for {
         pid ← db.createEmptyProject(userId, ecount)
-        _   ← db.saveProjectEvents(pid)(events)
+        r   ← db.saveProjectEvents(pid, events)
+        _   = r.leftMap(throw _) // For unit tests - should be impossible
       } yield ProjectMetaData(Obfuscators.projectId.obfuscate(pid), name, ecount, ecount, 0, now, None))
   }
 

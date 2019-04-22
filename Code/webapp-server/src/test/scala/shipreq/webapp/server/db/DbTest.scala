@@ -20,6 +20,7 @@ import shipreq.webapp.base.hash._
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.app.Global
+import shipreq.webapp.server.logic.DB.SaveProjectEventCmd
 import shipreq.webapp.server.test.WebappServerTestUtil._
 import shipreq.webapp.server.test._
 
@@ -235,12 +236,13 @@ object DbTest extends TestSuite {
         val prop = Prop.equal[(ActiveEvent, HashRecs)]("load . save = id")(
           i => TestDb().runNow { xa =>
             val dbu = DbUtil(xa)
-            val projectId = dbu.newProjectId()
-            val org = EventOrd(ordCounter.incrementAndGet())
-            xa ! db.saveProjectEvent(projectId)(org, i._1, i._2)
+            val pid = dbu.newProjectId()
+            val ord = EventOrd(ordCounter.incrementAndGet())
+            val cmd = SaveProjectEventCmd(ord, i._1, i._2)
+            xa ! db.saveProjectEvent(pid, cmd)
             val loaded =
-              dbu.debugSelectOnError(s"select * from event e, event_hash eh where e.project_id=eh.project_id and e.ord=eh.ord and e.ord = ${org.value}") {
-                (xa ! db.getAllProjectEvents(projectId)).toVector.filter(_.ord ==* org).map(r => r.event match {
+              dbu.debugSelectOnError(s"select * from event e, event_hash eh where e.project_id=eh.project_id and e.ord=eh.ord and e.ord = ${ord.value}") {
+                (xa ! db.getAllProjectEvents(pid)).toVector.filter(_.ord ==* ord).map(r => r.event match {
                   case ae: ActiveEvent => (ae, r.hashRecs)
                   case e               => sys error s"Not an ActiveEvent: $e"
                 })

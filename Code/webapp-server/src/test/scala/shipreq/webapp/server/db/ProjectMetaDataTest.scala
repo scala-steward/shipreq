@@ -3,6 +3,7 @@ package shipreq.webapp.server.db
 import utest._
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.{ActiveEvent, EventOrd, RandomEventStream, VerifiedEvent}
+import shipreq.webapp.server.logic.DB
 import shipreq.webapp.server.test.{DbUtil, PrepareEnv}
 import shipreq.webapp.server.test.WebappServerTestUtil._
 
@@ -27,7 +28,8 @@ object ProjectMetaDataTest extends TestSuite {
         def writeEvent(ve: VerifiedEvent, idx: Int): Unit =
           ve.event match {
             case ae: ActiveEvent =>
-              xa ! dbAlgebra.saveProjectEvent(pid)(EventOrd(idx + idxToOrd), ae, ve.hashRecs)
+              val cmd = DB.SaveProjectEventCmd(EventOrd(idx + idxToOrd), ae, ve.hashRecs)
+              xa ! dbAlgebra.saveProjectEvent(pid, cmd)
             case x =>
               fail("Can't create non-active event: " + x)
           }

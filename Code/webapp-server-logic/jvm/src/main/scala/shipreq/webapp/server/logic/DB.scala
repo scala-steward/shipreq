@@ -150,13 +150,8 @@ object DB {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   trait SaveProjectEvent[F[_]] {
-    def saveProjectEvents(id: ProjectId)(cmds: Traversable[SaveProjectEventCmd]): F[Option[Throwable]]
-
-    final def saveProjectEvent(id    : ProjectId)
-                              (ord   : EventOrd,
-                               event : ActiveEvent,
-                               hashes: HashRecs): F[Option[Throwable]] =
-      saveProjectEvents(id)(SaveProjectEventCmd(ord, event, hashes) :: Nil)
+    def saveProjectEvent(id: ProjectId, cmd: SaveProjectEventCmd): F[Throwable \/ VerifiedEvent]
+    def saveProjectEvents(id: ProjectId, cmds: Traversable[SaveProjectEventCmd]): F[Throwable \/ VerifiedEvent.Seq]
   }
 
   trait ForHomeSpa[F[_]] extends Base[F] with SaveProjectEvent[F] {

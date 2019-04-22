@@ -54,7 +54,8 @@ object ProjectSpaLogicTest extends TestSuite {
       val latestOrd = verifiedEvents.last.ord.asLatest
 
       for (e <- verifiedEvents)
-        db.saveProjectEvent(id)(e.ord, e.event.asInstanceOf[ActiveEvent], e.hashRecs).value.foreach(throw _)
+        db.saveProjectEvent(id, DB.SaveProjectEventCmd(e.ord, e.event.asInstanceOf[ActiveEvent], e.hashRecs)).value
+          .leftMap(throw _)
 
       val data1                = db.projectSpaInitApp(id).value
 

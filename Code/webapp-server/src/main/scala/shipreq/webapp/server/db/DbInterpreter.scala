@@ -7,6 +7,7 @@ import nyaya.gen.Gen
 import org.postgresql.util.PSQLException
 import scala.collection.immutable.TreeSet
 import scalaz.syntax.applicative._
+import scalaz.syntax.catchable._
 import scalaz.{-\/, Free, \/, \/-}
 import shipreq.base.db.DoobieHelpers._
 import shipreq.base.db.SqlHelpers._
@@ -262,7 +263,7 @@ object DbInterpreter {
     private[db] final val insertEventHashSql =
       Update[(ProjectId, EventOrd, HashRecRow)](s"INSERT INTO event_hash(project_id,ord,$sqlHashRecRow) VALUES(?,?,${sqlHashRecRow_?})")
 
-    override final def saveProjectEvents(id: ProjectId)(cmds: Traversable[SaveProjectEventCmd]): ConnectionIO[Option[Throwable]] = {
+    override final def saveProjectEvents(id: ProjectId, cmds: Traversable[SaveProjectEventCmd]) = {
       val addEvents = insertEventSql.executeBatch(
         cmds.toIterator.map(c => (id, c.ord, c.event)))
 
@@ -273,8 +274,14 @@ object DbInterpreter {
           (scope, hash)          <- schemeHashes.iterator
         } yield (id, cmd.ord, (scope, LogicVer.SoleInstance, scheme, hash)))
 
-      (addEvents *> addHashes).inTransaction.attemptVoid
+      def result: VerifiedEvent.Seq =
+        VerifiedEvent.Seq.empty ++ cmds.toIterator.map(c => VerifiedEvent(c.ord, c.event, c.hashes))
+
+      (addEvents *> addHashes).inTransaction.attempt.map(_.map(_ => result))
     }
+
+    override final def saveProjectEvent(id: ProjectId, cmd: SaveProjectEventCmd) =
+      saveProjectEvents(id, cmd :: Nil).map(_.map(_.head))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -384,7 +391,7 @@ object DbInterpreter {
     override final def projectSpaInitApp(id: ProjectId): ConnectionIO[DB.ProjectSpaInitApp] =
       projectSpaInitAppSql.toQuery0((id, id)).unique.map(x => DB.ProjectSpaInitApp(x._1, x._2, x._3))
 
-    private[db] final val sqlSelectAllEvents: EventFilter => ProjectId => Query0[(EventOrd, Event)] = {
+    private[db] final val sqlSelectEvents: EventFilter => ProjectId => Query0[(EventOrd, Event)] = {
       type O = (EventOrd, Event)
       val allSql = s"SELECT ord,$eventE FROM event WHERE project_id=?"
       val all = Query[ProjectId, O](allSql)
@@ -428,7 +435,7 @@ object DbInterpreter {
     /** @return Events in order from lowest to highest ord. */
     override final def getProjectEvents(p: ProjectId, f: EventFilter): ConnectionIO[VerifiedEvent.Seq] = {
       (for {
-        events <- sqlSelectAllEvents(f)(p).list
+        events <- sqlSelectEvents(f)(p).list
         hashes <- sqlSelectAllEventHashes.toQuery0(p).list
       } yield {
 

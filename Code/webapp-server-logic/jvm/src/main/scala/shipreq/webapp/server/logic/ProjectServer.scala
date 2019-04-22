@@ -312,11 +312,12 @@ object ProjectServer extends HasLogger {
 
                 case PotentialChange.Success(updated) =>
                   val ord = s1.nextOrd
+                  val cmd = DB.SaveProjectEventCmd(ord, updated.event, updated.hashRecs)
                   for {
-                    oe      <- runDB(db.saveProjectEvent(r.key)(ord, updated.event, updated.hashRecs))
+                    oe      <- runDB(db.saveProjectEvent(r.key, cmd))
                     endTime <- svr.now
                     dur      = Duration.between(startTime, endTime)
-                    pc      <- onSave(dur, updated, ord, oe)
+                    pc      <- onSave(dur, updated, ord, oe.swap.toOption)
                   } yield pc
 
                 case PotentialChange.Unchanged =>

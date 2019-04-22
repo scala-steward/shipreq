@@ -266,25 +266,24 @@ final class MockDb(_now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecu
     }
   }
 
-  private def _saveProjectEvent(id: ProjectId)(ord: EventOrd, e: ActiveEvent, hrs: HashRecs) = Name[Option[Throwable]] {
+  override def saveProjectEvents(id: ProjectId, cmds: Traversable[DB.SaveProjectEventCmd]) = Name[Throwable \/ VerifiedEvent.Seq] {
+    import scalaz.syntax.traverse._
+    cmds.toList.traverse(saveProjectEvent(id, _).value).map(VerifiedEvent.Seq.empty ++ _)
+  }
+
+  override def saveProjectEvent(id: ProjectId, cmd: DB.SaveProjectEventCmd) = Name[Throwable \/ VerifiedEvent] {
     val entry = projects.need(id)
     def update(events: VerifiedEvent.Seq): Unit =
       projects = projects + entry.copy(events = events, lastUpdatedAt = Some(Instant.now()))
-    val ve = verifyEvent(entry.project, e, ord)
+    val ve = verifyEvent(entry.project, cmd.event, cmd.ord)
     if (entry.events.isEmpty) {
       update(VerifiedEvent.Seq.empty + ve)
-      None
-    } else if (ord.immediatelyFollows(entry.events.lastKey.ord)) {
+      \/-(ve)
+    } else if (cmd.ord.immediatelyFollows(entry.events.lastKey.ord)) {
       update(entry.events + ve)
-      None
+      \/-(ve)
     } else
-      Some(new RuntimeException(s"$ord doesn't follow ${entry.events.lastKey.ord}"))
-  }
-
-  override def saveProjectEvents(id: ProjectId)(cmds: Traversable[DB.SaveProjectEventCmd]) = Name[Option[Throwable]] {
-    cmds.toIterator
-      .map(c => _saveProjectEvent(id)(c.ord, c.event, c.hashes).value)
-      .foldLeft[Option[Throwable]](None)(_ orElse _)
+      -\/(new RuntimeException(s"${cmd.ord} doesn't follow ${entry.events.lastKey.ord}"))
   }
 
   override def inDbTransaction[A](f: Name[A]) = f
