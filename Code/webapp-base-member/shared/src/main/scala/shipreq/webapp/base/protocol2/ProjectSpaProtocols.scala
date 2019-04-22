@@ -9,7 +9,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.Urls
-import shipreq.webapp.base.event.{EventOrd, VerifiedEvent}
+import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
 import BoopickleMacros._
 import BinCodecGeneric._
 import BinCodecBaseData._
@@ -45,9 +45,8 @@ object ProjectSpaProtocols {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final case class InitAppData(project       : Project,
-                               latestEventOrd: Option[EventOrd.Latest],
-                               lastUpdatedAt : Instant)
+  final case class InitAppData(project      : ProjectAndOrd,
+                               lastUpdatedAt: Instant)
 
   implicit val picklerInitAppData = pickleCaseClass[InitAppData]
 

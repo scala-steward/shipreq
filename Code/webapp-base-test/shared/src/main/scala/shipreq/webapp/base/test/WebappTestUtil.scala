@@ -1,8 +1,9 @@
 package shipreq.webapp.base.test
 
+import japgolly.microlibs.scalaz_ext.ScalazMacros
 import java.time.Instant
 import java.time.temporal.ChronoUnit._
-import scalaz.{-\/, \/-}
+import scalaz.{-\/, Equal, \/-}
 import shipreq.base.test._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.data._
@@ -16,6 +17,8 @@ trait WebappTestEquality
 {
   implicit def equalityText = ReqData.equalityText
   implicit def equalityTags = ReqData.equalityTags
+
+  implicit lazy val equalProjectAndOrd: Equal[ProjectAndOrd] = ScalazMacros.deriveEqual
 }
 
 object WebappTestUtil extends WebappTestEquality with WebappTestUtil

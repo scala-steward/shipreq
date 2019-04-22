@@ -102,6 +102,7 @@ object BinCodecEvents {
   implicit val pickleVerifiedEvent   : Pickler[VerifiedEvent            ] = pickleCaseClass
   implicit val pickleVerifiedEventSeq: Pickler[VerifiedEvent.Seq        ] = iterablePickler
   implicit val pickleVerifiedEventNES: Pickler[VerifiedEvent.NonEmptySeq] = pickleCaseClass
+  implicit val pickleProjectAndOrd   : Pickler[ProjectAndOrd            ] = pickleCaseClass
 
   implicit val pickleErrorMsgOrVerifiedEventSeq: Pickler[ErrorMsg \/ VerifiedEvent.Seq] = pickleXor
 }

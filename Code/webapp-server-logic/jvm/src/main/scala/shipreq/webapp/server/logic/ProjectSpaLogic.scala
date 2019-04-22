@@ -7,7 +7,7 @@ import scalaz.{-\/, Monad, \/, \/-, ~>}
 import scalaz.syntax.monad._
 import shipreq.base.util.{BinaryData, ErrorMsg, Monads}
 import shipreq.webapp.base.data.{Obfuscated, Project, ProjectId}
-import shipreq.webapp.base.event.{ApplyEvent, EventOrd, VerifiedEvent}
+import shipreq.webapp.base.event.{ApplyEvent, EventOrd, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.protocol2.ProjectSpaProtocols.WsReqRes.EventResult
 import shipreq.webapp.base.protocol2.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol2.{BinaryJvm, ProjectSpaProtocols, WebSocketServerHelper}
@@ -179,35 +179,35 @@ object ProjectSpaLogic extends StrictLogging {
 
         def ignoreCache(c: Redis.ProjectCache): F[Result] = {
 
-          def readDb(startingPoint: (Project, Option[EventOrd.Latest])) =
+          def readDb(p: ProjectAndOrd) =
             runDB(
               db.inDbTransaction(for {
                 ia <- db.projectSpaInitApp(pid)
-                es <- db.getProjectEvents(pid, DB.EventFilter.given(startingPoint._2))
+                es <- db.getProjectEvents(pid, DB.EventFilter.given(p.ord))
               } yield (es, ia))
             ).map { case (es, ia) =>
               // Build outside of DB transaction
-              ApplyEvents.append(pid, startingPoint, es).map(r => InitAppData(r._1, r._2, ia.lastUpdatedOrCreatedAt))
+              ApplyEvents.append(pid, p, es).map(InitAppData(_, ia.lastUpdatedOrCreatedAt))
             }
 
           def writeRedis(i: InitAppData): F[Boolean] =
             // TODO Maybe write events instead of snapshot
-            i.latestEventOrd match {
+            i.project.ord match {
               case Some(l) =>
-                redis.writeSnapshot(pid, Redis.ProjectSnapshot(i.project, l), VerifiedEvent.Seq.empty)
+                redis.writeSnapshot(pid, Redis.ProjectSnapshot(i.project.project, l), VerifiedEvent.Seq.empty)
               case None =>
                 // Don't try to write an empty project to the cache
                 F pure true
             }
 
             for {
-              result <- readDb(c.nonEmptyCompleteBuild(pid) getOrElse ApplyEvents.emptyStartingPoint)
+              result <- readDb(c.nonEmptyCompleteBuild(pid) getOrElse ProjectAndOrd.empty)
               _      <- result.fold[F[_]](_ => fUnit, writeRedis)
             } yield result
         }
 
         def useCache(c: Redis.ProjectCache, md: DB.ProjectSpaInitApp): F[Result] = {
-          val result = c.build(pid).map(r => InitAppData(r._1, r._2, md.lastUpdatedOrCreatedAt))
+          val result = c.build(pid).map(InitAppData(_, md.lastUpdatedOrCreatedAt))
           F pure result
         }
 

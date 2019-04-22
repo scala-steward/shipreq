@@ -7,7 +7,7 @@ import scala.collection.JavaConverters._
 import scalaz.{-\/, BindRec, Monad, \/-}
 import scalaz.syntax.monad._
 import shipreq.webapp.base.data.{Project, ProjectId}
-import shipreq.webapp.base.event.{EventOrd, VerifiedEvent}
+import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
 
 /** Why is this called Redis and not Cache?
   * Because our architecture relies on Redis for both caching and pub/sub.
@@ -15,7 +15,9 @@ import shipreq.webapp.base.event.{EventOrd, VerifiedEvent}
   */
 object Redis {
 
-  final case class ProjectSnapshot(value: Project, ord: EventOrd.Latest)
+  final case class ProjectSnapshot(value: Project, ord: EventOrd.Latest) {
+    def toProjectAndOrd = ProjectAndOrd(value, Some(ord))
+  }
 
   final case class ProjectCache(snapshot: Option[ProjectSnapshot], events: VerifiedEvent.Seq) {
 
@@ -48,11 +50,11 @@ object Redis {
 
     def build(pid: ProjectId) =
       snapshot match {
-        case Some(ss) => ApplyEvents.append(pid, ss.value, Some(ss.ord), events)
-        case None     => ApplyEvents.append(pid, Project.empty, None, events)
+        case Some(ss) => ApplyEvents.append(pid, ss.toProjectAndOrd, events)
+        case None     => ApplyEvents.create(pid, events)
       }
 
-    def nonEmptyCompleteBuild(pid: ProjectId): Option[(Project, Option[EventOrd.Latest])] =
+    def nonEmptyCompleteBuild(pid: ProjectId): Option[ProjectAndOrd] =
       if (nonEmpty && isComplete)
         build(pid).toOption
       else
