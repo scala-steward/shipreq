@@ -18,6 +18,7 @@ import shipreq.webapp.base.user._
 import shipreq.webapp.server.ServerConfig
 import shipreq.webapp.server.db.DbInterpreter._
 import shipreq.webapp.server.db.SqlHelpers._
+import shipreq.webapp.server.logic.DB.EventFilter
 import shipreq.webapp.server.logic._
 
 final class DbInterpreter(implicit config: ServerConfig.Security)
@@ -383,8 +384,17 @@ object DbInterpreter {
     override final def projectSpaInitApp(id: ProjectId): ConnectionIO[DB.ProjectSpaInitApp] =
       projectSpaInitAppSql.toQuery0((id, id)).unique.map(x => DB.ProjectSpaInitApp(x._1, x._2, x._3))
 
-    private[db] final val sqlSelectAllEvents =
-      Query[ProjectId, (EventOrd, Event)](s"SELECT ord,$eventE FROM event WHERE project_id=?")
+    private[db] final val sqlSelectAllEvents: EventFilter => ProjectId => Query0[(EventOrd, Event)] = {
+      type O = (EventOrd, Event)
+      val allSql = s"SELECT ord,$eventE FROM event WHERE project_id=?"
+      val all = Query[ProjectId, O](allSql)
+      val after = Query[(ProjectId,EventOrd), O](s"$allSql AND ord>?")
+
+      {
+        case EventFilter.IncludeAll     => all.toQuery0
+        case EventFilter.ExcludeUpTo(o) => p => after.toQuery0((p, o))
+      }
+    }
 
     private[db] final val sqlSelectAllEventHashes =
       Query[ProjectId, (EventOrd, HashRecRow)](s"SELECT ord,$sqlHashRecRow FROM event_hash WHERE project_id=?")
@@ -416,9 +426,9 @@ object DbInterpreter {
     }
 
     /** @return Events in order from lowest to highest ord. */
-    override final def getAllProjectEvents(p: ProjectId): ConnectionIO[VerifiedEvent.Seq] = {
+    override final def getProjectEvents(p: ProjectId, f: EventFilter): ConnectionIO[VerifiedEvent.Seq] = {
       (for {
-        events <- sqlSelectAllEvents.toQuery0(p).list
+        events <- sqlSelectAllEvents(f)(p).list
         hashes <- sqlSelectAllEventHashes.toQuery0(p).list
       } yield {
 
@@ -436,7 +446,7 @@ object DbInterpreter {
           result += VerifiedEvent(ord, tmp.e, tmp.result())
         result.result()
 
-        // TODO Improve getAllProjectEvents. Currently server time = O(e.log(e) + e + h.H)
+        // TODO Improve getProjectEvents. Currently server time = O(e.log(e) + e + h.H)
         // Ideas: Server (currently) much more constrained in resources than DB.
         // Maybe: have DB sort both queries by ord then traverse both at once | server time ~ O(e.log(e) + h.H)
         // Maybe: do it all in DB and return hash recs as array               | server time ~ O(e.log(e) + h.H)

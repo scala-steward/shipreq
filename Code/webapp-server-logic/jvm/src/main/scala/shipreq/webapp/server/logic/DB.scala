@@ -170,7 +170,22 @@ object DB {
     def getProjectMetaData (id: ProjectId): F[Option[ProjectMetaData]]
 
     def projectSpaInitApp  (id: ProjectId): F[ProjectSpaInitApp]
-    def getAllProjectEvents(id: ProjectId): F[VerifiedEvent.Seq]
+    def getProjectEvents(id: ProjectId, f: EventFilter): F[VerifiedEvent.Seq]
+
+    final def getProjectEvents(id: ProjectId): F[VerifiedEvent.Seq] = getProjectEvents(id, EventFilter.IncludeAll)
+    final def getAllProjectEvents(id: ProjectId): F[VerifiedEvent.Seq] = getProjectEvents(id, EventFilter.IncludeAll)
+  }
+
+  sealed trait EventFilter
+  object EventFilter {
+    case object IncludeAll extends EventFilter
+    final case class ExcludeUpTo(ord: EventOrd) extends EventFilter
+
+    def given(alreadyGot: Option[EventOrd.Latest]): EventFilter =
+      alreadyGot match {
+        case Some(ord) => ExcludeUpTo(ord)
+        case None      => IncludeAll
+      }
   }
 
   final case class ProjectSpaInitApp(createdAt    : Instant,

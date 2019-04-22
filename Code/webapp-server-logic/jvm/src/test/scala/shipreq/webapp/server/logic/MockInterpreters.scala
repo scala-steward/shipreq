@@ -257,9 +257,13 @@ final class MockDb(_now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecu
   }
 
   var loadProjectLog = Vector.empty[ProjectId]
-  override def getAllProjectEvents(id: ProjectId) = Name[VerifiedEvent.Seq] {
+  override def getProjectEvents(id: ProjectId, f: DB.EventFilter) = Name[VerifiedEvent.Seq] {
     loadProjectLog :+= id
-    projects.need(id).projectLoad
+    val r = projects.need(id).projectLoad
+    f match {
+      case DB.EventFilter.IncludeAll     => r
+      case DB.EventFilter.ExcludeUpTo(o) => r.filter(_.ord > o)
+    }
   }
 
   private def _saveProjectEvent(id: ProjectId)(ord: EventOrd, e: ActiveEvent, hrs: HashRecs) = Name[Option[Throwable]] {
