@@ -112,3 +112,5 @@ Phase 2B
   Any free tool?
 
 * Benchmark ZIO to back Fx
+
+* Add cache completion checks back into spec

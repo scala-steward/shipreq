@@ -15,6 +15,7 @@ import shipreq.webapp.base.protocol2.{BinaryJvm, ProjectSpaProtocols, WebSocketS
 import shipreq.webapp.base.user.User
 
 // TODO Logging, timing, tracing, metrics
+// TODO Stop using ErrorMsg everywhere - do that conversion right at the end
 
 trait ProjectSpaLogic[F[_]] {
   import ProjectSpaLogic._
@@ -225,10 +226,10 @@ object ProjectSpaLogic extends StrictLogging {
         } yield r
       }
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
     } // new ProjectSpaLogic
   }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   private object ProjectUpdater {
 
