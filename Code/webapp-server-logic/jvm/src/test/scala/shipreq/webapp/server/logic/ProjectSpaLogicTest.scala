@@ -4,8 +4,10 @@ import boopickle.Pickler
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import scalaz.{-\/, Equal, Name, \/, \/-}
 import utest._
+import shipreq.base.util.{BinaryData, Direction}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
+import shipreq.webapp.base.protocol.CreateContentCmd
 import shipreq.webapp.base.protocol2.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol2.WebSocketShared.ReqId
 import shipreq.webapp.base.protocol2._
@@ -24,6 +26,10 @@ object ProjectSpaLogicTest extends TestSuite {
   private implicit val equalSub: Equal[Redis.Subscription[Name]] = Equal.equal((_, _) => true)
   private implicit val equalState = ScalazMacros.deriveEqual[WebSocketState]
   private implicit val eqInitAppData = ScalazMacros.deriveEqual[InitAppData]
+
+  private val initAppMsg = WsReqRes.InitApp.AndReq(())
+  private val cmdNewUC = CreateContentCmd.CreateUseCase(Set.empty, Map.empty, Direction.Values.both(Set.empty), Set.empty, Vector.empty)
+  private val newUC = WsReqRes.CreateContent.AndReq(cmdNewUC)
 
   private class Tester extends MockInterpreters {
 
@@ -79,6 +85,12 @@ object ProjectSpaLogicTest extends TestSuite {
     }
   }
 
+  private val pushProtocol = {
+    val p = ProjectSpaProtocols.WebSocket(Obfuscated(null))
+    implicit def picklerPush: Pickler[ProjectSpaProtocols.WebSocket#Push] = p.push.codec
+    Protocol(WebSocketShared.protocolSC(_ => ???))
+  }
+
   private def wsHelper(reqId: ReqId, responseType: WsReqRes) = {
     val p = ProjectSpaProtocols.WebSocket(Obfuscated(null))
     implicit def picklerReq: Pickler[p.Req] = p.req.codec
@@ -109,10 +121,75 @@ object ProjectSpaLogicTest extends TestSuite {
     }
   }
 
+  private def sendMsgAndBroadcast(msg: WsReqRes.AndReq, static: WebSocketStatic)(implicit t: Tester): msg.reqRes.ResponseType = {
+    val r = sendMsg(msg, static).needRight
+    t.redis.publishAll.value
+    r
+  }
+
+  private def onPush(f: VerifiedEvent.NonEmptySeq => Unit): BinaryData => Name[Unit] =
+    bin => Name {
+      val value = BinaryJvm.unsafeDecode(bin, pushProtocol)
+      val push = value.swap.needRight
+      f(push)
+    }
+
+  private sealed trait CacheState
+  private object CacheState {
+    final case class Empty     (desc: String) extends CacheState
+    final case class UpToDate  (desc: String)  extends CacheState
+    final case class Stale     (desc: String) extends CacheState
+    final case class Incomplete(desc: String) extends CacheState
+  }
+
+  private def withAllCacheConfig(run: Tester => CacheState => Unit): Unit = {
+    import CacheState._
+
+    def runWith(c: CacheState)(setup: Tester => Unit): Unit = {
+      val t = new Tester
+      setup(t)
+      run(t)(c)
+    }
+
+    def z = VerifiedEvent.Seq.empty
+
+    runWith(Empty(""))(_ => ())
+
+    runWith(UpToDate("snapshot")) { t => import t._
+      redis.writeSnapshot(p1.id, ProjectSnapshot(p1.instance, p1.latestOrd), z).value
+    }
+
+    runWith(UpToDate("events")) { t => import t._
+      redis.writeEvents(p1.id, p1.verifiedEvents, z).value
+    }
+
+    runWith(UpToDate("both")) { t => import t._
+      redis.writeSnapshot(p1.id, ProjectSnapshot(p1.instanceB, p1.latestOrdB), z).value
+      redis.writeEvents(p1.id, p1.verifiedEventsC, z).value
+    }
+
+    runWith(Stale("snapshot")) { t => import t._
+      redis.writeSnapshot(p1.id, ProjectSnapshot(p1.instanceA, p1.latestOrdA), z).value
+    }
+
+    runWith(Stale("events")) { t => import t._
+      redis.writeEvents(p1.id, p1.verifiedEventsA, z).value
+    }
+
+    runWith(Stale("both")) { t => import t._
+      redis.writeSnapshot(p1.id, ProjectSnapshot(p1.instanceA, p1.latestOrdA), z).value
+      redis.writeEvents(p1.id, p1.verifiedEventsB, z).value
+    }
+
+    runWith(Incomplete("")) { t => import t._
+      redis.writeEvents(p1.id, p1.verifiedEventsC, z).value
+    }
+  }
+
   override def tests = Tests {
-    implicit val t = new Tester; import t._
 
     'connect {
+      implicit val t = new Tester; import t._
       import ConnectRejection._
 
       def test(c: Cookie.LookupFn, p: ProjectId.Public)(expect: ConnectRejection \/ (WebSocketStatic, WebSocketState)): Unit =
@@ -130,13 +207,12 @@ object ProjectSpaLogicTest extends TestSuite {
     }
 
     'initApp - {
-      def z = VerifiedEvent.Seq.empty
-
-      def test(expectCacheWrites: Int, expectFullDbReads: Int): Unit =
+      def test(expectCacheWrites: Int, expectFullDbReads: Int)(implicit t: Tester): Unit = {
+        import t._
         assertDifference("full db reads", db.loadProjectLog.length)(expectFullDbReads) {
           assertDifference("redis writes", redis.writeCount())(expectCacheWrites) {
 
-            val actual = sendMsg(WsReqRes.InitApp.AndReq(()), p1.static)
+            val actual = sendMsg(initAppMsg, p1.static)
             val expect = \/-(p1.initAppData)
             assertEq(actual, \/-(expect))
 
@@ -144,45 +220,71 @@ object ProjectSpaLogicTest extends TestSuite {
             assertEq(cache.ord, Some(p1.latestOrd))
           }
         }
+      }
+      withAllCacheConfig { implicit t => {
+        case _: CacheState.Empty      => test(1, 1)
+        case _: CacheState.UpToDate   => test(0, 0)
+        case _: CacheState.Stale      => test(1, 1)
+        case _: CacheState.Incomplete => test(1, 1)
+      }}
+    }
 
-      'cacheEmpty - test(1, 1)
+    'updateProject - {
+      def test(c: CacheState, expectCacheWrites: Int, expectFullDbReads: Int)(implicit t: Tester): Unit = {
+        import t._
+        assertDifference(s"[$c] full db reads", db.loadProjectLog.length)(expectFullDbReads) {
+          assertDifference(s"[$c] redis writes", redis.writeCount())(expectCacheWrites) {
 
-      'cacheValid - {
-        'snapshot - {
-          redis.writeSnapshot(p1.id, ProjectSnapshot(p1.instance, p1.latestOrd), z).value
-          test(0, 0)
-        }
-        'events - {
-          redis.writeEvents(p1.id, p1.verifiedEvents, z).value
-          test(0, 0)
-        }
-        'both - {
-          redis.writeSnapshot(p1.id, ProjectSnapshot(p1.instanceB, p1.latestOrdB), z).value
-          redis.writeEvents(p1.id, p1.verifiedEventsC, z).value
-          test(0, 0)
+            val actual = sendMsg(newUC, p1.static)
+            val expect = \/-(List(EventOrd(4)))
+            assertEq(s"[$c] response", actual.map(_.map(_.toList.map(_.ord))), \/-(expect))
+
+            val cache = redis.read(p1.id).value
+            assertEq(s"[$c] cache state", cache.ord, Some((p1.latestOrd.asEventOrd + 1).asLatest))
+          }
         }
       }
+      withAllCacheConfig { implicit t => {
+        case c: CacheState.Empty      => test(c, 2, 1)
+        case c: CacheState.UpToDate   => test(c, 1, 0)
+        case c: CacheState.Stale      => test(c, 2, 1)
+        case c: CacheState.Incomplete => test(c, 2, 1)
+      }}
+    }
 
-      'cacheStale - {
-        'snapshot - {
-          redis.writeSnapshot(p1.id, ProjectSnapshot(p1.instanceA, p1.latestOrdA), z).value
-          test(1, 1)
-        }
-        'events - {
-          redis.writeEvents(p1.id, p1.verifiedEventsA, z).value
-          test(1, 1)
-        }
-        'both - {
-          redis.writeSnapshot(p1.id, ProjectSnapshot(p1.instanceA, p1.latestOrdA), z).value
-          redis.writeEvents(p1.id, p1.verifiedEventsB, z).value
-          test(1, 1)
-        }
-        'eventTail - {
-          redis.writeEvents(p1.id, p1.verifiedEventsC, z).value
-          test(1, 1)
-        }
-      }
-    } // initApp
+    'updatesAndListeners - {
+      implicit val t = new Tester; import t._
+      val static = p1.static
+
+      var recv1     = Vector.empty[VerifiedEvent.NonEmptySeq]
+      val subState1 = projectSpa.onOpen(static, emptyState, onPush(recv1 :+= _)).value
+      val initData1 = sendMsgAndBroadcast(initAppMsg, static).needRight
+      assertEq("[1]", recv1, Vector.empty)
+
+      val ves1 = sendMsgAndBroadcast(newUC, static).needRight.needNES
+      assertEq("[2]", recv1, Vector(ves1))
+
+      var recv2     = Vector.empty[VerifiedEvent.NonEmptySeq]
+      val subState2 = projectSpa.onOpen(static, emptyState, onPush(recv2 :+= _)).value
+      val initData2 = sendMsgAndBroadcast(initAppMsg, static).needRight
+      assertEq("[3]", recv2, Vector.empty)
+      assertEq("[4]", recv1, Vector(ves1))
+      assertEq("[5]", initData2.project.ord, Some(initData1.project.nextOrd.asLatest))
+      assertEq("[6]", initData2.project.project.content.reqs.size, 1)
+
+      val ves2 = sendMsgAndBroadcast(newUC, static).needRight.needNES
+      assertEq("[7]", recv1, Vector(ves1, ves2))
+      assertEq("[8]", recv2, Vector(ves2))
+
+      val ves3 = sendMsgAndBroadcast(newUC, static).needRight.needNES
+      assertEq("[9]", recv1, Vector(ves1, ves2, ves3))
+      assertEq("[A]", recv2, Vector(ves2, ves3))
+
+      subState1.sub.get.unsubscribe.value
+      val ves4 = sendMsgAndBroadcast(newUC, static).needRight.needNES
+      assertEq("[B]", recv1, Vector(ves1, ves2, ves3))
+      assertEq("[C]", recv2, Vector(ves2, ves3, ves4))
+    }
 
   }
 }
