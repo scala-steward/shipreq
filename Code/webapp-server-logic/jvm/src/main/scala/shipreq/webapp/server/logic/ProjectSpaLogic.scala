@@ -166,14 +166,14 @@ object ProjectSpaLogic extends StrictLogging {
 
       private val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
         onInitApp               = onInitApp.tupled,
+        onCreateContent         = updateProject (MakeEvent.createContent),
+        onUpdateContent         = updateProject (MakeEvent.updateContent),
         onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn),
+        onUpdateSavedViews      = updateProject (MakeEvent.updateSavedViews),
         onFieldMandatorinessMod = updateProjectI(MakeEvent.fieldMandatorinessMod),
         onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod),
-        onCreateContent         = updateProject(MakeEvent.createContent),
-        onUpdateContent         = updateProject(MakeEvent.updateContent),
-        onUpdateSavedViews      = updateProject(MakeEvent.updateSavedViews),
-        onCustomIssueTypeCrud   = updateProject(MakeEvent.customIssueTypeCrud),
-        onCustomReqTypeCrud     = updateProject(MakeEvent.customReqTypeCrud),
+        onCustomIssueTypeCrud   = updateProject (MakeEvent.customIssueTypeCrud),
+        onCustomReqTypeCrud     = updateProject (MakeEvent.customReqTypeCrud),
       )
 
       private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFnIn[I] => MsgFnOut[EventResult] = input => {
