@@ -2,13 +2,13 @@ package shipreq.webapp.base.protocol2
 
 import boopickle.Pickler
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.BoopickleMacros._
+import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.user._
-import shipreq.webapp.base.protocol.{ClientSideProc => _, _}
+import shipreq.webapp.base.Urls
+import BoopickleMacros._
 import BinCodecGeneric._
 import BinCodecUser._
 import BinCodecMemberData._
-import shipreq.webapp.base.Urls
 
 /**
   * Protocols for the Home SPA / webapp-client-home module.

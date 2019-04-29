@@ -61,9 +61,4 @@ object FieldCrud {
       pickleADT
     }
   }
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  @deprecated
-  val Protocol = ServerSideProc.Protocol.toEvents[CfgAction]("FieldCrud")
 }

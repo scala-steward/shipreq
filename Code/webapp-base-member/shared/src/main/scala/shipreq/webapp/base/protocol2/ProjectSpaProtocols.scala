@@ -6,10 +6,10 @@ import java.time.Instant
 import scalaz.\/
 import shipreq.base.util.{ErrorMsg, StaticLookupFn}
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.event.{ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.user._
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.Urls
-import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
 import BoopickleMacros._
 import BinCodecGeneric._
 import BinCodecBaseData._

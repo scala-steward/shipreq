@@ -31,7 +31,4 @@ object TagCrud {
   implicit val picklerApplicableTagValues: Pickler[ApplicableTagValues] = pickleCaseClass
   implicit val picklerTagValues          : Pickler[Values]              = pickleADT
   implicit val picklerAction             : Pickler[Action]              = CrudAction.pickler
-
-  @deprecated
-  val Protocol = CrudProtocol[TagId, Values \&/ TagInTree.Relations]("TagCrud")
 }
