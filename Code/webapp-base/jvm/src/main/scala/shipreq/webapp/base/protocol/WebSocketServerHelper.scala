@@ -1,4 +1,4 @@
-package shipreq.webapp.base.protocol2
+package shipreq.webapp.base.protocol
 
 import boopickle.Pickler
 import WebSocketShared.{ClientToServer, ReqId, ServerToClient}

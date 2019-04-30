@@ -5,8 +5,7 @@ import net.liftweb.http.testing._
 import org.apache.commons.httpclient.{HttpClient, HttpMethodBase}
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.FxModule._
-import shipreq.webapp.base.protocol.ClientSideProc
-import shipreq.webapp.base.protocol2.{BinaryJvm, Protocol}
+import shipreq.webapp.base.protocol._
 import shipreq.webapp.server.app.Global
 import shipreq.webapp.server.logic.{Cookie, Security}
 import shipreq.webapp.server.security.SecurityInterpreter

@@ -1,4 +1,4 @@
-package shipreq.webapp.base.protocol2
+package shipreq.webapp.base.protocol
 
 import boopickle.{PickleImpl, Pickler, UnpickleImpl}
 import java.nio.ByteBuffer

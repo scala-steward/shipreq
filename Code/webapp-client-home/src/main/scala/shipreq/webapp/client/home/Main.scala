@@ -3,7 +3,7 @@ package shipreq.webapp.client.home
 import scala.scalajs.js.annotation.JSExportTopLevel
 import shipreq.webapp.base.CssSettings._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.protocol2.{AjaxClient, ClientSideProcImpl, HomeSpaProtocols}
+import shipreq.webapp.base.protocol.{AjaxClient, ClientSideProcImpl, HomeSpaProtocols}
 import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.client.home.ui.{Home, Styles}
 

@@ -6,7 +6,7 @@ import monocle.macros.{GenIso, Lenses}
 import scalaz.\/
 import shipreq.base.util._
 import shipreq.webapp.base.data.SecurityToken
-import shipreq.webapp.base.protocol2._
+import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.BoopickleMacros._
 import shipreq.webapp.base.protocol.BinCodecGeneric._
 import shipreq.webapp.base.protocol.BinCodecBaseData._

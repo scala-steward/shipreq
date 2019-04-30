@@ -8,7 +8,6 @@ import shipreq.webapp.base.{AssetManifest, Urls, WebappConfig}
 import shipreq.webapp.base.WebappConfig.liftPath1
 import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.protocol._
-import shipreq.webapp.base.protocol2.HomeSpaProtocols
 import shipreq.webapp.client.public.PublicSpaProtocols
 import shipreq.webapp.server.logic.{Obfuscators, Security}
 import shipreq.webapp.server.test.LiveTestUtils._
@@ -26,7 +25,7 @@ object LiveTest extends TestSuite {
     pid = Some(xa ! dbAlgebra.createEmptyProject(user1.id, 0))
   }
 
-  implicit def temp[I](c: shipreq.webapp.base.protocol2.ClientSideProc[I]): ClientSideProc[I] =
+  implicit def temp[I](c: shipreq.webapp.base.protocol.ClientSideProc[I]): ClientSideProc[I] =
     ClientSideProc[I](c.objectName)(c.pickler)
 
   implicit def userToToken(u: UserFixture.TestUser): Option[Security.SessionToken] =

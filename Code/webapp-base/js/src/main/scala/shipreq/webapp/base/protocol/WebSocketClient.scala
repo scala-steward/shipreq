@@ -1,4 +1,4 @@
-package shipreq.webapp.base.protocol2
+package shipreq.webapp.base.protocol
 
 import boopickle._
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
@@ -11,7 +11,7 @@ import scala.util.{Failure, Success, Try}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{Retries, Url}
-import shipreq.webapp.base.protocol2.WebSocketShared._
+import shipreq.webapp.base.protocol.WebSocketShared._
 
 final class WebSocketClient[
     Req,

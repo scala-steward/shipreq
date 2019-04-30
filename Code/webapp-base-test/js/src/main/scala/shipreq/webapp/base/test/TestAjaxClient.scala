@@ -6,7 +6,7 @@ import org.scalajs.dom.console
 import scala.util.{Failure, Success, Try}
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.test.BaseTestUtil._
-import shipreq.webapp.base.protocol2._
+import shipreq.webapp.base.protocol._
 
 object TestAjaxClient {
 

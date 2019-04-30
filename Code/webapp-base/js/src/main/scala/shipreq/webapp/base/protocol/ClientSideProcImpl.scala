@@ -1,4 +1,4 @@
-package shipreq.webapp.base.protocol2
+package shipreq.webapp.base.protocol
 
 import boopickle.UnpickleImpl
 import org.scalajs.dom

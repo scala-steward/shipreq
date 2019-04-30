@@ -6,12 +6,12 @@ import scala.util.{Failure, Success}
 import scalaz.syntax.monad._
 import scalaz.{-\/, BindRec, Monad, \/, \/-, ~>}
 import shipreq.base.ops.Trace
-import shipreq.base.util.{BinaryData, ErrorMsg, Monads, PotentialChange}
+import shipreq.base.util._
 import shipreq.webapp.base.data.{Obfuscated, Project, ProjectId}
 import shipreq.webapp.base.event.{ProjectAndOrd, VerifiedEvent}
-import shipreq.webapp.base.protocol2.ProjectSpaProtocols.WsReqRes.EventResult
-import shipreq.webapp.base.protocol2.ProjectSpaProtocols.{InitAppData, WsReqRes}
-import shipreq.webapp.base.protocol2.{BinaryJvm, ProjectSpaProtocols, WebSocketServerHelper}
+import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes.EventResult
+import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, WsReqRes}
+import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.user.User
 
 // TODO Logging, timing, tracing, metrics

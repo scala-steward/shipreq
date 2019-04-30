@@ -1,4 +1,4 @@
-package shipreq.webapp.base.protocol2
+package shipreq.webapp.base.protocol
 
 import boopickle._
 import japgolly.scalajs.react.AsyncCallback

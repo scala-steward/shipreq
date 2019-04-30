@@ -8,7 +8,7 @@ import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.{BinaryData, Invalid, Url}
 import shipreq.webapp.base.Urls
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol2.{BinaryJvm, Protocol}
+import shipreq.webapp.base.protocol.{BinaryJvm, Protocol}
 import shipreq.webapp.base.user.{EmailAddr, PersonName}
 import shipreq.webapp.client.public.PublicSpaProtocols
 import shipreq.webapp.server.logic.DispatchLogic.Method._

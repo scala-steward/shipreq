@@ -2,7 +2,7 @@ package shipreq.webapp.client.public
 
 import japgolly.scalajs.react.extra.router.{BaseUrl, Router}
 import scala.scalajs.js.annotation.JSExportTopLevel
-import shipreq.webapp.base.protocol2.{AjaxClient, ClientSideProcImpl}
+import shipreq.webapp.base.protocol.{AjaxClient, ClientSideProcImpl}
 import shipreq.webapp.client.public.PublicSpaProtocols._
 import shipreq.webapp.client.public.spa._
 

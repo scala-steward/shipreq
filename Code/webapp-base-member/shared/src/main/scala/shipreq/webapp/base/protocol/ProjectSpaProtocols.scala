@@ -1,4 +1,4 @@
-package shipreq.webapp.base.protocol2
+package shipreq.webapp.base.protocol
 
 import boopickle.{PickleState, Pickler, UnpickleState}
 import japgolly.microlibs.adt_macros.AdtMacros

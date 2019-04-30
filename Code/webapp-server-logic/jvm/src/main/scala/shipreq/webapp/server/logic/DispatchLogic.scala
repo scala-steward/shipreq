@@ -14,7 +14,7 @@ import shipreq.base.ops.Trace
 import shipreq.base.util._
 import shipreq.webapp.base.{AssetManifest, Urls}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol2._
+import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.user._
 import shipreq.webapp.base.util.ResourceHint
 import shipreq.webapp.client.public.PublicSpaProtocols
