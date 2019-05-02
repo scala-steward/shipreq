@@ -8,6 +8,7 @@ import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.{Project, ProjectMetaData}
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.lib.DataReusability._
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.WebSocket.Push
 import shipreq.webapp.base.protocol.WebSocketShared.ReadyState
@@ -53,23 +54,29 @@ final class Global(wsClientBuilder: WebSocketClient.WithoutCallbacks[WsReqRes, P
   def unsafeProject(): Project =
     pxProject.value()
 
-  val wsClient: WebSocketClient[WsReqRes] =
+  val wsClient: WebSocketClient[WsReqRes] = {
+    LoggerJs.runNow(_.debug("Creating WebSocket..."))
     wsClientBuilder.build(onPush, _ => onWebSocketReadyStateChange)
+  }
 
-  private def onWebSocketReadyStateChange(rs: ReadyState): Callback =
-    rs match {
+  private def onWebSocketReadyStateChange(rs: ReadyState): Callback = {
+    val result: Callback = rs match {
       case ReadyState.Open =>
         unsafeState match {
           case _: State.Loading => load
-          case _: State.Active  => Callback.empty
+          case _: State.Active  => LoggerJs(_.debug("ReadyState became Open while State.Active"))
         }
 
-      case ReadyState.Connecting
-         | ReadyState.Closing
-         | ReadyState.Closed => Callback.empty
+      case ReadyState.Closed =>
+        Callback.empty
 
       // TODO Handle initial connection failure
+      case ReadyState.Connecting
+         | ReadyState.Closing => Callback.empty
     }
+
+    LoggerJs(_.info(s"WebSocket ReadyState: $rs")) >> result
+  }
 
   private def load: Callback =
     for {
@@ -93,6 +100,8 @@ final class Global(wsClientBuilder: WebSocketClient.WithoutCallbacks[WsReqRes, P
     } yield ()
 
   private def onPush(recvEvents: VerifiedEvent.NonEmptySeq): Callback = Callback {
+    LoggerJs.runNow(_.debug("Server pushed: " + recvEvents))
+
     unsafeState match {
 
       case State.Active(ps1) =>

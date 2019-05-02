@@ -11,6 +11,7 @@ import scala.util.{Failure, Success, Try}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{ErrorMsg, Retries, Url}
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.WebSocketShared._
 
 trait WebSocketClient[ReqRes <: Protocol.RequestResponse[Pickler]] {
@@ -111,6 +112,7 @@ object WebSocketClient {
     private def unsafeScheduleReconnect(): Unit =
       state.retries.pop match {
         case Some((retry, nextRetries)) =>
+          LoggerJs.runNow(_.info(s"WebSocketClient: retry connection in ${retry.toMillis} ms..."))
           val h = setTimeout(retry.toMillis) {
             // This bit here is Schedule in websocket_client.tla
             val i = unsafeNewInstance()
@@ -121,6 +123,7 @@ object WebSocketClient {
           state = state.copy(retries = nextRetries, scheduled = Some(h))
 
         case None =>
+          LoggerJs.runNow(_.info("WebSocketClient: out of retries. Leaving disconnected."))
           state = state.copy(scheduled = None)
       }
 
