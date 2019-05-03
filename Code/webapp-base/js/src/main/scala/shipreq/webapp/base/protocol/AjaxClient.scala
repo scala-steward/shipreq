@@ -1,10 +1,12 @@
 package shipreq.webapp.base.protocol
 
 import boopickle._
-import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
 import japgolly.scalajs.react.extra.Ajax
+import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
 import org.scalajs.dom.ext.AjaxException
+import scala.scalajs.js.typedarray.ArrayBuffer
 import shipreq.base.util.ErrorMsg
+import shipreq.base.util.JsExt._
 
 trait AjaxClient[F[_]] {
 
@@ -25,7 +27,7 @@ object AjaxClient {
 
           val prep = p.protocol.prepareSend(req)
 
-          val reqAB = BinaryJs.encodeToArrayBuffer(prep.request)(p.prepReq.codec)
+          val reqAB = BinaryJs.encode(p.prepReq)(prep.request).toArrayBuffer
 
           val result: AsyncCallback[p.protocol.ResponseType] =
             Ajax("POST", p.url.relativeUrl)
@@ -34,9 +36,10 @@ object AjaxClient {
               .send(reqAB)
               .asAsyncCallback
               .map { xhr =>
-                if (xhr.status == 200)
-                  BinaryJs.decodeFromArrayBufferUnsafe(xhr.response)(prep.response.codec)
-                else
+                if (xhr.status == 200) {
+                  val ab = xhr.response.asInstanceOf[ArrayBuffer]
+                  BinaryJs.decodeUnsafeFromArrayBuffer(ab, prep.response)
+                } else
                   throw AjaxException(xhr)
               }
 

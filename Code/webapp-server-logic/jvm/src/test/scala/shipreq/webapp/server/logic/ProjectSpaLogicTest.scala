@@ -109,7 +109,7 @@ object ProjectSpaLogicTest extends TestSuite {
     val resp = projectSpa.onMessage(static, msgBin).value
     resp match {
       case \/-(b) =>
-        BinaryJvm.unsafeDecode(b, h.protocolSC) match {
+        BinaryJvm.decodeUnsafe(b, h.protocolSC) match {
           case \/-((reqId2, protocolAndValue)) =>
             assertEq(reqId2, reqId)
             val result = protocolAndValue.unsafeForceType[msg.reqRes.ResponseType].value
@@ -129,7 +129,7 @@ object ProjectSpaLogicTest extends TestSuite {
 
   private def onPush(f: VerifiedEvent.NonEmptySeq => Unit): BinaryData => Name[Unit] =
     bin => Name {
-      val value = BinaryJvm.unsafeDecode(bin, pushProtocol)
+      val value = BinaryJvm.decodeUnsafe(bin, pushProtocol)
       val push = value.swap.needRight
       f(push)
     }

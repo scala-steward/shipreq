@@ -164,7 +164,7 @@ object ProjectSpaLogic extends StrictLogging {
       }
 
       private def parseMsg(msg: BinaryData) = {
-        BinaryJvm.attemptDecode(msg, webSocketHelper.protocolCS) match {
+        BinaryJvm.decode(msg, webSocketHelper.protocolCS) match {
           case Success(r) => \/-(r)
           case Failure(_) => -\/(MsgError.DecodingFailure)
         }

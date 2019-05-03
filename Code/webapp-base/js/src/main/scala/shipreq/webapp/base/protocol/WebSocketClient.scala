@@ -65,14 +65,14 @@ object WebSocketClient {
       openImmediately   : Boolean,
       connectionRetries : Retries,
       onReadyStateChange: WebSocketClient[ReqRes] => ReadyState => Callback,
-      protocolCS        : Pickler[ClientToServer[Req]],
-      mkProtocolSC      : (ReqId => Protocol[Pickler]) => Pickler[ServerToClient[Push]],
+      protocolCS        : Protocol.Of[Pickler, ClientToServer[Req]],
+      mkProtocolSC      : (ReqId => Protocol[Pickler]) => Protocol.Of[Pickler, ServerToClient[Push]],
       recvPush          : Push => Callback) extends WebSocketClient[ReqRes] { self =>
 
     private val requestManager: RequestManager[ReqId, Protocol.AndValue[Pickler], Protocol[Pickler]] =
       RequestManager.arrayStore
 
-    private val protocolSC: Pickler[ServerToClient[Push]] =
+    private val protocolSC: Protocol.Of[Pickler, ServerToClient[Push]] =
       mkProtocolSC(requestManager.getState(_).orNull)
 
     private case class State(instance      : Option[Instance],
@@ -175,8 +175,12 @@ object WebSocketClient {
 
       private def onMessage(e: MessageEvent): Unit = {
         // console.log(s"[${ws.readyState}] onmessage: ", e.data.asInstanceOf[ArrayBuffer])
+        val decode = CallbackTo {
+          val ab = e.data.asInstanceOf[ArrayBuffer]
+          BinaryJs.decodeUnsafeFromArrayBuffer(ab, protocolSC)
+        }
         val handler: Callback =
-          CallbackTo(BinaryJs.decodeFromArrayBufferUnsafe(e.data)(protocolSC)).attemptTry.flatMap {
+          decode.attemptTry.flatMap {
             case Success(\/-((id, res))) => requestManager.complete(id, Success(res)) // TODO what about Failure??
             case Success(-\/(push))      => recvPush(push)
             case Failure(err)            => Callback(onException(err))
@@ -247,7 +251,7 @@ object WebSocketClient {
         requestManager.newRequest(prep.response).flatMap { case (reqId, callback) =>
           CallbackTo {
             val msgValue = (reqId, prep.request)
-            val msgAB    = BinaryJs.encodeToArrayBuffer(msgValue)(protocolCS)
+            val msgAB    = BinaryJs.encode(protocolCS)(msgValue).toArrayBuffer
             queueOldestToNewest :+= msgAB
             callback.map(_.unsafeForceType[p.ResponseType].value)
           }

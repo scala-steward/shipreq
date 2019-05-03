@@ -451,7 +451,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
         assert(p.url.underlying startsWith Urls.ajaxRoot.underlying, s"${p.url} must start with ${Urls.ajaxRoot}")
 
         val h: Handler = (token, reqBin) =>
-          BinaryJvm.attemptDecode(reqBin, p.prepReq) match {
+          BinaryJvm.decode(reqBin, p.prepReq) match {
             case Success(req) =>
               f(token, req)
             case Failure(t) =>

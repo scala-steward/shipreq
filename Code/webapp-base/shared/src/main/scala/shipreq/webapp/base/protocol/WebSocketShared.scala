@@ -32,16 +32,16 @@ object WebSocketShared {
 
   type ClientToServer[Req] = (ReqId, Req)
 
-  def protocolCS[Req: Pickler]: Pickler[ClientToServer[Req]] =
-    Tuple2Pickler
+  def protocolCS[Req: Pickler]: Protocol.Of[Pickler, ClientToServer[Req]] =
+    Protocol(Tuple2Pickler)
 
   // ===================================================================================================================
   // Server to Client
 
   type ServerToClient[Push] = Push \/ (ReqId, Protocol.AndValue[Pickler])
 
-  def protocolSC[Push: Pickler](responseUnpickler: ReqId => Protocol[Pickler]): Pickler[ServerToClient[Push]] =
-    new Pickler[ServerToClient[Push]] {
+  def protocolSC[Push: Pickler](responseUnpickler: ReqId => Protocol[Pickler]): Protocol.Of[Pickler, ServerToClient[Push]] =
+    Protocol(new Pickler[ServerToClient[Push]] {
 
       override def pickle(obj: ServerToClient[Push])(implicit state: PickleState): Unit =
         obj match {
@@ -70,5 +70,5 @@ object WebSocketShared {
           \/-((reqId, pav))
         }
       }
-    }
+    })
 }

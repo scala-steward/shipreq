@@ -16,8 +16,8 @@ object WebSocketServerHelper {
     implicit def picklerReq: Pickler[p.Req] = p.req.codec
     implicit def picklerPush: Pickler[p.Push] = p.push.codec
     new WebSocketServerHelper[p.Req, p.Push](
-      Protocol(protocolCS),
-      Protocol(protocolSC(responseUnpickler)))
+      protocolCS,
+      protocolSC(responseUnpickler))
   }
 
 }

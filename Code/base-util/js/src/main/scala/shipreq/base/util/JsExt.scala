@@ -1,6 +1,9 @@
 package shipreq.base.util
 
+import org.scalajs.dom.raw.Blob
 import scala.scalajs.js
+import scala.scalajs.js.typedarray.ArrayBuffer
+import scala.scalajs.js.JSConverters._
 
 object JsExt {
 
@@ -11,5 +14,26 @@ object JsExt {
     }
   }
 
+  implicit class BinaryDataJsExt(private val self: BinaryData) extends AnyVal {
+    def toArrayBuffer: ArrayBuffer =
+      BinaryJs.byteBufferToArrayBuffer(self.toByteBuffer)
+
+    def toBlob: Blob =
+      BinaryJs.byteBufferToBlob(self.toByteBuffer)
+
+    def toNewJsArray: js.Array[Byte] =
+      self.toNewArray.toJSArray
+
+    def unsafeJsArray: js.Array[Byte] =
+      self.unsafeArray.toJSArray
+  }
+
+  implicit class BinaryDataObjectJsExt(private val self: BinaryData.type) extends AnyVal {
+    def fromArrayBuffer(ab: ArrayBuffer): BinaryData =
+      BinaryData.fromByteBuffer(BinaryJs.arrayBufferToByteBuffer(ab))
+
+    def unsafeFromArrayBuffer(ab: ArrayBuffer): BinaryData =
+      BinaryData.unsafeFromByteBuffer(BinaryJs.arrayBufferToByteBuffer(ab))
+  }
 
 }
