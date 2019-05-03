@@ -114,3 +114,10 @@ Phase 2B
 * Benchmark ZIO to back Fx
 
 * Add cache completion checks back into spec
+
+* Move into microlibs:
+  * BinaryData
+  * Binary{Js,Jvm}
+  * StaticLookupFn
+  * LoggerJs
+  * {,Fake}WebSocket

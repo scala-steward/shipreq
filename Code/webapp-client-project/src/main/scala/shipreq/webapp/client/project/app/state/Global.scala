@@ -11,7 +11,7 @@ import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.WebSocket.Push
-import shipreq.webapp.base.protocol.WebSocketShared.ReadyState
+import shipreq.webapp.base.protocol.WebSocket.ReadyState
 import shipreq.webapp.base.protocol._
 
 final class Global(wsClientBuilder: WebSocketClient.WithoutCallbacks[WsReqRes, Push],

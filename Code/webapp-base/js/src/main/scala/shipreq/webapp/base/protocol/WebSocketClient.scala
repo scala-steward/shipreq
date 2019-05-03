@@ -2,8 +2,7 @@ package shipreq.webapp.base.protocol
 
 import boopickle._
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
-import java.time.Duration
-import org.scalajs.dom._
+import org.scalajs.dom.{console, CloseEvent, Event, MessageEvent}
 import scala.scalajs.js
 import scala.scalajs.js.timers._
 import scala.scalajs.js.typedarray.ArrayBuffer
@@ -12,6 +11,7 @@ import scalaz.{-\/, \/-}
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{ErrorMsg, Retries, Url}
 import shipreq.webapp.base.lib.LoggerJs
+import shipreq.webapp.base.protocol.WebSocket.ReadyState
 import shipreq.webapp.base.protocol.WebSocketShared._
 
 trait WebSocketClient[ReqRes <: Protocol.RequestResponse[Pickler]] {
@@ -30,30 +30,29 @@ object WebSocketClient {
               onReadyStateChange: WebSocketClient[ReqRes] => ReadyState => Callback): WebSocketClient[ReqRes]
   }
 
-  def apply(urlBase: Url.Absolute.Base,
-            p      : Protocol.WebSocket.ClientReqServerPush[Pickler],
-           ): WithoutCallbacks[p.ReqRes, p.Push] = {
+  def apply(u: Url.Absolute.Base,
+            p: Protocol.WebSocket.ClientReqServerPush[Pickler],
+            r: Retries): WithoutCallbacks[p.ReqRes, p.Push] = {
+    val url      = (u.forWebSocket / p.url).absoluteUrl
+    val createWS = CallbackTo(WebSocket(url))
+    apply(createWS, p, r)
+  }
 
-    val url      = (urlBase.forWebSocket / p.url).absoluteUrl
-    val createWS = CallbackTo(new WebSocket(url))
-
+  def apply(w: CallbackTo[WebSocket],
+            p: Protocol.WebSocket.ClientReqServerPush[Pickler],
+            r: Retries): WithoutCallbacks[p.ReqRes, p.Push] =
     new WithoutCallbacks[p.ReqRes, p.Push] {
       override def build(onServerPush: p.Push => Callback,
                          onReadyStateChange: WebSocketClient[p.ReqRes] => ReadyState => Callback) =
         new Impl(
-          createWS,
+          w,
           true,
-          retries,
+          r,
           onReadyStateChange,
           protocolCS(p.req.codec),
           protocolSC(_)(p.push.codec),
           onServerPush)
     }
-  }
-
-  private[this] val retries =
-    Retries.exponentially(Duration.ofMillis(1000)).takeWhile(_.getSeconds < 6) ++
-      Retries.continually(Duration.ofSeconds(8))
 
   // ===================================================================================================================
 
@@ -126,29 +125,38 @@ object WebSocketClient {
         case None =>
           LoggerJs.runNow(_.info("WebSocketClient: out of retries. Leaving disconnected."))
           state = state.copy(scheduled = None)
+          unsafeFailQueued(errorClosed)
       }
 
     private val onReadyStateChange2 = onReadyStateChange(this)
 
     private class Instance(val ws: WebSocket) {
-      ws.binaryType = "arraybuffer"
-      ws.onopen     = onOpen _
-      ws.onclose    = onClose _
-      ws.onmessage  = onMessage _
-      ws.onerror    = onError _
+      ws.binaryType.set(WebSocket.BinaryType.ArrayBuffer)
+      ws.onOpen    .set(onOpen _)
+      ws.onClose   .set(onClose _)
+      ws.onMessage .set(onMessage _)
+      ws.onError   .set(onError _)
 
       private var opened = false
 
-      // Sometimes (like when the security policy blocks the connection), the WebSocket starts in a closed state
-      // without sending an onClose event. Catch that here so that the normal retry process kicks in.
-      if (ws.readyState == WebSocket.CLOSED)
-        onClosed()
+      ws.readyState() match {
+        case ReadyState.Open =>
+          onOpened()
+
+        case ReadyState.Closed =>
+          // Sometimes (like when the security policy blocks the connection), the WebSocket starts in a closed state
+          // without sending an onClose event. Catch that here so that the normal retry process kicks in.
+          onClosed()
+
+          case ReadyState.Closing
+             | ReadyState.Connecting => ()
+        }
 
       def readyState(): ReadyState =
-        ReadyState.byJsValue(ws.readyState)
+        ws.readyState()
 
       def isOpen(): Boolean =
-        ws.readyState == WebSocket.OPEN
+        ws.readyState() == ReadyState.Open
 
       private def runReadyStateChange(): Unit = {
         val r = readyState()
@@ -158,7 +166,10 @@ object WebSocketClient {
         }
       }
 
-      private def onOpen(e: Event): Unit = {
+      private def onOpen(e: Event): Unit =
+        onOpened()
+
+      private def onOpened(): Unit = {
         opened = true
         state = state.copy(retries = connectionRetries) // reset retry counter
         runReadyStateChange()
@@ -208,7 +219,7 @@ object WebSocketClient {
 
       private def onClosed(): Unit = {
         runReadyStateChange()
-        failQueued(if (opened) errorClosed else errorFailed)
+        unsafeFailQueued(if (opened) errorClosed else errorFailed)
         unsafeScheduleReconnect()
       }
     }
@@ -220,10 +231,10 @@ object WebSocketClient {
             i.processQueue()
       }
 
-    private def failQueued(error: Throwable): Callback = {
+    private def unsafeFailQueued(error: Throwable): Unit =
       requestManager.completeAll(Failure(error))
         .map(_.foreach(_.printStackTrace()))
-    }
+        .runNow()
 
     override val close: Callback =
       Callback {
@@ -263,11 +274,11 @@ object WebSocketClient {
 
       CallbackTo.byName {
         state.instance.map(_.readyState()) match {
-          case None
-             | Some(ReadyState.Connecting) => addToQueue
+          case Some(ReadyState.Connecting) => addToQueue
           case Some(ReadyState.Open)       => addToQueue <* processQueue
           case Some(ReadyState.Closing)    => rejectImmediately(errorClosing)
-          case Some(ReadyState.Closed)     => addToQueue <* connect
+          case None
+             | Some(ReadyState.Closed)     => addToQueue <* connect
         }
       }
     }
