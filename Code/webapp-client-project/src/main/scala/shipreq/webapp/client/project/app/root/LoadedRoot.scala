@@ -37,17 +37,16 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
   final class Backend($: BackendScope[Props, State]) extends OnUnmount {
     import global.{cbProjectMetaData, wsClient}
 
-    private val sspInitApp               = wsClient.invoker(WsReqRes.InitApp              ).mergeFailure
-    private val sspCreateContent         = wsClient.invoker(WsReqRes.CreateContent        ).mergeFailure
-    private val sspUpdateContent         = wsClient.invoker(WsReqRes.UpdateContent        ).mergeFailure
-    private val sspProjectNameSet        = wsClient.invoker(WsReqRes.ProjectNameSet       ).mergeFailure
-    private val sspUpdateSavedViews      = wsClient.invoker(WsReqRes.UpdateSavedViews     ).mergeFailure
-    private val sspFieldMandatorinessMod = wsClient.invoker(WsReqRes.FieldMandatorinessMod).mergeFailure
-    private val sspReqTypeImplicationMod = wsClient.invoker(WsReqRes.ReqTypeImplicationMod).mergeFailure
-    private val sspCustomIssueTypeCrud   = wsClient.invoker(WsReqRes.CustomIssueTypeCrud  ).mergeFailure
-    private val sspCustomReqTypeCrud     = wsClient.invoker(WsReqRes.CustomReqTypeCrud    ).mergeFailure
-    private val sspFieldMod              = wsClient.invoker(WsReqRes.FieldMod             ).mergeFailure
-    private val sspTagMod                = wsClient.invoker(WsReqRes.TagMod               ).mergeFailure
+    private val sspCreateContent         = global.sspCreateContent
+    private val sspUpdateContent         = global.sspUpdateContent
+    private val sspProjectNameSet        = global.sspProjectNameSet
+    private val sspUpdateSavedViews      = global.sspUpdateSavedViews
+    private val sspFieldMandatorinessMod = global.sspFieldMandatorinessMod
+    private val sspReqTypeImplicationMod = global.sspReqTypeImplicationMod
+    private val sspCustomIssueTypeCrud   = global.sspCustomIssueTypeCrud
+    private val sspCustomReqTypeCrud     = global.sspCustomReqTypeCrud
+    private val sspFieldMod              = global.sspFieldMod
+    private val sspTagMod                = global.sspTagMod
 
     // This never changes
     private val routerCtl = $.props.runNow().routerCtl

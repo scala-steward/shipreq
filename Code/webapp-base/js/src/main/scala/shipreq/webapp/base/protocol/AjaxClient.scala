@@ -27,7 +27,7 @@ object AjaxClient {
 
           val prep = p.protocol.prepareSend(req)
 
-          val reqAB = BinaryJs.encode(p.prepReq)(prep.request).toArrayBuffer
+          val reqAB = BinaryJs.encode(p.prepReq)(prep.request).unsafeArrayBuffer
 
           val result: AsyncCallback[p.protocol.ResponseType] =
             Ajax("POST", p.url.relativeUrl)

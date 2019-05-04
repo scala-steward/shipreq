@@ -10,7 +10,7 @@ trait BinaryShared {
     Try(decodeUnsafe(b, p))
 
   final def decodeUnsafe(b: BinaryData, p: Protocol[Pickler]): p.Type =
-    UnpickleImpl(p.codec).fromBytes(b.toByteBuffer)
+    UnpickleImpl(p.codec).fromBytes(b.unsafeByteBuffer)
 
   final def encode(p: Protocol[Pickler])(v: p.Type): BinaryData =
     BinaryData.unsafeFromByteBuffer(PickleImpl.intoBytes(v)(implicitly, p.codec))

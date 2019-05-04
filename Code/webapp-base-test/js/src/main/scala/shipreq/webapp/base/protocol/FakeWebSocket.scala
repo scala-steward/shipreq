@@ -17,7 +17,7 @@ final class FakeWebSocket(override val url: String, initialState: ReadyState = R
   override val onMessage  = VarJs.free[js.Function1[MessageEvent, _]]((_: MessageEvent) => ())
   override val onClose    = VarJs.free[js.Function1[CloseEvent, _]]  ((_: CloseEvent) => ())
   override val onError    = VarJs.free[js.Function1[Event, _]]       ((_: Event) => ())
-  val onSend              = VarJs.free[Message => Unit]              ((_: Message) => ())
+  val onSend              = VarJs.free[Message => Unit]              ((m: Message) => println(s"[FakeWebSocket.onSend] Sent: $m"))
 
   private var _readyState: ReadyState = initialState
   private var _bufferedAmount = 0

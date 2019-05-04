@@ -23,6 +23,9 @@ final class BinaryData(private[BinaryData] val bytes: Array[Byte], val length: I
       case _             => false
     }
 
+  def duplicate: BinaryData =
+    BinaryData.unsafeFromArray(toNewArray)
+
   def describe(byteLimit: Int = BinaryData.DefaultByteLimitInDesc) = {
     val byteDesc = describeBytes(byteLimit)
     val len = "%,d".format(length)
@@ -30,7 +33,7 @@ final class BinaryData(private[BinaryData] val bytes: Array[Byte], val length: I
   }
 
   def describeBytes(limit: Int = BinaryData.DefaultByteLimitInDesc) = {
-    var i = bytes.iterator.map("%02X".format(_))
+    var i = bytes.iterator.map(b => "%02X".format(b & 0xff))
     if (length > limit)
       i = i.take(limit) ++ Iterator.single("…")
     else
@@ -42,7 +45,7 @@ final class BinaryData(private[BinaryData] val bytes: Array[Byte], val length: I
     os.write(bytes, 0, length)
 
   def toByteBuffer: ByteBuffer =
-    ByteBuffer.wrap(bytes, 0, length).asReadOnlyBuffer()
+    unsafeByteBuffer.asReadOnlyBuffer()
 
   def toNewArray: Array[Byte] =
     Arrays.copyOf(bytes, length)
@@ -53,6 +56,10 @@ final class BinaryData(private[BinaryData] val bytes: Array[Byte], val length: I
       bytes
     else
       bytes.take(length)
+
+  /** unsafe in that the result is mutable */
+  def unsafeByteBuffer: ByteBuffer =
+    ByteBuffer.wrap(bytes, 0, length)
 }
 
 object BinaryData {

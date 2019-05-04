@@ -33,6 +33,8 @@ object Protocol {
     val codec: F[Type]
     val value: Type
 
+    override def toString = s"Protocol.AndValue($value)"
+
     def unsafeForceType[A]: AndValue.Of[F, A] =
       this.asInstanceOf[AndValue.Of[F, A]]
   }

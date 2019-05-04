@@ -17,6 +17,7 @@ import shipreq.base.util.{ErrorMsg, MMTree}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{TagId => Id, _}
 import shipreq.webapp.base.data.DataValidators.{hashRefKey => VH, tag => V}
+import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.protocol.{ServerSideProcInvoker, TagCrud}
 import shipreq.webapp.base.ui.{AutosizeTextarea, BaseStyles}
 import shipreq.webapp.base.ui.semantic.Table
@@ -29,11 +30,10 @@ import shipreq.webapp.client.project.widgets.FilterDeadButton
 import DataImplicits._
 import FlatTag.FilterPolicy
 import TagInTree.Relations
-import shipreq.webapp.base.event.VerifiedEvent
 
 object CfgTags {
   case class Props(remote    : ServerSideProcInvoker[TagCrud.Action, ErrorMsg, VerifiedEvent.Seq],
-                   global: Global,
+                   global    : Global,
                    filterDead: StateSnapshot[FilterDead]) {
     def component = MainTable.Component(this)
   }

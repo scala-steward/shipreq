@@ -39,7 +39,8 @@ object Main extends ClientSideProcImpl(ProjectSpaProtocols.EntryPoint) {
     val protocol  = ProjectSpaProtocols.WebSocket(i.projectId)
     val wsUrlBase = Url.Absolute.Base(location.protocol + "//" + location.host).forWebSocket
     val wsClient  = WebSocketClient(wsUrlBase, protocol, wsRetries)
-    new Global(wsClient, onLoad, onFailure)
+    val global    = Global(wsClient, onLoad, onFailure)
+    global.wsClient.connect.runNow()
   }
 
   def determineBaseUrl(url: String) = {

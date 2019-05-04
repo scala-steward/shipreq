@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 import org.scalajs.dom.raw.{Blob, FileReader}
 import org.scalajs.dom.window
 import scala.scalajs.js
+import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.typedarray.TypedArrayBufferOps._
 import scala.scalajs.js.typedarray.{ArrayBuffer, Int8Array, TypedArrayBuffer}
 
@@ -46,9 +47,18 @@ trait BinaryJs {
     arrayBufferToBlob(byteBufferToArrayBuffer(bb))
 
   final def byteBufferToInt8Array(bb: ByteBuffer): Int8Array = {
-    if (bb.hasArray)
-      bb.typedArray().subarray(0, bb.limit)
-    else {
+    val l = bb.limit
+    if (bb.hasTypedArray()) {
+      val array = bb.typedArray()
+      if (l == array.length)
+        array
+      else
+        array.subarray(0, l)
+    } else if (bb.hasArray) {
+      var array = bb.array()
+      if (l != array.length) array = array.take(l)
+      new Int8Array(array.toJSArray)
+    } else {
       val array = BinaryData.unsafeFromByteBuffer(bb).unsafeJsArray
       new Int8Array(array)
     }

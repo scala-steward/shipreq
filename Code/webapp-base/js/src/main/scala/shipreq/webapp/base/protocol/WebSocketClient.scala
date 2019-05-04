@@ -2,14 +2,14 @@ package shipreq.webapp.base.protocol
 
 import boopickle._
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
-import org.scalajs.dom.{console, CloseEvent, Event, MessageEvent}
+import org.scalajs.dom.{CloseEvent, Event, MessageEvent, console}
 import scala.scalajs.js
 import scala.scalajs.js.timers._
 import scala.scalajs.js.typedarray.ArrayBuffer
 import scala.util.{Failure, Success, Try}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.JsExt._
-import shipreq.base.util.{ErrorMsg, Retries, Url}
+import shipreq.base.util.{BinaryData, ErrorMsg, Retries, Url}
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.WebSocket.ReadyState
 import shipreq.webapp.base.protocol.WebSocketShared._
@@ -18,6 +18,7 @@ trait WebSocketClient[ReqRes <: Protocol.RequestResponse[Pickler]] {
   val keepAlive: Callback
   def send(p: ReqRes)(request: p.RequestType): CallbackTo[AsyncCallback[p.ResponseType]]
   def invoker(p: ReqRes): ServerSideProcInvoker[p.RequestType, ErrorMsg, p.ResponseType]
+  val connect: Callback
   val close: Callback
 }
 
@@ -46,7 +47,6 @@ object WebSocketClient {
                          onReadyStateChange: WebSocketClient[p.ReqRes] => ReadyState => Callback) =
         new Impl(
           w,
-          true,
           r,
           onReadyStateChange,
           protocolCS(p.req.codec),
@@ -61,7 +61,6 @@ object WebSocketClient {
       ReqRes <: Protocol.RequestResponse[Pickler] { type PreparedRequestType = Req },
       Push](
       createWS          : CallbackTo[WebSocket],
-      openImmediately   : Boolean,
       connectionRetries : Retries,
       onReadyStateChange: WebSocketClient[ReqRes] => ReadyState => Callback,
       protocolCS        : Protocol.Of[Pickler, ClientToServer[Req]],
@@ -81,9 +80,9 @@ object WebSocketClient {
 
     private var state = State(None, connectionRetries, None, None)
 
-    private var queueOldestToNewest = Vector.empty[ArrayBuffer]
+    private var queueOldestToNewest = Vector.empty[BinaryData]
 
-    private val connect: Callback =
+    override val connect: Callback =
       Callback {
         state.instance.map(_.readyState()) match {
 
@@ -101,12 +100,14 @@ object WebSocketClient {
         }
       }
 
-    if (openImmediately)
-      connect.runNow()
-
     private def unsafeNewInstance(): Option[Instance] = {
       // console.info("Connecting to server...")
-      createWS.map(new Instance(_)).attempt.runNow().toOption
+      createWS.map(new Instance(_)).attempt.runNow() match {
+        case Right(i) => Some(i)
+        case Left(e) =>
+          LoggerJs.runNow(_.warn(s"Failed to create WebSocket instance.") << Callback(e.printStackTrace()))
+          None
+      }
     }
 
     private def unsafeScheduleReconnect(): Unit =
@@ -179,22 +180,36 @@ object WebSocketClient {
       def processQueue(): Unit = {
         while (queueOldestToNewest.nonEmpty) {
           val h = queueOldestToNewest.head
-          ws.send(h)
+          try
+            ws.send(h.unsafeArrayBuffer)
+          catch {
+            case t: Throwable =>
+              LoggerJs.runNow(_.warn(s"WebSocket.send($h) failed") << Callback(t.printStackTrace()))
+              throw t
+          }
           queueOldestToNewest = queueOldestToNewest.tail
         }
       }
 
       private def onMessage(e: MessageEvent): Unit = {
         // console.log(s"[${ws.readyState}] onmessage: ", e.data.asInstanceOf[ArrayBuffer])
-        val decode = CallbackTo {
-          val ab = e.data.asInstanceOf[ArrayBuffer]
-          BinaryJs.decodeUnsafeFromArrayBuffer(ab, protocolSC)
-        }
+        def msg = e.data.asInstanceOf[ArrayBuffer]
+
+        val decode = CallbackTo(BinaryJs.decodeUnsafeFromArrayBuffer(msg, protocolSC))
+
         val handler: Callback =
           decode.attemptTry.flatMap {
-            case Success(\/-((id, res))) => requestManager.complete(id, Success(res)) // TODO what about Failure??
-            case Success(-\/(push))      => recvPush(push)
-            case Failure(err)            => Callback(onException(err))
+            case Success(\/-((id, res))) =>
+              LoggerJs(_.debug(s"WebSocketClient received response to req #${id.value}: ${res.value}")) >>
+                requestManager.complete(id, Success(res))
+
+            case Success(-\/(push)) =>
+              LoggerJs(_.debug(s"WebSocketClient received push: $push")) >>
+                recvPush(push)
+
+            case Failure(err) =>
+              LoggerJs(_.error(s"WebSocketClient failed to process msg: ${BinaryData.fromArrayBuffer(msg)}\n$err")).attempt >>
+                Callback(onException(err))
           }
         handler.runNow()
       }
@@ -262,8 +277,8 @@ object WebSocketClient {
         requestManager.newRequest(prep.response).flatMap { case (reqId, callback) =>
           CallbackTo {
             val msgValue = (reqId, prep.request)
-            val msgAB    = BinaryJs.encode(protocolCS)(msgValue).toArrayBuffer
-            queueOldestToNewest :+= msgAB
+            val msgBin    = BinaryJs.encode(protocolCS)(msgValue)
+            queueOldestToNewest :+= msgBin
             callback.map(_.unsafeForceType[p.ResponseType].value)
           }
         }

@@ -24,6 +24,12 @@ object JsExt {
     def toNewJsArray: js.Array[Byte] =
       self.toNewArray.toJSArray
 
+    def unsafeArrayBuffer: ArrayBuffer =
+      BinaryJs.byteBufferToArrayBuffer(self.unsafeByteBuffer)
+
+    def unsafeBlob: Blob =
+      BinaryJs.byteBufferToBlob(self.unsafeByteBuffer)
+
     def unsafeJsArray: js.Array[Byte] =
       self.unsafeArray.toJSArray
   }

@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.app.state
 
-import japgolly.scalajs.react.{Callback, CallbackTo, Reusability}
 import japgolly.scalajs.react.extra.{Broadcaster, Px}
+import japgolly.scalajs.react.{Callback, CallbackTo, Reusability}
 import scala.util.{Failure, Success}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.ErrorMsg
@@ -9,38 +9,36 @@ import shipreq.webapp.base.data.{Project, ProjectMetaData}
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.LoggerJs
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.WebSocket.Push
+import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol.WebSocket.ReadyState
 import shipreq.webapp.base.protocol._
+import shipreq.webapp.client.project.app.state.Global.State
 
-final class Global(wsClientBuilder: WebSocketClient.WithoutCallbacks[WsReqRes, Push],
-                   onFirstLoad    : (Global, InitAppData) => Callback,
-                   onInitFailure  : ErrorMsg => Callback) extends Broadcaster[Changes] {
+abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
+                      onInitFailure: ErrorMsg => Callback) extends Broadcaster[Changes] {
 
   // TODO keep alive
   // TODO reload
   // TODO sync
 
-  import Global.State
-
   private var _state: State =
     State.Loading(VerifiedEvent.Seq.empty)
 
-  private def unsafeState = _state
+  final protected def unsafeState = _state
 
-  private def unsafeSetState(s: State): Unit = {
+  final protected def unsafeSetState(s: State): Unit = {
     _state = s
     _pxProject.refresh()
   }
 
-  val cbProjectMetaData: CallbackTo[ProjectMetaData] =
+  final val cbProjectMetaData: CallbackTo[ProjectMetaData] =
     CallbackTo(unsafeState match {
       case State.Active(s)  => s.projectMetaData
       case _: State.Loading => null // TODO Safe because I know I don't access this before initial load
     })
 
-  private val _pxProject: Px.ThunkM[Project] = {
+  final private val _pxProject: Px.ThunkM[Project] = {
     def f() = unsafeState match {
       case State.Active(s)  => s.project
       case _: State.Loading => Project.empty
@@ -48,18 +46,15 @@ final class Global(wsClientBuilder: WebSocketClient.WithoutCallbacks[WsReqRes, P
     Px(f()).withReuse.manualRefresh
   }
 
-  val pxProject: Px[Project] =
+  final val pxProject: Px[Project] =
     _pxProject
 
-  def unsafeProject(): Project =
+  final def unsafeProject(): Project =
     pxProject.value()
 
-  val wsClient: WebSocketClient[WsReqRes] = {
-    LoggerJs.runNow(_.debug("Creating WebSocket..."))
-    wsClientBuilder.build(onPush, _ => onWebSocketReadyStateChange)
-  }
+  val wsClient: WebSocketClient[WsReqRes]
 
-  private def onWebSocketReadyStateChange(rs: ReadyState): Callback = {
+  final protected def onWebSocketReadyStateChange(rs: ReadyState): Callback = Callback.lazily {
     val result: Callback = rs match {
       case ReadyState.Open =>
         unsafeState match {
@@ -78,54 +73,85 @@ final class Global(wsClientBuilder: WebSocketClient.WithoutCallbacks[WsReqRes, P
     LoggerJs(_.info(s"WebSocket ReadyState: $rs")) >> result
   }
 
-  private def load: Callback =
+  final private def load: Callback =
     for {
       _  <- LoggerJs(l => l.info("WebSocket opened. Requesting InitApp...") >> l.time("initApp"))
       a1 <- wsClient.send(WsReqRes.InitApp)(())
       a2  = a1 <* LoggerJs.async(_.timeEnd("initApp"))
       _  <- a2.completeWith {
 
-              case Success(\/-(i)) => Callback {
-                unsafeState match {
-                  case State.Loading(es) =>
-                    val s = ProjectState.init(i.project, i.projectMetaData).addEventsSimple(es)
-                    unsafeSetState(State.Active(s))
-                    onFirstLoad(this, i).runNow()
-                  case _: State.Active =>
-                    LoggerJs.runNow(_.warn("InitApp response received but already State.Active"))
-                }
-              }
-
-              case Success(-\/(errMsg)) =>
-                onInitFailure(errMsg) >> wsClient.close
-
-              case Failure(err) =>
-                for {
-                  _ <- LoggerJs(_.warn(s"Connection failure: ${err.getMessage}"))
-                } yield ()
-            }
-    } yield ()
-
-  private def onPush(recvEvents: VerifiedEvent.NonEmptySeq): Callback = Callback {
-    LoggerJs.runNow(_.debug("Server pushed: " + recvEvents))
-
-    unsafeState match {
-
-      case State.Active(ps1) =>
-        for ((ps2, appliedEvents) <- ps1.addEvents(recvEvents.values)) {
-          unsafeSetState(State.Active(ps2))
-          val changes = Changes(appliedEvents, ps1.project, ps2.project)
-          broadcast(changes).runNow()
+        case Success(\/-(i)) => Callback {
+          unsafeState match {
+            case State.Loading(es) =>
+              val s = ProjectState.init(i.project, i.projectMetaData).addEventsSimple(es)
+              unsafeSetState(State.Active(s))
+              onFirstLoad(this, i).runNow()
+            case _: State.Active =>
+              LoggerJs.runNow(_.warn("InitApp response received but already State.Active"))
+          }
         }
 
-      case State.Loading(es) =>
-        unsafeSetState(State.Loading(es ++ recvEvents.values))
-    }
+        case Success(-\/(errMsg)) =>
+          onInitFailure(errMsg) >> wsClient.close
+
+        case Failure(err) =>
+          for {
+            _ <- LoggerJs(_.warn(s"Connection failure: ${err.getMessage}"))
+          } yield ()
+      }
+    } yield ()
+
+  final def addEvents(recvEvents: VerifiedEvent.Seq): Callback =
+    Callback.when(recvEvents.nonEmpty)(Callback {
+      LoggerJs.runNow(_.debug("Adding events: " + recvEvents))
+
+      unsafeState match {
+
+        case State.Active(ps1) =>
+          for ((ps2, appliedEvents) <- ps1.addEvents(recvEvents)) {
+            unsafeSetState(State.Active(ps2))
+            val changes = Changes(appliedEvents, ps1.project, ps2.project)
+            broadcast(changes).runNow()
+          }
+
+        case State.Loading(es) =>
+          unsafeSetState(State.Loading(es ++ recvEvents))
+      }
+    })
+
+  final protected def onPush(recvEvents: VerifiedEvent.NonEmptySeq): Callback = Callback {
+    LoggerJs.runNow(_.info("Server pushed: " + recvEvents))
+    addEvents(recvEvents.values).runNow()
   }
 
+  private final def sspToEvents(p: WsReqRes {type ResponseType = WsReqRes.EventResult}): ServerSideProcInvoker[p.RequestType, ErrorMsg, VerifiedEvent.Seq] =
+    wsClient.invoker(p)
+      .mergeFailure
+      .onSuccess((ves, s) => addEvents(ves) >> s)
+
+  final lazy val sspCreateContent         = sspToEvents(WsReqRes.CreateContent)
+  final lazy val sspUpdateContent         = sspToEvents(WsReqRes.UpdateContent)
+  final lazy val sspProjectNameSet        = sspToEvents(WsReqRes.ProjectNameSet)
+  final lazy val sspUpdateSavedViews      = sspToEvents(WsReqRes.UpdateSavedViews)
+  final lazy val sspFieldMandatorinessMod = sspToEvents(WsReqRes.FieldMandatorinessMod)
+  final lazy val sspReqTypeImplicationMod = sspToEvents(WsReqRes.ReqTypeImplicationMod)
+  final lazy val sspCustomIssueTypeCrud   = sspToEvents(WsReqRes.CustomIssueTypeCrud)
+  final lazy val sspCustomReqTypeCrud     = sspToEvents(WsReqRes.CustomReqTypeCrud)
+  final lazy val sspFieldMod              = sspToEvents(WsReqRes.FieldMod)
+  final lazy val sspTagMod                = sspToEvents(WsReqRes.TagMod)
 }
 
 object Global {
+
+  def apply(wscBuilder   : WebSocketClient.WithoutCallbacks[WsReqRes, Push],
+            onFirstLoad  : (Global, InitAppData) => Callback,
+            onInitFailure: ErrorMsg => Callback): Global =
+    new Global(onFirstLoad, onInitFailure) {
+      override val wsClient: WebSocketClient[WsReqRes] = {
+        LoggerJs.runNow(_.debug("Creating WebSocket..."))
+        wscBuilder.build(onPush, _ => onWebSocketReadyStateChange)
+      }
+    }
 
   sealed trait State
   object State {

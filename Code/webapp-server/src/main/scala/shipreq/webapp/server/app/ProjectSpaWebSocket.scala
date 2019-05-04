@@ -74,7 +74,7 @@ final class ProjectSpaWebSocket extends StrictLogging {
         val static    = staticL.get(userProps)
         val state     = stateL.get(userProps)
         val remote    = s.getBasicRemote
-        val pushFn    = (b: BinaryData) => Fx(remote.sendBinary(b.toByteBuffer))
+        val pushFn    = (b: BinaryData) => Fx(remote.sendBinary(b.unsafeByteBuffer))
         val state2    = projectSpaLogic.onOpen(static, state, pushFn).unsafeRun()
         stateL.set(userProps, state2)
     }
@@ -94,7 +94,7 @@ final class ProjectSpaWebSocket extends StrictLogging {
         projectSpaLogic.onMessage(static, binIn).unsafeRun() match {
 
           case \/-(binOut) =>
-            remote.sendBinary(binOut.toByteBuffer)
+            remote.sendBinary(binOut.unsafeByteBuffer)
 
           case -\/(MsgError.DecodingFailure) =>
             logger.warn(s"Failed to decode message: $msgDesc")
