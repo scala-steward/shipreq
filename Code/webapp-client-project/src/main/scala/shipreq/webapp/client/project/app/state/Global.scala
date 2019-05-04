@@ -110,8 +110,10 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
         case State.Active(ps1) =>
           for ((ps2, appliedEvents) <- ps1.addEvents(recvEvents)) {
             unsafeSetState(State.Active(ps2))
-            val changes = Changes(appliedEvents, ps1.project, ps2.project)
-            broadcast(changes).runNow()
+            for (ves <- VerifiedEvent.NonEmptySeq.maybe(appliedEvents)) {
+              val changes = Changes(ves, ps1.project, ps2.project)
+              broadcast(changes).runNow()
+            }
           }
 
         case State.Loading(es) =>

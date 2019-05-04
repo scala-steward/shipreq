@@ -42,22 +42,31 @@ final case class ProjectState(projectAndOrd  : ProjectAndOrd,
     !futureEvents.iterator.map(_.ord).contains(projectAndOrd.nextOrd),
     s"Error: applicable event found in futureEvents. $descState")
 
-  def addEvents(events: VerifiedEvent.Seq): Option[(ProjectState, VerifiedEvent.NonEmptySeq)] = {
+  def addEvents(events: VerifiedEvent.Seq): Option[(ProjectState, VerifiedEvent.Seq)] = {
     val newEvents = ord.fold(events)(o => events.filter(_.ord > o))
     val pendingEvents = futureEvents ++ newEvents
-    ProjectState.removeConsecutive(pendingEvents, _.immediatelyFollowsLatest(ord))
-      .map { case (ves, remainingFutureEvents) =>
+    ProjectState.removeConsecutive(pendingEvents, _.immediatelyFollowsLatest(ord)) match {
+
+      case Some((ves, remainingFutureEvents)) =>
         ApplyEvent.trusted.applyVerified(ves)(project) match {
           case \/-(p2) =>
             val pao2 = ProjectAndOrd(p2, Some(ves.lastKey.ord.asLatest))
             val md2  = projectMetaData.applyEvents(ves, Instant.now())
             val s2   = ProjectState(pao2, md2, remainingFutureEvents)
-            (s2, ves)
+            Some((s2, ves.values))
           case -\/(err) =>
             // TODO Do more when VerifiedEvent application fails
             throw new RuntimeException(s"Update failed. $err")
         }
-      }
+
+      case None =>
+        if (newEvents.isEmpty)
+          None
+        else {
+          val s2 = copy(futureEvents = pendingEvents)
+          Some((s2, VerifiedEvent.Seq.empty))
+        }
+    }
   }
 
   def addEventsSimple(events: VerifiedEvent.Seq): ProjectState =
@@ -87,12 +96,6 @@ object ProjectState {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final case class Change(oldState: ProjectState,
-                          newState: ProjectState,
-                          events  : VerifiedEvent.NonEmptySeq)
-
-  type Listener = Change => Callback
-
   final class Mutable(initState: ProjectState) {
 
     private var _state: ProjectState =
@@ -110,23 +113,13 @@ object ProjectState {
     val pxProject: Px[Project] =
       _pxProject
 
-    private var _listeners: List[Listener] =
-      Nil
-
-    def addListener(l: Listener): Unit =
-      _listeners ::= l
-
-    private def updateState(s2: ProjectState, newEvents: VerifiedEvent.NonEmptySeq): Callback =
+    private def updateState(s2: ProjectState, newEvents: VerifiedEvent.Seq): Callback =
       Callback {
 //        if (s2.futureEvents.nonEmpty)
 //          console.warn(s"Not all events applied: stuck at #${s2.latestEventOrd.value} pending ${s2.futureEventRange}")
-        val s1 = _state
         _state = s2
-        _pxProject.refresh()
-        if (_listeners.nonEmpty) {
-          val c = Change(oldState = s1, newState = s2, events = newEvents)
-          _listeners.foreach(_(c).runNow())
-        }
+        if (newEvents.nonEmpty)
+          _pxProject.refresh()
       }
 
     def applyEventSeqCB(ves: VerifiedEvent.Seq): Callback =
