@@ -36,6 +36,7 @@ final class AppServletFilter extends LiftFilter with HasLogger {
     }
 
     // Don't handle websockets
+    // (Note: This following the Prometheus block above means that PrometheusMetrics doesn't see WebSocket traffic)
     ignore {
       val root = Urls.ProjectSpaWebSocket.Base + "/"
       _.startsWith(root)
