@@ -22,6 +22,8 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
   // TODO reload
   // TODO sync
 
+  protected val logger = LoggerJs.on
+
   private var _state: State =
     State.Loading(VerifiedEvent.Seq.empty)
 
@@ -59,7 +61,7 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
       case ReadyState.Open =>
         unsafeState match {
           case _: State.Loading => load
-          case _: State.Active  => LoggerJs(_.debug("ReadyState became Open while State.Active"))
+          case _: State.Active  => logger(_.debug("ReadyState became Open while State.Active"))
         }
 
       case ReadyState.Closed =>
@@ -70,14 +72,14 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
          | ReadyState.Closing => Callback.empty
     }
 
-    LoggerJs(_.info(s"WebSocket ReadyState: $rs")) >> result
+    logger(_.info(s"WebSocket ReadyState: $rs")) >> result
   }
 
   final private def load: Callback =
     for {
-      _  <- LoggerJs(l => l.info("WebSocket opened. Requesting InitApp...") >> l.time("initApp"))
+      _  <- logger(l => l.info("WebSocket opened. Requesting InitApp...") >> l.time("initApp"))
       a1 <- wsClient.send(WsReqRes.InitApp)(())
-      a2  = a1 <* LoggerJs.async(_.timeEnd("initApp"))
+      a2  = a1 <* logger.async(_.timeEnd("initApp"))
       _  <- a2.completeWith {
 
         case Success(\/-(i)) => Callback {
@@ -87,7 +89,7 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
               unsafeSetState(State.Active(s))
               onFirstLoad(this, i).runNow()
             case _: State.Active =>
-              LoggerJs.runNow(_.warn("InitApp response received but already State.Active"))
+              logger.runNow(_.warn("InitApp response received but already State.Active"))
           }
         }
 
@@ -96,14 +98,14 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
 
         case Failure(err) =>
           for {
-            _ <- LoggerJs(_.warn(s"Connection failure: ${err.getMessage}"))
+            _ <- logger(_.warn(s"Connection failure: ${err.getMessage}"))
           } yield ()
       }
     } yield ()
 
   final def addEvents(recvEvents: VerifiedEvent.Seq): Callback =
     Callback.when(recvEvents.nonEmpty)(Callback {
-      LoggerJs.runNow(_.debug("Adding events: " + recvEvents))
+      logger.runNow(_.debug("Adding events: " + recvEvents))
 
       unsafeState match {
 
@@ -122,7 +124,7 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
     })
 
   final protected def onPush(recvEvents: VerifiedEvent.NonEmptySeq): Callback = Callback {
-    LoggerJs.runNow(_.info("Server pushed: " + recvEvents))
+    logger.runNow(_.info("Server pushed: " + recvEvents))
     addEvents(recvEvents.values).runNow()
   }
 
@@ -147,11 +149,12 @@ object Global {
 
   def apply(wscBuilder   : WebSocketClient.WithoutCallbacks[WsReqRes, Push],
             onFirstLoad  : (Global, InitAppData) => Callback,
-            onInitFailure: ErrorMsg => Callback): Global =
+            onInitFailure: ErrorMsg => Callback,
+            logger       : LoggerJs.Dsl): Global =
     new Global(onFirstLoad, onInitFailure) {
       override val wsClient: WebSocketClient[WsReqRes] = {
-        LoggerJs.runNow(_.debug("Creating WebSocket..."))
-        wscBuilder.build(onPush, _ => onWebSocketReadyStateChange)
+        logger.runNow(_.debug("Creating WebSocket..."))
+        wscBuilder.build(onPush, _ => onWebSocketReadyStateChange, logger)
       }
     }
 

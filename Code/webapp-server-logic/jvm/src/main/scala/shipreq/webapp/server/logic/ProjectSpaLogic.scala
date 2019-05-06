@@ -152,7 +152,7 @@ object ProjectSpaLogic extends StrictLogging {
         val main: M.Result[BinaryData] =
           for {
             (reqId, req)  <- M.lift(parseMsg(msg))
-             res          <- M.rightF(req.reqRes.fold(msgFold)((req.req, static)))
+             res          <- M.rightF(msgFold(req.reqRes)((req.req, static)))
           } yield {
             val protocolAndRes = req.reqRes.protocolRes.andValue(res)
             val fullRes        = \/-((reqId, protocolAndRes))

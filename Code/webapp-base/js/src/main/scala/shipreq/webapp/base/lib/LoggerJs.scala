@@ -68,4 +68,22 @@ object LoggerJs {
   @inline def async(f: => (LoggerJs => Callback)): AsyncCallback[Unit] =
     AsyncCallback.point(runNow(f))
 
+  sealed class Dsl {
+    @elidable(L) def runNow(f: => (LoggerJs => Callback)): Unit =
+      if (instance ne null) f(instance).runNow()
+
+    @inline def apply(f: => (LoggerJs => Callback)): Callback =
+      Callback(runNow(f))
+
+    @inline def async(f: => (LoggerJs => Callback)): AsyncCallback[Unit] =
+      AsyncCallback.point(runNow(f))
+  }
+
+  val on: Dsl = new Dsl
+
+  val off: Dsl = new Dsl {
+    @elidable(L) override def runNow(f: => (LoggerJs => Callback)) = ()
+    @inline override def apply(f: => (LoggerJs => Callback)) = Callback.empty
+    @inline override def async(f: => (LoggerJs => Callback)) = AsyncCallback.pure(())
+  }
 }

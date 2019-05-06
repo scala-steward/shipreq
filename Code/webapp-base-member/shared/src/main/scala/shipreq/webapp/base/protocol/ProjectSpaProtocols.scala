@@ -143,6 +143,7 @@ object ProjectSpaProtocols {
         onFieldMod             : F[FieldMod             .type] => G[FieldMod             .type],
         onTagMod               : F[TagMod               .type] => G[TagMod               .type],
         ) { self =>
+      @inline def apply(r: WsReqRes)(f: F[r.type]) = r.fold(this)(f)
       def compose[H[_ <: WsReqRes]](h: Fold[G, H]): Fold[F, H] =
         Fold(
           onInitApp               = f => h.onInitApp              (self.onInitApp              (f)),
@@ -163,6 +164,11 @@ object ProjectSpaProtocols {
       val reqRes: WsReqRes
       val req: reqRes.RequestType
       override def toString = s"$reqRes.AndReq($req)"
+      override def hashCode() = reqRes.## * 31 + req.##
+      override def equals(obj: Any) = obj match {
+        case x: AndReq => (reqRes == x.reqRes) && (req == x.req)
+        case _         => false
+      }
     }
 
     object AndReq {

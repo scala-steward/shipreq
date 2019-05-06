@@ -2,15 +2,16 @@ package shipreq.webapp.base.protocol
 
 import boopickle.Pickler
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
+import scala.util.Try
 import scalaz.\/-
 import utest._
 import shipreq.base.util.{Retries, Url}
 import shipreq.base.util.JsExt._
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.FakeWebSocket.Message
 import shipreq.webapp.base.protocol.WebSocketShared.ReqId
 import shipreq.webapp.base.protocol.WebSocket.ReadyState
 import shipreq.webapp.base.test.WebappTestUtil._
-import scala.util.Try
 
 object WebSocketClientTest extends TestSuite {
   import BoopickleMacros._
@@ -47,7 +48,8 @@ object WebSocketClientTest extends TestSuite {
     val client = WebSocketClient(newWS, P, Retries.none)
       .build(
         p => Callback(receivedPushes :+= p),
-        _ => _=> Callback.empty)
+        _ => _=> Callback.empty,
+        LoggerJs.off)
 
     def ws() = webSockets.last
     def latestMsg() = webSockets.reverseIterator.flatMap(_.sent().reverseIterator).next()

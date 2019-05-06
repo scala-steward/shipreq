@@ -27,8 +27,9 @@ trait WebSocketClient[ReqRes <: Protocol.RequestResponse[Pickler]] {
 object WebSocketClient {
 
   trait WithoutCallbacks[ReqRes <: Protocol.RequestResponse[Pickler], Push] {
-    def build(onServerPush: Push => Callback,
-              onReadyStateChange: WebSocketClient[ReqRes] => ReadyState => Callback): WebSocketClient[ReqRes]
+    def build(onServerPush      : Push => Callback,
+              onReadyStateChange: WebSocketClient[ReqRes] => ReadyState => Callback,
+              logger            : LoggerJs.Dsl): WebSocketClient[ReqRes]
   }
 
   def apply(u: Url.Absolute.Base,
@@ -43,15 +44,17 @@ object WebSocketClient {
             p: Protocol.WebSocket.ClientReqServerPush[Pickler],
             r: Retries): WithoutCallbacks[p.ReqRes, p.Push] =
     new WithoutCallbacks[p.ReqRes, p.Push] {
-      override def build(onServerPush: p.Push => Callback,
-                         onReadyStateChange: WebSocketClient[p.ReqRes] => ReadyState => Callback) =
+      override def build(onServerPush      : p.Push => Callback,
+                         onReadyStateChange: WebSocketClient[p.ReqRes] => ReadyState => Callback,
+                         logger            : LoggerJs.Dsl) =
         new Impl(
           w,
           r,
           onReadyStateChange,
           protocolCS(p.req.codec),
           protocolSC(_)(p.push.codec),
-          onServerPush)
+          onServerPush,
+          logger)
     }
 
   // ===================================================================================================================
@@ -65,7 +68,8 @@ object WebSocketClient {
       onReadyStateChange: WebSocketClient[ReqRes] => ReadyState => Callback,
       protocolCS        : Protocol.Of[Pickler, ClientToServer[Req]],
       mkProtocolSC      : (ReqId => Protocol[Pickler]) => Protocol.Of[Pickler, ServerToClient[Push]],
-      recvPush          : Push => Callback) extends WebSocketClient[ReqRes] { self =>
+      recvPush          : Push => Callback,
+      logger            : LoggerJs.Dsl) extends WebSocketClient[ReqRes] { self =>
 
     private val requestManager: RequestManager[ReqId, Protocol.AndValue[Pickler], Protocol[Pickler]] =
       RequestManager.arrayStore
@@ -105,7 +109,7 @@ object WebSocketClient {
       createWS.map(new Instance(_)).attempt.runNow() match {
         case Right(i) => Some(i)
         case Left(e) =>
-          LoggerJs.runNow(_.warn(s"Failed to create WebSocket instance.") << Callback(e.printStackTrace()))
+          logger.runNow(_.warn(s"Failed to create WebSocket instance.") << Callback(e.printStackTrace()))
           None
       }
     }
@@ -113,7 +117,7 @@ object WebSocketClient {
     private def unsafeScheduleReconnect(): Unit =
       state.retries.pop match {
         case Some((retry, nextRetries)) =>
-          LoggerJs.runNow(_.info(s"WebSocketClient: retry connection in ${retry.toMillis} ms..."))
+          logger.runNow(_.info(s"WebSocketClient: retry connection in ${retry.toMillis} ms..."))
           val h = setTimeout(retry.toMillis) {
             // This bit here is Schedule in websocket_client.tla
             val i = unsafeNewInstance()
@@ -124,7 +128,7 @@ object WebSocketClient {
           state = state.copy(retries = nextRetries, scheduled = Some(h))
 
         case None =>
-          LoggerJs.runNow(_.info("WebSocketClient: out of retries. Leaving disconnected."))
+          logger.runNow(_.info("WebSocketClient: out of retries. Leaving disconnected."))
           state = state.copy(scheduled = None)
           unsafeFailQueued(errorClosed)
       }
@@ -184,7 +188,7 @@ object WebSocketClient {
             ws.send(h.unsafeArrayBuffer)
           catch {
             case t: Throwable =>
-              LoggerJs.runNow(_.warn(s"WebSocket.send($h) failed") << Callback(t.printStackTrace()))
+              logger.runNow(_.warn(s"WebSocket.send($h) failed") << Callback(t.printStackTrace()))
               throw t
           }
           queueOldestToNewest = queueOldestToNewest.tail
@@ -200,15 +204,15 @@ object WebSocketClient {
         val handler: Callback =
           decode.attemptTry.flatMap {
             case Success(\/-((id, res))) =>
-              LoggerJs(_.debug(s"WebSocketClient received response to req #${id.value}: ${res.value}")) >>
+              logger(_.debug(s"WebSocketClient received response to req #${id.value}: ${res.value}")) >>
                 requestManager.complete(id, Success(res))
 
             case Success(-\/(push)) =>
-              LoggerJs(_.debug(s"WebSocketClient received push: $push")) >>
+              logger(_.debug(s"WebSocketClient received push: $push")) >>
                 recvPush(push)
 
             case Failure(err) =>
-              LoggerJs(_.error(s"WebSocketClient failed to process msg: ${BinaryData.fromArrayBuffer(msg)}\n$err")).attempt >>
+              logger(_.error(s"WebSocketClient failed to process msg: ${BinaryData.fromArrayBuffer(msg)}\n$err")).attempt >>
                 Callback(onException(err))
           }
         handler.runNow()

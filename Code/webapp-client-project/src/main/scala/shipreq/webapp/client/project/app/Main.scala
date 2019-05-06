@@ -8,6 +8,7 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{ErrorMsg, Retries, Url}
 import shipreq.webapp.base.CssSettings._
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, InitPageData}
 import shipreq.webapp.base.protocol.{ClientSideProcImpl, ProjectSpaProtocols, WebSocketClient}
 import shipreq.webapp.base.ui.BaseStyles
@@ -39,7 +40,7 @@ object Main extends ClientSideProcImpl(ProjectSpaProtocols.EntryPoint) {
     val protocol  = ProjectSpaProtocols.WebSocket(i.projectId)
     val wsUrlBase = Url.Absolute.Base(location.protocol + "//" + location.host).forWebSocket
     val wsClient  = WebSocketClient(wsUrlBase, protocol, wsRetries)
-    val global    = Global(wsClient, onLoad, onFailure)
+    val global    = Global(wsClient, onLoad, onFailure, LoggerJs.on)
     global.wsClient.connect.runNow()
   }
 
