@@ -37,7 +37,7 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
   final val cbProjectMetaData: CallbackTo[ProjectMetaData] =
     CallbackTo(unsafeState match {
       case State.Active(s)  => s.projectMetaData
-      case _: State.Loading => null // TODO Safe because I know I don't access this before initial load
+      case _: State.Loading => null // Safe because I know I don't access this before initial load
     })
 
   final private val _pxProject: Px.ThunkM[Project] = {
@@ -65,9 +65,11 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
         }
 
       case ReadyState.Closed =>
-        Callback.empty
+        unsafeState match {
+          case _: State.Loading => onInitFailure(ErrorMsg("Connection to server failed."))
+          case _: State.Active  => Callback.empty
+        }
 
-      // TODO Handle initial connection failure
       case ReadyState.Connecting
          | ReadyState.Closing => Callback.empty
     }
