@@ -28,25 +28,36 @@ MIGRATION
     * [ ] reload
     * [ ] sync
   * [ ] New client logic
-    * [ ] load (initAppData) on inital WS connection
+    * [x] load (initAppData) on inital WS connection
     * [ ] reload
     * [ ] sync
     * [ ] keepalive
-  * [ ] Replace:
-    * [ ] Use JWT
-    * [ ] Use WebSocket
-    * [ ] ClientState or whatever - new one with ProjectAndOrd + future event logic
-    * [ ] Project AJAX over WS
-    * [ ] Push events over WS
+  * [x] Replace:
+    * [x] Use JWT
+    * [x] Use WebSocket
+    * [x] ClientState or whatever - new one with ProjectAndOrd + future event logic
+    * [x] Project AJAX over WS
+    * [x] Push events over WS
 * [ ] only use Lift stateless dispatch
 * [ ] Remove
-  * [ ] Old SSP
+  * [x] Old SSP
   * [x] Shiro
   * [ ] Lift statelful dispatch
   * [x] webapp-logic: Security (v1)
   * [ ] webapp-logic: Server.Session
-  * [ ] Remove comets
+  * [x] Remove comets
   * [x] Remove Promse logic (probably)
+* [ ] Fix tracing
+  * [ ] AJAX / SSP
+  * [ ] WebSocket connection
+  * [ ] WebSocket req/res
+  * [ ] WebSocket push
+* [ ] Fix metrics
+  * [ ] AJAX / SSP
+  * [ ] WebSocket connection
+  * [ ] WebSocket req/res
+  * [ ] WebSocket push
+
 
 * [ ] Redis
   * [ ] Add async typeclass and/or support to Fx (?)
