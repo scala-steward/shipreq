@@ -40,7 +40,6 @@ trait BinaryJs {
   }
 
   final def byteBufferToArrayBuffer(bb: ByteBuffer): ArrayBuffer =
-    // TODO hmmm? ByteBuffer -> Int8Array -> ArrayBuffer
     int8ArrayToArrayBuffer(byteBufferToInt8Array(bb))
 
   final def byteBufferToBlob(bb: ByteBuffer): Blob =

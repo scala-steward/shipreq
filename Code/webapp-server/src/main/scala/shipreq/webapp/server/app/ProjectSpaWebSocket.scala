@@ -12,8 +12,6 @@ import shipreq.webapp.server.util.WebSocketUtil
 import shipreq.webapp.server.util.WebSocketUtil.UserPropsLens
 import CloseReason.{CloseCode, CloseCodes}
 
-// TODO Restrict payload size (?)
-// TODO Configure timeouts
 // TODO Add tracing
 
 object ProjectSpaWebSocket extends StrictLogging {

@@ -78,7 +78,7 @@ object Register2 {
 
     private def tosName = "terms of service"
 
-    private val tosLabel = TagMod("I agree to the ", Common.a_toNewWindow(Urls.termsOfService.relativeUrl)(tosName))
+    private val tosLabel = TagMod("I agree to the ", <.a.toNewWindow(Urls.termsOfService.relativeUrl)(tosName))
 
     private val tosValidator: Composite.Stateless[Agreement, Agreement, Agree.type] =
       Simple.Auditor[Simple.Invalidity, Agreement, Agree.type] {

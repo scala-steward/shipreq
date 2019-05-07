@@ -383,7 +383,6 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
           case \/-(projectId) =>
             tracer.alg.addAttrs(Trace.Attr.ShipReqProjectId(projectId) :: Nil) >>
             needAuth(user =>
-              // TODO Check ProjectStore first
               security.db.getProjectOwner(projectId).map {
                 case Some(o) if o ==* user.id => ResponseCmd.ProjectSpa.Serve(user, projectId)
                 case Some(_)                  => ResponseCmd.ProjectSpa.NotOwner
