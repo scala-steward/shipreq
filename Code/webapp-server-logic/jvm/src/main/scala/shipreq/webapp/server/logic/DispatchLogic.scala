@@ -222,7 +222,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
   @inline private def traceUrl(url: Url.Relative, f: F[RealRes])(implicit req: Request): F[RealRes] =
     traceUrlWithSpan(url, _ => f)
 
-  @inline private def traceUrlWithSpan(url: Url.Relative, f: tracer.Span => F[RealRes])(implicit req: Request): F[RealRes] =
+  private def traceUrlWithSpan(url: Url.Relative, f: tracer.Span => F[RealRes])(implicit req: Request): F[RealRes] =
     metrics.setHttpName(url.relativeUrl) >> tracer.http(url.relativeUrl, req.real, req.path)(f)
 
   private def onMethod(m: Method)(f: F[Response])(implicit req: Request): F[RealRes] =
@@ -419,29 +419,40 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
     private val authRequired =
       F pure Response(ResponseCmd.StatusOnly.Forbidden, Cookie.Update.empty)
 
-    private type Handler = (Security.SessionToken, BinaryData) => F[Response]
+    private case class Route(handler: Handler, name: String)
 
-    private val _library = {
-      val handlerMap = new Url.Relative.MutableMap[Handler]
-      var nameMap = Map.empty[Url.Relative, String]
+    private type Handler = (Security.SessionToken, BinaryData, tracer.Span) => F[Response]
+
+    private[this] val routeMap: Map[String, Route] = {
+      val mutableRouteMap = new Url.Relative.MutableMap[Route]
 
       def _register[A](p: Protocol.Ajax[Pickler], name: String)
                       (f: (Security.SessionToken, p.protocol.PreparedRequestType) => F[Response]): Unit = {
         assert(p.url.underlying startsWith Urls.ajaxRoot.underlying, s"${p.url} must start with ${Urls.ajaxRoot}")
 
-        val h: Handler = (token, reqBin) =>
-          BinaryJvm.decode(reqBin, p.prepReq) match {
-            case Success(req) =>
-              f(token, req)
-            case Failure(t) =>
-              F.point {
-                logger.warn("Failed to decode ajax binary body.", t)
-                ResponseCmd.StatusOnly.BadRequest.withoutCookieUpdate
-              }
-          }
+        val h: Handler = (token, reqBin, span) => {
+          val main: F[Response] =
+            BinaryJvm.decode(reqBin, p.prepReq) match {
+              case Success(req) =>
+                f(token, req)
+              case Failure(t) =>
+                F.point {
+                  logger.warn("Failed to decode ajax binary body.", t)
+                  ResponseCmd.StatusOnly.BadRequest.withoutCookieUpdate
+                }
+            }
 
-        handlerMap += (p.url -> h)
-        nameMap += (p.url -> name)
+          token.authenticatedUser match {
+            case None => main
+            case Some(u) =>
+              for {
+                _ <- tracer.alg.addAttrs(Trace.Attr.ShipReqUserId(u.id.value) :: Nil)(span)
+                r <- main
+              } yield r
+          }
+        }
+
+        mutableRouteMap += (p.url -> Route(h, name))
       }
 
       def responseCmd(p: Protocol.Ajax[Pickler])(req: p.protocol.PreparedRequestType, out: p.protocol.ResponseType) = {
@@ -492,14 +503,8 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
       anon (PublicSpaProtocols.resetPassword2)("resetPassword2", publicSpa.ajaxResetPassword2)
       auth (HomeSpaProtocols  .createProject )("createProject" , homeSpa  .ajaxCreateProject )
 
-      (handlerMap.toMapNoHeadSlash, nameMap)
+      mutableRouteMap.toMapNoHeadSlash
     }
-
-    private[this] val handlers: Map[String, Handler] =
-      _library._1
-
-    val pathsToNames: Map[Url.Relative, String] =
-      _library._2
 
     private def useNewToken(oldToken: Security.SessionToken, res: ResponseCmd, newToken: Option[Security.SessionToken]): F[Response] =
       security.sessionPersist(newToken getOrElse oldToken).map(Response(res, _))
@@ -513,21 +518,24 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
     val routes: Request ?=> F[RealRes] =
       when(r => candidate(r.path)) { implicit req =>
 
-        handlers.get(req.path.relativeUrlNoHeadSlash) match {
-          case Some(handler) =>
+        routeMap.get(req.path.relativeUrlNoHeadSlash) match {
+          case Some(route) =>
 
-            val fResponse: F[Response] =
+            def respond(span: tracer.Span): F[Response] =
               requireSession(s =>
                 if (req.method eq Post)
                   req.body.value match {
-                    case Some(reqBin) => handler(s, reqBin)
+                    case Some(reqBin) => route.handler(s, reqBin, span)
                     case None         => F pure ResponseCmd.StatusOnly.BadRequest.withoutCookieUpdate
                   }
                 else
                   F pure ResponseCmd.StatusOnly.MethodNotAllowed.withoutCookieUpdate
               )
 
-            makeRealF(fResponse)
+            for {
+              _ <- metrics.setServerSideProcName(route.name)
+              r <- tracer.serverSideProc(route.name, req.real, req.path)(span => makeRealF(respond(span)))
+            } yield r
 
           case None =>
             makeReal(notFound)

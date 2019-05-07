@@ -2,7 +2,7 @@ package shipreq.webapp.server.logic
 
 import doobie.imports.ConnectionIO
 import scalaz.syntax.monad._
-import scalaz.{-\/, Monad, \/-, ~>}
+import scalaz.{Monad, ~>}
 import shipreq.base.ops.Trace
 import shipreq.base.ops.Trace.{Attr, AttrFor}
 import shipreq.base.util.Url
@@ -11,7 +11,6 @@ final class TraceLogic[F[_], HttpReq, HttpRes](implicit F: Monad[F],
                                                val alg: Trace.Algebra[F],
                                                attrForHttpReq: AttrFor[HttpReq],
                                                attrForHttpRes: AttrFor[HttpRes]) {
-  import TraceLogic.AttrFor
 
   type Span = alg.Span
   import alg._
@@ -25,6 +24,19 @@ final class TraceLogic[F[_], HttpReq, HttpRes](implicit F: Monad[F],
     newSpan("HTTP: " + routeName) { implicit span =>
       for {
         _   <- addAttrs(Attr.EndpointName(routeName) :: Attr.HttpUri(path.relativeUrl) :: attrForHttpReq(req))
+        res <- respond(span)
+        _   <- addAttrs(attrForHttpRes(res))
+      } yield res
+    }
+
+  /** Trace the invocation of a server-side procedure (by the user's browser).
+    *
+    * Creates a top-level trace.
+    */
+  def serverSideProc(sspName: String, req: HttpReq, path: Url.Relative)(respond: Span => F[HttpRes]): F[HttpRes] =
+    newSpan("AJAX: " + sspName) { implicit span =>
+      for {
+        _   <- addAttrs(Attr.EndpointName(sspName) :: Attr.HttpUri(path.relativeUrl) :: attrForHttpReq(req))
         res <- respond(span)
         _   <- addAttrs(attrForHttpRes(res))
       } yield res

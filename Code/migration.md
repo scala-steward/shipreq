@@ -48,12 +48,12 @@ MIGRATION
   * [x] Remove comets
   * [x] Remove Promse logic (probably)
 * [ ] Fix tracing
-  * [ ] AJAX / SSP
+  * [x] AJAX / SSP
   * [ ] WebSocket connection
   * [ ] WebSocket req/res
   * [ ] WebSocket push
 * [ ] Fix metrics
-  * [ ] AJAX / SSP
+  * [x] AJAX / SSP
   * [ ] WebSocket connection
   * [ ] WebSocket req/res
   * [ ] WebSocket push

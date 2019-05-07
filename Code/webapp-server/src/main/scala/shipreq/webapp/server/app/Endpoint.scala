@@ -1,8 +1,8 @@
 package shipreq.webapp.server.app
 
 import japgolly.univeq.UnivEq
-import shipreq.webapp.base.{AssetManifest, Urls, WebappConfig}
-import shipreq.base.util.{FreeOption, Url}
+import shipreq.webapp.base.{AssetManifest, WebappConfig}
+import shipreq.base.util.FreeOption
 import shipreq.webapp.server.logic.DispatchLogic
 
 sealed abstract class Endpoint(final val `type`: String, final val name: String)
@@ -28,9 +28,11 @@ object Endpoint {
 
   type Resolver = (String, FreeOption[Endpoint]) => FreeOption[Endpoint]
 
-  def resolver(metricsPath: String, ajaxPaths: Map[Url.Relative, String]): Resolver = {
+  // Note this is only meant to resolve generic requests.
+  // Specific requests that DispatchLogic handles correctly set the Endpoint directly via MetricsLogic which results in
+  // the FreeOption[Endpoint] param to Resolver being set.
+  def resolver(metricsPath: String): Resolver = {
     val exactMatches = new java.util.HashMap[String, Endpoint]
-    for((u, n) <- ajaxPaths) exactMatches.put(u.relativeUrl, ServerSideProc(n))
     exactMatches.put(metricsPath                          , Metrics)
     exactMatches.put(s"/${WebappConfig.liftPath2}/lift.js", LiftJsStatic)
     exactMatches.put(AssetManifest.webappClientHomeJs     , AssetSpecific("js", "shipreq-home"))
@@ -46,32 +48,36 @@ object Endpoint {
     exactMatches.put(AssetManifest.semanticCss            , AssetSpecific("css", "semantic"))
     exactMatches.put(AssetManifest.shipreqBannerSvg       , AssetGeneric("svg"))
 
-    (path, provided) =>
-      if (provided.nonEmpty) {
-        if (path startsWith opsPrefix)
-          provided.getOrNull match {
-            case Page(n) => FreeOption(OpsPage(n.dropWhile(isSlash)))
-            case _       => provided
-          }
-        else
-          provided
-      } else {
-        val exact = FreeOption(exactMatches.get(path))
-        if (exact.nonEmpty)
-          exact
-        else if (path startsWith liftJsDynamicPrefix)
-          FreeOption(LiftJsDynamic)
-        else if (path startsWith liftAjaxPrefix)
-          FreeOption(LiftAjax)
-        else if (liftRegex.matcher(path).matches)
-          FreeOption.empty
-        else path match {
-          case assetRegex(ext) =>
-            FreeOption(AssetGeneric(ext))
-          case _ =>
+    (path, provided) => {
+      val result =
+        if (provided.nonEmpty) {
+          if (path startsWith opsPrefix)
+            provided.getOrNull match {
+              case Page(n) => FreeOption(OpsPage(n.dropWhile(isSlash)))
+              case _       => provided
+            }
+          else
+            provided
+        } else {
+          val exact = FreeOption(exactMatches.get(path))
+          if (exact.nonEmpty)
+            exact
+          else if (path startsWith liftJsDynamicPrefix)
+            FreeOption(LiftJsDynamic)
+          else if (path startsWith liftAjaxPrefix)
+            FreeOption(LiftAjax)
+          else if (liftRegex.matcher(path).matches)
             FreeOption.empty
+          else path match {
+            case assetRegex(ext) =>
+              FreeOption(AssetGeneric(ext))
+            case _ =>
+              FreeOption.empty
+          }
         }
-      }
+      //println(s"[ENDPOINT] $path $provided --> $result")
+      result
+    }
   }
 
   implicit def univEq: UnivEq[Endpoint] = UnivEq.derive

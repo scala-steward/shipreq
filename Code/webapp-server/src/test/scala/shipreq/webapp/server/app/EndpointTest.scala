@@ -10,8 +10,7 @@ import shipreq.webapp.client.public.PublicSpaProtocols
 object EndpointTest extends TestSuite {
 
   private val metricsPath = "/opsssss/metric"
-  private val ajaxPaths = Map(PublicSpaProtocols.login.url -> "login")
-  private val endpoint = Endpoint.resolver(metricsPath, ajaxPaths)
+  private val endpoint = Endpoint.resolver(metricsPath)
 
   def test(expect: Endpoint, path: String, providedOrNull: Endpoint = null): Unit =
     assertEq(path, endpoint(path, FreeOption(providedOrNull)).toOption, Some(expect))
@@ -52,8 +51,6 @@ object EndpointTest extends TestSuite {
     'vizJs                 - test(Endpoint.AssetSpecific("js", "viz"),               AssetManifest.vizJs)
     'semanticJs            - test(Endpoint.AssetSpecific("js", "semantic"),          AssetManifest.semanticJs)
     'semanticCss           - test(Endpoint.AssetSpecific("css", "semantic"),         AssetManifest.semanticCss)
-
-    'ajax - test(Endpoint.ServerSideProc("login"), PublicSpaProtocols.login.url.relativeUrl)
 
     'genericAssets {
       'css   - test(Endpoint.AssetGeneric("css"),    "/blah/x.css")

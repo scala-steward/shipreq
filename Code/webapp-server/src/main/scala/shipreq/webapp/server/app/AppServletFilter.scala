@@ -30,8 +30,7 @@ final class AppServletFilter extends LiftFilter with HasLogger {
     // Initialise Prometheus
     val p = g.config.prometheus
     if (p.enabled) {
-      val ajaxPaths = new LiftDispatcher(g).logic.Ajax.pathsToNames
-      val endpointResolver = Endpoint.resolver(p.path, ajaxPaths)
+      val endpointResolver = Endpoint.resolver(p.path)
       installPrometheus(new PrometheusMetrics.Unsafe(endpointResolver), p.path)
     }
 
