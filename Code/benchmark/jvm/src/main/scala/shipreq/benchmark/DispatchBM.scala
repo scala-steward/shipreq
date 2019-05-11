@@ -183,6 +183,12 @@ object DispatchBM {
           a     <- f
           end   <- now
         } yield (a, Duration.between(start, end))
+      override def measureDuration_[A](f: F[A]): F[Duration] =
+        for {
+          start <- now
+          _     <- f
+          end   <- now
+        } yield Duration.between(start, end)
     }
 
     implicit val metrics: MetricsLogic[F] =

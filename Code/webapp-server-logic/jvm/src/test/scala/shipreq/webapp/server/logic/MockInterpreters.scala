@@ -296,8 +296,6 @@ final class MockDb(_now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecu
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 final class MockServer extends Server.Algebra[Name] {
-  private var prevFn = 0
-
   var clock = Instant.now()
   override val now = Name(clock)
 
@@ -307,6 +305,9 @@ final class MockServer extends Server.Algebra[Name] {
       a     <- f
       end   <- now
     } yield (a, Duration.between(start, end))
+
+  override def measureDuration_[A](f: Name[A]) =
+    measureDuration(f).map(_._2)
 
   private def durationBorder(duration: Duration, tolerance: Duration = Duration.ofSeconds(2)): Validity => Duration = {
     case Valid   => duration minus tolerance

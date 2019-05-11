@@ -2,6 +2,7 @@ package shipreq.webapp.server.logic
 
 import boopickle.Pickler
 import japgolly.microlibs.scalaz_ext.ScalazMacros
+import java.time.Instant
 import scalaz.{-\/, Equal, Name, \/, \/-}
 import utest._
 import shipreq.base.util.{BinaryData, Direction}
@@ -71,7 +72,7 @@ object ProjectSpaLogicTest extends TestSuite {
       lazy val instance        = applyVerifiedEventSuccessfully(Project.empty, verifiedEvents.toList: _*)
       lazy val projectAndOrd   = ProjectAndOrd(instance, Some(verifiedEvents.last.ord.asLatest))
       lazy val initAppData     = InitAppData(projectAndOrd, data1)
-      lazy val static          = WebSocketStatic(user2.toUser, id, ())
+      lazy val static          = WebSocketStatic(user2.toUser, id, (), svr.now.value)
 
       lazy val eventsA         = events.take(1)
       lazy val verifiedEventsA = verifiedEvents.take(1)
