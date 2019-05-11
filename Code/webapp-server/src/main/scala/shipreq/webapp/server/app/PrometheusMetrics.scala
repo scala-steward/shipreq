@@ -402,6 +402,9 @@ final class PrometheusMetrics extends MetricsLogic[Fx] {
       projectSpaPushIO.inc(bytesOut)
     }
 
+  override def projectSpaWebSocketConnected(dur: Duration, result: String) =
+    Fx(WebSocketEventDuration("connect", result).observe(dur.asSeconds))
+
   override def projectSpaWebSocketOpened(dur: Duration) =
     Fx(WebSocketEventDuration("open", "ok").observe(dur.asSeconds))
 

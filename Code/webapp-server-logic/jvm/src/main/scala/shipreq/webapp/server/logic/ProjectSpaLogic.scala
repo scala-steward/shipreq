@@ -127,7 +127,19 @@ object ProjectSpaLogic extends StrictLogging {
         trace.newSpan("WebSocket")(span =>
           trace.newSubSpan("onConnect", span)(_ =>
             security.protect(
-              main(span).value)))
+              for {
+                (r, dur) ← svr.measureDuration(main(span).value)
+                mresult  = r match {
+                             case \/-(_)                => "ok"
+                             case -\/(NoSession       ) => "NoSession"
+                             case -\/(AnonymousSession) => "AnonymousSession"
+                             case -\/(InvalidProjectId) => "InvalidProjectId"
+                             case -\/(ProjectNotFound ) => "ProjectNotFound"
+                             case -\/(AccessDenied    ) => "AccessDenied"
+                           }
+                _        ← metrics.projectSpaWebSocketConnected(dur, mresult)
+              } yield r
+            )))
       }
 
       override def onOpen(static: WebSocketStatic,
