@@ -8,6 +8,7 @@ object Server {
   trait Time[F[_]] {
     val now: F[Instant]
     def measureDuration[A](f: F[A]): F[(A, Duration)]
+    def measureDuration_[A](f: F[A]): F[Duration]
   }
 
   trait Schedule[F[_]] extends Time[F] {
@@ -29,6 +30,7 @@ object Server {
     override def delay[A](f: F[A], d: Duration) = underlying.delay(f, d)
     override def fork[A](fa: F[A])              = underlying.fork(fa)
     override def measureDuration[A](fa: F[A])   = underlying.measureDuration(fa)
+    override def measureDuration_[A](fa: F[A])  = underlying.measureDuration_(fa)
     override val clientIP                       = underlying.clientIP
     override val sessionId                      = underlying.sessionId
     override val now                            = underlying.now

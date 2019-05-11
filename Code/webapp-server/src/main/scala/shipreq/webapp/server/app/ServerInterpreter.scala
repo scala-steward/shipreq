@@ -18,6 +18,9 @@ object ServerInterpreter extends Server.Algebra[Fx] with HasLogger {
   override def measureDuration[A](f: Fx[A]): Fx[(A, Duration)] =
     f.measureDuration
 
+  override def measureDuration_[A](f: Fx[A]): Fx[Duration] =
+    f.measureDuration_
+
   override def delay[A](f: Fx[A], d: Duration): Fx[A] =
     Fx(blocking(Thread.sleep(d.toMillis))) >> f // TODO Thread.sleep lolz
 
