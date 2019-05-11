@@ -44,7 +44,7 @@ MIGRATION
   * [x] Shiro
   * [ ] Lift statelful dispatch
   * [x] webapp-logic: Security (v1)
-  * [ ] webapp-logic: Server.Session
+  * [ ] webapp-logic: Server.Session & session metrics
   * [x] Remove comets
   * [x] Remove Promse logic (probably)
 * [x] Fix tracing
@@ -52,11 +52,11 @@ MIGRATION
   * [x] WebSocket connection
   * [x] WebSocket req/res
   * [x] WebSocket push
-* [ ] Fix metrics
+* [x] Fix metrics
   * [x] AJAX / SSP
-  * [ ] WebSocket connection
-  * [ ] WebSocket req/res
-  * [ ] WebSocket push
+  * [x] WebSocket connection
+  * [x] WebSocket req/res
+  * [x] WebSocket push
 * [x] Ensure WebSockets work from Docker container
 * [x] Ensure WebSockets reconnect after server bounce
 
