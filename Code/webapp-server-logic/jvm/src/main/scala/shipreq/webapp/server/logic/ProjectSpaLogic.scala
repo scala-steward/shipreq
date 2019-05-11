@@ -2,19 +2,19 @@ package shipreq.webapp.server.logic
 
 import com.typesafe.scalalogging.StrictLogging
 import japgolly.univeq._
+import java.time.{Duration, Instant}
 import scala.util.{Failure, Success}
 import scalaz.syntax.monad._
 import scalaz.{-\/, BindRec, Monad, \/, \/-, ~>}
 import shipreq.base.ops.Trace
 import shipreq.base.util._
+import shipreq.base.util.JavaTimeHelpers._
 import shipreq.webapp.base.data.{Obfuscated, Project, ProjectId, ProjectMetaData}
 import shipreq.webapp.base.event.{ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes.EventResult
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, InitPageData, WsReqRes}
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.user.{User, Username}
-
-// TODO metrics
 
 trait ProjectSpaLogic[F[_]] {
   import ProjectSpaLogic._
@@ -39,7 +39,10 @@ trait ProjectSpaLogic[F[_]] {
 
 object ProjectSpaLogic extends StrictLogging {
 
-  final case class WebSocketStatic(user: User, projectId: ProjectId, span: Any)
+  final case class WebSocketStatic(user       : User,
+                                   projectId  : ProjectId,
+                                   span       : Any,
+                                   connectedAt: Instant)
 
   final case class WebSocketState[F[_]](sub: Option[Redis.Subscription[F]])
   object WebSocketState {
@@ -114,8 +117,9 @@ object ProjectSpaLogic extends StrictLogging {
                                                Trace.Attr.ShipReqProjectId(pid.value) :: Nil)(span))
             owner   <- C.optionF(security.db.getProjectOwner(pid), ProjectNotFound)
             _       <- C.ensure(user.id ==* owner, AccessDenied)
+            now     <- C.rightF(svr.now)
           } yield {
-            val static = WebSocketStatic(user, pid, span)
+            val static = WebSocketStatic(user, pid, span, now)
             val state  = WebSocketState.empty[F]
             (static, state)
           }
@@ -130,7 +134,7 @@ object ProjectSpaLogic extends StrictLogging {
                           state: WebSocketState[F],
                           push : BinaryData => F[Unit]) = {
         val span = getSpan(static)
-        val main: F[WebSocketState[F]] =
+        def main: F[WebSocketState[F]] =
           state.sub match {
             case None =>
               for {
@@ -139,17 +143,24 @@ object ProjectSpaLogic extends StrictLogging {
             case Some(_) =>
               F.pure(state)
           }
-        trace.newSubSpan("onOpen", span)(_ => main)
+        trace.newSubSpan("onOpen", span)(_ =>
+          for {
+            (r, dur) <- svr.measureDuration(main)
+            _        <- metrics.projectSpaWebSocketOpened(dur)
+          } yield r
+        )
       }
 
       override def onClose(static: WebSocketStatic,
                            state : WebSocketState[F]) =
-        trace.newSubSpan("onClose", getSpan(static))(_ =>
-          state.sub match {
-            case Some(sub) => sub.unsubscribe
-            case None      => fUnit
-          }
-        )
+        trace.newSubSpan("onClose", getSpan(static)) { _ =>
+          for {
+            dur        ← svr.measureDuration_(state.sub.fold(fUnit)(_.unsubscribe))
+            now        ← svr.now
+            sessionDur = Duration.between(static.connectedAt, now)
+            _          ← metrics.projectSpaWebSocketClosed(dur, sessionDur)
+          } yield logger.info(s"WebSocket closed after ${sessionDur.conciseDesc}")
+        }
 
       private def pushEvent(span: Span, push: BinaryData => F[Unit], e: VerifiedEvent): F[Unit] =
         pushEvents(span, push, VerifiedEvent.NonEmptySeq.one(e))
@@ -207,10 +218,9 @@ object ProjectSpaLogic extends StrictLogging {
 
         for {
           (r, dur) ← svr.measureDuration(trace.newSubSpan("onMessage", span)(body(_)))
-          durMs    = dur.toMillis
           pid      = static.projectId.value
           _        ← metrics.projectSpaWebSocketMsg(r.msgType, msg.length, r.bytesOut, dur, r.ok)
-          _        ← F.point(logger.info(s"WebSocket for project #$pid processed request in $durMs ms"))
+          _        ← F.point(logger.info(s"WebSocket for project #$pid processed request in ${dur.conciseDesc}"))
         } yield ()
       }
 
@@ -260,40 +270,43 @@ object ProjectSpaLogic extends StrictLogging {
 
         def projectNotFound = -\/(ErrorMsg("Project not found."))
 
+        def step[A](name: String)(f: F[A]): F[A] =
+          trace.newSpan(name)(_ => metrics.projectSpaWebSocketStep("load", name)(f))
+
         def ignoreCache(c: Redis.ProjectCache): F[Result] = {
 
           def readDb(p: ProjectAndOrd) =
-          trace.newSpan("readDb")(_ =>
-            runDB(
-              db.inDbTransaction(for {
-                md <- db.getProjectMetaData(pid)
-                es <- db.getProjectEvents(pid, DB.EventFilter.given(p.ord))
-              } yield (es, md))
-            ).map {
-              case (es, Some(md)) =>
-                // Build outside of DB transaction
-                trace.newSpanImpure("ApplyEvents")(_ =>
-                  ApplyEvents.append(pid, p, es).map(InitAppData(_, md)))
-              case (_, None) =>
-                projectNotFound
-            }
-          )
+            step("readDb")(
+              runDB(
+                db.inDbTransaction(for {
+                  md <- db.getProjectMetaData(pid)
+                  es <- db.getProjectEvents(pid, DB.EventFilter.given(p.ord))
+                } yield (es, md))
+              ).map {
+                case (es, Some(md)) =>
+                  // Build outside of DB transaction
+                  trace.newSpanImpure("ApplyEvents")(_ =>
+                    ApplyEvents.append(pid, p, es).map(InitAppData(_, md)))
+                case (_, None) =>
+                  projectNotFound
+              }
+            )
 
           def writeRedis(i: InitAppData): F[Boolean] =
-            trace.newSpan("writeRedis")(_ =>
+            step("writeRedis")(
               // TODO Maybe write events instead of snapshot
-              redis.writeSnapshot(pid, i.project, VerifiedEvent.Seq.empty))
+              redis.writeSnapshot(pid, i.project, VerifiedEvent.Seq.empty)
+            )
 
-            for {
-              result <- readDb(c.nonEmptyCompleteBuild(pid) getOrElse ProjectAndOrd.empty)
-              _      <- result.fold[F[_]](_ => fUnit, writeRedis)
-            } yield result
+          for {
+            result <- readDb(c.nonEmptyCompleteBuild(pid) getOrElse ProjectAndOrd.empty)
+            _      <- result.fold[F[_]](_ => fUnit, writeRedis)
+          } yield result
         }
 
         def useCache(c: Redis.ProjectCache, md: ProjectMetaData): F[Result] =
-          trace.newSpan("useCache") { _ =>
-            val result = c.build(pid).map(InitAppData(_, md))
-            F pure result
+          step("useCache") {
+            F point c.build(pid).map(InitAppData(_, md))
           }
 
         for {
@@ -326,8 +339,9 @@ object ProjectSpaLogic extends StrictLogging {
                          (implicit
                           D       : Monad[D],
                           F       : Monad[F] with BindRec[F],
-                          redis   : Redis.ProjectAlgebra[F],
                           db      : DB.ForProjectSpa[D],
+                          metrics : MetricsLogic[F],
+                          redis   : Redis.ProjectAlgebra[F],
                           runDB   : D ~> F,
                           security: Security.Algebra[F],
                           trace   : Trace.Algebra[F]): F[Result] = {
@@ -388,7 +402,9 @@ object ProjectSpaLogic extends StrictLogging {
             } yield \/-(\/-(newEvents))
         }
 
-        trace.newSpan(s.status.name)(_ => main)
+        trace.newSpan(s.status.name)(_ =>
+          metrics.projectSpaWebSocketStep("update", s.status.name)(
+            main))
       }
 
       F.tailrecM(loop)(initialState)

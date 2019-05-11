@@ -27,21 +27,28 @@ trait MetricsLogic[F[_]] {
                              success : Boolean): F[Unit]
 
   def projectSpaWebSocketPush(bytesOut: Long): F[Unit]
+
+  def projectSpaWebSocketOpened(dur: Duration): F[Unit]
+  def projectSpaWebSocketClosed(dur: Duration, sessionDur: Duration): F[Unit]
+  def projectSpaWebSocketStep[A](process: String, step: String)(f: F[A]): F[A]
 }
 
 object MetricsLogic {
 
   def const[F[_]](f: F[Unit]): MetricsLogic[F] =
     new MetricsLogic[F] {
-      override def setHttpName            (x: String)                                            = f
-      override def setServerSideProcName  (x: String)                                            = f
-      override def sessionStart           (x: SessionId)                                         = f
-      override def sessionEnd             (x: SessionId)                                         = f
-      override def login                  (x: SessionId, y: User)                                = f
-      override def logout                 (x: SessionId)                                         = f
-      override def securityEvent          (x: Security.Event, y: Security.Result)                = f
-      override def setActiveProjectCount  (x: Int)                                               = f
-      override def projectSpaWebSocketMsg (a: String, b: Long, c: Long, d: Duration, e: Boolean) = f
-      override def projectSpaWebSocketPush(a: Long)                                              = f
+      override def setHttpName               (x: String)                                            = f
+      override def setServerSideProcName     (x: String)                                            = f
+      override def sessionStart              (x: SessionId)                                         = f
+      override def sessionEnd                (x: SessionId)                                         = f
+      override def login                     (x: SessionId, y: User)                                = f
+      override def logout                    (x: SessionId)                                         = f
+      override def securityEvent             (x: Security.Event, y: Security.Result)                = f
+      override def setActiveProjectCount     (x: Int)                                               = f
+      override def projectSpaWebSocketMsg    (a: String, b: Long, c: Long, d: Duration, e: Boolean) = f
+      override def projectSpaWebSocketPush   (a: Long)                                              = f
+      override def projectSpaWebSocketOpened (a: Duration)                                          = f
+      override def projectSpaWebSocketClosed (a: Duration, b: Duration)                             = f
+      override def projectSpaWebSocketStep[A](a: String, b: String)(c: F[A])                        = c
     }
 }

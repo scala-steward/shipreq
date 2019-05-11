@@ -9,6 +9,7 @@ import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 import scala.collection.JavaConverters._
 import shipreq.base.util.FreeOption
 import shipreq.base.util.FxModule._
+import shipreq.base.util.JavaTimeHelpers._
 import shipreq.base.util.log.HasLogger
 import shipreq.webapp.base.user.User
 import shipreq.webapp.server.logic.{MetricsLogic, Security, SessionId}
@@ -52,9 +53,13 @@ object PrometheusMetrics extends HasLogger {
   private[PrometheusMetrics] object Label {
     final val Delay      = "delay"
     final val Dir        = "dir"
+    final val Event      = "event"
     final val Method     = "method"
     final val MsgType    = "msg_type"
     final val Name       = "name"
+    final val Process    = "process"
+    final val Result     = "result"
+    final val Step       = "step"
     final val Success    = "success"
     final val StatusCode = "status_code"
     final val Type       = "type"
@@ -78,10 +83,13 @@ object PrometheusMetrics extends HasLogger {
     val HttpSessionsActive       = mkHttpSessionsActive
     val HttpSessionsTotal        = mkHttpSessionsTotal
     val ProjectsActive           = mkProjectsActive
+    val ProjectSpaStepDuration   = new ProjectSpaStepDuration
     val SecureEventsTotal        = new SecureEventsTotal
+    val WebSocketEventDuration   = new WebSocketEventDuration
+    val WebSocketIO              = new WebSocketIO
     val WebSocketMessageDuration = new WebSocketMessageDuration
     val WebSocketPushes          = new WebSocketPushes
-    val WebSocketIO              = new WebSocketIO
+    val WebSocketSessionDuration = new WebSocketSessionDuration
 
     // The following counters are omitted because they are provided by histogram counts
     //
@@ -152,6 +160,19 @@ object PrometheusMetrics extends HasLogger {
     private def mkProjectsActive =
       Gauge.build(prefix + "projects_active", "Projects currently being served").register()
 
+    final class WebSocketEventDuration private[Metrics] {
+      private[this] val m =
+        Histogram.build(prefix + "ws_event_duration_seconds", "Duration of WebSocket event handlers (except onMessage)")
+          .labelNames(Label.Name, Label.Event, Label.Result)
+          .buckets(
+            0.001, 0.003, 0.005, 0.010, 0.025, 0.050, 0.075,
+            0.100, 0.200, 0.300, 0.500, 0.750,
+            1, 2, 4, 8)
+          .register()
+      def apply(event: String, result: String)(implicit name: WebSocketName) =
+        m.labels(name.value, event, result)
+    }
+
     final class WebSocketMessageDuration private[Metrics] {
       private[this] val m =
         Histogram.build(prefix + "ws_message_duration_seconds", "Duration of WebSocket requests in seconds")
@@ -184,6 +205,30 @@ object PrometheusMetrics extends HasLogger {
       def push(implicit name: WebSocketName) =
         m.labels(CommDir.Send, name.value, "push", "", yesOrNo(true))
     }
+
+    final class WebSocketSessionDuration private[Metrics] {
+      private[this] val m =
+        Histogram.build(prefix + "ws_session_duration_minutes", "Total duration of WebSocket session in minutes")
+          .labelNames(Label.Name)
+          .buckets(1, 5, 10, 15, 30, 45, 60, 90, 120, 150, 180, 240, 480)
+          .register()
+      def apply(implicit name: WebSocketName) =
+        m.labels(name.value)
+    }
+
+    final class ProjectSpaStepDuration private[Metrics] {
+      private[this] val m =
+        Histogram.build(prefix + "project_step_duration_seconds", "Duration of a Project-SPA step")
+          .labelNames(Label.Process, Label.Step)
+          .buckets(
+            0.001, 0.003, 0.005, 0.010, 0.025, 0.050, 0.075,
+            0.100, 0.200, 0.300, 0.500, 0.750,
+            1, 2, 4, 8)
+          .register()
+      def apply(process: String, step: String) =
+        m.labels(process, step)
+    }
+
   }
 
   private[PrometheusMetrics] object Unsafe {
@@ -248,12 +293,25 @@ object PrometheusMetrics extends HasLogger {
   }
 }
 
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
 final class PrometheusMetrics extends MetricsLogic[Fx] {
   import PrometheusMetrics.Data._
   import PrometheusMetrics.Metrics._
 
-  @inline private implicit def durationToSec(d: Duration): Double =
-    d.getSeconds.toDouble + d.getNano.toDouble / 1000000000
+  private def time[A](m: Histogram.Child, f: Fx[A]): Fx[A] =
+    Fx {
+      val t = m.startTimer()
+      try {
+        val a = f.unsafeRun()
+        t.observeDuration()
+        a
+      } catch {
+        case e: Throwable =>
+          t.observeDuration()
+          throw e
+      }
+    }
 
   private[this] val endpointVar =
     PrometheusMetrics.Unsafe.endpointVar
@@ -331,7 +389,7 @@ final class PrometheusMetrics extends MetricsLogic[Fx] {
                                       success : Boolean): Fx[Unit] =
     Fx {
       implicit val msgTypeT = MsgType(msgType)
-      WebSocketMessageDuration(success).observe(duration)
+      WebSocketMessageDuration(success).observe(duration.asSeconds)
       WebSocketIO.msg(CommDir.Recv, success).inc(bytesIn)
       WebSocketIO.msg(CommDir.Send, success).inc(bytesOut)
     }
@@ -343,4 +401,17 @@ final class PrometheusMetrics extends MetricsLogic[Fx] {
       projectSpaPushes.inc()
       projectSpaPushIO.inc(bytesOut)
     }
+
+  override def projectSpaWebSocketOpened(dur: Duration) =
+    Fx(WebSocketEventDuration("open", "ok").observe(dur.asSeconds))
+
+  private[this] val projectSpaSession = WebSocketSessionDuration.apply
+  override def projectSpaWebSocketClosed(dur: Duration, sessionDur: Duration) =
+    Fx {
+      WebSocketEventDuration("close", "ok").observe(dur.asSeconds)
+      projectSpaSession.observe(sessionDur.asMinutes)
+    }
+
+  override def projectSpaWebSocketStep[A](process: String, step: String)(f: Fx[A]) =
+    time(ProjectSpaStepDuration(process, step), f)
 }
