@@ -78,7 +78,7 @@ object Dependencies {
   }
 
   object React {
-    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "1.4.2-SNAPSHOT")
+    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "1.4.2")
     val core    = mm("core")
     val test    = mm("test")
     val scalaz  = mm("ext-scalaz72") ++ Scalaz.effect
@@ -194,7 +194,7 @@ object Dependencies {
   val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "3.3.1")
   val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.11")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
-  val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "0.35.3")
+  val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "0.35.4")
   val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.5")
   val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "2.6.0")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.13.5")
