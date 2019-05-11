@@ -51,6 +51,6 @@ object Main extends ClientSideProcImpl(ProjectSpaProtocols.EntryPoint) {
   }
 
   private def wsRetries: Retries =
-    Retries.exponentially(Duration.ofMillis(1000)).takeWhile(_.getSeconds < 6) ++
-      Retries.continually(Duration.ofSeconds(8))
+    Retries.exponentially(Duration.ofMillis(1000)).takeWhile(_.getSeconds < 16) ++
+      Retries.continually(Duration.ofSeconds(16))
 }
