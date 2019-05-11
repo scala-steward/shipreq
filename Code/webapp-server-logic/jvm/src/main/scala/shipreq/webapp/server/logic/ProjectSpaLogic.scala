@@ -33,8 +33,10 @@ trait ProjectSpaLogic[F[_]] {
                 respond: BinaryData => F[Throwable \/ Unit],
                 onError: MsgError => F[Unit]): F[Unit]
 
-  def onClose(static: WebSocketStatic,
-              state : WebSocketState[F]): F[Unit]
+  // Option is used because this is called after onConnect rejection
+  // (in which case valid values are never created for the session)
+  def onClose(static: Option[WebSocketStatic],
+              state : Option[WebSocketState[F]]): F[Unit]
 }
 
 object ProjectSpaLogic extends StrictLogging {
@@ -163,16 +165,26 @@ object ProjectSpaLogic extends StrictLogging {
         )
       }
 
-      override def onClose(static: WebSocketStatic,
-                           state : WebSocketState[F]) =
-        trace.newSubSpan("onClose", getSpan(static)) { _ =>
-          for {
-            dur        ← svr.measureDuration_(state.sub.fold(fUnit)(_.unsubscribe))
-            now        ← svr.now
-            sessionDur = Duration.between(static.connectedAt, now)
-            _          ← metrics.projectSpaWebSocketClosed(dur, sessionDur)
-          } yield logger.info(s"WebSocket closed after ${sessionDur.conciseDesc}")
+      override def onClose(staticO: Option[WebSocketStatic],
+                           stateO : Option[WebSocketState[F]]) = {
+
+        val main: F[Unit] =
+          stateO.flatMap(_.sub).fold(fUnit)(_.unsubscribe)
+
+        staticO match {
+          case Some(static) =>
+            trace.newSubSpan("onClose", getSpan(static)) { _ =>
+              for {
+                dur        ← svr.measureDuration_(main)
+                now        ← svr.now
+                sessionDur = Duration.between(static.connectedAt, now)
+                _          ← metrics.projectSpaWebSocketClosed(dur, sessionDur)
+              } yield logger.info(s"WebSocket closed after ${sessionDur.conciseDesc}")
+            }
+          case None =>
+            main
         }
+      }
 
       private def pushEvent(span: Span, push: BinaryData => F[Unit], e: VerifiedEvent): F[Unit] =
         pushEvents(span, push, VerifiedEvent.NonEmptySeq.one(e))

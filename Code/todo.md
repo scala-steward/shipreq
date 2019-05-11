@@ -115,6 +115,8 @@ Phase 2B
 
 * Upgrade to Postgres 11
 
+* Project SPA will try to re-establish a WebSocket connection ad-nauseum after JWT has expired
+
 * Benchmark ZIO to back Fx - UpdateContent seems to be crazy slow with current Fx
 
 * Add cache completion checks back into spec (filterComplete/isCompleteTo/etc)
