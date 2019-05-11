@@ -67,8 +67,9 @@ object ProjectSpaLogic extends StrictLogging {
   def apply[D[_], F[_]](implicit
                         D       : Monad[D],
                         F       : Monad[F] with BindRec[F],
-                        redis   : Redis.ProjectAlgebra[F],
                         db      : DB.ForProjectSpa[D],
+                        metrics : MetricsLogic[F],
+                        redis   : Redis.ProjectAlgebra[F],
                         runDB   : D ~> F,
                         security: Security.Algebra[F],
                         svr     : Server.Time[F],
@@ -155,8 +156,11 @@ object ProjectSpaLogic extends StrictLogging {
 
       private def pushEvents(span: Span, push: BinaryData => F[Unit], es: VerifiedEvent.NonEmptySeq): F[Unit] =
         trace.newSubSpan("push", span) { _ =>
-          val msgBin = BinaryJvm.encode(webSocketHelper.protocolSC)(-\/(es))
-          push(msgBin)
+          for {
+            msgBin <- F point BinaryJvm.encode(webSocketHelper.protocolSC)(-\/(es))
+            _      <- metrics.projectSpaWebSocketPush(msgBin.length)
+            _      <- push(msgBin)
+          } yield ()
         }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -170,32 +174,42 @@ object ProjectSpaLogic extends StrictLogging {
 
         val span = getSpan(static)
 
-        def main(implicit span: Span): M.Result[Unit] =
-          for {
-            (reqId, req)   ← M.lift(parseMsg(msg))
-            _              ← M.rightF(trace.rename("onMessage: " + req.reqRes.name))
-            res            ← M.rightF(msgFold(req.reqRes)((req.req, static)))
-            protocolAndRes = req.reqRes.protocolRes.andValue(res)
-            fullRes        = \/-((reqId, protocolAndRes))
-            resBin         = BinaryJvm.encode(webSocketHelper.protocolSC)(fullRes)
-            _              ← M(respond(resBin).map(_.leftMap[MsgError](MsgError.RespondError)))
-          } yield ()
+        def body(implicit span: Span): F[MsgResult] = {
 
-        val handleError: MsgError \/ Unit => F[Unit] = {
-          case \/-(_) =>
-            fUnit
+          def handleError(wsReqRes: FreeOption[WsReqRes], err: MsgError): F[MsgResult] =
+            onError(err) >> F.point {
+              err match {
+                case MsgError.DecodingFailure => logger.warn(s"Failed to decode message: ${msg.describe(1000)}")
+                case MsgError.RespondError(e) => logger.error(s"Error sending response.", e)
+              }
+              new MsgResult(wsReqRes, -1L)
+            }
 
-          case -\/(m @ MsgError.DecodingFailure) =>
-            F.point(logger.warn(s"Failed to decode message: ${msg.describe(1000)}")) >> onError(m)
+          parseMsg(msg) match {
+            case \/-((reqId, req)) =>
+              for {
+                _              ← trace.rename("onMessage: " + req.reqRes.name)
+                res            ← msgFold(req.reqRes)((req.req, static)): F[req.reqRes.ResponseType]
+                protocolAndRes = req.reqRes.protocolRes.andValue(res)
+                fullRes        = \/-((reqId, protocolAndRes))
+                resBin         = BinaryJvm.encode(webSocketHelper.protocolSC)(fullRes)
+                wsReqRes       = FreeOption(req.reqRes)
+                result         ← respond(resBin).flatMap {
+                                   case \/-(_) => F.point(new MsgResult(wsReqRes, resBin.length))
+                                   case -\/(e) => handleError(wsReqRes, MsgError.RespondError(e))
+                                 }
+              } yield result
 
-          case -\/(m @ MsgError.RespondError(err)) =>
-            F.point(logger.error(s"Error sending response.", err)) >> onError(m)
+            case -\/(e) =>
+              handleError(FreeOption.empty, e)
+          }
         }
 
         for {
-          (_, dur) ← svr.measureDuration(trace.newSubSpan("onMessage", span)(main(_).value.flatMap(handleError)))
+          (r, dur) ← svr.measureDuration(trace.newSubSpan("onMessage", span)(body(_)))
           durMs    = dur.toMillis
           pid      = static.projectId.value
+          _        ← metrics.projectSpaWebSocketMsg(r.msgType, msg.length, r.bytesOut, dur, r.ok)
           _        ← F.point(logger.info(s"WebSocket for project #$pid processed request in $durMs ms"))
         } yield ()
       }
@@ -296,6 +310,12 @@ object ProjectSpaLogic extends StrictLogging {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  private final class MsgResult(reqType: FreeOption[WsReqRes], len: Long) {
+    def msgType : String  = reqType.fold("unknown", _.name)
+    def ok      : Boolean = len >= 0
+    def bytesOut: Long    = if (ok) len else 0
+  }
 
   private object ProjectUpdater {
 

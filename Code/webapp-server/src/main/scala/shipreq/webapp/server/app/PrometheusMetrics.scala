@@ -2,6 +2,7 @@ package shipreq.webapp.server.app
 
 import io.prometheus.client.{Counter, Gauge, Histogram, SimpleTimer}
 import japgolly.microlibs.stdlib_ext.ParseLong
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
@@ -15,27 +16,35 @@ import shipreq.webapp.server.util.CommDir
 
 object PrometheusMetrics extends HasLogger {
 
-  final case class HttpMethod(value: String) extends AnyVal
+  object Data {
+    final case class HttpMethod(value: String) extends AnyVal
 
-  final class StatusCode(val value: String) extends AnyVal
-  object StatusCode {
-    private[this] val StatusCode101 = "101"
-    private[this] val StatusCode200 = "200"
-    private[this] val StatusCode302 = "302"
-    private[this] val StatusCode304 = "304"
-    private[this] val StatusCode403 = "403"
-    private[this] val StatusCode404 = "404"
-    def apply(value: Int): StatusCode =
-      new StatusCode(value match {
-        case 200 => StatusCode200
-        case 302 => StatusCode302
-        case 304 => StatusCode304
-        case 403 => StatusCode403
-        case 404 => StatusCode404
-        case 101 => StatusCode101
-        case _   => value.toString
-      })
+    final case class MsgType(value: String) extends AnyVal
+
+    final class StatusCode(val value: String) extends AnyVal
+    object StatusCode {
+      private[this] val StatusCode101 = "101"
+      private[this] val StatusCode200 = "200"
+      private[this] val StatusCode302 = "302"
+      private[this] val StatusCode304 = "304"
+      private[this] val StatusCode403 = "403"
+      private[this] val StatusCode404 = "404"
+      def apply(value: Int): StatusCode =
+        new StatusCode(value match {
+          case 200 => StatusCode200
+          case 302 => StatusCode302
+          case 304 => StatusCode304
+          case 403 => StatusCode403
+          case 404 => StatusCode404
+          case 101 => StatusCode101
+          case _   => value.toString
+        })
+    }
+
+    final case class WebSocketName(value: String) extends AnyVal
   }
+
+  import Data._
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Internal
@@ -44,7 +53,9 @@ object PrometheusMetrics extends HasLogger {
     final val Delay      = "delay"
     final val Dir        = "dir"
     final val Method     = "method"
+    final val MsgType    = "msg_type"
     final val Name       = "name"
+    final val Ok         = "ok"
     final val Success    = "success"
     final val StatusCode = "status_code"
     final val Type       = "type"
@@ -62,18 +73,23 @@ object PrometheusMetrics extends HasLogger {
 
   private[PrometheusMetrics] object Metrics {
 
-    val LoginsActive       = new LoginsActive
-    val HttpDuration       = new HttpDuration
-    val HttpIO             = new HttpIO
-    val HttpRequests       = new HttpRequests
-    val HttpSessionsActive = mkHttpSessionsActive
-    val HttpSessionsTotal  = mkHttpSessionsTotal
-    val ProjectsActive     = mkProjectsActive
-    val SecureEventsTotal  = new SecureEventsTotal
+    val LoginsActive             = new LoginsActive
+    val HttpDuration             = new HttpDuration
+    val HttpIO                   = new HttpIO
+    val HttpRequests             = new HttpRequests
+    val HttpSessionsActive       = mkHttpSessionsActive
+    val HttpSessionsTotal        = mkHttpSessionsTotal
+    val ProjectsActive           = mkProjectsActive
+    val SecureEventsTotal        = new SecureEventsTotal
+    val WebSocketMessages        = new WebSocketMessages
+    val WebSocketMessageDuration = new WebSocketMessageDuration
+    val WebSocketPushes          = new WebSocketPushes
+    val WebSocketIO              = new WebSocketIO
 
     // -----------------------------------------------------------------------------------------------------------------
 
-    private val prefix = "shipreq_webapp_"
+    // Don't make this a val because of init order
+    private def prefix = "shipreq_webapp_"
 
     final class HttpRequests private[Metrics] {
       private[this] val m =
@@ -89,10 +105,10 @@ object PrometheusMetrics extends HasLogger {
         Histogram.build(prefix + "http_response_duration_seconds", "Duration of HTTP request in seconds")
           .labelNames(Label.Method, Label.Name, Label.StatusCode, Label.Type) // TODO Delay
           .buckets(
-            0.005, 0.010, 0.025, 0.050, 0.075, 0.100, // no security delay
-            0.125, 0.130, 0.145, 0.170, 0.195, 0.220, // with 120 ms security delay (see ServerConfig)
+            0.001, 0.003, 0.005, 0.010, 0.025, 0.050, 0.075, 0.100, // no security delay
+            0.121, 0.123, 0.125, 0.130, 0.145, 0.170, 0.195, 0.220, // with 120 ms security delay (see ServerConfig)
             0.300, 0.500, 0.750,
-            1, 2, 3, 5, 8, 12)
+            1, 2, 4, 8)
           .register()
       def apply(implicit method: HttpMethod, endpoint: Endpoint, statusCode: StatusCode) =
         m.labels(method.value, endpoint.name, statusCode.value, endpoint.`type`)
@@ -142,6 +158,48 @@ object PrometheusMetrics extends HasLogger {
 
     private def mkProjectsActive =
       Gauge.build(prefix + "projects_active", "Projects currently being served").register()
+
+    final class WebSocketMessages private[Metrics] {
+      private[this] val m =
+        Counter.build(prefix + "ws_messages_total", "Total WebSocket messages received")
+          .labelNames(Label.Name, Label.MsgType, Label.Ok)
+          .register()
+      def apply(ok: Boolean)(implicit name: WebSocketName, msgType: MsgType) =
+        m.labels(name.value, msgType.value, yesOrNo(ok))
+    }
+
+    final class WebSocketPushes private[Metrics] {
+      private[this] val m =
+        Counter.build(prefix + "ws_pushes_total", "Total WebSocket messages pushed from server (excluding responses to request messages)")
+          .labelNames(Label.Name)
+          .register()
+      def apply(implicit name: WebSocketName) =
+        m.labels(name.value)
+    }
+
+    final class WebSocketMessageDuration private[Metrics] {
+      private[this] val m =
+        Histogram.build(prefix + "ws_message_duration_seconds", "Duration of WebSocket requests in seconds")
+          .labelNames(Label.Name, Label.MsgType, Label.Ok)
+          .buckets(
+            0.001, 0.003, 0.005, 0.010, 0.025, 0.050, 0.075,
+            0.100, 0.200, 0.300, 0.500, 0.750,
+            1, 2, 4, 8)
+          .register()
+      def apply(ok: Boolean)(implicit name: WebSocketName, msgType: MsgType) =
+        m.labels(name.value, msgType.value, yesOrNo(ok))
+    }
+
+    final class WebSocketIO private[Metrics] {
+      private[this] val m =
+        Counter.build(prefix + "ws_bytes_total", "WebSocket traffic in bytes")
+          .labelNames(Label.Dir, Label.Name, Label.Type, Label.MsgType, Label.Ok)
+          .register()
+      def msg(dir: CommDir, ok: Boolean)(implicit name: WebSocketName, msgType: MsgType) =
+        m.labels(dir, name.value, "msg", msgType.value, yesOrNo(ok))
+      def push(implicit name: WebSocketName) =
+        m.labels(CommDir.Send, name.value, "push", "", yesOrNo(true))
+    }
   }
 
   private[PrometheusMetrics] object Unsafe {
@@ -209,7 +267,11 @@ object PrometheusMetrics extends HasLogger {
 }
 
 final class PrometheusMetrics extends MetricsLogic[Fx] {
+  import PrometheusMetrics.Data._
   import PrometheusMetrics.Metrics._
+
+  @inline private implicit def durationToSec(d: Duration): Double =
+    d.getSeconds.toDouble + d.getNano.toDouble / 1000000000
 
   private[this] val endpointVar =
     PrometheusMetrics.Unsafe.endpointVar
@@ -262,6 +324,7 @@ final class PrometheusMetrics extends MetricsLogic[Fx] {
   override def login(sessionId: SessionId, user: User): Fx[Unit] =
     Fx {
       sessions.put(sessionId, Some(user))
+      sessions.put(sessionId, Some(user))
       updateActiveLogins()
     }
 
@@ -276,4 +339,27 @@ final class PrometheusMetrics extends MetricsLogic[Fx] {
 
   override def setActiveProjectCount(n: Int): Fx[Unit] =
     Fx(ProjectsActive.set(n))
+
+  private[this] implicit val projectSpa = WebSocketName("project_spa")
+
+  override def projectSpaWebSocketMsg(msgType : String,
+                                      bytesIn : Long,
+                                      bytesOut: Long,
+                                      duration: Duration,
+                                      ok      : Boolean): Fx[Unit] =
+    Fx {
+      implicit val msgTypeT = MsgType(msgType)
+      WebSocketMessages(ok).inc()
+      WebSocketMessageDuration(ok).observe(duration)
+      WebSocketIO.msg(CommDir.Recv, ok).inc(bytesIn)
+      WebSocketIO.msg(CommDir.Send, ok).inc(bytesOut)
+    }
+
+  private[this] val projectSpaPushes = WebSocketPushes.apply
+  private[this] val projectSpaPushIO = WebSocketIO.push
+  override def projectSpaWebSocketPush(bytesOut: Long): Fx[Unit] =
+    Fx {
+      projectSpaPushes.inc()
+      projectSpaPushIO.inc(bytesOut)
+    }
 }
