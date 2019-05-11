@@ -82,6 +82,7 @@ object PrometheusMetrics extends HasLogger {
     val HttpIO                   = new HttpIO
     val HttpSessionsActive       = mkHttpSessionsActive
     val HttpSessionsTotal        = mkHttpSessionsTotal
+    val OpenWebSockets           = new OpenWebSockets
     val ProjectsActive           = mkProjectsActive
     val ProjectSpaStepDuration   = new ProjectSpaStepDuration
     val SecureEventsTotal        = new SecureEventsTotal
@@ -159,6 +160,15 @@ object PrometheusMetrics extends HasLogger {
 
     private def mkProjectsActive =
       Gauge.build(prefix + "projects_active", "Projects currently being served").register()
+
+    final class OpenWebSockets private[Metrics] {
+      private[this] val m =
+        Gauge.build(prefix + "ws_open", "WebSockets currently open")
+          .labelNames(Label.Name)
+          .register()
+      def apply(implicit name: WebSocketName) =
+        m.labels(name.value)
+    }
 
     final class WebSocketEventDuration private[Metrics] {
       private[this] val m =
@@ -381,6 +391,10 @@ final class PrometheusMetrics extends MetricsLogic[Fx] {
     Fx(ProjectsActive.set(n))
 
   private[this] implicit val projectSpa = WebSocketName("project_spa")
+  private[this] val projectSpaOpen    = OpenWebSockets.apply
+  private[this] val projectSpaPushes  = WebSocketPushes.apply
+  private[this] val projectSpaPushIO  = WebSocketIO.push
+  private[this] val projectSpaSession = WebSocketSessionDuration.apply
 
   override def projectSpaWebSocketMsg(msgType : String,
                                       bytesIn : Long,
@@ -394,8 +408,6 @@ final class PrometheusMetrics extends MetricsLogic[Fx] {
       WebSocketIO.msg(CommDir.Send, success).inc(bytesOut)
     }
 
-  private[this] val projectSpaPushes = WebSocketPushes.apply
-  private[this] val projectSpaPushIO = WebSocketIO.push
   override def projectSpaWebSocketPush(bytesOut: Long): Fx[Unit] =
     Fx {
       projectSpaPushes.inc()
@@ -406,13 +418,16 @@ final class PrometheusMetrics extends MetricsLogic[Fx] {
     Fx(WebSocketEventDuration("connect", result).observe(dur.asSeconds))
 
   override def projectSpaWebSocketOpened(dur: Duration) =
-    Fx(WebSocketEventDuration("open", "ok").observe(dur.asSeconds))
+    Fx {
+      WebSocketEventDuration("open", "ok").observe(dur.asSeconds)
+      projectSpaOpen.inc()
+    }
 
-  private[this] val projectSpaSession = WebSocketSessionDuration.apply
   override def projectSpaWebSocketClosed(dur: Duration, sessionDur: Duration) =
     Fx {
       WebSocketEventDuration("close", "ok").observe(dur.asSeconds)
       projectSpaSession.observe(sessionDur.asMinutes)
+      projectSpaOpen.dec()
     }
 
   override def projectSpaWebSocketStep[A](process: String, step: String)(f: Fx[A]) =
