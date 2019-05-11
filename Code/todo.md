@@ -113,6 +113,8 @@ Phase 2B
   Could add to test-state... But then how to make it account for tiny differents like moment.js "updated x sec ago" things?
   Any free tool?
 
+* Upgrade to Postgres 11
+
 * Benchmark ZIO to back Fx - UpdateContent seems to be crazy slow with current Fx
 
 * Add cache completion checks back into spec (filterComplete/isCompleteTo/etc)
