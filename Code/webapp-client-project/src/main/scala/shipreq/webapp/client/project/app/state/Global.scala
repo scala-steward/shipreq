@@ -1,12 +1,17 @@
 package shipreq.webapp.client.project.app.state
 
+import japgolly.microlibs.nonempty.NonEmptySet
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.extra.{Broadcaster, Px}
 import japgolly.scalajs.react.{Callback, CallbackTo, Reusability}
+import japgolly.univeq._
+import java.time.{Duration, Instant}
 import scala.util.{Failure, Success}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.ErrorMsg
+import shipreq.base.util.JavaTimeHelpers._
 import shipreq.webapp.base.data.{Project, ProjectMetaData}
-import shipreq.webapp.base.event.VerifiedEvent
+import shipreq.webapp.base.event.{EventOrd, VerifiedEvent}
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.WebSocket.Push
@@ -20,6 +25,8 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
 
   protected val logger = LoggerJs.on
 
+  protected def unsafeNow() = Instant.now()
+
   private var _state: State =
     State.Loading(VerifiedEvent.Seq.empty)
 
@@ -32,13 +39,13 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
 
   final val cbProjectMetaData: CallbackTo[ProjectMetaData] =
     CallbackTo(unsafeState match {
-      case State.Active(s)  => s.projectMetaData
+      case s: State.Active  => s.projectState.projectMetaData
       case _: State.Loading => null // Safe because I know I don't access this before initial load
     })
 
   final private val _pxProject: Px.ThunkM[Project] = {
     def f() = unsafeState match {
-      case State.Active(s)  => s.project
+      case s: State.Active  => s.projectState.project
       case _: State.Loading => Project.empty
     }
     Px(f()).withReuse.manualRefresh
@@ -84,7 +91,7 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
                 unsafeState match {
                   case State.Loading(es) =>
                     val s = ProjectState.init(i.project, i.projectMetaData).addEventsSimple(es)
-                    unsafeSetState(State.Active(s))
+                    unsafeSetState(State.Active(s, None))
                     onFirstLoad(this, i).runNow()
                   case _: State.Active =>
                     logger.runNow(_.warn("InitApp response received but already State.Active"))
@@ -113,14 +120,25 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
   final def addEvents(recvEvents: VerifiedEvent.Seq): Callback =
     Callback.when(recvEvents.nonEmpty)(Callback {
       logger.runNow(_.debug("Adding events: " + recvEvents))
-
       unsafeState match {
 
-        case State.Active(ps1) =>
-          for ((ps2, appliedEvents) <- ps1.addEvents(recvEvents)) {
-            unsafeSetState(State.Active(ps2))
+        case s1: State.Active =>
+          for ((ps2, appliedEvents) <- s1.projectState.addEvents(recvEvents)) {
+
+            // Update state
+            val similarlyStale = ps2.ord ==* s1.projectState.ord
+            val staleSince =
+              if (similarlyStale)
+                s1.staleSince.orElse(Some(unsafeNow()))
+              else if (ps2.futureEvents.nonEmpty)
+                Some(unsafeNow())
+              else
+                None
+            unsafeSetState(State.Active(ps2, staleSince))
+
+            // Broadcast changes
             for (ves <- VerifiedEvent.NonEmptySeq.maybe(appliedEvents)) {
-              val changes = Changes(ves, ps1.project, ps2.project)
+              val changes = Changes(ves, s1.projectState.project, ps2.project)
               broadcast(changes).runNow()
             }
           }
@@ -139,6 +157,39 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
     wsClient.invoker(p)
       .mergeFailure
       .onSuccess((ves, s) => addEvents(ves) >> s)
+
+  def requestSyncIfStaleFor(tolerance: Duration): Callback = {
+    val missingEvents = CallbackTo[Option[NonEmptySet[EventOrd]]] {
+      unsafeState match {
+        case s: State.Active =>
+          for {
+            staleSince  ← s.staleSince
+            stalePeriod = Duration.between(staleSince, unsafeNow())
+            _           ← Option.when(stalePeriod.isLongerThan(tolerance))(())
+            lastEvent   ← s.projectState.futureEvents.lastOption
+            first       = s.projectState.projectAndOrd.nextOrd.value
+            last        = lastEvent.ord.value - 1
+            got         = s.projectState.futureEvents.iterator.map(_.ord.value).toSet
+            missing     = first.to(last).iterator.filterNot(got.contains).map(EventOrd(_)).toSet
+            missingNE   ← NonEmptySet.option(missing)
+          } yield {
+            logger.runNow(_.info {
+              val dur = stalePeriod.conciseDesc
+              val events = missingNE.iterator.map(_.value).toList.sorted.mkString(",")
+              s"Client has been stale for $dur. Requesting sync for events: $events"
+            })
+            missingNE
+          }
+        case _ => None
+      }
+    }
+
+    for {
+      es <- missingEvents.asCBO
+      _  <- wsClient.readyState.asCBO.filter(_ == ReadyState.Open)
+      _  <- wsClient.send(WsReqRes.Sync)(es).toCBO
+    } yield ()
+  }
 
   final lazy val sspCreateContent         = sspToEvents(WsReqRes.CreateContent)
   final lazy val sspUpdateContent         = sspToEvents(WsReqRes.UpdateContent)
@@ -168,7 +219,7 @@ object Global {
   sealed trait State
   object State {
     final case class Loading(events: VerifiedEvent.Seq) extends State
-    final case class Active(projectState: ProjectState) extends State
+    final case class Active(projectState: ProjectState, staleSince: Option[Instant]) extends State
   }
 
   implicit def reusability: Reusability[Global] = Reusability.always

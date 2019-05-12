@@ -15,6 +15,7 @@ import shipreq.webapp.base.protocol.WebSocket.ReadyState
 import shipreq.webapp.base.protocol.WebSocketShared._
 
 trait WebSocketClient[ReqRes <: Protocol.RequestResponse[Pickler]] {
+  val readyState: CallbackTo[Option[ReadyState]]
   val keepAlive: Callback
   def send(p: ReqRes)(request: p.RequestType): CallbackTo[AsyncCallback[p.ResponseType]]
   def invoker(p: ReqRes): ServerSideProcInvoker[p.RequestType, ErrorMsg, p.ResponseType]
@@ -263,6 +264,9 @@ object WebSocketClient {
             i.ws.close()
       }
 
+    override val readyState: CallbackTo[Option[ReadyState]] =
+      CallbackTo(state.instance.map(_.readyState()))
+
     /** If a connection is open, Send an empty message to  Useful for preventing server-side timeout and keeping the connection alive */
     override val keepAlive: Callback = {
       val ab = new ArrayBuffer(0)
@@ -350,7 +354,7 @@ object WebSocketClient {
         Callback {
           get(reqId) match {
             case Some((_, f)) =>
-              assert(size > 0)
+              assert(size > 0, s"WebSocketClient.RequestManager: size=$size, reqId=${reqId.value}, state=$state")
               size -= 1
               if (size == 0)
                 state = new js.Array

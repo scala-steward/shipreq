@@ -2,6 +2,8 @@ package shipreq.webapp.base.protocol
 
 import boopickle.{PickleState, Pickler, UnpickleState}
 import japgolly.microlibs.adt_macros.AdtMacros
+import japgolly.microlibs.nonempty.NonEmptySet
+import japgolly.univeq.UnivEq
 import scalaz.\/
 import shipreq.base.util.{ErrorMsg, StaticLookupFn}
 import shipreq.webapp.base.data._
@@ -92,6 +94,10 @@ object ProjectSpaProtocols {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onReconnect(r)
     }
 
+    case object Sync extends Base[NonEmptySet[EventOrd], Unit](2) {
+      override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onSync(r)
+    }
+
     case object CreateContent extends Base[CreateContentCmd, EventResult](3) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onCreateContent(r)
     }
@@ -132,12 +138,14 @@ object ProjectSpaProtocols {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onTagMod(r)
     }
 
+    implicit def univEq: UnivEq[WsReqRes] = UnivEq.derive
     val values = AdtMacros.adtValues[WsReqRes]
     val byKey = StaticLookupFn.arrayBy(values.whole)(_.key)
 
     final case class Fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](
         onInitApp              : F[InitApp              .type] => G[InitApp              .type],
         onReconnect            : F[Reconnect            .type] => G[Reconnect            .type],
+        onSync                 : F[Sync                 .type] => G[Sync                 .type],
         onCreateContent        : F[CreateContent        .type] => G[CreateContent        .type],
         onUpdateContent        : F[UpdateContent        .type] => G[UpdateContent        .type],
         onProjectNameSet       : F[ProjectNameSet       .type] => G[ProjectNameSet       .type],
@@ -154,6 +162,7 @@ object ProjectSpaProtocols {
         Fold(
           onInitApp               = f => h.onInitApp              (self.onInitApp              (f)),
           onReconnect             = f => h.onReconnect            (self.onReconnect            (f)),
+          onSync                  = f => h.onSync                 (self.onSync                 (f)),
           onCreateContent         = f => h.onCreateContent        (self.onCreateContent        (f)),
           onUpdateContent         = f => h.onUpdateContent        (self.onUpdateContent        (f)),
           onProjectNameSet        = f => h.onProjectNameSet       (self.onProjectNameSet       (f)),

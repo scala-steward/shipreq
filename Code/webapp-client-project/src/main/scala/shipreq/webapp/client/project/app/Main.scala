@@ -42,8 +42,14 @@ object Main extends ClientSideProcImpl(ProjectSpaProtocols.EntryPoint) {
     val wsUrlBase = Url.Absolute.Base(location.protocol + "//" + location.host).forWebSocket
     val wsClient  = WebSocketClient(wsUrlBase, protocol, wsRetries)
     val global    = Global(wsClient, onLoad, onFailure, LoggerJs.on)
+
+    val keepAliveEvery     = Duration.ofSeconds(21)
+    val syncEvery          = Duration.ofSeconds(30)
+    val syncStaleTolerance = Duration.ofSeconds(30)
+
+    RawTimers.setInterval(global.wsClient.keepAlive.toJsFn, keepAliveEvery.toMillis)
+    RawTimers.setInterval(global.requestSyncIfStaleFor(syncStaleTolerance).toJsFn, syncEvery.toMillis)
     global.wsClient.connect.runNow()
-    RawTimers.setInterval(global.wsClient.keepAlive.toJsFn, 20000)
   }
 
   def determineBaseUrl(url: String) = {

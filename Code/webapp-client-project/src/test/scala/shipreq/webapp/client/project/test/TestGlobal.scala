@@ -2,6 +2,7 @@ package shipreq.webapp.client.project.test
 
 import boopickle.Pickler
 import japgolly.scalajs.react.{Callback, CallbackTo}
+import java.time.{Duration, Instant}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{ErrorMsg, PotentialChange, Retries}
@@ -17,7 +18,17 @@ import shipreq.webapp.server.logic.{ApplyNewEvent, MakeEvent}
 
 final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) => Callback.empty, _ => Callback.empty) {
 
+  override def toString = unsafeState match {
+    case Global.State.Active(a, b) => s"TestGlobal(Active($a, $b))"
+    case Global.State.Loading(es)  => s"TestGlobal(Loading(${es.map(_.ord.value).mkString(",")}))"
+  }
+
   override protected val logger = LoggerJs.off
+
+  override protected def unsafeNow() = now
+  var now = Instant.now()
+  def advanceTime(d: Duration): Unit = now = now.plusNanos(d.getNano).plusSeconds(d.getSeconds)
+  def advanceTimeByMs(ms: Long) = advanceTime(Duration.ofMillis(ms))
 
   lazy val protocol = ProjectSpaProtocols.WebSocket(initialProjectState.projectMetaData.id)
 
@@ -30,6 +41,12 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
 
     private var _responded = false
     def responded = _responded
+
+    def assertType(r: WsReqRes): r.RequestType = {
+      assertEq(req.reqRes, r)
+      val x = req.asInstanceOf[r.AndReq]
+      x.req
+    }
 
     def respondWith(r: Response): Unit = {
       val res = \/-((reqId, r))
@@ -45,6 +62,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
       val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
         onInitApp               = _ => ???,
         onReconnect             = _ => ???,
+        onSync                  = _ => ???,
         onCreateContent         = failLeft,
         onUpdateContent         = failLeft,
         onProjectNameSet        = failLeft,
@@ -96,7 +114,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
   val nextEventOrd: CallbackTo[EventOrd] =
     CallbackTo {
       val s = unsafeState.asInstanceOf[Global.State.Active].projectState
-      assert(s.futureEvents.isEmpty)
+      // assert(s.futureEvents.isEmpty, s"TestGlobal.nextEventOrd: s.futureEvents = ${s.futureEvents.map(_.ord.value)}")
       s.projectAndOrd.nextOrd
     }
 
@@ -108,6 +126,9 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
 
   def respondToLast(p: WsReqRes)(o: p.ResponseType): Unit =
     reqs().last.respondWith(p.protocolRes.andValue(o))
+
+  def addEvent(e: VerifiedEvent) =
+    addEvents(VerifiedEvent.Seq.one(e))
 
   def verifyEventsCB(es: Event*): CallbackTo[VerifiedEvent.Seq] = {
     val eventList = es.toList // avoid Scala bug
@@ -174,6 +195,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
     val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
       onInitApp               = _ => None,
       onReconnect             = _ => None,
+      onSync                  = _ => None,
       onCreateContent         = updateProject (MakeEvent.createContent),
       onUpdateContent         = updateProject (MakeEvent.updateContent),
       onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn),
@@ -196,7 +218,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
     }
   }
 
-  unsafeSetState(Global.State.Active(initialProjectState))
+  unsafeSetState(Global.State.Active(initialProjectState, None))
   wsClient.connect.runNow()
 }
 
