@@ -2,7 +2,6 @@ package shipreq.webapp.server.logic
 
 import boopickle.Pickler
 import japgolly.microlibs.scalaz_ext.ScalazMacros
-import java.time.Instant
 import scalaz.{-\/, Equal, Name, \/, \/-}
 import utest._
 import shipreq.base.util.{BinaryData, Direction}
@@ -86,6 +85,8 @@ object ProjectSpaLogicTest extends TestSuite {
 
       lazy val eventsC         = events.drop(2)
       lazy val verifiedEventsC = verifiedEvents.drop(2)
+
+      lazy val verifiedEventsBC = verifiedEventsB ++ verifiedEventsC
     }
   }
 
@@ -105,29 +106,39 @@ object ProjectSpaLogicTest extends TestSuite {
       WebSocketShared.protocolSC(responseUnpickler))
   }
 
-  private def sendMsg(msg: WsReqRes.AndReq, static: WebSocketStatic)(implicit t: Tester): MsgError \/ msg.reqRes.ResponseType = {
+  private def sendMsg(msg: WsReqRes.AndReq, static: WebSocketStatic, state: WebSocketState)(implicit t: Tester) = {
     import t._
     val reqId = ReqId(7)
     val h = wsHelper(reqId, msg.reqRes)
     val msgBin = BinaryJvm.encode(h.protocolCS)((reqId, msg))
     var resp: MsgError \/ BinaryData = null
-    projectSpa.onMessage(static, msgBin, a => Name{resp = \/-(a); \/-(())}, a => Name{resp = -\/(a)}).value
-    resp match {
-      case \/-(b) =>
-        BinaryJvm.decodeUnsafe(b, h.protocolSC) match {
-          case \/-((reqId2, protocolAndValue)) =>
-            assertEq(reqId2, reqId)
-            val result = protocolAndValue.unsafeForceType[msg.reqRes.ResponseType].value
-            \/-(result)
-          case -\/(push) =>
-            fail("Received push: " + push)
-        }
-      case -\/(e) => -\/(e)
-    }
+    val proc = projectSpa.onMessage(
+      static  = static,
+      state   = state,
+      msg     = msgBin,
+      respond = a => Name{resp = \/-(a); \/-(())},
+      push    = e => Name(???),
+      onError = a => Name{resp = -\/(a)}
+    )
+    val newState = proc.value
+    val result: MsgError \/ msg.reqRes.ResponseType =
+      resp match {
+        case \/-(b) =>
+          BinaryJvm.decodeUnsafe(b, h.protocolSC) match {
+            case \/-((reqId2, protocolAndValue)) =>
+              assertEq(reqId2, reqId)
+              val result = protocolAndValue.unsafeForceType[msg.reqRes.ResponseType].value
+              \/-(result)
+            case -\/(push) =>
+              fail("Received push: " + push)
+          }
+        case -\/(e) => -\/(e)
+      }
+    (result, newState)
   }
 
-  private def sendMsgAndBroadcast(msg: WsReqRes.AndReq, static: WebSocketStatic)(implicit t: Tester): msg.reqRes.ResponseType = {
-    val r = sendMsg(msg, static).needRight
+  private def sendMsgAndBroadcast(msg: WsReqRes.AndReq, static: WebSocketStatic, state: WebSocketState)(implicit t: Tester): msg.reqRes.ResponseType = {
+    val r = sendMsg(msg, static, state)._1.needRight
     t.redis.publishAll.value
     r
   }
@@ -222,9 +233,11 @@ object ProjectSpaLogicTest extends TestSuite {
         assertDifference("full db reads", db.loadProjectLog.length)(expectFullDbReads) {
           assertDifference("redis writes", redis.writeCount())(expectCacheWrites) {
 
-            val actual = sendMsg(initAppMsg, p1.static)
+            val result = sendMsg(initAppMsg, p1.static, subscribedState)
+            val actual = result._1
             val expect = \/-(p1.initAppData)
             assertEq(actual, \/-(expect))
+            assert(result._2.isEmpty)
 
             val cache = redis.read(p1.id).value
             assertEq(cache.ord, Some(p1.latestOrd))
@@ -242,12 +255,14 @@ object ProjectSpaLogicTest extends TestSuite {
     'updateProject - {
       def test(c: CacheState, expectCacheWrites: Int, expectFullDbReads: Int)(implicit t: Tester): Unit = {
         import t._
-        assertDifference(s"[$c] full db reads", db.loadProjectLog.length)(expectFullDbReads) {
+        assertDifference(s"[$c] db reads", db.loadProjectLog.length)(expectFullDbReads) {
           assertDifference(s"[$c] redis writes", redis.writeCount())(expectCacheWrites) {
 
-            val actual = sendMsg(newUC, p1.static)
+            val result = sendMsg(newUC, p1.static, subscribedState)
+            val actual = result._1
             val expect = \/-(List(EventOrd(4)))
             assertEq(s"[$c] response", actual.map(_.map(_.toList.map(_.ord))), \/-(expect))
+            assert(result._2.isEmpty)
 
             val cache = redis.read(p1.id).value
             assertEq(s"[$c] cache state", cache.ord, Some((p1.latestOrd.asEventOrd + 1).asLatest))
@@ -268,32 +283,62 @@ object ProjectSpaLogicTest extends TestSuite {
 
       var recv1     = Vector.empty[VerifiedEvent.NonEmptySeq]
       val subState1 = projectSpa.onOpen(static, emptyState, onPush(recv1 :+= _)).value
-      val initData1 = sendMsgAndBroadcast(initAppMsg, static).needRight
+      val initData1 = sendMsgAndBroadcast(initAppMsg, static, subState1).needRight
       assertEq("[1]", recv1, Vector.empty)
 
-      val ves1 = sendMsgAndBroadcast(newUC, static).needRight.needNES
+      val ves1 = sendMsgAndBroadcast(newUC, static, subState1).needRight.needNES
       assertEq("[2]", recv1, Vector(ves1))
 
       var recv2     = Vector.empty[VerifiedEvent.NonEmptySeq]
       val subState2 = projectSpa.onOpen(static, emptyState, onPush(recv2 :+= _)).value
-      val initData2 = sendMsgAndBroadcast(initAppMsg, static).needRight
+      val initData2 = sendMsgAndBroadcast(initAppMsg, static, subState2).needRight
       assertEq("[3]", recv2, Vector.empty)
       assertEq("[4]", recv1, Vector(ves1))
       assertEq("[5]", initData2.project.ord, Some(initData1.project.nextOrd.asLatest))
       assertEq("[6]", initData2.project.project.content.reqs.size, 1)
 
-      val ves2 = sendMsgAndBroadcast(newUC, static).needRight.needNES
+      val ves2 = sendMsgAndBroadcast(newUC, static, subState2).needRight.needNES
       assertEq("[7]", recv1, Vector(ves1, ves2))
       assertEq("[8]", recv2, Vector(ves2))
 
-      val ves3 = sendMsgAndBroadcast(newUC, static).needRight.needNES
+      val ves3 = sendMsgAndBroadcast(newUC, static, subState1).needRight.needNES
       assertEq("[9]", recv1, Vector(ves1, ves2, ves3))
       assertEq("[A]", recv2, Vector(ves2, ves3))
 
       subState1.sub.get.unsubscribe.value
-      val ves4 = sendMsgAndBroadcast(newUC, static).needRight.needNES
+      val ves4 = sendMsgAndBroadcast(newUC, static, subState2).needRight.needNES
       assertEq("[B]", recv1, Vector(ves1, ves2, ves3))
       assertEq("[C]", recv2, Vector(ves2, ves3, ves4))
+    }
+
+    'reconnect - {
+
+      'current - {
+        implicit val t = new Tester; import t._
+        assertDifference("db reads", db.loadProjectLog.length)(0) {
+          val (\/-(events), newState) = sendMsg(WsReqRes.Reconnect.AndReq(p1.projectAndOrd.ord), p1.static, emptyState)
+          assertEq(events, VerifiedEvent.Seq.empty)
+          assert(newState.exists(_.sub.isDefined))
+        }
+      }
+
+      'stale - {
+        def test(c: CacheState, expectFullDbReads: Int)(implicit t: Tester): Unit = {
+          import t._
+          assertDifference(s"[$c] db reads", db.loadProjectLog.length)(expectFullDbReads) {
+            val (\/-(events), newState) = sendMsg(WsReqRes.Reconnect.AndReq(Some(p1.latestOrdA)), p1.static, emptyState)
+            assertEq(events, p1.verifiedEventsBC)
+            assert(newState.exists(_.sub.isDefined))
+          }
+        }
+        withAllCacheConfig { implicit t => {
+          case c: CacheState.Empty              => test(c, 1)
+          case c@ CacheState.UpToDate("events") => test(c, 0)
+          case c@ CacheState.UpToDate(_)        => test(c, 1)
+          case c: CacheState.Stale              => test(c, 1)
+          case c: CacheState.Incomplete         => test(c, 1)
+        }}
+      }
     }
 
   }

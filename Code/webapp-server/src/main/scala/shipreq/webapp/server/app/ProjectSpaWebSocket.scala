@@ -65,6 +65,11 @@ final class ProjectSpaWebSocket extends StrictLogging {
       }
     }
 
+  private def fxPush(s: Session): BinaryData => Fx[Unit] = {
+    val remote = s.getBasicRemote
+    b => Fx(remote.sendBinary(b.unsafeByteBuffer))
+  }
+
   @OnOpen
   def onOpen(s: Session): Unit = {
     val startMs   = System.currentTimeMillis()
@@ -77,14 +82,14 @@ final class ProjectSpaWebSocket extends StrictLogging {
         val userProps = s.getUserProperties
         val static    = staticL.get(userProps)
         val state     = stateL.get(userProps)
-        val remote    = s.getBasicRemote
-        val pushFn    = (b: BinaryData) => Fx(remote.sendBinary(b.unsafeByteBuffer))
-        val state2    = projectSpaLogic.onOpen(static, state, pushFn).unsafeRun()
+        val state2    = projectSpaLogic.onOpen(static, state, fxPush(s)).unsafeRun()
         stateL.set(userProps, state2)
     }
     val durMs = System.currentTimeMillis() - startMs
     logger.debug(s"WebSocket ${s.getRequestURI.getPath} open completed $durMs ms")
   }
+
+  private[this] val rightUnit = \/-(())
 
   @OnMessage
   def onMessage(s: Session, messageBytes: Array[Byte]): Unit = {
@@ -93,13 +98,14 @@ final class ProjectSpaWebSocket extends StrictLogging {
     } else {
       val userProps = s.getUserProperties
       val static    = staticL.get(userProps)
+      val state     = stateL.get(userProps)
       val remote    = s.getBasicRemote
       val binIn     = BinaryData.unsafeFromArray(messageBytes)
 
       val fxSend: BinaryData => Fx[Throwable \/ Unit] =
         b => Fx(try {
           remote.sendBinary(b.unsafeByteBuffer)
-          \/-(())
+          rightUnit
         } catch {
           case t: Throwable => -\/(t)
         })
@@ -109,7 +115,10 @@ final class ProjectSpaWebSocket extends StrictLogging {
         case MsgError.RespondError(_) => fxClose(s, CustomCloseCodes.RespondException, "Error sending response")
       }
 
-      projectSpaLogic.onMessage(static, binIn, fxSend, fxOnError).unsafeRun()
+      val main = projectSpaLogic.onMessage(static, state, binIn, fxSend, fxPush(s), fxOnError)
+
+      for (state2 <- main.unsafeRun())
+        stateL.set(userProps, state2)
     }
   }
 

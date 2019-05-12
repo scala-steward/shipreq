@@ -49,14 +49,6 @@ object Redis {
     def filterComplete: ProjectCache =
       if (isComplete) this else ProjectCache.empty
 
-    def >(x: Option[EventOrd.Latest]): Boolean =
-      (ord, x) match {
-        case (Some(a), Some(b)) => a > b
-        case (Some(_), None   ) => true
-        case (None   , Some(_))
-           | (None   , None   ) => false
-      }
-
     def build(pid: ProjectId) =
       snapshot match {
         case Some(ss) => ApplyEvents.append(pid, ss.toProjectAndOrd, events)
@@ -91,6 +83,12 @@ object Redis {
       *          - Update_ReadRedis
       */
     def read(id: ProjectId): F[ProjectCache]
+
+    /** Read events only.
+      *
+      * @param beyond Only events that exceed this are to be returned.
+      */
+    def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]): F[VerifiedEvent.Seq]
 
     /** [TLA+] Used by:
       *          - RedisWriteSnapshot
@@ -194,6 +192,10 @@ object Redis {
 
     override def read(id: ProjectId) = F.point {
       readNow(id)
+    }
+
+    override def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]) = F.point {
+      readNow(id).events.filter(_.ord > beyond)
     }
 
     override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq) =

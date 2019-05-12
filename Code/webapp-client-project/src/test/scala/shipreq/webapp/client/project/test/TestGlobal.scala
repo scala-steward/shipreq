@@ -44,6 +44,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
       def failLeft = (_: Any) => -\/(ErrorMsg("TestGlobal.failLast()"))
       val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
         onInitApp               = _ => ???,
+        onReconnect             = _ => ???,
         onCreateContent         = failLeft,
         onUpdateContent         = failLeft,
         onProjectNameSet        = failLeft,
@@ -182,6 +183,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
 
     val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
       onInitApp               = _ => None,
+      onReconnect             = _ => None,
       onCreateContent         = updateProject (MakeEvent.createContent),
       onUpdateContent         = updateProject (MakeEvent.updateContent),
       onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn),

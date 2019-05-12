@@ -10,7 +10,8 @@ import shipreq.base.ops.Trace
 import shipreq.base.util._
 import shipreq.base.util.JavaTimeHelpers._
 import shipreq.webapp.base.data.{Obfuscated, Project, ProjectId, ProjectMetaData}
-import shipreq.webapp.base.event.{ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.base.event.EventOrd.Implicits._
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes.EventResult
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, InitPageData, WsReqRes}
 import shipreq.webapp.base.protocol._
@@ -29,9 +30,11 @@ trait ProjectSpaLogic[F[_]] {
              push  : BinaryData => F[Unit]): F[WebSocketState[F]]
 
   def onMessage(static : WebSocketStatic,
+                state  : WebSocketState[F],
                 msg    : BinaryData,
                 respond: BinaryData => F[Throwable \/ Unit],
-                onError: MsgError => F[Unit]): F[Unit]
+                push   : BinaryData => F[Unit],
+                onError: MsgError => F[Unit]): F[Option[WebSocketState[F]]]
 
   // Option is used because this is called after onConnect rejection
   // (in which case valid values are never created for the session)
@@ -201,36 +204,41 @@ object ProjectSpaLogic extends StrictLogging {
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // Message responding
 
+      type OptionState = Option[WebSocketState[F]]
+
       override def onMessage(static : WebSocketStatic,
+                             state  : WebSocketState[F],
                              msg    : BinaryData,
                              respond: BinaryData => F[Throwable \/ Unit],
-                             onError: MsgError => F[Unit]): F[Unit] = {
+                             push   : BinaryData => F[Unit],
+                             onError: MsgError => F[Unit]): F[OptionState] = {
         val M = OnMsgError
 
         val span = getSpan(static)
 
-        def body(implicit span: Span): F[MsgResult] = {
+        def body(implicit span: Span): F[MsgResult[F]] = {
 
-          def handleError(wsReqRes: FreeOption[WsReqRes], err: MsgError): F[MsgResult] =
+          def handleError(wsReqRes: FreeOption[WsReqRes], err: MsgError): F[MsgResult[F]] =
             onError(err) >> F.point {
               err match {
                 case MsgError.DecodingFailure => logger.warn(s"Failed to decode message: ${msg.describe(1000)}")
                 case MsgError.RespondError(e) => logger.error(s"Error sending response.", e)
               }
-              new MsgResult(wsReqRes, -1L)
+              new MsgResult(wsReqRes, -1L, None)
             }
 
           parseMsg(msg) match {
             case \/-((reqId, req)) =>
               for {
                 _              ← trace.rename("onMessage: " + req.reqRes.name)
-                res            ← msgFold(req.reqRes)((req.req, static)): F[req.reqRes.ResponseType]
-                protocolAndRes = req.reqRes.protocolRes.andValue(res)
+                msgFnIn        = MsgFnIn(req.req, static, state, push)
+                msgFnOut       ← msgFold(req.reqRes)(msgFnIn): F[MsgFnOut[F, req.reqRes.ResponseType]]
+                protocolAndRes = req.reqRes.protocolRes.andValue(msgFnOut.output)
                 fullRes        = \/-((reqId, protocolAndRes))
                 resBin         = BinaryJvm.encode(webSocketHelper.protocolSC)(fullRes)
                 wsReqRes       = FreeOption(req.reqRes)
                 result         ← respond(resBin).flatMap {
-                                   case \/-(_) => F.point(new MsgResult(wsReqRes, resBin.length))
+                                   case \/-(_) => F.point(new MsgResult(wsReqRes, resBin.length, msgFnOut.newState))
                                    case -\/(e) => handleError(wsReqRes, MsgError.RespondError(e))
                                  }
               } yield result
@@ -245,7 +253,7 @@ object ProjectSpaLogic extends StrictLogging {
           pid      = static.projectId.value
           _        ← metrics.projectSpaWebSocketMsg(r.msgType, msg.length, r.bytesOut, dur, r.ok)
           _        ← F.point(logger.info(s"WebSocket for project #$pid processed request in ${dur.conciseDesc}"))
-        } yield ()
+        } yield r.newState
       }
 
       private def parseMsg(msg: BinaryData) = {
@@ -255,14 +263,13 @@ object ProjectSpaLogic extends StrictLogging {
         }
       }
 
-      private type MsgFnIn[I] = (I, WebSocketStatic)
-      private type MsgFnOut[O] = F[O]
-      private type MsgFn[I, O] = (I, WebSocketStatic) => MsgFnOut[O]
-      private type MsgFoldIn[R <: WsReqRes] = MsgFnIn[R#RequestType]
-      private type MsgFoldOut[R <: WsReqRes] = MsgFnOut[R#ResponseType]
+      private type MsgFn     [I, O]          = MsgFnIn[F, I] => F[MsgFnOut[F, O]]
+      private type MsgFoldIn [R <: WsReqRes] = MsgFnIn[F, R#RequestType]
+      private type MsgFoldOut[R <: WsReqRes] = F[MsgFnOut[F, R#ResponseType]]
 
       private val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
-        onInitApp               = onInitApp.tupled,
+        onInitApp               = onInitApp,
+        onReconnect             = onReconnect,
         onCreateContent         = updateProject (MakeEvent.createContent),
         onUpdateContent         = updateProject (MakeEvent.updateContent),
         onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn),
@@ -277,20 +284,16 @@ object ProjectSpaLogic extends StrictLogging {
 
       private val projectUpdater = new ProjectUpdater[D, F]
 
-      private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFnIn[I] => MsgFnOut[EventResult] = input => {
-        val i = input._1
-        val pid = input._2.projectId
-        projectUpdater(pid, mkEvent(i, _))
-      }
+      private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFn[I, EventResult] =
+        in => projectUpdater(in.static.projectId, mkEvent(in.input, _)).map(MsgFnOut(_, None))
 
-      private def updateProjectI[I](mkEvent: I => MakeEvent.Result): MsgFnIn[I] => MsgFnOut[EventResult] =
+      private def updateProjectI[I](mkEvent: I => MakeEvent.Result): MsgFn[I, EventResult] =
         updateProject((i, _) => mkEvent(i))
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // InitApp
 
-      private def onInitApp: MsgFn[Unit, ErrorMsg \/ InitAppData] = (_, static) => {
-        val pid = static.projectId
+      private def onInitApp: MsgFn[Unit, ErrorMsg \/ InitAppData] = in => {
+        val pid = in.static.projectId
 
         type Result = ErrorMsg \/ InitAppData
 
@@ -342,7 +345,57 @@ object ProjectSpaLogic extends StrictLogging {
                      case Some(md) => if (cache.isCompleteTo(md.latestOrd)) useCache(cache, md) else ignoreCache(cache)
                      case None     => F pure projectNotFound
                    }
-        } yield r
+        } yield MsgFnOut(r, None)
+      }
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      private def onReconnect: MsgFn[Option[EventOrd.Latest], VerifiedEvent.Seq] = in => {
+        val pid     = in.static.projectId
+        val userOrd = in.input
+        val span    = getSpan(in.static)
+
+        def step[A](name: String)(f: F[A]): F[A] =
+          trace.newSpan(name)(_ => metrics.projectSpaWebSocketStep("reconnect", name)(f))
+
+        val redisSubscribe: F[OptionState] =
+          in.state.sub match {
+            case None    => redis.subscribe(pid, pushEvent(span, in.push, _)).map(s => Some(WebSocketState(Some(s))))
+            case Some(_) => F.pure(None)
+          }
+
+        def loadEventsFromRedis: F[VerifiedEvent.Seq] =
+          step("readRedis")(redis.readEvents(pid, userOrd))
+
+        def loadEventsFromDb(o: Option[EventOrd.Latest]): F[VerifiedEvent.Seq] =
+          step("readDb")(runDB(db.getProjectEvents(pid, DB.EventFilter.given(o))))
+
+        def loadEvents(dbLatest: Option[EventOrd.Latest]): F[VerifiedEvent.Seq] =
+          loadEventsFromRedis.flatMap { cachedEvents =>
+            val cachedEventsAreUsable = cachedEvents.nonEmpty && cachedEvents.head.ord.immediatelyFollowsLatest(userOrd)
+            if (cachedEventsAreUsable) {
+              val newLatest = Some(cachedEvents.last.ord.asLatest)
+              if (dbLatest > newLatest)
+                for {
+                  dbEvents <- loadEventsFromDb(newLatest)
+                  // Not writing back to Redis for now
+                  // * Snapshot could be 1000, this could send events 500-1001 for no reason
+                  // * Normal processing (covered by TLA) keeps the cache up-to-date - a reconnection seems orthogonal
+                  // _ <- redis.writeEvents(pid, dbEvents, VerifiedEvent.Seq.empty)
+                } yield cachedEvents ++ dbEvents
+              else
+                F.pure(cachedEvents)
+            } else
+              loadEventsFromDb(userOrd)
+          }
+
+        for {
+          newState ← redisSubscribe
+          mdOpt    ← runDB(db.getProjectMetaData(pid))
+          md       = mdOpt.get // TODO Handle reconnection attempt after project deleted
+          dbLatest = md.latestOrd
+          events   ← if (dbLatest > userOrd) loadEvents(dbLatest) else F.pure(VerifiedEvent.Seq.empty)
+        } yield MsgFnOut(events, newState)
       }
 
     } // new ProjectSpaLogic
@@ -350,7 +403,14 @@ object ProjectSpaLogic extends StrictLogging {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private final class MsgResult(reqType: FreeOption[WsReqRes], len: Long) {
+  private final case class MsgFnIn[F[_], I](input : I,
+                                            static: WebSocketStatic,
+                                            state : WebSocketState[F],
+                                            push  : BinaryData => F[Unit])
+
+  private final case class MsgFnOut[F[_], O](output: O, newState: Option[WebSocketState[F]])
+
+  private final class MsgResult[F[_]](reqType: FreeOption[WsReqRes], len: Long, val newState: Option[WebSocketState[F]]) {
     def msgType : String  = reqType.fold("unknown", _.name)
     def ok      : Boolean = len >= 0
     def bytesOut: Long    = if (ok) len else 0
@@ -381,7 +441,7 @@ object ProjectSpaLogic extends StrictLogging {
             } yield {
               val r = r0.filterComplete
               r.build(pid) match {
-                case \/-(p) => -\/(s.copy(local = p, redis = r, status = if (r > s.local.ord) WriteDb else ReadDb))
+                case \/-(p) => -\/(s.copy(local = p, redis = r, status = if (r.ord > s.local.ord) WriteDb else ReadDb))
                 case -\/(e) => \/-(-\/(e))
               }
             }

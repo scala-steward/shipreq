@@ -18,6 +18,9 @@ final case class EventOrd(value: Int) extends AnyVal {
   def <=(o: EventOrd): Boolean = value <= o.value
   def >=(o: EventOrd): Boolean = value >= o.value
 
+  def < (o: Option[EventOrd.Latest]): Boolean = if (o.isEmpty) false else value < o.get.value
+  def > (o: Option[EventOrd.Latest]): Boolean = if (o.isEmpty) true  else value > o.get.value
+
   def immediatelyFollows(prev: EventOrd): Boolean =
     (prev.value + 1) ==* this.value
 
@@ -45,4 +48,17 @@ object EventOrd {
   @inline implicit def latestExtendsEventOrd(l: Latest): EventOrd = l.asEventOrd
 
   implicit def univEqLatest: UnivEq[Latest] = UnivEq.derive
+
+  object Implicits {
+    implicit class EventOrdLatestExt(private val self: Option[EventOrd.Latest]) extends AnyVal {
+      def >(x: Option[EventOrd.Latest]): Boolean =
+        (self, x) match {
+          case (Some(a), Some(b)) => a > b
+          case (Some(_), None   ) => true
+          case (None   , Some(_))
+             | (None   , None   ) => false
+        }
+    }
+
+  }
 }

@@ -5,7 +5,7 @@ import japgolly.microlibs.adt_macros.AdtMacros
 import scalaz.\/
 import shipreq.base.util.{ErrorMsg, StaticLookupFn}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.{ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.user._
 import shipreq.webapp.base.Urls
 import BoopickleMacros._
@@ -88,43 +88,47 @@ object ProjectSpaProtocols {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onInitApp(r)
     }
 
-    case object CreateContent extends Base[CreateContentCmd, EventResult](1) {
+    case object Reconnect extends Base[Option[EventOrd.Latest], VerifiedEvent.Seq](1) {
+      override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onReconnect(r)
+    }
+
+    case object CreateContent extends Base[CreateContentCmd, EventResult](3) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onCreateContent(r)
     }
 
-    case object UpdateContent extends Base[UpdateContentCmd, EventResult](2) {
+    case object UpdateContent extends Base[UpdateContentCmd, EventResult](4) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onUpdateContent(r)
     }
 
-    case object ProjectNameSet extends Base[String, EventResult](3) {
+    case object ProjectNameSet extends Base[String, EventResult](5) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onProjectNameSet(r)
     }
 
-    case object UpdateSavedViews extends Base[SavedViewCmd, EventResult](4) {
+    case object UpdateSavedViews extends Base[SavedViewCmd, EventResult](6) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onUpdateSavedViews(r)
     }
 
-    case object FieldMandatorinessMod extends Base[(CustomFieldId, Mandatory), EventResult](5) {
+    case object FieldMandatorinessMod extends Base[(CustomFieldId, Mandatory), EventResult](7) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onFieldMandatorinessMod(r)
     }
 
-    case object ReqTypeImplicationMod extends Base[(CustomReqTypeId, ImplicationRequired), EventResult](6) {
+    case object ReqTypeImplicationMod extends Base[(CustomReqTypeId, ImplicationRequired), EventResult](8) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onReqTypeImplicationMod(r)
     }
 
-    case object CustomIssueTypeCrud extends Base[CrudAction[CustomIssueTypeId, (HashRefKey, Option[String])], EventResult](7) {
+    case object CustomIssueTypeCrud extends Base[CrudAction[CustomIssueTypeId, (HashRefKey, Option[String])], EventResult](9) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onCustomIssueTypeCrud(r)
     }
 
-    case object CustomReqTypeCrud extends Base[CrudAction[CustomReqTypeId, (ReqType.Mnemonic, String, ImplicationRequired)], EventResult](8) {
+    case object CustomReqTypeCrud extends Base[CrudAction[CustomReqTypeId, (ReqType.Mnemonic, String, ImplicationRequired)], EventResult](10) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onCustomReqTypeCrud(r)
     }
 
-    case object FieldMod extends Base[FieldCrud.CfgAction, EventResult](9) {
+    case object FieldMod extends Base[FieldCrud.CfgAction, EventResult](11) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onFieldMod(r)
     }
 
-    case object TagMod extends Base[TagCrud.Action, EventResult](10) {
+    case object TagMod extends Base[TagCrud.Action, EventResult](12) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onTagMod(r)
     }
 
@@ -133,6 +137,7 @@ object ProjectSpaProtocols {
 
     final case class Fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](
         onInitApp              : F[InitApp              .type] => G[InitApp              .type],
+        onReconnect            : F[Reconnect            .type] => G[Reconnect            .type],
         onCreateContent        : F[CreateContent        .type] => G[CreateContent        .type],
         onUpdateContent        : F[UpdateContent        .type] => G[UpdateContent        .type],
         onProjectNameSet       : F[ProjectNameSet       .type] => G[ProjectNameSet       .type],
@@ -148,6 +153,7 @@ object ProjectSpaProtocols {
       def compose[H[_ <: WsReqRes]](h: Fold[G, H]): Fold[F, H] =
         Fold(
           onInitApp               = f => h.onInitApp              (self.onInitApp              (f)),
+          onReconnect             = f => h.onReconnect            (self.onReconnect            (f)),
           onCreateContent         = f => h.onCreateContent        (self.onCreateContent        (f)),
           onUpdateContent         = f => h.onUpdateContent        (self.onUpdateContent        (f)),
           onProjectNameSet        = f => h.onProjectNameSet       (self.onProjectNameSet       (f)),
