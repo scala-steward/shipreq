@@ -275,10 +275,12 @@ object ProjectSpaLogic extends StrictLogging {
         onTagMod                = updateProject (MakeEvent.tagCrud),
       )
 
+      private val projectUpdater = new ProjectUpdater[D, F]
+
       private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFnIn[I] => MsgFnOut[EventResult] = input => {
         val i = input._1
         val pid = input._2.projectId
-        ProjectUpdater[D, F](pid, mkEvent(i, _))
+        projectUpdater(pid, mkEvent(i, _))
       }
 
       private def updateProjectI[I](mkEvent: I => MakeEvent.Result): MsgFnIn[I] => MsgFnOut[EventResult] =
@@ -354,21 +356,20 @@ object ProjectSpaLogic extends StrictLogging {
     def bytesOut: Long    = if (ok) len else 0
   }
 
-  private object ProjectUpdater {
+  private final class ProjectUpdater[D[_], F[_]](implicit
+                                                 D       : Monad[D],
+                                                 F       : Monad[F] with BindRec[F],
+                                                 db      : DB.ForProjectSpa[D],
+                                                 metrics : MetricsLogic[F],
+                                                 redis   : Redis.ProjectAlgebra[F],
+                                                 runDB   : D ~> F,
+                                                 security: Security.Algebra[F],
+                                                 trace   : Trace.Algebra[F]) {
+    import ProjectUpdater._
 
     type Result = ErrorMsg \/ VerifiedEvent.Seq
 
-    def apply[D[_], F[_]](pid: ProjectId,
-                          mkEvent: Project => MakeEvent.Result)
-                         (implicit
-                          D       : Monad[D],
-                          F       : Monad[F] with BindRec[F],
-                          db      : DB.ForProjectSpa[D],
-                          metrics : MetricsLogic[F],
-                          redis   : Redis.ProjectAlgebra[F],
-                          runDB   : D ~> F,
-                          security: Security.Algebra[F],
-                          trace   : Trace.Algebra[F]): F[Result] = {
+    def apply(pid: ProjectId, mkEvent: Project => MakeEvent.Result): F[Result] = {
 
       def loop(s: State): F[State \/ Result] = {
         import Status._
@@ -433,6 +434,9 @@ object ProjectSpaLogic extends StrictLogging {
 
       F.tailrecM(loop)(initialState)
     }
+  }
+
+  private object ProjectUpdater {
 
     final case class State(local : ProjectAndOrd,
                            redis : Redis.ProjectCache,
