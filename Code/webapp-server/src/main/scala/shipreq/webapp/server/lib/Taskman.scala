@@ -22,9 +22,6 @@ object Taskman {
 //      url,
 //      ArticulateError(e).hint(suppInfo).show)
 
-//  def submitAsync(w: WebappErrorOccurred): Fx[Unit] =
-//    Fx.unit // TODO
-
 //  private object AsyncActor extends SpecializedLiftActor[Msg] {
 //    override protected def messageHandler = {
 //      case m: Msg =>
