@@ -1,6 +1,7 @@
 package shipreq.webapp.server.logic
 
 import boopickle.Pickler
+import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import scalaz.{-\/, Equal, Name, \/, \/-}
 import utest._
@@ -35,6 +36,8 @@ object ProjectSpaLogicTest extends TestSuite {
   private val newUC = WsReqRes.CreateContent.AndReq(cmdNewUC)
 
   private class Tester extends MockInterpreters {
+    def broadcastAll(): Unit =
+      redis.publishAll.value
 
     implicit def tokenToCookieLookup(t: SessionToken): Cookie.LookupFn =
       security.sessionPersist(t).value.add.map(c => c.name -> c.value).toMap.get
@@ -139,7 +142,7 @@ object ProjectSpaLogicTest extends TestSuite {
 
   private def sendMsgAndBroadcast(msg: WsReqRes.AndReq, static: WebSocketStatic, state: WebSocketState)(implicit t: Tester): msg.reqRes.ResponseType = {
     val r = sendMsg(msg, static, state)._1.needRight
-    t.redis.publishAll.value
+    t.broadcastAll()
     r
   }
 
@@ -339,6 +342,21 @@ object ProjectSpaLogicTest extends TestSuite {
           case c: CacheState.Incomplete         => test(c, 1)
         }}
       }
+    }
+
+    'sync - {
+      implicit val t = new Tester; import t._
+      val ords     = NonEmptySet(1, 3, 666).map(EventOrd(_))
+      var recv     = Vector.empty[VerifiedEvent.NonEmptySeq]
+      val subState = projectSpa.onOpen(p1.static, emptyState, onPush(recv :+= _)).value
+      val (\/-(_), newState) = sendMsg(WsReqRes.Sync.AndReq(ords), p1.static, subState)
+      assertEq(recv, Vector.empty)
+      assert(newState.isEmpty)
+
+      broadcastAll()
+      val actual = recv.flatMap(_.values.iterator.map(_.ord)).toSet
+      val expect = ords.whole.filter(_ <= p1.verifiedEvents.last.ord)
+      assertEq(actual, expect)
     }
 
   }

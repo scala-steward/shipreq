@@ -249,6 +249,7 @@ final class MockDb(_now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecu
     f match {
       case DB.EventFilter.IncludeAll     => r
       case DB.EventFilter.ExcludeUpTo(o) => r.filter(_.ord > o)
+      case DB.EventFilter.Set(o)         => r.filter(x => o.contains(x.ord))
     }
   }
 

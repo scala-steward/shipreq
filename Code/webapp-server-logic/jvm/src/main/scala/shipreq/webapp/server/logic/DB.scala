@@ -1,5 +1,6 @@
 package shipreq.webapp.server.logic
 
+import japgolly.microlibs.nonempty.NonEmptySet
 import java.time.Instant
 import scalaz.{\/, ~>}
 import shipreq.webapp.base.data._
@@ -172,6 +173,7 @@ object DB {
   object EventFilter {
     case object IncludeAll extends EventFilter
     final case class ExcludeUpTo(ord: EventOrd) extends EventFilter
+    final case class Set(ords: NonEmptySet[EventOrd]) extends EventFilter
 
     def given(alreadyGot: Option[EventOrd.Latest]): EventFilter =
       alreadyGot match {

@@ -1,6 +1,7 @@
 package shipreq.webapp.server.db
 
 import doobie.imports._
+import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.univeq._
 import java.time.Instant
 import nyaya.gen.Gen
@@ -370,16 +371,25 @@ object DbInterpreter {
     override def projectSpaInitPage(id: ProjectId): ConnectionIO[Project.Name] =
       projectSpaInitPageSql.toQuery0(id).option.map(_.filterNot(_ eq null).getOrElse(""))
 
-    private[db] final val sqlSelectEvents: EventFilter => ProjectId => Query0[(EventOrd, Event)] = {
-      type O = (EventOrd, Event)
-      val allSql = s"SELECT ord,$eventE FROM event WHERE project_id=?"
-      val all = Query[ProjectId, O](allSql)
-      val after = Query[(ProjectId,EventOrd), O](s"$allSql AND ord>?")
+    private[db] object SqlSelectEvents {
+      type Out = (EventOrd, Event)
+      private val allSql = s"SELECT ord,$eventE FROM event WHERE project_id=?"
+      val all = Query[ProjectId, Out](allSql)
+      val after = Query[(ProjectId,EventOrd), Out](s"$allSql AND ord>?")
 
-      {
-        case EventFilter.IncludeAll     => all.toQuery0
-        case EventFilter.ExcludeUpTo(o) => p => after.toQuery0((p, o))
-      }
+      private val setPrefix = s"$allSql AND ord IN ("
+
+      def setQuery(ords: Seq[EventOrd]): Query[ProjectId, Out] =
+        Query(ords.iterator.map(_.value).mkString(setPrefix, ",", ")"))
+
+      def set(pid: ProjectId, ords: NonEmptySet[EventOrd]): ConnectionIO[List[Out]] =
+        selectByNonEmptySet(ords)(setQuery(_).toQuery0(pid))
+    }
+
+    private[db] final val selectEvents: EventFilter => ProjectId => ConnectionIO[List[SqlSelectEvents.Out]] = {
+      case EventFilter.IncludeAll     => SqlSelectEvents.all.toQuery0(_).list
+      case EventFilter.ExcludeUpTo(o) => p => SqlSelectEvents.after.toQuery0((p, o)).list
+      case EventFilter.Set(ords)      => p => SqlSelectEvents.set(p, ords)
     }
 
     private[db] final val sqlSelectAllEventHashes =
@@ -414,7 +424,7 @@ object DbInterpreter {
     /** @return Events in order from lowest to highest ord. */
     override final def getProjectEvents(p: ProjectId, f: EventFilter): ConnectionIO[VerifiedEvent.Seq] = {
       (for {
-        events <- sqlSelectEvents(f)(p).list
+        events <- selectEvents(f)(p)
         hashes <- sqlSelectAllEventHashes.toQuery0(p).list
       } yield {
 

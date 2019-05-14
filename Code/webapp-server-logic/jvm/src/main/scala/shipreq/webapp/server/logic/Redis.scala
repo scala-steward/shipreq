@@ -1,5 +1,6 @@
 package shipreq.webapp.server.logic
 
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -133,46 +134,45 @@ object Redis {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   object InMemory {
-    private[InMemory] final case class State[F[_]](subs: List[(VerifiedEvent => F[Unit], Subscription[F])],
-                                                   pub: List[F[Unit]]) {
+    private[InMemory] final case class PubSub[F[_]](pub: VerifiedEvent => F[Unit],
+                                                    sub: Subscription[F],
+                                                    key: AnyRef)
 
-      def modSubs(f: List[(VerifiedEvent => F[Unit], Subscription[F])] => List[(VerifiedEvent => F[Unit], Subscription[F])]) =
-        copy(subs = f(subs))
-
-      def publish(es: Traversable[VerifiedEvent]) = {
-        var pub2 = pub
-        for {
-          e <- es
-          s <- subs
-        } pub2 ::= s._1(e)
-        pub2
-      }
+    private[InMemory] final class Queue[F[_]] {
+      private val queue = new collection.mutable.Queue[(PubSub[F], VerifiedEvent)]
+      def unsafeAdd(events: Traversable[VerifiedEvent], pubSubs: List[PubSub[F]]): Unit =
+        synchronized {
+          for {
+            p <- pubSubs
+            e <- events
+          } queue.enqueue((p, e))
+        }
+      def unsafeDequeue() =
+        synchronized(Option.when(queue.nonEmpty)(queue.dequeue))
     }
   }
 
   final class InMemory[F[_]](implicit FF: Monad[F] with BindRec[F]) extends ProjectAlgebra[F] {
     import com.github.blemale.scaffeine._
-    import InMemory.State
+    import InMemory.PubSub
 
     override protected def F = FF
 
-    private[this] val globalCache: Cache[ProjectId, ProjectCache] =
-      Scaffeine()
-        .softValues()
-        .build()
+    private type PubSubs = List[PubSub[F]]
 
-    private[this] val globalState  = new ConcurrentHashMap[ProjectId, State[F]]()
-    private[this] val emptyState   = State[F](Nil, Nil)
+    private[this] val globalCache  = Scaffeine().softValues().build[ProjectId, ProjectCache]()
+    private[this] val globalPubSub = new ConcurrentHashMap[ProjectId, PubSubs]()
+    private[this] val globalQueue  = new InMemory.Queue[F]
     private[this] val writeCounter = new AtomicInteger(0)
     private[this] val fUnit        = F.pure(())
 
-    private def mod[A](id: ProjectId)(f: State[F] => (State[F], A)): F[A] =
-      F.point(unsafeModNow(id)(f))
+    private def modPubSub[A](id: ProjectId)(f: PubSubs => (PubSubs, A)): F[A] =
+      F.point(unsafeModPubSubNow(id)(f))
 
-    private def unsafeModNow[A](id: ProjectId)(f: State[F] => (State[F], A)): A = {
+    private def unsafeModPubSubNow[A](id: ProjectId)(f: PubSubs => (PubSubs, A)): A = {
       @volatile var result: Any = null
-      globalState.compute(id, (_, ostate) => {
-        val state = Option(ostate).getOrElse(emptyState)
+      globalPubSub.compute(id, (_, ostate) => {
+        val state = Option(ostate).getOrElse(Nil)
         val (state2, a) = f(state)
         result = a
         state2
@@ -180,100 +180,86 @@ object Redis {
       result.asInstanceOf[A]
     }
 
-    override def subscribe(id: ProjectId, f: VerifiedEvent => F[Unit]) =
-      mod(id) { state =>
-        lazy val sub: Subscription[F] = Subscription[F](mod(id)(s => (s.modSubs(_.filter(_._2 ne sub)), ())))
-        val state2 = state.modSubs((f, sub) :: _)
-        (state2, sub)
+    override def subscribe(id: ProjectId, pub: VerifiedEvent => F[Unit]) =
+      modPubSub(id) { pubSubs =>
+        val key    = new AnyRef
+        val unsub  = modPubSub(id)(s => (s.filter(_.key ne key), ()))
+        val sub    = Subscription(unsub)
+        val pubSub = PubSub(pub, sub, key)
+        (pubSub :: pubSubs, sub)
       }
 
-    private def readNow(id: ProjectId) =
+    private def readPubSubsNow(id: ProjectId): PubSubs =
+      Option(globalPubSub.get(id)).getOrElse(Nil)
+
+    private def readCacheNow(id: ProjectId) =
       globalCache.getIfPresent(id).getOrElse(ProjectCache.empty)
 
     override def read(id: ProjectId) = F.point {
-      readNow(id)
+      readCacheNow(id)
     }
 
     override def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]) = F.point {
-      readNow(id).events.filter(_.ord > beyond)
+      readCacheNow(id).events.filter(_.ord > beyond)
     }
 
-    override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq) =
-      mod(id) { state =>
-        writeCounter.getAndIncrement()
+    override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq) = F.point {
+      writeCounter.getAndIncrement()
 
-        val cache = readNow(id)
+      val cache = readCacheNow(id)
 
-        val result =
-          if (cache.snapshot.forall(snapshot.ord > _.ord)) {
-            val cache2 = ProjectCache(Some(snapshot), cache.events.filter(_.ord > snapshot.ord))
-            globalCache.put(id, cache2)
-            true
-          } else
-            false
+      val result =
+        if (cache.snapshot.forall(snapshot.ord > _.ord)) {
+          val cache2 = ProjectCache(Some(snapshot), cache.events.filter(_.ord > snapshot.ord))
+          globalCache.put(id, cache2)
+          true
+        } else
+          false
 
-        val pub2 = state.publish(publishOnly)
+      val pubSubs = readPubSubsNow(id)
+      globalQueue.unsafeAdd(publishOnly, pubSubs)
 
-        (State(state.subs, pub2), result)
+      result
+    }
+
+    override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq) = F.point {
+      writeCounter.getAndIncrement()
+
+      val cache = readCacheNow(id)
+
+      val newEvents = cache.ord match {
+        case Some(o) => VerifiedEvent.Seq.empty ++ (cacheOnly.iterator ++ cacheAndPublish).filter(_.ord > o)
+        case None    => cacheOnly ++ cacheAndPublish
       }
 
-    override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq) =
-      mod(id) { state =>
-        writeCounter.getAndIncrement()
-
-        val cache = readNow(id)
-
-        val newEvents = cache.ord match {
-          case Some(o) => VerifiedEvent.Seq.empty ++ (cacheOnly.iterator ++ cacheAndPublish).filter(_.ord > o)
-          case None    => cacheOnly ++ cacheAndPublish
+      val result =
+        if (newEvents.isEmpty || cache.ord.exists(newEvents.min.ord.value > _.value + 1))
+          false
+        else {
+          val cache2 = cache.copy(events = cache.events ++ newEvents)
+          globalCache.put(id, cache2)
+          true
         }
 
-        val result =
-          if (newEvents.isEmpty || cache.ord.exists(newEvents.min.ord.value > _.value + 1))
-            false
-          else {
-            val cache2 = cache.copy(events = cache.events ++ newEvents)
-            globalCache.put(id, cache2)
-            true
-          }
+      val pubSubs = readPubSubsNow(id)
+      globalQueue.unsafeAdd(cacheAndPublish, pubSubs)
 
-        val pub2 = state.publish(cacheAndPublish)
-
-        (State(state.subs, pub2), result)
-      }
+      result
+    }
 
     // =================================================================================================================
     // Test/utility additions
 
     def writeCount() = writeCounter.get()
 
+    val publishOne: F[Boolean] =
+      F.point(globalQueue.unsafeDequeue()).flatMap {
+        case Some((p, e)) => p.pub(e) >| true
+        case None         => F.pure(false)
+      }
+
     /** Simulates Redis publishing events to listeners */
-    val publishAll: F[Unit] = {
-      type L = List[ProjectId]
-
-      def getKeys: F[L] =
-        F.point(globalState.keySet().asScala.toList)
-
-      def run(l: L): F[Unit] =
-        F.tailrecM[L, Unit]({
-          case ids @ id :: nextIds =>
-            for {
-              callback <- mod(id)(s => s.pub match {
-                            case h :: t => (s.copy(pub = t), Some(h))
-                            case Nil    => (s, None)
-                          })
-              _ <- callback.getOrElse(fUnit)
-            } yield callback match {
-              case Some(_) => -\/(ids)
-              case None    => -\/(nextIds)
-            }
-          case Nil => F.pure(\/-(()))
-        })(l)
-
-      for {
-        keys <- getKeys
-        _    <- run(keys)
-      } yield ()
-    }
+    val publishAll: F[Unit] =
+      fUnit.whileM_(publishOne)
   }
 }

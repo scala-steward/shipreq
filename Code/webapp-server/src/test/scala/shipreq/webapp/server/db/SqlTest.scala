@@ -48,11 +48,15 @@ object SqlTest extends TestSuite {
 
     'members {
       val pid = ProjectId(123)
+      val o2 = EventOrd(2)
+      val o3 = EventOrd(3)
       'createEmptyProjectSql           - test(db.createEmptyProjectSql)
       'getAllProjectMetaDataForUserSql - test(db.getAllProjectMetaDataForUserSql)
       'getProjectMetaDataSql           - test(db.getProjectMetaDataSql)
-      'sqlSelectEventsAll              - test(db.sqlSelectEvents(DB.EventFilter.IncludeAll)(pid))
-      'sqlSelectEventsExcludeUpTo      - test(db.sqlSelectEvents(DB.EventFilter.ExcludeUpTo(EventOrd(2)))(pid))
+      'sqlSelectEventsAll              - test(db.SqlSelectEvents.all.toQuery0(pid))
+      'sqlSelectEventsExcludeUpTo      - test(db.SqlSelectEvents.after.toQuery0((pid, o2)))
+      'sqlSelectEventsSet              - test(db.SqlSelectEvents.setQuery(Seq(o2)).toQuery0(pid))
+      'sqlSelectEventsSet              - test(db.SqlSelectEvents.setQuery(Seq(o2, o3)).toQuery0(pid))
       'sqlSelectAllEventHashes         - test(db.sqlSelectAllEventHashes)
       'projectSpaInitPageSql           - test(db.projectSpaInitPageSql)
     }

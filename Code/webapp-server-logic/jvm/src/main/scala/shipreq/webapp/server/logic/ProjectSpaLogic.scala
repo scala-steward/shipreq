@@ -1,6 +1,7 @@
 package shipreq.webapp.server.logic
 
 import com.typesafe.scalalogging.StrictLogging
+import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.univeq._
 import java.time.{Duration, Instant}
 import scala.util.{Failure, Success}
@@ -270,6 +271,7 @@ object ProjectSpaLogic extends StrictLogging {
       private val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
         onInitApp               = onInitApp,
         onReconnect             = onReconnect,
+        onSync                  = onSync,
         onCreateContent         = updateProject (MakeEvent.createContent),
         onUpdateContent         = updateProject (MakeEvent.updateContent),
         onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn),
@@ -398,6 +400,19 @@ object ProjectSpaLogic extends StrictLogging {
         } yield MsgFnOut(events, newState)
       }
 
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      private def onSync: MsgFn[NonEmptySet[EventOrd], Unit] = in => {
+        val pid  = in.static.projectId
+        val ords = in.input
+
+        for {
+          events <- runDB(db.getProjectEvents(pid, DB.EventFilter.Set(ords)))
+          _      <- redis.writeEvents(pid, VerifiedEvent.Seq.empty, events)
+        } yield MsgFnOut((), None)
+      }
+
+
     } // new ProjectSpaLogic
   }
 
@@ -483,7 +498,7 @@ object ProjectSpaLogic extends StrictLogging {
           case WriteRedis2(newEvents) =>
             for {
               // TODO Maybe write snapshot instead of events
-              ok <- redis.writeEvents(pid, VerifiedEvent.Seq.empty, newEvents)
+              _ <- redis.writeEvents(pid, VerifiedEvent.Seq.empty, newEvents)
             } yield \/-(\/-(newEvents))
         }
 
