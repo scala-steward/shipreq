@@ -10,7 +10,7 @@ import shipreq.webapp.server.test.PrepareEnv
 object SqlTest extends TestSuite {
   import DbInterpreter._
 
-  private lazy val db = new DbInterpreter()(PrepareEnv.global().config.security)
+  private lazy val db = new DbInterpreter()(PrepareEnv.global().config.server.security)
 
   override def tests = Tests {
 

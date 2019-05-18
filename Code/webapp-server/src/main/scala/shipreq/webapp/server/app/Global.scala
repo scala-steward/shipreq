@@ -6,12 +6,11 @@ import shipreq.base.db.DbAccess
 import shipreq.base.util.FxModule._
 import shipreq.taskman.api.TaskmanApi
 import shipreq.taskman.api.impl.TaskmanApiImpl
-import shipreq.webapp.server.ServerLogicConfig
 import shipreq.webapp.server.db.DbInterpreter
 import shipreq.webapp.server.logic._
 import shipreq.webapp.server.security.SecurityInterpreter
 
-final case class Global(config  : ServerLogicConfig,
+final case class Global(config  : ServerConfig,
                         db      : DbAccess,
                         logic   : ServerLogic[Fx],
                         metrics : MetricsLogic[Fx],
@@ -30,22 +29,23 @@ object Global {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  def default(implicit dbAccess: DbAccess, config: ServerLogicConfig): Global = {
+  def default(implicit dbAccess: DbAccess, config: ServerConfig): Global = {
     assert(dbAccess ne null, "DbAccess is null, sir.")
     import TraceInterpreter.Implicits._
 
-    implicit def configSecurity = config.security
+    implicit def configServer   = config.server
+    implicit def configSecurity = config.server.security
 
     implicit val metrics: MetricsLogic[Fx] =
-      if (config.prometheus.enabled)
+      if (config.server.prometheus.enabled)
         new PrometheusMetrics
       else
         MetricsLogic.const(Fx.unit)
 
-    implicit val traceAlgebra  = config.traceAlgebraFx
+    implicit val traceAlgebra  = config.server.traceAlgebraFx
     implicit val trace         = new TraceLogic: TraceInterpreter.ForLift[Fx]
     implicit val runDB         = trace.injectDb(dbAccess.fx.trans)
-    implicit val taskman       = TaskmanApi.addLogging(TaskmanApiImpl(Some(config.taskmanSchema)).trans(runDB))
+    implicit val taskman       = TaskmanApi.addLogging(TaskmanApiImpl(Some(config.server.taskmanSchema)).trans(runDB))
     implicit val dbAlgebra     = new DbInterpreter()
     implicit val dbForSecurity = DB.ForSecurity.trans(DbInterpreter.ForSecurity)(runDB)
     implicit val dbForOps      = DB.ForOps.trans(new DbInterpreter.ForOps(dbAccess.databaseName))(runDB)

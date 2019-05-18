@@ -13,8 +13,8 @@ object Taskman {
   def updateCfg(g: Global): Fx[Unit] =
     g.taskman.cfgPutBulk(
       K.appName  -> WebappConfig.appName,
-      K.homeUrl  -> g.config.baseUrl.value,
-      K.loginUrl -> (g.config.baseUrl / Urls.login).absoluteUrl)
+      K.homeUrl  -> g.config.server.baseUrl.value,
+      K.loginUrl -> (g.config.server.baseUrl / Urls.login).absoluteUrl)
 
 //  def webappErrorOccurred(e: Throwable, url: Option[String], suppInfo: String): WebappErrorOccurred =
 //    WebappErrorOccurred(

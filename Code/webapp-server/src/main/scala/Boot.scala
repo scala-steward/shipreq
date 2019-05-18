@@ -40,10 +40,9 @@ class Boot {
     trace("Boot") { _ =>
 
       // Create services
-      implicit val serverConfig = cfg.server
-      implicit val dbAccess = trace("initDatabase")(_ => initDatabase(cfg))
+      val dbAccess = trace("initDatabase")(_ => initDatabase(cfg))
       trace("configureLift")(_ => configureLift())
-      Global.Instance = trace("Global")(_ => Global.default)
+      Global.Instance = trace("Global")(_ => Global.default(dbAccess, cfg))
 
       // Prepare services
       trace("preloadTemplates")(_ => preloadTemplates())
@@ -171,9 +170,9 @@ class Boot {
   }
 
   def initTaskman(g: Global): Unit =
-    if (g.config.initTaskmanOnBoot)
+    if (g.config.server.initTaskmanOnBoot)
       Taskman.updateCfg(g)
-        .retryOnException((n, t) => g.config.initTaskmanRetry(n).map(d => Fx {
+        .retryOnException((n, t) => g.config.server.initTaskmanRetry(n).map(d => Fx {
           logger.warn(s"Taskman initialisation error occurred. Retrying...\n${t.getMessage}")
           Thread sleep d.toMillis
         }))

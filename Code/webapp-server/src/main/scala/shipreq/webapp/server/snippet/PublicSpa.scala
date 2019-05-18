@@ -12,7 +12,7 @@ object PublicSpa extends SnippetHelpers {
 
   def render = {
     val user = currentUserOption()
-    val initData = PublicSpaProtocols.InitData(Global.config.publicRegistration, user.map(_.username))
+    val initData = PublicSpaProtocols.InitData(Global.config.server.publicRegistration, user.map(_.username))
     "*" #> EntryPoint.invokeOnLoadHtml(initData)
   }
 }

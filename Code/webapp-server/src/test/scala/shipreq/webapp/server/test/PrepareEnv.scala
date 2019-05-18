@@ -21,7 +21,7 @@ object PrepareEnv {
   }
 
   Global.Instance = Global(
-    config   = cfg.server,
+    config   = cfg,
     db       = null,
     logic    = null,
     metrics  = MetricsLogic.const(Fx.unit),
@@ -48,7 +48,7 @@ object PrepareEnv {
   }
 
   lazy val dbAlgebra =
-    new DbInterpreter()(global().config.security)
+    new DbInterpreter()(global().config.server.security)
 
   lazy val security = {
     db()

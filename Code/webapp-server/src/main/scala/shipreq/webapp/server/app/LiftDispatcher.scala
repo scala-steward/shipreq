@@ -142,7 +142,7 @@ final class LiftDispatcher(global: Global) extends StrictLogging {
   }
 
   val logic: DispatchLogic[Fx, LiftReq, Box[LiftResponse]] = {
-    implicit val config    = global.config
+    implicit val config    = global.config.server
     implicit val metrics   = global.metrics
     implicit val trace     = global.trace
     implicit val taskman   = global.taskman
