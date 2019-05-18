@@ -1,11 +1,10 @@
 package shipreq.webapp.server.test
 
-import bootstrap.liftweb.BootConfig
 import java.time.Duration
 import shipreq.base.test.BaseTestUtil.onceUnit
 import shipreq.base.util.FxModule.Fx
 import shipreq.webapp.server.ServerLogicConfig
-import shipreq.webapp.server.app.Global
+import shipreq.webapp.server.app.{Global, ServerConfig}
 import shipreq.webapp.server.db.DbInterpreter
 import shipreq.webapp.server.logic.{MetricsLogic, TraceLogic}
 
@@ -15,7 +14,7 @@ object PrepareEnv {
   private val cfg = {
     var (appConfig, runMode) = boot.readConfig()
     runMode foreach boot.setRunMode
-    val attackDelayL = BootConfig.server ^|-> ServerLogicConfig.security ^|-> ServerLogicConfig.Security.attackFrustrationDelay
+    val attackDelayL = ServerConfig.server ^|-> ServerLogicConfig.security ^|-> ServerLogicConfig.Security.attackFrustrationDelay
     appConfig = attackDelayL.set(Duration.ZERO)(appConfig)
     // println("webapp-server test config:\n" + appConfig.report.reportUsed)
     appConfig

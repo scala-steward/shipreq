@@ -4,13 +4,11 @@ import com.zaxxer.hikari.metrics.prometheus.PrometheusMetricsTrackerFactory
 import japgolly.clearconfig._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
-import monocle.macros.Lenses
 import net.liftweb.common.Logger
 import net.liftweb.http._
 import net.liftweb.util._
 import net.liftweb.util.Props.RunModes
-import scalaz.syntax.applicative._
-import shipreq.base.db.{DbAccess, DbConfig}
+import shipreq.base.db.DbAccess
 import shipreq.base.ops.{JdbcLogging, JdbcMetrics, SqlTracer}
 import shipreq.base.util.FxModule._
 import shipreq.base.util.{Props => ShipReqProps}
@@ -18,9 +16,6 @@ import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.server.ServerLogicConfig
 import shipreq.webapp.server.app._
 import shipreq.webapp.server.lib.Taskman
-
-@Lenses
-final case class BootConfig(db: DbConfig, server: ServerLogicConfig, report: ConfigReport)
 
 /**
  * A class that's instantiated early and run.  It allows the application
@@ -59,7 +54,7 @@ class Boot {
     }
   }
 
-  def readConfig(): (BootConfig, Option[RunModes.Value]) = {
+  def readConfig(): (ServerConfig, Option[RunModes.Value]) = {
 
     val cfgRunMode: ConfigDef[Option[RunModes.Value]] =
       ConfigDef.get[String]("shipreq.lift.runMode").mapOption {
@@ -67,13 +62,11 @@ class Boot {
         case None    => Some(None)
       }
 
-    val plan = (DbConfig.config |@| ServerLogicConfig.config |@| cfgRunMode).tupled.withReport
-      .map { case ((db, svr, runMode), report) =>
-        val cfg = BootConfig(db, svr, report)
-        (cfg, runMode)
-      }
-
-    plan.run(ShipReqProps.sources).unsafeRun().getOrDie()
+    ServerConfig
+      .config(cfgRunMode)
+      .run(ShipReqProps.sources)
+      .unsafeRun()
+      .getOrDie()
   }
 
   def setRunMode(runMode: RunModes.Value): Unit = {
@@ -152,7 +145,7 @@ class Boot {
     HttpStatusHandler.init()
   }
 
-  def initDatabase(cfg: BootConfig): DbAccess = {
+  def initDatabase(cfg: ServerConfig): DbAccess = {
     val dbCfg = cfg.db
 
     // Hikari
