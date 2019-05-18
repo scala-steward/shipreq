@@ -8,20 +8,13 @@ import shipreq.webapp.server.ServerLogicConfig
 
 @Lenses
 final case class ServerConfig(db    : DbConfig,
-                              server: ServerLogicConfig,
-                              report: ConfigReport)
+                              server: ServerLogicConfig)
 
 object ServerConfig {
 
-  def config[A](cfgA: ConfigDef[A]): ConfigDef[(ServerConfig, A)] =
+  def config: ConfigDef[ServerConfig] =
     ( DbConfig.config |@|
-      ServerLogicConfig.config |@|
-      cfgA
-    ).tupled
-      .withReport
-      .map { case ((db, svr, a), report) =>
-        val cfg = ServerConfig(db, svr, report)
-        (cfg, a)
-      }
+      ServerLogicConfig.config
+    )(apply)
 
 }

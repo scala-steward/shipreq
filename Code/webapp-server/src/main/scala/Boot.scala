@@ -8,6 +8,7 @@ import net.liftweb.common.Logger
 import net.liftweb.http._
 import net.liftweb.util._
 import net.liftweb.util.Props.RunModes
+import scalaz.syntax.applicative._
 import shipreq.base.db.DbAccess
 import shipreq.base.ops.{JdbcLogging, JdbcMetrics, SqlTracer}
 import shipreq.base.util.FxModule._
@@ -30,8 +31,8 @@ class Boot {
 
   def boot(): Unit = {
     // Read config
-    val (cfg, runMode) = readConfig()
-    logger.info(cfg.report.full)
+    val (cfg, runMode, cfgReport) = readConfig()
+    logger.info(cfgReport.full)
     runMode foreach setRunMode
     logger.info(s"RunMode = ${Props.mode}")
 
@@ -54,7 +55,7 @@ class Boot {
     }
   }
 
-  def readConfig(): (ServerConfig, Option[RunModes.Value]) = {
+  def readConfig(): (ServerConfig, Option[RunModes.Value], ConfigReport) = {
 
     val cfgRunMode: ConfigDef[Option[RunModes.Value]] =
       ConfigDef.get[String]("shipreq.lift.runMode").mapOption {
@@ -62,8 +63,10 @@ class Boot {
         case None    => Some(None)
       }
 
-    ServerConfig
-      .config(cfgRunMode)
+    (ServerConfig.config |@| cfgRunMode)
+      .tupled
+      .withReport
+      .map { case ((svr, runMode), report) => (svr, runMode, report) }
       .run(ShipReqProps.sources)
       .unsafeRun()
       .getOrDie()

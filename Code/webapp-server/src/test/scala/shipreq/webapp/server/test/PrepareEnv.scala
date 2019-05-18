@@ -12,7 +12,7 @@ object PrepareEnv {
   private val boot = new bootstrap.liftweb.Boot
 
   private val cfg = {
-    var (appConfig, runMode) = boot.readConfig()
+    var (appConfig, runMode, _) = boot.readConfig()
     runMode foreach boot.setRunMode
     val attackDelayL = ServerConfig.server ^|-> ServerLogicConfig.security ^|-> ServerLogicConfig.Security.attackFrustrationDelay
     appConfig = attackDelayL.set(Duration.ZERO)(appConfig)
