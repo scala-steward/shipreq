@@ -9,7 +9,9 @@ import shipreq.webapp.base.hash.HashRecs
  * A verified event is an event that has been validated by the server, proven applicable, and retains hashes expected
  * of the Project after application.
  */
-final case class VerifiedEvent(ord: EventOrd, event: Event, hashRecs: HashRecs)
+final case class VerifiedEvent(ord: EventOrd, event: Event, hashRecs: HashRecs) {
+  override def toString = s"VerifiedEvent(${ord.value}, $event)"
+}
 
 object VerifiedEvent {
 

@@ -15,8 +15,11 @@ import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
   */
 object Redis {
 
-  final case class ProjectSnapshot(value: Project, ord: EventOrd.Latest) {
-    def toProjectAndOrd = ProjectAndOrd(value, Some(ord))
+  final case class ProjectSnapshot(project: Project, ord: EventOrd.Latest) {
+    override def toString = s"ProjectSnapshot(${ord.value})"
+    def min(b: ProjectSnapshot): ProjectSnapshot = if (ord < b.ord) this else b
+    def max(b: ProjectSnapshot): ProjectSnapshot = if (ord > b.ord) this else b
+    def toProjectAndOrd = ProjectAndOrd(project, Some(ord))
   }
 
   final case class ProjectCache(snapshot: Option[ProjectSnapshot], events: VerifiedEvent.Seq) {
