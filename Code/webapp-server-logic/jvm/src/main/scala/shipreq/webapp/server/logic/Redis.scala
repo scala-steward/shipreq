@@ -4,8 +4,8 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
-import scala.collection.JavaConverters._
-import scalaz.{-\/, BindRec, Monad, \/-}
+import scala.annotation.tailrec
+import scalaz.{BindRec, Monad}
 import scalaz.syntax.monad._
 import shipreq.webapp.base.data.{Project, ProjectId}
 import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
@@ -16,8 +16,11 @@ import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
   */
 object Redis {
 
-  final case class ProjectSnapshot(value: Project, ord: EventOrd.Latest) {
-    def toProjectAndOrd = ProjectAndOrd(value, Some(ord))
+  final case class ProjectSnapshot(project: Project, ord: EventOrd.Latest) {
+    override def toString = s"ProjectSnapshot(${ord.value})"
+    def min(b: ProjectSnapshot): ProjectSnapshot = if (ord < b.ord) this else b
+    def max(b: ProjectSnapshot): ProjectSnapshot = if (ord > b.ord) this else b
+    def toProjectAndOrd = ProjectAndOrd(project, Some(ord))
   }
 
   final case class ProjectCache(snapshot: Option[ProjectSnapshot], events: VerifiedEvent.Seq) {
@@ -105,14 +108,6 @@ object Redis {
                       snapshot   : ProjectSnapshot,
                       publishOnly: VerifiedEvent.Seq): F[Boolean]
 
-    final def writeSnapshot(id         : ProjectId,
-                            snapshot   : ProjectAndOrd,
-                            publishOnly: VerifiedEvent.Seq): F[Boolean] =
-      snapshot.ord match {
-        case Some(ord) => writeSnapshot(id, ProjectSnapshot(snapshot.project, ord), publishOnly)
-        case None      => fTrue
-      }
-
     /** [TLA+] Used by:
       *          - RedisWriteEvents
       *            - Update_WriteRedis1
@@ -122,13 +117,36 @@ object Redis {
       * @param cacheOnly       Events to save, and not publish.
       * @param cacheAndPublish Events to save, and publish to the project's topic.
       *                        These events are published unconditionally, even if the cache isn't updated.
-      * @return Whether the write was accepted (stale data is rejected), or there was nothing to write.
+      * @return Whether the write was accepted (stale data is rejected, and empty set is rejected too).
       */
     def writeEvents(id             : ProjectId,
                     cacheOnly      : VerifiedEvent.Seq,
                     cacheAndPublish: VerifiedEvent.Seq): F[Boolean]
 
-    protected final val fTrue = F pure true
+    def publishEvents(id: ProjectId, events: VerifiedEvent.NonEmptySeq): F[Unit]
+
+    // Helpers
+
+    final def publishEvents(id: ProjectId, events: VerifiedEvent.Seq): F[Unit] =
+      VerifiedEvent.NonEmptySeq.maybe(events) match {
+        case Some(s) => publishEvents(id, s)
+        case None    => fUnit
+      }
+
+    final def writeSnapshot(id         : ProjectId,
+                            snapshot   : ProjectAndOrd,
+                            publishOnly: VerifiedEvent.Seq): F[Boolean] =
+      snapshot.ord match {
+        case Some(ord) => writeSnapshot(id, ProjectSnapshot(snapshot.project, ord), publishOnly)
+        case None      =>
+          VerifiedEvent.NonEmptySeq.maybe(publishOnly) match {
+            case Some(s) => F.map(publishEvents(id, s))(_ => true)
+            case None    => fTrue
+          }
+      }
+
+    protected final val fTrue = F.pure(true)
+    protected final val fUnit = F.pure(())
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -140,7 +158,7 @@ object Redis {
 
     private[InMemory] final class Queue[F[_]] {
       private val queue = new collection.mutable.Queue[(PubSub[F], VerifiedEvent)]
-      def unsafeAdd(events: Traversable[VerifiedEvent], pubSubs: List[PubSub[F]]): Unit =
+      def unsafeAdd(events: VerifiedEvent.NonEmptySeq, pubSubs: List[PubSub[F]]): Unit =
         synchronized {
           for {
             p <- pubSubs
@@ -164,7 +182,6 @@ object Redis {
     private[this] val globalPubSub = new ConcurrentHashMap[ProjectId, PubSubs]()
     private[this] val globalQueue  = new InMemory.Queue[F]
     private[this] val writeCounter = new AtomicInteger(0)
-    private[this] val fUnit        = F.pure(())
 
     private def modPubSub[A](id: ProjectId)(f: PubSubs => (PubSubs, A)): F[A] =
       F.point(unsafeModPubSubNow(id)(f))
@@ -205,46 +222,47 @@ object Redis {
 
     override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq) = F.point {
       writeCounter.getAndIncrement()
-
       val cache = readCacheNow(id)
-
-      val result =
-        if (cache.snapshot.forall(snapshot.ord > _.ord)) {
-          val cache2 = ProjectCache(Some(snapshot), cache.events.filter(_.ord > snapshot.ord))
-          globalCache.put(id, cache2)
-          true
-        } else
-          false
-
-      val pubSubs = readPubSubsNow(id)
-      globalQueue.unsafeAdd(publishOnly, pubSubs)
-
-      result
-    }
+      if (cache.snapshot.forall(snapshot.ord > _.ord)) {
+        val cache2 = ProjectCache(Some(snapshot), cache.events.filter(_.ord > snapshot.ord))
+        globalCache.put(id, cache2)
+        true
+      } else
+        false
+    } <* publishEvents(id, publishOnly)
 
     override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq) = F.point {
       writeCounter.getAndIncrement()
-
       val cache = readCacheNow(id)
-
       val newEvents = cache.ord match {
         case Some(o) => VerifiedEvent.Seq.empty ++ (cacheOnly.iterator ++ cacheAndPublish).filter(_.ord > o)
         case None    => cacheOnly ++ cacheAndPublish
       }
+      if (newEvents.isEmpty || cache.ord.exists(newEvents.min.ord.value > _.value + 1))
+        false
+      else {
+        val it = newEvents.iterator
+        val first = it.next()
+        var events2 = cache.events + first
+        @tailrec def go(prev: Int): Unit =
+          if (it.hasNext) {
+            val e = it.next()
+            val o = e.ord.value
+            if (o == prev + 1) {
+              events2 += e
+              go(o)
+            }
+          }
+        go(first.ord.value)
+        val cache2 = cache.copy(events = events2)
+        globalCache.put(id, cache2)
+        true
+      }
+    } <* publishEvents(id, cacheAndPublish)
 
-      val result =
-        if (newEvents.isEmpty || cache.ord.exists(newEvents.min.ord.value > _.value + 1))
-          false
-        else {
-          val cache2 = cache.copy(events = cache.events ++ newEvents)
-          globalCache.put(id, cache2)
-          true
-        }
-
+    override def publishEvents(id: ProjectId, events: VerifiedEvent.NonEmptySeq) = F.point {
       val pubSubs = readPubSubsNow(id)
-      globalQueue.unsafeAdd(cacheAndPublish, pubSubs)
-
-      result
+      globalQueue.unsafeAdd(events, pubSubs)
     }
 
     // =================================================================================================================

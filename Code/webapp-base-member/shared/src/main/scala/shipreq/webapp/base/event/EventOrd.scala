@@ -50,14 +50,18 @@ object EventOrd {
   implicit def univEqLatest: UnivEq[Latest] = UnivEq.derive
 
   object Implicits {
-    implicit class EventOrdLatestExt(private val self: Option[EventOrd.Latest]) extends AnyVal {
-      def >(x: Option[EventOrd.Latest]): Boolean =
-        (self, x) match {
+    implicit final class EventOrdLatestExt(private val x: Option[EventOrd.Latest]) extends AnyVal {
+
+      def >(y: Option[EventOrd.Latest]): Boolean =
+        (x, y) match {
           case (Some(a), Some(b)) => a > b
           case (Some(_), None   ) => true
           case (None   , Some(_))
              | (None   , None   ) => false
         }
+
+      def min(y: Option[EventOrd.Latest]): Option[EventOrd.Latest] =
+        if (x > y) y else x
     }
 
   }

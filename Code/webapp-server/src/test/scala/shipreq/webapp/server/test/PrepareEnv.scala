@@ -1,6 +1,7 @@
 package shipreq.webapp.server.test
 
 import java.time.Duration
+import org.redisson.Redisson
 import shipreq.base.test.BaseTestUtil.onceUnit
 import shipreq.base.util.FxModule.Fx
 import shipreq.webapp.server.ServerLogicConfig
@@ -12,11 +13,11 @@ object PrepareEnv {
   private val boot = new bootstrap.liftweb.Boot
 
   private val cfg = {
-    var (appConfig, runMode, _) = boot.readConfig()
+    var (appConfig, runMode, configReport) = boot.readConfig()
     runMode foreach boot.setRunMode
     val attackDelayL = ServerConfig.server ^|-> ServerLogicConfig.security ^|-> ServerLogicConfig.Security.attackFrustrationDelay
     appConfig = attackDelayL.set(Duration.ZERO)(appConfig)
-    // println("webapp-server test config:\n" + appConfig.report.reportUsed)
+    // println("webapp-server test config:\n" + configReport.reportUsed)
     appConfig
   }
 
@@ -54,4 +55,10 @@ object PrepareEnv {
     db()
     global().security
   }
+
+  lazy val redissonClient =
+    global().config.redis match {
+      case Some(r) => Redisson.create(r.instance)
+      case None    => sys.error("Redis test config not specified.")
+    }
 }

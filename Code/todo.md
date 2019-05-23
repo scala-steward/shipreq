@@ -121,10 +121,6 @@ Phase 2B
 * Add a correlation ID to JWTs / logs / traces
 * Redis
   * Add async typeclass and/or support to Fx (?)
-  * Add Redis to project & env
-  * LUA scripts
-  * Real algebra impl
-  * Real pub/sub
   * Determine when to send events vs snapshot
 
 * Benchmark ZIO to back Fx - UpdateContent seems to be crazy slow with current Fx
