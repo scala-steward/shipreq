@@ -21,6 +21,4 @@ services:
       - "13079:6379"
     environment:
       - REDIS_PASSWORD=sqt
-    logging:
-      driver: none
     mem_limit: 100m

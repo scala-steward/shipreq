@@ -1,6 +1,7 @@
 package shipreq.webapp.server.test
 
 import java.time.Duration
+import org.redisson.Redisson
 import shipreq.base.test.BaseTestUtil.onceUnit
 import shipreq.base.util.FxModule.Fx
 import shipreq.webapp.server.ServerLogicConfig
@@ -54,4 +55,10 @@ object PrepareEnv {
     db()
     global().security
   }
+
+  lazy val redissonClient =
+    global().config.redis match {
+      case Some(r) => Redisson.create(r.instance)
+      case None    => sys.error("Redis test config not specified.")
+    }
 }

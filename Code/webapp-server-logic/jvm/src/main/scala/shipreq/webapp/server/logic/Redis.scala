@@ -4,6 +4,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import scala.annotation.tailrec
 import scalaz.{BindRec, Monad}
 import scalaz.syntax.monad._
 import shipreq.webapp.base.data.{Project, ProjectId}
@@ -79,7 +80,7 @@ object Redis {
       *          - Reload_Subscribe
       */
     def subscribe(id      : ProjectId,
-                  listener: VerifiedEvent.NonEmptySeq => F[Unit]): F[Subscription[F]]
+                  listener: VerifiedEvent => F[Unit]): F[Subscription[F]]
 
     /** [TLA+] Used by:
       *          - Load_ReadRedis
@@ -116,7 +117,7 @@ object Redis {
       * @param cacheOnly       Events to save, and not publish.
       * @param cacheAndPublish Events to save, and publish to the project's topic.
       *                        These events are published unconditionally, even if the cache isn't updated.
-      * @return Whether the write was accepted (stale data is rejected), or there was nothing to write.
+      * @return Whether the write was accepted (stale data is rejected, and empty set is rejected too).
       */
     def writeEvents(id             : ProjectId,
                     cacheOnly      : VerifiedEvent.Seq,
@@ -151,17 +152,18 @@ object Redis {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   object InMemory {
-    private[InMemory] final case class PubSub[F[_]](pub: VerifiedEvent.NonEmptySeq => F[Unit],
+    private[InMemory] final case class PubSub[F[_]](pub: VerifiedEvent => F[Unit],
                                                     sub: Subscription[F],
                                                     key: AnyRef)
 
     private[InMemory] final class Queue[F[_]] {
-      private val queue = new collection.mutable.Queue[(PubSub[F], VerifiedEvent.NonEmptySeq)]
+      private val queue = new collection.mutable.Queue[(PubSub[F], VerifiedEvent)]
       def unsafeAdd(events: VerifiedEvent.NonEmptySeq, pubSubs: List[PubSub[F]]): Unit =
         synchronized {
           for {
             p <- pubSubs
-          } queue.enqueue((p, events))
+            e <- events
+          } queue.enqueue((p, e))
         }
       def unsafeDequeue() =
         synchronized(Option.when(queue.nonEmpty)(queue.dequeue))
@@ -195,7 +197,7 @@ object Redis {
       result.asInstanceOf[A]
     }
 
-    override def subscribe(id: ProjectId, pub: VerifiedEvent.NonEmptySeq => F[Unit]) =
+    override def subscribe(id: ProjectId, pub: VerifiedEvent => F[Unit]) =
       modPubSub(id) { pubSubs =>
         val key    = new AnyRef
         val unsub  = modPubSub(id)(s => (s.filter(_.key ne key), ()))
@@ -239,7 +241,20 @@ object Redis {
       if (newEvents.isEmpty || cache.ord.exists(newEvents.min.ord.value > _.value + 1))
         false
       else {
-        val cache2 = cache.copy(events = cache.events ++ newEvents)
+        val it = newEvents.iterator
+        val first = it.next()
+        var events2 = cache.events + first
+        @tailrec def go(prev: Int): Unit =
+          if (it.hasNext) {
+            val e = it.next()
+            val o = e.ord.value
+            if (o == prev + 1) {
+              events2 += e
+              go(o)
+            }
+          }
+        go(first.ord.value)
+        val cache2 = cache.copy(events = events2)
         globalCache.put(id, cache2)
         true
       }

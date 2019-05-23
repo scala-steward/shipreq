@@ -1,10 +1,13 @@
 package shipreq.webapp.server.redis
 
+import java.time.Duration
 import nyaya.gen._
 import scalaz.{Applicative, Equal, Monad, Semigroup}
 import scalaz.syntax.monad._
 import shipreq.base.test.SyncEffect
 import shipreq.base.test.SyncEffect.Ops._
+import shipreq.base.util.JavaTimeHelpers._
+import shipreq.base.util.Util
 import shipreq.webapp.base.data.{Project, ProjectId}
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.event.EventOrd.Implicits._
@@ -219,8 +222,8 @@ object RedisLaws {
     def apply(rep: Int): Gens = {
       assert(rep <= 100, "Don't exceed 100 reps. Current formula scales too wildly")
       
-      // It gives a continually good proportional increase/rep, with a reasonable total size (100 reps = 5,277)
-      val limit = (Math.pow(rep + 1, 1.1) * (Math.pow(rep * 0.1, 1.5) + 1)).toInt
+      // It gives a continually good proportional increase/rep, with a reasonable total size (100 reps = 2,177)
+      val limit = (Math.pow(rep + 1, 1.1) * (Math.pow(rep * 0.1, 1.1) + 1)).toInt
 
       val genOrd = Gen.chooseInt(limit).map(EventOrd.first + _)
 
@@ -257,31 +260,62 @@ object RedisLaws {
 
   private final class Listener[F[_]](id: ProjectId, r: ProjectAlgebra[F])(implicit F: Applicative[F], S: SyncEffect[F]) {
     private val s = new collection.mutable.ArrayBuffer[VerifiedEvent]
-    def get() = s.toList
-    def clear() = s.clear()
-    r.subscribe(id, es => F.point(s ++= es)).unsafeRun()
+    def get() = synchronized(s.toList)
+    def clear() = synchronized(s.clear())
+    private def add(e: VerifiedEvent) = F.point[Unit] { synchronized {
+//      val before = get()
+      s += e
+//      val after = get()
+//      val p =  if (r.toString.contains("Memory")) "<<M>>" else "<<R>>"
+//      println(s"${p} ${before} + ${e} --> ${after}")
+    }}
+    r.subscribe(id, add).unsafeRun()
   }
 
   final class Tester[F[_]: Monad: SyncEffect](id1: ProjectId, redis1: ProjectAlgebra[F],
                                               id2: ProjectId, redis2: ProjectAlgebra[F],
-                                              awaitPublish: () => Unit) {
+                                              publish: () => Unit) {
 
     private val listener1 = new Listener(id1, redis1)
     private val listener2 = new Listener(id2, redis2)
 
+    import scala.concurrent.duration.DurationInt
+    private implicit val retryMax = utest.asserts.RetryMax(5000.millis)
+    private implicit val retryInterval = utest.asserts.RetryInterval(5.millis)
+
     def assertTest(test: Test[F]): Unit = {
+      // Prepare
       listener1.clear()
       listener2.clear()
+
+      // Run
       val o1 = test.lhs.unsafeRun()
       val o2 = test.rhs.unsafeRun()
       val s1 = redis1.read(id1).unsafeRun()
       val s2 = redis2.read(id2).unsafeRun()
-      val p1 = listener1.get().iterator.map(_.ord).toSet
-      val p2 = listener2.get().iterator.map(_.ord).toSet
-      awaitPublish()
+      publish()
+
+      // Test laws
+      def p1 = listener1.get().iterator.map(_.ord).toSet
+      def p2 = listener2.get().iterator.map(_.ord).toSet
       assertEq(s"${test.name} -> result",      actual = o1, expect = o2)(test.eq)
       assertEq(s"${test.name} -> redis state", actual = s1, expect = s2)
-      assertEq(s"${test.name} -> published",   actual = p1, expect = p2)
+      try
+        utest.eventually(p1 === p2)
+      catch {
+        case _: Throwable => assertEq(s"${test.name} -> published", actual = p1, expect = p2)
+      }
+
+      // Test invariants
+      val s = s1
+      if (s.events.size > 1) {
+        val ords = s.events.iterator.map(_.ord.value).toList
+        assertEq("no event gaps allowed", actual = ords, expect = Util.partitionConsecutive(ords)._1)
+      }
+      if (s.snapshot.isDefined && s.events.nonEmpty)
+        assertEq("first event",
+          actual = s.events.min.ord.value,
+          expect = s.snapshot.get.ord.value + 1)
     }
     
     private val allTestGens =
@@ -301,15 +335,18 @@ object RedisLaws {
                     gens : Int => Gens  = Gens.apply,
                     seed : Option[Long] = None,
                     debug: Boolean      = false): String = {
-      val tests    = allTestsIterator(gens, reps, seed).toArray
-      val lawCount = allTestGens.size
+      val startTime = System.nanoTime()
+      val tests     = allTestsIterator(gens, reps, seed).toArray
+      val lawCount  = allTestGens.size
       if (debug) println(s"Testing $lawCount Redis laws, $reps times each = ${tests.length} tests")
       for (i <- tests.indices) {
         val t = tests(i)
-        if (debug) printf("[%4d] %-24s: %s\n", i + 1, t.name, t.in.toString.take(180))
+        if (debug) printf("\n[%4d] %-24s: %s\n", i + 1, t.name, t.in.toString.take(180))
         assertTest(t)
       }
-      s"$lawCount Redis laws passed after ${tests.length} tests."
+      val endTime = System.nanoTime()
+      val dur     = Duration.ofNanos(endTime - startTime)
+      s"$lawCount Redis laws passed after ${tests.length} tests in ${dur.conciseDesc}."
     }
   }
 
