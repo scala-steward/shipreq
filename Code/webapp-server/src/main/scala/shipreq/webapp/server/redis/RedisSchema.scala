@@ -9,5 +9,5 @@ final case class RedisSchema(prefix: String) {
 }
 
 object RedisSchema {
-  def default = RedisSchema("project:")
+  def default = RedisSchema("prj:")
 }
