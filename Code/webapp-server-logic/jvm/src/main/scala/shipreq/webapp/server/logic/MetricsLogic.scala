@@ -1,6 +1,7 @@
 package shipreq.webapp.server.logic
 
 import java.time.Duration
+import shipreq.webapp.base.event.Trust
 
 trait MetricsLogic[F[_]] extends MetricsLogic.ForEvents[F] with MetricsLogic.ForRedis[F] {
 
@@ -28,7 +29,7 @@ trait MetricsLogic[F[_]] extends MetricsLogic.ForEvents[F] with MetricsLogic.For
 object MetricsLogic {
 
   trait ForEvents[F[_]] {
-    def appliedEvents(eventCount: Int, dur: Duration, trusted: Boolean): F[Unit]
+    def appliedEvents(eventCount: Int, dur: Duration, trust: Trust): F[Unit]
   }
 
   trait ForRedis[F[_]] {
@@ -47,6 +48,6 @@ object MetricsLogic {
       override def projectSpaWebSocketClosed   (a: Duration, b: Duration)                             = f
       override def projectSpaWebSocketStep[A]  (a: String, b: String)(c: F[A])                        = c
       override def redis                       (a: String, d: Duration)                               = f
-      override def appliedEvents               (a: Int, b: Duration, c: Boolean)                      = f
+      override def appliedEvents               (a: Int, b: Duration, c: Trust)                        = f
     }
 }

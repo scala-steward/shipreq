@@ -8,6 +8,7 @@ import shipreq.base.util.FreeOption
 import shipreq.base.util.FxModule._
 import shipreq.base.util.JavaTimeHelpers._
 import shipreq.base.util.log.HasLogger
+import shipreq.webapp.base.event.{Trust, Trusted}
 import shipreq.webapp.server.logic.{MetricsLogic, Security}
 import shipreq.webapp.server.util.CommDir
 
@@ -246,7 +247,7 @@ object PrometheusMetrics extends HasLogger {
           .register()
       private[this] val trusted   = m.labels("trusted")
       private[this] def untrusted = m.labels("untrusted")
-      def apply(trusted: Boolean) = if (trusted) this.trusted else untrusted
+      def apply(trust: Trust) = if (trust is Trusted) this.trusted else untrusted
     }
 
     final class EventApplicationDuration private[Metrics] {
@@ -260,7 +261,7 @@ object PrometheusMetrics extends HasLogger {
           .register()
       private[this] val trusted   = m.labels("trusted")
       private[this] def untrusted = m.labels("untrusted")
-      def apply(trusted: Boolean) = if (trusted) this.trusted else untrusted
+      def apply(trust: Trust) = if (trust is Trusted) this.trusted else untrusted
     }
   }
 
@@ -404,9 +405,9 @@ final class PrometheusMetrics extends MetricsLogic[Fx] {
   override def redis(opName: String, dur: Duration): Fx[Unit] =
     Fx(RedisDuration(opName).observe(dur.asSeconds))
 
-  override def appliedEvents(eventCount: Int, dur: Duration, trusted: Boolean) =
+  override def appliedEvents(eventCount: Int, dur: Duration, trust: Trust) =
     Fx {
-      EventApplicationCount(trusted = trusted).inc(eventCount)
-      EventApplicationDuration(trusted = trusted).observe(dur.asSeconds)
+      EventApplicationCount(trust).inc(eventCount)
+      EventApplicationDuration(trust).observe(dur.asSeconds)
     }
 }

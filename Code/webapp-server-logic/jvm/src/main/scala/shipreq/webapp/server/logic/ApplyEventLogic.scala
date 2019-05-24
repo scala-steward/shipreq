@@ -7,13 +7,13 @@ import shipreq.base.ops.Trace
 import shipreq.base.util.ErrorMsg
 import shipreq.base.util.JavaTimeHelpers._
 import shipreq.webapp.base.data.ProjectId
-import shipreq.webapp.base.event.{ApplyEvent, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.base.event.{ApplyEvent, ProjectAndOrd, Trust, Trusted, VerifiedEvent}
 
 trait ApplyEventLogic[F[_]] { self =>
   import ApplyEventLogic.{AppendFn, Result}
 
   def F: Applicative[F]
-  def trusted: Boolean
+  def trust: Trust
   val appendFn: AppendFn[F]
 
   final def create(pid: ProjectId, events: VerifiedEvent.Seq): F[Result] =
@@ -34,17 +34,17 @@ object ApplyEventLogic extends StrictLogging {
 
   type AppendFn[F[_]] = (ProjectId, ProjectAndOrd, VerifiedEvent.NonEmptySeq) => F[Result]
 
-  def apply[F[_]](_trusted: Boolean)
+  def apply[F[_]](_trust: Trust)
                  (_appendFn: AppendFn[F])
                  (implicit _F: Applicative[F]): ApplyEventLogic[F] =
     new ApplyEventLogic[F] {
       override def F = _F
-      override def trusted = _trusted
+      override def trust = _trust
       override val appendFn = _appendFn
     }
 
   def trusted[F[_]](implicit _F: Applicative[F]): ApplyEventLogic[F] =
-    apply(true)((pid, pao, events) => _F.point {
+    apply(Trusted)((pid, pao, events) => _F.point {
       ApplyEvent.trusted.applyVerified(events)(pao.project) match {
         case \/-(p2) =>
           \/-(ProjectAndOrd(p2, Some(events.lastKey.ord.asLatest)))
@@ -56,7 +56,7 @@ object ApplyEventLogic extends StrictLogging {
 
   def traced[F[_]](underlying: ApplyEventLogic[F], trace: Trace.Algebra[F])
                   (implicit F: Monad[F]): ApplyEventLogic[F] =
-    apply(underlying.trusted)((a, b, c) =>
+    apply(underlying.trust)((a, b, c) =>
       trace.newSpan("ApplyEvents")(_ => underlying.appendFn(a, b, c)))
 
   def withMetricsAndLogging[F[_]](underlying: ApplyEventLogic[F], warnIfDurExceedsMs: Int)
@@ -64,17 +64,17 @@ object ApplyEventLogic extends StrictLogging {
                                   metrics: MetricsLogic.ForEvents[F],
                                   svr: Server.Time[F]): ApplyEventLogic[F] = {
 
-    val trusted            = underlying.trusted
+    val trust              = underlying.trust
     val warnIfDurExceedsNs = warnIfDurExceedsMs * 1000 * 1000
 
-    apply(trusted) { (pid, pao1, events) =>
+    apply(trust) { (pid, pao1, events) =>
       for {
         (res, dur) ← svr.measureDuration(underlying.appendFn(pid, pao1, events))
         eventCount = res match {
                        case \/-(pao2) => pao2.ordAsInt - pao1.ordAsInt
                        case -\/(_)    => events.size
                      }
-        _          ← metrics.appliedEvents(eventCount, dur, trusted = trusted)
+        _          ← metrics.appliedEvents(eventCount, dur, trust = trust)
       } yield {
         if (dur.getSeconds == 0 && dur.getNano < warnIfDurExceedsNs)
           logger.debug(s"Applied $eventCount events to project #${pid.value} v${pao1.ordAsInt} in ${dur.conciseDesc}")
