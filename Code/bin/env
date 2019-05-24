@@ -39,10 +39,14 @@ down=0
 for arg in "$@"; do
   [ "$arg" == down ] && down=1
 done
-[ $down == 1 ] \
+[ $down == 1 -a "$env" != "test" ] \
   && echo "WARNING: The 'down' command will remove containers after stopping them meaning you'll lose all state." \
   && echo "         Use 'stop' instead if you want to retain state..." \
-  && sleep 4
+  && echo "5..." && sleep 1 \
+  && echo "4..." && sleep 1 \
+  && echo "3..." && sleep 1 \
+  && echo "2..." && sleep 1 \
+  && echo "1..." && sleep 1
 
 # In project name (-p) dashes and underscores and removed automatically
 exec docker-compose \
