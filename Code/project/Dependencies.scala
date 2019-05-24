@@ -87,7 +87,7 @@ object Dependencies {
   }
 
   object Json4s {
-    private val mm = MultiModule.scala("org.json4s", "3.6.5")
+    private val mm = MultiModule.scala("org.json4s", "3.6.6")
     val jackson = mm("json4s-jackson") ++ Scala.all
   }
 
@@ -131,13 +131,13 @@ object Dependencies {
 
   object Akka {
     val shortVer = "2.5"
-    private val mm = MultiModule.scala("com.typesafe.akka", shortVer + ".22")
+    private val mm = MultiModule.scala("com.typesafe.akka", shortVer + ".23")
     val actor   = mm("akka-actor") ++ mm("akka-slf4j")
     val testkit = mm("akka-testkit")
   }
 
   object OkHttp {
-    private val mm = MultiModule.java("com.squareup.okhttp3", "3.14.1")
+    private val mm = MultiModule.java("com.squareup.okhttp3", "3.14.2")
     val core = mm("okhttp")
     // val urlConnection = mm("okhttp-urlconnection") ++ core
   }
@@ -174,7 +174,7 @@ object Dependencies {
   val scalajsDom       = jsOnly("org.scala-js"                          %% "scalajs-dom"       % "0.9.7")
   val scalajsJavaTime  = jsOnly("org.scala-js"                          %% "scalajs-java-time" % "0.2.5")
 
-  val boopickle   = jvmAndJs("io.suzaku",                        "boopickle",   "1.3.0")
+  val boopickle   = jvmAndJs("io.suzaku",                        "boopickle",   "1.3.1")
   val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",        "1.3.0")
   val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.1.6")
   val scalaz      = jvmAndJs("org.scalaz",                       "scalaz-core", "7.2.27")
@@ -188,7 +188,7 @@ object Dependencies {
   val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "3.3.1")
   val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.11")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
-  val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "0.35.4")
+  val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "0.35.5")
   val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.5")
   val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.10.7")
   val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "2.6.0")
