@@ -1,9 +1,9 @@
 package shipreq.base.util
 
+import cats.effect.IO
+import cats.effect.IO.ioEffect
 import java.time.{Duration, Instant}
-import scalaz._
-import scalaz.std.function.function0Instance
-import scalaz.syntax.catchable._
+import scalaz.{-\/, BindRec, Catchable, Monad, \/, \/-}
 
 /**
   * The chosen target for algebra interpretation.
@@ -12,17 +12,27 @@ import scalaz.syntax.catchable._
   */
 object FxModule {
 
-  type Fx[A] = Free.Trampoline[A]
+  type Fx[A] = IO[A]
 
   implicit val fxInstance: Monad[Fx] with BindRec[Fx] =
-    Free.trampolineInstance
+    new Monad[Fx] with BindRec[Fx] {
+      override def ap[A, B](fa: => Fx[A])(f: => Fx[A => B]): Fx[B] = ioEffect.ap(f)(fa)
+      override def point[A](a: => A): Fx[A] = IO(a)
+      override def bind[A, B](fa: Fx[A])(f: A => Fx[B]): Fx[B] = fa.flatMap(f)
+      override def map[A, B](fa: Fx[A])(f: A => B): Fx[B] = fa.map(f)
+      override def tailrecM[A, B](f: A => Fx[A \/ B])(a: A): Fx[B] =
+        ioEffect.tailRecM(a)(f(_).map(_.toEither)) // TODO Use either in Fx interface?
+    }
 
   implicit val fxInstanceCatchable: Catchable[Fx] =
     new Catchable[Fx] {
       override def attempt[A](f: Fx[A]): Fx[Throwable \/ A] =
-        Fx(
+        Fx {
           try \/-(f.unsafeRun())
-          catch { case t: Throwable => -\/(t) })
+          catch {
+            case t: Throwable => -\/(t)
+          }
+        }
 
       override def fail[A](err: Throwable): Fx[A] =
         Fx.fail(err)
@@ -32,26 +42,26 @@ object FxModule {
 
   object Fx {
     def apply[A](a: => A): Fx[A] =
-      fxInstance.point(a)
+      IO(a)
 
     def pure[A](a: A): Fx[A] =
-      Free.pure(a)
+      IO.pure(a)
 
     /** In case there are errors in construction (!) */
     def safe[A](fa: => Fx[A]): Fx[A] =
-      Fx(fa).flatMap(Identity.apply)
+      IO(fa).flatMap(Identity.apply)
 
     def fail[A](err: Throwable): Fx[A] =
-      Fx(throw err)
+      IO.raiseError(err)
 
     def lift[A](fa: Throwable \/ A): Fx[A] =
       fa.fold(fail, pure)
 
     val unit: Fx[Unit] =
-      Free.pure(())
+      IO.unit
 
     val now: Fx[Instant] =
-      apply(Instant.now())
+      IO(Instant.now())
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -59,7 +69,7 @@ object FxModule {
   implicit class FxOps[A](private val fx: Fx[A]) extends AnyVal {
 
     @inline def unsafeRun(): A =
-      fx.go(_())
+      fx.unsafeRunSync()
 
     def tap[B](f: A => Fx[B]): Fx[A] =
       for {
@@ -94,18 +104,22 @@ object FxModule {
       *                 Result of Some(fx) = continue; run fx between retries
       */
     def retry[E, B](inspect: A => E \/ B)(continue: (Int, E) => Option[Fx[Unit]]): Fx[E \/ B] =
-      fxInstance.tailrecM((n: Int) =>
-        fx.flatMap[Int \/ (E \/ B)](a =>
+      ioEffect.tailRecM(0)(n =>
+        fx.flatMap[Int Either (E \/ B)](a =>
           inspect(a) match {
-            case \/-(b) => Fx.pure(\/-(\/-(b)))
+            case \/-(b) => Fx.pure(Right(\/-(b)))
             case -\/(e) =>
               val attempts = n + 1
               continue(attempts, e) match {
-                case Some(x) => x.map(_ => -\/(attempts))
-                case None    => Fx.pure(\/-(-\/(e)))
+                case Some(x) => x.map(_ => Left(attempts))
+                case None    => Fx.pure(Right(-\/(e)))
               }
-          })
-      )(0)
+          }
+        )
+      )
+
+    @inline def attemptFx: Fx[Throwable \/ A] =
+      fxInstanceCatchable.attempt(fx)
 
     /**
       * @param continue Int arg            = number of attempts thus far (i.e. ≥ 1)
@@ -113,20 +127,23 @@ object FxModule {
       *                 Result of Some(fx) = continue; run fx between retries
       */
     def retryOnException(continue: (Int, Throwable) => Option[Fx[Unit]]): Fx[A] =
-      fx.attempt.retry(identity)(continue).map(_.fold(throw _, identity))
+      fx.attempt.retry(\/.fromEither)(continue).map(_.fold(throw _, identity))
 
     /** Executes the handler if an exception is raised. */
     def recoverException[AA >: A](handler: Throwable => Fx[AA]): Fx[AA] =
       fx.attempt.flatMap {
-        case \/-(a) => Fx.pure(a)
-        case -\/(e) => handler(e)
+        case Right(a) => Fx.pure(a)
+        case Left(e) => handler(e)
       }
 
     def recoverArticulateError[AA >: A](handler: ArticulateError => Fx[AA]): Fx[AA] =
       recoverException(t => handler(ArticulateError(t)))
 
     def attemptArticulateError: Fx[ArticulateError \/ A] =
-      fx.attempt.map(_.leftMap(ArticulateError(_)))
+      fx.attempt.map {
+        case Right(a) => \/-(a)
+        case Left(e) => -\/(ArticulateError(e))
+      }
 
     def mapArticulateError(f: ArticulateError => Throwable): Fx[A] =
       recoverArticulateError(e => Fx.fail(f(e)))
@@ -145,10 +162,10 @@ object FxModule {
         _ <- finallyClause
       } yield r
 
-    def bracket[B, C](release: A => Fx[B], use: A => Fx[C]): Fx[C] =
-      fx.flatMap(a => use(a).andFinally(release(a)))
+    def bracketFx[B, C](release: A => Fx[B], use: A => Fx[C]): Fx[C] =
+      fx.bracket(use)(release(_).map(_ => ()))
 
-    def bracket_[B, C](release: Fx[B], use: Fx[C]): Fx[C] = {
+    def bracketFx_[B, C](release: Fx[B], use: Fx[C]): Fx[C] = {
       val useAndRelease = use.andFinally(release)
       fx.flatMap(_ => useAndRelease)
     }

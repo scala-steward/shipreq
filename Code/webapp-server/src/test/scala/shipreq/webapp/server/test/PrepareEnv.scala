@@ -3,7 +3,7 @@ package shipreq.webapp.server.test
 import java.time.Duration
 import org.redisson.Redisson
 import shipreq.base.test.BaseTestUtil.onceUnit
-import shipreq.base.util.FxModule.Fx
+import shipreq.base.util.FxModule._
 import shipreq.webapp.server.ServerLogicConfig
 import shipreq.webapp.server.app.{Global, ServerConfig}
 import shipreq.webapp.server.db.DbInterpreter

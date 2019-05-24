@@ -62,7 +62,7 @@ object ShipReqBuild {
         Microlibs.scalazExt ++ Microlibs.stdlibExt ++ Microlibs.utils ++
         testScope(μTest ++ Nyaya.test ++ Microlibs.testUtil))
       .depsForJvm(
-        SLF4J.api ++ Logback.core ++ scalaLogging ++ clearConfig)
+        SLF4J.api ++ Logback.core ++ scalaLogging ++ clearConfig ++ catsEffect)
 
   lazy val baseOps =
     project("base-ops")
@@ -120,9 +120,8 @@ object ShipReqBuild {
         .dependsOn(webappServer)
         .configure(Common.jvmSettings)
         .settings(libraryDependencies ++= Seq(
-          "io.monix"      %% "monix-eval"  % "3.0.0-RC2",
-          "org.scalaz"    %% "scalaz-zio"  % "1.0-RC4",
-          "org.typelevel" %% "cats-effect" % "1.3.0"))
+          "io.monix"   %% "monix-eval" % "3.0.0-RC2",
+          "org.scalaz" %% "scalaz-zio" % "1.0-RC4"))
         .deps(JJWT.all)
     }
 

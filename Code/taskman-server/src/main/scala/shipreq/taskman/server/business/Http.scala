@@ -18,7 +18,7 @@ final case class Http[I, O](prep: (I, HttpClient, HttpLogger) => Fx[Request],
   def run(i: I)(implicit client: HttpClient, log: HttpLogger): Fx[O] =
     log.result(
       prep(i, client, log).flatMap(req =>
-        Fx(client.newCall(req).execute()).bracket(
+        Fx(client.newCall(req).execute()).bracketFx(
           release = resp => Fx(resp.close()),
           use = resp =>
             Fx(resp.body.string())

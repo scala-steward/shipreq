@@ -182,6 +182,7 @@ object Dependencies {
   val μPickle     = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",     "custom-7")
   val μTest       = jvmAndJs("com.lihaoyi",                      "utest",       "0.6.7")
 
+  val catsEffect   = jvmOnly("org.typelevel"              %% "cats-effect"           % "1.3.0")
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val commonsLang  = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.9")
   val flyway       = jvmOnly("com.googlecode.flyway"       % "flyway-core"           % "2.3.1")
