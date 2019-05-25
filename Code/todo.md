@@ -46,7 +46,6 @@ Backlog
 * Add laws for webapp-server-logic and test in webapp-server
 * Rename webapp-client-{home ⇒ member} now that its ambiguous in regards to the public pages
 * Make webtamp hash filenames of urls in Semantic CSS (`icons.*`)
-* Add DB indicies (don't look at code! metrics dashboard should indicate)
 * SSL shouldn't be in Docker - resolve TODO in WebappBuild.scala
 * Hide Tags/Imps columns when guaranteed to be empty & useless.
   (i.e. all possible tags/imps are allocated to columns)
