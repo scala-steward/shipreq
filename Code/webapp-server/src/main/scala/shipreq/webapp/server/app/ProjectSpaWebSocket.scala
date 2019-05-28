@@ -54,6 +54,12 @@ object ProjectSpaWebSocket extends StrictLogging {
 final class ProjectSpaWebSocket extends StrictLogging {
   import ProjectSpaWebSocket._
 
+  private def unsafeSend(s: Session, b: BinaryData): Unit = {
+    // Can't use s.getBasicRemote.sendBinary() - it can cause "Blocking message pending 10000 for BLOCKING" errors
+    val onResult: SendHandler = r => if (!r.isOK) onError(s, r.getException)
+    s.getAsyncRemote.sendBinary(b.unsafeByteBuffer, onResult)
+  }
+
   private def fxClose(s: Session, code: CloseCode, reasonPhrase: String): Fx[Unit] =
     Fx {
       try {
@@ -66,8 +72,7 @@ final class ProjectSpaWebSocket extends StrictLogging {
     }
 
   private def fxPush(s: Session): BinaryData => Fx[Unit] = {
-    val remote = s.getBasicRemote
-    b => Fx(remote.sendBinary(b.unsafeByteBuffer))
+    b => Fx(unsafeSend(s, b))
   }
 
   @OnOpen
@@ -103,12 +108,10 @@ final class ProjectSpaWebSocket extends StrictLogging {
       val binIn     = BinaryData.unsafeFromArray(messageBytes)
 
       val fxSend: BinaryData => Fx[Throwable \/ Unit] =
-        b => Fx(try {
-          remote.sendBinary(b.unsafeByteBuffer)
+        b => Fx {
+          unsafeSend(s, b)
           rightUnit
-        } catch {
-          case t: Throwable => -\/(t)
-        })
+        }
 
       val fxOnError: MsgError => Fx[Unit] = {
         case MsgError.DecodingFailure => fxClose(s, CloseCodes.PROTOCOL_ERROR, "Error parsing message")
