@@ -114,14 +114,3 @@ Phase 2B
 
 * Add a correlation ID to JWTs / logs / traces
 * WebSockets don't recover from lost Redis connections
-
-* Move into microlibs:
-  * BinaryData
-  * Binary{Js,Jvm}
-  * StaticLookupFn
-  * LoggerJs
-  * {,Fake}WebSocket (?)
-  * SetDiff
-  * PotentialChange
-  * IsoBool + Validity, Enabled, etc (?)
-  * JavaTimeHelpersTest
