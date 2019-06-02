@@ -1,34 +1,24 @@
 package shipreq.webapp.ssr
 
 import scala.xml.XML
-import shipreq.base.util.FxModule._
-import shipreq.base.util.Url
+import shipreq.base.util.{Permission, Url}
+import shipreq.webapp.base.user.Username
 
 trait SsrAlgebra[F[_]] {
-  import SsrAlgebra.Types._
+  import SsrAlgebra.Html
+  import SsrSharedData._
 
   def warmup: F[Unit]
 
-  val public: (Url.Absolute, PublicInitData) => F[Option[Html]]
+  def public(publicRegistration: Permission): F[(Url.Relative, Option[Username]) => F[Option[Html]]]
 
-  val projectSpaLoader: ProjectSpaLoaderData => F[Option[Html]]
+  def projectSpaLoader: F[ProjectSpaLoaderData => F[Option[Html]]]
 }
 
 object SsrAlgebra {
-  object Types {
-    final case class Html(value: String) {
-      def toXml = XML.loadString(value)
-    }
 
-    type PublicInitData = shipreq.webapp.client.public.PublicSpaProtocols.InitData
-    val  PublicInitData = shipreq.webapp.client.public.PublicSpaProtocols.InitData
+  final case class Html(value: String) {
+    val xml = XML.loadString(value)
   }
 
-  object Off extends SsrAlgebra[Fx] {
-    import Types._
-    private val none = Fx.pure(Option.empty[Html])
-    override def warmup = Fx.unit
-    override val public = (_, _) => none
-    override val projectSpaLoader = _ => none
-  }
 }

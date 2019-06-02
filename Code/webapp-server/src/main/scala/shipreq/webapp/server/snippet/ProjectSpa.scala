@@ -7,7 +7,8 @@ import shipreq.webapp.base.protocol.ProjectSpaProtocols
 import shipreq.webapp.server.app.{Global, LiftDispatcher}
 import shipreq.webapp.server.lib.SingleOpStatelessSnippet
 import shipreq.webapp.server.protocol._
-import shipreq.webapp.ssr.{ProjectSpaLoaderData, SsrAlgebra}
+import shipreq.webapp.ssr.SsrAlgebra.Html
+import shipreq.webapp.ssr.SsrSharedData.ProjectSpaLoaderData
 
 object ProjectSpa extends SingleOpStatelessSnippet {
 
@@ -24,8 +25,11 @@ object ProjectSpa extends SingleOpStatelessSnippet {
 
   val EntryPoint = ClientSideProcInvoker(ProjectSpaProtocols.EntryPoint, ResourceBundle)
 
-  private val ssrFallback = SsrAlgebra.Types.Html(
+  private[this] val ssrFallback = Html(
     """<div style="margin-top:33vh;text-align:center;font-size:150%;color:#333;">loading ...</div>""")
+
+  private[this] val ssr =
+    Global.ssr.projectSpaLoader.unsafeRun()
 
   override def render = {
     val projectId = LiftDispatcher.ProjectIdVar.is
@@ -38,10 +42,13 @@ object ProjectSpa extends SingleOpStatelessSnippet {
     val init: ProjectSpaProtocols.InitPageData =
       logic.initPage(projectId, user.username).unsafeRun()
 
+    val loaderData =
+      ProjectSpaLoaderData(user.username, init.projectName)
+
     val loaderHtml =
-      Global.ssr.projectSpaLoader(ProjectSpaLoaderData(user.username, init.projectName)).unsafeRun()
+      ssr(loaderData).unsafeRun()
         .getOrElse(ssrFallback)
-        .toXml
+        .xml
 
     "*" #> (loaderHtml :+ EntryPoint.invokeOnLoadHtml(init))
   }

@@ -11,7 +11,7 @@ import shipreq.webapp.server.db.DbInterpreter
 import shipreq.webapp.server.logic._
 import shipreq.webapp.server.redis.{RedisSchema, RedisViaRedisson}
 import shipreq.webapp.server.security.SecurityInterpreter
-import shipreq.webapp.ssr.{SsrAlgebra, SsrInterpreter}
+import shipreq.webapp.ssr.SsrAlgebra
 
 final case class Global(config  : ServerConfig,
                         db      : DbAccess,
@@ -61,7 +61,7 @@ object Global {
     implicit val security      = new SecurityInterpreter[Fx]
 
     val ssrPrometheus = config.server.prometheus.enabled && config.server.prometheus.ssr
-    val ssr           = if (config.server.ssr.enabled) SsrInterpreter(config.server.ssr, ssrPrometheus) else SsrAlgebra.Off
+    val ssr           = config.server.ssr.instance[Fx](ssrPrometheus)
 
     implicit val apEvents = {
       var a = ApplyEventLogic.trusted[Fx]

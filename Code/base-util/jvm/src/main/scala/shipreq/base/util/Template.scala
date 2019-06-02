@@ -1,6 +1,9 @@
 package shipreq.base.util
 
 import java.util.UUID
+import scalaz.Functor
+import scalaz.syntax.functor._
+import scalaz.Scalaz.Id
 
 /** Takes a potentially slow `String* => String` function and makes it super fast by executing it once,
   * turning the result into a template, then using the template for all subsequent calls.
@@ -9,9 +12,30 @@ import java.util.UUID
   */
 object Template {
 
+  def functor1A[F[_], A](f: A => F[String])(implicit F: Functor[F], p1: Param[A]): F[A => String] =
+    prepareF(1, a => f(p1.fromStr(a(0)))).map(t => (a: A) => t(Array(p1.toStr(a))))
+
+  def functor1[F[_]: Functor](f: String => F[String]): F[String => String] =
+    prepareF(1, a => f(a(0))).map(t => s => t(Array(s)))
+
   def apply1(f: String => String): String => String = {
     val t = prepare(1, a => f(a(0)))
     s => t(Array(s))
+  }
+
+  def functor2A[F[_], A, B](f: (A, B) => F[String])(implicit F: Functor[F], p1: Param[A], p2: Param[B]): F[(A, B) => String] =
+    prepareF(2, a => f(p1.fromStr(a(0)), p2.fromStr(a(1)))).map(t => (a: A, b: B) => t(Array(p1.toStr(a), p2.toStr(b))))
+
+  final class Param[A](val fromStr: String => A, val toStr: A => String)
+
+  object Param {
+    def apply[A](fromStr: String => A)(toStr: A => String): Param[A] =
+      new Param(fromStr, toStr)
+
+    implicit val string: Param[String] = {
+      val id = (s: String) => s
+      apply(id)(id)
+    }
   }
 
   def apply2(f: (String, String) => String): (String, String) => String = {
@@ -19,71 +43,61 @@ object Template {
     (s1, s2) => t(Array(s1, s2))
   }
 
-  def apply3(f: (String, String, String) => String): (String, String, String) => String = {
-    val t = prepare(3, a => f(a(0), a(1), a(2)))
-    (s1, s2, s3) => t(Array(s1, s2, s3))
-  }
+  private def prepare(arity: Int, f: Array[String] => String): Array[String] => String =
+    prepareF[Id](arity, f)
 
-  def apply4(f: (String, String, String, String) => String): (String, String, String, String) => String = {
-    val t = prepare(4, a => f(a(0), a(1), a(2), a(3)))
-    (s1, s2, s3, s4) => t(Array(s1, s2, s3, s4))
-  }
-
-  def apply5(f: (String, String, String, String, String) => String): (String, String, String, String, String) => String = {
-    val t = prepare(5, a => f(a(0), a(1), a(2), a(3), a(4)))
-    (s1, s2, s3, s4, s5) => t(Array(s1, s2, s3, s4, s5))
-  }
-
-  def apply6(f: (String, String, String, String, String, String) => String): (String, String, String, String, String, String) => String = {
-    val t = prepare(6, a => f(a(0), a(1), a(2), a(3), a(4), a(5)))
-    (s1, s2, s3, s4, s5, s6) => t(Array(s1, s2, s3, s4, s5, s6))
-  }
-
-  private def prepare(arity: Int, f: Array[String] => String): Array[String] => String = {
+  private def prepareF[F[_]: Functor](arity: Int, f: Array[String] => F[String]): F[Array[String] => String] = {
     val ids = Array.fill(arity)(newId())
 
-    val regex = {
-      val i = ids.mkString("|")
-      val r = s"(?=$i)|(?<=$i)"
-      r.r
-    }
+    f(ids).map { templateWithIds =>
+      if (templateWithIds eq null)
+        _ => null
+      else {
 
-    def makeFragFn(frag: String): (Array[String], StringBuilder) => Unit =
-      ids.indexWhere(frag == _) match {
-        case -1 => (_, sb) => sb.append(frag)
-        case i  => (a, sb) => sb.append(a(i))
-      }
-
-    val fragFns =
-      regex
-        .split(f(ids))
-        .iterator
-        .filter(_.nonEmpty)
-        .map(makeFragFn)
-        .toArray
-
-    fragFns.length match {
-      case 0 =>
-        _ => ""
-
-      case 1 =>
-        val ff = fragFns(0)
-        a => {
-          val sb = new StringBuilder
-          ff(a, sb)
-          sb.toString()
+        val regex = {
+          val i = ids.mkString("|")
+          val r = s"(?=$i)|(?<=$i)"
+          r.r
         }
 
-      case len =>
-        a => {
-          val sb = new StringBuilder
-          var i = 0
-          while (i < len) {
-            fragFns(i)(a, sb)
-            i += 1
+        def makeFragFn(frag: String): (Array[String], StringBuilder) => Unit =
+          ids.indexWhere(frag == _) match {
+            case -1 => (_, sb) => sb.append(frag)
+            case i  => (a, sb) => sb.append(a(i))
           }
-          sb.toString()
+
+        val fragFns =
+          regex
+            .split(templateWithIds)
+            .iterator
+            .filter(_.nonEmpty)
+            .map(makeFragFn)
+            .toArray
+
+        fragFns.length match {
+          case 0 =>
+            _ => ""
+
+          case 1 =>
+            val ff = fragFns(0)
+            a => {
+              val sb = new StringBuilder
+              ff(a, sb)
+              sb.toString()
+            }
+
+          case len =>
+            a => {
+              val sb = new StringBuilder
+              var i = 0
+              while (i < len) {
+                fragFns(i)(a, sb)
+                i += 1
+              }
+              sb.toString()
+            }
         }
+      }
     }
   }
 
