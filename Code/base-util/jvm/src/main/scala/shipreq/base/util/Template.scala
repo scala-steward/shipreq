@@ -52,6 +52,8 @@ object Template {
     f(ids).map { templateWithIds =>
       if (templateWithIds eq null)
         _ => null
+      else if (!ids.exists(templateWithIds.contains))
+        _ => templateWithIds
       else {
 
         val regex = {
