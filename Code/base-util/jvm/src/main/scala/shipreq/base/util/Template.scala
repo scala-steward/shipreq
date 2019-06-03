@@ -63,7 +63,7 @@ object Template {
         }
 
         def makeFragFn(frag: String): (Array[String], StringBuilder) => Unit =
-          ids.indexWhere(frag == _) match {
+          ids.indexOf(frag) match {
             case -1 => (_, sb) => sb.append(frag)
             case i  => (a, sb) => sb.append(a(i))
           }
