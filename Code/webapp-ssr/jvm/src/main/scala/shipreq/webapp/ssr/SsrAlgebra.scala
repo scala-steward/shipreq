@@ -1,24 +1,32 @@
 package shipreq.webapp.ssr
 
+import japgolly.univeq.UnivEq
 import scala.xml.XML
 import shipreq.base.util.{Permission, Url}
 import shipreq.webapp.base.user.Username
 
 trait SsrAlgebra[F[_]] {
-  import SsrAlgebra.Html
-  import SsrSharedData._
 
-  def warmup: F[Unit]
-
-  def public(publicRegistration: Permission): F[(Url.Relative, Option[Username]) => F[Option[Html]]]
-
-  def projectSpaLoader: F[ProjectSpaLoaderData => F[Option[Html]]]
+  def prepare(baseUrl: Url.Absolute.Base,
+              publicRegistration: Permission): F[SsrAlgebra.Prepared[F]]
 }
 
 object SsrAlgebra {
+  import SsrSharedData._
 
-  final case class Html(value: String) {
-    val xml = XML.loadString(value)
-  }
+  type Output                 = Option[Html]
+  type Public[F[_]]           = (Url.Relative, Option[Username]) => F[Output]
+  type ProjectSpaLoader[F[_]] = ProjectSpaLoaderData => F[Output]
 
+  final case class Prepared[F[_]](public: Public[F],
+                                  projectSpaLoader: ProjectSpaLoader[F])
+
+}
+
+final case class Html(value: String) {
+  val xml = XML.loadString(value)
+}
+
+object Html {
+  implicit def univEq: UnivEq[Html] = UnivEq.derive
 }

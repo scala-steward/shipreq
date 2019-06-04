@@ -19,7 +19,7 @@ final case class Global(config  : ServerConfig,
                         metrics : MetricsLogic[Fx],
                         ops     : OpsEndpointInterpreter,
                         security: Security.Algebra[Fx],
-                        ssr     : SsrAlgebra[Fx],
+                        ssr     : SsrAlgebra.Prepared[Fx],
                         taskman : TaskmanApi[Fx],
                         trace   : TraceInterpreter.ForLift[Fx])
 
@@ -35,6 +35,7 @@ object Global {
 
   def default(dbAccess   : DbAccess,
               redisClient: Option[RedissonClient],
+              ssr        : SsrAlgebra.Prepared[Fx],
               config     : ServerConfig): Global = {
 
     assert(dbAccess ne null, "DbAccess is null, sir.")
@@ -59,9 +60,6 @@ object Global {
     implicit val server        = trace.injectServer(ServerInterpreter)
     implicit val ops           = new OpsEndpointInterpreter()
     implicit val security      = new SecurityInterpreter[Fx]
-
-    val ssrPrometheus = config.server.prometheus.enabled && config.server.prometheus.ssr
-    val ssr           = config.server.ssr.instance[Fx](ssrPrometheus)
 
     implicit val apEvents = {
       var a = ApplyEventLogic.trusted[Fx]

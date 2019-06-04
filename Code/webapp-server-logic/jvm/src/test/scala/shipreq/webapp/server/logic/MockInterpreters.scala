@@ -12,7 +12,7 @@ import shipreq.webapp.base.event._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.ServerLogicConfig
-import shipreq.webapp.ssr.SsrInterpreter
+import shipreq.webapp.ssr.SsrConfig
 
 object MockDb {
   final case class UserEntry(id           : UserId,
@@ -450,7 +450,7 @@ object MockInterpreters {
     applyEventThresholdMs      = 1000,
     googleAnalyticsTrackingId  = None,
     taskmanSchema              = "test_taskman",
-    ssr                        = SsrInterpreter.Config.default,
+    ssr                        = SsrConfig(false),
     initTaskmanOnBoot          = false,
     initTaskmanRetry           = Retries.none,
     jaegerTracingConfig        = None,

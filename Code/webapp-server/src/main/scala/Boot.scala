@@ -43,8 +43,9 @@ class Boot {
       // Create services
       val dbAccess = trace("initDatabase")(_ => initDatabase(cfg))
       val redisClient = cfg.redis.map(c => trace("initRedis")(_ => Redisson.create(c.instance)))
+      val ssr = trace("initSsr")(_ => initSsr(cfg.server))
       trace("configureLift")(_ => configureLift())
-      Global.Instance = trace("Global")(_ => Global.default(dbAccess, redisClient, cfg))
+      Global.Instance = trace("Global")(_ => Global.default(dbAccess, redisClient, ssr, cfg))
 
       // Prepare services
       trace("preloadTemplates")(_ => preloadTemplates())
@@ -54,9 +55,6 @@ class Boot {
       // Start services
       trace("initPrometheus")(_ => initPrometheus(cfg.server.prometheus))
     }
-
-    // Warmup
-    Global.Instance.ssr.warmup.unsafeRun()
   }
 
   def readConfig(): (ServerConfig, Option[RunModes.Value], ConfigReport) = {
@@ -200,4 +198,9 @@ class Boot {
       // - initDatabase()
       // - AppServletFilter
     }
+
+  def initSsr(cfg: ServerLogicConfig) = {
+    val ssr = cfg.ssr.instance[Fx]
+    ssr.prepare(cfg.baseUrl, cfg.publicRegistration).unsafeRun()
+  }
 }

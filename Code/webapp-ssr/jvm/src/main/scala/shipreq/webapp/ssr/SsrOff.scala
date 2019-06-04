@@ -1,12 +1,18 @@
 package shipreq.webapp.ssr
 
-import cats.Applicative
-import shipreq.base.util.Permission
-import shipreq.webapp.ssr.SsrAlgebra.Html
+import shipreq.base.util.{Permission, Url}
+import scalaz.Applicative
 
-final case class SsrOff[F[_]]()(implicit F: Applicative[F]) extends SsrAlgebra[F] {
-  private[this] val none             = F.pure(Option.empty[Html])
-  override def warmup                = F.unit
-  override def public(p: Permission) = F.pure((_, _) => none)
-  override def projectSpaLoader      = F.pure(_ => none)
+final class SsrOff[F[_]]()(implicit F: Applicative[F]) extends SsrAlgebra[F] {
+
+  override def prepare(b: Url.Absolute.Base, p: Permission) =
+    F.point(SsrOff.prepared)
+}
+
+object SsrOff {
+
+  def prepared[F[_]](implicit F: Applicative[F]): SsrAlgebra.Prepared[F] = {
+    val none = F.pure(Option.empty[Html])
+    SsrAlgebra.Prepared[F]((_, _) => none, _ => none)
+  }
 }

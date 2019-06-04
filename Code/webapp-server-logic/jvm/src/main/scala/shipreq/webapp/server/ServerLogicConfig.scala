@@ -10,7 +10,7 @@ import shipreq.base.ops._
 import shipreq.base.util._
 import shipreq.base.util.FxModule._
 import shipreq.webapp.server.logic.{DispatchLogic, ProjectSpaLogic}
-import shipreq.webapp.ssr.SsrInterpreterConfig
+import shipreq.webapp.ssr.SsrConfig
 
 @Lenses
 final case class ServerLogicConfig(baseUrl: Url.Absolute.Base,
@@ -33,7 +33,7 @@ final case class ServerLogicConfig(baseUrl: Url.Absolute.Base,
                                    projectSpa: ProjectSpaLogic.Config,
                                    prometheus: ServerLogicConfig.Prometheus,
                                    security: ServerLogicConfig.Security,
-                                   ssr: SsrInterpreterConfig,
+                                   ssr: SsrConfig,
                                    jaegerTracingConfig: Option[Configuration]) {
 
   lazy val traceAlgebraFx: Trace.Algebra[Fx] =
@@ -120,7 +120,6 @@ object ServerLogicConfig {
                               hikaricp: Boolean,
                               hotspot : Boolean,
                               jdbc    : Boolean,
-                              ssr     : Boolean,
                               path    : String)
   object Prometheus {
     val default = apply(
@@ -128,7 +127,6 @@ object ServerLogicConfig {
       hikaricp = true,
       hotspot  = true,
       jdbc     = true,
-      ssr      = true,
       path     = (DispatchLogic.opsRoot / "metrics").relativeUrl)
 
     def config: ConfigDef[Prometheus] =
@@ -136,7 +134,6 @@ object ServerLogicConfig {
         ConfigDef.getOrUse[Boolean]("hikaricp", default.hikaricp) |@|
         ConfigDef.getOrUse[Boolean]("hotspot" , default.hotspot) |@|
         ConfigDef.getOrUse[Boolean]("jdbc"    , default.jdbc) |@|
-        ConfigDef.getOrUse[Boolean]("ssr"     , default.ssr) |@|
         ConfigDef.getOrUse[String ]("path"    , default.path).map(_.replaceFirst("^/*", "/"))
     ) (apply)
   }
@@ -153,7 +150,7 @@ object ServerLogicConfig {
       ProjectSpaLogic.Config.defn.withPrefix("projectSpa.") |@|
       Prometheus.config.withPrefix          ("prometheus.") |@|
       Security.config.withPrefix            ("security.") |@|
-      SsrInterpreterConfig.defn.withPrefix  ("ssr.") |@|
+      SsrConfig.config.withPrefix           ("ssr.") |@|
       JaegerTracingConfig.main              ("webapp")
   ) (apply)
       .withPrefix("shipreq.")

@@ -164,8 +164,8 @@ object WebappBuild {
   lazy val webappSsr =
     crossProject("webapp-ssr")
       .configureJvm(Common.jvmSettings)
-      .configureJs(Common.jsSettings(NoDom))
-      .dependsOn(webappBaseMember, webappClientPublic)
+      .configureJs(Common.jsSettings(NoTests))
+      .dependsOn(webappBaseMember, webappClientPublic, baseTest % Test)
       .depsForBoth(ScalaGraal.extBoopickle ++ testScope(μTest))
       .depsForJvm(ScalaGraal.util ++ ScalaGraal.extPrometheus ++ scalaXml)
 

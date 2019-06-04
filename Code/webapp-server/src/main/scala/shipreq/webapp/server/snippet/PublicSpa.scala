@@ -12,16 +12,13 @@ object PublicSpa extends SnippetHelpers {
 
   val EntryPoint = ClientSideProcInvoker(PublicSpaProtocols.EntryPoint)
 
-  private[this] val ssr =
-    Global.ssr.public(Global.config.server.publicRegistration).unsafeRun()
-
   def render = {
     val user = currentUserOption()
     val initData = PublicSpaProtocols.InitData(Global.config.server.publicRegistration, user.map(_.username))
 
     val fx: Fx[NodeSeq => NodeSeq] =
       for {
-        optionHtml <- ssr(requestUrl(), initData.loggedInUser)
+        optionHtml <- Global.ssr.public(requestUrl(), initData.loggedInUser)
       } yield {
         val initJs = "#init-js" #> EntryPoint.invokeOnLoadHtml(initData)
         optionHtml match {
