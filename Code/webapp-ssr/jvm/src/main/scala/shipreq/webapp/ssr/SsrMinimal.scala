@@ -1,14 +1,15 @@
 package shipreq.webapp.ssr
 
+import cats.instances.either._
 import com.typesafe.scalalogging.StrictLogging
 import japgolly.scalagraal._
 import japgolly.scalagraal.GraalJs._
-import shipreq.base.util.{Permission, Template, Url}
+import japgolly.scalagraal.util._
+import shipreq.base.util.{Permission, Url}
 import shipreq.webapp.base.user.Username
-import scalaz.std.either._
-import scalaz.Applicative
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.ssr.SsrAlgebra.Html
+import scalaz.Applicative
 
 final class SsrMinimal[F[_]](implicit F: Applicative[F]) extends SsrAlgebra[F] with StrictLogging {
   import SsrSharedData._
@@ -17,8 +18,8 @@ final class SsrMinimal[F[_]](implicit F: Applicative[F]) extends SsrAlgebra[F] w
 
   private def baseUrl = Url.Absolute.Base("https://shipreq.com")
 
-  private implicit def templateParamUsername: Template.Param[Username] =
-    Template.Param(Username.apply)(_.value)
+  private implicit def cacheAndReplaceParamUsername: CacheAndReplace.Param[Username] =
+    CacheAndReplace.Param(Username.apply)(_.value)
 
   private def withCtx[A](f: ContextSync => A): F[A] =
     F.point {
@@ -41,9 +42,9 @@ final class SsrMinimal[F[_]](implicit F: Applicative[F]) extends SsrAlgebra[F] w
 
       val templates =
         for {
-          _    <- ctx.eval(RealSsr.setUrl(baseUrl.value))
+          _    <- ctx.eval(ReactSsrUtil.setUrl(baseUrl.value))
           anon <- ctx.eval(RealSsr.renderPublic(PublicInitData(p, None)))
-          user <- Template.functor1A(renderSome)
+          user <- CacheAndReplace.compile1(renderSome)
         } yield (Html(anon), user.andThen(Html))
 
       templates match {
@@ -67,7 +68,7 @@ final class SsrMinimal[F[_]](implicit F: Applicative[F]) extends SsrAlgebra[F] w
       def render(u: Username, p: Project.Name) =
         ctx.eval(RealSsr.renderProjectSpaLoader(ProjectSpaLoaderData(u, p)))
 
-      Template.functor2A(render) match {
+      CacheAndReplace.compile2(render) match {
         case Right(t) =>
           i => F.pure(Some(Html(t(i.username, i.projectName))))
         case Left(e) =>

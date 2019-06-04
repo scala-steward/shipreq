@@ -167,7 +167,7 @@ object WebappBuild {
       .configureJs(Common.jsSettings(NoDom))
       .dependsOn(webappBaseMember, webappClientPublic)
       .depsForBoth(ScalaGraal.extBoopickle ++ testScope(μTest))
-      .depsForJvm(ScalaGraal.extPrometheus ++ scalaXml)
+      .depsForJvm(ScalaGraal.util ++ ScalaGraal.extPrometheus ++ scalaXml)
 
   lazy val webappSsrJvm = webappSsr.jvm
     .settings(unmanagedResources in Compile += Def.taskDyn {

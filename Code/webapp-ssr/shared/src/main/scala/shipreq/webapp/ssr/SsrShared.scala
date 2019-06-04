@@ -4,7 +4,6 @@ package shipreq.webapp.ssr
   * that can be called from [SsrInterpreter] on the JVM.
   */
 object SsrJsFunctionManifest {
-  final val SetUrl           = "setUrl"
   final val Public           = "public"
   final val ProjectSpaLoader = "projectSpaLoader"
 }

@@ -1,6 +1,7 @@
 package shipreq.webapp.ssr
 
 import japgolly.scalagraal._
+import japgolly.scalagraal.util.ReactSsrUtil
 
 object RealSsr {
   import GraalBoopickle._
@@ -8,14 +9,10 @@ object RealSsr {
   import SsrSharedData._
 
   val setup: Expr[Unit] =
-    Expr.stdlibCosequenceDiscard(List(
-      Expr("window = {console: console, navigator: {userAgent:''}}"),
+    ReactSsrUtil.Setup(
       Expr.requireFileOnClasspath("webapp-ssr-deps.js"),
       Expr.requireFileOnClasspath("webapp-ssr.js"),
-    ))
-
-  val setUrl: String => Expr[Unit] =
-    Expr.compileFnCall1[String](SsrJsFunctionManifest.SetUrl)(_.void)
+    )
 
   val renderPublic: PublicInitData => Expr[String] =
     Expr.compileFnCall1[PublicInitData](SsrJsFunctionManifest.Public)(_.asString)
