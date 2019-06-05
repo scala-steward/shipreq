@@ -131,13 +131,14 @@ depsJvm = M.fromList [
          ("base-ops",                ["base-util"]) ,
          ("base-util",               []) ]
 depsJs = M.fromList [
-         ("webapp-ssr",              ["webapp-base-member", "webapp-client-public", "webapp-client-home", "webapp-client-project"]),
+         ("webapp-ssr",              ["webapp-client-public", "webapp-client-loaders"]),
          ("webapp-server-logic",     ["webapp-base-member"]) ,
          ("webapp-client-public",    ["webapp-base"]) ,
-         ("webapp-client-home",      ["webapp-base-member"]) ,
+         ("webapp-client-loaders",   ["webapp-base-member"]) ,
+         ("webapp-client-home",      ["webapp-client-loaders"]) ,
          ("webapp-client-ww-api",    ["webapp-base-member"]) ,
          ("webapp-client-ww",        ["webapp-client-ww-api"]) ,
-         ("webapp-client-project",   ["webapp-client-ww-api"]) ,
+         ("webapp-client-project",   ["webapp-client-loaders"]) ,
          ("webapp-base-member",      ["webapp-base"]) ,
          ("webapp-base",             ["webapp-macro", "base-util"]) ,
          ("webapp-macro",            ["base-util"]) ,

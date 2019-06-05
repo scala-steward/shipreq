@@ -4,6 +4,7 @@ import japgolly.scalagraal.Pickled
 import japgolly.scalajs.react.ReactDOMServer
 import scala.scalajs.js.annotation.JSExportTopLevel
 import shipreq.webapp.base.protocol.AjaxClient
+import shipreq.webapp.client.loaders._
 
 /** This code is compiled into JS and executed on the JVM through Graal JS.
   */
@@ -24,8 +25,7 @@ object SsrJs {
 
   @JSExportTopLevel(SsrJsFunctionManifest.ProjectSpaLoader)
   def projectSpaLoader(i: Pickled[ProjectSpaLoaderData]): String = {
-    import shipreq.webapp.client.project.app.root.LoadingPage
-    val component = LoadingPage.Props(i.value.username, i.value.projectName).render
+    val component = ProjectSpaLoader.Props(i.value.username, i.value.projectName).render
     ReactDOMServer.renderToStaticMarkup(component)
   }
 }

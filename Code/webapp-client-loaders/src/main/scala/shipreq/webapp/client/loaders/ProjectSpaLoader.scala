@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.app.root
+package shipreq.webapp.client.loaders
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.Reusable
@@ -8,7 +8,7 @@ import shipreq.webapp.base.ui.semantic.{Breadcrumb, UsesSemanticUiManually}
 import shipreq.webapp.base.ui._
 import shipreq.webapp.base.user.Username
 
-object LoadingPage {
+object ProjectSpaLoader {
 
   final case class Props(username: Username, projectName: Project.Name) {
     @inline def render: VdomElement = Component(this)

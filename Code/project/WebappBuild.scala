@@ -44,6 +44,7 @@ object WebappBuild {
         webappMacroJvm, webappBaseJvm, webappBaseMemberJvm, webappServerLogicJvm, webappBaseTestJvm,
         webappMacroJs , webappBaseJs , webappBaseMemberJs , webappServerLogicJs , webappBaseTestJs ,
         webappClientPublicJvm, webappClientPublicJs,
+        webappClientLoaders,
         webappClientHome,
         webappClientWwApi, webappClientWw, webappClientProject,
         webappSsrJvm, webappSsrJs,
@@ -127,10 +128,16 @@ object WebappBuild {
       .configureBoth(useMacroParadise)
       .jsSettings(jsDependencies in Test += ProvidedJS / "webapp-client-test.js")
 
+  lazy val webappClientLoaders =
+    project("webapp-client-loaders")
+      .enablePlugins(ScalaJSPlugin)
+      .configure(Common.jsSettings(NoTests))
+      .dependsOn(webappBaseMemberJs)
+
   lazy val webappClientHome =
     project("webapp-client-home")
       .configure(clientSpa)
-      .dependsOn(webappBaseMemberJs)
+      .dependsOn(webappClientLoaders)
       .depsForJs(ScalaCSS.react)
       .settings(jsEnv in Test := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv) // phantomjs crashes
 
@@ -158,7 +165,7 @@ object WebappBuild {
   lazy val webappClientProject =
     project("webapp-client-project")
       .configure(clientSpa)
-      .dependsOn(webappClientWwApi)
+      .dependsOn(webappClientWwApi, webappClientLoaders)
       .depsForJs(ScalaCSS.react ++ scalajsDom ++ μPickle ++ shapeless ++ Nyaya.prop ++ parboiled ++ React.scalaz)
 
   lazy val webappSsr =
@@ -167,9 +174,9 @@ object WebappBuild {
       .configureJs(Common.jsSettings(NoTests))
       .dependsOn(webappBaseMember, webappClientPublic, baseTest % Test)
       .depsForBoth(ScalaGraal.extBoopickle ++ testScope(μTest))
-      .depsForJvm(ScalaGraal.util ++ ScalaGraal.extPrometheus ++ scalaXml)
 
   lazy val webappSsrJvm = webappSsr.jvm
+    .deps(ScalaGraal.util ++ ScalaGraal.extPrometheus ++ scalaXml)
     .settings(unmanagedResources in Compile += Def.taskDyn {
       val stage = (scalaJSStage in Compile).value
       val task = stageKeys(stage)
@@ -177,7 +184,7 @@ object WebappBuild {
     }.value)
 
   lazy val webappSsrJs = webappSsr.js
-    .dependsOn(webappClientHome, webappClientProject)
+    .dependsOn(webappClientLoaders)
     .settings(
       emitSourceMaps := false,
       artifactPath in (Compile, fastOptJS) := (crossTarget.value / "webapp-ssr.js"),
