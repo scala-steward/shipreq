@@ -248,8 +248,8 @@ object Common {
 
   def dockerBaseEnv = Def.task(
     List[(String, String)](
-      "VERSION" -> version.value,
-      "BUILD_MODE" -> (if (releaseMode) "release" else "dev")))
+      "SHIPREQ_VERSION"    -> version.value,
+      "SHIPREQ_BUILD_MODE" -> (if (releaseMode) "release" else "dev")))
 
   lazy val releaseMode: Boolean = {
     val mode = System.getProperty("MODE", "").trim
