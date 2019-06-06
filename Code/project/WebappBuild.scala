@@ -178,7 +178,7 @@ object WebappBuild {
   lazy val webappSsrJvm = webappSsr.jvm
     .deps(ScalaGraal.util ++ ScalaGraal.extPrometheus ++ scalaXml)
     .settings(unmanagedResources in Compile += Def.taskDyn {
-      val stage = (scalaJSStage in Compile).value
+      val stage = (scalaJSStage in Compile in webappSsrJs).value
       val task = stageKeys(stage)
       Def.task((task in Compile in webappSsrJs).value.data)
     }.value)
