@@ -1,12 +1,6 @@
 -------------------------------------------------- MODULE encryption --------------------------------------------------
 
-(* PROTOCOL
-   - If users send their key to the server to assert it's valid, they'll violate SafeFromServer
-   - Maybe server sends [encrypted: 'secret123', key: K] and if the user sends back 'secret123' they we know they have a valid key
-     'secret123' would be initially encrypted by client in NewProject and send as plain text to server
-     'secret123' would be to be tracked in a Seen variable to ensure that they can't use it later to avoid their key becoming invalid
-     If every key change requires a new secret then I think we're good - would have to retain all old secrets and ensure no reuse on key change
-
+(*
 Client                  Server
   |                        |
   | NewProject             |
@@ -83,16 +77,16 @@ CONSTANTS Data,
           Secrets,
           Users
           
-VARIABLES serverSeen,   \* Keys & secrets the server has ever had unencrypted access to
-          userSeen,     \* Keys & secrets each user has ever had unencrypted access to
+VARIABLES serverSeen,   \* Keys & secrets the server has ever had undecrypted access to
+          userSeen,     \* Keys & secrets each user has ever had undecrypted access to
           pcReplaceKey,
 
           \* Server-side state:
-          data,         \* User data (project content) encrypted with dataKey
-          key,          \* dataKey encrypted with keyKey
-          secret,       \* secret (unencrypted)
-          secretE,      \* secret encrypted with keyKey
-          oldSecrets    \* Previously used secrets (unencrypted)
+          data,         \* User data (project content) decrypted with dataKey
+          key,          \* dataKey decrypted with keyKey
+          secret,       \* secret (undecrypted)
+          secretE,      \* secret decrypted with keyKey
+          oldSecrets    \* Previously used secrets (undecrypted)
 
 vars == << serverSeen, userSeen, pcReplaceKey, data, key, secret, secretE, oldSecrets >>
 
@@ -106,20 +100,20 @@ TypeInvariants ==
   /\ serverSeen   \in SUBSET (Keys \union Secrets)
   /\ userSeen     \in [Users -> SUBSET (Keys \union Secrets)]
   /\ pcReplaceKey \in [Users -> Secrets \union {FALSE}]
-  /\ data         \in [encrypted: {Data},  key: Keys] \* This is a blob which if decrypted with .key, would produce .encrypted
-  /\ key          \in [encrypted: Keys,    key: Keys] \* This is a blob which if decrypted with .key, would produce .encrypted
-  /\ secretE      \in [encrypted: Secrets, key: Keys]
+  /\ data         \in [decrypted: {Data},  key: Keys] \* This is a blob which if decrypted with .key, would produce .decrypted
+  /\ key          \in [decrypted: Keys,    key: Keys] \* This is a blob which if decrypted with .key, would produce .decrypted
+  /\ secretE      \in [decrypted: Secrets, key: Keys]
   /\ secret       \in Secrets
   /\ oldSecrets   \in SUBSET Secrets
 
 KeyKeyUnlocksDataKey ==
-  key.encrypted = data.key
+  key.decrypted = data.key
 
 ValueInvariants ==
-  /\ secretE.key = key.key      \* secretE encrypted by keyKey
-  /\ secretE.encrypted = secret \* secret & secretE are the same secret
+  /\ secretE.key = key.key      \* secretE decrypted by keyKey
+  /\ secretE.decrypted = secret \* secret & secretE are the same secret
   \* debug
-\*  /\ PrintT([serverSeen |-> serverSeen, userSeen |-> userSeen, pcReplaceKey |-> pcReplaceKey, data |-> data, key |-> key, secret |-> secret, secretE |-> secretE, oldSecrets |-> oldSecrets])
+  \*/\ PrintT([serverSeen |-> serverSeen, userSeen |-> userSeen, pcReplaceKey |-> pcReplaceKey, data |-> data, key |-> key, secret |-> secret, secretE |-> secretE, oldSecrets |-> oldSecrets])
 
 SanityChecksT ==
   /\ serverSeen \subseteq serverSeen'
@@ -142,9 +136,9 @@ Init ==
     /\ secret       = CHOOSE s \in Secrets : TRUE
     /\ serverSeen   = {secret}
     /\ pcReplaceKey = [i \in Users |-> FALSE]
-    /\ data         = [encrypted |-> Data,    key |-> dataKey]
-    /\ key          = [encrypted |-> dataKey, key |-> keyKey]
-    /\ secretE      = [encrypted |-> secret,  key |-> keyKey]
+    /\ data         = [decrypted |-> Data,    key |-> dataKey]
+    /\ key          = [decrypted |-> dataKey, key |-> keyKey]
+    /\ secretE      = [decrypted |-> secret,  key |-> keyKey]
     /\ userSeen     = [i \in Users |-> IF i = u THEN {dataKey, keyKey, secret} ELSE {}]
     /\ oldSecrets   = {}
 
@@ -187,8 +181,8 @@ ReplaceKey2(u) ==
        \E dataKey2 \in Keys : \* Either user decrypts actual dataKey using keyKey (expected), or attacker uses bullshit
         /\ UserSees(u, {keyKey2, dataKey2, secret2})
         /\ secret'       = secret2
-        /\ secretE'      = [encrypted |-> secret2,  key |-> keyKey2]
-        /\ key'          = [encrypted |-> dataKey2, key |-> keyKey2]
+        /\ secretE'      = [decrypted |-> secret2,  key |-> keyKey2]
+        /\ key'          = [decrypted |-> dataKey2, key |-> keyKey2]
         /\ oldSecrets'   = oldSecrets \union {secret}
         /\ pcReplaceKey' = [pcReplaceKey EXCEPT ![u] = FALSE]
         /\ UNCHANGED << serverSeen, data >>
@@ -215,8 +209,7 @@ OpenToUsersWithKeyKey ==
   /\ \A u \in UsersWithKeyKey :
     /\ ENABLED(ReadProject(u))
 
-\* The only TLA+ operator that can produce a non-symmetric expression when applied to a symmetric expression is CHOOSE
-\* MCSymmetry == nope
+-----------------------------------------------------------------------------------------------------------------------
 
 Spec == Init /\ [][Next]_<<vars>>
 
