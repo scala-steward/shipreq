@@ -98,8 +98,6 @@ Phase 2B
 
 * Cell copy-and-paste on Req{Table,Detail}
 
-* Issues prototype: add collapse/expand by issue{type,} columns
-
 * Allow system to add new field/columns in future without breaking existing projects.
   eg. User adds a "Last Updated" custom field, later ShipReq provides an auto-populated
   column with the same name. System needs a way to rename user's field without
