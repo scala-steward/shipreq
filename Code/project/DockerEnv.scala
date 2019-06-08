@@ -35,7 +35,7 @@ object DockerEnv {
       .toList
 
   def dockerEnvsRoot(baseDirectory: File): File =
-    baseDirectory / "../docker"
+    baseDirectory / "../envs"
 
   def envFileValue(envRoot: File, key: String): String = {
     val k = key + "="

@@ -283,8 +283,8 @@ object WebappBuild {
 
     /** Does the following on the `up` command:
       *
-      * - Starts up a subset of `docker/dev/docker-compose.yml` (see [[DockerEnv.dev]] for exact services)
-      * - Adds `docker/dev/webapp` to the runtime classpath
+      * - Starts up a subset of `envs/dev/docker-compose.yml` (see [[DockerEnv.dev]] for exact services)
+      * - Adds `envs/dev/webapp` to the runtime classpath
       * - Loads the env specified in docker-compose into system properties
       * - Overrides certain env values to use external hosts and ports
       */
