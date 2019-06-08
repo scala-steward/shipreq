@@ -32,12 +32,23 @@ Backlog
 * Warn when closing page and there are open, dirty editors
 * Add KB shortcut to move colums in ReqTable
 
+### User-affecting
+* Hide Tags/Imps columns when guaranteed to be empty & useless.
+  (i.e. all possible tags/imps are allocated to columns)
+  Also consider FilterDead=ShowDead when designing this.
+  Also consider dead tags in use in text are always displayed which shows in them in Tags columns even when HideDead
+* New Form preview.show? shouldn't consider focus (?)
+* Imp/Code editors are way too wide in NewReqForm
+* Firefox: ctrl-home space doesn't work properly
+* Firefox: UC step graph doesn't shrink
+* Prevent -- (not not) in the FilterParser? Or allow /\-+/ and auto-correct on blur?
+
 ### Tech
 * Remove ScalaCheck. Use Nyaya.
 * Use fast boopickle codecs for webworkers: https://github.com/ochrons/boopickle#codecs
 * Test env: Use different DBs for each module
 * Switch to semantic-react
-* Remove jQuery - Lift and Semantic UI blocking this
+* Remove jQuery - Semantic UI blocking this
 * Remove unused styles
 * Change ScalaCSS to generate Scala.JS without the runtime/JS-size overhead
 * webapp-base{,-member} packages are shit. Reorg!
@@ -47,19 +58,10 @@ Backlog
 * Rename webapp-client-{home ⇒ member} now that its ambiguous in regards to the public pages
 * Make webtamp hash filenames of urls in Semantic CSS (`icons.*`)
 * SSL shouldn't be in Docker - resolve TODO in WebappBuild.scala
-* Hide Tags/Imps columns when guaranteed to be empty & useless.
-  (i.e. all possible tags/imps are allocated to columns)
-  Also consider FilterDead=ShowDead when designing this.
-  Also consider dead tags in use in text are always displayed which shows in them in Tags columns even when HideDead
-* New Form preview.show? shouldn't consider focus (?)
-* Imp/Code editors are way too wide in NewReqForm
-* Prevent -- (not not) in the FilterParser? Or allow /\-+/ and auto-correct on blur?
-* Firefox: ctrl-home space doesn't work properly
-* Firefox: UC step graph doesn't shrink
-* Tracing
-  * Add user id tag to sub-spans. Only on top-level atm
-  * Add tracing to Taskman
-  * Naming convention for code top-levels {Security delay, MakeEvent, UpdateProject}. Prefix with "Fn: " or something?
+* Automate visual testing so changes to styling (mostly Semantic UI upgrades) can be verified.
+  Could add to test-state... But then how to make it account for tiny differents like moment.js "updated x sec ago" things?
+  Any free tool?
+
 
 ------------------------------------------------------------------------------------------------------------------------
 Phase 2B
@@ -67,7 +69,7 @@ Phase 2B
 
 ### Business
 * Potential angel clients
-  * Research BA consultencies
+  * Research BA consultancies
 
 ### Deployment
 * Automate ShipReq releases
@@ -75,17 +77,17 @@ Phase 2B
 * Automate config of DevOps services (dashboards, alerts, etc)
 
 ### Ops
-* Process
+* Data backups
+* Failure
   * Do more with errors (client & server), eg. ClientData.{init,applyEvents}
   * Add React component error handling and possibly report to server
-* Review & audit state of devops -- metrics/tracing -- now vs goal
 * Metrics
   * Metrics endpoint needs secret key
-  * Add ThreadLocal security-delay flag and affect metrics
+  * Add ThreadLocal security-delay flag and affect metrics (?)
   * Add metrics for logs @ logLevel (webapp & taskman)
   * Taskman metrics
   * Business metrics (see metrics.md)
-* Data backups
+  * Add a correlation ID to JWTs / logs / traces
 
 ### New Features
 * Issues
@@ -106,11 +108,6 @@ Phase 2B
   that adds a new event to everyone's projects to do the rename once when the
   new version is deployed.
 
-* Automate visual testing so changes to styling (mostly Semantic UI upgrades) can be verified.
-  Could add to test-state... But then how to make it account for tiny differents like moment.js "updated x sec ago" things?
-  Any free tool?
-
 * Project SPA will try to re-establish a WebSocket connection ad-nauseum after JWT has expired
 
-* Add a correlation ID to JWTs / logs / traces
 * WebSockets don't recover from lost Redis connections
