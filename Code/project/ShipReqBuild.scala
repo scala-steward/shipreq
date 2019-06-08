@@ -121,7 +121,7 @@ object ShipReqBuild {
         .configure(Common.jvmSettings)
         .settings(libraryDependencies ++= Seq(
           "io.monix"   %% "monix-eval" % "3.0.0-RC2",
-          "org.scalaz" %% "scalaz-zio" % "1.0-RC4"))
+          "org.scalaz" %% "scalaz-zio" % "1.0-RC5"))
         .deps(JJWT.all)
     }
 
