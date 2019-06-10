@@ -5,6 +5,7 @@ import utest._
 import scalaz.{-\/, Equal, \/, \/-}
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.{Invalid, Valid}
+import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.base.validation._
 import shipreq.webapp.base.validation.Simple._
 
@@ -89,7 +90,7 @@ object UserValidatorTest extends TestSuite {
       * - test("abcdefghi")(fail("at least")) // no numbers
       * - test("a________")(fail("at least")) // no numbers
       * - test("9________")(fail("at least")) // no alpha
-      * - assertEq(test.v.auditor.validity("a" + "1" * 128), Invalid) // too long
+      * - assertEq(test.v.auditor.validity("a" + "1" * WebappConfig.passwordLength.max), Invalid) // too long
     }
 
     'passwordTwice {
@@ -102,7 +103,7 @@ object UserValidatorTest extends TestSuite {
       * - assertEq(v.validity(("blahblah", ("qweqwe123", "qweqwe123"))), Invalid)
       * - assertEq(v.validity(("blahblah8", ("qweqwe12", "qweqwe123"))), Invalid)
       * - assertEq(v.validity(("blahblah8", ("qweqwe123", ""))), Invalid)
-      * - assertEq(v(("blahblah8", ("qweqwe123", "qweqwe123"))), \/-("qweqwe123"))(Equal.equalA, implicitly)
+      * - assertEq(v(("blahblah8", ("qweqwe123", "qweqwe123"))), \/-(PlainTextPassword("qweqwe123")))
     }
 
     'username {

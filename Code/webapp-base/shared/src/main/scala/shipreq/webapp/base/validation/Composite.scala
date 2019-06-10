@@ -2,6 +2,7 @@ package shipreq.webapp.base.validation
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.nonempty.NonEmptyVector
+import japgolly.univeq.UnivEq
 import scalaz.{Applicative, \/}
 import shipreq.base.util.Validity
 import Implicits._
@@ -9,6 +10,8 @@ import Implicits._
 object Composite {
 
   final case class FieldInvalidity(field: Option[String], reasons: Simple.Invalidity)
+
+  implicit def univEq: UnivEq[FieldInvalidity] = UnivEq.derive
 
   type Invalidity = NonEmptyVector[FieldInvalidity]
 
