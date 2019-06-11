@@ -1,8 +1,7 @@
 package shipreq.webapp.base.data
 
 import japgolly.microlibs.adt_macros.AdtMacros
-import japgolly.microlibs.nonempty.NonEmptyVector
-import japgolly.microlibs.utils.Memo
+import japgolly.microlibs.stdlib_ext.MutableArray
 import nyaya.prop.CycleDetector
 import monocle.Lens
 import monocle.macros.{GenLens, Lenses}
@@ -61,7 +60,6 @@ case object MutexChildren extends MutexChildren with IsoBool.Object[MutexChildre
   case object Not extends MutexChildren
 }
 
-
 sealed abstract class TagType(val name: String) { type Data <: Tag }
 object TagType {
   case object Group      extends TagType("Tag Group") { override type Data = TagGroup }
@@ -118,7 +116,7 @@ object TagTree {
   def prettyPrint(tt: TagTree): String = {
     def lookup(id: TagId) = tt.underlyingMap(id)
     val rootIds = tt.values.foldLeft(tt.keySet)(_ -- _.children)
-    val roots = rootIds.toStream.map(lookup).sortBy(_.tag.name)
+    val roots = MutableArray(rootIds.iterator.map(lookup)).sortBy(_.tag.name).array
     "TagTree\n" +
     nyaya.util.Util.asciiTree(roots)(_.children.map(lookup),
       t => s"${t.tag.name} (${t.id.value})${if (t.tag.live ==* Dead) " DEAD" else ""}",
@@ -199,95 +197,4 @@ object TagInTree {
       else
         transitiveChildren(queue.tail append focus.lookupChildren, seen + id)
     }
-}
-
-// =====================================================================================================================
-
-final case class FlatTag(tag: Tag, depth: Int, parentPath: Vector[TagId], status: FlatTag.Status) {
-  @inline def id: TagId = tag.id
-
-  def key: String =
-    if (depth == 0)
-      id.value.toString
-    else {
-      val sb = new StringBuilder
-      parentPath.foreach { p =>
-        sb append p.value
-        sb append '.'
-      }
-      sb append id.value
-      sb.toString()
-    }
-
-  def indentedName =
-    s"${FlatTag.indentation(depth)}${tag.name}"
-}
-
-object FlatTag {
-  sealed trait Status
-  object Status {
-    case object Good              extends Status
-    case object Bad               extends Status
-    case object BadParentGoodKids extends Status
-    implicit def equality: UnivEq[Status] = UnivEq.derive
-  }
-
-  sealed trait FilterPolicy
-  object FilterPolicy {
-    case object OmitNothing               extends FilterPolicy
-    case object OmitBadBranches           extends FilterPolicy
-    case object OmitAnythingWithBadParent extends FilterPolicy
-    implicit def equality: UnivEq[FilterPolicy] = UnivEq.derive
-  }
-
-  implicit def equality: UnivEq[FlatTag] = UnivEq.derive
-
-  val indentation =
-    Memo.int("\u00A0\u00A0" * _)
-
-  def flatten(tt: TagTree) =
-    flatRows(TagTree.topLevelIds(tt), tt.get(_).get) _
-
-  def flatRows(topLvlIds: Set[TagId], lookup: TagId => TagInTree)
-              (filter: Tag => Boolean, policy: FilterPolicy): Vector[FlatTag] = {
-    import Status._
-    import FilterPolicy._
-
-    val omitAnythingWithBadParent = policy ==* OmitAnythingWithBadParent
-    val omitNothing               = policy ==* OmitNothing
-
-    def go(r: Vector[FlatTag], t: TagInTree, depth: Int, parentPath: Vector[TagId]): Vector[FlatTag] =
-      if (filter(t.tag)) {
-        var result = r :+ FlatTag(t.tag, depth, parentPath, Good)
-        // Append children directly
-        if (t.children.nonEmpty) {
-          val nextDepth = depth + 1
-          val nextPP = parentPath :+ t.id
-          t.children.foreach(id => result = go(result, lookup(id), nextDepth, nextPP))
-        }
-        result
-      } else if (omitAnythingWithBadParent)
-        r
-      else {
-        // Process children separately
-        var cs = Vector.empty[FlatTag]
-        if (t.children.nonEmpty) {
-          val nextDepth = depth + 1
-          val nextPP = parentPath :+ t.id
-          cs = t.children.foldLeft(cs)((q, id) => go(q, lookup(id), nextDepth, nextPP))
-        }
-        val goodKids = cs.exists(_.status == Good)
-
-        def result(s: Status) = (r :+ FlatTag(t.tag, depth, parentPath, s)) ++ cs
-        if (goodKids)
-          result(BadParentGoodKids)
-        else if (omitNothing)
-          result(Bad)
-        else
-          r
-      }
-
-    val topLvl = topLvlIds.toStream.map(lookup).sortBy(_.tag.name)
-    topLvl.foldLeft(Vector.empty[FlatTag])(go(_, _, 0, Vector.empty))
-  }
 }
