@@ -47,15 +47,10 @@ object FilterAst {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  implicit def univEqAst[A: UnivEq, B: UnivEq, C: UnivEq, D: UnivEq, E: UnivEq]: UnivEq[FilterAst[A, B, C, D, E]] =
-    UnivEq.derive
-
   type Fixed[A, B, C, D] = Fix[λ[F => FilterAst[A, B, C, D, F]]]
 
-  def univEqFix[A: UnivEq, B: UnivEq, C: UnivEq, D: UnivEq]: UnivEq[Fixed[A, B, C, D]] = {
-    univEqAst[A, B, C, D, A]
-    UnivEq.force
-  }
+  def univEqFix[A: UnivEq, B: UnivEq, C: UnivEq, D: UnivEq]: UnivEq[Fixed[A, B, C, D]] =
+    UnivEq.deriveFix[Fix, λ[F => FilterAst[A, B, C, D, F]]]
 
   def traverse[Attr, HashTag, ReqSet, RT]: Traverse[FilterAst[Attr, HashTag, ReqSet, RT, ?]] =
     new Traverse[FilterAst[Attr, HashTag, ReqSet, RT, ?]] {
