@@ -13,46 +13,34 @@ object IssueCategory {
   implicit def univEq: UnivEq[IssueCategory] = UnivEq.derive
 }
 
-sealed abstract class Issue(final val category: IssueCategory)
-object Issue {
-  import IssueCategory._
+sealed abstract class IssueClass(final val category: IssueCategory)
+object IssueClass {
+  import shipreq.webapp.base.issue.{IssueCategory => C}
 
-  // BadData
-  // =======
-  // Deleted issue tag in use: #TBD
-  // Deleted tag in use: #backend
-  // Reference to deleted data
+  case object ConflictingTags       extends IssueClass(C.BadData)
+  case object DeadIssueTag          extends IssueClass(C.BadData)
+  case object DeadTag               extends IssueClass(C.BadData)
+  case object DeadReference         extends IssueClass(C.BadData)
+  case object EmptyCodeGroup        extends IssueClass(C.Futility)
+  case object UninhabitableTagField extends IssueClass(C.Futility)
+  case object EmptyField            extends IssueClass(C.MissingData)
+  case object IssueTag              extends IssueClass(C.UserDefined)
+  case object LooseIssue            extends IssueClass(C.UserDefined)
 
-  final case class ConflictingTags(reqId: ReqId, tagGroupId: TagGroupId) extends Issue(BadData)
-
-//  final case class DeadCustomIssueInUse(req: Req, issue: CustomIssueType) extends Issue(BadData)
-//  final case class DeadTagInUse(req: Req, tag: ApplicableTag) extends Issue(BadData)
-
-  // Futility
-  // ========
-  // Code group has nothing to group.
-  // Status field has no tags
-
-
-  // MissingData
-  // ===========
-  // BlankField
-//  final case class BlankField
-
-
-  // UserDefined
-  // ===========
-  // #PENDING
-  // Loose
-
-  implicit def univEq: UnivEq[Issue] = UnivEq.derive
+  implicit def univEq: UnivEq[IssueClass] = UnivEq.derive
 }
 
+sealed abstract class Issue(final val cls: IssueClass)
+object Issue {
+  import shipreq.webapp.base.issue.{IssueClass => C}
 
-final case class IssueId(value: Int)
+  // TODO Need concept of a position/location in a Req that points to a data-type
+  // r: reqId
+  //   -> f: r.field
+  //      -> ...
+  // eg. An issue tag appears in text, I want a LocationOf[AstLoc]
 
-final case class IssueWithId(id: IssueId, issue: Issue)
+  final case class ConflictingTags(reqId: ReqId, tagGroupId: TagGroupId) extends Issue(C.ConflictingTags)
 
-final case class Issues(list: List[Issue]) {
-  lazy val count = list.size
+  implicit def univEq: UnivEq[Issue] = UnivEq.derive
 }

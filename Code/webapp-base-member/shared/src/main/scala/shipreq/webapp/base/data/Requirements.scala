@@ -342,7 +342,7 @@ object UseCaseSteps {
  *                 Note that the position of steps provides implicit flow that isn't stored here (or anywhere).
  */
 @Lenses
-case class UseCases(imap: UseCaseIMap, stepIndex: UseCases.StepIndex, stepFlow: UseCases.StepFlow) {
+final case class UseCases(imap: UseCaseIMap, stepIndex: UseCases.StepIndex, stepFlow: UseCases.StepFlow) {
   def stepIterator: Iterator[UseCaseStep] =
     imap.valuesIterator.flatMap(_.stepIterator)
 
@@ -360,7 +360,7 @@ object UseCases {
   /**
    * Information sufficient to uniquely identify a step tree within a project.
    */
-  case class StepTreeKey(useCaseId: UseCaseId, field: StaticField.UseCaseStepTree) {
+  final case class StepTreeKey(useCaseId: UseCaseId, field: StaticField.UseCaseStepTree) {
     def need(imap: UseCaseIMap): UseCaseSteps =
       field.useCaseSteps.get(imap.need(useCaseId))
   }

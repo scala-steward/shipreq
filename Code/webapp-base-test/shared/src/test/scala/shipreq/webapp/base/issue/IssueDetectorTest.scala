@@ -35,8 +35,8 @@ object IssueDetectorTest extends TestSuite {
     }
 
     def test(project: Project)(expected: Issue*): Unit = {
-      val i = IssueDetectors.ConflictingTagDetector.instance
-      val is = i.init(project)
+      val it = IssueTracker(project)
+      def is = it.issues.vector.iterator.map(_.issue)
       val actual = MutableArray(is).sortBySchwartzian(_.toString).to[List]
       val expect = MutableArray(expected).sortBySchwartzian(_.toString).to[List]
       assertSeq(actual, expect)

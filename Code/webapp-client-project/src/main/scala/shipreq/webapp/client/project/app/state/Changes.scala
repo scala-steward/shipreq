@@ -8,6 +8,7 @@ import shipreq.webapp.base.event._
 import Event._
 import UnivEq.emptySet
 
+@deprecated("Replace with, or build upon, EventSeqSummary", "")
 case class Changes(ves: VerifiedEvent.NonEmptySeq, p1: Project, p2: Project) {
   private var _customReqTypes  : Set[CustomReqTypeId  ] = emptySet
   private var _customIssueTypes: Set[CustomIssueTypeId] = emptySet

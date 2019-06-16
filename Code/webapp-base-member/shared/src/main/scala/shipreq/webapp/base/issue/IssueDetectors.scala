@@ -1,44 +1,44 @@
 package shipreq.webapp.base.issue
 
 import japgolly.microlibs.adt_macros.AdtMacros
-import japgolly.microlibs.nonempty.NonEmptyVector
 import shipreq.base.util.Util
 import shipreq.webapp.base.data._
 
 object IssueDetectors {
   import IssueDetector.{Increment, Init}
 
-  /** This type exists just so that we can have .values and know it will be kept in sync by AdtMacros.
-    */
-  private[issue] sealed trait Instance {
-    def init: Init => Unit
-    def increment: Increment => Unit
-    val instance = IssueDetector(init, increment)
-  }
+  sealed trait Instance extends IssueDetector
 
-  private[issue] case object ConflictingTagDetector extends Instance {
-    override def init = i => {
-      import i._
-      val exclusiveGroups = project.config.tags.exclusiveGroups
-      for (r <- project.liveReqIterator()) {
-        val tagIds    = project.content.reqTags(r.id)
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object DetectConflictingTags extends Instance {
+
+    override def init(i: Init): Unit =
+      checkReqs(i)
+
+    override def increment(i: Increment): Unit = {
+      if (i.eventSummary.tagsChanged)
+        i.dirtyAllContent()
+      checkReqs(i.init)
+    }
+
+    private def checkReqs(i: Init) =
+      i.action.foreachDirtyLiveReq(() => reqCheckFn(i))
+
+    private def reqCheckFn(i: Init): Req => Unit = {
+      val exclusiveGroups = i.project.config.tags.exclusiveGroups
+      val content         = i.project.content
+      req => {
+        val reqId     = req.id
+        val tagIds    = content.reqTags(reqId)
         val conflicts = Util.uniqueDupsNested(tagIds)(exclusiveGroups)
         for (g <- conflicts)
-          add(Issue.ConflictingTags(r.id, g))
+          i.action.add(Issue.ConflictingTags(reqId, g))
       }
-    }
-
-    override def increment = i => {
-      // remove all/some Issue.ConflictingTags
-      // add
     }
   }
 
-  private val instances = AdtMacros.adtValues[Instance]
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  val values: NonEmptyVector[IssueDetector] =
-    instances.map(_.instance)
-
-  val composite: IssueDetector =
-    IssueDetector.compose(values.whole: _*)
+  val all = AdtMacros.adtValues[Instance]
 }
