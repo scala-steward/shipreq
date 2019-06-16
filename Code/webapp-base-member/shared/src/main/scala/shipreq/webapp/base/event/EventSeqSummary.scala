@@ -6,7 +6,8 @@ import shipreq.webapp.base.data._
 final case class EventSeqSummary(
     customIssueTypes : Set[CustomIssueTypeId],
     customFieldTypes : Set[CustomFieldId],
-    customReqTypes   : Set[CustomReqTypeId],
+    customReqTypesCU : Set[CustomReqTypeId],
+    customReqTypesDR : Set[CustomReqTypeId],
     tagGroups        : Set[TagGroupId],
     applicableTags   : Set[ApplicableTagId],
     staticFields     : Set[StaticField],
@@ -15,11 +16,14 @@ final case class EventSeqSummary(
     useCaseSteps     : Set[UseCaseStepId],
     ) {
 
+  lazy val customReqTypes: Set[CustomReqTypeId] =
+    customReqTypesCU ++ customReqTypesDR
+
   val tagsChanged: Boolean =
     applicableTags.nonEmpty || tagGroups.nonEmpty
 
   val fieldNamesChanged: Boolean =
-    tagsChanged || customFieldTypes.nonEmpty || customReqTypes.nonEmpty
+    tagsChanged || customFieldTypes.nonEmpty || customReqTypesCU.nonEmpty
 
   lazy val tags: Set[TagId] =
     applicableTags ++ tagGroups
@@ -49,8 +53,11 @@ object EventSeqSummary {
     lazy val useCases: Set[UseCaseId] =
       summary.useCasesExclSteps ++ useCasesChangedBySteps
 
+    lazy val reqsAffectedByReqTypeChanges: Set[ReqId] =
+      summary.customReqTypesDR.flatMap(project.content.reqs.reqsByType(_).iterator.map(_.id))
+
     lazy val reqs: Set[ReqId] =
-      summary.reqsExclUseCaseSteps ++ useCasesChangedBySteps
+      summary.reqsExclUseCaseSteps ++ useCasesChangedBySteps ++ reqsAffectedByReqTypeChanges
   }
 
   implicit def exportSummaryToWithProject(w: WithProject) = w.summary
@@ -58,15 +65,16 @@ object EventSeqSummary {
   // ===================================================================================================================
 
   private final class MutableBuilder {
-    private var customIssueTypes = UnivEq.emptySet[CustomIssueTypeId]
-    private var customFieldTypes = UnivEq.emptySet[CustomFieldId]
-    private var customReqTypes   = UnivEq.emptySet[CustomReqTypeId]
-    private var tagGroups        = UnivEq.emptySet[TagGroupId]
-    private var applicableTags   = UnivEq.emptySet[ApplicableTagId]
-    private var staticFields     = UnivEq.emptySet[StaticField]
-    private var genericReqs      = UnivEq.emptySet[GenericReqId]
-    private var useCasesExclSteps         = UnivEq.emptySet[UseCaseId]
-    private var useCaseSteps     = UnivEq.emptySet[UseCaseStepId]
+    private var customIssueTypes  = UnivEq.emptySet[CustomIssueTypeId]
+    private var customFieldTypes  = UnivEq.emptySet[CustomFieldId]
+    private var customReqTypesCU  = UnivEq.emptySet[CustomReqTypeId]
+    private var customReqTypesDR  = UnivEq.emptySet[CustomReqTypeId]
+    private var tagGroups         = UnivEq.emptySet[TagGroupId]
+    private var applicableTags    = UnivEq.emptySet[ApplicableTagId]
+    private var staticFields      = UnivEq.emptySet[StaticField]
+    private var genericReqs       = UnivEq.emptySet[GenericReqId]
+    private var useCasesExclSteps = UnivEq.emptySet[UseCaseId]
+    private var useCaseSteps      = UnivEq.emptySet[UseCaseStepId]
 
     private val addReq: ReqId => Unit = {
       case i: GenericReqId => genericReqs       += i
@@ -116,10 +124,10 @@ object EventSeqSummary {
       case e: Event.FieldCustomTextCreate  => customFieldTypes += e.id
       case e: Event.FieldCustomTextUpdate  => customFieldTypes += e.id
 
-      case e: Event.CustomReqTypeCreate    => customReqTypes += e.id
-      case e: Event.CustomReqTypeDelete    => customReqTypes += e.id // Affects GenericReq.live & ReqCodes
-      case e: Event.CustomReqTypeRestore   => customReqTypes += e.id // Affects GenericReq.live & ReqCodes
-      case e: Event.CustomReqTypeUpdate    => customReqTypes += e.id
+      case e: Event.CustomReqTypeCreate    => customReqTypesCU += e.id
+      case e: Event.CustomReqTypeDelete    => customReqTypesDR += e.id // Affects GenericReq.live & ReqCodes
+      case e: Event.CustomReqTypeRestore   => customReqTypesDR += e.id // Affects GenericReq.live & ReqCodes
+      case e: Event.CustomReqTypeUpdate    => customReqTypesCU += e.id
 
       case e: Event.ApplicableTagCreate    => applicableTags += e.id
       case e: Event.ApplicableTagUpdate    => applicableTags += e.id
@@ -148,7 +156,8 @@ object EventSeqSummary {
       EventSeqSummary(
         customIssueTypes  = customIssueTypes,
         customFieldTypes  = customFieldTypes,
-        customReqTypes    = customReqTypes  ,
+        customReqTypesCU  = customReqTypesCU,
+        customReqTypesDR  = customReqTypesDR,
         tagGroups         = tagGroups       ,
         applicableTags    = applicableTags  ,
         staticFields      = staticFields    ,

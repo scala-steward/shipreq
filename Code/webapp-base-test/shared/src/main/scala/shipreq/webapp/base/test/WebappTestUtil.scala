@@ -1,13 +1,17 @@
 package shipreq.webapp.base.test
 
 import japgolly.microlibs.scalaz_ext.ScalazMacros
+import japgolly.microlibs.stdlib_ext.MutableArray
+import japgolly.univeq.UnivEqScalaz._
 import java.time.Instant
 import java.time.temporal.ChronoUnit._
 import scalaz.{-\/, Equal, \/-}
+import sourcecode.Line
 import shipreq.base.test._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.hash.HashSchemes
+import shipreq.webapp.base.issue.Issue
 import shipreq.webapp.base.text.Text
 
 trait WebappTestEquality
@@ -65,7 +69,7 @@ trait WebappTestUtil extends BaseTestUtil {
   def applyVerifiedEventSuccessfully(p: Project, es: VerifiedEvent*): Project =
     es.foldLeft(p)(applyVerifiedEventSuccessfully)
 
-  def assertEventFails(p: Project, e: Event, errFrag: String = ""): Unit =
+  def assertEventFails(p: Project, e: Event, errFrag: String = "")(implicit l: Line): Unit =
     ApplyEvent.untrusted.apply1(e)(p) match {
       case -\/(f) => assertContainsCI(f, errFrag)
       case \/-(_) => fail(s"Failure expected but didn't occur applying $e")
@@ -76,4 +80,20 @@ trait WebappTestUtil extends BaseTestUtil {
       VerifiedEvent.NonEmptySeq(self.head, self.tail)
   }
 
+  def assertIssueSet(actual: Seq[Issue], expect: Seq[Issue])(implicit l: Line): Unit =
+    assertIssueSet("", actual, expect)
+
+  def assertIssueSet(name: => String, actual: Seq[Issue], expect: Seq[Issue])(implicit l: Line): Unit = {
+    def norm(i: Seq[Issue]) = MutableArray(i).sortBySchwartzian(_.toString).to[Vector]
+    assertSeq(name, norm(actual), norm(expect))
+  }
+
+  def onFail[A](body: => A)(f: => Any): A = // TODO Move into microlibs
+    try
+      body
+    catch {
+      case t: java.lang.AssertionError =>
+        f
+        throw t
+    }
 }

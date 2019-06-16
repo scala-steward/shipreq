@@ -79,6 +79,11 @@ object RandomEventStream {
       (s2, e2) <- verifiedEvents(ss).run(s1)
     } yield (s2, e1, e2)
 
+  def justEntireEventStream(implicit ss: SizeSpec): Gen[Vector[VerifiedEvent]] =
+    for {
+      (_, e1, e2) <- entireEventStream(ss)
+    } yield e1 ++ e2
+
 //  def applicableEventS[S](observe: ObserveFn[S]): StateGen[(S, Project), Event] =
 //    StateGen(sp =>
 //      ApplicableEventGen(sp._2).applicableEventS(sp._1)(observe))
