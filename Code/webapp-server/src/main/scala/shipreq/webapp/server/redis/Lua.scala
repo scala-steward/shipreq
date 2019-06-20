@@ -204,3 +204,100 @@ private[redis] object Lua {
      """.stripMargin
   }
 }
+
+/*
+========================================================================================================================
+For reference, these are the resulting Lua procs:
+========================================================================================================================
+-- read
+
+local ks = KEYS[1]
+local ke = KEYS[2]
+return {redis.call('LINDEX',ks,1), redis.call('ZRANGE',ke,0,-1)}
+
+========================================================================================================================
+-- readEvents
+
+local ke = KEYS[1]
+local b = tonumber(ARGV[1])
+if b == 0 then
+  return redis.call('ZRANGE',ke,0,-1)
+else
+  return redis.call('ZRANGEBYSCORE',ke,b+1,'+inf')
+end
+
+========================================================================================================================
+-- writeSnapshot
+
+local ks = KEYS[1]
+local ke = KEYS[2]
+
+local c = ARGV[1]
+local ver = tonumber(ARGV[2])
+local bin = ARGV[3]
+
+local ok = ver > (tonumber(redis.call('LINDEX',ks,0)) or 0)
+if ok then
+
+redis.call('LPOP',ks)
+redis.call('LPOP',ks)
+redis.call('LPUSH',ks,bin,ver)
+
+  redis.call('ZREMRANGEBYSCORE',ke,1,ver)
+end
+
+for i = 4,#ARGV do
+  redis.call('publish',c,ARGV[i])
+end
+
+return ok
+
+========================================================================================================================
+-- writeEvents
+
+local ks = KEYS[1]
+local ke = KEYS[2]
+local c = ARGV[1]
+local v = ((redis.call('EXISTS',ke)==0) or ((tonumber(redis.call('LINDEX',ks,0)) or 0) + 1 == tonumber(redis.call('ZRANGE',ke,0,0,'WITHSCORES')[2]))) and (tonumber(redis.call('ZRANGE',ke,-1,-1,'WITHSCORES')[2]) or (tonumber(redis.call('LINDEX',ks,0)) or 0)) or 0
+
+local n = 0
+local s = 0
+repeat
+  n = n + 2
+  s = tonumber(ARGV[n])
+  if s ~= nil then
+    s = math.abs(s)
+  end
+until s == nil or s > v
+
+local ok = s == v + 1
+
+if ok then
+  local prev,j = v,0
+  for i = n,#ARGV,2 do
+    j=math.abs(tonumber(ARGV[i]))
+    if j ~= (prev + 1) then break end
+    redis.call('ZADD',ke,'NX',j,ARGV[i+1])
+    prev=j
+  end
+end
+
+for i = 2,#ARGV,2 do
+  if tonumber(ARGV[i]) < 0 then
+    redis.call('publish',c,ARGV[i+1])
+  end
+end
+
+return ok
+
+========================================================================================================================
+-- publishEvents
+
+local c = ARGV[1]
+
+for i = 2,#ARGV do
+  redis.call('publish',c,ARGV[i])
+end
+
+========================================================================================================================
+*/
