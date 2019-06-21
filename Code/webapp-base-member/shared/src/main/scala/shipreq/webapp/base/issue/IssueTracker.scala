@@ -61,7 +61,8 @@ object IssueTracker {
     def isDeadOrDirty  (id: ReqId) = isDirty(id) || isDead(id)
 
     val invalidateByDefault: Issue => Boolean = {
-      case i: Issue.ConflictingTags => isDeadOrDirty(i.reqId)
+      case i: Issue.ConflictingTags       => isDeadOrDirty(i.reqId)
+      case i: Issue.UninhabitableTagField => false
     }
 
     val tstateM             = tstate.resume()

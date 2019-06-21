@@ -24,6 +24,8 @@ object SampleProject {
 
     val allLiveTags = NonEmptyVector(priHigh, priMed, priLow, wip, defer, v10, v11, v12, v13, v1x, v2x)
     val allDeadTags = NonEmptyVector(uat, uat2, v09, v3x, v4x)
+
+    val priTG = 1.TG
   }
 
   object Values extends Values
@@ -45,7 +47,7 @@ object SampleProject {
   lazy val v10d = Some("Released: 17/14/1976\nFirst release.")
   lazy val v11d = Some("Released: 1/2/2001")
   lazy val tags = TagTree.empty.addAll(
-    TagInTree(TagGroup     (1      , "Priority",        None, MutexChildren,     Live), Vector(priHigh, priMed, priLow)),
+    TagInTree(TagGroup     (priTG  , "Priority",        None, MutexChildren,     Live), Vector(priHigh, priMed, priLow)),
     TagInTree(ApplicableTag(priHigh, "High Priority",   None, "pri=high",        Live), Vector()),
     TagInTree(ApplicableTag(priMed , "Medium Priority", None, "pri=med",         Live), Vector()),
     TagInTree(TagGroup     (10     , "Status",          None, MutexChildren.Not, Live), Vector(wip, defer, uat, uat2, uat3, prod)),
@@ -74,7 +76,7 @@ object SampleProject {
       Text       (descField    , "Description", "desc",     Mandatory,     onlyReqTypes(mf, si, StaticReqType.UseCase), Live),
       Text       (notesField   , "Notes",       "notes",    Mandatory.Not, notReqTypes(br),                             Live),
       Text       (reporterField, "Reporter",    "reporter", Mandatory,     onlyReqTypes(dd, StaticReqType.UseCase),     Dead),
-      Tag        (priField     , 1.TG,                      Mandatory,     ISubset.All(),                               Live),
+      Tag        (priField     , priTG,                     Mandatory,     ISubset.All(),                               Live),
       Tag        (statusField  , 10.TG,                     Mandatory.Not, notReqTypes(dd, si),                         Live),
       Implication(mfField      , mf,                        Mandatory.Not, notReqTypes(si),                             Live),
       Tag        (relField     , 27.TG,                     Mandatory.Not, ISubset.All(),                               Dead)

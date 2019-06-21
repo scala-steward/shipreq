@@ -2,6 +2,8 @@ package shipreq.webapp.base.issue
 
 import japgolly.microlibs.nonempty.{NonEmpty, NonEmptySet}
 import japgolly.microlibs.stdlib_ext.MutableArray
+import scala.reflect.ClassTag
+import sourcecode.Line
 import shipreq.base.util.SetDiff
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
@@ -13,7 +15,9 @@ import Event._
 
 object IssueDetectorTest extends TestSuite {
 
-  import SampleProject3.{project => p3}
+  import SampleProject3.{Values => P3, project => p3}
+
+  private case class IssueFilter[I <: Issue]()(implicit val c: ClassTag[I])
 
   private def updateReqTags(id: ReqId)(del: ApplicableTagId*)(add: ApplicableTagId*): ReqTagsPatch =
     ReqTagsPatch(id, NonEmpty force SetDiff(removed = del.toSet, added = add.toSet))
@@ -23,28 +27,42 @@ object IssueDetectorTest extends TestSuite {
     TagGroupUpdate(id, nev(MutexChildren(mutexChildren)))
   }
 
+  private def assertIssues[I <: Issue](project: Project)(expected: I*)(implicit l: Line, f: IssueFilter[I]): Unit =
+    assertIssuesOfType[I](project)(expected: _*)(l, f.c)
+
+  private def assertIssuesOfType[I <: Issue](project: Project)(expected: I*)(implicit l: Line, c: ClassTag[I]): Unit =
+    assertIssuesWithFilter(project, c.unapply(_).isDefined)(expected: _*)
+
+  private def assertIssuesWithFilter(project: Project, filter: Issue => Boolean)(expected: Issue*)(implicit l: Line): Unit = {
+    val it = IssueTracker(project)
+    def is = it.issues.vector.iterator.map(_.issue).filter(filter)
+    val actual = MutableArray(is).sortBySchwartzian(_.toString).to[List]
+    val expect = MutableArray(expected).sortBySchwartzian(_.toString).to[List]
+    if (actual.size != expect.size) { // TODO Fix assertSeq
+      println("ACTUAL: ")
+      actual.foreach(i => println("  - " + i))
+      println("EXPECT: ")
+      expect.foreach(i => println("  - " + i))
+    }
+    assertSeq("assertIssues", actual, expect)
+  }
+
+  private def debugTags(project: Project): Project = {
+    println(project.config.tags.prettyPrint)
+    for (r <- project.content.reqs.reqIterator.toList.sortBy(_.id.value)) {
+      val tags = project.content.reqTags(r.id).map(_.value).toList.sorted.mkString(", ")
+      val isLive = r.live(project.config.reqTypes) is Dead
+      println(s"(#${r.id.value}) $tags${if (isLive) " [DEAD]" else ""}")
+    }
+    project
+  }
+
+  // ===================================================================================================================
+
   private object ConflictingTagTests {
-    def debug(project: Project): Project = {
-      println(project.config.tags.prettyPrint)
-      for (r <- project.content.reqs.reqIterator.toList.sortBy(_.id.value)) {
-        val tags = project.content.reqTags(r.id).map(_.value).toList.sorted.mkString(", ")
-        val isLive = r.live(project.config.reqTypes) is Dead
-        println(s"(#${r.id.value}) $tags${if (isLive) " [DEAD]" else ""}")
-      }
-      project
-    }
+    private implicit val filter = IssueFilter[Issue.ConflictingTags]
 
-    def test(project: Project)(expected: Issue*): Unit = {
-      val it = IssueTracker(project)
-      def is = it.issues.vector.iterator.map(_.issue)
-      val actual = MutableArray(is).sortBySchwartzian(_.toString).to[List]
-      val expect = MutableArray(expected).sortBySchwartzian(_.toString).to[List]
-      assertSeq(actual, expect)
-    }
-
-    def ok() = test(p3)()
-
-    def ko() = test(applyEventsSuccessfully(p3,
+    def ko() = assertIssues(applyEventsSuccessfully(p3,
       updateTagGroup(20, MutexChildren),
       ContentRestore(Set(1119), Set.empty),
       updateReqTags(1101)()(4),
@@ -58,26 +76,56 @@ object IssueDetectorTest extends TestSuite {
       Issue.ConflictingTags(1107, 20),
     )
 
-    def deadTag() = test(applyEventsSuccessfully(p3,
+    def deadTag() = assertIssues(applyEventsSuccessfully(p3,
       updateReqTags(1101)()(4),
       TagDelete(4.AT),
     ))()
 
-    def deadTagGroup() = test(applyEventsSuccessfully(p3,
+    def deadTagGroup() = assertIssues(applyEventsSuccessfully(p3,
       updateReqTags(1101)()(4),
-      TagDelete(1.TG),
+      TagDelete(P3.priTG),
     ))()
   }
 
+  // ===================================================================================================================
+
+  private object UninhabitableTagFieldsTests {
+    private implicit val filter = IssueFilter[Issue.UninhabitableTagField]
+
+    def ko() = assertIssues(applyEventsSuccessfully(p3,
+      TagDelete(P3.priTG),
+    ))(Issue.UninhabitableTagField(P3.priField))
+
+    def deadField() = assertIssues(applyEventsSuccessfully(p3,
+      FieldCustomDelete(P3.priField),
+      TagDelete(P3.priTG),
+    ))()
+  }
+
+  // ===================================================================================================================
+
+//  debugTags(p3)
+
   override def tests = Tests {
+
+    // Just testing sample projects' states without any modification.
+    // In targeted tests below however, we modify projects to elicit specific issues.
+    'sampleProjects {
+      implicit val filter = IssueFilter[Issue]
+      'p3 - assertIssues(p3)()
+    }
 
     'ConflictingTag {
       import ConflictingTagTests._
-      'ok           - ok()
       'ko           - ko()
       'deadTag      - deadTag()
       'deadTagGroup - deadTagGroup()
     }
 
+    'UninhabitableTagFields {
+      import UninhabitableTagFieldsTests._
+      'ko        - ko()
+      'deadField - deadField()
+    }
   }
 }

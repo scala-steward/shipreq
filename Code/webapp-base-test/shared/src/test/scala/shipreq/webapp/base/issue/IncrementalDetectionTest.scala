@@ -9,12 +9,7 @@ import shipreq.webapp.base.test.WebappTestUtil._
 
 object IncrementalDetectionTest extends TestSuite {
 
-  private val genEvents = RandomEventStream.justEntireEventStream(64)
-
-  private def initTrackerFromEvents(es: Seq[VerifiedEvent]): IssueTracker = {
-    val initProject = applyVerifiedEventSuccessfully(Project.empty, es: _*)
-    IssueTracker(initProject)
-  }
+  private val genEvents = RandomEventStream.justEntireEventStream(128)
 
   private def assertIncrementsEqualWhole(windowSize: Int, ves: Vector[VerifiedEvent], seed: Long): Unit = {
     @tailrec
@@ -24,7 +19,7 @@ object IncrementalDetectionTest extends TestSuite {
         val p2     = applyVerifiedEventSuccessfully(it.project, es: _*)
         val it2    = it.update(es.iterator.map(_.event), p2)
         val taken2 = taken + windowSize
-        val expect = initTrackerFromEvents(ves.take(taken2))
+        val expect = IssueTracker(p2)
 
         onFail {
           assertIssueSet(s"[windowSize=$windowSize, seed = ${seed}L , events=$taken]",
@@ -40,7 +35,8 @@ object IncrementalDetectionTest extends TestSuite {
         go(it2, remainingEvents.drop(windowSize), taken2)
       }
 
-    val init = initTrackerFromEvents(ves.take(windowSize))
+    val initProject = applyVerifiedEventSuccessfully(Project.empty, ves.take(windowSize): _*)
+    val init = IssueTracker(initProject)
     go(init, ves.drop(windowSize), windowSize)
   }
 
@@ -55,6 +51,8 @@ object IncrementalDetectionTest extends TestSuite {
         }
       }
 
+      * - test()
+      * - test()
       * - test()
       * - test()
       * - test()

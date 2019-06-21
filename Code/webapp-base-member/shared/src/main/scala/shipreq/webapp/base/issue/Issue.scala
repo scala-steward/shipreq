@@ -42,5 +42,7 @@ object Issue {
 
   final case class ConflictingTags(reqId: ReqId, tagGroupId: TagGroupId) extends Issue(C.ConflictingTags)
 
+  final case class UninhabitableTagField(fieldId: CustomField.Tag.Id) extends Issue(C.UninhabitableTagField)
+
   implicit def univEq: UnivEq[Issue] = UnivEq.derive
 }

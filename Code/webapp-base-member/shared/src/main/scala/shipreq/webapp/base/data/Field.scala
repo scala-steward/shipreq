@@ -353,10 +353,12 @@ object CustomField {
                   mandatory     : Mandatory,
                   reqTypes      : ApplicableReqTypes,
                   liveExplicitly: Live) extends CustomField(CustomFieldType.Text) {
+    override def toString = s"CustomField.Text($id, $name, $key, $mandatory, $reqTypes, $liveExplicitly)"
     override def independentName = Some(name)
     override def keyO = Some(key)
     override def live(cfg: ProjectConfig) = liveExplicitly
   }
+
   object Text {
     final case class Id(value: Int) extends CustomFieldId {
       override def toString = s"CustomField.Text.Id($value)"
@@ -374,6 +376,8 @@ object CustomField {
                  mandatory     : Mandatory,
                  reqTypes      : ApplicableReqTypes,
                  liveExplicitly: Live) extends CustomField(CustomFieldType.Tag) {
+
+    override def toString = s"CustomField.Tag($id, $tagId, $mandatory, $reqTypes, $liveExplicitly)"
     override def independentName = None
     override def keyO = None
 
@@ -383,6 +387,7 @@ object CustomField {
     override def live(cfg: ProjectConfig) =
       liveExplicitly & cfg.tags.live(tagId)
   }
+
   object Tag {
     final case class Id(value: Int) extends CustomFieldId  {
       override def toString = s"CustomField.Tag.Id($value)"
@@ -400,6 +405,7 @@ object CustomField {
                          mandatory     : Mandatory,
                          reqTypes      : ApplicableReqTypes,
                          liveExplicitly: Live) extends CustomField(CustomFieldType.Implication) {
+    override def toString = s"CustomField.Implication($id, $reqTypeId, $mandatory, $reqTypes, $liveExplicitly)"
     override def independentName = None
     override def keyO = None
 
@@ -409,6 +415,7 @@ object CustomField {
     override def live(cfg: ProjectConfig) =
       liveExplicitly & cfg.live(reqTypeId)
   }
+
   object Implication {
     final case class Id(value: Int) extends CustomFieldId {
       override def toString = s"CustomField.Implication.Id($value)"
