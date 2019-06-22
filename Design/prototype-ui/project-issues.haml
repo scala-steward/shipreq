@@ -42,6 +42,12 @@
       .issue-liveRef_liveUC_deadStep {color:#c00; background:#fee}
       .issue-deadtag, .issue-deadissuetag {color:#c00; background:#fee; text-decoration: line-through;}
 
+      .ui.label.basic.bad-tag {
+        color:#c00!important;
+        border-color:#c00!important;
+        background:#fee!important;
+      }
+
       .mergesum {display:none; }
       .itype .mergesum,
       .issue .mergesum {display:inline; color:#999; padding-left:1ex; white-space:nowrap}
@@ -283,8 +289,8 @@
             %td.title Admin must be able to connect 100 fax machines simultaneously.
             %td.fname Tags
             %td.fedit.can-edit
-              .ui.label.red.basic.is-tag critical
-              .ui.label.red.basic.is-tag urgent
+              .ui.label.basic.bad-tag.is-tag critical
+              .ui.label.basic.bad-tag.is-tag urgent
               .ui.label.blue.is-tag wip
             %td.actions
             %td.pri.na
@@ -294,12 +300,12 @@
             %td.title User logs in via stern eye contact
             %td.fname Priority
             %td.fedit.can-edit
-              .ui.label.red.basic.is-tag urgent
-              .ui.label.red.basic.is-tag critical
+              .ui.label.basic.bad-tag.is-tag urgent
+              .ui.label.basic.bad-tag.is-tag critical
             %td.actions
             %td.pri
-              .ui.label.red.basic.is-tag urgent
-              .ui.label.red.basic.is-tag critical
+              .ui.label.basic.bad-tag.is-tag urgent
+              .ui.label.basic.bad-tag.is-tag critical
 
           %tr
             %td.issue(rowspan=2) Deleted issue tag in use: #TBD
