@@ -63,6 +63,10 @@
         background:#fee!important;
       }
 
+      .ui.celled.table tr td.fix-left-border:first-child {
+          border-left: 1px solid #2224261a;
+      }
+
       .mergesum {display:none; }
       .itype .mergesum,
       .issue .mergesum {display:inline; color:#999; padding-left:1ex; white-space:nowrap}
@@ -312,7 +316,7 @@
               .ui.label.basic.bad-tag.is-tag critical
  
           %tr
-            %td.fname Detail
+            %td.fix-left-border.fname Detail
             %td.fedit.can-edit This is <span class="issue-tagRef">#urgent</span>!
 
           %tr
@@ -376,7 +380,7 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
-            %td.fname Step 4.1
+            %td.fix-left-border.fname Step 4.1
             %td.fedit.can-edit See <span class="issue-liveRef_liveUC_deadStep">[UC-17.E.2.a]</span>.
             %td.actions
               .ui.button.resolve
@@ -385,7 +389,7 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
-            %td.fname Step 4.2
+            %td.fix-left-border.fname Step 4.2
             %td.fedit.can-edit See <span class="issue-liveRef_deadUC_liveStep">[UC-18.E.3]</span>.
             %td.actions
               .ui.button.resolve
@@ -394,7 +398,7 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
-            %td.fname Step 4.3
+            %td.fix-left-border.fname Step 4.3
             %td.fedit.can-edit See <span class="issue-liveRef_deadUC_deadStep">[UC-18.E.X.1]</span>.
             %td.actions
             %td.pri .ui.label.blue.is-tag urgent
@@ -435,7 +439,7 @@
             %td.pri .ui.label.blue.is-tag high
 
           %tr
-            %td.fname Implied By
+            %td.fix-left-border.fname Implied By
             %td.fedit.can-edit.issue-blank
             %td.actions
             %td.pri .ui.label.blue.is-tag high
