@@ -12,7 +12,7 @@ object ReqTagLoc {
 
 /** Location of (rich) text in a requirement. */
 sealed trait ReqTextLoc
-  extends ReqTagLoc // more efficient than ReqTagLoc.Text(ReqTextLoc)
+  extends ReqTagLoc // more efficient version of: case class ReqTagLoc.Text(ReqTextLoc)
 
 object ReqTextLoc {
   case object Title                                              extends ReqTextLoc

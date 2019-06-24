@@ -50,6 +50,39 @@ object IssueDetectors {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  case object DeadIssueTag extends Instance {
+
+    override def init(i: Init): Unit =
+      ()
+
+    override def increment(i: Increment): Unit =
+      ()
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object DeadReference extends Instance {
+
+    override def init(i: Init): Unit =
+      ()
+
+    override def increment(i: Increment): Unit =
+      ()
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object DeadTag extends Instance {
+
+    override def init(i: Init): Unit =
+      ()
+
+    override def increment(i: Increment): Unit =
+      ()
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   case object EmptyCodeGroup extends Instance {
 
     override def init(i: Init): Unit = {
@@ -71,6 +104,39 @@ object IssueDetectors {
       case _: ReqCode.ActiveGroup
          | _: ReqCode.Inactive    => true
     }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object EmptyField extends Instance {
+
+    override def init(i: Init): Unit =
+      ()
+
+    override def increment(i: Increment): Unit =
+      ()
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object IssueTag extends Instance {
+
+    override def init(i: Init): Unit =
+      ()
+
+    override def increment(i: Increment): Unit =
+      ()
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object LooseIssue extends Instance {
+
+    override def init(i: Init): Unit =
+      ()
+
+    override def increment(i: Increment): Unit =
+      ()
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

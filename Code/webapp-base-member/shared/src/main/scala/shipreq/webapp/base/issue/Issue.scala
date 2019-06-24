@@ -20,13 +20,13 @@ object IssueClass {
 
   case object ConflictingTags       extends IssueClass(C.BadData)
   case object DeadIssueTag          extends IssueClass(C.BadData)
-  case object DeadTag               extends IssueClass(C.BadData)
   case object DeadReference         extends IssueClass(C.BadData)
+  case object DeadTag               extends IssueClass(C.BadData)
   case object EmptyCodeGroup        extends IssueClass(C.Futility)
-  case object UninhabitableTagField extends IssueClass(C.Futility)
   case object EmptyField            extends IssueClass(C.MissingData)
   case object IssueTag              extends IssueClass(C.UserDefined)
   case object LooseIssue            extends IssueClass(C.UserDefined)
+  case object UninhabitableTagField extends IssueClass(C.Futility)
 
   implicit def univEq: UnivEq[IssueClass] = UnivEq.derive
 }
