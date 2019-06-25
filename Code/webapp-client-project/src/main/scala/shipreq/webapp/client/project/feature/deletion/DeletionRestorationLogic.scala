@@ -117,14 +117,16 @@ object DeletionRestorationLogic {
       reqRows.result()
     }
 
-    def initiallySelected(mode         : DeleteOrRestore,
-                          p            : Project,
+    def initiallySelected(mode          : DeleteOrRestore,
+                          p             : Project,
                           actionableReqs: ActionableReqs,
-                          directSel    : NonEmptySet[ReqId]): NonEmptySet[ReqId] = {
+                          directSel     : NonEmptySet[ReqId]): NonEmptySet[ReqId] = {
 
       // Means we don't know yet whether the deletion should be cascaded by default to this item
-      class CascadePending(val req: Req, val imp: Vector[Req], var pending: Boolean)
-      def cascadePending =
+      class CascadePending(val req: Req, val imp: Vector[Req], var pending: Boolean) {
+        override def toString: String = s"CascadePending(${req.id}, ${imp.map(_.id)}, $pending)"
+      }
+      val cascadePending =
         actionableReqs.iterator
           .filter(_.indent != 0)
           .map(r => new CascadePending(r.req, r.impliedBy, true))
