@@ -15,32 +15,26 @@ final case class EventSeqSummary(
     tagGroups        : EventSeqSummary.CUDR[TagGroupId],
     applicableTags   : EventSeqSummary.CUDR[ApplicableTagId],
     reqCodeGroups    : EventSeqSummary.CUDR[ReqCodeGroupId],
-    staticFields     : Set[StaticField],
-    genericReqs      : Set[GenericReqId],
-    useCasesExclSteps: Set[UseCaseId],
-    useCaseSteps     : Set[UseCaseStepId],
+    staticFields     : EventSeqSummary.CUDR[StaticField],
+    genericReqs      : EventSeqSummary.CUDR[GenericReqId],
+    useCasesExclSteps: EventSeqSummary.CUDR[UseCaseId],
+    useCaseSteps     : EventSeqSummary.CUDR[UseCaseStepId],
     contentLiveDeps  : Boolean,
     ) {
-
-  private def showStrs(f: Set[_]): String =
-    MutableArray(f.iterator.map(_.toString)).sort.mkString("{", ",", "}")
-
-  private def showInts[A](f: Set[A])(g: A => Int): String =
-    MutableArray(f.iterator.map(g(_))).sort.mkString("{", ",", "}")
 
   override def toString =
     s"""
        |EventSeqSummary(
-       |  customIssueTypes  = ${customIssueTypes.show(_.value)}
-       |  customFieldTypes  = ${customFieldTypes.show(_.value)}
-       |  customReqTypes    = ${customReqTypes  .show(_.value)}
-       |  tagGroups         = ${tagGroups       .show(_.value)}
-       |  applicableTags    = ${applicableTags  .show(_.value)}
-       |  reqCodeGroups     = ${reqCodeGroups   .show(_.value)}
-       |  staticFields      = ${showStrs(staticFields)}
-       |  genericReqs       = ${showInts(genericReqs)(_.value)}
-       |  useCasesExclSteps = ${showInts(useCasesExclSteps)(_.value)}
-       |  useCaseSteps      = ${showInts(useCaseSteps)(_.value)}
+       |  customIssueTypes  = ${customIssueTypes .show(_.value)}
+       |  customFieldTypes  = ${customFieldTypes .show(_.value)}
+       |  customReqTypes    = ${customReqTypes   .show(_.value)}
+       |  tagGroups         = ${tagGroups        .show(_.value)}
+       |  applicableTags    = ${applicableTags   .show(_.value)}
+       |  reqCodeGroups     = ${reqCodeGroups    .show(_.value)}
+       |  staticFields      = ${staticFields     .show(_.toString)}
+       |  genericReqs       = ${genericReqs      .show(_.value)}
+       |  useCasesExclSteps = ${useCasesExclSteps.show(_.value)}
+       |  useCaseSteps      = ${useCaseSteps     .show(_.value)}
        |  contentLiveDeps   = $contentLiveDeps ){
        |  customTextFields  = $customTextFields
        |  hasTags           = $hasTags }
@@ -64,7 +58,7 @@ final case class EventSeqSummary(
     hasTags || customFieldTypes.hasAny || customReqTypes.hasCU
 
   lazy val reqsExclUseCaseSteps: Set[ReqId] =
-    genericReqs ++ useCasesExclSteps
+    genericReqs.all ++ useCasesExclSteps.all
 
   def withProject(p: Project): EventSeqSummary.WithProject =
     EventSeqSummary.WithProject(this, p)
@@ -82,11 +76,11 @@ object EventSeqSummary {
 
     lazy val useCasesChangedBySteps: Set[UseCaseId] = {
       val stepIndex = project.content.reqs.useCases.stepIndex
-      summary.useCaseSteps.map(stepIndex(_).useCaseId)
+      summary.useCaseSteps.all.map(stepIndex(_).useCaseId)
     }
 
     lazy val useCases: Set[UseCaseId] =
-      summary.useCasesExclSteps ++ useCasesChangedBySteps
+      summary.useCasesExclSteps.all ++ useCasesChangedBySteps
 
     lazy val reqsAffectedByReqTypeChanges: Set[ReqId] =
       summary.customReqTypes.DR.flatMap(project.content.reqs.reqsByType(_).iterator.map(_.id))
@@ -162,23 +156,23 @@ object EventSeqSummary {
   }
 
   private final class MutableBuilder {
-    private[this] val customIssueTypes = new CUDR.Mutable[CustomIssueTypeId]
-    private[this] val customFieldTypes = new CUDR.Mutable[CustomFieldId    ]
-    private[this] val customReqTypes   = new CUDR.Mutable[CustomReqTypeId  ]
-    private[this] val tagGroups        = new CUDR.Mutable[TagGroupId       ]
-    private[this] val applicableTags   = new CUDR.Mutable[ApplicableTagId  ]
-    private[this] val reqCodeGroups    = new CUDR.Mutable[ReqCodeGroupId   ]
-    private var staticFields           = UnivEq.emptySet[StaticField]
-    private var genericReqs            = UnivEq.emptySet[GenericReqId]
-    private var useCasesExclSteps      = UnivEq.emptySet[UseCaseId]
-    private var useCaseSteps           = UnivEq.emptySet[UseCaseStepId]
-    private var contentLiveDeps        = false
+    private[this] val customIssueTypes  = new CUDR.Mutable[CustomIssueTypeId]
+    private[this] val customFieldTypes  = new CUDR.Mutable[CustomFieldId    ]
+    private[this] val customReqTypes    = new CUDR.Mutable[CustomReqTypeId  ]
+    private[this] val tagGroups         = new CUDR.Mutable[TagGroupId       ]
+    private[this] val applicableTags    = new CUDR.Mutable[ApplicableTagId  ]
+    private[this] val reqCodeGroups     = new CUDR.Mutable[ReqCodeGroupId   ]
+    private[this] val staticFields      = new CUDR.Mutable[StaticField]
+    private[this] val genericReqs       = new CUDR.Mutable[GenericReqId]
+    private[this] val useCasesExclSteps = new CUDR.Mutable[UseCaseId]
+    private[this] val useCaseSteps      = new CUDR.Mutable[UseCaseStepId]
+    private var contentLiveDeps         = false
 
     import CUDR.Field._
 
-    private val addReq: ReqId => Unit = {
-      case i: GenericReqId => genericReqs       += i
-      case i: UseCaseId    => useCasesExclSteps += i
+    private def req(id: ReqId, f: CUDR.Field): Unit = id match {
+      case i: GenericReqId => genericReqs      .add(f, i)
+      case i: UseCaseId    => useCasesExclSteps.add(f, i)
     }
 
     private def tag(id: TagId, f: CUDR.Field): Unit = id match {
@@ -192,17 +186,17 @@ object EventSeqSummary {
     val += : Event => Unit = {
 
       case e: Event.ContentRestore =>
-        e.reqs.foreach(addReq)
+        e.reqs.foreach(req(_, Restored))
         reqCodeGroups.restored ++= e.codeGroups
 
       case e: Event.ReqsDelete =>
-        e.reqs.foreach(addReq)
+        e.reqs.foreach(req(_, Deleted))
         reqCodeGroups.deleted ++= e.codeGroups
 
       case e: Event.ReqImplicationsPatch =>
-        addReq(e.id)
-        e.patch.added.foreach(addReq)
-        e.patch.removed.foreach(addReq)
+        req(e.id, Updated)
+        e.patch.added.foreach(req(_, Updated))
+        e.patch.removed.foreach(req(_, Updated))
 
       case e: Event.CustomReqTypeDelete =>
         customReqTypes.deleted += e.id
@@ -213,7 +207,7 @@ object EventSeqSummary {
         contentLiveDeps = true
 
       case e: Event.GenericReqTypeSet =>
-        genericReqs += e.id
+        genericReqs.updated += e.id
         contentLiveDeps = true
 
       case e: Event.ApplicableTagCreate    => applicableTags.created += e.id
@@ -235,26 +229,26 @@ object EventSeqSummary {
       case e: Event.FieldCustomTagUpdate   => customFieldTypes.updated += e.id
       case e: Event.FieldCustomTextCreate  => customFieldTypes.created += e.id
       case e: Event.FieldCustomTextUpdate  => customFieldTypes.updated += e.id
-      case e: Event.FieldStaticAdd         => staticFields += e.f
-      case e: Event.FieldStaticRemove      => staticFields += e.f
-      case e: Event.GenericReqCreate       => genericReqs += e.id
-      case e: Event.GenericReqTitleSet     => genericReqs += e.id
+      case e: Event.FieldStaticAdd         => staticFields.created += e.f
+      case e: Event.FieldStaticRemove      => staticFields.deleted += e.f
+      case e: Event.GenericReqCreate       => genericReqs.created += e.id
+      case e: Event.GenericReqTitleSet     => genericReqs.updated += e.id
       case e: Event.ProjectTemplateApply   => this ++= e.template.events
-      case e: Event.ReqCodesPatch          => addReq(e.id)
-      case e: Event.ReqFieldCustomTextSet  => addReq(e.id)
-      case e: Event.ReqTagsPatch           => addReq(e.id)
+      case e: Event.ReqCodesPatch          => req(e.id, Updated)
+      case e: Event.ReqFieldCustomTextSet  => req(e.id, Updated)
+      case e: Event.ReqTagsPatch           => req(e.id, Updated)
       case e: Event.TagDelete              => tag(e.id, Deleted)
       case e: Event.TagGroupCreate         => tagGroups.created += e.id
       case e: Event.TagGroupUpdate         => tagGroups.updated += e.id
       case e: Event.TagRestore             => tag(e.id, Restored)
-      case e: Event.UseCaseCreate          => useCasesExclSteps += e.id
-      case e: Event.UseCaseStepCreate      => useCaseSteps += e.id
-      case e: Event.UseCaseStepDelete      => useCaseSteps += e.id
-      case e: Event.UseCaseStepRestore     => useCaseSteps += e.id
-      case e: Event.UseCaseStepShiftLeft   => useCaseSteps += e.id
-      case e: Event.UseCaseStepShiftRight  => useCaseSteps += e.id
-      case e: Event.UseCaseStepUpdate      => useCaseSteps += e.id
-      case e: Event.UseCaseTitleSet        => useCasesExclSteps += e.id
+      case e: Event.UseCaseCreate          => useCasesExclSteps.created += e.id
+      case e: Event.UseCaseStepCreate      => useCaseSteps.created += e.id
+      case e: Event.UseCaseStepDelete      => useCaseSteps.deleted += e.id
+      case e: Event.UseCaseStepRestore     => useCaseSteps.restored += e.id
+      case e: Event.UseCaseStepShiftLeft   => useCaseSteps.updated += e.id // ?
+      case e: Event.UseCaseStepShiftRight  => useCaseSteps.updated += e.id // ?
+      case e: Event.UseCaseStepUpdate      => useCaseSteps.updated += e.id
+      case e: Event.UseCaseTitleSet        => useCasesExclSteps.updated += e.id
 
       case _: Event.FieldReposition
          | _: Event.ProjectNameSet
@@ -266,16 +260,16 @@ object EventSeqSummary {
     
     def result(): EventSeqSummary =
       EventSeqSummary(
-        customIssueTypes  = customIssueTypes.result(),
-        customFieldTypes  = customFieldTypes.result(),
-        customReqTypes    = customReqTypes.result(),
-        tagGroups         = tagGroups.result(),
-        applicableTags    = applicableTags.result(),
-        reqCodeGroups     = reqCodeGroups.result(),
-        staticFields      = staticFields,
-        genericReqs       = genericReqs,
-        useCasesExclSteps = useCasesExclSteps,
-        useCaseSteps      = useCaseSteps,
+        customIssueTypes  = customIssueTypes .result(),
+        customFieldTypes  = customFieldTypes .result(),
+        customReqTypes    = customReqTypes   .result(),
+        tagGroups         = tagGroups        .result(),
+        applicableTags    = applicableTags   .result(),
+        reqCodeGroups     = reqCodeGroups    .result(),
+        staticFields      = staticFields     .result(),
+        genericReqs       = genericReqs      .result(),
+        useCasesExclSteps = useCasesExclSteps.result(),
+        useCaseSteps      = useCaseSteps     .result(),
         contentLiveDeps   = contentLiveDeps,
       )
   }
