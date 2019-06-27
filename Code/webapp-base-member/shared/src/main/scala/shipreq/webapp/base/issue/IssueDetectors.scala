@@ -25,7 +25,7 @@ object IssueDetectors {
       i.action.foreachDirtyLiveReq(() => detectInReqs(i))
 
     override def increment(i: Increment): Unit = {
-      if (i.eventSummary.tagsChanged || i.eventSummary.customTextFields.nonEmpty)
+      if (i.eventSummary.hasTags || i.eventSummary.customTextFields.nonEmpty)
         i.invalidateAll()
       init(i.init)
     }
@@ -96,7 +96,7 @@ object IssueDetectors {
       i.action.foreachDirtyLiveReq(() => detectInReqs(i))
 
     override def increment(i: Increment): Unit = {
-      if (i.eventSummary.tagsDR || i.eventSummary.customFieldTypesDR.nonEmpty)
+      if (i.eventSummary.hasTagsDR || i.eventSummary.customFieldTypes.hasDR)
         i.invalidateAll()
       init(i.init)
     }
@@ -162,7 +162,7 @@ object IssueDetectors {
     }
 
     override def increment(i: Increment): Unit = {
-      if (i.eventSummary.customIssueTypesDR.nonEmpty || i.eventSummary.customFieldTypesDR.nonEmpty)
+      if (i.eventSummary.customIssueTypes.hasDR || i.eventSummary.customFieldTypes.hasDR)
         i.invalidateAll()
       init(i.init)
     }
@@ -222,7 +222,7 @@ object IssueDetectors {
     }
 
     override def increment(i: Increment): Unit =
-      redoAllIf(i, i.eventSummary.tagsChanged || i.eventSummary.customFieldTypes.nonEmpty)
+      redoAllIf(i, i.eventSummary.hasTags || i.eventSummary.customFieldTypes.hasAny)
 
     private def inhabitable(id: TagId, cfg: ProjectConfig): Boolean = {
       val t      = cfg.tags.tree.need(id)

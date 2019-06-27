@@ -73,7 +73,7 @@ object IssueTracker {
     def isReqDeadOrDirty  (id: ReqId) = isReqDirty(id) || isReqDead(id)
 
     @inline def isReqCodeGroupDead (id: ReqCodeGroupId) = !liveGroupIds.contains(id)
-    @inline def isReqCodeGroupDirty(id: ReqCodeGroupId) = essp.reqCodeGroups.contains(id)
+    @inline def isReqCodeGroupDirty(id: ReqCodeGroupId) = essp.reqCodeGroups.all.contains(id)
     def isReqCodeGroupDeadOrDirty  (id: ReqCodeGroupId) = isReqCodeGroupDirty(id) || isReqCodeGroupDead(id)
 
     val autoInvalidate: Issue => Boolean = {
@@ -141,7 +141,7 @@ object IssueTracker {
       allFns       = withAllContentDirty.liveRcg,
       dirtyFns     = tstateM.dirtyFns.liveRcg,
       liveIterator = () => newProject.content.reqCodes.liveGroups.iterator,
-      dirtyIdSet   = () => essp.reqCodeGroups,
+      dirtyIdSet   = () => essp.reqCodeGroups.all,
       id           = _.id,
       foreachLive  = f => newProject.content.reqCodes.liveGroup(_).foreach(f)
     )
