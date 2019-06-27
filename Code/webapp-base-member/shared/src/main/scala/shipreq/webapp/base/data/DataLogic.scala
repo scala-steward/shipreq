@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import shipreq.base.util.Digraph.BiDir
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.text.Atom
+import shipreq.webapp.base.text.{Atom, Text}
 import DataImplicits._
 
 final class DataLogic(p: Project) {
@@ -34,11 +34,11 @@ final class DataLogic(p: Project) {
             if (!deadTags.contains(t))
               other = other.add(t, ReqTagLoc.Tags)
 
-          for ((t, loc) <- tagsInText(reqId).live)
-            if (deadTags.contains(t))
-              deadTagsInLiveText = deadTagsInLiveText.add(t, loc)
+          for (t <- tagsInText(reqId).live)
+            if (deadTags.contains(t.value))
+              deadTagsInLiveText = deadTagsInLiveText.add(t.value, t.loc)
             else
-              other = other.add(t, loc)
+              other = other.add(t.value, t.loc)
 
           ReqTags(other, deadTagsInLiveText)
         }
@@ -52,8 +52,8 @@ final class DataLogic(p: Project) {
           for (t <- reqTags(reqId))
             other = other.add(t, ReqTagLoc.Tags)
 
-          for ((t, loc) <- tagsInText(reqId).all)
-            other = other.add(t, loc)
+          for (t <- tagsInText(reqId).all)
+            other = other.add(t.value, t.loc)
 
           ReqTags(other, emptyDeadTagsInLiveText)
         }
@@ -201,20 +201,17 @@ object DataLogic {
   // Issues
 
   final class IssueLookup(p: Project, fd: FilterDead) {
-    import AtomScan._
 
     type Issues = Vector[Atom.AnyIssue]
 
-    private val get = fd.ldStatAccessor[Issues]
+    private[this] val getReqIssues = fd.ldStatAccessor[Vector[ReqTextLoc.And[Atom.AnyIssue]]]
+    private[this] val getRcgIssues = fd.ldStatAccessor[Vector[Text.CodeGroupTitle.Issue]]
 
-    private def forLoc(loc: IssueLoc): Issues =
-      get(p.atomScan.issues(loc))
-
-    def forReq(id: ReqId): Issues =
-      forLoc(InReq(id))
+    val forReq: ReqId => Issues =
+      Memo(id => getReqIssues(p.atomScan.issuesInReqs(id)).map(_.value))
 
     def forReqCode(id: ReqCodeId): Issues =
-      forLoc(InRCG(id))
+      getRcgIssues(p.atomScan.issuesInRcgs(id))
   }
 
   def issueLookup(p: Project, fd: FilterDead): IssueLookup =

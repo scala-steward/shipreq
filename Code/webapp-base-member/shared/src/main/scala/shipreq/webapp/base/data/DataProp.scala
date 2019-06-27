@@ -693,8 +693,9 @@ object DataProp {
       ∧ validReqIds    ("Atoms: ReqRefs",             _.atomScan.reqRefs)
       ∧ validReqCodeIds("Atoms: CodeRefs",            _.atomScan.codeRefs)
       ∧ validUCStepIds ("Atoms: UseCaseStepRefs",     _.atomScan.useCaseStepRefs)
-      ∧ validTagIds    ("Atoms: TagRefs",             _.atomScan.tagRefs.all.all.iterator.map(_._1)) // TODO check ._2
-      ∧ validIssueTypes("Atoms: Issues",              _.atomScan.issues.all.all.map(_.typ))
+      ∧ validTagIds    ("Atoms: TagRefs",             _.atomScan.tagRefs.all.all.iterator.map(_.value)) // TODO check .loc
+      ∧ validIssueTypes("Atoms: Issues in reqs",      _.atomScan.issuesInReqs.all.all.map(_.value.typ))
+      ∧ validIssueTypes("Atoms: Issues in RCGs",      _.atomScan.issuesInRcgs.all.all.map(_.typ))
       ∧ validReqIds    ("DeletionReason reqIds",      _.content.deletionReasons.reqApplication.keys)
       ∧ validUCStepIds ("UseCase step flow",          _.content.reqs.useCases.stepFlow.memberIterator)
       ∧ fullRefCmp     ("SavedView filters",          p => Refs.savedViewFilters(p.reqtableViews))

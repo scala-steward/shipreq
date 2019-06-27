@@ -13,7 +13,8 @@ trait IssueDetector {
 object IssueDetector {
 
   final case class Action(add                : Issue => Unit,
-                          foreachDirtyLiveReq: (() => Req => Unit) => Unit)
+                          foreachDirtyLiveReq: (() => Req => Unit) => Unit,
+                          foreachDirtyLiveRcg: (() => LiveCodeGroup => Unit) => Unit)
 
   final case class Init(action : Action,
                         project: Project)

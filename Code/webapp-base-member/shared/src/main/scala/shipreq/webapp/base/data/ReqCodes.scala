@@ -259,8 +259,14 @@ final case class ReqCodes(trie: ReqCode.Trie) {
   def lookup(id: ReqCodeId): Data =
     apply(reqCode(id))
 
+  def liveGroup(id: ReqCodeGroupId): Option[LiveCodeGroup] =
+    scan.liveGroupsById.get(id)
+
   def liveGroups: List[LiveCodeGroup] =
     scan.liveGroups
+
+  def liveGroupIds: Set[ReqCodeGroupId] =
+    scan.liveGroupsById.keySet
 
   /** All groups, dead and live. */
   def groups: List[CodeGroup] =
@@ -298,14 +304,15 @@ object ReqCodes {
   private[ReqCodes] final class Scan(trie: ReqCode.Trie) {
     import ReqCode._
 
-    private var _idList                = List.empty[ReqCodeId]
-    private var _groups                = List.empty[CodeGroup]
-    private var _liveGroups            = List.empty[LiveCodeGroup]
-    private var _idSet                 = Set.empty[ReqCodeId]
-    private var _apReqCodesById        = Map.empty[ApReqCodeId, Value]
-    private var _reqCodeGroupsById     = Map.empty[ReqCodeGroupId, Value]
     private var _activeReqCodesByReqId = UnivEq.emptySetMultimap[ReqId, Value]
+    private var _apReqCodesById        = Map.empty[ApReqCodeId, Value]
+    private var _groups                = List.empty[CodeGroup]
+    private var _idList                = List.empty[ReqCodeId]
+    private var _idSet                 = Set.empty[ReqCodeId]
     private var _inactiveIdsByReqId    = UnivEq.emptySetMultimap[ReqId, ApReqCodeId]
+    private var _liveGroups            = List.empty[LiveCodeGroup]
+    private var _liveGroupsById        = Map.empty[ReqCodeGroupId, LiveCodeGroup]
+    private var _reqCodeGroupsById     = Map.empty[ReqCodeGroupId, Value]
 
     trie.foreachPathAndValue { (code, data) =>
 
@@ -321,9 +328,16 @@ object ReqCodes {
       _inactiveIdsByReqId ++= data.reqInactive.m
 
       data match {
-        case d: ActiveReq   => _activeReqCodesByReqId = _activeReqCodesByReqId.add(d.reqId, code)
-        case d: ActiveGroup => _liveGroups ::= d.group; _groups ::= d.group
-        case _: Inactive    => ()
+        case d: ActiveReq   =>
+          _activeReqCodesByReqId = _activeReqCodesByReqId.add(d.reqId, code)
+
+        case d: ActiveGroup =>
+          _liveGroupsById = _liveGroupsById.updated(d.id, d.group)
+          _liveGroups ::= d.group
+          _groups ::= d.group
+
+        case _: Inactive    =>
+          ()
       }
 
       data.deadGroup.foreach(_groups ::= _)
@@ -334,6 +348,7 @@ object ReqCodes {
     val groups                = _groups
     val inactiveIdsByReqId    = _inactiveIdsByReqId
     val liveGroups            = _liveGroups
+    val liveGroupsById        = _liveGroupsById
     val idList                = _idList
     val idSet                 = _idSet
     val reqCodeGroupsById     = _reqCodeGroupsById

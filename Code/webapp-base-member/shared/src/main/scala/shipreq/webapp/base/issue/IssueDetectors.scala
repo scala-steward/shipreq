@@ -21,7 +21,7 @@ object IssueDetectors {
   case object ConflictingTags extends Instance {
 
     override def init(i: Init): Unit =
-      i.action.foreachDirtyLiveReq(() => reqCheckFn(i))
+      i.action.foreachDirtyLiveReq(() => detectInReqs(i))
 
     override def increment(i: Increment): Unit = {
       if (i.eventSummary.tagsChanged || i.eventSummary.customTextFields.nonEmpty)
@@ -29,7 +29,7 @@ object IssueDetectors {
       init(i.init)
     }
 
-    private def reqCheckFn(i: Init): Req => Unit = {
+    private def detectInReqs(i: Init): Req => Unit = {
       val exclusiveGroups = i.project.config.tags.exclusiveGroups
       val tagLookup       = i.project.dataLogic.tagLookup(HideDead)
       req => {
@@ -46,17 +46,6 @@ object IssueDetectors {
         }
       }
     }
-  }
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  case object DeadIssueTag extends Instance {
-
-    override def init(i: Init): Unit =
-      ()
-
-    override def increment(i: Increment): Unit =
-      ()
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -85,19 +74,22 @@ object IssueDetectors {
 
   case object EmptyCodeGroup extends Instance {
 
-    override def init(i: Init): Unit = {
+    override def init(i: Init): Unit =
+      i.action.foreachDirtyLiveRcg(() => detectInRcgs(i))
+
+    override def increment(i: Increment): Unit =
+      init(i.init)
+
+    private def detectInRcgs(i: Init): LiveCodeGroup => Unit = {
       val reqCodes = i.project.content.reqCodes
-      for (g <- reqCodes.liveGroups) {
-        val code    = reqCodes.reqCodeGroupsById(g.id)
+      rcg => {
+        val code    = reqCodes.reqCodeGroupsById(rcg.id)
         val subtree = reqCodes.trie.getNode(code).get
         val empty   = subtree.valueIterator().forall(isEmpty)
         if (empty)
-          i.action.add(Issue.EmptyCodeGroup(code))
+          i.action.add(Issue.EmptyCodeGroup(rcg.id))
       }
     }
-
-    override def increment(i: Increment): Unit =
-      redoAllIf(i, i.eventSummary.reqCodesChanged)
 
     private val isEmpty: ReqCode.Data => Boolean = {
       case _: ReqCode.ActiveReq   => false
@@ -119,13 +111,46 @@ object IssueDetectors {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  case object IssueTag extends Instance {
+  case object IssueTags extends Instance {
 
-    override def init(i: Init): Unit =
-      ()
+    override def init(i: Init): Unit = {
+      i.action.foreachDirtyLiveReq(() => detectInReqs(i))
+      i.action.foreachDirtyLiveRcg(() => detectInRcgs(i))
+    }
 
-    override def increment(i: Increment): Unit =
-      ()
+    override def increment(i: Increment): Unit = {
+      if (i.eventSummary.customIssueTypesDR.nonEmpty || i.eventSummary.customFieldTypesDR.nonEmpty)
+        i.invalidateAll()
+      init(i.init)
+    }
+
+    private def detectInReqs(i: Init): Req => Unit = {
+      val issuesInReqs = i.project.atomScan.issuesInReqs
+      req => {
+        for (a <- issuesInReqs(req.id).live) {
+          val t = i.project.config.customIssueType(a.value.typ)
+          val r = t.live match {
+            case Live => Issue.IssueTagInReq(req.id, a.loc, a.value)
+            case Dead => Issue.DeadIssueTagInReq(req.id, a.loc, a.value)
+          }
+          i.action.add(r)
+        }
+      }
+    }
+
+    private def detectInRcgs(i: Init): LiveCodeGroup => Unit = {
+      val issuesInRcgs = i.project.atomScan.issuesInRcgs
+      rcg => {
+        for (a <- issuesInRcgs(rcg.id).live) {
+          val t = i.project.config.customIssueType(a.typ)
+          val r = t.live match {
+            case Live => Issue.IssueTagInRcg(rcg.id, a)
+            case Dead => Issue.DeadIssueTagInRcg(rcg.id, a)
+          }
+          i.action.add(r)
+        }
+      }
+    }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

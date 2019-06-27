@@ -30,16 +30,24 @@ object IssueTracker {
 
       val action = IssueDetector.Action(
         add                 = i => dstate.issues += tstateM.assignId(i),
-        foreachDirtyLiveReq = tstateM.dirtyFns.addForeachLiveReq)
+        foreachDirtyLiveReq = tstateM.dirtyFns.liveReq.add,
+        foreachDirtyLiveRcg = tstateM.dirtyFns.liveRcg.add)
 
       val init = IssueDetector.Init(action, project)
 
       d.init(init)
     }
 
-    // Scan requirements
-    for (ff <- tstateM.dirtyFns.foreachLiveReq) {
+    // Scan dirty requirements
+    for (ff <- tstateM.dirtyFns.liveReq.foreach) {
       val it = project.liveReqIterator()
+      if (it.nonEmpty)
+        it.foreach(ff())
+    }
+
+    // Scan dirty req code groups
+    for (ff <- tstateM.dirtyFns.liveRcg.foreach) {
+      val it = project.content.reqCodes.liveGroups
       if (it.nonEmpty)
         it.foreach(ff())
     }
@@ -55,18 +63,27 @@ object IssueTracker {
                      tstate     : IssueTracker.TrackerState,
                      dstates    : Map[IssueDetector, IssueTracker.DetectorState]): IssueTracker = {
 
-    val essp     = ess.withProject(newProject)
-    val reqs     = newProject.content.reqs
-    val reqTypes = newProject.config.reqTypes
+    val essp         = ess.withProject(newProject)
+    val reqs         = newProject.content.reqs
+    val liveGroupIds = newProject.content.reqCodes.liveGroupIds
+    val reqTypes     = newProject.config.reqTypes
 
     @inline def isReqDead (id: ReqId) = reqs.need(id).live(reqTypes) is Dead
     @inline def isReqDirty(id: ReqId) = essp.reqs.contains(id)
     def isReqDeadOrDirty  (id: ReqId) = isReqDirty(id) || isReqDead(id)
 
+    @inline def isReqCodeGroupDead (id: ReqCodeGroupId) = !liveGroupIds.contains(id)
+    @inline def isReqCodeGroupDirty(id: ReqCodeGroupId) = essp.reqCodeGroups.contains(id)
+    def isReqCodeGroupDeadOrDirty  (id: ReqCodeGroupId) = isReqCodeGroupDirty(id) || isReqCodeGroupDead(id)
+
     val autoInvalidate: Issue => Boolean = {
       case i: Issue.ConflictingTags       => isReqDeadOrDirty(i.reqId)
-      case _: Issue.EmptyCodeGroup
-         | _: Issue.UninhabitableTagField => false
+      case i: Issue.DeadIssueTagInRcg     => isReqCodeGroupDeadOrDirty(i.rcgId)
+      case i: Issue.DeadIssueTagInReq     => isReqDeadOrDirty(i.reqId)
+      case i: Issue.EmptyCodeGroup        => isReqCodeGroupDeadOrDirty(i.rcgId)
+      case i: Issue.IssueTagInRcg         => isReqCodeGroupDeadOrDirty(i.rcgId)
+      case i: Issue.IssueTagInReq         => isReqDeadOrDirty(i.reqId)
+      case _: Issue.UninhabitableTagField => false
     }
 
     val tstateM             = tstate.resume()
@@ -81,7 +98,8 @@ object IssueTracker {
 
       val action = IssueDetector.Action(
         add                 = i => dstate.issues += tstateM.assignId(i),
-        foreachDirtyLiveReq = dirtyFns.addForeachLiveReq)
+        foreachDirtyLiveReq = dirtyFns.liveReq.add,
+        foreachDirtyLiveRcg = dirtyFns.liveRcg.add)
 
       val init = IssueDetector.Init(action, newProject)
 
@@ -102,37 +120,66 @@ object IssueTracker {
     }
 
     // Scan requirements
-    (withAllContentDirty.foreachLiveReq, tstateM.dirtyFns.foreachLiveReq) match {
+    incrementalScan[ReqId, Req](
+      allFns       = withAllContentDirty.liveReq,
+      dirtyFns     = tstateM.dirtyFns.liveReq,
+      liveIterator = () => newProject.liveReqIterator(),
+      dirtyIdSet   = () => essp.reqs,
+      id           = _.id,
+      foreachLive  = f => id => {
+        val req = reqs.need(id)
+        if (req.live(reqTypes) is Live)
+          f(req)
+      },
+    )
+
+    // Scan req code groups
+    incrementalScan[ReqCodeGroupId, LiveCodeGroup](
+      allFns       = withAllContentDirty.liveRcg,
+      dirtyFns     = tstateM.dirtyFns.liveRcg,
+      liveIterator = () => newProject.content.reqCodes.liveGroups.iterator,
+      dirtyIdSet   = () => essp.reqCodeGroups,
+      id           = _.id,
+      foreachLive  = f => newProject.content.reqCodes.liveGroup(_).foreach(f)
+    )
+
+    buildTracker(newProject, detectors, tstateM, dstatesM)
+  }
+
+  private def incrementalScan[Id, A](allFns      : MutableDirtyFnsA[A],
+                                     dirtyFns    : MutableDirtyFnsA[A],
+                                     liveIterator: () => Iterator[A],
+                                     dirtyIdSet  : () => Set[Id],
+                                     id          : A => Id,
+                                     foreachLive : (A => Unit) => Id => Unit): Unit =
+    (allFns.foreach, dirtyFns.foreach) match {
+
       case (Some(allF), Some(dirtyF)) =>
-        val it = newProject.liveReqIterator()
+        val it = liveIterator()
         if (it.nonEmpty) {
           val all = allF()
-          val dirtyReqs = essp.reqs
-          if (dirtyReqs.isEmpty) {
+          val dirtyAs = dirtyIdSet()
+          if (dirtyAs.isEmpty) {
             it.foreach(all)
           } else {
             val dirty = dirtyF()
-            for (req <- it) {
-              all(req)
-              if (dirtyReqs.contains(req.id))
-                dirty(req)
+            for (a <- it) {
+              all(a)
+              if (dirtyAs.contains(id(a)))
+                dirty(a)
             }
           }
         }
 
       case (None, Some(ff)) =>
-        val dirtyReqs = essp.reqs
-        if (dirtyReqs.nonEmpty) {
+        val dirtyAs = dirtyIdSet()
+        if (dirtyAs.nonEmpty) {
           val f = ff()
-          for (id <- dirtyReqs) {
-            val req = reqs.need(id)
-            if (req.live(reqTypes) is Live)
-              f(req)
-          }
+          dirtyAs.foreach(foreachLive(f))
         }
 
       case (Some(ff), None) =>
-        val it = newProject.liveReqIterator()
+        val it = liveIterator()
         if (it.nonEmpty) {
           it.foreach(ff())
         }
@@ -140,9 +187,6 @@ object IssueTracker {
       case (None, None) =>
         ()
     }
-
-    buildTracker(newProject, detectors, tstateM, dstatesM)
-  }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
@@ -179,19 +223,24 @@ object IssueTracker {
     }
   }
 
+  private final class MutableDirtyFnsA[A] {
+    private var fns               : List[() => A => Unit]     = Nil
+    def nonEmpty                  : Boolean                   = fns.nonEmpty
+    val add                       : (() => A => Unit) => Unit = fns ::= _
+    def foreach                   : Option[() => A => Unit]   = fuse(fns)
+    def +=(f: MutableDirtyFnsA[A]): Unit                      = fns = fns.reverse_:::(f.fns)
+  }
+
   private final class MutableDirtyFns {
-    private[MutableDirtyFns] var fnsForeachLiveReq = List.empty[() => Req => Unit]
+    val liveReq = new MutableDirtyFnsA[Req]
+    val liveRcg = new MutableDirtyFnsA[LiveCodeGroup]
 
-    def nonEmpty = fnsForeachLiveReq.nonEmpty
+    def nonEmpty = liveReq.nonEmpty || liveRcg.nonEmpty
 
-    val addForeachLiveReq: (() => Req => Unit) => Unit =
-      fnsForeachLiveReq ::= _
-
-    def foreachLiveReq: Option[() => Req => Unit] =
-      fuse(fnsForeachLiveReq)
-
-    def +=(d: MutableDirtyFns): Unit =
-      fnsForeachLiveReq = fnsForeachLiveReq.reverse_:::(d.fnsForeachLiveReq)
+    def +=(d: MutableDirtyFns): Unit = {
+      liveReq += d.liveReq
+      liveRcg += d.liveRcg
+    }
   }
 
   private final case class TrackerState(resume: () => MutableTrackerState)

@@ -3,6 +3,8 @@ package shipreq.webapp.base.issue
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.univeq.UnivEq
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.text.{Atom, Text}
+import shipreq.webapp.base.text.Text.Equality._
 
 sealed trait IssueCategory
 object IssueCategory {
@@ -39,7 +41,16 @@ object Issue {
                                    tagGroupId: TagGroupId,
                                    locs      : NonEmptySet[ReqTagLoc]) extends Issue(C.ConflictingTags)
 
-  final case class EmptyCodeGroup(code: ReqCode.Value) extends Issue(C.EmptyCodeGroup)
+
+  final case class DeadIssueTagInRcg(rcgId: ReqCodeGroupId, issue: Text.CodeGroupTitle.Issue) extends Issue(C.DeadIssueTag)
+
+  final case class DeadIssueTagInReq(reqId: ReqId, loc: ReqTextLoc, issue: Atom.AnyIssue) extends Issue(C.DeadIssueTag)
+
+  final case class EmptyCodeGroup(rcgId: ReqCodeGroupId) extends Issue(C.EmptyCodeGroup)
+
+  final case class IssueTagInRcg(rcgId: ReqCodeGroupId, issue: Text.CodeGroupTitle.Issue) extends Issue(C.IssueTag)
+
+  final case class IssueTagInReq(reqId: ReqId, loc: ReqTextLoc, issue: Atom.AnyIssue) extends Issue(C.IssueTag)
 
   final case class UninhabitableTagField(fieldId: CustomField.Tag.Id) extends Issue(C.UninhabitableTagField)
 

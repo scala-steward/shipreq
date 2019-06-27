@@ -1,38 +1,41 @@
 package shipreq.webapp.base.data
 
+import scalaz.std.anyVal.intInstance
 import scalaz.std.vector.vectorMonoid
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.text.Atom._
-import AtomScan.IssueLoc
+import shipreq.webapp.base.text.Text
 
-/**
- * Scanning includes dead reqs.
- *
- * @param codeRefs ReqCodes referenced in anything anywhere (including text in dead custom-text fields).
- */
-final class AtomScan(val tagRefs        : LiveDeadStatMap[ReqId, Set[(ApplicableTagId, ReqTextLoc)]],
-                     val issues         : LiveDeadStatMap[IssueLoc, Vector[AnyIssue]],
+/** Scanning includes dead reqs.
+  *
+  * @param tagRefs  Live/Dead refers to the requirement context; not the life-state of the tag itself.
+  * @param issuesInReqs  Live/Dead refers to the requirement context; not the life-state of the issue itself.
+  * @param codeRefs ReqCodes referenced in anything anywhere (including text in dead custom-text fields).
+  */
+final class AtomScan(val tagRefs        : LiveDeadStatMap[ReqId, Set[ReqTextLoc.And[ApplicableTagId]]],
+                     val issuesInReqs   : LiveDeadStatMap[ReqId, Vector[ReqTextLoc.And[AnyIssue]]],
+                     val issuesInRcgs   : LiveDeadStatMap[ReqCodeId, Vector[Text.CodeGroupTitle.Issue]],
                      val reqRefs        : Set[ReqId],
                      val codeRefs       : Set[ReqCodeId],
                      val useCaseStepRefs: Set[UseCaseStepId]) {
 
-  lazy val issueCounts: LiveDeadStatMap[CustomIssueTypeId, Int] =
-    issues.countByValues(_.toStream.map(_.typ))
+  lazy val issueCounts: LiveDeadStatMap[CustomIssueTypeId, Int] = {
+    val r = new LiveDeadStatMap.Builder[CustomIssueTypeId, Int]
+    issuesInReqs.countByValues(r, _.iterator.map(_.value.typ))
+    issuesInRcgs.countByValues(r, _.iterator.map(_.typ))
+    r.result()
+  }
 }
 
 // TODO AtomScan doesn't scan deletion reasons
 object AtomScan {
 
-  sealed trait IssueLoc
-  final case class InReq(id: ReqId)     extends IssueLoc
-  final case class InRCG(id: ReqCodeId) extends IssueLoc
-  implicit def issueLocEq: UnivEq[IssueLoc] = UnivEq.derive
-
-  private implicit val tagSetMonoid = scalazMonoidSet[(ApplicableTagId, ReqTextLoc)]
+  private implicit val tagSetMonoid = scalazMonoidSet[ReqTextLoc.And[ApplicableTagId]]
 
   def apply(p: Project): AtomScan = {
-    val tagRefs         = new LiveDeadStatMap.Builder[ReqId, Set[(ApplicableTagId, ReqTextLoc)]]
-    val issues          = new LiveDeadStatMap.Builder[IssueLoc, Vector[AnyIssue]]
+    val tagRefs         = new LiveDeadStatMap.Builder[ReqId, Set[ReqTextLoc.And[ApplicableTagId]]]
+    val issuesInReqs    = new LiveDeadStatMap.Builder[ReqId, Vector[ReqTextLoc.And[AnyIssue]]]
+    val issuesInRCGs    = new LiveDeadStatMap.Builder[ReqCodeId, Vector[Text.CodeGroupTitle.Issue]]
     val reqRefs         = UnivEq.setBuilder[ReqId]
     val codeRefs        = UnivEq.setBuilder[ReqCodeId]
     val useCaseStepRefs = UnivEq.setBuilder[UseCaseStepId]
@@ -61,12 +64,12 @@ object AtomScan {
             useCaseStepRefs += a.value
 
           case a: Issue#Issue =>
-            if (reqId     ne null) issues(InReq(reqId))    .mod(live)(_ :+ a)
-            if (reqCodeId ne null) issues(InRCG(reqCodeId)).mod(live)(_ :+ a)
+            if (reqId     ne null) issuesInReqs(reqId).mod(live)(_ :+ ReqTextLoc.And(loc, a))
+            if (reqCodeId ne null) issuesInRCGs(reqCodeId).mod(live)(_ :+ a.asInstanceOf[Text.CodeGroupTitle.Issue]) // TODO prove
             go(a.desc)
 
           case a: TagRef#TagRef =>
-            if (reqId ne null) tagRefs(reqId).mod(live)(_ + ((a.value, loc)))
+            if (reqId ne null) tagRefs(reqId).mod(live)(_ + ReqTextLoc.And(loc, a.value))
 
           case a: ListMarkup#UnorderedList =>
             a.items foreach go
@@ -105,6 +108,12 @@ object AtomScan {
       scan(g.live, loc, reqCodeId = g.id)(g.title)
     }
 
-    new AtomScan(tagRefs.result(), issues.result(), reqRefs.result(), codeRefs.result(), useCaseStepRefs.result())
+    new AtomScan(
+      tagRefs.result(),
+      issuesInReqs.result(),
+      issuesInRCGs.result(),
+      reqRefs.result(),
+      codeRefs.result(),
+      useCaseStepRefs.result())
   }
 }
