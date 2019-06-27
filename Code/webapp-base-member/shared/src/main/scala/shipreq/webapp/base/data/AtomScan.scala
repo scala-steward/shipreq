@@ -54,13 +54,13 @@ object AtomScan {
              | _: PlainTextMarkup # MathTeX
              | _: NewLine         # BlankLine => ()
 
-          case a: ReqRef#ReqRef =>
+          case a: ContentRef#ReqRef =>
             reqRefs += a.value
 
-          case a: ReqRef#CodeRef =>
+          case a: ContentRef#CodeRef =>
             codeRefs += a.value
 
-          case a: ReqRef#UseCaseStepRef =>
+          case a: ContentRef#UseCaseStepRef =>
             useCaseStepRefs += a.value
 
           case a: Issue#Issue =>

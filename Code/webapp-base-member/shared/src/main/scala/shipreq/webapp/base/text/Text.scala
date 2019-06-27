@@ -86,7 +86,7 @@ object Text {
 
   object InlineIssueDesc extends Base
       with A.SingleLine
-      with A.ReqRef {
+      with A.ContentRef {
 
     final class Parser(override val project       : Project,
                        override val currentUseCase: Option[ReqTypePos],
@@ -123,7 +123,7 @@ object Text {
   object CodeGroupTitle extends Base
       with A.SingleLine
       with A.Issue
-      with A.ReqRef {
+      with A.ContentRef {
 
     final class Parser(override val project       : Project,
                        override val currentUseCase: Option[ReqTypePos],
@@ -145,7 +145,7 @@ object Text {
   object CustomTextField extends Base
       with A.MultiLine
       with A.Issue
-      with A.ReqRef
+      with A.ContentRef
       with A.TagRef {
 
     final class Parser(override val project       : Project,
@@ -199,7 +199,7 @@ object Text {
 
   object DeletionReason extends Base
       with A.MultiLine
-      with A.ReqRef
+      with A.ContentRef
       with A.TagRef {
 
     final class Parser(override val project       : Project,
@@ -225,7 +225,7 @@ object Text {
   object UseCaseStep extends Base
       with A.SingleLine
       with A.Issue
-      with A.ReqRef
+      with A.ContentRef
       with A.TagRef {
 
     final class Parser(override val project       : Project,

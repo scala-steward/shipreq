@@ -74,9 +74,9 @@ object ProjectHasher {
     override def webAddress    [T <: PlainTextMarkup](t: T): HashFn[t.WebAddress    ] = withName("WA", hashCaseClass)
     override def emailAddress  [T <: PlainTextMarkup](t: T): HashFn[t.EmailAddress  ] = withName("EA", hashCaseClass)
     override def mathTeX       [T <: PlainTextMarkup](t: T): HashFn[t.MathTeX       ] = withName("MX", hashCaseClass)
-    override def reqRef        [T <: ReqRef         ](t: T): HashFn[t.ReqRef        ] = withName("RR", hashCaseClass)
-    override def codeRef       [T <: ReqRef         ](t: T): HashFn[t.CodeRef       ] = withName("CR", hashCaseClass)
-    override def useCaseStepRef[T <: ReqRef         ](t: T): HashFn[t.UseCaseStepRef] = withName("UR", hashCaseClass)
+    override def reqRef        [T <: ContentRef     ](t: T): HashFn[t.ReqRef        ] = withName("RR", hashCaseClass)
+    override def codeRef       [T <: ContentRef     ](t: T): HashFn[t.CodeRef       ] = withName("CR", hashCaseClass)
+    override def useCaseStepRef[T <: ContentRef     ](t: T): HashFn[t.UseCaseStepRef] = withName("UR", hashCaseClass)
     override def tagRef        [T <: TagRef         ](t: T): HashFn[t.TagRef        ] = withName("TR", hashCaseClass)
 
     override def issue[T <: Issue](t: T)(implicit h: HashFn[Text.InlineIssueDesc.OptionalText]): HashFn[t.Issue] =

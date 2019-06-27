@@ -128,7 +128,7 @@ object Parsers {
   }
 
   trait ReqRef extends Base with UseCaseStepLabel {
-    override type T <: Atom.ReqRef
+    override type T <: Atom.ContentRef
 
     import G.reflinkSurround.parsing.{prefix, suffix}
     import ReqCode._

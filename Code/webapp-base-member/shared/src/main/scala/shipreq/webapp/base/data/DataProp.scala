@@ -448,9 +448,9 @@ object DataProp {
       case a: PlainTextMarkup # EmailAddress   => emailAddress(a)
       case a: PlainTextMarkup # MathTeX        => mathtex(a)
       case a: ListMarkup      # UnorderedList  => anyTextV(a.items.whole)
-      case _: ReqRef          # ReqRef         => nop
-      case _: ReqRef          # CodeRef        => nop
-      case _: ReqRef          # UseCaseStepRef => nop
+      case _: ContentRef      # ReqRef         => nop
+      case _: ContentRef      # CodeRef        => nop
+      case _: ContentRef      # UseCaseStepRef => nop
       case a: Issue           # Issue          => anyText(a.desc)
       case _: TagRef          # TagRef         => nop
     } rename "AnyAtom"

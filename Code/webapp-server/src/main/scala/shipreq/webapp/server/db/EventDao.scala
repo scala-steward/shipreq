@@ -394,11 +394,11 @@ object EventDbCodecs {
       a => strkeyW(MATHTEX, a.value),
       { case Js.Obj((MATHTEX, v)) => t.MathTeX(readJs[String](v)) })
 
-    override def reqRef[T <: ReqRef](t: T): ReadWriter[t.ReqRef] = ReadWriter(
+    override def reqRef[T <: ContentRef](t: T): ReadWriter[t.ReqRef] = ReadWriter(
       a => strkeyW(REQREF, a.value),
       { case Js.Obj((REQREF, v)) => t.ReqRef(readJs[ReqId](v)) })
 
-    override def codeRef[T <: ReqRef](t: T): ReadWriter[t.CodeRef] = ReadWriter(
+    override def codeRef[T <: ContentRef](t: T): ReadWriter[t.CodeRef] = ReadWriter(
       a => a.value match {
         case id: ApReqCodeId    => strkeyW(APCODEREF, id)
         case id: ReqCodeGroupId => strkeyW(CODEGROUPREF, id)
@@ -408,7 +408,7 @@ object EventDbCodecs {
         case Js.Obj((CODEGROUPREF, v)) => t.CodeRef(readJs[ReqCodeGroupId](v))
       })
 
-    override def useCaseStepRef[T <: ReqRef](t: T): ReadWriter[t.UseCaseStepRef] = ReadWriter(
+    override def useCaseStepRef[T <: ContentRef](t: T): ReadWriter[t.UseCaseStepRef] = ReadWriter(
       a => strkeyW(UCSTEPREF, a.value),
       { case Js.Obj((UCSTEPREF, v)) => t.UseCaseStepRef(readJs[UseCaseStepId](v)) })
 

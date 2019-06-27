@@ -501,14 +501,14 @@ object RandomData {
         plus.foldLeft[List[Gen.Freq[t.Atom]]](Nil)((q, o) =>
           o.fold(q)(g => (9, g) :: q)): _*)
 
-    def reqRefs(r: Option[Gen[ReqId]], c: Option[Gen[ReqCodeId]])(implicit t: ReqRef): List[Gen[t.Atom]] = {
+    def reqRefs(r: Option[Gen[ReqId]], c: Option[Gen[ReqCodeId]])(implicit t: ContentRef): List[Gen[t.Atom]] = {
       var result = List.empty[Gen[t.Atom]]
       r.foreach(result ::= _ map t.ReqRef)
       c.foreach(result ::= _ map t.CodeRef)
       result
     }
 
-    def useCaseStepRef(u: Gen[UseCaseStepId])(implicit t: ReqRef): Gen[t.Atom] =
+    def useCaseStepRef(u: Gen[UseCaseStepId])(implicit t: ContentRef): Gen[t.Atom] =
       u map t.UseCaseStepRef
 
     def tagRef(g: Gen[ApplicableTagId])(implicit t: TagRef): Gen[t.TagRef] =
@@ -530,9 +530,9 @@ object RandomData {
 
     val legalListItemAtom: AnyAtom => Boolean = {
       case _: Literal         # Literal
-         | _: ReqRef          # ReqRef
-         | _: ReqRef          # CodeRef
-         | _: ReqRef          # UseCaseStepRef
+         | _: ContentRef      # ReqRef
+         | _: ContentRef      # CodeRef
+         | _: ContentRef      # UseCaseStepRef
          | _: Issue           # Issue
          | _: PlainTextMarkup # WebAddress
          | _: PlainTextMarkup # EmailAddress
