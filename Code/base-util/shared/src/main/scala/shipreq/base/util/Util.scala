@@ -216,4 +216,15 @@ object Util {
       }
     dups
   }
+
+  def mergeSets[A: UnivEq](x: Set[_ <: A], y: Set[_ <: A]): Set[A] =
+    if (x.isEmpty) y.asInstanceOf[Set[A]]
+    else if (y.isEmpty) x.asInstanceOf[Set[A]]
+    else x ++ y
+
+  def mergeSets[A: UnivEq](x: Set[_ <: A], y: Set[_ <: A], z: Set[_ <: A]): Set[A] =
+    if (x.isEmpty) mergeSets(y, z)
+    else if (y.isEmpty) mergeSets(x, z)
+    else if (z.isEmpty) mergeSets(x, y)
+    else (Set.newBuilder[A] ++= x ++= y ++= z).result()
 }

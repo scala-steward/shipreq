@@ -252,8 +252,8 @@ object IssueTracker {
     val issues = Vector.newBuilder[IssueWithId]
     private var retain = old
 
-    def invalidate(f: Issue => Boolean): Unit =
-      retain = retain.filter(i => !f(i.issue))
+    val invalidate: (Issue => Boolean) => Unit =
+      f => retain = retain.filter(i => !f(i.issue))
 
     def invalidateAll(): Unit =
       retain = Vector.empty
