@@ -7,48 +7,33 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Atom
 
 object IssueDetectors {
-  import IssueDetector.{Increment, Init}
+  import IssueDetector.Ctx
 
-  sealed trait Instance extends IssueDetector {
-    protected def redoAllIf(i: Increment, redo: Boolean): Unit =
-      if (redo) {
-        i.invalidateAll()
-        init(i.init)
-      }
-  }
+  sealed trait Instance extends IssueDetector
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object BlankTitle extends Instance {
 
-    override def init(i: Init): Unit =
-      i.action.foreachDirtyLiveReq(() => detectInReqs(i))
+    override val detect = ctx =>
+      ctx.foreachLiveReq(() => detectInReqs(ctx))
 
-    override def increment(i: Increment): Unit =
-      init(i.init)
-
-    private def detectInReqs(i: Init): Req => Unit =
+    private def detectInReqs(ctx: Ctx): Req => Unit =
       req =>
         if (req.title.isEmpty)
-          i.action.add(Issue.BlankTitle(req.id))
+          ctx.add(Issue.BlankTitle(req.id))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object ConflictingTags extends Instance {
 
-    override def init(i: Init): Unit =
-      i.action.foreachDirtyLiveReq(() => detectInReqs(i))
+    override val detect = ctx =>
+      ctx.foreachLiveReq(() => detectInReqs(ctx))
 
-    override def increment(i: Increment): Unit = {
-      if (i.eventSummary.hasTags || i.eventSummary.customFieldTextTypes.hasDR)
-        i.invalidateAll()
-      init(i.init)
-    }
-
-    private def detectInReqs(i: Init): Req => Unit = {
-      val exclusiveGroups = i.project.config.tags.exclusiveGroups
-      val tagLookup       = i.project.dataLogic.tagLookup(HideDead)
+    private def detectInReqs(ctx: Ctx): Req => Unit = {
+      val exclusiveGroups = ctx.project.config.tags.exclusiveGroups
+      val tagLookup       = ctx.project.dataLogic.tagLookup(HideDead)
       req => {
         val reqId     = req.id
         val tagIds    = tagLookup(reqId).other
@@ -59,7 +44,7 @@ object IssueDetectors {
               .filter(x => exclusiveGroups(x._1).contains(g))
               .flatMap(_._2)
               .toSet
-          i.action.add(Issue.ConflictingTags(reqId, g, NonEmptySet force locs))
+          ctx.add(Issue.ConflictingTags(reqId, g, NonEmptySet force locs))
         }
       }
     }
@@ -69,39 +54,25 @@ object IssueDetectors {
 
   case object DeadReference extends Instance {
 
-    override def init(i: Init): Unit = {
-      i.action.foreachDirtyLiveReq(() => detectInReqs(i))
-      i.action.foreachDirtyLiveRcg(() => detectInRcgs(i))
+    override val detect = ctx => {
+      ctx.foreachLiveReq(() => detectInReqs(ctx))
+      ctx.foreachLiveRcg(() => detectInRcgs(ctx))
     }
 
-    override def increment(i: Increment): Unit = {
-      val s = i.eventSummary
-      if ( s.contentLiveDeps
-        || s.genericReqs.hasDR
-        || s.useCasesExclSteps.hasDR
-        || s.useCaseSteps.hasDR
-        || s.reqCodeGroups.hasDR
-        || s.customFieldTextTypes.hasDR
-        || s.apReqCodes
-      )
-        i.invalidateAll()
-      init(i.init)
-    }
-
-    private def detectInReqs(i: Init): Req => Unit = {
-      val refsInReqs = i.project.atomScan.contentRefsInReqs
+    private def detectInReqs(ctx: Ctx): Req => Unit = {
+      val refsInReqs = ctx.project.atomScan.contentRefsInReqs
       req =>
         for (a <- refsInReqs(req.id).live)
-          if (!isRefLive(a.value, i.project))
-            i.action.add(Issue.DeadRefInReq(req.id, a.loc, ContentRef.fromAtom(a.value)))
+          if (!isRefLive(a.value, ctx.project))
+            ctx.add(Issue.DeadRefInReq(req.id, a.loc, ContentRef.fromAtom(a.value)))
     }
 
-    private def detectInRcgs(i: Init): LiveCodeGroup => Unit = {
-      val refsInRcgs = i.project.atomScan.contentRefsInRcgs
+    private def detectInRcgs(ctx: Ctx): LiveCodeGroup => Unit = {
+      val refsInRcgs = ctx.project.atomScan.contentRefsInRcgs
       rcg =>
         for (a <- refsInRcgs(rcg.id).live)
-          if (!isRefLive(a, i.project))
-            i.action.add(Issue.DeadRefInRcg(rcg.id, ContentRef.fromAtom(a)))
+          if (!isRefLive(a, ctx.project))
+            ctx.add(Issue.DeadRefInRcg(rcg.id, ContentRef.fromAtom(a)))
     }
 
     private def isRefLive(a: Atom.AnyContentRef, p: Project): Boolean =
@@ -116,22 +87,16 @@ object IssueDetectors {
 
   case object DeadTag extends Instance {
 
-    override def init(i: Init): Unit =
-      i.action.foreachDirtyLiveReq(() => detectInReqs(i))
+    override val detect = ctx =>
+      ctx.foreachLiveReq(() => detectInReqs(ctx))
 
-    override def increment(i: Increment): Unit = {
-      if (i.eventSummary.hasTagsDR || i.eventSummary.customFieldTextTypes.hasDR)
-        i.invalidateAll()
-      init(i.init)
-    }
-
-    private def detectInReqs(i: Init): Req => Unit = {
-      val tagRefs = i.project.atomScan.tagRefs
+    private def detectInReqs(ctx: Ctx): Req => Unit = {
+      val tagRefs = ctx.project.atomScan.tagRefs
       req => {
         for (a <- tagRefs(req.id).live) {
-          val t = i.project.config.tags.atag(a.value)
+          val t = ctx.project.config.tags.atag(a.value)
           if (t.live.is(Dead))
-            i.action.add(Issue.DeadTag(req.id, a.loc, a.value))
+            ctx.add(Issue.DeadTag(req.id, a.loc, a.value))
         }
       }
     }
@@ -141,20 +106,17 @@ object IssueDetectors {
 
   case object EmptyCodeGroup extends Instance {
 
-    override def init(i: Init): Unit =
-      i.action.foreachDirtyLiveRcg(() => detectInRcgs(i))
+    override val detect = ctx =>
+      ctx.foreachLiveRcg(() => detectInRcgs(ctx))
 
-    override def increment(i: Increment): Unit =
-      init(i.init)
-
-    private def detectInRcgs(i: Init): LiveCodeGroup => Unit = {
-      val reqCodes = i.project.content.reqCodes
+    private def detectInRcgs(ctx: Ctx): LiveCodeGroup => Unit = {
+      val reqCodes = ctx.project.content.reqCodes
       rcg => {
         val code    = reqCodes.reqCodeGroupsById(rcg.id)
         val subtree = reqCodes.trie.getNode(code).get
         val empty   = subtree.valueIterator().forall(isEmpty)
         if (empty)
-          i.action.add(Issue.EmptyCodeGroup(rcg.id))
+          ctx.add(Issue.EmptyCodeGroup(rcg.id))
       }
     }
 
@@ -169,41 +131,35 @@ object IssueDetectors {
 
   case object IssueTags extends Instance {
 
-    override def init(i: Init): Unit = {
-      i.action.foreachDirtyLiveReq(() => detectInReqs(i))
-      i.action.foreachDirtyLiveRcg(() => detectInRcgs(i))
+    override val detect = ctx => {
+      ctx.foreachLiveReq(() => detectInReqs(ctx))
+      ctx.foreachLiveRcg(() => detectInRcgs(ctx))
     }
 
-    override def increment(i: Increment): Unit = {
-      if (i.eventSummary.customIssueTypes.hasDR || i.eventSummary.customFieldTextTypes.hasDR)
-        i.invalidateAll()
-      init(i.init)
-    }
-
-    private def detectInReqs(i: Init): Req => Unit = {
-      val issuesInReqs = i.project.atomScan.issuesInReqs
+    private def detectInReqs(ctx: Ctx): Req => Unit = {
+      val issuesInReqs = ctx.project.atomScan.issuesInReqs
       req => {
         for (a <- issuesInReqs(req.id).live) {
-          val t = i.project.config.customIssueType(a.value.typ)
+          val t = ctx.project.config.customIssueType(a.value.typ)
           val r = t.live match {
             case Live => Issue.IssueTagInReq(req.id, a.loc, a.value)
             case Dead => Issue.DeadIssueTagInReq(req.id, a.loc, a.value)
           }
-          i.action.add(r)
+          ctx.add(r)
         }
       }
     }
 
-    private def detectInRcgs(i: Init): LiveCodeGroup => Unit = {
-      val issuesInRcgs = i.project.atomScan.issuesInRcgs
+    private def detectInRcgs(ctx: Ctx): LiveCodeGroup => Unit = {
+      val issuesInRcgs = ctx.project.atomScan.issuesInRcgs
       rcg => {
         for (a <- issuesInRcgs(rcg.id).live) {
-          val t = i.project.config.customIssueType(a.typ)
+          val t = ctx.project.config.customIssueType(a.typ)
           val r = t.live match {
             case Live => Issue.IssueTagInRcg(rcg.id, a)
             case Dead => Issue.DeadIssueTagInRcg(rcg.id, a)
           }
-          i.action.add(r)
+          ctx.add(r)
         }
       }
     }
@@ -213,10 +169,7 @@ object IssueDetectors {
 
   case object LooseIssue extends Instance {
 
-    override def init(i: Init): Unit =
-      ()
-
-    override def increment(i: Increment): Unit =
+    override val detect = ctx =>
       ()
   }
 
@@ -224,18 +177,15 @@ object IssueDetectors {
 
   case object UninhabitableTagField extends Instance {
 
-    override def init(i: Init): Unit = {
-      val cfg = i.project.config
-      for (f <- i.project.config.fields.customTagFields) {
+    override val detect = ctx => {
+      val cfg = ctx.project.config
+      for (f <- ctx.project.config.fields.customTagFields) {
         val isLive        = f.liveExplicitly is Live
         def uninhabitable = !inhabitable(f.tagId, cfg)
         if (isLive && uninhabitable)
-          i.action.add(Issue.UninhabitableTagField(f.id))
+          ctx.add(Issue.UninhabitableTagField(f.id))
       }
     }
-
-    override def increment(i: Increment): Unit =
-      redoAllIf(i, i.eventSummary.hasTags || i.eventSummary.customFieldTagTypes.hasAny)
 
     private def inhabitable(id: TagId, cfg: ProjectConfig): Boolean = {
       val t      = cfg.tags.tree.need(id)

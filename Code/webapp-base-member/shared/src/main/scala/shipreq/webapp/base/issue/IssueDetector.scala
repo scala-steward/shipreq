@@ -2,26 +2,17 @@ package shipreq.webapp.base.issue
 
 import japgolly.univeq.UnivEq
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.EventSeqSummary
-import IssueDetector._
 
 trait IssueDetector {
-  def init(i: Init): Unit
-  def increment(i: Increment): Unit
+  val detect: IssueDetector.Ctx => Unit
 }
 
 object IssueDetector {
 
-  final case class Action(add                : Issue => Unit,
-                          foreachDirtyLiveReq: (() => Req => Unit) => Unit,
-                          foreachDirtyLiveRcg: (() => LiveCodeGroup => Unit) => Unit)
-
-  final case class Init(action : Action,
-                        project: Project)
-
-  final case class Increment(init         : Init,
-                             eventSummary : EventSeqSummary,
-                             invalidateAll: () => Unit)
+  final case class Ctx(project       : Project,
+                       add           : Issue => Unit,
+                       foreachLiveReq: (() => Req => Unit) => Unit,
+                       foreachLiveRcg: (() => LiveCodeGroup => Unit) => Unit)
 
   /** Reference equality is the default, and it's desired. */
   implicit def univEq: UnivEq[IssueDetector] = UnivEq.force
