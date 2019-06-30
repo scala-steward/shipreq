@@ -13,7 +13,6 @@ import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.text.{Text => T}
 import utest._
-import Event._
 
 object IssueDetectorTest extends TestSuite {
 
@@ -41,12 +40,12 @@ object IssueDetectorTest extends TestSuite {
       new IssueFilter(_.cls.category ==* ic)
   }
 
-  private def updateReqTags(id: ReqId)(del: ApplicableTagId*)(add: ApplicableTagId*): ReqTagsPatch =
-    ReqTagsPatch(id, NonEmpty force SetDiff(removed = del.toSet, added = add.toSet))
+  private def updateReqTags(id: ReqId)(del: ApplicableTagId*)(add: ApplicableTagId*) =
+    Event.ReqTagsPatch(id, NonEmpty force SetDiff(removed = del.toSet, added = add.toSet))
 
   private def updateTagGroup(id: TagGroupId, mutexChildren: MutexChildren) = {
     import TagGroupGD._
-    TagGroupUpdate(id, nev(MutexChildren(mutexChildren)))
+    Event.TagGroupUpdate(id, nev(MutexChildren(mutexChildren)))
   }
 
   private def assertIssues(project: Project)(expected: Issue*)(implicit l: Line, f: IssueFilter): Unit =
@@ -119,11 +118,11 @@ object IssueDetectorTest extends TestSuite {
 
     def ko() = test(p3)(
       updateTagGroup(20, MutexChildren),
-      ContentRestore(Set(1119), ∅),
+      Event.ContentRestore(Set(1119), ∅),
       updateReqTags(1101)()(4),
       updateReqTags(1104)()(2, 24, 25),
       updateReqTags(1119)()(2, 3),
-      ReqsDelete(NonEmptySet(1119), ∅, ∅),
+      Event.ReqsDelete(NonEmptySet(1119), ∅, ∅),
     )(
       Issue.ConflictingTags(1101, 1, NonEmptySet(ReqTagLoc.Tags)),
       Issue.ConflictingTags(1104, 1, NonEmptySet(ReqTagLoc.Tags)),
@@ -133,20 +132,20 @@ object IssueDetectorTest extends TestSuite {
 
     def deadTag() = test(p3)(
       updateReqTags(1101)()(4),
-      TagDelete(4.AT),
+      Event.TagDelete(4.AT),
     )()
 
     def deadTagGroup() = test(p3)(
       updateReqTags(1101)()(4),
-      TagDelete(P3.priTG),
+      Event.TagDelete(P3.priTG),
     )()
 
     def tagInText() = {
       import T.GenericReqTitle.TagRef
       test(p3)(
-        GenericReqTitleSet(1002, Vector(TagRef(P3.priHigh), TagRef(P3.priLow))), // no tags
-        GenericReqTitleSet(1103, Vector(TagRef(P3.priLow))), // + highPri in tags
-        GenericReqTitleSet(1104, Vector(TagRef(P3.priMed))), // + priMed in tags
+        Event.GenericReqTitleSet(1002, Vector(TagRef(P3.priHigh), TagRef(P3.priLow))), // no tags
+        Event.GenericReqTitleSet(1103, Vector(TagRef(P3.priLow))), // + highPri in tags
+        Event.GenericReqTitleSet(1104, Vector(TagRef(P3.priMed))), // + priMed in tags
       )(
         Issue.ConflictingTags(1002, P3.priTG, NonEmptySet(ReqTextLoc.Title)),
         Issue.ConflictingTags(1103, P3.priTG, NonEmptySet(ReqTagLoc.Tags, ReqTextLoc.Title)),
@@ -163,21 +162,21 @@ object IssueDetectorTest extends TestSuite {
     }
 
     def issueDesc() = test(p3)(
-      ReqsDelete(NonEmptySet(P3.frs(2), P3.mfs(26)), ∅, ∅),
+      Event.ReqsDelete(NonEmptySet(P3.frs(2), P3.mfs(26)), ∅, ∅),
     )()
 
     def inRcg() = test(p3)(
-      CodeGroupUpdate(demoId, CodeGroupGD.ValueForTitle(Vector(T.CodeGroupTitle.ReqRef(P3.frs(2))))),
-      ReqsDelete(NonEmptySet.one(P3.frs(2)), ∅, ∅),
+      Event.CodeGroupUpdate(demoId, CodeGroupGD.ValueForTitle(Vector(T.CodeGroupTitle.ReqRef(P3.frs(2))))),
+      Event.ReqsDelete(NonEmptySet.one(P3.frs(2)), ∅, ∅),
     )(
       Issue.DeadRefInRcg(demoId, ContentRef.ReqRef(P3.frs(2)))
     )
 
     def toRcg() = test(p3)(
       ContentEventTestHelp.createRCG(987, "haha.boop"),
-      GenericReqTitleSet(1001, Vector(T.GenericReqTitle.CodeRef(987.RCG))),
-      GenericReqTitleSet(1002, Vector(T.GenericReqTitle.CodeRef(demoId))),
-      CodeGroupsDelete(NonEmptySet.one(demoId)),
+      Event.GenericReqTitleSet(1001, Vector(T.GenericReqTitle.CodeRef(987.RCG))),
+      Event.GenericReqTitleSet(1002, Vector(T.GenericReqTitle.CodeRef(demoId))),
+      Event.CodeGroupsDelete(NonEmptySet.one(demoId)),
     )(
       Issue.DeadRefInReq(1002, ReqTextLoc.Title, ContentRef.CodeRef(demoId)),
     )
@@ -192,8 +191,8 @@ object IssueDetectorTest extends TestSuite {
 
     def ko() = test(p3)(
       Event.GenericReqTitleSet(P3.frs(1), Vector(TagRef(P3.priHigh), TagRef(P3.priMed), TagRef(P3.priLow))),
-      TagDelete(P3.priHigh),
-      TagDelete(P3.priLow),
+      Event.TagDelete(P3.priHigh),
+      Event.TagDelete(P3.priLow),
     )(
       Issue.DeadTag(P3.frs(1), ReqTextLoc.Title, P3.priHigh),
       Issue.DeadTag(P3.frs(1), ReqTextLoc.Title, P3.priLow),
@@ -206,15 +205,15 @@ object IssueDetectorTest extends TestSuite {
     private implicit val filter = IssueFilter[Issue.EmptyCodeGroup]
 
     def ko() = test(p3)(
-      ReqCodesPatch(P3.frs(1), Set(demoWhateverId), ∅, Multimap.empty),
+      Event.ReqCodesPatch(P3.frs(1), Set(demoWhateverId), ∅, Multimap.empty),
     )(Issue.EmptyCodeGroup(demoId))
 
     def deadChild() = test(p3)(
-      ReqsDelete(NonEmptySet.one(P3.frs(1)), ∅, ∅),
+      Event.ReqsDelete(NonEmptySet.one(P3.frs(1)), ∅, ∅),
     )(Issue.EmptyCodeGroup(demoId))
 
     def deadCodeGroup() = test(p3)(
-      ReqsDelete(NonEmptySet.one(P3.frs(1)), Set(demoId), ∅),
+      Event.ReqsDelete(NonEmptySet.one(P3.frs(1)), Set(demoId), ∅),
     )()
   }
 
@@ -228,18 +227,18 @@ object IssueDetectorTest extends TestSuite {
       case i: Issue.DeadIssueTagInReq => i
     }
 
-    private val delFRs = ReqsDelete(NonEmptySet(P3.frs(1), P3.frs(2)), ∅, ∅)
+    private val delFRs = Event.ReqsDelete(NonEmptySet(P3.frs(1), P3.frs(2)), ∅, ∅)
 
     def rcg() = test(p3)(
       delFRs,
-      CodeGroupUpdate(demoId, CodeGroupGD.ValueForTitle(Vector(T.CodeGroupTitle.Issue(1, ∅)))),
+      Event.CodeGroupUpdate(demoId, CodeGroupGD.ValueForTitle(Vector(T.CodeGroupTitle.Issue(1, ∅)))),
     )(
       Issue.IssueTagInRcg(demoId, T.CodeGroupTitle.Issue(1, ∅)),
     )
 
     def deadIssue() = test(p3)(
-      CustomIssueTypeDelete(1),
-      CustomIssueTypeDelete(2),
+      Event.CustomIssueTypeDelete(1),
+      Event.CustomIssueTypeDelete(2),
     )(
       Issue.DeadIssueTagInReq(P3.frs(1), ReqTextLoc.Title, T.GenericReqTitle.Issue(1, ∅)),
       Issue.DeadIssueTagInReq(P3.frs(2), ReqTextLoc.Title, T.GenericReqTitle.Issue(2, SampleProject3.inlineIssueDesc)),
@@ -249,23 +248,23 @@ object IssueDetectorTest extends TestSuite {
 
     def txtField() = test(p3)(
       delFRs,
-      ReqFieldCustomTextSet(P3.mfs(3), P3.descField, Vector(T.CustomTextField.Issue(1, ∅))),
+      Event.ReqFieldCustomTextSet(P3.mfs(3), P3.descField, Vector(T.CustomTextField.Issue(1, ∅))),
     )(
       Issue.IssueTagInReq(P3.mfs(3), ReqTextLoc.CustomTextField(P3.descField), T.CustomTextField.Issue(1, ∅)),
     )
 
     def ucs() = test(p6)(
       delFRs,
-      UseCaseStepUpdate(13, UseCaseStepGD.ValueForTitle(Vector(T.UseCaseStep.Issue(1, ∅)))),
+      Event.UseCaseStepUpdate(13, UseCaseStepGD.ValueForTitle(Vector(T.UseCaseStep.Issue(1, ∅)))),
     )(
       Issue.IssueTagInReq(P6.uc1, ReqTextLoc.UseCaseStep(13), T.UseCaseStep.Issue(1, ∅)),
     )
 
     def deadCtx() = test(p6)(
-      UseCaseStepUpdate(13, UseCaseStepGD.ValueForTitle(Vector(T.UseCaseStep.Issue(1, ∅)))),
-      ReqFieldCustomTextSet(P3.mfs(3), P3.descField, Vector(T.CustomTextField.Issue(1, ∅))),
-      ReqsDelete(NonEmptySet(P3.frs(1), P3.frs(2), P6.uc1), ∅, ∅),
-      FieldCustomDelete(P3.descField),
+      Event.UseCaseStepUpdate(13, UseCaseStepGD.ValueForTitle(Vector(T.UseCaseStep.Issue(1, ∅)))),
+      Event.ReqFieldCustomTextSet(P3.mfs(3), P3.descField, Vector(T.CustomTextField.Issue(1, ∅))),
+      Event.ReqsDelete(NonEmptySet(P3.frs(1), P3.frs(2), P6.uc1), ∅, ∅),
+      Event.FieldCustomDelete(P3.descField),
     )()
   }
 
@@ -275,12 +274,12 @@ object IssueDetectorTest extends TestSuite {
     private implicit val filter = IssueFilter[Issue.UninhabitableTagField]
 
     def ko() = test(p3)(
-      TagDelete(P3.priTG),
+      Event.TagDelete(P3.priTG),
     )(Issue.UninhabitableTagField(P3.priField))
 
     def deadField() = test(p3)(
-      FieldCustomDelete(P3.priField),
-      TagDelete(P3.priTG),
+      Event.FieldCustomDelete(P3.priField),
+      Event.TagDelete(P3.priTG),
     )()
   }
 
