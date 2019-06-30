@@ -1,9 +1,9 @@
 package shipreq.webapp.client.project.app.reqdetail
 
+import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
 import org.scalajs.dom.html
-import shipreq.base.test.BaseTestUtil.quoteStringForDisplay
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._

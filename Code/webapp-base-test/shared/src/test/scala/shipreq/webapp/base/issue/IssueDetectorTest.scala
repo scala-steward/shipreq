@@ -1,7 +1,6 @@
 package shipreq.webapp.base.issue
 
 import japgolly.microlibs.nonempty.{NonEmpty, NonEmptySet}
-import japgolly.microlibs.stdlib_ext.MutableArray
 import nyaya.util.Multimap
 import scala.reflect.ClassTag
 import sourcecode.Line
@@ -53,16 +52,8 @@ object IssueDetectorTest extends TestSuite {
 
   private def assertIssuesWithFilter(project: Project, filter: Issue => Boolean)(expected: Issue*)(implicit l: Line): Unit = {
     val it = IssueTracker(project)
-    def is = it.issues.vector.iterator.map(_.issue).filter(filter)
-    val actual = MutableArray(is).sortBySchwartzian(_.toString).to[List]
-    val expect = MutableArray(expected).sortBySchwartzian(_.toString).to[List]
-    if (actual.size != expect.size) { // TODO Fix assertSeq
-      println("ACTUAL: ")
-      actual.foreach(i => println("  - " + i))
-      println("EXPECT: ")
-      expect.foreach(i => println("  - " + i))
-    }
-    assertSeq("assertIssues", actual, expect)
+    def actual = it.issues.vector.iterator.map(_.issue).filter(filter)
+    assertSeqIgnoreOrder("assertIssues", actual, expect = expected)
   }
 
   private def test(p: Project)(events: Event*)(expect: Issue*)(implicit l: Line, f: IssueFilter): Unit =

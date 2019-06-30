@@ -1,5 +1,6 @@
 package shipreq.webapp.base.text
 
+import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import java.util.concurrent.atomic.AtomicInteger
 import nyaya.prop._
 import nyaya.gen._
