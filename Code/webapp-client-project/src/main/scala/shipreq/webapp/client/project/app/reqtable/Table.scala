@@ -450,19 +450,8 @@ object Table {
           "None of the project content matches the specified filter criteria.")
     }
 
-    private val reusabilityNormal: Reusability[Normal] =
-      Reusability.derive
-
     implicit val reusability: Reusability[Mode] =
-      Reusability((a, b) => // TODO Replace with Reusability.derive
-        a match {
-          case x: Normal => b match {
-            case y: Normal => reusabilityNormal.test(x, y)
-            case _ => false
-          }
-          case FilteredOut => a == b
-        }
-      )
+      Reusability.derive
   }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
