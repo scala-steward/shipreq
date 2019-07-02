@@ -12,10 +12,7 @@ final class IssueTracker(val issues : Issues,
 
 object IssueTracker {
 
-  def apply(project: Project): IssueTracker =
-    apply(project, IssueDetectors.all.whole)
-
-  def apply(project: Project, detectors: Vector[IssueDetector]): IssueTracker = {
+  def apply(project: Project): IssueTracker = {
     val tstateM = new MutableTrackerState(1)
 
     val ctx = IssueDetector.Ctx(
@@ -26,7 +23,7 @@ object IssueTracker {
       foreachLiveUcs = tstateM.dirtyFns.liveUcs.add)
 
     // Run and prepare detectors
-    for (d <- detectors)
+    for (d <- IssueDetectors.all)
       d.detect(ctx)
 
     // Scan project
@@ -34,14 +31,12 @@ object IssueTracker {
     tstateM.dirtyFns.liveRcg.foreach(project.content.reqCodes.liveGroups)
     tstateM.dirtyFns.liveUcs.foreach(project.content.reqs.useCases.liveStepIterator())
 
-    buildTracker(project, detectors, tstateM)
+    buildTracker(project, tstateM)
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-  private def buildTracker(newProject: Project,
-                           detectors : Vector[IssueDetector],
-                           tstateM   : MutableTrackerState): IssueTracker = {
+  private def buildTracker(newProject: Project, tstateM: MutableTrackerState): IssueTracker = {
     val issues = Issues(tstateM.issues.result())
     new IssueTracker(issues, newProject)
   }
