@@ -108,6 +108,10 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
     private val savedViewAsyncW: AsyncFeature.Write.D0[ErrorMsg] =
       AsyncFeature.Write.D0.init($ zoomStateL State.savedViewAsync)
 
+    private val issuesPage = issues.IssuesPage.StaticProps(
+      pxProject,
+      pxProjectWidgets)
+
     private val reqTable = ReqTablePage(
       ReqTablePage.StaticProps(
         $ zoomStateL State.reqTable,
@@ -196,7 +200,7 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
             Allow when _.lookup(unsafeProject()).isRight,
             e => routerCtl.set(Page.ReqDetail(e)))
 
-          val index = ProjectIndex.Props(shipreq.webapp.base.issue.IssueCount(123), lookup, routerCtl)
+          val index = ProjectIndex.Props(unsafeProject().issues.count, lookup, routerCtl)
 
           val pname = ProjectItem.WithEditableName.Props(
             cbProjectMetaData.runNow(),
@@ -204,6 +208,10 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
             setProjectNameIO)
 
           ProjectHome.Props(pname, index).render
+
+        case Page.Issues =>
+          val p = issues.IssuesPage.Props(editRW)
+          issuesPage.render(p)
 
         case Page.CfgFields =>
           cfg.fields.CfgFields.Props(sspFieldMod, global, filterDeadSS).component

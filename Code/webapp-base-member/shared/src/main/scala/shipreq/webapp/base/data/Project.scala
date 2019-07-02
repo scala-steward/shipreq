@@ -11,6 +11,7 @@ import scalaz.std.anyVal.intInstance
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import DataImplicits._
+import shipreq.webapp.base.issue.IssueTracker
 
 object Project {
   type Name = String
@@ -86,6 +87,8 @@ final case class Project(name         : Project.Name,
   lazy val atomScan = AtomScan(this)
 
   lazy val dataLogic = new DataLogic(this)
+
+  lazy val issues = IssueTracker(this).issues
 
   /**
    * Transitive closure of implications going source → target.
