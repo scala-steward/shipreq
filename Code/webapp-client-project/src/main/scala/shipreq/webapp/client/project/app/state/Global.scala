@@ -122,22 +122,22 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
       unsafeState match {
 
         case s1: State.Active =>
-          for ((ps2, appliedEvents) <- s1.projectState.addEvents(recvEvents)) {
+          for (update <- s1.projectState.addEvents(recvEvents)) {
 
             // Update state
-            val similarlyStale = ps2.ord ==* s1.projectState.ord
+            val similarlyStale = update.newState.ord ==* s1.projectState.ord
             val staleSince =
               if (similarlyStale)
                 s1.staleSince.orElse(Some(unsafeNow()))
-              else if (ps2.futureEvents.nonEmpty)
+              else if (update.newState.futureEvents.nonEmpty)
                 Some(unsafeNow())
               else
                 None
-            unsafeSetState(State.Active(ps2, staleSince))
+            unsafeSetState(State.Active(update.newState, staleSince))
 
             // Broadcast changes
-            for (ves <- VerifiedEvent.NonEmptySeq.maybe(appliedEvents)) {
-              val ess = EventSeqSummary(ves.iterator.map(_.event)).withProject(ps2.project)
+            for (ves <- update.newlyAppliedEventsNE) {
+              val ess = EventSeqSummary(ves.iterator.map(_.event)).withProject(update.newState.project)
               broadcast(ess).runNow()
             }
           }
