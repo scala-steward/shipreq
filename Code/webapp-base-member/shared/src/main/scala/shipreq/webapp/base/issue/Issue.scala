@@ -30,7 +30,7 @@ object IssueClass {
   case object EmptyCodeGroup        extends IssueClass(C.Futility)
   case object ImplicationRequired   extends IssueClass(C.MissingData)
   case object IssueTag              extends IssueClass(C.UserDefined)
-  case object LooseIssue            extends IssueClass(C.UserDefined)
+  //case object LooseIssue            extends IssueClass(C.UserDefined)
   case object UninhabitableTagField extends IssueClass(C.Futility)
 
   implicit def univEq: UnivEq[IssueClass] = UnivEq.derive
