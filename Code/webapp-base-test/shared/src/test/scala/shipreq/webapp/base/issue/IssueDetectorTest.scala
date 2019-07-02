@@ -263,6 +263,22 @@ object IssueDetectorTest extends TestSuite {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  private object ImplicationRequiredTests {
+    private implicit val filter = IssueFilter[Issue.ImplicationRequired]
+
+    import P4._
+
+    // ∅ -> fr1 -> fr2
+    def ko() = test(p4)(
+      Event.ReqImplicationsPatch(frs(1), Backwards, nesd[ReqId](mfs(12), mfs(19))()),
+      Event.ReqImplicationsPatch(frs(2), Backwards, nesd[ReqId](mfs(1), mfs(13), mfs(22))()),
+    )(
+      Issue.ImplicationRequired(frs(1)),
+    )
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   private object IssueTagTests {
     private implicit val filter = IssueFilter.collect {
       case i: Issue.IssueTagInRcg     => i
@@ -408,6 +424,11 @@ object IssueDetectorTest extends TestSuite {
       'ko            - ko()
       'deadChild     - deadChild()
       'deadCodeGroup - deadCodeGroup()
+    }
+
+    'ImplicationRequired {
+      import ImplicationRequiredTests._
+      'ko - ko()
     }
 
     'IssueTags {

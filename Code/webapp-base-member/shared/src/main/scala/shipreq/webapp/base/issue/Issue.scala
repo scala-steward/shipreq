@@ -71,6 +71,8 @@ object Issue {
 
   final case class EmptyCodeGroup(rcgId: ReqCodeGroupId) extends Issue(C.EmptyCodeGroup)
 
+  final case class ImplicationRequired(reqId: ReqId) extends Issue(C.ImplicationRequired)
+
   final case class IssueTagInRcg(rcgId: ReqCodeGroupId,
                                  issue: Text.CodeGroupTitle.Issue) extends Issue(C.IssueTag)
 

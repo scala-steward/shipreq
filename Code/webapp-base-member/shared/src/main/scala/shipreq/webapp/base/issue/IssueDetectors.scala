@@ -2,7 +2,7 @@ package shipreq.webapp.base.issue
 
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptySet
-import shipreq.base.util.Util
+import shipreq.base.util.{Backwards, Util}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Atom, Text}
 
@@ -184,6 +184,22 @@ object IssueDetectors {
       case _: ReqCode.ActiveReq   => false
       case _: ReqCode.ActiveGroup
          | _: ReqCode.Inactive    => true
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object ImplicationRequired extends Instance {
+    override val detect = ctx => {
+      val reqTypeIds = ctx.project.config.reqTypes.idsRequiringImplication
+      val imps       = ctx.project.content.implications(Backwards)
+      if (reqTypeIds.nonEmpty)
+        ctx.foreachLiveReq(() => req => {
+          def requiresImp = reqTypeIds.contains(req.reqTypeId)
+          def hasNoImps   = imps(req.id).isEmpty
+          if (requiresImp && hasNoImps)
+            ctx.add(Issue.ImplicationRequired(req.id))
+        })
     }
   }
 

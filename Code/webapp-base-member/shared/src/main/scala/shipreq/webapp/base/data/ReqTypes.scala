@@ -1,4 +1,3 @@
-
 package shipreq.webapp.base.data
 
 import japgolly.microlibs.adt_macros.AdtMacros
@@ -66,6 +65,9 @@ object StaticReqType {
   val values: NonEmptyVector[StaticReqType] =
     AdtMacros.adtValues[StaticReqType]
 
+  val requiringImplication: Set[StaticReqType] =
+    values.iterator.filter(_.imp is ImplicationRequired).toSet
+
   implicit val order = Util.univEqAndArbitraryOrder(values.whole)
 
   lazy val mnemonics =
@@ -122,11 +124,16 @@ final case class ReqTypes(custom: IMap[CustomReqTypeId, CustomReqType]) {
   def need(i: ReqTypeId): ReqType =
     i.foldId[ReqType](identity, custom.need)
 
-  val liveCustomReqTypes: Vector[CustomReqType] =
+  lazy val liveCustomReqTypes: Vector[CustomReqType] =
     custom.valuesIterator.filter(_.live is Live).toVector
 
-  val all: NonEmptyVector[ReqType] =
+  lazy val all: NonEmptyVector[ReqType] =
     StaticReqType.values ++ custom.valuesIterator
+
+  lazy val idsRequiringImplication: Set[ReqTypeId] = {
+    def customIds = custom.valuesIterator.filter(_.imp is ImplicationRequired).map(_.id).toSet
+    Util.mergeSets(StaticReqType.requiringImplication, customIds)
+  }
 
   lazy val allByMnemonic: Map[ReqType.Mnemonic, ReqType] =
     all.iterator.flatMap(t => t.allMnemonics.iterator.map((_, t))).toMap
