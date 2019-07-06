@@ -96,6 +96,8 @@ Phase 2B
 
 ### Other
 
+* Stop generating codecs from macros
+
 * Cell copy-and-paste on Req{Table,Detail}
 
 * Allow system to add new field/columns in future without breaking existing projects.
