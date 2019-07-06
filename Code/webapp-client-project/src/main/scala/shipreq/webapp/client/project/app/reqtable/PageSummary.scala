@@ -1,15 +1,12 @@
 package shipreq.webapp.client.project.app.reqtable
 
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
-import japgolly.scalajs.react.extra._
 import japgolly.univeq.UnivEq
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.UiText.EnglishIntExt
 import shipreq.webapp.base.data.{FilterDead, HideDead, ShowDead}
 import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.ui.semantic.Icon
+import shipreq.webapp.client.project.widgets.SummaryUI
+import shipreq.webapp.client.project.widgets.SummaryUI.SummaryIcon
 
 /**
   * Presents a user with a summary of select portions of the content and state of [[ReqTablePage]].
@@ -36,68 +33,32 @@ object PageSummary {
       Reusability.byRefOrUnivEq
   }
 
-  private def icon(icon: Icon, title: String): VdomTag =
-    icon.tag(^.title := title, ^.marginRight := "0")
-
-  private val iconReqs   = icon(Icon.Cubes        , "requirements")(^.marginLeft := "0.1ex")
-  private val iconRCGs   = icon(Icon.FolderOutline, UiText.codeGroups.toLowerCase)
-  private val iconDelete = icon(Icon.TrashOutline , "deleted")
-  private val iconFilter = icon(Icon.Filter       , "excluded by the filter")
-  private val iconReapp  = icon(Icon.Copy         , "reappearances due to sorting")
-  private val iconSelect = icon(Icon.CheckmarkBox , "selected")
-
-  private val fakeLine = <.span("_", ^.visibility.hidden)
-
-  private class Breakdown {
-    private var parts = Vector.empty[TagMod]
-
-    def add(as: TagMod*): Unit =
-      parts ++= as
-
-    def addUnlessZero(n: Int, icon: VdomTag): Unit =
-      if (n != 0) {
-        val txt: String =
-//          if (parts.isEmpty)
-//            n.toString
-//          else
-            if (n < 0) s" - ${-n}" else s" + $n"
-        add(txt, icon)
-      }
-
-    def result: TagMod =
-      TagMod.Composite(parts)
-
-    def resultNonEmpty: Option[TagMod] =
-      Option.when(parts.nonEmpty)(result)
-  }
+  private val iconReappearances = SummaryIcon.reappearances("reappearances due to sorting")
 
   def summariseContent(table: TableContentStats): TagMod = {
     import table._
 
     val reqBreakdown: Option[TagMod] = {
-      val b = new Breakdown
-      b.addUnlessZero(reqsInProject.dead, iconDelete)
-      b.addUnlessZero(-reqsFilteredOut.all, iconFilter)
+      val b = new SummaryUI
+      b.beginning = false
+      b.addUnlessZero(reqsInProject.dead, SummaryIcon.delete)
+      b.addUnlessZero(-reqsFilteredOut.all, SummaryIcon.filter)
       b.resultNonEmpty.map(m => TagMod(" (", reqsInProject.live, m, ")"))
     }
 
-    val rowBreakdown = new Breakdown
-    rowBreakdown.add(uniqueReqsInTable.all, iconReqs, reqBreakdown.whenDefined)
-    rowBreakdown.addUnlessZero(reappearances, iconReapp)
-    rowBreakdown.addUnlessZero(codeGroups, iconRCGs)
+    val rowBreakdown = new SummaryUI
+    rowBreakdown.add(uniqueReqsInTable.all, SummaryIcon.reqs, reqBreakdown.whenDefined)
+    rowBreakdown.addUnlessZero(reappearances, iconReappearances)
+    rowBreakdown.addUnlessZero(codeGroups, SummaryIcon.rcgs)
 
-    TagMod(s"Showing ${totalRowsInTable.unitsOf("row")}: ", rowBreakdown.result)
+    rowBreakdown.prefixWithShowing(totalRowsInTable, "row")
   }
-
-  def summariseSelected(n: Int): Option[TagMod] =
-    Option.when(n > 0)(
-      TagMod(n, iconSelect, "."))
 
   def render(p: Props): VdomElement =
     <.div(
       summariseContent(p.tableFD),
       <.br,
-      summariseSelected(p.selectedRows) getOrElse fakeLine)
+      SummaryUI.selected(p.selectedRows) getOrElse SummaryUI.fakeLine)
 
   val Component = ScalaComponent.builder[Props]("PageSummary")
     .render_P(render)
