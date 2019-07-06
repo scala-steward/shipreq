@@ -200,16 +200,20 @@
         %div.status(style="text-align: right; padding-left:2em; xcolor:#800")
           = "Showing 0 issues: 20"
           %i.icon.warning.sign{title: "issues"}
-          = "(1"
-          %i.icon.setting{title: "config"}
-          = "+ 17 "
-          %i.icon.cubes{title: "reqs"}
-          = " + 1 "
-          %i.icon.open.folder.outline{title: "code groups"}
-          = " + 1 "
-          %i.icon.comment.outline(title="loose" style="margin-right:-0.01ex")
-          = ") - 20"
+          = " - 20"
           %i.icon.filter{title: "excluded by the filter"}
+
+          %br
+
+          = "Showing 6 issues: 20"
+          %i.icon.warning.sign{title: "issues"}
+          = "- 14"
+          %i.icon.filter{title: "excluded by the filter"}
+          = "= 6 "
+          %i.icon.cubes{title: "reqs"}
+          = "(4 + 2 "
+          %i.icon.copy{title: "reappearances"}
+          = ")"
 
       -# =============================================================================================
       %section#view-ctrls{style: "display:flex; align-content: center; margin-top: 2em"}

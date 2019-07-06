@@ -234,12 +234,16 @@
           %i.icon.setting{title: "config"}
           = "+ 17 "
           %i.icon.cubes{title: "reqs"}
-          = " + 1 "
-          %i.icon.open.folder.outline{title: "code groups"}
+          = "(12 + 5 "
+          %i.icon.copy{title: "reappearances"}
+          = ") + 1 "
+          %i.icon.folder.outline{title: "code groups"}
           = " + 1 "
           -# %i.icon.unordered.list{title: "loose"}
           -# %i.icon.calendar.outline{title: "loose"}
-          %i.icon.comment.outline{title: "loose"}
+          -# %i.icon.comment.outline{title: "loose"}
+          -# %i.icon.warning.circle{title: "loose"}
+          %i.icon.keyboard{title: "loose"}
 
       -# =============================================================================================
       %section#view-ctrls{style: "display:flex; align-content: center; margin-top: 2em"}
@@ -316,7 +320,7 @@
             %td.pri(rowspan=2)
               .ui.label.basic.bad-tag.is-tag urgent
               .ui.label.basic.bad-tag.is-tag critical
- 
+
           %tr
             %td.fix-left-border.fname Detail
             %td.fedit.can-edit This is <span class="issue-tagRef">#urgent</span>!
