@@ -39,7 +39,9 @@ object ReqDetail {
                                webWorker            : WebWorkerClient,
                                pxProject            : Px[Project],
                                pxTextSearch         : Px[TextSearch],
-                               pxProjectWidgetsNoCtx: Px[ProjectWidgets.NoCtx])
+                               pxProjectWidgetsNoCtx: Px[ProjectWidgets.NoCtx]) {
+    val pxProjectConfig = pxProject.map(_.config).withReuse
+  }
 
   final case class DynamicProps(extPubid  : ExternalPubid,
                                 filterDead: StateSnapshot[FilterDead],
@@ -119,7 +121,7 @@ object ReqDetail {
   final class Backend(SP: StaticProps, $: BackendScope[DynamicProps, Unit]) {
     import SP._
 
-    val pxFieldNameFn = pxProject.map(Field.nameByIdFromProject)
+    val pxFieldNameFn = pxProjectConfig.map(Field.nameByIdFromProjectConfig)
     val pxExtPubid    = Px.props($).map(_.extPubid).withReuse.manualRefresh
     val pxUpstreamFD  = Px.props($).map(_.filterDead.value).withReuse.manualRefresh
 

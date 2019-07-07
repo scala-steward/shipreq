@@ -118,12 +118,12 @@ object Field {
     fn
   }
 
-  def nameFromProject(p: Project): Field => String =
-    name(p.config.reqTypes, p.config.tags.tree)
+  def nameFromProjectConfig(cfg: ProjectConfig): Field => String =
+    name(cfg.reqTypes, cfg.tags.tree)
 
-  def nameByIdFromProject(p: Project): FieldId => String = {
-    val fieldToName = nameFromProject(p)
-    _.foldId(fieldToName, id => fieldToName(p.config.fields.customFields.need(id)))
+  def nameByIdFromProjectConfig(cfg: ProjectConfig): FieldId => String = {
+    val fieldToName = nameFromProjectConfig(cfg)
+    _.foldId(fieldToName, id => fieldToName(cfg.fields.customFields.need(id)))
   }
 }
 
