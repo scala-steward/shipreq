@@ -401,7 +401,7 @@ object Sorter {
       }
 
     override val rowModFn: RowModFn =
-      consolidateRowModFns(ss.toStream.map(_.rowModFn))
+      consolidateRowModFns(ss.iterator.map(_.rowModFn))
 
     private def eachSortFn: Vector[(T, T) => Int] =
       ss.zipWithIndex.map {
@@ -429,7 +429,7 @@ object Sorter {
   }
 
   def consolidateRowModFns(ss: TraversableOnce[RowModFn]): RowModFn = {
-    val fns = ss.toStream.flatMap(_.toStream)
+    val fns = ss.toIterator.flatten.toList
     if (fns.isEmpty)
       None
     else
