@@ -80,12 +80,15 @@ trait WebappTestUtil extends BaseTestUtil {
       VerifiedEvent.NonEmptySeq(self.head, self.tail)
   }
 
-  def assertIssueSet(actual: Seq[Issue], expect: Seq[Issue])(implicit l: Line): Unit =
+//  implicit def autoSeqIssueToSeqIssueLite(is: Seq[Issue]): Seq[IssueLite] =
+//    is.map(IssueLite.fromIssue)
+
+  def assertIssueSet(actual: Seq[IssueLite], expect: Seq[IssueLite])(implicit l: Line): Unit =
     assertIssueSet("", actual, expect)
 
-  def assertIssueSet(name: => String, actual: Seq[Issue], expect: Seq[Issue])(implicit l: Line): Unit = {
+  def assertIssueSet(name: => String, actual: Seq[IssueLite], expect: Seq[IssueLite])(implicit l: Line): Unit = {
     assertSet(name, actual.toSet, expect.toSet) // TODO use assertSeqIgnoreOrder
-    def norm(i: Seq[Issue]) = MutableArray(i).sortBySchwartzian(_.toString).to[Vector]
+    def norm(i: Seq[IssueLite]) = MutableArray(i).sortBySchwartzian(_.toString).to[Vector]
     assertSeq(name, norm(actual), norm(expect))
   }
 

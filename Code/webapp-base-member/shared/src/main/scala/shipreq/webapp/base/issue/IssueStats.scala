@@ -2,7 +2,7 @@ package shipreq.webapp.base.issue
 
 import japgolly.univeq.UnivEq
 import nyaya.prop._
-import shipreq.webapp.base.data.{ReqCodeGroupId, ReqId}
+import shipreq.webapp.base.data.{LiveCodeGroup, ReqId}
 
 final case class IssueStats(total     : Int,
                             inConfig  : Int,
@@ -34,26 +34,26 @@ object IssueStats {
       }
     }
 
-    @inline def addInRcg(rcgId: ReqCodeGroupId): Unit =
+    @inline def addInRcg(rcg: LiveCodeGroup): Unit =
       inRcg += 1
 
     @inline def addInConfig(): Unit =
       inRcg += 1
 
     is.vector.foreach {
-      case i: Issue.BlankCustomField      => addInReq(i.reqId)
-      case i: Issue.BlankTitle            => addInReq(i.reqId)
-      case i: Issue.BlankUseCaseStep      => addInReq(i.ucId)
-      case i: Issue.ConflictingTags       => addInReq(i.reqId)
-      case i: Issue.DeadIssueTagInRcg     => addInRcg(i.rcgId)
-      case i: Issue.DeadIssueTagInReq     => addInReq(i.reqId)
-      case i: Issue.DeadRefInRcg          => addInRcg(i.rcgId)
-      case i: Issue.DeadRefInReq          => addInReq(i.reqId)
-      case i: Issue.DeadTag               => addInReq(i.reqId)
-      case i: Issue.EmptyCodeGroup        => addInRcg(i.rcgId)
-      case i: Issue.ImplicationRequired   => addInReq(i.reqId)
-      case i: Issue.IssueTagInRcg         => addInRcg(i.rcgId)
-      case i: Issue.IssueTagInReq         => addInReq(i.reqId)
+      case i: Issue.BlankCustomField      => addInReq(i.req.id)
+      case i: Issue.BlankTitle            => addInReq(i.req.id)
+      case i: Issue.BlankUseCaseStep      => addInReq(i.step.useCaseId)
+      case i: Issue.ConflictingTags       => addInReq(i.req.id)
+      case i: Issue.DeadIssueTagInRcg     => addInRcg(i.rcg)
+      case i: Issue.DeadIssueTagInReq     => addInReq(i.req.id)
+      case i: Issue.DeadRefInRcg          => addInRcg(i.rcg)
+      case i: Issue.DeadRefInReq          => addInReq(i.req.id)
+      case i: Issue.DeadTag               => addInReq(i.req.id)
+      case i: Issue.EmptyCodeGroup        => addInRcg(i.rcg)
+      case i: Issue.ImplicationRequired   => addInReq(i.req.id)
+      case i: Issue.IssueTagInRcg         => addInRcg(i.rcg)
+      case i: Issue.IssueTagInReq         => addInReq(i.req.id)
       case i: Issue.UninhabitableTagField => addInConfig()
     }
 

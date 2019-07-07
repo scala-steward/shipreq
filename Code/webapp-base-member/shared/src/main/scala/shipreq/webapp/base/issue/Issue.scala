@@ -4,7 +4,6 @@ import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.univeq.UnivEq
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Atom, Text}
-import shipreq.webapp.base.text.Text.Equality._
 
 sealed trait IssueCategory
 object IssueCategory {
@@ -40,50 +39,47 @@ sealed abstract class Issue(final val cls: IssueClass)
 object Issue {
   import shipreq.webapp.base.issue.{IssueClass => C}
 
-  final case class BlankCustomField(reqId: ReqId,
-                                    fieldId: CustomFieldId) extends Issue(C.BlankCustomField)
+  final case class BlankCustomField(req  : Req,
+                                    field: CustomField) extends Issue(C.BlankCustomField)
 
-  final case class BlankTitle(reqId: ReqId) extends Issue(C.BlankTitle)
+  final case class BlankTitle(req: Req) extends Issue(C.BlankTitle)
 
-  final case class BlankUseCaseStep(ucId  : UseCaseId,
-                                    stepId: UseCaseStepId) extends Issue(C.BlankUseCaseStep)
+  final case class BlankUseCaseStep(step: UseCaseStep.Focus) extends Issue(C.BlankUseCaseStep)
 
-  final case class ConflictingTags(reqId     : ReqId,
+  final case class ConflictingTags(req       : Req,
                                    tagGroupId: TagGroupId,
                                    locs      : NonEmptySet[ReqTagLoc]) extends Issue(C.ConflictingTags)
 
-  final case class DeadIssueTagInRcg(rcgId: ReqCodeGroupId,
+  final case class DeadIssueTagInRcg(rcg: LiveCodeGroup,
                                      issue: Text.CodeGroupTitle.Issue) extends Issue(C.DeadIssueTag)
 
-  final case class DeadIssueTagInReq(reqId: ReqId,
+  final case class DeadIssueTagInReq(req: Req,
                                      loc  : ReqTextLoc,
                                      issue: Atom.AnyIssue) extends Issue(C.DeadIssueTag)
 
-  final case class DeadRefInRcg(rcgId: ReqCodeGroupId,
+  final case class DeadRefInRcg(rcg: LiveCodeGroup,
                                 ref  : ContentRef) extends Issue(C.DeadReference)
 
-  final case class DeadRefInReq(reqId: ReqId,
+  final case class DeadRefInReq(req: Req,
                                 loc  : ReqTextLoc,
                                 ref  : ContentRef) extends Issue(C.DeadReference)
 
-  final case class DeadTag(reqId: ReqId,
-                           loc  : ReqTextLoc,
-                           tagId: ApplicableTagId) extends Issue(C.DeadIssueTag)
+  final case class DeadTag(req: Req,
+                           loc: ReqTextLoc,
+                           tag: ApplicableTag) extends Issue(C.DeadIssueTag)
 
-  final case class EmptyCodeGroup(rcgId: ReqCodeGroupId) extends Issue(C.EmptyCodeGroup)
+  final case class EmptyCodeGroup(rcg: LiveCodeGroup) extends Issue(C.EmptyCodeGroup)
 
-  final case class ImplicationRequired(reqId: ReqId) extends Issue(C.ImplicationRequired)
+  final case class ImplicationRequired(req: Req) extends Issue(C.ImplicationRequired)
 
-  final case class IssueTagInRcg(rcgId: ReqCodeGroupId,
+  final case class IssueTagInRcg(rcg: LiveCodeGroup,
                                  issue: Text.CodeGroupTitle.Issue) extends Issue(C.IssueTag)
 
-  final case class IssueTagInReq(reqId: ReqId,
+  final case class IssueTagInReq(req: Req,
                                  loc  : ReqTextLoc,
                                  issue: Atom.AnyIssue) extends Issue(C.IssueTag)
 
-  final case class UninhabitableTagField(fieldId: CustomField.Tag.Id) extends Issue(C.UninhabitableTagField)
-
-  implicit def univEq: UnivEq[Issue] = UnivEq.derive
+  final case class UninhabitableTagField(field: CustomField.Tag) extends Issue(C.UninhabitableTagField)
 }
 
 sealed trait ContentRef

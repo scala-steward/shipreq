@@ -61,7 +61,7 @@ object IssueDetectors {
             val reqTypeId = req.reqTypeId
             for ((field, hasIssue) <- as)
               if (field.reqTypes.contains(reqTypeId) && hasIssue(reqId))
-                ctx.add(Issue.BlankCustomField(reqId, field.id))
+                ctx.add(Issue.BlankCustomField(req, field))
           }
         })
   }
@@ -72,7 +72,7 @@ object IssueDetectors {
     override val detect = ctx =>
       ctx.foreachLiveReq(() => req =>
         if (req.title.isEmpty)
-          ctx.add(Issue.BlankTitle(req.id)))
+          ctx.add(Issue.BlankTitle(req)))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -81,7 +81,7 @@ object IssueDetectors {
     override val detect = ctx =>
       ctx.foreachLiveUcs(() => f =>
         if (f.step.titleExplicitly.isEmpty && !f.usesUseCaseTitle)
-          ctx.add(Issue.BlankUseCaseStep(f.useCaseId, f.id)))
+          ctx.add(Issue.BlankUseCaseStep(f)))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -104,7 +104,7 @@ object IssueDetectors {
               .filter(x => exclusiveGroups(x._1).contains(g))
               .flatMap(_._2)
               .toSet
-          ctx.add(Issue.ConflictingTags(reqId, g, NonEmptySet force locs))
+          ctx.add(Issue.ConflictingTags(req, g, NonEmptySet force locs))
         }
       }
     }
@@ -124,7 +124,7 @@ object IssueDetectors {
       req =>
         for (a <- refsInReqs(req.id).live)
           if (!isRefLive(a.value, ctx.project))
-            ctx.add(Issue.DeadRefInReq(req.id, a.loc, ContentRef.fromAtom(a.value)))
+            ctx.add(Issue.DeadRefInReq(req, a.loc, ContentRef.fromAtom(a.value)))
     }
 
     private def detectInRcgs(ctx: Ctx): LiveCodeGroup => Unit = {
@@ -132,7 +132,7 @@ object IssueDetectors {
       rcg =>
         for (a <- refsInRcgs(rcg.id).live)
           if (!isRefLive(a, ctx.project))
-            ctx.add(Issue.DeadRefInRcg(rcg.id, ContentRef.fromAtom(a)))
+            ctx.add(Issue.DeadRefInRcg(rcg, ContentRef.fromAtom(a)))
     }
 
     private def isRefLive(a: Atom.AnyContentRef, p: Project): Boolean =
@@ -156,7 +156,7 @@ object IssueDetectors {
         for (a <- tagRefs(req.id).live) {
           val t = ctx.project.config.tags.atag(a.value)
           if (t.live.is(Dead))
-            ctx.add(Issue.DeadTag(req.id, a.loc, a.value))
+            ctx.add(Issue.DeadTag(req, a.loc, t))
         }
       }
     }
@@ -176,7 +176,7 @@ object IssueDetectors {
         val subtree = reqCodes.trie.getNode(code).get
         val empty   = subtree.valueIterator().forall(isEmpty)
         if (empty)
-          ctx.add(Issue.EmptyCodeGroup(rcg.id))
+          ctx.add(Issue.EmptyCodeGroup(rcg))
       }
     }
 
@@ -198,7 +198,7 @@ object IssueDetectors {
           def requiresImp = reqTypeIds.contains(req.reqTypeId)
           def hasNoImps   = imps(req.id).isEmpty
           if (requiresImp && hasNoImps)
-            ctx.add(Issue.ImplicationRequired(req.id))
+            ctx.add(Issue.ImplicationRequired(req))
         })
     }
   }
@@ -218,8 +218,8 @@ object IssueDetectors {
         for (a <- issuesInReqs(req.id).live) {
           val t = ctx.project.config.customIssueType(a.value.typ)
           val r = t.live match {
-            case Live => Issue.IssueTagInReq(req.id, a.loc, a.value)
-            case Dead => Issue.DeadIssueTagInReq(req.id, a.loc, a.value)
+            case Live => Issue.IssueTagInReq(req, a.loc, a.value)
+            case Dead => Issue.DeadIssueTagInReq(req, a.loc, a.value)
           }
           ctx.add(r)
         }
@@ -232,8 +232,8 @@ object IssueDetectors {
         for (a <- issuesInRcgs(rcg.id).live) {
           val t = ctx.project.config.customIssueType(a.typ)
           val r = t.live match {
-            case Live => Issue.IssueTagInRcg(rcg.id, a)
-            case Dead => Issue.DeadIssueTagInRcg(rcg.id, a)
+            case Live => Issue.IssueTagInRcg(rcg, a)
+            case Dead => Issue.DeadIssueTagInRcg(rcg, a)
           }
           ctx.add(r)
         }
@@ -259,7 +259,7 @@ object IssueDetectors {
         val isLive        = f.liveExplicitly is Live
         def uninhabitable = !inhabitable(f.tagId, cfg)
         if (isLive && uninhabitable)
-          ctx.add(Issue.UninhabitableTagField(f.id))
+          ctx.add(Issue.UninhabitableTagField(f))
       }
     }
 
