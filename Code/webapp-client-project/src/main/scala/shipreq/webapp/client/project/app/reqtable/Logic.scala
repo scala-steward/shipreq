@@ -299,19 +299,12 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(p: Project, view: View, pt: PlainText.ForProject.NoCtx)(rows: Iterable[Row]): MutableArray[Row] = {
-    import BaseSorter.KeepDir
+  def sorter(p: Project, view: View, pt: PlainText.ForProject.NoCtx): TraversableOnce[Row] => MutableArray[Row] = {
     import Sorter._
 
-    val sorter  = new FusedSorters(view.order.init map inconclusive, view.order.last |> conclusive)
-    val setup   = new Setup(p, pt)
-    val prepare = sorter.prepFn(setup)
-    val rowMod  = BaseSorter.consolidateRowModFns(Sorter.sortUnspecified(view) :: sorter.rowModFn :: Nil)
-    val rowEndo = rowMod.map(_(setup, KeepDir)) getOrElse ((r: Row) => r)
-
-    MutableArray.map(rows)(r => prepare(rowEndo(r)))
-      .sort(sorter.sortFn.toOrdering)
-      .map(sorter.row)
+    val sorter = new FusedSorters(view.order.init map inconclusive, view.order.last |> conclusive)
+    val setup  = new Setup(p, pt)
+    sorter.result(setup, Sorter.sortUnspecified(view))
   }
 
   // ===================================================================================================================
@@ -470,7 +463,7 @@ private[reqtable] object Logic {
                    ts: TextSearch): Vector[Row] = {
 
     def r1: Array       [Row] = gather(p, v, pt, ts)
-    def r2: MutableArray[Row] = sort(p, v, pt)(r1)
+    def r2: MutableArray[Row] = sorter(p, v, pt)(r1)
     val r3: Vector      [Row] = consolidateAdjacentDups(r2.iterator)
     val r4: Vector      [Row] = if (v.viewReqCodesAsTree) addReqCodeTreeToRows(r3) else r3
     r4

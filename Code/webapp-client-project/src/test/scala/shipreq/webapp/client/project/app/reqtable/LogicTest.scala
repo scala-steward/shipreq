@@ -104,7 +104,7 @@ object LogicTest extends TestSuite {
 
   private def gatherSortConsolidate(p: Project, v: View, pt: PlainText.ForProject.NoCtx, ts: TextSearch): Vector[Row] = {
     def r1: Array       [Row] = Logic.gather(p, v, pt, ts)
-    def r2: MutableArray[Row] = Logic.sort(p, v, pt)(r1)
+    def r2: MutableArray[Row] = Logic.sorter(p, v, pt)(r1)
     val r3: Vector      [Row] = Logic.consolidateAdjacentDups(r2.iterator)
     r3
   }

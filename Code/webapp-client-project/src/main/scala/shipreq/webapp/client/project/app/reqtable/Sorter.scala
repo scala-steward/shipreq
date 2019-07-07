@@ -25,7 +25,7 @@ object Sorter {
   final class Setup(val p: Project, plainText: PlainText.ForProject.NoCtx) {
 
     def normalisedText(f: PlainText.ForProject.NoCtx => String) =
-      stringNormalise(f(plainText))
+      DataLogic.normaliseStringForSorting(f(plainText))
 
     val applicability: Applicability[Column, Row] =
       Row.applicability(p.config.applicability)
@@ -40,11 +40,8 @@ object Sorter {
       DataLogic.tagOrderByPos(p.config.tags)
   }
 
-  def pubidNormaliser(setup: Setup): Pubid => (Int, Int) =
+  private def pubidNormaliser(setup: Setup): Pubid => (Int, Int) =
     DataLogic.pubidSortKeyFn(setup.p.config)
-
-  @inline def stringNormalise: EndoFn[String] =
-    DataLogic.normaliseStringForSorting
 
   // CodeGroups are only displayed when sorting by code.
   // CodeGroups cannot have a blank code.
