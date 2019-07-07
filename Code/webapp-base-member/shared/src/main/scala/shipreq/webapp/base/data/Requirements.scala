@@ -346,6 +346,9 @@ object UseCaseSteps {
  */
 @Lenses
 final case class UseCases(imap: UseCaseIMap, stepIndex: UseCases.StepIndex, stepFlow: UseCases.StepFlow) {
+  @inline def need(id: UseCaseId): UseCase =
+    imap.need(id)
+
   def stepIterator: Iterator[UseCaseStep] =
     imap.valuesIterator.flatMap(_.stepIterator)
 

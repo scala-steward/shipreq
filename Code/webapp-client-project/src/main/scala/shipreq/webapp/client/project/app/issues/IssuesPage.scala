@@ -7,12 +7,16 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.issue.Issues
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.base.lib.DataReusability._
 
 object IssuesPage {
 
   final case class StaticProps(pxProject: Px[Project],
                                pxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
-    val pxIssues = pxProject.map(_.issues)
+
+    val pxIssues      = pxProject.map(_.issues)
+    val pxConfig      = pxProject.map(_.config).withReuse
+    val pxFieldNameFn = pxConfig.map(cfg => Reusable.byRef(Field.nameByIdFromProjectConfig(cfg)))
 
     val component = ScalaComponent.builder[Props]("IssuesPage")
       .backend(new Backend(this, _))
@@ -39,7 +43,7 @@ object IssuesPage {
   //  Reusability.caseClass
 
   final class Backend(static: StaticProps, $: BackendScope[Props, Unit]) {
-    import static._
+    import static.{component => _, render => _, _}
 
     def render(p: Props): VdomElement = {
       // val project = pxProject.value()
@@ -56,19 +60,14 @@ object IssuesPage {
         EmptyBody.render)
 
     private def renderContent(issues: Issues) = {
+      val project = pxProject.value()
+      val fieldNameFn = pxFieldNameFn.value()
 
       <.div(
         NewIssue.render,
         Summary.Props(issues.stats, 0).render,
         // TODO Table config row (sort | filter | cols)
-        Table.Props().render,
-        <.ul(
-          issues.vector.sortBy(_.toString).toTagMod { i =>
-            <.li(i match {
-              //              case Issue.IssueTagInReq(reqId, _, _) => p.editor.forReq(reqId)(EditorFeature.FieldKey.reqTitle(reqId), pxProjectWidgets).read.render(())
-              case x => <.pre(x.toString)
-            })}))
-
+        Table.Props(project, issues, fieldNameFn).render)
     }
   }
 }

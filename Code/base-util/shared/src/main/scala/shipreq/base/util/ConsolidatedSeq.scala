@@ -9,6 +9,9 @@ object ConsolidatedSeq {
     def apply[A](doConsolidate: Candidate[A] => Boolean): Dsl[A] =
       new Dsl(doConsolidate)
 
+    def consolidateByUnivEq[A: UnivEq] =
+      apply[A](c => c.prev == c.cur)
+
     final class Dsl[A](doConsolidate: Candidate[A] => Boolean) {
       def apply[B](groupHead    : Group[A] => B,
                    groupTail    : Group[A] => Option[B] = (_: Any) => None): Logic[A, B] =
@@ -86,7 +89,7 @@ object ConsolidatedSeq {
 
   final case class Group[+A](values: NonEmptyVector[A], srcIndexStart: Int, group: Int) {
     def value       = values.head
-    def length      = values.length
+    def size        = values.length
     def srcIndexEnd = srcIndexStart + values.length - 1
     def map[B](f: A => B) = copy(values.map(f))
   }

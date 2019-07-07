@@ -159,6 +159,9 @@ object Sorter {
   }
 
   object SortFn {
+    def fromOrdering[A](implicit o: Ordering[A]): SortFn[A] =
+      SortFn(o.compare)
+
     val int: SortFn[Int] =
       SortFn(_ - _)
 

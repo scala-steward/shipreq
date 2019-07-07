@@ -1,7 +1,10 @@
 package shipreq.webapp.base
 
 import shipreq.base.util.{Backwards, Direction, Forwards, LeftRight}
-import shipreq.webapp.base.data.{Dead, Live, StaticField, StaticFieldType}
+import shipreq.webapp.base.data.ReqType.Mnemonic
+import shipreq.webapp.base.data.{Dead, HashRefKey, Live, StaticField, StaticFieldType}
+import shipreq.webapp.base.issue.IssueCategory
+import shipreq.webapp.base.text.PlainText
 
 object UiText {
 
@@ -23,12 +26,17 @@ object UiText {
   }
 
   object ColumnNames {
-    def reqType        = FieldNames.reqType
-    def pubid          = "ID"
-    def code           = FieldNames.reqCode
-    def title          = "Title"
-    def tags           = FieldNames.tags
-    def deletionReason = FieldNames.deletionReason
+    def reqType          = FieldNames.reqType
+    def pubid            = "ID"
+    def code             = FieldNames.reqCode
+    def title            = "Title"
+    def tags             = FieldNames.tags
+    def deletionReason   = FieldNames.deletionReason
+    def issueCategory    = "Issue Type"
+    def issueClass       = "Issue"
+    def issueFieldName   = "Field"
+    def issueFieldEditor = "Field Editor"
+    def issueActions     = "Actions"
 
     val implications: Direction => String = {
       case Backwards => "Implied By"
@@ -114,5 +122,24 @@ object UiText {
   object Issues {
     final val loose = "manual"
     final val Loose = "Manual"
+
+    val category: IssueCategory => String = {
+      case IssueCategory.BadData     => "Bad data"
+      case IssueCategory.Futility    => "Futility"
+      case IssueCategory.MissingData => "Missing data"
+      case IssueCategory.UserDefined => "User-defined"
+    }
+
+     def descBlankCustomField     (field: String)   : String = "Mandatory field is blank: " + field
+     def descBlankTitle                             : String = "Title is blank"
+     def descBlankUseCaseStep                       : String = "Use case step is blank"
+     def descConflictingTags      (tag: String)     : String = "Conflicting " + tag + " tags"
+     def descDeadIssueTag         (tag: HashRefKey) : String = "Deleted issue tag in use: " + PlainText.hashtag(tag)
+     def descDeadRef                                : String = "Reference to deleted data"
+     def descDeadTag              (tag: HashRefKey) : String = "Deleted tag in use: " + PlainText.hashtag(tag)
+     def descEmptyCodeGroup                         : String = "Code group has nothing to group"
+     def descImplicationRequired  (reqType: Mnemonic): String = "Implication required for req type: " + reqType.value
+     def descIssueTag             (tag: HashRefKey) : String = PlainText.hashtag(tag)
+     def descUninhabitableTagField(field: String)   : String = field + " field has no tags"
   }
 }

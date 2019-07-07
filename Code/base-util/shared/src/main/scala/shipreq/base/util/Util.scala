@@ -1,5 +1,6 @@
 package shipreq.base.util
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.Memo
 import japgolly.univeq.UnivEq
@@ -227,4 +228,10 @@ object Util {
     else if (y.isEmpty) mergeSets(x, z)
     else if (z.isEmpty) mergeSets(x, y)
     else (Set.newBuilder[A] ++= x ++= y ++= z).result()
+
+  def enumOrdering[A: UnivEq, B: Ordering](as: TraversableOnce[A])(by: A => B): Ordering[A] = {
+    val sorted = MutableArray(as).sortBySchwartzian(by).array
+    val ord = sorted.iterator.mapToOrder
+    Ordering.by(ord.apply)
+  }
 }

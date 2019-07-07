@@ -1,5 +1,6 @@
 package shipreq.webapp.base.issue
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.univeq.UnivEq
 import shipreq.webapp.base.data._
@@ -13,6 +14,7 @@ object IssueCategory {
   case object UserDefined extends IssueCategory
 
   implicit def univEq: UnivEq[IssueCategory] = UnivEq.derive
+  val values = AdtMacros.adtValues[IssueCategory]
 }
 
 sealed abstract class IssueClass(final val category: IssueCategory)
@@ -33,9 +35,13 @@ object IssueClass {
   case object UninhabitableTagField extends IssueClass(C.Futility)
 
   implicit def univEq: UnivEq[IssueClass] = UnivEq.derive
+  val values = AdtMacros.adtValues[IssueClass]
 }
 
-sealed abstract class Issue(final val cls: IssueClass)
+sealed abstract class Issue(final val cls: IssueClass) {
+  @inline def category = cls.category
+}
+
 object Issue {
   import shipreq.webapp.base.issue.{IssueClass => C}
 

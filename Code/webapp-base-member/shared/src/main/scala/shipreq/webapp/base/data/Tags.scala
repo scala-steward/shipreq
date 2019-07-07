@@ -239,6 +239,12 @@ final case class Tags(tree: TagTree) {
   def atagIterator(): Iterator[ApplicableTag] =
     tree.valuesIterator.map(_.tag).filterSubType[ApplicableTag]
 
+  def needTagGroup(id: TagGroupId): TagGroup =
+    tree.need(id).tag match {
+      case t: TagGroup      => t
+      case a: ApplicableTag => mustNotHappen(s"$a is not a TagGroup.")
+    }
+
   lazy val deadATagIds: Set[ApplicableTagId] =
     atagIterator().filter(_.live is Dead).map(_.id).toSet
 

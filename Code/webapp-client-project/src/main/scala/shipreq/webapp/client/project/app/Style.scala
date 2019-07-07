@@ -89,6 +89,20 @@ object Style extends StyleSheet.Inline {
   val layout = style(
     unsafeRoot(".ui.button")(marginRight(`0`).important))
 
+  object generic {
+    val table = style(
+      margin(`0`).important)
+
+    val tableHeaderBase = style(
+      padding(4.px).important,
+      &.focus(outlineColor(BaseStyles.focus.colour(1))))
+
+    val tableDataBase = style(
+      padding(4.px).important,
+      verticalAlign.top.important,
+      (borderLeft :=! "1px solid #2224261a").important) // Without this, rowspan break semantic UI table borders
+  }
+
   // ===================================================================================================================
   object home {
 
@@ -262,13 +276,8 @@ object Style extends StyleSheet.Inline {
     }
 
     object table {
-
-      val table = style(
-        margin(`0`).important)
-
-      private val headerBase = style(
-        padding(4.px).important,
-        &.focus(outlineColor(BaseStyles.focus.colour(1))))
+      def table = generic.table
+      @inline private def headerBase = generic.tableHeaderBase
 
       val columnHeader = styleF(D.live *** D.dragStatus) { case (live, status) => styleS(
         headerBase,
@@ -283,8 +292,7 @@ object Style extends StyleSheet.Inline {
       )}
 
       private val cellBase = styleF(D.`live * on`)(i => styleS(
-        padding(4.px).important,
-        verticalAlign.top.important,
+        generic.tableDataBase,
         i match {
           case (Live, Off) => mixin()
           case (Dead, Off) => mixin(backgroundColor(c"#f5f5f5"))
@@ -620,6 +628,23 @@ object Style extends StyleSheet.Inline {
   }
 
   // ===================================================================================================================
+  object issues {
+
+    def table       = generic.table
+    def tableHeader = generic.tableHeaderBase
+    def tableData   = generic.tableDataBase
+
+    val rowspanOuter = style(
+      display.inline,
+      color(c"#999"),
+      paddingLeft(1.ex),
+      whiteSpace.nowrap)
+
+    val rowspanInner = style(
+      color(c"#c66"))
+  }
+
+  // ===================================================================================================================
   object widgets {
 
     private val refColour = color(c"#2363A1")
@@ -752,12 +777,14 @@ object Style extends StyleSheet.Inline {
   // ===================================================================================================================
 
   initInnerObjects(
+    generic.table,
     home.cardHeader,
     help.examplesTable,
     impgraphPage.graph,
     cfg.deadMnemonic,
     deletionRestorationForms.main,
     deletionForm.bottomSections,
+    issues.rowspanOuter,
     restorationForm.bottomSection,
     reqtable.creation.buttonDropdown,
     reqtable.filterEditor.input(Valid),
