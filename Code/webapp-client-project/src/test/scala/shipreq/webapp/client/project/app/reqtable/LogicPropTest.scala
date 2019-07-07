@@ -15,12 +15,12 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.data.reqtable.{SortCriterion => SC, Column => C}
 import shipreq.webapp.base.sort.SortMethod
-import shipreq.webapp.base.text.{Atom, PlainText, Text, TextSearch, ProjectText}
+import shipreq.webapp.base.sort.Sorter.{BlanksFirst, BlanksLast, BlankPlacement, Dir, FlipDir, KeepDir}
+import shipreq.webapp.base.text.{Atom, PlainText, Text, TextSearch}
 import shipreq.webapp.client.project.test.ClientTestSettings._
-import SortMethod._
-import Sorter._
-import Text.Equality._
 import LogicTestUtil._
+import SortMethod._
+import Text.Equality._
 
 object LogicPropTest extends TestSuite {
   val nop = Eval.pass()

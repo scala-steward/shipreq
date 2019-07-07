@@ -18,6 +18,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.filter.{CompiledFilter, Filter}
+import shipreq.webapp.base.sort.{FusedSorters, Sorter => BaseSorter}
 import shipreq.webapp.base.text.Atom.AnyIssue
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.base.util.ReqCodeTreeItem
@@ -299,12 +300,13 @@ private[reqtable] object Logic {
   // Sorting
 
   def sort(p: Project, view: View, pt: PlainText.ForProject.NoCtx)(rows: Iterable[Row]): MutableArray[Row] = {
+    import BaseSorter.KeepDir
     import Sorter._
 
     val sorter  = new FusedSorters(view.order.init map inconclusive, view.order.last |> conclusive)
     val setup   = new Setup(p, pt)
     val prepare = sorter.prepFn(setup)
-    val rowMod  = Sorter.consolidateRowModFns(Sorter.sortUnspecified(view) :: sorter.rowModFn :: Nil)
+    val rowMod  = BaseSorter.consolidateRowModFns(Sorter.sortUnspecified(view) :: sorter.rowModFn :: Nil)
     val rowEndo = rowMod.map(_(setup, KeepDir)) getOrElse ((r: Row) => r)
 
     MutableArray.map(rows)(r => prepare(rowEndo(r)))
