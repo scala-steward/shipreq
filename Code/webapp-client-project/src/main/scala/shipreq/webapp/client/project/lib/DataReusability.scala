@@ -19,4 +19,7 @@ object DataReusability extends shipreq.webapp.base.lib.DataReusability {
   implicit def reusabilityProjectWidgetsPubidFormat[C <: ProjectText.Context]: Reusability[ProjectWidgets[C]#PubidFormat] =
     Reusability.byRef
 
+  implicit def reusabilityProjectWidgetsPubidFormatAny: Reusability[ProjectWidgets.AnyCtx#PubidFormat] =
+    Reusability.byRef
+
 }

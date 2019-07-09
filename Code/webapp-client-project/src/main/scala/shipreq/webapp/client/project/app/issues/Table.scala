@@ -2,21 +2,20 @@ package shipreq.webapp.client.project.app.issues
 
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.scalajs.react.extra._
+import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.base.util.{ConsolidatedSeq, Util}
-import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.issue._
 import shipreq.webapp.base.sort.FusedSorters
 import shipreq.webapp.base.ui.semantic
 import shipreq.webapp.client.project.app.Style.{issues => *}
+import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 object Table {
 
   final case class Props(project: Project,
-                         issues: Issues,
+                         pw: ProjectWidgets.AnyCtx,
                          fieldNames: FieldId ~=> String) {
     @inline def render: VdomElement = Component(this)
   }
@@ -26,58 +25,59 @@ object Table {
 
   private object Internal {
 
-
-  }
-
-  final class Backend($: BackendScope[Props, Unit]) {
-    import Internal._
-
-    private val columns: NonEmptyVector[Column] =
+    val columns: NonEmptyVector[Column] =
       NonEmptyVector(
         Column.IssueCategory,
         Column.IssueClass,
-        Column.Pubid,
+        Column.Id,
         Column.Title,
         Column.FieldName,
         Column.FieldEditor,
         Column.Actions,
       )
 
-    private val td = <.td(*.tableData)
+    private val sorter = new FusedSorters(
+      Vector(Sorter.issueCategorySorter, Sorter.issueClassSorter),
+      Sorter.pubidSorter)
 
-    private val renderGroup: ConsolidatedSeq.Group[String] => VdomElement = g =>
-      if (g.size == 1)
-        td(g.value)
-      else
-        td(g.value,
-          <.div(*.rowspanOuter, "(", <.span(*.rowspanInner, g.size), ")"),
-          ^.rowSpan := g.size)
+    final class RenderPrep(p: Project) {
+      private val sortFn  = sorter.result(new Sorter.Setup(p))
+      private val toRow   = Row.fromIssue(p)
+      val rows            = sortFn(p.issues.vector.iterator.map(toRow)).iterator.toVector
+      val csIssueCategory = TableRow.consolidateIssueCategories(rows.iterator.map(_.issueCategoryDesc))
+      val csIssueClass    = TableRow.consolidateIssueClasses   (rows.iterator.map(_.issueClassDesc))
+    }
+  }
 
-    private val consolidator = ConsolidatedSeq.Logic.consolidateByUnivEq[String].apply(renderGroup)
+  final class Backend($: BackendScope[Props, Unit]) {
+    import Internal._
+
+    private val pxProject        = Px.props($).map(_.project).withReuse.autoRefresh
+    private val pxProjectWidgets = Px.props($).map(_.pw).withReuse.autoRefresh
+    private val pxPubidFormat    = pxProjectWidgets.map(_.PubidFormat(Plain, _ => *.pubidColumnValue, titleFn = _ => None))
+    private val pxRenderPrep     = pxProject.map(new RenderPrep(_))
 
     def render(p: Props): VdomElement = {
-
-      val sorter = new FusedSorters(
-        Vector(Sorter.issueCategorySorter, Sorter.issueClassSorter),
-        Sorter.pubidSorter)
-      val setup = new Sorter.Setup(p.project)
-      val sortFn = sorter.result(setup)
-
-      val toRow = Row.fromIssue(p.project)
-      val rows = sortFn(p.issues.vector.iterator.map(toRow)).iterator.toVector
-
-      val cs1 = consolidator.consolidate(rows.iterator.map(_.issueCategoryDesc))
-      val cs2 = consolidator.consolidate(rows.iterator.map(_.issueClassDesc))
+      val pubidFormat = pxPubidFormat.value()
+      val rp = pxRenderPrep.value()
+      import rp._
 
       val header = TableHeader.Props(columns, p.fieldNames).render
 
-      val tmp = td("TODO")
-      val body = rows.indices.toVdomArray { row =>
-        // TODO key
-        <.tr(
-          cs1(row),
-          cs2(row),
-          tmp, tmp, tmp, tmp, tmp)
+      val body = rows.indices.toVdomArray { rowIdx =>
+
+        val row = rows(rowIdx)
+
+        val rowProps = TableRow.Props(
+          row,
+          columns,
+          p.pw,
+          pubidFormat,
+          issueCategory = csIssueCategory(rowIdx),
+          issueClass    = csIssueClass(rowIdx))
+
+        val key = rowIdx // TODO choose better row key
+        TableRow.Component.withKey(key)(rowProps)
       }
 
       semantic.Table.celledCompactUnstackable(

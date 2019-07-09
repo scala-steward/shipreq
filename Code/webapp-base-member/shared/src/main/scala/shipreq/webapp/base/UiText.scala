@@ -28,6 +28,7 @@ object UiText {
   object ColumnNames {
     def reqType          = FieldNames.reqType
     def pubid            = "ID"
+    def id               = "ID"
     def code             = FieldNames.reqCode
     def title            = "Title"
     def tags             = FieldNames.tags

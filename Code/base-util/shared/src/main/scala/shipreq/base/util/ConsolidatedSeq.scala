@@ -35,7 +35,7 @@ object ConsolidatedSeq {
         g => f(groupHead(g)),
         g => groupTail(g).map(f))
 
-    def consolidate(as: TraversableOnce[A]): ConsolidatedSeq[B] = {
+    def apply(as: TraversableOnce[A]): ConsolidatedSeq[B] = {
       val it            = as.toIterator
       var srcIndexStart = 0
       var group         = 0

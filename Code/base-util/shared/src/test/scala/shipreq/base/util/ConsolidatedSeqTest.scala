@@ -13,7 +13,7 @@ object ConsolidatedSeqTest extends TestSuite {
         val logic      = ConsolidatedSeq.Logic[Int](_ => false)(identity)
         val as         = Vector.tabulate(size)(100 + _)
         val indices    = 0.until(size).toList
-        val c          = logic.consolidate(as)
+        val c          = logic(as)
         def el(i: Int) = Some(ConsolidatedSeq.Group(NonEmptyVector.one(i + 100), i, i))
         assertEq("length", size, c.length)
         assertEq("groups", indices, c.groupIterator().toList)
@@ -33,7 +33,7 @@ object ConsolidatedSeqTest extends TestSuite {
         val logic      = ConsolidatedSeq.Logic[Int](_ => true)(identity)
         val as         = Vector.tabulate(size)(100 + _)
         val indices    = 0.until(size).toList
-        val c          = logic.consolidate(as)
+        val c          = logic(as)
         def el(i: Int) = if (i > 0) None else Some(ConsolidatedSeq.Group(NonEmptyVector.force(as), 0, 0))
         assertEq("length", size, c.length)
         assertEq("groups", List.fill(size)(0), c.groupIterator().toList)
@@ -51,7 +51,7 @@ object ConsolidatedSeqTest extends TestSuite {
     'consolidateOdd - {
       val logic  = ConsolidatedSeq.Logic[Int](i => (i.cur & 1) != 0)(identity)
       val as     = Vector(10, 11, 12, 13, 14)
-      val c      = logic.consolidate(as)
+      val c      = logic(as)
       val expect = List(
         Some(ConsolidatedSeq.Group(NonEmptyVector(10, 11), 0, 0)),
         None,

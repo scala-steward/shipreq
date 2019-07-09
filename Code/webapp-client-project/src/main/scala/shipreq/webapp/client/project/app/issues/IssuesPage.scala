@@ -14,7 +14,6 @@ object IssuesPage {
   final case class StaticProps(pxProject: Px[Project],
                                pxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
 
-    val pxIssues      = pxProject.map(_.issues)
     val pxConfig      = pxProject.map(_.config).withReuse
     val pxFieldNameFn = pxConfig.map(cfg => Reusable.byRef(Field.nameByIdFromProjectConfig(cfg)))
 
@@ -46,12 +45,12 @@ object IssuesPage {
     import static.{component => _, render => _, _}
 
     def render(p: Props): VdomElement = {
-      // val project = pxProject.value()
-      val issues = pxIssues.value()
+      val project = pxProject.value()
+      val issues = project.issues
       if (issues.isEmpty)
         renderEmpty
       else
-        renderContent(issues)
+        renderContent(project)
     }
 
     private def renderEmpty =
@@ -59,15 +58,16 @@ object IssuesPage {
         NewIssue.render,
         EmptyBody.render)
 
-    private def renderContent(issues: Issues) = {
-      val project = pxProject.value()
+    private def renderContent(p: Project) = {
+      val issues = p.issues
+      val pw = pxProjectWidgets.value()
       val fieldNameFn = pxFieldNameFn.value()
 
       <.div(
         NewIssue.render,
         Summary.Props(issues.stats, 0).render,
         // TODO Table config row (sort | filter | cols)
-        Table.Props(project, issues, fieldNameFn).render)
+        Table.Props(p, pw, fieldNameFn).render)
     }
   }
 }

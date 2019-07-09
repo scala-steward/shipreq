@@ -642,6 +642,13 @@ object Style extends StyleSheet.Inline {
 
     val rowspanInner = style(
       color(c"#c66"))
+
+    val pubidColumnValue = style(
+//      display.inline,
+      whiteSpace.nowrap)
+
+    val na = style(
+      color(c"#666"))
   }
 
   // ===================================================================================================================

@@ -88,7 +88,12 @@ object ViewReq {
   object Data {
 
     def fromProject(id: ReqId, project: Project, filterDead: FilterDead): Data = {
-      val req             = project.content.reqs.need(id)
+      val req = project.content.reqs.need(id)
+      fromProject(req, project, filterDead)
+    }
+
+    def fromProject(req: Req, project: Project, filterDead: FilterDead): Data = {
+      import req.id
       val pubidSortKeyFn  = project.dataLogic.pubidSortKeyFn
       val customImpLookup = project.dataLogic.customFieldImps(filterDead)
       val tagDist         = project.dataLogic.tagFieldDist(filterDead)
@@ -96,12 +101,12 @@ object ViewReq {
       val tagOrderByName  = project.dataLogic.tagOrderByName
       val tagOrderByPos   = project.dataLogic.tagOrderByPos
       val impFilter       = project.config.reqFilter(filterDead)
-      val generalTagSet   = DataLogic.generalTags(tagDist, tagLookup)(req.id)
+      val generalTagSet   = DataLogic.generalTags(tagDist, tagLookup)(id)
       val generalTags     = MutableArray(generalTagSet).sortBy(tagOrderByName.apply).to[Vector]
 
       val customTags: CustomField.Tag.Id => Vector[ApplicableTagId] =
         Memo { fid =>
-          def tagSet = DataLogic.customFieldTags(tagDist, tagLookup, fid)(req.id)
+          def tagSet = DataLogic.customFieldTags(tagDist, tagLookup, fid)(id)
           MutableArray(tagSet).sortBy(tagOrderByPos.apply).to[Vector]
         }
 

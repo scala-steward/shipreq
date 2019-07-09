@@ -27,7 +27,7 @@ object TableHeader {
       case Column.FieldName         => UiText.ColumnNames.issueFieldName
       case Column.FieldEditor       => UiText.ColumnNames.issueFieldEditor
       case Column.Actions           => UiText.ColumnNames.issueActions
-      case Column.Pubid             => UiText.ColumnNames.pubid
+      case Column.Id                => UiText.ColumnNames.id
       case Column.Code              => UiText.ColumnNames.code
       case Column.Title             => UiText.ColumnNames.title
       case Column.ReqType           => UiText.ColumnNames.reqType
