@@ -301,8 +301,9 @@ private[reqtable] object Logic {
 
   def sorter(p: Project, view: View, pt: PlainText.ForProject.NoCtx): TraversableOnce[Row] => MutableArray[Row] = {
     import Sorter._
-
-    val sorter = new FusedSorters(view.order.init map inconclusive, view.order.last |> conclusive)
+    val init   = view.order.init map inconclusive
+    val last   = view.order.last |> conclusive
+    val sorter = new FusedSorters(NonEmptyVector.end(init, last))
     val setup  = new Setup(p, pt)
     sorter.result(setup, Sorter.sortUnspecified(view))
   }

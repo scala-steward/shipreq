@@ -36,8 +36,9 @@ object Table {
         Column.Actions,
       )
 
-    private val sorter = new FusedSorters(
-      Vector(Sorter.issueCategorySorter, Sorter.issueClassSorter),
+    private val sorter = FusedSorters(
+      Sorter.issueCategorySorter,
+      Sorter.issueClassSorter,
       Sorter.pubidSorter)
 
     final class RenderPrep(p: Project) {

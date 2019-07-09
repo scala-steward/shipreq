@@ -1,11 +1,12 @@
 package shipreq.webapp.base.sort
 
+import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.MutableArray
 import scalajs.js.{Array => JArray}
 import Sorter._
 
-final class FusedSorters[Setup, Row](init: Vector[Sorter[Setup, Row]], last: Sorter[Setup, Row]) extends Sorter[Setup, Row] {
-  private[this] val ss       = init :+ last
+final class FusedSorters[Setup, Row](sorters: NonEmptyVector[Sorter[Setup, Row]]) extends Sorter[Setup, Row] {
+  private[this] val ss       = sorters.whole
   private[this] val tSize    = ss.size + 1
   private[this] val rowIndex = tSize - 1
 
@@ -75,4 +76,9 @@ final class FusedSorters[Setup, Row](init: Vector[Sorter[Setup, Row]], last: Sor
         .sort(sortFn.toOrdering)
         .map(row)
   }
+}
+
+object FusedSorters {
+  def apply[S, R](a: Sorter[S, R], b: Sorter[S, R]*): FusedSorters[S, R] =
+    new FusedSorters(NonEmptyVector.varargs(a, b: _*))
 }
