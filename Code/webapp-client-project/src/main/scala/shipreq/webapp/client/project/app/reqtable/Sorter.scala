@@ -74,14 +74,7 @@ object Sorter {
   )
 
   def reqCodeSorter: SorterForSMCB =
-    SorterForSMCB { bp =>
-      // TODO Sorting reqcodes by txt is inefficient. Trie => Vector[Int] would be better.
-      val norm: ReqCode.Value => String = PlainText.reqCode
-      sorter[String](
-        rowMod = typicalRowModFn(Row.reqCodesO, SortFn.stringNonEmpty)(_ => norm),
-        prep   = _ => row => Row.reqCodes.get(row).headOption map norm getOrElse "",
-        sort   = SortFn.string(bp))
-    }
+    SorterForSMCB(SorterBase.reqCodeSorter(Row.reqCodesO, _))
 
   def tagSorter(loc: Optional[Row, Vector[ApplicableTagId]], order: Setup => TagOrder): SorterForSMCB =
     SorterForSMCB(bp =>

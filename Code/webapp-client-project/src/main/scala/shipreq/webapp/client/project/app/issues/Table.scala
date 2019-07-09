@@ -39,7 +39,9 @@ object Table {
     private val sorter = FusedSorters(
       Sorter.issueCategorySorter,
       Sorter.issueClassSorter,
-      Sorter.pubidSorter)
+      Sorter.idSorter
+      // TODO LooseIssueText | Field
+    )
 
     final class RenderPrep(p: Project) {
       private val sortFn  = sorter.result(new Sorter.Setup(p))

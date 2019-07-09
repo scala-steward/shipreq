@@ -3,9 +3,11 @@ package shipreq.webapp.base.sort
 import japgolly.microlibs.stdlib_ext.MutableArray
 import monocle.Optional
 import scala.annotation.tailrec
-import scala.reflect.ClassTag
+import scalaz.{-\/, \/, \/-}
 import scalaz.std.option.optionInstance
 import shipreq.base.util.ScalaExt._
+import shipreq.webapp.base.data.ReqCode
+import shipreq.webapp.base.text.PlainText
 
 trait Sorter[Setup, Row] { self =>
   import Sorter._
@@ -15,13 +17,16 @@ trait Sorter[Setup, Row] { self =>
   def sortFn  : SortFn[T]
   def rowModFn: RowModFn[Setup, Row]
 
-  def reverse: Sorter[Setup, Row] =
+  final def reverse: Sorter[Setup, Row] =
     new Sorter[Setup, Row] {
       override type T                              = self.T
       override def prepFn  : PrepFn[Setup, Row, T] = self.prepFn
       override val sortFn  : SortFn[T]             = self.sortFn.reverse
       override def rowModFn: RowModFn[Setup, Row]  = self.rowModFn.map(f => (s, dir) => f(s, dir.flip))
     }
+
+  final def overrideWith(other: Sorter[Setup, Row])(useOther: Row => Boolean): Sorter[Setup, Row] =
+    Sorter.merge(other, this)(useOther)
 }
 
 object Sorter {
@@ -39,6 +44,29 @@ object Sorter {
       override val prepFn   = prep
       override val sortFn   = sort
       override val rowModFn = rowMod
+    }
+
+  private[Sorter] def merge[Setup, Row](s1: Sorter[Setup, Row], s2: Sorter[Setup, Row])(use1: Row => Boolean): Sorter[Setup, Row] =
+    new Sorter[Setup, Row] {
+      override type T = s1.T \/ s2.T
+
+      override val prepFn: PrepFn[Setup, Row, T] =
+        setup => {
+          val p1 = s1.prepFn(setup)
+          val p2 = s2.prepFn(setup)
+          row => if (use1(row)) -\/(p1(row)) else \/-(p2(row))
+        }
+
+      override val sortFn: SortFn[T] =
+        s1.sortFn ||| s2.sortFn
+
+      override val rowModFn: RowModFn[Setup, Row] =
+        (s1.rowModFn, s2.rowModFn) match {
+          case (Some(f)   , Some(g)   ) => Some((x, y) => g(x, y) compose f(x, y))
+          case (s@ Some(_), None      ) => s
+          case (None      , s@ Some(_)) => s
+          case (None      , None      ) => None
+        }
     }
 
   class WithTypes[Setup, Row] {
@@ -91,6 +119,18 @@ object Sorter {
           g(x._2, y._2)
         else
           a
+      }
+    }
+
+    def |||[B](next: SortFn[B]): SortFn[A \/ B] = {
+      val g = next.f
+      SortFn { (x, y) =>
+        (x, y) match {
+          case (-\/(xa), -\/(ya)) => f(xa, ya)
+          case (\/-(xb), \/-(yb)) => g(xb, yb)
+          case (-\/(_) , \/-(_) ) => -1
+          case (\/-(_) , -\/(_) ) =>  1
+        }
       }
     }
 
@@ -199,7 +239,7 @@ object Sorter {
   private def tryModEndo[A, B](l: Optional[A, B])(mod: B => Option[B]): EndoFn[A] =
     a => l.modifyF[Option](mod)(a) getOrElse a
 
-  def typicalRowModFn[Setup, Row, A: ClassTag, B](l: Optional[Row, Vector[A]], s: SortFn[B])(f: Setup => A => B): RowModFn[Setup, Row] =
+  def typicalRowModFn[Setup, Row, A, B](l: Optional[Row, Vector[A]], s: SortFn[B])(f: Setup => A => B): RowModFn[Setup, Row] =
     Some((setup, dir) => {
       val n = f(setup)
       val o = s.applyDir(dir).toOrdering
@@ -217,5 +257,14 @@ object Sorter {
       None
     else
       Some((setup, dir) => row => fns.foldLeft(row)((r, f) => f(setup, dir)(r)))
+  }
+
+  def reqCodeSorter[Setup, Row](optic: Optional[Row, Vector[ReqCode.Value]], bp: BlankPlacement) = {
+    // TODO Sorting reqcodes by txt is inefficient. Trie => Vector[Int] would be better.
+    val norm: ReqCode.Value => String = PlainText.reqCode
+    apply[Setup, Row, String](
+      rowMod = typicalRowModFn(optic, SortFn.stringNonEmpty)(_ => norm),
+      prep   = _ => row => optic.getOption(row).flatMap(_.headOption).fold("")(norm),
+      sort   = SortFn.string(bp))
   }
 }

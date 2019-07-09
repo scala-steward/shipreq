@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.app.issues
 
-import shipreq.base.util.Util
+import monocle.Optional
+import shipreq.base.util.{Util, Vector1}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.issue.IssueCategory
@@ -14,7 +15,7 @@ object Sorter {
 
   final class Setup(val p: Project)
 
-  val pubidSorter = sorter[(Int, Int)](
+  private val pubidSorter = sorter[(Int, Int)](
     prep =
       setup => {
         val n = setup.p.dataLogic.pubidSortKeyFn
@@ -27,6 +28,25 @@ object Sorter {
       },
     sort = SortFn.intPair
   )
+
+  private val reqCodeIdSorter: Sorter = {
+    val o = Optional[Row, Vector[ReqCode.Value]]({
+      case r: Row.ForRcg    => Some(Vector1(r.code))
+      case _: Row.ForReq
+         | _: Row.ForConfig => None
+    })(c => {
+      case r: Row.ForRcg if c.length == 1 => r.copy(code = c.head)
+      case r                              => r
+    })
+    SorterBase.reqCodeSorter(o, BlanksFirst)
+  }
+
+  val idSorter: Sorter =
+    pubidSorter.overrideWith(reqCodeIdSorter) {
+      case _: Row.ForRcg    => true
+      case _: Row.ForReq
+         | _: Row.ForConfig => false
+    }
 
   val issueCategorySorter: Sorter = {
     val ordering = Util.enumOrdering(IssueCategory.values.whole)(UiText.Issues.category)
