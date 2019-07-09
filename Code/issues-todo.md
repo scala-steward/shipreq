@@ -16,8 +16,6 @@ reuse (or not)
   * AST - don't modify - should be a global language with global capabilities
   * what about text-filtering against loose issue bodies?
   * FilterEditor
-* content summary
-  * PageSummary
 * column selector
   * ColumnSelector
 
@@ -35,11 +33,14 @@ functionality
   * add loose issue editor to CreateFeature
   * add loose issue editor to EditorFeature
   * add async feature for it
-* UI: empty
-* UI: pop
-  * summary
+* UI: table
   * table
-    * consolidatble representation (rowspans)
-  * columns
+  * dynamic columns
+  * custom sorting
   * filter
-  * sort
+  * inline editing
+  * KB navigation
+* ProjectWidgets
+  * blank custom fields
+  * conflicting tags
+  * dead issue tags need linethrough
