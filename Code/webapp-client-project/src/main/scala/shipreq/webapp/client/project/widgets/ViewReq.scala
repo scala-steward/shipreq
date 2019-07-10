@@ -8,13 +8,14 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.project.feature.EditorFeature
-import ProjectWidgets.emptySpan
 import ViewReq._
 
 /**
   * Easy means to view/render a requirement.
   */
-final case class ViewReq(data: Data, pw: ProjectWidgets.AnyCtx, fmtReqTypeShort: Boolean = true) {
+final case class ViewReq(data           : Data,
+                         pw             : ProjectWidgets.AnyCtx,
+                         fmtReqTypeShort: Boolean) {
 
   def reqType: VdomElement =
     (if (fmtReqTypeShort) pw.reqTypeShort else pw.reqTypeFull)(data.req.reqTypeId)
@@ -25,8 +26,13 @@ final case class ViewReq(data: Data, pw: ProjectWidgets.AnyCtx, fmtReqTypeShort:
   def imps(dir: Direction): VdomElement =
     pw.implicationList(data.generalImps(dir))
 
-  def imps(id: CustomField.Implication.Id): VdomElement =
-    pw.implicationList(data.customImps(id))
+  def imps(id: CustomField.Implication.Id): VdomElement = {
+    val imps = data.customImps(id)
+    if (imps.isEmpty && data.mandatoryFields.contains(id))
+      ProjectWidgets.blankButMandatory
+    else
+      pw.implicationList(imps)
+  }
 
   def imps(scope: ImplicationScope): VdomElement =
     scope.fold(imps(_), imps(_))
@@ -40,14 +46,24 @@ final case class ViewReq(data: Data, pw: ProjectWidgets.AnyCtx, fmtReqTypeShort:
   def tags: VdomElement =
     pw.tagList(data.generalTags)
 
-  def tags(id: CustomField.Tag.Id): VdomElement =
-    pw.tagList(data.customTags(id))
+  def tags(id: CustomField.Tag.Id): VdomElement = {
+    val tags = data.customTags(id)
+    if (tags.isEmpty && data.mandatoryFields.contains(id))
+      ProjectWidgets.blankButMandatory
+    else
+      pw.tagList(tags)
+  }
 
   def tags(id: Option[CustomField.Tag.Id]): VdomElement =
     id.fold(tags)(tags(_))
 
   def text(id: CustomField.Text.Id): VdomElement =
-    pw.customTextField(id)(data.req) getOrElse[VdomTag] emptySpan
+    pw.customTextField(id)(data.req).getOrElse[VdomTag] {
+      if (data.mandatoryFields.contains(id))
+        ProjectWidgets.blankButMandatory
+      else
+        ProjectWidgets.emptySpan
+    }
 
   def title: VdomElement =
     pw.reqTitle(data.req)
@@ -73,16 +89,17 @@ final case class ViewReq(data: Data, pw: ProjectWidgets.AnyCtx, fmtReqTypeShort:
 
 object ViewReq {
 
-  final case class Data(req        : Req,
-                        codes      : Traversable[ReqCode.Value],
-                        generalTags: Vector[ApplicableTagId],
-                        customTags : CustomField.Tag.Id => Vector[ApplicableTagId],
-                        generalImps: Direction => Vector[Pubid],
-                        customImps : CustomField.Implication.Id => Vector[Pubid],
-                        pastPubids : SortedSet[ExternalPubid]) {
+  final case class Data(req            : Req,
+                        codes          : Traversable[ReqCode.Value],
+                        generalTags    : Vector[ApplicableTagId],
+                        customTags     : CustomField.Tag.Id => Vector[ApplicableTagId],
+                        generalImps    : Direction => Vector[Pubid],
+                        customImps     : CustomField.Implication.Id => Vector[Pubid],
+                        pastPubids     : SortedSet[ExternalPubid],
+                        mandatoryFields: CustomField.Lists) {
 
     def apply(pw: ProjectWidgets.AnyCtx): ViewReq =
-      ViewReq(this, pw)
+      ViewReq(this, pw, true)
   }
 
   object Data {
@@ -149,7 +166,8 @@ object ViewReq {
         customTags,
         generalImps,
         customImps,
-        pastPubids)
+        pastPubids,
+        project.config.mandatoryLiveCustomFields)
     }
 
   }

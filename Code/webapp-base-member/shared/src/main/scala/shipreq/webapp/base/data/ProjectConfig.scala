@@ -57,4 +57,12 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
   def reqFilter(fd: FilterDead): Req => Boolean =
     fd.filterFnBy((_: Req).live(reqTypes))
 
+  lazy val mandatoryLiveCustomFields: CustomField.Lists = {
+    val m = new CustomField.MutableLists
+    for (f <- fields.customFields.valuesIterator)
+      if (f.mandatory.is(Mandatory) && f.live(this).is(Live))
+        m += f
+    m.result()
+  }
+
 }

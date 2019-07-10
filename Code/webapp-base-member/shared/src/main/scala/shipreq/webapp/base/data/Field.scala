@@ -475,18 +475,32 @@ object CustomField {
   implicit def equality        : UnivEq[CustomField] = UnivEq.derive
 
   final class MutableLists {
-    var imp  = List.empty[CustomField.Implication]
-    var tag  = List.empty[CustomField.Tag]
+    var imps = List.empty[CustomField.Implication]
+    var tags = List.empty[CustomField.Tag]
     var text = List.empty[CustomField.Text]
 
-    def isEmpty = imp.isEmpty && tag.isEmpty && text.isEmpty
+    def isEmpty() = imps.isEmpty && tags.isEmpty && text.isEmpty
 
     def +=(cf: CustomField): Unit =
       cf match {
         case f: CustomField.Text        => text ::= f
-        case f: CustomField.Tag         => tag  ::= f
-        case f: CustomField.Implication => imp  ::= f
+        case f: CustomField.Tag         => tags ::= f
+        case f: CustomField.Implication => imps ::= f
       }
+
+    def result(): Lists =
+      Lists(imps, tags, text)
+  }
+
+  final case class Lists(
+    imps: List[CustomField.Implication],
+    tags: List[CustomField.Tag],
+    text: List[CustomField.Text],
+  ) {
+    def isEmpty = text.isEmpty && imps.isEmpty && tags.isEmpty
+    def contains(id: CustomField.Text       .Id): Boolean = text.exists(_.id ==* id)
+    def contains(id: CustomField.Tag        .Id): Boolean = tags.exists(_.id ==* id)
+    def contains(id: CustomField.Implication.Id): Boolean = imps.exists(_.id ==* id)
   }
 }
 
@@ -548,10 +562,10 @@ final case class FieldSet(customFields: FieldSet.CustomFields,
   }
 
   def customImpFields: List[CustomField.Implication] =
-    splitFields.imp
+    splitFields.imps
 
   def customTagFields: List[CustomField.Tag] =
-    splitFields.tag
+    splitFields.tags
 
   def customTextFields: List[CustomField.Text] =
     splitFields.text

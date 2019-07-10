@@ -70,7 +70,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
 
         def renderRows(rows: Vector[Row]): VdomArray = {
           val applicability = pxApplicability.value()
-          val reqViewInputs: ReqRow.ViewInput = (p.config.reqTypes, p.pw, pxPubidFmt.value())
+          val reqViewInputs: ReqRow.ViewInput = (p.config, p.pw, pxPubidFmt.value())
 
           rows.toVdomArray { genericRow =>
             val rowAsync = p.rowAsync(genericRow.sourceId)
@@ -304,7 +304,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
   private object ReqRow extends RowTemplate[
       FieldKey.ForSomeReq,
       Row.ForReq,
-      (ReqTypes, ProjectWidgets.NoCtx, ProjectWidgets.NoCtx#PubidFormat),
+      (ProjectConfig, ProjectWidgets.NoCtx, ProjectWidgets.NoCtx#PubidFormat),
     ]("ReqRow") {
 
     override protected val rowToColumnToEditorField =
@@ -316,7 +316,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
     override protected def reusabilityRowEditor = implicitly
 
     override protected def viewMaker(row: RowData, vi: ViewInput): Column => Reusable[TagMod] = {
-      val (reqTypes, pw, pubidFmt) = vi
+      val (cfg, pw, pubidFmt) = vi
 
       val viewReq = ViewReq.Data(
         row.req,
@@ -325,8 +325,9 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
         row.exp.cfTags.getOrElse(_, Vector.empty),
         row.exp.implications.apply,
         row.exp.cfImps.getOrElse(_, Vector.empty),
-        SortedSet.empty[ExternalPubid]) // ReqTable doesn't display pastPubids
-        .apply(pw)
+        SortedSet.empty[ExternalPubid], // ReqTable doesn't display pastPubids
+        cfg.mandatoryLiveCustomFields,
+      ).apply(pw)
 
       def renderCodes: VdomElement =
         if (row.exp.reqCodeTree.nonEmpty)
