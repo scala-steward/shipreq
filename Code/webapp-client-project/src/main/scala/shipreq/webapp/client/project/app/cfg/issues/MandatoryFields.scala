@@ -60,6 +60,13 @@ private[issues] object MandatoryFields {
 
     private val editable = editor.editableByRowStatus($)
 
+    private val renderTitle = {
+      val ed = Editors.checkboxEditor.imap(On <=> Mandatory).labelSuffix(_ => "Title")
+      <.div(
+        ^.key := "title",
+        ed render EditorI(Mandatory, "", None))
+    }
+
     private def renderStaticField(f: StaticField) =
       <.div(
         ^.key := f.name,
@@ -75,8 +82,11 @@ private[issues] object MandatoryFields {
 
     private def renderRows(p: Project, s: S): VdomNode = {
       val fs = p.config.fields.fields
-      HideDead(fs)(_ live p.config).toVdomArray(
-        _.fold(renderStaticField, renderCustomField(_, s)))
+      val a = VdomArray.empty()
+      a += renderTitle
+      for (f <- HideDead(fs)(_ live p.config))
+        a += f.fold(renderStaticField, renderCustomField(_, s))
+      a
     }
 
     def render(p: Props, s: S): VdomElement =
