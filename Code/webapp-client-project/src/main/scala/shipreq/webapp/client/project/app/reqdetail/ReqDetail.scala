@@ -424,7 +424,7 @@ object ReqDetail {
           ucData.uc,
           stepData,
           data.filterDead,
-          project.content.reqs.useCases.stepFlow,
+          project.content.reqs.useCases,
           renderBody,
           cmdRunner,
           addCmdRunner,

@@ -238,7 +238,7 @@ object UseCaseStep {
   /**
    * Focus on a particular [[UseCaseStep]] and provide related data.
    */
-  final class Focus(useCases: UseCases, val id: UseCaseStepId) {
+  final class Focus(useCases: UseCases, val id: UseCaseStepId) { self =>
 
     val key: UseCases.StepTreeKey =
       useCases.stepIndex(id)
@@ -294,7 +294,7 @@ object UseCaseStep {
       }
 
     def flow(d: Direction, live: Live): Set[UseCaseStepId] =
-      flow(d).filter(id => UseCaseStep.live(uc, ucSteps.stepPartialLocs.get(id)) is live)
+      flow(d).filter(self.useCases.focusStep(_).live is live)
   }
 }
 
@@ -302,7 +302,7 @@ object UseCaseStep {
  * A tree of steps. Can correspond to one (EC) or more (NC + AC) fields.
  */
 @Lenses
-case class UseCaseSteps(tree: UseCaseSteps.Tree) {
+final case class UseCaseSteps(tree: UseCaseSteps.Tree) {
   import VectorTree.{Location, PartialLocation}
 
   def need(id: UseCaseStepId): UseCaseStep =

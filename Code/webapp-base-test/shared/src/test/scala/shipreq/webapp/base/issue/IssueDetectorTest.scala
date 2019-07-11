@@ -97,6 +97,14 @@ object IssueDetectorTest extends TestSuite {
       IssueLite.BlankUseCaseStep(14),
     )
 
+    // This was a bug with flow between fields (i.e. NA -> E)
+    def ucSteps2() = test(p6)(
+      Event.UseCaseStepUpdate(14, UseCaseStepGD.ValueForTitle(∅)),
+      Event.UseCaseStepUpdate(14, UseCaseStepGD.ValueForFlowOut(nesd()(18))),
+    )(
+      IssueLite.BlankUseCaseStep(UseCaseStepId(19)),
+    )
+
     def emptyStepAndTitle() = test(p4)(
       Event.UseCaseTitleSet(P6.uc1, ∅),
       Event.UseCaseStepUpdate(10, UseCaseStepGD.ValueForTitle(∅)),
@@ -392,6 +400,7 @@ object IssueDetectorTest extends TestSuite {
       import BlankTests._
       'title             - title()
       'ucSteps           - ucSteps()
+      'ucSteps2          - ucSteps2()
       'emptyStepAndTitle - emptyStepAndTitle()
     }
 

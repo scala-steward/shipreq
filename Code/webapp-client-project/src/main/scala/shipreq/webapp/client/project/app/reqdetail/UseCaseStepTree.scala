@@ -32,7 +32,7 @@ object UseCaseStepTree {
   final case class Props(uc          : UseCase,
                          stepData    : StepData,
                          filterDead  : FilterDead,
-                         flow        : UseCases.StepFlow,
+                         useCases    : UseCases,
                          renderBody  : RenderBodyFn, // TODO <------------------ prevents Reuse. Underlying fn uses state.
                          cmdRunner   : AsyncFeature.Runner.D1[Cell, UpdateContentCmd.ForUseCaseStep, Any],
                          addCmdRunner: AsyncFeature.Runner.D1[Cell, UpdateContentCmd.AddUseCaseStep, Any]) {
@@ -66,22 +66,14 @@ object UseCaseStepTree {
     val pos        = uc.pubid.pos
     val stepFilter = stepFilterM(filterDead)
 
-    val flowFilter: Set[UseCaseStepId] => Set[UseCaseStepId] =
-      filterDead match {
-        case HideDead => _.filter { id =>
-          def ploc = stepData.steps.stepPartialLocs.get(id)
-          UseCaseStep.live(uc,  ploc) is Live
-        }
-        case ShowDead => identity
-      }
-
     val results = VdomArray.empty()
 
     steps.tree.subtreeLocAndValueIterator(treeFilter, (loc, step) => {
       val partialLoc = steps.partialLocs.forward(loc)
       if (stepFilter(partialLoc)) {
         val id        = step.id
-        val live      = UseCaseStep.live(uc, partialLoc)
+        val focus     = useCases.focusStep(id)
+        val live      = focus.live
         val fullLabel = field.stepLabel(pos, partialLoc, UseCaseStepLabelFmt.`N.m`)
 
         def text =
@@ -90,7 +82,7 @@ object UseCaseStepTree {
               stepBodyBase,
               id,
               live,
-              () => TextAndFlow(step.titleA(uc), Direction.Values(d => flowFilter(flow(d)(id))))))
+              () => TextAndFlow(step.titleA(uc), Direction.Values(focus.flow(_, filterDead)))))
 
         def ctrls: VdomElement =
           uc.liveUC match {
