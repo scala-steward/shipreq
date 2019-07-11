@@ -147,10 +147,11 @@ object Feature {
 
       def startEdit(state           : Read.ForAnyEditor,
                     pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]],
+                    filterDead      : FilterDead,
                     hooks           : NewEditor.Hooks = NewEditor.Hooks.empty): Option[Callback] =
         startEditWithArgs(
           state,
-          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, hooks)))
+          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, filterDead, hooks)))
 
       private[Feature] def startEditWithArgs(state: Read.ForAnyEditor,
                                              args : FreeOption[NewEditor.CreationArgs]): Option[Callback] =
@@ -300,11 +301,13 @@ object Feature {
       def asyncFeature = write.async
       def asyncState = read.async
 
-      def apply(f: FK, pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]]): ForEditor[f.Args, f.Change] =
+      def apply(f: FK,
+                pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]],
+                filterDead      : FilterDead): ForEditor[f.Args, f.Change] =
         ForEditor(
           read(f),
           write.apply(f),
-          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, NewEditor.Hooks.empty)))
+          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, filterDead, NewEditor.Hooks.empty)))
     }
 
     implicit class ForFieldsInvariantExt[FK <: FieldKey](private val self: ForFields[FK]) extends AnyVal {

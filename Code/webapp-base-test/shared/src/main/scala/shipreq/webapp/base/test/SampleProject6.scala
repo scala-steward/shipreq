@@ -4,7 +4,6 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.text._
 import Event._
-import SampleProject4.Values.uc1
 import SampleProject5.{project => project0}
 import StaticField.{NormalAltStepTree => NA, ExceptionStepTree => E}
 import UnsafeTypes._
@@ -13,6 +12,7 @@ import UnsafeTypes._
  * Builds on SampleProject #5 to:
  *   - Add some dead steps to UC-1
  *   - Change UC-1 title to include refs to live & dead steps
+ *   - Add UC-2 with just the title step
  */
 object SampleProject6 {
 
@@ -22,10 +22,12 @@ object SampleProject6 {
     val step18_label = "1.E.1"
     val step19_label = "1.0.2.a"
     val step20_label = "1.X.0"
+    val uc2 = UseCaseId(1204)
   }
   object Values extends Values
+  import Values._
 
-  private def newTitle: Text.UseCaseTitle.OptionalText = {
+  private def newTitleForUC1: Text.UseCaseTitle.OptionalText = {
     import Text.UseCaseTitle._
     Vector(
       UseCaseStepRef(16),
@@ -38,6 +40,11 @@ object SampleProject6 {
       Literal(" are not."))
   }
 
+  private def titleForUC2: Text.UseCaseTitle.OptionalText = {
+    import Text.UseCaseTitle._
+    Vector(Literal("Empty for now"))
+  }
+
   lazy val project = WebappTestUtil.applyEventsSuccessfully(project0
     , UseCaseStepCreate(16, uc1, NA, "0.0".ploc) // becomes UC-n.0.2, followed by n.0.3, n.0.4.
     , UseCaseStepDelete(16)                      // becomes UC-n.0.X.1, now looks the same as before live
@@ -48,7 +55,9 @@ object SampleProject6 {
     , UseCaseStepShiftRight(19)                  // becomes UC-n.0.2.a
     , UseCaseStepCreate(20, uc1, NA, ∅)          // becomes UC-n.1
     , UseCaseStepDelete(20)                      // becomes UC-n.X.0
-    , UseCaseTitleSet(uc1, newTitle)
+    , UseCaseTitleSet(uc1, newTitleForUC1)
+    , UseCaseCreate(uc2, 200, ∅)
+    , UseCaseTitleSet(uc2, titleForUC2)
     )
 
   lazy val plainText  = PlainText.ForProject.noCtx(project)

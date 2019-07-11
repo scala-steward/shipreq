@@ -165,11 +165,12 @@ object ReqDetail {
 
     def startUseCaseStepEditor(id: UseCaseStepId): Callback =
       for {
-        data  ← cbData
-        props ← $.props.toCBO
-        key   = EditorFeature.FieldKey.UseCaseStep(id)
-        start ← CallbackOption liftOption props.editorUCS(key, data.pxProjectWidgets).startEdit
-        _     ← start.toCBO
+        data   ← cbData
+        props  ← $.props.toCBO
+        key    = EditorFeature.FieldKey.UseCaseStep(id)
+        editor = props.editorUCS(key, data.pxProjectWidgets, data.filterDead)
+        start  ← CallbackOption liftOption editor.startEdit
+        _      ← start.toCBO
       } yield ()
 
     def setModal(modal: Modal.State): Callback =
@@ -241,7 +242,7 @@ object ReqDetail {
             Header(hstyle, pubidText + ":")),
 
           <.div(*.headerTitle,
-            reqEditor(EditorFeature.FieldKey.reqTitle(req.id), data.pxProjectWidgets)
+            reqEditor(EditorFeature.FieldKey.reqTitle(req.id), data.pxProjectWidgets, data.filterDead)
               .themedRenderOr(())(
                 Header(hstyle, view.title))),
 
@@ -306,9 +307,11 @@ object ReqDetail {
       def renderRowData(cellBase: VdomTag, row: Row): VdomElement = {
         import EditorFeature.FieldKey
 
-        def editableCell(key: FieldKey.ForSomeReq): VdomElement =
-          EditableCell.Props(cellBase, reqEditor(key, data.pxProjectWidgets), () => view.editable(key))
+        def editableCell(key: FieldKey.ForSomeReq): VdomElement = {
+          val editor = reqEditor(key, data.pxProjectWidgets, data.filterDead)
+          EditableCell.Props(cellBase, editor, () => view.editable(key))
             .render
+        }
 
         def nonDirectlyEditableCell(t: TagMod): VdomElement =
           cellBase(^.onKeyDown ==> TableNavigationFeature.Keys.handler, t)
@@ -346,7 +349,8 @@ object ReqDetail {
           case Row.Implications =>
             def renderHalf(dir: Direction) = {
               val key = FieldKey.Implications(\/-(dir))
-              EditableCell.Props(impRowSubBase, reqEditor(key, data.pxProjectWidgets), () => view.editable(key))
+              val editor = reqEditor(key, data.pxProjectWidgets, data.filterDead)
+              EditableCell.Props(impRowSubBase, editor, () => view.editable(key))
                 .render
             }
             nonDirectlyEditableCell(
@@ -402,7 +406,7 @@ object ReqDetail {
           import EditorFeature.FieldKey.UseCaseStep
           import args.id
 
-          val editor = props.editorUCS(UseCaseStep(id), data.pxProjectWidgets)
+          val editor = props.editorUCS(UseCaseStep(id), data.pxProjectWidgets, data.filterDead)
 
           def editorArgs = UseCaseStep.Args(
             cmdRunner(Cell.UseCaseStepCtrls(id)),

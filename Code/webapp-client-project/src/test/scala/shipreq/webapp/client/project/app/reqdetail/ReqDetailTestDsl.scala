@@ -39,10 +39,10 @@ object ReqDetailTestDsl {
     State(ExternalPubid(ReqType.Mnemonic("UNSPECIFIED TEST STATE"), ReqTypePos(1)), Mode.Error)
 
   @Lenses
-  case class State(ep: ExternalPubid, mode: Mode)
+  final case class State(ep: ExternalPubid, mode: Mode)
 
   @Lenses
-  case class TestState(project: Project, state: State) {
+  final case class TestState(project: Project, state: State) {
     def ep = state.ep
     def mode = state.mode
 
@@ -169,8 +169,15 @@ object ReqDetailTestDsl {
     *.action(s"Double-click $label text")(Simulate doubleClick _.obs.uc.row(label).textContainer.dom)
 
   def editStepText(label: String, newValue: String): *.Actions =
+    _editStepText(label, None, newValue)
+
+  def editStepText(label: String, expectedOldValue: String, newValue: String): *.Actions =
+    _editStepText(label, Some(expectedOldValue), newValue)
+
+  private def _editStepText(label: String, old: Option[String], newValue: String): *.Actions =
     (doubleClickStepText(label)
       +> editorCount.assert.increment
+      +> stepText(label).rename("Initial editor text").assert(old.getOrElse("")).when(_ => old.isDefined) // TODO test-state should support optional assertions
       >> setStepTextEditValue(label, newValue)
       >> commitStepTextEdit(label)
       +> editorCount.assert.decrement

@@ -377,6 +377,7 @@ object IssueDetectorTest extends TestSuite {
         IssueLite.BlankCustomField(P6.frs(1), P6.priField),
         IssueLite.BlankCustomField(P6.frs(2), P6.priField),
         IssueLite.BlankCustomField(P6.uc1, P6.priField),
+        IssueLite.BlankCustomField(P6.uc2, P6.priField),
         IssueLite.BlankUseCaseStep(UseCaseStepId(18)),
         IssueLite.BlankUseCaseStep(UseCaseStepId(19)),
         IssueLite.DeadRefInReq(P6.frs(2), ReqTextLoc.Title, ContentRef.ReqRef(P6.mfs(28))),

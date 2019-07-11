@@ -12,6 +12,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.UseCaseStepGD
 import shipreq.webapp.base.feature._
+import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.KeyboardTheme
 import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateContentCmd}
 import shipreq.webapp.base.text._
@@ -30,7 +31,9 @@ final case class NewEditor(create: NewEditor.CreationArgs => Callback) extends A
 object NewEditor {
 
   @Lenses
-  final case class CreationArgs(pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]], hooks: Hooks) {
+  final case class CreationArgs(pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]],
+                                filterDead      : FilterDead,
+                                hooks           : Hooks) {
     val cbProjectWidgets: CallbackTo[ProjectWidgets.AnyCtx] =
       pxProjectWidgets.toCallback
   }
@@ -603,6 +606,9 @@ object NewEditor {
         import ictx._
 
         val commitFn: UseCaseStepEditor.CommitFn =
+          // Below you'll see that we're filtering flow to create visibleFlow
+          // There's no need to re-insert invisibleFlow here because flow is passed as a SetDiff
+          // meaning that regardless of what the actual flow is, we only send what the user changes.
           Reusable.fn(v => commit(UpdateContentCmd.UpdateUseCaseStep(id, v), args.hooks))
 
         val pxStepFocus: Px[UseCaseStep.Focus] =
@@ -613,7 +619,11 @@ object NewEditor {
             stepFocus      <- pxStepFocus
             projectWidgets <- args.pxProjectWidgets.value
           } yield {
-            val initialValue = TextAndFlow(stepFocus.step.titleExplicitly, Direction.Values(stepFocus.flow))
+            val visibleFlow = args.filterDead match {
+              case HideDead => Direction.Values(stepFocus.flow(_, Live))
+              case ShowDead => Direction.Values(stepFocus.flow)
+            }
+            val initialValue = TextAndFlow(stepFocus.step.titleExplicitly, visibleFlow)
             val initialText = projectWidgets.plainText.useCaseStepTextAndFlow(initialValue, hardcodedLive)
             (initialValue, initialText)
           }

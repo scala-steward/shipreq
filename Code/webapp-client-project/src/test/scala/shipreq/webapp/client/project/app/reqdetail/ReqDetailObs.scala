@@ -101,7 +101,13 @@ final class ReqDetailObs($: DomZipperJs) {
 
       lazy val textContainer = $(s"*[${TestMarker.useCaseStepText.name}]")
 
-      lazy val text = textContainer.innerText
+      lazy val text = {
+        val t: String = textContainer.innerText
+        t.indexOf("alt-left to unindent,") match {
+          case -1 => t
+          case i  => t.take(i)
+        }
+      }
 
       lazy val textEditor = textContainer("textarea").domAs[html.TextArea]
 

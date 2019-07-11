@@ -35,6 +35,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
                      rowAsync        : AsyncFeature.Read.D1[Row.SourceId, ErrorMsg],
                      config          : ProjectConfig,
                      pw              : ProjectWidgets.NoCtx,
+                     filterDead      : FilterDead,
                      modifyView      : ModFn[View]) {
       @inline def render = Component(this)
     }
@@ -80,6 +81,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
               case row: Row.ForReq =>
                 ReqRow.Props(
                   row,
+                  p.filterDead,
                   reqViewInputs,
                   p.editor.forReq(row.req.id),
                   p.cols,
@@ -91,6 +93,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
               case row: Row.ForCodeGroup =>
                 CodeGroupRow.Props(
                   row,
+                  p.filterDead,
                   p.pw,
                   p.editor.forCodeGroup(row.reqCodeId),
                   p.cols,
@@ -209,6 +212,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
     final type RowEditor = EditorFeature.ReadWrite.ForFields[FK]
 
     case class Props(row             : RowData,
+                     filterDead      : FilterDead,
                      viewInput       : ViewInput,
                      editor          : RowEditor,
                      cols            : NonEmptyVector[ColumnPlus],
@@ -264,7 +268,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
 
         val colCells = mkColumnCells(col =>
           columnToEditorField(col) match {
-            case Some(f) => p.editor(f, rootPxProjectWidgets)
+            case Some(f) => p.editor(f, rootPxProjectWidgets, p.filterDead)
             case None    => EditorFeature.ReadWrite.ForEditor.doNothing
           })
 

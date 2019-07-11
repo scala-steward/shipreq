@@ -11,23 +11,31 @@ import shipreq.webapp.base.text.{Grammar, ProjectText, Text}
 import Field.ApplicableReqTypes
 import ScalaExt._
 import VectorTree.{Location, ParentLocation, PartialLocation}
+import shipreq.webapp.base.event._
 
-case class MakeEmpty[+A](empty: A) extends AnyVal
+final case class MakeEmpty[+A](empty: A) extends AnyVal
 
 object MakeEmpty {
 
   implicit def emptyVTPL: MakeEmpty[VectorTree.ParentLocation] =
     MakeEmpty(VectorTree.ParentLocation.Empty)
 
-  implicit def emptyVec[A]: MakeEmpty[Vector[A]] =
-    MakeEmpty(Vector.empty)
+  implicit def emptyVec [A]: MakeEmpty[Vector[A]] = MakeEmpty(Vector.empty)
+  implicit def emptyList[A]: MakeEmpty[List  [A]] = MakeEmpty(Nil)
+  implicit def emptySet [A]: MakeEmpty[Set   [A]] = MakeEmpty(Set.empty)
 
-  implicit def emptyList[A]: MakeEmpty[List[A]] =
-    MakeEmpty(Nil)
-
-  implicit def emptySet[A]: MakeEmpty[Set[A]] =
-    MakeEmpty(Set.empty)
-
+  implicit def emptyApplicableTagGD  : MakeEmpty[ApplicableTagGD  .Values] = MakeEmpty(ApplicableTagGD  .emptyValues)
+  implicit def emptyCodeGroupGD      : MakeEmpty[CodeGroupGD      .Values] = MakeEmpty(CodeGroupGD      .emptyValues)
+  implicit def emptyCustomImpFieldGD : MakeEmpty[CustomImpFieldGD .Values] = MakeEmpty(CustomImpFieldGD .emptyValues)
+  implicit def emptyCustomIssueTypeGD: MakeEmpty[CustomIssueTypeGD.Values] = MakeEmpty(CustomIssueTypeGD.emptyValues)
+  implicit def emptyCustomReqTypeGD  : MakeEmpty[CustomReqTypeGD  .Values] = MakeEmpty(CustomReqTypeGD  .emptyValues)
+  implicit def emptyCustomTagFieldGD : MakeEmpty[CustomTagFieldGD .Values] = MakeEmpty(CustomTagFieldGD .emptyValues)
+  implicit def emptyCustomTextFieldGD: MakeEmpty[CustomTextFieldGD.Values] = MakeEmpty(CustomTextFieldGD.emptyValues)
+  implicit def emptyGenericReqGD     : MakeEmpty[GenericReqGD     .Values] = MakeEmpty(GenericReqGD     .emptyValues)
+  implicit def emptySavedViewGD      : MakeEmpty[SavedViewGD      .Values] = MakeEmpty(SavedViewGD      .emptyValues)
+  implicit def emptyTagGroupGD       : MakeEmpty[TagGroupGD       .Values] = MakeEmpty(TagGroupGD       .emptyValues)
+  implicit def emptyUseCaseGD        : MakeEmpty[UseCaseGD        .Values] = MakeEmpty(UseCaseGD        .emptyValues)
+  implicit def emptyUseCaseStepGD    : MakeEmpty[UseCaseStepGD    .Values] = MakeEmpty(UseCaseStepGD    .emptyValues)
 }
 
 trait UnsafeTypesLowPriority {

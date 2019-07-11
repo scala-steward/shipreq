@@ -289,12 +289,12 @@ object UseCaseStep {
 
     def flow(d: Direction, fd: FilterDead): Set[UseCaseStepId] =
       fd match {
-        case HideDead => liveFlow(d)
+        case HideDead => flow(d, Live)
         case ShowDead => flow(d)
       }
 
-    def liveFlow(d: Direction): Set[UseCaseStepId] =
-      flow(d).filter(id => UseCaseStep.live(uc, ucSteps.stepPartialLocs.get(id)) is Live)
+    def flow(d: Direction, live: Live): Set[UseCaseStepId] =
+      flow(d).filter(id => UseCaseStep.live(uc, ucSteps.stepPartialLocs.get(id)) is live)
   }
 }
 

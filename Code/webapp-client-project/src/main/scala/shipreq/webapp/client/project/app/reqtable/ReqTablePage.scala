@@ -392,6 +392,7 @@ object ReqTablePage {
         p.rowAsync,
         project.config,
         pxProjectWidgets.value(),
+        filterDead,
         modifyViewFn,
       ).render
 

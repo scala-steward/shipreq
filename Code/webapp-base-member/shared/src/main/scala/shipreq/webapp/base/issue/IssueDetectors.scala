@@ -77,8 +77,8 @@ object IssueDetectors {
         if (
           f.step.titleExplicitly.isEmpty
           && !f.usesUseCaseTitle
-          && f.liveFlow(Forwards).isEmpty
-          && f.liveFlow(Backwards).isEmpty
+          && f.flow(Forwards, Live).isEmpty
+          && f.flow(Backwards, Live).isEmpty
         )
           ctx.add(Issue.BlankUseCaseStep(f)))
   }

@@ -5,16 +5,13 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import scalajs.js
 import shipreq.base.util._
-import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
 import shipreq.webapp.client.project.app.Style.reqdetail.{useCaseStep => *}
 import shipreq.webapp.client.project.app.TestMarker
-import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
 import UseCaseStepFlowText.TextAndFlow
 
@@ -69,6 +66,15 @@ object UseCaseStepTree {
     val pos        = uc.pubid.pos
     val stepFilter = stepFilterM(filterDead)
 
+    val flowFilter: Set[UseCaseStepId] => Set[UseCaseStepId] =
+      filterDead match {
+        case HideDead => _.filter { id =>
+          def ploc = stepData.steps.stepPartialLocs.get(id)
+          UseCaseStep.live(uc,  ploc) is Live
+        }
+        case ShowDead => identity
+      }
+
     val results = VdomArray.empty()
 
     steps.tree.subtreeLocAndValueIterator(treeFilter, (loc, step) => {
@@ -84,7 +90,7 @@ object UseCaseStepTree {
               stepBodyBase,
               id,
               live,
-              () => TextAndFlow(step.titleA(uc), Direction.Values(flow(_)(id)))))
+              () => TextAndFlow(step.titleA(uc), Direction.Values(d => flowFilter(flow(d)(id))))))
 
         def ctrls: VdomElement =
           uc.liveUC match {
