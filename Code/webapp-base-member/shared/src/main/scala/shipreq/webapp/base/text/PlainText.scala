@@ -99,7 +99,7 @@ object PlainText {
       else
         ForProject(p, newCtx)
 
-    override def text(text: Text.AnyOptional, live: Live): String =
+    override protected def _text(text: Text.AnyOptional, live: Live): String =
       nestedText("", outOfListNewline, live, text)
 
     override protected def whenBlankButMandatory = ""
@@ -117,7 +117,7 @@ object PlainText {
             case a: ContentRef      # ReqRef         => reqRef(a.value)
             case a: ContentRef      # CodeRef        => codeRef(a.value)
             case a: ContentRef      # UseCaseStepRef => useCaseStepRef(a.value)
-            case a: Issue           # Issue          => issue(a.typ, a.desc.asOption.map(text(_, live)))
+            case a: Issue           # Issue          => issue(a.typ, a.desc.asOption.map(text(_, live, Mandatory.Not)))
             case a: PlainTextMarkup # WebAddress     => a.value
             case a: PlainTextMarkup # EmailAddress   => a.value
             case a: PlainTextMarkup # MathTeX        => G.mathTexSurround(a.value)
@@ -182,7 +182,7 @@ object PlainText {
     override def useCaseStepTextAndFlow(step: UseCaseStepFlowText.TextAndFlow[Text.AnyOptional, Set[UseCaseStepId]],
                                         live: Live): String =
       Util.quickSB { sb =>
-        sb append text(step.text, live)
+        sb append text(step.text, live, Mandatory.when(step.flow.forall(_.isEmpty)))
         for (d <- UseCaseStepFlowText.DefaultArrowOrder) {
           val ids = step.flow(d)
           if (ids.nonEmpty) {

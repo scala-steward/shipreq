@@ -97,7 +97,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
             help = Some(RichTextEditorHelp.modal.show)))
 
       def richText: VdomTag =
-        p.projectWidgets.text(p.richText, hardcodedLive)
+        p.projectWidgets.text(p.richText, hardcodedLive, Mandatory.Not)
 
       def preview: VdomNode =
         EditTheme.renderPreview(p.preview, p.wantPreview, richText)

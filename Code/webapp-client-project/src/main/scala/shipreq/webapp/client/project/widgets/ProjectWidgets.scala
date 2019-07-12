@@ -93,7 +93,7 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
     else
       ProjectWidgets(project, plainText withCtx newCtx, reqDetailRC)
 
-  override def text(text: AnyOptional, live: Live): VdomTag =
+  override def _text(text: AnyOptional, live: Live): VdomTag =
     <.span(text map textByLive(live): _*)
 
   override protected def whenBlankButMandatory =
@@ -176,7 +176,7 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
 
   private def mkUseCaseStep[A](r: (VdomTag, (Live, Validity), String) => A)(f: UseCaseStep.Focus): A = {
     val label = plainText.useCaseStepLabel(f)
-    val title = UiText.hoverText(plainText.text(f.titleA, f.live))
+    val title = UiText.hoverText(plainText.text(f.titleA, f.live, Mandatory))
     val ld = deadValidity(Invalid)(f.live)
     val base = linkOrSpan(f.uc)(^.title := title)
     r(base, ld, label)
@@ -253,7 +253,7 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
                                                                         l: Live)
                                                                        (render: C[A] => TraversableOnce[VdomTag]): VdomTag = {
 
-    val stepText = text(s.text, l)
+    val stepText = text(s.text, l, Mandatory.when(s.flow.forall(_.isEmpty)))
 
     def flowClause(dir: Direction): Option[VdomElement] = {
       val flowElements = s flow dir

@@ -522,7 +522,7 @@ object NewEditor {
               initialValue   <- initialValueCB
               projectWidgets <- args.cbProjectWidgets.toCBO
             } yield {
-              val initialText = projectWidgets.plainText.text(initialValue, RichTextEditor.hardcodedLive)
+              val initialText = projectWidgets.plainText.text(initialValue, RichTextEditor.hardcodedLive, Mandatory.Not)
               (initialValue, initialText)
             }
 

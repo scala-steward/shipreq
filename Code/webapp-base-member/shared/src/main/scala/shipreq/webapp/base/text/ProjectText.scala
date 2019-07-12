@@ -102,7 +102,7 @@ abstract class ProjectText[Ctx <: Context, Out](project: Project, final val ctx:
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Abstract
 
-  def text(text: Text.AnyOptional, live: Live): Out
+  protected def _text(text: Text.AnyOptional, live: Live): Out
   protected def whenBlankButMandatory: Out
 
   def useCaseStepTextAndFlow(step: UseCaseStepFlowText.TextAndFlow[Text.AnyOptional, Set[UseCaseStepId]],
@@ -123,6 +123,12 @@ abstract class ProjectText[Ctx <: Context, Out](project: Project, final val ctx:
   // Derived: protected
 
   protected final val cfg = project.config
+
+  final def text(text: Text.AnyOptional, live: Live, mandatory: Mandatory): Out =
+    if (text.isEmpty && live.is(Live) && mandatory.is(Mandatory))
+      whenBlankButMandatory
+    else
+      _text(text, live)
 
   protected final def memoByReqId = Memo.by[Req, ReqId](_.id)
 
@@ -149,18 +155,12 @@ abstract class ProjectText[Ctx <: Context, Out](project: Project, final val ctx:
     ctx
 
   final def text(text: Text.AnyNonEmpty, live: Live): Out =
-    this.text(text.whole, live)
-
-  final private def mandatoryText(text: Text.AnyOptional, live: Live): Out =
-    if (text.isEmpty && live.is(Live))
-      whenBlankButMandatory
-    else
-      this.text(text, live)
+    _text(text.whole, live)
 
   final val reqTitle: Req => Out =
     memoByReqId {
-      case gr: GenericReq => mandatoryText(gr.title, gr live cfg.reqTypes)
-      case uc: UseCase    => mandatoryText(uc.title, uc.liveUC)
+      case gr: GenericReq => text(gr.title, gr live cfg.reqTypes, Mandatory)
+      case uc: UseCase    => text(uc.title, uc.liveUC, Mandatory)
     }
 
   final def reqTitleById(id: ReqId): Out =
@@ -168,7 +168,7 @@ abstract class ProjectText[Ctx <: Context, Out](project: Project, final val ctx:
 
   final val codeGroupTitle: CodeGroup => Out =
     Memo.by((_: CodeGroup).id)(g =>
-      text(g.title, g.live))
+      text(g.title, g.live, Mandatory.Not))
 
   final val customTextField: CustomField.Text.Id => Req => Option[Out] =
     Memo { fid =>

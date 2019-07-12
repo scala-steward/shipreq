@@ -32,7 +32,7 @@ object DataValidators {
 
   def genericRichText(pt: PlainText.ForProject.NoCtx): Invalidator[Text.AnyOptional] =
     Invalidator.test(
-      pt.text(_, Live).length <= WebappConfig.largeTextMaxLength,
+      pt.text(_, Live, Mandatory.Not).length <= WebappConfig.largeTextMaxLength,
       Invalidity("Text too large.")) // english
 
   // TODO Make vals lazy

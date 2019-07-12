@@ -199,7 +199,7 @@ object Graphs {
               attrBlock {
                 setLabel(label)
                 sb append ' '
-                setTooltip(ptext.text(step.titleA(uc), UseCaseStep.live(uc, ploc)))
+                setTooltip(ptext.text(step.titleA(uc), UseCaseStep.live(uc, ploc), Mandatory))
               }
             }
             (ploc, nodeDOT)
