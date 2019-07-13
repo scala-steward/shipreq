@@ -112,13 +112,15 @@ object ViewReq {
 
     def fromProject(req: Req, project: Project, filterDead: FilterDead): Data = {
       import req.id
+
+      val cfg             = project.config
       val pubidSortKeyFn  = project.dataLogic.pubidSortKeyFn
       val customImpLookup = project.dataLogic.customFieldImps(filterDead)
       val tagDist         = project.dataLogic.tagFieldDist(filterDead)
       val tagLookup       = project.dataLogic.tagLookup(filterDead)
       val tagOrderByName  = project.dataLogic.tagOrderByName
       val tagOrderByPos   = project.dataLogic.tagOrderByPos
-      val impFilter       = project.config.reqFilter(filterDead)
+      val impFilter       = cfg.reqFilter(filterDead)
       val generalTagSet   = DataLogic.generalTags(tagDist, tagLookup)(id)
       val generalTags     = MutableArray(generalTagSet).sortBy(tagOrderByName.apply).to[Vector]
 
@@ -159,15 +161,15 @@ object ViewReq {
 
       Data(
         req              = req,
-        live             = req.live(project.config.reqTypes),
+        live             = req.live(cfg.reqTypes),
         codes            = codes,
         generalTags      = generalTags,
         customTags       = customTags,
         generalImps      = generalImps,
         customImps       = fid => sortPubids(customImpLookup(fid)(id)),
         pastPubids       = pastPubids,
-        impsAreMandatory = project.config.reqTypes.idsRequiringImplication.contains(req.reqTypeId),
-        mandatoryFields  = project.config.mandatoryLiveCustomFields)
+        impsAreMandatory = cfg.reqTypes.idsRequiringImplication.contains(req.reqTypeId),
+        mandatoryFields  = cfg.mandatoryLiveCustomFields)
     }
 
   }
