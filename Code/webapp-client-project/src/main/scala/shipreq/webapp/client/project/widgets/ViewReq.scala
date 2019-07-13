@@ -24,19 +24,15 @@ final case class ViewReq(data           : Data,
     <.div(pw.reqCodes(data.codes))
 
   def imps(dir: Direction): VdomElement = {
-    val imps = data.generalImps(dir)
-    if (imps.isEmpty && data.impsAreMandatory && dir.is(Backwards))
-      ProjectWidgets.blankButMandatory
-    else
-      pw.implicationList(imps)
+    val imps      = data.generalImps(dir)
+    val mandatory = Mandatory.when(data.impsAreMandatory && dir.is(Backwards))
+    pw.implicationList(imps, data.live, mandatory)
   }
 
   def imps(id: CustomField.Implication.Id): VdomElement = {
-    val imps = data.customImps(id)
-    if (imps.isEmpty && data.mandatoryFields.contains(id))
-      ProjectWidgets.blankButMandatory
-    else
-      pw.implicationList(imps)
+    val imps      = data.customImps(id)
+    val mandatory = Mandatory.when(data.mandatoryFields.contains(id))
+    pw.implicationList(imps, data.live, mandatory)
   }
 
   def imps(scope: ImplicationScope): VdomElement =
@@ -49,14 +45,12 @@ final case class ViewReq(data           : Data,
     pw pastPubids data.pastPubids
 
   def tags: VdomElement =
-    pw.tagList(data.generalTags)
+    pw.tagList(data.generalTags, data.live, Mandatory.Not)
 
   def tags(id: CustomField.Tag.Id): VdomElement = {
-    val tags = data.customTags(id)
-    if (tags.isEmpty && data.mandatoryFields.contains(id))
-      ProjectWidgets.blankButMandatory
-    else
-      pw.tagList(tags)
+    val tags      = data.customTags(id)
+    val mandatory = Mandatory.when(data.mandatoryFields.contains(id))
+    pw.tagList(tags, data.live, mandatory)
   }
 
   def tags(id: Option[CustomField.Tag.Id]): VdomElement =
@@ -64,7 +58,7 @@ final case class ViewReq(data           : Data,
 
   def text(id: CustomField.Text.Id): VdomElement =
     pw.customTextField(id)(data.req).getOrElse[VdomTag] {
-      if (data.mandatoryFields.contains(id))
+      if (data.live.is(Live) && data.mandatoryFields.contains(id))
         ProjectWidgets.blankButMandatory
       else
         ProjectWidgets.emptySpan
@@ -95,6 +89,7 @@ final case class ViewReq(data           : Data,
 object ViewReq {
 
   final case class Data(req             : Req,
+                        live            : Live,
                         codes           : Traversable[ReqCode.Value],
                         generalTags     : Vector[ApplicableTagId],
                         customTags      : CustomField.Tag.Id => Vector[ApplicableTagId],
@@ -164,6 +159,7 @@ object ViewReq {
 
       Data(
         req              = req,
+        live             = req.live(project.config.reqTypes),
         codes            = codes,
         generalTags      = generalTags,
         customTags       = customTags,

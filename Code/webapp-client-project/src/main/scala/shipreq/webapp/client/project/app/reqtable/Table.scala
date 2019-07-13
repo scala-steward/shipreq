@@ -324,6 +324,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
 
       val viewReq = ViewReq.Data(
         req              = row.req,
+        live             = row.live,
         codes            = row.exp.reqCodes,
         generalTags      = row.mv.tags,
         customTags       = row.exp.cfTags.getOrElse(_, Vector.empty),

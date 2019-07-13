@@ -110,8 +110,8 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
         case a: PlainTextMarkup # EmailAddress   => <.a(^.href := "mailto:" ~ a.value, a.value)
         case a: PlainTextMarkup # MathTeX        => katex(a)
         case a: ListMarkup      # UnorderedList  => <.ul(*.ul, a.items.whole.toTagMod(row => <.li(row toTagMod atom)))
-        case a: ContentRef      # ReqRef         => reqRefInValidText(a.value)
-        case a: ContentRef      # CodeRef        => codeRef(a.value)
+        case a: ContentRef      # ReqRef         => reqRef(live)(a.value)
+        case a: ContentRef      # CodeRef        => codeRef(live)(a.value)
         case a: ContentRef      # UseCaseStepRef => useCaseStepRefById(a.value)
         case a: Issue           # Issue          => issue(a.typ, a.desc, live)
       }
@@ -128,39 +128,44 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
          | _: ProjectText.Context.Req                   => reqDetailRC.link(ep)
     }
 
-  @inline private def reqRefInValidText: PubidFormat =
-    PubidFormat.invalidWhenDeadWithCtx
+  private def reqRef(liveText: Live): PubidFormat =
+    liveText match {
+      case Live => PubidFormat.invalidWhenDeadWithCtx
+      case Dead => PubidFormat.validWhenDead
+    }
 
   /** Contextualised */
-  private val codeRef: ReqCodeId => VdomElement =
-    memo { id =>
-      import ProjectText.ReqCodeResolution._
+  private val codeRef: Live => ReqCodeId => VdomElement =
+    Live.memo { live =>
+      memo { id =>
+        import ProjectText.ReqCodeResolution._
 
-      implicit def liveWithValidity(a: Live): (Live, Validity) =
-        invalidWhenDead(a)
+        implicit def liveWithValidity(a: Live): (Live, Validity) =
+          invalidWhenDead(a)
 
-      def toRef(code: ReqCode.Value, r: ReqId): VdomElement = {
-        val req = project.content.reqs.need(r)
-        ref(
-          linkOrSpan(req)(*.reqRef(req live project.config.reqTypes)),
-          code,
-          plainText reqTitle req)
-      }
+        def toRef(code: ReqCode.Value, r: ReqId): VdomElement = {
+          val req = project.content.reqs.need(r)
+          ref(
+            linkOrSpan(req)(*.reqRef(req live project.config.reqTypes)),
+            code,
+            plainText reqTitle req)
+        }
 
-      def toGroup(code: ReqCode.Value, g: CodeGroup): VdomElement =
-        ref(<.span(*.codeGroupRef(g.live)), code, plainText.codeGroupTitle(g))
+        def toGroup(code: ReqCode.Value, g: CodeGroup): VdomElement =
+          ref(<.span(*.codeGroupRef(g.live)), code, plainText.codeGroupTitle(g))
 
-      def ref(base: VdomTag, code: ReqCode.Value, title: String): VdomTag =
-        base(
-          ^.title := UiText.hoverText(title),
-          G.reflinkSurround(PlainText reqCode code))
+        def ref(base: VdomTag, code: ReqCode.Value, title: String): VdomTag =
+          base(
+            ^.title := UiText.hoverText(title),
+            G.reflinkSurround(PlainText reqCode code))
 
-      ProjectText.ReqCodeResolution(id, project.content.reqCodes) match {
-        case ActiveCodeToReq     (c, r) => toRef(c, r)
-        case ActiveCodeToGroup   (c, g) => toGroup(c, g)
-        case DeadGroup           (c, g) => toGroup(c, g)
-        case ReqWithAltCode      (c, r) => toRef(c, r)
-        case ReqWithoutActiveCode(_, r) => reqRefInValidText(r)
+        ProjectText.ReqCodeResolution(id, project.content.reqCodes) match {
+          case ActiveCodeToReq     (c, r) => toRef(c, r)
+          case ActiveCodeToGroup   (c, g) => toGroup(c, g)
+          case DeadGroup           (c, g) => toGroup(c, g)
+          case ReqWithAltCode      (c, r) => toRef(c, r)
+          case ReqWithoutActiveCode(_, r) => reqRef(live)(r)
+        }
       }
     }
 
@@ -210,20 +215,25 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
   }
 
   private def issue(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.OptionalText, liveText: Live): VdomElement =
-    NonEmptyVector.maybe(desc, issueWithoutDesc(id))(issueWithDesc(id, _, liveText))
+    NonEmptyVector.option(desc) match {
+      case None       => issueWithoutDesc(id)(liveText)
+      case Some(desc) => issueWithDesc(id, desc, liveText)
+    }
 
-  private val issueWithoutDesc: CustomIssueTypeId => VdomElement =
-    memo { id =>
+  private val issueWithoutDesc: CustomIssueTypeId => Live => VdomElement =
+    Memo { id =>
       val issueType = cfg.customIssueType(id)
-      <.span(
-        *.issue(issueType.live),
-        G.hashRefKey.prefix ~ issueType.key.value)
+      Live.memo { liveText =>
+        <.span(
+          *.issue((liveText, issueType.live)),
+          G.hashRefKey.prefix ~ issueType.key.value)
+      }
     }
 
   private def issueWithDesc(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.NonEmptyText, liveText: Live): VdomElement = {
     val issueType = project.config.customIssueType(id)
     <.span(
-      *.issue(issueType.live),
+      *.issue((liveText, issueType.live)),
       G.hashRefKey.prefix ~ issueType.key.value ~ issueDescSurroundPrefix,
       text(desc, liveText)(*.issueDesc),
       issueDescSurroundSuffix)
@@ -297,8 +307,11 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Public additions not part of ProjectText
 
-  def implicationList(ids: Vector[Pubid]): VdomElement =
-    PubidFormat.validWhenDead.pubids(ids)
+  def implicationList(ids: Vector[Pubid], live: Live, mandatory: Mandatory): VdomElement =
+    if (ids.isEmpty && live.is(Live) && mandatory.is(Mandatory))
+      whenBlankButMandatory
+    else
+      PubidFormat.validWhenDead.pubids(ids)
 
   def pastPubids(ids: SortedSet[ExternalPubid]): VdomElement =
     renderSeq(
@@ -341,8 +354,11 @@ final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
       tagWithoutStyle(Plain, tag)(*.tag(tag.live))
     }
 
-  def tagList(ids: Vector[ApplicableTagId]): VdomElement =
-    renderVector(ids, sepSpace)(tagPlain)
+  def tagList(ids: Vector[ApplicableTagId], live: Live, mandatory: Mandatory): VdomElement =
+    if (ids.isEmpty && live.is(Live) && mandatory.is(Mandatory))
+      whenBlankButMandatory
+    else
+      renderVector(ids, sepSpace)(tagPlain)
 
   def useCaseStepTextAndMaybeInvalidFlow[C[x] <: Traversable[x]](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[String \/ UseCaseStepId]],
                                                                  l: Live): VdomTag = {

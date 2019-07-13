@@ -27,6 +27,7 @@ object Style extends StyleSheet.Inline {
       Domain.ofValues[Status](Normal, DragSource, Tombstone)
     }
 
+    val `live * live`     = live *** live
     val `live * on`       = live *** on
     val `live * validity` = live *** validity
 
@@ -696,9 +697,10 @@ object Style extends StyleSheet.Inline {
       hoverShowsInfo,
       mixinIf(a is Dead)(deadAndNotError)))
 
-    val issue = styleF(D.live)(l => styleS(
-      hasError,
-      mixinIf(l is Dead)(textDecoration := ^.lineThrough)))
+    val issue = styleF(D.`live * live`) { case (liveCtx, liveIssue) => styleS(
+      mixinIf(liveCtx is Live)(hasError),
+      mixinIf(liveIssue is Dead)(textDecoration := ^.lineThrough))
+    }
 
     val erroneousUseCaseStepRef = style(hasError)
 
