@@ -266,7 +266,14 @@ object Feature {
       @inline def renderOr[B](args: A)(b: => B)(implicit ev: VdomElement => B): B =
         read.renderOr(args)(b)(ev)
 
-      /** impure */
+      /** 1) Renders the editor if open, or a given view otherwise.
+        * 2) Modifies the parent vdom so that
+        *    - double-clicking starts the editor
+        *    - there is hover text with user instructions
+        *    - colour changes on hover
+        *
+        * impure
+        */
       def themedRenderOr(args: A)(view: => TagMod): TagMod =
         renderOr(args)(TagMod(EditTheme.editableInline(startEdit), view))
 
