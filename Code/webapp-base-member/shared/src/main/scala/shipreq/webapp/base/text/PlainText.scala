@@ -18,7 +18,7 @@ import Atom.AnyAtom
 object PlainText {
 
   object ForProject {
-    type AnyCtx = ForProject[_ <: ProjectText.Context]
+    type AnyCtx = ForProject[ProjectText.Context]
     type NoCtx  = ForProject[ProjectText.Context.None]
 
     def apply[Ctx <: ProjectText.Context](p: Project, ctx: Ctx): ForProject[Ctx] =
@@ -91,7 +91,7 @@ object PlainText {
   // Don't make this final! I'm using eq below.
   private val outOfListNewline = "\n\n"
 
-  final class ForProject[Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
+  final class ForProject[+Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
 
     def withCtx[Ctx2 <: ProjectText.Context](newCtx: Ctx2): ForProject[Ctx2] =
       if (newCtx ==* ctx)

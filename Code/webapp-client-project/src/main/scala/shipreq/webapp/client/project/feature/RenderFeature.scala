@@ -81,6 +81,7 @@ object RenderFeature {
     final type ForUseCaseSteps = RenderFeature.ForUseCaseSteps[Ctx]
   }
 
+  object AnyCtx extends TypeHelpers[PCtx]
   object NoCtx extends TypeHelpers[PCtx.None]
 
   implicit def reusabilityForProject[Ctx <: PCtx]: Reusability[ForProject[Ctx]] =

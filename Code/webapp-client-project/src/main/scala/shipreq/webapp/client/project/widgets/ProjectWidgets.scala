@@ -25,7 +25,7 @@ import shipreq.webapp.client.project.app.Style.{widgets => *}
 
 object ProjectWidgets {
 
-  type AnyCtx = ProjectWidgets[_ <: ProjectText.Context]
+  type AnyCtx = ProjectWidgets[ProjectText.Context]
   type NoCtx  = ProjectWidgets[ProjectText.Context.None]
 
   def apply[Ctx <: ProjectText.Context](project    : Project,
@@ -80,9 +80,9 @@ object ProjectWidgets {
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-final class ProjectWidgets[Ctx <: ProjectText.Context](project      : Project,
-                                                       val plainText: PlainText.ForProject[Ctx],
-                                                       reqDetailRC  : RouterCtl[ExternalPubid])
+final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
+                                                        val plainText: PlainText.ForProject[Ctx],
+                                                        reqDetailRC  : RouterCtl[ExternalPubid])
     extends ProjectText[Ctx, VdomTag](project, plainText.ctx) {
 
   import ProjectWidgets.Internal._

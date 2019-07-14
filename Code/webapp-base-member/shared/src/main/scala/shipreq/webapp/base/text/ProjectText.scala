@@ -97,7 +97,7 @@ object ProjectText {
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-abstract class ProjectText[Ctx <: Context, Out](project: Project, final val ctx: Ctx) {
+abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx: Ctx) {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Abstract
