@@ -130,58 +130,93 @@ object AsyncFeature {
 
       final def either[K2, FF >: F](that: D1[K2, FF]): D1[K \/ K2, FF] =
         D1.either(this, that)
+
+      /** If any keys match, everything is returned.
+        * If no keys match, empty is returned.
+        */
+      final def filterHolistic(f: K => Boolean): D1[K, F] =
+        if (isEmpty)
+          this
+        else {
+          val anyKeysToMatch = iterator.exists(x => f(x._1))
+          if (anyKeysToMatch)
+            this
+          else
+            D1.empty
+        }
     }
 
     object D1 {
+      private[this] val _empty: D1[Any, Any] =
+        new D1[Any, Any] {
+          override def isEmpty = true
+          override def apply(key: Any) = None
+          override def mapKey[J](j: Intersection[Any, J]) = empty
+          override def iterator = Iterator.empty
+          override def keySet = Set.empty
+        }
+
+      def empty[K, F]: D1[K, F] =
+        _empty.asInstanceOf[D1[K, F]]
+
       def apply[K, F](state: State.D1[K, F]): D1[K, F] =
-        mapped(state, Intersection.id)
+        if (state.isEmpty)
+          empty
+        else
+          mapped(state, Intersection.id)
 
       def mapped[SK, K, F](state: State.D1[SK, F], i: Intersection[SK, K]): D1[K, F] =
-        new D1[K, F] {
-          override def isEmpty: Boolean =
-            state.isEmpty
+        if (state.isEmpty)
+          empty
+        else
+          new D1[K, F] {
+            override def isEmpty: Boolean =
+              state.isEmpty
 
-          override def apply(key: K): D0[F] =
-            i.reverse.getOption(key).flatMap(state.get)
+            override def apply(key: K): D0[F] =
+              i.reverse.getOption(key).flatMap(state.get)
 
-          override def mapKey[J](j: Intersection[K, J]): D1[J, F] =
-            mapped(state, i <=> j)
+            override def mapKey[J](j: Intersection[K, J]): D1[J, F] =
+              mapped(state, i <=> j)
 
-          override def iterator: Iterator[(K, Status[F])] =
-            i.reverse.id.fold(
-              state.iterator.map(x => i.getOption(x._1) match {
-                case Some(k) => (k, x._2)
-                case None    => null
-              }).filter(_ ne null)
-            )(_.subst[λ[X => Iterator[(X, Status[F])]]](state.iterator))
+            override def iterator: Iterator[(K, Status[F])] =
+              i.reverse.id.fold(
+                state.iterator.map(x => i.getOption(x._1) match {
+                  case Some(k) => (k, x._2)
+                  case None    => null
+                }).filter(_ ne null)
+              )(_.subst[λ[X => Iterator[(X, Status[F])]]](state.iterator))
 
-          override def keySet: Set[K] =
-            i.reverse.id.fold(
-              state.keysIterator.map(i.getOption).filterDefined.toSet
-            )(_.subst(state.keySet))
-      }
+            override def keySet: Set[K] =
+              i.reverse.id.fold(
+                state.keysIterator.map(i.getOption).filterDefined.toSet
+              )(_.subst(state.keySet))
+          }
 
       private[D1] def either[K1, K2, F](d1: D1[K1, F], d2: D1[K2, F]): D1[K1 \/ K2, F] =
-        new D1[K1 \/ K2, F] {
-          override def isEmpty: Boolean =
-            d1.isEmpty && d2.isEmpty
+        if (d1.isEmpty && d2.isEmpty)
+          empty
+        else
+          new D1[K1 \/ K2, F] {
+            override def isEmpty: Boolean =
+              d1.isEmpty && d2.isEmpty
 
-          override def apply(key: K1 \/ K2): D0[F] =
-            key.fold(d1.apply, d2.apply)
+            override def apply(key: K1 \/ K2): D0[F] =
+              key.fold(d1.apply, d2.apply)
 
-          override def mapKey[J](j: Intersection[K1 \/ K2, J]): D1[J, F] =
-            D1.mapped(iterator.toMap, j)
+            override def mapKey[J](j: Intersection[K1 \/ K2, J]): D1[J, F] =
+              D1.mapped(iterator.toMap, j)
 
-          override def iterator: Iterator[(K1 \/ K2, Status[F])] =
-            d1.iterator.map(_.map1(-\/(_))) ++ d2.iterator.map(_.map1(\/-(_)))
+            override def iterator: Iterator[(K1 \/ K2, Status[F])] =
+              d1.iterator.map(_.map1(-\/(_))) ++ d2.iterator.map(_.map1(\/-(_)))
 
-          override def keySet: Set[K1 \/ K2] = {
-            val s = Set.newBuilder[K1 \/ K2]
-            s ++= d1.keySet.iterator.map(-\/(_))
-            s ++= d2.keySet.iterator.map(\/-(_))
-            s.result()
+            override def keySet: Set[K1 \/ K2] = {
+              val s = Set.newBuilder[K1 \/ K2]
+              s ++= d1.keySet.iterator.map(-\/(_))
+              s ++= d2.keySet.iterator.map(\/-(_))
+              s.result()
+            }
           }
-        }
 
       implicit def reusability[K, F]: Reusability[D1[K, F]] =
         Reusability.byRef || Reusability.when(_.isEmpty)

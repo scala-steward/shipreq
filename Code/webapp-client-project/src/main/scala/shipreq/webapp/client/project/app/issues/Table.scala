@@ -7,6 +7,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/-}
 import shipreq.base.util.{ConsolidatedSeq, ErrorMsg}
+import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.sort.FusedSorters
@@ -106,7 +107,7 @@ object Table {
           row.editor(p.editor, reusablePxPW),
           pubidFormat,
           cmdInvoker,
-          p.cmdAsync,
+          p.cmdAsync.filterHolistic(cmd => row.actions.exists(_.cmd ==* cmd)), // for better Reusability
           issueCategory = csIssueCategory(rowIdx),
           issueClass    = csIssueClass(rowIdx),
           idBase        = csIds(rowIdx),
