@@ -586,7 +586,7 @@ final class ApplicableEventGen(curState: State) {
         inactiveValues = p.content.reqCodes.inactiveIdsByReqId(reqId)
         restore        ← Gen.tryGenChoose(inactiveValues.toVector).setE(0 to 2)
         activeValues   = p.content.reqCodes.activeReqCodesByReqId(reqId)
-        activeIds      = activeValues.iterator.map(p.content.reqCodes(_).activeId.get).collect {case i: ApReqCodeId => i}.toSet
+        activeIds      = activeValues.iterator.map(p.content.reqCodes.need(_).activeId.get).collect {case i: ApReqCodeId => i}.toSet
         remove         ← Gen.tryGenChoose(activeIds.toVector).setE(0 to 2)
         renameIds      ← Gen.tryGenChoose(remove.toVector).setE(0 to 2)
         addMin         = if (remove.nonEmpty || restore.nonEmpty) 0 else 1
