@@ -28,12 +28,12 @@ object TableHeader {
       case Column.FieldEditor       => UiText.ColumnNames.issueFieldEditor
       case Column.Actions           => UiText.ColumnNames.issueActions
       case Column.Id                => UiText.ColumnNames.id
-      case Column.Code              => UiText.ColumnNames.code
       case Column.Title             => UiText.ColumnNames.title
-      case Column.ReqType           => UiText.ColumnNames.reqType
-      case Column.Tags              => UiText.ColumnNames.tags
-      case Column.Implications(dir) => UiText.ColumnNames.implications(dir)
-      case Column.CustomField(id)   => p.fieldNames(id)
+//      case Column.Code              => UiText.ColumnNames.code
+//      case Column.ReqType           => UiText.ColumnNames.reqType
+//      case Column.Tags              => UiText.ColumnNames.tags
+//      case Column.Implications(dir) => UiText.ColumnNames.implications(dir)
+//      case Column.CustomField(id)   => p.fieldNames(id)
     }
 
     <.thead(

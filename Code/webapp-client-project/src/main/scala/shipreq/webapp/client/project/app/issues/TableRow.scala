@@ -134,21 +134,6 @@ object TableRow {
             }
             cells += base(c)
           }
-
-        case Column.Code =>
-          addTD("TODO") // TODO ==========================
-
-        case Column.ReqType =>
-          addTD("TODO") // TODO ==========================
-
-        case Column.Tags =>
-          addTD("TODO") // TODO ==========================
-
-        case Column.Implications(dir) =>
-          addTD("TODO") // TODO ==========================
-
-        case Column.CustomField(id) =>
-          addTD("TODO") // TODO ==========================
       }
     }
 
