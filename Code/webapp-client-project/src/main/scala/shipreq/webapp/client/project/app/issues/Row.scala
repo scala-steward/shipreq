@@ -2,13 +2,15 @@ package shipreq.webapp.client.project.app.issues
 
 import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.{Reusability, Reusable}
-import japgolly.scalajs.react.vdom.TagMod
+import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.issue._
 import shipreq.webapp.base.UiText.{Issues => UI}
+import shipreq.webapp.base.feature.TableNavigationFeature
 import shipreq.webapp.client.project.feature.RenderFeature
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.feature.EditorFeature.FieldKey
+import shipreq.webapp.client.project.lib.EditorNavParent
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 sealed trait Row {
@@ -17,7 +19,7 @@ sealed trait Row {
   def fieldOption: Option[IssueField[FieldKey]]
   val actions: List[Action]
 
-  val editor: (EditorFeature.ReadWrite.ForProject, Reusable[Px[ProjectWidgets.NoCtx]]) => Option[Reusable[TagMod]]
+  val editor: (EditorFeature.ReadWrite.ForProject, Reusable[Px[ProjectWidgets.NoCtx]]) => Option[Reusable[EditorNavParent.Props]]
 
   final def issueCategoryDesc = UI.category(issue.category)
 }
@@ -35,11 +37,7 @@ object Row {
                                  renderer      : RenderFeature.NoCtx.ForGenericReq,
                                  actions       : List[Action]) extends ForReq {
     override val fieldOption = Some(field)
-
-    override val editor = (e, pw) => {
-      val e2 = e.forGenericReq(req.id)(field.key, pw, HideDead)
-      Some(Reusable.implicitly(e2).map(_.themedRenderOr(())(renderer(field.key))))
-    }
+    override val editor = (e, pw) => Some(renderEditable(field.key)(renderer, e.forGenericReq(req.id), (), pw))
   }
 
   final case class ForUseCase(issue         : Issue,
@@ -49,11 +47,7 @@ object Row {
                               renderer      : RenderFeature.NoCtx.ForUseCase,
                               actions       : List[Action]) extends ForReq {
     override val fieldOption = Some(field)
-
-    override val editor = (e, pw) => {
-      val e2 = e.forUseCase(req.id)(field.key, pw, HideDead)
-      Some(Reusable.implicitly(e2).map(_.themedRenderOr(())(renderer(field.key))))
-    }
+    override val editor = (e, pw) => Some(renderEditable(field.key)(renderer, e.forUseCase(req.id), (), pw))
   }
 
   final case class ForUseCaseStep(issue         : Issue,
@@ -64,11 +58,8 @@ object Row {
                                   renderer      : RenderFeature.NoCtx.ForUseCaseSteps,
                                   actions       : List[Action]) extends ForReq {
     override val fieldOption = Some(field)
-
-    override val editor = (e, pw) => {
-      val e2 = e.forUseCaseSteps(field.key, pw, HideDead)
-      Some(Reusable.implicitly(e2).map(_.themedRenderOr(FieldKey.UseCaseStep.Args.empty)(renderer(field.key))))
-    }
+    override val editor = (e, pw) => Some(
+      renderEditable(field.key)(renderer, e.forUseCaseSteps, FieldKey.UseCaseStep.Args.empty, pw))
   }
 
   final case class ForRcg(issue         : Issue,
@@ -81,8 +72,7 @@ object Row {
 
     override val editor = (e, pw) =>
       fieldOption.map { f =>
-        val e2 = e.forCodeGroup(rcg.id)(f.key, pw, HideDead)
-        Reusable.implicitly(e2).map(_.themedRenderOr(())(renderer(f.key)))
+        renderEditable(f.key)(renderer, e.forCodeGroup(rcg.id), (), pw)
       }
   }
 
@@ -97,6 +87,17 @@ object Row {
 
   implicit def reusability: Reusability[Row] =
     Reusability.byRef
+
+  private def renderEditable[FK <: FieldKey](fk    : FK)
+                                            (render: RenderFeature.NoCtx.ForField[FK],
+                                             editor: EditorFeature.ReadWrite.ForFields[FK],
+                                             args  : fk.Args,
+                                             pw    : Reusable[Px[ProjectWidgets.NoCtx]]): Reusable[EditorNavParent.Props] = {
+    val e = editor(fk, pw, HideDead)
+    Reusable.implicitly(e).map { e =>
+      TableRow.renderEditor(Column.FieldEditor, render(fk), e, args)
+    }
+  }
 
   def fromIssue(p: Project, rf: RenderFeature.NoCtx.ForProject): Issue => Row = {
     implicit val cfg = p.config

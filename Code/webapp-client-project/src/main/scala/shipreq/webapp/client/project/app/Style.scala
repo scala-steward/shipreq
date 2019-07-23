@@ -654,7 +654,10 @@ object Style extends StyleSheet.Inline {
 
     def table       = generic.table
     def tableHeader = generic.tableHeaderBase
-    def tableData   = generic.tableDataBase
+
+    val tableData   = style(
+      generic.tableDataBase,
+      &.focus(BaseStyles.focus.glowOutline))
 
     val rowspanOuter = style(
       display.inline,

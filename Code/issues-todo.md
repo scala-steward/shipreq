@@ -39,7 +39,6 @@ functionality
   * dynamic columns
   * custom sorting
   * filter
-  * KB navigation
 * filter changes
   * issue category
   * issue class

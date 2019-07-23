@@ -73,12 +73,13 @@ object RenderFeature {
   type ForUseCaseSteps[Ctx <: PCtx] = ForData[Ctx, FieldKey.UseCaseStep  ]
 
   sealed trait TypeHelpers[Ctx <: PCtx] {
-    final type ForProject      = RenderFeature.ForProject     [Ctx]
-    final type ForCodeGroup    = RenderFeature.ForCodeGroup   [Ctx]
-    final type ForGenericReq   = RenderFeature.ForGenericReq  [Ctx]
-    final type ForReq          = RenderFeature.ForReq         [Ctx]
-    final type ForUseCase      = RenderFeature.ForUseCase     [Ctx]
-    final type ForUseCaseSteps = RenderFeature.ForUseCaseSteps[Ctx]
+    final type ForProject                = RenderFeature.ForProject     [Ctx]
+    final type ForField[FK <: FieldKey]  = RenderFeature.ForData        [Ctx, FK]
+    final type ForCodeGroup              = RenderFeature.ForCodeGroup   [Ctx]
+    final type ForGenericReq             = RenderFeature.ForGenericReq  [Ctx]
+    final type ForReq                    = RenderFeature.ForReq         [Ctx]
+    final type ForUseCase                = RenderFeature.ForUseCase     [Ctx]
+    final type ForUseCaseSteps           = RenderFeature.ForUseCaseSteps[Ctx]
   }
 
   object AnyCtx extends TypeHelpers[PCtx]

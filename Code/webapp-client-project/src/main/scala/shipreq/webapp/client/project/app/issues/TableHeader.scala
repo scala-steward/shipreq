@@ -41,7 +41,6 @@ object TableHeader {
         p.columns.whole.toVdomArray(c =>
           <.th(
             *.tableHeader,
-            ^.tabIndex := -1,
             ^.key := c.key,
             columnName(c)))))
   }

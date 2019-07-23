@@ -9,13 +9,15 @@ import scalaz.\/
 import shipreq.base.util.{ConsolidatedSeq, ErrorMsg}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.feature.AsyncFeature
+import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.client.project.app.Style.{issues => *}
+import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.feature.editor.FieldKey
 import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.lib.EditorNavParent
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 object TableRow {
@@ -23,7 +25,7 @@ object TableRow {
 
   final case class Props(row             : Row,
                          columns         : NonEmptyVector[Column],
-                         editor          : Option[Reusable[TagMod]],
+                         editor          : Option[Reusable[EditorNavParent.Props]],
                          pubidFormat     : ProjectWidgets.NoCtx#PubidFormat,
                          cmdInvoker      : Action.Cmd ~=> Callback,
                          cmdAsync        : AsyncFeature.Read.D1[Action.Cmd, ErrorMsg],
@@ -36,43 +38,14 @@ object TableRow {
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.derive
 
-  private val td = <.td(*.tableData)
+  private val td = <.td(*.tableData, ^.tabIndex := -1)
 
   private val na = TagMod(*.na, "–")
 
-  private type RenderGroup[-A] = ConsolidatedSeq.Group[A] => Reusable[TD]
-
-  private def renderGroupBase(col: Column): RenderGroup[Any] =
-    g => Reusable.byRef(td(^.key := col.key, ^.rowSpan := g.size))
-
-  private def renderIssueGroup(col: Column): RenderGroup[String] = g => {
-    val base = td(^.key := col.key, g.value)
-    val result =
-      if (g.size == 1)
-        base
-      else
-        base(
-          <.div(*.rowspanOuter, "(", <.span(*.rowspanInner, g.size), ")"),
-          ^.rowSpan := g.size)
-    Reusable.byRef(result)
-  }
-
-  private val consolidateStrings = ConsolidatedSeq.Logic.consolidateByUnivEq[String]
-
-  val consolidateIssueCategories = consolidateStrings(renderIssueGroup(Column.IssueCategory))
-
-  val consolidateIssueClasses = consolidateStrings(renderIssueGroup(Column.IssueClass))
-
-  final case class Id(group: Int, value: Option[ReqCode.Value \/ ReqId])
-
-  object Id {
-    implicit def univEq: UnivEq[Id] = UnivEq.derive
-    val consolidate = ConsolidatedSeq.Logic.cmp[Id]((a, b) => a.value.isDefined && (a ==* b))(renderGroupBase(Column.Id))
-  }
-
-  private val consolidateText = ConsolidatedSeq.Logic.consolidateByUnivEq[(Int, Text.AnyOptional)]
-
-  val consolidateTitle = consolidateText(renderGroupBase(Column.Title))
+  private def cellBase(col: Column, addNav: Boolean = true) =
+    td(
+      ^.key := col.key,
+      TableNavigationFeature.onKeyDown.when(addNav))
 
   private def render(p: Props): VdomElement = {
     import p.{row, pubidFormat}
@@ -80,7 +53,9 @@ object TableRow {
     val cells = VdomArray.empty()
 
     for (col <- p.columns) {
-      def addTD(content: TagMod) = cells += td(^.key := col.key, content)
+
+      def addTD(content: TagMod, addNav: Boolean = true) =
+        cells += cellBase(col, addNav)(content)
 
       col match {
 
@@ -94,7 +69,10 @@ object TableRow {
           addTD(row.fieldOption.fold(na)(_.desc))
 
         case Column.FieldEditor =>
-          addTD(p.editor.fold(na)(_.value))
+          p.editor match {
+            case Some(props) => cells += props.renderWithKey(col.key)
+            case None        => addTD(na)
+          }
 
         case Column.Actions =>
           addTD(
@@ -144,4 +122,52 @@ object TableRow {
     .render_P(render)
     .configure(shouldComponentUpdate)
     .build
+
+  // ===================================================================================================================
+  // Consolidation
+
+  private type RenderGroup[-A] = ConsolidatedSeq.Group[A] => Reusable[TD]
+
+  private def renderGroupBase(col: Column): RenderGroup[Any] =
+    g => Reusable.byRef(cellBase(col)(^.rowSpan := g.size))
+
+  private def renderIssueGroup(col: Column): RenderGroup[String] = g => {
+    val base = cellBase(col)(g.value)
+    val result =
+      if (g.size == 1)
+        base
+      else
+        base(
+          <.div(*.rowspanOuter, "(", <.span(*.rowspanInner, g.size), ")"),
+          ^.rowSpan := g.size)
+    Reusable.byRef(result)
+  }
+
+  private val consolidateStrings = ConsolidatedSeq.Logic.consolidateByUnivEq[String]
+
+  val consolidateIssueCategories = consolidateStrings(renderIssueGroup(Column.IssueCategory))
+
+  val consolidateIssueClasses = consolidateStrings(renderIssueGroup(Column.IssueClass))
+
+  final case class Id(group: Int, value: Option[ReqCode.Value \/ ReqId])
+
+  object Id {
+    implicit def univEq: UnivEq[Id] = UnivEq.derive
+    val consolidate = ConsolidatedSeq.Logic.cmp[Id]((a, b) => a.value.isDefined && (a ==* b))(renderGroupBase(Column.Id))
+  }
+
+  private val consolidateText = ConsolidatedSeq.Logic.consolidateByUnivEq[(Int, Text.AnyOptional)]
+
+  val consolidateTitle = consolidateText(renderGroupBase(Column.Title))
+
+  // ===================================================================================================================
+  // Cells
+
+  def renderEditor[A](column: Column,
+                      render: => TagMod,
+                      editor: EditorFeature.ReadWrite.ForEditor[A, Any],
+                      args  : A): EditorNavParent.Props = {
+    val base = cellBase(column, addNav = false)
+    EditorNavParent.Props(base, editor, args, render)
+  }
 }
