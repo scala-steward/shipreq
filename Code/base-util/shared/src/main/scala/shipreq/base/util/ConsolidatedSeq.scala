@@ -9,6 +9,15 @@ object ConsolidatedSeq {
     def apply[A](doConsolidate: Candidate[A] => Boolean): Dsl[A] =
       new Dsl(doConsolidate)
 
+    def const[A](doConsolidate: Boolean) =
+      apply[A](_ => doConsolidate)
+
+    def never[A] =
+      const[A](false)
+
+    def always[A] =
+      const[A](true)
+
     def cmp[A](doConsolidate: (A, A) => Boolean): Dsl[A] =
       apply(c => doConsolidate(c.prev, c.cur))
 
@@ -31,6 +40,15 @@ object ConsolidatedSeq {
   final class Logic[-A, +B](doConsolidate: Candidate[A] => Boolean,
                             groupHead    : Group[A] => B,
                             groupTail    : Group[A] => Option[B]) {
+
+    def disable: Logic[A, B] =
+      new Logic[A, B](_ => false, groupHead, groupTail)
+
+    def disableWhen(cond: Boolean): Logic[A, B] =
+      if (cond) disable else this
+
+    def disableUnless(cond: Boolean): Logic[A, B] =
+      if (cond) this else disable
 
     def contramap[C](f: C => A): Logic[C, B] =
       new Logic[C, B](
