@@ -104,6 +104,7 @@ object DockerEnv {
         .add("db.port"        , postgresPort)
         .add("redis.url"      , s"redis://localhost:$redisPort")
         .add("run.mode"       , runMode)
+        .add("shipreq.url"    , "http://localhost:8080")
         .value
     }
 
