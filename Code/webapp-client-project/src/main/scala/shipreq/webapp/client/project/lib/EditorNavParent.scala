@@ -22,6 +22,7 @@ object EditorNavParent {
     val editor    : EditorFeature.ReadWrite.ForEditor[A, Any]
     val editorArgs: A
     val view      : () => TagMod
+    val tableStyle: TableNavigationFeature.TableStyle
 
     @inline final def render: VdomElement =
       Component(this)
@@ -37,7 +38,8 @@ object EditorNavParent {
       */
     @inline def apply(parent: VdomTag,
                       editor: EditorFeature.ReadWrite.ForEditor[Unit, Any],
-                      view  : => TagMod): Props =
+                      view  : => TagMod)
+                     (implicit ts: TableNavigationFeature.TableStyle): Props =
       apply(parent, editor, (), view)
 
     /**
@@ -46,7 +48,8 @@ object EditorNavParent {
     def apply[A](parent    : VdomTag,
                  editor    : EditorFeature.ReadWrite.ForEditor[A, Any],
                  editorArgs: A,
-                 view      : => TagMod): Props = {
+                 view      : => TagMod)
+                (implicit ts: TableNavigationFeature.TableStyle): Props = {
       type _A         = A
       val _parent     = parent
       val _editor     = editor
@@ -58,6 +61,7 @@ object EditorNavParent {
         override val editorArgs = _editorArgs
         override val editor     = _editor
         override val view       = _view
+        override val tableStyle = ts
       }
     }
   }
@@ -74,7 +78,7 @@ object EditorNavParent {
       p.editor.onClose(editorOnClose)
 
     val onKeyDown: ReactKeyboardEventFromHtml => Callback =
-      e => TableNavigationFeature.Keys(e) | EditorFeature.Keys(editor)(e)
+      e => TableNavigationFeature(p.tableStyle).Keys(e) | EditorFeature.Keys(editor)(e)
 
     p.parent(
       ^.onKeyDown ==> onKeyDown,

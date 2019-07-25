@@ -25,8 +25,6 @@ import japgolly.scalajs.react.vdom.html_<^._
   */
 object TableNavigationFeature {
 
-  val Keys = tablenav.TableNavKeys
-
   type Zipper = tablenav.TableCellZipper
   val  Zipper = tablenav.TableCellZipper
 
@@ -36,6 +34,21 @@ object TableNavigationFeature {
   type Axis = tablenav.Axis
   val  Axis = tablenav.Axis
 
+  type TableStyle = tablenav.TableStyle
+  val  TableStyle = tablenav.TableStyle
+
+  def apply(ts: TableStyle): Bundle =
+    if (ts.hasRowSpans)
+      HasRowSpans
+    else
+      NoRowSpans
+
+  /** Use this if the target table doesn't use rowSpans -- it's much faster */
+  val NoRowSpans = new Bundle(TableStyle(hasRowSpans = false))
+
+  /** Use this if the target table uses rowSpans */
+  val HasRowSpans = new Bundle(TableStyle(hasRowSpans = true))
+
   /** Annotate nested tables with this to have them count as sub-cell content */
   val nestedTable: TagMod =
     VdomAttr(tablenav.Attrs.NestedTable) := 1
@@ -43,6 +56,13 @@ object TableNavigationFeature {
   val newRow: TagMod =
     VdomAttr(tablenav.Attrs.NewRow) := 1
 
-  val onKeyDown: TagMod =
-    ^.onKeyDown ==> Keys.handler
+  // -------------------------------------------------------------------------------------------------------------------
+
+  final class Bundle private[TableNavigationFeature] (val tableStyle: TableStyle) {
+
+    val Keys = new tablenav.TableNavKeys()(tableStyle)
+
+    val onKeyDown: TagMod =
+      ^.onKeyDown ==> Keys.handler
+  }
 }

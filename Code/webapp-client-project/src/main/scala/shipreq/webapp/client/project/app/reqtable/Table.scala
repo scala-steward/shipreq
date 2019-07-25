@@ -26,6 +26,8 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
   import Table._
   import Shared._
 
+  private val tableNavigationFeature = TableNavigationFeature.NoRowSpans
+
   object Whole {
 
     case class Props(mode            : Mode,
@@ -142,7 +144,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
           $.props.flatMap(_ reorder newCols))
 
       private def dataColKeyDown(col: ColumnPlus)(e: ReactKeyboardEventFromHtml): Callback =
-        TableNavigationFeature.Keys(e) | CallbackOption.keyCodeSwitch(e) {
+        tableNavigationFeature.Keys(e) | CallbackOption.keyCodeSwitch(e) {
           case KeyCode.Space => $.props.flatMap(_ clickSort col)
         }.asEventDefault(e)
 
@@ -150,7 +152,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
         val selectionCell =
           <.th(
             *.selectionColumnHeader,
-            TableNavigationFeature.onKeyDown,
+            tableNavigationFeature.onKeyDown,
             p.selection.total.checkboxAndOnClick) // TODO *.selectionCheckbox
 
         val cols =
@@ -260,7 +262,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
       def renderNormal = {
         val selCell =
           selBase(
-            TableNavigationFeature.onKeyDown,
+            tableNavigationFeature.onKeyDown,
             sel.onClick,
             sel.checkbox(*.selectionCheckbox, ^.tabIndex := -1))
 
@@ -421,7 +423,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
     type Dom = dom.html.TableDataCell
 
     def onKeyDown(editor: EditorFeature.ReadWrite.ForAnyEditor): ReactKeyboardEventFromHtml => Callback =
-      e => TableNavigationFeature.Keys(e) | EditorFeature.Keys(editor)(e)
+      e => tableNavigationFeature.Keys(e) | EditorFeature.Keys(editor)(e)
 
     val cellBase = <.td(^.tabIndex := -1)
 

@@ -484,7 +484,15 @@ object TableNavigationFeatureTest extends TestSuite {
     case Backwards => _.reverse
   }
 
-  def testCellLabels(table: html.Table)(implicit l: Line): Unit = {
+  def compatibleTableStyles(implicit ts: TableStyle): List[TableStyle] =
+    if (ts.hasRowSpans)
+      Nil
+    else
+      // If a table doesn't have rowSpans, it should function the same when rowSpans are enabled
+      TableStyle(hasRowSpans = true) :: Nil
+
+
+  def testCellLabels(table: html.Table)(implicit ts: TableStyle, l: Line): Unit = {
     def text(e: html.Element): String =
       ReactTestUtils.removeReactInternals(e.innerHTML).replaceFirst("\\).+", ")")
 
@@ -502,9 +510,11 @@ object TableNavigationFeatureTest extends TestSuite {
       assertEq("goto(focusVLoc).focusVLoc", loc2.toString, expect = text(c))
       assertEq(loc2, loc)
     }
+
+    compatibleTableStyles.foreach(testCellLabels(table)(_, l))
   }
 
-  def init(table: html.Table): TableCellZipper =
+  def init(table: html.Table)(implicit ts: TableStyle): TableCellZipper =
     TableCellZipper(table.querySelectorAll("td,th").iterator.focusable.next())
 
   def needGoto(z: TableCellZipper, pos: VirtualLoc)(implicit l: Line): TableCellZipper = {
@@ -513,11 +523,14 @@ object TableNavigationFeatureTest extends TestSuite {
     z2
   }
 
-  def testMoves(table: html.Table, axis: Axis, movement: Movement, moves: TestMoves, movesDir: Direction)(implicit l: Line): Unit = {
+  def testMoves(table: html.Table, axis: Axis, movement: Movement, moves: TestMoves, movesDir: Direction)
+               (implicit ts: TableStyle, l: Line): Unit = {
     val z = init(table)
     moves.moveTests.foreach { ms =>
       testMoves2(z, axis, movement, changeDir(movesDir)(ms))
     }
+
+    compatibleTableStyles.foreach(testMoves(table, axis, movement, moves, movesDir)(_, l))
   }
 
   def testMoves2(z: TableCellZipper, axis: Axis, movement: Movement, moves: List[VirtualLoc])(implicit l: Line): Unit =
@@ -530,7 +543,8 @@ object TableNavigationFeatureTest extends TestSuite {
     assertEq(s"$movement along $axis from $from", actual, \/-(to))
   }
 
-  def testSubMoves(table: html.Table, movement: Movement, moves: TestMoves, movesDir: Direction): Unit = {
+  def testSubMoves(table: html.Table, movement: Movement, moves: TestMoves, movesDir: Direction)
+                  (implicit ts: TableStyle, l: Line): Unit = {
     val z = init(table)
 
     def testData: Iterator[List[VirtualLoc]] =
@@ -546,6 +560,8 @@ object TableNavigationFeatureTest extends TestSuite {
       } else
         // Test movement succeeds
         testSubMoves2(z, movement, ps.last :: ps)
+
+    compatibleTableStyles.foreach(testSubMoves(table, movement, moves, movesDir)(_, l))
   }
 
   def testSubMoves2(z: TableCellZipper, movement: Movement, moves: List[VirtualLoc]): Unit =
@@ -558,6 +574,7 @@ object TableNavigationFeatureTest extends TestSuite {
   override def tests = Tests {
 
     'lr {
+      implicit val ts = TableStyle(hasRowSpans = false)
       def t = lr
       def T = LR
       'posDetection   - testCellLabels(t)
@@ -570,6 +587,7 @@ object TableNavigationFeatureTest extends TestSuite {
     }
 
     'td {
+      implicit val ts = TableStyle(hasRowSpans = false)
       def t = td
       def T = TD
       'posDetection   - testCellLabels(t)
@@ -590,6 +608,7 @@ object TableNavigationFeatureTest extends TestSuite {
     }
 
     'rowSpans {
+      implicit val ts = TableStyle(hasRowSpans = true)
       def t = rowSpans
       def T = RowSpans
       'posDetection   - testCellLabels(t)

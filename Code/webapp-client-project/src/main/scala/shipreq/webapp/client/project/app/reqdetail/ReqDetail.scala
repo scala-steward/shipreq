@@ -29,6 +29,8 @@ import ProjectWidgets.emptySpan
 
 object ReqDetail {
 
+  private implicit val tableNavigationFeature = TableNavigationFeature.NoRowSpans
+
   def apply(staticProps: StaticProps) =
     ScalaComponent.builder[DynamicProps]("ReqDetail")
       .backend(new Backend(staticProps, _))
@@ -318,7 +320,7 @@ object ReqDetail {
         }
 
         def nonDirectlyEditorNavParent(t: TagMod): VdomElement =
-          cellBase(TableNavigationFeature.onKeyDown, t)
+          cellBase(tableNavigationFeature.onKeyDown, t)
 
         def useCaseStepsCell(f: UseCaseData => UseCaseStepTree.StepData): VdomElement = {
           val d = data.useCaseData.get

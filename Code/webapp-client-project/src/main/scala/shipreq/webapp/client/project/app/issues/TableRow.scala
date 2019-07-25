@@ -38,6 +38,8 @@ object TableRow {
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.derive
 
+  private implicit val tableNavigationFeature = TableNavigationFeature.HasRowSpans
+
   private val td = <.td(*.tableData, ^.tabIndex := -1)
 
   private val na = TagMod(*.na, "–")
@@ -45,7 +47,7 @@ object TableRow {
   private def cellBase(col: Column, addNav: Boolean = true) =
     td(
       ^.key := col.key,
-      TableNavigationFeature.onKeyDown.when(addNav))
+      tableNavigationFeature.onKeyDown.when(addNav))
 
   private def render(p: Props): VdomElement = {
     import p.{row, pubidFormat}

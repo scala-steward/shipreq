@@ -50,7 +50,8 @@ private[tablenav] object Logic {
   }
 
   @tailrec
-  def findRootAndPos(parentStream: ParentStream, focus: html.Element, expectSubPos: Boolean = false): F[(VirtualTable, VirtualLoc)] =
+  def findRootAndPos(parentStream: ParentStream, focus: html.Element, expectSubPos: Boolean = false)
+                    (implicit ts: TableStyle): F[(VirtualTable, VirtualLoc)] =
     parentStream.map(t => if (t._1.hasAttribute(Attrs.NestedTable)) "" else t._1.tagName) match {
 
       case ("TD" | "TH") #:: "TR" #:: ("TBODY" | "THEAD") #:: "TABLE" #:: _ =>

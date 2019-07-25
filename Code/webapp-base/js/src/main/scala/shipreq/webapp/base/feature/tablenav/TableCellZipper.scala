@@ -15,13 +15,16 @@ import shipreq.webapp.base.lib.DomUtil._
 
 object TableCellZipper {
 
-  def option(o: Option[html.Element]): F[TableCellZipper] =
+  def apply(focus: html.Element)(implicit ts: TableStyle): TableCellZipper =
+    new TableCellZipper(focus)
+
+  def option(o: Option[html.Element])(implicit ts: TableStyle): F[TableCellZipper] =
     o match {
       case Some(e) => \/-(apply(e))
       case None    => -\/("Nothing focusable")
     }
 
-  def within(e: html.Element): F[TableCellZipper] =
+  def within(e: html.Element)(implicit ts: TableStyle): F[TableCellZipper] =
     if (isFocusable(e))
       \/-(apply(e))
     else
@@ -30,7 +33,7 @@ object TableCellZipper {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-final case class TableCellZipper(focus: html.Element) {
+final class TableCellZipper(val focus: html.Element)(implicit tableStyle: TableStyle) {
   import Logic._
 
   private lazy val rootAndPos =

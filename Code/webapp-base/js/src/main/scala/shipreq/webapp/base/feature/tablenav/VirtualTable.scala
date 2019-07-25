@@ -56,7 +56,13 @@ private[tablenav] trait VirtualTable {
 
 private[tablenav] object VirtualTable {
 
-  def apply(t: html.Table): VirtualTable =
+  def apply(t: html.Table)(implicit ts: TableStyle): VirtualTable =
+    if (ts.hasRowSpans)
+      from(t)
+    else
+      oneToOne(t)
+
+  def from(t: html.Table): VirtualTable =
     new VirtualTable {
 
       private val s = t.children.iterator.map(Section).toArray
