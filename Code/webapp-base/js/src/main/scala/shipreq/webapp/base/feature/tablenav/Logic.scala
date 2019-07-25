@@ -90,19 +90,11 @@ private[tablenav] object Logic {
         -\/("Unable to determine table structure")
     }
 
-  def rowIterator(table: html.Table): Iterator[html.TableRow] =
-    table
-      .children.iterator
-      .filter(t => t.tagName ==* "TBODY" || t.tagName ==* "THEAD")
-      .flatMap(_.domAsHtml
-        .children.iterator
-        .filter(_.tagName ==* "TR")
-        .map(_.domCast[html.TableRow]))
-
+  /** (Cell DOM, (virtual column, sub)) */
   type RowContent = (html.Element, (Int, Option[PosXY]))
 
   def rowContentsIterator(vt: VirtualTable, focusLoc: VirtualLoc): Iterator[RowContent] =
-    (0 until vt.virtualCols(focusLoc)).iterator
+    (0 until vt.virtualColCount(focusLoc)).iterator
       .map(focusLoc.withCol)
       .map(l => vt.cellAt(l).toOption.map((_, l)))
       .filterDefined

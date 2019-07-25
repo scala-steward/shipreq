@@ -36,11 +36,8 @@ final case class TableCellZipper(focus: html.Element) {
   private lazy val rootAndPos =
     findRootAndPos(parentsAndIndices(focus), focus)
 
-  private def virtualTable: F[VirtualTable] =
+  def virtualTable: F[VirtualTable] =
     rootAndPos.map(_._1)
-
-  def root: F[html.Table] =
-    virtualTable.map(_.root)
 
   def focusVLoc: F[VirtualLoc] =
     rootAndPos.map(_._2)
@@ -61,15 +58,15 @@ final case class TableCellZipper(focus: html.Element) {
     type Sub = (html.Element, Option[PosXY])
 
     def virtualRows(vt: VirtualTable, focusLoc: VirtualLoc): Iterator[(Int, Int, NonEmptyVector[Sub])] =
-      (0 until vt.sections).iterator
-        .flatMap(section => (0 until vt.virtualRows(section)).iterator.map((section, _)))
+      (0 until vt.sectionCount).iterator
+        .flatMap(section => (0 until vt.virtualRowCount(section)).iterator.map((section, _)))
         .flatMap { case (section, row) =>
 
           def cells: Iterator[html.Element] = {
-            val len   = vt.virtualCols(section, row)
+            val len   = vt.virtualColCount(section, row)
             val first = focusLoc.col.min(len - 1)
             val it    = (first to 0 by -1).iterator ++ (first + 1 until len)
-            if (vt.isRoot(section, VirtualPos(row, first)))
+            if (vt.isRootCell(section, VirtualPos(row, first)))
               it
                 .map(col => VirtualLoc(section, VirtualPos(row, col), None))
                 .map(loc => vt.cellAt(loc).toOption)

@@ -492,15 +492,15 @@ object TableNavigationFeatureTest extends TestSuite {
     assert(cells.nonEmpty)
     for (c <- cells) {
       val z = TableCellZipper(c)
-      val pos = z.focusVLoc.needRight
-      val tableRoot = z.root.needRight
-      assertEq("focusPos", pos.toString, text(c))
+      val loc = z.focusVLoc.needRight
+      val tableRoot = z.virtualTable.needRight.root
+      assertEq("focusVLoc", loc.toString, text(c))
       assert(tableRoot == table)
 
-      val z2 = z.goto(pos).needRight
-      val pos2 = z2.focusVLoc.needRight
-      assertEq("goto(focusPos).focusVLoc", pos2.toString, expect = text(c))
-      assertEq(pos2, pos)
+      val z2 = z.goto(loc).needRight
+      val loc2 = z2.focusVLoc.needRight
+      assertEq("goto(focusVLoc).focusVLoc", loc2.toString, expect = text(c))
+      assertEq(loc2, loc)
     }
   }
 
