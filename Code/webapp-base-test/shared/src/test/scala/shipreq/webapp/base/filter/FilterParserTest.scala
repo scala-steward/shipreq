@@ -226,7 +226,7 @@ object FilterParserTest extends TestSuite {
 
     // TODO {has,no,implies,impliedBy}: etc case insensitive
 
-    // TODO MF FR should warn and recommend (MF FR)
+    // TODO MF FR should warn and recommend (MF | FR)
     // Or do it automatically if parsing isn't live
 
     'combos {

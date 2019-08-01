@@ -62,10 +62,10 @@ object FilterHelp {
         "You can also filter by whether a requirement has any issues or any tags by specifying ", code("has:"),
         " followed by either:",
         <.ol(
-          <.li(code("issues")),
-          <.li(code("tags"))),
+          <.li(code("issue")),
+          <.li(code("tag"))),
         // "As above, this is case-insensitive, so it doesn't matter whether text is upper-case or lower-case."
-      )("has:issues", "has:tags"),
+      )("has:issue", "has:tag"),
     ),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -123,7 +123,7 @@ object FilterHelp {
           <.li("requirements tagged with v1.0 and v1.1")),
           "Like above, you can also wrap them in parenthesis ", code("(…)"),
           " and treat it as a single filter (which allows you to do things like negate the whole thing).",
-      )("MF | FR | UC", "has:issues | #bug", "(#v1.0 | #v1.1)"),
+      )("MF | FR | UC", "has:issue | #bug", "(#v1.0 | #v1.1)"),
     ),
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

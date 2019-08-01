@@ -50,8 +50,6 @@ functionality
 Filter
 ======
 
-* Change {has,no}:xxx to only accept one version - remove plurals
-
 * Change {has,no}:issue to look at actual issues, not just #issue tags
 
 * Add `issue:cat`

@@ -25,8 +25,8 @@ object FilterAst {
 
   sealed abstract class Attr(val name: String, val additionalNames: String*)
   object Attr {
-    case object AnyIssue extends Attr("issues", "issue")
-    case object AnyTag   extends Attr("tags", "tag")
+    case object AnyIssue extends Attr("issue")
+    case object AnyTag   extends Attr("tag")
 
     implicit def univEq: UnivEq[Attr] = UnivEq.derive
 
