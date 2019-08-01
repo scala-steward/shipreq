@@ -43,3 +43,35 @@ functionality
   * issue class
   * issue presence
 * Resolve TODOs in new code
+
+
+
+
+Filter
+======
+
+* Change {has,no}:xxx to only accept one version - remove plurals
+
+* Change {has,no}:issue to look at actual issues, not just #issue tags
+
+* Remove `no:` in place of `-has:`
+
+* Add `issue:cat`
+	* issue:badData
+	* issue:futility
+	* issue:missingData
+	* issue:userDefined
+
+* (DOUBT IT) add `issue:cls(:arg)`
+	* issue:blankCustomField
+	* issue:blankTitle
+	* issue:blankUseCaseStep
+	* issue:conflictingTags:"Version 1.0"
+	* issue:deadIssueTag
+	* issue:deadReference
+	* issue:deadTag
+	* issue:emptyCodeGroup
+	* issue:implicationRequired:UC
+	* issue:issueTag
+	* issue:looseIssue
+	* issue:uninhabitableTagField
