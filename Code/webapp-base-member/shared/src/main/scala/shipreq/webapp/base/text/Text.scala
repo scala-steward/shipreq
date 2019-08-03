@@ -63,7 +63,7 @@ object Text {
                        override val input         : ParserInput) extends P.TopBase[this.type](this)
         with P.SingleLine
         with P.Issue
-        with P.ReqRef
+        with P.ContentRef
         with P.TagRef {
 
       def hashToken =                         rule(hashRef ~ (tagRef | issueRef))
@@ -92,7 +92,7 @@ object Text {
                        override val currentUseCase: Option[ReqTypePos],
                        override val input         : ParserInput) extends P.TopBase(this)
         with P.SingleLine
-        with P.ReqRef {
+        with P.ContentRef {
 
       import Grammar.issueDescSurround.{parsing => G}
       val token     = () =>             rule(reqRef | singleLine)
@@ -130,7 +130,7 @@ object Text {
                        override val input         : ParserInput) extends P.TopBase(this)
         with P.SingleLine
         with P.Issue
-        with P.ReqRef {
+        with P.ContentRef {
 
       def hashToken =                         rule(hashRef ~ issueRef)
       override val token = () =>              rule(hashToken | reqRef | singleLine)
@@ -153,7 +153,7 @@ object Text {
                        override val input         : ParserInput) extends P.TopBase(this)
         with P.MultiLine
         with P.Issue
-        with P.ReqRef
+        with P.ContentRef
         with P.TagRef {
 
       def hashToken =                                 rule(hashRef ~ (tagRef | issueRef))
@@ -206,7 +206,7 @@ object Text {
                        override val currentUseCase: Option[ReqTypePos],
                        override val input         : ParserInput) extends P.TopBase(this)
         with P.MultiLine
-        with P.ReqRef
+        with P.ContentRef
         with P.TagRef {
 
       def hashToken =                                 rule(hashRef ~ tagRef)
@@ -233,7 +233,7 @@ object Text {
                        override val input         : ParserInput) extends P.TopBase(this)
         with P.SingleLine
         with P.Issue
-        with P.ReqRef
+        with P.ContentRef
         with P.TagRef {
 
       def hashToken =                         rule(hashRef ~ (tagRef | issueRef))

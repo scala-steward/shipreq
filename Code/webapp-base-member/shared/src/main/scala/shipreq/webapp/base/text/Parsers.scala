@@ -127,7 +127,7 @@ object Parsers {
        rule((BOI | (OWS ~ NL)) ~ listItem(listToken).+ ~ OWSNL ~ popSeqToNEV[t.ListItem] ~> t.UnorderedList)
   }
 
-  trait ReqRef extends Base with UseCaseStepLabel {
+  trait ContentRef extends Base with UseCaseStepLabel {
     override type T <: Atom.ContentRef
 
     import G.reflinkSurround.parsing.{prefix, suffix}
