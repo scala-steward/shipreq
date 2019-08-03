@@ -67,6 +67,28 @@ object TableRow {
         case Column.IssueClass =>
           p.issueClass.foreach(cells += _.value)
 
+        case Column.Id =>
+          for (base <- p.idBase) {
+            val c = row match {
+              case r: Row.ForReq    => pubidFormat(r.req)
+              case r: Row.ForRcg    => r.renderer(FieldKey.Code)
+              case _: Row.ForConfig => na
+            }
+            cells += base(c)
+          }
+
+        case Column.Title =>
+          for (base <- p.titleBase) {
+            val c = row match {
+              case r: Row.ForGenericReq  => r.renderer(FieldKey.GenericReqTitle)
+              case r: Row.ForUseCase     => r.renderer(FieldKey.UseCaseTitle)
+              case r: Row.ForUseCaseStep => r.ucRenderer(FieldKey.UseCaseTitle)
+              case r: Row.ForRcg         => r.renderer(FieldKey.CodeGroupTitle)
+              case _: Row.ForConfig      => na
+            }
+            cells += base(c)
+          }
+
         case Column.FieldName =>
           addTD(row.fieldOption.fold(na)(_.desc))
 
@@ -93,27 +115,6 @@ object TableRow {
               }
           )
 
-        case Column.Id =>
-          for (base <- p.idBase) {
-            val c = row match {
-              case r: Row.ForReq    => pubidFormat(r.req)
-              case r: Row.ForRcg    => r.renderer(FieldKey.Code)
-              case _: Row.ForConfig => na
-            }
-            cells += base(c)
-          }
-
-        case Column.Title =>
-          for (base <- p.titleBase) {
-            val c = row match {
-              case r: Row.ForGenericReq  => r.renderer(FieldKey.GenericReqTitle)
-              case r: Row.ForUseCase     => r.renderer(FieldKey.UseCaseTitle)
-              case r: Row.ForUseCaseStep => r.ucRenderer(FieldKey.UseCaseTitle)
-              case r: Row.ForRcg         => r.renderer(FieldKey.CodeGroupTitle)
-              case _: Row.ForConfig      => na
-            }
-            cells += base(c)
-          }
       }
     }
 
