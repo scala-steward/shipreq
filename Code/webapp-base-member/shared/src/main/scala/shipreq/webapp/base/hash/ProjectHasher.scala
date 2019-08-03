@@ -31,6 +31,7 @@ object ProjectHasher {
   protected implicit val hashUseCaseStepId            = hashTaggedType[UseCaseStepId]
   protected implicit val hashUseCaseId                = hashTaggedType[UseCaseId]
   protected implicit val hashDeletionReasonId         = hashTaggedType[DeletionReasonId]
+  protected implicit val hashManualIssueId            = hashTaggedType[ManualIssueId]
   protected implicit val hashGenericReqId             = hashTaggedType[GenericReqId]
   protected implicit val hashApReqCodeId              = hashTaggedType[ApReqCodeId]
   protected implicit val hashReqCodeGroupId           = hashTaggedType[ReqCodeGroupId]
@@ -235,5 +236,9 @@ object ProjectHasher {
     implicit val hashSavedViewsNE : HashFn[SavedViews.NonEmpty] = hashCaseClass
     implicit val hashSavedViews   : HashFn[SavedViews.Optional] = hashOption
   }
+
   implicit val hashSavedViews = ReqTableData.hashSavedViews
+
+  protected implicit val hashManualIssue : HashFn[ManualIssue ] = hashCaseClass
+            implicit val hashManualIssues: HashFn[ManualIssues] = hashCaseClass
 }

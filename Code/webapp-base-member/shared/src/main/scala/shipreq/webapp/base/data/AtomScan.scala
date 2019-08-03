@@ -8,6 +8,8 @@ import shipreq.webapp.base.text.Text
 
 /** Scanning includes dead reqs.
   *
+  * Scanning excludes deletion reasons, and manual issues.
+  *
   * @param tagRefs  Live/Dead refers to the requirement context; not the life-state of the tag itself.
   * @param issuesInReqs  Live/Dead refers to the requirement context; not the life-state of the issue itself.
   * @param codeRefs ReqCodes referenced in anything anywhere (including text in dead custom-text fields).
@@ -30,7 +32,6 @@ final class AtomScan(val tagRefs          : LiveDeadStatMap[ReqId, Set[ReqTextLo
   }
 }
 
-// TODO AtomScan doesn't scan deletion reasons
 object AtomScan {
 
   private implicit val tagSetMonoid = scalazMonoidSet[ReqTextLoc.And[ApplicableTagId]]

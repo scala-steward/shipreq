@@ -772,6 +772,7 @@ object Project_100 {
           reqDataTags,
           implications,
           DeletionReasons.empty),
+        ManualIssues.empty,
         reqtable.SavedViews.empty,
         _))
 }

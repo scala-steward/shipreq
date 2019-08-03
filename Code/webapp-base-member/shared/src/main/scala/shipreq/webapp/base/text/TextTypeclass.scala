@@ -45,6 +45,7 @@ class TextTC[TC[_]](a: AtomTC[TC]) {
   implicit val ( codeGroupTitleA,  codeGroupTitleO,  codeGroupTitleN) = generateTypeclasses(Text.CodeGroupTitle)
   implicit val (customTextFieldA, customTextFieldO, customTextFieldN) = generateTypeclasses(Text.CustomTextField)
   implicit val ( deletionReasonA,  deletionReasonO,  deletionReasonN) = generateTypeclasses(Text.DeletionReason)
+  implicit val (    manualIssueA,     manualIssueO,     manualIssueN) = generateTypeclasses(Text.ManualIssue)
   implicit val (    useCaseStepA,     useCaseStepO,     useCaseStepN) = generateTypeclasses(Text.UseCaseStep)
   implicit val (   useCaseTitleA,    useCaseTitleO,    useCaseTitleN) = generateTypeclasses(Text.UseCaseTitle)
 }

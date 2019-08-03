@@ -101,6 +101,7 @@ object SampleProject {
       "Sample Project",
       projectConfig,
       projectContent,
+      ManualIssues.empty,
       reqtable.SavedViews.empty,
       _))
 

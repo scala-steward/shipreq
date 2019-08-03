@@ -9,6 +9,18 @@ import shipreq.webapp.base.{text => T}
 
 object Atom {
 
+  // Mixin Hierarchy
+  // ===============
+  // - MultiLine
+  //   - SingleLine
+  //     - Literal
+  //     - PlainTextMarkup
+  //   - NewLine
+  //   - ListMarkup
+  // - Issue
+  // - ContentRef
+  // - TagRef
+
   sealed trait Type
   object Type {
     case object Literal        extends Type

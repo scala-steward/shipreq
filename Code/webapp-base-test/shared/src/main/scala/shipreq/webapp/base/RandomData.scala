@@ -723,6 +723,18 @@ object RandomData {
       multiLinePlus(t)(gs: _*)
     }
 
+    def manualIssueAtom(r: Option[Gen[ReqId]],
+                        u: Option[Gen[UseCaseStepId]],
+                        c: Option[Gen[ReqCodeId]],
+                        a: Option[Gen[ApplicableTagId]]): Gen[ManualIssue.Atom] = {
+      implicit val t: ManualIssue.type = ManualIssue
+      var gs: List[Option[Gen[t.Atom]]]
+           = reqRefs(r, c).map(_.some)
+      gs ::= u.map(useCaseStepRef(_))
+      gs ::= a.map(tagRef(_))
+      multiLinePlus(t)(gs: _*)
+    }
+
     def useCaseStepAtom(r: Option[Gen[ReqId]],
                         u: Option[Gen[UseCaseStepId]],
                         c: Option[Gen[ReqCodeId]],
@@ -1168,6 +1180,12 @@ object RandomData {
         }
     }
 
+  def genManualIssues(gText: Gen[Text.ManualIssue.NonEmptyText]): Gen[ManualIssues] =
+    for {
+      len <- Gen.chooseInt(0, 2)
+      ts <- gText.list(len)
+    } yield ts.foldLeft(ManualIssues.empty)(_ add _)
+
   lazy val projectConfig: Gen[ProjectConfig] =
     for {
       (issues, tags) ← Gen.tuple2(customIssueTypes, tagTree) map distinctHashRefKeys.run
@@ -1182,25 +1200,27 @@ object RandomData {
                  reqCodes1      : ReqCodes,
                  reqTags        : ReqData.Tags,
                  reqImps        : Implications): Gen[Project] = {
-    val cissueIds      = cfg.customIssueTypes.keySet
-    val cissueIdG      = Gen tryGenChoose cissueIds.toSeq
-    val activeCodeIds  = reqCodes1.trie.allValues.flatMap(_.activeId.toStream)
-    val activeCodeIdG  = Gen tryGenChoose activeCodeIds
-    val atagIds        = cfg.tags.tree.valuesIterator.map(_.tag).filterSubType[ApplicableTag].map(_.id).toSet
-    val atagIdG        = Gen.tryGenChoose(atagIds.toSeq)
-    val textColIds     = cfg.fields.customFields.valuesIterator.filterSubType[CustomField.Text].map(_.id).toSet
-    val reqIdSet       = reqsWithoutText.idIterator.toSet
-    val reqIdG         = Gen tryGenChoose reqIdSet.toIndexedSeq
-    def ucStepIds      = reqsWithoutText.useCases.stepIterator.map(_.id)
-    val ucStepIdG      = Gen tryGenChoose ucStepIds.toIndexedSeq
-    val rcgTitleText   = TextGen.codeGroupTitleAtom(reqIdG, ucStepIdG, activeCodeIdG, cissueIdG).text
-    val delReasonText  = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.DeletionReason)
+    val cissueIds       = cfg.customIssueTypes.keySet
+    val cissueIdG       = Gen tryGenChoose cissueIds.toSeq
+    val activeCodeIds   = reqCodes1.trie.allValues.flatMap(_.activeId.toStream)
+    val activeCodeIdG   = Gen tryGenChoose activeCodeIds
+    val atagIds         = cfg.tags.tree.valuesIterator.map(_.tag).filterSubType[ApplicableTag].map(_.id).toSet
+    val atagIdG         = Gen.tryGenChoose(atagIds.toSeq)
+    val textColIds      = cfg.fields.customFields.valuesIterator.filterSubType[CustomField.Text].map(_.id).toSet
+    val reqIdSet        = reqsWithoutText.idIterator.toSet
+    val reqIdG          = Gen tryGenChoose reqIdSet.toIndexedSeq
+    def ucStepIds       = reqsWithoutText.useCases.stepIterator.map(_.id)
+    val ucStepIdG       = Gen tryGenChoose ucStepIds.toIndexedSeq
+    val rcgTitleText    = TextGen.codeGroupTitleAtom(reqIdG, ucStepIdG, activeCodeIdG, cissueIdG).text
+    val delReasonText   = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.DeletionReason)
+    val manualIssueText = TextGen.manualIssueAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.ManualIssue)
     for {
       name       ← projectName
       reqText    ← reqFieldDataText2(reqIdSet, textColIds, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
       reqs       ← setReqText(reqsWithoutText, reqIdG, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
       reqCodes2  ← reqCode.updateGroupText(rcgTitleText)(reqCodes1.trie)
       dr         ← deletionReasons(reqIdG, delReasonText)
+      mis        ← genManualIssues(manualIssueText)
       p1         = Project(
                      name,
                      cfg,
@@ -1211,6 +1231,7 @@ object RandomData {
                        reqTags,
                        reqImps,
                        dr),
+                     mis,
                      reqtable.SavedViews.empty,
                      IdCeilings.zero)
       savedViews ← reqtableData.savedViewsForProject(p1)

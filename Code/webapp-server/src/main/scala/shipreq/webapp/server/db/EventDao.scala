@@ -963,6 +963,7 @@ object EventSqlHelpers {
       case HashScope.DeletionReasons => 'd'
       case HashScope.GenericReqs     => 'g'
       case HashScope.ImplicationData => 'i'
+      case HashScope.ManualIssues    => 'm'
       case HashScope.ProjectName     => 'n'
       case HashScope.PubidRegister   => 'p'
       case HashScope.ReqCodes        => 'c'

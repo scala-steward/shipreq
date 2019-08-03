@@ -19,12 +19,8 @@ functionality
 =============
 
 * loose issues
-  * text def
-  * atomscan?
-  * data
   * events
   * event ap & testing
-  * id ceilings (store next because hard deleting)
 * UI: new
   * add loose issue editor to CreateFeature
   * add loose issue editor to EditorFeature

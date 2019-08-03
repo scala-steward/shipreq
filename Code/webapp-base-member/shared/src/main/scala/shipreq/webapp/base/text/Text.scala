@@ -241,4 +241,25 @@ object Text {
 
     override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
   }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  object ManualIssue extends Base
+      with A.MultiLine
+      with A.ContentRef
+      with A.TagRef {
+
+    final class Parser(override val project       : Project,
+                       override val currentUseCase: Option[ReqTypePos],
+                       override val input         : ParserInput) extends P.TopBase(this)
+        with P.MultiLine
+        with P.ContentRef
+        with P.TagRef {
+
+      def hashToken =                                 rule(hashRef ~ tagRef)
+      override protected val additionalTokens = () => rule(hashToken | contentRef)
+    }
+
+    override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
+  }
 }

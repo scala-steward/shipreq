@@ -56,6 +56,7 @@ object Project {
       emptyProjectName,
       ProjectConfig.empty,
       ProjectContent.empty,
+      ManualIssues.empty,
       reqtable.SavedViews.empty,
       IdCeilings.zero)
 }
@@ -64,6 +65,7 @@ object Project {
 final case class Project(name         : Project.Name,
                          config       : ProjectConfig,
                          content      : ProjectContent,
+                         manualIssues : ManualIssues,
                          reqtableViews: reqtable.SavedViews.Optional,
                          idCeilings   : IdCeilings) {
 

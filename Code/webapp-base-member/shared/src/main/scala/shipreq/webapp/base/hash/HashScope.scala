@@ -26,6 +26,7 @@ object HashScope {
   case object TagData         extends WithProjectAccess(_.content.reqTags)
   case object ImplicationData extends WithProjectAccess(_.content.implications)
   case object DeletionReasons extends WithProjectAccess(_.content.deletionReasons)
+  case object ManualIssues    extends WithProjectAccess(_.manualIssues)
   case object SavedViews      extends WithProjectAccess(_.reqtableViews)
 
   implicit def univEq: UnivEq[HashScope] = UnivEq.force
