@@ -2,7 +2,6 @@ package shipreq.webapp.server.app
 
 import utest._
 import japgolly.microlibs.testutil.TestUtil._
-import shipreq.base.util.univeq._
 import shipreq.base.util.FreeOption
 import shipreq.webapp.base.AssetManifest
 

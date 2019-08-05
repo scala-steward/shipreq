@@ -11,7 +11,7 @@ object Dependencies {
   }
 
   object Graal {
-    val ver = "19.0.0"
+    val ver = "19.1.1"
   }
 
   object Docker {
@@ -30,13 +30,13 @@ object Dependencies {
   }
 
   object Monocle {
-    private val mm = MultiModule.jvmAndJs("com.github.julien-truffaut", "1.5.0")
+    private val mm = MultiModule.jvmAndJs("com.github.julien-truffaut", "1.6.0")
     val core   = mm("monocle-core")
     val macros = mm("monocle-macro") ++ core
   }
 
   object Microlibs {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "1.20")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "1.22")
     val adtMacros  = mm("adt-macros")
     val macroUtils = mm("macro-utils")
     val nonempty   = mm("nonempty")
@@ -79,7 +79,7 @@ object Dependencies {
   }
 
   object UnivEq {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.univeq", "1.0.6")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.univeq", "1.0.8")
     val univeq = mm("univeq")
     val scalaz = mm("univeq-scalaz") ++ univeq ++ Dependencies.scalaz
   }
@@ -101,7 +101,7 @@ object Dependencies {
   }
 
   object Json4s {
-    private val mm = MultiModule.scala("org.json4s", "3.6.6")
+    private val mm = MultiModule.scala("org.json4s", "3.6.7")
     val jackson = mm("json4s-jackson") ++ Scala.all
   }
 
@@ -136,7 +136,7 @@ object Dependencies {
   }
 
   object JJWT {
-    private val mm = MultiModule.java("io.jsonwebtoken", "0.10.6")
+    private val mm = MultiModule.java("io.jsonwebtoken", "0.10.7")
     val api     = mm("jjwt-api")
     val impl    = mm("jjwt-impl") % Runtime
     val jackson = mm("jjwt-jackson") % Runtime
@@ -157,7 +157,7 @@ object Dependencies {
   }
 
   object LibJetty {
-    private def ver = "9.4.18.v20190429"
+    private def ver = "9.4.19.v20190610"
     private val mm = MultiModule.java("org.eclipse.jetty", ver)
     private val ws = MultiModule.java("org.eclipse.jetty.websocket", ver)
 
@@ -190,13 +190,13 @@ object Dependencies {
 
   val boopickle   = jvmAndJs("io.suzaku",                        "boopickle",   "1.3.1")
   val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",        "1.3.0")
-  val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.1.6")
-  val scalaz      = jvmAndJs("org.scalaz",                       "scalaz-core", "7.2.27")
+  val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.1.8")
+  val scalaz      = jvmAndJs("org.scalaz",                       "scalaz-core", "7.2.28")
   val shapeless   = jvmAndJs("com.chuusai",                      "shapeless",   "2.3.3")
   val μPickle     = jvmAndJs("com.github.japgolly.fork.upickle", "upickle",     "custom-7")
   val μTest       = jvmAndJs("com.lihaoyi",                      "utest",       "0.6.7")
 
-  val catsEffect   = jvmOnly("org.typelevel"              %% "cats-effect"           % "1.3.1")
+  val catsEffect   = jvmOnly("org.typelevel"              %% "cats-effect"           % "1.4.0")
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val commonsLang  = jvmOnly("org.apache.commons"          % "commons-lang3"         % "3.9")
   val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "6.0.0-beta2")
@@ -204,21 +204,21 @@ object Dependencies {
   val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.11")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "0.35.5")
-  val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.5")
-  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.11.0")
-  val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "2.6.0")
+  val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.6")
+  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.11.2")
+  val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "3.0.0")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.13.5")
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.2")
   val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.2.0")
   val twitterEval  = jvmOnly("com.twitter"                %% "util-eval"             % "6.43.0")
 
-  val betterMonadicFor = compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.0")
+  val betterMonadicFor = compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
   val useBetterMonadicFor = (_: Project).settings(addCompilerPlugin(betterMonadicFor))
 
   val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
   val useMacroParadise = (_: Project).settings(addCompilerPlugin(macroParadise))
 
-  val kindProjector = compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.10")
+  val kindProjector = compilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3")
   val useKindProjector = (_: Project).settings(addCompilerPlugin(kindProjector))
 
 //  import sbt.Keys._

@@ -1,5 +1,6 @@
 package shipreq.base.test
 
+import japgolly.microlibs.testutil.TestUtilInternals
 import scalaz.std.string.stringInstance
 import scalaz.{Equal, Order, \/}
 import shipreq.base.util.Identity
@@ -60,6 +61,9 @@ trait BaseTestUtil
 
   def onceUnit[A](a: => A): () => Unit =
     once { a; () }
+
+  def quoteStringForDisplay(s: String) =
+    TestUtilInternals.quoteStringForDisplay(s)
 
   def assertFields[A](actual: A, expect: A) =
     new BaseTestUtil.FieldAssert(actual, expect)
