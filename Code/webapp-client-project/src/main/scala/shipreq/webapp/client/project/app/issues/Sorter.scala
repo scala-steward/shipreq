@@ -6,6 +6,7 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.issue.IssueCategory
 import shipreq.webapp.base.sort.{Sorter => SorterBase}
+import shipreq.webapp.base.text.PlainText
 
 object Sorter {
   import SorterBase._
@@ -13,12 +14,13 @@ object Sorter {
   val Types = new WithTypes[Setup, Row]
   import Types._
 
-  final class Setup(val p: Project)
+  final class Setup(val project: Project,
+                    val plainText: PlainText.ForProject.NoCtx)
 
   private val pubidSorter = sorter[(Int, Int)](
     prep =
       setup => {
-        val n = setup.p.dataLogic.pubidSortKeyFn
+        val n = setup.project.dataLogic.pubidSortKeyFn
         val `n/a` = (-1, -1)
         ;{
           case r: Row.ForReq         => n(r.req.pubid)
@@ -59,4 +61,31 @@ object Sorter {
 
   val issueClassSorter: Sorter =
     sorter(_ => _.issueClassDesc, SortFn.stringNonEmpty)
+
+  private def blankPlacement = BlanksLast
+
+  private val stringSortFn = SortFn.string(blankPlacement)
+
+  val fieldName: Sorter =
+    sorter(_ => _.fieldOption.flatMap(_.desc).getOrElse(""), stringSortFn)
+
+  val manualIssueText: Sorter =
+    sorter[String](
+      prep = setup => {
+
+        val manualIssueText =
+          setup.project.manualIssues.imap
+            .valuesIterator
+            .map(i => i.id -> DataLogic.normaliseStringForSorting(setup.plainText.manualIssue(i.text)))
+            .toMap
+
+        {
+          case r: Row.ForManualIssue => manualIssueText(r.issue.issue.id)
+          case _: Row.ForReq
+             | _: Row.ForRcg
+             | _: Row.ForConfig      => ""
+        }
+
+      },
+      sort = SortFn.stringNonEmpty)
 }

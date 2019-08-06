@@ -12,6 +12,7 @@ import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.filter.{CompiledFilter, Filter}
 import shipreq.webapp.base.issue.Issues
 import shipreq.webapp.base.lib.DataReusability._
+import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.project.app.Style.{issues => *}
 import shipreq.webapp.client.project.feature.{CreateFeature, EditorFeature, RenderFeature}
 import shipreq.webapp.client.project.widgets.{FilterEditor, ProjectWidgets}
@@ -20,6 +21,7 @@ object IssuesPage {
 
   final case class StaticProps(pxProject       : Px[Project],
                                pxRenderFeature : Px[FilterDead => RenderFeature.NoCtx.ForProject],
+                               pxPlainText     : Px[PlainText.ForProject.NoCtx],
                                pxProjectWidgets: Px[ProjectWidgets.NoCtx],
                                pxFilterCompiler: Px[Filter.Valid.Compiler],
                                cmdInvoker      : Action.Cmd ~=> Callback) {
@@ -35,6 +37,7 @@ object IssuesPage {
     val table = Table.StaticProps(
       pxProject,
       pxRenderFeature.map(_(HideDead)),
+      pxPlainText,
       pxProjectWidgets,
       pxFieldNameFn,
       cmdInvoker)

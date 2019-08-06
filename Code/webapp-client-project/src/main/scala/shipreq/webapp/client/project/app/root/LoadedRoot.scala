@@ -157,6 +157,7 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
     private val issuesPage = issues.IssuesPage.StaticProps(
       pxProject,
       pxRenderFeature,
+      pxPlainText,
       pxProjectWidgets,
       pxFilterCompilerHideDead,
       updateConfigOrContentCmdInvoker)

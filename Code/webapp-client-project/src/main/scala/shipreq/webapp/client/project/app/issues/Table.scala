@@ -13,6 +13,7 @@ import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.issue.Issues
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.sort.FusedSorters
+import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.ui.semantic
 import shipreq.webapp.client.project.app.Style.{issues => *}
 import shipreq.webapp.client.project.feature.{EditorFeature, RenderFeature}
@@ -22,6 +23,7 @@ object Table {
 
   final case class StaticProps(pxProject       : Px[Project],
                                pxRenderFeature : Px[RenderFeature.NoCtx.ForProject],
+                               pxPlainText     : Px[PlainText.ForProject.NoCtx],
                                pxProjectWidgets: Px[ProjectWidgets.NoCtx],
                                pxFieldNameFn   : Px[FieldId ~=> String],
                                cmdInvoker      : Action.Cmd ~=> Callback) {
@@ -57,13 +59,17 @@ object Table {
   private val sorter = FusedSorters(
     Sorter.issueCategorySorter,
     Sorter.issueClassSorter,
-    Sorter.idSorter
-    // TODO LooseIssueText | FieldDesc
+    Sorter.idSorter,
+    Sorter.fieldName,
+    Sorter.manualIssueText,
   )
 
-  final class RenderPrep(p: Project, issues: Issues, rf: RenderFeature.NoCtx.ForProject) {
-    private val sortFn  = sorter.result(new Sorter.Setup(p))
-    private val toRow   = Row.fromIssue(p, rf)
+  final class RenderPrep(project      : Project,
+                         plainText    : PlainText.ForProject.NoCtx,
+                         issues       : Issues,
+                         renderFeature: RenderFeature.NoCtx.ForProject) {
+    private val sortFn  = sorter.result(new Sorter.Setup(project, plainText))
+    private val toRow   = Row.fromIssue(project, renderFeature)
     val rows            = sortFn(issues.vector.iterator.map(toRow)).iterator.toVector
     val csIssueCategory = TableRow.consolidateIssueCategories(rows.iterator.map(_.issueCategoryDesc))
     val csIssueClass    = TableRow.consolidateIssueClasses   (rows.iterator.map(_.issueClassDesc))
@@ -94,7 +100,7 @@ object Table {
     import static.{component => _, _}
 
     private val pxIssues     = Px.props($).map(_.issues).withReuse.autoRefresh
-    private val pxRenderPrep = Px.apply3(pxProject, pxIssues, pxRenderFeature)(new RenderPrep(_, _, _))
+    private val pxRenderPrep = Px.apply4(pxProject, pxPlainText, pxIssues, pxRenderFeature)(new RenderPrep(_, _, _, _))
 
     def render(p: Props): VdomElement = {
       val fieldNames = pxFieldNameFn.value()
