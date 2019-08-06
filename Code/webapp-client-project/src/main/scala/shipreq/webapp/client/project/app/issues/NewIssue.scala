@@ -51,8 +51,11 @@ object NewIssue {
     private val closeEditor: Callback =
       setState(State(Closed))
 
-    private def save(p: Props, value: Text.ManualIssue.NonEmptyText): Callback =
-      p.createR.create(ManualIssueCmd.Create(value), closeEditor)
+    private def save(p: Props, value: Text.ManualIssue.NonEmptyText): Callback = {
+      val clearState = p.createR.clearState(CreateFeature.FieldKey.ManualIssue)
+      val onSuccess  = closeEditor >> clearState
+      p.createR.create(ManualIssueCmd.Create(value), onSuccess)
+    }
 
     def render(p: Props): VdomElement = {
 

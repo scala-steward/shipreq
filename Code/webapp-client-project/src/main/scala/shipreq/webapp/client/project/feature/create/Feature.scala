@@ -107,6 +107,7 @@ object Feature {
                                                    rowEditors: NewEditor.ForFields[FK],
                                                    async     : AsyncFeature.Write.D0[AsyncError],
                                                    ssp       : ServerSideProcInvoker[Cmd, ErrorMsg, Any]) {
+
       def startEditor(field: FK): Editor[field.Args, field.Value] = {
         val stateAccess: StateAccessPure[State.ForEditor[Nothing, Any]] = rowAccess zoomStateL Optics.mapValue(field)
         val ctx = NewEditor.Ctx[field.Args, field.Value](field.cast2(stateAccess))
@@ -116,6 +117,9 @@ object Feature {
       /** Initiates a call to the server to create content for this row. */
       def create(cmd: Cmd, onSuccess: Callback = Callback.empty): Callback =
         async((s, f) => ssp(cmd, _ => s >> onSuccess, f))
+
+      def clearState(field: FK): Callback =
+        rowAccess.modState(_ - field)
     }
 
     final case class ForProject(static              : NewEditor.Static,
@@ -160,6 +164,9 @@ object Feature {
       /** Initiates a call to the server to create content for this row. */
       def create(cmd: Cmd, onSuccess: Callback = Callback.empty): Callback =
         write.create(cmd, onSuccess)
+
+      def clearState(field: FK): Callback =
+        write.clearState(field)
     }
 
     final case class ForProject(read: Read.ForProject, write: Write.ForProject) {
