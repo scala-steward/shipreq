@@ -570,18 +570,18 @@
    207 [remove] .ui.inverted.green.basic.button:focus,.ui.inverted.green.basic.buttons .button:focus
    257 [remove] .ui.inverted.green.basic.active.button,.ui.inverted.green.basic.buttons .active.button,.ui.inverted.green.buttons .basic.active.button
    257 [remove] .ui.inverted.green.basic.button:active,.ui.inverted.green.basic.buttons .button:active,.ui.inverted.green.buttons .basic.button:active
-   120 [remove] .ui.orange.button,.ui.orange.buttons .button
-   114 [remove] .ui.orange.button
-   110 [remove] .ui.orange.button:hover,.ui.orange.buttons .button:hover
-   110 [remove] .ui.orange.button:focus,.ui.orange.buttons .button:focus
-   112 [remove] .ui.orange.button:active,.ui.orange.buttons .button:active
-   193 [remove] .ui.orange.active.button,.ui.orange.button .active.button:active,.ui.orange.buttons .active.button,.ui.orange.buttons .active.button:active
-   179 [remove] .ui.basic.orange.button,.ui.basic.orange.buttons .button
-   216 [remove] .ui.basic.orange.button:hover,.ui.basic.orange.buttons .button:hover
-   216 [remove] .ui.basic.orange.button:focus,.ui.basic.orange.buttons .button:focus
-   218 [remove] .ui.basic.orange.active.button,.ui.basic.orange.buttons .active.button
-   193 [remove] .ui.basic.orange.button:active,.ui.basic.orange.buttons .button:active
-    68 [remove] .ui.buttons>.basic.orange.button:not(:first-child)
+   120 [keep  ] .ui.orange.button,.ui.orange.buttons .button
+   114 [keep  ] .ui.orange.button
+   110 [keep  ] .ui.orange.button:hover,.ui.orange.buttons .button:hover
+   110 [keep  ] .ui.orange.button:focus,.ui.orange.buttons .button:focus
+   112 [keep  ] .ui.orange.button:active,.ui.orange.buttons .button:active
+   193 [keep  ] .ui.orange.active.button,.ui.orange.button .active.button:active,.ui.orange.buttons .active.button,.ui.orange.buttons .active.button:active
+   179 [keep  ] .ui.basic.orange.button,.ui.basic.orange.buttons .button
+   216 [keep  ] .ui.basic.orange.button:hover,.ui.basic.orange.buttons .button:hover
+   216 [keep  ] .ui.basic.orange.button:focus,.ui.basic.orange.buttons .button:focus
+   218 [keep  ] .ui.basic.orange.active.button,.ui.basic.orange.buttons .active.button
+   193 [keep  ] .ui.basic.orange.button:active,.ui.basic.orange.buttons .button:active
+    68 [keep  ] .ui.buttons>.basic.orange.button:not(:first-child)
    204 [remove] .ui.inverted.orange.button,.ui.inverted.orange.buttons .button
    375 [remove] .ui.inverted.orange.button.active,.ui.inverted.orange.button:active,.ui.inverted.orange.button:focus,.ui.inverted.orange.button:hover,.ui.inverted.orange.buttons .button.active,.ui.inverted.orange.buttons .button:active,.ui.inverted.orange.buttons .button:focus,.ui.inverted.orange.buttons .button:hover
    100 [remove] .ui.inverted.orange.button:hover,.ui.inverted.orange.buttons .button:hover
