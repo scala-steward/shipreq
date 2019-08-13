@@ -1,6 +1,5 @@
 package shipreq.webapp.client.project.app.issues
 
-import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import japgolly.scalajs.react.test._
 import shipreq.webapp.base.test.TestState._
 
@@ -8,13 +7,15 @@ object IssuesPageTestDsl {
 
   val * = Dsl[Unit, IssuesPageObs, Unit]
 
+  object OptionalEditorDsl extends OptionalEditorDslBase(*, editorCount)
+
   val rowCount = *.focus("Row count").value(_.obs.rowCount)
 
-  val issueCategories = *.focus("Issue categories").collection(_.obs.columnTexts(0))
+  val issueCategories = *.focus("Issue categories").collection(_.obs.columnTexts(Column.IssueCategory))
 
-  val issueClasses = *.focus("Issue classes").collection(_.obs.columnTexts(1))
+  val issueClasses = *.focus("Issue classes").collection(_.obs.columnTexts(Column.IssueClass))
 
-  val ids = *.focus("IDs").collection(_.obs.columnTexts(2))
+  val ids = *.focus("IDs").collection(_.obs.columnTexts(Column.Id))
 
   val editorCount =
     *.focus("Editor count").value(_.obs.editables.length)
@@ -35,41 +36,19 @@ object IssuesPageTestDsl {
     def col(c: Int)   : CellDsl = new CellDsl(_(r)(c), s"($r,$c)")
   }
 
-  final class CellDsl(f: IssuesPageObs => IssuesPageObs.Cell, label: => String) {
+  final class CellDsl(f: IssuesPageObs => IssuesPageObs.Cell, label: => String)
+      extends OptionalEditorDsl.ForCell(f(_).editor, label) {
 
-    def editorValue =
-      *.focus(label + " editor value").value(x => f(x.obs).editorValue)
+    def text =
+      *.focus(label + " text").value(x => f(x.obs).text)
 
-    def doubleClick: *.Actions =
-      *.action(s"Double-click $label text")(x => Simulate doubleClick f(x.obs).td())
-
-    def edit(newValue: String): *.Actions =
-      edit(newValue, 1)
-
-    def edit(expectedAndNewValue: (String, String)): *.Actions =
-      edit(expectedAndNewValue, 1)
-
-    def edit(newValue: String, editors: Int): *.Actions =
-      _editCell(None, newValue, editors)
-
-    def edit(expectedAndNewValue: (String, String), editors: Int): *.Actions =
-      _editCell(Some(expectedAndNewValue._1), expectedAndNewValue._2, editors)
-
-    private def _editCell(old: Option[String], newValue: String, editors: Int): *.Actions =
-      (doubleClick
-        +> editorCount.assert.increaseBy(editors)
-        +> editorValue.rename("Initial editor value").assert(old.getOrElse("")).when(_ => old.isDefined) // TODO test-state should support optional assertions
-        >> setEditValue(newValue)
-        >> commitEdit
-        +> editorCount.assert.decreaseBy(editors)
-      ).group(s"Edit $label text to ${quoteStringForDisplay(newValue)}")
-
-    def setEditValue(newValue: String): *.Actions =
-      *.action(s"Set $label text to ${quoteStringForDisplay(newValue)}")(x =>
-        SimEvent.Change(newValue) simulate f(x.obs).editor())
-
-    def commitEdit: *.Actions =
-      *.action(s"Commit $label text edit")(x => KB.Enter.ctrl simulateKeyDown f(x.obs).editor())
+    def clickAction: *.Actions =
+      *.action(NameFn {
+        case None    => "Click action"
+        case Some(x) => s"Click action: ${f(x.obs).actions.headOption.fold("?")(_.label)}"
+      })(x => Simulate click f(x.obs).actions.head.dom())
   }
+
+  object newForm extends OptionalEditorDsl.ForFormWithButton(_.newForm.editor, "new manual issue", _.newForm.button())
 
 }
