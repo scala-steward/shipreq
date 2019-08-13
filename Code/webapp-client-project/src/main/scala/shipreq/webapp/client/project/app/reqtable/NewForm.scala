@@ -113,7 +113,7 @@ sealed trait NewForm {
 
   sealed case class Props(input        : Input,
                           activeColumns: NonEmptyVector[ColumnPlus],
-                          createFeature: CreateFeature.ReadWrite.ForRow[FK],
+                          createFeature: CreateFeature.ReadWrite.ForRow[FK, CreateContentCmd],
                           cancel       : Callback) {
 
     val editableCols: NonEmptyVector[(ColumnPlus, Editor)] =
@@ -140,7 +140,7 @@ sealed trait NewForm {
         Some(o)
       else {
         val e = es.next()
-        e.value.value(CreateFeature.EditorArgs.empty) match {
+        e.value.value() match {
           case \/-(v) => go(e.withValue[FieldValue](v) :: o)
           case -\/(_) => None // Invalidity found -- abort everything
         }

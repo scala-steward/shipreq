@@ -5,16 +5,13 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import scalajs.js
 import shipreq.base.util._
-import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
 import shipreq.webapp.client.project.app.Style.reqdetail.{useCaseStep => *}
 import shipreq.webapp.client.project.app.TestMarker
-import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
 import UseCaseStepFlowText.TextAndFlow
 
@@ -35,7 +32,7 @@ object UseCaseStepTree {
   final case class Props(uc          : UseCase,
                          stepData    : StepData,
                          filterDead  : FilterDead,
-                         flow        : UseCases.StepFlow,
+                         useCases    : UseCases,
                          renderBody  : RenderBodyFn, // TODO <------------------ prevents Reuse. Underlying fn uses state.
                          cmdRunner   : AsyncFeature.Runner.D1[Cell, UpdateContentCmd.ForUseCaseStep, Any],
                          addCmdRunner: AsyncFeature.Runner.D1[Cell, UpdateContentCmd.AddUseCaseStep, Any]) {
@@ -75,7 +72,8 @@ object UseCaseStepTree {
       val partialLoc = steps.partialLocs.forward(loc)
       if (stepFilter(partialLoc)) {
         val id        = step.id
-        val live      = UseCaseStep.live(uc, partialLoc)
+        val focus     = useCases.focusStep(id)
+        val live      = focus.live
         val fullLabel = field.stepLabel(pos, partialLoc, UseCaseStepLabelFmt.`N.m`)
 
         def text =
@@ -84,7 +82,7 @@ object UseCaseStepTree {
               stepBodyBase,
               id,
               live,
-              () => TextAndFlow(step.titleA(uc), Direction.Values(flow(_)(id)))))
+              () => TextAndFlow(step.titleA(uc), Direction.Values(focus.flow(_, filterDead)))))
 
         def ctrls: VdomElement =
           uc.liveUC match {

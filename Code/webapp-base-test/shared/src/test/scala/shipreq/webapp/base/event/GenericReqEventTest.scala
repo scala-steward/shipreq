@@ -10,6 +10,7 @@ import shipreq.webapp.base.text.Text.{GenericReqTitle => GRT}
 import ApplyEventTestFns._
 import AutoNES._
 import ContentEventTestHelp._
+import Event._
 
 object GenericReqEventTest extends TestSuite {
   import GenericReqGD._
@@ -56,10 +57,10 @@ object GenericReqEventTest extends TestSuite {
       }
 
       'reqCodes {
-        val rcs = NonEmptySet[ReqCode.IdAndValue](7 -> "a.b.c", 8 -> "d")
+        val rcs = NonEmptySet[ApReqCodeId.AndValue](7 -> "a.b.c", 8 -> "d")
         val p = _assertPass(emptyGR1.copy(vs = nev(Codes(rcs))))
         assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), ∅, Live), reqCodes = rcs.whole.map(_.value))
-        assertEq(p.content.reqCodes.reqCodesById, rcs.whole.map(_.toTupleIV).toMap)
+        assertEq(p.content.reqCodes.apReqCodesById, rcs.whole.map(_.toTupleIV).toMap)
       }
 
       def customText: Event.NonEmptyCustomTextMap = NonEmpty.force(Map(cf1 -> "1", cf2 -> "2"))
@@ -111,8 +112,8 @@ object GenericReqEventTest extends TestSuite {
       'groupDead     - assertFail("is not an ActiveGroup.")(delRCG2, ReqsDelete(5, 2, ∅))
       'ok {
         val p = _assertPass(ReqsDelete(5, 2, ∅))
-        assertEq("RC#1", p.content.reqCodes(RCG1_code).isActive, true)
-        assertEq("RC#2", p.content.reqCodes(RCG2_code).isActive, false)
+        assertEq("RC#1", p.content.reqCodes.need(RCG1_code).isActive, true)
+        assertEq("RC#2", p.content.reqCodes.need(RCG2_code).isActive, false)
         assertEq("GR #1", p.content.reqs.genericReqs.need(1).liveExplicitly, Live)
         assertEq("GR #5", p.content.reqs.genericReqs.need(5).liveExplicitly, Dead)
       }

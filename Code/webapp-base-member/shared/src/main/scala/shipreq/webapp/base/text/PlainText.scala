@@ -18,7 +18,7 @@ import Atom.AnyAtom
 object PlainText {
 
   object ForProject {
-    type AnyCtx = ForProject[_ <: ProjectText.Context]
+    type AnyCtx = ForProject[ProjectText.Context]
     type NoCtx  = ForProject[ProjectText.Context.None]
 
     def apply[Ctx <: ProjectText.Context](p: Project, ctx: Ctx): ForProject[Ctx] =
@@ -91,7 +91,7 @@ object PlainText {
   // Don't make this final! I'm using eq below.
   private val outOfListNewline = "\n\n"
 
-  final class ForProject[Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
+  final class ForProject[+Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
 
     def withCtx[Ctx2 <: ProjectText.Context](newCtx: Ctx2): ForProject[Ctx2] =
       if (newCtx ==* ctx)
@@ -99,8 +99,10 @@ object PlainText {
       else
         ForProject(p, newCtx)
 
-    override def text(text: Text.AnyOptional, live: Live): String =
+    override protected def _text(text: Text.AnyOptional, live: Live): String =
       nestedText("", outOfListNewline, live, text)
+
+    override protected def whenBlankButMandatory = ""
 
     private def nestedText(acc: String, newline: String, live: Live, atoms: Vector[AnyAtom]): String = {
       @tailrec def go(acc: String, atoms: Vector[AnyAtom]): String =
@@ -112,10 +114,10 @@ object PlainText {
           val cur = atoms.head match {
             case a: Literal         # Literal        => a.value
             case a: NewLine         # BlankLine      => newline
-            case a: ReqRef          # ReqRef         => reqRef(a.value)
-            case a: ReqRef          # CodeRef        => codeRef(a.value)
-            case a: UseCaseStepRef  # UseCaseStepRef => useCaseStepRef(a.value)
-            case a: Issue           # Issue          => issue(a.typ, a.desc.asOption.map(text(_, live)))
+            case a: ContentRef      # ReqRef         => reqRef(a.value)
+            case a: ContentRef      # CodeRef        => codeRef(a.value)
+            case a: ContentRef      # UseCaseStepRef => useCaseStepRef(a.value)
+            case a: Issue           # Issue          => issue(a.typ, a.desc.asOption.map(text(_, live, Mandatory.Not)))
             case a: PlainTextMarkup # WebAddress     => a.value
             case a: PlainTextMarkup # EmailAddress   => a.value
             case a: PlainTextMarkup # MathTeX        => G.mathTexSurround(a.value)
@@ -154,7 +156,7 @@ object PlainText {
       G.reflinkSurround(useCaseStepLabelById(id))
 
     private def tagRef(id: ApplicableTagId): String = {
-      val t = p.config.atag(id)
+      val t = p.config.tags.atag(id)
       hashtag(t.key)
     }
 
@@ -164,14 +166,13 @@ object PlainText {
     }
 
     def useCaseStepLabel(focus: UseCaseStep.Focus): String = {
-      import focus._
       val fmt = gctx match {
      // case ProjectText.Context.Req(i: UseCaseId) if i ==* uc.id => UseCaseStepLabelFmt.    `.m` // looks too confusing
         case ProjectText.Context.Req(_: UseCaseId)                => UseCaseStepLabelFmt.   `N.m`
         case ProjectText.Context.None
            | ProjectText.Context.Req(_: GenericReqId)             => UseCaseStepLabelFmt.`UC-N.m`
       }
-      field.stepLabel(uc.pubid.pos, ploc, fmt)
+      focus.label(fmt)
     }
 
     private def useCaseStepLabelById(id: UseCaseStepId): String =
@@ -180,7 +181,7 @@ object PlainText {
     override def useCaseStepTextAndFlow(step: UseCaseStepFlowText.TextAndFlow[Text.AnyOptional, Set[UseCaseStepId]],
                                         live: Live): String =
       Util.quickSB { sb =>
-        sb append text(step.text, live)
+        sb append text(step.text, live, Mandatory.when(step.flow.forall(_.isEmpty)))
         for (d <- UseCaseStepFlowText.DefaultArrowOrder) {
           val ids = step.flow(d)
           if (ids.nonEmpty) {

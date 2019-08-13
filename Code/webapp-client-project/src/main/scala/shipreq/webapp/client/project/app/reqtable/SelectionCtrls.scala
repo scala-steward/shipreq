@@ -72,9 +72,9 @@ object SelectionCtrls {
         if (remaining contains id) {
           remaining -= id
           row match {
-            case Row.ForReq(r, Live, _, _, _) =>
+            case Row.ForReq(r, Live, _, _, _, _) =>
               delRq :+= r
-            case Row.ForReq(r, Dead, _, _, _) =>
+            case Row.ForReq(r, Dead, _, _, _, _) =>
               if (r.allowLiveChange(reqTypes) is Allow)
                 resRq :+= r
             case r: Row.ForCodeGroup =>
@@ -155,7 +155,7 @@ object SelectionCtrls {
           ActionInfo(affects, action)
         }
 
-      private def io(codeGroups: NonEmptySet[ReqCodeId]): Callback = {
+      private def io(codeGroups: NonEmptySet[ReqCodeGroupId]): Callback = {
         val cmd = UpdateContentCmd.DeleteCodeGroups(codeGroups)
         val sourceIds: List[Row.SourceId] = cmd.ids.whole.map(Row.SourceId.ForCodeGroup)(collection.breakOut)
         runCmd(cmd, sourceIds)
@@ -170,7 +170,7 @@ object SelectionCtrls {
           ActionInfo(affects, action)
         }
 
-      private def io(codeGroups: NonEmptySet[ReqCodeId]): Callback = {
+      private def io(codeGroups: NonEmptySet[ReqCodeGroupId]): Callback = {
         val cmd = UpdateContentCmd.RestoreContent(Set.empty, codeGroups.whole)
         val sourceIds: List[Row.SourceId] = cmd.codeGroups.map(Row.SourceId.ForCodeGroup)(collection.breakOut)
         runCmd(cmd, sourceIds)

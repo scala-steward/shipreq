@@ -5,6 +5,9 @@ import scalaz.Equal
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.filter.Filter
+import shipreq.webapp.base.filter.Filter.Implicits._
+import shipreq.webapp.base.issue.{Issue, Issues}
 import shipreq.webapp.base.user._
 import shipreq.webapp.base.text.{Atom, PlainText, ProjectText, TextSearch}
 import shipreq.webapp.base.text.Text.Equality._
@@ -64,9 +67,6 @@ abstract class DataReusability extends BaseReusability {
   implicit def reusabilityProjectTextCtx: Reusability[ProjectText.Context] =
     Reusability.byUnivEq
 
-  implicit def reusabilityPlainText_ : Reusability[PlainText.ForProject.AnyCtx] =
-    Reusability.byRef
-
   implicit def reusabilityPlainText[C <: ProjectText.Context]: Reusability[PlainText.ForProject[C]] =
     Reusability.byRef
 
@@ -78,6 +78,9 @@ abstract class DataReusability extends BaseReusability {
 
   implicit def reusabilityCustomFields: Reusability[FieldSet.CustomFields] =
     reusabilityByRefOrEqual
+
+  implicit def reusabilityFilterValid: Reusability[Filter.Valid] =
+    Reusability.byUnivEq
 
   implicit def reusabilityExternalPubid: Reusability[ExternalPubid] =
     Reusability.byRefOrUnivEq
@@ -99,5 +102,11 @@ abstract class DataReusability extends BaseReusability {
 
   implicit def reusabilityTextAndFlow[T: Reusability, S: Reusability]: Reusability[TextAndFlow[T, S]] =
     Reusability.derive
+
+  implicit lazy val reusabilityIssue: Reusability[Issue] =
+    Reusability.byRef
+
+  implicit lazy val reusabilityIssues: Reusability[Issues] =
+    Reusability.byRef || Reusability.derive
 }
 

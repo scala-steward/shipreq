@@ -6,6 +6,8 @@ import scalaz.{-\/, Traverse, \/, \/-}
 import shipreq.base.util.Identity
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data
+import shipreq.webapp.base.data.FilterDead
+import shipreq.webapp.base.issue.IssueCategory
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 
 object Filter {
@@ -19,6 +21,7 @@ object Filter {
 
   type PotentialF[+F] = FilterAst[
     Potential.Attr,
+    Potential.IssueCat,
     Potential.HashTag,
     Potential.ReqSet,
     Potential.ReqType,
@@ -26,6 +29,7 @@ object Filter {
 
   object Potential extends FilterAst.Dsl {
     type Attr      = String
+    type IssueCat  = String
     type HashTag   = data.HashRefKey
     type ReqSubset = IntensionalReqSet[data.ReqType.Mnemonic]
     type ReqSet    = NonEmptyVector[ReqSubset]
@@ -47,6 +51,7 @@ object Filter {
 
   type ValidF[+F] = FilterAst[
     Valid.Attr,
+    Valid.IssueCat,
     Valid.HashTag,
     Valid.ReqSet,
     Valid.ReqType,
@@ -54,6 +59,7 @@ object Filter {
 
   object Valid extends FilterAst.Dsl {
     type Attr      = FilterAst.Attr
+    type IssueCat  = IssueCategory
     type HashTag   = data.CustomIssueTypeId \/ data.ApplicableTagId
     type ReqSubset = IntensionalReqSet[data.ReqTypeId]
     type ReqSet    = NonEmptyVector[ReqSubset]
@@ -72,18 +78,18 @@ object Filter {
                reqSet : ReqSet          => Boolean,
                reqType: ReqType         => Boolean): Valid => Boolean =
       RecursionFn.cata[ValidF, Boolean] {
-        case c: FilterAst.Text                    => text (c)
-        case c: FilterAst.Regex                   => regex(c)
-        case c: FilterAst.HashRef       [HashTag] => hashRef(c.value)
-        case c: FilterAst.Presence      [Attr]    => attr(c.attr)
-        case c: FilterAst.Lack          [Attr]    => attr(c.attr)
-        case c: FilterAst.ReqType       [ReqType] => reqType(c.reqType)
-        case c: FilterAst.ImpliesAnyOf  [ReqSet]  => reqSet(c.reqs)
-        case c: FilterAst.ImpliedByAnyOf[ReqSet]  => reqSet(c.reqs)
-        case c: FilterAst.Reqs          [ReqSet]  => reqSet(c.reqs)
-        case c: FilterAst.Not           [Boolean] => c.clause
-        case c: FilterAst.AllOf         [Boolean] => c.clauses.exists(Identity.apply)
-        case c: FilterAst.AnyOf         [Boolean] => c.head || c.tail.exists(Identity.apply)
+        case c: FilterAst.Text                     => text (c)
+        case c: FilterAst.Regex                    => regex(c)
+        case c: FilterAst.HashRef       [HashTag]  => hashRef(c.value)
+        case c: FilterAst.Presence      [Attr]     => attr(c.attr)
+        case _: FilterAst.HasIssue      [IssueCat] => false
+        case c: FilterAst.ReqType       [ReqType]  => reqType(c.reqType)
+        case c: FilterAst.ImpliesAnyOf  [ReqSet]   => reqSet(c.reqs)
+        case c: FilterAst.ImpliedByAnyOf[ReqSet]   => reqSet(c.reqs)
+        case c: FilterAst.Reqs          [ReqSet]   => reqSet(c.reqs)
+        case c: FilterAst.Not           [Boolean]  => c.clause
+        case c: FilterAst.AllOf         [Boolean]  => c.clauses.exists(Identity.apply)
+        case c: FilterAst.AnyOf         [Boolean]  => c.head || c.tail.exists(Identity.apply)
       }
 
     def toText(cfg: data.ProjectConfig, f: Valid): String =
@@ -95,13 +101,17 @@ object Filter {
     def compiler(p          : data.Project,
                  projectText: PlainText.ForProject.NoCtx,
                  textSearch : TextSearch,
-                 issueLookup: data.DataLogic.IssueLookup,
-                 tagLookup  : data.DataLogic.TagLookup): Compiler = {
+                 filterDead : FilterDead): Compiler = {
       val extensional = FilterAlgebra.makeExtensional(p)
-      val compile = FilterAlgebra.compile(p, projectText, textSearch, issueLookup, tagLookup)
+      val compile = FilterAlgebra.compile(
+        p,
+        projectText,
+        textSearch,
+        p.dataLogic.issueLookup(filterDead),
+        p.dataLogic.tagLookup(filterDead))
       v => Recursion.cata(compile)(Recursion.cata(extensional)(v))
     }
-   }
+  }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -109,16 +119,18 @@ object Filter {
 
   type ExtensionalF[+F] = FilterAst[
     Extensional.Attr,
+    Extensional.IssueCat,
     Extensional.HashTag,
     Extensional.ReqSet,
     Extensional.ReqType,
     F]
 
   object Extensional extends FilterAst.Dsl {
-    type Attr    = Valid.Attr
-    type HashTag = Valid.HashTag
-    type ReqSet  = Set[data.ReqId]
-    type ReqType = Valid.ReqType
+    type Attr     = Valid.Attr
+    type IssueCat = Valid.IssueCat
+    type HashTag  = Valid.HashTag
+    type ReqSet   = Set[data.ReqId]
+    type ReqType  = Valid.ReqType
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -136,12 +148,12 @@ object Filter {
 
     implicit val univEqFilterPotential: UnivEq[Potential] = {
       import Potential._
-      FilterAst.univEqFix[Attr, HashTag, ReqSet, ReqType]
+      FilterAst.univEqFix[Attr, IssueCat, HashTag, ReqSet, ReqType]
     }
 
     implicit val univEqFilterValid: UnivEq[Valid] = {
       import Valid._
-      FilterAst.univEqFix[Attr, HashTag, ReqSet, ReqType]
+      FilterAst.univEqFix[Attr, IssueCat, HashTag, ReqSet, ReqType]
     }
   }
 

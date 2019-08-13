@@ -18,13 +18,15 @@ import shipreq.webapp.base.ui.{EditTheme, semantic}
 import shipreq.webapp.base.ui.semantic.{Icon, Message}
 import shipreq.webapp.client.project.app.Style.reqtable.{table => *}
 import shipreq.webapp.client.project.feature.{EditorFeature, Selection}
-import shipreq.webapp.client.project.widgets.{DragToReorder, ProjectWidgets, ViewReq}
+import shipreq.webapp.client.project.widgets.{DragToReorder, NoFilterResults, ProjectWidgets, ViewReq}
 import shipreq.webapp.client.project.lib.DataReusability._
 import EditorFeature.FieldKey
 
 final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
   import Table._
   import Shared._
+
+  private val tableNavigationFeature = TableNavigationFeature.NoRowSpans
 
   object Whole {
 
@@ -35,6 +37,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
                      rowAsync        : AsyncFeature.Read.D1[Row.SourceId, ErrorMsg],
                      config          : ProjectConfig,
                      pw              : ProjectWidgets.NoCtx,
+                     filterDead      : FilterDead,
                      modifyView      : ModFn[View]) {
       @inline def render = Component(this)
     }
@@ -66,11 +69,11 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
               p.modifyView.map(f => c => f.modState(_ orderByColumn c.column))))
 
         def renderMsg(msg: VdomTag): VdomTag =
-          <.tr(<.td(*.noContent, ^.colSpan := p.cols.length + 1, msg))
+          NoFilterResults.asTableRow(p.cols.length + 1)
 
         def renderRows(rows: Vector[Row]): VdomArray = {
           val applicability = pxApplicability.value()
-          val reqViewInputs: ReqRow.ViewInput = (p.config.reqTypes, p.pw, pxPubidFmt.value())
+          val reqViewInputs: ReqRow.ViewInput = (p.config, p.pw, pxPubidFmt.value())
 
           rows.toVdomArray { genericRow =>
             val rowAsync = p.rowAsync(genericRow.sourceId)
@@ -80,6 +83,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
               case row: Row.ForReq =>
                 ReqRow.Props(
                   row,
+                  p.filterDead,
                   reqViewInputs,
                   p.editor.forReq(row.req.id),
                   p.cols,
@@ -91,6 +95,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
               case row: Row.ForCodeGroup =>
                 CodeGroupRow.Props(
                   row,
+                  p.filterDead,
                   p.pw,
                   p.editor.forCodeGroup(row.reqCodeId),
                   p.cols,
@@ -105,7 +110,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
         val body: TagMod =
           p.mode match {
             case Mode.Normal(rows) => renderRows(rows)
-            case m@Mode.FilteredOut => renderMsg(m.render)
+            case Mode.FilteredOut  => renderMsg(NoFilterResults.render)
           }
 
         semantic.Table.celledCompactUnstackable(
@@ -139,7 +144,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
           $.props.flatMap(_ reorder newCols))
 
       private def dataColKeyDown(col: ColumnPlus)(e: ReactKeyboardEventFromHtml): Callback =
-        TableNavigationFeature.Keys(e) | CallbackOption.keyCodeSwitch(e) {
+        tableNavigationFeature.Keys(e) | CallbackOption.keyCodeSwitch(e) {
           case KeyCode.Space => $.props.flatMap(_ clickSort col)
         }.asEventDefault(e)
 
@@ -147,7 +152,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
         val selectionCell =
           <.th(
             *.selectionColumnHeader,
-            ^.onKeyDown ==> TableNavigationFeature.Keys.handler,
+            tableNavigationFeature.onKeyDown,
             p.selection.total.checkboxAndOnClick) // TODO *.selectionCheckbox
 
         val cols =
@@ -209,6 +214,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
     final type RowEditor = EditorFeature.ReadWrite.ForFields[FK]
 
     case class Props(row             : RowData,
+                     filterDead      : FilterDead,
                      viewInput       : ViewInput,
                      editor          : RowEditor,
                      cols            : NonEmptyVector[ColumnPlus],
@@ -256,7 +262,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
       def renderNormal = {
         val selCell =
           selBase(
-            ^.onKeyDown ==> TableNavigationFeature.Keys.handler,
+            tableNavigationFeature.onKeyDown,
             sel.onClick,
             sel.checkbox(*.selectionCheckbox, ^.tabIndex := -1))
 
@@ -264,7 +270,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
 
         val colCells = mkColumnCells(col =>
           columnToEditorField(col) match {
-            case Some(f) => p.editor(f, rootPxProjectWidgets)
+            case Some(f) => p.editor(f, rootPxProjectWidgets, p.filterDead)
             case None    => EditorFeature.ReadWrite.ForEditor.doNothing
           })
 
@@ -304,7 +310,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
   private object ReqRow extends RowTemplate[
       FieldKey.ForSomeReq,
       Row.ForReq,
-      (ReqTypes, ProjectWidgets.NoCtx, ProjectWidgets.NoCtx#PubidFormat),
+      (ProjectConfig, ProjectWidgets.NoCtx, ProjectWidgets.NoCtx#PubidFormat),
     ]("ReqRow") {
 
     override protected val rowToColumnToEditorField =
@@ -316,17 +322,21 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
     override protected def reusabilityRowEditor = implicitly
 
     override protected def viewMaker(row: RowData, vi: ViewInput): Column => Reusable[TagMod] = {
-      val (reqTypes, pw, pubidFmt) = vi
+      val (cfg, pw, pubidFmt) = vi
 
       val viewReq = ViewReq.Data(
-        row.req,
-        row.exp.reqCodes,
-        row.mv.tags,
-        row.exp.cfTags.getOrElse(_, Vector.empty),
-        row.exp.implications.apply,
-        row.exp.cfImps.getOrElse(_, Vector.empty),
-        SortedSet.empty[ExternalPubid]) // ReqTable doesn't display pastPubids
-        .apply(pw)
+        req              = row.req,
+        live             = row.live,
+        codes            = row.exp.reqCodes,
+        generalTags      = row.mv.tags,
+        customTags       = row.exp.cfTags.getOrElse(_, Vector.empty),
+        conflictingTags  = row.conflictingTags,
+        generalImps      = row.exp.implications.apply,
+        customImps       = row.exp.cfImps.getOrElse(_, Vector.empty),
+        pastPubids       = SortedSet.empty[ExternalPubid], // ReqTable doesn't display pastPubids
+        impsAreMandatory = cfg.reqTypes.idsRequiringImplication.contains(row.req.reqTypeId),
+        mandatoryFields  = cfg.mandatoryLiveCustomFields,
+      ).apply(pw)
 
       def renderCodes: VdomElement =
         if (row.exp.reqCodeTree.nonEmpty)
@@ -413,7 +423,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
     type Dom = dom.html.TableDataCell
 
     def onKeyDown(editor: EditorFeature.ReadWrite.ForAnyEditor): ReactKeyboardEventFromHtml => Callback =
-      e => TableNavigationFeature.Keys(e) | EditorFeature.Keys(editor)(e)
+      e => tableNavigationFeature.Keys(e) | EditorFeature.Keys(editor)(e)
 
     val cellBase = <.td(^.tabIndex := -1)
 
@@ -441,28 +451,10 @@ object Table {
 
     final case class Normal(rows: Vector[Row]) extends Mode
 
-    case object FilteredOut extends Mode {
-      def render: VdomTag =
-        Message(
-          Message.Style(Message.Type.Info),
-          Icon.Filter,
-          "No filter results.",
-          "None of the project content matches the specified filter criteria.")
-    }
-
-    private val reusabilityNormal: Reusability[Normal] =
-      Reusability.derive
+    case object FilteredOut extends Mode
 
     implicit val reusability: Reusability[Mode] =
-      Reusability((a, b) => // TODO Replace with Reusability.derive
-        a match {
-          case x: Normal => b match {
-            case y: Normal => reusabilityNormal.test(x, y)
-            case _ => false
-          }
-          case FilteredOut => a == b
-        }
-      )
+      Reusability.derive
   }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

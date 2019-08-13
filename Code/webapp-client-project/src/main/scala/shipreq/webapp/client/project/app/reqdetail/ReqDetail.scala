@@ -11,7 +11,7 @@ import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.{UseCaseStepCreate, VerifiedEvent}
+import shipreq.webapp.base.event.{Event, VerifiedEvent}
 import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
 import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateContentCmd}
 import shipreq.webapp.base.text._
@@ -22,11 +22,14 @@ import shipreq.webapp.client.project.app.Style.{reqdetail => *}
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.lib.EditorNavParent
 import shipreq.webapp.client.project.widgets._
 import ExternalPubid.LookupFailure
 import ProjectWidgets.emptySpan
 
 object ReqDetail {
+
+  private implicit val tableNavigationFeature = TableNavigationFeature.NoRowSpans
 
   def apply(staticProps: StaticProps) =
     ScalaComponent.builder[DynamicProps]("ReqDetail")
@@ -38,8 +41,11 @@ object ReqDetail {
                                reqDetailRC          : RouterCtl[ExternalPubid],
                                webWorker            : WebWorkerClient,
                                pxProject            : Px[Project],
+                               pxViewReqDataCache   : Px[ViewReqDataCache],
                                pxTextSearch         : Px[TextSearch],
-                               pxProjectWidgetsNoCtx: Px[ProjectWidgets.NoCtx])
+                               pxProjectWidgetsNoCtx: Px[ProjectWidgets.NoCtx]) {
+    val pxProjectConfig = pxProject.map(_.config).withReuse
+  }
 
   final case class DynamicProps(extPubid  : ExternalPubid,
                                 filterDead: StateSnapshot[FilterDead],
@@ -60,10 +66,11 @@ object ReqDetail {
    *
    * Cached by its inputs.
    */
-  final class Data(sp        : StaticProps,
-               val project   : Project,
-               val req       : Req,
-                   upstreamFD: FilterDead) {
+  final class Data(sp              : StaticProps,
+               val project         : Project,
+               val req             : Req,
+                   viewReqDataCache: ViewReqDataCache,
+                   upstreamFD      : FilterDead) {
 
     val pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]] =
       Reusable.byRef(
@@ -89,7 +96,7 @@ object ReqDetail {
     val pubidText = PlainText.pubid(req.pubid, project)
 
     val viewData: ViewReq.Data =
-      ViewReq.Data.fromProject(req.id, project, filterDead)
+      viewReqDataCache(filterDead)(req.id)
 
     val useCaseData: Option[UseCaseData] =
       req match {
@@ -119,7 +126,7 @@ object ReqDetail {
   final class Backend(SP: StaticProps, $: BackendScope[DynamicProps, Unit]) {
     import SP._
 
-    val pxFieldNameFn = pxProject.map(Field.nameByIdFromProject)
+    val pxFieldNameFn = pxProjectConfig.map(Field.nameByIdFromProjectConfig)
     val pxExtPubid    = Px.props($).map(_.extPubid).withReuse.manualRefresh
     val pxUpstreamFD  = Px.props($).map(_.filterDead.value).withReuse.manualRefresh
 
@@ -130,9 +137,10 @@ object ReqDetail {
       for {
         p <- pxProject
         e <- pxExtPubid
+        v <- pxViewReqDataCache
         f <- pxUpstreamFD
       } yield
-        e.lookup(p).map(new Data(SP, p, _, f))
+        e.lookup(p).map(new Data(SP, p, _, v, f))
 
     val cbData: CallbackOption[Data] =
       Callback(refreshPx()).toCBO >> pxData.toCallback.map(_.toOption).asCBO
@@ -155,7 +163,7 @@ object ReqDetail {
 
         val startEditor: Callback =
           ves.iterator.map(_.event).collect {
-            case e: UseCaseStepCreate => startUseCaseStepEditor(e.id).delayMs(50).toCallback
+            case e: Event.UseCaseStepCreate => startUseCaseStepEditor(e.id).delayMs(50).toCallback
           }.nextOption().getOrEmpty
 
         onSuccess >> startEditor
@@ -163,11 +171,12 @@ object ReqDetail {
 
     def startUseCaseStepEditor(id: UseCaseStepId): Callback =
       for {
-        data  ← cbData
-        props ← $.props.toCBO
-        key   = EditorFeature.FieldKey.UseCaseStep(id)
-        start ← CallbackOption liftOption props.editorUCS(key, data.pxProjectWidgets).startEdit
-        _     ← start.toCBO
+        data   ← cbData
+        props  ← $.props.toCBO
+        key    = EditorFeature.FieldKey.UseCaseStep(id)
+        editor = props.editorUCS(key, data.pxProjectWidgets, data.filterDead)
+        start  ← CallbackOption liftOption editor.startEdit
+        _      ← start.toCBO
       } yield ()
 
     def setModal(modal: Modal.State): Callback =
@@ -239,7 +248,7 @@ object ReqDetail {
             Header(hstyle, pubidText + ":")),
 
           <.div(*.headerTitle,
-            reqEditor(EditorFeature.FieldKey.reqTitle(req.id), data.pxProjectWidgets)
+            reqEditor(EditorFeature.FieldKey.reqTitle(req.id), data.pxProjectWidgets, data.filterDead)
               .themedRenderOr(())(
                 Header(hstyle, view.title))),
 
@@ -304,16 +313,18 @@ object ReqDetail {
       def renderRowData(cellBase: VdomTag, row: Row): VdomElement = {
         import EditorFeature.FieldKey
 
-        def editableCell(key: FieldKey.ForSomeReq): VdomElement =
-          EditableCell.Props(cellBase, reqEditor(key, data.pxProjectWidgets), () => view.editable(key))
+        def editableCell(key: FieldKey.ForSomeReq): VdomElement = {
+          val editor = reqEditor(key, data.pxProjectWidgets, data.filterDead)
+          EditorNavParent.Props(cellBase, editor, view.editable(key))
             .render
+        }
 
-        def nonDirectlyEditableCell(t: TagMod): VdomElement =
-          cellBase(^.onKeyDown ==> TableNavigationFeature.Keys.handler, t)
+        def nonDirectlyEditorNavParent(t: TagMod): VdomElement =
+          cellBase(tableNavigationFeature.onKeyDown, t)
 
         def useCaseStepsCell(f: UseCaseData => UseCaseStepTree.StepData): VdomElement = {
           val d = data.useCaseData.get
-          nonDirectlyEditableCell(renderStepTree(d, f(d)))
+          nonDirectlyEditorNavParent(renderStepTree(d, f(d)))
         }
 
         row match {
@@ -336,18 +347,19 @@ object ReqDetail {
             editableCell(FieldKey.Tags(None))
 
           case Row.DeletionReason =>
-            nonDirectlyEditableCell(view.deletionReason getOrElse emptySpan)
+            nonDirectlyEditorNavParent(view.deletionReason getOrElse emptySpan)
 
           case Row.PastPubids =>
-            nonDirectlyEditableCell(view.pastPubids)
+            nonDirectlyEditorNavParent(view.pastPubids)
 
           case Row.Implications =>
             def renderHalf(dir: Direction) = {
               val key = FieldKey.Implications(\/-(dir))
-              EditableCell.Props(impRowSubBase, reqEditor(key, data.pxProjectWidgets), () => view.editable(key))
+              val editor = reqEditor(key, data.pxProjectWidgets, data.filterDead)
+              EditorNavParent.Props(impRowSubBase, editor, view.editable(key))
                 .render
             }
-            nonDirectlyEditableCell(
+            nonDirectlyEditorNavParent(
               <.table(
                 TableNavigationFeature.nestedTable,
                 *.generalImpsCont,
@@ -358,7 +370,7 @@ object ReqDetail {
                     renderHalf(Forwards)))))
 
           case Row.ImplicationGraph =>
-            nonDirectlyEditableCell(
+            nonDirectlyEditorNavParent(
               ImplicationGraph.Props(
                 Some(req.id), data.filterDead,
                 project.content.implications, project.content.reqs, project.config.reqTypes,
@@ -378,10 +390,10 @@ object ReqDetail {
 
           case Row.StepGraph =>
             val ucId = data.useCaseData.get.uc.id
-            nonDirectlyEditableCell(UseCaseStepFlowGraph.Props(ucId, project, pw.ctx, webWorker).render)
+            nonDirectlyEditorNavParent(UseCaseStepFlowGraph.Props(ucId, project, pw.ctx, webWorker).render)
 
           case Row.Life =>
-            nonDirectlyEditableCell(
+            nonDirectlyEditorNavParent(
               data.live match {
                 case Live =>
                   LifeButton.Delete withStatusOnLeft delete(req.id)
@@ -400,17 +412,17 @@ object ReqDetail {
           import EditorFeature.FieldKey.UseCaseStep
           import args.id
 
-          val editor = props.editorUCS(UseCaseStep(id), data.pxProjectWidgets)
+          val editor = props.editorUCS(UseCaseStep(id), data.pxProjectWidgets, data.filterDead)
 
           def editorArgs = UseCaseStep.Args(
-            cmdRunner(Cell.UseCaseStepCtrls(id)),
-            addCmdRunner(Cell.AddUseCaseStep(id)))
+            Some(cmdRunner(Cell.UseCaseStepCtrls(id))),
+            Some(addCmdRunner(Cell.AddUseCaseStep(id))))
 
-          EditableCell.Props(
+          EditorNavParent.Props(
             args.base,
             editor,
             editorArgs,
-            () => pw.useCaseStepTextAndFlow(args.textAndFlow(), args.live))
+            pw.useCaseStepTextAndFlow(args.textAndFlow(), args.live))
             .render
         }
 
@@ -418,7 +430,7 @@ object ReqDetail {
           ucData.uc,
           stepData,
           data.filterDead,
-          project.content.reqs.useCases.stepFlow,
+          project.content.reqs.useCases,
           renderBody,
           cmdRunner,
           addCmdRunner,

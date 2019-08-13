@@ -3,6 +3,7 @@ package shipreq.webapp.base.event
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{DataValidators => V, _}
 import ApplyEventLib._, SE.SE
+import Event._
 
 trait ApplyOtherEvent {
   this: ApplyEvent =>
@@ -13,6 +14,47 @@ trait ApplyOtherEvent {
     def applyProjectNameSet(e: ProjectNameSet): SE[Unit] =
       validateProjectName(e.name) >>= (name =>
         SE.mod(Project.name.set(name)))
+  }
+
+  // ===================================================================================================================
+
+  object ManualIssueEvents {
+
+    def applyCreate(e: ManualIssueCreate): SE[Unit] = {
+
+      def validateDoesntExist: SE[Unit] =
+        SE.test(
+          !_.manualIssues.imap.containsK(e.id),
+          s"${show(e.id)} already exists.")
+
+      def add(mi: ManualIssues): ManualIssues = {
+        val nextId = ManualIssueId(1 + math.max(e.id.value, mi.nextId.value))
+        val newMap = mi.imap + ManualIssue(e.id, e.text)
+        ManualIssues(newMap, nextId)
+      }
+
+      for {
+        _ ← whenUntrusted(validateDoesntExist)
+        _ ← Project.manualIssues.modify(add)
+      } yield ()
+    }
+
+    private def validateExists(id: ManualIssueId): SE[Unit] =
+      SE.test(
+        _.manualIssues.imap.containsK(id),
+        s"${show(id)} not found.")
+
+    def applyUpdate(e: ManualIssueUpdate): SE[Unit] =
+      for {
+        _ ← whenUntrusted(validateExists(e.id))
+        _ ← Project.manualIssues.modify(_.modIMap(_ + ManualIssue(e.id, e.text)))
+      } yield ()
+
+    def applyDelete(e: ManualIssueDelete): SE[Unit] =
+      for {
+        _ ← whenUntrusted(validateExists(e.id))
+        _ ← Project.manualIssues.modify(_.modIMap(_ - e.id))
+      } yield ()
   }
 
   // ===================================================================================================================

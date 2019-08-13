@@ -4,13 +4,15 @@ import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.VdomElement
+import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{Allow, ErrorMsg}
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.{FilterDead, ReqId}
+import shipreq.webapp.base.data.{FilterDead, HideDead, ReqId}
+import shipreq.webapp.base.event.EventSeqSummary
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.protocol._
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitPageData, WsReqRes}
+import shipreq.webapp.base.protocol.ProjectSpaProtocols.InitPageData
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.base.ui.ProjectItem
 import shipreq.webapp.client.project.app.state._
@@ -20,7 +22,7 @@ import shipreq.webapp.client.project.app.reqtable.ReqTablePage
 import shipreq.webapp.client.project.app.cfg.shared.Usage
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.widgets.{ImplicationGraph, ProjectWidgets}
+import shipreq.webapp.client.project.widgets.{ImplicationGraph, ProjectWidgets, ViewReqCache, ViewReqDataCache}
 import AsyncFeature.Implicits._
 import LoadedRoot._
 import Routes.{Page, RouterCtl}
@@ -35,18 +37,16 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
   def unsafeProject() = global.unsafeProject()
 
   final class Backend($: BackendScope[Props, State]) extends OnUnmount {
-    import global.{cbProjectMetaData, wsClient}
+    import global.cbProjectMetaData
 
+    private val sspUpdateConfig          = global.sspUpdateConfig
     private val sspCreateContent         = global.sspCreateContent
     private val sspUpdateContent         = global.sspUpdateContent
     private val sspProjectNameSet        = global.sspProjectNameSet
     private val sspUpdateSavedViews      = global.sspUpdateSavedViews
+    private val sspUpdateManualIssues    = global.sspUpdateManualIssues
     private val sspFieldMandatorinessMod = global.sspFieldMandatorinessMod
     private val sspReqTypeImplicationMod = global.sspReqTypeImplicationMod
-    private val sspCustomIssueTypeCrud   = global.sspCustomIssueTypeCrud
-    private val sspCustomReqTypeCrud     = global.sspCustomReqTypeCrud
-    private val sspFieldMod              = global.sspFieldMod
-    private val sspTagMod                = global.sspTagMod
 
     // This never changes
     private val routerCtl = $.props.runNow().routerCtl
@@ -64,11 +64,30 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
     private val pxProjectWidgets =
       Reusable byRef Px.apply2(pxProject, pxPlainText)(ProjectWidgets(_, _, reqDetailRC))
 
+    private val pxViewReqDataCache =
+      pxProject.map(ViewReqDataCache.apply)
+
+    private val pxViewReqCache =
+      Px.apply2(pxViewReqDataCache, pxProjectWidgets)(ViewReqCache.apply)
+
+    private val pxRenderFeature =
+      Px.apply3(pxProject, pxViewReqCache, pxProjectWidgets)(RenderFeature.prepare)
+
     private val pxCreateEditability =
       pxProject.map(p => CreateFeature.Editability(p.config))
 
     private val pxEditEditability =
       pxProject.map(EditorFeature.Editability.apply)
+
+    private val pxFilterCompilerFromFilterDead: Px[FilterDead => Filter.Valid.Compiler] =
+      for {
+        p  <- pxProject
+        pt <- pxPlainText
+        ts <- pxTextSearch
+      } yield FilterDead.memoLazy(Filter.Valid.compiler(p, pt, ts, _))
+
+    private val pxFilterCompilerHideDead: Px[Filter.Valid.Compiler] =
+      pxFilterCompilerFromFilterDead.map(_(HideDead))
 
     private val previewW: PreviewFeature.Write.Composite[PreviewId] =
       PreviewFeature.Write.Composite($ zoomStateL State.preview)
@@ -85,7 +104,8 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
           pxTextSearch),
         $ zoomStateL State.create,
         createAsyncW,
-        sspCreateContent)
+        sspCreateContent,
+        sspUpdateManualIssues)
 
     private val editAsyncW: AsyncFeature.Write.D2[EditorFeature.RowKey, AsyncKey, ErrorMsg] =
       AsyncFeature.Write.D2.init($ zoomStateL State.editAsync)
@@ -97,7 +117,9 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
           pxProject,
           pxPlainText,
           pxTextSearch,
-          sspUpdateContent),
+          sspUpdateContent,
+          sspUpdateManualIssues,
+        ),
         $ zoomStateL State.edit,
         editAsyncW.mapKey1(AsyncKey.ToEditor))
 
@@ -107,11 +129,49 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
     private val savedViewAsyncW: AsyncFeature.Write.D0[ErrorMsg] =
       AsyncFeature.Write.D0.init($ zoomStateL State.savedViewAsync)
 
+    private val updateConfigCmdAsyncW: AsyncFeature.Write.D1[UpdateConfigCmd, ErrorMsg] =
+      AsyncFeature.Write.D1.init($ zoomStateL State.updateConfigCmdAsync)
+
+    private val updateContentCmdAsyncW: AsyncFeature.Write.D1[UpdateContentCmd, ErrorMsg] =
+      AsyncFeature.Write.D1.init($ zoomStateL State.updateContentCmdAsync)
+
+    private val manualIssueCmdAsyncW: AsyncFeature.Write.D1[ManualIssueCmd, ErrorMsg] =
+      AsyncFeature.Write.D1.init($ zoomStateL State.manualIssueCmdAsync)
+
+    private val updateConfigCmdInvoker: UpdateConfigCmd ~=> Callback =
+      Reusable.fn(cmd => updateConfigCmdAsyncW(cmd)((s, f) => sspUpdateConfig(cmd, _ => s, f)))
+
+    private val updateContentCmdInvoker: UpdateContentCmd ~=> Callback =
+      Reusable.fn(cmd => updateContentCmdAsyncW(cmd)((s, f) => sspUpdateContent(cmd, _ => s, f)))
+
+    private val manualIssueCmdInvoker: ManualIssueCmd ~=> Callback =
+      Reusable.fn(cmd => manualIssueCmdAsyncW(cmd)((s, f) => sspUpdateManualIssues(cmd, _ => s, f)))
+
+    private val updateConfigOrContentCmdInvoker: issues.Action.Cmd ~=> Callback =
+      Reusable.fn {
+        case \/-(cmd)      => updateContentCmdInvoker(cmd)
+        case -\/(-\/(cmd)) => manualIssueCmdInvoker(cmd)
+        case -\/(\/-(cmd)) => updateConfigCmdInvoker(cmd)
+      }
+
+    private val issuesPage = issues.IssuesPage.StaticProps(
+      pxProject,
+      pxRenderFeature,
+      pxPlainText,
+      pxProjectWidgets,
+      pxFilterCompilerHideDead,
+      updateConfigOrContentCmdInvoker)
+
+    private val issuesPageSS =
+      StateSnapshot.withReuse.zoomL(State.issuesPage).prepareVia($)
+
     private val reqTable = ReqTablePage(
       ReqTablePage.StaticProps(
         $ zoomStateL State.reqTable,
         pxProject,
-        pxTextSearch, pxProjectWidgets,
+        pxTextSearch,
+        pxProjectWidgets,
+        pxFilterCompilerFromFilterDead,
         reqDetailRC,
         sspUpdateContent,
         sspUpdateSavedViews,
@@ -147,7 +207,13 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
     def ww = WebWorkerClient.Instance
 
     private val reqDetail = ReqDetail(ReqDetail.StaticProps(
-      sspUpdateContent, reqDetailRC, ww, pxProject, pxTextSearch, pxProjectWidgets))
+      sspUpdateContent,
+      reqDetailRC,
+      ww,
+      pxProject,
+      pxViewReqDataCache,
+      pxTextSearch,
+      pxProjectWidgets))
 
     private val reqDetailSetState: Reusable[SetStateFnPure[ReqDetail.State]] =
       Reusable.fn.state($ zoomStateL State.reqDetail).setStateFn
@@ -195,7 +261,7 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
             Allow when _.lookup(unsafeProject()).isRight,
             e => routerCtl.set(Page.ReqDetail(e)))
 
-          val index = ProjectIndex.Props(lookup, routerCtl)
+          val index = ProjectIndex.Props(unsafeProject().issues.count, lookup, routerCtl)
 
           val pname = ProjectItem.WithEditableName.Props(
             cbProjectMetaData.runNow(),
@@ -204,19 +270,28 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
 
           ProjectHome.Props(pname, index).render
 
+        case Page.Issues =>
+          val state    = issuesPageSS(s)
+          val creator  = createRW(CreateFeature.RowKey.ManualIssue)
+          val cmdAsync = s.manualIssueCmdAsync.toRead
+                           .either(s.updateConfigCmdAsync.toRead)
+                           .either(s.updateContentCmdAsync.toRead)
+          val p = issues.IssuesPage.Props(state, creator, editRW, cmdAsync)
+          issuesPage.component(p)
+
         case Page.CfgFields =>
-          cfg.fields.CfgFields.Props(sspFieldMod, global, filterDeadSS).component
+          cfg.fields.CfgFields.Props(sspUpdateConfig, global, filterDeadSS).component
 
         case Page.CfgIssues =>
           cfg.issues.CfgIssues.Props(
-            sspCustomIssueTypeCrud, sspReqTypeImplicationMod, sspFieldMandatorinessMod, global, filterDeadSS, usageShow)
+            sspUpdateConfig, sspReqTypeImplicationMod, sspFieldMandatorinessMod, global, filterDeadSS, usageShow)
             .component
 
         case Page.CfgReqTypes =>
-          cfg.reqtypes.CfgReqTypes.Props(sspCustomReqTypeCrud, global, filterDeadSS, usageShow).component
+          cfg.reqtypes.CfgReqTypes.Props(sspUpdateConfig, global, filterDeadSS, usageShow).component
 
         case Page.CfgTags =>
-          cfg.tags.CfgTags.Props(sspTagMod, global, filterDeadSS).component
+          cfg.tags.CfgTags.Props(sspUpdateConfig, global, filterDeadSS).component
 
         case Page.ReqTable =>
           val rowAsync = editAsyncState
@@ -254,7 +329,7 @@ final class LoadedRoot(initPageData: InitPageData, global: Global) {
       Layout.Props(initPageData.username, cbProjectMetaData.runNow(), routerCtl, p.page, content).render
     }
 
-    def onProjectChange(c: Changes): Callback = // TODO I don't like this
+    def onProjectChange(c: EventSeqSummary.WithProject): Callback = // TODO I don't like this
       $.forceUpdate
   }
 

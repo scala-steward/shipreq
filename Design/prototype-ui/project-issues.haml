@@ -34,13 +34,39 @@
       #reqtable .id {white-space:nowrap}
       .pubid {white-space:nowrap}
       td.fedit.issue-blank {min-width:40ex}
-      .issue-blank {background:#fdd /*hsl(0, 90%, 80%)*/}
       .issue-issuetag ,
+      .issue-tagRef {color:#c00; background:#fee}
       .issue-liveRef_deadreq ,
       .issue-liveRef_deadUC_deadStep ,
       .issue-liveRef_deadUC_liveStep ,
-      .issue-liveRef_liveUC_deadStep {color:#c00; background:#fee}
+      .issue-liveRef_liveUC_deadStep ,
       .issue-deadtag, .issue-deadissuetag {color:#c00; background:#fee; text-decoration: line-through;}
+      tr.issue-loose .loose-body {color:#c00}
+
+      .issue-blank {
+        xbackground:#fdd /*hsl(0, 90%, 80%)*/;
+      }
+      .issue-blank::after {
+        content:'blank';
+        /* font-style: italic; */
+        color:#c00;
+        background:#fee;
+        text-align: center;
+        display: block;
+        height: 100%;
+        width: 11ex;
+        border-radius: 0.3ex;
+      }
+
+      .ui.label.basic.bad-tag {
+        color:#c00!important;
+        border-color:#c00!important;
+        background:#fee!important;
+      }
+
+      .ui.celled.table tr td.fix-left-border:first-child {
+          border-left: 1px solid #2224261a;
+      }
 
       .mergesum {display:none; }
       .itype .mergesum,
@@ -52,10 +78,11 @@
         white-space: nowrap;
         box-shadow: 0 0 0 0 rgba(34,36,38,.15) inset;
         original-background-color: #21ba45;
-        background-color: #198a28;
+        background-color: hsl(128,54%,40%);
         color: #fff;
         text-shadow: none;
         background-image: none;
+        padding: 0.4em 0.8em;
       }
 
       td.na {
@@ -182,12 +209,12 @@
           #new-closed
             %button.ui.button.orange
               %i.icon.plus
-              New loose issue
+              New issue
           #new-open{style: "display:flex"}
             %div
               %button.ui.button.orange.disabled
                 %i.icon.plus
-                New loose issue
+                New issue
             %div(style="flex:1; padding-left:1ex")
               %textarea.texteditor
                 Remove Bob's reqs? (eg. [fr3] and [fr18])
@@ -207,12 +234,16 @@
           %i.icon.setting{title: "config"}
           = "+ 17 "
           %i.icon.cubes{title: "reqs"}
-          = " + 1 "
-          %i.icon.open.folder.outline{title: "code groups"}
+          = "(12 + 5 "
+          %i.icon.copy{title: "reappearances"}
+          = ") + 1 "
+          %i.icon.folder.outline{title: "code groups"}
           = " + 1 "
           -# %i.icon.unordered.list{title: "loose"}
           -# %i.icon.calendar.outline{title: "loose"}
-          %i.icon.comment.outline{title: "loose"}
+          -# %i.icon.comment.outline{title: "loose"}
+          -# %i.icon.warning.circle{title: "loose"}
+          %i.icon.keyboard{title: "loose"}
 
       -# =============================================================================================
       %section#view-ctrls{style: "display:flex; align-content: center; margin-top: 2em"}
@@ -277,29 +308,34 @@
         %tbody
 
           %tr
-            %td.itype(rowspan=9) Bad data
-            %td.issue(rowspan=2) Conflicting Priority tags
-            %td.id %a(href="project-reqdetail.html") FR-14
-            %td.title Admin must be able to connect 100 fax machines simultaneously.
+            %td.itype(rowspan=10) Bad data
+            %td.issue(rowspan=3) Conflicting Priority tags
+            %td.id(rowspan=2) %a(href="project-reqdetail.html") FR-14
+            %td.title(rowspan=2) Admin must be able to connect 100 fax machines simultaneously.
             %td.fname Tags
             %td.fedit.can-edit
-              .ui.label.red.basic.is-tag critical
-              .ui.label.red.basic.is-tag urgent
+              .ui.label.basic.bad-tag.is-tag critical
               .ui.label.blue.is-tag wip
-            %td.actions
-            %td.pri.na
+            %td.actions.na(rowspan=2)
+            %td.pri(rowspan=2)
+              .ui.label.basic.bad-tag.is-tag urgent
+              .ui.label.basic.bad-tag.is-tag critical
+
+          %tr
+            %td.fix-left-border.fname Detail
+            %td.fedit.can-edit This is <span class="issue-tagRef">#urgent</span>!
 
           %tr
             %td.id %a(href="project-reqdetail.html") UC-5
             %td.title User logs in via stern eye contact
             %td.fname Priority
             %td.fedit.can-edit
-              .ui.label.red.basic.is-tag urgent
-              .ui.label.red.basic.is-tag critical
+              .ui.label.basic.bad-tag.is-tag urgent
+              .ui.label.basic.bad-tag.is-tag critical
             %td.actions
             %td.pri
-              .ui.label.red.basic.is-tag urgent
-              .ui.label.red.basic.is-tag critical
+              .ui.label.basic.bad-tag.is-tag urgent
+              .ui.label.basic.bad-tag.is-tag critical
 
           %tr
             %td.issue(rowspan=2) Deleted issue tag in use: #TBD
@@ -350,7 +386,7 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
-            %td.fname Step 4.1
+            %td.fix-left-border.fname Step 4.1
             %td.fedit.can-edit See <span class="issue-liveRef_liveUC_deadStep">[UC-17.E.2.a]</span>.
             %td.actions
               .ui.button.resolve
@@ -359,7 +395,7 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
-            %td.fname Step 4.2
+            %td.fix-left-border.fname Step 4.2
             %td.fedit.can-edit See <span class="issue-liveRef_deadUC_liveStep">[UC-18.E.3]</span>.
             %td.actions
               .ui.button.resolve
@@ -368,7 +404,7 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
-            %td.fname Step 4.3
+            %td.fix-left-border.fname Step 4.3
             %td.fedit.can-edit See <span class="issue-liveRef_deadUC_deadStep">[UC-18.E.X.1]</span>.
             %td.actions
             %td.pri .ui.label.blue.is-tag urgent
@@ -400,21 +436,23 @@
 
           %tr
             %td.itype(rowspan=6) Missing data
-            %td.issue(rowspan=6) Blank field
-            %td.id(rowspan=2) %a(href="project-reqdetail.html") UC-3
+            %td.issue Implication required for req type: UC
+            %td.id(rowspan=2) %a(href="project-reqdetail.html") UC-1
             %td.title(rowspan=2) User logs in via smartphone
+            %td.fix-left-border.fname Implied By
+            %td.fedit.can-edit.issue-blank
+            %td.actions
+            %td.pri .ui.label.blue.is-tag high
+
+          %tr
+            %td.issue Mandatory field is blank: Detail
             %td.fname Detail
             %td.fedit.can-edit.issue-blank
             %td.actions
             %td.pri .ui.label.blue.is-tag high
 
           %tr
-            %td.fname Implied By
-            %td.fedit.can-edit.issue-blank
-            %td.actions
-            %td.pri .ui.label.blue.is-tag high
-
-          %tr
+            %td.issue Mandatory field is blank: Major Feature
             %td.id %a(href="project-reqdetail.html") UC-4
             %td.title User logs in via fax
             %td.fname Major Feature
@@ -423,6 +461,7 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr
+            %td.issue Mandatory field is blank: Priority
             %td.id %a(href="project-reqdetail.html") UC-8
             %td.title User logs in via shouting
             %td.fname Priority
@@ -431,15 +470,17 @@
             %td.pri.issue-blank
 
           %tr
-            %td.id %a(href="project-reqdetail.html") UC-1
-            %td.title
+            %td.issue Title is blank
+            %td.id %a(href="project-reqdetail.html") UC-9
+            %td.title.can-edit.issue-blank
             %td.fname Title
             %td.fedit.can-edit.issue-blank
             %td.actions
             %td.pri .ui.label.blue.is-tag critical
 
           %tr
-            %td.id %a(href="project-reqdetail.html") UC-4
+            %td.issue Use case step is blank
+            %td.id %a(href="project-reqdetail.html") UC-13
             %td.title User logs in via fax
             %td.fname Step 4.E.1
             %td.fedit.can-edit.issue-blank
@@ -466,15 +507,16 @@
             %td.pri .ui.label.blue.is-tag urgent
 
           %tr.issue-loose
-            %td.issue Loose
+            %td.issue Manual
             %td.id.na
             %td.title.na
             %td.fname.na
-            %td.fedit.can-edit Revise all Major Features
+            %td.fedit.can-edit
+              %span.loose-body Revise all Major Features
             %td.actions
               .ui.button.resolve
-                %i.icon.remove.circle
-                Close issue
+                %i.icon.trash.circle
+                Delete issue
             %td.pri.na
 
   :javascript

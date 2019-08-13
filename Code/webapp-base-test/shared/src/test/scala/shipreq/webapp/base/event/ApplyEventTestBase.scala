@@ -1,11 +1,13 @@
 package shipreq.webapp.base.event
 
 import scalaz.{-\/, \/-}
+import sourcecode.Line
 import utest.{assert => _, _}
 import shipreq.webapp.base.WebappConfig
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.WebappTestUtil._
 import ApplyEventTestFns._
+import Event._
 
 object ApplyEventTestFns {
 
@@ -18,10 +20,10 @@ object ApplyEventTestFns {
     es.zipWithIndex.map { case (e, i) => s"[${i + 1}/$t] $e" } mkString "\n"
   }
 
-  def assertPass(es: Event*)(implicit init: InitialEvents): Unit =
+  def assertPass(es: Event*)(implicit init: InitialEvents, l: Line): Unit =
     _assertPass(es: _*)
 
-  def _assertPass(es: Event*)(implicit init: InitialEvents): Project = {
+  def _assertPass(es: Event*)(implicit init: InitialEvents, l: Line): Project = {
     val es2 = init ++ es
 
     def go(ae: ApplyEvent): Project = {
@@ -41,13 +43,13 @@ object ApplyEventTestFns {
     p
   }
 
-  def assertFail(errFrag: String)(es: Event*)(implicit init: InitialEvents): Unit = {
+  def assertFail(errFrag: String)(es: Event*)(implicit init: InitialEvents, l: Line): Unit = {
     // Only the last event should fail - apply init and ensure ok
     val vb = Vector.newBuilder[Event]
     vb ++= init.es
     vb ++= es
     val ev = vb.result()
-    val p1 = _assertPass(ev.init: _*)(NoInitialEvents.init)
+    val p1 = _assertPass(ev.init: _*)(NoInitialEvents.init, l)
 
     // Now apply the last event
     val r = apply.apply1(ev.last)(p1)
@@ -57,7 +59,7 @@ object ApplyEventTestFns {
     }
   }
 
-  def assertQty(p: Project, es: Event*): Unit = {
+  def assertQty(p: Project, es: Event*)(implicit l: Line): Unit = {
     var customIssueTypes = 0
     var customReqTypes   = 0
     var tags             = 0
@@ -66,6 +68,7 @@ object ApplyEventTestFns {
     var useCases         = 0
     var genericReqs      = 0
     var delReasons       = 0
+    var manualIssues     = 0
     var savedViews       = 0
 
     es foreach {
@@ -106,6 +109,9 @@ object ApplyEventTestFns {
       case _: SavedViewCreate => savedViews += 1
       case _: SavedViewDelete => savedViews -= 1
 
+      case _: ManualIssueCreate => manualIssues += 1
+      case _: ManualIssueDelete => manualIssues -= 1
+
       case _: ApplicableTagUpdate
          | _: CustomIssueTypeDelete
          | _: CustomIssueTypeRestore
@@ -123,6 +129,7 @@ object ApplyEventTestFns {
          | _: FieldStaticRemove
          | _: GenericReqTitleSet
          | _: GenericReqTypeSet
+         | _: ManualIssueUpdate
          | _: ProjectNameSet
          | _: CodeGroupUpdate
          | _: ReqCodesPatch
@@ -147,12 +154,13 @@ object ApplyEventTestFns {
     assert(cfg.reqTypes.custom.size <= customReqTypes, "Σ CustomReqTypes")
     assert(cfg.fields.customFields.size <= customFields, "Σ CustomFields")
     assertEq("Σ CustomIssueTypes", cfg.customIssueTypes.size, customIssueTypes)
-    assertEq("Σ Tags", tags, cfg.tags.size)
+    assertEq("Σ Tags", tags, cfg.tags.tree.size)
     assertEq("Σ Generic Reqs", genericReqs, p.content.reqs.genericReqs.size)
     assertEq("Σ Use Cases", useCases, p.content.reqs.useCases.imap.size)
     assertEq("Σ Reqs", genericReqs + useCases, p.content.reqs.size)
     assertEq("Σ CodeGroups (active)", activeRCGs, p.content.reqCodes.groups.count(_.live is Live))
     assertEq("Σ DeletionReasons", delReasons, p.content.deletionReasons.reasons.size)
+    assertEq("Σ ManualIssues", manualIssues, p.manualIssues.imap.size)
     validateIdCeilings(p)
   }
 
@@ -179,8 +187,8 @@ trait NoInitialEvents {
 }
 object NoInitialEvents extends NoInitialEvents
 
-class EventTester(implicit init: InitialEvents) {
-  var p = _assertPass()(init)
+class EventTester(implicit init: InitialEvents, l: Line) {
+  var p = _assertPass()(init, l)
   var es = init.es.toVector
 
   var makeName: (Int, Event) => String =
@@ -188,10 +196,10 @@ class EventTester(implicit init: InitialEvents) {
 
   var testNo = 0
 
-  def justApply(es: Event*): Unit =
+  def justApply(es: Event*)(implicit l: Line): Unit =
     es foreach (apply(_)(_ => ()))
 
-  def apply(e: Event)(test: (=> String) => Unit): Unit = {
+  def apply(e: Event)(test: (=> String) => Unit)(implicit l: Line): Unit = {
     testNo += 1
     def name = makeName(testNo, e)
     ApplyEventTestFns.apply.apply1(e)(p) match {

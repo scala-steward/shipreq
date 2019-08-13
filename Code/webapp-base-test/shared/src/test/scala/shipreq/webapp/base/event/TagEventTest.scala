@@ -8,6 +8,7 @@ import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
 import ApplyEventTestFns._
 import DataImplicits._
+import Event._
 import NoInitialEvents._
 
 abstract class SharedTagEventTests extends TestSuite {
@@ -81,7 +82,7 @@ abstract class SharedTagEventTests extends TestSuite {
         var es = Vector[Event](c1)
         def test(e: Event, ab: String): Unit = {
           es :+= e
-          val t = _assertPass(es: _*).config.tags
+          val t = _assertPass(es: _*).config.tags.tree
           val List(a, b) = ttget(t, 1, 2)
           assertEq((a, b) mapEach getChildren, (Vector(2), Vector.empty))
           def f(d: TagInTree, s: String) = if (d.tag.live is Live) s else "-"
@@ -104,7 +105,7 @@ abstract class SharedTagEventTests extends TestSuite {
         var es = Vector[Event](c1, c2)
         def test(e: Event, acb: String): Unit = {
           es :+= e
-          val t = _assertPass(es: _*).config.tags
+          val t = _assertPass(es: _*).config.tags.tree
           val List(a, b, c) = ttget(t, 1, 2, 3)
           assertEq((a, c, b) mapEach getChildren, (Vector(2), Vector(2), Vector.empty))
           def f(d: TagInTree, s: String) = if (d.tag.live is Live) s else "-"
@@ -126,7 +127,7 @@ abstract class SharedTagEventTests extends TestSuite {
         var es = Vector[Event](c1, c2, cC)
         def test(e: Event, state: String): Unit = {
           es :+= e
-          val t = _assertPass(es: _*).config.tags
+          val t = _assertPass(es: _*).config.tags.tree
           val List(a, b, c, d) = ttget(t, 1, 2, 3, 4)
           assertEq((a, d, b, c) mapEach getChildren, (Vector(2), Vector(2), Vector(3), Vector.empty))
           def f(d: TagInTree, s: String) = if (d.tag.live is Live) s else "-"
@@ -145,7 +146,7 @@ abstract class SharedTagEventTests extends TestSuite {
         var es = Vector[Event](c1, c2, cC)
         def test(e: Event, state: String): Unit = {
           es :+= e
-          val t = _assertPass(es: _*).config.tags
+          val t = _assertPass(es: _*).config.tags.tree
           val List(a, b, c, d) = ttget(t, 1, 2, 3, 4)
           assertEq((a, b, c, d) mapEach getChildren, (Vector(2), Vector(3), Vector.empty, Vector(3)))
           def f(d: TagInTree, s: String) = if (d.tag.live is Live) s else "-"
@@ -160,7 +161,7 @@ abstract class SharedTagEventTests extends TestSuite {
 
       def testTagFieldLiveness(imp: Live, exp: Live)(es: Event*): Unit = {
         val p = _assertPass(es: _*)
-        val f = p.config.customField(createTagField1.id)
+        val f = p.config.fields.custom(createTagField1.id)
         assertEq("live", imp, f live p.config)
         assertEq("liveExplicitly", exp, f.liveExplicitly)
       }
@@ -233,8 +234,8 @@ object TagGroupEventTest extends TestSuite with TagGroupEvents {
     'update {
       'ok - {
         var es = Vector(c1, u1)
-        def r1 = _assertPass(es: _*).config.tags.get(1.TG).get
-        def r2 = _assertPass(es: _*).config.tags.get(2.TG).get
+        def r1 = _assertPass(es: _*).config.tags.tree.get(1.TG).get
+        def r2 = _assertPass(es: _*).config.tags.tree.get(2.TG).get
         assertEq(r1, TagInTree(TagGroup(1, c1Name, Some("versionness"), false, Live), Vector.empty))
 
         es :+= c2
@@ -305,8 +306,8 @@ object ApplicableTagEventTest extends TestSuite with ApplicableTagEvents {
     'update {
       'ok - {
         var es = Vector(c1, u1)
-        def r1 = _assertPass(es: _*).config.tags.get(1.AT).get
-        def r2 = _assertPass(es: _*).config.tags.get(2.AT).get
+        def r1 = _assertPass(es: _*).config.tags.tree.get(1.AT).get
+        def r2 = _assertPass(es: _*).config.tags.tree.get(2.AT).get
         assertEq(r1, TagInTree(ApplicableTag(1, c1Name, Some("versionness"), "c1", Live), Vector.empty))
 
         es :+= c2

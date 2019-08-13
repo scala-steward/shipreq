@@ -10,6 +10,7 @@ import shipreq.webapp.base.test.UnsafeTypes
 import shipreq.webapp.base.text.Text.{UseCaseTitle =>  UCT, UseCaseStep => UCST}
 import ApplyEventTestFns._
 import ContentEventTestHelp._
+import Event._
 import StaticField.{NormalAltStepTree => NCAC, ExceptionStepTree => EC}
 import UnsafeTypes._
 import UnsafeTypes.AutoNES._
@@ -93,10 +94,10 @@ object UseCaseEventTest extends TestSuite {
       }
 
       'reqCodes {
-        val rcs = NonEmptySet[ReqCode.IdAndValue](7 -> "a.b.c", 8 -> "d")
+        val rcs = NonEmptySet[ApReqCodeId.AndValue](7 -> "a.b.c", 8 -> "d")
         val p = _assertPass(emptyUC1.copy(vs = nev(Codes(rcs))))
         assertUC(p, 1)(UC1, reqCodes = rcs.whole.map(_.value))
-        assertEq(p.content.reqCodes.reqCodesById, rcs.whole.map(_.toTupleIV).toMap)
+        assertEq(p.content.reqCodes.apReqCodesById, rcs.whole.map(_.toTupleIV).toMap)
       }
 
       def customText: Event.NonEmptyCustomTextMap = NonEmpty.force(Map(cf1 -> "1", cf2 -> "2"))
@@ -148,8 +149,8 @@ object UseCaseEventTest extends TestSuite {
       'groupDead     - assertFail("is not an ActiveGroup.")(delRCG2, ReqsDelete(5, 2, ∅))
       'ok {
         val p = _assertPass(ReqsDelete(5, 2, ∅))
-        assertEq("RC#1", p.content.reqCodes(RCG1_code).isActive, true)
-        assertEq("RC#2", p.content.reqCodes(RCG2_code).isActive, false)
+        assertEq("RC#1", p.content.reqCodes.need(RCG1_code).isActive, true)
+        assertEq("RC#2", p.content.reqCodes.need(RCG2_code).isActive, false)
         assertEq("UC #1", p.content.reqs.useCases.imap.need(1).liveExplicitly, Live)
         assertEq("UC #5", p.content.reqs.useCases.imap.need(5).liveExplicitly, Dead)
       }

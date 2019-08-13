@@ -9,6 +9,7 @@ import ApplyEventTestFns._
 import AutoNES._
 import CustomReqTypeGD._
 import DataImplicits._
+import Event._
 import NoInitialEvents._
 
 trait CustomReqTypeEvents {
@@ -78,7 +79,7 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
     'delete {
       def testImpFieldLiveness(imp: Live, exp: Live)(es: Event*): Unit = {
         val p = _assertPass(es: _*)
-        val f = p.config.customField(CustomImpFieldEventTest.c1.id)
+        val f = p.config.fields.custom(CustomImpFieldEventTest.c1.id)
         assertEq("live", imp, f live p.config)
         assertEq("liveExplicitly", exp, f.liveExplicitly)
       }
@@ -98,7 +99,7 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
         'inUseAsField {
           val p = _assertPass(c1, CustomImpFieldEventSharedTests.c1, sd1)
           assertEq(p.config.reqTypes.custom.values.toList, Nil)
-          assertEq(p.config.customImpFields.filter(_.reqTypeId == c1.id), Nil)
+          assertEq(p.config.fields.customImpFields.filter(_.reqTypeId == c1.id), Nil)
         }
         'inUseAsFieldApplicability {
           def test(before: Field.ApplicableReqTypes, after: Field.ApplicableReqTypes) = {
@@ -106,8 +107,8 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
             val f  = FieldCustomTextCreate(2, nev(Name("R"), Key("r"), Mandatory(false), ReqTypes(before)))
             val p = _assertPass(c1, c2, f, sd1)
             assertEq(p.config.reqTypes.custom.values.toList.map(_.reqTypeId), c2.id :: Nil)
-            assertEq(p.config.customTextFields.size, 1)
-            assertEq(p.config.customTextFields.head.reqTypes, after)
+            assertEq(p.config.fields.customTextFields.size, 1)
+            assertEq(p.config.fields.customTextFields.head.reqTypes, after)
           }
           'not1   - test(notReqTypes(1), allReqTypes)
           'only1  - test(onlyReqTypes(1), allReqTypes)
@@ -120,13 +121,13 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
         val t     = new EventTester
         t.makeName = (i, e) => s"#$i: $e"
         val reqId = GenericReqId(8)
-        val rc    = ReqCode.IdAndValue(9, "oh.good")
+        val rc    = ApReqCodeId.AndValue(9, "oh.good")
         def test(grLiveImp: Live)(e: Event): Unit =
           t(e) { name =>
             val r = t.p.content.reqs.genericReqs.need(reqId)
             assertEq(s"$name - req.live", r live t.p.config.reqTypes, grLiveImp)
             assertEq(s"$name - req.expLive", r.liveExplicitly, Live)
-            assertEq(s"$name - RC.active?", t.p.content.reqCodes(rc.value).isActive, grLiveImp is Live)
+            assertEq(s"$name - RC.active?", t.p.content.reqCodes.need(rc.value).isActive, grLiveImp is Live)
           }
         t.justApply(c1)
         test(Live)(GenericReqCreate(reqId, c1.id, GenericReqGD.Codes(rc)))

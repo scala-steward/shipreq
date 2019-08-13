@@ -5,13 +5,14 @@ import japgolly.microlibs.recursion._
 import japgolly.microlibs.utils.ConciseIntSetFormat
 import japgolly.univeq._
 import java.util.regex.Pattern
-import scalaz.{-\/, Functor, Traverse, Traverse1, \/, \/-}
+import scalaz.{-\/, Functor, Traverse, \/, \/-}
+import scalaz.syntax.traverse1._
 import shipreq.base.util.{OptionalBoolFn, TransitiveClosure}
 import shipreq.webapp.base.data
+import shipreq.webapp.base.data.On
 import shipreq.webapp.base.data.DataLogic.{IssueLookup, TagLookup}
+import shipreq.webapp.base.issue.Issues
 import shipreq.webapp.base.text.{Atom, Grammar, PlainText, TextSearch}
-import Filter._
-import FilterAst._
 
 /** Algebras:
   *
@@ -22,6 +23,8 @@ import FilterAst._
   * compile        : FAlgebra [             ExtensionalF, CompiledFilter         ]
   */
 object FilterAlgebra {
+  import Filter._
+  import FilterAst._
 
   val unparse: FAlgebra[PotentialF, AtomOrComposite[String]] = {
     import shipreq.base.util.SafeStringOps._
@@ -52,11 +55,11 @@ object FilterAlgebra {
       case Regex         (text)              => '/' ~ text.replace("/", "\\/") ~ '/'
       case ReqType       (value)             => value.value
       case HashRef       (text)              => Grammar.hashRefKey.prefix ~ text.value
+      case HasIssue      (on, criteria)      => "has:issue:" ~ (if (on is On) "" else "-") ~ criteria.mkString(",")
       case ImpliesAnyOf  (reqs)              => "implies:" ~ fmtReqs(reqs, ',')
       case ImpliedByAnyOf(reqs)              => "impliedBy:" ~ fmtReqs(reqs, ',')
       case Reqs          (reqs)              => fmtReqs(reqs, ' ')
       case Presence      (attr)              => "has:" ~ attr
-      case Lack          (attr)              => "no:" ~ attr
       case Not           (clause)            => '-' ~ clause.atom
       case AllOf         (clauses)           => composite("(", clauses.iterator.map(_.atom).mkString(" "),  ")")
       case AnyOf         (c, cs)             => composite("(", (c +: cs).iterator.map(_.atom).mkString(" | "),  ")")
@@ -93,7 +96,7 @@ object FilterAlgebra {
       Traverse[IntensionalReqSet].traverse(_)(lookupReqType(_).map(_.reqTypeId))
 
     def byReqSet(reqs: Potential.ReqSet, f: Valid.ReqSet => ValidF[Nothing]): R =
-      Traverse1[NonEmptyVector].traverse1(reqs)(lookupReqSubset).map(nev => Valid(f(nev)))
+      reqs.traverse1(lookupReqSubset).map(nev => Valid(f(nev)))
 
     def byRegex(regex: String): R =
       try {
@@ -107,18 +110,18 @@ object FilterAlgebra {
 
     // explicit types here because IntelliJ is a piece of shit
     val alg: PotentialF[Valid] => String \/ Valid = {
-      case HashRef        (key)    => byHashTag(key)
-      case ImpliesAnyOf   (reqs)   => byReqSet(reqs, ImpliesAnyOf.apply)
-      case ImpliedByAnyOf (reqs)   => byReqSet(reqs, ImpliedByAnyOf.apply)
-      case Reqs           (reqs)   => byReqSet(reqs, Reqs.apply)
-      case Lack           (attr)   => byAttr(attr, Lack.apply)
-      case Presence       (attr)   => byAttr(attr, Presence.apply)
-      case Regex          (regex)  => byRegex(regex)
-      case ReqType        (mn)     => lookupReqType(mn).map(rt => Valid(ReqType(rt.reqTypeId)))
-      case c: Text                 => \/-(Valid(c))
-      case c: Not  [Valid]         => \/-(Valid(c))
-      case c: AllOf[Valid]         => \/-(Valid(c))
-      case c: AnyOf[Valid]         => \/-(Valid(c))
+      case HashRef       (key)   => byHashTag(key)
+      case ImpliesAnyOf  (reqs)  => byReqSet(reqs, ImpliesAnyOf.apply)
+      case ImpliedByAnyOf(reqs)  => byReqSet(reqs, ImpliedByAnyOf.apply)
+      case Reqs          (reqs)  => byReqSet(reqs, Reqs.apply)
+      case Presence      (attr)  => byAttr(attr, Presence.apply)
+      case HasIssue      (on, c) => c.traverse1(FilterAst.issueCategoryFromStr).map(Valid.hasIssue(on, _))
+      case Regex         (regex) => byRegex(regex)
+      case ReqType       (mn)    => lookupReqType(mn).map(rt => Valid(ReqType(rt.reqTypeId)))
+      case c: Text               => \/-(Valid(c))
+      case c: Not  [Valid]       => \/-(Valid(c))
+      case c: AllOf[Valid]       => \/-(Valid(c))
+      case c: AnyOf[Valid]       => \/-(Valid(c))
     }
 
     alg
@@ -134,14 +137,14 @@ object FilterAlgebra {
       x.map(Functor[IntensionalReqSet].map(_)(convReqType))
 
     {
-      case HashRef       (\/-(id)) => Potential(HashRef       (cfg.atag(id).key))
+      case HashRef       (\/-(id)) => Potential(HashRef       (cfg.tags.atag(id).key))
       case HashRef       (-\/(id)) => Potential(HashRef       (cfg.customIssueType(id).key))
-      case Lack          (attr)    => Potential(Lack          (attr.name))
       case Presence      (attr)    => Potential(Presence      (attr.name))
       case ImpliesAnyOf  (reqs)    => Potential(ImpliesAnyOf  (convReqSet(reqs)))
       case ImpliedByAnyOf(reqs)    => Potential(ImpliedByAnyOf(convReqSet(reqs)))
       case Reqs          (reqs)    => Potential(Reqs          (convReqSet(reqs)))
       case ReqType       (id)      => Potential(ReqType       (convReqType(id)))
+      case HasIssue      (on, c)   => Potential(HasIssue      (on, c.map(FilterAst.issueCategoryToStr)))
       case c: Regex                => Potential(c)
       case c: Text                 => Potential(c)
       case c: Not  [Potential]     => Potential(c)
@@ -169,18 +172,18 @@ object FilterAlgebra {
       ss.reduceMapLeft1(lookupReqSubset)(_ ++ _)
 
     {
-      case ImpliesAnyOf  (reqs)       => Extensional(ImpliesAnyOf  (lookupReqSet(reqs)))
-      case ImpliedByAnyOf(reqs)       => Extensional(ImpliedByAnyOf(lookupReqSet(reqs)))
-      case Reqs          (reqs)       => Extensional(Reqs          (lookupReqSet(reqs)))
-      case c: Regex                   => Extensional(c)
-      case c: Text                    => Extensional(c)
-      case c: HashRef [Valid.HashTag] => Extensional(c)
-      case c: Lack    [Valid.Attr]    => Extensional(c)
-      case c: Presence[Valid.Attr]    => Extensional(c)
-      case c: ReqType [Valid.ReqType] => Extensional(c)
-      case c: Not     [Extensional]   => Extensional(c)
-      case c: AllOf   [Extensional]   => Extensional(c)
-      case c: AnyOf   [Extensional]   => Extensional(c)
+      case ImpliesAnyOf  (reqs)        => Extensional(ImpliesAnyOf  (lookupReqSet(reqs)))
+      case ImpliedByAnyOf(reqs)        => Extensional(ImpliedByAnyOf(lookupReqSet(reqs)))
+      case Reqs          (reqs)        => Extensional(Reqs          (lookupReqSet(reqs)))
+      case c: Regex                    => Extensional(c)
+      case c: Text                     => Extensional(c)
+      case c: HashRef [Valid.HashTag]  => Extensional(c)
+      case c: Presence[Valid.Attr]     => Extensional(c)
+      case c: HasIssue[Valid.IssueCat] => Extensional(c)
+      case c: ReqType [Valid.ReqType]  => Extensional(c)
+      case c: Not     [Extensional]    => Extensional(c)
+      case c: AllOf   [Extensional]    => Extensional(c)
+      case c: AnyOf   [Extensional]    => Extensional(c)
     }
   }
 
@@ -193,11 +196,10 @@ object FilterAlgebra {
               tagLookup  : TagLookup): FAlgebra[ExtensionalF, CompiledFilter] = {
 
     // Possible optimisations:
-    // - overlap between has Tag & Presence/Lack(AnyTag)
-    // - overlap between has Issue & Presence/Lack(AnyIssue)
+    // - overlap between has Tag & Presence(AnyTag)
+    // - overlap between has Issue & Presence(AnyIssue)
     // - overlap between WholeType & SomeOfType
     // - cycle in ImpliesAnyOf & ImpliedByAnyOf is impossible to satisfy
-    // - lack & presence of α
     // - AnyOf with 2 contradictions = always pass
     // - AllOf with 2 contradictions = always fail
     // - AnyOf stops when match found, AllOf stops when non-match found. DeMorgan to the faster case.
@@ -206,31 +208,60 @@ object FilterAlgebra {
     // - Squash Not(Not(x)) => x
 
     import shipreq.webapp.base.data.{ReqType => _, _}
+    lazy val issuesBySource = p.issues.bySource
 
-    def make(req      : Req       => Boolean = null,
-             codeGroup: CodeGroup => Boolean = null) =
+    def ignore: Any => Boolean = null
+    def fail: Any => Boolean = _ => false
+
+    def make(req        : Req         => Boolean,
+             codeGroup  : CodeGroup   => Boolean,
+             manualIssue: ManualIssue => Boolean) =
       CompiledFilter(
-        req       = OptionalBoolFn(Option(req)),
-        codeGroup = OptionalBoolFn(Option(codeGroup)))
+        req         = OptionalBoolFn(Option(req)),
+        codeGroup   = OptionalBoolFn(Option(codeGroup)),
+        manualIssue = OptionalBoolFn(Option(manualIssue)),
+      )
+
+    def reqOnly(f: Req => Boolean) =
+      make(
+        req         = f,
+        codeGroup   = ignore,
+        manualIssue = fail,
+      )
 
     def byTag(f: Set[ApplicableTagId] => Boolean) =
-      make(req = r => tagLookup(r.id) exists f)
-
-    def byIssueType(f: Vector[Atom.AnyIssue] => Boolean) =
       make(
-        r => f(issueLookup.forReq(r.id)),
-        g => f(issueLookup.forReqCode(g.id)))
+        req         = r => tagLookup(r.id) exists f,
+        codeGroup   = ignore,
+        manualIssue = i => f(i.tags),
+      )
+
+    def byIssue(f: Issues.ForSource => Boolean) =
+      make(
+        req         = r => f(issuesBySource(r.id)),
+        codeGroup   = g => f(issuesBySource(g.id)),
+        manualIssue = fail,
+      )
+
+    def byCustomIssueType(f: Vector[Atom.AnyIssue] => Boolean) =
+      make(
+        req         = r => f(issueLookup.forReq(r.id)),
+        codeGroup   = g => f(issueLookup.forReqCode(g.id)),
+        manualIssue = fail,
+      )
 
     def byImplication(reqs: Extensional.ReqSet, tc: TransitiveClosure[ReqId]) = {
       val whitelist = reqs.foldLeft(UnivEq.emptySet[ReqId])(_ ++ tc(_))
-      make(req = whitelist contains _.id)
+      reqOnly(whitelist contains _.id)
     }
 
     def byText(substr: String) = {
-      val (fa, fb) = textSearch.ignoreCaseSingleSpaces.searchFilter(substr)
+      val searchFilter = textSearch.ignoreCaseSingleSpaces.searchFilter(substr)
       CompiledFilter(
-        req       = fa.contramap((_: Req).id),
-        codeGroup = fb.contramap((_: CodeGroup).id))
+        req         = searchFilter.req        .contramap(_.id),
+        codeGroup   = searchFilter.codeGroup  .contramap(_.id),
+        manualIssue = searchFilter.manualIssue.contramap(_.id),
+      )
     }
 
     def byRegex(regex: String) = {
@@ -242,26 +273,32 @@ object FilterAlgebra {
           def custom = p.config.liveCustomTextFields.exists(f => projectText.customTextField(f.id)(r) exists m)
           title || custom
         },
-        g => m(projectText codeGroupTitle g))
+        g => m(projectText codeGroupTitle g),
+        i => m(projectText.manualIssue(i.text))
+      )
     }
 
     var alg: ExtensionalF[CompiledFilter] => CompiledFilter = null
     alg = {
       case Text          (substr, _)     => byText(substr)
-      case Reqs          (reqs)          => make(req = r => reqs.contains(r.id))
+      case Reqs          (reqs)          => reqOnly(r => reqs.contains(r.id))
       case ImpliesAnyOf  (reqs)          => byImplication(reqs, p.implicationTgtToSrcTC)
       case ImpliedByAnyOf(reqs)          => byImplication(reqs, p.implicationSrcToTgtTC)
-      case ReqType       (rt)            => make(req = _.reqTypeId ==* rt)
-      case Presence      (Attr.AnyIssue) => byIssueType(_.nonEmpty)
+      case ReqType       (rt)            => reqOnly(_.reqTypeId ==* rt)
+      case Presence      (Attr.AnyIssue) => byIssue(_.issues.nonEmpty)
       case Presence      (Attr.AnyTag)   => byTag(_.nonEmpty)
-      case HashRef       (-\/(issue))    => byIssueType(_.exists(_.typ ==* issue))
+      case HashRef       (-\/(issue))    => byCustomIssueType(_.exists(_.typ ==* issue))
       case HashRef       (\/-(tag))      => byTag(_ contains tag)
-      case Lack          (a)             => !alg(Presence(a))
       case Regex         (regex)         => byRegex(regex)
       case AllOf         (fs)            => fs.reduce(_ && _)
       case AnyOf         (f, fs)         => f || fs.reduce(_ || _)
       case Not           (f)             => !f
+      case HasIssue      (On, cs)        => byIssue(i => i.issues.nonEmpty && cs.forall(i.categories.contains))
+      case HasIssue      (Off, cs)       =>
+        val categories = cs.whole.toSet
+        byIssue(i => i.issues.nonEmpty && i.categories.exists(!categories.contains(_)))
     }
     alg
   }
+  // TODO also auto-complete
 }

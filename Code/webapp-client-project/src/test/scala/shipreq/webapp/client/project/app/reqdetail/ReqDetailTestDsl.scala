@@ -1,9 +1,9 @@
 package shipreq.webapp.client.project.app.reqdetail
 
+import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
 import org.scalajs.dom.html
-import shipreq.base.test.BaseTestUtil.quoteStringForDisplay
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
@@ -39,10 +39,10 @@ object ReqDetailTestDsl {
     State(ExternalPubid(ReqType.Mnemonic("UNSPECIFIED TEST STATE"), ReqTypePos(1)), Mode.Error)
 
   @Lenses
-  case class State(ep: ExternalPubid, mode: Mode)
+  final case class State(ep: ExternalPubid, mode: Mode)
 
   @Lenses
-  case class TestState(project: Project, state: State) {
+  final case class TestState(project: Project, state: State) {
     def ep = state.ep
     def mode = state.mode
 
@@ -169,8 +169,15 @@ object ReqDetailTestDsl {
     *.action(s"Double-click $label text")(Simulate doubleClick _.obs.uc.row(label).textContainer.dom)
 
   def editStepText(label: String, newValue: String): *.Actions =
+    _editStepText(label, None, newValue)
+
+  def editStepText(label: String, expectedOldValue: String, newValue: String): *.Actions =
+    _editStepText(label, Some(expectedOldValue), newValue)
+
+  private def _editStepText(label: String, old: Option[String], newValue: String): *.Actions =
     (doubleClickStepText(label)
       +> editorCount.assert.increment
+      +> stepText(label).rename("Initial editor text").assert(old.getOrElse("")).when(_ => old.isDefined) // TODO test-state should support optional assertions
       >> setStepTextEditValue(label, newValue)
       >> commitStepTextEdit(label)
       +> editorCount.assert.decrement
@@ -184,7 +191,10 @@ object ReqDetailTestDsl {
     *.action(s"Commit $label text edit")(KB.Enter.ctrl simulateKeyDown _.obs.uc.row(label).textEditor)
 
   val filterDeadToggle =
-    *.action("Toggle FilterDead")(Simulate click _.obs.generic.filterDeadButton)
+    *.action(NameFn {
+      case None    => "Toggle FilterDead"
+      case Some(x) => s"Set FilterDead to ${!x.obs.generic.filterDead}"
+    })(Simulate click _.obs.generic.filterDeadButton)
       .addCheck(filterDead.assert.changeTo(!_))
 
   def setFilterDead(fd: FilterDead) =

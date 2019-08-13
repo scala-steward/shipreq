@@ -1,15 +1,17 @@
 package shipreq.webapp.base.data
 
 import japgolly.microlibs.adt_macros.AdtMacros
-import japgolly.microlibs.nonempty.NonEmptyVector
-import japgolly.microlibs.utils.Memo
+import japgolly.microlibs.stdlib_ext.MutableArray
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import nyaya.prop.CycleDetector
 import monocle.Lens
 import monocle.macros.{GenLens, Lenses}
 import scala.annotation.tailrec
+import scala.collection.mutable
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.base.util.TaggedTypes.TaggedInt
+import shipreq.webapp.base.util.Must._
 
 sealed trait TagId extends TaggedInt
 final case class TagGroupId     (value: Int) extends TagId with TaggedInt
@@ -60,7 +62,6 @@ case object MutexChildren extends MutexChildren with IsoBool.Object[MutexChildre
   override def negative = Not
   case object Not extends MutexChildren
 }
-
 
 sealed abstract class TagType(val name: String) { type Data <: Tag }
 object TagType {
@@ -118,14 +119,22 @@ object TagTree {
   def prettyPrint(tt: TagTree): String = {
     def lookup(id: TagId) = tt.underlyingMap(id)
     val rootIds = tt.values.foldLeft(tt.keySet)(_ -- _.children)
-    val roots = rootIds.toStream.map(lookup).sortBy(_.tag.name)
+    val roots = MutableArray(rootIds.iterator.map(lookup)).sortBy(_.tag.name).iterator.toArray // TODO .array should work
     "TagTree\n" +
     nyaya.util.Util.asciiTree(roots)(_.children.map(lookup),
-      t => s"${t.tag.name} (${t.id.value})${if (t.tag.live ==* Dead) " DEAD" else ""}",
+      t => {
+        val id = t.id.value
+        val isDead = t.tag.live is Dead
+        val isMutex = t.tag match {
+          case t: TagGroup      => t.mutexChildren is MutexChildren
+          case _: ApplicableTag => false
+        }
+        s"${t.tag.name} (#$id)${if (isDead) " [DEAD]" else ""}${if (isMutex) " [MUTEX]" else ""}"
+      },
       "  ")
   }
 
-  def topLevelIds(tt: TagTree): Set[TagId] = {
+  private[data] def topLevelIds(tt: TagTree): Set[TagId] = {
     val allChildren = tt.values.foldLeft(UnivEq.emptySet[TagId])((q, t) => t.children.foldLeft(q)(_ + _))
     tt.keySet -- allChildren
   }
@@ -203,91 +212,101 @@ object TagInTree {
 
 // =====================================================================================================================
 
-final case class FlatTag(tag: Tag, depth: Int, parentPath: Vector[TagId], status: FlatTag.Status) {
-  @inline def id: TagId = tag.id
-
-  def key: String =
-    if (depth == 0)
-      id.value.toString
-    else {
-      val sb = new StringBuilder
-      parentPath.foreach { p =>
-        sb append p.value
-        sb append '.'
-      }
-      sb append id.value
-      sb.toString()
-    }
-
-  def indentedName =
-    s"${FlatTag.indentation(depth)}${tag.name}"
+object Tags {
+  val empty = apply(TagTree.empty)
+  implicit def univEq: UnivEq[Tags] = UnivEq.derive
 }
 
-object FlatTag {
-  sealed trait Status
-  object Status {
-    case object Good              extends Status
-    case object Bad               extends Status
-    case object BadParentGoodKids extends Status
-    implicit def equality: UnivEq[Status] = UnivEq.derive
-  }
+@Lenses
+final case class Tags(tree: TagTree) {
+  import FlatTag.FilterPolicy
 
-  sealed trait FilterPolicy
-  object FilterPolicy {
-    case object OmitNothing               extends FilterPolicy
-    case object OmitBadBranches           extends FilterPolicy
-    case object OmitAnythingWithBadParent extends FilterPolicy
-    implicit def equality: UnivEq[FilterPolicy] = UnivEq.derive
-  }
+  def atagValidate(id: ApplicableTagId): Option[String] =
+    tree.get(id) match {
+      case Some(tit) => tit.tag match {
+        case _: ApplicableTag => None
+        case t: TagGroup      => Some(s"$t is not an ApplicableTag.")
+      }
+      case None               => Some(s"$id not found.")
+    }
 
-  implicit def equality: UnivEq[FlatTag] = UnivEq.derive
+  def atag(id: ApplicableTagId): ApplicableTag =
+    tree.need(id).tag match {
+      case a: ApplicableTag => a
+      case t: TagGroup      => mustNotHappen(s"$t is not an ApplicableTag.")
+    }
 
-  val indentation =
-    Memo.int("\u00A0\u00A0" * _)
+  def atagIterator(): Iterator[ApplicableTag] =
+    tree.valuesIterator.map(_.tag).filterSubType[ApplicableTag]
 
-  def flatten(tt: TagTree) =
-    flatRows(TagTree.topLevelIds(tt), tt.get(_).get) _
+  def needTagGroup(id: TagGroupId): TagGroup =
+    tree.need(id).tag match {
+      case t: TagGroup      => t
+      case a: ApplicableTag => mustNotHappen(s"$a is not a TagGroup.")
+    }
 
-  def flatRows(topLvlIds: Set[TagId], lookup: TagId => TagInTree)
-              (filter: Tag => Boolean, policy: FilterPolicy): Vector[FlatTag] = {
-    import Status._
-    import FilterPolicy._
+  lazy val deadATagIds: Set[ApplicableTagId] =
+    atagIterator().filter(_.live is Dead).map(_.id).toSet
 
-    val omitAnythingWithBadParent = policy ==* OmitAnythingWithBadParent
-    val omitNothing               = policy ==* OmitNothing
+  lazy val exclusiveGroups: ApplicableTagId => Set[TagGroupId] = {
+    val results = mutable.HashMap.empty[ApplicableTagId, Set[TagGroupId]]
 
-    def go(r: Vector[FlatTag], t: TagInTree, depth: Int, parentPath: Vector[TagId]): Vector[FlatTag] =
-      if (filter(t.tag)) {
-        var result = r :+ FlatTag(t.tag, depth, parentPath, Good)
-        // Append children directly
-        if (t.children.nonEmpty) {
-          val nextDepth = depth + 1
-          val nextPP = parentPath :+ t.id
-          t.children.foreach(id => result = go(result, lookup(id), nextDepth, nextPP))
-        }
-        result
-      } else if (omitAnythingWithBadParent)
-        r
-      else {
-        // Process children separately
-        var cs = Vector.empty[FlatTag]
-        if (t.children.nonEmpty) {
-          val nextDepth = depth + 1
-          val nextPP = parentPath :+ t.id
-          cs = t.children.foldLeft(cs)((q, id) => go(q, lookup(id), nextDepth, nextPP))
-        }
-        val goodKids = cs.exists(_.status == Good)
-
-        def result(s: Status) = (r :+ FlatTag(t.tag, depth, parentPath, s)) ++ cs
-        if (goodKids)
-          result(BadParentGoodKids)
-        else if (omitNothing)
-          result(Bad)
-        else
-          r
+    val get: ApplicableTagId => Set[TagGroupId] =
+      results.get(_) match {
+        case Some(ids) => ids
+        case None      => Set.empty
       }
 
-    val topLvl = topLvlIds.toStream.map(lookup).sortBy(_.tag.name)
-    topLvl.foldLeft(Vector.empty[FlatTag])(go(_, _, 0, Vector.empty))
+    def goDown(id: TagId, exclusiveParents: Set[TagGroupId]): Unit = {
+      val t = tree.need(id)
+      if (t.tag.live is Live) {
+
+        val nextExclusiveParents: Set[TagGroupId] =
+          t.tag match {
+
+            case a: ApplicableTag =>
+              if (exclusiveParents.nonEmpty)
+                results.update(a.id, exclusiveParents ++ get(a.id))
+              exclusiveParents
+
+            case g: TagGroup =>
+              g.mutexChildren match {
+                case MutexChildren     => exclusiveParents + g.id
+                case MutexChildren.Not => exclusiveParents
+              }
+          }
+
+        t.children.foreach(goDown(_, nextExclusiveParents))
+      }
+    }
+
+    topLevelIds.foreach(goDown(_, Set.empty))
+
+    get
   }
+
+  def flatRows(isGood: Tag => Boolean, policy: FilterPolicy): Vector[FlatTag] =
+    FlatTag.flatRows(topLevelIds, tree.get(_).get)(isGood, policy)
+
+  def flatRows(fd: FilterDead): Vector[FlatTag] =
+    fd match {
+      case HideDead => flatRowsLive
+      case ShowDead => flatRowsUnfiltered
+    }
+
+  lazy val flatRowsLive =
+    flatRows(Tag.filterLive, FilterPolicy.OmitAnythingWithBadParent)
+
+  lazy val flatRowsUnfiltered =
+    flatRows(_ => true, FlatTag.FilterPolicy.OmitNothing)
+
+  def live(id: TagId): Live =
+    tree.need(id).tag.live
+
+  def prettyPrint: String =
+    TagTree.prettyPrint(tree)
+
+  lazy val topLevelIds: Set[TagId] =
+    TagTree.topLevelIds(tree)
+
 }

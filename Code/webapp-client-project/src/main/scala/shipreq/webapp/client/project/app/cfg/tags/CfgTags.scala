@@ -18,7 +18,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{TagId => Id, _}
 import shipreq.webapp.base.data.DataValidators.{hashRefKey => VH, tag => V}
 import shipreq.webapp.base.event.VerifiedEvent
-import shipreq.webapp.base.protocol.{ServerSideProcInvoker, TagCrud}
+import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateConfigCmd}
 import shipreq.webapp.base.ui.{AutosizeTextarea, BaseStyles}
 import shipreq.webapp.base.ui.semantic.Table
 import shipreq.webapp.base.UiText.FieldNames
@@ -32,7 +32,7 @@ import FlatTag.FilterPolicy
 import TagInTree.Relations
 
 object CfgTags {
-  case class Props(remote    : ServerSideProcInvoker[TagCrud.Action, ErrorMsg, VerifiedEvent.Seq],
+  case class Props(remote    : ServerSideProcInvoker[UpdateConfigCmd.ToModifyTags, ErrorMsg, VerifiedEvent.Seq],
                    global    : Global,
                    filterDead: StateSnapshot[FilterDead]) {
     def component = MainTable.Component(this)
@@ -73,6 +73,9 @@ private[tags] object MainTable {
 
     lazy val tagTree: TagTree =
       tagStream.foldLeft(TagTree.empty)((q, t) => q add TagInTree(t, tree(t.id)))
+
+    lazy val tags: Tags =
+      Tags(tagTree)
   }
 
   object State {
@@ -98,7 +101,7 @@ private[tags] object MainTable {
   def initialState(p: Props): S = {
     val tgs = Seq.newBuilder[TagGroup]
     val ats = Seq.newBuilder[ApplicableTag]
-    val tagtree = p.global.unsafeProject().config.tags
+    val tagtree = p.global.unsafeProject().config.tags.tree
     tagtree.values.foreach(_.tag match {
       case t: TagGroup      => tgs += t
       case t: ApplicableTag => ats += t
@@ -128,12 +131,12 @@ private[tags] object MainTable {
   case class PovTag(tag: Tag, rels: TagInTree.Relations)
 
   def povTagLookup(p: Project): Id => Option[PovTag] = {
-    val tt = p.config.tags
+    val tt = p.config.tags.tree
     val tree = tt.mapValues(_.children)
     id => tt.get(id).map(v => PovTag(v.tag, MMTree.Relations.derive(v.tag.id, tree)))
   }
 
-  val changeListener = ChangeListener.oneByOne[S, Id, PovTag](_.tags, povTagLookup)(
+  val changeListener = ChangeListener.oneByOne[S, Id, PovTag](_.allTags, povTagLookup)(
     (s, i) => {
       val f1 = State.tree.modify(_ delkv i)
       val f2 = eachTypesStores.foldLeft(f1)(_ compose _.s.remove(i))
@@ -188,7 +191,19 @@ private[tags] object MainTable {
 
   // ===================================================================================================================
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
-    val crudIO = Px.props($).withReuse.autoRefresh.map(p => CrudActionIO(p.remote))
+    private val pxRemote = Px.props($).withReuse.autoRefresh.map(_.remote)
+
+    private val createIO: Px[(UpdateConfigCmd.TagData, TCB.Success, TCB.Failure) => Callback] =
+      pxRemote.map(p => (data, s, f) => p(UpdateConfigCmd.TagCreate(data), _ => s, _ => f))
+
+    private val updateIO: Px[(Tag, UpdateConfigCmd.TagData, TCB.Success, TCB.Failure) => Callback] =
+      pxRemote.map(p => (tag, data, s, f) => p(UpdateConfigCmd.TagUpdate(tag.id, data), _ => s, _ => f))
+
+    private val deleteIO: Px[(Id, DeletionAction, TCB.Success, TCB.Failure) => Callback] =
+      pxRemote.map(p => (tagId, d, s, f) => d match {
+        case Delete  => p(UpdateConfigCmd.TagDelete(tagId), _ => s, _ => f)
+        case Restore => p(UpdateConfigCmd.TagRestore(tagId), _ => s, _ => f)
+      })
 
     def validatorState(k: Option[Id]): S => V.State =
       s => MainTable.validatorState(s, $.props.map(_.global), k)
@@ -230,7 +245,7 @@ private[tags] object MainTable {
 
     def rows(fd: FilterDead, s: State): TagMod = {
       val renderers = (tg_renderer.all(s) #::: at_renderer.all(s)).foldLeft(UnivEq.emptyMap[Id, F])(_ + _)
-      val flatTree  = FlatTag.flatten(s.tagTree)(fd.filterFnBy[Tag](_.live), FilterPolicy.OmitAnythingWithBadParent)
+      val flatTree  = s.tags.flatRows(fd)
       val results   = VdomArray.empty()
 
       // New row
@@ -258,7 +273,7 @@ private[tags] object MainTable {
           <.tbody(rows(fd, s))),
 
         DetailPaneFns.render(
-          s, crudIO.value().updateIO,
+          s, updateIO.value(),
           parentSel = $ modState State.detailRowSelParent.set(_),
           childSel  = $ modState State.detailRowSelChild.set(_)))
     }
@@ -278,8 +293,8 @@ private[tags] object MainTable {
 
       val editable = editor.editableByRowStatus($)
 
-      val deletion = crudIO.map(c =>
-        Persistence.asyncDeletionS(stores.s)(c._deleteIO, $ runState _))
+      val deletion = deleteIO.map(d =>
+        Persistence.asyncDeletionS(stores.s)((tagId, da) => d(tagId, da, _, _), $ runState _))
 
       def ei(s: S, r: stores.s.Row): editor.Input = {
         val a = (validatorState(r.p.id.some)(s), r.i)
@@ -336,12 +351,15 @@ private[tags] object MainTable {
 
     val tg_editor = {
       @inline def stores = tg_storesS
-      val toValues  = TagCrud.TagGroupValues.apply _
+      val toValues  = UpdateConfigCmd.TagGroupValues.apply _
       val toValuesT = (toValues andThenA \&/.This.apply).tupled
       val saveFn    =
-        crudIO.map(c =>
-          Persistence.asyncSaveNS(V.tagGroup.andThen(_ mapValid toValuesT), stores, c.createIO)(
-            c.updateIO,
+        (for {
+          createIO <- this.createIO
+          updateIO <- this.updateIO
+        } yield
+          Persistence.asyncSaveNS(V.tagGroup.andThen(_ mapValid toValuesT), stores, createIO)(
+            updateIO,
             (t,u) => SaveNeed.equal(u.onlyThis.get, toValues(t.name, t.mutexChildren, t.desc)),
             validatorState,
             $ runState _)
@@ -373,11 +391,14 @@ private[tags] object MainTable {
 
     val at_editor = {
       @inline def stores = at_storesS
-      val toValues  = TagCrud.ApplicableTagValues.apply _
+      val toValues  = UpdateConfigCmd.ApplicableTagValues.apply _
       val toValuesT = (toValues andThenA \&/.This.apply).tupled
       val saveFn    =
-        crudIO.map(c =>
-          Persistence.asyncSaveNS(V.applicableTag.andThen(_ mapValid toValuesT), stores, c.createIO)(c.updateIO,
+        (for {
+          createIO <- this.createIO
+          updateIO <- this.updateIO
+        } yield
+          Persistence.asyncSaveNS(V.applicableTag.andThen(_ mapValid toValuesT), stores, createIO)(updateIO,
           (t,u) => SaveNeed.equal(u.onlyThis.get, toValues(t.name, t.key, t.desc)),
           validatorState, $ runState _)
         ).extract
@@ -412,7 +433,7 @@ private[tags] object MainTable {
 
     import DetailPane.{Rel, Rels, AddRel, AddRels, AddSelected}
 
-    type UpdateIO = (Tag, TagCrud.Value, TCB.Success, TCB.Failure) => Callback
+    type UpdateIO = (Tag, UpdateConfigCmd.TagData, TCB.Success, TCB.Failure) => Callback
     type SelUpdate = Option[Id] => Callback
 
     def removeChild(child: Id): Relations => Relations =
@@ -470,7 +491,7 @@ private[tags] object MainTable {
     def addRels(s: S, subj: Tag, updateIO: UpdateIO, sel: Option[Id], selUpdate: SelUpdate,
                 mod: Id => Relations => Relations, relAlreadyExists: (Relations, Id) => Boolean): AddRels = {
       val filter = addRelFilter(s, subj, mod, relAlreadyExists)
-      val rels = FlatTag.flatten(s.tagTree)(filter, FilterPolicy.OmitNothing)
+      val rels = s.tags.flatRows(filter, FilterPolicy.OmitNothing)
         .filter(_.tag.live is Live)
         .map(row => AddRel(row,
             if (row.status ==* FlatTag.Status.Good) row.id.some else None))

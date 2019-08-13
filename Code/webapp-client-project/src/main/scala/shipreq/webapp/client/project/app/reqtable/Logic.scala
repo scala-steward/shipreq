@@ -18,6 +18,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.filter.{CompiledFilter, Filter}
+import shipreq.webapp.base.sort.{FusedSorters, Sorter => BaseSorter}
 import shipreq.webapp.base.text.Atom.AnyIssue
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.base.util.ReqCodeTreeItem
@@ -80,16 +81,11 @@ private[reqtable] object Logic {
   private def expanderC[A](view: View, c: Column.SortInconclusive): Expander[A] =
     expander(view isVisible c, view isOrderedI c)
 
-  private def impColValueFn(p: Project, fd: FilterDead): CustomField.Implication.Id => ReqId => Set[Pubid] = {
-    val filter = DataLogic.impValueFilter(p.config, fd)
-    DataLogic.customFieldImps(p, filter)
-  }
-
   private def impColValueExpander(view: View,
                                   fd  : FilterDead,
                                   p   : Project,
                                   ap  : Applicability[Column, ReqTypeId]): Req => Map[CustomField.Implication.Id, Expanded[Pubid]] =
-    customFieldExpander(view: View, ap, impColValueFn(p, fd))
+    customFieldExpander(view: View, ap, p.dataLogic.customFieldImps(fd))
 
   private def tagFieldValueExpander(view        : View,
                                     ap          : Applicability[Column, ReqTypeId],
@@ -179,10 +175,11 @@ private[reqtable] object Logic {
    * Performs expansion.
    * Does not perform any sorting.
    */
-  def gather[C[_]](p   : Project,
-                   view: View,
-                   pt  : PlainText.ForProject.NoCtx,
-                   ts  : TextSearch)
+  def gather[C[_]](p             : Project,
+                   view          : View,
+                   pt            : PlainText.ForProject.NoCtx,
+                   ts            : TextSearch,
+                   filterCompiler: Filter.Valid.Compiler)
                   (implicit cbf: CanBuildFrom[Nothing, Row, C[Row]]): C[Row] = {
 
     // NOTES:
@@ -195,10 +192,9 @@ private[reqtable] object Logic {
     val fd            = view.filterDead
     val filterDeadReq = fd.filterFn.contramap[Req](_ live p.config.reqTypes)
     val filterDeadRCG = fd.filterFn.contramap[CodeGroup](_.live)
-    val filterDead    = CompiledFilter(filterDeadReq, filterDeadRCG)
+    val filterDead    = CompiledFilter(filterDeadReq, filterDeadRCG, OptionalBoolFn.empty)
     val tagFieldDist  = DataLogic.tagFieldDist(p.config, fd, view isVisible Column.CustomField(_))
-    val tagLookup     = DataLogic.tagLookup(p, fd)
-    val issueLookup   = DataLogic.issueLookup(p, fd)
+    val tagLookup     = p.dataLogic.tagLookup(fd)
     val applicability = Column.applicabilityForReq(p.config.applicability)
     val expandImps    = Direction.memo(dir => expanderC[Pubid](view, Column.Implications(dir)))
     val expandCodes   = expanderC[ReqCode.Value](view, Column.Code)
@@ -231,7 +227,7 @@ private[reqtable] object Logic {
         pubid(id).fold(q)(q + _))
 
     val opOpFilter: Option[CompiledFilter] =
-      view.filter.map(Filter.Valid.compiler(p, pt, ts, issueLookup, tagLookup))
+      view.filter.map(filterCompiler)
 
     /**
      * Full = the cumulative result off all factors that would contribute to potentially filter content.
@@ -268,7 +264,7 @@ private[reqtable] object Logic {
           // Build
           val mv = multiValuesFn(id)
           exps.foreachWithIndex((exp, i) =>
-            output += Row.ForReq(r, live, exp, mv, i))
+            output += Row.ForReq(r, live, p.conflictingTagsPerReq(id), exp, mv, i))
 
           seeExpandedCodes(codes)
         }
@@ -303,18 +299,13 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Sorting
 
-  def sort(p: Project, view: View, pt: PlainText.ForProject.NoCtx)(rows: Iterable[Row]): MutableArray[Row] = {
+  def sorter(p: Project, view: View, pt: PlainText.ForProject.NoCtx): TraversableOnce[Row] => MutableArray[Row] = {
     import Sorter._
-
-    val sorter  = new FusedSorters(view.order.init map inconclusive, view.order.last |> conclusive)
-    val setup   = new Setup(p, pt)
-    val prepare = sorter.prepFn(setup)
-    val rowMod  = Sorter.consolidateRowModFns(Sorter.sortUnspecified(view) :: sorter.rowModFn :: Nil)
-    val rowEndo = rowMod.map(_(setup, KeepDir)) getOrElse ((r: Row) => r)
-
-    MutableArray.map(rows)(r => prepare(rowEndo(r)))
-      .sort(sorter.sortFn.toOrdering)
-      .map(sorter.row)
+    val init   = view.order.init map inconclusive
+    val last   = view.order.last |> conclusive
+    val sorter = new FusedSorters(NonEmptyVector.end(init, last))
+    val setup  = new Setup(p, pt)
+    sorter.result(setup, Sorter.sortUnspecified(view))
   }
 
   // ===================================================================================================================
@@ -345,7 +336,13 @@ private[reqtable] object Logic {
     mergeAdjacent(rows)((x, y) =>
       (x, y) match {
         case (a: Row.ForReq, b: Row.ForReq) if a.req.id ==* b.req.id =>
-          Some(Row.ForReq(a.req, a.live, a.exp |+| b.exp, a.mv |+| b.mv, a.instanceId min b.instanceId)) // TODO resort
+          Some(Row.ForReq(
+            req             = a.req,
+            live            = a.live,
+            conflictingTags = a.conflictingTags,
+            exp             = a.exp |+| b.exp,
+            mv              = a.mv |+| b.mv,
+            instanceId      = a.instanceId min b.instanceId)) // TODO resort
         case _ =>
           None
       }
@@ -470,10 +467,11 @@ private[reqtable] object Logic {
   def rowsForTable(p : Project,
                    v : View,
                    pt: PlainText.ForProject.NoCtx,
-                   ts: TextSearch): Vector[Row] = {
+                   ts: TextSearch,
+                   fc: Filter.Valid.Compiler): Vector[Row] = {
 
-    def r1: Array       [Row] = gather(p, v, pt, ts)
-    def r2: MutableArray[Row] = sort(p, v, pt)(r1)
+    def r1: Array       [Row] = gather(p, v, pt, ts, fc)
+    def r2: MutableArray[Row] = sorter(p, v, pt)(r1)
     val r3: Vector      [Row] = consolidateAdjacentDups(r2.iterator)
     val r4: Vector      [Row] = if (v.viewReqCodesAsTree) addReqCodeTreeToRows(r3) else r3
     r4

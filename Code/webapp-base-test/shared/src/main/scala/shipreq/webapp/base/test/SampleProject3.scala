@@ -24,7 +24,12 @@ object SampleProject3 {
   object Values extends Values
   import Values._
 
-  lazy val project = {
+  val inlineIssueDesc = {
+    import T.InlineIssueDesc._
+    Vector(Literal("Pending "), ReqRef(mfs(26)))
+  }
+
+  lazy val project: Project = {
     import SampleProject.Values._
     val List(p1,p3,p5) = List[ApplicableTagId](4,3,2)
     val (p2,p4) = (p3,p5)
@@ -38,12 +43,8 @@ object SampleProject3 {
       )
     }
     def fr2Desc = {
-      val tbd = {
-        import T.InlineIssueDesc._
-        Vector(Literal("Pending "), ReqRef(mfs(26)))
-      }
       import T.GenericReqTitle._
-      Vector(Issue(2, tbd), Literal(". "), ReqRef(mfs(28)), Literal(" is dead."))
+      Vector(Issue(2, inlineIssueDesc), Literal(". "), ReqRef(mfs(28)), Literal(" is dead."))
     }
 
     val contentByDsl = (

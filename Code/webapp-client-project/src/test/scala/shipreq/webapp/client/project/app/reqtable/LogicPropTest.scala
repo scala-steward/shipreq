@@ -5,7 +5,7 @@ import nyaya.gen.Gen
 import nyaya.prop._
 import nyaya.test._
 import nyaya.util.Multimap
-import scalaz.{\/, \/-, -\/, Equal}
+import scalaz.{-\/, Equal, \/, \/-}
 import scalaz.std.AllInstances._
 import utest._
 import shipreq.base.util.univeq._
@@ -13,13 +13,15 @@ import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.reqtable._
-import shipreq.webapp.base.data.reqtable.{SortCriterion => SC, Column => C}
-import shipreq.webapp.base.text.{Atom, PlainText, Text, TextSearch, ProjectText}
+import shipreq.webapp.base.data.reqtable.{Column => C, SortCriterion => SC}
+import shipreq.webapp.base.sort.SortMethod
+import shipreq.webapp.base.sort.Sorter.{BlankPlacement, BlanksFirst, BlanksLast, Dir, FlipDir, KeepDir}
+import shipreq.webapp.base.text.{Atom, PlainText, Text, TextSearch}
 import shipreq.webapp.client.project.test.ClientTestSettings._
-import SortMethod._
-import Sorter._
-import Text.Equality._
 import LogicTestUtil._
+import SortMethod._
+import Text.Equality._
+import shipreq.webapp.base.filter.Filter
 
 object LogicPropTest extends TestSuite {
   val nop = Eval.pass()
@@ -35,15 +37,16 @@ object LogicPropTest extends TestSuite {
       else
         _ => true
 
-    val plainText   = PlainText.ForProject.noCtx(p)
-    val textSearch  = TextSearch(p, plainText)
-    val gathered    = Logic.gather[Vector](p, v, plainText, textSearch)
-    val gatheredG   = gathered.iterator.filterSubType[Row.ForReq].toList
-    val rowReqCodes = gathered.flatMap(codesInRow)
-    val rowGReqIds  = gatheredG.map(_.req.id).toSet
-    val srcGReqIds  = p.content.reqs.idIterator.filterSubType[GenericReqId].filter(expectVisible).toSet
-    val finalRows   = Logic.rowsForTable(p, v, plainText, textSearch)
-    val tableStats  = Logic.stats(p, finalRows)
+    val plainText      = PlainText.ForProject.noCtx(p)
+    val textSearch     = TextSearch(p, plainText)
+    val filterCompiler = Filter.Valid.compiler(p, plainText, textSearch, fd)
+    val gathered       = Logic.gather[Vector](p, v, plainText, textSearch, filterCompiler)
+    val gatheredG      = gathered.iterator.filterSubType[Row.ForReq].toList
+    val rowReqCodes    = gathered.flatMap(codesInRow)
+    val rowGReqIds     = gatheredG.map(_.req.id).toSet
+    val srcGReqIds     = p.content.reqs.idIterator.filterSubType[GenericReqId].filter(expectVisible).toSet
+    val finalRows      = Logic.rowsForTable(p, v, plainText, textSearch, filterCompiler)
+    val tableStats     = Logic.stats(p, finalRows)
 
     val expectedVisibleReqCodes = {
       val b = Set.newBuilder[ReqCode.Value]
@@ -88,14 +91,14 @@ object LogicPropTest extends TestSuite {
     // Sorting
 
     implicit def textOrd[T <: Atom.Base] =
-      implicitly[Ordering[String]].on[T#OptionalText](t => plainText.text(t, Live).toLowerCase)
+      implicitly[Ordering[String]].on[T#OptionalText](t => plainText.text(t, Live, Mandatory.Not).toLowerCase)
 
     def universalSort = {
       val revOrder  = v.order.reverse
       val revCri    = v.copy(order = revOrder)
-      val sorted    = Logic.sort(p, v, plainText)(gathered).to[Vector]
+      val sorted    = Logic.sorter(p, v, plainText)(gathered).to[Vector]
       def criRev    = E.equal("cri.rev.rev = cri", revOrder.reverse, v.order)
-      def sortTwice = E.equal("sort.sort = sort", Logic.sort(p, v, plainText)(sorted).to[Vector], sorted)
+      def sortTwice = E.equal("sort.sort = sort", Logic.sorter(p, v, plainText)(sorted).to[Vector], sorted)
       def sortRev   = reverseSortOnReverseCri(sorted, revCri)
       (criRev ∧ sortRev ∧ sortTwice) rename "Universal sort props"
     }
@@ -141,14 +144,14 @@ object LogicPropTest extends TestSuite {
       if (v isVisible c)
         gathered
       else
-        Logic.gather(p, View(columnState(p, c), sc, fd, v.filter), plainText, textSearch)
+        Logic.gather(p, View(columnState(p, c), sc, fd, v.filter), plainText, textSearch, filterCompiler)
 
     def sortCriAndGather(c: SC.Inconclusive) =
       sortCri(c).mapStrengthR(gatherOn(c.column, _))
 
     def sortBy(c: SC.Inconclusive): Vector[Row] = {
       val (sc, input) = sortCriAndGather(c)
-      Logic.sort(p, newTableSettingsForSort(sc), plainText)(input).to[Vector]
+      Logic.sorter(p, newTableSettingsForSort(sc), plainText)(input).to[Vector]
     }
 
     def newTableSettingsForSort(sc: SortCriteria): View =
@@ -196,7 +199,7 @@ object LogicPropTest extends TestSuite {
 
     def sortByPubid: IndivSortIB = (sm, dir) => {
       val sc     = SortCriteria(Vector.empty, SC.Conclusive(C.Pubid, sm))
-      val sorted = Logic.sort(p, newTableSettingsForSort(sc), plainText)(gathered).to[Vector]
+      val sorted = Logic.sorter(p, newTableSettingsForSort(sc), plainText)(gathered).to[Vector]
       val na     = ("", -1)
       val pubids = sorted.map {
         case r: Row.ForReq          => pubidExtract(p)(r.req.pubid)

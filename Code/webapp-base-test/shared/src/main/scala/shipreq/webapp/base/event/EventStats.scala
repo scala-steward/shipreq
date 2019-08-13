@@ -5,6 +5,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import ApplicableEventGen.ObserveFn
+import Event._
 
 object EventStats {
 
@@ -35,6 +36,9 @@ object EventStats {
       case _: GenericReqCreate       => "GenericReqCreate"
       case _: GenericReqTitleSet     => "GenericReqTitleSet"
       case _: GenericReqTypeSet      => "GenericReqTypeSet"
+      case _: ManualIssueCreate      => "ManualIssueCreate"
+      case _: ManualIssueDelete      => "ManualIssueDelete"
+      case _: ManualIssueUpdate      => "ManualIssueUpdate"
       case _: ProjectNameSet         => "ProjectNameSet"
       case _: ProjectTemplateApply   => "ProjectTemplateApply"
       case _: CodeGroupCreate        => "CodeGroupCreate"

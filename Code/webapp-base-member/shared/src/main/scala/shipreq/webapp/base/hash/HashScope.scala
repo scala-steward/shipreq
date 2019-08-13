@@ -17,7 +17,7 @@ object HashScope {
   case object CfgIssueTypes   extends WithProjectAccess(_.config.customIssueTypes)
   case object CfgReqTypes     extends WithProjectAccess(_.config.reqTypes)
   case object CfgFields       extends WithProjectAccess(_.config.fields)
-  case object CfgTags         extends WithProjectAccess(_.config.tags)
+  case object CfgTags         extends WithProjectAccess(_.config.tags.tree)
   case object GenericReqs     extends WithProjectAccess(_.content.reqs.genericReqs)
   case object UseCases        extends WithProjectAccess(_.content.reqs.useCases)
   case object PubidRegister   extends WithProjectAccess(_.content.reqs.pubids)
@@ -26,6 +26,7 @@ object HashScope {
   case object TagData         extends WithProjectAccess(_.content.reqTags)
   case object ImplicationData extends WithProjectAccess(_.content.implications)
   case object DeletionReasons extends WithProjectAccess(_.content.deletionReasons)
+  case object ManualIssues    extends WithProjectAccess(_.manualIssues)
   case object SavedViews      extends WithProjectAccess(_.reqtableViews)
 
   implicit def univEq: UnivEq[HashScope] = UnivEq.force

@@ -7,10 +7,12 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import monocle._
 import monocle.macros.{GenLens, Lenses}
 import scala.collection.immutable.ListSet
-import scalaz.Equal
+import scalaz.{-\/, Equal, \/}
+import scalaz.std.option.toRight
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.base.util.ScalaExt._
+import shipreq.webapp.base.util.Must._
 import shipreq.webapp.base.WebappConfig
 import TaggedTypes.{TaggedInt, TaggedString}
 import IndexLabel._
@@ -116,12 +118,12 @@ object Field {
     fn
   }
 
-  def nameFromProject(p: Project): Field => String =
-    name(p.config.reqTypes, p.config.tags)
+  def nameFromProjectConfig(cfg: ProjectConfig): Field => String =
+    name(cfg.reqTypes, cfg.tags.tree)
 
-  def nameByIdFromProject(p: Project): FieldId => String = {
-    val fieldToName = nameFromProject(p)
-    _.foldId(fieldToName, id => fieldToName(p.config.fields.customFields.need(id)))
+  def nameByIdFromProjectConfig(cfg: ProjectConfig): FieldId => String = {
+    val fieldToName = nameFromProjectConfig(cfg)
+    _.foldId(fieldToName, id => fieldToName(cfg.fields.customFields.need(id)))
   }
 }
 
@@ -351,10 +353,12 @@ object CustomField {
                   mandatory     : Mandatory,
                   reqTypes      : ApplicableReqTypes,
                   liveExplicitly: Live) extends CustomField(CustomFieldType.Text) {
+    override def toString = s"CustomField.Text($id, $name, $key, $mandatory, $reqTypes, $liveExplicitly)"
     override def independentName = Some(name)
     override def keyO = Some(key)
     override def live(cfg: ProjectConfig) = liveExplicitly
   }
+
   object Text {
     final case class Id(value: Int) extends CustomFieldId {
       override def toString = s"CustomField.Text.Id($value)"
@@ -372,6 +376,8 @@ object CustomField {
                  mandatory     : Mandatory,
                  reqTypes      : ApplicableReqTypes,
                  liveExplicitly: Live) extends CustomField(CustomFieldType.Tag) {
+
+    override def toString = s"CustomField.Tag($id, $tagId, $mandatory, $reqTypes, $liveExplicitly)"
     override def independentName = None
     override def keyO = None
 
@@ -379,8 +385,9 @@ object CustomField {
       tags.need(tagId).tag.name
 
     override def live(cfg: ProjectConfig) =
-      liveExplicitly & cfg.live(tagId)
+      liveExplicitly & cfg.tags.live(tagId)
   }
+
   object Tag {
     final case class Id(value: Int) extends CustomFieldId  {
       override def toString = s"CustomField.Tag.Id($value)"
@@ -398,6 +405,7 @@ object CustomField {
                          mandatory     : Mandatory,
                          reqTypes      : ApplicableReqTypes,
                          liveExplicitly: Live) extends CustomField(CustomFieldType.Implication) {
+    override def toString = s"CustomField.Implication($id, $reqTypeId, $mandatory, $reqTypes, $liveExplicitly)"
     override def independentName = None
     override def keyO = None
 
@@ -407,6 +415,7 @@ object CustomField {
     override def live(cfg: ProjectConfig) =
       liveExplicitly & cfg.live(reqTypeId)
   }
+
   object Implication {
     final case class Id(value: Int) extends CustomFieldId {
       override def toString = s"CustomField.Implication.Id($value)"
@@ -420,7 +429,7 @@ object CustomField {
     def dir = Backwards
   }
 
-  // -------------------------------------------------------------------------------------------------------------------
+  // ===================================================================================================================
 
   val independentName = Optional[CustomField, String](_.independentName)(n => {
     case Text(a, _, b, c, d, e) => Text(a, n, b, c, d, e)
@@ -458,12 +467,41 @@ object CustomField {
     case f: Implication => f.name(reqTypes)
   }
 
-  def nameP(p: Project) = name(p.config.reqTypes, p.config.tags)
+  def nameP(p: Project) = name(p.config.reqTypes, p.config.tags.tree)
 
   implicit def equalImplication: UnivEq[Implication] = UnivEq.derive
   implicit def equalTag        : UnivEq[Tag]         = UnivEq.derive
   implicit def equalText       : UnivEq[Text]        = UnivEq.derive
   implicit def equality        : UnivEq[CustomField] = UnivEq.derive
+
+  final class MutableLists {
+    var imps = List.empty[CustomField.Implication]
+    var tags = List.empty[CustomField.Tag]
+    var text = List.empty[CustomField.Text]
+
+    def isEmpty() = imps.isEmpty && tags.isEmpty && text.isEmpty
+
+    def +=(cf: CustomField): Unit =
+      cf match {
+        case f: CustomField.Text        => text ::= f
+        case f: CustomField.Tag         => tags ::= f
+        case f: CustomField.Implication => imps ::= f
+      }
+
+    def result(): Lists =
+      Lists(imps, tags, text)
+  }
+
+  final case class Lists(
+    imps: List[CustomField.Implication],
+    tags: List[CustomField.Tag],
+    text: List[CustomField.Text],
+  ) {
+    def isEmpty = text.isEmpty && imps.isEmpty && tags.isEmpty
+    def contains(id: CustomField.Text       .Id): Boolean = text.exists(_.id ==* id)
+    def contains(id: CustomField.Tag        .Id): Boolean = tags.exists(_.id ==* id)
+    def contains(id: CustomField.Implication.Id): Boolean = imps.exists(_.id ==* id)
+  }
 }
 
 object FieldId {
@@ -497,6 +535,40 @@ final case class FieldSet(customFields: FieldSet.CustomFields,
 
   def staticFieldSet: ListSet[StaticField] =
     staticFieldIterator.to
+
+  val applicability: Applicability.Default =
+    Applicability(get(_) match {
+      case Some(f) => f.applicable
+      case None    => Applicable.never
+    })
+
+  def custom[I <: CustomFieldId, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): D = {
+    val f = customFields.need(id)
+    d.unapplyData(f) mustExistElse s"$id associated with wrong type: $f"
+  }
+
+  def customAttempt[I <: CustomFieldId, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): String \/ D =
+    customFields.get(id) match {
+      case Some(f) =>
+        toRight(d unapplyData f)(s"$id associated with wrong type: $f")
+      case None =>
+        -\/(s"$id not found.")
+    }
+
+  private lazy val splitFields = {
+    val f = new CustomField.MutableLists
+    customFields.valuesIterator.foreach(f.+=)
+    f
+  }
+
+  def customImpFields: List[CustomField.Implication] =
+    splitFields.imps
+
+  def customTagFields: List[CustomField.Tag] =
+    splitFields.tags
+
+  def customTextFields: List[CustomField.Text] =
+    splitFields.text
 }
 
 object FieldSet {

@@ -1,5 +1,6 @@
 package shipreq.base.util
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.Memo
 import japgolly.univeq.UnivEq
@@ -199,4 +200,38 @@ object Util {
   def partitionConsecutiveBy[F[x] <: Traversable[x], A, B](as: F[A])(f: A => B)
                                                           (implicit cbf: CanBuildFrom[Nothing, A, F[A]], n: Numeric[B]): (F[A], F[A]) =
     partitionBetween(as)((a, b) => !n.equiv(n.plus(f(a), n.one), f(b)))
+
+  def uniqueDupsNested[A, B: UnivEq](as: TraversableOnce[A])(bs: A => TraversableOnce[B]): Set[B] = {
+    var uniq = Set.empty[B]
+    var dups = Set.empty[B]
+    for {
+      a <- as
+      b <- bs(a)
+    }
+      if (!uniq.contains(b))
+        // first sighting
+        uniq += b
+      else if (!dups.contains(b)) {
+        // second sighting
+        dups += b
+      }
+    dups
+  }
+
+  def mergeSets[A: UnivEq](x: Set[_ <: A], y: Set[_ <: A]): Set[A] =
+    if (x.isEmpty) y.asInstanceOf[Set[A]]
+    else if (y.isEmpty) x.asInstanceOf[Set[A]]
+    else x ++ y
+
+  def mergeSets[A: UnivEq](x: Set[_ <: A], y: Set[_ <: A], z: Set[_ <: A]): Set[A] =
+    if (x.isEmpty) mergeSets(y, z)
+    else if (y.isEmpty) mergeSets(x, z)
+    else if (z.isEmpty) mergeSets(x, y)
+    else (Set.newBuilder[A] ++= x ++= y ++= z).result()
+
+  def enumOrdering[A: UnivEq, B: Ordering](as: TraversableOnce[A])(by: A => B): Ordering[A] = {
+    val sorted = MutableArray(as).sortBySchwartzian(by).array
+    val ord = sorted.iterator.mapToOrder
+    Ordering.by(ord.apply)
+  }
 }

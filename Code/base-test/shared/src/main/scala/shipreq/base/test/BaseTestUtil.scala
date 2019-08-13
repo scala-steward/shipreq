@@ -37,7 +37,7 @@ object BaseTestUtil extends BaseTestEquality with BaseTestUtil {
 }
 
 trait BaseTestUtil
-  extends japgolly.microlibs.testutil.TestUtil
+  extends japgolly.microlibs.testutil.TestUtilWithoutUnivEq
   with scalaz.syntax.ToEqualOps {
 
   implicit def BaseTestUtilOpsAny[A](a: A) =

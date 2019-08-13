@@ -1,16 +1,18 @@
 package shipreq.webapp.base.data
 
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import japgolly.microlibs.stdlib_ext.MutableArray
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.Memo
 import monocle.{Lens, Optional}
 import monocle.macros.Lenses
 import monocle.std.option.pSome
+import nyaya.util.Multimap
 import scalaz.Equal
 import scalaz.std.anyVal.intInstance
 import shipreq.base.util._
 import shipreq.base.util.univeq._
+import shipreq.webapp.base.issue.{Issue, IssueTracker}
 import DataImplicits._
 
 object Project {
@@ -19,8 +21,8 @@ object Project {
   val customIssueTypes    : Lens[Project, CustomIssueTypeIMap  ] = config  ^|-> ProjectConfig.customIssueTypes
   val reqTypes            : Lens[Project, ReqTypes             ] = config  ^|-> ProjectConfig.reqTypes
   val fields              : Lens[Project, FieldSet             ] = config  ^|-> ProjectConfig.fields
-  val tags                : Lens[Project, TagTree              ] = config  ^|-> ProjectConfig.tags
-  val customFields        : Lens[Project, FieldSet.CustomFields] = fields ^|-> FieldSet.customFields
+  val tagTree             : Lens[Project, TagTree              ] = config  ^|-> ProjectConfig.tags ^|-> Tags.tree
+  val customFields        : Lens[Project, FieldSet.CustomFields] = fields  ^|-> FieldSet.customFields
   val reqs                : Lens[Project, Requirements         ] = content ^|-> ProjectContent.reqs
   val reqCodes            : Lens[Project, ReqCodes             ] = content ^|-> ProjectContent.reqCodes
   val reqText             : Lens[Project, ReqData.Text         ] = content ^|-> ProjectContent.reqText
@@ -54,6 +56,7 @@ object Project {
       emptyProjectName,
       ProjectConfig.empty,
       ProjectContent.empty,
+      ManualIssues.empty,
       reqtable.SavedViews.empty,
       IdCeilings.zero)
 }
@@ -62,6 +65,7 @@ object Project {
 final case class Project(name         : Project.Name,
                          config       : ProjectConfig,
                          content      : ProjectContent,
+                         manualIssues : ManualIssues,
                          reqtableViews: reqtable.SavedViews.Optional,
                          idCeilings   : IdCeilings) {
 
@@ -86,6 +90,25 @@ final case class Project(name         : Project.Name,
 
   lazy val atomScan = AtomScan(this)
 
+  lazy val dataLogic = new DataLogic(this)
+
+  lazy val issues = IssueTracker(this).issues
+
+  lazy val conflictingTagsPerReq: Multimap[ReqId, Set, ApplicableTagId] = {
+    var m = Multimap.empty[ReqId, Set, ApplicableTagId]
+    issues.vector.foreach {
+
+      case i: Issue.ConflictingTags =>
+        val tagGroup = config.tags.tree.need(i.tagGroupId)
+        val children = tagGroup.transitiveChildren(config.tags.tree)
+        val atags    = children.iterator.filterSubType[ApplicableTagId].toSet
+        m = m.addvs(i.req.id, atags)
+
+      case _ => ()
+    }
+    m
+  }
+
   /**
    * Transitive closure of implications going source → target.
    *
@@ -107,6 +130,9 @@ final case class Project(name         : Project.Name,
       dir,
       content.reqs.idIterator,
       TransitiveClosure.Filter terminalSet deadReqIds)
+
+  def liveReqIterator(): Iterator[Req] =
+    content.reqs.reqIterator.filter(_.live(config.reqTypes) is Live)
 
   def reqtableViewIterator: Iterator[reqtable.SavedView] =
     reqtableViews.fold[Iterator[reqtable.SavedView]](Iterator.empty)(_.iterator)

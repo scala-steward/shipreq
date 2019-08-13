@@ -11,7 +11,7 @@ import shipreq.base.util.MMTree
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.protocol.TagCrud._
+import shipreq.webapp.base.protocol.UpdateConfigCmd._
 import shipreq.webapp.base.test.{SampleProject => S}, S.Values._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.client.project.lib.DataReusability._
@@ -36,14 +36,14 @@ object CfgTagsTest extends TestSuite {
     Sizzle("td.name", ReactDOM.findDOMNode(c.raw).get.asElement).toVector.map(nameCellToText(_, ""))
 
   class FakeUpdateIO {
-    var reqs = Vector.empty[(Tag, Value)]
+    var reqs = Vector.empty[(Tag, TagData)]
     val u: MainTable.DetailPaneFns.UpdateIO = (t, v, _, _) => Callback { reqs :+= ((t, v)) }
   }
 
   class Tester {
     lazy val filterDead = ReactTestVar[FilterDead](HideDead)
     lazy val g          = TestGlobal(S.project)
-    lazy val props      = CfgTags.Props(g.sspTagMod, g, filterDead.stateSnapshotWithReuse())
+    lazy val props      = CfgTags.Props(g.sspUpdateConfig, g, filterDead.stateSnapshotWithReuse())
     lazy val re         = MainTable.Component(props)
     lazy val c          = ReactTestUtils.renderIntoDocument(re)
   }
@@ -54,7 +54,7 @@ object CfgTagsTest extends TestSuite {
 
     'recvUpdates {
       import ApplicableTagGD._
-      val e = ApplicableTagUpdate(v10, nev(
+      val e = Event.ApplicableTagUpdate(v10, nev(
                 Name("Blah"),
                 Parents(Map(1.TG -> priMed.some)),
                 Children(Vector(10.TG))))
@@ -95,7 +95,7 @@ object CfgTagsTest extends TestSuite {
         assertEq(h._1, subj)
         val actualRels = h._2.onlyThat.get
         assertEq("RFC", actualRels, expectedRels)
-        val tt = ApplyRelations.trustedApply1(S.project.config.tags, h._1.id, actualRels)
+        val tt = ApplyRelations.trustedApply1(S.project.config.tags.tree, h._1.id, actualRels)
         assertEq("Final result", Relations.derive(subj.id, tt), expectedRels)
       }
 

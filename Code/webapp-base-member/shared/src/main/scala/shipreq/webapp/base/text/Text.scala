@@ -63,12 +63,11 @@ object Text {
                        override val input         : ParserInput) extends P.TopBase[this.type](this)
         with P.SingleLine
         with P.Issue
-        with P.ReqRef
-        with P.UseCaseStepRef
+        with P.ContentRef
         with P.TagRef {
 
       def hashToken =                         rule(hashRef ~ (tagRef | issueRef))
-      val token = () =>                       rule(hashToken | useCaseStepRef | reqRef | singleLine)
+      val token = () =>                       rule(hashToken | contentRef | singleLine)
       override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(project, currentUseCase)(_).inline))
     }
 
@@ -83,37 +82,7 @@ object Text {
    */
   object GenericReqTitle extends ReqTitle
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  object InlineIssueDesc extends Base
-      with A.SingleLine
-      with A.ReqRef
-      with A.UseCaseStepRef {
-
-    final class Parser(override val project       : Project,
-                       override val currentUseCase: Option[ReqTypePos],
-                       override val input         : ParserInput) extends P.TopBase(this)
-        with P.SingleLine
-        with P.ReqRef
-        with P.UseCaseStepRef {
-
-      import Grammar.issueDescSurround.{parsing => G}
-      val token     = () =>             rule(useCaseStepRef | reqRef | singleLine)
-      val inlineEnd = () =>             rule(OWS ~ G.suffix)
-      def inline: Rule1[NonEmptyText] = rule(G.prefix ~ OWS ~ textUntil(token, inlineEnd) ~ popNEV)
-    }
-
-    override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
-
-    /** Issue descs that demonstrate all types of inner atoms. */
-    def demo(reqId: ReqId, reqCodeId: ReqCodeId, useCaseStepId: UseCaseStepId): NonEmptyVector[NonEmptyText] =
-      NonEmptyVector(
-        NonEmptyVector(
-          Literal("Need to finish "), ReqRef(reqId),
-          Literal(", "), UseCaseStepRef(useCaseStepId),
-          Literal(" and "), CodeRef(reqCodeId)),
-        NonEmptyVector(Literal("Ask "), EmailAddress("bob@gmail.com"), Literal(" about "), MathTeX("e=mc^2")))
-  }
+  object UseCaseTitle extends ReqTitle
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -121,19 +90,17 @@ object Text {
   object CodeGroupTitle extends Base
       with A.SingleLine
       with A.Issue
-      with A.ReqRef
-      with A.UseCaseStepRef {
+      with A.ContentRef {
 
     final class Parser(override val project       : Project,
                        override val currentUseCase: Option[ReqTypePos],
                        override val input         : ParserInput) extends P.TopBase(this)
         with P.SingleLine
         with P.Issue
-        with P.ReqRef
-        with P.UseCaseStepRef {
+        with P.ContentRef {
 
       def hashToken =                         rule(hashRef ~ issueRef)
-      override val token = () =>              rule(hashToken | useCaseStepRef | reqRef | singleLine)
+      override val token = () =>              rule(hashToken | contentRef | singleLine)
       override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(project, currentUseCase)(_).inline))
     }
 
@@ -142,11 +109,45 @@ object Text {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  object InlineIssueDesc extends Base
+      with A.SingleLine
+      with A.ContentRef {
+
+    final class Parser(override val project       : Project,
+                       override val currentUseCase: Option[ReqTypePos],
+                       override val input         : ParserInput) extends P.TopBase(this)
+        with P.SingleLine
+        with P.ContentRef {
+
+      import Grammar.issueDescSurround.{parsing => G}
+      val token     = () =>             rule(contentRef | singleLine)
+      val inlineEnd = () =>             rule(OWS ~ G.suffix)
+      def inline: Rule1[NonEmptyText] = rule(G.prefix ~ OWS ~ textUntil(token, inlineEnd) ~ popNEV)
+    }
+
+    override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
+
+    /** Issue descs that demonstrate all types of inner atoms. */
+    def demo(reqId        : ReqId,
+             reqCodeIdA   : ApReqCodeId,
+             reqCodeIdG   : ReqCodeGroupId,
+             useCaseStepId: UseCaseStepId): NonEmptyVector[NonEmptyText] =
+      NonEmptyVector(
+        NonEmptyVector(
+          Literal("Need to finish "), ReqRef(reqId),
+          Literal(", "), UseCaseStepRef(useCaseStepId),
+          Literal(", "), CodeRef(reqCodeIdA),
+          Literal(" and "), CodeRef(reqCodeIdG),
+        ),
+        NonEmptyVector(Literal("Ask "), EmailAddress("bob@gmail.com"), Literal(" about "), MathTeX("e=mc^2")))
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   object CustomTextField extends Base
       with A.MultiLine
       with A.Issue
-      with A.ReqRef
-      with A.UseCaseStepRef
+      with A.ContentRef
       with A.TagRef {
 
     final class Parser(override val project       : Project,
@@ -154,26 +155,32 @@ object Text {
                        override val input         : ParserInput) extends P.TopBase(this)
         with P.MultiLine
         with P.Issue
-        with P.ReqRef
-        with P.UseCaseStepRef
+        with P.ContentRef
         with P.TagRef {
 
       def hashToken =                                 rule(hashRef ~ (tagRef | issueRef))
-      override protected val additionalTokens = () => rule(hashToken | useCaseStepRef | reqRef)
+      override protected val additionalTokens = () => rule(hashToken | contentRef)
       override protected def issueInnerDesc =         rule(runSubParser(InlineIssueDesc.parserI(project, currentUseCase)(_).inline))
     }
 
     override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
 
     /** A text value that demonstrates all types of atoms. */
-    def demo(reqId: ReqId, reqCodeId: ReqCodeId, useCaseStepId: UseCaseStepId, tagId: ApplicableTagId, issue: CustomIssueTypeId): NonEmptyText = {
+    def demo(reqId        : ReqId,
+             reqCodeIdA   : ApReqCodeId,
+             reqCodeIdG   : ReqCodeGroupId,
+             useCaseStepId: UseCaseStepId,
+             tagId        : ApplicableTagId,
+             issue        : CustomIssueTypeId): NonEmptyText = {
+
       var uls = NonEmptyVector[ListItem](
         Vector(Literal("Req: "), ReqRef(reqId)),
         Vector(Literal("UC Step Req: "), UseCaseStepRef(useCaseStepId)),
-        Vector(Literal("Code: "), CodeRef(reqCodeId)),
+        Vector(Literal("Code: "), CodeRef(reqCodeIdA)),
+        Vector(Literal("Code Group: "), CodeRef(reqCodeIdG)),
         Vector(Literal("Tag: "), TagRef(tagId)),
         Vector(Literal("Issue(∅): "), Issue(issue, Vector.empty)))
-      uls ++= InlineIssueDesc.demo(reqId, reqCodeId, useCaseStepId).map(desc =>
+      uls ++= InlineIssueDesc.demo(reqId, reqCodeIdA, reqCodeIdG, useCaseStepId).map(desc =>
         Vector(Literal("Issue(∃): "), Issue(issue, desc.whole)))
       uls ++= NonEmptyVector(
         Vector(),
@@ -192,38 +199,10 @@ object Text {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  object DeletionReason extends Base
-      with A.MultiLine
-      with A.ReqRef
-      with A.UseCaseStepRef
-      with A.TagRef {
-
-    final class Parser(override val project       : Project,
-                       override val currentUseCase: Option[ReqTypePos],
-                       override val input         : ParserInput) extends P.TopBase(this)
-        with P.MultiLine
-        with P.ReqRef
-        with P.UseCaseStepRef
-        with P.TagRef {
-
-      def hashToken =                                 rule(hashRef ~ tagRef)
-      override protected val additionalTokens = () => rule(hashToken | useCaseStepRef | reqRef)
-    }
-
-    override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
-  }
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  object UseCaseTitle extends ReqTitle
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
   object UseCaseStep extends Base
       with A.SingleLine
       with A.Issue
-      with A.ReqRef
-      with A.UseCaseStepRef
+      with A.ContentRef
       with A.TagRef {
 
     final class Parser(override val project       : Project,
@@ -231,13 +210,54 @@ object Text {
                        override val input         : ParserInput) extends P.TopBase(this)
         with P.SingleLine
         with P.Issue
-        with P.ReqRef
-        with P.UseCaseStepRef
+        with P.ContentRef
         with P.TagRef {
 
       def hashToken =                         rule(hashRef ~ (tagRef | issueRef))
-      override val token = () =>              rule(hashToken | useCaseStepRef | reqRef | singleLine)
+      override val token = () =>              rule(hashToken | contentRef | singleLine)
       override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(project, currentUseCase)(_).inline))
+    }
+
+    override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  object DeletionReason extends Base
+      with A.MultiLine
+      with A.ContentRef
+      with A.TagRef {
+
+    final class Parser(override val project       : Project,
+                       override val currentUseCase: Option[ReqTypePos],
+                       override val input         : ParserInput) extends P.TopBase(this)
+        with P.MultiLine
+        with P.ContentRef
+        with P.TagRef {
+
+      def hashToken =                                 rule(hashRef ~ tagRef)
+      override protected val additionalTokens = () => rule(hashToken | contentRef)
+    }
+
+    override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  object ManualIssue extends Base
+      with A.MultiLine
+      with A.ContentRef
+      with A.TagRef {
+
+    final class Parser(override val project       : Project,
+                       override val currentUseCase: Option[ReqTypePos],
+                       override val input         : ParserInput) extends P.TopBase(this)
+        with P.MultiLine
+        with P.ContentRef
+        with P.TagRef {
+
+      def hashToken =                                 rule(hashRef ~ tagRef)
+      override protected val additionalTokens = () => rule(hashToken | contentRef)
     }
 
     override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)

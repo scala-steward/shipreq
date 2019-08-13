@@ -9,6 +9,18 @@ import shipreq.webapp.base.{text => T}
 
 object Atom {
 
+  // Mixin Hierarchy
+  // ===============
+  // - MultiLine
+  //   - SingleLine
+  //     - Literal
+  //     - PlainTextMarkup
+  //   - NewLine
+  //   - ListMarkup
+  // - Issue
+  // - ContentRef
+  // - TagRef
+
   sealed trait Type
   object Type {
     case object Literal        extends Type
@@ -28,9 +40,9 @@ object Atom {
     val of: AnyAtom => Type = {
       case _: Literal         # Literal        => Literal
       case _: NewLine         # BlankLine      => BlankLine
-      case _: ReqRef          # ReqRef         => ReqRef
-      case _: ReqRef          # CodeRef        => CodeRef
-      case _: UseCaseStepRef  # UseCaseStepRef => UseCaseStepRef
+      case _: ContentRef      # ReqRef         => ReqRef
+      case _: ContentRef      # CodeRef        => CodeRef
+      case _: ContentRef      # UseCaseStepRef => UseCaseStepRef
       case _: Issue           # Issue          => Issue
       case _: PlainTextMarkup # WebAddress     => WebAddress
       case _: PlainTextMarkup # EmailAddress   => EmailAddress
@@ -40,8 +52,9 @@ object Atom {
     }
   }
 
-  type AnyAtom  = Base#Atom
-  type AnyIssue = Issue#Issue
+  type AnyAtom       = Base#Atom
+  type AnyIssue      = Issue#Issue
+  type AnyContentRef = ContentRef#ContentRef
 
   // ===================================================================================================================
   // Basics - reduces down to either SingleLine or MultiLine
@@ -58,11 +71,14 @@ object Atom {
     @inline final def empty: OptionalText =
       Vector.empty
 
+    def toOptional(o: Option[NonEmptyText]): OptionalText =
+      NonEmptyIso.get(o)
+
     final val NonEmptyIso: Iso[Option[NonEmptyText], OptionalText] =
       Iso[Option[NonEmptyText], OptionalText](_.fold(Vector.empty[Atom])(_.whole))(NonEmptyVector.option)
 
     final def supportsPTM     = this match { case _: Atom.PlainTextMarkup => true; case _ => false }
-    final def supportsReqRefs = this match { case _: Atom.ReqRef          => true; case _ => false }
+    final def supportsReqRefs = this match { case _: Atom.ContentRef      => true; case _ => false }
     final def supportsTags    = this match { case _: Atom.TagRef          => true; case _ => false }
     final def supportsIssues  = this match { case _: Atom.Issue           => true; case _ => false }
   }
@@ -128,21 +144,21 @@ object Atom {
     }
   }
 
-  trait ReqRef extends Base {
+  trait ContentRef extends Base { self =>
+    sealed trait ContentRef extends Atom
+
     /** Reference to a requirement, like "UC-4". */
-    case class ReqRef(value: ReqId) extends Atom {
+    case class ReqRef(value: ReqId) extends self.ContentRef {
       override final def isPlain = false
     }
 
     /** Reference to a requirement via its [[ReqCode]]. */
-    case class CodeRef(value: ReqCodeId) extends Atom {
+    case class CodeRef(value: ReqCodeId) extends self.ContentRef {
       override final def isPlain = false
     }
-  }
 
-  /** Reference to a UC step, like "UC-4.0.1.a". */
-  trait UseCaseStepRef extends Base {
-    case class UseCaseStepRef(value: UseCaseStepId) extends Atom {
+    /** Reference to a UC step, like "UC-4.0.1.a". */
+    case class UseCaseStepRef(value: UseCaseStepId) extends self.ContentRef {
       override final def isPlain = false
     }
   }
@@ -167,7 +183,6 @@ object Atom {
   /** The main title/desc of a top-level requirement. */
   trait ReqTitle extends SingleLine
     with Issue
-    with ReqRef
-    with UseCaseStepRef
+    with ContentRef
     with TagRef
 }

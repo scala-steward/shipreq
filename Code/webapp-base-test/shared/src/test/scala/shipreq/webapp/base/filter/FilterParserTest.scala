@@ -11,7 +11,7 @@ import utest._
 import shipreq.base.util.Debug._
 import shipreq.base.util._
 import shipreq.webapp.base.{RandomData => $}
-import shipreq.webapp.base.data.{ExternalPubid, HashRefKey, ReqTypePos}
+import shipreq.webapp.base.data.{ExternalPubid, HashRefKey, Off, On, ReqTypePos}
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.filter._
 import shipreq.webapp.base.filter.Filter.{Potential, PotentialF}
@@ -176,9 +176,15 @@ object FilterParserTest extends TestSuite {
       'simple - test("has:stuff", presence("stuff"))
     }
 
-    'lack {
-      'empty  - testFail("no:")
-      'simple - test("no:stuff", lack("stuff"))
+    'hasIssue {
+      'on1  - test("has:issue:x"       , hasIssue(On, "x"))
+      'on2  - test("has:issue:abC,DeF" , hasIssue(On, "abC", "DeF"))
+      'off1 - test("has:issue:-x"      , hasIssue(Off, "x"))
+      'off2 - test("has:issue:-abC,DeF", hasIssue(Off, "abC", "DeF"))
+      'on0  - testFail("has:issue:")
+      'off0 - testFail("has:issue:-")
+      'onC  - testFail("has:issue:x,")
+      'offC - testFail("has:issue:-x,")
     }
 
     'unknownKeys {
@@ -224,7 +230,6 @@ object FilterParserTest extends TestSuite {
       'implies    - test("-implies:XYZ",    not(impliesAnyOf  (WholeType("XYZ"))))
       'impliedBy  - test("-impliedBy:B-12", not(impliedByAnyOf(SomeOfType("B", NES(12)))))
       'presence   - test("-has:face",       not(presence      ("face")))
-      'lack       - test("-no:hair",        not(lack          ("hair")))
       'allOf      - test("-(my god)",       not(allOf         (text("my"), text("god"))))
       'anyOf      - test("-(my|god)",       not(anyOf         (text("my"), text("god"))))
       'not        - test("--whip",          text("whip"))
@@ -232,7 +237,7 @@ object FilterParserTest extends TestSuite {
 
     // TODO {has,no,implies,impliedBy}: etc case insensitive
 
-    // TODO MF FR should warn and recommend (MF FR)
+    // TODO MF FR should warn and recommend (MF | FR)
     // Or do it automatically if parsing isn't live
 
     'combos {

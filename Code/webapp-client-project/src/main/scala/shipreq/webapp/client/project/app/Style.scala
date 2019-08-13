@@ -27,6 +27,7 @@ object Style extends StyleSheet.Inline {
       Domain.ofValues[Status](Normal, DragSource, Tombstone)
     }
 
+    val `live * live`     = live *** live
     val `live * on`       = live *** on
     val `live * validity` = live *** validity
 
@@ -46,8 +47,8 @@ object Style extends StyleSheet.Inline {
   private val hasErrorBackground =
     backgroundColor(c"#fee")
 
-  private val hasErrorColor = style(
-    color(c"#c00"))
+  private val hasErrorColor =
+    color(c"#c00")
 
   private val errorRedOnRed = mixin(
     hasErrorColor,
@@ -78,6 +79,11 @@ object Style extends StyleSheet.Inline {
     deadMixin,
     hasError)
 
+  private val deadFilledCell = style(
+    opacity(0.7),
+    // This ↓ needs to be kept in sync with detailTableKey which uses .04 but .06 is required when opacity=0.7
+    backgroundColor(rgba(0, 0, 0, .06)))
+
   val svgGraph = style(
     unsafeChild("svg")(
       maxWidth(100 %%)))
@@ -88,6 +94,23 @@ object Style extends StyleSheet.Inline {
 
   val layout = style(
     unsafeRoot(".ui.button")(marginRight(`0`).important))
+
+  val noFilterResultsCont = style(
+    padding(2 em).important)
+
+  object generic {
+    val table = style(
+      margin(`0`).important)
+
+    val tableHeaderBase = style(
+      padding(4.px).important,
+      &.focus(outlineColor(BaseStyles.focus.colour(1))))
+
+    val tableDataBase = style(
+      padding(4.px).important,
+      verticalAlign.top.important,
+      (borderLeft :=! "1px solid #2224261a").important) // Without this, rowspan break semantic UI table borders
+  }
 
   // ===================================================================================================================
   object home {
@@ -262,13 +285,8 @@ object Style extends StyleSheet.Inline {
     }
 
     object table {
-
-      val table = style(
-        margin(`0`).important)
-
-      private val headerBase = style(
-        padding(4.px).important,
-        &.focus(outlineColor(BaseStyles.focus.colour(1))))
+      def table = generic.table
+      @inline private def headerBase = generic.tableHeaderBase
 
       val columnHeader = styleF(D.live *** D.dragStatus) { case (live, status) => styleS(
         headerBase,
@@ -283,8 +301,7 @@ object Style extends StyleSheet.Inline {
       )}
 
       private val cellBase = styleF(D.`live * on`)(i => styleS(
-        padding(4.px).important,
-        verticalAlign.top.important,
+        generic.tableDataBase,
         i match {
           case (Live, Off) => mixin()
           case (Dead, Off) => mixin(backgroundColor(c"#f5f5f5"))
@@ -308,9 +325,6 @@ object Style extends StyleSheet.Inline {
       val `N/A` = style(
         color(c"#666"),
         margin.horizontal(auto))
-
-      val noContent = style(
-        padding(2 em).important)
     }
 
     object filterEditor {
@@ -549,13 +563,13 @@ object Style extends StyleSheet.Inline {
       textAlign.left,
       wordWrap.breakWord,
       // whiteSpace.nowrap,
-      backgroundColor(rgba(0, 0, 0, .04)),
-      mixinIf(live is Dead)(textDecoration := "line-through")))
+      mixinIf(live is Live)(backgroundColor(rgba(0, 0, 0, .04))),
+      mixinIf(live is Dead)(deadFilledCell, textDecoration := "line-through")))
 
     val detailTableValue = styleF(D.live)(live => styleS(
       detailTableCell,
       width(100 %%),
-      mixinIf(live is Dead)(backgroundColor(rgba(0, 0, 0, .04)))))
+      mixinIf(live is Dead)(deadFilledCell)))
 
     val generalImpsCont = style(
       width(100 %%))
@@ -620,6 +634,53 @@ object Style extends StyleSheet.Inline {
   }
 
   // ===================================================================================================================
+  object issues {
+
+    private def gapSize = 1 rem
+
+    val pageRow1 = style(display.flex)
+    val pageNew  = style(flexGrow(1), marginRight(gapSize))
+
+    val pageRow2 = style(margin.vertical(gapSize), display.flex)
+    def pageSort = pageNew
+
+    val emptyCont = style(marginTop(gapSize))
+
+    val newIssueCont = style(display.flex)
+    val newIssueForm = style(flexGrow(1), marginLeft(1.5 ex))
+
+    def table       = generic.table
+    def tableHeader = generic.tableHeaderBase
+
+    val tableData   = style(
+      generic.tableDataBase,
+      &.focus(BaseStyles.focus.glowOutline))
+
+    val rowspanOuter = style(
+      display.inline,
+      color(c"#999"),
+      paddingLeft(1.ex),
+      whiteSpace.nowrap)
+
+    val rowspanInner = style(
+      color(c"#c66"))
+
+    val pubidColumnValue = style(
+//      display.inline,
+      whiteSpace.nowrap)
+
+    val na = style(
+      color(c"#666"))
+
+    val actionButton = style(
+      textAlign.left.important,
+      whiteSpace.nowrap.important,
+      color(c"#fff").important,
+      (background := "#2f9d3e").important,
+      padding(0.4 em, 0.8 em).important)
+  }
+
+  // ===================================================================================================================
   object widgets {
 
     private val refColour = color(c"#2363A1")
@@ -628,19 +689,29 @@ object Style extends StyleSheet.Inline {
 
     val ul = style(paddingLeft(2.4 ex))
 
+    val blankButMandatory = style(
+      errorRedOnRed,
+      textAlign.center,
+      height(100 %%),
+      width(11 ex),
+      borderRadius(0.3 ex))
+
     private def tagBase(live: Live) = mixin(
       mixinIf(live is Dead)(&.not(_.hover)(textDecoration := ^.lineThrough)),
       hoverShowsInfo)
 
-    private def tagLabelColour(live: Live) = live match {
-      case Live => "blue"
-      case Dead => "grey"
+    private val tagLabelColour: ((Live, Validity)) => String = {
+      case (Live, Valid  ) => "blue"
+      case (Live, Invalid) => ""
+      case (Dead, _      ) => "grey"
     }
 
-    val tag = styleF(D.live)(live => styleS(
-      tagBase(live),
+    @UsesSemanticUiManually
+    val tag = styleF(D.`live * validity`)(lv => styleS(
+      tagBase(lv._1),
       padding(4 px, 6 px).important,
-      addClassName(s"ui label ${tagLabelColour(live)}")))
+      mixinIf(lv._2 is Invalid)(hasErrorBackground.important, hasErrorColor.important),
+      addClassName(s"ui label ${tagLabelColour(lv)}")))
 
     val tagInText = styleF(D.`live * validity`){ case (l, v) => styleS(
       tagBase(l),
@@ -652,7 +723,10 @@ object Style extends StyleSheet.Inline {
       hoverShowsInfo,
       mixinIf(a is Dead)(deadAndNotError)))
 
-    val issue = style(hasError)
+    val issue = styleF(D.`live * live`) { case (liveCtx, liveIssue) => styleS(
+      mixinIf(liveCtx is Live)(hasError),
+      mixinIf(liveIssue is Dead)(textDecoration := ^.lineThrough))
+    }
 
     val erroneousUseCaseStepRef = style(hasError)
 
@@ -692,7 +766,10 @@ object Style extends StyleSheet.Inline {
     val reqCodeTreeCode = style(reqCodeTreePre)
     val reqCodeFlat = style(reqCodePre, display.block, overflowY.hidden)
 
-    val useCaseStepTextAndFlow_cont = style(display.flex)
+    val useCaseStepTextAndFlow_cont = styleF(D.live)(l => styleS(
+      display.flex,
+      mixinIf(l is Dead)(deadFilledCell)))
+
     val useCaseStepTextAndFlow_text = style()
     val useCaseStepTextAndFlow_flow = style()
 
@@ -739,6 +816,8 @@ object Style extends StyleSheet.Inline {
       addClassNames(descCls))
 
     val exampleDescCode = style(
+      padding(0.1 em, 0.5 ex),
+      margin.vertical(0.5 ex),
       fontFamily :=! "monospace", // TODO :=! ???
       backgroundColor(c"#fff"))
 
@@ -752,12 +831,14 @@ object Style extends StyleSheet.Inline {
   // ===================================================================================================================
 
   initInnerObjects(
+    generic.table,
     home.cardHeader,
     help.examplesTable,
     impgraphPage.graph,
     cfg.deadMnemonic,
     deletionRestorationForms.main,
     deletionForm.bottomSections,
+    issues.rowspanOuter,
     restorationForm.bottomSection,
     reqtable.creation.buttonDropdown,
     reqtable.filterEditor.input(Valid),
@@ -767,7 +848,7 @@ object Style extends StyleSheet.Inline {
     reqtable.savedViews.activeItem,
     reqdetail.detailTable,
     reqdetail.useCaseStep.container,
-    widgets.issue,
+    widgets.issueDesc,
     widgets.reqTypeSelector.dropdown)
 //  ConsoleIO(_.log(render[String])).unsafePerformIO()
 //  ConsoleIO(_.info(s"Styles: ${Style.register.styles.length}")).unsafePerformIO()

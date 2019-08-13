@@ -22,6 +22,7 @@ package object hash {
         HashScope.TagData         --> ProjectHasher.hashReqDataTags,
         HashScope.ImplicationData --> ProjectHasher.hashImplications,
         HashScope.DeletionReasons --> ProjectHasher.hashDeletionReasons,
+        HashScope.ManualIssues    --> ProjectHasher.hashManualIssues,
         HashScope.SavedViews      --> ProjectHasher.hashSavedViews)
   }
 

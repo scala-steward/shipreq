@@ -73,16 +73,21 @@ object ProjectText {
       }
 
       val code = rc.reqCode(id)
-      rc(code) match {
+      rc.need(code) match {
         case d: ActiveReq   if d.id ==* id => ActiveCodeToReq(code, d.reqId)
         case d: ActiveGroup if d.id ==* id => ActiveCodeToGroup(code, d.group)
         case d =>
           d.deadGroup match {
             case Some(g) if g.id ==* id => DeadGroup(code, g)
             case _                      =>
-              d.reqInactive.m.find(_._2 contains id) match {
-                case Some((reqId, _)) => findAlt(reqId, code) getOrElse ReqWithoutActiveCode(code, reqId)
-                case None             => mustNotHappen(s"$id not found in $code: $d")
+              def fail = mustNotHappen(s"$id not found in $code: $d")
+              id match {
+                case i: ApReqCodeId =>
+                  d.reqInactive.m.find(_._2 contains i) match {
+                    case Some((reqId, _)) => findAlt(reqId, code) getOrElse ReqWithoutActiveCode(code, reqId)
+                    case None             => fail
+                  }
+                case _: ReqCodeGroupId => fail
               }
           }
       }
@@ -92,12 +97,13 @@ object ProjectText {
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-abstract class ProjectText[Ctx <: Context, Out](project: Project, final val ctx: Ctx) {
+abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx: Ctx) {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Abstract
 
-  def text(text: Text.AnyOptional, live: Live): Out
+  protected def _text(text: Text.AnyOptional, live: Live): Out
+  protected def whenBlankButMandatory: Out
 
   def useCaseStepTextAndFlow(step: UseCaseStepFlowText.TextAndFlow[Text.AnyOptional, Set[UseCaseStepId]],
                              live: Live): Out
@@ -117,6 +123,12 @@ abstract class ProjectText[Ctx <: Context, Out](project: Project, final val ctx:
   // Derived: protected
 
   protected final val cfg = project.config
+
+  final def text(text: Text.AnyOptional, live: Live, mandatory: Mandatory): Out =
+    if (text.isEmpty && live.is(Live) && mandatory.is(Mandatory))
+      whenBlankButMandatory
+    else
+      _text(text, live)
 
   protected final def memoByReqId = Memo.by[Req, ReqId](_.id)
 
@@ -143,12 +155,15 @@ abstract class ProjectText[Ctx <: Context, Out](project: Project, final val ctx:
     ctx
 
   final def text(text: Text.AnyNonEmpty, live: Live): Out =
-    this.text(text.whole, live)
+    _text(text.whole, live)
+
+  final def manualIssue(text: Text.ManualIssue.NonEmptyText): Out =
+    _text(text.whole, Live)
 
   final val reqTitle: Req => Out =
     memoByReqId {
-      case gr: GenericReq => text(gr.title, gr live cfg.reqTypes)
-      case uc: UseCase    => text(uc.title, uc.liveUC)
+      case gr: GenericReq => text(gr.title, gr live cfg.reqTypes, Mandatory)
+      case uc: UseCase    => text(uc.title, uc.liveUC, Mandatory)
     }
 
   final def reqTitleById(id: ReqId): Out =
@@ -156,7 +171,7 @@ abstract class ProjectText[Ctx <: Context, Out](project: Project, final val ctx:
 
   final val codeGroupTitle: CodeGroup => Out =
     Memo.by((_: CodeGroup).id)(g =>
-      text(g.title, g.live))
+      text(g.title, g.live, Mandatory.Not))
 
   final val customTextField: CustomField.Text.Id => Req => Option[Out] =
     Memo { fid =>

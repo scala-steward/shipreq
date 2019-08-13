@@ -27,7 +27,7 @@ import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.base.ui.semantic.{Icon, Message}
 import shipreq.webapp.client.project.app.Style.reqtable.{page => *}
 import shipreq.webapp.client.project.feature._
-import shipreq.webapp.client.project.widgets.{FilterDeadButton, ProjectWidgets}
+import shipreq.webapp.client.project.widgets.{FilterDeadButton, FilterEditor, ProjectWidgets}
 
 object ReqTablePage {
 
@@ -40,15 +40,16 @@ object ReqTablePage {
       .componentWillReceiveProps($ => $.backend.onPropsChange($.currentProps, $.nextProps))
       .build
 
-  final case class StaticProps(stateAccess     : StateAccessPure[State],
-                               pxProject       : Px[Project],
-                               pxTextSearch    : Px[TextSearch],
-                               pxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
-                               reqDetailRC     : RouterCtl[ExternalPubid],
-                               updateIO        : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
-                               savedViewIO     : ServerSideProcInvoker[SavedViewCmd, ErrorMsg, VerifiedEvent.Seq],
-                               rowAsyncW       : AsyncFeature.Write.D1[Row.SourceId, ErrorMsg],
-                               savedViewAsyncW : AsyncFeature.Write.D0[ErrorMsg])
+  final case class StaticProps(stateAccess           : StateAccessPure[State],
+                               pxProject             : Px[Project],
+                               pxTextSearch          : Px[TextSearch],
+                               pxProjectWidgets      : Reusable[Px[ProjectWidgets.NoCtx]],
+                               pxFilterCompilerFromFD: Px[FilterDead => Filter.Valid.Compiler],
+                               reqDetailRC           : RouterCtl[ExternalPubid],
+                               updateIO              : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
+                               savedViewIO           : ServerSideProcInvoker[SavedViewCmd, ErrorMsg, VerifiedEvent.Seq],
+                               rowAsyncW             : AsyncFeature.Write.D1[Row.SourceId, ErrorMsg],
+                               savedViewAsyncW       : AsyncFeature.Write.D0[ErrorMsg])
 
   final case class Props(create        : CreateFeature.ReadWrite.ForProject,
                          editor        : EditorFeature.ReadWrite.ForProject,
@@ -131,14 +132,13 @@ object ReqTablePage {
     val setSelection: SetFn[RowSelection  ] = Reusable.fn.state(stateAccess zoomStateL State.selection).setStateFn
     val setModal    : SetFn[Modal.State   ] = Reusable.fn.state(stateAccess zoomStateL State.modal).setStateFn
 
-    // TODO Externalise this manualRefresh - actually...move into sjsreact
-    private var manualRefresh = List.empty[Px.ThunkM[_]]
+    private val manualPxs = Px.ManualCollection()
+
     private def pxProps[A: Reusability](f: Props => A): Px.ThunkM[A] = {
       val px = Px.props($).map(f).withReuse.manualRefresh
-      manualRefresh ::= px
+      manualPxs.add(px)
       px
     }
-    private val refreshPx = Callback(Px.refresh(manualRefresh: _*))
 
     val pxViewState        : Px[SavedViewLogic.State] = pxProps(_.state.view)
     val pxFilterDeadFalback: Px[FilterDead]           = pxProps(_.filterDead.value)
@@ -198,7 +198,8 @@ object ReqTablePage {
         v  <- pxActiveView
         pw <- pxProjectWidgets
         ts <- pxTextSearch
-      } yield Logic.rowsForTable(p, v, pw.plainText, ts)
+        fc <- pxFilterCompilerFromFD
+      } yield Logic.rowsForTable(p, v, pw.plainText, ts, fc(v.filterDead))
 
     val pxRowIdsWithWholeRowAsync: Px[Set[Row.SourceId]] =
       pxProps(_.rowAsync.keySet)
@@ -314,7 +315,7 @@ object ReqTablePage {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     def render(p: Props): VdomElement = {
-      refreshPx.runNow()
+      manualPxs.refresh()
       p.state.modal renderOrElse renderMain(p)
     }
 
@@ -391,6 +392,7 @@ object ReqTablePage {
         p.rowAsync,
         project.config,
         pxProjectWidgets.value(),
+        filterDead,
         modifyViewFn,
       ).render
 
@@ -426,7 +428,7 @@ object ReqTablePage {
     /** Synchronises the State of this page with external Props that affect it. */
     private val syncViewColumns: Callback =
       for {
-        _ <- refreshPx
+        _ <- manualPxs.refreshCB
         c <- pxColumnPlusAll.toCallback
         f = State.manualView.modify(_ filterColumns c.containsColumn)
         _ <- stateAccess modState f

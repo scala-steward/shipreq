@@ -6,6 +6,7 @@ import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.test._
+import Event._
 import WebappTestUtil._
 
 /**
@@ -81,6 +82,7 @@ object HashSchemeStabilityTest extends TestSuite {
         0xfff75860 ~ CfgTags,
         0x35ed6368 ~ DeletionReasons,
         0xf71674f7 ~ GenericReqs,
+        0x6ba12af0 ~ ManualIssues,
         0x7934b838 ~ ImplicationData,
         0x969d43a3 ~ ProjectName,
         0x724ff13d ~ PubidRegister,
@@ -92,13 +94,14 @@ object HashSchemeStabilityTest extends TestSuite {
       )
 
       'P3 - assertHashes(h, P3,
-        0x3e1ac0cb ~ CfgFields,
+        0xab6a202d ~ CfgFields,
         0x25b0e4e6 ~ CfgIssueTypes,
         0x36b43113 ~ CfgReqTypes,
         0x7e949e3c ~ CfgTags,
         0x17af358b ~ DeletionReasons,
         0x8090fed8 ~ GenericReqs,
         0x34c6056e ~ ImplicationData,
+        0x6ba12af0 ~ ManualIssues,
         0x3ae9403b ~ ProjectName,
         0x084cb8cc ~ PubidRegister,
         0x6f1d8f9b ~ ReqCodes,
@@ -109,13 +112,14 @@ object HashSchemeStabilityTest extends TestSuite {
       )
 
       'P4 - assertHashes(h, P4,
-        0x3e1ac0cb ~ CfgFields,
+        0xab6a202d ~ CfgFields,
         0x25b0e4e6 ~ CfgIssueTypes,
         0x36b43113 ~ CfgReqTypes,
         0x7e949e3c ~ CfgTags,
         0x17af358b ~ DeletionReasons,
         0x8090fed8 ~ GenericReqs,
         0x34c6056e ~ ImplicationData,
+        0x6ba12af0 ~ ManualIssues,
         0x537726aa ~ ProjectName,
         0x719d13b1 ~ PubidRegister,
         0x6f1d8f9b ~ ReqCodes,

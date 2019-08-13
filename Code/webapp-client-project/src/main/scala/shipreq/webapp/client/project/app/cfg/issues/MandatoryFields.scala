@@ -28,7 +28,7 @@ private[issues] object MandatoryFields {
   private val  ST = ReactS.FixCB[S]
   private type ST = ST.T[Unit]
 
-  private val changeListener = ChangeListener.store(rowStore)(_.customFieldTypes, _.config.fields.customFields.get)
+  private val changeListener = ChangeListener.store(rowStore)(_.allCustomFieldTypes, _.config.fields.customFields.get)
 
   val Component = ScalaComponent.builder[Props]("MandatoryFields")
     .initialStateFromProps(initialState)
@@ -42,8 +42,8 @@ private[issues] object MandatoryFields {
 
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
 
-    private val pxProject = Px.props($).map(_.global.unsafeProject()).withReuse.autoRefresh
-    private val labelFn   = pxProject map Field.nameFromProject
+    private val pxProjectConfig = Px.props($).map(_.global.unsafeProject().config).withReuse.autoRefresh
+    private val labelFn         = pxProjectConfig.map(Field.nameFromProjectConfig)
 
     private def save(id: CustomFieldId): CallbackTo[ST] =
       $.props.map(p =>
@@ -60,6 +60,13 @@ private[issues] object MandatoryFields {
 
     private val editable = editor.editableByRowStatus($)
 
+    private val renderTitle = {
+      val ed = Editors.checkboxEditor.imap(On <=> Mandatory).labelSuffix(_ => "Title")
+      <.div(
+        ^.key := "title",
+        ed render EditorI(Mandatory, "", None))
+    }
+
     private def renderStaticField(f: StaticField) =
       <.div(
         ^.key := f.name,
@@ -75,8 +82,11 @@ private[issues] object MandatoryFields {
 
     private def renderRows(p: Project, s: S): VdomNode = {
       val fs = p.config.fields.fields
-      HideDead(fs)(_ live p.config).toVdomArray(
-        _.fold(renderStaticField, renderCustomField(_, s)))
+      val a = VdomArray.empty()
+      a += renderTitle
+      for (f <- HideDead(fs)(_ live p.config))
+        a += f.fold(renderStaticField, renderCustomField(_, s))
+      a
     }
 
     def render(p: Props, s: S): VdomElement =

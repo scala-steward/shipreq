@@ -2,14 +2,11 @@ package shipreq.utils
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import nyaya.gen._
-import nyaya.test._
 import scala.annotation.tailrec
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.ShowSize
 import shipreq.webapp.base.{RandomData => $}
-import shipreq.utils.lib._
 import DataImplicits._
-import ShowSrcDataImp._
 
 object GenerateProject {
 
@@ -69,8 +66,8 @@ object GenerateProject {
     val reqTypeIds      = StaticReqType.values ++ reqtypes.keys
     val reqTypeIdSet    = reqTypeIds.whole.toSet
     val fields          = sample($.fieldSet2(reqTypeIdSet, tags.keySet, reqtypes.keySet), Size.CfgFields)
-    val cfg             = ProjectConfig(issues, ReqTypes(reqtypes), fields, tags)
-    val atagIds         = cfg.tags.valuesIterator.map(_.tag).filterSubType[ApplicableTag].map(_.id).toSet
+    val cfg             = ProjectConfig(issues, ReqTypes(reqtypes), fields, Tags(tags))
+    val atagIds         = cfg.tags.tree.valuesIterator.map(_.tag).filterSubType[ApplicableTag].map(_.id).toSet
     val reqsWithoutText = firstSample($.reqsWithoutText(cfg, genericReqCount, useCaseCount), 20)
     val reqIdSet        = reqsWithoutText.idIterator.toSet
     val reqIdG          = Gen tryGenChoose reqIdSet.toIndexedSeq
@@ -85,12 +82,15 @@ object GenerateProject {
     val p               = sample($.genProject(cfg, reqsWithoutText, reqCodes, reqTags, reqImps), Size.Reqs)
 
     val objName = s"Project_${Size.Reqs}"
-    val code    = ShowSrc.generateObject("shipreq.benchmark", objName, "project")(p)
+//    val code    = ShowSrc.generateObject("shipreq.benchmark", objName, "project")(p)
     val fout    = s"/tmp/$objName.scala"
+//
+    println(s"This used to create $fout but turned out to be a terrible idea.")
+    println("TODO: Save this generated project as binary or JSON or something.")
 
-    println()
-    println(s"Writing ${"%,d" format code.length} bytes to $fout ...")
-    writeFile(fout, code)
+//    println()
+//    println(s"Writing ${"%,d" format code.length} bytes to $fout ...")
+//    writeFile(fout, code)
     println("Done.")
   }
 

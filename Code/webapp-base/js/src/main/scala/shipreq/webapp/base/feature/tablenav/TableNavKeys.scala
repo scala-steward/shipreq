@@ -5,7 +5,7 @@ import org.scalajs.dom
 import org.scalajs.dom.ext.KeyCode
 import scala.annotation.elidable
 
-object TableNavKeys {
+final class TableNavKeys(implicit ts: TableStyle) {
 
   private implicit def autoSomeMovement(m: Movement): Option[Movement] =
     Some(m)

@@ -13,7 +13,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataValidators.{customIssueType => V, hashRefKey => VH}
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.util.TextMod
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes.CustomIssueTypeCrud
+import shipreq.webapp.base.protocol.UpdateConfigCmd
 import shipreq.webapp.base.ui.AutosizeTextarea
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.project.app.Style
@@ -27,7 +27,7 @@ import shipreq.webapp.base.protocol.ServerSideProcInvoker
 
 private[issues] object CustomIssueTypes {
 
-  final case class Props(remote    : ServerSideProcInvoker[CustomIssueTypeCrud.RequestType, ErrorMsg, VerifiedEvent.Seq],
+  final case class Props(remote    : ServerSideProcInvoker[UpdateConfigCmd.ToModifyCustomIssueTypes, ErrorMsg, VerifiedEvent.Seq],
                          global    : Global,
                          filterDead: StateSnapshot[FilterDead],
                          usageShow : Usage.Show) {
@@ -38,7 +38,7 @@ private[issues] object CustomIssueTypes {
   val fields = FieldSet2[CustomIssueType](_.key.value, _.desc getOrElse "")(("", ""))
   val storesAndState = TypicalStoresAndState(fields).keyedBy[CustomIssueTypeId]
   import storesAndState._
-  private val changeListener = ChangeListener.store(savedRowStoreS)(_.customIssueTypes, _.config.customIssueTypes.get)
+  private val changeListener = ChangeListener.store(savedRowStoreS)(_.customIssueTypes.all, _.config.customIssueTypes.get)
 
   val Component =
     ScalaComponent.builder[Props]("Cfg: User-Defined Issue Types")
@@ -55,7 +55,7 @@ private[issues] object CustomIssueTypes {
 
   private def validatorState(k: Option[CustomIssueTypeId], g: CallbackTo[Global]): S => V.State = {
     val tagData: Px[List[(Option[TagId], HashRefKey)]] =
-      Px.callback(g.map(_.unsafeProject().config.tags)).withReuse.autoRefresh
+      Px.callback(g.map(_.unsafeProject().config.tags.tree)).withReuse.autoRefresh
         .map(_.valuesIterator.map(t => t.tag.keyO.map(k => (t.tag.id.some, k))).filterDefined.toList)
 
     val tags: VH.SubState[TagId] =
@@ -75,7 +75,12 @@ private[issues] object CustomIssueTypes {
     private val usageShow  = Px.props($).map(_.usageShow).withReuse.manualRefresh
 
     private val crudIO =
-      Px.props($).withReuse.autoRefresh.map(p => CrudActionIO(p.remote))
+      Px.props($).withReuse.autoRefresh.map(p => CrudActionIO(p.remote)(
+        create  = UpdateConfigCmd.CustomIssueTypeCreate,
+        update  = UpdateConfigCmd.CustomIssueTypeUpdate,
+        delete  = UpdateConfigCmd.CustomIssueTypeDelete,
+        restore = UpdateConfigCmd.CustomIssueTypeRestore,
+      ).contramapValues(UpdateConfigCmd.CustomIssueTypeValues.tupled))
 
     private val supp = TypicalSupp(storesAndState)(crudIO.value(), $)
 
@@ -96,7 +101,8 @@ private[issues] object CustomIssueTypes {
           $ runState _)
         ).extract
 
-      supp.addEditorFeatures2(e)(saveFn, _._1.customIssues.subject)
+      e.applyRowUpdateAndRevert(savedRowStoreS, newRowStoreS)(_._1.customIssues.subject)
+        .applyOnEditFinishedK(saveFn)(_._1.customIssues.subject)
     }
 
     private val usageFn = Usage((_: CustomIssueType).id)(

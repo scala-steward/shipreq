@@ -7,11 +7,13 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.{Filter, FilterAst, IntensionalReqSet}
 import shipreq.webapp.base.filter.Filter.Implicits._
+import shipreq.webapp.base.sort.SortMethod
 import shipreq.webapp.base.text.{AtomTC, ProjectText}
 import DataImplicits._
 import BinCodecGeneric._
 import BinCodecBaseData._
 import BoopickleMacros._
+import shipreq.webapp.base.issue.IssueCategory
 
 object BinCodecMemberData {
 
@@ -19,6 +21,7 @@ object BinCodecMemberData {
     pickleIMap(d.emptyIMap)
 
   implicit lazy val pickleLive         : Pickler[Live               ] = pickleBool(Live)
+  implicit lazy val pickleOn           : Pickler[On                 ] = pickleBool(On)
   implicit lazy val pickleImplRequired : Pickler[ImplicationRequired] = pickleBool(ImplicationRequired)
   implicit lazy val pickleMandatory    : Pickler[Mandatory          ] = pickleBool(Mandatory)
   implicit lazy val pickleDeletable    : Pickler[Deletable          ] = pickleBool(Deletable)
@@ -28,7 +31,8 @@ object BinCodecMemberData {
   implicit lazy val pickleUseCaseId                = pickleTaggedI(UseCaseId                 ).reuseByUnivEq
   implicit lazy val pickleUseCaseStepId            = pickleTaggedI(UseCaseStepId             ).reuseByUnivEq
   implicit lazy val pickleGenericReqId             = pickleTaggedI(GenericReqId              ).reuseByUnivEq
-  implicit lazy val pickleReqCodeId                = pickleTaggedI(ReqCodeId                 ).reuseByUnivEq
+  implicit lazy val pickleApReqCodeId              = pickleTaggedI(ApReqCodeId.apply         ).reuseByUnivEq
+  implicit lazy val pickleReqCodeGroupId           = pickleTaggedI(ReqCodeGroupId            ).reuseByUnivEq
   implicit lazy val pickleCustomReqTypeId          = pickleTaggedI(CustomReqTypeId           ).reuseByUnivEq
   implicit lazy val pickleCustomIssueTypeId        = pickleTaggedI(CustomIssueTypeId         ).reuseByUnivEq
   implicit lazy val pickleApplicableTagId          = pickleTaggedI(ApplicableTagId           ).reuseByUnivEq
@@ -46,6 +50,7 @@ object BinCodecMemberData {
   implicit lazy val pickleReqId        : Pickler[ReqId        ] = pickleADT
   implicit lazy val pickleSubReqId     : Pickler[SubReqId     ] = pickleADT
   implicit lazy val pickleReqOrSubReqId: Pickler[ReqOrSubReqId] = pickleADT
+  implicit lazy val pickleReqCodeId    : Pickler[ReqCodeId    ] = pickleADT
 
   implicit lazy val pickleImplications: Pickler[Implications] = pickleCaseClass
 
@@ -80,10 +85,10 @@ object BinCodecMemberData {
     override def webAddress    [T <: PlainTextMarkup](t: T): Pickler[t.WebAddress    ] = pickleCaseClass
     override def emailAddress  [T <: PlainTextMarkup](t: T): Pickler[t.EmailAddress  ] = pickleCaseClass
     override def mathTeX       [T <: PlainTextMarkup](t: T): Pickler[t.MathTeX       ] = pickleCaseClass
-    override def reqRef        [T <: ReqRef         ](t: T): Pickler[t.ReqRef        ] = pickleCaseClass
-    override def codeRef       [T <: ReqRef         ](t: T): Pickler[t.CodeRef       ] = pickleCaseClass
+    override def reqRef        [T <: ContentRef     ](t: T): Pickler[t.ReqRef        ] = pickleCaseClass
+    override def codeRef       [T <: ContentRef     ](t: T): Pickler[t.CodeRef       ] = pickleCaseClass
+    override def useCaseStepRef[T <: ContentRef     ](t: T): Pickler[t.UseCaseStepRef] = pickleCaseClass
     override def tagRef        [T <: TagRef         ](t: T): Pickler[t.TagRef        ] = pickleCaseClass
-    override def useCaseStepRef[T <: UseCaseStepRef ](t: T): Pickler[t.UseCaseStepRef] = pickleCaseClass
 
     override def issue[T <: Issue](t: T)(implicit h: Pickler[Text.InlineIssueDesc.OptionalText]): Pickler[t.Issue] =
       pickleCaseClass
@@ -98,15 +103,15 @@ object BinCodecMemberData {
   implicit lazy val pickleProjectTextContextNone: Pickler[ProjectText.Context.None] = pickleCaseClass
   implicit lazy val pickleProjectTextContext    : Pickler[ProjectText.Context     ] = pickleADT
 
-  implicit lazy val pickleReqDataText       : Pickler[ReqData.Text       ] = pickleMap
-  implicit lazy val pickleReqCodeNode       : Pickler[ReqCode.Node       ] = pickleCaseClass // xmap[String] already reuses
-  implicit lazy val pickleLiveCodeGroup     : Pickler[LiveCodeGroup      ] = pickleCaseClass
-  implicit lazy val pickleDeadCodeGroup     : Pickler[DeadCodeGroup      ] = pickleCaseClass
-  implicit lazy val pickleCodeGroup         : Pickler[CodeGroup          ] = pickleADT
-  implicit lazy val pickleReqCodeData       : Pickler[ReqCode.Data       ] = derivePickler
-  implicit lazy val pickleReqCodeIdAndValue : Pickler[ReqCode.IdAndValue ] = pickleCaseClass
-  implicit lazy val pickleReqCodeTrie       : Pickler[ReqCode.Trie       ] = pickleTrie
-  implicit lazy val pickleReqCodes          : Pickler[ReqCodes           ] = pickleCaseClass
+  implicit lazy val pickleReqDataText        : Pickler[ReqData.Text        ] = pickleMap
+  implicit lazy val pickleReqCodeNode        : Pickler[ReqCode.Node        ] = pickleCaseClass // xmap[String] already reuses
+  implicit lazy val pickleLiveCodeGroup      : Pickler[LiveCodeGroup       ] = pickleCaseClass
+  implicit lazy val pickleDeadCodeGroup      : Pickler[DeadCodeGroup       ] = pickleCaseClass
+  implicit lazy val pickleCodeGroup          : Pickler[CodeGroup           ] = pickleADT
+  implicit lazy val pickleReqCodeData        : Pickler[ReqCode.Data        ] = derivePickler
+  implicit lazy val pickleApReqCodeIdAndValue: Pickler[ApReqCodeId.AndValue] = pickleCaseClass
+  implicit lazy val pickleReqCodeTrie        : Pickler[ReqCode.Trie        ] = pickleTrie
+  implicit lazy val pickleReqCodes           : Pickler[ReqCodes            ] = pickleCaseClass
 
   implicit lazy val pickleStaticReqTypeUC: Pickler[StaticReqType.UseCase.type] = pickleObject
   implicit lazy val pickleStaticReqType  : Pickler[StaticReqType             ] = pickleADT
@@ -132,12 +137,14 @@ object BinCodecMemberData {
   implicit lazy val pickleCustomReqTypes  : Pickler[ReqTypes.Custom    ] = pickleIMapD
   implicit lazy val pickleReqTypes        : Pickler[ReqTypes           ] = pickleCaseClass
 
-  implicit lazy val pickleTagId        : Pickler[TagId        ] = pickleADT
-  implicit lazy val pickleApplicableTag: Pickler[ApplicableTag] = pickleCaseClass
-  implicit lazy val pickleTagGroup     : Pickler[TagGroup     ] = pickleCaseClass
-  implicit lazy val pickleTag          : Pickler[Tag          ] = pickleADT
-  implicit lazy val pickleTagInTree    : Pickler[TagInTree    ] = pickleCaseClass
-  implicit lazy val pickleTagTree      : Pickler[TagTree      ] = pickleIMap(TagTree.empty)
+  implicit lazy val pickleTagId          : Pickler[TagId              ] = pickleADT
+  implicit lazy val pickleApplicableTag  : Pickler[ApplicableTag      ] = pickleCaseClass
+  implicit lazy val pickleTagGroup       : Pickler[TagGroup           ] = pickleCaseClass
+  implicit lazy val pickleTag            : Pickler[Tag                ] = pickleADT
+  implicit lazy val pickleTagInTree      : Pickler[TagInTree          ] = pickleCaseClass
+  implicit lazy val pickleTagTree        : Pickler[TagTree            ] = pickleIMap(TagTree.empty)
+  implicit lazy val pickleTags           : Pickler[Tags               ] = pickleCaseClass
+  implicit lazy val pickleTagPovRelations: Pickler[TagInTree.Relations] = pickleCaseClass
 
   implicit lazy val pickleApplReqTypes     : Pickler[Field.ApplicableReqTypes             ] = pickleISubset
   implicit lazy val pickleCustomFieldTypeIM: Pickler[CustomFieldType.Implication.type     ] = pickleObject
@@ -166,6 +173,8 @@ object BinCodecMemberData {
 
   implicit lazy val pickleDeletionReasonIdO = optionPickler(pickleTaggedI(DeletionReasonId)).reuseByUnivEq
   implicit lazy val pickleDeletionReasons   = pickleCaseClass[DeletionReasons]
+
+  implicit lazy val pickleIssueCategory: Pickler[IssueCategory] = derivePickler
 
   object ReqTableDataPicklers {
     import reqtable._
@@ -216,29 +225,34 @@ object BinCodecMemberData {
 
   implicit val pickleValidFilter: Pickler[Filter.Valid] = {
     import Filter._
-    implicit val pickleNonEmptyVectorUnit : Pickler[NonEmptyVector[Unit]                   ] = implicitly[Pickler[Int]].xmap(NonEmptyVector force Vector.fill(_)(()))(_.length)
-    implicit val pickleNonEmptySetInt     : Pickler[NonEmptySet[Int]                       ] = pickleNES
-    implicit def pickleIRSetS [A: Pickler]: Pickler[IntensionalReqSet.SomeOfType[A]        ] = pickleCaseClass
-    implicit def pickleIRSetW [A: Pickler]: Pickler[IntensionalReqSet.WholeType [A]        ] = pickleCaseClass
-    implicit def pickleIRSet  [A: Pickler]: Pickler[IntensionalReqSet           [A]        ] = pickleADT
-    implicit val pickleValidReqSubset     : Pickler[Valid.ReqSubset                        ] = pickleADT
-    implicit val pickleValidReqSet        : Pickler[Valid.ReqSet                           ] = pickleNEV
-    implicit val pickleValidAttr          : Pickler[FilterAst.Attr                         ] = derivePickler
-    implicit val pickleValidText          : Pickler[FilterAst.Text                         ] = pickleCaseClass
-    implicit val pickleValidRegex         : Pickler[FilterAst.Regex                        ] = pickleCaseClass
-    implicit val pickleValidPresence      : Pickler[FilterAst.Presence      [Valid.Attr]   ] = pickleCaseClass
-    implicit val pickleValidLack          : Pickler[FilterAst.Lack          [Valid.Attr]   ] = pickleCaseClass
-    implicit val pickleValidReqs          : Pickler[FilterAst.Reqs          [Valid.ReqSet] ] = pickleCaseClass
-    implicit val pickleValidReqType       : Pickler[FilterAst.ReqType       [Valid.ReqType]] = pickleCaseClass
-    implicit val pickleValidHashRef       : Pickler[FilterAst.HashRef       [Valid.HashTag]] = pickleCaseClass
-    implicit val pickleValidImpliesAnyOf  : Pickler[FilterAst.ImpliesAnyOf  [Valid.ReqSet] ] = pickleCaseClass
-    implicit val pickleValidImpliedByAnyOf: Pickler[FilterAst.ImpliedByAnyOf[Valid.ReqSet] ] = pickleCaseClass
-    implicit val pickleValidAllOf         : Pickler[FilterAst.AllOf         [Unit]         ] = pickleCaseClass
-    implicit val pickleValidAnyOf         : Pickler[FilterAst.AnyOf         [Unit]         ] = pickleCaseClass
-    implicit val pickleValidNot           : Pickler[FilterAst.Not           [Unit]         ] = pickleCaseClass
-    implicit val pickleValidF             : Pickler[ValidF                  [Unit]         ] = pickleADT
+    implicit val pickleNonEmptyVectorUnit : Pickler[NonEmptyVector[Unit]                    ] = implicitly[Pickler[Int]].xmap(NonEmptyVector force Vector.fill(_)(()))(_.length)
+    implicit val pickleNonEmptySetInt     : Pickler[NonEmptySet[Int]                        ] = pickleNES
+    implicit def pickleIRSetS [A: Pickler]: Pickler[IntensionalReqSet.SomeOfType[A]         ] = pickleCaseClass
+    implicit def pickleIRSetW [A: Pickler]: Pickler[IntensionalReqSet.WholeType [A]         ] = pickleCaseClass
+    implicit def pickleIRSet  [A: Pickler]: Pickler[IntensionalReqSet           [A]         ] = pickleADT
+    implicit val pickleValidReqSubset     : Pickler[Valid.ReqSubset                         ] = pickleADT
+    implicit val pickleValidReqSet        : Pickler[Valid.ReqSet                            ] = pickleNEV
+    implicit val pickleValidAttr          : Pickler[FilterAst.Attr                          ] = derivePickler
+    implicit val pickleValidText          : Pickler[FilterAst.Text                          ] = pickleCaseClass
+    implicit val pickleValidRegex         : Pickler[FilterAst.Regex                         ] = pickleCaseClass
+    implicit val pickleValidPresence      : Pickler[FilterAst.Presence      [Valid.Attr]    ] = pickleCaseClass
+    implicit val pickleValidHasIssue      : Pickler[FilterAst.HasIssue      [Valid.IssueCat]] = pickleCaseClass
+    implicit val pickleValidReqs          : Pickler[FilterAst.Reqs          [Valid.ReqSet]  ] = pickleCaseClass
+    implicit val pickleValidReqType       : Pickler[FilterAst.ReqType       [Valid.ReqType] ] = pickleCaseClass
+    implicit val pickleValidHashRef       : Pickler[FilterAst.HashRef       [Valid.HashTag] ] = pickleCaseClass
+    implicit val pickleValidImpliesAnyOf  : Pickler[FilterAst.ImpliesAnyOf  [Valid.ReqSet]  ] = pickleCaseClass
+    implicit val pickleValidImpliedByAnyOf: Pickler[FilterAst.ImpliedByAnyOf[Valid.ReqSet]  ] = pickleCaseClass
+    implicit val pickleValidAllOf         : Pickler[FilterAst.AllOf         [Unit]          ] = pickleCaseClass
+    implicit val pickleValidAnyOf         : Pickler[FilterAst.AnyOf         [Unit]          ] = pickleCaseClass
+    implicit val pickleValidNot           : Pickler[FilterAst.Not           [Unit]          ] = pickleCaseClass
+    implicit val pickleValidF             : Pickler[ValidF                  [Unit]          ] = pickleADT
     pickleFix[ValidF]
   }
+
+  implicit lazy val pickleManualIssueId: Pickler[ManualIssueId   ] = pickleTaggedI(ManualIssueId)
+  implicit lazy val pickleManualIssue  : Pickler[ManualIssue     ] = pickleCaseClass
+  implicit lazy val pickleManualIssueIM: Pickler[ManualIssue.IMap] = pickleIMap(ManualIssue.emptyIMap)
+  implicit lazy val pickleManualIssues : Pickler[ManualIssues    ] = pickleCaseClass
 
   implicit lazy val pickleIdCeilings    : Pickler[IdCeilings    ] = pickleCaseClass
   implicit lazy val pickleProjectConfig : Pickler[ProjectConfig ] = pickleCaseClass

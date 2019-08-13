@@ -19,9 +19,9 @@ trait AtomTC[TC[_]] {
   def webAddress    [T <: Atom.PlainTextMarkup](t: T): TC[t.WebAddress    ]
   def emailAddress  [T <: Atom.PlainTextMarkup](t: T): TC[t.EmailAddress  ]
   def mathTeX       [T <: Atom.PlainTextMarkup](t: T): TC[t.MathTeX       ]
-  def reqRef        [T <: Atom.ReqRef         ](t: T): TC[t.ReqRef        ]
-  def codeRef       [T <: Atom.ReqRef         ](t: T): TC[t.CodeRef       ]
-  def useCaseStepRef[T <: Atom.UseCaseStepRef ](t: T): TC[t.UseCaseStepRef]
+  def reqRef        [T <: Atom.ContentRef     ](t: T): TC[t.ReqRef        ]
+  def codeRef       [T <: Atom.ContentRef     ](t: T): TC[t.CodeRef       ]
+  def useCaseStepRef[T <: Atom.ContentRef     ](t: T): TC[t.UseCaseStepRef]
   def tagRef        [T <: Atom.TagRef         ](t: T): TC[t.TagRef        ]
 
   def issue        [T <: Atom.Issue     ](t: T)(implicit x: TC[Text.InlineIssueDesc.OptionalText]): TC[t.Issue]
@@ -45,6 +45,7 @@ class TextTC[TC[_]](a: AtomTC[TC]) {
   implicit val ( codeGroupTitleA,  codeGroupTitleO,  codeGroupTitleN) = generateTypeclasses(Text.CodeGroupTitle)
   implicit val (customTextFieldA, customTextFieldO, customTextFieldN) = generateTypeclasses(Text.CustomTextField)
   implicit val ( deletionReasonA,  deletionReasonO,  deletionReasonN) = generateTypeclasses(Text.DeletionReason)
+  implicit val (    manualIssueA,     manualIssueO,     manualIssueN) = generateTypeclasses(Text.ManualIssue)
   implicit val (    useCaseStepA,     useCaseStepO,     useCaseStepN) = generateTypeclasses(Text.UseCaseStep)
   implicit val (   useCaseTitleA,    useCaseTitleO,    useCaseTitleN) = generateTypeclasses(Text.UseCaseTitle)
 }

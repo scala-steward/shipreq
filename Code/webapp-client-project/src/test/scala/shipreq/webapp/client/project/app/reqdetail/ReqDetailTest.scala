@@ -5,6 +5,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.UiText
+import shipreq.webapp.base.test.{SampleProject5, SampleProject6}
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.app.root.Routes.Page
 import shipreq.webapp.client.project.app.ProjectSpaTestDsl
@@ -15,33 +16,35 @@ object ReqDetailTest extends TestSuite {
 
   PrepareEnv()
 
-  def runTest(ep: ExternalPubid, error: Boolean)(p: *.Plan): Unit = {
+  private def defaultProject = SampleProject5.project
+
+  private def runTest(ep: ExternalPubid, error: Boolean, project: Project = defaultProject)(p: *.Plan): Unit = {
 
     import ProjectSpaTestDsl._
 
     ProjectSpaTestDsl.runTest(
       liftReqDetailTests(p).asAction(s"Req Detail (${PlainText.pubid(ep)})"),
       page = Page.ReqDetail(ep),
+      project = project,
       rd = State(ep, if (error) Mode.Error else Mode.Details))
   }
 
-  def testError(ep: ExternalPubid, error: String): Unit =
+  private def testError(ep: ExternalPubid, error: String): Unit =
     runTest(ep, true)(Plan invariants checkErrorReason(error))
 
-  def test(ep: ExternalPubid)(test: *.Plan = *.emptyPlan): Unit = {
-    runTest(ep, false)(test)
-  }
+  private def test(ep: ExternalPubid, project: Project = defaultProject)(test: *.Plan = *.emptyPlan): Unit =
+    runTest(ep, false, project)(test)
 
   // yeah i'm being lazy
-  def testLifeRowInnerText(expect: String) =
+  private def testLifeRowInnerText(expect: String) =
     *.focus("Life row").value(_.obs.generic.lifeRow.innerText).assert(expect)
 
-  val reporterFieldExistence =
+  private val reporterFieldExistence =
     visibleFields.assert.existenceOf("Reporter")(_.obs.generic.filterDead is ShowDead)
 
-  val liveCanDelete  = UiText.Life.live + "." + UiText.Life.delete
-  val deadCanRestore = UiText.Life.dead + "." + UiText.Life.restore
-  val deadNoRestore  = UiText.Life.dead + "."
+  private val liveCanDelete  = UiText.Life.live + "." + UiText.Life.delete
+  private val deadCanRestore = UiText.Life.dead + "." + UiText.Life.restore
+  private val deadNoRestore  = UiText.Life.dead + "."
 
   override def tests = Tests {
 
@@ -51,6 +54,7 @@ object ReqDetailTest extends TestSuite {
     'gr - test("FR-1")(Plan invariants testLifeRowInnerText(liveCanDelete))
 
     'uc {
+
       'tree - test("UC-1")(Plan.action( allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1")
           +> addTailStepEC           +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1", "1.E.1")
           >> delStep("1.1")          +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1")
@@ -100,6 +104,41 @@ object ReqDetailTest extends TestSuite {
           +> life.assert(Dead)
           +> tailStepAC.test("doesn't exist")(_.isEmpty)
           +> tailStepEC.test("doesn't exist")(_.isEmpty)
+      ))
+
+      'deadFlow - test("UC-2", SampleProject6.project)(Plan.action(
+           addStep("2.0")
+        >> addStep("2.0.1")
+        >> addStep("2.0.2")
+        >> addStep("2.0.3")
+        >> addStep("2.0.4")
+        >> addStep("2.0.5")
+        +> allSteps.assert("2.0", "2.0.1", "2.0.2", "2.0.3", "2.0.4", "2.0.5", "2.0.6")
+
+        >> editStepText("2.0.3", "cat <-- .0.1 .0.2 --> .0.4 .0.5")
+        >> delStep("2.0.4")
+        >> delStep("2.0.2")
+        +> allSteps.assert("2.0", "2.0.1", "2.0.2", "2.0.3", "2.0.4")
+        +> stepText("2.0.2").assert("cat←2.0.1→2.0.3")
+
+        >> filterDeadToggle // ShowDead
+        +> allSteps.assert("2.0", "2.0.1", "2.0.X.1", "2.0.2", "2.0.X.2", "2.0.3", "2.0.4")
+        +> stepText("2.0.2").assert("cat←2.0.1, 2.0.X.1→2.0.3, 2.0.X.2")
+
+        >> filterDeadToggle // HideDead
+        +> allSteps.assert("2.0", "2.0.1", "2.0.2", "2.0.3", "2.0.4")
+        +> stepText("2.0.2").assert("cat←2.0.1→2.0.3")
+        >> editStepText("2.0.2", "cat <-- 2.0.1 --> 2.0.3", "dog --> .0.4")
+        +> stepText("2.0.2").assert("dog→2.0.4")
+
+        >> filterDeadToggle // ShowDead
+        +> allSteps.assert("2.0", "2.0.1", "2.0.X.1", "2.0.2", "2.0.X.2", "2.0.3", "2.0.4")
+        +> stepText("2.0.2").assert("dog←2.0.X.1→2.0.4, 2.0.X.2")
+
+        >> restoreStep("2.0.X.2")
+        >> restoreStep("2.0.X.1")
+        +> allSteps.assert("2.0", "2.0.1", "2.0.2", "2.0.3", "2.0.4", "2.0.5", "2.0.6")
+        +> stepText("2.0.3").assert("dog←2.0.2→2.0.4, 2.0.6")
       ))
     }
 

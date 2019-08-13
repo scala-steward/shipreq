@@ -1,5 +1,6 @@
 package shipreq.webapp.base.text
 
+import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import nyaya.gen._
 import nyaya.prop._
 import nyaya.test.PropTest._

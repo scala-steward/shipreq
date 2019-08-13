@@ -5,10 +5,11 @@ import japgolly.scalajs.react.{Callback, CallbackTo}
 import japgolly.scalajs.react.extra.Px
 import java.time.Instant
 import scala.annotation.tailrec
-import scalaz.{-\/, \/-}
+import scalaz.{-\/, Need, \/-}
 import shipreq.webapp.base.data.{Project, ProjectMetaData}
 import shipreq.webapp.base.event.{ApplyEvent, EventOrd, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.data.TCB
+import shipreq.webapp.base.issue.Issues
 import shipreq.webapp.client.project.lib.DataReusability.reusabilityProject
 
 /**
@@ -42,7 +43,7 @@ final case class ProjectState(projectAndOrd  : ProjectAndOrd,
     !futureEvents.iterator.map(_.ord).contains(projectAndOrd.nextOrd),
     s"Error: applicable event found in futureEvents. $descState")
 
-  def addEvents(events: VerifiedEvent.Seq): Option[(ProjectState, VerifiedEvent.Seq)] = {
+  def addEvents(events: VerifiedEvent.Seq): Option[ProjectState.Update] = {
     val newEvents = ord.fold(events)(o => events.filter(_.ord > o))
     val pendingEvents = futureEvents ++ newEvents
     ProjectState.removeConsecutive(pendingEvents, _.immediatelyFollowsLatest(ord)) match {
@@ -53,7 +54,7 @@ final case class ProjectState(projectAndOrd  : ProjectAndOrd,
             val pao2 = ProjectAndOrd(p2, Some(ves.lastKey.ord.asLatest))
             val md2  = projectMetaData.applyEvents(ves, Instant.now())
             val s2   = ProjectState(pao2, md2, remainingFutureEvents)
-            Some((s2, ves.values))
+            Some(ProjectState.Update(s2, ves.values))
           case -\/(err) =>
             // TODO Do more when VerifiedEvent application fails
             throw new RuntimeException(s"Update failed. $err")
@@ -64,19 +65,23 @@ final case class ProjectState(projectAndOrd  : ProjectAndOrd,
           None
         else {
           val s2 = copy(futureEvents = pendingEvents)
-          Some((s2, VerifiedEvent.Seq.empty))
+          Some(ProjectState.Update(s2, VerifiedEvent.Seq.empty))
         }
     }
   }
 
   def addEventsSimple(events: VerifiedEvent.Seq): ProjectState =
-    addEvents(events).fold(this)(_._1)
+    addEvents(events).fold(this)(_.newState)
 }
 
 object ProjectState {
 
   def init(p: ProjectAndOrd, md: ProjectMetaData): ProjectState =
     ProjectState(p, md, VerifiedEvent.Seq.empty)
+
+  final case class Update(newState: ProjectState, newlyAppliedEvents: VerifiedEvent.Seq) {
+    def newlyAppliedEventsNE = VerifiedEvent.NonEmptySeq.maybe(newlyAppliedEvents)
+  }
 
   private[ProjectState] def removeConsecutive(events: VerifiedEvent.Seq, headFilter: EventOrd => Boolean): Option[(VerifiedEvent.NonEmptySeq, VerifiedEvent.Seq)] =
     events.headOption
@@ -113,22 +118,19 @@ object ProjectState {
     val pxProject: Px[Project] =
       _pxProject
 
-    private def updateState(s2: ProjectState, newEvents: VerifiedEvent.Seq): Callback =
+    private def updateState(u: Update): Callback =
       Callback {
 //        if (s2.futureEvents.nonEmpty)
 //          console.warn(s"Not all events applied: stuck at #${s2.latestEventOrd.value} pending ${s2.futureEventRange}")
-        _state = s2
-        if (newEvents.nonEmpty)
+        _state = u.newState
+        if (u.newlyAppliedEvents.nonEmpty)
           _pxProject.refresh()
       }
 
     def applyEventSeqCB(ves: VerifiedEvent.Seq): Callback =
       Callback.unless(ves.isEmpty)(
         stateCB.flatMap { s1 =>
-          s1.addEvents(ves) match {
-            case Some((s2, ves2)) => updateState(s2, ves2)
-            case None             => Callback.empty
-          }
+          Callback.traverseOption(s1.addEvents(ves))(updateState)
         }
       )
 

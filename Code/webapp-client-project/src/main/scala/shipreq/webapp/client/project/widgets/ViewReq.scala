@@ -8,13 +8,14 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.project.feature.EditorFeature
-import ProjectWidgets.emptySpan
 import ViewReq._
 
 /**
   * Easy means to view/render a requirement.
   */
-final case class ViewReq(data: Data, pw: ProjectWidgets.AnyCtx, fmtReqTypeShort: Boolean = true) {
+final case class ViewReq(data           : Data,
+                         pw             : ProjectWidgets.AnyCtx,
+                         fmtReqTypeShort: Boolean) {
 
   def reqType: VdomElement =
     (if (fmtReqTypeShort) pw.reqTypeShort else pw.reqTypeFull)(data.req.reqTypeId)
@@ -22,11 +23,17 @@ final case class ViewReq(data: Data, pw: ProjectWidgets.AnyCtx, fmtReqTypeShort:
   def codes: VdomElement =
     <.div(pw.reqCodes(data.codes))
 
-  def imps(dir: Direction): VdomElement =
-    pw.implicationList(data.generalImps(dir))
+  def imps(dir: Direction): VdomElement = {
+    val imps      = data.generalImps(dir)
+    val mandatory = Mandatory.when(data.impsAreMandatory && dir.is(Backwards))
+    pw.implicationList(imps, data.live, mandatory)
+  }
 
-  def imps(id: CustomField.Implication.Id): VdomElement =
-    pw.implicationList(data.customImps(id))
+  def imps(id: CustomField.Implication.Id): VdomElement = {
+    val imps      = data.customImps(id)
+    val mandatory = Mandatory.when(data.mandatoryFields.contains(id))
+    pw.implicationList(imps, data.live, mandatory)
+  }
 
   def imps(scope: ImplicationScope): VdomElement =
     scope.fold(imps(_), imps(_))
@@ -37,17 +44,28 @@ final case class ViewReq(data: Data, pw: ProjectWidgets.AnyCtx, fmtReqTypeShort:
   def pastPubids: VdomElement =
     pw pastPubids data.pastPubids
 
-  def tags: VdomElement =
-    pw.tagList(data.generalTags)
+  private val tagValidity: ApplicableTagId => Validity =
+    Invalid when data.conflictingTags.contains(_)
 
-  def tags(id: CustomField.Tag.Id): VdomElement =
-    pw.tagList(data.customTags(id))
+  def tags: VdomElement =
+    pw.tagList(data.generalTags, data.live, Mandatory.Not, tagValidity)
+
+  def tags(id: CustomField.Tag.Id): VdomElement = {
+    val tags      = data.customTags(id)
+    val mandatory = Mandatory.when(data.mandatoryFields.contains(id))
+    pw.tagList(tags, data.live, mandatory, tagValidity)
+  }
 
   def tags(id: Option[CustomField.Tag.Id]): VdomElement =
     id.fold(tags)(tags(_))
 
   def text(id: CustomField.Text.Id): VdomElement =
-    pw.customTextField(id)(data.req) getOrElse[VdomTag] emptySpan
+    pw.customTextField(id)(data.req).getOrElse[VdomTag] {
+      if (data.live.is(Live) && data.mandatoryFields.contains(id))
+        ProjectWidgets.blankButMandatory
+      else
+        ProjectWidgets.emptySpan
+    }
 
   def title: VdomElement =
     pw.reqTitle(data.req)
@@ -73,35 +91,46 @@ final case class ViewReq(data: Data, pw: ProjectWidgets.AnyCtx, fmtReqTypeShort:
 
 object ViewReq {
 
-  final case class Data(req        : Req,
-                        codes      : Traversable[ReqCode.Value],
-                        generalTags: Vector[ApplicableTagId],
-                        customTags : CustomField.Tag.Id => Vector[ApplicableTagId],
-                        generalImps: Direction => Vector[Pubid],
-                        customImps : CustomField.Implication.Id => Vector[Pubid],
-                        pastPubids : SortedSet[ExternalPubid]) {
+  final case class Data(req             : Req,
+                        live            : Live,
+                        codes           : Traversable[ReqCode.Value],
+                        generalTags     : Vector[ApplicableTagId],
+                        customTags      : CustomField.Tag.Id => Vector[ApplicableTagId],
+                        conflictingTags : Set[ApplicableTagId],
+                        generalImps     : Direction => Vector[Pubid],
+                        customImps      : CustomField.Implication.Id => Vector[Pubid],
+                        pastPubids      : SortedSet[ExternalPubid],
+                        impsAreMandatory: Boolean,
+                        mandatoryFields : CustomField.Lists) {
 
     def apply(pw: ProjectWidgets.AnyCtx): ViewReq =
-      ViewReq(this, pw)
+      ViewReq(this, pw, true)
   }
 
   object Data {
 
     def fromProject(id: ReqId, project: Project, filterDead: FilterDead): Data = {
-      val req             = project.content.reqs.need(id)
-      val pubidSortKeyFn  = DataLogic.pubidSortKeyFn(project.config)
-      val impFilter       = DataLogic.impValueFilter(project.config, filterDead)
-      val customImpLookup = DataLogic.customFieldImps(project, impFilter)
-      val tagDist         = DataLogic.tagFieldDist(project.config, filterDead, _ => true)
-      val tagLookup       = DataLogic.tagLookup(project, filterDead)
-      val tagOrderByName  = DataLogic.tagOrderByName(project.config.tags)
-      val tagOrderByPos   = DataLogic.tagOrderByPos(project.config.tags)
-      val generalTagSet   = DataLogic.generalTags(tagDist, tagLookup)(req.id)
+      val req = project.content.reqs.need(id)
+      fromProject(req, project, filterDead)
+    }
+
+    def fromProject(req: Req, project: Project, filterDead: FilterDead): Data = {
+      import req.id
+
+      val cfg             = project.config
+      val pubidSortKeyFn  = project.dataLogic.pubidSortKeyFn
+      val customImpLookup = project.dataLogic.customFieldImps(filterDead)
+      val tagDist         = project.dataLogic.tagFieldDist(filterDead)
+      val tagLookup       = project.dataLogic.tagLookup(filterDead)
+      val tagOrderByName  = project.dataLogic.tagOrderByName
+      val tagOrderByPos   = project.dataLogic.tagOrderByPos
+      val impFilter       = cfg.reqFilter(filterDead)
+      val generalTagSet   = DataLogic.generalTags(tagDist, tagLookup)(id)
       val generalTags     = MutableArray(generalTagSet).sortBy(tagOrderByName.apply).to[Vector]
 
       val customTags: CustomField.Tag.Id => Vector[ApplicableTagId] =
         Memo { fid =>
-          def tagSet = DataLogic.customFieldTags(tagDist, tagLookup, fid)(req.id)
+          def tagSet = DataLogic.customFieldTags(tagDist, tagLookup, fid)(id)
           MutableArray(tagSet).sortBy(tagOrderByPos.apply).to[Vector]
         }
 
@@ -124,9 +153,6 @@ object ViewReq {
               .filter(impFilter)
               .map(_.pubid)))
 
-      val customImps: CustomField.Implication.Id => Vector[Pubid] =
-        fid => sortPubids(customImpLookup(fid)(id))
-
       val pastPubids: SortedSet[ExternalPubid] = {
         val b = SortedSet.newBuilder[ExternalPubid]
         b ++= req.pubid.pastExternals(project)
@@ -138,13 +164,17 @@ object ViewReq {
       }
 
       Data(
-        req,
-        codes,
-        generalTags,
-        customTags,
-        generalImps,
-        customImps,
-        pastPubids)
+        req              = req,
+        live             = req.live(cfg.reqTypes),
+        codes            = codes,
+        generalTags      = generalTags,
+        customTags       = customTags,
+        conflictingTags  = project.conflictingTagsPerReq(id),
+        generalImps      = generalImps,
+        customImps       = fid => sortPubids(customImpLookup(fid)(id)),
+        pastPubids       = pastPubids,
+        impsAreMandatory = cfg.reqTypes.idsRequiringImplication.contains(req.reqTypeId),
+        mandatoryFields  = cfg.mandatoryLiveCustomFields)
     }
 
   }

@@ -105,6 +105,7 @@ object Feature {
     type ForReq          = ForFields[FieldKey.ForSomeReq   ]
     type ForUseCase      = ForFields[FieldKey.ForUseCase   ]
     type ForUseCaseSteps = ForFields[FieldKey.UseCaseStep  ]
+    type ForManualIssues = ForFields[FieldKey.ManualIssue  ]
 
     final case class ForProject(state      : State.ForProject,
                                 editability: Editability.ForProject,
@@ -113,7 +114,7 @@ object Feature {
        private def forRow(r: RowKey)(e: Reusable[Editability.ForFields[r.FieldKey]]): ForFields[r.FieldKey] =
          ForFields(state.getOrElse(r, UnivEq.emptyMap), e, async(r))
 
-      def forCodeGroup(id: ReqCodeId): ForCodeGroup =
+      def forCodeGroup(id: ReqCodeGroupId): ForCodeGroup =
         forRow(RowKey.CodeGroup(id))(Reusable implicitly editability.forCodeGroups(id))
 
       def forGenericReq(id: GenericReqId): ForGenericReq =
@@ -127,6 +128,9 @@ object Feature {
 
       lazy val forUseCaseSteps: ForUseCaseSteps =
         forRow(RowKey.UseCaseSteps)(Reusable implicitly editability.forUseCaseSteps)
+
+      lazy val forManualIssues: ForManualIssues =
+        forRow(RowKey.ManualIssues)(Editability.forManualIssues)
     }
 
              val reusabilityForEditorAny   : Reusability[ForAnyEditor   ] = Reusability.derive
@@ -147,10 +151,11 @@ object Feature {
 
       def startEdit(state           : Read.ForAnyEditor,
                     pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]],
+                    filterDead      : FilterDead,
                     hooks           : NewEditor.Hooks = NewEditor.Hooks.empty): Option[Callback] =
         startEditWithArgs(
           state,
-          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, hooks)))
+          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, filterDead, hooks)))
 
       private[Feature] def startEditWithArgs(state: Read.ForAnyEditor,
                                              args : FreeOption[NewEditor.CreationArgs]): Option[Callback] =
@@ -188,6 +193,7 @@ object Feature {
     type ForReq          = ForFields[FieldKey.ForSomeReq   ]
     type ForUseCase      = ForFields[FieldKey.ForUseCase   ]
     type ForUseCaseSteps = ForFields[FieldKey.UseCaseStep  ]
+    type ForManualIssues = ForFields[FieldKey.ManualIssue  ]
 
     /** Create only one instance; reusability is byRef */
     final case class ForProject(static      : NewEditor.Static,
@@ -224,7 +230,7 @@ object Feature {
         reuseKey.map(_ => instanceForRow(row))
       }
 
-      def forCodeGroup(id: ReqCodeId): ForCodeGroup =
+      def forCodeGroup(id: ReqCodeGroupId): ForCodeGroup =
         forRow(RowKey.CodeGroup(id))
 
       def forGenericReq(id: GenericReqId): ForGenericReq =
@@ -238,6 +244,9 @@ object Feature {
 
       lazy val forUseCaseSteps: ForUseCaseSteps =
         forRow(RowKey.UseCaseSteps)
+
+      lazy val forManualIssues: ForManualIssues =
+        forRow(RowKey.ManualIssues)
 
       @inline def toReadWrite(r: Read.ForProject): ReadWrite.ForProject =
         ReadWrite.ForProject(r, this)
@@ -265,7 +274,14 @@ object Feature {
       @inline def renderOr[B](args: A)(b: => B)(implicit ev: VdomElement => B): B =
         read.renderOr(args)(b)(ev)
 
-      /** impure */
+      /** 1) Renders the editor if open, or a given view otherwise.
+        * 2) Modifies the parent vdom so that
+        *    - double-clicking starts the editor
+        *    - there is hover text with user instructions
+        *    - colour changes on hover
+        *
+        * impure
+        */
       def themedRenderOr(args: A)(view: => TagMod): TagMod =
         renderOr(args)(TagMod(EditTheme.editableInline(startEdit), view))
 
@@ -300,11 +316,13 @@ object Feature {
       def asyncFeature = write.async
       def asyncState = read.async
 
-      def apply(f: FK, pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]]): ForEditor[f.Args, f.Change] =
+      def apply(f: FK,
+                pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]],
+                filterDead      : FilterDead): ForEditor[f.Args, f.Change] =
         ForEditor(
           read(f),
           write.apply(f),
-          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, NewEditor.Hooks.empty)))
+          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, filterDead, NewEditor.Hooks.empty)))
     }
 
     implicit class ForFieldsInvariantExt[FK <: FieldKey](private val self: ForFields[FK]) extends AnyVal {
@@ -317,10 +335,11 @@ object Feature {
     type ForReq          = ForFields[FieldKey.ForSomeReq   ]
     type ForUseCase      = ForFields[FieldKey.ForUseCase   ]
     type ForUseCaseSteps = ForFields[FieldKey.UseCaseStep  ]
+    type ForManualIssues = ForFields[FieldKey.ManualIssue  ]
 
     final case class ForProject(read: Read.ForProject, write: Write.ForProject) {
 
-      def forCodeGroup(id: ReqCodeId): ForCodeGroup =
+      def forCodeGroup(id: ReqCodeGroupId): ForCodeGroup =
         ForFields(read.forCodeGroup(id), write.forCodeGroup(id))
 
       def forGenericReq(id: GenericReqId): ForGenericReq =
@@ -334,6 +353,9 @@ object Feature {
 
       lazy val forUseCaseSteps: ForUseCaseSteps =
         ForFields(read.forUseCaseSteps, write.forUseCaseSteps)
+
+      lazy val forManualIssues: ForManualIssues =
+        ForFields(read.forManualIssues, write.forManualIssues)
 
       def asyncFeature = write.async
       def asyncState = read.async

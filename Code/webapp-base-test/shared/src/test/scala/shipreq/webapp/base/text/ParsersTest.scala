@@ -1,5 +1,6 @@
 package shipreq.webapp.base.text
 
+import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import java.util.concurrent.atomic.AtomicInteger
 import nyaya.prop._
 import nyaya.gen._
@@ -51,7 +52,7 @@ object ParsersTest extends TestSuite {
 
     val E = EvalOver(this)
 
-    val txt2str = PlainText.ForProject.noCtx(p).text(_: Text.AnyOptional, Live)
+    val txt2str = PlainText.ForProject.noCtx(p).text(_: Text.AnyOptional, Live, Mandatory.Not)
 
     val genericReqTitles =
       p.content.reqs.reqIterator
@@ -180,9 +181,9 @@ object ParsersTest extends TestSuite {
   @inline def LI[A <: AnyAtom](as: A*) = as.toVector
   @inline def L(s: String) = T.Literal(s)
 
-  val reqCode_co2      = ReqCodeId(9)
-  val reqCode_co1      = ReqCodeId(10)
-  val reqCode_hereiam3 = ReqCodeId(11)
+  val reqCode_co2      = ApReqCodeId(9)
+  val reqCode_co1      = ApReqCodeId(10)
+  val reqCode_hereiam3 = ApReqCodeId(11)
 
   def propEmailAddress = parserProp("EmailAddress",
     (_: T.EmailAddress).value, T.parserI(P, None))(_.emailAddress.run())
@@ -222,7 +223,7 @@ object ParsersTest extends TestSuite {
       def testT[A <: AnyAtom](p: Project, parse: Project => String => Vector[A], text: String)(as: A*): Unit = {
         val e = as.toVector
         assertEq(quoteStringForDisplay(preprocessStr(text, MultiLine)), parse(p)(text), e)
-        val text2 = PlainText.ForProject.noCtx(p).text(e, Live)
+        val text2 = PlainText.ForProject.noCtx(p).text(e, Live, Mandatory.Not)
         assertEq(text2, parse(p)(text2), e)
       }
 

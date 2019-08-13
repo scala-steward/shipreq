@@ -10,7 +10,7 @@ import scala.util.{Failure, Success}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.{Project, ProjectMetaData}
-import shipreq.webapp.base.event.{EventOrd, VerifiedEvent}
+import shipreq.webapp.base.event.{EventOrd, EventSeqSummary, VerifiedEvent}
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.WebSocket.Push
@@ -20,7 +20,7 @@ import shipreq.webapp.base.protocol._
 import shipreq.webapp.client.project.app.state.Global.State
 
 abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
-                      onInitFailure: ErrorMsg => Callback) extends Broadcaster[Changes] {
+                      onInitFailure: ErrorMsg => Callback) extends Broadcaster[EventSeqSummary.WithProject] {
 
   protected val logger = LoggerJs.on
 
@@ -122,23 +122,23 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
       unsafeState match {
 
         case s1: State.Active =>
-          for ((ps2, appliedEvents) <- s1.projectState.addEvents(recvEvents)) {
+          for (update <- s1.projectState.addEvents(recvEvents)) {
 
             // Update state
-            val similarlyStale = ps2.ord ==* s1.projectState.ord
+            val similarlyStale = update.newState.ord ==* s1.projectState.ord
             val staleSince =
               if (similarlyStale)
                 s1.staleSince.orElse(Some(unsafeNow()))
-              else if (ps2.futureEvents.nonEmpty)
+              else if (update.newState.futureEvents.nonEmpty)
                 Some(unsafeNow())
               else
                 None
-            unsafeSetState(State.Active(ps2, staleSince))
+            unsafeSetState(State.Active(update.newState, staleSince))
 
             // Broadcast changes
-            for (ves <- VerifiedEvent.NonEmptySeq.maybe(appliedEvents)) {
-              val changes = Changes(ves, s1.projectState.project, ps2.project)
-              broadcast(changes).runNow()
+            for (ves <- update.newlyAppliedEventsNE) {
+              val ess = EventSeqSummary(ves.iterator.map(_.event)).withProject(update.newState.project)
+              broadcast(ess).runNow()
             }
           }
 
@@ -190,16 +190,14 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
     } yield ()
   }
 
+  final lazy val sspUpdateConfig          = sspToEvents(WsReqRes.UpdateConfig)
   final lazy val sspCreateContent         = sspToEvents(WsReqRes.CreateContent)
   final lazy val sspUpdateContent         = sspToEvents(WsReqRes.UpdateContent)
   final lazy val sspProjectNameSet        = sspToEvents(WsReqRes.ProjectNameSet)
   final lazy val sspUpdateSavedViews      = sspToEvents(WsReqRes.UpdateSavedViews)
+  final lazy val sspUpdateManualIssues    = sspToEvents(WsReqRes.UpdateManualIssues)
   final lazy val sspFieldMandatorinessMod = sspToEvents(WsReqRes.FieldMandatorinessMod)
   final lazy val sspReqTypeImplicationMod = sspToEvents(WsReqRes.ReqTypeImplicationMod)
-  final lazy val sspCustomIssueTypeCrud   = sspToEvents(WsReqRes.CustomIssueTypeCrud)
-  final lazy val sspCustomReqTypeCrud     = sspToEvents(WsReqRes.CustomReqTypeCrud)
-  final lazy val sspFieldMod              = sspToEvents(WsReqRes.FieldMod)
-  final lazy val sspTagMod                = sspToEvents(WsReqRes.TagMod)
 }
 
 object Global {

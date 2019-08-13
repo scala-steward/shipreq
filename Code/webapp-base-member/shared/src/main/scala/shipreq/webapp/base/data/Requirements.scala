@@ -1,7 +1,7 @@
 package shipreq.webapp.base.data
 
 import japgolly.microlibs.scalaz_ext.ScalazMacros
-import japgolly.microlibs.utils.BiMap
+import japgolly.microlibs.utils.{BiMap, Memo}
 import monocle.{Iso, Traversal}
 import monocle.macros.Lenses
 import nyaya.util.Multimap
@@ -184,12 +184,12 @@ object UseCase {
   implicit def equality: UnivEq[UseCase] = UnivEq.derive
 }
 
-case class UseCaseStepId(value: Int) extends SubReqId
+final case class UseCaseStepId(value: Int) extends SubReqId
 
 @Lenses
-case class UseCaseStep(id             : UseCaseStepId,
-                       titleExplicitly: Text.UseCaseStep.OptionalText,
-                       liveExplicitly : Live) {
+final case class UseCaseStep(id             : UseCaseStepId,
+                             titleExplicitly: Text.UseCaseStep.OptionalText,
+                             liveExplicitly : Live) {
 
   def usesUseCaseTitle(enclosingUC: UseCase): Boolean =
     titleExplicitly.isEmpty && enclosingUC.rootStepId ==* id
@@ -207,7 +207,7 @@ case class UseCaseStep(id             : UseCaseStepId,
       titleExplicitly
 
   @deprecated("Use UseCaseStep.live or UseCaseStep.Focus#live.", "")
-  def live = ()
+  def live(a: Nothing): Nothing = a
 
   /** Doesn't take live-state of enclosing use-case into consideration. */
   def liveIgnoringUC(enclosingTree: UseCaseSteps): Live =
@@ -238,7 +238,7 @@ object UseCaseStep {
   /**
    * Focus on a particular [[UseCaseStep]] and provide related data.
    */
-  final class Focus(useCases: UseCases, val id: UseCaseStepId) {
+  final class Focus(useCases: UseCases, val id: UseCaseStepId) { self =>
 
     val key: UseCases.StepTreeKey =
       useCases.stepIndex(id)
@@ -258,13 +258,16 @@ object UseCaseStep {
     lazy val loc: VectorTree.Location =
       ucSteps.stepLocs.forward(id)
 
-    lazy val ploc: VectorTree.PartialLocation =
+    val ploc: VectorTree.PartialLocation =
       ucSteps.stepPartialLocs.get(id)
 
-    lazy val step: UseCaseStep =
-      ucSteps.tree.needAtLocation(loc)
+    val step: UseCaseStep =
+      useCases.needStep(id)
 
-    lazy val live: Live =
+    def label(fmt: UseCaseStepLabelFmt): String =
+      field.stepLabel(uc.pubid.pos, ploc, fmt)
+
+    val live: Live =
       UseCaseStep.live(uc, ploc)
 
     def title: UseCaseStep.Title =
@@ -272,6 +275,9 @@ object UseCaseStep {
 
     def titleA: Text.AnyOptional =
       step.titleA(uc)
+
+    def usesUseCaseTitle: Boolean =
+      step.usesUseCaseTitle(uc)
 
     val canShift: LeftRight => Permission = {
       lazy val canShiftRight = field.canShiftRight(loc, ucSteps.locValidity, ucSteps.tree.maxDepthTree);
@@ -283,6 +289,15 @@ object UseCaseStep {
 
     def flow(d: Direction): Set[UseCaseStepId] =
       useCases.stepFlow(d)(id)
+
+    def flow(d: Direction, fd: FilterDead): Set[UseCaseStepId] =
+      fd match {
+        case HideDead => flow(d, Live)
+        case ShowDead => flow(d)
+      }
+
+    def flow(d: Direction, live: Live): Set[UseCaseStepId] =
+      flow(d).filter(self.useCases.focusStep(_).live is live)
   }
 }
 
@@ -290,7 +305,7 @@ object UseCaseStep {
  * A tree of steps. Can correspond to one (EC) or more (NC + AC) fields.
  */
 @Lenses
-case class UseCaseSteps(tree: UseCaseSteps.Tree) {
+final case class UseCaseSteps(tree: UseCaseSteps.Tree) {
   import VectorTree.{Location, PartialLocation}
 
   def need(id: UseCaseStepId): UseCaseStep =
@@ -342,14 +357,21 @@ object UseCaseSteps {
  *                 Note that the position of steps provides implicit flow that isn't stored here (or anywhere).
  */
 @Lenses
-case class UseCases(imap: UseCaseIMap, stepIndex: UseCases.StepIndex, stepFlow: UseCases.StepFlow) {
+final case class UseCases(imap: UseCaseIMap, stepIndex: UseCases.StepIndex, stepFlow: UseCases.StepFlow) {
+  @inline def need(id: UseCaseId): UseCase =
+    imap.need(id)
+
   def stepIterator: Iterator[UseCaseStep] =
     imap.valuesIterator.flatMap(_.stepIterator)
 
-  // This might be a good candidate for caching...
-  // On the other hand, caching could end up being a waste of client memory for no noticeable gain...
-  def focusStep(id: UseCaseStepId): UseCaseStep.Focus =
-    new UseCaseStep.Focus(this, id)
+  def focusStepIterator(): Iterator[UseCaseStep.Focus] =
+    stepIndex.keysIterator.map(focusStep)
+
+  def liveStepIterator(): Iterator[UseCaseStep.Focus] =
+    focusStepIterator().filter(_.live is Live)
+
+  val focusStep: UseCaseStepId => UseCaseStep.Focus =
+    Memo(new UseCaseStep.Focus(this, _))
 
   def needStep(id: UseCaseStepId): UseCaseStep =
     stepIndex(id).need(imap).need(id)
@@ -360,7 +382,7 @@ object UseCases {
   /**
    * Information sufficient to uniquely identify a step tree within a project.
    */
-  case class StepTreeKey(useCaseId: UseCaseId, field: StaticField.UseCaseStepTree) {
+  final case class StepTreeKey(useCaseId: UseCaseId, field: StaticField.UseCaseStepTree) {
     def need(imap: UseCaseIMap): UseCaseSteps =
       field.useCaseSteps.get(imap.need(useCaseId))
   }

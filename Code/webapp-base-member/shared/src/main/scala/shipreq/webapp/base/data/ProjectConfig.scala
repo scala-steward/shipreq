@@ -1,14 +1,11 @@
 package shipreq.webapp.base.data
 
 import japgolly.microlibs.scalaz_ext.ScalazMacros
-import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.microlibs.utils.Memo
 import monocle.macros.Lenses
-import scalaz.{-\/, Equal, \/, \/-}
-import scalaz.std.option.toRight
-import shipreq.base.util.Applicable
+import scalaz.{-\/, Equal, \/-}
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.util.Must._
-import DataImplicits._
+import shipreq.webapp.base.data.DataImplicits._
 
 object ProjectConfig {
   implicit lazy val equality: Equal[ProjectConfig] =
@@ -18,8 +15,8 @@ object ProjectConfig {
     val cit = emptyDataMap(CustomIssueType)
     val rt  = ReqTypes.empty
     val fs  = FieldSet(emptyDataMap(CustomField), StaticField.values.whole)
-    val tt  = TagTree.empty
-    ProjectConfig(cit, rt, fs, tt)
+    val ts  = Tags.empty
+    ProjectConfig(cit, rt, fs, ts)
   }
 }
 
@@ -27,64 +24,17 @@ object ProjectConfig {
 final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
                                reqTypes        : ReqTypes,
                                fields          : FieldSet,
-                               tags            : TagTree) {
+                               tags            : Tags) {
 
-  val applicability: Applicability.Default =
-    Applicability(fields.get(_) match {
-      case Some(f) => f.applicable
-      case None    => Applicable.never
-    })
-
-  def atagValidate(id: ApplicableTagId): Option[String] =
-    tags.get(id) match {
-      case Some(tit) => tit.tag match {
-        case _: ApplicableTag => None
-        case t: TagGroup      => Some(s"$t is not an ApplicableTag.")
-      }
-      case None               => Some(s"$id not found.")
-    }
-
-  def atag(id: ApplicableTagId): ApplicableTag =
-    tags.need(id).tag match {
-      case a: ApplicableTag => a
-      case t: TagGroup      => mustNotHappen(s"$t is not an ApplicableTag.")
-    }
-
-  def atagIterator: Iterator[ApplicableTag] =
-    tags.valuesIterator.map(_.tag).filterSubType[ApplicableTag]
-
-  lazy val deadATagIds: Set[ApplicableTagId] =
-    atagIterator.filter(_.live is Dead).map(_.id).toSet
-
-  def customField[I <: CustomFieldId, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): D = {
-    val f = fields.customFields.need(id)
-    d.unapplyData(f) mustExistElse s"$id associated with wrong type: $f"
-  }
-
-  def customFieldAttempt[I <: CustomFieldId, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): String \/ D =
-    fields.customFields.get(id) match {
-      case Some(f) =>
-        toRight(d unapplyData f)(s"$id associated with wrong type: $f")
-      case None =>
-        -\/(s"$id not found.")
-    }
+  @inline def applicability = fields.applicability
 
   def customIssueType(id: CustomIssueTypeId): CustomIssueType =
     customIssueTypes.need(id)
 
-  lazy val customImpFields: List[CustomField.Implication] =
-    fields.customFields.valuesIterator.filterSubType[CustomField.Implication].toList
-
-  lazy val customTagFields: List[CustomField.Tag] =
-    fields.customFields.valuesIterator.filterSubType[CustomField.Tag].toList
-
-  lazy val customTextFields: List[CustomField.Text] =
-    fields.customFields.valuesIterator.filterSubType[CustomField.Text].toList
-
   lazy val liveCustomTextFields =
-    customTextFields.filter(_.live(this) is Live)
+    fields.customTextFields.filter(_.live(this) is Live)
 
-  lazy val liveTagFieldDistribution =
+  lazy val liveTagFieldDistribution: TagFieldDistribution.TagIds =
     TagFieldDistribution(this, _.live(this) is Live)
 
   def deadTagFieldDistribution(deadTagFilter: CustomField.Tag.Id => Boolean): TagFieldDistribution.TagIds =
@@ -95,13 +45,44 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
 
   /** Keys are lowercase */
   lazy val hashRefLookupM: Map[String, HashRefTarget] =
-    ( atagIterator                   .map(t => (t.key.value.toLowerCase, -\/(t))) ++
+    ( tags.atagIterator()            .map(t => (t.key.value.toLowerCase, -\/(t))) ++
       customIssueTypes.valuesIterator.map(t => (t.key.value.toLowerCase, \/-(t)))
     ).toMap
 
   def hashRefLookup(key: String): Option[HashRefTarget] =
     hashRefLookupM.get(key.toLowerCase)
 
-  def live(id: TagId    ): Live = tags.need(id).tag.live
-  def live(id: ReqTypeId): Live = reqTypes.need(id).live
+  def live(id: ReqTypeId): Live =
+    reqTypes.need(id).live
+
+  def reqFilter(fd: FilterDead): Req => Boolean =
+    fd.filterFnBy((_: Req).live(reqTypes))
+
+  lazy val mandatoryLiveCustomFields: CustomField.Lists = {
+    val m = new CustomField.MutableLists
+    for (f <- fields.customFields.valuesIterator)
+      if (f.mandatory.is(Mandatory) && f.live(this).is(Live))
+        m += f
+    m.result()
+  }
+
+  val mostRelevantLiveFieldForTag: TagId => Option[CustomField.Tag] =
+    Memo { tagId =>
+      type R = Option[CustomField.Tag]
+
+      implicit val tree = tags.tree
+
+      def liveTagFields = fields.customTagFields.iterator.filter(_.live(this).is(Live))
+
+      val direct: R = liveTagFields.find(_.tagId ==* tagId)
+
+      def soleParent: R = {
+        liveTagFields.filter(f => tree.need(f.tagId).transitiveChildren.contains(f.tagId)).take(2).toList match {
+          case f :: Nil => Some(f)
+          case _        => None
+        }
+      }
+
+      direct.orElse(soleParent)
+    }
 }

@@ -4,13 +4,14 @@ import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty._
 import japgolly.microlibs.recursion._
 import scala.annotation.tailrec
-import scalaz.{-\/, Functor, \/, \/-}
+import scalaz.{-\/, Functor, Isomorphism, \/, \/-}
 import scalaz.Isomorphism.<=>
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.hash._
 import ApplyEvent.LogicVer
+import Event._
 import TaggedTypes.JsonStr
 
 object EventDbCodecs {
@@ -20,7 +21,9 @@ object EventDbCodecs {
   import upickle.BaseCodecs.{CharRW, StringRW}
   import shipreq.webapp.base.data._
   import shipreq.webapp.base.data.reqtable.SavedView
+  import shipreq.webapp.base.issue.IssueCategory
   import shipreq.webapp.base.protocol.MPickleMacros._
+  import shipreq.webapp.base.sort.SortMethod
   import shipreq.webapp.base.text.{AtomTC, Text}
   import shipreq.webapp.base.util.GenericDataMacros._
   import EventDbMacros._
@@ -176,6 +179,7 @@ object EventDbCodecs {
     ReadWriter[Js.Value](Identity.apply, { case j => j })
 
   implicit val pickleLive          = boolCase(Live)
+  implicit val pickleOn            = boolCase(On)
   implicit val pickleImplRequired  = boolCase(ImplicationRequired)
   implicit val pickleMandatory     = boolCase(Mandatory)
   implicit val pickleDeletable     = boolCase(Deletable)
@@ -184,7 +188,8 @@ object EventDbCodecs {
   implicit val pickleUseCaseId               : ReadWriter[UseCaseId                 ] = caseClass1
   implicit val pickleUseCaseStepId           : ReadWriter[UseCaseStepId             ] = caseClass1
   implicit val pickleGenericReqId            : ReadWriter[GenericReqId              ] = caseClass1
-  implicit val pickleReqCodeId               : ReadWriter[ReqCodeId                 ] = caseClass1
+  implicit val pickleApReqCodeId             : ReadWriter[ApReqCodeId               ] = caseClass1
+  implicit val pickleReqCodeGroupId          : ReadWriter[ReqCodeGroupId            ] = caseClass1
   implicit val pickleCustomReqTypeId         : ReadWriter[CustomReqTypeId           ] = caseClass1
   implicit val pickleCustomIssueTypeId       : ReadWriter[CustomIssueTypeId         ] = caseClass1
   implicit val pickleApplicableTagId         : ReadWriter[ApplicableTagId           ] = caseClass1
@@ -212,11 +217,17 @@ object EventDbCodecs {
 
   implicit val pickleUseCaseStepIdNESD = pickleNESD[UseCaseStepId]
 
-  implicit val pickleReqCodeIdSet: ReadWriter[Set[ReqCodeId]] =
-    pickleReqCodeId.setNice
+  implicit val pickleApReqCodeIdSet: ReadWriter[Set[ApReqCodeId]] =
+    pickleApReqCodeId.setNice
 
-  implicit val pickleReqCodeIdNES: ReadWriter[NonEmptySet[ReqCodeId]] =
-    pickleReqCodeId.nesNice
+  implicit val pickleApReqCodeIdNES: ReadWriter[NonEmptySet[ApReqCodeId]] =
+    pickleApReqCodeId.nesNice
+
+  implicit val pickleReqCodeGroupIdSet: ReadWriter[Set[ReqCodeGroupId]] =
+    pickleReqCodeGroupId.setNice
+
+  implicit val pickleReqCodeGroupIdNES: ReadWriter[NonEmptySet[ReqCodeGroupId]] =
+    pickleReqCodeGroupId.nesNice
 
   implicit val pickleDirection: ReadWriter[Direction] = pickleAdtOS {
     case Forwards  => "f"
@@ -329,6 +340,13 @@ object EventDbCodecs {
   implicit val pickleApplicableReqTypes: ReadWriter[Field.ApplicableReqTypes] =
     pickleISubsetNice
 
+  implicit val pickleIssueCategory: ReadWriter[IssueCategory] = pickleAdtOS {
+    case IssueCategory.BadData     => "b"
+    case IssueCategory.Futility    => "f"
+    case IssueCategory.MissingData => "m"
+    case IssueCategory.UserDefined => "u"
+  }
+
   // TODO Performance can be improved, probably significantly
   object TextCodecs extends AtomTC[ReadWriter] {
     import shipreq.webapp.base.text._
@@ -348,17 +366,18 @@ object EventDbCodecs {
     override def nev[A](as: ReadWriter[Vector[A]])(implicit a: ReadWriter[A]) =
       pickleNEV(as)
 
-    private[this] final val BLANKLINE = 0
-    private[this] final val WEBADD    = "/"
-    private[this] final val EMAILADD  = "@"
-    private[this] final val MATHTEX   = "="
-    private[this] final val UL        = "*"
-    private[this] final val ISSUE     = "i"
-    private[this] final val ISSUEDESC = "?"
-    private[this] final val REQREF    = "r"
-    private[this] final val CODEREF   = "c"
-    private[this] final val UCSTEPREF = "u"
-    private[this] final val TAGREF    = "t"
+    private[this] final val BLANKLINE    = 0
+    private[this] final val WEBADD       = "/"
+    private[this] final val EMAILADD     = "@"
+    private[this] final val MATHTEX      = "="
+    private[this] final val UL           = "*"
+    private[this] final val ISSUE        = "i"
+    private[this] final val ISSUEDESC    = "?"
+    private[this] final val REQREF       = "r"
+    private[this] final val CODEGROUPREF = "C"
+    private[this] final val APCODEREF    = "c"
+    private[this] final val UCSTEPREF    = "u"
+    private[this] final val TAGREF       = "t"
 
     override def sum[T <: Atom.Base](t: T)(f: t.Atom => ReadWriter[t.Atom], i: t.Atom => Int, all: Vector[ReadWriter[t.Atom]]): ReadWriter[t.Atom] = {
       val readPF = all.map(_.read).reduce(_ orElse _)
@@ -385,15 +404,21 @@ object EventDbCodecs {
       a => strkeyW(MATHTEX, a.value),
       { case Js.Obj((MATHTEX, v)) => t.MathTeX(readJs[String](v)) })
 
-    override def reqRef[T <: ReqRef](t: T): ReadWriter[t.ReqRef] = ReadWriter(
+    override def reqRef[T <: ContentRef](t: T): ReadWriter[t.ReqRef] = ReadWriter(
       a => strkeyW(REQREF, a.value),
       { case Js.Obj((REQREF, v)) => t.ReqRef(readJs[ReqId](v)) })
 
-    override def codeRef[T <: ReqRef](t: T): ReadWriter[t.CodeRef] = ReadWriter(
-      a => strkeyW(CODEREF, a.value),
-      { case Js.Obj((CODEREF, v)) => t.CodeRef(readJs[ReqCodeId](v)) })
+    override def codeRef[T <: ContentRef](t: T): ReadWriter[t.CodeRef] = ReadWriter(
+      a => a.value match {
+        case id: ApReqCodeId    => strkeyW(APCODEREF, id)
+        case id: ReqCodeGroupId => strkeyW(CODEGROUPREF, id)
+      },
+      {
+        case Js.Obj((APCODEREF,    v)) => t.CodeRef(readJs[ApReqCodeId](v))
+        case Js.Obj((CODEGROUPREF, v)) => t.CodeRef(readJs[ReqCodeGroupId](v))
+      })
 
-    override def useCaseStepRef[T <: UseCaseStepRef](t: T): ReadWriter[t.UseCaseStepRef] = ReadWriter(
+    override def useCaseStepRef[T <: ContentRef](t: T): ReadWriter[t.UseCaseStepRef] = ReadWriter(
       a => strkeyW(UCSTEPREF, a.value),
       { case Js.Obj((UCSTEPREF, v)) => t.UseCaseStepRef(readJs[UseCaseStepId](v)) })
 
@@ -441,7 +466,7 @@ object EventDbCodecs {
    * This is not implicit because there are cases where the same value can be associated with multiple ids.
    * If this representation is used in such a case then there will be duplicate object keys.
    */
-  private val pickleReqCodeIdAndValueNES: ReadWriter[NonEmptySet[ReqCode.IdAndValue]] =
+  private val pickleReqCodeIdAndValueNES: ReadWriter[NonEmptySet[ApReqCodeId.AndValue]] =
     ReadWriter(
       nes => {
         val kvs = nes.foldLeft(List.empty[(String, Js.Value)])((q, iv) =>
@@ -449,10 +474,10 @@ object EventDbCodecs {
         Js.Obj(kvs: _*)
       }, {
         case o: Js.Obj =>
-          val cs = o.value.foldLeft(Set.empty[ReqCode.IdAndValue])((q, kv) => {
+          val cs = o.value.foldLeft(Set.empty[ApReqCodeId.AndValue])((q, kv) => {
               val Js.Num(n) = kv._2
               val c = reqCodeValueFromString(kv._1)
-              q + ReqCode.IdAndValue(ReqCodeId(n.toInt), c)
+              q + ApReqCodeId.AndValue(ApReqCodeId(n.toInt), c)
             })
         NonEmptySet.force(cs)
       }
@@ -568,34 +593,37 @@ object EventDbCodecs {
         case _: IntensionalReqSet.WholeType [A] => "w"
       }
 
-      implicit val pickleValidHashTag       : ReadWriter[Valid.HashTag                          ] = pickleDisj
-      implicit val pickleValidReqSubset     : ReadWriter[Valid.ReqSubset                        ] = pickleIRSet[ReqTypeId]
-      implicit val pickleValidReqSet        : ReadWriter[Valid.ReqSet                           ] = pickleValidReqSubset.nev
-      implicit val pickleValidText          : ReadWriter[FilterAst.Text                         ] = caseClassAsArray('text, 'quoteChar)
-      implicit val pickleValidRegex         : ReadWriter[FilterAst.Regex                        ] = caseClass1
-      implicit val pickleValidPresence      : ReadWriter[FilterAst.Presence      [Valid.Attr]   ] = caseClass1
-      implicit val pickleValidLack          : ReadWriter[FilterAst.Lack          [Valid.Attr]   ] = caseClass1
-      implicit val pickleValidReqs          : ReadWriter[FilterAst.Reqs          [Valid.ReqSet] ] = caseClass1
-      implicit val pickleValidReqType       : ReadWriter[FilterAst.ReqType       [Valid.ReqType]] = caseClass1
-      implicit val pickleValidHashRef       : ReadWriter[FilterAst.HashRef       [Valid.HashTag]] = caseClass1
-      implicit val pickleValidImpliesAnyOf  : ReadWriter[FilterAst.ImpliesAnyOf  [Valid.ReqSet] ] = caseClass1
-      implicit val pickleValidImpliedByAnyOf: ReadWriter[FilterAst.ImpliedByAnyOf[Valid.ReqSet] ] = caseClass1
-      implicit val pickleValidAllOf         : ReadWriter[FilterAst.AllOf         [Js.Value]     ] = caseClass1
-      implicit val pickleValidAnyOf         : ReadWriter[FilterAst.AnyOf         [Js.Value]     ] = pickleNonEmptyVectorJs.xmap(x => FilterAst.AnyOf(x.head, NonEmptyVector force x.tail))(x => x.head +: x.tail)
-      implicit val pickleValidNot           : ReadWriter[FilterAst.Not           [Js.Value]     ] = caseClass1
-      implicit val pickleValidF             : ReadWriter[ValidF                  [Js.Value]     ] = pickleAdtOS {
-        case _: Text                          => "x"
-        case _: Regex                         => "/"
-        case _: Presence      [Valid.Attr]    => "1"
-        case _: Lack          [Valid.Attr]    => "0"
-        case _: Reqs          [Valid.ReqSet]  => "r"
-        case _: ReqType       [Valid.ReqType] => "T"
-        case _: HashRef       [Valid.HashTag] => "#"
-        case _: ImpliesAnyOf  [Valid.ReqSet]  => ">"
-        case _: ImpliedByAnyOf[Valid.ReqSet]  => "<"
-        case _: AllOf         [Js.Value]      => "&"
-        case _: AnyOf         [Js.Value]      => "|"
-        case _: Not           [Js.Value]      => "!"
+      implicit val pickleIssueCatNEV: ReadWriter[NonEmptyVector[IssueCategory]] =
+        pickleIssueCategory.nev
+
+      implicit val pickleValidHashTag       : ReadWriter[Valid.HashTag                           ] = pickleDisj
+      implicit val pickleValidReqSubset     : ReadWriter[Valid.ReqSubset                         ] = pickleIRSet[ReqTypeId]
+      implicit val pickleValidReqSet        : ReadWriter[Valid.ReqSet                            ] = pickleValidReqSubset.nev
+      implicit val pickleValidText          : ReadWriter[FilterAst.Text                          ] = caseClassAsArray('text, 'quoteChar)
+      implicit val pickleValidRegex         : ReadWriter[FilterAst.Regex                         ] = caseClass1
+      implicit val pickleValidPresence      : ReadWriter[FilterAst.Presence      [Valid.Attr]    ] = caseClass1
+      implicit val pickleValidHasIssue      : ReadWriter[FilterAst.HasIssue      [Valid.IssueCat]] = caseClassAsArray('on, 'criteria)
+      implicit val pickleValidReqs          : ReadWriter[FilterAst.Reqs          [Valid.ReqSet]  ] = caseClass1
+      implicit val pickleValidReqType       : ReadWriter[FilterAst.ReqType       [Valid.ReqType] ] = caseClass1
+      implicit val pickleValidHashRef       : ReadWriter[FilterAst.HashRef       [Valid.HashTag] ] = caseClass1
+      implicit val pickleValidImpliesAnyOf  : ReadWriter[FilterAst.ImpliesAnyOf  [Valid.ReqSet]  ] = caseClass1
+      implicit val pickleValidImpliedByAnyOf: ReadWriter[FilterAst.ImpliedByAnyOf[Valid.ReqSet]  ] = caseClass1
+      implicit val pickleValidAllOf         : ReadWriter[FilterAst.AllOf         [Js.Value]      ] = caseClass1
+      implicit val pickleValidAnyOf         : ReadWriter[FilterAst.AnyOf         [Js.Value]      ] = pickleNonEmptyVectorJs.xmap(x => FilterAst.AnyOf(x.head, NonEmptyVector force x.tail))(x => x.head +: x.tail)
+      implicit val pickleValidNot           : ReadWriter[FilterAst.Not           [Js.Value]      ] = caseClass1
+      implicit val pickleValidF             : ReadWriter[ValidF                  [Js.Value]      ] = pickleAdtOS {
+        case _: Text                           => "x"
+        case _: Regex                          => "/"
+        case _: Presence      [Valid.Attr]     => "1"
+        case _: HasIssue      [Valid.IssueCat] => "I"
+        case _: Reqs          [Valid.ReqSet]   => "r"
+        case _: ReqType       [Valid.ReqType]  => "T"
+        case _: HashRef       [Valid.HashTag]  => "#"
+        case _: ImpliesAnyOf  [Valid.ReqSet]   => ">"
+        case _: ImpliedByAnyOf[Valid.ReqSet]   => "<"
+        case _: AllOf         [Js.Value]       => "&"
+        case _: AnyOf         [Js.Value]       => "|"
+        case _: Not           [Js.Value]       => "!"
       }
       pickleFix[ValidF]
     }
@@ -676,8 +704,8 @@ object EventDbCodecs {
   }
   import ReqTableData.pickleSavedViewGD
 
-  implicit val pickleReqCodeValueToIds: ReadWriter[Multimap[ReqCode.Value, Set, ReqCodeId]] = {
-    val empty = UnivEq.emptySetMultimap[ReqCode.Value, ReqCodeId]
+  implicit val pickleReqCodeValueToIds: ReadWriter[Multimap[ReqCode.Value, Set, ApReqCodeId]] = {
+    val empty = UnivEq.emptySetMultimap[ReqCode.Value, ApReqCodeId]
     ReadWriter(mm => {
       var o: List[(String, Js.Value)] = Nil
       mm.m.foreach { kv =>
@@ -685,9 +713,9 @@ object EventDbCodecs {
         val ids = kv._2
         val v =
           if (ids.tail.isEmpty)
-            pickleReqCodeId write ids.head
+            pickleApReqCodeId write ids.head
           else {
-            val vs = ids.foldLeft[List[Js.Value]](Nil)((q, id) => pickleReqCodeId.write(id) :: q)
+            val vs = ids.foldLeft[List[Js.Value]](Nil)((q, id) => pickleApReqCodeId.write(id) :: q)
             Js.Arr(vs: _*)
           }
         o ::= (c, v)
@@ -698,8 +726,8 @@ object EventDbCodecs {
         o.value.foldLeft(empty)((q, kv) => {
           val c   = reqCodeValueFromString(kv._1)
           val ids = kv._2 match {
-            case a: Js.Arr => a.value.foldLeft(Set.empty[ReqCodeId])(_ + pickleReqCodeId.read(_))
-            case x         => Set(pickleReqCodeId read x)
+            case a: Js.Arr => a.value.foldLeft(Set.empty[ApReqCodeId])(_ + pickleApReqCodeId.read(_))
+            case x         => Set.empty[ApReqCodeId] + pickleApReqCodeId.read(x)
           }
           q.setvs(c, ids)
         })
@@ -711,7 +739,8 @@ object EventDbCodecs {
     case ProjectTemplate.V2 => 2
   }
 
-  implicit val idTypeReqCodeId                = DbCodec.monoId(noDataIdType, ReqCodeId)
+  implicit val idTypeApReqCodeId              = DbCodec.monoId(noDataIdType, ApReqCodeId.apply)
+  implicit val idTypeReqCodeGroupId           = DbCodec.monoId(noDataIdType, ReqCodeGroupId)
   implicit val idTypeCustomReqTypeId          = DbCodec.monoId('r', CustomReqTypeId)
   implicit val idTypeCustomIssueTypeId        = DbCodec.monoId('i', CustomIssueTypeId)
 
@@ -729,6 +758,8 @@ object EventDbCodecs {
   implicit val idTypeCustomFieldTagId         = DbCodec.monoId('t', CustomField.Tag.Id)
   implicit val idTypeCustomFieldImplicationId = DbCodec.monoId('i', CustomField.Implication.Id)
   implicit val idTypeCustomFieldId            = DbCodec.polyId[CustomFieldId]
+
+  implicit val idTypeManualIssueId            = DbCodec.monoId(noDataIdType, ManualIssueId)
 
   implicit val idTypeSavedViewId              = DbCodec.monoId(noDataIdType, SavedView.Id)
 
@@ -782,6 +813,9 @@ object EventDbCodecs {
   implicit val dbCodecGenericReqCreate      : DbCodec[GenericReqCreate      ] = dbCodecIdGdAnd('vs, 'rt -> "T")
   implicit val dbCodecGenericReqTitleSet    : DbCodec[GenericReqTitleSet    ] = dbCodec2
   implicit val dbCodecGenericReqTypeSet     : DbCodec[GenericReqTypeSet     ] = dbCodec2
+  implicit val dbCodecManualIssueCreate     : DbCodec[ManualIssueCreate     ] = dbCodec2
+  implicit val dbCodecManualIssueDelete     : DbCodec[ManualIssueDelete     ] = dbCodecIdOnly
+  implicit val dbCodecManualIssueUpdate     : DbCodec[ManualIssueUpdate     ] = dbCodec2
   implicit val dbCodecProjectNameSet        : DbCodec[ProjectNameSet        ] = dbCodecDataOnly
   implicit val dbCodecProjectTemplateApply  : DbCodec[ProjectTemplateApply  ] = dbCodecDataOnly
   implicit val dbCodecCodeGroupCreate       : DbCodec[CodeGroupCreate       ] = dbCodec2
@@ -896,6 +930,14 @@ object EventDbCodecs {
     case _: FieldCustomTextUpdate  => 1135
 
     // =====================================
+    // Other: Manual Issues
+    // =====================================
+
+    case _: ManualIssueCreate      => 2110
+    case _: ManualIssueUpdate      => 2111
+    case _: ManualIssueDelete      => 2112
+
+    // =====================================
     // Other: Shared Views
     // =====================================
 
@@ -934,6 +976,7 @@ object EventSqlHelpers {
       case HashScope.DeletionReasons => 'd'
       case HashScope.GenericReqs     => 'g'
       case HashScope.ImplicationData => 'i'
+      case HashScope.ManualIssues    => 'm'
       case HashScope.ProjectName     => 'n'
       case HashScope.PubidRegister   => 'p'
       case HashScope.ReqCodes        => 'c'

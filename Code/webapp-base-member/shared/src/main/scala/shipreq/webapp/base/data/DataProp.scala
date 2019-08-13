@@ -448,9 +448,9 @@ object DataProp {
       case a: PlainTextMarkup # EmailAddress   => emailAddress(a)
       case a: PlainTextMarkup # MathTeX        => mathtex(a)
       case a: ListMarkup      # UnorderedList  => anyTextV(a.items.whole)
-      case _: ReqRef          # ReqRef         => nop
-      case _: ReqRef          # CodeRef        => nop
-      case _: UseCaseStepRef  # UseCaseStepRef => nop
+      case _: ContentRef      # ReqRef         => nop
+      case _: ContentRef      # CodeRef        => nop
+      case _: ContentRef      # UseCaseStepRef => nop
       case a: Issue           # Issue          => anyText(a.desc)
       case _: TagRef          # TagRef         => nop
     } rename "AnyAtom"
@@ -515,13 +515,13 @@ object DataProp {
         customIssueTypes.all.contramap[P](_.customIssueTypes)
       ∧   customReqTypes.all.contramap[P](_.reqTypes)
       ∧           fields.all.contramap[P](_.fields)
-      ∧             tags.all.contramap[P](_.tags)
+      ∧             tags.all.contramap[P](_.tags.tree)
     ) rename "constituents"
 
     def uniqueHashRefKeys =
       Prop.distinctI[P, String]("HashRefKey", p => (
           p.customIssueTypes.valuesIterator.map(_.key) ++
-          p.tags.valuesIterator.map(_.tag.keyO).filterDefined
+          p.tags.tree.valuesIterator.map(_.tag.keyO).filterDefined
         ).map(_.value.toLowerCase))
 
     def validRefs = {
@@ -529,7 +529,7 @@ object DataProp {
 
       def mkRefs(p: ProjectConfig): Refs = Refs(
         p.reqTypes.all.whole.map(_.reqTypeId)(collection.breakOut),
-        p.tags.keySet)
+        p.tags.tree.keySet)
 
       def whitelist[A](refs: TR => Set[A])(name: String, test: P => TraversableOnce[A]) =
         // Two steps here results in better failure messages
@@ -604,18 +604,18 @@ object DataProp {
           }.toSet)
 
       private val validFilter: FAlgebra[Filter.ValidF, Refs] = {
-        case FilterAst.Reqs          (reqs)          => validFilterReqSetRefs(reqs)
-        case FilterAst.ImpliesAnyOf  (reqs)          => validFilterReqSetRefs(reqs)
-        case FilterAst.ImpliedByAnyOf(reqs)          => validFilterReqSetRefs(reqs)
-        case FilterAst.ReqType       (rt)            => Refs.empty addReqTypeId rt
-        case FilterAst.HashRef       (-\/(issue))    => Refs.empty addCustomIssueTypeId issue
-        case FilterAst.HashRef       (\/-(tag))      => Refs.empty addTagId tag
-        case FilterAst.AllOf         (fs)            => fs.reduce(_ ++ _)
-        case FilterAst.AnyOf         (f, fs)         => f ++ fs.reduce(_ ++ _)
-        case FilterAst.Not           (f)             => f
+        case FilterAst.Reqs          (reqs)           => validFilterReqSetRefs(reqs)
+        case FilterAst.ImpliesAnyOf  (reqs)           => validFilterReqSetRefs(reqs)
+        case FilterAst.ImpliedByAnyOf(reqs)           => validFilterReqSetRefs(reqs)
+        case FilterAst.ReqType       (rt)             => Refs.empty addReqTypeId rt
+        case FilterAst.HashRef       (-\/(issue))     => Refs.empty addCustomIssueTypeId issue
+        case FilterAst.HashRef       (\/-(tag))       => Refs.empty addTagId tag
+        case FilterAst.AllOf         (fs)             => fs.reduce(_ ++ _)
+        case FilterAst.AnyOf         (f, fs)          => f ++ fs.reduce(_ ++ _)
+        case FilterAst.Not           (f)              => f
         case _: FilterAst.Text
            | _: FilterAst.Regex
-           | _: FilterAst.Lack[Filter.Valid.Attr]
+           | _: FilterAst.HasIssue[Filter.Valid.IssueCat]
            | _: FilterAst.Presence[Filter.Valid.Attr] => Refs.empty
       }
 
@@ -653,7 +653,7 @@ object DataProp {
         p.content.reqCodes.idSet,
         p.content.reqs.useCases.stepIterator.map(_.id).toSet,
         p.config.reqTypes.all.whole.map(_.reqTypeId)(collection.breakOut),
-        p.config.tags.keySet)
+        p.config.tags.tree.keySet)
 
       def whitelist[A](refs: TR => Set[A])(name: String, test: P => TraversableOnce[A]): Prop[TR] =
         // Two steps here results in better failure messages
@@ -693,8 +693,9 @@ object DataProp {
       ∧ validReqIds    ("Atoms: ReqRefs",             _.atomScan.reqRefs)
       ∧ validReqCodeIds("Atoms: CodeRefs",            _.atomScan.codeRefs)
       ∧ validUCStepIds ("Atoms: UseCaseStepRefs",     _.atomScan.useCaseStepRefs)
-      ∧ validTagIds    ("Atoms: TagRefs",             _.atomScan.tagRefs.all.all)
-      ∧ validIssueTypes("Atoms: Issues",              _.atomScan.issues.all.all.map(_.typ))
+      ∧ validTagIds    ("Atoms: TagRefs",             _.atomScan.tagRefs.all.all.iterator.map(_.value)) // TODO check .loc
+      ∧ validIssueTypes("Atoms: Issues in reqs",      _.atomScan.issuesInReqs.all.all.map(_.value.typ))
+      ∧ validIssueTypes("Atoms: Issues in RCGs",      _.atomScan.issuesInRcgs.all.all.map(_.typ))
       ∧ validReqIds    ("DeletionReason reqIds",      _.content.deletionReasons.reqApplication.keys)
       ∧ validUCStepIds ("UseCase step flow",          _.content.reqs.useCases.stepFlow.memberIterator)
       ∧ fullRefCmp     ("SavedView filters",          p => Refs.savedViewFilters(p.reqtableViews))

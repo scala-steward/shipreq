@@ -3,13 +3,111 @@ package shipreq.webapp.base.data
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.Memo
+import nyaya.util.Multimap
 import scala.annotation.tailrec
-import shipreq.base.util.Util
 import shipreq.base.util.Digraph.BiDir
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.text.Atom
+import shipreq.webapp.base.text.{Atom, Text}
 import DataImplicits._
+
+final class DataLogic(p: Project) {
+  import DataLogic._
+
+  val issueLookup: FilterDead => IssueLookup =
+    FilterDead.memoLazy(new IssueLookup(p, _))
+
+  val tagLookup: FilterDead => TagLookup = {
+    val reqTags                 = p.content.reqTags
+    def tagsInText              = p.atomScan.tagRefs
+    val emptyOther              = Multimap.empty[ApplicableTagId, List, ReqTagLoc]
+    val emptyDeadTagsInLiveText = Multimap.empty[ApplicableTagId, List, ReqTextLoc]
+
+    FilterDead.memoLazy {
+
+      case HideDead =>
+        val deadTags = p.config.tags.deadATagIds
+
+        // Dead tags on live reqs are ignored unless in text
+        Memo { reqId =>
+          var other              = emptyOther
+          var deadTagsInLiveText = emptyDeadTagsInLiveText
+
+          for (t <- reqTags(reqId))
+            if (!deadTags.contains(t))
+              other = other.add(t, ReqTagLoc.Tags)
+
+          for (t <- tagsInText(reqId).live)
+            if (deadTags.contains(t.value))
+              deadTagsInLiveText = deadTagsInLiveText.add(t.value, t.loc)
+            else
+              other = other.add(t.value, t.loc)
+
+          ReqTags(other, deadTagsInLiveText)
+        }
+
+      case ShowDead =>
+        // [deadTagsInLiveText = Set.empty] is technically wrong but when (FilterDead == ShowDead) putting everything
+        // in `other` is more efficient and achieves the same result (confirmed in LogicTest.filterDead.tagComprehensive)
+        Memo { reqId =>
+          var other = emptyOther
+
+          for (t <- reqTags(reqId))
+            other = other.add(t, ReqTagLoc.Tags)
+
+          for (t <- tagsInText(reqId).all)
+            other = other.add(t.value, t.loc)
+
+          ReqTags(other, emptyDeadTagsInLiveText)
+        }
+    }
+  }
+
+  /** Note: If you want to filter dead tags, use DataLogic.tagFieldDist(...) */
+  val tagFieldDist: FilterDead => TagFieldDistribution.TagIds =
+    FilterDead.memoLazy(DataLogic.tagFieldDist(p.config, _, _ => true))
+
+  lazy val tagOrderByName: TagOrder =
+    p.config.tags.tree
+      .valuesIterator
+      .map(_.tag)
+      .filterSubType[ApplicableTag]
+      .|>(MutableArray.apply)
+      .sortBySchwartzian(_.key.value |> normaliseStringForSorting)
+      .map(_.id)
+      .iterator
+      .mapToOrder
+
+  lazy val tagOrderByPos: TagOrder =
+    p.config.tags
+      .flatRowsUnfiltered
+      .iterator
+      .map(_.id)
+      .filterSubType[ApplicableTagId]
+      .mapToOrder
+
+  val customFieldImps: FilterDead => CustomField.Implication.Id => ReqId => Set[Pubid] =
+    FilterDead.memoLazy { fd =>
+      val filter = p.config.reqFilter(fd)
+      Memo { fid =>
+        // (source of implication for this column) → (all it transitively implies)
+        val f = p.config.fields.custom(fid)
+        val srcs: List[(Pubid, Set[ReqId])] =
+          p.content.reqs.reqsByType(f.reqTypeId).iterator
+            .filter(filter)
+            .map(r => (r.pubid, p.implicationSrcToTgtTC(r.id)))
+            .toList
+        id => srcs.iterator.filter(_._2 contains id).map(_._1).toSet
+      }
+    }
+
+  val pubidSortKeyFn: Pubid => (Int, Int) = {
+    val reqTypeOrder = p.config.reqTypes.order
+    i => (reqTypeOrder(i.reqTypeId), i.pos.value)
+  }
+}
+
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
 object DataLogic {
 
@@ -30,35 +128,20 @@ object DataLogic {
   /**
     * Set of tags associated with a requirement.
     */
-  final case class ReqTags(other: Set[ApplicableTagId], deadTagsInLiveText: Set[ApplicableTagId]) {
-    def all: Set[ApplicableTagId] =
-      other | deadTagsInLiveText
+  final case class ReqTags(other             : Multimap[ApplicableTagId, List, ReqTagLoc],
+                           deadTagsInLiveText: Multimap[ApplicableTagId, List, ReqTextLoc]) {
 
-    def exists(f: Set[ApplicableTagId] => Boolean): Boolean =
-      f(other) || f(deadTagsInLiveText)
+    // Computing eagerly because this is for a single req. Reqs never have a huge number of tags.
+    val all: Set[ApplicableTagId] =
+      other.keySet | deadTagsInLiveText.keySet
+
+    @inline def exists(f: Set[ApplicableTagId] => Boolean): Boolean =
+      f(all)
   }
+
+  type TagOrder = Map[ApplicableTagId, Int]
 
   type TagLookup = ReqId => ReqTags
-
-  def tagLookup(p: Project, fd: FilterDead): TagLookup = {
-    val reqTags = p.content.reqTags
-    val tagsInText = p.atomScan.tagRefs
-
-    fd match {
-      case HideDead =>
-        val deadTags = p.config.deadATagIds
-        Memo { id =>
-          val inText = tagsInText(id).live
-          val liveTags = (reqTags(id) | inText) &~ deadTags // Dead tags on live reqs are ignored unless in text
-          ReqTags(liveTags, deadTagsInLiveText = inText & deadTags)
-        }
-
-      case ShowDead =>
-        // [deadTagsInLiveText = Set.empty] is technically wrong but when (FilterDead == ShowDead) putting everything
-        // in `other` is more efficient and achieves the same result (confirmed in LogicTest.filterDead.tagComprehensive)
-        Memo(id => ReqTags(reqTags(id) | tagsInText(id).all, deadTagsInLiveText = Set.empty))
-    }
-  }
 
   def generalTags(dist: TagFieldDistribution.TagIds, lookup: TagLookup): ReqId => Set[ApplicableTagId] = {
     val tagsUsedInFields = dist.usedInFields
@@ -73,43 +156,12 @@ object DataLogic {
   val normaliseStringForSorting: EndoFn[String] =
     _.toLowerCase
 
-  type TagOrder = Map[ApplicableTagId, Int]
-
-  def tagOrderByName(tags: TagTree): TagOrder =
-    MutableArray(tags.valuesIterator.map(_.tag).filterSubType[ApplicableTag])
-      .sortBySchwartzian(_.key.value |> normaliseStringForSorting)
-      .map(_.id)
-      .iterator
-      .mapToOrder
-
-  def tagOrderByPos(tags: TagTree): TagOrder =
-    FlatTag.flatten(tags)(_ => true, FlatTag.FilterPolicy.OmitNothing)
-      .iterator
-      .map(_.id)
-      .filterSubType[ApplicableTagId]
-      .mapToOrder
-
   // ===================================================================================================================
   // Implications
 
-  def impValueFilter(pc: ProjectConfig, fd: FilterDead): Req => Boolean =
-    fd.filterFnBy((_: Req).live(pc.reqTypes))
-
-  def customFieldImps(p: Project, filter: Req => Boolean): CustomField.Implication.Id => ReqId => Set[Pubid] =
-    Memo { fid =>
-      // (source of implication for this column) → (all it transitively implies)
-      val f = p.config.customField(fid)
-      val srcs: List[(Pubid, Set[ReqId])] =
-        p.content.reqs.reqsByType(f.reqTypeId).iterator
-          .filter(filter)
-          .map(r => (r.pubid, p.implicationSrcToTgtTC(r.id)))
-          .toList
-      id => srcs.iterator.filter(_._2 contains id).map(_._1).toSet
-    }
-
-  case class ImpRequiredResult(goodImpGraph: Implications.BiDir,
-                               badIds      : Set[ReqId],
-                               badImpGraph : Implications.BiDir)
+  final case class ImpRequiredResult(goodImpGraph: Implications.BiDir,
+                                     badIds      : Set[ReqId],
+                                     badImpGraph : Implications.BiDir)
 
   def requiringImplication(reqTypes: ReqTypes,
                            imps    : Implications.BiDir,
@@ -166,25 +218,19 @@ object DataLogic {
   // ===================================================================================================================
   // Issues
 
-  final class IssueLookup(p: Project, fd: FilterDead) {
-    import AtomScan._
+  final class IssueLookup private[DataLogic] (p: Project, fd: FilterDead) {
 
     type Issues = Vector[Atom.AnyIssue]
 
-    private val get = fd.ldStatAccessor[Issues]
+    private[this] val getReqIssues = fd.ldStatAccessor[Vector[ReqTextLoc.And[Atom.AnyIssue]]]
+    private[this] val getRcgIssues = fd.ldStatAccessor[Vector[Text.CodeGroupTitle.Issue]]
 
-    private def forLoc(loc: IssueLoc): Issues =
-      get(p.atomScan.issues(loc))
-
-    def forReq(id: ReqId): Issues =
-      forLoc(InReq(id))
+    val forReq: ReqId => Issues =
+      Memo(id => getReqIssues(p.atomScan.issuesInReqs(id)).map(_.value))
 
     def forReqCode(id: ReqCodeId): Issues =
-      forLoc(InRCG(id))
+      getRcgIssues(p.atomScan.issuesInRcgs(id))
   }
-
-  def issueLookup(p: Project, fd: FilterDead): IssueLookup =
-    new IssueLookup(p, fd)
 
   // ===================================================================================================================
   // Misc
@@ -192,8 +238,4 @@ object DataLogic {
 //  def lookupCustomField[I <: CustomFieldId, D <: CustomField, O](pc: ProjectConfig, f: D => O)(implicit d: DataIdAux[D, I]): I => O =
 //    id => f(pc.customField(id))
 
-  def pubidSortKeyFn(pc: ProjectConfig): Pubid => (Int, Int) = {
-    val reqTypeOrder = pc.reqTypes.order
-    p => (reqTypeOrder(p.reqTypeId), p.pos.value)
-  }
 }

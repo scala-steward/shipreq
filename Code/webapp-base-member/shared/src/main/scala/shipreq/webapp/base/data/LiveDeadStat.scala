@@ -1,5 +1,6 @@
 package shipreq.webapp.base.data
 
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import scala.collection.{mutable, GenTraversable}
 import scalaz.{Monoid, Semigroup}
 import scalaz.std.anyVal.intInstance
@@ -13,6 +14,9 @@ final case class LiveDeadStat[A] private[LiveDeadStat](live: A, dead: A, all: A)
 
   def +(c: LiveDeadStat[A])(implicit a: Semigroup[A]): LiveDeadStat[A] =
     LiveDeadStat(live |+| c.live, dead |+| c.dead)
+
+  def map[B](f: A => B): LiveDeadStat[B] =
+    LiveDeadStat(f(live), f(dead), f(all))
 
   def clearDead(implicit a: Monoid[A]): LiveDeadStat[A] =
     new LiveDeadStat(live, a.zero, live)
@@ -69,15 +73,22 @@ object LiveDeadStat {
  * A collection of stats mapped by a key.
  */
 final class LiveDeadStatMap[Key: UnivEq, A: Monoid] private[LiveDeadStatMap](val raw: Map[Key, LiveDeadStat[A]]) {
+  def isEmpty = raw.isEmpty
+
   val all: LiveDeadStat[A] =
     LiveDeadStat sum raw.values
 
   def apply(key: Key): LiveDeadStat[A] =
     raw.getOrElse(key, LiveDeadStat.empty[A])
 
+  def map[B: Monoid](f: A => B): LiveDeadStatMap[Key, B] =
+    LiveDeadStatMap(raw.mapValuesNow(_.map(f)))
+
   def +(that: LiveDeadStatMap[Key, A]): LiveDeadStatMap[Key, A] =
-    if (that.raw.size > this.raw.size)
-      that + this
+    if (that.isEmpty)
+      this
+    else if (this.isEmpty)
+      that
     else {
       var m = raw
       for ((key, c) <- that.raw) {
@@ -87,13 +98,17 @@ final class LiveDeadStatMap[Key: UnivEq, A: Monoid] private[LiveDeadStatMap](val
       LiveDeadStatMap(m)
     }
 
-  def countByValues[B: UnivEq](f: A => GenTraversable[B]): LiveDeadStatMap[B, Int] = {
+  def countByValues[B: UnivEq](f: A => TraversableOnce[B]): LiveDeadStatMap[B, Int] = {
     val r = new LiveDeadStatMap.Builder[B, Int]
-    for (stat <- raw.values) {
-      f(stat.live) foreach (r(_).live += 1)
-      f(stat.dead) foreach (r(_).dead += 1)
-    }
+    countByValues(r, f)
     r.result()
+  }
+
+  def countByValues[B: UnivEq](r: LiveDeadStatMap.Builder[B, Int], f: A => TraversableOnce[B]): Unit = {
+    for (stat <- raw.values) {
+      f(stat.live).foreach(r(_).live += 1)
+      f(stat.dead).foreach(r(_).dead += 1)
+    }
   }
 }
 

@@ -42,6 +42,12 @@ Backlog
 * Firefox: ctrl-home space doesn't work properly
 * Firefox: UC step graph doesn't shrink
 * Prevent -- (not not) in the FilterParser? Or allow /\-+/ and auto-correct on blur?
+* Filter doesn't allow req-code filtering
+* Issues page: allow custom sorting
+* Issues page: allow custom columns
+* Issues page: allow issue cat/cls filtering
+* Issues page: allow editing of ID cells
+* Issues page: allow editing of Title cells
 
 ### Tech
 * Remove ScalaCheck. Use Nyaya.
@@ -59,8 +65,7 @@ Backlog
 * Make webtamp hash filenames of urls in Semantic CSS (`icons.*`)
 * SSL shouldn't be in Docker - resolve TODO in WebappBuild.scala
 * Automate visual testing so changes to styling (mostly Semantic UI upgrades) can be verified.
-  Could add to test-state... But then how to make it account for tiny differents like moment.js "updated x sec ago" things?
-  Any free tool?
+  Use BackstopJS. Will require a read-only test user with a pre-configured project
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -95,6 +100,22 @@ Phase 2B
 * User profile page
 
 ### Other
+
+* Flow syntax missing from use case step help
+
+* Hard-delete UC steps with no text, flow, or refs
+
+* Forward-compatible dev enablement
+  * Stop generating codecs from macros
+  * BooPickle usage revision
+    * separate into huge library, and top-level instances actually used in protocols
+    * add a version field to all top-level codecs (Maybe? What about forwards-compatibility?)
+    * test evolution, ensure possible
+  * Delete the concept of Event/Project hashing
+  * (Consider) simplifying the event table and codec-code to just event-type-id (for stats) and json
+  * (Consider) store (and update) the latest project name in the header table
+  * (Consider) using Circe instead of JsPickle -- (Cats + Scalaz on the frontend is a problem)
+
 
 * Cell copy-and-paste on Req{Table,Detail}
 

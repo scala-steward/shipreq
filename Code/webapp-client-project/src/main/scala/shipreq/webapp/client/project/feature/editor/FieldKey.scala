@@ -1,9 +1,8 @@
 package shipreq.webapp.client.project.feature.editor
 
-import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.Reusability
 import scala.reflect.ClassTag
-import scalaz.~~>
+import scalaz.{-\/, \/-, ~~>}
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
@@ -40,7 +39,7 @@ object FieldKey {
 
   sealed trait ForCodeGroup extends FieldKey {
     override final type Args = Unit
-    def foldCG[F[_, _]](f: FoldForCodeGroup[F]): F[Args, Change];
+    def foldCG[F[_, _]](f: FoldForCodeGroup[F]): F[Args, Change]
   }
 
   sealed trait ForGenericReq extends ForSomeReq {
@@ -100,18 +99,28 @@ object FieldKey {
     override type Change = UseCaseStepGD.NonEmptyValues
     def foldUCS[F[_, _]](f: FoldForUseCaseSteps[F]): F[Args, Change] = f.step(this)
   }
+
   object UseCaseStep {
     /**
       * @param shiftRunner   so users can shift the step left/right via keyboard shortcuts.
       * @param addStepRunner so users can add a new step via keyboard shortcuts.
       */
-    final case class Args(shiftRunner  : AsyncFeature.Runner.D0[UpdateContentCmd.ForUseCaseStep, Any],
-                          addStepRunner: AsyncFeature.Runner.D0[UpdateContentCmd.AddUseCaseStep, Any])
+    final case class Args(shiftRunner  : Option[AsyncFeature.Runner.D0[UpdateContentCmd.ForUseCaseStep, Any]],
+                          addStepRunner: Option[AsyncFeature.Runner.D0[UpdateContentCmd.AddUseCaseStep, Any]])
+    object Args {
+      val empty = Args(None, None)
+    }
   }
 
   case object UseCaseTitle extends ForUseCase {
     override type Change = Text.UseCaseTitle.OptionalText
     override def foldUC[F[_, _]](f: FoldForUseCase[F]): F[Args, Change] = f.title(this)
+  }
+
+  final case class ManualIssue(id: ManualIssueId) extends FieldKey {
+    override type Args = Unit
+    override type Change = Text.ManualIssue.NonEmptyText
+    def foldMI[F[_, _]](f: FoldForManualIssues[F]): F[Args, Change] = f.text(this)
   }
 
   @inline implicit def equalityForSomeReq: UnivEq[ForSomeReq] =
@@ -122,6 +131,22 @@ object FieldKey {
 
   implicit val reusability: Reusability[FieldKey] =
     Reusability.byUnivEq
+
+  def customField(id: CustomFieldId): FieldKey =
+    id match {
+      case i: CustomField.Text.Id        => CustomTextField(i)
+      case i: CustomField.Tag.Id         => Tags(Some(i))
+      case i: CustomField.Implication.Id => Implications(-\/(i))
+    }
+
+  def impliedBy = Implications(\/-(Backwards))
+
+  def reqTextLoc(reqId: ReqId, loc: ReqTextLoc): FieldKey =
+    loc match {
+      case ReqTextLoc.Title                    => reqTitle(reqId)
+      case ReqTextLoc.CustomTextField(fieldId) => CustomTextField(fieldId)
+      case ReqTextLoc.UseCaseStep(stepId)      => UseCaseStep(stepId)
+    }
 
   def reqTitle(id: ReqId): ForSomeReq =
     id match {
@@ -186,6 +211,12 @@ object FieldKey {
     override def apply(f: UseCaseStep): F[f.Args, f.Change] = f.foldUCS(this)
     override def map[G[_, _]](t: F ~~> G): FoldForUseCaseSteps[G] =
       FoldForUseCaseSteps(f => t(step(f)))
+  }
+
+  case class FoldForManualIssues[F[_, _]](text: ManualIssue => F[ManualIssue#Args, ManualIssue#Change]) extends Fold[ManualIssue, F] {
+    override def apply(f: ManualIssue): F[f.Args, f.Change] = f.foldMI(this)
+    override def map[G[_, _]](t: F ~~> G): FoldForManualIssues[G] =
+      FoldForManualIssues(f => t(text(f)))
   }
 
   final class Type[F <: FieldKey](implicit ct: ClassTag[F]) {

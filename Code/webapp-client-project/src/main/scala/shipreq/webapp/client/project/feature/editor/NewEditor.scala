@@ -12,8 +12,9 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.UseCaseStepGD
 import shipreq.webapp.base.feature._
+import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.KeyboardTheme
-import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateContentCmd}
+import shipreq.webapp.base.protocol.{ManualIssueCmd, ServerSideProcInvoker, UpdateContentCmd}
 import shipreq.webapp.base.text._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import Feature.{AsyncError, AsyncState, Editor, PreviewId, State}
@@ -30,7 +31,9 @@ final case class NewEditor(create: NewEditor.CreationArgs => Callback) extends A
 object NewEditor {
 
   @Lenses
-  final case class CreationArgs(pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]], hooks: Hooks) {
+  final case class CreationArgs(pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]],
+                                filterDead      : FilterDead,
+                                hooks           : Hooks) {
     val cbProjectWidgets: CallbackTo[ProjectWidgets.AnyCtx] =
       pxProjectWidgets.toCallback
   }
@@ -60,7 +63,9 @@ object NewEditor {
                           pxProject       : Px[Project],
                           pxPlainTextNoCtx: Px[PlainText.ForProject.NoCtx],
                           pxTextSearch    : Px[TextSearch],
-                          saveIO          : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any]) {
+                          sspUpdateContent: ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
+                          sspManualIssue  : ServerSideProcInvoker[ManualIssueCmd, ErrorMsg, Any],
+                         ) {
 
     private[NewEditor] val internal = new Internal(this)
   }
@@ -151,11 +156,16 @@ object NewEditor {
       lazy val forUseCaseSteps = FieldKey.FoldForUseCaseSteps[ForEditor](
         f => logicToPerField(EditUseCaseStep(f.id, PreviewId(RowKey.UseCaseSteps, f))))
 
+      lazy val forManualIssues = FieldKey.FoldForManualIssues[ForEditor](
+        f => logicToPerField(EditRichTextNonEmpty.ManualIssue(f.id, PreviewId(RowKey.ManualIssues, f))))
+
       RowKey.Fold[ForFields](
         codeGroup    = prepareCG(_).map(logicToPerField),
         genericReq   = prepareGR(_).map(logicToPerField),
         useCase      = prepareUC(_).map(logicToPerField),
-        useCaseSteps = () => forUseCaseSteps)
+        useCaseSteps = () => forUseCaseSteps,
+        manualIssues = () => forManualIssues,
+      )
     }
 
     final class InternalCtx[A, C](val ctx: Ctx[A, C]) {
@@ -166,11 +176,13 @@ object NewEditor {
         stateAccess.setState(None, clearAsyncStatus >> hooks.onClose)
       }
 
-      def commit(cmd: UpdateContentCmd, hooks: Hooks): Callback =
-        asyncFeature((s, f) => saveIO(cmd, _ => s >> abort(hooks), f))
+      def commit[Cmd](ssp: ServerSideProcInvoker[Cmd, ErrorMsg, Any])
+                     (cmd: Cmd, hooks: Hooks): Callback =
+        asyncFeature((s, f) => ssp(cmd, _ => s >> abort(hooks), f))
 
-      def makeAbortCommitFn[B](cmd: B => UpdateContentCmd, hooks: Hooks): (Some[Callback], Some[B ~=> Callback]) =
-        (Some(abort(hooks)), Some(Reusable.fn(v => commit(cmd(v), hooks))))
+      def makeAbortCommitFn[Cmd, B](ssp: ServerSideProcInvoker[Cmd, ErrorMsg, Any])
+                                   (cmd: B => Cmd, hooks: Hooks): (Some[Callback], Some[B ~=> Callback]) =
+        (Some(abort(hooks)), Some(Reusable.fn(v => commit(ssp)(cmd(v), hooks))))
 
       /** Creates a Callback that when invoked, will initialise and start an editor.
         *
@@ -260,7 +272,7 @@ object NewEditor {
         }
 
         val (abort, commitFn) =
-          makeAbortCommitFn[RT](t => UpdateContentCmd.SetGenericReqType(id, t.id), args.hooks)
+          makeAbortCommitFn(sspUpdateContent)((t: RT) => UpdateContentCmd.SetGenericReqType(id, t.id), args.hooks)
 
         for {
           req     <- getGenericReq(id)
@@ -292,7 +304,7 @@ object NewEditor {
             pxProject.toCallback.map(_.content.reqCodes.activeReqCodesByReqId(id))
 
           val (abort, commitFn) =
-            makeAbortCommitFn[RCE.Output](UpdateContentCmd.PatchReqCodes(id, _), args.hooks)
+            makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchReqCodes(id, _), args.hooks)
 
           startWithStateSnapshot(
             initialValuesCB.toCBO)(
@@ -330,14 +342,14 @@ object NewEditor {
         override type Args   = Unit
         override type Change = RCE.Output
 
-        def apply(id: ReqCodeId): InitFn = ictx => args => {
+        def apply(id: ReqCodeGroupId): InitFn = ictx => args => {
           import ictx._
 
           val initialValueCB: CallbackOption[ReqCode.Value] =
             pxProject.toCallback.map(_.content.reqCodes.reqCode(id)).toCBO
 
           val (abort, commitFn) =
-            makeAbortCommitFn[RCE.Output](UpdateContentCmd.SetCodeGroupCode(id, _), args.hooks)
+            makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.SetCodeGroupCode(id, _), args.hooks)
 
           startWithStateSnapshot(initialValueCB)(PlainText.reqCode)(
             i => new State(_, Some(i), abort, commitFn))
@@ -409,7 +421,7 @@ object NewEditor {
           } yield ImplicationEditor.validationFn(project, id.some, init._1, dir)
 
         val (abort, commitFn) =
-          makeAbortCommitFn[ImplicationEditor.Output](UpdateContentCmd.PatchImplications(id, dir, _), args.hooks)
+          makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchImplications(id, dir, _), args.hooks)
 
         startWithStateSnapshot(pxInit.toCallback.toCBO)(_._2)(
           _ => new State(_, pxLookup, pxValFn, abort, commitFn))
@@ -464,7 +476,7 @@ object NewEditor {
           } yield TagEditor.initialValues(project.content.reqTags(id), project.config, lookup)
 
         val (abort, commitFn) =
-          makeAbortCommitFn[TagEditor.Output](UpdateContentCmd.PatchReqTags(id, _), args.hooks)
+          makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchReqTags(id, _), args.hooks)
 
         startWithStateSnapshot(pxInit.toCallback.toCBO)(_._2)(
           init => new State(_, Some(init._1), pxLookup, abort, commitFn))
@@ -512,14 +524,14 @@ object NewEditor {
           import ictx._
 
           val (abort, commitFn) =
-            makeAbortCommitFn(cmd, args.hooks)
+            makeAbortCommitFn(sspUpdateContent)(cmd, args.hooks)
 
           val initCB =
             for {
               initialValue   <- initialValueCB
               projectWidgets <- args.cbProjectWidgets.toCBO
             } yield {
-              val initialText = projectWidgets.plainText.text(initialValue, RichTextEditor.hardcodedLive)
+              val initialText = projectWidgets.plainText.text(initialValue, RichTextEditor.hardcodedLive, Mandatory.Not)
               (initialValue, initialText)
             }
 
@@ -532,9 +544,9 @@ object NewEditor {
                             projectWidgetsCB: CallbackTo[ProjectWidgets.AnyCtx],
                             pid             : PreviewId,
                             abort           : Some[Callback],
-                            commitFn        : Some[editor.CommitFn]) extends EditorImpl {
+                            commitFn        : Some[editor.Optional.CommitFn]) extends EditorImpl {
 
-          override type Props = editor.Props
+          override type Props = editor.Optional
           override def renderImpl = _.render
           override def changeImpl = _.validated
           override val props = (_, asyncState) =>
@@ -544,7 +556,7 @@ object NewEditor {
               plainTextNoCtx <- pxPlainTextNoCtx.toCallback
               textSearch     <- pxTextSearch.toCallback
               projectWidgets <- projectWidgetsCB
-            } yield editor.Props(
+            } yield editor.Optional(
               project          = project,
               plainTextNoCtx   = plainTextNoCtx,
               textSearch       = textSearch,
@@ -562,7 +574,7 @@ object NewEditor {
       }
 
       object CodeGroupTitle extends Base(RichTextEditor.CodeGroupTitle) {
-        def apply(id: ReqCodeId, pid: PreviewId): InitFn = start(
+        def apply(id: ReqCodeGroupId, pid: PreviewId): InitFn = start(
           UpdateContentCmd.SetCodeGroupTitle(id, _),
           getCodeGroup(id).map(_.title).widen,
           pid)
@@ -591,6 +603,81 @@ object NewEditor {
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    object EditRichTextNonEmpty {
+      import shipreq.webapp.base.text._
+      import shipreq.webapp.client.project.widgets.RichTextEditor
+
+      abstract class Base[T <: Text.Generic, Cmd](val editor: RichTextEditor[T],
+                                                  ssp: ServerSideProcInvoker[Cmd, ErrorMsg, Any]) extends ForChangeType {
+        val T: editor.text.type = editor.text
+
+        override type Args   = Unit
+        override type Change = T.NonEmptyText
+
+        protected def start(cmd           : T.NonEmptyText => Cmd,
+                            initialValueCB: CallbackOption[T.NonEmptyText],
+                            pid           : PreviewId): InitFn = ictx => args => {
+          import ictx._
+
+          val (abort, commitFn) =
+            makeAbortCommitFn(ssp)(cmd, args.hooks)
+
+          val initCB =
+            for {
+              initialValue   <- initialValueCB
+              projectWidgets <- args.cbProjectWidgets.toCBO
+            } yield {
+              val initialText = projectWidgets.plainText.text(initialValue.whole, RichTextEditor.hardcodedLive, Mandatory)
+              (initialValue, initialText)
+            }
+
+          startWithStateSnapshot(initCB)(_._2)(
+            i => new State(_, Some(i._1), args.cbProjectWidgets, pid, abort, commitFn))
+        }
+
+        private class State(ss              : StateSnapshot[String],
+                            initial         : Some[T.NonEmptyText],
+                            projectWidgetsCB: CallbackTo[ProjectWidgets.AnyCtx],
+                            pid             : PreviewId,
+                            abort           : Some[Callback],
+                            commitFn        : Some[editor.NonEmpty.CommitFn]) extends EditorImpl {
+
+          override type Props = editor.NonEmpty
+          override def renderImpl = _.render
+          override def changeImpl = _.validated
+          override val props = (_, asyncState) =>
+            for {
+              previewRW      <- previewW.toReadWriteCB
+              project        <- pxProject.toCallback
+              plainTextNoCtx <- pxPlainTextNoCtx.toCallback
+              textSearch     <- pxTextSearch.toCallback
+              projectWidgets <- projectWidgetsCB
+            } yield editor.NonEmpty(
+              project          = project,
+              plainTextNoCtx   = plainTextNoCtx,
+              textSearch       = textSearch,
+              projectWidgets   = projectWidgets,
+              edit             = ss,
+              asyncStatus      = EditorStatus.async(asyncState),
+              abort            = abort,
+              commitFn         = commitFn,
+              commitVerb       = commitVerb,
+              preview          = previewRW(pid),
+              preEditValue     = initial,
+              extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
+              showInstructions = true)
+        }
+      }
+
+       object ManualIssue extends Base(RichTextEditor.ManualIssue, sspManualIssue) {
+         def apply(id: ManualIssueId, pid: PreviewId): InitFn = start(
+           ManualIssueCmd.Update(id, _),
+           pxProject.toCallback.map(_.manualIssues.imap.need(id).text).toCBO,
+           pid)
+       }
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     object EditUseCaseStep extends ForChangeType {
       import shipreq.webapp.client.project.widgets.RichTextEditor.hardcodedLive
       import shipreq.webapp.client.project.widgets.UseCaseStepEditor
@@ -603,7 +690,10 @@ object NewEditor {
         import ictx._
 
         val commitFn: UseCaseStepEditor.CommitFn =
-          Reusable.fn(v => commit(UpdateContentCmd.UpdateUseCaseStep(id, v), args.hooks))
+          // Below you'll see that we're filtering flow to create visibleFlow
+          // There's no need to re-insert invisibleFlow here because flow is passed as a SetDiff
+          // meaning that regardless of what the actual flow is, we only send what the user changes.
+          Reusable.fn(v => commit(sspUpdateContent)(UpdateContentCmd.UpdateUseCaseStep(id, v), args.hooks))
 
         val pxStepFocus: Px[UseCaseStep.Focus] =
           pxProject.map(_.content.reqs.useCases.focusStep(id))
@@ -613,7 +703,11 @@ object NewEditor {
             stepFocus      <- pxStepFocus
             projectWidgets <- args.pxProjectWidgets.value
           } yield {
-            val initialValue = TextAndFlow(stepFocus.step.titleExplicitly, Direction.Values(stepFocus.flow))
+            val visibleFlow = args.filterDead match {
+              case HideDead => Direction.Values(stepFocus.flow(_, Live))
+              case ShowDead => Direction.Values(stepFocus.flow)
+            }
+            val initialValue = TextAndFlow(stepFocus.step.titleExplicitly, visibleFlow)
             val initialText = projectWidgets.plainText.useCaseStepTextAndFlow(initialValue, hardcodedLive)
             (initialValue, initialText)
           }
@@ -643,17 +737,19 @@ object NewEditor {
             step           <- stepFocusCB
           } yield {
 
-            val shiftRunner: AsyncFeature.Runner.D0O[LeftRight, Any] =
-              args.shiftRunner.mapRunOption(run =>
-                Reusable.never(d =>
-                  step.canShift(d).option(
-                    run(UpdateContentCmd.ShiftUseCaseStep(step.id, d)))))
+            val shiftRunner: Option[AsyncFeature.Runner.D0O[LeftRight, Any]] =
+              args.shiftRunner.map(
+                _.mapRunOption(run =>
+                  Reusable.never(d =>
+                    step.canShift(d).option(
+                      run(UpdateContentCmd.ShiftUseCaseStep(step.id, d))))))
 
-            val addStepRunner: AsyncFeature.Runner.D0O[Unit, Any] =
-              args.addStepRunner.mapRunOption(run =>
-                Reusable.never(_ =>
-                  step.field.canInsertAfter(step.loc).option(
-                    run(UpdateContentCmd.AddUseCaseStep(step.useCaseId, step.field, step.loc.asParentLoc)))))
+            val addStepRunner: Option[AsyncFeature.Runner.D0O[Unit, Any]] =
+              args.addStepRunner.map(
+                _.mapRunOption(run =>
+                  Reusable.never(_ =>
+                    step.field.canInsertAfter(step.loc).option(
+                      run(UpdateContentCmd.AddUseCaseStep(step.useCaseId, step.field, step.loc.asParentLoc))))))
 
             UseCaseStepEditor.Props(
               project        = project,
