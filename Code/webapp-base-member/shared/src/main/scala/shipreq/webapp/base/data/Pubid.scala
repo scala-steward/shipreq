@@ -102,7 +102,7 @@ object ExternalPubid {
  * Once a (reqtype x position) is allocated, it is never removed.
  * Thus, the 0-based position in the vector corresponds with 1-based [[ReqTypePos]] values.
  */
-case class PubidRegister(value: Multimap[ReqTypeId, Vector, ReqId]) {
+final case class PubidRegister(value: Multimap[ReqTypeId, Vector, ReqId]) {
 
   // TODO Should be GR not C
   def allocC(reqTypeId: CustomReqTypeId)(reqId: ReqIdC): (PubidRegister, PubidC) =
