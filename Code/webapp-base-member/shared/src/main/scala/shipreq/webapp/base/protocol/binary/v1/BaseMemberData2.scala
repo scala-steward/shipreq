@@ -1,4 +1,4 @@
-package shipreq.webapp.base.protocol.binary
+package shipreq.webapp.base.protocol.binary.v1
 
 import boopickle.ConstPickler
 import boopickle.DefaultBasic._
@@ -14,8 +14,8 @@ import shipreq.webapp.base.issue.IssueCategory
 import shipreq.webapp.base.sort.SortMethod
 import shipreq.webapp.base.text.{AtomTC, ProjectText, Text}
 
-object CodecBaseMemberV1 {
-  import CodecBaseV1._
+object BaseMemberData2 {
+  import BaseData._
 
   // ===================================================================================================================
   // Polymorphic definitions

@@ -12,7 +12,7 @@ object PublicSpaEntryPoint {
 
   implicit val picklerInitData: Pickler[InitData] =
     new Pickler[InitData] {
-      import shipreq.webapp.base.protocol.binary.CodecBaseV1._
+      import shipreq.webapp.base.protocol.binary.v1.BaseData._
 
       override def pickle(a: InitData)(implicit state: PickleState): Unit = {
         state.pickle(a.publicRegistration)

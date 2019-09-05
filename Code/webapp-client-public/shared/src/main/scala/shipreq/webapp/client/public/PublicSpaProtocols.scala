@@ -66,7 +66,7 @@ object PublicSpaProtocols {
     type Response = ErrorMsg \/ Unit
 
     val ajax = {
-      import CodecBaseV1._
+      import v1.BaseData._
 
       implicit val picklerRequest: Pickler[Request] =
         new Pickler[Request] {
@@ -104,7 +104,7 @@ object PublicSpaProtocols {
     type Response = ErrorMsg \/ Unit
 
     val ajax: Ajax[Request, Response] = {
-      import CodecBaseV1._
+      import v1.BaseData._
 
       val picklerRequest: Pickler[Request] = implicitly
       val picklerResponse: Pickler[Response] = implicitly
@@ -158,7 +158,7 @@ object PublicSpaProtocols {
     type Response = ErrorMsg \/ Result
 
     val ajax: Ajax[Request, Response] = {
-      import CodecBaseV1._
+      import v1.BaseData._
 
       val picklerRequest: Pickler[Request] =
         new Pickler[Request] {
@@ -238,7 +238,7 @@ object PublicSpaProtocols {
     type Response = Permission
 
     val ajax: Ajax[Request, Response] = {
-      import CodecBaseV1._
+      import v1.BaseData._
 
       val picklerRequest: Pickler[Request] =
         new Pickler[Request] {
@@ -272,7 +272,7 @@ object PublicSpaProtocols {
     type Response = Unit
 
     val ajax: Ajax[Request, Response] = {
-      import CodecBaseV1._
+      import v1.BaseData._
 
       val picklerRequest: Pickler[Request] = implicitly
       val picklerResponse: Pickler[Response] = implicitly
@@ -304,7 +304,7 @@ object PublicSpaProtocols {
     type Response = ErrorMsg \/ Result
 
     val ajax: Ajax[Request, Response] = {
-      import CodecBaseV1._
+      import v1.BaseData._
 
       implicit val picklerRequest: Pickler[Request] =
         new Pickler[Request] {

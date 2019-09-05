@@ -1,4 +1,4 @@
-package shipreq.webapp.base.protocol.binary
+package shipreq.webapp.base.protocol.binary.v1
 
 import japgolly.microlibs.nonempty._
 import nyaya.util.Multimap
@@ -9,12 +9,12 @@ import shipreq.webapp.base.event._
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.text.Text
 
-object CodecEventsV1 {
+object Events {
   import boopickle.DefaultBasic._
-  import CodecBaseV1._
-  import CodecBaseMemberV1._
-  import CodecBaseMemberV1.AtomPicklers.instances._
-  import CodecBaseMemberV1.ReqTableDataPicklers._
+  import BaseData._
+  import BaseMemberData2._
+  import BaseMemberData2.AtomPicklers.instances._
+  import BaseMemberData2.ReqTableDataPicklers._
 
   implicit val picklerEventNonEmptyCustomTextMap: Pickler[Event.NonEmptyCustomTextMap] = pickleNonEmptyMono
   implicit val picklerNonEmptySetApplicableTagId: Pickler[NonEmptySet[ApplicableTagId]] = pickleNES
