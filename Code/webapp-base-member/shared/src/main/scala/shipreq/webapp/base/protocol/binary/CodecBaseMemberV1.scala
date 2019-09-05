@@ -5,6 +5,7 @@ import boopickle.DefaultBasic._
 import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.univeq.UnivEq
 import java.time.Instant
+import nyaya.util.Multimap
 import shipreq.base.util.{Direction, IMap}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
@@ -965,6 +966,12 @@ object CodecBaseMemberV1 {
       }
     }
 
+  implicit lazy val picklerMultimapReqIdSetApReqCodeId: Pickler[Multimap[ReqId, Set, ApReqCodeId]] =
+    pickleMultimap[ReqId, Set, ApReqCodeId]
+
+  implicit lazy val picklerMultimapReqCodeValueSetApReqCodeId: Pickler[Multimap[ReqCode.Value, Set, ApReqCodeId]] =
+    pickleMultimap[ReqCode.Value, Set, ApReqCodeId]
+
   implicit lazy val picklerMutexChildren: Pickler[MutexChildren] =
     pickleBool(MutexChildren)
 
@@ -1111,9 +1118,6 @@ object CodecBaseMemberV1 {
 
   implicit lazy val picklerReqCodeData: Pickler[ReqCode.Data] = {
     import ReqCode._
-
-    implicit val picklerReqInactive =
-      pickleMultimap[ReqId, Set, ApReqCodeId]
 
     implicit val picklerInactive: Pickler[Inactive] =
       new Pickler[Inactive] {
@@ -1331,6 +1335,22 @@ object CodecBaseMemberV1 {
           case KeyImplicationGraph => StaticFieldType.ImplicationGraph
           case KeyStepGraph        => StaticFieldType.StepGraph
           case KeyStepTree         => StaticFieldType.StepTree
+        }
+    }
+
+  implicit lazy val picklerStaticFieldUseCaseStepTree: Pickler[StaticField.UseCaseStepTree] =
+    new Pickler[StaticField.UseCaseStepTree] {
+      private[this] final val KeyNormalAltStepTree = 'n'
+      private[this] final val KeyExceptionStepTree = 'e'
+      override def pickle(a: StaticField.UseCaseStepTree)(implicit state: PickleState): Unit =
+        a match {
+          case StaticField.NormalAltStepTree => state.enc.writeByte(KeyNormalAltStepTree)
+          case StaticField.ExceptionStepTree => state.enc.writeByte(KeyExceptionStepTree)
+        }
+      override def unpickle(implicit state: UnpickleState): StaticField.UseCaseStepTree =
+        state.dec.readByte match {
+          case KeyNormalAltStepTree => StaticField.NormalAltStepTree
+          case KeyExceptionStepTree => StaticField.ExceptionStepTree
         }
     }
 

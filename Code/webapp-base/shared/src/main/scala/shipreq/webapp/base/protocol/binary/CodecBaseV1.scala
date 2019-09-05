@@ -326,6 +326,9 @@ object CodecBaseV1 {
   implicit lazy val picklerInstant: Pickler[Instant] =
     transformPickler(Instant.ofEpochMilli)(_.toEpochMilli)
 
+  implicit lazy val picklerNonEmptyVectorInt: Pickler[NonEmptyVector[Int]] =
+    pickleNEV
+
   implicit lazy val picklerPermission: Pickler[Permission] =
     pickleBool(Allow)
 
@@ -363,4 +366,23 @@ object CodecBaseV1 {
   implicit lazy val picklerValidity: Pickler[Validity] =
     pickleBool(Valid)
 
+  implicit lazy val picklerVectorTreeParentLocation: Pickler[VectorTree.ParentLocation] =
+    new Pickler[VectorTree.ParentLocation] {
+
+      implicit val picklerVectorTreeAt: Pickler[VectorTree.ParentLocation.At] =
+        transformPickler(VectorTree.ParentLocation.At.apply)(_.loc)
+
+      private[this] final val KeyAt    = 'a'
+      private[this] final val KeyEmpty = 'e'
+      override def pickle(a: VectorTree.ParentLocation)(implicit state: PickleState): Unit =
+        a match {
+          case b: VectorTree.ParentLocation.At    => state.enc.writeByte(KeyAt   ); state.pickle(b)
+          case VectorTree.ParentLocation.Empty    => state.enc.writeByte(KeyEmpty)
+        }
+      override def unpickle(implicit state: UnpickleState): VectorTree.ParentLocation =
+        state.dec.readByte match {
+          case KeyAt    => state.unpickle[VectorTree.ParentLocation.At]
+          case KeyEmpty => VectorTree.ParentLocation.Empty
+        }
+    }
 }
