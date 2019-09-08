@@ -1,9 +1,8 @@
 package shipreq.webapp.base.protocol
 
-import boopickle.{PickleState, Pickler, UnpickleState}
+import boopickle.DefaultBasic._
 import japgolly.univeq.UnivEq
 import scalaz.{-\/, \/, \/-}
-import shipreq.webapp.base.protocol.BinCodecGeneric.{Tuple2Pickler, intPickler}
 
 object WebSocketShared {
 

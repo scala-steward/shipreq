@@ -1,6 +1,6 @@
 package shipreq.webapp.base.protocol
 
-import boopickle.Pickler
+import boopickle.DefaultBasic._
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
 import scala.util.Try
 import scalaz.\/-
@@ -14,8 +14,6 @@ import shipreq.webapp.base.protocol.WebSocket.ReadyState
 import shipreq.webapp.base.test.WebappTestUtil._
 
 object WebSocketClientTest extends TestSuite {
-  import BoopickleMacros._
-  import BinCodecGeneric._
 
   private final case class ReqMsg(msg: Int)
   private final case class ResMsg(msg: Int)
@@ -25,9 +23,9 @@ object WebSocketClientTest extends TestSuite {
     override type ReqId  = WebSocketShared.ReqId
     override type ReqRes = Protocol.RequestResponse.Simple[Pickler, ReqMsg, ResMsg]
     override val url     = Url.Relative("/x")
-    override val req     = Protocol(pickleCaseClass[ReqMsg])
-    override val push    = Protocol(pickleCaseClass[PushMsg])
-    val res              = Protocol(pickleCaseClass[ResMsg])
+    override val req     = Protocol(transformPickler(ReqMsg.apply)(_.msg))
+    override val push    = Protocol(transformPickler(PushMsg.apply)(_.msg))
+    val res              = Protocol(transformPickler(ResMsg.apply)(_.msg))
     val ReqRes: ReqRes   = Protocol.RequestResponse.simple(res)
   }
 
