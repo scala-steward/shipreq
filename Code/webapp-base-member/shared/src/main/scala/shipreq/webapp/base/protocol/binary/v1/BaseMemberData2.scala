@@ -3,10 +3,10 @@ package shipreq.webapp.base.protocol.binary.v1
 import boopickle.DefaultBasic._
 import java.time.Instant
 import nyaya.util.Multimap
-import shipreq.base.util.Direction
+import shipreq.base.util.{Direction, SetDiff}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
-import shipreq.webapp.base.text.{ ProjectText, Text}
+import shipreq.webapp.base.text.{ProjectText, Text}
 
 /** This is all remaining codecs not covered by [[BaseMemberData1]].
   *
@@ -594,6 +594,10 @@ object BaseMemberData2 {
         Requirements(genericReqs, useCases, pubids)
       }
     }
+
+  implicit lazy val picklerSetDiffReqCodeValue: Pickler[SetDiff[ReqCode.Value]] = pickleSetDiff
+
+  implicit lazy val picklerSetDiffNEReqCodeValue: Pickler[SetDiff.NE[ReqCode.Value]] = pickleNonEmptyMono
 
   implicit lazy val picklerStaticFieldType: Pickler[StaticFieldType] =
     new Pickler[StaticFieldType] {
