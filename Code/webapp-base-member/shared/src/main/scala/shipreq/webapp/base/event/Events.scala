@@ -27,6 +27,10 @@ sealed trait ActiveEvent extends Event
 
 object Event {
 
+  val toActiveEvent: Event => ActiveEvent = {
+    case a: ActiveEvent => a
+  }
+
   def reqCreationEventFilter: Event => Boolean = {
     case _: GenericReqCreate
        | _: UseCaseCreate => true
