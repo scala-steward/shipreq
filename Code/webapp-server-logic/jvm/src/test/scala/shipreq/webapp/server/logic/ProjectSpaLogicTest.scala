@@ -129,12 +129,13 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
     val msgBin = BinaryJvm.encode(h.protocolCS)((reqId, msg))
     var resp: MsgError \/ BinaryData = null
     val proc = projectSpa.onMessage(
-      static  = static,
-      state   = state,
-      msg     = msgBin,
-      respond = a => Name{resp = \/-(a); \/-(())},
-      push    = e => Name(???),
-      onError = a => Name{resp = -\/(a)}
+      static          = static,
+      state           = state,
+      msg             = msgBin,
+      respond         = a => Name{resp = \/-(a); \/-(())},
+      push            = e => Name(???),
+      onListenerError = e => Name(???),
+      onError         = a => Name{resp = -\/(a)}
     )
     val newState = proc.value
     val result: MsgError \/ msg.reqRes.ResponseType =
@@ -247,7 +248,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
             assertEq(actual, \/-(expect))
             assert(result._2.isEmpty)
 
-            val cache = redis.read(p1.id).value
+            val cache = redis.read(p1.id).value.needRight
             assertEq(cache.ord, Some(p1.latestOrd))
           }
         }
@@ -272,7 +273,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
             assertEq(s"[$c] response", actual.map(_.map(_.toList.map(_.ord))), \/-(expect))
             assert(result._2.isEmpty)
 
-            val cache = redis.read(p1.id).value
+            val cache = redis.read(p1.id).value.needRight
             assertEq(s"[$c] cache state", cache.ord, Some((p1.latestOrd.asEventOrd + 1).asLatest))
           }
         }
@@ -290,7 +291,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       val static = p1.static
 
       var recv1     = Vector.empty[VerifiedEvent.NonEmptySeq]
-      val subState1 = projectSpa.onOpen(static, emptyState, onPush(recv1 :+= _)).value
+      val subState1 = projectSpa.onOpen(static, emptyState, onPush(recv1 :+= _), _ => ???).value
       val initData1 = sendMsgAndBroadcast(initAppMsg, static, subState1).needRight
       assertEq("[1]", recv1, Vector.empty)
 
@@ -298,7 +299,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       assertEq("[2]", recv1, Vector(ves1))
 
       var recv2     = Vector.empty[VerifiedEvent.NonEmptySeq]
-      val subState2 = projectSpa.onOpen(static, emptyState, onPush(recv2 :+= _)).value
+      val subState2 = projectSpa.onOpen(static, emptyState, onPush(recv2 :+= _), _ => ???).value
       val initData2 = sendMsgAndBroadcast(initAppMsg, static, subState2).needRight
       assertEq("[3]", recv2, Vector.empty)
       assertEq("[4]", recv1, Vector(ves1))
@@ -353,7 +354,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       implicit val t = new Tester; import t._
       val ords     = NonEmptySet(1, 3, 666).map(EventOrd(_))
       var recv     = Vector.empty[VerifiedEvent.NonEmptySeq]
-      val subState = projectSpa.onOpen(p1.static, emptyState, onPush(recv :+= _)).value
+      val subState = projectSpa.onOpen(p1.static, emptyState, onPush(recv :+= _), _ => ???).value
       val (\/-(_), newState) = sendMsg(WsReqRes.Sync.AndReq(ords), p1.static, subState)
       assertEq(recv, Vector.empty)
       assert(newState.isEmpty)

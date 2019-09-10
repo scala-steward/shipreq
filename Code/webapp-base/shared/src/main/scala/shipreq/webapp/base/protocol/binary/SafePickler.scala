@@ -2,11 +2,11 @@ package shipreq.webapp.base.protocol.binary
 
 import boopickle.{PickleState, Pickler, UnpickleState}
 import japgolly.univeq._
-import java.nio.charset.CharacterCodingException
 import scala.util.control.NonFatal
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.BinaryData
 import shipreq.webapp.base.protocol.Version
+import shipreq.webapp.base.protocol.Version.ordering.mkOrderingOps
 
 /** Binary codec (pickler). Differs from out-of-the-box [[Pickler]] in the following ways:
   *
@@ -26,8 +26,9 @@ final case class SafePickler[A](header : Option[MagicNumber],
   def withMagicNumbers(header: Int, footer: Int): SafePickler[A] =
     copy(Some(MagicNumber(header)), Some(MagicNumber(footer)))
 
-  private val picklerHeader = header.map(picklerMagicNumber)
-  private val picklerFooter = footer.map(picklerMagicNumber)
+  private val picklerHeader  = header.map(pickleMagicNumber(version, _))
+  private val picklerFooter  = footer.map(pickleMagicNumber(version, _))
+  private val picklerVersion = pickleVersion(version)
 
   private val picklerCombined: Pickler[A] =
     new Pickler[A] {
@@ -43,7 +44,7 @@ final case class SafePickler[A](header : Option[MagicNumber],
         picklerHeader.foreach(_.unpickle)
         val v = picklerVersion.unpickle
         if (v.major !=* version.major)
-          throw DecodingFailure.UnsupportedMajorVer(actual = v)
+          throw DecodingFailure.UnsupportedMajorVer(localVer = version, actual = v)
         try {
           val a = body.unpickle
           picklerFooter.foreach(_.unpickle)
@@ -64,51 +65,67 @@ final case class SafePickler[A](header : Option[MagicNumber],
       val a = UnpickleImpl(picklerCombined).fromBytes(bin.unsafeByteBuffer)
       \/-(a)
     } catch {
-      case e: VerAndErr => DecodingFailure.fromException(e.err, Some(e.ver))
-      case e: Throwable => DecodingFailure.fromException(e, None)
+      case e: VerAndErr => DecodingFailure.fromException(version, e.err, Some(e.ver))
+      case e: Throwable => DecodingFailure.fromException(version, e, None)
     }
   }
+
+  val decodeBytes: Array[Byte] => SafePickler.Result[A] =
+    bytes => decode(BinaryData.unsafeFromArray(bytes))
 }
 
 object SafePickler {
 
   type Result[+A] = DecodingFailure \/ A
 
+  def success[A](a: A): Result[A] =
+    \/-(a)
+
   sealed trait DecodingFailure {
+    val localVer: Version
     val upstreamVer: Option[Version]
+
+    def isLocalKnownToBeOutOfDate: Boolean =
+      upstreamVer.exists(localVer < _)
+
+    def isUpstreamKnownToBeOutOfDate: Boolean =
+      upstreamVer.exists(_ < localVer)
   }
 
   object DecodingFailure {
 
-    final case class UnsupportedMajorVer(actual: Version) extends RuntimeException with DecodingFailure {
+    final case class UnsupportedMajorVer(localVer: Version, actual: Version) extends RuntimeException with DecodingFailure {
       override val upstreamVer = Some(actual)
     }
 
-    final case class MagicNumberMismatch(actual     : MagicNumber,
+    final case class MagicNumberMismatch(localVer   : Version,
+                                         actual     : MagicNumber,
                                          expected   : MagicNumber,
                                          upstreamVer: Option[Version]) extends RuntimeException with DecodingFailure
 
-    final case class InvalidVersion(major: Int,
-                                    minor: Int) extends RuntimeException with DecodingFailure {
+    final case class InvalidVersion(localVer: Version,
+                                    major   : Int,
+                                    minor   : Int) extends RuntimeException with DecodingFailure {
       override val upstreamVer = None
     }
 
-    final case class ExceptionOccurred(exception  : Throwable,
+    final case class ExceptionOccurred(localVer   : Version,
+                                       exception  : Throwable,
                                        upstreamVer: Option[Version]) extends DecodingFailure
 
-    def fromException(err: Throwable, upstreamVer: Option[Version]): Result[Nothing] =
+    def fromException(localVer: Version, err: Throwable, upstreamVer: Option[Version]): Result[Nothing] =
       err match {
-        case MagicNumberMismatch(a, b, None) => -\/(MagicNumberMismatch(a, b, upstreamVer))
-        case e: DecodingFailure              => -\/(e)
-        case e: StackOverflowError           => -\/(DecodingFailure.ExceptionOccurred(e, upstreamVer))
-        case NonFatal(e)                     => -\/(DecodingFailure.ExceptionOccurred(e, upstreamVer))
-        case e                               => throw e
+        case MagicNumberMismatch(_, a, b, None) => -\/(MagicNumberMismatch(localVer, a, b, upstreamVer))
+        case e: DecodingFailure                 => -\/(e)
+        case e: StackOverflowError              => -\/(DecodingFailure.ExceptionOccurred(localVer, e, upstreamVer))
+        case NonFatal(e)                        => -\/(DecodingFailure.ExceptionOccurred(localVer, e, upstreamVer))
+        case e                                  => throw e
       }
   }
 
   private[SafePickler] final class VerAndErr(val ver: Version, val err: Throwable) extends RuntimeException
 
-  private[SafePickler] val picklerVersion: Pickler[Version] =
+  private[SafePickler] def pickleVersion(localVer: Version): Pickler[Version] =
     new Pickler[Version] {
       import boopickle.DefaultBasic._
 
@@ -125,11 +142,11 @@ object SafePickler {
         if (minOk && maxOk)
           Version.fromInts(major, minor)
         else
-          throw DecodingFailure.InvalidVersion(major, minor)
+          throw DecodingFailure.InvalidVersion(localVer, major, minor)
       }
     }
 
-  private[SafePickler] def picklerMagicNumber(real: MagicNumber): Pickler[Unit] =
+  private[SafePickler] def pickleMagicNumber(localVer: Version, real: MagicNumber): Pickler[Unit] =
     new Pickler[Unit] {
       import boopickle.DefaultBasic._
 
@@ -140,7 +157,11 @@ object SafePickler {
       override def unpickle(implicit state: UnpickleState): Unit = {
         val found = state.dec.readRawInt
         if (found != real.value)
-          throw DecodingFailure.MagicNumberMismatch(actual = MagicNumber(found), expected = real, upstreamVer = None)
+          throw DecodingFailure.MagicNumberMismatch(
+            localVer = localVer,
+            actual = MagicNumber(found),
+            expected = real,
+            upstreamVer = None)
       }
     }
 

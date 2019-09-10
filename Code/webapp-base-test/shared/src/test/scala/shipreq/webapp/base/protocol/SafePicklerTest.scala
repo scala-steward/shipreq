@@ -15,6 +15,7 @@ object SafePicklerTest extends TestSuite {
 
   private object Internals {
 
+    val v10 = Version.v10
     val v11 = Version.fromInts(1, 1)
 
     sealed trait Data
@@ -94,7 +95,7 @@ object SafePicklerTest extends TestSuite {
       val data = Data.B(123)
       val bin = safePicklerv11.encode(data)
       assertDecodeFailure(safePicklerv10, bin) {
-        case DecodingFailure.ExceptionOccurred(_, Some(`v11`)) =>
+        case DecodingFailure.ExceptionOccurred(`v10`, _, Some(`v11`)) =>
       }
     }
 
@@ -108,7 +109,7 @@ object SafePicklerTest extends TestSuite {
       val bin = modBin(safePicklerv11.encode(Data.O), 9.toByte +: _)
       val expect = safePicklerv11.header.get
       assertDecodeFailure(safePicklerv11, bin) {
-        case DecodingFailure.MagicNumberMismatch(_, `expect`, None) =>
+        case DecodingFailure.MagicNumberMismatch(`v11`, _, `expect`, None) =>
       }
     }
 
@@ -116,7 +117,7 @@ object SafePicklerTest extends TestSuite {
       val bin = modBin(safePicklerv11.encode(Data.O), _.dropRight(1) :+ 9.toByte)
       val expect = safePicklerv11.footer.get
       assertDecodeFailure(safePicklerv11, bin) {
-        case DecodingFailure.MagicNumberMismatch(_, `expect`, Some(`v11`)) =>
+        case DecodingFailure.MagicNumberMismatch(`v11`, _, `expect`, Some(`v11`)) =>
       }
     }
 

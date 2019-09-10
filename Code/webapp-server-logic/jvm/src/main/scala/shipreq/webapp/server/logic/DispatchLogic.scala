@@ -469,20 +469,20 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => Dispat
                 F.point {
                   err match {
 
-                    case DecodingFailure.UnsupportedMajorVer(clientVer) =>
+                    case DecodingFailure.UnsupportedMajorVer(_, clientVer) =>
                       logger.warn(s"${logPrefix}Unsupported major version: ${clientVer.verStr}")
                       def serverAheadOfClient = versionFailure(s"Failed to parse protocol ${clientVer.verStr}. This server is on ${serverVer.verStr}.")
                       respondCV(clientVer, serverAheadOfClient)
 
-                    case DecodingFailure.MagicNumberMismatch(client, server, clientVer) =>
+                    case DecodingFailure.MagicNumberMismatch(_, client, server, clientVer) =>
                       logger.warn(s"${logPrefix}Magic-number mismatch: received ${client.hex}, expected ${server.hex}. (ClientVer:${clientVer.fold("?")(_.verNum)})")
                       respondCVO(clientVer, badRequest)
 
-                    case DecodingFailure.InvalidVersion(major, minor) =>
+                    case DecodingFailure.InvalidVersion(_, major, minor) =>
                       logger.warn(s"${logPrefix}Invalid version: $major.$minor)")
                       badRequest
 
-                    case DecodingFailure.ExceptionOccurred(e, clientVer) =>
+                    case DecodingFailure.ExceptionOccurred(_, e, clientVer) =>
                       logger.warn(s"${logPrefix}Failed to decode request. (ClientVer:${clientVer.fold("?")(_.verNum)})", e)
                       respondCVO(clientVer, badRequest)
                   }

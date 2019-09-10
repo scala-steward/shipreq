@@ -10,7 +10,6 @@ import shipreq.base.util.{BinaryData, ErrorMsg}
 import shipreq.base.util.JsExt._
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.binary.SafePickler.DecodingFailure
-import shipreq.webapp.base.protocol.Version.ordering.mkOrderingOps
 
 trait AjaxClient[F[_]] {
 
@@ -40,7 +39,7 @@ object AjaxClient {
 
         case e: DecodingFailure.UnsupportedMajorVer =>
           log(s"S:${e.actual.verNum}, C:${clientVer.verNum}")
-          if (e.actual > clientVer)
+          if (e.isLocalKnownToBeOutOfDate)
             (false, serverIsNewer)
           else
             (true, failedToParse)
@@ -53,7 +52,7 @@ object AjaxClient {
           e.upstreamVer.foreach(v => log(s"S:${v.verStr}"))
           e.exception.printStackTrace()
           val errorMsg = ServerSideProcInvoker.throwableToErrorMsg(e.exception)
-          val shouldRetry = e.upstreamVer.exists(_ < clientVer)
+          val shouldRetry = e.isUpstreamKnownToBeOutOfDate
           (shouldRetry, errorMsg)
       }
 
