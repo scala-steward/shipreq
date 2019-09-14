@@ -192,6 +192,9 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
 
   implicit def setLikePatchAdd(s: Set[ApReqCodeId.AndValue]): Multimap[ReqCode.Value, Set, ApReqCodeId] =
     Multimap(s.toList.map(iv => iv.value -> Set(iv.id)).toMap)
+
+  implicit def autoVerifiedEventNonEmptySeqFromOne(v: VerifiedEvent): VerifiedEvent.NonEmptySeq =
+    VerifiedEvent.NonEmptySeq.one(v)
 }
 
 object UnsafeTypes extends UnsafeTypesMedPriority {
@@ -222,6 +225,11 @@ object UnsafeTypes extends UnsafeTypesMedPriority {
       PartialLocation.detect(
         NonEmptyVector force
           str.split('.').iterator.map(s => if (s == "X") -1 else s.toInt).toVector)
+  }
+
+  implicit class UnsafeEventExt(private val self: Event) extends AnyVal {
+    def verified(ord: EventOrd): VerifiedEvent =
+      VerifiedEvent(ord, self)
   }
 
   object AutoNES {
