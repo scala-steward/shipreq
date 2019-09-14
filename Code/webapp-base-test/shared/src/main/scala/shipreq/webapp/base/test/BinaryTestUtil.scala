@@ -1,13 +1,17 @@
 package shipreq.webapp.base.test
 
+import boopickle.Pickler
 import nyaya.gen.Gen
 import scalaz.{Equal, \/-}
 import sourcecode.Line
 import shipreq.webapp.base.protocol.binary.SafePickler
+import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.BinaryData
 
 object BinaryTestUtil {
+
+  private val propTestSize = 33
 
   // Not true but good enough for now
   implicit def univEqSafePicklerDecoderFailure: UnivEq[SafePickler.DecodingFailure] = UnivEq.force
@@ -22,7 +26,7 @@ object BinaryTestUtil {
     assertDecodeOk(p)(p.encode(a), a)
 
   def propTestRoundTrip[A: Equal](p: SafePickler[A])(g: Gen[A])(implicit l: Line): Unit =
-    g.samples().take(33).foreach(assertRoundTrip(p)(_))
+    g.samples().take(propTestSize).foreach(assertRoundTrip(p)(_))
 
   def generateStabilityTest[A](p: SafePickler[A])(a: A)(implicit l: Line): Nothing = {
     val ver = p.version.verStr
@@ -40,5 +44,15 @@ object BinaryTestUtil {
          |}
          |""".stripMargin.trim
     fail(s"Copy and paste this:\n\n  $test\n\n")
+  }
+
+  def assertRoundTripP[A](a: A)(implicit p: Pickler[A], e: Equal[A], l: Line): Unit = {
+    val sp = p.asV10
+    assertDecodeOk(sp)(sp.encode(a), a)
+  }
+
+  def propTestRoundTripP[A](g: Gen[A])(implicit p: Pickler[A], e: Equal[A], l: Line): Unit = {
+    val sp = p.asV10
+    g.samples().take(propTestSize).foreach(assertRoundTrip(sp)(_))
   }
 }
