@@ -60,18 +60,29 @@ final case class SafePickler[A](header : Option[MagicNumber],
     BinaryData.unsafeFromByteBuffer(bb)
   }
 
-  def decode(bin: BinaryData): SafePickler.Result[A] = {
+  private def wrapRead(unpickle: => A): SafePickler.Result[A] =
     try {
-      val a = UnpickleImpl(picklerCombined).fromBytes(bin.unsafeByteBuffer)
-      \/-(a)
+      \/-(unpickle)
     } catch {
-      case e: VerAndErr => DecodingFailure.fromException(version, e.err, Some(e.ver))
-      case e: Throwable => DecodingFailure.fromException(version, e, None)
+      case e: EmbeddedFailure => -\/(e.failure)
+      case e: VerAndErr       => DecodingFailure.fromException(version, e.err, Some(e.ver))
+      case e: Throwable       => DecodingFailure.fromException(version, e, None)
     }
-  }
+
+  def decode(bin: BinaryData): SafePickler.Result[A] =
+    wrapRead(UnpickleImpl(picklerCombined).fromBytes(bin.unsafeByteBuffer))
 
   val decodeBytes: Array[Byte] => SafePickler.Result[A] =
     bytes => decode(BinaryData.unsafeFromArray(bytes))
+
+  def embeddedWrite(a: A)(implicit state: PickleState): Unit =
+    picklerCombined.pickle(a)
+
+  def embeddedRead(implicit state: UnpickleState): A =
+    wrapRead(picklerCombined.unpickle) match {
+      case \/-(a) => a
+      case -\/(e) => throw new EmbeddedFailure(e)
+    }
 }
 
 object SafePickler {
@@ -117,6 +128,7 @@ object SafePickler {
       err match {
         case MagicNumberMismatch(_, a, b, None) => -\/(MagicNumberMismatch(localVer, a, b, upstreamVer))
         case e: DecodingFailure                 => -\/(e)
+        case e: EmbeddedFailure                 => -\/(e.failure)
         case e: StackOverflowError              => -\/(DecodingFailure.ExceptionOccurred(localVer, e, upstreamVer))
         case NonFatal(e)                        => -\/(DecodingFailure.ExceptionOccurred(localVer, e, upstreamVer))
         case e                                  => throw e
@@ -124,6 +136,8 @@ object SafePickler {
   }
 
   private[SafePickler] final class VerAndErr(val ver: Version, val err: Throwable) extends RuntimeException
+
+  private[SafePickler] final class EmbeddedFailure(val failure: DecodingFailure) extends RuntimeException
 
   private[SafePickler] def pickleVersion(localVer: Version): Pickler[Version] =
     new Pickler[Version] {

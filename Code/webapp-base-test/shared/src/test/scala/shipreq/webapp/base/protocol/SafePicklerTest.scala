@@ -74,6 +74,18 @@ object SafePicklerTest extends TestSuite {
     def modBin(b: BinaryData, f: Array[Byte] => Array[Byte]): BinaryData =
       BinaryData.unsafeFromArray(f(b.toNewArray))
 
+    def embedded[A](inner: SafePickler[A]): SafePickler[A] = {
+      val p = new Pickler[A] {
+        override def pickle(a: A)(implicit state: PickleState): Unit = {
+          inner.embeddedWrite(a)
+        }
+        override def unpickle(implicit state: UnpickleState): A = {
+          inner.embeddedRead
+        }
+      }
+      p.asVersion(Version.fromInts(4, 4)).withMagicNumbers(0x67230F4E, 0xA0B18F5D)
+    }
+
     def assertDecodeFailure(p: SafePickler[_], bin: BinaryData)(pf: PartialFunction[DecodingFailure, Unit])
                            (implicit l: Line): Unit =
       p.decode(bin) match {
@@ -118,6 +130,33 @@ object SafePicklerTest extends TestSuite {
       val expect = safePicklerv11.footer.get
       assertDecodeFailure(safePicklerv11, bin) {
         case DecodingFailure.MagicNumberMismatch(`v11`, _, `expect`, Some(`v11`)) =>
+      }
+    }
+
+    'embedded - {
+
+      "w>r (ok)" - {
+        val data = Data.A(123)
+        val bin = embedded(safePicklerv11).encode(data)
+        assertDecodeOk(embedded(safePicklerv10))(bin, data)
+      }
+
+      "w>r (ko)" - {
+        val data = Data.B(123)
+        val bin = embedded(safePicklerv11).encode(data)
+        assertDecodeFailure(embedded(safePicklerv10), bin) {
+          case DecodingFailure.ExceptionOccurred(`v10`, _, Some(`v11`)) =>
+        }
+      }
+
+      'badOuterFooter - {
+        val p = embedded(safePicklerv11)
+        val bin = modBin(p.encode(Data.O), _.dropRight(1) :+ 9.toByte)
+        val expect = p.footer.get
+        val outerVer = p.version
+        assertDecodeFailure(p, bin) {
+          case DecodingFailure.MagicNumberMismatch(`outerVer`, _, `expect`, Some(`outerVer`)) =>
+        }
       }
     }
 
