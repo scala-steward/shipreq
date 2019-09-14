@@ -3,6 +3,8 @@ package shipreq.webapp.base.protocol
 import boopickle.DefaultBasic._
 import japgolly.univeq.UnivEq
 import scalaz.{-\/, \/, \/-}
+import shipreq.webapp.base.protocol.binary.SafePickler
+import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 
 object WebSocketShared {
 
@@ -18,43 +20,49 @@ object WebSocketShared {
 
   type ClientToServer[Req] = (ReqId, Req)
 
-  def protocolCS[Req: Pickler]: Protocol.Of[Pickler, ClientToServer[Req]] =
-    Protocol(Tuple2Pickler)
+  def protocolCS[Req](implicit sp: SafePickler[Req]): Protocol.Of[SafePickler, ClientToServer[Req]] =
+    Protocol(sp.map(Tuple2Pickler(ReqId.pickler, _)))
 
   // ===================================================================================================================
   // Server to Client
 
-  type ServerToClient[Push] = Push \/ (ReqId, Protocol.AndValue[Pickler])
+  type ServerToClient[Push] = Push \/ (ReqId, Protocol.AndValue[SafePickler])
 
-  def protocolSC[Push: Pickler](responseUnpickler: ReqId => Protocol[Pickler]): Protocol.Of[Pickler, ServerToClient[Push]] =
-    Protocol(new Pickler[ServerToClient[Push]] {
+  def protocolSC[Push](responseUnpickler: ReqId => Protocol[SafePickler])
+                      (implicit pushCodec: SafePickler[Push]): Protocol.Of[SafePickler, ServerToClient[Push]] = {
 
-      override def pickle(obj: ServerToClient[Push])(implicit state: PickleState): Unit =
-        obj match {
-          case \/-((i, pv)) =>
-            state.enc.writeLong(i.value.toLong << 1)
-            pv.codec.pickle(pv.value)
-          case -\/(push) =>
-            state.enc.writeLong(1)
-            state.pickle(push)
-        }
+    val pickler: Pickler[ServerToClient[Push]] =
+      new Pickler[ServerToClient[Push]] {
 
-      override def unpickle(implicit state: UnpickleState): ServerToClient[Push] = {
-        val header = state.dec.readLong
-        if (header == 1)
-          -\/(state.unpickle[Push])
-        else {
-          val reqId = ReqId((header >> 1).toInt)
-          val protocol = responseUnpickler(reqId)
-          val pav: Protocol.AndValue[Pickler] =
-            if (protocol eq null)
-              null
-            else {
-              val v = state.unpickle(protocol.codec)
-              protocol.andValue(v)
-            }
-          \/-((reqId, pav))
+        override def pickle(obj: ServerToClient[Push])(implicit state: PickleState): Unit =
+          obj match {
+            case \/-((i, pv)) =>
+              state.enc.writeLong(i.value.toLong << 1)
+              pv.codec.embeddedWrite(pv.value)
+            case -\/(push) =>
+              state.enc.writeLong(1)
+              pushCodec.embeddedWrite(push)
+          }
+
+        override def unpickle(implicit state: UnpickleState): ServerToClient[Push] = {
+          val header = state.dec.readLong
+          if (header == 1)
+            -\/(pushCodec.embeddedRead)
+          else {
+            val reqId = ReqId((header >> 1).toInt)
+            val protocol = responseUnpickler(reqId)
+            val pav: Protocol.AndValue[SafePickler] =
+              if (protocol eq null)
+                null
+              else {
+                val v = protocol.codec.embeddedRead
+                protocol.andValue(v)
+              }
+            \/-((reqId, pav))
+          }
         }
       }
-    })
+
+    Protocol(pickler.asV10)
+  }
 }

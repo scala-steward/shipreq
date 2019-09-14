@@ -94,8 +94,9 @@ object ProjectSpaLogic extends StrictLogging {
 
   sealed trait MsgError
   object MsgError {
-    case object ClientMsgDecodingFailure extends MsgError
-    final case class ServerOutOfDate(err: SafePickler.DecodingFailure) extends MsgError
+    final case class ClientMsgDecodingFailure(err: SafePickler.DecodingFailure) extends MsgError
+    final case class ServerBehindClient(err: SafePickler.DecodingFailure) extends MsgError
+    final case class ServerBehindRedis(err: SafePickler.DecodingFailure) extends MsgError
     final case class RespondError(err: Throwable) extends MsgError
   }
 
@@ -237,7 +238,7 @@ object ProjectSpaLogic extends StrictLogging {
       private def pushEvents(span: Span, push: BinaryData => F[Unit], es: VerifiedEvent.NonEmptySeq): F[Unit] =
         trace.newSubSpan("push", span) { _ =>
           for {
-            msgBin <- F point BinaryJvm.encode(webSocketHelper.protocolSC)(-\/(es))
+            msgBin <- F point webSocketHelper.protocolSC.codec.encode(-\/(es))
             _      <- metrics.projectSpaWebSocketPush(msgBin.length)
             _      <- push(msgBin)
           } yield ()
@@ -263,11 +264,17 @@ object ProjectSpaLogic extends StrictLogging {
 
           def handleError(wsReqRes: FreeOption[WsReqRes], err: MsgError): F[MsgResult[F]] =
             onError(err) >> F.point {
+              def descMsg = msg.describe(1000)
               err match {
-                case MsgError.ClientMsgDecodingFailure =>
-                  logger.warn(s"Failed to parse message from client: ${msg.describe(1000)}")
-                case MsgError.ServerOutOfDate(e) =>
-                  logger.warn(s"Failed to parse cache. Aborting. Binary:[${msg.describe(1000)}]", err)
+                case MsgError.ClientMsgDecodingFailure(e) =>
+                  logger.warn(s"Failed to parse message from client: $descMsg", e)
+
+                case MsgError.ServerBehindClient(e) =>
+                  logger.warn(s"Server older than client. Aborting. ClientMsg:[$descMsg]", e)
+
+                case MsgError.ServerBehindRedis(e) =>
+                  logger.warn(s"Server older than cache. Aborting. CacheData:[$descMsg]", e)
+
                 case MsgError.RespondError(e) =>
                   logger.error(s"Error sending response.", e)
               }
@@ -279,7 +286,7 @@ object ProjectSpaLogic extends StrictLogging {
               def respondWith(msgFnOut: MsgFnOut[F, req.reqRes.ResponseType]): F[MsgResult[F]] = {
                 val protocolAndRes = req.reqRes.protocolRes.andValue(msgFnOut.output)
                 val fullRes        = \/-((reqId, protocolAndRes))
-                val resBin         = BinaryJvm.encode(webSocketHelper.protocolSC)(fullRes)
+                val resBin         = webSocketHelper.protocolSC.codec.encode(fullRes)
                 val wsReqRes       = FreeOption(req.reqRes)
                 respond(resBin).flatMap {
                   case \/-(_) => F.point(new MsgResult(wsReqRes, resBin.length, msgFnOut.newState))
@@ -310,9 +317,11 @@ object ProjectSpaLogic extends StrictLogging {
       }
 
       private def parseClientMsg(msg: BinaryData) = {
-        BinaryJvm.decode(msg, webSocketHelper.protocolCS) match {
-          case Success(r) => \/-(r)
-          case Failure(_) => -\/(MsgError.ClientMsgDecodingFailure)
+        webSocketHelper.protocolCS.codec.decode(msg).leftMap[MsgError] { e =>
+          if (e.isLocalKnownToBeOutOfDate)
+            MsgError.ServerBehindClient(e)
+          else
+            MsgError.ClientMsgDecodingFailure(e)
         }
       }
 
@@ -347,9 +356,9 @@ object ProjectSpaLogic extends StrictLogging {
 
       private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFn[I, EventResult] =
         in => projectUpdater(in.static.projectId, mkEvent(in.input, _)).map {
-          case ProjectUpdater.Result.Ok(events)         => \/-(MsgFnOut(\/-(events), None))
-          case ProjectUpdater.Result.Reject(e)          => \/-(MsgFnOut(-\/(e), None))
-          case ProjectUpdater.Result.ServerOutOfDate(e) => -\/(MsgError.ServerOutOfDate(e))
+          case ProjectUpdater.Result.Ok(events)           => \/-(MsgFnOut(\/-(events), None))
+          case ProjectUpdater.Result.Reject(e)            => \/-(MsgFnOut(-\/(e), None))
+          case ProjectUpdater.Result.ServerBehindRedis(e) => -\/(MsgError.ServerBehindRedis(e))
         }
 
       private def updateProjectI[I](mkEvent: I => MakeEvent.Result): MsgFn[I, EventResult] =
@@ -418,7 +427,7 @@ object ProjectSpaLogic extends StrictLogging {
                          ignoreCache(cache)
                      case (-\/(e), Some(_)) =>
                        if (e.isLocalKnownToBeOutOfDate)
-                         F pure -\/(MsgError.ServerOutOfDate(e))
+                         F pure -\/(MsgError.ServerBehindRedis(e))
                        else
                          ignoreCache(Redis.ProjectCache.empty)
                      case (_, None) =>
@@ -471,7 +480,7 @@ object ProjectSpaLogic extends StrictLogging {
                 loadEventsFromDb(userOrd).map(\/-(_))
             case -\/(err) =>
               if (err.isLocalKnownToBeOutOfDate)
-                F pure -\/(MsgError.ServerOutOfDate(err))
+                F pure -\/(MsgError.ServerBehindRedis(err))
               else
                 for {
                   _  <- F.point(logger.warn("Failed to parse cache. Rebuilding. Error: ", err))
@@ -555,7 +564,7 @@ object ProjectSpaLogic extends StrictLogging {
               case \/-(cache) => useCache(cache)
               case -\/(err) =>
                 if (err.isLocalKnownToBeOutOfDate)
-                  F pure \/-(Result.ServerOutOfDate(err))
+                  F pure \/-(Result.ServerBehindRedis(err))
                 else
                   F.point {
                     logger.warn("Failed to parse cache. Rebuilding. Error: ", err)
@@ -628,9 +637,9 @@ object ProjectSpaLogic extends StrictLogging {
 
     sealed trait Result
     object Result {
-      final case class ServerOutOfDate(err: SafePickler.DecodingFailure) extends Result
-      final case class Reject         (errMsg: ErrorMsg)                 extends Result
-      final case class Ok             (events: VerifiedEvent.Seq)        extends Result
+      final case class ServerBehindRedis(err: SafePickler.DecodingFailure) extends Result
+      final case class Reject           (errMsg: ErrorMsg)                 extends Result
+      final case class Ok               (events: VerifiedEvent.Seq)        extends Result
     }
 
     final case class State(local : ProjectAndOrd,

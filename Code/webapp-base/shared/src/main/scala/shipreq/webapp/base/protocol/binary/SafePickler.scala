@@ -26,6 +26,12 @@ final case class SafePickler[A](header : Option[MagicNumber],
   def withMagicNumbers(header: Int, footer: Int): SafePickler[A] =
     copy(Some(MagicNumber(header)), Some(MagicNumber(footer)))
 
+  def withMagicNumberFooter(footer: Int): SafePickler[A] =
+    copy(footer = Some(MagicNumber(footer)))
+
+  def map[B](f: Pickler[A] => Pickler[B]): SafePickler[B] =
+    copy(body = f(body))
+
   private val picklerHeader  = header.map(pickleMagicNumber(version, _))
   private val picklerFooter  = footer.map(pickleMagicNumber(version, _))
   private val picklerVersion = pickleVersion(version)

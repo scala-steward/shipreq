@@ -1,6 +1,5 @@
 package shipreq.webapp.client.project.test
 
-import boopickle.Pickler
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import java.time.{Duration, Instant}
 import scalaz.{-\/, \/-}
@@ -13,6 +12,7 @@ import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes
 import shipreq.webapp.base.protocol.WebSocket.ReadyState
+import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.client.project.app.state.{Global, ProjectState}
 import shipreq.webapp.server.logic.{ApplyNewEvent, MakeEvent}
 
@@ -34,10 +34,10 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
 
   lazy val svr = WebSocketServerHelper(protocol)
 
-  type Response = Protocol.AndValue[Pickler]
+  type Response = Protocol.AndValue[SafePickler]
 
   case class Req(msg: FakeWebSocket.Message) {
-    lazy val (reqId, req) = BinaryJs.decodeUnsafe(msg.binaryData, svr.protocolCS)
+    lazy val (reqId, req) = svr.protocolCS.codec.decode(msg.binaryData).needRight
 
     private var _responded = false
     def responded = _responded
@@ -50,7 +50,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
 
     def respondWith(r: Response): Unit = {
       val res = \/-((reqId, r))
-      val bd = BinaryJs.encode(svr.protocolSC)(res)
+      val bd = svr.protocolSC.codec.encode(res)
       val msg = FakeWebSocket.Message.ArrayBuffer(bd.toArrayBuffer)
       respond(msg)
     }

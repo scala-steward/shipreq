@@ -11,6 +11,8 @@ import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.FakeWebSocket.Message
 import shipreq.webapp.base.protocol.WebSocketShared.ReqId
 import shipreq.webapp.base.protocol.WebSocket.ReadyState
+import shipreq.webapp.base.protocol.binary.SafePickler
+import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.base.test.WebappTestUtil._
 
 object WebSocketClientTest extends TestSuite {
@@ -19,13 +21,13 @@ object WebSocketClientTest extends TestSuite {
   private final case class ResMsg(msg: Int)
   private final case class PushMsg(msg: String)
 
-  private object P extends  Protocol.WebSocket.ClientReqServerPush[Pickler] {
+  private object P extends  Protocol.WebSocket.ClientReqServerPush[SafePickler] {
     override type ReqId  = WebSocketShared.ReqId
-    override type ReqRes = Protocol.RequestResponse.Simple[Pickler, ReqMsg, ResMsg]
+    override type ReqRes = Protocol.RequestResponse.Simple[SafePickler, ReqMsg, ResMsg]
     override val url     = Url.Relative("/x")
-    override val req     = Protocol(transformPickler(ReqMsg.apply)(_.msg))
-    override val push    = Protocol(transformPickler(PushMsg.apply)(_.msg))
-    val res              = Protocol(transformPickler(ResMsg.apply)(_.msg))
+    override val req     = Protocol(transformPickler(ReqMsg.apply)(_.msg).asV10)
+    override val push    = Protocol(transformPickler(PushMsg.apply)(_.msg).asV10)
+    val res              = Protocol(transformPickler(ResMsg.apply)(_.msg).asV10)
     val ReqRes: ReqRes   = Protocol.RequestResponse.simple(res)
   }
 
@@ -61,7 +63,7 @@ object WebSocketClientTest extends TestSuite {
 
     object server {
       def parseRequest(msg: Message = latestMsg()) =
-        BinaryJs.decodeUnsafe(msg.binaryData, serverProtocols.protocolCS)
+        serverProtocols.protocolCS.codec.decode(msg.binaryData).needRight
 
       def respondBy(f: ReqMsg => ResMsg) = {
         val (reqId, reqMsg) = parseRequest()
@@ -70,7 +72,7 @@ object WebSocketClientTest extends TestSuite {
 
       def respond(reqId: ReqId, resMsg: ResMsg) = {
         val res = \/-((reqId, P.res.andValue(resMsg)))
-        val bd = BinaryJs.encode(serverProtocols.protocolSC)(res)
+        val bd = serverProtocols.protocolSC.codec.encode(res)
         ws().recv(Message.ArrayBuffer(bd.toArrayBuffer))
       }
     }

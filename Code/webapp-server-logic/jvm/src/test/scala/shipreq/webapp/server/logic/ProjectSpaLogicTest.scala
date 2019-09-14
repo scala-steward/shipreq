@@ -12,6 +12,7 @@ import shipreq.webapp.base.protocol.CreateContentCmd
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol.WebSocketShared.ReqId
 import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.server.logic.ProjectSpaLogic.{WebSocketState => _, _}
 import shipreq.webapp.server.logic.Redis.ProjectSnapshot
@@ -108,15 +109,15 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
   private val pushProtocol = {
     val p = ProjectSpaProtocols.WebSocket(Obfuscated(null))
-    implicit def picklerPush: Pickler[ProjectSpaProtocols.WebSocket#Push] = p.push.codec
+    implicit def picklerPush: SafePickler[ProjectSpaProtocols.WebSocket#Push] = p.push.codec
     WebSocketShared.protocolSC(_ => ???)
   }
 
   private def wsHelper(reqId: ReqId, responseType: WsReqRes) = {
     val p = ProjectSpaProtocols.WebSocket(Obfuscated(null))
-    implicit def picklerReq: Pickler[p.Req] = p.req.codec
-    implicit def picklerPush: Pickler[p.Push] = p.push.codec
-    val responseUnpickler: ReqId => Protocol[Pickler] = i => if (i.value == reqId.value) responseType.protocolRes else ???
+    implicit def picklerReq: SafePickler[p.Req] = p.req.codec
+    implicit def picklerPush: SafePickler[p.Push] = p.push.codec
+    val responseUnpickler: ReqId => Protocol[SafePickler] = i => if (i.value == reqId.value) responseType.protocolRes else ???
     new WebSocketServerHelper[p.Req, p.Push](
       WebSocketShared.protocolCS,
       WebSocketShared.protocolSC(responseUnpickler))
@@ -126,7 +127,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
     import t._
     val reqId = ReqId(7)
     val h = wsHelper(reqId, msg.reqRes)
-    val msgBin = BinaryJvm.encode(h.protocolCS)((reqId, msg))
+    val msgBin = h.protocolCS.codec.encode((reqId, msg))
     var resp: MsgError \/ BinaryData = null
     val proc = projectSpa.onMessage(
       static          = static,
@@ -141,13 +142,15 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
     val result: MsgError \/ msg.reqRes.ResponseType =
       resp match {
         case \/-(b) =>
-          BinaryJvm.decodeUnsafe(b, h.protocolSC) match {
-            case \/-((reqId2, protocolAndValue)) =>
+          h.protocolSC.codec.decode(b) match {
+            case \/-(\/-((reqId2, protocolAndValue))) =>
               assertEq(reqId2, reqId)
               val result = protocolAndValue.unsafeForceType[msg.reqRes.ResponseType].value
               \/-(result)
-            case -\/(push) =>
+            case \/-(-\/(push)) =>
               fail("Received push: " + push)
+            case -\/(err) =>
+              fail(err.toString)
           }
         case -\/(e) => -\/(e)
       }
@@ -162,7 +165,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
   private def onPush(f: VerifiedEvent.NonEmptySeq => Unit): BinaryData => Name[Unit] =
     bin => Name {
-      val value = BinaryJvm.decodeUnsafe(bin, pushProtocol)
+      val value = pushProtocol.codec.decode(bin).needRight
       val push = value.swap.needRight
       f(push)
     }

@@ -116,9 +116,10 @@ final class ProjectSpaWebSocket extends StrictLogging {
         }
 
       val fxOnMsgError: MsgError => Fx[Unit] = {
-        case MsgError.ClientMsgDecodingFailure => fxClose(s, CloseCodes.PROTOCOL_ERROR, "Error parsing message")
-        case MsgError.ServerOutOfDate(_)       => fxClose(s, CloseCodes.SERVICE_RESTART, "Server is out-of-date")
-        case MsgError.RespondError(_)          => fxClose(s, CustomCloseCodes.RespondException, "Error sending response")
+        case _: MsgError.ClientMsgDecodingFailure => fxClose(s, CloseCodes.PROTOCOL_ERROR, "Error parsing message")
+        case _: MsgError.RespondError             => fxClose(s, CustomCloseCodes.RespondException, "Error sending response")
+        case _: MsgError.ServerBehindClient
+           | _: MsgError.ServerBehindRedis        => fxClose(s, CloseCodes.SERVICE_RESTART, "Server is out-of-date")
       }
 
       val main = projectSpaLogic.onMessage(

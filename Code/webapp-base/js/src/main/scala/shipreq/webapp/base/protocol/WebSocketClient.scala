@@ -1,8 +1,7 @@
 package shipreq.webapp.base.protocol
 
-import boopickle._
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
-import org.scalajs.dom.{CloseEvent, Event, MessageEvent, console}
+import org.scalajs.dom.{CloseEvent, Event, MessageEvent, console, window}
 import scala.scalajs.js
 import scala.scalajs.js.timers._
 import scala.scalajs.js.typedarray.ArrayBuffer
@@ -13,8 +12,9 @@ import shipreq.base.util.{BinaryData, ErrorMsg, Retries, Url}
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.WebSocket.ReadyState
 import shipreq.webapp.base.protocol.WebSocketShared._
+import shipreq.webapp.base.protocol.binary.SafePickler
 
-trait WebSocketClient[ReqRes <: Protocol.RequestResponse[Pickler]] {
+trait WebSocketClient[ReqRes <: Protocol.RequestResponse[SafePickler]] {
   val readyState: CallbackTo[Option[ReadyState]]
   val keepAlive: Callback
   def send(p: ReqRes)(request: p.RequestType): CallbackTo[AsyncCallback[p.ResponseType]]
@@ -27,14 +27,14 @@ trait WebSocketClient[ReqRes <: Protocol.RequestResponse[Pickler]] {
 
 object WebSocketClient {
 
-  trait WithoutCallbacks[ReqRes <: Protocol.RequestResponse[Pickler], Push] {
+  trait WithoutCallbacks[ReqRes <: Protocol.RequestResponse[SafePickler], Push] {
     def build(onServerPush      : Push => Callback,
               onReadyStateChange: WebSocketClient[ReqRes] => ReadyState => Callback,
               logger            : LoggerJs.Dsl): WebSocketClient[ReqRes]
   }
 
   def apply(u: Url.Absolute.Base,
-            p: Protocol.WebSocket.ClientReqServerPush[Pickler],
+            p: Protocol.WebSocket.ClientReqServerPush[SafePickler],
             r: Retries): WithoutCallbacks[p.ReqRes, p.Push] = {
     val url      = (u.forWebSocket / p.url).absoluteUrl
     val createWS = CallbackTo(WebSocket(url))
@@ -42,7 +42,7 @@ object WebSocketClient {
   }
 
   def apply(w: CallbackTo[WebSocket],
-            p: Protocol.WebSocket.ClientReqServerPush[Pickler],
+            p: Protocol.WebSocket.ClientReqServerPush[SafePickler],
             r: Retries): WithoutCallbacks[p.ReqRes, p.Push] =
     new WithoutCallbacks[p.ReqRes, p.Push] {
       override def build(onServerPush      : p.Push => Callback,
@@ -62,20 +62,20 @@ object WebSocketClient {
 
   final class Impl[
       Req,
-      ReqRes <: Protocol.RequestResponse[Pickler] { type PreparedRequestType = Req },
+      ReqRes <: Protocol.RequestResponse[SafePickler] { type PreparedRequestType = Req },
       Push](
       createWS          : CallbackTo[WebSocket],
       connectionRetries : Retries,
       onReadyStateChange: WebSocketClient[ReqRes] => ReadyState => Callback,
-      protocolCS        : Protocol.Of[Pickler, ClientToServer[Req]],
-      mkProtocolSC      : (ReqId => Protocol[Pickler]) => Protocol.Of[Pickler, ServerToClient[Push]],
+      protocolCS        : Protocol.Of[SafePickler, ClientToServer[Req]],
+      mkProtocolSC      : (ReqId => Protocol[SafePickler]) => Protocol.Of[SafePickler, ServerToClient[Push]],
       recvPush          : Push => Callback,
       logger            : LoggerJs.Dsl) extends WebSocketClient[ReqRes] { self =>
 
-    private val requestManager: RequestManager[ReqId, Protocol.AndValue[Pickler], Protocol[Pickler]] =
+    private val requestManager: RequestManager[ReqId, Protocol.AndValue[SafePickler], Protocol[SafePickler]] =
       RequestManager.arrayStore
 
-    private val protocolSC: Protocol.Of[Pickler, ServerToClient[Push]] =
+    private val protocolSC: Protocol.Of[SafePickler, ServerToClient[Push]] =
       mkProtocolSC(requestManager.getState(_).orNull)
 
     private case class State(instance      : Option[Instance],
@@ -200,37 +200,53 @@ object WebSocketClient {
         // console.log(s"[${ws.readyState}] onmessage: ", e.data.asInstanceOf[ArrayBuffer])
         def msg = e.data.asInstanceOf[ArrayBuffer]
 
-        val decode = CallbackTo(BinaryJs.decodeUnsafeFromArrayBuffer(msg, protocolSC))
+        val decode = CallbackTo(protocolSC.codec.decode(BinaryData.unsafeFromArrayBuffer(msg)))
 
         val handler: Callback =
-          decode.attemptTry.flatMap {
-            case Success(\/-((id, res))) =>
+          decode.attempt.flatMap {
+            case Right(\/-(\/-((id, res)))) =>
               logger(_.debug(s"WebSocketClient received response to req #${id.value}: ${res.value}")) >>
                 requestManager.complete(id, Success(res))
 
-            case Success(-\/(push)) =>
+            case Right(\/-(-\/(push))) =>
               logger(_.debug(s"WebSocketClient received push: $push")) >>
                 recvPush(push)
 
-            case Failure(err) =>
+            case Right(-\/(err)) =>
               logger(_.error(s"WebSocketClient failed to process msg: ${BinaryData.fromArrayBuffer(msg)}\n$err")).attempt >>
-                Callback(onException(err))
+                onDecodeFailure(err)
+
+            case Left(err) =>
+              logger(_.error(s"WebSocketClient failed to process msg: ${BinaryData.fromArrayBuffer(msg)}\n$err")).attempt >>
+                onException(err)
           }
         handler.runNow()
       }
 
-      private def onException(e: Throwable): Unit = {
-        val desc = s"WebSocket exception occurred. ${e.getMessage}"
-        console.error(desc)
-        e.printStackTrace()
-        ws.close(4001, desc.take(123)) // [MDN] reason must be no longer than 123 bytes of UTF-8 text (not characters)
+      private def onDecodeFailure(e: SafePickler.DecodingFailure): Callback = Callback {
+        console.error(s"Failed to parse server response: $e")
+        if (e.isLocalKnownToBeOutOfDate) {
+          window.alert("Failed to understand the response from the server.\nWe've upgraded our servers since you opened this page.\nPlease reload this page to get the updates.")
+          ws.close(1003, "Failed to parse server response: client out-of-date")
+        } else {
+          ws.close(1002, "Failed to parse server response")
+        }
+      }
+
+      private def onException(err: Throwable): Callback = Callback {
+        val message = Option(err.getMessage)
+        unsafeCloseDueToError(message)
       }
 
       private def onError(e: Event): Unit = {
         val message = e.asInstanceOf[js.Dynamic].message.asInstanceOf[js.UndefOr[String]]
-        val desc = s"WebSocket error occurred.${message.fold("")(" " + _)}"
+        unsafeCloseDueToError(message.toOption)
+      }
+
+      private def unsafeCloseDueToError(msg: Option[String]): Unit = {
+        val desc = s"WebSocket error occurred.${msg.fold("")(" " + _)}"
         //console.error(desc, e)
-        ws.close(4000, desc.take(123)) // [MDN] reason must be no longer than 123 bytes of UTF-8 text (not characters)
+        ws.close(4000, desc)
       }
 
       private def onClose(e: CloseEvent): Unit = {
@@ -285,7 +301,7 @@ object WebSocketClient {
         requestManager.newRequest(prep.response).flatMap { case (reqId, callback) =>
           CallbackTo {
             val msgValue = (reqId, prep.request)
-            val msgBin    = BinaryJs.encode(protocolCS)(msgValue)
+            val msgBin    = protocolCS.codec.encode(msgValue)
             queueOldestToNewest :+= msgBin
             callback.map(_.unsafeForceType[p.ResponseType].value)
           }
