@@ -232,9 +232,6 @@ private[v1] object BaseMemberData1 {
       case Column.ReqType => Json.obj(KeyReqType -> ().asJson)
     }
 
-    implicit val codecColumnSIs: JsonCodec[Vector[Column.SortInconclusive]] =
-      JsonCodec.summon
-
     implicit val codecColumnNEV: JsonCodec[NonEmptyVector[Column]] =
       codecNEV
 
@@ -305,6 +302,16 @@ private[v1] object BaseMemberData1 {
     implicit val encoderSortCriterionConclusive: Encoder[SortCriterion.Conclusive] =
       Encoder.forProduct2("column", "method")(a => (a.column, a.method))
 
+    implicit val decoderSortCriterionI: Decoder[SortCriterion.Inconclusive] = decodeSumBySoleKey {
+      case ("CB", c) => c.as[SortCriterion.InconclusiveCB]
+      case ("IB", c) => c.as[SortCriterion.InconclusiveIB]
+    }
+
+    implicit val encoderSortCriterionI: Encoder[SortCriterion.Inconclusive] = Encoder.instance {
+      case a: SortCriterion.InconclusiveCB => Json.obj("CB" -> a.asJson)
+      case a: SortCriterion.InconclusiveIB => Json.obj("IB" -> a.asJson)
+    }
+
     implicit val decoderSortCriterion: Decoder[SortCriterion] = decodeSumBySoleKey {
       case ("c" , c) => c.as[SortCriterion.Conclusive]
       case ("CB", c) => c.as[SortCriterion.InconclusiveCB]
@@ -316,9 +323,6 @@ private[v1] object BaseMemberData1 {
       case a: SortCriterion.InconclusiveCB => Json.obj("CB" -> a.asJson)
       case a: SortCriterion.InconclusiveIB => Json.obj("IB" -> a.asJson)
     }
-
-    implicit val codecSortCriterionIs: JsonCodec[Vector[SortCriterion.Inconclusive]] =
-      JsonCodec.summon
 
     implicit val decoderSortCriteria: Decoder[SortCriteria] =
       Decoder.forProduct2("init", "last")(SortCriteria.apply)

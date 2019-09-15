@@ -74,8 +74,8 @@ private[v1] object BaseData {
     case -\/(a) => Json.obj("l" -> a.asJson)
   }
 
-  def codecDisj[A, B](implicit d: Decoder[A \/ B], e: Encoder[A \/ B]): JsonCodec[A \/ B] =
-    JsonCodec(e, d)
+  def codecDisj[A, B](implicit a: JsonCodec[A], b: JsonCodec[B]): JsonCodec[A \/ B] =
+    JsonCodec(encodeDisj, decodeDisj)
 
   def codecIMap[K: UnivEq, V: Decoder: Encoder](empty: IMap[K, V]): JsonCodec[IMap[K, V]] =
     JsonCodec.xmap(empty ++ (_: Iterable[V]))(_.values)
