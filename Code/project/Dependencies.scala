@@ -135,6 +135,14 @@ object Dependencies {
     val main     = core ++ postgres ++ hikari
   }
 
+  object Circe {
+    private val mm = MultiModule.scala("io.circe", "0.12.1")
+    val core    = mm("circe-core")
+    val parser  = mm("circe-parser")
+    val testing = mm("circe-testing")
+    val main    = core ++ parser
+  }
+
   object JJWT {
     private val mm = MultiModule.java("io.jsonwebtoken", "0.10.7")
     val api     = mm("jjwt-api")

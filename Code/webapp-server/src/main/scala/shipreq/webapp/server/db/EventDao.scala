@@ -286,7 +286,7 @@ object EventDbCodecs {
   }
 
   private val reqCodeValueToString: ReqCode.Value => String =
-    ReqCode.valueToStr(_, '.')
+    ReqCode.Value.toStr(_, '.')
 
   private val reqCodeValueFromString: String => ReqCode.Value =
     s => {

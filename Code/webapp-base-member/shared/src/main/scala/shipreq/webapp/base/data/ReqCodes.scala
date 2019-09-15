@@ -44,23 +44,30 @@ object ReqCode {
    */
   type Value = NonEmptyVector[Node]
 
-  /** For speed/mem efficiency */
-  def valueToStr(v: Value, sep: Char): String = {
-    val head = v.head.value
-    if (v.tail.isEmpty)
-      head
-    else
-      Util.quickSB(head, sb =>
-        v.tail.foreach { n =>
-          sb append sep
-          sb append n.value
-        }
-      )
+  object Value {
+
+    /** For speed/mem efficiency */
+    def toStr(v: Value, sep: Char): String = {
+      val head = v.head.value
+      if (v.tail.isEmpty)
+        head
+      else
+        Util.quickSB(head, sb =>
+          v.tail.foreach { n =>
+            sb append sep
+            sb append n.value
+          }
+        )
+    }
+
+    /** Unsafe because it assumes perfection, doesn't handle errors or additional whitespace etc */
+    def unsafeFromStr(s: String, sep: Char): Value =
+      NonEmptyVector.force(s.split(sep).iterator.map(Node.applyFn).toVector)
   }
 
   def debugShowCodes(codes: TraversableOnce[Value]): String =
     codes.toList
-      .map(valueToStr(_, '.'))
+      .map(Value.toStr(_, '.'))
       .sorted
       .map("\n  - " + _).mkString("")
 

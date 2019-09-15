@@ -92,6 +92,7 @@ object WebappBuild {
       .dependsOn(webappBase)
       .configureBoth(useMacroParadise)
       .depsForBoth(shapeless ++ parboiled)
+      .depsForJvm(Circe.main)
       .depsForJs(ScalaCSS.react)
 
   lazy val webappBaseTestJvm = webappBaseTest.jvm

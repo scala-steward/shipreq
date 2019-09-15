@@ -24,7 +24,7 @@ object BaseMemberData1 {
   // Polymorphic definitions
   // (non-implicit, "pickle" prefix)
 
-  def pickleIMapD[K: UnivEq : Pickler, V: Pickler](implicit d: DataIdAux[V, K]): Pickler[IMap[K, V]] =
+  def pickleIMapD[K: UnivEq, V: Pickler](implicit d: DataIdAux[V, K]): Pickler[IMap[K, V]] =
     pickleIMap(d.emptyIMap)
 
   // ===================================================================================================================
