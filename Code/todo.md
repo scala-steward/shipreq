@@ -132,10 +132,8 @@ Phase 2B
     * Use Circe
   * Cleanup
     * Revise all ajax paths
-  * Add Circe codecs
   * Testing
     * Finish `ProjectSpaProtocolsTest`
     * Test codecs in `WebSocketShared`
     * round-trip tests of event codecs
     * add proper RedisProtocol tests after adding circe codecs (hardcode event data using JSON instead of Scala)
-  * benchmark circe vs boopickle in both jvm & js

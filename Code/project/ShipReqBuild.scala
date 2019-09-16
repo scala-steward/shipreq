@@ -1,3 +1,4 @@
+
 import sbt._, Keys._
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
 import sbtcrossproject.CrossProject

@@ -16,6 +16,13 @@ object BaseTestUtil extends BaseTestEquality with BaseTestUtil {
       BaseTestUtil.assertEq(name, a, expect)
   }
 
+  final class BaseTestUtilOpsEither[A, B](private val e: Either[A, B]) extends AnyVal {
+    def needLeft: A =
+      e.fold(Identity.apply, e => fail(s"needLeft got Right($e)"))
+    def needRight: B =
+      e.fold(e => fail(s"needRight got Left($e)"), Identity.apply)
+  }
+
   final class BaseTestUtilOpsDisj[A, B](private val d: A \/ B) extends AnyVal {
     def needLeft: A =
       d.fold(Identity.apply, e => fail(s"needLeft got \\/-($e)"))
@@ -45,6 +52,9 @@ trait BaseTestUtil
 
   implicit def BaseTestUtilOpsDisj[A, B](d: A \/ B) =
     new BaseTestUtil.BaseTestUtilOpsDisj(d)
+
+  implicit def BaseTestUtilOpsEither[A, B](e: Either[A, B]) =
+    new BaseTestUtil.BaseTestUtilOpsEither(e)
 
   def forceUnivEqOrderByToString[A]: Order[A] with UnivEq[A] = {
     val o = Order.orderBy((_: A).toString)
