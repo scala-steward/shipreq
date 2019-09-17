@@ -14,7 +14,7 @@ object HomeSpaProtocols {
   type Ajax[Req, Res] = Protocol.Ajax.Simple[SafePickler, Req, Res]
 
   private def defAjax[Req: SafePickler, Res: SafePickler](path: String): Ajax[Req, Res] =
-    Protocol.Ajax.Simple(Urls.ajaxRoot / "h" / path, Protocol(implicitly), Protocol(implicitly))
+    Protocol.Ajax.Simple(Urls.ajaxRoot / "hom" / path, Protocol(implicitly), Protocol(implicitly))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object CreateProject {
@@ -33,7 +33,7 @@ object HomeSpaProtocols {
       implicit val safePicklerResponse: SafePickler[Response] =
         picklerResponse.asV10.withMagicNumbers(0xB27B40C3, 0x004A70E7)
 
-      defAjax[Request, Response]("p")
+      defAjax[Request, Response]("cp")
     }
   }
 

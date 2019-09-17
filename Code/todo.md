@@ -130,8 +130,6 @@ Phase 2B
     * handle inability to decode
   * Taskman
     * Use Circe
-  * Cleanup
-    * Revise all ajax paths
   * Testing
     * Finish `ProjectSpaProtocolsTest`
     * Test codecs in `WebSocketShared`
