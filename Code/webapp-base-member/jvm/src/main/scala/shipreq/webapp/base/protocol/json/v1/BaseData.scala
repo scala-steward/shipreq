@@ -3,9 +3,9 @@ package shipreq.webapp.base.protocol.json.v1
 import io.circe._
 import io.circe.syntax._
 import japgolly.microlibs.nonempty.{NonEmpty, NonEmptySet, NonEmptyVector}
+import japgolly.microlibs.utils.StaticLookupFn
 import japgolly.univeq._
 import nyaya.util.{MultiValues, Multimap}
-import scalaz.Isomorphism.<=>
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util._
 import shipreq.webapp.base.data._
@@ -34,7 +34,16 @@ private[v1] object BaseData {
   def decodeSumBySoleKey[A](f: PartialFunction[(String, ACursor), Decoder.Result[A]]): Decoder[A] =
     Decoder.instance(decoderFnSumBySoleKey(f))
 
-  val unitJson = ().asJson
+  def decodeSumBySoleKeyOrConst[A](consts: (String, A)*)(f: PartialFunction[(String, ACursor), Decoder.Result[A]]): Decoder[A] = {
+    val lookup = StaticLookupFn.useMap(consts).toOption
+    val g = decoderFnSumBySoleKey(f)
+    Decoder.instance(c =>
+      c.as[String].toOption.flatMap(lookup) match {
+        case Some(r) => Right(r)
+        case None    => g(c)
+      }
+    )
+  }
 
   // ===================================================================================================================
   // Polymorphic definitions
@@ -191,14 +200,16 @@ private[v1] object BaseData {
     implicit val encoderParentLocationAt: Encoder[ParentLocation.At] =
       Encoder[Location].contramap(_.loc)
 
-    implicit val decoderParentLocation: Decoder[ParentLocation] = decodeSumBySoleKey {
-      case ("at"   , c) => c.as[ParentLocation.At]
-      case ("empty", _) => Right(ParentLocation.Empty)
-    }
+    implicit val decoderParentLocation: Decoder[ParentLocation] =
+      decodeSumBySoleKeyOrConst[ParentLocation](
+        "empty" -> ParentLocation.Empty
+      ) {
+        case ("at", c) => c.as[ParentLocation.At]
+      }
 
     implicit val encoderParentLocation: Encoder[ParentLocation] = Encoder.instance {
-      case a: ParentLocation.At => Json.obj("at"    -> a.asJson)
-      case ParentLocation.Empty => Json.obj("empty" -> ().asJson)
+      case a: ParentLocation.At => Json.obj("at" -> a.asJson)
+      case ParentLocation.Empty => Json.fromString("empty")
     }
 
     JsonCodec.summon

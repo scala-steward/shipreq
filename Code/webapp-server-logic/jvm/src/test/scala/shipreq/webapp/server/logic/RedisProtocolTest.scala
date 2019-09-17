@@ -1,14 +1,13 @@
 package shipreq.webapp.server.logic
 
 import japgolly.microlibs.scalaz_ext.ScalazMacros
-import japgolly.univeq.UnivEqScalaz._
 import nyaya.gen.Gen
-import scalaz.Equal
+import scalaz.{Equal, \/-}
 import shipreq.webapp.base.{RandomData => R}
 import shipreq.webapp.base.data.Project
-import shipreq.webapp.base.event.{Event, VerifiedEvent}
-import shipreq.webapp.base.event.EventEquality._
+import shipreq.webapp.base.event._
 import shipreq.webapp.base.test.BinaryTestUtil._
+import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.base.util.BinaryData
 import utest._
@@ -19,6 +18,26 @@ object RedisProtocolTest extends TestSuite {
     ScalazMacros.deriveEqual
 
   override def tests = Tests {
+
+//    'generateTestData - RedisProtocolTestData.main(Array.empty)
+
+    'saved - {
+      val rows = RedisProtocolTestData.load()
+
+      var prev: Option[Redis.ProjectSnapshot] = None
+      for (i <- rows.indices) {
+        def prefix = s"[${i+1}/${rows.length}]"
+        val row    = rows(i)
+        val event  = row.parseEventJson.needRight
+        val ord    = prev.fold(EventOrd.first)(x => EventOrd(x.ord.value) + 1)
+        val p1     = prev.fold(Project.empty)(_.project)
+        val p2     = applyVerifiedEventSuccessfully(p1, event)
+        val ps     = Redis.ProjectSnapshot(p2, ord.asLatest)
+        prev       = Some(ps)
+        assertEq(s"$prefix ${row.eventJson.noSpaces}", row.parseEventBinary, \/-(event))
+        assertEq(prefix, row.parseSnapshotBinary, \/-(ps))
+      }
+    }
 
     // =================================================================================================================
 

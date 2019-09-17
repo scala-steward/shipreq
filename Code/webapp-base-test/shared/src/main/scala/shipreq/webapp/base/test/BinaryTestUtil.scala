@@ -17,7 +17,8 @@ object BinaryTestUtil {
   // SafePickler testing
 
   // Not true but good enough for now
-  implicit def univEqSafePicklerDecoderFailure: UnivEq[SafePickler.DecodingFailure] = UnivEq.force
+  implicit def equalSafePicklerDecoderFailure: Equal[SafePickler.DecodingFailure] =
+    Equal.equalA
 
   def assertDecode[A: Equal](p: SafePickler[A])(bin: BinaryData, expect: SafePickler.Result[A])(implicit l: Line): Unit =
     assertEq(bin.describe(100).filter(_ != ','), p.decode(bin), expect)

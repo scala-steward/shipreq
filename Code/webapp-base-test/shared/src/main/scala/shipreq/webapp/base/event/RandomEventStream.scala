@@ -41,14 +41,14 @@ object RandomEventStream {
   def liftGE(eventGen: Gen[Event]): ProjectDepGen[VerifiedEvent] =
     liftPGE(_ => eventGen)
 
-  def liftPGE(eventGen: State => Gen[Event]): ProjectDepGen[VerifiedEvent] =
+  def liftPGE(eventGen: State => Gen[Event], maxAttempts: Int = 40): ProjectDepGen[VerifiedEvent] =
     StateGen(s =>
       eventGen(s).map(e =>
         ApplyEvent.untrusted.apply1(e)(s._1) match {
           case \/-(p2) => Some(((p2, s._2 + 1), VerifiedEvent(s._2, e)))
           case -\/(_)  => None
         }
-      ).optionGetLimit(40)
+      ).optionGetLimit(maxAttempts)
     )
 
   private def keepProject[A](g: ProjectDepGen[A]): ProjectDepGen[(A, Project)] =
@@ -75,6 +75,12 @@ object RandomEventStream {
     StateGen(state =>
       ss.gen.flatMap(size =>
         Vector.fill(size)(verifiedEvent).sequence.run(state)))
+
+  def verifiedEventMatching(accept: Event => Boolean, maxAttempts: Int = 100): ProjectDepGen[VerifiedEvent] =
+    liftPGE(ApplicableEventGen(_).eventGen.map(e => Option.when(accept(e))(e)).optionGetLimit(maxAttempts))
+
+  def verifiedEventOfTypes(types: NonEmptySet[EventName]): ProjectDepGen[VerifiedEvent] =
+    liftPGE(ApplicableEventGen(_).eventGenOfTypes(types))
 
   def entireEventStream(implicit ss: SizeSpec): Gen[(State, Vector[VerifiedEvent], Vector[VerifiedEvent])] =
     for {
@@ -807,69 +813,80 @@ final class ApplicableEventGen(curState: State) {
   def genManualIssueDelete: Option[Gen[ManualIssueDelete]] =
     manualIssueId.map(_ map ManualIssueDelete)
 
-  val possibleEventGens: NonEmptyVector[Option[Gen[Event]]] =
-    valuesForAdt[Event, Option[Gen[Event]]] {
-      case _: ApplicableTagCreate    => genApplicableTagCreate
-      case _: ApplicableTagUpdate    => genApplicableTagUpdate
-      case _: ContentRestore         => genContentRestore
-      case _: CustomIssueTypeCreate  => genCustomIssueTypeCreate
-      case _: CustomIssueTypeDelete  => genCustomIssueTypeDelete
-      case _: CustomIssueTypeRestore => genCustomIssueTypeRestore
-      case _: CustomIssueTypeUpdate  => genCustomIssueTypeUpdate
-      case _: CustomReqTypeCreate    => genCustomReqTypeCreate
-      case _: CustomReqTypeDelete    => genCustomReqTypeDelete
-      case _: CustomReqTypeRestore   => genCustomReqTypeRestore
-      case _: CustomReqTypeUpdate    => genCustomReqTypeUpdate
-      case _: FieldCustomDelete      => genFieldCustomDelete
-      case _: FieldCustomImpCreate   => genFieldCustomImpCreate
-      case _: FieldCustomImpUpdate   => genFieldCustomImpUpdate
-      case _: FieldCustomRestore     => genFieldCustomRestore
-      case _: FieldCustomTagCreate   => genFieldCustomTagCreate
-      case _: FieldCustomTagUpdate   => genFieldCustomTagUpdate
-      case _: FieldCustomTextCreate  => genFieldCustomTextCreate
-      case _: FieldCustomTextUpdate  => genFieldCustomTextUpdate
-      case _: FieldReposition        => genFieldReposition
-      case _: FieldStaticAdd         => genFieldStaticAdd
-      case _: FieldStaticRemove      => genFieldStaticRemove
-      case _: GenericReqCreate       => genGenericReqCreate
-      case _: GenericReqTitleSet     => genGenericReqTitleSet
-      case _: GenericReqTypeSet      => genGenericReqTypeSet
-      case _: ManualIssueCreate      => genManualIssueCreate
-      case _: ManualIssueDelete      => genManualIssueDelete
-      case _: ManualIssueUpdate      => genManualIssueUpdate
-      case _: ProjectNameSet         => genProjectNameSet
-      case _: ProjectTemplateApply   => genProjectTemplateApply
-      case _: CodeGroupCreate        => genCodeGroupCreate
-      case _: CodeGroupsDelete       => genCodeGroupsDelete
-      case _: CodeGroupUpdate        => genCodeGroupUpdate
-      case _: ReqCodesPatch          => genReqCodesPatch
-      case _: ReqFieldCustomTextSet  => genReqFieldCustomTextSet
-      case _: ReqImplicationsPatch   => genReqImplicationsPatch
-      case _: ReqsDelete             => genReqsDelete
-      case _: ReqTagsPatch           => genReqTagsPatch
-      case _: SavedViewCreate        => genSavedViewCreate
-      case _: SavedViewDefaultSet    => genSavedViewDefaultSet
-      case _: SavedViewDelete        => genSavedViewDelete
-      case _: SavedViewUpdate        => genSavedViewUpdate
-      case _: TagDelete              => genTagDelete
-      case _: TagGroupCreate         => genTagGroupCreate
-      case _: TagGroupUpdate         => genTagGroupUpdate
-      case _: TagRestore             => genTagRestore
-      case _: UseCaseCreate          => genUseCaseCreate
-      case _: UseCaseStepCreate      => genUseCaseStepCreate
-      case _: UseCaseStepDelete      => genUseCaseStepDelete
-      case _: UseCaseStepRestore     => genUseCaseStepRestore
-      case _: UseCaseStepShiftLeft   => genUseCaseStepShiftLeft
-      case _: UseCaseStepShiftRight  => genUseCaseStepShiftRight
-      case _: UseCaseStepUpdate      => genUseCaseStepUpdate
-      case _: UseCaseTitleSet        => genUseCaseTitleSet
+  private val possibleEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[Event]])] =
+    valuesForAdt[Event, (EventName, Option[Gen[Event]])] {
+      case _: ApplicableTagCreate    => EventName("ApplicableTagCreate"   ) -> genApplicableTagCreate
+      case _: ApplicableTagUpdate    => EventName("ApplicableTagUpdate"   ) -> genApplicableTagUpdate
+      case _: ContentRestore         => EventName("ContentRestore"        ) -> genContentRestore
+      case _: CustomIssueTypeCreate  => EventName("CustomIssueTypeCreate" ) -> genCustomIssueTypeCreate
+      case _: CustomIssueTypeDelete  => EventName("CustomIssueTypeDelete" ) -> genCustomIssueTypeDelete
+      case _: CustomIssueTypeRestore => EventName("CustomIssueTypeRestore") -> genCustomIssueTypeRestore
+      case _: CustomIssueTypeUpdate  => EventName("CustomIssueTypeUpdate" ) -> genCustomIssueTypeUpdate
+      case _: CustomReqTypeCreate    => EventName("CustomReqTypeCreate"   ) -> genCustomReqTypeCreate
+      case _: CustomReqTypeDelete    => EventName("CustomReqTypeDelete"   ) -> genCustomReqTypeDelete
+      case _: CustomReqTypeRestore   => EventName("CustomReqTypeRestore"  ) -> genCustomReqTypeRestore
+      case _: CustomReqTypeUpdate    => EventName("CustomReqTypeUpdate"   ) -> genCustomReqTypeUpdate
+      case _: FieldCustomDelete      => EventName("FieldCustomDelete"     ) -> genFieldCustomDelete
+      case _: FieldCustomImpCreate   => EventName("FieldCustomImpCreate"  ) -> genFieldCustomImpCreate
+      case _: FieldCustomImpUpdate   => EventName("FieldCustomImpUpdate"  ) -> genFieldCustomImpUpdate
+      case _: FieldCustomRestore     => EventName("FieldCustomRestore"    ) -> genFieldCustomRestore
+      case _: FieldCustomTagCreate   => EventName("FieldCustomTagCreate"  ) -> genFieldCustomTagCreate
+      case _: FieldCustomTagUpdate   => EventName("FieldCustomTagUpdate"  ) -> genFieldCustomTagUpdate
+      case _: FieldCustomTextCreate  => EventName("FieldCustomTextCreate" ) -> genFieldCustomTextCreate
+      case _: FieldCustomTextUpdate  => EventName("FieldCustomTextUpdate" ) -> genFieldCustomTextUpdate
+      case _: FieldReposition        => EventName("FieldReposition"       ) -> genFieldReposition
+      case _: FieldStaticAdd         => EventName("FieldStaticAdd"        ) -> genFieldStaticAdd
+      case _: FieldStaticRemove      => EventName("FieldStaticRemove"     ) -> genFieldStaticRemove
+      case _: GenericReqCreate       => EventName("GenericReqCreate"      ) -> genGenericReqCreate
+      case _: GenericReqTitleSet     => EventName("GenericReqTitleSet"    ) -> genGenericReqTitleSet
+      case _: GenericReqTypeSet      => EventName("GenericReqTypeSet"     ) -> genGenericReqTypeSet
+      case _: ManualIssueCreate      => EventName("ManualIssueCreate"     ) -> genManualIssueCreate
+      case _: ManualIssueDelete      => EventName("ManualIssueDelete"     ) -> genManualIssueDelete
+      case _: ManualIssueUpdate      => EventName("ManualIssueUpdate"     ) -> genManualIssueUpdate
+      case _: ProjectNameSet         => EventName("ProjectNameSet"        ) -> genProjectNameSet
+      case _: ProjectTemplateApply   => EventName("ProjectTemplateApply"  ) -> genProjectTemplateApply
+      case _: CodeGroupCreate        => EventName("CodeGroupCreate"       ) -> genCodeGroupCreate
+      case _: CodeGroupsDelete       => EventName("CodeGroupsDelete"      ) -> genCodeGroupsDelete
+      case _: CodeGroupUpdate        => EventName("CodeGroupUpdate"       ) -> genCodeGroupUpdate
+      case _: ReqCodesPatch          => EventName("ReqCodesPatch"         ) -> genReqCodesPatch
+      case _: ReqFieldCustomTextSet  => EventName("ReqFieldCustomTextSet" ) -> genReqFieldCustomTextSet
+      case _: ReqImplicationsPatch   => EventName("ReqImplicationsPatch"  ) -> genReqImplicationsPatch
+      case _: ReqsDelete             => EventName("ReqsDelete"            ) -> genReqsDelete
+      case _: ReqTagsPatch           => EventName("ReqTagsPatch"          ) -> genReqTagsPatch
+      case _: SavedViewCreate        => EventName("SavedViewCreate"       ) -> genSavedViewCreate
+      case _: SavedViewDefaultSet    => EventName("SavedViewDefaultSet"   ) -> genSavedViewDefaultSet
+      case _: SavedViewDelete        => EventName("SavedViewDelete"       ) -> genSavedViewDelete
+      case _: SavedViewUpdate        => EventName("SavedViewUpdate"       ) -> genSavedViewUpdate
+      case _: TagDelete              => EventName("TagDelete"             ) -> genTagDelete
+      case _: TagGroupCreate         => EventName("TagGroupCreate"        ) -> genTagGroupCreate
+      case _: TagGroupUpdate         => EventName("TagGroupUpdate"        ) -> genTagGroupUpdate
+      case _: TagRestore             => EventName("TagRestore"            ) -> genTagRestore
+      case _: UseCaseCreate          => EventName("UseCaseCreate"         ) -> genUseCaseCreate
+      case _: UseCaseStepCreate      => EventName("UseCaseStepCreate"     ) -> genUseCaseStepCreate
+      case _: UseCaseStepDelete      => EventName("UseCaseStepDelete"     ) -> genUseCaseStepDelete
+      case _: UseCaseStepRestore     => EventName("UseCaseStepRestore"    ) -> genUseCaseStepRestore
+      case _: UseCaseStepShiftLeft   => EventName("UseCaseStepShiftLeft"  ) -> genUseCaseStepShiftLeft
+      case _: UseCaseStepShiftRight  => EventName("UseCaseStepShiftRight" ) -> genUseCaseStepShiftRight
+      case _: UseCaseStepUpdate      => EventName("UseCaseStepUpdate"     ) -> genUseCaseStepUpdate
+      case _: UseCaseTitleSet        => EventName("UseCaseTitleSet"       ) -> genUseCaseTitleSet
     }
+
+  private val possibleEventGens: NonEmptyVector[Option[Gen[Event]]] =
+    possibleEventGensWithNames.map(_._2)
 
   val eventGens: NonEmptyVector[Gen[Event]] =
     NonEmptyVector force possibleEventGens.iterator.filterDefined.toVector
 
   val eventGen: Gen[Event] =
     Gen chooseGenNE eventGens
+
+  def eventGenOfTypes(types: NonEmptySet[EventName]): Gen[Event] = {
+    val gens = possibleEventGensWithNames.iterator.filter(x => types.contains(x._1)).map(_._2).filterDefined.toVector
+    if (gens.isEmpty)
+      sys.error(s"No event gens possible for types: ${types.whole.map(_.value).mkString(", ")}")
+    else
+      Gen.chooseGen_!(gens)
+  }
 
 //  def applyEventSG[S](observe: ObserveFn[S]): StateGen[S, (Event, Project)] =
 //    StateGen.tailrec[S, (Event, Project)](s =>

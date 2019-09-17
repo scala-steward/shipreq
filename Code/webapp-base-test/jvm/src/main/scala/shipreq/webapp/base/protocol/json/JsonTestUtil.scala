@@ -1,6 +1,7 @@
 package shipreq.webapp.base.protocol.json
 
 import io.circe._
+import io.circe.parser._
 import io.circe.syntax._
 import nyaya.gen.Gen
 import scalaz.Equal
@@ -34,5 +35,8 @@ object JsonTestUtil {
 
   def propTestRoundTrip[A: Decoder: Encoder: Equal](g: Gen[A])(implicit l: Line): Unit =
     g.samples().take(propTestSize).foreach(assertRoundTrip(_))
+
+  def loadJsonResFile[A: Decoder](filename: String): A =
+    decode[A](readResourceFile(filename)).needRight
 
 }

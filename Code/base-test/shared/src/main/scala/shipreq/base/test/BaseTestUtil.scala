@@ -1,6 +1,8 @@
 package shipreq.base.test
 
 import japgolly.microlibs.testutil.TestUtilInternals
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
 import scalaz.std.string.stringInstance
 import scalaz.{Equal, Order, \/}
 import shipreq.base.util.Identity
@@ -81,4 +83,23 @@ trait BaseTestUtil
 //  def assertMatch[A](a: A)(pf: PartialFunction[A, Unit]): Unit =
 //    if (!pf.isDefinedAt(a))
 //      fail(s"Wrong shape: $a")
+
+  // TODO Move getOrThrow() into microlibs
+  // TODO Move these into microlibs(jvm-only)
+
+  import scala.io.{Codec, Source}
+
+  def writeFile(filename: String, content: String): Unit =
+    Files.write(Paths get filename, content getBytes StandardCharsets.UTF_8)
+
+  def readFile(filename: String): String = {
+    val src = Source.fromFile(filename)(Codec.UTF8)
+    try src.mkString finally src.close()
+  }
+
+  def readResourceFile(filename: String): String = {
+    val src = Source.fromResource(filename)(Codec.UTF8)
+    try src.mkString finally src.close()
+  }
+
 }

@@ -144,15 +144,27 @@ private[v1] object BaseMemberData1 {
     private[this] final val KeyTags           = "tags"
     private[this] final val KeyTitle          = "title"
 
-    implicit val decoderColumn: Decoder[Column] = decodeSumBySoleKey {
+    implicit val decoderColumn: Decoder[Column] = decodeSumBySoleKeyOrConst[Column](
+      KeyCode           -> Column.Code,
+      KeyDeletionReason -> Column.DeletionReason,
+      KeyPubid          -> Column.Pubid,
+      KeyReqType        -> Column.ReqType,
+      KeyTags           -> Column.Tags,
+      KeyTitle          -> Column.Title,
+    ) {
       case (KeyCustomField   , c) => c.as[Column.CustomField]
       case (KeyImplications  , c) => c.as[Column.Implications]
-      case (KeyCode          , _) => Right(Column.Code)
-      case (KeyDeletionReason, _) => Right(Column.DeletionReason)
-      case (KeyPubid         , _) => Right(Column.Pubid)
-      case (KeyReqType       , _) => Right(Column.ReqType)
-      case (KeyTags          , _) => Right(Column.Tags)
-      case (KeyTitle         , _) => Right(Column.Title)
+    }
+
+    implicit val encoderColumn: Encoder[Column] = Encoder.instance {
+      case Column.Code            => Json.fromString(KeyCode)
+      case Column.DeletionReason  => Json.fromString(KeyDeletionReason)
+      case Column.Pubid           => Json.fromString(KeyPubid)
+      case Column.ReqType         => Json.fromString(KeyReqType)
+      case Column.Tags            => Json.fromString(KeyTags)
+      case Column.Title           => Json.fromString(KeyTitle)
+      case a: Column.CustomField  => Json.obj(KeyCustomField  -> a.asJson)
+      case a: Column.Implications => Json.obj(KeyImplications -> a.asJson)
     }
 
     implicit val decoderColumnImplications: Decoder[Column.Implications] =
@@ -167,122 +179,84 @@ private[v1] object BaseMemberData1 {
     implicit val encoderColumnCustomField: Encoder[Column.CustomField] =
       Encoder[CustomFieldId].contramap(_.id)
 
-    implicit val encoderColumn: Encoder[Column] = Encoder.instance {
-      case a: Column.CustomField  => Json.obj(KeyCustomField    -> a.asJson)
-      case a: Column.Implications => Json.obj(KeyImplications   -> a.asJson)
-      case Column.Code            => Json.obj(KeyCode           -> ().asJson)
-      case Column.DeletionReason  => Json.obj(KeyDeletionReason -> ().asJson)
-      case Column.Pubid           => Json.obj(KeyPubid          -> ().asJson)
-      case Column.ReqType         => Json.obj(KeyReqType        -> ().asJson)
-      case Column.Tags            => Json.obj(KeyTags           -> ().asJson)
-      case Column.Title           => Json.obj(KeyTitle          -> ().asJson)
-    }
+    implicit val codecColumnSortConclusive: JsonCodec[Column.SortConclusive] =
+      JsonCodec.enumAdt(AdtMacros.adtIsoSet[Column.SortConclusive, String] {
+        case Column.Pubid => KeyPubid
+      })
 
-    implicit val decoderColumnSortConclusive: Decoder[Column.SortConclusive] = decodeSumBySoleKey {
-      case (KeyPubid, _) => Right(Column.Pubid)
-    }
-
-    implicit val encoderColumnSortConclusive: Encoder[Column.SortConclusive] = Encoder.instance {
-      case Column.Pubid => Json.obj(KeyPubid -> ().asJson)
-    }
-
-    implicit val decoderColumnSortInconclusive: Decoder[Column.SortInconclusive] = decodeSumBySoleKey {
-      case (KeyCustomField   , c) => c.as[Column.CustomField]
-      case (KeyImplications  , c) => c.as[Column.Implications]
-      case (KeyCode          , _) => Right(Column.Code)
-      case (KeyDeletionReason, _) => Right(Column.DeletionReason)
-      case (KeyReqType       , _) => Right(Column.ReqType)
-      case (KeyTags          , _) => Right(Column.Tags)
-      case (KeyTitle         , _) => Right(Column.Title)
-    }
+    implicit val decoderColumnSortInconclusive: Decoder[Column.SortInconclusive] =
+      decodeSumBySoleKeyOrConst[Column.SortInconclusive](
+        KeyCode           -> Column.Code,
+        KeyDeletionReason -> Column.DeletionReason,
+        KeyReqType        -> Column.ReqType,
+        KeyTags           -> Column.Tags,
+        KeyTitle          -> Column.Title,
+      ) {
+        case (KeyCustomField , c) => c.as[Column.CustomField]
+        case (KeyImplications, c) => c.as[Column.Implications]
+      }
 
     implicit val encoderColumnSortInconclusive: Encoder[Column.SortInconclusive] = Encoder.instance {
-      case a: Column.CustomField  => Json.obj(KeyCustomField    -> a.asJson)
-      case a: Column.Implications => Json.obj(KeyImplications   -> a.asJson)
-      case Column.Code            => Json.obj(KeyCode           -> ().asJson)
-      case Column.DeletionReason  => Json.obj(KeyDeletionReason -> ().asJson)
-      case Column.ReqType         => Json.obj(KeyReqType        -> ().asJson)
-      case Column.Tags            => Json.obj(KeyTags           -> ().asJson)
-      case Column.Title           => Json.obj(KeyTitle          -> ().asJson)
+      case Column.Code            => Json.fromString(KeyCode)
+      case Column.DeletionReason  => Json.fromString(KeyDeletionReason)
+      case Column.ReqType         => Json.fromString(KeyReqType)
+      case Column.Tags            => Json.fromString(KeyTags)
+      case Column.Title           => Json.fromString(KeyTitle)
+      case a: Column.CustomField  => Json.obj(KeyCustomField  -> a.asJson)
+      case a: Column.Implications => Json.obj(KeyImplications -> a.asJson)
     }
 
-    implicit val decoderColumnSortInconclusiveHasBlanks: Decoder[Column.SortInconclusiveHasBlanks] = decodeSumBySoleKey {
-      case (KeyCustomField   , c) => c.as[Column.CustomField]
-      case (KeyImplications  , c) => c.as[Column.Implications]
-      case (KeyCode          , _) => Right(Column.Code)
-      case (KeyDeletionReason, _) => Right(Column.DeletionReason)
-      case (KeyTags          , _) => Right(Column.Tags)
-      case (KeyTitle         , _) => Right(Column.Title)
+    implicit val decoderColumnSortInconclusiveHasBlanks: Decoder[Column.SortInconclusiveHasBlanks] =
+      decodeSumBySoleKeyOrConst[Column.SortInconclusiveHasBlanks](
+        KeyCode           -> Column.Code,
+        KeyDeletionReason -> Column.DeletionReason,
+        KeyTags           -> Column.Tags,
+        KeyTitle          -> Column.Title,
+      ) {
+      case (KeyCustomField , c) => c.as[Column.CustomField]
+      case (KeyImplications, c) => c.as[Column.Implications]
     }
 
     implicit val encoderColumnSortInconclusiveHasBlanks: Encoder[Column.SortInconclusiveHasBlanks] = Encoder.instance {
-      case a: Column.CustomField  => Json.obj(KeyCustomField    -> a.asJson)
-      case a: Column.Implications => Json.obj(KeyImplications   -> a.asJson)
-      case Column.Code            => Json.obj(KeyCode           -> ().asJson)
-      case Column.DeletionReason  => Json.obj(KeyDeletionReason -> ().asJson)
-      case Column.Tags            => Json.obj(KeyTags           -> ().asJson)
-      case Column.Title           => Json.obj(KeyTitle          -> ().asJson)
+      case Column.Code            => Json.fromString(KeyCode)
+      case Column.DeletionReason  => Json.fromString(KeyDeletionReason)
+      case Column.Tags            => Json.fromString(KeyTags)
+      case Column.Title           => Json.fromString(KeyTitle)
+      case a: Column.CustomField  => Json.obj(KeyCustomField  -> a.asJson)
+      case a: Column.Implications => Json.obj(KeyImplications -> a.asJson)
     }
 
-    implicit val decoderColumnSortInconclusiveNoBlanks: Decoder[Column.SortInconclusiveNoBlanks] = decodeSumBySoleKey {
-      case (KeyReqType, _) => Right(Column.ReqType)
-    }
-
-    implicit val encoderColumnSortInconclusiveNoBlanks: Encoder[Column.SortInconclusiveNoBlanks] = Encoder.instance {
-      case Column.ReqType => Json.obj(KeyReqType -> ().asJson)
-    }
+    implicit val codecColumnSortInconclusiveNoBlanks: JsonCodec[Column.SortInconclusiveNoBlanks] =
+      JsonCodec.enumAdt(AdtMacros.adtIsoSet[Column.SortInconclusiveNoBlanks, String] {
+        case Column.ReqType => KeyReqType
+      })
 
     implicit val codecColumnNEV: JsonCodec[NonEmptyVector[Column]] =
       codecNEV
 
-    private[this] final val KeyAsc            = "asc"
-    private[this] final val KeyAscThenBlanks  = "asc_"
-    private[this] final val KeyBlanksThenAsc  = "_asc"
-    private[this] final val KeyBlanksThenDesc = "_desc"
-    private[this] final val KeyDesc           = "desc"
-    private[this] final val KeyDescThenBlanks = "desc_"
+    implicit val codecSortMethod: JsonCodec[SortMethod] =
+      JsonCodec.enumAdt(AdtMacros.adtIsoSet[SortMethod, String] {
+        case SortMethod.Asc            => "asc"
+        case SortMethod.AscThenBlanks  => "asc_"
+        case SortMethod.BlanksThenAsc  => "_asc"
+        case SortMethod.BlanksThenDesc => "_desc"
+        case SortMethod.Desc           => "desc"
+        case SortMethod.DescThenBlanks => "desc_"
+      })
 
-    implicit val decoderSortMethod: Decoder[SortMethod] = decodeSumBySoleKey {
-      case (KeyAsc           , _) => Right(SortMethod.Asc)
-      case (KeyAscThenBlanks , _) => Right(SortMethod.AscThenBlanks)
-      case (KeyBlanksThenAsc , _) => Right(SortMethod.BlanksThenAsc)
-      case (KeyBlanksThenDesc, _) => Right(SortMethod.BlanksThenDesc)
-      case (KeyDesc          , _) => Right(SortMethod.Desc)
-      case (KeyDescThenBlanks, _) => Right(SortMethod.DescThenBlanks)
-    }
+    implicit val codecSortMethodIgnoreBlanks: JsonCodec[SortMethod.IgnoreBlanks] =
+      JsonCodec.enumAdt(AdtMacros.adtIsoSet[SortMethod.IgnoreBlanks, String] {
+        case SortMethod.Asc  => "asc"
+        case SortMethod.Desc => "desc"
+      })
 
-    implicit val encoderSortMethod: Encoder[SortMethod] = Encoder.instance {
-      case SortMethod.Asc            => Json.obj(KeyAsc            -> ().asJson)
-      case SortMethod.AscThenBlanks  => Json.obj(KeyAscThenBlanks  -> ().asJson)
-      case SortMethod.BlanksThenAsc  => Json.obj(KeyBlanksThenAsc  -> ().asJson)
-      case SortMethod.BlanksThenDesc => Json.obj(KeyBlanksThenDesc -> ().asJson)
-      case SortMethod.Desc           => Json.obj(KeyDesc           -> ().asJson)
-      case SortMethod.DescThenBlanks => Json.obj(KeyDescThenBlanks -> ().asJson)
-    }
-
-    implicit val decoderSortMethodIgnoreBlanks: Decoder[SortMethod.IgnoreBlanks] = decodeSumBySoleKey {
-      case (KeyAsc , _) => Right(SortMethod.Asc)
-      case (KeyDesc, _) => Right(SortMethod.Desc)
-    }
-
-    implicit val encoderSortMethodIgnoreBlanks: Encoder[SortMethod.IgnoreBlanks] = Encoder.instance {
-      case SortMethod.Asc  => Json.obj(KeyAsc  -> ().asJson)
-      case SortMethod.Desc => Json.obj(KeyDesc -> ().asJson)
-    }
-
-    implicit val decoderSortMethodConsiderBlanks: Decoder[SortMethod.ConsiderBlanks] = decodeSumBySoleKey {
-      case (KeyAscThenBlanks , _) => Right(SortMethod.AscThenBlanks)
-      case (KeyBlanksThenAsc , _) => Right(SortMethod.BlanksThenAsc)
-      case (KeyBlanksThenDesc, _) => Right(SortMethod.BlanksThenDesc)
-      case (KeyDescThenBlanks, _) => Right(SortMethod.DescThenBlanks)
-    }
-
-    implicit val encoderSortMethodConsiderBlanks: Encoder[SortMethod.ConsiderBlanks] = Encoder.instance {
-      case SortMethod.AscThenBlanks  => Json.obj(KeyAscThenBlanks  -> ().asJson)
-      case SortMethod.BlanksThenAsc  => Json.obj(KeyBlanksThenAsc  -> ().asJson)
-      case SortMethod.BlanksThenDesc => Json.obj(KeyBlanksThenDesc -> ().asJson)
-      case SortMethod.DescThenBlanks => Json.obj(KeyDescThenBlanks -> ().asJson)
-    }
+    implicit val codecSortMethodConsiderBlanks: JsonCodec[SortMethod.ConsiderBlanks] =
+      JsonCodec.enumAdt(AdtMacros.adtIsoSet[SortMethod.ConsiderBlanks, String] {
+        case SortMethod.AscThenBlanks  => "asc_"
+        case SortMethod.BlanksThenAsc  => "_asc"
+        case SortMethod.BlanksThenDesc => "_desc"
+        case SortMethod.DescThenBlanks => "desc_"
+      })
 
     implicit val decoderSortCriterionInconclusiveCB: Decoder[SortCriterion.InconclusiveCB] =
       Decoder.forProduct2("column", "method")(SortCriterion.InconclusiveCB.apply)
@@ -412,24 +386,25 @@ private[v1] object BaseMemberData1 {
   implicit lazy val codecFieldApplicableReqTypes: JsonCodec[Field.ApplicableReqTypes] =
     codecISubset
 
-  implicit lazy val decoderFieldId: Decoder[FieldId] = decodeSumBySoleKey {
-    case ("imp"      , c) => c.as[CustomField.Implication.Id]
-    case ("tag"      , c) => c.as[CustomField.Tag.Id]
-    case ("text"     , c) => c.as[CustomField.Text.Id]
-    case ("stepsNA"  , _) => Right(StaticField.NormalAltStepTree)
-    case ("stepsE"   , _) => Right(StaticField.ExceptionStepTree)
-    case ("impGraph" , _) => Right(StaticField.ImplicationGraph)
-    case ("stepGraph", _) => Right(StaticField.StepGraph)
+  implicit lazy val decoderFieldId: Decoder[FieldId] = decodeSumBySoleKeyOrConst[FieldId](
+    "stepsNA"   -> StaticField.NormalAltStepTree,
+    "stepsE"    -> StaticField.ExceptionStepTree,
+    "impGraph"  -> StaticField.ImplicationGraph,
+    "stepGraph" -> StaticField.StepGraph,
+  ) {
+    case ("imp" , c) => c.as[CustomField.Implication.Id]
+    case ("tag" , c) => c.as[CustomField.Tag.Id]
+    case ("text", c) => c.as[CustomField.Text.Id]
   }
 
   implicit lazy val encoderFieldId: Encoder[FieldId] = Encoder.instance {
-    case a: CustomField.Implication.Id => Json.obj("imp"       -> a.asJson)
-    case a: CustomField.Tag.Id         => Json.obj("tag"       -> a.asJson)
-    case a: CustomField.Text.Id        => Json.obj("text"      -> a.asJson)
-    case StaticField.NormalAltStepTree => Json.obj("stepsNA"   -> unitJson)
-    case StaticField.ExceptionStepTree => Json.obj("stepsE"    -> unitJson)
-    case StaticField.ImplicationGraph  => Json.obj("impGraph"  -> unitJson)
-    case StaticField.StepGraph         => Json.obj("stepGraph" -> unitJson)
+    case StaticField.NormalAltStepTree => Json.fromString("stepsNA")
+    case StaticField.ExceptionStepTree => Json.fromString("stepsE")
+    case StaticField.ImplicationGraph  => Json.fromString("impGraph")
+    case StaticField.StepGraph         => Json.fromString("stepGraph")
+    case a: CustomField.Implication.Id => Json.obj("imp"  -> a.asJson)
+    case a: CustomField.Tag.Id         => Json.obj("tag"  -> a.asJson)
+    case a: CustomField.Text.Id        => Json.obj("text" -> a.asJson)
   }
 
   implicit lazy val codecFieldRefKey: JsonCodec[FieldRefKey] =
@@ -517,14 +492,15 @@ private[v1] object BaseMemberData1 {
     case a: UseCaseId    => Json.obj("uc" -> a.asJson)
   }
 
-  implicit lazy val decoderReqTypeId: Decoder[ReqTypeId] = decodeSumBySoleKey {
-    case ("c" , c) => c.as[CustomReqTypeId]
-    case ("uc", _) => Right(StaticReqType.UseCase)
+  implicit lazy val decoderReqTypeId: Decoder[ReqTypeId] = decodeSumBySoleKeyOrConst[ReqTypeId](
+    "uc" -> StaticReqType.UseCase,
+  ) {
+    case ("c", c) => c.as[CustomReqTypeId]
   }
 
   implicit lazy val encoderReqTypeId: Encoder[ReqTypeId] = Encoder.instance {
     case a: CustomReqTypeId       => Json.obj("c"  -> a.asJson)
-    case a: StaticReqType.UseCase => Json.obj("uc" -> unitJson)
+    case a: StaticReqType.UseCase => Json.fromString("uc")
   }
 
   implicit lazy val codecReqTypeMnemonic: JsonCodec[ReqType.Mnemonic] =

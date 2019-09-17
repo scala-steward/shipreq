@@ -135,4 +135,3 @@ Phase 2B
   * Testing
     * Finish `ProjectSpaProtocolsTest`
     * Test codecs in `WebSocketShared`
-    * add proper RedisProtocol tests after adding circe codecs (hardcode event data using JSON instead of Scala)
