@@ -201,7 +201,7 @@ object WebappBuild {
       .configureJs(Common.jsSettings(NeedDom)) // TODO NeedDom isn't true but required cos webappBaseTest loads in Sizzle
       .dependsOn(webappBaseMember)
       .dependsOn(baseTest % Test, webappBaseTest % Test)
-      .depsForJvm(scaffeine ++ Circe.main)
+      .depsForJvm(scaffeine ++ Circe.main ++ commonsText)
       .depsForBoth(testScope(μTest ++ Nyaya.test))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -130,6 +130,3 @@ Phase 2B
     * handle inability to decode
   * Taskman
     * Use Circe
-  * Testing
-    * Finish `ProjectSpaProtocolsTest`
-    * Test codecs in `WebSocketShared`

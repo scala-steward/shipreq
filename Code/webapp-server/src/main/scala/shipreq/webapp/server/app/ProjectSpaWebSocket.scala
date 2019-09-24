@@ -106,7 +106,6 @@ final class ProjectSpaWebSocket extends StrictLogging {
       val userProps = s.getUserProperties
       val static    = staticL.get(userProps)
       val state     = stateL.get(userProps)
-      val remote    = s.getBasicRemote
       val binIn     = BinaryData.unsafeFromArray(messageBytes)
 
       val fxSend: BinaryData => Fx[Throwable \/ Unit] =

@@ -1,5 +1,6 @@
 package shipreq.webapp.base.test
 
+import io.circe.parser._
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.univeq.UnivEqScalaz._
@@ -10,6 +11,7 @@ import sourcecode.Line
 import shipreq.base.test._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.protocol.json.v1.PostEvents._
 import shipreq.webapp.base.text.Text
 
 trait WebappTestEquality
@@ -89,4 +91,6 @@ trait WebappTestUtil extends BaseTestUtil {
     assertSeq(name, norm(actual), norm(expect))
   }
 
+  def verifiedEventsFromJson(jsons: String*): VerifiedEvent.Seq =
+    VerifiedEvent.Seq.empty ++ jsons.iterator.map(decode[VerifiedEvent](_).needRight)
 }

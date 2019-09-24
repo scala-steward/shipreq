@@ -19,6 +19,8 @@ final case class SafePickler[A](header : Option[MagicNumber],
                                 version: Version,
                                 body   : Pickler[A]) {
 
+  type Data = A
+
   import boopickle.{PickleImpl, UnpickleImpl}
   import SafePickler._
 

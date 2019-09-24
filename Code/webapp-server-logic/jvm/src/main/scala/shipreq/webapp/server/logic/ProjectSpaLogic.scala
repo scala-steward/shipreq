@@ -5,7 +5,6 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.univeq._
 import java.time.{Duration, Instant}
-import scala.util.{Failure, Success}
 import scalaz.syntax.monad._
 import scalaz.{-\/, BindRec, Monad, \/, \/-, ~>}
 import shipreq.base.ops.Trace
@@ -283,11 +282,13 @@ object ProjectSpaLogic extends StrictLogging {
 
           parseClientMsg(msg) match {
             case \/-((reqId, req)) =>
+              // GenerateUnitTest.req(webSocketHelper, msg)(reqId, req)
               def respondWith(msgFnOut: MsgFnOut[F, req.reqRes.ResponseType]): F[MsgResult[F]] = {
                 val protocolAndRes = req.reqRes.protocolRes.andValue(msgFnOut.output)
                 val fullRes        = \/-((reqId, protocolAndRes))
                 val resBin         = webSocketHelper.protocolSC.codec.encode(fullRes)
                 val wsReqRes       = FreeOption(req.reqRes)
+                // GenerateUnitTest.resp(webSocketHelper, req, fullRes)(resBin)
                 respond(resBin).flatMap {
                   case \/-(_) => F.point(new MsgResult(wsReqRes, resBin.length, msgFnOut.newState))
                   case -\/(e) => handleError(wsReqRes, MsgError.RespondError(e))
@@ -658,6 +659,88 @@ object ProjectSpaLogic extends StrictLogging {
       case object WriteDb                                                        extends Status("WriteDb")
       final case class WriteRedis1(newEvents: VerifiedEvent.Seq)                 extends Status("WriteRedis1")
       final case class WriteRedis2(newProject: Project, newEvent: VerifiedEvent) extends Status("WriteRedis2")
+    }
+  }
+
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+  /** Generates code to paste into ProjectSpaProtocolsTest.scala */
+  private[this] object GenerateUnitTest {
+    import io.circe._
+    import io.circe.syntax._
+    import org.apache.commons.text.StringEscapeUtils
+    import scala.collection.immutable.TreeSet
+    import shipreq.webapp.base.protocol.json.v1.PostEvents.encoderVerifiedEvent
+    import ProjectSpaProtocols.WebSocket
+
+    type WSH = WebSocketServerHelper[WebSocket#Req, WebSocket.Push]
+
+    def req(webSocketHelper: WSH, msg: BinaryData)(reqId: WebSocketShared.ReqId, req: WebSocket#Req): Unit =
+      println(
+        s"""
+           |"${req.toString.takeWhile(_ != '.')}" - {
+           |  "req" - {
+           |    "${webSocketHelper.protocolCS.codec.version.verStr}" - {
+           |      val bin    = BinaryData.fromHex("${msg.hex}")
+           |      val expect = ${(reqId, req)}
+           |      assertRequest(bin, expect)
+           |    }
+           |  }
+           |}
+           |""".stripMargin)
+
+    // InitApp               - Unit                                   - ErrorMsg \/ InitAppData
+    // Reconnect             - Option[EventOrd.Latest]                - VerifiedEvent.Seq
+    // Sync                  - NonEmptySet[EventOrd]                  - Unit
+    // UpdateConfig          - UpdateConfigCmd                        - ErrorMsg \/ VerifiedEvent.Seq
+    // CreateContent         - CreateContentCmd                       - ErrorMsg \/ VerifiedEvent.Seq
+    // UpdateContent         - UpdateContentCmd                       - ErrorMsg \/ VerifiedEvent.Seq
+    // ProjectNameSet        - String                                 - ErrorMsg \/ VerifiedEvent.Seq
+    // UpdateSavedViews      - SavedViewCmd                           - ErrorMsg \/ VerifiedEvent.Seq
+    // UpdateManualIssues    - ManualIssueCmd                         - ErrorMsg \/ VerifiedEvent.Seq
+    // FieldMandatorinessMod - (CustomFieldId, Mandatory)             - ErrorMsg \/ VerifiedEvent.Seq
+    // ReqTypeImplicationMod - (CustomReqTypeId, ImplicationRequired) - ErrorMsg \/ VerifiedEvent.Seq
+
+    private def asJsonStr[A: Encoder](a: A): String =
+      "\"\"\"" + a.asJson.noSpacesSortKeys + "\"\"\""
+
+    private final case class WrapVerifiedEvents(ves: VerifiedEvent.Seq) {
+      override def toString = {
+        def jsons = ves.iterator.map(asJsonStr(_))
+        if (ves.isEmpty)
+          "VerifiedEvent.Seq.empty"
+        else if (ves.size == 1)
+          jsons.mkString("verifiedEventsFromJson(", ", ", ")")
+        else
+          jsons.mkString("verifiedEventsFromJson(\n", ",\n", ")")
+      }
+    }
+
+    private def show(input: Any): Any = input match {
+      case t: TreeSet[_] => WrapVerifiedEvents(t.asInstanceOf[VerifiedEvent.Seq])
+      case \/-(a)        => \/-(show(a))
+      case (a, b)        => (a, show(b))
+      case s: String     => StringEscapeUtils.escapeJava(s)
+      case a             => a
+    }
+
+    def resp(webSocketHelper: WSH, req: WsReqRes.AndReq, resp: WebSocketShared.ServerToClient[_])(out: BinaryData): Unit = {
+      val name = req.toString.takeWhile(_ != '.')
+      val resp2  = resp.map { case (reqId, protocolAndValue) => (reqId, protocolAndValue.value) }
+      val respCode = show(resp2).toString
+
+      println(
+        s"""
+           |"$name" - {
+           |  "resp" - {
+           |    "${webSocketHelper.protocolSC.codec.version.verStr}" - {
+           |      val bin    = BinaryData.fromHex("${out.hex}")
+           |      val expect = $respCode
+           |      assertResponse($name)(bin, expect)
+           |    }
+           |  }
+           |}
+           |""".stripMargin)
     }
   }
 }
