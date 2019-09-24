@@ -1,6 +1,6 @@
 package shipreq.taskman.server.logic
 
-import org.scalacheck.Prop.BooleanOperators
+import org.scalacheck.Prop.propBoolean
 import shipreq.base.test.MTestScalaCheck
 import shipreq.taskman.api.{MsgId, Priority}
 import utest._

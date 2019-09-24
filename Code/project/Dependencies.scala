@@ -11,7 +11,7 @@ object Dependencies {
   }
 
   object Graal {
-    val ver = "19.2.0"
+    val ver = "19.2.0.1"
   }
 
   object Docker {
@@ -207,15 +207,15 @@ object Dependencies {
   val catsEffect   = jvmOnly("org.typelevel"              %% "cats-effect"           % "2.0.0")
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val commonsText  = jvmOnly("org.apache.commons"          % "commons-text"          % "1.8")
-  val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "6.0.3")
-  val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "3.3.1")
+  val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "6.0.4")
+  val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "3.4.1")
   val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.12")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.0.0")
   val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.8")
   val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.11.3")
   val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "3.1.0")
-  val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.14.0")
+  val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.14.1")
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.2")
   val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.2.0")
   val twitterEval  = jvmOnly("com.twitter"                %% "util-eval"             % "6.43.0")
