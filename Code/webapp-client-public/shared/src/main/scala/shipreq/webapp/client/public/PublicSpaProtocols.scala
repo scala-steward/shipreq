@@ -1,16 +1,14 @@
 package shipreq.webapp.client.public
 
-import boopickle.Pickler
-import japgolly.univeq.UnivEq
+import boopickle.DefaultBasic._
 import monocle.macros.{GenIso, Lenses}
 import scalaz.\/
 import shipreq.base.util._
+import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.SecurityToken
 import shipreq.webapp.base.protocol._
-import shipreq.webapp.base.protocol.BoopickleMacros._
-import shipreq.webapp.base.protocol.BinCodecGeneric._
-import shipreq.webapp.base.protocol.BinCodecBaseData._
-import shipreq.webapp.base.protocol.BinCodecUser._
+import shipreq.webapp.base.protocol.binary._
+import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.base.util.TextMod
 import shipreq.webapp.base.user._
 import shipreq.webapp.base.validation._
@@ -22,7 +20,9 @@ import shipreq.webapp.base.Urls
   */
 object PublicSpaProtocols {
 
-  private def ajax[Req: Pickler, Res: Pickler](path: String): Protocol.Ajax.Simple[Pickler, Req, Res] =
+  type Ajax[Req, Res] = Protocol.Ajax.Simple[SafePickler, Req, Res]
+
+  private def defAjax[Req: SafePickler, Res: SafePickler](path: String): Ajax[Req, Res] =
     Protocol.Ajax.Simple(Urls.ajaxRoot / "pub" / path, Protocol(implicitly), Protocol(implicitly))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -36,14 +36,14 @@ object PublicSpaProtocols {
     }
 
     object Request {
-      implicit val pickler: Pickler[Request] = pickleCaseClass[Request]
-
       def labelName  = "Your name"
       def labelEmail = "Your email address"
 
       def validatorName  = UserValidators.personName.unnamed
       def validatorEmail = UserValidators.emailAddr.unnamed
       def validatorMsg   = CommonValidation.optionalLargeText.mapCorrector(_ prependLive TextMod.maxTwoConsecutiveNewLines.run)
+
+      implicit def univEq: UnivEq[Request] = UnivEq.derive
 
       @Lenses
       final case class Untyped(name      : String,
@@ -62,12 +62,65 @@ object PublicSpaProtocols {
           .imapInput(GenIso.fields[Untyped])
           .mapValid((Request.apply _).tupled)
     }
+
+    type Response = ErrorMsg \/ Unit
+
+    val ajax = {
+      import v1.BaseData._
+
+      implicit val picklerRequest: Pickler[Request] =
+        new Pickler[Request] {
+          override def pickle(a: Request)(implicit state: PickleState): Unit = {
+            state.pickle(a.name)
+            state.pickle(a.email)
+            state.pickle(a.msg)
+            state.pickle(a.newsletter)
+          }
+          override def unpickle(implicit state: UnpickleState): Request = {
+            val name       = state.unpickle[PersonName]
+            val email      = state.unpickle[EmailAddr]
+            val msg        = state.unpickle[Option[String]]
+            val newsletter = state.unpickle[Boolean]
+            Request(name, email, msg, newsletter)
+          }
+        }
+
+      val picklerResponse: Pickler[Response] =
+        implicitly
+
+      implicit val safePicklerRequest: SafePickler[Request] =
+        picklerRequest.asV10.withMagicNumbers(0xB5AE4CF5, 0x228FA2F2)
+
+      implicit val safePicklerResponse: SafePickler[Response] =
+        picklerResponse.asV10.withMagicNumbers(0x7CD703D9, 0xB2C6D5E3)
+
+      defAjax[Request, Response]("lp")
+    }
   }
 
-  val landingPage = ajax[LandingPage.Request, ErrorMsg \/ Unit]("lp")
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  object Register1 {
+    type Request  = EmailAddr
+    type Response = ErrorMsg \/ Unit
+
+    val ajax: Ajax[Request, Response] = {
+      import v1.BaseData._
+
+      val picklerRequest: Pickler[Request] = implicitly
+      val picklerResponse: Pickler[Response] = implicitly
+
+      implicit val safePicklerRequest: SafePickler[Request] =
+        picklerRequest.asV10.withMagicNumbers(0x89827590, 0x8858F858)
+
+      implicit val safePicklerResponse: SafePickler[Response] =
+        picklerResponse.asV10.withMagicNumbers(0x0FCE3232, 0x713A4224)
+
+      defAjax("reg1")
+    }
+  }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  object Register {
+  object Register2 {
     final case class Request(token     : SecurityToken,
                              personName: PersonName,
                              username  : Username,
@@ -79,7 +132,7 @@ object PublicSpaProtocols {
     }
 
     object Request {
-      implicit val pickler: Pickler[Request] = pickleCaseClass
+      implicit def univEq: UnivEq[Request] = UnivEq.derive
 
       // Only used on server-side - Request has less than the registration form
       lazy val validator: Composite.Validator[(SecurityToken, String, String, String, Boolean), _, Request] =
@@ -91,31 +144,81 @@ object PublicSpaProtocols {
           .mapValid((Request.apply _).tupled)
     }
 
-    sealed trait Response
-    object Response {
-      sealed trait Terminal     extends Response
+    sealed trait Result
+    object Result {
+      sealed trait Terminal     extends Result
       case object Success       extends Terminal
       case object TokenInvalid  extends Terminal
       case object TokenExpired  extends Terminal
-      case object UsernameTaken extends Response
+      case object UsernameTaken extends Result
 
-      implicit val pickler: Pickler[Response] = derivePickler[Response]
-      implicit def univEq: UnivEq[Response] = UnivEq.derive
+      implicit def univEq: UnivEq[Result] = UnivEq.derive
+    }
+
+    type Response = ErrorMsg \/ Result
+
+    val ajax: Ajax[Request, Response] = {
+      import v1.BaseData._
+
+      val picklerRequest: Pickler[Request] =
+        new Pickler[Request] {
+          override def pickle(a: Request)(implicit state: PickleState): Unit = {
+            state.pickle(a.token)
+            state.pickle(a.personName)
+            state.pickle(a.username)
+            state.pickle(a.password)
+            state.pickle(a.newsletter)
+          }
+          override def unpickle(implicit state: UnpickleState): Request = {
+            val token      = state.unpickle[SecurityToken]
+            val personName = state.unpickle[PersonName]
+            val username   = state.unpickle[Username]
+            val password   = state.unpickle[PlainTextPassword]
+            val newsletter = state.unpickle[Boolean]
+            Request(token, personName, username, password, newsletter)
+          }
+        }
+
+      implicit val picklerResult: Pickler[Result] =
+        new Pickler[Result] {
+          override def pickle(a: Result)(implicit state: PickleState): Unit =
+            a match {
+              case Result.Success       => state.enc.writeByte(0)
+              case Result.TokenExpired  => state.enc.writeByte(1)
+              case Result.TokenInvalid  => state.enc.writeByte(2)
+              case Result.UsernameTaken => state.enc.writeByte(3)
+            }
+          override def unpickle(implicit state: UnpickleState): Result =
+            state.dec.readByte match {
+              case 0 => Result.Success
+              case 1 => Result.TokenExpired
+              case 2 => Result.TokenInvalid
+              case 3 => Result.UsernameTaken
+            }
+        }
+
+      val picklerResponse: Pickler[Response] =
+        pickleDisj
+
+      implicit val safePicklerRequest: SafePickler[Request] =
+        picklerRequest.asV10.withMagicNumbers(0x456C4A18, 0x74601B38)
+
+      implicit val safePicklerResponse: SafePickler[Response] =
+        picklerResponse.asV10.withMagicNumbers(0x9FE45912, 0x6FDDAE09)
+
+      defAjax("reg2")
     }
   }
 
-  val register1 = ajax[EmailAddr, ErrorMsg \/ Unit]("rg1")
-  val register2 = ajax[Register.Request, ErrorMsg \/ Register.Response]("rg2")
-
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object Login {
+
     final case class Request(user: Username \/ EmailAddr, password: PlainTextPassword) {
       def untyped: Request.Untyped =
         Request.Untyped(user.fold(_.value, _.value), password.value)
     }
 
     object Request {
-      implicit val pickler: Pickler[Request] = pickleCaseClass[Request]
 
       @Lenses
       final case class Untyped(user: String, password: String) {
@@ -128,38 +231,121 @@ object PublicSpaProtocols {
           .tuple(UserValidators.password.named)
           .imapInput(GenIso.fields[Untyped])
           .mapValid((Request.apply _).tupled)
+
+      implicit def univEq: UnivEq[Request] = UnivEq.derive
+    }
+
+    type Response = Permission
+
+    val ajax: Ajax[Request, Response] = {
+      import v1.BaseData._
+
+      val picklerRequest: Pickler[Request] =
+        new Pickler[Request] {
+          override def pickle(a: Request)(implicit state: PickleState): Unit = {
+            state.pickle(a.user)
+            state.pickle(a.password)
+          }
+          override def unpickle(implicit state: UnpickleState): Request = {
+            val user     = state.unpickle[Username \/ EmailAddr]
+            val password = state.unpickle[PlainTextPassword]
+            Request(user, password)
+          }
+        }
+
+      val picklerResponse: Pickler[Response] =
+        implicitly
+
+      implicit val safePicklerRequest: SafePickler[Request] =
+        picklerRequest.asV10.withMagicNumbers(0x8AB0DAD1, 0x38E21961)
+
+      implicit val safePicklerResponse: SafePickler[Response] =
+        picklerResponse.asV10.withMagicNumbers(0xBAD9BE35, 0xBCACEC71)
+
+      defAjax("login")
     }
   }
 
-  val login = ajax[Login.Request, Permission]("l")
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  object ResetPassword1 {
+    type Request  = Username \/ EmailAddr
+    type Response = Unit
+
+    val ajax: Ajax[Request, Response] = {
+      import v1.BaseData._
+
+      val picklerRequest: Pickler[Request] = implicitly
+      val picklerResponse: Pickler[Response] = implicitly
+
+      implicit val safePicklerRequest: SafePickler[Request] =
+        picklerRequest.asV10.withMagicNumbers(0x1EFE85AA, 0x43067CC7)
+
+      implicit val safePicklerResponse: SafePickler[Response] =
+        picklerResponse.asV10.withMagicNumbers(0xFEF9FB89, 0x318614CF)
+
+      defAjax("rp1")
+    }
+  }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  object ResetPassword {
+  object ResetPassword2 {
     final case class Request(token: SecurityToken, newPassword: PlainTextPassword)
-    implicit val pickler: Pickler[Request] = pickleCaseClass[Request]
 
-    sealed trait Response
-    object Response {
-      case object Success      extends Response
-      case object TokenInvalid extends Response
-      case object TokenExpired extends Response
+    implicit def univEqRequest: UnivEq[Request] = UnivEq.derive
 
-      implicit val pickler: Pickler[Response] = derivePickler[Response]
-      implicit def univEq: UnivEq[Response] = UnivEq.derive
+    sealed trait Result
+    object Result {
+      case object Success      extends Result
+      case object TokenInvalid extends Result
+      case object TokenExpired extends Result
+      implicit def univEq: UnivEq[Result] = UnivEq.derive
+    }
+
+    type Response = ErrorMsg \/ Result
+
+    val ajax: Ajax[Request, Response] = {
+      import v1.BaseData._
+
+      implicit val picklerRequest: Pickler[Request] =
+        new Pickler[Request] {
+          override def pickle(a: Request)(implicit state: PickleState): Unit = {
+            state.pickle(a.token)
+            state.pickle(a.newPassword)
+          }
+          override def unpickle(implicit state: UnpickleState): Request = {
+            val token       = state.unpickle[SecurityToken]
+            val newPassword = state.unpickle[PlainTextPassword]
+            Request(token, newPassword)
+          }
+        }
+
+      implicit val picklerResult: Pickler[Result] =
+        new Pickler[Result] {
+          override def pickle(a: Result)(implicit state: PickleState): Unit =
+            a match {
+              case Result.Success      => state.enc.writeByte(0)
+              case Result.TokenExpired => state.enc.writeByte(1)
+              case Result.TokenInvalid => state.enc.writeByte(2)
+            }
+          override def unpickle(implicit state: UnpickleState): Result =
+            state.dec.readByte match {
+              case 0 => Result.Success
+              case 1 => Result.TokenExpired
+              case 2 => Result.TokenInvalid
+            }
+        }
+
+      val picklerResponse: Pickler[Response] =
+        pickleDisj
+
+      implicit val safePicklerRequest: SafePickler[Request] =
+        picklerRequest.asV10.withMagicNumbers(0x024A43EE, 0x63AE6C82)
+
+      implicit val safePicklerResponse: SafePickler[Response] =
+        picklerResponse.asV10.withMagicNumbers(0xB9CB8212, 0xDA4601AD)
+
+      defAjax("rp2")
     }
   }
 
-  val resetPassword1 = ajax[Username \/ EmailAddr, Unit]("rp1")
-  val resetPassword2 = ajax[ResetPassword.Request, ErrorMsg \/ ResetPassword.Response]("rp2")
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  final case class InitData(publicRegistration: Permission,
-                            loggedInUser      : Option[Username])
-  object InitData {
-    implicit val pickler = pickleCaseClass[InitData]
-  }
-
-  final val EntryPointName = "A"
-  val EntryPoint = ClientSideProc[InitData](EntryPointName)
 }

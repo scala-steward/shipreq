@@ -8,7 +8,7 @@ import shipreq.webapp.base.data.DataProp
 class PropCheck {
 
   val prop = DataProp.project.allIncludingConfig
-  val p100  = data.project_100
+  val p100  = SampleData.project_100
 
   @Benchmark
   def prop_100 = prop(p100)

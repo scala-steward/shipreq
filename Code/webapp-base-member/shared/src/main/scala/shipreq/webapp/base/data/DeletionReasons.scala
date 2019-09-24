@@ -17,8 +17,8 @@ final case class DeletionReasonId(value: Int) extends TaggedInt
  *
  * The vectors in [[reqApplication]] are append-only and so order shows deletion chronology.
  */
-case class DeletionReasons(reasons       : Vector[DeletionReason.NonEmptyText],
-                           reqApplication: ReqApplication) {
+final case class DeletionReasons(reasons       : Vector[DeletionReason.NonEmptyText],
+                                 reqApplication: ReqApplication) {
 
   def apply(id: DeletionReasonId): DeletionReason.NonEmptyText =
     reasons(id.value)

@@ -3,6 +3,7 @@ package shipreq.utils
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import nyaya.gen._
 import scala.annotation.tailrec
+import shipreq.utils.UtilUtils._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.util.ShowSize
 import shipreq.webapp.base.{RandomData => $}
@@ -134,22 +135,4 @@ object GenerateProject {
     go()
   }
 
-  def time[R](name: String, f: => R): R = {
-    print(s"Starting $name... ")
-    val start = System.nanoTime()
-    val r = f
-    val end = System.nanoTime()
-    val time = end - start // 10⁹
-    val sec = 1000000000
-    val t = time.toDouble / sec.toDouble
-    printf("Time: %,f sec\n", t)
-    System.out.flush()
-    r
-  }
-
-  def writeFile(filename: String, content: String): Unit = {
-    import java.nio.file.{Paths, Files}
-    import java.nio.charset.StandardCharsets
-    Files.write(Paths get filename, content getBytes StandardCharsets.UTF_8)
-  }
 }

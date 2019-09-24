@@ -1,30 +1,40 @@
 package shipreq.webapp.base.protocol
 
-import boopickle.Pickler
+import boopickle.DefaultBasic._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol._
-import shipreq.webapp.base.user._
+import shipreq.webapp.base.protocol.binary._
+import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.base.Urls
-import BoopickleMacros._
-import BinCodecGeneric._
-import BinCodecUser._
-import BinCodecMemberData._
 
 /**
   * Protocols for the Home SPA / webapp-client-home module.
   */
 object HomeSpaProtocols {
 
-  private def ajax[Req: Pickler, Res: Pickler](path: String): Protocol.Ajax.Simple[Pickler, Req, Res] =
-    Protocol.Ajax.Simple(Urls.ajaxRoot / "h" / path, Protocol(implicitly), Protocol(implicitly))
+  type Ajax[Req, Res] = Protocol.Ajax.Simple[SafePickler, Req, Res]
 
-  val createProject = ajax[String, ProjectMetaData]("p")
+  private def defAjax[Req: SafePickler, Res: SafePickler](path: String): Ajax[Req, Res] =
+    Protocol.Ajax.Simple(Urls.ajaxRoot / "hom" / path, Protocol(implicitly), Protocol(implicitly))
 
-  final case class InitData(username: Username,
-                            projects: List[ProjectMetaData])
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  object CreateProject {
+    type Request = String
+    type Response = ProjectMetaData
 
-  implicit val picklerInitData = pickleCaseClass[InitData]
+    val ajax = {
+      import v1.BaseMemberData2._
 
-  final val EntryPointName = "H"
-  val EntryPoint = ClientSideProc[InitData](EntryPointName)
+      val picklerRequest: Pickler[Request] = implicitly
+      val picklerResponse: Pickler[Response] = implicitly
+
+      implicit val safePicklerRequest: SafePickler[Request] =
+        picklerRequest.asV10.withMagicNumbers(0x42A63E36, 0x0C1B2566)
+
+      implicit val safePicklerResponse: SafePickler[Response] =
+        picklerResponse.asV10.withMagicNumbers(0xB27B40C3, 0x004A70E7)
+
+      defAjax[Request, Response]("cp")
+    }
+  }
+
 }

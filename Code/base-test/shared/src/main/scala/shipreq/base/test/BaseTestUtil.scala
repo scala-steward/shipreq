@@ -1,6 +1,8 @@
 package shipreq.base.test
 
 import japgolly.microlibs.testutil.TestUtilInternals
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
 import scalaz.std.string.stringInstance
 import scalaz.{Equal, Order, \/}
 import shipreq.base.util.Identity
@@ -14,6 +16,13 @@ object BaseTestUtil extends BaseTestEquality with BaseTestUtil {
 
     def assertEqN(name: => String, expect: A)(implicit e: Equal[A]): Unit =
       BaseTestUtil.assertEq(name, a, expect)
+  }
+
+  final class BaseTestUtilOpsEither[A, B](private val e: Either[A, B]) extends AnyVal {
+    def needLeft: A =
+      e.fold(Identity.apply, e => fail(s"needLeft got Right($e)"))
+    def needRight: B =
+      e.fold(e => fail(s"needRight got Left($e)"), Identity.apply)
   }
 
   final class BaseTestUtilOpsDisj[A, B](private val d: A \/ B) extends AnyVal {
@@ -46,6 +55,9 @@ trait BaseTestUtil
   implicit def BaseTestUtilOpsDisj[A, B](d: A \/ B) =
     new BaseTestUtil.BaseTestUtilOpsDisj(d)
 
+  implicit def BaseTestUtilOpsEither[A, B](e: Either[A, B]) =
+    new BaseTestUtil.BaseTestUtilOpsEither(e)
+
   def forceUnivEqOrderByToString[A]: Order[A] with UnivEq[A] = {
     val o = Order.orderBy((_: A).toString)
     new Order[A] with UnivEq[A] {
@@ -71,4 +83,23 @@ trait BaseTestUtil
 //  def assertMatch[A](a: A)(pf: PartialFunction[A, Unit]): Unit =
 //    if (!pf.isDefinedAt(a))
 //      fail(s"Wrong shape: $a")
+
+  // TODO Move getOrThrow() into microlibs
+  // TODO Move these into microlibs(jvm-only)
+
+  import scala.io.{Codec, Source}
+
+  def writeFile(filename: String, content: String): Unit =
+    Files.write(Paths get filename, content getBytes StandardCharsets.UTF_8)
+
+  def readFile(filename: String): String = {
+    val src = Source.fromFile(filename)(Codec.UTF8)
+    try src.mkString finally src.close()
+  }
+
+  def readResourceFile(filename: String): String = {
+    val src = Source.fromResource(filename)(Codec.UTF8)
+    try src.mkString finally src.close()
+  }
+
 }

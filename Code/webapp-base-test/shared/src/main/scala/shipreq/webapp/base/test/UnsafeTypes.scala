@@ -63,6 +63,10 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
   implicit def autoReqCodeSetFromSet[C <% ReqCode.Value](cs: Set[C]): ReqCode.CodeSet =
     cs.foldLeft(ReqCode.CodeSet.empty)(_.put(_, ()))
 
+  implicit def autoEventOrd(i: Int) = EventOrd(i)
+
+  implicit def autoEventOrdLatest(i: Int) = EventOrd.Latest(i)
+
   implicit def autoReqCodeGroupId   (i: Int) = ReqCodeGroupId(i)
   implicit def autoApReqCodeId      (i: Int) = ApReqCodeId(i)
 //  implicit def autoReqCodeId        (i: Int) = ReqCodeId(i)
@@ -78,6 +82,7 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
   implicit def autoTagGroupId       (i: Int) = TagGroupId(i)
   implicit def autoApplicableTagId  (i: Int) = ApplicableTagId(i)
   implicit def autoDeletionReasonId (i: Int) = DeletionReasonId(i)
+  implicit def autoManualIssueId    (i: Int) = ManualIssueId(i)
 
   implicit def autoReqCodeGroupIdO   (i: Int): Option[ReqCodeGroupId]             = Some(i)
   implicit def autoApReqCodeIdO      (i: Int): Option[ApReqCodeId]                = Some(i)
@@ -140,6 +145,10 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
   implicit def autoText_DeletionReasonN(s: String): Text.DeletionReason.NonEmptyText = NonEmptyVector one s
   implicit def autoText_DeletionReasonO(s: String): Text.DeletionReason.OptionalText = Vector1(s)
 
+  implicit def autoText_ManualIssueA(s: String): Text.ManualIssue.Atom = Text.ManualIssue Literal __checkLiteral(s)
+  implicit def autoText_ManualIssueN(s: String): Text.ManualIssue.NonEmptyText = NonEmptyVector one s
+  implicit def autoText_ManualIssueO(s: String): Text.ManualIssue.OptionalText = Vector1(s)
+
   implicit def autoText_GenericReqTitleA(s: String): Text.GenericReqTitle.Atom = Text.GenericReqTitle Literal __checkLiteral(s)
   implicit def autoText_GenericReqTitleN(s: String): Text.GenericReqTitle.NonEmptyText = NonEmptyVector one s
   implicit def autoText_GenericReqTitleO(s: String): Text.GenericReqTitle.OptionalText = Vector1(s)
@@ -183,6 +192,9 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
 
   implicit def setLikePatchAdd(s: Set[ApReqCodeId.AndValue]): Multimap[ReqCode.Value, Set, ApReqCodeId] =
     Multimap(s.toList.map(iv => iv.value -> Set(iv.id)).toMap)
+
+  implicit def autoVerifiedEventNonEmptySeqFromOne(v: VerifiedEvent): VerifiedEvent.NonEmptySeq =
+    VerifiedEvent.NonEmptySeq.one(v)
 }
 
 object UnsafeTypes extends UnsafeTypesMedPriority {
@@ -213,6 +225,11 @@ object UnsafeTypes extends UnsafeTypesMedPriority {
       PartialLocation.detect(
         NonEmptyVector force
           str.split('.').iterator.map(s => if (s == "X") -1 else s.toInt).toVector)
+  }
+
+  implicit class UnsafeEventExt(private val self: Event) extends AnyVal {
+    def verified(ord: EventOrd): VerifiedEvent =
+      VerifiedEvent(ord, self)
   }
 
   object AutoNES {

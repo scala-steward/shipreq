@@ -91,7 +91,7 @@ object WebappBuild {
       .configureJs(Common.jsSettings(NoTests))
       .dependsOn(webappBase)
       .configureBoth(useMacroParadise)
-      .depsForBoth(shapeless ++ parboiled)
+      .depsForBoth(shapeless ++ parboiled ++ (Circe.main % Provided))
       .depsForJs(ScalaCSS.react)
 
   lazy val webappBaseTestJvm = webappBaseTest.jvm
@@ -102,7 +102,7 @@ object WebappBuild {
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NeedDom))
       .dependsOn(baseTest, webappBaseMember)
-      .depsForBoth(μTest ++ Nyaya.test)
+      .depsForBoth(μTest ++ Nyaya.test ++ Circe.main)
       .depsForJs(
         React.test ++ ScalaCSS.react ++
         TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact)
@@ -201,7 +201,7 @@ object WebappBuild {
       .configureJs(Common.jsSettings(NeedDom)) // TODO NeedDom isn't true but required cos webappBaseTest loads in Sizzle
       .dependsOn(webappBaseMember)
       .dependsOn(baseTest % Test, webappBaseTest % Test)
-      .depsForJvm(scaffeine)
+      .depsForJvm(scaffeine ++ Circe.main ++ commonsText)
       .depsForBoth(testScope(μTest ++ Nyaya.test))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -12,7 +12,7 @@ import shipreq.base.util.univeq._
  * For each value herein, adding one should always produce a never-before-used ID.
  */
 @Lenses
-case class IdCeilings(
+final case class IdCeilings(
     customIssueType : Int,
     customReqType   : Int,
     customField     : Int,

@@ -5,7 +5,6 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.univeq._
 import java.time.{Duration, Instant}
-import scala.util.{Failure, Success}
 import scalaz.syntax.monad._
 import scalaz.{-\/, BindRec, Monad, \/, \/-, ~>}
 import shipreq.base.ops.Trace
@@ -14,28 +13,31 @@ import shipreq.webapp.base.data.{Obfuscated, Project, ProjectId, ProjectMetaData
 import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.event.EventOrd.Implicits._
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes.EventResult
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, InitPageData, WsReqRes}
+import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.user.{User, Username}
 
 trait ProjectSpaLogic[F[_]] {
   import ProjectSpaLogic._
 
-  def initPage(projectId: ProjectId, username: Username): F[InitPageData]
+  def initPage(projectId: ProjectId, username: Username): F[ProjectSpaEntryPoint.InitData]
 
   def onConnect(cookies  : Cookie.LookupFn,
                 projectId: ProjectId.Public): F[ConnectRejection \/ (WebSocketStatic, WebSocketState[F])]
 
-  def onOpen(static: WebSocketStatic,
-             state : WebSocketState[F],
-             push  : BinaryData => F[Unit]): F[WebSocketState[F]]
+  def onOpen(static : WebSocketStatic,
+             state  : WebSocketState[F],
+             push   : BinaryData => F[Unit],
+             onError: ListenerError => F[Unit]): F[WebSocketState[F]]
 
-  def onMessage(static : WebSocketStatic,
-                state  : WebSocketState[F],
-                msg    : BinaryData,
-                respond: BinaryData => F[Throwable \/ Unit],
-                push   : BinaryData => F[Unit],
-                onError: MsgError => F[Unit]): F[Option[WebSocketState[F]]]
+  def onMessage(static         : WebSocketStatic,
+                state          : WebSocketState[F],
+                msg            : BinaryData,
+                respond        : BinaryData => F[Throwable \/ Unit],
+                push           : BinaryData => F[Unit],
+                onListenerError: ListenerError => F[Unit],
+                onError        : MsgError => F[Unit]): F[Option[WebSocketState[F]]]
 
   // Option is used because this is called after onConnect rejection
   // (in which case valid values are never created for the session)
@@ -84,9 +86,16 @@ object ProjectSpaLogic extends StrictLogging {
     implicit def univEq: UnivEq[ConnectRejection] = UnivEq.derive
   }
 
+  sealed trait ListenerError
+  object ListenerError {
+    final case class RedisDecodingFailure(err: SafePickler.DecodingFailure) extends ListenerError
+  }
+
   sealed trait MsgError
   object MsgError {
-    case object DecodingFailure extends MsgError
+    final case class ClientMsgDecodingFailure(err: SafePickler.DecodingFailure) extends MsgError
+    final case class ServerBehindClient(err: SafePickler.DecodingFailure) extends MsgError
+    final case class ServerBehindRedis(err: SafePickler.DecodingFailure) extends MsgError
     final case class RespondError(err: Throwable) extends MsgError
   }
 
@@ -104,6 +113,7 @@ object ProjectSpaLogic extends StrictLogging {
                         security: Security.Algebra[F],
                         svr     : Server.Time[F],
                         trace   : Trace.Algebra[F]): ProjectSpaLogic[F] = {
+
     val webSocketHelper = WebSocketServerHelper(ProjectSpaProtocols.WebSocket(Obfuscated(null)))
 
     val OnConnect  = Monads.FDisj[F, ConnectRejection]
@@ -120,12 +130,12 @@ object ProjectSpaLogic extends StrictLogging {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      override def initPage(pid: ProjectId, username: Username): F[InitPageData] =
+      override def initPage(pid: ProjectId, username: Username): F[ProjectSpaEntryPoint.InitData] =
         for {
           name <- runDB(db.projectSpaInitPage(pid))
         } yield {
           val pidPub = Obfuscators.projectId.obfuscate(pid)
-          InitPageData(username, pidPub, name)
+          ProjectSpaEntryPoint.InitData(username, pidPub, name)
         }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -169,15 +179,16 @@ object ProjectSpaLogic extends StrictLogging {
             )))
       }
 
-      override def onOpen(static: WebSocketStatic,
-                          state: WebSocketState[F],
-                          push : BinaryData => F[Unit]) = {
+      override def onOpen(static : WebSocketStatic,
+                          state  : WebSocketState[F],
+                          push   : BinaryData => F[Unit],
+                          onError: ListenerError => F[Unit]) = {
         val span = getSpan(static)
         def main: F[WebSocketState[F]] =
           state.sub match {
             case None =>
               for {
-                sub <- redis.subscribe(static.projectId, pushEvent(span, push, _))
+                sub <- redis.subscribe(static.projectId, listener(span, push, onError))
               } yield WebSocketState(Some(sub))
             case Some(_) =>
               F.pure(state)
@@ -211,13 +222,22 @@ object ProjectSpaLogic extends StrictLogging {
         }
       }
 
+      private def listener(span: Span, push: BinaryData => F[Unit], onError: ListenerError => F[Unit]): Redis.Listener[F] = {
+        case \/-(event) => pushEvent(span, push, event)
+        case -\/(err) =>
+          for {
+            _ <- F.point(logger.warn("Failed to parse pub/sub event from Redis: ", err))
+            _ <- onError(ListenerError.RedisDecodingFailure(err))
+          } yield ()
+      }
+
       private def pushEvent(span: Span, push: BinaryData => F[Unit], e: VerifiedEvent): F[Unit] =
         pushEvents(span, push, VerifiedEvent.NonEmptySeq.one(e))
 
       private def pushEvents(span: Span, push: BinaryData => F[Unit], es: VerifiedEvent.NonEmptySeq): F[Unit] =
         trace.newSubSpan("push", span) { _ =>
           for {
-            msgBin <- F point BinaryJvm.encode(webSocketHelper.protocolSC)(-\/(es))
+            msgBin <- F point webSocketHelper.protocolSC.codec.encode(-\/(es))
             _      <- metrics.projectSpaWebSocketPush(msgBin.length)
             _      <- push(msgBin)
           } yield ()
@@ -228,12 +248,13 @@ object ProjectSpaLogic extends StrictLogging {
 
       type OptionState = Option[WebSocketState[F]]
 
-      override def onMessage(static : WebSocketStatic,
-                             state  : WebSocketState[F],
-                             msg    : BinaryData,
-                             respond: BinaryData => F[Throwable \/ Unit],
-                             push   : BinaryData => F[Unit],
-                             onError: MsgError => F[Unit]): F[OptionState] = {
+      override def onMessage(static         : WebSocketStatic,
+                             state          : WebSocketState[F],
+                             msg            : BinaryData,
+                             respond        : BinaryData => F[Throwable \/ Unit],
+                             push           : BinaryData => F[Unit],
+                             onListenerError: ListenerError => F[Unit],
+                             onError        : MsgError => F[Unit]): F[OptionState] = {
         val M = OnMsgError
 
         val span = getSpan(static)
@@ -242,26 +263,44 @@ object ProjectSpaLogic extends StrictLogging {
 
           def handleError(wsReqRes: FreeOption[WsReqRes], err: MsgError): F[MsgResult[F]] =
             onError(err) >> F.point {
+              def descMsg = msg.describe(1000)
               err match {
-                case MsgError.DecodingFailure => logger.warn(s"Failed to decode message: ${msg.describe(1000)}")
-                case MsgError.RespondError(e) => logger.error(s"Error sending response.", e)
+                case MsgError.ClientMsgDecodingFailure(e) =>
+                  logger.warn(s"Failed to parse message from client: $descMsg", e)
+
+                case MsgError.ServerBehindClient(e) =>
+                  logger.warn(s"Server older than client. Aborting. ClientMsg:[$descMsg]", e)
+
+                case MsgError.ServerBehindRedis(e) =>
+                  logger.warn(s"Server older than cache. Aborting. CacheData:[$descMsg]", e)
+
+                case MsgError.RespondError(e) =>
+                  logger.error(s"Error sending response.", e)
               }
               new MsgResult(wsReqRes, -1L, None)
             }
 
-          parseMsg(msg) match {
+          parseClientMsg(msg) match {
             case \/-((reqId, req)) =>
+              // GenerateUnitTest.req(webSocketHelper, msg)(reqId, req)
+              def respondWith(msgFnOut: MsgFnOut[F, req.reqRes.ResponseType]): F[MsgResult[F]] = {
+                val protocolAndRes = req.reqRes.protocolRes.andValue(msgFnOut.output)
+                val fullRes        = \/-((reqId, protocolAndRes))
+                val resBin         = webSocketHelper.protocolSC.codec.encode(fullRes)
+                val wsReqRes       = FreeOption(req.reqRes)
+                // GenerateUnitTest.resp(webSocketHelper, req, fullRes)(resBin)
+                respond(resBin).flatMap {
+                  case \/-(_) => F.point(new MsgResult(wsReqRes, resBin.length, msgFnOut.newState))
+                  case -\/(e) => handleError(wsReqRes, MsgError.RespondError(e))
+                }
+              }
               for {
-                _              ← trace.rename("onMessage: " + req.reqRes.name)
-                msgFnIn        = MsgFnIn(req.req, static, state, push)
-                msgFnOut       ← msgFold(req.reqRes)(msgFnIn): F[MsgFnOut[F, req.reqRes.ResponseType]]
-                protocolAndRes = req.reqRes.protocolRes.andValue(msgFnOut.output)
-                fullRes        = \/-((reqId, protocolAndRes))
-                resBin         = BinaryJvm.encode(webSocketHelper.protocolSC)(fullRes)
-                wsReqRes       = FreeOption(req.reqRes)
-                result         ← respond(resBin).flatMap {
-                                   case \/-(_) => F.point(new MsgResult(wsReqRes, resBin.length, msgFnOut.newState))
-                                   case -\/(e) => handleError(wsReqRes, MsgError.RespondError(e))
+                _           ← trace.rename("onMessage: " + req.reqRes.name)
+                msgFnIn     = MsgFnIn(req.req, static, state, push, onListenerError)
+                msgErrOrOut ← msgFold(req.reqRes)(msgFnIn): F[MsgError \/ MsgFnOut[F, req.reqRes.ResponseType]]
+                result      ← msgErrOrOut match {
+                                   case \/-(msgFnOut) => respondWith(msgFnOut)
+                                   case -\/(e)        => handleError(FreeOption.empty, e)
                                  }
               } yield result
 
@@ -278,16 +317,18 @@ object ProjectSpaLogic extends StrictLogging {
         } yield r.newState
       }
 
-      private def parseMsg(msg: BinaryData) = {
-        BinaryJvm.decode(msg, webSocketHelper.protocolCS) match {
-          case Success(r) => \/-(r)
-          case Failure(_) => -\/(MsgError.DecodingFailure)
+      private def parseClientMsg(msg: BinaryData) = {
+        webSocketHelper.protocolCS.codec.decode(msg).leftMap[MsgError] { e =>
+          if (e.isLocalKnownToBeOutOfDate)
+            MsgError.ServerBehindClient(e)
+          else
+            MsgError.ClientMsgDecodingFailure(e)
         }
       }
 
-      private type MsgFn     [I, O]          = MsgFnIn[F, I] => F[MsgFnOut[F, O]]
+      private type MsgFn     [I, O]          = MsgFnIn[F, I] => F[MsgError \/ MsgFnOut[F, O]]
       private type MsgFoldIn [R <: WsReqRes] = MsgFnIn[F, R#RequestType]
-      private type MsgFoldOut[R <: WsReqRes] = F[MsgFnOut[F, R#ResponseType]]
+      private type MsgFoldOut[R <: WsReqRes] = F[MsgError \/ MsgFnOut[F, R#ResponseType]]
 
       private val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
         onInitApp               = onInitApp,
@@ -315,7 +356,11 @@ object ProjectSpaLogic extends StrictLogging {
       private val projectUpdater = new ProjectUpdater[D, F](writeSnapshotInsteadOfEvents)
 
       private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFn[I, EventResult] =
-        in => projectUpdater(in.static.projectId, mkEvent(in.input, _)).map(MsgFnOut(_, None))
+        in => projectUpdater(in.static.projectId, mkEvent(in.input, _)).map {
+          case ProjectUpdater.Result.Ok(events)           => \/-(MsgFnOut(\/-(events), None))
+          case ProjectUpdater.Result.Reject(e)            => \/-(MsgFnOut(-\/(e), None))
+          case ProjectUpdater.Result.ServerBehindRedis(e) => -\/(MsgError.ServerBehindRedis(e))
+        }
 
       private def updateProjectI[I](mkEvent: I => MakeEvent.Result): MsgFn[I, EventResult] =
         updateProject((i, _) => mkEvent(i))
@@ -332,7 +377,7 @@ object ProjectSpaLogic extends StrictLogging {
         def step[A](name: String)(f: F[A]): F[A] =
           trace.newSpan(name)(_ => metrics.projectSpaWebSocketStep("load", name)(f))
 
-        def ignoreCache(c: Redis.ProjectCache): F[Result] = {
+        def ignoreCache(c: Redis.ProjectCache): F[\/-[Result]] = {
 
           def readDb(p: ProjectAndOrd) =
             step("readDb")(
@@ -362,24 +407,34 @@ object ProjectSpaLogic extends StrictLogging {
             cacheb <- c.buildNonEmpty(pid)
             result <- readDb(cacheb getOrElse ProjectAndOrd.empty)
             _      <- result.fold[F[_]](_ => fUnit, writeRedis)
-          } yield result
+          } yield \/-(result)
         }
 
-        def useCache(c: Redis.ProjectCache, md: ProjectMetaData): F[Result] =
+        def useCache(c: Redis.ProjectCache, md: ProjectMetaData): F[\/-[Result]] =
           step("useCache") {
             for {
               r <- c.build(pid)
-            } yield r.map(InitAppData(_, md))
+            } yield \/-(r.map(InitAppData(_, md)))
           }
 
         for {
-          cache <- redis.read(pid)
-          mdOpt <- runDB(db.getProjectMetaData(pid))
-          r     <- mdOpt match {
-                     case Some(md) => if (cache.isCompleteTo(md.latestOrd)) useCache(cache, md) else ignoreCache(cache)
-                     case None     => F pure projectNotFound
+          cacheRes <- redis.read(pid)
+          mdOpt    <- runDB(db.getProjectMetaData(pid))
+          r        <- (cacheRes, mdOpt) match {
+                     case (\/-(cache), Some(md)) =>
+                       if (cache.isCompleteTo(md.latestOrd))
+                         useCache(cache, md)
+                       else
+                         ignoreCache(cache)
+                     case (-\/(e), Some(_)) =>
+                       if (e.isLocalKnownToBeOutOfDate)
+                         F pure -\/(MsgError.ServerBehindRedis(e))
+                       else
+                         ignoreCache(Redis.ProjectCache.empty)
+                     case (_, None) =>
+                       F pure \/-(projectNotFound)
                    }
-        } yield MsgFnOut(r, None)
+        } yield r.map(MsgFnOut(_, None))
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -394,33 +449,44 @@ object ProjectSpaLogic extends StrictLogging {
 
         val redisSubscribe: F[OptionState] =
           in.state.sub match {
-            case None    => redis.subscribe(pid, pushEvent(span, in.push, _)).map(s => Some(WebSocketState(Some(s))))
-            case Some(_) => F.pure(None)
+            case None =>
+              redis.subscribe(pid, listener(span, in.push, in.onListenerError)).map(s => Some(WebSocketState(Some(s))))
+            case Some(_) =>
+              F.pure(None)
           }
 
-        def loadEventsFromRedis: F[VerifiedEvent.Seq] =
+        def loadEventsFromRedis: F[SafePickler.Result[VerifiedEvent.Seq]] =
           step("readRedis")(redis.readEvents(pid, userOrd))
 
         def loadEventsFromDb(o: Option[EventOrd.Latest]): F[VerifiedEvent.Seq] =
           step("readDb")(runDB(db.getProjectEvents(pid, DB.EventFilter.given(o))))
 
-        def loadEvents(dbLatest: Option[EventOrd.Latest]): F[VerifiedEvent.Seq] =
-          loadEventsFromRedis.flatMap { cachedEvents =>
-            val cachedEventsAreUsable = cachedEvents.nonEmpty && cachedEvents.head.ord.immediatelyFollowsLatest(userOrd)
-            if (cachedEventsAreUsable) {
-              val newLatest = Some(cachedEvents.last.ord.asLatest)
-              if (dbLatest > newLatest)
-                for {
-                  dbEvents <- loadEventsFromDb(newLatest)
-                  // Not writing back to Redis for now
-                  // * Snapshot could be 1000, this could send events 500-1001 for no reason
-                  // * Normal processing (covered by TLA) keeps the cache up-to-date - a reconnection seems orthogonal
-                  // _ <- redis.writeEvents(pid, dbEvents, VerifiedEvent.Seq.empty)
-                } yield cachedEvents ++ dbEvents
+        def loadEvents(dbLatest: Option[EventOrd.Latest]): F[MsgError \/ VerifiedEvent.Seq] =
+          loadEventsFromRedis.flatMap {
+            case \/-(cachedEvents) =>
+              val cachedEventsAreUsable = cachedEvents.nonEmpty && cachedEvents.head.ord.immediatelyFollowsLatest(userOrd)
+              if (cachedEventsAreUsable) {
+                val newLatest = Some(cachedEvents.last.ord.asLatest)
+                if (dbLatest > newLatest)
+                  for {
+                    dbEvents <- loadEventsFromDb(newLatest)
+                    // Not writing back to Redis for now
+                    // * Snapshot could be 1000, this could send events 500-1001 for no reason
+                    // * Normal processing (covered by TLA) keeps the cache up-to-date - a reconnection seems orthogonal
+                    // _ <- redis.writeEvents(pid, dbEvents, VerifiedEvent.Seq.empty)
+                  } yield \/-(cachedEvents ++ dbEvents)
+                else
+                  F.pure(\/-(cachedEvents))
+              } else
+                loadEventsFromDb(userOrd).map(\/-(_))
+            case -\/(err) =>
+              if (err.isLocalKnownToBeOutOfDate)
+                F pure -\/(MsgError.ServerBehindRedis(err))
               else
-                F.pure(cachedEvents)
-            } else
-              loadEventsFromDb(userOrd)
+                for {
+                  _  <- F.point(logger.warn("Failed to parse cache. Rebuilding. Error: ", err))
+                  es <- loadEventsFromDb(userOrd)
+                } yield \/-(es)
           }
 
         for {
@@ -428,8 +494,11 @@ object ProjectSpaLogic extends StrictLogging {
           mdOpt    ← runDB(db.getProjectMetaData(pid))
           md       = mdOpt.get // This will fail during connection usage after project deleted
           dbLatest = md.latestOrd
-          events   ← if (dbLatest > userOrd) loadEvents(dbLatest) else F.pure(VerifiedEvent.Seq.empty)
-        } yield MsgFnOut(events, newState)
+          events   ← if (dbLatest > userOrd)
+                       loadEvents(dbLatest)
+                     else
+                       F.pure(\/-(VerifiedEvent.Seq.empty))
+        } yield events.map(MsgFnOut(_, newState))
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -441,19 +510,19 @@ object ProjectSpaLogic extends StrictLogging {
         for {
           events <- runDB(db.getProjectEvents(pid, DB.EventFilter.Set(ords)))
           _      <- redis.writeEvents(pid, VerifiedEvent.Seq.empty, events)
-        } yield MsgFnOut((), None)
+        } yield \/-(MsgFnOut((), None))
       }
-
 
     } // new ProjectSpaLogic
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private final case class MsgFnIn[F[_], I](input : I,
-                                            static: WebSocketStatic,
-                                            state : WebSocketState[F],
-                                            push  : BinaryData => F[Unit])
+  private final case class MsgFnIn[F[_], I](input          : I,
+                                            static         : WebSocketStatic,
+                                            state          : WebSocketState[F],
+                                            push           : BinaryData => F[Unit],
+                                            onListenerError: ListenerError => F[Unit])
 
   private final case class MsgFnOut[F[_], O](output: O, newState: Option[WebSocketState[F]])
 
@@ -476,8 +545,6 @@ object ProjectSpaLogic extends StrictLogging {
                                                  trace   : Trace.Algebra[F]) {
     import ProjectUpdater._
 
-    type Result = ErrorMsg \/ VerifiedEvent.Seq
-
     def apply(pid: ProjectId, mkEvent: Project => MakeEvent.Result): F[Result] = {
       var gas = 200
 
@@ -489,12 +556,20 @@ object ProjectSpaLogic extends StrictLogging {
         val main: F[State \/ Result] = s.status match {
 
           case ReadRedis =>
-            for {
-              r     ← redis.read(pid)
-              built ← r.build(pid)
-            } yield built match {
-              case \/-(p) => -\/(s.copy(local = p, redis = r, status = if (r.ord > s.local.ord) WriteDb else ReadDb))
-              case -\/(e) => \/-(-\/(e))
+            def useCache(cache: Redis.ProjectCache): F[State \/ Result] =
+              cache.build(pid).map {
+                case \/-(p) => -\/(s.copy(local = p, redis = cache, status = if (cache.ord > s.local.ord) WriteDb else ReadDb))
+                case -\/(e) => \/-(Result.Reject(e))
+              }
+            redis.read(pid).flatMap {
+              case \/-(cache) => useCache(cache)
+              case -\/(err) =>
+                if (err.isLocalKnownToBeOutOfDate)
+                  F pure \/-(Result.ServerBehindRedis(err))
+                else
+                  F.point {
+                    logger.warn("Failed to parse cache. Rebuilding. Error: ", err)
+                  } >> useCache(Redis.ProjectCache.empty)
             }
 
           case ReadDb =>
@@ -505,7 +580,7 @@ object ProjectSpaLogic extends StrictLogging {
               built      ← apEvent.append(pid, p1, newEvents)
             } yield built match {
               case \/-(p2) => -\/(s.copy(local = p2, status = WriteRedis1(newEvents)))
-              case -\/(e)  => \/-(-\/(e))
+              case -\/(e)  => \/-(Result.Reject(e))
             }
 
           case WriteRedis1(newEvents) =>
@@ -531,10 +606,10 @@ object ProjectSpaLogic extends StrictLogging {
                 }
 
               case PotentialChange.Unchanged =>
-                F pure \/-(\/-(VerifiedEvent.Seq.empty))
+                F pure \/-(Result.Ok(VerifiedEvent.Seq.empty))
 
               case PotentialChange.Failure(e) =>
-                F pure \/-(-\/(ErrorMsg(e)))
+                F pure \/-(Result.Reject(ErrorMsg(e)))
             }
 
           case WriteRedis2(newProject, newEvent) =>
@@ -547,7 +622,7 @@ object ProjectSpaLogic extends StrictLogging {
                 redis.writeEvents(pid, VerifiedEvent.Seq.empty, newEvents)
             for {
               _ <- writeRedis
-            } yield \/-(\/-(newEvents))
+            } yield \/-(Result.Ok(newEvents))
         }
 
         trace.newSpan(s.status.name)(_ =>
@@ -560,6 +635,13 @@ object ProjectSpaLogic extends StrictLogging {
   }
 
   private object ProjectUpdater {
+
+    sealed trait Result
+    object Result {
+      final case class ServerBehindRedis(err: SafePickler.DecodingFailure) extends Result
+      final case class Reject           (errMsg: ErrorMsg)                 extends Result
+      final case class Ok               (events: VerifiedEvent.Seq)        extends Result
+    }
 
     final case class State(local : ProjectAndOrd,
                            redis : Redis.ProjectCache,
@@ -577,6 +659,88 @@ object ProjectSpaLogic extends StrictLogging {
       case object WriteDb                                                        extends Status("WriteDb")
       final case class WriteRedis1(newEvents: VerifiedEvent.Seq)                 extends Status("WriteRedis1")
       final case class WriteRedis2(newProject: Project, newEvent: VerifiedEvent) extends Status("WriteRedis2")
+    }
+  }
+
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+  /** Generates code to paste into ProjectSpaProtocolsTest.scala */
+  private[this] object GenerateUnitTest {
+    import io.circe._
+    import io.circe.syntax._
+    import org.apache.commons.text.StringEscapeUtils
+    import scala.collection.immutable.TreeSet
+    import shipreq.webapp.base.protocol.json.v1.PostEvents.encoderVerifiedEvent
+    import ProjectSpaProtocols.WebSocket
+
+    type WSH = WebSocketServerHelper[WebSocket#Req, WebSocket.Push]
+
+    def req(webSocketHelper: WSH, msg: BinaryData)(reqId: WebSocketShared.ReqId, req: WebSocket#Req): Unit =
+      println(
+        s"""
+           |"${req.toString.takeWhile(_ != '.')}" - {
+           |  "req" - {
+           |    "${webSocketHelper.protocolCS.codec.version.verStr}" - {
+           |      val bin    = BinaryData.fromHex("${msg.hex}")
+           |      val expect = ${(reqId, req)}
+           |      assertRequest(bin, expect)
+           |    }
+           |  }
+           |}
+           |""".stripMargin)
+
+    // InitApp               - Unit                                   - ErrorMsg \/ InitAppData
+    // Reconnect             - Option[EventOrd.Latest]                - VerifiedEvent.Seq
+    // Sync                  - NonEmptySet[EventOrd]                  - Unit
+    // UpdateConfig          - UpdateConfigCmd                        - ErrorMsg \/ VerifiedEvent.Seq
+    // CreateContent         - CreateContentCmd                       - ErrorMsg \/ VerifiedEvent.Seq
+    // UpdateContent         - UpdateContentCmd                       - ErrorMsg \/ VerifiedEvent.Seq
+    // ProjectNameSet        - String                                 - ErrorMsg \/ VerifiedEvent.Seq
+    // UpdateSavedViews      - SavedViewCmd                           - ErrorMsg \/ VerifiedEvent.Seq
+    // UpdateManualIssues    - ManualIssueCmd                         - ErrorMsg \/ VerifiedEvent.Seq
+    // FieldMandatorinessMod - (CustomFieldId, Mandatory)             - ErrorMsg \/ VerifiedEvent.Seq
+    // ReqTypeImplicationMod - (CustomReqTypeId, ImplicationRequired) - ErrorMsg \/ VerifiedEvent.Seq
+
+    private def asJsonStr[A: Encoder](a: A): String =
+      "\"\"\"" + a.asJson.noSpacesSortKeys + "\"\"\""
+
+    private final case class WrapVerifiedEvents(ves: VerifiedEvent.Seq) {
+      override def toString = {
+        def jsons = ves.iterator.map(asJsonStr(_))
+        if (ves.isEmpty)
+          "VerifiedEvent.Seq.empty"
+        else if (ves.size == 1)
+          jsons.mkString("verifiedEventsFromJson(", ", ", ")")
+        else
+          jsons.mkString("verifiedEventsFromJson(\n", ",\n", ")")
+      }
+    }
+
+    private def show(input: Any): Any = input match {
+      case t: TreeSet[_] => WrapVerifiedEvents(t.asInstanceOf[VerifiedEvent.Seq])
+      case \/-(a)        => \/-(show(a))
+      case (a, b)        => (a, show(b))
+      case s: String     => StringEscapeUtils.escapeJava(s)
+      case a             => a
+    }
+
+    def resp(webSocketHelper: WSH, req: WsReqRes.AndReq, resp: WebSocketShared.ServerToClient[_])(out: BinaryData): Unit = {
+      val name = req.toString.takeWhile(_ != '.')
+      val resp2  = resp.map { case (reqId, protocolAndValue) => (reqId, protocolAndValue.value) }
+      val respCode = show(resp2).toString
+
+      println(
+        s"""
+           |"$name" - {
+           |  "resp" - {
+           |    "${webSocketHelper.protocolSC.codec.version.verStr}" - {
+           |      val bin    = BinaryData.fromHex("${out.hex}")
+           |      val expect = $respCode
+           |      assertResponse($name)(bin, expect)
+           |    }
+           |  }
+           |}
+           |""".stripMargin)
     }
   }
 }

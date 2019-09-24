@@ -53,7 +53,7 @@ object DeletionLogicTestData {
 
   private implicit class RCGroupExt(private val x: RCGroup) {
     private val id = x.id.getOrElse(sys error s"$x needs an id.")
-    private def codeStr = ReqCode.valueToStr(x.code, '.')
+    private def codeStr = ReqCode.Value.toStr(x.code, '.')
 
     def select = {
       _selectedRCGs += id

@@ -7,11 +7,12 @@ import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.tailrec
-import scalaz.{BindRec, Monad}
+import scalaz.{BindRec, Monad, \/-}
 import scalaz.syntax.monad._
 import shipreq.base.ops.Trace
 import shipreq.webapp.base.data.{Project, ProjectId}
 import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.base.protocol.binary.SafePickler
 
 /** Why is this called Redis and not Cache?
   * Because our architecture relies on Redis for both caching and pub/sub.
@@ -66,6 +67,17 @@ object Redis extends StrictLogging {
 
   final case class Subscription[F[_]](unsubscribe: F[Unit])
 
+  type Listener[F[_]] = SafePickler.Result[VerifiedEvent] => F[Unit]
+
+  private val ensureComplete: ProjectCache => ProjectCache = pc => {
+    val isComplete: Boolean =
+      pc.events.headOption match {
+        case Some(e) => e.ord.immediatelyFollows(pc.snapshot.map(_.ord.asEventOrd))
+        case None    => true
+      }
+    if (isComplete) pc else ProjectCache.empty
+  }
+
   trait ProjectAlgebra[F[_]] {
     protected def F: Monad[F]
 
@@ -74,7 +86,7 @@ object Redis extends StrictLogging {
       *          - Reload_Subscribe
       */
     def subscribe(id      : ProjectId,
-                  listener: VerifiedEvent => F[Unit]): F[Subscription[F]]
+                  listener: Listener[F]): F[Subscription[F]]
 
     /** [TLA+] Used by:
       *          - Load_ReadRedis
@@ -82,27 +94,20 @@ object Redis extends StrictLogging {
       *
       * @return Result is always complete. No gap due to an evicted snapshot.
       */
-    final def read(id: ProjectId): F[ProjectCache] =
-      F.map(_read(id)) { r =>
-        val isComplete: Boolean =
-          r.events.headOption match {
-            case Some(e) => e.ord.immediatelyFollows(r.snapshot.map(_.ord.asEventOrd))
-            case None    => true
-          }
-        if (isComplete) r else ProjectCache.empty
-      }
+    final def read(id: ProjectId): F[SafePickler.Result[ProjectCache]] =
+      F.map(_read(id))(_.map(ensureComplete))
 
     /** [TLA+] Used by:
       *          - Load_ReadRedis
       *          - Update_ReadRedis
       */
-    protected def _read(id: ProjectId): F[ProjectCache]
+    protected def _read(id: ProjectId): F[SafePickler.Result[ProjectCache]]
 
     /** Read events only.
       *
       * @param beyond Only events that exceed this are to be returned.
       */
-    def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]): F[VerifiedEvent.Seq]
+    def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]): F[SafePickler.Result[VerifiedEvent.Seq]]
 
     /** [TLA+] Used by:
       *          - RedisWriteSnapshot
@@ -171,22 +176,22 @@ object Redis extends StrictLogging {
           F.bind(addAttrs)(_ => f)
         }
 
-      override def subscribe(id: ProjectId, listener: VerifiedEvent => F[Unit]): F[Subscription[F]] =
+      override def subscribe(id: ProjectId, listener: Listener[F]) =
         traced("subscribe", id, underlying.subscribe(id, listener))
 
-      override protected def _read(id: ProjectId): F[ProjectCache] =
+      override protected def _read(id: ProjectId) =
         traced("read", id, underlying.read(id))
 
-      override def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]): F[VerifiedEvent.Seq] =
+      override def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]) =
         traced("readEvents", id, underlying.readEvents(id, beyond))
 
-      override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq): F[Boolean] =
+      override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq) =
         traced("writeSnapshot", id, underlying.writeSnapshot(id, snapshot, publishOnly))
 
-      override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq): F[Boolean] =
+      override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq) =
         traced("writeEvents", id, underlying.writeEvents(id, cacheOnly, cacheAndPublish))
 
-      override def publishEvents(id: ProjectId, events: VerifiedEvent.NonEmptySeq): F[Unit] =
+      override def publishEvents(id: ProjectId, events: VerifiedEvent.NonEmptySeq) =
         traced("publishEvents", id, underlying.publishEvents(id, events))
     }
 
@@ -203,22 +208,22 @@ object Redis extends StrictLogging {
           _        <- report(name, id, dur)
         } yield a
 
-      override def subscribe(id: ProjectId, listener: VerifiedEvent => F[Unit]): F[Subscription[F]] =
+      override def subscribe(id: ProjectId, listener: Listener[F]) =
         wrap("subscribe", id, underlying.subscribe(id, listener))
 
-      override protected def _read(id: ProjectId): F[ProjectCache] =
+      override protected def _read(id: ProjectId) =
         wrap("read", id, underlying.read(id))
 
-      override def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]): F[VerifiedEvent.Seq] =
+      override def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]) =
         wrap("readEvents", id, underlying.readEvents(id, beyond))
 
-      override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq): F[Boolean] =
+      override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq) =
         wrap("writeSnapshot", id, underlying.writeSnapshot(id, snapshot, publishOnly))
 
-      override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq): F[Boolean] =
+      override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq) =
         wrap("writeEvents", id, underlying.writeEvents(id, cacheOnly, cacheAndPublish))
 
-      override def publishEvents(id: ProjectId, events: VerifiedEvent.NonEmptySeq): F[Unit] =
+      override def publishEvents(id: ProjectId, events: VerifiedEvent.NonEmptySeq) =
         wrap("publishEvents", id, underlying.publishEvents(id, events))
     }
 
@@ -242,7 +247,7 @@ object Redis extends StrictLogging {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   object InMemory {
-    private[InMemory] final case class PubSub[F[_]](pub: VerifiedEvent => F[Unit],
+    private[InMemory] final case class PubSub[F[_]](pub: Listener[F],
                                                     sub: Subscription[F],
                                                     key: AnyRef)
 
@@ -287,7 +292,7 @@ object Redis extends StrictLogging {
       result.asInstanceOf[A]
     }
 
-    override def subscribe(id: ProjectId, pub: VerifiedEvent => F[Unit]) =
+    override def subscribe(id: ProjectId, pub: Listener[F]) =
       modPubSub(id) { pubSubs =>
         val key    = new AnyRef
         val unsub  = modPubSub(id)(s => (s.filter(_.key ne key), ()))
@@ -303,11 +308,11 @@ object Redis extends StrictLogging {
       globalCache.getIfPresent(id).getOrElse(ProjectCache.empty)
 
     override protected def _read(id: ProjectId) = F.point {
-      readCacheNow(id)
+      \/-(readCacheNow(id))
     }
 
     override def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]) = F.point {
-      readCacheNow(id).events.filter(_.ord > beyond)
+      \/-(readCacheNow(id).events.filter(_.ord > beyond))
     }
 
     override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq) = F.point {
@@ -322,7 +327,8 @@ object Redis extends StrictLogging {
     } <* publishEvents(id, publishOnly)
 
     override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq) =
-      read(id).map { cache =>
+      F.point {
+        val cache = ensureComplete(readCacheNow(id))
         writeCounter.getAndIncrement()
         val newEvents = cache.ord match {
           case Some(o) => VerifiedEvent.Seq.empty ++ (cacheOnly.iterator ++ cacheAndPublish).filter(_.ord > o)
@@ -362,7 +368,7 @@ object Redis extends StrictLogging {
 
     private def _publishOne[A](ok: A, ko: F[A]): F[A] =
       F.point(globalQueue.unsafeDequeue()).flatMap {
-        case Some((p, e)) => p.pub(e) >| ok
+        case Some((p, e)) => p.pub(\/-(e)) >| ok
         case None         => ko
       }
 

@@ -1,6 +1,5 @@
 package shipreq.webapp.server.redis
 
-import boopickle.Pickler
 import com.typesafe.scalalogging.StrictLogging
 import java.lang.{Boolean => JBool}
 import java.util.{ArrayList, Collections, List => JList}
@@ -11,37 +10,29 @@ import org.redisson.client.codec.{ByteArrayCodec, StringCodec}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
-import shipreq.base.util.BinaryData
+import scalaz.\/-
+import scalaz.std.option._
+import scalaz.syntax.traverse._
 import shipreq.base.util.FxModule._
 import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.event.{EventOrd, VerifiedEvent}
-import shipreq.webapp.base.protocol.{BinaryJvm, Protocol}
+import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.server.logic.Redis
+import shipreq.webapp.server.logic.RedisProtocol._
 import shipreq.webapp.server.logic.Redis.ProjectSnapshot
 
 object RedisViaRedisson {
 
   private[RedisViaRedisson] object Internals {
-    import shipreq.webapp.base.protocol.BoopickleMacros._
-    import shipreq.webapp.base.protocol.BinCodecEvents._
-    import shipreq.webapp.base.protocol.BinCodecMemberData._
-
-    val protocolProjectSnapshot: Protocol.Of[Pickler, ProjectSnapshot] = {
-      val p = pickleCaseClass[ProjectSnapshot]
-      Protocol(p)
-    }
-
-    val protocolEvent: Protocol.Of[Pickler, VerifiedEvent] =
-      Protocol(pickleVerifiedEvent)
 
     def newArgs() = new Args(new mutable.ArrayBuffer[Array[Byte]])
+
     final class Args(val args: mutable.ArrayBuffer[Array[Byte]]) extends AnyVal {
       @inline def +=(s: String         ): Unit = args += s.getBytes
       @inline def +=(i: Int            ): Unit = args += i.toString.getBytes
       @inline def +=(a: Array[Byte]    ): Unit = args += a
-      @inline def +=(e: VerifiedEvent  ): Unit = args += BinaryJvm.encode(protocolEvent)(e).unsafeArray
-      @inline def +=(s: ProjectSnapshot): Unit = args += BinaryJvm.encode(protocolProjectSnapshot)(s).unsafeArray
+      @inline def +=(e: VerifiedEvent  ): Unit = args += picklerEvent.encode(e).unsafeArray
+      @inline def +=(s: ProjectSnapshot): Unit = args += picklerProjectSnapshot.encode(s).unsafeArray
       @inline def ++=(es: VerifiedEvent.Seq): Unit = es.foreach(+=(_))
     }
   }
@@ -64,18 +55,13 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
   private val noKeys: JList[AnyRef] =
     Collections.unmodifiableList(Collections.emptyList())
 
-  override def subscribe(id: ProjectId, listener: VerifiedEvent => Fx[Unit]): Fx[Subscription[Fx]] = {
+  override def subscribe(id: ProjectId, listener: SafePickler.Result[VerifiedEvent] => Fx[Unit]): Fx[Subscription[Fx]] = {
     val topicName = schema.topic(id)
 
     val msgListener: MessageListener[Array[Byte]] = (_, msg) => {
-      val bin = BinaryData.unsafeFromArray(msg)
-      BinaryJvm.decode(bin, protocolEvent) match {
-        case Success(ve) =>
-          // logger.info(s"Received from topic: project #${id.value} event #${ve.ord.value}")
-          listener(ve).unsafeRun()
-        case Failure(e) =>
-          logger.warn(s"Failed to decode topic $topicName msg: $bin", e)
-      }
+      val decoded = picklerEvent.decodeBytes(msg)
+      val fx      = listener(decoded)
+      fx.unsafeRun()
     }
 
     Fx[Subscription[Fx]] {
@@ -113,15 +99,22 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
       }
     }
 
-  private def decodeEvents(raw: JList[Array[Byte]]): VerifiedEvent.Seq =
-    VerifiedEvent.Seq.empty ++ raw.asScala.iterator.map(b => BinaryJvm.decodeUnsafe(BinaryData.unsafeFromArray(b), protocolEvent))
+  private[this] val emptyEventResult = SafePickler.success(VerifiedEvent.Seq.empty)
+
+  private def decodeEvents(raw: JList[Array[Byte]]): SafePickler.Result[VerifiedEvent.Seq] =
+    raw.asScala
+      .iterator
+      .map(picklerEvent.decodeBytes)
+      .foldLeft(emptyEventResult)((q, r) => q.flatMap(e1 => r.map(e2 => e1 + e2)))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   private val shaRead = deployScript(Lua.read)
 
+  private[this] val emptyCacheResult = SafePickler.success(ProjectCache.empty)
+
   override protected def _read(id: ProjectId) =
-    fxWithFallback("read", ProjectCache.empty) {
+    fxWithFallback("read", emptyCacheResult) {
 
       // Call Redis
       val keys = new ArrayList[AnyRef](2)
@@ -132,11 +125,14 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
       // Parse results
       val binSS = Option(result.get(0).asInstanceOf[Array[Byte]])
       val binES = result.get(1).asInstanceOf[JList[Array[Byte]]]
-      val snapshot = binSS.map(b => BinaryJvm.decodeUnsafe(BinaryData.unsafeFromArray(b), protocolProjectSnapshot))
-      val events = decodeEvents(binES)
+      val decSS = binSS.traverse(picklerProjectSnapshot.decodeBytes)
+      val decES = decodeEvents(binES)
 
       // Done
-      ProjectCache(snapshot, events)
+      for {
+        ss <- decSS
+        es <- decES
+      } yield ProjectCache(ss, es)
     }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -144,7 +140,7 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
   private val shaReadEvents = deployScript(Lua.readEvents)
 
   override def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]) =
-    fxWithFallback("readEvents", VerifiedEvent.Seq.empty) {
+    fxWithFallback("readEvents", emptyEventResult) {
 
       val keys = new ArrayList[AnyRef](1)
       keys.add(schema.events(id))

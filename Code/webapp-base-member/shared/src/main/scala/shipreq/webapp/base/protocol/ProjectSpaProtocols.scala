@@ -1,40 +1,24 @@
 package shipreq.webapp.base.protocol
 
-import boopickle.{PickleState, Pickler, UnpickleState}
+import boopickle.DefaultBasic._
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.utils.StaticLookupFn
 import japgolly.univeq.UnivEq
 import scalaz.\/
 import shipreq.base.util.ErrorMsg
+import shipreq.webapp.base.Urls
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
-import shipreq.webapp.base.user._
-import shipreq.webapp.base.Urls
-import BoopickleMacros._
-import BinCodecGeneric._
-import BinCodecBaseData._
-import BinCodecMemberData._
-import BinCodecUser._
-import BinCodecEvents._
+import shipreq.webapp.base.protocol.binary.SafePickler
+import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 
 /**
   * Protocols for the Project SPA / webapp-client-project module.
   */
 object ProjectSpaProtocols {
 
-  final case class InitPageData(username: Username,
-                                projectId: ProjectId.Public,
-                                projectName: Project.Name)
-
-  implicit val picklerInitPageData = pickleCaseClass[InitPageData]
-
-  final val EntryPointName = "P"
-  val EntryPoint = ClientSideProc[InitPageData](EntryPointName)
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  final case class WebSocket(projectId: ProjectId.Public) extends Protocol.WebSocket.ClientReqServerPush[Pickler] {
+  final case class WebSocket(projectId: ProjectId.Public) extends Protocol.WebSocket.ClientReqServerPush[SafePickler] {
     override val  url    = Urls.ProjectSpaWebSocket.url(projectId)
     override type ReqId  = WebSocketShared.ReqId
     override type ReqRes = WsReqRes
@@ -44,20 +28,122 @@ object ProjectSpaProtocols {
 
   object WebSocket {
     type Push = VerifiedEvent.NonEmptySeq
-    private[WebSocket] val pushProtocol = Protocol[Pickler, Push](implicitly)
+
+    private[WebSocket] val pushProtocol: Protocol.Of[SafePickler, Push] =
+      Protocol(Codecs.safePicklerVerifiedEventNonEmptySeq)
   }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  private object Codecs {
+    import boopickle.DefaultBasic.unitPickler
+    import shipreq.webapp.base.protocol.binary.v1.BaseData._
+    import shipreq.webapp.base.protocol.binary.v1.BaseMemberData1._
+    import shipreq.webapp.base.protocol.binary.v1.BaseMemberData2._
+    import shipreq.webapp.base.protocol.binary.v1.PostEvents._
+
+    val safePicklerWsReqResAndReq: SafePickler[WsReqRes.AndReq] = {
+      import WsReqRes._
+
+      val pickler: Pickler[AndReq] =
+        new Pickler[AndReq] {
+
+          override def pickle(obj: AndReq)(implicit state: PickleState): Unit = {
+            state.pickle(obj.reqRes.key)
+            state.pickle(obj.req)(obj.reqRes.protocolReq.codec)
+          }
+
+          override def unpickle(implicit state: UnpickleState): AndReq = {
+            val key = state.unpickle[Int]
+            byKey(key) match {
+              case Some(p) =>
+                val req = state.unpickle(p.protocolReq.codec)
+                p.AndReq(req)
+              case None =>
+                val msg = s"Can't unpickle request: unknown key ($key)"
+                throw new RuntimeException(msg)
+            }
+          }
+        }
+
+      pickler
+        .asV10
+        .withMagicNumbers(0x1DB44559, 0x53562938)
+    }
+
+    implicit val picklerInitAppData: Pickler[InitAppData] =
+      new Pickler[InitAppData] {
+        override def pickle(a: InitAppData)(implicit state: PickleState): Unit = {
+          state.pickle(a.project)
+          state.pickle(a.projectMetaData)
+        }
+        override def unpickle(implicit state: UnpickleState): InitAppData = {
+          val project         = state.unpickle[ProjectAndOrd]
+          val projectMetaData = state.unpickle[ProjectMetaData]
+          InitAppData(project, projectMetaData)
+        }
+      }
+
+    implicit val picklerInitAppRes: Pickler[ErrorMsg \/ InitAppData] =
+      pickleDisj
+
+    implicit def picklerVerifiedEventSeq: Pickler[VerifiedEvent.Seq] =
+      shipreq.webapp.base.protocol.binary.v1.PostEvents.picklerVerifiedEventSeq
+
+    implicit val picklerOptionEventOrdLatest: Pickler[Option[EventOrd.Latest]] =
+      optionPickler
+
+    implicit val picklerNonEmptySetEventOrd: Pickler[NonEmptySet[EventOrd]] =
+      pickleNES
+
+    implicit val picklerFieldMandatorinessModReq: Pickler[(CustomFieldId, Mandatory)] =
+      Tuple2Pickler
+
+    implicit val picklerReqTypeImplicationModReq: Pickler[(CustomReqTypeId, ImplicationRequired)] =
+      Tuple2Pickler
+
+    implicit val picklerEventResult: Pickler[WsReqRes.EventResult] =
+      pickleDisj
+
+    // These SafePicklers below are for responses.
+    // We're ditching the magic header because there's not much point; they can trust us.
+    // We're keeping a magic footer just in case.
+
+    implicit val safePicklerUnit: SafePickler[Unit] =
+      unitPickler.asV10 // no magic numbers because no data
+
+    implicit val safePicklerInitAppRes: SafePickler[ErrorMsg \/ InitAppData] =
+      picklerInitAppRes
+        .asV10
+        .withMagicNumberFooter(0x8819303B)
+
+    implicit val safePicklerEventResult: SafePickler[WsReqRes.EventResult] =
+      picklerEventResult
+        .asV10
+        .withMagicNumberFooter(0x86DA8677)
+
+    implicit val safePicklerVerifiedEventSeq: SafePickler[VerifiedEvent.Seq] =
+      picklerVerifiedEventSeq
+        .asV10
+        .withMagicNumberFooter(0x85651C09)
+
+    val safePicklerVerifiedEventNonEmptySeq: SafePickler[VerifiedEvent.NonEmptySeq] =
+      picklerVerifiedEventNonEmptySeq
+        .asV10
+        .withMagicNumberFooter(0x06F60C06)
+  }
+
+  import Codecs._
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   final case class InitAppData(project        : ProjectAndOrd,
                                projectMetaData: ProjectMetaData)
 
-  implicit val picklerInitAppData = pickleCaseClass[InitAppData]
-
-  sealed trait WsReqRes extends Protocol.RequestResponse[Pickler] { self =>
-    protected val protocolReq: Protocol.Of[Pickler, RequestType]
-    val protocolRes: Protocol.Of[Pickler, ResponseType]
-    protected val key: Int
+  sealed trait WsReqRes extends Protocol.RequestResponse[SafePickler] { self =>
+    protected[ProjectSpaProtocols] val key: Int
+    protected[ProjectSpaProtocols] val protocolReq: Protocol.Of[Pickler, RequestType]
+    val protocolRes: Protocol.Of[SafePickler, ResponseType]
     final val name = getClass.getName.replaceFirst("""^.*\$(.+?)\$?$""", "$1")
 
     final type AndReq = WsReqRes.AndReq { val reqRes: self.type }
@@ -78,10 +164,10 @@ object ProjectSpaProtocols {
   }
 
   object WsReqRes {
-    sealed abstract class Base[Req: Pickler, Res: Pickler](override final protected val key: Int) extends WsReqRes {
+    sealed abstract class Base[Req: Pickler, Res: SafePickler](override final protected[ProjectSpaProtocols] val key: Int) extends WsReqRes {
       override final type RequestType = Req
       override final type ResponseType = Res
-      override final protected val protocolReq = Protocol(implicitly)
+      override final protected[ProjectSpaProtocols] val protocolReq = Protocol(implicitly)
       override final val protocolRes = Protocol(implicitly)
     }
 
@@ -177,27 +263,8 @@ object ProjectSpaProtocols {
     }
 
     object AndReq {
-      val protocol: Protocol.Of[Pickler, AndReq] = Protocol(
-        new Pickler[AndReq] {
-
-          override def pickle(obj: AndReq)(implicit state: PickleState): Unit = {
-            state.pickle(obj.reqRes.key)
-            state.pickle(obj.req)(obj.reqRes.protocolReq.codec)
-          }
-
-          override def unpickle(implicit state: UnpickleState): AndReq = {
-            val key = state.unpickle[Int]
-            byKey(key) match {
-              case Some(p) =>
-                val req = state.unpickle(p.protocolReq.codec)
-                p.AndReq(req)
-              case None =>
-                val msg = s"Can't unpickle request: unknown key ($key)"
-                throw new RuntimeException(msg)
-            }
-          }
-        }
-      )
+      private[ProjectSpaProtocols] val protocol: Protocol.Of[SafePickler, AndReq] =
+        Protocol(Codecs.safePicklerWsReqResAndReq)
     }
   }
 }

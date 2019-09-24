@@ -87,7 +87,9 @@ final class ProjectSpaWebSocket extends StrictLogging {
         val userProps = s.getUserProperties
         val static    = staticL.get(userProps)
         val state     = stateL.get(userProps)
-        val state2    = projectSpaLogic.onOpen(static, state, fxPush(s)).unsafeRun()
+        val onError   = onListenerError(s)
+        val fx        = projectSpaLogic.onOpen(static, state, fxPush(s), onError)
+        val state2    = fx.unsafeRun()
         stateL.set(userProps, state2)
     }
     val durMs = System.currentTimeMillis() - startMs
@@ -104,7 +106,6 @@ final class ProjectSpaWebSocket extends StrictLogging {
       val userProps = s.getUserProperties
       val static    = staticL.get(userProps)
       val state     = stateL.get(userProps)
-      val remote    = s.getBasicRemote
       val binIn     = BinaryData.unsafeFromArray(messageBytes)
 
       val fxSend: BinaryData => Fx[Throwable \/ Unit] =
@@ -113,16 +114,33 @@ final class ProjectSpaWebSocket extends StrictLogging {
           rightUnit
         }
 
-      val fxOnError: MsgError => Fx[Unit] = {
-        case MsgError.DecodingFailure => fxClose(s, CloseCodes.PROTOCOL_ERROR, "Error parsing message")
-        case MsgError.RespondError(_) => fxClose(s, CustomCloseCodes.RespondException, "Error sending response")
+      val fxOnMsgError: MsgError => Fx[Unit] = {
+        case _: MsgError.ClientMsgDecodingFailure => fxClose(s, CloseCodes.PROTOCOL_ERROR, "Error parsing message")
+        case _: MsgError.RespondError             => fxClose(s, CustomCloseCodes.RespondException, "Error sending response")
+        case _: MsgError.ServerBehindClient
+           | _: MsgError.ServerBehindRedis        => fxClose(s, CloseCodes.SERVICE_RESTART, "Server is out-of-date")
       }
 
-      val main = projectSpaLogic.onMessage(static, state, binIn, fxSend, fxPush(s), fxOnError)
+      val main = projectSpaLogic.onMessage(
+        static          = static,
+        state           = state,
+        msg             = binIn,
+        respond         = fxSend,
+        push            = fxPush(s),
+        onListenerError = onListenerError(s),
+        onError         = fxOnMsgError)
 
       for (state2 <- main.unsafeRun())
         stateL.set(userProps, state2)
     }
+  }
+
+  private def onListenerError(s: Session): ListenerError => Fx[Unit] = {
+    case ListenerError.RedisDecodingFailure(e) =>
+      if (e.isLocalKnownToBeOutOfDate)
+        fxClose(s, CloseCodes.SERVICE_RESTART, "Server is out-of-date")
+      else
+        fxClose(s, CloseCodes.UNEXPECTED_CONDITION, "Error parsing subscription data")
   }
 
   @OnError

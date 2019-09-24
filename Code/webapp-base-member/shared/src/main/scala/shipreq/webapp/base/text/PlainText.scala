@@ -44,7 +44,7 @@ object PlainText {
     }
 
   def reqCode(c: ReqCode.Value): String =
-    ReqCode.valueToStr(c, G.reqCode.nodeSeparator)
+    ReqCode.Value.toStr(c, G.reqCode.nodeSeparator)
 
   def hashtag(key: HashRefKey): String =
     G.hashRefKey.prefix ~ key.value

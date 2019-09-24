@@ -78,10 +78,12 @@ object WebSocket {
 
     override def close()                          = underlying.close()
     override def close(code: Int)                 = underlying.close(code)
-    override def close(code: Int, reason: String) = underlying.close(code, reason)
+    override def close(code: Int, reason: String) =
+      underlying.close(code, reason.take(123)) // [MDN] reason must be no longer than 123 bytes of UTF-8 text (not characters)
 
     override def send(data: ArrayBuffer) = underlying.send(data)
     override def send(data: Blob)        = underlying.send(data)
     override def send(data: String)      = underlying.send(data)
+
   }
 }

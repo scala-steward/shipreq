@@ -11,6 +11,7 @@ import shipreq.base.util.Util
 import shipreq.webapp.base.data.{Project, ProjectId}
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.event.EventOrd.Implicits._
+import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.server.logic.Redis._
 import shipreq.webapp.server.test.WebappServerTestUtil._
 
@@ -185,11 +186,11 @@ object RedisLaws {
   }
 
   private def read: Logic[ProjectCache] = new Logic[ProjectCache] {
-    override def apply[G[_] : Monad] = _.read(_)
+    override def apply[G[_] : Monad] = _.read(_).map(_.needRight)
   }
 
   private def readEvents(o: O): Logic[VerifiedEvent.Seq] = new Logic[VerifiedEvent.Seq] {
-    override def apply[G[_] : Monad] = _.readEvents(_, o)
+    override def apply[G[_] : Monad] = _.readEvents(_, o).map(_.needRight)
   }
 
   private def writeEvents(c: E, cp: E): Logic[Boolean] = new Logic[Boolean] {
@@ -261,9 +262,9 @@ object RedisLaws {
     private val s = new collection.mutable.ArrayBuffer[VerifiedEvent]
     def get() = synchronized(s.toList)
     def clear() = synchronized(s.clear())
-    private def add(e: VerifiedEvent) = F.point[Unit] { synchronized {
+    private def add(e: SafePickler.Result[VerifiedEvent]) = F.point[Unit] { synchronized {
 //      val before = get()
-      s += e
+      s += e.needRight
 //      val after = get()
 //      val p =  if (r.toString.contains("Memory")) "<<M>>" else "<<R>>"
 //      println(s"${p} ${before} + ${e} --> ${after}")
@@ -308,8 +309,8 @@ object RedisLaws {
 
     def assertState(name: String): Unit = {
       // Test state
-      val s1 = redis1.read(id1).unsafeRun()
-      val s2 = redis2.read(id2).unsafeRun()
+      val s1 = redis1.read(id1).unsafeRun().needRight
+      val s2 = redis2.read(id2).unsafeRun().needRight
       assertEq(s"$name -> redis state", actual = s1, expect = s2)
 
       // Test invariants
