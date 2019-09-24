@@ -7,6 +7,7 @@ import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.univeq.UnivEq
 import nyaya.util.Multimap
 import shipreq.base.util.{Direction, IMap}
+import shipreq.base.util.JsonUtil._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.filter.Filter

@@ -61,6 +61,7 @@ object ShipReqBuild {
         UnivEq.scalaz ++ scalaz ++ Nyaya.prop ++ Monocle.core ++
         Microlibs.adtMacros ++ Microlibs.nonempty ++ Microlibs.recursion ++
         Microlibs.scalazExt ++ Microlibs.stdlibExt ++ Microlibs.utils ++
+        (Circe.main % Provided) ++
         testScope(μTest ++ Nyaya.test ++ Microlibs.testUtil))
       .depsForJvm(
         SLF4J.api ++ Logback.core ++ scalaLogging ++ clearConfig ++ catsEffect)

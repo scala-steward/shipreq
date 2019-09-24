@@ -3,8 +3,8 @@ package shipreq.webapp.base.protocol.json.v1
 import io.circe._
 import io.circe.syntax._
 import japgolly.microlibs.nonempty.{NonEmpty, NonEmptySet, NonEmptyVector}
-import japgolly.microlibs.utils.StaticLookupFn
 import japgolly.univeq._
+import shipreq.base.util.JsonUtil._
 import nyaya.util.{MultiValues, Multimap}
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util._
@@ -13,37 +13,6 @@ import shipreq.webapp.base.protocol.json.JsonCodec
 
 private[v1] object BaseData {
   import JsonCodec.Implicits._
-
-  def decoderFnSumBySoleKey[A](f: PartialFunction[(String, ACursor), Decoder.Result[A]]): ACursor => Decoder.Result[A] = {
-    def keyErr = "Expected a single key indicating the subtype"
-    c =>
-      c.keys match {
-        case Some(it) =>
-          it.toList match {
-            case singleKey :: Nil =>
-              val arg  = (singleKey, c.downField(singleKey))
-              def fail = Left(DecodingFailure("Unknown subtype: " + singleKey, c.history))
-              f.applyOrElse(arg, (_: (String, ACursor)) => fail)
-            case Nil  => Left(DecodingFailure(keyErr, c.history))
-            case keys => Left(DecodingFailure(s"$keyErr, found multiple: $keys", c.history))
-          }
-        case None => Left(DecodingFailure(keyErr, c.history))
-      }
-  }
-
-  def decodeSumBySoleKey[A](f: PartialFunction[(String, ACursor), Decoder.Result[A]]): Decoder[A] =
-    Decoder.instance(decoderFnSumBySoleKey(f))
-
-  def decodeSumBySoleKeyOrConst[A](consts: (String, A)*)(f: PartialFunction[(String, ACursor), Decoder.Result[A]]): Decoder[A] = {
-    val lookup = StaticLookupFn.useMap(consts).toOption
-    val g = decoderFnSumBySoleKey(f)
-    Decoder.instance(c =>
-      c.as[String].toOption.flatMap(lookup) match {
-        case Some(r) => Right(r)
-        case None    => g(c)
-      }
-    )
-  }
 
   // ===================================================================================================================
   // Polymorphic definitions

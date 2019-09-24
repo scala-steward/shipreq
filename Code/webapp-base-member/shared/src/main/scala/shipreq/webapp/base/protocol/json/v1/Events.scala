@@ -6,6 +6,7 @@ import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty._
 import japgolly.microlibs.stdlib_ext.ParseInt
 import shipreq.base.util._
+import shipreq.base.util.JsonUtil._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.reqtable.SavedView
 import shipreq.webapp.base.event._
