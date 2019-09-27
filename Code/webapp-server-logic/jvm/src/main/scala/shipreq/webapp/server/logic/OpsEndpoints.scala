@@ -9,7 +9,9 @@ import scalaz.syntax.monad._
 import shipreq.base.util.ErrorMsg
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.{Msg, MsgId, TaskmanApi}
+import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.user.UserValidators
+import shipreq.webapp.server.logic.dispatch.{ResponseCmd, StatusCode}
 
 trait OpsEndpoints[F[_]] {
   import OpsEndpoints._
@@ -21,6 +23,8 @@ trait OpsEndpoints[F[_]] {
   def taskmanMsgStatus(id: MsgId): F[Option[MsgStatusResult]]
 
   def sendMail(emailAddr: String): F[ErrorMsg \/ SendMailResult]
+
+  def getProjectEvents(pid: ProjectId): F[ResponseCmd]
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -75,6 +79,17 @@ object OpsEndpoints extends HasLogger {
           r         ← measureDuration(taskman.submitMsg(msg))
         } yield \/-(SendMailResult(r._1, r._2, token))
       )
+
+    override def getProjectEvents(pid: ProjectId): F[ResponseCmd] =
+      db.getAllProjectEvents(pid).map { ves =>
+        if (ves.isEmpty)
+          ResponseCmd.StatusOnly.NotFound
+        else {
+          import shipreq.webapp.base.protocol.json.v1.Events.encoderEvent
+          val json = ves.iterator.map(_.event.asJson.noSpacesSortKeys).mkString("[", "\n,", "\n]")
+          ResponseCmd.Json(StatusCode.OK, json)
+        }
+      }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -255,6 +255,7 @@ object DispatchBM {
       override def userStats                         = F.pure(null)
       override def taskmanMsgStatus(id: MsgId)       = F.pure(null)
       override def sendMail(e: String)               = F.pure(null)
+      override def getProjectEvents(pid: ProjectId)  = F.pure(null)
     }
 
     val dispatchLogic = new DispatchLogic[F, Request[Unit], Response](

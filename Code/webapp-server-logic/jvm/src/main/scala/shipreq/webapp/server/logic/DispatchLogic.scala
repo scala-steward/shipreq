@@ -545,6 +545,13 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
         )
       )
 
+    private val getProjectEvents: Request ?=> F[RealRes] =
+      endpoint(Post, Url.Relative("project/events"))(req =>
+        parseParams(req.param("id") flatMap ParseLong.unapply)(id =>
+          ops.getProjectEvents(ProjectId(id)).map(response)
+        )
+      )
+
     private val testSendMail: Request ?=> F[RealRes] =
       endpoint(Post, Url.Relative("test-sendmail"))(req =>
         parseParams(req.param("email"))(email =>
@@ -552,7 +559,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
             jsonResponse)))
 
     private def innerRoutes: Request ?=> F[RealRes] =
-      ok | register1 | statsDb | statsUsers | task | testSendMail
+      ok | register1 | statsDb | statsUsers | task | testSendMail | getProjectEvents
 
     private def fallback: Request => F[RealRes] = { implicit req =>
       makeRealF(notFoundSecure)

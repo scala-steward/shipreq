@@ -156,13 +156,19 @@ object DB {
     def getAllProjectMetaDataForUser(id: UserId): F[List[ProjectMetaData]]
   }
 
-  trait ForProjectSpa[F[_]] extends Base[F] with SaveProjectEvent[F] {
-    def projectSpaInitPage(id: ProjectId): F[Project.Name]
-    def getProjectMetaData(id: ProjectId): F[Option[ProjectMetaData]]
+  trait GetProjectEvents[F[_]] {
     def getProjectEvents(id: ProjectId, f: EventFilter): F[VerifiedEvent.Seq]
 
-    final def getProjectEvents(id: ProjectId): F[VerifiedEvent.Seq] = getProjectEvents(id, EventFilter.IncludeAll)
-    final def getAllProjectEvents(id: ProjectId): F[VerifiedEvent.Seq] = getProjectEvents(id, EventFilter.IncludeAll)
+    final def getProjectEvents(id: ProjectId): F[VerifiedEvent.Seq] =
+      getProjectEvents(id, EventFilter.IncludeAll)
+
+    final def getAllProjectEvents(id: ProjectId): F[VerifiedEvent.Seq] =
+      getProjectEvents(id, EventFilter.IncludeAll)
+  }
+
+  trait ForProjectSpa[F[_]] extends Base[F] with SaveProjectEvent[F] with GetProjectEvents[F] {
+    def projectSpaInitPage(id: ProjectId): F[Project.Name]
+    def getProjectMetaData(id: ProjectId): F[Option[ProjectMetaData]]
   }
 
   sealed trait EventFilter
@@ -180,7 +186,7 @@ object DB {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  trait ForOps[F[_]] {
+  trait ForOps[F[_]] extends GetProjectEvents[F] {
     val now       : F[Instant]
     val userStats : F[ForOps.UserStats]
     val tableStats: F[List[ForOps.TableStat]]
@@ -201,10 +207,11 @@ object DB {
 
     def trans[F[_], G[_]](f: ForOps[F])(t: F ~> G): ForOps[G] =
       new ForOps[G] {
-        override val now        = t(f.now)
-        override val userStats  = t(f.userStats)
-        override val tableStats = t(f.tableStats)
-        override val dbSize     = t(f.dbSize)
+        override val now                                            = t(f.now)
+        override val userStats                                      = t(f.userStats)
+        override val tableStats                                     = t(f.tableStats)
+        override val dbSize                                         = t(f.dbSize)
+        override def getProjectEvents(a: ProjectId, b: EventFilter) = t(f.getProjectEvents(a, b))
       }
   }
 

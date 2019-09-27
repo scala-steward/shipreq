@@ -359,34 +359,36 @@ object DbInterpreter {
     override def projectSpaInitPage(id: ProjectId): ConnectionIO[Project.Name] =
       projectSpaInitPageSql.toQuery0(id).option.map(_.filterNot(_ eq null).getOrElse(""))
 
-    private[db] object SqlSelectEvents {
-      type Out = VerifiedEvent
+    /** @return Events in order from lowest to highest ord. */
+    override final def getProjectEvents(p: ProjectId, f: EventFilter): ConnectionIO[VerifiedEvent.Seq] =
+      SqlSelectEvents.selectEvents(f)(p)
+  }
 
-      private val allSql = s"SELECT ord,$eventE FROM event WHERE project_id=?"
+  private[db] object SqlSelectEvents {
+    import EventSqlHelpers._
 
-      val all = Query[ProjectId, Out](allSql)
+    type Out = VerifiedEvent
 
-      val after = Query[(ProjectId,EventOrd), Out](s"$allSql AND ord>?")
+    private val allSql = s"SELECT ord,${EventSqlHelpers.eventE} FROM event WHERE project_id=?"
 
-      private val setPrefix = s"$allSql AND ord IN ("
+    val all = Query[ProjectId, Out](allSql)
 
-      def setQuery(ords: Seq[EventOrd]): Query[ProjectId, Out] =
-        Query(ords.iterator.map(_.value).mkString(setPrefix, ",", ")"))
+    val after = Query[(ProjectId,EventOrd), Out](s"$allSql AND ord>?")
 
-      def set(pid: ProjectId, ords: NonEmptySet[EventOrd]): ConnectionIO[VerifiedEvent.Seq] =
-        selectByNonEmptySet(ords)(setQuery(_).toQuery0(pid).list)
-          .map(bbs => VerifiedEvent.Seq.empty ++ bbs.toIterator.flatten)
-    }
+    private val setPrefix = s"$allSql AND ord IN ("
 
-    private[db] final val selectEvents: EventFilter => ProjectId => ConnectionIO[VerifiedEvent.Seq] = {
+    def setQuery(ords: Seq[EventOrd]): Query[ProjectId, Out] =
+      Query(ords.iterator.map(_.value).mkString(setPrefix, ",", ")"))
+
+    def set(pid: ProjectId, ords: NonEmptySet[EventOrd]): ConnectionIO[VerifiedEvent.Seq] =
+      selectByNonEmptySet(ords)(setQuery(_).toQuery0(pid).list)
+        .map(bbs => VerifiedEvent.Seq.empty ++ bbs.toIterator.flatten)
+
+    val selectEvents: EventFilter => ProjectId => ConnectionIO[VerifiedEvent.Seq] = {
       case EventFilter.IncludeAll     => SqlSelectEvents.all.toQuery0(_).to[TreeSet]
       case EventFilter.ExcludeUpTo(o) => p => SqlSelectEvents.after.toQuery0((p, o)).to[TreeSet]
       case EventFilter.Set(ords)      => p => SqlSelectEvents.set(p, ords)
     }
-
-    /** @return Events in order from lowest to highest ord. */
-    override final def getProjectEvents(p: ProjectId, f: EventFilter): ConnectionIO[VerifiedEvent.Seq] =
-      selectEvents(f)(p)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -438,5 +440,9 @@ object DbInterpreter {
       dbSizeSql
         .toQuery0(dbName.replaceFirst("^.*/", ""))
         .unique
+
+    /** @return Events in order from lowest to highest ord. */
+    override final def getProjectEvents(p: ProjectId, f: EventFilter): ConnectionIO[VerifiedEvent.Seq] =
+      SqlSelectEvents.selectEvents(f)(p)
   }
 }

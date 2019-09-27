@@ -51,10 +51,10 @@ object SqlTest extends TestSuite {
       'createEmptyProjectSql           - test(db.createEmptyProjectSql)
       'getAllProjectMetaDataForUserSql - test(db.getAllProjectMetaDataForUserSql)
       'getProjectMetaDataSql           - test(db.getProjectMetaDataSql)
-      'sqlSelectEventsAll              - test(db.SqlSelectEvents.all.toQuery0(pid))
-      'sqlSelectEventsExcludeUpTo      - test(db.SqlSelectEvents.after.toQuery0((pid, o2)))
-      'sqlSelectEventsSet              - test(db.SqlSelectEvents.setQuery(Seq(o2)).toQuery0(pid))
-      'sqlSelectEventsSet              - test(db.SqlSelectEvents.setQuery(Seq(o2, o3)).toQuery0(pid))
+      'sqlSelectEventsAll              - test(DbInterpreter.SqlSelectEvents.all.toQuery0(pid))
+      'sqlSelectEventsExcludeUpTo      - test(DbInterpreter.SqlSelectEvents.after.toQuery0((pid, o2)))
+      'sqlSelectEventsSet              - test(DbInterpreter.SqlSelectEvents.setQuery(Seq(o2)).toQuery0(pid))
+      'sqlSelectEventsSet              - test(DbInterpreter.SqlSelectEvents.setQuery(Seq(o2, o3)).toQuery0(pid))
       'projectSpaInitPageSql           - test(db.projectSpaInitPageSql)
     }
 
