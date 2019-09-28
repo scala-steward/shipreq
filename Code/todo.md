@@ -125,7 +125,6 @@ Phase 2B
 
 * Standardise on Circe
   * Use Circe in Taskman
-  * Remove mpickle & its macros
   * Share DbInterpreter.DoobieMeta with Taskman
 
 * Sort out {Doobie,Sql}{Helpers,Meta} and the DoobieMeta in DbInterpreter

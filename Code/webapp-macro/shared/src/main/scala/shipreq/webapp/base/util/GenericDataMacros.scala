@@ -1,9 +1,6 @@
 package shipreq.webapp.base.util
 
 import japgolly.microlibs.macro_utils._
-import shipreq.webapp.base.protocol.MPickleMacroUtils
-import boopickle._
-import upickle._
 
 object GenericDataMacros {
   def gdAllValues(d: GenericData, ctx: String): d.NonEmptyValues = macro GenericDataMacroImpls.quietAllValues
@@ -11,15 +8,9 @@ object GenericDataMacros {
 
   def gdUnequalValues(d: GenericData, ref: Any, ctx: String): d.Values = macro GenericDataMacroImpls.quietUnequalValues
   def _gdUnequalValues(d: GenericData, ref: Any, ctx: String): d.Values = macro GenericDataMacroImpls.debugUnequalValues
-
-  def gdMPickler (d: GenericData, failUnrecognisedKeys: Boolean)(keys: d.Attr => String): d.ValueTypeClasses[ReadWriter] = macro GenericDataMacroImpls.quietMPickler
-  def _gdMPickler(d: GenericData, failUnrecognisedKeys: Boolean)(keys: d.Attr => String): d.ValueTypeClasses[ReadWriter] = macro GenericDataMacroImpls.debugMPickler
-
-  def binpickler (d: GenericData): d.ValueTypeClasses[Pickler] = macro GenericDataMacroImpls.quietBinPickler
-  def _binpickler(d: GenericData): d.ValueTypeClasses[Pickler] = macro GenericDataMacroImpls.debugBinPickler
 }
 
-class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extends MacroUtils with MPickleMacroUtils {
+class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extends MacroUtils {
   import c.universe._
 
   def resolveAttrsAndValues(debug: Boolean)(D: SingleType): Vector[(ModuleSymbol, ClassSymbol)] = {
@@ -114,117 +105,5 @@ class GenericDataMacroImpls(val c: scala.reflect.macros.blackbox.Context) extend
     if (debug) println("\n" + showCode(impl) + "\n" + sep)
 
     c.Expr[d.value.Values](impl)
-  }
-  // ===================================================================================================================
-
-  def debugMPickler(d: c.Expr[GenericData], failUnrecognisedKeys: c.Expr[Boolean])(keys: c.Expr[d.value.Attr => String]) = implMPickler(true )(d, failUnrecognisedKeys)(keys)
-  def quietMPickler(d: c.Expr[GenericData], failUnrecognisedKeys: c.Expr[Boolean])(keys: c.Expr[d.value.Attr => String]) = implMPickler(false)(d, failUnrecognisedKeys)(keys)
-  def implMPickler(debug: Boolean)(d: c.Expr[GenericData], failUnrecognisedKeys: c.Expr[Boolean])(keys: c.Expr[d.value.Attr => String]): c.Expr[d.value.ValueTypeClasses[ReadWriter]] = {
-    if (debug) println(sep)
-
-    val D = d.actualType.asInstanceOf[SingleType]
-    val DFQN = toSelectFQN(D.typeSymbol.asType)
-
-    val keyLookup: List[(String, Literal)] =
-      keys match {
-        case Expr(Function(_, Match(_, caseDefs))) =>
-          caseDefs map {
-            case CaseDef(Select(_, name), _, key@ Literal(Constant(_: String))) => (name.toString, key)
-            case x => fail(s"Expecting a case like: {case Attr => Literal}\nGot: ${showRaw(x)}")
-          }
-        case _ => fail(s"Expecting a function like: {case Attr => Literal}\nGot: ${showRaw(keys)}")
-      }
-
-    if (debug) println(s"Keys: $keyLookup")
-
-    val attrsAndValues = resolveAttrsAndValues(debug)(D)
-
-    var wCases   = List.empty[CaseDef]
-    var rCases   = List.empty[CaseDef]
-    var keysUsed = Set.empty[String]
-    val init     = new Init("i$" + _)
-    init += importMPickle
-
-    for ((attr, value) <- attrsAndValues) {
-      val name  = attr.name.toString
-      val key   = keyLookup.find(_._1 == name).map(_._2) getOrElse fail(s"Key not found for $name.\nKeys = $keyLookup")
-      val rw    = summonReadWriter(init, attrDataType(attr))
-      wCases  ::= cq"v: $value => kvs :+= (($key, $rw write v.value))"
-      rCases  ::= cq"$key => kvs += $attr apply $rw.read(kv._2)"
-      keysUsed += key.toString()
-    }
-
-    if (keysUsed.size != attrsAndValues.size)
-      fail(s"Keys must be unique: $keyLookup")
-
-    val onUnrecognisedKey =
-      if (readMacroArg_boolean(failUnrecognisedKeys))
-        q"""sys.error("Unknown key '"+what+"' in "+o)"""
-      else
-        Literal(Constant(()))
-
-    val impl = q""" {
-      ..$init
-      val empty = $DFQN.emptyValues
-      val rwValues =
-        ReadWriter[$DFQN.Values](
-          vs => {
-            var kvs = Vector.empty[(String, Js.Value)]
-            vs.values foreach { case ..$wCases }
-            Js.Obj(kvs: _*)
-          },
-          { case o: Js.Obj =>
-            var kvs = empty
-            o.value.foreach(kv =>
-              kv._1 match {
-                case ..$rCases
-                case what => $onUnrecognisedKey
-              }
-            )
-            kvs
-          })
-      val rwValue = rwValues.xmap(_.values.head)(empty + _)
-      val rwNev   = rwValues.xmap[$DFQN.NonEmptyValues](japgolly.microlibs.nonempty.NonEmpty require_! _)(_.value)
-      $DFQN.ValueTypeClasses[ReadWriter](rwValue, rwValues, rwNev)
-    } """
-
-    // ↑ rwValue isn't used so I don't care right now
-
-    if (debug) println("\n" + showCode(impl) + "\n" + sep)
-
-    c.Expr[d.value.ValueTypeClasses[ReadWriter]](impl)
-  }
-
-  // ===================================================================================================================
-
-  def debugBinPickler(d: c.Expr[GenericData]) = implBinPickler(true )(d)
-  def quietBinPickler(d: c.Expr[GenericData]) = implBinPickler(false)(d)
-  def implBinPickler(debug: Boolean)(d: c.Expr[GenericData]): c.Expr[d.value.ValueTypeClasses[Pickler]] = {
-    if (debug) println(sep)
-
-    val D = d.actualType.asInstanceOf[SingleType]
-
-    val attrsAndValues = resolveAttrsAndValues(debug)(D)
-
-    val pickleCaseClass = Ident(TermName((if (debug) "_" else "") + "pickleCaseClass"))
-    val init =
-      for ((attr, value) <- attrsAndValues) yield {
-        val p = TermName(c.freshName("p"))
-        q"implicit val $p: Pickler[$value] = $pickleCaseClass": ValDef
-      }
-
-    val impl = q""" {
-      import _root_.shipreq.webapp.base.protocol.BoopickleMacros._
-      import $d._
-      ..${flattenBlocks(init.toList)}
-      implicit val value : Pickler[Value]          = pickleADT
-      implicit val values: Pickler[Values]         = pickleIMap(emptyValues)
-      implicit val nev   : Pickler[NonEmptyValues] = pickleNonEmptyMono[Values](values, implicitly)
-      ValueTypeClasses(value, values, nev)
-    } """
-
-    if (debug) println("\n" + showCode(impl) + "\n" + sep)
-
-    c.Expr[d.value.ValueTypeClasses[Pickler]](impl)
   }
 }

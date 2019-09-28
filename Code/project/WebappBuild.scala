@@ -65,7 +65,7 @@ object WebappBuild {
       .configureJs(Common.jsSettings(NoTests))
       .dependsOn(baseUtil)
       .depsForBoth(
-        μPickle ++ boopickle ++ Monocle.core ++
+        boopickle ++ Monocle.core ++
         providedScope(Scala.library) ++
         testScope(μTest))
       .configureJvm(_.dependsOn(baseDb))
@@ -166,7 +166,7 @@ object WebappBuild {
     project("webapp-client-project")
       .configure(clientSpa)
       .dependsOn(webappClientWwApi, webappClientLoaders)
-      .depsForJs(ScalaCSS.react ++ scalajsDom ++ μPickle ++ shapeless ++ Nyaya.prop ++ parboiled ++ React.scalaz)
+      .depsForJs(ScalaCSS.react ++ scalajsDom ++ shapeless ++ Nyaya.prop ++ parboiled ++ React.scalaz)
 
   lazy val webappSsr =
     crossProject("webapp-ssr")
