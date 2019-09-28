@@ -96,6 +96,7 @@ object ProjectSpaLogic extends StrictLogging {
   object MsgError {
     final case class ClientMsgDecodingFailure(err: SafePickler.DecodingFailure) extends MsgError
     final case class ServerBehindClient(err: SafePickler.DecodingFailure) extends MsgError
+    final case class ServerBehindDatabase(err: DB.ReadProjectEventError) extends MsgError
     final case class ServerBehindRedis(err: SafePickler.DecodingFailure) extends MsgError
     final case class RespondError(err: Throwable) extends MsgError
   }
@@ -269,6 +270,9 @@ object ProjectSpaLogic extends StrictLogging {
                 case MsgError.ClientMsgDecodingFailure(e) =>
                   logger.warn(s"Failed to parse message from client: $descMsg", e)
 
+                case MsgError.ServerBehindDatabase(e) =>
+                  logger.warn(s"Server older than DB. Aborting. ClientMsg:[$descMsg]", e)
+
                 case MsgError.ServerBehindClient(e) =>
                   logger.warn(s"Server older than client. Aborting. ClientMsg:[$descMsg]", e)
 
@@ -358,9 +362,10 @@ object ProjectSpaLogic extends StrictLogging {
 
       private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFn[I, EventResult] =
         in => projectUpdater(in.static.projectId, mkEvent(in.input, _)).map {
-          case ProjectUpdater.Result.Ok(events)           => \/-(MsgFnOut(\/-(events), None))
-          case ProjectUpdater.Result.Reject(e)            => \/-(MsgFnOut(-\/(e), None))
-          case ProjectUpdater.Result.ServerBehindRedis(e) => -\/(MsgError.ServerBehindRedis(e))
+          case ProjectUpdater.Result.Ok(events)              => \/-(MsgFnOut(\/-(events), None))
+          case ProjectUpdater.Result.Reject(e)               => \/-(MsgFnOut(-\/(e), None))
+          case ProjectUpdater.Result.ServerBehindDatabase(e) => -\/(MsgError.ServerBehindDatabase(e))
+          case ProjectUpdater.Result.ServerBehindRedis(e)    => -\/(MsgError.ServerBehindRedis(e))
         }
 
       private def updateProjectI[I](mkEvent: I => MakeEvent.Result): MsgFn[I, EventResult] =
@@ -378,22 +383,29 @@ object ProjectSpaLogic extends StrictLogging {
         def step[A](name: String)(f: F[A]): F[A] =
           trace.newSpan(name)(_ => metrics.projectSpaWebSocketStep("load", name)(f))
 
-        def ignoreCache(c: Redis.ProjectCache): F[\/-[Result]] = {
+        def ignoreCache(c: Redis.ProjectCache): F[MsgError \/ Result] = {
 
-          def readDb(p: ProjectAndOrd) =
+          def readDb(p: ProjectAndOrd): F[MsgError \/ Result] =
             step("readDb")(
               for {
-                (es, mdo) <- runDB(
-                               db.inDbTransaction(for {
-                                 md <- db.getProjectMetaData(pid)
-                                 es <- db.getProjectEvents(pid, DB.EventFilter.given(p.ord))
-                               } yield (es, md))
-                             )
-                buildResult <- apEvent.append(pid, p, es)
-              } yield mdo match {
-                case Some(md) => buildResult.map(InitAppData(_, md))
-                case None     => projectNotFound
-              }
+                (mdo, read) <- runDB(
+                                 db.inDbTransaction(for {
+                                   a <- db.getProjectMetaData(pid)
+                                   b <- db.getProjectEvents(pid, DB.EventFilter.given(p.ord))
+                                 } yield (a, b))
+                               )
+                result      <- read.traverse(apEvent.append(pid, p, _))
+              } yield
+                result match {
+                  case \/-(buildResult) =>
+                    mdo match {
+                      case Some(md) => \/-(buildResult.map(InitAppData(_, md)))
+                      case None     => \/-(projectNotFound)
+                    }
+                  case -\/(e) =>
+                    -\/(MsgError.ServerBehindDatabase(e))
+                }
+
             )
 
           def writeRedis(i: InitAppData): F[Boolean] =
@@ -405,10 +417,13 @@ object ProjectSpaLogic extends StrictLogging {
             )
 
           for {
-            cacheb <- c.buildNonEmpty(pid)
-            result <- readDb(cacheb getOrElse ProjectAndOrd.empty)
-            _      <- result.fold[F[_]](_ => fUnit, writeRedis)
-          } yield \/-(result)
+            cache  <- c.buildNonEmpty(pid)
+            result <- readDb(cache getOrElse ProjectAndOrd.empty)
+            _      <- result match {
+                        case \/-(\/-(d)) => writeRedis(d)
+                        case _           => fUnit
+                      }
+          } yield result
         }
 
         def useCache(c: Redis.ProjectCache, md: ProjectMetaData): F[\/-[Result]] =
@@ -459,8 +474,10 @@ object ProjectSpaLogic extends StrictLogging {
         def loadEventsFromRedis: F[SafePickler.Result[VerifiedEvent.Seq]] =
           step("readRedis")(redis.readEvents(pid, userOrd))
 
-        def loadEventsFromDb(o: Option[EventOrd.Latest]): F[VerifiedEvent.Seq] =
-          step("readDb")(runDB(db.getProjectEvents(pid, DB.EventFilter.given(o))))
+        def loadEventsFromDb(o: Option[EventOrd.Latest]): F[MsgError \/ VerifiedEvent.Seq] =
+          step("readDb")(
+            runDB(db.getProjectEvents(pid, DB.EventFilter.given(o)))
+              .map(_.leftMap(MsgError.ServerBehindDatabase)))
 
         def loadEvents(dbLatest: Option[EventOrd.Latest]): F[MsgError \/ VerifiedEvent.Seq] =
           loadEventsFromRedis.flatMap {
@@ -470,24 +487,24 @@ object ProjectSpaLogic extends StrictLogging {
                 val newLatest = Some(cachedEvents.last.ord.asLatest)
                 if (dbLatest > newLatest)
                   for {
-                    dbEvents <- loadEventsFromDb(newLatest)
+                    dbEventsOrErr <- loadEventsFromDb(newLatest)
                     // Not writing back to Redis for now
                     // * Snapshot could be 1000, this could send events 500-1001 for no reason
                     // * Normal processing (covered by TLA) keeps the cache up-to-date - a reconnection seems orthogonal
                     // _ <- redis.writeEvents(pid, dbEvents, VerifiedEvent.Seq.empty)
-                  } yield \/-(cachedEvents ++ dbEvents)
+                  } yield dbEventsOrErr.map(cachedEvents ++ _)
                 else
                   F.pure(\/-(cachedEvents))
               } else
-                loadEventsFromDb(userOrd).map(\/-(_))
+                loadEventsFromDb(userOrd)
             case -\/(err) =>
               if (err.isLocalKnownToBeOutOfDate)
                 F pure -\/(MsgError.ServerBehindRedis(err))
               else
                 for {
-                  _  <- F.point(logger.warn("Failed to parse cache. Rebuilding. Error: ", err))
-                  es <- loadEventsFromDb(userOrd)
-                } yield \/-(es)
+                  _    <- F.point(logger.warn("Failed to parse cache. Rebuilding. Error: ", err))
+                  load <- loadEventsFromDb(userOrd)
+                } yield load
           }
 
         for {
@@ -509,9 +526,12 @@ object ProjectSpaLogic extends StrictLogging {
         val ords = in.input
 
         for {
-          events <- runDB(db.getProjectEvents(pid, DB.EventFilter.Set(ords)))
-          _      <- redis.writeEvents(pid, VerifiedEvent.Seq.empty, events)
-        } yield \/-(MsgFnOut((), None))
+          eventsOrErr <- runDB(db.getProjectEvents(pid, DB.EventFilter.Set(ords)))
+          result      <- eventsOrErr.traverse(redis.writeEvents(pid, VerifiedEvent.Seq.empty, _))
+        } yield result match {
+          case \/-(_) => \/-(MsgFnOut((), None))
+          case -\/(e) => -\/(MsgError.ServerBehindDatabase(e))
+        }
       }
 
     } // new ProjectSpaLogic
@@ -575,14 +595,17 @@ object ProjectSpaLogic extends StrictLogging {
 
           case ReadDb =>
             for {
-              cacheBuilt ← s.redis.buildNonEmpty(pid)
-              p1         = s.local max cacheBuilt
-              newEvents  ← runDB(db.getProjectEvents(pid, DB.EventFilter.given(p1.ord)))
-              built      ← apEvent.append(pid, p1, newEvents)
-            } yield built match {
-              case \/-(p2) => -\/(s.copy(local = p2, status = WriteRedis1(newEvents)))
-              case -\/(e)  => \/-(Result.Reject(e))
-            }
+              cacheBuilt     ← s.redis.buildNonEmpty(pid)
+              p1             = s.local max cacheBuilt
+              newEventsOrErr ← runDB(db.getProjectEvents(pid, DB.EventFilter.given(p1.ord)))
+              result         ← newEventsOrErr match {
+                                 case \/-(newEvents) => apEvent.append(pid, p1, newEvents) map {
+                                   case \/-(p2) => -\/(s.copy(local = p2, status = WriteRedis1(newEvents)))
+                                   case -\/(e)  => \/-(Result.Reject(e))
+                                 }
+                                 case -\/(e) => F pure \/-(Result.ServerBehindDatabase(e))
+                               }
+            } yield result
 
           case WriteRedis1(newEvents) =>
             val writeRedis: F[Boolean] =
@@ -597,12 +620,11 @@ object ProjectSpaLogic extends StrictLogging {
           case WriteDb =>
             mkEvent(s.local.project).flatMap(ApplyNewEvent(_, s.local.project)) match {
               case PotentialChange.Success(updated) =>
-                val saveCmd = DB.SaveProjectEventCmd(s.local.nextOrd, updated.event)
-                runDB(db.saveProjectEvent(pid, saveCmd)) map {
+                runDB(db.saveProjectEvent(pid, s.local.nextOrd, updated.event, updated.project)) map {
                   case \/-(ve) =>
                     val nextStatus = WriteRedis2(updated.project, ve)
                     -\/(s.copy(status = nextStatus))
-                  case -\/(_) =>
+                  case -\/(DB.SaveProjectEventError.OrdInUse) =>
                     -\/(s.copy(status = ReadRedis))
                 }
 
@@ -639,9 +661,10 @@ object ProjectSpaLogic extends StrictLogging {
 
     sealed trait Result
     object Result {
-      final case class ServerBehindRedis(err: SafePickler.DecodingFailure) extends Result
-      final case class Reject           (errMsg: ErrorMsg)                 extends Result
-      final case class Ok               (events: VerifiedEvent.Seq)        extends Result
+      final case class ServerBehindDatabase(err: DB.ReadProjectEventError)    extends Result
+      final case class ServerBehindRedis   (err: SafePickler.DecodingFailure) extends Result
+      final case class Reject              (errMsg: ErrorMsg)                 extends Result
+      final case class Ok                  (events: VerifiedEvent.Seq)        extends Result
     }
 
     final case class State(local : ProjectAndOrd,

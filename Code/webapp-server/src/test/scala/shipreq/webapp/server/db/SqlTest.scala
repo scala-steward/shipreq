@@ -2,9 +2,8 @@ package shipreq.webapp.server.db
 
 import utest._
 import shipreq.base.test.db.SqlTester.test
-import shipreq.webapp.base.data.ProjectId
-import shipreq.webapp.base.event.EventOrd
 import shipreq.webapp.server.test.PrepareEnv
+import shipreq.webapp.base.test.UnsafeTypes._
 
 object SqlTest extends TestSuite {
   import DbInterpreter._
@@ -40,22 +39,30 @@ object SqlTest extends TestSuite {
       'updateUserPasswordSql                - test(db.updateUserPasswordSql)
     }
 
-    'saveProjectEvent {
-      'insertEventSql - test(db.insertEventSql)
+    'getProjectMetaData {
+      'projectMetaDataQuery - test(db.getProjectMetaDataQuery)
     }
 
-    'members {
-      val pid = ProjectId(123)
-      val o2 = EventOrd(2)
-      val o3 = EventOrd(3)
-      'createEmptyProjectSql           - test(db.createEmptyProjectSql)
-      'getAllProjectMetaDataForUserSql - test(db.getAllProjectMetaDataForUserSql)
-      'getProjectMetaDataSql           - test(db.getProjectMetaDataSql)
-      'sqlSelectEventsAll              - test(DbInterpreter.SqlSelectEvents.all.toQuery0(pid))
-      'sqlSelectEventsExcludeUpTo      - test(DbInterpreter.SqlSelectEvents.after.toQuery0((pid, o2)))
-      'sqlSelectEventsSet              - test(DbInterpreter.SqlSelectEvents.setQuery(Seq(o2)).toQuery0(pid))
-      'sqlSelectEventsSet              - test(DbInterpreter.SqlSelectEvents.setQuery(Seq(o2, o3)).toQuery0(pid))
-      'projectSpaInitPageSql           - test(db.projectSpaInitPageSql)
+    'getProjectEvents {
+      'all   - test(GetProjectEventLogic.all)
+      'after - test(GetProjectEventLogic.after)
+      'set1  - test(GetProjectEventLogic.setSubset(Seq(2)))
+      'set2  - test(GetProjectEventLogic.setSubset(Seq(2, 3)))
+    }
+
+    'saveProjectEvent {
+      'insertEventQuery - test(SaveProjectEventLogic.insertEventQuery)
+      'updateProjectN   - test(SaveProjectEventLogic.updateProjectN)
+      'updateProjectR   - test(SaveProjectEventLogic.updateProjectR)
+    }
+
+    'homeSpa {
+      'createProject                - test(db.createProjectQuery)
+      'getAllProjectMetaDataForUser - test(db.getAllProjectMetaDataForUserQuery)
+    }
+
+    'projectSpa {
+      'projectSpaInitPage - test(db.projectSpaInitPageQuery)
     }
 
     'ops {

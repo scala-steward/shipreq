@@ -407,21 +407,31 @@ object BaseMemberData2 {
       override def pickle(a: ProjectMetaData)(implicit state: PickleState): Unit = {
         state.pickle(a.id)
         state.pickle(a.name)
-        state.pickle(a.initEventCount)
-        state.pickle(a.totalEventCount)
-        state.pickle(a.reqCount)
+        state.pickle(a.eventsInit)
+        state.pickle(a.eventsTotal)
+        state.pickle(a.reqsLive)
+        state.pickle(a.reqsTotal)
         state.pickle(a.createdAt)
         state.pickle(a.lastUpdatedAt)
       }
       override def unpickle(implicit state: UnpickleState): ProjectMetaData = {
-        val id              = state.unpickle[ProjectId.Public]
-        val name            = state.unpickle[Project.Name]
-        val initEventCount  = state.unpickle[Int]
-        val totalEventCount = state.unpickle[Int]
-        val reqCount        = state.unpickle[Int]
-        val createdAt       = state.unpickle[Instant]
-        val lastUpdatedAt   = state.unpickle[Option[Instant]]
-        ProjectMetaData(id, name, initEventCount, totalEventCount, reqCount, createdAt, lastUpdatedAt)
+        val id            = state.unpickle[ProjectId.Public]
+        val name          = state.unpickle[Project.Name]
+        val eventsInit    = state.unpickle[Int]
+        val eventsTotal   = state.unpickle[Int]
+        val reqsLive      = state.unpickle[Int]
+        val reqsTotal     = state.unpickle[Int]
+        val createdAt     = state.unpickle[Instant]
+        val lastUpdatedAt = state.unpickle[Option[Instant]]
+        ProjectMetaData(
+          id            = id           ,
+          name          = name         ,
+          eventsInit    = eventsInit   ,
+          eventsTotal   = eventsTotal  ,
+          reqsLive      = reqsLive     ,
+          reqsTotal     = reqsTotal    ,
+          createdAt     = createdAt    ,
+          lastUpdatedAt = lastUpdatedAt)
       }
     }
 

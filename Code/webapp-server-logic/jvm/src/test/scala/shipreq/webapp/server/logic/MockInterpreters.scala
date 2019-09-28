@@ -49,13 +49,12 @@ object MockDb {
       ApplyEvent.trusted.applyVerified(events)(Project.empty).needRight
 
     lazy val projectMetaData: ProjectMetaData =
-      ProjectMetaData(id              = Obfuscators.projectId.obfuscate(projectId),
-                      name            = project.name,
-                      initEventCount  = initEvents,
-                      totalEventCount = events.size,
-                      reqCount        = project.content.reqs.size,
-                      createdAt       = createdAt,
-                      lastUpdatedAt   = lastUpdatedAt)
+      ProjectMetaData.fromProject(project)(
+        id            = Obfuscators.projectId.obfuscate(projectId),
+        eventsInit    = initEvents,
+        eventsTotal   = events.size,
+        createdAt     = createdAt,
+        lastUpdatedAt = lastUpdatedAt)
 
     def projectLoad: VerifiedEvent.Seq =
       events
@@ -221,9 +220,9 @@ final class MockDb(_now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecu
     projects.get(id).map(_.userId)
   }
 
-  override def createEmptyProject(id: UserId, initEvents: Int) = Name[ProjectId] {
+  override def createProject(id: UserId, initEvents: Vector[ActiveEvent], p: Project) = Name[ProjectId] {
     val pid = ProjectId(1 + projects.underlyingMap.keysIterator.map(_.value).foldLeft(0L)(_ max _))
-    addProject(pid, id)()
+    addProject(pid, id)(initEvents: _*)
     pid
   }
 
@@ -245,34 +244,29 @@ final class MockDb(_now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecu
   }
 
   var loadProjectLog = Vector.empty[ProjectId]
-  override def getProjectEvents(id: ProjectId, f: DB.EventFilter) = Name[VerifiedEvent.Seq] {
+  override def getProjectEvents(id: ProjectId, f: DB.EventFilter) = Name {
     loadProjectLog :+= id
     val r = projects.need(id).projectLoad
-    f match {
+    \/-(f match {
       case DB.EventFilter.IncludeAll     => r
       case DB.EventFilter.ExcludeUpTo(o) => r.filter(_.ord > o)
       case DB.EventFilter.Set(o)         => r.filter(x => o.contains(x.ord))
-    }
+    })
   }
 
-  override def saveProjectEvents(id: ProjectId, cmds: Traversable[DB.SaveProjectEventCmd]) = Name[Throwable \/ VerifiedEvent.Seq] {
-    import scalaz.syntax.traverse._
-    cmds.toList.traverse(saveProjectEvent(id, _).value).map(VerifiedEvent.Seq.empty ++ _)
-  }
-
-  override def saveProjectEvent(id: ProjectId, cmd: DB.SaveProjectEventCmd) = Name[Throwable \/ VerifiedEvent] {
+  override def saveProjectEvent(id: ProjectId, ord: EventOrd, e: ActiveEvent, p: Project) = Name[DB.SaveProjectEventError \/ VerifiedEvent] {
     val entry = projects.need(id)
     def update(events: VerifiedEvent.Seq): Unit =
       projects = projects + entry.copy(events = events, lastUpdatedAt = Some(Instant.now()))
-    val ve = verifyEvent(entry.project, cmd.event, cmd.ord)
+    val ve = verifyEvent(entry.project, e, ord)
     if (entry.events.isEmpty) {
       update(VerifiedEvent.Seq.empty + ve)
       \/-(ve)
-    } else if (cmd.ord.immediatelyFollows(entry.events.lastKey.ord)) {
+    } else if (ord.immediatelyFollows(entry.events.lastKey.ord)) {
       update(entry.events + ve)
       \/-(ve)
     } else
-      -\/(new RuntimeException(s"${cmd.ord} doesn't follow ${entry.events.lastKey.ord}"))
+      -\/(DB.SaveProjectEventError.OrdInUse)
   }
 
   override def inDbTransaction[A](f: Name[A]) = f

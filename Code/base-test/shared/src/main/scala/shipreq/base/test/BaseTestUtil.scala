@@ -3,6 +3,7 @@ package shipreq.base.test
 import japgolly.microlibs.testutil.TestUtilInternals
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
+import java.time.{Duration, Instant}
 import scalaz.std.string.stringInstance
 import scalaz.{Equal, Order, \/}
 import shipreq.base.util.Identity
@@ -83,6 +84,13 @@ trait BaseTestUtil
 //  def assertMatch[A](a: A)(pf: PartialFunction[A, Unit]): Unit =
 //    if (!pf.isDefinedAt(a))
 //      fail(s"Wrong shape: $a")
+
+  // TODO move into microlibs
+  def equalInstantWithTolerance(tolerance: Duration): Equal[Instant] =
+    Equal((a, b) => {
+      val d = Duration.between(b, a).abs()
+      tolerance.compareTo(d) > 0
+    })
 
   // TODO Move getOrThrow() into microlibs
   // TODO Move these into microlibs(jvm-only)

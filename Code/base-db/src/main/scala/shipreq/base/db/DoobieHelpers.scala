@@ -101,4 +101,10 @@ object DoobieHelpers {
     val h = it.next().map(_ :: Nil)
     it.foldLeft(h)(Apply[ConnectionIO].apply2(_, _)((bs, b) => b :: bs))
   }
+
+  def sequentially[A](cmds: TraversableOnce[ConnectionIO[_]], ret: A): ConnectionIO[A] =
+    if (cmds.isEmpty)
+      ret.pure[ConnectionIO]
+    else
+      cmds.asInstanceOf[TraversableOnce[ConnectionIO[Any]]].reduce((a, b) => a.flatMap(_ => b)).map(_ => ret)
 }

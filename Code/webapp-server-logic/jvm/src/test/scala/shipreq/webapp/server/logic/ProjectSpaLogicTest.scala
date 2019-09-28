@@ -67,25 +67,18 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
     object p1 {
 
-      val id = db.createEmptyProject(user2.id, 2).value
-
-      val events = List[Event](
+      val events = Vector[Event](
         Event.ProjectTemplateApply(ProjectTemplate.V2),
         Event.ProjectNameSet("hell"),
         Event.ProjectNameSet("hello"),
       )
 
-      val verifiedEvents = verifyEvents(Project.empty)(events: _*)
-
-      val latestOrd = verifiedEvents.last.ord.asLatest
-
-      for (e <- verifiedEvents)
-        db.saveProjectEvent(id, DB.SaveProjectEventCmd(e.ord, e.event.asInstanceOf[ActiveEvent])).value
-          .leftMap(throw _)
-
+      val verifiedEvents       = verifyEvents(Project.empty)(events: _*)
+      val instance             = applyVerifiedEventSuccessfully(Project.empty, verifiedEvents.toList: _*)
+      val latestOrd            = verifiedEvents.last.ord.asLatest
+      val id                   = db.createProject(user2.id, events.map(_.active), instance).value
       val data1                = db.getProjectMetaData(id).value.get
 
-      lazy val instance        = applyVerifiedEventSuccessfully(Project.empty, verifiedEvents.toList: _*)
       lazy val projectAndOrd   = ProjectAndOrd(instance, Some(verifiedEvents.last.ord.asLatest))
       lazy val initAppData     = InitAppData(projectAndOrd, data1)
       lazy val static          = WebSocketStatic(user2.toUser, id, (), svr.now.value)

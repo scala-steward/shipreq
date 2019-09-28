@@ -134,6 +134,9 @@ final case class Project(name         : Project.Name,
   def liveReqIterator(): Iterator[Req] =
     content.reqs.reqIterator.filter(_.live(config.reqTypes) is Live)
 
+  lazy val liveReqCount: Int =
+    liveReqIterator().size
+
   def reqtableViewIterator: Iterator[reqtable.SavedView] =
     reqtableViews.fold[Iterator[reqtable.SavedView]](Iterator.empty)(_.iterator)
 

@@ -40,4 +40,7 @@ object JsonUtil {
     )
   }
 
+  def errorMsg(f: DecodingFailure): String =
+    s"Failed to decode JSON at ${CursorOp.opsToPath(f.history)}: ${f.message}"
+
 }

@@ -52,7 +52,7 @@ final case class ProjectState(projectAndOrd  : ProjectAndOrd,
         ApplyEvent.trusted.applyVerified(ves)(project) match {
           case \/-(p2) =>
             val pao2 = ProjectAndOrd(p2, Some(ves.lastKey.ord.asLatest))
-            val md2  = projectMetaData.applyEvents(ves, Instant.now())
+            val md2  = projectMetaData.applyEvents(ves, p2, Instant.now())
             val s2   = ProjectState(pao2, md2, remainingFutureEvents)
             Some(ProjectState.Update(s2, ves.values))
           case -\/(err) =>

@@ -1,69 +1,21 @@
 package shipreq.webapp.server.db
 
 import doobie.imports._
-import japgolly.microlibs.nonempty._
 import java.time.{Duration, Instant, LocalDateTime, ZoneOffset}
-import java.util.concurrent.atomic.AtomicInteger
-import nyaya.gen._
-import nyaya.prop._
-import nyaya.test.PropTestOps._
-import nyaya.test._
-import scalaz.{-\/, \/-}
+import sourcecode.Line
 import utest._
 import shipreq.base.util.FxModule._
-import shipreq.base.util._
-import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.event.Event._
-import shipreq.webapp.base.filter.Filter
-import shipreq.webapp.base.sort.SortMethod
-import shipreq.webapp.base.text.Text
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.app.Global
-import shipreq.webapp.server.logic.DB.SaveProjectEventCmd
 import shipreq.webapp.server.test.WebappServerTestUtil._
 import shipreq.webapp.server.test._
 
 object DbTest extends TestSuite {
 
-  private val q3 = "\"\"\""
-
   def db = PrepareEnv.dbAlgebra
   def dbSec = DbInterpreter.ForSecurity
-
-  def demo[E <: ActiveEvent](gen: Gen[E]) = {
-    import EventDbCodecs.eventCodecRegistry
-    val es = gen.samples(GenSize(3)).take(10)
-    println("_"*120)
-    for (e <- es) {
-      val c = eventCodecRegistry.writer(e)
-      val d = c._2.write(e)
-      val json = Option(d._3).fold("null")(q3 + _ + q3)
-      println(
-        s"""
-           |testRW(${e.toString.replaceAll(",(?! )", ", ")},
-           |  ${c._1}, ${d._2}, '${d._1.value}', $json)
-         """.stripMargin)
-    }
-    println()
-  }
-
-  def testRW(e: ActiveEvent, typeId: Short, dataId: Option[Int], dataTypeId: Char, data: String): Unit = {
-    import EventDbCodecs.eventCodecRegistry
-
-    val c = eventCodecRegistry.writer(e)
-    val (aDataTypeId, aDataId, aData) = c._2.write(e)
-    assertEq(s"TypeId for $e", c._1, typeId)
-    assertEq(s"DataId for $e", (aDataId, aDataTypeId.value), (dataId, dataTypeId))
-    assertEq(s"Data for $e", aData, data)
-
-    val aEvent = c._2.read(aDataTypeId.toByte, aDataId, aData)
-    assertEq(aEvent, e)
-  }
-
-  import shipreq.webapp.base.test.UnsafeTypes.AutoNES._
-  import shipreq.webapp.base.test.UnsafeTypes._
 
   override def tests = Tests {
 
@@ -228,227 +180,48 @@ object DbTest extends TestSuite {
     'event {
 
       'prop - {
-        // implicit val settings = DefaultSettings.propSettings.setSampleSize(10).setGenSize(10).setDebug.setSingleThreaded.setSeed(0)
-        // implicit val settings = DefaultSettings.propSettings.setSampleSize(20000).setGenSize(4).setDebug
-        implicit val settings = DefaultSettings.propSettings.setSampleSize(320).setGenSize(16)
+        import IgnoreEqualityOfVerifiedEventTimestamps._
+        TestDb().runNow { xa =>
 
-        val ordCounter = new AtomicInteger(0)
+          val data  = RandomEventStream.sampleEventStreamWithProjects
+          val data1 = data.take(RandomEventStream.InitialEventCount)
+          val data2 = data.drop(data1.length)
+          val dbu   = DbUtil(xa)
+          val uid   = dbu.newUserId()
+          val pid   = xa ! db.createProject(uid, data1.map(_._1.event.active), data1.last._2)
 
-        val prop = Prop.equal[ActiveEvent]("load . save = id")(
-          ae => TestDb().runNow { xa =>
-            val dbu = DbUtil(xa)
-            val pid = dbu.newProjectId()
-            val ord = EventOrd(ordCounter.incrementAndGet())
-            val cmd = SaveProjectEventCmd(ord, ae)
-            xa ! db.saveProjectEvent(pid, cmd)
-            val loaded =
-              dbu.debugSelectOnError(s"select * from event where ord = ${ord.value}") {
-                (xa ! db.getAllProjectEvents(pid)).toVector.filter(_.ord ==* ord).map(r => r.event match {
-                  case e: ActiveEvent => e
-                  case e              => sys error s"Not an ActiveEvent: $e"
-                })
-              }
-            loaded
-          },
-          Vector1)
+          def assertPMD(expect: ProjectMetaData => ProjectMetaData)(implicit l: Line): Unit = {
+            val a = (xa ! db.getProjectMetaData(pid)).get
+            val e = expect(a)
+            assertEq(a, e)
+          }
 
-        val rnd = RandomData.events.activeEvent
+          val read1 = (xa ! db.getAllProjectEvents(pid)).needRight
+          assertEq("init event count", read1.size, data1.length)
+          assertEq("first ord", read1.head.ord, EventOrd.first)
+          assertPMD(a => ProjectMetaData.fromProject(data1.last._2)(
+            id            = a.id,
+            eventsInit    = data1.length,
+            eventsTotal   = data1.length,
+            createdAt     = a.createdAt,
+            lastUpdatedAt = None))
 
-        prop.mustBeSatisfiedBy(rnd)
+          var ord = read1.last.ord
+          for ((e, p) <- data2) {
+            ord = EventOrd(ord.value + 1)
+            (xa ! db.saveProjectEvent(pid, ord, e.event.active, p)).needRight
+          }
+          val readAll = (xa ! db.getAllProjectEvents(pid)).needRight
+          assertSeq(readAll, data.map(_._1))
+          assertPMD(a => ProjectMetaData.fromProject(data.last._2)(
+            id            = a.id,
+            eventsInit    = data1.length,
+            eventsTotal   = data.length,
+            createdAt     = a.createdAt,
+            lastUpdatedAt = Some(a.lastUpdatedAt.get)))
+        }
       }
 
-      // These tests serve two purposes:
-      // 1) Ensure data is stored as expected (efficient & human-readable).
-      // 2) Ensure each Event's format never changes once established.
-      'data {
-
-        'FieldStaticAdd {
-          testRW(FieldStaticAdd(StaticField.ExceptionStepTree), 1110, -2, 's', null)
-          testRW(FieldStaticAdd(StaticField.NormalAltStepTree), 1110, -1, 's', null)
-          testRW(FieldStaticAdd(StaticField.StepGraph        ), 1110, -3, 's', null)
-        }
-
-        'ProjectTemplateApply {
-          testRW(ProjectTemplateApply(ProjectTemplate.default), 1000, None, ' ', """2""")
-        }
-
-        //'createApplicableTag    - demo(RandomData.events.createApplicableTag   )
-
-        //'createCustomImpField   - demo(RandomData.events.createCustomImpField  )
-
-        //'createCustomIssueType  - demo(RandomData.events.createCustomIssueType )
-
-        //'createCustomReqType    - demo(RandomData.events.createCustomReqType   )
-
-        //'createCustomTagField   - demo(RandomData.events.createCustomTagField  )
-
-        //'createCustomTextField  - demo(RandomData.events.createCustomTextField )
-
-        'GenericReqCreate {
-          import GenericReqGD._
-          testRW(GenericReqCreate(123, 449099973, Tags(NonEmptySet(ApplicableTagId(166426196)))),
-            100, 123, 'g', """{"T":449099973,"#":166426196}""")
-
-          testRW(GenericReqCreate(123, 1469773577, ImpTgts(NonEmptySet(GenericReqId(2074289209)))),
-            100, 123, 'g', """{"T":1469773577,"<":2074289209}""")
-
-          testRW(GenericReqCreate(123, 1469773577, ImpSrcs(NonEmptySet(GenericReqId(2074289209)))),
-            100, 123, 'g', """{"T":1469773577,">":2074289209}""")
-
-          testRW(GenericReqCreate(123, 1469773577, Codes(ApReqCodeId.AndValue(7, "yay"))),
-            100, 123, 'g', """{"T":1469773577,"c":{"yay":7}}""")
-        }
-
-        //'createCodeGroup     - demo(RandomData.events.createCodeGroup    )
-
-        //'createTagGroup         - demo(RandomData.events.createTagGroup        )
-
-        //'deleteCustomField      - demo(RandomData.events.deleteCustomField     )
-
-        //'deleteCustomIssueType  - demo(RandomData.events.deleteCustomIssueType )
-
-        //'deleteCustomReqType    - demo(RandomData.events.deleteCustomReqType   )
-
-        //'deleteCodeGroup     - demo(RandomData.events.deleteCodeGroup    )
-
-        //'deleteReq              - demo(RandomData.events.deleteReq             )
-
-        //'deleteStaticField      - demo(RandomData.events.deleteStaticField     )
-
-        //'deleteTag              - demo(RandomData.events.deleteTag             )
-
-        'ReqImplicationsPatch {
-          testRW(ReqImplicationsPatch(1234, Forwards, nesd[ReqId](34, 45)(67, 89)),
-            22, 1234, 'g', """{"d":"f","-":[34,45],"+":[67,89]}""")
-
-          testRW(ReqImplicationsPatch(1234, Backwards, nesd[ReqId]()(2128131835)),
-            22, 1234, 'g', """{"d":"b","+":2128131835}""")
-
-          testRW(ReqImplicationsPatch(1234, Forwards, nesd[ReqId](1086529477)()),
-            22, 1234, 'g', """{"d":"f","-":1086529477}""")
-        }
-
-        'ReqCodesPatch {
-          val mm = UnivEq.emptySetMultimap[ReqCode.Value, ApReqCodeId]
-          testRW(ReqCodesPatch(666, Set(3), Set(1095731751, 1055755379), mm),
-            20, 666, 'g', """{"-":3,"^":[1095731751,1055755379]}""")
-
-          testRW(ReqCodesPatch(667, Set(), Set(), mm.add("lnls", 1168583026).addvs("m", Set(976426332, 522011847))),
-            20, 667, 'g', """{"+":{"m":[522011847,976426332],"lnls":1168583026}}""")
-        }
-
-        'ReqTagsPatch {
-          testRW(ReqTagsPatch(1234, nesd[ApplicableTagId](34, 45)(67, 89)),
-            23, 1234, 'g', """{"-":[34,45],"+":[67,89]}""")
-
-          testRW(ReqTagsPatch(1234, nesd[ApplicableTagId]()(2128131835)),
-            23, 1234, 'g', """{"+":2128131835}""")
-
-          testRW(ReqTagsPatch(1234, nesd[ApplicableTagId](1086529477)()),
-            23, 1234, 'g', """{"-":1086529477}""")
-        }
-
-        //'repositionField        - demo(RandomData.events.repositionField       )
-
-        'ReqFieldCustomTextSet {
-          testRW(ReqFieldCustomTextSet(2345, CustomField.Text.Id(123), Text.CustomTextField.demo(9, 8, 10, 5, 7, 6)),
-          21, 2345, 'g',
-            """
-              │{"f":123,"t":[
-              │"Atom demonstration.",
-              │0,
-              │"Here we go:",
-              │{"*":[
-              │["Req: ",{"r":9}],
-              │["UC Step Req: ",{"u":5}],
-              │["Code: ",{"c":8}],
-              │["Code Group: ",{"C":10}],
-              │["Tag: ",{"t":7}],
-              │["Issue(∅): ",{"i":6}],
-              │["Issue(∃): ",{"i":6,"?":["Need to finish ",{"r":9},", ",{"u":5},", ",{"c":8}," and ",{"C":10}]}],
-              │["Issue(∃): ",{"i":6,"?":["Ask ",{"@":"bob@gmail.com"}," about ",{"=":"e=mc^2"}]}],
-              │[],
-              │["Math: ",{"=":"f(x) = {x+1 \\over x - 1} + 9\\pi^2"}],
-              │["Email: ",{"@":"blah@google.com"}],
-              │["Web: ",{"/":"https://shipreq.com"}]
-              │]}
-              │]}
-            """.stripMargin('│').replace("\n", "").trim
-          )
-        }
-
-        //'setGenericReqTitle     - demo(RandomData.events.setGenericReqTitle    )
-
-        //'setGenericReqType      - demo(RandomData.events.setGenericReqType     )
-
-        //'updateApplicableTag    - demo(RandomData.events.updateApplicableTag   )
-
-        //'updateCustomImpField   - demo(RandomData.events.updateCustomImpField  )
-
-        //'updateCustomIssueType  - demo(RandomData.events.updateCustomIssueType )
-
-        //'updateCustomReqType    - demo(RandomData.events.updateCustomReqType   )
-
-        //'updateCustomTagField   - demo(RandomData.events.updateCustomTagField  )
-
-        //'updateCustomTextField  - demo(RandomData.events.updateCustomTextField )
-
-        //'updateCodeGroup     - demo(RandomData.events.updateCodeGroup    )
-
-        //'updateTagGroup         - demo(RandomData.events.updateTagGroup        )
-
-        //'addUseCaseStep        - demo(RandomData.events.addUseCaseStep       )
-        //'shiftUseCaseStepLeft  - demo(RandomData.events.shiftUseCaseStepLeft )
-        //'shiftUseCaseStepRight - demo(RandomData.events.shiftUseCaseStepRight)
-        //'deleteUseCaseStep     - demo(RandomData.events.deleteUseCaseStep    )
-        //'setUseCaseStepText    - demo(RandomData.events.setUseCaseStepText   )
-        //'setUseCaseTitle       - demo(RandomData.events.setUseCaseTitle      )
-        //'createUseCase         - demo(RandomData.events.createUseCase        )
-
-        'savedViewCreate {
-          import reqtable._
-          import Column.{CustomField => CF, _}
-          import Filter.Valid._
-          import SortCriterion._
-          import SortMethod._
-
-          val e =
-            SavedViewCreate(
-              SavedView.Id(7593),
-              SavedView.Name("7AvWNHb95"),
-              NonEmptyVector(
-                Implications(Forwards),
-                Implications(Backwards),
-                CF(CustomField.Tag.Id(27887)),
-                DeletionReason),
-              SortCriteria(Vector(
-                InconclusiveCB(DeletionReason, AscThenBlanks),
-                InconclusiveIB(ReqType, Desc),
-                InconclusiveCB(Tags, BlanksThenDesc)),
-                Conclusive(Pubid, Desc)),
-              ShowDead,
-              Some(
-                not(
-                  anyOf(
-                    hashRef(\/-(ApplicableTagId(300))),
-                    hashRef(-\/(CustomIssueTypeId(400)))))))
-
-          testRW(e, 2100, 7593, ' ',
-            """
-              |{
-              |  "n":"7AvWNHb95",
-              |  "c":[{"i":"f"},{"i":"b"},{"f":{"t":27887}},"d"],
-              |  "o":[[{"_":["d","a_"]},{"i":["T","d"]},{"_":["#","_d"]}],["I","d"]],
-              |  "x":"s",
-              |  "f":{
-              |    "!":{
-              |      "|":[
-              |         {"#":{"R":300}},
-              |         {"#":{"L":400}}]}}}
-            """.stripMargin.replaceAll(" *\n *", "").trim)
-        }
-
-      }
     }
 
   }

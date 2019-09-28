@@ -1,7 +1,6 @@
 package shipreq.webapp.server.db
 
 import doobie.imports._
-import java.time.Instant
 import shipreq.base.db.SqlHelpers._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
@@ -30,19 +29,6 @@ object SqlHelpers {
     r match {
       case None        => Set.empty
       case Some(roles) => roles.split(',').toSet
-    }
-
-  implicit val doobieCompositeProjectMetaData: Composite[ProjectMetaData] =
-    Composite[(ProjectId, String, Int, Int, Int, Instant, Option[Instant])].readOnly {
-      case(id, name, initEvents, eventMaxOrd, reqCount, createdAt, lastUpdatedAt) =>
-        ProjectMetaData(
-          Obfuscators.projectId.obfuscate(id),
-          name unNull "",
-          initEvents,
-          eventMaxOrd,
-          reqCount,
-          createdAt,
-          lastUpdatedAt)
     }
 
 }

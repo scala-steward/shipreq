@@ -2,7 +2,7 @@
 --   SET search_path FROM CURRENT
 ;
 
-CREATE OR REPLACE FUNCTION create_msg_v01(IN type INT2, IN data JSON, IN pri INT2)
+CREATE OR REPLACE FUNCTION create_msg_v01(IN type INT2, IN data JSONB, IN pri INT2)
 RETURNS void AS $$
 DECLARE n TIMESTAMPTZ;
 BEGIN

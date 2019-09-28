@@ -19,26 +19,25 @@ object HomeSpaLogic {
     val ajaxCreateProject: HomeSpaProtocols.CreateProject.ajax.ServerSideFnI[F, User]
   }
 
-  val InitProjectEvent = ProjectTemplateApply(ProjectTemplate.default)
-  val InitProject      = ApplyNewEvent.mustApply(InitProjectEvent, Project.empty)
+  val InitProjectEvent  = ProjectTemplateApply(ProjectTemplate.default)
+  val InitProject       = ApplyNewEvent.mustApply(InitProjectEvent, Project.empty)
+  val InitProjectEventV = Vector.empty[ActiveEvent] :+ InitProject.event
 
   def createProject[D[_]](userId: UserId,
                           name: Project.Name,
                           now: Instant)
                          (implicit db: DB.ForHomeSpa[D], D: Monad[D]): D[ProjectMetaData] = {
 
-    val e1 = DB.SaveProjectEventCmd(EventOrd.first, InitProject.event)
-    val u2 = ApplyNewEvent.mustApply(ProjectNameSet(name), InitProject.project)
-    val e2 = DB.SaveProjectEventCmd(e1.ord.next, u2.event)
-    val ecount = 2
-    val events = e1 :: e2 :: Nil
+    val e2 = ProjectNameSet(name)
+    val p2 = ApplyNewEvent.mustApply(e2, InitProject.project).project
+    val events = InitProjectEventV :+ e2
 
     db.inDbTransaction(
       for {
-        pid ← db.createEmptyProject(userId, ecount)
-        r   ← db.saveProjectEvents(pid, events)
-        _   = r.leftMap(throw _) // For unit tests - should be impossible
-      } yield ProjectMetaData(Obfuscators.projectId.obfuscate(pid), name, ecount, ecount, 0, now, None))
+        pid ← db.createProject(userId, events, p2)
+        pmd ← db.getProjectMetaData(pid)
+      } yield pmd.get
+    )
   }
 
   def apply[D[_], F[_]](implicit db: DB.ForHomeSpa[D],

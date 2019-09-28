@@ -4,7 +4,6 @@ import java.time.Instant
 import utest._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.Event.FieldStaticRemove
-import shipreq.webapp.server.logic.DB.SaveProjectEventCmd
 import shipreq.webapp.server.logic.{HomeSpaLogic, Obfuscators}
 import shipreq.webapp.server.test.WebappServerTestUtil._
 import shipreq.webapp.server.test._
@@ -28,15 +27,16 @@ object HomeSpaTest extends TestSuite {
           val initEvents = 2
 
           val pid = Obfuscators.projectId.deobfuscate(pi.id).toOption.get
-          def events() = (xa ! db.getAllProjectEvents(pid)).toVector
+          def events() = (xa ! db.getAllProjectEvents(pid)).needRight.toVector
           def loadProject() = applyVerifiedEventSuccessfully(Project.empty, events(): _*)
 
           // Immediate result
           assertEq("Immediate name", pi.name, name)
-          assertEq("Immediate.initEventCount", pi.initEventCount, initEvents)
-          assertEq("Immediate.totalEventCount", pi.totalEventCount, initEvents)
-          assertEq("Immediate.nonInitEventCount", pi.nonInitEventCount, 0)
-          assertEq("Immediate reqCount", pi.reqCount, 0)
+          assertEq("Immediate.eventsInit", pi.eventsInit, initEvents)
+          assertEq("Immediate.eventsTotal", pi.eventsTotal, initEvents)
+          assertEq("Immediate.eventsPostInit", pi.eventsPostInit, 0)
+          assertEq("Immediate reqsLive", pi.reqsLive, 0)
+          assertEq("Immediate reqsTotal", pi.reqsTotal, 0)
 
           // Reloaded result
           val pc = xa ! db.getAllProjectMetaDataForUser(uid)
@@ -45,8 +45,9 @@ object HomeSpaTest extends TestSuite {
           assertFields(pi, a)
             .assertEq(_.id)
             .assertEq("Reloaded name", _.name)
-            .assertEq("Reloaded.nonInitEventCount", _.nonInitEventCount)
-            .assertEq("Reloaded reqCount", _.reqCount)
+            .assertEq("Reloaded.eventsPostInit", _.eventsPostInit)
+            .assertEq("Reloaded reqsLive", _.reqsLive)
+            .assertEq("Reloaded reqsTotal", _.reqsTotal)
           assertEq("Event count", events().length, 2)
 
           // Next event
@@ -54,10 +55,10 @@ object HomeSpaTest extends TestSuite {
           val p = loadProject()
           val e = FieldStaticRemove(StaticField.StepGraph)
           val ve = verifyEvent(p, e)
-          val cmd = SaveProjectEventCmd(nextOrd, e)
-          xa ! db.saveProjectEvent(pid, cmd)
+          val p2 = applyVerifiedEventSuccessfully(p, ve)
+          xa ! db.saveProjectEvent(pid, nextOrd, e, p2)
           val a2 = (xa ! db.getAllProjectMetaDataForUser(uid)).head
-          assertEq("Next.nonInitEventCount", a2.nonInitEventCount, a.nonInitEventCount + 1)
+          assertEq("Next.nonInitEventCount", a2.eventsPostInit, a.eventsPostInit + 1)
           loadProject()
         }
 

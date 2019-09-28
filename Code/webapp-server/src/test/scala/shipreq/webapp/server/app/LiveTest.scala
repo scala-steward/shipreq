@@ -5,7 +5,7 @@ import utest._
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.FxModule._
 import shipreq.webapp.base.{AssetManifest, Urls, WebappConfig}
-import shipreq.webapp.base.data.ProjectId
+import shipreq.webapp.base.data.{Project, ProjectId}
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.client.public.{PublicSpaEntryPoint, PublicSpaProtocols}
 import shipreq.webapp.server.logic.{Obfuscators, Security}
@@ -21,7 +21,7 @@ object LiveTest extends TestSuite {
   val prepare = onceUnit {
     LiveTestUtils.init()
     userFixture.setup.unsafeRun()
-    pid = Some(xa ! dbAlgebra.createEmptyProject(user1.id, 0))
+    pid = Some(xa ! dbAlgebra.createProject(user1.id, Vector.empty, Project.empty))
   }
 
   implicit def temp[I](c: shipreq.webapp.base.protocol.ClientSideProc[I]): ClientSideProc[I] =

@@ -221,7 +221,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
 object TestGlobal {
 
   def apply(p: Project): TestGlobal = {
-    val md  = looseProjectMetaData(p, totalEventCount = 200)
+    val md  = looseProjectMetaData(p, eventsTotal = 200)
     val pao = ProjectAndOrd(p, Some(EventOrd.Latest(200)))
     val ps  = ProjectState.init(pao, md)
     new TestGlobal(ps)

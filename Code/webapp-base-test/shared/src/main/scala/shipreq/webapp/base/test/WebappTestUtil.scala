@@ -29,15 +29,13 @@ object WebappTestUtil extends WebappTestEquality with WebappTestUtil
 
 trait WebappTestUtil extends BaseTestUtil {
 
-  def looseProjectMetaData(p: Project, totalEventCount: Int = 123, initEventCount: Int = 2): ProjectMetaData =
-    ProjectMetaData(
-      Obfuscated("t3sT"),
-      p.name,
-      initEventCount.min(totalEventCount),
-      totalEventCount,
-      p.content.reqs.size,
-      Instant.now().minus(28, DAYS),
-      Some(Instant.now().minus(1, DAYS)))
+  def looseProjectMetaData(p: Project, eventsTotal: Int = 123, eventsInit: Int = 2): ProjectMetaData =
+    ProjectMetaData.fromProject(p)(
+      id            = Obfuscated("t3sT"),
+      eventsInit    = eventsInit.min(eventsTotal),
+      eventsTotal   = eventsTotal,
+      createdAt     = Instant.now().minus(28, DAYS),
+      lastUpdatedAt = Some(Instant.now().minus(1, DAYS)))
 
   def verifyEvent(p: Project, e: Event, o: EventOrd = EventOrd.first): VerifiedEvent =
     _verifyEvent(p, e, o)._2
@@ -74,9 +72,14 @@ trait WebappTestUtil extends BaseTestUtil {
       case \/-(_) => fail(s"Failure expected but didn't occur applying $e")
     }
 
-  implicit final class VerifiedEventSeqExt(private val self: VerifiedEvent.Seq) {
+  implicit final class WebappTestUtilExt_VerifiedEventSeq(private val self: VerifiedEvent.Seq) {
     def needNES: VerifiedEvent.NonEmptySeq =
       VerifiedEvent.NonEmptySeq(self.head, self.tail)
+  }
+
+  implicit final class WebappTestUtilExt_Event(private val self: Event) {
+    def active: ActiveEvent =
+      Event.toActiveEvent(self)
   }
 
 //  implicit def autoSeqIssueToSeqIssueLite(is: Seq[Issue]): Seq[IssueLite] =

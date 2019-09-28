@@ -20,7 +20,7 @@ private[api] class ApiDao(prefix: String) {
     }
 
   private[impl] val CreateMsg = Query[(Short, Option[Ser], Short), MsgId](
-    s"select ${prefix}create_msg_v01(?::int2, ?::json, ?::int2)")
+    s"select ${prefix}create_msg_v01(?::INT2, ?::JSONB, ?::INT2)")
 
   def createMsg(m: Msg): ConnectionIO[MsgId] =
     createMsg(MsgType lookup m, Serialisation serialise m, Priority of m)

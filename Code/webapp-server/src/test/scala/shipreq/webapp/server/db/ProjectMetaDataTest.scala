@@ -3,7 +3,7 @@ package shipreq.webapp.server.db
 import utest._
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.{ActiveEvent, EventOrd, RandomEventStream, VerifiedEvent}
-import shipreq.webapp.server.logic.{DB, Obfuscators}
+import shipreq.webapp.server.logic.Obfuscators
 import shipreq.webapp.server.test.{DbUtil, PrepareEnv}
 import shipreq.webapp.server.test.WebappServerTestUtil._
 
@@ -18,42 +18,41 @@ object ProjectMetaDataTest extends TestSuite {
       import dbu.xa
 
       val uid = dbu.newUserId()
-      val initEvents = RandomEventStream.InitialEventCount
-      val idxToOrd = initEvents + 1
 
       // Do this twice to ensure that other projects' events don't interfere
       for (_ <- 1 to 2) {
-        val pid = dbu.newProjectId(uid, initEvents)
+        val (_, ves1, ves2) = RandomEventStream.entireEventStream(50).samples().next()
+        val initEvents = ves1.length
+
+        val pid = dbu.newProjectId(uid, ves1.map(_.event.active))
         val pidPub = Obfuscators.projectId.obfuscate(pid)
 
-        def writeEvent(ve: VerifiedEvent, idx: Int): Unit =
+        def writeEvent(ve: VerifiedEvent, idx: Int, p: Project): Unit =
           ve.event match {
             case ae: ActiveEvent =>
-              val cmd = DB.SaveProjectEventCmd(EventOrd(idx + idxToOrd), ae)
-              xa ! dbAlgebra.saveProjectEvent(pid, cmd)
+              val r = xa ! dbAlgebra.saveProjectEvent(pid, EventOrd.fromIndex(idx), ae, p)
+              r.needRight
+              ()
             case x =>
               fail("Can't create non-active event: " + x)
           }
 
-        val (_, ves1, ves2) = RandomEventStream.entireEventStream(50).samples().next()
-
         // Mandatory events first
-        ves1.zipWithIndex.foreach((writeEvent _).tupled)
         var p = applyVerifiedEventSuccessfully(Project.empty, ves1: _*)
 
         for (idx <- ves2.indices) {
           val ve = ves2(idx)
-          val idx2 = idx + ves1.length
-          writeEvent(ve, idx2)
+          val idx2 = idx + initEvents
           p = applyEventSuccessfully(p, ve.event)
+          writeEvent(ve, idx2, p)
 
           val md = (xa ! dbAlgebra.getAllProjectMetaDataForUser(uid)).find(_.id == pidPub).getOrElse(
             fail(s"ProjectMetaData not found for $pid."))
 
-          val expectTotal = idx2 + idxToOrd
+          val expectTotal = idx2 + 1
           val expectNonInit = expectTotal - initEvents
-          assert(md.totalEventCount ==* expectTotal)
-          assert(md.nonInitEventCount ==* expectNonInit)
+          assertEq("totalEventCount", md.eventsTotal, expectTotal)
+          assertEq("nonInitEventCount", md.eventsPostInit, expectNonInit)
           md.assertInSyncWith(p)
         }
       }

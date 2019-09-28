@@ -1298,13 +1298,22 @@ object RandomData {
     for {
       id            <- projectIdPublic
       name          <- projectName
-      initEvents    <- Gen.chooseInt(3)
-      totalEvents   <- Gen.chooseInt(30000)
-      reqCount      <- Gen.chooseInt(totalEvents min 2000)
+      eventsInit    <- Gen.chooseInt(3)
+      eventsTotal   <- Gen.chooseInt(30000)
+      reqsTotal     <- Gen.chooseInt(eventsTotal min 2000)
+      reqsLive      <- Gen.chooseInt(reqsTotal)
       createdAt     <- instantPast
       lastUpdatedAt <- instantPast.option.map(_.filter(_ isAfter createdAt))
     } yield
-      ProjectMetaData(id, name, initEvents.min(totalEvents), totalEvents, reqCount, createdAt, lastUpdatedAt)
+    ProjectMetaData(
+      id            = id,
+      name          = name,
+      eventsInit    = eventsInit.min(eventsTotal),
+      eventsTotal   = eventsTotal,
+      reqsLive      = reqsLive,
+      reqsTotal     = reqsTotal,
+      createdAt     = createdAt,
+      lastUpdatedAt = lastUpdatedAt)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object reqtableData {

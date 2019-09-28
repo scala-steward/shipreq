@@ -4,7 +4,7 @@ import io.circe._
 import io.circe.syntax._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.{Duration, Instant}
-import scalaz.{Monad, \/, \/-}
+import scalaz.{-\/, Monad, \/, \/-}
 import scalaz.syntax.monad._
 import shipreq.base.util.ErrorMsg
 import shipreq.base.util.log.HasLogger
@@ -81,14 +81,22 @@ object OpsEndpoints extends HasLogger {
       )
 
     override def getProjectEvents(pid: ProjectId): F[ResponseCmd] =
-      db.getAllProjectEvents(pid).map { ves =>
-        if (ves.isEmpty)
-          ResponseCmd.StatusOnly.NotFound
-        else {
-          import shipreq.webapp.base.protocol.json.v1.PostEvents.encoderVerifiedEvent
-          val json = ves.iterator.map(_.asJson.noSpacesSortKeys).mkString("[", "\n,", "\n]")
-          ResponseCmd.Json(StatusCode.OK, json)
-        }
+      db.getAllProjectEvents(pid).map {
+        case \/-(ves) =>
+          if (ves.isEmpty)
+            ResponseCmd.StatusOnly.NotFound
+          else {
+            import shipreq.webapp.base.protocol.json.v1.PostEvents.encoderVerifiedEvent
+            val json = ves.iterator.map(_.asJson.noSpacesSortKeys).mkString("[", "\n,", "\n]")
+            ResponseCmd.Json(StatusCode.OK, json)
+          }
+        case -\/(e: DB.ReadProjectEventError.DecodeFailure) =>
+          logger.warn(s"Failed to decode project ${pid.value} event ${e.ord.value}: ${e.logMsg}")
+          val json = Json.obj(
+            "error"  -> "Failed to decode event".asJson,
+            "ord"    -> e.ord.value.asJson,
+            "reason" -> e.logMsg.asJson)
+          ResponseCmd.Json(StatusCode.NotImplemented, json)
       }
   }
 

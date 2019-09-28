@@ -5,13 +5,13 @@ import japgolly.microlibs.utils.AsciiTable
 import org.postgresql.util.PSQLException
 import scala.util.Random
 import shipreq.base.db.DoobieHelpers._
-import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.db.SingleConnectionXA
 import shipreq.base.util.FxModule._
-import shipreq.webapp.base.data.ProjectId
+import shipreq.webapp.base.data.{Project, ProjectId}
+import shipreq.webapp.base.event.ActiveEvent
 import shipreq.webapp.base.user.UserId
 import shipreq.webapp.server.db.SqlHelpers._
-import shipreq.webapp.server.db._
+import WebappServerTestUtil._
 
 object DbUtil {
 
@@ -26,8 +26,10 @@ final case class DbUtil(xa: SingleConnectionXA) {
   private def randomStr: String =
     DbUtil.Random.nextString(32)
 
-  def newProjectId(userId: UserId = getOrCreateUserId(), initEvents: Int = 0): ProjectId =
-    xa ! dbAlgebra.createEmptyProject(userId, initEvents)
+  def newProjectId(userId: UserId = getOrCreateUserId(), initEvents: Vector[ActiveEvent] = Vector.empty): ProjectId = {
+    val p = applyEventsSuccessfully(Project.empty, initEvents: _*)
+    xa ! dbAlgebra.createProject(userId, initEvents, p)
+  }
 
   def getOrCreateUserId(): UserId =
     (xa ! Query0[UserId]("select id from usr where username is not null").option) getOrElse newUserId()

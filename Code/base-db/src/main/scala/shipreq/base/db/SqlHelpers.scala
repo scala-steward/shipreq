@@ -1,14 +1,13 @@
 package shipreq.base.db
 
+import doobie.enum.jdbctype
 import doobie.imports._
-import doobie.enum.{jdbctype => JT}
-import doobie.free.{preparedstatement => PS, resultset => RS}
 import japgolly.microlibs.macro_utils.MacroUtils
-import java.time.Duration
+import java.time.{ Duration, Instant, OffsetDateTime, ZoneId }
+import doobie.free.{ resultset => RS, preparedstatement => PS }
 import org.postgresql.util.{PGInterval, PGobject}
 import scala.reflect.macros.blackbox.Context
 import scala.reflect.runtime.universe.TypeTag
-import scalaz.NonEmptyList
 import shipreq.base.util.TaggedTypes.JsonStr
 
 object SqlHelpers {
@@ -61,42 +60,12 @@ object SqlHelpers {
     o
   }
 
-// Doobie really really really doesn't allow NULLs.
-//  implicit val doobieMetaInteger: Meta[java.lang.Integer] =
-//    Meta.advanced[java.lang.Integer](
-//      NonEmptyList(JT.Integer, JT.TinyInt, JT.SmallInt, JT.BigInt),
-//      NonEmptyList("int1", "int2", "int4"),
-//      _.getObject(_).asInstanceOf[Integer],
-//      PS.setObject(_, _, java.sql.Types.INTEGER),
-//      RS.updateObject(_, _, java.sql.Types.INTEGER))
-
-  /** @param value [0..255] */
-  final case class PGChar(value: Char) extends AnyVal {
-    def toByte: Byte =
-      value.toByte
-    def toPGobject: PGobject =
-      pgObject("char", value.toString)
-  }
-  object PGChar {
-    implicit val metaPGChar: Meta[PGChar] =
-      Meta.advanced[PGChar](
-        NonEmptyList(JT.Char),
-        NonEmptyList("char"),
-        (rs, i) => PGChar(rs.getString(i).head),
-        (i, a) => PS.setObject(i, a.toPGobject, java.sql.Types.OTHER),
-        (i, a) => RS.updateObject(i, a.toPGobject, java.sql.Types.OTHER)
-      )
-  }
-
-  val doobieMetaChar: Meta[Char] =
-    Meta[PGChar].xmap[Char](_.value, PGChar.apply)
-
-  val doobieMetaJson = Meta.other[PGobject]("json")
+  val doobieMetaJson = Meta.other[PGobject]("jsonb")
 
   def jsonStr[A: TypeTag]: Meta[JsonStr[A]] =
     doobieMetaJson.xmap[JsonStr[A]](
       o => JsonStr(if (o == null) null else o.getValue),
-      j => pgObject("json", j.value))
+      j => pgObject("jsonb", j.value))
 
   implicit val doobieMetaDuration: Meta[Duration] =
     Meta.other[PGInterval]("interval").nxmap(
@@ -107,6 +76,19 @@ object SqlHelpers {
       )
     )
 
+  implicit val metaOffsetDateTime: Meta[OffsetDateTime] =
+    Meta.advanced[OffsetDateTime](
+      scalaz.NonEmptyList(jdbctype.TimestampWithTimezone),
+      scalaz.NonEmptyList("TIMESTAMPTZ"),
+      _.getObject(_, classOf[OffsetDateTime]),
+      PS.setObject,
+      RS.updateObject
+    )
+
+  private[this] val UTC = ZoneId.of("UTC")
+
+  implicit val metaInstant: Meta[Instant] =
+    metaOffsetDateTime.nxmap(_.toInstant, OffsetDateTime.ofInstant(_, UTC))
 }
 
 // =====================================================================================================================

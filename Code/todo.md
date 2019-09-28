@@ -123,10 +123,9 @@ Phase 2B
 
 * Document the build & release process
 
-* Codec revision
-  * DB
-    * (Consider) simplifying the event table and codec-code to just event-type-id (for stats) and json
-    * store (and update) the latest project name in the header table
-    * handle inability to decode
-  * Taskman
-    * Use Circe
+* Standardise on Circe
+  * Use Circe in Taskman
+  * Remove mpickle & its macros
+  * Share DbInterpreter.DoobieMeta with Taskman
+
+* Sort out {Doobie,Sql}{Helpers,Meta} and the DoobieMeta in DbInterpreter

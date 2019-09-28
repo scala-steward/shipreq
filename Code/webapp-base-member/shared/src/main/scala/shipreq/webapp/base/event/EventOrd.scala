@@ -41,6 +41,8 @@ object EventOrd {
 
   def first = apply(1)
 
+  def fromIndex(idx: Int) = apply(1 + idx)
+
   final case class Latest(value: Int) {
     def asEventOrd = EventOrd(value)
   }

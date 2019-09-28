@@ -118,6 +118,7 @@ final class ProjectSpaWebSocket extends StrictLogging {
         case _: MsgError.ClientMsgDecodingFailure => fxClose(s, CloseCodes.PROTOCOL_ERROR, "Error parsing message")
         case _: MsgError.RespondError             => fxClose(s, CustomCloseCodes.RespondException, "Error sending response")
         case _: MsgError.ServerBehindClient
+           | _: MsgError.ServerBehindDatabase
            | _: MsgError.ServerBehindRedis        => fxClose(s, CloseCodes.SERVICE_RESTART, "Server is out-of-date")
       }
 

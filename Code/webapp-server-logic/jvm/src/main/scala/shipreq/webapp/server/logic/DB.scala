@@ -60,8 +60,6 @@ object DB {
     final case class TokenExists(reg: UserRegistration.Complete, token: SecurityToken, tokenSentAt: Instant) extends PasswordResetState
   }
 
-  final case class SaveProjectEventCmd(ord: EventOrd, event: ActiveEvent)
-
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   trait Base[F[_]] {
@@ -143,32 +141,20 @@ object DB {
     def updateUserPassword(token: SecurityToken, ps: PasswordAndSalt): F[Option[UserId]]
   }
 
-  trait ForPublicSpa[F[_]] extends ForUserRegistration[F] with ForPasswordReset[F]
-
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  trait SaveProjectEvent[F[_]] {
-    def saveProjectEvent(id: ProjectId, cmd: SaveProjectEventCmd): F[Throwable \/ VerifiedEvent]
-    def saveProjectEvents(id: ProjectId, cmds: Traversable[SaveProjectEventCmd]): F[Throwable \/ VerifiedEvent.Seq]
-  }
 
-  trait ForHomeSpa[F[_]] extends Base[F] with SaveProjectEvent[F] {
-    def createEmptyProject(id: UserId, initEvents: Int): F[ProjectId]
-    def getAllProjectMetaDataForUser(id: UserId): F[List[ProjectMetaData]]
+  trait GetProjectMetaData[F[_]] {
+    def getProjectMetaData(id: ProjectId): F[Option[ProjectMetaData]]
   }
 
   trait GetProjectEvents[F[_]] {
-    def getProjectEvents(id: ProjectId, f: EventFilter): F[VerifiedEvent.Seq]
+    def getProjectEvents(id: ProjectId, f: EventFilter): F[ReadProjectEventError \/ VerifiedEvent.Seq]
 
-    final def getProjectEvents(id: ProjectId): F[VerifiedEvent.Seq] =
+    final def getProjectEvents(id: ProjectId): F[ReadProjectEventError \/ VerifiedEvent.Seq] =
       getProjectEvents(id, EventFilter.IncludeAll)
 
-    final def getAllProjectEvents(id: ProjectId): F[VerifiedEvent.Seq] =
+    final def getAllProjectEvents(id: ProjectId): F[ReadProjectEventError \/ VerifiedEvent.Seq] =
       getProjectEvents(id, EventFilter.IncludeAll)
-  }
-
-  trait ForProjectSpa[F[_]] extends Base[F] with SaveProjectEvent[F] with GetProjectEvents[F] {
-    def projectSpaInitPage(id: ProjectId): F[Project.Name]
-    def getProjectMetaData(id: ProjectId): F[Option[ProjectMetaData]]
   }
 
   sealed trait EventFilter
@@ -182,6 +168,40 @@ object DB {
         case Some(ord) => ExcludeUpTo(ord)
         case None      => IncludeAll
       }
+  }
+
+  sealed trait ReadProjectEventError
+  object ReadProjectEventError {
+    final case class DecodeFailure(ord: EventOrd, logMsg: String) extends ReadProjectEventError
+  }
+
+  trait SaveProjectEvent[F[_]] {
+    def saveProjectEvent(id     : ProjectId,
+                         ord    : EventOrd,
+                         event  : ActiveEvent,
+                         project: Project): F[SaveProjectEventError \/ VerifiedEvent]
+  }
+
+  sealed trait SaveProjectEventError
+  object SaveProjectEventError {
+    case object OrdInUse extends SaveProjectEventError
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  trait ForPublicSpa[F[_]] extends ForUserRegistration[F] with ForPasswordReset[F]
+
+  trait ForHomeSpa[F[_]] extends Base[F] with GetProjectMetaData[F] {
+    def createProject(id: UserId, initEvents: Vector[ActiveEvent], project: Project): F[ProjectId]
+    def getAllProjectMetaDataForUser(id: UserId): F[List[ProjectMetaData]]
+  }
+
+  trait ForProjectSpa[F[_]]
+      extends Base[F]
+         with GetProjectMetaData[F]
+         with GetProjectEvents[F]
+         with SaveProjectEvent[F] {
+    def projectSpaInitPage(id: ProjectId): F[Project.Name]
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

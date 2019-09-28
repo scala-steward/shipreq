@@ -365,329 +365,334 @@ object Events {
   // ===================================================================================================================
   // Events
 
-  private implicit val decoderEventProjectNameSet: Decoder[Event.ProjectNameSet] =
-    Decoder[String].map(Event.ProjectNameSet.apply)
+  object EventData {
 
-  private implicit val encoderEventProjectNameSet: Encoder[Event.ProjectNameSet] =
-    Encoder[String].contramap(_.name)
+    implicit val decoderEventProjectNameSet: Decoder[Event.ProjectNameSet] =
+      Decoder[String].map(Event.ProjectNameSet.apply)
 
-  private implicit val decoderEventProjectTemplateApply: Decoder[Event.ProjectTemplateApply] =
-    Decoder[ProjectTemplate].map(Event.ProjectTemplateApply.apply)
+    implicit val encoderEventProjectNameSet: Encoder[Event.ProjectNameSet] =
+      Encoder[String].contramap(_.name)
 
-  private implicit val encoderEventProjectTemplateApply: Encoder[Event.ProjectTemplateApply] =
-    Encoder[ProjectTemplate].contramap(_.template)
+    implicit val decoderEventProjectTemplateApply: Decoder[Event.ProjectTemplateApply] =
+      Decoder[ProjectTemplate].map(Event.ProjectTemplateApply.apply)
 
-  private implicit val decoderEventCustomIssueTypeCreate: Decoder[Event.CustomIssueTypeCreate] =
-    Decoder.forProduct2("id", "values")(Event.CustomIssueTypeCreate.apply)
+    implicit val encoderEventProjectTemplateApply: Encoder[Event.ProjectTemplateApply] =
+      Encoder[ProjectTemplate].contramap(_.template)
 
-  private implicit val encoderEventCustomIssueTypeCreate: Encoder[Event.CustomIssueTypeCreate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventCustomIssueTypeCreate: Decoder[Event.CustomIssueTypeCreate] =
+      Decoder.forProduct2("id", "values")(Event.CustomIssueTypeCreate.apply)
 
-  private implicit val decoderEventCustomIssueTypeUpdate: Decoder[Event.CustomIssueTypeUpdate] =
-    Decoder.forProduct2("id", "values")(Event.CustomIssueTypeUpdate.apply)
+    implicit val encoderEventCustomIssueTypeCreate: Encoder[Event.CustomIssueTypeCreate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventCustomIssueTypeUpdate: Encoder[Event.CustomIssueTypeUpdate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventCustomIssueTypeUpdate: Decoder[Event.CustomIssueTypeUpdate] =
+      Decoder.forProduct2("id", "values")(Event.CustomIssueTypeUpdate.apply)
 
-  private implicit val decoderEventCustomIssueTypeDelete: Decoder[Event.CustomIssueTypeDelete] =
-    Decoder[CustomIssueTypeId].map(Event.CustomIssueTypeDelete.apply)
+    implicit val encoderEventCustomIssueTypeUpdate: Encoder[Event.CustomIssueTypeUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventCustomIssueTypeDelete: Encoder[Event.CustomIssueTypeDelete] =
-    Encoder[CustomIssueTypeId].contramap(_.id)
+    implicit val decoderEventCustomIssueTypeDelete: Decoder[Event.CustomIssueTypeDelete] =
+      Decoder[CustomIssueTypeId].map(Event.CustomIssueTypeDelete.apply)
 
-  private implicit val decoderEventCustomIssueTypeRestore: Decoder[Event.CustomIssueTypeRestore] =
-    Decoder[CustomIssueTypeId].map(Event.CustomIssueTypeRestore.apply)
+    implicit val encoderEventCustomIssueTypeDelete: Encoder[Event.CustomIssueTypeDelete] =
+      Encoder[CustomIssueTypeId].contramap(_.id)
 
-  private implicit val encoderEventCustomIssueTypeRestore: Encoder[Event.CustomIssueTypeRestore] =
-    Encoder[CustomIssueTypeId].contramap(_.id)
+    implicit val decoderEventCustomIssueTypeRestore: Decoder[Event.CustomIssueTypeRestore] =
+      Decoder[CustomIssueTypeId].map(Event.CustomIssueTypeRestore.apply)
 
-  private implicit val decoderEventCustomReqTypeCreate: Decoder[Event.CustomReqTypeCreate] =
-    Decoder.forProduct2("id", "values")(Event.CustomReqTypeCreate.apply)
+    implicit val encoderEventCustomIssueTypeRestore: Encoder[Event.CustomIssueTypeRestore] =
+      Encoder[CustomIssueTypeId].contramap(_.id)
 
-  private implicit val encoderEventCustomReqTypeCreate: Encoder[Event.CustomReqTypeCreate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventCustomReqTypeCreate: Decoder[Event.CustomReqTypeCreate] =
+      Decoder.forProduct2("id", "values")(Event.CustomReqTypeCreate.apply)
 
-  private implicit val decoderEventCustomReqTypeUpdate: Decoder[Event.CustomReqTypeUpdate] =
-    Decoder.forProduct2("id", "values")(Event.CustomReqTypeUpdate.apply)
+    implicit val encoderEventCustomReqTypeCreate: Encoder[Event.CustomReqTypeCreate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventCustomReqTypeUpdate: Encoder[Event.CustomReqTypeUpdate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventCustomReqTypeUpdate: Decoder[Event.CustomReqTypeUpdate] =
+      Decoder.forProduct2("id", "values")(Event.CustomReqTypeUpdate.apply)
 
-  private implicit val decoderEventCustomReqTypeDelete: Decoder[Event.CustomReqTypeDelete] =
-    Decoder[CustomReqTypeId].map(Event.CustomReqTypeDelete.apply)
+    implicit val encoderEventCustomReqTypeUpdate: Encoder[Event.CustomReqTypeUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventCustomReqTypeDelete: Encoder[Event.CustomReqTypeDelete] =
-    Encoder[CustomReqTypeId].contramap(_.id)
+    implicit val decoderEventCustomReqTypeDelete: Decoder[Event.CustomReqTypeDelete] =
+      Decoder[CustomReqTypeId].map(Event.CustomReqTypeDelete.apply)
 
-  private implicit val decoderEventCustomReqTypeRestore: Decoder[Event.CustomReqTypeRestore] =
-    Decoder[CustomReqTypeId].map(Event.CustomReqTypeRestore.apply)
+    implicit val encoderEventCustomReqTypeDelete: Encoder[Event.CustomReqTypeDelete] =
+      Encoder[CustomReqTypeId].contramap(_.id)
 
-  private implicit val encoderEventCustomReqTypeRestore: Encoder[Event.CustomReqTypeRestore] =
-    Encoder[CustomReqTypeId].contramap(_.id)
+    implicit val decoderEventCustomReqTypeRestore: Decoder[Event.CustomReqTypeRestore] =
+      Decoder[CustomReqTypeId].map(Event.CustomReqTypeRestore.apply)
 
-  private implicit val decoderEventTagDelete: Decoder[Event.TagDelete] =
-    Decoder[TagId].map(Event.TagDelete.apply)
+    implicit val encoderEventCustomReqTypeRestore: Encoder[Event.CustomReqTypeRestore] =
+      Encoder[CustomReqTypeId].contramap(_.id)
 
-  private implicit val encoderEventTagDelete: Encoder[Event.TagDelete] =
-    Encoder[TagId].contramap(_.id)
+    implicit val decoderEventTagDelete: Decoder[Event.TagDelete] =
+      Decoder[TagId].map(Event.TagDelete.apply)
 
-  private implicit val decoderEventTagRestore: Decoder[Event.TagRestore] =
-    Decoder[TagId].map(Event.TagRestore.apply)
+    implicit val encoderEventTagDelete: Encoder[Event.TagDelete] =
+      Encoder[TagId].contramap(_.id)
 
-  private implicit val encoderEventTagRestore: Encoder[Event.TagRestore] =
-    Encoder[TagId].contramap(_.id)
+    implicit val decoderEventTagRestore: Decoder[Event.TagRestore] =
+      Decoder[TagId].map(Event.TagRestore.apply)
 
-  private implicit val decoderEventTagGroupCreate: Decoder[Event.TagGroupCreate] =
-    Decoder.forProduct2("id", "values")(Event.TagGroupCreate.apply)
+    implicit val encoderEventTagRestore: Encoder[Event.TagRestore] =
+      Encoder[TagId].contramap(_.id)
 
-  private implicit val encoderEventTagGroupCreate: Encoder[Event.TagGroupCreate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventTagGroupCreate: Decoder[Event.TagGroupCreate] =
+      Decoder.forProduct2("id", "values")(Event.TagGroupCreate.apply)
 
-  private implicit val decoderEventTagGroupUpdate: Decoder[Event.TagGroupUpdate] =
-    Decoder.forProduct2("id", "values")(Event.TagGroupUpdate.apply)
+    implicit val encoderEventTagGroupCreate: Encoder[Event.TagGroupCreate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventTagGroupUpdate: Encoder[Event.TagGroupUpdate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventTagGroupUpdate: Decoder[Event.TagGroupUpdate] =
+      Decoder.forProduct2("id", "values")(Event.TagGroupUpdate.apply)
 
-  private implicit val decoderEventApplicableTagCreate: Decoder[Event.ApplicableTagCreate] =
-    Decoder.forProduct2("id", "values")(Event.ApplicableTagCreate.apply)
+    implicit val encoderEventTagGroupUpdate: Encoder[Event.TagGroupUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventApplicableTagCreate: Encoder[Event.ApplicableTagCreate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventApplicableTagCreate: Decoder[Event.ApplicableTagCreate] =
+      Decoder.forProduct2("id", "values")(Event.ApplicableTagCreate.apply)
 
-  private implicit val decoderEventApplicableTagUpdate: Decoder[Event.ApplicableTagUpdate] =
-    Decoder.forProduct2("id", "values")(Event.ApplicableTagUpdate.apply)
+    implicit val encoderEventApplicableTagCreate: Encoder[Event.ApplicableTagCreate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventApplicableTagUpdate: Encoder[Event.ApplicableTagUpdate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventApplicableTagUpdate: Decoder[Event.ApplicableTagUpdate] =
+      Decoder.forProduct2("id", "values")(Event.ApplicableTagUpdate.apply)
 
-  private implicit val decoderEventFieldReposition: Decoder[Event.FieldReposition] =
-    Decoder.forProduct2("id", "newPos")(Event.FieldReposition.apply)
+    implicit val encoderEventApplicableTagUpdate: Encoder[Event.ApplicableTagUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventFieldReposition: Encoder[Event.FieldReposition] =
-    Encoder.forProduct2("id", "newPos")(a => (a.id, a.newPos))
+    implicit val decoderEventFieldReposition: Decoder[Event.FieldReposition] =
+      Decoder.forProduct2("id", "newPos")(Event.FieldReposition.apply)
 
-  private implicit val decoderEventFieldStaticAdd: Decoder[Event.FieldStaticAdd] =
-    Decoder[StaticField].map(Event.FieldStaticAdd.apply)
+    implicit val encoderEventFieldReposition: Encoder[Event.FieldReposition] =
+      Encoder.forProduct2("id", "newPos")(a => (a.id, a.newPos))
 
-  private implicit val encoderEventFieldStaticAdd: Encoder[Event.FieldStaticAdd] =
-    Encoder[StaticField].contramap(_.f)
+    implicit val decoderEventFieldStaticAdd: Decoder[Event.FieldStaticAdd] =
+      Decoder[StaticField].map(Event.FieldStaticAdd.apply)
 
-  private implicit val decoderEventFieldStaticRemove: Decoder[Event.FieldStaticRemove] =
-    Decoder[StaticField].map(Event.FieldStaticRemove.apply)
+    implicit val encoderEventFieldStaticAdd: Encoder[Event.FieldStaticAdd] =
+      Encoder[StaticField].contramap(_.f)
 
-  private implicit val encoderEventFieldStaticRemove: Encoder[Event.FieldStaticRemove] =
-    Encoder[StaticField].contramap(_.f)
+    implicit val decoderEventFieldStaticRemove: Decoder[Event.FieldStaticRemove] =
+      Decoder[StaticField].map(Event.FieldStaticRemove.apply)
 
-  private implicit val decoderEventFieldCustomDelete: Decoder[Event.FieldCustomDelete] =
-    Decoder[CustomFieldId].map(Event.FieldCustomDelete.apply)
+    implicit val encoderEventFieldStaticRemove: Encoder[Event.FieldStaticRemove] =
+      Encoder[StaticField].contramap(_.f)
 
-  private implicit val encoderEventFieldCustomDelete: Encoder[Event.FieldCustomDelete] =
-    Encoder[CustomFieldId].contramap(_.id)
+    implicit val decoderEventFieldCustomDelete: Decoder[Event.FieldCustomDelete] =
+      Decoder[CustomFieldId].map(Event.FieldCustomDelete.apply)
 
-  private implicit val decoderEventFieldCustomRestore: Decoder[Event.FieldCustomRestore] =
-    Decoder[CustomFieldId].map(Event.FieldCustomRestore.apply)
+    implicit val encoderEventFieldCustomDelete: Encoder[Event.FieldCustomDelete] =
+      Encoder[CustomFieldId].contramap(_.id)
 
-  private implicit val encoderEventFieldCustomRestore: Encoder[Event.FieldCustomRestore] =
-    Encoder[CustomFieldId].contramap(_.id)
+    implicit val decoderEventFieldCustomRestore: Decoder[Event.FieldCustomRestore] =
+      Decoder[CustomFieldId].map(Event.FieldCustomRestore.apply)
 
-  private implicit val decoderEventFieldCustomTextCreate: Decoder[Event.FieldCustomTextCreate] =
-    Decoder.forProduct2("id", "values")(Event.FieldCustomTextCreate.apply)
+    implicit val encoderEventFieldCustomRestore: Encoder[Event.FieldCustomRestore] =
+      Encoder[CustomFieldId].contramap(_.id)
 
-  private implicit val encoderEventFieldCustomTextCreate: Encoder[Event.FieldCustomTextCreate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventFieldCustomTextCreate: Decoder[Event.FieldCustomTextCreate] =
+      Decoder.forProduct2("id", "values")(Event.FieldCustomTextCreate.apply)
 
-  private implicit val decoderEventFieldCustomTextUpdate: Decoder[Event.FieldCustomTextUpdate] =
-    Decoder.forProduct2("id", "values")(Event.FieldCustomTextUpdate.apply)
+    implicit val encoderEventFieldCustomTextCreate: Encoder[Event.FieldCustomTextCreate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventFieldCustomTextUpdate: Encoder[Event.FieldCustomTextUpdate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventFieldCustomTextUpdate: Decoder[Event.FieldCustomTextUpdate] =
+      Decoder.forProduct2("id", "values")(Event.FieldCustomTextUpdate.apply)
 
-  private implicit val decoderEventFieldCustomTagCreate: Decoder[Event.FieldCustomTagCreate] =
-    Decoder.forProduct2("id", "values")(Event.FieldCustomTagCreate.apply)
+    implicit val encoderEventFieldCustomTextUpdate: Encoder[Event.FieldCustomTextUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventFieldCustomTagCreate: Encoder[Event.FieldCustomTagCreate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventFieldCustomTagCreate: Decoder[Event.FieldCustomTagCreate] =
+      Decoder.forProduct2("id", "values")(Event.FieldCustomTagCreate.apply)
 
-  private implicit val decoderEventFieldCustomTagUpdate: Decoder[Event.FieldCustomTagUpdate] =
-    Decoder.forProduct2("id", "values")(Event.FieldCustomTagUpdate.apply)
+    implicit val encoderEventFieldCustomTagCreate: Encoder[Event.FieldCustomTagCreate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventFieldCustomTagUpdate: Encoder[Event.FieldCustomTagUpdate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventFieldCustomTagUpdate: Decoder[Event.FieldCustomTagUpdate] =
+      Decoder.forProduct2("id", "values")(Event.FieldCustomTagUpdate.apply)
 
-  private implicit val decoderEventFieldCustomImpCreate: Decoder[Event.FieldCustomImpCreate] =
-    Decoder.forProduct2("id", "values")(Event.FieldCustomImpCreate.apply)
+    implicit val encoderEventFieldCustomTagUpdate: Encoder[Event.FieldCustomTagUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventFieldCustomImpCreate: Encoder[Event.FieldCustomImpCreate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventFieldCustomImpCreate: Decoder[Event.FieldCustomImpCreate] =
+      Decoder.forProduct2("id", "values")(Event.FieldCustomImpCreate.apply)
 
-  private implicit val decoderEventFieldCustomImpUpdate: Decoder[Event.FieldCustomImpUpdate] =
-    Decoder.forProduct2("id", "values")(Event.FieldCustomImpUpdate.apply)
+    implicit val encoderEventFieldCustomImpCreate: Encoder[Event.FieldCustomImpCreate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventFieldCustomImpUpdate: Encoder[Event.FieldCustomImpUpdate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventFieldCustomImpUpdate: Decoder[Event.FieldCustomImpUpdate] =
+      Decoder.forProduct2("id", "values")(Event.FieldCustomImpUpdate.apply)
 
-  private implicit val decoderEventGenericReqCreate: Decoder[Event.GenericReqCreate] =
-    Decoder.forProduct3("reqId", "reqTypeId", "values")(Event.GenericReqCreate.apply)
+    implicit val encoderEventFieldCustomImpUpdate: Encoder[Event.FieldCustomImpUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventGenericReqCreate: Encoder[Event.GenericReqCreate] =
-    Encoder.forProduct3("reqId", "reqTypeId", "values")(a => (a.id, a.rt, a.vs))
+    implicit val decoderEventGenericReqCreate: Decoder[Event.GenericReqCreate] =
+      Decoder.forProduct3("reqId", "reqTypeId", "values")(Event.GenericReqCreate.apply)
 
-  private implicit val decoderEventGenericReqTypeSet: Decoder[Event.GenericReqTypeSet] =
-    Decoder.forProduct2("id", "value")(Event.GenericReqTypeSet.apply)
+    implicit val encoderEventGenericReqCreate: Encoder[Event.GenericReqCreate] =
+      Encoder.forProduct3("reqId", "reqTypeId", "values")(a => (a.id, a.rt, a.vs))
 
-  private implicit val encoderEventGenericReqTypeSet: Encoder[Event.GenericReqTypeSet] =
-    Encoder.forProduct2("id", "value")(a => (a.id, a.value))
+    implicit val decoderEventGenericReqTypeSet: Decoder[Event.GenericReqTypeSet] =
+      Decoder.forProduct2("id", "value")(Event.GenericReqTypeSet.apply)
 
-  private implicit val decoderEventGenericReqTitleSet: Decoder[Event.GenericReqTitleSet] =
-    Decoder.forProduct2("id", "value")(Event.GenericReqTitleSet.apply)
+    implicit val encoderEventGenericReqTypeSet: Encoder[Event.GenericReqTypeSet] =
+      Encoder.forProduct2("id", "value")(a => (a.id, a.value))
 
-  private implicit val encoderEventGenericReqTitleSet: Encoder[Event.GenericReqTitleSet] =
-    Encoder.forProduct2("id", "value")(a => (a.id, a.value))
+    implicit val decoderEventGenericReqTitleSet: Decoder[Event.GenericReqTitleSet] =
+      Decoder.forProduct2("id", "value")(Event.GenericReqTitleSet.apply)
 
-  private implicit val decoderEventUseCaseCreate: Decoder[Event.UseCaseCreate] =
-    Decoder.forProduct3("id", "stepId", "values")(Event.UseCaseCreate.apply)
+    implicit val encoderEventGenericReqTitleSet: Encoder[Event.GenericReqTitleSet] =
+      Encoder.forProduct2("id", "value")(a => (a.id, a.value))
 
-  private implicit val encoderEventUseCaseCreate: Encoder[Event.UseCaseCreate] =
-    Encoder.forProduct3("id", "stepId", "values")(a => (a.id, a.stepId, a.vs))
+    implicit val decoderEventUseCaseCreate: Decoder[Event.UseCaseCreate] =
+      Decoder.forProduct3("id", "stepId", "values")(Event.UseCaseCreate.apply)
 
-  private implicit val decoderEventUseCaseTitleSet: Decoder[Event.UseCaseTitleSet] =
-    Decoder.forProduct2("id", "value")(Event.UseCaseTitleSet.apply)
+    implicit val encoderEventUseCaseCreate: Encoder[Event.UseCaseCreate] =
+      Encoder.forProduct3("id", "stepId", "values")(a => (a.id, a.stepId, a.vs))
 
-  private implicit val encoderEventUseCaseTitleSet: Encoder[Event.UseCaseTitleSet] =
-    Encoder.forProduct2("id", "value")(a => (a.id, a.value))
+    implicit val decoderEventUseCaseTitleSet: Decoder[Event.UseCaseTitleSet] =
+      Decoder.forProduct2("id", "value")(Event.UseCaseTitleSet.apply)
 
-  private implicit val decoderEventUseCaseStepCreate: Decoder[Event.UseCaseStepCreate] =
-    Decoder.forProduct4("id", "ucId", "field", "at")(Event.UseCaseStepCreate.apply)
+    implicit val encoderEventUseCaseTitleSet: Encoder[Event.UseCaseTitleSet] =
+      Encoder.forProduct2("id", "value")(a => (a.id, a.value))
 
-  private implicit val encoderEventUseCaseStepCreate: Encoder[Event.UseCaseStepCreate] =
-    Encoder.forProduct4("id", "ucId", "field", "at")(a => (a.id, a.ucId, a.field, a.at))
+    implicit val decoderEventUseCaseStepCreate: Decoder[Event.UseCaseStepCreate] =
+      Decoder.forProduct4("id", "ucId", "field", "at")(Event.UseCaseStepCreate.apply)
 
-  private implicit val decoderEventUseCaseStepUpdate: Decoder[Event.UseCaseStepUpdate] =
-    Decoder.forProduct2("id", "values")(Event.UseCaseStepUpdate.apply)
+    implicit val encoderEventUseCaseStepCreate: Encoder[Event.UseCaseStepCreate] =
+      Encoder.forProduct4("id", "ucId", "field", "at")(a => (a.id, a.ucId, a.field, a.at))
 
-  private implicit val encoderEventUseCaseStepUpdate: Encoder[Event.UseCaseStepUpdate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventUseCaseStepUpdate: Decoder[Event.UseCaseStepUpdate] =
+      Decoder.forProduct2("id", "values")(Event.UseCaseStepUpdate.apply)
 
-  private implicit val decoderEventUseCaseStepShiftLeft: Decoder[Event.UseCaseStepShiftLeft] =
-    Decoder[UseCaseStepId].map(Event.UseCaseStepShiftLeft.apply)
+    implicit val encoderEventUseCaseStepUpdate: Encoder[Event.UseCaseStepUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventUseCaseStepShiftLeft: Encoder[Event.UseCaseStepShiftLeft] =
-    Encoder[UseCaseStepId].contramap(_.id)
+    implicit val decoderEventUseCaseStepShiftLeft: Decoder[Event.UseCaseStepShiftLeft] =
+      Decoder[UseCaseStepId].map(Event.UseCaseStepShiftLeft.apply)
 
-  private implicit val decoderEventUseCaseStepShiftRight: Decoder[Event.UseCaseStepShiftRight] =
-    Decoder[UseCaseStepId].map(Event.UseCaseStepShiftRight.apply)
+    implicit val encoderEventUseCaseStepShiftLeft: Encoder[Event.UseCaseStepShiftLeft] =
+      Encoder[UseCaseStepId].contramap(_.id)
 
-  private implicit val encoderEventUseCaseStepShiftRight: Encoder[Event.UseCaseStepShiftRight] =
-    Encoder[UseCaseStepId].contramap(_.id)
+    implicit val decoderEventUseCaseStepShiftRight: Decoder[Event.UseCaseStepShiftRight] =
+      Decoder[UseCaseStepId].map(Event.UseCaseStepShiftRight.apply)
 
-  private implicit val decoderEventUseCaseStepDelete: Decoder[Event.UseCaseStepDelete] =
-    Decoder[UseCaseStepId].map(Event.UseCaseStepDelete.apply)
+    implicit val encoderEventUseCaseStepShiftRight: Encoder[Event.UseCaseStepShiftRight] =
+      Encoder[UseCaseStepId].contramap(_.id)
 
-  private implicit val encoderEventUseCaseStepDelete: Encoder[Event.UseCaseStepDelete] =
-    Encoder[UseCaseStepId].contramap(_.id)
+    implicit val decoderEventUseCaseStepDelete: Decoder[Event.UseCaseStepDelete] =
+      Decoder[UseCaseStepId].map(Event.UseCaseStepDelete.apply)
 
-  private implicit val decoderEventUseCaseStepRestore: Decoder[Event.UseCaseStepRestore] =
-    Decoder[UseCaseStepId].map(Event.UseCaseStepRestore.apply)
+    implicit val encoderEventUseCaseStepDelete: Encoder[Event.UseCaseStepDelete] =
+      Encoder[UseCaseStepId].contramap(_.id)
 
-  private implicit val encoderEventUseCaseStepRestore: Encoder[Event.UseCaseStepRestore] =
-    Encoder[UseCaseStepId].contramap(_.id)
+    implicit val decoderEventUseCaseStepRestore: Decoder[Event.UseCaseStepRestore] =
+      Decoder[UseCaseStepId].map(Event.UseCaseStepRestore.apply)
 
-  private implicit val decoderEventCodeGroupCreate: Decoder[Event.CodeGroupCreate] =
-    Decoder.forProduct2("id", "values")(Event.CodeGroupCreate.apply)
+    implicit val encoderEventUseCaseStepRestore: Encoder[Event.UseCaseStepRestore] =
+      Encoder[UseCaseStepId].contramap(_.id)
 
-  private implicit val encoderEventCodeGroupCreate: Encoder[Event.CodeGroupCreate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventCodeGroupCreate: Decoder[Event.CodeGroupCreate] =
+      Decoder.forProduct2("id", "values")(Event.CodeGroupCreate.apply)
 
-  private implicit val decoderEventCodeGroupUpdate: Decoder[Event.CodeGroupUpdate] =
-    Decoder.forProduct2("id", "values")(Event.CodeGroupUpdate.apply)
+    implicit val encoderEventCodeGroupCreate: Encoder[Event.CodeGroupCreate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventCodeGroupUpdate: Encoder[Event.CodeGroupUpdate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventCodeGroupUpdate: Decoder[Event.CodeGroupUpdate] =
+      Decoder.forProduct2("id", "values")(Event.CodeGroupUpdate.apply)
 
-  private implicit val decoderEventCodeGroupsDelete: Decoder[Event.CodeGroupsDelete] =
-    Decoder[NonEmptySet[ReqCodeGroupId]].map(Event.CodeGroupsDelete.apply)
+    implicit val encoderEventCodeGroupUpdate: Encoder[Event.CodeGroupUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventCodeGroupsDelete: Encoder[Event.CodeGroupsDelete] =
-    Encoder[NonEmptySet[ReqCodeGroupId]].contramap(_.ids)
+    implicit val decoderEventCodeGroupsDelete: Decoder[Event.CodeGroupsDelete] =
+      Decoder[NonEmptySet[ReqCodeGroupId]].map(Event.CodeGroupsDelete.apply)
 
-  private implicit val decoderEventReqCodesPatch: Decoder[Event.ReqCodesPatch] =
-    Decoder.forProduct4("id", "remove", "restore", "add")(Event.ReqCodesPatch.apply)
+    implicit val encoderEventCodeGroupsDelete: Encoder[Event.CodeGroupsDelete] =
+      Encoder[NonEmptySet[ReqCodeGroupId]].contramap(_.ids)
 
-  private implicit val encoderEventReqCodesPatch: Encoder[Event.ReqCodesPatch] =
-    Encoder.forProduct4("id", "remove", "restore", "add")(a => (a.id, a.remove, a.restore, a.add))
+    implicit val decoderEventReqCodesPatch: Decoder[Event.ReqCodesPatch] =
+      Decoder.forProduct4("id", "remove", "restore", "add")(Event.ReqCodesPatch.apply)
 
-  private implicit val decoderEventReqTagsPatch: Decoder[Event.ReqTagsPatch] =
-    Decoder.forProduct2("id", "patch")(Event.ReqTagsPatch.apply)
+    implicit val encoderEventReqCodesPatch: Encoder[Event.ReqCodesPatch] =
+      Encoder.forProduct4("id", "remove", "restore", "add")(a => (a.id, a.remove, a.restore, a.add))
 
-  private implicit val encoderEventReqTagsPatch: Encoder[Event.ReqTagsPatch] =
-    Encoder.forProduct2("id", "patch")(a => (a.id, a.patch))
+    implicit val decoderEventReqTagsPatch: Decoder[Event.ReqTagsPatch] =
+      Decoder.forProduct2("id", "patch")(Event.ReqTagsPatch.apply)
 
-  private implicit val decoderEventReqImplicationsPatch: Decoder[Event.ReqImplicationsPatch] =
-    Decoder.forProduct3("id", "dir", "patch")(Event.ReqImplicationsPatch.apply)
+    implicit val encoderEventReqTagsPatch: Encoder[Event.ReqTagsPatch] =
+      Encoder.forProduct2("id", "patch")(a => (a.id, a.patch))
 
-  private implicit val encoderEventReqImplicationsPatch: Encoder[Event.ReqImplicationsPatch] =
-    Encoder.forProduct3("id", "dir", "patch")(a => (a.id, a.dir, a.patch))
+    implicit val decoderEventReqImplicationsPatch: Decoder[Event.ReqImplicationsPatch] =
+      Decoder.forProduct3("id", "dir", "patch")(Event.ReqImplicationsPatch.apply)
 
-  private implicit val decoderEventReqFieldCustomTextSet: Decoder[Event.ReqFieldCustomTextSet] =
-    Decoder.forProduct3("id", "fid", "value")(Event.ReqFieldCustomTextSet.apply)
+    implicit val encoderEventReqImplicationsPatch: Encoder[Event.ReqImplicationsPatch] =
+      Encoder.forProduct3("id", "dir", "patch")(a => (a.id, a.dir, a.patch))
 
-  private implicit val encoderEventReqFieldCustomTextSet: Encoder[Event.ReqFieldCustomTextSet] =
-    Encoder.forProduct3("id", "fid", "value")(a => (a.id, a.fid, a.value))
+    implicit val decoderEventReqFieldCustomTextSet: Decoder[Event.ReqFieldCustomTextSet] =
+      Decoder.forProduct3("id", "fid", "value")(Event.ReqFieldCustomTextSet.apply)
 
-  private implicit val decoderEventReqsDelete: Decoder[Event.ReqsDelete] =
-    Decoder.forProduct3("reqs", "codeGroups", "reason")(Event.ReqsDelete.apply)
+    implicit val encoderEventReqFieldCustomTextSet: Encoder[Event.ReqFieldCustomTextSet] =
+      Encoder.forProduct3("id", "fid", "value")(a => (a.id, a.fid, a.value))
 
-  private implicit val encoderEventReqsDelete: Encoder[Event.ReqsDelete] =
-    Encoder.forProduct3("reqs", "codeGroups", "reason")(a => (a.reqs, a.codeGroups, a.reason))
+    implicit val decoderEventReqsDelete: Decoder[Event.ReqsDelete] =
+      Decoder.forProduct3("reqs", "codeGroups", "reason")(Event.ReqsDelete.apply)
 
-  private implicit val decoderEventContentRestore: Decoder[Event.ContentRestore] =
-    Decoder.forProduct2("reqs", "codeGroups")(Event.ContentRestore.apply)
+    implicit val encoderEventReqsDelete: Encoder[Event.ReqsDelete] =
+      Encoder.forProduct3("reqs", "codeGroups", "reason")(a => (a.reqs, a.codeGroups, a.reason))
 
-  private implicit val encoderEventContentRestore: Encoder[Event.ContentRestore] =
-    Encoder.forProduct2("reqs", "codeGroups")(a => (a.reqs, a.codeGroups))
+    implicit val decoderEventContentRestore: Decoder[Event.ContentRestore] =
+      Decoder.forProduct2("reqs", "codeGroups")(Event.ContentRestore.apply)
 
-  private implicit val decoderEventManualIssueCreate: Decoder[Event.ManualIssueCreate] =
-    Decoder.forProduct2("id", "text")(Event.ManualIssueCreate.apply)
+    implicit val encoderEventContentRestore: Encoder[Event.ContentRestore] =
+      Encoder.forProduct2("reqs", "codeGroups")(a => (a.reqs, a.codeGroups))
 
-  private implicit val encoderEventManualIssueCreate: Encoder[Event.ManualIssueCreate] =
-    Encoder.forProduct2("id", "text")(a => (a.id, a.text))
+    implicit val decoderEventManualIssueCreate: Decoder[Event.ManualIssueCreate] =
+      Decoder.forProduct2("id", "text")(Event.ManualIssueCreate.apply)
 
-  private implicit val decoderEventManualIssueUpdate: Decoder[Event.ManualIssueUpdate] =
-    Decoder.forProduct2("id", "text")(Event.ManualIssueUpdate.apply)
+    implicit val encoderEventManualIssueCreate: Encoder[Event.ManualIssueCreate] =
+      Encoder.forProduct2("id", "text")(a => (a.id, a.text))
 
-  private implicit val encoderEventManualIssueUpdate: Encoder[Event.ManualIssueUpdate] =
-    Encoder.forProduct2("id", "text")(a => (a.id, a.text))
+    implicit val decoderEventManualIssueUpdate: Decoder[Event.ManualIssueUpdate] =
+      Decoder.forProduct2("id", "text")(Event.ManualIssueUpdate.apply)
 
-  private implicit val decoderEventManualIssueDelete: Decoder[Event.ManualIssueDelete] =
-    Decoder[ManualIssueId].map(Event.ManualIssueDelete.apply)
+    implicit val encoderEventManualIssueUpdate: Encoder[Event.ManualIssueUpdate] =
+      Encoder.forProduct2("id", "text")(a => (a.id, a.text))
 
-  private implicit val encoderEventManualIssueDelete: Encoder[Event.ManualIssueDelete] =
-    Encoder[ManualIssueId].contramap(_.id)
+    implicit val decoderEventManualIssueDelete: Decoder[Event.ManualIssueDelete] =
+      Decoder[ManualIssueId].map(Event.ManualIssueDelete.apply)
 
-  private implicit val decoderEventSavedViewCreate: Decoder[Event.SavedViewCreate] =
-    Decoder.forProduct6("id", "name", "columns", "order", "filterDead", "filter")(Event.SavedViewCreate.apply)
+    implicit val encoderEventManualIssueDelete: Encoder[Event.ManualIssueDelete] =
+      Encoder[ManualIssueId].contramap(_.id)
 
-  private implicit val encoderEventSavedViewCreate: Encoder[Event.SavedViewCreate] =
-    Encoder.forProduct6("id", "name", "columns", "order", "filterDead", "filter")(a => (a.id, a.name, a.columns, a.order, a.filterDead, a.filter))
+    implicit val decoderEventSavedViewCreate: Decoder[Event.SavedViewCreate] =
+      Decoder.forProduct6("id", "name", "columns", "order", "filterDead", "filter")(Event.SavedViewCreate.apply)
 
-  private implicit val decoderEventSavedViewUpdate: Decoder[Event.SavedViewUpdate] =
-    Decoder.forProduct2("id", "values")(Event.SavedViewUpdate.apply)
+    implicit val encoderEventSavedViewCreate: Encoder[Event.SavedViewCreate] =
+      Encoder.forProduct6("id", "name", "columns", "order", "filterDead", "filter")(a => (a.id, a.name, a.columns, a.order, a.filterDead, a.filter))
 
-  private implicit val encoderEventSavedViewUpdate: Encoder[Event.SavedViewUpdate] =
-    Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+    implicit val decoderEventSavedViewUpdate: Decoder[Event.SavedViewUpdate] =
+      Decoder.forProduct2("id", "values")(Event.SavedViewUpdate.apply)
 
-  private implicit val decoderEventSavedViewDelete: Decoder[Event.SavedViewDelete] =
-    Decoder[SavedView.Id].map(Event.SavedViewDelete.apply)
+    implicit val encoderEventSavedViewUpdate: Encoder[Event.SavedViewUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-  private implicit val encoderEventSavedViewDelete: Encoder[Event.SavedViewDelete] =
-    Encoder[SavedView.Id].contramap(_.id)
+    implicit val decoderEventSavedViewDelete: Decoder[Event.SavedViewDelete] =
+      Decoder[SavedView.Id].map(Event.SavedViewDelete.apply)
 
-  private implicit val decoderEventSavedViewDefaultSet: Decoder[Event.SavedViewDefaultSet] =
-    Decoder[SavedView.Id].map(Event.SavedViewDefaultSet.apply)
+    implicit val encoderEventSavedViewDelete: Encoder[Event.SavedViewDelete] =
+      Encoder[SavedView.Id].contramap(_.id)
 
-  private implicit val encoderEventSavedViewDefaultSet: Encoder[Event.SavedViewDefaultSet] =
-    Encoder[SavedView.Id].contramap(_.id)
+    implicit val decoderEventSavedViewDefaultSet: Decoder[Event.SavedViewDefaultSet] =
+      Decoder[SavedView.Id].map(Event.SavedViewDefaultSet.apply)
+
+    implicit val encoderEventSavedViewDefaultSet: Encoder[Event.SavedViewDefaultSet] =
+      Encoder[SavedView.Id].contramap(_.id)
+  }
+
+  import EventData._
 
   // ===================================================================================================================
 

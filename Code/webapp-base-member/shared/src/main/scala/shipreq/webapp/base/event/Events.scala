@@ -31,15 +31,6 @@ object Event {
     case a: ActiveEvent => a
   }
 
-  def reqCreationEventFilter: Event => Boolean = {
-    case _: GenericReqCreate
-       | _: UseCaseCreate => true
-    case _ => false
-  } // ↑ keep in sync ↓
-  def reqCreationEventSamples = List[ActiveEvent](
-    GenericReqCreate(null, null, null),
-    UseCaseCreate(null, null, null))
-
   type NonEmptyCustomTextMap = NonEmpty[Map[CustomField.Text.Id, CustomTextField.NonEmptyText]]
 
   /*

@@ -39,7 +39,7 @@ object ProjectStateTest extends TestSuite {
         totalEvents1      ← Gen.chooseInt(40).map(_ + initEventCount)
         latestOrd1        = Option.when(totalEvents1 > 0)(EventOrd.Latest(totalEvents1))
         pao1              = ProjectAndOrd(p1, latestOrd1)
-        s1                = ProjectState.init(pao1, looseProjectMetaData(p1, totalEventCount = totalEvents1, initEventCount = initEventCount))
+        s1                = ProjectState.init(pao1, looseProjectMetaData(p1, eventsTotal = totalEvents1, eventsInit = initEventCount))
         ((p2, _), ves)    ← RandomEventStream.verifiedEvents(80).run((p1, pao1.nextOrd))
         batches           ← Gen_batches(ves, 0 to 7)
                               .pair.map(x => x._1 ++ x._2) // duplicate all events (in different batches) to test idempotency
@@ -55,10 +55,10 @@ object ProjectStateTest extends TestSuite {
 
     val (s1, ves, p2, s2) = genTest.sample()
 
-    assertEq("Total event count", s2.projectMetaData.totalEventCount, s1.projectMetaData.totalEventCount + ves.length)
-    assertEq("Init event count", s2.projectMetaData.initEventCount, s1.projectMetaData.initEventCount)
+    assertEq("Total event count", s2.projectMetaData.eventsTotal, s1.projectMetaData.eventsTotal + ves.length)
+    assertEq("Init event count", s2.projectMetaData.eventsInit, s1.projectMetaData.eventsInit)
     assertEq("Future events", s2.futureEvents.keySet.toList, Nil)
-    assertEq("Latest EventOrd", s2.ord, Some(EventOrd.Latest(s2.projectMetaData.totalEventCount)))
+    assertEq("Latest EventOrd", s2.ord, Some(EventOrd.Latest(s2.projectMetaData.eventsTotal)))
     s2.projectMetaData.assertInSyncWith(p2)
     assertEq(s2.project, p2)
   }
