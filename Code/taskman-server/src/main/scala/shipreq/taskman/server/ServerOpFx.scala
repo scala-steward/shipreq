@@ -3,10 +3,7 @@ package shipreq.taskman.server
 import doobie.imports._
 import japgolly.clearconfig._
 import java.time.Duration
-import scalaz.{-\/, \/, \/-, ~>}
-import scalaz.std.option.optionInstance
-import scalaz.syntax.catchable._
-import scalaz.syntax.traverse._
+import scalaz.~>
 import shipreq.base.db.DbAccess
 import shipreq.base.util.FxModule._
 import shipreq.base.util.TaggedTypes.JsonStr
@@ -36,13 +33,15 @@ object ServerOpFx {
   // -------------------------------------------------------------------------------------------------------------------
 
   object Sql {
+    import shipreq.base.db.DoobieHelpers._
+    import shipreq.base.db.DoobieMeta._
     import shipreq.base.db.SqlHelpers._
 
-    implicit val doobieMetaWorkerId = doobieMetaCaseClass[WorkerId]
-    implicit val doobieMetaNodeId   = doobieMetaCaseClass[NodeId]
-    implicit val doobieMetaMsgId    = doobieMetaCaseClass[MsgId]
-    implicit val doobieMetaPriority = doobieMetaCaseClass[Priority]
-    implicit val doobieMetaMsg      = jsonStr[Msg]
+    implicit val doobieMetaWorkerId = meta1(WorkerId.apply)(_.value)
+    implicit val doobieMetaNodeId   = meta1(NodeId.apply)(_.value)
+    implicit val doobieMetaMsgId    = meta1(MsgId.apply)(_.value)
+    implicit val doobieMetaPriority = meta1(Priority.apply)(_.value)
+    implicit val doobieMetaMsg      = doobieMetaJsonStr[Msg]
 
 
     implicit val doobieCompositeMsgHeader: Composite[MsgHeader] = Composite.generic

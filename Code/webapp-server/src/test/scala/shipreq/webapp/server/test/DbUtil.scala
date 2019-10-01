@@ -10,7 +10,6 @@ import shipreq.base.util.FxModule._
 import shipreq.webapp.base.data.{Project, ProjectId}
 import shipreq.webapp.base.event.ActiveEvent
 import shipreq.webapp.base.user.UserId
-import shipreq.webapp.server.db.SqlHelpers._
 import WebappServerTestUtil._
 
 object DbUtil {

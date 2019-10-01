@@ -6,6 +6,7 @@ import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.univeq._
 import java.sql.SQLException
 import java.time.{Duration, Instant}
+import scala.reflect.runtime.universe.TypeTag
 import scalaz._, Scalaz._
 
 object DoobieHelpers {
@@ -94,6 +95,31 @@ object DoobieHelpers {
         }
       }
   }
+
+  implicit class DoobieMetaExt[A](private val self: Meta[A]) extends AnyVal {
+    def readOnlyAnyVal[B](f: A => B)(implicit tt: TypeTag[B]): Meta[B] =
+      self.xmap[B](f, _ => sys error s"Writing $tt not supported.")
+
+    def readOnly[B >: Null](f: A => B)(implicit tt: TypeTag[B], ev: Null <:< A): Meta[B] =
+      self.nxmap[B](f, _ => sys error s"Writing $tt not supported.")
+
+    def writeOnlyAnyVal[B](f: B => A)(implicit tt: TypeTag[B]): Meta[B] =
+      self.xmap[B](_ => sys error s"Reading $tt not supported.", f)
+
+    def writeOnly[B >: Null](f: B => A)(implicit tt: TypeTag[B], ev: Null <:< A): Meta[B] =
+      self.nxmap[B](_ => sys error s"Reading $tt not supported.", f)
+  }
+
+  implicit class DoobieCompositeExt[A](private val self: Composite[A]) extends AnyVal {
+    def readOnly[B](f: A => B)(implicit tt: TypeTag[B]): Composite[B] =
+      self.xmap(f, _ => sys error s"Writing $tt not supported.")
+
+    def writeOnly[B](f: B => A)(implicit tt: TypeTag[B]): Composite[B] =
+      self.xmap(_ => sys error s"Reading $tt not supported.", f)
+  }
+
+  def meta1[A: Meta, B: TypeTag](f: A => B)(g: B => A): Meta[B] =
+    Meta[A].xmap(f, g)
 
   def selectByNonEmptySet[A, B](as: NonEmptySet[A], groupSize: Int = 100)
                                (f: Seq[A] => ConnectionIO[B]): ConnectionIO[List[B]] = {

@@ -4,7 +4,7 @@ import doobie.imports._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.{Duration, Instant}
 import scala.util.Random
-import shipreq.base.db.SqlHelpers._
+import shipreq.base.db.DoobieMeta._
 import shipreq.base.test.db.TestDb
 import shipreq.base.util.TaggedTypes.JsonStr
 import shipreq.taskman.api.impl.Serialisation

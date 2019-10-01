@@ -125,6 +125,4 @@ Phase 2B
 
 * Standardise on Circe
   * Use Circe in Taskman
-  * Share DbInterpreter.DoobieMeta with Taskman
-
-* Sort out {Doobie,Sql}{Helpers,Meta} and the DoobieMeta in DbInterpreter
+  * Remove Json4s

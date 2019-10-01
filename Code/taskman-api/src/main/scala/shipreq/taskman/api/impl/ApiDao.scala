@@ -1,14 +1,15 @@
 package shipreq.taskman.api.impl
 
 import doobie.imports._
-import shipreq.base.db.SqlHelpers._
+import shipreq.base.db.DoobieHelpers._
+import shipreq.base.db.DoobieMeta._
 import shipreq.taskman.api._
 import Serialisation.Ser
 
 private[api] class ApiDao(prefix: String) {
 
-  private implicit val doobieMetaMsg   = jsonStr[Msg]
-  private implicit val doobieMetaMsgId = doobieMetaCaseClass[MsgId]
+  private implicit val doobieMetaMsg   = doobieMetaJsonStr[Msg]
+  private implicit val doobieMetaMsgId = meta1(MsgId.apply)(_.value)
 
   private implicit val doobieMetaMsgStatus: Meta[MsgStatus] =
     Meta[String].readOnly {

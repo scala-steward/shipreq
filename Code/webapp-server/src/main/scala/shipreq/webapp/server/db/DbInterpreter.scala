@@ -4,7 +4,6 @@ import doobie.imports._
 import io.circe.Json
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.StdlibExt._
-import japgolly.univeq._
 import java.time.Instant
 import nyaya.gen.Gen
 import org.postgresql.util.PSQLException
@@ -13,13 +12,14 @@ import scala.collection.mutable
 import scalaz.syntax.applicative._
 import scalaz.{-\/, Free, \/, \/-}
 import shipreq.base.db.DoobieHelpers._
+import shipreq.base.db.DoobieMeta._
+import shipreq.base.db.DoobieMetaCirce._
 import shipreq.base.db.SqlHelpers._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.ServerLogicConfig
 import shipreq.webapp.server.db.DbInterpreter._
-import shipreq.webapp.server.db.SqlHelpers._
 import shipreq.webapp.server.logic.DB.EventFilter
 import shipreq.webapp.server.logic._
 
@@ -46,28 +46,7 @@ final class DbInterpreter(implicit config: ServerLogicConfig.Security)
 }
 
 object DbInterpreter {
-
-  private object DoobieMeta { // TODO Move
-    import io.circe.parser.parse
-    import org.postgresql.util.PGobject
-
-    private def jsonToPG: Json => PGobject =
-      j => pgObject("jsonb", j.noSpaces)
-
-    private val pgToJson: PGobject => Json =
-      o => strToJson(o.getValue)
-
-    private def strToJson(s: String): Json =
-      parse(s) match {
-        case Right(j) => j
-        case Left(e)  => throw e
-      }
-
-    implicit val metaJson: Meta[Json] =
-      doobieMetaJson.xmap[Json](pgToJson, jsonToPG)
-  }
-
-  import DoobieMeta._
+  import DbMeta._
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   trait Base extends DB.Base[ConnectionIO] {

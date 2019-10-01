@@ -1,7 +1,7 @@
 package shipreq.taskman.server.business
 
 import doobie.imports._
-import shipreq.base.db.SqlHelpers._
+import shipreq.base.db.DoobieHelpers._
 import shipreq.taskman.api.{EmailAddr, UserId}
 import shipreq.taskman.server.logic.business.ShipReqUser
 
@@ -9,8 +9,8 @@ final case class ShipReqInterface(schema: Option[String]) {
 
   private val prefix = schema.fold("")(_ + ".")
 
-  private implicit val doobieMetaUserId    = doobieMetaCaseClass[UserId]
-  private implicit val doobieMetaEmailAddr = doobieMetaCaseClass[EmailAddr]
+  private implicit val doobieMetaUserId    = meta1(UserId.apply)(_.value)
+  private implicit val doobieMetaEmailAddr = meta1(EmailAddr.apply)(_.value)
 
   private implicit val compositeShipReqUser: Composite[ShipReqUser] = Composite.generic
 

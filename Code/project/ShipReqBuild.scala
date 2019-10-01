@@ -76,11 +76,9 @@ object ShipReqBuild {
 
   lazy val baseDb =
     project("base-db")
-      .configure(
-        Common.jvmSettings,
-        Common.macroModuleSettings)
+      .configure(Common.jvmSettings)
       .dependsOn(baseOps)
-      .deps(postgresql ++ Doobie.main ++ hikariCP ++ flyway ++ Microlibs.macroUtils)
+      .deps(postgresql ++ Doobie.main ++ hikariCP ++ flyway ++ (Circe.main % Provided))
 
   lazy val baseTestJvm = baseTest.jvm
   lazy val baseTestJs  = baseTest.js
