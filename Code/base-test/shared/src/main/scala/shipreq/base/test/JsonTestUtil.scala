@@ -1,4 +1,4 @@
-package shipreq.webapp.base.protocol.json
+package shipreq.base.test
 
 import io.circe._
 import io.circe.parser._
@@ -7,7 +7,7 @@ import nyaya.gen.Gen
 import scalaz.Equal
 import scalaz.std.either._
 import sourcecode.Line
-import shipreq.base.test.BaseTestUtil._
+import BaseTestUtil._
 
 object JsonTestUtil {
 
