@@ -122,5 +122,3 @@ Phase 2B
 * Get off G-suite (?)
 
 * Document the build & release process
-
-* ArticulateError.hints should be a map and then translated to structuredargs or similar
