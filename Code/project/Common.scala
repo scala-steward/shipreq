@@ -23,19 +23,23 @@ object Common {
   def targetJdk = "1." + Dependencies.Java.major
 
   def scalacFlags = Seq(
-    "-unchecked",
     "-deprecation",
+    "-feature",
+    "-language:existentials",
+    "-language:higherKinds",
+    "-language:implicitConversions",
+    "-language:postfixOps",
     "-target:jvm-" + targetJdk,
+    "-unchecked",
     "-Xsource:2.13",
-    // "-Xstrict-inference", // Don't infer known-unsound types
-    // "-Yno-generic-signatures", // Stuffs up json4s
+    "-Ybackend-parallelism", availableProcessors.min(16).toString,
+    "-Ycache-macro-class-loader:last-modified",
+    "-Ycache-plugin-class-loader:last-modified",
     "-Ypartial-unification",
     "-Ypatmat-exhaust-depth", "off",
-    "-Ywarn-inaccessible",
-    "-Ybackend-parallelism", availableProcessors.min(16).toString,
-    "-Ycache-plugin-class-loader:last-modified",
-    "-Ycache-macro-class-loader:last-modified",
-    "-feature", "-language:postfixOps", "-language:implicitConversions", "-language:higherKinds", "-language:existentials")
+    "-Ywarn-inaccessible")
+    // "-Xstrict-inference", // Don't infer known-unsound types
+    // "-Yno-generic-signatures", // Stuffs up json4s
 
   def scalacTestFlags = Seq("-language:reflectiveCalls")
 
