@@ -10,7 +10,8 @@ resource "aws_s3_bucket" "terraform_state" {
     prevent_destroy = true
   }
 
-  tags = merge(var.shared_tags, {
-    "env" = "n/a"
-  })
+  tags = {
+    "createdBy" = "terraform"
+    "env"       = "n/a"
+  }
 }

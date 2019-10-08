@@ -1,6 +1,6 @@
 resource "aws_route53_zone" "shipreq" {
   name = "shipreq.com"
-  tags = merge(var.shared_tags, { "env" = "n/a" })
+  tags = local.default_tags
 }
 
 # www.shipreq.com -> shipreq.com
