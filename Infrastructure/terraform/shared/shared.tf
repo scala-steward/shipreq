@@ -10,3 +10,9 @@ provider "aws" {
 variable "region" {
   default = "ap-southeast-2"
 }
+
+variable "shared_tags" {
+  default = {
+    "createdBy" = "terraform"
+  }
+}

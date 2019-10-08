@@ -19,6 +19,11 @@ so the exact steps have been lost. This seems to be what I did though:
 * created an IAM Group called "Admin" with the "AdministratorAccess" policy
 * created an IAM User called "golly" with the "Admin" group
 
+### Cost Allocation Tags
+
+After creating resources through Terraform, I also went to `Billing` -> `Cost allocation tags` and
+activated the `env` tags for cost allocation.
+
 
 User / Local Env Setup
 ======================
@@ -30,3 +35,14 @@ User / Local Env Setup
   1. enter account keys
   2. set region to `ap-southeast-2`
   3. set output to `json`
+
+
+Tags
+====
+
+All resources we create within AWS are tagged according to the following system:
+
+| Key         | Value                     | Application   |
+|-------------|---------------------------|---------------|
+| `createdBy` | `terraform`               | All resources |
+| `env`       | `n/a`, `dev`, `prod`, etc | All resources |
