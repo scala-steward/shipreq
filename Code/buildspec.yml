@@ -5,8 +5,9 @@ phases:
     commands:
       - cd Code
       - nohup dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2 &
-      - timeout 15 sh -c "until docker info; do echo .; sleep .5; done"
-      - bin/env test up -d
+      - $(aws ecr get-login --no-include-email --region $AWS_REGION)
+      - timeout 15 sh -c "until docker info; do sleep .5; done"
+      - bin/env test --no-ansi up -d
   build:
     commands:
       - >
@@ -16,7 +17,7 @@ phases:
         '
     finally:
       - find /root/.cache/coursier /root/.ivy2 /root/.sbt -name '*.lock' -type f -exec rm -fv {} +
-      - bin/env test down
+      - bin/env test --no-ansi down
 
 cache:
   paths:
