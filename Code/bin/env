@@ -31,8 +31,10 @@ if [[ "$env" != "test" ]]; then
 fi
 
 # Expose localhost so that prometheus can collect metrics when running via SBT
-export DOCKER0="$(ip route show | grep docker0 | awk '{print $9}')"
-[[ ! "$DOCKER0" =~ ^[0-9][0-9.]*$ ]] && echo "Invalid docker0 ip: $DOCKER0" && exit 3
+if [[ "$env" != "test" ]]; then
+  export DOCKER0="$(ip route show | grep docker0 | awk '{print $9}')"
+  [[ ! "$DOCKER0" =~ ^[0-9][0-9.]*$ ]] && echo "Invalid docker0 ip: $DOCKER0" && exit 3
+fi
 
 # Prevent muscle-memory blowing all state
 down=0

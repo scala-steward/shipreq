@@ -3,7 +3,10 @@ cd "$(dirname "$0")" || exit 1
 
 exec docker run \
   --rm \
+  --privileged \
+  --network host \
   -it \
+  -v /var/run/docker.sock:/var/run/docker.sock \
   -v"$(pwd)/../../Code":/Code:ro \
   -v"$HOME/.coursier/cache":/root/.cache/coursier:ro \
   -e SHIPREQ_TARGET=/tmp/shipreq.sbt \

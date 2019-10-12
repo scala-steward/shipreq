@@ -9,9 +9,9 @@ RUN echo 'en_AU.UTF-8 UTF-8' >> /etc/locale.gen \
  && locale-gen \
  && echo 'LANG=en_AU.UTF-8' > /etc/locale.conf
 
-ENV LANGUAGE en_AU:en
-ENV LANG     en_AU.UTF-8
-ENV LC_ALL   en_AU.UTF-8
+ENV LANGUAGE=en_AU:en \
+    LANG=en_AU.UTF-8 \
+    LC_ALL=en_AU.UTF-8
 
 # Modify makepkg to allow running as root
 RUN sed -i -e '/as root is not allowed/,+2 {s/^/japgolly= #/}' /usr/sbin/makepkg
@@ -26,6 +26,7 @@ RUN pacman -Sy --noconfirm --needed \
       brotli \
       diffutils \
       docker \
+      docker-compose \
       fakeroot \
       file \
       git \
@@ -95,3 +96,4 @@ RUN mkdir /tmp/scala \
 
 COPY strip-ansi /bin
 COPY .bashrc /root/.bashrc
+
