@@ -1,7 +1,9 @@
+# Created by ../global
 data "aws_ecr_repository" "taskman" {
   name = "shipreq/taskman"
 }
 
+# Created by ../global
 data "aws_ecr_repository" "webapp" {
   name = "shipreq/webapp"
 }
@@ -9,18 +11,19 @@ data "aws_ecr_repository" "webapp" {
 resource "aws_codebuild_project" "shipreq" {
   name         = "shipreq"
   description  = "Taskman & Webapp"
-  service_role = "${aws_iam_role.shipreq.arn}"
+  service_role = aws_iam_role.shipreq.arn
+  tags         = local.default_tags
 
   environment {
     type            = "LINUX_CONTAINER"
-    compute_type    = "BUILD_GENERAL1_LARGE"
-    image           = "${aws_ecr_repository.build.repository_url}:latest"
+    compute_type    = "BUILD_GENERAL1_LARGE" # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html
+    image           = "${aws_ecr_repository.shipreq_build.repository_url}:latest"
     privileged_mode = true
   }
 
   source {
     type            = "CODECOMMIT"
-    location        = "${data.aws_codecommit_repository.shipreq.clone_url_http}"
+    location        = aws_codecommit_repository.shipreq.clone_url_http
     git_clone_depth = 1
     buildspec       = "Code/buildspec.yml"
   }
@@ -31,21 +34,24 @@ resource "aws_codebuild_project" "shipreq" {
 
   cache {
     type     = "S3"
-    location = "${aws_s3_bucket.cache_shipreq.bucket}"
+    location = aws_s3_bucket.cache_shipreq.bucket
   }
 }
 
 resource "aws_s3_bucket" "cache_shipreq" {
   bucket = "codebuild-cache-shipreq"
   acl    = "private"
+  tags   = local.default_tags
 }
 
 resource "aws_cloudwatch_log_group" "shipreq" {
   name = "/aws/codebuild/shipreq"
+  tags = local.default_tags
 }
 
 resource "aws_iam_role" "shipreq" {
   name = "codebuild-shipreq"
+  tags = local.default_tags
 
   assume_role_policy = <<EOB
 {
@@ -62,7 +68,7 @@ EOB
 }
 
 resource "aws_iam_role_policy" "shipreq" {
-  role = "${aws_iam_role.shipreq.name}"
+  role = aws_iam_role.shipreq.name
 
   policy = <<EOB
 {
@@ -109,7 +115,7 @@ resource "aws_iam_role_policy" "shipreq" {
     },
     {
       "Effect": "Allow",
-      "Resource": [ "${aws_ecr_repository.build.arn}" ],
+      "Resource": [ "${aws_ecr_repository.shipreq_build.arn}" ],
       "Action": [
         "ecr:BatchCheckLayerAvailability",
         "ecr:BatchGetImage",

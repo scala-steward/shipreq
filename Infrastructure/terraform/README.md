@@ -5,6 +5,10 @@ Overview
 
 * `global` - Terraform to setup environment-agnostic stuff.
              (eg. docker repos, proof of shipreq.com for 3rd party services)
+             Depends on `init`.
+
+* `cicd` - Terraform to setup CI/CD stuff.
+           Depends on `init` and `global`.
 
 
 Prerequisites

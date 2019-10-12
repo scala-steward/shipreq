@@ -1,9 +1,10 @@
-resource "aws_ecr_repository" "build" {
+resource "aws_ecr_repository" "shipreq_build" {
   name = "shipreq/build"
+  tags = local.default_tags
 }
 
-resource "aws_ecr_repository_policy" "build" {
-  repository = "${aws_ecr_repository.build.name}"
+resource "aws_ecr_repository_policy" "shipreq_build" {
+  repository = aws_ecr_repository.shipreq_build.name
 
   policy = <<EOB
 {
@@ -23,28 +24,29 @@ resource "aws_ecr_repository_policy" "build" {
 EOB
 }
 
-resource "aws_codebuild_project" "build" {
-  name         = "shipreq-build"
+resource "aws_codebuild_project" "shipreq_build" {
+  name         = "shipreq_build"
   description  = "Docker image: shipreq/build"
-  service_role = "${aws_iam_role.build.arn}"
+  service_role = aws_iam_role.shipreq_build.arn
+  tags         = local.default_tags
 
   environment {
     type            = "LINUX_CONTAINER"
-    compute_type    = "BUILD_GENERAL1_SMALL"
-    image           = "aws/codebuild/docker:17.09.0"
+    compute_type    = "BUILD_GENERAL1_SMALL"                                  # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html
+    image           = "aws/codebuild/amazonlinux2-x86_64-standard:1.0-1.13.0" # aws codebuild list-curated-environment-images
     privileged_mode = true
 
     environment_variable {
-      "name"  = "IMAGE_URL"
-      "value" = "${aws_ecr_repository.build.repository_url}"
+      name  = "IMAGE_URL"
+      value = "${aws_ecr_repository.shipreq_build.repository_url}"
     }
   }
 
   source {
     type            = "CODECOMMIT"
-    location        = "${data.aws_codecommit_repository.shipreq.clone_url_http}"
+    location        = aws_codecommit_repository.shipreq.clone_url_http
     git_clone_depth = 1
-    buildspec       = "DockerImages/build/buildspec.yml"
+    buildspec       = "DockerImages/shipreq-build/buildspec.yml"
   }
 
   artifacts {
@@ -52,12 +54,14 @@ resource "aws_codebuild_project" "build" {
   }
 }
 
-resource "aws_cloudwatch_log_group" "build" {
-  name = "/aws/codebuild/shipreq-build"
+resource "aws_cloudwatch_log_group" "shipreq_build" {
+  name = "/aws/codebuild/shipreq_build"
+  tags = local.default_tags
 }
 
-resource "aws_iam_role" "build" {
-  name = "codebuild-shipreq-build"
+resource "aws_iam_role" "shipreq_build" {
+  name = "codebuild-shipreq_build"
+  tags = local.default_tags
 
   assume_role_policy = <<EOB
 {
@@ -73,8 +77,8 @@ resource "aws_iam_role" "build" {
 EOB
 }
 
-resource "aws_iam_role_policy" "build" {
-  role = "${aws_iam_role.build.name}"
+resource "aws_iam_role_policy" "shipreq_build" {
+  role = aws_iam_role.shipreq_build.name
 
   policy = <<EOB
 {
@@ -83,8 +87,8 @@ resource "aws_iam_role_policy" "build" {
     {
       "Effect": "Allow",
       "Resource": [
-        "${aws_cloudwatch_log_group.build.arn}",
-        "${aws_cloudwatch_log_group.build.arn}/*"
+        "${aws_cloudwatch_log_group.shipreq_build.arn}",
+        "${aws_cloudwatch_log_group.shipreq_build.arn}/*"
       ],
       "Action": [
         "logs:CreateLogStream",
@@ -93,7 +97,7 @@ resource "aws_iam_role_policy" "build" {
     },
     {
       "Effect": "Allow",
-      "Resource": [ "${aws_ecr_repository.build.arn}" ],
+      "Resource": [ "${aws_ecr_repository.shipreq_build.arn}" ],
       "Action": [
         "ecr:BatchCheckLayerAvailability",
         "ecr:BatchGetImage",

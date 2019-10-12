@@ -4,7 +4,6 @@ phases:
   pre_build:
     commands:
       - cd Code
-      - export JAVA_OPTS="-Xss2m"
   build:
     commands:
       - >
@@ -18,5 +17,3 @@ phases:
 cache:
   paths:
     - '/root/.cache/coursier/**/*'
-    - '/root/.ivy2/**/*'
-    - '/root/.sbt/**/*'
