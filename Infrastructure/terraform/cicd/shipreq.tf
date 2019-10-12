@@ -115,7 +115,10 @@ resource "aws_iam_role_policy" "shipreq" {
     },
     {
       "Effect": "Allow",
-      "Resource": [ "${aws_ecr_repository.shipreq_build.arn}" ],
+      "Resource": [
+        "${aws_ecr_repository.shipreq_build.arn}",
+        "${data.aws_ecr_repository.shipreq_base.arn}"
+      ],
       "Action": [
         "ecr:BatchCheckLayerAvailability",
         "ecr:BatchGetImage",

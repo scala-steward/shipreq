@@ -1,10 +1,10 @@
-resource "aws_ecr_repository" "shipreq_build" {
-  name = "shipreq/build"
-  tags = local.default_tags
+# Created by ../global
+data "aws_ecr_repository" "shipreq_base" {
+  name = "shipreq/base"
 }
 
-resource "aws_ecr_repository_policy" "shipreq_build" {
-  repository = aws_ecr_repository.shipreq_build.name
+resource "aws_ecr_repository_policy" "shipreq_base" {
+  repository = data.aws_ecr_repository.shipreq_base.name
 
   policy = <<EOB
 {
@@ -24,10 +24,10 @@ resource "aws_ecr_repository_policy" "shipreq_build" {
 EOB
 }
 
-resource "aws_codebuild_project" "shipreq_build" {
-  name         = "shipreq_build"
-  description  = "Docker image: shipreq/build"
-  service_role = aws_iam_role.shipreq_build.arn
+resource "aws_codebuild_project" "shipreq_base" {
+  name         = "shipreq_base"
+  description  = "Docker image: shipreq/base"
+  service_role = aws_iam_role.shipreq_base.arn
   tags         = local.default_tags
 
   environment {
@@ -38,7 +38,7 @@ resource "aws_codebuild_project" "shipreq_build" {
 
     environment_variable {
       name  = "IMAGE_URL"
-      value = aws_ecr_repository.shipreq_build.repository_url
+      value = data.aws_ecr_repository.shipreq_base.repository_url
     }
   }
 
@@ -46,7 +46,7 @@ resource "aws_codebuild_project" "shipreq_build" {
     type            = "CODECOMMIT"
     location        = aws_codecommit_repository.shipreq.clone_url_http
     git_clone_depth = 1
-    buildspec       = "DockerImages/shipreq-build/buildspec.yml"
+    buildspec       = "DockerImages/shipreq-base/buildspec.yml"
   }
 
   artifacts {
@@ -54,13 +54,13 @@ resource "aws_codebuild_project" "shipreq_build" {
   }
 }
 
-resource "aws_cloudwatch_log_group" "shipreq_build" {
-  name = "/aws/codebuild/shipreq_build"
+resource "aws_cloudwatch_log_group" "shipreq_base" {
+  name = "/aws/codebuild/shipreq_base"
   tags = local.default_tags
 }
 
-resource "aws_iam_role" "shipreq_build" {
-  name = "codebuild-shipreq_build"
+resource "aws_iam_role" "shipreq_base" {
+  name = "codebuild-shipreq_base"
   tags = local.default_tags
 
   assume_role_policy = <<EOB
@@ -77,8 +77,8 @@ resource "aws_iam_role" "shipreq_build" {
 EOB
 }
 
-resource "aws_iam_role_policy" "shipreq_build" {
-  role = aws_iam_role.shipreq_build.name
+resource "aws_iam_role_policy" "shipreq_base" {
+  role = aws_iam_role.shipreq_base.name
 
   policy = <<EOB
 {
@@ -87,8 +87,8 @@ resource "aws_iam_role_policy" "shipreq_build" {
     {
       "Effect": "Allow",
       "Resource": [
-        "${aws_cloudwatch_log_group.shipreq_build.arn}",
-        "${aws_cloudwatch_log_group.shipreq_build.arn}/*"
+        "${aws_cloudwatch_log_group.shipreq_base.arn}",
+        "${aws_cloudwatch_log_group.shipreq_base.arn}/*"
       ],
       "Action": [
         "logs:CreateLogStream",
@@ -97,7 +97,7 @@ resource "aws_iam_role_policy" "shipreq_build" {
     },
     {
       "Effect": "Allow",
-      "Resource": [ "${aws_ecr_repository.shipreq_build.arn}" ],
+      "Resource": [ "${data.aws_ecr_repository.shipreq_base.arn}" ],
       "Action": [
         "ecr:BatchCheckLayerAvailability",
         "ecr:BatchGetImage",

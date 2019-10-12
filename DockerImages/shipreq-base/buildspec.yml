@@ -1,0 +1,24 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 18
+  pre_build:
+    commands:
+      - cd DockerImages/shipreq-base
+      - env|sort
+      - $(aws ecr get-login --no-include-email --region $AWS_REGION)
+      - docker pull $IMAGE_URL:latest || true
+  build:
+    commands:
+      - >
+        docker build
+        --cache-from $IMAGE_URL:latest
+        -t $IMAGE_URL:git-$CODEBUILD_RESOLVED_SOURCE_VERSION
+        -t $IMAGE_URL:latest
+        .
+  post_build:
+    commands:
+      - docker push $IMAGE_URL:git-$CODEBUILD_RESOLVED_SOURCE_VERSION
+      - docker push $IMAGE_URL:latest
