@@ -53,7 +53,6 @@ services:
     ports:
       - $PORT_SHIPREQ_WEBAPP_HTTP:8080
       - $PORT_SHIPREQ_WEBAPP_HTTPS:8443
-      - $PORT_SHIPREQ_WEBAPP_PROMETHEUS:9095
     volumes:
       - ./webapp:/shipreq/conf:ro
     environment:
@@ -84,7 +83,7 @@ services:
     mem_limit: 10m
 
   prometheus:
-    image: prom/prometheus:v2.7.1
+    image: prom/prometheus:v2.13.0
     container_name: shipreq_dev_prometheus
     ports:
       - $PORT_PROMETHEUS_HTTP:9090
@@ -96,25 +95,29 @@ services:
     mem_limit: 100m
 
   grafana:
-    image: grafana/grafana:5.4.3
+    image: grafana/grafana:6.4.2
     container_name: shipreq_dev_grafana
     links:
       - prometheus
     ports:
       - $PORT_GRAFANA_HTTP:3000
     volumes:
-      - ./grafana-ds-prometheus.json:/etc/grafana/datasources/prometheus.json
+      - ./grafana/:/etc/grafana/provisioning/
+    environment:
+      - GF_SERVER_ENABLE_GZIP=true
     cpus: 2
     mem_limit: 100m
 
   # sudo sysctl -w vm.max_map_count=262144
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.6.0
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.4.0
     container_name: shipreq_dev_elasticsearch
     mem_limit: 1g
+    environment:
+      - discovery.type=single-node
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:6.6.0
+    image: docker.elastic.co/kibana/kibana-oss:7.4.0
     container_name: shipreq_dev_kibana
     links:
       - elasticsearch
@@ -125,7 +128,7 @@ services:
     mem_limit: 200m
 
   logstash:
-    image: docker.elastic.co/logstash/logstash-oss:6.6.0
+    image: docker.elastic.co/logstash/logstash-oss:7.4.0
     container_name: shipreq_dev_logstash
     links:
       - elasticsearch
@@ -137,7 +140,7 @@ services:
 
   # You wouldn't do this in prod - it uses in-memory storage
   jaeger:
-    image: jaegertracing/all-in-one:1.11.0
+    image: jaegertracing/all-in-one:1.14.0
     container_name: shipreq_dev_jaeger
     ports:
       - $PORT_JAEGER_HTTP:16686
