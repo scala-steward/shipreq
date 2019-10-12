@@ -137,7 +137,7 @@ dockerfile in docker := {
   new Dockerfile {
     def runInBash(cmds: String*) = run("/bin/bash", "-c", cmds.mkString(";"))
 
-    from(Dependencies.Docker.baseImage)
+    from(Docker.baseImage)
 
     env("JETTY_HOME" -> jettyHome, "JETTY_BASE" -> base)
 
@@ -162,7 +162,7 @@ dockerfile in docker := {
       8080, // HTTP
       8443) // HTTPS
 
-    env(Common.dockerBaseEnv.value: _*)
+    env(Docker.envVars.value: _*)
 
     cmd("bin/webapp")
   }

@@ -58,13 +58,16 @@ object Common {
     _.settings(
       scalacOptions ++= Seq("-Xcheckinit"))
 
+  def optimisationScalacFlags = Seq(
+    "-opt:l:method",
+    "-opt:l:inline",
+    "-opt-inline-from:**",
+    //"-opt-warnings:at-inline-failed",
+  )
+
   val optimisationSettings: Project => Project =
-    nonTestCompilerFlags(
-      "-opt:l:method",
-      "-opt:l:inline",
-      "-opt-inline-from:**",
-      //"-opt-warnings:at-inline-failed",
-      "-Xelide-below", "OFF")
+    nonTestCompilerFlags("-Xelide-below", "OFF") compose
+    nonTestCompilerFlags(optimisationScalacFlags: _*)
 
   def javacFlags = Seq("-target", targetJdk, "-source", targetJdk)
 
@@ -255,21 +258,6 @@ object Common {
 //          emitSourceMaps in fastOptJS in Test := true)
     }
 
-  def dockerBaseSettings(name: String): Project => Project =
-    _.settings(
-      buildOptions in docker := BuildOptions(pullBaseImage = BuildOptions.Pull.IfMissing),
-      imageNames in docker := {
-        var versions = Seq(version.value, "latest")
-        if (!isSnapshot.value && releaseMode) versions :+= "latest-prod"
-        versions.map(ver => ImageName(s"shipreq/$name:$ver"))
-      }
-    )
-
-  def dockerBaseEnv = Def.task(
-    List[(String, String)](
-      "SHIPREQ_VERSION"    -> version.value,
-      "SHIPREQ_BUILD_MODE" -> (if (releaseMode) "release" else "dev")))
-
   lazy val releaseMode: Boolean = {
     val mode = System.getProperty("MODE", "").trim
     val r = mode.compareToIgnoreCase("release") == 0
@@ -288,7 +276,7 @@ object Common {
       scalacOptions in Test --= flags)
 
   def dontOptimise: Project => Project =
-    _.settings(scalacOptions in Compile -= "-opt:l:classpath")
+    _.settings(scalacOptions in Compile --= optimisationScalacFlags)
 
   def dontInline: Project => Project =
     debugOrRelease(identity, _
@@ -409,4 +397,7 @@ object Common {
   def depScope(c: Configuration): ModDepScope = depScope(c.name)
   def testScope = depScope("test")
   def providedScope = depScope("provided")
+
+  def propOrEnv(key: String): Option[String] =
+    sys.props.get(key).orElse(sys.env.get(key))
 }

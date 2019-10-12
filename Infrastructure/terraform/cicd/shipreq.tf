@@ -19,6 +19,19 @@ resource "aws_codebuild_project" "shipreq" {
     compute_type    = "BUILD_GENERAL1_LARGE" # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html
     image           = "${aws_ecr_repository.shipreq_build.repository_url}:latest"
     privileged_mode = true
+
+    environment_variable {
+      name  = "BASE_IMAGE_URL"
+      value = data.aws_ecr_repository.shipreq_base.repository_url
+    }
+    environment_variable {
+      name  = "WEBAPP_IMAGE_URL"
+      value = data.aws_ecr_repository.webapp.repository_url
+    }
+    environment_variable {
+      name  = "TASKMAN_IMAGE_URL"
+      value = data.aws_ecr_repository.taskman.repository_url
+    }
   }
 
   source {

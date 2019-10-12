@@ -14,10 +14,6 @@ object Dependencies {
     val ver = "19.2.0.1"
   }
 
-  object Docker {
-    val baseImage = s"shipreq/base:latest-graal-${Graal.ver}"
-  }
-
   object Scala {
     private val mm = scalaItself(version)
     def version  = "2.12.10"

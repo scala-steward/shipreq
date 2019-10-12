@@ -1,6 +1,10 @@
 import sbt._, Keys._
 import Common.releaseMode
 
+/** Unlike [[Docker]], this is about spinning up a local environment using Docker.
+  *
+  * For example, spinning up a local Postgres and Redis for tests to connect to.
+  */
 object DockerEnv {
   import sys.process._
 

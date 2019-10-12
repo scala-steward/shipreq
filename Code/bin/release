@@ -9,18 +9,27 @@ taskman=0
 webapp=0
 sbt_test=()
 sbt_pkg=()
+sbt_push=()
+
+function add_docker {
+  module=$1
+  image_url_prefix=$2
+  image_url_var="${image_url_prefix}_IMAGE_URL"
+  sbt_pkg+=($module/docker)
+  [ -n "${!image_url_var}" ] && sbt_push+=($module/dockerPush)
+}
 
 for m in $defargs "$@"; do
   case "$m" in
     taskman)
       taskman=1
       sbt_test+=(taskman/test)
-      sbt_pkg+=(taskman-server/docker)
+      add_docker taskman-server TASKMAN
       ;;
     webapp)
       webapp=1
       sbt_test+=(webapp/test)
-      sbt_pkg+=(webapp-server/docker)
+      add_docker webapp-server WEBAPP
       ;;
     -T|no-test)
       notest=1
@@ -58,16 +67,9 @@ esac
 [ -n "$notest" ] && sbt_test=()
 [ -z "$noclean" ] && sbt+=(clean)
 
-function sep() { echo -e '____________________________________________________________________________________________________\n'; }
-
 # ======================================================================================================================
 # Perform release
 
-clear
-
-git status .
-sep
-
-echo "> ${sbt[@]} ${sbt_test[@]} ${sbt_pkg[@]}"
+echo "> ${sbt[@]} ${sbt_test[@]} ${sbt_pkg[@]} ${sbt_push[@]}"
 echo
-[ -z "$dryrun" ] && time "${sbt[@]}" "${sbt_test[@]}" "${sbt_pkg[@]}"
+[ -z "$dryrun" ] && time "${sbt[@]}" "${sbt_test[@]}" "${sbt_pkg[@]}" "${sbt_push[@]}"

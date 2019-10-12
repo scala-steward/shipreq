@@ -30,14 +30,20 @@ dockerfile in docker := {
   new Dockerfile {
     def runInBash(cmds: String*) = run("/bin/bash", "-c", cmds.mkString(";"))
 
-    from(Dependencies.Docker.baseImage)
+    from(Docker.baseImage)
+
     workDir(root)
+
     jarTiers.foreach(copy(_, lib))
+
     copy(sourceDirectory.value / "docker", s"$root/")
+
     runInBash(
       s"sed -i 's|{{cp}}|$classpath|' $root/bin/run",
       s"sed -i 's|{{mainClass}}|$serverClass|' $root/bin/taskman")
-    env(Common.dockerBaseEnv.value: _*)
+
+    env(Docker.envVars.value: _*)
+
     cmd("bin/taskman")
   }
 }

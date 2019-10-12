@@ -72,7 +72,7 @@ object TaskmanBuild {
         testScope(Akka.testkit ++ μTest))
       .dependsOn(taskmanServerLogic, taskmanServerSchema, taskmanApi)
       .dependsOn(baseTestJvm % Test)
-      .configure(Common.dockerBaseSettings("taskman"))
+      .configure(Docker.settingsFor("taskman"))
       .configure(runWithDockerDev)
       .settings(
         mainClass := Some(serverClass),
