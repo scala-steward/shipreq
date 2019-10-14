@@ -10,9 +10,28 @@ Overview
 * `cicd` - Terraform to setup CI/CD stuff.
            Depends on `init` and `global`.
 
+* `env` - Configurable Terraform *module* to create a ShipReq runtime environment.
+          Depends on `init` and `global`.
 
-Prerequisites
+* `dev` - Terraform to setup a ShipReq dev environment
+          Depends on `init` and `global`.
+
+
+Initial Setup
 =============
 
-1. Have a user account and local env setup (see ../AWS.md)
-2. Apply the terraform in `./init`.
+1. Create an AWS account
+2. Have a user account and local env setup ([see](../AWS.md))
+3. Terraform: `init`
+4. Terraform: `global`
+5. Terraform: `cicd`
+6. CodeBuild: `shipreq_build`
+7. CodeBuild: `shipreq_base`
+8. CodeBuild: `shipreq`
+
+
+Creating a Dev Environment
+==========================
+
+1. Terraform: `dev`
+TODO : Bastion local setup
