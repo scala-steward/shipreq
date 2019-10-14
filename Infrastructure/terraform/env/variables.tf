@@ -16,3 +16,8 @@ variable "vpc_ip_prefix" {
 variable "availability_zone" {
   type = string
 }
+
+variable "bastion_public_key" {
+  description = "Generate using: ssh-keygen -t rsa -b 4096 -f bastion_rsa -C bastion"
+  type        = string
+}

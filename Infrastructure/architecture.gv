@@ -9,6 +9,7 @@ digraph {
     dns_shipreq [label="DNS:\nshipreq.com"]
     ebs_prometheus [label="EBS:\nPrometheus"]
     ebs_grafana [label="EBS:\nGrafana"]
+    eip_bastion [label="EIP:\nBastion"]
 
     subgraph cluster_VPC {
       label="VPC" fillcolor=white
@@ -22,7 +23,7 @@ digraph {
         subgraph cluster_sg_bastion {
           label="SG: Bastion" fillcolor=white
           sg_bastion [shape=point fillcolor=blue width=.12]
-          bastion [label="ASG:\nBastion &\ndevops portal"]
+          bastion [label="EC2:\nBastion &\ndevops portal"]
         }
       }
 
@@ -76,7 +77,7 @@ digraph {
   edge [color=red]
   internet -> dns_shipreq -> elb_webapp
   internet -> nat [dir=back]
-  internet -> bastion -> es,docker_prometheus,docker_grafana
+  internet -> eip_bastion -> bastion -> es,docker_prometheus,docker_grafana
   elb_webapp -> docker_webapp
   nat -> subnet_private_app [dir=back]
 
