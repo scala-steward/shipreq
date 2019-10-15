@@ -21,3 +21,8 @@ variable "bastion_public_key" {
   description = "Generate using: ssh-keygen -t rsa -b 4096 -f bastion_rsa -C bastion"
   type        = string
 }
+
+variable "ops_instance_type" {
+  description = "EC2 instance type for machines in the ops cluster"
+  type        = string
+}

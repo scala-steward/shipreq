@@ -48,7 +48,7 @@ digraph {
           sg_app [shape=point fillcolor=blue width=.12]
 
           subgraph cluster_ecs2_app {
-            label="App ECS Cluster / EC2s" fillcolor="#ffeeee"
+            label="App ECS Cluster / AGS / EC2s" fillcolor="#ffeeee"
             docker_filebeat [label="Docker:\nFilebeat"]
             docker_webapp [label="Docker:\nWebapp"]
             docker_taskman [label="Docker:\nTaskman"]
@@ -66,10 +66,16 @@ digraph {
           es [label="ElasticSearch\n& Kibana"]
         }
 
-        docker_prometheus
-        docker_grafana
-        # TODO: prometheus
-        # TODO: grafana
+        subgraph cluster_sg_ops {
+          label="SG: Ops" fillcolor=white
+          sg_ops [shape=point fillcolor=blue width=.12]
+
+          subgraph cluster_ecs2_ops {
+            label="Ops ECS Cluster / ASG / EC2s" fillcolor="#ffeeee"
+            docker_prometheus [label="Docker:\nPrometheus"]
+            docker_grafana [label="Docker:\nGrafana"]
+          }
+        }
       }
     }
   }
@@ -87,6 +93,7 @@ digraph {
   subnet_private_app -> subnet_private_ops [dir=both]
   sg_app -> sg_rds,sg_redis,sg_es
   sg_bastion -> sg_app,sg_rds,sg_redis,sg_es
+  sg_ops -> sg_app
 
   edge [color=green]
   docker_filebeat -> es
