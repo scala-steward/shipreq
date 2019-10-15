@@ -1,5 +1,5 @@
-module "env" {
-  source = "../env"
+module "shipreq" {
+  source = "../modules/shipreq-env"
 
   name               = "dev"
   env                = "dev"
@@ -10,5 +10,5 @@ module "env" {
 }
 
 output "bastion_host" {
-  value = module.env.bastion_host
+  value = module.shipreq.bastion_host
 }
