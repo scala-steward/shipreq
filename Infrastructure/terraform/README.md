@@ -35,3 +35,32 @@ Creating a Dev Environment
 
 1. Terraform: `dev`
 TODO : Bastion local setup
+
+
+Env Details
+===========
+
+* One VPC per env
+  * 3 subnets: public, private-{app,ops}
+  * one private DNS `<env>.internal` only accessible from within the VPC
+
+* Prometheus
+  * DNS entry `prometheus.<env>.internal` points to all active Prometheus containers
+  * port: 9090
+
+
+Problems
+========
+
+If you get an error like this when running Terraform:
+
+    module.shipreq.aws_service_discovery_service.prometheus: Destroying... [id=srv-vguuopieeeayrdco]
+
+    Error: ResourceInUse: Service contains registered instances; delete the instances before deleting the service
+    	status code: 400, request id: 092e9d0b-03d1-4bf5-b4fe-b4c031894c22
+
+To workaround:
+
+    terraform destroy -target=module.shipreq.aws_ecs_service.prometheus
+
+Issue: https://github.com/terraform-providers/terraform-provider-aws/issues/4853

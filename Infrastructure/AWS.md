@@ -24,6 +24,13 @@ so the exact steps have been lost. This seems to be what I did though:
 After creating resources through Terraform, I also went to `Billing` -> `Cost allocation tags` and
 activated the `env` tags for cost allocation.
 
+### Enable new style ARN and resource ID settings (before 2020-01-01)
+
+1. Log in to AWS with root credentials
+2. ECS -> Account Settings
+3. In the _Amazon ECS ARN and resource ID settings_ section, tick all boxes
+4. Save
+5. Repeat for other regions
 
 User / Local Env Setup
 ======================
