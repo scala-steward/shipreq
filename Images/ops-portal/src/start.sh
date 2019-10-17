@@ -7,6 +7,8 @@ cd /root
 PROMETHEUS_URL=${PROMETHEUS_URL%/}
 GRAFANA_URL=${GRAFANA_URL%/}
 
+export DNS_IP="$(cat /etc/resolv.conf | egrep ' *nameserver ' | head -1 | sed 's/\s*\S\S*\s*//; s/\s.*//')"
+
 vars=(
   DNS_IP
   DNS_TTL
