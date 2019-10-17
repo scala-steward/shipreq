@@ -3,7 +3,7 @@ locals {
 }
 
 resource "aws_service_discovery_service" "prometheus" {
-  name = "prometheus" # subdomain
+  name = local.prometheus_subdomain
 
   dns_config {
     namespace_id   = aws_service_discovery_private_dns_namespace.internal.id
@@ -51,11 +51,15 @@ resource "aws_ecs_task_definition" "prometheus" {
   {
     "name": "${var.env}-ops-prometheus",
     "image": "prom/prometheus:v2.13.0",
+    "command": [
+      "--config.file=/etc/prometheus/prometheus.yml",
+      "--web.external-url=http://internal:9090/prometheus/"
+    ],
     "cpu": 1536,
     "memoryReservation": 64,
     "portMappings": [
       {
-        "hostPort": 9090,
+        "hostPort": ${local.prometheus_port},
         "containerPort": 9090
       }
     ]

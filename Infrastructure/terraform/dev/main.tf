@@ -1,6 +1,11 @@
 module "shipreq" {
   source = "../modules/shipreq-env"
 
+  providers = {
+    aws     = aws
+    aws.ecr = aws.ap-southeast-2
+  }
+
   name               = "dev"
   env                = "dev"
   vpc_ip_prefix      = "10.0"

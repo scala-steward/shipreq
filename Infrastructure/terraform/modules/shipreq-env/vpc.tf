@@ -6,7 +6,7 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_service_discovery_private_dns_namespace" "internal" {
-  name = "${var.env}.internal" # This is the domain
+  name = local.internal_domain
   vpc  = aws_vpc.main.id
 }
 

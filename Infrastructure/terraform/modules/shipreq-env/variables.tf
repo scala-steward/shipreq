@@ -1,3 +1,10 @@
+provider "aws" {
+}
+
+provider "aws" {
+  alias = "ecr"
+}
+
 variable "env" {
   description = "The short textual ID of this environment"
   type        = string

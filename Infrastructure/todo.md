@@ -5,8 +5,6 @@
   * Healthcheck & recovery
 
 * Portal
-  * custom image
-  * custom image CI
   * logs
 
 * NAT

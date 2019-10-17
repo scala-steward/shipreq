@@ -86,7 +86,7 @@ resource "aws_iam_role" "ops-ecs" {
   path = "/${var.env}/"
   tags = local.ops_tags
 
-  assume_role_policy = <<EOF
+  assume_role_policy = <<EOB
 {
   "Version": "2008-10-17",
   "Statement": [
@@ -99,7 +99,7 @@ resource "aws_iam_role" "ops-ecs" {
     }
   ]
 }
-EOF
+EOB
 }
 
 resource "aws_iam_instance_profile" "ops-ecs" {
