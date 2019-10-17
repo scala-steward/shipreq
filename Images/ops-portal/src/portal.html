@@ -1,0 +1,31 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>ShipReq Portal: ${SHIPREQ_ENV}</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+    li {
+      line-height: 170%;
+    }
+</style>
+</head>
+<body>
+
+<h1>ShipReq Portal: ${SHIPREQ_ENV}</h1>
+
+<ul>
+  <li><a href="$SHIPREQ_URL">ShipReq</a></li>
+  <li><a href="$SHIPREQ_URL_HTTP">ShipReq (HTTP)</a></li>
+  <li><a href="$KIBANA_URL">Kibana</a></li>
+  <li><a href="/prometheus/">Prometheus</a></li>
+  <li><a href="/grafana/">Grafana</a></li>
+  <li><a href="$JAEGER_URL">Jaeger</a></li>
+</ul>
+
+</body>
+</html>

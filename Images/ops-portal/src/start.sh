@@ -1,0 +1,43 @@
+#!/bin/bash
+set -euo pipefail
+
+cd /root
+
+# Remove trailing slashes
+PROMETHEUS_URL=${PROMETHEUS_URL%/}
+GRAFANA_URL=${GRAFANA_URL%/}
+
+vars=(
+  DNS_IP
+  DNS_TTL
+  GRAFANA_URL
+  JAEGER_URL
+  KIBANA_URL
+  PROMETHEUS_URL
+  SHIPREQ_ENV
+  SHIPREQ_URL_HTTP
+  SHIPREQ_URL
+)
+
+varstring=
+
+for v in "${vars[@]}"; do
+  printf "%20s = %s\n" $v ${!v}
+  varstring="$varstring "'${'"$v}"
+done
+echo
+
+function reify {
+  cat "$1" | envsubst "$varstring" > "$2"
+  # echo "========================================================================================"
+  # echo "$2"
+  # echo "========================================================================================"
+  # cat "$2"
+  # echo "========================================================================================"
+  # echo
+}
+
+reify portal.html /usr/share/nginx/html/index.html
+reify nginx.conf /etc/nginx/nginx.conf
+
+exec nginx -g 'daemon off;'
