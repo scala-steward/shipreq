@@ -62,3 +62,11 @@ resource "aws_security_group" "nat" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+resource "aws_route53_record" "www" {
+  zone_id = aws_route53_zone.internal.zone_id
+  name    = local.nat_domain
+  type    = "A"
+  ttl     = "30"
+  records = [aws_instance.nat.private_ip]
+}

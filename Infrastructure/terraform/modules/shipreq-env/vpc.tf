@@ -5,8 +5,16 @@ resource "aws_vpc" "main" {
   tags                 = local.default_tags
 }
 
-resource "aws_service_discovery_private_dns_namespace" "internal" {
+resource "aws_route53_zone" "internal" {
   name = local.internal_domain
+  tags = local.default_tags
+  vpc {
+    vpc_id = aws_vpc.main.id
+  }
+}
+
+resource "aws_service_discovery_private_dns_namespace" "internal" {
+  name = local.internal_sd_domain
   vpc  = aws_vpc.main.id
 }
 

@@ -42,10 +42,12 @@ Env Details
 
 * One VPC per env
   * 3 subnets: public, private-{app,ops}
-  * one private DNS `<env>.internal` only accessible from within the VPC
+  * 2 private DNSs only accessible from within the VPC:
+    * `<env>.internal` - manually managed
+    * `<env>.sd.internal` - managed by service discovery
 
 * Prometheus
-  * DNS entry `prometheus.<env>.internal` points to all active Prometheus containers
+  * DNS entry `prometheus.<env>.sd.internal` points to all active Prometheus containers
   * port: 9090
 
 
