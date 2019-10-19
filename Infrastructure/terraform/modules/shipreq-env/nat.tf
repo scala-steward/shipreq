@@ -67,6 +67,6 @@ resource "aws_route53_record" "www" {
   zone_id = aws_route53_zone.internal.zone_id
   name    = local.nat_domain
   type    = "A"
-  ttl     = "30"
+  ttl     = local.dns_stable_ttl
   records = [aws_instance.nat.private_ip]
 }

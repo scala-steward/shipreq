@@ -50,6 +50,7 @@ resource "aws_instance" "bastion" {
     ENV_NAME       = var.name
     PROMETHEUS_URL = local.prometheus_url
     PORTAL_IMAGE   = data.aws_ecr_repository.shipreq_ops_portal.repository_url
+    REDIS_HOST     = local.redis_domain
   })
 
   root_block_device {

@@ -3,6 +3,12 @@
 # Bash "strict mode"
 set -euo pipefail
 
+# Echo commands before running them
+set -x
+
+####################################################################################################
+# System & environment
+
 for f in ~{root,ec2-user}/.bashrc; do
   cat >> $f << 'EOB'
     export PS1='\n\[\e[91m[bastion-${ENV}]\e[0m \[\e[32m\]\u@\h: \[\e[33m\]\w\[\e[0m\]\n> '
@@ -14,21 +20,41 @@ for f in ~{root,ec2-user}/.bashrc; do
 EOB
 done
 
+yum -y update
+yum -y install htop nc tree
+
+####################################################################################################
+# SSH
+
 cat >> /etc/ssh/sshd_config << 'EOB'
   Port 22
   Port 36017
 EOB
 
-# Echo commands before running them
-set -x
-
 systemctl restart sshd
 
-yum -y update
-yum -y install htop tree
+####################################################################################################
+# Docker
 
 amazon-linux-extras install -y docker
 systemctl start docker
+
+####################################################################################################
+# redis-cli
+
+cat >> /usr/bin/redis-cli << 'EOB'
+#!/bin/bash
+args=("$@")
+[ $# -eq 0 ] && args=(-h ${REDIS_HOST} -p 6379)
+exec sudo docker run --rm -it bitnami/redis:5.0.5 redis-cli "$${args[@]}"
+EOB
+
+chmod 755 /usr/bin/redis-cli
+
+docker pull bitnami/redis:5.0.5
+
+####################################################################################################
+# Start portal
 
 $(aws ecr get-login --no-include-email --region ap-southeast-2)
 

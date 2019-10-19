@@ -7,10 +7,13 @@ locals {
     Name      = var.name
   }
 
+  # TTL for DNS entries pointed at targets I expect to change rarely/never
+  dns_stable_ttl = 120
+
   internal_domain    = "${var.env}.internal"
   internal_sd_domain = "${var.env}.sd.internal"
-
-  nat_domain = "nat.${local.internal_domain}"
+  nat_domain         = "nat.${local.internal_domain}"
+  redis_domain       = "redis.${local.internal_domain}"
 
   prometheus_subdomain = "prometheus"
   prometheus_port      = 9090
