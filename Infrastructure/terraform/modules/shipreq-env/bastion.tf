@@ -43,6 +43,7 @@ resource "aws_instance" "bastion" {
   iam_instance_profile   = aws_iam_instance_profile.bastion.id
   key_name               = aws_key_pair.bastion.key_name
   tags                   = local.bastion_tags
+  volume_tags            = local.bastion_tags
 
   user_data = templatefile("${path.module}/bastion-ec2-init.sh", {
     ENV            = var.env
@@ -50,6 +51,10 @@ resource "aws_instance" "bastion" {
     PROMETHEUS_URL = local.prometheus_url
     PORTAL_IMAGE   = data.aws_ecr_repository.shipreq_ops_portal.repository_url
   })
+
+  root_block_device {
+    volume_type = "standard"
+  }
 
   lifecycle { create_before_destroy = true }
 }

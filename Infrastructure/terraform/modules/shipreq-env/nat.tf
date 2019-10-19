@@ -17,6 +17,11 @@ resource "aws_instance" "nat" {
   source_dest_check           = false
   key_name                    = aws_key_pair.nat.key_name
   tags                        = local.nat_tags
+  volume_tags                 = local.nat_tags
+
+  root_block_device {
+    volume_type = "standard"
+  }
 
   lifecycle { create_before_destroy = true }
 }

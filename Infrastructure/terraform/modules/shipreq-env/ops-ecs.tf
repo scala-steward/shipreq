@@ -38,11 +38,17 @@ resource "aws_launch_template" "ops" {
     arn = aws_iam_instance_profile.ops-ecs.arn
   }
 
-  user_data = replace(
-    base64encode(trimspace(templatefile("${path.module}/ops-ec2-init.sh", {
-      cluster = aws_ecs_cluster.ops.name
-    })))
-  , "=", "")
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_size = 30 # Min size set by AMI snapshot
+      volume_type = var.ecs_root_volume_type
+    }
+  }
+
+  user_data = base64encode(trimspace(templatefile("${path.module}/ops-ec2-init.sh", {
+    cluster = aws_ecs_cluster.ops.name
+  })))
 
   tag_specifications {
     resource_type = "instance"

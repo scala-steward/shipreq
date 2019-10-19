@@ -11,14 +11,15 @@ module "shipreq" {
     aws.ecr = aws.ap-southeast-2
   }
 
-  env                = "dev"
-  name               = "Dev"
-  vpc_ip_prefix      = "10.0"
-  availability_zone  = "us-east-2b"
-  bastion_public_key = file("key-bastion.rsa.pub")
-  nat_public_key     = file("key-nat.rsa.pub")
-  ops_public_key     = file("key-ops.rsa.pub")
-  ops_instance_type  = "t3a.nano"
+  env                  = "dev"
+  name                 = "Dev"
+  vpc_ip_prefix        = "10.0"
+  availability_zone    = "us-east-2b"
+  bastion_public_key   = file("key-bastion.rsa.pub")
+  nat_public_key       = file("key-nat.rsa.pub")
+  ops_public_key       = file("key-ops.rsa.pub")
+  ops_instance_type    = "t3a.nano"
+  ecs_root_volume_type = "standard" # Save money
 }
 
 output "bastion_host" {
