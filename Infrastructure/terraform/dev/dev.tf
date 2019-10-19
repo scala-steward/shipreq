@@ -17,6 +17,9 @@ module "shipreq" {
   availability_zone    = "us-east-2b"
   bastion_public_key   = file("key-bastion.rsa.pub")
   nat_public_key       = file("key-nat.rsa.pub")
+  app_public_key       = file("key-app.rsa.pub")
+  app_instance_type    = "t3a.medium"
+  app_cluster_size     = 0
   ops_public_key       = file("key-ops.rsa.pub")
   ops_instance_type    = "t3a.nano"
   ecs_root_volume_type = "standard" # Save money

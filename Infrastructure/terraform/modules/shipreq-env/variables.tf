@@ -32,6 +32,20 @@ variable "nat_public_key" {
   type = string
 }
 
+variable "app_public_key" {
+  type = string
+}
+
+variable "app_instance_type" {
+  description = "EC2 instance type for machines in the app cluster"
+  type        = string
+}
+
+variable "app_cluster_size" {
+  description = "Number of machines in the app cluster"
+  type        = number
+}
+
 variable "ops_public_key" {
   type = string
 }

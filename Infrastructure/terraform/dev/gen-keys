@@ -1,12 +1,11 @@
 #!/bin/bash
 cd "$(dirname "$0")" || exit 1
 
-set -e
-
 pwd="$(pwd)"
 env=${pwd##*/}
 
 targets=(
+  app
   bastion
   nat
   ops
