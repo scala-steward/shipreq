@@ -60,3 +60,8 @@ variable "ecs_root_volume_type" {
   type        = string
   default     = "gp2"
 }
+
+variable "enable_redis" {
+  type    = bool
+  default = true
+}

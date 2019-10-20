@@ -23,6 +23,7 @@ module "shipreq" {
   ops_public_key       = file("key-ops.rsa.pub")
   ops_instance_type    = "t3a.nano"
   ecs_root_volume_type = "standard" # Save money
+  enable_redis         = false
 }
 
 output "bastion_host" {
