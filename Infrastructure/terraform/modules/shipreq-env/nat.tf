@@ -63,7 +63,7 @@ resource "aws_security_group" "nat" {
   }
 }
 
-resource "aws_route53_record" "www" {
+resource "aws_route53_record" "nat" {
   zone_id = aws_route53_zone.internal.zone_id
   name    = local.nat_domain
   type    = "A"
