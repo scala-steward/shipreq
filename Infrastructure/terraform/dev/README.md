@@ -19,6 +19,14 @@ Match Host shipreq-bastion-dev
   ServerAliveCountMax 2
 ```
 
+replacing `xxx.xxx.xxx.xxx` with the real Bastion IP that Terraform spits out.
+
 Then once per session, before attempting to connect, run:
 
     ssh-add *.rsa
+
+
+# Viewing the Ops Portal
+
+1. Run `ssh -NL 10000:localhost:8000 shipreq-bastion-dev` to create a tunnel.
+2. Open http://localhost:10000/
