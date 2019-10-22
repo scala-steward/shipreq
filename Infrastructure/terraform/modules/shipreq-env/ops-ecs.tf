@@ -47,7 +47,8 @@ resource "aws_launch_template" "ops" {
   }
 
   user_data = base64encode(trimspace(templatefile("${path.module}/ops-ec2-init.sh", {
-    cluster = aws_ecs_cluster.ops.name
+    cluster                = aws_ecs_cluster.ops.name
+    install_prometheus_ebs = module.ecs_ebs_prometheus.user_data
   })))
 
   tag_specifications {

@@ -73,7 +73,20 @@ EOB
   # }
 }
 
-# TODO EBS: prometheus
+module "ecs_ebs_prometheus" {
+  source   = "../ecs-ebs"
+  name     = "${var.env}-ops-prometheus"
+  size     = 1
+  ec2_role = aws_iam_role.ops-ecs
+  tags     = local.prometheus_tags
+
+  manifest = [
+    {
+      availability_zone = var.availability_zone
+      count             = 1
+    }
+  ]
+}
 
 resource "aws_security_group" "prometheus" {
   name   = "sg_${var.env}_ops_prometheus"
