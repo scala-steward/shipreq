@@ -101,22 +101,21 @@ services:
 
   # sudo sysctl -w vm.max_map_count=262144
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.4.0
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.1.0
     container_name: shipreq_dev_elasticsearch
-    mem_limit: 1g
     environment:
       - discovery.type=single-node
+    mem_limit: 1g
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:7.4.0
+    image: docker.elastic.co/kibana/kibana-oss:7.1.0
     container_name: shipreq_dev_kibana
     links:
       - elasticsearch
-    ports:
-      - $PORT_KIBANA:5601
-    logging:
-      driver: none
-    mem_limit: 200m
+    environment:
+      - SERVER_BASEPATH=/_plugin/kibana
+      - SERVER_REWRITEBASEPATH=true
+    mem_limit: 1g
 
   logstash:
     image: docker.elastic.co/logstash/logstash-oss:7.4.0
@@ -146,12 +145,13 @@ services:
     links:
       - prometheus
       - grafana
+      - kibana
     environment:
       - SHIPREQ_ENV=dev
       - SHIPREQ_URL=https://shipreq.com:$PORT_SHIPREQ_WEBAPP_HTTPS
       - SHIPREQ_URL_HTTP=http://shipreq.com:$PORT_SHIPREQ_WEBAPP_HTTP
       - JAEGER_URL=http://localhost:$PORT_JAEGER_HTTP
-      - KIBANA_URL=http://localhost:$PORT_KIBANA
+      - KIBANA_URL=http://kibana:5601
       - DNS_TTL=10s
       - PROMETHEUS_URL=http://prometheus:9090
       - GRAFANA_URL=http://grafana:3000
