@@ -19,8 +19,7 @@
   * custom image
   * custom image CI
   * logs
-  * EBS
-
+  * configure retention period & storage onto EBS
 
 
 ====================================================================================================
@@ -31,3 +30,18 @@
   * custom image CI
   * logs
   * EBS
+
+* RDS
+
+* RDS initialisation
+  Seems the only way is RDS event subscription + SNS + lambda
+
+* FileBeat
+* EC2 metrics; node_exporter?
+
+* App ALB
+* ShipReq
+* Taskman
+
+* Grafana
+* Storage
