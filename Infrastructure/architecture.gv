@@ -7,7 +7,8 @@ digraph {
   subgraph cluster_AWS {
     label="AWS" style=filled fillcolor="#eeffdd"
     dns_shipreq [label="DNS:\nshipreq.com"]
-    ebs_prometheus [label="EBS:\nPrometheus"]
+    ebs_prometheus_tech [label="EBS:\nPrometheus\n(tech)" fillcolor=lightskyblue1]
+    ebs_prometheus_busi [label="EBS:\nPrometheus\n(business)" fillcolor=lightskyblue1]
     eip_bastion [label="EIP:\nBastion"]
 
     subgraph cluster_VPC {
@@ -18,7 +19,7 @@ digraph {
         label="Public subnet" fillcolor="#999999"
         elb_webapp [label="ALB:\nWebapp"]
         nat [label="EC2:\nNAT"]
-        bastion [label="EC2:\nBastion &\ndevops portal" color=red]
+        bastion [label="EC2:\nBastion\ndevops reverse-proxy\ndevops portal" color=red]
       }
 
       subgraph cluster_private {
@@ -29,13 +30,14 @@ digraph {
 
         subgraph cluster_ecs2_app {
           label="App ECS Cluster / AGS / EC2s" fillcolor="#ffeeee"
-          docker_filebeatA [label="Docker:\nFilebeat"]
+          docker_filebeatA [label="Docker:\nFilebeat" fillcolor="#eecc99"]
+          docker_nodeexpA [label="Docker:\nNodeExporter" fillcolor="#eecc99"]
           docker_webapp [label="Docker:\nWebapp"]
           docker_taskman [label="Docker:\nTaskman"]
         }
 
         subgraph cluster_rds {
-          label="RDS" fillcolor="#ffee44" style="filled,rounded"
+          label="RDS" fillcolor=lightskyblue1 style="filled,rounded"
           node [fillcolor="#fff8f0"]
           rds_shipreq [label="shipreq"]
           rds_taskman [label="taskman"]
@@ -44,8 +46,11 @@ digraph {
 
         subgraph cluster_ecs2_ops {
           label="Ops ECS Cluster / ASG / EC2s" fillcolor="#ffeeee"
-          docker_filebeatO [label="Docker:\nFilebeat"]
-          docker_prometheus [label="Docker:\nPrometheus"]
+          docker_filebeatO [label="Docker:\nFilebeat" fillcolor="#eecc99"]
+          docker_nodeexpO [label="Docker:\nNodeExporter" fillcolor="#eecc99"]
+          docker_db_metrics  [label="?\nDB metrics to\nmaterialised view\n?" fillcolor="#eecc99"]
+          docker_prometheus_tech [label="Docker:\nPrometheus\n(tech)"]
+          docker_prometheus_busi [label="Docker:\nPrometheus\n(business)"]
           docker_grafana [label="Docker:\nGrafana"]
         }
       }
@@ -60,18 +65,23 @@ digraph {
   internet -> eip_bastion -> bastion
   elb_webapp -> docker_webapp
   bastion -> subnet_private
+  subnet_private -> es,docker_grafana,docker_prometheus_tech,docker_prometheus_busi [style=dashed]
 
   edge [color=blue]
   internet -> nat [dir=back]
   nat -> subnet_private [dir=back]
 
   edge [color=green]
+  rds_grafana -> docker_grafana [dir=back]
+  docker_webapp -> redis,rds_shipreq,rds_taskman
+  docker_taskman -> rds_taskman
+  docker_prometheus_tech -> ebs_prometheus_tech
+  docker_prometheus_busi -> ebs_prometheus_busi
+  docker_grafana -> docker_prometheus_tech,docker_prometheus_busi
+
+  edge [color="#999999" style=dashed]
   docker_filebeatA -> es
   es -> docker_filebeatO [dir=back]
-  docker_prometheus -> ebs_prometheus
-  rds_grafana -> docker_grafana [dir=back]
-  docker_webapp -> docker_prometheus [dir=back]
-  docker_grafana -> docker_prometheus
-  docker_webapp -> redis,rds_shipreq,rds_taskman
-  docker_taskman -> redis,rds_taskman
+  docker_webapp,docker_taskman,docker_nodeexpA,docker_nodeexpO -> docker_prometheus_tech [dir=back]
+  rds_shipreq,rds_taskman -> docker_db_metrics -> docker_prometheus_busi [dir=back]
 }
