@@ -45,3 +45,9 @@
 
 * Grafana
 * Storage
+
+* Alerting
+
+* DR
+  * Postgres
+  * Prometheus
