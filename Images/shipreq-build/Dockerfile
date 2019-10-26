@@ -36,7 +36,9 @@ RUN pacman -Sy --noconfirm --needed \
       procps \
       sudo \
       tree \
-      which
+      unzip \
+      which \
+      zip
 
 #########
 # Graal #
