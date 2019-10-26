@@ -11,23 +11,25 @@ module "shipreq" {
     aws.ecr = aws.ap-southeast-2
   }
 
-  env                         = "dev"
-  name                        = "Dev"
-  vpc_ip_prefix               = "10.0"
-  availability_zone           = "ap-southeast-2b"
-  bastion_public_key          = file("key-bastion.rsa.pub")
-  nat_public_key              = file("key-nat.rsa.pub")
-  app_public_key              = file("key-app.rsa.pub")
-  app_instance_type           = "t3a.medium"
-  app_cluster_size            = 0
-  ops_public_key              = file("key-ops.rsa.pub")
-  ops_instance_type           = "t3a.nano"
-  ecs_root_volume_type        = "standard" # Save money
-  enable_redis                = false
-  enable_elasticsearch        = true
-  elasticsearch_instance_type = "t2.small.elasticsearch"
-  elasticsearch_volume_type   = "standard" # Save money
-  elasticsearch_volume_size   = 10
+  env                                       = "dev"
+  name                                      = "Dev"
+  vpc_ip_prefix                             = "10.0"
+  availability_zone                         = "ap-southeast-2b"
+  bastion_public_key                        = file("key-bastion.rsa.pub")
+  nat_public_key                            = file("key-nat.rsa.pub")
+  app_public_key                            = file("key-app.rsa.pub")
+  app_instance_type                         = "t3a.medium"
+  app_cluster_size                          = 0
+  ops_public_key                            = file("key-ops.rsa.pub")
+  ops_instance_type                         = "t3a.nano"
+  ecs_root_volume_type                      = "standard" # Save money
+  enable_redis                              = false
+  enable_elasticsearch                      = true
+  elasticsearch_instance_type               = "t2.small.elasticsearch"
+  elasticsearch_volume_type                 = "standard" # Save money
+  elasticsearch_volume_size                 = 10
+  shipreq_webapp_keystore_filename          = "../../../Secrets/ssl/keystore"
+  shipreq_webapp_ssl_passwords_ini_filename = "../../../Secrets/ssl/ssl-passwords.ini"
 }
 
 output "bastion_host" {

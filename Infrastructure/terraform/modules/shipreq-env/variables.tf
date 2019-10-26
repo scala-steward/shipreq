@@ -84,3 +84,13 @@ variable "elasticsearch_volume_size" {
   description = "Min:10GB, Max:35GB"
   type        = number
 }
+
+variable "shipreq_webapp_keystore_filename" {
+  description = "Path to the keystore"
+  type        = string
+}
+
+variable "shipreq_webapp_ssl_passwords_ini_filename" {
+  description = "Path to the ssl-passwords.ini"
+  type        = string
+}
