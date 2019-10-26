@@ -57,6 +57,14 @@ resource "aws_s3_bucket" "cache_shipreq" {
   tags   = local.default_tags
 }
 
+resource "aws_s3_bucket_public_access_block" "cache_shipreq" {
+  bucket                  = aws_s3_bucket.cache_shipreq.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 resource "aws_cloudwatch_log_group" "shipreq" {
   name = "/aws/codebuild/shipreq"
   tags = local.default_tags
