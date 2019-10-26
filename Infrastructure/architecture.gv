@@ -10,6 +10,7 @@ digraph {
     ebs_prometheus_tech [label="EBS:\nPrometheus\n(tech)" fillcolor=lightskyblue1]
     ebs_prometheus_busi [label="EBS:\nPrometheus\n(business)" fillcolor=lightskyblue1]
     eip_bastion [label="EIP:\nBastion"]
+    s3_webapp [label="S3:\nwebapp\nconfig\n& ssl"]
 
     subgraph cluster_VPC {
       label="VPC" fillcolor=white
@@ -32,6 +33,7 @@ digraph {
           label="App ECS Cluster / AGS / EC2s" fillcolor="#ffeeee"
           docker_filebeatA [label="Docker:\nFilebeat" fillcolor="#eecc99"]
           docker_nodeexpA [label="Docker:\nNodeExporter" fillcolor="#eecc99"]
+          docker_cadvisorA [label="Docker:\ncAdvisor" fillcolor="#eecc99"]
           docker_webapp [label="Docker:\nWebapp"]
           docker_taskman [label="Docker:\nTaskman"]
         }
@@ -48,7 +50,8 @@ digraph {
           label="Ops ECS Cluster / ASG / EC2s" fillcolor="#ffeeee"
           docker_filebeatO [label="Docker:\nFilebeat" fillcolor="#eecc99"]
           docker_nodeexpO [label="Docker:\nNodeExporter" fillcolor="#eecc99"]
-          docker_db_metrics  [label="?\nDB metrics to\nmaterialised view\n?" fillcolor="#eecc99"]
+          docker_cadvisorO [label="Docker:\ncAdvisor" fillcolor="#eecc99"]
+          docker_db_metrics  [label="Docker:\npostgres_exporter"]
           docker_prometheus_tech [label="Docker:\nPrometheus\n(tech)"]
           docker_prometheus_busi [label="Docker:\nPrometheus\n(business)"]
           docker_grafana [label="Docker:\nGrafana"]
@@ -57,7 +60,9 @@ digraph {
     }
   }
 
-  subnet_private -> docker_webapp [style=invis]
+  subnet_private -> docker_webapp,docker_taskman [style=invis]
+  // docker_webapp,docker_taskman -> docker_filebeatA,docker_nodeexpA,docker_cadvisorA [style=invis]
+  docker_prometheus_busi,docker_prometheus_tech -> docker_filebeatO,docker_nodeexpO,docker_cadvisorO [style=invis]
   // rds_shipreq,rds_taskman -> rds_grafana [style=invis]
 
   edge [color=red]
@@ -73,7 +78,7 @@ digraph {
 
   edge [color=green]
   rds_grafana -> docker_grafana [dir=back]
-  docker_webapp -> redis,rds_shipreq,rds_taskman
+  docker_webapp -> redis,rds_shipreq,rds_taskman,s3_webapp
   docker_taskman -> rds_taskman
   docker_prometheus_tech -> ebs_prometheus_tech
   docker_prometheus_busi -> ebs_prometheus_busi
@@ -82,6 +87,6 @@ digraph {
   edge [color="#999999" style=dashed]
   docker_filebeatA -> es
   es -> docker_filebeatO [dir=back]
-  docker_webapp,docker_taskman,docker_nodeexpA,docker_nodeexpO -> docker_prometheus_tech [dir=back]
+  docker_webapp,docker_taskman,docker_nodeexpA,docker_nodeexpO,docker_cadvisorA,docker_cadvisorO -> docker_prometheus_tech [dir=back]
   rds_shipreq,rds_taskman -> docker_db_metrics -> docker_prometheus_busi [dir=back]
 }
