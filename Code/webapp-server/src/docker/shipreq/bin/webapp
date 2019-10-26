@@ -18,7 +18,7 @@ cmd+=("$@")
 
 # This is a little util in shipreq/base that imports files from an external
 # source depending on config. For example, SSL passwords.
-import .
+import-files
 
 "${cmd[@]}" --list-config | grep -iv password
 exec "${cmd[@]}"

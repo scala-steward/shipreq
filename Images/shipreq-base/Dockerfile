@@ -63,4 +63,4 @@ ENV JAVA_HOME=/opt/graal \
 
 COPY .bashrc /root/.bashrc
 
-COPY import /usr/bin/import
+COPY import-files /usr/bin/import-files
