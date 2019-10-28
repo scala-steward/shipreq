@@ -13,12 +13,11 @@
     </filter>
   </appender>
 
-  <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-    <destination>logstash:14500,localhost:14500</destination>
+  <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
     <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-      <customFields>{"app":"webapp"}</customFields>
+      <includeMdc>true</includeMdc>
+      <customFields>{"@service":"shipreq/webapp"}</customFields>
     </encoder>
-    <keepAliveDuration>5 minutes</keepAliveDuration>
   </appender>
 
   <logger name="org.apache.commons" level="WARN" />
@@ -26,7 +25,6 @@
   <logger name="shipreq" level="DEBUG" />
 
   <root level="INFO">
-    <appender-ref ref="STDOUT" />
-    <appender-ref ref="LOGSTASH" />
+    <appender-ref ref="JSON" />
   </root>
 </configuration>

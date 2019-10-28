@@ -1,0 +1,35 @@
+# Reference YML available at:
+#   https://www.elastic.co/guide/en/beats/filebeat/current/filebeat-reference-yml.html
+
+filebeat.autodiscover:
+  providers:
+  - type: docker
+    templates:
+    - condition:
+        regexp:
+          docker.container.name: 'shipreq_dev_(webapp|taskman)'
+      config:
+      - type: container
+        paths:
+          - /var/lib/docker/containers/${data.docker.container.id}/*.log
+        encoding: utf-8
+        json.keys_under_root: true
+        json.add_error_key: true
+        json.message_key: message
+        # processors:
+        # - add_docker_metadata: ~
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  index: "filebeat-%{+yyyy.MM.dd}"
+  compression_level: 3
+
+# This alone doesn't actually create the index in ElasticSearch (or at least in Kibana)
+# but it's required because output.elasticsearch.index is specified above
+setup.template:
+  name: "filebeat"
+  pattern: "filebeat-*"
+
+# output.console:
+#   enabled: true
+#   pretty: true

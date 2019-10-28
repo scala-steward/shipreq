@@ -31,7 +31,6 @@ services:
     container_name: shipreq_dev_taskman
     links:
       - postgres
-      - logstash
     volumes:
       - ./taskman:/taskman/conf:ro
     environment:
@@ -48,7 +47,6 @@ services:
     links:
       - postgres
       - redis
-      - logstash
       - jaeger
     ports:
       - $PORT_SHIPREQ_WEBAPP_HTTP:8080
@@ -120,16 +118,20 @@ services:
       - SERVER_REWRITEBASEPATH=true
     mem_limit: 1g
 
-  logstash:
-    image: docker.elastic.co/logstash/logstash-oss:7.4.0
-    container_name: shipreq_dev_logstash
+  filebeat:
+    image: docker.elastic.co/beats/filebeat-oss:7.4.1
+    container_name: shipreq_dev_filebeat
+    user: root
     links:
       - elasticsearch
     volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
-    ports:
-      - $PORT_LOGSTASH:14500
-    mem_limit: 500m
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command:
+      - -e
+      - -strict.perms=false
+    mem_limit: 100m
 
   # You wouldn't do this in prod - it uses in-memory storage
   jaeger:
