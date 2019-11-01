@@ -126,3 +126,7 @@ Phase 2B
 * Default project template has an issue: Version field has no tags
 
 * Taskamn error in taskman-error.txt
+
+* Add LogFields and lock down types
+
+* Add userId to events
