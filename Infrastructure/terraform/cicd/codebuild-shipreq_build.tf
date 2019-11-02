@@ -1,24 +1,3 @@
-resource "aws_ecr_repository_policy" "shipreq_build" {
-  repository = aws_ecr_repository.shipreq_build.name
-
-  policy = <<EOB
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": { "Service": "codebuild.amazonaws.com" },
-      "Action": [
-        "ecr:BatchCheckLayerAvailability",
-        "ecr:BatchGetImage",
-        "ecr:GetDownloadUrlForLayer"
-      ]
-    }
-  ]
-}
-EOB
-}
-
 resource "aws_codebuild_project" "shipreq_build" {
   name         = "shipreq_build"
   description  = "Docker image: shipreq/build"
