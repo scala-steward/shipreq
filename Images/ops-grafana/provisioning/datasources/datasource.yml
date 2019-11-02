@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+
+- name: Prometheus (tech)
+  type: prometheus
+  access: proxy
+  url: ${PROMETHEUS_TECH_URL}
+  basicAuth: false
+  isDefault: true
+
+- name: Prometheus (biz)
+  type: prometheus
+  access: proxy
+  url: ${PROMETHEUS_BIZ_URL}
+  basicAuth: false
+  isDefault: false

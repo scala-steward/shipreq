@@ -198,17 +198,13 @@ services:
     mem_limit: 200m
 
   grafana:
-    image: grafana/grafana:6.4.3
+    image: shipreq/ops/grafana
     container_name: shipreq_dev_grafana
     links:
       - prometheus
-    volumes:
-      - ./grafana/:/etc/grafana/provisioning/
     environment:
-      - GF_SERVER_ENABLE_GZIP=true
-      - GF_SERVER_DOMAIN=grafana.whatever.com # needed to reverse-proxy
-      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/grafana/
-      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - PROMETHEUS_TECH_URL=http://prometheus:9090/prometheus
+      - PROMETHEUS_BIZ_URL=http://todo
     cpus: 2
     mem_limit: 100m
 
