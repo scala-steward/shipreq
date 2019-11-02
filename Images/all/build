@@ -53,9 +53,14 @@ function build_and_deploy {
   echo "image_by_git = $image_by_git"
   echo "image_latest = $image_latest"
 
+  pull_repo_prefix=
+  [ -n "${PULL_REPO:-}" ] && pull_repo_prefix="${PULL_REPO}/"
+
   if [ $pull = yes ]; then
     echo "Pulling..."
-    runcmd docker pull "${image_by_md5}" || runcmd docker pull "${image_latest}" || true
+    runcmd docker pull "${pull_repo_prefix}${image_by_md5}" \
+      || runcmd docker pull "${pull_repo_prefix}${image_latest}" \
+      || true
   fi
 
   image_exists=yes
@@ -66,6 +71,8 @@ function build_and_deploy {
   if [ $image_exists = no ]; then
     echo "Building..."
     runcmd docker build \
+      --cache-from "${pull_repo_prefix}${image_by_md5}" \
+      --cache-from "${pull_repo_prefix}${image_latest}" \
       -t "${image_by_md5}" \
       -t "${image_by_git}" \
       -t "${image_latest}" \

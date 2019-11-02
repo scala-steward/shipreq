@@ -1,8 +1,9 @@
 #!/bin/bash
 cd "$(dirname "$0")" || exit 1
 
+export PULL_REPO=930801536115.dkr.ecr.ap-southeast-2.amazonaws.com
 export OPS_PORTAL_URL=shipreq/ops/portal
 export SHIPREQ_BASE_URL=shipreq/base
 export SHIPREQ_BUILD_URL=shipreq/build
 
-exec ./build --no-pull --no-push
+exec ./build --no-push
