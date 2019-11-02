@@ -7,8 +7,8 @@ import Common.{propOrEnv, releaseMode}
 object Docker {
 
   val baseImage = {
-    val tag = s"latest-graal-${Dependencies.Graal.ver}"
     val image = propOrEnv("BASE_IMAGE_URL").getOrElse("shipreq/base")
+    val tag = "latest"
     s"$image:$tag"
   }
 
