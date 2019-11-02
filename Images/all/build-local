@@ -1,0 +1,8 @@
+#!/bin/bash
+cd "$(dirname "$0")" || exit 1
+
+export OPS_PORTAL_URL=shipreq/ops/portal
+export SHIPREQ_BASE_URL=shipreq/base
+export SHIPREQ_BUILD_URL=shipreq/build
+
+exec ./build --no-pull --no-push

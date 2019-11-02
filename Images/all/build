@@ -1,0 +1,92 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Parse args
+pull=yes
+push=yes
+for arg in "$@"; do
+  case "$arg" in
+    --no-pull) pull=no ;;
+    --no-push) push=no ;;
+    *)
+      echo "Usage: $0 [OPTION]..."
+      echo
+      echo "Options:"
+      echo "  --no-pull    Don't pull Docker images"
+      echo "  --no-push    Don't push Docker images/tags"
+      exit 1
+      ;;
+  esac
+done
+
+# Prepare globals
+cd "$(dirname "$0")/.."
+images_root_dir="$(pwd)"
+git_sha="$(git rev-parse --verify HEAD)"
+echo "images_root_dir = $images_root_dir"
+echo "git_sha         = $git_sha"
+echo
+
+function runcmd {
+  echo "> $@"
+  "$@"
+}
+
+function build_and_deploy {
+  image_dir="$1"
+  image_url="$2"
+
+  echo "================================================================================"
+  echo "$image_dir"
+  echo "================================================================================"
+
+  cd "${images_root_dir}/${image_dir}"
+
+  src_md5=$(find . -type f -exec md5sum {} \; | LC_COLLATE=C sort | md5sum | sed 's/ .*//')
+  echo "src_md5      = $src_md5"
+
+  image_by_md5="${image_url}:src-${src_md5}"
+  image_by_git="${image_url}:git-${git_sha}"
+  image_latest="${image_url}:latest"
+  echo "image_by_md5 = $image_by_md5"
+  echo "image_by_git = $image_by_git"
+  echo "image_latest = $image_latest"
+
+  if [ $pull = yes ]; then
+    echo "Pulling..."
+    runcmd docker pull "${image_by_md5}" || runcmd docker pull "${image_latest}" || true
+  fi
+
+  image_exists=yes
+  x="$(docker inspect "${image_by_md5}" || true)"
+  [ "$x" = '[]' ] && image_exists=no
+  echo "image_exists = $image_exists"
+
+  if [ $image_exists = no ]; then
+    echo "Building..."
+    runcmd docker build \
+      -t "${image_by_md5}" \
+      -t "${image_by_git}" \
+      -t "${image_latest}" \
+      .
+  else
+    echo "No need to build. Retagging..."
+    runcmd docker tag "${image_by_md5}" "${image_by_git}"
+    runcmd docker tag "${image_by_md5}" "${image_latest}"
+  fi
+
+  if [ $push = yes ]; then
+    echo "Pushing..."
+    [ $image_exists = no ] && runcmd docker push "${image_by_md5}"
+    runcmd docker push "${image_by_git}"
+    runcmd docker push "${image_latest}"
+  fi
+
+  echo "Done"
+  echo
+}
+
+build_and_deploy ops-portal    "${OPS_PORTAL_URL}"
+build_and_deploy shipreq-base  "${SHIPREQ_BASE_URL}"
+build_and_deploy shipreq-build "${SHIPREQ_BUILD_URL}"
