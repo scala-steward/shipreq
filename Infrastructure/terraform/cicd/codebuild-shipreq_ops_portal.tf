@@ -1,8 +1,3 @@
-# Created by ../global
-data "aws_ecr_repository" "shipreq_ops_portal" {
-  name = "shipreq/ops/portal"
-}
-
 resource "aws_ecr_repository_policy" "shipreq_ops_portal" {
   repository = data.aws_ecr_repository.shipreq_ops_portal.name
 

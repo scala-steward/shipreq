@@ -1,8 +1,3 @@
-resource "aws_ecr_repository" "shipreq_build" {
-  name = "shipreq/build"
-  tags = local.default_tags
-}
-
 resource "aws_ecr_repository_policy" "shipreq_build" {
   repository = aws_ecr_repository.shipreq_build.name
 

@@ -1,8 +1,3 @@
-# Created by ../global
-data "aws_ecr_repository" "shipreq_base" {
-  name = "shipreq/base"
-}
-
 resource "aws_ecr_repository_policy" "shipreq_base" {
   repository = data.aws_ecr_repository.shipreq_base.name
 

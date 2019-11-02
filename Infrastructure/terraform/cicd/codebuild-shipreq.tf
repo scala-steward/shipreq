@@ -1,13 +1,3 @@
-# Created by ../global
-data "aws_ecr_repository" "taskman" {
-  name = "shipreq/taskman"
-}
-
-# Created by ../global
-data "aws_ecr_repository" "webapp" {
-  name = "shipreq/webapp"
-}
-
 resource "aws_codebuild_project" "shipreq" {
   name         = "shipreq"
   description  = "Taskman & Webapp"
