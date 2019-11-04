@@ -7,4 +7,3 @@ VOLUME /data
 ENTRYPOINT ["/root/start"]
 CMD []
 COPY ./start /root/start
-COPY ./prometheus.yml /root/prometheus.yml.tempalte

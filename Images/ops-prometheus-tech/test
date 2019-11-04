@@ -7,11 +7,21 @@ docker build -t shipreq/ops/prometheus-tech .
 vol=/tmp/ops-prometheus-tech.vol
 mkdir -p $vol
 
+CONFIG="
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: 'prometheus-tech'
+    metrics_path: '/prometheus/tech/metrics'
+    static_configs:
+      - targets: ['localhost:9090']
+"
+
 cmd=(
   docker run
   --rm
   -v $vol:/data
-  -e SCRAPE_INTERVAL=15s
+  -e CONFIG="$CONFIG"
   -p 9090:9090
   shipreq/ops/prometheus-tech
   --storage.tsdb.retention.time=2y

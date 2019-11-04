@@ -1,8 +1,8 @@
 #!/bin/sh
 
-cat /root/prometheus.yml.tempalte | sed "
-  s/\${SCRAPE_INTERVAL}/${SCRAPE_INTERVAL}/;
-" > /etc/prometheus/prometheus.yml
+[ -z "$CONFIG" ] && echo '$CONFIG is blank!' && exit 1
+
+echo "$CONFIG" > /etc/prometheus/prometheus.yml
 
 echo "----------------------------------------------------------------------------"
 cat /etc/prometheus/prometheus.yml
