@@ -70,6 +70,7 @@ resource "aws_security_group" "app" {
     from_port       = 22
     to_port         = 22
     security_groups = [aws_security_group.bastion.id]
+    description     = "Bastion can SSH in"
   }
 
   egress {
@@ -77,6 +78,7 @@ resource "aws_security_group" "app" {
     from_port   = 80
     to_port     = 80
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Internet HTTP"
   }
 
   egress {
@@ -84,6 +86,7 @@ resource "aws_security_group" "app" {
     from_port   = 443
     to_port     = 443
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Internet HTTPS"
   }
 }
 

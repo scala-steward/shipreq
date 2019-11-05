@@ -24,6 +24,7 @@ resource "aws_security_group" "bastion" {
     from_port   = 36017
     to_port     = 36017
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Incoming SSH"
   }
 
   egress {
@@ -31,6 +32,7 @@ resource "aws_security_group" "bastion" {
     from_port   = 0
     to_port     = 0
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Full internet access"
   }
 }
 

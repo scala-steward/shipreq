@@ -43,6 +43,7 @@ resource "aws_security_group" "redis" {
     from_port       = 6379
     to_port         = 6379
     security_groups = [aws_security_group.bastion.id]
+    description     = "Bastion access"
   }
 }
 

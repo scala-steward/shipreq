@@ -36,6 +36,7 @@ resource "aws_security_group" "nat" {
     from_port       = 22
     to_port         = 22
     security_groups = [aws_security_group.bastion.id]
+    description     = "Bastion can SSH in"
   }
 
   ingress {
@@ -43,6 +44,7 @@ resource "aws_security_group" "nat" {
     from_port   = 0
     to_port     = 0
     cidr_blocks = [aws_subnet.private.cidr_block]
+    description = "Full access from private subnet"
   }
 
   egress {
@@ -50,6 +52,7 @@ resource "aws_security_group" "nat" {
     from_port   = 80
     to_port     = 80
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Internet HTTP"
   }
 
   egress {
@@ -57,6 +60,7 @@ resource "aws_security_group" "nat" {
     from_port   = 443
     to_port     = 443
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Internet HTTPS"
   }
 }
 

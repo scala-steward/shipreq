@@ -70,6 +70,7 @@ resource "aws_security_group" "es" {
     from_port       = 443
     to_port         = 443
     security_groups = [aws_security_group.bastion.id]
+    description     = "Bastion access"
   }
 }
 
