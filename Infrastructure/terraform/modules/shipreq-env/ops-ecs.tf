@@ -119,3 +119,21 @@ resource "aws_iam_role_policy_attachment" "ops-ecs-ec2" {
   role       = aws_iam_role.ops-ecs.id
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
 }
+
+resource "aws_service_discovery_service" "ops" {
+  name = local.ops_subdomain
+
+  dns_config {
+    namespace_id   = aws_service_discovery_private_dns_namespace.internal.id
+    routing_policy = "MULTIVALUE"
+
+    dns_records {
+      ttl  = 30
+      type = "A"
+    }
+  }
+
+  health_check_custom_config {
+    failure_threshold = 1
+  }
+}

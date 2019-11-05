@@ -2,24 +2,6 @@ locals {
   prometheus_tech_tags = merge(local.default_tags, { Name = "${var.env}-prometheus-tech" })
 }
 
-resource "aws_service_discovery_service" "prometheus_tech" {
-  name = local.prometheus_tech_subdomain
-
-  dns_config {
-    namespace_id   = aws_service_discovery_private_dns_namespace.internal.id
-    routing_policy = "MULTIVALUE"
-
-    dns_records {
-      ttl  = 30
-      type = "A"
-    }
-  }
-
-  health_check_custom_config {
-    failure_threshold = 1
-  }
-}
-
 resource "aws_ecs_service" "prometheus_tech" {
   name            = "${var.env}-ops-prometheus-tech"
   cluster         = aws_ecs_cluster.ops.id
@@ -28,8 +10,10 @@ resource "aws_ecs_service" "prometheus_tech" {
   propagate_tags  = "SERVICE"
   tags            = local.prometheus_tech_tags
 
+  # Service discovery requires an ENI per service but there's a small ENI/instanceType limit that we exceed.
+  # Therefore, prometheus-tech will register itself on behalf of the entire ops cluster
   service_registries {
-    registry_arn = aws_service_discovery_service.prometheus_tech.arn
+    registry_arn = aws_service_discovery_service.ops.arn
   }
 
   network_configuration {
@@ -135,7 +119,7 @@ resource "aws_iam_role" "prometheus_tech_task" {
       {
           "Action": "sts:AssumeRole",
           "Principal": {
-             "Service": "ecs-tasks.amazonaws.com"
+            "Service": "ecs-tasks.amazonaws.com"
           },
           "Effect": "Allow",
           "Sid": ""

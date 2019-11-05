@@ -21,15 +21,18 @@ locals {
   redis_domain  = "redis.${local.internal_domain}"
   redis_version = "5.0.5"
 
-  prometheus_tech_subdomain = "tech.prometheus"
-  prometheus_tech_port      = 9090
-  prometheus_tech_host      = "${local.prometheus_tech_subdomain}.${local.internal_sd_domain}"
-  prometheus_tech_url       = "http://${local.prometheus_tech_host}:${local.prometheus_tech_port}"
+  # Service discovery requires an ENI per service but there's a small ENI/instanceType limit that we exceed.
+  # Therefore, prometheus-tech will register itself on behalf of the entire ops cluster
+  ops_subdomain = "ops"
+  ops_host      = "${local.ops_subdomain}.${local.internal_sd_domain}"
 
-  prometheus_biz_subdomain = "biz.prometheus"
-  prometheus_biz_port      = 9091
-  prometheus_biz_host      = "${local.prometheus_biz_subdomain}.${local.internal_sd_domain}"
-  prometheus_biz_url       = "http://${local.prometheus_biz_host}:${local.prometheus_biz_port}"
+  prometheus_tech_port = 9090
+  prometheus_tech_host = local.ops_host
+  prometheus_tech_url  = "http://${local.prometheus_tech_host}:${local.prometheus_tech_port}"
+
+  prometheus_biz_port = 9091
+  prometheus_biz_host = local.ops_host
+  prometheus_biz_url  = "http://${local.prometheus_biz_host}:${local.prometheus_biz_port}"
 
   postgres_domain = "postgres.${local.internal_domain}"
 
