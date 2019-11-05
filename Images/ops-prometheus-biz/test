@@ -1,0 +1,32 @@
+#!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
+
+docker build -t shipreq/ops/prometheus-biz .
+
+vol=/tmp/ops-prometheus-biz.vol
+mkdir -p $vol
+
+CONFIG="
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: 'prometheus-biz'
+    metrics_path: '/prometheus/biz/metrics'
+    static_configs:
+      - targets: ['localhost:9090']
+"
+
+cmd=(
+  docker run
+  --rm
+  -v $vol:/data
+  -e CONFIG="$CONFIG"
+  -p 9091:9090
+  shipreq/ops/prometheus-biz
+  --storage.tsdb.retention.time=2y
+)
+
+echo "> ${cmd[@]}"
+echo
+exec "${cmd[@]}"

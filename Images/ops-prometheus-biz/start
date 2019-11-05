@@ -1,0 +1,17 @@
+#!/bin/sh
+
+[ -z "$CONFIG" ] && echo '$CONFIG is blank!' && exit 1
+
+echo "$CONFIG" > /etc/prometheus/prometheus.yml
+
+echo "----------------------------------------------------------------------------"
+cat /etc/prometheus/prometheus.yml
+echo "----------------------------------------------------------------------------"
+
+CMD=/bin/prometheus
+CMD="$CMD --config.file=/etc/prometheus/prometheus.yml"
+CMD="$CMD --storage.tsdb.path=/data/"
+CMD="$CMD --web.external-url=http://prometheus:9090/prometheus/biz/"
+
+echo "> $CMD $@"
+exec $CMD "$@"
