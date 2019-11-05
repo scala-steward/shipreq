@@ -70,8 +70,8 @@ resource "aws_security_group" "ops" {
 
   ingress {
     protocol        = "tcp"
-    from_port       = 22
-    to_port         = 22
+    from_port       = 0
+    to_port         = 65535
     security_groups = [aws_security_group.bastion.id]
     description     = "Bastion can access everything"
   }
