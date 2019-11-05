@@ -10,10 +10,16 @@ Overview
 * `cicd` - Terraform to setup CI/CD stuff.
            Depends on `init` and `global`.
 
-* `env` - Configurable Terraform *module* to create a ShipReq runtime environment.
-          Depends on `init` and `global`.
+* `modules/ec2-sd` - Terraform *module* for EC2 service discovery.
+                     Specifically, the ability to have a single, private DNS record that points all
+                     live EC2s with a given Name tag.
 
-* `dev` - Terraform to setup a ShipReq dev environment
+* `modules/ecs-ebs` - Terraform *module* to allow each EC2 in a cluster, a persistent EBS volume.
+
+* `modules/shipreq-env` - Configurable Terraform *module* to create a ShipReq runtime environment.
+                          Depends on `init` and `global`.
+
+* `dev` - Terraform to setup a ShipReq dev environment.
           Depends on `init` and `global`.
 
 
@@ -25,30 +31,18 @@ Initial Setup
 3. Terraform: `init`
 4. Terraform: `global`
 5. Terraform: `cicd`
-6. CodeBuild: `shipreq_build`
-7. CodeBuild: `shipreq_base`
-8. CodeBuild: `shipreq`
-
-
-Creating a Dev Environment
-==========================
-
-1. Terraform: `dev`
-TODO : Bastion local setup
+6. CodeBuild: `images`
+7. CodeBuild: `shipreq`
 
 
 Env Details
 ===========
 
 * One VPC per env
-  * 3 subnets: public, private-{app,ops}
+  * 2 subnets: public, private
   * 2 private DNSs only accessible from within the VPC:
     * `<env>.internal` - manually managed
     * `<env>.sd.internal` - managed by service discovery
-
-* Prometheus
-  * DNS entry `prometheus.<env>.sd.internal` points to all active Prometheus containers
-  * port: 9090
 
 
 Problems
