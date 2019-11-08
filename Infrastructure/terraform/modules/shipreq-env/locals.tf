@@ -15,9 +15,9 @@ locals {
 
   nat_domain = "nat.${local.internal_domain}"
 
-  es_domain        = "es.${local.internal_domain}"
-  es_url           = "https://${local.es_domain}"
-  es_url_with_port = "${local.es_url}:443"
+  es_domain             = "es.${local.internal_domain}"
+  es_root_url           = "https://${local.es_domain}"
+  es_root_url_with_port = "${local.es_root_url}:443"
 
   redis_domain  = "redis.${local.internal_domain}"
   redis_version = "5.0.5"
@@ -60,14 +60,21 @@ locals {
   ops_subdomain = "ops"
   ops_host      = "${local.ops_subdomain}.${local.internal_sd_domain}"
 
-  prometheus_tech_port = 9090
-  prometheus_tech_host = local.ops_host
-  prometheus_tech_url  = "http://${local.prometheus_tech_host}:${local.prometheus_tech_port}"
+  prometheus_tech_port     = 9090
+  prometheus_tech_host     = local.ops_host
+  prometheus_tech_root_url = "http://${local.prometheus_tech_host}:${local.prometheus_tech_port}"
+  prometheus_tech_url      = "${local.prometheus_tech_root_url}/prometheus/tech/"
 
-  prometheus_biz_port = 9091
-  prometheus_biz_host = local.ops_host
-  prometheus_biz_url  = "http://${local.prometheus_biz_host}:${local.prometheus_biz_port}"
+  prometheus_biz_port     = 9091
+  prometheus_biz_host     = local.ops_host
+  prometheus_biz_root_url = "http://${local.prometheus_biz_host}:${local.prometheus_biz_port}"
+  prometheus_biz_url      = "${local.prometheus_biz_root_url}/prometheus/biz/"
 
-  ops_cadvisor_host = local.ops_host
-  ops_cadvisor_port = 8080
+  ops_cadvisor_host     = local.ops_host
+  ops_cadvisor_port     = 8080
+  ops_cadvisor_root_url = "http://${local.ops_cadvisor_host}:${local.ops_cadvisor_port}"
+
+  grafana_port     = 3000
+  grafana_host     = local.ops_host
+  grafana_root_url = "http://${local.grafana_host}:${local.grafana_port}"
 }

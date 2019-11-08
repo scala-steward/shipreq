@@ -155,3 +155,15 @@ variable "prometheus_tech_scrape_interval" {
 variable "prometheus_biz_scrape_interval" {
   type = string
 }
+
+variable "grafana_db_name" {
+  type = string
+}
+
+variable "grafana_db_username" {
+  type = string
+}
+
+variable "grafana_db_password" {
+  type = string
+}

@@ -48,16 +48,20 @@ resource "aws_instance" "bastion" {
   volume_tags            = local.bastion_tags
 
   user_data = templatefile("${path.module}/bastion-ec2-init.sh", {
+    CADVISOR_URL        = local.ops_cadvisor_root_url
     DNS_TTL             = "${local.dns_stable_ttl / 2}s"
     ENV                 = var.env
     ENV_NAME            = var.name
-    KIBANA_URL          = local.es_url
+    GRAFANA_URL         = local.grafana_root_url
+    KIBANA_URL          = local.es_root_url
     PORTAL_IMAGE        = data.aws_ecr_repository.shipreq_ops_portal.repository_url
     POSTGRES_DOMAIN     = local.postgres_domain
-    PROMETHEUS_TECH_URL = local.prometheus_tech_url
-    PROMETHEUS_BIZ_URL  = local.prometheus_biz_url
+    PROMETHEUS_TECH_URL = local.prometheus_tech_root_url
+    PROMETHEUS_BIZ_URL  = local.prometheus_biz_root_url
     REDIS_HOST          = local.redis_domain
     REDIS_VER           = local.redis_version
+    SHIPREQ_URL_HTTP    = "TODO"
+    SHIPREQ_URL         = "TODO"
   })
 
   root_block_device {

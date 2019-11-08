@@ -8,7 +8,7 @@ GRANT grafana TO root;
 CREATE DATABASE grafana OWNER grafana;
 ALTER SCHEMA public OWNER TO grafana;
 
-ALTER ROLE grafana SET search_path TO grafana;
+ALTER ROLE grafana SET search_path TO public;
 
 --------------------------------------------------------------------------------
 

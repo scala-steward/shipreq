@@ -25,7 +25,7 @@ resource "aws_ecs_task_definition" "filebeat" {
     "environment": [
       {
         "name": "ES_HOSTS",
-        "value": "${local.es_url_with_port}"
+        "value": "${local.es_root_url_with_port}"
       },
       {
         "name": "ES_SSL_VERIFICATION_MODE",

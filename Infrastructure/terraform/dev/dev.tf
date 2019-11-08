@@ -42,6 +42,9 @@ module "shipreq" {
   prometheus_biz_ebs_size                   = 1
   prometheus_biz_retention                  = "time=10y"
   prometheus_biz_scrape_interval            = "2m"
+  grafana_db_name                           = "grafana"
+  grafana_db_username                       = "grafana"
+  grafana_db_password                       = "grafana"
 }
 
 output "bastion_host" {

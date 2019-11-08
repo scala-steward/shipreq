@@ -91,6 +91,14 @@ resource "aws_security_group" "ops" {
     cidr_blocks = ["0.0.0.0/0"]
     description = "Internet HTTPS"
   }
+
+  egress {
+    protocol        = "tcp"
+    from_port       = 5432
+    to_port         = 5432
+    security_groups = [aws_security_group.postgres.id]
+    description     = "Postgres"
+  }
 }
 
 resource "aws_iam_role" "ops-ecs" {
