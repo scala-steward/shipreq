@@ -1,5 +1,9 @@
 FROM grafana/grafana:6.4.3
 
+USER root
+RUN apk --no-cache add curl
+USER grafana
+
 COPY provisioning /etc/grafana/provisioning
 
 ENV \
