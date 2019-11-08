@@ -217,6 +217,10 @@ setup.template:
   name: "filebeat"
   pattern: "filebeat-*"
 
+# Required for connectivity to ES on AWS
+# https://stackoverflow.com/questions/57836793/mysterious-filebeat-7-x-pack-issue-using-docker-image/57874465#57874465
+setup.ilm.enabled: false
+
 # output.console:
 #   enabled: true
 #   pretty: true
