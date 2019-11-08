@@ -68,4 +68,6 @@ locals {
   prometheus_biz_host = local.ops_host
   prometheus_biz_url  = "http://${local.prometheus_biz_host}:${local.prometheus_biz_port}"
 
+  ops_cadvisor_host = local.ops_host
+  ops_cadvisor_port = 8080
 }

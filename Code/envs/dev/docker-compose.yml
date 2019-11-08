@@ -151,7 +151,7 @@ services:
     restart: unless-stopped
 
   cadvisor:
-    image: gcr.io/google_containers/cadvisor:v0.34.0
+    image: shipreq/ops/cadvisor
     container_name: shipreq_dev_cadvisor
     privileged: true
     volumes:
@@ -160,11 +160,7 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /var/run:/var/run:ro
-    command:
-      - --docker_only
-      # - --docker_env_metadata_whitelist=
-      - --url_base_prefix=/cadvisor
-    mem_limit: 160m
+    mem_limit: 128m
     restart: unless-stopped
 
   postgres_exporter:

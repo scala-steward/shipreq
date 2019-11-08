@@ -21,10 +21,12 @@ scrape_configs:
   #   static_configs:
   #     - targets: ['node-exporter:9100']
 
-  # - job_name: 'cadvisor'
-  #   metrics_path: '/cadvisor/metrics'
-  #   static_configs:
-  #     - targets: ['cadvisor:8080']
+  - job_name: 'cadvisor'
+    metrics_path: '/cadvisor/metrics'
+    dns_sd_configs:
+      - names: [ '${OPS_CADVISOR_HOST}' ]
+        type: 'A'
+        port: ${OPS_CADVISOR_PORT}
 
   # - job_name: 'webapp-dev'
   #   metrics_path: '/ops/metrics'

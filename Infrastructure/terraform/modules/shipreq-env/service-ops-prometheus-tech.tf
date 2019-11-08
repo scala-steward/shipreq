@@ -7,6 +7,8 @@ locals {
     PROMETHEUS_TECH_SCRAPE_INTERVAL = var.prometheus_tech_scrape_interval
     PROMETHEUS_BIZ_HOST             = local.prometheus_biz_host
     PROMETHEUS_BIZ_PORT             = local.prometheus_biz_port
+    OPS_CADVISOR_HOST               = local.ops_cadvisor_host
+    OPS_CADVISOR_PORT               = local.ops_cadvisor_port
   })
 }
 
