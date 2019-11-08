@@ -18,23 +18,32 @@ digraph {
 
       subgraph cluster_public {
         label="Public subnet" fillcolor="#999999"
-        elb_webapp [label="ALB:\nWebapp"]
+        elb_webapp [label="ALB:\nWebapp" color=red]
         nat [label="EC2:\nNAT"]
-        bastion [label="EC2:\nBastion\ndevops reverse-proxy\ndevops portal" color=red]
+
+        subgraph cluster_bastion {
+          label="EC2: Bastion" fillcolor="#ffee44" style="filled,rounded" color=red
+          node [fillcolor="#fff8f0"]
+          bastion [shape=point fillcolor=red width=.12]
+          bastion_out [shape=point fillcolor=blue width=.12]
+          docker_portal [label="Docker:\nOps Portal"]
+          docker_filebeatB [label="Docker:\nFilebeat" fillcolor="#eecc99"]
+        }
       }
 
       subgraph cluster_private {
         label="Private subnet" fillcolor="#dddddd"
-        subnet_private [shape=point fillcolor=blue width=.12]
-        redis [label="Redis"]
-        es [label="ElasticSearch\n& Kibana"]
+        subnet_private_in [shape=point fillcolor=red width=.12]
+        subnet_private_out [shape=point fillcolor=blue width=.12]
+        redis [label="\nRedis\n\n"]
+        es [label="ElasticSearch\n& Kibana" color=red]
 
         subgraph cluster_ecs2_app {
           label="App ECS Cluster / AGS / EC2s" fillcolor="#ffeeee"
           docker_filebeatA [label="Docker:\nFilebeat" fillcolor="#eecc99"]
           docker_nodeexpA [label="Docker:\nNodeExporter" fillcolor="#eecc99"]
           docker_cadvisorA [label="Docker:\ncAdvisor" fillcolor="#eecc99"]
-          docker_webapp [label="Docker:\nWebapp"]
+          docker_webapp [label="Docker:\nWebapp" color=red]
           docker_taskman [label="Docker:\nTaskman"]
         }
 
@@ -51,31 +60,33 @@ digraph {
           docker_nodeexpO [label="Docker:\nNodeExporter" fillcolor="#eecc99"]
           docker_cadvisorO [label="Docker:\ncAdvisor" fillcolor="#eecc99"]
           docker_db_metrics  [label="Docker:\npostgres_exporter"]
-          docker_prometheus_tech [label="Docker:\nPrometheus\n(tech)"]
-          docker_prometheus_busi [label="Docker:\nPrometheus\n(business)"]
-          docker_grafana [label="Docker:\nGrafana"]
+          docker_prometheus_tech [label="Docker:\nPrometheus\n(tech)" color=red]
+          docker_prometheus_busi [label="Docker:\nPrometheus\n(business)" color=red]
+          docker_grafana [label="Docker:\nGrafana" color=red]
         }
       }
     }
   }
 
-  subnet_private -> docker_webapp,docker_taskman [style=invis]
+  // subnet_private_in -> elb_webapp [style=invis]
+  // subnet_private_in -> docker_webapp,docker_taskman [style=invis]
+  subnet_private_in -> docker_filebeatA [style=invis]
   // docker_webapp,docker_taskman -> docker_filebeatA,docker_nodeexpA,docker_cadvisorA [style=invis]
-  docker_prometheus_busi,docker_prometheus_tech -> docker_filebeatO,docker_nodeexpO,docker_cadvisorO [style=invis]
+  // docker_prometheus_busi,docker_prometheus_tech -> docker_filebeatO,docker_nodeexpO,docker_cadvisorO [style=invis]
   // rds_shipreq -> rds_grafana [style=invis]
 
   edge [color=red]
   internet -> dns_shipreq -> elb_webapp
   internet -> eip_bastion -> bastion
   elb_webapp -> docker_webapp
-  bastion -> subnet_private
-  subnet_private -> es,docker_grafana,docker_prometheus_tech,docker_prometheus_busi [style=dashed]
-  subnet_private -> docker_cadvisorO [style=dashed]
-  // subnet_private -> docker_cadvisorA [style=dashed constraint=false]
+  bastion -> subnet_private_in
+  docker_portal -> subnet_private_in -> es,docker_grafana,docker_prometheus_tech,docker_prometheus_busi [style=dashed]
+  // subnet_private_in -> docker_cadvisorO [style=dashed]
+  // subnet_private_in -> docker_cadvisorA [style=dashed constraint=false]
 
   edge [color=blue]
-  internet -> nat [dir=back]
-  nat -> subnet_private [dir=back]
+  internet -> nat,bastion_out [dir=back]
+  nat -> subnet_private_out [dir=back]
 
   edge [color=green]
   rds_grafana -> docker_grafana [dir=back]
@@ -85,8 +96,8 @@ digraph {
   docker_prometheus_busi -> ebs_prometheus_busi
   docker_grafana -> docker_prometheus_tech,docker_prometheus_busi
 
-  edge [color="#999999" style=dashed]
-  docker_filebeatA -> es
+  edge [color="#888888" style=dashed]
+  docker_filebeatA,docker_filebeatB -> es
   es -> docker_filebeatO [dir=back]
   docker_webapp,docker_taskman,docker_nodeexpA,docker_nodeexpO,docker_cadvisorA,docker_cadvisorO -> docker_prometheus_tech [dir=back]
   rds_shipreq -> docker_db_metrics -> docker_prometheus_busi [dir=back]
