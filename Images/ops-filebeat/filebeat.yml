@@ -208,7 +208,7 @@ filebeat.autodiscover:
 output.elasticsearch:
   hosts: '${ES_HOSTS}'
   index: "filebeat-%{+yyyy.MM.dd}"
-  compression_level: ${ES_COMPRESSION_LEVEL:3}
+  compression_level: ${ES_COMPRESSION_LEVEL:0} # This seems to be incompatible with AWS ES
   ssl.verification_mode: ${ES_SSL_VERIFICATION_MODE:full}
 
 # This alone doesn't actually create the index in ElasticSearch (or at least in Kibana)
