@@ -252,7 +252,7 @@ output.elasticsearch:
   hosts: '${ES_HOSTS}'
   index: "filebeat-%{+yyyy.MM.dd}"
   compression_level: ${ES_COMPRESSION_LEVEL:0} # This seems to be incompatible with AWS ES
-  ssl.verification_mode: ${ES_SSL_VERIFICATION_MODE:full}
+  ssl.verification_mode: ${ES_SSL_VERIFICATION_MODE:none} # I'm using a private DNS alias
 
 # This alone doesn't actually create the index in ElasticSearch (or at least in Kibana)
 # but it's required because output.elasticsearch.index is specified above
