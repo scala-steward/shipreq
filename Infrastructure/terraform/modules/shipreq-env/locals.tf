@@ -43,13 +43,13 @@ locals {
 
   # Memory reservation for everything in the Ops cluster
   ops_cluster_mem_res = {
-    cadvisor          = 50
+    cadvisor          = 48
     filebeat          = 32
     grafana           = 32
-    node_exporter     = 32
-    postgres_exporter = 32
-    prometheus_biz    = 90
-    prometheus_tech   = 100
+    node_exporter     = 24
+    postgres_exporter = 16
+    prometheus_biz    = 64
+    prometheus_tech   = 128
   }
 
   ops_device = {
