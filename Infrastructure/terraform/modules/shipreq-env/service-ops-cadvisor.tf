@@ -59,7 +59,17 @@ resource "aws_ecs_task_definition" "cadvisor" {
     ],
     "cpu": ${local.ops_cluster_cpu.cadvisor},
     "memoryReservation": ${local.ops_cluster_mem_res.cadvisor},
-    "memory": 128
+    "memory": 128,
+    "healthCheck": {
+      "command": [
+        "CMD-SHELL",
+        "wget --quiet --tries=1 --spider http://localhost:8080${local.ops_cadvisor_path}/healthz || exit 1"
+      ],
+      "startPeriod": 60,
+      "interval": 60,
+      "timeout": 10,
+      "retries": 2
+    }
   }
 ]
 EOB

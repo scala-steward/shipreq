@@ -74,6 +74,7 @@ locals {
 
   ops_cadvisor_host     = local.ops_host
   ops_cadvisor_port     = 8080
+  ops_cadvisor_path     = "/cadvisor"
   ops_cadvisor_root_url = "http://${local.ops_cadvisor_host}:${local.ops_cadvisor_port}"
 
   grafana_port     = 3000
