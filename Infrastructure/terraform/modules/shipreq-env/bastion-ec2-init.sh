@@ -42,6 +42,18 @@ EOB
 systemctl restart sshd
 
 ####################################################################################################
+# Security
+
+echo '0 0 * * * root yum -y update --security' > /etc/cron.d/security-updates
+
+# Prevent bastion host users from viewing processes owned by other users.
+# See: https://github.com/aws-quickstart/quickstart-linux-bastion/blob/master/scripts/bastion_bootstrap.sh
+mount -o remount,rw,hidepid=2 /proc
+awk '!/proc/' /etc/fstab > temp && mv temp /etc/fstab
+echo "proc /proc proc defaults,hidepid=2 0 0" >> /etc/fstab
+
+
+####################################################################################################
 # Docker
 
 amazon-linux-extras install -y docker
