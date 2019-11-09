@@ -66,6 +66,13 @@ locals {
     prometheus_biz  = "/dev/xvdg"
   }
 
+  ops_healthcheck = {
+    startPeriod = 60
+    interval    = 60
+    timeout     = 10
+    retries     = 2
+  }
+
   ops_subdomain = "ops"
   ops_host      = "${local.ops_subdomain}.${local.internal_sd_domain}"
 

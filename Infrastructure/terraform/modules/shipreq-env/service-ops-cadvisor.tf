@@ -63,10 +63,10 @@ resource "aws_ecs_task_definition" "cadvisor" {
         "CMD-SHELL",
         "wget --quiet --tries=1 --spider http://localhost:8080${local.ops_cadvisor_path}/healthz || exit 1"
       ],
-      "startPeriod": 60,
-      "interval": 60,
-      "timeout": 10,
-      "retries": 2
+      "startPeriod": ${local.ops_healthcheck.startPeriod},
+      "interval": ${local.ops_healthcheck.interval},
+      "timeout": ${local.ops_healthcheck.timeout},
+      "retries": ${local.ops_healthcheck.retries}
     }
   }
 ]
