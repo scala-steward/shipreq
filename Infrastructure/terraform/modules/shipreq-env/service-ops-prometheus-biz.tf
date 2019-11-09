@@ -12,8 +12,6 @@ resource "aws_ecs_service" "prometheus_biz" {
   desired_count   = 1
   propagate_tags  = "SERVICE"
   tags            = local.prometheus_biz_tags
-
-  # TODO health check
 }
 
 resource "aws_ecs_task_definition" "prometheus_biz" {

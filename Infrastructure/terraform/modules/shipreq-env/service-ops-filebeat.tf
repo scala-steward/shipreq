@@ -9,8 +9,6 @@ resource "aws_ecs_service" "filebeat" {
   scheduling_strategy = "DAEMON"
   propagate_tags      = "SERVICE"
   tags                = local.filebeat_tags
-
-  # TODO health check
 }
 
 resource "aws_ecs_task_definition" "filebeat" {

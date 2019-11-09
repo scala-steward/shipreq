@@ -9,8 +9,6 @@ resource "aws_ecs_service" "cadvisor" {
   scheduling_strategy = "DAEMON"
   propagate_tags      = "SERVICE"
   tags                = local.cadvisor_tags
-
-  # TODO health check
 }
 
 resource "aws_ecs_task_definition" "cadvisor" {

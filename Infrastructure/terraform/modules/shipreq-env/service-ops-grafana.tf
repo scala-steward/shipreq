@@ -9,8 +9,6 @@ resource "aws_ecs_service" "grafana" {
   desired_count   = 1
   propagate_tags  = "SERVICE"
   tags            = local.grafana_tags
-
-  # TODO health check
 }
 
 resource "aws_ecs_task_definition" "grafana" {

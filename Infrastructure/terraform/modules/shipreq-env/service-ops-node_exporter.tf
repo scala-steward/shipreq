@@ -9,8 +9,6 @@ resource "aws_ecs_service" "node_exporter" {
   scheduling_strategy = "DAEMON"
   propagate_tags      = "SERVICE"
   tags                = local.node_exporter_tags
-
-  # TODO health check
 }
 
 resource "aws_ecs_task_definition" "node_exporter" {
