@@ -4,21 +4,18 @@
   * Log logins
   * Log commands (?)
   * Log portal (?)
-  * Healthcheck & recovery
+  * node_exporter (?)
+  * cadvisor (?)
+  * filebeat (?)
 
 * NAT
-  * Collect logs
-  * Healthcheck & recovery
+  * Collect logs / filebeat (?)
+  * node_exporter (?)
 
 * Cluster EC2s
   * Collect logs (?)
 
 ====================================================================================================
-
-* Bastion
-  * node_exporter (?)
-  * cadvisor (?)
-  * filebeat (?)
 
 * App
   * ALB
@@ -29,7 +26,6 @@
   * node_exporter
 
 * Ops
-  * node_exporter
   * postgres_exporter
 
 * Alerting
