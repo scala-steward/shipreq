@@ -3,8 +3,16 @@
 set -euo pipefail
 
 serviceId='${serviceId}'
-recordId='auto-generated'
+instanceId="$(curl -s http://169.254.169.254/latest/meta-data/instance-id)"
+ip="$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)"
 tagValue='${tagValue}'
+
+echo "Registering own ip..."
+
+aws servicediscovery register-instance \
+  --service-id "$serviceId" \
+  --instance-id "$instanceId" \
+  --attributes=AWS_INSTANCE_IPV4="$ip"
 
 echo "Discovering $tagValue IPs..."
 
@@ -17,14 +25,29 @@ ips="$(
 )"
 
 echo "  $ips"
+ipstr=",$ips,"
 
-[ -z "$ips" ] && echo "No IPs found! At a minimum this current instance should be in the results." && exit 1
+echo "Discovering records..."
 
-echo "Updating service registry..."
+records="$(
+  aws servicediscovery list-instances \
+    --service-id "$serviceId" \
+    --query 'Instances[].[Id,Attributes.AWS_INSTANCE_IPV4]' \
+    --output text
+)"
 
-aws servicediscovery register-instance \
-  --service-id "$serviceId" \
-  --instance-id "$recordId" \
-  --attributes=AWS_INSTANCE_IPV4="$ips"
+while read -r rec; do
+  id="$${rec%$'\t'*}"
+  ip="$${rec#*$'\t'}"
+  echo "Checking record: $id = $ip"
+  if [[ "$ipstr" == *",$ip,"* ]]; then
+    echo "  ok"
+  else
+    echo "  IP is stale. Removing record..."
+    aws servicediscovery deregister-instance \
+      --service-id "$serviceId" \
+      --instance-id "$id"
+  fi
+done <<< "$records"
 
 echo "Done"

@@ -21,3 +21,9 @@ variable "sd_namespace_id" {
   description = "A value like: aws_service_discovery_private_dns_namespace.xxxx.id"
   type        = string
 }
+
+variable "cron_schedule" {
+  description = "Cron schedule upon which stale EC2s should be pruned from service-discovery."
+  type        = string
+  default     = "*/3 * * * *"
+}

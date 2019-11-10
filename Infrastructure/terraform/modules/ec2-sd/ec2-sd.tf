@@ -28,10 +28,11 @@ resource "aws_iam_policy" "main" {
       "Effect": "Allow",
       "Action": [
         "ec2:DescribeInstances",
-        "route53:GetHealthCheck",
+        "route53:ChangeResourceRecordSets",
         "route53:CreateHealthCheck",
-        "route53:UpdateHealthCheck",
-        "route53:ChangeResourceRecordSets"
+        "route53:DeleteHealthCheck",
+        "route53:GetHealthCheck",
+        "route53:UpdateHealthCheck"
       ],
       "Resource": "*"
     },
@@ -39,12 +40,27 @@ resource "aws_iam_policy" "main" {
       "Sid": "",
       "Effect": "Allow",
       "Action": [
+        "servicediscovery:DeregisterInstance",
+        "servicediscovery:ListInstances",
         "servicediscovery:RegisterInstance"
       ],
       "Resource": "*",
       "Condition": {
         "ForAllValues:StringEquals": {
           "servicediscovery:ServiceArn": "${aws_service_discovery_service.main.arn}"
+        }
+      }
+    },
+    {
+      "Sid": "",
+      "Effect": "Allow",
+      "Action": [
+        "servicediscovery:ListInstances"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "ForAllValues:StringLike": {
+          "servicediscovery:ServiceArn": "${aws_service_discovery_service.main.arn}/*"
         }
       }
     }
