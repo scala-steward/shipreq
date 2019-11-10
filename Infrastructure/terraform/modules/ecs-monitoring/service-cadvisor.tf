@@ -1,10 +1,10 @@
 locals {
-  cadvisor_tags = merge(local.default_tags, { Name = "${var.env}-ops-cadvisor" })
+  cadvisor_tags = merge(var.default_tags, { Name = "${var.name_prefix}-cadvisor" })
 }
 
 resource "aws_ecs_service" "cadvisor" {
-  name                = "${var.env}-ops-cadvisor"
-  cluster             = aws_ecs_cluster.ops.id
+  name                = "${var.name_prefix}-cadvisor"
+  cluster             = var.cluster_id
   task_definition     = aws_ecs_task_definition.cadvisor.arn
   scheduling_strategy = "DAEMON"
   propagate_tags      = "SERVICE"
@@ -12,14 +12,14 @@ resource "aws_ecs_service" "cadvisor" {
 }
 
 resource "aws_ecs_task_definition" "cadvisor" {
-  family = "${var.env}-ops-cadvisor"
+  family = "${var.name_prefix}-cadvisor"
   tags   = local.cadvisor_tags
 
   container_definitions = <<EOB
 [
   {
-    "name": "${var.env}-ops-cadvisor",
-    "image": "${data.aws_ecr_repository.cadvisor.repository_url}:${var.ops_images_tag}",
+    "name": "${var.name_prefix}-cadvisor",
+    "image": "${var.cadvisor_image}",
     "privileged": true,
     "mountPoints": [
       {
@@ -51,22 +51,22 @@ resource "aws_ecs_task_definition" "cadvisor" {
     "portMappings": [
       {
         "protocol": "tcp",
-        "hostPort": ${local.ops_cluster_ports.cadvisor},
+        "hostPort": ${var.cadvisor_port},
         "containerPort": 8080
       }
     ],
-    "cpu": ${local.ops_cluster_cpu.cadvisor},
-    "memoryReservation": ${local.ops_cluster_mem_res.cadvisor},
+    "cpu": ${var.cadvisor_cpu},
+    "memoryReservation": ${var.cadvisor_mem_res},
     "memory": 128,
     "healthCheck": {
       "command": [
         "CMD-SHELL",
-        "wget --quiet --tries=1 --spider http://localhost:8080${local.ops_cadvisor_path}/healthz || exit 1"
+        "wget --quiet --tries=1 --spider http://localhost:8080${var.cadvisor_path}/healthz || exit 1"
       ],
-      "startPeriod": ${local.ops_healthcheck.startPeriod},
-      "interval": ${local.ops_healthcheck.interval},
-      "timeout": ${local.ops_healthcheck.timeout},
-      "retries": ${local.ops_healthcheck.retries}
+      "startPeriod": ${local.healthcheck.startPeriod},
+      "interval": ${local.healthcheck.interval},
+      "timeout": ${local.healthcheck.timeout},
+      "retries": ${local.healthcheck.retries}
     }
   }
 ]

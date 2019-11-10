@@ -1,10 +1,10 @@
 locals {
-  filebeat_tags = merge(local.default_tags, { Name = "${var.env}-ops-filebeat" })
+  filebeat_tags = merge(var.default_tags, { Name = "${var.name_prefix}-filebeat" })
 }
 
 resource "aws_ecs_service" "filebeat" {
-  name                = "${var.env}-ops-filebeat"
-  cluster             = aws_ecs_cluster.ops.id
+  name                = "${var.name_prefix}-filebeat"
+  cluster             = var.cluster_id
   task_definition     = aws_ecs_task_definition.filebeat.arn
   scheduling_strategy = "DAEMON"
   propagate_tags      = "SERVICE"
@@ -12,18 +12,18 @@ resource "aws_ecs_service" "filebeat" {
 }
 
 resource "aws_ecs_task_definition" "filebeat" {
-  family = "${var.env}-ops-filebeat"
+  family = "${var.name_prefix}-filebeat"
   tags   = local.filebeat_tags
 
   container_definitions = <<EOB
 [
   {
-    "name": "${var.env}-ops-filebeat",
-    "image": "${data.aws_ecr_repository.filebeat.repository_url}:${var.ops_images_tag}",
+    "name": "${var.name_prefix}-filebeat",
+    "image": "${var.filebeat_image}",
     "environment": [
       {
         "name": "ES_HOSTS",
-        "value": "${local.es_root_url_with_port}"
+        "value": "${var.filebeat_es_hosts}"
       }
     ],
     "mountPoints": [
@@ -43,8 +43,8 @@ resource "aws_ecs_task_definition" "filebeat" {
         "readOnly": true
       }
     ],
-    "cpu": ${local.ops_cluster_cpu.filebeat},
-    "memoryReservation": ${local.ops_cluster_mem_res.filebeat},
+    "cpu": ${var.filebeat_cpu},
+    "memoryReservation": ${var.filebeat_mem_res},
     "memory": 128
   }
 ]
