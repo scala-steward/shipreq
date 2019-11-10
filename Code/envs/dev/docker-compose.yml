@@ -122,7 +122,6 @@ services:
       #- --no-collector.sockstat     # Exposes various statistics from /proc/net/sockstat. 	Linux
       #- --no-collector.stat         # Exposes various statistics from /proc/stat. This includes boot time, forks and interrupts. 	Linux
       #- --no-collector.textfile     # Exposes statistics read from local disk. The --collector.textfile.directory flag must be set. 	any
-      #- --no-collector.thermal_zone # Exposes thermal zone & cooling device statistics from /sys/class/thermal. 	Linux
       #- --no-collector.time         # Exposes the current system time. 	any
       #- --no-collector.timex        # Exposes selected adjtimex(2) system call stats. 	Linux
       #- --no-collector.uname        # Exposes system information as provided by the uname system call. 	Darwin, FreeBSD, Linux, OpenBSD
