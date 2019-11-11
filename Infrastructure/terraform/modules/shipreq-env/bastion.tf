@@ -56,7 +56,7 @@ resource "aws_instance" "bastion" {
     FILEBEAT_IMAGE      = data.aws_ecr_repository.filebeat.repository_url
     GRAFANA_URL         = local.grafana_root_url
     KIBANA_URL          = local.es_root_url
-    PORTAL_IMAGE        = data.aws_ecr_repository.shipreq_ops_portal.repository_url
+    PORTAL_IMAGE        = data.aws_ecr_repository.ops_portal.repository_url
     POSTGRES_DOMAIN     = local.postgres_domain
     PROMETHEUS_BIZ_URL  = local.prometheus_biz_root_url
     PROMETHEUS_TECH_URL = local.prometheus_tech_root_url
@@ -112,11 +112,6 @@ resource "aws_iam_role" "bastion" {
 EOB
 }
 
-resource "aws_iam_role_policy_attachment" "bastion" {
-  role       = aws_iam_role.bastion.name
-  policy_arn = aws_iam_policy.bastion.arn
-}
-
 resource "aws_iam_policy" "bastion" {
   name = "${var.env}_bastion_policy"
 
@@ -128,7 +123,7 @@ resource "aws_iam_policy" "bastion" {
       "Effect": "Allow",
       "Resource": [
         "${data.aws_ecr_repository.filebeat.arn}",
-        "${data.aws_ecr_repository.shipreq_ops_portal.arn}"
+        "${data.aws_ecr_repository.ops_portal.arn}"
       ],
       "Action": [
         "ecr:BatchCheckLayerAvailability",
@@ -148,8 +143,12 @@ resource "aws_iam_policy" "bastion" {
 EOB
 }
 
-# Created by ../global
-data "aws_ecr_repository" "shipreq_ops_portal" {
-  provider = aws.ecr
-  name     = "shipreq/ops/portal"
+resource "aws_iam_role_policy_attachment" "bastion" {
+  role       = aws_iam_role.bastion.name
+  policy_arn = aws_iam_policy.bastion.arn
+}
+
+resource "aws_iam_role_policy_attachment" "bastion-s3-tmp" {
+  role       = aws_iam_role.bastion.name
+  policy_arn = data.aws_iam_policy.s3_tmp_rw.arn
 }

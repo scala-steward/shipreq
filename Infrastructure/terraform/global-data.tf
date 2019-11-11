@@ -1,5 +1,15 @@
 # The following are all created by ./global
 
+data "aws_caller_identity" "default" {}
+
+data "aws_s3_bucket" "tmp" {
+  bucket = "shipreq-tmp"
+}
+
+data "aws_iam_policy" "s3_tmp_rw" {
+  arn = "arn:aws:iam::${data.aws_caller_identity.default.account_id}:policy/global_s3_tmp_rw_policy"
+}
+
 data "aws_ecr_repository" "cadvisor" { name = "shipreq/ops/cadvisor" }
 data "aws_ecr_repository" "filebeat" { name = "shipreq/ops/filebeat" }
 data "aws_ecr_repository" "grafana" { name = "shipreq/ops/grafana" }

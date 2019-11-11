@@ -138,6 +138,11 @@ resource "aws_iam_role_policy_attachment" "app-ecs-ec2" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role"
 }
 
+resource "aws_iam_role_policy_attachment" "app-ecs-ec2-s3tmp" {
+  role       = aws_iam_role.app-ecs.id
+  policy_arn = data.aws_iam_policy.s3_tmp_rw.arn
+}
+
 # Service discovery requires an ENI per service but there's a small ENI/instanceType limit that we exceed.
 # Therefore, we use EC2 service discovery.
 module "app_ec2_sd" {
