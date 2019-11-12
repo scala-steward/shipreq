@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 cmd=("$JETTY_BASE/bin/jetty")
 
 i="$(printenv run.mode)"
@@ -12,7 +10,8 @@ cmd+=("$@")
 
 # This is a little util in shipreq/base that imports files from an external
 # source depending on config. For example, SSL passwords.
-import-files
+import-files || exit 1
 
 "${cmd[@]}" --list-config | grep -iv password
+
 exec "${cmd[@]}"

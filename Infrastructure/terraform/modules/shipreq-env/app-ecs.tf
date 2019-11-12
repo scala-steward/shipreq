@@ -90,6 +90,14 @@ resource "aws_security_group" "app" {
     description = "Metrics: node_exporter"
   }
 
+  ingress {
+    protocol    = "tcp"
+    from_port   = local.app_cluster_ports.shipreq_webapp
+    to_port     = local.app_cluster_ports.shipreq_webapp
+    cidr_blocks = [aws_subnet.private.cidr_block]
+    description = "Metrics: shipreq/webapp"
+  }
+
   egress {
     protocol    = "tcp"
     from_port   = 80
@@ -104,6 +112,22 @@ resource "aws_security_group" "app" {
     to_port     = 443
     cidr_blocks = ["0.0.0.0/0"]
     description = "Internet HTTPS"
+  }
+
+  egress {
+    protocol        = "tcp"
+    from_port       = 5432
+    to_port         = 5432
+    security_groups = [aws_security_group.postgres.id]
+    description     = "Postgres"
+  }
+
+  egress {
+    protocol    = "tcp"
+    from_port   = 6379
+    to_port     = 6379
+    cidr_blocks = [aws_subnet.private.cidr_block]
+    description = "Redis"
   }
 }
 

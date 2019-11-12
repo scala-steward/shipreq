@@ -111,6 +111,14 @@ resource "aws_security_group" "ops" {
   }
 
   egress {
+    protocol    = "tcp"
+    from_port   = local.app_cluster_ports.shipreq_webapp
+    to_port     = local.app_cluster_ports.shipreq_webapp
+    cidr_blocks = [aws_subnet.private.cidr_block]
+    description = "Metrics: shipreq/webapp"
+  }
+
+  egress {
     protocol        = "tcp"
     from_port       = 5432
     to_port         = 5432

@@ -9,6 +9,9 @@ locals {
 
   region = regex("^[a-z]+-[a-z]+-\\d+", var.availability_zone)
 
+  shipreq_domain = var.env == "prod" ? "shipreq.com" : "${var.env}.shipreq.com"
+  shipreq_url    = "https://${local.shipreq_domain}"
+
   # TTL for DNS entries pointed at targets I expect to change rarely/never
   dns_stable_ttl = 120
 
@@ -39,21 +42,26 @@ locals {
   # This only matters when CPU is maxed out, in which I've prioritised metric-collection over user response-time.
   # If the services are slow I want to be able to look at the metrics to figure out what needs more resources.
   app_cluster_cpu = {
-    cadvisor      = 9
-    filebeat      = 9
-    node_exporter = 9
+    cadvisor        = 3
+    filebeat        = 3
+    node_exporter   = 3
+    shipreq_webapp  = 9
+    shipreq_taskman = 1
   }
 
   # Memory reservation for everything in the App cluster
   app_cluster_mem_res = {
-    cadvisor      = 48
-    filebeat      = 32
-    node_exporter = 24
+    cadvisor        = 48
+    filebeat        = 32
+    node_exporter   = 24
+    shipreq_webapp  = 1200
+    shipreq_taskman = 400
   }
 
   app_cluster_ports = {
-    cadvisor      = 8080
-    node_exporter = 9100
+    cadvisor       = 9080
+    node_exporter  = 9100
+    shipreq_webapp = 8080
   }
 
   app_subdomain = "app"

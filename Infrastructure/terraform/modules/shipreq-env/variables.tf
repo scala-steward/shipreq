@@ -66,11 +66,6 @@ variable "ecs_root_volume_type" {
   default     = "gp2"
 }
 
-variable "enable_redis" {
-  type    = bool
-  default = true
-}
-
 variable "enable_elasticsearch" {
   type    = bool
   default = true
@@ -88,16 +83,6 @@ variable "elasticsearch_volume_type" {
 variable "elasticsearch_volume_size" {
   description = "Min:10GB, Max:35GB"
   type        = number
-}
-
-variable "shipreq_webapp_keystore_filename" {
-  description = "Path to the keystore"
-  type        = string
-}
-
-variable "shipreq_webapp_ssl_passwords_ini_filename" {
-  description = "Path to the ssl-passwords.ini"
-  type        = string
 }
 
 variable "postgres_instance_type" {
@@ -125,6 +110,11 @@ variable "postgres_final_snapshot" {
 
 variable "ops_images_tag" {
   description = "The docker tag for all ops images. Eg. `git-<sha>` or `latest`"
+  type        = string
+}
+
+variable "shipreq_images_tag" {
+  description = "The docker tag for all shipreq images. Eg. `git-<sha>` or `latest`"
   type        = string
 }
 
@@ -166,4 +156,36 @@ variable "grafana_db_username" {
 
 variable "grafana_db_password" {
   type = string
+}
+
+variable "shipreq_db_name" {
+  type = string
+}
+
+variable "shipreq_db_username" {
+  type = string
+}
+
+variable "shipreq_db_password" {
+  type = string
+}
+
+variable "shipreq_webapp_properties" {
+  description = "Content of webapp's shipreq.properties"
+  type        = string
+}
+
+variable "shipreq_webapp_logback_xml" {
+  description = "Content of webapp's logback.xml"
+  type        = string
+}
+
+variable "shipreq_taskman_properties" {
+  description = "Content of taskman's shipreq.properties"
+  type        = string
+}
+
+variable "shipreq_taskman_logback_xml" {
+  description = "Content of taskman's logback.xml"
+  type        = string
 }

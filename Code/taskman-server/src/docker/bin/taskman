@@ -1,2 +1,7 @@
 #!/bin/bash
+
+set -e
+
+import-files
+
 exec /taskman/bin/run {{mainClass}} "$@"

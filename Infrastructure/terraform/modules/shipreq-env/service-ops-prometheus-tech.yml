@@ -49,7 +49,9 @@ scrape_configs:
         type: 'A'
         port: ${APP_CADVISOR_PORT}
 
-  # - job_name: 'webapp-dev'
-  #   metrics_path: '/ops/metrics'
-  #   static_configs:
-  #     - targets: ['webapp:8080']
+  - job_name: 'shipreq-webapp'
+    metrics_path: '/ops/metrics'
+    dns_sd_configs:
+      - names: [ '${APP_HOST}' ]
+        type: 'A'
+        port: ${APP_SHIPREQ_WEBAPP_PORT}

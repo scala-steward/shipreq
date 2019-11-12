@@ -5,6 +5,7 @@ locals {
     APP_CADVISOR_PORT               = local.app_cluster_ports.cadvisor
     APP_HOST                        = local.app_host
     APP_NODE_EXPORTER_PORT          = local.app_cluster_ports.node_exporter
+    APP_SHIPREQ_WEBAPP_PORT         = local.app_cluster_ports.shipreq_webapp
     CADVISOR_PATH                   = local.cadvisor_path
     OPS_CADVISOR_PORT               = local.ops_cluster_ports.cadvisor
     OPS_HOST                        = local.ops_host

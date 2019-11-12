@@ -1,10 +1,8 @@
 locals {
-  redis_tags  = merge(local.default_tags, { Name = "${var.env}-redis" })
-  redis_count = var.enable_redis ? 1 : 0
+  redis_tags = merge(local.default_tags, { Name = "${var.env}-redis" })
 }
 
 resource "aws_elasticache_cluster" "redis" {
-  count                = local.redis_count
   cluster_id           = "${var.env}-redis"
   engine               = "redis"
   node_type            = "cache.t2.micro"
@@ -45,13 +43,20 @@ resource "aws_security_group" "redis" {
     security_groups = [aws_security_group.bastion.id]
     description     = "Bastion access"
   }
+
+  ingress {
+    protocol        = "tcp"
+    from_port       = 6379
+    to_port         = 6379
+    security_groups = [aws_security_group.app.id]
+    description     = "Shipreq access"
+  }
 }
 
 resource "aws_route53_record" "redis" {
-  count   = local.redis_count
   zone_id = aws_route53_zone.internal.zone_id
   name    = local.redis_domain
   type    = "CNAME"
   ttl     = local.dns_stable_ttl
-  records = aws_elasticache_cluster.redis[count.index].cache_nodes[*].address
+  records = aws_elasticache_cluster.redis.cache_nodes[*].address
 }
