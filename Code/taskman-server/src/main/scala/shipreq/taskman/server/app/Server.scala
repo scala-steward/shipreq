@@ -16,9 +16,15 @@ import shipreq.taskman.server.TaskmanCtx
 object Server extends MainTemplate {
 
   def main(args: Array[String]): Unit =
-    withTaskmanCtx(ctx =>
-      Fx(run(ctx)(s => Await.result(s.system.whenTerminated, Duration.Inf)))
-    ).unsafeRun()
+    try {
+      withTaskmanCtx(ctx =>
+        Fx(run(ctx)(s => Await.result(s.system.whenTerminated, Duration.Inf)))
+      ).unsafeRun()
+    } catch {
+      case t: Throwable =>
+        logger.error("Uncaught exception. Exitting...", t)
+        System.exit(1)
+    }
 
   def run(ctx: TaskmanCtx, testConnections: Boolean = true)(f: System => Unit): Unit = {
     if (testConnections) ctx.testConnections()
