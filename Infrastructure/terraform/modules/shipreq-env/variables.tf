@@ -138,8 +138,8 @@ variable "prometheus_biz_retention" {
   type        = string
 }
 
-variable "prometheus_tech_scrape_interval" {
-  type = string
+variable "prometheus_tech_scrape_interval_sec" {
+  type = number
 }
 
 variable "prometheus_biz_scrape_interval" {

@@ -19,6 +19,13 @@ scrape_configs:
         type: 'A'
         port: ${OPS_CADVISOR_PORT}
 
+  - job_name: 'ecs_exporter'
+    scrape_interval: ${ECS_EXPORTER_SCRAPE_INTERVAL}
+    dns_sd_configs:
+      - names: [ '${OPS_HOST}' ]
+        type: 'A'
+        port: ${ECS_EXPORTER_PORT}
+
   - job_name: 'prometheus-tech'
     metrics_path: '${PROMETHEUS_TECH_PATH}/metrics'
     dns_sd_configs:

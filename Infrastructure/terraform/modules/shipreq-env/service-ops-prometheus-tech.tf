@@ -7,6 +7,8 @@ locals {
     APP_NODE_EXPORTER_PORT          = local.app_cluster_ports.node_exporter
     APP_SHIPREQ_WEBAPP_PORT         = local.app_cluster_ports.shipreq_webapp
     CADVISOR_PATH                   = local.cadvisor_path
+    ECS_EXPORTER_PORT               = local.ops_cluster_ports.ecs_exporter
+    ECS_EXPORTER_SCRAPE_INTERVAL    = "${max(60, var.prometheus_tech_scrape_interval_sec)}s"
     OPS_CADVISOR_PORT               = local.ops_cluster_ports.cadvisor
     OPS_HOST                        = local.ops_host
     OPS_NODE_EXPORTER_PORT          = local.ops_cluster_ports.node_exporter
@@ -16,7 +18,7 @@ locals {
     PROMETHEUS_TECH_HOST            = local.prometheus_tech_host
     PROMETHEUS_TECH_PATH            = local.prometheus_tech_path
     PROMETHEUS_TECH_PORT            = local.ops_cluster_ports.prometheus_tech
-    PROMETHEUS_TECH_SCRAPE_INTERVAL = var.prometheus_tech_scrape_interval
+    PROMETHEUS_TECH_SCRAPE_INTERVAL = "${var.prometheus_tech_scrape_interval_sec}s"
   })
 }
 

@@ -45,8 +45,8 @@ locals {
     cadvisor        = 3
     filebeat        = 3
     node_exporter   = 3
-    shipreq_webapp  = 9
     shipreq_taskman = 1
+    shipreq_webapp  = 9
   }
 
   # Memory reservation for everything in the App cluster
@@ -54,8 +54,8 @@ locals {
     cadvisor        = 48
     filebeat        = 32
     node_exporter   = 24
-    shipreq_webapp  = 1200
     shipreq_taskman = 400
+    shipreq_webapp  = 1200
   }
 
   app_cluster_ports = {
@@ -79,6 +79,7 @@ locals {
   # If the services are slow I want to be able to look at the metrics to figure out what needs more resources.
   ops_cluster_cpu = {
     cadvisor          = 9
+    ecs_exporter      = 1
     filebeat          = 9
     grafana           = 1
     node_exporter     = 9
@@ -90,6 +91,7 @@ locals {
   # Memory reservation for everything in the Ops cluster
   ops_cluster_mem_res = {
     cadvisor          = 48
+    ecs_exporter      = 8
     filebeat          = 32
     grafana           = 32
     node_exporter     = 24
@@ -100,6 +102,7 @@ locals {
 
   ops_cluster_ports = {
     cadvisor          = 8080
+    ecs_exporter      = 9222
     grafana           = 3000
     node_exporter     = 9100
     postgres_exporter = 9187

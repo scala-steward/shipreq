@@ -31,7 +31,7 @@ resource "aws_ecs_task_definition" "grafana" {
       },
       {
         "name": "PROMETHEUS_TECH_SCRAPE_INTERVAL",
-        "value": "${var.prometheus_tech_scrape_interval}"
+        "value": "${var.prometheus_tech_scrape_interval_sec}s"
       },
       {
         "name": "PROMETHEUS_BIZ_URL",
