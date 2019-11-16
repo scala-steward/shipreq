@@ -1,6 +1,11 @@
 locals {
   robots_txt = "${trimspace(file("${path.module}/robots.txt"))}\n"
+
+  s3_logs_bucket = "shipreq-${var.env}-logs"
+  alb_log_prefix = "webapp-alb"
 }
+
+data "aws_elb_service_account" "main" {}
 
 resource "aws_route53_record" "shipreq" {
   zone_id = data.aws_route53_zone.shipreq.zone_id
@@ -23,11 +28,11 @@ resource "aws_lb" "webapp" {
   enable_deletion_protection = var.deletion_protection
   tags                       = local.default_tags
 
-  # access_logs {
-  #   bucket  = "${aws_s3_bucket.lb_logs.bucket}"
-  #   prefix  = "test-lb"
-  #   enabled = true
-  # }
+  access_logs {
+    bucket  = aws_s3_bucket.logs.bucket
+    prefix  = local.alb_log_prefix
+    enabled = true
+  }
 }
 
 resource "aws_lb_listener" "webapp-http" {
@@ -145,4 +150,34 @@ resource "aws_security_group" "webapp-alb" {
     security_groups = [aws_security_group.app.id]
     description     = "Containers with dynamic ports"
   }
+}
+
+resource "aws_s3_bucket" "logs" {
+  bucket = local.s3_logs_bucket
+  policy = <<EOB
+{
+  "Id": "Policy",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Principal": {
+        "AWS": [ "${data.aws_elb_service_account.main.arn}" ]
+      },
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Effect": "Allow",
+      "Resource": "arn:aws:s3:::${local.s3_logs_bucket}/${local.alb_log_prefix}/AWSLogs/*"
+    }
+  ]
+}
+EOB
+}
+
+resource "aws_s3_bucket_public_access_block" "logs" {
+  bucket                  = aws_s3_bucket.logs.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }

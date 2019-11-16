@@ -20,8 +20,6 @@
 
 * A public `<env>.shipreq.com` record is probably a bad idea
 
-* ALB: Access logs -> S3 & Kibana
-
 ====================================================================================================
 
 * postgres_exporter
