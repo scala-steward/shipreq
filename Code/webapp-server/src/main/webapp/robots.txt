@@ -1,6 +1,0 @@
-User-agent: *
-Disallow: /classpath/
-Disallow: /L/
-Disallow: /a/
-Disallow: /s/
-Disallow: /j/
