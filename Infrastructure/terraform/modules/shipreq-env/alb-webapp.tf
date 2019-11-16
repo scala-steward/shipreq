@@ -153,8 +153,9 @@ resource "aws_security_group" "webapp-alb" {
 }
 
 resource "aws_s3_bucket" "logs" {
-  bucket = local.s3_logs_bucket
-  policy = <<EOB
+  bucket        = local.s3_logs_bucket
+  force_destroy = ! var.deletion_protection
+  policy        = <<EOB
 {
   "Id": "Policy",
   "Version": "2012-10-17",

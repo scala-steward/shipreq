@@ -25,6 +25,12 @@ resource "aws_service_discovery_service" "webapp" {
   health_check_custom_config {
     failure_threshold = 2
   }
+
+  # Remove after https://github.com/terraform-providers/terraform-provider-aws/issues/4853 is resolved
+  provisioner "local-exec" {
+    when    = "destroy"
+    command = "${path.module}/../ec2-sd/servicediscovery-drain.sh ${aws_service_discovery_service.webapp.id}"
+  }
 }
 
 resource "aws_ecs_service" "shipreq_webapp" {
