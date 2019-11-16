@@ -48,6 +48,7 @@ Backlog
 * Issues page: allow issue cat/cls filtering
 * Issues page: allow editing of ID cells
 * Issues page: allow editing of Title cells
+* Use WebSockets on home SPA to see projects and project stats update
 
 ### Tech
 * Remove ScalaCheck. Use Nyaya.
@@ -130,3 +131,13 @@ Phase 2B
 * Add LogFields and lock down types
 
 * Add userId to events
+
+* Secure /ops/metrics
+
+* Taskman JVM metrics
+
+* Taskman - missing logging when job fails (?)
+  Logs show the following in a cycle:
+  1. Received 1 new msg(s)
+  2. Starting work: MsgDetail(MsgHeader(MsgId(1000),Priority(100),2019-11-16T03:36:54.460739Z), RegistrationRequested(EmailAddr(japgolly@gmail.com),https://dev.shipreq.com/register/GbIrmFT4xe9924vSpCj6vyy7m6NnGOtl933xpPyhHfRhR3inX), 0)
+  3. Scheduled to run asynchronously: MsgDetail(MsgHeader(MsgId(1000),Priority(100),2019-11-16T03:36:54.460739Z), RegistrationRequested(EmailAddr(japgolly@gmail.com),https://dev.shipreq.com/register/GbIrmFT4xe9924vSpCj6vyy7m6NnGOtl933xpPyhHfRhR3inX), 0)

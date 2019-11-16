@@ -14,20 +14,17 @@
   * Collect logs (?)
 
 * Healthcheck: node_exporter
-
+* Healthcheck: ecs_exporter
 * Healthcheck: filebeat
-
 * Healthcheck: taskman (what's `taskman.healthFile` for?)
 
 * A public `<env>.shipreq.com` record is probably a bad idea
 
-====================================================================================================
+* Updating webapp task def breaks UX; ALB serves 503s for a while
 
-* ALB
-  * Cert
-  * Allow HTTP for /robots.txt
-  * Allow HTTP for /ops/metrics
-  * Allow HTTP for /ops/ok
+* ALB: Access logs -> S3 & Kibana
+
+====================================================================================================
 
 * postgres_exporter
 
@@ -36,5 +33,3 @@
 * DR
   * Postgres
   * EBS
-
-* Updating webapp task def breaks UX; ALB serves 503s for a while
