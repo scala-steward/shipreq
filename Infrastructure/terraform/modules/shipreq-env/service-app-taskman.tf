@@ -1,6 +1,11 @@
 locals {
   shipreq_taskman_tags     = merge(local.default_tags, { Name = "${var.env}-shipreq-taskman" })
-  s3_config_folder_taskman = "taskman"
+  s3_config_taskman_folder = "taskman"
+
+  s3_config_taskman_content_hash = md5(join(":", [
+    var.shipreq_taskman_properties,
+    var.shipreq_taskman_logback_xml,
+  ]))
 }
 
 resource "aws_ecs_service" "shipreq_taskman" {
@@ -10,6 +15,12 @@ resource "aws_ecs_service" "shipreq_taskman" {
   scheduling_strategy = "DAEMON"
   propagate_tags      = "SERVICE"
   tags                = local.shipreq_taskman_tags
+
+  # Ensure that S3 is updated before we allow tasks to start
+  depends_on = [
+    aws_s3_bucket_object.taskman_properties,
+    aws_s3_bucket_object.taskman_logback,
+  ]
 }
 
 resource "aws_ecs_task_definition" "shipreq_taskman" {
@@ -24,8 +35,12 @@ resource "aws_ecs_task_definition" "shipreq_taskman" {
     "image": "${data.aws_ecr_repository.taskman.repository_url}:${var.shipreq_images_tag}",
     "environment": [
       {
+        "name": "S3_CONTENT_HASH",
+        "value": "${local.s3_config_taskman_content_hash}"
+      },
+      {
         "name": "IMPORT_S3",
-        "value": "s3://${aws_s3_bucket.config.bucket}/${local.s3_config_folder_taskman}"
+        "value": "s3://${aws_s3_bucket.config.bucket}/${local.s3_config_taskman_folder}"
       },
       {
         "name": "db.host",
@@ -54,13 +69,13 @@ EOB
 
 resource "aws_s3_bucket_object" "taskman_properties" {
   bucket  = aws_s3_bucket.config.bucket
-  key     = "${local.s3_config_folder_taskman}/conf/shipreq.properties"
+  key     = "${local.s3_config_taskman_folder}/conf/shipreq.properties"
   content = var.shipreq_taskman_properties
 }
 
 resource "aws_s3_bucket_object" "taskman_logback" {
   bucket  = aws_s3_bucket.config.bucket
-  key     = "${local.s3_config_folder_taskman}/conf/logback.xml"
+  key     = "${local.s3_config_taskman_folder}/conf/logback.xml"
   content = var.shipreq_taskman_logback_xml
 }
 

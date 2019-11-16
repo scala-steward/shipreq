@@ -1,6 +1,11 @@
 locals {
   shipreq_webapp_tags     = merge(local.default_tags, { Name = "${var.env}-shipreq-webapp" })
-  s3_config_folder_webapp = "webapp"
+  s3_config_webapp_folder = "webapp"
+
+  s3_config_webapp_content_hash = md5(join(":", [
+    var.shipreq_webapp_properties,
+    var.shipreq_webapp_logback_xml,
+  ]))
 }
 
 resource "aws_service_discovery_service" "webapp" {
@@ -34,6 +39,12 @@ resource "aws_ecs_service" "shipreq_webapp" {
     container_name = "${var.env}-shipreq-webapp"
     container_port = 8080
   }
+
+  # Ensure that S3 is updated before we allow tasks to start
+  depends_on = [
+    aws_s3_bucket_object.webapp_properties,
+    aws_s3_bucket_object.webapp_logback,
+  ]
 }
 
 resource "aws_ecs_task_definition" "shipreq_webapp" {
@@ -48,8 +59,12 @@ resource "aws_ecs_task_definition" "shipreq_webapp" {
     "image": "${data.aws_ecr_repository.webapp.repository_url}:${var.shipreq_images_tag}",
     "environment": [
       {
+        "name": "S3_CONTENT_HASH",
+        "value": "${local.s3_config_webapp_content_hash}"
+      },
+      {
         "name": "IMPORT_S3",
-        "value": "s3://${aws_s3_bucket.config.bucket}/${local.s3_config_folder_webapp}"
+        "value": "s3://${aws_s3_bucket.config.bucket}/${local.s3_config_webapp_folder}"
       },
       {
         "name": "db.host",
@@ -106,13 +121,13 @@ EOB
 
 resource "aws_s3_bucket_object" "webapp_properties" {
   bucket  = aws_s3_bucket.config.bucket
-  key     = "${local.s3_config_folder_webapp}/resources/shipreq.properties"
+  key     = "${local.s3_config_webapp_folder}/resources/shipreq.properties"
   content = var.shipreq_webapp_properties
 }
 
 resource "aws_s3_bucket_object" "webapp_logback" {
   bucket  = aws_s3_bucket.config.bucket
-  key     = "${local.s3_config_folder_webapp}/resources/logback.xml"
+  key     = "${local.s3_config_webapp_folder}/resources/logback.xml"
   content = var.shipreq_webapp_logback_xml
 }
 
