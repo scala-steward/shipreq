@@ -2,6 +2,7 @@ package shipreq.taskman.server.app
 
 import scalaz.syntax.applicative._
 import shipreq.base.db.{DbAccess, DbConfig}
+import shipreq.base.ops.{JdbcLogging, SqlTracer}
 import shipreq.base.util.FxModule._
 import shipreq.base.util.Props
 import shipreq.base.util.log.HasLogger
@@ -12,11 +13,10 @@ private[app] trait MainTemplate extends HasLogger {
 
   def withDatabase[A](f: DbAccess => Fx[A]): Fx[A] =
     for {
-      tmp          <- DbConfig.config.withReport.run(Props.sources).map(_.getOrDie)
-      (cfg, report) = tmp
-      _            <- Fx(logger.info(s"Config report:\n${report.full}"))
-      dbAccess     <- DbAccess.fromCfg(cfg)
-      a            <- dbAccess.setupRunShutdown(f(dbAccess))
+      (cfg, report) <- DbConfig.config.withReport.run(Props.sources).map(_.getOrDie)
+      _             <- Fx(logger.info(s"Config report:\n${report.full}"))
+      dbAccess      <- dbInit(cfg)
+      a             <- dbAccess.setupRunShutdown(f(dbAccess))
     } yield a
 
   def withTaskmanCtx[A](f: TaskmanCtx => Fx[A]): Fx[A] = {
@@ -29,11 +29,19 @@ private[app] trait MainTemplate extends HasLogger {
     } yield a
 
     for {
-      tmp                          <- readConfig.map(_.getOrDie)
-      ((dbCfg, taskmanCfg), report) = tmp
-      _                            <- Fx(logger.info(report.full))
-      dbAccess                     <- DbAccess.fromCfg(dbCfg)
-      a                            <- dbAccess.setupRunShutdown(onShutDown(dbAccess, taskmanCfg))
+      ((dbCfg, taskmanCfg), report) <- readConfig.map(_.getOrDie)
+      _                             <- Fx(logger.info(report.full))
+      dbAccess                      <- dbInit(dbCfg)
+      a                             <- dbAccess.setupRunShutdown(onShutDown(dbAccess, taskmanCfg))
     } yield a
   }
+
+  private def dbInit(dbCfg: DbConfig): Fx[DbAccess] = {
+//    val sqlTracer: SqlTracer = JdbcLogging
+//    if (cfg.server.prometheus.enabled && cfg.server.prometheus.jdbc)
+//      sqlTracer = sqlTracer compose JdbcMetrics.sqlTracer("webapp")
+//    dbCfg.modifyHikariDataSource(sqlTracer.inject)
+    DbAccess.fromCfg(dbCfg)
+  }
+
 }
