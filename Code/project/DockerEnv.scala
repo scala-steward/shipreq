@@ -84,7 +84,7 @@ object DockerEnv {
     val devEnvStart = taskKey[Unit]("Starts up the dev environment.")
     val devEnvStop = taskKey[Unit]("Stops the dev environment.")
 
-    private val env = envRef("dev")("postgres", "redis", "elasticsearch", "logstash")
+    private val env = envRef("dev")("postgres", "redis")
 
     val commands: Project => Project =
       _.settings(

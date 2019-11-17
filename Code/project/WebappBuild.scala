@@ -291,7 +291,7 @@ object WebappBuild {
     def connectToDockerDevEnv: Project => Project =
       _.configure(DockerEnv.dev.commands)
         .settings(
-          containerArgs in Jetty ++= "--classes" :: DockerEnv.dev.resDir("webapp", baseDirectory.value).absolutePath :: Nil,
+          containerArgs in Jetty ++= "--classes" :: (DockerEnv.dev.resDir("webapp", baseDirectory.value) / "resources").absolutePath :: Nil,
           javaOptions   in Jetty ++= DockerEnv.dev.javaOptions("webapp", baseDirectory.value),
           start         in Jetty  := (start in Jetty).dependsOn(DockerEnv.dev.devEnvStart).value)
 
