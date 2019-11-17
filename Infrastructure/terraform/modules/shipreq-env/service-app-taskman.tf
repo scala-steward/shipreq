@@ -1,6 +1,7 @@
 locals {
-  shipreq_taskman_tags     = merge(local.default_tags, { Name = "${var.env}-shipreq-taskman" })
-  s3_config_taskman_folder = "taskman"
+  shipreq_taskman_tags             = merge(local.default_tags, { Name = "${var.env}-shipreq-taskman" })
+  shipreq_taskman_healthcheck_file = "/tmp/taskman.health"
+  s3_config_taskman_folder         = "taskman"
 
   s3_config_taskman_content_hash = md5(join(":", [
     var.shipreq_taskman_properties,
@@ -57,11 +58,27 @@ resource "aws_ecs_task_definition" "shipreq_taskman" {
       {
         "name": "db.password",
         "value": "${var.shipreq_db_password}"
+      },
+      {
+        "name": "taskman.healthFile",
+        "value": "${local.shipreq_taskman_healthcheck_file}"
       }
     ],
     "cpu": ${local.app_cluster_cpu.shipreq_taskman},
     "memoryReservation": ${local.app_cluster_mem_res.shipreq_taskman},
-    "memory": 512
+    "memory": 512,
+    "healthCheck": {
+      "command": [
+        "CMD",
+        "/taskman/bin/healthcheck",
+        "${local.shipreq_taskman_healthcheck_file}",
+        "60"
+      ],
+      "startPeriod": 30,
+      "interval": 60,
+      "timeout": 10,
+      "retries": 2
+    }
   }
 ]
 EOB

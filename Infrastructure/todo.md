@@ -16,7 +16,6 @@
 * Healthcheck: node_exporter
 * Healthcheck: ecs_exporter
 * Healthcheck: filebeat
-* Healthcheck: taskman (what's `taskman.healthFile` for?)
 
 * A public `<env>.shipreq.com` record is probably a bad idea
 
