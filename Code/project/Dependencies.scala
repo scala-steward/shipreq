@@ -179,6 +179,7 @@ object Dependencies {
     val client     = mm("simpleclient")
     val hotspot    = mm("simpleclient_hotspot")
     val httpserver = mm("simpleclient_httpserver")
+    val logback    = mm("simpleclient_logback")
     val servlet    = mm("simpleclient_servlet")
   }
 

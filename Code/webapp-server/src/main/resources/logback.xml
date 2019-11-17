@@ -16,6 +16,8 @@
     </encoder>
   </appender>
 
+  <appender name="METRICS" class="io.prometheus.client.logback.InstrumentedAppender" />
+
   <logger name="org.apache.commons" level="WARN" />
   <logger name="net.liftweb.util.Props" level="OFF" />
 
@@ -23,5 +25,6 @@
 
   <root level="${LOG_LEVEL_ROOT}">
     <appender-ref ref="${LOG_APPENDER:-JSON}" />
+    <appender-ref ref="METRICS" />
   </root>
 </configuration>

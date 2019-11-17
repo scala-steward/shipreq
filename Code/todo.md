@@ -90,7 +90,6 @@ Phase 2B
 * Metrics
   * Metrics endpoint needs secret key
   * Add ThreadLocal security-delay flag and affect metrics (?)
-  * Add metrics for logs @ logLevel (webapp & taskman)
   * Taskman metrics
   * Business metrics (see metrics.md)
   * Add a correlation ID to JWTs / logs / traces
