@@ -104,6 +104,7 @@ object DockerEnv {
       val redisPort    = envFileValue(envRoot, "PORT_REDIS")
       Options(DockerEnv.javaOptionsFromDockerComposeEnv(serviceName, envRoot))
         .add("JAEGER_ENDPOINT", s"http://localhost:$jaegerPort/api/traces")
+        .add("LOG_APPENDER"   , "STDOUT")
         .add("db.host"        , "localhost")
         .add("db.port"        , postgresPort)
         .add("redis.url"      , s"redis://localhost:$redisPort")

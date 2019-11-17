@@ -24,6 +24,6 @@
   <logger name="shipreq" level="DEBUG" />
 
   <root level="INFO">
-    <appender-ref ref="JSON" />
+    <appender-ref ref="${LOG_APPENDER}" />
   </root>
 </configuration>

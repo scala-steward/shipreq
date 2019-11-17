@@ -42,6 +42,7 @@ services:
       - db.database=$POSTGRES_DB
       - db.username=$POSTGRES_USER
       - db.password=$POSTGRES_PASSWORD
+      - LOG_APPENDER=JSON
     cpus: 2
     mem_limit: 448m
 
@@ -70,6 +71,7 @@ services:
       - JAEGER_SAMPLER_TYPE=const
       - JAEGER_SAMPLER_PARAM=1
       - IMPORT_VOL=/mnt/import
+      - LOG_APPENDER=JSON
     cpus: 2
     mem_limit: 1856m # 2.25*1024 - 448 for Taskman
 
