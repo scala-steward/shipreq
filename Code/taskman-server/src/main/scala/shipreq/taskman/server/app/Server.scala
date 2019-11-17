@@ -22,19 +22,19 @@ object Server extends MainTemplate {
       ).unsafeRun()
     } catch {
       case t: Throwable =>
-        logger.error("Uncaught exception. Exitting...", t)
+        logger.error("Uncaught exception. Exiting...", t)
         System.exit(1)
     }
 
   def run(ctx: TaskmanCtx, testConnections: Boolean = true)(f: System => Unit): Unit = {
     if (testConnections) ctx.testConnections()
     val s = new System(ctx)
-    s.manager.tell(ManagerActor.RegisterWorker, s.workers)
+    s.manager.tell(ActorMsg.RegisterWorker, s.workers)
     logger.info("Taskman started.")
     f(s)
   }
 
-  class System(ctx: TaskmanCtx) extends HasLogger {
+  final class System(ctx: TaskmanCtx) extends HasLogger {
     val system = ActorSystem("Taskman")
     val source = system.actorOf(SourceActor.props(ctx), "source")
     val manager = system.actorOf(ManagerActor.props(ctx, source), "manager")
