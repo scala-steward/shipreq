@@ -132,8 +132,6 @@ Phase 2B
 
 * Add userId to events
 
-* Secure /ops/metrics
-
 * Taskman JVM metrics
 
 * Taskman - missing logging when job fails (?)

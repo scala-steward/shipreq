@@ -103,6 +103,15 @@ object LiveTest extends TestSuite {
       ()
     }
 
+    'metrics {
+      def test(token: String = null) =
+        get("/ops/metrics", headers = Option(token).map(t => "Authorization" -> s"Bearer $t").toList).assertStatelessLift
+
+      'noAuth - test().assertStatus(404)
+      'badAuth - test("xxx").assertStatus(401)
+      'goodAuth - test("metric_test_secret").assertStatus(200)
+    }
+
     'templateAccess {
       val templates = List(
         "admin-stats.html",

@@ -115,25 +115,28 @@ object ServerLogicConfig {
       ) (apply)
   }
 
-  final case class Prometheus(enabled : Boolean,
-                              hikaricp: Boolean,
-                              hotspot : Boolean,
-                              jdbc    : Boolean,
-                              path    : String)
+  final case class Prometheus(enabled    : Boolean,
+                              hikaricp   : Boolean,
+                              hotspot    : Boolean,
+                              jdbc       : Boolean,
+                              path       : String,
+                              bearerToken: Option[String])
   object Prometheus {
     val default = apply(
-      enabled  = true,
-      hikaricp = true,
-      hotspot  = true,
-      jdbc     = true,
-      path     = (DispatchLogic.opsRoot / "metrics").relativeUrl)
+      enabled     = true,
+      hikaricp    = true,
+      hotspot     = true,
+      jdbc        = true,
+      path        = (DispatchLogic.opsRoot / "metrics").relativeUrl,
+      bearerToken = None)
 
     def config: ConfigDef[Prometheus] =
-      ( ConfigDef.getOrUse[Boolean]("enabled" , default.enabled) |@|
-        ConfigDef.getOrUse[Boolean]("hikaricp", default.hikaricp) |@|
-        ConfigDef.getOrUse[Boolean]("hotspot" , default.hotspot) |@|
-        ConfigDef.getOrUse[Boolean]("jdbc"    , default.jdbc) |@|
-        ConfigDef.getOrUse[String ]("path"    , default.path).map(_.replaceFirst("^/*", "/"))
+      ( ConfigDef.getOrUse[Boolean]("enabled"    , default.enabled) |@|
+        ConfigDef.getOrUse[Boolean]("hikaricp"   , default.hikaricp) |@|
+        ConfigDef.getOrUse[Boolean]("hotspot"    , default.hotspot) |@|
+        ConfigDef.getOrUse[Boolean]("jdbc"       , default.jdbc) |@|
+        ConfigDef.getOrUse[String ]("path"       , default.path).map(_.replaceFirst("^/*", "/")) |@|
+        ConfigDef.get     [String ]("bearerToken")
     ) (apply)
   }
 

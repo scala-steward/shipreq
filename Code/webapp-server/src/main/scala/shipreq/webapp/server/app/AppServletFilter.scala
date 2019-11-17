@@ -31,7 +31,7 @@ final class AppServletFilter extends LiftFilter with HasLogger {
     val p = g.config.server.prometheus
     if (p.enabled) {
       val endpointResolver = Endpoint.resolver(p.path)
-      installPrometheus(new PrometheusMetrics.Unsafe(endpointResolver), p.path)
+      installPrometheus(new PrometheusMetrics.Unsafe(endpointResolver), p.path, p.bearerToken)
     }
 
     // Don't handle websockets
@@ -48,8 +48,10 @@ final class AppServletFilter extends LiftFilter with HasLogger {
   override def doFilter(req: ServletRequest, res: ServletResponse, chain: FilterChain): Unit =
     doFilterFn(req, res, chain)
 
-  private def installPrometheus(metrics: PrometheusMetrics.Unsafe, metricsPath: String): Unit = {
-    val metricsServlet = new PrometheusMetricsServlet
+  private def installPrometheus(metrics            : PrometheusMetrics.Unsafe,
+                                metricsPath        : String,
+                                expectedBearerToken: Option[String]): Unit = {
+    val metricsServlet = new PrometheusMetricsServlet(expectedBearerToken)
     val real = doFilterFn
     doFilterFn = (req, res, chain) =>
       if (req.isInstanceOf[HttpServletRequest] && res.isInstanceOf[HttpServletResponse]) {
@@ -72,12 +74,6 @@ final class AppServletFilter extends LiftFilter with HasLogger {
         case r: HttpServletRequest if ignoreUri(r.getRequestURI) => chain.doFilter(req, res)
         case _                                                   => real(req, res, chain)
       }
-  }
-
-  /** Version of Prometheus' [[MetricsServlet]] that exposes it's service proc */
-  private class PrometheusMetricsServlet extends MetricsServlet {
-    override def service(req: HttpServletRequest, resp: HttpServletResponse): Unit =
-      super.service(req, resp)
   }
 
   private def installLogging(): Unit = {
