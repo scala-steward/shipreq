@@ -64,7 +64,6 @@ Backlog
 * Add laws for webapp-server-logic and test in webapp-server
 * Rename webapp-client-{home ⇒ member} now that its ambiguous in regards to the public pages
 * Make webtamp hash filenames of urls in Semantic CSS (`icons.*`)
-* SSL shouldn't be in Docker - resolve TODO in WebappBuild.scala
 * Automate visual testing so changes to styling (mostly Semantic UI upgrades) can be verified.
   Use BackstopJS. Will require a read-only test user with a pre-configured project
 
@@ -88,7 +87,6 @@ Phase 2B
   * Do more with errors (client & server), eg. ClientData.{init,applyEvents}
   * Add React component error handling and possibly report to server
 * Metrics
-  * Metrics endpoint needs secret key
   * Add ThreadLocal security-delay flag and affect metrics (?)
   * Taskman metrics
   * Business metrics (see metrics.md)
