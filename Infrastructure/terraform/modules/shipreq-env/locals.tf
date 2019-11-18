@@ -11,8 +11,9 @@ locals {
 
   min_healthy_percent = var.app_cluster_size > 1 ? 50 : 0
 
-  shipreq_domain = var.env == "prod" ? "shipreq.com" : "${var.env}.shipreq.com"
-  shipreq_url    = "https://${local.shipreq_domain}"
+  shipreq_zone_id = var.env == "prod" ? data.aws_route53_zone.shipreq.zone_id : data.aws_route53_zone.shipwreck.zone_id
+  shipreq_domain  = var.env == "prod" ? "shipreq.com" : "${var.env}.shipwreck.space"
+  shipreq_url     = "https://${local.shipreq_domain}"
 
   # TTL for DNS entries pointed at targets I expect to change rarely/never
   dns_stable_ttl = 120

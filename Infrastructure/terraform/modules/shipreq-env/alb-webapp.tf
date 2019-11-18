@@ -8,7 +8,7 @@ locals {
 data "aws_elb_service_account" "main" {}
 
 resource "aws_route53_record" "shipreq" {
-  zone_id = data.aws_route53_zone.shipreq.zone_id
+  zone_id = local.shipreq_zone_id
   name    = local.shipreq_domain
   type    = "A"
   alias {

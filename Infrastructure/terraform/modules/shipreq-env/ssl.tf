@@ -5,6 +5,8 @@ resource "aws_acm_certificate" "shipreq" {
   validation_method = "DNS"
   tags              = local.default_tags
   # subject_alternative_names = ["*.${local.shipreq_domain}"]
+
+  lifecycle { create_before_destroy = true }
 }
 
 # DNS record for cert validation - keep in mind that this isn't the ALB endpoint record
@@ -12,7 +14,7 @@ resource "aws_route53_record" "cert_validation" {
   name    = aws_acm_certificate.shipreq.domain_validation_options.0.resource_record_name
   type    = aws_acm_certificate.shipreq.domain_validation_options.0.resource_record_type
   records = [aws_acm_certificate.shipreq.domain_validation_options.0.resource_record_value]
-  zone_id = data.aws_route53_zone.shipreq.id
+  zone_id = local.shipreq_zone_id
   ttl     = 10800
 }
 

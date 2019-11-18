@@ -7,6 +7,11 @@ data "aws_route53_zone" "shipreq" {
   private_zone = false
 }
 
+data "aws_route53_zone" "shipwreck" {
+  name         = "shipwreck.space."
+  private_zone = false
+}
+
 data "aws_s3_bucket" "tmp" {
   bucket = "shipreq-tmp"
 }
