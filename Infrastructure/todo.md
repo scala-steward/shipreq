@@ -13,12 +13,6 @@
 * Cluster EC2s
   * Collect logs (?)
 
-* Healthcheck: node_exporter
-* Healthcheck: ecs_exporter
-* Healthcheck: filebeat
-
-* A public `<env>.shipreq.com` record is probably a bad idea
-
 ====================================================================================================
 
 * postgres_exporter
