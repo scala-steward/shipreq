@@ -112,6 +112,14 @@ resource "aws_security_group" "ops" {
 
   egress {
     protocol    = "tcp"
+    from_port   = local.app_cluster_ports.shipreq_taskman
+    to_port     = local.app_cluster_ports.shipreq_taskman
+    cidr_blocks = [aws_subnet.private.cidr_block]
+    description = "Metrics: taskman"
+  }
+
+  egress {
+    protocol    = "tcp"
     from_port   = 32768
     to_port     = 65535
     cidr_blocks = [aws_subnet.private.cidr_block]

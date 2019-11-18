@@ -92,6 +92,14 @@ resource "aws_security_group" "app" {
 
   ingress {
     protocol    = "tcp"
+    from_port   = local.app_cluster_ports.shipreq_taskman
+    to_port     = local.app_cluster_ports.shipreq_taskman
+    cidr_blocks = [aws_subnet.private.cidr_block]
+    description = "Metrics: taskman"
+  }
+
+  ingress {
+    protocol    = "tcp"
     from_port   = 32768
     to_port     = 65535
     cidr_blocks = [aws_subnet.public.cidr_block, aws_subnet.private.cidr_block]
