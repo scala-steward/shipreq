@@ -79,7 +79,7 @@ resource "aws_ecs_task_definition" "shipreq_taskman" {
     ],
     "cpu": ${local.app_cluster_cpu.shipreq_taskman},
     "memoryReservation": ${local.app_cluster_mem_res.shipreq_taskman},
-    "memory": 512,
+    "memory": 300,
     "healthCheck": {
       "command": [
         "CMD",

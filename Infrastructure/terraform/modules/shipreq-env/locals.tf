@@ -60,8 +60,8 @@ locals {
     cadvisor        = 48
     filebeat        = 32
     node_exporter   = 24
-    shipreq_taskman = 400
-    shipreq_webapp  = 1200
+    shipreq_taskman = 160
+    shipreq_webapp  = 800
   }
 
   app_cluster_ports = {

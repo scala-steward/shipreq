@@ -45,7 +45,7 @@ services:
       - LOG_LEVEL_ROOT=INFO
       - LOG_LEVEL_SHIPREQ=DEBUG
     cpus: 2
-    mem_limit: 448m
+    mem_limit: 300m
 
   webapp:
     image: shipreq/webapp
