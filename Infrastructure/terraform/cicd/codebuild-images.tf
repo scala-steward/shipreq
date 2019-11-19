@@ -71,7 +71,7 @@ resource "aws_codebuild_project" "images" {
     type            = "CODECOMMIT"
     location        = aws_codecommit_repository.shipreq.clone_url_http
     git_clone_depth = 1
-    buildspec       = "Images/build-all.yml"
+    buildspec       = "Docker/build-all.yml"
   }
 
   artifacts {
