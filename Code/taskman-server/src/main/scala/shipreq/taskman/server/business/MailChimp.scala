@@ -114,6 +114,8 @@ object MailChimp {
               ("batch" -> Json.arr(i.subs.list.map(s => Json.obj(buildReqSubscription(s): _*)): _*)) ::
               batchSubscribeStatic))
 
+        implicit val dec = decoderBatchSubscribe
+
         endpoint("lists/batch-subscribe")(ApiFailure.Total.handle)
       }
 
@@ -124,7 +126,7 @@ object MailChimp {
               subscribeOptions(i.sendConfEmail, false) :::
               buildReqSubscription(i.sub)))
 
-        implicit val dec = Decoder.const[SubscribeResult](Ok)
+        implicit val dec = decoderSubscribe
 
         endpoint("lists/subscribe")(parseErrorForSubscribe)
       }
@@ -135,17 +137,25 @@ object MailChimp {
             ("id" -> i.listId.value.asJson) ::
               buildReqSubscription(i.sub)))
 
-        implicit val dec = Decoder.const[UpdateMemberResult](Ok)
+        implicit val dec = decoderUpdateMember
 
         endpoint("lists/update-member")(
           ApiFailure.Total.recoverOrHandle(f =>
             Option.when(f.name ==* "Email_NotExists" || f.name ==* "List_NotSubscribed")(NotSubscribed)))
       }
-
     }
   }
 
-  private[business] val decoderGetListIdResponse: Decoder[Option[ListId]] =
+  private[business] def decoderBatchSubscribe: Decoder[Unit] =
+    Decoder.const(())
+
+  private[business] def decoderSubscribe: Decoder[SubscribeResult] =
+    Decoder.const(Ok)
+
+  private[business] def decoderUpdateMember: Decoder[UpdateMemberResult] =
+    Decoder.const(Ok)
+
+  private[business] def decoderGetListIdResponse: Decoder[Option[ListId]] =
     Decoder.instance { c =>
       val cTotal = c.downField("total")
       cTotal.as[Int].flatMap {
@@ -155,7 +165,7 @@ object MailChimp {
       }
     }
 
-  private[business] val parseErrorForSubscribe: Json => Fx[SubscribeResult] =
+  private[business] def parseErrorForSubscribe: Json => Fx[SubscribeResult] =
     ApiFailure.Total.recoverOrHandle(f => Option.when(f.name ==* "List_AlreadySubscribed")(AlreadySubscribed))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

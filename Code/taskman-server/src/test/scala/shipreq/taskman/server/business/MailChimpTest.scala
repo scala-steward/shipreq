@@ -1,5 +1,6 @@
 package shipreq.taskman.server.business
 
+import io.circe.Decoder
 import scalaz.{\/, \/-}
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.JsonTestUtil._
@@ -82,19 +83,19 @@ object MailChimpTest extends TestSuite {
       }
     }
 
-    //  "lists/batch-subscribe" - {
-    //    "new user" - {
-    //      testParse(parseResponse(BatchSubscribe(null, null)),
-    //        """{"add_count":1,"adds":[{"email":"great@yay.com","euid":"1fbc6c212e","leid":"147450781"}],"update_count":0,"updates":[],"error_count":0,"errors":[]}"""
-    //      ) ==== (())
-    //    }
-    //
-    //    "update user" - {
-    //      testParse(parseResponse(BatchSubscribe(null, null)),
-    //        """{"add_count":0,"adds":[],"update_count":1,"updates":[{"email":"great@yay.com","euid":"1fbc6c212e","leid":"147450781"}],"error_count":0,"errors":[]}"""
-    //      ) ==== (())
-    //    }
-    //  }
+    "lists/batch-subscribe" - {
+      val tester = decoderTester(decoderBatchSubscribe)
+
+      "new user" - {
+        val json = """{"add_count":1,"adds":[{"email":"great@yay.com","euid":"1fbc6c212e","leid":"147450781"}],"update_count":0,"updates":[],"error_count":0,"errors":[]}"""
+        tester.assertDecodeOk(json, ())
+      }
+
+      "update user" - {
+        val json = """{"add_count":0,"adds":[],"update_count":1,"updates":[{"email":"great@yay.com","euid":"1fbc6c212e","leid":"147450781"}],"error_count":0,"errors":[]}"""
+        tester.assertDecodeOk(json, ())
+      }
+    }
 
     "lists/subscribe" - {
       "error parsing" - {
