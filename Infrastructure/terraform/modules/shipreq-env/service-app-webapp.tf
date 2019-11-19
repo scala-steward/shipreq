@@ -111,6 +111,10 @@ resource "aws_ecs_task_definition" "shipreq_webapp" {
         "value": "${var.google_analytics_tracking_id}"
       },
       {
+        "name": "shipreq.taskman.schema",
+        "value": "${var.shipreq_db_taskman_schema}"
+      },
+      {
         "name": "shipreq.url",
         "value": "${local.shipreq_url}"
       },

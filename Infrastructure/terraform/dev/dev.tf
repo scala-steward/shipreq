@@ -45,6 +45,7 @@ module "shipreq" {
   shipreq_db_name                     = "shipreq"
   shipreq_db_username                 = "shipreq"
   shipreq_db_password                 = "dev"
+  shipreq_db_taskman_schema           = "taskman"
   shipreq_images_tag                  = "latest"
   shipreq_webapp_properties           = file("webapp.properties")
   shipreq_taskman_properties          = file("taskman.properties")

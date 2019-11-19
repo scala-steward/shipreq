@@ -200,6 +200,10 @@ variable "shipreq_taskman_log_level_shipreq" {
   default = "INFO"
 }
 
+variable "shipreq_db_taskman_schema" {
+  type = string
+}
+
 variable "block_public_ops_calls" {
   description = "Add a rule to the webapp ALB to block calls to /ops/*"
   type        = bool
