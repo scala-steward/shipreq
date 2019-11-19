@@ -2,25 +2,25 @@ locals {
   prometheus_tech_tags = merge(local.default_tags, { Name = "${var.env}-prometheus-tech" })
 
   prometheus_tech_config_yml = templatefile("${path.module}/service-ops-prometheus-tech.yml", {
-    APP_CADVISOR_PORT               = local.app_cluster_ports.cadvisor
+    APP_CADVISOR_PORT               = local.ports.app.cadvisor
     APP_HOST                        = local.app_host
-    APP_NODE_EXPORTER_PORT          = local.app_cluster_ports.node_exporter
+    APP_NODE_EXPORTER_PORT          = local.ports.app.node_exporter
     CADVISOR_PATH                   = local.cadvisor_path
     CADVISOR_RELABEL                = chomp(replace(local.prometheus_tech_config_yml_cadvisor_relabel, "/\n+/", "\n"))
-    ECS_EXPORTER_PORT               = local.ops_cluster_ports.ecs_exporter
+    ECS_EXPORTER_PORT               = local.ports.ops.ecs_exporter
     ECS_EXPORTER_SCRAPE_INTERVAL    = "${max(60, var.prometheus_tech_scrape_interval_sec)}s"
     NODE_EXPORTER_RELABEL           = chomp(replace(local.prometheus_tech_config_yml_node_exporter_relabel, "/\n+/", "\n"))
-    OPS_CADVISOR_PORT               = local.ops_cluster_ports.cadvisor
+    OPS_CADVISOR_PORT               = local.ports.ops.cadvisor
     OPS_HOST                        = local.ops_host
-    OPS_NODE_EXPORTER_PORT          = local.ops_cluster_ports.node_exporter
+    OPS_NODE_EXPORTER_PORT          = local.ports.ops.node_exporter
     PROMETHEUS_BIZ_HOST             = local.prometheus_biz_host
     PROMETHEUS_BIZ_PATH             = local.prometheus_biz_path
-    PROMETHEUS_BIZ_PORT             = local.ops_cluster_ports.prometheus_biz
+    PROMETHEUS_BIZ_PORT             = local.ports.ops.prometheus_biz
     PROMETHEUS_TECH_HOST            = local.prometheus_tech_host
     PROMETHEUS_TECH_PATH            = local.prometheus_tech_path
-    PROMETHEUS_TECH_PORT            = local.ops_cluster_ports.prometheus_tech
+    PROMETHEUS_TECH_PORT            = local.ports.ops.prometheus_tech
     PROMETHEUS_TECH_SCRAPE_INTERVAL = "${var.prometheus_tech_scrape_interval_sec}s"
-    SHIPREQ_TASKMAN_PORT            = local.app_cluster_ports.shipreq_taskman
+    SHIPREQ_TASKMAN_PORT            = local.ports.app.shipreq_taskman
     SHIPREQ_WEBAPP_SD_DOMAIN        = local.shipreq_webapp_sd_domain
   })
 
@@ -110,7 +110,7 @@ resource "aws_ecs_task_definition" "prometheus_tech" {
     "portMappings": [
       {
         "protocol": "tcp",
-        "hostPort": ${local.ops_cluster_ports.prometheus_tech},
+        "hostPort": ${local.ports.ops.prometheus_tech},
         "containerPort": 9090
       }
     ],

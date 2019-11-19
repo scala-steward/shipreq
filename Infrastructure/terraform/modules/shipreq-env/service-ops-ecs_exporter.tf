@@ -26,7 +26,7 @@ resource "aws_ecs_task_definition" "ecs_exporter" {
     "portMappings": [
       {
         "protocol": "tcp",
-        "hostPort": ${local.ops_cluster_ports.ecs_exporter},
+        "hostPort": ${local.ports.ops.ecs_exporter},
         "containerPort": 9222
       }
     ],

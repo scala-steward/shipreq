@@ -76,24 +76,24 @@ resource "aws_security_group" "app" {
 
   ingress {
     protocol    = "tcp"
-    from_port   = local.app_cluster_ports.cadvisor
-    to_port     = local.app_cluster_ports.cadvisor
+    from_port   = local.ports.app.cadvisor
+    to_port     = local.ports.app.cadvisor
     cidr_blocks = [aws_subnet.private.cidr_block]
     description = "Metrics: cadvisor"
   }
 
   ingress {
     protocol    = "tcp"
-    from_port   = local.app_cluster_ports.node_exporter
-    to_port     = local.app_cluster_ports.node_exporter
+    from_port   = local.ports.app.node_exporter
+    to_port     = local.ports.app.node_exporter
     cidr_blocks = [aws_subnet.private.cidr_block]
     description = "Metrics: node_exporter"
   }
 
   ingress {
     protocol    = "tcp"
-    from_port   = local.app_cluster_ports.shipreq_taskman
-    to_port     = local.app_cluster_ports.shipreq_taskman
+    from_port   = local.ports.app.shipreq_taskman
+    to_port     = local.ports.app.shipreq_taskman
     cidr_blocks = [aws_subnet.private.cidr_block]
     description = "Metrics: taskman"
   }

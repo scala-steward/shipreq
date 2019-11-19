@@ -73,7 +73,7 @@ resource "aws_ecs_task_definition" "shipreq_taskman" {
     "portMappings": [
       {
         "protocol": "tcp",
-        "hostPort": ${local.app_cluster_ports.shipreq_taskman},
+        "hostPort": ${local.ports.app.shipreq_taskman},
         "containerPort": 9031
       }
     ],
