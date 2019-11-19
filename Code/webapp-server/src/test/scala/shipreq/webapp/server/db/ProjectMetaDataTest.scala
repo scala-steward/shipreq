@@ -30,7 +30,7 @@ object ProjectMetaDataTest extends TestSuite {
         def writeEvent(ve: VerifiedEvent, idx: Int, p: Project): Unit =
           ve.event match {
             case ae: ActiveEvent =>
-              val r = xa ! dbAlgebra.saveProjectEvent(pid, EventOrd.fromIndex(idx), ae, p)
+              val r = xa ! dbAlgebra.saveProjectEvent(pid, EventOrd.fromIndex(idx), ae, p, uid)
               r.needRight
               ()
             case x =>

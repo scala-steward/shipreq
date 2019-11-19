@@ -209,7 +209,7 @@ object DbTest extends TestSuite {
           var ord = read1.last.ord
           for ((e, p) <- data2) {
             ord = EventOrd(ord.value + 1)
-            (xa ! db.saveProjectEvent(pid, ord, e.event.active, p)).needRight
+            (xa ! db.saveProjectEvent(pid, ord, e.event.active, p, uid)).needRight
           }
           val readAll = (xa ! db.getAllProjectEvents(pid)).needRight
           assertSeq(readAll, data.map(_._1))

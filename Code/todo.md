@@ -108,5 +108,3 @@ Phase 2B
 * Document the build & release process
 
 * Default project template has an issue: Version field has no tags
-
-* Add userId to events

@@ -254,8 +254,12 @@ final class MockDb(_now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecu
     })
   }
 
-  override def saveProjectEvent(id: ProjectId, ord: EventOrd, e: ActiveEvent, p: Project) = Name[DB.SaveProjectEventError \/ VerifiedEvent] {
-    val entry = projects.need(id)
+  override def saveProjectEvent(pid: ProjectId,
+                                ord: EventOrd,
+                                e  : ActiveEvent,
+                                p  : Project,
+                                uid: UserId) = Name[DB.SaveProjectEventError \/ VerifiedEvent] {
+    val entry = projects.need(pid)
     def update(events: VerifiedEvent.Seq): Unit =
       projects = projects + entry.copy(events = events, lastUpdatedAt = Some(Instant.now()))
     val ve = verifyEvent(entry.project, e, ord)

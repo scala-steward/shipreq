@@ -345,13 +345,13 @@ object DbInterpreter {
 
   object SaveProjectEventLogic {
 
-    val insertEventQuery: Query[(ProjectId, EventOrd, Short, Json), Instant] =
-      Query("INSERT INTO event (project_id,ord,type,data) VALUES(?,?,?,?) RETURNING created_at")
+    val insertEventQuery: Query[(ProjectId, EventOrd, Short, Json, UserId), Instant] =
+      Query("INSERT INTO event (project_id,ord,type,data,usr_id) VALUES(?,?,?,?,?) RETURNING created_at")
 
     /** unsafe because the ord could be in-use */
-    def unsafeInsertEvent(pid: ProjectId, ord: EventOrd, event: ActiveEvent) = {
+    def unsafeInsertEvent(pid: ProjectId, ord: EventOrd, event: ActiveEvent, userId: UserId) = {
       val enc = EventSerialisation.encode(event)
-      insertEventQuery.toQuery0((pid, ord, enc._1, enc._2)).unique
+      insertEventQuery.toQuery0((pid, ord, enc._1, enc._2, userId)).unique
     }
 
     private def updateProjectSql(moreSets: String) =
@@ -367,9 +367,13 @@ object DbInterpreter {
   trait SaveProjectEvent extends DB.SaveProjectEvent[ConnectionIO] {
     import SaveProjectEventLogic._
 
-    override def saveProjectEvent(pid: ProjectId, ord: EventOrd, e: ActiveEvent, p: Project): ConnectionIO[DB.SaveProjectEventError \/ VerifiedEvent] = {
+    override def saveProjectEvent(pid: ProjectId,
+                                  ord: EventOrd,
+                                  e  : ActiveEvent,
+                                  p  : Project,
+                                  uid: UserId): ConnectionIO[DB.SaveProjectEventError \/ VerifiedEvent] = {
       type Result = DB.SaveProjectEventError \/ VerifiedEvent
-      unsafeInsertEvent(pid, ord, e).attemptSql.flatMap {
+      unsafeInsertEvent(pid, ord, e, uid).attemptSql.flatMap {
         case \/-(now) =>
           val result: Result = \/-(VerifiedEvent(ord, e, now))
           val update: Update0 =
@@ -413,7 +417,7 @@ object DbInterpreter {
       val data   = (uid, events, events, p.liveReqCount, p.content.reqs.size, name)
       for {
         pid  ← createProjectQuery.toQuery0(data).unique
-        adds = es.iterator.zipWithIndex.map(x => SaveProjectEventLogic.unsafeInsertEvent(pid, EventOrd.fromIndex(x._2), x._1))
+        adds = es.iterator.zipWithIndex.map(x => SaveProjectEventLogic.unsafeInsertEvent(pid, EventOrd.fromIndex(x._2), x._1, uid))
         done ← sequentially(adds, pid)
       } yield done
     }

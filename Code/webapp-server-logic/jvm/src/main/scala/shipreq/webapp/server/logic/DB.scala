@@ -179,7 +179,8 @@ object DB {
     def saveProjectEvent(id     : ProjectId,
                          ord    : EventOrd,
                          event  : ActiveEvent,
-                         project: Project): F[SaveProjectEventError \/ VerifiedEvent]
+                         project: Project,
+                         userId : UserId): F[SaveProjectEventError \/ VerifiedEvent]
   }
 
   sealed trait SaveProjectEventError

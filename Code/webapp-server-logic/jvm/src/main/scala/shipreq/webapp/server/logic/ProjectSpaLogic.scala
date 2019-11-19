@@ -16,7 +16,7 @@ import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes.EventResult
 import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
-import shipreq.webapp.base.user.{User, Username}
+import shipreq.webapp.base.user.{User, UserId, Username}
 import shipreq.webapp.server.logic.dispatch.Cookie
 
 trait ProjectSpaLogic[F[_]] {
@@ -361,7 +361,7 @@ object ProjectSpaLogic extends StrictLogging {
       private val projectUpdater = new ProjectUpdater[D, F](writeSnapshotInsteadOfEvents)
 
       private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFn[I, EventResult] =
-        in => projectUpdater(in.static.projectId, mkEvent(in.input, _)).map {
+        in => projectUpdater(in.static.projectId, in.static.user.id, mkEvent(in.input, _)).map {
           case ProjectUpdater.Result.Ok(events)              => \/-(MsgFnOut(\/-(events), None))
           case ProjectUpdater.Result.Reject(e)               => \/-(MsgFnOut(-\/(e), None))
           case ProjectUpdater.Result.ServerBehindDatabase(e) => -\/(MsgError.ServerBehindDatabase(e))
@@ -564,7 +564,7 @@ object ProjectSpaLogic extends StrictLogging {
                                                  trace   : Trace.Algebra[F]) {
     import ProjectUpdater._
 
-    def apply(pid: ProjectId, mkEvent: Project => MakeEvent.Result): F[Result] = {
+    def apply(pid: ProjectId, userId: UserId, mkEvent: Project => MakeEvent.Result): F[Result] = {
       var gas = 200
 
       def loop(s: State): F[State \/ Result] = {
@@ -618,7 +618,7 @@ object ProjectSpaLogic extends StrictLogging {
           case WriteDb =>
             mkEvent(s.local.project).flatMap(ApplyNewEvent(_, s.local.project)) match {
               case PotentialChange.Success(updated) =>
-                runDB(db.saveProjectEvent(pid, s.local.nextOrd, updated.event, updated.project)) map {
+                runDB(db.saveProjectEvent(pid, s.local.nextOrd, updated.event, updated.project, userId)) map {
                   case \/-(ve) =>
                     val nextStatus = WriteRedis2(updated.project, ve)
                     -\/(s.copy(status = nextStatus))
