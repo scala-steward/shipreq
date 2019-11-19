@@ -4,14 +4,14 @@ locals {
   node_exporter_args = [
 
     # Disable on-by-default collectors
-    "--no-collector.arp",       # Exposes ARP statistics from /proc/net/arp. 	Linux
-    "--no-collector.bcache",    # Exposes bcache statistics from /sys/fs/bcache/. 	Linux
-    "--no-collector.bonding",   # Exposes the number of configured and active slaves of Linux bonding interfaces. 	Linux
-    "--no-collector.conntrack", # Shows conntrack statistics (does nothing if no /proc/sys/net/netfilter/ present). 	Linux
+    "--no-collector.arp",     # Exposes ARP statistics from /proc/net/arp. 	Linux
+    "--no-collector.bcache",  # Exposes bcache statistics from /sys/fs/bcache/. 	Linux
+    "--no-collector.bonding", # Exposes the number of configured and active slaves of Linux bonding interfaces. 	Linux
+    # "--no-collector.conntrack", # Shows conntrack statistics (does nothing if no /proc/sys/net/netfilter/ present). 	Linux
     # "--no-collector.cpu",          # Exposes CPU statistics 	Darwin, Dragonfly, FreeBSD, Linux, Solaris
     # "--no-collector.cpufreq",      # Exposes CPU frequency statistics 	Linux, Solaris
     # "--no-collector.diskstats",    # Exposes disk I/O statistics. 	Darwin, Linux, OpenBSD
-    "--no-collector.edac",    # Exposes error detection and correction statistics. 	Linux
+    # "--no-collector.edac",    # Exposes error detection and correction statistics. 	Linux
     "--no-collector.entropy", # Exposes available entropy. 	Linux
     # "--no-collector.exec",         # Exposes execution statistics. 	Dragonfly, FreeBSD
     # "--no-collector.filefd",       # Exposes file descriptor statistics from /proc/sys/fs/file-nr. 	Linux
@@ -32,8 +32,8 @@ locals {
     # "--no-collector.sockstat",     # Exposes various statistics from /proc/net/sockstat. 	Linux
     # "--no-collector.stat",         # Exposes various statistics from /proc/stat. This includes boot time, forks and interrupts. 	Linux
     "--no-collector.textfile", # Exposes statistics read from local disk. The --collector.textfile.directory flag must be set. 	any
-    "--no-collector.time",     # Exposes the current system time. 	any
-    "--no-collector.timex",    # Exposes selected adjtimex(2) system call stats. 	Linux
+    # "--no-collector.time",     # Exposes the current system time. 	any
+    # "--no-collector.timex", # Exposes selected adjtimex(2) system call stats. 	Linux
     # "--no-collector.uname",    # Exposes system information as provided by the uname system call. 	Darwin, FreeBSD, Linux, OpenBSD
     # "--no-collector.vmstat",       # Exposes statistics from /proc/vmstat. 	Linux
     "--no-collector.xfs", # Exposes XFS runtime statistics. 	Linux (kernel 4.4+)
@@ -61,7 +61,7 @@ locals {
     "--path.rootfs=/rootfs",
     "--path.procfs=/host/proc",
     "--path.sysfs=/host/sys",
-    "--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)"
+    "--collector.filesystem.ignored-mount-points= ^/(dev|proc|sys|var/lib/docker/.+|host|etc)($$|/)"
   ]
 }
 
