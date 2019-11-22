@@ -108,3 +108,7 @@ Phase 2B
 * Document the build & release process
 
 * Default project template has an issue: Version field has no tags
+
+* Add an error-catching top-level react component
+
+* Warn against closing page if editors are open with changes
