@@ -69,7 +69,8 @@ object TaskmanConfig extends HasLogger {
 
   def mailGun: ConfigDef[MailGun.Props] =
     (ConfigDef.need[String]("domain")
-      |@| ConfigDef.need[String]("key").secret
+      |@| ConfigDef.need[String]("apiKey").secret
+      |@| ConfigDef.need[String]("tags").map(_.split(',').map(_.trim).filter(_.nonEmpty).toSet)
       ) (MailGun.Props.apply)
       .withPrefix("mailgun.")
 

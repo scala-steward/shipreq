@@ -13,19 +13,26 @@ import shipreq.taskman.server.logic.business.BusinessOp.SendEmail
 
 object MailGun {
 
-  final case class Props(domain: String, key: String)
+  final case class Props(domain: String, apiKey: String, tags: Set[String]) {
 
-  final class Endpoints(domain: String, apiKey: String) {
+    private[MailGun] val tagFields: List[(String, String)] =
+      (tags + "taskman").iterator.map(("o:tag", _)).toList
+  }
+
+  final class Endpoints(props: Props) {
+
     val send: Http[SendEmail, Unit] =
-      Post(s"https://api.mailgun.net/v3/$domain/messages")
-        .authWith(Credential.basic("api", apiKey))
+      Post(s"https://api.mailgun.net/v3/${props.domain}/messages")
+        .authWith(Credential.basic("api", props.apiKey))
         .requestAsForm[SendEmail](i =>
           "from" -> i.envelope.from.addr.value ::
           "subject" -> i.content.subject ::
           "text" -> i.content.body ::
           i.envelope.cc.map("cc" -> _.addr.value) :::
           i.envelope.bcc.map("bcc" -> _.addr.value) :::
-          i.envelope.to.list.map("to" -> _.addr.value))
+          i.envelope.to.list.map("to" -> _.addr.value) :::
+          props.tagFields
+        )
       .responseAsJson[Json]
       .map(_ => \/-(()))
   }
@@ -37,7 +44,7 @@ final class MailGun(props: Props)(implicit httpClient: HttpClient)
   private implicit val httpLogger: HttpLogger =
     HttpLogger(logger)
 
-  private val endpoints = new Endpoints(props.domain, props.key)
+  private val endpoints = new Endpoints(props)
 
   override def apply(op: SendEmail): Fx[Unit] =
     endpoints.send.run(op) >>
