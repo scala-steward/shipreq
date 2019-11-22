@@ -61,7 +61,7 @@ locals {
     "--path.rootfs=/rootfs",
     "--path.procfs=/host/proc",
     "--path.sysfs=/host/sys",
-    "--collector.filesystem.ignored-mount-points= ^/(dev|proc|sys|var/lib/docker/.+|host|etc)($$|/)"
+    "--collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+|host|etc)($$|/)"
   ]
 }
 
