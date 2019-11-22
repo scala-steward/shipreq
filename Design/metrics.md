@@ -40,37 +40,40 @@ Intents
 
 
 
-Thoughts
-========
+Business metrics
+=================
 
-#### Webapp
-
-- users
-  - registered vs not
-  - last login
-- projects
-  - total created & deleted
-- requirements
+For nearly all of the following, have the ability to show
   - total
-  - per project
-- events
-  - total
-  - per project
-- disk space
-  - total
-  - per project
-  - per user
-  - per event
-  - per requirement
+  - today
+  - this week
+  - per day
+  - per week
+  - per month
 
-
-Cheatsheet
-==========
-
-```
-[C]ounter   - monotonic number; use for X per N (eg. req/sec)
-[G]auge     - number
-[H]istogram - stream of numbers, recorded in buckets
-[S]ummary   - client-side quantiles, pre-determined window size
-```
-
+Metrics
+  - landing page reqs
+  - users
+    - registered vs not
+    - last login
+    - customer engagement score
+  - projects
+    - total created & deleted
+  - requirements
+    - total
+    - per project
+  - events
+    - total
+    - per project
+  - disk space
+    - total
+    - per project
+    - per user
+    - per event
+    - per requirement
+  - usage/engagement
+    - unique users logging in
+    - events created
+    - project reads
+    - unique projects read
+    - avg session time per user
