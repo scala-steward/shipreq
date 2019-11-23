@@ -20,8 +20,8 @@ final class DataLogic(p: Project) {
   val tagLookup: FilterDead => TagLookup = {
     val reqTags                 = p.content.reqTags
     def tagsInText              = p.atomScan.tagRefs
-    val emptyOther              = Multimap.empty[ApplicableTagId, List, ReqTagLoc]
-    val emptyDeadTagsInLiveText = Multimap.empty[ApplicableTagId, List, ReqTextLoc]
+    val emptyOther              = Multimap.empty[ApplicableTagId, List, LocationOf.Tag.InReq]
+    val emptyDeadTagsInLiveText = Multimap.empty[ApplicableTagId, List, Location.Text]
 
     FilterDead.memoLazy {
 
@@ -35,13 +35,15 @@ final class DataLogic(p: Project) {
 
           for (t <- reqTags(reqId))
             if (!deadTags.contains(t))
-              other = other.add(t, ReqTagLoc.Tags)
+              other = other.add(t, Location.Tags)
 
           for (t <- tagsInText(reqId).live)
-            if (deadTags.contains(t.value))
-              deadTagsInLiveText = deadTagsInLiveText.add(t.value, t.loc)
-            else
-              other = other.add(t.value, t.loc)
+            t.loc match {
+              case txtLoc: Location.Text if deadTags.contains(t.value) =>
+                deadTagsInLiveText = deadTagsInLiveText.add(t.value, txtLoc)
+              case _ =>
+                other = other.add(t.value, t.loc)
+            }
 
           ReqTags(other, deadTagsInLiveText)
         }
@@ -53,7 +55,7 @@ final class DataLogic(p: Project) {
           var other = emptyOther
 
           for (t <- reqTags(reqId))
-            other = other.add(t, ReqTagLoc.Tags)
+            other = other.add(t, Location.Tags)
 
           for (t <- tagsInText(reqId).all)
             other = other.add(t.value, t.loc)
@@ -128,8 +130,8 @@ object DataLogic {
   /**
     * Set of tags associated with a requirement.
     */
-  final case class ReqTags(other             : Multimap[ApplicableTagId, List, ReqTagLoc],
-                           deadTagsInLiveText: Multimap[ApplicableTagId, List, ReqTextLoc]) {
+  final case class ReqTags(other             : Multimap[ApplicableTagId, List, LocationOf.Tag.InReq],
+                           deadTagsInLiveText: Multimap[ApplicableTagId, List, Location.Text]) {
 
     // Computing eagerly because this is for a single req. Reqs never have a huge number of tags.
     val all: Set[ApplicableTagId] =
@@ -222,7 +224,7 @@ object DataLogic {
 
     type Issues = Vector[Atom.AnyIssue]
 
-    private[this] val getReqIssues = fd.ldStatAccessor[Vector[ReqTextLoc.And[Atom.AnyIssue]]]
+    private[this] val getReqIssues = fd.ldStatAccessor[Vector[LocAndValue[LocationOf.Text.InReq, Atom.AnyIssue]]]
     private[this] val getRcgIssues = fd.ldStatAccessor[Vector[Text.CodeGroupTitle.Issue]]
 
     val forReq: ReqId => Issues =

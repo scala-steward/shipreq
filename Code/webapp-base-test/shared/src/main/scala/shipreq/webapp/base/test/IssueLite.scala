@@ -20,24 +20,24 @@ object IssueLite {
 
   final case class ConflictingTags(reqId     : ReqId,
                                    tagGroupId: TagGroupId,
-                                   locs      : NonEmptySet[ReqTagLoc]) extends IssueLite(C.ConflictingTags)
+                                   locs      : NonEmptySet[LocationOf.Tag.InReq]) extends IssueLite(C.ConflictingTags)
 
   final case class DeadIssueTagInRcg(rcgId: ReqCodeGroupId,
                                      issue: Text.CodeGroupTitle.Issue) extends IssueLite(C.DeadIssueTag)
 
   final case class DeadIssueTagInReq(reqId: ReqId,
-                                     loc  : ReqTextLoc,
+                                     loc  : LocationOf.Text.InReq,
                                      issue: Atom.AnyIssue) extends IssueLite(C.DeadIssueTag)
 
   final case class DeadRefInRcg(rcgId: ReqCodeGroupId,
                                 ref  : ContentRef) extends IssueLite(C.DeadReference)
 
   final case class DeadRefInReq(reqId: ReqId,
-                                loc  : ReqTextLoc,
+                                loc  : LocationOf.Text.InReq,
                                 ref  : ContentRef) extends IssueLite(C.DeadReference)
 
   final case class DeadTag(reqId: ReqId,
-                           loc  : ReqTextLoc,
+                           loc  : LocationOf.Text.InReq,
                            tagId: ApplicableTagId) extends IssueLite(C.DeadIssueTag)
 
   final case class EmptyCodeGroup(rcgId: ReqCodeGroupId) extends IssueLite(C.EmptyCodeGroup)
@@ -48,7 +48,7 @@ object IssueLite {
                                  issue: Text.CodeGroupTitle.Issue) extends IssueLite(C.IssueTag)
 
   final case class IssueTagInReq(reqId: ReqId,
-                                 loc  : ReqTextLoc,
+                                 loc  : LocationOf.Text.InReq,
                                  issue: Atom.AnyIssue) extends IssueLite(C.IssueTag)
 
   final case class UninhabitableTagField(fieldId: CustomField.Tag.Id) extends IssueLite(C.UninhabitableTagField)

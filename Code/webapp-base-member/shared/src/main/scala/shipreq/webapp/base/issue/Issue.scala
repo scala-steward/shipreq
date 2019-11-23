@@ -54,24 +54,24 @@ object Issue {
 
   final case class ConflictingTags(req       : Req,
                                    tagGroupId: TagGroupId,
-                                   locs      : NonEmptySet[ReqTagLoc]) extends Issue(C.ConflictingTags)
+                                   locs      : NonEmptySet[LocationOf.Tag.InReq]) extends Issue(C.ConflictingTags)
 
   final case class DeadIssueTagInRcg(rcg  : LiveCodeGroup,
                                      issue: Text.CodeGroupTitle.Issue) extends Issue(C.DeadIssueTag)
 
   final case class DeadIssueTagInReq(req  : Req,
-                                     loc  : ReqTextLoc,
+                                     loc  : LocationOf.Text.InReq,
                                      issue: Atom.AnyIssue) extends Issue(C.DeadIssueTag)
 
   final case class DeadRefInRcg(rcg: LiveCodeGroup,
                                 ref: ContentRef) extends Issue(C.DeadReference)
 
   final case class DeadRefInReq(req: Req,
-                                loc: ReqTextLoc,
+                                loc: LocationOf.Text.InReq,
                                 ref: ContentRef) extends Issue(C.DeadReference)
 
   final case class DeadTag(req: Req,
-                           loc: ReqTextLoc,
+                           loc: LocationOf.Text.InReq,
                            tag: ApplicableTag) extends Issue(C.DeadIssueTag)
 
   final case class EmptyCodeGroup(rcg: LiveCodeGroup) extends Issue(C.EmptyCodeGroup)
@@ -82,7 +82,7 @@ object Issue {
                                  issue: Text.CodeGroupTitle.Issue) extends Issue(C.IssueTag)
 
   final case class IssueTagInReq(req  : Req,
-                                 loc  : ReqTextLoc,
+                                 loc  : LocationOf.Text.InReq,
                                  issue: Atom.AnyIssue) extends Issue(C.IssueTag)
 
   final case class ManualIssue(issue: ManualIssueInstance) extends Issue(C.ManualIssue)

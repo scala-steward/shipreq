@@ -141,11 +141,11 @@ object FieldKey {
 
   def impliedBy = Implications(\/-(Backwards))
 
-  def reqTextLoc(reqId: ReqId, loc: ReqTextLoc): FieldKey =
+  def reqTextLoc(reqId: ReqId, loc: LocationOf.Text.InReq): FieldKey =
     loc match {
-      case ReqTextLoc.Title                    => reqTitle(reqId)
-      case ReqTextLoc.CustomTextField(fieldId) => CustomTextField(fieldId)
-      case ReqTextLoc.UseCaseStep(stepId)      => UseCaseStep(stepId)
+      case Location.Text.Title                    => reqTitle(reqId)
+      case Location.Text.CustomTextField(fieldId) => CustomTextField(fieldId)
+      case Location.Text.UseCaseStep(stepId)      => UseCaseStep(stepId)
     }
 
   def reqTitle(id: ReqId): ForSomeReq =

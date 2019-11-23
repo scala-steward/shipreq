@@ -178,10 +178,10 @@ object IssueDetectorTest extends TestSuite {
       updateReqTags(1119)()(2, 3),
       Event.ReqsDelete(NonEmptySet(1119), ∅, ∅),
     )(
-      IssueLite.ConflictingTags(1101, 1, NonEmptySet(ReqTagLoc.Tags)),
-      IssueLite.ConflictingTags(1104, 1, NonEmptySet(ReqTagLoc.Tags)),
-      IssueLite.ConflictingTags(1104, 20, NonEmptySet(ReqTagLoc.Tags)),
-      IssueLite.ConflictingTags(1107, 20, NonEmptySet(ReqTagLoc.Tags)),
+      IssueLite.ConflictingTags(1101, 1, NonEmptySet(Location.Tags)),
+      IssueLite.ConflictingTags(1104, 1, NonEmptySet(Location.Tags)),
+      IssueLite.ConflictingTags(1104, 20, NonEmptySet(Location.Tags)),
+      IssueLite.ConflictingTags(1107, 20, NonEmptySet(Location.Tags)),
     )
 
     def deadTag() = test(p3)(
@@ -201,8 +201,8 @@ object IssueDetectorTest extends TestSuite {
         Event.GenericReqTitleSet(1103, Vector(TagRef(P3.priLow))), // + highPri in tags
         Event.GenericReqTitleSet(1104, Vector(TagRef(P3.priMed))), // + priMed in tags
       )(
-        IssueLite.ConflictingTags(1002, P3.priTG, NonEmptySet(ReqTextLoc.Title)),
-        IssueLite.ConflictingTags(1103, P3.priTG, NonEmptySet(ReqTagLoc.Tags, ReqTextLoc.Title)),
+        IssueLite.ConflictingTags(1002, P3.priTG, NonEmptySet(Location.Text.Title)),
+        IssueLite.ConflictingTags(1103, P3.priTG, NonEmptySet(Location.Tags, Location.Text.Title)),
       )
     }
   }
@@ -232,7 +232,7 @@ object IssueDetectorTest extends TestSuite {
       Event.GenericReqTitleSet(1002, Vector(T.GenericReqTitle.CodeRef(demoId))),
       Event.CodeGroupsDelete(NonEmptySet.one(demoId)),
     )(
-      IssueLite.DeadRefInReq(1002, ReqTextLoc.Title, ContentRef.CodeRef(demoId)),
+      IssueLite.DeadRefInReq(1002, Location.Text.Title, ContentRef.CodeRef(demoId)),
     )
   }
 
@@ -248,8 +248,8 @@ object IssueDetectorTest extends TestSuite {
       Event.TagDelete(P3.priHigh),
       Event.TagDelete(P3.priLow),
     )(
-      IssueLite.DeadTag(P3.frs(1), ReqTextLoc.Title, P3.priHigh),
-      IssueLite.DeadTag(P3.frs(1), ReqTextLoc.Title, P3.priLow),
+      IssueLite.DeadTag(P3.frs(1), Location.Text.Title, P3.priHigh),
+      IssueLite.DeadTag(P3.frs(1), Location.Text.Title, P3.priLow),
     )
   }
 
@@ -310,8 +310,8 @@ object IssueDetectorTest extends TestSuite {
       Event.CustomIssueTypeDelete(1),
       Event.CustomIssueTypeDelete(2),
     )(
-      IssueLite.DeadIssueTagInReq(P3.frs(1), ReqTextLoc.Title, T.GenericReqTitle.Issue(1, ∅)),
-      IssueLite.DeadIssueTagInReq(P3.frs(2), ReqTextLoc.Title, T.GenericReqTitle.Issue(2, SampleProject3.inlineIssueDesc)),
+      IssueLite.DeadIssueTagInReq(P3.frs(1), Location.Text.Title, T.GenericReqTitle.Issue(1, ∅)),
+      IssueLite.DeadIssueTagInReq(P3.frs(2), Location.Text.Title, T.GenericReqTitle.Issue(2, SampleProject3.inlineIssueDesc)),
     )
 
     def ok() = test(p3)(delFRs)()
@@ -320,14 +320,14 @@ object IssueDetectorTest extends TestSuite {
       delFRs,
       Event.ReqFieldCustomTextSet(P3.mfs(3), P3.descField, Vector(T.CustomTextField.Issue(1, ∅))),
     )(
-      IssueLite.IssueTagInReq(P3.mfs(3), ReqTextLoc.CustomTextField(P3.descField), T.CustomTextField.Issue(1, ∅)),
+      IssueLite.IssueTagInReq(P3.mfs(3), Location.Text.CustomTextField(P3.descField), T.CustomTextField.Issue(1, ∅)),
     )
 
     def ucs() = test(p6)(
       delFRs,
       Event.UseCaseStepUpdate(13, UseCaseStepGD.ValueForTitle(Vector(T.UseCaseStep.Issue(1, ∅)))),
     )(
-      IssueLite.IssueTagInReq(P6.uc1, ReqTextLoc.UseCaseStep(13), T.UseCaseStep.Issue(1, ∅)),
+      IssueLite.IssueTagInReq(P6.uc1, Location.Text.UseCaseStep(13), T.UseCaseStep.Issue(1, ∅)),
     )
 
     def deadCtx() = test(p6)(
@@ -367,18 +367,18 @@ object IssueDetectorTest extends TestSuite {
       'p3 - assertIssues(p3)(
         IssueLite.BlankCustomField(P3.frs(1), P3.priField),
         IssueLite.BlankCustomField(P3.frs(2), P3.priField),
-        IssueLite.DeadRefInReq(P3.frs(2), ReqTextLoc.Title, ContentRef.ReqRef(P3.mfs(28))),
-        IssueLite.IssueTagInReq(P3.frs(1), ReqTextLoc.Title, T.GenericReqTitle.Issue(1, ∅)),
-        IssueLite.IssueTagInReq(P3.frs(2), ReqTextLoc.Title, T.GenericReqTitle.Issue(2, SampleProject3.inlineIssueDesc)),
+        IssueLite.DeadRefInReq(P3.frs(2), Location.Text.Title, ContentRef.ReqRef(P3.mfs(28))),
+        IssueLite.IssueTagInReq(P3.frs(1), Location.Text.Title, T.GenericReqTitle.Issue(1, ∅)),
+        IssueLite.IssueTagInReq(P3.frs(2), Location.Text.Title, T.GenericReqTitle.Issue(2, SampleProject3.inlineIssueDesc)),
       )
 
       'p4 - assertIssues(p4)(
         IssueLite.BlankCustomField(P4.frs(1), P4.priField),
         IssueLite.BlankCustomField(P4.frs(2), P4.priField),
         IssueLite.BlankCustomField(P4.uc1, P4.priField),
-        IssueLite.DeadRefInReq(P4.frs(2), ReqTextLoc.Title, ContentRef.ReqRef(P4.mfs(28))),
-        IssueLite.IssueTagInReq(P4.frs(1), ReqTextLoc.Title, T.GenericReqTitle.Issue(1, ∅)),
-        IssueLite.IssueTagInReq(P4.frs(2), ReqTextLoc.Title, T.GenericReqTitle.Issue(2, SampleProject3.inlineIssueDesc)),
+        IssueLite.DeadRefInReq(P4.frs(2), Location.Text.Title, ContentRef.ReqRef(P4.mfs(28))),
+        IssueLite.IssueTagInReq(P4.frs(1), Location.Text.Title, T.GenericReqTitle.Issue(1, ∅)),
+        IssueLite.IssueTagInReq(P4.frs(2), Location.Text.Title, T.GenericReqTitle.Issue(2, SampleProject3.inlineIssueDesc)),
       )
 
       'p6 - assertIssues(p6)(
@@ -388,11 +388,11 @@ object IssueDetectorTest extends TestSuite {
         IssueLite.BlankCustomField(P6.uc2, P6.priField),
         IssueLite.BlankUseCaseStep(UseCaseStepId(18)),
         IssueLite.BlankUseCaseStep(UseCaseStepId(19)),
-        IssueLite.DeadRefInReq(P6.frs(2), ReqTextLoc.Title, ContentRef.ReqRef(P6.mfs(28))),
-        IssueLite.DeadRefInReq(P6.uc1, ReqTextLoc.Title, ContentRef.UseCaseStepRef(16)),
-        IssueLite.DeadRefInReq(P6.uc1, ReqTextLoc.Title, ContentRef.UseCaseStepRef(17)),
-        IssueLite.IssueTagInReq(P6.frs(1), ReqTextLoc.Title, T.GenericReqTitle.Issue(1, ∅)),
-        IssueLite.IssueTagInReq(P6.frs(2), ReqTextLoc.Title, T.GenericReqTitle.Issue(2, SampleProject3.inlineIssueDesc)),
+        IssueLite.DeadRefInReq(P6.frs(2), Location.Text.Title, ContentRef.ReqRef(P6.mfs(28))),
+        IssueLite.DeadRefInReq(P6.uc1, Location.Text.Title, ContentRef.UseCaseStepRef(16)),
+        IssueLite.DeadRefInReq(P6.uc1, Location.Text.Title, ContentRef.UseCaseStepRef(17)),
+        IssueLite.IssueTagInReq(P6.frs(1), Location.Text.Title, T.GenericReqTitle.Issue(1, ∅)),
+        IssueLite.IssueTagInReq(P6.frs(2), Location.Text.Title, T.GenericReqTitle.Issue(2, SampleProject3.inlineIssueDesc)),
       )
     }
 

@@ -98,7 +98,7 @@ object IssueDetectors {
         val tagIds    = tagLookup(reqId).other
         val conflicts = Util.uniqueDupsNested(tagIds.keyIterator)(exclusiveGroups)
         for (g <- conflicts) {
-          val locs: Set[ReqTagLoc] =
+          val locs: Set[LocationOf.Tag.InReq] =
             tagIds.iterator
               .filter(x => exclusiveGroups(x._1).contains(g))
               .flatMap(_._2)
@@ -155,7 +155,10 @@ object IssueDetectors {
         for (a <- tagRefs(req.id).live) {
           val t = ctx.project.config.tags.atag(a.value)
           if (t.live.is(Dead))
-            ctx.add(Issue.DeadTag(req, a.loc, t))
+            a.loc match {
+              case txtLoc: LocationOf.Text.InReq => ctx.add(Issue.DeadTag(req, txtLoc, t))
+              case _                             => ()
+            }
         }
       }
     }

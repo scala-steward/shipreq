@@ -146,11 +146,11 @@ object Row {
         renderer       = rf.forUseCase(req.id),
         actions        = actionBuilder(i))
 
-    def forReqAndLoc(i: Issue, desc: String, r: Req, loc: ReqTextLoc): Row =
+    def forReqAndLoc(i: Issue, desc: String, r: Req, loc: LocationOf.Text.InReq): Row =
       loc match {
-        case ReqTextLoc.Title                    => forReqTitle(i, desc, r)
-        case ReqTextLoc.CustomTextField(fieldId) => forReqA(i, desc, r, IssueField.customField(fieldId))
-        case ReqTextLoc.UseCaseStep(stepId)      => forUcsI(i, desc, stepId)
+        case Location.Text.Title                    => forReqTitle(i, desc, r)
+        case Location.Text.CustomTextField(fieldId) => forReqA(i, desc, r, IssueField.customField(fieldId))
+        case Location.Text.UseCaseStep(stepId)      => forUcsI(i, desc, stepId)
       }
 
     def forRcg(i: Issue, desc: String, g: LiveCodeGroup, fk: Option[IssueField[FieldKey.ForCodeGroup]]) =
