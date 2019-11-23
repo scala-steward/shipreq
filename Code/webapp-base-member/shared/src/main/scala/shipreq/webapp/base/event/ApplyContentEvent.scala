@@ -343,6 +343,9 @@ trait ApplyContentEvent {
     def needStepIndex(id: UseCaseStepId): SE[UseCases.StepTreeKey] =
       SE.get(_.content.reqs.useCases.stepIndex.get(id)) >>= (optionGet(_, s"${show(id)} not found."))
 
+    def needStepFocus(id: UseCaseStepId): SE[UseCaseStep.Focus] =
+      needStepIndex(id) >> SE.get(_.content.reqs.useCases.focusStep(id))
+
     private def findStepModTree(id: UseCaseStepId)(mod: (UseCaseSteps, StepField, Location, UseCaseStep) => SE[UseCaseSteps.Tree]): SE[Unit] =
       needStepIndex(id) >>= { idx =>
         val ucId = idx.useCaseId
@@ -408,24 +411,29 @@ trait ApplyContentEvent {
       }
     }
 
-//    private def postDelete(deleted: VectorTree.Node[UseCaseStep]): Project => Project =
-//      Project.useCases.modify { ucs =>
-//        val ids = deleted.valueIterator.map(_.id).toSet
-//        val si2 = ucs.stepIndex -- ids
-//        val sf2 = ucs.stepFlow.modify(_.delks(ids).delvs(ids))
-//        ucs.copy(stepIndex = si2, stepFlow = sf2)
-//      }
-
     def applyStepDelete(e: UseCaseStepDelete): SE[Unit] =
-      setUseCaseStepLive(e.id, Dead)
-//      mapStep(e.id)((tree, field, loc) =>
-//        for {
-//          _ <- whenUntrusted(SE.test(field.canDelete(loc) :: Allow, "Use case step cannot be deleted."))
-//          _ <- whenUntrusted(tree.)
-//          g <- optionGet(t1.removeNodeO(l), badStepIndex(e.id))
-//          _ ← postDelete(g._2)
-//        } yield g._1
-//      )
+      for {
+        f   <- needStepFocus(e.id)
+        _   <- whenUntrusted(SE.test(f.field.canDelete(f.loc) is Allow, s"Deletion of step ${show(e.id)} forbidden."))
+        del <- SE.get(_.deletionMethodForUseCaseStep(e.id))
+        _   <- del match {
+                 case DeletionMethod.Soft => setUseCaseStepLive(e.id, Dead)
+                 case DeletionMethod.Hard => hardDeleteStep(f)
+               }
+      } yield ()
+
+    private def hardDeleteStep(f: UseCaseStep.Focus): SE[Unit] =
+      for {
+        _ <- findStepModTree(f.id)((steps, _, loc, _) => SE.ret(steps.tree.remove(loc).get))
+        _ <- postHardDelete(f.subtree)
+      } yield ()
+
+    private def postHardDelete(deleted: VectorTree.Node[UseCaseStep]): Project => Project =
+      Project.useCases.modify { ucs =>
+        def ids = deleted.valueIterator.map(_.id)
+        val si2 = ucs.stepIndex -- ids
+        ucs.copy(stepIndex = si2)
+      }
 
     def applyStepRestore(e: UseCaseStepRestore): SE[Unit] =
       setUseCaseStepLive(e.id, Live)

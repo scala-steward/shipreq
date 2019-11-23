@@ -492,6 +492,9 @@ object VectorTree extends VectorTreeLowPri {
           go(first)
       }
 
+    final def needAt(pos: Location): Node[A] =
+      at(pos) getOrElse sys.error(s"Node not found at position ${pos.whole mkString "."}.")
+
     final def getAtLocation(pos: Location): Option[A] = {
       val it = pos.iterator
       @tailrec

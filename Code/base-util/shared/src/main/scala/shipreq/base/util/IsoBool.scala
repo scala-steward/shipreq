@@ -83,6 +83,12 @@ object IsoBool {
     final def mapReduce[X, Y](m: B => X)(r: (X, X) => Y): Y =
       r(m(positive), m(negative))
 
+    final def foreach[A](f: B with IsoBool[B] => A): Unit = {
+      f(positive)
+      f(negative)
+      ()
+    }
+
     final def forall(f: B => Boolean): Boolean =
       f(positive) && f(negative)
 

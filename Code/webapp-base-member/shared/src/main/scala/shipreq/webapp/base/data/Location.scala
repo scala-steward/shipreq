@@ -21,7 +21,7 @@ object LocationOf {
     sealed trait InReq
     sealed trait InReqCodeGroup
   }
-  
+
   implicit def univEqTagInReq : UnivEq[Tag.InReq ] = UnivEq.derive
   implicit def univEqTextInReq: UnivEq[Text.InReq] = UnivEq.derive
 }
@@ -49,15 +49,22 @@ object Location {
   sealed trait Text extends InReq with LocationOf.Tag.InReq with LocationOf.Text.InReq
 
   object Text {
-
     case object Title extends Text with InReqCodeGroup with LocationOf.Text.InReqCodeGroup
 
     final case class CustomTextField(fieldId: CustomField.Text.Id) extends Text
 
     final case class UseCaseStep(stepId: UseCaseStepId) extends Text
-
   }
 
+  implicit def fromLocationOfTextInReq(x: LocationOf.Text.InReq): InReq =
+    x match {
+      case a: Text => a
+    }
+
+  implicit def fromLocationOfTextInRcg(x: LocationOf.Text.InReqCodeGroup): InReqCodeGroup =
+    x match {
+      case Text.Title => Text.Title
+    }
 }
 
 // =====================================================================================================================

@@ -6,6 +6,7 @@ import nyaya.test.PropTest._
 import scalaz.\/-
 import scalaz.std.list.listInstance
 import scalaz.std.vector.vectorInstance
+import shipreq.base.util.DeletionMethod
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
@@ -25,12 +26,25 @@ object EventPropTests extends TestSuite {
 
     private def deletableStepProps =
       E.forall(p.useCaseStepsDeletable.map(_.id).toList) { id =>
-        val a = UseCaseStepDelete (id)
-        val b = UseCaseStepRestore(id)
-        E.equal("DeleteUseCaseStep + RestoreUseCaseStep = id",
-          actual = AE.apply1(a)(p).flatMap(AE.apply1(b)),
-          expect = \/-(p))
+        p.deletionMethodForUseCaseStep(id) match {
+
+          case DeletionMethod.Soft =>
+            val a = UseCaseStepDelete (id)
+            val b = UseCaseStepRestore(id)
+            E.equal("DeleteUseCaseStep + RestoreUseCaseStep = id",
+              actual = AE.apply1(a)(p).flatMap(AE.apply1(b)),
+              expect = \/-(p))
+
+          case DeletionMethod.Hard =>
+            val stepIds = p.content.reqs.useCases.stepIdSet
+            val f       = p.content.reqs.useCases.focusStep(id)
+            val allIds  = f.subtree.locAndValueIterator(f.loc, (_, a) => a.id).toSet + id
+            val e       = UseCaseStepDelete(id)
+            E.equal("DeleteUseCaseStep hard delete",
+              actual = AE.apply1(e)(p).map(_.content.reqs.useCases.stepIdSet),
+              expect = \/-(stepIds -- allIds))
         }
+      }
 
     // Any live custom req-types can be deleted
     // Whether deletion is soft or hard doesn't matter, so long as the event succeeds and the resulting project is valid

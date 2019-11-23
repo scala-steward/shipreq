@@ -94,6 +94,17 @@ final case class Project(name         : Project.Name,
 
   lazy val issues = IssueTracker(this).issues
 
+  lazy val reverseDependencies = new ReverseDependencies(atomScan, content.reqs.useCases)
+
+  def deletionMethodForUseCaseStep(id: UseCaseStepId): DeletionMethod = {
+    val f = content.reqs.useCases.focusStep(id)
+    DeletionMethod.Hard.when(
+      f.step.titleExplicitly.isEmpty &&
+      reverseDependencies.useCaseStepId(id).isEmpty &&
+      f.subtree.children.forall(n => deletionMethodForUseCaseStep(n.value.id) is DeletionMethod.Hard)
+    )
+  }
+
   lazy val conflictingTagsPerReq: Multimap[ReqId, Set, ApplicableTagId] = {
     var m = Multimap.empty[ReqId, Set, ApplicableTagId]
     issues.vector.foreach {

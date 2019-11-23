@@ -7,15 +7,16 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes
-import shipreq.webapp.base.text.Text.{UseCaseTitle =>  UCT, UseCaseStep => UCST}
-import ApplyEventTestFns._
-import ContentEventTestHelp._
-import Event._
-import StaticField.{NormalAltStepTree => NCAC, ExceptionStepTree => EC}
-import UnsafeTypes._
-import UnsafeTypes.AutoNES._
+import shipreq.webapp.base.text.Text
+import shipreq.webapp.base.text.Text.{UseCaseTitle => UCT, UseCaseStep => UCST}
 
 object UseCaseEventTest extends TestSuite {
+  import ApplyEventTestFns._
+  import ContentEventTestHelp._
+  import Event._
+  import StaticField.{NormalAltStepTree => NCAC, ExceptionStepTree => EC}
+  import UnsafeTypes._
+  import UnsafeTypes.AutoNES._
   import UseCaseGD._
 
   implicit def autoUseCaseId(i: Int) = UseCaseId(i)
@@ -50,7 +51,7 @@ object UseCaseEventTest extends TestSuite {
 
   def maxLenRange = 0 to WebappConfig.useCaseStepsMaxLength
 
-  def testSteps(es: ActiveEvent*)(nc: String*)(e: String*): Unit = {
+  def testSteps(es: ActiveEvent*)(nc: String*)(e: String*)(implicit l: sourcecode.Line): Unit = {
     var es2 = es.toList
     if (!es2.exists(_ eq emptyUC1))
       es2 = emptyUC1 :: es2
@@ -251,24 +252,24 @@ object UseCaseEventTest extends TestSuite {
     }
 
     'deleteUseCaseStep {
-      // That deletion is soft and restorable is tested in EventPropTests
 
+      /** Creates a use case with 3 steps */
       def create3 = Vector[ActiveEvent](
-        emptyUC1,                                 // 1.0
+        emptyUC1,                                    // 1.0
         UseCaseStepCreate(7, 1, NCAC, V0),           // 1.0.1
         UseCaseStepCreate(8, 1, NCAC, Vector(0, 0)),
-        UseCaseStepShiftRight(8))                 // 1.0.1.a
+        UseCaseStepShiftRight(8))                    // 1.0.1.a
 
       'okLeaf        - testSteps(create3 :+ UseCaseStepDelete(8): _*)("0", "0.0")()
       'okParent      - testSteps(create3 :+ UseCaseStepDelete(7): _*)("0")()
       'stepNotFound  - assertFail("found")(UseCaseStepDelete(7))
       'ucDead        - assertFail("dead")(create3 :+ delUC1 :+ UseCaseStepDelete(8): _*)
-      'notRootN      - assertFail("root")(emptyUC1, UseCaseStepDelete(1))
+      'notRootN      - assertFail("forbidden")(emptyUC1, UseCaseStepDelete(1))
       'okRootE       - testSteps(UseCaseStepCreate(6, 1, EC, ∅), UseCaseStepDelete(6))("0")()
 
       'retainsFlow - {
         val es = create3 ++ Seq(
-          UseCaseStepCreate(9, 1, NCAC, V0),                 // add 1.1
+          UseCaseStepCreate(9, 1, NCAC, V0),              // add 1.1
           UseCaseStepUpdate(1, ^.FlowOut(nesd()(7))),     // 1.0     → [1.0.1]
           UseCaseStepUpdate(7, ^.FlowOut(nesd()(9))),     // 1.0.1   → [1.1]
           UseCaseStepUpdate(8, ^.FlowOut(nesd()(1,7,9))), // 1.0.1.a → [1.0, 1.0.1, 1.1]
@@ -281,6 +282,28 @@ object UseCaseEventTest extends TestSuite {
                   .addvs(8, Set(1,7,9)) // 1.0.1.a → [1.0, 1.0.1, 1.1]
                   .addvs(9, Set(1))     // 1.1     → [1.0]
         assertEq(p.content.reqs.useCases.stepFlow.forwards, e)
+      }
+
+      'hardDelete - {
+        def test(id: UseCaseStepId): Unit =
+          assertFail("found")(UseCaseStepRestore(id))(InitialEvents(create3 :+ UseCaseStepDelete(id): _*), implicitly)
+
+        'single - test(8)
+        'subtree - test(7)
+      }
+
+      'softDeleteWhen - {
+        def test(es: ActiveEvent*): Unit =
+          testSteps(create3 ++ es :+ UseCaseStepDelete(7): _*)("0")()
+
+        'hasText        - test(UseCaseStepUpdate(7, ^.Title("asd")))
+        'hasFlowIn      - test(UseCaseStepUpdate(7, ^.FlowIn(nesd()(1))))
+        'hasFlowOut     - test(UseCaseStepUpdate(1, ^.FlowOut(nesd()(7))))
+        'refFromUCS     - test(UseCaseStepUpdate(8, ^.Title(Vector1(UCST.UseCaseStepRef(7)))))
+        'refFromReq     - test(createGR(2), GenericReqTitleSet(2, Vector1(Text.GenericReqTitle.UseCaseStepRef(7))))
+        'refFromRCG     - test(createRCG(1, RCG1_code, Vector1(Text.CodeGroupTitle.UseCaseStepRef(7))))
+        'childInUseLive - test(UseCaseStepUpdate(8, ^.FlowIn(nesd()(1))))
+        'childInUseDead - test(UseCaseStepUpdate(8, ^.FlowIn(nesd()(1))), UseCaseStepDelete(8))
       }
     }
 

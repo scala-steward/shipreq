@@ -89,8 +89,6 @@ Phase 2B
 
 * Flow syntax missing from use case step help
 
-* Hard-delete UC steps with no text, flow, or refs
-
 * Cell copy-and-paste on Req{Table,Detail}
 
 * Allow system to add new field/columns in future without breaking existing projects.

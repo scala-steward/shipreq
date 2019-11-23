@@ -16,9 +16,9 @@ import shipreq.webapp.base.text.Text
   */
 final class AtomScan(val tagRefs          : LiveDeadStatMap[ReqId, Set[LocAndValue[LocationOf.Tag.InReq, ApplicableTagId]]],
                      val issuesInReqs     : LiveDeadStatMap[ReqId, Vector[LocAndValue[LocationOf.Text.InReq, AnyIssue]]],
-                     val issuesInRcgs     : LiveDeadStatMap[ReqCodeId, Vector[Text.CodeGroupTitle.Issue]],
+                     val issuesInRcgs     : LiveDeadStatMap[ReqCodeGroupId, Vector[Text.CodeGroupTitle.Issue]],
                      val contentRefsInReqs: LiveDeadStatMap[ReqId, Vector[LocAndValue[LocationOf.Text.InReq, AnyContentRef]]],
-                     val contentRefsInRcgs: LiveDeadStatMap[ReqCodeId, Vector[AnyContentRef]],
+                     val contentRefsInRcgs: LiveDeadStatMap[ReqCodeGroupId, Vector[LocAndValue[LocationOf.Text.InReqCodeGroup, AnyContentRef]]],
                      val reqRefs          : Set[ReqId],
                      val codeRefs         : Set[ReqCodeId],
                      val useCaseStepRefs  : Set[UseCaseStepId]
@@ -39,9 +39,9 @@ object AtomScan {
   def apply(p: Project): AtomScan = {
     val tagRefs           = new LiveDeadStatMap.Builder[ReqId, Set[LocAndValue[LocationOf.Tag.InReq, ApplicableTagId]]]
     val issuesInReqs      = new LiveDeadStatMap.Builder[ReqId, Vector[LocAndValue[LocationOf.Text.InReq, AnyIssue]]]
-    val issuesInRcgs      = new LiveDeadStatMap.Builder[ReqCodeId, Vector[Text.CodeGroupTitle.Issue]]
+    val issuesInRcgs      = new LiveDeadStatMap.Builder[ReqCodeGroupId, Vector[Text.CodeGroupTitle.Issue]]
     val contentRefsInReqs = new LiveDeadStatMap.Builder[ReqId, Vector[LocAndValue[LocationOf.Text.InReq, AnyContentRef]]]
-    val contentRefsInRcgs = new LiveDeadStatMap.Builder[ReqCodeId, Vector[AnyContentRef]]
+    val contentRefsInRcgs = new LiveDeadStatMap.Builder[ReqCodeGroupId, Vector[LocAndValue[LocationOf.Text.InReqCodeGroup, AnyContentRef]]]
     val reqRefs           = UnivEq.setBuilder[ReqId]
     val codeRefs          = UnivEq.setBuilder[ReqCodeId]
     val useCaseStepRefs   = UnivEq.setBuilder[UseCaseStepId]
@@ -86,7 +86,8 @@ object AtomScan {
     }
 
     def scanReqCodeGroupText(live     : Live,
-                             reqCodeId: ReqCodeId)
+                             reqCodeId: ReqCodeGroupId,
+                             loc      : LocationOf.Text.InReqCodeGroup)
                             (text     : TraversableOnce[AnyAtom]): Unit = {
 
       def go(as: TraversableOnce[AnyAtom]): Unit =
@@ -98,15 +99,15 @@ object AtomScan {
              | _: NewLine         # BlankLine => ()
 
           case a: ContentRef#ReqRef =>
-            contentRefsInRcgs(reqCodeId).mod(live)(_ :+ a)
+            contentRefsInRcgs(reqCodeId).mod(live)(_ :+ LocAndValue(loc, a))
             reqRefs += a.value
 
           case a: ContentRef#CodeRef =>
-            contentRefsInRcgs(reqCodeId).mod(live)(_ :+ a)
+            contentRefsInRcgs(reqCodeId).mod(live)(_ :+ LocAndValue(loc, a))
             codeRefs += a.value
 
           case a: ContentRef#UseCaseStepRef =>
-            contentRefsInRcgs(reqCodeId).mod(live)(_ :+ a)
+            contentRefsInRcgs(reqCodeId).mod(live)(_ :+ LocAndValue(loc, a))
             useCaseStepRefs += a.value
 
           case a: Issue#Issue =>
@@ -152,7 +153,7 @@ object AtomScan {
 
     // Parse ReqCode groups
     for (g <- p.content.reqCodes.groups)
-      scanReqCodeGroupText(g.live, g.id)(g.title)
+      scanReqCodeGroupText(g.live, g.id, Location.Text.Title)(g.title)
 
     new AtomScan(
       tagRefs.result(),

@@ -130,8 +130,8 @@ object IssueDetectors {
       val refsInRcgs = ctx.project.atomScan.contentRefsInRcgs
       rcg =>
         for (a <- refsInRcgs(rcg.id).live)
-          if (!isRefLive(a, ctx.project))
-            ctx.add(Issue.DeadRefInRcg(rcg, ContentRef.fromAtom(a)))
+          if (!isRefLive(a.value, ctx.project))
+            ctx.add(Issue.DeadRefInRcg(rcg, ContentRef.fromAtom(a.value)))
     }
 
     private def isRefLive(a: Atom.AnyContentRef, p: Project): Boolean =

@@ -261,6 +261,9 @@ object UseCaseStep {
     val ploc: VectorTree.PartialLocation =
       ucSteps.stepPartialLocs.get(id)
 
+    lazy val subtree: VectorTree.Node[UseCaseStep] =
+      ucSteps.tree.needAt(loc)
+
     val step: UseCaseStep =
       useCases.needStep(id)
 
@@ -358,11 +361,15 @@ object UseCaseSteps {
  */
 @Lenses
 final case class UseCases(imap: UseCaseIMap, stepIndex: UseCases.StepIndex, stepFlow: UseCases.StepFlow) {
+
   @inline def need(id: UseCaseId): UseCase =
     imap.need(id)
 
   def stepIterator: Iterator[UseCaseStep] =
     imap.valuesIterator.flatMap(_.stepIterator)
+
+  def stepIdSet: Set[UseCaseStepId] =
+    stepIterator.map(_.id).toSet
 
   def focusStepIterator(): Iterator[UseCaseStep.Focus] =
     stepIndex.keysIterator.map(focusStep)
@@ -372,6 +379,9 @@ final case class UseCases(imap: UseCaseIMap, stepIndex: UseCases.StepIndex, step
 
   val focusStep: UseCaseStepId => UseCaseStep.Focus =
     Memo(new UseCaseStep.Focus(this, _))
+
+  def getStep(id: UseCaseStepId): Option[UseCaseStep] =
+    stepIndex.get(id).map(_.need(imap).need(id))
 
   def needStep(id: UseCaseStepId): UseCaseStep =
     stepIndex(id).need(imap).need(id)

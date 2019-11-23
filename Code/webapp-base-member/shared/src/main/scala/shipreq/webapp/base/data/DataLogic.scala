@@ -230,7 +230,7 @@ object DataLogic {
     val forReq: ReqId => Issues =
       Memo(id => getReqIssues(p.atomScan.issuesInReqs(id)).map(_.value))
 
-    def forReqCode(id: ReqCodeId): Issues =
+    def forReqCodeGroup(id: ReqCodeGroupId): Issues =
       getRcgIssues(p.atomScan.issuesInRcgs(id))
   }
 

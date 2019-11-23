@@ -246,7 +246,7 @@ object FilterAlgebra {
     def byCustomIssueType(f: Vector[Atom.AnyIssue] => Boolean) =
       make(
         req         = r => f(issueLookup.forReq(r.id)),
-        codeGroup   = g => f(issueLookup.forReqCode(g.id)),
+        codeGroup   = g => f(issueLookup.forReqCodeGroup(g.id)),
         manualIssue = fail,
       )
 
