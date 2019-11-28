@@ -5,10 +5,11 @@ resource "aws_codebuild_project" "shipreq" {
   tags         = local.default_tags
 
   environment {
-    type            = "LINUX_CONTAINER"
-    compute_type    = "BUILD_GENERAL1_LARGE" # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html
-    image           = "${aws_ecr_repository.shipreq_build.repository_url}:latest"
-    privileged_mode = true
+    type                        = "LINUX_CONTAINER"
+    compute_type                = "BUILD_GENERAL1_LARGE" # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html
+    image                       = "${aws_ecr_repository.shipreq_build.repository_url}:latest"
+    image_pull_credentials_type = "SERVICE_ROLE"
+    privileged_mode             = true
 
     environment_variable {
       name  = "BASE_IMAGE_URL"
