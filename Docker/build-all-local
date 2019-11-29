@@ -3,6 +3,7 @@ cd "$(dirname "$0")" || exit 1
 
 export PULL_REPO=930801536115.dkr.ecr.ap-southeast-2.amazonaws.com
 
+export NAT="shipreq/nat"
 export OPS_CADVISOR_URL="shipreq/ops/cadvisor"
 export OPS_ECS_EXPORTER_URL="shipreq/ops/ecs_exporter"
 export OPS_FILEBEAT_URL="shipreq/ops/filebeat"
@@ -12,6 +13,7 @@ export OPS_PORTAL_URL="shipreq/ops/portal"
 export OPS_POSTGRES_EXPORTER_URL="shipreq/ops/postgres_exporter"
 export OPS_PROMETHEUS_BIZ_URL="shipreq/ops/prometheus-biz"
 export OPS_PROMETHEUS_TECH_URL="shipreq/ops/prometheus-tech"
+export OPS_SQUID_EXPORTER_URL="shipreq/ops/squid_exporter"
 export SHIPREQ_BASE_URL="shipreq/base"
 export SHIPREQ_BUILD_URL="shipreq/build"
 

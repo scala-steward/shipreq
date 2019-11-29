@@ -57,3 +57,13 @@ resource "aws_ecr_repository" "ecs_exporter" {
   name = "shipreq/ops/ecs_exporter"
   tags = local.default_tags
 }
+
+resource "aws_ecr_repository" "squid_exporter" {
+  name = "shipreq/ops/squid_exporter"
+  tags = local.default_tags
+}
+
+resource "aws_ecr_repository" "nat" {
+  name = "shipreq/nat"
+  tags = local.default_tags
+}

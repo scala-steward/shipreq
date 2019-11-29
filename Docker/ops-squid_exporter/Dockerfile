@@ -1,0 +1,1 @@
+FROM boynux/squid-exporter

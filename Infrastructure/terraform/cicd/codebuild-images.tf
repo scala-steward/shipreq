@@ -12,6 +12,11 @@ resource "aws_codebuild_project" "images" {
 
 
     environment_variable {
+      name  = "NAT_URL"
+      value = data.aws_ecr_repository.nat.repository_url
+    }
+
+    environment_variable {
       name  = "OPS_CADVISOR_URL"
       value = data.aws_ecr_repository.cadvisor.repository_url
     }
@@ -54,6 +59,11 @@ resource "aws_codebuild_project" "images" {
     environment_variable {
       name  = "OPS_PROMETHEUS_TECH_URL"
       value = data.aws_ecr_repository.prometheus-tech.repository_url
+    }
+
+    environment_variable {
+      name  = "OPS_SQUID_EXPORTER_URL"
+      value = data.aws_ecr_repository.squid_exporter.repository_url
     }
 
     environment_variable {
@@ -105,11 +115,13 @@ resource "aws_iam_role_policy" "images" {
         "${data.aws_ecr_repository.ecs_exporter.arn}",
         "${data.aws_ecr_repository.filebeat.arn}",
         "${data.aws_ecr_repository.grafana.arn}",
+        "${data.aws_ecr_repository.nat.arn}",
         "${data.aws_ecr_repository.node_exporter.arn}",
         "${data.aws_ecr_repository.ops_portal.arn}",
         "${data.aws_ecr_repository.postgres_exporter.arn}",
         "${data.aws_ecr_repository.prometheus-biz.arn}",
         "${data.aws_ecr_repository.prometheus-tech.arn}",
+        "${data.aws_ecr_repository.squid_exporter.arn}",
         "${data.aws_ecr_repository.shipreq_base.arn}"
       ],
       "Action": [

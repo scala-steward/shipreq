@@ -1,0 +1,7 @@
+.amazon.com
+.amazonaws.com
+.freshdesk.com
+.mailchimp.com
+.mailgun.net
+.shipreq.com
+smtp.gmail.com
