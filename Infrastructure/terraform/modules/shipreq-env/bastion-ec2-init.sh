@@ -39,6 +39,14 @@ cat >> /etc/ssh/sshd_config << 'EOB'
   Port 36017
 EOB
 
+for f in ~{root,ec2-user}/.ssh; do
+  mkdir -p $f
+  cat >> $f/config << 'EOB'
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+EOB
+done
+
 systemctl restart sshd
 
 ####################################################################################################
