@@ -39,6 +39,7 @@ resource "aws_ecs_service" "shipreq_webapp" {
   scheduling_strategy                = "DAEMON"
   propagate_tags                     = "SERVICE"
   deployment_minimum_healthy_percent = local.min_healthy_percent
+  health_check_grace_period_seconds  = 40
   tags                               = local.shipreq_webapp_tags
 
   load_balancer {
