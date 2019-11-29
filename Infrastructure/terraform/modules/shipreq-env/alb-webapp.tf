@@ -132,9 +132,9 @@ resource "aws_lb_listener_rule" "webapp-https-ops" {
 }
 
 resource "aws_security_group" "webapp-alb" {
-  name   = "${var.env}-webapp-alb"
+  name   = "sg_${var.env}_alb_webapp"
   vpc_id = aws_vpc.main.id
-  tags   = local.app_tags
+  tags   = merge(local.app_tags, { Name = "${var.env}-alb-webapp" })
 
   ingress {
     description = "Allow public HTTP"
@@ -167,6 +167,8 @@ resource "aws_security_group" "webapp-alb" {
     security_groups = [aws_security_group.app.id]
     description     = "Containers with dynamic ports"
   }
+
+  lifecycle { create_before_destroy = true }
 }
 
 resource "aws_s3_bucket" "logs" {
