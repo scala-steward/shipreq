@@ -71,14 +71,12 @@ Phase 2B
 ========
 
 ### Ops
-* Data backups
 * Failure
   * Do more with errors (client & server), eg. ClientData.{init,applyEvents}
   * Add React component error handling and possibly report to server
 * Metrics
   * Add ThreadLocal security-delay flag and affect metrics (?)
   * Taskman metrics
-  * Business metrics (see metrics.md)
   * Add a correlation ID to JWTs / logs / traces
 
 ### New Features
@@ -87,9 +85,14 @@ Phase 2B
 
 ### Other
 
-* Flow syntax missing from use case step help
-
 * Cell copy-and-paste on Req{Table,Detail}
+* Project SPA will try to re-establish a WebSocket connection ad-nauseum after JWT has expired
+* WebSockets don't recover from lost Redis connections
+* Document the build & release process
+* Add an error-catching top-level react component
+* Warn against closing page if editors are open with changes
+* Finish Grafana tech dashboards
+* Business metrics: dashboards
 
 * Allow system to add new field/columns in future without breaking existing projects.
   eg. User adds a "Last Updated" custom field, later ShipReq provides an auto-populated
@@ -99,19 +102,8 @@ Phase 2B
   that adds a new event to everyone's projects to do the rename once when the
   new version is deployed.
 
-* Project SPA will try to re-establish a WebSocket connection ad-nauseum after JWT has expired
-
-* WebSockets don't recover from lost Redis connections
-
-* Document the build & release process
+### BLOCKERS
 
 * Default project template has an issue: Version field has no tags
-
-* Add an error-catching top-level react component
-
-* Warn against closing page if editors are open with changes
-
-* Finish Grafana tech dashboards
-
+* Flow syntax missing from use case step help
 * Business metrics: views
-* Business metrics: dashboards
