@@ -5,28 +5,30 @@ import utest._
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.db.SingleConnectionXA
 import shipreq.webapp.base.user._
+import shipreq.webapp.server.logic.IP
 import shipreq.webapp.server.test._
 
 object DbTriggerTest extends TestSuite {
 
   override def tests = Tests {
 
-    /*
     'usr_login_log {
       def loginCount(userId: UserId)(implicit xa: SingleConnectionXA): Long =
         xa ! Query0[Long](s"SELECT login_count FROM usr WHERE id = ${userId.value}").unique
+
+      def logLogin(u: UserId, ip: Option[IP])(implicit xa: SingleConnectionXA): Unit =
+        xa ! DbInterpreter.ForSecurity.logLoginSuccess(u, ip)
 
       "should update agg view stats by trigger" - TestDb().runNow { implicit xa =>
         val a, b = DbUtil(xa).newUserId()
         def viewCounts = (loginCount(a), loginCount(b))
         def assertViewCounts(x: Long, y: Long) = assertEq(viewCounts, (x, y))
         assertViewCounts(0, 0)
-        xa ! DbLogic.user.logLogin(a, None); assertViewCounts(1, 0)
-        xa ! DbLogic.user.logLogin(a, None); assertViewCounts(2, 0)
-        xa ! DbLogic.user.logLogin(b, None); assertViewCounts(2, 1)
+        logLogin(a, None); assertViewCounts(1, 0)
+        logLogin(a, None); assertViewCounts(2, 0)
+        logLogin(b, None); assertViewCounts(2, 1)
       }
     }
-    */
 
     'usrd {
       def nameHistory(userId: Long)(implicit xa: SingleConnectionXA) =
