@@ -21,7 +21,7 @@ resource "aws_db_instance" "postgres" {
   apply_immediately           = true
   allow_major_version_upgrade = true
   auto_minor_version_upgrade  = true
-  maintenance_window          = "Sat:15:00-Sat:17:00" # In Aussie East: Sunday 1am/2am + 2hrs
+  maintenance_window          = "Sat:15:00-Sat:16:00" # In Aussie East: Sunday 1am/2am + 1hr
   monitoring_interval         = var.postgres_monitoring_interval_sec
   deletion_protection         = var.deletion_protection
   skip_final_snapshot         = var.postgres_final_snapshot == ""

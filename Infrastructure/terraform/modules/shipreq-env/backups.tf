@@ -18,7 +18,7 @@ resource "aws_backup_plan" "db" {
   rule {
     rule_name           = "${var.env}-db"
     target_vault_name   = aws_backup_vault.sole.name
-    schedule            = "cron(0 16 * * ? *)" # 16:00 every day = 2am/3am Aussie East
+    schedule            = "cron(1 16 * * ? *)" # 16:01 every day = 2am/3am Aussie East
     recovery_point_tags = local.recovery_point_tags
     lifecycle {
       delete_after = var.postgres_backup_retention_days
