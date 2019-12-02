@@ -30,7 +30,7 @@ private[app] trait MainTemplate extends HasLogger {
 
     for {
       ((dbCfg, taskmanCfg), report) <- readConfig.map(_.getOrDie)
-      _                             <- Fx(logger.info(report.full))
+      _                             <- Fx(logger.info(s"Config report:\n${report.full}"))
       dbAccess                      <- dbInit(dbCfg)
       a                             <- dbAccess.setupRunShutdown(onShutDown(dbAccess, taskmanCfg))
     } yield a

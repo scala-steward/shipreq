@@ -40,7 +40,7 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
       }))
       .unsafeRun()
 
-  logger.info(emailTokensReport.full)
+  logger.info(s"Config report: (for email tokens)\n${emailTokensReport.full}")
 
   private object async {
     val (emailExecutorService, emailScheduler) = Async.newPool("email", config.mail.concurrencyMax)
