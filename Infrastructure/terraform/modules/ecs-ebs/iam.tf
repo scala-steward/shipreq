@@ -11,6 +11,7 @@ data "aws_iam_policy_document" "mount" {
   statement {
     actions = [
       "ec2:AttachVolume",
+      "ec2:CreateTags",
     ]
     resources = flatten([
       [for v in aws_ebs_volume.drives : v.arn],

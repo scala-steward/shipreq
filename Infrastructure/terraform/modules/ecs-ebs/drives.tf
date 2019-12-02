@@ -16,7 +16,10 @@ locals {
 
   tag_value = var.name
 
-  tags = merge(var.tags, { ecs-ebs = local.tag_value })
+  tags = merge(var.tags, {
+    ecs-ebs   = local.tag_value
+    formatted = "n"
+  })
 }
 
 resource "aws_ebs_volume" "drives" {
@@ -25,4 +28,7 @@ resource "aws_ebs_volume" "drives" {
   size              = var.size
   type              = var.type
   tags              = merge({ Name = var.name }, local.tags)
+  lifecycle {
+    ignore_changes = [tags["formatted"]]
+  }
 }

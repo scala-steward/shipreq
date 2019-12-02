@@ -22,3 +22,13 @@ output "tag_value" {
   description = "The tag value used to identify all volumes created by this module"
   value       = local.tag_value
 }
+
+output "formatted_tag_key" {
+  description = "The tag name/key used to identify a volume has been formatted or not"
+  value       = "formatted"
+}
+
+output "formatted_tag_value" {
+  description = "The tag value used to identify a volume has been formatted or not"
+  value       = "y"
+}

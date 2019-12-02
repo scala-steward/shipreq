@@ -44,12 +44,17 @@ echo
 ########################################################################################################################
 # Format volume
 
-if [[ "$(file -sL $device)" =~ .*:\ data$ ]]; then
+formatted="$(aws ec2 describe-volumes --volume-ids $vol --query "Volumes[0].Tags[?Key=='formatted'].Value" --output text)"
+
+if [ "$formatted" = n ]; then
   echo "Formatting $device..."
   mkfs -t ext4 $device
+  echo "Volume formatted. Tagging volume..."
+  aws ec2 create-tags --resources $vol --tags Key=formatted,Value=y
+else
+  echo "Volume is already formatted"
 fi
 
-echo "Volume is formatted"
 file -sL $device
 echo
 
