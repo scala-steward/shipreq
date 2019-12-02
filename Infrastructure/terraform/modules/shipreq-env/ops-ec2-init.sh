@@ -35,8 +35,5 @@ ECS_CLUSTER=${cluster}
 EOB
 
 ${ec2_service_discovery}
-${install_prometheus_tech_ebs1}
-${install_prometheus_biz_ebs1}
-
-${install_prometheus_tech_ebs2}
-${install_prometheus_biz_ebs2}
+${install_prometheus_tech_ebs}
+${install_prometheus_biz_ebs}
