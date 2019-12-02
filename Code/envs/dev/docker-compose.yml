@@ -164,19 +164,14 @@ services:
     restart: unless-stopped
 
   postgres_exporter:
-    image: wrouesnel/postgres_exporter
+    image: shipreq/ops/postgres_exporter
     container_name: shipreq_dev_postgres_exporter
     ports:
       - $PORT_POSTGRES_EXPORTER:9187
     links:
       - postgres
-    volumes:
-      - ./pgexp.yml:/shipreq-pgexp.yml:ro
     environment:
       - DATA_SOURCE_NAME=postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@postgres:5432/$POSTGRES_DB?sslmode=disable
-      - PG_EXPORTER_DISABLE_DEFAULT_METRICS=true
-      - PG_EXPORTER_DISABLE_SETTINGS_METRICS=true
-      - PG_EXPORTER_EXTEND_QUERY_PATH=/shipreq-pgexp.yml
 
   prometheus-tech:
     image: prom/prometheus:v2.13.1
