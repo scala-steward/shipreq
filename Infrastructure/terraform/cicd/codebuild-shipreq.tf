@@ -7,13 +7,17 @@ resource "aws_codebuild_project" "shipreq" {
   environment {
     type                        = "LINUX_CONTAINER"
     compute_type                = "BUILD_GENERAL1_LARGE" # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html
-    image                       = "${aws_ecr_repository.shipreq_build.repository_url}:latest"
+    image                       = "${aws_ecr_repository.shipreq_dev_build_env.repository_url}:latest"
     image_pull_credentials_type = "SERVICE_ROLE"
     privileged_mode             = true
 
     environment_variable {
       name  = "BASE_IMAGE_URL"
       value = data.aws_ecr_repository.shipreq_base.repository_url
+    }
+    environment_variable {
+      name  = "DEV_POSTGRES_IMAGE_URL"
+      value = aws_ecr_repository.shipreq_dev_postgres.repository_url
     }
     environment_variable {
       name  = "WEBAPP_IMAGE_URL"
@@ -128,7 +132,8 @@ resource "aws_iam_role_policy" "shipreq" {
     {
       "Effect": "Allow",
       "Resource": [
-        "${aws_ecr_repository.shipreq_build.arn}",
+        "${aws_ecr_repository.shipreq_dev_build_env.arn}",
+        "${aws_ecr_repository.shipreq_dev_postgres.arn}",
         "${data.aws_ecr_repository.shipreq_base.arn}"
       ],
       "Action": [

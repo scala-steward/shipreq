@@ -2,7 +2,7 @@ version: '2.4'
 services:
 
   postgres:
-    image: shipreq/dev/postgres
+    image: ${DEV_POSTGRES_IMAGE_URL:-shipreq/dev/postgres}
     container_name: shipreq_test_postgres
     ports:
       - "13032:5432"

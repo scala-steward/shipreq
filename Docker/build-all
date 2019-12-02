@@ -96,6 +96,7 @@ function build_and_deploy {
   echo
 }
 
+build_and_deploy  dev-postgres           "${DEV_POSTGRES_URL}"
 build_and_deploy  nat                    "${NAT_URL}"
 build_and_deploy  ops-cadvisor           "${OPS_CADVISOR_URL}"
 build_and_deploy  ops-ecs_exporter       "${OPS_ECS_EXPORTER_URL}"
@@ -108,4 +109,4 @@ build_and_deploy  ops-prometheus-biz     "${OPS_PROMETHEUS_BIZ_URL}"
 build_and_deploy  ops-prometheus-tech    "${OPS_PROMETHEUS_TECH_URL}"
 build_and_deploy  ops-squid_exporter     "${OPS_SQUID_EXPORTER_URL}"
 build_and_deploy  shipreq-base           "${SHIPREQ_BASE_URL}"
-build_and_deploy  shipreq-build          "${SHIPREQ_BUILD_URL}"
+build_and_deploy  dev-build_env          "${DEV_BUILD_ENV_URL}" # Last because it's huge and not needed locally
