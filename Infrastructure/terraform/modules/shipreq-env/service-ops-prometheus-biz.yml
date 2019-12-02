@@ -8,3 +8,14 @@ scrape_configs:
       - names: [ '${OPS_HOST}' ]
         type: 'A'
         port: ${POSTGRES_EXPORTER_PORT}
+
+    metric_relabel_configs:
+
+    # Drop most tech metrics; only really keeping scaping metrics
+    - source_labels: [__name__]
+      regex: '^(go|process|postgres)_.*'
+      action: drop
+
+    # Drop unnecessary labels
+    - regex: 'server|instance|job'
+      action: labeldrop

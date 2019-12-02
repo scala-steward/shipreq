@@ -46,3 +46,11 @@ scrape_configs:
   - job_name: 'postgres_exporter'
     static_configs:
       - targets: ['postgres_exporter:9187']
+    metric_relabel_configs:
+    # Drop most tech metrics; only really keeping scaping metrics
+    - source_labels: [__name__]
+      regex: '^(go|process|postgres)_.*'
+      action: drop
+    # Drop unnecessary labels
+    - regex: 'server|instance'
+      action: labeldrop
