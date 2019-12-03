@@ -9,10 +9,13 @@ import io.circe.parser._
 import io.circe.syntax._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.Duration
+import okio.Buffer
+import scala.util.control.NonFatal
 import scalaz.{-\/, \/, \/-}
 import scalaz.syntax.bind._
 import shipreq.base.util.{ArticulateError, Identity}
 import shipreq.base.util.FxModule._
+import shipreq.base.util.log.LogFields
 import Http._
 
 final case class Http[I, O](prep: (I, HttpClient, HttpLogger) => Fx[Request],
@@ -105,8 +108,7 @@ object Http {
       Http((i, client, log) =>
         for {
           reqBuilder  ← http.prep((), client, log)
-          built       ← buildReq(reqBuilder, i)
-          (req, body) = built
+          (req, body) ← buildReq(reqBuilder, i)
           _           ← log.request(req, body)
         } yield req,
         (_, _) => Fx.unit)
@@ -191,17 +193,37 @@ final class HttpLogger(logger: Logger, modContent: String => String) {
   private[this] val debugEnabled = logger.underlying.isDebugEnabled
 
   val request: (Request, () => String) => Fx[Unit] =
-    (req, body) => Fx {
-      def url = req.url.url.toExternalForm
-      logger.debug(s"HTTP request: ${req.method} $url ← ${modContent(body())}")
-    }
+    if (debugEnabled)
+      (req, body) => Fx {
+        def url = req.url.url.toExternalForm
+        logger.debug(s"HTTP request: ${req.method} $url ← ${modContent(body())}")
+      }
+    else
+      (_, _) => Fx.unit
 
   val response: (Request, Response, String) => Fx[Unit] =
-    (req, resp, body) => Fx {
-      def url = req.url.url.toExternalForm
-      def dur = Duration.ofMillis(resp.receivedResponseAtMillis() - resp.sentRequestAtMillis())
-      logger.info(s"HTTP ${req.method} $url responded with ${resp.code} ${resp.message} in ${dur.conciseDesc}")
-      logger.debug(s"HTTP response body: ${modContent(body)}")
+    (req, resp, respBody) => Fx {
+      val url = req.url.url.toExternalForm
+      val dur = Duration.ofMillis(resp.receivedResponseAtMillis() - resp.sentRequestAtMillis())
+      logger.info(
+        s"HTTP ${req.method} $url responded with ${resp.code} in ${dur.conciseDesc}",
+        LogFields.http.request.body(modContent(requestBody(req))),
+        LogFields.http.request.method(req.method),
+        LogFields.http.request.url(url),
+        LogFields.http.response.body(modContent(respBody)),
+        LogFields.http.response.code(resp.code),
+        LogFields.http.response.durMs(dur),
+      )
+    }
+
+  private def requestBody(req: Request): String =
+    try {
+      val copy = req.newBuilder().build()
+      val buffer = new Buffer()
+      copy.body().writeTo(buffer)
+      buffer.readUtf8()
+    } catch {
+      case NonFatal(_) => "?"
     }
 
   def result[A](fx: Fx[A]): Fx[A] =
