@@ -21,7 +21,8 @@ resource "aws_ecs_task_definition" "ecs_exporter" {
     "name": "${var.env}-ops-ecs_exporter",
     "image": "${data.aws_ecr_repository.ecs_exporter.repository_url}:${var.ops_images_tag}",
     "command": [
-      "-aws.region=${local.region}"
+      "-aws.region=${local.region}",
+      "-aws.cluster-filter=${var.env}-.*"
     ],
     "portMappings": [
       {
