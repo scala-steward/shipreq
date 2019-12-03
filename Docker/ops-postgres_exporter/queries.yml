@@ -51,7 +51,7 @@ shipreq_users_last_login_seconds:
       usage: GAUGE
 
 shipreq_users_last_login_seconds_ago:
-  query: select sum(extract(epoch from now() - last_login_at)) sum from usr where username is not null
+  query: select coalesce(sum(extract(epoch from now() - last_login_at)),0) sum from usr where username is not null
   metrics:
   - sum:
       usage: GAUGE
@@ -73,9 +73,9 @@ shipreq_projects:
 
 shipreq_events:
   query: >-
-    select 'y' live_project, 'y' initial, sum(events_init) total from project
+    select 'y' live_project, 'y' initial, coalesce(sum(events_init),0) total from project
     union all
-    select 'y', 'n', sum(events_total - events_init) total from project
+    select 'y', 'n', coalesce(sum(events_total - events_init),0) total from project
   metrics:
   - live_project:
       usage: LABEL
@@ -89,9 +89,9 @@ shipreq_events:
 
 shipreq_reqs:
   query: >-
-    select 'y' live_project, 'y' live_req, 'y' live, sum(reqs_live) total from project
+    select 'y' live_project, 'y' live_req, 'y' live, coalesce(sum(reqs_live),0) total from project
     union all
-    select 'y', 'n', 'n', sum(reqs_total - reqs_live) from project
+    select 'y', 'n', 'n', coalesce(sum(reqs_total - reqs_live),0) from project
   metrics:
   - live:
       usage: LABEL
@@ -165,8 +165,8 @@ shipreq_project_last_access_seconds:
 shipreq_project_last_access_seconds_ago:
   query: >-
     with data as (
-      select sum(extract(epoch from now() - accessed_at)) r,
-             sum(extract(epoch from now() - updated_at)) w
+      select coalesce(sum(extract(epoch from now() - accessed_at)),0) r,
+             coalesce(sum(extract(epoch from now() - updated_at)),0) w
       from project
     )
     select 'r' as access, r sum from data
@@ -198,9 +198,9 @@ shipreq_daily_logins:
       where (date = (select a_date from range) AND hour >= (select a_hour from range)) OR
             (date = (select b_date from range) AND hour <= (select b_hour from range))
     )
-    select 'n' unique_user, total_sum total from results
+    select 'n' unique_user, coalesce(total_sum,0) total from results
     union all
-    select 'y', user_sum from results
+    select 'y', coalesce(user_sum,0) from results
   metrics:
   - unique_user:
       usage: LABEL
@@ -233,9 +233,9 @@ shipreq_daily_project_reads:
     union all
     select case when write then 'w' else 'r' end as access, 'y' unique_project, hll_cardinality(projects) total from results
     union all
-    select 'rw', 'n', sum(total_sum) from results
+    select 'rw', 'n', coalesce(sum(total_sum),0) from results
     union all
-    select 'rw', 'y', hll_cardinality(hll_union_agg(projects)) from results
+    select 'rw', 'y', coalesce(hll_cardinality(hll_union_agg(projects)),0) from results
   metrics:
   - access:
       usage: LABEL
