@@ -165,7 +165,7 @@ EOB
 }
 
 resource "aws_iam_instance_profile" "ops-ecs" {
-  name = "ops_ecs_instance_profile"
+  name = "${var.env}_ops_ecs_instance_profile"
   role = aws_iam_role.ops-ecs.name
   path = aws_iam_role.ops-ecs.path
 }

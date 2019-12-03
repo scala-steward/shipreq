@@ -163,7 +163,7 @@ EOB
 }
 
 resource "aws_iam_instance_profile" "app-ecs" {
-  name = "app_ecs_instance_profile"
+  name = "${var.env}_app_ecs_instance_profile"
   role = aws_iam_role.app-ecs.name
   path = aws_iam_role.app-ecs.path
 }
