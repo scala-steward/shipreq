@@ -58,11 +58,6 @@ resource "aws_backup_selection" "prometheus-tech" {
     key   = module.ecs_ebs_prometheus_tech.tag_key
     value = module.ecs_ebs_prometheus_tech.tag_value
   }
-  selection_tag {
-    type  = "STRINGEQUALS"
-    key   = module.ecs_ebs_prometheus_tech.formatted_tag_key
-    value = module.ecs_ebs_prometheus_tech.formatted_tag_value
-  }
 }
 
 ####################################################################################################
@@ -89,11 +84,6 @@ resource "aws_backup_selection" "prometheus-biz" {
     type  = "STRINGEQUALS"
     key   = module.ecs_ebs_prometheus_biz.tag_key
     value = module.ecs_ebs_prometheus_biz.tag_value
-  }
-  selection_tag {
-    type  = "STRINGEQUALS"
-    key   = module.ecs_ebs_prometheus_biz.formatted_tag_key
-    value = module.ecs_ebs_prometheus_biz.formatted_tag_value
   }
 }
 
