@@ -42,7 +42,7 @@ resource "aws_ecs_task_definition" "prometheus_biz" {
       }
     ],
     "command": [
-      "--storage.tsdb.retention.${var.prometheus_biz_retention}"
+      "--storage.tsdb.retention.${var.prometheus_biz_data_retention}"
     ],
     "mountPoints": [
       {

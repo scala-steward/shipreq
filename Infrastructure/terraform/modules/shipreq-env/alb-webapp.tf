@@ -118,7 +118,7 @@ resource "aws_lb_listener_rule" "webapp-https-robots" {
 
 # https://shipreq.com/ops/*
 resource "aws_lb_listener_rule" "webapp-https-ops" {
-  count        = var.block_public_ops_calls ? 1 : 0
+  count        = var.shipreq_webapp_allow_ops_routes_publically ? 0 : 1
   listener_arn = aws_lb_listener.webapp-https.arn
   condition {
     field  = "path-pattern"

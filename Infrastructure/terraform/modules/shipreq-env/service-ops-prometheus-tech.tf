@@ -57,7 +57,7 @@ resource "aws_ecs_task_definition" "prometheus_tech" {
       }
     ],
     "command": [
-      "--storage.tsdb.retention.${var.prometheus_tech_retention}"
+      "--storage.tsdb.retention.${var.prometheus_tech_data_retention}"
     ],
     "mountPoints": [
       {

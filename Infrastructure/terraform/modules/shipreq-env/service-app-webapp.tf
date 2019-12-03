@@ -38,7 +38,7 @@ resource "aws_ecs_service" "shipreq_webapp" {
   task_definition                    = aws_ecs_task_definition.shipreq_webapp.arn
   scheduling_strategy                = "DAEMON"
   propagate_tags                     = "SERVICE"
-  deployment_minimum_healthy_percent = local.min_healthy_percent
+  deployment_minimum_healthy_percent = local.app_min_healthy_percent
   health_check_grace_period_seconds  = 40
   tags                               = local.shipreq_webapp_tags
 
@@ -100,7 +100,7 @@ resource "aws_ecs_task_definition" "shipreq_webapp" {
       },
       {
         "name": "shipreq.googleAnalytics.trackingId",
-        "value": "${var.google_analytics_tracking_id}"
+        "value": "${var.shipreq_webapp_google_analytics_id}"
       },
       {
         "name": "shipreq.taskman.schema",

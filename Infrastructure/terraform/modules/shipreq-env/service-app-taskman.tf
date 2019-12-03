@@ -62,7 +62,7 @@ resource "aws_ecs_task_definition" "shipreq_taskman" {
       },
       {
         "name": "freshdesk.domain",
-        "value": "${var.freshdesk_domain}"
+        "value": "${var.shipreq_taskman_freshdesk_domain}"
       },
       {
         "name": "taskman.healthFile",

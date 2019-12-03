@@ -1,3 +1,9 @@
+# Note regarding CPU shares
+# =========================
+#
+# Linux containers share unallocated CPU units with other containers on the container instance with the same ratio as their allocated amount.
+# Therefore, these are ratios and not total shares. The values only matter when CPU is maxed out.
+
 locals {
 
   default_tags = {
@@ -9,14 +15,9 @@ locals {
 
   region = regex("^[a-z]+-[a-z]+-\\d+", var.availability_zone)
 
-  min_healthy_percent = var.app_cluster_size > 1 ? 50 : 0
-
   shipreq_zone_id = var.env == "prod" ? data.aws_route53_zone.shipreq.zone_id : data.aws_route53_zone.shipwreck.zone_id
   shipreq_domain  = var.env == "prod" ? "shipreq.com" : "${var.env}.shipwreck.space"
   shipreq_url     = "https://${local.shipreq_domain}"
-
-  bastion_zone_id = var.env == "prod" ? null : data.aws_route53_zone.shipwreck.zone_id
-  bastion_domain  = var.env == "prod" ? null : "b.${var.env}.shipwreck.space"
 
   # TTL for DNS entries pointed at targets I expect to change rarely/never
   dns_stable_ttl = 120
@@ -25,6 +26,9 @@ locals {
   internal_sd_domain = "${var.env}.sd.internal"
 
   nat_domain = "nat.${local.internal_domain}"
+
+  bastion_zone_id = var.env == "prod" ? null : data.aws_route53_zone.shipwreck.zone_id
+  bastion_domain  = var.env == "prod" ? null : "b.${var.env}.shipwreck.space"
 
   es_domain             = "es.${local.internal_domain}"
   es_root_url           = "https://${local.es_domain}"
@@ -61,13 +65,6 @@ locals {
   # =================================================================================================================================================
   # App cluster
 
-  # CPU shares for everything in the App cluster
-  #
-  # NOTE: Linux containers share unallocated CPU units with other containers on the container instance with the same ratio as their allocated amount.
-  #       Therefore, these are ratios and not total shares.
-  #
-  # This only matters when CPU is maxed out, in which I've prioritised metric-collection over user response-time.
-  # If the services are slow I want to be able to look at the metrics to figure out what needs more resources.
   app_cluster_cpu = {
     cadvisor        = 3
     filebeat        = 3
@@ -76,7 +73,6 @@ locals {
     shipreq_webapp  = 9
   }
 
-  # Memory reservation for everything in the App cluster
   app_cluster_mem_res = {
     cadvisor        = 48
     filebeat        = 32
@@ -84,6 +80,8 @@ locals {
     shipreq_taskman = 160
     shipreq_webapp  = 800
   }
+
+  app_min_healthy_percent = var.app_cluster_size > 1 ? 50 : 0
 
   app_subdomain = "app"
   app_host      = "${local.app_subdomain}.${local.internal_sd_domain}"
@@ -94,13 +92,6 @@ locals {
   # =================================================================================================================================================
   # Ops cluster
 
-  # CPU shares for everything in the Ops cluster
-  #
-  # NOTE: Linux containers share unallocated CPU units with other containers on the container instance with the same ratio as their allocated amount.
-  #       Therefore, these are ratios and not total shares.
-  #
-  # This only matters when CPU is maxed out, in which I've prioritised metric-collection over user response-time.
-  # If the services are slow I want to be able to look at the metrics to figure out what needs more resources.
   ops_cluster_cpu = {
     cadvisor          = 9
     ecs_exporter      = 1
@@ -112,7 +103,6 @@ locals {
     prometheus_tech   = 5
   }
 
-  # Memory reservation for everything in the Ops cluster
   ops_cluster_mem_res = {
     cadvisor          = 48
     ecs_exporter      = 8

@@ -18,5 +18,3 @@
 * Alerting
 
 * Separate account for prod or non-prod (?)
-
-* Refactor Terraform

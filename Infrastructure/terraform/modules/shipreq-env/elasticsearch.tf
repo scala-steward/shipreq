@@ -1,6 +1,6 @@
 locals {
   es_tags  = merge(local.default_tags, { Name = "${var.env}-elasticsearch" })
-  es_count = var.enable_elasticsearch ? 1 : 0
+  es_count = var.elasticsearch_enable ? 1 : 0
 }
 
 resource "aws_elasticsearch_domain" "es" {

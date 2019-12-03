@@ -66,7 +66,7 @@ variable "ecs_root_volume_type" {
   default     = "gp2"
 }
 
-variable "enable_elasticsearch" {
+variable "elasticsearch_enable" {
   type    = bool
   default = true
 }
@@ -147,12 +147,12 @@ variable "prometheus_biz_ebs_size" {
   type        = number
 }
 
-variable "prometheus_tech_retention" {
+variable "prometheus_tech_data_retention" {
   description = "Either 'size=xxx' or 'time=xxx'. See https://prometheus.io/docs/prometheus/latest/storage/"
   type        = string
 }
 
-variable "prometheus_biz_retention" {
+variable "prometheus_biz_data_retention" {
   description = "Either 'size=xxx' or 'time=xxx'. See https://prometheus.io/docs/prometheus/latest/storage/"
   type        = string
 }
@@ -223,17 +223,17 @@ variable "shipreq_db_taskman_schema" {
   type = string
 }
 
-variable "block_public_ops_calls" {
-  description = "Add a rule to the webapp ALB to block calls to /ops/*"
+variable "shipreq_webapp_allow_ops_routes_publically" {
+  description = "When false, add a rule to the webapp ALB to block calls to /ops/*"
   type        = bool
-  default     = true
+  default     = false
 }
 
-variable "google_analytics_tracking_id" {
+variable "shipreq_webapp_google_analytics_id" {
   type = string
 }
 
-variable "freshdesk_domain" {
+variable "shipreq_taskman_freshdesk_domain" {
   type = string
 }
 
