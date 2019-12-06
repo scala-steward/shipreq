@@ -4,12 +4,14 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.data.FilterDead
+import shipreq.webapp.base.data.{FilterDead, HideDead, ShowDead}
 import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.ui.BaseStyles
+import shipreq.webapp.base.ui.{BaseStyles, NoContentMessage}
 import shipreq.webapp.client.project.widgets.FilterDeadButton
 import shipreq.webapp.client.project.widgets.ImplicationGraph
 import Style.{impgraphPage => *}
+import shipreq.webapp.base.ui.semantic.Icon
+import shipreq.webapp.client.project.app.root.ProjectIndex
 
 object ImplicationGraphPage {
 
@@ -17,14 +19,34 @@ object ImplicationGraphPage {
     @inline def render = Component(this)
   }
 
-  def render(p: Props) =
-    <.div(BaseStyles.containerFull,
+  def render(p: Props) = {
 
+    val filterDeadButton =
       <.div(*.filterDeadButton,
-        FilterDeadButton.Component(StateSnapshot.withReuse(p.graph.filterDead)(p.setFilterDead))),
+        FilterDeadButton.Component(StateSnapshot.withReuse(p.graph.filterDead)(p.setFilterDead)))
 
-      <.div(*.graph,
-        p.graph.render))
+    def noContentMessage =
+      if (p.graph.filterDead.is(HideDead) && !p.graph.copy(filterDead = ShowDead).isEmpty)
+        NoContentMessage.becauseAllDead(
+          TagMod(
+            "Enable display of dead content (via the ",
+            Icon.TrashOutline.tag,
+            "button in the top-right)."))
+      else
+        NoContentMessage(
+          "You don't have any requirements yet.",
+          s"Head over to the ${ProjectIndex.Item.ReqTable.title} page to get started.")
+
+    val content =
+      if (p.graph.isEmpty)
+        <.div(*.noContent, noContentMessage)
+      else
+        <.div(*.graph, p.graph.render)
+
+    <.div(BaseStyles.containerFull,
+      filterDeadButton,
+      content)
+  }
 
   val Component = ScalaFnComponent(render)
 }

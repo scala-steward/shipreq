@@ -146,6 +146,9 @@ object Style extends StyleSheet.Inline {
     val filterDeadButton = style(
       textAlign.right)
 
+    val noContent = style(
+      marginTop(1 em))
+
     val graph = style(
       textAlign.center,
       margin.horizontal(auto))

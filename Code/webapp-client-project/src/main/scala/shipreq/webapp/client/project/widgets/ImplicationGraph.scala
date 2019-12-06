@@ -24,6 +24,9 @@ object ImplicationGraph {
                          reqDetailRC: RouterCtl[ExternalPubid],
                          webWorker  : WebWorkerClient) extends HasWebWorker {
     @inline def render = Component(this)
+
+    def isEmpty: Boolean =
+      focus.isEmpty && reqs.reqIterator.map(_.live(reqTypes)).filter(filterDead.filter).isEmpty
   }
 
   implicit val reusabilityProps: Reusability[Props] = {

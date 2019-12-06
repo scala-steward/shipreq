@@ -328,7 +328,6 @@ object ReqTablePage {
 
     def renderAllContentDead: VdomTag =
       NoContentMessage.becauseAllDead(
-        "No live content.",
         TagMod(
           "Create new content (above) or enable display of dead content (via the ",
           Icon.TrashOutline.tag,

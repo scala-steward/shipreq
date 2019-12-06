@@ -1,6 +1,6 @@
 package shipreq.webapp.base.ui
 
-import japgolly.scalajs.react.vdom.html_<^.TagMod
+import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.webapp.base.ui.semantic.{Icon, Message}
 
 /** When there is no content on a page, display this message rather than just emptiness.
@@ -10,38 +10,41 @@ import shipreq.webapp.base.ui.semantic.{Icon, Message}
   */
 object NoContentMessage {
 
-  def apply(header: TagMod, content: TagMod) =
+  def apply(title: TagMod, subtitle: TagMod): VdomTag =
     Message(
       Message.Style(Message.Type.Info),
       Icon.InfoCircle,
-      header,
-      content)
+      title,
+      subtitle)
 
-  def becauseAllDead(header: TagMod, content: TagMod) =
+  def becauseAllDead(title: TagMod, subtitle: TagMod): VdomTag =
     Message(
       Message.Style(Message.Type.Warning),
       Icon.TrashOutline,
-      header,
-      content)
+      title,
+      subtitle)
 
-  def becauseOfFilter(header: TagMod, content: TagMod) =
+  def becauseAllDead(subtitle: TagMod): VdomTag =
+    becauseAllDead("No live content.", subtitle)
+
+  def becauseOfFilter(title: TagMod, subtitle: TagMod): VdomTag =
     Message(
       Message.Style(Message.Type.Info),
       Icon.Filter,
-      header,
-      content)
+      title,
+      subtitle)
 
-  def becauseNotFound(header: TagMod, content: TagMod) =
+  def becauseNotFound(title: TagMod, subtitle: TagMod): VdomTag =
     Message(
       Message.Style(Message.Type.Error),
       Icon.WarningSign,
-      header,
-      content)
+      title,
+      subtitle)
 
-  def becauseAnErrorOccurred(header: TagMod, content: TagMod) =
+  def becauseAnErrorOccurred(title: TagMod, subtitle: TagMod): VdomTag =
     Message(
       Message.Style(Message.Type.Error),
       Icon.WarningCircle,
-      header,
-      content)
+      title,
+      subtitle)
 }
