@@ -420,7 +420,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
 
     type RenderScope = ScalaComponent.Lifecycle.RenderScope[Props, Unit, Unit]
     type Mounted = ScalaComponent.MountedPure[Props, Unit, Unit]
-    type Dom = dom.html.TableDataCell
+    type Dom = dom.html.TableCell
 
     def onKeyDown(editor: EditorFeature.ReadWrite.ForAnyEditor): ReactKeyboardEventFromHtml => Callback =
       e => tableNavigationFeature.Keys(e) | EditorFeature.Keys(editor)(e)

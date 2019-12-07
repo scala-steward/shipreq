@@ -1,7 +1,7 @@
 package shipreq.webapp.base.protocol
 
 import org.scalajs.dom.{console, raw}
-import org.scalajs.dom.raw.{Blob, CloseEvent, Event, MessageEvent}
+import org.scalajs.dom.raw.{Blob, CloseEvent, Event, EventInit, MessageEvent, MessageEventInit}
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSGlobal
 import scala.scalajs.js.typedarray
@@ -35,7 +35,7 @@ final class FakeWebSocket(override val url: String, initialState: ReadyState = R
          | ReadyState.Closed     => sys.error("WebSocket is already in CLOSING or CLOSED state.")
       case ReadyState.Connecting =>
         _readyState = ReadyState.Open
-        onOpen.get()(new Event2("open"))
+        onOpen.get()(new Event("open"))
     }
 
   def closing(): Unit =
@@ -63,8 +63,8 @@ final class FakeWebSocket(override val url: String, initialState: ReadyState = R
           reason    = reason,
           wasClean  = wasClean,
           isTrusted = true,
-        )
-        val e = new CloseEvent2("close", p)
+        ).asInstanceOf[EventInit]
+        val e = new Event("close", p).asInstanceOf[CloseEvent]
         onClose.get()(e)
     }
 
@@ -114,8 +114,8 @@ final class FakeWebSocket(override val url: String, initialState: ReadyState = R
         val p = js.Dynamic.literal(
           data      = m.asInstanceOf[js.Any],
           isTrusted = true,
-        )
-        val e = new MessageEvent2("message", p)
+        ).asInstanceOf[MessageEventInit]
+        val e = new MessageEvent("message", p)
         onMessage.get()(e)
       case s => sys.error(s"WebSocket isn't open. ReadyState = $s")
     }
@@ -125,20 +125,6 @@ final class FakeWebSocket(override val url: String, initialState: ReadyState = R
 // =====================================================================================================================
 
 object FakeWebSocket {
-
-  @JSGlobal("CloseEvent")
-  @js.native
-  private class CloseEvent2(typeArg: String, init: js.Object) extends CloseEvent
-
-  @JSGlobal("MessageEvent")
-  @js.native
-  private class MessageEvent2(typeArg: String, init: js.Object) extends MessageEvent
-
-  @JSGlobal("Event")
-  @js.native
-  private class Event2(typeArg: String, init: js.Object = js.native) extends Event
-
-  // -------------------------------------------------------------------------------------------------------------------
 
   sealed trait Message {
     val binaryData: BinaryData

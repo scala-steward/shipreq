@@ -109,7 +109,7 @@ object Dependencies {
     val core = mm("logback-classic") ++ mm("logback-core")
 
     val withPlugins = core ++
-      jvmOnly("net.logstash.logback" % "logstash-logback-encoder" % "6.2")
+      jvmOnly("net.logstash.logback" % "logstash-logback-encoder" % "6.3")
   }
 
   object Lift {
@@ -184,8 +184,8 @@ object Dependencies {
   }
 
   val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.2.6")
-  val scalajsDom       = jsOnly("org.scala-js"                          %% "scalajs-dom"       % "0.9.7")
-  val scalajsJavaTime  = jsOnly("org.scala-js"                          %% "scalajs-java-time" % "0.2.5")
+  val scalajsDom       = jsOnly("org.scala-js"                          %% "scalajs-dom"       % "0.9.8")
+  val scalajsJavaTime  = jsOnly("org.scala-js"                          %% "scalajs-java-time" % "0.2.6")
 
   val boopickle   = jvmAndJs("io.suzaku",                        "boopickle",   "1.3.1")
   val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",        "1.3.0")
@@ -203,7 +203,7 @@ object Dependencies {
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.0.0")
   val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.8")
-  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.11.5")
+  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.11.6")
   val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "3.1.0")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.14.2")
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.2")
