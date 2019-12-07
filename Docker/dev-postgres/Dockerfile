@@ -1,4 +1,4 @@
-FROM postgres:11.5
+FROM postgres:11.6
 
 RUN apt-get -qq update \
  && apt-get -qq -y --no-install-recommends install \

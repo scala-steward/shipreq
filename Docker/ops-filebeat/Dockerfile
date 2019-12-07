@@ -1,4 +1,4 @@
-FROM docker.elastic.co/beats/filebeat-oss:7.4.2
+FROM docker.elastic.co/beats/filebeat-oss:7.5.0
 
 # Because we're mounting external volumes
 USER root

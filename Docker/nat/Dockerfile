@@ -1,6 +1,6 @@
 # See https://github.com/strowi/docker-alpine-squid/blob/master/Dockerfile
 
-FROM alpine:latest
+FROM alpine:3.10.3
 
 RUN apk --update --no-cache add acf-squid openssl \
   && rm -fr /var/cache/apk/* \
