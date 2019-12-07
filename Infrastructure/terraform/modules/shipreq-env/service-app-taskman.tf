@@ -9,6 +9,7 @@ locals {
 }
 
 resource "aws_ecs_service" "shipreq_taskman" {
+  count               = var.enable_db_dependant_services ? 1 : 0
   name                = "${var.env}-shipreq-taskman"
   cluster             = aws_ecs_cluster.app.id
   task_definition     = aws_ecs_task_definition.shipreq_taskman.arn

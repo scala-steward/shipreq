@@ -244,3 +244,8 @@ variable "postgres_exporter_db_username" {
 variable "postgres_exporter_db_password" {
   type = string
 }
+
+variable "enable_db_dependant_services" {
+  type    = bool
+  default = true
+}

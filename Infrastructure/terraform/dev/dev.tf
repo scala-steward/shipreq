@@ -73,6 +73,8 @@ module "shipreq" {
   shipreq_taskman_properties            = file("taskman.properties")
   shipreq_webapp_google_analytics_id    = "UA-105581783-2"
   shipreq_webapp_properties             = file("webapp.properties")
+
+  # enable_db_dependant_services = false
 }
 
 output "bastion_host" {

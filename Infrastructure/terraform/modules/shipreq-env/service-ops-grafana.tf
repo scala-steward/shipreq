@@ -3,6 +3,7 @@ locals {
 }
 
 resource "aws_ecs_service" "grafana" {
+  count                              = var.enable_db_dependant_services ? 1 : 0
   name                               = "${var.env}-ops-grafana"
   cluster                            = aws_ecs_cluster.ops.id
   task_definition                    = aws_ecs_task_definition.grafana.arn

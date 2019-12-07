@@ -33,6 +33,7 @@ resource "aws_service_discovery_service" "webapp" {
 }
 
 resource "aws_ecs_service" "shipreq_webapp" {
+  count                              = var.enable_db_dependant_services ? 1 : 0
   name                               = "${var.env}-shipreq-webapp"
   cluster                            = aws_ecs_cluster.app.id
   task_definition                    = aws_ecs_task_definition.shipreq_webapp.arn
