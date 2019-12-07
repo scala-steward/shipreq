@@ -124,18 +124,6 @@ object PublicSpaLogic extends HasLogger {
 
         private val absUrlRegister2 = config.baseUrl / Urls.PublicSpaRoute.Register2.url
 
-        private def registrationProc[A, B](e: Security.Event, f: A => F[ErrorMsg \/ B]): A => F[ErrorMsg \/ B] =
-          security.protectFn(
-            config.publicRegistration match {
-              case Allow => f
-              case Deny  => _ =>
-                for {
-                  _ <- metrics.securityEvent(e, Security.Result.Failure)
-                  _ <- F.point(logger.warn("Denying public registration."))
-                } yield -\/(ErrorMsg("Registration is disabled."))
-            }
-          )
-
         private val getTokenStatus: SecurityToken => F[SecurityToken.Status] =
           tokenStatusFn(t => runDB(db.getUserRegistrationTokenIssueDate(t)), config.security.registrationTokenLifespan)
 
@@ -190,8 +178,16 @@ object PublicSpaLogic extends HasLogger {
         }
 
         val register1: PublicSpaProtocols.Register1.ajax.ServerSideFn[F] =
-          registrationProc(Security.Event.Register1, i =>
-            register1(i.value).map(_.void))
+          security.protectFn(
+            config.publicRegistration match {
+              case Allow => i => register1(i.value).map(_.void)
+              case Deny  => _ =>
+                for {
+                  _ <- metrics.securityEvent(Security.Event.Register1, Security.Result.Failure)
+                  _ <- F.point(logger.warn("Denying public registration."))
+                } yield -\/(ErrorMsg("Registration is disabled."))
+            }
+          )
 
         val register2: PublicSpaProtocols.Register2.ajax.ServerSideFnO[F, Option[Security.SessionToken]] = {
           type T = Option[Security.SessionToken]
@@ -200,7 +196,7 @@ object PublicSpaLogic extends HasLogger {
           import stack._
 
           val body: Request => F[ErrorMsg \/ (Result, T)] =
-            registrationProc[Request, (Result, T)](Security.Event.Register2, unvalidatedReq => {
+            security.protectFn { unvalidatedReq =>
 
               unvalidatedReq.validate.onValid[F, (Result, T)](req =>
                 MDC(MdcSecurityToken, req.token.value) {
@@ -254,7 +250,7 @@ object PublicSpaLogic extends HasLogger {
                   } yield res
                 }
               )
-            })
+            }
 
           body(_).map {
             case \/-((r, t)) => (\/-(r), t)

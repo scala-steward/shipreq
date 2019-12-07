@@ -8,10 +8,16 @@ import shipreq.webapp.base.data.SecurityToken
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.user._
 import shipreq.webapp.client.public.{PublicSpaEntryPoint, PublicSpaProtocols}
+import shipreq.webapp.server.ServerLogicConfig
 
 object PublicSpaLogicTest extends TestSuite {
 
-  class Tester(publicRegistration: Permission = Allow) extends MockInterpreters(_.copy(publicRegistration = publicRegistration)) {
+  private final case class Tester(mockInterpreters: MockInterpreters = new MockInterpreters) {
+    import mockInterpreters._
+
+    def withConfig(f: ServerLogicConfig => ServerLogicConfig): Tester =
+      Tester(mockInterpreters.withConfig(f))
+
     val initData = PublicSpaEntryPoint.InitData(Allow, None)
 
     def runLogin(i: PublicSpaProtocols.Login.ajax.Req) = assertProtected(publicSpa.ajaxLogin(i).value)
@@ -26,7 +32,7 @@ object PublicSpaLogicTest extends TestSuite {
   val ea = EmailAddr("blah@test.com")
 
   def assertRegistrationEmailSent(emailAddr: EmailAddr = ea)(implicit t: Tester): Unit = {
-    import t._
+    import t._, mockInterpreters._
     val m = taskman.assertLastSubmitted { case m: Msg.RegistrationRequested => m }
     assertEq(m.email.value, ea.value)
     assertContains(m.verifyEmailUrl, db.prevToken().value)
@@ -36,7 +42,7 @@ object PublicSpaLogicTest extends TestSuite {
 
     'login {
       import PublicSpaProtocols.Login._
-      implicit val t = new Tester(); import t._
+      implicit val t = Tester(); import t._, mockInterpreters._
 
       def test(usernameOrEmail: Username \/ EmailAddr, password: PlainTextPassword)
               (expectResp: Permission, expectToken: Option[Security.SessionToken]) =
@@ -55,7 +61,7 @@ object PublicSpaLogicTest extends TestSuite {
     }
 
     'register1 {
-      implicit val t = new Tester(); import t._
+      implicit val t = Tester(); import t._, mockInterpreters._
 
       def runSuccessfully(tokensIssued: Int, msgsSubmitted: Int, emailAddr: EmailAddr = ea): Unit =
         db.assertIssuesTokens(tokensIssued)(
@@ -93,21 +99,17 @@ object PublicSpaLogicTest extends TestSuite {
       }
 
       'registrationsOff {
-        val t = new Tester(Deny); import t._
+        val t2 = t.withConfig(_.copy(publicRegistration = Deny))
+        import t2._, mockInterpreters._
         runRegister1(ea).needLeft
       }
     }
 
     'register2 {
       import PublicSpaProtocols.Register2._
-      val t = new Tester(); import t._
 
-      // Mock user (pending)
-      runRegister1(ea).needRight
-      val token = db.prevToken()
-      val req = Request(token, PersonName("Big Bob"), Username("bob"), PlainTextPassword("big_BOB_123!"), false)
-
-      'success - {
+      def testSuccess(t: Tester, req: Request) = {
+        import t._, mockInterpreters._
         val r =
           assertDifference("usrLoginLog", db.usrLoginLog.length)(1)(
             assertDifference("taskman", taskman.msgs.length)(1) {
@@ -123,6 +125,15 @@ object PublicSpaLogicTest extends TestSuite {
         assertEq(r, (\/-(Result.Success), Some(u.token)))
         taskman.assertLastSubmitted { case _: Msg.RegistrationCompleted => () }
       }
+
+      val t = Tester(); import t._, mockInterpreters._
+
+      // Mock user (pending)
+      runRegister1(ea).needRight
+      val token = db.prevToken()
+      val req = Request(token, PersonName("Big Bob"), Username("bob"), PlainTextPassword("big_BOB_123!"), false)
+
+      'success - testSuccess(t, req)
 
       def assertFailure(req: Request) = {
         val r =
@@ -147,24 +158,23 @@ object PublicSpaLogicTest extends TestSuite {
         assertEq(assertFailure(req.copy(username = user2.username)), \/-(Result.UsernameTaken))
 
       'registrationsOff {
-        val t = new Tester(Deny); import t._
+        val t2 = t.withConfig(_.copy(publicRegistration = Deny))
+        import t2._, mockInterpreters._
         db.userPlaceholders = Map(ea -> DB.UserRegistration.Pending(UserId(2), token, svr.clock))
-        val r = runRegister2(req)
-        r._1.needLeft
-        assertEq(r._2, None)
+        testSuccess(t2, req)
       }
     }
 
     'resetPassword1 {
       def runSuccessfully(id: Username \/ EmailAddr, tokensIssued: Int, msgsSubmitted: Int)(implicit t: Tester): Unit = {
-        import t._
+        import t._, mockInterpreters._
         db.assertIssuesTokens(tokensIssued)(
           taskman.assertSubmits(msgsSubmitted)(
             runResetPassword1(id)))
       }
 
       def assertResetPasswordEmailSent()(implicit t: Tester): Unit = {
-        import t._
+        import t._, mockInterpreters._
         val m = taskman.assertLastSubmitted { case m: Msg.PasswordResetRequested => m }
         assertEq(m.email.value, user2.emailAddr.value)
         assertContains(m.resetPasswordUrl, db.prevToken().value)
@@ -173,7 +183,7 @@ object PublicSpaLogicTest extends TestSuite {
 
       "send email with new token when user found and doesn't have a reset-pw token yet" -
         List(0, 1).foreach { i =>
-          implicit val t = new Tester(); import t._
+          implicit val t = Tester(); import t._, mockInterpreters._
           val u = user2.pubids(i)
           runSuccessfully(u, 1, 1)
           assertResetPasswordEmailSent()
@@ -181,7 +191,7 @@ object PublicSpaLogicTest extends TestSuite {
 
       "send email with current token when user found and valid reset-pw token exists" -
         List(0, 1).foreach { i =>
-          implicit val t = new Tester(); import t._
+          implicit val t = Tester(); import t._, mockInterpreters._
           val u = user2.pubids(i)
           runSuccessfully(u, 1, 1)
           forwardTimeToEndOfPasswordResetWindow(Valid)
@@ -191,7 +201,7 @@ object PublicSpaLogicTest extends TestSuite {
 
       "send email with new token when user found and reset-pw token has expired" -
         List(0, 1).foreach { i =>
-          implicit val t = new Tester(); import t._
+          implicit val t = Tester(); import t._, mockInterpreters._
           val u = user2.pubids(i)
           runSuccessfully(u, 1, 1)
           forwardTimeToEndOfPasswordResetWindow(Invalid)
@@ -201,7 +211,7 @@ object PublicSpaLogicTest extends TestSuite {
 
 
       "do nothing and seem ok when no user found" - {
-        val t = new Tester(); import t._
+        val t = Tester(); import t._, mockInterpreters._
         db.assertNoDbChange(
           assertDifference(taskman.msgs.length)(0) {
             runResetPassword1(-\/(Username("xxxxxxxxxxxxxx")))
@@ -211,7 +221,7 @@ object PublicSpaLogicTest extends TestSuite {
       }
 
       "send registration email when user found and account not activated" - {
-        implicit val t = new Tester(); import t._
+        implicit val t = Tester(); import t._, mockInterpreters._
         assertDifference(db.userPlaceholders.size)(1)(runRegister1(ea).needRight)
         runSuccessfully(\/-(ea), 0, 1)
         assertRegistrationEmailSent()
@@ -220,7 +230,7 @@ object PublicSpaLogicTest extends TestSuite {
 
     'resetPassword2 {
       import PublicSpaProtocols.ResetPassword2._
-      implicit val t = new Tester(); import t._
+      implicit val t = Tester(); import t._, mockInterpreters._
       val i = \/-(user2.emailAddr)
       runResetPassword1(i)
       val token = db.prevToken()

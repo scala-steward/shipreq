@@ -469,17 +469,21 @@ object MockInterpreters {
       passwordResetTokenLifespan = 4 days))
 }
 
-class MockInterpreters(modCfg: ServerLogicConfig => ServerLogicConfig = Identity[ServerLogicConfig]) {
+class MockInterpreters(modCfg         : ServerLogicConfig => ServerLogicConfig = Identity[ServerLogicConfig],
+                       specificMockDb : Option[MockDb]                         = None,
+                       specificRedis  : Option[Redis.InMemory[Name]]           = None,
+                       specificTaskman: Option[MockTaskman]                    = None,
+                      ) {
   implicit val config         = modCfg(MockInterpreters.config)
   implicit val svr            = new MockServer[Name]
-  implicit val db             = new MockDb(svr.now)
+  implicit val db             = specificMockDb.getOrElse(new MockDb(svr.now))
   implicit val security       = new MockSecurity(db)
-  implicit val taskman        = new MockTaskman
+  implicit val taskman        = specificTaskman.getOrElse(new MockTaskman)
   implicit val nameToName     = NaturalTransformation.refl[Name]
   implicit val apEvent        = ApplyEventLogic.trusted[Name]
   implicit val metrics        = MetricsLogic.const(Name(()))
   implicit val trace          = Trace.Algebra.off[Name]
-  implicit val redis          = new Redis.InMemory[Name]
+  implicit val redis          = specificRedis.getOrElse(new Redis.InMemory[Name])
   implicit val publicSpa      = PublicSpaLogic[Name, Name]
   implicit val homeSpa        = HomeSpaLogic[Name, Name]
   implicit val projectSpa     = ProjectSpaLogic[Name, Name](config.projectSpa)
@@ -503,6 +507,14 @@ class MockInterpreters(modCfg: ServerLogicConfig => ServerLogicConfig = Identity
     EmailAddr("u3@test.com"),
     security.hashPassword(user3password).value,
     svr.clock minus Duration.ofDays(2))
+
+  def withConfig(f: ServerLogicConfig => ServerLogicConfig): MockInterpreters =
+    new MockInterpreters(
+      modCfg          = _ => f(config),
+      specificMockDb  = Some(db),
+      specificRedis   = Some(redis),
+      specificTaskman = Some(taskman),
+    )
 
   def assertProtected[A](a: => A): A =
     assertDifference("Protected actions", security.protectedActions)(1)(a)

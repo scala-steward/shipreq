@@ -5,13 +5,14 @@ import io.circe._
 import io.circe.syntax._
 import utest._
 import shipreq.base.test.BaseTestUtil._
-import shipreq.base.util.{BinaryData, Invalid, Url}
+import shipreq.base.util.{BinaryData, Deny, Identity, Invalid, Url}
 import shipreq.webapp.base.Urls
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.Protocol
 import shipreq.webapp.base.user.{EmailAddr, PersonName}
 import shipreq.webapp.client.public.PublicSpaProtocols
+import shipreq.webapp.server.ServerLogicConfig
 import shipreq.webapp.server.logic.dispatch._
 import shipreq.webapp.server.logic.dispatch.Method._
 import shipreq.webapp.server.logic.DispatchLogic._
@@ -38,7 +39,12 @@ object DispatchLogicTest extends TestSuite {
       s.sessionRestore(cookies.get).value.flatMap(_.authenticatedUser)
   }
 
-  object Tester extends MockInterpreters {
+  private final case class Tester(mockInterpreters: MockInterpreters) {
+    import mockInterpreters._
+
+    def withConfig(f: ServerLogicConfig => ServerLogicConfig): Tester =
+      Tester(mockInterpreters.withConfig(f))
+
     implicit val traceLogic = TraceLogic.off[Name, TestRequest, TestResponse]
 
     val dispatcher = new DispatchLogic[Name, TestRequest, TestResponse](
@@ -52,64 +58,58 @@ object DispatchLogicTest extends TestSuite {
 
     val pid = ProjectId(9)
     db.addProject(pid, user2.id)()
-  }
 
-  import Tester._
+    def run(url    : Url.Relative,
+            method : Method                   = Get,
+            body   : Option[BinaryData]       = None,
+            params : Map[String, String]      = Map.empty,
+            cookies: Map[Cookie.Name, String] = Map.empty)
+           (implicit token: Security.SessionToken = null): (TestRequest, TestResponse) = {
+      val cookies2 =
+        if (token ne null)
+          patchCookies(cookies, security.sessionPersist(token).value)
+        else
+          cookies
+      val req = TestRequest(method, url, body, params, cookies2)
+      (req, routeDispatcher(req).value)
+    }
 
-  override def utestBeforeEach(path: Seq[String]): Unit = {
-    taskman.reset()
-  }
+    def runAjax(p      : Protocol.Ajax[SafePickler])
+               (req    : p.prepReq.Type,
+                method : Method                   = Post,
+                cookies: Map[Cookie.Name, String] = Map.empty)
+               (implicit token: Security.SessionToken = null) = {
+      val bin = p.prepReq.codec.encode(req)
+      run(p.url, method, Some(bin), Map.empty, cookies)(token)
+    }
 
-  implicit def autoRelUrl(s: String): Url.Relative = Url.Relative(s)
+    def testRun(expect: ResponseCmd,
+                url   : Url.Relative,
+                method: Method              = Get,
+                body   : Option[BinaryData] = None,
+                params: Map[String, String] = Map.empty)
+               (implicit token: Security.SessionToken = null): TestResponse = {
+      val actual = run(url, method, body, params)(token)._2
+      assertEq(s"${method.toString.toUpperCase} ${url.relativeUrl} ${params.mkString(", ")}", actual.cmd, expect)
+      actual
+    }
 
-  def run(url    : Url.Relative,
-          method : Method                   = Get,
-          body   : Option[BinaryData]       = None,
-          params : Map[String, String]      = Map.empty,
-          cookies: Map[Cookie.Name, String] = Map.empty)
-         (implicit token: Security.SessionToken = null): (TestRequest, TestResponse) = {
-    val cookies2 =
-      if (token ne null)
-        patchCookies(cookies, security.sessionPersist(token).value)
-      else
-        cookies
-    val req = TestRequest(method, url, body, params, cookies2)
-    (req, routeDispatcher(req).value)
-  }
-
-  def runAjax(p      : Protocol.Ajax[SafePickler])
-             (req    : p.prepReq.Type,
-              method : Method                   = Post,
-              cookies: Map[Cookie.Name, String] = Map.empty)
-             (implicit token: Security.SessionToken = null) = {
-    val bin = p.prepReq.codec.encode(req)
-    run(p.url, method, Some(bin), Map.empty, cookies)(token)
-  }
-
-  def testRun(expect: ResponseCmd,
-              url   : Url.Relative,
-              method: Method              = Get,
-              body   : Option[BinaryData] = None,
-              params: Map[String, String] = Map.empty)
-             (implicit token: Security.SessionToken = null): TestResponse = {
-    val actual = run(url, method, body, params)(token)._2
-    assertEq(s"${method.toString.toUpperCase} ${url.relativeUrl} ${params.mkString(", ")}", actual.cmd, expect)
-    actual
-  }
-
-  def testNonGet(url: Url.Relative): Unit =
-    for {
-      method <- List[Method](Post, Other)
-      user   <- List[MockDb.UserEntry](null, user2)
-    } {
+    def testNonGet(url: Url.Relative): Unit =
+      for {
+        method <- List[Method](Post, Other)
+        user   <- List[MockDb.UserEntry](null, user2)
+      } {
         val r = testRun(ResponseCmd.StatusOnly.MethodNotAllowed, url, method)(user)
         assertEq("405 shouldn't log user out", r.authUser, Option(user).map(_.toUser))
       }
 
-  def testNeedAuth(url: Url.Relative): Unit = {
-    val expect = if (url ==* Urls.memberHome) "/login" else s"/login/${url.relativeUrlNoHeadSlash}"
-    testRun(ResponseCmd.Redirect(expect), url)
+    def testNeedAuth(url: Url.Relative): Unit = {
+      val expect = if (url ==* Urls.memberHome) "/login" else s"/login/${url.relativeUrlNoHeadSlash}"
+      testRun(ResponseCmd.Redirect(expect), url)
+    }
   }
+
+  implicit def autoRelUrl(s: String): Url.Relative = Url.Relative(s)
 
   val spaSuffixes: List[String] =
     for {
@@ -130,7 +130,11 @@ object DispatchLogicTest extends TestSuite {
   implicit def userToToken(u: MockDb.UserEntry): Security.SessionToken =
     if (u eq null) null else u.token
 
+  private def newEmail = EmailAddr("x@x.io")
+
   override def tests = Tests {
+    val tester = Tester(new MockInterpreters)
+    import tester._, mockInterpreters.{withConfig => _, _}
 
     'publicSpa {
       import Urls.PublicSpaRoute._
@@ -168,14 +172,39 @@ object DispatchLogicTest extends TestSuite {
         }
       }
 
-      'register2 {
-        publicSpa.ajaxRegister1(EmailAddr("x@x.io")).value.needRight
+      'register1 {
+        'enabled {
+          publicSpa.ajaxRegister1(newEmail).value.needRight
+        }
+        'disabled {
+          val t2 = withConfig(_.copy(publicRegistration = Deny))
+          import t2._, mockInterpreters._
+          publicSpa.ajaxRegister1(newEmail).value.needLeft
+        }
+      }
 
-        'invalid - assertProtected(testRun(ResponseCmd.redirectToPublicHome, Register2.url(SecurityToken("wwwweeeeeeeeeee66666"))))
-        'valid   - assertProtected(testRun(ResponseCmd.ServePublicSpa(None), Register2.url(db.prevToken())))
-        'expired {
-          forwardTimeToEndOfConfirmationWindow(Invalid)
-          assertProtected(testRun(ResponseCmd.redirectToPublicHome, Register2.url(db.prevToken())))
+      'register2 {
+        publicSpa.ajaxRegister1(newEmail).value.needRight
+
+        'enabled {
+          'invalid - assertProtected(testRun(ResponseCmd.redirectToPublicHome, Register2.url(SecurityToken("wwwweeeeeeeeeee66666"))))
+          'valid   - assertProtected(testRun(ResponseCmd.ServePublicSpa(None), Register2.url(db.prevToken())))
+          'expired {
+            forwardTimeToEndOfConfirmationWindow(Invalid)
+            assertProtected(testRun(ResponseCmd.redirectToPublicHome, Register2.url(db.prevToken())))
+          }
+        }
+
+        'disabled {
+          val t2 = withConfig(_.copy(publicRegistration = Deny))
+          import t2._, mockInterpreters._
+
+          'invalid - assertProtected(testRun(ResponseCmd.redirectToPublicHome, Register2.url(SecurityToken("wwwweeeeeeeeeee66666"))))
+          'valid   - assertProtected(testRun(ResponseCmd.ServePublicSpa(None), Register2.url(db.prevToken())))
+          'expired {
+            forwardTimeToEndOfConfirmationWindow(Invalid)
+            assertProtected(testRun(ResponseCmd.redirectToPublicHome, Register2.url(db.prevToken())))
+          }
         }
       }
     }
