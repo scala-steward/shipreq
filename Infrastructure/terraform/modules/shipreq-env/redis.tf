@@ -5,7 +5,7 @@ locals {
 resource "aws_elasticache_cluster" "redis" {
   cluster_id           = "${var.env}-redis"
   engine               = "redis"
-  node_type            = "cache.t2.micro"
+  node_type            = "cache.t3.micro"
   num_cache_nodes      = 1 # must be 1 unless replication_group_id is provided
   parameter_group_name = aws_elasticache_parameter_group.redis.name
   engine_version       = local.redis_version
