@@ -40,6 +40,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
                    trie            : ReqCode.Trie,
                    asyncStatus     : Option[EditorStatus.Async],
                    abort           : Option[Callback],
+                   autoFocus       : Boolean,
                    commitFn        : Option[CommitFn],
                    commitVerb      : String,
                    extraKbShortcuts: KeyboardTheme.Shortcuts,
@@ -73,7 +74,6 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
           p.status.wrapEdit(p.edit.setState(liveCorrect(e.target.value))))
 
       TagMod(
-        ^.autoFocus := true,
         ^.onBlur   --> autoCompleteBlur,
         ^.onChange ==> updateState,
         RichTextEditor.minRows(lineCardinality))
@@ -82,7 +82,10 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
     def render(p: Props) = {
       def editor(validity: Validity): VdomElement = {
         val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
-        val base = TagMod(textareaConst, keys)
+        val base = TagMod(
+          textareaConst,
+          keys,
+          ^.autoFocus  := p.autoFocus)
         editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, base))
       }
 

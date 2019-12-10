@@ -8,18 +8,17 @@ import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
-import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.PreviewFeature
 import shipreq.webapp.base.lib.KeyboardTheme
 import shipreq.webapp.base.protocol.UpdateContentCmd.DeleteReqs
-import shipreq.webapp.base.text.{PlainText, TextSearch}
-import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Table}
+import shipreq.webapp.base.text.TextSearch
+import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon}
 import shipreq.webapp.client.project.app.Style.{deletionForm => *}
 import shipreq.webapp.client.project.app.TestMarker
 import shipreq.webapp.client.project.feature.Selection
-import shipreq.webapp.client.project.widgets.{ProjectWidgets, RichTextEditor, Widgets}
+import shipreq.webapp.client.project.widgets.{ProjectWidgets, RichTextEditor}
 
 object DeletionForm {
   import DeletionRestorationLogic.{Data, ReqRow}
@@ -53,6 +52,7 @@ object DeletionForm {
         edit             = StateSnapshot.withReuse(s.reason)(setReason),
         asyncStatus      = None,
         abort            = None,
+        autoFocus        = true,
         commitFn         = None,
         commitVerb       = "",
         preview          = PreviewFeature.ReadWrite.Single.alwaysShow,

@@ -4,6 +4,7 @@ import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
+import japgolly.univeq._
 import scala.annotation.tailrec
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/-}
@@ -127,6 +128,9 @@ sealed trait NewForm {
           .filterDefined
           .toVector)
 
+    val autoFocusIdx: Int =
+      editableCols.whole.indexWhere(_._1.column ==* Column.Title).max(0)
+
     def render: VdomElement = Component(this)
   }
 
@@ -166,16 +170,25 @@ sealed trait NewForm {
       val createAndCloseForm: Option[Callback] =
         create.map(_(p.cancel))
 
-      val renderArgs =
+      val renderArgsWithoutAutoFocus =
         CreateFeature.EditorArgs(
           abort            = Some(p.cancel),
+          autoFocus        = false,
           commit           = createAndCloseForm,
           commitVerb       = "create and close",
           extraKbShortcuts = KeyboardTheme.Shortcut.option(
             KeyboardTheme.commitAndProgressCriterion, "create without closing", createAndKeepFormOpen))
 
+      val cols = p.editableCols.whole
+
       val editorCells: VdomArray =
-        p.editableCols.whole.toVdomArray { case (cp, e) =>
+        cols.indices.toVdomArray { idx =>
+          val (cp, e) = cols(idx)
+          val renderArgs =
+            if (idx == p.autoFocusIdx)
+              renderArgsWithoutAutoFocus.copy(autoFocus = true)
+            else
+              renderArgsWithoutAutoFocus
           <.td(
             ^.key := Column.key(cp.column),
             e.value.render(renderArgs))

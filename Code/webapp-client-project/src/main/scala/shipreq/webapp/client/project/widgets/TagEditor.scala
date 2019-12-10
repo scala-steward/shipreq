@@ -63,6 +63,7 @@ object TagEditor {
                    lookup          : Lookup,
                    asyncStatus     : Option[EditorStatus.Async],
                    abort           : Option[Callback],
+                   autoFocus       : Boolean,
                    commitFn        : Option[CommitFn],
                    commitVerb      : String,
                    extraKbShortcuts: KeyboardTheme.Shortcuts,
@@ -107,7 +108,6 @@ object TagEditor {
           p.status.wrapEdit(p.edit.setState(e.target.value.replace("\n", ""))))
 
       TagMod(
-        ^.autoFocus := true,
         ^.spellCheck := false,
         ^.onBlur   --> autoCompleteBlur,
         ^.onChange ==> updateState,
@@ -118,7 +118,10 @@ object TagEditor {
 
       def editor(validity: Validity): VdomElement = {
         val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
-        val base = TagMod(textareaConst, keys)
+        val base = TagMod(
+          textareaConst,
+          keys,
+          ^.autoFocus  := p.autoFocus)
         editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, base))
       }
 

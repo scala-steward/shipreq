@@ -32,6 +32,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
     val showInstructions: Boolean
     val status          : EditorStatus
     val wantPreview     : Boolean
+    val autoFocus       : Boolean
   }
 
   // ===================================================================================================================
@@ -43,6 +44,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
                       edit            : StateSnapshot[String],
                       asyncStatus     : Option[EditorStatus.Async],
                       abort           : Option[Callback],
+                      autoFocus       : Boolean,
                       commitFn        : Option[Optional.CommitFn],
                       commitVerb      : String,
                       preview         : PreviewFeature.ReadWrite.Single,
@@ -74,6 +76,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
                       edit            : StateSnapshot[String],
                       asyncStatus     : Option[EditorStatus.Async],
                       abort           : Option[Callback],
+                      autoFocus       : Boolean,
                       commitFn        : Option[NonEmpty.CommitFn],
                       commitVerb      : String,
                       preview         : PreviewFeature.ReadWrite.Single,
@@ -124,7 +127,6 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
             p.preview.onEdit(p.wantPreview)))
 
       TagMod(
-        ^.autoFocus := true,
         ^.onBlur   --> (autoCompleteBlur >> $.props.flatMap(_.preview.onBlur)),
         ^.onChange ==> updateState,
         ^.onFocus  --> $.props.flatMap(p => p.preview.onFocus(p.wantPreview)),
@@ -135,7 +137,10 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
       def editor(validity: Validity): VdomElement = {
         val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
-        val base = TagMod(textareaConst, keys)
+        val base = TagMod(
+          textareaConst,
+          keys,
+          ^.autoFocus  := p.autoFocus)
         editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, base))
       }
 

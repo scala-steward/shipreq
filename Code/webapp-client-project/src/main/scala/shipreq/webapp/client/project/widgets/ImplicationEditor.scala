@@ -76,6 +76,7 @@ object ImplicationEditor {
                    validationFn    : ValidationFn,
                    asyncStatus     : Option[EditorStatus.Async],
                    abort           : Option[Callback],
+                   autoFocus       : Boolean,
                    commitFn        : Option[CommitFn],
                    commitVerb      : String,
                    textSearch      : TextSearch,
@@ -146,7 +147,6 @@ object ImplicationEditor {
           p.status.wrapEdit(p.edit.setState(e.target.value.replace("\n", ""))))
 
       TagMod(
-        ^.autoFocus  := true,
         ^.onBlur    --> autoCompleteBlur,
         ^.onChange  ==> updateState,
         ^.spellCheck := false,
@@ -156,7 +156,10 @@ object ImplicationEditor {
     def render(p: Props) = {
       def editor(validity: Validity): VdomElement = {
         val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
-        val base = TagMod(textareaConst, keys)
+        val base = TagMod(
+          textareaConst,
+          keys,
+          ^.autoFocus  := p.autoFocus)
         editorRef.component(EditTheme.autosizeTextareaProps(validity, p.edit.value, base))
       }
 

@@ -4,6 +4,7 @@ import japgolly.scalajs.react.{Callback, Reusable, ~=>}
 import shipreq.webapp.base.lib.KeyboardTheme
 
 final case class NewEditorArgs(abort           : Option[Callback],
+                               autoFocus       : Boolean,
                                commit          : Option[Callback],
                                commitVerb      : String,
                                extraKbShortcuts: KeyboardTheme.Shortcuts) {
@@ -15,12 +16,18 @@ final case class NewEditorArgs(abort           : Option[Callback],
 object NewEditorArgs {
 
   val empty: NewEditorArgs =
-    apply(None, None, "", KeyboardTheme.Shortcuts.empty)
+    apply(
+      abort            = None,
+      autoFocus        = true,
+      commit           = None,
+      commitVerb       = "",
+      extraKbShortcuts = KeyboardTheme.Shortcuts.empty)
 
   def basic(abort : Option[Callback],
             commit: Option[Callback]): NewEditorArgs =
     apply(
       abort            = abort,
+      autoFocus        = true,
       commit           = commit,
       commitVerb       = KeyboardTheme.Instructions.defaultCommitVerb,
       extraKbShortcuts = KeyboardTheme.Shortcuts.empty)

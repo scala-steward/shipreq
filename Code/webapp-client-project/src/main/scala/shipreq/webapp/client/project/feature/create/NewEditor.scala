@@ -6,7 +6,6 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scalaz.~~>
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.lib.KeyboardTheme
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.feature._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
@@ -158,6 +157,7 @@ object NewEditor {
               trie             = trie,
               asyncStatus      = EditorStatus.async(asyncState),
               abort            = args.abort,
+              autoFocus        = args.autoFocus,
               commitFn         = args.commitFn,
               commitVerb       = args.commitVerb,
               extraKbShortcuts = args.extraKbShortcuts,
@@ -186,6 +186,7 @@ object NewEditor {
               trie             = trie,
               asyncStatus      = EditorStatus.async(asyncState),
               abort            = args.abort,
+              autoFocus        = args.autoFocus,
               commitFn         = args.commitFn,
               commitVerb       = args.commitVerb,
               extraKbShortcuts = args.extraKbShortcuts,
@@ -239,6 +240,7 @@ object NewEditor {
             validationFn     = valFn,
             asyncStatus      = EditorStatus.async(asyncState),
             abort            = args.abort,
+            autoFocus        = args.autoFocus,
             commitFn         = args.commitFn,
             commitVerb       = args.commitVerb,
             textSearch       = textSearch,
@@ -274,6 +276,7 @@ object NewEditor {
             lookup           = lookup,
             asyncStatus      = EditorStatus.async(asyncState),
             abort            = args.abort,
+            autoFocus        = args.autoFocus,
             commitFn         = args.commitFn,
             commitVerb       = args.commitVerb,
             extraKbShortcuts = args.extraKbShortcuts,
@@ -313,6 +316,7 @@ object NewEditor {
               edit             = ss,
               asyncStatus      = EditorStatus.async(asyncState),
               abort            = args.abort,
+              autoFocus        = args.autoFocus,
               commitFn         = args.commitFn,
               commitVerb       = args.commitVerb,
               preview          = previewRW(pid),
@@ -360,6 +364,7 @@ object NewEditor {
               edit             = ss,
               asyncStatus      = EditorStatus.async(asyncState),
               abort            = args.abort,
+              autoFocus        = args.autoFocus,
               commitFn         = args.commitFn,
               commitVerb       = args.commitVerb,
               preview          = previewRW(pid),
