@@ -44,7 +44,7 @@ CREATE EXTENSION hll SCHEMA webapp;
 CREATE ROLE shipreq_webapp_ro;
 GRANT USAGE ON SCHEMA webapp TO shipreq_webapp_ro;
 GRANT SELECT ON ALL TABLES IN SCHEMA webapp TO shipreq_webapp_ro;
-ALTER DEFAULT PRIVILEGES IN SCHEMA webapp GRANT SELECT ON TABLES TO shipreq_webapp_ro;
+ALTER DEFAULT PRIVILEGES FOR USER shipreq IN SCHEMA webapp GRANT SELECT ON TABLES TO shipreq_webapp_ro;
 
 CREATE USER postgres_exporter WITH PASSWORD '${POSTGRES_EXPORTER_PASSWORD}';
 GRANT shipreq_webapp_ro TO postgres_exporter;
