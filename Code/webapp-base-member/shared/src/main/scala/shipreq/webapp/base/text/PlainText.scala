@@ -89,7 +89,7 @@ object PlainText {
   private final val bullet = "* "
 
   // Don't make this final! I'm using eq below.
-  private val outOfListNewline = "\n\n"
+  private val outOfListNewline = "\n"
 
   final class ForProject[+Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
 
