@@ -23,7 +23,7 @@ locals {
       cadvisor          = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
       ecs_exporter      = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
       filebeat          = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
-      grafana           = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
+      grafana           = "git-6cb1f6ba6fa347b9bda12d0c5441e9c29e2627fa"
       node_exporter     = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
       postgres_exporter = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
       prometheus_biz    = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
