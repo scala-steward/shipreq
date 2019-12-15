@@ -10,6 +10,7 @@ import shipreq.webapp.base.data.DataValidators.{reqCode => V}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.feature.EditorStatus
+import shipreq.webapp.base.feature.clipboard.ClipboardInterface
 import shipreq.webapp.base.lib.{KeyHandlers, KeyboardTheme}
 import shipreq.webapp.base.text.GrammarSpec.SeqFormat
 import shipreq.webapp.base.text.{LineCardinality, MultiLine, SingleLine}
@@ -34,6 +35,9 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
   val lineCardinality: LineCardinality
 
   type CommitFn = Out ~=> Callback
+
+  lazy val clipboardInterface: ClipboardInterface[String] =
+    ClipboardInterface.string.correct(liveCorrect)
 
   case class Props(edit            : StateSnapshot[String],
                    initialValue    : Option[In],

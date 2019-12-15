@@ -1,7 +1,6 @@
 package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.microlibs.nonempty.NonEmptyVector
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
@@ -15,7 +14,6 @@ import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
 import shipreq.webapp.base.lib.DomUtil._
 import shipreq.webapp.base.ui.{EditTheme, semantic}
-import shipreq.webapp.base.ui.semantic.{Icon, Message}
 import shipreq.webapp.client.project.app.Style.reqtable.{table => *}
 import shipreq.webapp.client.project.feature.{EditorFeature, Selection}
 import shipreq.webapp.client.project.widgets.{DragToReorder, NoFilterResults, ProjectWidgets, ViewReq}
@@ -422,8 +420,8 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
     type Mounted = ScalaComponent.MountedPure[Props, Unit, Unit]
     type Dom = dom.html.TableCell
 
-    def onKeyDown(editor: EditorFeature.ReadWrite.ForAnyEditor): ReactKeyboardEventFromHtml => Callback =
-      e => tableNavigationFeature.Keys(e) | EditorFeature.Keys(editor)(e)
+    def onKeyDown(editor: EditorFeature.ReadWrite.ForEditor[Unit, Any]): ReactKeyboardEventFromHtml => Callback =
+      e => tableNavigationFeature.Keys(e) | EditorFeature.Keys(editor)(())(e)
 
     val cellBase = <.td(^.tabIndex := -1)
 

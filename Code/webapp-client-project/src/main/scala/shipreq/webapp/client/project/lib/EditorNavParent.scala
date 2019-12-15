@@ -78,7 +78,7 @@ object EditorNavParent {
       p.editor.onClose(editorOnClose)
 
     val onKeyDown: ReactKeyboardEventFromHtml => Callback =
-      e => TableNavigationFeature(p.tableStyle).Keys(e) | EditorFeature.Keys(editor)(e)
+      e => TableNavigationFeature(p.tableStyle).Keys(e) | EditorFeature.Keys(editor)(p.editorArgs)(e)
 
     p.parent(
       ^.onKeyDown ==> onKeyDown,

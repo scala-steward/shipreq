@@ -8,6 +8,7 @@ import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature._
+import shipreq.webapp.base.feature.clipboard.ClipboardData
 import shipreq.webapp.base.ui.EditTheme
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
@@ -25,6 +26,8 @@ object Feature {
 
     /** impure */
     def change(args: Args): Editor.Change[Change]
+
+    def paste(c: ClipboardData): Option[Callback]
   }
 
   object Editor {
@@ -69,7 +72,14 @@ object Feature {
 
     type ForAnyEditor = ForEditor[Nothing, Any]
 
-    final case class ForEditor[-A, +C](editor: Option[Editor[A, C]], editability: Permission, async: AsyncState) {
+    // Note: editor is package-private here because it's actually read & write, where as this class is read-only
+    final case class ForEditor[-A, +C](private[editor] val editor: Option[Editor[A, C]],
+                                       editability: Permission,
+                                       async: AsyncState) {
+
+      def isOpen: Boolean =
+        editor.isDefined
+
       /** impure */
       def render(args: A): Option[VdomElement] =
         editor.flatMap(_.render(editability, async, args))
@@ -152,10 +162,11 @@ object Feature {
       def startEdit(state           : Read.ForAnyEditor,
                     pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]],
                     filterDead      : FilterDead,
-                    hooks           : NewEditor.Hooks = NewEditor.Hooks.empty): Option[Callback] =
+                    hooks           : NewEditor.Hooks = NewEditor.Hooks.empty,
+                    clipboardData   : Option[ClipboardData] = None): Option[Callback] =
         startEditWithArgs(
           state,
-          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, filterDead, hooks)))
+          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, filterDead, clipboardData, hooks)))
 
       private[Feature] def startEditWithArgs(state: Read.ForAnyEditor,
                                              args : FreeOption[NewEditor.CreationArgs]): Option[Callback] =
@@ -300,8 +311,14 @@ object Feature {
       def onClose(cb: Callback): ForEditor[A, C] =
         copy(creationArgs = creationArgs.map(NewEditor.CreationArgs.onClose.modify(_ >> cb)))
 
+      def withClipboardData(cd: ClipboardData): ForEditor[A, C] =
+        copy(creationArgs = creationArgs.map(_.copy(clipboardData = Some(cd))))
+
       def asyncFeature = write.async
       def asyncState = read.async
+
+      def paste(c: ClipboardData): Option[Callback] =
+        read.editor.flatMap(_.paste(c))
     }
 
     object ForEditor {
@@ -322,7 +339,7 @@ object Feature {
         ForEditor(
           read(f),
           write.apply(f),
-          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, filterDead, NewEditor.Hooks.empty)))
+          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, filterDead, None, NewEditor.Hooks.empty)))
     }
 
     implicit class ForFieldsInvariantExt[FK <: FieldKey](private val self: ForFields[FK]) extends AnyVal {

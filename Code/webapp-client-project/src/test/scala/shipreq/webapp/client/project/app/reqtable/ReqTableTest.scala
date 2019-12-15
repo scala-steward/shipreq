@@ -312,6 +312,62 @@ object ReqTableTest extends TestSuite {
 //    // confirm new UC exists
 //  )
 
+  def testPasteClosedDesc = {
+    val cell = cellEditor(pubid = "MF-1", col = "Description")
+    val text = "* omfg\n* ahh"
+    Plan.action(
+      copyToClipboard(text)
+        >> showAllColumns
+        >> cell.focus
+        +> cell.assertNotEditing
+        +> cell.cellText.assert("")
+        >> press(cmdOrCtrl(KB.V))
+        +> cell.assertState(Editing)
+        +> cell.editorValue.assert(text)
+        >> cell.commit
+        >> cell.startEdit
+        +> cell.editorValue.assert(text)
+    )
+  }
+
+  def testPasteClosedTitle = {
+    val cell = cellEditor(pubid = "MF-1", col = "Title")
+    val text1 = "* omfg\n* ahh"
+    val text2 = "* omfg * ahh"
+    Plan.action(
+      copyToClipboard(text1)
+        >> cell.focus
+        +> cell.assertNotEditing
+        +> cell.cellText.assert("Use Case Editor")
+        >> press(cmdOrCtrl(KB.V))
+        +> cell.assertState(Editing)
+        +> cell.editorValue.assert(text2)
+        >> cell.commit
+        >> cell.startEdit
+        +> cell.editorValue.assert(text2)
+    )
+  }
+
+  def testPasteOpenDesc = {
+    val cell = cellEditor(pubid = "MF-1", col = "Description")
+    val text = "* omfg\n* ahh"
+    Plan.action(
+      copyToClipboard(text)
+        >> showAllColumns
+        >> cell.startEdit
+        +> cell.editorValue.assert("")
+        >> cell.enterValue("yo")
+        +> cell.editorValue.assert("yo")
+        >> cell.focus
+        >> press(cmdOrCtrl(KB.V))
+        +> cell.assertState(Editing)
+        +> cell.editorValue.assert(text)
+        >> cell.commit
+        >> cell.startEdit
+        +> cell.editorValue.assert(text)
+    )
+  }
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = Tests {
@@ -354,5 +410,11 @@ object ReqTableTest extends TestSuite {
 //      'useCaseWithMinimalColumns - ???
 //      'codeGroupWithMinimalColumns - ???
 //    }
+
+    'paste - {
+      'closedDesc  - runTest(testPasteClosedDesc)
+      'closedTitle - runTest(testPasteClosedTitle)
+      'openDesc    - runTest(testPasteOpenDesc)
+    }
   }
 }
