@@ -5,13 +5,16 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.test._
 import org.scalajs.dom.html
+import shipreq.base.test.BaseTestUtil.quoteStringForDisplay
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.reqtable._
+import shipreq.webapp.base.feature.clipboard.TestClipboard
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.test._
+import shipreq.webapp.base.util.Browser
 import shipreq.webapp.client.project.test._
 import teststate.domzipper.DomZipper.EditableSel
 import TestState._
@@ -40,6 +43,12 @@ object ReqTableTestDsl {
       Column.mandatory.whole ++ ColumnPlus.All(p, fd).columns.whole.map(_.column).filter(isOn) - Column.Pubid
     NonEmptyVector(Column.Pubid, set.toVector)
   }
+
+  def cmdOrCtrl(kb: SimEvent.Keyboard): SimEvent.Keyboard =
+    if (Browser.isMac)
+      kb.copy(metaKey = true)
+    else
+      kb.copy(ctrlKey = true)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Focuses
@@ -113,6 +122,9 @@ object ReqTableTestDsl {
 
     val assertNotEditing =
       _editing.assert(false)
+
+    val focus =
+      setFocus(o => o.table.cell(loc(o)).domAsHtml)
 
     val tryStartEdit =
       *.action("Start editor.")(Simulate doubleClick cell.run(_).dom)
@@ -317,4 +329,7 @@ object ReqTableTestDsl {
 
   def press(k: SimEvent.Keyboard): *.Actions =
     *.action(s"Press ${k.desc}.")(k simulateKeyDownPressUp _.obs.activeElement)
+
+  def copyToClipboard(text: String): *.Actions =
+    *.action(s"Copy to clipboard: ${quoteStringForDisplay(text)}")(_ => TestClipboard.writeText(text))
 }
