@@ -9,6 +9,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.feature.EditorStatus
+import shipreq.webapp.base.feature.clipboard.ClipboardInterface
 import shipreq.webapp.base.lib.{KeyHandlers, KeyboardTheme}
 import shipreq.webapp.base.text.Grammar.{hashRefKey => G}
 import shipreq.webapp.base.text.SingleLine
@@ -58,6 +59,12 @@ object TagEditor {
   val validator: Lookup => Validator[String, Stream[String], Stream[ApplicableTag]] =
     l => G.seqFormat.validator(Auditor.optionFn(l.get)(i => Invalidity(s"Invalid tag: $i")))
 
+  val liveCorrect: String => String =
+    _.replace("\n", "")
+
+  val clipboardInterface: ClipboardInterface[String] =
+    ClipboardInterface.string.correct(liveCorrect)
+
   case class Props(preEditValue    : Option[Set[ApplicableTagId]],
                    edit            : StateSnapshot[String],
                    lookup          : Lookup,
@@ -105,7 +112,7 @@ object TagEditor {
     val textareaConst: TagMod = {
       val updateState: ReactEventFromTextArea => Callback =
         e => $.props >>= (p =>
-          p.status.wrapEdit(p.edit.setState(e.target.value.replace("\n", ""))))
+          p.status.wrapEdit(p.edit.setState(liveCorrect(e.target.value))))
 
       TagMod(
         ^.spellCheck := false,
