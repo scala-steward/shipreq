@@ -1,5 +1,6 @@
 package shipreq.webapp.base.text
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import org.parboiled2._
 import japgolly.microlibs.nonempty.NonEmptyVector
 import shipreq.base.util.univeq._
@@ -24,6 +25,14 @@ object Text {
 
   @inline def isRich(t: AnyOptional): Boolean =
     !isPlain(t)
+
+  val values: NonEmptyVector[Generic] =
+    AdtMacros.adtValues[Base].map {
+      case a: Base with A.Literal => a
+    }
+
+  implicit def univEqBase: UnivEq[Base] = UnivEq.derive
+  implicit def univEqGeneric: UnivEq[Generic] = UnivEq.force // proof is above
 
   // ===================================================================================================================
 

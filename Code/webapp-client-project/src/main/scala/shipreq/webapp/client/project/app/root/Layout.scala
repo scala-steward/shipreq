@@ -63,7 +63,7 @@ object Layout {
         _,
         Style.layout,
         FilterHelp.modal.render,
-        RichTextEditorHelp.modal.render,
+        RichTextEditorHelp.allRendered,
         p.content))
       .render
 

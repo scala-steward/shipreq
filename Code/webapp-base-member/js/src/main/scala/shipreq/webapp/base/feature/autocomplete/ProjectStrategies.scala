@@ -13,7 +13,7 @@ import shipreq.base.util._
 import shipreq.base.util.MTrie.Ops
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{Grammar, PlainText, Text, TextSearch}
+import shipreq.webapp.base.text.{Atom, Grammar, PlainText, Text, TextSearch}
 import shipreq.webapp.base.data.{Contextualise, Plain}
 import shipreq.webapp.base.jsfacade.TextComplete.Strategy
 import shipreq.webapp.base.ui.BaseStyles.{autoComplete => *}
@@ -21,6 +21,7 @@ import Implicits.autoLiftTextCompleteStrategy
 import Utils.{Context, Strategies}
 
 object ProjectStrategies {
+  import Atom.TypeGroup
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Rich text
@@ -31,14 +32,14 @@ object ProjectStrategies {
                ts: TextSearch): Strategies = {
     val s = Vector.newBuilder[Strategy[_]]
 
-    s ++= hashtag(p, HideDead, issues = text.supportsIssues, tags = text.supportsTags)(Contextualise)
+    s ++= hashtag(p, HideDead, issues = text.supports(TypeGroup.Issue), tags = text.supports(TypeGroup.TagRef))(Contextualise)
 
-    if (text.supportsReqRefs) {
+    if (text.supports(TypeGroup.ContentRef)) {
       s ++= reqCode.ref(p, pt)
       s ++= req(ts, reqItems(p, pt), Contextualise)
     }
 
-    if (text.supportsPTM)
+    if (text.supports(Atom.Type.TeX))
       s ++= tex
 
     s.result()

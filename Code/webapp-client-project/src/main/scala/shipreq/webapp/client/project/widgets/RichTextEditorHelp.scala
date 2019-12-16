@@ -1,8 +1,13 @@
 package shipreq.webapp.client.project.widgets
 
+import japgolly.microlibs.nonempty.NonEmptyVector
+import japgolly.univeq._
 import japgolly.scalajs.react.vdom.html_<^._
+import shipreq.webapp.base.UiText
+import shipreq.webapp.base.text._
+import shipreq.webapp.base.text.Atom.TypeGroup
 import shipreq.webapp.base.text.Grammar.texTag
-import shipreq.webapp.base.ui.semantic.Modal
+import shipreq.webapp.base.ui.semantic.{Accordion, Modal}
 
 object RichTextEditorHelp {
   import HelpModal._
@@ -21,18 +26,26 @@ object RichTextEditorHelp {
         "Codes can be referenced by putting the code inside square brackets.")(
         "[backend.backup.times]"))
 
-  private val issuesAndTags =
-    Group("Issues & Tags")(
+  private val issues =
+    Group("Issues")(
       Example(
         "Issues can be declared in text by typing a hash (", code("#"), ") followed by the issue.")(
-        "#TBD"),
+        "#TODO"),
 
+      Example(
+        "More information may be attached to an issue by appending", <.br,
+        code("{"), ", the text, and a final ", code("}"), " to the issue tag."
+      )(
+        "#PENDING{ Tina to come back from leave }"))
+
+  private val tags =
+    Group("Tags")(
       Example(
         "Tags can be declared in text by typing a hash (", code("#"), ") followed by the tag.")(
         "#uat"))
 
-  private val multiline =
-    Group("Multiline")(
+  private val lists =
+    Group("Lists")(
       Example(
         "A list of bullet points can be created by starting new lines with an asterisk (", code("*"), ") followed by a space."
       )(
@@ -74,13 +87,51 @@ object RichTextEditorHelp {
       )(
         s"<$texTag>{1 \\over n} + x^2</$texTag>"))
 
-  val modal: Modal = {
-    val groups = Groups(
-      references,
-      issuesAndTags,
-      multiline,
-      useCaseFlow,
-      other)
+  private def create(t: Text.Generic): Modal = {
+
+    def customise(group: Group, criteria: Text.Generic => Boolean): Group = {
+      if (criteria(t))
+        group
+      else {
+        val title = <.span(
+          ^.opacity := "0.6",
+          group.title, " (not applicable here)")
+
+        val content = <.div(
+          ^.opacity := "0.85",
+          "This is only supported in the following locations:",
+          <.ul(
+            Text.values
+              .iterator
+              .filter(criteria)
+              .map(UiText.RichText.descPlural)
+              .toList
+              .distinct
+              .sorted
+              .map(<.li(_)): _*))
+
+        Accordion.Item(title, content)
+      }
+    }
+
+    val groups = NonEmptyVector[Group](
+      customise(issues, _.supports(TypeGroup.Issue)),
+      customise(lists, _.supports(TypeGroup.ListMarkup)),
+      customise(references, _.supports(TypeGroup.ContentRef)),
+      customise(tags, _.supports(TypeGroup.TagRef)),
+      customise(other, _.supports(TypeGroup.PlainTextMarkup)),
+      customise(useCaseFlow, _ ==* Text.UseCaseStep),
+    )
+
     HelpModal("Rich Text Editor Help", groups)
   }
+
+  private val lookup: Map[Text.Generic, Modal] =
+    Text.values.iterator.map(t => t -> create(t)).toMap
+
+  val allRendered: TagMod =
+    TagMod(lookup.valuesIterator.map(_.render).toList: _*)
+
+  def modalFor(text: Text.Generic): Modal =
+    lookup(text)
 }

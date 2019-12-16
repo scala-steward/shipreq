@@ -21,19 +21,32 @@ object Atom {
   // - ContentRef
   // - TagRef
 
-  sealed trait Type
+  sealed abstract class TypeGroup
+  object TypeGroup {
+    case object Literal         extends TypeGroup
+    case object ContentRef      extends TypeGroup
+    case object Issue           extends TypeGroup
+    case object ListMarkup      extends TypeGroup
+    case object NewLine         extends TypeGroup
+    case object PlainTextMarkup extends TypeGroup
+    case object TagRef          extends TypeGroup
+
+    val values = AdtMacros.adtValues[TypeGroup]
+  }
+
+  sealed abstract class Type(final val group: TypeGroup)
   object Type {
-    case object Literal        extends Type
-    case object BlankLine      extends Type
-    case object ReqRef         extends Type
-    case object CodeRef        extends Type
-    case object UseCaseStepRef extends Type
-    case object Issue          extends Type
-    case object WebAddress     extends Type
-    case object EmailAddress   extends Type
-    case object TeX            extends Type
-    case object TagRef         extends Type
-    case object UnorderedList  extends Type
+    case object Literal        extends Type(TypeGroup.Literal)
+    case object BlankLine      extends Type(TypeGroup.NewLine)
+    case object ReqRef         extends Type(TypeGroup.ContentRef)
+    case object CodeRef        extends Type(TypeGroup.ContentRef)
+    case object UseCaseStepRef extends Type(TypeGroup.ContentRef)
+    case object Issue          extends Type(TypeGroup.Issue)
+    case object WebAddress     extends Type(TypeGroup.PlainTextMarkup)
+    case object EmailAddress   extends Type(TypeGroup.PlainTextMarkup)
+    case object TeX            extends Type(TypeGroup.PlainTextMarkup)
+    case object TagRef         extends Type(TypeGroup.TagRef)
+    case object UnorderedList  extends Type(TypeGroup.ListMarkup)
 
     val values = AdtMacros.adtValues[Type]
 
@@ -77,10 +90,19 @@ object Atom {
     final val NonEmptyIso: Iso[Option[NonEmptyText], OptionalText] =
       Iso[Option[NonEmptyText], OptionalText](_.fold(Vector.empty[Atom])(_.whole))(NonEmptyVector.option)
 
-    final def supportsPTM     = this match { case _: Atom.PlainTextMarkup => true; case _ => false }
-    final def supportsReqRefs = this match { case _: Atom.ContentRef      => true; case _ => false }
-    final def supportsTags    = this match { case _: Atom.TagRef          => true; case _ => false }
-    final def supportsIssues  = this match { case _: Atom.Issue           => true; case _ => false }
+    final def supports(g: TypeGroup): Boolean =
+      g match {
+        case TypeGroup.ContentRef      => this.isInstanceOf[Atom.ContentRef]
+        case TypeGroup.Issue           => this.isInstanceOf[Atom.Issue]
+        case TypeGroup.ListMarkup      => this.isInstanceOf[Atom.ListMarkup]
+        case TypeGroup.Literal         => this.isInstanceOf[Atom.Literal]
+        case TypeGroup.NewLine         => this.isInstanceOf[Atom.NewLine]
+        case TypeGroup.PlainTextMarkup => this.isInstanceOf[Atom.PlainTextMarkup]
+        case TypeGroup.TagRef          => this.isInstanceOf[Atom.TagRef]
+      }
+
+    final def supports(t: Type): Boolean =
+      supports(t.group)
   }
 
   /** Literal text, like "hello there" */

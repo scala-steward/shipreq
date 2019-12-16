@@ -189,7 +189,7 @@ object UseCaseStepEditor {
       } clauses ::=
         Instructions.Clause.keyToAction(shiftKeyCriterion(d).desc)(UiText.useCaseStepShift(d).toLowerCase, cb)
 
-      Instructions(clauses, help = Some(RichTextEditorHelp.modal.show))
+      Instructions(clauses, help = Some(RichTextEditorHelp.modalFor(Text.UseCaseStep).show))
     }
 
     def render(p: Props) = {

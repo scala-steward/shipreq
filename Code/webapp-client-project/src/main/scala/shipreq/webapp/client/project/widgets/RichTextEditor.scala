@@ -156,7 +156,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
               commit = p.status.getCommit,
               commitVerb = p.commitVerb,
               abort = p.abort),
-            help = Some(RichTextEditorHelp.modal.show)))
+            help = Some(RichTextEditorHelp.modalFor(text).show)))
 
       def richText: VdomTag =
         p match {

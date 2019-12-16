@@ -4,7 +4,7 @@ import shipreq.base.util.{Backwards, Direction, Forwards, LeftRight}
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.data.{Dead, HashRefKey, Live, StaticField, StaticFieldType}
 import shipreq.webapp.base.issue.IssueCategory
-import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.base.text.{PlainText, Text}
 
 object UiText {
 
@@ -74,6 +74,18 @@ object UiText {
     def savedViewName        = "Name"
   }
 
+  object RichText {
+    val descPlural: Text.Base => String = {
+      case _: Text.ReqTitle     => "req titles"
+      case Text.CodeGroupTitle  => s"${UiText.codeGroup.toLowerCase} titles"
+      case Text.InlineIssueDesc => "issue info blocks"
+      case Text.CustomTextField => "text fields"
+      case Text.UseCaseStep     => "use case steps"
+      case Text.DeletionReason  => FieldNames.deletionReason.toLowerCase.pluralise(2)
+      case Text.ManualIssue     => Issues.looseIssues
+    }
+  }
+
   object Cfg {
     def startNewButton    = "Create"
     def abortNewButton    = "Cancel"
@@ -123,6 +135,8 @@ object UiText {
   object Issues {
     final val loose = "manual"
     final val Loose = "Manual"
+
+    final val looseIssues = loose + " issues"
 
     val category: IssueCategory => String = {
       case IssueCategory.BadData     => "Bad data"

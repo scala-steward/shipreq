@@ -101,7 +101,3 @@ Phase 2B
   Maybe a dynamic approach that compares versions, or maybe a migration task
   that adds a new event to everyone's projects to do the rename once when the
   new version is deployed.
-
-### BLOCKERS
-
-* Flow syntax missing from use case step help
