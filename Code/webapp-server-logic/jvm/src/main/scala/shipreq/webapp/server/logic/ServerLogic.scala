@@ -1,6 +1,6 @@
 package shipreq.webapp.server.logic
 
-import scalaz.{BindRec, Monad, ~>}
+import scalaz.{BindRec, Catchable, Monad, ~>}
 import shipreq.base.ops.Trace
 import shipreq.taskman.api.TaskmanApi
 import shipreq.webapp.server.ServerLogicConfig
@@ -24,6 +24,7 @@ object ServerLogic {
                   : TaskmanApi
                   : Trace.Algebra]
             (implicit F: Monad[F] with BindRec[F],
+             FC: Catchable[F],
              runDB: D ~> F,
              config: ServerLogicConfig): ServerLogic[F] =
     ServerLogic(

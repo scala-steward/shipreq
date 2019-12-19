@@ -10,16 +10,21 @@ package shipreq.base.util.log
 object TaskmanLogFields {
   private final val prefix = "shipreq.taskman."
 
+
+  object work {
+    val actorName = LogField.Text          (prefix + "work.actor.name")
+  }
+
   object http {
     object request {
-      val body   = LogField.Text          (prefix + "http.request.body")
-      val method = LogField.Text          (prefix + "http.request.method")
-      val url    = LogField.Text          (prefix + "http.request.url")
+      val body    = LogField.Text          (prefix + "http.request.body")
+      val method  = LogField.Text          (prefix + "http.request.method")
+      val url     = LogField.Text          (prefix + "http.request.url")
     }
     object response {
-      val body  = LogField.Text           (prefix + "http.response.body")
-      val code  = LogField.Long           (prefix + "http.response.code")
-      val durMs = LogField.Long.durationMs(prefix + "http.response.duration.ms")
+      val body   = LogField.Text           (prefix + "http.response.body")
+      val code   = LogField.Long           (prefix + "http.response.code")
+      val durMs  = LogField.Long.durationMs(prefix + "http.response.duration.ms")
     }
   }
 

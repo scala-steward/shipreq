@@ -3,7 +3,7 @@ package shipreq.webapp.server.logic
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.{Duration, Instant}
 import scalaz.syntax.monad._
-import scalaz.{-\/, Monad, Name, NaturalTransformation, \/, \/-}
+import scalaz.{-\/, Catchable, Monad, Name, NaturalTransformation, \/, \/-}
 import shipreq.base.ops.Trace
 import shipreq.base.test.SyncEffect
 import shipreq.base.util._
@@ -467,6 +467,19 @@ object MockInterpreters {
       securityTokenLength        = 8,
       registrationTokenLifespan  = 7 days,
       passwordResetTokenLifespan = 4 days))
+
+  implicit val catchableName: Catchable[Name] =
+    new Catchable[Name] {
+      override def attempt[A](f: Name[A]): Name[Throwable \/ A] =
+        Name {
+          try \/-(f.value)
+          catch {
+            case t: Throwable => -\/(t)
+          }
+        }
+      override def fail[A](err: Throwable): Name[A] =
+        Name(throw err)
+    }
 }
 
 class MockInterpreters(modCfg         : ServerLogicConfig => ServerLogicConfig = Identity[ServerLogicConfig],
@@ -474,6 +487,9 @@ class MockInterpreters(modCfg         : ServerLogicConfig => ServerLogicConfig =
                        specificRedis  : Option[Redis.InMemory[Name]]           = None,
                        specificTaskman: Option[MockTaskman]                    = None,
                       ) {
+
+  import MockInterpreters.catchableName
+
   implicit val config         = modCfg(MockInterpreters.config)
   implicit val svr            = new MockServer[Name]
   implicit val db             = specificMockDb.getOrElse(new MockDb(svr.now))

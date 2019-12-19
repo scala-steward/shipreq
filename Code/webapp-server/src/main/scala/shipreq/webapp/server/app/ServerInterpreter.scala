@@ -8,7 +8,7 @@ import net.liftweb.http.provider.HTTPRequest
 import scala.concurrent.blocking
 import scalaz.syntax.monad._
 import shipreq.base.util.FxModule._
-import shipreq.base.util.log.{HasLogger, MDC}
+import shipreq.base.util.log.{HasLogger, MdcUtil}
 import shipreq.webapp.server.logic._
 
 object ServerInterpreter extends Server.Algebra[Fx] with HasLogger {
@@ -27,7 +27,7 @@ object ServerInterpreter extends Server.Algebra[Fx] with HasLogger {
 
   override def fork[A](f: Fx[A]): Fx[Unit] =
     for {
-      f2 <- MDC.preserve(f)
+      f2 <- MdcUtil.preserve(f)
       _  <- Fx(LAScheduler.execute(() => f2.unsafeRun()))
     } yield ()
 

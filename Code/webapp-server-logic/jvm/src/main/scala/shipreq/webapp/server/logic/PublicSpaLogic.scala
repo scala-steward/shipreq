@@ -3,12 +3,12 @@ package shipreq.webapp.server.logic
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.sql.Connection
 import java.time.{Duration, Instant}
-import scalaz.{-\/, Monad, \/, \/-, ~>}
+import scalaz.{-\/, Catchable, Monad, \/, \/-, ~>}
 import scalaz.std.option.optionInstance
 import scalaz.syntax.monad._
 import scalaz.syntax.std.option._
 import shipreq.base.util._
-import shipreq.base.util.log.{HasLogger, MDC}
+import shipreq.base.util.log.{HasLogger, MdcUtil, WebappLogFields}
 import shipreq.taskman.api.{Msg, MsgId, TaskmanApi}
 import shipreq.webapp.base.Urls
 import shipreq.webapp.base.data.SecurityToken
@@ -36,8 +36,6 @@ trait PublicSpaLogic[F[_]] {
 object PublicSpaLogic extends HasLogger {
 
   private[this] val rightUnit = \/-(())
-
-  private[this] final val MdcSecurityToken = "security_token"
 
   def isExpired_?(startTime: Instant, timeToLive: Duration, now: Instant): Boolean =
     startTime plus timeToLive isBefore now
@@ -73,7 +71,8 @@ object PublicSpaLogic extends HasLogger {
                                  svr     : Server.Algebra[F],
                                  taskman : TaskmanApi[F],
                                  D       : Monad[D],
-                                 F       : Monad[F]): PublicSpaLogic[F] =
+                                 F       : Monad[F],
+                                 FC      : Catchable[F]): PublicSpaLogic[F] =
     new PublicSpaLogic[F] {
 
       override val ajaxLandingPage =
@@ -198,8 +197,8 @@ object PublicSpaLogic extends HasLogger {
           val body: Request => F[ErrorMsg \/ (Result, T)] =
             security.protectFn { unvalidatedReq =>
 
-              unvalidatedReq.validate.onValid[F, (Result, T)](req =>
-                MDC(MdcSecurityToken, req.token.value) {
+              unvalidatedReq.validate.onValid[F, (Result, T)] { req =>
+                WebappLogFields.request.securityToken.mdc(req.token.value).para {
 
                   val validateToken: Stack[Unit] =
                     getTokenStatus(req.token).mapToStack {
@@ -249,7 +248,7 @@ object PublicSpaLogic extends HasLogger {
                     _             <- metrics.securityEvent(Security.Event.Register2, secRes)
                   } yield res
                 }
-              )
+              }
             }
 
           body(_).map {
@@ -316,8 +315,8 @@ object PublicSpaLogic extends HasLogger {
           }
 
         val resetPassword2: PublicSpaProtocols.ResetPassword2.ajax.ServerSideFn[F] =
-          security.protectFn(req =>
-            MDC(MdcSecurityToken, req.token.value)(
+          security.protectFn { req =>
+            WebappLogFields.request.securityToken.mdc(req.token.value).para {
               UserValidators.password.named(req.newPassword.value).onValid { newPassword =>
 
                 import PublicSpaProtocols.ResetPassword2.Result
@@ -360,8 +359,8 @@ object PublicSpaLogic extends HasLogger {
                   _             <- metrics.securityEvent(Security.Event.ResetPassword2, secRes)
                 } yield res
               }
-            )
-          )
+            }
+          }
       }
 
     }

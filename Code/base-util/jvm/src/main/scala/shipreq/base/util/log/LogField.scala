@@ -7,36 +7,49 @@ import japgolly.univeq._
 import java.time.Duration
 import java.util.UUID
 import net.logstash.logback.argument.StructuredArgument
+import org.slf4j.MDC
 
-sealed abstract class LogField[+T <: LogField.Type, @specialized(Long, Boolean) -A] private[log] (final val key: String) { self =>
+sealed abstract class LogField[T <: LogField.Type, @specialized(Long, Boolean) -A] private[log] (final val key: String) { self =>
 
   val fieldType: T
   protected def conv: A => fieldType.Input
 
-  def apply(a: A): StructuredArgument =
+  final def apply(a: A): StructuredArgument =
     fieldType.create(key, conv(a))
 
-  def contramap[B](f: B => A): LogField[T, B] =
+  final def contramap[B](f: B => A): LogField[T, B] =
     new LogField[T, B](key) {
       override val fieldType: self.fieldType.type = self.fieldType
       override protected def conv: B => fieldType.Input = self.conv compose f
     }
 
-  def optional(o: Option[A]): StructuredArgument =
+  final def optional(o: Option[A]): StructuredArgument =
     o.fold(LogField.emptyArg)(apply)
 
-  def mdcUnsafePut(value: A)(implicit ev: T <:< LogField.Text.type): Unit = {
+  private final def convInput[T2 <: LogField.Type](t2: T2, i: fieldType.Input)(implicit ev: T =:= T2): t2.Input = {
     val _ = ev
-    val str = conv(value).asInstanceOf[LogField.Text.Input]
-    org.slf4j.MDC.put(key, str)
+    i.asInstanceOf[t2.Input]
+  }
+
+  final def mdcUnsafePut(value: A)(implicit ev: T =:= LogField.Text.type): Unit = {
+    val str = convInput(LogField.Text, conv(value))
+    MDC.put(key, str)
+  }
+
+  final def mdc(value: A)(implicit ev: T =:= LogField.Text.type): MdcValues = {
+    val str = convInput(LogField.Text, conv(value))
+    MdcValues.one(key, str)
   }
 }
 
 object LogField {
 
-  protected[LogField] def apply(key: String, t: Type): LogField[t.type, t.Input] = {
+  protected[LogField] def apply(key: String, t: Type): LogField[t.type, t.Input] =
+    generic[t.type](key, t)
+
+  protected[LogField] def generic[T <: Type](key: String, t: T): LogField[T, t.Input] = {
     LogField.Registry.register(key, t)
-    new LogField[t.type, t.Input](key) {
+    new LogField[T, t.Input](key) {
       override val fieldType: t.type = t
       override protected def conv: t.Input => t.Input = i => i
     }
@@ -110,8 +123,10 @@ object LogField {
   }
 
   object UnsafeJson {
-    def apply[A: Encoder](key: String): LogField[UnsafeJson[A], A] =
-      LogField(key, new UnsafeJson(Encoder[A]))
+    def apply[A: Encoder](key: String): LogField[UnsafeJson[A], A] = {
+      val fieldType = new UnsafeJson(Encoder[A])
+      generic[UnsafeJson[A]](key, fieldType)
+    }
   }
 
   // ===================================================================================================================

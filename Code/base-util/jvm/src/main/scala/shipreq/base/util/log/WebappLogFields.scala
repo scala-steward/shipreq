@@ -13,6 +13,7 @@ object WebappLogFields {
   object request {
     val id            = LogField.Text.uuid      (prefix + "request.id")
     val method        = LogField.Text           (prefix + "request.method")
+    val securityToken = LogField.Text           (prefix + "request.security_token")
     val uri           = LogField.Text           (prefix + "request.uri")
     val url           = LogField.Text           (prefix + "request.url")
     val userAgent     = LogField.Text           (prefix + "request.user_agent")
@@ -23,5 +24,4 @@ object WebappLogFields {
     val code          = LogField.Long           (prefix + "response.code")
     val durMs         = LogField.Long.durationMs(prefix + "response.duration.ms")
   }
-
 }

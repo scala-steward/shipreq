@@ -162,9 +162,11 @@ object FxModule {
         _ <- finallyClause
       } yield r
 
+    /** Note: This is the init clause. */
     def bracketFx[B, C](release: A => Fx[B], use: A => Fx[C]): Fx[C] =
       fx.bracket(use)(release(_).map(_ => ()))
 
+    /** Note: This is the init clause. */
     def bracketFx_[B, C](release: Fx[B], use: Fx[C]): Fx[C] = {
       val useAndRelease = use.andFinally(release)
       fx.flatMap(_ => useAndRelease)

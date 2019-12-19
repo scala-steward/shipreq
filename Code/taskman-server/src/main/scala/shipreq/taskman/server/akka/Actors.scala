@@ -7,10 +7,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.apache.commons.io.FileUtils
 import scala.concurrent.duration._
 import shipreq.base.util.FxModule._
-import shipreq.base.util.log.HasLogger
+import shipreq.base.util.log.{HasLogger, MdcValues, TaskmanLogFields}
 import shipreq.taskman.api.Priority
 import shipreq.taskman.server.logic.MsgHeader
-import shipreq.taskman.server.{TaskmanCtx, TaskmanLogging}
+import shipreq.taskman.server.TaskmanCtx
 
 /*
       <Time>
@@ -48,6 +48,11 @@ object ActorMsg {
 
 import ActorMsg._
 
+private[akka] object ActorUtil {
+  def mdc(actorName: String): MdcValues =
+    TaskmanLogFields.work.actorName.mdc(actorName)
+}
+
 // =====================================================================================================================
 
 object SourceActor {
@@ -58,7 +63,7 @@ final class SourceActor(ctx: TaskmanCtx) extends Actor with HasLogger {
   import shipreq.taskman.server.logic.Source
   import ctx._
 
-  private val mdc    = TaskmanLogging.mdc("source")
+  private val mdc    = ActorUtil.mdc("source")
   private val source = new Source(config.taskman.pollGap, config.taskman.queueSize)
   private var state  = source.empty.unsafeRun()
 
@@ -68,7 +73,7 @@ final class SourceActor(ctx: TaskmanCtx) extends Actor with HasLogger {
       case Some(f) => () => FileUtils.touch(f)
     }
 
-  override def receive = mdc.impureWrapPF {
+  override def receive = mdc.impurePF {
     case RequestForWork(qs) =>
       val (s2, msgs) = source.poll(qs).run(state).unsafeRun()
       logger.debug(s"Looking for work. Found ${msgs.size} jobs")
@@ -89,14 +94,14 @@ final class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with H
   import shipreq.taskman.server.logic.{Manager => M}
   import context.dispatcher
 
-  private val mdc     = TaskmanLogging.mdc("manager")
+  private val mdc     = ActorUtil.mdc("manager")
   private val poller  = context.system.scheduler.schedule(0 millis, ctx.config.taskman.pollEvery.asFiniteDuration, self, PollSource)
   private var workers = Set.empty[ActorRef]
   private var queue   = M.empty
 
   override def postStop() = poller.cancel()
 
-  override def receive = mdc.impureWrapPF {
+  override def receive = mdc.impurePF {
 
     case PollSource =>
       source ! RequestForWork(queue.status)
@@ -136,13 +141,13 @@ final class WorkerActor(ctx: TaskmanCtx, manager: ActorRef) extends Actor with H
   import ctx._
 
   private implicit val id = WorkerActor.nextId()
-  private val mdc         = TaskmanLogging.mdc(s"worker-${id.value}")
+  private val mdc         = ActorUtil.mdc(s"worker-${id.value}")
   private val worker      = new Worker(ctx.msgProcessor)
 
   private def requestWork(): Unit =
     manager ! RequestForWork
 
-  override def receive = mdc.impureWrapPF {
+  override def receive = mdc.impurePF {
 
     case WorkAvailable =>
       requestWork()
