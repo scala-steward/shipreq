@@ -50,6 +50,6 @@ tgt=/usr/share/nginx/html
 
 reify portal.html $tgt/index.html
 reify nginx.conf /etc/nginx/nginx.conf
-unzip favicon_io.zip -d $tgt
+unzip -o favicon_io.zip -d $tgt
 
 exec nginx -g 'daemon off;'
