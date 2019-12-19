@@ -1,12 +1,13 @@
 package shipreq.webapp.server.app
 
 import io.prometheus.client.exporter.MetricsServlet
+import java.time.Duration
 import java.util.UUID
 import javax.servlet._
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 import net.liftweb.http.LiftFilter
 import org.slf4j.MDC
-import shipreq.base.util.log.HasLogger
+import shipreq.base.util.log.{HasLogger, LogFields}
 import shipreq.webapp.base.Urls
 
 /** Servlet entry-point into ShipReq (as specified in web.xml).
@@ -82,36 +83,45 @@ final class AppServletFilter extends LiftFilter with HasLogger {
     doFilterFn = (req, res, chain) => {
 
       val startMs = System.currentTimeMillis()
-      val txnId = UUID.randomUUID().toString
-      MDC.put("txn_id", txnId)
-      MDC.put("request_remote_addr", req.getRemoteAddr)
-      MDC.put("request_remote_host", req.getRemoteHost)
+
+      val requestId = UUID.randomUUID()
+      LogFields.webapp.request.id.mdcUnsafePut(requestId)
+
+      // MDC.put("request_remote_addr", req.getRemoteAddr) <-- no point, it's always the ALB
+      // MDC.put("request_remote_host", req.getRemoteHost) <-- no point, it's always the ALB
+
       val hreq: HttpServletRequest =
         req match {
-        case h: HttpServletRequest =>
-          h.getRequestURL match {
-            case null => ()
-            case sb => MDC.put("request_url", sb.toString)
-          }
-          MDC.put("request_uri", h.getRequestURI)
-          MDC.put("request_method", h.getMethod)
-          // MDC.put("request_query_string", h.getQueryString)
-          MDC.put("request_user_agent", h.getHeader("User-Agent"))
-          MDC.put("request_x_forwarded_for", h.getHeader("X-Forwarded-For"))
-          h
-        case _ =>
-          null
-      }
+          case h: HttpServletRequest =>
+            h.getRequestURL match {
+              case null => ()
+              case sb   => LogFields.webapp.request.url.mdcUnsafePut(sb.toString)
+            }
+            LogFields.webapp.request.uri          .mdcUnsafePut(h.getRequestURI)
+            LogFields.webapp.request.method       .mdcUnsafePut(h.getMethod)
+            LogFields.webapp.request.userAgent    .mdcUnsafePut(h.getHeader("User-Agent"))
+            LogFields.webapp.request.xForwardedFor.mdcUnsafePut(h.getHeader("X-Forwarded-For"))
+            h
+          case _ =>
+            null
+        }
 
       try {
         real(req, res, chain)
 
-        val durMs = System.currentTimeMillis() - startMs
+        val durMs  = System.currentTimeMillis() - startMs
+        val dur    = Duration.ofMillis(durMs)
+        val durLog = LogFields.webapp.response.durMs(dur)
+
         if ((hreq ne null) && res.isInstanceOf[HttpServletResponse]) {
           val hres = res.asInstanceOf[HttpServletResponse]
-          logger.info(s"Served ${hres.getStatus} ${hreq.getRequestURI} in $durMs ms")
+          val code = hres.getStatus
+          logger.info(s"Served $code ${hreq.getRequestURI} in $durMs ms",
+            durLog,
+            LogFields.webapp.response.code(code))
+
         } else
-          logger.info(s"Served non-HTTP request in $durMs ms")
+          logger.info(s"Served non-HTTP request in $durMs ms", durLog)
       }
       finally
         MDC.clear()
