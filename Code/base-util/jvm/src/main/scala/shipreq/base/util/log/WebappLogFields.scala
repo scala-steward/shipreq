@@ -12,6 +12,8 @@ object WebappLogFields {
 
   object jwt {
     val invalid       = LogField.Text           (prefix + "jwt.invalid")
+    val userId        = LogField.Text.long      (prefix + "jwt.user_id")
+    val username      = LogField.Text           (prefix + "jwt.username")
   }
 
   object request {
@@ -27,5 +29,10 @@ object WebappLogFields {
   object response {
     val code          = LogField.Long           (prefix + "response.code")
     val durMs         = LogField.Long.durationMs(prefix + "response.duration.ms")
+  }
+
+  object websocket {
+    val callback      = LogField.Text           (prefix + "websocket.callback")
+    val projectId     = LogField.Text.long      (prefix + "websocket.project_id")
   }
 }

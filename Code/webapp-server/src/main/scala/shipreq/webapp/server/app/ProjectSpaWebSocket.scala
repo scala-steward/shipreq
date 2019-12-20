@@ -3,6 +3,7 @@ package shipreq.webapp.server.app
 import com.typesafe.scalalogging.StrictLogging
 import javax.websocket._
 import javax.websocket.server._
+import org.slf4j.MDC
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.BinaryData
 import shipreq.base.util.FxModule._
@@ -10,15 +11,18 @@ import shipreq.webapp.base.Urls
 import shipreq.webapp.server.logic.ProjectSpaLogic._
 import shipreq.webapp.server.util.WebSocketUtil
 import shipreq.webapp.server.util.WebSocketUtil.UserPropsLens
-import CloseReason.{CloseCode, CloseCodes}
+import shipreq.base.util.log.WebappLogFields
 
 object ProjectSpaWebSocket extends StrictLogging {
 
   def projectSpaLogic = Global.logic.projectSpa
 
+  final case class LoggingData(path: String)
+
   val staticL           = UserPropsLens.atKey[WebSocketStatic]("X")
   val stateL            = UserPropsLens.atKey[WebSocketState[Fx]]("Y")
   val connectRejectionL = UserPropsLens.atKey[ConnectRejection]("Z")
+  val loggingDataL      = UserPropsLens.atKey[LoggingData]("L")
 
   final class Connector extends ServerEndpointConfig.Configurator {
     private[this] val pathPrefix = Urls.ProjectSpaWebSocket.Base.length + 1
@@ -29,6 +33,8 @@ object ProjectSpaWebSocket extends StrictLogging {
       val projectId      = Urls.ProjectSpaWebSocket.parseProjectId(projectIdParam)
       val cookieLookup   = WebSocketUtil.cookieLookupFnOverHandshakeRequest(req)
       val userProps      = cfg.getUserProperties
+
+      loggingDataL.set(userProps, LoggingData(path))
 
       projectSpaLogic.onConnect(cookieLookup, projectId).unsafeRun() match {
 
@@ -52,6 +58,7 @@ object ProjectSpaWebSocket extends StrictLogging {
   value        = Urls.ProjectSpaWebSocket.ServerEndpoint,
   configurator = classOf[ProjectSpaWebSocket.Connector])
 final class ProjectSpaWebSocket extends StrictLogging {
+  import CloseReason.{CloseCode, CloseCodes}
   import ProjectSpaWebSocket._
 
   private def unsafeSend(s: Session, b: BinaryData): Unit = {
@@ -75,9 +82,26 @@ final class ProjectSpaWebSocket extends StrictLogging {
     b => Fx(unsafeSend(s, b))
   }
 
+  private def withMdc[A](s: Session, callbackName: String)(a: => A): A = {
+    val userProps   = s.getUserProperties
+    val loggingData = loggingDataL.get(userProps)
+    val static      = staticL.get(userProps)
+    try {
+      WebappLogFields.request.uri.mdcUnsafePut(loggingData.path)
+      WebappLogFields.websocket.callback.mdcUnsafePut(callbackName)
+      if (static ne null) {
+        WebappLogFields.jwt.username.mdcUnsafePut(static.user.username.value)
+        WebappLogFields.jwt.userId.mdcUnsafePut(static.user.id.value)
+        WebappLogFields.websocket.projectId.mdcUnsafePut(static.projectId.value)
+      }
+      a
+    } finally
+      MDC.clear()
+  }
+
   @OnOpen
-  def onOpen(s: Session): Unit = {
-    val startMs   = System.currentTimeMillis()
+  def onOpen(s: Session): Unit = withMdc(s, "open") {
+    val startMs = System.currentTimeMillis()
     Option(connectRejectionL.get(s.getUserProperties)) match {
       case Some(r) =>
         logger.warn(s"Rejecting WebSocket connection: $r")
@@ -99,7 +123,7 @@ final class ProjectSpaWebSocket extends StrictLogging {
   private[this] val rightUnit = \/-(())
 
   @OnMessage
-  def onMessage(s: Session, messageBytes: Array[Byte]): Unit = {
+  def onMessage(s: Session, messageBytes: Array[Byte]): Unit = withMdc(s, "message") {
     if (messageBytes.length == 0) {
       logger.trace("Received keep-alive")
     } else {
@@ -145,13 +169,13 @@ final class ProjectSpaWebSocket extends StrictLogging {
   }
 
   @OnError
-  def onError(s: Session, cause: Throwable): Unit = {
+  def onError(s: Session, cause: Throwable): Unit = withMdc(s, "error") {
     logger.error("Error occurred.", cause)
     fxClose(s, CustomCloseCodes.UnhandledException, "Runtime exception occurred").unsafeRun()
   }
 
   @OnClose
-  def onClose(s: Session, reason: CloseReason): Unit = {
+  def onClose(s: Session, reason: CloseReason): Unit = withMdc(s, "close") {
     val userProps = s.getUserProperties
     val static    = Option(staticL.get(userProps))
     val state     = Option(stateL.get(userProps))

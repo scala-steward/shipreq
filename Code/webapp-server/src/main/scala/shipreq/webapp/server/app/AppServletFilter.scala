@@ -7,8 +7,12 @@ import javax.servlet._
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 import net.liftweb.http.LiftFilter
 import org.slf4j.MDC
+import scala.annotation.tailrec
+import shipreq.base.util.FxModule._
 import shipreq.base.util.log.{HasLogger, WebappLogFields}
 import shipreq.webapp.base.Urls
+import shipreq.webapp.server.logic.Security
+import shipreq.webapp.server.logic.dispatch.Cookie
 
 /** Servlet entry-point into ShipReq (as specified in web.xml).
   *
@@ -43,7 +47,7 @@ final class AppServletFilter extends LiftFilter with HasLogger {
     }
 
     // Initialise logging
-    installLogging()
+    installLogging(g.security)
   }
 
   override def doFilter(req: ServletRequest, res: ServletResponse, chain: FilterChain): Unit =
@@ -77,7 +81,7 @@ final class AppServletFilter extends LiftFilter with HasLogger {
       }
   }
 
-  private def installLogging(): Unit = {
+  private def installLogging(security: Security.Algebra[Fx]): Unit = {
     UUID.randomUUID() // Force initialisation
     val real = doFilterFn
     doFilterFn = (req, res, chain) => {
@@ -94,14 +98,47 @@ final class AppServletFilter extends LiftFilter with HasLogger {
         val hreq: HttpServletRequest =
           req match {
             case h: HttpServletRequest =>
-              h.getRequestURL match {
-                case null => ()
-                case sb   => WebappLogFields.request.url.mdcUnsafePut(sb.toString)
-              }
+
               WebappLogFields.request.uri          .mdcUnsafePut(h.getRequestURI)
               WebappLogFields.request.method       .mdcUnsafePut(h.getMethod)
               WebappLogFields.request.userAgent    .mdcUnsafePut(h.getHeader("User-Agent"))
               WebappLogFields.request.xForwardedFor.mdcUnsafePut(h.getHeader("X-Forwarded-For"))
+
+              h.getRequestURL match {
+                case null => ()
+                case sb   => WebappLogFields.request.url.mdcUnsafePut(sb.toString)
+              }
+
+              // This results in double parsing of JWTs (i.e. once here and then again in server-logic) but...
+              // 1. I don't think it can be avoided. We can't pass the result around from here and thread-locals are
+              //    out of the question because it's (shit and) too dangerous. MDC is thread-local too but there's
+              //    propagation support in the relevant places, and getting it wrong doesn't affect users.
+              // 2. It's super fast at around 6us.
+              val cookies = h.getCookies
+              if (cookies ne null) {
+                val lookup: Cookie.LookupFn = name => {
+                  // Below is equivalent to: cookies.find(_.getName == name.value).map(_.getValue)
+                  @tailrec def go(i: Int): Option[String] =
+                    if (i == cookies.length)
+                      None
+                    else {
+                      val c = cookies(i)
+                      if (c.getName == name.value)
+                        Some(c.getValue)
+                      else
+                        go(i + 1)
+                    }
+                  go(0)
+                }
+                for {
+                  session <- security.sessionRestore(lookup).unsafeRun()
+                  user    <- session.authenticatedUser
+                } {
+                  WebappLogFields.jwt.username.mdcUnsafePut(user.username.value)
+                  WebappLogFields.jwt.userId.mdcUnsafePut(user.id.value)
+                }
+              }
+
               h
             case _ =>
               null
