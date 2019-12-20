@@ -169,8 +169,8 @@ object DispatchBM {
   val user = User(UserId(1), Username("asds"))
   val ps = PasswordAndSalt(PasswordHash("wdsef34r"), Salt("32165498bdef"))
 
-  final class Interpreters[F[_]](val run: F[_] => Any)(implicit val F: Monad[F]) {
-    val self = this
+  final class Interpreters[F[_]](val run: F[_] => Any)(implicit val _F: Monad[F]) { self =>
+    private val F = _F
 
     implicit object db extends DB.SecurityTokenReadOnly[F] with DB.ForSecurity[F] {
       var token = Option.empty[Instant]
@@ -186,12 +186,13 @@ object DispatchBM {
     }
 
     implicit object security extends Security.Algebra[F] {
+      override val F                                  = _F
       override val db                                 = self.db
       val delay                                       = F.point(())
       override def protect[A](vulnerable: F[A])       = delay >> vulnerable
       override def hashPassword(p: PlainTextPassword) = F point ps
-      private val loggedInToken                       = Some(Security.SessionToken(Some(user)))
-      private val anonToken                           = Some(Security.SessionToken.anonymous)
+      private val loggedInToken                       = Some(Security.SessionToken.anonymous().login(user))
+      private val anonToken                           = Some(Security.SessionToken.anonymous())
       private val cookieName                          = Cookie.Name("S")
 
       override def attemptLogin(u: Username \/ EmailAddr, p: PlainTextPassword) = F.point {

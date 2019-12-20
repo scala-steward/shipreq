@@ -77,7 +77,6 @@ Phase 2B
 * Metrics
   * Add ThreadLocal security-delay flag and affect metrics (?)
   * Taskman metrics
-  * Add a correlation ID to JWTs / logs / traces
 
 ### New Features
 * Send Feedback / Report Issue (with screenshot). Add link beside @username in top bar

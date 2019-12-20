@@ -37,7 +37,7 @@ object UserFixture {
     def hashedPassword = ps.passwordHash
     def salt = ps.salt
     def toUserDescriptor = User(id, username)
-    def toToken = Security.SessionToken(Some(toUserDescriptor))
+    def toToken() = Security.SessionToken.anonymous().login(toUserDescriptor)
   }
 
   final case class PendingTestUser(email: EmailAddr, token: String, tokenCreatedAt: Instant)

@@ -2,7 +2,8 @@ package shipreq.webapp.server.logic
 
 import com.typesafe.scalalogging.StrictLogging
 import japgolly.univeq.UnivEq
-import scalaz.\/
+import java.util.UUID
+import scalaz.{\/, Monad}
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.logic.dispatch.Cookie
 
@@ -10,6 +11,7 @@ object Security {
 
   trait Algebra[F[_]] {
 
+    val F: Monad[F]
     val db: DB.ForSecurity[F]
 
     /** Protects a vulnerable action from external attacks.
@@ -31,14 +33,39 @@ object Security {
     def sessionRestore(cookies: Cookie.LookupFn): F[Option[SessionToken]]
 
     def sessionPersist(token: SessionToken): F[Cookie.Update]
+
+    final def sessionRestoreOrCreate(cookies: Cookie.LookupFn): F[SessionToken] =
+      F.map(sessionRestore(cookies))(_.getOrElse(SessionToken.anonymous()))
   }
 
   // ===================================================================================================================
 
-  final case class SessionToken(authenticatedUser: Option[User])
+  final case class SessionId(value: String) extends AnyVal
+
+  object SessionId {
+    def random(): SessionId =
+      apply(UUID.randomUUID().toString)
+
+    implicit def univEq: UnivEq[SessionId] = UnivEq.derive
+  }
+
+  final case class SessionToken(sessionId: Option[SessionId], authenticatedUser: Option[User]) {
+    def login(u: User): SessionToken =
+      copy(authenticatedUser = Some(u))
+
+    def logout: SessionToken =
+      copy(authenticatedUser = None)
+
+    def withSession(st: SessionToken): SessionToken =
+      copy(sessionId = st.sessionId)
+  }
 
   object SessionToken extends StrictLogging {
-    val anonymous = apply(None)
+    def anonymous(): SessionToken =
+      anonymous(SessionId.random())
+
+    def anonymous(sessionId: SessionId): SessionToken =
+      apply(Some(sessionId), None)
 
     implicit def univEq: UnivEq[SessionToken] = UnivEq.derive
   }

@@ -28,7 +28,7 @@ object LiveTest extends TestSuite {
     ClientSideProc[I](c.objectName)(c.pickler)
 
   implicit def userToToken(u: UserFixture.TestUser): Option[Security.SessionToken] =
-    Some(Security.SessionToken(Some(u.toUserDescriptor)))
+    Some(Security.SessionToken.anonymous().login(u.toUserDescriptor))
 
   override def tests = Tests {
     prepare()
@@ -41,17 +41,19 @@ object LiveTest extends TestSuite {
     }
 
     'loginAjax {
-      ajaxPost(PublicSpaProtocols.Login.ajax)(PublicSpaProtocols.Login.Request(-\/(user1.username), user1.password))
+      val st = Security.SessionToken.anonymous()
+      ajaxPost(PublicSpaProtocols.Login.ajax)(PublicSpaProtocols.Login.Request(-\/(user1.username), user1.password), st)
         .assertOk
         .assertContentType("application/octet-stream")
-        .assertJwt(Some(user1.toToken))
+        .assertJwt(Some(user1.toToken().withSession(st)))
       ()
     }
 
     'logout {
-      get(Urls.logout.relativeUrl, Some(user1.toToken))
+      val st = user1.toToken()
+      get(Urls.logout.relativeUrl, Some(st))
         .assertRedirectTo("/")
-        .assertJwt(Some(Security.SessionToken.anonymous))
+        .assertJwt(Some(st.logout))
       ()
     }
 

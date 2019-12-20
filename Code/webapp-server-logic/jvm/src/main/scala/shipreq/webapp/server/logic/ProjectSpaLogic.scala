@@ -69,6 +69,7 @@ object ProjectSpaLogic extends StrictLogging {
 
   final case class WebSocketStatic(user       : User,
                                    projectId  : ProjectId,
+                                   sessionId  : Option[Security.SessionId],
                                    span       : Any,
                                    connectedAt: Instant)
 
@@ -158,7 +159,7 @@ object ProjectSpaLogic extends StrictLogging {
             _       <- C.ensure(user.id ==* owner, AccessDenied)
             now     <- C.rightF(svr.now)
           } yield {
-            val static = WebSocketStatic(user, pid, span, now)
+            val static = WebSocketStatic(user, pid, session.sessionId, span, now)
             val state  = WebSocketState.empty[F]
             (static, state)
           }

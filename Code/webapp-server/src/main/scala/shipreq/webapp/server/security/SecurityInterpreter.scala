@@ -19,19 +19,20 @@ import shipreq.webapp.base.data.Obfuscated
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.ServerLogicConfig
 import shipreq.webapp.server.logic.dispatch.Cookie
-import shipreq.webapp.server.logic.Security.SessionToken
+import shipreq.webapp.server.logic.Security.{SessionId, SessionToken}
 import shipreq.webapp.server.logic._
 
 object SecurityInterpreter {
   val cookieName = Cookie.Name("jwt")
 }
 
-final class SecurityInterpreter[F[_]](implicit F: Monad[F],
+final class SecurityInterpreter[F[_]](implicit _F: Monad[F],
                                       config : ServerLogicConfig.Security,
                                       secDb  : DB.ForSecurity[F],
                                       trace  : Trace.Algebra[F]) extends Security.Algebra[F] with StrictLogging {
   import SecurityInterpreter._
 
+  override val F = _F
   override val db = secDb
 
   private[this] val fUnit                    = F.point(())
@@ -71,7 +72,8 @@ final class SecurityInterpreter[F[_]](implicit F: Monad[F],
       Option.when(providedHash ==* real.passwordHash)(user)
     })
 
-  private[this] final val claimUserId = "uid"
+  private[this] final val claimSessionId = "sid"
+  private[this] final val claimUserId    = "uid"
 
   override def sessionPersist(token: SessionToken): F[Cookie.Update] = F.point {
     val jws: String = {
@@ -80,6 +82,9 @@ final class SecurityInterpreter[F[_]](implicit F: Monad[F],
       val now = System.currentTimeMillis()
       val exp = new java.util.Date(now + config.jwtLifespanMs)
       b.setExpiration(exp)
+
+      for (id <- token.sessionId)
+        b.claim(claimSessionId, id.value)
 
       for (u <- token.authenticatedUser) {
         b.claim(claimUserId, Obfuscators.userId.obfuscate(u.id).value)
@@ -109,10 +114,11 @@ final class SecurityInterpreter[F[_]](implicit F: Monad[F],
         throw new RuntimeException(errMsg)
       }
 
-      val claims = parser.parseClaimsJws(jws).getBody
-      val subject = claims.getSubject
+      val claims    = parser.parseClaimsJws(jws).getBody
+      val sessionId = Option(claims.get(claimSessionId, classOf[String])).fold(SessionId.random())(SessionId.apply)
+      val subject   = claims.getSubject
       if (subject eq null)
-        SessionToken.anonymous
+        SessionToken.anonymous(sessionId)
       else {
         val username = Username(subject)
         val userIdOb = Obfuscated[UserId](claims.get(claimUserId, classOf[String]))
@@ -121,7 +127,7 @@ final class SecurityInterpreter[F[_]](implicit F: Monad[F],
           case -\/(e) => fail(s"Failed to deobfuscate user ID ${StringEscapeUtils.escapeJava(userIdOb.value)}: $e")
         }
         val user = User(userId, username)
-        SessionToken(Some(user))
+        SessionToken(Some(sessionId), Some(user))
       }
     }
 
@@ -157,5 +163,4 @@ final class SecurityInterpreter[F[_]](implicit F: Monad[F],
 
       case None => fNoToken
     }
-
 }

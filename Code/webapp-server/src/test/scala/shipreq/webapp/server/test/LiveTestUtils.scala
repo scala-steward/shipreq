@@ -77,7 +77,7 @@ object LiveTestUtils {
 
   def ajaxPost(p: Protocol.Ajax[SafePickler])
               (req: p.protocol.RequestType,
-               token  : Security.SessionToken = Security.SessionToken.anonymous,
+               token  : Security.SessionToken = Security.SessionToken.anonymous(),
                headers: List[(String, String)] = Nil): HttpResponse = {
     val h2 = tokenCookie(token)
     val prep = p.protocol.prepareSend(req)
@@ -148,7 +148,7 @@ object LiveTestUtils {
         .assertBodyContains(spaJs)
         .assertBodyContains(spaEP.objectAndMethod + "(")
 
-    def assertJwt(expect: Option[Security.SessionToken]) = {
+    def assertJwt(expect: Option[Security.SessionToken])(implicit l: sourcecode.Line) = {
       val prefix = SecurityInterpreter.cookieName.value + "="
       val cookieValue = resp.headers.getOrElse("Set-Cookie", Nil).find(_.startsWith(prefix)).map(_.drop(prefix.length))
       val actual = cookieValue.flatMap { v =>

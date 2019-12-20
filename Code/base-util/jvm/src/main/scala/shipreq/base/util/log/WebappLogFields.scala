@@ -12,6 +12,7 @@ object WebappLogFields {
 
   object jwt {
     val invalid       = LogField.Text           (prefix + "jwt.invalid")
+    val sessionId     = LogField.Text           (prefix + "jwt.session_id")
     val userId        = LogField.Text.long      (prefix + "jwt.user_id")
     val username      = LogField.Text           (prefix + "jwt.username")
   }

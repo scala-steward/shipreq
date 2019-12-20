@@ -81,7 +81,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
       lazy val projectAndOrd   = ProjectAndOrd(instance, Some(verifiedEvents.last.ord.asLatest))
       lazy val initAppData     = InitAppData(projectAndOrd, data1)
-      lazy val static          = WebSocketStatic(user2.toUser, id, (), svr.now.value)
+      lazy val static          = WebSocketStatic(user2.toUser, id, None, (), svr.now.value)
 
       lazy val eventsA         = events.take(1)
       lazy val verifiedEventsA = verifiedEvents.take(1)
@@ -225,11 +225,11 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         }
 
       'noSession        - test(None, p1.id)(-\/(NoSession))
-      'anonymousSession - test(SessionToken.anonymous, p1.id)(-\/(AnonymousSession))
+      'anonymousSession - test(SessionToken.anonymous(), p1.id)(-\/(AnonymousSession))
       'invalidProjectId - test(user2.token, Obfuscated("!"))(-\/(InvalidProjectId))
       'projectNotFound  - test(user2.token, ProjectId(23432))(-\/(ProjectNotFound))
       'accessDenied     - test(user3.token, p1.id)(-\/(AccessDenied))
-      'ok               - test(user2.token, p1.id)(\/-((p1.static, emptyState)))
+      'ok               - test(user2.token, p1.id)(\/-((p1.static.copy(sessionId = user2.token.sessionId), emptyState)))
     }
 
     'initApp - {

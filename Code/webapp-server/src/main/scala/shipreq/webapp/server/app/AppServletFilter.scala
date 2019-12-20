@@ -130,12 +130,14 @@ final class AppServletFilter extends LiftFilter with HasLogger {
                     }
                   go(0)
                 }
-                for {
-                  session <- security.sessionRestore(lookup).unsafeRun()
-                  user    <- session.authenticatedUser
-                } {
-                  WebappLogFields.jwt.username.mdcUnsafePut(user.username.value)
-                  WebappLogFields.jwt.userId.mdcUnsafePut(user.id.value)
+                for (session <- security.sessionRestore(lookup).unsafeRun()) {
+                  for (id <- session.sessionId) {
+                    WebappLogFields.jwt.sessionId.mdcUnsafePut(id.value)
+                  }
+                  for (user <- session.authenticatedUser) {
+                    WebappLogFields.jwt.username.mdcUnsafePut(user.username.value)
+                    WebappLogFields.jwt.userId.mdcUnsafePut(user.id.value)
+                  }
                 }
               }
 

@@ -19,10 +19,11 @@ object PublicSpaLogicTest extends TestSuite {
       Tester(mockInterpreters.withConfig(f))
 
     val initData = PublicSpaEntryPoint.InitData(Allow, None)
+    val session = Security.SessionToken.anonymous()
 
-    def runLogin(i: PublicSpaProtocols.Login.ajax.Req) = assertProtected(publicSpa.ajaxLogin(i).value)
+    def runLogin(i: PublicSpaProtocols.Login.ajax.Req) = assertProtected(publicSpa.ajaxLogin(session)(i).value)
     def runRegister1(i: PublicSpaProtocols.Register1.ajax.Req) = assertProtected(publicSpa.ajaxRegister1(i).value)
-    def runRegister2(i: PublicSpaProtocols.Register2.ajax.Req) = assertProtected(publicSpa.ajaxRegister2(i).value)
+    def runRegister2(i: PublicSpaProtocols.Register2.ajax.Req) = assertProtected(publicSpa.ajaxRegister2(session)(i).value)
     def runResetPassword1(i: PublicSpaProtocols.ResetPassword1.ajax.Req) = assertProtected(publicSpa.ajaxResetPassword1(i).value)
     def runResetPassword2(i: PublicSpaProtocols.ResetPassword2.ajax.Req) = assertProtected(publicSpa.ajaxResetPassword2(i).value)
 
@@ -48,7 +49,7 @@ object PublicSpaLogicTest extends TestSuite {
               (expectResp: Permission, expectToken: Option[Security.SessionToken]) =
         assertDifference("usrLoginLog", db.usrLoginLog.length)(if (expectResp is Allow) 1 else 0) {
           val r = runLogin(Request(usernameOrEmail, password))
-          assertEq(r, (expectResp, expectToken))
+          assertEq(r, (expectResp, expectToken.withSession(r._2)))
           svr.runForked()
         }
 
@@ -122,7 +123,7 @@ object PublicSpaLogicTest extends TestSuite {
             }
           )
         val u = db.getUser(-\/(req.username)).getOrElse(sys error "User not found")
-        assertEq(r, (\/-(Result.Success), Some(u.token)))
+        assertEq(r, (\/-(Result.Success), Some(u.token).withSession(r._2)))
         taskman.assertLastSubmitted { case _: Task.RegistrationCompleted => () }
       }
 

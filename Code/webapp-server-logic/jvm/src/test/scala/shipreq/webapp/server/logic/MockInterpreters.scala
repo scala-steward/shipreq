@@ -1,10 +1,13 @@
 package shipreq.webapp.server.logic
 
+import io.circe._
+import io.circe.syntax._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.{Duration, Instant}
 import scalaz.syntax.monad._
 import scalaz.{-\/, Catchable, Monad, Name, NaturalTransformation, \/, \/-}
 import shipreq.base.ops.Trace
+import shipreq.base.test.JsonTestUtil._
 import shipreq.base.test.SyncEffect
 import shipreq.base.util._
 import shipreq.taskman.api.{Task, TaskId, TaskStatus, TaskmanApi}
@@ -31,8 +34,8 @@ object MockDb {
     def toUserAndPassword: (User, PasswordAndSalt) =
       (toUser, ps)
 
-    def token: Security.SessionToken =
-      Security.SessionToken(Some(toUser))
+    val token: Security.SessionToken =
+      Security.SessionToken.anonymous().login(toUser)
   }
   object UserEntry {
     implicit def univEq: UnivEq[UserEntry] = UnivEq.derive
@@ -389,8 +392,47 @@ final class MockTaskman extends TaskmanApi[Name] {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+object MockSecurity {
+  private[MockSecurity] object Codecs {
+    import Security._
+
+    implicit val decoderSessionId: Decoder[SessionId] =
+      Decoder[String].map(SessionId.apply)
+
+    implicit val encoderSessionId: Encoder[SessionId] =
+      Encoder[String].contramap(_.value)
+
+    implicit val decoderUserId: Decoder[UserId] =
+      Decoder[Long].map(UserId.apply)
+
+    implicit val encoderUserId: Encoder[UserId] =
+      Encoder[Long].contramap(_.value)
+
+    implicit val decoderUsername: Decoder[Username] =
+      Decoder[String].map(Username.apply)
+
+    implicit val encoderUsername: Encoder[Username] =
+      Encoder[String].contramap(_.value)
+
+    implicit val decoderUser: Decoder[User] =
+      Decoder.forProduct2("id", "username")(User.apply)
+
+    implicit val encoderUser: Encoder[User] =
+      Encoder.forProduct2("id", "username")(a => (a.id, a.username))
+
+    implicit val decoderSessionToken: Decoder[SessionToken] =
+      Decoder.forProduct2("sessionId", "authenticatedUser")(SessionToken.apply)
+
+    implicit val encoderSessionToken: Encoder[SessionToken] =
+      Encoder.forProduct2("sessionId", "authenticatedUser")(a => (a.sessionId, a.authenticatedUser))
+  }
+}
+
 final class MockSecurity(override val db: MockDb) extends Security.Algebra[Name] {
+  import MockSecurity.Codecs._
   import Security.SessionToken
+
+  override val F = Monad[Name]
 
   var protectedActions = 0
   override def protect[A](vulnerable: Name[A]): Name[A] =
@@ -418,24 +460,22 @@ final class MockSecurity(override val db: MockDb) extends Security.Algebra[Name]
 
   override def sessionPersist(token: SessionToken) = Name[Cookie.Update] {
     val header = System.nanoTime().toString + ":"
-    val body = token.authenticatedUser match {
-      case None    => ""
-      case Some(u) => s"${u.id.value} ${u.username.value}"
-    }
+    val body   = token.asJson.noSpaces
     val cookie = Cookie(cookieName, header + body, None, None, None)
     Cookie.Update.add(cookie)
   }
 
   override def sessionRestore(cookies: Cookie.LookupFn) = Name[Option[SessionToken]] {
-    cookies(cookieName) map { cookieValue =>
+    cookies(cookieName).map { cookieValue =>
         if (cookieValue.endsWith(":"))
-          SessionToken.anonymous
+          SessionToken.anonymous()
         else {
-          val body     = cookieValue.dropWhile(_ != ':').drop(1).split(' ')
-          val userId   = UserId(body(0).toInt)
-          val username = Username(body(1))
-          val user     = User(userId, username)
-          SessionToken(Some(user))
+          val body  = cookieValue.dropWhile(_ != ':').drop(1)
+          val token = decodeOrThrow[SessionToken](body)
+          if (token.sessionId.isDefined)
+            token
+          else
+            token.withSession(SessionToken.anonymous())
         }
     }
   }
@@ -543,4 +583,14 @@ class MockInterpreters(modCfg         : ServerLogicConfig => ServerLogicConfig =
 
   def forwardTimeToEndOfPasswordResetWindow(v: Validity): Unit =
     svr.forwardTimeToEndOfWindow(config.security.passwordResetTokenLifespan, v)
+
+  final implicit class MockInterpreterExtOptionSessionToken(self: Option[Security.SessionToken]) {
+    def withSession(from: Option[Security.SessionToken]): Option[Security.SessionToken] =
+      // self.map(_.copy(sessionId = from.flatMap(_.sessionId)))
+     (self, from) match {
+       case (Some(s), Some(f)) => Some(s.withSession(f))
+       case _                  => self
+     }
+  }
+
 }

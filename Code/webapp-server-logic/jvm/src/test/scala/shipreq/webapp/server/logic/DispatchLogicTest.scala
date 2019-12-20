@@ -146,9 +146,10 @@ object DispatchLogicTest extends TestSuite {
       'logIn - {
         val u = user2
         val req = PublicSpaProtocols.Login.Request(-\/(u.username), user2password)
-        val res = runAjax(PublicSpaProtocols.Login.ajax)(req)(Security.SessionToken.anonymous)._2
+        val st1 = Security.SessionToken.anonymous()
+        val res = runAjax(PublicSpaProtocols.Login.ajax)(req)(st1)._2
         val tok = security.sessionRestore(res.cookies.get).value
-        assertEq(tok, Some(user2.token))
+        assertEq(tok, Some(user2.token.withSession(st1)))
       }
 
       'loggedIn {
@@ -283,8 +284,11 @@ object DispatchLogicTest extends TestSuite {
       }
 
       'requireJwt - test(None)(Some(403), None)
-      'anon - test(Some(Security.SessionToken.anonymous))(None, Some(Security.SessionToken.anonymous))
       'auth - test(Some(user2.token))(None, Some(user2.token))
+      'anon - {
+        val st = Security.SessionToken.anonymous()
+        test(Some(st))(None, Some(st))
+      }
     }
 
     'ops {

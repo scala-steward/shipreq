@@ -21,11 +21,12 @@ import Implicits._
 trait PublicSpaLogic[F[_]] {
 
   val ajaxLandingPage   : PublicSpaProtocols.LandingPage   .ajax.ServerSideFn [F]
-  val ajaxLogin         : PublicSpaProtocols.Login         .ajax.ServerSideFnO[F, Option[Security.SessionToken]]
   val ajaxRegister1     : PublicSpaProtocols.Register1     .ajax.ServerSideFn [F]
-  val ajaxRegister2     : PublicSpaProtocols.Register2     .ajax.ServerSideFnO[F, Option[Security.SessionToken]]
   val ajaxResetPassword1: PublicSpaProtocols.ResetPassword1.ajax.ServerSideFn [F]
   val ajaxResetPassword2: PublicSpaProtocols.ResetPassword2.ajax.ServerSideFn [F]
+
+  val ajaxLogin    : Security.SessionToken => PublicSpaProtocols.Login    .ajax.ServerSideFnO[F, Option[Security.SessionToken]]
+  val ajaxRegister2: Security.SessionToken => PublicSpaProtocols.Register2.ajax.ServerSideFnO[F, Option[Security.SessionToken]]
 
   /** Ignores publicRegistration setting.
     * Lacks security protection.
@@ -90,7 +91,9 @@ object PublicSpaLogic extends HasLogger {
       private type LoginResult = (Permission, Option[Security.SessionToken])
       private[this] val loginFail: F[LoginResult] = {val x = (Deny, None); F pure x}
 
-      private def attemptLogin(id: Username \/ EmailAddr, password: PlainTextPassword): F[LoginResult] =
+      private def attemptLogin(id      : Username \/ EmailAddr,
+                               password: PlainTextPassword,
+                               session : Security.SessionToken): F[LoginResult] =
         security.attemptLogin(id, password).flatMap {
 
           case Some(user) =>
@@ -98,13 +101,15 @@ object PublicSpaLogic extends HasLogger {
             val logToDB       = svr.clientIP.flatMap(ip => svr.fork(security.db.logLoginSuccess(user.id, ip)))
             val log           = F.point(logger.info(s"User #${user.id.value} logged in."))
             val updateMetrics = metrics.securityEvent(Security.Event.Login, Security.Result.Success)
-            val token         = Security.SessionToken(Some(user))
-            val result        = (Allow, Some(token)): LoginResult
+            val newSession    = session.login(user)
+            val result        = (Allow, Some(newSession)): LoginResult
             val main          = log >> logToDB >> updateMetrics >| result
 
-            val mdc1          = WebappLogFields.jwt.userId.mdc(user.id.value)
-            val mdc2          = WebappLogFields.jwt.username.mdc(user.username.value)
-            val mdc           = mdc1 ++ mdc2
+            var mdc = WebappLogFields.jwt.userId.mdc(user.id.value) ++
+                      WebappLogFields.jwt.username.mdc(user.username.value)
+            for (id <- newSession.sessionId) {
+              mdc ++= WebappLogFields.jwt.sessionId.mdc(id.value)
+            }
             mdc.para(main)
 
           case None =>
@@ -116,8 +121,9 @@ object PublicSpaLogic extends HasLogger {
         }
 
       override val ajaxLogin =
-        security.protectFn(req =>
-          attemptLogin(req.user, req.password))
+        token =>
+          security.protectFn(req =>
+            attemptLogin(req.user, req.password, token))
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -194,7 +200,7 @@ object PublicSpaLogic extends HasLogger {
             }
           )
 
-        val register2: PublicSpaProtocols.Register2.ajax.ServerSideFnO[F, Option[Security.SessionToken]] = {
+        val register2: Security.SessionToken => PublicSpaProtocols.Register2.ajax.ServerSideFnO[F, Option[Security.SessionToken]] = session => {
           type T = Option[Security.SessionToken]
           import PublicSpaProtocols.Register2.{Request, Result}
           val stack = MonadEE[F, ErrorMsg, Result]
@@ -221,7 +227,7 @@ object PublicSpaLogic extends HasLogger {
                     }
 
                   val login: Stack[Option[Security.SessionToken]] =
-                    attemptLogin(-\/(req.username), req.password).mapToStack {
+                    attemptLogin(-\/(req.username), req.password, session).mapToStack {
                       case (Allow, t) => \/-(t)
                       case (Deny, _) => -\/(-\/(ErrorMsg("Registration completed but login failed.")))
                     }
