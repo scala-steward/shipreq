@@ -9,11 +9,11 @@ import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.db.TestDb
 import shipreq.taskman.api._
 import shipreq.taskman.api.impl.DoobieMeta._
-import shipreq.taskman.server.logic.{MsgDetail, MsgHeader, NodeId, WorkerId}
+import shipreq.taskman.server.logic.{TaskDetail, TaskHeader, NodeId, WorkerId}
 import scalaz.syntax.applicative._
 import scalaz.syntax.traverse._
 import utest._
-import Msg.ReRegistrationAttempted
+import Task.ReRegistrationAttempted
 import ServerOpFx.Sql._
 
 object ServerOpFxTest extends TestSuite {
@@ -22,11 +22,11 @@ object ServerOpFxTest extends TestSuite {
   private val n = NodeId(123)
   private val w = WorkerId(666)
   private val rng = new Random()
-  private val defaultMsg = ReRegistrationAttempted(EmailAddr("haha cool"))
+  private val defaultTask = ReRegistrationAttempted(EmailAddr("haha cool"))
 
   private object GetMsgsAssignNode {
 
-    val insertQ = Query[(Short, Priority, Priority, Option[Int], Option[Short], Duration, Duration, Duration), MsgId](
+    val insertQ = Query[(Short, Priority, Priority, Option[Int], Option[Short], Duration, Duration, Duration), TaskId](
       "INSERT INTO msgq(type, data, priority, priority_base, node, worker, created_at, updated_at, effective_from)" +
         "VALUES(?, '{}', ?, ?, ?, ?, now()+?, now()+?, now()+?) RETURNING id")
 
@@ -47,21 +47,21 @@ object ServerOpFxTest extends TestSuite {
         Option(effective) getOrElse created
       )).unique
 
-    def insertP(pris: Int*): ConnectionIO[Vector[MsgId]] =
+    def insertP(pris: Int*): ConnectionIO[Vector[TaskId]] =
       rng.shuffle(pris.toVector.map(p => Priority(p.toShort)).zipWithIndex)
         .traverse(pi => insert(pri = pi._1).map((_, pi._2)))
         .map(_.sortBy(_._2).map(_._1))
 
-    def idAndPri(m: MsgHeader) = (m.id, m.priority)
+    def idAndPri(m: TaskHeader) = (m.id, m.priority)
 
     final class TestWithoutHighPriorityQueueOverrides(queue: Option[(Priority, Int)], allowResults: Boolean = true) {
 
-      private def assertReturnOnly(a: List[MsgHeader], e: MsgId*) = {
+      private def assertReturnOnly(a: List[TaskHeader], e: TaskId*) = {
         val ids = a.map(_.id)
         assert(ids.sortBy(_.value) == e.toList.sortBy(_.value))
       }
 
-      private def assertAllowedReturnOnly(a: List[MsgHeader], ids: MsgId*): Unit =
+      private def assertAllowedReturnOnly(a: List[TaskHeader], ids: TaskId*): Unit =
         if (allowResults)
           assertReturnOnly(a, ids: _*)
         else
@@ -114,14 +114,14 @@ object ServerOpFxTest extends TestSuite {
 
     "reassignWorker" - {
 
-      val insertQ = Query[(Option[NodeId], Option[WorkerId], Duration, Duration, Duration), MsgId](
+      val insertQ = Query[(Option[NodeId], Option[WorkerId], Duration, Duration, Duration), TaskId](
         "INSERT INTO msgq(type, data, node, worker, updated_at, created_at, effective_from, priority, priority_base)" +
           s"VALUES(0, '{}', ?, ?, now()-?, now()-?, now()-?, 5,5) RETURNING id")
 
-      def getUpdatedAt(id: MsgId) =
+      def getUpdatedAt(id: TaskId) =
         sql"select updated_at from msgq where id=$id".query[Instant].unique
 
-      def timestampBeforeAfter(id: MsgId) =
+      def timestampBeforeAfter(id: TaskId) =
         for {
           b <- getUpdatedAt(id)
           _ <- dao.reassignWorker(n, w, id)
@@ -228,19 +228,19 @@ object ServerOpFxTest extends TestSuite {
 
     "getMsgAssignWorker" - {
 
-      val insertQ = Query[(Msg, Option[NodeId], Option[WorkerId], Duration, Duration, Duration), MsgId](
+      val insertQ = Query[(Task, Option[NodeId], Option[WorkerId], Duration, Duration, Duration), TaskId](
         "INSERT INTO msgq(type, data, node, worker, created_at, updated_at, effective_from, priority, priority_base)" +
           "VALUES(?, ?, ?, ?, now()-?, now()-?, now()-?, 5,5) RETURNING id")
 
-      def insert(node: Option[NodeId] = None, worker: Option[WorkerId] = None, msg: Msg = defaultMsg) = {
+      def insert(node: Option[NodeId] = None, worker: Option[WorkerId] = None, msg: Task = defaultTask) = {
         val d: Duration = 2.days
         insertQ.toQuery0((msg, node, worker, d, d, d)).unique
       }
 
       def insertAssignedToOwnNode = insert(node = Some(n))
 
-      def test(id: MsgId) =
-        dao.getMsgAssignWorker(n, w, MsgHeader(id, Priority(5), Instant.now()))
+      def test(id: TaskId) =
+        dao.getMsgAssignWorker(n, w, TaskHeader(id, Priority(5), Instant.now()))
 
       "not assign if msg has been picked up by another node" - {
         val r = TestDb.runNow(insert(node = Some(NodeId(6789))).flatMap(test))
@@ -255,7 +255,7 @@ object ServerOpFxTest extends TestSuite {
       "deserialise the msg" - {
         val r = TestDb.runNow(insertAssignedToOwnNode.flatMap(test))
         assertMatch(r) {
-          case Some(MsgDetail(_, msg, _)) if msg == defaultMsg => ()
+          case Some(TaskDetail(_, msg, _)) if msg == defaultTask => ()
         }
       }
 

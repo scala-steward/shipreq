@@ -2,17 +2,17 @@ package shipreq.taskman.server.logic
 
 import org.scalacheck.Prop.propBoolean
 import shipreq.base.test.MTestScalaCheck
-import shipreq.taskman.api.{MsgId, Priority}
+import shipreq.taskman.api.{TaskId, Priority}
 import utest._
 import Manager._
 import TestHelpers._
 
 object ManagerTest extends TestSuite with MTestScalaCheck {
 
-  private val a = MsgHeader(MsgId(1), Priority(6), timePast)
-  private val b = MsgHeader(MsgId(2), Priority(6), timeNow)
-  private val c = MsgHeader(MsgId(3), Priority(5), timePast)
-  private val d = MsgHeader(MsgId(4), Priority(5), timeNow)
+  private val a = TaskHeader(TaskId(1), Priority(6), timePast)
+  private val b = TaskHeader(TaskId(2), Priority(6), timeNow)
+  private val c = TaskHeader(TaskId(3), Priority(5), timePast)
+  private val d = TaskHeader(TaskId(4), Priority(5), timeNow)
 
   private val eg4 = Manager.empty + c + a + d + b
 
@@ -23,7 +23,7 @@ object ManagerTest extends TestSuite with MTestScalaCheck {
         eg4.q.toList ==> List(a, b, c, d)
       }
 
-      "add" - scalaCheck(_.forAll { (q: JobQueue, ms: List[MsgHeader]) =>
+      "add" - scalaCheck(_.forAll { (q: JobQueue, ms: List[TaskHeader]) =>
         val r = add(ms).run(q)._1.q.toList
         (q.q.toList ::: ms.distinct).forall(r.contains)
       })

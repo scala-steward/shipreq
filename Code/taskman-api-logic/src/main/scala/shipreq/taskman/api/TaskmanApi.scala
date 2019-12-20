@@ -16,11 +16,11 @@ trait TaskmanApi[F[_]] { self =>
    */
   def cfgPut(key: String, value: String): F[Unit]
 
-  /** Submits a Msg to the Taskman server for processing. */
-  def submitMsg(m: Msg): F[MsgId]
+  /** Submits a [[Task]] to the Taskman server for processing. */
+  def submit(m: Task): F[TaskId]
 
-  /** Inspects the status of a msg. */
-  def queryMsgStatus(id: MsgId): F[Option[MsgStatus]]
+  /** Inspects the status of a task. */
+  def getStatus(id: TaskId): F[Option[TaskStatus]]
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -30,26 +30,26 @@ trait TaskmanApi[F[_]] { self =>
     else
       kvs.iterator.map(kv => cfgPut(kv._1, kv._2)).reduce(_ >> _)
 
-  /** Submits 0-n Msgs to the Taskman server for processing. */
-  def submitMsgs[G[_] : Traverse](ms: G[Msg])(implicit F: Applicative[F]): F[G[(Msg, MsgId)]] =
-    ms.traverse(m => submitMsg(m).map((m, _)))
+  /** Submits 0-n tasks to the Taskman server for processing. */
+  def submitBulk[G[_] : Traverse](ms: G[Task])(implicit F: Applicative[F]): F[G[(Task, TaskId)]] =
+    ms.traverse(m => submit(m).map((m, _)))
 
-  /** Submits 0-n Msgs to the Taskman server for processing, discarding the results. */
-  def submitMsgs_[G[_] : Traverse](ms: G[Msg])(implicit F: Applicative[F]): F[Unit] =
-    ms.traverse_(submitMsg(_).void)
+  /** Submits 0-n tasks to the Taskman server for processing, discarding the results. */
+  def submitBulk_[G[_] : Traverse](ms: G[Task])(implicit F: Applicative[F]): F[Unit] =
+    ms.traverse_(submit(_).void)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   final def trans[G[_]](g: F ~> G)(implicit F: Monad[F]): TaskmanApi[G] =
     new TaskmanApi[G] {
       override def cfgPut(k: String, v: String) = g(self.cfgPut(k, v))
-      override def submitMsg(m: Msg)            = g(self.submitMsg(m))
-      override def queryMsgStatus(id: MsgId)    = g(self.queryMsgStatus(id))
+      override def submit(m: Task)              = g(self.submit(m))
+      override def getStatus(id: TaskId)        = g(self.getStatus(id))
 
       // In practice, these override merge actions into a single DB transaction
-      override def cfgPutBulk(kvs: (String, String)*)(implicit G: Monad[G])             = g(self.cfgPutBulk(kvs: _*))
-      override def submitMsgs[H[_] : Traverse](ms: H[Msg])(implicit G: Applicative[G])  = g(self.submitMsgs(ms))
-      override def submitMsgs_[H[_] : Traverse](ms: H[Msg])(implicit G: Applicative[G]) = g(self.submitMsgs_(ms))
+      override def cfgPutBulk(kvs: (String, String)*)(implicit G: Monad[G])              = g(self.cfgPutBulk(kvs: _*))
+      override def submitBulk[H[_] : Traverse](ms: H[Task])(implicit G: Applicative[G])  = g(self.submitBulk(ms))
+      override def submitBulk_[H[_] : Traverse](ms: H[Task])(implicit G: Applicative[G]) = g(self.submitBulk_(ms))
     }
 }
 
@@ -62,15 +62,15 @@ object TaskmanApi extends HasLogger {
           _        <- Fx(logger.info(s"Put config {$k=$v} in Taskman in ${dur.toMillis} ms"))
         } yield ()
 
-      override def submitMsg(m: Msg) =
+      override def submit(m: Task) =
         for {
-          (id, dur) <- self.submitMsg(m).measureDuration
+          (id, dur) <- self.submit(m).measureDuration
           _         <- Fx(logger.info(s"Submitted $m to Taskman in ${dur.toMillis} ms"))
         } yield id
 
-      override def queryMsgStatus(id: MsgId) =
+      override def getStatus(id: TaskId) =
         for {
-          (os, dur) <- self.queryMsgStatus(id).measureDuration
+          (os, dur) <- self.getStatus(id).measureDuration
           _         <- Fx(logger.info(s"Retrieved $id status as $os from Taskman in ${dur.toMillis} ms"))
         } yield os
     }

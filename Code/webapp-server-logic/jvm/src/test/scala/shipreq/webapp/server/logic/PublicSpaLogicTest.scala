@@ -3,7 +3,7 @@ package shipreq.webapp.server.logic
 import scalaz.{-\/, \/, \/-}
 import utest._
 import shipreq.base.util._
-import shipreq.taskman.api.Msg
+import shipreq.taskman.api.Task
 import shipreq.webapp.base.data.SecurityToken
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.user._
@@ -33,7 +33,7 @@ object PublicSpaLogicTest extends TestSuite {
 
   def assertRegistrationEmailSent(emailAddr: EmailAddr = ea)(implicit t: Tester): Unit = {
     import t._, mockInterpreters._
-    val m = taskman.assertLastSubmitted { case m: Msg.RegistrationRequested => m }
+    val m = taskman.assertLastSubmitted { case m: Task.RegistrationRequested => m }
     assertEq(m.email.value, ea.value)
     assertContains(m.verifyEmailUrl, db.prevToken().value)
   }
@@ -89,7 +89,7 @@ object PublicSpaLogicTest extends TestSuite {
 
       "email belongs to registered account -- should email with link to reset password" - {
         runSuccessfully(0, 1, user2.emailAddr)
-        val m = taskman.assertLastSubmitted { case m: Msg.ReRegistrationAttempted => m }
+        val m = taskman.assertLastSubmitted { case m: Task.ReRegistrationAttempted => m }
         assertEq(m.email.value, user2.emailAddr.value)
       }
 
@@ -123,7 +123,7 @@ object PublicSpaLogicTest extends TestSuite {
           )
         val u = db.getUser(-\/(req.username)).getOrElse(sys error "User not found")
         assertEq(r, (\/-(Result.Success), Some(u.token)))
-        taskman.assertLastSubmitted { case _: Msg.RegistrationCompleted => () }
+        taskman.assertLastSubmitted { case _: Task.RegistrationCompleted => () }
       }
 
       val t = Tester(); import t._, mockInterpreters._
@@ -175,7 +175,7 @@ object PublicSpaLogicTest extends TestSuite {
 
       def assertResetPasswordEmailSent()(implicit t: Tester): Unit = {
         import t._, mockInterpreters._
-        val m = taskman.assertLastSubmitted { case m: Msg.PasswordResetRequested => m }
+        val m = taskman.assertLastSubmitted { case m: Task.PasswordResetRequested => m }
         assertEq(m.email.value, user2.emailAddr.value)
         assertContains(m.resetPasswordUrl, db.prevToken().value)
         assertEq(db.getUser(user2.pubids.head).get.resetPassword.map(_._1), Some(db.prevToken()))

@@ -8,7 +8,7 @@ import scalaz.{-\/, Monad, \/, \/-}
 import scalaz.syntax.monad._
 import shipreq.base.util.ErrorMsg
 import shipreq.base.util.log.HasLogger
-import shipreq.taskman.api.{Msg, MsgId, TaskmanApi}
+import shipreq.taskman.api.{Task, TaskId, TaskmanApi}
 import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.user.UserValidators
 import shipreq.webapp.server.logic.dispatch.{ResponseCmd, StatusCode}
@@ -20,7 +20,7 @@ trait OpsEndpoints[F[_]] {
 
   def userStats: F[UserStats]
 
-  def taskmanMsgStatus(id: MsgId): F[Option[MsgStatusResult]]
+  def taskmanMsgStatus(id: TaskId): F[Option[MsgStatusResult]]
 
   def sendMail(emailAddr: String): F[ErrorMsg \/ SendMailResult]
 
@@ -64,8 +64,8 @@ object OpsEndpoints extends HasLogger {
     override def userStats =
       db.userStats.map(UserStats)
 
-    override def taskmanMsgStatus(id: MsgId) =
-      taskman.queryMsgStatus(id).map(_.map(status =>
+    override def taskmanMsgStatus(id: TaskId) =
+      taskman.getStatus(id).map(_.map(status =>
         MsgStatusResult(id, status.toString, status.isArchived)))
 
     override def sendMail(emailAddrStr: String) =
@@ -75,8 +75,8 @@ object OpsEndpoints extends HasLogger {
           now       ← svr.now
           subj      = "ShipReq send-mail test"
           body      = s"Token: $token\nIssued: ${now.toStringIso8601}"
-          msg       = Msg.SendDiagEmail(emailAddr.toTaskman, subj, body)
-          r         ← measureDuration(taskman.submitMsg(msg))
+          msg       = Task.SendDiagEmail(emailAddr.toTaskman, subj, body)
+          r         ← measureDuration(taskman.submit(msg))
         } yield \/-(SendMailResult(r._1, r._2, token))
       )
 
@@ -112,7 +112,7 @@ object OpsEndpoints extends HasLogger {
     def toJson: Json
   }
 
-  final case class MsgStatusResult(id: MsgId, status: String, archived: Boolean) extends HasJson {
+  final case class MsgStatusResult(id: TaskId, status: String, archived: Boolean) extends HasJson {
     def toJson: Json =
       Json.obj(
         "id"       -> id.value.asJson,
@@ -120,7 +120,7 @@ object OpsEndpoints extends HasLogger {
         "archived" -> archived.asJson)
   }
 
-  final case class SendMailResult(id: MsgId, time: Duration, token: String) extends HasJson {
+  final case class SendMailResult(id: TaskId, time: Duration, token: String) extends HasJson {
     def toJson: Json =
       Json.obj(
         "id"    -> id.value.asJson,

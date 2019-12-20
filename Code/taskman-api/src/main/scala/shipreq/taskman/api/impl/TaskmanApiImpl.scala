@@ -10,7 +10,7 @@ object TaskmanApiImpl extends HasLogger {
     new TaskmanApi[ConnectionIO] {
       private[this] val dao = new ApiDao(schema.map(_ + ".") getOrElse "")
       override def cfgPut(k: String, v: String) = dao.cfgPut(k, v)
-      override def submitMsg(m: Msg)            = dao.createMsg(m)
-      override def queryMsgStatus(id: MsgId)    = dao.queryMsgStatus(id)
+      override def submit(m: Task)              = dao.createMsg(m)
+      override def getStatus(id: TaskId)        = dao.queryMsgStatus(id)
     }
 }

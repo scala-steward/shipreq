@@ -13,15 +13,15 @@ object FailureTest extends TestSuite {
 
   private val genericError = ArticulateError("NO!")
   private val deterministicError = ArticulateError("ALWAYS NO!").tagDeterministic
-  private val ctx_det = FailureCtx(node1, worker2, md_1, deterministicError, timeNow)
-  private val ctx_nd = FailureCtx(node1, worker2, md_1, genericError, timeNow)
+  private val ctx_det = FailureCtx(node1, worker2, td_1, deterministicError, timeNow)
+  private val ctx_nd = FailureCtx(node1, worker2, td_1, genericError, timeNow)
 
   implicit class Assertions(private val self: Option[FailureResponse]) extends AnyVal {
     def assertReactWith(f: FailedJobReaction) =
       assert(self.map(_.reaction) == Some(f))
 
     def assertRetryIn(d: Duration)(implicit c: FailureCtx) =
-      assertReactWith(UpdateMsgRetry(c.node, c.worker, c.msg, d))
+      assertReactWith(UpdateTaskRetry(c.node, c.worker, c.taskDetail, d))
 
     def assertNotifySupport: Unit =
       assert(self.map(_.additionalOps).exists(_.count(_.isInstanceOf[NotifySupportWorkerFailed]) == 1))
@@ -33,7 +33,7 @@ object FailureTest extends TestSuite {
       val test = abortDeterministicErrors.partial
 
       "abort when error is deterministic" - {
-        test(c).assertReactWith(UpdateMsgAbort(c.node, c.worker, c.msg))
+        test(c).assertReactWith(UpdateTaskAbort(c.node, c.worker, c.taskDetail))
       }
 
       "notify support when error is deterministic" - {

@@ -29,17 +29,17 @@ final class Source(pollGap      : Duration,
   val updateTime: STFx[Unit] =
     StateT(_ => clock.map(n => (n, ())))
 
-  val noResults: STFx[Seq[MsgHeader]] =
+  val noResults: STFx[Seq[TaskHeader]] =
     StateT.stateT(Seq.empty)
 
   def runOp[A](op: ServerOp[A]): STFx[A] =
     StateT(s => serverOpFx(op).map((s, _)))
 
-  def poll(qs: QueueStatus): STFx[Seq[MsgHeader]] =
+  def poll(qs: QueueStatus): STFx[Seq[TaskHeader]] =
     outsidePollGap.flatMap(ok =>
       if (ok)
         for {
-          ms <- runOp(ServerOp.GetMsgsAssignNode(node, batchSize, trustPeriod.value, qs))
+          ms <- runOp(ServerOp.GetTasksAssignNode(node, batchSize, trustPeriod.value, qs))
           _  <- updateTime
         } yield ms
       else

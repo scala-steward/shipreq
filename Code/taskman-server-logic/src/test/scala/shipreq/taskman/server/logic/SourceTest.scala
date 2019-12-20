@@ -11,8 +11,8 @@ import ServerOp._
 object SourceTest extends TestSuite {
 
   implicit val node = NodeId(8)
-  val mockMsgs = List(mh_1, mh_2)
-  implicit val mockSop = MockOpTransformer1[ServerOp, Fx, GetMsgsAssignNode, List[MsgHeader]](SopTypeTags, mockMsgs)
+  val mockTasks = List(th_1, th_2)
+  implicit val mockSop = MockOpTransformer1[ServerOp, Fx, GetTasksAssignNode, List[TaskHeader]](SopTypeTags, mockTasks)
   implicit val clock = Fx(timeNow)
   implicit val tp = AssignmentTrustPeriod(Duration ofDays 3)
   val source = new Source(Duration ofSeconds 1, 20)
@@ -22,7 +22,7 @@ object SourceTest extends TestSuite {
   "poll when allowed" - {
     val (s, ms) = source.poll(None).run(timeNow.minus(1, ChronoUnit.DAYS)).unsafeRun()
     "Time should be updated"    - { s ==> timeNow }
-    "Retrieves message headers" - { ms ==> mockMsgs }
+    "Retrieves message headers" - { ms ==> mockTasks }
   }
 
   "poll before pollGap expires" - {

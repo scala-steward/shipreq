@@ -4,7 +4,7 @@ import scalaz.{Heap, State}
 
 object Manager {
 
-  final case class JobQueue(q: Heap[MsgHeader]) {
+  final case class JobQueue(q: Heap[TaskHeader]) {
     def size: Int =
       q.size
 
@@ -14,8 +14,8 @@ object Manager {
 
   type JobQueueS[A] = State[JobQueue, A]
 
-  implicit object PrioritisationOrder extends Ordering[MsgHeader] {
-    override def compare(x: MsgHeader, y: MsgHeader): Int = {
+  implicit object PrioritisationOrder extends Ordering[TaskHeader] {
+    override def compare(x: TaskHeader, y: TaskHeader): Int = {
       val a = y.priority.value - x.priority.value
       if (a != 0) a else {
         val b = x.created.compareTo(y.created)
@@ -25,16 +25,16 @@ object Manager {
     }
   }
 
-  implicit val PrioritisationOrderZ: scalaz.Order[MsgHeader] =
-    scalaz.Order.fromScalaOrdering[MsgHeader]
+  implicit val PrioritisationOrderZ: scalaz.Order[TaskHeader] =
+    scalaz.Order.fromScalaOrdering[TaskHeader]
 
   def empty: JobQueue =
-    JobQueue(Heap.Empty[MsgHeader])
+    JobQueue(Heap.Empty[TaskHeader])
 
-  def add(ms: Seq[MsgHeader]): JobQueueS[Unit] =
+  def add(ms: Seq[TaskHeader]): JobQueueS[Unit] =
     State.modify(j => JobQueue(j.q insertAll ms))
 
-  val pop: JobQueueS[Option[MsgHeader]] =
+  val pop: JobQueueS[Option[TaskHeader]] =
     State(j =>
       j.q.minimumO match {
         case None      => (j, None)

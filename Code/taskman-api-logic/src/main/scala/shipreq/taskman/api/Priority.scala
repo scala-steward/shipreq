@@ -1,7 +1,7 @@
 package shipreq.taskman.api
 
 import japgolly.univeq.UnivEq
-import Msg._
+import Task._
 
 final case class Priority(value: Short) extends AnyVal {
   def inc = Priority((value.toInt + 1).toShort)
@@ -16,7 +16,7 @@ object Priority {
   @inline def High        = Priority(80)
   @inline def UserWaiting = Priority(100)
 
-  val of: Msg => Priority = {
+  val of: Task => Priority = {
 
     case _: RegistrationRequested
        | _: ReRegistrationAttempted
@@ -26,7 +26,7 @@ object Priority {
     case _: WebappErrorOccurred
               => High
 
-    case _: DummyMsg
+    case _: DummyTask
        | _: SendDiagEmail
               => Medium
 

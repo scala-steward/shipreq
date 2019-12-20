@@ -2,18 +2,18 @@ package shipreq.taskman.server.logic.business
 
 import scalaz.syntax.catchable._
 import shipreq.base.util.FxModule._
-import shipreq.taskman.api.Msg
+import shipreq.taskman.api.Task
 import shipreq.taskman.server.logic.TestHelpers._
-import shipreq.taskman.server.logic.{MsgDetail, MockBops}
+import shipreq.taskman.server.logic.{TaskDetail, MockBops}
 import utest._
 import BusinessOp._
 import MailingList.API._
 
 object BusinessLogicTest extends TestSuite {
 
-  private def testM(bop: MockBops, msg: Msg) = {
+  private def testM(bop: MockBops, task: Task) = {
     val bl = new BusinessLogic(mockEmails(false), null, null)(bop)
-    val fx = bl(MsgDetail(mh_1, msg, 0))
+    val fx = bl(TaskDetail(th_1, task, 0))
     (bop, fx.attempt.unsafeRun())
   }
 
@@ -21,7 +21,7 @@ object BusinessLogicTest extends TestSuite {
 
   override def tests = Tests {
 
-    "Msg.LandingPageHit" - {
+    "Task.LandingPageHit" - {
 
       def test(bop: MockBops) = testM(bop, sampleLP)
 
@@ -51,8 +51,8 @@ object BusinessLogicTest extends TestSuite {
       }
     }
 
-    "Msg.RegistrationCompleted" - {
-      def test(bop: MockBops) = testM(bop, Msg.RegistrationCompleted(sampleUserId))
+    "Task.RegistrationCompleted" - {
+      def test(bop: MockBops) = testM(bop, Task.RegistrationCompleted(sampleUserId))
 
       "update ML" - {
         val bop = new MockBops

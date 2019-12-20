@@ -5,7 +5,7 @@ import utest._
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.db.TestDb
 import shipreq.base.util.FxModule._
-import shipreq.taskman.api.{EmailAddr, Msg, MsgId, MsgStatus}
+import shipreq.taskman.api.{EmailAddr, Task, TaskId, TaskStatus}
 
 object ApiOpTest extends TestSuite with ApiImplTestHelpers {
 
@@ -15,7 +15,7 @@ object ApiOpTest extends TestSuite with ApiImplTestHelpers {
       "Submits a task" - {
         val r: Int = TestDb() { xa =>
           for {
-            _ <- taskmanApi(xa).submitMsg(Msg.RegistrationRequested(EmailAddr("a@b.com"), "http://x"))
+            _ <- taskmanApi(xa).submit(Task.RegistrationRequested(EmailAddr("a@b.com"), "http://x"))
             c <- Query0[Int]("select count(1) from msgq").unique.transact(xa)
           } yield c
         }.unsafeRun()
@@ -26,18 +26,18 @@ object ApiOpTest extends TestSuite with ApiImplTestHelpers {
     "Query msg status" - {
 
       "When msg doesn't exist" - {
-        val r = run(_.queryMsgStatus(MsgId(123456)))
+        val r = run(_.getStatus(TaskId(123456)))
         assertEq(r, None)
       }
 
       "On new msg" - {
         val r = run(api =>
           for {
-            id <- api.submitMsg(Msg.RegistrationRequested(EmailAddr("a@b.com"), "http://x"))
-            s <- api.queryMsgStatus(id)
+            id <- api.submit(Task.RegistrationRequested(EmailAddr("a@b.com"), "http://x"))
+            s <- api.getStatus(id)
           } yield s
         )
-        assertEq(r, Some(MsgStatus.Unassigned))
+        assertEq(r, Some(TaskStatus.Unassigned))
       }
     }
 

@@ -6,8 +6,8 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
-import shipreq.taskman.api.Msg.DummyMsg
-import shipreq.taskman.api.MsgId
+import shipreq.taskman.api.Task.DummyTask
+import shipreq.taskman.api.TaskId
 import shipreq.taskman.server.ServerImplTestHelpers
 import shipreq.taskman.server.ServerOpFx.{ArchiveIntent, FailAndAbort, Succeeded}
 import shipreq.taskman.server.app.Server
@@ -22,7 +22,7 @@ object AkkaTest extends TestSuite with HasLogger {
 
       logger.info("Akka integration test starting...")
 
-      def lookupHistory(id: MsgId): Option[ArchiveIntent] =
+      def lookupHistory(id: TaskId): Option[ArchiveIntent] =
         sql"select result from msg_history where id=${id.value}".query[String].option.transact(xa).unsafeRun().map(_.head).map {
           case c if c == Succeeded.resultFlag    => Succeeded
           case c if c == FailAndAbort.resultFlag => FailAndAbort
@@ -47,9 +47,9 @@ object AkkaTest extends TestSuite with HasLogger {
         })
 
         // submit jobs
-        val dummy1 = runApi(_.submitMsg(DummyMsg("#1: Pass immediately")))
-        val dummy2 = runApi(_.submitMsg(DummyMsg("#2: Fail immediately", retryCount = 1, failureMsg = Some("Deliberate fail."))))
-        val dummy3 = runApi(_.submitMsg(DummyMsg("#3: Async pass", async = true)))
+        val dummy1 = runApi(_.submit(DummyTask("#1: Pass immediately")))
+        val dummy2 = runApi(_.submit(DummyTask("#2: Fail immediately", retryCount = 1, failureMsg = Some("Deliberate fail."))))
+        val dummy3 = runApi(_.submit(DummyTask("#3: Async pass", async = true)))
         logger.debug(s"Dummy job ids: ${dummy1.value}, ${dummy2.value}, ${dummy3.value}")
 
         // wait for results

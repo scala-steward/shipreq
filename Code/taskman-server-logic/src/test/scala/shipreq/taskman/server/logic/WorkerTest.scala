@@ -40,55 +40,55 @@ object WorkerTest extends TestSuite {
 
   override def tests = Tests {
 
-    "Worker processing msgs synchronously" - {
+    "Worker processing tasks synchronously" - {
 
-      def test(sopEndo: Endo[MockSops], fp: FailurePolicy, mp: MsgProcessor[Need]) = {
+      def test(sopEndo: Endo[MockSops], fp: FailurePolicy, mp: Processor[Need]) = {
         val mockSop = sopEndo(new MockSops)
         val w = new Worker(mp)(nid, wid, mockSop, tp, clockReal, fp)
-        val r: R = w.process(mh_1).unsafeRun()
+        val r: R = w.process(th_1).unsafeRun()
         (r, mockSop)
       }
 
       "Work completes" - {
         val (r,s) = test(assignWorkerAllow, fpRetry, mpNop)
-        "Result"                - assertResultS[Completed](r)
-        "Marks msg as complete" - s.assertOpTypes2[GetMsgAssignWorker, UpdateMsgSuccess]
+        "Result"                 - assertResultS[Completed](r)
+        "Marks task as complete" - s.assertOpTypes2[GetTaskAssignWorker, UpdateTaskSuccess]
       }
 
       "Worker crashes (retry)" - {
         val (r, s) = test(assignWorkerAllow, fpRetry, mpCrash)
         "Result"          - assertResultS[WorkerFailed](r)
-        "Schedules retry" - s.assertOpTypes2[GetMsgAssignWorker, UpdateMsgAbort]
+        "Schedules retry" - s.assertOpTypes2[GetTaskAssignWorker, UpdateTaskAbort]
       }
 
       "Worker crashes (abort)" - {
         val (r, s) = test(assignWorkerAllow, fpAbort, mpCrash)
         "Result"     - assertResultS[WorkerFailed](r)
-        "Aborts job" - s.assertOpTypes2[GetMsgAssignWorker, UpdateMsgRetry]
+        "Aborts job" - s.assertOpTypes2[GetTaskAssignWorker, UpdateTaskRetry]
       }
 
       "Worker crashes (retry and notify support)" - {
         val (r, s) = test(assignWorkerAllow, fpRetrySupport, mpCrash)
         "Result"                       - assertResultS[WorkerFailed](r)
-        "Fails job & notifies support" - s.assertOpTypes3[GetMsgAssignWorker, NotifySupportWorkerFailed, UpdateMsgAbort]
+        "Fails job & notifies support" - s.assertOpTypes3[GetTaskAssignWorker, NotifySupportWorkerFailed, UpdateTaskAbort]
       }
 
       "Taskman crashes pre-work" - {
         val (r, s) = test(assignWorkerCrash, fpRetry, mpCrash)
         "Result"           - assertResultS[TaskmanFailed](r)
-        "Notifies support" - s.assertOpTypes2[GetMsgAssignWorker, NotifySupportTaskmanError]
+        "Notifies support" - s.assertOpTypes2[GetTaskAssignWorker, NotifySupportTaskmanError]
       }
 
       "Taskman crashes post-work" - {
         val (r, s) = test(crashOnUpdateMsgSuccess compose assignWorkerAllow, fpRetry, mpNop)
         "Result"           - assertResultS[TaskmanFailed](r)
-        "Notifies support" - s.assertOpTypes3[GetMsgAssignWorker, UpdateMsgSuccess, NotifySupportTaskmanError]
+        "Notifies support" - s.assertOpTypes3[GetTaskAssignWorker, UpdateTaskSuccess, NotifySupportTaskmanError]
       }
     }
 
     // -------------------------------------------------------------------------------------------------------------------
 
-    "Worker processing msgs asynchronously" - {
+    "Worker processing tasks asynchronously" - {
 
       def blah(fx     : Fx[Unit],
                clock  : Fx[Instant] = clockReal,
@@ -96,14 +96,14 @@ object WorkerTest extends TestSuite {
         val scheduler = new AsyncScheduler[Need] { def apply[A](io: Fx[A]) = Fx(Need(io.unsafeRun())) }
         val prComplete: ProcessorResult[Need] = ProcessorResult.Complete
         val schedule = ProcessorResult.Schedule(scheduler, fx.map(_ => prComplete))
-        val mp: MsgProcessor[Need] = _ => Fx(schedule)
+        val mp: Processor[Need] = _ => Fx(schedule)
         def run = {
           val mockSop = sopEndo(new MockSops)
           val w = new Worker(mp)(nid, wid, mockSop, tp, clock, fpRetry)
-          val r: R = w.process(mh_1).unsafeRun()
+          val r: R = w.process(th_1).unsafeRun()
           (r, mockSop)
         }
-        def runFuture(r1: R) = r1.asInstanceOf[Scheduled[Need]].f.value
+        def runFuture(r1: R) = r1.asInstanceOf[Scheduled[Need]].fResult.value
         (run, run map1 runFuture)
       }
 
@@ -111,42 +111,42 @@ object WorkerTest extends TestSuite {
 
       "Work completes" - {
         val ((r1, s1), (r2, s2)) = blah(Fx.unit)
-        "Immediate result"             - assertResultA(r1)
-        "Assigns msg before future"    - s1.assertOpTypes1[GetMsgAssignWorker]
-        "Future result"                - assertResultS[Completed](r2)
-        "Future marks msg as complete" - s2.assertOpTypes2[GetMsgAssignWorker, UpdateMsgSuccess]
+        "Immediate result"              - assertResultA(r1)
+        "Assigns task before future"    - s1.assertOpTypes1[GetTaskAssignWorker]
+        "Future result"                 - assertResultS[Completed](r2)
+        "Future marks task as complete" - s2.assertOpTypes2[GetTaskAssignWorker, UpdateTaskSuccess]
       }
 
       "Future crashes" - {
         val ((r1, s1), (r2, s2)) = blah(Fx(???))
-        "Immediate result"           - assertResultA(r1)
-        "Assigns msg before future"  - s1.assertOpTypes1[GetMsgAssignWorker]
-        "Future result"              - assertResultS[WorkerFailed](r2)
-        "Future marks msg as failed" - s2.assertOpTypes2[GetMsgAssignWorker, UpdateMsgAbort]
+        "Immediate result"            - assertResultA(r1)
+        "Assigns task before future"  - s1.assertOpTypes1[GetTaskAssignWorker]
+        "Future result"               - assertResultS[WorkerFailed](r2)
+        "Future marks task as failed" - s2.assertOpTypes2[GetTaskAssignWorker, UpdateTaskAbort]
       }
 
       "Reassigns and completes" - {
         val ((r1, s1), (r2, s2)) = blah(Fx.unit, clock = longClock)
-        "Immediate result"             - assertResultA(r1)
-        "Assigns msg before future"    - s1.assertOpTypes1[GetMsgAssignWorker]
-        "Future result"                - assertResultS[Completed](r2)
-        "Future marks msg as complete" - s2.assertOpTypes3[GetMsgAssignWorker, ReassignWorker, UpdateMsgSuccess]
+        "Immediate result"              - assertResultA(r1)
+        "Assigns task before future"    - s1.assertOpTypes1[GetTaskAssignWorker]
+        "Future result"                 - assertResultS[Completed](r2)
+        "Future marks task as complete" - s2.assertOpTypes3[GetTaskAssignWorker, ReassignWorker, UpdateTaskSuccess]
       }
 
       "Future fails to reassign worker" - {
         val ((r1, s1), (r2, s2)) = blah(Fx.unit, clock = longClock, sopEndo = assignWorkerAllow compose reassignWorkerDeny)
         "Immediate result"                             - assertResultA(r1)
-        "Assigns msg before future"                    - s1.assertOpTypes1[GetMsgAssignWorker]
+        "Assigns task before future"                    - s1.assertOpTypes1[GetTaskAssignWorker]
         "Future result"                                - assertResultS[CouldntReassign](r2)
-        "Future does nothing after reassignment fails" - s2.assertOpTypes2[GetMsgAssignWorker, ReassignWorker]
+        "Future does nothing after reassignment fails" - s2.assertOpTypes2[GetTaskAssignWorker, ReassignWorker]
       }
 
       "Future encounters taskman error" - {
         val ((r1, s1), (r2, s2)) = blah(Fx.unit, clock = longClock, sopEndo = assignWorkerAllow compose reassignWorkerCrash)
-        "Immediate result"          - assertResultA(r1)
-        "Assigns msg before future" - s1.assertOpTypes1[GetMsgAssignWorker]
-        "Future result"             - assertResultS[TaskmanFailed](r2)
-        "Future notifies support"   - s2.assertOpTypes3[GetMsgAssignWorker, ReassignWorker, NotifySupportTaskmanError]
+        "Immediate result"           - assertResultA(r1)
+        "Assigns task before future" - s1.assertOpTypes1[GetTaskAssignWorker]
+        "Future result"              - assertResultS[TaskmanFailed](r2)
+        "Future notifies support"    - s2.assertOpTypes3[GetTaskAssignWorker, ReassignWorker, NotifySupportTaskmanError]
       }
     }
 

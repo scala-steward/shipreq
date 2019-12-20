@@ -6,9 +6,9 @@ import scalaz.old.NonEmptyList
 import shipreq.base.util.ScalaExt.StringBuilderExt
 import shipreq.base.util.{ArticulateError, Util}
 import shipreq.taskman.api.EmailAddr
-import shipreq.taskman.api.Msg.LandingPageHit
+import shipreq.taskman.api.Task.LandingPageHit
 import shipreq.taskman.server.logic.business.Email._
-import shipreq.taskman.server.logic.{MsgDetail, MsgHeader}
+import shipreq.taskman.server.logic.{TaskDetail, TaskHeader}
 
 object Email {
 
@@ -70,8 +70,8 @@ final class Emails(ep: EnvelopeProps, tv: TokenValues) {
     BusinessOp.SendEmail(e, c)
   }
 
-  def diagnosticEmail(subject: String, body: String, msg: MsgDetail) =
-    Content(s"[DIAG] $subject", s"$body\n\n${"=" * 40}\nMsg header: ${msg.hdr}\nFailure count: ${msg.failureCount}")
+  def diagnosticEmail(subject: String, body: String, task: TaskDetail) =
+    Content(s"[DIAG] $subject", s"$body\n\n${"=" * 40}\nTask header: ${task.hdr}\nFailure count: ${task.failureCount}")
 
   // ---------------------------------------------------------------------------
 
@@ -90,34 +90,34 @@ final class Emails(ep: EnvelopeProps, tv: TokenValues) {
     s"TIME: $utc\n      $sydney"
   }
 
-  def workerFailureEmail(t: Instant, m: MsgDetail, e: ArticulateError): Content =
+  def workerFailureEmail(t: Instant, td: TaskDetail, e: ArticulateError): Content =
     Content(
-      s"Taskman worker failed on msg (${m.id.value}) ${m.msg.msgTypeStr}",
+      s"Taskman worker failed on task (${td.id.value}) ${td.task.taskTypeStr}",
       s"""
          |${timeFieldsForSupport(t)}
          |
-         |Msg: $m
+         |Task: $td
          |
          |${e.show}
        """.stripMargin.trim)
 
-  def taskmanErrorEmail(t: Instant, e: ArticulateError, m: Option[MsgDetail]): Content =
+  def taskmanErrorEmail(t: Instant, e: ArticulateError, m: Option[TaskDetail]): Content =
     Content(
       "Taskman infrastructure failed",
       s"""
          |${timeFieldsForSupport(t)}
          |
-         |Msg: $m
+         |Task: $m
          |
          |${e.show}
        """.stripMargin.trim)
 
   // ---------------------------------------------------------------------------
 
-  def landingPageEmail(m: MsgHeader, l: LandingPageHit) = {
+  def landingPageEmail(m: TaskHeader, l: LandingPageHit) = {
     val body =
       Util.quickSB(_.mkStringF("","\n","")(
-        _.kv("MsgId", m.id.value)
+        _.kv("TaskId", m.id.value)
         ,_.kv("Contact time", m.created)
         ,_.kv("Name", l.name)
         ,_.kv("Email", l.email.value)

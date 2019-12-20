@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.{HasLogger, MdcValues, TaskmanLogFields}
 import shipreq.taskman.api.Priority
-import shipreq.taskman.server.logic.MsgHeader
+import shipreq.taskman.server.logic.TaskHeader
 import shipreq.taskman.server.TaskmanCtx
 
 /*
@@ -20,7 +20,7 @@ import shipreq.taskman.server.TaskmanCtx
         v
   [------------------------------------ ManagerActor ------------------------------------]
                      |   ^                          |   ^                            |
-  RequestForWork (2) |   |                          |   |              MsgHeader (6) |
+  RequestForWork (2) |   |                          |   |             TaskHeader (6) |
                      |   | (3) IncomingWork         |   |                            |
                      v   |                          |   |                            |
       [---------- SourceActor ----------]           |   |                            |
@@ -39,7 +39,7 @@ object ActorMsg {
 
   final case class RequestForWork(queueStatus: Option[(Priority, Int)])
 
-  final case class IncomingWork(work: Seq[MsgHeader])
+  final case class IncomingWork(work: Seq[TaskHeader])
 
   case object WorkAvailable
 
@@ -75,11 +75,11 @@ final class SourceActor(ctx: TaskmanCtx) extends Actor with HasLogger {
 
   override def receive = mdc.impurePF {
     case RequestForWork(qs) =>
-      val (s2, msgs) = source.poll(qs).run(state).unsafeRun()
-      logger.debug(s"Looking for work. Found ${msgs.size} jobs")
+      val (s2, tasks) = source.poll(qs).run(state).unsafeRun()
+      logger.debug(s"Looking for work. Found ${tasks.size} jobs")
       state = s2
-      if (msgs.nonEmpty)
-        sender() ! IncomingWork(msgs)
+      if (tasks.nonEmpty)
+        sender() ! IncomingWork(tasks)
       touchHealthFile()
   }
 }
@@ -142,7 +142,7 @@ final class WorkerActor(ctx: TaskmanCtx, manager: ActorRef) extends Actor with H
 
   private implicit val id = WorkerActor.nextId()
   private val mdc         = ActorUtil.mdc(s"worker-${id.value}")
-  private val worker      = new Worker(ctx.msgProcessor)
+  private val worker      = new Worker(ctx.businessLogic)
 
   private def requestWork(): Unit =
     manager ! RequestForWork
@@ -152,7 +152,7 @@ final class WorkerActor(ctx: TaskmanCtx, manager: ActorRef) extends Actor with H
     case WorkAvailable =>
       requestWork()
 
-    case m: MsgHeader =>
+    case m: TaskHeader =>
       TaskmanLogFields.work.taskId.mdc(m.id.value.toString).impure {
         worker.process(m).unsafeRun()
       }

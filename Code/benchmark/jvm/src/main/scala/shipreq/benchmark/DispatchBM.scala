@@ -13,7 +13,7 @@ import scalaz.std.function.function0Instance
 import scalaz.syntax.monad._
 import scalaz.{Monad, Name, Need, \/, \/-}
 import shipreq.base.util._
-import shipreq.taskman.api.MsgId
+import shipreq.taskman.api.TaskId
 import shipreq.webapp.base.Urls
 import shipreq.webapp.base.data.{ProjectId, SecurityToken}
 import shipreq.webapp.base.user._
@@ -237,7 +237,7 @@ object DispatchBM {
       TraceLogic.off
 
     implicit object publicSpa extends PublicSpaLogic[F] {
-      override def apiRegister1(emailAddr: String) = F.pure(\/-(MsgId(1000)))
+      override def apiRegister1(emailAddr: String) = F.pure(\/-(TaskId(1000)))
       override val ajaxLandingPage    = _ => ???
       override val ajaxLogin          = _ => ???
       override val ajaxRegister1      = _ => ???
@@ -253,7 +253,7 @@ object DispatchBM {
     implicit object ops extends OpsEndpoints[F] {
       override def dbStats                           = F.pure(null)
       override def userStats                         = F.pure(null)
-      override def taskmanMsgStatus(id: MsgId)       = F.pure(null)
+      override def taskmanMsgStatus(id: TaskId)      = F.pure(null)
       override def sendMail(e: String)               = F.pure(null)
       override def getProjectEvents(pid: ProjectId)  = F.pure(null)
     }

@@ -6,10 +6,10 @@ import shipreq.taskman.api._
 private[api] class ApiDao(prefix: String) {
   import DoobieMeta._
 
-  private[impl] val createMsgQuery: Query[(Msg, Priority), MsgId] =
+  private[impl] val createMsgQuery: Query[(Task, Priority), TaskId] =
     Query(s"select ${prefix}create_msg_v01(?::INT2, ?::JSONB, ?::INT2)")
 
-  def createMsg(m: Msg): ConnectionIO[MsgId] =
+  def createMsg(m: Task): ConnectionIO[TaskId] =
     createMsgQuery.toQuery0((m, Priority.of(m))).unique
 
   private[impl] val cfgPutQuery: Query[(String, String), Unit] =
@@ -18,9 +18,9 @@ private[api] class ApiDao(prefix: String) {
   def cfgPut(k: String, v: String): ConnectionIO[Unit] =
     cfgPutQuery.toQuery0((k, v)).unique
 
-  private[impl] val queryMsgStatusQuery: Query[MsgId, Option[MsgStatus]] =
+  private[impl] val queryMsgStatusQuery: Query[TaskId, Option[TaskStatus]] =
     Query(s"select ${prefix}query_msg_status_v01(?)")
 
-  def queryMsgStatus(id: MsgId): ConnectionIO[Option[MsgStatus]] =
+  def queryMsgStatus(id: TaskId): ConnectionIO[Option[TaskStatus]] =
     queryMsgStatusQuery.toQuery0(id).unique
 }

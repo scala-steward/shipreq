@@ -479,7 +479,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
   // Ops & Diagnostics
 
   object Ops {
-    import shipreq.taskman.api.MsgId
+    import shipreq.taskman.api.TaskId
 
     private def response(cmd: ResponseCmd): Response =
       Response(cmd, Cookie.Update.empty)
@@ -537,7 +537,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
     private val task: Request ?=> F[RealRes] =
       endpoint(Post, Url.Relative("task"))(req =>
         parseParams(req.param("id") flatMap ParseLong.unapply)(id =>
-          ops.taskmanMsgStatus(MsgId(id)).map {
+          ops.taskmanMsgStatus(TaskId(id)).map {
             case Some(r) => jsonResponse(r)
             case None    => response(ResponseCmd.StatusOnly.NotFound)
           }

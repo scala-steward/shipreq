@@ -10,48 +10,48 @@ import shipreq.taskman.api._
 
 object DoobieMeta {
 
-  private val msgTypes = AdtMacros.adtIso[MsgType, Short] {
-    case MsgType.DummyMsg                 =>   1
-    case MsgType.SendDiagEmail            =>   2
-    case MsgType.RegistrationRequested    => 100
-    case MsgType.RegistrationCompleted    => 101
-    case MsgType.ReRegistrationAttempted  => 102
-    case MsgType.PasswordResetRequested   => 103
-    case MsgType.UserUpdated              => 104
-    case MsgType.LandingPageHit           => 200
-    case MsgType.SyncToMailingList        => 300
-    case MsgType.WebappErrorOccurred      => 500
+  private val msgTypes = AdtMacros.adtIso[TaskType, Short] {
+    case TaskType.DummyTask                =>   1
+    case TaskType.SendDiagEmail            =>   2
+    case TaskType.RegistrationRequested    => 100
+    case TaskType.RegistrationCompleted    => 101
+    case TaskType.ReRegistrationAttempted  => 102
+    case TaskType.PasswordResetRequested   => 103
+    case TaskType.UserUpdated              => 104
+    case TaskType.LandingPageHit           => 200
+    case TaskType.SyncToMailingList        => 300
+    case TaskType.WebappErrorOccurred      => 500
   }
 
-  implicit val doobieMetaMsgId: Meta[MsgId] =
-    meta1(MsgId.apply)(_.value)
+  implicit val doobieMetaTaskId: Meta[TaskId] =
+    meta1(TaskId.apply)(_.value)
 
-  implicit val doobieMetaMsgType: Meta[MsgType] =
+  implicit val doobieMetaTaskType: Meta[TaskType] =
     Meta[Short].xmap(msgTypes._2, msgTypes._1)
 
   implicit val doobieMetaPriority: Meta[Priority] =
     meta1(Priority.apply)(_.value)
 
-  implicit val doobieMetaMsgStatus: Meta[MsgStatus] =
+  implicit val doobieMetaTaskStatus: Meta[TaskStatus] =
     Meta[String].readOnly {
-      case "unassigned"    => MsgStatus.Unassigned
-      case "node_assigned" => MsgStatus.NodeAssigned
-      case "working"       => MsgStatus.Working
-      case "complete"      => MsgStatus.Complete
-      case "aborted"       => MsgStatus.Aborted
+      case "unassigned"    => TaskStatus.Unassigned
+      case "node_assigned" => TaskStatus.NodeAssigned
+      case "working"       => TaskStatus.Working
+      case "complete"      => TaskStatus.Complete
+      case "aborted"       => TaskStatus.Aborted
     }
 
-  implicit val doobieCompositeMsg: Composite[Msg] = {
-    type T = (MsgType, Json)
+  implicit val doobieCompositeTask: Composite[Task] = {
+    type T = (TaskType, Json)
 
-    val f: T => Msg =
-      t => MsgJson.dataDecoder(t._1).decodeJson(t._2) match {
+    val f: T => Task =
+      t => TaskJson.dataDecoder(t._1).decodeJson(t._2) match {
              case Right(msg) => msg
              case Left(e)    => throw new UnsupportedOperationException(JsonUtil.decodingFailureMsg(e))
            }
 
-    val g: Msg => T =
-      m => (m.msgType, MsgJson.encodeData(m))
+    val g: Task => T =
+      m => (m.taskType, TaskJson.encodeData(m))
 
     Composite[T].xmap(f, g)
   }

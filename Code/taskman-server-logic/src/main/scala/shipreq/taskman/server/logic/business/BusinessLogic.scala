@@ -6,17 +6,17 @@ import scalaz.syntax.bind._
 import shipreq.base.util.ArticulateError
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
-import shipreq.taskman.api.Msg._
+import shipreq.taskman.api.Task._
 import shipreq.taskman.api.{EmailAddr, UserId}
-import shipreq.taskman.server.logic.{Deliberate, MsgDetail, MsgHeader, Worker}
+import shipreq.taskman.server.logic.{Deliberate, TaskDetail, TaskHeader, Worker}
 import BusinessOp._
 
 final class BusinessLogic[F[_]](emails        : Emails,
                                 emailScheduler: Worker.AsyncScheduler[F],
                                 mailingListId : MailingList.ListId)
-                               (implicit businessOpFx: BusinessOp ~> Fx) extends Worker.MsgProcessor[F] with HasLogger {
+                               (implicit businessOpFx: BusinessOp ~> Fx) extends Worker.Processor[F] with HasLogger {
 
-  type MO = Worker.MsgProcessorOut[F]
+  type MO = Worker.ProcessorOut[F]
 
   @inline private def complete(io: Fx[_]): MO =
     io.map(_ => Worker.ProcessorResult.Complete)
@@ -33,7 +33,7 @@ final class BusinessLogic[F[_]](emails        : Emails,
   @inline private def run[A](a: Support.API[A])    : Fx[A] = businessOpFx(SupportOp(a))
   @inline private def run[A](a: BusinessOp[A])     : Fx[A] = businessOpFx(a)
 
-  override def apply(md: MsgDetail): MO = md.msg match {
+  override def apply(md: TaskDetail): MO = md.task match {
 
     case RegistrationRequested(addr, url) =>
       emailUser(addr, emails.linkToCompleteRegistration(url))
@@ -68,7 +68,7 @@ final class BusinessLogic[F[_]](emails        : Emails,
         complete(run(op))
       }
 
-    case d: DummyMsg =>
+    case d: DummyTask =>
       dummy(md, d)
   }
 
@@ -107,7 +107,7 @@ final class BusinessLogic[F[_]](emails        : Emails,
 
   object LandingPage {
 
-    def apply(m: MsgHeader, l: LandingPageHit): MO = {
+    def apply(m: TaskHeader, l: LandingPageHit): MO = {
       val c = emails.landingPageEmail(m, l)
       val fx = updateMailingListIfNeeded(l.email, l.name, l.newsletter) >> createSupportTicket(m, l, c)
       emails.archive(c) match {
@@ -139,7 +139,7 @@ final class BusinessLogic[F[_]](emails        : Emails,
       }
     }
 
-    def createSupportTicket(m: MsgHeader, l: LandingPageHit, c: Email.Content): Fx[Support.TicketId] = {
+    def createSupportTicket(m: TaskHeader, l: LandingPageHit, c: Email.Content): Fx[Support.TicketId] = {
       import Support._
       val from = s"${l.name} <${l.email.value}>"
       val p = if (l.msg.isDefined) Priority.Medium else Priority.Low
@@ -147,15 +147,15 @@ final class BusinessLogic[F[_]](emails        : Emails,
     }
   }
 
-  private def dummy(md: MsgDetail, msg: DummyMsg): MO = {
-    import msg._
+  private def dummy(td: TaskDetail, task: DummyTask): MO = {
+    import task._
 
     val fx = Fx[Unit] {
       if (processingTimeMs > 0)
         Thread.sleep(processingTimeMs)
 
-      if (md.failureCount < retryCount)
-        throw ArticulateError(s"Failure count (${md.failureCount}) < desired ($retryCount).").tag(Deliberate)
+      if (td.failureCount < retryCount)
+        throw ArticulateError(s"Failure count (${td.failureCount}) < desired ($retryCount).").tag(Deliberate)
 
       failureMsg match {
         case Some(e) => throw ArticulateError(e).tag(Deliberate, ArticulateError.Deterministic)

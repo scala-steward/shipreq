@@ -7,7 +7,7 @@ import scalaz.{-\/, Catchable, Monad, Name, NaturalTransformation, \/, \/-}
 import shipreq.base.ops.Trace
 import shipreq.base.test.SyncEffect
 import shipreq.base.util._
-import shipreq.taskman.api.{Msg, MsgId, MsgStatus, TaskmanApi}
+import shipreq.taskman.api.{Task, TaskId, TaskStatus, TaskmanApi}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.test.WebappTestUtil._
@@ -347,7 +347,7 @@ final class MockServer[F[_]]()(implicit F: Monad[F], se: SyncEffect[F]) extends 
 
 final class MockTaskman extends TaskmanApi[Name] {
   private var prevMsgId = 0L
-  var msgs = Vector.empty[(MsgId, Msg)]
+  var msgs = Vector.empty[(TaskId, Task)]
 
   def reset(): Unit = {
     prevMsgId = 0L
@@ -358,14 +358,14 @@ final class MockTaskman extends TaskmanApi[Name] {
     ()
   }
 
-  override def submitMsg(m: Msg) = Name[MsgId] {
+  override def submit(m: Task) = Name[TaskId] {
     prevMsgId += 1
-    val id = MsgId(prevMsgId)
+    val id = TaskId(prevMsgId)
     msgs :+= ((id, m))
     id
   }
 
-  override def queryMsgStatus(id: MsgId) = Name[Option[MsgStatus]] {
+  override def getStatus(id: TaskId) = Name[Option[TaskStatus]] {
     None
   }
 
@@ -376,7 +376,7 @@ final class MockTaskman extends TaskmanApi[Name] {
   def assertSubmits[A](expect: Int)(a: => A): A =
     assertDifference("taskman.assertSubmits", msgs.length)(expect)(a)
 
-  def assertLastSubmitted[A](pf: PartialFunction[Msg, A]): A =
+  def assertLastSubmitted[A](pf: PartialFunction[Task, A]): A =
     if (msgs.isEmpty)
       fail("No tasks submitted.")
     else

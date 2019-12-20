@@ -9,7 +9,7 @@ import scalaz.syntax.monad._
 import scalaz.syntax.std.option._
 import shipreq.base.util._
 import shipreq.base.util.log.{HasLogger, MdcUtil, WebappLogFields}
-import shipreq.taskman.api.{Msg, MsgId, TaskmanApi}
+import shipreq.taskman.api.{Task, TaskId, TaskmanApi}
 import shipreq.webapp.base.Urls
 import shipreq.webapp.base.data.SecurityToken
 import shipreq.webapp.base.user._
@@ -30,7 +30,7 @@ trait PublicSpaLogic[F[_]] {
   /** Ignores publicRegistration setting.
     * Lacks security protection.
     */
-  def apiRegister1(emailAddr: String): F[ErrorMsg \/ MsgId]
+  def apiRegister1(emailAddr: String): F[ErrorMsg \/ TaskId]
 }
 
 object PublicSpaLogic extends HasLogger {
@@ -77,12 +77,12 @@ object PublicSpaLogic extends HasLogger {
 
       override val ajaxLandingPage =
         _.untyped.validate.onValid { req =>
-          val msg = Msg.LandingPageHit(
+          val msg = Task.LandingPageHit(
             name       = req.name.value,
             email      = req.email.toTaskman,
             msg        = req.msg,
             newsletter = req.newsletter)
-          taskman.submitMsg(msg).map(_ => rightUnit)
+          taskman.submit(msg).map(_ => rightUnit)
         }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -126,7 +126,7 @@ object PublicSpaLogic extends HasLogger {
         private val getTokenStatus: SecurityToken => F[SecurityToken.Status] =
           tokenStatusFn(t => runDB(db.getUserRegistrationTokenIssueDate(t)), config.security.registrationTokenLifespan)
 
-        def preRegistrationMsg(email: EmailAddr, u: DB.UserRegistration, now: Instant): D[(Msg, Security.Result)] =
+        def preRegistrationMsg(email: EmailAddr, u: DB.UserRegistration, now: Instant): D[(Task, Security.Result)] =
           u match {
             case _: DB.UserRegistration.Complete =>
               D pure onAlreadyRegistered(email)
@@ -137,35 +137,35 @@ object PublicSpaLogic extends HasLogger {
                 D pure onTokenReusable(email, r.token)
           }
 
-        private def onTokenReusable(email: EmailAddr, token: SecurityToken): (Msg, Security.Result) =
+        private def onTokenReusable(email: EmailAddr, token: SecurityToken): (Task, Security.Result) =
           registrationRequestedTask(email, token)
 
-        private def onTokenExpired(email: EmailAddr, id: UserId): D[(Msg, Security.Result)] =
+        private def onTokenExpired(email: EmailAddr, id: UserId): D[(Task, Security.Result)] =
           db.updateUserRegistrationToken(id).map(registrationRequestedTask(email, _))
 
-        private def onAlreadyRegistered(email: EmailAddr): (Msg, Security.Result) =
-          (Msg.ReRegistrationAttempted(email.toTaskman), Security.Result.Failure)
+        private def onAlreadyRegistered(email: EmailAddr): (Task, Security.Result) =
+          (Task.ReRegistrationAttempted(email.toTaskman), Security.Result.Failure)
 
-        private def registrationRequestedTask(email: EmailAddr, token: SecurityToken): (Msg, Security.Result) =
-          (Msg.RegistrationRequested(email.toTaskman, absUrlRegister2(token).absoluteUrl), Security.Result.Success)
+        private def registrationRequestedTask(email: EmailAddr, token: SecurityToken): (Task, Security.Result) =
+          (Task.RegistrationRequested(email.toTaskman, absUrlRegister2(token).absoluteUrl), Security.Result.Success)
 
-        def register1(emailAddrStr: String): F[ErrorMsg \/ MsgId] = {
-          def registerInDb(emailAddr: EmailAddr, now: Instant): D[(Msg, Security.Result)] =
+        def register1(emailAddrStr: String): F[ErrorMsg \/ TaskId] = {
+          def registerInDb(emailAddr: EmailAddr, now: Instant): D[(Task, Security.Result)] =
             db.inDbTransaction(
               db.getUserRegistration(emailAddr).flatMap {
                 case None    => onNewUser(emailAddr)
                 case Some(u) => preRegistrationMsg(emailAddr, u, now)
               })
 
-          def onNewUser(email: EmailAddr): D[(Msg, Security.Result)] =
+          def onNewUser(email: EmailAddr): D[(Task, Security.Result)] =
             db.createUserPlaceholder(email).map(registrationRequestedTask(email, _))
 
-          val main: F[ErrorMsg \/ (MsgId, Security.Result)] =
+          val main: F[ErrorMsg \/ (TaskId, Security.Result)] =
             UserValidators.emailAddr.named(emailAddrStr).onValid(emailAddr =>
               for {
                 now           <- svr.now
                 (msg, secRes) <- runDB(registerInDb(emailAddr, now))
-                id            <- taskman.submitMsg(msg)
+                id            <- taskman.submit(msg)
               } yield \/-((id, secRes))
             )
 
@@ -225,7 +225,7 @@ object PublicSpaLogic extends HasLogger {
                       _  <- validateToken
                       ps <- security.hashPassword(req.password).toStack
                       id <- register(ps)
-                      _  <- svr.fork(taskman.submitMsg(Msg.RegistrationCompleted(id.toTaskman))).toStack
+                      _  <- svr.fork(taskman.submit(Task.RegistrationCompleted(id.toTaskman))).toStack
                       t  <- login
                     } yield t
 
@@ -273,7 +273,7 @@ object PublicSpaLogic extends HasLogger {
         val resetPassword1: PublicSpaProtocols.ResetPassword1.ajax.ServerSideFn[F] =
           security.protectFn { user =>
 
-            def resetInDb(now: Instant): D[(Option[Msg], Security.Result)] = {
+            def resetInDb(now: Instant): D[(Option[Task], Security.Result)] = {
               import DB.PasswordResetState._
               db.inDbTransaction(Connection.TRANSACTION_SERIALIZABLE,
                 db.getPasswordResetState(user) flatMap {
@@ -303,14 +303,14 @@ object PublicSpaLogic extends HasLogger {
               )
             }
 
-            def resetMsg(email: EmailAddr, token: SecurityToken): Msg =
-              Msg.PasswordResetRequested(email.toTaskman, absUrlRegister2(token).absoluteUrl)
+            def resetMsg(email: EmailAddr, token: SecurityToken): Task =
+              Task.PasswordResetRequested(email.toTaskman, absUrlRegister2(token).absoluteUrl)
 
             for {
               now           <- svr.now
               (msg, secRes) <- runDB(resetInDb(now))
               _             <- metrics.securityEvent(Security.Event.ResetPassword1, secRes)
-              _             <- taskman.submitMsgs_(msg)
+              _             <- taskman.submitBulk_(msg)
             } yield ()
           }
 

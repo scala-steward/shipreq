@@ -4,7 +4,7 @@ import java.time.Duration
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.base.util.{?=>, FnWithFallback}
 import shipreq.base.util.log.HasLogger
-import shipreq.taskman.api.Msg.DummyMsg
+import shipreq.taskman.api.Task.DummyTask
 import shipreq.taskman.api.Priority
 import ServerOp._
 import Worker.{FailureCtx, FailurePolicy, FailureResponse}
@@ -26,12 +26,12 @@ object Failure extends HasLogger {
   type RetryRule = Attempt[Duration]
 
   def chooseByFailureCount[A](values: A*): Attempt[A] =
-    chooseByIndex(_.msg.failureCount, values.toIndexedSeq)
+    chooseByIndex(_.taskDetail.failureCount, values.toIndexedSeq)
 
   def retryEveryUntil(every: Duration, cutoff: Duration): RetryRule = {
     val someEvery = Some(every)
     FnWithFallback.optionKleisli { ctx =>
-      val retryExpiry = ctx.msg.hdr.created plus cutoff
+      val retryExpiry = ctx.taskDetail.hdr.created plus cutoff
       if (ctx.now.isAfter(retryExpiry)) None else someEvery
     }
   }
@@ -40,28 +40,28 @@ object Failure extends HasLogger {
     r.copy(additionalOps = op :: r.additionalOps)
 
   def retryResponse(ctx: FailureCtx, delay: Duration): FailureResponse =
-    FailureResponse(UpdateMsgRetry(ctx.node, ctx.worker, ctx.msg, delay), Nil)
+    FailureResponse(UpdateTaskRetry(ctx.node, ctx.worker, ctx.taskDetail, delay), Nil)
 
   def notifySupport(ctx: FailureCtx): ServerOp[Unit] =
     if (ctx.err is Deliberate)
       Nop
     else
-      NotifySupportWorkerFailed(ctx.now, ctx.msg, ctx.err)
+      NotifySupportWorkerFailed(ctx.now, ctx.taskDetail, ctx.err)
 
   val abortAndDontNotify: FailurePolicy =
-    ctx => FailureResponse(UpdateMsgAbort(ctx.node, ctx.worker, ctx.msg), Nil)
+    ctx => FailureResponse(UpdateTaskAbort(ctx.node, ctx.worker, ctx.taskDetail), Nil)
 
   val abortAndNotify: FailurePolicy =
-    ctx => FailureResponse(UpdateMsgAbort(ctx.node, ctx.worker, ctx.msg), notifySupport(ctx) :: Nil)
+    ctx => FailureResponse(UpdateTaskAbort(ctx.node, ctx.worker, ctx.taskDetail), notifySupport(ctx) :: Nil)
 
   def abortDeterministicErrors: Rule =
     FnWithFallback.when((_: FailureCtx).err.isDeterministic)(abortAndNotify)
 
-  def dummyMsgRules: Rule =
+  def dummyTaskRules: Rule =
     FnWithFallback(f => (ctx: FailureCtx) =>
-      ctx.msg.msg match {
-        case _: DummyMsg if ctx.err.isDeterministic => abortAndDontNotify(ctx)
-        case m: DummyMsg                            => retryResponse(ctx, m.retryDelaySec seconds)
+      ctx.taskDetail.task match {
+        case _: DummyTask if ctx.err.isDeterministic => abortAndDontNotify(ctx)
+        case m: DummyTask                            => retryResponse(ctx, m.retryDelaySec seconds)
         case _                                      => f(ctx)
       }
     )
@@ -99,7 +99,7 @@ object Failure extends HasLogger {
 
   val priorityBasedRetryRule: RetryRule =
     FnWithFallback.choose((ctx: FailureCtx) =>
-      if (ctx.msg.priority.value >= Priority.High.value)
+      if (ctx.taskDetail.priority.value >= Priority.High.value)
         impatientRetries
       else
         patientRetries)
@@ -109,5 +109,5 @@ object Failure extends HasLogger {
       .mapWithInput((ctx, dur) => addOp(retryResponse(ctx, dur), notifySupport(ctx)))
 
   val failurePolicy: FailurePolicy =
-    (dummyMsgRules | abortDeterministicErrors | retryAndNotify) withFallback abortAndNotify
+    (dummyTaskRules | abortDeterministicErrors | retryAndNotify) withFallback abortAndNotify
 }

@@ -68,7 +68,7 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
   implicit val taskmanApi    = TaskmanApi.addLogging(TaskmanApiImpl(None).trans(dbAccess.fx.trans))
   implicit val businessOpFx  = new BusinessOpFx(sendMail, mailchimp, freshdesk, dbAccess.fx, config.shipreq.schema)
   implicit val serverOpFx    = new ServerOpFx(dbAccess.fx, new Worker.FailureHandler(emails)(businessOpFx))
-  implicit val msgProcessor  = new BusinessLogic(emails, async.emailScheduler, mailingListId)(businessOpFx)
+  implicit val businessLogic = new BusinessLogic(emails, async.emailScheduler, mailingListId)(businessOpFx)
   implicit val failurePolicy = Failure.failurePolicy
   implicit val clock         = Fx(clockClock.instant())
   implicit val nodeId        = serverOpFx.getNextNodeId.unsafeRun()

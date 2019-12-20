@@ -1,8 +1,8 @@
 package shipreq.taskman.api
 
 import org.scalacheck.{Gen, Arbitrary}
-import shipreq.taskman.api.{MsgType => T}
-import shipreq.taskman.api.{Msg => M}
+import shipreq.taskman.api.{TaskType => T}
+import shipreq.taskman.api.{Task => M}
 
 object TestHelpers {
 
@@ -12,10 +12,10 @@ object TestHelpers {
   def genUserId: Gen[UserId] = arbitrary[Long].map(UserId.apply)
   def genUserIdO: Gen[Option[UserId]] = Gen.option(genUserId)
 
-  implicit def arbMsg: Arbitrary[Msg] =
-    Arbitrary(Gen.oneOf(MsgType.values.whole).flatMap(genMsgForType))
+  implicit def arbTask: Arbitrary[Task] =
+    Arbitrary(Gen.oneOf(TaskType.values.whole).flatMap(genTaskForType))
 
-  def genMsgForType(m: MsgType): Gen[Msg] = m match {
+  def genTaskForType(m: TaskType): Gen[Task] = m match {
 
     case T.RegistrationRequested =>
       for(email <- genEmail; url <- arbitrary[String])
@@ -54,7 +54,7 @@ object TestHelpers {
       } yield
         M.WebappErrorOccurred(usr, url, msg)
 
-    case T.DummyMsg =>
+    case T.DummyTask =>
       for {
         desc             <- arbitrary[String]
         async            <- arbitrary[Boolean]
@@ -63,7 +63,7 @@ object TestHelpers {
         retryDelaySec    <- arbitrary[Int]
         failureMsg       <- arbitrary[Option[String]]
       } yield
-        M.DummyMsg(desc, async, processingTimeMs, retryCount, retryDelaySec, failureMsg)
+        M.DummyTask(desc, async, processingTimeMs, retryCount, retryDelaySec, failureMsg)
 
     case T.SendDiagEmail =>
       for {
