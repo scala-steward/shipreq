@@ -96,12 +96,16 @@ object PublicSpaLogic extends HasLogger {
           case Some(user) =>
             // Login succeeded
             val logToDB       = svr.clientIP.flatMap(ip => svr.fork(security.db.logLoginSuccess(user.id, ip)))
-            val log           = F.point(logger.info(s"User #${user.id.value} logged in.",
-                                  WebappLogFields.jwt.userId(user.id.value),
-                                  WebappLogFields.jwt.username(user.username.value)))
+            val log           = F.point(logger.info(s"User #${user.id.value} logged in."))
             val updateMetrics = metrics.securityEvent(Security.Event.Login, Security.Result.Success)
             val token         = Security.SessionToken(Some(user))
-            log >> logToDB >> updateMetrics >| ((Allow, Some(token)))
+            val result        = (Allow, Some(token)): LoginResult
+            val main          = log >> logToDB >> updateMetrics >| result
+
+            val mdc1          = WebappLogFields.jwt.userId.mdc(user.id.value)
+            val mdc2          = WebappLogFields.jwt.username.mdc(user.username.value)
+            val mdc           = mdc1 ++ mdc2
+            mdc.para(main)
 
           case None =>
             // User not found, or password didn't match

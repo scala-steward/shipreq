@@ -6,6 +6,9 @@ import shipreq.base.util.FxModule._
 
 final class MdcValues(private val values: Map[String, String]) extends AnyVal {
 
+  def ++(more: MdcValues): MdcValues =
+    new MdcValues(values ++ more.values)
+
   private def unsafeAdd(): Unit =
     for ((k, v) <- values)
       MDC.put(k, v)
@@ -42,6 +45,7 @@ final class MdcValues(private val values: Map[String, String]) extends AnyVal {
 }
 
 object MdcValues {
+
   def one(key: String, value: String): MdcValues =
     new MdcValues(Map.empty[String, String].updated(key, value))
 }
