@@ -28,7 +28,7 @@ resource "aws_service_discovery_service" "webapp" {
   # Remove after https://github.com/terraform-providers/terraform-provider-aws/issues/4853 is resolved
   provisioner "local-exec" {
     when    = destroy
-    command = "${path.module}/../ec2-sd/servicediscovery-drain.sh ${aws_service_discovery_service.webapp.id}"
+    command = "${path.module}/../ec2-sd/servicediscovery-drain.sh ${self.id}"
   }
 }
 
