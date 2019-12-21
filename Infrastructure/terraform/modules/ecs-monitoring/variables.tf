@@ -13,6 +13,10 @@ variable "filebeat_cpu" { type = number }
 variable "filebeat_es_hosts" { type = string }
 variable "filebeat_image" { type = string }
 variable "filebeat_mem_res" { type = number }
+variable "filebeat_network_mode" {
+  type    = string
+  default = null
+}
 
 variable "node_exporter_cpu" { type = number }
 variable "node_exporter_image" { type = string }

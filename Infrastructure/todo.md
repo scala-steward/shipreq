@@ -7,9 +7,6 @@
   * cadvisor (?)
   * add IP to SG, add lambda to auto purge SG
 
-* NAT
-  * node_exporter (?)
-
 * Cluster EC2s
   * Collect logs (?)
 

@@ -11,6 +11,8 @@ scrape_configs:
       - names: [ '${APP_HOST}', '${OPS_HOST}' ]
         type: 'A'
         port: ${NODE_EXPORTER_PORT}
+    static_configs:
+      - targets: ['${NAT_HOST}:${NODE_EXPORTER_PORT}']
     relabel_configs:
       # Remove port from instance
       - source_labels: [__address__]
@@ -23,6 +25,8 @@ scrape_configs:
       - names: [ '${APP_HOST}', '${OPS_HOST}' ]
         type: 'A'
         port: ${CADVISOR_PORT}
+    static_configs:
+      - targets: ['${NAT_HOST}:${CADVISOR_PORT}']
     relabel_configs:
       # Remove port from instance
       - source_labels: [__address__]

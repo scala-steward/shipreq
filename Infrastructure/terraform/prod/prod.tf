@@ -76,8 +76,10 @@ module "shipreq" {
   app_shipreq_images_tag          = local.versions.app.shipreq
   bastion_filebeat_image_tag      = local.versions.bastion.filebeat
   bastion_portal_image_tag        = local.versions.bastion.portal
+  nat_cadvisor_image_tag          = local.versions.nat.cadvisor
   nat_filebeat_image_tag          = local.versions.nat.filebeat
   nat_image_tag                   = local.versions.nat.nat
+  nat_node_exporter_image_tag     = local.versions.nat.node_exporter
   nat_squid_exporter_image_tag    = local.versions.nat.squid_exporter
   ops_cadvisor_image_tag          = local.versions.ops.cadvisor
   ops_ecs_exporter_image_tag      = local.versions.ops.ecs_exporter

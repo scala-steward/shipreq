@@ -35,7 +35,7 @@ module "shipreq" {
   ecs_root_volume_type = "standard" # Save money
   vpc_ip_prefix        = "10.0"
 
-  app_cluster_size                      = 2
+  app_cluster_size                      = 0
   app_instance_type                     = "t3a.small"
   app_public_key                        = file("key-app.rsa.pub")
   bastion_public_key                    = file("key-bastion.rsa.pub")
@@ -77,8 +77,10 @@ module "shipreq" {
   app_shipreq_images_tag          = "latest"
   bastion_filebeat_image_tag      = "latest"
   bastion_portal_image_tag        = "latest"
+  nat_cadvisor_image_tag          = "latest"
   nat_filebeat_image_tag          = "latest"
   nat_image_tag                   = "latest"
+  nat_node_exporter_image_tag     = "latest"
   nat_squid_exporter_image_tag    = "latest"
   ops_cadvisor_image_tag          = "latest"
   ops_ecs_exporter_image_tag      = "latest"

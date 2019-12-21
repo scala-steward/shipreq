@@ -7,13 +7,18 @@ resource "aws_key_pair" "nat" {
   public_key = var.nat_public_key
 }
 
+resource "aws_ecs_cluster" "nat" {
+  name = "${var.env}-nat"
+  tags = local.nat_tags
+}
+
 resource "aws_instance" "nat" {
-  ami                         = data.aws_ssm_parameter.ami-ec2.value
+  ami                         = data.aws_ssm_parameter.ami-ecs.value
   availability_zone           = var.availability_zone
   instance_type               = "t3a.nano"
   subnet_id                   = aws_subnet.public.id
   vpc_security_group_ids      = [aws_security_group.nat.id]
-  iam_instance_profile        = aws_iam_instance_profile.nat.id
+  iam_instance_profile        = aws_iam_instance_profile.nat-ecs.id
   associate_public_ip_address = true
   source_dest_check           = false
   key_name                    = aws_key_pair.nat.key_name
@@ -21,17 +26,15 @@ resource "aws_instance" "nat" {
   volume_tags                 = local.nat_tags
 
   user_data = trimspace(templatefile("${path.module}/nat-ec2-init.sh", {
-    ENV                  = var.env
-    ES_HOSTS             = local.es_root_url_with_port
-    FILEBEAT_IMAGE       = "${data.aws_ecr_repository.filebeat.repository_url}:${var.nat_filebeat_image_tag}"
-    NAT_IMAGE            = "${data.aws_ecr_repository.nat.repository_url}:${var.nat_image_tag}"
-    SQUID_EXPORTER_IMAGE = "${data.aws_ecr_repository.squid_exporter.repository_url}:${var.nat_squid_exporter_image_tag}"
-    SQUID_EXPORTER_PORT  = local.ports.nat.squid_exporter
+    cluster = aws_ecs_cluster.nat.name
   }))
 
   root_block_device {
+    volume_size = 30 # Min size set by AMI snapshot
     volume_type = "standard"
   }
+
+  depends_on = [aws_ecs_cluster.nat]
 
   lifecycle { create_before_destroy = true }
 }
@@ -50,13 +53,14 @@ resource "aws_cloudwatch_metric_alarm" "nat-recovery" {
   tags                = local.nat_tags
 }
 
-resource "aws_iam_instance_profile" "nat" {
+
+resource "aws_iam_instance_profile" "nat-ecs" {
   name = "${var.env}_nat_instance_profile"
-  role = aws_iam_role.nat.name
+  role = aws_iam_role.nat-ecs.name
 }
 
-resource "aws_iam_role" "nat" {
-  name = "${var.env}_nat_instance_role"
+resource "aws_iam_role" "nat-ecs" {
+  name = "${var.env}_nat_ecs_instance_role"
   tags = local.nat_tags
 
   assume_role_policy = <<EOB
@@ -75,8 +79,18 @@ resource "aws_iam_role" "nat" {
 EOB
 }
 
-resource "aws_iam_policy" "nat" {
-  name = "${var.env}_nat_policy"
+resource "aws_iam_role_policy_attachment" "nat-ecs-ec2-s3tmp" {
+  role       = aws_iam_role.nat-ecs.name
+  policy_arn = data.aws_iam_policy.s3_tmp_rw.arn
+}
+
+resource "aws_iam_role_policy_attachment" "nat-ecs" {
+  role       = aws_iam_role.nat-ecs.name
+  policy_arn = aws_iam_policy.nat-ecs.arn
+}
+
+resource "aws_iam_policy" "nat-ecs" {
+  name = "${var.env}_nat_ecs_policy"
 
   policy = <<EOB
 {
@@ -84,32 +98,40 @@ resource "aws_iam_policy" "nat" {
   "Statement": [
     {
       "Effect": "Allow",
-      "Resource": [
-        "${data.aws_ecr_repository.filebeat.arn}",
-        "${data.aws_ecr_repository.nat.arn}",
-        "${data.aws_ecr_repository.squid_exporter.arn}"
-      ],
       "Action": [
-        "ecr:BatchCheckLayerAvailability",
-        "ecr:GetDownloadUrlForLayer",
-        "ecr:BatchGetImage"
-      ]
+        "ec2:DescribeTags",
+        "ecr:GetAuthorizationToken",
+        "ecs:CreateCluster",
+        "ecs:DeregisterContainerInstance",
+        "ecs:DiscoverPollEndpoint",
+        "ecs:Poll",
+        "ecs:RegisterContainerInstance",
+        "ecs:StartTelemetrySession",
+        "ecs:Submit*",
+        "ecs:UpdateContainerInstancesState",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "*"
     },
     {
       "Effect": "Allow",
-      "Resource": "*",
       "Action": [
-        "ecr:GetAuthorizationToken"
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer"
+      ],
+      "Resource": [
+        "${data.aws_ecr_repository.cadvisor.arn}",
+        "${data.aws_ecr_repository.filebeat.arn}",
+        "${data.aws_ecr_repository.nat.arn}",
+        "${data.aws_ecr_repository.node_exporter.arn}",
+        "${data.aws_ecr_repository.squid_exporter.arn}"
       ]
     }
   ]
 }
 EOB
-}
-
-resource "aws_iam_role_policy_attachment" "nat" {
-  role       = aws_iam_role.nat.name
-  policy_arn = aws_iam_policy.nat.arn
 }
 
 resource "aws_security_group" "nat" {

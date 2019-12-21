@@ -26,7 +26,7 @@ resource "aws_autoscaling_group" "app" {
   }
 
   # The EC2s need a working internet connection to startup
-  depends_on = [aws_instance.nat]
+  depends_on = [aws_instance.nat, aws_ecs_service.nat]
 }
 
 resource "aws_launch_template" "app" {

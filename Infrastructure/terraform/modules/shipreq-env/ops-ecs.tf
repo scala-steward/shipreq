@@ -26,7 +26,7 @@ resource "aws_autoscaling_group" "ops" {
   }
 
   # The EC2s need a working internet connection to startup
-  depends_on = [aws_instance.nat]
+  depends_on = [aws_instance.nat, aws_ecs_service.nat]
 }
 
 resource "aws_launch_template" "ops" {
@@ -99,7 +99,7 @@ resource "aws_security_group" "ops" {
     protocol    = "tcp"
     from_port   = local.ports.cadvisor
     to_port     = local.ports.cadvisor
-    cidr_blocks = [aws_subnet.private.cidr_block]
+    cidr_blocks = [aws_subnet.public.cidr_block, aws_subnet.private.cidr_block]
     description = "Metrics: cadvisor"
   }
 
@@ -107,7 +107,7 @@ resource "aws_security_group" "ops" {
     protocol    = "tcp"
     from_port   = local.ports.node_exporter
     to_port     = local.ports.node_exporter
-    cidr_blocks = [aws_subnet.private.cidr_block]
+    cidr_blocks = [aws_subnet.public.cidr_block, aws_subnet.private.cidr_block]
     description = "Metrics: node_exporter"
   }
 

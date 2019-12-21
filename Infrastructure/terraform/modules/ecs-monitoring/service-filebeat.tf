@@ -12,8 +12,9 @@ resource "aws_ecs_service" "filebeat" {
 }
 
 resource "aws_ecs_task_definition" "filebeat" {
-  family = "${var.name_prefix}-filebeat"
-  tags   = local.filebeat_tags
+  family       = "${var.name_prefix}-filebeat"
+  network_mode = var.filebeat_network_mode
+  tags         = local.filebeat_tags
 
   container_definitions = <<EOB
 [

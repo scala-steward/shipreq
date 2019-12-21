@@ -19,10 +19,10 @@ for f in ~{root,ec2-user}/.bashrc; do
 EOB
 done
 cat >> ~root/.bashrc << 'EOB'
-  export PS1='\n\[\e[95m[nat-${ENV}]\e[0m \[\e[31m\]\u\[\e[32m\]@\h: \[\e[33m\]\w\[\e[0m\]\n> '
+  export PS1='\n\[\e[95m[${cluster}]\e[0m \[\e[31m\]\u\[\e[32m\]@\h: \[\e[33m\]\w\[\e[0m\]\n> '
 EOB
 cat >> ~ec2-user/.bashrc << 'EOB'
-  export PS1='\n\[\e[95m[nat-${ENV}]\e[0m \[\e[32m\]\u@\h: \[\e[33m\]\w\[\e[0m\]\n> '
+  export PS1='\n\[\e[95m[${cluster}]\e[0m \[\e[32m\]\u@\h: \[\e[33m\]\w\[\e[0m\]\n> '
 EOB
 
 yum -y update
@@ -34,78 +34,14 @@ yum -y install htop nc tree
 echo '0 0 * * * root yum -y update --security' > /etc/cron.d/security-updates
 
 ####################################################################################################
-# Docker
+# ECS
 
-amazon-linux-extras install -y docker
-systemctl start docker
-
-$(aws ecr get-login --no-include-email --region ap-southeast-2)
+cat <<'EOB' >> /etc/ecs/ecs.config
+ECS_CLUSTER=${cluster}
+EOB
 
 ####################################################################################################
 # NAT
 
 iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3129
 iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 3130
-
-nat=/usr/bin/start-nat
-
-cat > $nat << 'EOB'
-#!/bin/bash
-docker pull ${NAT_IMAGE}
-docker run \
-  -d \
-  --restart unless-stopped \
-  --network host \
-  --name nat \
-  ${NAT_IMAGE}
-EOB
-
-chmod 700 $nat
-
-$nat
-
-####################################################################################################
-# Filebeat
-
-filebeat=/usr/bin/start-filebeat
-
-cat > $filebeat << 'EOB'
-#!/bin/bash
-docker pull ${FILEBEAT_IMAGE}
-docker run \
-  -d \
-  --restart unless-stopped \
-  --network host \
-  -v /var/log:/host/var/log:ro \
-  -v /var/lib/docker/containers:/var/lib/docker/containers:ro \
-  -v /var/run/docker.sock:/var/run/docker.sock:ro \
-  -e CLUSTER=nat \
-  -e ES_HOSTS='${ES_HOSTS}' \
-  --name filebeat \
-  ${FILEBEAT_IMAGE}
-EOB
-
-chmod 700 $filebeat
-
-$filebeat
-
-####################################################################################################
-# squid_exporter
-
-squid_exporter=/usr/bin/start-squid_exporter
-
-cat > $squid_exporter << 'EOB'
-#!/bin/bash
-docker pull ${SQUID_EXPORTER_IMAGE}
-docker run \
-  -d \
-  --restart unless-stopped \
-  --network host \
-  --name squid_exporter \
-  ${SQUID_EXPORTER_IMAGE} \
-  -listen "0.0.0.0:${SQUID_EXPORTER_PORT}"
-EOB
-
-chmod 700 $squid_exporter
-
-$squid_exporter
