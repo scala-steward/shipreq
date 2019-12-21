@@ -13,6 +13,15 @@ locals {
     Name      = var.name
   }
 
+  wait_for_nat = <<EOB
+nat_check=
+while [ -z "$nat_check" ]; do
+  echo "Waiting for NAT..."
+  nat_check="$(curl -s -m 7 duckduckgo.com | fgrep -v ERR_ACCESS_DENIED || sleep 3)"
+done
+echo "NAT confirmed."
+EOB
+
   region = regex("^[a-z]+-[a-z]+-\\d+", var.availability_zone)
 
   shipreq_zone_id = var.env == "prod" ? data.aws_route53_zone.shipreq.zone_id : data.aws_route53_zone.shipwreck.zone_id
