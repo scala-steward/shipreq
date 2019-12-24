@@ -105,11 +105,9 @@ object PublicSpaLogic extends HasLogger {
             val result        = (Allow, Some(newSession)): LoginResult
             val main          = log >> logToDB >> updateMetrics >| result
 
-            var mdc = WebappLogFields.jwt.userId.mdc(user.id.value) ++
-                      WebappLogFields.jwt.username.mdc(user.username.value)
-            for (id <- newSession.sessionId) {
-              mdc ++= WebappLogFields.jwt.sessionId.mdc(id.value)
-            }
+            val mdc = WebappLogFields.jwt.userId.mdc(user.id.value) ++
+                      WebappLogFields.jwt.username.mdc(user.username.value) ++
+                      WebappLogFields.jwt.sessionId.mdc(newSession.sessionId.value)
             mdc.para(main)
 
           case None =>

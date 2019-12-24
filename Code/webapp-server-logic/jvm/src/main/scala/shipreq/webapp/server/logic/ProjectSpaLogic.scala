@@ -69,7 +69,7 @@ object ProjectSpaLogic extends StrictLogging {
 
   final case class WebSocketStatic(user       : User,
                                    projectId  : ProjectId,
-                                   sessionId  : Option[Security.SessionId],
+                                   sessionId  : Security.SessionId,
                                    span       : Any,
                                    connectedAt: Instant)
 

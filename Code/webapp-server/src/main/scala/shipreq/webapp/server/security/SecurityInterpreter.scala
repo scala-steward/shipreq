@@ -83,8 +83,7 @@ final class SecurityInterpreter[F[_]](implicit _F: Monad[F],
       val exp = new java.util.Date(now + config.jwtLifespanMs)
       b.setExpiration(exp)
 
-      for (id <- token.sessionId)
-        b.claim(claimSessionId, id.value)
+      b.claim(claimSessionId, token.sessionId.value)
 
       for (u <- token.authenticatedUser) {
         b.claim(claimUserId, Obfuscators.userId.obfuscate(u.id).value)
@@ -114,7 +113,9 @@ final class SecurityInterpreter[F[_]](implicit _F: Monad[F],
         throw new RuntimeException(errMsg)
       }
 
-      val sessionId = Option(claims.get(claimSessionId, classOf[String])).map(SessionId.apply)
+      val sessionId = SessionId(claims.get(claimSessionId, classOf[String]))
+      require(sessionId.value ne null, "Session ID not specified")
+
       val subject   = claims.getSubject
       if (subject eq null)
         SessionToken.anonymous(sessionId)

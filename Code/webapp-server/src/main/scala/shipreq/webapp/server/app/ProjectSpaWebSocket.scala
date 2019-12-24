@@ -90,9 +90,7 @@ final class ProjectSpaWebSocket extends StrictLogging {
       WebappLogFields.request.uri.mdcUnsafePut(loggingData.path)
       WebappLogFields.websocket.callback.mdcUnsafePut(callbackName)
       if (static ne null) {
-        for (id <- static.sessionId) {
-          WebappLogFields.jwt.sessionId.mdcUnsafePut(id.value)
-        }
+        WebappLogFields.jwt.sessionId.mdcUnsafePut(static.sessionId.value)
         WebappLogFields.jwt.username.mdcUnsafePut(static.user.username.value)
         WebappLogFields.jwt.userId.mdcUnsafePut(static.user.id.value)
         WebappLogFields.websocket.projectId.mdcUnsafePut(static.projectId.value)

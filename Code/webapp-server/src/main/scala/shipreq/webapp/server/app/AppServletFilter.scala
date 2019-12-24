@@ -132,8 +132,7 @@ final class AppServletFilter extends LiftFilter with HasLogger {
                 }
                 security.sessionRestore(lookup).unsafeRun() match {
                   case Security.SessionRestoreResult.Success(session) =>
-                    for (id <- session.sessionId)
-                      WebappLogFields.jwt.sessionId.mdcUnsafePut(id.value)
+                    WebappLogFields.jwt.sessionId.mdcUnsafePut(session.sessionId.value)
                     for (user <- session.authenticatedUser) {
                       WebappLogFields.jwt.username.mdcUnsafePut(user.username.value)
                       WebappLogFields.jwt.userId.mdcUnsafePut(user.id.value)
@@ -141,8 +140,7 @@ final class AppServletFilter extends LiftFilter with HasLogger {
                   case Security.SessionRestoreResult.None =>
                     ()
                   case Security.SessionRestoreResult.Expired(session) =>
-                    for (id <- session.sessionId)
-                      WebappLogFields.jwt.sessionId.mdcUnsafePut(id.value)
+                    WebappLogFields.jwt.sessionId.mdcUnsafePut(session.sessionId.value)
                 }
               }
 

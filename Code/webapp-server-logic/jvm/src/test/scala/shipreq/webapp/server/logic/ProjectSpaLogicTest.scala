@@ -15,7 +15,7 @@ import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.server.logic.ProjectSpaLogic.{WebSocketState => _, _}
 import shipreq.webapp.server.logic.Redis.ProjectSnapshot
-import shipreq.webapp.server.logic.Security.SessionToken
+import shipreq.webapp.server.logic.Security.{SessionId, SessionToken}
 import shipreq.webapp.server.logic.dispatch.Cookie
 
 object ProjectSpaLogicTestS extends ProjectSpaLogicTest(Config.default.copy(writeEvents = false))
@@ -81,7 +81,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
       lazy val projectAndOrd   = ProjectAndOrd(instance, Some(verifiedEvents.last.ord.asLatest))
       lazy val initAppData     = InitAppData(projectAndOrd, data1)
-      lazy val static          = WebSocketStatic(user2.toUser, id, None, (), svr.now.value)
+      lazy val static          = WebSocketStatic(user2.toUser, id, SessionId.random(), (), svr.now.value)
 
       lazy val eventsA         = events.take(1)
       lazy val verifiedEventsA = verifiedEvents.take(1)

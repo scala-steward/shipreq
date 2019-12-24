@@ -468,12 +468,8 @@ final class MockSecurity(override val db: MockDb) extends Security.Algebra[Name]
   override def sessionRestore(cookies: Cookie.LookupFn) = Name[SessionRestoreResult] {
     cookies(cookieName) match {
       case Some(cookieValue) =>
-        if (cookieValue.endsWith(":"))
-          SessionRestoreResult.Success(SessionToken.anonymous(None))
-        else {
-          val body = cookieValue.dropWhile(_ != ':').drop(1)
-          SessionRestoreResult.Success(decodeOrThrow[SessionToken](body))
-        }
+        val body = cookieValue.dropWhile(_ != ':').drop(1)
+        SessionRestoreResult.Success(decodeOrThrow[SessionToken](body))
 
       case None =>
         SessionRestoreResult.None

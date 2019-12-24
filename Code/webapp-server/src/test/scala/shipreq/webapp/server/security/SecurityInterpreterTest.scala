@@ -50,8 +50,7 @@ object SecurityInterpreterTest extends TestSuite {
       assertEq(sec.sessionRestore(cookieJar).value, SessionRestoreResult.None)
       val s1 = sec.sessionRestoreOrCreate(cookieJar).value
       sessionPersist(s1)
-      assert(s1.sessionId.isDefined)
-      assertEq(s1.sessionId.map(_.value.length), Some(36))
+      assertEq(s1.sessionId.value.length, 36)
       assertEq(s1.authenticatedUser, None)
       assertEq(sec.sessionRestore(cookieJar).value, SessionRestoreResult.Success(s1))
       assertEq(sec.sessionRestoreOrCreate(cookieJar).value, s1)
@@ -73,23 +72,6 @@ object SecurityInterpreterTest extends TestSuite {
       s1.sessionId
     }
 
-    "migration" - {
-      val s0 = SessionToken(None, Some(user2.toUser))
-      val List(s1, s2) = List((), ()).map { _ =>
-        sessionPersist(s0)
-        val o = sec.sessionRestore(cookieJar).value
-        assertMatch(o) {
-          case SessionRestoreResult.Success(t) if t.sessionId.isEmpty =>
-        }
-        val s = sec.sessionRestoreOrCreate(cookieJar).value
-        assert(s.sessionId.isDefined)
-        s
-      }
-      assertEq(s1.copy(sessionId = None), s0)
-      assertEq(s2.copy(sessionId = None), s0)
-      assertNotEq(s1.sessionId.get, s2.sessionId.get)
-    }
-
     "secretRotation" - {
       val secret1 = new JwtSecret("1" * 64)
       val sec1 = {
@@ -104,7 +86,6 @@ object SecurityInterpreterTest extends TestSuite {
       }
 
       val s = sec.sessionRestoreOrCreate(cookieJar).value
-      assert(s.sessionId.isDefined)
       sessionPersist(s)(sec1)
       assertEq(sec1.sessionRestore(cookieJar).value, SessionRestoreResult.Success(s))
       assertEq(sec2.sessionRestore(cookieJar).value, SessionRestoreResult.Success(s))
@@ -121,7 +102,6 @@ object SecurityInterpreterTest extends TestSuite {
       }
 
       val s1 = loginUser2(SessionToken.anonymous())
-      assert(s1.sessionId.isDefined)
       sessionPersist(s1)
       Thread.sleep(4)
       assertEq(sec.sessionRestore(cookieJar).value, SessionRestoreResult.Expired(s1))

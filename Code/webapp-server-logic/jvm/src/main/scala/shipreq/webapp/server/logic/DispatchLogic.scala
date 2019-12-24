@@ -184,7 +184,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
 
   private def requireSession(fCmd: Security.SessionToken => F[Response])(implicit req: Request): F[Response] =
     security.sessionRestore(req.cookie).flatMap {
-      case Security.SessionRestoreResult.Success(t) => fCmd(t.createSessionIdIfNone())
+      case Security.SessionRestoreResult.Success(t) => fCmd(t)
       case Security.SessionRestoreResult.None
          | Security.SessionRestoreResult.Expired(_) => F pure ResponseCmd.StatusOnly.Forbidden.withoutCookieUpdate
     }
@@ -591,7 +591,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
           } yield (Username.orEmail(u), PlainTextPassword(p))
         ) { case (u, p) =>
           security.attemptLogin(u, p).flatMap {
-            case Some(u) => security.sessionPersist(Security.SessionToken(None, Some(u))).map(Response(ResponseCmd.StatusOnly.OK, _))
+            case Some(u) => security.sessionPersist(Security.SessionToken(Security.SessionId.random(), Some(u))).map(Response(ResponseCmd.StatusOnly.OK, _))
             case None    => F pure ResponseCmd.StatusOnly.Forbidden.withoutCookieUpdate
           }
         }
