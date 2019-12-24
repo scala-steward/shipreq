@@ -98,6 +98,10 @@ Phase 2B
   * Finish tech dashboards (inc using webapp metrics)
   * Business metrics: dashboards
 
+* Handle no localStorage available (in login page)
+
+* Don't update JWT expiration on each request - should be loginTime + expiryTime regardless of what the user does
+
 * Unsaved changes
   * Warn against closing page
   * Display counter
@@ -106,7 +110,7 @@ Phase 2B
 
 * WebSockets
   * Have client handle ConnectRejections, including re-logging in
-  * Check JWT on message (and extend on non-keepAlives)
+  * Check JWT expiry on message
   * Display a connected icon
   * Allow users to toggle connection
   * Recover from lost Redis connections
