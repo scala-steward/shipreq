@@ -76,12 +76,6 @@ Phase 2B
 
 ### Other
 
-* Update UX prototype with:
-  * link to user profile page
-  * means to report issue or send feedback
-  * show connection status/control
-  * show unsaved changes
-
 * Type to open editor and replace content (enter = just open?)
 
 * Copy to clipboard from cells in Req{Table,Detail}
@@ -112,7 +106,7 @@ Phase 2B
 
 * WebSockets
   * Have client handle ConnectRejections, including re-logging in
-  * Check JWT on message
+  * Check JWT on message (and extend on non-keepAlives)
   * Display a connected icon
   * Allow users to toggle connection
   * Recover from lost Redis connections

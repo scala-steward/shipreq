@@ -66,12 +66,43 @@
                 .item.active CardBoard
                 .item ShipReq
 
-        .item.ui.right.dropdown.simple
-          @japgolly
-          -# %i.dropdown.icon
-          .menu
-            %a.item{href: "member-account.html"} Account
-            .item Logout
+        .right.menu
+
+          -# .item
+          -#   %i.icon.large.edit
+          -#   3 open editors
+
+          .item(style="color:#ffec70" title="2 unsaved changes")
+            .span(style="margin-right: 0.5ex; font-size:120%; margin-top:1px") 2
+            %i.icon.large.edit
+
+          -# .item#connected1(onclick="$('#connected1 > *').toggle()")
+          -#   %i.icon.large.toggle.on.green
+          -#   %i.icon.large.toggle.on.red.horizontally.flipped(style="display:none")
+
+          -# .item#connected2(onclick="$('#connected2 > *').toggle()")
+          -#   %i.icon.large.power.off.green
+          -#   %i.icon.large.power.off.red(style="display:none")
+
+          -# .item#connected3(onclick="$('#connected3 > *').toggle()")
+          -#   %i.icon.large.wifi.green
+          -#   %i.icon.large.wifi.red(style="display:none")
+
+          .item#connected4(onclick="$('#connected4 > *').toggle()")
+            %i.icon.large.plug.green(style="opacity:.7" title="connected")
+            %i.icon.large.plug.red(style="opacity:1;display:none" title="disconnected")
+
+          -# .item#connected5(onclick="$('#connected5 > *').toggle()")
+          -#   %i.icon.large.mixcloud.green
+          -#   %i.icon.large.mixcloud.red(style="display:none")
+
+          .item.ui.dropdown.simple
+            @japgolly
+            -# %i.dropdown.icon
+            .menu
+              %a.item{href: "member-account.html"} Account
+              .item Send feedback
+              .item Logout
 
     -# =============================================================================================
     -# .__container{style: "width: 723px; margin-left: auto; margin-right: auto;"}
