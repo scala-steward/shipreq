@@ -39,7 +39,7 @@ object AssetManifest {
     href = "https://cdn.jsdelivr.net/npm/react@16.5.2/umd/react.production.min.js",
     integrity = Some("sha256-alJnAKUY0Ruhf55K/C+sCyz6zaipGhl1kxuzDW3jtHk="))
 
-  def semanticCss = "/s/5f14ceedc3338cfaaa7bddf16332f1fc.css"
+  def semanticCss = "/s/a61a76f2b8deb3d8cc44d1460c46886e.css"
 
   def semanticCssUrls: List[String] =
     "icons.eot" ::

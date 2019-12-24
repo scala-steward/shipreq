@@ -346,7 +346,7 @@
     87 [remove] .ui.compact.button,.ui.compact.buttons .button
    101 [remove] .ui.compact.icon.button,.ui.compact.icon.buttons .button
    118 [remove] .ui.compact.labeled.icon.button,.ui.compact.labeled.icon.buttons .button
-    85 [remove] .ui.mini.button,.ui.mini.buttons .button,.ui.mini.buttons .or
+    85 [keep  ] .ui.mini.button,.ui.mini.buttons .button,.ui.mini.buttons .or
     85 [keep  ] .ui.tiny.button,.ui.tiny.buttons .button,.ui.tiny.buttons .or
     88 [remove] .ui.small.button,.ui.small.buttons .button,.ui.small.buttons .or
     62 [keep  ] .ui.button,.ui.buttons .button,.ui.buttons .or
@@ -992,7 +992,7 @@
     37 [remove] i.olive.icon
     46 [remove] i.inverted.olive.icon
    118 [remove] i.inverted.bordered.olive.icon,i.inverted.circular.olive.icon
-    37 [remove] i.green.icon
+    37 [keep  ] i.green.icon
     46 [remove] i.inverted.green.icon
    118 [remove] i.inverted.bordered.green.icon,i.inverted.circular.green.icon
     36 [remove] i.teal.icon
@@ -1019,7 +1019,7 @@
     37 [remove] i.black.icon
     46 [remove] i.inverted.black.icon
    118 [remove] i.inverted.bordered.black.icon,i.inverted.circular.black.icon
-    54 [remove] i.mini.icon,i.mini.icons
+    54 [keep  ] i.mini.icon,i.mini.icons
     54 [keep  ] i.tiny.icon,i.tiny.icons
     57 [remove] i.small.icon,i.small.icons
     29 [keep  ] i.icon,i.icons
@@ -1133,7 +1133,7 @@
     36 [keep  ] i.icon.write:before
     37 [remove] i.icon.adjust:before
     36 [remove] i.icon.theme:before
-    35 [remove] i.icon.edit:before
+    35 [keep  ] i.icon.edit:before
     45 [remove] i.icon.external.share:before
     34 [keep  ] i.icon.ban:before
     43 [remove] i.icon.mail.forward:before
@@ -1392,7 +1392,7 @@
     37 [remove] i.icon.laptop:before
     35 [remove] i.icon.game:before
     39 [keep  ] i.icon.keyboard:before
-    35 [remove] i.icon.plug:before
+    35 [keep  ] i.icon.plug:before
     36 [keep  ] i.icon.trash:before
     43 [remove] i.icon.file.outline:before
     37 [remove] i.icon.folder:before
@@ -2013,7 +2013,7 @@
     37 [remove] .ui.inverted.input input
     69 [keep  ] .ui.fluid.input
     40 [keep  ] .ui.fluid.input>input
-    37 [remove] .ui.mini.input
+    37 [keep  ] .ui.mini.input
     38 [remove] .ui.small.input
     24 [keep  ] .ui.input
     39 [keep  ] .ui.large.input
@@ -2184,7 +2184,7 @@
     65 [keep  ] .ui.basic[class*="left pointing"].label:before
     67 [keep  ] .ui.basic[class*="right pointing"].label:before
     98 [keep  ] .ui.floating.label
-    61 [remove] .ui.mini.label,.ui.mini.labels .label
+    61 [keep  ] .ui.mini.label,.ui.mini.labels .label
     61 [keep  ] .ui.tiny.label,.ui.tiny.labels .label
     63 [remove] .ui.small.label,.ui.small.labels .label
     51 [keep  ] .ui.label,.ui.labels .label
@@ -2199,7 +2199,7 @@
     61 [keep  ] @-webkit-keyframes loader to
     53 [keep  ] @keyframes loader from
     61 [keep  ] @keyframes loader to
-    88 [remove] .ui.mini.loader:after,.ui.mini.loader:before
+    88 [keep  ] .ui.mini.loader:after,.ui.mini.loader:before
    113 [keep  ] .ui.tiny.loader:after,.ui.tiny.loader:before
    115 [remove] .ui.small.loader:after,.ui.small.loader:before
    104 [keep  ] .ui.loader:after,.ui.loader:before
@@ -2218,7 +2218,7 @@
    115 [keep  ] .ui.indeterminate.loader:after
     51 [keep  ] .ui.loader.active,.ui.loader.visible
     51 [keep  ] .ui.loader.disabled,.ui.loader.hidden
-    97 [remove] .ui.inverted.dimmer .ui.mini.loader,.ui.mini.loader
+    97 [keep  ] .ui.inverted.dimmer .ui.mini.loader,.ui.mini.loader
    115 [keep  ] .ui.inverted.dimmer .ui.tiny.loader,.ui.tiny.loader
    117 [remove] .ui.inverted.dimmer .ui.small.loader,.ui.small.loader
     97 [keep  ] .ui.inverted.dimmer .ui.loader,.ui.loader
@@ -2226,7 +2226,7 @@
    114 [remove] .ui.big.loader,.ui.inverted.dimmer .ui.big.loader
    116 [remove] .ui.huge.loader,.ui.inverted.dimmer .ui.huge.loader
    122 [remove] .ui.inverted.dimmer .ui.massive.loader,.ui.massive.loader
-    62 [remove] .ui.mini.text.loader
+    62 [keep  ] .ui.mini.text.loader
     71 [keep  ] .ui.tiny.text.loader
     65 [remove] .ui.small.text.loader
     66 [keep  ] .ui.text.loader
@@ -2348,7 +2348,7 @@
     60 [keep  ] .ui.segment[class*="top attached"]:first-child
    231 [keep  ] .ui.segment[class*="bottom attached"]
     65 [keep  ] .ui.segment[class*="bottom attached"]:last-child
-    67 [remove] .ui.mini.segment,.ui.mini.segments .segment
+    67 [keep  ] .ui.mini.segment,.ui.mini.segments .segment
     67 [keep  ] .ui.tiny.segment,.ui.tiny.segments .segment
     69 [remove] .ui.small.segment,.ui.small.segments .segment
     49 [keep  ] .ui.segment,.ui.segments .segment
@@ -2367,7 +2367,7 @@
     64 [keep  ] .ui.breadcrumb .section
     68 [keep  ] .ui.breadcrumb.segment
     47 [keep  ] .ui.breadcrumb .active.section
-    43 [remove] .ui.mini.breadcrumb
+    43 [keep  ] .ui.mini.breadcrumb
     43 [keep  ] .ui.tiny.breadcrumb
     44 [remove] .ui.small.breadcrumb
     30 [keep  ] .ui.breadcrumb
@@ -2509,7 +2509,7 @@
     87 [keep  ] .ui.form .inline.field>:only-child,.ui.form .inline.fields .field>:only-child
    155 [keep  ] .ui.form .inline.fields .wide.field
     96 [keep  ] .ui.form .inline.fields .wide.field>input,.ui.form .inline.fields .wide.field>select
-    37 [remove] .ui.mini.form
+    37 [keep  ] .ui.mini.form
     37 [keep  ] .ui.tiny.form
     38 [remove] .ui.small.form
     24 [keep  ] .ui.form
@@ -2821,7 +2821,7 @@
     57 [keep  ] .ui.attached.menu:not(.tabular)
     39 [keep  ] .ui.attached.inverted.menu
     66 [keep  ] .ui.attached.tabular.menu
-    37 [remove] .ui.mini.menu
+    37 [keep  ] .ui.mini.menu
     34 [remove] .ui.mini.vertical.menu
     37 [keep  ] .ui.tiny.menu
     35 [remove] .ui.tiny.vertical.menu
@@ -2916,7 +2916,7 @@
     39 [remove] .ui.pink.message .header
    175 [remove] .ui.brown.message
     40 [remove] .ui.brown.message .header
-    39 [remove] .ui.mini.message
+    39 [keep  ] .ui.mini.message
     39 [keep  ] .ui.tiny.message
     40 [remove] .ui.small.message
     26 [keep  ] .ui.message
@@ -3340,9 +3340,9 @@
     67 [keep  ] .ui[class*="left floated"].statistic
     69 [keep  ] .ui[class*="right floated"].statistic
     49 [keep  ] .ui.floated.statistic:last-child
-    91 [remove] .ui.mini.statistic>.value,.ui.mini.statistics .statistic>.value
-   113 [remove] .ui.mini.horizontal.statistic>.value,.ui.mini.horizontal.statistics .statistic>.value
-    99 [remove] .ui.mini.statistic>.text.value,.ui.mini.statistics .statistic>.text.value
+    91 [keep  ] .ui.mini.statistic>.value,.ui.mini.statistics .statistic>.value
+   113 [keep  ] .ui.mini.horizontal.statistic>.value,.ui.mini.horizontal.statistics .statistic>.value
+    99 [keep  ] .ui.mini.statistic>.text.value,.ui.mini.statistics .statistic>.text.value
     89 [keep  ] .ui.tiny.statistic>.value,.ui.tiny.statistics .statistic>.value
    111 [keep  ] .ui.tiny.horizontal.statistic>.value,.ui.tiny.horizontal.statistics .statistic>.value
     99 [keep  ] .ui.tiny.statistic>.text.value,.ui.tiny.statistics .statistic>.text.value
@@ -3730,11 +3730,11 @@
     75 [keep  ] .ui.fullscreen.modal>.close
     25 [keep  ] .ui.modal
     48 [keep  ] .ui.mini.modal>.header:not(.ui)
-    45 [remove] @media only screen and (max-width:767px) .ui.mini.modal
-    47 [remove] @media only screen and (min-width:768px) .ui.mini.modal
-    47 [remove] @media only screen and (min-width:992px) .ui.mini.modal
-    47 [remove] @media only screen and (min-width:1200px) .ui.mini.modal
-    47 [remove] @media only screen and (min-width:1920px) .ui.mini.modal
+    45 [keep  ] @media only screen and (max-width:767px) .ui.mini.modal
+    47 [keep  ] @media only screen and (min-width:768px) .ui.mini.modal
+    47 [keep  ] @media only screen and (min-width:992px) .ui.mini.modal
+    47 [keep  ] @media only screen and (min-width:1200px) .ui.mini.modal
+    47 [keep  ] @media only screen and (min-width:1920px) .ui.mini.modal
     49 [keep  ] .ui.small.modal>.header:not(.ui)
     45 [keep  ] @media only screen and (max-width:767px) .ui.tiny.modal
     47 [keep  ] @media only screen and (min-width:768px) .ui.tiny.modal
@@ -3849,7 +3849,7 @@
     60 [remove] .ui.inverted.popup .header
    111 [remove] .ui.inverted.popup:before
     33 [keep  ] .ui.flowing.popup
-    38 [remove] .ui.mini.popup
+    38 [keep  ] .ui.mini.popup
     38 [keep  ] .ui.tiny.popup
     39 [remove] .ui.small.popup
     25 [keep  ] .ui.popup
@@ -3900,7 +3900,7 @@
     61 [keep  ] .ui[class*="left aligned"].search>.results
     62 [keep  ] .ui[class*="right aligned"].search>.results
     37 [keep  ] .ui.fluid.search .results
-    38 [remove] .ui.mini.search
+    38 [keep  ] .ui.mini.search
     39 [remove] .ui.small.search
     25 [keep  ] .ui.search
     40 [keep  ] .ui.large.search

@@ -11,6 +11,7 @@
 .cube
 .cubes
 .dropdown
+.edit
 .file.text.outline
 .filter
 .folder.outline
@@ -23,6 +24,7 @@
 .lock
 .mail
 .mail.outline
+.plug
 .plus
 .remove
 .remove.user
