@@ -8,11 +8,11 @@ VARIABLES retry,     \* Whether more retries are allowed
 
 vars == << retry, scheduled, ws >>
 
-None       == "None"
-Connecting == "Connecting"
-Open       == "Open"
-Closing    == "Closing"
-Closed     == "Closed"
+None       == "None"       \* None: Option[Instance]
+Connecting == "Connecting" \* Some(ws) if ws.readyState = Connecting
+Open       == "Open"       \* Some(ws) if ws.readyState = Open
+Closing    == "Closing"    \* Some(ws) if ws.readyState = Closing
+Closed     == "Closed"     \* Some(ws) if ws.readyState = Closed
 
 TypeInvariants ==
   /\ retry     \in BOOLEAN
@@ -30,6 +30,16 @@ Init ==
 
 ------------------------------------------------------------------------------------------------------------------------
 
+scheduleReconnect(assertNotScheduled) ==
+  IF retry
+  THEN /\ assertNotScheduled => Assert(~scheduled, "Zombie scheduled task detected.")
+       /\ scheduled' = TRUE
+       /\ retry' \in BOOLEAN \* move on to next retry
+  ELSE /\ scheduled' = FALSE
+       /\ UNCHANGED retry
+
+------------------------------------------------------------------------------------------------------------------------
+
 WS_Open ==
   /\ ws = Connecting
   /\ ws' = Open
@@ -41,19 +51,12 @@ WS_Closing ==
   /\ ws' = Closing
   /\ UNCHANGED << retry, scheduled >>
 
-scheduleReconnect ==
- IF retry
- THEN /\ scheduled' = TRUE
-      /\ retry' \in BOOLEAN \* move on to next retry
- ELSE /\ scheduled' = FALSE
-      /\ UNCHANGED retry
-
 WS_Closed ==
   /\ ws \in {Connecting, Open, Closing}
   /\ ws' = Closed
-  /\ scheduleReconnect
+  /\ scheduleReconnect(TRUE)
 
-Schedule ==
+ScheduledTaskExecutes ==
   /\ scheduled = TRUE
   /\ \/ \* Connection succeeds
         /\ scheduled' = FALSE
@@ -61,7 +64,7 @@ Schedule ==
         /\ UNCHANGED << retry >>
      \/ \* Connection fails
         /\ ws' = None
-        /\ scheduleReconnect
+        /\ scheduleReconnect(FALSE)
 
 ConnectNow ==
   /\ ws \in {None,Closed}
@@ -72,7 +75,7 @@ ConnectNow ==
         /\ retry' \in BOOLEAN \* reset retry status (counter)
      \/ \* Connection fails
         /\ ws' = None
-        /\ scheduleReconnect
+        /\ scheduleReconnect(FALSE) \* because clearTimer above
 
 Close ==
   /\ retry' = FALSE
@@ -85,7 +88,7 @@ Next ==
   \/ WS_Open
   \/ WS_Closing
   \/ WS_Closed
-  \/ Schedule
+  \/ ScheduledTaskExecutes
   \/ ConnectNow
   \/ Close
 
@@ -93,7 +96,7 @@ Next ==
 
 Liveness ==
   /\ WF_vars(WS_Open)
-  /\ WF_vars(Schedule)
+  /\ WF_vars(ScheduledTaskExecutes)
   /\ WF_vars(ConnectNow)
 
 Spec == Init /\ [][Next]_vars /\ Liveness

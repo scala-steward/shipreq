@@ -78,6 +78,22 @@ object WebSocketClient {
     private val protocolSC: Protocol.Of[SafePickler, ServerToClient[Push]] =
       mkProtocolSC(requestManager.getState(_).orNull)
 
+    /** All state for the WebSocket client.
+      *
+      * This is impure because of .instance.
+      *
+      * Unfortunately splitting this into multiple, clearer cases isn't an option. Even if you just had Connected
+      * and Disconnected as cases, Connected holds a WebSocket instance which has it's own mutable state, and can change
+      * to Closed without gives us a chance to change the state over to Disconnected.
+      *
+      * Correctness, confidence and sanity are instead achieved by formal specification in `websocket_client.tla`.
+      *
+      * @param instance An optional WebSocket instance that may or may not be connected. See it's readyState.
+      * @param retries Remaining retries when attempting to reconnect.
+      * @param scheduled A scheduled task that will attempt to (re)connect when it eventually executes.
+      * @param prevReadyState The last [[ReadyState]] used to notify readyState-change listeners. Used to prevent
+      *                       sending consecutive, identical notifications.
+      */
     private case class State(instance      : Option[Instance],
                              retries       : Retries,
                              scheduled     : Option[SetTimeoutHandle],
