@@ -106,7 +106,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
       f
     }
     WebSocketClient.Builder(newWS, protocol, Retries.none)
-      .build(onPush, _ => onWebSocketReadyStateChange, logger)
+      .build(onPush, _ => onWebSocketStateChange, logger)
   }
 
   val nextEventOrd: CallbackTo[EventOrd] =

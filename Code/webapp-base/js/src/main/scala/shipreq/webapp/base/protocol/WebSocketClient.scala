@@ -28,9 +28,9 @@ trait WebSocketClient[ReqRes <: Protocol.RequestResponse[SafePickler]] {
 object WebSocketClient {
 
   trait Builder[ReqRes <: Protocol.RequestResponse[SafePickler], Push] {
-    def build(onServerPush      : Push => Callback,
-              onReadyStateChange: WebSocketClient[ReqRes] => ReadyState => Callback,
-              logger            : LoggerJs.Dsl): WebSocketClient[ReqRes]
+    def build(onServerPush : Push => Callback,
+              onStateChange: WebSocketClient[ReqRes] => State => Callback,
+              logger       : LoggerJs.Dsl): WebSocketClient[ReqRes]
   }
 
   object Builder {
@@ -47,19 +47,21 @@ object WebSocketClient {
               p: Protocol.WebSocket.ClientReqServerPush[SafePickler],
               r: Retries): Builder[p.ReqRes, p.Push] =
       new Builder[p.ReqRes, p.Push] {
-        override def build(onServerPush      : p.Push => Callback,
-                           onReadyStateChange: WebSocketClient[p.ReqRes] => ReadyState => Callback,
-                           logger            : LoggerJs.Dsl) =
+        override def build(onServerPush : p.Push => Callback,
+                           onStateChange: WebSocketClient[p.ReqRes] => State => Callback,
+                           logger       : LoggerJs.Dsl) =
           new Impl(
             w,
             r,
-            onReadyStateChange,
+            onStateChange,
             protocolCS(p.req.codec),
             protocolSC(_)(p.push.codec),
             onServerPush,
             logger)
       }
   }
+
+  final case class State(readyState: ReadyState)
 
   // ===================================================================================================================
 
@@ -69,7 +71,7 @@ object WebSocketClient {
       Push](
       createWS          : CallbackTo[WebSocket],
       connectionRetries : Retries,
-      onReadyStateChange: WebSocketClient[ReqRes] => ReadyState => Callback,
+      onStateChange     : WebSocketClient[ReqRes] => State => Callback,
       protocolCS        : Protocol.Of[SafePickler, ClientToServer[Req]],
       mkProtocolSC      : (ReqId => Protocol[SafePickler]) => Protocol.Of[SafePickler, ServerToClient[Push]],
       recvPush          : Push => Callback,
@@ -94,15 +96,15 @@ object WebSocketClient {
       * @param instance An optional WebSocket instance that may or may not be connected. See it's readyState.
       * @param retries Remaining retries when attempting to reconnect.
       * @param scheduled A scheduled task that will attempt to (re)connect when it eventually executes.
-      * @param prevReadyState The last [[ReadyState]] used to notify readyState-change listeners. Used to prevent
-      *                       sending consecutive, identical notifications.
+      * @param prevState The last [[State]] used to notify readyState-change listeners. Used to prevent sending
+      *                  consecutive, identical notifications.
       */
-    private case class State(instance      : Option[Instance],
-                             retries       : Retries,
-                             scheduled     : Option[SetTimeoutHandle],
-                             prevReadyState: Option[ReadyState])
+    private case class InternalState(instance : Option[Instance],
+                                     retries  : Retries,
+                                     scheduled: Option[SetTimeoutHandle],
+                                     prevState: Option[State])
 
-    private var state = State(None, connectionRetries, None, None)
+    private var state = InternalState(None, connectionRetries, None, None)
 
     private var queueOldestToNewest = Vector.empty[BinaryData]
 
@@ -153,7 +155,7 @@ object WebSocketClient {
           unsafeFailQueued(errorClosed)
       }
 
-    private val onReadyStateChange2 = onReadyStateChange(this)
+    private val onReadyStateChange2 = onStateChange(this)
 
     private class Instance(val ws: WebSocket) {
       ws.binaryType.set(WebSocket.BinaryType.ArrayBuffer)
@@ -184,10 +186,10 @@ object WebSocketClient {
         ws.readyState() == ReadyState.Open
 
       private def runReadyStateChange(): Unit = {
-        val r = readyState()
-        if (!state.prevReadyState.contains(r)) {
-          state = state.copy(prevReadyState = Some(r))
-          onReadyStateChange2(r).runNow()
+        val newState = State(readyState())
+        if (!state.prevState.contains(newState)) {
+          state = state.copy(prevState = Some(newState))
+          onReadyStateChange2(newState).runNow()
         }
       }
 

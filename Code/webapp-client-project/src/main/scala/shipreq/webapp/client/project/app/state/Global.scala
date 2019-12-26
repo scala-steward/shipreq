@@ -58,8 +58,8 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
 
   val wsClient: WebSocketClient[WsReqRes]
 
-  final protected def onWebSocketReadyStateChange(rs: ReadyState): Callback = Callback.lazily {
-    val result: Callback = rs match {
+  final protected def onWebSocketStateChange(s: WebSocketClient.State): Callback = Callback.lazily {
+    val result: Callback = s.readyState match {
       case ReadyState.Open =>
         unsafeState match {
           case _: State.Loading => load
@@ -76,7 +76,7 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
          | ReadyState.Closing => Callback.empty
     }
 
-    logger(_.info(s"WebSocket ReadyState: $rs")) >> result
+    logger(_.info(s"WebSocket State: $s")) >> result
   }
 
   final private def load: Callback =
@@ -209,7 +209,7 @@ object Global {
     new Global(onFirstLoad, onInitFailure) {
       override val wsClient: WebSocketClient[WsReqRes] = {
         logger.runNow(_.debug("Creating WebSocket..."))
-        wscBuilder.build(onPush, _ => onWebSocketReadyStateChange, logger)
+        wscBuilder.build(onPush, _ => onWebSocketStateChange, logger)
       }
     }
 
