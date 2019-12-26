@@ -27,36 +27,39 @@ trait WebSocketClient[ReqRes <: Protocol.RequestResponse[SafePickler]] {
 
 object WebSocketClient {
 
-  trait WithoutCallbacks[ReqRes <: Protocol.RequestResponse[SafePickler], Push] {
+  trait Builder[ReqRes <: Protocol.RequestResponse[SafePickler], Push] {
     def build(onServerPush      : Push => Callback,
               onReadyStateChange: WebSocketClient[ReqRes] => ReadyState => Callback,
               logger            : LoggerJs.Dsl): WebSocketClient[ReqRes]
   }
 
-  def apply(u: Url.Absolute.Base,
-            p: Protocol.WebSocket.ClientReqServerPush[SafePickler],
-            r: Retries): WithoutCallbacks[p.ReqRes, p.Push] = {
-    val url      = (u.forWebSocket / p.url).absoluteUrl
-    val createWS = CallbackTo(WebSocket(url))
-    apply(createWS, p, r)
-  }
+  object Builder {
 
-  def apply(w: CallbackTo[WebSocket],
-            p: Protocol.WebSocket.ClientReqServerPush[SafePickler],
-            r: Retries): WithoutCallbacks[p.ReqRes, p.Push] =
-    new WithoutCallbacks[p.ReqRes, p.Push] {
-      override def build(onServerPush      : p.Push => Callback,
-                         onReadyStateChange: WebSocketClient[p.ReqRes] => ReadyState => Callback,
-                         logger            : LoggerJs.Dsl) =
-        new Impl(
-          w,
-          r,
-          onReadyStateChange,
-          protocolCS(p.req.codec),
-          protocolSC(_)(p.push.codec),
-          onServerPush,
-          logger)
+    def apply(u: Url.Absolute.Base,
+              p: Protocol.WebSocket.ClientReqServerPush[SafePickler],
+              r: Retries): Builder[p.ReqRes, p.Push] = {
+      val url      = (u.forWebSocket / p.url).absoluteUrl
+      val createWS = CallbackTo(WebSocket(url))
+      apply(createWS, p, r)
     }
+
+    def apply(w: CallbackTo[WebSocket],
+              p: Protocol.WebSocket.ClientReqServerPush[SafePickler],
+              r: Retries): Builder[p.ReqRes, p.Push] =
+      new Builder[p.ReqRes, p.Push] {
+        override def build(onServerPush      : p.Push => Callback,
+                           onReadyStateChange: WebSocketClient[p.ReqRes] => ReadyState => Callback,
+                           logger            : LoggerJs.Dsl) =
+          new Impl(
+            w,
+            r,
+            onReadyStateChange,
+            protocolCS(p.req.codec),
+            protocolSC(_)(p.push.codec),
+            onServerPush,
+            logger)
+      }
+  }
 
   // ===================================================================================================================
 

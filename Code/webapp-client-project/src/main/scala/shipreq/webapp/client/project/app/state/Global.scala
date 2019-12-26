@@ -202,7 +202,7 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
 
 object Global {
 
-  def apply(wscBuilder   : WebSocketClient.WithoutCallbacks[WsReqRes, Push],
+  def apply(wscBuilder   : WebSocketClient.Builder[WsReqRes, Push],
             onFirstLoad  : (Global, InitAppData) => Callback,
             onInitFailure: ErrorMsg => Callback,
             logger       : LoggerJs.Dsl): Global =

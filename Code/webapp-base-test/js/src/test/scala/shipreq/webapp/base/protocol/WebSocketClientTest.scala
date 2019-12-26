@@ -45,7 +45,7 @@ object WebSocketClientTest extends TestSuite {
       f
     }
 
-    val client = WebSocketClient(newWS, P, Retries.none)
+    val client = WebSocketClient.Builder(newWS, P, Retries.none)
       .build(
         p => Callback(receivedPushes :+= p),
         _ => _=> Callback.empty,

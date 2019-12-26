@@ -105,7 +105,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
       _fakeWS :+= f
       f
     }
-    WebSocketClient(newWS, protocol, Retries.none)
+    WebSocketClient.Builder(newWS, protocol, Retries.none)
       .build(onPush, _ => onWebSocketReadyStateChange, logger)
   }
 

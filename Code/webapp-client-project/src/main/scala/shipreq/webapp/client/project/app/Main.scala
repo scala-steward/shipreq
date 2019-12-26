@@ -41,7 +41,7 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
 
     val protocol  = ProjectSpaProtocols.WebSocket(i.projectId)
     val wsUrlBase = Url.Absolute.Base(location.protocol + "//" + location.host).forWebSocket
-    val wsClient  = WebSocketClient(wsUrlBase, protocol, wsRetries)
+    val wsClient  = WebSocketClient.Builder(wsUrlBase, protocol, wsRetries)
     val global    = Global(wsClient, onLoad, onFailure, LoggerJs.on)
 
     val keepAliveEvery     = Duration.ofSeconds(21)
