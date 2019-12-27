@@ -1,10 +1,10 @@
 package shipreq.webapp.client.project.test
 
-import japgolly.scalajs.react.{Callback, CallbackTo}
+import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
 import java.time.{Duration, Instant}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.JsExt._
-import shipreq.base.util.{ErrorMsg, PotentialChange, Retries}
+import shipreq.base.util.{ErrorMsg, OpResult, PotentialChange, Retries}
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.lib.LoggerJs
@@ -106,7 +106,11 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
       f
     }
     WebSocketClient.Builder(newWS, protocol, Retries.none)
-      .build(onPush, _ => onWebSocketStateChange, logger)
+      .build(
+        reauthorise   = AsyncCallback.pure(OpResult.Failure),
+        onServerPush  = onPush,
+        onStateChange = _ => onWebSocketStateChange,
+        logger        = logger)
   }
 
   val nextEventOrd: CallbackTo[EventOrd] =

@@ -4,18 +4,20 @@ import boopickle.DefaultBasic._
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
 import scala.util.Try
 import scalaz.\/-
+import sourcecode.Line
 import utest._
-import shipreq.base.util.{Retries, Url}
+import shipreq.base.util.{OpResult, Retries, Url}
 import shipreq.base.util.JsExt._
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.FakeWebSocket.Message
-import shipreq.webapp.base.protocol.WebSocketShared.ReqId
+import shipreq.webapp.base.protocol.WebSocketShared.{CloseCode, ReqId}
 import shipreq.webapp.base.protocol.WebSocket.ReadyState
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.base.test.WebappTestUtil._
 
 object WebSocketClientTest extends TestSuite {
+  import WebSocketClient.State
 
   private final case class ReqMsg(msg: Int)
   private final case class ResMsg(msg: Int)
@@ -36,6 +38,7 @@ object WebSocketClientTest extends TestSuite {
   private class Tester(initialState: ReadyState = ReadyState.Connecting) {
     var webSockets = Vector.empty[FakeWebSocket]
 
+    var stateChanges = Vector.empty[State]
     var receivedPushes = Vector.empty[PushMsg]
     var receivedResponses = Vector.empty[ResMsg]
 
@@ -45,11 +48,21 @@ object WebSocketClientTest extends TestSuite {
       f
     }
 
+    var reauthAttempts = 0
+    var reauthResult: OpResult = OpResult.Failure
+
+    private def onStateChange(s: State): Callback =
+      Callback {
+        stateChanges :+= s
+        //println(s"State change: $s")
+      }
+
     val client = WebSocketClient.Builder(newWS, P, Retries.none)
       .build(
-        p => Callback(receivedPushes :+= p),
-        _ => _=> Callback.empty,
-        LoggerJs.off)
+        reauthorise   = AsyncCallback.point{reauthAttempts += 1; reauthResult},
+        onServerPush  = p => Callback(receivedPushes :+= p),
+        onStateChange = _ => onStateChange,
+        logger        = LoggerJs.off)
 
     client.connect.runNow()
 
@@ -95,6 +108,11 @@ object WebSocketClientTest extends TestSuite {
       }
       receivedResponses.last
     }
+
+    def assertAndClearStateChanges(expect: State*)(implicit l: Line): Unit = {
+      assertEq(stateChanges, expect.toVector)
+      stateChanges = Vector.empty
+    }
   }
 
   override def tests = Tests {
@@ -114,6 +132,7 @@ object WebSocketClientTest extends TestSuite {
         val ab = assertNoChange(ws().sent().length)(send(ReqMsg(3)))
         ws().close()
         assertAsyncCallbackAlreadyFailed(ab)
+        assertEq(reauthAttempts, 0)
       }
 
       'closed - {
@@ -128,6 +147,50 @@ object WebSocketClientTest extends TestSuite {
         val ab = send(ReqMsg(3))
         ws().close()
         assertAsyncCallbackAlreadyFailed(ab)
+        assertEq(reauthAttempts, 0)
+      }
+    }
+
+    'auth - {
+      'expiryWithImmediateLogin - {
+        val t = new Tester(ReadyState.Open); import t._
+        reauthResult = OpResult.Success
+        assertEq(reauthAttempts, 0)
+        assertAndClearStateChanges(State.Authorised(ReadyState.Open))
+
+        ws().close(CloseCode.unauthorised)
+        assertEq(reauthAttempts, 1)
+        assertAndClearStateChanges(State.Unauthorised, State.Authorised(ReadyState.Open))
+
+        ws().close()
+        client.connect.runNow()
+        assertEq("Shouldn't try to re-authenticate", reauthAttempts, 1)
+        assertAndClearStateChanges(State.Authorised(ReadyState.Closed), State.Authorised(ReadyState.Open))
+      }
+
+      'expiryWithEventualLogin - {
+        val t = new Tester(ReadyState.Open); import t._
+        reauthResult = OpResult.Failure
+        assertEq(reauthAttempts, 0)
+        assertAndClearStateChanges(State.Authorised(ReadyState.Open))
+
+        ws().close(CloseCode.unauthorised)
+        assertEq(reauthAttempts, 1)
+        assertAndClearStateChanges(State.Unauthorised)
+
+        client.connect.runNow()
+        assertEq(reauthAttempts, 2)
+        assertAndClearStateChanges()
+
+        reauthResult = OpResult.Success
+        client.connect.runNow()
+        assertEq(reauthAttempts, 3)
+        assertAndClearStateChanges(State.Authorised(ReadyState.Open))
+
+        ws().close()
+        client.connect.runNow()
+        assertEq("Shouldn't try to re-authenticate", reauthAttempts, 3)
+        assertAndClearStateChanges(State.Authorised(ReadyState.Closed), State.Authorised(ReadyState.Open))
       }
     }
 

@@ -1,12 +1,13 @@
 package shipreq.webapp.base.protocol
 
 import org.scalajs.dom.{console, raw}
-import org.scalajs.dom.raw.{Blob, CloseEvent, Event, EventInit, MessageEvent, MessageEventInit}
+import org.scalajs.dom.raw.{Blob, CloseEvent, Event, MessageEvent, MessageEventInit}
 import scala.scalajs.js
 import scala.scalajs.js.typedarray
 import scala.scalajs.js.typedarray.{ArrayBuffer, TypedArrayBuffer}
 import shipreq.base.util.{BinaryData, BinaryJs, VarJs}
 import shipreq.webapp.base.protocol.WebSocket._
+import shipreq.webapp.base.protocol.WebSocketShared.{CloseCode, CloseReason, CloseReasonPhrase}
 
 final class FakeWebSocket(override val url: String, initialState: ReadyState = ReadyState.Connecting) extends WebSocket {
   import FakeWebSocket._
@@ -46,25 +47,26 @@ final class FakeWebSocket(override val url: String, initialState: ReadyState = R
         _readyState = ReadyState.Closing
     }
 
-  override def close()                          = close(1005)
-  override def close(code: Int)                 = close(code, "")
-  override def close(code: Int, reason: String) = close(code, reason, true)
+  def close(): Unit =
+    close(CloseCode.noStatusCode)
 
-  def close(code: Int, reason: String, wasClean: Boolean) =
+  def close(code: CloseCode): Unit =
+    close(CloseReason(code, CloseReasonPhrase.empty))
+
+  override def close(reason: CloseReason): Unit =
     readyState() match {
       case ReadyState.Closed     => ()
       case ReadyState.Connecting
          | ReadyState.Open
          | ReadyState.Closing    =>
         _readyState = ReadyState.Closed
-        val p = js.Dynamic.literal(
-          code      = code,
-          reason    = reason,
-          wasClean  = wasClean,
-          isTrusted = true,
-        ).asInstanceOf[EventInit]
-        val e = new Event("close", p).asInstanceOf[CloseEvent]
-        onClose.get()(e)
+        val event = new Event("close").asInstanceOf[CloseEvent]
+        val e = event.asInstanceOf[js.Dynamic]
+        e.code      = reason.code.value
+        e.reason    = reason.phrase.value
+        e.wasClean  = true
+        e.isTrusted = true
+        onClose.get()(event)
     }
 
   override def send(data: String)      = sendMsg(Message.Text(data))

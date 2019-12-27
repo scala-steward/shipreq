@@ -1,14 +1,16 @@
 package shipreq.webapp.base.protocol
 
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
+import japgolly.univeq._
 import org.scalajs.dom.{CloseEvent, Event, MessageEvent, console, window}
+import scala.annotation.elidable
 import scala.scalajs.js
 import scala.scalajs.js.timers._
 import scala.scalajs.js.typedarray.ArrayBuffer
 import scala.util.{Failure, Success, Try}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.JsExt._
-import shipreq.base.util.{BinaryData, ErrorMsg, Retries, Url}
+import shipreq.base.util.{BinaryData, ErrorMsg, OpResult, Retries, Url}
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.WebSocket.ReadyState
 import shipreq.webapp.base.protocol.WebSocketShared._
@@ -19,7 +21,7 @@ trait WebSocketClient[ReqRes <: Protocol.RequestResponse[SafePickler]] {
   val keepAlive: Callback
   def send(p: ReqRes)(request: p.RequestType): CallbackTo[AsyncCallback[p.ResponseType]]
   def invoker(p: ReqRes): ServerSideProcInvoker[p.RequestType, ErrorMsg, p.ResponseType]
-  val connect: Callback
+  def connect: Callback
   val close: Callback
 }
 
@@ -28,7 +30,8 @@ trait WebSocketClient[ReqRes <: Protocol.RequestResponse[SafePickler]] {
 object WebSocketClient {
 
   trait Builder[ReqRes <: Protocol.RequestResponse[SafePickler], Push] {
-    def build(onServerPush : Push => Callback,
+    def build(reauthorise  : AsyncCallback[OpResult],
+              onServerPush : Push => Callback,
               onStateChange: WebSocketClient[ReqRes] => State => Callback,
               logger       : LoggerJs.Dsl): WebSocketClient[ReqRes]
   }
@@ -47,12 +50,14 @@ object WebSocketClient {
               p: Protocol.WebSocket.ClientReqServerPush[SafePickler],
               r: Retries): Builder[p.ReqRes, p.Push] =
       new Builder[p.ReqRes, p.Push] {
-        override def build(onServerPush : p.Push => Callback,
+        override def build(reauthorise  : AsyncCallback[OpResult],
+                           onServerPush : p.Push => Callback,
                            onStateChange: WebSocketClient[p.ReqRes] => State => Callback,
                            logger       : LoggerJs.Dsl) =
           new Impl(
             w,
             r,
+            reauthorise,
             onStateChange,
             protocolCS(p.req.codec),
             protocolSC(_)(p.push.codec),
@@ -61,7 +66,18 @@ object WebSocketClient {
       }
   }
 
-  final case class State(readyState: ReadyState)
+  object CloseReasons {
+    val clientOutOfDate = CloseReason(CloseCode.cannotAccept,  CloseReasonPhrase("Failed to parse server response: client out-of-date"))
+    val parseError      = CloseReason(CloseCode.protocolError, CloseReasonPhrase("Failed to parse server response"))
+  }
+
+  sealed trait State
+  object State {
+    case object Unauthorised extends State
+    final case class Authorised(readyState: ReadyState) extends State
+
+    implicit def univEq: UnivEq[State] = UnivEq.derive
+  }
 
   // ===================================================================================================================
 
@@ -71,6 +87,7 @@ object WebSocketClient {
       Push](
       createWS          : CallbackTo[WebSocket],
       connectionRetries : Retries,
+      reauthorise       : AsyncCallback[OpResult],
       onStateChange     : WebSocketClient[ReqRes] => State => Callback,
       protocolCS        : Protocol.Of[SafePickler, ClientToServer[Req]],
       mkProtocolSC      : (ReqId => Protocol[SafePickler]) => Protocol.Of[SafePickler, ServerToClient[Push]],
@@ -93,38 +110,78 @@ object WebSocketClient {
       *
       * Correctness, confidence and sanity are instead achieved by formal specification in `websocket_client.tla`.
       *
+      * @param authorised Whether we think we're logged in or not.
       * @param instance An optional WebSocket instance that may or may not be connected. See it's readyState.
       * @param retries Remaining retries when attempting to reconnect.
       * @param scheduled A scheduled task that will attempt to (re)connect when it eventually executes.
       * @param prevState The last [[State]] used to notify readyState-change listeners. Used to prevent sending
       *                  consecutive, identical notifications.
       */
-    private case class InternalState(instance : Option[Instance],
-                                     retries  : Retries,
-                                     scheduled: Option[SetTimeoutHandle],
-                                     prevState: Option[State])
+    private case class InternalState(authorised: Boolean,
+                                     instance  : Option[Instance],
+                                     retries   : Retries,
+                                     scheduled : Option[SetTimeoutHandle],
+                                     prevState : Option[State])
 
-    private var state = InternalState(None, connectionRetries, None, None)
+    private var state = InternalState(
+      authorised = true,
+      instance   = None,
+      retries    = connectionRetries,
+      scheduled  = None,
+      prevState  = None)
 
     private var queueOldestToNewest = Vector.empty[BinaryData]
 
-    override val connect: Callback =
+    private val readyStateCB: CallbackTo[Option[ReadyState]] =
+      CallbackTo(state.instance.map(_.readyState()))
+
+    private def setPublicState(newState: State): Callback =
       Callback {
-        state.instance.map(_.readyState()) match {
-
-          case None | Some(ReadyState.Closed) =>
-            state.scheduled.foreach(clearTimeout)
-            val i = unsafeNewInstance()
-            state = state.copy(instance = i, scheduled = None)
-            if (i.isDefined)
-              state = state.copy(retries = connectionRetries)
-            else
-              unsafeScheduleReconnect()
-
-          case Some(r) =>
-            console.warn(s"Ignoring connect with WS in readyState $r")
+        if (!state.prevState.exists(_ ==* newState)) {
+          state = state.copy(prevState = Some(newState))
+          onReadyStateChange2(newState).runNow()
         }
       }
+
+    override lazy val connect: Callback = {
+      val attemptConnect: Callback =
+        Callback {
+          state.scheduled.foreach(clearTimeout)
+          val i = unsafeNewInstance()
+          state = state.copy(instance = i, scheduled = None)
+          if (i.isDefined)
+            state = state.copy(retries = connectionRetries)
+          else
+            unsafeScheduleReconnect()
+        }
+
+      val reauthoriseAndReconnect: Callback =
+        Callback.byName { // TODO BUG! https://github.com/japgolly/scalajs-react/issues/604
+          reauthorise.attempt.flatMap {
+
+            case Right(OpResult.Success) =>
+              AsyncCallback.point {
+                state = state.copy(authorised = true)
+              } >> connect.asAsyncCallback
+
+            case Right(OpResult.Failure) | Left(_) =>
+              AsyncCallback.point {
+                unsafeFailQueued(errorUnauthorised)
+              }
+
+          }.toCallback
+        }
+
+      readyStateCB.flatMap {
+        case None | Some(ReadyState.Closed) =>
+          if (state.authorised)
+            attemptConnect
+          else
+            reauthoriseAndReconnect
+        case Some(ReadyState.Connecting | ReadyState.Open | ReadyState.Closing) =>
+          Callback.empty
+      }
+    }
 
     private def unsafeNewInstance(): Option[Instance] = {
       // console.info("Connecting to server...")
@@ -173,11 +230,14 @@ object WebSocketClient {
         case ReadyState.Closed =>
           // Sometimes (like when the security policy blocks the connection), the WebSocket starts in a closed state
           // without sending an onClose event. Catch that here so that the normal retry process kicks in.
-          onClosed()
+          onClosed(None)
 
           case ReadyState.Closing
              | ReadyState.Connecting => ()
         }
+
+      @elidable(elidable.INFO)
+      override def toString = s"WebSocketClient.Instance(${readyState()})"
 
       def readyState(): ReadyState =
         ws.readyState()
@@ -186,11 +246,8 @@ object WebSocketClient {
         ws.readyState() == ReadyState.Open
 
       private def runReadyStateChange(): Unit = {
-        val newState = State(readyState())
-        if (!state.prevState.contains(newState)) {
-          state = state.copy(prevState = Some(newState))
-          onReadyStateChange2(newState).runNow()
-        }
+        val newState = State.Authorised(readyState())
+        setPublicState(newState).runNow()
       }
 
       private def onOpen(e: Event): Unit =
@@ -247,10 +304,10 @@ object WebSocketClient {
       private def onDecodeFailure(e: SafePickler.DecodingFailure): Callback = Callback {
         console.error(s"Failed to parse server response: $e")
         if (e.isLocalKnownToBeOutOfDate) {
-          window.alert("Failed to understand the response from the server.\nWe've upgraded our servers since you opened this page.\nPlease reload this page to get the updates.")
-          ws.close(1003, "Failed to parse server response: client out-of-date")
+          window.alert("Unable to understand the response from the server.\nWe've upgraded our servers since you opened this page.\nPlease reload this page to get the updates.")
+          ws.close(CloseReasons.clientOutOfDate)
         } else {
-          ws.close(1002, "Failed to parse server response")
+          ws.close(CloseReasons.parseError)
         }
       }
 
@@ -267,18 +324,26 @@ object WebSocketClient {
       private def unsafeCloseDueToError(msg: Option[String]): Unit = {
         val desc = s"WebSocket error occurred.${msg.fold("")(" " + _)}"
         //console.error(desc, e)
-        ws.close(4000, desc)
+        val reason = CloseReason(CloseCode.unhandledException, CloseReasonPhrase(desc))
+        ws.close(reason)
       }
 
       private def onClose(e: CloseEvent): Unit = {
-        onClosed()
+        onClosed(Some(CloseCode(e.code)))
       }
 
-      private def onClosed(): Unit = {
-        runReadyStateChange()
-        unsafeFailQueued(if (opened) errorClosed else errorFailed)
-        unsafeScheduleReconnect()
-      }
+      private def onClosed(code: Option[CloseCode]): Unit =
+        code match {
+          case Some(CloseCode.`unauthorised`) =>
+            state = state.copy(authorised = false)
+            setPublicState(State.Unauthorised).runNow()
+            connect.runNow()
+
+          case _ =>
+            runReadyStateChange()
+            unsafeFailQueued(if (opened) errorClosed else errorFailed)
+            unsafeScheduleReconnect()
+        }
     }
 
     private val processQueue: Callback =
@@ -298,7 +363,7 @@ object WebSocketClient {
         state = state.copy(retries = Retries.none)
         for (i <- state.instance)
           if (i.isOpen())
-            i.ws.close()
+            i.ws.close(CloseReason.normalClosure)
       }
 
     override val readyState: CallbackTo[Option[ReadyState]] =
@@ -347,9 +412,10 @@ object WebSocketClient {
       ServerSideProcInvoker.viaAsyncCallback(send(p)(_))
   }
 
-  private val errorClosing = js.JavaScriptException("Connection is closing.")
-  private val errorClosed  = js.JavaScriptException("Connection is closed.")
-  private val errorFailed  = js.JavaScriptException("Failed to connect to server.")
+  private val errorClosing      = js.JavaScriptException("Connection is closing.")
+  private val errorClosed       = js.JavaScriptException("Connection is closed.")
+  private val errorFailed       = js.JavaScriptException("Failed to connect to server.")
+  private val errorUnauthorised = js.JavaScriptException("Session expired. You must login again.")
 
   // ===================================================================================================================
 

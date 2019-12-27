@@ -3,12 +3,13 @@ package shipreq.webapp.client.project.app.state
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.extra.{Broadcaster, Px}
-import japgolly.scalajs.react.{Callback, CallbackTo, Reusability}
+import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo, Reusability}
 import japgolly.univeq._
 import java.time.{Duration, Instant}
+import org.scalajs.dom.window
 import scala.util.{Failure, Success}
 import scalaz.{-\/, \/-}
-import shipreq.base.util.ErrorMsg
+import shipreq.base.util.{ErrorMsg, OpResult}
 import shipreq.webapp.base.data.{Project, ProjectMetaData}
 import shipreq.webapp.base.event.{EventOrd, EventSeqSummary, VerifiedEvent}
 import shipreq.webapp.base.lib.DataReusability._
@@ -59,21 +60,38 @@ abstract class Global(onFirstLoad: (Global, InitAppData) => Callback,
   val wsClient: WebSocketClient[WsReqRes]
 
   final protected def onWebSocketStateChange(s: WebSocketClient.State): Callback = Callback.lazily {
-    val result: Callback = s.readyState match {
-      case ReadyState.Open =>
-        unsafeState match {
-          case _: State.Loading => load
-          case s: State.Active  => reconnect(s.projectState)
-        }
+    import WebSocketClient.State._
 
-      case ReadyState.Closed =>
-        unsafeState match {
-          case _: State.Loading => onInitFailure(ErrorMsg("Connection to server failed."))
-          case _: State.Active  => Callback.empty
-        }
+    val result: Callback =
+      unsafeState match {
+        case _: State.Loading =>
+          s match {
+            case Authorised(ReadyState.Open) =>
+              load
 
-      case ReadyState.Connecting
-         | ReadyState.Closing => Callback.empty
+            case Authorised(ReadyState.Closed) =>
+              onInitFailure(ErrorMsg("Connection to server failed."))
+
+            case Unauthorised =>
+              val errMsg = ErrorMsg("Your session has expired. Please login again.")
+              onInitFailure(errMsg) >> Callback(window.location.reload())
+
+            case Authorised(ReadyState.Connecting)
+               | Authorised(ReadyState.Closing) =>
+              Callback.empty
+          }
+
+        case g: State.Active =>
+          s match {
+            case Authorised(ReadyState.Open) =>
+              reconnect(g.projectState)
+
+            case Authorised(ReadyState.Closed)
+               | Authorised(ReadyState.Connecting)
+               | Authorised(ReadyState.Closing)
+               | Unauthorised =>
+              Callback.empty
+          }
     }
 
     logger(_.info(s"WebSocket State: $s")) >> result
@@ -209,7 +227,11 @@ object Global {
     new Global(onFirstLoad, onInitFailure) {
       override val wsClient: WebSocketClient[WsReqRes] = {
         logger.runNow(_.debug("Creating WebSocket..."))
-        wscBuilder.build(onPush, _ => onWebSocketStateChange, logger)
+        wscBuilder.build(
+          reauthorise   = AsyncCallback.pure(OpResult.Failure),
+          onServerPush  = onPush,
+          onStateChange = _ => onWebSocketStateChange,
+          logger        = logger)
       }
     }
 
