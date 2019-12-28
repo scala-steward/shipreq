@@ -28,6 +28,9 @@ object CommonProtocols {
 
     object Request {
 
+      def validate(user: Username \/ EmailAddr, password: PlainTextPassword): Composite.Invalidity \/ Request =
+        Untyped(user.fold(_.value, _.value), password.value).validate
+
       @Lenses
       final case class Untyped(usernameOrEmail: String, password: String) {
         def validate: Composite.Invalidity \/ Request =
