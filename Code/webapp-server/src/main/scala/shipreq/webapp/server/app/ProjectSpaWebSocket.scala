@@ -181,7 +181,7 @@ final class ProjectSpaWebSocket extends StrictLogging {
   }
 
   @OnClose
-  def onClose(s: Session, reason: CloseReason): Unit = withMdc(s, "close") {
+  def onClose(s: Session, reason: javax.websocket.CloseReason): Unit = withMdc(s, "close") {
     val userProps = s.getUserProperties
     val static    = Option(staticL.get(userProps))
     val state     = Option(stateL.get(userProps))
