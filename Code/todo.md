@@ -119,8 +119,7 @@ Phase 2B
     * Allow users to toggle connection
   * Have client handle ConnectRejections, including re-logging in
   * Ensure that JWT expiry is only increased on login/logout
-  * Refactor Security.SessionToken so that expiry isn't optional on read but ignored on write
-    * Check JWT expiry on message
+  * Check JWT expiry on message
   * Recover from lost Redis connections
 
 * Change security token to something like confirmation/verification token (inc properties)

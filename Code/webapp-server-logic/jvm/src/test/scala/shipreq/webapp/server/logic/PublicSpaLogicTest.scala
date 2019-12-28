@@ -102,7 +102,7 @@ object PublicSpaLogicTest extends TestSuite {
             }
           )
         val u = db.getUser(-\/(req.username)).getOrElse(sys error "User not found")
-        assertEq(r, (\/-(Result.Success), Some(u.token).withSession(r._2)))
+        assertEq(r, (\/-(Result.Success), Some(u.token).withSession(r._2).withoutExpiry))
         taskman.assertLastSubmitted { case _: Task.RegistrationCompleted => () }
       }
 

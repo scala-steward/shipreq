@@ -8,7 +8,7 @@ import scalaz.std.option.optionInstance
 import scalaz.syntax.monad._
 import scalaz.syntax.std.option._
 import shipreq.base.util._
-import shipreq.base.util.log.{HasLogger, MdcUtil, WebappLogFields}
+import shipreq.base.util.log.{HasLogger, WebappLogFields}
 import shipreq.taskman.api.{Task, TaskId, TaskmanApi}
 import shipreq.webapp.base.Urls
 import shipreq.webapp.base.data.SecurityToken
@@ -25,7 +25,7 @@ trait PublicSpaLogic[F[_]] {
   val ajaxResetPassword1: PublicSpaProtocols.ResetPassword1.ajax.ServerSideFn [F]
   val ajaxResetPassword2: PublicSpaProtocols.ResetPassword2.ajax.ServerSideFn [F]
 
-  val ajaxRegister2: Security.SessionToken => PublicSpaProtocols.Register2.ajax.ServerSideFnO[F, Option[Security.SessionToken]]
+  val ajaxRegister2: Security.SessionToken[Any] => PublicSpaProtocols.Register2.ajax.ServerSideFnO[F, Option[Security.SessionToken[Unit]]]
 
   /** Ignores publicRegistration setting.
     * Lacks security protection.
@@ -161,8 +161,8 @@ object PublicSpaLogic extends HasLogger {
             }
           )
 
-        val register2: Security.SessionToken => PublicSpaProtocols.Register2.ajax.ServerSideFnO[F, Option[Security.SessionToken]] = session => {
-          type T = Option[Security.SessionToken]
+        val register2: Security.SessionToken[Any] => PublicSpaProtocols.Register2.ajax.ServerSideFnO[F, Option[Security.SessionToken[Unit]]] = session => {
+          type T = Option[Security.SessionToken[Unit]]
           import PublicSpaProtocols.Register2.{Request, Result}
           val stack = MonadEE[F, ErrorMsg, Result]
           import stack._
@@ -187,13 +187,13 @@ object PublicSpaLogic extends HasLogger {
                       case DB.UserRegistrationResult.UsernameTaken => -\/(\/-(Result.UsernameTaken))
                     }
 
-                  val login: Stack[Option[Security.SessionToken]] =
+                  val login: Stack[Option[Security.SessionToken[Unit]]] =
                     common.attemptLoginUnprotected(-\/(req.username), req.password, session).mapToStack {
                       case (Allow, t) => \/-(t)
                       case (Deny, _) => -\/(-\/(ErrorMsg("Registration completed but login failed.")))
                     }
 
-                  val main: Stack[Option[Security.SessionToken]] =
+                  val main: Stack[Option[Security.SessionToken[Unit]]] =
                     for {
                       _  <- validateToken
                       ps <- security.hashPassword(req.password).toStack
@@ -202,7 +202,7 @@ object PublicSpaLogic extends HasLogger {
                       t  <- login
                     } yield t
 
-                  def logAndMap(i: StackLeft \/ Option[Security.SessionToken]): F[(ErrorMsg \/ (Result, Option[Security.SessionToken]), Security.Result)] =
+                  def logAndMap(i: StackLeft \/ Option[Security.SessionToken[Unit]]): F[(ErrorMsg \/ (Result, Option[Security.SessionToken[Unit]]), Security.Result)] =
                     F.point(i match {
                       case \/-(t) =>
                         logger.info(s"${req.username.with_@} completed user registration.")

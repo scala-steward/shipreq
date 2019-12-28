@@ -3,6 +3,7 @@ package shipreq.webapp.server.logic
 import scalaz.{-\/, Name, Need, \/-}
 import io.circe._
 import io.circe.syntax._
+import java.time.Instant
 import utest._
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.{BinaryData, Deny, Identity, Invalid, Url}
@@ -69,7 +70,7 @@ object DispatchLogicTest extends TestSuite {
             body   : Option[BinaryData]       = None,
             params : Map[String, String]      = Map.empty,
             cookies: Map[Cookie.Name, String] = Map.empty)
-           (implicit token: Security.SessionToken = null): (TestRequest, TestResponse) = {
+           (implicit token: Security.SessionToken[Instant] = null): (TestRequest, TestResponse) = {
       val cookies2 =
         if (token ne null)
           patchCookies(cookies, security.sessionPersist(token).value)
@@ -84,7 +85,7 @@ object DispatchLogicTest extends TestSuite {
                (req    : p.prepReq.Type,
                 method : Method                   = Post,
                 cookies: Map[Cookie.Name, String] = Map.empty)
-               (implicit token: Security.SessionToken = null) = {
+               (implicit token: Security.SessionToken[Instant] = null) = {
       val bin = p.prepReq.codec.encode(req)
       run(p.url, method, Some(bin), Map.empty, cookies)(token)
     }
@@ -94,7 +95,7 @@ object DispatchLogicTest extends TestSuite {
                 method: Method              = Get,
                 body   : Option[BinaryData] = None,
                 params: Map[String, String] = Map.empty)
-               (implicit token: Security.SessionToken = null): TestResponse = {
+               (implicit token: Security.SessionToken[Instant] = null): TestResponse = {
       val actual = run(url, method, body, params)(token)._2
       assertEq(s"${method.toString.toUpperCase} ${url.relativeUrl} ${params.mkString(", ")}", actual.cmd, expect)
       actual
@@ -133,7 +134,7 @@ object DispatchLogicTest extends TestSuite {
   implicit def autoXID(p: ProjectId): ProjectId.Public =
     Obfuscators.projectId.obfuscate(p)
 
-  implicit def userToToken(u: MockDb.UserEntry): Security.SessionToken =
+  implicit def userToToken(u: MockDb.UserEntry): Security.SessionToken[Instant] =
     if (u eq null) null else u.token
 
   private def newEmail = EmailAddr("x@x.io")
@@ -154,7 +155,7 @@ object DispatchLogicTest extends TestSuite {
           val u      = user2
           val req    = CommonProtocols.Login.Request(-\/(u.username), user2password)
           val st1    = Security.SessionToken.anonymous()
-          val res    = runAjax(CommonProtocols.Login.ajax)(req)(st1)._2
+          val res    = runAjax(CommonProtocols.Login.ajax)(req)(st1.withExpirySoon())._2
           val expect = u.token.withoutExpiry.withSession(st1)
           val tok    = security.sessionRestore(res.cookies.get).value.modToken(_.withoutExpiry)
           assertEq(tok, SessionRestoreResult.Success(expect))
@@ -268,9 +269,9 @@ object DispatchLogicTest extends TestSuite {
     }
 
     'ajax {
-      def test(token: Option[Security.SessionToken])
+      def test(token: Option[Security.SessionToken[Instant]])
               (expectFailure: Option[Int],
-               expectNewToken: Option[Security.SessionToken]) = {
+               expectNewToken: Option[Security.SessionToken[Any]]) = {
 
         val lpReq = PublicSpaProtocols.LandingPage.Request(
           PersonName("Mike"),
@@ -305,7 +306,7 @@ object DispatchLogicTest extends TestSuite {
       'requireJwt - test(None)(Some(403), None)
       'auth - test(Some(user2.token))(None, Some(user2.token))
       'anon - {
-        val st = Security.SessionToken.anonymous()
+        val st = Security.SessionToken.anonymous().withExpirySoon()
         test(Some(st))(None, Some(st))
       }
     }

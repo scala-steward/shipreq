@@ -27,7 +27,7 @@ object LiveTest extends TestSuite {
   implicit def temp[I](c: shipreq.webapp.base.protocol.ClientSideProc[I]): ClientSideProc[I] =
     ClientSideProc[I](c.objectName)(c.pickler)
 
-  implicit def userToToken(u: UserFixture.TestUser): Option[Security.SessionToken] =
+  implicit def userToToken(u: UserFixture.TestUser): Option[Security.SessionToken[Unit]] =
     Some(Security.SessionToken.anonymous().login(u.toUserDescriptor))
 
   override def tests = Tests {

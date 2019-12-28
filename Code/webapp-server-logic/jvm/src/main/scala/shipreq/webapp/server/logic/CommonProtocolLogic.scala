@@ -12,14 +12,14 @@ trait CommonProtocolLogic[F[_]] {
   /** "Unprotected" means that this isn't wrapped in `security.protect` */
   def attemptLoginUnprotected(id      : Username \/ EmailAddr,
                               password: PlainTextPassword,
-                              session : Security.SessionToken): F[CommonProtocolLogic.LoginResult]
+                              session : Security.SessionToken[Any]): F[CommonProtocolLogic.LoginResult]
 
-  val ajaxLogin: Security.SessionToken => CommonProtocols.Login.ajax.ServerSideFnO[F, Option[Security.SessionToken]]
+  val ajaxLogin: Security.SessionToken[Any] => CommonProtocols.Login.ajax.ServerSideFnO[F, Option[Security.SessionToken[Unit]]]
 }
 
 object CommonProtocolLogic extends HasLogger {
 
-  type LoginResult = (Permission, Option[Security.SessionToken])
+  type LoginResult = (Permission, Option[Security.SessionToken[Unit]])
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
@@ -34,7 +34,7 @@ object CommonProtocolLogic extends HasLogger {
 
       override def attemptLoginUnprotected(id      : Username \/ EmailAddr,
                                            password: PlainTextPassword,
-                                           session : Security.SessionToken): F[LoginResult] =
+                                           session : Security.SessionToken[Any]): F[LoginResult] =
         security.attemptLogin(id, password).flatMap {
 
           case Some(user) =>
@@ -42,7 +42,7 @@ object CommonProtocolLogic extends HasLogger {
             val logToDB       = svr.clientIP.flatMap(ip => svr.fork(security.db.logLoginSuccess(user.id, ip)))
             val log           = F.point(logger.info(s"User #${user.id.value} logged in."))
             val updateMetrics = metrics.securityEvent(Security.Event.Login, Security.Result.Success)
-            val newSession    = session.login(user)
+            val newSession    = session.login(user).withoutExpiry
             val result        = (Allow, Some(newSession)): LoginResult
             val main          = log >> logToDB >> updateMetrics >| result
 

@@ -1,5 +1,6 @@
 package shipreq.webapp.server.test
 
+import java.time.Instant
 import net.liftweb.http.LiftRules
 import net.liftweb.http.testing._
 import org.apache.commons.httpclient.{HttpClient, HttpMethodBase}
@@ -60,7 +61,7 @@ object LiveTestUtils {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   def get(url    : String,
-          token  : Option[Security.SessionToken] = None,
+          token  : Option[Security.SessionToken[Any]] = None,
           headers: List[(String, String)] = Nil,
           params : List[(String, String)] = Nil): HttpResponse = {
     val h2 = token.map(tokenCookie).toList
@@ -68,7 +69,7 @@ object LiveTestUtils {
   }
 
   def post(url    : String,
-           token  : Option[Security.SessionToken] = None,
+           token  : Option[Security.SessionToken[Any]] = None,
            headers: List[(String, String)] = Nil,
            params : List[(String, String)] = Nil): HttpResponse = {
     val h2 = token.map(tokenCookie).toList
@@ -77,7 +78,7 @@ object LiveTestUtils {
 
   def ajaxPost(p: Protocol.Ajax[SafePickler])
               (req: p.protocol.RequestType,
-               token  : Security.SessionToken = Security.SessionToken.anonymous(),
+               token  : Security.SessionToken[Any] = Security.SessionToken.anonymous(),
                headers: List[(String, String)] = Nil): HttpResponse = {
     val h2 = tokenCookie(token)
     val prep = p.protocol.prepareSend(req)
@@ -86,7 +87,7 @@ object LiveTestUtils {
       .asInstanceOf[HttpResponse]
   }
 
-  private def tokenCookie(t: Security.SessionToken): (String, String) = {
+  private def tokenCookie(t: Security.SessionToken[Any]): (String, String) = {
     Global.security.sessionPersist(t).unsafeRun() match {
       case Cookie.Update(c :: Nil, Nil) => ("Cookie", s"${c.name.value}=${c.value}")
       case c => sys.error("Got: " + c)
@@ -148,7 +149,7 @@ object LiveTestUtils {
         .assertBodyContains(spaJs)
         .assertBodyContains(spaEP.objectAndMethod + "(")
 
-    def assertJwt(expect: Option[Security.SessionToken])(implicit l: sourcecode.Line): LiveTestHttpResponse = {
+    def assertJwt(expect: Option[Security.SessionToken[Any]])(implicit l: sourcecode.Line): LiveTestHttpResponse = {
       val e = expect match {
         case Some(t) => Security.SessionRestoreResult.Success(t)
         case None    => Security.SessionRestoreResult.None
@@ -156,7 +157,7 @@ object LiveTestUtils {
       assertJwt(e)
     }
 
-    def assertJwt(expect: Security.SessionRestoreResult)(implicit l: sourcecode.Line): LiveTestHttpResponse = {
+    def assertJwt(expect: Security.SessionRestoreResult[Any])(implicit l: sourcecode.Line): LiveTestHttpResponse = {
       val prefix = SecurityInterpreter.cookieName.value + "="
       val cookieValue = resp.headers.getOrElse("Set-Cookie", Nil).find(_.startsWith(prefix)).map(_.drop(prefix.length))
       val actual = cookieValue match {
@@ -166,7 +167,7 @@ object LiveTestUtils {
         case None =>
           Security.SessionRestoreResult.None
       }
-      assertEq(actual.modToken(_.withoutExpiry), expect)
+      assertEq(actual.modToken(_.withoutExpiry), expect.modToken(_.withoutExpiry))
       this
     }
   }

@@ -24,13 +24,13 @@ object CommonProtocolLogicTest extends TestSuite {
     'login {
       import CommonProtocols.Login._
       implicit val t = Tester(); import t._
- import mockInterpreters._
+      import mockInterpreters._
 
       def test(usernameOrEmail: Username \/ EmailAddr, password: PlainTextPassword)
-              (expectResp: Permission, expectToken: Option[Security.SessionToken]) =
+              (expectResp: Permission, expectToken: Option[Security.SessionToken[Any]]) =
         assertDifference("usrLoginLog", db.usrLoginLog.length)(if (expectResp is Allow) 1 else 0) {
           val r = runLogin(Request(usernameOrEmail, password))
-          assertEq(r, (expectResp, expectToken.withSession(r._2)))
+          assertEq(r, (expectResp, expectToken.withSession(r._2).withoutExpiry))
           svr.runForked()
         }
 

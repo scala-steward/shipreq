@@ -149,7 +149,7 @@ object ProjectSpaLogic extends StrictLogging {
         val C = OnConnect
         import ConnectRejection._
 
-        val parseSessionResult: Security.SessionRestoreResult => C.Result[Security.SessionToken] = {
+        val parseSessionResult: Security.SessionRestoreResult[Instant] => C.Result[Security.SessionToken[Instant]] = {
           case Security.SessionRestoreResult.Success(t) => C.pure(t)
           case Security.SessionRestoreResult.Expired(_) => C.fail(ExpiredSession)
           case Security.SessionRestoreResult.None       => C.fail(NoSession)

@@ -8,6 +8,7 @@ import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.ParseLong
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.univeq._
+import java.time.Instant
 import scalaz.{-\/, Monad, Need, \/, \/-}
 import scalaz.syntax.monad._
 import shipreq.base.ops.Trace
@@ -177,13 +178,13 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
     routes.embed(r => test(r.path), r => r.copy(path = mod(r.path)))
   }
 
-  private def initOrExtendSession(cmd: Security.SessionToken => ResponseCmd)(implicit req: Request): F[Response] =
+  private def initOrExtendSession(cmd: Security.SessionToken[Any] => ResponseCmd)(implicit req: Request): F[Response] =
     for {
       s  <- security.sessionRestoreOrCreate(req.cookie)
       cu <- security.sessionPersist(s)
     } yield Response(cmd(s), cu)
 
-  private def requireSession(fCmd: Security.SessionToken => F[Response])(implicit req: Request): F[Response] =
+  private def requireSession(fCmd: Security.SessionToken[Instant] => F[Response])(implicit req: Request): F[Response] =
     security.sessionRestore(req.cookie).flatMap {
       case Security.SessionRestoreResult.Success(t) => fCmd(t)
       case Security.SessionRestoreResult.None
@@ -323,13 +324,13 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
 
     private case class Route(handler: Handler, name: String, sessionRequired: Boolean)
 
-    private type Handler = (Security.SessionToken, BinaryData, tracer.Span) => F[Response]
+    private type Handler = (Security.SessionToken[Any], BinaryData, tracer.Span) => F[Response]
 
     private[this] val routeMap: Map[String, Route] = {
       val mutableRouteMap = new Url.Relative.MutableMap[Route]
 
       def _register[A](p: Protocol.Ajax[SafePickler], name: String, sessionRequired: Boolean)
-                      (f: (Security.SessionToken, p.protocol.PreparedRequestType) => F[Response]): Unit = {
+                      (f: (Security.SessionToken[Any], p.protocol.PreparedRequestType) => F[Response]): Unit = {
         assert(p.url.underlying startsWith Urls.ajaxRoot.underlying, s"${p.url} must start with ${Urls.ajaxRoot}")
 
         val serverVer = p.prepReq.codec.version
@@ -408,8 +409,8 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
       def anonO[A](p: Protocol.Ajax[SafePickler])
                   (name: String,
                    sessionRequired: Boolean,
-                   f: Security.SessionToken => p.ServerSideFnO[F, A])
-                  (g: (Security.SessionToken, ResponseCmd, A) => F[Response]): Unit =
+                   f: Security.SessionToken[Any] => p.ServerSideFnO[F, A])
+                  (g: (Security.SessionToken[Any], ResponseCmd, A) => F[Response]): Unit =
         _register(p, name, sessionRequired)((token, req) =>
           for {
             (out, a) <- f(token)(req)
@@ -444,9 +445,9 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
       mutableRouteMap.toMapNoHeadSlash
     }
 
-    private def useNewToken(oldToken: Security.SessionToken,
+    private def useNewToken(oldToken: Security.SessionToken[Any],
                             res: ResponseCmd,
-                            newToken: Option[Security.SessionToken]): F[Response] =
+                            newToken: Option[Security.SessionToken[Unit]]): F[Response] =
       security.sessionPersist(newToken getOrElse oldToken).map(Response(res, _))
 
     private val notFound: Response =
@@ -463,7 +464,7 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
 
             def respond(span: tracer.Span): F[Response] = {
 
-              def respondWithSession(s: Security.SessionToken) =
+              def respondWithSession(s: Security.SessionToken[Any]) =
                 if (req.method eq Post)
                   req.body.value match {
                     case Some(reqBin) => route.handler(s, reqBin, span)

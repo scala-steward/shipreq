@@ -53,10 +53,10 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
     def broadcastAll(): Unit =
       redis.publishAll.value
 
-    implicit def tokenToCookieLookup(t: SessionToken): Cookie.LookupFn =
+    implicit def tokenToCookieLookup(t: SessionToken[Any]): Cookie.LookupFn =
       security.sessionPersist(t).value.add.map(c => c.name -> c.value).toMap.get
 
-    implicit def otokenToCookieLookup(o: Option[SessionToken]): Cookie.LookupFn =
+    implicit def otokenToCookieLookup(o: Option[SessionToken[Any]]): Cookie.LookupFn =
       o match {
         case Some(t) => tokenToCookieLookup(t)
         case None    => _ => None
