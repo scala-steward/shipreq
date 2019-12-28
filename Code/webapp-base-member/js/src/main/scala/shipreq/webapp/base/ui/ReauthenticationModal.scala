@@ -2,7 +2,7 @@ package shipreq.webapp.base.ui
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
-import org.scalajs.dom.{Element, document, html}
+import org.scalajs.dom.{Element, document, html, raw}
 import scala.scalajs.js
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{Allow, Deny, ErrorMsg, Permission}
@@ -28,11 +28,14 @@ object ReauthenticationModal {
 
     val id = Modal.nextId()
 
-    val passwordDom    = CallbackTo(rootDom.querySelector("input[type=password]").asInstanceOf[html.Input])
+    def getDom[N <: raw.Node](sel: String): CallbackTo[N] =
+      CallbackTo(rootDom.querySelector(s"#$id $sel").domCast[N])
+
+    val passwordDom    = getDom[html.Input]("input[type=password]")
     val passwordGet    = passwordDom.map(i => PlainTextPassword(i.value))
     val passwordClear  = passwordDom.map(_.value = "")
-    val loginButtonDom = CallbackTo(rootDom.querySelector(".button.primary").asInstanceOf[html.Button])
-    val errorLabelDom  = CallbackTo(rootDom.querySelector(".label").asInstanceOf[html.Div])
+    val loginButtonDom = getDom[html.Button](".button.primary")
+    val errorLabelDom  = getDom[html.Div](".label")
 
     def setState(form: Enabled, error: Option[ErrorMsg]): Callback =
       for {
