@@ -325,12 +325,14 @@ object ProjectSpaLogic extends StrictLogging {
           val mainResponseLogic: F[MsgResult[F]] =
             parseClientMsg(msg) match {
               case \/-((reqId, req)) =>
+                logger.debug(s"Received $reqId: $req")
                 // GenerateUnitTest.req(webSocketHelper, msg)(reqId, req)
                 def respondWith(msgFnOut: MsgFnOut[F, req.reqRes.ResponseType]): F[MsgResult[F]] = {
                   val protocolAndRes = req.reqRes.protocolRes.andValue(msgFnOut.output)
                   val fullRes        = \/-((reqId, protocolAndRes))
                   val resBin         = webSocketHelper.protocolSC.codec.encode(fullRes)
                   val wsReqRes       = FreeOption(req.reqRes)
+                  logger.debug(s"Responding to $reqId with $fullRes -- $resBin")
                   // GenerateUnitTest.resp(webSocketHelper, req, fullRes)(resBin)
                   respond(resBin).flatMap {
                     case \/-(_) => F.point(new MsgResult(wsReqRes, resBin.length, msgFnOut.newState))

@@ -110,7 +110,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
     val p = ProjectSpaProtocols.WebSocket(Obfuscated(null))
     implicit def picklerReq: SafePickler[p.Req] = p.req.codec
     implicit def picklerPush: SafePickler[p.Push] = p.push.codec
-    val responseUnpickler: ReqId => Protocol[SafePickler] = i => if (i.value == reqId.value) responseType.protocolRes else ???
+    val responseUnpickler: ReqId => Option[Protocol[SafePickler]] = i => if (i.value == reqId.value) Some(responseType.protocolRes) else ???
     new WebSocketServerHelper[p.Req, p.Push](
       WebSocketShared.protocolCS,
       WebSocketShared.protocolSC(responseUnpickler))

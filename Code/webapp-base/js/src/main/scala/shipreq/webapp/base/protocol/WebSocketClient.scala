@@ -90,7 +90,7 @@ object WebSocketClient {
       reauthorise       : AsyncCallback[Permission],
       onStateChange     : WebSocketClient[ReqRes] => State => Callback,
       protocolCS        : Protocol.Of[SafePickler, ClientToServer[Req]],
-      mkProtocolSC      : (ReqId => Protocol[SafePickler]) => Protocol.Of[SafePickler, ServerToClient[Push]],
+      mkProtocolSC      : (ReqId => Option[Protocol[SafePickler]]) => Protocol.Of[SafePickler, ServerToClient[Push]],
       recvPush          : Push => Callback,
       logger            : LoggerJs.Dsl) extends WebSocketClient[ReqRes] { self =>
 
@@ -98,7 +98,7 @@ object WebSocketClient {
       RequestManager.arrayStore
 
     private val protocolSC: Protocol.Of[SafePickler, ServerToClient[Push]] =
-      mkProtocolSC(requestManager.getState(_).orNull)
+      mkProtocolSC(requestManager.getState)
 
     /** All state for the WebSocket client.
       *
@@ -282,6 +282,10 @@ object WebSocketClient {
 
         val handler: Callback =
           decode.attempt.flatMap {
+            case Right(\/-(\/-((id, null)))) =>
+              logger(_.debug(s"Unable to decode response to req #${id.value}; request has been removed")) >>
+                requestManager.remove(id)
+
             case Right(\/-(\/-((id, res)))) =>
               logger(_.debug(s"WebSocketClient received response to req #${id.value}: ${res.value}")) >>
                 requestManager.complete(id, Success(res))
@@ -291,18 +295,18 @@ object WebSocketClient {
                 recvPush(push)
 
             case Right(-\/(err)) =>
-              logger(_.error(s"WebSocketClient failed to process msg: ${BinaryData.fromArrayBuffer(msg)}\n$err")).attempt >>
+              logger(_.error(s"WebSocketClient failed to process msg: ${BinaryData.fromArrayBuffer(msg)}\n$err")) >>
                 onDecodeFailure(err)
 
             case Left(err) =>
-              logger(_.error(s"WebSocketClient failed to process msg: ${BinaryData.fromArrayBuffer(msg)}\n$err")).attempt >>
+              logger(_.error(s"WebSocketClient failed to process msg: ${BinaryData.fromArrayBuffer(msg)}\n$err")) >>
                 onException(err)
           }
         handler.runNow()
       }
 
       private def onDecodeFailure(e: SafePickler.DecodingFailure): Callback = Callback {
-        console.error(s"Failed to parse server response: $e")
+        logger(_.error(s"Failed to parse server response: $e")).runNow()
         if (e.isLocalKnownToBeOutOfDate) {
           window.alert("Unable to understand the response from the server.\nWe've upgraded our servers since you opened this page.\nPlease reload this page to get the updates.")
           ws.close(CloseReasons.clientOutOfDate)
@@ -311,10 +315,12 @@ object WebSocketClient {
         }
       }
 
-      private def onException(err: Throwable): Callback = Callback {
-        val message = Option(err.getMessage)
-        unsafeCloseDueToError(message)
-      }
+      private def onException(err: Throwable): Callback =
+        Callback {
+          logger(_.exception(err)).runNow()
+          val message = Option(err.getMessage)
+          unsafeCloseDueToError(message)
+        }
 
       private def onError(e: Event): Unit = {
         val message = e.asInstanceOf[js.Dynamic].message.asInstanceOf[js.UndefOr[String]]
@@ -424,20 +430,19 @@ object WebSocketClient {
     def getState(id: Id): Option[S]
     def complete(id: Id, a: Try[A]): Callback
     def completeAll(t: Try[A]): CallbackTo[List[Throwable]]
+    def remove(id: Id): Callback
   }
 
   private object RequestManager {
     private final class ArrayStore[A, S] extends RequestManager[ReqId, A, S] {
       private var prevId = 0
       private var size = 0
-      private var state = new js.Array[(S, Try[A] => Callback)]
+      private var state = new js.Array[js.UndefOr[(S, Try[A] => Callback)]]
 
       private def get(id: ReqId): Option[(S, Try[A] => Callback)] = {
+        // console.log("GET: ", state.asInstanceOf[js.Array[js.Any]])
         val e = state(id.value)
-        if (js.isUndefined(e))
-          None
-        else
-          Option(e)
+        e.toOption
       }
 
       override def newRequest(s: S): CallbackTo[(ReqId, AsyncCallback[A])] =
@@ -453,27 +458,30 @@ object WebSocketClient {
       override def getState(id: ReqId): Option[S] =
         get(id).map(_._1)
 
+      private def unsafeGetAndRemove(reqId: ReqId): Option[(S, Try[A] => Callback)] = {
+        val r = get(reqId)
+        if (r.isDefined) {
+          assert(size > 0, s"WebSocketClient.RequestManager: size=$size, reqId=${reqId.value}, state=$state")
+          size -= 1
+          if (size == 0)
+            state = new js.Array
+          else
+            js.special.delete(state, reqId.value)
+        }
+        r
+      }
+
       override def complete(reqId: ReqId, a: Try[A]): Callback =
         Callback {
-          get(reqId) match {
-            case Some((_, f)) =>
-              assert(size > 0, s"WebSocketClient.RequestManager: size=$size, reqId=${reqId.value}, state=$state")
-              size -= 1
-              if (size == 0)
-                state = new js.Array
-              else
-                js.special.delete(state, reqId.value)
-              f(a).runNow()
-            case None =>
-              ()
-          }
+          for ((_, f) <- unsafeGetAndRemove(reqId))
+            f(a).runNow()
         }
 
       override def completeAll(t: Try[A]): CallbackTo[List[Throwable]] =
         CallbackTo {
           // Extract handlers
           var l = List.empty[Try[A] => Callback]
-          state.forEachJs(l ::= _._2)
+          state.forEachJs(_.foreach(l ::= _._2))
 
           // Clear state
           state = new js.Array
@@ -481,6 +489,12 @@ object WebSocketClient {
 
           // Call handlers
           l.flatMap(_(t).attempt.runNow().left.toSeq)
+        }
+
+      override def remove(reqId: ReqId): Callback =
+        Callback {
+          unsafeGetAndRemove(reqId)
+          ()
         }
     }
 

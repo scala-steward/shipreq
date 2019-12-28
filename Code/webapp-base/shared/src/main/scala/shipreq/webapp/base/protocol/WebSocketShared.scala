@@ -152,7 +152,9 @@ object WebSocketShared {
 
   type ServerToClient[Push] = Push \/ (ReqId, Protocol.AndValue[SafePickler])
 
-  def protocolSC[Push](responseUnpickler: ReqId => Protocol[SafePickler])
+  /** TAKE CARE! The Protocol.AndValue[SafePickler] part of unpickled results will be null if no unpickler is available!
+    */
+  def protocolSC[Push](responseUnpickler: ReqId => Option[Protocol[SafePickler]])
                       (implicit pushCodec: SafePickler[Push]): Protocol.Of[SafePickler, ServerToClient[Push]] = {
 
     val pickler: Pickler[ServerToClient[Push]] =
@@ -176,11 +178,12 @@ object WebSocketShared {
             val reqId = ReqId((header >> 1).toInt)
             val protocol = responseUnpickler(reqId)
             val pav: Protocol.AndValue[SafePickler] =
-              if (protocol eq null)
-                null
-              else {
-                val v = protocol.codec.embeddedRead
-                protocol.andValue(v)
+              protocol match {
+                case Some(p) =>
+                  val v = p.codec.embeddedRead
+                  p.andValue(v)
+                case None =>
+                  null
               }
             \/-((reqId, pav))
           }
