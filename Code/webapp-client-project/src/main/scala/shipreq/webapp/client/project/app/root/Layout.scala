@@ -15,25 +15,27 @@ import Routes.{Page, RouterCtl}
 
 object Layout {
 
-  final case class Props(username        : Username,
-                         project         : ProjectMetaData,
-                         connectionStatus: ConnectionStatus,
-                         reauthModal     : ReauthenticationModal,
-                         rc              : RouterCtl,
-                         page            : Page,
-                         content         : VdomElement) {
+  final case class Props(username           : Username,
+                         project            : ProjectMetaData,
+                         connectionStatus   : ConnectionStatus,
+                         setConnectionStatus: ConnectionStatus => Reusable[Callback],
+                         reauthModal        : ReauthenticationModal,
+                         rc                 : RouterCtl,
+                         page               : Page,
+                         content            : VdomElement) {
     @inline def render = Component(this)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  private type NavBarLeftInput = (Page, ProjectMetaData, RouterCtl)
+  private final case class NavBarLeftInput(page: Page, project: ProjectMetaData, rc: RouterCtl)
 
-  private val reusabilityNavBarLeftInput: Reusability[NavBarLeftInput] =
-    implicitly[Reusability[NavBarLeftInput]]
+  private implicit val reusabilityNavBarLeftInput: Reusability[NavBarLeftInput] =
+    Reusability.derive
 
   private def navBarLeft(input: NavBarLeftInput): MemberNavBar.LeftProps =
-    Reusable.explicitly(input)(reusabilityNavBarLeftInput).map { case (page, project, rc) =>
+    Reusable.implicitly(input).map { i =>
+      import i._
 
       def index = Breadcrumb.Item.Link(rc.link(Page.Index)(project.name))
 
@@ -61,34 +63,36 @@ object Layout {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  private type NavBarRightInput = ConnectionStatus
+  private final case class NavBarRightInput(connectionStatus: ConnectionStatus, toggleConnectionStatus: Reusable[Callback])
 
-  private val reusabilityNavBarRightInput: Reusability[NavBarRightInput] =
-    implicitly[Reusability[NavBarRightInput]]
+  private implicit val reusabilityNavBarRightInput: Reusability[NavBarRightInput] =
+    Reusability.derive
 
-  private val connectedMenuItem =
-    ConnectionStatus.memo { c =>
-      val icon = c match {
-        case ConnectionStatus.Connected =>
-          Icon.Plug.withColour(Colour.Green).tag(Style.navBar.connected, ^.title := "connected")
+  private val connectedIcon =
+    ConnectionStatus.memo {
+      case ConnectionStatus.Connected =>
+        Icon.Plug.withColour(Colour.Green).tag(Style.navBar.connected, ^.title := "connected")
 
-        case ConnectionStatus.Disconnected =>
-          Icon.Plug.withColour(Colour.Red).tag(Style.navBar.disconnected, ^.title := "disconnected")
-      }
-
-      Menu.Item(Menu.ItemType.Div(icon))
+      case ConnectionStatus.Disconnected =>
+        Icon.Plug.withColour(Colour.Red).tag(Style.navBar.disconnected, ^.title := "disconnected")
     }
 
   private def navBarRight(input: NavBarRightInput): MemberNavBar.RightProps =
-    Reusable.explicitly(input)(reusabilityNavBarRightInput).map { connectionStatus =>
-      connectedMenuItem(connectionStatus) :: Nil
+    Reusable.implicitly(input).map { i =>
+      import i._
+
+      val connectedMenuItem =
+        Menu.Item(Menu.ItemType.Div(
+          connectedIcon(connectionStatus)(^.onClick --> toggleConnectionStatus)))
+
+      connectedMenuItem :: Nil
     }
 
   // -------------------------------------------------------------------------------------------------------------------
 
   private def render(p: Props): VdomElement = {
-    val menuLeft  = navBarLeft((p.page, p.project, p.rc))
-    val menuRight = navBarRight(p.connectionStatus)
+    val menuLeft  = navBarLeft(NavBarLeftInput(p.page, p.project, p.rc))
+    val menuRight = navBarRight(NavBarRightInput(p.connectionStatus, p.setConnectionStatus(!p.connectionStatus)))
     MemberLayout.Props(
       MemberNavBar.Props(p.username, menuLeft, menuRight),
       <.div(

@@ -329,6 +329,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
         initPageData.username,
         cbProjectMetaData.runNow(),
         global.connectedStatusHub.unsafeGet(),
+        global.setConnectionStatus,
         global.reauthModal,
         routerCtl,
         p.page,

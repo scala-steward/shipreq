@@ -106,8 +106,8 @@ object Style extends StyleSheet.Inline {
   }
 
   object navBar {
-    val connected    = style(opacity(0.7).important)
-    val disconnected = style(opacity(1).important)
+    val connected    = style(cursor.pointer, opacity(0.7).important)
+    val disconnected = style(cursor.pointer, opacity(1).important)
   }
 
   // ===================================================================================================================

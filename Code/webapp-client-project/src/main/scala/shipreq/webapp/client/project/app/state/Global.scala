@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.app.state
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.extra.{Broadcaster, Px}
-import japgolly.scalajs.react.{Callback, CallbackTo, Reusability}
+import japgolly.scalajs.react._
 import japgolly.univeq._
 import java.time.{Duration, Instant}
 import org.scalajs.dom.window
@@ -232,6 +232,16 @@ abstract class Global(onFirstLoad  : (Global, InitAppData) => Callback,
       _  <- wsClient.readyState.asCBO.filter(_ == ReadyState.Open)
       _  <- wsClient.send(WsReqRes.Sync)(es).toCBO
     } yield ()
+  }
+
+  lazy val setConnectionStatus: ConnectionStatus => Reusable[Callback] = {
+    val connect    = Reusable.callbackByRef(wsClient.connect)
+    val disconnect = Reusable.callbackByRef(wsClient.close)
+
+    {
+      case ConnectionStatus.Connected    => connect
+      case ConnectionStatus.Disconnected => disconnect
+    }
   }
 
   final lazy val sspUpdateConfig          = sspToEvents(WsReqRes.UpdateConfig)
