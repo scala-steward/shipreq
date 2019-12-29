@@ -52,7 +52,7 @@ object SecurityInterpreterTest extends TestSuite {
       sessionPersist(s1)
       assertEq(s1.sessionId.value.length, 36)
       assertEq(s1.authenticatedUser, None)
-      assertEq(sec.sessionRestore(cookieJar).value.modToken(_.withoutExpiry), SessionRestoreResult.Success(s1))
+      assertEq(sec.sessionRestore(cookieJar).value.modToken(_.withoutExpiry), SessionRestoreResult.Success(s1.withoutExpiry))
 
       val s2 = loginUser2(s1)
       assertEq(s2.sessionId, s1.sessionId)
@@ -82,7 +82,7 @@ object SecurityInterpreterTest extends TestSuite {
         new SecurityInterpreter[Name]
       }
 
-      val s = sec.sessionRestoreOrCreate(cookieJar).value
+      val s = sec.sessionRestoreOrCreate(cookieJar).value.withoutExpiry
       sessionPersist(s)(sec1)
       assertEq(sec1.sessionRestore(cookieJar).value.modToken(_.withoutExpiry), SessionRestoreResult.Success(s))
       assertEq(sec2.sessionRestore(cookieJar).value.modToken(_.withoutExpiry), SessionRestoreResult.Success(s))

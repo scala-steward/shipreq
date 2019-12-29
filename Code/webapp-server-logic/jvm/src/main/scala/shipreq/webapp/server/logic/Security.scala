@@ -37,9 +37,9 @@ object Security {
     def sessionRestore(cookies: Cookie.LookupFn): F[SessionRestoreResult[Instant]]
 
     /** Generates a new session id if missing. */
-    final def sessionRestoreOrCreate(cookies: Cookie.LookupFn): F[SessionToken[Unit]] =
+    final def sessionRestoreOrCreate(cookies: Cookie.LookupFn): F[SessionToken[Option[Instant]]] =
       F.map(sessionRestore(cookies)) {
-        case SessionRestoreResult.Success(t) => t.withoutExpiry
+        case SessionRestoreResult.Success(t) => t.copy(expiry = Some(t.expiry))
         case SessionRestoreResult.Expired(t) => SessionToken.anonymous(t.sessionId)
         case SessionRestoreResult.None       => SessionToken.anonymous()
       }
@@ -72,18 +72,15 @@ object Security {
     def withSession(st: SessionToken[Any]): SessionToken[E] =
       copy(sessionId = st.sessionId)
 
-    def mapExpiry[A](f: E => A): SessionToken[A] =
-      copy(expiry = f(expiry))
-
     def withoutExpiry: SessionToken[Unit] =
       copy(expiry = ())
   }
 
   object SessionToken extends StrictLogging {
-    def anonymous(): SessionToken[Unit] =
+    def anonymous(): SessionToken[Option[Instant]] =
       anonymous(SessionId.random())
 
-    def anonymous(sessionId: SessionId): SessionToken[Unit] =
+    def anonymous(sessionId: SessionId): SessionToken[Option[Instant]] =
       apply(sessionId, None, None)
 
     implicit def univEq[E: UnivEq]: UnivEq[SessionToken[E]] = UnivEq.derive

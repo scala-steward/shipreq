@@ -28,7 +28,7 @@ object LiveTest extends TestSuite {
     ClientSideProc[I](c.objectName)(c.pickler)
 
   implicit def userToToken(u: UserFixture.TestUser): Option[Security.SessionToken[Unit]] =
-    Some(Security.SessionToken.anonymous().login(u.toUserDescriptor))
+    Some(Security.SessionToken.anonymous().login(u.toUserDescriptor).withoutExpiry)
 
   override def tests = Tests {
     prepare()
