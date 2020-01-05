@@ -96,6 +96,7 @@ object ProjectSpaLogic extends StrictLogging {
   sealed trait ListenerError
   object ListenerError {
     final case class RedisDecodingFailure(err: SafePickler.DecodingFailure) extends ListenerError
+    case object SessionExpired extends ListenerError
   }
 
   sealed trait MsgError
@@ -202,6 +203,8 @@ object ProjectSpaLogic extends StrictLogging {
             )))
       }
 
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
       override def onOpen(static : WebSocketStatic,
                           state  : WebSocketState[F],
                           push   : BinaryData => F[Unit],
@@ -211,7 +214,7 @@ object ProjectSpaLogic extends StrictLogging {
           state.sub match {
             case None =>
               for {
-                sub <- redis.subscribe(static.projectId, listener(span, push, onError))
+                sub <- redis.subscribe(static.projectId, listener(static, span, push, onError))
               } yield WebSocketState(Some(sub))
             case Some(_) =>
               F.pure(state)
@@ -223,6 +226,40 @@ object ProjectSpaLogic extends StrictLogging {
           } yield r
         )
       }
+
+      private def listener(static : WebSocketStatic,
+                           span   : Span,
+                           push   : BinaryData => F[Unit],
+                           onError: ListenerError => F[Unit]): Redis.Listener[F] = {
+        case \/-(event) =>
+          hasExpired(static).flatMap {
+            case false => pushEvent(span, push, event)
+            case true  => onError(ListenerError.SessionExpired)
+          }
+
+        case -\/(err) =>
+          for {
+            _ <- F.point(logger.warn("Failed to parse pub/sub event from Redis: ", err))
+            _ <- onError(ListenerError.RedisDecodingFailure(err))
+          } yield ()
+      }
+
+      private def pushEvent(span: Span, push: BinaryData => F[Unit], e: VerifiedEvent): F[Unit] =
+        pushEvents(span, push, VerifiedEvent.NonEmptySeq.one(e))
+
+      private def pushEvents(span: Span, push: BinaryData => F[Unit], es: VerifiedEvent.NonEmptySeq): F[Unit] =
+        trace.newSubSpan("push", span) { _ =>
+          for {
+            msgBin <- F point webSocketHelper.protocolSC.codec.encode(-\/(es))
+            _      <- metrics.projectSpaWebSocketPush(msgBin.length)
+            _      <- push(msgBin)
+          } yield ()
+        }
+
+      private def hasExpired(static: WebSocketStatic): F[Boolean] =
+        svr.now.map(_.isAfter(static.expiresAt))
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
       override def onClose(staticO: Option[WebSocketStatic],
                            stateO : Option[WebSocketState[F]]) = {
@@ -244,27 +281,6 @@ object ProjectSpaLogic extends StrictLogging {
             main
         }
       }
-
-      private def listener(span: Span, push: BinaryData => F[Unit], onError: ListenerError => F[Unit]): Redis.Listener[F] = {
-        case \/-(event) => pushEvent(span, push, event)
-        case -\/(err) =>
-          for {
-            _ <- F.point(logger.warn("Failed to parse pub/sub event from Redis: ", err))
-            _ <- onError(ListenerError.RedisDecodingFailure(err))
-          } yield ()
-      }
-
-      private def pushEvent(span: Span, push: BinaryData => F[Unit], e: VerifiedEvent): F[Unit] =
-        pushEvents(span, push, VerifiedEvent.NonEmptySeq.one(e))
-
-      private def pushEvents(span: Span, push: BinaryData => F[Unit], es: VerifiedEvent.NonEmptySeq): F[Unit] =
-        trace.newSubSpan("push", span) { _ =>
-          for {
-            msgBin <- F point webSocketHelper.protocolSC.codec.encode(-\/(es))
-            _      <- metrics.projectSpaWebSocketPush(msgBin.length)
-            _      <- push(msgBin)
-          } yield ()
-        }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
       // Message responding
@@ -293,9 +309,6 @@ object ProjectSpaLogic extends StrictLogging {
               logger.error(s"Error sending response.", e)
           }
         }
-
-      private def hasExpired[A](static: WebSocketStatic): F[Boolean] =
-        svr.now.map(_.isAfter(static.expiresAt))
 
       override def onKeepAlive(static: WebSocketStatic, onError: MsgError => F[Unit]): F[Unit] =
         hasExpired(static).flatMap { expired =>
@@ -513,7 +526,9 @@ object ProjectSpaLogic extends StrictLogging {
         val redisSubscribe: F[OptionState] =
           in.state.sub match {
             case None =>
-              redis.subscribe(pid, listener(span, in.push, in.onListenerError)).map(s => Some(WebSocketState(Some(s))))
+              redis.subscribe(pid, listener(in.static, span, in.push, in.onListenerError))
+                .map(s => Some(WebSocketState(Some(s))))
+
             case Some(_) =>
               F.pure(None)
           }

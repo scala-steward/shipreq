@@ -176,6 +176,9 @@ final class ProjectSpaWebSocket extends StrictLogging {
         fxClose(s, CloseReasons.serverOutOfDate)
       else
         fxClose(s, CloseReasons.errorParsingSubscriptionData)
+
+    case ListenerError.SessionExpired =>
+      fxClose(s, CloseReasons.unauthorised)
   }
 
   @OnError

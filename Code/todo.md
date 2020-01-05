@@ -112,5 +112,4 @@ Phase 2B
   * Provide ability to save all
 
 * WebSockets
-  * Ensure session validity on push
   * Recover from lost Redis connections
