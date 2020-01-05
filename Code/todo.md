@@ -104,8 +104,6 @@ Phase 2B
   * Finish tech dashboards (inc using webapp metrics)
   * Business metrics: dashboards
 
-* Handle no localStorage available (in login page)
-
 * Unsaved changes
   * Warn against closing page
   * Display counter

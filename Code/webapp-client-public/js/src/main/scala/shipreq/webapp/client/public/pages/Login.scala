@@ -11,6 +11,7 @@ import scalaz.{-\/, \/, \/-}
 import shipreq.base.util._
 import shipreq.webapp.base.data.{Disabled, Enabled, TCB}
 import shipreq.webapp.base.feature.AsyncFeature
+import shipreq.webapp.base.lib.BrowserStorage
 import shipreq.webapp.base.protocol.CommonProtocols.Login.Request
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.UiUtil
@@ -39,31 +40,30 @@ object Login {
   final case class LocalStorage(rememberMe: Option[Boolean], user: Option[String])
 
   object LocalStorage {
-    import org.scalajs.dom.window.localStorage // TODO is this always available?
 
-    private val KeyPrefix     = "login-"
-    private val KeyRememberMe = KeyPrefix + "remember-me"
-    private val KeyUser       = KeyPrefix + "user"
-    private val ValueTrue     = "1"
-    private val ValueFalse    = "0"
+    private final val KeyPrefix = "login-"
+    private val FieldRememberMe = BrowserStorage.Field.boolean(KeyPrefix + "remember-me")
+    private val FieldUser       = BrowserStorage.Field        (KeyPrefix + "user")
 
-    def read() = LocalStorage(
-      localStorage.getItem(KeyRememberMe) match {
-        case ValueTrue  => Some(true)
-        case ValueFalse => Some(false)
-        case _          => None
-      },
-      Option(localStorage.getItem(KeyUser)))
+    private implicit def storage = BrowserStorage.localOrEmpty
 
-    def write(s: State) = Callback {
-      if (s.rememberMe) {
-        localStorage.setItem(KeyRememberMe, ValueTrue)
-        localStorage.setItem(KeyUser, UserValidators.usernameOrEmail.corrector(s.req.usernameOrEmail))
-      } else {
-        localStorage.setItem(KeyRememberMe, ValueFalse)
-        localStorage.removeItem(KeyUser)
-      }
-    }
+    def read: CallbackTo[LocalStorage] =
+      for {
+        rm <- FieldRememberMe.get
+        u  <- FieldUser.get
+      } yield LocalStorage(rm, u)
+
+    def write(s: State) =
+      if (s.rememberMe)
+        for {
+          _ <- FieldRememberMe.set(true)
+          _ <- FieldUser.set(UserValidators.usernameOrEmail.corrector(s.req.usernameOrEmail))
+        } yield ()
+      else
+        for {
+          _ <- FieldRememberMe.set(false)
+          _ <- FieldUser.remove
+        } yield ()
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -104,7 +104,11 @@ object Login {
     Prefetch.memberHome()
 
     def readCredentials: Callback =
-      $.props.flatMap(_.state.modState(_(LocalStorage.read()))) >> focusForm(3).delayMs(20).toCallback
+      for {
+        s <- LocalStorage.read
+        _ <- $.props.flatMap(_.state.modState(_(s)))
+        _ <- focusForm(3).delayMs(20).toCallback
+      } yield ()
 
     /** Stores the current state in client's local storage according to the remember-me setting */
     val writeCredentials: Callback =
