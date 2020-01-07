@@ -10,13 +10,13 @@ terraform {
 
 provider "aws" {
   region  = "ap-southeast-2"
-  version = "~> 2.32"
+  version = "~> 2.39"
 }
 
 provider "aws" {
   alias   = "ap-southeast-2"
   region  = "ap-southeast-2"
-  version = "~> 2.32"
+  version = "~> 2.39"
 }
 
 module "shipreq" {
