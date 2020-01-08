@@ -95,7 +95,7 @@ final class ManagerActor(ctx: TaskmanCtx, source: ActorRef) extends Actor with H
   import context.dispatcher
 
   private val mdc     = ActorUtil.mdc("manager")
-  private val poller  = context.system.scheduler.schedule(0 millis, ctx.config.taskman.pollEvery.asFiniteDuration, self, PollSource)
+  private val poller  = context.system.scheduler.scheduleAtFixedRate(0 millis, ctx.config.taskman.pollEvery.asFiniteDuration, self, PollSource)
   private var workers = Set.empty[ActorRef]
   private var queue   = M.empty
 

@@ -51,14 +51,14 @@ object DbConfig {
         ConfigDef.need[String]("password") |@|
         ConfigDef.consumerFn[PGSimpleDataSource](
           _ => pgCurrentSchema,
-          _.getOrUse("host", _.setServerName)("localhost"),
+          _.getOrUse("host", x => (s: String) => x.setServerNames(Array(s)))("localhost"),
           _.get("appname"               , _.setApplicationName),
           _.get("binaryTransfer"        , _.setBinaryTransfer),
           _.get("binaryTransferDisable" , _.setBinaryTransferDisable),
           _.get("binaryTransferEnable"  , _.setBinaryTransferEnable),
           _.get("disableColumnSanitiser", _.setDisableColumnSanitiser),
           _.get("loginTimeout"          , _.setLoginTimeout),
-          _.get("port"                  , _.setPortNumber),
+          _.get("port"                  , x => (p: Int) => x.setPortNumbers(Array(p))),
           _.get("prepareThreshold"      , _.setPrepareThreshold),
           _.get("protocolVersion"       , _.setProtocolVersion),
           _.get("receiveBufferSize"     , _.setReceiveBufferSize),

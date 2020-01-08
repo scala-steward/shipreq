@@ -76,6 +76,8 @@ object TaskmanBuild {
       .configure(Docker.settingsFor("taskman"))
       .configure(runWithDockerDev)
       .settings(
+        dependencyOverrides ++= OkHttp.core(LibDependency.JVM), // because jaegerClient wants okhttp 4
+
         mainClass := Some(serverClass),
         javaOptions in(Compile, run) += "-XX:+UseG1GC",
 

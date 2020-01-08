@@ -19,7 +19,7 @@ final case class DbAccess(cfg               : DbConfig,
                           migrator          : SchemaMigrator) extends HasLogger {
 
   def host: String =
-    cfg.pgDataSource.getServerName
+    cfg.pgDataSource.getServerNames()(0)
 
   def databaseName: String =
     cfg.pgDataSource.getDatabaseName
