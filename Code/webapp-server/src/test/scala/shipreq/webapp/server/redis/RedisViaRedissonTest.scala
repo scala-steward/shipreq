@@ -21,7 +21,7 @@ object RedisViaRedissonTest extends TestSuite {
 
       val evictSS = () => {
         inmem.unsafeEvictSnapshot(id)
-        client.getKeys.delete(schema.snapshot(id))
+        client.getKeys.delete(schema.snapshot(id).value)
         ()
       }
 

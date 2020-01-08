@@ -10,7 +10,6 @@ import org.redisson.client.codec.{ByteArrayCodec, StringCodec}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
-import scalaz.\/-
 import scalaz.std.option._
 import scalaz.syntax.traverse._
 import shipreq.base.util.FxModule._
@@ -25,18 +24,51 @@ object RedisViaRedisson {
 
   private[RedisViaRedisson] object Internals {
 
-    def newArgs() = new Args(new mutable.ArrayBuffer[Array[Byte]])
+    final class Keys(val keys: JList[AnyRef]) extends AnyVal
+
+    object Keys {
+      val none: Keys =
+        new Keys(Collections.unmodifiableList(Collections.emptyList()))
+
+      def apply(k1: RedisKey): Keys = {
+        val keys = new ArrayList[AnyRef](1)
+        keys.add(k1)
+        new Keys(keys)
+      }
+
+      def apply(k1: RedisKey, k2: RedisKey): Keys = {
+        val keys = new ArrayList[AnyRef](2)
+        keys.add(k1)
+        keys.add(k2)
+        new Keys(keys)
+      }
+    }
 
     final class Args(val args: mutable.ArrayBuffer[Array[Byte]]) extends AnyVal {
       @inline def +=(s: String         ): Unit = args += s.getBytes
       @inline def +=(i: Int            ): Unit = args += i.toString.getBytes
       @inline def +=(a: Array[Byte]    ): Unit = args += a
+      @inline def +=(c: RedisChannel   ): Unit = this += c.value
       @inline def +=(e: VerifiedEvent  ): Unit = args += picklerEvent.encode(e).unsafeArray
       @inline def +=(s: ProjectSnapshot): Unit = args += picklerProjectSnapshot.encode(s).unsafeArray
       @inline def ++=(es: VerifiedEvent.Seq): Unit = es.foreach(+=(_))
     }
+
+    object Args {
+      def apply() = new Args(new mutable.ArrayBuffer[Array[Byte]])
+    }
+
+    final case class ReadEventsInput(id: ProjectId, beyond: Option[EventOrd.Latest])
+
+    final case class WriteSnapshotInput(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq)
+
+    final case class WriteEventsInput(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq)
+
+    final case class PublishEventsInput(id: ProjectId, events: VerifiedEvent.NonEmptySeq)
   }
 }
+
+// =====================================================================================================================
 
 final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extends Redis.ProjectAlgebra[Fx] with StrictLogging {
   import Redis._
@@ -45,15 +77,20 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
   override protected def F = fxInstance
 
   private val byteArrayClass = classOf[Array[Byte]]
+  private val scriptString   = client.getScript(StringCodec.INSTANCE)
+  private val scriptBinary   = client.getScript(ByteArrayCodec.INSTANCE)
+  private val scriptRegistry = new ScriptRegistry
 
-  private def deployScript(lua: Lua): String =
-    client.getScript(StringCodec.INSTANCE).scriptLoad(lua.processed)
+  private def defineScript[I, O](lua: Lua)(execUnsafe: (ScriptSha, I) => O): I => Fx[O] = {
+    val deploy = Fx(ScriptSha(scriptString.scriptLoad(lua.processed)))
+    scriptRegistry.register(deploy)((sha, i) => Fx(execUnsafe(sha, i)))
+  }
 
-  private val scriptBinary =
-    client.getScript(ByteArrayCodec.INSTANCE)
+  private def evalSha[A](mode: Mode, sha: ScriptSha, returnType: RScript.ReturnType, keys: Keys): A =
+    scriptBinary.evalSha[A](mode, sha.value, returnType, keys.keys)
 
-  private val noKeys: JList[AnyRef] =
-    Collections.unmodifiableList(Collections.emptyList())
+  private def evalSha[A](mode: Mode, sha: ScriptSha, returnType: RScript.ReturnType, keys: Keys, args: Args): A =
+    scriptBinary.evalSha[A](mode, sha.value, returnType, keys.keys, args.args: _*)
 
   override def subscribe(id: ProjectId, listener: SafePickler.Result[VerifiedEvent] => Fx[Unit]): Fx[Subscription[Fx]] = {
     val topicName = schema.topic(id)
@@ -65,7 +102,7 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
     }
 
     Fx[Subscription[Fx]] {
-      val topicRef = client.getTopic(topicName, ByteArrayCodec.INSTANCE)
+      val topicRef = client.getTopic(topicName.value, ByteArrayCodec.INSTANCE)
       val listenerId = topicRef.addListener(byteArrayClass, msgListener)
       val unsub = Fx[Unit] {
         topicRef.removeListener(listenerId)
@@ -88,10 +125,10 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
 //      case _ => println(s"RESULT: [${if (a == null) "null" else a.getClass.getCanonicalName}] ${a}")
 //    }
 
-  private def fxWithFallback[@specialized(Boolean) A](name: String, default: A)(body: => A): Fx[A] =
+  private def fxWithFallback[@specialized(Boolean) A](name: String, default: A)(body: Fx[A]): Fx[A] =
     Fx {
       try
-        body
+        body.unsafeRun()
       catch {
         case NonFatal(t) =>
           logger.warn(s"Exception during $name: $t", t)
@@ -109,116 +146,114 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private val shaRead = deployScript(Lua.read)
+  private val scriptRead = defineScript[ProjectId, SafePickler.Result[ProjectCache]](Lua.read) { (sha, id) =>
+
+    // Call Redis
+    val keys = Keys(schema.snapshot(id), schema.events(id))
+    val result = evalSha[JList[_]](Mode.READ_ONLY, sha, RScript.ReturnType.MULTI, keys)
+
+    // Parse results
+    val binSS = Option(result.get(0).asInstanceOf[Array[Byte]])
+    val binES = result.get(1).asInstanceOf[JList[Array[Byte]]]
+    val decSS = binSS.traverse(picklerProjectSnapshot.decodeBytes)
+    val decES = decodeEvents(binES)
+
+    // Done
+    for {
+      ss <- decSS
+      es <- decES
+    } yield ProjectCache(ss, es)
+  }
 
   private[this] val emptyCacheResult = SafePickler.success(ProjectCache.empty)
 
   override protected def _read(id: ProjectId) =
-    fxWithFallback("read", emptyCacheResult) {
-
-      // Call Redis
-      val keys = new ArrayList[AnyRef](2)
-      keys.add(schema.snapshot(id))
-      keys.add(schema.events(id))
-      val result = scriptBinary.evalSha[JList[_]](Mode.READ_ONLY, shaRead, RScript.ReturnType.MULTI, keys)
-
-      // Parse results
-      val binSS = Option(result.get(0).asInstanceOf[Array[Byte]])
-      val binES = result.get(1).asInstanceOf[JList[Array[Byte]]]
-      val decSS = binSS.traverse(picklerProjectSnapshot.decodeBytes)
-      val decES = decodeEvents(binES)
-
-      // Done
-      for {
-        ss <- decSS
-        es <- decES
-      } yield ProjectCache(ss, es)
-    }
+    fxWithFallback("read", emptyCacheResult)(scriptRead(id))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private val shaReadEvents = deployScript(Lua.readEvents)
+  private val scriptReadEvents = defineScript[ReadEventsInput, SafePickler.Result[VerifiedEvent.Seq]](Lua.readEvents) { (sha, in) =>
+    import in._
+
+    val keys = Keys(schema.events(id))
+
+    val args = Args()
+    args += beyond.fold(0)(_.value)
+
+    val result = evalSha[JList[Array[Byte]]](Mode.READ_ONLY, sha, RScript.ReturnType.MULTI, keys, args)
+
+    decodeEvents(result)
+  }
 
   override def readEvents(id: ProjectId, beyond: Option[EventOrd.Latest]) =
-    fxWithFallback("readEvents", emptyEventResult) {
-
-      val keys = new ArrayList[AnyRef](1)
-      keys.add(schema.events(id))
-
-      val args = newArgs()
-      args += beyond.fold(0)(_.value)
-
-      val result = scriptBinary.evalSha[JList[Array[Byte]]](Mode.READ_ONLY, shaReadEvents, RScript.ReturnType.MULTI, keys, args.args: _*)
-
-      decodeEvents(result)
-    }
+    fxWithFallback("readEvents", emptyEventResult)(scriptReadEvents(ReadEventsInput(id, beyond)))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private val shaWriteSnapshot = deployScript(Lua.writeSnapshot)
+  private val scriptWriteSnapshot = defineScript[WriteSnapshotInput, Boolean](Lua.writeSnapshot) { (sha, in) =>
+    import in._
+
+    val keys = Keys(schema.snapshot(id), schema.events(id))
+
+    val args = Args()
+    args += schema.topic(id)
+    args += snapshot.ord.value
+    args += snapshot
+    args ++= publishOnly
+
+    evalSha[JBool](Mode.READ_WRITE, sha, RScript.ReturnType.BOOLEAN, keys, args)
+  }
 
   override def writeSnapshot(id: ProjectId, snapshot: ProjectSnapshot, publishOnly: VerifiedEvent.Seq) =
-    fxWithFallback("writeSnapshot", true) {
-
-      val keys = new ArrayList[AnyRef](2)
-      keys.add(schema.snapshot(id))
-      keys.add(schema.events(id))
-
-      val args = newArgs()
-      args += schema.topic(id)
-      args += snapshot.ord.value
-      args += snapshot
-      args ++= publishOnly
-
-      scriptBinary.evalSha[JBool](Mode.READ_WRITE, shaWriteSnapshot, RScript.ReturnType.BOOLEAN, keys, args.args: _*)
-    }
+    fxWithFallback("writeSnapshot", true)(scriptWriteSnapshot(WriteSnapshotInput(id, snapshot, publishOnly)))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private val shaWriteEvents = deployScript(Lua.writeEvents)
+  private val scriptWriteEvents = defineScript[WriteEventsInput, Boolean](Lua.writeEvents) { (sha, in) =>
+    import in._
+
+    val shouldPublish: VerifiedEvent => Boolean =
+      if (cacheOnly.isEmpty)
+        _ => true
+      else if (cacheAndPublish.isEmpty)
+        _ => false
+      else {
+        val pubOrds = cacheAndPublish.iterator.map(_.ord).toSet
+        e => pubOrds.contains(e.ord)
+      }
+
+    val keys = Keys(schema.snapshot(id), schema.events(id))
+
+    val args = Args()
+    args += schema.topic(id)
+    for (e <- cacheOnly ++ cacheAndPublish) {
+      val key = if (shouldPublish(e)) -e.ord.value else e.ord.value
+      args += key
+      args += e
+    }
+
+    evalSha[JBool](Mode.READ_WRITE, sha, RScript.ReturnType.BOOLEAN, keys, args)
+  }
 
   override def writeEvents(id: ProjectId, cacheOnly: VerifiedEvent.Seq, cacheAndPublish: VerifiedEvent.Seq) =
     if (cacheOnly.isEmpty && cacheAndPublish.isEmpty)
       Fx.pure(false)
-    else fxWithFallback("writeEvents", true) {
-
-      val shouldPublish: VerifiedEvent => Boolean =
-        if (cacheOnly.isEmpty)
-          _ => true
-        else if (cacheAndPublish.isEmpty)
-          _ => false
-        else {
-          val pubOrds = cacheAndPublish.iterator.map(_.ord).toSet
-          e => pubOrds.contains(e.ord)
-        }
-
-      val keys = new ArrayList[AnyRef](2)
-      keys.add(schema.snapshot(id))
-      keys.add(schema.events(id))
-
-      val args = newArgs()
-      args += schema.topic(id)
-      for (e <- cacheOnly ++ cacheAndPublish) {
-        val key = if (shouldPublish(e)) -e.ord.value else e.ord.value
-        args += key
-        args += e
-      }
-
-      scriptBinary.evalSha[JBool](Mode.READ_WRITE, shaWriteEvents, RScript.ReturnType.BOOLEAN, keys, args.args: _*)
-    }
+    else
+      fxWithFallback("writeEvents", true)(scriptWriteEvents(WriteEventsInput(id, cacheOnly, cacheAndPublish)))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private val shaPublishEvents = deployScript(Lua.publishEvents)
+  private val scriptPublishEvents = defineScript[PublishEventsInput, Unit](Lua.publishEvents) { (sha, in) =>
+    import in._
+    // logger.info(s"Publishing project #${id.value} events ${events.describeEvents}")
+
+    val args = Args()
+    args += schema.topic(id)
+    args ++= events
+
+    evalSha(Mode.READ_WRITE, sha, RScript.ReturnType.STATUS, Keys.none, args)
+  }
 
   override def publishEvents(id: ProjectId, events: VerifiedEvent.NonEmptySeq) =
-    fxWithFallback("publishEvents", ()) {
-      // logger.info(s"Publishing project #${id.value} events ${events.describeEvents}")
-
-      val args = newArgs()
-      args += schema.topic(id)
-      args ++= events
-
-      scriptBinary.evalSha(Mode.READ_WRITE, shaPublishEvents, RScript.ReturnType.STATUS, noKeys, args.args: _*)
-    }
+    fxWithFallback("publishEvents", ())(scriptPublishEvents(PublishEventsInput(id, events)))
 }
