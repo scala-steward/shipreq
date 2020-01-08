@@ -171,6 +171,12 @@ object FxModule {
       val useAndRelease = use.andFinally(release)
       fx.flatMap(_ => useAndRelease)
     }
+
+    def toJavaRunnable: Runnable =
+      () => {
+        unsafeRun()
+        ()
+      }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
