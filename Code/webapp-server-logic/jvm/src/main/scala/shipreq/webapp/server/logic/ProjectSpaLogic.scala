@@ -96,6 +96,7 @@ object ProjectSpaLogic extends StrictLogging {
   sealed trait ListenerError
   object ListenerError {
     final case class RedisDecodingFailure(err: SafePickler.DecodingFailure) extends ListenerError
+    final case class RedisLibraryException(err: Throwable) extends ListenerError
     case object SessionExpired extends ListenerError
   }
 
@@ -237,10 +238,16 @@ object ProjectSpaLogic extends StrictLogging {
             case true  => onError(ListenerError.SessionExpired)
           }
 
-        case -\/(err) =>
+        case -\/(Redis.ListenerError.DecodingFailure(err)) =>
           for {
             _ <- F.point(logger.warn("Failed to parse pub/sub event from Redis: ", err))
             _ <- onError(ListenerError.RedisDecodingFailure(err))
+          } yield ()
+
+        case -\/(Redis.ListenerError.RedisLibraryException(err)) =>
+          for {
+            _ <- F.point(logger.warn("Failed to parse pub/sub event from Redis: ", err))
+            _ <- onError(ListenerError.RedisLibraryException(err))
           } yield ()
       }
 

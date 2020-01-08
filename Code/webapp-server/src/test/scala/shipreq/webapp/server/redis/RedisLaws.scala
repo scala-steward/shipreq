@@ -3,7 +3,7 @@ package shipreq.webapp.server.redis
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.{Duration, Instant}
 import nyaya.gen._
-import scalaz.{Applicative, Equal, Monad, Semigroup}
+import scalaz.{Applicative, Equal, Monad, Semigroup, \/}
 import scalaz.syntax.monad._
 import shipreq.base.test.SyncEffect
 import shipreq.base.test.SyncEffect.Ops._
@@ -256,14 +256,15 @@ object RedisLaws {
       Gens(genO, genS, genE)
     }
   }
-  
+
   // ===================================================================================================================
 
   private final class Listener[F[_]](id: ProjectId, r: ProjectAlgebra[F])(implicit F: Applicative[F], S: SyncEffect[F]) {
+    import shipreq.webapp.server.logic.Redis.ListenerError
     private val s = new collection.mutable.ArrayBuffer[VerifiedEvent]
     def get() = synchronized(s.toList)
     def clear() = synchronized(s.clear())
-    private def add(e: SafePickler.Result[VerifiedEvent]) = F.point[Unit] { synchronized {
+    private def add(e: ListenerError \/ VerifiedEvent) = F.point[Unit] { synchronized {
 //      val before = get()
       s += e.needRight
 //      val after = get()

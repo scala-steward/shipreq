@@ -7,7 +7,7 @@ import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.tailrec
-import scalaz.{BindRec, Monad, \/-}
+import scalaz.{BindRec, Monad, \/, \/-}
 import scalaz.syntax.monad._
 import shipreq.base.ops.Trace
 import shipreq.webapp.base.data.{Project, ProjectId}
@@ -67,7 +67,13 @@ object Redis extends StrictLogging {
 
   final case class Subscription[F[_]](unsubscribe: F[Unit])
 
-  type Listener[F[_]] = SafePickler.Result[VerifiedEvent] => F[Unit]
+  type Listener[F[_]] = ListenerError \/ VerifiedEvent => F[Unit]
+
+  sealed trait ListenerError
+  object ListenerError {
+    final case class RedisLibraryException(value: Throwable) extends ListenerError
+    final case class DecodingFailure(value: SafePickler.DecodingFailure) extends ListenerError
+  }
 
   private val ensureComplete: ProjectCache => ProjectCache = pc => {
     val isComplete: Boolean =

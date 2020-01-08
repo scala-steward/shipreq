@@ -179,6 +179,9 @@ final class ProjectSpaWebSocket extends StrictLogging {
 
     case ListenerError.SessionExpired =>
       fxClose(s, CloseReasons.unauthorised)
+
+    case ListenerError.RedisLibraryException(_) =>
+      fxClose(s, CloseReasons.runtimeExceptionOccurred)
   }
 
   @OnError

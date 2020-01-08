@@ -10,6 +10,7 @@ import org.redisson.client.codec.{ByteArrayCodec, StringCodec}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
+import scalaz.-\/
 import scalaz.std.option._
 import scalaz.syntax.traverse._
 import shipreq.base.util.FxModule._
@@ -92,13 +93,18 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
   private def evalSha[A](mode: Mode, sha: ScriptSha, returnType: RScript.ReturnType, keys: Keys, args: Args): A =
     scriptBinary.evalSha[A](mode, sha.value, returnType, keys.keys, args.args: _*)
 
-  override def subscribe(id: ProjectId, listener: SafePickler.Result[VerifiedEvent] => Fx[Unit]): Fx[Subscription[Fx]] = {
+  override def subscribe(id: ProjectId, listener: Redis.Listener[Fx]): Fx[Subscription[Fx]] = {
     val topicName = schema.topic(id)
 
     val msgListener: MessageListener[Array[Byte]] = (_, msg) => {
-      val decoded = picklerEvent.decodeBytes(msg)
-      val fx      = listener(decoded)
-      fx.unsafeRun()
+      import Redis.ListenerError
+      try {
+        val decoded = picklerEvent.decodeBytes(msg).leftMap(ListenerError.DecodingFailure)
+        listener(decoded).unsafeRun()
+      } catch {
+        case NonFatal(err) =>
+          listener(-\/(ListenerError.RedisLibraryException(err))).unsafeRun()
+      }
     }
 
     Fx[Subscription[Fx]] {
