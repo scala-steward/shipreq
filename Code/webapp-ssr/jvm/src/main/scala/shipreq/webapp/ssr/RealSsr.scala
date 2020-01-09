@@ -1,7 +1,7 @@
 package shipreq.webapp.ssr
 
 import japgolly.scalagraal._
-import japgolly.scalagraal.util.ReactSsrUtil
+import japgolly.scalagraal.util.ReactSsr
 
 object RealSsr {
   import GraalBoopickle._
@@ -9,7 +9,7 @@ object RealSsr {
   import SsrSharedData._
 
   val setup: Expr[Unit] =
-    ReactSsrUtil.Setup(
+    ReactSsr.Setup(
       Expr.requireFileOnClasspath("webapp-ssr-deps.js"),
       Expr.requireFileOnClasspath("webapp-ssr.js"),
     )

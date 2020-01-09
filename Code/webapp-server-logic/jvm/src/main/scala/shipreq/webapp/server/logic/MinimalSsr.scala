@@ -67,7 +67,7 @@ final class MinimalSsr[F[_]]()(implicit F: Monad[F],
 
         val cached =
           for {
-            _    <- ctx.eval(ReactSsrUtil.setUrl(baseUrl.value))
+            _    <- ctx.eval(ReactSsr.setUrl(baseUrl.value))
             anon <- render(None)
             user <- CacheAndReplace.compile1((u: Username) => render(Some(u)))
           } yield (Html(anon), user.andThen(Html.apply))

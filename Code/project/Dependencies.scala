@@ -52,7 +52,7 @@ object Dependencies {
   }
 
   object ScalaGraal {
-    private val ver   = "0.3.0"
+    private val ver   = "0.4.0"
     private val jvm   = MultiModule.scala("com.github.japgolly.scala-graal", ver)
     private val both  = MultiModule.jvmAndJs("com.github.japgolly.scala-graal", ver)
     val core          = jvm("core") ++ graal
@@ -91,7 +91,7 @@ object Dependencies {
   }
 
   object ScalaCSS {
-    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.5.6")
+    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.6.0")
     val core  = mm("core")
     val react = mm("ext-react") ++ core
   }
@@ -183,12 +183,12 @@ object Dependencies {
     val servlet    = mm("simpleclient_servlet")
   }
 
-  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.2.6")
+  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.3.0")
   val scalajsDom       = jsOnly("org.scala-js"                          %% "scalajs-dom"       % "0.9.8")
   val scalajsJavaTime  = jsOnly("org.scala-js"                          %% "scalajs-java-time" % "0.2.6")
 
   val boopickle   = jvmAndJs("io.suzaku",                        "boopickle",   "1.3.1")
-  val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",        "1.3.0")
+  val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",        "1.4.0")
   val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.1.8")
   val scalaz      = jvmAndJs("org.scalaz",                       "scalaz-core", "7.2.30")
   val shapeless   = jvmAndJs("com.chuusai",                      "shapeless",   "2.3.3")
