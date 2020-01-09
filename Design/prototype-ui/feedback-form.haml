@@ -1,0 +1,270 @@
+!!! 5
+%html
+  %head
+    -# %meta(http-equiv="refresh" content="1")
+    %title CardBoard | ShipReq
+    %script{src: "../node_modules/jquery/dist/jquery.min.js"}
+    %link{href:  "../semantic/dist/semantic.min.css", rel: "stylesheet", type: "text/css"}/
+    %script{src: "../semantic/dist/semantic.min.js"}
+    -# %link{href:  "../../Code/webapp-server/src/main/webapp/a/semantic.min.css", rel: "stylesheet", type: "text/css"}/
+    -# %script{src: "../../Code/webapp-server/src/main/webapp/a/semantic.min.js"}
+    :css
+      body {padding:1rem}
+      .ui.menu.inverted .ui.breadcrumb a {color: #63c0ff}
+      .ui.menu.inverted .ui.breadcrumb a:hover {color: #9bf3ff}
+      .ui.menu.inverted .ui.breadcrumb > i {color: #ddd; margin-left: 0.8em; margin-right: 0.8em;}
+
+      h1.ui.header {margin-bottom:0; margin-right:1em; color:#1e70bf}
+      .inline-edit:hover {cursor:pointer; outline:dotted 2px #FFA622; background: #fff4e3 !important}
+
+      h3.ui.header {margin-top: 2em; padding-bottom: 0.3em !important}
+
+      .ui.card>.content, .ui.cards>.card>.content {flex-grow:0!important}
+
+      .content.pic {text-align:center; padding-top:2.2em !important}
+      .content.pic > i {font-size:3rem}
+
+      .edit-notes {
+        xtext-align:right;
+        font-size: 0.75rem;
+        line-height: 1em;
+        color: #a4a6a8;
+      }
+      .edit-notes:not(:first-child) {
+        margin-top: 0.4em;
+      }
+      .edit-notes:not(:last-child) {
+        margin-bottom: 0.4em;
+      }
+      .edit-notes a {
+        cursor:pointer;
+      }
+      .edit-notes a:not(:hover) {
+        color:inherit;
+        border-bottom: solid 1px #e0e2e4;
+      }
+      .edit-notes a:hover {
+        color:#525456;
+        text-decoration: underline;
+      }
+
+  %body
+
+    %nav(style="margin-bottom:5rem")
+      .ui.menu.borderless.fixed.inverted
+        .item
+          %img{src: "logo-only-dark2.svg"}
+
+        .item
+          .ui.breadcrumb
+            %a.section{href: "member-home.html"} Projects
+            %i.divider.icon.right.angle
+            .ui.dropdown.inline
+              CardBoard&nbsp;
+              %i.icon.dropdown
+              .menu
+                .item.active CardBoard
+                .item ShipReq
+
+        .right.menu
+
+          -# .item
+          -#   %i.icon.large.edit
+          -#   3 open editors
+
+          .item(style="color:#ffec70" title="2 unsaved changes")
+            .span(style="margin-right: 0.5ex; font-size:120%; margin-top:1px") 2
+            %i.icon.large.edit
+
+          -# .item#connected1(onclick="$('#connected1 > *').toggle()")
+          -#   %i.icon.large.toggle.on.green
+          -#   %i.icon.large.toggle.on.red.horizontally.flipped(style="display:none")
+
+          -# .item#connected2(onclick="$('#connected2 > *').toggle()")
+          -#   %i.icon.large.power.off.green
+          -#   %i.icon.large.power.off.red(style="display:none")
+
+          -# .item#connected3(onclick="$('#connected3 > *').toggle()")
+          -#   %i.icon.large.wifi.green
+          -#   %i.icon.large.wifi.red(style="display:none")
+
+          .item#connected4(onclick="$('#connected4 > *').toggle()")
+            %i.icon.large.plug.green(style="opacity:.7" title="connected")
+            %i.icon.large.plug.red(style="opacity:1;display:none" title="disconnected")
+
+          -# .item#connected5(onclick="$('#connected5 > *').toggle()")
+          -#   %i.icon.large.mixcloud.green
+          -#   %i.icon.large.mixcloud.red(style="display:none")
+
+          .item.ui.dropdown.simple
+            @japgolly
+            -# %i.dropdown.icon
+            .menu
+              %a.item{href: "member-account.html"} Account
+              .item Send feedback
+              .item Logout
+
+    -# =============================================================================================
+    -# .__container{style: "width: 723px; margin-left: auto; margin-right: auto;"}
+    .ui.container{style: "max-width: 723px! important"}
+
+      %div{style: "display:flex"}
+        #pname{style: "flex-grow:1"}
+          %div
+            %h1.ui.header.inline-edit{title: "double-click to edit", ondblclick: '$("#pname > *").toggle()'}
+              CardBoard
+            .ui.meta{style: "margin: .5em 0; font-size: 1em; line-height: 1em; color: rgba(0,0,0,.6);"}
+              Updated&nbsp;
+              %time{datetime: "2015-12-17T09:24:17Z", title: "December 17, 2015"} 4 months ago.
+          %div{style: "display:none"}
+            %div
+              .ui.input
+                %input{type: "text", value: "CardBoard", autofocus: 1, size: 50}
+              .edit-notes ctrl-enter to <a>save</a>, esc to <a onclick='$("#pname > *").toggle()'>cancel</a>.
+
+
+        %div
+          .ui.statistics.tiny
+            .statistic
+              .value
+                %i.icon.write
+                &nbsp;209
+              .label changes
+            .statistic
+              .value
+                %i.icon.cubes
+                &nbsp;39
+              .label reqs
+            -# .statistic
+            -#   .value
+            -#     %i.icon.database
+            -#     &nbsp;67.2
+            -#   .label KB
+
+      %h3.ui.dividing.header
+        %i.icon.file.text.outline
+        .content Content
+
+      .ui.cards.four
+
+        .ui.card.blue{onclick: "location.href='project-reqtable.html'", style: "cursor:pointer"}
+          .content.pic
+            %i.icon.cubes
+            -# %i.icon.table
+          .content
+            .header Req Table
+            .description View and edit all reqs.
+
+        .ui.card.blue
+          .content.pic.blurring.omg-dimmable
+            .ui.inverted.dimmer
+              .content
+                .center
+                  .ui.search
+                    .ui.icon.input
+                      %input.prompt{type: "text", size: "18"}/
+                      %i.icon.search
+            %i.icon.cube
+            -# %i.icon.file.text.outline
+          .content
+            .header Req Lookup
+            .description View and edit a single req.
+
+        .ui.card.blue{onclick: "location.href='project-issues.html'", style: "cursor:pointer"}
+          .content.pic
+            %i.icon.warning.sign
+          .content
+            .header Issues
+            .description View and resolve outstanding issues.
+            .floating.ui.red.circular.label 123
+
+        .ui.card.blue
+          .content.pic
+            %i.icon.share.alternate
+          .content
+            .header Implications
+            .description View project-wide implication graph.
+
+
+      %h3.ui.dividing.header(style="margin-top:3em")
+        %i.icon.setting
+        -# %i.icon.ellipsis.vertical
+        .content Configuration
+
+      .ui.cards.four(style="margin-top:-.875em")
+
+        .ui.card.yellow
+          .content.pic
+            %i.icon.list.layout.grey
+          .content
+            .header Fields
+            .description Configure fields that each type of req has.
+
+        .ui.card.yellow
+          .content.pic
+            %i.icon.warning.sign.grey
+          .content
+            .header Issues
+            .description Configure types and causes of issues.
+
+        .ui.card.yellow
+          .content.pic
+            %i.icon.inbox.grey
+          .content
+            .header Req Types
+            .description Configure types of reqs.
+
+        .ui.card.yellow
+          .content.pic
+            %i.icon.tags.grey
+          .content
+            .header Tags
+            .description Configure attributes for content and organisation.
+
+    .ui.modal
+      .header Send Feedback
+      .content
+        %p Thank you for taking a moment to give us feedback.
+        %p Whether it be a suggestion for improvement, a bug report, or even just sharing your experience, all feedback is appreciated.
+        .ui.form(style="padding-top:0.3333em")
+          .field
+            %textarea(placeholder="What would you like to say?" autofocus=1 rows=12)
+      .actions
+        .ui.button Cancel
+        .ui.button.primary.disabled.loading Send
+
+    -#
+      Thank you for taking a moment to give us feedback.
+      Whether it be a suggestion for improvement, a bug report, a frustrated rant, or an expression of satisfaction,
+      Whether it be a suggestion for improvement, a bug report, or even just sharing your experience be it positive or negative,
+      all feedback is appreciated.
+
+      What would you like to say?
+
+      ---- mine ↑↑ ---- others ↓↓
+
+      Thank you for taking a moment to give us feedback on xxxxx.
+      Tell us about your experience:
+
+      Do you have a suggestion or found some bug?
+
+      Tell us what you love, tell us what you hate, and tell us what you want to see in the next release.
+      We're a small team developing an awesome product, so your feedback is essential.
+
+      --------
+
+      Would you like a response from us?
+      [ no thanks ] [ if you want ] [ yes please ]
+
+      Info:
+      - user id
+      - project id
+      - latest (applied) event
+      - user agent
+      - screenshot
+
+  :javascript
+    $('.ui.dropdown').dropdown();
+    $('.omg-dimmable').dimmer({on: 'hover'});
+    $('.ui.modal').modal();
+    $('.ui.modal').modal('show');
