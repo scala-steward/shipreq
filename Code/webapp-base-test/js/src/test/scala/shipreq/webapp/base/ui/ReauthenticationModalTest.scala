@@ -7,7 +7,7 @@ import org.scalajs.dom.{Element, document, html}
 import japgolly.scalajs.react.test._
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util._
-import shipreq.webapp.base.test.TestReauthorisationModal
+import shipreq.webapp.base.test.TestReauthenticationModal
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.user.Username
 import utest._
@@ -41,13 +41,13 @@ object ReauthenticationModalTest extends TestSuite {
 
     // =================================================================================================================
 
-    final case class Ref(backend: Backend, server: TestReauthorisationModal)
+    final case class Ref(backend: Backend, server: TestReauthenticationModal)
 
     val * = Dsl[Ref, Obs, Unit]
 
     def runTest(initialResponse: Option[ErrorMsg \/ Permission])(a: *.Actions) = {
       val a2 = a <+ passwordValue.assert("")
-      val server = TestReauthorisationModal(initialResponse)
+      val server = TestReauthenticationModal(initialResponse)
       ReactTestUtils.withNewDocumentElement { root =>
         val m = Component(Props(server.proc, root)).renderIntoDOM(root)
         Plan.action(a2)
@@ -61,7 +61,7 @@ object ReauthenticationModalTest extends TestSuite {
 
     // =================================================================================================================
 
-    final class Obs($: DomZipperJs, server: TestReauthorisationModal) {
+    final class Obs($: DomZipperJs, server: TestReauthenticationModal) {
       import Obs._
 
       private val password = $("input[type=password]")
