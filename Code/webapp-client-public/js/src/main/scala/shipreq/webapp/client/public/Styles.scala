@@ -274,6 +274,5 @@ object Styles {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object common {
     def tokenInvalidCont = resetPassword.part2
-    val submitButton     = marginRight := "0"
   }
 }

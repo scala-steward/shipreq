@@ -14,7 +14,7 @@ import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.BrowserStorage
 import shipreq.webapp.base.protocol.CommonProtocols.Login.Request
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.ui.UiUtil
+import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic._
 import shipreq.webapp.base.user.{EmailAddr, UserValidators, Username}
 import shipreq.webapp.base.{CommmonUiText, Urls}
@@ -29,8 +29,11 @@ object Login {
                          resetPassword  : ServerSideProcInvoker[Username \/ EmailAddr, ErrorMsg, Unit],
                          redirectOnLogin: Option[Url.Relative]) {
 
+    val inFlight: Boolean =
+      AsyncFeature.isInProgress(state.value.async)
+
     val formEnabled: Enabled =
-      Disabled when AsyncFeature.isInProgress(state.value.async)
+      Disabled when inFlight
 
     @inline def render: VdomElement = Component(this)
   }
@@ -160,7 +163,7 @@ object Login {
     private def onLoginFailure(user: Username \/ EmailAddr): Callback =
       setError("Login failed", s"Invalid ${CommmonUiText.usernameOrEmail(user.isLeft).toLowerCase} or password.")
 
-    private val submitOnEnter = UiUtil.submitOnEnter(attemptLogin)
+    private val submitOnEnter = GeneralTheme.submitOnEnter(attemptLogin)
 
     private def onForgotPassword: Callback =
       $.props.flatMap(p =>
@@ -213,7 +216,7 @@ object Login {
         fields = fields.map(_.disable)
 
       val submitButton =
-        Common.submitButton("Login", Option.when(p.formEnabled is Enabled)(attemptLogin))
+        GeneralTheme.submitButton("Login", Option.when(p.formEnabled is Enabled)(attemptLogin), inFlight = p.inFlight)
 
       val bottomRow =
         <.div(*.bottomRow,

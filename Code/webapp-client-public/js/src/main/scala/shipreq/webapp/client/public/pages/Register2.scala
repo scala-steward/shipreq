@@ -15,6 +15,7 @@ import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.semantic.{Form, Icon, Input, Message}
+import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.user._
 import shipreq.webapp.base.validation.Implicits._
 import shipreq.webapp.base.validation.{Composite, Simple}
@@ -42,8 +43,11 @@ object Register2 {
                          takenUsernames: Set[Username],
                          response      : Option[Result.Terminal]) {
 
+    val inFlight: Boolean =
+      AsyncFeature.isInProgress(async)
+
     val formEnabled: Enabled =
-      Disabled when AsyncFeature.isInProgress(async)
+      Disabled when inFlight
   }
 
   object State {
@@ -159,7 +163,7 @@ object Register2 {
 
       val fieldSubmit =
         Form.BasicField(
-          Common.submitButton("Create Account", submitCB),
+          GeneralTheme.submitButton("Create Account", submitCB, inFlight = s.inFlight),
           *.submitCont)
 
       var fields: NonEmptyVector[Form.Field] =

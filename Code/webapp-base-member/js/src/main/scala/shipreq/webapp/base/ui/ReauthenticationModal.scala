@@ -63,19 +63,23 @@ object ReauthenticationModal {
     val loginButtonDom = getDom[html.Button](".button.primary")
     val errorLabelDom  = getDom[html.Div](".label")
 
-    def setState(form: Enabled, error: Option[ErrorMsg]): Callback =
+    def setState(form: Enabled, error: Option[ErrorMsg], inFlight: Boolean): Callback =
       for {
         pd <- passwordDom
         lb <- loginButtonDom
         el <- errorLabelDom
       } yield {
-        Option(pd).foreach(_.readOnly = form.is(Disabled))
-        Option(lb).foreach(_.disabled = form.is(Disabled))
-        Option(el).foreach(_.style.display = if (error.isDefined) null else "none")
-        Option(el).foreach(_.innerHTML = error.fold("")(_.value))
+        for (d <- Option(pd)) {
+          d.readOnly = form.is(Disabled)
+        }
+        for (d <- Option(el)) {
+          d.style.display = if (error.isDefined) null else "none"
+          d.innerHTML = error.fold("")(_.value)
+        }
+        GeneralTheme.nonReact.setStateOfSubmitButton(lb)(form, inFlight = inFlight)
       }
 
-    val resetForm            = passwordClear >> setState(Enabled, None)
+    val resetForm            = passwordClear >> setState(Enabled, None, inFlight = false)
     val onHide               = resetForm >> Callback.byName(onCompletion)
     val modalInitProps       = js.Dynamic.literal(onHidden = onHide.toJsFn)
     val modalInit            = Callback(JQuery.byId(id).modal(modalInitProps))
@@ -89,7 +93,7 @@ object ReauthenticationModal {
         val prepare =
           for {
             _ <- event.map(_.preventDefaultCB).getOrEmpty // prevent form submission
-            _ <- setState(Disabled, None)
+            _ <- setState(Disabled, None, inFlight = true)
             p <- passwordGet
           } yield Login.Request.validate(-\/(username), p)
 
@@ -100,14 +104,14 @@ object ReauthenticationModal {
               (Callback { lastResult = Allow } >> modalHide).asAsyncCallback
 
             case \/-(Deny) =>
-              setState(Enabled, Some(errorInvalidPassword)).asAsyncCallback
+              setState(Enabled, Some(errorInvalidPassword), inFlight = false).asAsyncCallback
 
             case -\/(err) =>
-              setState(Enabled, Some(err)).asAsyncCallback
+              setState(Enabled, Some(err), inFlight = false).asAsyncCallback
           }
 
           case -\/(_) =>
-            setState(Enabled, Some(errorInvalidPassword)).delayMs(delayMs)
+            setState(Enabled, Some(errorInvalidPassword), inFlight = false).delayMs(delayMs)
         }
       }
     }
@@ -130,8 +134,8 @@ object ReauthenticationModal {
         <.input.password(
           ^.autoComplete.currentPassword,
           ^.autoFocus := true,
-          ^.onChange --> setState(Enabled, None),
-          UiUtil.submitOnEnter(submit(None))
+          ^.onChange --> setState(Enabled, None, inFlight = false),
+          GeneralTheme.submitOnEnter(submit(None))
         ),
         Icon.Lock.tag),
       errorLabel

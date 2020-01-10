@@ -8,7 +8,7 @@ import monocle.Lens
 import shipreq.base.util.{Invalid, Valid, Validity}
 import shipreq.webapp.base.data.{Disabled, Enabled}
 import shipreq.webapp.base.lib.ValidationUX
-import shipreq.webapp.base.ui.UiUtil
+import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.validation.Simple
 
 object Form {
@@ -69,7 +69,7 @@ object Form {
             ^.onChange ==> onChange))
 
         val error: ValidationUX.Outcome[VdomElement] =
-          vux.outcomeD(vali(value)).map(UiUtil.renderSimpleInvalidity(_)(validationErr))
+          vux.outcomeD(vali(value)).map(GeneralTheme.renderSimpleInvalidity(_)(validationErr))
 
         TextField(label, editor, error)
       }

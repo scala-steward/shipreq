@@ -10,7 +10,7 @@ import shipreq.webapp.base.data.{Disabled, Enabled}
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.ui.UiUtil
+import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.{Form, Icon, Input, Message}
 import shipreq.webapp.base.user.{EmailAddr, UserValidators}
 import shipreq.webapp.client.public.Styles.{register1 => *}
@@ -31,8 +31,11 @@ object Register1 {
                          async    : AsyncFeature.State.D0[ErrorMsg],
                          submitted: Boolean) {
 
+    val inFlight: Boolean =
+      AsyncFeature.isInProgress(async)
+
     val formEnabled: Enabled =
-      Disabled when AsyncFeature.isInProgress(async)
+      Disabled when inFlight
 
     val validated: Option[EmailAddr] =
       UserValidators.emailAddr.unnamed(email).toOption
@@ -58,7 +61,7 @@ object Register1 {
     private val attemptSubmit: Callback =
       $.props.flatMap(submitCB(_).getOrEmpty)
 
-    private val submitOnEnter = UiUtil.submitOnEnter(attemptSubmit)
+    private val submitOnEnter = GeneralTheme.submitOnEnter(attemptSubmit)
 
     private val fieldEmail = Form.TextField.highLevel(
       State.email,
@@ -71,7 +74,7 @@ object Register1 {
       val s = p.state.value
 
       val submitButton =
-        Common.submitButton("Register", submitCB(p))
+        GeneralTheme.submitButton("Register", submitCB(p), inFlight = s.inFlight)
 
       <.form(*.part1,
         Form(

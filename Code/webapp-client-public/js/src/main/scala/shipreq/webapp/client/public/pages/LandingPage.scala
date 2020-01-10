@@ -10,6 +10,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic._
 import shipreq.webapp.base.{AssetManifest, WebappConfig}
 import shipreq.webapp.client.public.PublicSpaProtocols.LandingPage.Request
@@ -88,11 +89,13 @@ object LandingPage {
     private def renderForm(p: Props): VdomElement = {
       val s = p.state.value
 
+      val inFlight = AsyncFeature.isInProgress(s.async)
+
       // Disable form if:
       // - already submitted; 1 msg/user is enough, if they really want to send another msg they can hit reload
       // - submission in progress
       val enabled: Enabled =
-        Disabled.when(s.submitted || AsyncFeature.isInProgress(s.async))
+        Disabled.when(s.submitted || inFlight)
 
       val onSubmit: Option[Callback] =
         Common.validationOffUntilFirstSubmit(
@@ -110,7 +113,7 @@ object LandingPage {
           "Subscribe to newsletter"))
 
       fields :+= Form.BasicField.centered(
-        Common.submitButton("Express Interest", onSubmit))
+        GeneralTheme.submitButton("Express Interest", onSubmit, inFlight = inFlight))
 
       if (enabled is Disabled)
         fields = fields.map(_.disable)

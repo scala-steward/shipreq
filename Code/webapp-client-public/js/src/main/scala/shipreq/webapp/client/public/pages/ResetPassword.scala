@@ -11,7 +11,7 @@ import shipreq.webapp.base.data.{Disabled, Enabled, VerificationToken}
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.ui.UiUtil
+import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.{Form, Icon, Input, Message}
 import shipreq.webapp.base.user.{PlainTextPassword, UserValidators}
 import shipreq.webapp.client.public.PublicSpaProtocols.{ResetPassword2 => P}
@@ -30,8 +30,11 @@ object ResetPassword {
                          async    : AsyncFeature.State.D0[ErrorMsg],
                          response : Option[P.Result]) {
 
+    val inFlight: Boolean =
+      AsyncFeature.isInProgress(async)
+
     val formEnabled: Enabled =
-      Disabled when AsyncFeature.isInProgress(async)
+      Disabled when inFlight
 
     val validated: Option[PlainTextPassword] =
       UserValidators.passwordTwice((password1, password2)).toOption
@@ -62,7 +65,7 @@ object ResetPassword {
         $.state.flatMap(s =>
           submitCB(p, s).getOrEmpty))
 
-    val submitOnEnter = UiUtil.submitOnEnter(attemptSubmit)
+    val submitOnEnter = GeneralTheme.submitOnEnter(attemptSubmit)
 
     val fieldPassword1 = Form.TextField.highLevel(
       State.password1,
@@ -79,7 +82,7 @@ object ResetPassword {
         Some("Confirm new password"))(ValidationUX.Highlight)
 
       val submitButton =
-        Common.submitButton("Change Password", submitCB(p, s))
+        GeneralTheme.submitButton("Change Password", submitCB(p, s), inFlight = s.inFlight)
 
       val ss = StateSnapshot(s).setStateVia($)
 
