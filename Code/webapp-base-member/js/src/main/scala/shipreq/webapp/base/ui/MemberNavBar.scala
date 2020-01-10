@@ -42,7 +42,7 @@ object MemberNavBar {
       tagMod = *.navMenu)
 
   private val dropdownOptions =
-    Dropdown.JsOptions.default
+    Dropdown.JsOptions.readOnly
 
   private val itemLogo =
     Menu.ItemType.Link(
