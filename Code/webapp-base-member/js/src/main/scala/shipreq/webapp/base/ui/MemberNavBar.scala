@@ -25,9 +25,10 @@ object MemberNavBar {
 
   val noRightProps: RightProps = Reusable.byRef(Nil)
 
-  final case class Props(username: Username,
-                         left    : LeftProps,
-                         right   : RightProps = noRightProps) {
+  final case class Props(username     : Username,
+                         feedbackModal: Option[FeedbackModal],
+                         left         : LeftProps,
+                         right        : RightProps = noRightProps) {
     lazy val leftWithDividers = left.iterator.intersperse(Divider).toList
     @inline def render: VdomElement = Component(this)
   }
@@ -67,10 +68,18 @@ object MemberNavBar {
           Breadcrumb.Props(breadcrumbStyle, p.leftWithDividers).render
         ).toItem
 
+      val dropdownSendFeedback = {
+        val root = <.a("Send feedback")
+        p.feedbackModal match {
+          case Some(m) => Dropdown.Item.Link(root(^.onClick --> m.run.toCallback))
+          case None    => Dropdown.Item.Link(root(^.disabled := true), Dropdown.ItemState.Disabled)
+        }
+      }
+
       val rightDropdown =
         Menu.DropdownType.Simple(
           p.username.with_@,
-          dropdownLogout :: Nil
+          dropdownSendFeedback :: dropdownLogout :: Nil
         ).toItem
 
       val leftMenuItems =
