@@ -45,7 +45,7 @@ object FeedbackModal {
 
     import ModalForm.SetState
 
-    object modalForm extends ModalForm[OpResult]("FeedbackModal", OpResult.Failure, "Send", rootDom) {
+    object modalForm extends ModalForm[OpResult]("FeedbackModal", OpResult.Failure, "Send", rootDom, OpResult.isSuccess) {
 
       val feedbackDom     = getDom[html.Input]("textarea")
       val feedbackGet     = feedbackDom.map(i => TextMod.multiLineWhitespace(i.value))

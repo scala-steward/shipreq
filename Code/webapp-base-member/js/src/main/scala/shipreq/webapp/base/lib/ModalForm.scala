@@ -19,6 +19,7 @@ abstract class ModalForm[A](name             : String,
                             initalResult     : A,
                             submitLabel      : String,
                             rootDom          : Element,
+                            clear            : A => Boolean = (_: A) => true,
                             extraModalClasses: String = "",
                             ) {
   import ModalForm.SetState
@@ -37,7 +38,7 @@ abstract class ModalForm[A](name             : String,
   val content: TagMod
   val justSubmit: AsyncCallback[SetState \/ A]
 
-  private lazy val resetForm            = clearFormData >> setState(SetState(Enabled, None, inFlight = false))
+  private lazy val resetForm            = clearFormData.when(clear(lastResult)) >> setState(SetState(Enabled, None, inFlight = false))
   private lazy val onHide               = resetForm >> Callback.byName(onCompletion)
   private lazy val modalInitProps       = js.Dynamic.literal(onHidden = onHide.toJsFn)
   private lazy val modalInit            = Callback(JQuery.byId(id).modal(modalInitProps))

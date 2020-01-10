@@ -53,7 +53,7 @@ object ReauthenticationModal {
     val errorInvalidPassword = ErrorMsg("Invalid password.")
     val errorLabel           = Label.Style(Label.Type.PointingUp, Colour.Red).div
 
-    object modalForm extends ModalForm[Permission]("ReauthModal", Deny, "Login", rootDom, "mini") {
+    object modalForm extends ModalForm[Permission]("ReauthModal", Deny, "Login", rootDom, extraModalClasses = "mini") {
 
       val passwordDom    = getDom[html.Input]("input[type=password]")
       val passwordGet    = passwordDom.map(i => PlainTextPassword(i.value))
