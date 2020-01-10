@@ -1,12 +1,13 @@
 package shipreq.taskman.server.logic.business
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import java.time.{Instant, ZoneId, ZoneOffset}
 import scalaz.{\/, \/-}
 import scalaz.old.NonEmptyList
 import shipreq.base.util.ScalaExt.StringBuilderExt
 import shipreq.base.util.{ArticulateError, Util}
 import shipreq.taskman.api.EmailAddr
-import shipreq.taskman.api.Task.LandingPageHit
+import shipreq.taskman.api.Task.{LandingPageHit, UserFeedbackReceived}
 import shipreq.taskman.server.logic.business.Email._
 import shipreq.taskman.server.logic.{TaskDetail, TaskHeader}
 
@@ -123,7 +124,25 @@ final class Emails(ep: EnvelopeProps, tv: TokenValues) {
         ,_.kv("Email", l.email.value)
         ,_.kv("Newsletter", l.newsletter)
         ,_.kv("Message", l.msg.fold("<no msg>")("\n\n" + _))))
-    Email.Content("Landing Page Contact", body)
+    Email.Content("Landing page contact", body)
+  }
+
+  def userFeedback(u: UserFeedbackReceived) = {
+    val metadata: String =
+      MutableArray(
+        u.metadata.updated("user.id", u.userId.value.toString).iterator.map {
+          case (k, v) => s"$k = $v"
+        }
+      ).sort.mkString("\n")
+
+    Email.Content("User feedback received",
+      s"""
+         |$metadata
+         |
+         |Feedback:
+         |
+         |${u.feedback}
+         |""".stripMargin.trim)
   }
 
   // ---------------------------------------------------------------------------
