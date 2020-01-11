@@ -17,12 +17,14 @@ import MailChimp._
 
 object MailChimp {
 
+  final case class ApiKey(value: String)
+
   /**
     * @param dc MailChimp data center
     */
   final case class Props(dc        : String,
                          key       : ApiKey,
-                         masterList: String)
+                         audienceId: ListId)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Protocol
@@ -54,8 +56,6 @@ object MailChimp {
     ("merge_vars" -> Json.fromJsonObject(mergeVars)) ::
       Nil
   }
-
-  final case class ApiKey(value: String)
 
   object Endpoints {
     def apply(props: Props): Endpoints =

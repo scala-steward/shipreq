@@ -26,9 +26,6 @@ object TaskmanCtx {
 
 final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailTokenSource: ConfigSources[Fx]) extends HasLogger {
 
-  private def getMailChimpListId(name: String): Fx[MailingList.ListId] =
-    mailchimp(MailingList.API.GetListId(name)) getOrFail s"Mailing list not found: $name"
-
   private val (emailTokens, emailTokensReport) =
     TaskmanConfig.mailTokens
       .withReport
@@ -60,7 +57,7 @@ final class TaskmanCtx(val dbAccess: DbAccess, val config: TaskmanConfig, emailT
   val emails        = new Emails(config.mail.envelopeProps, emailTokens)
   val freshdesk     = new FreshDesk0(config.freshdesk)(http).upgrade.unsafeRun()
   val mailchimp     = new MailChimp(config.mailchimp)(http)
-  val mailingListId = getMailChimpListId(config.mailchimp.masterList).unsafeRun()
+  val mailingListId = config.mailchimp.audienceId
 
   private val clockClock = Clock.systemUTC()
 
