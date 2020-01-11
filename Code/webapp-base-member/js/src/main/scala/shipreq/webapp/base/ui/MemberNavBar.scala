@@ -9,7 +9,6 @@ import shipreq.webapp.base.{AssetManifest, Urls, WebappConfig}
 import shipreq.webapp.base.ClientConfig
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.ui.semantic.{Breadcrumb, Dropdown, Icon, Menu, SemExtAny}
-import shipreq.webapp.base.ui.semantic.Dropdown.JsOptionsOps
 import BaseStyles.{layout => *}
 
 /** At top of member (logged-in) screens:
@@ -41,8 +40,20 @@ object MemberNavBar {
       attr = Menu.Attr.Borderless + Menu.Attr.Inverted,
       tagMod = *.navMenu)
 
-  private val dropdownOptions =
-    Dropdown.JsOptions.readOnly
+  private val sendFeedbackTitle = "Send feedback"
+  private val sendFeedbackRoot  = <.div(sendFeedbackTitle)
+
+  private val dropdownOptions = {
+    val preventSelection: Set[String] = Set(sendFeedbackTitle)
+    new Dropdown.JsOptions {
+      override val action = Dropdown.JsOptions.Action.custom { args =>
+        val text = args.element.innerText.trim
+        if (!preventSelection.contains(text))
+          args.select()
+        args.hideAndClear()
+      }
+    }
+  }
 
   private val itemLogo =
     Menu.ItemType.Link(
@@ -56,12 +67,9 @@ object MemberNavBar {
   private val breadcrumbStyle =
     Breadcrumb.Style()
 
-  private val preventDefault: ReactEvent => Callback =
-    _.preventDefaultCB
-
   private val dropdownLogout =
     Dropdown.Item.Link(
-      <.a(^.href := Urls.logout.relativeUrl, ^.onClick ==> preventDefault, "Logout"))
+      <.a(^.href := Urls.logout.relativeUrl, "Logout"))
 
   final class Backend($: BackendScope[Props, Unit]) {
 
@@ -71,13 +79,11 @@ object MemberNavBar {
           Breadcrumb.Props(breadcrumbStyle, p.leftWithDividers).render
         ).toItem
 
-      val dropdownSendFeedback = {
-        val root = <.a("Send feedback")
+      val dropdownSendFeedback =
         p.feedbackModal match {
-          case Some(m) => Dropdown.Item.Link(root(^.onClick ==> preventDefault.andThen(_ >> m.run.toCallback)))
-          case None    => Dropdown.Item.Link(root(^.disabled := true), Dropdown.ItemState.Disabled)
+          case Some(m) => Dropdown.Item.Div(sendFeedbackRoot(^.onClick --> m.run.toCallback))
+          case None    => Dropdown.Item.Div(sendFeedbackRoot(^.disabled := true), Dropdown.ItemState.Disabled)
         }
-      }
 
       val rightDropdown =
         Menu.DropdownType.Simple(

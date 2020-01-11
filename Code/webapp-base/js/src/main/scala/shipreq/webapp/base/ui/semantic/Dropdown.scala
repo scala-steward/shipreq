@@ -5,6 +5,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq.UnivEq
 import org.scalajs.dom.{Node, html}
 import scala.scalajs.js
+import shipreq.webapp.base.lib.DomUtil._
 
 /** http://semantic-ui.com/modules/dropdown.html
   */
@@ -75,6 +76,7 @@ object Dropdown {
     var delay   : js.UndefOr[Delay   ] = js.undefined
     var onChange: js.UndefOr[OnChange] = js.undefined
   //var debug   : js.UndefOr[Boolean ] = js.undefined
+  //var verbose : js.UndefOr[Boolean ] = js.undefined
   }
 
   object JsOptions {
@@ -92,6 +94,23 @@ object Dropdown {
       /** Hides the dropdown menu and stores value, but does not change text */
       @inline def Hide = "hide".asInstanceOf[Action]
       @inline def nothing = "nothing".asInstanceOf[Action]
+
+      def custom(f: Args => Unit): Action = {
+        val j: js.Function3[String, String, html.Element, Unit] = (a, b, c) => f(Args(a, b, c))
+        j.asInstanceOf[Action]
+      }
+
+      final case class Args(text: String, value: String, element: html.Element) {
+        val downdown = element.findParent(_.classList.contains("dropdown")).get
+
+        private val $ = shipreq.webapp.base.ui.semantic.JQuery(element).asInstanceOf[js.Dynamic]
+        private val $$ = shipreq.webapp.base.ui.semantic.JQuery(downdown).asInstanceOf[js.Dynamic]
+
+        def hide        (): Unit = $$.dropdown("hide")
+        def clear       (): Unit = $$.dropdown("clear")
+        def hideAndClear(): Unit = {hide(); clear()}
+        def select      (): Unit = $.dropdown("set value", value)
+      }
     }
 
     sealed trait Match extends js.Any

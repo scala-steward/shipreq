@@ -5,11 +5,22 @@ import japgolly.scalajs.react.{raw => _, _}
 import scala.annotation.tailrec
 import scalajs.js
 import org.scalajs.dom._
-import shipreq.base.util.{Identity, Util}
+import shipreq.base.util.Util
 
 object DomUtil {
 
   val SvgNS = "http://www.w3.org/2000/svg"
+
+  @tailrec
+  private def findParent(e: html.Element, f: html.Element => Boolean, self: Boolean): Option[html.Element] = {
+    if (self && f(e))
+      Some(e)
+    else
+      Option(e.parentElement) match {
+        case Some(p) => findParent(p, f, self = true)
+        case None    => None
+      }
+  }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Extensions
@@ -20,6 +31,9 @@ object DomUtil {
   @inline implicit class PatchHtmlElement(private val e: html.Element) extends AnyVal {
     def _disabled: js.UndefOr[Boolean] =
       e.asInstanceOf[js.Dynamic].disabled.asInstanceOf[js.UndefOr[Boolean]]
+
+    def findParent(f: html.Element => Boolean, self: Boolean = false): Option[html.Element] =
+      DomUtil.findParent(e, f, self = self)
   }
 
   @inline implicit class NodeListExt(private val n: NodeList) extends AnyVal {
