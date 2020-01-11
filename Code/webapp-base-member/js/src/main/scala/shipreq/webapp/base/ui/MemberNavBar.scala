@@ -52,6 +52,7 @@ object MemberNavBar {
           args.select()
         args.hideAndClear()
       }
+      on = Dropdown.JsOptions.On.Hover
     }
   }
 
