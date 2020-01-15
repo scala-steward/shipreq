@@ -105,6 +105,9 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
 
       EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)
     }
+
+    val onMount: Callback =
+      EditTheme.onTextareaEditorMount(editorRef, $.props.map(_.autoFocus)).toCallback
   }
 
   // lazy else there'll be a FieldNotInitialised error via .configure → impTextEditor → textEditor
@@ -112,8 +115,9 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
     ScalaComponent.builder[Props]("ReqCodeEditor")
       .renderBackend[Backend]
       .configure(
-//        Reusability.shouldComponentUpdate,
+        //Reusability.shouldComponentUpdate,
         AutoComplete.install)
+      .componentDidMount(_.backend.onMount)
       .build
 }
 

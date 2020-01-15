@@ -176,6 +176,9 @@ object ImplicationEditor {
 
       EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)
     }
+
+    val onMount: Callback =
+      EditTheme.onTextareaEditorMount(editorRef, $.props.map(_.autoFocus)).toCallback
   }
 
   implicit val reusabilityLookup: Reusability[Lookup] =
@@ -188,7 +191,8 @@ object ImplicationEditor {
     ScalaComponent.builder[Props]("ImpEditor")
       .renderBackend[Backend]
       .configure(
-//        Reusability.shouldComponentUpdate,
+        //Reusability.shouldComponentUpdate,
         AutoComplete.install)
+      .componentDidMount(_.backend.onMount)
       .build
 }

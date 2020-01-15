@@ -3,6 +3,7 @@ package shipreq.webapp.client.project.widgets
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
+import org.scalajs.dom.html
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
 import shipreq.base.util.{PotentialChange, Validity}
@@ -169,14 +170,18 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
       EditTheme.renderEditor(p.status, editor, richText, instructions, preview)
     }
+
+    val onMount: Callback =
+      EditTheme.onTextareaEditorMount(editorRef, $.props.map(_.autoFocus)).toCallback
   }
 
   val Component =
     ScalaComponent.builder[Props]("RichTextEditor:" + name)
       .renderBackend[Backend]
       .configure(
-//        Reusability.shouldComponentUpdate,
+        //Reusability.shouldComponentUpdate,
         AutoComplete.install)
+      .componentDidMount(_.backend.onMount)
       .build
 }
 

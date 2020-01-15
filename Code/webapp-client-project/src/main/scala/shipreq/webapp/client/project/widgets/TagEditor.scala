@@ -144,13 +144,17 @@ object TagEditor {
 
       EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)
     }
+
+    val onMount: Callback =
+      EditTheme.onTextareaEditorMount(editorRef, $.props.map(_.autoFocus)).toCallback
   }
 
   val Component =
     ScalaComponent.builder[Props]("TagEditor")
       .renderBackend[Backend]
       .configure(
-//        Reusability.shouldComponentUpdate,
+        //Reusability.shouldComponentUpdate,
         AutoComplete.install)
+      .componentDidMount(_.backend.onMount)
       .build
 }

@@ -204,13 +204,17 @@ object UseCaseStepEditor {
 
       EditTheme.renderEditor(p.status, editor, richText, instructions(p), preview)
     }
+
+    val onMount: Callback =
+      EditTheme.onTextareaEditorMount(editorRef).toCallback
   }
 
   val Component =
     ScalaComponent.builder[Props]("UseCaseStepEditor")
       .renderBackend[Backend]
       .configure(
-//        Reusability.shouldComponentUpdate,
+        //Reusability.shouldComponentUpdate,
         AutoComplete.install)
+      .componentDidMount(_.backend.onMount)
       .build
 }
