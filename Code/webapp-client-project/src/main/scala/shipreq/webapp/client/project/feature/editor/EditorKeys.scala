@@ -21,7 +21,7 @@ object EditorKeys {
     def noModKeys: CallbackOption[Unit] =
       CallbackOption.keyCodeSwitch(e) {
 
-        case KeyCode.F2 =>
+        case KeyCode.F2 | KeyCode.Enter =>
           focusOrStartEditor(editor, e)
 
         case KeyCode.Backspace =>

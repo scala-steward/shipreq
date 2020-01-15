@@ -188,9 +188,17 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 // ===================================================================================================================
 
 object RichTextEditor {
-  val correctSingleLineText: EndoFn[String] = {
-    val r = "[\\r\\n]+".r
-    r.replaceAllIn(_, " ")
+
+  private val correctSingleLineText: EndoFn[String] = {
+    val r = "[\u000a-\u000d\u0085\u2028\u2029]+".r
+    val f = (c: Char) => (c >= 10 && c <= 13) || c == 8232 || c == 8233
+    s0 => {
+      var s = s0
+      while (s.nonEmpty && f(s.last))
+        s = s.dropRight(1)
+      s = r.replaceAllIn(s, " ")
+      s
+    }
   }
 
   def liveCorrect(text: Text.Generic): EndoFn[String] =
