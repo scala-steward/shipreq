@@ -71,4 +71,10 @@ object EditorFeature {
   val ReadWrite = editor.Feature.ReadWrite
 
   val Keys = editor.EditorKeys
+
+  type PotentialValue = editor.PotentialValue
+  val  PotentialValue = editor.PotentialValue
+
+  type PotentialValueAcceptor[+A] = editor.PotentialValueAcceptor[A]
+  val  PotentialValueAcceptor     = editor.PotentialValueAcceptor
 }

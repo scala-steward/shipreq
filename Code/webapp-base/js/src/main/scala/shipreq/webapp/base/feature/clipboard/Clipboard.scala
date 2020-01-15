@@ -1,6 +1,7 @@
 package shipreq.webapp.base.feature.clipboard
 
 import japgolly.scalajs.react._
+import japgolly.univeq.UnivEq
 import scala.scalajs.js
 
 object Clipboard {
@@ -44,6 +45,6 @@ abstract class Clipboard private[clipboard] {
 final case class ClipboardData(text: String)
 
 object ClipboardData {
-  implicit def reusability: Reusability[ClipboardData] =
-    Reusability.derive
+  implicit def univEq     : UnivEq     [ClipboardData] = UnivEq.derive
+  implicit def reusability: Reusability[ClipboardData] = Reusability.derive
 }

@@ -5,30 +5,30 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.ext.KeyCode
 import scalaz.\/
-import scalaz.syntax.traverse._
 import scalaz.std.option.optionInstance
 import scalaz.std.string.stringInstance
 import scalaz.std.vector._
-import shipreq.base.util._
+import scalaz.syntax.traverse._
 import shipreq.base.util.ScalaExt._
+import shipreq.base.util._
 import shipreq.base.util.univeq._
+import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text._
-import shipreq.webapp.base.validation.Simple._
 import shipreq.webapp.base.event.UseCaseStepGD
-import shipreq.webapp.base.feature.clipboard.ClipboardCodec
-import shipreq.webapp.base.lib.{KeyHandler, KeyboardTheme}
-import shipreq.webapp.base.ui.EditTheme
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.feature.{AsyncFeature, EditorStatus, PreviewFeature}
-import shipreq.webapp.base.UiText
+import shipreq.webapp.base.lib.{KeyHandler, KeyboardTheme}
+import shipreq.webapp.base.text._
+import shipreq.webapp.base.ui.EditTheme
+import shipreq.webapp.base.validation.Simple._
+import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
 import shipreq.webapp.client.project.lib.DataReusability._
-import RichTextEditor.hardcodedLive
-import Text.Equality._
-import Text.UseCaseStep.{OptionalText, lineCardinality}
-import UseCaseStepFlowText.TextAndFlow
 
 object UseCaseStepEditor {
+  import RichTextEditor.hardcodedLive
+  import Text.Equality._
+  import Text.UseCaseStep.{OptionalText, lineCardinality}
+  import UseCaseStepFlowText.TextAndFlow
 
   type InitialValue = TextAndFlow[OptionalText, Set[UseCaseStepId]]
 
@@ -116,8 +116,8 @@ object UseCaseStepEditor {
   val liveCorrect: EndoFn[String] =
     RichTextEditor.liveCorrect(Text.UseCaseStep)
 
-  val clipboardCodec: ClipboardCodec[String] =
-    ClipboardCodec.string.correct(liveCorrect)
+  val potentialValueAcceptor: PotentialValueAcceptor[String] =
+    PotentialValueAcceptor.correct(liveCorrect)
 
   private def saveAndAddKeyCriterion = KeyHandler.Criterion.AltEnter
 

@@ -9,12 +9,12 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.feature.EditorStatus
-import shipreq.webapp.base.feature.clipboard.ClipboardCodec
 import shipreq.webapp.base.lib.{KeyHandlers, KeyboardTheme}
 import shipreq.webapp.base.text.Grammar.{hashRefKey => G}
 import shipreq.webapp.base.text.SingleLine
 import shipreq.webapp.base.ui.EditTheme
 import shipreq.webapp.base.validation.Simple._
+import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
 import shipreq.webapp.client.project.lib.DataReusability._
 
 object TagEditor {
@@ -62,8 +62,8 @@ object TagEditor {
   val liveCorrect: String => String =
     _.replace("\n", "")
 
-  val clipboardCodec: ClipboardCodec[String] =
-    ClipboardCodec.string.correct(liveCorrect)
+  val potentialValueAcceptor: PotentialValueAcceptor[String] =
+    PotentialValueAcceptor.correct(liveCorrect)
 
   case class Props(preEditValue    : Option[Set[ApplicableTagId]],
                    edit            : StateSnapshot[String],

@@ -3,17 +3,47 @@ package shipreq.webapp.client.project.feature.editor
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import org.scalajs.dom.ext.KeyCode
+import shipreq.webapp.base.feature.clipboard.Clipboard
 import shipreq.webapp.base.lib.DomUtil._
-import Feature.ReadWrite
+import shipreq.webapp.base.util.Browser
 
 object EditorKeys {
+  import Feature.ReadWrite
 
   def apply[A](editor: ReadWrite.ForEditor[A, Any])(a: A)(e: ReactKeyboardEventFromHtml): CallbackOption[Unit] = {
 
-    def handlers: CallbackOption[Unit] =
+    val applicableToOpenAndReplace =
+      !(e.altKey || e.ctrlKey || e.metaKey || editor.read.isOpen)
+
+    def paste: Callback =
+      editor.setPotentialValueAsync(Clipboard.read.map(PotentialValue.Clipboard)).getOrEmpty
+
+    def noModKeys: CallbackOption[Unit] =
       CallbackOption.keyCodeSwitch(e) {
-        case KeyCode.F2 => focusOrStartEditor(editor, e)
-      } | ClipboardIntegration.keys(editor)(a)(e)
+
+        case KeyCode.F2 =>
+          focusOrStartEditor(editor, e)
+
+        case KeyCode.Backspace =>
+          editor.setPotentialValue(PotentialValue.Emptiness).getOrEmpty.when_(applicableToOpenAndReplace)
+      }
+
+    def platformDependantKeys: CallbackOption[Unit] =
+      Browser.cmdOrCtrlKeyCodeSwitch(e) {
+
+        case KeyCode.V =>
+          paste
+      }
+
+    def openEditorAndReplaceContentWithKey: CallbackOption[Unit] =
+      for {
+        _ <- CallbackOption.require(applicableToOpenAndReplace)
+        _ <- CallbackOption.unless(e.key.matches("^(?:|[a-zA-Z0-9]{2,})$"))
+        _ <- CallbackOption.liftOptionCallback(editor.setPotentialValue(PotentialValue.Text(e.key)))
+      } yield ()
+
+    def handlers: CallbackOption[Unit] =
+      noModKeys | platformDependantKeys | openEditorAndReplaceContentWithKey
 
     (CallbackOption.require(doesEventTargetCell(e)) >> handlers).asEventDefault(e)
   }

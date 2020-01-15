@@ -75,8 +75,6 @@ Phase 2B
 
 ### Other
 
-* Type to open editor and replace content (enter = just open?)
-
 * Add to imp graph page:
   * Saved views
   * Filter

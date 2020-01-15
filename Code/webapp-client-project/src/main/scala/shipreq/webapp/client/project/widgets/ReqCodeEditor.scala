@@ -10,12 +10,12 @@ import shipreq.webapp.base.data.DataValidators.{reqCode => V}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.feature.EditorStatus
-import shipreq.webapp.base.feature.clipboard.ClipboardCodec
 import shipreq.webapp.base.lib.{KeyHandlers, KeyboardTheme}
 import shipreq.webapp.base.text.GrammarSpec.SeqFormat
 import shipreq.webapp.base.text.{LineCardinality, MultiLine, SingleLine}
 import shipreq.webapp.base.ui.EditTheme
 import shipreq.webapp.base.validation.Simple._
+import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.TextEditor
 
@@ -36,8 +36,8 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
 
   type CommitFn = Out ~=> Callback
 
-  lazy val clipboardCodec: ClipboardCodec[String] =
-    ClipboardCodec.string.correct(liveCorrect)
+  final lazy val potentialValueAcceptor: PotentialValueAcceptor[String] =
+    PotentialValueAcceptor.correct(liveCorrect)
 
   case class Props(edit            : StateSnapshot[String],
                    initialValue    : Option[In],

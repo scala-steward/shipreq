@@ -34,7 +34,7 @@ object NewEditor {
   @Lenses
   final case class CreationArgs(pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]],
                                 filterDead      : FilterDead,
-                                clipboardData   : Option[ClipboardData],
+                                potentialValue  : Option[PotentialValue],
                                 hooks           : Hooks) {
     val cbProjectWidgets: CallbackTo[ProjectWidgets.AnyCtx] =
       pxProjectWidgets.toCallback
@@ -105,6 +105,8 @@ object NewEditor {
       protected val props: (Args, AsyncState) => CallbackTo[Props]
       protected def renderImpl: Props => VdomElement
       protected def changeImpl: Props => Editor.Change[Change]
+//      protected type AcceptableValue
+//      protected def acceptPotentialValue: PotentialValue => Option[AcceptableValue]
 
       final override def render(p: Permission, as: AsyncState, args: Args): Option[VdomElement] =
         // Looks like this could block async but not so. Can't go from edit → async → notAllowed.
@@ -118,31 +120,23 @@ object NewEditor {
         changeImpl(props(args, None).runNow())
     }
 
-    def init[FieldArgs, Change, A](oci: Option[ClipboardCodec[A]])
-                                  (userInit: Init[FieldArgs, Change]): Init[FieldArgs, Change] =
-        oci match {
-          case Some(ci) =>
-            init(ci)(userInit)
+    def init[FieldArgs, Change, A](pva: PotentialValueAcceptor[A])
+                                  (userInit: Option[A] => Init[FieldArgs, Change]): Init[FieldArgs, Change] = args => {
 
-          case None =>
-            args =>
-              for {
-                _ <- CallbackOption.require(args.clipboardData.isEmpty)
-                e <- userInit(args)
-              } yield e
-        }
+      args.potentialValue match {
 
-    def init[FieldArgs, Change, A](ci: ClipboardCodec[A])
-                                  (userInit: Init[FieldArgs, Change]): Init[FieldArgs, Change] =
-      args => {
-        val unreadableClipboard = args.clipboardData.exists(ci.read(_).isEmpty)
-        for {
-          _ <- CallbackOption.unless(unreadableClipboard)
-          e <- userInit(args)
-        } yield e
+        case None =>
+          userInit(None)(args)
+
+        case Some(pv) =>
+          for {
+            a <- CallbackOption.liftOption(pva.accept(pv)) // halt here if PotentialValueAcceptor rejects value
+            e <- userInit(Some(a))(args)
+          } yield e
       }
+    }
 
-  }
+  } // Internal
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -217,9 +211,9 @@ object NewEditor {
         * @tparam B The initial value of the editor.
         * @tparam E The editor
         */
-      def startWithStateSnapshot[S, B: Reusability, E <: Editor[A, C]](initialData: CallbackOption[S])
+      def startWithStateSnapshot[S, B: Reusability, E <: Editor[A, C]](initialData : CallbackOption[S])
                                                                       (initialValue: S => B)
-                                                                      (editor: S => StateSnapshot[B] => E): CallbackOption[E] =
+                                                                      (editor      : S => StateSnapshot[B] => E): CallbackOption[E] =
         initialData.flatMap { s =>
           val editorCtor = editor(s)
 
@@ -232,23 +226,11 @@ object NewEditor {
           CallbackOption.liftOption(newEditor(initialValue(s)))
         }
 
-      /** Creates a Callback that when invoked, will initialise and start an editor.
-        *
-        * The "C" suffix is for "clipboard" in that this is reads its initial value from the clipboard if specified.
-        *
-        * @tparam S Initial data. Data captured before starting the editor.
-        * @tparam B The initial value of the editor.
-        * @tparam E The editor
-        */
-      def startWithStateSnapshotC[S, B: Reusability, E <: Editor[A, C]](initialData: CallbackOption[S],
-                                                                        args: CreationArgs,
-                                                                        clipboardCodec: ClipboardCodec[B])
-                                                                       (initialValue: S => B)
-                                                                       (editor: S => StateSnapshot[B] => E): CallbackOption[E] =
-        startWithStateSnapshot(
-          initialData)(
-          s => clipboardCodec.readOrUse(args.clipboardData, initialValue(s)))(
-          editor)
+      def startWithStateSnapshot[S, B: Reusability, E <: Editor[A, C]](initialData      : CallbackOption[S],
+                                                                       initalValueOption: Option[B])
+                                                                      (initialValueFn   : S => B)
+                                                                      (editor           : S => StateSnapshot[B] => E): CallbackOption[E] =
+        startWithStateSnapshot(initialData)(s => initalValueOption.getOrElse(initialValueFn(s)))(editor)
 
       def newEditor(init: => Internal.Init[A, C]): NewEditor =
         NewEditor(args => init(args).asCallback.flatMap(stateAccess.setState(_, args.hooks.onStart)))
@@ -264,7 +246,7 @@ object NewEditor {
       pxProject.toCallback.map(_.content.reqCodes.getById(id).flatMap {
         case d: ReqCode.ActiveGroup => d.group.some
         case _: ReqCode.ActiveReq
-             | _: ReqCode.Inactive    => None
+           | _: ReqCode.Inactive    => None
       }).asCBO
 
     def getCustomReqTypeCB(id: CustomReqTypeId): CallbackOption[CustomReqType] =
@@ -290,7 +272,9 @@ object NewEditor {
 
       val pxCustomReqTypes = ReqTypeSelector.pxCustomReqTypes(pxProject)
 
-      def apply(id: GenericReqId): InitFn = ictx => Internal.init(None) { args =>
+      val potentialValueAcceptor = PotentialValueAcceptor.rejectAll
+
+      def apply(id: GenericReqId): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
         import ictx._, ctx._
 
         case class State(initialValue: Some[RT],
@@ -315,15 +299,15 @@ object NewEditor {
               abort        = abort,
               commitFn     = commitFn)
 
-          override def paste(c: ClipboardData): Option[Callback] =
-            None
+          override def setPotentialValue(p: PotentialValue): Option[Callback] =
+            potentialValueAcceptor.accept(p).map(ss.setState)
         }
 
         val (abort, commitFn) =
           makeAbortCommitFn(sspUpdateContent)((t: RT) => UpdateContentCmd.SetGenericReqType(id, t.id), args.hooks)
 
         for {
-          _       <- CallbackOption.require(args.clipboardData.isEmpty)
+          _       <- CallbackOption.require(ivo.isEmpty)
           req     <- getGenericReq(id)
           initial <- getCustomReqTypeCB(req.reqTypeId)
         } yield {
@@ -342,12 +326,12 @@ object NewEditor {
 
       object Multiple extends ForChangeType {
         import ReqCodeEditor.{Multiple => RCE}
-        import RCE.clipboardCodec
+        import RCE.potentialValueAcceptor
 
         override type Args   = Unit
         override type Change = RCE.Output
 
-        def apply(id: ReqId): InitFn = ictx => Internal.init(Some(clipboardCodec)) { args =>
+        def apply(id: ReqId): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
           import ictx._
 
           val initialValuesCB: CallbackTo[Set[ReqCode.Value]] =
@@ -356,12 +340,11 @@ object NewEditor {
           val (abort, commitFn) =
             makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchReqCodes(id, _), args.hooks)
 
-          startWithStateSnapshotC(
-            initialValuesCB.toCBO,
-            args,
-            clipboardCodec)(
-            ReqCodeEditor.Multiple.seqFmt merge _.toVector.map(PlainText.reqCode).sorted)(
-            initialValues => new State(_, Some(initialValues), abort, commitFn))
+        startWithStateSnapshot(
+          initialData       = initialValuesCB.toCBO,
+          initalValueOption = ivo)(
+          initialValueFn    = ReqCodeEditor.Multiple.seqFmt merge _.toVector.map(PlainText.reqCode).sorted)(
+          editor            = initialValues => new State(_, Some(initialValues), abort, commitFn))
         }
 
         private class State(ss      : StateSnapshot[String],
@@ -387,19 +370,19 @@ object NewEditor {
               extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
 
-        override def paste(c: ClipboardData): Option[Callback] =
-          clipboardCodec.read(c).map(ss.setState)
+          override def setPotentialValue(p: PotentialValue): Option[Callback] =
+            potentialValueAcceptor.accept(p).map(ss.setState)
         }
       }
 
       object Single extends ForChangeType {
         import ReqCodeEditor.{Single => RCE}
-        import RCE.clipboardCodec
+        import RCE.potentialValueAcceptor
 
         override type Args   = Unit
         override type Change = RCE.Output
 
-        def apply(id: ReqCodeGroupId): InitFn = ictx => Internal.init(Some(clipboardCodec)) { args =>
+        def apply(id: ReqCodeGroupId): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
           import ictx._
 
           val initialValueCB: CallbackOption[ReqCode.Value] =
@@ -408,12 +391,11 @@ object NewEditor {
           val (abort, commitFn) =
             makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.SetCodeGroupCode(id, _), args.hooks)
 
-          startWithStateSnapshotC(
-            initialValueCB,
-            args,
-            clipboardCodec)(
-            PlainText.reqCode)(
-            i => new State(_, Some(i), abort, commitFn))
+        startWithStateSnapshot(
+          initialData       = initialValueCB,
+          initalValueOption = ivo)(
+          initialValueFn    = PlainText.reqCode)(
+          editor            = i => new State(_, Some(i), abort, commitFn))
         }
 
         private class State(ss      : StateSnapshot[String],
@@ -439,8 +421,8 @@ object NewEditor {
               extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
 
-          override def paste(c: ClipboardData): Option[Callback] =
-            clipboardCodec.read(c).map(ss.setState)
+          override def setPotentialValue(p: PotentialValue): Option[Callback] =
+            potentialValueAcceptor.accept(p).map(ss.setState)
         }
       }
     }
@@ -491,19 +473,18 @@ object NewEditor {
             valFn  <- pxValFn
           } yield valFn(lookup).corrector.live
 
-        val clipboardCodec = ClipboardCodec.string.correct(pxCorrector.value())
+        val potentialValueAcceptor = PotentialValueAcceptor.correct(pxCorrector.value())
 
-        Internal.init(Some(clipboardCodec)) { args =>
+        Internal.init(potentialValueAcceptor) { ivo => args =>
 
           val (abort, commitFn) =
             makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchImplications(id, dir, _), args.hooks)
 
-          startWithStateSnapshotC(
-            pxInit.toCallback.toCBO,
-            args,
-            clipboardCodec)(
-            _._2)(
-            _ => new State(_, pxLookup, pxValFn, pxCorrector, abort, commitFn))
+        startWithStateSnapshot(
+          initialData       = pxInit.toCallback.toCBO,
+          initalValueOption = ivo)(
+          initialValueFn    = _._2)(
+          editor            = _ => new State(_, pxLookup, pxValFn, pxCorrector, abort, commitFn))
         }
       }
 
@@ -513,6 +494,9 @@ object NewEditor {
                           pxCorrector: Px[String => String],
                           abort      : Some[Callback],
                           commitFn   : Some[CommitFn]) extends EditorImpl {
+
+        private val pxPotentialValueAcceptor =
+          pxCorrector.map(PotentialValueAcceptor.correct)
 
         override type Props = ImplicationEditor.Props
         override def renderImpl = _.render
@@ -535,11 +519,11 @@ object NewEditor {
             extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
             showInstructions = true)
 
-        override def paste(c: ClipboardData): Option[Callback] =
+        override def setPotentialValue(p: PotentialValue): Option[Callback] =
           Some {
             for {
-              corrector <- pxCorrector.toCallback
-              _         <- ss.setState(corrector(c.text))
+              pva <- pxPotentialValueAcceptor.toCallback
+              _   <- pva.accept(p).fold(Callback.empty)(ss.setState)
             } yield ()
           }
       }
@@ -548,12 +532,12 @@ object NewEditor {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     object EditTags extends ForChangeType {
       import shipreq.webapp.client.project.widgets.TagEditor
-      import TagEditor.{CommitFn, Lookup, clipboardCodec}
+      import TagEditor.{CommitFn, Lookup, potentialValueAcceptor}
 
       override type Args   = Unit
       override type Change = TagEditor.Output
 
-      def apply(id: ReqId, fid: Option[CustomField.Tag.Id]): InitFn = ictx => Internal.init(Some(clipboardCodec)) { args =>
+      def apply(id: ReqId, fid: Option[CustomField.Tag.Id]): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
         import ictx._
 
         val lookupFn = fid.fold[Project => Lookup](Lookup.notUsedInTagFields)(Lookup.forTagField)
@@ -568,12 +552,11 @@ object NewEditor {
         val (abort, commitFn) =
           makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchReqTags(id, _), args.hooks)
 
-        startWithStateSnapshotC(
-          pxInit.toCallback.toCBO,
-          args,
-          clipboardCodec)(
-          _._2)(
-          init => new State(_, Some(init._1), pxLookup, abort, commitFn))
+        startWithStateSnapshot(
+          initialData       = pxInit.toCallback.toCBO,
+          initalValueOption = ivo)(
+          initialValueFn    = _._2)(
+          editor            = i => new State(_, Some(i._1), pxLookup, abort, commitFn))
       }
 
       private class State(ss           : StateSnapshot[String],
@@ -600,8 +583,8 @@ object NewEditor {
             extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
             showInstructions = true)
 
-        override def paste(c: ClipboardData): Option[Callback] =
-          clipboardCodec.read(c).map(ss.setState)
+        override def setPotentialValue(p: PotentialValue): Option[Callback] =
+          potentialValueAcceptor.accept(p).map(ss.setState)
       }
     }
 
@@ -613,14 +596,14 @@ object NewEditor {
       abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) extends ForChangeType {
         val T: editor.text.type = editor.text
 
-        import editor.clipboardCodec
+        import editor.potentialValueAcceptor
 
         override type Args   = Unit
         override type Change = T.OptionalText
 
         protected def start(cmd           : T.OptionalText => UpdateContentCmd,
                             initialValueCB: CallbackOption[T.OptionalText],
-                            pid           : PreviewId): InitFn = ictx => Internal.init(Some(clipboardCodec)) { args =>
+                            pid           : PreviewId): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
           import ictx._
 
           val (abort, commitFn) =
@@ -635,12 +618,11 @@ object NewEditor {
               (initialValue, initialText)
             }
 
-          startWithStateSnapshotC(
-            initCB,
-            args,
-            clipboardCodec)(
-            _._2)(
-            i => new State(_, Some(i._1), args.cbProjectWidgets, pid, abort, commitFn))
+        startWithStateSnapshot(
+          initialData       = initCB,
+          initalValueOption = ivo)(
+          initialValueFn    = _._2)(
+          editor            = i => new State(_, Some(i._1), args.cbProjectWidgets, pid, abort, commitFn))
         }
 
         private class State(ss              : StateSnapshot[String],
@@ -676,8 +658,8 @@ object NewEditor {
               extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
 
-          override def paste(c: ClipboardData): Option[Callback] =
-            clipboardCodec.read(c).map(ss.setState)
+          override def setPotentialValue(p: PotentialValue): Option[Callback] =
+            potentialValueAcceptor.accept(p).map(ss.setState)
         }
       }
 
@@ -719,14 +701,14 @@ object NewEditor {
                                                   ssp: ServerSideProcInvoker[Cmd, ErrorMsg, Any]) extends ForChangeType {
         val T: editor.text.type = editor.text
 
-        import editor.clipboardCodec
+        import editor.potentialValueAcceptor
 
         override type Args   = Unit
         override type Change = T.NonEmptyText
 
         protected def start(cmd           : T.NonEmptyText => Cmd,
                             initialValueCB: CallbackOption[T.NonEmptyText],
-                            pid           : PreviewId): InitFn = ictx => Internal.init(Some(clipboardCodec)) { args =>
+                            pid           : PreviewId): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
           import ictx._
 
           val (abort, commitFn) =
@@ -741,12 +723,11 @@ object NewEditor {
               (initialValue, initialText)
             }
 
-          startWithStateSnapshotC(
-            initCB,
-            args,
-            clipboardCodec)(
-            _._2)(
-            i => new State(_, Some(i._1), args.cbProjectWidgets, pid, abort, commitFn))
+          startWithStateSnapshot(
+            initialData       = initCB,
+            initalValueOption = ivo)(
+            initialValueFn    = _._2)(
+            editor            = i => new State(_, Some(i._1), args.cbProjectWidgets, pid, abort, commitFn))
         }
 
         private class State(ss              : StateSnapshot[String],
@@ -782,8 +763,8 @@ object NewEditor {
               extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
 
-          override def paste(c: ClipboardData): Option[Callback] =
-            clipboardCodec.read(c).map(ss.setState)
+          override def setPotentialValue(p: PotentialValue): Option[Callback] =
+            potentialValueAcceptor.accept(p).map(ss.setState)
         }
       }
 
@@ -799,13 +780,13 @@ object NewEditor {
     object EditUseCaseStep extends ForChangeType {
       import shipreq.webapp.client.project.widgets.RichTextEditor.hardcodedLive
       import shipreq.webapp.client.project.widgets.UseCaseStepEditor
-      import shipreq.webapp.client.project.widgets.UseCaseStepEditor.clipboardCodec
+      import shipreq.webapp.client.project.widgets.UseCaseStepEditor.potentialValueAcceptor
       import UseCaseStepFlowText.TextAndFlow
 
       override type Args = FieldKey.UseCaseStep.Args
       override type Change = UseCaseStepGD.NonEmptyValues
 
-      def apply(id: UseCaseStepId, pid: PreviewId): InitFn = ictx => Internal.init(Some(clipboardCodec)) { args =>
+      def apply(id: UseCaseStepId, pid: PreviewId): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
         import ictx._
 
         val commitFn: UseCaseStepEditor.CommitFn =
@@ -831,12 +812,11 @@ object NewEditor {
             (initialValue, initialText)
           }
 
-        startWithStateSnapshotC(
-          pxInit.toCallback.toCBO,
-          args,
-          clipboardCodec)(
-          _._2)(
-          i => new State(_, Some(i._1), args.cbProjectWidgets, pxStepFocus.toCallback, pid, abort(args.hooks), commitFn))
+        startWithStateSnapshot(
+          initialData       = pxInit.toCallback.toCBO,
+          initalValueOption = ivo)(
+          initialValueFn    = _._2)(
+          editor            = i => new State(_, Some(i._1), args.cbProjectWidgets, pxStepFocus.toCallback, pid, abort(args.hooks), commitFn))
       }
 
       private class State(ss              : StateSnapshot[String],
@@ -889,10 +869,10 @@ object NewEditor {
               preEditValue   = initial)
           }
 
-        override def paste(c: ClipboardData): Option[Callback] =
-          clipboardCodec.read(c).map(ss.setState)
+        override def setPotentialValue(p: PotentialValue): Option[Callback] =
+          potentialValueAcceptor.accept(p).map(ss.setState)
       }
     }
 
-  }
+  } // Internal
 }

@@ -8,7 +8,6 @@ import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature._
-import shipreq.webapp.base.feature.clipboard.ClipboardData
 import shipreq.webapp.base.ui.EditTheme
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
@@ -27,7 +26,7 @@ object Feature {
     /** impure */
     def change(args: Args): Editor.Change[Change]
 
-    def paste(c: ClipboardData): Option[Callback]
+    def setPotentialValue(p: PotentialValue): Option[Callback]
   }
 
   object Editor {
@@ -163,10 +162,10 @@ object Feature {
                     pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]],
                     filterDead      : FilterDead,
                     hooks           : NewEditor.Hooks = NewEditor.Hooks.empty,
-                    clipboardData   : Option[ClipboardData] = None): Option[Callback] =
+                    potentialValue  : Option[PotentialValue] = None): Option[Callback] =
         startEditWithArgs(
           state,
-          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, filterDead, clipboardData, hooks)))
+          FreeOption(NewEditor.CreationArgs(pxProjectWidgets, filterDead, potentialValue, hooks)))
 
       private[Feature] def startEditWithArgs(state: Read.ForAnyEditor,
                                              args : FreeOption[NewEditor.CreationArgs]): Option[Callback] =
@@ -311,14 +310,28 @@ object Feature {
       def onClose(cb: Callback): ForEditor[A, C] =
         copy(creationArgs = creationArgs.map(NewEditor.CreationArgs.onClose.modify(_ >> cb)))
 
-      def withClipboardData(cd: ClipboardData): ForEditor[A, C] =
-        copy(creationArgs = creationArgs.map(_.copy(clipboardData = Some(cd))))
+      def withPotentialValue(p: PotentialValue): ForEditor[A, C] =
+        copy(creationArgs = creationArgs.map(_.copy(potentialValue = Some(p))))
 
       def asyncFeature = write.async
       def asyncState = read.async
 
-      def paste(c: ClipboardData): Option[Callback] =
-        read.editor.flatMap(_.paste(c))
+      val setPotentialValueFnIfAllowed: Option[PotentialValue => Option[Callback]] =
+        SetValueDecision(read) match {
+          case SetValueDecision.OpenAndReplace => Some(withPotentialValue(_).startEdit)
+          case SetValueDecision.Replace        => Some(p => read.editor.flatMap(_.setPotentialValue(p)))
+          case SetValueDecision.Ignore         => None
+        }
+
+      def setPotentialValue(p: PotentialValue): Option[Callback] =
+        setPotentialValueFnIfAllowed.flatMap(_(p))
+
+      def setPotentialValueAsync(getPV: AsyncCallback[PotentialValue]): Option[Callback] =
+        setPotentialValueFnIfAllowed.map(set =>
+          getPV.flatMap(pv =>
+            set(pv).getOrEmpty.asAsyncCallback
+          ).toCallback
+        )
     }
 
     object ForEditor {
