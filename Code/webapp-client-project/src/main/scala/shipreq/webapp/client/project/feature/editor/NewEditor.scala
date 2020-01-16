@@ -105,8 +105,6 @@ object NewEditor {
       protected val props: (Args, AsyncState) => CallbackTo[Props]
       protected def renderImpl: Props => VdomElement
       protected def changeImpl: Props => Editor.Change[Change]
-//      protected type AcceptableValue
-//      protected def acceptPotentialValue: PotentialValue => Option[AcceptableValue]
 
       final override def render(p: Permission, as: AsyncState, args: Args): Option[VdomElement] =
         // Looks like this could block async but not so. Can't go from edit → async → notAllowed.
