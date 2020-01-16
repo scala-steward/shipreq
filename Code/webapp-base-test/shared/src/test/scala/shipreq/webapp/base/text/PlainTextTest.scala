@@ -1,15 +1,23 @@
 package shipreq.webapp.base.text
 
+import sourcecode.Line
 import shipreq.base.test.BaseTestUtil._
+import shipreq.webapp.base.data.{Live, Mandatory}
 import shipreq.webapp.base.test.SampleProject6._
 import shipreq.webapp.base.test.UnsafeTypes._
 import utest._
-import Values._
 
 object PlainTextTest extends TestSuite {
+  import Values._
 
   def ctxUc1 = ProjectText.Context.Req(uc1 )
   def ctxUc0 = ProjectText.Context.Req(0.UC)
+
+  private def assertRoundTrip(input: String)(implicit l: Line) = {
+    val rich = Text.CustomTextField.parse(project, None)(input)
+    val actual = plainText.text(rich, Live, Mandatory.Not)
+    assertMultiline(actual, input)
+  }
 
   override def tests = Tests {
     'useCaseStepRefs {
@@ -18,6 +26,34 @@ object PlainTextTest extends TestSuite {
       'noCtx - assertEq(plainText                .reqTitleById(uc1), full)
       'uc1   - assertEq(plainText.withCtx(ctxUc1).reqTitleById(uc1), full.replaceAll("UC-", ""))
       'ucN   - assertEq(plainText.withCtx(ctxUc0).reqTitleById(uc1), full.replaceAll("UC-", ""))
+    }
+
+    'multilineText {
+
+      'combo {
+        val input =
+          """
+            |hehe
+            |
+            |ok
+            |* a
+            |* b
+            |
+            |yes
+            |""".stripMargin.trim
+        assertRoundTrip(input)
+      }
+
+      'ul {
+        val input =
+          """
+            |* a
+            |* b
+            |* c
+            |""".stripMargin.trim
+        assertRoundTrip(input)
+      }
+
     }
   }
 }

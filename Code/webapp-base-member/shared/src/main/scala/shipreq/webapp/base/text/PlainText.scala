@@ -88,9 +88,6 @@ object PlainText {
 
   private final val bullet = "* "
 
-  // Don't make this final! I'm using eq below.
-  private val outOfListNewline = "\n"
-
   final class ForProject[+Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
 
     def withCtx[Ctx2 <: ProjectText.Context](newCtx: Ctx2): ForProject[Ctx2] =
@@ -100,11 +97,11 @@ object PlainText {
         ForProject(p, newCtx)
 
     override protected def _text(text: Text.AnyOptional, live: Live): String =
-      nestedText("", outOfListNewline, live, text)
+      nestedText("", live, text)
 
     override protected def whenBlankButMandatory = ""
 
-    private def nestedText(acc: String, newline: String, live: Live, atoms: Vector[AnyAtom]): String = {
+    private def nestedText(acc: String, live: Live, atoms: Vector[AnyAtom]): String = {
       @tailrec def go(acc: String, atoms: Vector[AnyAtom]): String =
         if (atoms.isEmpty)
           acc
@@ -113,7 +110,7 @@ object PlainText {
           import Atom._
           val cur = atoms.head match {
             case a: Literal         # Literal        => a.value
-            case _: NewLine         # BlankLine      => newline
+            case _: NewLine         # BlankLine      => "\n\n"
             case a: ContentRef      # ReqRef         => reqRef(a.value)
             case a: ContentRef      # CodeRef        => codeRef(a.value)
             case a: ContentRef      # UseCaseStepRef => useCaseStepRef(a.value)
@@ -123,12 +120,11 @@ object PlainText {
             case a: PlainTextMarkup # TeX            => G.texSurround(a.value)
             case a: TagRef          # TagRef         => tagRef(a.value)
             case a: ListMarkup      # UnorderedList  =>
-              val listNL = if (newline eq outOfListNewline) "\n  " else newline ~ "  "
               val r = a.items.foldLeft("") { (q, li) =>
-                val pre = if (q.isEmpty && acc.isEmpty) bullet else q ~ newline ~ bullet
-                nestedText(pre, listNL, live, li)
+                val pre = if (q.isEmpty && acc.isEmpty) bullet else q ~ "\n" ~ bullet
+                nestedText(pre, live, li)
               }
-              if (nextAtoms.isEmpty) r else r ~ newline
+              if (nextAtoms.isEmpty) r else r ~ "\n\n"
           }
           go(acc ~ cur, nextAtoms)
         }
