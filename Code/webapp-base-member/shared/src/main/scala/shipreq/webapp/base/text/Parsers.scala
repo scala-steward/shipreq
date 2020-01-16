@@ -118,10 +118,21 @@ object Parsers {
   }
 
   trait ListMarkup extends Literal {
-    override type T <: Atom.ListMarkup with Atom.Literal
+    override type T <: Atom.ListMarkup with Atom.Literal with Atom.NewLine
 
     def listItem(listToken: TokenRule): Rule1[t.ListItem] =
-      rule(OWSNL ~ "* " ~ OWS ~ textUntil(listToken, untilEOL))
+      rule(
+        OWSNL ~ "* " ~ OWS ~ textUntil(listToken, untilEOL)
+          ~ extraLine(listToken).*
+          ~> ((head: Vector[t.Atom], extra: Seq[Vector[t.Atom]]) =>
+                 extra.iterator.filter(_.nonEmpty).foldLeft(head)((q, n) => (q :+ t.blankLine) ++ n))
+      )
+
+    private def extraLine(listToken: TokenRule): Rule1[Vector[t.Atom]] =
+      rule(
+        (' '.? ~ NL ~ extraLine(listToken)) |
+        ("  " ~ OWS ~ textUntil(listToken, untilEOL))
+      )
 
      def unorderedList(listToken: TokenRule): Rule1[t.UnorderedList] =
        rule((BOI | (OWS ~ NL)) ~ listItem(listToken).+ ~ OWSNL ~ popSeqToNEV[t.ListItem] ~> t.UnorderedList)

@@ -97,11 +97,11 @@ object PlainText {
         ForProject(p, newCtx)
 
     override protected def _text(text: Text.AnyOptional, live: Live): String =
-      nestedText("", live, text)
+      nestedText("", "\n\n", live, text)
 
     override protected def whenBlankButMandatory = ""
 
-    private def nestedText(acc: String, live: Live, atoms: Vector[AnyAtom]): String = {
+    private def nestedText(acc: String, newline: String, live: Live, atoms: Vector[AnyAtom]): String = {
       @tailrec def go(acc: String, atoms: Vector[AnyAtom]): String =
         if (atoms.isEmpty)
           acc
@@ -110,7 +110,7 @@ object PlainText {
           import Atom._
           val cur = atoms.head match {
             case a: Literal         # Literal        => a.value
-            case _: NewLine         # BlankLine      => "\n\n"
+            case _: NewLine         # BlankLine      => newline
             case a: ContentRef      # ReqRef         => reqRef(a.value)
             case a: ContentRef      # CodeRef        => codeRef(a.value)
             case a: ContentRef      # UseCaseStepRef => useCaseStepRef(a.value)
@@ -119,11 +119,26 @@ object PlainText {
             case a: PlainTextMarkup # EmailAddress   => a.value
             case a: PlainTextMarkup # TeX            => G.texSurround(a.value)
             case a: TagRef          # TagRef         => tagRef(a.value)
+
             case a: ListMarkup      # UnorderedList  =>
-              val r = a.items.foldLeft("") { (q, li) =>
-                val pre = if (q.isEmpty && acc.isEmpty) bullet else q ~ "\n" ~ bullet
-                nestedText(pre, live, li)
-              }
+              val nextNewline = newline + "  "
+
+              val prefix: String => String =
+                if (a.containsBlankLines)
+                  q =>
+                    if (q.isEmpty)
+                      (if (acc.isEmpty) bullet else "\n\n" ~ bullet)
+                    else
+                      q ~ "\n\n" ~ bullet
+                else
+                  q =>
+                    if (q.isEmpty && acc.isEmpty)
+                      bullet
+                    else
+                      q ~ "\n" ~ bullet
+
+              val r = a.items.foldLeft("")((q, li) => nestedText(prefix(q), nextNewline, live, li))
+
               if (nextAtoms.isEmpty) r else r ~ "\n\n"
           }
           go(acc ~ cur, nextAtoms)

@@ -224,7 +224,7 @@ object ParsersTest extends TestSuite {
         val e = as.toVector
         assertEq(quoteStringForDisplay(preprocessStr(text, MultiLine)), parse(p)(text), e)
         val text2 = PlainText.ForProject.noCtx(p).text(e, Live, Mandatory.Not)
-        assertEq(text2, parse(p)(text2), e)
+        assertEq(s"txt -> parsed -> txt: $text2", parse(p)(text2), e)
       }
 
       def test(text: String)(as: T.Atom*): Unit = {
@@ -261,7 +261,44 @@ object ParsersTest extends TestSuite {
 
       'list {
         'empty - test("* ")(T.UnorderedList(NEV(LI())))
+        'empties - test("* \n* ")(T.UnorderedList(NEV(LI(), LI())))
+        'mid - test("a* b")(L("a* b"))
         'between - test("before\n* mid\nafter")(L("before"), T.UnorderedList(NEV(LI(L("mid")))), L("after"))
+        'between2 - test("before\n* mid\n after")(L("before"), T.UnorderedList(NEV(LI(L("mid")))), L("after"))
+        'between3 - test("before\n* mid \n\n \n after")(L("before"), T.UnorderedList(NEV(LI(L("mid")))), L("after"))
+        'newlines - test(
+          """
+            |* a1
+            |  a2
+            |* b
+            |
+            |* c1
+            |
+            |   c2
+            |
+            |
+            |    c3
+            |
+            |
+            |
+            |*  d
+            |*    e1
+            |
+            |
+            |
+            |  e2
+            |
+            |
+            | yo
+            |""".stripMargin)(
+          T.UnorderedList(NEV(
+            LI(L("a1"), T.blankLine, L("a2")),
+            LI(L("b")),
+            LI(L("c1"), T.blankLine, L("c2"), T.blankLine, L("c3")),
+            LI(L("d")),
+            LI(L("e1"), T.blankLine, L("e2")),
+          )),
+          L("yo"))
       }
 
       'useCaseStepRef {

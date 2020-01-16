@@ -686,13 +686,21 @@ object Style extends StyleSheet.Inline {
 
     private val refColour = color(c"#2363A1")
 
-    private def newlineHeight = 0.6 em
+    private def blankLineHeight = 0.6 em
 
-    val blankLine = style(display.block, height(newlineHeight))
+    val blankLine = style(display.block, height(blankLineHeight))
 
-    val ul = style(
-      margin(`0`, `0`, newlineHeight, `0`),
-      paddingLeft(3.2 ex))
+    private def ul = styleS(paddingLeft(3.2 ex))
+
+    val ulCompact = style(
+      ul,
+      margin(`0`, `0`, blankLineHeight, `0`))
+
+    val ulSpacious = style(
+      ul,
+      margin(blankLineHeight, `0`, `0`, `0`),
+      unsafeChild(">li")(
+        marginBottom(blankLineHeight)))
 
     val blankButMandatory = style(
       errorRedOnRed,

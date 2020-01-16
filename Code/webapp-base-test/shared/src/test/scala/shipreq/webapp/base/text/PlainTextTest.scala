@@ -44,6 +44,52 @@ object PlainTextTest extends TestSuite {
         assertRoundTrip(input)
       }
 
+      'ulWithNLs1 {
+        val input =
+          """
+            |ok
+            |
+            |* a
+            |
+            |* b1
+            |
+            |  b2
+            |
+            |* c
+            |
+            |* d
+            |
+            |* e1
+            |
+            |  e2
+            |
+            |* f1
+            |
+            |  f2
+            |
+            |  f3
+            |
+            |good
+            |""".stripMargin.trim
+        assertRoundTrip(input)
+      }
+
+      'ulWithNLs2 {
+        val input =
+          """
+            |* a
+            |
+            |* b1
+            |
+            |  b2
+            |
+            |* c1
+            |
+            |  c2
+            |""".stripMargin.trim
+        assertRoundTrip(input)
+      }
+
       'ul {
         val input =
           """

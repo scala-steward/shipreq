@@ -48,8 +48,16 @@ object Text {
     final def parser(p: Project, currentUseCase: Option[ReqTypePos])(text: String): Parser =
       parserI(p, currentUseCase)(P.preProcessor(lineCardinality)(text).value)
 
-    final def parse(p: Project, currentUseCase: Option[ReqTypePos])(text: String): OptionalText =
-      parser(p, currentUseCase)(text).optionalText.run().get
+    final def parse(p: Project, currentUseCase: Option[ReqTypePos])(text: String): OptionalText = {
+      val pp = parser(p, currentUseCase)(text)
+//      try
+        pp.optionalText.run().get
+//      catch {
+//        case e: ParseError =>
+//          println(pp.formatError(e, new ErrorFormatter(showTraces = true, traceCutOff = 500)))
+//          throw e
+//      }
+    }
 
     final def parseNonEmpty(p: Project, currentUseCase: Option[ReqTypePos])(text: String): Option[NonEmptyText] =
       parser(p, currentUseCase)(text).nonEmptyText.run().toOption

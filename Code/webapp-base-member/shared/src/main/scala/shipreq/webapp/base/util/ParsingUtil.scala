@@ -2,6 +2,7 @@ package shipreq.webapp.base.util
 
 import japgolly.microlibs.nonempty._
 import org.parboiled2._
+import scala.annotation.elidable
 import shapeless._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{ReqType, ReqTypePos}
@@ -129,4 +130,13 @@ abstract class ParsingUtil extends Parser {
 
   def hashRefStr_! : Rule1[String] =
     rule(G.hashRefKey.prefix ~!~ capture(grammarStr(G.hashRefKey)(_.firstChar, _.tailChars, _.length)))
+
+  @elidable(elidable.FINE)
+  def debugPrintRemainder: Rule0 =
+    rule((capture(ANY.*) ~> ((i: String) => println(s"remainder: [$i]")) ~ "fail") | test(true))
+
+  @elidable(elidable.FINE)
+  def debugPrint(s: => Any): Rule0 =
+    rule(push(0) ~> ((_: Int) => println(s)))
+
 }

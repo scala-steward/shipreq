@@ -77,6 +77,7 @@ object Atom {
       /** Plain text atom, or rich text atom? */
       def isPlain: Boolean
       @inline final def isRich: Boolean = !isPlain
+      def isBlankLine = false
     }
     final type OptionalText = Vector[Atom]
     final type NonEmptyText = NonEmptyVector[Atom]
@@ -117,6 +118,7 @@ object Atom {
   trait NewLine extends Base {
     case class BlankLine() extends Atom {
       override final def isPlain = true
+      override def isBlankLine = true
     }
     final val blankLine = BlankLine()
   }
@@ -125,6 +127,9 @@ object Atom {
     final type ListItem = Vector[Atom]
     case class UnorderedList(items: NonEmptyVector[ListItem]) extends Atom {
       override final def isPlain = false
+
+      final val containsBlankLines = items.exists(_.exists(_.isBlankLine))
+
       // For tests
       def filterAtoms(f: Atom => Boolean): this.type = UnorderedList(items.map(_ filter f)).asInstanceOf[this.type]
       def map(f: ListItem => ListItem): this.type = UnorderedList(items map f).asInstanceOf[this.type]

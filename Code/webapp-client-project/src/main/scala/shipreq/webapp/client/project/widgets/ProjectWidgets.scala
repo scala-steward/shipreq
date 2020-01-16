@@ -109,11 +109,14 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
         case a: PlainTextMarkup # WebAddress     => <.a(^.href := a.value, a.value)
         case a: PlainTextMarkup # EmailAddress   => <.a(^.href := "mailto:" ~ a.value, a.value)
         case a: PlainTextMarkup # TeX            => katex(a)
-        case a: ListMarkup      # UnorderedList  => <.ul(*.ul, a.items.whole.toTagMod(row => <.li(row toTagMod atom)))
         case a: ContentRef      # ReqRef         => reqRef(live)(a.value)
         case a: ContentRef      # CodeRef        => codeRef(live)(a.value)
         case a: ContentRef      # UseCaseStepRef => useCaseStepRefById(a.value)
         case a: Issue           # Issue          => issue(a.typ, a.desc, live)
+
+        case a: ListMarkup      # UnorderedList  =>
+          val style = if (a.containsBlankLines) *.ulSpacious else *.ulCompact
+          <.ul(style, a.items.whole.toTagMod(row => <.li(row toTagMod atom)))
       }
       atom
     }
