@@ -100,7 +100,3 @@ Phase 2B
   * Taskman metrics
   * Finish tech dashboards (inc using webapp metrics)
   * Business metrics: dashboards
-
-* Unsaved changes
-  * Save to, and load from, localStorage (maybe spec with TLA+ cos merges?)
-  * Provide ability to save all
