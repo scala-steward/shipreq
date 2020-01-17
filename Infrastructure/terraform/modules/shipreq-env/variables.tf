@@ -33,6 +33,11 @@ variable "bastion_public_key" {
   type = string
 }
 
+variable "nat_ami" {
+  type    = string
+  default = null
+}
+
 variable "nat_public_key" {
   type = string
 }

@@ -13,7 +13,7 @@ resource "aws_ecs_cluster" "nat" {
 }
 
 resource "aws_instance" "nat" {
-  ami                         = data.aws_ssm_parameter.ami-ecs.value
+  ami                         = var.nat_ami != null ? var.nat_ami : data.aws_ssm_parameter.ami-ecs.value
   availability_zone           = var.availability_zone
   instance_type               = "t3a.nano"
   subnet_id                   = aws_subnet.public.id
