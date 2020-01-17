@@ -3,7 +3,6 @@ package shipreq.webapp.client.project.app.root
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.ProjectMetaData
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.text.PlainText
@@ -95,7 +94,7 @@ object Layout {
         menuItems ::=
           Menu.Item(Menu.ItemType.Div(TagMod(
             Style.navBar.unsavedChangesItem,
-            ^.title := UiText.unsavedChanges(unsavedChanges.count),
+            ^.title := unsavedChanges.desc,
             <.span(Style.navBar.unsavedChangesText, unsavedChanges.count),
             unsavedChangesIcon)))
 
@@ -105,9 +104,23 @@ object Layout {
   // -------------------------------------------------------------------------------------------------------------------
 
   private def render(p: Props): VdomElement = {
-    val menuLeft  = navBarLeft(NavBarLeftInput(p.page, p.project, p.rc))
-    val menuRight = navBarRight(NavBarRightInput(p.unsavedChanges, p.connectionStatus, p.setConnectionStatus(!p.connectionStatus)))
-    val navBar    = MemberNavBar.Props(p.username, Some(p.feedbackModal), menuLeft, menuRight)
+
+    val menuLeft = navBarLeft(NavBarLeftInput(
+      p.page,
+      p.project,
+      p.rc))
+
+    val menuRight = navBarRight(NavBarRightInput(
+      p.unsavedChanges,
+      p.connectionStatus,
+      p.setConnectionStatus(!p.connectionStatus)))
+
+    val navBar = MemberNavBar.Props(
+      p.username,
+      Some(p.feedbackModal),
+      menuLeft,
+      menuRight)
+
     MemberLayout.Props(
       navBar,
       <.div(

@@ -71,7 +71,11 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       Px.apply3(pxState, pxProjectName, pxUseCases)(UnsavedChanges.Input.apply)
 
     private val pxUnsavedChanges: Px[UnsavedChanges] =
-      pxUnsavedChangesInput.map(UnsavedChanges.determine).flatMap(Px.callback(_).withReuse.autoRefresh)
+      for {
+        i <- pxUnsavedChangesInput.map(UnsavedChanges.determine)
+        p <- pxProject
+        f <- Px.callback(i).withReuse.autoRefresh
+      } yield f(p)
 
     private val setFilterDead: Reusable[SetStateFnPure[FilterDead]] =
       Reusable.fn.state($ zoomStateL State.filterDead).setStateFn

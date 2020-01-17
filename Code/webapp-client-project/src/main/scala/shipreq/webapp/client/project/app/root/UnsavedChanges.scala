@@ -1,12 +1,18 @@
 package shipreq.webapp.client.project.app.root
 
 import japgolly.microlibs.adt_macros.AdtMacros
-import japgolly.scalajs.react.{CallbackTo, Reusability}
+import japgolly.microlibs.stdlib_ext.MutableArray
+import japgolly.scalajs.react.{CallbackTo, Reusability, Reusable}
 import japgolly.univeq._
+import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.{Project, ReqCodeGroupId, ReqId, UseCases}
+import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.project.lib.DataReusability._
 
-final case class UnsavedChanges(count: Int, locations: Set[UnsavedChanges.Location]) {
+final case class UnsavedChanges(count    : Int,
+                                locations: Set[UnsavedChanges.Location],
+                                desc     : String) {
+
   assert(count >= 0)
   assert(locations.size <= count)
 
@@ -16,8 +22,29 @@ final case class UnsavedChanges(count: Int, locations: Set[UnsavedChanges.Locati
 
 object UnsavedChanges {
 
+  def apply(count: Int, locations: Set[Location])(p: Project): UnsavedChanges = {
+
+    val desc: String = {
+      val head = UiText.unsavedChanges(count)
+      if (count == 0)
+        head
+      else
+        MutableArray(locations).map {
+          case Location.Req(id)          => PlainText.pubidByReqId(id, p)
+          case Location.ReqCodeGroup(id) => PlainText.reqCodeById(id, p)
+          case Location.ProjectName      => "project name"
+          case Location.ManualIssues     => "manual issue(s)"
+        }
+          .sort
+          .map("  * " + _)
+          .mkString(s"$head\n\nLocations:\n", "\n", "")
+    }
+
+    new UnsavedChanges(count, locations, desc)
+  }
+
   val empty: UnsavedChanges =
-    apply(0, Set.empty)
+    apply(0, Set.empty)(Project.empty)
 
   implicit def univEq     : UnivEq     [UnsavedChanges] = UnivEq.derive
   implicit def reusability: Reusability[UnsavedChanges] = Reusability.byRefOrUnivEq
@@ -30,7 +57,7 @@ object UnsavedChanges {
     implicit def reusability: Reusability[Input] = Reusability.byRef || Reusability.derive
   }
 
-  def determine(input: Input): CallbackTo[UnsavedChanges] =
+  def determine(input: Input): CallbackTo[Reusable[Project => UnsavedChanges]] =
     CallbackTo {
       var count = 0
       var locs = Set.empty[Location]
@@ -43,7 +70,7 @@ object UnsavedChanges {
         }
       }
 
-      UnsavedChanges(count, locs)
+      Reusable.byRef(p => UnsavedChanges(count, locs)(p))
     }
 
   // ===================================================================================================================
@@ -102,10 +129,10 @@ object UnsavedChanges {
             case (row, fields) =>
 
               row match {
-                case RowKey.CodeGroup(id)  => countFields(fields, Location.ReqCodeGroup(id))
                 case RowKey.GenericReq(id) => countFields(fields, Location.Req(id))
                 case RowKey.UseCase(id)    => countFields(fields, Location.Req(id))
                 case RowKey.ManualIssues   => countFields(fields, Location.ManualIssues)
+                case RowKey.CodeGroup(id)  => countFields(fields, Location.ReqCodeGroup(id))
 
                 case RowKey.UseCaseSteps =>
                   fields.iterator.flatMap {

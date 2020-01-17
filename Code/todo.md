@@ -102,6 +102,5 @@ Phase 2B
   * Business metrics: dashboards
 
 * Unsaved changes
-  * Allow user to see where they are (by PubId is probably enough)
   * Save to, and load from, localStorage (maybe spec with TLA+ cos merges?)
   * Provide ability to save all
