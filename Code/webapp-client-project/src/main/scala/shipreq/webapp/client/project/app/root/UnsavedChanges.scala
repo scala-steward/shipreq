@@ -5,8 +5,10 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react.{CallbackTo, Reusability}
 import japgolly.univeq._
 import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data.{Project, ReqCodeGroupId, ReqId, UseCases}
+import shipreq.webapp.base.data.{Open, Project, ReqCodeGroupId, ReqId, UseCases}
+import shipreq.webapp.base.lib.KeyboardTheme
 import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.client.project.feature.create.NewEditorArgs
 import shipreq.webapp.client.project.lib.DataReusability._
 
 final case class UnsavedChanges(count    : Int,
@@ -101,6 +103,28 @@ object UnsavedChanges {
             case Some(s) if s.corrected !=* input.projectName => emptyVector :+ Location.ProjectName
             case _                                            => emptyVector
           }
+        }
+    }
+
+    case object CreationFields extends Type {
+      import shipreq.webapp.client.project.feature.CreateFeature
+      import CreateFeature.{FieldKey, RowKey}
+
+      private val uselessArgs = NewEditorArgs(None, false, None, "", KeyboardTheme.Shortcuts.empty)
+
+      override def determine(input: Input) =
+        CallbackTo {
+          var ls = Vector.empty[Location]
+
+          // New manual issue
+          if (input.state.issuesPage.newIssue.open is Open)
+            for (e <- input.state.create(RowKey.ManualIssue)(FieldKey.ManualIssue))
+              // .isRight here means we have valid NonEmptyText
+              // .isLeft is only true if the field is blank
+              if (e.value(uselessArgs).isRight)
+                ls :+= Location.ManualIssues
+
+          ls
         }
     }
 
