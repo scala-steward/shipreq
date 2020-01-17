@@ -71,11 +71,13 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       Px.apply3(pxState, pxProjectName, pxUseCases)(UnsavedChanges.Input.apply)
 
     private val pxUnsavedChanges: Px[UnsavedChanges] =
+      pxUnsavedChangesInput.map(UnsavedChanges.determine).flatMap(Px.callback(_).withReuse.autoRefresh)
+
+    private val pxLayoutUnsavedChangeData: Px[Layout.UnsavedChangeData] =
       for {
-        i <- pxUnsavedChangesInput.map(UnsavedChanges.determine)
+        c <- pxUnsavedChanges
         p <- pxProject
-        f <- Px.callback(i).withReuse.autoRefresh
-      } yield f(p)
+      } yield Layout.UnsavedChangeData.derive(c, p, routerCtl)
 
     private val setFilterDead: Reusable[SetStateFnPure[FilterDead]] =
       Reusable.fn.state($ zoomStateL State.filterDead).setStateFn
@@ -354,7 +356,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       Layout.Props(
         initPageData.username,
         cbProjectMetaData.runNow(),
-        pxUnsavedChanges.value(),
+        pxLayoutUnsavedChangeData.value(),
         global.connectedStatusHub.unsafeGet(),
         global.setConnectionStatus,
         global.reauthModal,

@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.app.root
 
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.stdlib_ext.MutableArray
-import japgolly.scalajs.react.{CallbackTo, Reusability, Reusable}
+import japgolly.scalajs.react.{CallbackTo, Reusability}
 import japgolly.univeq._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.{Project, ReqCodeGroupId, ReqId, UseCases}
@@ -10,41 +10,38 @@ import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.project.lib.DataReusability._
 
 final case class UnsavedChanges(count    : Int,
-                                locations: Set[UnsavedChanges.Location],
-                                desc     : String) {
+                                locations: Set[UnsavedChanges.Location]) {
+  import UnsavedChanges.Location
 
   assert(count >= 0)
   assert(locations.size <= count)
 
   def isEmpty = count == 0
   def nonEmpty = count > 0
+
+  val descShort = UiText.unsavedChanges(count)
+
+  def desc(p: Project): String = {
+    val head = descShort
+    if (count == 0)
+      head
+    else
+      MutableArray(locations).map {
+        case Location.Req(id)          => PlainText.pubidByReqId(id, p)
+        case Location.ReqCodeGroup(id) => PlainText.reqCodeById(id, p)
+        case Location.ProjectName      => "project name"
+        case Location.ManualIssues     => "manual issue(s)"
+      }
+        .sort
+        .map("  * " + _)
+        .mkString(s"$head\n\nLocations:\n", "\n", "")
+  }
 }
 
 object UnsavedChanges {
 
-  def apply(count: Int, locations: Set[Location])(p: Project): UnsavedChanges = {
-
-    val desc: String = {
-      val head = UiText.unsavedChanges(count)
-      if (count == 0)
-        head
-      else
-        MutableArray(locations).map {
-          case Location.Req(id)          => PlainText.pubidByReqId(id, p)
-          case Location.ReqCodeGroup(id) => PlainText.reqCodeById(id, p)
-          case Location.ProjectName      => "project name"
-          case Location.ManualIssues     => "manual issue(s)"
-        }
-          .sort
-          .map("  * " + _)
-          .mkString(s"$head\n\nLocations:\n", "\n", "")
-    }
-
-    new UnsavedChanges(count, locations, desc)
-  }
-
   val empty: UnsavedChanges =
-    apply(0, Set.empty)(Project.empty)
+    apply(0, Set.empty)
 
   implicit def univEq     : UnivEq     [UnsavedChanges] = UnivEq.derive
   implicit def reusability: Reusability[UnsavedChanges] = Reusability.byRefOrUnivEq
@@ -57,7 +54,7 @@ object UnsavedChanges {
     implicit def reusability: Reusability[Input] = Reusability.byRef || Reusability.derive
   }
 
-  def determine(input: Input): CallbackTo[Reusable[Project => UnsavedChanges]] =
+  def determine(input: Input): CallbackTo[UnsavedChanges] =
     CallbackTo {
       var count = 0
       var locs = Set.empty[Location]
@@ -70,7 +67,7 @@ object UnsavedChanges {
         }
       }
 
-      Reusable.byRef(p => UnsavedChanges(count, locs)(p))
+      UnsavedChanges(count, locs)
     }
 
   // ===================================================================================================================
@@ -83,8 +80,8 @@ object UnsavedChanges {
     final case class Req(id: ReqId)                   extends Location
     final case class ReqCodeGroup(id: ReqCodeGroupId) extends Location
 
-  implicit def univEq     : UnivEq     [Location] = UnivEq.derive
-  implicit def reusability: Reusability[Location] = Reusability.byRefOrUnivEq
+    implicit def univEq     : UnivEq     [Location] = UnivEq.derive
+    implicit def reusability: Reusability[Location] = Reusability.byRefOrUnivEq
   }
 
   // ===================================================================================================================
