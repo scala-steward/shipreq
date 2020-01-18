@@ -45,7 +45,7 @@ resource "aws_launch_template" "ops" {
     device_name = "/dev/xvda"
     ebs {
       volume_size = 30 # Min size set by AMI snapshot
-      volume_type = var.ecs_root_volume_type
+      volume_type = var.ops_cluster_ebs_volume_type
     }
   }
 

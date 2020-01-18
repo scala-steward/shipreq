@@ -27,13 +27,12 @@ module "shipreq" {
     aws.ecr = aws.ap-southeast-2
   }
 
-  env                  = "dev"
-  name                 = "Dev"
-  availability_zone    = "ap-southeast-2b"
-  availability_zone_2  = "ap-southeast-2c"
-  deletion_protection  = false
-  ecs_root_volume_type = "standard" # Save money
-  vpc_ip_prefix        = "10.0"
+  env                 = "dev"
+  name                = "Dev"
+  availability_zone   = "ap-southeast-2b"
+  availability_zone_2 = "ap-southeast-2c"
+  deletion_protection = false
+  vpc_ip_prefix       = "10.0"
 
   app_cluster_size                      = 0
   app_instance_type                     = "t3a.small"
@@ -47,6 +46,7 @@ module "shipreq" {
   grafana_db_password                   = "grafana"
   grafana_db_username                   = "grafana"
   nat_public_key                        = file("key-nat.rsa.pub")
+  ops_cluster_ebs_volume_type           = "standard" # Save money
   ops_instance_type                     = "t3a.micro"
   ops_public_key                        = file("key-ops.rsa.pub")
   postgres_backup_retention_days        = 2

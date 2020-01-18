@@ -65,8 +65,8 @@ variable "ops_instance_type" {
   type        = string
 }
 
-variable "ecs_root_volume_type" {
-  description = "The volume type for ECS instance root drives. Configurable because AMI snapshot demands min 30GB which costs money."
+variable "ops_cluster_ebs_volume_type" {
+  description = "The volume type for ECS instance root drives in the ops cluster. Configurable because AMI snapshot demands min 30GB which costs money."
   type        = string
   default     = "gp2"
 }

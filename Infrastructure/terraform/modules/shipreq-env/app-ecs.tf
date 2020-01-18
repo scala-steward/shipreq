@@ -44,8 +44,8 @@ resource "aws_launch_template" "app" {
   block_device_mappings {
     device_name = "/dev/xvda"
     ebs {
-      volume_size = 30 # Min size set by AMI snapshot
-      volume_type = var.ecs_root_volume_type
+      volume_size = 30         # Min size set by AMI snapshot
+      volume_type = "standard" # stop wasting my money
     }
   }
 
