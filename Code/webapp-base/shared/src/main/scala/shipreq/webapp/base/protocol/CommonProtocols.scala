@@ -137,6 +137,69 @@ object CommonProtocols {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  object ReportClientError {
+
+    final case class ErrorInfo(name          : String,
+                               message       : String,
+                               stack         : String,
+                               componentStack: String,
+                               other         : Map[String, String])
+
+    final case class Request(error: ErrorInfo, metadata: Metadata.Client)
+
+    implicit def univEqErrorInfo: UnivEq[ErrorInfo] = UnivEq.derive
+    implicit def univEqRequest  : UnivEq[Request  ] = UnivEq.derive
+
+    type Response = Unit
+
+    val ajax: Ajax[Request, Response] = {
+
+      implicit val picklerErrorInfo: Pickler[ErrorInfo] =
+        new Pickler[ErrorInfo] {
+          override def pickle(a: ErrorInfo)(implicit state: PickleState): Unit = {
+            state.pickle(a.name)
+            state.pickle(a.message)
+            state.pickle(a.stack)
+            state.pickle(a.componentStack)
+            state.pickle(a.other)
+          }
+          override def unpickle(implicit state: UnpickleState): ErrorInfo = {
+            val name           = state.unpickle[String]
+            val message        = state.unpickle[String]
+            val stack          = state.unpickle[String]
+            val componentStack = state.unpickle[String]
+            val other          = state.unpickle[Map[String, String]]
+            ErrorInfo(name, message, stack, componentStack, other)
+          }
+        }
+
+      implicit val picklerRequest: Pickler[Request] =
+        new Pickler[Request] {
+          override def pickle(a: Request)(implicit state: PickleState): Unit = {
+            state.pickle(a.error)
+            state.pickle(a.metadata)
+          }
+          override def unpickle(implicit state: UnpickleState): Request = {
+            val error    = state.unpickle[ErrorInfo]
+            val metadata = state.unpickle[Metadata.Client]
+            Request(error, metadata)
+          }
+        }
+
+      val picklerResponse: Pickler[Response] =
+        implicitly
+
+      implicit val safePicklerRequest: SafePickler[Request] =
+        picklerRequest.asV10.withMagicNumbers(0xBFA2418E, 0xF5D4C77E)
+
+      implicit val safePicklerResponse: SafePickler[Response] =
+        picklerResponse.asV10.withMagicNumbers(0x640CFE5C, 0x9DD455FA)
+
+      defAjax("error")
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object SubmitFeedback {
 
     final case class UserInput(feedback: String)
