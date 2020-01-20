@@ -106,6 +106,7 @@ object ErrorHandlingFeature {
           componentStack = e.componentStack,
           other          = Map(
             "error"       -> e.rawErrorString,
+            "errorNumber" -> (s.errors + 1).toString,
             "typeOfError" -> e.typeOfError,
           ))
 
