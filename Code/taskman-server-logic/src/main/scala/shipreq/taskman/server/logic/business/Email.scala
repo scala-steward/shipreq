@@ -119,14 +119,6 @@ final class Emails(ep: EnvelopeProps, tv: TokenValues) {
   // ---------------------------------------------------------------------------
 
   def landingPageEmail(m: TaskHeader, l: LandingPageHit) = {
-    val body =
-      Util.quickSB(_.mkStringF("","\n","")(
-        _.kv("TaskId", m.id.value)
-        ,_.kv("Contact time", m.created)
-        ,_.kv("Name", l.name)
-        ,_.kv("Email", l.email.value)
-        ,_.kv("Newsletter", l.newsletter)
-        ,_.kv("Message", l.msg.fold("<no msg>")("\n\n" + _))))
     Email.Content("Landing page contact",
       s"""
          |${l.msg.getOrElse("<no msg>")}
