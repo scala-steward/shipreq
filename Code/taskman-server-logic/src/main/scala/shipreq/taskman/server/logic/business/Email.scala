@@ -94,6 +94,12 @@ final class Emails(ep: EnvelopeProps, tv: TokenValues) {
     s"TIME: $utc\n      $sydney"
   }
 
+  def serverError(usrd: String, url: Option[String], report: String): Content = {
+    val subj = s"Webapp failure${url.fold("")(" on: " + _)}"
+    val desc = s"User: $usrd\n\nURL: $url\n\n$report"
+    Content(subj, desc)
+  }
+
   def workerFailureEmail(t: Instant, td: TaskDetail, e: ArticulateError): Content =
     Content(
       s"Taskman worker failed on task (${td.id.value}) ${td.task.taskTypeStr}",

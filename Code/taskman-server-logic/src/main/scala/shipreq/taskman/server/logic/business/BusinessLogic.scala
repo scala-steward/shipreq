@@ -62,9 +62,8 @@ final class BusinessLogic[F[_]](emails        : Emails,
     case ReportServerError(userId, url, report) =>
       val usrDescIo = userId.fold(Fx("None"))(ActiveUser.tryDesc)
       usrDescIo.flatMap { usrd =>
-        val subj = s"Webapp failure${url.fold("")(" on: " + _)}"
-        val desc = s"User: $usrd\n\nURL: $url\n\n$report"
-        val op = Support.API.ReportFailure(subj, desc, Support.Priority.High)
+        val content = emails.serverError(usrd, url, report)
+        val op = Support.API.ReportFailure(content, Support.Priority.High)
         complete(run(op))
       }
 
