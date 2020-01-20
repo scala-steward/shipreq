@@ -9,7 +9,7 @@ object CommonProtocolsJs {
   object Metadata {
     import CommonProtocols.Metadata._
 
-    def client(username: Username, p: Option[Project]): CallbackTo[Client] =
+    def client(username: Option[Username], p: Option[Project]): CallbackTo[Client] =
       CallbackTo {
         Client(
           project   = p,
@@ -20,10 +20,10 @@ object CommonProtocolsJs {
       }
 
     def clientWithProject(username: Username, project: CallbackTo[Project]): CallbackTo[Client] =
-      project.flatMap(p => client(username, Some(p)))
+      project.flatMap(p => client(Some(username), Some(p)))
 
     def clientWithoutProject(username: Username): CallbackTo[Client] =
-      client(username, None)
+      client(Some(username), None)
   }
 
 }

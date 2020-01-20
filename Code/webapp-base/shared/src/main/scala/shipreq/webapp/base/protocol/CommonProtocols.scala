@@ -29,7 +29,7 @@ object CommonProtocols {
     final case class Client(project  : Option[Project],
                             url      : String,
                             userAgent: String,
-                            username : Username)
+                            username : Option[Username])
 
     final case class Project(id          : ProjectId.Public,
                              ord         : Option[Int],
@@ -60,7 +60,7 @@ object CommonProtocols {
     implicit val picklerClient: Pickler[Client] =
       new Pickler[Client] {
         override def pickle(a: Client)(implicit state: PickleState): Unit = {
-          state.enc.writeInt(0) // version
+          state.enc.writeInt(1) // version
           state.pickle(a.project)
           state.pickle(a.url)
           state.pickle(a.userAgent)
@@ -71,7 +71,10 @@ object CommonProtocols {
           val project   = state.unpickle[Option[Project]]
           val url       = state.unpickle[String]
           val userAgent = state.unpickle[String]
-          val username  = state.unpickle[Username]
+          val username  = version match {
+                            case 0 => Some(state.unpickle[Username])
+                            case _ => state.unpickle[Option[Username]]
+                          }
           Client(project, url, userAgent, username)
         }
       }
@@ -243,10 +246,10 @@ object CommonProtocols {
         implicitly
 
       implicit val safePicklerRequest: SafePickler[Request] =
-        picklerRequest.asV10.withMagicNumbers(0xC8EF5F9E, 0x35FCD3C3)
+        picklerRequest.asV11.withMagicNumbers(0xC8EF5F9E, 0x35FCD3C3)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        picklerResponse.asV10.withMagicNumbers(0x69420882, 0x48AFA035)
+        picklerResponse.asV11.withMagicNumbers(0x69420882, 0x48AFA035)
 
       defAjax("feedback")
     }

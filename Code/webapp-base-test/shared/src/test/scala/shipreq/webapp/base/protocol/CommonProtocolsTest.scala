@@ -16,10 +16,11 @@ object CommonProtocolsTest extends TestSuite {
   private val str                = Gen.string(0 to 4)
   private val genOrd             = Gen.chooseInt(100000)
   private val genMetadataProject = Gen.apply3(Metadata.Project)(R.projectIdPublic, genOrd.option, genOrd.set(0 to 3))
-  private val genMetadataClient  = Gen.apply4(Metadata.Client)(genMetadataProject.option, str, str, R.username)
+  private val genMetadataClient  = Gen.apply4(Metadata.Client)(genMetadataProject.option, str, str, R.username.option)
   private val metadataProjectMax = Metadata.Project(Obfuscated("cUZ0"), Some(9), Set(11, 12, 14))
-  private val metadataClientMax  = Metadata.Client(Some(metadataProjectMax), "https://shipreq.com/project/cUZ0", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36", Username("omg123"))
-  private val metadataClientMin  = Metadata.Client(None, "https://shipreq.com/", "", Username("poop"))
+  private val metadataClientMax  = Metadata.Client(Some(metadataProjectMax), "https://shipreq.com/project/cUZ0", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36", Some(Username("omg123")))
+  private val metadataClientMin  = Metadata.Client(None, "https://shipreq.com/", "", None)
+  private val metadataClientMinU = metadataClientMin.copy(username = Some(Username("poop")))
 
   override def tests = Tests {
 
@@ -124,8 +125,24 @@ object CommonProtocolsTest extends TestSuite {
 
           "min" - {
             val userInput = UserInput(".")
-            val expect    = Request(userInput, metadataClientMin)
+            val expect    = Request(userInput, metadataClientMinU)
             val bin       = BinaryData.fromHex("9E5FEFC8010000012E00011468747470733A2F2F736869707265712E636F6D2F0004706F6F70C3D3FC35")
+            assertDecodeOk(codec)(bin, expect)
+          }
+        }
+
+        "v1.1" - {
+          "max" - {
+            val userInput       = UserInput("asd\nhehe!")
+            val expect          = Request(userInput, metadataClientMax)
+            val bin             = BinaryData.fromHex("9E5FEFC8010100096173640A68656865210102000463555A300209030B0C0E2068747470733A2F2F736869707265712E636F6D2F70726F6A6563742F63555A30684D6F7A696C6C612F352E3020285831313B204C696E7578207838365F363429204170706C655765624B69742F3533372E333620284B48544D4C2C206C696B65204765636B6F29204368726F6D652F37392E302E333934352E3838205361666172692F3533372E333602066F6D67313233C3D3FC35")
+            assertDecodeOk(codec)(bin, expect)
+          }
+
+          "min" - {
+            val userInput = UserInput(".")
+            val expect    = Request(userInput, metadataClientMin)
+            val bin       = BinaryData.fromHex("9E5FEFC8010100012E01011468747470733A2F2F736869707265712E636F6D2F0001C3D3FC35")
             assertDecodeOk(codec)(bin, expect)
           }
         }
@@ -140,6 +157,12 @@ object CommonProtocolsTest extends TestSuite {
 
         "v1.0" - {
           val bin    = BinaryData.fromHex("82084269010035A0AF48")
+          val expect = ()
+          assertDecodeOk(codec)(bin, expect)
+        }
+
+        "v1.1" - {
+          val bin    = BinaryData.fromHex("82084269010135A0AF48")
           val expect = ()
           assertDecodeOk(codec)(bin, expect)
         }
