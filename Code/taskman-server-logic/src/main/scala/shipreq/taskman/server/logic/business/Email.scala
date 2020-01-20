@@ -175,15 +175,15 @@ final class Emails(ep: Email.EnvelopeProps, tv: Email.TokenValues) {
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
   // Emails for support staff
 
-  def serverError(usrd: String, url: Option[String], report: String): Content = {
-    val subj = s"Webapp failure${url.fold("")(" on: " + _)}"
-    val desc = s"User: $usrd\n\nURL: $url\n\n$report"
-    Content(subj, desc)
-  }
-
   def clientError(user: Option[ShipReqUser], nameKey: String, messageKey: String, data: Map[String, String]) = {
     val info    = Info(data).addUser(user)
     val subject = exceptionSubject("Error occurred in client", data.get(nameKey), data.get(messageKey))
+    Email.Content(subject, info.format)
+  }
+
+  def serverError(user: Option[ShipReqUser], nameKey: String, messageKey: String, data: Map[String, String]) = {
+    val info    = Info(data).addUser(user)
+    val subject = exceptionSubject("Error occurred in server", data.get(nameKey), data.get(messageKey))
     Email.Content(subject, info.format)
   }
 

@@ -1,7 +1,6 @@
 package shipreq.taskman.api
 
 import japgolly.univeq.UnivEq
-import shipreq.base.util.Util
 
 /**
  * A datum that can be sent to the Taskman server and meaningfully processed.
@@ -51,11 +50,10 @@ object Task {
                                      messageKey: String,
                                      data      : Map[String, String]) extends Task(TaskType.ReportClientError)
 
-  final case class ReportServerError(userId: Option[UserId],
-                                     url   : Option[String],
-                                     report: String) extends Task(TaskType.ReportServerError) {
-    override def toString = s"ReportServerError($userId, $url, ${Util.cutoffStr(report, 80)})"
-  }
+  final case class ReportServerError(userId    : Option[UserId],
+                                     nameKey   : String,
+                                     messageKey: String,
+                                     data      : Map[String, String]) extends Task(TaskType.ReportServerError)
 
   implicit def univEq: UnivEq[Task] = UnivEq.derive
 
@@ -70,7 +68,7 @@ object Task {
       case TaskType.RegistrationCompleted   => RegistrationCompleted(uid)
       case TaskType.RegistrationRequested   => RegistrationRequested(ea, url)
       case TaskType.ReportClientError       => ReportClientError(Some(uid), "error.name", "error.message", Map("error.name" -> "TypeError", "error.message" -> "undefined is not a String", "url" -> "https://shipreq.com/project/abcd", "userAgent" -> "Chrome!"))
-      case TaskType.ReportServerError       => ReportServerError(Some(uid), Some("/login"), "blah")
+      case TaskType.ReportServerError       => ReportServerError(Some(uid), "error.name", "error.message", Map("error.name" -> "ArithmeticException", "error.message" -> "/ by zero", "url" -> "https://shipreq.com/project/abcd", "userAgent" -> "Chrome!"))
       case TaskType.ReRegistrationAttempted => ReRegistrationAttempted(ea)
       case TaskType.SendDiagEmail           => SendDiagEmail(ea, "test", "hello")
       case TaskType.SyncToMailingList       => SyncToMailingList(Some("id < 100"))

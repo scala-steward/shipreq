@@ -16,7 +16,7 @@ object TaskJsonTest extends TestSuite {
     case TaskType.RegistrationCompleted   => """123"""
     case TaskType.RegistrationRequested   => """{"email":"whatever@gmail.com","verifyEmailUrl":"http://hello.io"}"""
     case TaskType.ReportClientError       => """{"userId":123,"nameKey":"error.name","messageKey":"error.message","data":{"error.name":"TypeError","error.message":"undefined is not a String","url":"https://shipreq.com/project/abcd","userAgent":"Chrome!"}}"""
-    case TaskType.ReportServerError       => """{"report":"blah","url":"/login","userId":123}"""
+    case TaskType.ReportServerError       => """{"userId":123,"nameKey":"error.name","messageKey":"error.message","data":{"error.name":"ArithmeticException","error.message":"/ by zero","url":"https://shipreq.com/project/abcd","userAgent":"Chrome!"}}"""
     case TaskType.ReRegistrationAttempted => """"whatever@gmail.com""""
     case TaskType.SendDiagEmail           => """{"body":"hello","email":"whatever@gmail.com","subject":"test"}"""
     case TaskType.SyncToMailingList       => """"id < 100""""

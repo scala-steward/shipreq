@@ -69,10 +69,18 @@ object TestHelpers {
 
     case T.ReportServerError =>
       for {
-        usr <- genUserIdO
-        url <- arbitrary[Option[String]]
-        msg <- arbitrary[String]
-      } yield M.ReportServerError(usr, url, msg)
+        userId    <- genUserIdO
+        nameKey   <- arbitrary[String]
+        nameValue <- arbitrary[Option[String]]
+        msgKey    <- arbitrary[String]
+        msgValue  <- arbitrary[Option[String]]
+        info      <- arbitrary[Map[String, String]]
+      } yield {
+        var data = info
+        for (v <- nameValue) data = data.updated(nameKey, v)
+        for (v <- msgValue) data = data.updated(msgKey, v)
+        M.ReportServerError(userId, nameKey, msgKey, data)
+      }
 
     case T.DummyTask =>
       for {

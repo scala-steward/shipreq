@@ -68,12 +68,13 @@ final class BusinessLogic[F[_]](emails        : Emails,
         } yield ()
       }
 
-    case ReportServerError(userId, url, report) =>
-      val usrDescIo = userId.fold(Fx("None"))(ActiveUser.tryDesc)
-      usrDescIo.flatMap { usrd =>
-        val content = emails.serverError(usrd, url, report)
-        val op = Support.API.ReportFailure(content, Support.Priority.High)
-        complete(run(op))
+    case task: ReportServerError =>
+      complete {
+        for {
+          user    <- Fx.traverseOption(task.userId)(ActiveUser.get)
+          content  = emails.serverError(user, task.nameKey, task.messageKey, task.data)
+          _       <- run(Support.API.ReportFailure(content, Support.Priority.High))
+        } yield ()
       }
 
     case task: UserFeedbackReceived =>
