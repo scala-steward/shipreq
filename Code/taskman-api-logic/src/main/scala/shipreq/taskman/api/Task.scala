@@ -46,10 +46,10 @@ object Task {
 
   final case class SyncToMailingList(sqlCond: Option[String]) extends Task(TaskType.SyncToMailingList)
 
-  final case class ReportServerError(usr   : Option[UserId],
+  final case class ReportServerError(userId: Option[UserId],
                                      url   : Option[String],
                                      report: String) extends Task(TaskType.ReportServerError) {
-    override def toString = s"ReportServerError($usr, $url, ${Util.cutoffStr(report, 80)})"
+    override def toString = s"ReportServerError($userId, $url, ${Util.cutoffStr(report, 80)})"
   }
 
   implicit def univEq: UnivEq[Task] = UnivEq.derive

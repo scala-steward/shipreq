@@ -15,7 +15,7 @@ object TaskJsonTest extends TestSuite {
     case TaskType.PasswordResetRequested  => """{"email":"whatever@gmail.com","resetPasswordUrl":"http://hello.io"}"""
     case TaskType.RegistrationCompleted   => """123"""
     case TaskType.RegistrationRequested   => """{"email":"whatever@gmail.com","verifyEmailUrl":"http://hello.io"}"""
-    case TaskType.ReportServerError       => """{"report":"blah","url":"/login","usr":123}"""
+    case TaskType.ReportServerError       => """{"report":"blah","url":"/login","userId":123}"""
     case TaskType.ReRegistrationAttempted => """"whatever@gmail.com""""
     case TaskType.SendDiagEmail           => """{"body":"hello","email":"whatever@gmail.com","subject":"test"}"""
     case TaskType.SyncToMailingList       => """"id < 100""""

@@ -75,10 +75,10 @@ object TaskJson {
     Encoder[Option[String]].contramap(_.sqlCond)
 
   implicit val decoderTaskReportServerError: Decoder[Task.ReportServerError] =
-    Decoder.forProduct3("usr", "url", "report")(Task.ReportServerError.apply)
+    Decoder.forProduct3("userId", "url", "report")(Task.ReportServerError.apply)
 
   implicit val encoderTaskReportServerError: Encoder[Task.ReportServerError] =
-    Encoder.forProduct3("usr", "url", "report")(a => (a.usr, a.url, a.report))
+    Encoder.forProduct3("userId", "url", "report")(a => (a.userId, a.url, a.report))
 
   implicit val decoderTaskUserFeedbackReceived: Decoder[Task.UserFeedbackReceived] =
     Decoder.forProduct3("userId", "feedback", "metadata")(Task.UserFeedbackReceived.apply)

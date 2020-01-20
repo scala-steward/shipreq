@@ -59,8 +59,8 @@ final class BusinessLogic[F[_]](emails        : Emails,
     case SyncToMailingList(cond) =>
       complete(ActiveUser syncToML cond)
 
-    case ReportServerError(usr, url, report) =>
-      val usrDescIo = usr.fold(Fx("None"))(ActiveUser.tryDesc)
+    case ReportServerError(userId, url, report) =>
+      val usrDescIo = userId.fold(Fx("None"))(ActiveUser.tryDesc)
       usrDescIo.flatMap { usrd =>
         val subj = s"Webapp failure${url.fold("")(" on: " + _)}"
         val desc = s"User: $usrd\n\nURL: $url\n\n$report"
