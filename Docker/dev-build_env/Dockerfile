@@ -44,13 +44,14 @@ RUN pacman -Sy --noconfirm --needed \
 # Graal #
 #########
 
-RUN cd /tmp \
- && git clone https://aur.archlinux.org/graal-bin.git \
- && cd graal-bin \
- && git checkout 29fbb5d5951b6a77123968742b2a23bb4349b1a9 2>/dev/null \
+RUN n=jdk11-graalvm-bin \
+ && cd /tmp \
+ && git clone https://aur.archlinux.org/$n.git \
+ && cd $n \
+ && git checkout 3ec35a1a23170d2e9d2b577ee895d9517a5a1e58 2>/dev/null \
  && makepkg -sri --noconfirm \
  && cd /tmp \
- && rm -rf graal-bin
+ && rm -rf $n
 
 ########
 # Node #
