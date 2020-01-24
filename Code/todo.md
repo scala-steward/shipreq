@@ -64,6 +64,7 @@ Backlog
 * Make webtamp hash filenames of urls in Semantic CSS (`icons.*`)
 * Automate visual testing so changes to styling (mostly Semantic UI upgrades) can be verified.
   Use BackstopJS. Will require a read-only test user with a pre-configured project
+* Taskman metrics
 
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -90,8 +91,3 @@ Phase 2B
   Maybe a dynamic approach that compares versions, or maybe a migration task
   that adds a new event to everyone's projects to do the rename once when the
   new version is deployed.
-
-* Metrics
-  * Taskman metrics
-  * Finish tech dashboards (inc using webapp metrics)
-  * Business metrics: dashboards
