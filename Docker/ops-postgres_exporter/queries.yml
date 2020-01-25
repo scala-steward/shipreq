@@ -3,10 +3,12 @@
 
 shipreq_users:
   query: >-
-    select 'n' registered, count(1) total from usr where username is null
+    select 'public' owner_type, 'n' registered, count(1) total from usr where username is null
     union all
-    select 'y', count(1) from usr where username is not null
+    select user_type_by_username(username), 'y', count(1) from usr where username is not null group by user_type_by_username(username)
   metrics:
+  - owner_type:
+      usage: LABEL
   - registered:
       usage: LABEL
   - total:
@@ -33,26 +35,42 @@ shipreq_users_last_login:
     with ps as (
       select unnest(array[1,.9,.7,.5,.3,.1,0]) p
     ), ages as (
-      select extract(epoch from now() - last_login_at) t from usr where username is not null
+      select user_type_by_username(username) owner_type, extract(epoch from now() - last_login_at) t
+      from usr
+      where username is not null
     )
-    select (p*100)::smallint as p, percentile_cont(p) within group (order by t) seconds_ago
+    select owner_type, (p*100)::smallint as p, percentile_cont(p) within group (order by t) seconds_ago
     from ages, ps
-    group by p
+    group by p, owner_type
   metrics:
+  - owner_type:
+      usage: LABEL
   - p:
       usage: LABEL
   - seconds_ago:
       usage: GAUGE
 
 shipreq_users_last_login_seconds:
-  query: select count(1) ago_count from usr where username is not null
+  query: >-
+    select user_type_by_username(username) owner_type, count(1) ago_count
+    from usr
+    where username is not null
+    group by user_type_by_username(username)
   metrics:
+  - owner_type:
+      usage: LABEL
   - ago_count:
       usage: GAUGE
 
 shipreq_users_last_login_seconds_ago:
-  query: select coalesce(sum(extract(epoch from now() - last_login_at)),0) sum from usr where username is not null
+  query: >-
+    select user_type_by_username(username) owner_type, coalesce(sum(extract(epoch from now() - last_login_at)),0) sum
+    from usr
+    where username is not null
+    group by user_type_by_username(username)
   metrics:
+  - owner_type:
+      usage: LABEL
   - sum:
       usage: GAUGE
 
@@ -61,8 +79,17 @@ shipreq_users_last_login_seconds_ago:
 
 shipreq_projects:
   query: >-
-    select 'y' live, count(1) total from project
+    with projects as (
+      select user_type_by_username(username) owner_type
+      from project p, usr
+      where p.usr_id = usr.id
+    )
+    select owner_type, 'y' live, count(1) total
+    from projects
+    group by owner_type
   metrics:
+  - owner_type:
+      usage: LABEL
   - live:
       usage: LABEL
   - total:
@@ -73,10 +100,17 @@ shipreq_projects:
 
 shipreq_events:
   query: >-
-    select 'y' live_project, 'y' initial, coalesce(sum(events_init),0) total from project
+    with projects as (
+      select user_type_by_username(username) owner_type, events_total, events_init
+      from project p, usr
+      where p.usr_id = usr.id
+    )
+    select owner_type, 'y' live_project, 'y' initial, coalesce(sum(events_init),0) total from projects group by owner_type
     union all
-    select 'y', 'n', coalesce(sum(events_total - events_init),0) total from project
+    select owner_type, 'y', 'n', coalesce(sum(events_total - events_init),0) total from projects group by owner_type
   metrics:
+  - owner_type:
+      usage: LABEL
   - live_project:
       usage: LABEL
   - initial:
@@ -89,10 +123,17 @@ shipreq_events:
 
 shipreq_reqs:
   query: >-
-    select 'y' live_project, 'y' live_req, 'y' live, coalesce(sum(reqs_live),0) total from project
+    with projects as (
+      select user_type_by_username(username) owner_type, reqs_total, reqs_live
+      from project p, usr
+      where p.usr_id = usr.id
+    )
+    select owner_type, 'y' live_project, 'y' live_req, 'y' live, coalesce(sum(reqs_live),0) total from projects group by owner_type
     union all
-    select 'y', 'n', 'n', coalesce(sum(reqs_total - reqs_live),0) from project
+    select owner_type, 'y', 'n', 'n', coalesce(sum(reqs_total - reqs_live),0) from projects group by owner_type
   metrics:
+  - owner_type:
+      usage: LABEL
   - live:
       usage: LABEL
       description: "live_project && live_req"
@@ -137,13 +178,17 @@ shipreq_project_last_access:
       select unnest(array[1,.9,.7,.5,.3,.1,0]) p
     ), ages as (
       select extract(epoch from now() - accessed_at) rw,
-             extract(epoch from now() - updated_at) w
-      from project
+             extract(epoch from now() - updated_at) w,
+             user_type_by_username(username) owner_type
+      from project, usr
+      where usr_id = usr.id
     )
-    select (p*100)::smallint as p, 'rw' as access, percentile_cont(p) within group (order by rw) seconds_ago from ages, ps group by p
+    select owner_type, (p*100)::smallint as p, 'rw' as access, percentile_cont(p) within group (order by rw) seconds_ago from ages, ps group by p, owner_type
     union all
-    select (p*100)::smallint, 'w', percentile_cont(p) within group (order by w) from ages, ps group by p
+    select owner_type, (p*100)::smallint, 'w', percentile_cont(p) within group (order by w) from ages, ps group by p, owner_type
   metrics:
+  - owner_type:
+      usage: LABEL
   - p:
       usage: LABEL
   - access:
@@ -153,10 +198,17 @@ shipreq_project_last_access:
 
 shipreq_project_last_access_seconds:
   query: >-
-    select 'r' as access, count(1) ago_count from project
+    with projects as (
+      select user_type_by_username(username) owner_type
+      from project, usr
+      where usr_id = usr.id
+    )
+    select owner_type, 'r' as access, count(1) ago_count from projects group by owner_type
     union all
-    select 'w', count(1) from project
+    select owner_type, 'w', count(1) from projects group by owner_type
   metrics:
+  - owner_type:
+      usage: LABEL
   - access:
       usage: LABEL
   - ago_count:
@@ -166,13 +218,18 @@ shipreq_project_last_access_seconds_ago:
   query: >-
     with data as (
       select coalesce(sum(extract(epoch from now() - accessed_at)),0) r,
-             coalesce(sum(extract(epoch from now() - updated_at)),0) w
-      from project
+             coalesce(sum(extract(epoch from now() - updated_at)),0) w,
+             user_type_by_username(username) owner_type
+      from project, usr
+      where usr_id = usr.id
+      group by user_type_by_username(username)
     )
-    select 'r' as access, r sum from data
+    select owner_type, 'r' as access, r sum from data
     union all
-    select 'w', w from data
+    select owner_type, 'w', w from data
   metrics:
+  - owner_type:
+      usage: LABEL
   - access:
       usage: LABEL
   - sum:
@@ -191,17 +248,31 @@ shipreq_daily_logins:
              (select b::date from utc) b_date,
              (select extract(hour from a) from utc) a_hour,
              (select extract(hour from b) from utc) b_hour
-    ), results as (
+    ), results1 as (
       select sum(total) total_sum,
-             hll_cardinality(hll_union_agg(users)) user_sum
+             hll_union_agg(users) users
       from usr_logins_per_hour
       where (date = (select a_date from range) AND hour >= (select a_hour from range)) OR
             (date = (select b_date from range) AND hour <= (select b_hour from range))
+      union all
+      select 0, hll_empty()
+    ), results2 as (
+      select sum(total_sum) total_sum,
+             hll_union_agg(users) users
+      from results1
+    ), results as (
+      select *, #users user_count
+      from results2
     )
-    select 'n' unique_user, coalesce(total_sum,0) total from results
+    select 'y' unique_user,
+           user_type,
+           (r.user_count + u.count - #(r.users || u.users)) total -- |R ∩ U| = |R| + |U| - |R ∪ U|
+    from users_by_type u, results r
     union all
-    select 'y', coalesce(user_sum,0) from results
+    select 'n', '', total_sum from results
   metrics:
+  - user_type:
+      usage: LABEL
   - unique_user:
       usage: LABEL
   - total:
@@ -220,7 +291,7 @@ shipreq_daily_project_reads:
              (select b::date from utc) b_date,
              (select extract(hour from a) from utc) a_hour,
              (select extract(hour from b) from utc) b_hour
-    ), results as (
+    ), results1 as (
       select write,
              sum(total) total_sum,
              hll_union_agg(projects) projects
@@ -228,15 +299,37 @@ shipreq_daily_project_reads:
       where (date = (select a_date from range) AND hour >= (select a_hour from range)) OR
             (date = (select b_date from range) AND hour <= (select b_hour from range))
       group by write
+      union all
+      select true, 0, hll_empty()
+      union all
+      select false, 0, hll_empty()
+    ), results as (
+      select write,
+             sum(total_sum) total_sum,
+             hll_union_agg(projects) projects
+      from results1
+      group by write
+    ), results_rw as (
+      select hll_union_agg(projects) projects from results
     )
-    select case when write then 'w' else 'r' end as access, 'n' unique_project, total_sum total from results
+    select '' owner_type, case when write then 'w' else 'r' end as access, 'n' unique_project, total_sum total from results
     union all
-    select case when write then 'w' else 'r' end as access, 'y' unique_project, hll_cardinality(projects) total from results
+    select '', 'rw', 'n', sum(total_sum) from results
     union all
-    select 'rw', 'n', coalesce(sum(total_sum),0) from results
+    select owner_type,
+           case when write then 'w' else 'r' end,
+           'y',
+           hll_cardinality(r.projects) + p.count - #(r.projects || p.projects) -- |R ∩ P| = |R| + |P| - |R ∪ P|
+    from projects_by_owner_type p, results r
     union all
-    select 'rw', 'y', coalesce(hll_cardinality(hll_union_agg(projects)),0) from results
+    select owner_type,
+           'rw',
+           'y',
+           hll_cardinality(r.projects) + p.count - #(r.projects || p.projects) -- |R ∩ P| = |R| + |P| - |R ∪ P|
+    from projects_by_owner_type p, results_rw r
   metrics:
+  - owner_type:
+      usage: LABEL
   - access:
       usage: LABEL
   - unique_project:
