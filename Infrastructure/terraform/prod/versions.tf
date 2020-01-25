@@ -5,7 +5,7 @@ locals {
       cadvisor      = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
       filebeat      = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
       node_exporter = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
-      shipreq       = "git-69d6b2dd8a0d03481e60f1a573acab610fc71c2a"
+      shipreq       = "git-bd0efeea3069a4501c711a87c84604aa54405b58"
     }
 
     bastion = {
@@ -27,7 +27,7 @@ locals {
       filebeat          = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
       grafana           = "git-6cb1f6ba6fa347b9bda12d0c5441e9c29e2627fa"
       node_exporter     = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
-      postgres_exporter = "git-2c211e7109c443dcba236466a5a7029d3de93cee"
+      postgres_exporter = "git-bd0efeea3069a4501c711a87c84604aa54405b58"
       prometheus_biz    = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
       prometheus_tech   = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
     }
