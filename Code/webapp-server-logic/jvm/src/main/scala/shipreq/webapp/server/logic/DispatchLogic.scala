@@ -105,6 +105,9 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
   import DispatchLogic._
   import Method._
 
+  private val routeBuilderModule = new dispatch.RouteBuilderModule(makeRealRes)
+  import routeBuilderModule.{Respond, RouteBuilder}
+
   private type Request = dispatch.Request[RealReq]
 
   @inline private def makeReal(r: Response)(implicit req: Request): F[RealRes] =
@@ -523,6 +526,12 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
         )
       }
 
+    private def endpoint2(method: Method, url: Url.Relative) =
+      RouteBuilder.empty
+        .ensure(req => req.param(opsSecretKey).contains(opsSecretValue.value) && (req.method eq method), Respond.const(notFoundSecure))
+        .traceUrl(url)
+        .whenUrlIs(url)
+
     private def whenValid[A](fa: F[ErrorMsg \/ A])(f: A => Response): F[Response] =
       fa.map {
         case \/-(a) => f(a)
@@ -537,8 +546,14 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
       * Used for container health-checks.
       */
     private val ok: Request ?=> F[RealRes] = {
-      val r = response(ResponseCmd.Text(StatusCode.OK, "OK."))
-      get(Url.Relative("ok"), F pure r)
+
+      RouteBuilder.empty
+        .get(Url.Relative("ok"))
+        .respond(Respond.pure(ResponseCmd.Text(StatusCode.OK, "OK.")))
+        .build
+
+//      val r = response(ResponseCmd.Text(StatusCode.OK, "OK."))
+//      get(Url.Relative("ok"), F pure r)
     }
 
     /** API for invoking the first part of the registration process
@@ -551,8 +566,11 @@ final class DispatchLogic[F[_], RealReq, RealRes](readRealReq: RealReq => dispat
             response(ResponseCmd.Json(StatusCode.OK, Json.obj("taskId" -> id.value.asJson))))))
 
     private val statsDb: Request ?=> F[RealRes] =
-      endpoint(Post, Url.Relative("stats/db"))(
-        Function const ops.dbStats.map(jsonResponse))
+      endpoint2(Post, Url.Relative("stats/db"))
+        .respond(Respond.const(ops.dbStats.map(jsonResponse)))
+        .build
+//      endpoint(Post, Url.Relative("stats/db"))(
+//        Function const ops.dbStats.map(jsonResponse))
 
     private val statsUsers: Request ?=> F[RealRes] =
       endpoint(Post, Url.Relative("stats/users"))(

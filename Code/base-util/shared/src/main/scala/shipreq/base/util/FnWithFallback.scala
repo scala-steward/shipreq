@@ -1,5 +1,8 @@
 package shipreq.base.util
 
+import scalaz.Monad
+import scalaz.syntax.monad._
+
 /**
   * A partial function that, given a fallback, can efficiently become a total function.
   */
@@ -21,6 +24,14 @@ final case class FnWithFallback[A, B](withFallback: (A => B) => A => B) extends 
       val attempt = withFallback(fallback)
       a => (if (cond(a)) attempt else fallback)(a)
     })
+
+  def whenF[F[_], C](cond: A => F[Boolean])(implicit ev: (A ?=> B) <:< (A ?=> F[C]), F: Monad[F]): A ?=> F[C] = {
+    val self = ev(this)
+    FnWithFallback[A, F[C]](fallback => {
+      val attempt = self.withFallback(fallback)
+      a => cond(a).flatMap(ok => if (ok) attempt(a) else fallback(a))
+    })
+  }
 
   def embed(cond: A => Boolean, update: A => A): A ?=> B =
     FnWithFallback(fallback => {
