@@ -70,6 +70,8 @@ Phase 2C
 
 * User profile page
 
+* Bulk tag add/remove
+
 * Redo tag config screen - prop panel on right
 
 * Add to imp graph page:
