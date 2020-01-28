@@ -103,3 +103,23 @@ Phase 2C
     * audit trail (global)
     * audit trail (per req)
     * notifications
+
+### Prototype
+  * User profile: name
+  * User profile: username
+  * User profile: password
+  * User profile: email
+  * User profile: newsletter
+  * New tag config screen
+  * Project deletion
+  * Multi user
+
+### Requirements
+  * imp graph for task tracking
+  * github integration
+  * anon shares
+  * audit trail
+    * global/per req
+    * open project at revision x in R/O mode
+    * diff between revisions
+  * multi user notification / change tracking
