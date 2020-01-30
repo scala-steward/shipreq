@@ -223,6 +223,11 @@ object ParsersTest extends TestSuite {
       def testT[A <: AnyAtom](p: Project, parse: Project => String => Vector[A], text: String)(as: A*): Unit = {
         val e = as.toVector
         assertEq(quoteStringForDisplay(preprocessStr(text, MultiLine)), parse(p)(text), e)
+
+//        def x[B](as: Vector[B]) = as.mkString("\n")
+//        def x[B](as: Vector[B]) = as.toString().replaceAll("(?<=[,\\(]) *(?!\\))", "\n")
+//        assertMultiline(x(parse(p)(text)), x(e))
+
         val text2 = PlainText.ForProject.noCtx(p).text(e, Live, Mandatory.Not)
         assertEq(s"txt -> parsed -> txt: $text2", parse(p)(text2), e)
       }
@@ -253,7 +258,7 @@ object ParsersTest extends TestSuite {
         'li      - test("*     hehe    \n*     yay    ")(T.UnorderedList(NEV(LI(L("hehe")), LI(L("yay")))))
         'nl      - test("here\nthere")(L("here"), T.blankLine, L("there"))
         'nls     - test("here \n \n\n there")(L("here"), T.blankLine, L("there"))
-        'listNL  - test("ok\n\n\n*   hehe \n \n\n  \n *  yay \n\n\n bye")(L("ok"), T.UnorderedList(NEV(LI(L("hehe")), LI(L("yay")))), L("bye"))
+        'listNL  - test("ok\n\n\n*   hehe \n \n\n  \n *  yay \n\n\nbye")(L("ok"), T.UnorderedList(NEV(LI(L("hehe")), LI(L("yay")))), L("bye"))
         'codeRef - test("[ here . i . am_3 ]")(T.CodeRef(reqCode_hereiam3))
         'headNL  - whitespaceCombos.foreach(w => test(w + "good")(T.Literal("good")))
         'tailNL  - whitespaceCombos.foreach(w => test("good" + w)(T.Literal("good")))
@@ -264,8 +269,10 @@ object ParsersTest extends TestSuite {
         'empties - test("* \n* ")(T.UnorderedList(NEV(LI(), LI())))
         'mid - test("a* b")(L("a* b"))
         'between - test("before\n* mid\nafter")(L("before"), T.UnorderedList(NEV(LI(L("mid")))), L("after"))
-        'between2 - test("before\n* mid\n after")(L("before"), T.UnorderedList(NEV(LI(L("mid")))), L("after"))
-        'between3 - test("before\n* mid \n\n \n after")(L("before"), T.UnorderedList(NEV(LI(L("mid")))), L("after"))
+        'between2 - test("before\n* mid\n after")(L("before"), T.UnorderedList(NEV(LI(L("mid"), T.blankLine, L("after")))))
+        'between3 - test("before\n* mid \n\n \n after")(L("before"), T.UnorderedList(NEV(LI(L("mid"), T.blankLine, L("after")))))
+        'between4 - test("before\n* mid\n     \n\n      \nafter")(L("before"), T.UnorderedList(NEV(LI(L("mid")))), L("after"))
+
         'newlines - test(
           """
             |* a1
@@ -289,7 +296,7 @@ object ParsersTest extends TestSuite {
             |  e2
             |
             |
-            | yo
+            |yo
             |""".stripMargin)(
           T.UnorderedList(NEV(
             LI(L("a1"), T.blankLine, L("a2")),
@@ -299,6 +306,83 @@ object ParsersTest extends TestSuite {
             LI(L("e1"), T.blankLine, L("e2")),
           )),
           L("yo"))
+
+        'indents - test(
+          """
+            |  * a1
+            |  a2
+            | a3
+            |  * b
+            |omg
+            |    * c1
+            |      c2
+            |             c3
+            |    * d1
+            | *d2
+            |
+            |    * e1
+            |
+            |  e2
+            |
+            |* ok
+            |ah
+            |""".stripMargin)(
+          T.UnorderedList(NEV(
+            LI(L("a1"), T.blankLine, L("a2"), T.blankLine, L("a3")),
+            LI(L("b")),
+          )),
+          L("omg"),
+          T.UnorderedList(NEV(
+            LI(L("c1"), T.blankLine, L("c2"), T.blankLine, L("c3")),
+            LI(L("d1"), T.blankLine, L("*d2")),
+            LI(L("e1"), T.blankLine, L("e2")),
+            LI(L("ok")),
+          )),
+          L("ah"))
+
+        'bullets - test(
+          """
+            |Q
+            |    • A
+            |    • B
+            |    • C
+            |R
+            |    •A
+            |    •B
+            |    •C
+            |S
+            |    * A
+            |    * B
+            |    * C
+            |T
+            |    *A
+            |    *B
+            |    *C
+            |U
+            |""".stripMargin)(
+          L("Q"),
+          T.UnorderedList(NEV(
+            LI(L("A")),
+            LI(L("B")),
+            LI(L("C")),
+          )),
+          L("R"),
+          T.UnorderedList(NEV(
+            LI(L("A")),
+            LI(L("B")),
+            LI(L("C")),
+          )),
+          L("S"),
+          T.UnorderedList(NEV(
+            LI(L("A")),
+            LI(L("B")),
+            LI(L("C")),
+          )),
+          L("T"),
+          T.blankLine, L("*A"),
+          T.blankLine, L("*B"),
+          T.blankLine, L("*C"),
+          T.blankLine, L("U"))
       }
 
       'useCaseStepRef {

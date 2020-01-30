@@ -26,8 +26,10 @@ object Parsers {
   private val multiLineCanTrim: PreProcessor.CanTrim =
     (a, i) => a(i) match {
       case ' ' =>
-        // Space need only be preserved after an asterisk
-        !(i != 0 && a(i - 1) == '*')
+        (i == 0) || {
+          val prevChar = a(i - 1)
+          prevChar != '*' // Space need only be preserved after an asterisk
+        }
       case c =>
         PreProcessor.canTrimWhitespaceFn(c)
     }
@@ -120,18 +122,23 @@ object Parsers {
   trait ListMarkup extends Literal {
     override type T <: Atom.ListMarkup with Atom.Literal with Atom.NewLine
 
+    private def bullet: Rule0 =
+      // See https://en.wikipedia.org/wiki/Bullet_(typography)
+      rule("* " | anyOf("•‣⁃⁌⁍∙○◘◦☙❥❧⦾⦿"))
+
     def listItem(listToken: TokenRule): Rule1[t.ListItem] =
       rule(
-        OWSNL ~ "* " ~ OWS ~ textUntil(listToken, untilEOL)
+        OWSNL ~ bullet ~ OWS ~ textUntil(listToken, untilEOL)
           ~ extraLine(listToken).*
-          ~> ((head: Vector[t.Atom], extra: Seq[Vector[t.Atom]]) =>
-                 extra.iterator.filter(_.nonEmpty).foldLeft(head)((q, n) => (q :+ t.blankLine) ++ n))
+          ~> { (head: Vector[t.Atom], extra: Seq[Vector[t.Atom]]) =>
+            extra.iterator.filter(_.nonEmpty).foldLeft(head)((q, n) => (q :+ t.blankLine) ++ n)
+          }
       )
 
     private def extraLine(listToken: TokenRule): Rule1[Vector[t.Atom]] =
       rule(
-        (' '.? ~ NL ~ extraLine(listToken)) |
-        ("  " ~ OWS ~ textUntil(listToken, untilEOL))
+        (NL ~ extraLine(listToken)) |
+        (' ' ~ OWS ~ !bullet ~ textUntil(listToken, untilEOL))
       )
 
      def unorderedList(listToken: TokenRule): Rule1[t.UnorderedList] =
