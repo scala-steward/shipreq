@@ -29,8 +29,8 @@ object Clipboard {
   private[clipboard] def setClipboardImpl(c: Clipboard): Unit =
     this.clipboard = c
 
-  def read: AsyncCallback[ClipboardData] =
-    clipboard.read
+  def instance: Clipboard =
+    clipboard
 }
 
 // =====================================================================================================================

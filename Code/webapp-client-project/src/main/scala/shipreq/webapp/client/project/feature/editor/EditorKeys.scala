@@ -16,7 +16,7 @@ object EditorKeys {
       !(e.altKey || e.ctrlKey || e.metaKey || editor.read.isOpen)
 
     def paste: Callback =
-      editor.setPotentialValueAsync(Clipboard.read.map(PotentialValue.Clipboard)).getOrEmpty
+      editor.setPotentialValueAsync(Clipboard.instance.read.map(PotentialValue.Clipboard)).getOrEmpty
 
     def noModKeys: CallbackOption[Unit] =
       CallbackOption.keyCodeSwitch(e) {
