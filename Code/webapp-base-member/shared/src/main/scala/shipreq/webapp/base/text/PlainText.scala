@@ -94,13 +94,9 @@ object PlainText {
 
   private final val bullet = "* "
 
-  final class ForProject[+Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-    override def withCtx[Ctx2 <: ProjectText.Context](newCtx: Ctx2): ForProject[Ctx2] =
-      if (newCtx ==* ctx)
-        this.asInstanceOf[ForProject[Ctx2]]
-      else
-        ForProject(p, newCtx)
+  final class ForProject[+Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
 
     override protected def _implicationList(ids: Vector[Pubid]): String =
       ids.iterator.map(pubid(_, p)).mkString(", ")
@@ -111,7 +107,34 @@ object PlainText {
     override protected def _text(text: Text.AnyOptional, live: Live): String =
       nestedText("", "\n\n", live, text)
 
+    // Keep in sync with ProjectWidgets because it's used together for sorting/rendering in ReqTable
+    override protected def deletionReasonWhenNoneGiven: String =
+      ""
+
+    // Keep in sync with ProjectWidgets because it's used together for sorting/rendering in ReqTable
+    override protected def deletionReasonWhenReqTypeIsDead(rt: ReqType): String =
+      UiText.ColumnNames.reqType + " " + rt.mnemonic.value + " is deleted."
+
+    override protected val useCaseFlowElement: UseCaseStep.Focus => String =
+      useCaseStepLabel
+
     override protected def whenBlankButMandatory = ""
+
+    private def codeRef(id: ReqCodeId): String = {
+      import ProjectText.ReqCodeResolution, ReqCodeResolution._
+      ReqCodeResolution(id, p.content.reqCodes) match {
+        case ActiveCodeToReq     (c, _) => G reflinkSurround reqCode(c)
+        case ActiveCodeToGroup   (c, _) => G reflinkSurround reqCode(c)
+        case DeadGroup           (c, _) => G reflinkSurround reqCode(c)
+        case ReqWithAltCode      (c, _) => G reflinkSurround reqCode(c)
+        case ReqWithoutActiveCode(_, r) => reqRef(r)
+      }
+    }
+
+    private def issue(id: CustomIssueTypeId, desc: Option[String]): String = {
+      val it = p.config.customIssueType(id)
+      desc.foldLeft(hashtag(it.key))(_ ~ G.issueDescSurround(_))
+    }
 
     private def nestedText(acc: String, newline: String, live: Live, atoms: Vector[AnyAtom]): String = {
       @tailrec def go(acc: String, atoms: Vector[AnyAtom]): String =
@@ -164,28 +187,9 @@ object PlainText {
       G.reflinkSurround(pubid(rt, pid.pos))
     }
 
-    private def codeRef(id: ReqCodeId): String = {
-      import ProjectText.ReqCodeResolution, ReqCodeResolution._
-      ReqCodeResolution(id, p.content.reqCodes) match {
-        case ActiveCodeToReq     (c, _) => G reflinkSurround reqCode(c)
-        case ActiveCodeToGroup   (c, _) => G reflinkSurround reqCode(c)
-        case DeadGroup           (c, _) => G reflinkSurround reqCode(c)
-        case ReqWithAltCode      (c, _) => G reflinkSurround reqCode(c)
-        case ReqWithoutActiveCode(_, r) => reqRef(r)
-      }
-    }
-
-    private def useCaseStepRef(id: UseCaseStepId): String =
-      G.reflinkSurround(useCaseStepLabelById(id))
-
     private def tagRef(id: ApplicableTagId): String = {
       val t = p.config.tags.atag(id)
       hashtag(t.key)
-    }
-
-    private def issue(id: CustomIssueTypeId, desc: Option[String]): String = {
-      val it = p.config.customIssueType(id)
-      desc.foldLeft(hashtag(it.key))(_ ~ G.issueDescSurround(_))
     }
 
     def useCaseStepLabel(focus: UseCaseStep.Focus): String = {
@@ -201,33 +205,8 @@ object PlainText {
     private def useCaseStepLabelById(id: UseCaseStepId): String =
       useCaseStepLabel(p.content.reqs.useCases.focusStep(id))
 
-    override def useCaseStepTextAndFlow(step: UseCaseStepFlowText.TextAndFlow[Text.AnyOptional, Set[UseCaseStepId]],
-                                        live: Live): String =
-      Util.quickSB { sb =>
-        sb append text(step.text, live, Mandatory.when(step.flow.forall(_.isEmpty)))
-        for (d <- UseCaseStepFlowText.DefaultArrowOrder) {
-          val ids = step.flow(d)
-          if (ids.nonEmpty) {
-            if (sb.nonEmpty) sb append ' '
-            sb append UseCaseStepFlowText.AsciiArrows(d)
-            for (ref <- useCaseFlowElementsById(ids).iterator) {
-              sb append ' '
-              sb append ref
-            }
-          }
-        }
-      }
-
-    override protected val useCaseFlowElement: UseCaseStep.Focus => String =
-      useCaseStepLabel
-
-    // Keep in sync with ProjectWidgets because it's used together for sorting/rendering in ReqTable
-    override protected def deletionReasonWhenNoneGiven: String =
-      ""
-
-    // Keep in sync with ProjectWidgets because it's used together for sorting/rendering in ReqTable
-    override protected def deletionReasonWhenReqTypeIsDead(rt: ReqType): String =
-      UiText.ColumnNames.reqType + " " + rt.mnemonic.value + " is deleted."
+    private def useCaseStepRef(id: UseCaseStepId): String =
+      G.reflinkSurround(useCaseStepLabelById(id))
 
     override def pastPubids(ids: SortedSet[ExternalPubid]): String =
       ids.iterator.map(pubid(_)).mkString(", ")
@@ -251,5 +230,28 @@ object PlainText {
       val rt = p.config.reqTypes.need(id)
       s"${rt.mnemonic.value}: ${rt.name}"
     }
+
+    override def useCaseStepTextAndFlow(step: UseCaseStepFlowText.TextAndFlow[Text.AnyOptional, Set[UseCaseStepId]],
+                                        live: Live): String =
+      Util.quickSB { sb =>
+        sb append text(step.text, live, Mandatory.when(step.flow.forall(_.isEmpty)))
+        for (d <- UseCaseStepFlowText.DefaultArrowOrder) {
+          val ids = step.flow(d)
+          if (ids.nonEmpty) {
+            if (sb.nonEmpty) sb append ' '
+            sb append UseCaseStepFlowText.AsciiArrows(d)
+            for (ref <- useCaseFlowElementsById(ids).iterator) {
+              sb append ' '
+              sb append ref
+            }
+          }
+        }
+      }
+
+    override def withCtx[Ctx2 <: ProjectText.Context](newCtx: Ctx2): ForProject[Ctx2] =
+      if (newCtx ==* ctx)
+        this.asInstanceOf[ForProject[Ctx2]]
+      else
+        ForProject(p, newCtx)
   }
 }

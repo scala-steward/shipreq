@@ -151,17 +151,11 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
 
   protected final val cfg = project.config
 
-  final def text(text: Text.AnyOptional, live: Live, mandatory: Mandatory): Out =
-    if (text.isEmpty && live.is(Live) && mandatory.is(Mandatory))
-      whenBlankButMandatory
-    else
-      _text(text, live)
-
-  protected final def memoByReqId = Memo.by[Req, ReqId](_.id)
-
   protected final val latestDeletionReasonById: ReqId => Option[Out] =
     Memo(id =>
       project.content.deletionReasons.getLatest(id).map(text(_, Dead)))
+
+  protected final def memoByReqId = Memo.by[Req, ReqId](_.id)
 
   protected final def useCaseFlowElementById(id: UseCaseStepId): Out =
     useCaseFlowElement(project.content.reqs.useCases.focusStep(id))
@@ -176,25 +170,6 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Derived: public
-
-  // Generic context. Upcasts for pattern-matching
-  @inline final def gctx: ProjectText.Context =
-    ctx
-
-  final def text(text: Text.AnyNonEmpty, live: Live): Out =
-    _text(text.whole, live)
-
-  final def manualIssue(text: Text.ManualIssue.NonEmptyText): Out =
-    _text(text.whole, Live)
-
-  final val reqTitle: Req => Out =
-    memoByReqId {
-      case gr: GenericReq => text(gr.title, gr live cfg.reqTypes, Mandatory)
-      case uc: UseCase    => text(uc.title, uc.liveUC, Mandatory)
-    }
-
-  final def reqTitleById(id: ReqId): Out =
-    reqTitle(project.content.reqs.need(id))
 
   final val codeGroupTitle: CodeGroup => Out =
     Memo.by((_: CodeGroup).id)(g =>
@@ -211,6 +186,9 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
           Function const None
       }
     }
+
+  final def deleteReasonForCodeGroup: IfApplicable[Nothing] =
+    NotApplicable
 
   final def deleteReasonForReq(req: Req): IfApplicable[Out] = {
     def latestReason(id: ReqId): Out =
@@ -237,14 +215,27 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
     }
   }
 
-  final def deleteReasonForCodeGroup: IfApplicable[Nothing] =
-    NotApplicable
+  // Generic context. Upcasts for pattern-matching
+  @inline final def gctx: ProjectText.Context =
+    ctx
 
   final def implicationList(ids: Vector[Pubid], live: Live, mandatory: Mandatory): Out =
     if (ids.isEmpty && live.is(Live) && mandatory.is(Mandatory))
       whenBlankButMandatory
     else
       _implicationList(ids)
+
+  final def manualIssue(text: Text.ManualIssue.NonEmptyText): Out =
+    _text(text.whole, Live)
+
+  final val reqTitle: Req => Out =
+    memoByReqId {
+      case gr: GenericReq => text(gr.title, gr live cfg.reqTypes, Mandatory)
+      case uc: UseCase    => text(uc.title, uc.liveUC, Mandatory)
+    }
+
+  final def reqTitleById(id: ReqId): Out =
+    reqTitle(project.content.reqs.need(id))
 
   final def tagList(ids      : Vector[ApplicableTagId],
                     live     : Live,
@@ -254,6 +245,15 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
       whenBlankButMandatory
     else
       _tagList(ids, validity)
+
+  final def text(text: Text.AnyNonEmpty, live: Live): Out =
+    _text(text.whole, live)
+
+  final def text(text: Text.AnyOptional, live: Live, mandatory: Mandatory): Out =
+    if (text.isEmpty && live.is(Live) && mandatory.is(Mandatory))
+      whenBlankButMandatory
+    else
+      _text(text, live)
 
   final def useCaseStepTextAndFlow(f: UseCaseStep.Focus, fd: FilterDead): Out =
     useCaseStepTextAndFlow(f.textAndFlow(fd), f.live)
