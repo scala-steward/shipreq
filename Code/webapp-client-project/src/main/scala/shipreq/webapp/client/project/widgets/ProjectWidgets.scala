@@ -8,8 +8,6 @@ import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
 import scala.collection.immutable.SortedSet
 import scalacss.ScalaCssReact._
-import scalacss.StyleA
-import scalajs.js.{UndefOr, undefined}
 import scalaz.\/
 import shipreq.base.util._
 import shipreq.base.util.SafeStringOps._
@@ -69,9 +67,6 @@ object ProjectWidgets {
 
     @inline implicit def surroundDisplay(s: GrammarSpec.Surrounds): GrammarSpec.Surround =
       s.display
-
-    @inline def memo[A: UnivEq](f: A => VdomElement): A => VdomElement =
-      Memo(f)
 
     val issueDescSurroundPrefix = G.issueDescSurround.prefix.trim
     val issueDescSurroundSuffix = G.issueDescSurround.suffix.trim
@@ -138,15 +133,15 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     }
 
   /** Contextualised */
-  private val codeRef: Live => ReqCodeId => VdomElement =
+  private val codeRef: Live => ReqCodeId => VdomTag =
     Live.memo { live =>
-      memo { id =>
+      Memo { id =>
         import ProjectText.ReqCodeResolution._
 
         implicit def liveWithValidity(a: Live): (Live, Validity) =
           invalidWhenDead(a)
 
-        def toRef(code: ReqCode.Value, r: ReqId): VdomElement = {
+        def toRef(code: ReqCode.Value, r: ReqId): VdomTag = {
           val req = project.content.reqs.need(r)
           ref(
             linkOrSpan(req)(*.reqRef(req live project.config.reqTypes)),
@@ -154,7 +149,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
             plainText reqTitle req)
         }
 
-        def toGroup(code: ReqCode.Value, g: CodeGroup): VdomElement =
+        def toGroup(code: ReqCode.Value, g: CodeGroup): VdomTag =
           ref(<.span(*.codeGroupRef(g.live)), code, plainText.codeGroupTitle(g))
 
         def ref(base: VdomTag, code: ReqCode.Value, title: String): VdomTag =
@@ -190,9 +185,9 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     r(base, ld, label)
   }
 
-  private val tagInText: Live => ApplicableTagId => VdomElement =
+  private val tagInText: Live => ApplicableTagId => VdomTag =
     Live.memo { liveText =>
-      memo[ApplicableTagId] { id =>
+      Memo { (id: ApplicableTagId) =>
         val tag = project.config.tags.atag(id)
         val liveTag = tag.live
         val valid = Invalid.when(liveText.is(Live) && liveTag.is(Dead))
@@ -217,13 +212,13 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       displayTxt)
   }
 
-  private def issue(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.OptionalText, liveText: Live): VdomElement =
+  private def issue(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.OptionalText, liveText: Live): VdomTag =
     NonEmptyVector.option(desc) match {
       case None       => issueWithoutDesc(id)(liveText)
       case Some(desc) => issueWithDesc(id, desc, liveText)
     }
 
-  private val issueWithoutDesc: CustomIssueTypeId => Live => VdomElement =
+  private val issueWithoutDesc: CustomIssueTypeId => Live => VdomTag =
     Memo { id =>
       val issueType = cfg.customIssueType(id)
       Live.memo { liveText =>
@@ -233,7 +228,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       }
     }
 
-  private def issueWithDesc(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.NonEmptyText, liveText: Live): VdomElement = {
+  private def issueWithDesc(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.NonEmptyText, liveText: Live): VdomTag = {
     val issueType = project.config.customIssueType(id)
     <.span(
       *.issue((liveText, issueType.live)),
@@ -250,8 +245,8 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     }
 
   /** eg. "UC" */
-  val reqTypeShort: ReqTypeId => VdomElement =
-    memo { id =>
+  val reqTypeShort: ReqTypeId => VdomTag =
+    Memo { id =>
       val rt = project.config.reqTypes.need(id)
       <.span(
         *.reqTypeShort(rt.live),
@@ -268,7 +263,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
 
     val stepText = text(s.text, l, Mandatory.when(s.flow.forall(_.isEmpty)))
 
-    def flowClause(dir: Direction): Option[VdomElement] = {
+    def flowClause(dir: Direction): Option[VdomTag] = {
       val flowElements = s flow dir
       Option.unless(flowElements.isEmpty)(
         stepFlowClauseBase(dir)(
@@ -276,7 +271,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
             render(flowElements).toIterator.map(t => t: TagMod).intersperse(sepComma))))
     }
 
-    val flowsMaybe: Option[VdomElement] =
+    val flowsMaybe: Option[VdomTag] =
       UseCaseStepFlowText.DefaultArrowOrder.map(flowClause) match {
         case (None   , None   ) => None
         case (Some(f), None   ) => Some(f)
@@ -310,13 +305,13 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Public additions not part of ProjectText
 
-  def implicationList(ids: Vector[Pubid], live: Live, mandatory: Mandatory): VdomElement =
+  def implicationList(ids: Vector[Pubid], live: Live, mandatory: Mandatory): VdomTag =
     if (ids.isEmpty && live.is(Live) && mandatory.is(Mandatory))
       whenBlankButMandatory
     else
       PubidFormat.validWhenDead.pubids(ids)
 
-  def pastPubids(ids: SortedSet[ExternalPubid]): VdomElement =
+  def pastPubids(ids: SortedSet[ExternalPubid]): VdomTag =
     renderSeq(
       ids.toIterator.map(ep => <.span(*.pastPubid, PlainText.pubid(ep))),
       sepComma)
@@ -330,11 +325,11 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   def reqCodeTree(items: Vector[ReqCodeTreeItem]): VdomTag =
     <.div(items toTagMod reqCodeTreeItem)
 
-  private val reqCodeTreeIdentation: NonEmptyVector[ReqCodeTreeItem.Indent] => VdomElement =
-    memo(is =>
+  private val reqCodeTreeIdentation: NonEmptyVector[ReqCodeTreeItem.Indent] => VdomTag =
+    Memo(is =>
       <.pre(*.reqCodeTreeIndent, PlainText reqCodeIndentation is))
 
-  def reqCodeTreeItem(item: ReqCodeTreeItem): VdomElement = {
+  def reqCodeTreeItem(item: ReqCodeTreeItem): VdomTag = {
     val indentation = NonEmptyVector.option(item.indent)
     var code = PlainText.reqCode(item.suffix)
     if (indentation.isDefined)
@@ -345,15 +340,15 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   }
 
   /** eg. "UC: Use Case" */
-  val reqTypeFull: ReqTypeId => VdomElement =
+  val reqTypeFull: ReqTypeId => VdomTag =
     id => {
       val rt = project.config.reqTypes.need(id)
       <.span(s"${rt.mnemonic.value}: ${rt.name}")
     }
 
-  private val tagPlain: Validity => ApplicableTagId => VdomElement =
+  private val tagPlain: Validity => ApplicableTagId => VdomTag =
     Validity.memo { validity =>
-      memo { id =>
+      Memo { id =>
         val tag = project.config.tags.atag(id)
         tagWithoutStyle(Plain, tag)(*.tag((tag.live, validity)))
       }
@@ -362,7 +357,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   def tagList(ids      : Vector[ApplicableTagId],
               live     : Live,
               mandatory: Mandatory,
-              validity : ApplicableTagId => Validity): VdomElement =
+              validity : ApplicableTagId => Validity): VdomTag =
     if (ids.isEmpty && live.is(Live) && mandatory.is(Mandatory))
       whenBlankButMandatory
     else
@@ -395,7 +390,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
 
     private val styleMemo = Live.memo(styleFn)
 
-    type Out = VdomElement
+    type Out = VdomTag
 
     private val memo: ReqId => Out =
       Memo { reqId =>
