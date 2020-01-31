@@ -27,13 +27,11 @@ object RenderFeature {
     private val viewReq      = viewReqCache(filterDead)
     private val useCases     = project.content.reqs.useCases
 
-    // TODO Use Reusable#withValue once available
-
     private def forData0[FK <: FieldKey](render: FK => VdomElement) =
-      ForData[Ctx, FK](reusableSelf.map(_ => render))
+      ForData[Ctx, FK](reusableSelf.withValue(render))
 
     private def forData1[A: Reusability : ClassTag, FK <: FieldKey](a: A)(render: FK => VdomElement) =
-      ForData[Ctx, FK](reusableSelf.tuple(Reusable.implicitly(a)).map(_ => render))
+      ForData[Ctx, FK](reusableSelf.tuple(Reusable.implicitly(a)).withValue(render))
 
     def forCodeGroup(rcg: CodeGroup): ForCodeGroup[Ctx] = {
       lazy val code = project.content.reqCodes.reqCode(rcg.id)
