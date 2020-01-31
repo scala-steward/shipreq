@@ -56,7 +56,7 @@ object RenderFeature {
         pt.useCaseStepTextAndFlow(focus, filterDead)
       })
 
-    val forManualIssue: ForManualIssue[Ctx, Out] =
+    val forManualIssues: ForManualIssues[Ctx, Out] =
       forData0[FieldKey.ManualIssue] { fk =>
         val issue = project.manualIssues.imap.need(fk.id)
         pt.manualIssue(issue.text)
@@ -72,7 +72,7 @@ object RenderFeature {
   type ForReq         [Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForSomeReq   , Out]
   type ForUseCase     [Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForUseCase   , Out]
   type ForUseCaseSteps[Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.UseCaseStep  , Out]
-  type ForManualIssue [Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ManualIssue  , Out]
+  type ForManualIssues[Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ManualIssue  , Out]
 
   sealed trait TypeHelpers[Ctx <: PCtx, Out] {
     final type ForProject                = RenderFeature.ForProject     [Ctx, Out]
@@ -82,7 +82,7 @@ object RenderFeature {
     final type ForReq                    = RenderFeature.ForReq         [Ctx, Out]
     final type ForUseCase                = RenderFeature.ForUseCase     [Ctx, Out]
     final type ForUseCaseSteps           = RenderFeature.ForUseCaseSteps[Ctx, Out]
-    final type ForManualIssue            = RenderFeature.ForManualIssue [Ctx, Out]
+    final type ForManualIssues           = RenderFeature.ForManualIssues[Ctx, Out]
   }
 
   object ToVdom {

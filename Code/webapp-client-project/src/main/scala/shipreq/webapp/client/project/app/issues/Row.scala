@@ -84,7 +84,7 @@ object Row {
 
   final case class ForManualIssue(issue   : Issue.ManualIssue,
                                   actions : List[Action],
-                                  renderer: RenderFeature.ToVdom.NoCtx.ForManualIssue) extends Row {
+                                  renderer: RenderFeature.ToVdom.NoCtx.ForManualIssues) extends Row {
     val field = IssueField.manual(issue.issue)
     override val issueClassDesc = UI.descManualIssue
     override def fieldOption = Some(field)
@@ -245,7 +245,7 @@ object Row {
         forConfig(i, desc)
 
       case i: Issue.ManualIssue =>
-        ForManualIssue(i, actionBuilder(i), rf.forManualIssue)
+        ForManualIssue(i, actionBuilder(i), rf.forManualIssues)
     }
   }
 }
