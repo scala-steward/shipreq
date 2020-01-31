@@ -80,6 +80,22 @@ object RenderFeature {
         val issue = project.manualIssues.imap.need(fk.id)
         pt.manualIssue(issue.text)
       }
+
+    // Disabled because it creates a new ViewReqCache. One should be passed in in a parent context and reused, rather
+    // than creating a local cache here.
+    //
+    //def withCtx[Ctx2 <: ProjectText.Context](newCtx: Ctx2): ForProject[Ctx2, Out] = {
+    //  val pt2 = pt.withCtx(newCtx)
+    //  if (pt eq pt2)
+    //    this.asInstanceOf[ForProject[Ctx2, Out]]
+    //  else
+    //    ForProject(
+    //      project,
+    //      filterDead,
+    //      ViewReqCache(viewReqCache.dataCache, pt2),
+    //      pt2,
+    //    )
+    //}
   }
 
   object ForFields {

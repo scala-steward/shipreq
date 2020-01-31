@@ -217,17 +217,22 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       for {
         editability   <- pxEditEditability
         reqDetailId   <- pxReqDetailId
-        renderFeature <- pxRenderFeatureText
+        project       <- pxProject
+        vrdc          <- pxViewReqDataCache
       } yield reqDetailId.map { id =>
         val row = EditorFeature.RowKey.req(id)
-        val aw = editAsyncW(row).mapKey(AsyncKey.ToReqDetail)
-        val ew = editW.forReq(id)
+        val aw  = editAsyncW(row).mapKey(AsyncKey.ToReqDetail)
+        val ew  = editW.forReq(id)
+        val ctx = ProjectText.Context.Req(id)
+        val pt  = PlainText.ForProject(project, ctx)
+        val vrc = ViewReqCache(vrdc, pt)
+        val rff = RenderFeature.prepare(project, vrc, pt)
 
         (s: State) => {
           val as = s.editAsync.toRead
           val ar = as(row).mapKey(AsyncKey.ToReqDetail)
           val af = aw.toReadWrite(ar)
-          val rf = renderFeature(s.filterDead)
+          val rf = rff(s.filterDead)
           val er = EditorFeature.Read.ForProject(s.edit, rf, editability, as.mapKey1(AsyncKey.ToEditor)).forReq(id)
           val ef = EditorFeature.ReadWrite.ForFields(er, ew)
           ReqDetail.ReqProps(ef, af)
