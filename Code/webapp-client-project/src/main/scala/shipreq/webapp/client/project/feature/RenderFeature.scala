@@ -18,10 +18,16 @@ object RenderFeature {
                                 pt          : ProjectText[Ctx, Out]): FilterDead => ForProject[Ctx, Out] =
     FilterDead.memo(ForProject(project, _, viewReqCache, pt))
 
-  final case class ForProject[Ctx <: PCtx, Out](private[RenderFeature] project     : Project,
-                                                private[RenderFeature] filterDead  : FilterDead,
-                                                private[RenderFeature] viewReqCache: ViewReqCache[Ctx, Out],
-                                                private[RenderFeature] pt          : ProjectText[Ctx, Out]) {
+  object ForProject {
+    import japgolly.scalajs.react.vdom.html_<^.VdomTag
+
+    type ToVdom[Ctx <: PCtx] = ForProject[Ctx, VdomTag]
+  }
+
+  final case class ForProject[+Ctx <: PCtx, Out](private[RenderFeature] project     : Project,
+                                                 private[RenderFeature] filterDead  : FilterDead,
+                                                 private[RenderFeature] viewReqCache: ViewReqCache[Ctx, Out],
+                                                 private[RenderFeature] pt          : ProjectText[Ctx, Out]) {
 
     private val reusableSelf = Reusable.explicitly(this)(reusabilityForProject[Ctx, Out])
     private val viewReq      = viewReqCache(filterDead)
@@ -38,6 +44,19 @@ object RenderFeature {
       forData1[ReqCodeGroupId, FieldKey.ForCodeGroup](rcg.id) {
         case FieldKey.CodeGroupTitle => pt.codeGroupTitle(rcg)
         case FieldKey.Code           => pt.reqCode(code)
+      }
+    }
+
+    def forCodeGroupId(id: ReqCodeGroupId): ForCodeGroup[Ctx, Option[Out]] = {
+      def ok(rcg: CodeGroup): ForCodeGroup[Ctx, Option[Out]] =
+        forCodeGroup(rcg).some
+
+      project.content.reqCodes.needById(id) match {
+        case ReqCode.ActiveGroup(group, _)               => ok(group)
+        case ReqCode.Inactive(Some(deadGroup), _)        => ok(deadGroup)
+        case ReqCode.ActiveReq(_, _, Some(deadGroup), _) => ok(deadGroup)
+        case ReqCode.Inactive(None, _)
+           | ReqCode.ActiveReq(_, _, None, _)            => ForFields.none
       }
     }
 
@@ -63,20 +82,39 @@ object RenderFeature {
       }
   }
 
-  final case class ForFields[Ctx <: PCtx, -FK <: FieldKey, Out](renderFn: FK ~=> Out) {
-    @inline def apply(fk: FK): Out = renderFn(fk)
+  object ForFields {
+    def const[Ctx <: PCtx, FK <: FieldKey, Out](value: Reusable[Out]): ForFields[Ctx, FK, Out] =
+      apply(value.map(v => _ => v))
+
+    def none[Ctx <: PCtx, FK <: FieldKey, Out]: ForFields[Ctx, FK, Option[Out]] =
+      const(Reusable.by_==(None))
   }
 
-  type ForCodeGroup   [Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForCodeGroup , Out]
-  type ForGenericReq  [Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForGenericReq, Out]
-  type ForReq         [Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForSomeReq   , Out]
-  type ForUseCase     [Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForUseCase   , Out]
-  type ForUseCaseSteps[Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.UseCaseStep  , Out]
-  type ForManualIssues[Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ManualIssue  , Out]
+  final case class ForFields[+Ctx <: PCtx, -FK <: FieldKey, Out](renderFn: FK ~=> Out) {
+    @inline def apply(fk: FK): Out = renderFn(fk)
+
+    def map[B](f: Out => B): ForFields[Ctx, FK, B] =
+      ForFields(renderFn.map(_.andThen(f)))
+
+    def some: ForFields[Ctx, FK, Option[Out]] =
+      map(Some(_))
+  }
+
+  implicit class ForFieldsInvariantExt[Ctx <: PCtx, FK <: FieldKey, Out](private val self: ForFields[Ctx, FK, Out]) extends AnyVal {
+    def widen[W >: FK <: FieldKey](fallback: Out)(implicit t: FieldKey.Type[FK]): ForFields[Ctx, W, Out] =
+      ForFields[Ctx, W, Out](self.renderFn.map(f => t.widenFn[W, Out](f)(fallback)))
+  }
+
+  type ForCodeGroup   [+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForCodeGroup , Out]
+  type ForGenericReq  [+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForGenericReq, Out]
+  type ForReq         [+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForSomeReq   , Out]
+  type ForUseCase     [+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForUseCase   , Out]
+  type ForUseCaseSteps[+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.UseCaseStep  , Out]
+  type ForManualIssues[+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ManualIssue  , Out]
 
   sealed trait TypeHelpers[Ctx <: PCtx, Out] {
     final type ForProject                = RenderFeature.ForProject     [Ctx, Out]
-    final type ForField[FK <: FieldKey]  = RenderFeature.ForFields        [Ctx, FK, Out]
+    final type ForField[FK <: FieldKey]  = RenderFeature.ForFields      [Ctx, FK, Out]
     final type ForCodeGroup              = RenderFeature.ForCodeGroup   [Ctx, Out]
     final type ForGenericReq             = RenderFeature.ForGenericReq  [Ctx, Out]
     final type ForReq                    = RenderFeature.ForReq         [Ctx, Out]

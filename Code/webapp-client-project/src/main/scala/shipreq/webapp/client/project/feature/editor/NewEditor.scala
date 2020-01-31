@@ -310,6 +310,9 @@ object NewEditor {
               abort        = abort,
               commitFn     = commitFn)
 
+          override def clipboardData: Option[ClipboardData] =
+            Some(ClipboardData(PlainText.reqTypeFull(ss.value)))
+
           override def setPotentialValue(p: PotentialValue): Option[Callback] =
             potentialValueAcceptor.accept(p).map(ss.setState)
         }
@@ -382,6 +385,9 @@ object NewEditor {
               extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
 
+          override def clipboardData: Option[ClipboardData] =
+            Some(ClipboardData(ss.value))
+
           override def setPotentialValue(p: PotentialValue): Option[Callback] =
             potentialValueAcceptor.accept(p).map(ss.setState)
         }
@@ -433,6 +439,9 @@ object NewEditor {
               commitVerb       = commitVerb,
               extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
+
+          override def clipboardData: Option[ClipboardData] =
+            Some(ClipboardData(ss.value))
 
           override def setPotentialValue(p: PotentialValue): Option[Callback] =
             potentialValueAcceptor.accept(p).map(ss.setState)
@@ -533,6 +542,9 @@ object NewEditor {
             extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
             showInstructions = true)
 
+        override def clipboardData: Option[ClipboardData] =
+          Some(ClipboardData(ss.value))
+
         override def setPotentialValue(p: PotentialValue): Option[Callback] =
           Some {
             for {
@@ -597,6 +609,9 @@ object NewEditor {
             commitVerb       = commitVerb,
             extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
             showInstructions = true)
+
+        override def clipboardData: Option[ClipboardData] =
+          Some(ClipboardData(ss.value))
 
         override def setPotentialValue(p: PotentialValue): Option[Callback] =
           potentialValueAcceptor.accept(p).map(ss.setState)
@@ -673,6 +688,9 @@ object NewEditor {
               preEditValue     = initial,
               extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
+
+          override def clipboardData: Option[ClipboardData] =
+            Some(ClipboardData(ss.value))
 
           override def setPotentialValue(p: PotentialValue): Option[Callback] =
             potentialValueAcceptor.accept(p).map(ss.setState)
@@ -780,6 +798,9 @@ object NewEditor {
               extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
 
+          override def clipboardData: Option[ClipboardData] =
+            Some(ClipboardData(ss.value))
+
           override def setPotentialValue(p: PotentialValue): Option[Callback] =
             potentialValueAcceptor.accept(p).map(ss.setState)
         }
@@ -886,6 +907,9 @@ object NewEditor {
               preview        = previewRW(pid),
               preEditValue   = initial)
           }
+
+        override def clipboardData: Option[ClipboardData] =
+          Some(ClipboardData(ss.value))
 
         override def setPotentialValue(p: PotentialValue): Option[Callback] =
           potentialValueAcceptor.accept(p).map(ss.setState)
