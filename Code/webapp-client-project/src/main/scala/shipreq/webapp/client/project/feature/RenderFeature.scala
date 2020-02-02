@@ -1,142 +1,36 @@
 package shipreq.webapp.client.project.feature
 
-import japgolly.scalajs.react.{Reusability, Reusable, ~=>}
-import scala.reflect.ClassTag
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.ProjectText
 import shipreq.webapp.base.text.ProjectText.{Context => PCtx}
-import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.ViewReqCache
 
+/** TODO usage
+ *
+ */
 object RenderFeature {
 
-  type FieldKey = editor.FieldKey
-  val  FieldKey = editor.FieldKey
+  type FieldKey = render.FieldKey
+  val  FieldKey = render.FieldKey
 
-  def prepare[Ctx <: PCtx, Out](project     : Project,
-                                viewReqCache: ViewReqCache[Ctx, Out],
-                                pt          : ProjectText[Ctx, Out]): FilterDead => ForProject[Ctx, Out] =
-    FilterDead.memo(ForProject(project, _, viewReqCache, pt))
+  type RowKey = render.RowKey
+  val  RowKey = render.RowKey
 
-  object ForProject {
-    import japgolly.scalajs.react.vdom.html_<^.VdomTag
+  type ForProject[+Ctx <: PCtx, Out] = render.Feature.ForProject[Ctx, Out]
+  val  ForProject                    = render.Feature.ForProject
 
-    type ToVdom[Ctx <: PCtx] = ForProject[Ctx, VdomTag]
-  }
-
-  final case class ForProject[+Ctx <: PCtx, Out](private[RenderFeature] project     : Project,
-                                                 private[RenderFeature] filterDead  : FilterDead,
-                                                 private[RenderFeature] viewReqCache: ViewReqCache[Ctx, Out],
-                                                 private[RenderFeature] pt          : ProjectText[Ctx, Out]) {
-
-    private val reusableSelf = Reusable.explicitly(this)(reusabilityForProject[Ctx, Out])
-    private val viewReq      = viewReqCache(filterDead)
-    private val useCases     = project.content.reqs.useCases
-
-    private def forData0[FK <: FieldKey](render: FK => Out) =
-      ForFields[Ctx, FK, Out](reusableSelf.withValue(render))
-
-    private def forData1[A: Reusability : ClassTag, FK <: FieldKey](a: A)(render: FK => Out) =
-      ForFields[Ctx, FK, Out](reusableSelf.tuple(Reusable.implicitly(a)).withValue(render))
-
-    def forCodeGroup(rcg: CodeGroup): ForCodeGroup[Ctx, Out] = {
-      lazy val code = project.content.reqCodes.reqCode(rcg.id)
-      forData1[ReqCodeGroupId, FieldKey.ForCodeGroup](rcg.id) {
-        case FieldKey.CodeGroupTitle => pt.codeGroupTitle(rcg)
-        case FieldKey.Code           => pt.reqCode(code)
-      }
-    }
-
-    def forCodeGroupId(id: ReqCodeGroupId): ForCodeGroup[Ctx, Option[Out]] = {
-      def ok(rcg: CodeGroup): ForCodeGroup[Ctx, Option[Out]] =
-        forCodeGroup(rcg).some
-
-      project.content.reqCodes.needById(id) match {
-        case ReqCode.ActiveGroup(group, _)               => ok(group)
-        case ReqCode.Inactive(Some(deadGroup), _)        => ok(deadGroup)
-        case ReqCode.ActiveReq(_, _, Some(deadGroup), _) => ok(deadGroup)
-        case ReqCode.Inactive(None, _)
-           | ReqCode.ActiveReq(_, _, None, _)            => ForFields.none
-      }
-    }
-
-    def forGenericReq(id: GenericReqId): ForGenericReq[Ctx, Out] =
-      forReq(id)
-
-    def forReq(id: ReqId): ForReq[Ctx, Out] =
-      forData1[ReqId, FieldKey.ForSomeReq](id)(viewReq(id).editable)
-
-    def forUseCase(id: UseCaseId): ForUseCase[Ctx, Out] =
-      forReq(id)
-
-    val forUseCaseSteps: ForUseCaseSteps[Ctx, Out] =
-      forData0[FieldKey.UseCaseStep](fk => {
-        val focus = useCases.focusStep(fk.id)
-        pt.useCaseStepTextAndFlow(focus, filterDead)
-      })
-
-    val forManualIssues: ForManualIssues[Ctx, Out] =
-      forData0[FieldKey.ManualIssue] { fk =>
-        val issue = project.manualIssues.imap.need(fk.id)
-        pt.manualIssue(issue.text)
-      }
-
-    // Disabled because it creates a new ViewReqCache. One should be passed in in a parent context and reused, rather
-    // than creating a local cache here.
-    //
-    //def withCtx[Ctx2 <: ProjectText.Context](newCtx: Ctx2): ForProject[Ctx2, Out] = {
-    //  val pt2 = pt.withCtx(newCtx)
-    //  if (pt eq pt2)
-    //    this.asInstanceOf[ForProject[Ctx2, Out]]
-    //  else
-    //    ForProject(
-    //      project,
-    //      filterDead,
-    //      ViewReqCache(viewReqCache.dataCache, pt2),
-    //      pt2,
-    //    )
-    //}
-  }
-
-  object ForFields {
-    def const[Ctx <: PCtx, FK <: FieldKey, Out](value: Reusable[Out]): ForFields[Ctx, FK, Out] =
-      apply(value.map(v => _ => v))
-
-    def none[Ctx <: PCtx, FK <: FieldKey, Out]: ForFields[Ctx, FK, Option[Out]] =
-      const(Reusable.by_==(None))
-  }
-
-  final case class ForFields[+Ctx <: PCtx, -FK <: FieldKey, Out](renderFn: FK ~=> Out) {
-    @inline def apply(fk: FK): Out = renderFn(fk)
-
-    def map[B](f: Out => B): ForFields[Ctx, FK, B] =
-      ForFields(renderFn.map(_.andThen(f)))
-
-    def some: ForFields[Ctx, FK, Option[Out]] =
-      map(Some(_))
-  }
-
-  implicit class ForFieldsInvariantExt[Ctx <: PCtx, FK <: FieldKey, Out](private val self: ForFields[Ctx, FK, Out]) extends AnyVal {
-    def widen[W >: FK <: FieldKey](fallback: Out)(implicit t: FieldKey.Type[FK]): ForFields[Ctx, W, Out] =
-      ForFields[Ctx, W, Out](self.renderFn.map(f => t.widenFn[W, Out](f)(fallback)))
-  }
-
-  type ForCodeGroup   [+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForCodeGroup , Out]
-  type ForGenericReq  [+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForGenericReq, Out]
-  type ForReq         [+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForSomeReq   , Out]
-  type ForUseCase     [+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ForUseCase   , Out]
-  type ForUseCaseSteps[+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.UseCaseStep  , Out]
-  type ForManualIssues[+Ctx <: PCtx, Out] = ForFields[Ctx, FieldKey.ManualIssue  , Out]
+  type ForFields[+Ctx <: PCtx, -FK <: FieldKey, Out] = render.Feature.ForFields[Ctx, FK, Out]
+  val  ForFields                                     = render.Feature.ForFields
 
   sealed trait TypeHelpers[Ctx <: PCtx, Out] {
-    final type ForProject                = RenderFeature.ForProject     [Ctx, Out]
-    final type ForField[FK <: FieldKey]  = RenderFeature.ForFields      [Ctx, FK, Out]
-    final type ForCodeGroup              = RenderFeature.ForCodeGroup   [Ctx, Out]
-    final type ForGenericReq             = RenderFeature.ForGenericReq  [Ctx, Out]
-    final type ForReq                    = RenderFeature.ForReq         [Ctx, Out]
-    final type ForUseCase                = RenderFeature.ForUseCase     [Ctx, Out]
-    final type ForUseCaseSteps           = RenderFeature.ForUseCaseSteps[Ctx, Out]
-    final type ForManualIssues           = RenderFeature.ForManualIssues[Ctx, Out]
+    final type ForProject                = render.Feature.ForProject     [Ctx, Out]
+    final type ForField[FK <: FieldKey]  = render.Feature.ForFields      [Ctx, FK, Out]
+    final type ForCodeGroup              = render.Feature.ForCodeGroup   [Ctx, Out]
+    final type ForGenericReq             = render.Feature.ForGenericReq  [Ctx, Out]
+    final type ForReq                    = render.Feature.ForReq         [Ctx, Out]
+    final type ForUseCase                = render.Feature.ForUseCase     [Ctx, Out]
+    final type ForUseCaseSteps           = render.Feature.ForUseCaseSteps[Ctx, Out]
+    final type ForManualIssues           = render.Feature.ForManualIssues[Ctx, Out]
   }
 
   object ToVdom {
@@ -146,9 +40,9 @@ object RenderFeature {
     object NoCtx extends TypeHelpers[PCtx.None, VdomTag]
   }
 
-  implicit def reusabilityForProject[Ctx <: PCtx, Out]: Reusability[ForProject[Ctx, Out]] =
-    Reusability.byRef || Reusability.derive
+  def prepare[Ctx <: PCtx, Out](project     : Project,
+                                viewReqCache: ViewReqCache[Ctx, Out],
+                                projectText : ProjectText[Ctx, Out]): FilterDead => ForProject[Ctx, Out] =
+    FilterDead.memo(ForProject(project, _, viewReqCache, projectText))
 
-  implicit def reusabilityForData[Ctx <: PCtx, FK <: FieldKey, Out]: Reusability[ForFields[Ctx, FK, Out]] =
-    Reusability.byRef || Reusability.derive
 }

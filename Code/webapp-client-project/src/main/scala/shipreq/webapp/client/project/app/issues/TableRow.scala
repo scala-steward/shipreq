@@ -15,7 +15,7 @@ import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.client.project.app.Style.{issues => *}
 import shipreq.webapp.client.project.feature.EditorFeature
-import shipreq.webapp.client.project.feature.editor.FieldKey
+import shipreq.webapp.client.project.feature.RenderFeature.FieldKey
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.EditorNavParent
 import shipreq.webapp.client.project.widgets.ProjectWidgets
