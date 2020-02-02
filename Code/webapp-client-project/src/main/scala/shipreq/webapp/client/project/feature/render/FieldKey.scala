@@ -67,7 +67,6 @@ object FieldKey {
       case Location.Text.UseCaseStep(stepId)      => UseCaseStep(stepId)
     }
 
-  // TODO REUSE
   final class Type[F <: FieldKey](implicit ct: ClassTag[F]) {
     def widenFn[G >: F <: FieldKey, A](orig: F => A)(fallback: A): G => A =
       g => if (ct.runtimeClass.isInstance(g))
