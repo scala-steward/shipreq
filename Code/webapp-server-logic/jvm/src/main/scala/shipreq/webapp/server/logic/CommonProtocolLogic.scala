@@ -138,9 +138,18 @@ object CommonProtocolLogic extends HasLogger {
                   messageKey = exceptionMsgKey,
                   data       = data)
 
-                _ <- taskman.submit(task)
+                taskId <- taskman.submit(task)
 
-              } yield ((), Allow)
+              } yield {
+
+                logger.error(
+                  "An error occurred in the client.",
+                  WebappLogFields.task.id(taskId.value),
+                  WebappLogFields.task.metadata(data),
+                )
+
+                ((), Allow)
+              }
 
             case -\/(_) =>
               F.pure(((), Deny))

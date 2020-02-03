@@ -1,7 +1,7 @@
 package shipreq.base.util.log
 
 import com.fasterxml.jackson.core.JsonGenerator
-import io.circe.Encoder
+import io.circe.{Encoder, Json}
 import io.circe.syntax._
 import japgolly.univeq._
 import java.time.Duration
@@ -126,11 +126,20 @@ object LogField {
     }
   }
 
+  type UnsafeJsonLogField[A] = LogField[UnsafeJson[A], A]
+
   object UnsafeJson {
-    def apply[A: Encoder](key: String): LogField[UnsafeJson[A], A] = {
+
+    def apply[A: Encoder](key: String): UnsafeJsonLogField[A] = {
       val fieldType = new UnsafeJson(Encoder[A])
       generic[UnsafeJson[A]](key, fieldType)
     }
+
+    private val stringMapEncoder: Encoder[Traversable[(String, String)]] =
+      Encoder.instance(i => Json.obj(i.toIterator.map(x => x._1 -> Json.fromString(x._2)).toList: _*))
+
+    def stringMap(key: String): UnsafeJsonLogField[Traversable[(String, String)]] =
+      UnsafeJson(key)(stringMapEncoder)
   }
 
   // ===================================================================================================================
