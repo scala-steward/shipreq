@@ -9,6 +9,7 @@ import scalaz.\/
 import shipreq.base.util.{ConsolidatedSeq, ErrorMsg}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.feature.clipboard.ClipboardKeys
 import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.base.text.Text.Equality._
@@ -44,10 +45,14 @@ object TableRow {
 
   private val na = TagMod(*.na, "–")
 
-  private def cellBase(col: Column, addNav: Boolean = true) =
+  private def cellBase(col: Column, addNav: Boolean = true, allowCopy: Boolean = true) = {
+    def keys(e: ReactKeyboardEventFromHtml): CallbackOption[Unit] =
+      tableNavigationFeature.Keys.handlerFn(e).when(addNav) | ClipboardKeys.copy.generic(e).when(allowCopy)
+
     td(
       ^.key := col.key,
-      tableNavigationFeature.onKeyDown.when(addNav))
+      ^.onKeyDown ==> keys)
+  }
 
   private def render(p: Props): VdomElement = {
     import p.{row, pubidFormat}
@@ -56,8 +61,8 @@ object TableRow {
 
     for (col <- p.columns) {
 
-      def addTD(content: TagMod, addNav: Boolean = true) =
-        cells += cellBase(col, addNav)(content)
+      def addTD(content: TagMod, addNav: Boolean = true, allowCopy: Boolean = true) =
+        cells += cellBase(col, addNav = addNav, allowCopy = allowCopy)(content)
 
       col match {
 
@@ -97,11 +102,11 @@ object TableRow {
         case Column.FieldEditor =>
           p.editor match {
             case Some(props) => cells += props.renderWithKey(col.key)
-            case None        => addTD(na)
+            case None        => addTD(na, allowCopy = false)
           }
 
         case Column.Actions =>
-          addTD(
+          val content =
             if (row.actions.isEmpty)
               na
             else
@@ -115,8 +120,7 @@ object TableRow {
                   case Some(Failed(err, _, _)) => TagMod(ok, <.br, BaseStyles.errorPointingUp(err.value))
                 }
               }
-          )
-
+          addTD(content, allowCopy = false)
       }
     }
 
