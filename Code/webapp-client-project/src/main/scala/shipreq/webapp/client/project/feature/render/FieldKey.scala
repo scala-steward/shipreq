@@ -74,6 +74,9 @@ object FieldKey {
       else
         fallback
   }
-  implicit val typeGR: Type[ForGenericReq] = new Type
-  implicit val typeUC: Type[ForUseCase]    = new Type
+  implicit val typeGR : Type[ForGenericReq] = new Type
+  implicit val typeCG : Type[ForCodeGroup]  = new Type
+  implicit val typeMI : Type[ManualIssue]   = new Type
+  implicit val typeUC : Type[ForUseCase]    = new Type
+  implicit val typeUCS: Type[UseCaseStep]   = new Type
 }

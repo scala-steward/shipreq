@@ -12,7 +12,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.UseCaseStepGD
 import shipreq.webapp.base.feature._
-import shipreq.webapp.base.feature.clipboard.{ClipboardData, ClipboardCodec}
+import shipreq.webapp.base.feature.clipboard.ClipboardData
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.KeyboardTheme
 import shipreq.webapp.base.protocol.{ManualIssueCmd, ServerSideProcInvoker, UpdateContentCmd}
