@@ -86,24 +86,35 @@ object EditorNavParent {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private def render($: ScalaComponent.Lifecycle.RenderScope[Props, Unit, Unit], p: Props): VdomElement = {
+  final class Backend($: BackendScope[Props, Unit]) {
 
     // This is the main point of this component
-    val editorOnClose: Callback =
-      $.mountedPure.getDOMNode.map(_.toHtml).asCBO.flatMapCB(DomUtil.focusParentOnChildClose)
+    private val editorOnClose: Callback =
+      $.getDOMNode.map(_.toHtml).asCBO.flatMapCB(DomUtil.focusParentOnChildClose)
 
-    val editor =
-      p.editor.onClose(editorOnClose)
+    private def prepare[A](editor: EditorFeature.ReadWrite.ForEditor[A, Any]) =
+      editor.onClose(editorOnClose)
 
-    val onKeyDown: ReactKeyboardEventFromHtml => Callback =
-      e => TableNavigationFeature(p.tableStyle).Keys(e) | EditorFeature.Keys(editor)(p.editorArgs)(e) | p.onKeyDown(e)
+    def startEdit[A](editor: EditorFeature.ReadWrite.ForEditor[A, Any]): Option[Callback] =
+      prepare(editor).startEdit
 
-    p.parent(
-      ^.onKeyDown ==> onKeyDown,
-      editor.themedRenderOr(p.editorArgs)(p.view()))
+    def render(p: Props): VdomElement = {
+
+      val editor =
+        prepare(p.editor)
+
+      val onKeyDown: ReactKeyboardEventFromHtml => Callback =
+        e => TableNavigationFeature(p.tableStyle).Keys(e) | EditorFeature.Keys(editor)(p.editorArgs)(e) | p.onKeyDown(e)
+
+      p.parent(
+        ^.onKeyDown ==> onKeyDown,
+        editor.themedRenderOr(p.editorArgs)(p.view()))
+    }
   }
 
   val Component = ScalaComponent.builder[Props]("EditorNavParent")
-    .renderP(render)
+    .renderBackend[Backend]
     .build
+
+  type ComponentRef = Ref.ToScalaComponent[Props, Unit, Backend]
 }

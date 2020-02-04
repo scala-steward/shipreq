@@ -169,14 +169,25 @@ object ReqDetail {
         onSuccess >> startEditor
       }
 
+    private var useCaseStepRefs: Map[UseCaseStepId, EditorNavParent.ComponentRef] =
+      UnivEq.emptyMap
+
+    private def useCaseStepRef(id: UseCaseStepId): EditorNavParent.ComponentRef =
+      useCaseStepRefs.get(id).getOrElse {
+        val ref = Ref.toScalaComponent(EditorNavParent.Component)
+        useCaseStepRefs = useCaseStepRefs.updated(id, ref)
+        ref
+      }
+
     def startUseCaseStepEditor(id: UseCaseStepId): Callback =
       for {
-        data   ← cbData
-        props  ← $.props.toCBO
-        key    = EditorFeature.FieldKey.UseCaseStep(id)
-        editor = props.editorUCS(key, data.pxProjectWidgets, data.filterDead)
-        start  ← CallbackOption liftOption editor.startEdit
-        _      ← start.toCBO
+        data      ← cbData
+        props     ← $.props.toCBO
+        key       = EditorFeature.FieldKey.UseCaseStep(id)
+        editor    = props.editorUCS(key, data.pxProjectWidgets, data.filterDead)
+        ref       ← CallbackTo(useCaseStepRefs.get(id)).asCBO
+        component ← ref.get
+        _         ← CallbackOption.liftOptionCallback(component.backend.startEdit(editor))
       } yield ()
 
     def setModal(modal: Modal.State): Callback =
@@ -427,13 +438,18 @@ object ReqDetail {
           def onKeyDown(e: ReactKeyboardEventFromHtml): CallbackOption[Unit] =
             UseCaseStepEditor.saveAndAddKeyCriterion.toCallbackOption(e) >> addStepAfterSelf
 
-          EditorNavParent.Props(
-            args.base,
-            editor,
-            editorArgs,
-            pw.useCaseStepTextAndFlow(args.textAndFlow(), args.live),
-            onKeyDown,
-          ).render
+          val stepProps =
+            EditorNavParent.Props(
+              args.base,
+              editor,
+              editorArgs,
+              pw.useCaseStepTextAndFlow(args.textAndFlow(), args.live),
+              onKeyDown,
+            )
+
+          val ref = useCaseStepRef(id)
+
+          EditorNavParent.Component.withRef(ref)(stepProps)
         }
 
         UseCaseStepTree.Props(
