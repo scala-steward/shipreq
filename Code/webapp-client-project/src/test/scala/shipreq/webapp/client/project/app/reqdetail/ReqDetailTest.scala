@@ -53,9 +53,9 @@ object ReqDetailTest extends TestSuite {
   private val deadNoRestore  = UiText.Life.dead + "."
 
   // webapp-client-project/testOnly -- shipreq.webapp.client.project.app.reqdetail.ReqDetailTest.uc.propTest
-  private def useCaseStepEditorPropTest(reps         : Int,
-                                        sets         : Int,
-                                        stopWhenFound: Boolean): Unit = {
+  protected def useCaseStepEditorPropTest(reps         : Int,
+                                          sets         : Int,
+                                          stopWhenFound: Boolean): Unit = {
 
     val plan = Plan.action(randomUseCaseStepAction.times(reps))
 
