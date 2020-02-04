@@ -190,7 +190,8 @@ object ReqDetailTestDsl {
       SimEvent.Change(newValue) simulate _.obs.uc.row(label).textEditor.get)
 
   def commitStepTextEdit(label: String): *.Actions =
-    *.action(s"Commit $label text edit")(KB.Enter.ctrl simulateKeyDown _.obs.uc.row(label).textEditor.get) +>
+    *.focus("Editor error msg").option(_.obs.uc.row(label).errorMsg).assert(None) +>
+      *.action(s"Commit $label text edit")(KB.Enter.ctrl simulateKeyDown _.obs.uc.row(label).textEditor.get) +>
       editorCount.assert.decrement
 
   def abortStepTextEdit(label: String): *.Actions =
@@ -285,7 +286,7 @@ object ReqDetailTestDsl {
         val genLabel = Gen.choose_!(editorOpen)
         add(genLabel.flatMap(l => genStr.map(setStepTextEditValue(l, _))))
         add(genLabel.map(abortStepTextEdit))
-        add(genLabel.map(commitStepTextEdit))
+        addChoice(selectActions(r => r.isEditorOpen && r.errorMsg.isEmpty, commitStepTextEdit))
       }
 
       if (editorClosed.nonEmpty) {

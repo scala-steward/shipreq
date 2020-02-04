@@ -106,6 +106,9 @@ final class ReqDetailObs($: DomZipperJs) {
       val isEditorOpen = textEditor.isDefined
       def isEditorClosed = !isEditorOpen
 
+      val errorMsg: Option[String] =
+        $.collect01(".ui.label.red").innerTexts
+
       lazy val text = {
         val t: String = textContainer.fold("")(_.innerText)
         t.indexOf("alt-left to unindent,") match {
