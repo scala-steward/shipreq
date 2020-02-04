@@ -99,23 +99,35 @@ final class ReqDetailObs($: DomZipperJs) {
       val label: Option[String] =
         $.collect01(s"*[${TestMarker.useCaseStepLabel.name}]").domsAsHtml.map(_.title)
 
-      lazy val textContainer = $(s"*[${TestMarker.useCaseStepText.name}]")
+      // tail steps just have buttons and nothing else
+      val textContainer = $.collect01(TestMarker.useCaseStepText.cssSel).zippers
+      val textEditor    = textContainer.flatMap(_.collect01("textarea").domsAs[html.TextArea])
+
+      val isEditorOpen = textEditor.isDefined
+      def isEditorClosed = !isEditorOpen
 
       lazy val text = {
-        val t: String = textContainer.innerText
+        val t: String = textContainer.fold("")(_.innerText)
         t.indexOf("alt-left to unindent,") match {
           case -1 => t
           case i  => t.take(i)
         }
       }
 
-      lazy val textEditor = textContainer("textarea").domAs[html.TextArea]
-
       val del   = ctrl(UseCaseStepControls.IconDelete)
       val rest  = ctrl(UseCaseStepControls.IconRestore)
       val left  = ctrl(UseCaseStepControls.IconShift(LeftRight.Left))
       val right = ctrl(UseCaseStepControls.IconShift(LeftRight.Right))
       val add   = ctrl(UseCaseStepControls.IconAdd)
+
+      private def can(b: Option[html.Button]): Boolean =
+        b.exists(!_.disabled)
+
+      val canDel   = can(del)
+      val canRest  = can(rest)
+      val canLeft  = can(left)
+      val canRight = can(right)
+      val canAdd   = can(add)
 
       val buttons = List(del, rest, left, right, add).flatMap(_.toList)
     }

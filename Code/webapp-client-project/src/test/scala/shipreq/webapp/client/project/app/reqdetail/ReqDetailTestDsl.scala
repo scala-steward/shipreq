@@ -3,6 +3,7 @@ package shipreq.webapp.client.project.app.reqdetail
 import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
+import nyaya.gen._
 import org.scalajs.dom.html
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.UiText
@@ -139,11 +140,11 @@ object ReqDetailTestDsl {
     Simulate click b
   }
 
-  def addTailStepAC: *.Actions =
+  val addTailStepAC: *.Actions =
     tailStepAC.test("exists")(_.isDefined) +>
     *.action("Add AC tail step")(i => clickEnabled(i.obs.uc.tailStepRowAC.get.add.get))
 
-  def addTailStepEC: *.Actions =
+  val addTailStepEC: *.Actions =
     tailStepEC.test("exists")(_.isDefined) +>
     *.action("Add EC tail step")(i => clickEnabled(i.obs.uc.tailStepRowEC.get.add.get))
 
@@ -166,7 +167,7 @@ object ReqDetailTestDsl {
     *.focus(label + " text").value(_.obs.uc.row(label).text)
 
   def doubleClickStepText(label: String): *.Actions =
-    *.action(s"Double-click $label text")(Simulate doubleClick _.obs.uc.row(label).textContainer.dom)
+    *.action(s"Double-click $label text")(Simulate doubleClick _.obs.uc.row(label).textContainer.get.dom)
 
   def editStepText(label: String, newValue: String): *.Actions =
     _editStepText(label, None, newValue)
@@ -174,21 +175,27 @@ object ReqDetailTestDsl {
   def editStepText(label: String, expectedOldValue: String, newValue: String): *.Actions =
     _editStepText(label, Some(expectedOldValue), newValue)
 
+  def openEditor(label: String): *.Actions =
+    doubleClickStepText(label) +> editorCount.assert.increment
+
   private def _editStepText(label: String, old: Option[String], newValue: String): *.Actions =
-    (doubleClickStepText(label)
-      +> editorCount.assert.increment
+    ( openEditor(label)
       +> stepText(label).rename("Initial editor text").assert(old.getOrElse("")).when(_ => old.isDefined) // TODO test-state should support optional assertions
       >> setStepTextEditValue(label, newValue)
       >> commitStepTextEdit(label)
-      +> editorCount.assert.decrement
     ).group(s"Edit $label text to ${quoteStringForDisplay(newValue)}")
 
   def setStepTextEditValue(label: String, newValue: String): *.Actions =
     *.action(s"Set $label text to ${quoteStringForDisplay(newValue)}")(
-      SimEvent.Change(newValue) simulate _.obs.uc.row(label).textEditor)
+      SimEvent.Change(newValue) simulate _.obs.uc.row(label).textEditor.get)
 
   def commitStepTextEdit(label: String): *.Actions =
-    *.action(s"Commit $label text edit")(KB.Enter.ctrl simulateKeyDown _.obs.uc.row(label).textEditor)
+    *.action(s"Commit $label text edit")(KB.Enter.ctrl simulateKeyDown _.obs.uc.row(label).textEditor.get) +>
+      editorCount.assert.decrement
+
+  def abortStepTextEdit(label: String): *.Actions =
+    *.action(s"Abort $label text edit")(KB.Escape simulateKeyDown _.obs.uc.row(label).textEditor.get) +>
+      editorCount.assert.decrement
 
   val filterDeadToggle =
     *.action(NameFn {
@@ -239,4 +246,61 @@ object ReqDetailTestDsl {
   def doubleClickFieldValue(field: String) =
     *.action("Double-click " + field)(Simulate doubleClick _.obs.generic.fields(field).dom)
 
+  val randomUseCaseStepAction: *.Actions = {
+
+    val addTailSteps = Vector.empty :+ addTailStepAC :+ addTailStepEC
+
+    val genStr = Gen.ascii.string(0 to 4)
+
+    *.chooseAction("Random use case step action") { ros =>
+      import ros.obs
+      import obs.uc.StepRow
+
+      var stepCount = 0
+      val stepArray = new Array[Gen[*.Actions]](8)
+
+      def add(a: Gen[*.Actions]): Unit = {
+        stepArray(stepCount) = a
+        stepCount += 1
+      }
+
+      def addChoice(as: Vector[*.Actions]): Unit =
+        if (as.nonEmpty)
+          add(Gen.choose_!(as))
+
+      def selectActions(ok: StepRow => Boolean, a: String => *.Actions): Vector[*.Actions] =
+        obs.uc.allRows.iterator.filter(ok).flatMap(_.label).map(a).toVector
+
+      // ===============================================================================================================
+
+      add(Gen.choose_!(selectActions(_.canAdd, addStep) ++ addTailSteps))
+      addChoice(selectActions(_.canDel, delStep))
+      addChoice(selectActions(_.canLeft, shiftStepLeft))
+      addChoice(selectActions(_.canRight, shiftStepRight))
+
+      val editorOpen = obs.uc.allRows.iterator.filter(_.isEditorOpen).flatMap(_.label)
+      val editorClosed = obs.uc.allRows.iterator.filter(_.isEditorClosed).flatMap(_.label)
+
+      if (editorOpen.nonEmpty) {
+        val genLabel = Gen.choose_!(editorOpen)
+        add(genLabel.flatMap(l => genStr.map(setStepTextEditValue(l, _))))
+        add(genLabel.map(abortStepTextEdit))
+        add(genLabel.map(commitStepTextEdit))
+      }
+
+      if (editorClosed.nonEmpty) {
+        val genLabel = Gen.choose_!(editorClosed)
+        add(genLabel.map(openEditor))
+      }
+
+      Gen.chooseInt(stepCount).flatMap(stepArray.apply).sample()
+    }
+  }
+
+  def debugPrintSteps: *.Actions =
+    *.action("debugPrintSteps"){ ros =>
+      println(ros.obs.uc.allRows.map {row =>
+        row.label.fold("")(_ + (if (row.isEditorOpen) "*" else " "))
+      }.filter(_.nonEmpty).mkString(" "))
+    }
 }

@@ -192,10 +192,11 @@ object ProjectSpaTestDsl {
   def testReqDetail(action: RD.*.Actions): *.Actions =
     liftReqDetailTests(Plan.action(action)).asAction("Test ReqDetail")
 
-  def runTest(action : *.Actions,
-              page   : Page,
-              project: Project  = SampleProject5.project,
-              rd     : RD.State = RD.unspecifiedState): Unit = {
+  def runTest(action    : *.Actions,
+              page      : Page,
+              project   : Project  = SampleProject5.project,
+              rd        : RD.State = RD.unspecifiedState,
+              assertPass: Boolean = true): Report[String] = {
 
     val global       = TestGlobal(project)
     val initPageData = ProjectSpaEntryPoint.InitData(Username("testuser"), Obfuscated("xyz"), project.name)
@@ -203,7 +204,7 @@ object ProjectSpaTestDsl {
     val rc           = MockRouterCtl[Page]()
     val init         = TestState(page, global.unsafeProject(), rd)
 
-    ReactTestUtils.withRenderedIntoBody(spa.Component(Props(init.page, rc))) { m =>
+    withRenderedIntoBody(spa.Component(Props(init.page, rc))) { m =>
       TestClipboard.clear()
       val tester = new ComponentTester(spa.Component)(m)
       val report = Plan(action, invariants)
@@ -211,9 +212,30 @@ object ProjectSpaTestDsl {
                      .withInitialState(init)
                      .withRefByName(Ref(global, tester))
                      .run()
-      assertTestState(report)
-//      assertTestState(r, println(s"${"=" * 120}\n${htmlScrub run tester.component.getDOMNode.map(_.asElement).outerHTML}\n"))
+      if (assertPass)
+        assertTestState(report)
+//        assertTestState(r, println(s"${"=" * 120}\n${htmlScrub run tester.component.getDOMNode.map(_.asElement).outerHTML}\n"))
+      report
     }
   }
 
+  // TODO Delete after next scalajs-react release
+import org.scalajs.dom.html.Element
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.raw.{React => RawReact, ReactDOM => RawReactDOM}
+import japgolly.scalajs.react.vdom.TopNode
+import ReactTestUtils._
+  private def mountedElement(m: RawReact.ComponentUntyped) =
+    ReactDOM.findDOMNode(m).get.asElement()
+  def withRenderedIntoBody[M, A](u: Unmounted[M])(f: M => A): A =
+    _withRenderedIntoBody(RawReactDOM.render(u.raw, _))(mountedElement, f compose u.mountRaw)
+  private def _withRenderedIntoBody[A, B](render: Element => A)(n: A => TopNode, use: A => B): B =
+    withNewBodyElement { parent =>
+      val a = render(parent)
+      try
+        use(a)
+      finally {
+        Try(ReactDOM unmountComponentAtNode n(a).parentNode)
+      }
+    }
 }

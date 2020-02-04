@@ -16,14 +16,15 @@ object TestMarker {
     new TestMarker(id)
   }
 
-  val deletionForm = create()
-  val restorationForm = create()
-  val useCaseStepLabel = create()
-  val useCaseStepText = create()
-  val useCaseTailStep = create()
+  val deletionForm     = create() // a
+  val restorationForm  = create() // b
+  val useCaseStepLabel = create() // c
+  val useCaseStepText  = create() // d
+  val useCaseTailStep  = create() // e
 }
 
 final class TestMarker private[TestMarker] (id: String) {
-  val name = "data-tm-" + id
+  val name   = "data-tm-" + id
   val tagMod = VdomAttr(name) := 1
+  val cssSel = s"*[$name]"
 }
