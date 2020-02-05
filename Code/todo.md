@@ -77,6 +77,7 @@ Phase 2C
 * Add to imp graph page:
   * Saved views
   * Filter
+  * Filter by chain size (eg. 0=all, 1 removes all nodes without imp, 2 removes A-B but not A-B-C)
   * Content summary
   * Configure display (eg. id + title, just title, add tags?)
   * Graph direction: TD / LR
