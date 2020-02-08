@@ -1,0 +1,52 @@
+digraph G {
+  rankdir=LR
+
+  node [style=filled]
+
+  {rank=same
+
+  autovidtool        [fillcolor="#eeeeee" label="create tool to create demo videos (?)"]
+  demo2              [fillcolor="#ccffcc" label="revise demo into v2"]
+  design_tagcfg      [fillcolor="#ccffcc" label="Design: Tag config screen v2"]
+  design_ucsimp      [fillcolor="#ccffcc" label="Design: Implications from UC steps"]
+  marketer           [fillcolor="#ccffcc" label="find a marketer"]
+  moreworkflows      [fillcolor="#eeeeee" label="Support more common workflows"]
+  workflow_ba        [fillcolor="#ffff66" label="Analyse workflow:\ninterviews → reqs done"]
+  writer             [fillcolor="#ccffcc" label="Find a copy/tech writer"]
+  }
+
+  analyse_anonshares [fillcolor="#eeeeee" label="Analyse: anon shares"]
+  analyse_github     [fillcolor="#eeeeee" label="Analyse: github integration"]
+  analyse_history    [fillcolor="#ffff66" label="Analyse: audit trail"]
+  analyse_multiuser  [fillcolor="#ffff66" label="Analyse: multi user"]
+  analyse_tasktrack  [fillcolor="#eeeeee" label="Analyse: imp graph\nfor task tracking"]
+  avoiddemo          [fillcolor="#eeeeee" label="avoid need for demoing"]
+  bizcontacts        [fillcolor="#eeeeee" label="reach out as entrepreneur\nask for advice, involvement\n(jdg, andy's guy, reddit)"]
+  blog_infoopt       [fillcolor="#eeeeee" label="blog: losing info is opt"]
+  blog_ssr           [fillcolor="#eeeeee" label="blog: scala-graal / SSR"]
+  design             [fillcolor="#eeeeee" label="Design:\nrequired changes"]
+  dev                [fillcolor="#eeeeee" label="Impl:\nrequired changes"]
+  enterinterviews    [fillcolor="#eeeeee" label="enter interviews into ShipReq"]
+  help               [fillcolor="#eeeeee" label="get help doc written"]
+  impl_anonshares    [fillcolor="#eeeeee" label="Impl: anon shares"]
+  impl_tagcfg        [fillcolor="#eeeeee" label="Impl: Tag config screen v2"]
+  impl_ucsimp        [fillcolor="#eeeeee" label="Impl: Implications from UC steps"]
+  sharevistoolreqs   [fillcolor="#eeeeee" label="share reqs for\nvisual testing tool"]
+  socialmedia        [fillcolor="#eeeeee" label="Broadcast on social media"]
+  workflow_ba_dev    [fillcolor="#eeeeee" label="Impl: required changes"]
+
+  // ===================================================================================================================================
+
+  analyse_tasktrack, analyse_github, analyse_history, analyse_multiuser -> design -> dev
+  autovidtool                                                           -> avoiddemo [style=dashed]
+  avoiddemo                                                             -> bizcontacts
+  demo2, marketer                                                       -> avoiddemo
+  design_tagcfg                                                         -> impl_tagcfg
+  design_ucsimp                                                         -> impl_ucsimp
+  marketer                                                              -> blog_infoopt, blog_ssr, socialmedia
+  workflow_ba                                                           -> workflow_ba_dev, enterinterviews
+  workflow_ba_dev                                                       -> analyse_anonshares -> impl_anonshares -> sharevistoolreqs [style=dashed]
+  workflow_ba_dev                                                       -> analyse_tasktrack, analyse_github, analyse_history, analyse_multiuser
+  writer                                                                -> help
+
+}
