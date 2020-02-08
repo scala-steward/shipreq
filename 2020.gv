@@ -14,7 +14,6 @@ digraph G {
   moreworkflows      [fillcolor="#eeeeee" label="Support more common workflows"]
   workflow_ba        [fillcolor="#ffff66" label="Analyse workflow:\ninterviews → reqs done"]
   writer             [fillcolor="#ccffcc" label="Find a copy/tech writer"]
-  grafana            [fillcolor="#ccffcc" label="Upgrade Grafana"]
   }
 
   analyse_anonshares [fillcolor="#eeeeee" label="Analyse: anon shares"]
@@ -37,7 +36,6 @@ digraph G {
   sharevistoolreqs   [fillcolor="#eeeeee" label="share reqs for\nvisual testing tool"]
   socialmedia        [fillcolor="#eeeeee" label="Broadcast on social media"]
   workflow_ba_dev    [fillcolor="#eeeeee" label="Impl: required changes"]
-  wallmetrics2       [fillcolor="#eeeeee" label="Wall metrics v2\nMake pretty + show my usage"]
 
   // ===================================================================================================================================
 
@@ -51,7 +49,6 @@ digraph G {
   workflow_ba                                                           -> workflow_ba_dev, enterinterviews
   workflow_ba_dev                                                       -> analyse_tasktrack, analyse_github, analyse_history, analyse_multiuser
   writer                                                                -> help
-  grafana                                                               -> wallmetrics2
 
   autovidtool                                                           -> avoiddemo [style=dashed]
   impl_ucsimp                                                           -> workflow_ba [constraint=false color=red style=dashed]
