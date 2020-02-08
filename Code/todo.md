@@ -65,7 +65,7 @@ Backlog
 
 
 ------------------------------------------------------------------------------------------------------------------------
-Phase 2C
+Phase 3A
 ========
 
 * User profile page
@@ -83,6 +83,12 @@ Phase 2C
 
 * NewForm: s/Cancel/Close/
 * NewForm: change reqtype without closing
+
+* Support code blocks in rich text (wanted to use in FR-5)
+* Support nested lists
+* Support all markdown?
+
+* Investigate changes required to support phone / tablet
 
 * Add to imp graph page:
   * Saved views
