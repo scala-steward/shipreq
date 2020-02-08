@@ -1,4 +1,4 @@
-FROM grafana/grafana:6.5.2
+FROM grafana/grafana:6.6.1
 
 USER root
 RUN apk --no-cache add curl
