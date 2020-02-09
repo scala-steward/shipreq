@@ -1,7 +1,6 @@
 package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
 import org.scalajs.dom.html
@@ -23,7 +22,7 @@ object NewButton {
   @inline def initState: State = None
 
   /**
-    * @param update `None` means it has already been pressed and the creation-form is open, thus this is disabled.
+    * @param update `None` means this is disabled.
     */
   final case class Props(state   : State,
                          reqTypes: ReqTypes,
@@ -53,7 +52,7 @@ object NewButton {
       selectedDropdownItem.map(_.value)
   }
 
-  final case class Update(setState: State => Callback, create: RowKey => Callback)
+  final case class Update(setState: RowKey => Callback, create: RowKey => Callback)
 
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.derive
@@ -64,7 +63,7 @@ object NewButton {
                                   key     : String)
 
   final class Backend($: BackendScope[Props, Unit]) {
-    val dropdownNode = Ref[html.Element]
+    private val dropdownNode = Ref[html.Element]
 
     @UsesSemanticUiManually
     def render(p: Props): VdomElement = {
@@ -113,7 +112,7 @@ object NewButton {
         p <- $.props.toCBO
         u <- CallbackOption.liftOption(p.update)
         i <- CallbackOption.liftOption(p.dropdownItems.find(_.key ==* value))
-        _ <- u.setState(Some(i.value)).toCBO
+        _ <- u.setState(i.value).toCBO
       } yield ()
 
     private val dropdownOptions: Dropdown.JsOptions =

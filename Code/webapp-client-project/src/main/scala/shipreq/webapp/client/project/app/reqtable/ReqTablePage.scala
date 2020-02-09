@@ -128,7 +128,7 @@ object ReqTablePage {
   final class Backend(sp: StaticProps, $: BackendScope[Props, Unit]) {
     import sp._
 
-    val setNewStuff : SetFn[NewStuff.State] = Reusable.fn.state(stateAccess zoomStateL State.newStuff).setStateFn
+    val modNewStuff : ModFn[NewStuff.State] = Reusable.fn.state(stateAccess zoomStateL State.newStuff).modStateFn
     val setSelection: SetFn[RowSelection  ] = Reusable.fn.state(stateAccess zoomStateL State.selection).setStateFn
     val setModal    : SetFn[Modal.State   ] = Reusable.fn.state(stateAccess zoomStateL State.modal).setStateFn
 
@@ -367,7 +367,7 @@ object ReqTablePage {
 
       val newStuff = new NewStuff(
         p.state.newStuff,
-        setNewStuff,
+        modNewStuff,
         project.config.reqTypes,
         Allow when activeView.viewCodeGroups,
         defaultNewType,

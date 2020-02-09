@@ -81,8 +81,6 @@ Phase 3A
 * UCS flow: support 103a if unambiguous
 * UCS flow: support 3a if unambiguous
 
-* NewForm: change reqtype without closing
-
 * Support code blocks in rich text (wanted to use in FR-5)
 * Support nested lists
 * Support all markdown?

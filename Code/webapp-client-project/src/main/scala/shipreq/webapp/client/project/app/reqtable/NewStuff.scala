@@ -15,11 +15,34 @@ import NewStuff.State
   */
 object NewStuff {
 
-  sealed abstract class State
+  sealed abstract class State {
+    def close: State
+    def toggle(r: RowKey): State
+    def setSelection(r: RowKey): State
+  }
 
   object State {
-    final case class Open(selected: RowKey) extends State
-    final case class Closed(selected: Option[RowKey]) extends State
+    final case class Open(selected: RowKey) extends State {
+      override def close =
+        Closed(Some(selected))
+
+      override def setSelection(r: RowKey) =
+        Open(r)
+
+      override def toggle(r: RowKey) =
+        Closed(Some(r))
+    }
+
+    final case class Closed(selected: Option[RowKey]) extends State {
+      override def close =
+        this
+
+      override def setSelection(r: RowKey) =
+        Closed(Some(r))
+
+      override def toggle(r: RowKey) =
+        Open(r)
+    }
 
     def init: State =
       State.Closed(None)
@@ -28,7 +51,7 @@ object NewStuff {
 }
 
 final class NewStuff(state        : State,
-                     setState     : SetFn[State],
+                     modState     : ModFn[State],
                      reqTypes     : ReqTypes,
                      allowRCG     : Permission,
                      defaultType  : Option[RowKey],
@@ -36,30 +59,30 @@ final class NewStuff(state        : State,
                      activeColumns: NonEmptyVector[ColumnPlus]) {
 
   private val buttonUpdate: Reusable[NewButton.Update] =
-    setState.map(f =>
+    modState.map(f =>
       NewButton.Update(
-        s => f.setState(State.Closed(s)),
-        s => f.setState(State.Open(s))))
+        setState = s => f.modState(_.setSelection(s)),
+        create   = s => f.modState(_.toggle(s))))
 
   val buttonProps: NewButton.Props =
     state match {
       case State.Open(s) =>
-        var b = NewButton.Props(Some(s), reqTypes, allowRCG, defaultType, None)
+        var b = NewButton.Props(Some(s), reqTypes, allowRCG, defaultType, Some(buttonUpdate))
         // If what we thought was open is no longer acceptable, proceed as if closed
-        if (!b.selected.exists(_ ==* s))
-          b = b.copy(update = Some(buttonUpdate))
+        if (b.selected.forall(_ !=* s))
+          b = b.copy(state = None)
         b
 
       case State.Closed(o) =>
         NewButton.Props(o, reqTypes, allowRCG, defaultType, Some(buttonUpdate))
     }
 
+  private val cancel: Callback =
+    modState.modState(_.close)
+
   val form: Option[VdomElement] =
     state match {
-      case State.Open(s) if buttonProps.update.isEmpty =>
-
-        val cancel: Callback =
-          setState.setState(State.Closed(Some(s)))
+      case State.Open(s) if buttonProps.state.isDefined =>
 
         s match {
 
