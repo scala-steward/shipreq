@@ -4,7 +4,7 @@ import japgolly.univeq.UnivEq
 import org.parboiled2._
 import scalaz.{-\/, Applicative, Functor, Monoid, \/, \/-}
 import shipreq.base.util.{Backwards, Direction, Forwards}
-import shipreq.webapp.base.data.{ReqTypePos, Requirements, UseCaseStepId}
+import shipreq.webapp.base.data.{ReqTypePos, Requirements, UseCaseStepId, UseCaseStepLabelLookup}
 import shipreq.webapp.base.util.ParsingUtil
 
 /**
@@ -117,17 +117,17 @@ object UseCaseStepFlowText {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-//  def parseStep(reqs: Requirements)(step: String): Option[UseCaseStepId] =
-//    new StepParser(reqs, step).useCaseStepLabel.run()(Parser.DeliveryScheme.Try).toOption
-
-  /** @return The input, `step`, on the left, not an error message. */
-  def parseStep(reqs: Requirements, currentUseCase: Option[ReqTypePos])(step: String): String \/ UseCaseStepId =
-    new StepParser(reqs, currentUseCase, step).useCaseStepLabel.run()(Parser.DeliveryScheme.Either) match {
-      case Right(id) => \/-(id)
-      case Left(_)   => -\/(step)
+  def parseStep(lookup: UseCaseStepLabelLookup, currentUseCase: Option[ReqTypePos])(input: String): String \/ UseCaseStepId = {
+    import UseCaseStepLabelLookup.Failure
+    new StepParser(lookup, currentUseCase, input).useCaseStepLabelAttempt.run()(Parser.DeliveryScheme.Either) match {
+      case Right(id@ \/-(_))                => id
+      case Right(-\/(a: Failure.Ambiguous)) => -\/(a.errMsg(input))
+      case Right(-\/(Failure.NotFound))     => -\/("Invalid step: " + input)
+      case Left(_)                          => -\/("Invalid step: " + input)
     }
+  }
 
-  private final class StepParser(override val reqs: Requirements,
+  private final class StepParser(override val useCaseStepLabelLookup: UseCaseStepLabelLookup,
                                  override val currentUseCase: Option[ReqTypePos],
                                  override val input: ParserInput) extends Parsers.UseCaseStepLabel {
     override def OWS = rule(SLWS.*)

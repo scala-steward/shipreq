@@ -65,13 +65,13 @@ object UseCaseStepEditor {
     val parsed: TextAndFlow[OptionalText, Vector[String \/ UseCaseStepId]] =
       rawTextFlow.bimap(
         Text.UseCaseStep.parse(project, ucNum),
-        _.map(UseCaseStepFlowText.parseStep(project.content.reqs, ucNum)))
+        _.map(UseCaseStepFlowText.parseStep(project.content.reqs.useCaseStepLabelLookup, ucNum)))
 
     val valResult: TextAndFlow[Invalidity \/ OptionalText, Invalidity \/ Set[UseCaseStepId]] =
       parsed.bimap(
         DataValidators.genericRichText(plainTextNoCtx).audit(_),
-        _.map(_.leftMap(txt => Invalidity("Invalid step: " + txt)))
-          .sequence[Invalidity \/ ?, UseCaseStepId](implicitly, Invalidity.applicative)
+        _.map(_.leftMap(Invalidity(_)))
+          .sequence[Invalidity \/ *, UseCaseStepId](implicitly, Invalidity.applicative)
           .map(_.toSet))
 
     val validated: Validated =

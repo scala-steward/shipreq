@@ -3,6 +3,7 @@ package shipreq.webapp.base.util
 import japgolly.microlibs.nonempty._
 import org.parboiled2._
 import scala.annotation.elidable
+import scalaz.{\/, \/-}
 import shapeless._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{ReqType, ReqTypePos}
@@ -79,6 +80,9 @@ abstract class ParsingUtil extends Parser {
 
   def popOptional[A]: RuleAB[Option[A], A] =
     rule(run((o: Option[A]) => test(o.isDefined) ~ push(o.get)))
+
+  def pop_\/-[A]: RuleAB[Any \/ A, A] =
+    rule(run((d: Any \/ A) => test(d.isRight) ~ push(d.asInstanceOf[\/-[A]].b)))
 
   def popPF[A, B](pf: PartialFunction[A, B]): RuleAB[A, B] =
     rule(run((a: A) => test(pf isDefinedAt a) ~ push(pf(a))))

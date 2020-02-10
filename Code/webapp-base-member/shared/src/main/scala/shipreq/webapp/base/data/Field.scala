@@ -167,6 +167,7 @@ object StaticField {
                                         _keyO     : Option[FieldRefKey])
       extends StaticField(_name, _fieldType, _reqTypes, _mandatory, _deletable, _keyO) {
 
+    val treeFilterAll: UseCaseSteps.Tree => Range
     val useCaseSteps: Lens[UseCase, UseCaseSteps]
     val useCaseStepTree: Lens[UseCase, UseCaseSteps.Tree] // Has to be lazy to be implemented here. No.
 
@@ -256,6 +257,8 @@ object StaticField {
 
     val treeFilterN: UseCaseSteps.Tree => Range = Function.const(0 to 0)
     val treeFilterA: UseCaseSteps.Tree => Range = 1 until _.children.length
+
+    override val treeFilterAll: UseCaseSteps.Tree => Range = _.children.indices
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -280,6 +283,8 @@ object StaticField {
       Allow
 
     val treeFilter: UseCaseSteps.Tree => Range = _.children.indices
+
+    override val treeFilterAll = treeFilter
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

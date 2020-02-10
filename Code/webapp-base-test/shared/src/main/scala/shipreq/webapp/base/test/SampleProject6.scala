@@ -13,6 +13,21 @@ import UnsafeTypes._
  *   - Add some dead steps to UC-1
  *   - Change UC-1 title to include refs to live & dead steps
  *   - Add UC-2 with just the title step
+ *
+ * UC steps:
+ *
+ *   - (#10) 1.0
+ *   - (#11) 1.0.1
+ *   - (#12) 1.0.2
+ *   - (#19) 1.0.2.a
+ *   - (#13) 1.0.3
+ *   - (#14) 1.1
+ *   - (#15) 1.1.1
+ *   - (#18) 1.E.1
+ *
+ *   - (#16) 1.0.X.1
+ *   - (#17) 1.E.X.1
+ *   - (#20) 1.X.0
  */
 object SampleProject6 {
 

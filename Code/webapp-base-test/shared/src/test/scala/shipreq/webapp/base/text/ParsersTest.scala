@@ -412,10 +412,8 @@ object ParsersTest extends TestSuite {
           }
         }
 
-        'liveN1 - testU(10, step10_label)
-        'liveN2 - testU(11, step11_label)
-        'liveN3 - testU(14, step14_label)
-        'liveN4 - testU(19, step19_label)
+        'liveN1 - testU(11, step11_label)
+        'liveN2 - testU(19, step19_label)
         'liveE1 - testU(18, step18_label)
         'liveE2 - testWithUcCtx("[E.1]", Some(1))(T.UseCaseStepRef(18))
         'deadN - testU(16, step16_label)

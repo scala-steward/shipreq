@@ -11,6 +11,14 @@ import UseCases.StepFlow
 /**
  * Builds on SampleProject #3 to add:
  *   - UC-1 with some steps.
+ *
+ * UC steps:
+ *   - (#10) 1.0
+ *   - (#11) 1.0.1
+ *   - (#12) 1.0.2
+ *   - (#13) 1.0.3
+ *   - (#14) 1.1
+ *   - (#15) 1.1.1
  */
 object SampleProject4 {
 

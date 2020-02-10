@@ -515,4 +515,7 @@ final case class Requirements(genericReqs: GenericReqIMap,
   lazy val reqsByType: Multimap[ReqTypeId, Vector, Req] =
     reqIterator.foldLeft(UnivEq.emptyMultimap[ReqTypeId, Vector, Req])((q, r) =>
       q.add(r.reqTypeId, r))
+
+  lazy val useCaseStepLabelLookup: UseCaseStepLabelLookup =
+    new UseCaseStepLabelLookup(this)
 }

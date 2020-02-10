@@ -1,5 +1,6 @@
 package shipreq.webapp.base
 
+import scala.collection.compat.IterableOnce
 import shipreq.base.util.{Backwards, Direction, Forwards, LeftRight}
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.data.{Dead, HashRefKey, Live, StaticField, StaticFieldType}
@@ -23,6 +24,19 @@ object UiText {
   @inline implicit class EnglishIntExt(private val self: Int) extends AnyVal {
     def unitsOf(name: String, pluralised: String = null): String =
       self + " " + name.pluralise(self, pluralised)
+  }
+
+  def sortedOrClause(cases: IterableOnce[String], limit: Int = Int.MaxValue) = {
+    var a = cases.toArray
+    scala.util.Sorting.quickSort(a)
+    val len = a.length
+    if (len > limit) {
+      a = a.take(limit + 1)
+      a(limit) = s"one of ${len - limit} others"
+    }
+    val last = a.length - 1
+    a(last) = "or " + a(last)
+    a.mkString(", ")
   }
 
   def unsavedChanges(i: Int): String =

@@ -47,6 +47,8 @@ object Parsers {
 
   val webAddressChar = CP.Visible -- ('{' :: '}' :: '[' :: ']' :: '<' :: '>' :: Nil)
 
+  private val useCaseStepTailChar = CP.AlphaNum ++ ' ' ++ '.'
+
   abstract class Base extends ParsingUtil {
     type T <: Atom.Base
     val t: T
@@ -167,7 +169,7 @@ object Parsers {
       NonEmptyVector.maybe(ss.toVector, None: Option[ReqCodeId])(code =>
         project.content.reqCodes.get(code).flatMap(_.activeId))
 
-    override def reqs = project.content.reqs
+    override def useCaseStepLabelLookup = project.content.reqs.useCaseStepLabelLookup
 
     def useCaseStepRef: Rule1[t.Atom] =
       rule(prefix ~ OWS ~ useCaseStepLabel ~ suffix ~> t.UseCaseStepRef)
@@ -187,7 +189,7 @@ object Parsers {
     /** Optional whitespace */
     def OWS: Rule0
 
-    def reqs: Requirements
+    def useCaseStepLabelLookup: UseCaseStepLabelLookup
 
     /** If specified, allows parsing of [.1] instead of [n.1] where n is the value specified */
     def currentUseCase: Option[ReqTypePos]
@@ -195,68 +197,30 @@ object Parsers {
     /** Expects no leading whitespace.
       * Gobbles any trailing whitespace.
       */
-    def useCaseStepLabel: Rule1[UseCaseStepId] = {
+    def useCaseStepLabelAttempt: Rule1[UseCaseStepLabelLookup.Result] = {
 
-      def dotStep: Rule1[String] =
-        rule('.' ~ OWS ~ capture(CP.Alpha.+ | CP.Digit.+) ~ OWS)
+      def stepLabelText: Rule1[String] =
+        rule(capture(useCaseStepTailChar.+) ~ OWS) // trailing OWS to potentially gobble up multiline WS
 
-      def ctxFree: Rule1[UseCaseStepId] = rule(
-        ((ch('U')|'u') ~ (ch('C')|'c') ~ OWS ~ ('-' ~ OWS).?).? // UC-
-          ~ reqTypePos ~ OWS                                    // 1
-          ~ dotStep ~ dotStep.*                                 // .0.X.1.a.ii
-          ~> lookupStep ~ popOptional[UseCaseStepId])
+      def ctxFree: Rule1[UseCaseStepLabelLookup.Result] = rule(
+        ((ch('U')|'u') ~ (ch('C')|'c') ~ OWS ~ ('-' ~ OWS).?).? // (UC-)?
+          ~ reqTypePos ~ OWS ~ '.' ~ OWS                        // 1.
+          ~ stepLabelText                                       // 0.X.1.a.ii
+          ~> ((pos: ReqTypePos, tail: String) => useCaseStepLabelLookup(pos, s"${pos.value}.$tail", allowAliases = false)))
 
-      def withCtx: Rule1[UseCaseStepId] = rule(
+      def withCtx: Rule1[UseCaseStepLabelLookup.Result] = rule(
         pushOptional(currentUseCase)
-          ~ (dotStep | (capture(CP.Alpha.+) ~ OWS)) // .0 | E
-          ~ dotStep.*                               // .0.X.1.a.ii
-          ~> lookupStep ~ popOptional[UseCaseStepId])
+          ~ stepLabelText
+          ~> ((pos: ReqTypePos, step: String) => useCaseStepLabelLookup(pos, step, allowAliases = true)))
 
       rule(ctxFree | withCtx)
     }
 
-    val lookupStep: (ReqTypePos, String, Seq[String]) => Option[UseCaseStepId] =
-      (pos, nodeHead, nodeTail) => {
-
-        val prefix = nodeHead.toUpperCase
-
-        val (nodes, field) =
-          StaticField.useCaseStepTrees.find(_.stepLabelPrefix.exists(_ ==* prefix)) match {
-            case Some(sf) => (nodeTail, sf)
-            case None     => (nodeHead +: nodeTail, StaticField.NormalAltStepTree)
-          }
-
-        def parseNodes(f: StaticField.UseCaseStepTree): Option[PartialLocation] = {
-          val it = nodes.iterator
-          @tailrec def go(q: Vector[Int], v: Validity, l: Int): Option[PartialLocation] =
-            if (it.hasNext) {
-              val node = it.next()
-
-              // Only match uppercase. Lowercase x is used in step labels & ambiguous.
-              if (node.length ==* 1 && node.charAt(0) ==* WebappConfig.useCaseStepsDeadNode)
-                v match {
-                  case Valid   => go(q :+ -1, Invalid, l)
-                  case Invalid => None
-                }
-              else
-                f.stepLabelsPerLevel.get(l).flatMap(_ parse node) match {
-                  case Some(i) => go(q :+ i, v, l + 1)
-                  case None    => None
-                }
-            } else
-              NonEmptyVector.option(q)
-                .filter(_.last >= 0) // Last node must be valid
-                .map(PartialLocation(_, v))
-
-          go(Vector.empty, Valid, 0)
-        }
-
-        for {
-          uc ← reqs.getUseCaseByPos(pos)
-          pl ← parseNodes(field)
-          id ← field.useCaseSteps.get(uc).partialLocSteps.getOption(pl)
-        } yield id
-      }
+    /** Expects no leading whitespace.
+      * Gobbles any trailing whitespace.
+      */
+    def useCaseStepLabel: Rule1[UseCaseStepId] =
+      rule(useCaseStepLabelAttempt ~ pop_\/-[UseCaseStepId])
   }
 
   trait Issue extends Base {
