@@ -457,11 +457,11 @@ object RandomData {
     private val highChars   = Gen.chooseInt(128, 255).map(_.toChar) // Gen.unicode // TODO Disabled due to PhantomJS-2.1.1-8 crashing
             val genCharSL   = Gen.chooseGen(Gen chooseArray_! asciiSL, highChars)
             val genCharML   = Gen.chooseGen(Gen chooseArray_! asciiML, highChars)
-    private val literalStr  = genCharSL                       .string(1 to 100)
-    private val texStr      = genCharSL                       .string(1 to  20)
-    private val webAddressR = charPred(Parsers.webAddressChar).string(1 to  40)
-    private val emailL      = charPred(Parsers.emailCharL)    .string(1 to  20)
-    private val emailR      = charPred(Parsers.emailCharR)    .string(1 to  14)
+    private val literalStr  = genCharSL                       .string(1 to 24)
+    private val texStr      = genCharSL                       .string(1 to 20)
+    private val webAddressR = charPred(Parsers.webAddressChar).string(1 to 30)
+    private val emailL      = charPred(Parsers.emailCharL)    .string(1 to 20)
+    private val emailR      = charPred(Parsers.emailCharR)    .string(1 to 14)
 
     def literal(implicit t: Literal): Gen[t.Literal] =
       literalStr.map(t.Literal)
@@ -506,7 +506,7 @@ object RandomData {
       Gen.pure(g).flatMap(_.value).vector(MaxTextAtoms)
 
     def listItems(t: ListMarkup)(g: Name[Gen[t.Atom]]): Gen[NonEmptyVector[t.ListItem]] =
-      listItem(t)(g).nev(0 to 10)
+      listItem(t)(g).nev(0 to 7)
 
     def unorderedList(t: ListMarkup)(g: Name[Gen[t.Atom]]): Gen[t.UnorderedList] =
       listItems(t)(g) map t.UnorderedList
