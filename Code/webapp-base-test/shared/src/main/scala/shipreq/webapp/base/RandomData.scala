@@ -11,6 +11,7 @@ import nyaya.util._
 import monocle._
 import monocle.function.Field1.first
 import monocle.function.Field2.second
+import org.parboiled2.CharPredicate
 import scala.annotation.tailrec
 import scalaz.{-\/, Need, \/-}
 import scalaz.std.list._
@@ -91,7 +92,7 @@ object RandomData {
   private val _charPredAllChars = ('\u0001' to '\u0100').seq
 //  private val _charPredAllChars = ('\u0020' to '\u0100').seq
 //  private val _charPredAllChars = ('\u0020' to '\u0080').seq
-  def charPred(p: org.parboiled2.CharPredicate): Gen[Char] =
+  def charPred(p: CharPredicate): Gen[Char] =
     //Gen.choose_!(_charPredAllChars filter p.apply)
     Gen.chooseArray_!((_charPredAllChars filter p.apply).toArray)
 
@@ -469,9 +470,13 @@ object RandomData {
     private val codeBlockContent: Gen[String] = {
       val trailingWS = " +$".r
 
-      val potentiallyEmptyLine = genCharSL.string(1 to 10).map(trailingWS.replaceFirstIn(_, ""))
+      val maxLineLen  = 10
+      val maxMidLines = 2
+      val midMaxLen   = (maxLineLen + 1) * maxMidLines
 
-      val potentiallyEmptyLines = potentiallyEmptyLine.list(0 to 2)
+      val potentiallyEmptyLine = genCharSL.string(1 to maxLineLen).map(trailingWS.replaceFirstIn(_, ""))
+
+      val potentiallyEmptyLines = potentiallyEmptyLine.list(0 to maxMidLines)
 
       val nonEmptyLine = potentiallyEmptyLine.map {
         case "" => "x"
@@ -480,24 +485,36 @@ object RandomData {
 
       val genTail = (potentiallyEmptyLines *** nonEmptyLine).option
 
+      val badLine = "^ *``` *$".r.pattern
+
+      def fix(s: String): String =
+        if (badLine.matcher(s).matches)
+          "x" + s
+        else
+          s
+
       for {
         head <- nonEmptyLine
         tail <- genTail
       } yield
         tail match {
           case Some((mid, last)) =>
-            val sb = new StringBuilder(64, head)
-            mid.foreach {l => sb append '\n'; sb ++= l}
+            val sb = new StringBuilder(head.length + midMaxLen + last.length)
+            sb ++= fix(head)
+            mid.foreach {l => sb append '\n'; sb ++= fix(l)}
             sb append '\n'
-            sb ++= last
+            sb ++= fix(last)
             sb.toString
           case None =>
-            head
+            fix(head)
         }
     }
 
+    private val codeBlockLang: Gen[String] =
+      charPred(CharPredicate.Visible).string(1 to 4)
+
     def codeBlock(implicit t: CodeBlock): Gen[t.CodeBlock] =
-      codeBlockContent.map(t.CodeBlock)
+      Gen.lift2(codeBlockLang.option, codeBlockContent)(t.CodeBlock(_, _))
 
     def blankLine(implicit t: NewLine): Gen[t.BlankLine] =
       Gen.pure(t.blankLine)

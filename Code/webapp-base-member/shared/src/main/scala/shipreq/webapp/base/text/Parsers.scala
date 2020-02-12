@@ -154,28 +154,32 @@ object Parsers {
       rule(
         "```"
           ~ indentationLevelSoFar(3)
-          ~ OWS ~ &(NL)
+          ~ OWS
+          ~ capture(CP.Visible.+).?
+          ~ OWS
+          ~ &(NL)
           ~ nonGreedyCapture0(codeBlockEnd)
           ~ indentationLevelSoFar(3)
           ~ OWS
-          ~> autoUnindent
-          ~> parseCodeBlockContent
+          ~> buildCodeBlock
       )
 
-    val parseCodeBlockContent: String => t.CodeBlock = s => {
-      val content =
-        s
-          .linesWithSeparators
-          .map(_.replaceFirst("[ \r\n]+$", "")) // right-trim all lines
-          .dropWhile(_.isEmpty)                 // remove leading blank lines
-          .toArray
-          .reverseIterator
-          .dropWhile(_.isEmpty)                // remove trailing blank lines
-          .toArray
-          .reverseIterator
-          .mkString("\n")
-      t.CodeBlock(content)
-    }
+    private val buildCodeBlock: (Int, Option[String], String, Int) => t.CodeBlock =
+      (startIndent, lang, codeTxt, endIndent) => {
+        val indent = startIndent min endIndent
+        val code =
+          Util.unindentBy(codeTxt, indent)
+            .linesWithSeparators
+            .map(_.replaceFirst("[ \r\n]+$", "")) // right-trim all lines
+            .dropWhile(_.isEmpty)                 // remove leading blank lines
+            .toArray
+            .reverseIterator
+            .dropWhile(_.isEmpty)                // remove trailing blank lines
+            .toArray
+            .reverseIterator
+            .mkString("\n")
+        t.CodeBlock(lang, code)
+      }
   }
 
   trait ListMarkup extends Literal with CodeBlock {

@@ -412,11 +412,11 @@ object ParsersTest extends TestSuite {
             | whee
             |```
             |""".stripMargin.trim)(
-          T.CodeBlock("ok\n\n\n  1\n\n\ncool"), // blank lines trimmed
+          T.CodeBlock(None, "ok\n\n\n  1\n\n\ncool"), // blank lines trimmed
           L("hello"),
-          T.CodeBlock("* here we go again!"), // blank lines after block removed
+          T.CodeBlock(None, "* here we go again!"), // blank lines after block removed
           L("hello again"),
-          T.CodeBlock(" whee"), // blank lines before block removed
+          T.CodeBlock(None, " whee"), // blank lines before block removed
         )
 
         'inList - test(
@@ -450,10 +450,10 @@ object ParsersTest extends TestSuite {
             |noice
             |""".stripMargin.trim)(
           T.UnorderedList(NEV(
-            LI(T.CodeBlock("ok\n\n  great")),
-            LI(T.CodeBlock("  hey")),
-            LI(L("cool"), T.CodeBlock("  good job, me")),
-            LI(L("omfg"), T.CodeBlock("  derp"), L("ahh")),
+            LI(T.CodeBlock(None, "ok\n\n  great")),
+            LI(T.CodeBlock(None, "  hey")),
+            LI(L("cool"), T.CodeBlock(None, "  good job, me")),
+            LI(L("omfg"), T.CodeBlock(None, "  derp"), L("ahh")),
           )),
           L("noice")
         )
@@ -472,16 +472,16 @@ object ParsersTest extends TestSuite {
             | done
             |""".stripMargin.trim)(
           T.UnorderedList(NEV(
-            LI(L("right"), T.CodeBlock("inner")),
+            LI(L("right"), T.CodeBlock(None, "inner")),
           )),
-          T.CodeBlock("outer"),
+          T.CodeBlock(None, "outer"),
           L("done")
         )
 
         'beforeEmptyList - test(
           "```\nasd\n```\n* "
         )(
-          T.CodeBlock("asd"),
+          T.CodeBlock(None, "asd"),
           T.UnorderedList(NEV(LI())),
         )
 
@@ -508,11 +508,11 @@ object ParsersTest extends TestSuite {
             |  ok
             |""".stripMargin
         )(
-          T.CodeBlock(""),
-          T.CodeBlock(""),
+          T.CodeBlock(None, ""),
+          T.CodeBlock(None, ""),
           T.UnorderedList(NEV(
-            LI(T.CodeBlock("")),
-            LI(L("here"), T.CodeBlock(""), L("ok")),
+            LI(T.CodeBlock(None, "")),
+            LI(L("here"), T.CodeBlock(None, ""), L("ok")),
           )),
         )
 
@@ -520,10 +520,10 @@ object ParsersTest extends TestSuite {
           """
             |preventing trim
             |
-            | !```
-            | !a
-            | ! a
-            | !```
+            | !```  !
+            | !a    !
+            | ! a   !
+            | !```  !
             |
             |  !```
             |  !  b
@@ -552,19 +552,39 @@ object ParsersTest extends TestSuite {
             |""".stripMargin.replace("!", "")
         )(
           L("preventing trim"),
-          T.CodeBlock("a\n a"),
-          T.CodeBlock("  b\n   b"),
-          T.CodeBlock("c\n c"),
-          T.CodeBlock("d\n d"),
-          T.CodeBlock("   e\n  e"),
-          T.CodeBlock("   f\n  f"),
+          T.CodeBlock(None, "a\n a"),
+          T.CodeBlock(None, "  b\n   b"),
+          T.CodeBlock(None, "c\n c"),
+          T.CodeBlock(None, "d\n d"),
+          T.CodeBlock(None, "   e\n  e"),
+          T.CodeBlock(None, "   f\n  f"),
         )
 
         'weird - test(
           "* ```\n  \u00a0\n  ```"
         )(
           T.UnorderedList(NEV(
-            LI(T.CodeBlock("\u00a0")),
+            LI(T.CodeBlock(None, "\u00a0")),
+          )),
+        )
+
+        'withLang - test(
+          """
+            |``` js !
+            |// here we go
+            |```
+            |
+            |* ```tla
+            |
+            |  x = /\ \/ /\ \/ /\ \/ \/ /\
+            |      ...
+            |
+            |  ```
+            |""".stripMargin.replace("!", "")
+        )(
+          T.CodeBlock(Some("js"), "// here we go"),
+          T.UnorderedList(NEV(
+            LI(T.CodeBlock(Some("tla"), """x = /\ \/ /\ \/ /\ \/ \/ /\""" + "\n    ...")),
           )),
         )
       }
