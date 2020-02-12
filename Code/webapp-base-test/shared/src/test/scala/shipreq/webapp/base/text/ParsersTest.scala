@@ -508,6 +508,50 @@ object ParsersTest extends TestSuite {
             LI(L("here"), T.CodeBlock(""), L("ok")),
           )),
         )
+
+        'indentedRoot - test(
+          """
+            |preventing trim
+            |
+            | ```
+            | a
+            |  a
+            | ```
+            |
+            |  ```
+            |    b
+            |     b
+            |  ```
+            |
+            | ```
+            |c
+            | c
+            |  ```
+            |
+            |  ```
+            |d
+            | d
+            | ```
+            |
+            |  ```
+            |    e
+            |   e
+            | ```
+            |
+            | ```
+            |    f
+            |   f
+            |  ```
+            |""".stripMargin
+        )(
+          L("preventing trim"),
+          T.CodeBlock("a\n a"),
+          T.CodeBlock("  b\n   b"),
+          T.CodeBlock("c\n c"),
+          T.CodeBlock("d\n d"),
+          T.CodeBlock("   e\n  e"),
+          T.CodeBlock("   f\n  f"),
+        )
       }
 
       'useCaseStepRef {

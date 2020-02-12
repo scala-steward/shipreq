@@ -139,6 +139,32 @@ abstract class ParsingUtil extends Parser {
   def hashRefStr_! : Rule1[String] =
     rule(G.hashRefKey.prefix ~!~ capture(grammarStr(G.hashRefKey)(_.firstChar, _.tailChars, _.length)))
 
+  def indentationLevelSoFar: Rule1[Int] =
+    indentationLevelSoFar(0)
+
+  def indentationLevelSoFar(skipChars: Int): Rule1[Int] =
+    rule(push(calculateIndentationLevelSoFar(skipChars)))
+
+  private def calculateIndentationLevelSoFar(skipChars: Int): Int = {
+    import org.parboiled2.{EOI => StartOfString}
+    var found = 0
+    var i = -skipChars
+    while ( {
+      i -= 1
+      // println{val c = charAtRC(i); s"i=$i, found=$found, ch=[${if (c > 32) c else c.toInt}]"}
+      charAtRC(i) match {
+        case ' ' => true
+        case '\n' | '\r' | StartOfString => false
+        case _ =>
+          found = 0
+          false
+      }
+    }) {
+      found += 1
+    }
+    found
+  }
+
   def unindentBy(spaces: Int): String => String =
     Util.unindentBy(_ , spaces)
 

@@ -6,7 +6,7 @@ import org.parboiled2.{CharPredicate => CP, _}
 import scala.annotation.{switch, tailrec}
 import scalaz.{-\/, \/, \/-}
 import shapeless._
-import shipreq.base.util.{Invalid, Valid, Validity}
+import shipreq.base.util.{Invalid, Util, Valid, Validity}
 import shipreq.base.util.VectorTree.PartialLocation
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
@@ -147,14 +147,23 @@ object Parsers {
     override type T <: Atom.CodeBlock with Atom.Literal
 
     private val codeBlockEnd = () => rule(
-      NL ~ OWS ~ "```" ~ OWS ~ &(NL | EOI)
+      NL ~ OWS ~ "```" ~ &(OWS ~ (NL | EOI))
     )
+
+    private val autoUnindent: (Int, String, Int) => String =
+      (startIndent, content, endIndent) => {
+        val indent = startIndent min endIndent
+        Util.unindentBy(content, indent)
+      }
 
     def codeBlock: Rule1[t.CodeBlock] =
       rule(
         (OWS ~ NL).* // remove pre-block blank lines
-          ~ "```" ~ OWS ~ &(NL)
+          ~ "```" ~ indentationLevelSoFar(3) ~ OWS ~ &(NL)
           ~ nonGreedyCapture0(codeBlockEnd)
+          ~ indentationLevelSoFar(3)
+          ~ OWS
+          ~> autoUnindent
           ~> parseCodeBlockContent
       )
 
@@ -164,6 +173,7 @@ object Parsers {
         OWS
           ~ "```" ~ OWS ~ &(NL)
           ~ nonGreedyCapture0(codeBlockEnd)
+          ~ OWS
           ~> unindent
           ~> parseCodeBlockContent
       )
