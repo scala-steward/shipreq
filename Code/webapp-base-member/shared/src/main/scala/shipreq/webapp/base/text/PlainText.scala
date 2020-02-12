@@ -202,7 +202,7 @@ object PlainText {
 
                 val tail = if (nextAtoms.isEmpty) "" else "\n\n"
 
-                head ~ "```\n" ~ a.content ~ "\n```" ~ tail
+                head ~ "```\n" ~ a.code ~ "\n```" ~ tail
 
               } else {
                 // we're in a list
@@ -217,7 +217,7 @@ object PlainText {
 
                 val tail = if (nextAtoms.isEmpty) "" else "\n\n" ~ indent
 
-                head ~ "```\n" ~ a.content.indent(indent) ~ "\n" ~ indent ~ "```" ~ tail
+                head ~ "```\n" ~ a.code.indent(indent) ~ "\n" ~ indent ~ "```" ~ tail
               }
 
           }

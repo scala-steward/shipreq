@@ -97,7 +97,7 @@ object BaseMemberData1 {
       transformPickler((i: String) => t.Literal(i))(_.value)
 
     override def codeBlock[T <: CodeBlock](t: T): Pickler[t.CodeBlock] =
-      transformPickler((i: String) => t.CodeBlock(i))(_.content)
+      transformPickler((i: String) => t.CodeBlock(i))(_.code)
 
     override def webAddress[T <: PlainTextMarkup](t: T): Pickler[t.WebAddress] =
       transformPickler((i: String) => t.WebAddress(i))(_.value)

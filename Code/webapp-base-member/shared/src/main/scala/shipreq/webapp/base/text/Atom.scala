@@ -169,7 +169,7 @@ object Atom {
   }
 
   trait CodeBlock extends Base {
-    case class CodeBlock(content: String) extends Atom {
+    case class CodeBlock(code: String) extends Atom {
       override final def isPlain = false
       override final def containsMultipleLines = true
       override final def allowBlankLineAfter = false
