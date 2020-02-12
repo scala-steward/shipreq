@@ -189,6 +189,12 @@ object PlainText {
             // ---------------------------------------------------------------------------------------------------------
             case a: CodeBlock # CodeBlock =>
 
+              val firstLine: String =
+                a.language match {
+                  case Some(lang) => "```" ~ lang ~ '\n'
+                  case None       => "```\n"
+                }
+
               if (indent.isEmpty) {
                 // top-level
 
@@ -202,7 +208,7 @@ object PlainText {
 
                 val tail = if (nextAtoms.isEmpty) "" else "\n\n"
 
-                head ~ "```\n" ~ a.code ~ "\n```" ~ tail
+                head ~ firstLine ~ a.code ~ "\n```" ~ tail
 
               } else {
                 // we're in a list
@@ -217,7 +223,7 @@ object PlainText {
 
                 val tail = if (nextAtoms.isEmpty) "" else "\n\n" ~ indent
 
-                head ~ "```\n" ~ a.code.indent(indent) ~ "\n" ~ indent ~ "```" ~ tail
+                head ~ firstLine ~ a.code.indent(indent) ~ "\n" ~ indent ~ "```" ~ tail
               }
 
           }

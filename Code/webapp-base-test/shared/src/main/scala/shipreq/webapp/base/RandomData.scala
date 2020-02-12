@@ -11,6 +11,7 @@ import nyaya.util._
 import monocle._
 import monocle.function.Field1.first
 import monocle.function.Field2.second
+import org.parboiled2.CharPredicate
 import scala.annotation.tailrec
 import scalaz.{-\/, Need, \/-}
 import scalaz.std.list._
@@ -91,7 +92,7 @@ object RandomData {
   private val _charPredAllChars = ('\u0001' to '\u0100').seq
 //  private val _charPredAllChars = ('\u0020' to '\u0100').seq
 //  private val _charPredAllChars = ('\u0020' to '\u0080').seq
-  def charPred(p: org.parboiled2.CharPredicate): Gen[Char] =
+  def charPred(p: CharPredicate): Gen[Char] =
     //Gen.choose_!(_charPredAllChars filter p.apply)
     Gen.chooseArray_!((_charPredAllChars filter p.apply).toArray)
 
@@ -496,8 +497,11 @@ object RandomData {
         }
     }
 
+    private val codeBlockLang: Gen[String] =
+      charPred(CharPredicate.Visible).string(1 to 4)
+
     def codeBlock(implicit t: CodeBlock): Gen[t.CodeBlock] =
-      Gen.lift2(genCharML.string(1 to 4).option, codeBlockContent)(t.CodeBlock(_, _))
+      Gen.lift2(codeBlockLang.option, codeBlockContent)(t.CodeBlock(_, _))
 
     def blankLine(implicit t: NewLine): Gen[t.BlankLine] =
       Gen.pure(t.blankLine)

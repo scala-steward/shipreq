@@ -115,7 +115,7 @@ object PlainTextTest extends TestSuite {
             |
             |hello
             |
-            |```
+            |```md
             |* here we go again!
             |```
             |
@@ -129,7 +129,7 @@ object PlainTextTest extends TestSuite {
       'ulWithCodeBlocks {
         val input =
           """
-            |* ```
+            |* ```xxx
             |  ok
             |  ```
             |

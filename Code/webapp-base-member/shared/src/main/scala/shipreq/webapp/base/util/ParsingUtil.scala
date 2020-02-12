@@ -162,12 +162,6 @@ abstract class ParsingUtil extends Parser {
     found
   }
 
-  val autoUnindent: (Int, String, Int) => String =
-    (startIndent, content, endIndent) => {
-      val indent = startIndent min endIndent
-      Util.unindentBy(content, indent)
-    }
-
   def unindentBy(spaces: Int): String => String =
     Util.unindentBy(_ , spaces)
 

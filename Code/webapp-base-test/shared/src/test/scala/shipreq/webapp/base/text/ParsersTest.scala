@@ -567,6 +567,26 @@ object ParsersTest extends TestSuite {
             LI(T.CodeBlock(None, "\u00a0")),
           )),
         )
+
+        'withLang - test(
+          """
+            |``` js !
+            |// here we go
+            |```
+            |
+            |* ```tla
+            |
+            |  x = /\ \/ /\ \/ /\ \/ \/ /\
+            |      ...
+            |
+            |  ```
+            |""".stripMargin.replace("!", "")
+        )(
+          T.CodeBlock(Some("js"), "// here we go"),
+          T.UnorderedList(NEV(
+            LI(T.CodeBlock(Some("tla"), """x = /\ \/ /\ \/ /\ \/ \/ /\""" + "\n    ...")),
+          )),
+        )
       }
 
       'useCaseStepRef {
