@@ -174,7 +174,7 @@ object Parsers {
           .toArray
           .reverseIterator
           .mkString("\n")
-      t.CodeBlock(content)
+      t.CodeBlock(None, content)
     }
   }
 

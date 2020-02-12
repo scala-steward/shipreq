@@ -97,7 +97,17 @@ object BaseMemberData1 {
       transformPickler((i: String) => t.Literal(i))(_.value)
 
     override def codeBlock[T <: CodeBlock](t: T): Pickler[t.CodeBlock] =
-      transformPickler((i: String) => t.CodeBlock(i))(_.code)
+      new Pickler[t.CodeBlock] {
+        override def pickle(a: t.CodeBlock)(implicit state: PickleState): Unit = {
+          state.pickle(a.language)
+          state.pickle(a.code)
+        }
+        override def unpickle(implicit state: UnpickleState): t.CodeBlock = {
+          val language = state.unpickle[Option[String]]
+          val code     = state.unpickle[String]
+          t.CodeBlock(language, code)
+        }
+      }
 
     override def webAddress[T <: PlainTextMarkup](t: T): Pickler[t.WebAddress] =
       transformPickler((i: String) => t.WebAddress(i))(_.value)

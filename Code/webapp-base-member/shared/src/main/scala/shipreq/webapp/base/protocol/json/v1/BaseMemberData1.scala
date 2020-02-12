@@ -102,8 +102,8 @@ private[v1] object BaseMemberData1 {
 
     override def codeBlock[T <: CodeBlock](t: T): JsonCodec[t.CodeBlock] =
       JsonCodec[t.CodeBlock](
-        Encoder.forProduct1[t.CodeBlock, String]("code")(a => (a.code)),
-        Decoder.forProduct1[t.CodeBlock, String]("code")(t.CodeBlock(_)))
+        Encoder.forProduct2[t.CodeBlock, Option[String], String]("lang", "code")(a => (a.language, a.code)),
+        Decoder.forProduct2[t.CodeBlock, Option[String], String]("lang", "code")(t.CodeBlock(_, _)))
 
     override def webAddress[T <: PlainTextMarkup](t: T): JsonCodec[t.WebAddress] =
       JsonCodec.xmap((i: String) => t.WebAddress(i))(_.value)

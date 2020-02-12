@@ -497,7 +497,7 @@ object RandomData {
     }
 
     def codeBlock(implicit t: CodeBlock): Gen[t.CodeBlock] =
-      codeBlockContent.map(t.CodeBlock)
+      Gen.lift2(genCharML.string(1 to 4).option, codeBlockContent)(t.CodeBlock(_, _))
 
     def blankLine(implicit t: NewLine): Gen[t.BlankLine] =
       Gen.pure(t.blankLine)
