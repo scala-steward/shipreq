@@ -520,36 +520,36 @@ object ParsersTest extends TestSuite {
           """
             |preventing trim
             |
-            | ```
-            | a
-            |  a
-            | ```
+            | !```
+            | !a
+            | ! a
+            | !```
             |
-            |  ```
-            |    b
-            |     b
-            |  ```
+            |  !```
+            |  !  b
+            |  !   b
+            |  !```
             |
-            | ```
-            |c
-            | c
-            |  ```
+            |! ```
+            |!c
+            |! c
+            |!  ```
             |
-            |  ```
-            |d
-            | d
-            | ```
+            |!  ```
+            |!d
+            |! d
+            |! ```
             |
-            |  ```
-            |    e
-            |   e
-            | ```
+            | ! ```
+            | !   e
+            | !  e
+            | !```
             |
-            | ```
-            |    f
-            |   f
-            |  ```
-            |""".stripMargin
+            | !```
+            | !   f
+            | !  f
+            | ! ```
+            |""".stripMargin.replace("!", "")
         )(
           L("preventing trim"),
           T.CodeBlock("a\n a"),
