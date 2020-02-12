@@ -84,6 +84,8 @@ Phase 3A
 
 * Investigate changes required to support phone / tablet
 
+* Wall metrics updating every 10 min only
+
 * Add to imp graph page:
   * Saved views
   * Filter
