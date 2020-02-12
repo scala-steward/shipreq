@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -eu
+
+args=(
+  --rm
+  --user $(id -u):$(id -g)
+  -v "$(pwd)":/host:rw
+  -w /host
+)
+
+if [ $# -eq 0 ]; then
+  args+=(-it)
+  cmd=(bash)
+else
+  cmd=("$@")
+fi
+
+full=(docker run "${args[@]}" shipreq/dev/node "${cmd[@]}")
+#echo "> ${full[@]}"
+exec "${full[@]}"
