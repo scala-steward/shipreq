@@ -82,6 +82,8 @@ resource "aws_codebuild_project" "images" {
     }
   }
 
+  source_version = "refs/heads/master"
+
   source {
     type            = "CODECOMMIT"
     location        = aws_codecommit_repository.shipreq.clone_url_http
