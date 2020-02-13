@@ -55,21 +55,36 @@ object RichTextEditorHelp {
   private val codeBlocks =
     Group("Code blocks")(
       Example(
-        "To create a block of monospace text, wrap it between lines of ", code("```"), "."
+        "To create a block of monospace text, wrap it between lines of ", code("```"), ".",
       )(
         <.div(
           ^.whiteSpace.pre,
           List(
             "```",
-            "1",
-            "  2",
-            "    3",
-            "  2",
-            "1",
+            "\\",
+            "  \\",
+            "    This is plain text",
+            "  /",
+            "/",
             "```",
           ).mkString("\n")
         )
-      ))
+      ),
+
+      Example(
+        "If you'd like to use syntax highlighting, specify the code language after the first ", code("```"), "."
+      )(
+        <.div(
+          ^.whiteSpace.pre,
+          """
+            |```javascript
+            |const Y =
+            |  g => g( () => Y(g) )
+            |```
+            |""".stripMargin.trim
+        )
+      ),
+    )
 
   private val useCaseFlow =
     Group("Use Case flow")(
