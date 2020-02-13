@@ -78,12 +78,20 @@ object PublicSpaLogic extends HasLogger {
 
       override val ajaxLandingPage =
         _.untyped.validate.onValid { req =>
-          val msg = Task.LandingPageHit(
-            name       = req.name.value,
-            email      = req.email.toTaskman,
-            msg        = req.msg,
-            newsletter = req.newsletter)
-          taskman.submit(msg).map(_ => rightUnit)
+          for {
+            ip <- svr.clientIP
+
+            msg = Task.LandingPageHit(
+              name       = req.name.value,
+              email      = req.email.toTaskman,
+              msg        = req.msg,
+              newsletter = req.newsletter,
+              ip         = ip.map(_.value)
+            )
+
+            _ <- taskman.submit(msg)
+
+          } yield rightUnit
         }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

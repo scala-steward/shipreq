@@ -50,7 +50,8 @@ object TestHelpers {
         name       <- arbitrary[String]
         msg        <- arbitrary[Option[String]]
         newsletter <- arbitrary[Boolean]
-      } yield M.LandingPageHit(email, name, msg, newsletter)
+        ip         <- arbitrary[Option[String]]
+      } yield M.LandingPageHit(email, name, msg, newsletter, ip)
 
     case T.ReportClientError =>
       for {

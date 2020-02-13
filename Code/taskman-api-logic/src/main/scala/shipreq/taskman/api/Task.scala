@@ -30,7 +30,8 @@ object Task {
   final case class LandingPageHit(email     : EmailAddr,
                                   name      : String,
                                   msg       : Option[String],
-                                  newsletter: Boolean) extends Task(TaskType.LandingPageHit)
+                                  newsletter: Boolean,
+                                  ip        : Option[String]) extends Task(TaskType.LandingPageHit)
 
   final case class DummyTask(desc            : String,
                              async           : Boolean        = false,
@@ -63,7 +64,7 @@ object Task {
     val uid = UserId(123)
     taskType match {
       case TaskType.DummyTask               => DummyTask("hello", failureMsg = Some("nope"))
-      case TaskType.LandingPageHit          => LandingPageHit(ea, "Iskaral Pust", Some("No mule can match wits with me."), false)
+      case TaskType.LandingPageHit          => LandingPageHit(ea, "Iskaral Pust", Some("No mule can match wits with me."), false, None)
       case TaskType.PasswordResetRequested  => PasswordResetRequested(ea, url)
       case TaskType.RegistrationCompleted   => RegistrationCompleted(uid)
       case TaskType.RegistrationRequested   => RegistrationRequested(ea, url)

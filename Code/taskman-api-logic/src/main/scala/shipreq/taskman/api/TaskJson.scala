@@ -51,10 +51,10 @@ object TaskJson {
     Encoder[UserId].contramap(_.userId)
 
   implicit val decoderTaskLandingPageHit: Decoder[Task.LandingPageHit] =
-    Decoder.forProduct4("email", "name", "msg", "newsletter")(Task.LandingPageHit.apply)
+    Decoder.forProduct5("email", "name", "msg", "newsletter", "ip")(Task.LandingPageHit.apply)
 
   implicit val encoderTaskLandingPageHit: Encoder[Task.LandingPageHit] =
-    Encoder.forProduct4("email", "name", "msg", "newsletter")(a => (a.email, a.name, a.msg, a.newsletter))
+    Encoder.forProduct5("email", "name", "msg", "newsletter", "ip")(a => (a.email, a.name, a.msg, a.newsletter, a.ip))
 
   implicit val decoderTaskDummyTask: Decoder[Task.DummyTask] =
     Decoder.forProduct6("desc", "async", "processingTimeMs", "retryCount", "retryDelaySec", "failureMsg")(Task.DummyTask.apply)

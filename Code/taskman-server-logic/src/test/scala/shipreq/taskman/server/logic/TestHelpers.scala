@@ -50,7 +50,7 @@ object TestHelpers {
   val sampleNotifySupportWorkerFailed = NotifySupportWorkerFailed(timeNow, td_1, ArticulateError("WORKED FAILED"))
   val sampleNotifySupportTaskmanError = NotifySupportTaskmanError(timeNow, ArticulateError("WORKED FAILED"), Some(td_1))
 
-  val sampleLP = LandingPageHit(sampleEmailAddr, "Bob", None, true)
+  val sampleLP = LandingPageHit(sampleEmailAddr, "Bob", None, true, Some("1.1.1.1"))
 
   object lenses {
     object taskDetail {

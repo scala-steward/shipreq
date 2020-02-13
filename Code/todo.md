@@ -80,8 +80,6 @@ Phase 3A
 * Support nested lists
 * Support all markdown?
 
-* Landing page: I want to know where contacts are
-
 * Investigate changes required to support phone / tablet
 
 * Wall metrics updating every 10 min only

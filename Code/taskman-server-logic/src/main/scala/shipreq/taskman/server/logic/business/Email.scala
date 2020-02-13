@@ -224,6 +224,7 @@ final class Emails(ep: Email.EnvelopeProps, tv: Email.TokenValues) {
         .add("contact.name", l.name)
         .add("contact.email", l.email.value)
         .add("contact.newsletter", l.newsletter)
+        .addOption("contact.ip", l.ip)
     Email.Content("Landing page contact",
       s"""
          |${l.msg.getOrElse("<no msg>")}
