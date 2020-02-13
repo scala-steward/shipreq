@@ -1,6 +1,7 @@
 package shipreq.webapp.server.db
 
 import doobie.imports._
+import doobie.postgres.imports._
 import io.circe.Json
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.StdlibExt._
@@ -46,6 +47,12 @@ final class DbInterpreter(implicit config: ServerLogicConfig.Security)
 
 object DbInterpreter {
   import DbMeta._
+
+  private[db] final val logVisitorStatsSql =
+    Query[(ResponseType, Array[String], Int), Unit](s"SELECT visitor_stats_per_hour_add(now(),?,?,?)")
+
+  def logVisitorStats(responseType: ResponseType, uniqueIps: Set[String], requests: Int): ConnectionIO[Unit] =
+    logVisitorStatsSql.toQuery0((responseType, uniqueIps.toArray, requests)).unique
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   trait Base extends DB.Base[ConnectionIO] {

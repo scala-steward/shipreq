@@ -4,6 +4,7 @@ import cats.effect.IO
 import cats.effect.IO.ioEffect
 import java.time.{Duration, Instant}
 import scala.collection.generic.CanBuildFrom
+import scala.concurrent.blocking
 import scalaz.{-\/, BindRec, Catchable, Monad, \/, \/-}
 
 /**
@@ -63,6 +64,18 @@ object FxModule {
 
     val now: Fx[Instant] =
       IO(Instant.now())
+
+    def sleepSec(sec: Int): Fx[Unit] =
+      sleep(Duration.ofSeconds(sec))
+
+    def sleepMs(ms: Int): Fx[Unit] =
+      sleep(Duration.ofMillis(ms))
+
+    def sleep(dur: Duration): Fx[Unit] = {
+      val ms = dur.toMillis
+      val ns = dur.getNano
+      Fx(blocking(Thread.sleep(ms, ns))) // Can this be better?
+    }
 
     def liftTraverse[A, B](f: A => Fx[B]): LiftTraverseDsl[A, B] =
       new LiftTraverseDsl(f)

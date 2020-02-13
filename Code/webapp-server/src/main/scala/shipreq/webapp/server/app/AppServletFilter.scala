@@ -13,8 +13,9 @@ import shipreq.base.util.log.{HasLogger, WebappLogFields}
 import shipreq.taskman.api.{Task, TaskmanApi}
 import shipreq.webapp.base.Urls
 import shipreq.webapp.base.user.UserId
+import shipreq.webapp.server.db.{ResponseType, StatRecorder}
 import shipreq.webapp.server.lib.Taskman
-import shipreq.webapp.server.logic.Security
+import shipreq.webapp.server.logic.{DispatchLogic, Security}
 import shipreq.webapp.server.logic.dispatch.Cookie
 
 /** Servlet entry-point into ShipReq (as specified in web.xml).
@@ -50,7 +51,7 @@ final class AppServletFilter extends LiftFilter with HasLogger {
     }
 
     // Initialise logging
-    installLogging(g.security, g.taskman)
+    installLoggingAndStats(g.security, g.statRecorder, g.taskman)
   }
 
   override def doFilter(req: ServletRequest, res: ServletResponse, chain: FilterChain): Unit =
@@ -84,75 +85,90 @@ final class AppServletFilter extends LiftFilter with HasLogger {
       }
   }
 
-  private def installLogging(security: Security.Algebra[Fx], taskman: TaskmanApi[Fx]): Unit = {
+  private def installLoggingAndStats(security    : Security.Algebra[Fx],
+                                     statRecorder: StatRecorder,
+                                     taskman     : TaskmanApi[Fx]): Unit = {
+
     UUID.randomUUID() // Force initialisation
-    val real = doFilterFn
+
+    val real         = doFilterFn
+    val opsUriPrefix = DispatchLogic.opsRoot.relativeUrlWithHeadAndTailSlashes
+
     doFilterFn = (req, res, chain) => {
 
-      val startMs = System.currentTimeMillis()
+      val startMs   = System.currentTimeMillis()
       val requestId = UUID.randomUUID()
-      var userId: UserId = null
+
+      var userId       : UserId             = null
+      var hreq         : HttpServletRequest = null
+      var xForwardedFor: String             = null
+      var responseCode : Int                = -1
+
+      // ----------------------------------------------- Start -----------------------------------------------
 
       try {
+
         WebappLogFields.request.id.mdcUnsafePut(requestId)
 
         // MDC.put("request_remote_addr", req.getRemoteAddr) <-- no point, it's always the ALB
         // MDC.put("request_remote_host", req.getRemoteHost) <-- no point, it's always the ALB
 
-        val hreq: HttpServletRequest =
-          req match {
-            case h: HttpServletRequest =>
+        req match {
+          case h: HttpServletRequest =>
 
-              WebappLogFields.request.uri          .mdcUnsafePut(h.getRequestURI)
-              WebappLogFields.request.method       .mdcUnsafePut(h.getMethod)
-              WebappLogFields.request.userAgent    .mdcUnsafePut(h.getHeader("User-Agent"))
-              WebappLogFields.request.xForwardedFor.mdcUnsafePut(h.getHeader("X-Forwarded-For"))
+            xForwardedFor = h.getHeader("X-Forwarded-For")
 
-              h.getRequestURL match {
-                case null => ()
-                case sb   => WebappLogFields.request.url.mdcUnsafePut(sb.toString)
+            WebappLogFields.request.uri          .mdcUnsafePut(h.getRequestURI)
+            WebappLogFields.request.method       .mdcUnsafePut(h.getMethod)
+            WebappLogFields.request.userAgent    .mdcUnsafePut(h.getHeader("User-Agent"))
+            WebappLogFields.request.xForwardedFor.mdcUnsafePut(xForwardedFor)
+
+            h.getRequestURL match {
+              case null => ()
+              case sb   => WebappLogFields.request.url.mdcUnsafePut(sb.toString)
+            }
+
+            // This results in double parsing of JWTs (i.e. once here and then again in server-logic) but...
+            // 1. I don't think it can be avoided. We can't pass the result around from here and thread-locals are
+            //    out of the question because it's (shit and) too dangerous. MDC is thread-local too but there's
+            //    propagation support in the relevant places, and getting it wrong doesn't affect users.
+            // 2. It's super fast at around 6us.
+            val cookies = h.getCookies
+            if (cookies ne null) {
+              val lookup: Cookie.LookupFn = name => {
+                // Below is equivalent to: cookies.find(_.getName == name.value).map(_.getValue)
+                @tailrec def go(i: Int): Option[String] =
+                  if (i == cookies.length)
+                    None
+                  else {
+                    val c = cookies(i)
+                    if (c.getName == name.value)
+                      Some(c.getValue)
+                    else
+                      go(i + 1)
+                  }
+                go(0)
               }
-
-              // This results in double parsing of JWTs (i.e. once here and then again in server-logic) but...
-              // 1. I don't think it can be avoided. We can't pass the result around from here and thread-locals are
-              //    out of the question because it's (shit and) too dangerous. MDC is thread-local too but there's
-              //    propagation support in the relevant places, and getting it wrong doesn't affect users.
-              // 2. It's super fast at around 6us.
-              val cookies = h.getCookies
-              if (cookies ne null) {
-                val lookup: Cookie.LookupFn = name => {
-                  // Below is equivalent to: cookies.find(_.getName == name.value).map(_.getValue)
-                  @tailrec def go(i: Int): Option[String] =
-                    if (i == cookies.length)
-                      None
-                    else {
-                      val c = cookies(i)
-                      if (c.getName == name.value)
-                        Some(c.getValue)
-                      else
-                        go(i + 1)
-                    }
-                  go(0)
-                }
-                security.sessionRestore(lookup).unsafeRun() match {
-                  case Security.SessionRestoreResult.Success(session) =>
-                    WebappLogFields.jwt.sessionId.mdcUnsafePut(session.sessionId.value)
-                    for (user <- session.authenticatedUser) {
-                      WebappLogFields.jwt.username.mdcUnsafePut(user.username.value)
-                      WebappLogFields.jwt.userId.mdcUnsafePut(user.id.value)
-                      userId = user.id
-                    }
-                  case Security.SessionRestoreResult.None =>
-                    ()
-                  case Security.SessionRestoreResult.Expired(session) =>
-                    WebappLogFields.jwt.sessionId.mdcUnsafePut(session.sessionId.value)
-                }
+              security.sessionRestore(lookup).unsafeRun() match {
+                case Security.SessionRestoreResult.Success(session) =>
+                  WebappLogFields.jwt.sessionId.mdcUnsafePut(session.sessionId.value)
+                  for (user <- session.authenticatedUser) {
+                    WebappLogFields.jwt.username.mdcUnsafePut(user.username.value)
+                    WebappLogFields.jwt.userId.mdcUnsafePut(user.id.value)
+                    userId = user.id
+                  }
+                case Security.SessionRestoreResult.None =>
+                  ()
+                case Security.SessionRestoreResult.Expired(session) =>
+                  WebappLogFields.jwt.sessionId.mdcUnsafePut(session.sessionId.value)
               }
+            }
 
-              h
-            case _ =>
-              null
-          }
+            hreq = h
+
+          case _ =>
+            ()
+        }
 
         real(req, res, chain)
 
@@ -164,10 +180,10 @@ final class AppServletFilter extends LiftFilter with HasLogger {
 
         if ((hreq ne null) && res.isInstanceOf[HttpServletResponse]) {
           val hres = res.asInstanceOf[HttpServletResponse]
-          val code = hres.getStatus
-          logger.info(s"Served $code ${hreq.getRequestURI} in $durMs ms",
+          responseCode = hres.getStatus
+          logger.info(s"Served $responseCode ${hreq.getRequestURI} in $durMs ms",
             durLog,
-            WebappLogFields.response.code(code))
+            WebappLogFields.response.code(responseCode))
 
         } else
           logger.info(s"Served non-HTTP request in $durMs ms", durLog)
@@ -188,8 +204,20 @@ final class AppServletFilter extends LiftFilter with HasLogger {
 
           throw err
 
-      } finally
+      } finally {
+
+        // --------------------------------------------- Finally ---------------------------------------------
+
+        val isOpsCall = (hreq ne null) && hreq.getRequestURI.startsWith(opsUriPrefix)
+
+        if (!isOpsCall) {
+          val rt = ResponseType(responseCode)
+          val ip = if (xForwardedFor eq null) null else ServerInterpreter.extractIpFromXForwardedFor(xForwardedFor)
+          statRecorder.recordRequest(rt, ip)
+        }
+
         MDC.clear()
+      }
     }
   }
 

@@ -6,7 +6,7 @@ import shipreq.base.test.BaseTestUtil.onceUnit
 import shipreq.base.util.FxModule._
 import shipreq.webapp.server.ServerLogicConfig
 import shipreq.webapp.server.app.{Global, ServerConfig}
-import shipreq.webapp.server.db.DbInterpreter
+import shipreq.webapp.server.db.{DbInterpreter, StatRecorder}
 import shipreq.webapp.server.logic.{MetricsLogic, TraceLogic}
 import shipreq.webapp.ssr.SsrOff
 
@@ -23,15 +23,16 @@ object PrepareEnv {
   }
 
   Global.Instance = Global(
-    config   = cfg,
-    db       = null,
-    logic    = null,
-    metrics  = MetricsLogic.const(Fx.unit),
-    ops      = null,
-    security = null,
-    ssr      = SsrOff.prepared,
-    taskman  = null,
-    trace    = TraceLogic.off)
+    config       = cfg,
+    db           = null,
+    logic        = null,
+    metrics      = MetricsLogic.const(Fx.unit),
+    ops          = null,
+    security     = null,
+    ssr          = SsrOff.prepared,
+    statRecorder = StatRecorder.Off,
+    taskman      = null,
+    trace        = TraceLogic.off)
 
   def global() = Global.Instance
 

@@ -7,21 +7,22 @@ import shipreq.base.db.DbAccess
 import shipreq.base.util.FxModule._
 import shipreq.taskman.api.TaskmanApi
 import shipreq.taskman.api.impl.TaskmanApiImpl
-import shipreq.webapp.server.db.DbInterpreter
+import shipreq.webapp.server.db.{DbInterpreter, StatRecorder}
 import shipreq.webapp.server.logic._
 import shipreq.webapp.server.redis.{RedisSchema, RedisViaRedisson}
 import shipreq.webapp.server.security.SecurityInterpreter
 import shipreq.webapp.ssr.SsrAlgebra
 
-final case class Global(config  : ServerConfig,
-                        db      : DbAccess,
-                        logic   : ServerLogic[Fx],
-                        metrics : MetricsLogic[Fx],
-                        ops     : OpsEndpointInterpreter,
-                        security: Security.Algebra[Fx],
-                        ssr     : SsrAlgebra.Prepared[Fx],
-                        taskman : TaskmanApi[Fx],
-                        trace   : TraceInterpreter.ForLift[Fx])
+final case class Global(config      : ServerConfig,
+                        db          : DbAccess,
+                        logic       : ServerLogic[Fx],
+                        metrics     : MetricsLogic[Fx],
+                        ops         : OpsEndpointInterpreter,
+                        security    : Security.Algebra[Fx],
+                        ssr         : SsrAlgebra.Prepared[Fx],
+                        statRecorder: StatRecorder,
+                        taskman     : TaskmanApi[Fx],
+                        trace       : TraceInterpreter.ForLift[Fx])
 
 object Global {
   var Instance: Global = _
@@ -64,6 +65,10 @@ object Global {
 
       implicit val runDB = t("runDB") {
         trace.injectDb(dbAccess.fx.trans)
+      }
+
+      implicit val statRecorder = t("statRecorder") {
+        StatRecorder(runDB, config.statRecorder)
       }
 
       implicit val taskman = t("taskman") {
@@ -118,15 +123,16 @@ object Global {
       }
 
       Global(
-        config   = config,
-        db       = dbAccess,
-        logic    = logic,
-        metrics  = metrics,
-        ops      = ops,
-        security = security,
-        ssr      = ssr,
-        taskman  = taskman,
-        trace    = trace)
+        config       = config,
+        db           = dbAccess,
+        logic        = logic,
+        metrics      = metrics,
+        ops          = ops,
+        security     = security,
+        ssr          = ssr,
+        statRecorder = statRecorder,
+        taskman      = taskman,
+        trace        = trace)
       }
     }
 

@@ -24,6 +24,7 @@ object DbTable {
   case object UsrLoginsPerHour     extends DbTable("usr_logins_per_hour")
   case object Usrd                 extends DbTable("usrd")
   case object UsrhName             extends DbTable("usrh_name")
+  case object VisitorStatsPerHour  extends DbTable("visitor_stats_per_hour")
 
   implicit def univEq: UnivEq[DbTable] = UnivEq.derive
 

@@ -4,6 +4,7 @@ import doobie.imports._
 import java.time.{Duration, Instant, LocalDateTime, ZoneOffset}
 import sourcecode.Line
 import utest._
+import shipreq.base.test.db.SingleConnectionXA
 import shipreq.base.util.FxModule._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
@@ -222,6 +223,74 @@ object DbTest extends TestSuite {
         }
       }
 
+    }
+
+    'visitorStats - {
+      def add(uniqueIps: Set[String], requests: Int)(implicit xa: SingleConnectionXA) =
+        xa ! DbInterpreter.logVisitorStats(ResponseType.`1xx`, uniqueIps, requests)
+
+      def test(expectIps: Int, expectRequests: Int)(implicit xa: SingleConnectionXA, l: Line): Unit = {
+        val actualIps      = xa ! sql"select coalesce(#hll_union_agg(ips),0) from visitor_stats_per_hour".query[Int].unique
+        val actualRequests = xa ! sql"select coalesce(sum(requests),0) from visitor_stats_per_hour".query[Int].unique
+        assertEq((actualIps, actualRequests), (expectIps, expectRequests))
+      }
+
+      'startWithoutIps - TestDb().runNow { implicit xa =>
+//        xa ! DbTable.VisitorStatsPerHour.truncate
+        test(0, 0)
+
+        add(Set(), 3)
+        test(0, 3)
+
+        add(Set("a", "c"), 10)
+        test(2, 13)
+
+        add(Set(), 1)
+        test(2, 14)
+      }
+
+      'startWithIps - TestDb().runNow { implicit xa =>
+//        xa ! DbTable.VisitorStatsPerHour.truncate
+        test(0, 0)
+
+        add(Set("a", "b"), 5)
+        test(2, 5)
+
+        add(Set("a", "c"), 10)
+        test(3, 15)
+
+        add(Set(), 5)
+        test(3, 20)
+      }
+
+      'responseTypes - {
+        import ResponseType._
+        val tests = List(
+           -1 -> Other,
+            0 -> Other,
+           99 -> Other,
+          100 -> `1xx`,
+          150 -> `1xx`,
+          199 -> `1xx`,
+          200 -> `2xx`,
+          250 -> `2xx`,
+          299 -> `2xx`,
+          300 -> `3xx`,
+          350 -> `3xx`,
+          399 -> `3xx`,
+          400 -> `4xx`,
+          450 -> `4xx`,
+          499 -> `4xx`,
+          500 -> `5xx`,
+          550 -> `5xx`,
+          599 -> `5xx`,
+          600 -> Other,
+          650 -> Other,
+          699 -> Other,
+        )
+        for ((i, t) <- tests)
+          assertEq(t, ResponseType(i))
+      }
     }
 
   }
