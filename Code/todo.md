@@ -82,8 +82,6 @@ Phase 3A
 
 * Landing page: I want to know where contacts are
 
-* unique site visitors (not just logins)
-
 * Investigate changes required to support phone / tablet
 
 * Wall metrics updating every 10 min only

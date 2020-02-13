@@ -336,3 +336,48 @@ shipreq_daily_project_reads:
       usage: LABEL
   - total:
       usage: GAUGE
+
+# =====================================================================================================================
+# shipreq_daily_visitor_{unique_ips,requests}
+
+shipreq_daily_visitor:
+  query: >-
+    with utc as (
+     select date_trunc('day', statement_timestamp() at time zone 'AEDT') at time zone 'AEDT' a,
+            (date_trunc('day', statement_timestamp() at time zone 'AEDT') at time zone 'AEDT') + interval '23 hours' b
+    ), range as (
+      select (select a::date from utc) a_date,
+             (select b::date from utc) b_date,
+             (select extract(hour from a) from utc) a_hour,
+             (select extract(hour from b) from utc) b_hour
+    ), results1 as (
+      select response,
+             sum(requests) requests,
+             hll_union_agg(ips) ips
+      from visitor_stats_per_hour
+      where (date = (select a_date from range) AND hour >= (select a_hour from range)) OR
+            (date = (select b_date from range) AND hour <= (select b_hour from range))
+          group by response
+      union all select '1xx', 0, hll_empty()
+      union all select '2xx', 0, hll_empty()
+      union all select '3xx', 0, hll_empty()
+      union all select '4xx', 0, hll_empty()
+      union all select '5xx', 0, hll_empty()
+      union all select 'other', 0, hll_empty()
+    ), results as (
+      select response,
+             sum(requests) requests,
+             hll_union_agg(ips) ips
+      from results1
+      group by response
+    )
+    select response::text "response_type", #ips "unique_ips", requests from results
+    union all
+    select 'all', #hll_union_agg(ips), sum(requests) from results group by 1
+  metrics:
+  - response_type:
+      usage: LABEL
+  - unique_ips:
+      usage: GAUGE
+  - requests:
+      usage: GAUGE
