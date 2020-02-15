@@ -100,6 +100,10 @@ resource "aws_ecs_task_definition" "shipreq_webapp" {
         "value": "redis://${local.redis_domain}:6379"
       },
       {
+        "name": "shipreq.analytics_proxy.url",
+        "value": "${local.analytics_proxy_url}"
+      },
+      {
         "name": "shipreq.googleAnalytics.trackingId",
         "value": "${var.shipreq_webapp_google_analytics_id}"
       },
