@@ -45,6 +45,13 @@ export async function init () {
             return res.status(500).send({ error: "An error ocurred. Error info was logged." });
         });
 
+        app.use((req, res) => {
+            const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+            info(`Returning 404 for ${req.url} from ${ip}`);
+            res.status(404);
+            res.send('404 Not Found');
+        });
+
         app.listen(config.httpPort, function onReady () {
             info(`Web server is listening on port ${ config.httpPort }`);
             isReady = true;

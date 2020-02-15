@@ -20,6 +20,7 @@ COPY LICENSE \
      config.js \
      ./
 
-ENV APP__ENV_NAME "production"
+ENV APP__ENV_NAME=production \
+    NODE_ENV=production
 
 CMD ["npm","run","start"]
