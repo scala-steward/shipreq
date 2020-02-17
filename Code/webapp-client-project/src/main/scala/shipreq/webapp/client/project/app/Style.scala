@@ -280,7 +280,7 @@ object Style extends StyleSheet.Inline {
         paddingBottom(0.4 em).important)
 
       val formMiddleRow = style(
-        verticalAlign.bottom)
+        verticalAlign.top)
 
       val formBottomRow = style(
         textAlign.right.important,
