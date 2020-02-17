@@ -29,7 +29,6 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
     val abort           : Option[Callback]
     val commitVerb      : String
     val preview         : PreviewFeature.ReadWrite.Single
-    val keepPreviewOpen : Boolean
     val extraKbShortcuts: KeyboardTheme.Shortcuts
     val showInstructions: Boolean
     val status          : EditorStatus
@@ -50,7 +49,6 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
                       commitFn        : Option[Optional.CommitFn],
                       commitVerb      : String,
                       preview         : PreviewFeature.ReadWrite.Single,
-                      keepPreviewOpen : Boolean,
                       preEditValue    : Option[text.OptionalText],
                       extraKbShortcuts: KeyboardTheme.Shortcuts,
                       showInstructions: Boolean) extends Props {
@@ -83,7 +81,6 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
                       commitFn        : Option[NonEmpty.CommitFn],
                       commitVerb      : String,
                       preview         : PreviewFeature.ReadWrite.Single,
-                      keepPreviewOpen : Boolean,
                       preEditValue    : Option[text.NonEmptyText],
                       extraKbShortcuts: KeyboardTheme.Shortcuts,
                       showInstructions: Boolean) extends Props {
@@ -134,7 +131,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
             p.preview.onEdit(p.wantPreview)))
 
       TagMod(
-        ^.onBlur   --> (autoCompleteBlur >> $.props.flatMap(p => p.preview.onBlur(p.keepPreviewOpen))),
+        ^.onBlur   --> (autoCompleteBlur >> $.props.flatMap(_.preview.onBlur)),
         ^.onChange ==> updateState,
         ^.onFocus  --> $.props.flatMap(p => p.preview.onFocus(p.wantPreview)),
         RichTextEditor.minRows(text.lineCardinality))

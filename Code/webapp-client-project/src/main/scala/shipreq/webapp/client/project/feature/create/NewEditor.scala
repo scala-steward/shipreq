@@ -320,7 +320,6 @@ object NewEditor {
               commitFn         = args.commitFn,
               commitVerb       = args.commitVerb,
               preview          = previewRW(pid),
-              keepPreviewOpen  = true,
               preEditValue     = None,
               extraKbShortcuts = args.extraKbShortcuts,
               showInstructions = ShowInstructions)
@@ -369,7 +368,6 @@ object NewEditor {
               commitFn         = args.commitFn,
               commitVerb       = args.commitVerb,
               preview          = previewRW(pid),
-              keepPreviewOpen  = true,
               preEditValue     = None,
               extraKbShortcuts = args.extraKbShortcuts,
               showInstructions = ShowInstructions)

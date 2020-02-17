@@ -711,7 +711,6 @@ object NewEditor {
               commitFn         = commitFn,
               commitVerb       = commitVerb,
               preview          = previewRW(pid),
-              keepPreviewOpen  = false,
               preEditValue     = initial,
               extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
@@ -824,7 +823,6 @@ object NewEditor {
               commitFn         = commitFn,
               commitVerb       = commitVerb,
               preview          = previewRW(pid),
-              keepPreviewOpen  = false,
               preEditValue     = initial,
               extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
               showInstructions = true)
