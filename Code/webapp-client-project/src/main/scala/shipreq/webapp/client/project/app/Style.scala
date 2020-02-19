@@ -295,6 +295,7 @@ object Style extends StyleSheet.Inline {
 
       val toastLink = style(
         fontWeight.bold,
+        marginLeft(0.45 ex),
       )
     }
 

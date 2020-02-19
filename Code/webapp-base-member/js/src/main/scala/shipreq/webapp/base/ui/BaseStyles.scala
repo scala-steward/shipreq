@@ -41,7 +41,7 @@ object BaseStyles extends StyleSheet.Inline {
 
   object toast {
 
-    private final val animationTime = ".5s"
+    private final val transitionValue = ".36s cubic-bezier(0.4, 0, 0.2, 1)"
 
     val row = style(
       position.absolute,
@@ -58,19 +58,21 @@ object BaseStyles extends StyleSheet.Inline {
       textAlign.center,
       padding(1 em, 1.5 em),
       lineHeight(1.4285 em),
-      background := "#fcfff5",
-      color(c"#2c662d"),
       borderRadius(.28571429 rem),
-      boxShadow := "0 0 0 1px #a3c293 inset, 0 0 0 0 transparent",
-      transition := s"visibility $animationTime ease, opacity $animationTime ease",
+      background := "#dff0ff",
+      border :=! "solid 1px #2185d0e8",
+      boxShadow := "0 3px 5px -1px hsla(206,73%,32%,.1),0 6px 10px 0 hsla(206,73%,32%,.07),0 1px 18px 0 hsla(206,73%,32%,.06)",
+      color(c"#2185d0"),
+      transition := s"all $transitionValue",
       on match {
         case On  => mixin(visibility.visible, opacity(1))
         case Off => mixin(visibility.hidden, opacity(0))
       },
+      unsafeChild("a")(color(c"#10617a")),
     ))
 
     val item = styleF(D.on)(on => styleS(
-      transition := s"all $animationTime ease",
+      transition := s"all $transitionValue",
       on match {
         case On  => mixin(visibility.visible, opacity(1))
         case Off => mixin(visibility.hidden, opacity(0))
