@@ -8,6 +8,7 @@ import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.validation._
 import shipreq.webapp.base.data.TCB
+import shipreq.webapp.base.util.CallbackHelpers._
 
 object Persistence {
 
@@ -85,7 +86,7 @@ object Persistence {
       val saveio = retryably[ReactST[CallbackTo, S, Unit]](retry => {
         val v = store.getI(id)(state)
         val f = Persistence.failureIO(retry)(realise, setStatus)
-        val io = proc((id, v), _ => Callback.empty, _ => f)
+        val io = proc((id, v)).leftFlatTapSync(_ => f).toCallback
         ReactS retM io
       })
       saveio >> setStatus(RowStatus.Locked)

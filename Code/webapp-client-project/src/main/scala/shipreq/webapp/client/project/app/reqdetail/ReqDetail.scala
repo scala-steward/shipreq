@@ -475,7 +475,7 @@ object ReqDetail {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     def runActionNoAsync(cmd: UpdateContentCmd): Callback =
-      updateIO(cmd, _ => Callback.empty, e => Callback.alert(e.value))
+      updateIO(cmd).leftFlatTapSync(e => Callback.alert(e.value)).toCallback
 
     def delete(id: ReqId): Callback =
       CallbackTo {

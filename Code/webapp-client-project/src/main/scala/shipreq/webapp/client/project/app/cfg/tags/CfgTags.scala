@@ -11,7 +11,7 @@ import nyaya.util.Multimap
 import scala.language.reflectiveCalls
 import scalacss.ScalaCssReact._
 import scalajs.js.{UndefOr, undefined}
-import scalaz.\&/
+import scalaz.{-\/, \&/, \/, \/-}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{ErrorMsg, MMTree}
 import shipreq.base.util.univeq._
@@ -21,6 +21,7 @@ import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateConfigCmd}
 import shipreq.webapp.base.ui.{AutosizeTextarea, BaseStyles}
 import shipreq.webapp.base.ui.semantic.Table
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.project.app.cfg.shared._
 import shipreq.webapp.client.project.app.state.{ChangeListener, Global}
@@ -193,16 +194,22 @@ private[tags] object MainTable {
   final class Backend($: BackendScope[Props, S]) extends OnUnmount {
     private val pxRemote = Px.props($).withReuse.autoRefresh.map(_.remote)
 
+    private def withSF[A, B](a: AsyncCallback[A \/ B], s: TCB.Success, f: TCB.Failure): Callback =
+      a.flatTapSync {
+        case \/-(_) => s
+        case -\/(_) => f
+      }.toCallback
+
     private val createIO: Px[(UpdateConfigCmd.TagData, TCB.Success, TCB.Failure) => Callback] =
-      pxRemote.map(p => (data, s, f) => p(UpdateConfigCmd.TagCreate(data), _ => s, _ => f))
+      pxRemote.map(p => (data, s, f) => withSF(p(UpdateConfigCmd.TagCreate(data)), s, f))
 
     private val updateIO: Px[(Tag, UpdateConfigCmd.TagData, TCB.Success, TCB.Failure) => Callback] =
-      pxRemote.map(p => (tag, data, s, f) => p(UpdateConfigCmd.TagUpdate(tag.id, data), _ => s, _ => f))
+      pxRemote.map(p => (tag, data, s, f) => withSF(p(UpdateConfigCmd.TagUpdate(tag.id, data)), s, f))
 
     private val deleteIO: Px[(Id, DeletionAction, TCB.Success, TCB.Failure) => Callback] =
       pxRemote.map(p => (tagId, d, s, f) => d match {
-        case Delete  => p(UpdateConfigCmd.TagDelete(tagId), _ => s, _ => f)
-        case Restore => p(UpdateConfigCmd.TagRestore(tagId), _ => s, _ => f)
+        case Delete  => withSF(p(UpdateConfigCmd.TagDelete(tagId)), s, f)
+        case Restore => withSF(p(UpdateConfigCmd.TagRestore(tagId)), s, f)
       })
 
     def validatorState(k: Option[Id]): S => V.State =

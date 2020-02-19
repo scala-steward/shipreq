@@ -21,6 +21,7 @@ import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateConfigCmd}
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.base.ui.semantic.Table
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.cfg.shared.{FieldSet => _, _}
@@ -201,7 +202,10 @@ private[fields] object MainTable {
     type T = (TCB.Success, TCB.Failure) => Callback
 
     private def call(cmd: UpdateConfigCmd.ToModifyFields): T =
-      (s, f) => remote(cmd, _ => s, _ => f)
+      (s, f) => remote(cmd).flatTapSync {
+        case \/-(_) => s
+        case -\/(_) => f
+      }.toCallback
 
     def createIO(v: CustomFieldValues): T =
       call(CustomFieldCreate(v))

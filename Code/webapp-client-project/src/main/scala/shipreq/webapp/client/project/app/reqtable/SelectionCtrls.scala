@@ -1,21 +1,21 @@
 package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.microlibs.nonempty._
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
-import japgolly.scalajs.react.extra._
 import japgolly.univeq._
 import org.scalajs.dom.window
 import scalacss.ScalaCssReact._
+import scalaz.{-\/, \/-}
 import shipreq.base.util.{Allow, ErrorMsg}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.UpdateContentCmd
-import shipreq.webapp.base.text.{PlainText, TextSearch}
+import shipreq.webapp.base.text.TextSearch
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.semantic.{Button, Icon}
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.Style.reqtable.{page => *}
 import shipreq.webapp.client.project.feature.{DeletionFeature, Modal}
 import shipreq.webapp.client.project.lib.DataReusability._
@@ -193,16 +193,18 @@ object SelectionCtrls {
           p.sel updateFn newSel
         }
 
-      def callServer: Callback = {
-        val s = unlockRows >> uncheckRows
-        val f = (err: ErrorMsg) => Callback.lazily(
-          if (window.confirm(s"Deletion failed. ${err.value}\n\nRetry?"))
-            callServer
-          else
-            unlockRows
-        )
-        $.props.flatMap(_.updateIO(cmd, _ => s, f))
-      }
+      def callServer: Callback =
+        $.props.flatMap(_.updateIO(cmd).flatTapSync {
+          case \/-(_) =>
+            unlockRows >> uncheckRows
+          case -\/(e) =>
+            Callback.lazily(
+              if (window.confirm(s"Deletion failed. ${e.value}\n\nRetry?"))
+                callServer
+              else
+                unlockRows
+            )
+        }.toCallback)
 
       lockRows >> clearModal >> callServer
     }

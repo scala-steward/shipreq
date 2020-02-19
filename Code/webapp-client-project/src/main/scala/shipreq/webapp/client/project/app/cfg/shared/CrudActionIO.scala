@@ -1,12 +1,14 @@
 package shipreq.webapp.client.project.app.cfg.shared
 
 import japgolly.scalajs.react.Callback
+import scalaz.{-\/, \/-}
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data.{DataIdAux, TCB}
 import shipreq.webapp.base.data.TCB.{Failure, Success}
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.util.CallbackHelpers._
 
 /**
  * @tparam D Data type.
@@ -39,7 +41,10 @@ object CrudActionIO {
     new CrudActionIO[D, I, U] {
 
       private def crudIO(s: TCB.Success, f: TCB.Failure, cmd: Cmd): Callback =
-        proc(cmd, _ => s, _ => f)
+        proc(cmd).flatTapSync {
+          case \/-(_) => s
+          case -\/(_) => f
+        }.toCallback
 
       override def createIO(values: U, s: Success, f: Failure): Callback =
         crudIO(s, f, create(values))

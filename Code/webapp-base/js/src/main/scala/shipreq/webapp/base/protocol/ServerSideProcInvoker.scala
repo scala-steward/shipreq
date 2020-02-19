@@ -11,14 +11,9 @@ final case class ServerSideProcInvoker[-I, F, O](fn: (I, O => Callback, F => Cal
   def apply(input: I): AsyncCallback[F \/ O] =
     for {
       (promise, complete) <- AsyncCallback.promise[F \/ O].asAsyncCallback
-      _                   <- this(input, o => complete(Try(\/-(o))), f => complete(Try(-\/(f)))).asAsyncCallback
+      _                   <- fn(input, o => complete(Try(\/-(o))), f => complete(Try(-\/(f)))).asAsyncCallback
       result              <- promise
     } yield result
-
-  @inline def apply(input    : I,
-                    onSuccess: O => Callback,
-                    onFailure: F => Callback): Callback =
-    fn(input, onSuccess, onFailure)
 
   def contramapInput[A](g: A => I): ServerSideProcInvoker[A, F, O] =
     new ServerSideProcInvoker[A, F, O]((a, s, f) => fn(g(a), s, f))
