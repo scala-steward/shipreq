@@ -13,33 +13,38 @@ import shipreq.webapp.base.ui.BaseStyles.{toast => *}
 
 /** This is an interface that can be passed around so that downstream components can add messages.
  */
-final class Toast($: StateAccess.Write[CallbackTo, Toast.State]) {
+trait Toast {
   import Toast._
 
-  def add(msg: VdomNode, duration: Duration = defaultDuration): Callback =
+  final def add(msg: VdomNode, duration: Duration = defaultDuration): Callback =
     addWithCtrls(_ => msg, duration)
 
-  def addWithCtrls(msgFn: Ctrls => VdomNode, duration: Duration = defaultDuration): Callback = {
-    val id    = keyGen.next()
-    val ctrls = Ctrls.forId($, id)
-    val msg   = msgFn(ctrls)
-    val bread = Bread(id, Reusable.byRef(msg), BreadState.ComingOn)
+  final def addWithCtrls(msgFn: Ctrls => VdomNode): Callback =
+    addWithCtrls(msgFn, defaultDuration)
 
-    val add  = (_: State).add(bread)
-    val show = (_: State).setBreadState(bread, BreadState.On)
-    val hide = (_: State).setBreadState(bread, BreadState.GoingOff)
-
-    val waitAndShow       = $.modState(show).delayMs(10).toCallback
-    val deleteWhenExpired = $.modState(hide).delay(duration).toCallback
-
-    $.modState(add, waitAndShow >> deleteWhenExpired)
-  }
+  def addWithCtrls(msgFn: Ctrls => VdomNode, duration: Duration): Callback
 }
 
 object Toast {
 
   def apply($: StateAccess.Write[CallbackTo, Toast.State]): Toast =
-    new Toast($)
+    new Toast {
+      override def addWithCtrls(msgFn: Ctrls => VdomNode, duration: Duration): Callback = {
+        val id    = keyGen.next()
+        val ctrls = Ctrls.forId($, id)
+        val msg   = msgFn(ctrls)
+        val bread = Bread(id, Reusable.byRef(msg), BreadState.ComingOn)
+
+        val add  = (_: State).add(bread)
+        val show = (_: State).setBreadState(bread, BreadState.On)
+        val hide = (_: State).setBreadState(bread, BreadState.GoingOff)
+
+        val waitAndShow       = $.modState(show).delayMs(10).toCallback
+        val deleteWhenExpired = $.modState(hide).delay(duration).toCallback
+
+        $.modState(add, waitAndShow >> deleteWhenExpired)
+      }
+    }
 
   val defaultDuration = Duration.ofSeconds(4)
 
