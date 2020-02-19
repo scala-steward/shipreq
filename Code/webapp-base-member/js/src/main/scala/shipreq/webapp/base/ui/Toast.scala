@@ -16,8 +16,14 @@ import shipreq.webapp.base.ui.BaseStyles.{toast => *}
 final class Toast($: StateAccess.Write[CallbackTo, Toast.State]) {
   import Toast._
 
-  def add(msg: VdomNode, duration: Duration = defaultDuration): Callback = {
-    val bread = Bread(keyGen.next(), Reusable.byRef(msg), BreadState.ComingOn)
+  def add(msg: VdomNode, duration: Duration = defaultDuration): Callback =
+    addWithCtrls(_ => msg, duration)
+
+  def addWithCtrls(msgFn: Ctrls => VdomNode, duration: Duration = defaultDuration): Callback = {
+    val id    = keyGen.next()
+    val ctrls = Ctrls.forId($, id)
+    val msg   = msgFn(ctrls)
+    val bread = Bread(id, Reusable.byRef(msg), BreadState.ComingOn)
 
     val add  = (_: State).add(bread)
     val show = (_: State).setBreadState(bread, BreadState.On)
@@ -41,6 +47,15 @@ object Toast {
 
   type Props = StateSnapshot[State]
 
+  final case class Ctrls(close: Callback)
+
+  object Ctrls {
+    def forId($: StateAccess.Write[CallbackTo, Toast.State], id: String): Ctrls =
+      Ctrls(
+        close = $.modState(_.deleteById(id)),
+      )
+  }
+
   sealed trait BreadState
   object BreadState {
     case object ComingOn extends BreadState
@@ -52,7 +67,7 @@ object Toast {
 
   final case class Bread(id: String, msg: Reusable[VdomNode], state: BreadState) {
     def isSameAs(b: Bread): Boolean =
-      msg eq b.msg
+      id == b.id
   }
 
   final case class State(bread: List[Bread]) {
@@ -67,11 +82,15 @@ object Toast {
       replace(b.copy(state = s))
 
     def delete(b: Bread): State =
-      copy(bread.filterNot(b.isSameAs))
+      deleteById(b.id)
 
-    def deleteAll(bs: TraversableOnce[Bread]): State =
-      // quadratic but ok cos tiny
-      bs.foldLeft(this)(_.delete(_))
+    def deleteById(id: String): State =
+      copy(bread.filter(_.id !=* id))
+
+    def deleteAll(bs: TraversableOnce[Bread]): State = {
+      val ids = bs.toIterator.map(_.id).toSet
+      copy(bread.filter(b => !ids.contains(b.id)))
+    }
   }
 
   object State {

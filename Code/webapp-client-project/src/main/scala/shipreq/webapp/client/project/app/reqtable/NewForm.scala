@@ -167,9 +167,24 @@ sealed trait NewForm {
       Callback.traverseOption(newEvents.summary.newReqIds.headOption) { reqId =>
         import newEvents.project
         val pubid = project.content.reqs.need(reqId).pubid.external(project)
-        val link  = p.routerCtl.link(pubid)(PlainText.pubid(pubid), *.toastLink)
-        val msg   = <.span("Created ", link)
-        p.toast.add(msg)
+
+        p.toast.addWithCtrls { ctrls =>
+          // TODO Simplify after https://github.com/japgolly/scalajs-react/issues/652
+
+          val onClick: ReactMouseEvent => Callback =
+            e =>
+              CallbackOption.unless(ReactMouseEvent targetsNewTab_? e) >>
+                (p.routerCtl.setEH(pubid)(e) >> ctrls.close)
+
+          val link =
+            <.a(
+              *.toastLink,
+              ^.href := p.routerCtl.urlFor(pubid).value,
+              ^.onClick ==> onClick,
+              PlainText.pubid(pubid))
+
+          <.span("Created ", link)
+        }
       }
 
     def render(p: Props): VdomElement = {
