@@ -292,6 +292,10 @@ object Style extends StyleSheet.Inline {
         color(c"#080").important,
         borderColor(c"#080").important,
         fontWeight.bold.important)
+
+      val toastLink = style(
+        fontWeight.bold,
+      )
     }
 
     object table {

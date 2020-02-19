@@ -2,13 +2,15 @@ package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
 import shipreq.base.util._
-import shipreq.webapp.base.data.ReqTypes
+import shipreq.webapp.base.data.{ExternalPubid, ReqTypes}
 import shipreq.webapp.client.project.feature.CreateFeature
 import shipreq.webapp.client.project.feature.CreateFeature.RowKey
 import NewStuff.State
+import shipreq.webapp.base.ui.Toast
 
 /**
   * Unified, convenience interface to both [[NewButton]] and [[NewForm]].
@@ -52,6 +54,8 @@ object NewStuff {
 
 final class NewStuff(state        : State,
                      modState     : ModFn[State],
+                     routerCtl    : RouterCtl[ExternalPubid],
+                     toast        : Toast,
                      reqTypes     : ReqTypes,
                      allowRCG     : Permission,
                      defaultType  : Option[RowKey],
@@ -87,14 +91,14 @@ final class NewStuff(state        : State,
         s match {
 
           case r@RowKey.CodeGroup =>
-            Some(NewForm.ForCodeGroup.Props((), activeColumns, create(r), cancel).render)
+            Some(NewForm.ForCodeGroup.Props((), activeColumns, create(r), routerCtl, toast, cancel).render)
 
           case r: RowKey.GenericReq =>
             val rt = reqTypes.custom.need(r.reqTypeId)
-            Some(NewForm.ForGenericReq.Props(rt, activeColumns, create(r), cancel).render)
+            Some(NewForm.ForGenericReq.Props(rt, activeColumns, create(r), routerCtl, toast, cancel).render)
 
           case r@RowKey.UseCase =>
-            Some(NewForm.ForUseCase.Props((), activeColumns, create(r), cancel).render)
+            Some(NewForm.ForUseCase.Props((), activeColumns, create(r), routerCtl, toast, cancel).render)
 
           case RowKey.ManualIssue =>
             None

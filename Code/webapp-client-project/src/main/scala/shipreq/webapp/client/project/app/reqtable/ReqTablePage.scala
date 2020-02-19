@@ -23,7 +23,7 @@ import shipreq.webapp.base.filter.Filter.Implicits._
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.protocol.{SavedViewCmd, ServerSideProcInvoker, UpdateContentCmd}
 import shipreq.webapp.base.text.TextSearch
-import shipreq.webapp.base.ui.{BaseStyles, NoContentMessage}
+import shipreq.webapp.base.ui.{BaseStyles, NoContentMessage, Toast}
 import shipreq.webapp.base.ui.semantic.Icon
 import shipreq.webapp.client.project.app.Style.reqtable.{page => *}
 import shipreq.webapp.client.project.feature._
@@ -46,6 +46,7 @@ object ReqTablePage {
                                pxProjectWidgets      : Reusable[Px[ProjectWidgets.NoCtx]],
                                pxFilterCompilerFromFD: Px[FilterDead => Filter.Valid.Compiler],
                                reqDetailRC           : RouterCtl[ExternalPubid],
+                               toast                 : Toast,
                                updateIO              : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
                                savedViewIO           : ServerSideProcInvoker[SavedViewCmd, ErrorMsg, VerifiedEvent.Seq],
                                rowAsyncW             : AsyncFeature.Write.D1[Row.SourceId, ErrorMsg],
@@ -368,11 +369,14 @@ object ReqTablePage {
       val newStuff = new NewStuff(
         p.state.newStuff,
         modNewStuff,
+        reqDetailRC,
+        toast,
         project.config.reqTypes,
         Allow when activeView.viewCodeGroups,
         defaultNewType,
         p.create,
-        newFormColumns)
+        newFormColumns,
+      )
 
       val savedViews = SavedViewsUI.Props(
         pxSavedViewsMenu.value(),

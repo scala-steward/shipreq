@@ -3,18 +3,22 @@ package shipreq.webapp.client.project.app.reqtable
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
 import scala.annotation.tailrec
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/-}
 import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data.{CustomReqType, ReqType, StaticReqType}
+import shipreq.webapp.base.data.{CustomReqType, ExternalPubid, ReqType, StaticReqType}
 import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.lib.KeyboardTheme
 import shipreq.webapp.base.protocol.CreateContentCmd
+import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.base.ui.Toast
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Table => SemTable}
 import shipreq.webapp.client.project.app.Style.reqtable.{creation => *}
+import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.feature.CreateFeature
 import shipreq.webapp.client.project.feature.CreateFeature.FieldKey
 import shipreq.webapp.client.project.lib.DataReusability._
@@ -115,7 +119,9 @@ sealed trait NewForm {
   sealed case class Props(input        : Input,
                           activeColumns: NonEmptyVector[ColumnPlus],
                           createFeature: CreateFeature.ReadWrite.ForRow[FK, CreateContentCmd],
-                          close       : Callback) {
+                          routerCtl    : RouterCtl[ExternalPubid],
+                          toast        : Toast,
+                          close        : Callback) {
 
     val editableCols: NonEmptyVector[(ColumnPlus, Editor)] =
       NonEmptyVector.force( // TODO test with mandatory columns only
@@ -157,18 +163,29 @@ sealed trait NewForm {
     private val closeButton: VdomElement =
       CloseButton($.props.flatMap(_.close))
 
+    private def notifyUserOfCreation(p: Props, newEvents: NewEvents): Callback =
+      Callback.traverseOption(newEvents.summary.newReqIds.headOption) { reqId =>
+        import newEvents.project
+        val pubid = project.content.reqs.need(reqId).pubid.external(project)
+        val link  = p.routerCtl.link(pubid)(PlainText.pubid(pubid), *.toastLink)
+        val msg   = <.span("Created ", link)
+        p.toast.add(msg)
+      }
+
     def render(p: Props): VdomElement = {
 
-      val create: Option[Callback => Callback] =
+      val createAnd: Option[Callback => Callback] =
         validOutput(p.editableCols.iterator.map(_._2))
           .flatMap(createCmd(p.input, _))
-          .map(cmd => onSuccess => p.createFeature.create(cmd, onSuccess))
+          .map { cmd =>
+            onSuccess => p.createFeature.create(cmd, notifyUserOfCreation(p, _) >> onSuccess)
+          }
 
       val createAndKeepFormOpen: Option[Callback] =
-        create.map(_(Callback.empty))
+        createAnd.map(_(Callback.empty))
 
       val createAndCloseForm: Option[Callback] =
-        create.map(_(p.close))
+        createAnd.map(_(p.close))
 
       val renderArgsWithoutAutoFocus =
         CreateFeature.EditorArgs(

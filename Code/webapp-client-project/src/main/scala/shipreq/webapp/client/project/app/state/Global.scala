@@ -206,7 +206,9 @@ abstract class Global(onFirstLoad  : (Global, InitAppData) => Callback,
               update.newEvents
 
             case None =>
-              NewEvents.empty
+              // This usually happens when a SSP returns the events it creates, but the server push happens first
+              // meaning that the events have already been applied.
+              NewEvents(recvEvents, s1.projectState.project)
           }
 
         case State.Loading(es) =>

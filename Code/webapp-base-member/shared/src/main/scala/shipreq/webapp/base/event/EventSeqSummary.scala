@@ -70,6 +70,9 @@ final case class EventSeqSummary(
   lazy val reqsExclUseCaseSteps: Set[ReqId] =
     mergeSets(genericReqs.all, useCasesExclSteps.all)
 
+  def newReqIds: Set[ReqId] =
+    genericReqs.created ++ useCasesExclSteps.created
+
   def withProject(p: Project): EventSeqSummary.WithProject =
     EventSeqSummary.WithProject(this, p)
 }

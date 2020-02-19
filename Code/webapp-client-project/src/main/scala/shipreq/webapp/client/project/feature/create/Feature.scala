@@ -8,9 +8,11 @@ import monocle.macros.Lenses
 import scalaz.\/
 import shipreq.base.util._
 import shipreq.base.util.univeq._
+import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.protocol.{CreateContentCmd, ManualIssueCmd, ServerSideProcInvoker}
 import shipreq.webapp.base.util.CallbackHelpers._
+import shipreq.webapp.client.project.app.state.NewEvents
 
 /** Nothing here has `Reusability` because:
   *
@@ -125,7 +127,7 @@ object Feature {
     final case class ForRow[-FK <: FieldKey, -Cmd](rowAccess : StateAccessPure[State.ForFields[FieldKey]],
                                                    rowEditors: NewEditor.ForFields[FK],
                                                    async     : AsyncFeature.Write.D0[AsyncError],
-                                                   ssp       : ServerSideProcInvoker[Cmd, ErrorMsg, Any]) {
+                                                   ssp       : ServerSideProcInvoker[Cmd, ErrorMsg, NewEvents]) {
 
       def startEditor(field: FK): Editor[field.Args, field.Value] = {
         val stateAccess: StateAccessPure[State.ForEditor[Nothing, Any]] =
@@ -136,8 +138,9 @@ object Feature {
       }
 
       /** Initiates a call to the server to create content for this row. */
-      def create(cmd: Cmd, onSuccess: Callback = Callback.empty): Callback =
-        async(ssp(cmd).rightFlatTap(_ => onSuccess.asAsyncCallback))
+      def create(cmd      : Cmd,
+                 onSuccess: NewEvents => Callback = _ => Callback.empty): Callback =
+        async(ssp(cmd).rightFlatTap(onSuccess(_).asAsyncCallback))
 
       def clearState(field: FK): Callback =
         rowAccess.modState(_ - field)
@@ -146,11 +149,11 @@ object Feature {
     final case class ForProject(static              : NewEditor.Static,
                                 stateAccess         : StateAccessPure[State.ForProject],
                                 async               : AsyncFeature.Write.D1[RowKey, AsyncError],
-                                sspCreateContent    : ServerSideProcInvoker[CreateContentCmd, ErrorMsg, Any],
-                                sspCreateManualIssue: ServerSideProcInvoker[ManualIssueCmd, ErrorMsg, Any],
+                                sspCreateContent    : ServerSideProcInvoker[CreateContentCmd, ErrorMsg, NewEvents],
+                                sspCreateManualIssue: ServerSideProcInvoker[ManualIssueCmd, ErrorMsg, NewEvents],
                                ) {
 
-      private type SSP[-A] = ServerSideProcInvoker[A, ErrorMsg, Any]
+      private type SSP[-A] = ServerSideProcInvoker[A, ErrorMsg, NewEvents]
 
       private val foldCmd = RowKey.FoldCmd[SSP](
         codeGroup   = _ => sspCreateContent,
@@ -183,7 +186,8 @@ object Feature {
         read(f)(write.startEditor(f))
 
       /** Initiates a call to the server to create content for this row. */
-      def create(cmd: Cmd, onSuccess: Callback = Callback.empty): Callback =
+      def create(cmd      : Cmd,
+                 onSuccess: NewEvents => Callback = _ => Callback.empty): Callback =
         write.create(cmd, onSuccess)
 
       def clearState(field: FK): Callback =

@@ -40,12 +40,13 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
   final class Backend($: BackendScope[Props, State]) extends OnUnmount {
     import global.cbProjectMetaData
 
+    private val sspCreateContent         = global.sspCreateContent
     private val sspUpdateConfig          = global.sspUpdateConfig.map(_.events)
-    private val sspCreateContent         = global.sspCreateContent.map(_.events)
     private val sspUpdateContent         = global.sspUpdateContent.map(_.events)
     private val sspProjectNameSet        = global.sspProjectNameSet.map(_.events)
     private val sspUpdateSavedViews      = global.sspUpdateSavedViews.map(_.events)
-    private val sspUpdateManualIssues    = global.sspUpdateManualIssues.map(_.events)
+    private val sspUpdateManualIssues    = global.sspUpdateManualIssues
+    private val sspUpdateManualIssuesE   = global.sspUpdateManualIssues.map(_.events)
     private val sspFieldMandatorinessMod = global.sspFieldMandatorinessMod.map(_.events)
     private val sspReqTypeImplicationMod = global.sspReqTypeImplicationMod.map(_.events)
 
@@ -58,6 +59,8 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
     // This never changes
     private val routerCtl = $.props.runNow().routerCtl
     private val reqDetailRC = routerCtl.contramap(Page.ReqDetail.apply)
+
+    private val toast = Toast($.zoomStateL(State.toast))
 
     private val pxState =
       Px.state($).withReuse.autoRefresh
@@ -152,7 +155,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
           pxPlainText,
           pxTextSearch,
           sspUpdateContent,
-          sspUpdateManualIssues,
+          sspUpdateManualIssuesE,
         ),
         $ zoomStateL State.edit,
         editAsyncW.mapKey1(AsyncKey.ToEditor))
@@ -179,7 +182,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       Reusable.fn(cmd => updateContentCmdAsyncW(cmd)(sspUpdateContent(cmd)))
 
     private val manualIssueCmdInvoker: ManualIssueCmd ~=> Callback =
-      Reusable.fn(cmd => manualIssueCmdAsyncW(cmd)(sspUpdateManualIssues(cmd)))
+      Reusable.fn(cmd => manualIssueCmdAsyncW(cmd)(sspUpdateManualIssuesE(cmd)))
 
     private val updateConfigOrContentCmdInvoker: issues.Action.Cmd ~=> Callback =
       Reusable.fn {
@@ -207,6 +210,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
         pxProjectWidgets,
         pxFilterCompilerFromFilterDead,
         reqDetailRC,
+        toast,
         sspUpdateContent,
         sspUpdateSavedViews,
         rowAsyncW.mapKey(reqtable.Row.SourceId.ToEditorRow.reverse),
@@ -284,8 +288,6 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
         pxProject.toCallback >>= (p => if (p.name ==* newName) close else save)
       }
     }
-
-    private val toast = Toast($.zoomStateL(State.toast))
 
     def render(p: Props, s: State): VdomElement = {
       lazy val editAsyncState = s.editAsync.toRead
