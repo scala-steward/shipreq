@@ -81,7 +81,6 @@ Phase 3A
 
 * New form
   * don't hide previews on blur in the NewForm area [FR-10]
-  * display a popup like "Created FR-7" when user creates a new req [FR-11]
 
 * Tags
   * redo tag config screen

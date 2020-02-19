@@ -70,6 +70,9 @@ final case class EventSeqSummary(
   lazy val reqsExclUseCaseSteps: Set[ReqId] =
     mergeSets(genericReqs.all, useCasesExclSteps.all)
 
+  def newReqIds: Set[ReqId] =
+    genericReqs.created ++ useCasesExclSteps.created
+
   def withProject(p: Project): EventSeqSummary.WithProject =
     EventSeqSummary.WithProject(this, p)
 }
@@ -81,6 +84,12 @@ object EventSeqSummary {
     b ++= events
     b.result()
   }
+
+  def empty: EventSeqSummary =
+    apply(Nil)
+
+  def fromVerifiedEvents(events: TraversableOnce[VerifiedEvent]): EventSeqSummary =
+    apply(events.toIterator.map(_.event))
 
   final case class WithProject(summary: EventSeqSummary, project: Project) {
 

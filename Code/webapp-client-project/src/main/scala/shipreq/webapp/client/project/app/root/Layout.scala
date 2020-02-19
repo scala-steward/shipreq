@@ -24,6 +24,7 @@ object Layout {
                          setConnectionStatus: ConnectionStatus => Reusable[Callback],
                          reauthModal        : ReauthenticationModal,
                          feedbackModal      : FeedbackModal,
+                         toast              : Toast.Props,
                          rc                 : RouterCtl,
                          page               : Page,
                          content            : VdomElement) {
@@ -175,6 +176,7 @@ object Layout {
         _,
         Style.layout,
         FilterHelp.modal.render,
+        Toast.Component(p.toast),
         p.feedbackModal.render,
         p.reauthModal.render,
         RichTextEditorHelp.allRendered,
