@@ -14,7 +14,7 @@ import shipreq.webapp.base.feature._
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.text.{PlainText, ProjectText, TextSearch}
-import shipreq.webapp.base.ui.{FeedbackModal, ProjectItem}
+import shipreq.webapp.base.ui.{FeedbackModal, ProjectItem, Toast}
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.state._
 import shipreq.webapp.client.project.app._
@@ -285,6 +285,8 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       }
     }
 
+    private val toast = Toast($.zoomStateL(State.toast))
+
     def render(p: Props, s: State): VdomElement = {
       lazy val editAsyncState = s.editAsync.toRead
       def createR       = CreateFeature.Read.ForProject(s.create, pxCreateEditability.value(), s.createAsync.toRead)
@@ -378,9 +380,11 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
         global.setConnectionStatus,
         global.reauthModal,
         feedbackModal,
+        StateSnapshot.zoomL(State.toast)(s).setStateVia($),
         routerCtl,
         p.page,
-        content).render
+        content,
+      ).render
     }
 
     def onProjectChange(c: EventSeqSummary.WithProject): Callback = // TODO I don't like this

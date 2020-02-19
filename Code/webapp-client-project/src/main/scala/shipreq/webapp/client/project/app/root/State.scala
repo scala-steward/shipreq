@@ -7,7 +7,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, HideDead}
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.protocol.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
-import shipreq.webapp.base.ui.ProjectItem
+import shipreq.webapp.base.ui.{ProjectItem, Toast}
 import shipreq.webapp.client.project.app.{reqdetail, reqtable}
 import shipreq.webapp.client.project.app.issues.IssuesPage
 import shipreq.webapp.client.project.app.reqdetail.ReqDetail
@@ -98,6 +98,7 @@ final case class State(projectName          : ProjectItem.WithEditableName.State
                        reqTable             : reqtable.ReqTablePage.State,
                        reqDetail            : ReqDetail.State,
                        issuesPage           : IssuesPage.State,
+                       toast                : Toast.State,
                        updateConfigCmdAsync : AsyncFeature.State.D1[UpdateConfigCmd, ErrorMsg],
                        updateContentCmdAsync: AsyncFeature.State.D1[UpdateContentCmd, ErrorMsg],
                        manualIssueCmdAsync  : AsyncFeature.State.D1[ManualIssueCmd, ErrorMsg],
@@ -121,6 +122,7 @@ object State {
       reqTable              = reqtable.ReqTablePage.State.init,
       reqDetail             = ReqDetail.initState,
       issuesPage            = IssuesPage.State.init,
+      toast                 = Toast.State.init,
       updateConfigCmdAsync  = AsyncFeature.State.initD1,
       updateContentCmdAsync = AsyncFeature.State.initD1,
       manualIssueCmdAsync   = AsyncFeature.State.initD1,
