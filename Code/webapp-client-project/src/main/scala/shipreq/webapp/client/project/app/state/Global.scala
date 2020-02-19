@@ -217,7 +217,7 @@ abstract class Global(onFirstLoad  : (Global, InitAppData) => Callback,
   private final def sspToEvents(p: WsReqRes {type ResponseType = WsReqRes.EventResult}): ServerSideProcInvoker[p.RequestType, ErrorMsg, VerifiedEvent.Seq] =
     wsClient.invoker(p)
       .mergeFailure
-      .onSuccess((ves, s) => addEvents(ves) >> s)
+      .onSuccess(addEvents)
 
   def requestSyncIfStaleFor(tolerance: Duration): Callback = {
     val missingEvents = CallbackTo[Option[NonEmptySet[EventOrd]]] {

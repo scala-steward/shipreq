@@ -2,56 +2,58 @@ package shipreq.webapp.base.protocol
 
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo, Reusability}
 import org.scalajs.dom.ext.AjaxException
-import scala.util.Try
 import scalaz.{\/, \/-, -\/}
 import shipreq.base.util.{ErrorMsg, Identity}
+import shipreq.webapp.base.util.CallbackHelpers._
 
-final case class ServerSideProcInvoker[-I, F, O](fn: (I, O => Callback, F => Callback) => Callback) extends AnyVal {
+final class ServerSideProcInvoker[-I, F, O](private[ServerSideProcInvoker] val run: I => AsyncCallback[F \/ O]) {
 
   def apply(input: I): AsyncCallback[F \/ O] =
-    for {
-      (promise, complete) <- AsyncCallback.promise[F \/ O].asAsyncCallback
-      _                   <- fn(input, o => complete(Try(\/-(o))), f => complete(Try(-\/(f)))).asAsyncCallback
-      result              <- promise
-    } yield result
+    run(input)
 
-  def contramapInput[A](g: A => I): ServerSideProcInvoker[A, F, O] =
-    new ServerSideProcInvoker[A, F, O]((a, s, f) => fn(g(a), s, f))
+  def contramapInput[A](f: A => I): ServerSideProcInvoker[A, F, O] =
+    new ServerSideProcInvoker[A, F, O](run compose f)
 
-  def contramapInputCB[A, II <: I](g: A => CallbackTo[II]): ServerSideProcInvoker[A, F, O] =
-    new ServerSideProcInvoker[A, F, O]((a, s, f) => g(a).flatMap(fn(_, s, f)))
+  def contramapInputCB[A, II <: I](f: A => CallbackTo[II]): ServerSideProcInvoker[A, F, O] =
+    new ServerSideProcInvoker[A, F, O](f(_).asAsyncCallback.flatMap(run))
 
-  def mapFailure[A](g: F => A): ServerSideProcInvoker[I, A, O] =
-    new ServerSideProcInvoker[I, A, O]((i, s, f) => fn(i, s, f compose g))
+  def mapFailure[A](f: F => A): ServerSideProcInvoker[I, A, O] =
+    new ServerSideProcInvoker[I, A, O](run(_).map(_.leftMap(f)))
 
-  def mapOutput[A](g: O => A): ServerSideProcInvoker[I, F, A] =
-    new ServerSideProcInvoker[I, F, A]((i, s, f) => fn(i, s compose g, f))
+  def mapOutput[A](f: O => A): ServerSideProcInvoker[I, F, A] =
+    new ServerSideProcInvoker[I, F, A](run(_).map(_.map(f)))
 
   def mergeFailure(implicit ev: ServerSideProcInvoker.MergeFailure[F, O]): ServerSideProcInvoker[I, F, ev.A] = {
-    val fn2 = ev.apply(this).fn
-    new ServerSideProcInvoker[I, F, ev.A]((i, s, f) => fn2(i, _.fold(f, s), f))
+    val run2 = ev.apply(this).run
+    new ServerSideProcInvoker[I, F, ev.A](run2(_).map {
+      case \/-(r@ \/-(_)) => r
+      case \/-(l@ -\/(_)) => l
+      case l@ -\/(_)      => l
+    })
   }
 
-  def onSuccess(g: (O, Callback) => Callback): ServerSideProcInvoker[I, F, O] =
-    new ServerSideProcInvoker[I, F, O]((i, s, f) => fn(i, o => g(o, s(o)), f))
+  def onSuccess(f: O => Callback): ServerSideProcInvoker[I, F, O] =
+    new ServerSideProcInvoker[I, F, O](run(_).rightFlatTapSync(f))
 }
 
 object ServerSideProcInvoker {
 
-  def const[F, O](result: F \/ O): ServerSideProcInvoker[Any, F, O] =
-    new ServerSideProcInvoker((_, ok, ko) => result.fold(ko, ok))
+  def apply[I, F, O](run: I => AsyncCallback[F \/ O]): ServerSideProcInvoker[I, F, O] =
+    new ServerSideProcInvoker(run)
 
-  def viaAsyncCallback[I, O](f: I => CallbackTo[AsyncCallback[O]]): ServerSideProcInvoker[I, ErrorMsg, O] =
-    new ServerSideProcInvoker[I, ErrorMsg, O](
-      (req, onOK, onKO) => f(req).attempt.flatMap {
-        case Right(async) =>
-          async.attempt.flatMap {
-            case Right(res) => onOK(res).asAsyncCallback
-            case Left(err) => onKO(throwableToErrorMsg(err)).asAsyncCallback
-          }.toCallback
-        case Left(err) => onKO(throwableToErrorMsg(err))
+  def const[F, O](result: F \/ O): ServerSideProcInvoker[Any, F, O] =
+    const(AsyncCallback.pure(result))
+
+  def const[F, O](result: AsyncCallback[F \/ O]): ServerSideProcInvoker[Any, F, O] =
+    new ServerSideProcInvoker(_ => result)
+
+  def fromSimple[I, O](f: I => CallbackTo[AsyncCallback[O]]): ServerSideProcInvoker[I, ErrorMsg, O] =
+    ServerSideProcInvoker[I, ErrorMsg, O] { i =>
+      f(i).asAsyncCallback.flatten.attempt.map {
+        case Right(o)  => \/-(o)
+        case Left(err) => -\/(throwableToErrorMsg(err))
       }
-    )
+    }
 
   /** Working around Scalac crappy type inference as usual */
   trait MergeFailure[F, O] {
@@ -67,10 +69,10 @@ object ServerSideProcInvoker {
   }
 
   implicit def reusability[I, F, O]: Reusability[ServerSideProcInvoker[I, F, O]] =
-    Reusability((a, b) => a.fn eq b.fn)
+    Reusability((a, b) => a.run eq b.run)
 
   implicit def variance[I, F, O, II <: I, FF >: F, OO >: O](a: ServerSideProcInvoker[I, F, O]): ServerSideProcInvoker[II, FF, OO] =
-    new ServerSideProcInvoker(a.fn)
+    new ServerSideProcInvoker(a.run.andThen(_.widen))
 
   def throwableToErrorMsg(t: Throwable): ErrorMsg =
     t match {

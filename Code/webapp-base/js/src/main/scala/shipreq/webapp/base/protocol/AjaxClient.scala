@@ -102,16 +102,15 @@ object AjaxClient {
 
       override def invoker(p: Protocol.Ajax[SafePickler]): ServerSideProcInvoker[p.protocol.RequestType, ErrorMsg, p.protocol.ResponseType] = {
         ServerSideProcInvoker
-          .viaAsyncCallback((req: p.protocol.RequestType) => CallbackTo(runWithRetry(p)(req).map(_.errMsgOrSuccess)))
+          .fromSimple((req: p.protocol.RequestType) => CallbackTo(runWithRetry(p)(req).map(_.errMsgOrSuccess)))
           .mergeFailure
       }
     }
 
-  def noop[F[_]]: AjaxClient[F] =
+  /** Calls are never made. AsyncCallbacks never complete. */
+  def never[F[_]]: AjaxClient[F] =
     new AjaxClient[F] {
-      override def invoker(p: Protocol.Ajax[F]) = {
-        val c = CallbackTo(AsyncCallback[p.protocol.ResponseType](_ => Callback.empty))
-        ServerSideProcInvoker.viaAsyncCallback((_: p.protocol.RequestType) => c)
-      }
+      override def invoker(p: Protocol.Ajax[F]) =
+        ServerSideProcInvoker.const(AsyncCallback.never[ErrorMsg \/ p.protocol.ResponseType])
     }
 }

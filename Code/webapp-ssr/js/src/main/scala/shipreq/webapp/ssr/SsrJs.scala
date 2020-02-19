@@ -12,7 +12,7 @@ object SsrJs {
   import SsrSharedData._
 
   private val ajaxNoop: AjaxClient.Binary =
-    AjaxClient.noop
+    AjaxClient.never
 
   @JSExportTopLevel(SsrJsFunctionManifest.Public)
   def public(i: Pickled[PublicInitData]): String = {

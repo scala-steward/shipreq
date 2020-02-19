@@ -67,7 +67,7 @@ class TestAjaxClient(autoRespondArg: Boolean) extends AjaxClient.Binary {
     }
 
   override def invoker(p: Protocol.Ajax[SafePickler]): ServerSideProcInvoker[p.protocol.RequestType, ErrorMsg, p.protocol.ResponseType] =
-    ServerSideProcInvoker.viaAsyncCallback { (req: p.protocol.RequestType) =>
+    ServerSideProcInvoker.fromSimple { (req: p.protocol.RequestType) =>
       apply(p)(req).map(_.map { result =>
         val resCodec = p.protocol.prepareSend(req).response.codec
         AjaxClient.BinaryImpl.Result(result, resCodec.version).errMsgOrSuccess

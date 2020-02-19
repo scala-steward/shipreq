@@ -420,7 +420,7 @@ object WebSocketClient {
     }
 
     override def invoker(p: ReqRes): ServerSideProcInvoker[p.RequestType, ErrorMsg, p.ResponseType] =
-      ServerSideProcInvoker.viaAsyncCallback(send(p)(_))
+      ServerSideProcInvoker.fromSimple(send(p)(_))
   }
 
   private val errorClosing      = js.JavaScriptException("Connection is closing.")
