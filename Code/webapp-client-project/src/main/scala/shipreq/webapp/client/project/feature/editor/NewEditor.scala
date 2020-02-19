@@ -18,6 +18,7 @@ import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.KeyboardTheme
 import shipreq.webapp.base.protocol.{ManualIssueCmd, ServerSideProcInvoker, UpdateContentCmd}
 import shipreq.webapp.base.text._
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import Feature.{AsyncError, AsyncState, Editor, PreviewId, State}
 
@@ -203,14 +204,15 @@ object NewEditor {
     final class InternalCtx[A, C](val ctx: Ctx[A, C]) {
       import ctx._
 
-      def abort(hooks: Hooks): Callback = {
-        val clearAsyncStatus = asyncFeature((s, _) => s)
-        stateAccess.setState(None, clearAsyncStatus >> hooks.onClose)
-      }
+      def abort(hooks: Hooks): Callback =
+        stateAccess.setState(None, asyncFeature.clearAsyncStatus >> hooks.onClose)
 
       def commit[Cmd](ssp: ServerSideProcInvoker[Cmd, ErrorMsg, Any])
                      (cmd: Cmd, hooks: Hooks): Callback =
-        asyncFeature((s, f) => ssp(cmd, _ => s >> abort(hooks), f))
+        asyncFeature(
+          ssp(cmd)
+            .rightFlatTap(_ => abort(hooks).asAsyncCallback)
+        )
 
       def makeAbortCommitFn[Cmd, B](ssp: ServerSideProcInvoker[Cmd, ErrorMsg, Any])
                                    (cmd: B => Cmd, hooks: Hooks): (Some[Callback], Some[B ~=> Callback]) =

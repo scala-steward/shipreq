@@ -17,6 +17,7 @@ import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic._
 import shipreq.webapp.base.user.{EmailAddr, UserValidators, Username}
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.base.{CommmonUiText, Urls}
 import shipreq.webapp.client.public.Prefetch
 import shipreq.webapp.client.public.Styles.{login => *}
@@ -131,8 +132,8 @@ object Login {
         }
       }
 
-    private def handleAsyncError(f: ErrorMsg => Callback): ErrorMsg => Callback =
-      e => f(e) >> setError("Error occurred", e.value)
+    private def handleError(e: ErrorMsg): Callback =
+      setError("Error occurred", e.value)
 
     private def setError(title: String, content: String): Callback =
       for {
@@ -146,10 +147,15 @@ object Login {
         Callback.when(p.formEnabled is Enabled)(
           p.state.value.req.validate match {
             case \/-(req) =>
-              p.asyncW((s, f) => p.attemptLogin(req, {
-                  case Allow => onLoginSuccess // `s <<` is deliberately omitted so the form doesn't re-enable before the redirect completes
-                  case Deny  => s << onLoginFailure(req.user)
-                }, handleAsyncError(f)))
+              p.asyncW.withOnSuccess(onSuccess =>
+                p.attemptLogin(req)
+                  .flatTapSync {
+                    case \/-(Allow) => onLoginSuccess // onSuccess is deliberately omitted so the form doesn't re-enable before the redirect completes
+                    case \/-(Deny)  => onSuccess << onLoginFailure(req.user)
+                    case -\/(e)     => handleError(e)
+                  }
+              )
+
             case -\/(_) =>
               onLoginFailure(Username.orEmail(p.state.value.req.usernameOrEmail))
           }
@@ -171,9 +177,13 @@ object Login {
           val usernameOrEmailStr = p.state.value.req.usernameOrEmail
           UserValidators.usernameOrEmail(usernameOrEmailStr) match {
             case \/-(u) =>
-              p.asyncW((s, f) => p.resetPassword(u,
-                _ => s << p.state.modState(_.copy(passwordReset = Some(u))),
-                handleAsyncError(f)))
+              p.asyncW(
+                p.resetPassword(u).flatTapSync {
+                  case \/-(_) => p.state.modState(_.copy(passwordReset = Some(u)))
+                  case -\/(e) => handleError(e)
+                }
+              )
+
             case -\/(_) =>
               val user = Username.orEmail(usernameOrEmailStr)
               setError("Forgotten password", s"Invalid ${CommmonUiText.usernameOrEmail(user.isLeft).toLowerCase}.")

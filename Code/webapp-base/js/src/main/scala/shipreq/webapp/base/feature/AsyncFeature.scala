@@ -9,6 +9,7 @@ import scala.reflect.ClassTag
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{Intersection, Optics}
 import shipreq.webapp.base.lib.BaseReusability._
+import shipreq.webapp.base.util.CallbackHelpers._
 
 /** Provides the following functionality around async actions:
   *
@@ -71,17 +72,6 @@ object AsyncFeature {
     implicit def reusability[F]: Reusability[Status[F]] =
       Reusability.byRef
   }
-
-  /** Provides two callbacks for you to use in your async logic:
-    * one for you to call on async success
-    * one for you to call on async failure
-    *
-    * The reason I'm keeping this as is instead of upgrading it all to work with AsyncCallbacks is that on failure we
-    * store a retry Callback. The only way to ensure that retry does exactly the same thing (as opposed to just the
-    * first steps and then this feature not knowing about external map & flatmaps) is that the complete and entire
-    * callback must be passed to this feature.
-    */
-  type AsyncCall[+F] = (Callback, F => Callback) => Callback
 
   private val _doNothingReusability = Reusable.byRef(new AnyRef)
   private def withDoNothingReusability[A](a: => A): Reusable[A] =
@@ -288,32 +278,63 @@ object AsyncFeature {
 
   object Write {
 
-    type D0[-F] = AsyncCall[F] ~=> Callback
+    sealed trait Injector[-F] {
+      def withOnSuccess[FF <: F, A](f: Callback => AsyncCallback[FF \/ A]): Callback
+
+      final def apply[FF <: F, A](ac: AsyncCallback[FF \/ A]): Callback =
+        withOnSuccess(s => ac.rightFlatTap(_ => s.asAsyncCallback))
+
+      final def clearAsyncStatus: Callback =
+        apply[F, Unit](AsyncCallback.pure(\/-(())))
+    }
+
+    object Injector {
+
+      def apply[F](setState: State.D0[F] => Callback): Injector[F] =
+        new Injector[F] {
+          private[this] val clearStatus = setState(None)
+
+          private def onSuccess: Callback =
+            clearStatus
+
+          override def withOnSuccess[FF <: F, A](create: Callback => AsyncCallback[FF \/ A]): Callback = {
+
+            val taskS =
+              create(onSuccess)
+
+            def onFailure: F => Callback =
+              f => setState(Some(Status.Failed(f, Callback byName doIt, clearStatus)))
+
+            def taskSF =
+              taskS.leftFlatTap(onFailure(_).asAsyncCallback)
+
+            lazy val doIt: Callback =
+              // Switching this around breaks tests' MockServer's order of events.
+              // i.e. it will call onSuccess which clears the status, and then set it to locked.
+              setState(Some(Status.InProgress)) >> taskSF.toCallback
+
+            doIt
+          }
+        }
+
+      val doNothing: Injector[Any] =
+        new Injector[Any] {
+          override def withOnSuccess[FF <: Any, A](f: Callback => AsyncCallback[FF \/ A]): Callback =
+            f(Callback.empty).toCallback
+        }
+    }
+
+    type D0[-F] = Reusable[Injector[F]]
 
     object D0 {
       def init[F]($: StateAccessPure[State.D0[F]]): D0[F] =
         apply(Reusable.fn.state($).set)
 
       def apply[F](setStateFn: State.D0[F] ~=> Callback): D0[F] =
-        setStateFn.map(setState => call => {
-          val clearStatus = setState(None)
-
-          def onSuccess: Callback =
-            clearStatus
-
-          def onFailure: F => Callback =
-            f => setState(Some(Status.Failed(f, Callback byName doIt, clearStatus)))
-
-          lazy val doIt: Callback =
-            // Switching this around breaks tests' MockServer's order of events.
-            // i.e. it will call onSuccess which clears the status, and then set it to locked.
-            setState(Some(Status.InProgress)) >> call(onSuccess, onFailure)
-
-          doIt
-        })
+        setStateFn.map(Injector(_))
 
       val doNothing: D0[Any] =
-        Reusable.byRef(_ => Callback.empty)
+        Reusable.byRef(Injector.doNothing)
     }
 
     // =================================================================================================================

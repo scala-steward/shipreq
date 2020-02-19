@@ -15,6 +15,7 @@ import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.text.{PlainText, ProjectText, TextSearch}
 import shipreq.webapp.base.ui.{FeedbackModal, ProjectItem}
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.state._
 import shipreq.webapp.client.project.app._
 import shipreq.webapp.client.project.app.reqdetail.ReqDetail
@@ -172,13 +173,13 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       AsyncFeature.Write.D1.init($ zoomStateL State.manualIssueCmdAsync)
 
     private val updateConfigCmdInvoker: UpdateConfigCmd ~=> Callback =
-      Reusable.fn(cmd => updateConfigCmdAsyncW(cmd)((s, f) => sspUpdateConfig(cmd, _ => s, f)))
+      Reusable.fn(cmd => updateConfigCmdAsyncW(cmd)(sspUpdateConfig(cmd)))
 
     private val updateContentCmdInvoker: UpdateContentCmd ~=> Callback =
-      Reusable.fn(cmd => updateContentCmdAsyncW(cmd)((s, f) => sspUpdateContent(cmd, _ => s, f)))
+      Reusable.fn(cmd => updateContentCmdAsyncW(cmd)(sspUpdateContent(cmd)))
 
     private val manualIssueCmdInvoker: ManualIssueCmd ~=> Callback =
-      Reusable.fn(cmd => manualIssueCmdAsyncW(cmd)((s, f) => sspUpdateManualIssues(cmd, _ => s, f)))
+      Reusable.fn(cmd => manualIssueCmdAsyncW(cmd)(sspUpdateManualIssues(cmd)))
 
     private val updateConfigOrContentCmdInvoker: issues.Action.Cmd ~=> Callback =
       Reusable.fn {
@@ -279,7 +280,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
     private val setProjectNameIO: String => Callback = {
       newName => {
         def close = $.modState(State.projectName set None)
-        def save = projectNameAF((s, f) => sspProjectNameSet(newName, _ => s >> close, f))
+        def save = projectNameAF(sspProjectNameSet(newName).rightFlatTap(_ => close.asAsyncCallback))
         pxProject.toCallback >>= (p => if (p.name ==* newName) close else save)
       }
     }

@@ -10,6 +10,7 @@ import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.protocol.{CreateContentCmd, ManualIssueCmd, ServerSideProcInvoker}
+import shipreq.webapp.base.util.CallbackHelpers._
 
 /** Nothing here has `Reusability` because:
   *
@@ -136,7 +137,7 @@ object Feature {
 
       /** Initiates a call to the server to create content for this row. */
       def create(cmd: Cmd, onSuccess: Callback = Callback.empty): Callback =
-        async((s, f) => ssp(cmd, _ => s >> onSuccess, f))
+        async(ssp(cmd).rightFlatTap(_ => onSuccess.asAsyncCallback))
 
       def clearState(field: FK): Callback =
         rowAccess.modState(_ - field)

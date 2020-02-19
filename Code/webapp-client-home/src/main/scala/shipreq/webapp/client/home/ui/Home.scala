@@ -12,6 +12,7 @@ import shipreq.webapp.base.feature.{AsyncFeature, EditorStatus, ErrorHandlingFea
 import shipreq.webapp.base.protocol.{AjaxClient, CommonProtocolsJs, HomeSpaEntryPoint, HomeSpaProtocols, ServerSideProcInvoker}
 import shipreq.webapp.base.ui._
 import shipreq.webapp.base.ui.semantic.{Breadcrumb, Colour}
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.base.{ClientConfig, WebappConfig}
 
 object Home {
@@ -57,12 +58,12 @@ object Home {
 
     val createProjectIO: String => Callback =
       name =>
-        $.props >>= (p =>
-          createProjectAF((onSuccess, onFailure) =>
-            p.createProjectIO(
-              name,
-              i => onSuccess >> setCreateProjectText.setState("") >> addProject(i),
-              onFailure)))
+        $.props.flatMap(p =>
+          createProjectAF(
+            p.createProjectIO(name)
+              .rightFlatTapSync(i => setCreateProjectText.setState("") >> addProject(i))
+          )
+        )
 
     val navBarLeft: MemberNavBar.LeftProps =
       Reusable.byRef(Breadcrumb.Item.Div(ClientConfig.BreadcrumbNameMemberHome) :: Nil)

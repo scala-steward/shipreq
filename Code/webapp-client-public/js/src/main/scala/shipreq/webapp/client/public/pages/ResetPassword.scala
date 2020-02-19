@@ -6,6 +6,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
+import scalaz.{-\/, \/-}
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.{Disabled, Enabled, VerificationToken}
 import shipreq.webapp.base.feature.AsyncFeature
@@ -14,6 +15,7 @@ import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.{Form, Icon, Input, Message}
 import shipreq.webapp.base.user.{PlainTextPassword, UserValidators}
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.public.PublicSpaProtocols.{ResetPassword2 => P}
 import shipreq.webapp.client.public.Styles.{resetPassword => *}
 
@@ -55,10 +57,12 @@ object ResetPassword {
         newPassword <- state.validated
         if state.formEnabled is Enabled
       } yield
-        asyncW((s, f) => props.resetPassword(
-          P.Request(props.token, newPassword),
-          res => s << $.modState(_.copy(response = Some(res))),
-          e => f(e) >> Callback.alert(e.value)))
+        asyncW(
+          props.resetPassword(P.Request(props.token, newPassword)).flatTapSync {
+            case \/-(res) => $.modState(_.copy(response = Some(res)))
+            case -\/(err) => Callback.alert(err.value)
+          }
+        )
 
     val attemptSubmit: Callback =
       $.props.flatMap(p =>

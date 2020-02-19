@@ -17,6 +17,7 @@ import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateContentCmd}
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.ui.semantic.Header
 import shipreq.webapp.base.ui.{BaseStyles, NoContentMessage}
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
 import shipreq.webapp.client.project.app.WebWorkerClient
@@ -148,25 +149,28 @@ object ReqDetail {
     val setFilterDead: Reusable[StateSnapshot.SetFn[FilterDead]] =
       Reusable.byRef((v, cb) => $.props.flatMap(_.filterDead.setStateOption(v, cb)))
 
-    private def mkRunCmdFn[Cmd <: UpdateContentCmd](onSuccess: (VerifiedEvent.Seq, Callback) => Callback) =
+    private def mkRunCmdFn[Cmd <: UpdateContentCmd](onSuccess: VerifiedEvent.Seq => Callback) =
       Reusable.fn[ReqId, Cell, Cmd, Callback](
         (reqId, cell, cmd) =>
-          $.props >>= (p =>
-            p.reqProps(reqId).async.write(cell)((s, f) =>
-              updateIO(cmd, onSuccess(_, s), f))))
+          $.props.flatMap(p =>
+            p.reqProps(reqId).async.write(cell)(
+              updateIO(cmd).rightFlatMap(onSuccess(_).asAsyncCallback)
+            )
+          )
+      )
 
     val runCmd: ReqId ~=> (Cell ~=> (UpdateContentCmd ~=> Callback)) =
-      mkRunCmdFn((_, s) => s)
+      mkRunCmdFn(_ => Callback.empty)
 
     val runAddAndEditNewUseCaseStep: ReqId ~=> (Cell ~=> (UpdateContentCmd.AddUseCaseStep ~=> Callback)) =
-      mkRunCmdFn { (ves, onSuccess) =>
+      mkRunCmdFn { ves =>
 
         val startEditor: Callback =
           ves.iterator.map(_.event).collect {
             case e: Event.UseCaseStepCreate => startUseCaseStepEditor(e.id).delayMs(50).toCallback
           }.nextOption().getOrEmpty
 
-        onSuccess >> startEditor
+        startEditor
       }
 
     private var useCaseStepRefs: Map[UseCaseStepId, EditorNavParent.ComponentRef] =

@@ -17,6 +17,7 @@ import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.semantic.{Form, Icon, Input, Message}
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.user._
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.base.validation.Implicits._
 import shipreq.webapp.base.validation.{Composite, Simple}
 import shipreq.webapp.base.{CommmonUiText, Urls, WebappConfig}
@@ -138,10 +139,13 @@ object Register2 {
       val submitCB: Option[Callback] = {
         def submitIfValid: Composite.Invalidity \/ Callback =
           validator((s.personName, s.username, (s.password1, s.password2), s.tos)).map(req =>
-            asyncW((s, f) => p.submit(
-              req,
-              res => s << onResult(req)(res),
-              e => f(e) >> Callback.alert(e.value))))
+            asyncW(
+              p.submit(req).flatTapSync {
+                case \/-(res) => onResult(req)(res)
+                case -\/(err) => Callback.alert(err.value)
+              }
+            )
+          )
 
         Common.validationOffUntilFirstSubmit(
           s.formEnabled,

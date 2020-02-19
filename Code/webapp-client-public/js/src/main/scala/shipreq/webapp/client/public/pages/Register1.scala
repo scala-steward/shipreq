@@ -4,6 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
+import scalaz.{-\/, \/-}
 import shipreq.base.util.{Deny, ErrorMsg, Permission}
 import shipreq.webapp.base.CommmonUiText
 import shipreq.webapp.base.data.{Disabled, Enabled}
@@ -13,6 +14,7 @@ import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.{Form, Icon, Input, Message}
 import shipreq.webapp.base.user.{EmailAddr, UserValidators}
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.public.Styles.{register1 => *}
 import shipreq.webapp.client.public.spa.{Page, RouterCtl}
 
@@ -53,10 +55,12 @@ object Register1 {
         email <- p.state.value.validated
         if p.state.value.formEnabled is Enabled
       } yield
-        p.asyncW((s, f) => p.submit(
-          email,
-          _ => s << $.props.flatMap(_.state.modState(_.copy(submitted = true))),
-          e => f(e) >> Callback.alert(e.value)))
+        p.asyncW(
+          p.submit(email).flatTapSync {
+            case \/-(_) => $.props.flatMap(_.state.modState(_.copy(submitted = true)))
+            case -\/(e) => Callback.alert(e.value)
+          }
+        )
 
     private val attemptSubmit: Callback =
       $.props.flatMap(submitCB(_).getOrEmpty)

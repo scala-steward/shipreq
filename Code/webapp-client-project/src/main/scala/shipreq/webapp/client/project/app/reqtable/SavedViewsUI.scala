@@ -1,7 +1,6 @@
 package shipreq.webapp.client.project.app.reqtable
 
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
@@ -10,6 +9,7 @@ import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.{SavedViewCmd, ServerSideProcInvoker}
 import shipreq.webapp.base.ui.semantic.Dropdown.JsOptionsOps
 import shipreq.webapp.base.ui.semantic.{Colour, Dropdown, Icon, SemExtAny, Menu => SemUiMenu}
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.Style.reqtable.{savedViews => *}
 import SavedViewLogic._
 
@@ -87,7 +87,7 @@ object SavedViewsUI {
         _.lastOption.map(_.event).collect(f).map(runAction).getOrEmpty
 
       def runCmd(cmd: SavedViewCmd, onSuccess: OnSuccess = _ => Callback.empty): Callback =
-        asyncW((s, f) => savedViewIO(cmd, s >> onSuccess(_), f))
+        asyncW(savedViewIO(cmd).rightFlatTap(onSuccess(_).asAsyncCallback))
 
       def promptThenRun(prompt   : CallbackTo[Option[String]],
                         validate : CallbackTo[String => Either[String, Option[SavedViewCmd]]],

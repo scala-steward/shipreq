@@ -5,6 +5,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
+import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AsyncFeature
@@ -12,6 +13,7 @@ import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic._
+import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.base.{AssetManifest, WebappConfig}
 import shipreq.webapp.client.public.PublicSpaProtocols.LandingPage.Request
 import shipreq.webapp.client.public.Styles.{landingPage => *}
@@ -80,11 +82,19 @@ object LandingPage {
     val textTields: NonEmptyVector[ValidationUX => StateSnapshot[State] => Form.Field] =
       NonEmptyVector(fieldName, fieldEmail, fieldMsg)
 
-    def submit(p: Props, r: Request): Callback =
-      p.asyncW((s, f) =>
-        p.submit(r,
-          _ => s << p.state.modState(State.submitted.set(true)) >> Callback.alert("Great to hear from you.\n\nWe'll be in touch!"),
-          e => f(e) >> Callback.alert(e.value)))
+    def submit(p: Props, r: Request): Callback = {
+      val task: AsyncCallback[ErrorMsg \/ Unit] =
+        p.submit(r).flatTapSync {
+          case \/-(_) =>
+            val lockForm = p.state.modState(State.submitted.set(true))
+            val sayDone  = Callback.alert("Great to hear from you.\n\nWe'll be in touch!")
+            lockForm >> sayDone
+          case -\/(f) =>
+            Callback.alert(f.value)
+        }
+
+      p.asyncW(task)
+    }
 
     private def renderForm(p: Props): VdomElement = {
       val s = p.state.value
