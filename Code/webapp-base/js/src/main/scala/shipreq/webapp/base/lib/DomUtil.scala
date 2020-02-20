@@ -103,8 +103,8 @@ object DomUtil {
 
   def activeHtmlElement: CallbackTo[Option[html.Element]] =
     CallbackTo(
-      document.activeElement
-        .domToHtml
+      Option(document.activeElement)
+        .flatMap(_.domToHtml)
         .filterNot(_ eq document.body))
 
   def focusableChildren(e: Element): Iterator[html.Element] =

@@ -90,9 +90,6 @@ Phase 3A
   * add default values for tag fields [FR-6]
   * make properties/values per req-type [FR-12]
 
-* UX
-  * Issues page: open & commit field editor -> row disappears -> no element has focus --- focus on adjacent row
-
 * Investigate changes required to support phone / tablet
 
 * Metrics

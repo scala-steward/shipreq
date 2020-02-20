@@ -54,6 +54,11 @@ object TableRow {
       ^.onKeyDown ==> keys)
   }
 
+  final val fieldEditorAttr = "data-fe"
+
+  private val fieldEditorTagMod: TagMod =
+    VdomAttr(fieldEditorAttr) := "1"
+
   private def render(p: Props): VdomElement = {
     import p.{row, pubidFormat}
 
@@ -176,7 +181,7 @@ object TableRow {
                       render: => TagMod,
                       editor: EditorFeature.ReadWrite.ForEditor[A, Any],
                       args  : A): EditorNavParent.Props = {
-    val base = cellBase(column, addNav = false)
+    val base = cellBase(column, addNav = false)(fieldEditorTagMod)
     EditorNavParent.Props(base, editor, args, render)
   }
 }

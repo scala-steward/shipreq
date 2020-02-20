@@ -30,6 +30,12 @@ object EditorNavParent {
 
     @inline final def renderWithKey(k: Key): VdomElement =
       Component.withKey(k)(this)
+
+    final def withEditor(e: EditorFeature.ReadWrite.ForEditor[A, Any]): Props =
+      Props(parent, e, editorArgs, view(), onKeyDown)(tableStyle)
+
+    final def modEditor(f: EditorFeature.ReadWrite.ForEditor[A, Any] => EditorFeature.ReadWrite.ForEditor[A, Any]): Props =
+      withEditor(f(editor))
   }
 
   object Props {

@@ -118,7 +118,7 @@ object Row {
       }
 
     def forReqF(i: Issue, desc: String, req: Req)(fkGR: IssueField[EditorFeature.FieldKey.ForGenericReq],
-                                                 fkUC: IssueField[EditorFeature.FieldKey.ForUseCase]): ForReq =
+                                                  fkUC: IssueField[EditorFeature.FieldKey.ForUseCase]): ForReq =
       req match {
         case r: GenericReq => forGR(i, desc, r, fkGR)
         case r: UseCase    => forUC(i, desc, r, fkUC)
