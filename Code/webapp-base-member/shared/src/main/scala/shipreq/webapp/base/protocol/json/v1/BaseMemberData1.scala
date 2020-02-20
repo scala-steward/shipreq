@@ -46,18 +46,18 @@ private[v1] object BaseMemberData1 {
 
     override def nev[A](as: JsonCodec[Vector[A]])(implicit a: JsonCodec[A]) = codecNEV
 
-    private[this] final val KeyLiteral        = "lit"
     private[this] final val KeyBlankLine      = "bl"
-    private[this] final val KeyReqRef         = "req"
-    private[this] final val KeyCodeRef        = "code"
-    private[this] final val KeyUseCaseStepRef = "ucs"
-    private[this] final val KeyIssue          = "issue"
-    private[this] final val KeyWebAddress     = "web"
-    private[this] final val KeyEmailAddress   = "email"
-    private[this] final val KeyTeX            = "tex"
-    private[this] final val KeyTagRef         = "tag"
-    private[this] final val KeyUnorderedList  = "ul"
     private[this] final val KeyCodeBlock      = "cb"
+    private[this] final val KeyCodeRef        = "code"
+    private[this] final val KeyEmailAddress   = "email"
+    private[this] final val KeyIssue          = "issue"
+    private[this] final val KeyLiteral        = "lit"
+    private[this] final val KeyReqRef         = "req"
+    private[this] final val KeyTagRef         = "tag"
+    private[this] final val KeyTeX            = "tex"
+    private[this] final val KeyUnorderedList  = "ul"
+    private[this] final val KeyUseCaseStepRef = "ucs"
+    private[this] final val KeyWebAddress     = "web"
 
     override def sum[T <: Atom.Base](t: T)(get: Atom.Type => JsonCodec[t.Atom], all: List[JsonCodec[t.Atom]]): JsonCodec[t.Atom] = {
       JsonCodec[t.Atom](
@@ -65,31 +65,31 @@ private[v1] object BaseMemberData1 {
           Atom.Type.of(a) match {
             case t@ Type.Literal        => Json.obj(KeyLiteral        -> get(t).encoder(a))
             case t@ Type.BlankLine      => Json.obj(KeyBlankLine      -> get(t).encoder(a))
-            case t@ Type.ReqRef         => Json.obj(KeyReqRef         -> get(t).encoder(a))
-            case t@ Type.CodeRef        => Json.obj(KeyCodeRef        -> get(t).encoder(a))
-            case t@ Type.UseCaseStepRef => Json.obj(KeyUseCaseStepRef -> get(t).encoder(a))
-            case t@ Type.Issue          => Json.obj(KeyIssue          -> get(t).encoder(a))
-            case t@ Type.WebAddress     => Json.obj(KeyWebAddress     -> get(t).encoder(a))
-            case t@ Type.EmailAddress   => Json.obj(KeyEmailAddress   -> get(t).encoder(a))
-            case t@ Type.TeX            => Json.obj(KeyTeX            -> get(t).encoder(a))
-            case t@ Type.TagRef         => Json.obj(KeyTagRef         -> get(t).encoder(a))
-            case t@ Type.UnorderedList  => Json.obj(KeyUnorderedList  -> get(t).encoder(a))
             case t@ Type.CodeBlock      => Json.obj(KeyCodeBlock      -> get(t).encoder(a))
+            case t@ Type.CodeRef        => Json.obj(KeyCodeRef        -> get(t).encoder(a))
+            case t@ Type.EmailAddress   => Json.obj(KeyEmailAddress   -> get(t).encoder(a))
+            case t@ Type.Issue          => Json.obj(KeyIssue          -> get(t).encoder(a))
+            case t@ Type.ReqRef         => Json.obj(KeyReqRef         -> get(t).encoder(a))
+            case t@ Type.TagRef         => Json.obj(KeyTagRef         -> get(t).encoder(a))
+            case t@ Type.TeX            => Json.obj(KeyTeX            -> get(t).encoder(a))
+            case t@ Type.UnorderedList  => Json.obj(KeyUnorderedList  -> get(t).encoder(a))
+            case t@ Type.UseCaseStepRef => Json.obj(KeyUseCaseStepRef -> get(t).encoder(a))
+            case t@ Type.WebAddress     => Json.obj(KeyWebAddress     -> get(t).encoder(a))
           }
         },
         decodeSumBySoleKey[t.Atom] {
           case (KeyLiteral       , c) => get(Type.Literal       ).decoder.tryDecode(c)
           case (KeyBlankLine     , c) => get(Type.BlankLine     ).decoder.tryDecode(c)
-          case (KeyReqRef        , c) => get(Type.ReqRef        ).decoder.tryDecode(c)
-          case (KeyCodeRef       , c) => get(Type.CodeRef       ).decoder.tryDecode(c)
-          case (KeyUseCaseStepRef, c) => get(Type.UseCaseStepRef).decoder.tryDecode(c)
-          case (KeyIssue         , c) => get(Type.Issue         ).decoder.tryDecode(c)
-          case (KeyWebAddress    , c) => get(Type.WebAddress    ).decoder.tryDecode(c)
-          case (KeyEmailAddress  , c) => get(Type.EmailAddress  ).decoder.tryDecode(c)
-          case (KeyTeX           , c) => get(Type.TeX           ).decoder.tryDecode(c)
-          case (KeyTagRef        , c) => get(Type.TagRef        ).decoder.tryDecode(c)
-          case (KeyUnorderedList , c) => get(Type.UnorderedList ).decoder.tryDecode(c)
           case (KeyCodeBlock     , c) => get(Type.CodeBlock     ).decoder.tryDecode(c)
+          case (KeyCodeRef       , c) => get(Type.CodeRef       ).decoder.tryDecode(c)
+          case (KeyEmailAddress  , c) => get(Type.EmailAddress  ).decoder.tryDecode(c)
+          case (KeyIssue         , c) => get(Type.Issue         ).decoder.tryDecode(c)
+          case (KeyReqRef        , c) => get(Type.ReqRef        ).decoder.tryDecode(c)
+          case (KeyTagRef        , c) => get(Type.TagRef        ).decoder.tryDecode(c)
+          case (KeyTeX           , c) => get(Type.TeX           ).decoder.tryDecode(c)
+          case (KeyUnorderedList , c) => get(Type.UnorderedList ).decoder.tryDecode(c)
+          case (KeyUseCaseStepRef, c) => get(Type.UseCaseStepRef).decoder.tryDecode(c)
+          case (KeyWebAddress    , c) => get(Type.WebAddress    ).decoder.tryDecode(c)
         }
       )
     }

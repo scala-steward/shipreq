@@ -44,48 +44,48 @@ object BaseMemberData1 {
 
     override def sum[T <: Atom.Base](t: T)(get: Atom.Type => Pickler[t.Atom], all: List[Pickler[t.Atom]]): Pickler[t.Atom] =
       new Pickler[t.Atom] {
-        private[this] final val KeyLiteral        = 'l'
         private[this] final val KeyBlankLine      = '0'
-        private[this] final val KeyReqRef         = 'r'
-        private[this] final val KeyCodeRef        = 'c'
-        private[this] final val KeyUseCaseStepRef = 'u'
-        private[this] final val KeyIssue          = 'i'
-        private[this] final val KeyWebAddress     = '/'
-        private[this] final val KeyEmailAddress   = '@'
-        private[this] final val KeyTeX            = 'X'
-        private[this] final val KeyTagRef         = 't'
-        private[this] final val KeyUnorderedList  = '*'
         private[this] final val KeyCodeBlock      = '{'
+        private[this] final val KeyCodeRef        = 'c'
+        private[this] final val KeyEmailAddress   = '@'
+        private[this] final val KeyIssue          = 'i'
+        private[this] final val KeyLiteral        = 'l'
+        private[this] final val KeyReqRef         = 'r'
+        private[this] final val KeyTagRef         = 't'
+        private[this] final val KeyTeX            = 'X'
+        private[this] final val KeyUnorderedList  = '*'
+        private[this] final val KeyUseCaseStepRef = 'u'
+        private[this] final val KeyWebAddress     = '/'
         override def pickle(a: t.Atom)(implicit state: PickleState): Unit = {
           Atom.Type.of(a) match {
             case t@ Type.Literal        => state.enc.writeByte(KeyLiteral       ); get(t).pickle(a)
             case t@ Type.BlankLine      => state.enc.writeByte(KeyBlankLine     ); get(t).pickle(a)
-            case t@ Type.ReqRef         => state.enc.writeByte(KeyReqRef        ); get(t).pickle(a)
-            case t@ Type.CodeRef        => state.enc.writeByte(KeyCodeRef       ); get(t).pickle(a)
-            case t@ Type.UseCaseStepRef => state.enc.writeByte(KeyUseCaseStepRef); get(t).pickle(a)
-            case t@ Type.Issue          => state.enc.writeByte(KeyIssue         ); get(t).pickle(a)
-            case t@ Type.WebAddress     => state.enc.writeByte(KeyWebAddress    ); get(t).pickle(a)
-            case t@ Type.EmailAddress   => state.enc.writeByte(KeyEmailAddress  ); get(t).pickle(a)
-            case t@ Type.TeX            => state.enc.writeByte(KeyTeX           ); get(t).pickle(a)
-            case t@ Type.TagRef         => state.enc.writeByte(KeyTagRef        ); get(t).pickle(a)
-            case t@ Type.UnorderedList  => state.enc.writeByte(KeyUnorderedList ); get(t).pickle(a)
             case t@ Type.CodeBlock      => state.enc.writeByte(KeyCodeBlock     ); get(t).pickle(a)
+            case t@ Type.CodeRef        => state.enc.writeByte(KeyCodeRef       ); get(t).pickle(a)
+            case t@ Type.EmailAddress   => state.enc.writeByte(KeyEmailAddress  ); get(t).pickle(a)
+            case t@ Type.Issue          => state.enc.writeByte(KeyIssue         ); get(t).pickle(a)
+            case t@ Type.ReqRef         => state.enc.writeByte(KeyReqRef        ); get(t).pickle(a)
+            case t@ Type.TagRef         => state.enc.writeByte(KeyTagRef        ); get(t).pickle(a)
+            case t@ Type.TeX            => state.enc.writeByte(KeyTeX           ); get(t).pickle(a)
+            case t@ Type.UnorderedList  => state.enc.writeByte(KeyUnorderedList ); get(t).pickle(a)
+            case t@ Type.UseCaseStepRef => state.enc.writeByte(KeyUseCaseStepRef); get(t).pickle(a)
+            case t@ Type.WebAddress     => state.enc.writeByte(KeyWebAddress    ); get(t).pickle(a)
           }
         }
         override def unpickle(implicit state: UnpickleState): t.Atom = {
           state.dec.readByte match {
             case KeyLiteral        => get(Type.Literal       ).unpickle
             case KeyBlankLine      => get(Type.BlankLine     ).unpickle
-            case KeyReqRef         => get(Type.ReqRef        ).unpickle
-            case KeyCodeRef        => get(Type.CodeRef       ).unpickle
-            case KeyUseCaseStepRef => get(Type.UseCaseStepRef).unpickle
-            case KeyIssue          => get(Type.Issue         ).unpickle
-            case KeyWebAddress     => get(Type.WebAddress    ).unpickle
-            case KeyEmailAddress   => get(Type.EmailAddress  ).unpickle
-            case KeyTeX            => get(Type.TeX           ).unpickle
-            case KeyTagRef         => get(Type.TagRef        ).unpickle
-            case KeyUnorderedList  => get(Type.UnorderedList ).unpickle
             case KeyCodeBlock      => get(Type.CodeBlock     ).unpickle
+            case KeyCodeRef        => get(Type.CodeRef       ).unpickle
+            case KeyEmailAddress   => get(Type.EmailAddress  ).unpickle
+            case KeyIssue          => get(Type.Issue         ).unpickle
+            case KeyReqRef         => get(Type.ReqRef        ).unpickle
+            case KeyTagRef         => get(Type.TagRef        ).unpickle
+            case KeyTeX            => get(Type.TeX           ).unpickle
+            case KeyUnorderedList  => get(Type.UnorderedList ).unpickle
+            case KeyUseCaseStepRef => get(Type.UseCaseStepRef).unpickle
+            case KeyWebAddress     => get(Type.WebAddress    ).unpickle
           }
         }
       }

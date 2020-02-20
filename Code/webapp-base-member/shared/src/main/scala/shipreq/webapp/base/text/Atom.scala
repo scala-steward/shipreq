@@ -24,48 +24,48 @@ object Atom {
 
   sealed abstract class TypeGroup
   object TypeGroup {
-    case object Literal         extends TypeGroup
+    case object CodeBlock       extends TypeGroup
     case object ContentRef      extends TypeGroup
     case object Issue           extends TypeGroup
     case object ListMarkup      extends TypeGroup
+    case object Literal         extends TypeGroup
     case object NewLine         extends TypeGroup
     case object PlainTextMarkup extends TypeGroup
     case object TagRef          extends TypeGroup
-    case object CodeBlock       extends TypeGroup
 
     val values = AdtMacros.adtValues[TypeGroup]
   }
 
   sealed abstract class Type(final val group: TypeGroup)
   object Type {
-    case object Literal        extends Type(TypeGroup.Literal)
     case object BlankLine      extends Type(TypeGroup.NewLine)
-    case object ReqRef         extends Type(TypeGroup.ContentRef)
-    case object CodeRef        extends Type(TypeGroup.ContentRef)
-    case object UseCaseStepRef extends Type(TypeGroup.ContentRef)
-    case object Issue          extends Type(TypeGroup.Issue)
-    case object WebAddress     extends Type(TypeGroup.PlainTextMarkup)
-    case object EmailAddress   extends Type(TypeGroup.PlainTextMarkup)
-    case object TeX            extends Type(TypeGroup.PlainTextMarkup)
-    case object TagRef         extends Type(TypeGroup.TagRef)
-    case object UnorderedList  extends Type(TypeGroup.ListMarkup)
     case object CodeBlock      extends Type(TypeGroup.CodeBlock)
+    case object CodeRef        extends Type(TypeGroup.ContentRef)
+    case object EmailAddress   extends Type(TypeGroup.PlainTextMarkup)
+    case object Issue          extends Type(TypeGroup.Issue)
+    case object Literal        extends Type(TypeGroup.Literal)
+    case object ReqRef         extends Type(TypeGroup.ContentRef)
+    case object TagRef         extends Type(TypeGroup.TagRef)
+    case object TeX            extends Type(TypeGroup.PlainTextMarkup)
+    case object UnorderedList  extends Type(TypeGroup.ListMarkup)
+    case object UseCaseStepRef extends Type(TypeGroup.ContentRef)
+    case object WebAddress     extends Type(TypeGroup.PlainTextMarkup)
 
     val values = AdtMacros.adtValues[Type]
 
     val of: AnyAtom => Type = {
-      case _: Literal         # Literal        => Literal
-      case _: NewLine         # BlankLine      => BlankLine
-      case _: ContentRef      # ReqRef         => ReqRef
+      case _: CodeBlock       # CodeBlock      => CodeBlock
       case _: ContentRef      # CodeRef        => CodeRef
+      case _: ContentRef      # ReqRef         => ReqRef
       case _: ContentRef      # UseCaseStepRef => UseCaseStepRef
       case _: Issue           # Issue          => Issue
-      case _: PlainTextMarkup # WebAddress     => WebAddress
+      case _: ListMarkup      # UnorderedList  => UnorderedList
+      case _: Literal         # Literal        => Literal
+      case _: NewLine         # BlankLine      => BlankLine
       case _: PlainTextMarkup # EmailAddress   => EmailAddress
       case _: PlainTextMarkup # TeX            => TeX
+      case _: PlainTextMarkup # WebAddress     => WebAddress
       case _: TagRef          # TagRef         => TagRef
-      case _: ListMarkup      # UnorderedList  => UnorderedList
-      case _: CodeBlock       # CodeBlock      => CodeBlock
     }
   }
 
@@ -100,6 +100,7 @@ object Atom {
 
     final def supports(g: TypeGroup): Boolean =
       g match {
+        case TypeGroup.CodeBlock       => this.isInstanceOf[Atom.CodeBlock]
         case TypeGroup.ContentRef      => this.isInstanceOf[Atom.ContentRef]
         case TypeGroup.Issue           => this.isInstanceOf[Atom.Issue]
         case TypeGroup.ListMarkup      => this.isInstanceOf[Atom.ListMarkup]
@@ -107,7 +108,6 @@ object Atom {
         case TypeGroup.NewLine         => this.isInstanceOf[Atom.NewLine]
         case TypeGroup.PlainTextMarkup => this.isInstanceOf[Atom.PlainTextMarkup]
         case TypeGroup.TagRef          => this.isInstanceOf[Atom.TagRef]
-        case TypeGroup.CodeBlock       => this.isInstanceOf[Atom.CodeBlock]
       }
 
     final def supports(t: Type): Boolean =
