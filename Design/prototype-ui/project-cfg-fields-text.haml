@@ -311,9 +311,12 @@
                 %td
                   <button class="ui button basic green" style="white-space: nowrap; border-color: #080 !important"><i class="icon plus" style="margin:0"></i></button>
 
-          %div(style="text-align:right; margin-top:2rem")
-            -# %button.ui.button.basic.black(style="margin-right:2ex")
-            %button.ui.button.black(style="margin-right:2ex")
+          %div(style="margin-top:2rem; display:flex")
+            %button.ui.button.negative.basic(style="white-space: nowrap;")
+              %i.icon.trash
+              Delete
+            %div(style="flex-grow:1")
+            %button.ui.button.black.basic(style="margin-right:2em")
               %i.icon.remove
               Cancel
             -# %button.ui.button.basic.green(style="border-color: #080 !important; font-weight: bold !important;")

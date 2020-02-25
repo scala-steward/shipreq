@@ -27,7 +27,7 @@
       main > .left > table > tbody > tr:not(.cont) > td:first-child {text-align:center!important; width:1ex}
       main > .left > table > tbody > tr > td {vertical-align:top;}
 
-      #t2 td:nth-child(5) { text-align:right; width:1px; }
+      #t2 tr > *:nth-child(5) { display:none }
 
       #t2 .rule {
         line-height:1.8em
@@ -86,6 +86,8 @@
         height: auto; opacity: 1;
         xtransition: height 0s 0s, opacity .4s 0s;
       }
+
+      .button-row button:not(:first-child) {margin-left:2em}
 
   -# ==================================================================================================================================================
   -# ==================================================================================================================================================
@@ -271,9 +273,11 @@
 
       %section.right
         .right-off#tageditor
-          -# %h2(style="color: #4059bf; margin-bottom:2rem") Status editor
-          -# %h2(style="color: #4c6be6; margin-bottom:2rem") Status editor
-          %h2(style="color: #3659e2; margin-bottom:2rem") Status editor
+          %div(style="display:flex")
+            %div(style="flex-grow:1")
+              %h2(style="color: #3659e2; margin-bottom:2rem; display:inline") Status editor
+            -# %div(style="text-align:right")
+              %i.close.link.icon.large
 
           %table.ui.single.line.table.settings
             %thead
@@ -334,12 +338,41 @@
                 %td
                   <button class="ui button basic green" style="white-space: nowrap; border-color: #080 !important"><i class="icon plus" style="margin:0"></i></button>
 
-          %div(style="text-align:right; margin-top:2rem")
-            -# %button.ui.button.basic.black(style="margin-right:2ex")
-            %button.ui.button.black(style="margin-right:2ex")
+          -# %div.button-row(style="text-align:right; margin-top:2rem")
+            %button.ui.button.black.basic
+              %i.icon.remove
+              Cancel
+            %button.ui.button.negative.basic(style="white-space: nowrap;")
+              %i.icon.trash
+              Delete
+            -# %button.ui.button.basic.green(style="border-color: #080 !important; font-weight: bold !important;")
+            %button.ui.button.green
+              %i.icon.plus
+              Update
+
+          %div(style="margin-top:2rem; display:flex")
+            %button.ui.button.negative.basic(style="white-space: nowrap;")
+              %i.icon.trash
+              Delete
+            %div(style="flex-grow:1")
+            %button.ui.button.black.basic(style="margin-right:2em")
               %i.icon.remove
               Cancel
             -# %button.ui.button.basic.green(style="border-color: #080 !important; font-weight: bold !important;")
+            %button.ui.button.green
+              %i.icon.plus
+              Update
+
+          -# %div(style="margin-top:2rem; display:flex; justify-content: space-between")
+            %button.ui.button.black.basic
+              %i.icon.remove
+              Cancel
+            %button.ui.button.negative.basic(style="white-space: nowrap;")
+              %i.icon.trash
+              Delete
+            -# %button.ui.button.basic.green(style="border-color: #080 !important; font-weight: bold !important;")
+              %i.icon.plus
+              Update
             %button.ui.button.green
               %i.icon.plus
               Update
