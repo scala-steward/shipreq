@@ -271,9 +271,12 @@
 
       %section.right
         .right-off#tageditor
-          %h2(style="color: #3659e2; margin-bottom:2rem") Detail editor
+          %h2(style="color: #3659e2; margin-bottom:2.5rem") Detail editor
 
-          %h1 title editor here
+          .ui.form(style="margin-bottom:2rem!important")
+            .inline.field
+              %label Name:
+              %input(type="text" value="Detail")
 
           %table.ui.single.line.table.settings
             %thead
