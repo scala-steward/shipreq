@@ -27,7 +27,7 @@
       main > .left > table > tbody > tr:not(.cont) > td:first-child {text-align:center!important; width:1ex}
       main > .left > table > tbody > tr > td {vertical-align:top;}
 
-      #t2 td:nth-child(5) { text-align:right; width:1px ; }
+      #t2 tr > *:nth-child(5) { display:none }
 
       #t2 .rule {
         line-height:1.8em
@@ -271,9 +271,9 @@
 
       %section.right
         .right-off#tageditor
-          -# %h2(style="color: #4059bf; margin-bottom:2rem") Status editor
-          -# %h2(style="color: #4c6be6; margin-bottom:2rem") Status editor
-          %h2(style="color: #3659e2; margin-bottom:2rem") Status editor
+          -# %h2(style="color: #4059bf; margin-bottom:2rem") Status
+          -# %h2(style="color: #4c6be6; margin-bottom:2rem") Status
+          %h2(style="color: #3659e2; margin-bottom:2rem") Status
 
           %table.ui.single.line.table.settings
             %thead
@@ -334,13 +334,16 @@
                 %td
                   <button class="ui button basic green" style="white-space: nowrap; border-color: #080 !important"><i class="icon plus" style="margin:0"></i></button>
 
-          %div(style="text-align:right; margin-top:2rem")
-            -# %button.ui.button.basic.black(style="margin-right:2ex")
-            %button.ui.button.black(style="margin-right:2ex")
+          %div(style="margin-top:2rem; display:flex")
+            %button.ui.button.negative.basic(style="white-space: nowrap;")
+              %i.icon.trash
+              Delete
+            %div(style="flex-grow:1")
+            %button.ui.button.black.basic(style="margin-right:2em")
               %i.icon.remove
-              Cancel
+              Close
             -# %button.ui.button.basic.green(style="border-color: #080 !important; font-weight: bold !important;")
-            %button.ui.button.green
+            %button.ui.button.green.disabled
               %i.icon.plus
               Update
 

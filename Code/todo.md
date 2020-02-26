@@ -89,6 +89,7 @@ Phase 3A
   * redo config screen
   * add default values for tag fields [FR-6]
   * make properties/values per req-type [FR-12]
+  * add a max-size for field names, apply to editors
 
 * Investigate changes required to support phone / tablet
 

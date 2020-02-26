@@ -27,7 +27,7 @@
       main > .left > table > tbody > tr:not(.cont) > td:first-child {text-align:center!important; width:1ex}
       main > .left > table > tbody > tr > td {vertical-align:top;}
 
-      #t2 td:nth-child(5) { text-align:right; width:1px; }
+      #t2 tr > *:nth-child(5) { display:none }
 
       #t2 .rule {
         line-height:1.8em
@@ -271,12 +271,12 @@
 
       %section.right
         .right-off#tageditor
-          %h2(style="color: #3659e2; margin-bottom:2.5rem") Detail editor
+          %h2(style="color: #3659e2; margin-bottom:2.5rem") Detail
 
           .ui.form(style="margin-bottom:2rem!important")
             .inline.field
               %label Name:
-              %input(type="text" value="Detail")
+              %input(type="text" value="Detail" style="width:30ex")
 
           %table.ui.single.line.table.settings
             %thead
@@ -321,9 +321,9 @@
             %div(style="flex-grow:1")
             %button.ui.button.black.basic(style="margin-right:2em")
               %i.icon.remove
-              Cancel
+              Close
             -# %button.ui.button.basic.green(style="border-color: #080 !important; font-weight: bold !important;")
-            %button.ui.button.green
+            %button.ui.button.green.disabled
               %i.icon.plus
               Update
 

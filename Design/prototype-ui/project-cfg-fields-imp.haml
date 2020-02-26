@@ -87,8 +87,6 @@
         xtransition: height 0s 0s, opacity .4s 0s;
       }
 
-      .button-row button:not(:first-child) {margin-left:2em}
-
   -# ==================================================================================================================================================
   -# ==================================================================================================================================================
   %body
@@ -217,17 +215,20 @@
                   %span.value Mandatory
               %td
                 <button class="ui button basic  negative " style="white-space: nowrap;"><i class="icon trash"></i>Delete</button>
-            %tr
+            %tr#tagrow
               %td ☰
               %td Major Feature
               %td Implication
               %td
                 .rule
-                  %span.types Not: MF, OE
+                  %span.types MF, OE
+                  %span.value Not applicable
+                .rule
+                  %span.types Other
                   %span.value Optional
               %td
                 <button class="ui button basic  negative " style="white-space: nowrap;"><i class="icon trash"></i>Delete</button>
-            %tr#tagrow
+            %tr
               %td ☰
               %td Status
               %td Tag
@@ -273,12 +274,7 @@
 
       %section.right
         .right-off#tageditor
-
-          %div(style="display:flex; margin-bottom:2.5rem")
-            %div(style="flex-grow:1")
-              %h2(style="color: #3659e2; display:inline") Status
-            -# %div(style="text-align:right")
-              %i.close.link.icon.large
+          %h2(style="color: #3659e2; margin-bottom:2.5rem") Major Feature
 
           %table.ui.single.line.table.settings
             %thead
@@ -290,39 +286,7 @@
               %tr
                 %td
                   .ui.input
-                    %input(type="text" value="FR, UC")
-                %td
-                  %select.ui.dropdown
-                    %option Default to...
-                  .ui.selection.dropdown(style="margin-left:1.5ex")
-                    %input(type="hidden" value="1")
-                    %i.dropdown.icon
-                    .default.text Select Tag
-                    .menu
-                      .item(data-value="1")
-                        .ui.label.is-tag.brown(style="margin:0") needs_analysis
-                %td
-                  <button class="ui button basic  negative " style="white-space: nowrap"><i class="icon trash" style="margin:0"></i></button>
-              %tr
-                %td
-                  .ui.input
-                    %input(type="text" value="IV")
-                %td
-                  %select.ui.dropdown
-                    %option Default to...
-                  .ui.selection.dropdown(style="margin-left:1.5ex")
-                    %input(type="hidden" value="1")
-                    %i.dropdown.icon
-                    .default.text Select Tag
-                    .menu
-                      .item(data-value="1")
-                        .ui.label.is-tag.yellow(style="margin:0;color:#000!important") needs_more_info
-                %td
-                  <button class="ui button basic  negative " style="white-space: nowrap"><i class="icon trash" style="margin:0"></i></button>
-              %tr
-                %td
-                  .ui.input
-                    %input(type="text" value="OE, SI")
+                    %input(type="text" value="MF, OE")
                 %td
                   %select.ui.dropdown
                     %option Not applicable
@@ -331,25 +295,13 @@
               %tr
                 %td
                   %p Other
-                  %p (BR, CO, QA, new)
-                  -# BR, CO, FR, IV, OE, QA, SI, UC
+                  %p BR, CO, FR, IV, QA, SI, UC, new
+                  -# BR, CO, FR, IV, MF, OE, QA, SI, UC
                 %td
                   %select.ui.dropdown
                     %option Optional
                 %td
                   <button class="ui button basic green" style="white-space: nowrap; border-color: #080 !important"><i class="icon plus" style="margin:0"></i></button>
-
-          -# %div.button-row(style="text-align:right; margin-top:2rem")
-            %button.ui.button.black.basic
-              %i.icon.remove
-              Cancel
-            %button.ui.button.negative.basic(style="white-space: nowrap;")
-              %i.icon.trash
-              Delete
-            -# %button.ui.button.basic.green(style="border-color: #080 !important; font-weight: bold !important;")
-            %button.ui.button.green
-              %i.icon.plus
-              Update
 
           %div(style="margin-top:2rem; display:flex")
             %button.ui.button.negative.basic(style="white-space: nowrap;")
@@ -358,23 +310,9 @@
             %div(style="flex-grow:1")
             %button.ui.button.black.basic(style="margin-right:2em")
               %i.icon.remove
-              Cancel
+              Close
             -# %button.ui.button.basic.green(style="border-color: #080 !important; font-weight: bold !important;")
-            %button.ui.button.green
-              %i.icon.plus
-              Update
-
-          -# %div(style="margin-top:2rem; display:flex; justify-content: space-between")
-            %button.ui.button.black.basic
-              %i.icon.remove
-              Cancel
-            %button.ui.button.negative.basic(style="white-space: nowrap;")
-              %i.icon.trash
-              Delete
-            -# %button.ui.button.basic.green(style="border-color: #080 !important; font-weight: bold !important;")
-              %i.icon.plus
-              Update
-            %button.ui.button.green
+            %button.ui.button.green.disabled
               %i.icon.plus
               Update
 
