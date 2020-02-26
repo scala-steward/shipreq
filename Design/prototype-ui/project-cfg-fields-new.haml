@@ -142,9 +142,18 @@
 
         %div(style="display:flex; margin-bottom:2rem")
           %div
-            .ui.button.green#new
-              %i.icon.plus
-              New
+            .ui.labeled.button
+              %a.ui.button.green
+                %i.icon.plus
+                New
+              -# .ui.floating.dropdown.labeled.search.button.label
+              .ui.dropdown.label{style: "background-color: #00a632; color: #EEE;"}
+                Text field
+                %i.icon.dropdown
+                .menu
+                  .item Implication field
+                  .item Tag field
+                  .item Text field
 
           %div(style="flex-grow:1")
 
@@ -215,16 +224,13 @@
                   %span.value Mandatory
               %td
                 <button class="ui button basic  negative " style="white-space: nowrap;"><i class="icon trash"></i>Delete</button>
-            %tr#tagrow
+            %tr
               %td ☰
               %td Major Feature
               %td Implication
               %td
                 .rule
-                  %span.types MF, OE
-                  %span.value Not applicable
-                .rule
-                  %span.types Other
+                  %span.types Not: MF, OE
                   %span.value Optional
               %td
                 <button class="ui button basic  negative " style="white-space: nowrap;"><i class="icon trash"></i>Delete</button>
@@ -267,15 +273,25 @@
                   .ui.label.is-tag.blue v1.1
               %td
 
+        %div(style="margin-top:6rem")
+          %button(onclick="cycle()")
+            Cycle through different scenarios
 
       -# ==================================================================================================================================================
       %section.gap1
       %section.gap2
 
       %section.right
-        .right-off#tageditor
-          %h2(style="color: #3659e2; margin-bottom:2.5rem") Major Feature
 
+        -# ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        %div(style="display:none")
+          %h2(style="color: #3659e2; margin-bottom:2.5rem") New text field
+          .ui.form(style="margin-bottom:2rem!important")
+            .inline.field.error
+              %label Name:
+              %input(type="text" value="Detail" style="width:30ex")
+              .ui.left.pointing.red.label(style="margin-left:3ex")
+                That field already exists.
           %table.ui.single.line.table.settings
             %thead
               %tr
@@ -285,36 +301,104 @@
             %tbody
               %tr
                 %td
-                  .ui.input
-                    %input(type="text" value="MF, OE")
+                  .ui.input.error
+                    %input(type="text" value="BR, FR")
+                  %div
+                    .ui.pointing.red.label
+                      FR defined elsewhere.
                 %td
                   %select.ui.dropdown
-                    %option Not applicable
+                    %option Optional
+                %td
+                  <button class="ui button basic  negative " style="white-space: nowrap"><i class="icon trash" style="margin:0"></i></button>
+              %tr
+                %td
+                  .ui.input.error
+                    %input(type="text" value="FR, UC")
+                  %div
+                    .ui.pointing.red.label
+                      FR defined elsewhere.
+                %td
+                  %select.ui.dropdown
+                    %option Mandatory
                 %td
                   <button class="ui button basic  negative " style="white-space: nowrap"><i class="icon trash" style="margin:0"></i></button>
               %tr
                 %td
                   %p Other
-                  %p BR, CO, FR, IV, QA, SI, UC, new
+                  %p (CO, IV, MF, OE, QA, SI, new)
+                  -# BR, CO, FR, IV, MF, OE, QA, SI, UC
+                %td
+                  %select.ui.dropdown
+                    %option Not applicable
+                %td
+                  <button class="ui button basic green" style="white-space: nowrap; border-color: #080 !important"><i class="icon plus" style="margin:0"></i></button>
+          %div(style="margin-top:2rem; display:flex")
+            %div(style="flex-grow:1")
+            %button.ui.button.black.basic(style="margin-right:2em")
+              %i.icon.remove
+              Cancel
+            %button.ui.button.green.disabled
+              %i.icon.plus
+              Create
+
+        -# ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        %div(style="display:none")
+          %h2(style="color: #3659e2; margin-bottom:2.5rem") New tag field
+          .ui.form(style="margin-bottom:2rem!important")
+            .inline.field
+              %label Tag:
+              %select.ui.dropdown
+                %option Version
+          %table.ui.single.line.table.settings
+            %thead
+              %tr
+                %th Req Types
+                %th Rule
+                %th
+            %tbody
+              %tr
+                %td
+                  %p All
+                  -# %p (CO, IV, OE, QA, SI, new)
                   -# BR, CO, FR, IV, MF, OE, QA, SI, UC
                 %td
                   %select.ui.dropdown
                     %option Optional
                 %td
                   <button class="ui button basic green" style="white-space: nowrap; border-color: #080 !important"><i class="icon plus" style="margin:0"></i></button>
-
           %div(style="margin-top:2rem; display:flex")
-            %button.ui.button.negative.basic(style="white-space: nowrap;")
-              %i.icon.trash
-              Delete
             %div(style="flex-grow:1")
             %button.ui.button.black.basic(style="margin-right:2em")
               %i.icon.remove
-              Close
-            -# %button.ui.button.basic.green(style="border-color: #080 !important; font-weight: bold !important;")
+              Cancel
             %button.ui.button.green.disabled
               %i.icon.plus
-              Update
+              Create
+
+        -# ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        %div(style="display:none")
+          %h2(style="color: #3659e2; margin-bottom:2.5rem") New tag field
+          -# .ui.form(style="margin-bottom:2rem!important")
+            .inline.field
+              %label Tag:
+              %select.ui.dropdown
+                %option
+                  ="-"
+          .ui.message.negative(style="margin-right: 2rem")
+            .header No tag groups available
+            %p
+              ="In order to create a new tag-based field, you need a tag group that hasn't been assigned to a field yet. "
+              You can create one on the <a href="#">Tag Config</a> page.
+          %div(style="margin-top:2rem; display:flex")
+            %div(style="flex-grow:1")
+            %button.ui.button.black.basic(style="margin-right:2em")
+              %i.icon.remove
+              Cancel
+            -# %button.ui.button.green.disabled
+              %i.icon.plus
+              Create
+
 
   :javascript
     $('.ui.dropdown').dropdown();
@@ -324,7 +408,17 @@
       $('#tagrow').toggleClass('selected');
       $('#noeditor,#tageditor').toggleClass('right-on');
       $('#noeditor,#tageditor').toggleClass('right-off');
-      $('#new, #t2 button').toggleClass('disabled');
+      $('#t2 button').toggleClass('disabled');
     };
 
     toggle();
+
+    function cycle() {
+      var all = $('section.right > *');
+      var vis = $('section.right > *:visible')[0];
+      var sel = all.index(vis);
+      $(all[sel]).hide();
+      sel = (sel + 1) % all.length;
+      $(all[sel]).show();
+    }
+    $($('section.right > *')[0]).show()
