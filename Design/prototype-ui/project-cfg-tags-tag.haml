@@ -87,7 +87,7 @@
       #tagtree .selected {
         background-color: #869df91f;
         border-top:solid 1px #3659e2;
-        border-bottom:solid 1px #3659e2;
+        border-bottom:solid 1px #3659e2!important;
       }
       #tagtree.has-selection .tag:not(.selected),
       #tagtree.has-selection .group > div:not(.selected) { opacity:.4 }
@@ -250,14 +250,14 @@
                 .ui.label.is-tag.olive(style="margin:0; color:#000!important") implemented
 
           %li.group
-            %div.selected#priority
+            %div
               %i.icon.folder.open.outline
               Priority
             %ol
               %li.tag
                 .drag ☰
                 .ui.label.is-tag.red(style="margin:0") must
-              %li.tag
+              %li.tag.selected#should
                 .drag ☰
                 .ui.label.is-tag.orange(style="margin:0; xcolor:#000!important") should
               %li.tag
@@ -312,21 +312,27 @@
 
         .right-on#editor
           %h2(style="color: #3659e2; margin-bottom:2rem")
-            %i.icon.folder.open.outline(style="margin-right: 0.4ex!important;")
-            Priority
+            -# %pre(style="margin:0") should
+            .ui.label.is-tag.orange(style="margin:0!important; font-size:100%") should
+            -# should
 
           .ui.form
             .field
               %label Name
-              %input(type="text" value="Priority")
-            .ui.segment
-              .field
-                .ui.checkbox
-                  %input(type="checkbox" checked="1")
-                  %label
-                    Exclusive
-                    %div(style="margin-top:0.5em; opacity:0.55")
-                      When more than one tag within this group is applied to a requirement, it will be reported as an issue.
+              %input(type="text" value="should")
+            .field
+              %label Colour
+              -# %input(type="text" value="#f2711c" style="width:16ex")
+              -# %div(style="margin-left:2ex; display:inline")
+                Choose:
+                .ui.buttons
+                  %button.ui.button simple
+                  %button.ui.button full
+              %div(style="width:20ex")
+                .ui.action.input
+                  %input(type="text" value="#f2711c")
+                  %button.ui.button Simple colours
+                  %button.ui.button All colours
             .field
               %label Description
               %textarea(rows="2" value="wtf" placeholder="")
@@ -342,91 +348,12 @@
                       %li.group
                         %div
                           %i.icon.folder.open.outline
-                          No drag handle
-                          .ui.button.basic.negative(style="white-space: nowrap; float:right") %i.icon.trash(style="margin:0!important")
-                      %li.group
-                        %div
-                          %i.icon.folder.open.outline
-                          No tags
+                          Priority
                           .ui.button.basic.negative(style="white-space: nowrap; float:right") %i.icon.trash(style="margin:0!important")
                   %div.f
                     .ui.floating.labeled.icon.dropdown.button
                       %i.icon.plus
                       %span.text Add parent...
-
-            .children
-              .ui.segment
-                .family
-                  %div.h
-                    %h4.ui.header Children
-                  %div.b
-                    %ol.tagtree
-                      %li.group
-                        %div
-                          %i.icon.folder.open.outline
-                          In Testing
-                          .ui.button.basic.negative(style="white-space: nowrap; float:right") %i.icon.trash(style="margin:0!important")
-                      %li.tag
-                        .drag ☰
-                        .ui.label.is-tag.red(style="margin:0") must
-                        .ui.button.basic.negative(style="white-space: nowrap; float:right") %i.icon.trash(style="margin:0")
-                      %li.tag
-                        .drag ☰
-                        .ui.label.is-tag.orange(style="margin:0; xcolor:#000!important") should
-                        .ui.button.basic.negative(style="white-space: nowrap; float:right") %i.icon.trash(style="margin:0")
-                      %li.tag
-                        .drag ☰
-                        .ui.label.is-tag.yellow(style="margin:0; color:#000!important") could
-                        .ui.button.basic.negative(style="white-space: nowrap; float:right") %i.icon.trash(style="margin:0")
-                  %div.f
-                    .ui.floating.labeled.icon.dropdown.button
-                      %i.icon.plus
-                      %span.text Add child...
-                      .menu
-                        .item
-                          %i.icon.folder.open.outline
-                          Actors
-                        .item
-                          %i.icon.folder.open.outline
-                          Status
-                        .item
-                          %span.lvl1
-                          .ui.label.is-tag.yellow(style="margin:0;color:#000!important") needs_more_info
-                        .item
-                          %span.lvl1
-                          .ui.label.is-tag.brown(style="margin:0") needs_analysis
-                        .item
-                          %span.lvl1
-                          .ui.label.is-tag.blue(style="margin:0") analysed
-                        .item
-                          %span.lvl1
-                          .ui.label.is-tag.pink(style="margin:0") ready_for_dev
-                        .item
-                          %span.lvl1
-                          .ui.label.is-tag.olive(style="margin:0; color:#000!important") implemented
-                        -# .item.disabled
-                          %i.icon.folder.open.outline
-                          Priority
-                        .item.disabled
-                          %i.icon.folder.open.outline
-                          Version
-                        .item
-                          %span.lvl1
-                          %i.icon.folder.open.outline
-                          Released
-                        .item
-                          %span.lvl1
-                          %i.icon.folder.open.outline
-                          Unreleased
-                        .item
-                          %span.lvl2
-                          .ui.label.is-tag.blue(style="margin:0") v1.0
-                        .item
-                          %span.lvl2
-                          .ui.label.is-tag.blue(style="margin:0") v1.1
-                        .item
-                          %span.lvl1
-                          .ui.label.is-tag.blue(style="margin:0") tbd
 
           %div(style="margin-top:2rem; display:flex")
             %button.ui.button.negative.basic(style="white-space: nowrap;")
@@ -447,7 +374,7 @@
 
     $('#tagtree').click(function() {
       $('#tagtree').toggleClass('has-selection');
-      $('#priority').toggleClass('selected');
+      $('#should').toggleClass('selected');
       $('#noeditor,#editor').toggleClass('right-on');
       $('#noeditor,#editor').toggleClass('right-off');
       $('#new').toggleClass('disabled');
