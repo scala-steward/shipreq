@@ -49,11 +49,9 @@
         margin-left: -2ex;
         cursor:grab;
       }
-      #tagtree > li {
-        border-top: solid 1px #2224261a;
-      }
-      #tagtree > li:not(:first-child) {
+      #tagtree > li.group:not(:first-child), #tagtree > li.tag.first_after_group {
         margin-top: 1.25em;
+        border-top: solid 1px #2224261a;
       }
       #tagtree li.tag:not(:last-child) {
         border-bottom:solid 1px blue;
@@ -221,6 +219,12 @@
                 %li.tag
                   .drag ☰
                   .ui.label.is-tag.blue(style="margin:0") tbd
+
+          %li.tag.first_after_group
+            .ui.label.is-tag.blue(style="margin:0") blah1
+
+          %li.tag
+            .ui.label.is-tag.blue(style="margin:0") blah2
 
       -# ==================================================================================================================================================
       %section.gap1
