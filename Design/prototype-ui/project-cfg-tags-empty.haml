@@ -1,0 +1,124 @@
+%html
+  %head
+    -# %meta(http-equiv="refresh" content="1")
+    %title CardBoard Req Table | ShipReq
+    %script{src: "../node_modules/jquery/dist/jquery.min.js"}
+    %link{href:  "../semantic/dist/semantic.min.css", rel: "stylesheet", type: "text/css"}/
+    %script{src: "../semantic/dist/semantic.js"}
+    :css
+      body {padding:1rem}
+      .ui.menu.inverted .ui.breadcrumb a {color: #63c0ff}
+      .ui.menu.inverted .ui.breadcrumb a:hover {color: #9bf3ff}
+      .ui.menu.inverted .ui.breadcrumb > i {color: #ddd; margin-left: 0.8em; margin-right: 0.8em;}
+
+      .ui.button.basic {background:#fff!important}
+
+      .is-tag {
+        padding: 4px 6px !important;
+        margin-left: .5ex !important;
+      }
+
+      main {
+        xbackground:#fbb;
+        margin-top: 4rem;
+        min-height: calc(100vh - 2 * (0.928571em + 1rem) - 2.5em);
+        min-height: calc(100vh - 2.79rem - 3rem);
+        min-height: calc(100vh - 6rem);
+        display:grid;
+        grid-template-columns: 1fr 2rem 2rem 1fr;
+      }
+
+      section.gap2 {
+        border-left: solid 1px #e8e8e8;
+      }
+
+  -# ==================================================================================================================================================
+  -# ==================================================================================================================================================
+  %body
+
+    .ui.menu.borderless.fixed.inverted
+      .item
+        %img{src: "logo-only-dark2.svg"}
+
+      .item
+        .ui.breadcrumb
+          %a.section{href: "member-home.html"} Projects
+          %i.divider.icon.right.angle
+          %a.section{href: "project-index.html"} CardBoard
+          .ui.dropdown.inline
+            &nbsp;
+            %i.icon.dropdown
+            .menu
+              .item.active CardBoard
+              .item ShipReq
+          %i.divider.icon.right.angle
+          .section // .active
+            .ui.dropdown.inline
+              Req Table
+              &nbsp;
+              %i.icon.dropdown
+              .menu
+                .header Content
+                .item Implication Graph
+                .item.active ReqTable
+                .header Configuration
+                .item Fields
+                .item Issues
+                .item Req Types
+                .item Tags
+
+      .item.ui.right.dropdown.simple
+        @japgolly
+        -# %i.dropdown.icon
+        .menu
+          %a.item{href: "member-account.html"} Account
+          .item Logout
+
+    %main
+
+      %section.left
+
+        %div(style="display:flex; margin-bottom:2rem")
+          %div
+            .ui.labeled.button
+              %a.ui.button.green
+                %i.icon.plus
+                New
+              -# .ui.floating.dropdown.labeled.search.button.label
+              .ui.dropdown.label{style: "background-color: #00a632; color: #EEE;"}
+                Tag group
+                %i.icon.dropdown
+                .menu
+                  .item Tag
+                  .item Tag group
+
+          %div(style="flex-grow:1")
+
+          %div(style="")
+            %button.ui.button.icon
+              %i.icon.trash.outline.large.grey
+
+
+        -# ==================================================================================================================================================
+        .ui.message.info.icon(style="margin-top: 4rem")
+          %i.icon.info.circle
+          .content
+            .header No tags to display
+            %p
+              Create new tags using the button above.
+
+      -# ==================================================================================================================================================
+      %section.gap1
+      %section.gap2
+
+      %section.right
+
+        .right-on#noeditor(style="display:flex; flex-direction: column; font-size:120%")
+          %div(style="height:calc((100vh - 6rem)/4); xbackground:red")
+          %div(style="text-align:center; font-style:italic; color:#999; line-height: 1.8em")
+            %div This is the tag editor.
+            %div Create a new tag, or select an existing tag to edit it here.
+
+  :javascript
+    $('.ui.dropdown').dropdown();
+    $('.outline').toggleClass('outline');
