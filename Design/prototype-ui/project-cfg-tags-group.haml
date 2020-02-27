@@ -64,6 +64,8 @@
       }
       .tagtree li.tag {
         padding-top: .5em;
+      }
+      #tagtree li.tag {
         padding-bottom: .5em;
       }
       .tagtree .group i {
@@ -132,9 +134,17 @@
       .family > .b {
         flex-grow:1;
       }
-      .family ol.tagtree {
+      .family .tagtree {
+        margin-left:2ex;
+        margin-top:0.25em;
+        margin-bottom:2em;
+      }
+      .family .tagtree li.tag {
         margin-left:2ex;
         margin-bottom:1em;
+      }
+      .family .tagtree .button {
+        margin:-0.5em 0 .5em 0!important;
       }
       .family .lvl1 {padding-left:3ex}
       .family .lvl2 {padding-left:6ex}
@@ -326,6 +336,17 @@
                   %div.h
                     %h4.ui.header Parents
                   %div.b
+                    %ol.tagtree
+                      %li.group
+                        %div
+                          %i.icon.folder.open.outline
+                          No drag handle
+                          .ui.button.basic.negative(style="white-space: nowrap; float:right") %i.icon.trash(style="margin:0!important")
+                      %li.group
+                        %div
+                          %i.icon.folder.open.outline
+                          No tags
+                          .ui.button.basic.negative(style="white-space: nowrap; float:right") %i.icon.trash(style="margin:0!important")
                   %div.f
                     .ui.floating.labeled.icon.dropdown.button
                       %i.icon.plus

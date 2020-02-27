@@ -84,6 +84,7 @@ Phase 3A
     * prop panel on right
     * ability to create child tag in 1-step instead of 2 [FB-4]
   * add tag colours [FR-8]
+  * prevent ap-tags having children
 
 * Fields
   * redo config screen
