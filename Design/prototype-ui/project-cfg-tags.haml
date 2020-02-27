@@ -28,16 +28,14 @@
         grid-template-columns: 1fr 2rem 2rem 1fr;
       }
 
-      /*
-      #tagtree, #tagtree ol { border: solid 1px red ; background:#fcc;}
-      #tagtree li           { xorder: solid 1px blue; background:#cfc;}
-      */
+      section.gap2 {
+        border-left: solid 1px #e8e8e8;
+      }
 
       #tagtree {
         margin:0;
         margin-top:2.5rem;
         padding-left:0;
-        xborder-bottom: solid 1px #2224261a;
       }
       #tagtree ol {
         padding-left:6.5ex;
@@ -47,82 +45,36 @@
       }
       #tagtree .drag {
         display: inline;
-        xborder:solid 1px;
         padding:.5em 1ex 0.5em 2ex;
         margin-left: -2ex;
-        xmargin-right: 1ex;
         cursor:grab;
       }
-
-      /*
-      #tagtree li.group:not(:last-child) { border-bottom:solid 1px green; }
-      #tagtree li.tag:not(:last-child) { border-bottom:solid 1px blue; }
-      #tagtree ol:not(:last-child) { border-bottom:solid 1px red; }
-      */
-
       #tagtree > li {
         border-top: solid 1px #2224261a;
       }
-      #tagtree > li.group {
-        xpadding-top:0.5em;
-      }
       #tagtree > li:not(:first-child) {
         margin-top: 1.25em;
-      }
-      #tagtree li.group:not(:last-child) {
-        xborder-bottom:solid 1px green;
-        xmargin-bottom:1em;
       }
       #tagtree li.tag:not(:last-child) {
         border-bottom:solid 1px blue;
         border-bottom: solid 1px #2224261a;
       }
-      #tagtree ol:not(:last-child) {
-        xborder-bottom:solid 1px red;
-      }
-
-      x#tagtree li.group {xmargin:1ex 0;border:1px solid #800;background:#fdd}
-      x#tagtree li.tag   {xmargin:1ex 0;border:1px solid #088;background:#dff}
-
-      #tagtree li.tag {padding-top: .5em; padding-bottom: .5em}
-
-      #tagtree .group {
-        xmargin-bottom:1em;
-        xbackground: #cfc;
-        xborder: solid 1px;
+      #tagtree li.tag {
+        padding-top: .5em;
+        padding-bottom: .5em;
       }
       #tagtree .group i {
         margin-right:0.4ex!important;
-      }
-      #tagtree .group:not(:first-child) {
-        xmargin-top:10em;
       }
       #tagtree .group > div {
         font-size: 120%;
         padding:0.4em 0;
       }
-      x#tagtree .group > ol {
-        xmargin-top:1em;
-      }
-
-      #tagtree .tag {
-        xpadding-top   : 0.6em;
-        xpadding-bottom: 0.6em;
-      }
-      #tagtree .tag:not(:first-child) {
-        xborder-top: solid 1px #2224261a;
-      }
-
       #tagtree li.group > div, #tagtree li.tag {
         cursor:pointer;
       }
       #tagtree li.group > div:hover, #tagtree li.tag:hover {
         background-color: #fffad7 !important;
-      }
-
-
-      section.gap2 {
-        border-left: solid 1px #e8e8e8;
       }
 
   -# ==================================================================================================================================================
