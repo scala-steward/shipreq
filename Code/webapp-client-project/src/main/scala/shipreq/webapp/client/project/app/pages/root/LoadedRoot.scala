@@ -338,7 +338,9 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
           config_old.reqtypes.CfgReqTypes.Props(sspUpdateConfig, global, filterDeadSS, usageShow).component
 
         case Page.CfgTags =>
-          config.tags.TagConfig.Props().render
+          config.tags.TagConfig.Props(
+            state = StateSnapshot.zoomL(State.tagConfig)(s).setStateVia($)
+          ).render
 
         case Page.ReqTable =>
           val rowAsync = editAsyncState

@@ -55,6 +55,8 @@ object Style extends StyleSheet.Inline {
 
   private def hasError = errorRedOnRed
 
+  private val lightLineColour = c"#e8e8e8"
+
   private val deadMixin = mixin(
     textDecoration := ^.lineThrough)
 
@@ -830,6 +832,73 @@ object Style extends StyleSheet.Inline {
       val abort = style(
         &.hover(color(c"#DB2828").important))
     }
+
+    object splitScreen {
+      @inline private def gap = 2 rem
+
+      val maxBodyWidth = "100vh - 6rem"
+
+      val outer = style(
+        minHeight :=! s"calc($maxBodyWidth)",
+        display.flex,
+      )
+
+      val left = style(
+        width(50 %%),
+        paddingRight(gap),
+        borderRight(solid, 1 px, lightLineColour),
+      )
+
+      val right = style(
+        width(50 %%),
+        paddingLeft(gap),
+      )
+    }
+
+    object splitScreenCrud {
+      import splitScreen.maxBodyWidth
+
+      protected final val animSpeed = ".4s"
+
+      val emptyRight = style(
+        display.flex,
+        flexDirection.column,
+      )
+
+      val emptyRightHeader = style(
+        height :=! s"calc(($maxBodyWidth)/4)",
+      )
+
+      val rightOn = style(
+        height.auto,
+        opacity(1),
+        transition := ("height 0s 0s, opacity " + animSpeed + " 0s"),
+      )
+
+      val rightOff = style(
+        overflow.hidden,
+        height(`0`),
+        opacity(0),
+        transition := ("height 0s " + animSpeed + ", opacity " + animSpeed + " 0s"),
+      )
+
+      val emptyRightBody = style(
+        textAlign.center,
+        fontStyle.italic,
+        color(c"#999"),
+        lineHeight(1.8 em),
+        fontSize(120 %%),
+      )
+
+      val topLeft = style(
+        display.flex,
+        marginBottom(2 rem),
+      )
+
+      val topLeftGrow = style(
+        flexGrow(1),
+      )
+    }
   }
 
   // ===================================================================================================================
@@ -886,7 +955,10 @@ object Style extends StyleSheet.Inline {
     reqdetail.detailTable,
     reqdetail.useCaseStep.container,
     widgets.issueDesc,
-    widgets.reqTypeSelector.dropdown)
+    widgets.reqTypeSelector.dropdown,
+    widgets.splitScreen.left,
+    widgets.splitScreenCrud.emptyRight,
+  )
 //  ConsoleIO(_.log(render[String])).unsafePerformIO()
 //  ConsoleIO(_.info(s"Styles: ${Style.register.styles.length}")).unsafePerformIO()
 }

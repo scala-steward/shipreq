@@ -8,6 +8,7 @@ import shipreq.webapp.base.data.{FilterDead, HideDead}
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.protocol.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
 import shipreq.webapp.base.ui.{ProjectItem, Toast}
+import shipreq.webapp.client.project.app.pages.config.tags.TagConfig
 import shipreq.webapp.client.project.app.pages.content.{reqdetail, reqtable}
 import shipreq.webapp.client.project.app.pages.content.issues.IssuesPage
 import shipreq.webapp.client.project.app.pages.content.reqdetail.ReqDetail
@@ -102,6 +103,7 @@ final case class State(projectName          : ProjectItem.WithEditableName.State
                        updateConfigCmdAsync : AsyncFeature.State.D1[UpdateConfigCmd, ErrorMsg],
                        updateContentCmdAsync: AsyncFeature.State.D1[UpdateContentCmd, ErrorMsg],
                        manualIssueCmdAsync  : AsyncFeature.State.D1[ManualIssueCmd, ErrorMsg],
+                       tagConfig            : TagConfig.State,
                       )
 
 object State {
@@ -126,6 +128,7 @@ object State {
       updateConfigCmdAsync  = AsyncFeature.State.initD1,
       updateContentCmdAsync = AsyncFeature.State.initD1,
       manualIssueCmdAsync   = AsyncFeature.State.initD1,
+      tagConfig             = TagConfig.initState,
     )
 
   implicit val reusability: Reusability[State] =
