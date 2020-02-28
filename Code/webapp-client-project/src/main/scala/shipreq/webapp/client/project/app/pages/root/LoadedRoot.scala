@@ -327,7 +327,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
           issuesPage.component(p)
 
         case Page.CfgFields =>
-          config_old.fields.CfgFields.Props(sspUpdateConfig, global, filterDeadSS).component
+          config.fields.FieldConfig.Props().render
 
         case Page.CfgIssues =>
           config_old.issues.CfgIssues.Props(
@@ -338,7 +338,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
           config_old.reqtypes.CfgReqTypes.Props(sspUpdateConfig, global, filterDeadSS, usageShow).component
 
         case Page.CfgTags =>
-          config_old.tags.CfgTags.Props(sspUpdateConfig, global, filterDeadSS).component
+          config.tags.TagConfig.Props().render
 
         case Page.ReqTable =>
           val rowAsync = editAsyncState
