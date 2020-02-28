@@ -11,14 +11,14 @@
     "loadjs": "4.2.0",
     "moment": "2.24.0",
     "prismjs": "1.19.0",
-    "react": "16.5.2",
-    "react-collapse": "5.0.0",
-    "react-dom": "16.5.2",
+    "react": "16.8.6",
+    "react-collapse": "5.0.1",
+    "react-dom": "16.8.6",
     "react-height": "3.0.1",
     "react-motion": "0.5.2",
     "scroll-into-view-if-needed": "^2.2.24",
     "semantic-ui": "2.2.13",
-    "textcomplete": "0.18.0"
+    "textcomplete": "0.18.1"
   },
   "devDependencies": {
     "@babel/core": "^7.2.2",

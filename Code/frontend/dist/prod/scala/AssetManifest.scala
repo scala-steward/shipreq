@@ -25,7 +25,7 @@ object AssetManifest {
 
   def loadjs = "/s/9e706a6f7bc551ddf626c15cd76c1c25.js"
 
-  def memberLibBundleJs = "/s/8b63013ca95e861057b955c9dd8bd8a2.js"
+  def memberLibBundleJs = "/s/14c54334fb1a1970a298c60eba810e18.js"
 
   def prismJsAutoloader = CDN(
     href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.19.0/plugins/autoloader/prism-autoloader.min.js",
@@ -40,16 +40,16 @@ object AssetManifest {
     integrity = Some("sha256-LArq5Cddn4QETLgVbBZppSkBLJbL1dhacPVQF/EPH00="))
 
   def reactDomJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.5.2/umd/react-dom.production.min.js",
-    integrity = Some("sha256-zxLuhMQXy7QBCD8nJT0FQaZN2GBcdEL4zooi/jAmu60="))
+    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.8.6/umd/react-dom.production.min.js",
+    integrity = Some("sha256-qVsF1ftL3vUq8RFOLwPnKimXOLo72xguDliIxeffHRc="))
 
   def reactDomServerJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.5.2/umd/react-dom-server.browser.production.min.js",
-    integrity = Some("sha256-/NDqhnQY7p3A1c28Bg/+4EBXrU6jR90I/epnapti35Y="))
+    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.8.6/umd/react-dom-server.browser.production.min.js",
+    integrity = Some("sha256-vvUAnA9uOVOrF0R+A8bWaInKo0Dck9JqZn3G/s25A0s="))
 
   def reactJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react/16.5.2/umd/react.production.min.js",
-    integrity = Some("sha256-alJnAKUY0Ruhf55K/C+sCyz6zaipGhl1kxuzDW3jtHk="))
+    href = "https://cdnjs.cloudflare.com/ajax/libs/react/16.8.6/umd/react.production.min.js",
+    integrity = Some("sha256-3vo65ZXn5pfsCfGM5H55X+SmwJHBlyNHPwRmWAPgJnM="))
 
   def semanticCss = "/s/a61a76f2b8deb3d8cc44d1460c46886e.css"
 

@@ -40,16 +40,16 @@ object AssetManifest {
     integrity = Some("sha256-LArq5Cddn4QETLgVbBZppSkBLJbL1dhacPVQF/EPH00="))
 
   def reactDomJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.5.2/umd/react-dom.development.js",
-    integrity = Some("sha256-8wd2P2Yj4wkD78XfzxVjDjEFKYEWR3jgZKgNCGUW9rI="))
+    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.8.6/umd/react-dom.development.js",
+    integrity = Some("sha256-I/ClrYyzlYEQkMUjqr7G3m/83znlycDCeI2xuBZsQx0="))
 
   def reactDomServerJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.5.2/umd/react-dom-server.browser.development.js",
-    integrity = Some("sha256-eFwB7hPkzpDLVOqUdaWb4w6U5bSw0B4PvbWc6nvEN7Y="))
+    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.8.6/umd/react-dom-server.browser.development.js",
+    integrity = Some("sha256-4poHykVozXGJlko3X1QSfmkyXb7ZIh56YZ9gB7AwPoA="))
 
   def reactJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react/16.5.2/umd/react.development.js",
-    integrity = Some("sha256-VitF3nhtwS4oxyddypEINBEyVS3xyk0Ngmk0daEnick="))
+    href = "https://cdnjs.cloudflare.com/ajax/libs/react/16.8.6/umd/react.development.js",
+    integrity = Some("sha256-9H05eCUa5x4G28dytYBwoAXkR3XgPE3sCogyXhrINwo="))
 
   def semanticCss = "/assets/semantic.css"
 
