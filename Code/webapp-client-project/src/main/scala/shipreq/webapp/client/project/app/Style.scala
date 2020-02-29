@@ -2,6 +2,7 @@ package shipreq.webapp.client.project.app
 
 import japgolly.scalajs.react.vdom.html_<^.{^ => ^^, _}
 import japgolly.univeq._
+import scalacss.internal.ValueT
 import shipreq.webapp.base.CssSettings._
 import shipreq.base.util._
 import shipreq.webapp.base.text.Grammar
@@ -713,7 +714,7 @@ object Style extends StyleSheet.Inline {
     }
 
     object LIState {
-      final case class Group(topLevel: Boolean)                                              extends LIState
+      final case class Group(topLevel: Boolean)                                               extends LIState
       final case class Tag  (rowState: RowState, topLevel: Boolean, firstAfterGroup: Boolean) extends LIState
 
       implicit def univEq: UnivEq[LIState] = UnivEq.derive
@@ -744,10 +745,10 @@ object Style extends StyleSheet.Inline {
       borderTop(solid, 1 px, borderColor),
     )
 
-    private def tagOrGroup(rowState: RowState) = mixin(
+    private def tagOrGroup(rowState: RowState, bottomBorderColour: ValueT[ValueT.Color] = c"#fff") = mixin(
       transition := s"all $animSpeed",
       borderTop(solid, 1 px, if (rowState ==* RowState.Selected) c"#3659e2" else c"#fff"),
-      borderBottom(solid, 1 px, if (rowState ==* RowState.Selected) c"#3659e2" else c"#fff").important,
+      borderBottom(solid, 1 px, if (rowState ==* RowState.Selected) c"#3659e2" else bottomBorderColour).important,
       rowState match {
         case RowState.Disabled => styleS(
           opacity(0.4),
@@ -775,9 +776,9 @@ object Style extends StyleSheet.Inline {
           styleS(
             paddingTop(.5 em),
             paddingBottom(.5 em),
-            tagOrGroup(t.rowState),
             mixinIf(t.topLevel && t.firstAfterGroup)(liGapTop),
-            &.not(_.lastChild)(borderBottom(solid, 1 px, borderColor))
+            &.not(_.lastChild)(tagOrGroup(t.rowState, borderColor)),
+            &.lastChild(tagOrGroup(t.rowState)),
           )
       },
     ))

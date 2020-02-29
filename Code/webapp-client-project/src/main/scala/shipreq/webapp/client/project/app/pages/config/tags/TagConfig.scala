@@ -101,7 +101,7 @@ object TagConfig {
       splitScreenCrud(
         newButton = newButtonProps(_).render,
         list      = renderLeft(p, _),
-        editor    = args => <.button("todo", ^.onClick --> args.close), // EditorArgs[Id, EditorState] => VdomNode,
+        editor    = args => <.button("Close", ^.onClick --> args.close),
         state     = p.state,
       )
     }
