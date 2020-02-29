@@ -14,6 +14,7 @@
 .edit
 .file.text.outline
 .filter
+.folder.open
 .folder.outline
 .heart
 .help.circle

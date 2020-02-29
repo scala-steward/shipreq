@@ -359,7 +359,7 @@ object Icon {
   // case object Flask                             extends Unmodified("flask")
   // case object Flickr                            extends Unmodified("flickr")
   // case object Folder                            extends Unmodified("folder")
-  // case object FolderOpen                        extends Unmodified("folder open")
+  case object FolderOpen                        extends Unmodified("folder open")
   // case object FolderOpenOutline                 extends Unmodified("folder open outline")
   case object FolderOutline                     extends Unmodified("folder outline")
   // case object Font                              extends Unmodified("font")
