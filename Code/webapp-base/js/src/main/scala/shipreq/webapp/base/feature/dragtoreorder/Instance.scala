@@ -14,9 +14,12 @@ object Instance {
   var instanceCount = 0
 }
 
-private[feature] final class Instance[A](getData    : CallbackTo[Vector[A]],
-                                         updateOrder: Vector[A] => Callback,
-                                         updateUI   : Callback) extends DragToReorderFeature[A] { self =>
+private[feature] final class Instance[A](getData            : CallbackTo[Vector[A]],
+                                         updateData         : Vector[A] => Callback,
+                                         updateUI           : Callback,
+                                         dragOutsideToRemove: Boolean,
+                                         addKeysToChildren  : Boolean,
+                                        ) extends DragToReorderFeature[A] { self =>
 
   private object Internals {
     type State = Option[DragState[A]]
@@ -94,7 +97,7 @@ private[feature] final class Instance[A](getData    : CallbackTo[Vector[A]],
         ^.onDrop      ==> drop)
     }
 
-    val childTagMods: Int => TagMod =
+    val dragSourceTagMods: Int => TagMod =
       Memo.int { i =>
         def dragStart: ReactDragEvent => Callback =
           e => for {
@@ -112,9 +115,26 @@ private[feature] final class Instance[A](getData    : CallbackTo[Vector[A]],
             s ← getDragState
             _ ← setState(None)
             o = s.orderWithoutTombstone
+            _ ← CallbackOption.unless(o.length < s.items.length && !dragOutsideToRemove)
             _ ← CallbackOption.unless(o ==* s.originalOrder)
-            _ ← updateOrder(o map s.items.apply)
+            _ ← updateData(o map s.items.apply)
           } yield ()
+
+        val t =
+          TagMod(
+            ^.draggable    := true,
+            ^.onDragStart ==> dragStart,
+            ^.onDragEnd   ==> dragEnd,
+            ^.onDrop      ==> drop)
+
+        if (addKeysToChildren)
+          TagMod(t, ^.key := i)
+        else
+          t
+      }
+
+    val dropTargetTagMods: Int => TagMod =
+      Memo.int { i =>
 
         def dragEnter: ReactDragEvent => Callback =
           e => for {
@@ -132,20 +152,15 @@ private[feature] final class Instance[A](getData    : CallbackTo[Vector[A]],
           detectIfDraggedOutside(Some(DragLoc.InChild(i)))
 
         TagMod(
-          ^.key          := i,
-          ^.draggable    := true,
-          ^.onDragStart ==> dragStart,
-          ^.onDragEnd   ==> dragEnd,
           ^.onDragEnter ==> dragEnter,
           ^.onDragLeave ==> dragLeave,
-          ^.onDragOver  ==> dragOver,
-          ^.onDrop      ==> drop)
+          ^.onDragOver  ==> dragOver)
       }
 
     def mkItems(order: Iterable[Int], as: IndexedSeq[A], status: Int => Status): Vector[Item[A]] = {
       val v = Vector.newBuilder[Item[A]]
       for (i <- order)
-        v += Item(as(i), childTagMods(i), status(i))
+        v += Item(as(i), dragSourceTagMods(i), dropTargetTagMods(i), status(i))
       v.result()
     }
 
@@ -156,9 +171,8 @@ private[feature] final class Instance[A](getData    : CallbackTo[Vector[A]],
 
         case Some(ds) =>
           val onDragSrc = ds.dragLoc match {
-            case DragLoc.Outside    => Status.Tombstone
-            case DragLoc.InParent
-               | DragLoc.InChild(_) => Status.DragSource
+            case DragLoc.Outside if dragOutsideToRemove => Status.Tombstone
+            case _                                      => Status.DragSource
           }
           mkItems(ds.currentOrder, ds.items, i => if (i ==* ds.dragSource) onDragSrc else Status.Normal)
       }

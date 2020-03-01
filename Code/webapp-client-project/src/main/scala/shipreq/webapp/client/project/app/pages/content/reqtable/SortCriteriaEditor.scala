@@ -49,9 +49,11 @@ object SortCriteriaEditor {
 
     private val dnd =
       DragToReorderFeature(
-        getData     = $.props.map(_.value.all.whole),
-        updateOrder = updateItems,
-        updateUI    = $.forceUpdate)
+        getData             = $.props.map(_.value.all.whole),
+        updateData          = updateItems,
+        updateUI            = $.forceUpdate,
+        dragOutsideToRemove = true,
+      )
 
     def rotateSortMethod(c: Column): Callback =
       $.props >>= { p =>

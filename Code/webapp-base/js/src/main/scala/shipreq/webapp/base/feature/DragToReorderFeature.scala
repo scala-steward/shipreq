@@ -11,7 +11,8 @@ import japgolly.scalajs.react.vdom.TagMod
   * 2. In your render function...
   *   1. mix `.container` into the parent vdom (i.e. the droppable container)
   *   2. call `.items` and render each item as desired making sure to...
-  *     1. mix `.mod` into the list item
+  *     1. Either mix `.mod` into the list item,
+ *         or mix `.source` into the drag handle and `.target` into the drop area
   *     2. style the list item according to `.status`
   */
 object DragToReorderFeature {
@@ -20,15 +21,26 @@ object DragToReorderFeature {
   /**
    * @param updateUI Use `$.forceUpdate`
    */
-  def apply[A](getData    : CallbackTo[Vector[A]],
-               updateOrder: Vector[A] => Callback,
-               updateUI   : Callback): DragToReorderFeature[A] =
-    new Instance(getData, updateOrder, updateUI)
+  def apply[A](getData            : CallbackTo[Vector[A]],
+               updateData         : Vector[A] => Callback,
+               updateUI           : Callback,
+               dragOutsideToRemove: Boolean,
+               addKeysToChildren  : Boolean = true,
+              ): DragToReorderFeature[A] =
+    new Instance(
+      getData             = getData,
+      updateData          = updateData,
+      updateUI            = updateUI,
+      dragOutsideToRemove = dragOutsideToRemove,
+      addKeysToChildren   = addKeysToChildren,
+    )
 
   type Status = dragtoreorder.Status
   val  Status = dragtoreorder.Status
 
-  final case class Item[+A](data: A, mod: TagMod, status: Status)
+  final case class Item[+A](data: A, source: TagMod, target: TagMod, status: Status) {
+    def mod = TagMod(source, target)
+  }
 }
 
 trait DragToReorderFeature[A] {

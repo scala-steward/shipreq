@@ -137,7 +137,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
 
     final class Backend($: BackendScope[Props, Unit]) {
 
-      private def setNewOrder(newOrder: Vector[ColumnPlus]): Callback =
+      private def setNewColumns(newOrder: Vector[ColumnPlus]): Callback =
         NonEmptyVector.maybe(newOrder, Callback.empty)(newCols =>
           $.props.flatMap(_ reorder newCols))
 
@@ -148,9 +148,11 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
 
       private val columnDND =
         DragToReorderFeature(
-          getData     = $.props.map(_.cols.whole),
-          updateOrder = setNewOrder,
-          updateUI    = $.forceUpdate)
+          getData             = $.props.map(_.cols.whole),
+          updateData          = setNewColumns,
+          updateUI            = $.forceUpdate,
+          dragOutsideToRemove = true,
+        )
 
       def render(p: Props): VdomElement = {
         val items = columnDND.items()
