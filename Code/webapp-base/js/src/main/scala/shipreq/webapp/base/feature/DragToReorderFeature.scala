@@ -2,6 +2,7 @@ package shipreq.webapp.base.feature
 
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import japgolly.scalajs.react.vdom.TagMod
+import japgolly.scalajs.react.vdom.html_<^._
 
 /** Allows a user to drag items in a sequence to reorder them.
   *
@@ -38,14 +39,44 @@ object DragToReorderFeature {
   type Status = dragtoreorder.Status
   val  Status = dragtoreorder.Status
 
-  final case class Item[+A](data: A, source: TagMod, target: TagMod, status: Status) {
+  final case class Item[+A](data  : A,
+                            source: TagMod,
+                            target: TagMod,
+                            status: Status) {
     def mod = TagMod(source, target)
   }
+
+  private def nopItem[A](a: A): Item[A] =
+    Item(a, TagMod.empty, TagMod.empty, Status.Normal)
+
+  def off[A]: DragToReorderFeature[A] =
+    off(Vector.empty)
+
+  def off[A](as: Vector[A]): DragToReorderFeature[A] = {
+    val c = as.map(nopItem)
+    new DragToReorderFeature[A] {
+      override val container                = TagMod.empty
+      override def dragInProgress()         = false
+      override def items()                  = c
+      override def items(as: IndexedSeq[A]) = as.iterator.map(nopItem).toVector
+    }
+  }
+
+  final val dragHamburger = "\u2630"
+
+  val dragHandle = <.div(dragHamburger)
+
+  /** Only call this in your render function. It's unsafe (impure) otherwise. */
+  def dragInProgress(): Boolean =
+    Instance.dragging.nonEmpty
 }
 
 trait DragToReorderFeature[A] {
 
   val container: TagMod
+
+  /** Only call this in your render function. It's unsafe (impure) otherwise. */
+  def dragInProgress(): Boolean
 
   /** Only call this in your render function. It's unsafe (impure) otherwise. */
   def items(): Vector[DragToReorderFeature.Item[A]]

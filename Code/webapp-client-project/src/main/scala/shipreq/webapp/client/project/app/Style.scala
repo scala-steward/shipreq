@@ -8,7 +8,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.data.{Dead, Live, StaticField}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.feature.DragToReorderFeature
+import shipreq.webapp.base.feature.DragToReorderFeature.{Status => DragStatus}
 import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.base.ui.semantic.UsesSemanticUiManually
 import shipreq.webapp.client.project.widgets._
@@ -24,10 +24,8 @@ object Style extends StyleSheet.Inline {
 
     @inline def on = BaseStyles.D.on
 
-    val dragStatus = {
-      import DragToReorderFeature.Status
-      Domain.ofValues[Status](Status.allValues.whole: _*)
-    }
+    val dragStatus =
+      Domain.ofValues[DragStatus](DragStatus.allValues.whole: _*)
 
     val `live * live`     = live *** live
     val `live * on`       = live *** on
@@ -90,6 +88,22 @@ object Style extends StyleSheet.Inline {
   private val selectionCellBase = style(
     width(24.px).important,
     textAlign.center.important)
+
+  private val genericDragStatus: DragStatus => StyleS = {
+    case DragStatus.Normal     => StyleS.empty
+    case DragStatus.DragSource => mixin(opacity(.5), border(2 px, dashed, c"#000").important)
+    case DragStatus.Tombstone  => mixin(display.none)
+  }
+
+  private def genericDragStatus(ds: DragStatus, whenVisible: StyleS): StyleS =
+    styleS(
+      genericDragStatus(ds),
+      ds match {
+        case DragStatus.Normal
+           | DragStatus.DragSource => whenVisible
+        case DragStatus.Tombstone  => StyleS.empty
+      }
+    )
 
   val layout = style(
     unsafeRoot(".ui.button")(marginRight(`0`).important))
@@ -308,9 +322,9 @@ object Style extends StyleSheet.Inline {
         deadColumnLabel(live),
         cursor.pointer.important, // Because click affects sorting
         (status match {
-          case DragToReorderFeature.Status.Normal => mixin()
-          case DragToReorderFeature.Status.DragSource
-             | DragToReorderFeature.Status.Tombstone =>
+          case DragStatus.Normal => mixin()
+          case DragStatus.DragSource
+             | DragStatus.Tombstone =>
             mixin(
               opacity(.4).important,
               border(2 px, dashed, c"#779").important)
@@ -379,11 +393,7 @@ object Style extends StyleSheet.Inline {
           cursor.pointer, // Because click changes sort direction
           // inlineFlex required below to keep the entire row at the right height
           // inlineBlock adds extra height and causes height differences between filter section & column button
-          (status match {
-            case DragToReorderFeature.Status.Normal     => mixin(display.inlineFlex)
-            case DragToReorderFeature.Status.DragSource => mixin(display.inlineFlex, opacity(.4), border(2 px, dashed, c"#000"))
-            case DragToReorderFeature.Status.Tombstone  => mixin(display.none)
-          }): StyleS
+          genericDragStatus(status, styleS(display.inlineFlex)),
         ))
 
       val criterionBorder = style(
@@ -702,14 +712,15 @@ object Style extends StyleSheet.Inline {
 
     sealed trait RowState
     object RowState {
-      case object Disabled extends RowState
-      case object Enabled  extends RowState
-      case object Selected extends RowState
+      case object Disabled   extends RowState
+      case object Enabled    extends RowState
+      case object Selected   extends RowState
+      case object Dragging   extends RowState
 
       implicit def univEq: UnivEq[RowState] = UnivEq.derive
 
       val domain: Domain[RowState] =
-        Domain.ofValues(Disabled, Enabled, Selected)
+        Domain.ofValues(Disabled, Enabled, Selected, Dragging)
     }
 
     sealed trait LIState {
@@ -730,6 +741,9 @@ object Style extends StyleSheet.Inline {
           (RowState.domain *** B *** B).map{case ((a, b), c) => Tag(a, b, c)}.iterator.toSeq
           : _*
         )
+
+      val withDragStatus =
+        domain *** D.dragStatus
     }
 
     val tagTree = style(
@@ -748,10 +762,14 @@ object Style extends StyleSheet.Inline {
       borderTop(solid, 1 px, borderColor),
     )
 
-    private def tagOrGroup(rowState: RowState, bottomBorderColour: ValueT[ValueT.Color] = c"#fff") = mixin(
+    private def tagOrGroup(rowState: RowState,
+                           dragStatus: DragStatus,
+                           bottomBorderColour: ValueT[ValueT.Color] = c"#fff") = mixin(
       transition := s"all $animSpeed",
       borderTop(solid, 1 px, if (rowState ==* RowState.Selected) c"#3659e2" else c"#fff"),
-      borderBottom(solid, 1 px, if (rowState ==* RowState.Selected) c"#3659e2" else bottomBorderColour).important,
+      mixinIf(dragStatus != DragStatus.DragSource)(
+        borderBottom(solid, 1 px, if (rowState ==* RowState.Selected) c"#3659e2" else bottomBorderColour).important,
+      ),
       rowState match {
         case RowState.Disabled => styleS(
           opacity(0.4),
@@ -763,11 +781,14 @@ object Style extends StyleSheet.Inline {
         case RowState.Selected => styleS(
           backgroundColor(Color("#869df91f")),
         )
+        case RowState.Dragging =>
+          StyleS.empty
       }
     )
 
-    val tagTreeLI = styleF(LIState.domain)(s => styleS(
+    val tagTreeLI = styleF(LIState.withDragStatus){ case (s, ds) => styleS(
       listStyleType := "none",
+      genericDragStatus(ds),
       s match {
 
         case g: LIState.Group =>
@@ -780,16 +801,16 @@ object Style extends StyleSheet.Inline {
             paddingTop(.5 em),
             paddingBottom(.5 em),
             mixinIf(t.topLevel && t.firstAfterGroup)(liGapTop),
-            &.not(_.lastChild)(tagOrGroup(t.rowState, borderColor)),
-            &.lastChild(tagOrGroup(t.rowState)),
+            &.not(_.lastChild)(tagOrGroup(t.rowState, ds, borderColor)),
+            &.lastChild(tagOrGroup(t.rowState, ds)),
           )
       },
-    ))
+    )}
 
     val tagTreeGroup = styleF(RowState.domain)(s => styleS(
       fontSize(120 %%),
       padding(0.4 em, `0`),
-      tagOrGroup(s),
+      tagOrGroup(s, DragStatus.Normal),
     ))
 
     val tagTreeGroupIcon = style(

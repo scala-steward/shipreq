@@ -3,13 +3,14 @@ package shipreq.webapp.client.project.app.pages.config.tags
 import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.ui.semantic.Icon
+import shipreq.webapp.base.feature.DragToReorderFeature
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
@@ -32,9 +33,23 @@ private[tags] object TagTreeView {
 
   private val dragHandle: Enabled => VdomTag =
     Enabled.memo(e =>
-      <.div(*.tagTreeDragHandle(e), "\u2630"))
+      DragToReorderFeature.dragHandle(*.tagTreeDragHandle(e)))
 
   final class Backend($: BackendScope[Props, Unit]) {
+
+    private val dndPerGroup: TagGroupId => DragToReorderFeature[ApplicableTagId] =
+      Memo { groupId =>
+        DragToReorderFeature(
+          getData             = $.props.map(_.tags.directApplicableChildren(groupId)),
+          updateData          = setNewTagOrder(groupId, _),
+          updateUI            = $.forceUpdate,
+          dragOutsideToRemove = false,
+          addKeysToChildren   = false,
+        )
+      }
+
+    private def setNewTagOrder(groupId: TagGroupId, tagOrder: Vector[ApplicableTagId]): Callback =
+      Callback.alert("" + tagOrder)
 
     def render(p: Props): VdomNode = {
       import p.{tags, projectWidgets}
@@ -42,16 +57,28 @@ private[tags] object TagTreeView {
       val enabled: Enabled =
         Enabled.when(p.select.isDefined)
 
+      val dragInProgress: Boolean =
+        DragToReorderFeature.dragInProgress()
+
       def rowState(id: TagId): *.RowState =
-        if (p.selected.exists(_ ==* id))
+        if (dragInProgress)
+          *.RowState.Dragging
+        else if (p.selected.exists(_ ==* id))
           *.RowState.Selected
         else if (enabled is Enabled)
           *.RowState.Enabled
         else
           *.RowState.Disabled
 
-      def renderTags(ids: NonEmptyVector[TagId], topLevel: Boolean): VdomTagOf[html.OList] = {
+      def renderTags(ids: NonEmptyVector[TagId], parent: Option[TagGroupId]): VdomTagOf[html.OList] = {
+        val topLevel = parent.isEmpty
         val lis = VdomArray.empty()
+
+        val dnd: DragToReorderFeature[ApplicableTagId] =
+          parent match {
+            case Some(id) => dndPerGroup(id)
+            case None     => DragToReorderFeature.off
+          }
 
         // Add tag groups
         MutableArray(ids.iterator.filterSubType[TagGroupId])
@@ -61,11 +88,11 @@ private[tags] object TagTreeView {
           .foreach { group =>
             val id      = group.id
             val tit     = tags.tree.need(id)
-            val subtree = NonEmptyVector.option(tit.children).map(renderTags(_, topLevel = false))
+            val subtree = NonEmptyVector.option(tit.children).map(renderTags(_, Some(id)))
             val liState = *.LIState.Group(topLevel = topLevel)
 
             lis += <.li(
-              *.tagTreeLI(liState),
+              *.tagTreeLI((liState, DragToReorderFeature.Status.Normal)),
               ^.key := id.value,
               Shared.group(group)(
                 *.tagTreeGroup(rowState(id)),
@@ -78,7 +105,9 @@ private[tags] object TagTreeView {
         var firstAfterGroup = lis.rawArray.nonEmpty
         val apTags  = ids.iterator.filterSubType[ApplicableTagId].toArray
         val canDrag = !topLevel && apTags.length > 1
-        apTags.foreach { id =>
+
+        dnd.items(apTags).foreach { item =>
+          val id = item.data
 
           val liState = *.LIState.Tag(
             rowState        = rowState(id),
@@ -87,10 +116,13 @@ private[tags] object TagTreeView {
           )
 
           lis += <.li(
-            *.tagTreeLI(liState),
+            *.tagTreeLI((liState, item.status)),
             ^.key := id.value,
             ^.onClick -->? p.select.map(_(id)),
-            TagMod.when(canDrag)(dragHandle(enabled)),
+            TagMod.when(canDrag)(TagMod(
+              dragHandle(enabled)(item.source),
+              item.target,
+            )),
             projectWidgets.tag(id),
           )
 
@@ -102,7 +134,7 @@ private[tags] object TagTreeView {
           lis)
       }
 
-      renderTags(p.topLevelIds.toNEV, topLevel = true)
+      renderTags(p.topLevelIds.toNEV, None)
     }
   }
 

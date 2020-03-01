@@ -12,6 +12,7 @@ import shipreq.webapp.base.util.Reorder
 
 object Instance {
   var instanceCount = 0
+  var dragging = List.empty[Instance[_]]
 }
 
 private[feature] final class Instance[A](getData            : CallbackTo[Vector[A]],
@@ -104,6 +105,7 @@ private[feature] final class Instance[A](getData            : CallbackTo[Vector[
             _  ← CallbackOption.unless(e.defaultPrevented)
             is ← getData.toCBO
             _  ← setState(DragState(is, i, DragLoc.InChild(i), is.indices.toVector)).async.toCallback
+            _  ← Callback { Instance.dragging ::= self }.toCBO
           } yield {
             val dt = e.dataTransfer
             dt.setData(ownMimeType, "")
@@ -114,6 +116,7 @@ private[feature] final class Instance[A](getData            : CallbackTo[Vector[
           _ => for {
             s ← getDragState
             _ ← setState(None)
+            _ ← Callback { Instance.dragging = Instance.dragging.filter(_ ne self) }.toCBO
             o = s.orderWithoutTombstone
             _ ← CallbackOption.unless(o.length < s.items.length && !dragOutsideToRemove)
             _ ← CallbackOption.unless(o ==* s.originalOrder)
@@ -167,14 +170,19 @@ private[feature] final class Instance[A](getData            : CallbackTo[Vector[
     def createItems(p: IndexedSeq[A], s: State): Vector[Item[A]] =
       s match {
         case None =>
-          mkItems(p.indices, p, _ => Status.Normal)
+          mkItems(
+            p.indices,
+            p,
+            _ => Status.Normal)
 
         case Some(ds) =>
           val onDragSrc = ds.dragLoc match {
             case DragLoc.Outside if dragOutsideToRemove => Status.Tombstone
             case _                                      => Status.DragSource
           }
-          mkItems(ds.currentOrder, ds.items, i => if (i ==* ds.dragSource) onDragSrc else Status.Normal)
+          mkItems(
+            ds.currentOrder,
+            ds.items,i => if (i ==* ds.dragSource) onDragSrc else Status.Normal)
       }
   }
 
@@ -183,6 +191,9 @@ private[feature] final class Instance[A](getData            : CallbackTo[Vector[
 
   override val container: TagMod =
     Internals.parentTagMod
+
+  override def dragInProgress(): Boolean =
+    Instance.dragging.contains(self)
 
   override def items(): Vector[Item[A]] =
     items(getData.runNow())

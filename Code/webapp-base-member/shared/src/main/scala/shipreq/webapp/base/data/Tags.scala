@@ -314,6 +314,9 @@ final case class Tags(tree: TagTree) {
   lazy val directChildren: Multimap[TagId, Vector, TagId] =
     Multimap(tree.mapValues(_.children))
 
+  def directApplicableChildren(id: TagId): Vector[ApplicableTagId] =
+    directChildren(id).iterator.filterSubType[ApplicableTagId].toVector
+
   lazy val directParents: Multimap[TagId, Set, TagGroupId] =
     Multimap(
       directChildren.reverseM[Set]
