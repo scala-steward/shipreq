@@ -147,8 +147,10 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
         }.asEventDefault(e)
 
       private val columnDND =
-        DragToReorderFeature($.forceUpdate, setNewOrder)
-          .prepare($.props.map(_.cols.whole))
+        DragToReorderFeature(
+          getData     = $.props.map(_.cols.whole),
+          updateOrder = setNewOrder,
+          updateUI    = $.forceUpdate)
 
       def render(p: Props): VdomElement = {
         val items = columnDND.items()

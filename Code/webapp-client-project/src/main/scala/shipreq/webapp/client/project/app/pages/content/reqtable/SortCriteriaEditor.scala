@@ -48,8 +48,10 @@ object SortCriteriaEditor {
   final class Backend($: BackendScope[Props, Unit]) {
 
     private val dnd =
-      DragToReorderFeature($.forceUpdate, updateItems)
-        .prepare($.props.map(_.value.all.whole))
+      DragToReorderFeature(
+        getData     = $.props.map(_.value.all.whole),
+        updateOrder = updateItems,
+        updateUI    = $.forceUpdate)
 
     def rotateSortMethod(c: Column): Callback =
       $.props >>= { p =>

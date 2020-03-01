@@ -6,7 +6,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.raw.DragEffect
 import shipreq.webapp.base.feature.DragToReorderFeature
-import shipreq.webapp.base.feature.DragToReorderFeature.{Item, Prepared}
+import shipreq.webapp.base.feature.DragToReorderFeature.Item
 import shipreq.webapp.base.lib.DomUtil
 import shipreq.webapp.base.util.Reorder
 
@@ -14,8 +14,9 @@ object Instance {
   var instanceCount = 0
 }
 
-private[feature] final class Instance[A](updateUI: Callback,
-                                         updateOrder: Vector[A] => Callback) extends DragToReorderFeature[A] { self =>
+private[feature] final class Instance[A](getData    : CallbackTo[Vector[A]],
+                                         updateOrder: Vector[A] => Callback,
+                                         updateUI   : Callback) extends DragToReorderFeature[A] { self =>
 
   private object Internals {
     type State = Option[DragState[A]]
@@ -93,7 +94,7 @@ private[feature] final class Instance[A](updateUI: Callback,
         ^.onDrop      ==> drop)
     }
 
-    def childTagMod(getData: CallbackTo[Vector[A]]): Int => TagMod =
+    val childTagMods: Int => TagMod =
       Memo.int { i =>
         def dragStart: ReactDragEvent => Callback =
           e => for {
@@ -141,17 +142,17 @@ private[feature] final class Instance[A](updateUI: Callback,
           ^.onDrop      ==> drop)
       }
 
-    def mkItems(order: Iterable[Int], as: Vector[A], mod: Int => TagMod, status: Int => Status): Vector[Item[A]] = {
+    def mkItems(order: Iterable[Int], as: IndexedSeq[A], status: Int => Status): Vector[Item[A]] = {
       val v = Vector.newBuilder[Item[A]]
       for (i <- order)
-        v += Item(as(i), mod(i), status(i))
+        v += Item(as(i), childTagMods(i), status(i))
       v.result()
     }
 
-    def createItems(p: Vector[A], s: State, mod: Int => TagMod): Vector[Item[A]] =
+    def createItems(p: IndexedSeq[A], s: State): Vector[Item[A]] =
       s match {
         case None =>
-          mkItems(p.indices, p, mod, _ => Status.Normal)
+          mkItems(p.indices, p, _ => Status.Normal)
 
         case Some(ds) =>
           val onDragSrc = ds.dragLoc match {
@@ -159,7 +160,7 @@ private[feature] final class Instance[A](updateUI: Callback,
             case DragLoc.InParent
                | DragLoc.InChild(_) => Status.DragSource
           }
-          mkItems(ds.currentOrder, ds.items, mod, i => if (i ==* ds.dragSource) onDragSrc else Status.Normal)
+          mkItems(ds.currentOrder, ds.items, i => if (i ==* ds.dragSource) onDragSrc else Status.Normal)
       }
   }
 
@@ -169,16 +170,10 @@ private[feature] final class Instance[A](updateUI: Callback,
   override val container: TagMod =
     Internals.parentTagMod
 
-  override def prepare(cbData: CallbackTo[Vector[A]]): Prepared[A] = {
-    val childTagMods = childTagMod(cbData)
+  override def items(): Vector[Item[A]] =
+    items(getData.runNow())
 
-    new Prepared[A] {
-      override val container: TagMod =
-        self.container
-
-      override def items(): Vector[Item[A]] =
-        createItems(cbData.runNow(), unsafeState(), childTagMods)
-    }
-  }
+  override def items(as: IndexedSeq[A]): Vector[Item[A]] =
+    createItems(as, unsafeState())
 
 }
