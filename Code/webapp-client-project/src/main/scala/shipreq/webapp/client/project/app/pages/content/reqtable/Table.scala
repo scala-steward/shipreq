@@ -11,12 +11,12 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.{Applicable, ErrorMsg, NotApplicable}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.reqtable._
-import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
+import shipreq.webapp.base.feature.{AsyncFeature, DragToReorderFeature, TableNavigationFeature}
 import shipreq.webapp.base.lib.DomUtil._
 import shipreq.webapp.base.ui.{EditTheme, semantic}
 import shipreq.webapp.client.project.app.Style.reqtable.{table => *}
 import shipreq.webapp.client.project.feature.{EditorFeature, Selection}
-import shipreq.webapp.client.project.widgets.{DragToReorder, NoFilterResults, ProjectWidgets, ViewReq}
+import shipreq.webapp.client.project.widgets.{NoFilterResults, ProjectWidgets, ViewReq}
 import shipreq.webapp.client.project.lib.DataReusability._
 import EditorFeature.FieldKey
 
@@ -146,7 +146,13 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
           case KeyCode.Space => $.props.flatMap(_ clickSort col)
         }.asEventDefault(e)
 
-      private def renderFn(p: Props, content: DragToReorder.Content[ColumnPlus]): VdomElement = {
+      private val columnDND =
+        DragToReorderFeature($.forceUpdate, setNewOrder)
+          .prepare($.props.map(_.cols.whole))
+
+      def render(p: Props): VdomElement = {
+        val items = columnDND.items()
+
         val selectionCell =
           <.th(
             *.selectionColumnHeader,
@@ -154,7 +160,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
             p.selection.total.checkboxAndOnClick) // TODO *.selectionCheckbox
 
         val cols =
-          content.items.toVdomArray { i =>
+          items.toVdomArray { i =>
             val c = i.data
             val live = c.column match {
               case Column.DeletionReason => Live // Don't render this title with strike-through
@@ -170,17 +176,11 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
           }
 
         <.thead(
-          content.rootMod,
+          columnDND.container,
           <.tr(
             selectionCell,
             cols))
       }
-
-      private val columnDND: DragToReorder[ColumnPlus] =
-        new DragToReorder(setNewOrder, c => $.props.map(renderFn(_, c)))
-
-      def render(p: Props): VdomElement =
-        columnDND.Component(p.cols.whole)
     }
 
     val Component = ScalaComponent.builder[Props]("Header")

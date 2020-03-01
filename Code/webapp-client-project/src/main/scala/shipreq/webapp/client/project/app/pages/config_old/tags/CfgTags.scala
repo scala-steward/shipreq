@@ -31,6 +31,7 @@ import shipreq.webapp.client.project.widgets.FilterDeadButton
 import DataImplicits._
 import FlatTag.FilterPolicy
 import TagInTree.Relations
+import shipreq.webapp.base.util.Reorder
 
 object CfgTags {
   case class Props(remote    : ServerSideProcInvoker[UpdateConfigCmd.ToModifyTags, ErrorMsg, VerifiedEvent.Seq],
@@ -456,7 +457,7 @@ private[tags] object MainTable {
       r => r.copy(parents = r.parents.updated(parent, None))
 
     def moveChild(from: Id, to: Id): Relations => Relations =
-      r => r.copy(children = DND.moveE(from, to)(r.children))
+      r => r.copy(children = Reorder.usingUnivEq(from, to)(r.children))
 
     def moveChildIO(s: S, updateIO: UpdateIO, subj: Tag)(from: Id, to: Id): Callback =
       treeUpdateIO(s, updateIO, subj, moveChild(from, to))

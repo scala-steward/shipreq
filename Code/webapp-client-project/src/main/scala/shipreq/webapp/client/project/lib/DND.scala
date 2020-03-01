@@ -1,9 +1,7 @@
 package shipreq.webapp.client.project.lib
 
 import scalaz._
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._, vdom.html_<^._, ScalazReact._
-import shipreq.base.util.Util
 
 /**
  * Usage.
@@ -14,47 +12,7 @@ import shipreq.base.util.Util
  * 4. Prepare a DND success callback `move(from: A, to: A): Callback`
  * 5. Render draggable children using DND.Parent.cProps2
  */
-object DND { // TODO Remove? DragToReorder makes this redundant?
-
-  def moveE[A](from: A, to: A)(as: Vector[A])(implicit e: Equal[A]): Vector[A] =
-    move(from, to, as)(e.equal)
-
-  def move[A, B](from: A, to: A, bs: Vector[B])(equal: (A, B) => Boolean): Vector[B] = {
-    val tmp = bs.companion.newBuilder[B]
-    var putLater = -1
-    var fromB: Option[B] = None
-    var i = 0
-    bs.foreach { b =>
-      if (fromB.isEmpty && equal(from, b)) {
-        if (equal(to, b))
-          return bs // nothing to do
-        fromB = Some(b)
-      } else {
-        tmp += b
-        if (equal(to, b)) {
-          fromB match {
-            case None =>
-              putLater = i
-              tmp += b // This is the correct b, we will replace this-1
-            case Some(ins) =>
-              tmp += ins
-          }
-          i += 1
-        }
-        i += 1
-      }
-    }
-    val tmp2 = tmp.result()
-    val result =
-      if (putLater == -1)
-        tmp2
-      else fromB match {
-        case Some(b) => tmp2.updated(putLater, b)
-        case None    => tmp2.delete(putLater).getOrElse(tmp2)
-      }
-    assert(result.size == bs.size, s"DND Move failure.\nBefore: $bs\n After: $result")
-    result
-  }
+object DND { // TODO Remove? DragToReorderFeature makes this redundant?
 
   sealed trait DragEvent[+A]
   object DragEvent {

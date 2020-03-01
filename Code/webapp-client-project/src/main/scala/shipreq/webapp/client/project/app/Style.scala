@@ -8,6 +8,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.data.{Dead, Live, StaticField}
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.feature.DragToReorderFeature
 import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.base.ui.semantic.UsesSemanticUiManually
 import shipreq.webapp.client.project.widgets._
@@ -24,8 +25,8 @@ object Style extends StyleSheet.Inline {
     @inline def on = BaseStyles.D.on
 
     val dragStatus = {
-      import DragToReorder._
-      Domain.ofValues[Status](Normal, DragSource, Tombstone)
+      import DragToReorderFeature.Status
+      Domain.ofValues[Status](Status.allValues.whole: _*)
     }
 
     val `live * live`     = live *** live
@@ -307,10 +308,12 @@ object Style extends StyleSheet.Inline {
         deadColumnLabel(live),
         cursor.pointer.important, // Because click affects sorting
         (status match {
-          case DragToReorder.Normal => mixin()
-          case DragToReorder.DragSource | DragToReorder.Tombstone => mixin(
-            opacity(.4).important,
-            border(2 px, dashed, c"#779").important)
+          case DragToReorderFeature.Status.Normal => mixin()
+          case DragToReorderFeature.Status.DragSource
+             | DragToReorderFeature.Status.Tombstone =>
+            mixin(
+              opacity(.4).important,
+              border(2 px, dashed, c"#779").important)
         }): StyleS
       )}
 
@@ -377,9 +380,9 @@ object Style extends StyleSheet.Inline {
           // inlineFlex required below to keep the entire row at the right height
           // inlineBlock adds extra height and causes height differences between filter section & column button
           (status match {
-            case DragToReorder.Normal     => mixin(display.inlineFlex)
-            case DragToReorder.DragSource => mixin(display.inlineFlex, opacity(.4), border(2 px, dashed, c"#000"))
-            case DragToReorder.Tombstone  => mixin(display.none)
+            case DragToReorderFeature.Status.Normal     => mixin(display.inlineFlex)
+            case DragToReorderFeature.Status.DragSource => mixin(display.inlineFlex, opacity(.4), border(2 px, dashed, c"#000"))
+            case DragToReorderFeature.Status.Tombstone  => mixin(display.none)
           }): StyleS
         ))
 
@@ -808,6 +811,16 @@ object Style extends StyleSheet.Inline {
     val segmentCheckboxSubtitle = style(
       marginTop(0.5 em),
       opacity(0.55),
+    )
+
+    val editorButtons = style(
+      marginTop(2 rem),
+      display.flex,
+      unsafeChild("button:not(:last-child)")(marginRight(2 em)),
+    )
+
+    val editorButtonGap = style(
+      flexGrow(1),
     )
   }
 

@@ -1,16 +1,16 @@
-package shipreq.webapp.client.project.lib
+package shipreq.webapp.base.util
 
-import scalaz.std.AllInstances._
-import shipreq.webapp.client.project.test.TestUtil._
 import utest._
+import japgolly.microlibs.testutil.TestUtil._
 
-object DNDTest extends TestSuite {
-  val vec12345 = Vector(1, 2, 3, 4, 5)
+object ReorderTest extends TestSuite {
 
   override def tests = Tests {
+    val vec12345 = Vector(1, 2, 3, 4, 5)
+
     'move {
       def test(from: Int, to: Int, expect: Vector[Int]): Unit =
-        assertEq(DND.moveE(from, to)(vec12345), expect)
+        assertEq(Reorder.usingUnivEq(from, to)(vec12345), expect)
 
       'downMid - test(1, 4, Vector(2, 3, 4, 1, 5))
       'upMid   - test(5, 3, Vector(1, 2, 5, 3, 4))

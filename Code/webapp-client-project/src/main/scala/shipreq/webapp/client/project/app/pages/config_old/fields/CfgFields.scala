@@ -31,6 +31,7 @@ import shipreq.webapp.client.project.lib.DND
 import shipreq.webapp.client.project.widgets._
 import Field.ApplicableReqTypes
 import UiText.FieldNames
+import shipreq.webapp.base.util.Reorder
 
 object CfgFields {
   final case class Props(remote    : ServerSideProcInvoker[UpdateConfigCmd.ToModifyFields, ErrorMsg, VerifiedEvent.Seq],
@@ -345,7 +346,7 @@ private[fields] object MainTable {
     // TODO orderIO doesn't handle failure (or lock row)
     def orderIO(from: Field, to: Field): Callback = {
       val id       = from.fieldId
-      val newOrder = DND.moveE(id, to.fieldId)(fieldOrder)
+      val newOrder = Reorder.usingUnivEq(id, to.fieldId)(fieldOrder)
       val pos      = RelPos.get(newOrder, id)
       protocol.value().updateOrderIO(id, pos)(TCB.Success.nop, TCB.Failure.nop)
     }

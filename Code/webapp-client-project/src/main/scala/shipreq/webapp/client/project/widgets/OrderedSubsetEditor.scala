@@ -1,10 +1,12 @@
 package shipreq.webapp.client.project.widgets
 
-import japgolly.scalajs.react._, vdom.html_<^._
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
 import scalaz.Equal
 import scalaz.syntax.equal._
 import shipreq.webapp.base.data.{Off, On}
+import shipreq.webapp.base.util.Reorder
 import shipreq.webapp.client.project.lib.DND
 
 /**
@@ -108,5 +110,5 @@ final class OrderedSubsetEditor[A: Equal] {
   }
 
   def move(state: State)(from: A, to: A): State =
-    State(DND.move(from, to, state.all)((a, b) => a ≟ b._1))
+    State(Reorder(from, to, state.all)((a, b) => a ≟ b._1))
 }
