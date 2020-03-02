@@ -1,0 +1,122 @@
+package shipreq.webapp.client.project.app.pages.config.tags
+
+import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.html_<^._
+import scalacss.ScalaCssReact._
+import shipreq.webapp.base.ui.semantic.{Button, Colour, ColourPlus, Icon}
+import shipreq.webapp.client.project.app.Style.{tagConfig => *}
+
+/** The row of buttons underneath editors.
+  *
+  * Eg. | [Delete]                      [ Cancel ] [ Update ] |
+  */
+object EditorButtons {
+
+  sealed trait UpdateState {
+    def hasChange: Boolean
+    def updateProc: Option[Callback] = None
+  }
+
+  object UpdateState {
+
+    case object Unchanged extends UpdateState {
+      final override def hasChange = false
+    }
+
+    sealed trait Changed extends UpdateState {
+      final override def hasChange = true
+    }
+
+    final case class ValidChange(update: Callback) extends Changed {
+      override def updateProc = Some(update)
+    }
+
+    case object InvalidChange extends Changed
+  }
+
+  sealed trait Props {
+    @inline final def render: VdomElement = Component(this)
+  }
+
+  object Props {
+
+    final case class Create(abort : Callback,
+                            create: Option[Callback]) extends Props
+
+    final case class Update(abort : Callback,
+                            delete: Callback,
+                            update: UpdateState) extends Props
+
+    final case class Restore(abort  : Callback,
+                             restore: Callback) extends Props
+  }
+
+  //implicit val reusabilityProps: Reusability[Props] =
+  //  Reusability.derive
+
+  private val outer  = <.div(*.editorButtons)
+  private val gap    = <.div(*.editorButtonGap)
+
+  private val cancelButton =
+    Button(
+      tipe   = Button.Type.BasicIconAndText(Icon.Remove, "Cancel"),
+      colour = Colour.Black)
+
+  private val closeButton =
+    Button(
+      tipe   = Button.Type.BasicIconAndText(Icon.Remove, "Close"),
+      colour = Colour.Black)
+
+  private val restoreButton =
+    Button(
+      tipe   = Button.Type.IconAndText(Icon.Undo, "Restore"),
+      colour = Colour.Green)
+
+  private val updateButton =
+    Button(
+      tipe   = Button.Type.IconAndText(Icon.Plus, "Update"),
+      colour = Colour.Green)
+
+  private val createButton =
+    Button(
+      tipe   = Button.Type.IconAndText(Icon.Plus, "Create"),
+      colour = Colour.Green)
+
+  private val deleteButton =
+    Button(
+      tipe   = Button.Type.BasicIconAndText(Icon.Trash, "Delete"),
+      colour = ColourPlus.Negative)
+
+  private def render(p: Props): VdomNode =
+    p match {
+      case Props.Create(abort, create) =>
+        outer(
+          gap,
+          cancelButton.onClick(abort),
+          createButton.onClickWhenDefined(create))
+
+      case Props.Update(abort, delete, UpdateState.Unchanged) =>
+        outer(
+          deleteButton.onClick(delete),
+          gap,
+          closeButton.onClick(abort),
+          updateButton.disabled)
+
+      case Props.Update(abort, delete, u: UpdateState.Changed) =>
+        outer(
+          deleteButton.onClick(delete),
+          gap,
+          cancelButton.onClick(abort),
+          updateButton.onClickWhenDefined(u.updateProc))
+
+      case Props.Restore(abort, restore) =>
+        outer(
+          restoreButton.onClick(restore),
+          closeButton.onClick(abort))
+    }
+
+  val Component = ScalaComponent.builder[Props]("EditorButtons")
+    .render_P(render)
+    //.configure(Reusability.shouldComponentUpdate)
+    .build
+}

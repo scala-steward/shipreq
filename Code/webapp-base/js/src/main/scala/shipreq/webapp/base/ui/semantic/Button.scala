@@ -1,5 +1,6 @@
 package shipreq.webapp.base.ui.semantic
 
+import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq.UnivEq
 import org.scalajs.dom.html
@@ -64,4 +65,22 @@ final case class Button(attr  : Multiple[Attr] = Multiple.empty,
 
     t
   }
+
+  def disabled: VdomTagOf[html.Button] =
+    if (state.disable)
+      tag
+    else
+      tag(^.disabled := true)
+
+  def onClick(c: Callback): VdomTagOf[html.Button] =
+    if (state.disable)
+      tag
+    else
+      tag(^.onClick --> c)
+
+  def onClickWhenDefined(o: Option[Callback]): VdomTagOf[html.Button] =
+    o match {
+      case Some(c) => onClick(c)
+      case None    => disabled
+    }
 }
