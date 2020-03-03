@@ -40,6 +40,13 @@ object TagConfig {
 
     val asyncInProgress = AsyncFeature.isInProgress(async.read)
 
+    val potentialSaveCmd: PotentialChange[Unit, UpdateConfigCmd.ToModifyTags] =
+      state.value.right.editorOption match {
+        case Some(\/-(s))  => s.updateCmd(project)
+        case Some(-\/(())) => PotentialChange.Unchanged
+        case None          => PotentialChange.Unchanged
+      }
+
     @inline def render: VdomElement = Component(this)
   }
 
@@ -130,7 +137,7 @@ object TagConfig {
             projectWidgets  = p.pw,
             updateChildren  = updateChildren,
             enabled         = Disabled when p.asyncInProgress,
-            onClickAnywhere = args.closeEditor,
+            onClickAnywhere = args.closeEditor.filter(_ => p.potentialSaveCmd.isUnchanged),
           ).render
 
         case None =>
@@ -145,12 +152,6 @@ object TagConfig {
           case \/-(id: ApplicableTagId) => -\/(Some(id))
           case -\/(NewTagType.TagGroup) => \/-(Option.empty[TagGroupId])
           case -\/(NewTagType.Tag)      => -\/(Option.empty[ApplicableTagId])
-        }
-
-      val potentialSave: PotentialChange[Any, Callback] =
-        args.state.value match {
-          case \/-(s)  => s.updateCmd(p.project).map(submitCmdAndCloseOnSuccess(p, _, args.close))
-          case -\/(()) => PotentialChange.Unchanged
         }
 
       val editor: VdomNode =
@@ -174,7 +175,7 @@ object TagConfig {
             EditorButtons.Props.Update(
               abort = args.close,
               delete = submitCmdAndCloseOnSuccess(p, UpdateConfigCmd.TagDelete(tagGroupId), args.close),
-              update = potentialSave,
+              update = p.potentialSaveCmd.map(submitCmdAndCloseOnSuccess(p, _, args.close)),
             ).render
 
           case \/-(None)

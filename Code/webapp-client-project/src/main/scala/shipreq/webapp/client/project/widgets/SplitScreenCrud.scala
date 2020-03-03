@@ -84,7 +84,15 @@ object SplitScreenCrud {
 
   object State {
 
-    sealed trait Right[+Id, +EditorState]
+    sealed trait Right[+Id, +EditorState] {
+      final val editorOption: Option[EditorState] =
+        this match {
+          case Right.Empty        => None
+          case Right.Create(s)    => Some(s)
+          case Right.Update(_, s) => Some(s)
+        }
+    }
+
     object Right {
       case object      Empty                              extends Right[Nothing, Nothing]
       final case class Create[+S]     (editor: S)         extends Right[Nothing, S]
