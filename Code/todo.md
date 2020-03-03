@@ -88,11 +88,10 @@ Phase 3A
   * remove key from TagGroups, check all Tag fields against UI prototype
   * restore -deprecation
   * remove MutexChildren
-  * remove config_old
   * remove DND?
-  * revise UpdateConfigCmd
   * ensure dead filter & style everywhere
   * shouldn't be able to click left if right has changes
+  * TagSetApplicableChildrenOrder has a bug or something - remember how priorty got fucked up with Actors & could added under should?
 
 * Fields
   * redo config screen

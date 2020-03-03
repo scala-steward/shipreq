@@ -1,9 +1,9 @@
 package shipreq.webapp.base.protocol
 
-import scalaz.\&/
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.event.{ApplicableTagGD, TagGroupGD}
 import Field.ApplicableReqTypes
 
 sealed trait UpdateConfigCmd
@@ -31,33 +31,14 @@ object UpdateConfigCmd {
   final case class FieldRestore         (id: FieldId)                                                extends ToModifyFields
   final case class FieldUpdateOrder     (id: FieldId, newPos: RelPos[FieldId])                       extends ToModifyFields
 
-  sealed trait ToModifyTags                                  extends UpdateConfigCmd
-
-  // TODO REMOVE
-  final case class TagCreate (values: TagData)               extends ToModifyTags
-  final case class TagUpdate (id: TagId, newValues: TagData) extends ToModifyTags
-
-  // TODO KEEP
-  final case class TagSetApplicableChildrenOrder(id: TagGroupId, children: Vector[ApplicableTagId]) extends ToModifyTags
-  final case class TagDelete (id: TagId)                     extends ToModifyTags
-  final case class TagRestore(id: TagId)                     extends ToModifyTags
-
-  // TODO USE
-//  final case class TagCreate(values: TagValues, parents: Set[TagGroupId], children: Vector[TagId]) extends ToModifyTags
-//
-//
-//  final case class TagDelete(id: TagId) extends ToModifyTags
-//  final case class TagRestore(id: TagId) extends ToModifyTags
-//
-//  //final case class TagUpdateGroup(id: TagGroupId, newValues: TagData) extends ToModifyTags
-//
-////  final case class TagGroupCreate(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
-////  final case class TagGroupUpdate(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
-////
-////  final case class ApplicableTagCreate(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
-////  final case class ApplicableTagUpdate(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
-//
-//  //final case class TagUpdate (id: TagId, newValues: TagData) extends ToModifyTags
+  sealed trait ToModifyTags                                                                                      extends UpdateConfigCmd
+  final case class ApplicableTagCreate          (                     newValues: ApplicableTagGD.NonEmptyValues) extends ToModifyTags
+  final case class ApplicableTagUpdate          (id: ApplicableTagId, newValues: ApplicableTagGD.NonEmptyValues) extends ToModifyTags
+  final case class TagGroupCreate               (                     newValues: TagGroupGD.NonEmptyValues)      extends ToModifyTags
+  final case class TagGroupUpdate               (id: TagGroupId,      newValues: TagGroupGD.NonEmptyValues)      extends ToModifyTags
+  final case class TagSetApplicableChildrenOrder(id: TagGroupId,      children: Vector[ApplicableTagId])         extends ToModifyTags
+  final case class TagDelete                    (id: TagId)                                                      extends ToModifyTags
+  final case class TagRestore                   (id: TagId)                                                      extends ToModifyTags
 
   // ===================================================================================================================
 
@@ -83,18 +64,6 @@ object UpdateConfigCmd {
                                   mandatory: Mandatory,
                                   reqTypes : ApplicableReqTypes) extends CustomFieldValues
 
-  sealed trait TagValues
-
-  final case class TagGroupValues(name         : String,
-                                  mutexChildren: MutexChildren,
-                                  desc         : Option[String]) extends TagValues
-
-  final case class ApplicableTagValues(name: String,
-                                       key : HashRefKey,
-                                       desc: Option[String]) extends TagValues
-
-  type TagData = TagValues \&/ TagInTree.Relations
-
   // ===================================================================================================================
 
   implicit def univEqCustomIssueTypeValues : UnivEq[CustomIssueTypeValues] = UnivEq.derive
@@ -103,9 +72,6 @@ object UpdateConfigCmd {
   implicit def univEqTagFieldValues        : UnivEq[TagFieldValues       ] = UnivEq.derive
   implicit def univEqImplicationFieldValues: UnivEq[ImpFieldValues       ] = UnivEq.derive
   implicit def univEqCustomFieldValues     : UnivEq[CustomFieldValues    ] = UnivEq.derive
-  implicit def univEqTagGroupValues        : UnivEq[TagGroupValues       ] = UnivEq.derive
-  implicit def univEqApplicableTagValues   : UnivEq[ApplicableTagValues  ] = UnivEq.derive
-  implicit def univEqTagValues             : UnivEq[TagValues            ] = UnivEq.derive
   implicit def univEq                      : UnivEq[UpdateConfigCmd      ] = UnivEq.derive
 
   // ===================================================================================================================
@@ -113,6 +79,7 @@ object UpdateConfigCmd {
   import shipreq.webapp.base.protocol.binary.v1.BaseData._
   import shipreq.webapp.base.protocol.binary.v1.BaseMemberData1._
   import shipreq.webapp.base.protocol.binary.v1.BaseMemberData2._
+  import shipreq.webapp.base.protocol.binary.v1.Events._
 
   private implicit val picklerCustomIssueTypeValues: Pickler[CustomIssueTypeValues] =
     new Pickler[CustomIssueTypeValues] {
@@ -189,36 +156,6 @@ object UpdateConfigCmd {
       }
     }
 
-  private implicit val picklerTagGroupValues: Pickler[TagGroupValues] =
-    new Pickler[TagGroupValues] {
-      override def pickle(a: TagGroupValues)(implicit state: PickleState): Unit = {
-        state.pickle(a.name)
-        state.pickle(a.mutexChildren)
-        state.pickle(a.desc)
-      }
-      override def unpickle(implicit state: UnpickleState): TagGroupValues = {
-        val name          = state.unpickle[String]
-        val mutexChildren = state.unpickle[MutexChildren]
-        val desc          = state.unpickle[Option[String]]
-        TagGroupValues(name, mutexChildren, desc)
-      }
-    }
-
-  private implicit val picklerApplicableTagValues: Pickler[ApplicableTagValues] =
-    new Pickler[ApplicableTagValues] {
-      override def pickle(a: ApplicableTagValues)(implicit state: PickleState): Unit = {
-        state.pickle(a.name)
-        state.pickle(a.key)
-        state.pickle(a.desc)
-      }
-      override def unpickle(implicit state: UnpickleState): ApplicableTagValues = {
-        val name = state.unpickle[String]
-        val key  = state.unpickle[HashRefKey]
-        val desc = state.unpickle[Option[String]]
-        ApplicableTagValues(name, key, desc)
-      }
-    }
-
   private implicit val picklerCustomFieldValues: Pickler[CustomFieldValues] =
     new Pickler[CustomFieldValues] {
       private[this] final val KeyImpFieldValues  = 'i'
@@ -237,25 +174,6 @@ object UpdateConfigCmd {
           case KeyTextFieldValues => state.unpickle[TextFieldValues]
         }
     }
-
-  private implicit val picklerTagValues: Pickler[TagValues] =
-    new Pickler[TagValues] {
-      private[this] final val KeyApplicableTagValues = 'a'
-      private[this] final val KeyTagGroupValues      = 'g'
-      override def pickle(a: TagValues)(implicit state: PickleState): Unit =
-        a match {
-          case b: ApplicableTagValues => state.enc.writeByte(KeyApplicableTagValues); state.pickle(b)
-          case b: TagGroupValues      => state.enc.writeByte(KeyTagGroupValues     ); state.pickle(b)
-        }
-      override def unpickle(implicit state: UnpickleState): TagValues =
-        state.dec.readByte match {
-          case KeyApplicableTagValues => state.unpickle[ApplicableTagValues]
-          case KeyTagGroupValues      => state.unpickle[TagGroupValues]
-        }
-    }
-
-  private implicit val picklerTagData: Pickler[TagData] =
-    pickleIor
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -364,27 +282,37 @@ object UpdateConfigCmd {
       }
     }
 
-  private implicit val picklerTagCreate: Pickler[TagCreate] =
-    transformPickler(TagCreate.apply)(_.values)
+  private implicit val picklerApplicableTagCreate: Pickler[ApplicableTagCreate] =
+    transformPickler(ApplicableTagCreate.apply)(_.newValues)
 
-  private implicit val picklerTagUpdate: Pickler[TagUpdate] =
-    new Pickler[TagUpdate] {
-      override def pickle(a: TagUpdate)(implicit state: PickleState): Unit = {
+  private implicit val picklerApplicableTagUpdate: Pickler[ApplicableTagUpdate] =
+    new Pickler[ApplicableTagUpdate] {
+      override def pickle(a: ApplicableTagUpdate)(implicit state: PickleState): Unit = {
         state.pickle(a.id)
         state.pickle(a.newValues)
       }
-      override def unpickle(implicit state: UnpickleState): TagUpdate = {
-        val id        = state.unpickle[TagId]
-        val newValues = state.unpickle[TagData]
-        TagUpdate(id, newValues)
+      override def unpickle(implicit state: UnpickleState): ApplicableTagUpdate = {
+        val id        = state.unpickle[ApplicableTagId]
+        val newValues = state.unpickle[ApplicableTagGD.NonEmptyValues]
+        ApplicableTagUpdate(id, newValues)
       }
     }
 
-  private implicit val picklerTagDelete: Pickler[TagDelete] =
-    transformPickler(TagDelete.apply)(_.id)
+  private implicit val picklerTagGroupCreate: Pickler[TagGroupCreate] =
+    transformPickler(TagGroupCreate.apply)(_.newValues)
 
-  private implicit val picklerTagRestore: Pickler[TagRestore] =
-    transformPickler(TagRestore.apply)(_.id)
+  private implicit val picklerTagGroupUpdate: Pickler[TagGroupUpdate] =
+    new Pickler[TagGroupUpdate] {
+      override def pickle(a: TagGroupUpdate)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.newValues)
+      }
+      override def unpickle(implicit state: UnpickleState): TagGroupUpdate = {
+        val id        = state.unpickle[TagGroupId]
+        val newValues = state.unpickle[TagGroupGD.NonEmptyValues]
+        TagGroupUpdate(id, newValues)
+      }
+    }
 
   private implicit val picklerTagSetApplicableChildrenOrder: Pickler[TagSetApplicableChildrenOrder] =
     new Pickler[TagSetApplicableChildrenOrder] {
@@ -398,6 +326,12 @@ object UpdateConfigCmd {
         TagSetApplicableChildrenOrder(id, children)
       }
     }
+
+  private implicit val picklerTagDelete: Pickler[TagDelete] =
+    transformPickler(TagDelete.apply)(_.id)
+
+  private implicit val picklerTagRestore: Pickler[TagRestore] =
+    transformPickler(TagRestore.apply)(_.id)
 
   implicit val pickler: Pickler[UpdateConfigCmd] =
     new Pickler[UpdateConfigCmd] {
@@ -416,11 +350,13 @@ object UpdateConfigCmd {
       private[this] final val KeyFieldDelete                   = 12
       private[this] final val KeyFieldRestore                  = 13
       private[this] final val KeyFieldUpdateOrder              = 14
-      private[this] final val KeyTagCreate                     = 15
-      private[this] final val KeyTagDelete                     = 16
-      private[this] final val KeyTagRestore                    = 17
-      private[this] final val KeyTagUpdate                     = 18
-      private[this] final val KeyTagSetApplicableChildrenOrder = 19
+      private[this] final val KeyApplicableTagCreate           = 15
+      private[this] final val KeyApplicableTagUpdate           = 16
+      private[this] final val KeyTagDelete                     = 17
+      private[this] final val KeyTagGroupCreate                = 18
+      private[this] final val KeyTagGroupUpdate                = 19
+      private[this] final val KeyTagRestore                    = 20
+      private[this] final val KeyTagSetApplicableChildrenOrder = 21
       override def pickle(a: UpdateConfigCmd)(implicit state: PickleState): Unit =
         a match {
           case b: CustomFieldCreate             => state.enc.writeByte(KeyCustomFieldCreate            ); state.pickle(b)
@@ -438,10 +374,12 @@ object UpdateConfigCmd {
           case b: FieldDelete                   => state.enc.writeByte(KeyFieldDelete                  ); state.pickle(b)
           case b: FieldRestore                  => state.enc.writeByte(KeyFieldRestore                 ); state.pickle(b)
           case b: FieldUpdateOrder              => state.enc.writeByte(KeyFieldUpdateOrder             ); state.pickle(b)
-          case b: TagCreate                     => state.enc.writeByte(KeyTagCreate                    ); state.pickle(b)
+          case b: ApplicableTagCreate           => state.enc.writeByte(KeyApplicableTagCreate          ); state.pickle(b)
+          case b: ApplicableTagUpdate           => state.enc.writeByte(KeyApplicableTagUpdate          ); state.pickle(b)
           case b: TagDelete                     => state.enc.writeByte(KeyTagDelete                    ); state.pickle(b)
+          case b: TagGroupCreate                => state.enc.writeByte(KeyTagGroupCreate               ); state.pickle(b)
+          case b: TagGroupUpdate                => state.enc.writeByte(KeyTagGroupUpdate               ); state.pickle(b)
           case b: TagRestore                    => state.enc.writeByte(KeyTagRestore                   ); state.pickle(b)
-          case b: TagUpdate                     => state.enc.writeByte(KeyTagUpdate                    ); state.pickle(b)
           case b: TagSetApplicableChildrenOrder => state.enc.writeByte(KeyTagSetApplicableChildrenOrder); state.pickle(b)
         }
       override def unpickle(implicit state: UnpickleState): UpdateConfigCmd =
@@ -461,10 +399,12 @@ object UpdateConfigCmd {
           case KeyFieldDelete                   => state.unpickle[FieldDelete]
           case KeyFieldRestore                  => state.unpickle[FieldRestore]
           case KeyFieldUpdateOrder              => state.unpickle[FieldUpdateOrder]
-          case KeyTagCreate                     => state.unpickle[TagCreate]
+          case KeyApplicableTagCreate           => state.unpickle[ApplicableTagCreate]
+          case KeyApplicableTagUpdate           => state.unpickle[ApplicableTagUpdate]
           case KeyTagDelete                     => state.unpickle[TagDelete]
+          case KeyTagGroupCreate                => state.unpickle[TagGroupCreate]
+          case KeyTagGroupUpdate                => state.unpickle[TagGroupUpdate]
           case KeyTagRestore                    => state.unpickle[TagRestore]
-          case KeyTagUpdate                     => state.unpickle[TagUpdate]
           case KeyTagSetApplicableChildrenOrder => state.unpickle[TagSetApplicableChildrenOrder]
         }
     }

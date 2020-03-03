@@ -160,29 +160,23 @@ object MakeEvent {
     }
   }
 
-  // TODO tagCrud protocol is crap. Redo it.
   private def tagCrud(cmd: UpdateConfigCmd.ToModifyTags, project: Project): Result = {
-    import UpdateConfigCmd.{TagGroupValues, ApplicableTagValues}
     def nextId = project.idCeilings.tag + 1
     cmd match {
 
-      case UpdateConfigCmd.TagCreate(vs) =>
-        val rels = vs.b getOrElse TagInTree.noRelations
-        import rels._
+      case UpdateConfigCmd.ApplicableTagCreate(newValues) =>
+        val id = ApplicableTagId(nextId)
+        ApplicableTagCreate(id, newValues)
 
-        vs.a match {
-          case Some(v: ApplicableTagValues) =>
-            val id = ApplicableTagId(nextId)
-            import v._
-            ApplicableTagCreate(id, gdAllValues(ApplicableTagGD, ""))
+      case UpdateConfigCmd.ApplicableTagUpdate(id, newValues) =>
+        ApplicableTagUpdate(id, newValues)
 
-          case Some(v: TagGroupValues) =>
-            val id = TagGroupId(nextId)
-            import v._
-            TagGroupCreate(id, gdAllValues(TagGroupGD, ""))
+      case UpdateConfigCmd.TagGroupCreate(newValues) =>
+        val id = TagGroupId(nextId)
+        TagGroupCreate(id, newValues)
 
-          case None => Failure("Values required.")
-        }
+      case UpdateConfigCmd.TagGroupUpdate(id, newValues) =>
+        TagGroupUpdate(id, newValues)
 
       case UpdateConfigCmd.TagSetApplicableChildrenOrder(tagId, childrenA) =>
         val existingChildrenA = project.config.tags.directChildren(tagId).iterator.filterSubType[ApplicableTagId].toSet
@@ -193,61 +187,6 @@ object MakeEvent {
           val children: Vector[TagId] = childrenG ++ childrenA
           val values = TagGroupGD.nev(TagGroupGD.ValueForChildren(children))
           TagGroupUpdate(tagId, values)
-        }
-
-      case UpdateConfigCmd.TagUpdate(tagId, vs) =>
-        project.config.tags.tree.get(tagId) match {
-          case Some(tit) =>
-
-            var children: Option[TagInTree.Children] = None
-            var parents : Option[TagInTree.Parents]  = None
-            for (rels <- vs.b) {
-              if (tit.children !=* rels.children)
-                children = Some(rels.children)
-              val existingParents = project.config.tags.parents(tagId)
-              if (existingParents !=* rels.parents)
-                parents = Some(rels.parents)
-            }
-
-            tit.tag match {
-              case cur: ApplicableTag =>
-                import ApplicableTagGD._
-                var us = emptyValues
-                def build = eventIfNonEmpty(us)(ApplicableTagUpdate(cur.id, _))
-                children.foreach(c => us += Children(c))
-                parents .foreach(p => us += Parents (p))
-                vs.a match {
-                  case Some(v: ApplicableTagValues) =>
-                    if (v.name !=* cur.name) us += Name(v.name)
-                    if (v.key  !=* cur.key ) us += Key (v.key)
-                    if (v.desc !=* cur.desc) us += Desc(v.desc)
-                    build
-                  case None =>
-                    build
-                  case Some(_: TagGroupValues) =>
-                    Failure("Cannot apply TagGroup values to an ApplicableTag.")
-                }
-
-              case cur: TagGroup =>
-                import TagGroupGD._
-                var us = emptyValues
-                def build = eventIfNonEmpty(us)(TagGroupUpdate(cur.id, _))
-                children.foreach(c => us += Children(c))
-                parents .foreach(p => us += Parents (p))
-                vs.a match {
-                  case Some(v: TagGroupValues) =>
-                    if (v.name          !=* cur.name         ) us += Name         (v.name)
-                    if (v.mutexChildren !=* cur.mutexChildren) us += MutexChildren(v.mutexChildren)
-                    if (v.desc          !=* cur.desc         ) us += Desc         (v.desc)
-                    build
-                  case None =>
-                    build
-                  case Some(_: ApplicableTagValues) =>
-                    Failure("Cannot apply ApplicableTag values to an TagGroup.")
-                }
-
-            }
-          case None => Failure(s"$tagId not found.")
         }
 
       case UpdateConfigCmd.TagDelete(id) =>
