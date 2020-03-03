@@ -14,6 +14,7 @@ private[tags] object Shared {
 
   def group(g: TagGroup) =
     <.span(
+      *.group(g.live),
       Shared.groupIcon,
       g.name,
       g.desc.whenDefined(^.title := _),

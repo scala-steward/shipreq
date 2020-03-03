@@ -95,10 +95,12 @@ private[tags] object TagTreeView {
         // Applicable tags
         var firstAfterGroup = lis.rawArray.nonEmpty
         val apTags          = it.applicableTagIdIterator().toArray
-        val canDrag         = !topLevel && apTags.length > 1
+        def liveApTagCount  = it.applicableTagIterator().count(_.live is Live)
+        val canAnyDrag      = !topLevel && liveApTagCount > 1
 
         dnd.items(apTags).foreach { item =>
-          val id = item.data
+          val id  = item.data
+          def tag = tags.tree.need(id).tag
 
           val liState = *.LIState.Tag(
             rowState        = rowState(id),
@@ -110,7 +112,9 @@ private[tags] object TagTreeView {
             *.tagTreeLI((liState, item.status)),
             ^.key := id.value,
             ^.onClick -->? p.select.map(_(id)),
-            TagMod.when(canDrag)(Shared.dragHandle(item, modificationEnabled)),
+            TagMod.when(canAnyDrag)(
+              Shared.dragHandle(item, modificationEnabled & Disabled.when(tag.live is Dead)),
+            ),
             projectWidgets.tag(id),
           )
 

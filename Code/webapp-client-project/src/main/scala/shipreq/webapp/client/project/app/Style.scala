@@ -920,6 +920,12 @@ object Style extends StyleSheet.Inline {
       paddingLeft(`0`),
     )
 
+    val group = styleF(D.live)(l => styleS(
+      mixinIf(l is Dead)(
+        color(c"#999"),
+        textDecoration := "line-through",
+      )
+    ))
   }
 
   // ===================================================================================================================
