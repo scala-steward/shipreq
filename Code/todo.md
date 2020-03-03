@@ -91,6 +91,8 @@ Phase 3A
   * remove config_old
   * remove DND?
   * revise UpdateConfigCmd
+  * ensure dead filter & style everywhere
+  * shouldn't be able to click left if right has changes
 
 * Fields
   * redo config screen

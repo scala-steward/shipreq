@@ -18,14 +18,15 @@ import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 private[tags] object TagTreeView {
 
-  final case class Props(topLevelIds   : NonEmptySet[TagId],
-                         tags          : Tags,
-                         filterDead    : FilterDead,
-                         selected      : Option[TagId],
-                         select        : Option[TagId ~=> Callback],
-                         projectWidgets: ProjectWidgets.NoCtx,
-                         updateChildren: Reusable[(TagGroupId, Vector[ApplicableTagId]) => Callback],
-                         enabled       : Enabled,
+  final case class Props(topLevelIds    : NonEmptySet[TagId],
+                         tags           : Tags,
+                         filterDead     : FilterDead,
+                         selected       : Option[TagId],
+                         select         : Option[TagId ~=> Callback],
+                         projectWidgets : ProjectWidgets.NoCtx,
+                         updateChildren : Reusable[(TagGroupId, Vector[ApplicableTagId]) => Callback],
+                         enabled        : Enabled,
+                         onClickAnywhere: Option[Reusable[Callback]],
                         ) {
     @inline def render: VdomElement = Component(this)
   }
@@ -128,7 +129,8 @@ private[tags] object TagTreeView {
           lis)
       }
 
-      renderTags(p.topLevelIds.toNEV, None)
+      renderTags(p.topLevelIds.toNEV, None)(
+        p.onClickAnywhere.whenDefined(^.onClick --> _))
     }
   }
 

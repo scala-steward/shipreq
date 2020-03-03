@@ -51,16 +51,19 @@ object SplitScreenCrud {
   sealed trait ListArgs[Id] {
     def selection: Option[Id]
     def enabledSelect: Option[Id ~=> Callback]
+    def closeEditor: Option[Reusable[Callback]]
   }
 
   object ListArgs {
-    final case class Disabled[Id](selection: Option[Id]) extends ListArgs[Id] {
+    final case class Disabled[Id](selection: Option[Id],
+                                  closeEditor: Option[Reusable[Callback]]) extends ListArgs[Id] {
       override def enabledSelect = None
     }
 
     final case class Enabled[Id](select: Id ~=> Callback) extends ListArgs[Id] {
       override def selection = None
       override def enabledSelect = Some(select)
+      override def closeEditor = None
     }
   }
 
@@ -168,8 +171,9 @@ final class SplitScreenCrud[
       Reusable.implicitly(id).withValue(
         modEditorState((s, es) => s.copy(right = S.Right.Update(id, es))))
 
-    private val closeEditor: Callback =
-      $.props.flatMap(_.state.modState(_.copy(right = S.Right.Empty)))
+    private val closeEditor: Reusable[Callback] =
+      Reusable.callbackByRef(
+        $.props.flatMap(_.state.modState(_.copy(right = S.Right.Empty))))
 
     def render(p: Props): VdomNode = {
       val s = p.state.value
@@ -196,8 +200,8 @@ final class SplitScreenCrud[
       val listArgs: ListArgs =
         s.right match {
           case S.Right.Empty         => SplitScreenCrud.ListArgs.Enabled(select)
-          case S.Right.Create(_)     => SplitScreenCrud.ListArgs.Disabled(None)
-          case S.Right.Update(id, _) => SplitScreenCrud.ListArgs.Disabled(Some(id))
+          case S.Right.Create(_)     => SplitScreenCrud.ListArgs.Disabled(None, None)
+          case S.Right.Update(id, _) => SplitScreenCrud.ListArgs.Disabled(Some(id), Some(closeEditor))
         }
 
       val leftBody: VdomNode =

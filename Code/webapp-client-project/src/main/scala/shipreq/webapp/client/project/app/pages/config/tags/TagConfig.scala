@@ -110,14 +110,15 @@ object TagConfig {
       NonEmptySet.option(p.project.tags.topLevelIds) match {
         case Some(ids) =>
           TagTreeView.Props(
-            topLevelIds    = ids,
-            tags           = p.project.tags,
-            filterDead     = p.state.value.filterDead,
-            selected       = args.selection,
-            select         = args.enabledSelect,
-            projectWidgets = p.pw,
-            updateChildren = updateChildren,
-            enabled        = Disabled when p.asyncInProgress,
+            topLevelIds     = ids,
+            tags            = p.project.tags,
+            filterDead      = p.state.value.filterDead,
+            selected        = args.selection,
+            select          = args.enabledSelect,
+            projectWidgets  = p.pw,
+            updateChildren  = updateChildren,
+            enabled         = Disabled when p.asyncInProgress,
+            onClickAnywhere = args.closeEditor,
           ).render
 
         case None =>
