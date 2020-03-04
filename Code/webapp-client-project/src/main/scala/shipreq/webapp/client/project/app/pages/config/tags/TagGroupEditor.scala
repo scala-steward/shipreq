@@ -186,15 +186,6 @@ private[tags] object TagGroupEditor {
     def render(p: Props): VdomNode = {
       val s = p.state.value
 
-      val header =
-        <.h2(
-          *.editorTitle,
-          s.source match {
-            case Some(src) => Shared.group(src.group)
-            case None      => "New tag group"
-          },
-        )
-
       val nameField =
         Form.Field.text
           .withLabel("Name")
@@ -219,10 +210,8 @@ private[tags] object TagGroupEditor {
       val children         = tagRelationships(p, hypotheticalTags, children = true)
 
       <.div(
-        header,
         Form(nameField, exclusivityField, descField),
-        <.div(*.editorRelRow, parents, children)
-      )
+        <.div(*.editorRelRow, parents, children))
     }
   }
 

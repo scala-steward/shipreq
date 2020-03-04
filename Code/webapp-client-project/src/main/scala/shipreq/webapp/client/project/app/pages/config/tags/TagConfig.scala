@@ -9,6 +9,7 @@ import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq.UnivEq
 import monocle.Lens
+import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{ErrorMsg, Optics, PotentialChange}
 import shipreq.webapp.base.data._
@@ -17,6 +18,7 @@ import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateConfigCmd}
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.client.project.app.state.NewEvents
+import shipreq.webapp.client.project.app.Style.{tagConfig => *}
 import shipreq.webapp.client.project.widgets.{ButtonAndDropdown, ProjectWidgets, SplitScreenCrud}
 
 object TagConfig {
@@ -38,7 +40,21 @@ object TagConfig {
                          async  : AsyncFeature.ReadWrite.D0[ErrorMsg],
                          ) {
 
-    val asyncInProgress = AsyncFeature.isInProgress(async.read)
+    val asyncInProgress: Boolean =
+      AsyncFeature.isInProgress(async.read)
+
+    val filterDeadOverride: Option[FilterDead] =
+      state.value.filterDead match {
+        case ShowDead => None
+        case HideDead =>
+          state.value.right.idOption match {
+            case Some(id) if project.tags.tree.need(id).tag.live.is(Dead) => Some(ShowDead)
+            case _                                                        => None
+          }
+      }
+
+    def effectiveFilterDead: FilterDead =
+      filterDeadOverride.getOrElse(state.value.filterDead)
 
     val potentialSaveCmd: PotentialChange[Unit, UpdateConfigCmd.ToModifyTags] =
       state.value.right.editorOption match {
@@ -75,6 +91,13 @@ object TagConfig {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  sealed trait EditorType
+  object EditorType {
+    final case class Dead         (tagId: TagId)                extends EditorType
+    final case class TagGroup     (id: Option[TagGroupId])      extends EditorType
+    final case class ApplicableTag(id: Option[ApplicableTagId]) extends EditorType
+  }
+
   private def editorStateLensForGroup(default: => TagGroupEditor.State): Lens[EditorState, TagGroupEditor.State] =
     Optics.disjunctionLensRight(default)
 
@@ -95,9 +118,12 @@ object TagConfig {
         } yield ()
       }
 
-    private def submitCmdAndCloseOnSuccess(p: Props,
-                                           cmd: UpdateConfigCmd.ToModifyTags,
-                                           close: Callback): Callback =
+    private def submitCmd(p: Props, cmd: UpdateConfigCmd.ToModifyTags): Callback =
+      submitCmd(p, cmd, Callback.empty)
+
+    private def submitCmd(p    : Props,
+                          cmd  : UpdateConfigCmd.ToModifyTags,
+                          close: Callback): Callback =
       p.async.write.forgetFailure(
         p.ssp(cmd).flatTap {
           case \/-(_) => close.asAsyncCallback
@@ -128,10 +154,11 @@ object TagConfig {
     private def renderLeft(p: Props, args: splitScreenCrud.ListArgs): VdomNode =
       NonEmptySet.option(p.project.tags.topLevelIds) match {
         case Some(ids) =>
+
           TagTreeView.Props(
             topLevelIds     = ids,
             tags            = p.project.tags,
-            filterDead      = p.state.value.filterDead,
+            filterDead      = p.effectiveFilterDead,
             selected        = args.selection,
             select          = args.enabledSelect,
             projectWidgets  = p.pw,
@@ -146,64 +173,82 @@ object TagConfig {
 
     private def renderEditor(p: Props, args: splitScreenCrud.EditorArgs): VdomNode = {
 
-      val subject: Option[ApplicableTagId] \/ Option[TagGroupId] =
+      val header: VdomNode =
+        <.h2(
+          *.editorTitle,
+          args.id match {
+            case \/-(id: TagGroupId)      => Shared.group(p.project.tags.needTagGroup(id))
+            case \/-(id: ApplicableTagId) => p.pw.tag(id)
+            case -\/(NewTagType.TagGroup) => "New tag group"
+            case -\/(NewTagType.Tag)      => "New tag"
+          })
+
+      val editorType: EditorType =
         args.id match {
-          case \/-(id: TagGroupId)      => \/-(Some(id))
-          case \/-(id: ApplicableTagId) => -\/(Some(id))
-          case -\/(NewTagType.TagGroup) => \/-(Option.empty[TagGroupId])
-          case -\/(NewTagType.Tag)      => -\/(Option.empty[ApplicableTagId])
+          case \/-(id) if p.project.tags.tree.need(id).tag.live.is(Dead) => EditorType.Dead(id)
+          case \/-(id: TagGroupId)                                       => EditorType.TagGroup(Some(id))
+          case \/-(id: ApplicableTagId)                                  => EditorType.ApplicableTag(Some(id))
+          case -\/(NewTagType.TagGroup)                                  => EditorType.TagGroup(None)
+          case -\/(NewTagType.Tag)                                       => EditorType.ApplicableTag(None)
         }
 
-      val editor: VdomNode =
-        subject match {
-          case \/-(group) =>
-            val lens = editorStateLensForGroup(TagGroupEditor.State.init(group, p.project.tags))
+      def createOrUpdateButtons(idOption: Option[TagId]): EditorButtons.Props =
+        idOption match {
+          case Some(id) =>
+            EditorButtons.Props.Update(
+              abort  = args.close,
+              delete = submitCmd(p, UpdateConfigCmd.TagDelete(id)),
+              update = p.potentialSaveCmd.map(submitCmd(p, _, args.close)),
+            )
+
+          case None =>
+            EditorButtons.Props.Create(
+              abort  = args.close,
+              create = p.potentialSaveCmd.toOption.map(submitCmd(p, _, args.close)),
+            )
+        }
+
+      editorType match {
+        case EditorType.ApplicableTag(id) =>
+          <.div("todo")
+
+        case EditorType.TagGroup(idOption) =>
+
+          val lens = editorStateLensForGroup(TagGroupEditor.State.init(idOption, p.project.tags))
+
+          val editor =
             TagGroupEditor.Props(
-              subject = group,
+              subject = idOption,
               state   = args.state.zoomStateL(lens),
               project = p.project,
               pw      = p.pw,
             ).render
 
-          case -\/(a) =>
-            <.div("todo: ", a.toString)
-        }
+          val buttons = createOrUpdateButtons(idOption).render
 
-      val buttons: VdomNode =
-        subject match {
-          case \/-(Some(tagGroupId)) =>
-            EditorButtons.Props.Update(
-              abort = args.close,
-              delete = submitCmdAndCloseOnSuccess(p, UpdateConfigCmd.TagDelete(tagGroupId), args.close),
-              update = p.potentialSaveCmd.map(submitCmdAndCloseOnSuccess(p, _, args.close)),
+          <.div(header, editor, buttons)
+
+        case EditorType.Dead(id) =>
+          val buttons =
+            EditorButtons.Props.Restore(
+              abort   = args.close,
+              restore = submitCmd(p, UpdateConfigCmd.TagRestore(id)),
             ).render
 
-          case \/-(None)
-             | -\/(None) =>
-            EditorButtons.Props.Create(
-              abort = args.close,
-              create = None,
-            ).render
-
-          case _ =>
-            <.button("Close", ^.onClick --> args.close)
-        }
-
-      <.div(
-        editor,
-        buttons,
-      )
+          <.div(header, buttons)
+      }
     }
 
     def render(p: Props): VdomNode = {
-      val s = p.state.value
+      // println(("="*60) + "\n" + p.project.tags.prettyPrint)
 
       splitScreenCrud(
-        newButton  = newButtonProps(p, _).render,
-        list       = renderLeft(p, _),
-        editor     = renderEditor(p, _),
-        initEditor = initEditor,
-        state      = p.state,
+        filterDeadOverride = p.filterDeadOverride,
+        newButton          = newButtonProps(p, _).render,
+        list               = renderLeft(p, _),
+        editor             = renderEditor(p, _),
+        initEditor         = initEditor,
+        state              = p.state,
       )
     }
   }

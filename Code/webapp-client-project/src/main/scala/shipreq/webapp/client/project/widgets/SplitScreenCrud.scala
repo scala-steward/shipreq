@@ -71,11 +71,12 @@ object SplitScreenCrud {
                                           state: StateSnapshot[S],
                                           close: Callback)
 
-  final case class Props[N, Id, E](newButton : NewArgs[N] => VdomNode,
-                                   list      : ListArgs[Id] => VdomNode,
-                                   editor    : EditorArgs[N, Id, E] => VdomNode,
-                                   initEditor: Id => CallbackTo[E],
-                                   state     : StateSnapshot[State[N, Id, E]])
+  final case class Props[N, Id, E](filterDeadOverride: Option[FilterDead],
+                                   newButton         : NewArgs[N] => VdomNode,
+                                   list              : ListArgs[Id] => VdomNode,
+                                   editor            : EditorArgs[N, Id, E] => VdomNode,
+                                   initEditor        : Id => CallbackTo[E],
+                                   state             : StateSnapshot[State[N, Id, E]])
 
   @Lenses
   final case class State[N, Id, E](newState  : N,
@@ -90,6 +91,13 @@ object SplitScreenCrud {
           case Right.Empty        => None
           case Right.Create(s)    => Some(s)
           case Right.Update(_, s) => Some(s)
+        }
+
+      final val idOption: Option[Id] =
+        this match {
+          case Right.Empty
+             | Right.Create(_)     => None
+          case Right.Update(id, _) => Some(id)
         }
     }
 
@@ -134,12 +142,13 @@ final class SplitScreenCrud[
   type ListArgs   = SplitScreenCrud.ListArgs[Id]
   type EditorArgs = SplitScreenCrud.EditorArgs[NewState, Id, EditorState]
 
-  @inline def apply(newButton : NewArgs    => VdomNode,
-                    list      : ListArgs   => VdomNode,
-                    editor    : EditorArgs => VdomNode,
-                    initEditor: Id => CallbackTo[EditorState],
-                    state     : StateSnapshot[State]): VdomNode =
-    Component(SplitScreenCrud.Props(newButton, list, editor, initEditor, state))
+  @inline def apply(filterDeadOverride: Option[FilterDead],
+                    newButton         : NewArgs    => VdomNode,
+                    list              : ListArgs   => VdomNode,
+                    editor            : EditorArgs => VdomNode,
+                    initEditor        : Id => CallbackTo[EditorState],
+                    state             : StateSnapshot[State]): VdomNode =
+    Component(SplitScreenCrud.Props(filterDeadOverride, newButton, list, editor, initEditor, state))
 
   def initState(newState: NewState): State =
     S(newState, HideDead, S.Right.Empty)
@@ -203,7 +212,11 @@ final class SplitScreenCrud[
         p.newButton(newArgs)
 
       val filterDeadButton: VdomNode =
-        FilterDeadButton.Component(p.state.zoomStateL(S.filterDead))
+        p.filterDeadOverride match {
+          case None     => FilterDeadButton.Component(p.state.zoomStateL(S.filterDead))
+          case Some(fd) => FilterDeadButton.Component(StateSnapshot(fd)((_, _) => Callback.empty))
+        }
+
 
       val listArgs: ListArgs =
         s.right match {

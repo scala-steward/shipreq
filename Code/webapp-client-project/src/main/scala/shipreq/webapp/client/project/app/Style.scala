@@ -861,7 +861,7 @@ object Style extends StyleSheet.Inline {
 
     val editorTitle = style(
       color(c"#3659e2"),
-      marginBottom(2 rem),
+      marginBottom(3 rem),
     )
 
     val segmentCheckboxSubtitle = style(
