@@ -80,19 +80,17 @@ Phase 3A
   * Support styling (bold, underline, italics, strikethrough)
 
 * Tags
-  * redo tag config screen
-    * prop panel on right
-    * ability to create child tag in 1-step instead of 2 [FB-4]
+  * ability to create child tag in 1-step instead of 2 [FB-4]
   * add tag colours [FR-8]
-  * prevent ap-tags having children
   * remove key from TagGroups, check all Tag fields against UI prototype
   * restore -deprecation
   * remove MutexChildren
   * remove DND?
   * ensure dead filter & style everywhere
-  * shouldn't be able to click left if right has changes
   * TagSetApplicableChildrenOrder has a bug or something - remember how priorty got fucked up with Actors & could added under should?
   * rename atag => needXxxx
+  * Add tests to ProjectSpaProtocolsTest
+  * Add tests for TagConfig
 
 * Fields
   * redo config screen
