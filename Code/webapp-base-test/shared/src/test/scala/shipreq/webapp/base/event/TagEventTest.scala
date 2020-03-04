@@ -41,7 +41,7 @@ abstract class SharedTagEventTests extends TestSuite {
   def create(id: Int)(parents: Int*)(children: Int*): CE
 
   private def getChildren(t: TagInTree) =
-    t.children.map(_.value.toInt)
+    t.children.map(_.value)
 
   def tagId1: TagId
   val createTagField1 = CustomTagFieldEventTest.mkC1(tagId1)
@@ -186,15 +186,15 @@ trait TagGroupEvents {
   def parent(id: TagGroupId) = Parents(Map((id: TagId) -> none))
   def ttget(tt: TagTree, ids: Int*): List[TagInTree] = ids.toList.map(i => tt.get(i.TG).get)
   def create(id: Int)(parents: Int*)(children: Int*) =
-    TagGroupCreate(id, nev(Name(id.toString), Desc(None), MutexChildren(true),
+    TagGroupCreate(id, nev(Name(id.toString), Desc(None), Exclusivity(true),
       Children(Vector(children.map(_.TG): _*)), Parents(parents.map(_.TG -> none[TagId]).toMap)))
   def tagId1 = 1.TG
 
   val c1Name = "Version"
   type CE = TagGroupCreate
-  val c1 = TagGroupCreate(1, nev(Name(c1Name), Desc(None), MutexChildren(false)))
-  val c2 = TagGroupCreate(2, nev(Name("Released"), Desc(Some("r")), MutexChildren(true), parent(1)))
-  val c3 = TagGroupCreate(3, nev(Name("All"), Desc(None), MutexChildren(false), child(1)))
+  val c1 = TagGroupCreate(1, nev(Name(c1Name), Desc(None), Exclusivity(false)))
+  val c2 = TagGroupCreate(2, nev(Name("Released"), Desc(Some("r")), Exclusivity(true), parent(1)))
+  val c3 = TagGroupCreate(3, nev(Name("All"), Desc(None), Exclusivity(false), child(1)))
   val u1 = TagGroupUpdate(1, nev(Desc(Some("versionness"))))
   val List(sd1,sd2,sd3,sd4) = List(1,2,3,4).map(i => TagDelete (i.TG))
   val List( r1, r2, r3, r4) = List(1,2,3,4).map(i => TagRestore(i.TG))
@@ -228,7 +228,7 @@ object TagGroupEventTest extends TestSuite with TagGroupEvents {
 
   override def tests = Tests {
     'create {
-      'needMC - assertFail("Mutex")(c1.mod(_ - MutexChildren))
+      'needMC - assertFail("Exclusiv")(c1.mod(_ - Exclusivity))
     }
 
     'update {
@@ -239,7 +239,7 @@ object TagGroupEventTest extends TestSuite with TagGroupEvents {
         assertEq(r1, TagInTree(TagGroup(1, c1Name, Some("versionness"), false, Live), Vector.empty))
 
         es :+= c2
-        es :+= TagGroupUpdate(1, nev(Name("Ver"), MutexChildren(true)))
+        es :+= TagGroupUpdate(1, nev(Name("Ver"), Exclusivity(true)))
         assertEq(r1, TagInTree(TagGroup(1, "Ver", Some("versionness"), true, Live), Vector(2.TG)))
         assertEq(r2, TagInTree(TagGroup(2, "Released", Some("r"), true, Live), Vector.empty))
 

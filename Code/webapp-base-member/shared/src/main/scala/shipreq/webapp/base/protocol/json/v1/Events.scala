@@ -281,26 +281,27 @@ object Events {
   private implicit val codecTagGroupGD: JsonCodec[TagGroupGD.NonEmptyValues] = {
     import TagGroupGD._
 
-    implicit val codecValueForChildren      = JsonCodec.xmap(ValueForChildren     .apply)(_.value)
-    implicit val codecValueForDesc          = JsonCodec.xmap(ValueForDesc         .apply)(_.value)
-    implicit val codecValueForMutexChildren = JsonCodec.xmap(ValueForMutexChildren.apply)(_.value)
-    implicit val codecValueForName          = JsonCodec.xmap(ValueForName         .apply)(_.value)
-    implicit val codecValueForParents       = JsonCodec.xmap(ValueForParents      .apply)(_.value)
+    implicit val codecValueForChildren    = JsonCodec.xmap(ValueForChildren   .apply)(_.value)
+    implicit val codecValueForDesc        = JsonCodec.xmap(ValueForDesc       .apply)(_.value)
+    implicit val codecValueForExclusivity = JsonCodec.xmap(ValueForExclusivity.apply)(_.value)
+    implicit val codecValueForName        = JsonCodec.xmap(ValueForName       .apply)(_.value)
+    implicit val codecValueForParents     = JsonCodec.xmap(ValueForParents    .apply)(_.value)
 
     implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
       case ("children"     , c) => c.as[ValueForChildren]
       case ("desc"         , c) => c.as[ValueForDesc]
-      case ("mutexChildren", c) => c.as[ValueForMutexChildren]
+      case ("exclusivity"  , c) => c.as[ValueForExclusivity]
       case ("name"         , c) => c.as[ValueForName]
       case ("parents"      , c) => c.as[ValueForParents]
+      case ("mutexChildren", c) => c.as[ValueForExclusivity] // old name, must remain for backward-compatibility
     }
 
     implicit val encoderValue: Encoder[Value] = Encoder.instance {
-      case a: ValueForChildren      => Json.obj("children"      -> a.asJson)
-      case a: ValueForDesc          => Json.obj("desc"          -> a.asJson)
-      case a: ValueForMutexChildren => Json.obj("mutexChildren" -> a.asJson)
-      case a: ValueForName          => Json.obj("name"          -> a.asJson)
-      case a: ValueForParents       => Json.obj("parents"       -> a.asJson)
+      case a: ValueForChildren    => Json.obj("children"    -> a.asJson)
+      case a: ValueForDesc        => Json.obj("desc"        -> a.asJson)
+      case a: ValueForExclusivity => Json.obj("exclusivity" -> a.asJson)
+      case a: ValueForName        => Json.obj("name"        -> a.asJson)
+      case a: ValueForParents     => Json.obj("parents"     -> a.asJson)
     }
 
     implicit val values: JsonCodec[Values] = codecIMap(emptyValues)

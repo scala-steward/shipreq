@@ -62,17 +62,17 @@ private[tags] object TagGroupEditor {
 
       val validated =
         DataValidators.tag.tagGroup(vs)(
-        (name, MutexChildren.when(exclusivity is Exclusive), desc))
+        (name, Exclusive.when(exclusivity is Exclusive), desc))
 
       PotentialChange
         .fromDisjunction(validated.leftMap(_ => ()))
-        .flatMap { case (name, mutexChildren, desc) =>
+        .flatMap { case (name, exclusivity, desc) =>
           val b = TagGroupGD.valueBuilder()
-          b.addIfChangedOption(TagGroupGD.Name         )(source.map(_.group.name         ), name)
-          b.addIfChangedOption(TagGroupGD.MutexChildren)(source.map(_.group.mutexChildren), mutexChildren)
-          b.addIfChangedOption(TagGroupGD.Desc         )(source.map(_.group.desc         ), desc)
-          b.addIfChangedOption(TagGroupGD.Parents      )(source.map(_.rels.parents       ), rels.parents)
-          b.addIfChangedOption(TagGroupGD.Children     )(source.map(_.rels.children      ), rels.children)
+          b.addIfChangedOption(TagGroupGD.Name       )(source.map(_.group.name       ), name)
+          b.addIfChangedOption(TagGroupGD.Exclusivity)(source.map(_.group.exclusivity), exclusivity)
+          b.addIfChangedOption(TagGroupGD.Desc       )(source.map(_.group.desc       ), desc)
+          b.addIfChangedOption(TagGroupGD.Parents    )(source.map(_.rels.parents     ), rels.parents)
+          b.addIfChangedOption(TagGroupGD.Children   )(source.map(_.rels.children    ), rels.children)
 
           PotentialChange.fromOption(b.nev()).map { newValues =>
             source match {
@@ -95,7 +95,7 @@ private[tags] object TagGroupEditor {
       State(
         source      = Some(Source(t, tags.relations(t.id))),
         name        = t.name,
-        exclusivity = Exclusive.when(t.mutexChildren is MutexChildren),
+        exclusivity = Exclusive.when(t.exclusivity is Exclusive),
         desc        = t.desc.getOrElse(""),
         parents     = TagRelationshipEditor.State.parents(t.id, tags),
         children    = TagRelationshipEditor.State.children(t.id, tags),
@@ -143,7 +143,7 @@ private[tags] object TagGroupEditor {
       TagGroupId(-1)
 
     private val fakeTagGroupInTree =
-      TagInTree(TagGroup(fakeTagGroupId, "", None, MutexChildren, Live), Vector.empty)
+      TagInTree(TagGroup(fakeTagGroupId, "", None, Exclusive, Live), Vector.empty)
 
     private val pxSourceId: Px[Option[TagGroupId]] =
       Px.props($).map(_.subject).withReuse.autoRefresh

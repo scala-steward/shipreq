@@ -5,7 +5,7 @@ import boopickle.DefaultBasic._
 import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.univeq.UnivEq
 import nyaya.util.Multimap
-import shipreq.base.util.IMap
+import shipreq.base.util.{Exclusive, Exclusivity, IMap}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.filter.Filter
@@ -702,8 +702,8 @@ object BaseMemberData1 {
   implicit lazy val picklerMultimapReqCodeValueSetApReqCodeId: Pickler[Multimap[ReqCode.Value, Set, ApReqCodeId]] =
     pickleMultimap[ReqCode.Value, Set, ApReqCodeId]
 
-  implicit lazy val picklerMutexChildren: Pickler[MutexChildren] =
-    pickleBool(MutexChildren)
+  implicit lazy val picklerExclusivity: Pickler[Exclusivity] =
+    pickleBool(Exclusive)
 
   implicit lazy val picklerOn: Pickler[On] =
     pickleBool(On)

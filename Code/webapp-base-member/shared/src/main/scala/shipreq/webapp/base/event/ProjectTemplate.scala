@@ -1,7 +1,7 @@
 package shipreq.webapp.base.event
 
 import japgolly.microlibs.nonempty._
-import shipreq.base.util.ISubset
+import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.Filter
@@ -53,11 +53,11 @@ object ProjectTemplate {
     }
 
     val tagId = new IdCounter(identity)
-    def tagGroup(name         : String,
-                 desc         : Option[String],
-                 mutexChildren: MutexChildren,
-                 parents      : TagInTree.Parents  = Map.empty,
-                 children     : TagInTree.Children = Vector.empty) = {
+    def tagGroup(name       : String,
+                 desc       : Option[String],
+                 exclusivity: Exclusivity,
+                 parents    : TagInTree.Parents  = Map.empty,
+                 children   : TagInTree.Children = Vector.empty) = {
       val id = TagGroupId(tagId.next())
       add(TagGroupCreate(id, gdAllValues(TagGroupGD, "")))
       id
@@ -112,17 +112,17 @@ object ProjectTemplate {
       issueType("TO"+"DO", "Work needs to be done.")
       issueType("PENDING", "Waiting on external information, or an external event.")
 
-      tagGroup("Actors", None, MutexChildren.Not)
+      tagGroup("Actors", None, NonExclusive)
 
       val must   = applicableTag("Must",   "Requirement is critical to the current delivery timebox in order for it to be a success. If even one MUST requirement is not included, the project delivery should be considered a failure", HashRefKey("must"))
       val should = applicableTag("Should", "Requirement is important but not necessary for delivery in the current delivery timebox.", HashRefKey("should"))
       val could  = applicableTag("Could",  "Requirement is desirable but not necessary, and could improve user experience or customer satisfaction for little development cost. These will typically be included if time and resources permit.", HashRefKey("could"))
-      val pri    = tagGroup("Priority", None, MutexChildren, children = Vector(must, should, could))
+      val pri    = tagGroup("Priority", None, Exclusive, children = Vector(must, should, could))
 
       val v10  = applicableTag("Version 1.0", None, HashRefKey("v1.0"))
-      val urel = tagGroup("Unreleased", "Product version in which requirements are planned for implementation.", MutexChildren.Not, children = Vector(v10))
-      val rel  = tagGroup("Released", "Product version in which requirements were implemented.", MutexChildren.Not)
-      val ver  = tagGroup("Version", "Target product version.", MutexChildren.Not, children = Vector(rel, urel))
+      val urel = tagGroup("Unreleased", "Product version in which requirements are planned for implementation.", NonExclusive, children = Vector(v10))
+      val rel  = tagGroup("Released", "Product version in which requirements were implemented.", NonExclusive)
+      val ver  = tagGroup("Version", "Target product version.", NonExclusive, children = Vector(rel, urel))
 
       customTextField("Detail", FieldRefKey("detail"), Mandatory.Not, allReqTypes)
       customImpField(mf,     Mandatory    , ISubset.Not(NonEmptySet(mf, oe)))

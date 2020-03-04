@@ -6,7 +6,7 @@ import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.univeq.UnivEq
 import nyaya.util.Multimap
-import shipreq.base.util.{Direction, IMap}
+import shipreq.base.util.{Direction, Exclusivity, IMap}
 import shipreq.base.util.JsonUtil._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
@@ -469,8 +469,8 @@ private[v1] object BaseMemberData1 {
   implicit lazy val codecMultimapReqCodeValueSetApReqCodeId: JsonCodec[Multimap[ReqCode.Value, Set, ApReqCodeId]] =
     codecMultimap[ReqCode.Value, Set, ApReqCodeId]
 
-  implicit lazy val codecMutexChildren: JsonCodec[MutexChildren] =
-    codecBool(MutexChildren)
+  implicit lazy val codecExclusivity: JsonCodec[Exclusivity] =
+    codecBool(Exclusivity)
 
   implicit lazy val codecOn: JsonCodec[On] =
     codecBoolVia(On) {

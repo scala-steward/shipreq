@@ -117,7 +117,7 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
 //  implicit def autoSet[A, B: UnivEq](a: A)(implicit ev: A => B): Set[B] =
 //    Set(a)
 
-  implicit def boolToMutexChildren(b: Boolean) = MutexChildren when b
+  implicit def boolToExclusivity(b: Boolean) = Exclusive when b
   implicit def boolToMandatory(b: Boolean) = Mandatory when b
   implicit def boolToImplicationRequired(b: Boolean) = ImplicationRequired when b
 

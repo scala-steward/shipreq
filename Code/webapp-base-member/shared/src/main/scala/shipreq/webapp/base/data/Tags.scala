@@ -35,7 +35,7 @@ sealed trait Tag {
 final case class TagGroup(id           : TagGroupId,
                           name         : String,
                           desc         : Option[String],
-                          mutexChildren: MutexChildren,
+                          exclusivity: Exclusivity,
                           live         : Live) extends Tag {
   override def keyO = None
   override def tagType = TagType.Group
@@ -49,20 +49,6 @@ final case class ApplicableTag(id  : ApplicableTagId,
                                live: Live) extends Tag {
   override def keyO = Some(key)
   override def tagType = TagType.Applicable
-}
-
-/**
- * FR-253: BA shall be able to specify that a grouping's children are mutually-exclusive (like an enum or sum-type).
- * FR-254: BA shall be able to track when two or more enum-groupings (FR-253) (or its children) are applied to the same req.
- */
-@deprecated("delete", "")
-sealed trait MutexChildren extends IsoBool[MutexChildren] {
-  override final def companion = MutexChildren
-}
-case object MutexChildren extends MutexChildren with IsoBool.Object[MutexChildren] {
-  override def positive = this
-  override def negative = Not
-  case object Not extends MutexChildren
 }
 
 sealed abstract class TagType(val name: String) { type Data <: Tag }
@@ -128,7 +114,7 @@ object TagTree {
         val id = t.id.value
         val isDead = t.tag.live is Dead
         val isMutex = t.tag match {
-          case t: TagGroup      => t.mutexChildren is MutexChildren
+          case t: TagGroup      => t.exclusivity is Exclusive
           case _: ApplicableTag => false
         }
         val name = t.tag match {
@@ -276,9 +262,9 @@ final case class Tags(tree: TagTree) {
               exclusiveParents
 
             case g: TagGroup =>
-              g.mutexChildren match {
-                case MutexChildren     => exclusiveParents + g.id
-                case MutexChildren.Not => exclusiveParents
+              g.exclusivity match {
+                case Exclusive     => exclusiveParents + g.id
+                case NonExclusive => exclusiveParents
               }
           }
 

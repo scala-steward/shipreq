@@ -42,9 +42,9 @@ object IssueDetectorTest extends TestSuite {
   private def updateReqTags(id: ReqId)(del: ApplicableTagId*)(add: ApplicableTagId*) =
     Event.ReqTagsPatch(id, NonEmpty force SetDiff(removed = del.toSet, added = add.toSet))
 
-  private def updateTagGroup(id: TagGroupId, mutexChildren: MutexChildren) = {
+  private def updateTagGroup(id: TagGroupId, exclusivity: Exclusivity) = {
     import TagGroupGD._
-    Event.TagGroupUpdate(id, nev(MutexChildren(mutexChildren)))
+    Event.TagGroupUpdate(id, nev(Exclusivity(exclusivity)))
   }
 
   private def assertIssues(project: Project)(expected: IssueLite*)(implicit l: Line, f: IssueFilter): Unit =
@@ -171,7 +171,7 @@ object IssueDetectorTest extends TestSuite {
     private implicit val filter = IssueFilter[Issue.ConflictingTags]
 
     def ko() = test(p3)(
-      updateTagGroup(20, MutexChildren),
+      updateTagGroup(20, Exclusive),
       Event.ContentRestore(Set(1119), ∅),
       updateReqTags(1101)()(4),
       updateReqTags(1104)()(2, 24, 25),

@@ -315,27 +315,27 @@ trait ApplyConfigEvent {
       for {
         n   ← GD.need(^.Name) >>= validateName
         d   ← GD.need(^.Desc) >>= validateDesc
-        mc  ← GD.need(^.MutexChildren)
+        ex  ← GD.need(^.Exclusivity)
         oc  = GD.read(^.Children)
         op  = GD.read(^.Parents)
-        tag = TagGroup(e.id, n, d, mc, Live)
+        tag = TagGroup(e.id, n, d, ex, Live)
         tit = TagInTree(tag, oc getOrElse Vector.empty)
         _   ← create(tit, op)
       } yield ()
     }
 
-    val updateName          = validateName >>=@ TagGroup.name
-    val updateDesc          = validateDesc >>=@ TagGroup.desc
-    val updateMutexChildren = fieldUpdateFn(TagGroup.mutexChildren)
+    val updateName        = validateName >>=@ TagGroup.name
+    val updateDesc        = validateDesc >>=@ TagGroup.desc
+    val updateExclusivity = fieldUpdateFn(TagGroup.exclusivity)
 
     def applyUpdate(e: TagGroupUpdate): SE[Unit] =
       update(e.id, vars =>
         e.vs.values foreach {
-          case v: ^.ValueForName          => vars apply updateName(v.value)
-          case v: ^.ValueForDesc          => vars apply updateDesc(v.value)
-          case v: ^.ValueForMutexChildren => vars apply updateMutexChildren(v.value)
-          case v: ^.ValueForChildren      => vars setChildren v.value
-          case v: ^.ValueForParents       => vars setParents v.value
+          case v: ^.ValueForName        => vars apply updateName(v.value)
+          case v: ^.ValueForDesc        => vars apply updateDesc(v.value)
+          case v: ^.ValueForExclusivity => vars apply updateExclusivity(v.value)
+          case v: ^.ValueForChildren    => vars setChildren v.value
+          case v: ^.ValueForParents     => vars setParents v.value
         }
       )
   }

@@ -1,7 +1,7 @@
 package shipreq.webapp.base.test
 
 import japgolly.microlibs.nonempty.NonEmptyVector
-import shipreq.base.util.ISubset
+import shipreq.base.util._
 import shipreq.webapp.base.data._
 import DataImplicits._
 import UnsafeTypes._
@@ -47,17 +47,17 @@ object SampleProject {
   lazy val v10d = Some("Released: 17/14/1976\nFirst release.")
   lazy val v11d = Some("Released: 1/2/2001")
   lazy val tags = TagTree.empty.addAll(
-    TagInTree(TagGroup     (priTG  , "Priority",        None, MutexChildren,     Live), Vector(priHigh, priMed, priLow)),
+    TagInTree(TagGroup     (priTG  , "Priority",        None, Exclusive,     Live), Vector(priHigh, priMed, priLow)),
     TagInTree(ApplicableTag(priHigh, "High Priority",   None, "pri=high",        Live), Vector()),
     TagInTree(ApplicableTag(priMed , "Medium Priority", None, "pri=med",         Live), Vector()),
-    TagInTree(TagGroup     (10     , "Status",          None, MutexChildren.Not, Live), Vector(wip, defer, uat, uat2, uat3, prod)),
+    TagInTree(TagGroup     (10     , "Status",          None, NonExclusive, Live), Vector(wip, defer, uat, uat2, uat3, prod)),
     TagInTree(ApplicableTag(wip    , "WIP",             None, "wip",             Live), Vector()),
     TagInTree(ApplicableTag(defer  , "Deferred",        None, "defer",           Live), Vector()),
     TagInTree(ApplicableTag(uat    , "In UAT #1",       None, "uat",             Dead), Vector()),
     TagInTree(ApplicableTag(uat2   , "In UAT #2",       None, "uat2",            Dead), Vector()),
     TagInTree(ApplicableTag(uat3   , "In UAT #3",       None, "uat3",            Dead), Vector()),
     TagInTree(ApplicableTag(prod   , "In Production",   None, "prod",            Live), Vector()),
-    TagInTree(TagGroup     (20     , "Version",         None, MutexChildren.Not, Live), Vector(27.TG, v1x, v2x, v3x, v4x)),
+    TagInTree(TagGroup     (20     , "Version",         None, NonExclusive, Live), Vector(27.TG, v1x, v2x, v3x, v4x)),
     TagInTree(ApplicableTag(v1x    , "v1.x",            None, "v1.x",            Live), Vector(v10, v11, v12, v13)),
     TagInTree(ApplicableTag(v10    , "v1.0",            v10d, "v1.0",            Live), Vector()),
     TagInTree(ApplicableTag(v11    , "v1.1",            v11d, "v1.1",            Live), Vector()),
@@ -66,7 +66,7 @@ object SampleProject {
     TagInTree(ApplicableTag(v2x    , "v2.x",            None, "v2.x",            Live), Vector()),
     TagInTree(ApplicableTag(v3x    , "v3.x",            None, "v3.x",            Dead), Vector()),
     TagInTree(ApplicableTag(v4x    , "v4.x",            None, "v4.x",            Dead), Vector()),
-    TagInTree(TagGroup     (27     , "Released",        None, MutexChildren.Not, Live), Vector(v09, v10, v11)),
+    TagInTree(TagGroup     (27     , "Released",        None, NonExclusive, Live), Vector(v09, v10, v11)),
     TagInTree(ApplicableTag(v09    , "v0.9",            None, "v0.9",            Dead), Vector()),
     TagInTree(ApplicableTag(priLow , "Low Priority", Some("Nice to have. Stuff that probably won't be implemented."), "pri=low", Live), Vector()))
 

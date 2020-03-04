@@ -225,7 +225,7 @@ object ContentEventTestHelp {
   val tg1: TagGroupId = 20
   val createTG1 = {
     import TagGroupGD._
-    TagGroupCreate(tg1, nev(Name("TG #1"), Desc(None), MutexChildren(false)))
+    TagGroupCreate(tg1, nev(Name("TG #1"), Desc(None), Exclusivity(false)))
   }
 
   val createIssueType1 = {

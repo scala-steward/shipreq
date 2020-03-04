@@ -2,7 +2,7 @@ package shipreq.webapp.base.event
 
 import japgolly.microlibs.nonempty._
 import scalaz.{Equal, Order}
-import shipreq.base.util.{SetDiff, Util}
+import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter.Filter.Implicits._
@@ -608,15 +608,15 @@ object TagGroupGD extends GenericData {
     }
   }
 
-  case object MutexChildren extends Attr {
-    override type Data = MutexChildren
-    override def apply(data: Data) = ValueForMutexChildren(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[MutexChildren]]
+  case object Exclusivity extends Attr {
+    override type Data = Exclusivity
+    override def apply(data: Data) = ValueForExclusivity(data)
+    val dataEquality: Equal[Data] = implicitly[Equal[Exclusivity]]
   }
-  final case class ValueForMutexChildren(value: MutexChildren.Data) extends Value {
-    override val attr: MutexChildren.type = MutexChildren
+  final case class ValueForExclusivity(value: Exclusivity.Data) extends Value {
+    override val attr: Exclusivity.type = Exclusivity
     override def equals(o: Any): Boolean = o match {
-      case v2: ValueForMutexChildren => MutexChildren.dataEquality.equal(value, v2.value)
+      case v2: ValueForExclusivity => Exclusivity.dataEquality.equal(value, v2.value)
       case _ => false
     }
   }
@@ -648,11 +648,11 @@ object TagGroupGD extends GenericData {
   }
 
   override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-    Util.univEqAndArbitraryOrder(Vector(Children, Desc, MutexChildren, Name, Parents))
+    Util.univEqAndArbitraryOrder(Vector(Children, Desc, Exclusivity,Name, Parents))
 
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
-  override val attrs = NonEmptySet[Attr](Children, Desc, MutexChildren, Name, Parents)
+  override val attrs = NonEmptySet[Attr](Children, Desc, Exclusivity,Name, Parents)
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████

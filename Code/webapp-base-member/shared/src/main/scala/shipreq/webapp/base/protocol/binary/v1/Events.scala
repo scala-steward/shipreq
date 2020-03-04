@@ -342,7 +342,7 @@ object Events {
 
     implicit val picklerValueForChildren      = transformPickler(ValueForChildren     .apply)(_.value)
     implicit val picklerValueForDesc          = transformPickler(ValueForDesc         .apply)(_.value)
-    implicit val picklerValueForMutexChildren = transformPickler(ValueForMutexChildren.apply)(_.value)
+    implicit val picklerValueForExclusivity = transformPickler(ValueForExclusivity.apply)(_.value)
     implicit val picklerValueForName          = transformPickler(ValueForName         .apply)(_.value)
     implicit val picklerValueForParents       = transformPickler(ValueForParents      .apply)(_.value)
 
@@ -350,14 +350,14 @@ object Events {
       new Pickler[Value] {
         private[this] final val KeyChildren      = 'C'
         private[this] final val KeyDesc          = 'D'
-        private[this] final val KeyMutexChildren = 'M'
+        private[this] final val KeyExclusivity = 'M'
         private[this] final val KeyName          = 'N'
         private[this] final val KeyParents       = 'P'
         override def pickle(a: Value)(implicit state: PickleState): Unit =
           a match {
             case b: ValueForChildren      => state.enc.writeByte(KeyChildren     ); state.pickle(b)
             case b: ValueForDesc          => state.enc.writeByte(KeyDesc         ); state.pickle(b)
-            case b: ValueForMutexChildren => state.enc.writeByte(KeyMutexChildren); state.pickle(b)
+            case b: ValueForExclusivity => state.enc.writeByte(KeyExclusivity); state.pickle(b)
             case b: ValueForName          => state.enc.writeByte(KeyName         ); state.pickle(b)
             case b: ValueForParents       => state.enc.writeByte(KeyParents      ); state.pickle(b)
           }
@@ -365,7 +365,7 @@ object Events {
           state.dec.readByte match {
             case KeyChildren      => state.unpickle[ValueForChildren]
             case KeyDesc          => state.unpickle[ValueForDesc]
-            case KeyMutexChildren => state.unpickle[ValueForMutexChildren]
+            case KeyExclusivity => state.unpickle[ValueForExclusivity]
             case KeyName          => state.unpickle[ValueForName]
             case KeyParents       => state.unpickle[ValueForParents]
           }

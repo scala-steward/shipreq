@@ -5,11 +5,12 @@ import sourcecode.Line
 import utest._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.base.test.BaseTestUtil._
+import shipreq.base.util._
 
 object TagsTest extends TestSuite {
 
   private def tg(id: TagGroupId, live: Live)(children: TagId*): TagInTree =
-    TagInTree(TagGroup(id, s"Group.${id.value}", None, MutexChildren.Not, live), children.toVector)
+    TagInTree(TagGroup(id, s"Group.${id.value}", None, NonExclusive, live), children.toVector)
 
   private def at(id: ApplicableTagId, live: Live)(children: TagId*): TagInTree =
     TagInTree(ApplicableTag(id, s"Tag.${id.value}", None, HashRefKey(s"tag.${id.value}"), live), children.toVector)

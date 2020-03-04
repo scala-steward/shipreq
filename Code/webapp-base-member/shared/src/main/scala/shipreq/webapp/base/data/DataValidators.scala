@@ -6,10 +6,9 @@ import scalaz.Equal
 import scalaz.std.string.stringInstance
 import scalaz.std.stream._
 import scalaz.std.vector._
-import scalaz.syntax.equal._
 import shipreq.base.util.MTrie.Ops
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.Util
+import shipreq.base.util.{Exclusivity, Util}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.Field.ApplicableReqTypes
 import shipreq.webapp.base.data.ReqType.Mnemonic
@@ -259,10 +258,10 @@ object DataValidators {
       genericDesc.lift[State]
 
     val tagGroup: State => Composite.Validator[
-      (String, MutexChildren, String),
-      (String, MutexChildren, Option[String]),
-      (String, MutexChildren, Option[String])] =
-      s => name(s).named tuple Validator.id[MutexChildren] tuple desc(s).named
+      (String, Exclusivity, String),
+      (String, Exclusivity, Option[String]),
+      (String, Exclusivity, Option[String])] =
+      s => name(s).named tuple Validator.id[Exclusivity] tuple desc(s).named
 
     val applicableTag: State => Composite.Validator[
       (String, String, String),

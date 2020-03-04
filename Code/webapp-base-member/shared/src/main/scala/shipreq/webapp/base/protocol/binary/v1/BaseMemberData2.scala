@@ -3,7 +3,7 @@ package shipreq.webapp.base.protocol.binary.v1
 import boopickle.DefaultBasic._
 import java.time.Instant
 import nyaya.util.Multimap
-import shipreq.base.util.{Direction, SetDiff}
+import shipreq.base.util.{Direction, Exclusivity, SetDiff}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.text.{ProjectText, Text}
@@ -677,16 +677,16 @@ object BaseMemberData2 {
         state.pickle(a.id)
         state.pickle(a.name)
         state.pickle(a.desc)
-        state.pickle(a.mutexChildren)
+        state.pickle(a.exclusivity)
         state.pickle(a.live)
       }
       override def unpickle(implicit state: UnpickleState): TagGroup = {
-        val id            = state.unpickle[TagGroupId]
-        val name          = state.unpickle[String]
-        val desc          = state.unpickle[Option[String]]
-        val mutexChildren = state.unpickle[MutexChildren]
-        val live          = state.unpickle[Live]
-        TagGroup(id, name, desc, mutexChildren, live)
+        val id          = state.unpickle[TagGroupId]
+        val name        = state.unpickle[String]
+        val desc        = state.unpickle[Option[String]]
+        val exclusivity = state.unpickle[Exclusivity]
+        val live        = state.unpickle[Live]
+        TagGroup(id, name, desc, exclusivity, live)
       }
     }
 

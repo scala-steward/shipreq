@@ -23,7 +23,7 @@ import shipreq.webapp.base.test.WebappBaseGen._
 import shipreq.webapp.base.text.Text
 import ApplicableEventGen.ObserveFn
 import Event._
-import RandomData.{fieldRefKey, filter, filterDead, hashRefKey, implicationRequired, mandatory, mutexChildren}
+import RandomData.{fieldRefKey, filter, filterDead, hashRefKey, implicationRequired, mandatory, exclusivity}
 import RandomData.{TextGen, TextGenExt, reqCode, reqTypeMnemonic, unicodeString1}
 import ScalaExt._
 
@@ -421,11 +421,11 @@ final class ApplicableEventGen(curState: State) {
   object tagGroupGD extends GenericDataGen(TagGroupGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Name          => unicodeString1        map Name         .apply
-      case Desc          => unicodeString1.option map Desc         .apply
-      case MutexChildren => mutexChildren         map MutexChildren.apply
-      case Children      => tagChildren           map Children     .apply
-      case Parents       => tagParents            map Parents      .apply
+      case Name        => unicodeString1        map Name       .apply
+      case Desc        => unicodeString1.option map Desc       .apply
+      case Exclusivity => exclusivity           map Exclusivity.apply
+      case Children    => tagChildren           map Children   .apply
+      case Parents     => tagParents            map Parents    .apply
     }
   }
 

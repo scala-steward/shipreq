@@ -292,14 +292,14 @@ object RandomData {
   val tagId: Gen[TagId] =
     Gen.chooseGen(tagGroupId, applicableTagId)
 
-  val mutexChildren =
-    Gen.choose[MutexChildren](MutexChildren, MutexChildren.Not)
+  val exclusivity =
+    Gen.choose[Exclusivity](Exclusive, NonExclusive)
 
   def tagName =
     shortText1
 
   val tagGroup =
-    Gen.apply5(TagGroup.apply)(tagGroupId, tagName, optionalLargeText, mutexChildren, live)
+    Gen.apply5(TagGroup.apply)(tagGroupId, tagName, optionalLargeText, exclusivity, live)
 
   val applicableTag =
     Gen.apply5(ApplicableTag.apply)(applicableTagId, tagName, optionalLargeText, hashRefKey, live)
@@ -1949,11 +1949,11 @@ object RandomData {
     object tagGroupGD extends GenericDataGen(TagGroupGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case Name          => unicodeString1        map Name         .apply
-        case Desc          => unicodeString1.option map Desc         .apply
-        case MutexChildren => mutexChildren         map MutexChildren.apply
-        case Children      => tagChildren           map Children     .apply
-        case Parents       => tagParents            map Parents      .apply
+        case Name        => unicodeString1        map Name       .apply
+        case Desc        => unicodeString1.option map Desc       .apply
+        case Exclusivity => exclusivity           map Exclusivity.apply
+        case Children    => tagChildren           map Children   .apply
+        case Parents     => tagParents            map Parents    .apply
       }
     }
 
