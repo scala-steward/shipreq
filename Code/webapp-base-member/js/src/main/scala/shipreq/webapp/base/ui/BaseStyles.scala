@@ -59,6 +59,7 @@ object BaseStyles extends StyleSheet.Inline {
       boxShadow := "0 3px 5px -1px hsla(206,73%,32%,.1),0 6px 10px 0 hsla(206,73%,32%,.07),0 1px 18px 0 hsla(206,73%,32%,.06)",
       color(c"#2185d0"),
       transition := s"all $transitionValue",
+      zIndex(1000),
       on match {
         case On  => mixin(visibility.visible, opacity(1))
         case Off => mixin(visibility.hidden, opacity(0))

@@ -16,7 +16,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateConfigCmd}
-import shipreq.webapp.base.ui.GeneralTheme
+import shipreq.webapp.base.ui.{GeneralTheme, Toast}
 import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}
 import shipreq.webapp.client.project.widgets.{ButtonAndDropdown, ProjectWidgets, SplitScreenCrud}
@@ -38,6 +38,7 @@ object TagConfig {
                          pw     : ProjectWidgets.NoCtx,
                          ssp    : ServerSideProcInvoker[UpdateConfigCmd.ToModifyTags, ErrorMsg, NewEvents],
                          async  : AsyncFeature.ReadWrite.D0[ErrorMsg],
+                         toast  : Toast,
                          ) {
 
     val asyncInProgress: Boolean =
@@ -120,16 +121,24 @@ object TagConfig {
         } yield ()
       }
 
-    private def submitCmd(p: Props, cmd: UpdateConfigCmd.ToModifyTags): Callback =
-      submitCmd(p, cmd, _ => Callback.empty)
-
-    private def submitCmd(p        : Props,
-                          cmd      : UpdateConfigCmd.ToModifyTags,
-                          onSuccess: TagId => Callback): Callback =
+    private def submitCmd(p          : Props,
+                          cmd        : UpdateConfigCmd.ToModifyTags,
+                          toastPrefix: String,
+                          onSuccess  : TagId => Callback = _ => Callback.empty): Callback =
       p.async.write.forgetFailure(
         p.ssp(cmd).flatTap {
-          case \/-(n) => Callback.traverseOption(n.summary.allTags.headOption)(onSuccess).asAsyncCallback
-          case -\/(e) => GeneralTheme.showErrorMsg(e).asAsyncCallback
+          case \/-(n) =>
+            Callback.traverseOption(n.summary.allTags.headOption)(id =>
+              for {
+                p2 <- $.props
+                tag = p2.project.tags.tree.need(id).tag
+                _  <- p2.toast.add(s"$toastPrefix ${tag.name}")
+                _  <- onSuccess(id)
+              } yield ()
+            ).asAsyncCallback
+
+          case -\/(e) =>
+            GeneralTheme.showErrorMsg(e).asAsyncCallback
         }
       )
 
@@ -199,14 +208,14 @@ object TagConfig {
           case Some(id) =>
             EditorButtons.Props.Update(
               abort  = args.close,
-              delete = submitCmd(p, UpdateConfigCmd.TagDelete(id)),
-              update = p.potentialSaveCmd.map(submitCmd(p, _, _ => args.reset)),
+              delete = submitCmd(p, UpdateConfigCmd.TagDelete(id), "Deleted"),
+              update = p.potentialSaveCmd.map(submitCmd(p, _, "Updated", _ => args.reset)),
             )
 
           case None =>
             EditorButtons.Props.Create(
               abort  = args.close,
-              create = p.potentialSaveCmd.toOption.map(submitCmd(p, _, args.select)),
+              create = p.potentialSaveCmd.toOption.map(submitCmd(p, _, "Created", args.select)),
             )
         }
 
@@ -233,7 +242,7 @@ object TagConfig {
           val buttons =
             EditorButtons.Props.Restore(
               abort   = args.close,
-              restore = submitCmd(p, UpdateConfigCmd.TagRestore(id)),
+              restore = submitCmd(p, UpdateConfigCmd.TagRestore(id), "Restored"),
             ).render
 
           <.div(header, buttons)

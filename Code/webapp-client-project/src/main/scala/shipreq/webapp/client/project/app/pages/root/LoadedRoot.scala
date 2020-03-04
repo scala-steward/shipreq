@@ -350,6 +350,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
             state   = StateSnapshot.zoomL(State.tagConfig)(s).setStateVia($),
             ssp     = sspUpdateConfig,
             async   = AsyncFeature.ReadWrite.D0(tagConfigAsyncW, s.tagConfigAsync),
+            toast   = toast,
           ).render
 
         case Page.ReqTable =>
