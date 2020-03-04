@@ -54,17 +54,20 @@ private[tags] object TagTreeView {
       val dragInProgress: Boolean =
         DragToReorderFeature.dragInProgress()
 
-      def rowState(id: TagId): *.RowState =
+      def rowState(id: TagId, readOnly: Boolean): *.RowState =
         if (dragInProgress)
           *.RowState.Dragging
         else if (p.selected.exists(_ ==* id))
           *.RowState.Selected
-        else if (modificationEnabled is Enabled)
-          *.RowState.Enabled
-        else
+        else if (modificationEnabled is Disabled)
           *.RowState.Disabled
+        else if (readOnly)
+          *.RowState.ReadOnly
+        else
+          *.RowState.Enabled
 
-      def renderTags(it: RecursiveTagIterator): VdomTagOf[html.OList] = {
+      def renderTags(it: RecursiveTagIterator, parentLive: Live): VdomTagOf[html.OList] = {
+        val readOnly = parentLive.is(Dead)
         val topLevel = it.parent.isEmpty
         val lis = VdomArray.empty()
 
@@ -76,19 +79,19 @@ private[tags] object TagTreeView {
 
         // Tag groups
         it.tagGroupIterator().foreach { group =>
-          val id      = group.id
-          val subtree = it.nextLevelNonEmpty(group)
-          val liState = *.LIState.Group(topLevel = topLevel)
+          val id       = group.id
+          val subtree  = it.nextLevelNonEmpty(group)
+          val liState  = *.LIState.Group(topLevel = topLevel)
 
           lis += <.li(
             *.tagTreeLI((liState, DragToReorderFeature.Status.Normal)),
             ^.key := id.value,
             <.div(
-              *.tagTreeGroup(rowState(id)),
+              *.tagTreeGroup(rowState(id, readOnly)),
               Shared.group(group),
-              ^.onClick -->? p.select.map(_(id)),
+              ^.onClick -->? p.select.filterNot(_ => readOnly).map(_(id)),
             ),
-            subtree.whenDefined(renderTags),
+            subtree.whenDefined(renderTags(_, parentLive & group.live)),
           )
         }
 
@@ -96,14 +99,14 @@ private[tags] object TagTreeView {
         var firstAfterGroup = lis.rawArray.nonEmpty
         val apTags          = it.applicableTagIdIterator().toArray
         def liveApTagCount  = it.applicableTagIterator().count(_.live is Live)
-        val canAnyDrag      = !topLevel && liveApTagCount > 1
+        val canAnyDrag      = !topLevel && !readOnly && liveApTagCount > 1
 
         dnd.items(apTags).foreach { item =>
           val id  = item.data
           def tag = tags.tree.need(id).tag
 
           val liState = *.LIState.Tag(
-            rowState        = rowState(id),
+            rowState        = rowState(id, readOnly),
             topLevel        = topLevel,
             firstAfterGroup = firstAfterGroup,
           )
@@ -111,7 +114,7 @@ private[tags] object TagTreeView {
           lis += <.li(
             *.tagTreeLI((liState, item.status)),
             ^.key := id.value,
-            ^.onClick -->? p.select.map(_(id)),
+            ^.onClick -->? p.select.filterNot(_ => readOnly).map(_(id)),
             TagMod.when(canAnyDrag)(
               Shared.dragHandle(item, modificationEnabled & Disabled.when(tag.live is Dead)),
             ),
@@ -126,7 +129,7 @@ private[tags] object TagTreeView {
           lis)
       }
 
-      renderTags(tags.recursiveIterator(p.filterDead))(
+      renderTags(tags.recursiveIterator(p.filterDead), Live)(
         p.onClickAnywhere.whenDefined(^.onClick --> _))
     }
   }

@@ -714,15 +714,16 @@ object Style extends StyleSheet.Inline {
 
     sealed trait RowState
     object RowState {
-      case object Disabled   extends RowState
-      case object Enabled    extends RowState
-      case object Selected   extends RowState
-      case object Dragging   extends RowState
+      case object Disabled extends RowState
+      case object Enabled  extends RowState
+      case object Selected extends RowState
+      case object Dragging extends RowState
+      case object ReadOnly extends RowState
 
       implicit def univEq: UnivEq[RowState] = UnivEq.derive
 
       val domain: Domain[RowState] =
-        Domain.ofValues(Disabled, Enabled, Selected, Dragging)
+        Domain.ofValues(Disabled, Enabled, Selected, Dragging, ReadOnly)
     }
 
     sealed trait LIState {
@@ -797,6 +798,9 @@ object Style extends StyleSheet.Inline {
         )
         case RowState.Selected => styleS(
           backgroundColor(Color("#869df91f")),
+        )
+        case RowState.ReadOnly => styleS(
+          opacity(0.7),
         )
         case RowState.Dragging
            | RowState.Disabled =>
