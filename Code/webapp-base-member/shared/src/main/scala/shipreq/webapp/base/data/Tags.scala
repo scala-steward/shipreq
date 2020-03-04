@@ -121,7 +121,7 @@ object TagTree {
   def prettyPrint(tt: TagTree): String = {
     def lookup(id: TagId) = tt.underlyingMap(id)
     val rootIds = tt.values.foldLeft(tt.keySet)(_ -- _.children)
-    val roots = MutableArray(rootIds.iterator.map(lookup)).sortBy(_.tag.name).iterator.toArray // TODO .array should work
+    val roots = MutableArray(rootIds.iterator.map(lookup)).sortBy(_.tag.name.toLowerCase).iterator.toArray // TODO .array should work
     "TagTree\n" +
     nyaya.util.Util.asciiTree(roots)(_.children.map(lookup),
       t => {
@@ -376,7 +376,7 @@ final class RecursiveTagIterator(tags      : Tags,
         .map(tags.needTagGroup)
         .filter(filter)
     )
-      .sortBy(_.name)
+      .sortBy(_.name.toLowerCase)
 
   def tagGroupIterator(): Iterator[TagGroup] =
     orderedGroups.iterator
