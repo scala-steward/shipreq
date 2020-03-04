@@ -68,6 +68,8 @@ Backlog
 Phase 3A
 ========
 
+* Add usages back to config screens
+
 * User profile page
 
 * Bulk tag add/remove
@@ -83,12 +85,8 @@ Phase 3A
   * ability to create child tag in 1-step instead of 2 [FB-4]
   * add tag colours [FR-8]
   * remove key from TagGroups, check all Tag fields against UI prototype
-  * restore -deprecation
-  * remove MutexChildren
-  * remove DND?
   * ensure dead filter & style everywhere
   * TagSetApplicableChildrenOrder has a bug or something - remember how priorty got fucked up with Actors & could added under should?
-  * rename atag => needXxxx
   * Add tests to ProjectSpaProtocolsTest
   * Add tests for TagConfig
 
