@@ -47,7 +47,7 @@ object TagEditor {
     val ids = initial & ls
     val text =
       ids.toVector
-        .map(a => pc.tags.atag(a).key.value)
+        .map(a => pc.tags.needApplicableTag(a).key.value)
         .sorted |>
         G.seqFormat.merge
     (ids, text)

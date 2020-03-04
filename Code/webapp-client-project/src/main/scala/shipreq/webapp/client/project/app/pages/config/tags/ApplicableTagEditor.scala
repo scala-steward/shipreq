@@ -87,7 +87,7 @@ private[tags] object ApplicableTagEditor {
       id.fold(initNew)(init(_, tags))
 
     def init(id: ApplicableTagId, tags: Tags): State =
-      init(tags.atag(id), tags)
+      init(tags.needApplicableTag(id), tags)
 
     def init(t: ApplicableTag, tags: Tags): State =
       State(

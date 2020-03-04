@@ -56,7 +56,7 @@ object TagFieldDistribution {
       all -- usedInFields
 
     lazy val tags: TagFieldDistribution[Set[ApplicableTag]] =
-      map(_ map p.tags.atag)
+      map(_ map p.tags.needApplicableTag)
   }
 
   // ===================================================================================================================

@@ -137,7 +137,7 @@ object FilterAlgebra {
       x.map(Functor[IntensionalReqSet].map(_)(convReqType))
 
     {
-      case HashRef       (\/-(id)) => Potential(HashRef       (cfg.tags.atag(id).key))
+      case HashRef       (\/-(id)) => Potential(HashRef       (cfg.tags.needApplicableTag(id).key))
       case HashRef       (-\/(id)) => Potential(HashRef       (cfg.customIssueType(id).key))
       case Presence      (attr)    => Potential(Presence      (attr.name))
       case ImpliesAnyOf  (reqs)    => Potential(ImpliesAnyOf  (convReqSet(reqs)))

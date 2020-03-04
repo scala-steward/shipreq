@@ -237,7 +237,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   private val tagInText: Live => ApplicableTagId => VdomTag =
     Live.memo { liveText =>
       Memo { (id: ApplicableTagId) =>
-        val tag = project.config.tags.atag(id)
+        val tag = project.config.tags.needApplicableTag(id)
         val liveTag = tag.live
         val valid = Invalid.when(liveText.is(Live) && liveTag.is(Dead))
         tagWithoutStyle(Contextualise, tag, includeDesc = true)(*.tagInText((liveTag, valid)))
@@ -347,7 +347,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   private val tagPlain: Validity => ApplicableTagId => VdomTag =
     Validity.memo { validity =>
       Memo { id =>
-        val tag = project.config.tags.atag(id)
+        val tag = project.config.tags.needApplicableTag(id)
         tagWithoutStyle(Plain, tag, includeDesc = true)(*.tag(((tag.live, validity), true)))
       }
     }
@@ -373,7 +373,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     * - no contextualisation
     */
   def tagSimple(id: ApplicableTagId, includeDesc: Boolean): VdomTag = {
-    val tag = project.config.tags.atag(id)
+    val tag = project.config.tags.needApplicableTag(id)
     tagWithoutStyle(Plain, tag, includeDesc = includeDesc)(*.tag(((tag.live, Valid), false)))
   }
 

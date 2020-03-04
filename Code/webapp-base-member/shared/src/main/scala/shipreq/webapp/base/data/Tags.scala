@@ -236,7 +236,7 @@ final case class Tags(tree: TagTree) {
       case None               => Some(s"$id not found.")
     }
 
-  def atag(id: ApplicableTagId): ApplicableTag =
+  def needApplicableTag(id: ApplicableTagId): ApplicableTag =
     tree.need(id).tag match {
       case a: ApplicableTag => a
       case t: TagGroup      => mustNotHappen(s"$t is not an ApplicableTag.")
@@ -390,7 +390,7 @@ final class RecursiveTagIterator(tags      : Tags,
   def applicableTagIterator(): Iterator[ApplicableTag] =
     ids.iterator
       .filterSubType[ApplicableTagId]
-      .map(tags.atag)
+      .map(tags.needApplicableTag)
       .filter(filter)
 
   def applicableTagIdIterator(): Iterator[ApplicableTagId] =

@@ -153,7 +153,7 @@ object IssueDetectors {
       val tagRefs = ctx.project.atomScan.tagRefs
       req => {
         for (a <- tagRefs(req.id).live) {
-          val t = ctx.project.config.tags.atag(a.value)
+          val t = ctx.project.config.tags.needApplicableTag(a.value)
           if (t.live.is(Dead))
             a.loc match {
               case txtLoc: LocationOf.Text.InReq => ctx.add(Issue.DeadTag(req, txtLoc, t))

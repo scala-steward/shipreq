@@ -109,7 +109,7 @@ object PlainText {
       ids.iterator.map(pubid(_, p)).mkString(", ")
 
     override protected def _tagList(ids: Vector[ApplicableTagId], validity: ApplicableTagId => Validity): String =
-      ids.iterator.map(p.config.tags.atag(_).key.value).mkString(" ")
+      ids.iterator.map(p.config.tags.needApplicableTag(_).key.value).mkString(" ")
 
     override protected def _text(text: Text.AnyOptional, live: Live): String =
       nestedText("", "", live, text)
@@ -242,7 +242,7 @@ object PlainText {
     }
 
     private def tagRef(id: ApplicableTagId): String = {
-      val t = p.config.tags.atag(id)
+      val t = p.config.tags.needApplicableTag(id)
       hashtag(t.key)
     }
 
