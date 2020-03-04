@@ -1790,7 +1790,7 @@ object RandomData {
 
       def forProject(p: Project): Gen[Valid] = {
         val gy: Option[Gen[ReqTypeId]]         = Gen tryGenChoose p.config.reqTypes.all.whole.map(_.reqTypeId)
-        val gt: Option[Gen[ApplicableTagId]]   = Gen tryGenChoose p.config.tags.atagIterator().map(_.id)
+        val gt: Option[Gen[ApplicableTagId]]   = Gen tryGenChoose p.config.tags.applicableTagIterator().map(_.id)
         val gi: Option[Gen[CustomIssueTypeId]] = Gen tryGenChoose p.config.customIssueTypes.keys.toVector
         gen(flatGens(gy, gt, gi))
       }

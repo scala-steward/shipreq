@@ -26,7 +26,7 @@ final class DataLogic(p: Project) {
     FilterDead.memoLazy {
 
       case HideDead =>
-        val deadTags = p.config.tags.deadATagIds
+        val deadTags = p.config.tags.deadApplicableTagIds
 
         // Dead tags on live reqs are ignored unless in text
         Memo { reqId =>

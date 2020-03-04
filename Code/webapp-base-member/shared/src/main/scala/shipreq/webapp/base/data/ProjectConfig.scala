@@ -45,7 +45,7 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
 
   /** Keys are lowercase */
   lazy val hashRefLookupM: Map[String, HashRefTarget] =
-    ( tags.atagIterator()            .map(t => (t.key.value.toLowerCase, -\/(t))) ++
+    ( tags.applicableTagIterator()   .map(t => (t.key.value.toLowerCase, -\/(t))) ++
       customIssueTypes.valuesIterator.map(t => (t.key.value.toLowerCase, \/-(t)))
     ).toMap
 

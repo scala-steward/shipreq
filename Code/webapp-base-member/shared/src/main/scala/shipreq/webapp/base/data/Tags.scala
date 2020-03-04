@@ -227,7 +227,7 @@ object Tags {
 final case class Tags(tree: TagTree) {
   import FlatTag.FilterPolicy
 
-  def atagValidate(id: ApplicableTagId): Option[String] =
+  def validateApplicableTag(id: ApplicableTagId): Option[String] =
     tree.get(id) match {
       case Some(tit) => tit.tag match {
         case _: ApplicableTag => None
@@ -242,7 +242,7 @@ final case class Tags(tree: TagTree) {
       case t: TagGroup      => mustNotHappen(s"$t is not an ApplicableTag.")
     }
 
-  def atagIterator(): Iterator[ApplicableTag] =
+  def applicableTagIterator(): Iterator[ApplicableTag] =
     tree.valuesIterator.map(_.tag).filterSubType[ApplicableTag]
 
   def needTagGroup(id: TagGroupId): TagGroup =
@@ -251,8 +251,8 @@ final case class Tags(tree: TagTree) {
       case a: ApplicableTag => mustNotHappen(s"$a is not a TagGroup.")
     }
 
-  lazy val deadATagIds: Set[ApplicableTagId] =
-    atagIterator().filter(_.live is Dead).map(_.id).toSet
+  lazy val deadApplicableTagIds: Set[ApplicableTagId] =
+    applicableTagIterator().filter(_.live is Dead).map(_.id).toSet
 
   lazy val exclusiveGroups: ApplicableTagId => Set[TagGroupId] = {
     val results = mutable.HashMap.empty[ApplicableTagId, Set[TagGroupId]]
