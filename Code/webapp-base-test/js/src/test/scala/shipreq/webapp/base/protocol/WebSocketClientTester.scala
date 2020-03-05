@@ -32,9 +32,9 @@ object WebSocketClientTester {
     override type ReqId  = WebSocketShared.ReqId
     override type ReqRes = Protocol.RequestResponse.Simple[SafePickler, ReqMsg, ResMsg]
     override val url     = Url.Relative("/x")
-    override val req     = Protocol(transformPickler(ReqMsg.apply)(_.msg).asV10)
-    override val push    = Protocol(transformPickler(PushMsg.apply)(_.msg).asV10)
-    val res              = Protocol(transformPickler(ResMsg.apply)(_.msg).asV10)
+    override val req     = Protocol(transformPickler(ReqMsg.apply)(_.msg).asV1(0))
+    override val push    = Protocol(transformPickler(PushMsg.apply)(_.msg).asV1(0))
+    val res              = Protocol(transformPickler(ResMsg.apply)(_.msg).asV1(0))
     val ReqRes: ReqRes   = Protocol.RequestResponse.simple(res)
   }
 

@@ -66,17 +66,17 @@ object BinaryTestUtil {
   // Pickler testing
 
   def assertRoundTripP[A](a: A)(implicit p: Pickler[A], e: Equal[A], l: Line): Unit = {
-    val sp = p.asV10
+    val sp = p.asV1(0)
     assertDecodeOk(sp)(sp.encode(a), a)
   }
 
   def propTestRoundTripP[A](g: Gen[A])(implicit p: Pickler[A], e: Equal[A], l: Line): Unit = {
-    val sp = p.asV10
+    val sp = p.asV1(0)
     g.samples().take(propTestSize).foreach(assertRoundTrip(sp)(_))
   }
 
   def assertRoundTripsP[A](as: Traversable[A])(implicit p: Pickler[A], e: Equal[A], l: Line): Unit = {
-    val sp = p.asV10
+    val sp = p.asV1(0)
     var i = 0
     for (a <- as) {
       i += 1

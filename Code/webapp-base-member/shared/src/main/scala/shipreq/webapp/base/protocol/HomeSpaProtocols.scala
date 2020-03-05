@@ -28,10 +28,10 @@ object HomeSpaProtocols {
       val picklerResponse: Pickler[Response] = implicitly
 
       implicit val safePicklerRequest: SafePickler[Request] =
-        picklerRequest.asV10.withMagicNumbers(0x42A63E36, 0x0C1B2566)
+        picklerRequest.asV1(0).withMagicNumbers(0x42A63E36, 0x0C1B2566)
 
       implicit val safePicklerResponse: SafePickler[Response] =
-        picklerResponse.asV10.withMagicNumbers(0xB27B40C3, 0x004A70E7)
+        picklerResponse.asV1(0).withMagicNumbers(0xB27B40C3, 0x004A70E7)
 
       defAjax[Request, Response]("cp")
     }

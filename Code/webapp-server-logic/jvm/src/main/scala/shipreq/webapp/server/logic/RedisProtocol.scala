@@ -26,7 +26,7 @@ object RedisProtocol {
         }
       }
 
-    p.asV10.withMagicNumbers(0x713D305C, 0xB72AC2DE)
+    p.asV1(0).withMagicNumbers(0x713D305C, 0xB72AC2DE)
   }
 
   // ===================================================================================================================
@@ -35,7 +35,7 @@ object RedisProtocol {
     import shipreq.webapp.base.protocol.binary.v1.PostEvents.picklerVerifiedEvent
 
     // no magic numbers - overhead to high proportional to the event size, too frequent
-    picklerVerifiedEvent.asV10
+    picklerVerifiedEvent.asV1(0)
   }
 
 }

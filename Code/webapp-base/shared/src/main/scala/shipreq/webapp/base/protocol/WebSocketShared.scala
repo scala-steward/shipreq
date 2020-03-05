@@ -190,6 +190,6 @@ object WebSocketShared {
         }
       }
 
-    Protocol(pickler.asV10)
+    Protocol(pickler.asV1(0))
   }
 }

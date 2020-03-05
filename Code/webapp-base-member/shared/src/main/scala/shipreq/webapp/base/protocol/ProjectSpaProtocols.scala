@@ -74,7 +74,7 @@ object ProjectSpaProtocols {
         }
 
       pickler
-        .asV10
+        .asV1(0)
         .withMagicNumbers(0x1DB44559, 0x53562938)
     }
 
@@ -117,26 +117,26 @@ object ProjectSpaProtocols {
     // We're keeping a magic footer just in case.
 
     implicit val safePicklerUnit: SafePickler[Unit] =
-      unitPickler.asV10 // no magic numbers because no data
+      unitPickler.asV1(0) // no magic numbers because no data
 
     implicit val safePicklerInitAppRes: SafePickler[ErrorMsg \/ InitAppData] =
       picklerInitAppRes
-        .asV10
+        .asV1(0)
         .withMagicNumberFooter(0x8819303B)
 
     implicit val safePicklerEventResult: SafePickler[WsReqRes.EventResult] =
       picklerEventResult
-        .asV10
+        .asV1(0)
         .withMagicNumberFooter(0x86DA8677)
 
     implicit val safePicklerVerifiedEventSeq: SafePickler[VerifiedEvent.Seq] =
       picklerVerifiedEventSeq
-        .asV10
+        .asV1(0)
         .withMagicNumberFooter(0x85651C09)
 
     val safePicklerVerifiedEventNonEmptySeq: SafePickler[VerifiedEvent.NonEmptySeq] =
       picklerVerifiedEventNonEmptySeq
-        .asV10
+        .asV1(0)
         .withMagicNumberFooter(0x06F60C06)
   }
 

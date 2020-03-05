@@ -32,7 +32,7 @@ object SerialisationEventsBM {
   val jsonDec = Decoder[Vector[Event]]
   val json = jsonEnc(events).noSpaces
 
-  val binCodec = implicitly[Pickler[Vector[Event]]].asV10.withMagicNumbers(123, 456)
+  val binCodec = implicitly[Pickler[Vector[Event]]].asV1(0).withMagicNumbers(123, 456)
   val bin = binCodec.encode(events)
 }
 

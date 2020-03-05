@@ -14,6 +14,6 @@ object ProjectSpaEntryPointTest extends TestSuite {
     ScalazMacros.deriveEqual
 
   override def tests = Tests {
-    'roundTrip - propTestRoundTrip(ProjectSpaEntryPoint.picklerInitData.asV10)(RandomData.routines.projectSpaInitPageData)
+    'roundTrip - propTestRoundTrip(ProjectSpaEntryPoint.picklerInitData.asV1(0))(RandomData.routines.projectSpaInitPageData)
   }
 }

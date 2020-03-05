@@ -66,7 +66,7 @@ object SafePicklerTest extends TestSuite {
       }
 
     val safePicklerv10: SafePickler[Data] =
-      picklerv10.asV10.withMagicNumbers(123, 456)
+      picklerv10.asV1(0).withMagicNumbers(123, 456)
 
     val safePicklerv11: SafePickler[Data] =
       picklerv11.asVersion(v11).withMagicNumbers(123, 456)
