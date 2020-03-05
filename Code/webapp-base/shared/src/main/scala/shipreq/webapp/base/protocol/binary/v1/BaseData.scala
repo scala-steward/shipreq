@@ -9,6 +9,7 @@ import japgolly.univeq.UnivEq
 import java.time.Instant
 import monocle.Iso
 import nyaya.util.{MultiValues, Multimap}
+import scala.reflect.ClassTag
 import scalaz.Isomorphism.<=>
 import scalaz.{-\/, Functor, \&/, \/, \/-}
 import shipreq.base.util._
@@ -31,6 +32,12 @@ object BaseData {
 
     def imap[B](iso: Iso[A, B]): Pickler[B] =
       p.xmap(iso.get)(iso.reverseGet)
+
+    def narrow[B <: A: ClassTag]: Pickler[B] =
+      p.xmap[B]({
+        case b: B => b
+        case a    => throw new IllegalArgumentException("Illegal supertype: " + a)
+      })(b => b)
   }
 
   final class PickleWithReuse[A <: AnyRef](p: Pickler[A], byUnivEq: Boolean) extends Pickler[A] {
