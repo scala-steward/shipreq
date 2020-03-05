@@ -551,29 +551,29 @@ object Events {
       }
     }
 
-  private implicit val picklerEventApplicableTagCreate: Pickler[Event.ApplicableTagCreate] =
-    new Pickler[Event.ApplicableTagCreate] {
-      override def pickle(a: Event.ApplicableTagCreate)(implicit state: PickleState): Unit = {
+  private implicit val picklerEventApplicableTagCreateV1: Pickler[Event.ApplicableTagCreateV1] =
+    new Pickler[Event.ApplicableTagCreateV1] {
+      override def pickle(a: Event.ApplicableTagCreateV1)(implicit state: PickleState): Unit = {
         state.pickle(a.id)
         state.pickle(a.vs)
       }
-      override def unpickle(implicit state: UnpickleState): Event.ApplicableTagCreate = {
+      override def unpickle(implicit state: UnpickleState): Event.ApplicableTagCreateV1 = {
         val id = state.unpickle[ApplicableTagId]
         val vs = state.unpickle[ApplicableTagGD.NonEmptyValues]
-        Event.ApplicableTagCreate(id, vs)
+        Event.ApplicableTagCreateV1(id, vs)
       }
     }
 
-  private implicit val picklerEventApplicableTagUpdate: Pickler[Event.ApplicableTagUpdate] =
-    new Pickler[Event.ApplicableTagUpdate] {
-      override def pickle(a: Event.ApplicableTagUpdate)(implicit state: PickleState): Unit = {
+  private implicit val picklerEventApplicableTagUpdateV1: Pickler[Event.ApplicableTagUpdateV1] =
+    new Pickler[Event.ApplicableTagUpdateV1] {
+      override def pickle(a: Event.ApplicableTagUpdateV1)(implicit state: PickleState): Unit = {
         state.pickle(a.id)
         state.pickle(a.vs)
       }
-      override def unpickle(implicit state: UnpickleState): Event.ApplicableTagUpdate = {
+      override def unpickle(implicit state: UnpickleState): Event.ApplicableTagUpdateV1 = {
         val id = state.unpickle[ApplicableTagId]
         val vs = state.unpickle[ApplicableTagGD.NonEmptyValues]
-        Event.ApplicableTagUpdate(id, vs)
+        Event.ApplicableTagUpdateV1(id, vs)
       }
     }
 
@@ -1039,8 +1039,8 @@ object Events {
 
       override def pickle(a: Event)(implicit state: PickleState): Unit =
         a match {
-          case b: ApplicableTagCreate    => state.enc.writeByte(KeyApplicableTagCreate   ); state.pickle(b)
-          case b: ApplicableTagUpdate    => state.enc.writeByte(KeyApplicableTagUpdate   ); state.pickle(b)
+          case b: ApplicableTagCreateV1  => state.enc.writeByte(KeyApplicableTagCreate   ); state.pickle(b)
+          case b: ApplicableTagUpdateV1  => state.enc.writeByte(KeyApplicableTagUpdate   ); state.pickle(b)
           case b: CodeGroupCreate        => state.enc.writeByte(KeyCodeGroupCreate       ); state.pickle(b)
           case b: CodeGroupUpdate        => state.enc.writeByte(KeyCodeGroupUpdate       ); state.pickle(b)
           case b: CodeGroupsDelete       => state.enc.writeByte(KeyCodeGroupsDelete      ); state.pickle(b)
@@ -1097,8 +1097,8 @@ object Events {
 
       override def unpickle(implicit state: UnpickleState): Event =
         state.dec.readByte match {
-          case KeyApplicableTagCreate    => state.unpickle[ApplicableTagCreate]
-          case KeyApplicableTagUpdate    => state.unpickle[ApplicableTagUpdate]
+          case KeyApplicableTagCreate    => state.unpickle[ApplicableTagCreateV1]
+          case KeyApplicableTagUpdate    => state.unpickle[ApplicableTagUpdateV1]
           case KeyCodeGroupCreate        => state.unpickle[CodeGroupCreate]
           case KeyCodeGroupUpdate        => state.unpickle[CodeGroupUpdate]
           case KeyCodeGroupsDelete       => state.unpickle[CodeGroupsDelete]

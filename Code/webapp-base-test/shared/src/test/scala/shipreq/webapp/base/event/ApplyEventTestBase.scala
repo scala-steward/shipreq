@@ -80,9 +80,9 @@ object ApplyEventTestFns {
          | _: FieldCustomTagCreate
          | _: FieldCustomImpCreate  => customFields += 1
       case _: TagGroupCreate
-         | _: ApplicableTagCreate   => tags += 1
-      case _: CodeGroupCreate    => activeRCGs += 1
-      case e: CodeGroupsDelete   => activeRCGs -= e.ids.size
+         | _: ApplicableTagCreateV1 => tags += 1
+      case _: CodeGroupCreate       => activeRCGs += 1
+      case e: CodeGroupsDelete      => activeRCGs -= e.ids.size
 
       case ProjectTemplateApply(t) => t match {
         case ProjectTemplate.V1 =>
@@ -107,7 +107,7 @@ object ApplyEventTestFns {
       case _: ManualIssueCreate => manualIssues += 1
       case _: ManualIssueDelete => manualIssues -= 1
 
-      case _: ApplicableTagUpdate
+      case _: ApplicableTagUpdateV1
          | _: CustomIssueTypeDelete
          | _: CustomIssueTypeRestore
          | _: CustomIssueTypeUpdate

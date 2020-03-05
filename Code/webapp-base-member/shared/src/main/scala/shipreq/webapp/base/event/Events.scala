@@ -144,8 +144,8 @@ object Event {
   final case class TagGroupCreate(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
   final case class TagGroupUpdate(id: TagGroupId, vs: TagGroupGD.NonEmptyValues) extends ActiveEvent
 
-  final case class ApplicableTagCreate(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
-  final case class ApplicableTagUpdate(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
+  final case class ApplicableTagCreateV1(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
+  final case class ApplicableTagUpdateV1(id: ApplicableTagId, vs: ApplicableTagGD.NonEmptyValues) extends ActiveEvent
 
   // ===================================================================================================================
   // Config: Fields

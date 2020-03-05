@@ -1998,8 +1998,8 @@ object RandomData {
     val genProjectTemplateApply: Gen[ProjectTemplateApply] =
       genProjectTemplate map ProjectTemplateApply
 
-    val genApplicableTagCreate: Gen[ApplicableTagCreate] =
-      Gen.apply2(ApplicableTagCreate)(applicableTagId, applicableTagGD.nonEmptyValues)
+    val genApplicableTagCreateV1: Gen[ApplicableTagCreateV1] =
+      Gen.apply2(ApplicableTagCreateV1)(applicableTagId, applicableTagGD.nonEmptyValues)
 
     val genFieldCustomImpCreate: Gen[FieldCustomImpCreate] =
       Gen.apply2(FieldCustomImpCreate)(customFieldImplicationId, customImpFieldGD.nonEmptyValues)
@@ -2108,8 +2108,8 @@ object RandomData {
     val genUseCaseStepShiftRight: Gen[UseCaseStepShiftRight] =
       useCaseStepId map UseCaseStepShiftRight
 
-    val genApplicableTagUpdate: Gen[ApplicableTagUpdate] =
-      Gen.apply2(ApplicableTagUpdate)(applicableTagId, applicableTagGD.nonEmptyValues)
+    val genApplicableTagUpdateV1: Gen[ApplicableTagUpdateV1] =
+      Gen.apply2(ApplicableTagUpdateV1)(applicableTagId, applicableTagGD.nonEmptyValues)
 
     val genFieldCustomImpUpdate: Gen[FieldCustomImpUpdate] =
       Gen.apply2(FieldCustomImpUpdate)(customFieldImplicationId, customImpFieldGD.nonEmptyValues)
@@ -2164,8 +2164,8 @@ object RandomData {
 
     val activeEventGens: NonEmptyVector[Gen[ActiveEvent]] =
       valuesForAdt[ActiveEvent, Gen[ActiveEvent]] {
-        case _: ApplicableTagCreate    => genApplicableTagCreate
-        case _: ApplicableTagUpdate    => genApplicableTagUpdate
+        case _: ApplicableTagCreateV1  => genApplicableTagCreateV1
+        case _: ApplicableTagUpdateV1  => genApplicableTagUpdateV1
         case _: ContentRestore         => genContentRestore
         case _: CustomIssueTypeCreate  => genCustomIssueTypeCreate
         case _: CustomIssueTypeDelete  => genCustomIssueTypeDelete

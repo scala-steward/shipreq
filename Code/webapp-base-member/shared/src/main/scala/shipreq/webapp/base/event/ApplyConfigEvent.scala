@@ -276,7 +276,7 @@ trait ApplyConfigEvent {
   object ApplicableTagEvents extends TagEvents[ApplicableTag, ApplicableTagGD.type](ApplicableTagGD) {
     import TagEvents._
 
-    def applyCreate(e: ApplicableTagCreate): SE[Unit] = {
+    def applyCreateV1(e: ApplicableTagCreateV1): SE[Unit] = {
       implicit val vs = e.vs
       for {
         n   ← GD.need(^.Name) >>= validateName
@@ -294,7 +294,7 @@ trait ApplyConfigEvent {
     val updateDesc = validateDesc >>=@ ApplicableTag.desc
     val updateKey  = validateKey  >>=@ ApplicableTag.key
 
-    def applyUpdate(e: ApplicableTagUpdate): SE[Unit] =
+    def applyUpdateV1(e: ApplicableTagUpdateV1): SE[Unit] =
       update(e.id, vars =>
         e.vs.values foreach {
           case v: ^.ValueForName     => vars apply updateName(v.value)

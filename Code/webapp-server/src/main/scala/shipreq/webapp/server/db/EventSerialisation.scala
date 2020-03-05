@@ -13,8 +13,8 @@ object EventSerialisation {
   import EventTypes._
 
   val encode: ActiveEvent => (Short, Json) = {
-    case e: ApplicableTagCreate    => (TypeApplicableTagCreate   , e.asJson)
-    case e: ApplicableTagUpdate    => (TypeApplicableTagUpdate   , e.asJson)
+    case e: ApplicableTagCreateV1  => (TypeApplicableTagCreate   , e.asJson)
+    case e: ApplicableTagUpdateV1  => (TypeApplicableTagUpdate   , e.asJson)
     case e: CodeGroupCreate        => (TypeCodeGroupCreate       , e.asJson)
     case e: CodeGroupsDelete       => (TypeCodeGroupsDelete      , e.asJson)
     case e: CodeGroupUpdate        => (TypeCodeGroupUpdate       , e.asJson)
@@ -85,8 +85,8 @@ object EventSerialisation {
       }
 
     typeId match {
-      case TypeApplicableTagCreate    => parse[ApplicableTagCreate]
-      case TypeApplicableTagUpdate    => parse[ApplicableTagUpdate]
+      case TypeApplicableTagCreate    => parse[ApplicableTagCreateV1]
+      case TypeApplicableTagUpdate    => parse[ApplicableTagUpdateV1]
       case TypeCodeGroupCreate        => parse[CodeGroupCreate]
       case TypeCodeGroupsDelete       => parse[CodeGroupsDelete]
       case TypeCodeGroupUpdate        => parse[CodeGroupUpdate]

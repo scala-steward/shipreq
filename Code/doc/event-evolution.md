@@ -24,19 +24,26 @@ Making a backward-incompatible change to an event
 Deleting an new event
 =====================
 
-* If a `GenericData` is no longer needed...
-  * move the relevant generic data from `GenericData.scala` to `RetiredGenericData.scala`
-  * remove its definition from `bin/gen-generic_data`
-  * run `bin/gen-generic_data`
+1. Use IDE to rename the event: append `V1` or similar
 
-* If a `GenericData` is changing...
-  * move the relevant generic data from `GenericData.scala` to `RetiredGenericData.scala` and
-    append `v1` or similar to the `object` name
-  * update its definition in `bin/gen-generic_data`
-  * run `bin/gen-generic_data`
+2. Go through `git diff` carefully. Where applicable...
+  * similarly rename methods (eg. in `ApplyXxxxEvent`, `RandomData`)
+  * fix up alignment
 
-* The event itself
-  1. Use IDE to rename: append `V1` or similar
-  2. Make sure everything compiles
-  3. Change to `extends RetiredEvent`
-  4. If it uses generic data, change it to use the version in `RetiredGenericData`
+3. Make sure everything compiles
+
+4. `GenericData`:
+
+  * If a `GenericData` is no longer needed...
+    * move the relevant generic data from `GenericData.scala` to `RetiredGenericData.scala`
+    * remove its definition from `bin/gen-generic_data`
+    * run `bin/gen-generic_data`
+
+  * If a `GenericData` is changing...
+    * move the relevant generic data from `GenericData.scala` to `RetiredGenericData.scala` and
+      append `v1` or similar to the `object` name
+    * update its definition in `bin/gen-generic_data`
+    * run `bin/gen-generic_data`
+
+5. Change event to extend `RetiredEvent`
+6. Change event to use the version of generic data in `RetiredGenericData`

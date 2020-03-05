@@ -89,8 +89,8 @@ object EventTypes {
   // ===================================================================================================================
 
   private def allTypes = AdtMacros.valuesForAdt[Event, Short] {
-    case _: ApplicableTagCreate    => TypeApplicableTagCreate
-    case _: ApplicableTagUpdate    => TypeApplicableTagUpdate
+    case _: ApplicableTagCreateV1  => TypeApplicableTagCreate
+    case _: ApplicableTagUpdateV1  => TypeApplicableTagUpdate
     case _: CodeGroupCreate        => TypeCodeGroupCreate
     case _: CodeGroupsDelete       => TypeCodeGroupsDelete
     case _: CodeGroupUpdate        => TypeCodeGroupUpdate

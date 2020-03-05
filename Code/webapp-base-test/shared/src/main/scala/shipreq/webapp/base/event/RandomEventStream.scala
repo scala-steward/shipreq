@@ -519,8 +519,8 @@ final class ApplicableEventGen(curState: State) {
     else
       None
 
-  def genApplicableTagCreate: Gen[ApplicableTagCreate] =
-    Gen.apply2(ApplicableTagCreate)(nextApplicableTagId, applicableTagGD.allValues)
+  def genApplicableTagCreateV1: Gen[ApplicableTagCreateV1] =
+    Gen.apply2(ApplicableTagCreateV1)(nextApplicableTagId, applicableTagGD.allValues)
 
   def genFieldCustomImpCreate: Option[Gen[FieldCustomImpCreate]] =
     customImpFieldGD.allValues.map(vs =>
@@ -715,14 +715,14 @@ final class ApplicableEventGen(curState: State) {
     Gen.tryGenChooseLazily(ids).map(_ map UseCaseStepShiftRight)
   }
 
-  def genApplicableTagUpdate: Option[Gen[ApplicableTagUpdate]] =
+  def genApplicableTagUpdateV1: Option[Gen[ApplicableTagUpdateV1]] =
     applicableTagId(Live).map(gId =>
       for {
         id <- gId
         vs <- applicableTagGD.nonEmptyValues
       } yield {
         import ApplicableTagGD._
-        ApplicableTagUpdate(id, NonEmpty.force(emptyValues ++ vs.valuesIterator.map {
+        ApplicableTagUpdateV1(id, NonEmpty.force(emptyValues ++ vs.valuesIterator.map {
           case ValueForParents(v) => ValueForParents(v - id)
           case ValueForChildren(v) => ValueForChildren(v.filterNot(_ ==* id))
           case v => v
@@ -816,8 +816,9 @@ final class ApplicableEventGen(curState: State) {
 
   private val possibleEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[Event]])] =
     valuesForAdt[Event, (EventName, Option[Gen[Event]])] {
-      case _: ApplicableTagCreate    => EventName("ApplicableTagCreate"   ) -> genApplicableTagCreate
-      case _: ApplicableTagUpdate    => EventName("ApplicableTagUpdate"   ) -> genApplicableTagUpdate
+      // Note: not using [case e: Xxx => EventName(e) -> xxx] here because the valuesForAdt doesn't like it
+      case _: ApplicableTagCreateV1  => EventName("ApplicableTagCreateV1" ) -> genApplicableTagCreateV1
+      case _: ApplicableTagUpdateV1  => EventName("ApplicableTagUpdateV1" ) -> genApplicableTagUpdateV1
       case _: ContentRestore         => EventName("ContentRestore"        ) -> genContentRestore
       case _: CustomIssueTypeCreate  => EventName("CustomIssueTypeCreate" ) -> genCustomIssueTypeCreate
       case _: CustomIssueTypeDelete  => EventName("CustomIssueTypeDelete" ) -> genCustomIssueTypeDelete

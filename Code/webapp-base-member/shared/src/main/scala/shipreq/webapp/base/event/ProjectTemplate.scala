@@ -68,7 +68,7 @@ object ProjectTemplate {
                       parents : TagInTree.Parents  = Map.empty,
                       children: TagInTree.Children = Vector.empty) = {
       val id = ApplicableTagId(tagId.next())
-      add(ApplicableTagCreate(id, gdAllValues(ApplicableTagGD, "")))
+      add(ApplicableTagCreateV1(id, gdAllValues(ApplicableTagGD, "")))
       id
     }
 

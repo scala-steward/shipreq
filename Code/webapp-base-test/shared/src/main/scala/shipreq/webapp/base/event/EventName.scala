@@ -14,10 +14,11 @@ object EventName {
   implicit def univEq: UnivEq[EventName] = UnivEq.derive
   implicit val ordering: Ordering[EventName] = Ordering.by(_.value)
 
+  // Note: backward-compatibility of these event name values needn't be maintained
   private val data =
     valuesForAdtF[Event, EventName] {
-      case _: ApplicableTagCreate    => new EventName("ApplicableTagCreate")
-      case _: ApplicableTagUpdate    => new EventName("ApplicableTagUpdate")
+      case _: ApplicableTagCreateV1  => new EventName("ApplicableTagCreateV1")
+      case _: ApplicableTagUpdateV1  => new EventName("ApplicableTagUpdateV1")
       case _: ContentRestore         => new EventName("ContentRestore")
       case _: CustomIssueTypeCreate  => new EventName("CustomIssueTypeCreate")
       case _: CustomIssueTypeDelete  => new EventName("CustomIssueTypeDelete")

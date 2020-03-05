@@ -451,16 +451,16 @@ object Events {
     implicit val encoderEventTagGroupUpdate: Encoder[Event.TagGroupUpdate] =
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-    implicit val decoderEventApplicableTagCreate: Decoder[Event.ApplicableTagCreate] =
-      Decoder.forProduct2("id", "values")(Event.ApplicableTagCreate.apply)
+    implicit val decoderEventApplicableTagCreateV1: Decoder[Event.ApplicableTagCreateV1] =
+      Decoder.forProduct2("id", "values")(Event.ApplicableTagCreateV1.apply)
 
-    implicit val encoderEventApplicableTagCreate: Encoder[Event.ApplicableTagCreate] =
+    implicit val encoderEventApplicableTagCreateV1: Encoder[Event.ApplicableTagCreateV1] =
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-    implicit val decoderEventApplicableTagUpdate: Decoder[Event.ApplicableTagUpdate] =
-      Decoder.forProduct2("id", "values")(Event.ApplicableTagUpdate.apply)
+    implicit val decoderEventApplicableTagUpdateV1: Decoder[Event.ApplicableTagUpdateV1] =
+      Decoder.forProduct2("id", "values")(Event.ApplicableTagUpdateV1.apply)
 
-    implicit val encoderEventApplicableTagUpdate: Encoder[Event.ApplicableTagUpdate] =
+    implicit val encoderEventApplicableTagUpdateV1: Encoder[Event.ApplicableTagUpdateV1] =
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
     implicit val decoderEventFieldReposition: Decoder[Event.FieldReposition] =
@@ -697,8 +697,8 @@ object Events {
   // ===================================================================================================================
 
   implicit val decoderEvent: Decoder[Event] = decodeSumBySoleKey {
-    case ("ApplicableTagCreate"   , c) => c.as[Event.ApplicableTagCreate]
-    case ("ApplicableTagUpdate"   , c) => c.as[Event.ApplicableTagUpdate]
+    case ("ApplicableTagCreate"   , c) => c.as[Event.ApplicableTagCreateV1]
+    case ("ApplicableTagUpdate"   , c) => c.as[Event.ApplicableTagUpdateV1]
     case ("CodeGroupCreate"       , c) => c.as[Event.CodeGroupCreate]
     case ("CodeGroupUpdate"       , c) => c.as[Event.CodeGroupUpdate]
     case ("CodeGroupsDelete"      , c) => c.as[Event.CodeGroupsDelete]
@@ -754,8 +754,8 @@ object Events {
   }
 
   implicit val encoderEvent: Encoder[Event] = Encoder.instance {
-    case a: Event.ApplicableTagCreate    => Json.obj("ApplicableTagCreate"    -> a.asJson)
-    case a: Event.ApplicableTagUpdate    => Json.obj("ApplicableTagUpdate"    -> a.asJson)
+    case a: Event.ApplicableTagCreateV1  => Json.obj("ApplicableTagCreate"    -> a.asJson)
+    case a: Event.ApplicableTagUpdateV1  => Json.obj("ApplicableTagUpdate"    -> a.asJson)
     case a: Event.CodeGroupCreate        => Json.obj("CodeGroupCreate"        -> a.asJson)
     case a: Event.CodeGroupUpdate        => Json.obj("CodeGroupUpdate"        -> a.asJson)
     case a: Event.CodeGroupsDelete       => Json.obj("CodeGroupsDelete"       -> a.asJson)

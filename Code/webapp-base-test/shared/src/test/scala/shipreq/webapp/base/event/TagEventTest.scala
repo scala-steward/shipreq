@@ -257,20 +257,20 @@ trait ApplicableTagEvents {
   def parent(id: ApplicableTagId) = Parents(Map((id: TagId) -> none))
   def ttget(tt: TagTree, ids: Int*): List[TagInTree] = ids.toList.map(i => tt.get(i.AT).get)
   def create(id: Int)(parents: Int*)(children: Int*) =
-    ApplicableTagCreate(id, nev(Name(id.toString), Desc(None), Key("k" + id),
+    ApplicableTagCreateV1(id, nev(Name(id.toString), Desc(None), Key("k" + id),
       Children(Vector(children.map(_.AT): _*)), Parents(parents.map(_.AT -> none[TagId]).toMap)))
   def tagId1 = 1.AT
 
   val c1Name = "Version"
-  type CE = ApplicableTagCreate
-  val c1 = ApplicableTagCreate(1, nev(Name(c1Name), Desc(None), Key("c1")))
-  val c2 = ApplicableTagCreate(2, nev(Name("Released"), Desc(Some("r")), Key("c2"), parent(1)))
-  val c3 = ApplicableTagCreate(3, nev(Name("All"), Desc(None), Key("c3"), child(1)))
-  val u1 = ApplicableTagUpdate(1, nev(Desc(Some("versionness"))))
+  type CE = ApplicableTagCreateV1
+  val c1 = ApplicableTagCreateV1(1, nev(Name(c1Name), Desc(None), Key("c1")))
+  val c2 = ApplicableTagCreateV1(2, nev(Name("Released"), Desc(Some("r")), Key("c2"), parent(1)))
+  val c3 = ApplicableTagCreateV1(3, nev(Name("All"), Desc(None), Key("c3"), child(1)))
+  val u1 = ApplicableTagUpdateV1(1, nev(Desc(Some("versionness"))))
   val List(sd1,sd2,sd3,sd4) = List(1,2,3,4).map(i => TagDelete (i.AT))
   val List( r1, r2, r3, r4) = List(1,2,3,4).map(i => TagRestore(i.AT))
 
-  implicit class ApplicableTagCreateExt(private val a: ApplicableTagCreate) {
+  implicit class ApplicableTagCreateExt(private val a: ApplicableTagCreateV1) {
     def mod(f: Values => Values) =
       a.copy(vs = NonEmpty.force(f(a.vs.value)))
   }
@@ -281,10 +281,10 @@ trait ApplicableTagEvents {
   def addParent(ce: CE, p: Int)            = ce.mod(_ + parent(p))
   def addChild (ce: CE, c: Int)            = ce.mod(_ + child(c))
 
-  def updateName  (subj: Int, n: String)         = ApplicableTagUpdate(subj, nev(Name(n)))
-  def updateDesc  (subj: Int, d: Option[String]) = ApplicableTagUpdate(subj, nev(Desc(d)))
-  def updateParent(subj: Int, p: Int)            = ApplicableTagUpdate(subj, nev(parent(p)))
-  def updateChild (subj: Int, c: Int)            = ApplicableTagUpdate(subj, nev(child(c)))
+  def updateName  (subj: Int, n: String)         = ApplicableTagUpdateV1(subj, nev(Name(n)))
+  def updateDesc  (subj: Int, d: Option[String]) = ApplicableTagUpdateV1(subj, nev(Desc(d)))
+  def updateParent(subj: Int, p: Int)            = ApplicableTagUpdateV1(subj, nev(parent(p)))
+  def updateChild (subj: Int, c: Int)            = ApplicableTagUpdateV1(subj, nev(child(c)))
 }
 
 object ApplicableTagEventSharedTests extends SharedTests with ApplicableTagEvents {
@@ -311,14 +311,14 @@ object ApplicableTagEventTest extends TestSuite with ApplicableTagEvents {
         assertEq(r1, TagInTree(ApplicableTag(1, c1Name, Some("versionness"), "c1", Live), Vector.empty))
 
         es :+= c2
-        es :+= ApplicableTagUpdate(1, nev(Name("Ver"), Key("c=one")))
+        es :+= ApplicableTagUpdateV1(1, nev(Name("Ver"), Key("c=one")))
         assertEq(r1, TagInTree(ApplicableTag(1, "Ver", Some("versionness"), "c=one", Live), Vector(2.AT)))
         assertEq(r2, TagInTree(ApplicableTag(2, "Released", Some("r"), "c2", Live), Vector.empty))
 
         // TODO confirm parent order
       }
 
-      'dupKey - assertFail("unique")(c1, c2, ApplicableTagUpdate(2, nev(Key("c1"))))
+      'dupKey - assertFail("unique")(c1, c2, ApplicableTagUpdateV1(2, nev(Key("c1"))))
     }
   }
 }

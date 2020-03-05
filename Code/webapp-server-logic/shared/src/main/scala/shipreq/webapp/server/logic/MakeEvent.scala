@@ -166,10 +166,10 @@ object MakeEvent {
 
       case UpdateConfigCmd.ApplicableTagCreate(newValues) =>
         val id = ApplicableTagId(nextId)
-        ApplicableTagCreate(id, newValues)
+        ApplicableTagCreateV1(id, newValues)
 
       case UpdateConfigCmd.ApplicableTagUpdate(id, newValues) =>
-        ApplicableTagUpdate(id, newValues)
+        ApplicableTagUpdateV1(id, newValues)
 
       case UpdateConfigCmd.TagGroupCreate(newValues) =>
         val id = TagGroupId(nextId)
