@@ -35,6 +35,7 @@ object Events {
   private[v1] implicit val codecProjectTemplate: JsonCodec[ProjectTemplate] =
     JsonCodec.enumAdt(AdtMacros.adtIsoSet[ProjectTemplate, Int] {
       case ProjectTemplate.V1 => 1
+      // Don't mindlessly add new cases here. When a new case is added the codec-evolution doc needs to be followed
     })
 
   private[v1] implicit val keyDecoderTagId: KeyDecoder[TagId] =

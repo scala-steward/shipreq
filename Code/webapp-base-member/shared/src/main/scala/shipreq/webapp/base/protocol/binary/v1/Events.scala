@@ -30,7 +30,18 @@ object Events {
   implicit val picklerSetDiffNEReqId                : Pickler[SetDiff.NE[ReqId]                ] = pickleNonEmptyMono
 
   implicit val picklerProjectTemplate: Pickler[ProjectTemplate] =
-    pickleEnum(ProjectTemplate.values, firstValue = 1)
+    // Don't use pickleEnum here. When a new case is added the codec-evolution doc needs to be followed
+    new Pickler[ProjectTemplate] {
+      private[this] final val KeyV1 = 1
+      override def pickle(a: ProjectTemplate)(implicit state: PickleState): Unit =
+        a match {
+          case ProjectTemplate.V1 => state.enc.writeByte(KeyV1)
+        }
+      override def unpickle(implicit state: UnpickleState): ProjectTemplate =
+        state.dec.readByte match {
+          case KeyV1 => ProjectTemplate.V1
+        }
+    }
 
   // ===================================================================================================================
   // GenericData
