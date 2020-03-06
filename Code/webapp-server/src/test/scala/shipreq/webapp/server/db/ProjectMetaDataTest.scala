@@ -21,7 +21,7 @@ object ProjectMetaDataTest extends TestSuite {
 
       // Do this twice to ensure that other projects' events don't interfere
       for (_ <- 1 to 2) {
-        val (_, ves1, ves2) = RandomEventStream.entireEventStream(50).samples().next()
+        val (_, ves1, ves2) = RandomEventStream.activeOnly.entireEventStream(50).samples().next()
         val initEvents = ves1.length
 
         val pid = dbu.newProjectId(uid, ves1.map(_.event.active))

@@ -182,7 +182,7 @@ object DbTest extends TestSuite {
         import IgnoreEqualityOfVerifiedEventTimestamps._
         TestDb().runNow { xa =>
 
-          val data  = RandomEventStream.sampleEventStreamWithProjects
+          val data  = RandomEventStream.activeOnly.sampleEventStreamWithProjects
           val data1 = data.take(RandomEventStream.InitialEventCount)
           val data2 = data.drop(data1.length)
           val dbu   = DbUtil(xa)

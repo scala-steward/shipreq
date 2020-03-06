@@ -25,15 +25,15 @@ import ApplicableEventGen.ObserveFn
 import Event._
 import RandomData.{genColour, fieldRefKey, filter, filterDead, hashRefKey, implicationRequired, mandatory, exclusivity}
 import RandomData.{TextGen, TextGenExt, reqCode, reqTypeMnemonic, unicodeString1}
+import RandomEventStream.{State, ProjectDepGen}
 import ScalaExt._
 
-/**
-  * Generates a random event stream that can be successfully applied.
+/** Generates a random event stream that can be successfully applied.
   *
   * This differs from the events that [[RandomData]] can generate which are only valid in isolation and often don't
   * make sense as a consecutive stream.
   */
-object RandomEventStream {
+object RandomEventStream extends RandomEventStreamDsl(ApplicableEventGen(_)) {
 
   type State = (Project, EventOrd)
 
@@ -52,15 +52,15 @@ object RandomEventStream {
       ).optionGetLimit(maxAttempts)
     )
 
-  private def keepProject[A](g: ProjectDepGen[A]): ProjectDepGen[(A, Project)] =
+  private[event] def keepProject[A](g: ProjectDepGen[A]): ProjectDepGen[(A, Project)] =
     StateGen(s => g.run(s).map(x => (x._1, (x._2, x._1._1))))
 
-  private val emptyState: State =
+  private[event] val emptyState: State =
     (Project.empty, EventOrd.first)
 
   val InitialEventCount = 2
 
-  private lazy val initialEventGens: Vector[ProjectDepGen[VerifiedEvent]] =
+  private[event] lazy val initialEventGens: Vector[ProjectDepGen[VerifiedEvent]] =
     Vector(
       liftGE(RandomData.events.genProjectTemplateApply),
       liftPGE(ApplicableEventGen(_).genProjectNameSet),
@@ -69,8 +69,44 @@ object RandomEventStream {
   lazy val initialEvents: Gen[(State, Vector[VerifiedEvent])] =
     initialEventGens.sequence.run(emptyState)
 
+//  def applicableEventS[S](observe: ObserveFn[S]): StateGen[(S, Project), Event] =
+//    StateGen(sp =>
+//      ApplicableEventGen(sp._2).applicableEventS(sp._1)(observe))
+//
+//  def addVerifiedEventS[S](succ: StateGen[(S, Project), Event]): StateGen[((S, Project), VerifiedEvents), VerifiedEvent] =
+//    StateGen { case orig @ (sp1, vs) =>
+//      succ(sp1).map { case (sp2, e2) =>
+//        val hrs = HashRec.changes(sp1._2, sp2._2)
+//        val v2 = VerifiedEvent(e2, hrs)
+//        ((sp2, vs :+ v2), v2)
+//      }
+//    }
+//
+//  def eventStreamS[S](gen: StateGen[((S, Project), VerifiedEvents), VerifiedEvent])(implicit ss: SizeSpec): StateGen[((S, Project), VerifiedEvents), Unit] = {
+//    val SSS = scalaz.StateT.stateTMonadState[((S, Project), VerifiedEvents), Gen]
+//    import SSS.monadSyntax._
+//    // TO DO Speed up replicateM_ (?)
+//    StateGen(spv => ss.gen.flatMap(n => gen.replicateM_(n)(spv)))
+//  }
+//
+//  def genEventStreamS[S](s0: S, p0: Project = Project.empty)(observe: ObserveFn[S])(implicit ss: SizeSpec): Gen[(S, VerifiedEvents)] =
+//    eventStreamS(addVerifiedEventS(applicableEventS(observe)))(ss)((s0, p0), Vector.empty)
+//      .map { case (((s, _), vs), ()) => (s, vs) }
+//
+//  def withEventStats(p: Project = Project.empty)(implicit ss: SizeSpec): Gen[(EventStats, VerifiedEvents)] =
+//    genEventStreamS(EventStats.empty, p)(EventStats.observeFn)
+
+  val activeOnly =
+    new RandomEventStreamDsl(ApplicableEventGen(_, generateRetiredEvents = false))
+}
+
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+sealed class RandomEventStreamDsl(applicableEventGen: State => ApplicableEventGen) {
+  import RandomEventStream.{emptyState, initialEvents, initialEventGens, keepProject, liftPGE}
+
   val verifiedEvent: ProjectDepGen[VerifiedEvent] =
-    StateGen(ApplicableEventGen(_).verifiedEvent)
+    StateGen(applicableEventGen(_).verifiedEvent)
 
   def verifiedEvents(implicit ss: SizeSpec): ProjectDepGen[Vector[VerifiedEvent]] =
     StateGen(state =>
@@ -105,45 +141,22 @@ object RandomEventStream {
 
   lazy val sampleEventStreamWithProjects: Vector[(VerifiedEvent, Project)] =
     eventStreamWithProjects(100).sample()
-
-//  def applicableEventS[S](observe: ObserveFn[S]): StateGen[(S, Project), Event] =
-//    StateGen(sp =>
-//      ApplicableEventGen(sp._2).applicableEventS(sp._1)(observe))
-//
-//  def addVerifiedEventS[S](succ: StateGen[(S, Project), Event]): StateGen[((S, Project), VerifiedEvents), VerifiedEvent] =
-//    StateGen { case orig @ (sp1, vs) =>
-//      succ(sp1).map { case (sp2, e2) =>
-//        val hrs = HashRec.changes(sp1._2, sp2._2)
-//        val v2 = VerifiedEvent(e2, hrs)
-//        ((sp2, vs :+ v2), v2)
-//      }
-//    }
-//
-//  def eventStreamS[S](gen: StateGen[((S, Project), VerifiedEvents), VerifiedEvent])(implicit ss: SizeSpec): StateGen[((S, Project), VerifiedEvents), Unit] = {
-//    val SSS = scalaz.StateT.stateTMonadState[((S, Project), VerifiedEvents), Gen]
-//    import SSS.monadSyntax._
-//    // TO DO Speed up replicateM_ (?)
-//    StateGen(spv => ss.gen.flatMap(n => gen.replicateM_(n)(spv)))
-//  }
-//
-//  def genEventStreamS[S](s0: S, p0: Project = Project.empty)(observe: ObserveFn[S])(implicit ss: SizeSpec): Gen[(S, VerifiedEvents)] =
-//    eventStreamS(addVerifiedEventS(applicableEventS(observe)))(ss)((s0, p0), Vector.empty)
-//      .map { case (((s, _), vs), ()) => (s, vs) }
-//
-//  def withEventStats(p: Project = Project.empty)(implicit ss: SizeSpec): Gen[(EventStats, VerifiedEvents)] =
-//    genEventStreamS(EventStats.empty, p)(EventStats.observeFn)
 }
 
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+
+
 // =====================================================================================================================
-import RandomEventStream.{State, ProjectDepGen}
 
 object ApplicableEventGen {
-  def apply(curState: State) = new ApplicableEventGen(curState)
+  def apply(curState: State, generateRetiredEvents: Boolean = true): ApplicableEventGen =
+    new ApplicableEventGen(curState, generateRetiredEvents)
 
   type ObserveFn[S] = (S, Event, ApplyEvent.Result) => S
 }
 
-final class ApplicableEventGen(curState: State) {
+final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) {
   val p = curState._1
 
   private implicit val gss: SizeSpec = 0 to 3
@@ -843,13 +856,11 @@ final class ApplicableEventGen(curState: State) {
   def genManualIssueDelete: Option[Gen[ManualIssueDelete]] =
     manualIssueId.map(_ map ManualIssueDelete)
 
-  private val possibleEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[Event]])] =
-    valuesForAdt[Event, (EventName, Option[Gen[Event]])] {
+  private val possibleActiveEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[ActiveEvent]])] =
+    valuesForAdt[ActiveEvent, (EventName, Option[Gen[ActiveEvent]])] {
       // Note: not using [case e: Xxx => EventName(e) -> xxx] here because the valuesForAdt doesn't like it
       case _: ApplicableTagCreate    => EventName("ApplicableTagCreate"   ) -> genApplicableTagCreate
-      case _: ApplicableTagCreateV1  => EventName("ApplicableTagCreateV1" ) -> genApplicableTagCreateV1
       case _: ApplicableTagUpdate    => EventName("ApplicableTagUpdate"   ) -> genApplicableTagUpdate
-      case _: ApplicableTagUpdateV1  => EventName("ApplicableTagUpdateV1" ) -> genApplicableTagUpdateV1
       case _: ContentRestore         => EventName("ContentRestore"        ) -> genContentRestore
       case _: CustomIssueTypeCreate  => EventName("CustomIssueTypeCreate" ) -> genCustomIssueTypeCreate
       case _: CustomIssueTypeDelete  => EventName("CustomIssueTypeDelete" ) -> genCustomIssueTypeDelete
@@ -903,6 +914,19 @@ final class ApplicableEventGen(curState: State) {
       case _: UseCaseStepUpdate      => EventName("UseCaseStepUpdate"     ) -> genUseCaseStepUpdate
       case _: UseCaseTitleSet        => EventName("UseCaseTitleSet"       ) -> genUseCaseTitleSet
     }
+
+  private def possibleRetiredEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[RetiredEvent]])] =
+    valuesForAdt[RetiredEvent, (EventName, Option[Gen[RetiredEvent]])] {
+      // Note: not using [case e: Xxx => EventName(e) -> xxx] here because the valuesForAdt doesn't like it
+      case _: ApplicableTagCreateV1  => EventName("ApplicableTagCreateV1" ) -> genApplicableTagCreateV1
+      case _: ApplicableTagUpdateV1  => EventName("ApplicableTagUpdateV1" ) -> genApplicableTagUpdateV1
+    }
+
+  private val possibleEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[Event]])] =
+    if (generateRetiredEvents)
+      possibleActiveEventGensWithNames ++ possibleRetiredEventGensWithNames
+    else
+      possibleActiveEventGensWithNames
 
   private val possibleEventGens: NonEmptyVector[Option[Gen[Event]]] =
     possibleEventGensWithNames.map(_._2)
