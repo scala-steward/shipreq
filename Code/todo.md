@@ -86,6 +86,9 @@ Phase 3A
 * Tags
   * ability to create child tag in 1-step instead of 2 [FB-4]
   * add tag colours [FR-8]
+  * Users #must be able to prohibit certain tags being used with certain req-types [FR-14]
+  * When a req has a tag that is invalid for its req type, it should be hidden from all views [FR-15]
+  * When a req has a tag that is invalid for its req type, users shouldn't be allow to specify it [FR-16]
   * remove key from TagGroups, check all Tag fields against UI prototype
   * ensure dead filter & style everywhere
   * TagSetApplicableChildrenOrder has a bug or something - remember how priorty got fucked up with Actors & could added under should?
@@ -93,7 +96,10 @@ Phase 3A
   * Add tests for TagConfig
   * Add stability test for ProjectTemplate - probably just JSON of events is enough
   * Uniqueness of tag names... just group names? or include ap-tag keys too?
-  * Tags themselves should have ApplicableReqTypes ... what to do about the overlap in Fields having rules with N/A as an option?
+  * track TagConfig state in UnsavedChanges
+  * handle dead ReqTypes' states in ApplicableReqTypes editors
+    (eg user says whitelist A; user deletes A, what should the editor show? Maybe just a litle warning (not error) under field.
+     like "<triangle-icon> A, B and C are dead")
 
 * Fields
   * redo config screen

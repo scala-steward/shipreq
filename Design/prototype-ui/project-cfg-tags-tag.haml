@@ -149,6 +149,13 @@
         padding-bottom:0.4em!important;
       }
 
+      .no-error,
+      .no-error .text {
+        color:#0009!important;
+        background:#e8e8e8!important;
+        border-color:#0000!important;
+      }
+
   -# ==================================================================================================================================================
   -# ==================================================================================================================================================
   %body
@@ -332,7 +339,17 @@
             .field
               %label Description
               %textarea(rows="2" value="wtf" placeholder="")
-
+            .field.error
+              %label Applicable Req Types
+              .ui.left.labeled.input
+                .ui.dropdown.label.no-error
+                  .text Blacklist
+                  %i.icon.dropdown.label
+                  .menu
+                    .item Blacklist
+                    .item Whitelist
+                %input(type="text" value="" placeholder="Req types..." style="border-left-width:0")
+              <span style="color: rgb(159, 58, 56); padding-top: 0.15rem; font-size: 92%;">blah</span>
           #family
             .parents
               .ui.segment
