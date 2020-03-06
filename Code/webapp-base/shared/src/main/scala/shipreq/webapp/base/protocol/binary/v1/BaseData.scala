@@ -114,18 +114,18 @@ object BaseData {
         }
     }
 
-  def pickleEnum[V: UnivEq](nev: NonEmptyVector[V]): Pickler[V] =
+  def pickleEnum[V: UnivEq](nev: NonEmptyVector[V], firstValue: Int = 0): Pickler[V] =
     new Pickler[V] {
       private[this] val fromInt = nev.whole
       private[this] val toInt   = nev.whole.mapToOrder
       assert(toInt.size == nev.length, s"Duplicates found in $nev")
       override def pickle(v: V)(implicit state: PickleState): Unit = {
-        val i = toInt(v)
+        val i = toInt(v) + firstValue
         state.enc.writeInt(i)
       }
       override def unpickle(implicit state: UnpickleState): V =
         state.dec.readIntCode match {
-          case Right(i) => fromInt(i)
+          case Right(i) => fromInt(i - firstValue)
           case Left(_)  => throw new IllegalArgumentException("Invalid coding")
         }
     }
