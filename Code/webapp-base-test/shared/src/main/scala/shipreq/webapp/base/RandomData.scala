@@ -42,7 +42,6 @@ object RandomDataSettings {
 object RandomData {
   import RandomDataSettings._
   import DataImplicits._
-  import Field.ApplicableReqTypes
   import MTrie.Ops
   import Optics.Implicits._
   import ReqType.Mnemonic
@@ -170,6 +169,9 @@ object RandomData {
 
   val on =
     Gen.boolean.map(On.when)
+
+  val applicability: Gen[Applicability] =
+    Gen.boolean.map(Applicable.when)
 
 //  val liveUsually =
 //    Gen.int.map(i => if ((i & 7) == 0) Dead else Live)
@@ -378,10 +380,12 @@ object RandomData {
     Gen.chooseNE(StaticField.values)
 
   def applicableReqTypes(r: Set[CustomReqTypeId]): Gen[ApplicableReqTypes] = {
-    val all = StaticReqType.values.whole ++ r
-    val nes = Gen.subset1(all).map(NonEmptySet force _.toSet)
-    genISubset(nes)
+    val all = r ++ StaticReqType.values.whole
+    applicableReqTypes(Gen.subset(all))
   }
+
+  def applicableReqTypes(g: Gen[Set[ReqTypeId]]): Gen[ApplicableReqTypes] =
+    Gen.apply2(ApplicableReqTypes.apply)(applicability, g)
 
   val customFieldTextId =
     id map CustomField.Text.Id
@@ -1543,7 +1547,7 @@ object RandomData {
       Gen.chooseGen(customFieldId, staticField)
 
     val applicableReqTypes: Gen[ApplicableReqTypes] =
-      genISubset(reqTypeId.nes)
+      RandomData.applicableReqTypes(reqTypeId.set)
 
     val fieldPosition =
       fieldId.option

@@ -165,9 +165,9 @@ object CustomImpFieldGD extends GenericData {
   }
 
   case object ReqTypes extends Attr {
-    override type Data = Field.ApplicableReqTypes
+    override type Data = ApplicableReqTypes
     override def apply(data: Data) = ValueForReqTypes(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Field.ApplicableReqTypes]]
+    val dataEquality: Equal[Data] = implicitly[Equal[ApplicableReqTypes]]
   }
   final case class ValueForReqTypes(value: ReqTypes.Data) extends Value {
     override val attr: ReqTypes.type = ReqTypes
@@ -298,9 +298,9 @@ object CustomTagFieldGD extends GenericData {
   }
 
   case object ReqTypes extends Attr {
-    override type Data = Field.ApplicableReqTypes
+    override type Data = ApplicableReqTypes
     override def apply(data: Data) = ValueForReqTypes(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Field.ApplicableReqTypes]]
+    val dataEquality: Equal[Data] = implicitly[Equal[ApplicableReqTypes]]
   }
   final case class ValueForReqTypes(value: ReqTypes.Data) extends Value {
     override val attr: ReqTypes.type = ReqTypes
@@ -377,9 +377,9 @@ object CustomTextFieldGD extends GenericData {
   }
 
   case object ReqTypes extends Attr {
-    override type Data = Field.ApplicableReqTypes
+    override type Data = ApplicableReqTypes
     override def apply(data: Data) = ValueForReqTypes(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Field.ApplicableReqTypes]]
+    val dataEquality: Equal[Data] = implicitly[Equal[ApplicableReqTypes]]
   }
   final case class ValueForReqTypes(value: ReqTypes.Data) extends Value {
     override val attr: ReqTypes.type = ReqTypes

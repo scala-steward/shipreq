@@ -6,7 +6,7 @@ import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.univeq.UnivEq
 import nyaya.util.Multimap
-import shipreq.base.util.{Direction, Exclusivity, IMap}
+import shipreq.base.util.{Applicable, Direction, Exclusivity, IMap, NotApplicable}
 import shipreq.base.util.JsonUtil._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
@@ -347,6 +347,30 @@ private[v1] object BaseMemberData1 {
       Encoder.forProduct2("default", "nonDefault")(a => (a.default, a.nonDefault))
   }
 
+  // Note: This has been designed to be identical to ISubset[ReqTypeId] which is what it's meant to replace.
+  implicit lazy val codecApplicableReqTypes: JsonCodec[ApplicableReqTypes] = {
+    val unit = ().asJson
+
+    implicit val encoder: Encoder[ApplicableReqTypes] =
+      Encoder.instance { a =>
+        if (a.isEmpty)
+          Json.obj("all" -> unit)
+        else {
+          val key = if (a.applicability is Applicable) "only" else "not"
+          Json.obj(key -> a.reqTypes.asJson)
+        }
+      }
+
+    implicit val decoder: Decoder[ApplicableReqTypes] =
+      decodeSumBySoleKey {
+        case ("all" , _) => Right(ApplicableReqTypes.empty)
+        case ("only", c) => c.as[Set[ReqTypeId]].map(ApplicableReqTypes(Applicable, _))
+        case ("not" , c) => c.as[Set[ReqTypeId]].map(ApplicableReqTypes(NotApplicable, _))
+      }
+
+    JsonCodec.summon
+  }
+
   implicit lazy val codecApplicableTagId: JsonCodec[ApplicableTagId] =
     codecTaggedI(ApplicableTagId.apply)
 
@@ -397,9 +421,6 @@ private[v1] object BaseMemberData1 {
 
   implicit lazy val codecCustomReqTypeId: JsonCodec[CustomReqTypeId] =
     codecTaggedI(CustomReqTypeId)
-
-  implicit lazy val codecFieldApplicableReqTypes: JsonCodec[Field.ApplicableReqTypes] =
-    codecISubset
 
   implicit lazy val decoderFieldId: Decoder[FieldId] = decodeSumBySoleKeyOrConst[FieldId](
     "stepsNA"   -> StaticField.NormalAltStepTree,

@@ -86,7 +86,7 @@ object BaseMemberData2 {
         val id             = state.unpickle[CustomField.Implication.Id]
         val reqTypeId      = state.unpickle[ReqTypeId]
         val mandatory      = state.unpickle[Mandatory]
-        val reqTypes       = state.unpickle[Field.ApplicableReqTypes]
+        val reqTypes       = state.unpickle[ApplicableReqTypes]
         val liveExplicitly = state.unpickle[Live]
         CustomField.Implication(id, reqTypeId, mandatory, reqTypes, liveExplicitly)
       }
@@ -105,7 +105,7 @@ object BaseMemberData2 {
         val id             = state.unpickle[CustomField.Tag.Id]
         val tagId          = state.unpickle[TagId]
         val mandatory      = state.unpickle[Mandatory]
-        val reqTypes       = state.unpickle[Field.ApplicableReqTypes]
+        val reqTypes       = state.unpickle[ApplicableReqTypes]
         val liveExplicitly = state.unpickle[Live]
         CustomField.Tag(id, tagId, mandatory, reqTypes, liveExplicitly)
       }
@@ -126,7 +126,7 @@ object BaseMemberData2 {
         val name           = state.unpickle[String]
         val key            = state.unpickle[FieldRefKey]
         val mandatory      = state.unpickle[Mandatory]
-        val reqTypes       = state.unpickle[Field.ApplicableReqTypes]
+        val reqTypes       = state.unpickle[ApplicableReqTypes]
         val liveExplicitly = state.unpickle[Live]
         CustomField.Text(id, name, key, mandatory, reqTypes, liveExplicitly)
       }

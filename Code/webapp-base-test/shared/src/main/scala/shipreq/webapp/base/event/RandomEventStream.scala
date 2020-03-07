@@ -251,7 +251,7 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
   val customReqTypeId: Live => Option[Gen[CustomReqTypeId]] =
     tryGenChooseLiveDead(l => cfg.reqTypes.custom.valuesIterator.filter(_.live is l).map(_.id))
 
-  lazy val applicableReqTypes: Gen[Field.ApplicableReqTypes] =
+  lazy val applicableReqTypes: Gen[ApplicableReqTypes] =
     RandomData.applicableReqTypes(cfg.reqTypes.custom.keySet)
 
   lazy val existingReqId: Option[Gen[ReqId]] =

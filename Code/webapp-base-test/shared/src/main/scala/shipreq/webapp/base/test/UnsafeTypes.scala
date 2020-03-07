@@ -7,7 +7,6 @@ import shipreq.base.util._
 import shipreq.base.util.univeq.UnivEq
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar, ProjectText, Text}
-import Field.ApplicableReqTypes
 import ScalaExt._
 import VectorTree.{Location, ParentLocation, PartialLocation}
 import shipreq.webapp.base.event._
@@ -108,9 +107,9 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
 
   implicit def tagTreeTree(t: TagTree) = t.mapValues(_.children)
 
-  def onlyReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Only(NonEmptySet(a, as: _*))
-  def notReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ISubset.Not(NonEmptySet(a, as: _*))
-  val allReqTypes: ApplicableReqTypes = ISubset.All()
+  def onlyReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ApplicableReqTypes.whitelist((a +: as): _*)
+  def notReqTypes(a: ReqTypeId, as: ReqTypeId*): ApplicableReqTypes = ApplicableReqTypes.blacklist((a +: as): _*)
+  def allReqTypes = ApplicableReqTypes.empty
 
   implicit def autoNevWhole[A](as: NonEmptyVector[A]): Vector[A] = as.whole
   implicit def autoNesWhole[A](as: NonEmptySet[A]): Set[A] = as.whole

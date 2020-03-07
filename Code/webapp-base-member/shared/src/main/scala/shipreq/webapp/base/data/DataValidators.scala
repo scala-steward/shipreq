@@ -8,9 +8,8 @@ import scalaz.std.stream._
 import scalaz.std.vector._
 import shipreq.base.util.MTrie.Ops
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.{Exclusivity, Util}
+import shipreq.base.util._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.Field.ApplicableReqTypes
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.text.{Grammar, PlainText, Text}
 import shipreq.webapp.base.util.TextMod
@@ -183,7 +182,7 @@ object DataValidators {
         .stateful(_ appendInvalidator _.keyUniqueness)
 
     def mandatory = Validator.id[Mandatory]
-    def reqTypes  = Validator.id[Field.ApplicableReqTypes]
+    def reqTypes  = Validator.id[ApplicableReqTypes]
 
     val textField: State => Composite.Validator[
       (String, String, Mandatory, ApplicableReqTypes),

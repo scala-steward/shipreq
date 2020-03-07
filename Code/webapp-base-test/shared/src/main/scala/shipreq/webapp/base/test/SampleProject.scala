@@ -76,10 +76,10 @@ object SampleProject {
       Text       (descField    , "Description", "desc",     Mandatory.Not, onlyReqTypes(mf, si, StaticReqType.UseCase), Live),
       Text       (notesField   , "Notes",       "notes",    Mandatory.Not, notReqTypes(br),                             Live),
       Text       (reporterField, "Reporter",    "reporter", Mandatory,     onlyReqTypes(dd, StaticReqType.UseCase),     Dead),
-      Tag        (priField     , priTG,                     Mandatory,     ISubset.All(),                               Live),
+      Tag        (priField     , priTG,                     Mandatory,     allReqTypes,                                 Live),
       Tag        (statusField  , 10.TG,                     Mandatory.Not, notReqTypes(dd, si),                         Live),
       Implication(mfField      , mf,                        Mandatory.Not, notReqTypes(si),                             Live),
-      Tag        (relField     , 27.TG,                     Mandatory.Not, ISubset.All(),                               Dead)
+      Tag        (relField     , 27.TG,                     Mandatory.Not, allReqTypes,                                 Dead)
     ), Vector(
       descField, mfField, priField, reporterField,
       StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph,

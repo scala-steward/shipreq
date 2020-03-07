@@ -1,6 +1,7 @@
 package shipreq.base.test
 
 import japgolly.microlibs.testutil.TestUtilInternals
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
 import java.time.{Duration, Instant}
@@ -92,6 +93,39 @@ trait BaseTestUtil
       val d = Duration.between(b, a).abs()
       tolerance.compareTo(d) > 0
     })
+
+  def shrinkUnequalStrings(str1: String, str2: String): (String, String) = {
+    var a = str1
+    var b = str2
+    val minLen = str1.length min str2.length
+    def mod(f: String => String): Unit = {
+      a = f(a)
+      b = f(b)
+    }
+
+    if (str1 == str2)
+      return ("", "")
+
+    for (n <- 0.until(minLen).dropWhile(i => str1(i) == str2(i)).headOption)
+      if (n > 3)
+        mod("…" + _.drop(n))
+
+    for (n <- 1.to(minLen).dropWhile(i => str1(str1.length - i) == str2(str2.length - i)).headOption)
+      if (n > 3)
+        mod(_.dropRight(n) + "…")
+
+    (a, b)
+  }
+
+  def shrinkUnequalStrings(str1: String, str2: String, limit: Int): (String, String) = {
+    def f(s: String): String =
+      if (s.length > limit)
+        s.take(limit - 1) + "…"
+      else
+        s
+    val (a, b) = shrinkUnequalStrings(str1, str2)
+    (f(a), f(b))
+  }
 
   // TODO Move getOrThrow() into microlibs
   // TODO Move these into microlibs(jvm-only)

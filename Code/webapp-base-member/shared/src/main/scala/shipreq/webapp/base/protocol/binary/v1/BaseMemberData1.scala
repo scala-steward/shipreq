@@ -5,7 +5,7 @@ import boopickle.DefaultBasic._
 import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.univeq.UnivEq
 import nyaya.util.Multimap
-import shipreq.base.util.{Exclusive, Exclusivity, IMap}
+import shipreq.base.util.{Applicable, Exclusive, Exclusivity, IMap, NotApplicable}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.filter.Filter
@@ -543,6 +543,29 @@ object BaseMemberData1 {
 
   import ReqTableDataPicklers.pickleSavedViews
 
+  // Note: This has been designed to be identical to ISubset[ReqTypeId] which is what it's meant to replace.
+  implicit lazy val picklerApplicableReqTypes: Pickler[ApplicableReqTypes] =
+    new Pickler[ApplicableReqTypes] {
+      private[this] final val KeyAll  = 'a'
+      private[this] final val KeyNot  = 'n'
+      private[this] final val KeyOnly = 'o'
+
+      override def pickle(a: ApplicableReqTypes)(implicit state: PickleState): Unit =
+        if (a.isEmpty)
+          state.enc.writeByte(KeyAll)
+        else {
+          state.enc.writeByte(if (a.applicability is Applicable) KeyOnly else KeyNot)
+          state.pickle(a.reqTypes)
+        }
+
+      override def unpickle(implicit state: UnpickleState): ApplicableReqTypes =
+        state.dec.readByte match {
+          case KeyAll  => ApplicableReqTypes.empty
+          case KeyNot  => ApplicableReqTypes(NotApplicable, state.unpickle[Set[ReqTypeId]])
+          case KeyOnly => ApplicableReqTypes(Applicable,    state.unpickle[Set[ReqTypeId]])
+        }
+    }
+
   implicit lazy val picklerApplicableTagId: Pickler[ApplicableTagId] =
     pickleTaggedI(ApplicableTagId).reuseByUnivEq
 
@@ -617,9 +640,6 @@ object BaseMemberData1 {
 
   implicit lazy val picklerCustomReqTypeId: Pickler[CustomReqTypeId] =
     pickleTaggedI(CustomReqTypeId).reuseByUnivEq
-
-  implicit lazy val picklerFieldApplicableReqTypes: Pickler[Field.ApplicableReqTypes] =
-    pickleISubset
 
   implicit lazy val picklerFieldId: Pickler[FieldId] =
     new Pickler[FieldId] {

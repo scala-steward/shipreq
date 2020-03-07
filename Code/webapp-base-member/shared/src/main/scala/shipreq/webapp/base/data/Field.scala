@@ -86,7 +86,7 @@ sealed trait FieldId {
 
 sealed trait Field {
   def fieldType: FieldType
-  def reqTypes : Field.ApplicableReqTypes
+  def reqTypes : ApplicableReqTypes
   def keyO     : Option[FieldRefKey]
   def mandatory: Mandatory
 
@@ -99,13 +99,9 @@ sealed trait Field {
 
   final def fieldId: FieldId =
     fold(s => s, _.id)
-
-  final val applicable: ReqTypeId => Applicability =
-    Applicable fnToThisWhen reqTypes.filter
 }
 
 object Field {
-  type ApplicableReqTypes = ISubset[ReqTypeId]
 
   implicit lazy val applicableReqTypesEquality: UnivEq[ApplicableReqTypes] = implicitly
 
@@ -127,11 +123,9 @@ object Field {
   }
 }
 
-import Field.ApplicableReqTypes
-
 sealed abstract class StaticField(         val name     : String,
                                   override val fieldType: StaticFieldType,
-                                  override val reqTypes : Field.ApplicableReqTypes,
+                                  override val reqTypes : ApplicableReqTypes,
                                   override val mandatory: Mandatory,
                                            val deletable: Deletable,
                                   override val keyO     : Option[FieldRefKey]) extends Field with FieldId {
@@ -153,7 +147,7 @@ object UseCaseStepLabelFmt {
 
 object StaticField {
   val useCaseOnly: ApplicableReqTypes =
-    ISubset.Only(NonEmptySet one StaticReqType.UseCase)
+    ApplicableReqTypes.whitelist(StaticReqType.UseCase)
 
   @inline final private[this] def T = StaticFieldType
 
@@ -161,7 +155,7 @@ object StaticField {
 
   sealed abstract class UseCaseStepTree(_name     : String,
                                         _fieldType: StaticFieldType,
-                                        _reqTypes : Field.ApplicableReqTypes,
+                                        _reqTypes : ApplicableReqTypes,
                                         _mandatory: Mandatory,
                                         _deletable: Deletable,
                                         _keyO     : Option[FieldRefKey])
@@ -293,7 +287,7 @@ object StaticField {
     T.StepGraph.name, T.StepGraph, useCaseOnly, Mandatory.Not, Deletable, None)
 
   case object ImplicationGraph extends StaticField(
-    T.ImplicationGraph.name, T.ImplicationGraph, ISubset.All(), Mandatory.Not, Deletable, None)
+    T.ImplicationGraph.name, T.ImplicationGraph, ApplicableReqTypes.empty, Mandatory.Not, Deletable, None)
 
   // Non lazy causes utest to crash
   // ORDER MATTERS as this is the default order of fields use in new projects
@@ -543,7 +537,7 @@ final case class FieldSet(customFields: FieldSet.CustomFields,
 
   val applicability: ProjectApplicability.Default =
     ProjectApplicability(get(_) match {
-      case Some(f) => f.applicable
+      case Some(f) => f.reqTypes.asFn
       case None    => Applicability.never
     })
 

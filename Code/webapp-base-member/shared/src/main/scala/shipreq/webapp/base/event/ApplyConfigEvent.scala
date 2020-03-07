@@ -154,7 +154,7 @@ trait ApplyConfigEvent {
 
       def removeFromReqTypeApplicability: SE[Unit] =
         Project.customFields.modify(
-          reqTypeApplicability.modify(_ remove id))
+          reqTypeApplicability.modify(_.hardDelete(id)))
 
       def deleteReqType: SE[Unit] =
         imap.hardDelete(id)

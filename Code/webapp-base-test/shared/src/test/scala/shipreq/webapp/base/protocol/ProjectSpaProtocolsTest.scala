@@ -120,7 +120,7 @@ object ProjectSpaProtocolsTest extends TestSuite {
         }
         "CustomFieldUpdateImp" - {
           val bin    = BinaryData.fromHex("5945B41D0100190301000763000A016F017538295653")
-          val expect = (ReqId(25),UpdateConfig.AndReq(CustomFieldUpdateImp(CustomField.Implication.Id(7),ImpFieldValues(CustomReqTypeId(10),Mandatory,ISubset.Only(NonEmptySet(StaticReqType.UseCase))))))
+          val expect = (ReqId(25),UpdateConfig.AndReq(CustomFieldUpdateImp(CustomField.Implication.Id(7),ImpFieldValues(CustomReqTypeId(10),Mandatory,ApplicableReqTypes.whitelist(StaticReqType.UseCase)))))
           assertRequest(bin, expect)
         }
 // TODO       "TagCreate" - {

@@ -4,7 +4,6 @@ import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{ApplicableTagGD, TagGroupGD}
-import Field.ApplicableReqTypes
 
 sealed trait UpdateConfigCmd
 

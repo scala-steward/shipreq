@@ -8,7 +8,6 @@ import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.sort.SortMethod
 import shipreq.webapp.base.util.GenericDataMacros._
 import Event._
-import Field.ApplicableReqTypes
 
 /**
  * Once a [[ProjectTemplate]] has been used (i.e. an Event exists in the database which refers to it),
@@ -73,7 +72,7 @@ object ProjectTemplate {
       id
     }
 
-    val allReqTypes: ApplicableReqTypes = ISubset.All()
+    def allReqTypes = ApplicableReqTypes.empty
     val customFieldId = new IdCounter(identity)
     def customTextField(name: String, key: FieldRefKey, mandatory: Mandatory, reqTypes: ApplicableReqTypes): Unit = {
       val id = CustomField.Text.Id(customFieldId.next())
@@ -126,7 +125,7 @@ object ProjectTemplate {
       val ver  = tagGroup("Version", "Target product version.", NonExclusive, children = Vector(rel, urel))
 
       customTextField("Detail", FieldRefKey("detail"), Mandatory.Not, allReqTypes)
-      customImpField(mf,     Mandatory    , ISubset.Not(NonEmptySet(mf, oe)))
+      customImpField(mf,     Mandatory    , ApplicableReqTypes.blacklist(mf, oe))
       customTagField(pri,    Mandatory.Not, allReqTypes)
       customTagField(ver,    Mandatory.Not, allReqTypes)
 

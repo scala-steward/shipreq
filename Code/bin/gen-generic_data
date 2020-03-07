@@ -86,17 +86,17 @@ val gens = List(
     "Name"      -> "String",
     "Key"       -> "FieldRefKey",
     "Mandatory" -> "Mandatory",
-    "ReqTypes"  -> "Field.ApplicableReqTypes",
+    "ReqTypes"  -> "ApplicableReqTypes",
   ),
   Gen("CustomTagFieldGD")(
     "TagId"     -> "TagId",
     "Mandatory" -> "Mandatory",
-    "ReqTypes"  -> "Field.ApplicableReqTypes",
+    "ReqTypes"  -> "ApplicableReqTypes",
   ),
   Gen("CustomImpFieldGD")(
     "ReqTypeId" -> "ReqTypeId",
     "Mandatory" -> "Mandatory",
-    "ReqTypes"  -> "Field.ApplicableReqTypes",
+    "ReqTypes"  -> "ApplicableReqTypes",
   ),
   """
     |/**
