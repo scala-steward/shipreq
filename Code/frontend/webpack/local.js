@@ -35,6 +35,8 @@ const config = {
       'expose-loader?scrollIntoView!scroll-into-view-if-needed',
       'expose-loader?TextComplete!textcomplete/lib/textcomplete',
       'expose-loader?TextCompleteTA!textcomplete/lib/textarea',
+      'expose-loader?GithubPicker!react-color/lib/components/github/Github',
+      'expose-loader?ChromePicker!react-color/lib/components/chrome/Chrome',
       'expose-loader?$!expose-loader?jQuery!jquery', // for Semantic UI -- must precede it! order in this array matters
       './semantic/dist/semantic.min', //.js
     ],

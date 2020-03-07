@@ -21,6 +21,8 @@ const config = ({ mode }) => ({
       'expose-loader?scrollIntoView!scroll-into-view-if-needed',
       'expose-loader?TextComplete!textcomplete/lib/textcomplete',
       'expose-loader?TextCompleteTA!textcomplete/lib/textarea',
+      'expose-loader?GithubPicker!react-color/lib/components/github/Github',
+      'expose-loader?ChromePicker!react-color/lib/components/chrome/Chrome',
     ]),
 
     analytics: './shipreq/js/analytics.js',

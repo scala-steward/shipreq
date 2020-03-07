@@ -5,7 +5,7 @@ object AssetManifest {
 
   final case class CDN(href: String, integrity: Option[String])
 
-  def analyticsJs = "/s/062ae3593f4eae24e248760bf0b448fc.js"
+  def analyticsJs = "/s/97df6f309bf23e1c13f6d76b0a40812a.js"
 
   def favicon = "/s/286b75985993da80759cbdc5142de4d3.ico"
 
@@ -25,7 +25,7 @@ object AssetManifest {
 
   def loadjs = "/s/9e706a6f7bc551ddf626c15cd76c1c25.js"
 
-  def memberLibBundleJs = "/s/127b8ddf9457de79ec84ba8835981a80.js"
+  def memberLibBundleJs = "/s/20babec3fbf2247f24dc1e0006f520dc.js"
 
   def prismJsAutoloader = CDN(
     href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.19.0/plugins/autoloader/prism-autoloader.min.js",
@@ -51,7 +51,7 @@ object AssetManifest {
     href = "https://cdnjs.cloudflare.com/ajax/libs/react/16.8.6/umd/react.production.min.js",
     integrity = Some("sha256-3vo65ZXn5pfsCfGM5H55X+SmwJHBlyNHPwRmWAPgJnM="))
 
-  def semanticCss = "/s/b5b8655bc6042a8ed0d96ad25517846e.css"
+  def semanticCss = "/s/9395a3b82fb273670f9b517d42bbad33.css"
 
   def semanticCssUrls: List[String] =
     "icons.eot" ::
@@ -62,7 +62,7 @@ object AssetManifest {
     "icons.svg#icons" ::
     Nil
 
-  def semanticJs = "/s/55a80b675cb3672759e0b653fd97cc1c.js"
+  def semanticJs = "/s/a397228ecdd88d2fc5019dae8512d78d.js"
 
   def shipreqBannerSvg = "/s/878536f0a4ad0029794669f88dbf5f35.svg"
 

@@ -13,6 +13,7 @@
     "prismjs": "1.19.0",
     "react": "16.8.6",
     "react-collapse": "5.0.1",
+    "react-color": "^2.18.0",
     "react-dom": "16.8.6",
     "react-height": "3.0.1",
     "react-motion": "0.5.2",
