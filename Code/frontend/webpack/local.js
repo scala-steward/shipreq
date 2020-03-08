@@ -37,6 +37,7 @@ const config = {
       'expose-loader?TextCompleteTA!textcomplete/lib/textarea',
       'expose-loader?GithubPicker!react-color/lib/components/github/Github',
       'expose-loader?ChromePicker!react-color/lib/components/chrome/Chrome',
+      'expose-loader?tinycolor!tinycolor2/tinycolor',
       'expose-loader?$!expose-loader?jQuery!jquery', // for Semantic UI -- must precede it! order in this array matters
       './semantic/dist/semantic.min', //.js
     ],

@@ -23,6 +23,7 @@ const config = ({ mode }) => ({
       'expose-loader?TextCompleteTA!textcomplete/lib/textarea',
       'expose-loader?GithubPicker!react-color/lib/components/github/Github',
       'expose-loader?ChromePicker!react-color/lib/components/chrome/Chrome',
+      'expose-loader?tinycolor!tinycolor2/tinycolor',
     ]),
 
     analytics: './shipreq/js/analytics.js',
