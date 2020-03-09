@@ -127,6 +127,19 @@ trait BaseTestUtil
     (f(a), f(b))
   }
 
+  def assertEqWithTolerance(actual: Double, expect: Double, tolerance: Double = 0.01)(implicit l: Line): Unit = {
+    val d = Math.abs(actual - expect)
+    if (d > tolerance)
+      fail(
+        s"""
+           |assertEqWithTolerance failed.
+           |actual: $actual
+           |expect: $expect
+           | delta: $d
+           |   tol: $tolerance
+           |""".stripMargin)
+  }
+
   // TODO Move getOrThrow() into microlibs
   // TODO Move these into microlibs(jvm-only)
 

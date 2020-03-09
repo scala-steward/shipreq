@@ -20,23 +20,57 @@ final class Colour private[Colour](val value: String) extends TaggedString {
   def hex: String =
     value.drop(1)
 
-//  def rgb: (Int, Int, Int) = {
-//    def parseHex(hex: String): Int =
-//      Integer.parseInt(hex, 16)
-//
-//    hex.length match {
-//      case 3 => thrice(hex(0), hex(1), hex(2))(c => parseHex(c.toString + c))
-//      case 6 => thrice(hex.substring(0, 2), hex.substring(2, 4), hex.substring(4, 6))(parseHex)
-//    }
-//  }
-//
-//  private def thrice[A, B](a: A, b: A, c: A)(f: A => B): (B, B, B) =
-//    (f(a), f(b), f(c))
+  def rgb: (Int, Int, Int) = {
+    def parseHex(hex: String): Int =
+      Integer.parseInt(hex, 16)
+
+    val hex = this.hex
+
+    hex.length match {
+      case 3 => thrice(hex(0), hex(1), hex(2))(c => parseHex(c.toString + c))
+      case 6 => thrice(hex.substring(0, 2), hex.substring(2, 4), hex.substring(4, 6))(parseHex)
+    }
+  }
+
+  private def thrice[A, B](a: A, b: A, c: A)(f: A => B): (B, B, B) =
+    (f(a), f(b), f(c))
+
+  val luminanace: Double = {
+    def f(i: Int): Double = {
+      val d = i.toDouble / 255
+      if (d <= 0.03928)
+        d / 12.92
+      else
+        Math.pow((d + 0.055) / 1.055, 2.4)
+    }
+
+    val (r, g, b) = rgb
+    f(r) * 0.2126 + f(g) * 0.7152 + f(b) * 0.0722
+  }
+
+  def contrastRatio(c: Colour): Double = {
+    val lum1      = luminanace
+    val lum2      = c.luminanace
+    val brightest = Math.max(lum1, lum2)
+    val darkest   = Math.min(lum1, lum2)
+    (brightest + 0.05) / (darkest + 0.05)
+  }
+
+  /** Whichever of white or black has the better contrast ratio. */
+  lazy val blackOrWhite: Colour = {
+    import Colour.{black, white}
+    val b = contrastRatio(black)
+    val w = contrastRatio(white)
+    if (b > w) black else white
+  }
 }
 
 object Colour {
   // Not allowing users to specify opacity
   private val hexFmt = "^#[0-9a-f]{3}(?:[0-9a-f]{3})?$".r.pattern
+
+  val white = force("#fff")
+  val black = force("#000")
 
   def apply(s: String): Option[Colour] = {
     val c = correct(s)
