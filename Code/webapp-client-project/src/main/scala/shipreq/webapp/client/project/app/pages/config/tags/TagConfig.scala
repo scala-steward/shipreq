@@ -186,13 +186,18 @@ object TagConfig {
       }
 
     private def renderEditor(p: Props, args: splitScreenCrud.EditorArgs): VdomNode = {
+      val colourOverride: Option[Option[Colour]] =
+        p.state.value.right.editorOption.flatMap(_.swap.toOption).map(_.colour.validated match {
+          case \/-(c) => c
+          case -\/(_) => None
+        })
 
       val header: VdomNode =
         <.h2(
           *.editorTitle,
           args.id match {
             case \/-(id: TagGroupId)      => Shared.group(p.project.tags.needTagGroup(id))
-            case \/-(id: ApplicableTagId) => p.pw.tagSimple(id, includeDesc = false)(*.editorApTagHeader)
+            case \/-(id: ApplicableTagId) => p.pw.tagSimple(id, includeDesc = false, colourOverride)(*.editorApTagHeader)
             case -\/(NewTagType.TagGroup) => "New tag group"
             case -\/(NewTagType.Tag)      => "New tag"
           })

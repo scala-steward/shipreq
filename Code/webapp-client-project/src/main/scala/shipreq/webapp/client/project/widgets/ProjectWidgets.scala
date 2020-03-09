@@ -47,6 +47,9 @@ object ProjectWidgets {
 
   private[ProjectWidgets] object Internal {
 
+    /** This is the moderate blue from ReactColor.Github */
+    val DefaultTagColour = Colour("#1273de").get
+
     val deadValidity: Validity => Live => (Live, Validity) =
       Validity.memo(validityWhenDead =>
         Live.memo {
@@ -344,11 +347,22 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   val _reqTypeFull: ReqTypeId => VdomTag =
     id => <.span(plainText.reqTypeFull(id))
 
+  private def tagColour(o: Option[Colour]): TagMod = {
+    val c = o.getOrElse(DefaultTagColour)
+    TagMod(
+      ^.backgroundColor := c.value,
+      ^.borderColor     := c.value,
+      ^.color           := c.blackOrWhite.value,
+    )
+  }
+
   private val tagPlain: Validity => ApplicableTagId => VdomTag =
     Validity.memo { validity =>
       Memo { id =>
         val tag = project.config.tags.needApplicableTag(id)
-        tagWithoutStyle(Plain, tag, includeDesc = true)(*.tag(((tag.live, validity), true)))
+        tagWithoutStyle(Plain, tag, includeDesc = true)(
+          *.tag(((tag.live, validity), true)),
+          tagColour(tag.colour))
       }
     }
 
@@ -361,7 +375,6 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     else
       ProjectWidgets(project, plainText withCtx newCtx, reqDetailRC)
 
-
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Public additions not part of ProjectText
 
@@ -372,9 +385,12 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     * - no concept of Validity (Live vs Dead is still respected)
     * - no contextualisation
     */
-  def tagSimple(id: ApplicableTagId, includeDesc: Boolean): VdomTag = {
-    val tag = project.config.tags.needApplicableTag(id)
-    tagWithoutStyle(Plain, tag, includeDesc = includeDesc)(*.tag(((tag.live, Valid), false)))
+  def tagSimple(id: ApplicableTagId, includeDesc: Boolean, colourOverride: Option[Option[Colour]] = None): VdomTag = {
+    val tag    = project.config.tags.needApplicableTag(id)
+    val colour = colourOverride.getOrElse(tag.colour)
+    tagWithoutStyle(Plain, tag, includeDesc = includeDesc)(
+      *.tag(((tag.live, Valid), false)),
+      tagColour(colour))
   }
 
   def useCaseStepTextAndMaybeInvalidFlow[C[x] <: Traversable[x]](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[String \/ UseCaseStepId]],

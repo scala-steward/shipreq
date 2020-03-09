@@ -95,7 +95,7 @@ private[tags] object ApplicableTagEditor {
         source  = Some(Source(t, tags.relations(t.id))),
         key     = t.key.value,
         desc    = t.desc.getOrElse(""),
-        colour  = ColourPicker.State.init(None),
+        colour  = ColourPicker.State.init(t.colour),
         parents = TagRelationshipEditor.State.parents(t.id, tags),
       )
 
@@ -188,7 +188,7 @@ private[tags] object ApplicableTagEditor {
       val colourField =
         Form.Field
           .ofEditor(ColourPicker.Props(p.state.zoomStateL(State.colour)).render)
-          .withValidated(p.state.value.colour.validated, ValidationUX.Highlight)
+          .withValidated(s.colour.validated, ValidationUX.Highlight)
           .withLabel("Colour")
 
       val descField =

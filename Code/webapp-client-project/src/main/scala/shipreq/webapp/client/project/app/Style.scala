@@ -1002,10 +1002,9 @@ object Style extends StyleSheet.Inline {
         ),
     )
 
-    private val tagLabelColour: ((Live, Validity)) => String = {
-      case (Live, Valid  ) => "blue"
-      case (Live, Invalid) => ""
-      case (Dead, _      ) => "grey"
+    private val tagLabelColour: Live => String = {
+      case Live => ""
+      case Dead => "grey"
     }
 
     @UsesSemanticUiManually
@@ -1013,7 +1012,7 @@ object Style extends StyleSheet.Inline {
       tagBase(live, helpIconOnHover = helpIconOnHover),
       padding(4 px, 6 px).important,
       mixinIf(validity is Invalid)(hasErrorBackground.important, hasErrorColor.important),
-      addClassName(s"ui label ${tagLabelColour((live, validity))}"),
+      addClassName(s"ui label ${tagLabelColour(live)}"),
     )}
 
     val tagInText = styleF(D.`live * validity`){ case (l, v) => styleS(
