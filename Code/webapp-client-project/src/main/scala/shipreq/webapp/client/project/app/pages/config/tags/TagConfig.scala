@@ -29,6 +29,7 @@ object TagConfig {
 
   val splitScreenCrud = new SplitScreenCrud[NewState, TagId, EditorState](
     rightEmpty = SplitScreenCrud.emptyEditorMessage("tag"),
+    //rightEmpty = shipreq.webapp.client.project.widgets.ColourTest.demo,
   )
 
   val dropdownButton = new ButtonAndDropdown.Types[NewTagType]

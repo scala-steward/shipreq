@@ -56,12 +56,18 @@ final class Colour private[Colour](val value: String) extends TaggedString {
     (brightest + 0.05) / (darkest + 0.05)
   }
 
-  /** Whichever of white or black has the better contrast ratio. */
-  lazy val blackOrWhite: Colour = {
+  /** A suggested foreground colour. */
+  lazy val foreground: Colour = {
     import Colour.{black, white}
-    val b = contrastRatio(black)
-    val w = contrastRatio(white)
-    if (b > w) black else white
+
+    // Surprisingly, choosing the higher contrast ratio leads to undesirable results.
+    // A red (#f00) background has a much higher ratio with black than white, but white is so much easier to read.
+
+    // The following formula was derived and confirmed using widgets/ColourTest.scala
+    if (luminanace < .4 && contrastRatio(white) >= 2.35)
+      white
+    else
+      black
   }
 }
 

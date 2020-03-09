@@ -352,7 +352,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     TagMod(
       ^.backgroundColor := c.value,
       ^.borderColor     := c.value,
-      ^.color           := c.blackOrWhite.value,
+      ^.color           := c.foreground.value,
     )
   }
 
