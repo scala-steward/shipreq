@@ -17,7 +17,7 @@ object JsonProtocolTest extends TestSuite {
   import BaseMemberData1._
   import Events._
   import AtomCodecs.instances._
-  import ReqTableDataCodecs._
+  import Rev1.ReqTableDataCodecs._
   import Rev1._
 
   private implicit def autoSomeG[A](g: Gen[A]): Option[Gen[A]] = Some(g)
