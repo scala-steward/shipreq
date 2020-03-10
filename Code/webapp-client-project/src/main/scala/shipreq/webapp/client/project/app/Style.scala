@@ -37,7 +37,7 @@ object Style extends StyleSheet.Inline {
     val ucStepIndent = Domain.ofRange(0 until StaticField.useCaseStepTrees.iterator.map(_.maxDepth).max)
   }
 
-  final val animSpeedMs = 260
+  final val animSpeedMs = 220
   protected final val animSpeed = animSpeedMs + "ms"
 
   private def monospace =

@@ -83,7 +83,9 @@ object SplitScreenCrud {
   @Lenses
   final case class State[N, Id, E](newState  : N,
                                    filterDead: FilterDead,
-                                   right     : State.Right[Id, E])
+                                   right     : State.Right[Id, E],
+                                   prevRight : State.Right[Id, E],
+                                  )
 
   object State {
 
@@ -153,7 +155,7 @@ final class SplitScreenCrud[
     Component(SplitScreenCrud.Props(filterDeadOverride, newButton, list, editor, initEditor, state))
 
   def initState(newState: NewState): State =
-    S(newState, HideDead, S.Right.Empty)
+    S(newState, HideDead, S.Right.Empty, S.Right.Empty)
 
   private val newStateLens = S.newState[NewState, Id, EditorState]
 
@@ -203,7 +205,7 @@ final class SplitScreenCrud[
 
     private val closeEditor: Reusable[Callback] =
       Reusable.callbackByRef(
-        $.props.flatMap(_.state.modState(_.copy(right = S.Right.Empty))))
+        $.props.flatMap(_.state.modState(s => s.copy(right = S.Right.Empty, prevRight = s.right))))
 
     def render(p: Props): VdomNode = {
       val s = p.state.value
@@ -246,8 +248,8 @@ final class SplitScreenCrud[
       val leftBody: VdomNode =
         p.list(listArgs)
 
-      val editorArgs: Option[EditorArgs] =
-        s.right match {
+      def createEditorArgs(right: S.Right[Id, EditorState]): Option[EditorArgs] =
+        right match {
           case S.Right.Empty =>
             None
 
@@ -270,6 +272,9 @@ final class SplitScreenCrud[
             ))
         }
 
+      val editorArgs: Option[EditorArgs] =
+        createEditorArgs(s.right)
+
       val left: VdomNode =
         React.Fragment(
           <.div(*.topLeft,
@@ -282,8 +287,8 @@ final class SplitScreenCrud[
           case None =>
             React.Fragment(
               renderRightEmpty(On),
-              // TODO capture lastEditor - use with .rightOff
-            )
+              <.div(*.rightOff,
+                createEditorArgs(s.prevRight).whenDefined(p.editor)))
 
           case Some(args) =>
             React.Fragment(
