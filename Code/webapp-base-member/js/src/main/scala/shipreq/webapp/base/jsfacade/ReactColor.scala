@@ -38,20 +38,31 @@ object ReactColor {
 
       def hex(color   : String,
               onChange: String => Callback,
-              width   : String = "212px",
+              colours : Colours,
               triangle: String = "hide",
              ): Props =
         js.Dynamic.literal(
           color    = color,
           onChange = Props.onChange(onChange),
-          width    = width,
+          width    = colours.width,
           triangle = triangle,
+          colors   = colours.array,
         ).asInstanceOf[Props]
 
       type OnChange = js.Function1[Change, Unit]
 
       def onChange(f: String => Callback): OnChange =
         (c: Change) => f(c.hex).runNow()
+    }
+
+    final case class Colours(colours: Seq[String], width: String) {
+      private[Github] val array: js.Array[String] =
+        js.Array(colours: _*)
+    }
+
+    object Colours {
+      implicit def reusability: Reusability[Colours] =
+        Reusability.byRef
     }
 
     @js.native
@@ -72,7 +83,9 @@ object ReactColor {
       /** Either "hide", "top-left" or "top-right". Default "top-left" */
       var triangle: String
 
-      // colors        - Array of Strings, Color squares to display. Default ['#B80000', '#DB3E00', '#FCCB00', '#008B02', '#006B76', '#1273DE', '#004DCF', '#5300EB', '#EB9694', '#FAD0C3', '#FEF3BD', '#C1E1C5', '#BEDADC', '#C4DEF6', '#BED3F3', '#D4C4FB']
+      /** Color squares to display. Default ['#B80000', '#DB3E00', '#FCCB00', '#008B02', '#006B76', '#1273DE', '#004DCF', '#5300EB', '#EB9694', '#FAD0C3', '#FEF3BD', '#C1E1C5', '#BEDADC', '#C4DEF6', '#BED3F3', '#D4C4FB'] */
+      var colors: js.Array[String]
+
       // onSwatchHover - An event handler for onMouseOver on the <Swatch>s within this component. Gives the args (color, event)
     }
 

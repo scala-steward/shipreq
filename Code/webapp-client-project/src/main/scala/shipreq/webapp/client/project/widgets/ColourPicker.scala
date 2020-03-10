@@ -13,7 +13,8 @@ import shipreq.webapp.client.project.app.Style.{widgets => *}
 /** Note: validation errors aren't presented as part of this. */
 object ColourPicker {
 
-  final case class Props(state: StateSnapshot[State]) {
+  final case class Props(state  : StateSnapshot[State],
+                         palette: ReactColor.Github.Colours) {
     @inline def render: VdomElement = Component(this)
   }
 
@@ -55,7 +56,7 @@ object ColourPicker {
       })
 
     private val githubButton =
-      Button.text("Simple").onClick(onButtonClick(PickerType.Github))
+      Button.text("Palette").onClick(onButtonClick(PickerType.Github))
 
     private val chromeButton =
       Button.text("Advanced").onClick(onButtonClick(PickerType.Chrome))
@@ -81,8 +82,8 @@ object ColourPicker {
         s.openPicker.map {
 
           case PickerType.Github =>
-            val p = ReactColor.Github.Props.hex(s.text, onChange)
-            ReactColor.Github.Component(p)
+            val g = ReactColor.Github.Props.hex(s.text, onChange, p.palette)
+            ReactColor.Github.Component(g)
 
           case PickerType.Chrome =>
             val p = ReactColor.Chrome.Props.hex(s.text, onChange, disableAlpha = true)

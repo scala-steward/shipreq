@@ -21,6 +21,11 @@ object TinyColor {
     var a: Double
   }
 
+  object Hsl {
+    @inline def apply(h: Int, s: Double, l: Double, a: Double = 1): Hsl =
+      js.Dynamic.literal(h = h, s = s, l = l, a = a).asInstanceOf[Hsl]
+  }
+
   @js.native
   trait Hsv extends js.Object {
     var h: Int

@@ -47,8 +47,8 @@ object ProjectWidgets {
 
   private[ProjectWidgets] object Internal {
 
-    /** This is the moderate blue from ReactColor.Github */
-    val DefaultTagColour = Colour("#1273de").get
+    /** This is "main blue" in TagPalette.scala */
+    val DefaultTagColour = Colour("#0076f5").get
 
     val deadValidity: Validity => Live => (Live, Validity) =
       Validity.memo(validityWhenDead =>
