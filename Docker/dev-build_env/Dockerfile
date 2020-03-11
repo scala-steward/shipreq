@@ -1,5 +1,7 @@
 FROM archlinux/base
 
+RUN pacman -Sy --noconfirm --needed archlinux-keyring
+
 RUN pacman -Sy --noconfirm reflector \
  && reflector --country Australia --country Canada --latest 100 --sort rate --save /etc/pacman.d/mirrorlist
 
