@@ -1,5 +1,7 @@
 FROM archlinux/base
 
+RUN pacman -Sy --noconfirm --needed archlinux-keyring
+
 RUN pacman -Sy --noconfirm reflector \
  && reflector --country Australia --country Canada --latest 100 --sort rate --save /etc/pacman.d/mirrorlist
 
@@ -86,7 +88,7 @@ RUN cd /usr/local/bin \
 RUN mkdir /tmp/scala \
  && cd /tmp/scala \
  && mkdir project \
- && echo 'sbt.version=1.3.7' > project/build.properties \
+ && echo 'sbt.version=1.3.8' > project/build.properties \
  && echo 'scalaVersion := "2.12.10"' > build.sbt \
  && echo 'object M{}' > M.scala \
  && sbt test \
@@ -103,3 +105,6 @@ RUN pacman -Syu --noconfirm --needed aws-cli
 COPY strip-ansi /bin
 COPY .bashrc /root/.bashrc
 
+RUN chmod -R a=u /root \
+ && ln -s /root/.bashrc /.bashrc \
+ && ln -s /root/.npmrc /.npmrc
