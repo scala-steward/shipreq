@@ -87,6 +87,11 @@
         transition: height 0s 0s, opacity .4s 0s;
       }
 
+      .usage {text-align:right !important;}
+      x.usage.one a {color:#ef06c4}
+      .usage.one span {visibility:hidden}
+      .usage.zero:not(:hover) {color:#4183c4}
+
   -# ==================================================================================================================================================
   -# ==================================================================================================================================================
   %body
@@ -162,6 +167,7 @@
               %th Type
               %th Details
               %th
+              %th.usage Usage
           %tbody
             %tr
               %td ☰
@@ -172,6 +178,7 @@
                   %span.types All
                   %span.value Visible
               %td
+              %td.usage.na N/A
             %tr
               %td ☰
               %td Normal and Alternate Courses
@@ -181,6 +188,7 @@
                   %span.types UC
                   %span.value only
               %td
+              %td.usage(title="2 reqs use this field") %a(href="#") 2 uses
             %tr
               %td ☰
               %td Exception Courses
@@ -190,6 +198,7 @@
                   %span.types UC
                   %span.value only
               %td
+              %td.usage(title="2 reqs use this field") %a(href="#") 2 uses
             %tr
               %td ☰
               %td Use Case Flow
@@ -202,6 +211,7 @@
                   %span.types UC
                   %span.value only
               %td
+              %td.usage.na N/A
             %tr
               %td ☰
               %td Detail
@@ -215,6 +225,7 @@
                   %span.value Mandatory
               %td
                 <button class="ui button basic  negative " style="white-space: nowrap;"><i class="icon trash"></i>Delete</button>
+              %td.usage.zero(title="No reqs use this field") %a(href="#") 0 uses
             %tr
               %td ☰
               %td Major Feature
@@ -225,6 +236,7 @@
                   %span.value Optional
               %td
                 <button class="ui button basic  negative " style="white-space: nowrap;"><i class="icon trash"></i>Delete</button>
+              %td.usage(title="86 reqs use this field") %a(href="#") 86 uses
             %tr#tagrow
               %td ☰
               %td Status
@@ -244,6 +256,7 @@
                   %span.value Optional
               %td
                 <button class="ui button basic  negative " style="white-space: nowrap;"><i class="icon trash"></i>Delete</button>
+              %td.usage(title="17 reqs use this field") %a(href="#") 17 uses
             %tr
               %td ☰
               %td Tags
@@ -263,6 +276,7 @@
                   .ui.label.is-tag.blue v1.0
                   .ui.label.is-tag.blue v1.1
               %td
+              %td.usage.zero(title="No reqs use this field") %a(href="#") 0 uses
 
 
       -# ==================================================================================================================================================

@@ -68,7 +68,7 @@ Backlog
 Phase 3A
 ========
 
-* Add usages back to config screens
+* Filter field should autosize
 
 * User profile page
 
@@ -89,6 +89,9 @@ Phase 3A
   * Users #must be able to prohibit certain tags being used with certain req-types [FR-14]
   * When a req has a tag that is invalid for its req type, it should be hidden from all views [FR-15]
   * When a req has a tag that is invalid for its req type, users shouldn't be allow to specify it [FR-16]
+  * System #must explain when a tag is invalid because the field is `Tags` and a specified tag is assigned to another field [FR-17]
+  * There #should be `AllTags` and `RemainingTags` fields instead of just `Tags` [FR-18]
+  * `AllTags` and `RemainingTags` fields #should be optional [FR-19]
   * remove key from TagGroups, check all Tag fields against UI prototype
   * TagSetApplicableChildrenOrder has a bug or something - remember how priorty got fucked up with Actors & could added under should?
   * Add tests for TagConfig
@@ -106,6 +109,7 @@ Phase 3A
   * add a max-size for field names, apply to editors
   * update reqtable (and probably reqdetail) to render dead rows like cfg field
   * soft deletion vs hard - wrt app req types in tags
+  * add usages. probably have to update filter too
 
 * Investigate changes required to support phone / tablet
 
