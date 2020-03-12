@@ -12,7 +12,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.data.{Disabled, Enabled, TCB}
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.{BrowserStorage, ValidationUX}
-import shipreq.webapp.base.protocol.CommonProtocols.Login.Request
+import shipreq.webapp.base.protocol.ajax.CommonProtocols.Login.Request
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic._

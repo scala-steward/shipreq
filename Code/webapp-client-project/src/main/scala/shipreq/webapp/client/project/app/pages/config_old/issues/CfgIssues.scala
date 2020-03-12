@@ -7,8 +7,9 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.FilterDead
 import shipreq.webapp.base.event.VerifiedEvent
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes._
+import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes._
 import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.pages.config_old.shared.Usage

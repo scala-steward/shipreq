@@ -10,12 +10,12 @@ import shipreq.base.util.FxModule._
 import shipreq.base.util.log.WebappLogFields
 import shipreq.taskman.api.TaskmanApi
 import shipreq.webapp.base.Urls
-import shipreq.webapp.base.protocol.WebSocketShared.CloseReason
+import shipreq.webapp.base.protocol.websocket.WebSocketShared.CloseReason
 import shipreq.webapp.server.lib.Taskman
 import shipreq.webapp.server.logic.ProjectSpaLogic._
-import shipreq.webapp.server.util.WebSocketUtil
-import shipreq.webapp.server.util.WebSocketUtil.Implicits._
-import shipreq.webapp.server.util.WebSocketUtil.{CloseReasons, UserPropsLens}
+import shipreq.webapp.server.protocol.websocket.WebSocketUtil
+import shipreq.webapp.server.protocol.websocket.WebSocketUtil.Implicits._
+import shipreq.webapp.server.protocol.websocket.WebSocketUtil.{CloseReasons, UserPropsLens}
 
 object ProjectSpaWebSocket extends StrictLogging {
 

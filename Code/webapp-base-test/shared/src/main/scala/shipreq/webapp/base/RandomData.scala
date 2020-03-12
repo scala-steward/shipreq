@@ -1546,6 +1546,7 @@ object RandomData {
   // Protocol
   object protocol {
     import shipreq.webapp.base.protocol._
+    import shipreq.webapp.base.protocol.websocket._
 
     val reqTypeId: Gen[ReqTypeId] =
       Gen.chooseGen(customReqTypeId, staticReqType)
@@ -1591,6 +1592,8 @@ object RandomData {
   // ===================================================================================================================
   object routines {
     import shipreq.webapp.base.protocol._
+    import shipreq.webapp.base.protocol.entrypoint._
+    import shipreq.webapp.base.protocol.websocket._
     import RandomData.protocol._
 
     def projectSpaInitAppData: Gen[ProjectSpaProtocols.InitAppData] =

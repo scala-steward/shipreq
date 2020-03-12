@@ -10,9 +10,11 @@ import shipreq.base.util.{ErrorMsg, Retries, Url}
 import shipreq.webapp.base.CssSettings._
 import shipreq.webapp.base.feature.ErrorHandlingFeature
 import shipreq.webapp.base.lib.LoggerJs
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.InitAppData
-import shipreq.webapp.base.protocol.ProjectSpaEntryPoint.InitData
-import shipreq.webapp.base.protocol.{ClientSideProcImpl, CommonProtocolsJs, ProjectSpaEntryPoint, ProjectSpaProtocols, WebSocketClient}
+import shipreq.webapp.base.protocol.ajax.CommonProtocolsJs
+import shipreq.webapp.base.protocol.entrypoint.{ClientSideProcImpl, ProjectSpaEntryPoint}
+import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint.InitData
+import shipreq.webapp.base.protocol.websocket.{ProjectSpaProtocols, WebSocketClient}
+import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.InitAppData
 import shipreq.webapp.base.ui.{BaseStyles, ReauthenticationModal}
 import shipreq.webapp.client.loaders.ProjectSpaLoader
 import shipreq.webapp.client.project.app.pages.root._

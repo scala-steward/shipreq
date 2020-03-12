@@ -9,7 +9,7 @@ import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.On
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes.FieldMandatorinessMod
+import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes.FieldMandatorinessMod
 import shipreq.webapp.client.project.app.state.{ChangeListener, Global}
 import shipreq.webapp.client.project.app.pages.config_old.shared._
 import shipreq.webapp.client.project.lib.DataReusability._

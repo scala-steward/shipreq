@@ -8,7 +8,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.UseCaseStepGD
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.protocol.UpdateContentCmd
+import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.client.project.feature.RenderFeature
 import shipreq.webapp.client.project.lib.DataReusability._

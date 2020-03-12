@@ -10,7 +10,8 @@ import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.feature._
-import shipreq.webapp.base.protocol.{CreateContentCmd, ManualIssueCmd, ServerSideProcInvoker}
+import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.protocol.websocket.{CreateContentCmd, ManualIssueCmd}
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.state.NewEvents
 

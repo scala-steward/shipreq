@@ -15,7 +15,8 @@ import shipreq.base.util.{ErrorMsg, Optics, PotentialChange}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateConfigCmd}
+import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.base.ui.{GeneralTheme, Toast}
 import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}

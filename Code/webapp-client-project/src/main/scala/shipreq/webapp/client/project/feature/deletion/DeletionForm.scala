@@ -12,7 +12,7 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.PreviewFeature
 import shipreq.webapp.base.lib.KeyboardTheme
-import shipreq.webapp.base.protocol.UpdateContentCmd.DeleteReqs
+import shipreq.webapp.base.protocol.websocket.UpdateContentCmd.DeleteReqs
 import shipreq.webapp.base.text.TextSearch
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon}
 import shipreq.webapp.client.project.app.Style.{deletionForm => *}

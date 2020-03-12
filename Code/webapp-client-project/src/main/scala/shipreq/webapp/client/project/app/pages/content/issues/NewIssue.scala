@@ -7,7 +7,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.webapp.base.data.{Closed, Open}
 import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.protocol.ManualIssueCmd
+import shipreq.webapp.base.protocol.websocket.ManualIssueCmd
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon}
 import shipreq.webapp.client.project.app.Style.{issues => *}

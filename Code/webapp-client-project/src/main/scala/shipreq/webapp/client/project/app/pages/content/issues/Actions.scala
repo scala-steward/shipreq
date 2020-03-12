@@ -7,7 +7,7 @@ import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{Allow, Deny}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.issue.{ContentRef, Issue}
-import shipreq.webapp.base.protocol.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
+import shipreq.webapp.base.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.ui.semantic.{Button, Icon}
 import shipreq.webapp.client.project.app.Style.{issues => *}

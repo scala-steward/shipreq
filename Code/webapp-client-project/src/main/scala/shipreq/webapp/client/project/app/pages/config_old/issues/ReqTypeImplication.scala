@@ -8,7 +8,7 @@ import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.On
 import shipreq.webapp.base.event.VerifiedEvent
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes.ReqTypeImplicationMod
+import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes.ReqTypeImplicationMod
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.client.project.app.state.{ChangeListener, Global}
 import shipreq.webapp.client.project.app.pages.config_old.shared._

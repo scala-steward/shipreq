@@ -6,7 +6,8 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.event.{Event, VerifiedEvent}
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.protocol.{SavedViewCmd, ServerSideProcInvoker}
+import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.protocol.websocket.SavedViewCmd
 import shipreq.webapp.base.ui.semantic.Dropdown.JsOptionsOps
 import shipreq.webapp.base.ui.semantic.{Colour, Dropdown, Icon, SemExtAny, Menu => SemUiMenu}
 import shipreq.webapp.base.util.CallbackHelpers._

@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import org.scalajs.dom.{Element, document}
 import scalaz.\/
 import shipreq.base.util._
-import shipreq.webapp.base.protocol.CommonProtocols.Login
+import shipreq.webapp.base.protocol.ajax.CommonProtocols.Login
 import shipreq.webapp.base.ui.ReauthenticationModal
 import shipreq.webapp.base.user.Username
 

@@ -13,7 +13,8 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{Event, VerifiedEvent}
 import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
-import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateContentCmd}
+import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.ui.semantic.Header
 import shipreq.webapp.base.ui.{BaseStyles, NoContentMessage}

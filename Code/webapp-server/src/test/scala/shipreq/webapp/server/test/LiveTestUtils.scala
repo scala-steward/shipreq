@@ -7,7 +7,8 @@ import org.apache.commons.httpclient.{HttpClient, HttpMethodBase}
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.FxModule._
 import shipreq.webapp.base.WebappConfig
-import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.protocol.Protocol
+import shipreq.webapp.base.protocol.entrypoint.ClientSideProc
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.server.app.Global
 import shipreq.webapp.server.logic.Security

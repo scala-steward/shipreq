@@ -5,15 +5,16 @@ import scalaz.syntax.monad._
 import scalaz.{Monad, ~>}
 import shipreq.webapp.base.data.{Project, ProjectMetaData}
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.protocol.{HomeSpaEntryPoint, HomeSpaProtocols}
+import shipreq.webapp.base.protocol.ajax.HomeSpaProtocols
+import shipreq.webapp.base.protocol.entrypoint.HomeSpaEntryPoint
 import shipreq.webapp.base.user._
-import Event._
 
 trait HomeSpaLogic[F[_]] extends HomeSpaLogic.Ajax[F] {
   def initData(user: User): F[HomeSpaEntryPoint.InitData]
 }
 
 object HomeSpaLogic {
+  import Event._
 
   trait Ajax[F[_]] {
     val ajaxCreateProject: HomeSpaProtocols.CreateProject.ajax.ServerSideFnI[F, User]

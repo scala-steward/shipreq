@@ -7,8 +7,9 @@ import monocle.macros.Lenses
 import org.scalajs.dom.html
 import utest._
 import shipreq.webapp.base.data.ProjectMetaData
-import shipreq.webapp.base.protocol.{HomeSpaEntryPoint, HomeSpaProtocols}
-import shipreq.webapp.base.test.TestAjaxClient
+import shipreq.webapp.base.protocol.ajax.HomeSpaProtocols
+import shipreq.webapp.base.protocol.entrypoint.HomeSpaEntryPoint
+import shipreq.webapp.base.protocol.ajax.TestAjaxClient
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.base.user._

@@ -6,7 +6,7 @@ import utest._
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.event.Event.ProjectNameSet
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes
+import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes
 import shipreq.webapp.client.project.test.TestGlobal
 import shipreq.base.test.BaseTestUtil._
 

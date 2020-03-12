@@ -9,7 +9,9 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.{DataValidators, ProjectMetaData}
 import shipreq.webapp.base.feature.{AsyncFeature, EditorStatus, ErrorHandlingFeature}
-import shipreq.webapp.base.protocol.{AjaxClient, CommonProtocolsJs, HomeSpaEntryPoint, HomeSpaProtocols, ServerSideProcInvoker}
+import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.protocol.ajax.{AjaxClient, CommonProtocolsJs, HomeSpaProtocols}
+import shipreq.webapp.base.protocol.entrypoint.HomeSpaEntryPoint
 import shipreq.webapp.base.ui._
 import shipreq.webapp.base.ui.semantic.{Breadcrumb, Colour}
 import shipreq.webapp.base.util.CallbackHelpers._

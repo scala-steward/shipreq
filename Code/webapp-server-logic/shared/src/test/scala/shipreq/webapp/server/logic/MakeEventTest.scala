@@ -5,7 +5,7 @@ import utest._
 import shipreq.base.util.PotentialChange._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.base.test.UnsafeTypes._

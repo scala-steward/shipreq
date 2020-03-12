@@ -14,7 +14,7 @@ import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.event.SavedViewGD
 import shipreq.webapp.base.filter.Filter.Implicits.univEqFilterValid
 import shipreq.webapp.base.lib.BaseReusability._
-import shipreq.webapp.base.protocol.SavedViewCmd
+import shipreq.webapp.base.protocol.websocket.SavedViewCmd
 import shipreq.webapp.base.validation.Simple
 
 object SavedViewLogic {

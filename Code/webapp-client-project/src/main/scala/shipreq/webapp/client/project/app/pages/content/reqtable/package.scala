@@ -6,7 +6,7 @@ import japgolly.scalajs.react.extra._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.lib.BaseReusability._
-import shipreq.webapp.base.protocol.SavedViewCmd
+import shipreq.webapp.base.protocol.websocket.SavedViewCmd
 import shipreq.webapp.client.project.feature.Selection
 
 package object reqtable {

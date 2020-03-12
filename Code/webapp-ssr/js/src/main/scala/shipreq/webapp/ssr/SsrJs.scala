@@ -3,7 +3,7 @@ package shipreq.webapp.ssr
 import japgolly.scalagraal.Pickled
 import japgolly.scalajs.react.ReactDOMServer
 import scala.scalajs.js.annotation.JSExportTopLevel
-import shipreq.webapp.base.protocol.AjaxClient
+import shipreq.webapp.base.protocol.ajax.AjaxClient
 import shipreq.webapp.client.loaders._
 
 /** This code is compiled into JS and executed on the JVM through Graal JS.

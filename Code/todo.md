@@ -140,8 +140,6 @@ v2.1
 
 * Bug: default saved view with filter, reload page, filter field is empty
 
-* Put ajax/ws protocol stuff in its own package
-
 * Reappearances wrt tags
 
 * Tags

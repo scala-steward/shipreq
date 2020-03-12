@@ -8,7 +8,7 @@ import monocle.macros.Lenses
 import shipreq.base.util.Url
 import shipreq.webapp.base.Urls.PublicSpaRoute
 import shipreq.webapp.base.feature.{AsyncFeature, ErrorHandlingFeature}
-import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.protocol.ajax._
 import shipreq.webapp.client.public.{PublicSpaEntryPoint, PublicSpaProtocols}
 import shipreq.webapp.client.public.pages._
 

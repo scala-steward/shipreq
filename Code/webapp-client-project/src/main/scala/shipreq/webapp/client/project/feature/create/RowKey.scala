@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.feature.create
 import japgolly.scalajs.react.Reusability
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.{CreateContentCmd, ManualIssueCmd}
+import shipreq.webapp.base.protocol.websocket.{CreateContentCmd, ManualIssueCmd}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.feature.create.{FieldKey => AnyFieldKey}
 

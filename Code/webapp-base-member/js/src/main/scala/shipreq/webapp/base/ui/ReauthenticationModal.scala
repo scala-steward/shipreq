@@ -7,8 +7,8 @@ import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{Allow, Deny, ErrorMsg, Permission}
 import shipreq.webapp.base.data.{Disabled, Enabled}
 import shipreq.webapp.base.lib.ModalForm
-import shipreq.webapp.base.protocol.CommonProtocols.Login
-import shipreq.webapp.base.protocol.{AjaxClient, CommonProtocols}
+import shipreq.webapp.base.protocol.ajax.CommonProtocols.Login
+import shipreq.webapp.base.protocol.ajax.{AjaxClient, CommonProtocols}
 import shipreq.webapp.base.ui.semantic.{Colour, Icon, Label, UsesSemanticUiManually}
 import shipreq.webapp.base.user.{PlainTextPassword, Username}
 import shipreq.webapp.base.util.Accessibility

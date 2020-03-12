@@ -14,11 +14,12 @@ import shipreq.webapp.base.data.{Project, ProjectId, ProjectMetaData}
 import shipreq.webapp.base.event.{EventOrd, EventSeqSummary, VerifiedEvent}
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.LoggerJs
-import shipreq.webapp.base.protocol.CommonProtocols.{Metadata, SubmitFeedback}
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.WebSocket.Push
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, WsReqRes}
-import shipreq.webapp.base.protocol.WebSocket.ReadyState
-import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.protocol.ajax.CommonProtocols.Metadata
+import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WebSocket.Push
+import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
+import shipreq.webapp.base.protocol.websocket.WebSocket.ReadyState
+import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.ui.ReauthenticationModal
 import shipreq.webapp.client.project.app.pages.root.ConnectionStatus
 import shipreq.webapp.client.project.app.state.Global.State

@@ -6,7 +6,7 @@ import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, HideDead}
 import shipreq.webapp.base.feature._
-import shipreq.webapp.base.protocol.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
+import shipreq.webapp.base.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
 import shipreq.webapp.base.ui.{ProjectItem, Toast}
 import shipreq.webapp.client.project.app.pages.config.tags.TagConfig
 import shipreq.webapp.client.project.app.pages.content.{reqdetail, reqtable}

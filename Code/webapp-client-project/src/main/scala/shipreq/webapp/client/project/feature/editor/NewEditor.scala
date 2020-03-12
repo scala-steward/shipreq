@@ -16,7 +16,8 @@ import shipreq.webapp.base.feature._
 import shipreq.webapp.base.feature.clipboard.ClipboardData
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.KeyboardTheme
-import shipreq.webapp.base.protocol.{ManualIssueCmd, ServerSideProcInvoker, UpdateContentCmd}
+import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.protocol.websocket.{ManualIssueCmd, UpdateContentCmd}
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.widgets.ProjectWidgets

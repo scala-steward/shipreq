@@ -9,7 +9,7 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.UpdateContentCmd.RestoreContent
+import shipreq.webapp.base.protocol.websocket.UpdateContentCmd.RestoreContent
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Table}
 import shipreq.webapp.client.project.app.Style.{restorationForm => *}

@@ -3,7 +3,7 @@ package shipreq.webapp.server.logic
 import scalaz.{-\/, \/, \/-}
 import utest._
 import shipreq.base.util._
-import shipreq.webapp.base.protocol.CommonProtocols
+import shipreq.webapp.base.protocol.ajax.CommonProtocols
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.user._
 

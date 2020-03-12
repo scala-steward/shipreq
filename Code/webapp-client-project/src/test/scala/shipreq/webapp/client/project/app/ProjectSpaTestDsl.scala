@@ -11,7 +11,7 @@ import shipreq.base.util.Debug._
 import shipreq.webapp.base.data.{ExternalPubid, Obfuscated, Project}
 import shipreq.webapp.base.event.Event
 import shipreq.webapp.base.feature.clipboard.TestClipboard
-import shipreq.webapp.base.protocol.ProjectSpaEntryPoint
+import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint
 import shipreq.webapp.base.test.SampleProject5
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.user.Username

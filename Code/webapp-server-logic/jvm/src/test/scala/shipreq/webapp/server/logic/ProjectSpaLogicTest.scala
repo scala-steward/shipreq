@@ -7,9 +7,9 @@ import utest._
 import shipreq.base.util.{BinaryData, Direction}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.protocol.CreateContentCmd
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.{InitAppData, WsReqRes}
-import shipreq.webapp.base.protocol.WebSocketShared.ReqId
+import shipreq.webapp.base.protocol.websocket._
+import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
+import shipreq.webapp.base.protocol.websocket.WebSocketShared.ReqId
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.test.WebappTestUtil._

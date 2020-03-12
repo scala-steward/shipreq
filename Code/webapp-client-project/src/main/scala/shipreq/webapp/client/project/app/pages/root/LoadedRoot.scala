@@ -13,7 +13,9 @@ import shipreq.webapp.base.data.{FilterDead, HideDead, Project, ProjectConfig, R
 import shipreq.webapp.base.event.EventSeqSummary
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.filter.Filter
-import shipreq.webapp.base.protocol._
+import shipreq.webapp.base.protocol.ajax.CommonProtocolsJs
+import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint
+import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.text.{PlainText, ProjectText, TextSearch}
 import shipreq.webapp.base.ui.{FeedbackModal, ProjectItem, Toast}
 import shipreq.webapp.base.util.CallbackHelpers._

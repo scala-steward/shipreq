@@ -15,7 +15,8 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataValidators.{reqType => V}
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.filter.Filter
-import shipreq.webapp.base.protocol.{ServerSideProcInvoker, UpdateConfigCmd}
+import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.project.app.Style

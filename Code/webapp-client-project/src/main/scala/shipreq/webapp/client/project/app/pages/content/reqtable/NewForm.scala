@@ -13,7 +13,7 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.{CustomReqType, ExternalPubid, ReqType, StaticReqType}
 import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.lib.KeyboardTheme
-import shipreq.webapp.base.protocol.CreateContentCmd
+import shipreq.webapp.base.protocol.websocket.CreateContentCmd
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.ui.Toast
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Table => SemTable}

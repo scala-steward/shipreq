@@ -13,7 +13,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.DataValidators.{customIssueType => V, hashRefKey => VH}
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.util.TextMod
-import shipreq.webapp.base.protocol.UpdateConfigCmd
+import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.base.ui.AutosizeTextarea
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.client.project.app.Style

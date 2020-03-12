@@ -21,7 +21,8 @@ import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.filter.Filter.Implicits._
 import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.protocol.{SavedViewCmd, ServerSideProcInvoker, UpdateContentCmd}
+import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.protocol.websocket.{SavedViewCmd, UpdateContentCmd}
 import shipreq.webapp.base.text.TextSearch
 import shipreq.webapp.base.ui.{BaseStyles, NoContentMessage, Toast}
 import shipreq.webapp.base.ui.semantic.Icon

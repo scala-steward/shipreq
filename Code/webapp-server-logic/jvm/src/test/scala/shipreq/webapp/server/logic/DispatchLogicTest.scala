@@ -7,11 +7,12 @@ import java.time.Instant
 import sourcecode.Line
 import utest._
 import shipreq.base.test.BaseTestUtil._
-import shipreq.base.util.{BinaryData, Deny, Identity, Invalid, Url}
+import shipreq.base.util.{BinaryData, Deny, Invalid, Url}
 import shipreq.webapp.base.Urls
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.binary.SafePickler
-import shipreq.webapp.base.protocol.{CommonProtocols, Protocol}
+import shipreq.webapp.base.protocol.Protocol
+import shipreq.webapp.base.protocol.ajax.CommonProtocols
 import shipreq.webapp.base.user.{EmailAddr, PersonName}
 import shipreq.webapp.client.public.PublicSpaProtocols
 import shipreq.webapp.server.ServerLogicConfig

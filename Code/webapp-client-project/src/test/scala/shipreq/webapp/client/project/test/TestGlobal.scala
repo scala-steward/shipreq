@@ -10,9 +10,10 @@ import shipreq.webapp.base.event._
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.protocol._
-import shipreq.webapp.base.protocol.ProjectSpaProtocols.WsReqRes
-import shipreq.webapp.base.protocol.WebSocket.ReadyState
 import shipreq.webapp.base.protocol.binary.SafePickler
+import shipreq.webapp.base.protocol.websocket._
+import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes
+import shipreq.webapp.base.protocol.websocket.WebSocket.ReadyState
 import shipreq.webapp.base.test.TestReauthenticationModal
 import shipreq.webapp.base.user.Username
 import shipreq.webapp.client.project.app.state.{Global, ProjectState}
