@@ -16,15 +16,15 @@ import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 private[tags] object TagTreeView {
 
-  final case class Props(topLevelIds    : NonEmptySet[TagId],
-                         tags           : Tags,
-                         filterDead     : FilterDead,
-                         selected       : Option[TagId],
-                         select         : Option[TagId ~=> Callback],
-                         pw             : ProjectWidgets.NoCtx,
-                         updateChildren : Reusable[(TagGroupId, Vector[ApplicableTagId]) => Callback],
-                         enabled        : Enabled,
-                         onClickAnywhere: Option[Reusable[Callback]],
+  final case class Props(topLevelIds       : NonEmptySet[TagId],
+                         tags              : Tags,
+                         filterDead        : FilterDead,
+                         selected          : Option[TagId],
+                         select            : Option[TagId ~=> Callback],
+                         pw                : ProjectWidgets.NoCtx,
+                         updateLiveChildren: Reusable[(TagGroupId, Vector[ApplicableTagId]) => Callback],
+                         enabled           : Enabled,
+                         onClickAnywhere   : Option[Reusable[Callback]],
                         ) {
     @inline def render: VdomElement = Component(this)
   }
@@ -38,7 +38,7 @@ private[tags] object TagTreeView {
       Memo { groupId =>
         DragToReorderFeature[ApplicableTagId](
           getData             = $.props.map(_.tags.directApplicableChildren(groupId)),
-          updateData          = tagOrder => $.props.flatMap(_.updateChildren(groupId, tagOrder)),
+          updateData          = tagOrder => $.props.flatMap(_.updateLiveChildren(groupId, tagOrder)),
           updateUI            = $.forceUpdate,
           dragOutsideToRemove = false,
           addKeysToChildren   = false,

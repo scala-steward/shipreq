@@ -178,15 +178,37 @@ object MakeEvent {
       case UpdateConfigCmd.TagGroupUpdate(id, newValues) =>
         TagGroupUpdate(id, newValues)
 
-      case UpdateConfigCmd.TagSetApplicableChildrenOrder(tagId, childrenA) =>
-        val existingChildrenA = project.config.tags.directChildren(tagId).iterator.filterSubType[ApplicableTagId].toSet
-        if (existingChildrenA !=* childrenA.toSet)
-          Failure("Tag group contains different children than specified. Please try again.")
+      case UpdateConfigCmd.TagSetLiveChildrenOrder(tagId, newLiveChildrenOrder) =>
+        val directChildren = project.config.tags.directChildren(tagId)
+
+        val existingLiveChildren: Vector[ApplicableTagId] =
+          directChildren
+            .iterator
+            .filterSubType[ApplicableTagId]
+            .filter(project.config.tags.needApplicableTag(_).live.is(Live))
+            .toVector
+
+        if (existingLiveChildren ==* newLiveChildrenOrder)
+          Unchanged
         else {
-          val childrenG = project.config.tags.directTagGroupChildren(tagId)
-          val children: Vector[TagId] = childrenG ++ childrenA
-          val values = TagGroupGD.nev(TagGroupGD.ValueForChildren(children))
-          TagGroupUpdate(tagId, values)
+          val existingLiveChildrenSet: Set[ApplicableTagId] =
+            existingLiveChildren.toSet
+
+          if (existingLiveChildrenSet !=* newLiveChildrenOrder.toSet)
+            Failure("Tag group contains different children than specified. Please try again.")
+          else {
+            val otherChildren: Vector[TagId] =
+              directChildren.filter {
+                case id: ApplicableTagId if existingLiveChildrenSet.contains(id) => false
+                case _                                                           => true
+              }
+
+            val newChildren: Vector[TagId] =
+              otherChildren ++ newLiveChildrenOrder
+
+            val values = TagGroupGD.nev(TagGroupGD.ValueForChildren(newChildren))
+            TagGroupUpdate(tagId, values)
+          }
         }
 
       case UpdateConfigCmd.TagDelete(id) =>

@@ -117,11 +117,11 @@ object TagConfig {
       case -\/(NewTagType.Tag)      => CallbackTo.pure(-\/(ApplicableTagEditor.State.initNew))
     }
 
-    private val updateChildren: Reusable[(TagGroupId, Vector[ApplicableTagId]) => Callback] =
+    private val updateLiveChildren: Reusable[(TagGroupId, Vector[ApplicableTagId]) => Callback] =
       Reusable.byRef { (parent, children) =>
         for {
           p   ← $.props
-          cmd = UpdateConfigCmd.TagSetApplicableChildrenOrder(parent, children)
+          cmd = UpdateConfigCmd.TagSetLiveChildrenOrder(parent, children)
           _   ← p.async.write.onFailureShowAndForget(p.ssp(cmd))
         } yield ()
       }
@@ -172,15 +172,15 @@ object TagConfig {
         case Some(ids) =>
 
           TagTreeView.Props(
-            topLevelIds     = ids,
-            tags            = p.project.tags,
-            filterDead      = p.effectiveFilterDead,
-            selected        = args.selection,
-            select          = args.enabledSelect,
-            pw              = p.pw,
-            updateChildren  = updateChildren,
-            enabled         = Disabled when p.asyncInProgress,
-            onClickAnywhere = args.closeEditor.filter(_ => p.potentialSaveCmd.isUnchanged),
+            topLevelIds        = ids,
+            tags               = p.project.tags,
+            filterDead         = p.effectiveFilterDead,
+            selected           = args.selection,
+            select             = args.enabledSelect,
+            pw                 = p.pw,
+            updateLiveChildren = updateLiveChildren,
+            enabled            = Disabled when p.asyncInProgress,
+            onClickAnywhere    = args.closeEditor.filter(_ => p.potentialSaveCmd.isUnchanged),
           ).render
 
         case None =>

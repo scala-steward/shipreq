@@ -10,11 +10,11 @@ import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.text.Text
-import AutoNES._
-import Event._
-import SampleProject.Values._
 
 object MakeEventTest extends TestSuite {
+  import AutoNES._
+  import Event._
+  import SampleProject.Values._
 
   class Tester(initial: Project = SampleProject.project) {
     private var p = initial
@@ -32,6 +32,12 @@ object MakeEventTest extends TestSuite {
       f(MakeEvent, p) match {
         case Failure(_) => ()
         case x          => fail(s"MakeEvent failure expected, got: $x")
+      }
+
+    def assertNoChange(f: (MakeEvent.type, Project) => Result): Unit =
+      f(MakeEvent, p) match {
+        case Unchanged => ()
+        case x         => fail(s"Unchanged expected, got: $x")
       }
 
     def assertFails(f: (MakeEvent.type, Project) => Result): Unit =
@@ -107,5 +113,30 @@ object MakeEventTest extends TestSuite {
 
     // TODO More MakeEvent tests would be good (esp for PatchReqCodes)
 
+    'UpdateConfigCmd {
+      'TagSetLiveChildrenOrder {
+        val ^ = TagGroupGD
+        import UpdateConfigCmd.{TagSetLiveChildrenOrder => Cmd}
+
+        'mismatch - assertFails(_.updateConfig(Cmd(priTG, Vector(priHigh, priLow)), _))
+
+        'noop - assertNoChange(_.updateConfig(Cmd(priTG, Vector(priHigh, priMed, priLow)), _))
+
+        'allLive - {
+          val c = Vector(priMed, priHigh, priLow)
+          val e = assertMakeEvent(_.updateConfig(Cmd(priTG, c), _), { case e: TagGroupUpdate => e })
+          assertEq(e.vs, ^.nev(^.ValueForChildren(c)))
+        }
+
+        'someDead - {
+          assertApplies(TagGroupUpdate(priTG, ^.nev(^.ValueForChildren(Vector(priMed, priHigh, priLow, statusTG)))))
+          assertApplies(TagDelete(priLow))
+          assertApplies(TagDelete(statusTG))
+          val c = Vector(priHigh, priMed)
+          val e = assertMakeEvent(_.updateConfig(Cmd(priTG, c), _), { case e: TagGroupUpdate => e })
+          assertEq(e.vs, ^.nev(^.ValueForChildren(Vector(priLow, statusTG) ++ c)))
+        }
+      }
+    }
   }
 }

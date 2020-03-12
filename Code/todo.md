@@ -150,7 +150,7 @@ v2.1
   * There #should be `AllTags` and `RemainingTags` fields instead of just `Tags` [FR-18]
   * `AllTags` and `RemainingTags` fields #should be optional [FR-19]
   * remove key from TagGroups, check all Tag fields against UI prototype
-  * TagSetApplicableChildrenOrder has a bug or something - remember how priorty got fucked up with Actors & could added under should?
+  * tag event updates wrt to dead children & req types
   * Add tests for TagConfig
   * handle dead ReqTypes' states in ApplicableReqTypes editors
     (eg user says whitelist A; user deletes A, what should the editor show? Maybe just a litle warning (not error) under field.
@@ -173,4 +173,5 @@ v2.1
 
 * ReqTypes
   * Might be a good idea to store a description & examples. (eg. "BR" means xxx + examples)
-
+  * Users should be able to change the mnemonic (without retention) if not in use yet
+  * Support hard & soft deletion from UI - explain difference and reasoning

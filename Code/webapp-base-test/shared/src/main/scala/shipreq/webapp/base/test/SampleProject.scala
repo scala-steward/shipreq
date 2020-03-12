@@ -26,6 +26,7 @@ object SampleProject {
     val allDeadTags = NonEmptyVector(uat, uat2, v09, v3x, v4x)
 
     val priTG = 1.TG
+    val statusTG = 10.TG
   }
 
   object Values extends Values
@@ -47,28 +48,28 @@ object SampleProject {
   lazy val v10d = Some("Released: 17/14/1976\nFirst release.")
   lazy val v11d = Some("Released: 1/2/2001")
   lazy val tags = TagTree.empty.addAll(
-    TagInTree(TagGroup        (priTG  , "Priority",        None, Exclusive,     Live), Vector(priHigh, priMed, priLow)),
-    TagInTree(ApplicableTag.v1(priHigh, "High Priority",   None, "pri=high",        Live), Vector()),
-    TagInTree(ApplicableTag.v1(priMed , "Medium Priority", None, "pri=med",         Live), Vector()),
-    TagInTree(TagGroup        (10     , "Status",          None, NonExclusive, Live), Vector(wip, defer, uat, uat2, uat3, prod)),
-    TagInTree(ApplicableTag.v1(wip    , "WIP",             None, "wip",             Live), Vector()),
-    TagInTree(ApplicableTag.v1(defer  , "Deferred",        None, "defer",           Live), Vector()),
-    TagInTree(ApplicableTag.v1(uat    , "In UAT #1",       None, "uat",             Dead), Vector()),
-    TagInTree(ApplicableTag.v1(uat2   , "In UAT #2",       None, "uat2",            Dead), Vector()),
-    TagInTree(ApplicableTag.v1(uat3   , "In UAT #3",       None, "uat3",            Dead), Vector()),
-    TagInTree(ApplicableTag.v1(prod   , "In Production",   None, "prod",            Live), Vector()),
-    TagInTree(TagGroup        (20     , "Version",         None, NonExclusive, Live), Vector(27.TG, v1x, v2x, v3x, v4x)),
-    TagInTree(ApplicableTag.v1(v1x    , "v1.x",            None, "v1.x",            Live), Vector(v10, v11, v12, v13)),
-    TagInTree(ApplicableTag.v1(v10    , "v1.0",            v10d, "v1.0",            Live), Vector()),
-    TagInTree(ApplicableTag.v1(v11    , "v1.1",            v11d, "v1.1",            Live), Vector()),
-    TagInTree(ApplicableTag.v1(v12    , "v1.2",            None, "v1.2",            Live), Vector()),
-    TagInTree(ApplicableTag.v1(v13    , "v1.3",            None, "v1.3",            Live), Vector()),
-    TagInTree(ApplicableTag.v1(v2x    , "v2.x",            None, "v2.x",            Live), Vector()),
-    TagInTree(ApplicableTag.v1(v3x    , "v3.x",            None, "v3.x",            Dead), Vector()),
-    TagInTree(ApplicableTag.v1(v4x    , "v4.x",            None, "v4.x",            Dead), Vector()),
-    TagInTree(TagGroup        (27     , "Released",        None, NonExclusive, Live), Vector(v09, v10, v11)),
-    TagInTree(ApplicableTag.v1(v09    , "v0.9",            None, "v0.9",            Dead), Vector()),
-    TagInTree(ApplicableTag.v1(priLow , "Low Priority", Some("Nice to have. Stuff that probably won't be implemented."), "pri=low", Live), Vector()))
+    TagInTree(TagGroup        (priTG   , "Priority",        None, Exclusive,    Live), Vector(priHigh, priMed, priLow)),
+    TagInTree(ApplicableTag.v1(priHigh , "High Priority",   None, "pri=high",   Live), Vector()),
+    TagInTree(ApplicableTag.v1(priMed  , "Medium Priority", None, "pri=med",    Live), Vector()),
+    TagInTree(TagGroup        (statusTG, "Status",          None, NonExclusive, Live), Vector(wip, defer, uat, uat2, uat3, prod)),
+    TagInTree(ApplicableTag.v1(wip     , "WIP",             None, "wip",        Live), Vector()),
+    TagInTree(ApplicableTag.v1(defer   , "Deferred",        None, "defer",      Live), Vector()),
+    TagInTree(ApplicableTag.v1(uat     , "In UAT #1",       None, "uat",        Dead), Vector()),
+    TagInTree(ApplicableTag.v1(uat2    , "In UAT #2",       None, "uat2",       Dead), Vector()),
+    TagInTree(ApplicableTag.v1(uat3    , "In UAT #3",       None, "uat3",       Dead), Vector()),
+    TagInTree(ApplicableTag.v1(prod    , "In Production",   None, "prod",       Live), Vector()),
+    TagInTree(TagGroup        (20      , "Version",         None, NonExclusive, Live), Vector(27.TG, v1x, v2x, v3x, v4x)),
+    TagInTree(ApplicableTag.v1(v1x     , "v1.x",            None, "v1.x",       Live), Vector(v10, v11, v12, v13)),
+    TagInTree(ApplicableTag.v1(v10     , "v1.0",            v10d, "v1.0",       Live), Vector()),
+    TagInTree(ApplicableTag.v1(v11     , "v1.1",            v11d, "v1.1",       Live), Vector()),
+    TagInTree(ApplicableTag.v1(v12     , "v1.2",            None, "v1.2",       Live), Vector()),
+    TagInTree(ApplicableTag.v1(v13     , "v1.3",            None, "v1.3",       Live), Vector()),
+    TagInTree(ApplicableTag.v1(v2x     , "v2.x",            None, "v2.x",       Live), Vector()),
+    TagInTree(ApplicableTag.v1(v3x     , "v3.x",            None, "v3.x",       Dead), Vector()),
+    TagInTree(ApplicableTag.v1(v4x     , "v4.x",            None, "v4.x",       Dead), Vector()),
+    TagInTree(TagGroup        (27      , "Released",        None, NonExclusive, Live), Vector(v09, v10, v11)),
+    TagInTree(ApplicableTag.v1(v09     , "v0.9",            None, "v0.9",       Dead), Vector()),
+    TagInTree(ApplicableTag.v1(priLow  , "Low Priority", Some("Nice to have. Stuff that probably won't be implemented."), "pri=low", Live), Vector()))
 
   lazy val fields = {
     import CustomField._
@@ -77,7 +78,7 @@ object SampleProject {
       Text       (notesField   , "Notes",       "notes",    Mandatory.Not, notReqTypes(br),                             Live),
       Text       (reporterField, "Reporter",    "reporter", Mandatory,     onlyReqTypes(dd, StaticReqType.UseCase),     Dead),
       Tag        (priField     , priTG,                     Mandatory,     allReqTypes,                                 Live),
-      Tag        (statusField  , 10.TG,                     Mandatory.Not, notReqTypes(dd, si),                         Live),
+      Tag        (statusField  , statusTG,                  Mandatory.Not, notReqTypes(dd, si),                         Live),
       Implication(mfField      , mf,                        Mandatory.Not, notReqTypes(si),                             Live),
       Tag        (relField     , 27.TG,                     Mandatory.Not, allReqTypes,                                 Dead)
     ), Vector(

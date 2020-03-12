@@ -178,9 +178,9 @@ object ProjectSpaProtocolsTest extends TestSuite {
             assertRequest(bin, expect)
           }
 
-          "TagSetApplicableChildrenOrder" - {
+          "TagSetLiveChildrenOrder" - {
             val bin = BinaryData.fromHex("5945B41D01010803150009020003001138295653")
-            val expect = (ReqId(8), UpdateConfig.AndReq(TagSetApplicableChildrenOrder(9.TG, Vector(3.AT, 17.AT))))
+            val expect = (ReqId(8), UpdateConfig.AndReq(TagSetLiveChildrenOrder(9.TG, Vector(3.AT, 17.AT))))
             assertRequest(bin, expect)
           }
 
