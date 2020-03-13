@@ -244,7 +244,7 @@ object TagConfig {
           case Some(id) =>
             EditorButtons.Props.Update(
               abort  = args.close,
-              delete = submitCmd(p, UpdateConfigCmd.TagDelete(id), "Deleted", _ => args.close),
+              delete = submitCmd(p, UpdateConfigCmd.TagDelete(id), "Deleted", _ => args.reset),
               update = p.potentialSaveCmd.map(submitCmd(p, _, "Updated", _ => args.reset)),
             )
 
@@ -300,7 +300,7 @@ object TagConfig {
           val buttons =
             EditorButtons.Props.Restore(
               abort   = args.close,
-              restore = submitCmd(p, UpdateConfigCmd.TagRestore(id), "Restored"),
+              restore = submitCmd(p, UpdateConfigCmd.TagRestore(id), "Restored", _ => args.reset),
             ).render
 
           <.div(header, editor, buttons)
