@@ -122,7 +122,7 @@ object TagConfig {
         for {
           p   ← $.props
           cmd = UpdateConfigCmd.TagSetLiveChildrenOrder(parent, children)
-          _   ← p.async.write.onFailureShowAndForget(p.ssp(cmd))
+          _   ← submitCmd(p, cmd, "Reordered")
         } yield ()
       }
 
