@@ -261,10 +261,11 @@ object TagConfig {
 
           val editor =
             ApplicableTagEditor.Props(
-              subject = idOption,
-              state   = args.state.zoomStateL(lens),
-              project = p.project,
-              pw      = p.pw,
+              subject    = idOption,
+              filterDead = p.effectiveFilterDead,
+              state      = args.state.zoomStateL(lens),
+              project    = p.project,
+              pw         = p.pw,
             ).render
 
           val buttons = createOrUpdateButtons(idOption).render
@@ -276,10 +277,11 @@ object TagConfig {
 
           val editor =
             TagGroupEditor.Props(
-              subject = idOption,
-              state   = args.state.zoomStateL(lens),
-              project = p.project,
-              pw      = p.pw,
+              subject    = idOption,
+              filterDead = p.effectiveFilterDead,
+              state      = args.state.zoomStateL(lens),
+              project    = p.project,
+              pw         = p.pw,
             ).render
 
           val buttons = createOrUpdateButtons(idOption).render

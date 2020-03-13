@@ -27,11 +27,15 @@ object TagRelationshipEditor {
     * @param hypotheticalTags Normal [[Tags]] but with all unsaved changes applied.
     */
   final case class Props(subject         : TagId,
+                         filterDead      : FilterDead,
                          hypotheticalTags: Tags,
                          pw              : ProjectWidgets.NoCtx,
                          state           : StateSnapshot[State],
                          children        : Boolean,
                          enabled         : Enabled) {
+
+    private[TagRelationshipEditor] def tagIdFilter: TagId => Boolean =
+      hypotheticalTags.tagIdFilter(filterDead)
 
     private[TagRelationshipEditor] val dirCtx: DirCtx =
       DirCtx(children = children)
@@ -128,14 +132,14 @@ object TagRelationshipEditor {
 
     private val dnd =
       DragToReorderFeature[ApplicableTagId](
-        getData             = $.props.map(_.state.value.tags),
+        getData             = $.props.map(p => p.state.value.tags.filter(p.tagIdFilter)),
         updateData          = tags => modState(_.copy(tags = tags)),
         updateUI            = $.forceUpdate,
         dragOutsideToRemove = false,
         addKeysToChildren   = false,
     )
 
-    private def deleteButton(id: TagId): VdomNode = {
+    private def deleteButton(id: TagId): VdomTag = {
       val onClick: Callback =
         $.props.map(_.state).flatMap { ss =>
 
@@ -155,14 +159,15 @@ object TagRelationshipEditor {
       TagRelationshipEditor.deleteButton.onClick(onClick)(*.editorRelDelete)
     }
 
-    private val dead = ^.opacity := "0"
+    private val dying = ^.opacity := "0"
+    private val hidden = ^.visibility.hidden
 
     private def renderTagList(p: Props): VdomNode = {
       val s         = p.state.value
       val animating = s.dead.nonEmpty
       val enabled   = p.enabled & Disabled.when(animating)
       val items     = VdomArray.empty()
-      val it        = p.hypotheticalTags.recursiveIterator(s.all, HideDead)
+      val it        = p.hypotheticalTags.recursiveIterator(s.all, p.filterDead)
 
       val rowState =
         if (animating)
@@ -176,32 +181,37 @@ object TagRelationshipEditor {
 
       // Tag groups
       it.tagGroupIterator().foreach { g =>
-        val id = g.id
+        val id      = g.id
+        val live    = p.hypotheticalTags.needTagGroup(id).live
+        val isDying = s.dead.contains(id)
+
         items += <.li(
           *.editorRelTagLI((groupLiState, DragToReorderFeature.Status.Normal)),
           ^.key := id.value,
-          dead.when(s.dead.contains(id)),
+          dying.when(isDying),
           <.div(
             *.editorRelGroup(rowState),
             Shared.group(g),
-            deleteButton(id),
+            deleteButton(id)(hidden.when(live is Dead)),
           )
         )
       }
 
       // Applicable tags
-      val tagLiState = *.LIState.Tag(rowState, false, false)
       val atags      = it.applicableTagIdIterator().toArray
       dnd.items(atags).foreach { item =>
-        val id = item.data
+        val id      = item.data
+        val live    = p.hypotheticalTags.needApplicableTag(id).live
+        val isDying = s.dead.contains(id)
+        val liState = *.LIState.Tag(rowState, false, false)
 
         items += <.li(
-          *.editorRelTagLI((tagLiState, item.status)),
+          *.editorRelTagLI((liState, item.status)),
           ^.key := id.value,
-          dead.when(s.dead.contains(id)),
-          Shared.dragHandle(item, enabled, Live),
+          dying.when(isDying),
+          Shared.dragHandle(item, enabled, live & Dead.when(isDying)),
           p.pw.tagSimple(id, includeDesc = true),
-          deleteButton(id),
+          deleteButton(id)(hidden.when(live is Dead)),
         )
       }
 

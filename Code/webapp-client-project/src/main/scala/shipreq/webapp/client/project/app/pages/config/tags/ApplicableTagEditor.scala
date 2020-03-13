@@ -21,10 +21,11 @@ import shipreq.webapp.client.project.widgets.{ColourPicker, ProjectWidgets}
 private[tags] object ApplicableTagEditor {
   import DataImplicits._
 
-  final case class Props(subject: Option[ApplicableTagId],
-                         state  : StateSnapshot[State],
-                         project: ProjectConfig,
-                         pw     : ProjectWidgets.NoCtx
+  final case class Props(subject   : Option[ApplicableTagId],
+                         filterDead: FilterDead,
+                         state     : StateSnapshot[State],
+                         project   : ProjectConfig,
+                         pw        : ProjectWidgets.NoCtx
                         ) {
 
     val virtualSubjectId: ApplicableTagId =
@@ -52,25 +53,27 @@ private[tags] object ApplicableTagEditor {
     def validatorState(p: ProjectConfig): DataValidators.tag.State =
       DataValidators.tag.State.fromConfig(source.map(_.tag.id), p)
 
-    def updateCmd(p: ProjectConfig): PotentialChange[Unit, UpdateConfigCmd.ToModifyTags] =
-      updateCmd(validatorState(p), buildNewRels(source.map(_.tag.id), p.tags, parents))
-
-    def updateCmd(vs: DataValidators.tag.State,
-                  rels: TagInTree.Relations): PotentialChange[Unit, UpdateConfigCmd.ToModifyTags] = {
+    def updateCmd(p: ProjectConfig): PotentialChange[Unit, UpdateConfigCmd.ToModifyTags] = {
+      val vs = validatorState(p)
 
       val validated =
         DataValidators.tag.applicableTag(vs)(
-        (key, desc, colour.text, ApplicableReqTypes.empty))
+          (key, desc, colour.text, ApplicableReqTypes.empty))
 
       PotentialChange
         .fromDisjunction(validated.leftMap(_ => ()))
         .flatMap { case (key, desc, colour, reqTypes) =>
+
+          val rels       = buildNewRels(source.map(_.tag.id), p.tags, parents)
+          val oldParents = source.map(s => p.tags.filterLiveParents(s.rels.parents))
+          val newParents = p.tags.filterLiveParents(rels.parents)
+
           val b = ApplicableTagGD.valueBuilder()
           b.addIfChangedOption(ApplicableTagGD.ApplicableReqTypes)(source.map(_.tag.applicableReqTypes), reqTypes)
           b.addIfChangedOption(ApplicableTagGD.Colour            )(source.map(_.tag.colour            ), colour)
           b.addIfChangedOption(ApplicableTagGD.Key               )(source.map(_.tag.key               ), key)
           b.addIfChangedOption(ApplicableTagGD.Desc              )(source.map(_.tag.desc              ), desc)
-          b.addIfChangedOption(ApplicableTagGD.Parents           )(source.map(_.rels.parents          ), rels.parents)
+          b.addIfChangedOption(ApplicableTagGD.Parents           )(oldParents                          , newParents)
 
           PotentialChange.fromOption(b.nev()).map { newValues =>
             source match {
@@ -162,6 +165,7 @@ private[tags] object ApplicableTagEditor {
     private def tagRelationships(p: Props, hypotheticalTags: Tags) =
       TagRelationshipEditor.Props(
         subject          = p.virtualSubjectId,
+        filterDead       = p.filterDead,
         hypotheticalTags = hypotheticalTags,
         pw               = p.pw,
         state            = p.state.withReuse.zoomStateL(State.parentsR),

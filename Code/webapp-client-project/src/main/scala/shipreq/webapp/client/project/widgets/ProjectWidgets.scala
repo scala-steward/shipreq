@@ -347,14 +347,15 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   val _reqTypeFull: ReqTypeId => VdomTag =
     id => <.span(plainText.reqTypeFull(id))
 
-  private def tagColour(o: Option[Colour]): TagMod = {
-    val c = o.getOrElse(DefaultTagColour)
-    TagMod(
-      ^.backgroundColor := c.value,
-      ^.borderColor     := c.value,
-      ^.color           := c.foreground.value,
-    )
-  }
+  private def tagColour(o: Option[Colour], live: Live): TagMod =
+    TagMod.when(live is Live) {
+      val c = o.getOrElse(DefaultTagColour)
+      TagMod(
+        ^.backgroundColor := c.value,
+        ^.borderColor     := c.value,
+        ^.color           := c.foreground.value,
+      )
+    }
 
   private val tagPlain: Validity => ApplicableTagId => VdomTag =
     Validity.memo { validity =>
@@ -362,7 +363,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
         val tag = project.config.tags.needApplicableTag(id)
         tagWithoutStyle(Plain, tag, includeDesc = true)(
           *.tag(((tag.live, validity), true)),
-          tagColour(tag.colour))
+          tagColour(tag.colour, tag.live))
       }
     }
 
@@ -393,7 +394,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   def tagSimple(tag: ApplicableTag, includeDesc: Boolean): VdomTag =
     tagWithoutStyle(Plain, tag, includeDesc = includeDesc)(
       *.tag(((tag.live, Valid), false)),
-      tagColour(tag.colour))
+      tagColour(tag.colour, tag.live))
 
   def useCaseStepTextAndMaybeInvalidFlow[C[x] <: Traversable[x]](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[String \/ UseCaseStepId]],
                                                                  l: Live): VdomTag = {

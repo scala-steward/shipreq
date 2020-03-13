@@ -182,7 +182,8 @@ private[feature] final class Instance[A](getData            : CallbackTo[Vector[
           }
           mkItems(
             ds.currentOrder,
-            ds.items,i => if (i ==* ds.dragSource) onDragSrc else Status.Normal)
+            ds.items,
+            i => if (i ==* ds.dragSource) onDragSrc else Status.Normal)
       }
   }
 

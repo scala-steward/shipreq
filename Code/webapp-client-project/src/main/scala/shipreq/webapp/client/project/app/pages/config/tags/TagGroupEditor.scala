@@ -23,10 +23,11 @@ import shipreq.webapp.client.project.widgets.ProjectWidgets
 private[tags] object TagGroupEditor {
   import DataImplicits._
 
-  final case class Props(subject: Option[TagGroupId],
-                         state  : StateSnapshot[State],
-                         project: ProjectConfig,
-                         pw     : ProjectWidgets.NoCtx
+  final case class Props(subject   : Option[TagGroupId],
+                         filterDead: FilterDead,
+                         state     : StateSnapshot[State],
+                         project   : ProjectConfig,
+                         pw        : ProjectWidgets.NoCtx
                         ) {
 
     val virtualSubjectId: TagGroupId =
@@ -55,25 +56,29 @@ private[tags] object TagGroupEditor {
     def validatorState(p: ProjectConfig): DataValidators.tag.State =
       DataValidators.tag.State.fromConfig(source.map(_.group.id), p)
 
-    def updateCmd(p: ProjectConfig): PotentialChange[Unit, UpdateConfigCmd.ToModifyTags] =
-      updateCmd(validatorState(p), buildNewRels(source.map(_.group.id), p.tags, parents, children))
-
-    def updateCmd(vs: DataValidators.tag.State,
-                  rels: TagInTree.Relations): PotentialChange[Unit, UpdateConfigCmd.ToModifyTags] = {
+    def updateCmd(p: ProjectConfig): PotentialChange[Unit, UpdateConfigCmd.ToModifyTags] = {
+      val vs = validatorState(p)
 
       val validated =
         DataValidators.tag.tagGroup(vs)(
-        (name, Exclusive.when(exclusivity is Exclusive), desc))
+          (name, Exclusive.when(exclusivity is Exclusive), desc))
 
       PotentialChange
         .fromDisjunction(validated.leftMap(_ => ()))
         .flatMap { case (name, exclusivity, desc) =>
+
+          val rels        = buildNewRels(source.map(_.group.id), p.tags, parents, children)
+          val oldChildren = source.map(s => p.tags.filterLiveChildren(s.rels.children))
+          val oldParents  = source.map(s => p.tags.filterLiveParents (s.rels.parents))
+          val newChildren = p.tags.filterLiveChildren(rels.children)
+          val newParents  = p.tags.filterLiveParents (rels.parents)
+
           val b = TagGroupGD.valueBuilder()
           b.addIfChangedOption(TagGroupGD.Name       )(source.map(_.group.name       ), name)
           b.addIfChangedOption(TagGroupGD.Exclusivity)(source.map(_.group.exclusivity), exclusivity)
           b.addIfChangedOption(TagGroupGD.Desc       )(source.map(_.group.desc       ), desc)
-          b.addIfChangedOption(TagGroupGD.Parents    )(source.map(_.rels.parents     ), rels.parents)
-          b.addIfChangedOption(TagGroupGD.Children   )(source.map(_.rels.children    ), rels.children)
+          b.addIfChangedOption(TagGroupGD.Parents    )(oldParents                     , newParents)
+          b.addIfChangedOption(TagGroupGD.Children   )(oldChildren                    , newChildren)
 
           PotentialChange.fromOption(b.nev()).map { newValues =>
             source match {
@@ -190,6 +195,7 @@ private[tags] object TagGroupEditor {
     private def tagRelationships(p: Props, hypotheticalTags: Tags, children: Boolean) =
       TagRelationshipEditor.Props(
         subject          = p.virtualSubjectId,
+        filterDead       = p.filterDead,
         hypotheticalTags = hypotheticalTags,
         pw               = p.pw,
         state            = p.state.withReuse.zoomStateL(if (children) State.childrenR else State.parentsR),

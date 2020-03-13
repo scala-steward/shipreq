@@ -26,7 +26,7 @@ private[tags] object Shared {
         DragToReorderFeature.dragHandle(*.dragHandle((e, l)))))
 
   def dragHandle(item: DragToReorderFeature.Item[Any], enabled: Enabled, live: Live): TagMod =
-    enabled match {
+    (enabled & Disabled.when(live is Dead)) match {
       case Enabled  => TagMod(dragHandle(Enabled)(live)(item.source), item.target)
       case Disabled => dragHandle(Disabled)(live)
     }

@@ -34,16 +34,31 @@ private[tags] object TagTreeView {
 
   final class Backend($: BackendScope[Props, Unit]) {
 
-    private val dndPerGroup: TagGroupId => DragToReorderFeature[ApplicableTagId] =
-      Memo { groupId =>
-        DragToReorderFeature[ApplicableTagId](
-          getData             = $.props.map(_.tags.directApplicableChildren(groupId)),
-          updateData          = tagOrder => $.props.flatMap(_.updateLiveChildren(groupId, tagOrder)),
-          updateUI            = $.forceUpdate,
-          dragOutsideToRemove = false,
-          addKeysToChildren   = false,
-        )
+    private val dndCache: FilterDead => TagGroupId => DragToReorderFeature[ApplicableTagId] = {
+
+      def updateChildren(groupId: TagGroupId, tags: Vector[ApplicableTagId]): Callback =
+        for {
+          p <- $.props
+          t  = tags.filter(p.tags.needApplicableTag(_).live is Live)
+          _ <- p.updateLiveChildren(groupId, t)
+        } yield ()
+
+      FilterDead.memo { fd =>
+
+        def getData(t: Tags, id: TagGroupId): Vector[ApplicableTagId] =
+          t.directApplicableChildren(id).filter(t.tagIdFilter(fd))
+
+        Memo { groupId =>
+          DragToReorderFeature[ApplicableTagId](
+            getData             = $.props.map(p => getData(p.tags, groupId)),
+            updateData          = updateChildren(groupId, _),
+            updateUI            = $.forceUpdate,
+            dragOutsideToRemove = false,
+            addKeysToChildren   = false,
+          )
+        }
       }
+    }
 
     def render(p: Props): VdomNode = {
       import p.{tags, pw}
@@ -73,15 +88,15 @@ private[tags] object TagTreeView {
 
         val dnd: DragToReorderFeature[ApplicableTagId] =
           it.parent match {
-            case Some(g) => dndPerGroup(g.id)
+            case Some(g) => dndCache(p.filterDead)(g.id)
             case None    => DragToReorderFeature.off
           }
 
         // Tag groups
         it.tagGroupIterator().foreach { group =>
-          val id       = group.id
-          val subtree  = it.nextLevelNonEmpty(group)
-          val liState  = *.LIState.Group(topLevel = topLevel)
+          val id      = group.id
+          val subtree = it.nextLevelNonEmpty(group)
+          val liState = *.LIState.Group(topLevel = topLevel)
 
           lis += <.li(
             *.tagTreeLI((liState, DragToReorderFeature.Status.Normal)),
@@ -115,10 +130,7 @@ private[tags] object TagTreeView {
             *.tagTreeLI((liState, item.status)),
             ^.key := id.value,
             ^.onClick -->? p.select.filterNot(_ => readOnly).map(_(id)),
-            TagMod.when(canAnyDrag) {
-              val live = tag.live
-              Shared.dragHandle(item, modificationEnabled & Disabled.when(live is Dead), tag.live)
-            },
+            TagMod.when(canAnyDrag)(Shared.dragHandle(item, modificationEnabled, tag.live)),
             pw.tagSimple(id, includeDesc = true),
           )
 

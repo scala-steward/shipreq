@@ -321,6 +321,11 @@ final case class Tags(tree: TagTree) {
     case ShowDead => _ => true
   }
 
+  val tagIdFilter: FilterDead => TagId => Boolean = {
+    case HideDead => id => tree.get(id).forall(_.tag.live is Live)
+    case ShowDead => _ => true
+  }
+
   def flatRows(isGood: Tag => Boolean, policy: FilterPolicy): Vector[FlatTag] =
     FlatTag.flatRows(topLevelIds, tree.get(_).get)(isGood, policy)
 
@@ -389,6 +394,12 @@ final case class Tags(tree: TagTree) {
 
   def recursiveIterator(roots: Iterable[TagId], fd: FilterDead): RecursiveTagIterator =
     new RecursiveTagIterator(this, tagFilter(fd), roots, 0, None)
+
+  def filterLiveChildren(children: TagInTree.Children): TagInTree.Children =
+    children.filter(tree.get(_).forall(_.tag.live is Live))
+
+  def filterLiveParents(parents: TagInTree.Parents): TagInTree.Parents =
+    parents.iterator.filter(kv => tree.get(kv._1).forall(_.tag.live is Live)).toMap
 }
 
 final class RecursiveTagIterator(tags      : Tags,
