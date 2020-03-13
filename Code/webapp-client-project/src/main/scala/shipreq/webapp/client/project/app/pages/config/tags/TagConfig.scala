@@ -266,6 +266,7 @@ object TagConfig {
               state      = args.state.zoomStateL(lens),
               project    = p.project,
               pw         = p.pw,
+              enabled    = Enabled,
             ).render
 
           val buttons = createOrUpdateButtons(idOption).render
@@ -282,6 +283,7 @@ object TagConfig {
               state      = args.state.zoomStateL(lens),
               project    = p.project,
               pw         = p.pw,
+              enabled    = Enabled,
             ).render
 
           val buttons = createOrUpdateButtons(idOption).render
@@ -289,13 +291,41 @@ object TagConfig {
           <.div(header, editor, buttons)
 
         case EditorType.Dead(id) =>
+
+          val editor =
+            id match {
+              case i: TagGroupId =>
+                val lens = editorStateLensForGroup(TagGroupEditor.State.init(Some(i), p.project.tags))
+                TagGroupEditor.Props(
+                  subject    = Some(i),
+                  filterDead = p.effectiveFilterDead,
+                  state      = args.state.zoomStateL(lens),
+                  project    = p.project,
+                  pw         = p.pw,
+                  enabled    = Disabled,
+                ).render
+
+              case i: ApplicableTagId =>
+                val lens = editorStateLensForApTag(ApplicableTagEditor.State.init(Some(i), p.project.tags))
+
+                ApplicableTagEditor.Props(
+                  subject    = Some(i),
+                  filterDead = p.effectiveFilterDead,
+                  state      = args.state.zoomStateL(lens),
+                  project    = p.project,
+                  pw         = p.pw,
+                  enabled    = Disabled,
+                ).render
+            }
+
+
           val buttons =
             EditorButtons.Props.Restore(
               abort   = args.close,
               restore = submitCmd(p, UpdateConfigCmd.TagRestore(id), "Restored"),
             ).render
 
-          <.div(header, buttons)
+          <.div(header, editor, buttons)
       }
     }
 

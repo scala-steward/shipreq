@@ -91,6 +91,7 @@ object EditorButtons {
       case Props.Restore(abort, restore) =>
         outer(
           restoreButton.onClick(restore),
+          gap,
           closeButton.onClick(abort))
     }
 

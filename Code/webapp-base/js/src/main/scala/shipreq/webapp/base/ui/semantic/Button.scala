@@ -4,6 +4,7 @@ import japgolly.scalajs.react.Callback
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq.UnivEq
 import org.scalajs.dom.html
+import shipreq.webapp.base.data.Enabled
 import Button._
 
 /** http://semantic-ui.com/elements/button.html */
@@ -72,6 +73,12 @@ final case class Button(attr  : Multiple[Attr] = Multiple.empty,
 
     t
   }
+
+  def disableMaybe(e: Enabled): Button =
+    if (e is Enabled) this else disable
+
+  def disable: Button =
+    copy(state = State.Disabled)
 
   def disabled: VdomTagOf[html.Button] =
     if (state.disable)

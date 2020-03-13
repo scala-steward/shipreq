@@ -27,7 +27,8 @@ private[tags] object TagGroupEditor {
                          filterDead: FilterDead,
                          state     : StateSnapshot[State],
                          project   : ProjectConfig,
-                         pw        : ProjectWidgets.NoCtx
+                         pw        : ProjectWidgets.NoCtx,
+                         enabled   : Enabled,
                         ) {
 
     val virtualSubjectId: TagGroupId =
@@ -200,7 +201,7 @@ private[tags] object TagGroupEditor {
         pw               = p.pw,
         state            = p.state.withReuse.zoomStateL(if (children) State.childrenR else State.parentsR),
         children         = children,
-        enabled          = Enabled,
+        enabled          = p.enabled,
       ).render
 
     def render(p: Props): VdomNode = {
@@ -211,13 +212,14 @@ private[tags] object TagGroupEditor {
           .withLabel("Name")
           .withState(p.state.zoomStateL(State.name))
           .withValidator(DataValidators.tag.name.unnamedFn(p.validatorState))
-          .withAutoFocus
+          .withEnabledAndAutoFocus(p.enabled)
 
       val exclusivityField =
         Form.Field.checkbox
           .asSegment
           .withLabel(exclusivityLabel)
           .withState(p.state.zoomStateL(State.exclusive))
+          .withEnabled(p.enabled)
 
       val descField =
         Form.Field.text
@@ -225,6 +227,7 @@ private[tags] object TagGroupEditor {
           .withLabel("Description")
           .withState(p.state.zoomStateL(State.desc))
           .withValidator(DataValidators.tag.desc.unnamedFn(p.validatorState))
+          .withEnabled(p.enabled)
 
       val hypotheticalTags = pxHypotheticalTags.value()
       val parents          = tagRelationships(p, hypotheticalTags, children = false)

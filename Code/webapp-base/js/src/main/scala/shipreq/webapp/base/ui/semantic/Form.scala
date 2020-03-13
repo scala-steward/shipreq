@@ -51,6 +51,12 @@ object Form {
     final def withAutoFocus: Field[A] =
       addTagMod(^.autoFocus := true)
 
+    final def withEnabledAndAutoFocus(enabled: Enabled): Field[A] =
+      enabled match {
+        case Enabled  => withAutoFocus
+        case Disabled => disable
+      }
+
     final def withEditor(e: TagMod => VdomNode): Field[A] =
       modEditor(_ => e)
 

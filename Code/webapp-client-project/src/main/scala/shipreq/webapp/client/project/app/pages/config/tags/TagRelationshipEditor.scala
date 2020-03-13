@@ -139,7 +139,7 @@ object TagRelationshipEditor {
         addKeysToChildren   = false,
     )
 
-    private def deleteButton(id: TagId): VdomTag = {
+    private def deleteButton(id: TagId, enabled: Enabled): VdomTag = {
       val onClick: Callback =
         $.props.map(_.state).flatMap { ss =>
 
@@ -156,7 +156,7 @@ object TagRelationshipEditor {
 
           ss.modState(State.dead.modify(_ + id), actuallyDelete)
         }
-      TagRelationshipEditor.deleteButton.onClick(onClick)(*.editorRelDelete)
+      TagRelationshipEditor.deleteButton.disableMaybe(enabled).onClick(onClick)(*.editorRelDelete)
     }
 
     private val dying = ^.opacity := "0"
@@ -192,7 +192,7 @@ object TagRelationshipEditor {
           <.div(
             *.editorRelGroup(rowState),
             Shared.group(g),
-            deleteButton(id)(hidden.when(live is Dead)),
+            deleteButton(id, enabled)(hidden.when(live is Dead)),
           )
         )
       }
@@ -211,7 +211,7 @@ object TagRelationshipEditor {
           dying.when(isDying),
           Shared.dragHandle(item, enabled, live & Dead.when(isDying)),
           p.pw.tagSimple(id, includeDesc = true),
-          deleteButton(id)(hidden.when(live is Dead)),
+          deleteButton(id, enabled)(hidden.when(live is Dead)),
         )
       }
 
@@ -281,7 +281,7 @@ object TagRelationshipEditor {
       <.div(*.editorRelOuter(p.dirCtx.leftRight),
         Segment.fullHeight(
           <.div(*.editorRelInner,
-            <.div(*.editorRelHeader,
+            <.div(*.editorRelHeader(p.enabled),
               Header.h4(p.dirCtx.title)),
             <.div(*.editorRelBody, tags),
             <.div(*.editorRelFooter, addButton))))

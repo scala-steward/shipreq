@@ -901,9 +901,10 @@ object Style extends StyleSheet.Inline {
       height(100 %%),
     )
 
-    val editorRelHeader = style(
+    val editorRelHeader = styleF(D.enabled)(e => styleS(
       marginBottom(1 em),
-    )
+      mixinIf(e is Disabled)(opacity(0.6)),
+    ))
 
     val editorRelBody = style(
       flexGrow(1),

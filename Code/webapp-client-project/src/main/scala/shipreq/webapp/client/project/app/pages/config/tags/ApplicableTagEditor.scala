@@ -25,7 +25,8 @@ private[tags] object ApplicableTagEditor {
                          filterDead: FilterDead,
                          state     : StateSnapshot[State],
                          project   : ProjectConfig,
-                         pw        : ProjectWidgets.NoCtx
+                         pw        : ProjectWidgets.NoCtx,
+                         enabled   : Enabled,
                         ) {
 
     val virtualSubjectId: ApplicableTagId =
@@ -170,7 +171,7 @@ private[tags] object ApplicableTagEditor {
         pw               = p.pw,
         state            = p.state.withReuse.zoomStateL(State.parentsR),
         children         = false,
-        enabled          = Enabled,
+        enabled          = p.enabled,
       ).render
 
     def render(p: Props): VdomNode = {
@@ -181,13 +182,14 @@ private[tags] object ApplicableTagEditor {
           .withLabel("Name")
           .withState(p.state.zoomStateL(State.key))
           .withValidator(DataValidators.tag.key.unnamedFn(p.validatorState))
-          .withAutoFocus
+          .withEnabledAndAutoFocus(p.enabled)
 
       val colourField =
         Form.Field
           .ofEditor(ColourPicker.Props(p.state.zoomStateL(State.colour), TagPalette.forGithubPicker).render)
           .withValidated(s.colour.validated, ValidationUX.Highlight)
           .withLabel("Colour")
+          .withEnabled(p.enabled)
 
       val descField =
         Form.Field.text
@@ -195,6 +197,7 @@ private[tags] object ApplicableTagEditor {
           .withLabel("Description")
           .withState(p.state.zoomStateL(State.desc))
           .withValidator(DataValidators.tag.desc.unnamedFn(p.validatorState))
+          .withEnabled(p.enabled)
 
       val hypotheticalTags = pxHypotheticalTags.value()
       val parents          = tagRelationships(p, hypotheticalTags)
