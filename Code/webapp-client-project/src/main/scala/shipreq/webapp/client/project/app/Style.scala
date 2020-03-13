@@ -782,7 +782,7 @@ object Style extends StyleSheet.Inline {
 
     private def basicTagOrGroup(rowState: RowState, ds: DragStatus) = mixin(
       transition := s"all $animSpeed",
-      mixinIf(rowState ==* RowState.Disabled && ds ==* DragStatus.Normal)(opacity(0.3)),
+      mixinIf(rowState ==* RowState.Disabled && ds ==* DragStatus.Normal)(opacity(0.6)),
     )
 
     private def tagOrGroup(rowState: RowState,
