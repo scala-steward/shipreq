@@ -32,6 +32,8 @@ private[tags] object TagTreeView {
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.derive
 
+  val selected = VdomAttr.devOnly[Boolean]("data-selected")
+
   final class Backend($: BackendScope[Props, Unit]) {
 
     private val dndCache: FilterDead => TagGroupId => DragToReorderFeature[ApplicableTagId] = {
@@ -97,12 +99,14 @@ private[tags] object TagTreeView {
           val id      = group.id
           val subtree = it.nextLevelNonEmpty(group)
           val liState = *.LIState.Group(topLevel = topLevel)
+          val rs      = rowState(id, readOnly)
 
           lis += <.li(
             *.tagTreeLI((liState, DragToReorderFeature.Status.Normal)),
+            selected := (rs == *.RowState.Selected),
             ^.key := id.value,
             <.div(
-              *.tagTreeGroup(rowState(id, readOnly)),
+              *.tagTreeGroup(rs),
               Shared.group(group),
               ^.onClick -->? p.select.filterNot(_ => readOnly).map(_(id)),
             ),
@@ -128,6 +132,7 @@ private[tags] object TagTreeView {
 
           lis += <.li(
             *.tagTreeLI((liState, item.status)),
+            selected := (liState.rowState == *.RowState.Selected),
             ^.key := id.value,
             ^.onClick -->? p.select.filterNot(_ => readOnly).map(_(id)),
             TagMod.when(canAnyDrag)(Shared.dragHandle(item, modificationEnabled, tag.live)),

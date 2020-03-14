@@ -150,7 +150,6 @@ v2.1
   * There #should be `AllTags` and `RemainingTags` fields instead of just `Tags` [FR-18]
   * `AllTags` and `RemainingTags` fields #should be optional [FR-19]
   * check all Tag fields against UI prototype
-  * Add tests for TagConfig
   * handle dead ReqTypes' states in ApplicableReqTypes editors
     (eg user says whitelist A; user deletes A, what should the editor show? Maybe just a litle warning (not error) under field.
      like "<triangle-icon> A, B and C are dead")

@@ -3,6 +3,7 @@ package shipreq.webapp.base.test
 import japgolly.microlibs.testutil.TestUtil
 import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import japgolly.scalajs.react.test._
+import japgolly.scalajs.react.vdom.html_<^.VdomAttr
 import org.scalajs.dom.html
 import scalacss.internal.StyleA
 import shipreq.base.util.DebugImplicits
@@ -20,9 +21,19 @@ object TestState
 
   type DomZipperTo[A] = DomZipperJsF[Id, A]
 
-  implicit class StyleAExt(private val self: StyleA) extends AnyVal {
+  implicit class TestStateStyleAExt(private val self: StyleA) extends AnyVal {
     def selector: String =
       "." + self.className.value
+  }
+
+  implicit class TestStateElementExt(private val self: html.Element) extends AnyVal {
+    def get(v: VdomAttr[_]): String = {
+      val n = v.attrName
+      if (n.startsWith("data-"))
+        self.dataset.get(n.drop(5)).getOrElse("")
+      else
+        self.attributes.getNamedItem(n).value
+    }
   }
 
 //  implicit val displayTestReq: Display[TestClientProtocol.Req] =

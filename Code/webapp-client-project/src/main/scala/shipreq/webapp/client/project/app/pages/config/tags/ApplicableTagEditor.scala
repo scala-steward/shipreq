@@ -117,7 +117,7 @@ private[tags] object ApplicableTagEditor {
                           ): TagInTree.Relations = {
     val oldRels = tags.relationsOption(sourceId)
     oldRels.copy(
-      parents = parents.all.toIterator.map(id => id -> oldRels.parents.get(id).flatten).toMap,
+      parents = parents.allSet.toIterator.map(id => id -> oldRels.parents.get(id).flatten).toMap,
     )
   }
 

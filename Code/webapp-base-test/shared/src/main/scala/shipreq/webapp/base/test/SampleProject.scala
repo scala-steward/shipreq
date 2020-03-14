@@ -60,7 +60,7 @@ object SampleProject {
     TagInTree(ApplicableTag.v1(uat2    , "In UAT #2",       None, "uat2",       Dead), Vector()),
     TagInTree(ApplicableTag.v1(uat3    , "In UAT #3",       None, "uat3",       Dead), Vector()),
     TagInTree(ApplicableTag.v1(prod    , "In Production",   None, "prod",       Live), Vector()),
-    TagInTree(TagGroup        (verTG   , "Version",         None, NonExclusive, Live), Vector(27.TG, v1x, v2x, v3x, v4x)),
+    TagInTree(TagGroup        (verTG   , "Version",         None, NonExclusive, Live), Vector(relTG, v1x, v2x, v3x, v4x)),
     TagInTree(ApplicableTag.v1(v1x     , "v1.x",            None, "v1.x",       Live), Vector(v10, v11, v12, v13)),
     TagInTree(ApplicableTag.v1(v10     , "v1.0",            v10d, "v1.0",       Live), Vector()),
     TagInTree(ApplicableTag.v1(v11     , "v1.1",            v11d, "v1.1",       Live), Vector()),

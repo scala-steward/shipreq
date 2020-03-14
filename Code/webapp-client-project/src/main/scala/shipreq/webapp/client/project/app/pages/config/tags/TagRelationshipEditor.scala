@@ -1,5 +1,6 @@
 package shipreq.webapp.client.project.app.pages.config.tags
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react._
@@ -55,7 +56,7 @@ object TagRelationshipEditor {
     def isEmpty: Boolean =
       groups.isEmpty && tags.isEmpty && dead.isEmpty
 
-    val all: Set[TagId] =
+    val allSet: Set[TagId] =
       groups ++ tags
   }
 
@@ -125,6 +126,8 @@ object TagRelationshipEditor {
     private val Children = new DirCtx(children = true)
   }
 
+  // ===================================================================================================================
+
   final class Backend($: BackendScope[Props, Unit]) {
 
     private def modState(f: State => State): Callback =
@@ -163,11 +166,13 @@ object TagRelationshipEditor {
     private val hidden = ^.visibility.hidden
 
     private def renderTagList(p: Props): VdomNode = {
-      val s         = p.state.value
-      val animating = s.dead.nonEmpty
-      val enabled   = p.enabled & Disabled.when(animating)
-      val items     = VdomArray.empty()
-      val it        = p.hypotheticalTags.recursiveIterator(s.all, p.filterDead)
+      val s            = p.state.value
+      val animating    = s.dead.nonEmpty
+      val enabled      = p.enabled & Disabled.when(animating)
+      val sortedGroups = MutableArray(s.groups).sortBySchwartzian(p.hypotheticalTags.needTagGroup(_).name)
+      val allOrdered   = sortedGroups.iterator.toVector ++ s.tags
+      val items        = VdomArray.empty()
+      val it           = p.hypotheticalTags.recursiveIterator(allOrdered, p.filterDead)
 
       val rowState =
         if (animating)
@@ -198,7 +203,7 @@ object TagRelationshipEditor {
       }
 
       // Applicable tags
-      val atags      = it.applicableTagIdIterator().toArray
+      val atags = it.applicableTagIdIterator().toArray
       dnd.items(atags).foreach { item =>
         val id      = item.data
         val live    = p.hypotheticalTags.needApplicableTag(id).live
@@ -225,7 +230,7 @@ object TagRelationshipEditor {
       }
 
     private def renderAddButton(p: Props): VdomNode = {
-      val all = p.state.value.all
+      val all  = p.state.value.allSet
       val tags = p.hypotheticalTags
 
       def canTagBeAdded(t: Tag): Boolean = {
