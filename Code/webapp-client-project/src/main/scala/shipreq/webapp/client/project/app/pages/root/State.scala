@@ -1,10 +1,11 @@
 package shipreq.webapp.client.project.app.pages.root
 
 import japgolly.scalajs.react._
+import monocle.Lens
 import monocle.macros._
 import shipreq.base.util._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.data.{FilterDead, HideDead}
+import shipreq.webapp.base.data.{FilterDead, HideDead, Project}
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
 import shipreq.webapp.base.ui.{ProjectItem, Toast}
@@ -95,7 +96,7 @@ final case class State(projectName          : ProjectItem.WithEditableName.State
                        editAsync            : AsyncFeature.State.D2[EditorFeature.RowKey, AsyncKey, EditorFeature.AsyncError],
                        savedViewAsync       : AsyncFeature.State.D0[EditorFeature.AsyncError],
                        preview              : PreviewFeature.State[PreviewId],
-                       filterDead           : FilterDead,
+                       _filterDead          : FilterDead,
                        reqTable             : reqtable.ReqTablePage.State,
                        reqDetail            : ReqDetail.State,
                        issuesPage           : IssuesPage.State,
@@ -105,13 +106,25 @@ final case class State(projectName          : ProjectItem.WithEditableName.State
                        manualIssueCmdAsync  : AsyncFeature.State.D1[ManualIssueCmd, ErrorMsg],
                        tagConfig            : TagConfig.State,
                        tagConfigAsync       : AsyncFeature.State.D0[ErrorMsg],
-                      )
+                      ) {
+
+  @inline def filterDead = _filterDead
+
+  def setFilterDead(fd: FilterDead, p: Project): State =
+    if (fd ==* _filterDead)
+      this
+    else
+      copy(
+        _filterDead = fd,
+        reqTable = reqTable.setFilterDead(fd, p),
+      )
+}
 
 object State {
 
   val recorder = ErrorHandlingFeature.StateRecorder[State]
 
-  def init: State =
+  def init(p: Project): State =
     State(
       projectName           = ProjectItem.WithEditableName.State.init,
       reqLookup             = "",
@@ -121,7 +134,7 @@ object State {
       editAsync             = AsyncFeature.State.initD2,
       savedViewAsync        = AsyncFeature.State.initD0,
       preview               = PreviewFeature.State.init,
-      filterDead            = HideDead,
+      _filterDead           = p.reqtableViews.map(_.default.view.filterDead).getOrElse(HideDead),
       reqTable              = reqtable.ReqTablePage.State.init,
       reqDetail             = ReqDetail.initState,
       issuesPage            = IssuesPage.State.init,

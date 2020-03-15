@@ -5,6 +5,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.Implicits._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.VdomElement
+import monocle.Lens
 import org.scalajs.dom.window
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{Allow, ErrorMsg}
@@ -39,6 +40,14 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
 
   val pxProject = global.pxProject
   def unsafeProject() = global.unsafeProject()
+
+  private val stateLensFilterDead =
+    Lens[State, FilterDead](_._filterDead)(fd => _.setFilterDead(fd, unsafeProject()))
+
+  private val stateLensFilterDeadAndReqTable =
+    Lens[State, (FilterDead, ReqTablePage.State)](
+      s => (s.filterDead, s.reqTable))(
+      n => _.copy(reqTable = n._2).setFilterDead(n._1, unsafeProject()))
 
   final class Backend($: BackendScope[Props, State]) extends OnUnmount {
     import global.cbProjectMetaData
@@ -94,7 +103,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       } yield Layout.UnsavedChangeData.derive(c, p, routerCtl)
 
     private val setFilterDead: Reusable[SetStateFnPure[FilterDead]] =
-      Reusable.fn.state($ zoomStateL State.filterDead).setStateFn
+      Reusable.fn.state($ zoomStateL stateLensFilterDead).setStateFn
 
     private val pxPlainText: Px[PlainText.ForProject.NoCtx] =
       pxProject.map(PlainText.ForProject.noCtx)
@@ -214,7 +223,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
 
     private val reqTable = ReqTablePage(
       ReqTablePage.StaticProps(
-        $ zoomStateL State.reqTable,
+        $ zoomStateL stateLensFilterDeadAndReqTable,
         pxProject,
         pxTextSearch,
         pxProjectWidgets,
@@ -281,7 +290,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
           for {
             p ← pxProject.toCallback
             f = ReqTablePage.State.modifyView(p, fd, updateFilterText = true)(_.withFilter(Some(filter)))
-            _ ← $.modState(State.reqTable.modify(f) compose State.filterDead.set(fd))
+            _ ← $.modState(s => State.reqTable.modify(f)(s).setFilterDead(fd, p))
           } yield ()
         routerCtl.onSet(setReqTableView >> _).contramap(_ => Page.ReqTable)
       }
@@ -374,7 +383,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
               editRW,
               rowAsync,
               s.savedViewAsync,
-              filterDeadSS,
+              s.filterDead,
               s.reqTable))
 
         case Page.ReqDetail(pubid) =>
@@ -440,7 +449,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
   }
 
   val Component = ScalaComponent.builder[Props]("LoadedRoot")
-    .initialState(State.recorder.getOrElse(State.init))
+    .initialState(State.recorder.getOrElse(State.init(unsafeProject())))
     .renderBackend[Backend]
     .componentDidMount(_.backend.installHooks)
     .configure(Listenable.listen(_ => global, _.backend.onProjectChange))

@@ -110,4 +110,7 @@ object Optics {
 
   def constLens[S, A](value: A): Lens[S, A] =
     Lens[S, A](_ => value)(_ => identity)
+
+  def lensTuple2_2[A, B]: Lens[(A, B), B] =
+    Lens[(A, B), B](_._2)(b => ab => (ab._1, b))
 }
