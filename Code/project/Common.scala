@@ -18,6 +18,22 @@ case object UsePhantomJs extends JsTestType
 
 object Common {
 
+  lazy val releaseMode: Boolean = {
+    val mode = System.getProperty("MODE", "").trim
+    val r = mode.compareToIgnoreCase("release") == 0
+    if (r) println("[info] \u001b[1;31mRelease Mode.\u001b[0m")
+    r
+  }
+
+  lazy val emitSourceMapsValue: Boolean =
+    System.getProperty("emitSourceMaps", "0").trim.toLowerCase match {
+      case "0" | "no" | "n" | "off" => false
+      case _                        =>
+        println("[info] \u001b[1;93mSource maps enabled.\u001b[0m")
+        true
+    }
+
+
   private val availableProcessors = java.lang.Runtime.getRuntime.availableProcessors()
 
   def scalacFlags = Seq(
@@ -206,11 +222,11 @@ object Common {
         .withAsInstanceOfs(CheckedBehavior.Unchecked)))
 
   private def jsDevSettings: Project => Project =
-    _.settings(emitSourceMaps := false)
+    _.settings(emitSourceMaps := emitSourceMapsValue)
 
   private def jsProdSettings: Project => Project =
     _.settings(
-      emitSourceMaps := false,
+      emitSourceMaps := emitSourceMapsValue,
       scalaJSStage := FullOptStage,
       scalaJSOptimizerOptions ~= (_
         .withBatchMode(true)
@@ -251,13 +267,6 @@ object Common {
           jsEnv                       in Test := new PhantomJS2Env(PhantomJSEnv.Config().withJettyClassLoader(scalaJSPhantomJSClassLoader.value)))
 //          emitSourceMaps in fastOptJS in Test := true)
     }
-
-  lazy val releaseMode: Boolean = {
-    val mode = System.getProperty("MODE", "").trim
-    val r = mode.compareToIgnoreCase("release") == 0
-    if (r) println("[mode] \u001b[1;31mRelease Mode.\u001b[0m")
-    r
-  }
 
   def devMode: Boolean = !releaseMode
 
