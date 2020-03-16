@@ -6,7 +6,7 @@ import japgolly.microlibs.utils.Memo
 import japgolly.univeq.UnivEq
 import java.net.URL
 import scala.annotation.tailrec
-import scalaz.Order
+import scalaz.{-\/, Order, \/, \/-}
 import scalaz.std.anyVal.intInstance
 import scala.collection.GenTraversable
 import scala.collection.generic.CanBuildFrom
@@ -294,4 +294,36 @@ object Util {
         line
     }.mkString("")
   }
+
+  def separate(input: String, g: String => Int): Vector[String \/ String] = {
+    val b = Vector.newBuilder[String \/ String]
+    var i = 0
+    var nongap = 0
+    def takeNonGap(): Unit =
+      if (nongap != 0) {
+        val ng = input.substring(i - nongap, i)
+        b += \/-(ng)
+        nongap = 0
+      }
+
+    while (i < input.length) {
+      val s = input.drop(i)
+      val gapSize = g(s)
+      if (gapSize == 0) {
+        nongap += 1
+        i += 1
+      } else {
+        takeNonGap()
+        val gap = s.take(gapSize)
+        b += -\/(gap)
+        i += gapSize
+      }
+    }
+    takeNonGap()
+    b.result()
+  }
+
+  def separateByWhitespaceOrCommas(input: String): Vector[String \/ String] =
+    separate(input, _.takeWhile(c => c == ',' || c.isWhitespace).length)
+
 }

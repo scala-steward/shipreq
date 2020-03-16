@@ -1,6 +1,8 @@
 package shipreq.base.util
 
 import japgolly.microlibs.testutil.TestUtil._
+import nyaya.gen.Gen
+import scalaz.{-\/, \/-}
 import utest._
 
 object UtilTest extends TestSuite {
@@ -95,6 +97,24 @@ object UtilTest extends TestSuite {
         )
       }
 
+    }
+
+    'separateByWhitespaceOrCommas {
+
+      'manual - assertEq(
+        Util.separateByWhitespaceOrCommas("omg  , k qq"),
+        Vector(\/-("omg"), -\/("  , "), \/-("k"), -\/(" "), \/-("qq")))
+
+      'prop - {
+        val gen = Gen.chooseChar(' ', ",ab")
+        for {
+          n <- 0 to 6
+          s <- gen.string(n).samples().take(Math.pow(n, 2).toInt + 1)
+        } {
+          val r = Util.separateByWhitespaceOrCommas(s)
+          assertEq(r.iterator.map(_.merge).mkString, s)
+        }
+      }
     }
   }
 }
