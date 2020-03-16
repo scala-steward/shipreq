@@ -3,6 +3,7 @@ package shipreq.webapp.base.validation
 import monocle.Iso
 import scalaz.Isomorphism.<=>
 import scalaz.{-\/, Applicative, Semigroup, Traverse, \/, \/-}
+import scalaz.std.vector.vectorInstance
 import shipreq.base.util.{GenTuple, Identity, Valid, Validity}
 
 object Generic {
@@ -133,12 +134,18 @@ object Generic {
 
     def tuple[I2, C2, II, CC](b: Corrector[I2, C2])(implicit I: GenTuple[I, I2, II], C: GenTuple[C, C2, CC]): Corrector[II, CC] =
       Corrector[II, CC](
-        ii => I.map(ii, live, b.live, I.append),
-        ii => I.map(ii, full, b.full, C.append),
-        cc => C.map(cc, uncorrect, b.uncorrect, I.append))
+        live      = ii => I.map(ii, live, b.live, I.append),
+        full      = ii => I.map(ii, full, b.full, C.append),
+        uncorrect = cc => C.map(cc, uncorrect, b.uncorrect, I.append))
 
     def withAuditor[E, V](v: Auditor[E, C, V]): Validator[E, I, C, V] =
       Validator(this, v)
+
+    def vectorWithGaps[G]: Corrector[Vector[G \/ I], Vector[G \/ C]] =
+      Corrector[Vector[G \/ I], Vector[G \/ C]](
+        live      = _.map(_.map(live)),
+        full      = _.map(_.map(full)),
+        uncorrect = _.map(_.map(uncorrect)))
   }
 
   object Corrector {
@@ -276,6 +283,9 @@ object Generic {
 
     def toValidator: Validator[E, C, C, V] =
       Validator(Corrector.id, this)
+
+    def vector[EE >: E](implicit e: Semigroup[EE]): Auditor[EE, Vector[C], Vector[V]] =
+      Auditor.traverse[EE, Vector, C, V](audit)
   }
 
   object Auditor {
@@ -432,6 +442,11 @@ object Generic {
 
 //    def product[EE >: E, I2, C2, V2](that: Validator[EE, I2, C2, V2])(implicit E: Semigroup[EE]): Validator[EE, (I, I2), (C, C2), (V, V2)] =
 //      this tuple that
+
+    def vectorWithGaps[G, EE >: E](implicit e: Semigroup[EE]): Validator[EE, Vector[G \/ I], Vector[G \/ C], Vector[V]] =
+      Validator[EE, Vector[G \/ I], Vector[G \/ C], Vector[V]](
+        corrector.vectorWithGaps[G],
+        auditor.vector(e).contramap(_.flatMap(_.toList)))
   }
 
   object Validator {
