@@ -25,8 +25,8 @@ sealed abstract class StaticFieldType(name: String) extends FieldType(name)
 sealed abstract class CustomFieldType(name: String) extends FieldType(name)
 
 object StaticFieldType {
-  case object StepTree         extends StaticFieldType("Step Tree")
-  case object StepGraph        extends StaticFieldType("Step Graph")
+  case object UseCaseSteps     extends StaticFieldType("Use Case Steps")
+  case object UseCaseStepGraph extends StaticFieldType("Use Case Step Graph")
   case object ImplicationGraph extends StaticFieldType("Implication Graph")
 
   val values: NonEmptyVector[StaticFieldType] =
@@ -231,7 +231,7 @@ object StaticField {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object NormalAltStepTree extends UseCaseStepTree(
-      "Normal and Alternate Courses", T.StepTree, useCaseOnly, Mandatory.Not, Deletable.Not, None) {
+      "Normal and Alternate Courses", T.UseCaseSteps, useCaseOnly, Mandatory.Not, Deletable.Not, None) {
 
     override val useCaseSteps = GenLens[UseCase](_.stepsNA)
     override val useCaseStepTree = useCaseSteps ^|-> UseCaseSteps.tree
@@ -258,7 +258,7 @@ object StaticField {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object ExceptionStepTree extends UseCaseStepTree(
-      "Exception Courses", T.StepTree, useCaseOnly, Mandatory.Not, Deletable.Not, None) {
+      "Exception Courses", T.UseCaseSteps, useCaseOnly, Mandatory.Not, Deletable.Not, None) {
 
     override val useCaseSteps = GenLens[UseCase](_.stepsE)
     override val useCaseStepTree = useCaseSteps ^|-> UseCaseSteps.tree
@@ -284,7 +284,7 @@ object StaticField {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object StepGraph extends StaticField(
-    T.StepGraph.name, T.StepGraph, useCaseOnly, Mandatory.Not, Deletable, None)
+    T.UseCaseStepGraph.name, T.UseCaseStepGraph, useCaseOnly, Mandatory.Not, Deletable, None)
 
   case object ImplicationGraph extends StaticField(
     T.ImplicationGraph.name, T.ImplicationGraph, ApplicableReqTypes.empty, Mandatory.Not, Deletable, None)

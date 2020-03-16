@@ -86,7 +86,7 @@ object UiText {
     def useCaseStepTreeN     = "Normal Course"
     def useCaseStepTreeA     = "Alternative Courses"
     def useCaseStepTreeE     = StaticField.ExceptionStepTree.name
-    def useCaseStepFlowGraph = StaticFieldType.StepGraph.name
+    def useCaseStepFlowGraph = StaticFieldType.UseCaseStepGraph.name
     def deletionReason       = "Deletion Reason"
     def pastPubids           = "Past IDs"
     def savedViewName        = "Name"

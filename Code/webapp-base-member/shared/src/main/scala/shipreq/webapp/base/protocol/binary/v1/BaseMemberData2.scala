@@ -224,16 +224,16 @@ object BaseMemberData2 {
     new Pickler[FieldType] {
       private[this] final val KeyImplication      = 'i'
       private[this] final val KeyImplicationGraph = 'I'
-      private[this] final val KeyStepGraph        = 'G'
-      private[this] final val KeyStepTree         = 'T'
+      private[this] final val KeyUseCaseStepGraph = 'G'
+      private[this] final val KeyUseCaseSteps     = 'T'
       private[this] final val KeyTag              = 't'
       private[this] final val KeyText             = 'x'
       override def pickle(a: FieldType)(implicit state: PickleState): Unit =
         a match {
           case CustomFieldType.Implication      => state.enc.writeByte(KeyImplication     )
           case StaticFieldType.ImplicationGraph => state.enc.writeByte(KeyImplicationGraph)
-          case StaticFieldType.StepGraph        => state.enc.writeByte(KeyStepGraph       )
-          case StaticFieldType.StepTree         => state.enc.writeByte(KeyStepTree        )
+          case StaticFieldType.UseCaseSteps     => state.enc.writeByte(KeyUseCaseSteps    )
+          case StaticFieldType.UseCaseStepGraph => state.enc.writeByte(KeyUseCaseStepGraph)
           case CustomFieldType.Tag              => state.enc.writeByte(KeyTag             )
           case CustomFieldType.Text             => state.enc.writeByte(KeyText            )
         }
@@ -241,8 +241,8 @@ object BaseMemberData2 {
         state.dec.readByte match {
           case KeyImplication      => CustomFieldType.Implication
           case KeyImplicationGraph => StaticFieldType.ImplicationGraph
-          case KeyStepGraph        => StaticFieldType.StepGraph
-          case KeyStepTree         => StaticFieldType.StepTree
+          case KeyUseCaseSteps     => StaticFieldType.UseCaseSteps
+          case KeyUseCaseStepGraph => StaticFieldType.UseCaseStepGraph
           case KeyTag              => CustomFieldType.Tag
           case KeyText             => CustomFieldType.Text
         }
@@ -615,19 +615,19 @@ object BaseMemberData2 {
   implicit lazy val picklerStaticFieldType: Pickler[StaticFieldType] =
     new Pickler[StaticFieldType] {
       private[this] final val KeyImplicationGraph = 'i'
-      private[this] final val KeyStepGraph        = 'g'
-      private[this] final val KeyStepTree         = 't'
+      private[this] final val KeyUseCaseSteps     = 't'
+      private[this] final val KeyUseCaseStepGraph = 'g'
       override def pickle(a: StaticFieldType)(implicit state: PickleState): Unit =
         a match {
           case StaticFieldType.ImplicationGraph => state.enc.writeByte(KeyImplicationGraph)
-          case StaticFieldType.StepGraph        => state.enc.writeByte(KeyStepGraph       )
-          case StaticFieldType.StepTree         => state.enc.writeByte(KeyStepTree        )
+          case StaticFieldType.UseCaseSteps     => state.enc.writeByte(KeyUseCaseSteps    )
+          case StaticFieldType.UseCaseStepGraph => state.enc.writeByte(KeyUseCaseStepGraph)
         }
       override def unpickle(implicit state: UnpickleState): StaticFieldType =
         state.dec.readByte match {
           case KeyImplicationGraph => StaticFieldType.ImplicationGraph
-          case KeyStepGraph        => StaticFieldType.StepGraph
-          case KeyStepTree         => StaticFieldType.StepTree
+          case KeyUseCaseSteps     => StaticFieldType.UseCaseSteps
+          case KeyUseCaseStepGraph => StaticFieldType.UseCaseStepGraph
         }
     }
 
