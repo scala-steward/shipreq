@@ -5,6 +5,8 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
+import org.scalajs.dom.html
+import scala.scalajs.js
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.ui.semantic.{Dropdown, Icon, UsesSemanticUiManually}
 
@@ -21,6 +23,7 @@ object DropdownAndTextEditor {
     val outerTagMod    : TagMod
     val dropdownTagMod : TagMod
     val inputTagMod    : TagMod
+    val inputDomRef    : js.UndefOr[Ref.Simple[html.Input]]
     def univEq         : UnivEq[A]
 
     @inline final def render: VdomElement = Component(this)
@@ -33,10 +36,11 @@ object DropdownAndTextEditor {
                  renderItem     : A => TagMod,
                  state          : StateSnapshot[State[A]],
                  enabled        : Enabled,
-                 textLiveCorrect: String => String = identity,
-                 outerTagMod    : TagMod           = EmptyVdom,
-                 dropdownTagMod : TagMod           = EmptyVdom,
-                 inputTagMod    : TagMod           = EmptyVdom,
+                 textLiveCorrect: String => String                   = identity,
+                 outerTagMod    : TagMod                             = EmptyVdom,
+                 dropdownTagMod : TagMod                             = EmptyVdom,
+                 inputTagMod    : TagMod                             = EmptyVdom,
+                 inputDomRef    : js.UndefOr[Ref.Simple[html.Input]] = js.undefined
                 )(implicit ue: UnivEq[A]): Of[A] = {
       type _A              = A
       val _items           = items
@@ -47,6 +51,7 @@ object DropdownAndTextEditor {
       val _outerTagMod     = outerTagMod
       val _dropdownTagMod  = dropdownTagMod
       val _inputTagMod     = inputTagMod
+      val _inputDomRef     = inputDomRef
       new Props {
         override type A              = _A
         override val items           = _items
@@ -57,6 +62,7 @@ object DropdownAndTextEditor {
         override val outerTagMod     = _outerTagMod
         override val dropdownTagMod  = _dropdownTagMod
         override val inputTagMod     = _inputTagMod
+        override val inputDomRef     = _inputDomRef
         override def univEq          = ue
       }
     }
@@ -104,7 +110,7 @@ object DropdownAndTextEditor {
         ^.borderLeftWidth := "0",
         p.outerTagMod,
         dropdown,
-        input)
+        p.inputDomRef.fold(input)(input.withRef(_)))
     }
 
     val enableDropdown: Callback =

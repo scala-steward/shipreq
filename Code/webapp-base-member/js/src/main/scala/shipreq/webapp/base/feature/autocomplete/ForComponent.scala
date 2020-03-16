@@ -1,7 +1,6 @@
 package shipreq.webapp.base.feature.autocomplete
 
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.internal.JsUtil
 import japgolly.univeq._
 import shipreq.webapp.base.jsfacade.TextComplete

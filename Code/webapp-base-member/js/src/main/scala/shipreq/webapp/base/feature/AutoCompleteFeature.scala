@@ -10,11 +10,28 @@ import shipreq.webapp.base.ui.AutosizeTextarea
   * Usage
   * =====
   *
-  * 1. `import AutoCompleteFeature._`
-  * 2. Have your component's backend extends `AutoComplete.Backend[D]` where D is the dom type.
-  * 3. Implement required method(s).
-  * 4. Wire up your editor: `^.onBlur --> autoCompleteBlur`
-  * 5. Add `.configure(AutoComplete.install)` to your component builder.
+  * 1. `import shipreq.webapp.base.feature.AutoCompleteFeature._`
+  *
+  *  2. Have your component's backend extends `AutoComplete.BackendI` for `<input>`, or `BackendTA` for `<textarea>`
+  *
+  *  3. Add to backend:
+  *      ```
+  *      override val autoCompleteCtx: CallbackOption[AutoCompleteCtx] =
+  *        inputDomRef.get.map(AutoCompleteCtx(pxAutoComplete.value(), _))
+  *      ```
+  *
+  *  4. Add a dom ref to the backend: `private val inputDom = Ref[html.Input]`
+  *    Add it to the dom using `.withRef`
+  *
+  *  5. Wire up your editor: `^.onBlur --> autoCompleteBlur`
+  *
+  *  6. Add `.configure(AutoComplete.install)` to your component builder.
+  *     If you're using an input instead of a textarea use
+  *     `.configure(AutoComplete.install(autoCompletableInput))`
+  *
+  *  7. Add to backend: `private val pxAutoComplete: Px[AutoComplete.Strategies]`
+  *    For the implementation, start with `pxProject.map` or `pxProjectConfig.map`,
+  *    then use or compose values in `AutoComplete.Project.xxx`
   */
 object AutoCompleteFeature extends autocomplete.Implicits {
 

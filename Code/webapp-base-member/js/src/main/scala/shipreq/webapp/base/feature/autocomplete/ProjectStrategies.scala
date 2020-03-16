@@ -67,8 +67,8 @@ object ProjectStrategies {
   def hashtag(p: Project, fd: FilterDead, issues: Boolean, tags: Boolean): Contextualise => Strategies =
     if (issues || tags)
       hashtag(
-        if (issues) p.config.customIssueTypes.values.toStream else Stream.empty,
-        if (tags)   p.config.tags.applicableTagIterator().toStream     else Stream.empty,
+        if (issues) p.config.customIssueTypes.values.toStream      else Stream.empty,
+        if (tags)   p.config.tags.applicableTagIterator().toStream else Stream.empty,
         fd)
     else
       _ => Vector.empty
@@ -291,6 +291,24 @@ object ProjectStrategies {
       .regex("""(^|\s)<([a-z]+)$""", index = 2)
       .search(term => tags.filter(_ startsWith term))
       .replace2(tag => (s"$$1<$tag>", s"</$tag>"))
+      .result()
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // Req type mnemonics
+
+  def reqTypeMnemonics(reqTypes: ReqTypes, exclude: Set[String]): Strategies = {
+    import Grammar.{reqTypeMnemonic => G}
+    Strategy.builder
+      .regex(s"(^|\\s|,)(|${G.caseInsensitiveRegexStr})$$", index = 2)
+      .search(term =>
+        reqTypes.liveSortedByMnemonic
+          .iterator
+          .filterNot(rt => exclude.contains(rt.mnemonic.value))
+          .filter(_.mnemonic.value startsWith term)
+          .map(r => s"${r.mnemonic.value}: ${r.name}")
+      )
+      .replace(rt => s"$$1${rt.takeWhile(_ != ':')}")
       .result()
   }
 }

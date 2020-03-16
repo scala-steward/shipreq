@@ -169,7 +169,7 @@ final case class ReqTypes(custom: IMap[CustomReqTypeId, CustomReqType]) {
     MutableArray(ids)
       .map(need(_).mnemonic.value)
       .sort
-      .mkString(", ")
+      .mkString(" ")
 }
 
 object ReqTypes {

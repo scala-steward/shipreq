@@ -7,10 +7,12 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
+import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.ui.GeneralTheme
@@ -21,6 +23,8 @@ import shipreq.webapp.client.project.app.Style.{widgets => *}
 object ApplicableReqTypeEditor {
 
   sealed trait Props {
+    val reqTypes: ReqTypes
+    def reqTypesInText: Set[String]
     @inline final def render: VdomElement = Component(this)
   }
 
@@ -32,10 +36,12 @@ object ApplicableReqTypeEditor {
                            reqTypes  : ReqTypes,
                            filterDead: FilterDead,
                            enabled   : Enabled) extends ApplicableReqTypeEditor.Props {
-
       lazy val deadPrevious = previous.filterReqTypes(Dead, reqTypes)
       lazy val validator    = DataValidators.reqTypeSeqStr(reqTypes).unnamed
       lazy val validated    = validator(state.value.text)
+
+      override lazy val reqTypesInText: Set[String] =
+        validator.corrector(state.value.text).iterator.flatMap(_.toOption).toSet
     }
 
     type State = DropdownAndTextEditor.State[Applicability]
@@ -68,7 +74,7 @@ object ApplicableReqTypeEditor {
 
   // ===================================================================================================================
 
-  final class Backend($: BackendScope[Props, Unit]) {
+  final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.BackendI {
 
     private val label = <.label(UiText.FieldNames.applicableReqTypes)
 
@@ -80,8 +86,14 @@ object ApplicableReqTypeEditor {
     private val items: NonEmptyVector[Applicability] =
       NonEmptyVector(Applicable, NotApplicable)
 
-    private val inputTagMod: TagMod =
-      TagMod(^.placeholder := "Req types...")
+    private val inputDomRef = Ref[html.Input]
+
+    private lazy val inputTagMod: TagMod =
+      TagMod(
+        ^.onBlur --> autoCompleteBlur,
+        ^.placeholder := "Req types...",
+        ^.spellCheck := false,
+      )
 
     private val clear =
       <.div(^.clear.right)
@@ -101,6 +113,7 @@ object ApplicableReqTypeEditor {
           enabled         = p.enabled,
           dropdownTagMod  = *.applicableReqTypesDropdown,
           inputTagMod     = inputTagMod,
+          inputDomRef     = inputDomRef,
         ).render
 
       val dead = {
@@ -130,6 +143,21 @@ object ApplicableReqTypeEditor {
       p match {
         case a: FullFormField.Props => renderFullFormField(a)
       }
+
+    private val pxReqTypes: Px[ReqTypes] =
+      Px.props($).map(_.reqTypes).withReuse.autoRefresh
+
+    private val pxReqTypesInText: Px[Set[String]] =
+      Px.props($).map(_.reqTypesInText).withReuse.autoRefresh
+
+    private val pxAutoComplete: Px[AutoComplete.Strategies] =
+      for {
+        rt <- pxReqTypes
+        ex <- pxReqTypesInText
+      } yield AutoComplete.Project.reqTypeMnemonics(rt, ex)
+
+    override val autoCompleteCtx: CallbackOption[AutoCompleteCtx] =
+      inputDomRef.get.map(AutoCompleteCtx(pxAutoComplete.value(), _))
   }
 
   implicit val reusabilityProps: Reusability[Props] = Reusability.derive
@@ -137,5 +165,6 @@ object ApplicableReqTypeEditor {
   val Component = ScalaComponent.builder[Props]("ApplicableReqTypeEditor")
     .renderBackend[Backend]
     .configure(Reusability.shouldComponentUpdate)
+    .configure(AutoComplete.install(autoCompletableInput))
     .build
 }

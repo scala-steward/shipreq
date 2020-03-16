@@ -87,7 +87,7 @@ object FilterEditor {
     private val pxFilterValidator: Px[Filter.Validator] =
       pxProjectConfig.map(FilterAlgebra.validate)
 
-    val pxAutoComplete: Px[AutoComplete.Strategies] =
+    private val pxAutoComplete: Px[AutoComplete.Strategies] =
       pxProject.map { p =>
         val hashtags = AutoComplete.Project.hashtag(p, ShowDead, issues = true, tags = true)(Contextualise)
         hashtags :+ autoCompletePresenceLackAttr :+ autoCompleteHasIssue :+ autoCompleteKeywords

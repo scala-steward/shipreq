@@ -498,7 +498,7 @@ object TagConfigTest extends TestSuite {
       selectTag("pri=med")
         +> filterDead.assert(HideDead)
         +> reqTypeApplicability.assert("Whitelist")
-        +> reqTypesText.assert("FR, MF")
+        +> reqTypesText.assert("FR MF")
         +> reqTypesDead.assert.empty
         +> reqTypesError.assert.empty
         +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
@@ -506,7 +506,7 @@ object TagConfigTest extends TestSuite {
         >> clickFilterDead
         +> filterDead.assert(ShowDead)
         +> reqTypeApplicability.assert("Whitelist")
-        +> reqTypesText.assert("FR, MF")
+        +> reqTypesText.assert("FR MF")
         +> reqTypesDead.assert.contains("Deleted req types: DD")
         +> reqTypesError.assert.empty
         +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
