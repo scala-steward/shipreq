@@ -105,13 +105,11 @@ object Field {
 
   implicit lazy val applicableReqTypesEquality: UnivEq[ApplicableReqTypes] = implicitly
 
-  def name(reqTypes: ReqTypes, tags: TagTree): Field => String = {
-    val cn: CustomField => String = CustomField.name(reqTypes, tags)
-    val fn: Field       => String = {
-      case f: StaticField => f.name
-      case f: CustomField => cn(f)
-    }
-    fn
+  private[data] def name(reqTypes: ReqTypes, tags: TagTree): Field => String = {
+    case f: StaticField             => f.name
+    case f: CustomField.Text        => f.name
+    case f: CustomField.Tag         => f.name(tags)
+    case f: CustomField.Implication => f.name(reqTypes)
   }
 }
 
@@ -451,14 +449,6 @@ object CustomField {
     case f: Tag         => f.copy(liveExplicitly = n)
     case f: Implication => f.copy(liveExplicitly = n)
   })
-
-  def name(reqTypes: ReqTypes, tags: TagTree): CustomField => String = {
-    case f: Text        => f.name
-    case f: Tag         => f.name(tags)
-    case f: Implication => f.name(reqTypes)
-  }
-
-  def nameP(p: Project) = name(p.config.reqTypes, p.config.tags.tree)
 
   implicit def equalImplication: UnivEq[Implication] = UnivEq.derive
   implicit def equalTag        : UnivEq[Tag]         = UnivEq.derive

@@ -108,7 +108,6 @@ object Row {
 
   def fromIssue(p: Project, rf: RenderFeature.ToVdom.NoCtx.ForProject): Issue => Row = {
     implicit val cfg = p.config
-    val customFieldName = CustomField.nameP(p)
     val actionBuilder = new Actions.Builder(p)
 
     def forReqA(i: Issue, desc: String, req: Req, fk: IssueField[EditorFeature.FieldKey.ForAllReqs]): ForReq =
@@ -185,7 +184,7 @@ object Row {
 
     {
       case i: Issue.BlankCustomField =>
-        val desc = UI.descBlankCustomField(customFieldName(i.field))
+        val desc = UI.descBlankCustomField(cfg.fieldName(i.field))
         forReqA(i, desc, i.req, IssueField.customField(i.field.id))
 
       case i: Issue.BlankTitle =>

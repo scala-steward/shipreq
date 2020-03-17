@@ -175,12 +175,10 @@ object ReqTableTestDsl {
       val uniqueColumns =
         **.assert.distinct
 
-      def customFieldNames(project: Project, a: Live): Set[String] = {
-        val cfname = CustomField.nameP(project)
+      def customFieldNames(project: Project, a: Live): Set[String] =
         project.config.fields.customFields.valuesIterator
-          .filter(_.live(project.config) ==* a).map(cfname)
+          .filter(_.live(project.config) ==* a).map(project.config.fieldName)
           .toSet
-      }
 
       val liveCustomFieldColumnsAlwaysAvailable =
         **.assert.containsAll("live custom field columns")(i => customFieldNames(i.state, Live))

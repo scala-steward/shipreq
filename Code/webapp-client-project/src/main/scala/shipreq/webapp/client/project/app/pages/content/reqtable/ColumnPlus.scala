@@ -30,7 +30,7 @@ object ColumnPlus {
     apply(Column.Title, Live, ColumnNames.title)
 
   def byProject(p: Project): Column => Option[ColumnPlus] = {
-    val cfName = CustomField.nameP(p)
+    val cfName = p.config.fieldName
     c => c match {
       case Column.Pubid           => Some(apply(c, Live, ColumnNames.pubid))
       case Column.Code            => Some(apply(c, Live, ColumnNames.code))
