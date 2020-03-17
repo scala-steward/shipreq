@@ -138,7 +138,7 @@ object FilterAlgebra {
 
     {
       case HashRef       (\/-(id)) => Potential(HashRef       (cfg.tags.needApplicableTag(id).key))
-      case HashRef       (-\/(id)) => Potential(HashRef       (cfg.customIssueType(id).key))
+      case HashRef       (-\/(id)) => Potential(HashRef       (cfg.customIssueTypes.need(id).key))
       case Presence      (attr)    => Potential(Presence      (attr.name))
       case ImpliesAnyOf  (reqs)    => Potential(ImpliesAnyOf  (convReqSet(reqs)))
       case ImpliedByAnyOf(reqs)    => Potential(ImpliedByAnyOf(convReqSet(reqs)))

@@ -141,7 +141,7 @@ object PlainText {
     }
 
     private def issue(id: CustomIssueTypeId, desc: Option[String]): String = {
-      val it = p.config.customIssueType(id)
+      val it = p.config.customIssueTypes.need(id)
       desc.foldLeft(hashtag(it.key))(_ ~ G.issueDescSurround(_))
     }
 

@@ -162,7 +162,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
 
   private val issueWithoutDesc: CustomIssueTypeId => Live => VdomTag =
     Memo { id =>
-      val issueType = cfg.customIssueType(id)
+      val issueType = cfg.customIssueTypes.need(id)
       Live.memo { liveText =>
         <.span(
           *.issue((liveText, issueType.live)),
@@ -171,7 +171,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     }
 
   private def issueWithDesc(id: CustomIssueTypeId, desc: Text.InlineIssueDesc.NonEmptyText, liveText: Live): VdomTag = {
-    val issueType = project.config.customIssueType(id)
+    val issueType = project.config.customIssueTypes.need(id)
     <.span(
       *.issue((liveText, issueType.live)),
       G.hashRefKey.prefix ~ issueType.key.value ~ issueDescSurroundPrefix,

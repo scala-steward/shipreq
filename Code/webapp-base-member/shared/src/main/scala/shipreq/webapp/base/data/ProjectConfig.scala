@@ -26,25 +26,14 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
                                fields          : FieldSet,
                                tags            : Tags) {
 
-  @inline def applicability = fields.applicability
+  // ==========================================================================
+  // Content
 
-  def customIssueType(id: CustomIssueTypeId): CustomIssueType =
-    customIssueTypes.need(id)
+  def reqFilter(fd: FilterDead): Req => Boolean =
+    fd.filterFnBy((_: Req).live(reqTypes))
 
-  lazy val liveCustomTextFields: List[CustomField.Text] =
-    fields.customTextFields.filter(_.live(this) is Live)
-
-  lazy val liveOrderedFieldIds: Vector[FieldId] =
-    fields.order.filter(fields.need(_).live(this) is Live)
-
-  lazy val liveTagFieldDistribution: TagFieldDistribution.TagIds =
-    TagFieldDistribution(this, _.live(this) is Live)
-
-  def deadTagFieldDistribution(deadTagFilter: CustomField.Tag.Id => Boolean): TagFieldDistribution.TagIds =
-    TagFieldDistribution(this, f => f.live(this) match {
-      case Live => true
-      case Dead => deadTagFilter(f.id)
-    })
+  // ==========================================================================
+  // HashRefs
 
   /** Keys are lowercase */
   lazy val hashRefLookupM: Map[String, HashRefTarget] =
@@ -55,19 +44,8 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
   def hashRefLookup(key: String): Option[HashRefTarget] =
     hashRefLookupM.get(key.toLowerCase)
 
-  def live(id: ReqTypeId): Live =
-    reqTypes.need(id).live
-
-  def reqFilter(fd: FilterDead): Req => Boolean =
-    fd.filterFnBy((_: Req).live(reqTypes))
-
-  lazy val mandatoryLiveCustomFields: CustomField.Lists = {
-    val m = new CustomField.MutableLists
-    for (f <- fields.customFields.valuesIterator)
-      if (f.mandatory.is(Mandatory) && f.live(this).is(Live))
-        m += f
-    m.result()
-  }
+  // ==========================================================================
+  // Fields
 
   lazy val fieldName: Field => String =
     Field.name(reqTypes, tags.tree)
@@ -75,6 +53,20 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
   lazy val fieldNameById: FieldId => String = {
     val f = fieldName
     _.foldId(f, id => f(fields.customFields.need(id)))
+  }
+
+  lazy val liveCustomTextFields: List[CustomField.Text] =
+    fields.customTextFields.filter(_.live(this) is Live)
+
+  lazy val liveOrderedFieldIds: Vector[FieldId] =
+    fields.order.filter(fields.need(_).live(this) is Live)
+
+  lazy val mandatoryLiveCustomFields: CustomField.Lists = {
+    val m = new CustomField.MutableLists
+    for (f <- fields.customFields.valuesIterator)
+      if (f.mandatory.is(Mandatory) && f.live(this).is(Live))
+        m += f
+    m.result()
   }
 
   val mostRelevantLiveFieldForTag: TagId => Option[CustomField.Tag] =
@@ -96,4 +88,23 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
 
       direct.orElse(soleParent)
     }
+
+  // ==========================================================================
+  // Req types
+
+  def live(id: ReqTypeId): Live =
+    reqTypes.need(id).live
+
+  // ==========================================================================
+  // Tags
+
+  def deadTagFieldDistribution(deadTagFilter: CustomField.Tag.Id => Boolean): TagFieldDistribution.TagIds =
+    TagFieldDistribution(this, f => f.live(this) match {
+      case Live => true
+      case Dead => deadTagFilter(f.id)
+    })
+
+  lazy val liveTagFieldDistribution: TagFieldDistribution.TagIds =
+    TagFieldDistribution(this, _.live(this) is Live)
+
 }

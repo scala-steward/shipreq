@@ -58,7 +58,7 @@ object Actions {
       Action(Icon.Undo, "Restore " + subject, cmd)
 
     private def restoreIssueTag(id: CustomIssueTypeId): Actions = {
-      val t = p.config.customIssueType(id)
+      val t = p.config.customIssueTypes.need(id)
       restore(
         PlainText.hashtag(t.key),
         UpdateConfigCmd.CustomIssueTypeRestore(id))

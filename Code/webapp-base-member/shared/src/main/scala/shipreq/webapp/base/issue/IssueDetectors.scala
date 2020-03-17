@@ -218,7 +218,7 @@ object IssueDetectors {
       val issuesInReqs = ctx.project.atomScan.issuesInReqs
       req => {
         for (a <- issuesInReqs(req.id).live) {
-          val t = ctx.project.config.customIssueType(a.value.typ)
+          val t = ctx.project.config.customIssueTypes.need(a.value.typ)
           val r = t.live match {
             case Live => Issue.IssueTagInReq(req, a.loc, a.value)
             case Dead => Issue.DeadIssueTagInReq(req, a.loc, a.value)
@@ -232,7 +232,7 @@ object IssueDetectors {
       val issuesInRcgs = ctx.project.atomScan.issuesInRcgs
       rcg => {
         for (a <- issuesInRcgs(rcg.id).live) {
-          val t = ctx.project.config.customIssueType(a.typ)
+          val t = ctx.project.config.customIssueTypes.need(a.typ)
           val r = t.live match {
             case Live => Issue.IssueTagInRcg(rcg, a)
             case Dead => Issue.DeadIssueTagInRcg(rcg, a)

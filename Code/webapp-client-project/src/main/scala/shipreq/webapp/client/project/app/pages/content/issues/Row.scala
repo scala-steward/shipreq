@@ -201,12 +201,12 @@ object Row {
         forReqA(i, desc, i.req, IssueField.tags(field))
 
       case i: Issue.DeadIssueTagInRcg =>
-        val it   = cfg.customIssueType(i.issue.typ)
+        val it   = cfg.customIssueTypes.need(i.issue.typ)
         val desc = UI.descDeadIssueTag(it.key)
         forRcg(i, desc, i.rcg, Some(IssueField.CodeGroupTitle))
 
       case i: Issue.DeadIssueTagInReq =>
-        val it   = cfg.customIssueType(i.issue.typ)
+        val it   = cfg.customIssueTypes.need(i.issue.typ)
         val desc = UI.descDeadIssueTag(it.key)
         forReqAndLoc(i, desc, i.req, i.loc)
 
@@ -229,12 +229,12 @@ object Row {
         forReqA(i, desc, i.req, IssueField.impliedBy)
 
       case i: Issue.IssueTagInRcg =>
-        val it   = cfg.customIssueType(i.issue.typ)
+        val it   = cfg.customIssueTypes.need(i.issue.typ)
         val desc = UI.descIssueTag(it.key)
         forRcg(i, desc, i.rcg, Some(IssueField.CodeGroupTitle))
 
       case i: Issue.IssueTagInReq =>
-        val it   = cfg.customIssueType(i.issue.typ)
+        val it   = cfg.customIssueTypes.need(i.issue.typ)
         val desc = UI.descIssueTag(it.key)
         forReqAndLoc(i, desc, i.req, i.loc)
 
