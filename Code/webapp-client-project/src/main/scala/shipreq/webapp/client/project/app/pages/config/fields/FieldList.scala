@@ -21,8 +21,8 @@ object FieldList {
                          pw                  : ProjectWidgets.NoCtx,
                          updateOrder         : Reusable[FieldUpdateOrder => Callback],
                          enabled             : Enabled,
-//                         onClickAnywhere     : Option[Reusable[Callback]],
-//                         usage               : LiveDeadStatMap[ApplicableTagId, Int],
+                         onClickAnywhere     : Option[Reusable[Callback]],
+                         //usage               : LiveDeadStatMap[FieldId, Int],
                          router              : SpecialRouterCtl,
                         ) {
 
@@ -129,6 +129,7 @@ object FieldList {
 
       <.table(
         *.fieldListTable,
+        p.onClickAnywhere.whenDefined(^.onClick --> _),
         tableHeader,
         <.tbody(
           dnd.container,

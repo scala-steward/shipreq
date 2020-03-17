@@ -61,7 +61,8 @@ object FieldConfig {
     def effectiveFilterDead: FilterDead =
       filterDeadOverride.getOrElse(state.value.filterDead)
 
-//    val potentialSaveCmd: PotentialChange[Unit, UpdateConfigCmd.ToModifyFields] =
+    val potentialSaveCmd: PotentialChange[Unit, UpdateConfigCmd.ToModifyFields] =
+      PotentialChange.Unchanged // TODO
 //      state.value.right.editorOption match {
 //        case Some(\/-(s)) => s.updateCmd(project.config)
 //        case Some(-\/(s)) => s.updateCmd(project.config)
@@ -178,7 +179,7 @@ object FieldConfig {
         pw                 = p.pw,
         updateOrder        = updateOrder,
         enabled            = Disabled when p.asyncInProgress,
-//        onClickAnywhere    = args.closeEditor.filter(_ => p.potentialSaveCmd.isUnchanged),
+        onClickAnywhere    = args.closeEditor.filter(_ => p.potentialSaveCmd.isUnchanged),
 //        usage              = p.project.tagUsage,
         router             = p.router,
       ).render
