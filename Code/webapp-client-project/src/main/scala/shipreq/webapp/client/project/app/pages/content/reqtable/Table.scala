@@ -147,9 +147,9 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
         }.asEventDefault(e)
 
       private val columnDND =
-        DragToReorderFeature(
+        DragToReorderFeature[ColumnPlus](
           getData             = $.props.map(_.cols.whole),
-          updateData          = setNewColumns,
+          updateData          = u => setNewColumns(u.newOrder),
           updateUI            = $.forceUpdate,
           dragOutsideToRemove = true,
         )

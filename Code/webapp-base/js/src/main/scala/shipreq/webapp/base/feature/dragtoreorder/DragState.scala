@@ -10,6 +10,7 @@ private[dragtoreorder] final case class DragState[A](items       : Vector[A],
   override def toString = s"DragState($dragSource, $dragLoc, $currentOrder)"
 
   def originalOrder = items.indices.toVector
+  def dragSourceItem = items(dragSource)
 
   def orderWithoutTombstone: Vector[Int] =
     dragLoc match {

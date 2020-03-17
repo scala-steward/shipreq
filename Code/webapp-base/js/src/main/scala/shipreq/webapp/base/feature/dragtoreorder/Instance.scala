@@ -6,7 +6,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.raw.DragEffect
 import shipreq.webapp.base.feature.DragToReorderFeature
-import shipreq.webapp.base.feature.DragToReorderFeature.Item
+import shipreq.webapp.base.feature.DragToReorderFeature.{Item, Update}
 import shipreq.webapp.base.lib.DomUtil
 import shipreq.webapp.base.util.Reorder
 
@@ -16,7 +16,7 @@ object Instance {
 }
 
 private[feature] final class Instance[A](getData            : CallbackTo[Vector[A]],
-                                         updateData         : Vector[A] => Callback,
+                                         updateData         : Update[A] => Callback,
                                          updateUI           : Callback,
                                          dragOutsideToRemove: Boolean,
                                          addKeysToChildren  : Boolean,
@@ -120,7 +120,7 @@ private[feature] final class Instance[A](getData            : CallbackTo[Vector[
             o = s.orderWithoutTombstone
             _ ← CallbackOption.unless(o.length < s.items.length && !dragOutsideToRemove)
             _ ← CallbackOption.unless(o ==* s.originalOrder)
-            _ ← updateData(o map s.items.apply)
+            _ ← updateData(Update(s.dragSourceItem, s.items, o.map(s.items.apply)))
           } yield ()
 
         val t =

@@ -3,6 +3,8 @@ package shipreq.webapp.base.feature
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import japgolly.scalajs.react.vdom.TagMod
 import japgolly.scalajs.react.vdom.html_<^._
+import scalaz.Equal
+import shipreq.base.util.RelPos
 
 /** Allows a user to drag items in a sequence to reorder them.
   *
@@ -23,7 +25,7 @@ object DragToReorderFeature {
    * @param updateUI Use `$.forceUpdate`
    */
   def apply[A](getData            : CallbackTo[Vector[A]],
-               updateData         : Vector[A] => Callback,
+               updateData         : Update[A] => Callback,
                updateUI           : Callback,
                dragOutsideToRemove: Boolean,
                addKeysToChildren  : Boolean = true,
@@ -48,6 +50,11 @@ object DragToReorderFeature {
 
   private def nopItem[A](a: A): Item[A] =
     Item(a, TagMod.empty, TagMod.empty, Status.Normal)
+
+  final case class Update[+A](source: A, originalOrder: Vector[A], newOrder: Vector[A]) {
+    def relPos[AA >: A](implicit e: Equal[AA]): RelPos[AA] =
+      RelPos.get[AA](newOrder, source)
+  }
 
   def off[A]: DragToReorderFeature[A] =
     off(Vector.empty)

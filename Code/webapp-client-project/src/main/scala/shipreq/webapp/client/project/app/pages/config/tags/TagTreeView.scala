@@ -57,7 +57,7 @@ private[tags] object TagTreeView {
         Memo { groupId =>
           DragToReorderFeature[ApplicableTagId](
             getData             = $.props.map(p => getData(p.tags, groupId)),
-            updateData          = updateChildren(groupId, _),
+            updateData          = u => updateChildren(groupId, u.newOrder),
             updateUI            = $.forceUpdate,
             dragOutsideToRemove = false,
             addKeysToChildren   = false,

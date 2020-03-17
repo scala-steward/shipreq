@@ -48,9 +48,9 @@ object SortCriteriaEditor {
   final class Backend($: BackendScope[Props, Unit]) {
 
     private val dnd =
-      DragToReorderFeature(
+      DragToReorderFeature[SortCriterion](
         getData             = $.props.map(_.value.all.whole),
-        updateData          = updateItems,
+        updateData          = u => updateItems(u.newOrder),
         updateUI            = $.forceUpdate,
         dragOutsideToRemove = true,
       )

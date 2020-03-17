@@ -136,7 +136,7 @@ object TagRelationshipEditor {
     private val dnd =
       DragToReorderFeature[ApplicableTagId](
         getData             = $.props.map(p => p.state.value.tags.filter(p.tagIdFilter)),
-        updateData          = tags => modState(_.copy(tags = tags)),
+        updateData          = u => modState(_.copy(tags = u.newOrder)),
         updateUI            = $.forceUpdate,
         dragOutsideToRemove = false,
         addKeysToChildren   = false,
