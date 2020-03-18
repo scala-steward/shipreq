@@ -158,7 +158,6 @@ v2.1
   * add usages. probably have to update filter too
   * event tests
   * stablity tests (for events & commands)
-  * RedisProtocolTest.generateTestData
   * delete ProjectConfig mandatoryLiveCustomFields
   * delete Key & keyO from Fields
 
