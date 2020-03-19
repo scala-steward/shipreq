@@ -93,6 +93,28 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
     m.result()
   }
 
+  val fieldRules: FilterDead => ReqTypeId => FieldSetRules =
+    FilterDead.memo {
+
+      case HideDead =>
+        Memo { reqTypeId =>
+          FieldSetRules(
+            imp  = fields.custom(_).fieldReqTypeRules(reqTypeId), // TODO hide dead
+            tag  = fields.custom(_).fieldReqTypeRules(reqTypeId), // TODO hide dead
+            text = fields.custom(_).fieldReqTypeRules(reqTypeId), // TODO hide dead
+          )
+        }
+
+      case ShowDead =>
+        Memo { reqTypeId =>
+          FieldSetRules(
+            imp  = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            tag  = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            text = fields.custom(_).fieldReqTypeRules(reqTypeId),
+          )
+        }
+    }
+
   val mostRelevantLiveFieldForTag: TagId => Option[CustomField.Tag] =
     Memo { tagId =>
       type R = Option[CustomField.Tag]

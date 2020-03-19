@@ -112,6 +112,10 @@ object FieldReqTypeRules {
 
     @inline def default = Optional
 
+    type ForImpField  = Resolution[Impossible]
+    type ForTagField  = Resolution[ApplicableTagId]
+    type ForTextField = Resolution[Impossible]
+
     def v1(mandatory: data.Mandatory) =
       mandatory match {
         case data.Mandatory     => Mandatory

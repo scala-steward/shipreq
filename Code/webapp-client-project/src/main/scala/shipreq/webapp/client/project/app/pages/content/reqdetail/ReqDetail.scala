@@ -322,13 +322,12 @@ object ReqDetail {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      // TODO Test that this applies applicability
       def renderRowData(cellBase: VdomTag, row: Row): VdomElement = {
         import EditorFeature.FieldKey
 
         def editableCell(key: FieldKey.ForSomeReq): VdomElement = {
           val editor = reqEditor(key, data.pxProjectWidgets, data.filterDead)
-          EditorNavParent.Props(cellBase, editor, view.editable(key))
+          EditorNavParent.Props(cellBase, editor, view.editable(key).getOrElse(EmptyVdom))
             .render
         }
 
@@ -369,7 +368,7 @@ object ReqDetail {
             def renderHalf(dir: Direction) = {
               val key = FieldKey.Implications(\/-(dir))
               val editor = reqEditor(key, data.pxProjectWidgets, data.filterDead)
-              EditorNavParent.Props(impRowSubBase, editor, view.editable(key))
+              EditorNavParent.Props(impRowSubBase, editor, view.editable(key).getOrElse(EmptyVdom))
                 .render
             }
             nonDirectlyEditorNavParent(

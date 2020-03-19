@@ -159,6 +159,8 @@ v2.1
   * MakeEvent tests wrt dead/live
   * stablity tests (for events & commands)
   * delete ProjectConfig mandatoryLiveCustomFields
+  * delete CustomFields.List & MutableBuilder
+  * mandatoryLiveCustomFields
 
 * ReqTypes
   * Might be a good idea to store a description & examples. (eg. "BR" means xxx + examples)

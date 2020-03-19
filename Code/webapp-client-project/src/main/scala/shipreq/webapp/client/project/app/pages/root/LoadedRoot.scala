@@ -122,11 +122,11 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
     private val pxViewReqCacheText: Px[ViewReqCache[ProjectText.Context.None, String]] =
       Px.apply2(pxViewReqDataCache, pxPlainText)(ViewReqCache.apply)
 
-    private val pxRenderFeature: Px[FilterDead => RenderFeature.ForProject.ToVdom[ProjectText.Context.None]] =
-      Px.apply3(pxProject, pxViewReqCache, pxProjectWidgets)(RenderFeature.prepare)
+    private val pxRenderFeature: Px[FilterDead => RenderFeature.ToVdom.NoCtx.IfApplicable.ForProject] =
+      Px.apply3(pxProject, pxViewReqCache, pxProjectWidgets)(RenderFeature.ToVdom.NoCtx.IfApplicable.prepare)
 
-    private val pxRenderFeatureText: Px[FilterDead => RenderFeature.ForProject[ProjectText.Context.None, String]] =
-      Px.apply3(pxProject, pxViewReqCacheText, pxPlainText)(RenderFeature.prepare)
+    private val pxRenderFeatureText: Px[FilterDead => RenderFeature.ToText.NoCtx.ApplicableOption.ForProject] =
+      Px.apply3(pxProject, pxViewReqCacheText, pxPlainText)(RenderFeature.ToText.NoCtx.ApplicableOption.prepare)
 
     private val pxCreateEditability =
       pxProject.map(p => CreateFeature.Editability(p.config))
@@ -252,7 +252,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
         val ctx = ProjectText.Context.Req(id)
         val pt  = PlainText.ForProject(project, ctx)
         val vrc = ViewReqCache(vrdc, pt)
-        val rff = RenderFeature.prepare(project, vrc, pt)
+        val rff = RenderFeature.ToText.ReqCtx.ApplicableOption.prepare(project, vrc, pt)
 
         (s: State) => {
           val as = s.editAsync.toRead

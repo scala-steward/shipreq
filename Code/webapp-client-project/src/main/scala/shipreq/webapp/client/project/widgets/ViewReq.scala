@@ -4,8 +4,11 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react.vdom.html_<^.VdomTag
 import scala.collection.immutable.SortedSet
+import scalaz.{-\/, \/-}
 import shipreq.base.util._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.DataImplicits._
+import shipreq.webapp.base.data.FieldReqTypeRules.Resolution
 import shipreq.webapp.base.text.{PlainText, ProjectText}
 import shipreq.webapp.client.project.feature.{EditorFeature, RenderFeature}
 import ViewReq._
@@ -34,14 +37,21 @@ final case class ViewReq[A](data           : Data,
     pt.implicationList(imps, data.live, mandatory)
   }
 
-  def imps(id: CustomField.Implication.Id): A = {
-    val imps      = data.customImps(id)
-    val mandatory = Mandatory.when(data.mandatoryFields.contains(id))
-    pt.implicationList(imps, data.live, mandatory)
+  def imps(id: CustomField.Implication.Id): IfApplicable[A] = {
+    val imps = data.customImps(id)
+    data.fieldRules.imp(id) match {
+      case Resolution.Optional      => \/-(pt.implicationList(imps, data.live, Mandatory.Not))
+      case Resolution.Mandatory     => \/-(pt.implicationList(imps, data.live, Mandatory))
+      case Resolution.NotApplicable => NotApplicable.left
+      case Resolution.DefaultTo(x)  => x.impossible
+    }
   }
 
-  def imps(scope: ImplicationScope): A =
-    scope.fold(imps(_), imps(_))
+  def imps(scope: ImplicationScope): IfApplicable[A] =
+    scope match {
+      case \/-(dir) => \/-(imps(dir))
+      case -\/(id)  => imps(id)
+    }
 
   def deletionReason: IfApplicable[A] =
     pt.deleteReasonForReq(data.req)
@@ -55,37 +65,51 @@ final case class ViewReq[A](data           : Data,
   def tags: A =
     pt.tagList(data.generalTags, data.live, Mandatory.Not, tagValidity)
 
-  def tags(id: CustomField.Tag.Id): A = {
-    val tags      = data.customTags(id)
-    val mandatory = Mandatory.when(data.mandatoryFields.contains(id))
-    pt.tagList(tags, data.live, mandatory, tagValidity)
+  def tags(id: CustomField.Tag.Id): IfApplicable[A] = {
+    val tags = data.customTags(id)
+    data.fieldRules.tag(id) match {
+      case Resolution.Optional      => \/-(pt.tagList(tags, data.live, Mandatory.Not, tagValidity))
+      case Resolution.Mandatory     => \/-(pt.tagList(tags, data.live, Mandatory, tagValidity))
+      case Resolution.NotApplicable => NotApplicable.left
+      case Resolution.DefaultTo(d)  =>
+        val t = if (tags.isEmpty) Vector1(d) else tags
+        \/-(pt.tagList(t, data.live, Mandatory.Not, tagValidity))
+    }
   }
 
-  def tags(id: Option[CustomField.Tag.Id]): A =
-    id.fold(tags)(tags(_))
+  def tags(id: Option[CustomField.Tag.Id]): IfApplicable[A] =
+    id match {
+      case Some(id) => tags(id)
+      case None     => \/-(tags)
+    }
 
-  def text(id: CustomField.Text.Id): A =
-    pt.customTextField(id, data.req, data.live, Mandatory.when(data.mandatoryFields.contains(id)))
+  def text(id: CustomField.Text.Id): IfApplicable[A] =
+    data.fieldRules.text(id) match {
+      case Resolution.Optional      => \/-(pt.customTextField(id, data.req, data.live, Mandatory.Not))
+      case Resolution.Mandatory     => \/-(pt.customTextField(id, data.req, data.live, Mandatory))
+      case Resolution.NotApplicable => NotApplicable.left
+      case Resolution.DefaultTo(x)  => x.impossible
+    }
 
   def title: A =
     pt.reqTitle(data.req)
 
-  val customField: CustomFieldId => A = {
+  val customField: CustomFieldId => IfApplicable[A] = {
     case id: CustomField.Implication.Id => imps(id)
     case id: CustomField.Tag        .Id => tags(id)
     case id: CustomField.Text       .Id => text(id)
   }
 
-  val render: RenderFeature.FieldKey.ForSomeReq => A = {
+  val render: RenderFeature.FieldKey.ForSomeReq => IfApplicable[A] = {
     case RenderFeature.FieldKey.CustomTextField(field) => text(field)
     case RenderFeature.FieldKey.Tags           (field) => tags(field)
     case RenderFeature.FieldKey.Implications   (scope) => imps(scope)
-    case RenderFeature.FieldKey.Codes                  => codes
-    case RenderFeature.FieldKey.Title                  => title
-    case RenderFeature.FieldKey.ReqType                => reqType
+    case RenderFeature.FieldKey.Codes                  => \/-(codes)
+    case RenderFeature.FieldKey.Title                  => \/-(title)
+    case RenderFeature.FieldKey.ReqType                => \/-(reqType)
   }
 
-  val editable: EditorFeature.FieldKey.ForSomeReq => A =
+  val editable: EditorFeature.FieldKey.ForSomeReq => IfApplicable[A] =
     k => render(k.forRender)
 }
 
@@ -105,7 +129,8 @@ object ViewReq {
                         customImps      : CustomField.Implication.Id => Vector[Pubid],
                         pastPubids      : SortedSet[ExternalPubid],
                         impsAreMandatory: Boolean,
-                        mandatoryFields : CustomField.Lists) {
+                        fieldRules      : FieldSetRules,
+                       ) {
 
     def apply[A](pt: ProjectText[ProjectText.Context, A]): ViewReq[A] =
       ViewReq(this, pt, true)
@@ -180,8 +205,8 @@ object ViewReq {
         customImps       = fid => sortPubids(customImpLookup(fid)(id)),
         pastPubids       = pastPubids,
         impsAreMandatory = cfg.reqTypes.idsRequiringImplication.contains(req.reqTypeId),
-        mandatoryFields  = cfg.mandatoryLiveCustomFields)
+        fieldRules       = cfg.fieldRules(filterDead)(req.reqTypeId),
+      )
     }
-
   }
 }

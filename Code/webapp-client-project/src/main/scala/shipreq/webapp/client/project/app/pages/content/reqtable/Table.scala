@@ -337,7 +337,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
         customImps       = row.exp.cfImps.getOrElse(_, Vector.empty),
         pastPubids       = SortedSet.empty[ExternalPubid], // ReqTable doesn't display pastPubids
         impsAreMandatory = cfg.reqTypes.idsRequiringImplication.contains(row.req.reqTypeId),
-        mandatoryFields  = cfg.mandatoryLiveCustomFields,
+        fieldRules       = row.fieldRules
       ).apply(pw)
 
       def renderCodes: VdomElement =
@@ -347,7 +347,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
           viewReq.codes
 
       val view: Column => TagMod = {
-        case Column.CustomField(id)   => viewReq.customField(id)
+        case Column.CustomField(id)   => viewReq.customField(id) getOrElse `n/a`
         case Column.Title             => viewReq.title
         case Column.ReqType           => viewReq.reqType
         case Column.Tags              => viewReq.tags

@@ -7,7 +7,7 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/-}
-import shipreq.base.util.{ConsolidatedSeq, ErrorMsg}
+import shipreq.base.util.{ConsolidatedSeq, ErrorMsg, IfApplicable}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AsyncFeature
@@ -18,14 +18,14 @@ import shipreq.webapp.base.sort.FusedSorters
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.ui.semantic
 import shipreq.webapp.client.project.app.Style.{issues => *}
-import shipreq.webapp.client.project.feature.{EditorFeature, RenderFeature}
+import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.lib.EditorNavParent
 import shipreq.webapp.client.project.widgets.{NoFilterResults, ProjectWidgets}
 
 object Table {
 
   final case class StaticProps(pxProject       : Px[Project],
-                               pxRenderFeature : Px[RenderFeature.ToVdom.NoCtx.ForProject],
+                               pxRenderFeature : Px[RenderFeature.ForProject],
                                pxPlainText     : Px[PlainText.ForProject.NoCtx],
                                pxProjectWidgets: Px[ProjectWidgets.NoCtx],
                                pxFieldNameFn   : Px[FieldId ~=> String],
@@ -70,7 +70,7 @@ object Table {
   final class RenderPrep(project      : Project,
                          plainText    : PlainText.ForProject.NoCtx,
                          issues       : Issues,
-                         renderFeature: RenderFeature.ToVdom.NoCtx.ForProject) {
+                         renderFeature: RenderFeature.ForProject) {
     private val sortFn  = sorter.result(new Sorter.Setup(project, plainText))
     private val toRow   = Row.fromIssue(project, renderFeature)
     val rows            = sortFn(issues.vector.iterator.map(toRow)).iterator.toVector
@@ -140,12 +140,11 @@ object Table {
 
             val row = rows(rowIdx)
 
-            val editor: Option[Reusable[EditorNavParent.Props]] =
+            val editor: Option[Reusable[IfApplicable[EditorNavParent.Props]]] =
               row.editor(p.editor, reusablePxPW).map(
                 _.tuple(Reusable.implicitly(rowIdx))
-                  .map(_._1)
-                  .map(p => p.modEditor(_.onClose(focusAlternateRow(p, rowIdx))))
-              )
+                  .map(_._1.map(p =>
+                    p.modEditor(_.onClose(focusAlternateRow(p, rowIdx))))))
 
             val rowProps = TableRow.Props(
               row,

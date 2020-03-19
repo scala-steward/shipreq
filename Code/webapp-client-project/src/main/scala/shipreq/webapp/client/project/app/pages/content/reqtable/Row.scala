@@ -101,9 +101,10 @@ object MultiValues {
 // =====================================================================================================================
 
 sealed trait Row {
-  val id      : Row.Id
-  def sourceId: Row.SourceId
-  def live    : Live
+  val id        : Row.Id
+  def sourceId  : Row.SourceId
+  def live      : Live
+  def fieldRules: FieldSetRules
 }
 
 object Row {
@@ -117,17 +118,21 @@ object Row {
                           conflictingTags: Set[ApplicableTagId],
                           exp            : Expansion,
                           mv             : MultiValues,
+                          fieldRules     : FieldSetRules,
                           instanceId     : Int) extends Row {
     override val id       = Row.Id.ForReq(req.id, instanceId)
     override def sourceId = Row.SourceId.ForReq(req.id)
     override def toString = s"$id\n$req\n$exp\n$mv\n"
   }
 
-  final case class ForCodeGroup(group: CodeGroup, reqCode: ReqCode.Value, reqCodeTreeItem: Option[ReqCodeTreeItem]) extends Row {
-    override val id       = Row.Id.ForCodeGroup(reqCodeId)
-    override def sourceId = Row.SourceId.ForCodeGroup(reqCodeId)
-    override def live     = group.live
-    def reqCodeId         = group.id
+  final case class ForCodeGroup(group: CodeGroup,
+                                reqCode: ReqCode.Value,
+                                reqCodeTreeItem: Option[ReqCodeTreeItem]) extends Row {
+    override val id         = Row.Id.ForCodeGroup(reqCodeId)
+    override def sourceId   = Row.SourceId.ForCodeGroup(reqCodeId)
+    override def live       = group.live
+    override def fieldRules = FieldSetRules.optional
+    def reqCodeId           = group.id
   }
 
   implicit def equalityR   : UnivEq[ForReq]            = UnivEq.derive
@@ -212,23 +217,23 @@ object Row {
     case r: ForReq       => Some(r.exp)
     case _: ForCodeGroup => None
   }(nv => {
-    case ForReq(r, l, c, _, m, i) => ForReq(r, l, c, nv, m, i)
-    case r: ForCodeGroup       => r
+    case ForReq(r, l, c, _, m, f, i) => ForReq(r, l, c, nv, m, f, i)
+    case r: ForCodeGroup             => r
   })
 
   val multiValues = Optional[Row, MultiValues] {
     case r: ForReq       => Some(r.mv)
     case _: ForCodeGroup => None
   }(nv => {
-    case ForReq(r, l, c, e, _, i) => ForReq(r, l, c, e, nv, i)
-    case r: ForCodeGroup       => r
+    case ForReq(r, l, c, e, _, f, i) => ForReq(r, l, c, e, nv, f, i)
+    case r: ForCodeGroup             => r
   })
 
   val reqCodes = Lens[Row, Vector[ReqCode.Value]] {
     case r: ForReq       => r.exp.reqCodes
     case r: ForCodeGroup => Vector1(r.reqCode)
   }(nv => {
-    case ForReq(r, l, c, e, m, i)             => ForReq(r, l, c, e.copyReqCodes(nv), m, i)
+    case ForReq(r, l, c, e, m, f, i)       => ForReq(r, l, c, e.copyReqCodes(nv), m, f, i)
     case r: ForCodeGroup if nv.length == 1 => r.copy(reqCode = nv.head)
     case r: ForCodeGroup if nv.length != 1 => assert(false, s"Can't apply $nv to $r") ;r
   })
@@ -238,7 +243,7 @@ object Row {
     case r: ForReq       => r.exp.reqCodeTree
     case r: ForCodeGroup => r.reqCodeTreeItem.toVector
   }(nv => {
-    case ForReq(r, l, c, e, m, i) => ForReq(r, l, c, e.copyReqCodeTree(nv), m, i)
+    case ForReq(r, l, c, e, m, f, i) => ForReq(r, l, c, e.copyReqCodeTree(nv), m, f, i)
     case r: ForCodeGroup => nv.length match {
       case 1 => r.copy(reqCodeTreeItem = Some(nv.head))
       case 0 => r.copy(reqCodeTreeItem = None)

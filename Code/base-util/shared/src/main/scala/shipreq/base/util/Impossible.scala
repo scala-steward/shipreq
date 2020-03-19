@@ -11,8 +11,8 @@ import scala.annotation.elidable
 sealed trait Impossible {
 
   @elidable(elidable.ALL)
-  final def nothing: Nothing =
-    throw new RuntimeException("Impossible.nothing called!")
+  final def impossible: Nothing =
+    throw new RuntimeException("Impossible.impossible called!")
 }
 
 object Impossible {

@@ -243,16 +243,18 @@ private[reqtable] object Logic {
 
     // Create rows
     val rows = {
-      val output = cbf()
-      val restorableRCGs   = DataLog.list[Row.ForCodeGroup].disableUnless(restoreFilteredRCGs)
-      val codesSeen        = DataLog.mtrie[ReqCode.Node].disableUnless(restoreFilteredRCGs)
-      val seeExpandedCodes = codesSeen.addFn[Expanded[ReqCode.Value]](add => _.foreach(_ foreach add))
+      val output              = cbf()
+      val restorableRCGs      = DataLog.list[Row.ForCodeGroup].disableUnless(restoreFilteredRCGs)
+      val codesSeen           = DataLog.mtrie[ReqCode.Node].disableUnless(restoreFilteredRCGs)
+      val seeExpandedCodes    = codesSeen.addFn[Expanded[ReqCode.Value]](add => _.foreach(_ foreach add))
+      val fieldRulesByReqType = p.config.fieldRules(fd)
 
       // Add requirements
       for (r <- p.content.reqs.reqIterator)
         if (fullFilter.req(r)) {
-          val id = r.id
-          val live = r live p.config.reqTypes
+          val id         = r.id
+          val live       = r live p.config.reqTypes
+          val fieldRules = fieldRulesByReqType(r.reqTypeId)
 
           // Expansion
           val imps    = Direction.Values(dir => expandImps(dir)(() => pImplications(dir)(id) |> pubids))
@@ -264,7 +266,7 @@ private[reqtable] object Logic {
           // Build
           val mv = multiValuesFn(id)
           exps.foreachWithIndex((exp, i) =>
-            output += Row.ForReq(r, live, p.conflictingTagsPerReq(id), exp, mv, i))
+            output += Row.ForReq(r, live, p.conflictingTagsPerReq(id), exp, mv, fieldRules, i))
 
           seeExpandedCodes(codes)
         }
@@ -342,6 +344,7 @@ private[reqtable] object Logic {
             conflictingTags = a.conflictingTags,
             exp             = a.exp |+| b.exp,
             mv              = a.mv |+| b.mv,
+            fieldRules      = a.fieldRules,
             instanceId      = a.instanceId min b.instanceId)) // TODO resort
         case _ =>
           None
