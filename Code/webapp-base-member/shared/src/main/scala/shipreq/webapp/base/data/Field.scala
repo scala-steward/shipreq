@@ -14,8 +14,8 @@ import shipreq.base.util.univeq._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.util.Must._
 import shipreq.webapp.base.WebappConfig
-import TaggedTypes.{TaggedInt, TaggedString}
 import IndexLabel._
+import TaggedTypes.TaggedInt
 
 // =====================================================================================================================
 // Types
@@ -569,6 +569,9 @@ final case class FieldSet(customFields: FieldSet.CustomFields,
 }
 
 object FieldSet {
+  val empty: FieldSet =
+    FieldSet(emptyCustomFields, StaticField.values.whole)
+
   // TODO FieldSet.Order should be NonEmptyVector.
   type Order = Vector[FieldId]
   type CustomFields = IMap[CustomFieldId, CustomField]
@@ -577,5 +580,5 @@ object FieldSet {
   def customFieldsTraversal: Traversal[CustomFields, CustomField] =
     IMap.traversal[CustomFieldId, CustomField]
 
-  implicit val equality: Equal[FieldSet] = ScalazMacros.deriveEqual
+  implicit def univEq: UnivEq[FieldSet] = UnivEq.derive
 }

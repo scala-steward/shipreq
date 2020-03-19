@@ -26,6 +26,27 @@ final case class FieldReqTypeRules[+D](perReqType: Map[ReqTypeId, Resolution[D]]
   def resolutionIterator(): Iterator[Resolution[D]] =
     perReqType.valuesIterator ++ Iterator.single(otherwise)
 
+  def foreach(f: (Option[ReqTypeId], Resolution[D]) => Unit): Unit = {
+    for ((rt, res) <- perReqType)
+      f(Some(rt), res)
+    f(None, otherwise)
+  }
+
+  def updated[DD >: D](ids: ReqTypeId*)(res: Resolution[DD]): FieldReqTypeRules[DD] =
+    copy(ids.foldLeft(perReqType: Map[ReqTypeId, Resolution[DD]])(_.updated(_, res)))
+
+  def defaultTo[DD >: D](ids: ReqTypeId*)(d: DD): FieldReqTypeRules[DD] =
+    updated[DD](ids: _*)(Resolution.DefaultTo(d))
+
+  def optional(ids: ReqTypeId*): FieldReqTypeRules[D] =
+    updated(ids: _*)(Resolution.Optional)
+
+  def mandatory(ids: ReqTypeId*): FieldReqTypeRules[D] =
+    updated(ids: _*)(Resolution.Mandatory)
+
+  def notApplicable(ids: ReqTypeId*): FieldReqTypeRules[D] =
+    updated(ids: _*)(Resolution.NotApplicable)
+
   def hardDelete(id: ReqTypeId): FieldReqTypeRules[D] =
     if (perReqType contains id)
       FieldReqTypeRules(perReqType - id, otherwise)
@@ -69,9 +90,10 @@ object FieldReqTypeRules {
   def const[D](res: Resolution[D]): FieldReqTypeRules[D] =
     FieldReqTypeRules(Map.empty, res)
 
-  def optional      = const(Resolution.Optional)
-  def mandatory     = const(Resolution.Mandatory)
-  def notApplicable = const(Resolution.NotApplicable)
+  def defaultTo[D](d: D) = const(Resolution.DefaultTo(d))
+  def optional           = const(Resolution.Optional)
+  def mandatory          = const(Resolution.Mandatory)
+  def notApplicable      = const(Resolution.NotApplicable)
 
   def only[D](reqTypeId: ReqTypeId, resolution: Resolution[D]): FieldReqTypeRules[D] =
     FieldReqTypeRules(Map(reqTypeId -> resolution), Resolution.NotApplicable)

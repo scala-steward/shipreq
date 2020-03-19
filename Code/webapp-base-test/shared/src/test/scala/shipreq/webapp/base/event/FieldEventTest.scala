@@ -3,17 +3,24 @@ package shipreq.webapp.base.event
 import utest._
 import japgolly.microlibs.nonempty.NonEmpty
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.test.WebappTestUtil._
+import shipreq.webapp.base.data.{FieldReqTypeRules => FRTR}
+import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.base.test.UnsafeTypes._
+import shipreq.webapp.base.test.WebappTestUtil._
 import ApplyEventTestFns._
-import CustomFieldEventTestHelpers._
 import Event._
 import RetiredGenericData._
 
-object CustomFieldEventTestHelpers {
-  val onlyUC = onlyReqTypes(StaticReqType.UseCase)
+object CustomFieldEventTestHelpersV1 {
+  val onlyUC  = onlyReqTypes(StaticReqType.UseCase)
   val onlyRT1 = onlyReqTypes(1)
-  val notRT2 = notReqTypes(2)
+  val notRT2  = notReqTypes(2)
+}
+
+object CustomFieldEventTestHelpers {
+  val onlyUC      = FieldReqTypeRules.notApplicable.optional(StaticReqType.UseCase)
+  val onlyRT1     = FieldReqTypeRules.notApplicable.optional(1)
+  val notRT2      = FieldReqTypeRules.optional.notApplicable(2)
 }
 
 object CustomFieldEventTest extends TestSuite {
@@ -64,7 +71,8 @@ object CustomFieldEventTest extends TestSuite {
 }
 
 // =====================================================================================================================
-trait CustomTextFieldEvents {
+trait CustomTextFieldEventsV1 {
+  import CustomFieldEventTestHelpersV1._
   import CustomTextFieldGDv1._
 
   val c1Name = "Stuff"
@@ -77,12 +85,13 @@ trait CustomTextFieldEvents {
   val r1  = FieldCustomRestore(1.CFText)
 }
 
-object CustomTextFieldEventSharedTests extends SharedTests()(NoInitialEvents.init) with CustomTextFieldEvents {
+object CustomTextFieldEventSharedTests extends SharedTests()(NoInitialEvents.init) with CustomTextFieldEventsV1 {
   def setId(c: CE, i: Int) = c.copy(id = i)
   def copyId(to: CE, from: CE) = to.copy(id = from.id)
 }
 
-object CustomTextFieldEventTestV1 extends TestSuite with CustomTextFieldEvents {
+object CustomTextFieldEventTestV1 extends TestSuite with CustomTextFieldEventsV1 {
+  import CustomFieldEventTestHelpersV1._
   import CustomTextFieldGDv1._
   import NoInitialEvents._
 
@@ -127,8 +136,62 @@ object CustomTextFieldEventTestV1 extends TestSuite with CustomTextFieldEvents {
   }
 }
 
+trait CustomTextFieldEvents {
+  import CustomFieldEventTestHelpers._
+  import CustomTextFieldGD._
+
+  val c1Name = "Stuff"
+  type CE = FieldCustomTextCreate
+  val c1  = FieldCustomTextCreate(1, nev(Name(c1Name), FieldReqTypeRules(FRTR.mandatory)))
+  val c2  = FieldCustomTextCreate(2, nev(Name("Roar"), FieldReqTypeRules(onlyUC)))
+  val u1  = FieldCustomTextUpdate(1, nev(FieldReqTypeRules(FRTR.optional)))
+  val sd1 = FieldCustomDelete(1.CFText)
+  val r1  = FieldCustomRestore(1.CFText)
+}
+
+object CustomTextFieldEventTest extends TestSuite with CustomTextFieldEvents {
+  import CustomFieldEventTestHelpers._
+  import CustomTextFieldGD._
+  import NoInitialEvents._
+
+  implicit class FieldCustomTextCreateExt(private val a: FieldCustomTextCreate) extends AnyVal {
+    def mod(f: Values => Values) =
+      a.copy(vs = NonEmpty.force(f(a.vs.value)))
+  }
+
+  override def tests = Tests {
+    'create {
+      'needName    - assertFail("Name")     (c1.mod(_ - Name))
+      'needRules   - assertFail("rules")    (c1.mod(_ - FieldReqTypeRules))
+      'badName     - assertFail("blank")    (c1.mod(_ + Name("")))
+      'badReqTypes - assertFail("Types")    (c1.mod(_ + FieldReqTypeRules(onlyRT1))) // RT1 doesn't exist
+      'dupName     - assertFail("unique")   (c1, c2.mod(_ + Name(c1Name)))
+    }
+
+    'update {
+      'ok - {
+        var es = Vector[Event](c1, u1)
+        def r = _assertPass(es: _*).config.fields.customFields.get(c1.id).get
+        assertEq(r, CustomField.Text(1, c1Name, FRTR.optional, Live))
+
+        es :+= FieldCustomTextUpdate(1, nev(Name("AH"), FieldReqTypeRules(onlyUC)))
+        assertEq(r, CustomField.Text(1, "AH", onlyUC, Live))
+
+        es :+= CustomReqTypeEventTest.c1
+        es :+= FieldCustomTextUpdate(1, nev(FieldReqTypeRules(onlyRT1)))
+        assertEq(r, CustomField.Text(1, "AH", onlyRT1, Live))
+
+      }
+      'badName     - assertFail("blank") (c1, FieldCustomTextUpdate(1, nev(Name(""))))
+      'badReqTypes - assertFail("Types") (c1, FieldCustomTextUpdate(1, nev(FieldReqTypeRules(onlyRT1)))) // RT1 doesn't exist
+      'dupName     - assertFail("unique")(c1, c2, FieldCustomTextUpdate(2, nev(Name(c1Name))))
+    }
+  }
+}
+
 // =====================================================================================================================
 trait CustomTagFieldEventsV1 {
+  import CustomFieldEventTestHelpersV1._
   import CustomTagFieldGDv1._
 
   def mkC1(tagId: TagId) = FieldCustomTagCreateV1(1, nev(TagId(tagId), Mandatory(true), ApplicableReqTypes(allReqTypes)))
@@ -147,6 +210,7 @@ object CustomTagFieldEventSharedTests extends SharedTests()(CustomTagFieldEventT
 }
 
 object CustomTagFieldEventTestV1 extends TestSuite with CustomTagFieldEventsV1 {
+  import CustomFieldEventTestHelpersV1._
   import CustomTagFieldGDv1._
 
   val createAT2 = {
@@ -192,8 +256,114 @@ object CustomTagFieldEventTestV1 extends TestSuite with CustomTagFieldEventsV1 {
   }
 }
 
+trait CustomTagFieldEvents {
+  import CustomFieldEventTestHelpers._
+  import CustomTagFieldGD._
+
+  def mkC1(tagId: TagId) = FieldCustomTagCreate(1, nev(TagId(tagId), FieldReqTypeRules(FRTR.mandatory)))
+
+  type CE = FieldCustomTagCreate
+  val c1  = mkC1(1.TG)
+  val c2  = FieldCustomTagCreate(2, nev(TagId(2.AT), FieldReqTypeRules(onlyUC)))
+  val u1  = FieldCustomTagUpdate(1, nev(FieldReqTypeRules(FRTR.optional)))
+  val sd1 = FieldCustomDelete(1.CFTag)
+  val r1  = FieldCustomRestore(1.CFTag)
+}
+
+object CustomTagFieldEventTest extends TestSuite with CustomTagFieldEvents {
+  import CustomFieldEventTestHelpers._
+  import CustomTagFieldGD._
+
+  val createAT2 = {
+    import ApplicableTagGD._
+    ApplicableTagCreate(2, nev(Key("c2"), Desc(Some("r")), Colour(None), ApplicableReqTypes(allReqTypes)))
+  }
+  val softDelTG1 = TagGroupEventTest.sd1
+  implicit val init = InitialEvents(TagGroupEventTest.c1, createAT2)
+
+  implicit class FieldCustomTagCreateExt(private val a: FieldCustomTagCreate) extends AnyVal {
+    def mod(f: Values => Values) =
+      a.copy(vs = NonEmpty.force(f(a.vs.value)))
+  }
+
+  override def tests = Tests {
+    'create {
+      'needTagId     - assertFail("TagId")    (c1.mod(_ - TagId))
+      'needRules     - assertFail("rules")    (c1.mod(_ - FieldReqTypeRules))
+      'tagIdNotFound - assertFail("Tag")      (c1.mod(_ + TagId(9.TG)))
+      'tagIdDead     - assertFail("dead")     (softDelTG1, c1)
+      'badReqTypes   - assertFail("Types")    (c1.mod(_ + FieldReqTypeRules(onlyRT1))) // RT1 doesn't exist
+      'dupTagId      - assertFail("unique")   (c1, c2.mod(_ + TagId(1.TG)))
+
+      'defaults - {
+        import SampleProject.Values._
+        val p0 = Project.fields.set(FieldSet.empty)(SampleProject.project)
+
+        def assertBad(parent: TagId, id: ApplicableTagId) = {
+          val c = FieldCustomTagCreate(1, nev(TagId(parent), FieldReqTypeRules(FRTR.defaultTo(id))))
+          assertEventFails(p0, c)
+        }
+
+        'ok - {
+          val c = FieldCustomTagCreate(1, nev(TagId(priTG), FieldReqTypeRules(FRTR.defaultTo(priHigh))))
+          val p = applyEventSuccessfully(p0, c)
+          val f = p.config.fields.customFields.need(c.id)
+          assertEq(f, CustomField.Tag(c.id, priTG, FRTR.defaultTo(priHigh), Live))
+        }
+
+        'notFound  - assertBad(priTG, 1234.AT)
+//        'dead      - assertBad(statusTG, uat2)
+//        'notAChild - assertBad(statusTG, priHigh)
+      }
+    }
+
+    'update {
+      'ok - {
+        var es = Vector[Event](c1, u1)
+        def r = _assertPass(es: _*).config.fields.customFields.get(c1.id).get
+        assertEq(r, CustomField.Tag(1, 1.TG, FRTR.optional, Live))
+
+        es :+= FieldCustomTagUpdate(1, nev(TagId(2.AT), FieldReqTypeRules(FRTR.mandatory)))
+        assertEq(r, CustomField.Tag(1, 2.AT, FRTR.mandatory, Live))
+
+        es :+= CustomReqTypeEventTest.c1
+        es :+= FieldCustomTagUpdate(1, nev(FieldReqTypeRules(onlyRT1)))
+        assertEq(r, CustomField.Tag(1, 2.AT, onlyRT1, Live))
+      }
+      'tagIdNotFound - assertFail("Tag")   (c1, FieldCustomTagUpdate(1, nev(TagId(9.TG))))
+      'badReqTypes   - assertFail("Types") (c1, FieldCustomTagUpdate(1, nev(FieldReqTypeRules(onlyRT1)))) // RT1 doesn't exist
+      'dupTagId      - assertFail("unique")(c1, c2, FieldCustomTagUpdate(2, nev(TagId(1.TG))))
+
+      'defaults - {
+        import SampleProject.Values._
+        val id = 1
+        val p0 = applyEventsSuccessfully(
+                   Project.fields.set(FieldSet.empty)(SampleProject.project),
+                   FieldCustomTagCreate(id, nev(TagId(statusTG), FieldReqTypeRules(FRTR.optional))))
+
+        def assertBad(default: ApplicableTagId) = {
+          val u = FieldCustomTagUpdate(id, nev(FieldReqTypeRules(FRTR.defaultTo(default))))
+          assertEventFails(p0, u)
+        }
+
+        'ok - {
+          val u = FieldCustomTagUpdate(id, nev(FieldReqTypeRules(FRTR.defaultTo(wip))))
+          val p = applyEventSuccessfully(p0, u)
+          val f = p.config.fields.customFields.need(u.id)
+          assertEq(f, CustomField.Tag(id, statusTG, FRTR.defaultTo(wip), Live))
+        }
+
+        'notFound  - assertBad(1234.AT)
+//        'dead      - assertBad(uat2)
+//        'notAChild - assertBad(priHigh)
+      }
+    }
+  }
+}
+
 // =====================================================================================================================
 trait CustomImpFieldEventsV1 {
+  import CustomFieldEventTestHelpersV1._
   import CustomImpFieldGDv1._
 
   type CE = FieldCustomImpCreateV1
@@ -210,6 +380,7 @@ object CustomImpFieldEventSharedTests extends SharedTests()(CustomImpFieldEventT
 }
 
 object CustomImpFieldEventTestV1 extends TestSuite with CustomImpFieldEventsV1 {
+  import CustomFieldEventTestHelpersV1._
   import CustomImpFieldGDv1._
 
   implicit val init = InitialEvents(CustomReqTypeEventTest.c1, CustomReqTypeEventTest.use1)
@@ -245,6 +416,58 @@ object CustomImpFieldEventTestV1 extends TestSuite with CustomImpFieldEventsV1 {
       'reqTypeIdNotFound - assertFail("Imp")   (c1, FieldCustomImpUpdateV1(1, nev(ReqTypeId(9))))
       'badReqTypes       - assertFail("Types") (c1, FieldCustomImpUpdateV1(1, nev(ApplicableReqTypes(notRT2)))) // RT2 doesn't exist
       'dupReqTypeId      - assertFail("unique")(c1, c2, FieldCustomImpUpdateV1(2, nev(ReqTypeId(1))))
+    }
+  }
+}
+
+trait CustomImpFieldEvents {
+  import CustomFieldEventTestHelpers._
+  import CustomImpFieldGD._
+
+  type CE = FieldCustomImpCreate
+  val c1  = FieldCustomImpCreate(1, nev(ReqTypeId(1), FieldReqTypeRules(onlyUC)))
+  val c2  = FieldCustomImpCreate(2, nev(ReqTypeId(StaticReqType.UseCase), FieldReqTypeRules(FRTR.optional)))
+  val u1  = FieldCustomImpUpdate(1, nev(FieldReqTypeRules(FRTR.mandatory)))
+  val sd1 = FieldCustomDelete(1.CFImp)
+  val r1  = FieldCustomRestore(1.CFImp)
+}
+
+object CustomImpFieldEventTest extends TestSuite with CustomImpFieldEvents {
+  import CustomFieldEventTestHelpers._
+  import CustomImpFieldGD._
+
+  implicit val init = InitialEvents(CustomReqTypeEventTest.c1, CustomReqTypeEventTest.use1)
+
+  val softDelRT1 = CustomReqTypeEventTest.sd1
+
+  implicit class FieldCustomImpCreateExt(private val a: FieldCustomImpCreate) extends AnyVal {
+    def mod(f: Values => Values) =
+      a.copy(vs = NonEmpty.force(f(a.vs.value)))
+  }
+
+  override def tests = Tests {
+    'create {
+      'needReqTypeId     - assertFail("ReqTypeId")(c1.mod(_- ReqTypeId))
+      'needRules         - assertFail("rules")    (c1.mod(_- FieldReqTypeRules))
+      'reqTypeIdNotFound - assertFail("ReqType")  (c1.mod(_ + ReqTypeId(9)))
+      'reqTypeIdDead     - assertFail("dead")     (softDelRT1, c1)
+      'badReqTypes       - assertFail("Types")    (c1.mod(_ + FieldReqTypeRules(notRT2))) // RT2 doesn't exist
+      'dupReqTypeId      - assertFail("unique")   (c1, c2.mod(_ + ReqTypeId(1)))
+    }
+
+    'update {
+      'ok - {
+        var es = Vector[Event](c1, u1)
+        def r = _assertPass(es: _*).config.fields.customFields.get(c1.id).get
+        assertEq(r, CustomField.Implication(1, 1, FRTR.mandatory, Live))
+
+        es :+= CustomReqTypeEventTest.c2
+        es :+= FieldCustomImpUpdate(1, nev(FieldReqTypeRules(notRT2)))
+        assertEq(r, CustomField.Implication(1, 1, notRT2, Live))
+      }
+      'reqTypeIdNotFound - assertFail("Imp")   (c1, FieldCustomImpUpdate(1, nev(ReqTypeId(9))))
+      'badReqTypes       - assertFail("Types") (c1, FieldCustomImpUpdate(1, nev(FieldReqTypeRules(notRT2)))) // RT2 doesn't exist
+      'dupReqTypeId      - assertFail("unique")(c1, c2, FieldCustomImpUpdate(2, nev(ReqTypeId(1))))
     }
   }
 }

@@ -14,7 +14,7 @@ object ProjectConfig {
   val empty: ProjectConfig = {
     val cit = emptyDataMap(CustomIssueType)
     val rt  = ReqTypes.empty
-    val fs  = FieldSet(emptyDataMap(CustomField), StaticField.values.whole)
+    val fs  = FieldSet.empty
     val ts  = Tags.empty
     ProjectConfig(cit, rt, fs, ts)
   }
