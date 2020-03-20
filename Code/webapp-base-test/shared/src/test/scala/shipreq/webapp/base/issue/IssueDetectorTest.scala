@@ -287,6 +287,39 @@ object IssueDetectorTest extends TestSuite {
     def liveOnly() = test(p7)(
       Event.FieldCustomDelete(statusField),
     )()
+
+    def unrelated() = test(p7)(
+      Event.FieldCustomDelete(statusField),
+      Event.TagDelete(priMed),
+    )(
+      IssueLite.FieldDefaultTagDead(relField, priMed, Set()), // empty because unrelated tags don't appear in column
+      IssueLite.FieldDefaultTagDead(priField, priMed, Set()),
+    )
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  private object FieldDefaultTagUnrelatedTests {
+    private implicit val filter = IssueFilter[Issue.FieldDefaultTagUnrelated]
+    import P7._
+
+    def ko() = test(p7)()(
+      IssueLite.FieldDefaultTagUnrelated(relField, priMed),
+    )
+
+    def deadTag() = test(p7)(
+      Event.TagDelete(priMed),
+    )(
+      IssueLite.FieldDefaultTagUnrelated(relField, priMed),
+    )
+
+    def liveFieldOnly() = test(p7)(
+      Event.FieldCustomDelete(relField),
+    )()
+
+    def liveReqTypeOnly() = test(p7)(
+      Event.CustomReqTypeDeleteSoft(co),
+    )()
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -476,8 +509,17 @@ object IssueDetectorTest extends TestSuite {
 
     'FieldDefaultTagDead {
       import FieldDefaultTagDeadTests._
-      'ko       - ko()
-      'liveOnly - liveOnly()
+      'ko        - ko()
+      'unrelated - unrelated()
+      'liveOnly  - liveOnly()
+    }
+
+    'FieldDefaultTagUnrelated {
+      import FieldDefaultTagUnrelatedTests._
+      'ko              - ko()
+      'deadTag         - deadTag()
+      'liveFieldOnly   - liveFieldOnly()
+      'liveReqTypeOnly - liveReqTypeOnly()
     }
 
     'ImplicationRequired {

@@ -199,6 +199,9 @@ object IssueDetectors {
       for (f <- ctx.project.config.fields.customTagFields)
         if (f.liveExplicitly is Live) {
 
+          val okTags: Set[ApplicableTagId] =
+            cfg.liveTagFieldDistribution.inField(f.id)
+
           var badDefaults  = Set.empty[ApplicableTagId]
           var affectedReqs = Multimap.empty[ApplicableTagId, List, Req]
 
@@ -206,14 +209,41 @@ object IssueDetectors {
             res match {
               case FieldReqTypeRules.Resolution.DefaultTo(tagId) if cfg.tags.needApplicableTag(tagId).live is Dead =>
                 badDefaults += tagId
-                affectedReqs = affectedReqs.addvs(tagId,
-                  ctx.project.content.reqs.reqsByType(rt.reqTypeId).filter(_.live(cfg.reqTypes) is Live).toList)
+                if (okTags.contains(tagId))
+                  affectedReqs = affectedReqs.addvs(tagId,
+                    ctx.project.content.reqs.reqsByType(rt.reqTypeId).filter(_.live(cfg.reqTypes) is Live).toList)
+
               case _ =>
             }
 
           for (tagId <- badDefaults) {
             val tag = cfg.tags.needApplicableTag(tagId)
             ctx.add(Issue.FieldDefaultTagDead(f, tag, affectedReqs(tagId)))
+          }
+        }
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  case object FieldDefaultTagUnrelated extends Instance {
+    override val detect = ctx => {
+      val cfg = ctx.project.config
+      for (f <- ctx.project.config.fields.customTagFields)
+        if (f.liveExplicitly is Live) {
+
+          val okTags: Set[ApplicableTagId] =
+            cfg.liveTagFieldDistribution.inField(f.id)
+
+          val unrelatedTags: Set[ApplicableTagId] =
+          f.fieldReqTypeRules
+            .liveResolutionIterator(cfg.reqTypes)
+            .collect { case FieldReqTypeRules.Resolution.DefaultTo(tagId) if !okTags.contains(tagId) => tagId }
+            .toSet
+
+          for (tagId <- unrelatedTags) {
+            val tag = cfg.tags.needApplicableTag(tagId)
+            ctx.add(Issue.FieldDefaultTagUnrelated(f, tag))
           }
         }
     }
