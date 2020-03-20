@@ -20,8 +20,16 @@ abstract class GenericData { self =>
 
     def apply(d: Data): ValueFor[this.type]
 
+    val dataEquality: Equal[Data]
+
     final def get(vs: Values): Option[ValueFor[this.type]] =
       vs.get(this).asInstanceOf[Option[ValueFor[this.type]]]
+
+    final def areValuesEqual(as: Values, bs: Values): Boolean = {
+      val oa = as.get(this)
+      val ob = bs.get(this)
+      oa ==* ob
+    }
   }
 
   /**
@@ -70,6 +78,14 @@ abstract class GenericData { self =>
 
   implicit def autoValues(v: Value): Values =
     emptyValues + v
+
+  def removeUnchanged(before: Values, after: Values): Values =
+    attrs.foldLeft(after)((vs, a) =>
+      if (a.areValuesEqual(before, after))
+        vs
+      else
+        vs - a
+    )
 
   final def valueBuilder(): GenericData.ValueBuilder { val gd: self.type } =
     new GenericData.ValueBuilder {

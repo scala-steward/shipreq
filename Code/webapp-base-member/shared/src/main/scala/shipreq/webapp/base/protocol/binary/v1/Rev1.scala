@@ -391,22 +391,18 @@ object Rev1 {
   implicit val pickleCustomImpFieldGD: Pickler[CustomImpFieldGD.NonEmptyValues] = {
     import CustomImpFieldGD._
 
-    implicit val picklerValueForReqTypeId         = transformPickler(ValueForReqTypeId        .apply)(_.value)
     implicit val picklerValueForFieldReqTypeRules = transformPickler(ValueForFieldReqTypeRules.apply)(_.value)
 
     implicit val picklerValue: Pickler[Value] =
       new Pickler[Value] {
-        private[this] final val KeyReqTypeId = 'I'
-        private[this] final val KeyReqTypes  = 'R'
+        private[this] final val KeyReqTypes = 'R'
         override def pickle(a: Value)(implicit state: PickleState): Unit =
           a match {
-            case b: ValueForReqTypeId         => state.enc.writeByte(KeyReqTypeId); state.pickle(b)
-            case b: ValueForFieldReqTypeRules => state.enc.writeByte(KeyReqTypes ); state.pickle(b)
+            case b: ValueForFieldReqTypeRules => state.enc.writeByte(KeyReqTypes); state.pickle(b)
           }
         override def unpickle(implicit state: UnpickleState): Value =
           state.dec.readByte match {
-            case KeyReqTypeId => state.unpickle[ValueForReqTypeId]
-            case KeyReqTypes  => state.unpickle[ValueForFieldReqTypeRules]
+            case KeyReqTypes => state.unpickle[ValueForFieldReqTypeRules]
           }
       }
 
@@ -419,21 +415,17 @@ object Rev1 {
     import CustomTagFieldGD._
 
     implicit val picklerValueForFieldReqTypeRules = transformPickler(ValueForFieldReqTypeRules.apply)(_.value)
-    implicit val picklerValueForTagId             = transformPickler(ValueForTagId            .apply)(_.value)
 
     implicit val picklerValue: Pickler[Value] =
       new Pickler[Value] {
-        private[this] final val KeyReqTypes  = 'R'
-        private[this] final val KeyTagId     = 'T'
+        private[this] final val KeyReqTypes = 'R'
         override def pickle(a: Value)(implicit state: PickleState): Unit =
           a match {
-            case b: ValueForFieldReqTypeRules => state.enc.writeByte(KeyReqTypes ); state.pickle(b)
-            case b: ValueForTagId             => state.enc.writeByte(KeyTagId    ); state.pickle(b)
+            case b: ValueForFieldReqTypeRules => state.enc.writeByte(KeyReqTypes); state.pickle(b)
           }
         override def unpickle(implicit state: UnpickleState): Value =
           state.dec.readByte match {
-            case KeyReqTypes  => state.unpickle[ValueForFieldReqTypeRules]
-            case KeyTagId     => state.unpickle[ValueForTagId]
+            case KeyReqTypes => state.unpickle[ValueForFieldReqTypeRules]
           }
       }
 
@@ -523,12 +515,14 @@ object Rev1 {
     new Pickler[Event.FieldCustomTagCreate] {
       override def pickle(a: Event.FieldCustomTagCreate)(implicit state: PickleState): Unit = {
         state.pickle(a.id)
+        state.pickle(a.tagId)
         state.pickle(a.vs)
       }
       override def unpickle(implicit state: UnpickleState): Event.FieldCustomTagCreate = {
-        val id = state.unpickle[CustomField.Tag.Id]
-        val vs = state.unpickle[CustomTagFieldGD.NonEmptyValues]
-        Event.FieldCustomTagCreate(id, vs)
+        val id    = state.unpickle[CustomField.Tag.Id]
+        val tagId = state.unpickle[TagId]
+        val vs    = state.unpickle[CustomTagFieldGD.NonEmptyValues]
+        Event.FieldCustomTagCreate(id, tagId, vs)
       }
     }
 
@@ -549,12 +543,14 @@ object Rev1 {
     new Pickler[Event.FieldCustomImpCreate] {
       override def pickle(a: Event.FieldCustomImpCreate)(implicit state: PickleState): Unit = {
         state.pickle(a.id)
+        state.pickle(a.reqTypeId)
         state.pickle(a.vs)
       }
       override def unpickle(implicit state: UnpickleState): Event.FieldCustomImpCreate = {
-        val id = state.unpickle[CustomField.Implication.Id]
-        val vs = state.unpickle[CustomImpFieldGD.NonEmptyValues]
-        Event.FieldCustomImpCreate(id, vs)
+        val id        = state.unpickle[CustomField.Implication.Id]
+        val reqTypeId = state.unpickle[ReqTypeId]
+        val vs        = state.unpickle[CustomImpFieldGD.NonEmptyValues]
+        Event.FieldCustomImpCreate(id, reqTypeId, vs)
       }
     }
 

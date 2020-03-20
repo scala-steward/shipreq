@@ -1992,15 +1992,14 @@ object RandomData {
     object customTagFieldGD extends GenericDataGen(CustomTagFieldGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case TagId             => tagId                map TagId            .apply
         case FieldReqTypeRules => fieldReqTypeRulesTag map FieldReqTypeRules.apply
       }
     }
 
     object customImpFieldGD extends GenericDataGen(CustomImpFieldGD) {
       import gd._
+
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case ReqTypeId         => reqTypeId          map ReqTypeId        .apply
         case FieldReqTypeRules => fieldReqTypeRules_ map FieldReqTypeRules.apply
       }
     }
@@ -2122,7 +2121,7 @@ object RandomData {
       Gen.apply2(FieldCustomImpCreateV1)(customFieldImplicationId, customImpFieldGDv1.nonEmptyValues)
 
     val genFieldCustomImpCreate: Gen[FieldCustomImpCreate] =
-      Gen.apply2(FieldCustomImpCreate)(customFieldImplicationId, customImpFieldGD.nonEmptyValues)
+      Gen.apply3(FieldCustomImpCreate)(customFieldImplicationId, reqTypeId, customImpFieldGD.nonEmptyValues)
 
     val genCustomIssueTypeCreate: Gen[CustomIssueTypeCreate] =
       Gen.apply2(CustomIssueTypeCreate)(customIssueTypeId, customIssueTypeGD.nonEmptyValues)
@@ -2134,7 +2133,7 @@ object RandomData {
       Gen.apply2(FieldCustomTagCreateV1)(customFieldTagId, customTagFieldGDv1.nonEmptyValues)
 
     val genFieldCustomTagCreate: Gen[FieldCustomTagCreate] =
-      Gen.apply2(FieldCustomTagCreate)(customFieldTagId, customTagFieldGD.nonEmptyValues)
+      Gen.apply3(FieldCustomTagCreate)(customFieldTagId, tagId, customTagFieldGD.nonEmptyValues)
 
     val genFieldCustomTextCreateV1: Gen[FieldCustomTextCreateV1] =
       Gen.apply2(FieldCustomTextCreateV1)(customFieldTextId, customTextFieldGDv1.nonEmptyValues)

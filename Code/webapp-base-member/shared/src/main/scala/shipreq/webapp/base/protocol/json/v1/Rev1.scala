@@ -363,16 +363,13 @@ object Rev1 {
     import CustomImpFieldGD._
 
     implicit val codecValueForFieldReqTypeRules = JsonCodec.xmap(ValueForFieldReqTypeRules.apply)(_.value)
-    implicit val codecValueForReqTypeId         = JsonCodec.xmap(ValueForReqTypeId        .apply)(_.value)
 
     implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
-      case ("reqTypeId", c) => c.as[ValueForReqTypeId]
-      case ("reqTypes" , c) => c.as[ValueForFieldReqTypeRules]
+      case ("reqTypes", c) => c.as[ValueForFieldReqTypeRules]
     }
 
     implicit val encoderValue: Encoder[Value] = Encoder.instance {
-      case a: ValueForReqTypeId         => Json.obj("reqTypeId" -> a.asJson)
-      case a: ValueForFieldReqTypeRules => Json.obj("reqTypes"  -> a.asJson)
+      case a: ValueForFieldReqTypeRules => Json.obj("reqTypes" -> a.asJson)
     }
 
     implicit val values: JsonCodec[Values] = codecIMap(emptyValues)
@@ -426,16 +423,13 @@ object Rev1 {
     import CustomTagFieldGD._
 
     implicit val codecValueForFieldReqTypeRules = JsonCodec.xmap(ValueForFieldReqTypeRules.apply)(_.value)
-    implicit val codecValueForTagId             = JsonCodec.xmap(ValueForTagId            .apply)(_.value)
 
     implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
       case ("reqTypes", c) => c.as[ValueForFieldReqTypeRules]
-      case ("tagId"   , c) => c.as[ValueForTagId]
     }
 
     implicit val encoderValue: Encoder[Value] = Encoder.instance {
       case a: ValueForFieldReqTypeRules => Json.obj("reqTypes" -> a.asJson)
-      case a: ValueForTagId             => Json.obj("tagId"    -> a.asJson)
     }
 
     implicit val values: JsonCodec[Values] = codecIMap(emptyValues)
@@ -603,10 +597,10 @@ object Rev1 {
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
     implicit val decoderEventFieldCustomTagCreate: Decoder[Event.FieldCustomTagCreate] =
-      Decoder.forProduct2("id", "values")(Event.FieldCustomTagCreate.apply)
+      Decoder.forProduct3("id", "tagId", "values")(Event.FieldCustomTagCreate.apply)
 
     implicit val encoderEventFieldCustomTagCreate: Encoder[Event.FieldCustomTagCreate] =
-      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+      Encoder.forProduct3("id", "tagId", "values")(a => (a.id, a.tagId, a.vs))
 
     implicit val decoderEventFieldCustomTagUpdate: Decoder[Event.FieldCustomTagUpdate] =
       Decoder.forProduct2("id", "values")(Event.FieldCustomTagUpdate.apply)
@@ -615,10 +609,10 @@ object Rev1 {
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
     implicit val decoderEventFieldCustomImpCreate: Decoder[Event.FieldCustomImpCreate] =
-      Decoder.forProduct2("id", "values")(Event.FieldCustomImpCreate.apply)
+      Decoder.forProduct3("id", "reqTypeId", "values")(Event.FieldCustomImpCreate.apply)
 
     implicit val encoderEventFieldCustomImpCreate: Encoder[Event.FieldCustomImpCreate] =
-      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+      Encoder.forProduct3("id", "reqTypeId", "values")(a => (a.id, a.reqTypeId, a.vs))
 
     implicit val decoderEventFieldCustomImpUpdate: Decoder[Event.FieldCustomImpUpdate] =
       Decoder.forProduct2("id", "values")(Event.FieldCustomImpUpdate.apply)

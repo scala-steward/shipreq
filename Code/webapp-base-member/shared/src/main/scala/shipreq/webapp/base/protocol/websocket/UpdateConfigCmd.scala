@@ -3,7 +3,7 @@ package shipreq.webapp.base.protocol.websocket
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.{ApplicableTagGD, TagGroupGD}
+import shipreq.webapp.base.event._
 
 sealed trait UpdateConfigCmd
 
@@ -21,14 +21,16 @@ object UpdateConfigCmd {
   final case class CustomReqTypeDeleteSoft(id: CustomReqTypeId)                                 extends ToModifyCustomReqTypes
   final case class CustomReqTypeRestore   (id: CustomReqTypeId)                                 extends ToModifyCustomReqTypes
 
-  sealed trait ToModifyFields                                                                        extends UpdateConfigCmd
-  final case class CustomFieldCreate    (values: CustomFieldValues)                                  extends ToModifyFields
-  final case class CustomFieldUpdateImp (id: CustomField.Implication.Id, newValues: ImpFieldValues)  extends ToModifyFields
-  final case class CustomFieldUpdateTag (id: CustomField.Tag        .Id, newValues: TagFieldValues)  extends ToModifyFields
-  final case class CustomFieldUpdateText(id: CustomField.Text       .Id, newValues: TextFieldValues) extends ToModifyFields
-  final case class FieldDelete          (id: FieldId)                                                extends ToModifyFields
-  final case class FieldRestore         (id: FieldId)                                                extends ToModifyFields
-  final case class FieldUpdateOrder     (id: FieldId, newPos: RelPos[FieldId])                       extends ToModifyFields
+  sealed trait ToModifyFields                                                                                         extends UpdateConfigCmd
+  final case class CustomFieldCreateImp (reqTypeId: ReqTypeId, fieldReqTypeRules: FieldReqTypeRules.ForImpField )     extends ToModifyFields
+  final case class CustomFieldCreateTag (tagId    : TagId    , fieldReqTypeRules: FieldReqTypeRules.ForTagField )     extends ToModifyFields
+  final case class CustomFieldCreateText(name     : String   , fieldReqTypeRules: FieldReqTypeRules.ForTextField)     extends ToModifyFields
+  final case class CustomFieldUpdateImp (id: CustomField.Implication.Id, newValues: CustomImpFieldGD .NonEmptyValues) extends ToModifyFields
+  final case class CustomFieldUpdateTag (id: CustomField.Tag        .Id, newValues: CustomTagFieldGD .NonEmptyValues) extends ToModifyFields
+  final case class CustomFieldUpdateText(id: CustomField.Text       .Id, newValues: CustomTextFieldGD.NonEmptyValues) extends ToModifyFields
+  final case class FieldDelete          (id: FieldId)                                                                 extends ToModifyFields
+  final case class FieldRestore         (id: FieldId)                                                                 extends ToModifyFields
+  final case class FieldUpdateOrder     (id: FieldId, newPos: RelPos[FieldId])                                        extends ToModifyFields
 
   /** Note: you're not allowed to specify any dead values in:
     *
@@ -57,25 +59,10 @@ object UpdateConfigCmd {
                                        name    : String,
                                        imp     : ImplicationRequired)
 
-  sealed trait CustomFieldValues
-
-  final case class TextFieldValues(name             : String,
-                                   fieldReqTypeRules: FieldReqTypeRules.ForTextField) extends CustomFieldValues
-
-  final case class TagFieldValues(tagId            : TagId,
-                                  fieldReqTypeRules: FieldReqTypeRules.ForTagField) extends CustomFieldValues
-
-  final case class ImpFieldValues(reqTypeId        : ReqTypeId,
-                                  fieldReqTypeRules: FieldReqTypeRules.ForImpField) extends CustomFieldValues
-
   // ===================================================================================================================
 
   implicit def univEqCustomIssueTypeValues : UnivEq[CustomIssueTypeValues] = UnivEq.derive
   implicit def univEqCustomReqTypeValues   : UnivEq[CustomReqTypeValues  ] = UnivEq.derive
-  implicit def univEqTextFieldValues       : UnivEq[TextFieldValues      ] = UnivEq.derive
-  implicit def univEqTagFieldValues        : UnivEq[TagFieldValues       ] = UnivEq.derive
-  implicit def univEqImplicationFieldValues: UnivEq[ImpFieldValues       ] = UnivEq.derive
-  implicit def univEqCustomFieldValues     : UnivEq[CustomFieldValues    ] = UnivEq.derive
   implicit def univEq                      : UnivEq[UpdateConfigCmd      ] = UnivEq.derive
 
   // ===================================================================================================================
@@ -113,64 +100,6 @@ object UpdateConfigCmd {
           val imp      = state.unpickle[ImplicationRequired]
           CustomReqTypeValues(mnemonic, name, imp)
         }
-      }
-
-    private implicit val picklerTextFieldValues: Pickler[TextFieldValues] =
-      new Pickler[TextFieldValues] {
-        override def pickle(a: TextFieldValues)(implicit state: PickleState): Unit = {
-          state.pickle(a.name)
-          state.pickle(a.fieldReqTypeRules)
-        }
-        override def unpickle(implicit state: UnpickleState): TextFieldValues = {
-          val name     = state.unpickle[String]
-          val reqTypes = state.unpickle[FieldReqTypeRules.ForTextField]
-          TextFieldValues(name, reqTypes)
-        }
-      }
-
-    private implicit val picklerTagFieldValues: Pickler[TagFieldValues] =
-      new Pickler[TagFieldValues] {
-        override def pickle(a: TagFieldValues)(implicit state: PickleState): Unit = {
-          state.pickle(a.tagId)
-          state.pickle(a.fieldReqTypeRules)
-        }
-        override def unpickle(implicit state: UnpickleState): TagFieldValues = {
-          val tagId    = state.unpickle[TagId]
-          val reqTypes = state.unpickle[FieldReqTypeRules.ForTagField]
-          TagFieldValues(tagId, reqTypes)
-        }
-      }
-
-    private implicit val picklerImpFieldValues: Pickler[ImpFieldValues] =
-      new Pickler[ImpFieldValues] {
-        override def pickle(a: ImpFieldValues)(implicit state: PickleState): Unit = {
-          state.pickle(a.reqTypeId)
-          state.pickle(a.fieldReqTypeRules)
-        }
-        override def unpickle(implicit state: UnpickleState): ImpFieldValues = {
-          val reqTypeId = state.unpickle[ReqTypeId]
-          val reqTypes  = state.unpickle[FieldReqTypeRules.ForImpField]
-          ImpFieldValues(reqTypeId, reqTypes)
-        }
-      }
-
-    private implicit val picklerCustomFieldValues: Pickler[CustomFieldValues] =
-      new Pickler[CustomFieldValues] {
-        private[this] final val KeyImpFieldValues  = 'i'
-        private[this] final val KeyTagFieldValues  = 't'
-        private[this] final val KeyTextFieldValues = 'x'
-        override def pickle(a: CustomFieldValues)(implicit state: PickleState): Unit =
-          a match {
-            case b: ImpFieldValues  => state.enc.writeByte(KeyImpFieldValues ); state.pickle(b)
-            case b: TagFieldValues  => state.enc.writeByte(KeyTagFieldValues ); state.pickle(b)
-            case b: TextFieldValues => state.enc.writeByte(KeyTextFieldValues); state.pickle(b)
-          }
-        override def unpickle(implicit state: UnpickleState): CustomFieldValues =
-          state.dec.readByte match {
-            case KeyImpFieldValues  => state.unpickle[ImpFieldValues]
-            case KeyTagFieldValues  => state.unpickle[TagFieldValues]
-            case KeyTextFieldValues => state.unpickle[TextFieldValues]
-          }
       }
 
     // -------------------------------------------------------------------------------------------------------------------
@@ -219,8 +148,44 @@ object UpdateConfigCmd {
     private implicit val picklerCustomReqTypeRestore: Pickler[CustomReqTypeRestore] =
       transformPickler(CustomReqTypeRestore.apply)(_.id)
 
-    private implicit val picklerCustomFieldCreate: Pickler[CustomFieldCreate] =
-      transformPickler(CustomFieldCreate.apply)(_.values)
+    private implicit val picklerCustomFieldCreateImp: Pickler[CustomFieldCreateImp] =
+      new Pickler[CustomFieldCreateImp] {
+        override def pickle(a: CustomFieldCreateImp)(implicit state: PickleState): Unit = {
+          state.pickle(a.reqTypeId)
+          state.pickle(a.fieldReqTypeRules)
+        }
+        override def unpickle(implicit state: UnpickleState): CustomFieldCreateImp = {
+          val reqTypeId         = state.unpickle[ReqTypeId]
+          val fieldReqTypeRules = state.unpickle[FieldReqTypeRules.ForImpField]
+          CustomFieldCreateImp(reqTypeId, fieldReqTypeRules)
+        }
+      }
+
+    private implicit val picklerCustomFieldCreateTag: Pickler[CustomFieldCreateTag] =
+      new Pickler[CustomFieldCreateTag] {
+        override def pickle(a: CustomFieldCreateTag)(implicit state: PickleState): Unit = {
+          state.pickle(a.tagId)
+          state.pickle(a.fieldReqTypeRules)
+        }
+        override def unpickle(implicit state: UnpickleState): CustomFieldCreateTag = {
+          val tagId             = state.unpickle[TagId]
+          val fieldReqTypeRules = state.unpickle[FieldReqTypeRules.ForTagField]
+          CustomFieldCreateTag(tagId, fieldReqTypeRules)
+        }
+      }
+
+    private implicit val picklerCustomFieldCreateText: Pickler[CustomFieldCreateText] =
+      new Pickler[CustomFieldCreateText] {
+        override def pickle(a: CustomFieldCreateText)(implicit state: PickleState): Unit = {
+          state.pickle(a.name)
+          state.pickle(a.fieldReqTypeRules)
+        }
+        override def unpickle(implicit state: UnpickleState): CustomFieldCreateText = {
+          val name              = state.unpickle[String]
+          val fieldReqTypeRules = state.unpickle[FieldReqTypeRules.ForTextField]
+          CustomFieldCreateText(name, fieldReqTypeRules)
+        }
+      }
 
     private implicit val picklerCustomFieldUpdateImp: Pickler[CustomFieldUpdateImp] =
       new Pickler[CustomFieldUpdateImp] {
@@ -230,7 +195,7 @@ object UpdateConfigCmd {
         }
         override def unpickle(implicit state: UnpickleState): CustomFieldUpdateImp = {
           val id        = state.unpickle[CustomField.Implication.Id]
-          val newValues = state.unpickle[ImpFieldValues]
+          val newValues = state.unpickle[CustomImpFieldGD.NonEmptyValues]
           CustomFieldUpdateImp(id, newValues)
         }
       }
@@ -242,8 +207,8 @@ object UpdateConfigCmd {
           state.pickle(a.newValues)
         }
         override def unpickle(implicit state: UnpickleState): CustomFieldUpdateTag = {
-          val id        = state.unpickle[CustomField.Tag        .Id]
-          val newValues = state.unpickle[TagFieldValues]
+          val id        = state.unpickle[CustomField.Tag.Id]
+          val newValues = state.unpickle[CustomTagFieldGD.NonEmptyValues]
           CustomFieldUpdateTag(id, newValues)
         }
       }
@@ -255,8 +220,8 @@ object UpdateConfigCmd {
           state.pickle(a.newValues)
         }
         override def unpickle(implicit state: UnpickleState): CustomFieldUpdateText = {
-          val id        = state.unpickle[CustomField.Text       .Id]
-          val newValues = state.unpickle[TextFieldValues]
+          val id        = state.unpickle[CustomField.Text.Id]
+          val newValues = state.unpickle[CustomTextFieldGD.NonEmptyValues]
           CustomFieldUpdateText(id, newValues)
         }
       }
@@ -333,7 +298,6 @@ object UpdateConfigCmd {
 
     implicit val picklerUpdateConfigCmd: Pickler[UpdateConfigCmd] =
       new Pickler[UpdateConfigCmd] {
-        private[this] final val KeyCustomFieldCreate       = 0
         private[this] final val KeyCustomFieldUpdateImp    = 1
         private[this] final val KeyCustomFieldUpdateTag    = 2
         private[this] final val KeyCustomFieldUpdateText   = 3
@@ -355,9 +319,14 @@ object UpdateConfigCmd {
         private[this] final val KeyTagGroupUpdate          = 19
         private[this] final val KeyTagRestore              = 20
         private[this] final val KeyTagSetLiveChildrenOrder = 21
+        private[this] final val KeyCustomFieldCreateImp    = 22
+        private[this] final val KeyCustomFieldCreateTag    = 23
+        private[this] final val KeyCustomFieldCreateText   = 24
         override def pickle(a: UpdateConfigCmd)(implicit state: PickleState): Unit =
           a match {
-            case b: CustomFieldCreate       => state.enc.writeByte(KeyCustomFieldCreate      ); state.pickle(b)
+            case b: CustomFieldCreateImp    => state.enc.writeByte(KeyCustomFieldCreateImp   ); state.pickle(b)
+            case b: CustomFieldCreateTag    => state.enc.writeByte(KeyCustomFieldCreateTag   ); state.pickle(b)
+            case b: CustomFieldCreateText   => state.enc.writeByte(KeyCustomFieldCreateText  ); state.pickle(b)
             case b: CustomFieldUpdateImp    => state.enc.writeByte(KeyCustomFieldUpdateImp   ); state.pickle(b)
             case b: CustomFieldUpdateTag    => state.enc.writeByte(KeyCustomFieldUpdateTag   ); state.pickle(b)
             case b: CustomFieldUpdateText   => state.enc.writeByte(KeyCustomFieldUpdateText  ); state.pickle(b)
@@ -382,7 +351,9 @@ object UpdateConfigCmd {
           }
         override def unpickle(implicit state: UnpickleState): UpdateConfigCmd =
           state.dec.readByte match {
-            case KeyCustomFieldCreate       => state.unpickle[CustomFieldCreate]
+            case KeyCustomFieldCreateImp    => state.unpickle[CustomFieldCreateImp]
+            case KeyCustomFieldCreateTag    => state.unpickle[CustomFieldCreateTag]
+            case KeyCustomFieldCreateText   => state.unpickle[CustomFieldCreateText]
             case KeyCustomFieldUpdateImp    => state.unpickle[CustomFieldUpdateImp]
             case KeyCustomFieldUpdateTag    => state.unpickle[CustomFieldUpdateTag]
             case KeyCustomFieldUpdateText   => state.unpickle[CustomFieldUpdateText]

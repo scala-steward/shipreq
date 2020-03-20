@@ -654,10 +654,9 @@ trait ApplyConfigEvent {
     def applyCreate(e: FieldCustomTagCreate): SE[Unit] = {
       implicit val vs = e.vs
       for {
-        t <- GD.need(^.TagId)
         r <- GD.need(^.FieldReqTypeRules)
-        _ <- ensureTagIsLive(t)
-        _ <- create(CustomField.Tag(e.id, t, r, Live))
+        _ <- ensureTagIsLive(e.tagId)
+        _ <- create(CustomField.Tag(e.id, e.tagId, r, Live))
       } yield ()
     }
 
@@ -665,7 +664,6 @@ trait ApplyConfigEvent {
     val updateFieldReqTypeRules = fieldUpdateFn(CustomField.Tag.fieldReqTypeRules)
 
     val updateValues = GD.updateEachValue {
-      case v: ^.ValueForTagId             => updateTagId            (v.value)
       case v: ^.ValueForFieldReqTypeRules => updateFieldReqTypeRules(v.value)
     }
 
@@ -683,10 +681,9 @@ trait ApplyConfigEvent {
     def applyCreate(e: FieldCustomImpCreate): SE[Unit] = {
       implicit val vs = e.vs
       for {
-        t <- GD.need(^.ReqTypeId)
         r <- GD.need(^.FieldReqTypeRules)
-        _ <- ensureReqTypeIsLive(t)
-        _ <- create(CustomField.Implication(e.id, t, r, Live))
+        _ <- ensureReqTypeIsLive(e.reqTypeId)
+        _ <- create(CustomField.Implication(e.id, e.reqTypeId, r, Live))
       } yield ()
     }
 
@@ -694,7 +691,6 @@ trait ApplyConfigEvent {
     val updateFieldReqTypeRules = fieldUpdateFn(CustomField.Implication.fieldReqTypeRules)
 
     val updateValues = GD.updateEachValue {
-      case v: ^.ValueForReqTypeId         => updateReqTypeId        (v.value)
       case v: ^.ValueForFieldReqTypeRules => updateFieldReqTypeRules(v.value)
     }
 

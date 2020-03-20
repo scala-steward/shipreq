@@ -18,7 +18,7 @@ object Gen {
        |  case object $attrName extends Attr {
        |    override type Data = $attrType
        |    override def apply(data: Data) = $valueName(data)
-       |    val dataEquality: Equal[Data] = implicitly[Equal[$attrType]]
+       |    override val dataEquality: Equal[Data] = implicitly[Equal[$attrType]]
        |  }
        |  final case class $valueName(value: $attrName.Data) extends Value {
        |    override val attr: $attrName.type = $attrName
@@ -88,11 +88,9 @@ val gens = List(
     "FieldReqTypeRules" -> "FieldReqTypeRules[Impossible]",
   ),
   Gen("CustomTagFieldGD")(
-    "TagId"             -> "TagId",
     "FieldReqTypeRules" -> "FieldReqTypeRules[ApplicableTagId]",
   ),
   Gen("CustomImpFieldGD")(
-    "ReqTypeId"         -> "ReqTypeId",
     "FieldReqTypeRules" -> "FieldReqTypeRules[Impossible]",
   ),
   """

@@ -100,42 +100,37 @@ object MakeEvent {
       case UpdateConfigCmd.FieldUpdateOrder(id, pos) =>
         FieldReposition(id, pos)
 
-      case UpdateConfigCmd.CustomFieldCreate(vs: UpdateConfigCmd.TextFieldValues) =>
-        val _ = vs // used by macros
-        val id = CustomField.Text.Id(nextId)
-        FieldCustomTextCreate(id, gdAllValues(CustomTextFieldGD, "vs"))
-
-      case UpdateConfigCmd.CustomFieldCreate(vs: UpdateConfigCmd.TagFieldValues) =>
-        val _ = vs // used by macros
-        val id = CustomField.Tag.Id(nextId)
-        FieldCustomTagCreate(id, gdAllValues(CustomTagFieldGD, "vs"))
-
-      case UpdateConfigCmd.CustomFieldCreate(vs: UpdateConfigCmd.ImpFieldValues) =>
-        val _ = vs // used by macros
+      case c: UpdateConfigCmd.CustomFieldCreateImp =>
         val id = CustomField.Implication.Id(nextId)
-        FieldCustomImpCreate(id, gdAllValues(CustomImpFieldGD, "vs"))
+        FieldCustomImpCreate(id, c.reqTypeId, gdAllValues(CustomImpFieldGD, "c"))
 
-      case UpdateConfigCmd.CustomFieldUpdateText(id, vs) =>
-        val _ = vs // used by macros
-        project.config.fields.customAttempt(id) toMakeEventResult { cur =>
-          val vs2 = gdUnequalValues(CustomTextFieldGD, cur, "vs")
-          eventIfNonEmpty(vs2)(FieldCustomTextUpdate(id, _))
-        }
+      case c: UpdateConfigCmd.CustomFieldCreateTag =>
+        val id = CustomField.Tag.Id(nextId)
+        FieldCustomTagCreate(id, c.tagId, gdAllValues(CustomTagFieldGD, "c"))
 
-      case UpdateConfigCmd.CustomFieldUpdateTag(id, vs) =>
-        val _ = vs // used by macros
-        project.config.fields.customAttempt(id) toMakeEventResult { cur =>
-          val vs2 = gdUnequalValues(CustomTagFieldGD, cur, "vs")
-          eventIfNonEmpty(vs2)(FieldCustomTagUpdate(id, _))
-        }
+      case c: UpdateConfigCmd.CustomFieldCreateText =>
+        val _ = c // used by macros
+        val id = CustomField.Text.Id(nextId)
+        FieldCustomTextCreate(id, gdAllValues(CustomTextFieldGD, "c"))
 
       case UpdateConfigCmd.CustomFieldUpdateImp(id, vs) =>
         val _ = vs // used by macros
         project.config.fields.customAttempt(id) toMakeEventResult { cur =>
-          val vs2 = gdUnequalValues(CustomImpFieldGD, cur, "vs")
+          val vs2 = gdUnequalValues2(CustomImpFieldGD, cur, vs)
           eventIfNonEmpty(vs2)(FieldCustomImpUpdate(id, _))
         }
 
+      case UpdateConfigCmd.CustomFieldUpdateTag(id, vs) =>
+        project.config.fields.customAttempt(id) toMakeEventResult { cur =>
+          val vs2 = gdUnequalValues2(CustomTagFieldGD, cur, vs)
+          eventIfNonEmpty(vs2)(FieldCustomTagUpdate(id, _))
+        }
+
+      case UpdateConfigCmd.CustomFieldUpdateText(id, vs) =>
+        project.config.fields.customAttempt(id) toMakeEventResult { cur =>
+          val vs2 = gdUnequalValues2(CustomTextFieldGD, cur, vs)
+          eventIfNonEmpty(vs2)(FieldCustomTextUpdate(id, _))
+        }
       case UpdateConfigCmd.FieldDelete(f: StaticField) =>
         FieldStaticRemove(f)
 

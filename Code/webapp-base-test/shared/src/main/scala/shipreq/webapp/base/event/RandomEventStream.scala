@@ -424,26 +424,13 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
   object customTagFieldGD extends GenericDataOptionGen(CustomTagFieldGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case TagId             => tagId(Live)   map (_ map TagId            .apply)
       case FieldReqTypeRules => fieldReqTypeRulesTag map FieldReqTypeRules.apply
     }
   }
 
   object customImpFieldGD extends GenericDataOptionGen(CustomImpFieldGD) {
     import gd._
-
-    private def reqTypesUsedInFields: Set[ReqTypeId] =
-      cfg.fields.customImpFields.map(_.reqTypeId).toSet
-
-    private def liveReqTypes: Iterator[ReqTypeId] =
-      StaticReqType.values.iterator.map(_.reqTypeId) ++
-      cfg.reqTypes.custom.valuesIterator.filter(_.live is Live).map(_.id)
-
-    private def reqTypeId: Option[Gen[ReqTypeId]] =
-      Gen.tryGenChoose(liveReqTypes.filterNot(reqTypesUsedInFields.contains))
-
     override def valueFor(a: Attr) = a match {
-      case ReqTypeId         => reqTypeId   map (_ map ReqTypeId        .apply)
       case FieldReqTypeRules => fieldReqTypeRules_ map FieldReqTypeRules.apply
     }
   }
@@ -602,9 +589,24 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
     customImpFieldGDv1.allValues.map(vs =>
       Gen.apply2(FieldCustomImpCreateV1)(nextCustomFieldImplicationId, vs))
 
-  def genFieldCustomImpCreate: Option[Gen[FieldCustomImpCreate]] =
-    customImpFieldGD.allValues.map(vs =>
-      Gen.apply2(FieldCustomImpCreate)(nextCustomFieldImplicationId, vs))
+  def genFieldCustomImpCreate: Option[Gen[FieldCustomImpCreate]] = {
+
+    def reqTypesUsedInFields: Set[ReqTypeId] =
+      cfg.fields.customImpFields.map(_.reqTypeId).toSet
+
+    def liveReqTypes: Iterator[ReqTypeId] =
+      StaticReqType.values.iterator.map(_.reqTypeId) ++
+        cfg.reqTypes.custom.valuesIterator.filter(_.live is Live).map(_.id)
+
+    for {
+      genReqTypeId <- Gen.tryGenChoose(liveReqTypes.filterNot(reqTypesUsedInFields.contains))
+      genVS        <- customImpFieldGD.allValues
+    } yield for {
+      id        <- nextCustomFieldImplicationId
+      reqTypeId <- genReqTypeId
+      vs        <- genVS
+    } yield FieldCustomImpCreate(id, reqTypeId, vs)
+  }
 
   def genCustomIssueTypeCreate: Gen[CustomIssueTypeCreate] =
     Gen.apply2(CustomIssueTypeCreate)(nextCustomIssueTypeId, customIssueTypeGD.allValues)
@@ -616,9 +618,23 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
     customTagFieldGDv1.allValues.map(vs =>
       Gen.apply2(FieldCustomTagCreateV1)(nextCustomFieldTagId, vs))
 
-  def genFieldCustomTagCreate: Option[Gen[FieldCustomTagCreate]] =
-    customTagFieldGD.allValues.map(vs =>
-      Gen.apply2(FieldCustomTagCreate)(nextCustomFieldTagId, vs))
+  def genFieldCustomTagCreate: Option[Gen[FieldCustomTagCreate]] = {
+
+    def tagsUsedInFields: Set[TagId] =
+      cfg.fields.customTagFields.map(_.tagId).toSet
+
+    def liveTagIds: Iterator[TagGroupId] =
+      p.config.tags.tree.valuesIterator.map(_.tag).filterSubType[TagGroup].filter(_.live is Live).map(_.id)
+
+    for {
+      genTagId <- Gen.tryGenChoose(liveTagIds.filterNot(tagsUsedInFields.contains))
+      genVS    <- customTagFieldGD.allValues
+    } yield for {
+      id    <- nextCustomFieldTagId
+      tagId <- genTagId
+      vs    <- genVS
+    } yield FieldCustomTagCreate(id, tagId, vs)
+  }
 
   def genFieldCustomTextCreateV1: Gen[FieldCustomTextCreateV1] =
     Gen.apply2(FieldCustomTextCreateV1)(nextCustomFieldTextId, customTextFieldGDv1.allValues)

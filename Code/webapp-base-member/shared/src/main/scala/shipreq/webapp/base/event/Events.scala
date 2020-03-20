@@ -122,14 +122,21 @@ object Event {
   final case class FieldCustomDelete (id: CustomFieldId) extends ActiveEvent
   final case class FieldCustomRestore(id: CustomFieldId) extends ActiveEvent
 
-  final case class FieldCustomTextCreate(id: CustomField.Text.Id, vs: CustomTextFieldGD.NonEmptyValues) extends ActiveEvent
-  final case class FieldCustomTextUpdate(id: CustomField.Text.Id, vs: CustomTextFieldGD.NonEmptyValues) extends ActiveEvent
+  final case class FieldCustomTextCreate(id: CustomField.Text.Id,
+                                         vs: CustomTextFieldGD.NonEmptyValues) extends ActiveEvent
 
-  final case class FieldCustomTagCreate(id: CustomField.Tag.Id, vs: CustomTagFieldGD.NonEmptyValues) extends ActiveEvent
-  final case class FieldCustomTagUpdate(id: CustomField.Tag.Id, vs: CustomTagFieldGD.NonEmptyValues) extends ActiveEvent
+  final case class FieldCustomTagCreate(id   : CustomField.Tag.Id,
+                                        tagId: TagId,
+                                        vs   : CustomTagFieldGD.NonEmptyValues) extends ActiveEvent
 
-  final case class FieldCustomImpCreate(id: CustomField.Implication.Id, vs: CustomImpFieldGD.NonEmptyValues) extends ActiveEvent
-  final case class FieldCustomImpUpdate(id: CustomField.Implication.Id, vs: CustomImpFieldGD.NonEmptyValues) extends ActiveEvent
+
+  final case class FieldCustomImpCreate(id       : CustomField.Implication.Id,
+                                        reqTypeId: ReqTypeId,
+                                        vs       : CustomImpFieldGD.NonEmptyValues) extends ActiveEvent
+
+  final case class FieldCustomImpUpdate (id: CustomField.Implication.Id, vs: CustomImpFieldGD .NonEmptyValues) extends ActiveEvent
+  final case class FieldCustomTagUpdate (id: CustomField.Tag        .Id, vs: CustomTagFieldGD .NonEmptyValues) extends ActiveEvent
+  final case class FieldCustomTextUpdate(id: CustomField.Text       .Id, vs: CustomTextFieldGD.NonEmptyValues) extends ActiveEvent
 
   final case class FieldCustomTextCreateV1(id: CustomField.Text       .Id, vs: RetiredGenericData.CustomTextFieldGDv1.NonEmptyValues) extends RetiredEvent
   final case class FieldCustomTextUpdateV1(id: CustomField.Text       .Id, vs: RetiredGenericData.CustomTextFieldGDv1.NonEmptyValues) extends RetiredEvent

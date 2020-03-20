@@ -22,7 +22,7 @@ object ApplicableTagGD extends GenericData {
   case object ApplicableReqTypes extends Attr {
     override type Data = ApplicableReqTypes
     override def apply(data: Data) = ValueForApplicableReqTypes(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[ApplicableReqTypes]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[ApplicableReqTypes]]
   }
   final case class ValueForApplicableReqTypes(value: ApplicableReqTypes.Data) extends Value {
     override val attr: ApplicableReqTypes.type = ApplicableReqTypes
@@ -35,7 +35,7 @@ object ApplicableTagGD extends GenericData {
   case object Children extends Attr {
     override type Data = TagInTree.Children
     override def apply(data: Data) = ValueForChildren(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[TagInTree.Children]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[TagInTree.Children]]
   }
   final case class ValueForChildren(value: Children.Data) extends Value {
     override val attr: Children.type = Children
@@ -48,7 +48,7 @@ object ApplicableTagGD extends GenericData {
   case object Colour extends Attr {
     override type Data = Option[Colour]
     override def apply(data: Data) = ValueForColour(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Option[Colour]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Option[Colour]]]
   }
   final case class ValueForColour(value: Colour.Data) extends Value {
     override val attr: Colour.type = Colour
@@ -61,7 +61,7 @@ object ApplicableTagGD extends GenericData {
   case object Desc extends Attr {
     override type Data = Option[String]
     override def apply(data: Data) = ValueForDesc(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Option[String]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Option[String]]]
   }
   final case class ValueForDesc(value: Desc.Data) extends Value {
     override val attr: Desc.type = Desc
@@ -74,7 +74,7 @@ object ApplicableTagGD extends GenericData {
   case object Key extends Attr {
     override type Data = HashRefKey
     override def apply(data: Data) = ValueForKey(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[HashRefKey]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[HashRefKey]]
   }
   final case class ValueForKey(value: Key.Data) extends Value {
     override val attr: Key.type = Key
@@ -87,7 +87,7 @@ object ApplicableTagGD extends GenericData {
   case object Parents extends Attr {
     override type Data = TagInTree.Parents
     override def apply(data: Data) = ValueForParents(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[TagInTree.Parents]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[TagInTree.Parents]]
   }
   final case class ValueForParents(value: Parents.Data) extends Value {
     override val attr: Parents.type = Parents
@@ -114,7 +114,7 @@ object CodeGroupGD extends GenericData {
   case object Code extends Attr {
     override type Data = ReqCode.Value
     override def apply(data: Data) = ValueForCode(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[ReqCode.Value]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[ReqCode.Value]]
   }
   final case class ValueForCode(value: Code.Data) extends Value {
     override val attr: Code.type = Code
@@ -127,7 +127,7 @@ object CodeGroupGD extends GenericData {
   case object Title extends Attr {
     override type Data = Text.CodeGroupTitle.OptionalText
     override def apply(data: Data) = ValueForTitle(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Text.CodeGroupTitle.OptionalText]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Text.CodeGroupTitle.OptionalText]]
   }
   final case class ValueForTitle(value: Title.Data) extends Value {
     override val attr: Title.type = Title
@@ -154,7 +154,7 @@ object CustomImpFieldGD extends GenericData {
   case object FieldReqTypeRules extends Attr {
     override type Data = FieldReqTypeRules[Impossible]
     override def apply(data: Data) = ValueForFieldReqTypeRules(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[FieldReqTypeRules[Impossible]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[FieldReqTypeRules[Impossible]]]
   }
   final case class ValueForFieldReqTypeRules(value: FieldReqTypeRules.Data) extends Value {
     override val attr: FieldReqTypeRules.type = FieldReqTypeRules
@@ -164,25 +164,12 @@ object CustomImpFieldGD extends GenericData {
     }
   }
 
-  case object ReqTypeId extends Attr {
-    override type Data = ReqTypeId
-    override def apply(data: Data) = ValueForReqTypeId(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[ReqTypeId]]
-  }
-  final case class ValueForReqTypeId(value: ReqTypeId.Data) extends Value {
-    override val attr: ReqTypeId.type = ReqTypeId
-    override def equals(o: Any): Boolean = o match {
-      case v2: ValueForReqTypeId => ReqTypeId.dataEquality.equal(value, v2.value)
-      case _ => false
-    }
-  }
-
   override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-    Util.univEqAndArbitraryOrder(Vector(FieldReqTypeRules, ReqTypeId))
+    Util.univEqAndArbitraryOrder(Vector(FieldReqTypeRules))
 
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
-  override val attrs = NonEmptySet[Attr](FieldReqTypeRules, ReqTypeId)
+  override val attrs = NonEmptySet[Attr](FieldReqTypeRules)
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -194,7 +181,7 @@ object CustomIssueTypeGD extends GenericData {
   case object Desc extends Attr {
     override type Data = Option[String]
     override def apply(data: Data) = ValueForDesc(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Option[String]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Option[String]]]
   }
   final case class ValueForDesc(value: Desc.Data) extends Value {
     override val attr: Desc.type = Desc
@@ -207,7 +194,7 @@ object CustomIssueTypeGD extends GenericData {
   case object Key extends Attr {
     override type Data = HashRefKey
     override def apply(data: Data) = ValueForKey(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[HashRefKey]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[HashRefKey]]
   }
   final case class ValueForKey(value: Key.Data) extends Value {
     override val attr: Key.type = Key
@@ -234,7 +221,7 @@ object CustomReqTypeGD extends GenericData {
   case object Imp extends Attr {
     override type Data = ImplicationRequired
     override def apply(data: Data) = ValueForImp(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[ImplicationRequired]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[ImplicationRequired]]
   }
   final case class ValueForImp(value: Imp.Data) extends Value {
     override val attr: Imp.type = Imp
@@ -247,7 +234,7 @@ object CustomReqTypeGD extends GenericData {
   case object Mnemonic extends Attr {
     override type Data = ReqType.Mnemonic
     override def apply(data: Data) = ValueForMnemonic(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[ReqType.Mnemonic]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[ReqType.Mnemonic]]
   }
   final case class ValueForMnemonic(value: Mnemonic.Data) extends Value {
     override val attr: Mnemonic.type = Mnemonic
@@ -260,7 +247,7 @@ object CustomReqTypeGD extends GenericData {
   case object Name extends Attr {
     override type Data = String
     override def apply(data: Data) = ValueForName(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[String]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[String]]
   }
   final case class ValueForName(value: Name.Data) extends Value {
     override val attr: Name.type = Name
@@ -287,7 +274,7 @@ object CustomTagFieldGD extends GenericData {
   case object FieldReqTypeRules extends Attr {
     override type Data = FieldReqTypeRules[ApplicableTagId]
     override def apply(data: Data) = ValueForFieldReqTypeRules(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[FieldReqTypeRules[ApplicableTagId]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[FieldReqTypeRules[ApplicableTagId]]]
   }
   final case class ValueForFieldReqTypeRules(value: FieldReqTypeRules.Data) extends Value {
     override val attr: FieldReqTypeRules.type = FieldReqTypeRules
@@ -297,25 +284,12 @@ object CustomTagFieldGD extends GenericData {
     }
   }
 
-  case object TagId extends Attr {
-    override type Data = TagId
-    override def apply(data: Data) = ValueForTagId(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[TagId]]
-  }
-  final case class ValueForTagId(value: TagId.Data) extends Value {
-    override val attr: TagId.type = TagId
-    override def equals(o: Any): Boolean = o match {
-      case v2: ValueForTagId => TagId.dataEquality.equal(value, v2.value)
-      case _ => false
-    }
-  }
-
   override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-    Util.univEqAndArbitraryOrder(Vector(FieldReqTypeRules, TagId))
+    Util.univEqAndArbitraryOrder(Vector(FieldReqTypeRules))
 
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
-  override val attrs = NonEmptySet[Attr](FieldReqTypeRules, TagId)
+  override val attrs = NonEmptySet[Attr](FieldReqTypeRules)
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -327,7 +301,7 @@ object CustomTextFieldGD extends GenericData {
   case object FieldReqTypeRules extends Attr {
     override type Data = FieldReqTypeRules[Impossible]
     override def apply(data: Data) = ValueForFieldReqTypeRules(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[FieldReqTypeRules[Impossible]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[FieldReqTypeRules[Impossible]]]
   }
   final case class ValueForFieldReqTypeRules(value: FieldReqTypeRules.Data) extends Value {
     override val attr: FieldReqTypeRules.type = FieldReqTypeRules
@@ -340,7 +314,7 @@ object CustomTextFieldGD extends GenericData {
   case object Name extends Attr {
     override type Data = String
     override def apply(data: Data) = ValueForName(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[String]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[String]]
   }
   final case class ValueForName(value: Name.Data) extends Value {
     override val attr: Name.type = Name
@@ -372,7 +346,7 @@ object GenericReqGD extends GenericData {
   case object Codes extends Attr {
     override type Data = NonEmptySet[ApReqCodeId.AndValue]
     override def apply(data: Data) = ValueForCodes(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ApReqCodeId.AndValue]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ApReqCodeId.AndValue]]]
   }
   final case class ValueForCodes(value: Codes.Data) extends Value {
     override val attr: Codes.type = Codes
@@ -385,7 +359,7 @@ object GenericReqGD extends GenericData {
   case object CustomText extends Attr {
     override type Data = Event.NonEmptyCustomTextMap
     override def apply(data: Data) = ValueForCustomText(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Event.NonEmptyCustomTextMap]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Event.NonEmptyCustomTextMap]]
   }
   final case class ValueForCustomText(value: CustomText.Data) extends Value {
     override val attr: CustomText.type = CustomText
@@ -398,7 +372,7 @@ object GenericReqGD extends GenericData {
   case object ImpSrcs extends Attr {
     override type Data = NonEmptySet[ReqId]
     override def apply(data: Data) = ValueForImpSrcs(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ReqId]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ReqId]]]
   }
   final case class ValueForImpSrcs(value: ImpSrcs.Data) extends Value {
     override val attr: ImpSrcs.type = ImpSrcs
@@ -411,7 +385,7 @@ object GenericReqGD extends GenericData {
   case object ImpTgts extends Attr {
     override type Data = NonEmptySet[ReqId]
     override def apply(data: Data) = ValueForImpTgts(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ReqId]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ReqId]]]
   }
   final case class ValueForImpTgts(value: ImpTgts.Data) extends Value {
     override val attr: ImpTgts.type = ImpTgts
@@ -424,7 +398,7 @@ object GenericReqGD extends GenericData {
   case object Tags extends Attr {
     override type Data = NonEmptySet[ApplicableTagId]
     override def apply(data: Data) = ValueForTags(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ApplicableTagId]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ApplicableTagId]]]
   }
   final case class ValueForTags(value: Tags.Data) extends Value {
     override val attr: Tags.type = Tags
@@ -437,7 +411,7 @@ object GenericReqGD extends GenericData {
   case object Title extends Attr {
     override type Data = Text.GenericReqTitle.NonEmptyText
     override def apply(data: Data) = ValueForTitle(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Text.GenericReqTitle.NonEmptyText]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Text.GenericReqTitle.NonEmptyText]]
   }
   final case class ValueForTitle(value: Title.Data) extends Value {
     override val attr: Title.type = Title
@@ -467,7 +441,7 @@ object SavedViewGD extends GenericData {
   case object Columns extends Attr {
     override type Data = NonEmptyVector[Column]
     override def apply(data: Data) = ValueForColumns(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[NonEmptyVector[Column]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[NonEmptyVector[Column]]]
   }
   final case class ValueForColumns(value: Columns.Data) extends Value {
     override val attr: Columns.type = Columns
@@ -480,7 +454,7 @@ object SavedViewGD extends GenericData {
   case object Filter extends Attr {
     override type Data = Option[ValidFilter]
     override def apply(data: Data) = ValueForFilter(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Option[ValidFilter]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Option[ValidFilter]]]
   }
   final case class ValueForFilter(value: Filter.Data) extends Value {
     override val attr: Filter.type = Filter
@@ -493,7 +467,7 @@ object SavedViewGD extends GenericData {
   case object FilterDead extends Attr {
     override type Data = FilterDead
     override def apply(data: Data) = ValueForFilterDead(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[FilterDead]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[FilterDead]]
   }
   final case class ValueForFilterDead(value: FilterDead.Data) extends Value {
     override val attr: FilterDead.type = FilterDead
@@ -506,7 +480,7 @@ object SavedViewGD extends GenericData {
   case object Name extends Attr {
     override type Data = SavedView.Name
     override def apply(data: Data) = ValueForName(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[SavedView.Name]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[SavedView.Name]]
   }
   final case class ValueForName(value: Name.Data) extends Value {
     override val attr: Name.type = Name
@@ -519,7 +493,7 @@ object SavedViewGD extends GenericData {
   case object Order extends Attr {
     override type Data = SortCriteria
     override def apply(data: Data) = ValueForOrder(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[SortCriteria]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[SortCriteria]]
   }
   final case class ValueForOrder(value: Order.Data) extends Value {
     override val attr: Order.type = Order
@@ -546,7 +520,7 @@ object TagGroupGD extends GenericData {
   case object Children extends Attr {
     override type Data = TagInTree.Children
     override def apply(data: Data) = ValueForChildren(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[TagInTree.Children]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[TagInTree.Children]]
   }
   final case class ValueForChildren(value: Children.Data) extends Value {
     override val attr: Children.type = Children
@@ -559,7 +533,7 @@ object TagGroupGD extends GenericData {
   case object Desc extends Attr {
     override type Data = Option[String]
     override def apply(data: Data) = ValueForDesc(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Option[String]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Option[String]]]
   }
   final case class ValueForDesc(value: Desc.Data) extends Value {
     override val attr: Desc.type = Desc
@@ -572,7 +546,7 @@ object TagGroupGD extends GenericData {
   case object Exclusivity extends Attr {
     override type Data = Exclusivity
     override def apply(data: Data) = ValueForExclusivity(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Exclusivity]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Exclusivity]]
   }
   final case class ValueForExclusivity(value: Exclusivity.Data) extends Value {
     override val attr: Exclusivity.type = Exclusivity
@@ -585,7 +559,7 @@ object TagGroupGD extends GenericData {
   case object Name extends Attr {
     override type Data = String
     override def apply(data: Data) = ValueForName(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[String]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[String]]
   }
   final case class ValueForName(value: Name.Data) extends Value {
     override val attr: Name.type = Name
@@ -598,7 +572,7 @@ object TagGroupGD extends GenericData {
   case object Parents extends Attr {
     override type Data = TagInTree.Parents
     override def apply(data: Data) = ValueForParents(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[TagInTree.Parents]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[TagInTree.Parents]]
   }
   final case class ValueForParents(value: Parents.Data) extends Value {
     override val attr: Parents.type = Parents
@@ -630,7 +604,7 @@ object UseCaseGD extends GenericData {
   case object Codes extends Attr {
     override type Data = NonEmptySet[ApReqCodeId.AndValue]
     override def apply(data: Data) = ValueForCodes(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ApReqCodeId.AndValue]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ApReqCodeId.AndValue]]]
   }
   final case class ValueForCodes(value: Codes.Data) extends Value {
     override val attr: Codes.type = Codes
@@ -643,7 +617,7 @@ object UseCaseGD extends GenericData {
   case object CustomText extends Attr {
     override type Data = Event.NonEmptyCustomTextMap
     override def apply(data: Data) = ValueForCustomText(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Event.NonEmptyCustomTextMap]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Event.NonEmptyCustomTextMap]]
   }
   final case class ValueForCustomText(value: CustomText.Data) extends Value {
     override val attr: CustomText.type = CustomText
@@ -656,7 +630,7 @@ object UseCaseGD extends GenericData {
   case object ImpSrcs extends Attr {
     override type Data = NonEmptySet[ReqId]
     override def apply(data: Data) = ValueForImpSrcs(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ReqId]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ReqId]]]
   }
   final case class ValueForImpSrcs(value: ImpSrcs.Data) extends Value {
     override val attr: ImpSrcs.type = ImpSrcs
@@ -669,7 +643,7 @@ object UseCaseGD extends GenericData {
   case object ImpTgts extends Attr {
     override type Data = NonEmptySet[ReqId]
     override def apply(data: Data) = ValueForImpTgts(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ReqId]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ReqId]]]
   }
   final case class ValueForImpTgts(value: ImpTgts.Data) extends Value {
     override val attr: ImpTgts.type = ImpTgts
@@ -682,7 +656,7 @@ object UseCaseGD extends GenericData {
   case object Tags extends Attr {
     override type Data = NonEmptySet[ApplicableTagId]
     override def apply(data: Data) = ValueForTags(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ApplicableTagId]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[NonEmptySet[ApplicableTagId]]]
   }
   final case class ValueForTags(value: Tags.Data) extends Value {
     override val attr: Tags.type = Tags
@@ -695,7 +669,7 @@ object UseCaseGD extends GenericData {
   case object Title extends Attr {
     override type Data = Text.UseCaseTitle.NonEmptyText
     override def apply(data: Data) = ValueForTitle(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Text.UseCaseTitle.NonEmptyText]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Text.UseCaseTitle.NonEmptyText]]
   }
   final case class ValueForTitle(value: Title.Data) extends Value {
     override val attr: Title.type = Title
@@ -722,7 +696,7 @@ object UseCaseStepGD extends GenericData {
   case object FlowIn extends Attr {
     override type Data = SetDiff.NE[UseCaseStepId]
     override def apply(data: Data) = ValueForFlowIn(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[SetDiff.NE[UseCaseStepId]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[SetDiff.NE[UseCaseStepId]]]
   }
   final case class ValueForFlowIn(value: FlowIn.Data) extends Value {
     override val attr: FlowIn.type = FlowIn
@@ -735,7 +709,7 @@ object UseCaseStepGD extends GenericData {
   case object FlowOut extends Attr {
     override type Data = SetDiff.NE[UseCaseStepId]
     override def apply(data: Data) = ValueForFlowOut(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[SetDiff.NE[UseCaseStepId]]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[SetDiff.NE[UseCaseStepId]]]
   }
   final case class ValueForFlowOut(value: FlowOut.Data) extends Value {
     override val attr: FlowOut.type = FlowOut
@@ -748,7 +722,7 @@ object UseCaseStepGD extends GenericData {
   case object Title extends Attr {
     override type Data = Text.UseCaseStep.OptionalText
     override def apply(data: Data) = ValueForTitle(data)
-    val dataEquality: Equal[Data] = implicitly[Equal[Text.UseCaseStep.OptionalText]]
+    override val dataEquality: Equal[Data] = implicitly[Equal[Text.UseCaseStep.OptionalText]]
   }
   final case class ValueForTitle(value: Title.Data) extends Value {
     override val attr: Title.type = Title
