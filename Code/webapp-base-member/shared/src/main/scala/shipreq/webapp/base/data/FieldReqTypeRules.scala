@@ -38,7 +38,7 @@ final case class FieldReqTypeRules[+D](perReqType: Map[ReqTypeId, Resolution[D]]
   def updated[DD >: D](ids: ReqTypeId*)(res: Resolution[DD]): FieldReqTypeRules[DD] =
     copy(ids.foldLeft(perReqType: Map[ReqTypeId, Resolution[DD]])(_.updated(_, res)))
 
-  def defaultTo[DD >: D](ids: ReqTypeId*)(d: DD): FieldReqTypeRules[DD] =
+  def defaultTo[DD >: D](d: DD)(ids: ReqTypeId*): FieldReqTypeRules[DD] =
     updated[DD](ids: _*)(Resolution.DefaultTo(d))
 
   def optional(ids: ReqTypeId*): FieldReqTypeRules[D] =

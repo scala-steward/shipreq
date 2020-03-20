@@ -103,6 +103,9 @@ object ApplicableTagGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](ApplicableReqTypes, Children, Colour, Desc, Key, Parents)
+
+  def apply(key: HashRefKey, desc: Option[String], colour: Option[Colour], applicableReqTypes: ApplicableReqTypes, parents: TagInTree.Parents, children: TagInTree.Children): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForKey(key) + ValueForDesc(desc) + ValueForColour(colour) + ValueForApplicableReqTypes(applicableReqTypes) + ValueForParents(parents) + ValueForChildren(children))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -143,6 +146,9 @@ object CodeGroupGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](Code, Title)
+
+  def apply(code: ReqCode.Value, title: Text.CodeGroupTitle.OptionalText): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForCode(code) + ValueForTitle(title))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -170,6 +176,9 @@ object CustomImpFieldGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](FieldReqTypeRules)
+
+  def apply(fieldReqTypeRules: FieldReqTypeRules[Impossible]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForFieldReqTypeRules(fieldReqTypeRules))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -210,6 +219,9 @@ object CustomIssueTypeGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](Desc, Key)
+
+  def apply(key: HashRefKey, desc: Option[String]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForKey(key) + ValueForDesc(desc))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -263,6 +275,9 @@ object CustomReqTypeGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](Imp, Mnemonic, Name)
+
+  def apply(mnemonic: ReqType.Mnemonic, name: String, imp: ImplicationRequired): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForMnemonic(mnemonic) + ValueForName(name) + ValueForImp(imp))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -290,6 +305,9 @@ object CustomTagFieldGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](FieldReqTypeRules)
+
+  def apply(fieldReqTypeRules: FieldReqTypeRules[ApplicableTagId]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForFieldReqTypeRules(fieldReqTypeRules))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -330,6 +348,9 @@ object CustomTextFieldGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](FieldReqTypeRules, Name)
+
+  def apply(name: String, fieldReqTypeRules: FieldReqTypeRules[Impossible]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForName(name) + ValueForFieldReqTypeRules(fieldReqTypeRules))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -427,6 +448,9 @@ object GenericReqGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](Codes, CustomText, ImpSrcs, ImpTgts, Tags, Title)
+
+  def apply(codes: NonEmptySet[ApReqCodeId.AndValue], customText: Event.NonEmptyCustomTextMap, impSrcs: NonEmptySet[ReqId], impTgts: NonEmptySet[ReqId], tags: NonEmptySet[ApplicableTagId], title: Text.GenericReqTitle.NonEmptyText): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForCodes(codes) + ValueForCustomText(customText) + ValueForImpSrcs(impSrcs) + ValueForImpTgts(impTgts) + ValueForTags(tags) + ValueForTitle(title))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -509,6 +533,9 @@ object SavedViewGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](Columns, Filter, FilterDead, Name, Order)
+
+  def apply(name: SavedView.Name, filterDead: FilterDead, columns: NonEmptyVector[Column], order: SortCriteria, filter: Option[ValidFilter]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForName(name) + ValueForFilterDead(filterDead) + ValueForColumns(columns) + ValueForOrder(order) + ValueForFilter(filter))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -588,6 +615,9 @@ object TagGroupGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](Children, Desc, Exclusivity, Name, Parents)
+
+  def apply(name: String, desc: Option[String], exclusivity: Exclusivity, parents: TagInTree.Parents, children: TagInTree.Children): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForName(name) + ValueForDesc(desc) + ValueForExclusivity(exclusivity) + ValueForParents(parents) + ValueForChildren(children))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -685,6 +715,9 @@ object UseCaseGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](Codes, CustomText, ImpSrcs, ImpTgts, Tags, Title)
+
+  def apply(codes: NonEmptySet[ApReqCodeId.AndValue], customText: Event.NonEmptyCustomTextMap, impSrcs: NonEmptySet[ReqId], impTgts: NonEmptySet[ReqId], tags: NonEmptySet[ApplicableTagId], title: Text.UseCaseTitle.NonEmptyText): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForCodes(codes) + ValueForCustomText(customText) + ValueForImpSrcs(impSrcs) + ValueForImpTgts(impTgts) + ValueForTags(tags) + ValueForTitle(title))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -738,4 +771,7 @@ object UseCaseStepGD extends GenericData {
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
   override val attrs = NonEmptySet[Attr](FlowIn, FlowOut, Title)
+
+  def apply(title: Text.UseCaseStep.OptionalText, flowIn: SetDiff.NE[UseCaseStepId], flowOut: SetDiff.NE[UseCaseStepId]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForTitle(title) + ValueForFlowIn(flowIn) + ValueForFlowOut(flowOut))
 }
