@@ -7,6 +7,9 @@ final class OptionalBoolFn[A](val value: Option[A => Boolean]) extends AnyVal {
   def apply(a: A): Boolean =
     value.fold(true)(_(a))
 
+  def exists(as: TraversableOnce[A]): Boolean =
+    value.fold(as.nonEmpty)(as.exists)
+
   def toFn: A => Boolean =
     value getOrElse OptionalBoolFn.alwaysTrue
 

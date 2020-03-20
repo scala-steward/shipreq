@@ -36,7 +36,9 @@ import UnsafeTypes._
  *       Otherwise: Optional
  *
  *   - Status tag field
- *       CO       : Default to uat (dead)
+ *       BR CO    : Default to uat (dead)
+ *       FR       : Default to uat2 (dead)
+ *       SI (dead): Default to uat3 (dead)
  *       MF       : Default to wip
  *       Otherwise: Optional
  *
@@ -71,7 +73,7 @@ object SampleProject7 {
       FieldReqTypeRules.optional.defaultTo(priMed)(co))),
 
     FieldCustomTagUpdate(statusField, CustomTagFieldGD(
-      FieldReqTypeRules.optional.defaultTo(wip)(mf).defaultTo(uat)(co))),
+      FieldReqTypeRules.optional.defaultTo(wip)(mf).defaultTo(uat)(br, co).defaultTo(uat2)(fr).defaultTo(uat3)(si))),
   )
 
   lazy val plainText  = PlainText.ForProject.noCtx(project)

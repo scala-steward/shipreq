@@ -2,6 +2,7 @@ package shipreq.webapp.base.issue
 
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptySet
+import nyaya.util.Multimap
 import shipreq.base.util._
 import shipreq.webapp.base.data.FieldReqTypeRules.Resolution
 import shipreq.webapp.base.data._
@@ -192,6 +193,34 @@ object IssueDetectors {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  case object FieldDefaultsToDeadTag extends Instance {
+    override val detect = ctx => {
+      val cfg = ctx.project.config
+      for (f <- ctx.project.config.fields.customTagFields)
+        if (f.liveExplicitly is Live) {
+
+          var badDefaults  = Set.empty[ApplicableTagId]
+          var affectedReqs = Multimap.empty[ApplicableTagId, List, Req]
+
+          for ((rt, res) <- f.fieldReqTypeRules.liveIterator(cfg.reqTypes))
+            res match {
+              case FieldReqTypeRules.Resolution.DefaultTo(tagId) if cfg.tags.needApplicableTag(tagId).live is Dead =>
+                badDefaults += tagId
+                affectedReqs = affectedReqs.addvs(tagId,
+                  ctx.project.content.reqs.reqsByType(rt.reqTypeId).filter(_.live(cfg.reqTypes) is Live).toList)
+              case _ =>
+            }
+
+          for (tagId <- badDefaults) {
+            val tag = cfg.tags.needApplicableTag(tagId)
+            ctx.add(Issue.FieldDefaultsToDeadTag(f, tag, affectedReqs(tagId)))
+          }
+        }
+    }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   case object ImplicationRequired extends Instance {
     override val detect = ctx => {
       val reqTypeIds = ctx.project.config.reqTypes.idsRequiringImplication
@@ -246,29 +275,16 @@ object IssueDetectors {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  case object LooseIssue extends Instance {
-
-    override val detect = ctx =>
-      ()
-  }
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
   case object NonApplicableField extends Instance {
-
     override val detect = ctx => {
       val cfg = ctx.project.config
       for (f <- ctx.project.config.fields.customFields.values) {
-        val isLive = f.liveExplicitly is Live
-        if (isLive && allDeadOrNA(cfg, f.fieldReqTypeRules))
+        val isLive      = f.liveExplicitly is Live
+        def allDeadOrNA = f.fieldReqTypeRules.liveResolutionIterator(cfg.reqTypes).forall(_.isNA)
+        if (isLive && allDeadOrNA)
           ctx.add(Issue.NonApplicableField(f))
       }
     }
-
-    @inline private def allDeadOrNA(cfg: ProjectConfig, f: FieldReqTypeRules[Any]): Boolean =
-      f.otherwise.isNA && f.perReqType.forall { case (reqTypeId, res) =>
-        res.isNA || cfg.reqTypes.need(reqTypeId).live.is(Dead)
-      }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

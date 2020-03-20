@@ -26,6 +26,18 @@ final case class FieldReqTypeRules[+D](perReqType: Map[ReqTypeId, Resolution[D]]
   def resolutionIterator(): Iterator[Resolution[D]] =
     perReqType.valuesIterator ++ Iterator.single(otherwise)
 
+  def resolutionIterator(reqTypeFilter: ReqTypeId => Boolean): Iterator[Resolution[D]] =
+    Iterator.single(otherwise) ++ perReqType.iterator.filter(x => reqTypeFilter(x._1)).map(_._2)
+
+  def liveResolutionIterator(reqTypes: ReqTypes): Iterator[Resolution[D]] =
+    resolutionIterator(reqTypes.need(_).live is Live)
+
+  def liveIterator(reqTypes: ReqTypes): Iterator[(ReqType, Resolution[D])] =
+    reqTypes.all
+      .iterator
+      .filter(_.live is Live)
+      .map(r => (r, apply(r.reqTypeId)))
+
   def foreach(f: (Option[ReqTypeId], Resolution[D]) => Unit): Unit = {
     for ((rt, res) <- perReqType)
       f(Some(rt), res)
@@ -56,7 +68,7 @@ final case class FieldReqTypeRules[+D](perReqType: Map[ReqTypeId, Resolution[D]]
     else
       this
 
-  def byResolution[DD >: D]: FieldReqTypeRules.ByResolution[DD] = {
+  private[data] def byResolution[DD >: D]: FieldReqTypeRules.ByResolution[DD] = {
     var perRes = Map.empty[Resolution[DD], NonEmptySet[ReqTypeId]]
     for ((id, res) <- perReqType) {
       val newIds = perRes.get(res) match {

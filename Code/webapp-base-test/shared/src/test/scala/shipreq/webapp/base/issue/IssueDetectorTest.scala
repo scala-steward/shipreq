@@ -275,6 +275,22 @@ object IssueDetectorTest extends TestSuite {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  private object FieldDefaultsToDeadTagTests {
+    private implicit val filter = IssueFilter[Issue.FieldDefaultsToDeadTag]
+    import P7._
+
+    def ko() = test(p7)()(
+      IssueLite.FieldDefaultsToDeadTag(statusField, uat, Set()), // BR CO
+      IssueLite.FieldDefaultsToDeadTag(statusField, uat2, Set(frs(1), frs(2))),
+    )
+
+    def liveOnly() = test(p7)(
+      Event.FieldCustomDelete(statusField),
+    )()
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   private object ImplicationRequiredTests {
     private implicit val filter = IssueFilter[Issue.ImplicationRequired]
 
@@ -456,6 +472,12 @@ object IssueDetectorTest extends TestSuite {
       'ko            - ko()
       'deadChild     - deadChild()
       'deadCodeGroup - deadCodeGroup()
+    }
+
+    'FieldDefaultsToDeadTag {
+      import FieldDefaultsToDeadTagTests._
+      'ko       - ko()
+      'liveOnly - liveOnly()
     }
 
     'ImplicationRequired {

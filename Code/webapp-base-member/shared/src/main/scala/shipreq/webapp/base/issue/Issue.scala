@@ -21,19 +21,20 @@ sealed abstract class IssueClass(final val category: IssueCategory)
 object IssueClass {
   import shipreq.webapp.base.issue.{IssueCategory => C}
 
-  case object BlankCustomField      extends IssueClass(C.MissingData)
-  case object BlankTitle            extends IssueClass(C.MissingData)
-  case object BlankUseCaseStep      extends IssueClass(C.MissingData)
-  case object ConflictingTags       extends IssueClass(C.BadData)
-  case object DeadIssueTag          extends IssueClass(C.BadData)
-  case object DeadReference         extends IssueClass(C.BadData)
-  case object DeadTag               extends IssueClass(C.BadData)
-  case object EmptyCodeGroup        extends IssueClass(C.Futility)
-  case object ImplicationRequired   extends IssueClass(C.MissingData)
-  case object IssueTag              extends IssueClass(C.UserDefined)
-  case object ManualIssue           extends IssueClass(C.UserDefined)
-  case object NonApplicableField    extends IssueClass(C.Futility)
-  case object UninhabitableTagField extends IssueClass(C.Futility)
+  case object BlankCustomField       extends IssueClass(C.MissingData)
+  case object BlankTitle             extends IssueClass(C.MissingData)
+  case object BlankUseCaseStep       extends IssueClass(C.MissingData)
+  case object ConflictingTags        extends IssueClass(C.BadData)
+  case object DeadIssueTag           extends IssueClass(C.BadData)
+  case object DeadReference          extends IssueClass(C.BadData)
+  case object DeadTag                extends IssueClass(C.BadData)
+  case object EmptyCodeGroup         extends IssueClass(C.Futility)
+  case object FieldDefaultsToDeadTag extends IssueClass(C.BadData)
+  case object ImplicationRequired    extends IssueClass(C.MissingData)
+  case object IssueTag               extends IssueClass(C.UserDefined)
+  case object ManualIssue            extends IssueClass(C.UserDefined)
+  case object NonApplicableField     extends IssueClass(C.Futility)
+  case object UninhabitableTagField  extends IssueClass(C.Futility)
 
   implicit def univEq: UnivEq[IssueClass] = UnivEq.derive
   val values = AdtMacros.adtValues[IssueClass]
@@ -73,9 +74,13 @@ object Issue {
 
   final case class DeadTag(req: Req,
                            loc: LocationOf.Text.InReq,
-                           tag: ApplicableTag) extends Issue(C.DeadIssueTag)
+                           tag: ApplicableTag) extends Issue(C.DeadTag)
 
   final case class EmptyCodeGroup(rcg: LiveCodeGroup) extends Issue(C.EmptyCodeGroup)
+
+  final case class FieldDefaultsToDeadTag(field       : CustomField.Tag,
+                                          tag         : ApplicableTag,
+                                          reqsAffected: List[Req]) extends Issue(C.FieldDefaultsToDeadTag)
 
   final case class ImplicationRequired(req: Req) extends Issue(C.ImplicationRequired)
 
