@@ -143,13 +143,20 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
   // ==========================================================================
   // Tags
 
+  /** Only live fields considered. All tags, live & dead, included. */
+  lazy val liveTagFieldDistribution: TagFieldDistribution.TagIds =
+    TagFieldDistribution(this, _.live(this) is Live)
+
+  /** All fields considered. All tags, live & dead, included. */
+  lazy val deadTagFieldDistribution: TagFieldDistribution.TagIds =
+    TagFieldDistribution(this, _ => true)
+
   def deadTagFieldDistribution(deadTagFilter: CustomField.Tag.Id => Boolean): TagFieldDistribution.TagIds =
     TagFieldDistribution(this, f => f.live(this) match {
       case Live => true
       case Dead => deadTagFilter(f.id)
     })
 
-  lazy val liveTagFieldDistribution: TagFieldDistribution.TagIds =
-    TagFieldDistribution(this, _.live(this) is Live)
-
+  def deadTagFieldDistribution(deadTagFilter: Option[CustomField.Tag.Id => Boolean]): TagFieldDistribution.TagIds =
+    deadTagFilter.fold(deadTagFieldDistribution)(deadTagFieldDistribution(_))
 }

@@ -67,7 +67,7 @@ final class DataLogic(p: Project) {
 
   /** Note: If you want to filter dead tags, use DataLogic.tagFieldDist(...) */
   val tagFieldDist: FilterDead => TagFieldDistribution.TagIds =
-    FilterDead.memoLazy(DataLogic.tagFieldDist(p.config, _, _ => true))
+    FilterDead.memoLazy(DataLogic.tagFieldDist(p.config, _, None))
 
   lazy val tagOrderByName: TagOrder =
     p.config.tags.tree
@@ -121,7 +121,7 @@ object DataLogic {
   // 2. doesn't display tags allocated to visible, dead tag-columns.
   def tagFieldDist(pc           : ProjectConfig,
                    fd           : FilterDead,
-                   deadTagFilter: CustomField.Tag.Id => Boolean): TagFieldDistribution.TagIds =
+                   deadTagFilter: Option[CustomField.Tag.Id => Boolean]): TagFieldDistribution.TagIds =
     fd match {
       case HideDead => pc.liveTagFieldDistribution
       case ShowDead => pc.deadTagFieldDistribution(deadTagFilter)
