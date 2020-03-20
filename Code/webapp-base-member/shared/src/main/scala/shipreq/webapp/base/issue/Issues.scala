@@ -31,8 +31,9 @@ final case class Issues(vector: Vector[Issue]) {
       case i: Issue.ImplicationRequired   => f.req(i.req)
       case i: Issue.IssueTagInRcg         => f.codeGroup(i.rcg)
       case i: Issue.IssueTagInReq         => f.req(i.req)
-      case _: Issue.UninhabitableTagField => false
       case i: Issue.ManualIssue           => f.manualIssue(i.issue)
+      case _: Issue.NonApplicableField    => false
+      case _: Issue.UninhabitableTagField => false
     })
 
   lazy val bySource: BySource = {
@@ -57,8 +58,9 @@ final case class Issues(vector: Vector[Issue]) {
       case i: Issue.ImplicationRequired   => addReq(i, i.req.id)
       case i: Issue.IssueTagInRcg         => addRcg(i, i.rcg.id)
       case i: Issue.IssueTagInReq         => addReq(i, i.req.id)
-      case i: Issue.UninhabitableTagField => config = config.add(i)
       case _: Issue.ManualIssue           => ()
+      case i: Issue.NonApplicableField    => config = config.add(i)
+      case i: Issue.UninhabitableTagField => config = config.add(i)
     }
 
     BySource(byReq, byRcg, config)

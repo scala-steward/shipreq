@@ -105,7 +105,9 @@ object FieldReqTypeRules {
   type ForTagField  = FieldReqTypeRules[ApplicableTagId]
   type ForTextField = FieldReqTypeRules[Impossible]
 
-  sealed abstract class Resolution[+Default](final val applicability: Applicability)
+  sealed abstract class Resolution[+Default](final val applicability: Applicability) {
+    final def isNA = applicability is NA
+  }
   
   object Resolution {
     case object Mandatory                      extends Resolution[Nothing](Applicable)

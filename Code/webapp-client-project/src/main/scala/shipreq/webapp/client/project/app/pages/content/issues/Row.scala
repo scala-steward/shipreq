@@ -243,13 +243,18 @@ object Row {
         val desc = UI.descIssueTag(it.key)
         forReqAndLoc(i, desc, i.req, i.loc)
 
-      case i: Issue.UninhabitableTagField =>
-        val fieldName = i.field.name(cfg.tags.tree)
-        val desc = UI.descUninhabitableTagField(fieldName)
-        forConfig(i, desc)
-
       case i: Issue.ManualIssue =>
         ForManualIssue(i, actionBuilder(i), rf.forManualIssues)
+
+      case i: Issue.NonApplicableField =>
+        val fieldName = cfg.fieldName(i.field.id)
+        val desc = UI.descNonApplicableField(fieldName)
+        forConfig(i, desc)
+
+      case i: Issue.UninhabitableTagField =>
+        val fieldName = cfg.fieldName(i.field.id)
+        val desc = UI.descUninhabitableTagField(fieldName)
+        forConfig(i, desc)
     }
   }
 }

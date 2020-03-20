@@ -254,6 +254,25 @@ object IssueDetectors {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  case object NonApplicableField extends Instance {
+
+    override val detect = ctx => {
+      val cfg = ctx.project.config
+      for (f <- ctx.project.config.fields.customFields.values) {
+        val isLive = f.liveExplicitly is Live
+        if (isLive && allDeadOrNA(cfg, f.fieldReqTypeRules))
+          ctx.add(Issue.NonApplicableField(f))
+      }
+    }
+
+    @inline private def allDeadOrNA(cfg: ProjectConfig, f: FieldReqTypeRules[Any]): Boolean =
+      f.otherwise.isNA && f.perReqType.forall { case (reqTypeId, res) =>
+        res.isNA || cfg.reqTypes.need(reqTypeId).live.is(Dead)
+      }
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   case object UninhabitableTagField extends Instance {
 
     override val detect = ctx => {

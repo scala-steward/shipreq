@@ -173,6 +173,7 @@ object UiText {
     def descEmptyCodeGroup                          : String = "Code group has nothing to group"
     def descImplicationRequired  (reqType: Mnemonic): String = "Implication required for req type: " + reqType.value
     def descIssueTag             (tag: HashRefKey)  : String = PlainText.hashtag(tag)
+    def descNonApplicableField   (field: String)    : String = field + " field not applicable to any req types"
     def descUninhabitableTagField(field: String)    : String = field + " field has no tags"
     def descManualIssue                             : String = "Manual"
   }

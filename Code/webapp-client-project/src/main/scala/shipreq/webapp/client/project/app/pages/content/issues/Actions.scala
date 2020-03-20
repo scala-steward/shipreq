@@ -40,10 +40,10 @@ object Actions {
     private def delete(subject: String, cmd: Cmd): Action =
       Action(Icon.Trash, "Delete " + subject, cmd)
 
-    private def deleteField(f: CustomField.Tag): Action = {
-      val tag = p.config.tags.tree.need(f.tagId).tag
+    private def deleteField(f: CustomField): Action = {
+      val name = p.config.fieldName(f.id)
       delete(
-        tag.name + " field",
+        name + " field",
         UpdateConfigCmd.FieldDelete(f.id))
     }
 
@@ -133,8 +133,9 @@ object Actions {
       case i: Issue.DeadRefInReq          => restoreRefTarget(i.ref)
       case i: Issue.DeadTag               => restoreTag(i.tag)
       case i: Issue.EmptyCodeGroup        => deleteReqCodeGroup(i.rcg)
-      case i: Issue.UninhabitableTagField => deleteField(i.field)
       case i: Issue.ManualIssue           => delete("issue", ManualIssueCmd.Delete(i.issue.id))
+      case i: Issue.NonApplicableField    => deleteField(i.field)
+      case i: Issue.UninhabitableTagField => deleteField(i.field)
     }
   }
 }

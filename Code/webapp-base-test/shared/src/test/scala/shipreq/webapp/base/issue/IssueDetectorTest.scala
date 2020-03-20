@@ -19,6 +19,7 @@ object IssueDetectorTest extends TestSuite {
   import SampleProject3.{Values => P3, project => p3}
   import SampleProject4.{Values => P4, project => p4}
   import SampleProject6.{Values => P6, project => p6}
+  import SampleProject7.{Values => P7, project => p7}
 
   private lazy val demoId         = p3.content.reqCodes.need("demo").activeId.get.value.RCG
   private lazy val demoWhateverId = p3.content.reqCodes.need("demo.whatever").activeId.get.value.ARC
@@ -341,6 +342,24 @@ object IssueDetectorTest extends TestSuite {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  private object NonApplicableFieldTests {
+    private implicit val filter = IssueFilter[Issue.NonApplicableField]
+
+    def onlyLiveFields() = test(p7)(
+      Event.FieldCustomDelete(P7.alternativesField)
+    )()
+
+    def onlyDeadApplicable() = test(p7)(
+      Event.FieldCustomTextUpdate(P7.bizJustField, CustomTextFieldGD("X", FieldReqTypeRules.mandatory.optional(P7.si))),
+    )(IssueLite.NonApplicableField(P7.alternativesField))
+
+    def noRules() = test(p7)(
+      Event.FieldCustomTextUpdate(P7.alternativesField, CustomTextFieldGD("X", FieldReqTypeRules.notApplicable)),
+    )(IssueLite.NonApplicableField(P7.alternativesField))
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   private object UninhabitableTagFieldTests {
     private implicit val filter = IssueFilter[Issue.UninhabitableTagField]
 
@@ -452,6 +471,13 @@ object IssueDetectorTest extends TestSuite {
       'ok        - ok()
       'txtField  - txtField()
       'ucs       - ucs()
+    }
+
+    'NonApplicableField {
+      import NonApplicableFieldTests._
+      'onlyLiveFields     - onlyLiveFields()
+      'onlyDeadApplicable - onlyDeadApplicable()
+      'noRules            - noRules()
     }
 
     'UninhabitableTagField {
