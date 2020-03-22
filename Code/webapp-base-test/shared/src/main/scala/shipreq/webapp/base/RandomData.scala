@@ -1846,6 +1846,9 @@ object RandomData {
       val fieldAttr: Gen[FieldAttr] =
         Gen.chooseNE(FieldAttr.values)
 
+      val fieldAttrNoDefault: Gen[FieldAttr] =
+        Gen.choose_!(FieldAttr.values.whole.filterNot(_ == FieldAttr.DefaultInUse))
+
       val hasIssue =
         Gen.lift2(on, issueCategory.nev(1 to 3))(FilterAst.HasIssue(_, _))
 
@@ -1859,7 +1862,11 @@ object RandomData {
       def customIssue(g: Gen[CustomIssueTypeId]): Gen[ValidF[Nothing]] = g.map(i => FilterAst.HashRef(-\/(i)))
 
       def fieldProp(g: Gen[CustomFieldId]): Gen[ValidF[Nothing]] =
-        Gen.lift2(g, fieldAttr)(FilterAst.FieldProp(_, _))
+        g.flatMap {
+          case id: CustomField.Tag        .Id => fieldAttr.map(FilterAst.FieldProp(id, _))
+          case id: CustomField.Text       .Id => fieldAttrNoDefault.map(FilterAst.FieldProp(id, _))
+          case id: CustomField.Implication.Id => fieldAttrNoDefault.map(FilterAst.FieldProp(id, _))
+        }
 
       type FlatGens = NonEmptyVector[Gen[ValidF[Nothing]]]
 
@@ -1897,11 +1904,14 @@ object RandomData {
       private def gen(f: FlatGens): Gen[Valid] =
         Recursion.anaM(coalgebra(f))(4 `JVM|JS` 3).map(fixRoot)
 
-      def forProject(p: Project): Gen[Valid] = {
-        val gf: Option[Gen[CustomFieldId]]     = Gen tryGenChoose p.config.fields.customFields.keySet
-        val gy: Option[Gen[ReqTypeId]]         = Gen tryGenChoose p.config.reqTypes.all.whole.map(_.reqTypeId)
-        val gt: Option[Gen[ApplicableTagId]]   = Gen tryGenChoose p.config.tags.applicableTagIterator().map(_.id)
-        val gi: Option[Gen[CustomIssueTypeId]] = Gen tryGenChoose p.config.customIssueTypes.keys.toVector
+      @inline def forProject(p: Project): Gen[Valid] =
+        forProjectConfig(p.config)
+
+      def forProjectConfig(p: ProjectConfig): Gen[Valid] = {
+        val gf: Option[Gen[CustomFieldId]]     = Gen tryGenChoose p.fields.customFields.keySet
+        val gy: Option[Gen[ReqTypeId]]         = Gen tryGenChoose p.reqTypes.all.whole.map(_.reqTypeId)
+        val gt: Option[Gen[ApplicableTagId]]   = Gen tryGenChoose p.tags.applicableTagIterator().map(_.id)
+        val gi: Option[Gen[CustomIssueTypeId]] = Gen tryGenChoose p.customIssueTypes.keys.toVector
         gen(flatGens(gf, gy, gt, gi))
       }
 

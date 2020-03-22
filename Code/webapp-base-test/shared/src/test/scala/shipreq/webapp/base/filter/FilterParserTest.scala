@@ -5,16 +5,17 @@ import nyaya.gen.Gen
 import nyaya.prop._
 import nyaya.test._
 import nyaya.test.PropTestOps._
+import nyaya.util._
 import org.parboiled2.ErrorFormatter
 import scalaz.{-\/, Functor, \/-}
 import utest._
 import shipreq.base.util.Debug._
 import shipreq.base.util._
 import shipreq.webapp.base.{RandomData => $}
-import shipreq.webapp.base.data.{ExternalPubid, HashRefKey, Off, On, ReqTypePos}
+import shipreq.webapp.base.data.{ExternalPubid, HashRefKey, Off, On, ProjectConfig, ReqTypePos}
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.filter._
-import shipreq.webapp.base.filter.Filter.{Potential, PotentialF}
+import shipreq.webapp.base.filter.Filter.{Potential, PotentialF, Valid}
 import shipreq.webapp.base.filter.Filter.Implicits._
 import shipreq.webapp.base.filter.IntensionalReqSet._
 import shipreq.webapp.base.test.WebappTestUtil._
@@ -23,20 +24,19 @@ object FilterParserTest extends TestSuite {
 
   import Filter.Potential._
 
-  implicit def autoSome(f: Potential) = Option(f)
-  implicit def autoMne(s: String) = Mnemonic(s)
-  implicit def autoHRK(s: String) = HashRefKey(s)
-  implicit def autoRS(s: IntensionalReqSet[String]): Potential.ReqSet = NonEmptyVector one Functor[IntensionalReqSet].map(s)(autoMne)
-  implicit def autoNev[A](a: A) = NonEmptyVector(a)
-  implicit def NES[A: UnivEq](a: A, as: A*) = NonEmptySet(a, as.toSet)
+  private implicit def autoSome(f: Potential) = Option(f)
+  private implicit def autoMne(s: String) = Mnemonic(s)
+  private implicit def autoHRK(s: String) = HashRefKey(s)
+  private implicit def autoRS(s: IntensionalReqSet[String]): Potential.ReqSet = NonEmptyVector one Functor[IntensionalReqSet].map(s)(autoMne)
+  private implicit def NES[A: UnivEq](a: A, as: A*) = NonEmptySet(a, as.toSet)
 
-  def postProcess(pf: Potential): Potential =
+  private def postProcess(pf: Potential): Potential =
     pf.unfix match {
       case FilterAst.AllOf(as) if as.length == 1 => postProcess(as.head)
       case _ => pf
     }
 
-  def propFromString = Prop.eval[String] { s1 =>
+  private def propFromString = Prop.eval[String] { s1 =>
     val e = EvalOver(s1)
     FilterParser.parse(s1) match {
       case \/-(None)
@@ -60,7 +60,7 @@ object FilterParserTest extends TestSuite {
     }
   }
 
-  def propFromPF = Prop.eval[Potential] { pf0 =>
+  private def propFromPF = Prop.eval[Potential] { pf0 =>
     val pf1 = postProcess(pf0)
     val s = Potential.toText(pf1)
     val e = EvalOver(s)
@@ -68,16 +68,24 @@ object FilterParserTest extends TestSuite {
     e.equal("parse . toText = id", pf2, Option(pf1))
   }
 
-  val toOption: FilterParser.Result => Option[Potential] = {
+  private def propFromValid(cfg: ProjectConfig) = Prop.eval[Valid] { f =>
+    val txt = Filter.Valid.toText(cfg, f)
+    val e = EvalOver(f)
+    val v = FilterAlgebra.validate(cfg)
+    val r = FilterParser.parse(txt).leftMap(_.toString).map(_.map(Filter.Potential.validate(_, v)))
+    e.equal("toText |> parse = id", r, \/-(Some(\/-(f))))
+  }
+
+  private val toOption: FilterParser.Result => Option[Potential] = {
     case \/-(f)                                => f
     case -\/(FilterParser.GeneralException(e)) => fail("Parser failed: " + Option(e.getMessage).getOrElse(e.toString))
     case -\/(e: FilterParser.ParseException)   => println(e.format(new ErrorFormatter(showTraces = true))); fail("Parser failed.")
   }
 
-  def test(str: String, exp: Option[Potential]): Unit =
+  private def test(str: String, exp: Option[Potential]): Unit =
     assertEq(s"[$str]", toOption(FilterParser.parse(str)), exp)
 
-  def testFail(str: String): Unit =
+  private def testFail(str: String): Unit =
     FilterParser.parse(str) match {
       case -\/(_)       => ()
       case \/-(Some(f)) => fail(s"[$str] succeeded with $f")
@@ -95,6 +103,15 @@ object FilterParserTest extends TestSuite {
 //      Gen.ascii.string1.bugHunt(74)(propFromString)
 //      Gen.unicode.string1.bugHunt()(propParseUnparse)
 //      $.filter.potential.gen.bugHunt(samplesPerSeed = 7)(propUnparseParse)
+
+      'fromValid - {
+        for (cfg <- $.projectConfig.samples().take(2)) {
+          val gen  = $.filter.valid.forProjectConfig(cfg)
+          val prop = propFromValid(cfg)
+          prop.mustBeSatisfiedBy(gen)
+          // gen.bugHunt()(prop)
+        }
+      }
     }
 
     'empty {
