@@ -152,7 +152,6 @@ v2.1
   * redo config screen
   * add default values for tag fields [FR-6]
   * make properties/values per req-type [FR-12]
-  * add a max-size for field names, apply to editors
   * update reqtable (and probably reqdetail) to render dead rows like cfg field
   * soft deletion vs hard - wrt app req types in tags
   * add usages. probably have to update filter too

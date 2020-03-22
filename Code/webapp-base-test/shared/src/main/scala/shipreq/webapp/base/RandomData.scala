@@ -191,6 +191,9 @@ object RandomData {
   val filterDead =
     Gen.choose[FilterDead](ShowDead, HideDead)
 
+  val alphaOne =
+    Gen.alpha.map(_.toString)
+
   def obfuscated[A]: Gen[Obfuscated[A]] =
     Gen.alphaNumeric.string(4 to 12).map(Obfuscated.apply[A])
 
@@ -272,8 +275,11 @@ object RandomData {
   val reqTypeId: Gen[ReqTypeId] =
     Gen.chooseGen(staticReqType, customReqTypeId)
 
-  def customReqTypeName =
-    shortText1
+  val customReqTypeName =
+    unicodeChar.string(Grammar.reqTypeName.length.total).flatMap { s0 =>
+      val s = DataValidators.reqType.name.stateless.corrector.full(s0)
+      if (s.isEmpty) alphaOne else Gen.pure(s)
+    }
 
   val customReqType =
     for {
@@ -320,11 +326,14 @@ object RandomData {
   val exclusivity =
     Gen.choose[Exclusivity](Exclusive, NonExclusive)
 
-  def tagName =
-    shortText1
+  val tagGroupName: Gen[String] =
+    unicodeChar.string(Grammar.tagGroupName.length.total).flatMap { s0 =>
+      val s = DataValidators.tag.name.stateless.corrector.full(s0)
+      if (s.isEmpty) alphaOne else Gen.pure(s)
+    }
 
   val tagGroup =
-    Gen.apply5(TagGroup.apply)(tagGroupId, tagName, optionalLargeText, exclusivity, live)
+    Gen.apply5(TagGroup.apply)(tagGroupId, tagGroupName, optionalLargeText, exclusivity, live)
 
   def applicableTag(genReqTypeIds: Gen[Set[ReqTypeId]]) =
     Gen.apply6(ApplicableTag.apply)(
@@ -431,6 +440,12 @@ object RandomData {
     }
   }
 
+  val fieldName: Gen[String] =
+    unicodeChar.string(Grammar.fieldName.length.total).flatMap { s0 =>
+      val s = DataValidators.field.name.stateless.corrector.full(s0)
+      if (s.isEmpty) alphaOne else Gen.pure(s)
+    }
+
   val staticField: Gen[StaticField] =
     Gen.chooseNE(StaticField.values)
 
@@ -453,7 +468,7 @@ object RandomData {
     Gen.chooseNE(CustomFieldType.values)
 
   def customFieldText(rules: Gen[FieldReqTypeRules.ForTextField]): Gen[CustomField.Text] =
-    Gen.apply4(CustomField.Text.apply)(customFieldTextId, shortText1, rules, live)
+    Gen.apply4(CustomField.Text.apply)(customFieldTextId, fieldName, rules, live)
 
   def customFieldTag(tagId: Gen[TagId], rules: Gen[FieldReqTypeRules.ForTagField]): Gen[CustomField.Tag] =
     Gen.apply4(CustomField.Tag.apply)(customFieldTagId, tagId, rules, live)
@@ -1941,7 +1956,7 @@ object RandomData {
     object customReqTypeGD extends GenericDataGen(CustomReqTypeGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case Name        => unicodeString1      map Name       .apply
+        case Name        => customReqTypeName   map Name       .apply
         case Imp         => implicationRequired map Imp        .apply
         case gd.Mnemonic => reqTypeMnemonic     map gd.Mnemonic.apply
       }
@@ -1950,7 +1965,7 @@ object RandomData {
     object customTextFieldGDv1 extends GenericDataGen(CustomTextFieldGDv1) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case Name               => unicodeString1        map Name              .apply
+        case Name               => fieldName             map Name              .apply
         case Key                => fieldRefKey           map Key               .apply
         case Mandatory          => mandatory             map Mandatory         .apply
         case ApplicableReqTypes => anyApplicableReqTypes map ApplicableReqTypes.apply
@@ -1984,7 +1999,7 @@ object RandomData {
     object customTextFieldGD extends GenericDataGen(CustomTextFieldGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case Name              => unicodeString1     map Name             .apply
+        case Name              => fieldName          map Name             .apply
         case FieldReqTypeRules => fieldReqTypeRules_ map FieldReqTypeRules.apply
       }
     }
@@ -2062,7 +2077,7 @@ object RandomData {
     object tagGroupGD extends GenericDataGen(TagGroupGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case Name        => unicodeString1        map Name       .apply
+        case Name        => tagGroupName          map Name       .apply
         case Desc        => unicodeString1.option map Desc       .apply
         case Exclusivity => exclusivity           map Exclusivity.apply
         case Children    => tagChildren           map Children   .apply

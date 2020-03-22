@@ -24,8 +24,8 @@ import shipreq.webapp.base.text.Text
 import ApplicableEventGen.ObserveFn
 import Event._
 import RetiredGenericData._
-import RandomData.{genColour, fieldRefKey, filter, filterDead, hashRefKey, implicationRequired, mandatory, exclusivity}
-import RandomData.{TextGen, TextGenExt, reqCode, reqTypeMnemonic, unicodeString1}
+import RandomData.{genColour, fieldName, fieldRefKey, filter, filterDead, hashRefKey, implicationRequired, mandatory, exclusivity}
+import RandomData.{TextGen, TextGenExt, reqCode, customReqTypeName, reqTypeMnemonic, tagGroupName, unicodeString1}
 import RandomEventStream.{State, ProjectDepGen}
 import ScalaExt._
 
@@ -368,7 +368,7 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
   object customReqTypeGD extends GenericDataGen(CustomReqTypeGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Name        => unicodeString1      map Name       .apply
+      case Name        => customReqTypeName   map Name       .apply
       case Imp         => implicationRequired map Imp        .apply
       case gd.Mnemonic => reqTypeMnemonic     map gd.Mnemonic.apply
     }
@@ -377,7 +377,7 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
   object customTextFieldGDv1 extends GenericDataGen(CustomTextFieldGDv1) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Name               => unicodeString1     map Name     .apply
+      case Name               => fieldName          map Name     .apply
       case Key                => fieldRefKey        map Key      .apply
       case Mandatory          => mandatory          map Mandatory.apply
       case ApplicableReqTypes => applicableReqTypes map ApplicableReqTypes .apply
@@ -416,7 +416,7 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
   object customTextFieldGD extends GenericDataGen(CustomTextFieldGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Name              => unicodeString1     map Name             .apply
+      case Name              => fieldName          map Name             .apply
       case FieldReqTypeRules => fieldReqTypeRules_ map FieldReqTypeRules.apply
     }
   }
@@ -481,7 +481,7 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
   object tagGroupGD extends GenericDataGen(TagGroupGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Name        => unicodeString1        map Name       .apply
+      case Name        => tagGroupName          map Name       .apply
       case Desc        => unicodeString1.option map Desc       .apply
       case Exclusivity => exclusivity           map Exclusivity.apply
       case Children    => tagChildren           map Children   .apply

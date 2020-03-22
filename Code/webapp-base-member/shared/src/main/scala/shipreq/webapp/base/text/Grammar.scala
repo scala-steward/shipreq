@@ -11,6 +11,14 @@ object Grammar {
 
   private val whitespace = "\\s+".r
 
+  object fieldName {
+    val length = Length(1 to 48)
+    val chars  = CharBlacklist.dblQuotes // " is used to escape field names in filters
+  }
+
+  @inline def reqTypeName = fieldName
+  @inline def tagGroupName = fieldName
+
   /** [[shipreq.webapp.base.data.ReqType.Mnemonic]] */
   object reqTypeMnemonic {
     val length = Length(1 to 6)

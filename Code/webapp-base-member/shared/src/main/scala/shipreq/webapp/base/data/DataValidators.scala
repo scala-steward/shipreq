@@ -23,9 +23,6 @@ import Uniqueness.Util._
 
 object DataValidators {
 
-  private val genericName: Composite.Stateless[String, String, String] =
-    V.mandatoryShortText.toValidator.named(FieldNames.name)
-
   private val genericDesc: Composite.Stateless[String, Option[String], Option[String]] =
     V.optionalLargeText.named(FieldNames.desc)
 
@@ -137,8 +134,16 @@ object DataValidators {
         .named(FieldNames.mnemonic)
         .stateful(_ appendInvalidator _.mnemonicUniqueness)
 
-    def name: Composite.Stateful[State, String, String, String] =
-      genericName.stateful(_ appendInvalidator _.nameUniqueness)
+    val name: Composite.Stateful[State, String, String, String] = {
+      V.endoCorrector.singleLineWhitespace
+        .appendValidator(V.invalidator.nonEmpty
+          .whenValid(Grammar.reqTypeName.chars.validator
+            .append(Grammar.reqTypeName.length.validator))
+        )
+        .toValidator
+        .named(FieldNames.name)
+        .stateful(_ appendInvalidator _.nameUniqueness)
+    }
 
     val all: State => Composite.Validator[
       (String, String, ImplicationRequired),
@@ -193,10 +198,17 @@ object DataValidators {
     private def nameNotReserved: Invalidator[String] =
       Invalidator.test(!StaticField.names.contains(_), Invalidity("Already in use by built-in features."))
 
-    val name: Composite.Stateful[State, String, String, String] =
-      genericName
-        .appendInvalidator(nameNotReserved)
+    val name: Composite.Stateful[State, String, String, String] = {
+      V.endoCorrector.singleLineWhitespace
+        .appendValidator(V.invalidator.nonEmpty
+          .whenValid(Grammar.fieldName.chars.validator
+            .append(Grammar.fieldName.length.validator))
+        )
+        .addInvalidator(nameNotReserved)
+        .toValidator
+        .named(FieldNames.name)
         .stateful(_ appendInvalidator _.nameUniqueness)
+    }
 
     def mandatory = Validator.id[Mandatory]
 
@@ -266,8 +278,16 @@ object DataValidators {
         )
     }
 
-    def name: Composite.Stateful[State, String, String, String] =
-      genericName.stateful(_ appendInvalidator _.nameUniqueness)
+    val name: Composite.Stateful[State, String, String, String] = {
+      V.endoCorrector.singleLineWhitespace
+        .appendValidator(V.invalidator.nonEmpty
+          .whenValid(Grammar.tagGroupName.chars.validator
+            .append(Grammar.tagGroupName.length.validator))
+        )
+        .toValidator
+        .named(FieldNames.name)
+        .stateful(_ appendInvalidator _.nameUniqueness)
+    }
 
     def key: Composite.Stateful[State, String, String, HashRefKey] =
       hashRefKey.hashRefKey.contramap(_.hashRefKeyState)

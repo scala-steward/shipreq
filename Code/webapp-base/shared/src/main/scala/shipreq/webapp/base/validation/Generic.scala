@@ -58,6 +58,9 @@ object Generic {
         aa => A.map(aa, live, b.live, A.append),
         aa => A.map(aa, full, b.full, A.append))
 
+    def appendValidator[E](c: EndoValidator[E, A]): EndoValidator[E, A] =
+      c.prependCorrector(this)
+
     def toCorrector: Corrector[A, A] =
       Corrector(live, full, Identity[A])
 
@@ -200,6 +203,9 @@ object Generic {
 
     def whenValid[EE >: E](next: Invalidator[EE, A]): Invalidator[EE, A] =
       Invalidator(a => invalidate(a) orElse next.invalidate(a))
+
+    def whenValid[EE >: E](next: EndoValidator[EE, A]): EndoValidator[EE, A] =
+      EndoValidator(next.corrector, whenValid(next.invalidator))
 
     def toEndoValidator: EndoValidator[E, A] =
       EndoValidator(EndoCorrector.id, Invalidator(invalidate))

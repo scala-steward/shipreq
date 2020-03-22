@@ -41,6 +41,15 @@ object GrammarSpec {
     val az09_ = new CharWhitelist("", '_', 'a' to 'z', '0' to '9')("may only consist of letters, numbers, and underscores.")
   }
 
+  class CharBlacklist(chn: String, ch1: Char, rs: NumericRange[Char]*)(ruleErrMsg: String) extends Chars(chn, ch1, rs: _*) {
+    final val validator: EndoValidator[String] =
+      CommonValidation.endoValidator.blacklistCharRangeRegex(regex, Invalidity(ruleErrMsg))
+  }
+
+  object CharBlacklist {
+    val dblQuotes = new CharBlacklist("", '"')("mustn't contain double quotation marks.")
+  }
+
   class FirstChar(chn: String, ch1: Char, rs: NumericRange[Char]*)(ruleErrMsg: String) extends Chars(chn, ch1, rs: _*) {
     final val invalidator: Invalidator[String] =
       CommonValidation.invalidator.startsWithRegex(one)(Invalidity(ruleErrMsg))
