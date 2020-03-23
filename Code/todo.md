@@ -131,12 +131,15 @@ Phase 3A
     * new filters: {createdBy,updatedBy,containsRefTo} {me,@blah}
     * refs to users in rich text
   * Common workflows
-  
+
 
 v2.1
 ========================================================================================================================
 
 * Filter field should autosize
+
+* update reqtable (and probably reqdetail) to render dead rows like cfg field
+* field filter should include Title
 
 * Reappearances wrt tags
 
@@ -149,18 +152,16 @@ v2.1
   * `AllTags` and `RemainingTags` fields #should be optional [FR-19]
 
 * Fields
-  * redo config screen
-  * add default values for tag fields [FR-6]
-  * make properties/values per req-type [FR-12]
-  * update reqtable (and probably reqdetail) to render dead rows like cfg field
-  * soft deletion vs hard - wrt app req types in tags
+  * redo config screen [FR-6] [FR-12]
   * add usages
   * MakeEvent tests wrt dead/live
   * stablity tests (for events & commands)
-  * delete Deletable
-  * remember that fields can be explicitly live but dead because underlying tag/reqType is dead
+  * Replace Deletable with Mandatory/Optional
 
 * ReqTypes
   * Might be a good idea to store a description & examples. (eg. "BR" means xxx + examples)
   * Users should be able to change the mnemonic (without retention) if not in use yet
-  * Support hard & soft deletion from UI - explain difference and reasoning
+  * Prototype new UI (here we go again!)
+  * Support hard & soft deletion from UI
+      - explain difference and reasoning
+      - explain effect on appreqtypes in tags & fields
