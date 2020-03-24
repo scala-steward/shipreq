@@ -27,8 +27,14 @@ object PlainText {
     def apply[Ctx <: ProjectText.Context](p: Project, ctx: Ctx): ForProject[Ctx] =
       new ForProject(p, ctx)
 
-    def noCtx(p: Project): NoCtx =
-      apply(p, ProjectText.Context.None)
+    object noCtx {
+
+      def apply(p: Project): NoCtx =
+        ForProject(p, ProjectText.Context.None)
+
+      lazy val empty: NoCtx =
+        apply(Project.empty)
+    }
   }
 
   val reqCodeIndentation: NonEmptyVector[ReqCodeTreeItem.Indent] => String =

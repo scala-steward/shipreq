@@ -85,6 +85,10 @@ object Style extends StyleSheet.Inline {
     // This ↓ needs to be kept in sync with detailTableKey which uses .04 but .06 is required when opacity=0.7
     backgroundColor(rgba(0, 0, 0, .06)))
 
+  private val deadCell = styleS(
+    backgroundColor(c"#f6f6f6"),
+  )
+
   val svgGraph = style(
     unsafeChild("svg")(
       maxWidth(100 %%)))
@@ -146,6 +150,21 @@ object Style extends StyleSheet.Inline {
       padding(4.px).important,
       verticalAlign.top.important,
       (borderLeft :=! "1px solid #2224261a").important) // Without this, rowspan break semantic UI table borders
+
+    // On here means selected
+    // N/A cells should just be specified as Dead
+    def tableCellBase(i: (Live, On)) = styleS(
+      i match {
+        case (Live, Off) => mixin()
+        case (Dead, Off) => deadCell
+        case (Live, On ) => mixin(backgroundColor(hsla(228, 90 %%, 75 %%, .12)))
+        case (Dead, On ) => mixin(backgroundColor(hsla(228, 74 %%, 33 %%, .11)))
+      })
+
+    val `N/A` = style(
+      color(c"#666"),
+      // margin.horizontal(auto),
+    )
   }
 
   object navBar {
@@ -335,12 +354,8 @@ object Style extends StyleSheet.Inline {
 
       private val cellBase = styleF(D.`live * on`)(i => styleS(
         generic.tableDataBase,
-        i match {
-          case (Live, Off) => mixin()
-          case (Dead, Off) => mixin(backgroundColor(c"#f5f5f5"))
-          case (Live, On ) => mixin(backgroundColor(hsla(228, 90 %%, 75 %%, .12)))
-          case (Dead, On ) => mixin(backgroundColor(hsla(228, 74 %%, 33 %%, .11)))
-        }))
+        generic.tableCellBase(i),
+      ))
 
       val dataCell = styleF(D.`live * on`)(i => styleS(
         cellBase(i),
@@ -355,9 +370,7 @@ object Style extends StyleSheet.Inline {
         whiteSpace.nowrap,
         mixinIf(a is Dead)(deadAndNotError)))
 
-      val `N/A` = style(
-        color(c"#666"),
-        margin.horizontal(auto))
+      @inline def `N/A` = generic.`N/A`
     }
 
     object filterEditor {
@@ -698,8 +711,7 @@ object Style extends StyleSheet.Inline {
 //      display.inline,
       whiteSpace.nowrap)
 
-    val na = style(
-      color(c"#666"))
+    @inline val na = generic.`N/A`
 
     val actionButton = style(
       textAlign.left.important,
@@ -784,14 +796,25 @@ object Style extends StyleSheet.Inline {
       ),
     )}
 
-    val fieldListTableDrag = style(
+    val fieldListTableName = styleF(D.live)(l => styleS(
+      generic.tableCellBase((l, Off)),
+      mixinIf(l is Dead)(textDecoration := "line-through"),
+    ))
+
+    val fieldListTableCell = styleF(D.live)(l => styleS(
+      generic.tableCellBase((l, Off)),
+    ))
+
+    val fieldListTableUsage = styleF(D.live)(l => styleS(
+      generic.tableCellBase((l, Off)),
+      textAlign.right.important,
+    ))
+
+    val fieldListTableDrag = styleF(D.live)(l => styleS(
+      mixinIf(l is Dead)(deadCell),
       padding(`0`).important,
       textAlign.center.important,
-    )
-
-    val fieldListTableUsage = style(
-      textAlign.right.important,
-    )
+    ))
 
     val dragHandle = styleF(D.`enabled * live`) { case (e, l) => styleS(
       display.inline,
@@ -800,9 +823,7 @@ object Style extends StyleSheet.Inline {
       mixinIf(e.is(Disabled) && l.is(Dead))(visibility.hidden),
     )}
 
-    val fieldListTableName = styleF(D.live)(l => styleS(
-      mixinIf(l is Dead)(textDecoration := "line-through"),
-    ))
+    @inline def `N/A` = generic.`N/A`
   }
 
   // ===================================================================================================================

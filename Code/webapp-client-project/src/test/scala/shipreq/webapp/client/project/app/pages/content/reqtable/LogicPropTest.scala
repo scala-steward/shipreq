@@ -39,7 +39,7 @@ object LogicPropTest extends TestSuite {
 
     val plainText      = PlainText.ForProject.noCtx(p)
     val textSearch     = TextSearch(p, plainText)
-    val filterCompiler = Filter.Valid.compiler(p, plainText, textSearch, fd)
+    val filterCompiler = Filter.Valid.compiler(p, plainText, textSearch, fd, applyFilterDeadToReqs = false)
     val gathered       = Logic.gather[Vector](p, v, plainText, textSearch, filterCompiler)
     val gatheredG      = gathered.iterator.filterSubType[Row.ForReq].toList
     val rowReqCodes    = gathered.flatMap(codesInRow)

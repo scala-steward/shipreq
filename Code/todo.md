@@ -153,7 +153,6 @@ v2.1
 
 * Fields
   * redo config screen [FR-6] [FR-12]
-  * add usages
   * MakeEvent tests wrt dead/live
   * stablity tests (for events & commands)
 

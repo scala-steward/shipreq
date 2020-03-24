@@ -4,7 +4,7 @@ import scala.collection.TraversableLike
 import shipreq.base.util.{IsoBool, OptionalBoolFn}
 import shipreq.base.util.univeq._
 
-sealed abstract class FilterDead(val filterFn: OptionalBoolFn[Live]) extends IsoBool[FilterDead] {
+sealed abstract class FilterDead(final val filterFn: OptionalBoolFn[Live]) extends IsoBool[FilterDead] {
   override final def companion = FilterDead
 
   final def apply[A, C[x] <: TraversableLike[x, C[x]]](as: C[A])(f: => (A => Live)): C[A] =

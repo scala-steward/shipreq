@@ -475,13 +475,13 @@ final case class Requirements(genericReqs: GenericReqIMap,
                               useCases   : UseCases,
                               pubids     : PubidRegister) {
 
-  def isEmpty = reqIterator.isEmpty
+  def isEmpty = reqIterator().isEmpty
   def nonEmpty = !isEmpty
 
-  def idIterator: Iterator[ReqId] =
-    reqIterator.map(_.id)
+  def idIterator(): Iterator[ReqId] =
+    reqIterator().map(_.id)
 
-  def reqIterator: Iterator[Req] =
+  def reqIterator(): Iterator[Req] =
     genericReqs.valuesIterator ++
     useCases.imap.valuesIterator
 
@@ -513,7 +513,7 @@ final case class Requirements(genericReqs: GenericReqIMap,
     pubids(id) mustExistElse s"Req for $id not found."
 
   lazy val reqsByType: Multimap[ReqTypeId, Vector, Req] =
-    reqIterator.foldLeft(UnivEq.emptyMultimap[ReqTypeId, Vector, Req])((q, r) =>
+    reqIterator().foldLeft(UnivEq.emptyMultimap[ReqTypeId, Vector, Req])((q, r) =>
       q.add(r.reqTypeId, r))
 
   lazy val useCaseStepLabelLookup: UseCaseStepLabelLookup =

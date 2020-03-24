@@ -11,6 +11,9 @@ object TextSearch {
   def apply(project: Project,  plainText: PlainText.ForProject.NoCtx): TextSearch =
     new TextSearch(project, plainText)
 
+  lazy val empty: TextSearch =
+    new TextSearch(Project.empty, PlainText.ForProject.noCtx.empty)
+
   // ===================================================================================================================
 
   type Normaliser = String => Normalised

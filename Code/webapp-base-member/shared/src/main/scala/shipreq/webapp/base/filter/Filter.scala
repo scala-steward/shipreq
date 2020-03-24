@@ -6,7 +6,7 @@ import scalaz.{-\/, Traverse, \/, \/-}
 import shipreq.base.util.Identity
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data
-import shipreq.webapp.base.data.FilterDead
+import shipreq.webapp.base.data.{FilterDead, HideDead, Req}
 import shipreq.webapp.base.issue.IssueCategory
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 
@@ -108,10 +108,11 @@ object Filter {
 
     type Compiler = Valid => CompiledFilter
 
-    def compiler(p          : data.Project,
-                 projectText: PlainText.ForProject.NoCtx,
-                 textSearch : TextSearch,
-                 filterDead : FilterDead): Compiler = {
+    def compiler(p                    : data.Project,
+                 projectText          : PlainText.ForProject.NoCtx,
+                 textSearch           : TextSearch,
+                 filterDead           : FilterDead,
+                 applyFilterDeadToReqs: Boolean): Compiler = {
       val extensional = FilterAlgebra.makeExtensional(p)
       val compile = FilterAlgebra.compile(
         p,
@@ -120,7 +121,19 @@ object Filter {
         textSearch,
         p.dataLogic.issueLookup(filterDead),
         p.dataLogic.tagLookup(filterDead))
-      v => Recursion.cata(compile)(Recursion.cata(extensional)(v))
+
+      val compiler: Compiler =
+        v => Recursion.cata(compile)(Recursion.cata(extensional)(v))
+
+      if (applyFilterDeadToReqs && filterDead.is(HideDead))
+        v => {
+          val filter   = compiler(v)
+          val reqTypes = p.config.reqTypes
+          val live     = filterDead.filterFn.contramap((_: Req).live(reqTypes))
+          filter.copy(req = live && filter.req)
+        }
+      else
+        compiler
     }
   }
 

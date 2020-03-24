@@ -225,6 +225,10 @@ object FilterAlgebra {
    * @param filterDead Not used to in consideration of reqs, but config.
    *                   i.e. dead reqs will still be returned (and expected to be further filtered out later),
    *                   where as it's needed in consideration of default tags in field rules.
+   *
+   *                   This is important to remember because this is an [[FAlgebra]], not a holistic filter.
+   *                   It operates on AST layers one at a time. Injecting [[FilterDead]] here would corrupt layers
+   *                   such that not(x) would become (live & not(live & x)).
    */
   def compile(p          : data.Project,
               filterDead : FilterDead,

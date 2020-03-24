@@ -10,7 +10,6 @@ import scalacss.ScalaCssReact._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.DragToReorderFeature
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}
-import shipreq.webapp.client.project.app.pages.root.SpecialRouterCtl
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.Usage
 import shipreq.webapp.client.project.widgets.ProjectWidgets
@@ -27,8 +26,7 @@ private[tags] object TagTreeView {
                          updateLiveChildren: Reusable[(TagGroupId, Vector[ApplicableTagId]) => Callback],
                          enabled           : Enabled,
                          onClickAnywhere   : Option[Reusable[Callback]],
-                         usage             : LiveDeadStatMap[ApplicableTagId, Int],
-                         router            : SpecialRouterCtl,
+                         usage             : Usage,
                         ) {
     @inline def render: VdomElement = Component(this)
   }
@@ -144,8 +142,7 @@ private[tags] object TagTreeView {
             ^.onClick ==>? select,
             TagMod.when(canAnyDrag)(Shared.dragHandle(item, modificationEnabled, tag.live)),
             pw.tagSimple(id, includeDesc = true),
-            <.div(*.usage,
-              Usage.tags(id, p.filterDead, p.usage, p.router))
+            <.div(*.usage, p.usage.tagLink(id, p.filterDead))
           )
 
           firstAfterGroup = false

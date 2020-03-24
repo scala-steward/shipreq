@@ -20,7 +20,7 @@ import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.base.ui.{GeneralTheme, Toast}
 import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}
-import shipreq.webapp.client.project.app.pages.root.SpecialRouterCtl
+import shipreq.webapp.client.project.lib.Usage
 import shipreq.webapp.client.project.widgets.{ButtonAndDropdown, EditorButtons, ProjectWidgets, SplitScreenCrud}
 
 object TagConfig {
@@ -42,7 +42,7 @@ object TagConfig {
                          ssp    : ServerSideProcInvoker[UpdateConfigCmd.ToModifyTags, ErrorMsg, NewEvents],
                          async  : AsyncFeature.ReadWrite.D0[ErrorMsg],
                          toast  : Toast,
-                         router : SpecialRouterCtl,
+                         usage  : Usage,
                         ) {
 
     val asyncInProgress: Boolean =
@@ -183,8 +183,7 @@ object TagConfig {
             updateLiveChildren = updateLiveChildren,
             enabled            = Disabled when p.asyncInProgress,
             onClickAnywhere    = args.closeEditor.filter(_ => p.potentialSaveCmd.isUnchanged),
-            usage              = p.project.tagUsage,
-            router             = p.router,
+            usage              = p.usage,
           ).render
 
         case None =>

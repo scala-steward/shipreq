@@ -27,6 +27,7 @@ import shipreq.webapp.client.project.app.pages.content.reqdetail.ReqDetail
 import shipreq.webapp.client.project.app.pages.content.reqtable.ReqTablePage
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.lib.Usage
 import shipreq.webapp.client.project.widgets.{ImplicationGraph, ProjectWidgets, ViewReqCache, ViewReqDataCache}
 import AsyncFeature.Implicits._
 import LoadedRoot._
@@ -105,7 +106,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       Reusable.fn.state($ zoomStateL stateLensFilterDead).setStateFn
 
     private val pxPlainText: Px[PlainText.ForProject.NoCtx] =
-      pxProject.map(PlainText.ForProject.noCtx)
+      pxProject.map(PlainText.ForProject.noCtx.apply)
 
     private val pxTextSearch =
       Px.apply2(pxProject, pxPlainText)(TextSearch.apply)
@@ -136,7 +137,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
         p  <- pxProject
         pt <- pxPlainText
         ts <- pxTextSearch
-      } yield FilterDead.memoLazy(Filter.Valid.compiler(p, pt, ts, _))
+      } yield FilterDead.memoLazy(Filter.Valid.compiler(p, pt, ts, _, applyFilterDeadToReqs = false))
 
     private val pxFilterCompilerHideDead: Px[Filter.Valid.Compiler] =
       pxFilterCompilerFromFilterDead.map(_(HideDead))
@@ -298,6 +299,9 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       }
     }
 
+    private val pxUsage: Px[Usage] =
+      pxProject.map(new Usage(_, specialRouterCtl))
+
     private val usageShow =
       config_old.shared.Usage.Show((filterDead, filter) =>
         specialRouterCtl.reqTableWithFilter(filterDead, filter()).link(()))
@@ -325,6 +329,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       def filterDeadSS   = StateSnapshot.withReuse(s.filterDead)(setFilterDead)
       def project        = unsafeProject()
       def projectWidgets = pxProjectWidgets.value.value()
+      def usage          = pxUsage.value()
       // def previewRW = previewW.toReadWrite(s.preview)
 
       val body: VdomElement = p.page match {
@@ -361,7 +366,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
             ssp     = sspUpdateConfig,
             async   = AsyncFeature.ReadWrite.D0(fieldConfigAsyncW, s.fieldConfigAsync),
             toast   = toast,
-            router  = specialRouterCtl,
+            usage   = usage,
           ).render
 
         case Page.CfgIssues =>
@@ -380,7 +385,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
             ssp     = sspUpdateConfig,
             async   = AsyncFeature.ReadWrite.D0(tagConfigAsyncW, s.tagConfigAsync),
             toast   = toast,
-            router  = specialRouterCtl,
+            usage   = usage,
           ).render
 
         case Page.ReqTable =>

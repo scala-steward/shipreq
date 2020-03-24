@@ -8,8 +8,8 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.DragToReorderFeature
 import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd.FieldUpdateOrder
 import shipreq.webapp.client.project.app.Style.{fieldConfig => *}
-import shipreq.webapp.client.project.app.pages.root.SpecialRouterCtl
 import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.lib.Usage
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 object FieldList {
@@ -22,8 +22,7 @@ object FieldList {
                          updateOrder         : Reusable[FieldUpdateOrder => Callback],
                          enabled             : Enabled,
                          onClickAnywhere     : Option[Reusable[Callback]],
-                         //usage               : LiveDeadStatMap[FieldId, Int],
-                         router              : SpecialRouterCtl,
+                         usage               : Usage,
                         ) {
 
     def fieldIds: Vector[FieldId] =
@@ -64,7 +63,7 @@ object FieldList {
           <.th("Name"),
           <.th("Type"),
           <.th("Details"),
-          <.th("Usage", *.fieldListTableUsage),
+          <.th("Usage", *.fieldListTableUsage(Live)),
         ))
 
     private val _dragHandle: Enabled => Live => VdomTag =
@@ -77,6 +76,10 @@ object FieldList {
         case Enabled  => _dragHandle(Enabled)(live)(item.source)
         case Disabled => _dragHandle(Disabled)(live)
       }
+
+    private val na = TagMod(
+      *.fieldListTableUsage(Dead),
+      <.span(*.`N/A`, "–"))
 
     def render(p: Props): VdomNode = {
 
@@ -101,6 +104,16 @@ object FieldList {
         val field = p.config.fields.need(id)
         val live = field.live(p.config)
 
+        val usage: TagMod =
+          id match {
+            case _: StaticField =>
+              na
+            case id: CustomFieldId =>
+              TagMod(
+                *.fieldListTableUsage(live),
+                p.usage.fieldLink(id, p.filterDead))
+          }
+
         <.tr(
           *.fieldListTableRow(((rowState(id), item.status), live)),
           item.target,
@@ -108,7 +121,7 @@ object FieldList {
           ^.onClick -->? p.select.map(_(id)),
 
           <.td(
-            *.fieldListTableDrag,
+            *.fieldListTableDrag(live),
             dragHandle(item, modificationEnabled, live)),
 
           <.td(
@@ -116,14 +129,15 @@ object FieldList {
             p.config.fieldName(id)),
 
           <.td(
+            *.fieldListTableCell(live),
             field.fieldType.name),
 
           <.td(
+            *.fieldListTableCell(live),
             "TODO"),
 
           <.td(
-            *.fieldListTableUsage,
-            "TODO"),
+            usage),
         )
       }
 

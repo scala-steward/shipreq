@@ -20,7 +20,7 @@ import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.base.ui.{GeneralTheme, Toast}
 import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.app.Style.{fieldConfig => *}
-import shipreq.webapp.client.project.app.pages.root.SpecialRouterCtl
+import shipreq.webapp.client.project.lib.Usage
 import shipreq.webapp.client.project.widgets.{ButtonAndDropdown, EditorButtons, ProjectWidgets, SplitScreenCrud}
 
 object FieldConfig {
@@ -41,7 +41,7 @@ object FieldConfig {
                          ssp    : ServerSideProcInvoker[UpdateConfigCmd.ToModifyFields, ErrorMsg, NewEvents],
                          async  : AsyncFeature.ReadWrite.D0[ErrorMsg],
                          toast  : Toast,
-                         router : SpecialRouterCtl,
+                         usage  : Usage,
                         ) {
 
     val asyncInProgress: Boolean =
@@ -180,8 +180,7 @@ object FieldConfig {
         updateOrder        = updateOrder,
         enabled            = Disabled when p.asyncInProgress,
         onClickAnywhere    = args.closeEditor.filter(_ => p.potentialSaveCmd.isUnchanged),
-//        usage              = p.project.tagUsage,
-        router             = p.router,
+        usage              = p.usage,
       ).render
 
     private def renderHeader(p: Props, args: splitScreenCrud.EditorArgs): VdomNode = {
