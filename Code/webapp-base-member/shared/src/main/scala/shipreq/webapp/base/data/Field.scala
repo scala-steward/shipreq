@@ -312,6 +312,9 @@ object CustomField {
     override def toString = s"CustomField.Text($id, $name, $fieldReqTypeRules, $liveExplicitly)"
     override def independentName = Some(name)
     override def live(cfg: ProjectConfig) = liveExplicitly
+
+    lazy val fieldReqTypeRulesByResolution =
+      fieldReqTypeRules.byResolution
   }
 
   object Text {
@@ -355,6 +358,9 @@ object CustomField {
 
     override def live(cfg: ProjectConfig) =
       liveExplicitly & cfg.tags.live(tagId)
+
+    lazy val fieldReqTypeRulesByResolution =
+      fieldReqTypeRules.byResolution
   }
 
   object Tag {
@@ -395,6 +401,9 @@ object CustomField {
 
     override def live(cfg: ProjectConfig) =
       liveExplicitly & cfg.live(reqTypeId)
+
+    lazy val fieldReqTypeRulesByResolution =
+      fieldReqTypeRules.byResolution
   }
 
   object Implication {

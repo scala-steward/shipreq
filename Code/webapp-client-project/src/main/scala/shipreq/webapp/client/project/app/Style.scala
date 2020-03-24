@@ -823,6 +823,18 @@ object Style extends StyleSheet.Inline {
       mixinIf(e.is(Disabled) && l.is(Dead))(visibility.hidden),
     )}
 
+    val detailRule = style(
+      lineHeight(1.8 em),
+    )
+
+    val detailRuleKey = style(
+      fontWeight.bold,
+    )
+
+    val detailRuleSep = style(
+      margin.horizontal(.7 ex)
+    )
+
     @inline def `N/A` = generic.`N/A`
   }
 

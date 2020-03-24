@@ -1,8 +1,10 @@
 package shipreq.webapp.client.project.app.pages.config.fields
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
+import shipreq.base.util.Impossible
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.DragToReorderFeature
@@ -81,7 +83,59 @@ object FieldList {
       *.fieldListTableUsage(Dead),
       <.span(*.`N/A`, "–"))
 
+    private val ruleSep =
+      <.span(*.detailRuleSep, "—")
+
+    private def renderDetailRule(key: String, value: VdomNode): VdomNode =
+      <.div(*.detailRule,
+        <.span(*.detailRuleKey, key),
+        ruleSep,
+        value)
+
+    private val impossible: Impossible => VdomNode =
+      _.impossible
+
+    private def renderDetailRules[A](cfg: ProjectConfig, rules: FieldReqTypeRules.ByResolution[A])(renderDefault: A => VdomNode): VdomNode = {
+
+      val renderRes: FieldReqTypeRules.Resolution[A] => VdomNode = {
+        case FieldReqTypeRules.Resolution.NotApplicable => "Not applicable"
+        case FieldReqTypeRules.Resolution.Mandatory     => "Mandatory"
+        case FieldReqTypeRules.Resolution.Optional      => "Optional"
+        case FieldReqTypeRules.Resolution.DefaultTo(a)  => <.span("Defaults to ", renderDefault(a))
+      }
+
+      if (rules.perRes.isEmpty)
+
+        renderDetailRule("All", renderRes(rules.otherwise))
+
+      else {
+
+        val specific: TagMod =
+          MutableArray {
+            rules.perRes.iterator.map { case (res, ids) =>
+
+              val key: String =
+                MutableArray(ids.iterator.map(cfg.reqTypes.need(_).mnemonic.value)).sort.mkString(", ")
+
+              val value: VdomNode =
+                renderRes(res)
+
+              (key, renderDetailRule(key, value))
+            }
+          }.sortBy(_._1).iterator.map(_._2).toTagMod
+
+        val other = renderDetailRule("Other", renderRes(rules.otherwise))
+
+        <.div(specific, other)
+      }
+    }
+
+    private val detailAllVisible = renderDetailRule("All", "Visible")
+    private val detailUcOptional = renderDetailRule(StaticReqType.UseCase.mnemonic.value, "Optional")
+    private val detailUcVisible  = renderDetailRule(StaticReqType.UseCase.mnemonic.value, "Visible")
+
     def render(p: Props): VdomNode = {
+      val cfg = p.config
 
       val modificationEnabled: Enabled =
         p.enabled & Enabled.when(p.select.isDefined)
@@ -103,6 +157,17 @@ object FieldList {
         val id = item.data
         val field = p.config.fields.need(id)
         val live = field.live(p.config)
+
+        val detail =
+          field match {
+            case StaticField.ImplicationGraph  => detailAllVisible
+            case StaticField.NormalAltStepTree => detailUcOptional
+            case StaticField.ExceptionStepTree => detailUcOptional
+            case StaticField.StepGraph         => detailUcVisible
+            case f: CustomField.Text           => renderDetailRules(cfg, f.fieldReqTypeRulesByResolution)(impossible)
+            case f: CustomField.Implication    => renderDetailRules(cfg, f.fieldReqTypeRulesByResolution)(impossible)
+            case f: CustomField.Tag            => renderDetailRules(cfg, f.fieldReqTypeRulesByResolution)(p.pw.tagSimple(_, includeDesc = true))
+          }
 
         val usage: TagMod =
           id match {
@@ -134,7 +199,7 @@ object FieldList {
 
           <.td(
             *.fieldListTableCell(live),
-            "TODO"),
+            detail),
 
           <.td(
             usage),
