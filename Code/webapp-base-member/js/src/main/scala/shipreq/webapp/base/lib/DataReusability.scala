@@ -55,6 +55,9 @@ abstract class DataReusability extends BaseReusability {
   implicit lazy val reusabilityProjectMetaData: Reusability[ProjectMetaData] =
     Reusability.byRef || Reusability.derive
 
+  implicit def reusabilityReactKey: Reusability[Key] =
+    Reusability.by_==
+
   implicit def reusabilityProject: Reusability[Project] =
     Reusability.byRef
 

@@ -1,23 +1,23 @@
 package shipreq.webapp.client.project.app.pages.content.reqtable
 
+import japgolly.scalajs.react.Key
 import scalaz.{-\/, \/-}
 import shipreq.base.util._
-import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.data.reqtable.Column._
 import shipreq.webapp.base.data
-import shipreq.webapp.base.lib.KeyGen
+import shipreq.webapp.base.lib.ReactKeyGen
 import shipreq.webapp.client.project.feature.{CreateFeature, EditorFeature}
 
 object ColumnExt {
 
   /** A value that can be passed to React to quickly identify columns. */
-  val key: Column => String = {
+  val key: Column => Key = {
 
-    val builtInKeys: BuiltIn => String =
+    val builtInKeys: BuiltIn => Key =
       builtInValues.iterator
-        .map(c => (c, KeyGen.global.next()))
-        .foldLeft(UnivEq.emptyMap[BuiltIn, String])(_ + _)
+        .map(c => (c, ReactKeyGen.global.next()))
+        .foldLeft(Map.empty[BuiltIn, Key])(_ + _)
 
     {
       case b: BuiltIn     => builtInKeys(b)

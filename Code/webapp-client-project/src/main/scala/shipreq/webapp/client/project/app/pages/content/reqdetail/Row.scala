@@ -1,18 +1,18 @@
 package shipreq.webapp.client.project.app.pages.content.reqdetail
 
-import japgolly.scalajs.react.Reusability
+import japgolly.scalajs.react.{Key, Reusability}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.base.lib.KeyGen
+import shipreq.webapp.base.lib.ReactKeyGen
 
-sealed abstract class Row(_key: String) {
+sealed abstract class Row(_key: Key) {
   /** A value that can be passed to React to quickly identify columns. */
-  val key: String = _key
+  val key: Key = _key
 }
 
 object Row {
-  private def autoKey = KeyGen.global.next()
+  private def autoKey = ReactKeyGen.global.next()
 
   sealed abstract class UseCaseSteps(_key: String) extends Row(_key) {
     def field     : StaticField.UseCaseStepTree

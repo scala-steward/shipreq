@@ -8,7 +8,7 @@ import java.time.Duration
 import scalacss.ScalaCssReact._
 import shipreq.webapp.base.data.{Off, On}
 import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.lib.KeyGen
+import shipreq.webapp.base.lib.ReactKeyGen
 import shipreq.webapp.base.ui.BaseStyles.{toast => *}
 
 /** This is an interface that can be passed around so that downstream components can add messages.
@@ -48,14 +48,14 @@ object Toast {
 
   val defaultDuration = Duration.ofSeconds(4)
 
-  private[Toast] val keyGen = new KeyGen
+  private[Toast] val keyGen = new ReactKeyGen
 
   type Props = StateSnapshot[State]
 
   final case class Ctrls(close: Callback)
 
   object Ctrls {
-    def forId($: StateAccess.Write[CallbackTo, Toast.State], id: String): Ctrls =
+    def forId($: StateAccess.Write[CallbackTo, Toast.State], id: Key): Ctrls =
       Ctrls(
         close = $.modState(_.deleteById(id)),
       )
@@ -70,7 +70,7 @@ object Toast {
     implicit def univEq: UnivEq[BreadState] = UnivEq.derive
   }
 
-  final case class Bread(id: String, msg: Reusable[VdomNode], state: BreadState) {
+  final case class Bread(id: Key, msg: Reusable[VdomNode], state: BreadState) {
     def isSameAs(b: Bread): Boolean =
       id == b.id
   }
@@ -89,8 +89,8 @@ object Toast {
     def delete(b: Bread): State =
       deleteById(b.id)
 
-    def deleteById(id: String): State =
-      copy(bread.filter(_.id !=* id))
+    def deleteById(id: Key): State =
+      copy(bread.filter(_.id == id))
 
     def deleteAll(bs: TraversableOnce[Bread]): State = {
       val ids = bs.toIterator.map(_.id).toSet
