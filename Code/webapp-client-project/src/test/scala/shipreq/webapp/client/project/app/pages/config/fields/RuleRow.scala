@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.app.pages.config.fields
 
 import japgolly.univeq.UnivEq
+import shipreq.webapp.client.project.widgets.ReqTypeRulesEditor
 
 final case class RuleRow(reqTypes     : String,
                          rule         : String,

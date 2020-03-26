@@ -13,6 +13,7 @@ import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.base.ui.semantic.Form
 import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.widgets.ReqTypeRulesEditor
 
 object TextFieldEditor {
   import DataImplicits._

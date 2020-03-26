@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.app.pages.config.fields
+package shipreq.webapp.client.project.widgets
 
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.MutableArray
@@ -206,7 +206,7 @@ object ReqTypeRulesEditor {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  private[fields] object Internals {
+  object Internals {
     val resOptionKey: Resolution[Any] => Select.OptionKey = {
       case Resolution.DefaultTo(_)  => "d"
       case Resolution.NotApplicable => "n"
