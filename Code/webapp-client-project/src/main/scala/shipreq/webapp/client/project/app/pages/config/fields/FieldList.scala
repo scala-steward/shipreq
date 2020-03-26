@@ -4,7 +4,7 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.base.util.Impossible
+import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.DragToReorderFeature
@@ -86,8 +86,8 @@ object FieldList {
     private val ruleSep =
       <.span(*.detailRuleSep, "—")
 
-    private def renderDetailRule(key: String, value: VdomNode): VdomNode =
-      <.div(*.detailRule,
+    private def renderDetailRule(key: String, value: VdomNode, validity: Validity = Valid): VdomNode =
+      <.div(*.detailRule(validity),
         <.span(*.detailRuleKey, key),
         ruleSep,
         value)
@@ -104,11 +104,11 @@ object FieldList {
         case FieldReqTypeRules.Resolution.DefaultTo(a)  => <.span("Defaults to ", renderDefault(a))
       }
 
-      if (rules.perRes.isEmpty)
+      if (rules.perRes.isEmpty) {
+        val validity = Invalid.when(rules.otherwise.applicability.is(NotApplicable))
+        renderDetailRule("All", renderRes(rules.otherwise), validity)
 
-        renderDetailRule("All", renderRes(rules.otherwise))
-
-      else {
+      } else {
 
         val specific: TagMod =
           MutableArray {

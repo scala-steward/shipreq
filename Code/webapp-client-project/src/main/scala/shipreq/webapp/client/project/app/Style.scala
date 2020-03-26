@@ -823,9 +823,10 @@ object Style extends StyleSheet.Inline {
       mixinIf(e.is(Disabled) && l.is(Dead))(visibility.hidden),
     )}
 
-    val detailRule = style(
+    val detailRule = styleF(D.validity)(v => styleS(
       lineHeight(1.8 em),
-    )
+      mixinIf(v is Invalid)(errorRedOnRed),
+    ))
 
     val detailRuleKey = style(
       fontWeight.bold,
