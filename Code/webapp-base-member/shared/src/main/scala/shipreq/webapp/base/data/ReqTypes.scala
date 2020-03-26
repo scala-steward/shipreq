@@ -170,11 +170,17 @@ final case class ReqTypes(custom: IMap[CustomReqTypeId, CustomReqType]) {
         }
     }
 
-  def makeSeqStr(ids: Set[ReqTypeId], sep: String = " "): String =
-    MutableArray(ids)
-      .map(need(_).mnemonic.value)
-      .sort
-      .mkString(sep)
+  def sortIdsByMnemonic(ids: TraversableOnce[ReqTypeId]): Iterator[ReqType] =
+    sortByMnemonic(ids.toIterator.map(need))
+
+  def sortByMnemonic(rts: TraversableOnce[ReqType]): Iterator[ReqType] =
+    MutableArray(rts).sortBy(_.mnemonic.value).iterator
+
+  def mkStringByIds(ids: TraversableOnce[ReqTypeId], sep: String): String =
+    mkString(ids.toIterator.map(need), sep)
+
+  def mkString(rts: TraversableOnce[ReqType], sep: String): String =
+    sortByMnemonic(rts).map(_.mnemonic.value).mkString(sep)
 }
 
 object ReqTypes {

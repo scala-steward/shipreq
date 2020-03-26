@@ -5,6 +5,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.raw.HTMLSelectElement
 import scala.scalajs.js
 import shipreq.base.util.univeq._
+import shipreq.webapp.base.data.{Disabled, Enabled}
 
 object Select {
 
@@ -18,6 +19,7 @@ object Select {
     type A
     val options : Traversable[Option[A]]
     val selected: js.UndefOr[OptionKey]
+    val enabled : Enabled
     val tagMod  : TagMod
     val onChange: Option[A] => Callback
 
@@ -36,6 +38,7 @@ object Select {
       <.select(
         tagMod,
         ^.cls := "ui dropdown",
+        (^.cls := "disabled").when(enabled is Disabled),
         ^.value := selected.getOrElse(null),
         ^.onChange ==> onChange2,
         optionArray)
@@ -44,17 +47,20 @@ object Select {
 
   def apply[A](options : Traversable[Option[A]],
                selected: js.UndefOr[OptionKey] = js.undefined,
+               enabled : Enabled = Enabled,
                tagMod  : TagMod = EmptyVdom)
               (onChange: Option[A] => Callback): VdomElement = {
     type AA       = A
     val _options  = options
     val _selected = selected
+    val _enabled  = enabled
     val _tagMod   = tagMod
     val _onChange = onChange
     Component(new Props {
       override type A = AA
       override val options  = _options
       override val selected = _selected
+      override val enabled  = _enabled
       override val tagMod   = _tagMod
       override val onChange = _onChange
     })

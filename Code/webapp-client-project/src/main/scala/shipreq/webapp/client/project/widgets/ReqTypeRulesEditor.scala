@@ -66,7 +66,7 @@ object ReqTypeRulesEditor {
             if (localDups.isEmpty)
               \/-(ids.toSet)
             else
-              -\/(Invalidity(s"Defined elsewhere: ${reqTypes.makeSeqStr(localDups, ", ")}"))
+              -\/(Invalidity(s"Defined elsewhere: ${reqTypes.mkStringByIds(localDups, ", ")}"))
           case e@ -\/(_) => e
         }
       }.toVector
@@ -80,19 +80,26 @@ object ReqTypeRulesEditor {
       }
 
     def resultWhenValid: Option[FieldReqTypeRules[D]] = {
-      val perReqTypeO: Option[List[(Resolution[D], Set[ReqTypeId])]] =
+
+      val deadO: Option[List[(Resolution[D], Set[ReqTypeId])]] =
+        state.dead.traverse(d => validateRes(d.res).map((_, d.ids.whole)))
+
+      def perReqTypeO: Option[List[(Resolution[D], Set[ReqTypeId])]] =
         results.indices.iterator.map { i =>
           for {
             reqTypeIds <- results(i).toOption
             row         = state.perReqType(i)
             res        <- validateRes(row.res)
-          } yield (res, Util.mergeSets(reqTypeIds, row.deadReqTypes))
-        }.toList.sequence
+          } yield (res, reqTypeIds)
+        }
+          .toList
+          .sequence
 
       for {
+        dead       <- deadO
         perReqType <- perReqTypeO
         otherwise  <- validateRes(state.otherwise)
-      } yield FieldReqTypeRules.ByResolution.build(perReqType, otherwise).toRules
+      } yield FieldReqTypeRules.ByResolution.build(perReqType.iterator ++ dead, otherwise).toRules
     }
   }
 
@@ -132,48 +139,74 @@ object ReqTypeRulesEditor {
   // -------------------------------------------------------------------------------------------------------------------
 
   @Lenses
-  final case class State[D](perReqType: Vector[State.PerReqType[D]], otherwise: State.ResValue[D]) {
+  final case class State[D](dead      : List[State.DeadRow[D]],
+                            perReqType: Vector[State.PerReqType[D]],
+                            otherwise : State.ResValue[D]) {
 
     def validation(reqTypes: ReqTypes): Validation[D] =
       new Validation(this, reqTypes)
 
     val allDead: Set[ReqTypeId] =
-      perReqType.foldLeft(Set.empty[ReqTypeId])((q, p) => Util.mergeSets(q, p.deadReqTypes))
+      dead.foldLeft(Set.empty[ReqTypeId])((q, p) => Util.mergeSets(q, p.ids.whole))
 
     def addRow: State[D] =
-      State(perReqType :+ State.PerReqType.empty[D], otherwise)
+      copy(perReqType = perReqType :+ State.PerReqType.empty[D])
 
     def delRow(idx: Int): State[D] =
-      State(perReqType.delete(idx).getOrElse(perReqType), otherwise)
+      copy(perReqType = perReqType.delete(idx).getOrElse(perReqType))
   }
 
   object State {
     def empty[D]: State[D] =
-      apply(Vector.empty, State.ResValue.empty)
+      apply(Nil, Vector.empty, State.ResValue.empty)
 
     def init[D](cfg: ProjectConfig, rules: FieldReqTypeRules.ByResolution[D]): State[D] = {
-      val rows =
-        MutableArray(rules.perRes.iterator.map { case (res, ids) => PerReqType.from(cfg, ids, res) })
+      val dead: List[DeadRow[D]] =
+        MutableArray(
+          rules.perRes.iterator.flatMap { case (res, ids) =>
+            val deadIds = ids.whole.filter(cfg.reqTypes.need(_).live is Dead)
+            NonEmptySet.option(deadIds).iterator.map(i =>
+              DeadRow(i, ResValue.from(res), keyGen.next())
+            )
+          }
+        )
+          .sortBySchwartzian(x => cfg.reqTypes.sortIdsByMnemonic(x.ids.whole).mkString(","))
+          .iterator
+          .toList
+
+      val rows: Vector[PerReqType[D]] =
+        MutableArray(
+          rules.perRes
+            .iterator
+            .map { case (res, ids) => PerReqType.from(cfg, ids, res) }
+            .filter(_.text.nonEmpty)
+        )
           .sortBy(_.text)
           .iterator
           .toVector
-      apply(rows, ResValue.from(rules.otherwise))
+
+      val otherwise =
+        ResValue.from(rules.otherwise)
+
+      apply(dead, rows, otherwise)
     }
 
     private val keyGen = new ReactKeyGen
 
     @Lenses
-    final case class PerReqType[D](text: String, deadReqTypes: Set[ReqTypeId], res: ResValue[D], key: Key)
+    final case class DeadRow[D](ids: NonEmptySet[ReqTypeId], res: ResValue[D], key: Key)
+
+    @Lenses
+    final case class PerReqType[D](text: String, res: ResValue[D], key: Key)
 
     object PerReqType {
       def empty[D]: PerReqType[D] =
-        apply("", Set.empty, ResValue.empty, keyGen.next())
+        apply("", ResValue.empty, keyGen.next())
 
       def from[D](cfg: ProjectConfig, ids: NonEmptySet[ReqTypeId], res: Resolution[D]): PerReqType[D] = {
         def reqTypes(live: Live) = ids.iterator.map(cfg.reqTypes.need).filter(_.live is live)
-        val txt = MutableArray(reqTypes(Live).map(_.mnemonic.value)).sort.mkString(", ")
-        val dead = reqTypes(Dead).map(_.reqTypeId).toSet
-        apply(txt, dead, ResValue.from(res), keyGen.next())
+        val txt = cfg.reqTypes.mkString(reqTypes(Live), ", ")
+        apply(txt, ResValue.from(res), keyGen.next())
       }
     }
 
@@ -192,10 +225,12 @@ object ReqTypeRulesEditor {
         }
     }
 
+    implicit def univEqD[D: UnivEq]: UnivEq[DeadRow   [D]] = UnivEq.derive
     implicit def univEqV[D: UnivEq]: UnivEq[ResValue  [D]] = UnivEq.derive
     implicit def univEqP[D: UnivEq]: UnivEq[PerReqType[D]] = UnivEq.derive
     implicit def univEqS[D: UnivEq]: UnivEq[State     [D]] = UnivEq.derive
 
+    implicit def reusabilityD[D: UnivEq]: Reusability[DeadRow   [D]] = Reusability.byRefOrUnivEq
     implicit def reusabilityV[D: UnivEq]: Reusability[ResValue  [D]] = Reusability.byRefOrUnivEq
     implicit def reusabilityP[D: UnivEq]: Reusability[PerReqType[D]] = Reusability.byRefOrUnivEq
     implicit def reusabilityS[D: UnivEq]: Reusability[State     [D]] = Reusability.byRefOrUnivEq
@@ -224,6 +259,7 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean) {
 
   type Props           = ReqTypeRulesEditor.Props[D]
   type State           = ReqTypeRulesEditor.State[D]
+  type StateDeadRow    = ReqTypeRulesEditor.State.DeadRow[D]
   type StatePerReqType = ReqTypeRulesEditor.State.PerReqType[D]
   type StateResValue   = ReqTypeRulesEditor.State.ResValue[D]
   type Validation      = ReqTypeRulesEditor.Validation[D]
@@ -316,11 +352,12 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean) {
           .onClick(p.state.modState(_.delRow(idx)))
 
       @UsesSemanticUiManually
-      def renderRes(ss: StateSnapshot[StateResValue]): TagMod = {
+      def renderRes(ss: StateSnapshot[StateResValue], enabled: Enabled): TagMod = {
 
         val resSelect =
           Select(
-            options = resOptions,
+            options  = resOptions,
+            enabled  = enabled,
             selected = resOptionKey(ss.value.res))(
             onChange = o => ss.modState(_.copy(res = o.value)))
 
@@ -336,6 +373,7 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean) {
           <.div(
             *.rulesEditorDefault,
             ^.cls := "ui selection dropdown",
+            (^.cls := "disabled").when(enabled is Disabled),
             (^.cls := "error").when(default.isEmpty),
             <.input.hidden(^.value := "1"),
             Icon.Dropdown.tag,
@@ -347,6 +385,19 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean) {
           TagMod(resSelect, defaultSelect)
         else
           resSelect
+      }
+
+      def renderDeadRow(row: StateDeadRow): VdomTagOf[html.TableRow] = {
+        val reqTypes =
+          p.reqTypes.sortIdsByMnemonic(row.ids.whole)
+            .map(rt => <.span(*.rulesDeadReqTypesInner, rt.mnemonic.value))
+            .mkTagMod(", ")
+
+        <.tr(
+          ^.key := row.key,
+          <.td(*.rulesDeadReqTypes, "Dead req types:", reqTypes),
+          <.td(renderRes(StateSnapshot(row.res)((_, _) => Callback.empty), Disabled)), // TODO scalajs-react
+          <.td(*.rulesEditorButton))
       }
 
       def renderPerReqType(idx: Int): VdomTagOf[html.TableRow] = {
@@ -362,14 +413,6 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean) {
 
         val reqTypesValidated = validation.results(idx)
 
-        val deadReqTypes =
-          Option.when(showDead & row.deadReqTypes.nonEmpty) {
-            <.div(*.rulesDeadReqTypes,
-              "Dead req types:",
-              <.span(*.rulesDeadReqTypesInner,
-                p.reqTypes.makeSeqStr(row.deadReqTypes, ", ")))
-          }
-
         val reqTypes =
           autoComplete.render(autoCompletion =>
             <.div(
@@ -378,15 +421,15 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean) {
                 TagMod(
                   ^.value := row.text,
                   ^.onChange ==> onChange,
+                  ^.spellCheck := false,
                   autoCompletion,
                 ),
-                deadReqTypes.whenDefined,
                 GeneralTheme.renderSimpleInvalidity(reqTypesValidated))))
 
         <.tr(
           ^.key := row.key,
           <.td(reqTypes),
-          <.td(renderRes(ss.zoomStateL(ReqTypeRulesEditor.State.PerReqType.res))),
+          <.td(renderRes(ss.zoomStateL(ReqTypeRulesEditor.State.PerReqType.res), p.enabled)),
           <.td(*.rulesEditorButton, delRowButton(idx)))
       }
 
@@ -408,8 +451,11 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean) {
             .++(Iterator.single[VdomNode](otherNew))
             .mkTagMod(TagMod("Other", <.br, "("), ", ", ")")
 
+        val deadRowsVisible =
+          p.filterDead.is(ShowDead) && s.dead.nonEmpty
+
         val desc: TagMod =
-          if (s.perReqType.isEmpty)
+          if (s.perReqType.isEmpty && !deadRowsVisible)
             "All"
           else
             fullReqTypeDesc
@@ -417,7 +463,7 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean) {
         <.tr(
           ^.key := "o",
           <.td(*.rulesEditorOtherwise, desc),
-          <.td(renderRes(ss)),
+          <.td(renderRes(ss, p.enabled)),
           <.td(*.rulesEditorButton, newRowButton(p.enabled)))
       }
 
@@ -425,7 +471,8 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean) {
         *.rulesEditor,
         header,
         <.tbody(
-          s.perReqType.indices.toVdomArray(i => renderPerReqType(i)),
+          TagMod.when(p.filterDead is ShowDead)(s.dead.toVdomArray(renderDeadRow)),
+          s.perReqType.indices.toVdomArray(renderPerReqType),
           renderOtherwise(p.state.zoomStateL(ReqTypeRulesEditor.State.otherwise))))
     }
   }

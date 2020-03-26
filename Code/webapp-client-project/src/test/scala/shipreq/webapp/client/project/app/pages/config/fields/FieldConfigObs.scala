@@ -54,12 +54,19 @@ object FieldConfigObs {
     val deadReqTypes  = reqTypes.collect01(selRulesDeadReqTypes).innerTexts
     val res           = new CommonObs.Dropdown(rule(".ui.dropdown.selection:first-child"))
     val default       = rule.collect01(".ui.dropdown.selection:not(:first-child)").map(new CommonObs.Dropdown(_))
+    val dead          = button.collect01("button").isEmpty
+
+    val reqTypesDesc: String =
+      reqTypesDom match {
+        case Some(r) if !dead => r.value
+        case _                => reqTypes.innerText.replace("Dead req types:", "").trim
+      }
 
     val desc = RuleRow(
-      reqTypes      = reqTypesDom.fold(reqTypes.innerText.trim)(_.value),
+      reqTypes      = reqTypesDesc,
       rule          = res.selected,
       default       = default.map(_.selected),
-      deadReqTypes  = deadReqTypes,
+      dead          = dead,
       reqTypesError = reqTypesError,
     )
 

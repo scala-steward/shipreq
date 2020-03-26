@@ -6,10 +6,10 @@ import shipreq.webapp.client.project.widgets.ReqTypeRulesEditor
 final case class RuleRow(reqTypes     : String,
                          rule         : String,
                          default      : Option[String] = None,
-                         deadReqTypes : Option[String] = None,
+                         dead         : Boolean = false,
                          reqTypesError: Option[String] = None) {
   override def toString: String =
-    s"RuleRow(${reqTypes.toString.replace("\n", "\\n")}, $rule, $default, $deadReqTypes, $reqTypesError)"
+    s"RuleRow(${reqTypes.toString.replace("\n", "\\n")}, $rule, $default, $dead, $reqTypesError)"
 }
 
 object RuleRow {

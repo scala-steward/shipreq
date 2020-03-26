@@ -86,7 +86,8 @@ object FieldConfigTest extends TestSuite {
         +> editorName.assert("Description")
         +> editorNameError.assert.empty
         +> editorRules.assert(
-        RuleRow("MF, UC", "Optional", deadReqTypes = "SI"),
+        RuleRow("SI", "Optional", dead = true),
+        RuleRow("MF, UC", "Optional"),
         RuleRow.other("BR, CO, DD, FR", "Not applicable"))
 
         >> setEditorName("")
@@ -102,38 +103,44 @@ object FieldConfigTest extends TestSuite {
 
         >> addEditorRule
         +> editorRules.assert(
-        RuleRow("MF, UC", "Optional", deadReqTypes = "SI"),
+        RuleRow("SI", "Optional", dead = true),
+        RuleRow("MF, UC", "Optional"),
         RuleRow.New,
         RuleRow.other("BR, CO, DD, FR", "Not applicable"))
 
-        >> setRuleReqTypes(1, "MF")
+        >> setRuleReqTypes(2, "MF")
         +> editorRules.assert(
-        RuleRow("MF, UC", "Optional", deadReqTypes = "SI", reqTypesError = "Defined elsewhere: MF"),
+        RuleRow("SI", "Optional", dead = true),
+        RuleRow("MF, UC", "Optional", reqTypesError = "Defined elsewhere: MF"),
         RuleRow("MF", "Optional", reqTypesError = "Defined elsewhere: MF"),
         RuleRow.other("BR, CO, DD, FR", "Not applicable"))
 
-        >> setRuleReqTypes(1, "xxx")
+        >> setRuleReqTypes(2, "xxx")
         +> editorRules.assert(
-        RuleRow("MF, UC", "Optional", deadReqTypes = "SI"),
+        RuleRow("SI", "Optional", dead = true),
+        RuleRow("MF, UC", "Optional"),
         RuleRow("XXX", "Optional", reqTypesError = "XXX is not a valid req type."),
         RuleRow.other("BR, CO, DD, FR", "Not applicable"))
 
-        >> setRuleReqTypes(1, "DD")
+        >> setRuleReqTypes(2, "DD")
         +> editorRules.assert(
-        RuleRow("MF, UC", "Optional", deadReqTypes = "SI"),
+        RuleRow("SI", "Optional", dead = true),
+        RuleRow("MF, UC", "Optional"),
         RuleRow("DD", "Optional", reqTypesError = "DD has been deleted."),
         RuleRow.other("BR, CO, DD, FR", "Not applicable"))
         +> buttonsEnabled.assert(Buttons(delete = Enabled, cancel = Enabled, save = Disabled))
 
-        >> setRuleReqTypes(1, "co fr")
+        >> setRuleReqTypes(2, "co fr")
         +> editorRules.assert(
-        RuleRow("MF, UC", "Optional", deadReqTypes = "SI"),
+        RuleRow("SI", "Optional", dead = true),
+        RuleRow("MF, UC", "Optional"),
         RuleRow("CO FR", "Optional"),
         RuleRow.other("BR, DD", "Not applicable"))
 
-        >> delEditorRule(1)
+        >> delEditorRule(2)
         +> editorRules.assert(
-        RuleRow("MF, UC", "Optional", deadReqTypes = "SI"),
+        RuleRow("SI", "Optional", dead = true),
+        RuleRow("MF, UC", "Optional"),
         RuleRow.other("BR, CO, DD, FR", "Not applicable"))
 
         >> clickFilterDead
@@ -173,21 +180,30 @@ object FieldConfigTest extends TestSuite {
         +> editorName.assert("Description")
         +> editorNameError.assert.empty
         +> editorRules.assert(
-        RuleRow("BR, FR, MF, UC", "Optional", deadReqTypes = "SI"),
+        RuleRow("SI", "Optional", dead = true),
+        RuleRow("BR, FR, MF, UC", "Optional"),
         RuleRow("CO", "Mandatory"),
         RuleRow.other("DD", "Not applicable"))
 
-        >> delEditorRule(0)
+        >> delEditorRule(1)
         +> editorRules.assert(
+        RuleRow("SI", "Optional", dead = true),
         RuleRow("CO", "Mandatory"),
-        RuleRow.other("BR, DD, FR, MF, SI, UC", "Not applicable"))
+        RuleRow.other("BR, DD, FR, MF, UC", "Not applicable"))
 
-        >> setRuleReqRes(0, "Not applicable")
+        >> setRuleReqRes(1, "Not applicable")
         +> editorRules.assert(
+        RuleRow("SI", "Optional", dead = true),
         RuleRow("CO", "Not applicable"),
-        RuleRow.other("BR, DD, FR, MF, SI, UC", "Not applicable"))
+        RuleRow.other("BR, DD, FR, MF, UC", "Not applicable"))
 
         >> clickSaveButton
+        +> editorRules.assert(
+        RuleRow("SI", "Optional", dead = true),
+        RuleRow.other("BR, CO, DD, FR, MF, UC", "Not applicable"))
+
+        >> clickFilterDead
+        +> filterDead.assert(HideDead)
         +> editorRules.assert(RuleRow.all("Not applicable"))
     )
 

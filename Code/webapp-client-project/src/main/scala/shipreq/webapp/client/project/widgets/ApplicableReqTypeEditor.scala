@@ -1,7 +1,6 @@
 package shipreq.webapp.client.project.widgets
 
 import japgolly.microlibs.nonempty.NonEmptyVector
-import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
@@ -50,7 +49,7 @@ object ApplicableReqTypeEditor {
     def init(art: ApplicableReqTypes, reqTypes: ReqTypes): State =
       DropdownAndTextEditor.State(
         selected = art.applicability,
-        text     = reqTypes.makeSeqStr(art.filterReqTypes(Live, reqTypes).reqTypes))
+        text     = reqTypes.mkStringByIds(art.filterReqTypes(Live, reqTypes).reqTypes, " "))
   }
 
   // ===================================================================================================================
@@ -104,7 +103,7 @@ object ApplicableReqTypeEditor {
             "Deleted req types: ",
             <.span(
               *.applicableReqTypesEditorDeadReqTypes,
-              MutableArray(p.deadPrevious.reqTypes).map(p.reqTypes.need(_).mnemonic.value).sort.mkString(", "))))
+              p.reqTypes.mkStringByIds(p.deadPrevious.reqTypes, ", "))))
       }
 
       val footer =

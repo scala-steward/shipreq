@@ -859,8 +859,7 @@ object Style extends StyleSheet.Inline {
 
     val rulesDeadReqTypes = style(
       color(c"#444"),
-      textAlign.right,
-      marginTop(0.15 em),
+      paddingLeft(2 ex).important,
     )
 
     val rulesDeadReqTypesInner = style(
