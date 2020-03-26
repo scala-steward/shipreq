@@ -177,7 +177,7 @@ object DataValidators {
         excludeOptionalKey(subject, allData())(_.id)
 
       def nameUniqueness: Invalidator[String] =
-        Uniqueness.within(otherData.map(_.independentName).filterDefined)
+        Uniqueness.stringIgnoreCase(otherData.map(_.independentName).filterDefined)
 
       def tagIdUniqueness: Invalidator[TagId] =
         Uniqueness.within(otherData.map({

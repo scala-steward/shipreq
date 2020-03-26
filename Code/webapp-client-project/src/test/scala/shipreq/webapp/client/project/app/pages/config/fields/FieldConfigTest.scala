@@ -89,6 +89,9 @@ object FieldConfigTest extends TestSuite {
         >> setEditorName("Component")
         +> editorNameError.assert("Already in use.")
 
+        >> setEditorName("COMponENT")
+        +> editorNameError.assert("Already in use.")
+
         >> setEditorName("Description")
 
         >> addEditorRule
