@@ -80,10 +80,10 @@ object Field {
   implicit lazy val applicableReqTypesEquality: UnivEq[ApplicableReqTypes] = implicitly
 }
 
-sealed abstract class StaticField(val name                      : String,
-                                  override val fieldType        : StaticFieldType,
-                                  override val fieldReqTypeRules: FieldReqTypeRules[Nothing],
-                                  val deletable                 : Deletable) extends Field with FieldId {
+sealed trait StaticField extends Field with FieldId {
+  val name: String
+
+  override def fieldReqTypeRules: FieldReqTypeRules[Impossible]
 
   override final def live(cfg: ProjectConfig) = Live
 
@@ -101,18 +101,20 @@ object UseCaseStepLabelFmt {
 }
 
 object StaticField {
-  val useCaseOptionalOnly: FieldReqTypeRules[Nothing] =
+
+  sealed trait Mandatory extends StaticField
+  sealed trait Optional extends StaticField
+
+  private val useCaseOptionalOnly: FieldReqTypeRules[Impossible] =
     FieldReqTypeRules.only(StaticReqType.UseCase, FieldReqTypeRules.Resolution.Optional)
 
   @inline final private[this] def T = StaticFieldType
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  sealed abstract class UseCaseStepTree(_name     : String,
-                                        _fieldType: StaticFieldType,
-                                        _reqTypes : FieldReqTypeRules[Nothing],
-                                        _deletable: Deletable)
-      extends StaticField(_name, _fieldType, _reqTypes, _deletable) {
+  sealed abstract class UseCaseStepTree(final val name             : String,
+                                        final val fieldType        : StaticFieldType,
+                                        final val fieldReqTypeRules: FieldReqTypeRules[Impossible]) extends Mandatory {
 
     val treeFilterAll: UseCaseSteps.Tree => Range
     val useCaseSteps: Lens[UseCase, UseCaseSteps]
@@ -184,7 +186,7 @@ object StaticField {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object NormalAltStepTree extends UseCaseStepTree(
-      "Normal and Alternate Courses", T.UseCaseSteps, useCaseOptionalOnly, Deletable.Not) {
+      "Normal and Alternate Courses", T.UseCaseSteps, useCaseOptionalOnly) {
 
     override val useCaseSteps = GenLens[UseCase](_.stepsNA)
     override val useCaseStepTree = useCaseSteps ^|-> UseCaseSteps.tree
@@ -211,7 +213,7 @@ object StaticField {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   case object ExceptionStepTree extends UseCaseStepTree(
-      "Exception Courses", T.UseCaseSteps, useCaseOptionalOnly, Deletable.Not) {
+      "Exception Courses", T.UseCaseSteps, useCaseOptionalOnly) {
 
     override val useCaseSteps = GenLens[UseCase](_.stepsE)
     override val useCaseStepTree = useCaseSteps ^|-> UseCaseSteps.tree
@@ -236,11 +238,17 @@ object StaticField {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  case object StepGraph extends StaticField(
-    T.UseCaseStepGraph.name, T.UseCaseStepGraph, useCaseOptionalOnly, Deletable)
+  case object StepGraph extends Optional {
+    override val name              = T.UseCaseStepGraph.name
+    override val fieldType         = T.UseCaseStepGraph
+    override val fieldReqTypeRules = useCaseOptionalOnly
+  }
 
-  case object ImplicationGraph extends StaticField(
-    T.ImplicationGraph.name, T.ImplicationGraph, FieldReqTypeRules.optional, Deletable)
+  case object ImplicationGraph extends Optional {
+    override val name              = T.ImplicationGraph.name
+    override val fieldType         = T.ImplicationGraph
+    override val fieldReqTypeRules = FieldReqTypeRules.optional
+  }
 
   // Non lazy causes utest to crash
   // ORDER MATTERS as this is the default order of fields use in new projects
@@ -251,11 +259,14 @@ object StaticField {
       ExceptionStepTree,
       StepGraph)
 
+  lazy val mandatory: NonEmptySet[Mandatory] =
+    AdtMacros.adtValues[Mandatory].toNES
+
+  lazy val optional: NonEmptySet[Optional] =
+    AdtMacros.adtValues[Optional].toNES
+
   lazy val useCaseStepTrees: NonEmptyVector[UseCaseStepTree] =
     AdtMacros.adtValuesManually[UseCaseStepTree](NormalAltStepTree, ExceptionStepTree)
-
-  lazy val (deletable, notDeletable) =
-    values.whole.partition(_.deletable is Deletable)
 
   lazy val byName: Map[String, StaticField] =
     values.iterator.map(f => f.name -> f).toMap
@@ -266,10 +277,14 @@ object StaticField {
   lazy val namesLowercase: Set[String] =
     names.iterator.map(_.toLowerCase).toSet
 
-  implicit def equality: UnivEq[StaticField] = UnivEq.derive
+  implicit def univEqO: UnivEq[Optional   ] = UnivEq.derive
+  implicit def univEqM: UnivEq[Mandatory  ] = UnivEq.derive
+  implicit def univEq : UnivEq[StaticField] = UnivEq.derive
 
   implicit def useCaseStepTreeEquality: UnivEq[UseCaseStepTree] = UnivEq.derive
 }
+
+// █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
 sealed abstract class CustomFieldId extends TaggedInt with FieldId {
   final def foldId[A](s: StaticField => A, c: CustomFieldId => A): A = c(this)

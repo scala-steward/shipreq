@@ -436,7 +436,7 @@ trait ApplyConfigEvent {
 
     def ensureDeletableSF(sf: StaticField): SE[Unit] =
       SE.test(
-        sf.deletable is Deletable,
+        sf.isInstanceOf[StaticField.Optional],
         s"Static field $sf cannot be deleted.")
 
     def applyStaticRemove(e: FieldStaticRemove): SE[Unit] =
@@ -476,7 +476,7 @@ trait ApplyConfigEvent {
         case (Some(m), None   ) =>
           FieldReqTypeRules.resolutionTraversal[D].modify({
             case FieldReqTypeRules.Resolution.Optional
-                 | FieldReqTypeRules.Resolution.Mandatory => FieldReqTypeRules.Resolution.v1(m)
+               | FieldReqTypeRules.Resolution.Mandatory => FieldReqTypeRules.Resolution.v1(m)
             case r                                      => r
           })(rules)
 

@@ -529,8 +529,8 @@ object RandomData {
     val rulesTag      = fieldReqTypeRules(genReqTypeId, genApTagId)
     for {
       cf           ← customFields(reqTypeIds, tagGroupIds, rulesAny, rulesTag)
-      mandatoryIds = cf.keySet.map(f => f: FieldId) ++ StaticField.notDeletable
-      optionalIds  ← Gen.chooseIndexed_!(StaticField.deletable).set
+      mandatoryIds = cf.keySet.map(f => f: FieldId) ++ StaticField.mandatory.iterator
+      optionalIds  ← Gen.subset(StaticField.optional.whole)
       order        ← Gen.shuffle((mandatoryIds ++ optionalIds).toVector)
     } yield FieldSet(cf, order)
   }

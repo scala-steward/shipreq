@@ -43,18 +43,6 @@ case object Mandatory extends Mandatory with IsoBool.Object[Mandatory] {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-sealed trait Deletable extends IsoBool[Deletable] {
-  override final def companion = Deletable
-}
-
-case object Deletable extends Deletable with IsoBool.Object[Deletable] {
-  override def positive = this
-  override def negative = Not
-  case object Not extends Deletable
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 /**
  * A key by which users can refer to data.
  * These references require a hashtag prefix.

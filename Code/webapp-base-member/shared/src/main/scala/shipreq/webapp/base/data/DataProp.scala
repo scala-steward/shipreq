@@ -146,8 +146,8 @@ object DataProp {
           case _: StaticField    => q
         }))
 
-    def orderHasAllUndeletableStaticFields =
-      Prop.allPresent[FieldSet]("order ⊇ undeletable static")(Function const StaticField.notDeletable.toSet, _.order)
+    def orderHasAllMandatoryStaticFields =
+      Prop.allPresent[FieldSet]("order ⊇ mandatory static")(_ => StaticField.mandatory.whole, _.order)
 
     def filteredFields[T](f: PartialFunction[CustomField, T]): FieldSet => Iterator[T] = {
       val ff = f.lift
@@ -165,7 +165,7 @@ object DataProp {
 
     def fieldSet = "FieldSet" rename_: (
       ids ∧ fields ∧
-      orderNoDups ∧ orderCustomFieldsIso ∧ orderHasAllUndeletableStaticFields ∧
+      orderNoDups ∧ orderCustomFieldsIso ∧ orderHasAllMandatoryStaticFields ∧
       tagFieldsUnique ∧ implicationFieldsUnique ∧ noDuplicateTagFieldReqTypeResolutions
     )
 

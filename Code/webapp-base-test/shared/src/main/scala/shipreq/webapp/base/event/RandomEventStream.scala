@@ -174,8 +174,7 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
     Live.memoLazy(l => Gen.tryGenChoose(f(l)))
 
   val (staticFieldsToDel, staticFieldsToAdd) =
-    StaticField.values.whole.partition(cfg.fields.staticFieldSet.contains)
-      .map1(_.filter(_.deletable is Deletable))
+    StaticField.optional.whole.partition(cfg.fields.staticFieldSet.contains)
 
   val nextReqId: Gen[Int] =
     IncCounter genInt p.idCeilings.req

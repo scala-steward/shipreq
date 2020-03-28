@@ -185,8 +185,9 @@ object BaseMemberData2 {
       }
     }
 
-  implicit lazy val picklerDeletable: Pickler[Deletable] =
-    pickleBool(Deletable)
+  // Removed in v1.1
+//  implicit lazy val picklerDeletable: Pickler[Deletable] =
+//    pickleBool(Deletable)
 
   implicit lazy val picklerDeletionReasonIdO =
     optionPickler(pickleTaggedI(DeletionReasonId)).reuseByUnivEq

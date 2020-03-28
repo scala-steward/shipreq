@@ -55,11 +55,11 @@ object CustomFieldEventTest extends TestSuite {
     'deleteStatic {
       // assertQty allows less detail here
       'ok - {
-        for (f <- values.whole.filter(_.deletable is Deletable))
+        for (f <- optional)
           assertPass(FieldStaticRemove(f))
       }
       'undeletable - {
-        for (f <- values.whole.filterNot(_.deletable is Deletable))
+        for (f <- mandatory)
           assertFail("delet")(FieldStaticRemove(f))
       }
       'twice - {
