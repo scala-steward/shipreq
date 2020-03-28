@@ -456,6 +456,9 @@ object RandomData {
   val staticField: Gen[StaticField] =
     Gen.chooseNE(StaticField.values)
 
+  val staticFieldOptional: Gen[StaticField.Optional] =
+    Gen.chooseNE(StaticField.optional)
+
   val customFieldTextId =
     id map CustomField.Text.Id
 
@@ -2155,7 +2158,7 @@ object RandomData {
       Gen.apply4(UseCaseStepCreate)(useCaseStepId, useCaseId, useCaseStepTreeField, genVectorTreeParLoc)
 
     val genFieldStaticAdd: Gen[FieldStaticAdd] =
-      staticField map FieldStaticAdd
+      staticFieldOptional map FieldStaticAdd
 
     val genProjectTemplate: Gen[ProjectTemplate] =
       Gen.chooseNE(ProjectTemplate.values)
@@ -2236,7 +2239,7 @@ object RandomData {
       Gen.apply3(ReqsDelete)(reqId.nes, reqCode.groupId.set, deletionReason)
 
     val genFieldStaticRemove: Gen[FieldStaticRemove] =
-      staticField map FieldStaticRemove
+      staticFieldOptional map FieldStaticRemove
 
     val genTagDelete: Gen[TagDelete] =
       tagId map TagDelete

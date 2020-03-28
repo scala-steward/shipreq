@@ -49,7 +49,6 @@ object CustomFieldEventTest extends TestSuite {
     'addStaticField {
       'ok - assertPass(FieldStaticRemove(StepGraph), FieldStaticAdd(StepGraph))
       'failIfExists     - assertFail("exists")(FieldStaticAdd(StepGraph))
-      'failIfNotDelable - assertFail("exists")(FieldStaticAdd(NormalAltStepTree))
     }
 
     'deleteStatic {
@@ -57,10 +56,6 @@ object CustomFieldEventTest extends TestSuite {
       'ok - {
         for (f <- optional)
           assertPass(FieldStaticRemove(f))
-      }
-      'undeletable - {
-        for (f <- mandatory)
-          assertFail("delet")(FieldStaticRemove(f))
       }
       'twice - {
         val d = FieldStaticRemove(StepGraph)

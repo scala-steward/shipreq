@@ -116,8 +116,8 @@ object Event {
 
   final case class FieldReposition(id: FieldId, newPos: RelPos[FieldId]) extends ActiveEvent
 
-  final case class FieldStaticAdd   (f: StaticField) extends ActiveEvent
-  final case class FieldStaticRemove(f: StaticField) extends ActiveEvent
+  final case class FieldStaticAdd   (f: StaticField.Optional) extends ActiveEvent
+  final case class FieldStaticRemove(f: StaticField.Optional) extends ActiveEvent
 
   final case class FieldCustomDelete (id: CustomFieldId) extends ActiveEvent
   final case class FieldCustomRestore(id: CustomFieldId) extends ActiveEvent

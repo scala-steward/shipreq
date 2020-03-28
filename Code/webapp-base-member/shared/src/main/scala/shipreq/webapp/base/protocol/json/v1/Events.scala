@@ -477,16 +477,16 @@ object Events {
       Encoder.forProduct2("id", "newPos")(a => (a.id, a.newPos))
 
     implicit val decoderEventFieldStaticAdd: Decoder[Event.FieldStaticAdd] =
-      Decoder[StaticField].map(Event.FieldStaticAdd.apply)
+      Decoder[StaticField.Optional].map(Event.FieldStaticAdd.apply)
 
     implicit val encoderEventFieldStaticAdd: Encoder[Event.FieldStaticAdd] =
-      Encoder[StaticField].contramap(_.f)
+      Encoder[StaticField.Optional].contramap(_.f)
 
     implicit val decoderEventFieldStaticRemove: Decoder[Event.FieldStaticRemove] =
-      Decoder[StaticField].map(Event.FieldStaticRemove.apply)
+      Decoder[StaticField.Optional].map(Event.FieldStaticRemove.apply)
 
     implicit val encoderEventFieldStaticRemove: Encoder[Event.FieldStaticRemove] =
-      Encoder[StaticField].contramap(_.f)
+      Encoder[StaticField.Optional].contramap(_.f)
 
     implicit val decoderEventFieldCustomDelete: Decoder[Event.FieldCustomDelete] =
       Decoder[CustomFieldId].map(Event.FieldCustomDelete.apply)

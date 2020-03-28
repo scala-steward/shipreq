@@ -555,6 +555,9 @@ private[v1] object BaseMemberData1 {
       case StaticField.StepGraph         => "stepGraph"
     })
 
+  implicit lazy val codecStaticFieldOptional: JsonCodec[StaticField.Optional] =
+    codecStaticField.narrow
+
   implicit lazy val codecStaticFieldUseCaseStepTree: JsonCodec[StaticField.UseCaseStepTree] =
     JsonCodec.enumAdt(AdtMacros.adtIsoSet[StaticField.UseCaseStepTree, String] {
       case StaticField.NormalAltStepTree => "stepsNA"

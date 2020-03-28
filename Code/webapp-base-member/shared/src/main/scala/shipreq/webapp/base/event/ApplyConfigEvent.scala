@@ -434,14 +434,8 @@ trait ApplyConfigEvent {
     def applyStaticAdd(e: FieldStaticAdd): SE[Unit] =
       lensMod(fieldOrderL)(addSF(e.f))
 
-    def ensureDeletableSF(sf: StaticField): SE[Unit] =
-      SE.test(
-        sf.isInstanceOf[StaticField.Optional],
-        s"Static field $sf cannot be deleted.")
-
     def applyStaticRemove(e: FieldStaticRemove): SE[Unit] =
-      ensureDeletableSF(e.f) >>
-        lensMod(fieldOrderL)(removeFromOrder(e.f))
+      lensMod(fieldOrderL)(removeFromOrder(e.f))
 
     def applyCustomDelete(e: FieldCustomDelete): SE[Unit] =
       deleteOrRestoreCF(e.id, Dead)

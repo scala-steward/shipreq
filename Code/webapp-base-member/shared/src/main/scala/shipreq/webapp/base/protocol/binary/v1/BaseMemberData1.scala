@@ -814,6 +814,9 @@ object BaseMemberData1 {
         }
     }
 
+  implicit lazy val picklerStaticFieldOptional: Pickler[StaticField.Optional] =
+    picklerStaticField.narrow
+
   implicit lazy val picklerStaticFieldUseCaseStepTree: Pickler[StaticField.UseCaseStepTree] =
     new Pickler[StaticField.UseCaseStepTree] {
       private[this] final val KeyNormalAltStepTree = 'n'
