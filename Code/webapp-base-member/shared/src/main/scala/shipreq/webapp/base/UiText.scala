@@ -47,7 +47,7 @@ object UiText {
     def pubid            = "ID"
     def id               = "ID"
     def code             = FieldNames.reqCode
-    def title            = "Title"
+    def title            = FieldNames.title
     def tags             = FieldNames.tags
     def deletionReason   = FieldNames.deletionReason
     def issueCategory    = "Issue Type"
@@ -66,6 +66,7 @@ object UiText {
     def hashRefKey           = "Key"
     def fieldRefKey          = hashRefKey
     def reqCode              = "Code"
+    def title                = "Title"
     def reqCodes             = "Codes"
     def reqCodeNode          = "Code node"
     def name                 = "Name"
