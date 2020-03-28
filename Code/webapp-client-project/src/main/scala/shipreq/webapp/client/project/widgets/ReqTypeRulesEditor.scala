@@ -400,7 +400,7 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean, keyFor: D => S
         <.tr(
           ^.key := row.key,
           <.td(*.rulesDeadReqTypes, "Dead req types:", reqTypes),
-          <.td(renderRes(StateSnapshot(row.res)((_, _) => Callback.empty), Disabled)), // TODO scalajs-react
+          <.td(*.rulesEditorRule, renderRes(StateSnapshot(row.res)((_, _) => Callback.empty), Disabled)), // TODO scalajs-react
           <.td(*.rulesEditorButton))
       }
 
@@ -434,7 +434,7 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean, keyFor: D => S
         <.tr(
           ^.key := row.key,
           <.td(reqTypes),
-          <.td(renderRes(ss.zoomStateL(ReqTypeRulesEditor.State.PerReqType.res), p.enabled)),
+          <.td(*.rulesEditorRule, renderRes(ss.zoomStateL(ReqTypeRulesEditor.State.PerReqType.res), p.enabled)),
           <.td(*.rulesEditorButton, delRowButton(idx)))
       }
 
@@ -468,7 +468,7 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean, keyFor: D => S
         <.tr(
           ^.key := "o",
           <.td(*.rulesEditorOtherwise, desc),
-          <.td(renderRes(ss, p.enabled)),
+          <.td(*.rulesEditorRule, renderRes(ss, p.enabled)),
           <.td(*.rulesEditorButton, newRowButton(p.enabled)))
       }
 

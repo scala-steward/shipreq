@@ -849,8 +849,16 @@ object Style extends StyleSheet.Inline {
       addClassNames("table", "ui", "single", "line", "table")
     )
 
+    private val rulesEditorReqTypeColumn = styleS(
+      width(44 ex)
+    )
+
     val rulesEditorReqTypes = style(
+      rulesEditorReqTypeColumn,
       unsafeChild(".ui.input")(width(100 %%)),
+    )
+
+    val rulesEditorRule = style(
     )
 
     val rulesEditorDefault = style(
@@ -858,7 +866,8 @@ object Style extends StyleSheet.Inline {
     )
 
     val rulesEditorOtherwise = style(
-      paddingLeft(2 ex),
+      rulesEditorReqTypeColumn,
+      paddingLeft(2 ex).important,
     )
 
     val rulesEditorButton = style(
@@ -867,6 +876,7 @@ object Style extends StyleSheet.Inline {
     )
 
     val rulesDeadReqTypes = style(
+      rulesEditorReqTypeColumn,
       color(c"#444"),
       paddingLeft(2 ex).important,
     )
