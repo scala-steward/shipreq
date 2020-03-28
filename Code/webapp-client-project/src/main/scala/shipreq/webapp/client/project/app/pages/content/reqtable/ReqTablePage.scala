@@ -256,13 +256,13 @@ object ReqTablePage {
         ColumnSelector.Props(sel, all, modifyViewFn.map(m => u => m.modState(_.withColumns(u)))).render
 
     val onFilterChange: FilterEditor.UpdateFn =
-      (newState, newFilter) =>
+      (newState, newFilter, cb) =>
         for {
           p  ← pxProject.toCallback
           fd ← pxFilterDead.toCallback
           m1 = State.filter.set(newState)
           m2 = State.modifyView(p, fd, updateFilterText = false)(_.withFilter(newFilter))
-          _ ← stateAccessS.modState(m1 compose m2)
+          _ ← stateAccessS.modState(m1 compose m2, cb)
         } yield ()
 
     val pxTableContentStats: Px[TableContentStats] =

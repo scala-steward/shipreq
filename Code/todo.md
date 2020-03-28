@@ -136,8 +136,6 @@ Phase 3A
 v2.1
 ========================================================================================================================
 
-* Filter field should autosize
-
 * update reqtable (and probably reqdetail) to render dead rows like cfg field
 * field filter should include Title
 

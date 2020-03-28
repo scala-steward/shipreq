@@ -56,7 +56,7 @@ object Input {
       * - icon inside on the left
       * - something (usually a button) attached to the right outside
       */
-    def iconAndRightAction(icon: VdomTag, input: VdomTag, right: TagMod, validity: Validity = Valid): VdomTag = {
+    def iconAndRightAction(icon: VdomTag, input: VdomNode, right: TagMod, validity: Validity = Valid): VdomTag = {
       var r = Base(^.cls := "left icon right action", icon, input, right)
       if (validity is Invalid)
         r = r(^.cls := "error")

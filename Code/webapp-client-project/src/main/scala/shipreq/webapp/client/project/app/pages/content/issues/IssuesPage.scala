@@ -83,10 +83,12 @@ object IssuesPage {
       } yield f.fold(p.issues)(p.issues.filter)
 
     private val filterUpdateFn: FilterEditor.UpdateFn =
-      (newState, newValue) =>
-        $.props.flatMap(_.state.modState(_.copy(
-          filterEditor = newState,
-          filterValue = newValue)))
+      (newState, newValue, cb) =>
+        $.props.flatMap(_.state.modState(
+          _.copy(
+            filterEditor = newState,
+            filterValue = newValue),
+          cb))
 
     def render(p: Props): VdomElement = {
       val project = pxProject.value()
