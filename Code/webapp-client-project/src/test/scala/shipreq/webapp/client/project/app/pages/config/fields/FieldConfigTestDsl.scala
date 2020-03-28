@@ -73,6 +73,8 @@ object FieldConfigTestDsl {
   val clickCloseButton   = clickButton("Close"        , _.close)
   val clickDeleteButton  = clickButton("Delete"       , _.delete)
   val clickRestoreButton = clickButton("Restore"      , _.restore)
+  val clickAddButton     = clickButton("Add"          , _.add)
+  val clickRemoveButton  = clickButton("Remove"       , _.remove)
 
   def setEditorName(name: String): *.Actions =
     *.action(s"Set editor name to: $name")(SimEvent.Change(name) simulate _.obs.editor.get.nameDom.get)

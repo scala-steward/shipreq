@@ -37,11 +37,28 @@ object EditorButtons {
   def cancel[N, Id, S, Cmd](args: SplitScreenCrud.EditorArgs[N, Id, S]): Props =
     Props.Cancel(args.close)
 
+  def close[N, Id, S, Cmd](args: SplitScreenCrud.EditorArgs[N, Id, S]): Props =
+    Props.Close(args.close)
+
   def restore[N, Id, S, Cmd](args     : SplitScreenCrud.EditorArgs[N, Id, S])
                             (submitCmd: (String, (Project, Id) => Callback) => Callback): Props =
     Props.Restore(
       abort   = args.close,
       restore = submitCmd("Restored", (p, _) => args.reset(p)),
+    )
+
+  def add[N, Id, S, Cmd](args     : SplitScreenCrud.EditorArgs[N, Id, S])
+                        (submitCmd: (String, (Project, Id) => Callback) => Callback): Props =
+    Props.Add(
+      abort = args.close,
+      add   = submitCmd("Added", (p, _) => args.reset(p)),
+    )
+
+  def remove[N, Id, S, Cmd](args     : SplitScreenCrud.EditorArgs[N, Id, S])
+                           (submitCmd: (String, (Project, Id) => Callback) => Callback): Props =
+    Props.Remove(
+      abort  = args.close,
+      remove = submitCmd("Removed", (p, _) => args.reset(p)),
     )
 
   sealed trait Props {
@@ -50,21 +67,34 @@ object EditorButtons {
 
   object Props {
 
+    final case class Add(abort: Callback,
+                         add  : Callback) extends Props
+
     final case class Cancel(abort: Callback) extends Props
+
+    final case class Close(abort: Callback) extends Props
 
     final case class Create(abort : Callback,
                             create: Option[Callback]) extends Props
+    final case class Remove(abort : Callback,
+                            remove: Callback) extends Props
+
+    final case class Restore(abort  : Callback,
+                             restore: Callback) extends Props
 
     final case class Update(abort : Callback,
                             delete: Callback,
                             update: PotentialChange[Any, Callback]) extends Props
 
-    final case class Restore(abort  : Callback,
-                             restore: Callback) extends Props
   }
 
   private val outer  = <.div(*.editorButtons)
   private val gap    = <.div(*.editorButtonGap)
+
+  private val addButton =
+    Button(
+      tipe   = Button.Type.IconAndText(Icon.Plus, "Add"),
+      colour = Colour.Green)
 
   private val cancelButton =
     Button(
@@ -76,16 +106,6 @@ object EditorButtons {
       tipe   = Button.Type.BasicIconAndText(Icon.Remove, "Close"),
       colour = Colour.Black)
 
-  private val restoreButton =
-    Button(
-      tipe   = Button.Type.IconAndText(Icon.Undo, "Restore"),
-      colour = Colour.Green)
-
-  private val updateButton =
-    Button(
-      tipe   = Button.Type.IconAndText(Icon.Plus, "Update"),
-      colour = Colour.Green)
-
   private val createButton =
     Button(
       tipe   = Button.Type.IconAndText(Icon.Plus, "Create"),
@@ -96,6 +116,21 @@ object EditorButtons {
       tipe   = Button.Type.BasicIconAndText(Icon.Trash, "Delete"),
       colour = ColourPlus.Negative)
 
+  private val removeButton =
+    Button(
+      tipe   = Button.Type.BasicIconAndText(Icon.Trash, "Remove"),
+      colour = ColourPlus.Negative)
+
+  private val restoreButton =
+    Button(
+      tipe   = Button.Type.IconAndText(Icon.Undo, "Restore"),
+      colour = Colour.Green)
+
+  private val updateButton =
+    Button(
+      tipe   = Button.Type.IconAndText(Icon.Plus, "Update"),
+      colour = Colour.Green)
+
   private def render(p: Props): VdomNode =
     p match {
 
@@ -103,6 +138,11 @@ object EditorButtons {
         outer(
           gap,
           cancelButton.onClick(abort))
+
+      case Props.Close(abort) =>
+        outer(
+          gap,
+          closeButton.onClick(abort))
 
       case Props.Create(abort, create) =>
         outer(
@@ -127,6 +167,18 @@ object EditorButtons {
       case Props.Restore(abort, restore) =>
         outer(
           restoreButton.onClick(restore),
+          gap,
+          closeButton.onClick(abort))
+
+      case Props.Add(abort, add) =>
+        outer(
+          gap,
+          closeButton.onClick(abort),
+          addButton.onClick(add))
+
+      case Props.Remove(abort, remove) =>
+        outer(
+          removeButton.onClick(remove),
           gap,
           closeButton.onClick(abort))
     }

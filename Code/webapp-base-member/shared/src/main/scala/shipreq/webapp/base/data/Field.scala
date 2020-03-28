@@ -532,6 +532,9 @@ object FieldId {
 final case class FieldSet(customFields: FieldSet.CustomFields,
                           order       : FieldSet.Order) {
 
+  def includes(f: StaticField): Boolean =
+    order.contains(f)
+
   def get(id: FieldId): Option[Field] =
     id match {
       case f : StaticField   => if (order contains f) Some(f) else None

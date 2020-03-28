@@ -10,7 +10,9 @@ final case class Buttons[+A](delete : Option[A] = None,
                              restore: Option[A] = None,
                              cancel : Option[A] = None,
                              close  : Option[A] = None,
-                             save   : Option[A] = None) {
+                             save   : Option[A] = None,
+                             add    : Option[A] = None,
+                             remove : Option[A] = None) {
 
   override def toString: String = {
     var fs = Vector.empty[String]
@@ -19,6 +21,8 @@ final case class Buttons[+A](delete : Option[A] = None,
     for (a <- cancel ) fs :+= s"cancel = $a"
     for (a <- close  ) fs :+= s"close = $a"
     for (a <- save   ) fs :+= s"save = $a"
+    for (a <- add    ) fs :+= s"add = $a"
+    for (a <- remove ) fs :+= s"remove = $a"
     fs.mkString("Buttons(", ", ", ")")
   }
 
@@ -29,6 +33,8 @@ final case class Buttons[+A](delete : Option[A] = None,
       cancel  = cancel .map(f),
       close   = close  .map(f),
       save    = save   .map(f),
+      add     = add    .map(f),
+      remove  = remove .map(f),
     )
 }
 
@@ -46,6 +52,8 @@ object Buttons {
         case "Close"             => bs = bs.copy(close   = Some(b.domAs[html.Button]))
         case "Delete"            => bs = bs.copy(delete  = Some(b.domAs[html.Button]))
         case "Restore"           => bs = bs.copy(restore = Some(b.domAs[html.Button]))
+        case "Add"               => bs = bs.copy(add     = Some(b.domAs[html.Button]))
+        case "Remove"            => bs = bs.copy(remove  = Some(b.domAs[html.Button]))
       }
     }
     bs
@@ -64,6 +72,8 @@ object Buttons {
         cmp("cancel ", expected.cancel , actual.cancel )
         cmp("close  ", expected.close  , actual.close  )
         cmp("save   ", expected.save   , actual.save   )
+        cmp("add    ", expected.add    , actual.add    )
+        cmp("remove ", expected.remove , actual.remove )
         vs.mkString("\n")
       }
 

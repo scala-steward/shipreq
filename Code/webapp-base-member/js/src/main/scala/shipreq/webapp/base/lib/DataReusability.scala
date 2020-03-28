@@ -118,6 +118,15 @@ abstract class DataReusability extends BaseReusability {
   implicit def reusabilityFieldId: Reusability[FieldId] =
     Reusability.byUnivEq
 
+  implicit def reusabilityStaticField: Reusability[StaticField] =
+    Reusability.byUnivEq
+
+  implicit def reusabilityStaticFieldMandatory: Reusability[StaticField.Mandatory] =
+    Reusability.byUnivEq
+
+  implicit def reusabilityStaticFieldOptional: Reusability[StaticField.Optional] =
+    Reusability.byUnivEq
+
   implicit def reusabilityCustomFields: Reusability[FieldSet.CustomFields] =
     reusabilityByRefOrEqual
 

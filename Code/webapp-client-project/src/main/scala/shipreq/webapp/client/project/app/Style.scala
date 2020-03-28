@@ -891,6 +891,16 @@ object Style extends StyleSheet.Inline {
       textDecoration := "line-through",
     )
 
+    val staticFieldUL = style(
+      color(c"#3f3f3f"),
+      margin.vertical(3 em),
+      fontSize(1.1 rem),
+    )
+
+    val staticFieldLI = style(
+      marginBottom(0.7 em),
+    )
+
     @inline def `N/A` = generic.`N/A`
     @inline def editorTitle = tagConfig.editorTitle
     @inline def fieldListDetailDead = rulesOtherDeadReqType

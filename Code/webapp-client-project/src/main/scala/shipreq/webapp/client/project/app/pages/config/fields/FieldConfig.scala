@@ -28,7 +28,13 @@ object FieldConfig {
 
   type NewState = NewFieldType
 
-  type EditorState = ImpFieldEditor.State \/ TagFieldEditor.State \/ TextFieldEditor.State
+  sealed trait EditorState
+  object EditorState {
+    final case class ImpEditor (state: ImpFieldEditor .State) extends EditorState
+    final case class TagEditor (state: TagFieldEditor .State) extends EditorState
+    final case class TextEditor(state: TextFieldEditor.State) extends EditorState
+    case object Static                                        extends EditorState
+  }
 
   val splitScreenCrud = new SplitScreenCrud[NewState, FieldId, EditorState](
     rightEmpty = SplitScreenCrud.emptyEditorMessage("field"),
@@ -67,10 +73,11 @@ object FieldConfig {
 
     val potentialSaveCmd: PotentialChange[Unit, UpdateConfigCmd.ToModifyFields] =
       state.value.right.editorOption match {
-        case Some(-\/(-\/(s))) => s.updateCmd(project.config)
-        case Some(-\/(\/-(s))) => s.updateCmd(project.config)
-        case Some(\/-(s))      => s.updateCmd(project.config)
-        case None              => PotentialChange.Unchanged
+        case Some(EditorState.ImpEditor (s)) => s.updateCmd(project.config)
+        case Some(EditorState.TagEditor (s)) => s.updateCmd(project.config)
+        case Some(EditorState.TextEditor(s)) => s.updateCmd(project.config)
+        case Some(EditorState.Static)
+           | None                            => PotentialChange.Unchanged
       }
 
     @inline def render: VdomElement = Component(this)
@@ -108,28 +115,30 @@ object FieldConfig {
     final case class LiveImp (id: Option[CustomField.Implication.Id]) extends EditorType
     final case class LiveTag (id: Option[CustomField.Tag        .Id]) extends EditorType
     final case class LiveText(id: Option[CustomField.Text       .Id]) extends EditorType
+    final case class Static  (field: StaticField)                     extends EditorType
   }
 
   private def editorStateLensForImp(default: => ImpFieldEditor.State): Lens[EditorState, ImpFieldEditor.State] =
-    Optics.coproductLens[EditorState, ImpFieldEditor.State]({ case -\/(-\/(s)) => s }, s => -\/(-\/(s)), default)
+    Optics.coproductLens[EditorState, ImpFieldEditor.State]({ case EditorState.ImpEditor(s) => s }, s => EditorState.ImpEditor(s), default)
 
   private def editorStateLensForTag(default: => TagFieldEditor.State): Lens[EditorState, TagFieldEditor.State] =
-    Optics.coproductLens[EditorState, TagFieldEditor.State]({ case -\/(\/-(s)) => s }, s => -\/(\/-(s)), default)
+    Optics.coproductLens[EditorState, TagFieldEditor.State]({ case EditorState.TagEditor(s) => s }, s => EditorState.TagEditor(s), default)
 
   private def editorStateLensForText(default: => TextFieldEditor.State): Lens[EditorState, TextFieldEditor.State] =
-    Optics.disjunctionLensRight(default)
+    Optics.coproductLens[EditorState, TextFieldEditor.State]({ case EditorState.TextEditor(s) => s }, s => EditorState.TextEditor(s), default)
 
   final class Backend($: BackendScope[Props, Unit]) {
     import SplitScreenCrud.NewArgs
 
     private def initEditor(project: Project, arg: NewFieldType \/ FieldId): EditorState =
       arg match {
-        case \/-(id: CustomField.Implication.Id) => -\/(-\/(ImpFieldEditor.State.initUpdate(id, project.config)))
-        case \/-(id: CustomField.Tag        .Id) => -\/(\/-(TagFieldEditor.State.initUpdate(id, project.config)))
-        case \/-(id: CustomField.Text       .Id) => \/-(TextFieldEditor.State.init(id, project.config))
-        case -\/(NewFieldType.Imp              ) => -\/(-\/(ImpFieldEditor.State.initCreate))
-        case -\/(NewFieldType.Tag              ) => -\/(\/-(TagFieldEditor.State.initCreate))
-        case -\/(NewFieldType.Text             ) => \/-(TextFieldEditor.State.empty)
+        case \/-(id: CustomField.Implication.Id) => EditorState.ImpEditor (ImpFieldEditor.State.initUpdate(id, project.config))
+        case \/-(id: CustomField.Tag        .Id) => EditorState.TagEditor (TagFieldEditor.State.initUpdate(id, project.config))
+        case \/-(id: CustomField.Text       .Id) => EditorState.TextEditor(TextFieldEditor.State.init(id, project.config))
+        case -\/(NewFieldType.Imp              ) => EditorState.ImpEditor (ImpFieldEditor.State.initCreate)
+        case -\/(NewFieldType.Tag              ) => EditorState.TagEditor (TagFieldEditor.State.initCreate)
+        case -\/(NewFieldType.Text             ) => EditorState.TextEditor(TextFieldEditor.State.empty)
+        case \/-(_: StaticField                ) => EditorState.Static
       }
 
     private val updateOrder: Reusable[UpdateConfigCmd.FieldUpdateOrder => Callback] =
@@ -219,6 +228,7 @@ object FieldConfig {
           case -\/(NewFieldType.Imp)  => EditorType.LiveImp(None)
           case -\/(NewFieldType.Tag)  => EditorType.LiveTag(None)
           case -\/(NewFieldType.Text) => EditorType.LiveText(None)
+          case \/-(f: StaticField)    => EditorType.Static(f)
         }
 
       def createOrUpdateButtons(idOption: Option[FieldId]): EditorButtons.Props =
@@ -277,15 +287,28 @@ object FieldConfig {
         case EditorType.Dead(id) =>
           val editor =
             id match {
-              case i: CustomField.Implication.Id => impFieldEditor(Some(i), Disabled).render
-              case i: CustomField.Tag        .Id => tagFieldEditor(Some(i), Disabled).render
+              case i: CustomField.Implication.Id => impFieldEditor (Some(i), Disabled).render
+              case i: CustomField.Tag        .Id => tagFieldEditor (Some(i), Disabled).render
               case i: CustomField.Text       .Id => textFieldEditor(Some(i), Disabled).render
             }
-
           val buttons =
             EditorButtons.restore(args)(submitCmd(p, UpdateConfigCmd.FieldRestore(id), _, _)).render
-
           <.div(header, editor, buttons)
+
+        case EditorType.Static(f: StaticField.Mandatory) =>
+          val editor  = StaticFieldEditor.Props(f, p.project.config).render
+          val buttons = EditorButtons.close(args).render
+          <.div(header, editor, buttons)
+
+        case EditorType.Static(f: StaticField.Optional) =>
+          val editor  = StaticFieldEditor.Props(f, p.project.config).render
+          val inUse   = p.project.config.fields.includes(f)
+          val buttons =
+            if (inUse)
+              EditorButtons.remove(args)(submitCmd(p, UpdateConfigCmd.FieldDelete(f), _, _))
+            else
+              EditorButtons.add(args)(submitCmd(p, UpdateConfigCmd.FieldRestore(f), _, _))
+          <.div(header, editor, buttons.render)
       }
     }
 

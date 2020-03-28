@@ -470,10 +470,55 @@ object FieldConfigTest extends TestSuite {
         +> editorEditables.assert(0)
     )
 
+  private def testStaticFieldMandatory()(implicit tp: TestPath) =
+    runActions(SampleProject6.project)(
+      selectField(StaticField.NormalAltStepTree.name)
+        +> buttonsEnabled.assert(Buttons(close = Enabled))
+        +> editorEditables.assert(0)
+    )
+
+  private def testStaticFieldOptional()(implicit tp: TestPath) =
+    runActions(SampleProject6.project)(
+
+      selectField(StaticField.StepGraph.name)
+        +> buttonsEnabled.assert(Buttons(remove = Enabled, close = Enabled))
+        +> editorEditables.assert(0)
+
+        >> clickRemoveButton
+        +> fieldList.assert(
+        "Description",
+        "Major Feature",
+        "Priority",
+        StaticField.NormalAltStepTree.name,
+        StaticField.ExceptionStepTree.name,
+        "Status",
+        "Notes")
+        +> buttonsEnabled.assert(Buttons(add = Enabled, close = Enabled))
+        +> editorEditables.assert(0)
+
+        >> clickAddButton
+        +> fieldList.assert(
+        "Description",
+        "Major Feature",
+        "Priority",
+        StaticField.NormalAltStepTree.name,
+        StaticField.ExceptionStepTree.name,
+        "Status",
+        "Notes",
+        StaticField.StepGraph.name)
+        +> buttonsEnabled.assert(Buttons(remove = Enabled, close = Enabled))
+        +> editorEditables.assert(0)
+    )
+
   override def tests = Tests {
 
     'fieldList - {
       'view - testFieldListView()
+    }
+
+    'static - {
+      'mandatory - testStaticFieldMandatory()
+      'optional  - testStaticFieldOptional()
     }
 
     'textField - {
