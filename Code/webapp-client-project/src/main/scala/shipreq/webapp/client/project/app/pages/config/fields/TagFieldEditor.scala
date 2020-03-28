@@ -49,7 +49,7 @@ object TagFieldEditor {
                          router    : Routes.RouterCtl) {
 
     lazy val legalDefaults: Vector[ApplicableTagId] =
-      legalDefaultIterator(state.value, cfg).toVector
+      legalDefaultIterator(state.value, cfg).toVector.distinct
 
     private lazy val legalTagGroups: Set[TagGroupId] =
       cfg.tags.liveTagGroupIds -- cfg.fields.customTagFields.iterator.map(_.tagId).filterSubType[TagGroupId]
