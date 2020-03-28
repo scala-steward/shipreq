@@ -190,6 +190,72 @@ object ProjectSpaProtocolsTest extends TestSuite {
             val expect = (ReqId(8), UpdateConfig.AndReq(TagRestore(3.AT)))
             assertRequest(bin, expect)
           }
+
+          "CustomFieldCreateImp" - {
+            val bin = BinaryData.fromHex("5945B41D01010203166300030263002102630020020138295653")
+            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldCreateImp(3, FieldReqTypeRules.optional.mandatory(33, 32))))
+            assertRequest(bin, expect)
+          }
+
+          "CustomFieldCreateTag" - {
+            val bin = BinaryData.fromHex("5945B41D0101020317002F0363000403000E63000703900475010038295653")
+            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldCreateTag(47.TG, FieldReqTypeRules.notApplicable.defaultTo(14.AT)(4, 7).optional(StaticReqType.UseCase))))
+            assertRequest(bin, expect)
+          }
+
+          "CustomFieldCreateText" - {
+            val bin = BinaryData.fromHex("5945B41D010102031804706F6F7002630080B100630001000238295653")
+            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldCreateText("poop", FieldReqTypeRules.mandatory.notApplicable(177, 1))))
+            assertRequest(bin, expect)
+          }
+
+          "CustomFieldUpdateImp" - {
+            val bin = BinaryData.fromHex("5945B41D0101020301000C015201630003020138295653")
+            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldUpdateImp(12.CFImp, CustomImpFieldGD(FieldReqTypeRules.optional.mandatory(3)))))
+            assertRequest(bin, expect)
+          }
+
+          "CustomFieldUpdateTag" - {
+            val bin = BinaryData.fromHex("5945B41D0101020302000B01520363000403000E630007039004750390040038295653")
+            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldUpdateTag(11.CFTag, CustomTagFieldGD(FieldReqTypeRules.notApplicable.defaultTo(14.AT)(4, 7, StaticReqType.UseCase)))))
+            assertRequest(bin, expect)
+          }
+
+          "CustomFieldUpdateText" - {
+            val bin = BinaryData.fromHex("5945B41D0101020303000A024E03617364520175010238295653")
+            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldUpdateText(10.CFText, CustomTextFieldGD("asd", FieldReqTypeRules.mandatory.optional(StaticReqType.UseCase)))))
+            assertRequest(bin, expect)
+          }
+
+          "CustomFieldDelete" - {
+            val bin = BinaryData.fromHex("5945B41D010102031978000C38295653")
+            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldDelete(12.CFText)))
+            assertRequest(bin, expect)
+          }
+
+          "CustomFieldRestore" - {
+            val bin = BinaryData.fromHex("5945B41D010102031A69000938295653")
+            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldRestore(9.CFImp)))
+            assertRequest(bin, expect)
+          }
+
+          "StaticFieldAdd" - {
+            val bin = BinaryData.fromHex("5945B41D010102031B6738295653")
+            val expect = (ReqId(2), UpdateConfig.AndReq(StaticFieldAdd(StaticField.StepGraph)))
+            assertRequest(bin, expect)
+          }
+
+          "StaticFieldRemove" - {
+            val bin = BinaryData.fromHex("5945B41D010102031C6938295653")
+            val expect = (ReqId(2), UpdateConfig.AndReq(StaticFieldRemove(StaticField.ImplicationGraph)))
+            assertRequest(bin, expect)
+          }
+
+          "FieldUpdateOrder" - {
+            val bin = BinaryData.fromHex("5945B41D010102030E740007024E38295653")
+            val expect = (ReqId(2), UpdateConfig.AndReq(FieldUpdateOrder(7.CFTag, Some(StaticField.NormalAltStepTree))))
+            assertRequest(bin, expect)
+          }
         }
       }
 

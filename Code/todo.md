@@ -151,11 +151,6 @@ v2.1
   * There #should be `AllTags` and `RemainingTags` fields instead of just `Tags` [FR-18]
   * `AllTags` and `RemainingTags` fields #should be optional [FR-19]
 
-* Fields
-  * redo config screen [FR-6] [FR-12]
-  * MakeEvent tests wrt dead/live
-  * stablity tests (for events & commands)
-
 * ReqTypes
   * Might be a good idea to store a description & examples. (eg. "BR" means xxx + examples)
   * Users should be able to change the mnemonic (without retention) if not in use yet
