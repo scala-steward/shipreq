@@ -421,14 +421,15 @@ final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean, keyFor: D => S
           autoComplete.render(autoCompletion =>
             <.div(
               *.rulesEditorReqTypes,
-              Input.Text(
-                TagMod(
+              Input.Text.withError(
+                input = TagMod(
                   ^.value := row.text,
                   ^.onChange ==> onChange,
                   ^.spellCheck := false,
                   autoCompletion,
                 ),
-                GeneralTheme.renderSimpleInvalidity(reqTypesValidated))))
+                error = GeneralTheme.renderSimpleInvalidity(reqTypesValidated),
+                enabled = p.enabled)))
 
         <.tr(
           ^.key := row.key,

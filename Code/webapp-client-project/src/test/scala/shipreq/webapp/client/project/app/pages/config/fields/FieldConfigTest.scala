@@ -212,6 +212,24 @@ object FieldConfigTest extends TestSuite {
         +> editorRules.assert(RuleRow.all("Not applicable"))
     )
 
+  private def testTextFieldDead()(implicit tp: TestPath) =
+    runActions(SampleProject7.project)(
+
+      selectField("Description")
+        +> filterDead.assert(HideDead)
+
+        >> clickDeleteButton
+        +> filterDead.assert(ShowDead)
+        +> editorName.assert("Description")
+        +> editorNameError.assert.empty
+        +> editorRules.assert(
+        RuleRow("SI", "Optional", dead = true),
+        RuleRow("MF, UC", "Optional"),
+        RuleRow.other("BR, CO, DD, FR", "Not applicable"))
+        +> buttonsEnabled.assert(Buttons(restore = Enabled, close = Enabled))
+        +> editorEditables.assert(0)
+    )
+
   private def testImpFieldCreate(p: Project)(implicit tp: TestPath) =
     runActions(p)(
 
@@ -285,6 +303,27 @@ object FieldConfigTest extends TestSuite {
         +> editorDropdown.assert.empty
         +> editorRules.assert(RuleRow.all("Optional"))
         +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
+    )
+
+  private def testImpFieldDead()(implicit tp: TestPath) =
+    runActions(SampleProject7.project)(
+
+      selectField("Major Feature")
+        +> filterDead.assert(HideDead)
+
+        >> addEditorRule
+        >> setRuleReqTypes(0, "MF")
+        >> setRuleReqRes(0, "Mandatory")
+        >> clickSaveButton
+
+        >> clickDeleteButton
+        +> filterDead.assert(ShowDead)
+        +> editorRules.assert(
+        RuleRow("SI", "Not applicable", dead = true),
+        RuleRow("MF", "Mandatory"),
+        RuleRow.other("BR, CO, DD, FR, UC", "Optional"))
+        +> buttonsEnabled.assert(Buttons(restore = Enabled, close = Enabled))
+        +> editorEditables.assert(0)
     )
 
   private def testTagFieldCreate()(implicit tp: TestPath) =
@@ -414,6 +453,23 @@ object FieldConfigTest extends TestSuite {
         +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
     )
 
+  private def testTagFieldDead()(implicit tp: TestPath) =
+    runActions(SampleProject7.project)(
+
+      selectField("Priority")
+        +> filterDead.assert(HideDead)
+
+        >> clickDeleteButton
+        +> filterDead.assert(ShowDead)
+        +> editorRules.assert(
+        RuleRow("BR", "Default to…", default = "pri=med"),
+        RuleRow("CO", "Not applicable"),
+        RuleRow("FR, MF", "Mandatory"),
+        RuleRow.other("DD, SI, UC", "Optional"))
+        +> buttonsEnabled.assert(Buttons(restore = Enabled, close = Enabled))
+        +> editorEditables.assert(0)
+    )
+
   override def tests = Tests {
 
     'fieldList - {
@@ -422,6 +478,7 @@ object FieldConfigTest extends TestSuite {
 
     'textField - {
       'edit - testTextFieldEdit()
+      'dead - testTextFieldDead()
     }
 
     'impField - {
@@ -430,12 +487,14 @@ object FieldConfigTest extends TestSuite {
       'createCant   - testImpFieldCreateCant()
       'createDeadMF - testImpFieldCreate(applyEventSuccessfully(p, Event.FieldCustomDelete(mfField)))
       'update       - testImpFieldUpdate()
+      'dead         - testImpFieldDead()
     }
 
     'tagField - {
       'create     - testTagFieldCreate()
       'createCant - testTagFieldCreateCant()
       'update     - testTagFieldUpdate()
+      'dead       - testTagFieldDead()
     }
 
   }

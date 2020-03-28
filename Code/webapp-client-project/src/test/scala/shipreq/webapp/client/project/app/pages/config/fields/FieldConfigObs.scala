@@ -44,6 +44,9 @@ object FieldConfigObs {
     val dropdown = soleField.zippers.filter(_.exists(".menu")).map(new CommonObs.Dropdown(_))
 
     val rules = $.collect01("table.ui.single.line").map(new Rules(_))
+
+    lazy val editables =
+      collectSemanticUi($, Enabled).doms
   }
 
   final class Rules($: DomZipperJs) {

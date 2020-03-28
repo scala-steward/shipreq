@@ -275,11 +275,12 @@ object FieldConfig {
           <.div(header, editor, buttons)
 
         case EditorType.Dead(id) =>
-          val editor = "TODO"
-//            id match {
-//              case i: ApplicableFieldId => applicableTagEditor(Some(i), Disabled)
-//              case i: TagGroupId      => tagGroupEditor(Some(i), Disabled)
-//            }
+          val editor =
+            id match {
+              case i: CustomField.Implication.Id => impFieldEditor(Some(i), Disabled).render
+              case i: CustomField.Tag        .Id => tagFieldEditor(Some(i), Disabled).render
+              case i: CustomField.Text       .Id => textFieldEditor(Some(i), Disabled).render
+            }
 
           val buttons =
             EditorButtons.restore(args)(submitCmd(p, UpdateConfigCmd.FieldRestore(id), _, _)).render

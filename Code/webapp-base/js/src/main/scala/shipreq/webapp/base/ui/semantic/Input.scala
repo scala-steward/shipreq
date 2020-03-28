@@ -6,36 +6,41 @@ import japgolly.scalajs.react.vdom.html_<^._
 import monocle.Lens
 import org.scalajs.dom.html
 import shipreq.base.util._
-import shipreq.webapp.base.data.On
+import shipreq.webapp.base.data.{Disabled, Enabled, On}
 
 object Input {
+  private[this] val disabled = ^.cls := "disabled"
+  private[this] val error = ^.cls := "error"
+
   val Base        = divCls("ui input")
-  val Error       = Base(^.cls := "error")
+  val Error       = Base(error)
   val Action      = Base(^.cls := "action")
-  val ActionError = Action(^.cls := "error")
+  val ActionError = Action(error)
 
   val errorAttr = VdomAttr.devOnly("data-err")
 
   object Text {
 
-    def apply(input: TagMod): VdomTag =
-      Base(<.input.text(input))
+    def apply(input   : TagMod,
+              enabled : Enabled  = Enabled,
+              validity: Validity = Valid,
+             ): VdomTag =
+      Base(
+        disabled.when(enabled is Disabled),
+        error.when(validity is Invalid),
+        <.input.text(input))
 
-    def apply(input: TagMod, validity: Validity): VdomTag = {
-      var r = apply(input)
-      if (validity is Invalid)
-        r = r(^.cls := "error")
-      r
-    }
-
-    def apply(input: TagMod, error: Option[VdomTag]): TagMod =
-      apply(input, EmptyVdom, error)
-
-    def apply(input: TagMod, afterInput: TagMod, error: Option[VdomTag]): TagMod =
+    def withError(input     : TagMod,
+                  error     : Option[VdomTag],
+                  afterInput: VdomNode = EmptyVdom,
+                  enabled   : Enabled = Enabled,
+                 ): TagMod = {
+      val base = TagMod(apply(input, enabled, Valid when error.isEmpty), afterInput)
       error match {
-        case None      => TagMod(apply(input), afterInput)
-        case Some(err) => TagMod(apply(input, Invalid), afterInput, <.div(errorAttr := "1", Form.validationErr, err))
+        case None      => base
+        case Some(err) => TagMod(base, <.div(errorAttr := "1", Form.validationErr, err))
       }
+    }
 
     /** Text input with:
       * - icon inside on the left

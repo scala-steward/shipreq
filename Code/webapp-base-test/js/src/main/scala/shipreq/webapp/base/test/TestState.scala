@@ -6,8 +6,11 @@ import japgolly.scalajs.react.test._
 import japgolly.scalajs.react.vdom.html_<^.VdomAttr
 import org.scalajs.dom.html
 import scalacss.internal.StyleA
+import teststate.domzipper.DomZipperJsF.Dom
 import shipreq.base.util.DebugImplicits
 import teststate.run.Report.AssertionSettings
+import shipreq.webapp.base.data.{Disabled, Enabled}
+import shipreq.webapp.base.lib.DomUtil._
 
 object TestState
  extends teststate.Exports
@@ -55,6 +58,27 @@ object TestState
         // f.cause.foreach(_.printStackTrace())
         TestUtil.fail(f.failure)
     }
+
+  private val semanticUiClasses: Set[String] =
+    Set("input", "dropdown", "button")
+
+  def collectSemanticUi($: DomZipperJs): DomZipper.DomCollection[DomZipperJsF, Id, Vector, Dom, Dom] =
+    collectSemanticUi($, None)
+
+  def collectSemanticUi($: DomZipperJs, e: Enabled): DomZipper.DomCollection[DomZipperJsF, Id, Vector, Dom, Dom] =
+    collectSemanticUi($, Some(e))
+
+  def collectSemanticUi($: DomZipperJs, e: Option[Enabled]): DomZipper.DomCollection[DomZipperJsF, Id, Vector, Dom, Dom] = {
+    def withUi = semanticUiClasses.iterator.map(".ui." + _)
+    def types: Iterator[String] =
+      e match {
+        case None           => withUi
+        case Some(Enabled)  => withUi.map(sel => s"$sel:not(:disabled):not(.disabled)")
+        case Some(Disabled) => withUi.flatMap(sel => s"$sel:disabled" :: s"$sel.disabled" :: Nil)
+      }
+    $.collect0n(types.mkString(","))
+      .filter(_.domAsHtml.findParent(e => semanticUiClasses.exists(e.classList.contains)).isEmpty)
+  }
 
   // ===================================================================================================================
 

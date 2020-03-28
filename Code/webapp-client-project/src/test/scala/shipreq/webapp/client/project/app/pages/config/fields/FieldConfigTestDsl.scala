@@ -22,6 +22,7 @@ object FieldConfigTestDsl {
   val editorDropdownItems = *.focus("Editor dropdown items").collection(_.obs.editor.iterator.flatMap(_.dropdown).flatMap(_.items).map(_.text).toVector)
   val editorDropdownError = *.focus("Editor dropdown error").value(_.obs.editor.flatMap(_.dropdown.map(_.hasError)).getOrElse(false))
   val messageHeader       = *.focus("Message header"       ).option(_.obs.editor.flatMap(_.message.map(_.header)))
+  val editorEditables     = *.focus("Editor editables"     ).value(_.obs.editor.fold(0)(_.editables.length))
 
   def fieldDetail(name: String) =
     *.focus(s"$name detail").value(_.obs.fieldList(name).detail)
