@@ -93,7 +93,9 @@ object Event {
   final case class CustomReqTypeDeleteHard(id: CustomReqTypeId)                                     extends ActiveEvent
   final case class CustomReqTypeDeleteSoft(id: CustomReqTypeId)                                     extends ActiveEvent
 
-  final case class CustomReqTypeDelete(id: CustomReqTypeId) extends RetiredEvent
+  final case class CustomReqTypeCreateV1(id: CustomReqTypeId, vs: RetiredGenericData.CustomReqTypeGDv1.NonEmptyValues) extends RetiredEvent
+  final case class CustomReqTypeUpdateV1(id: CustomReqTypeId, vs: RetiredGenericData.CustomReqTypeGDv1.NonEmptyValues) extends RetiredEvent
+  final case class CustomReqTypeDelete  (id: CustomReqTypeId)                                                          extends RetiredEvent
 
   // ===================================================================================================================
   // Config: Tags

@@ -77,14 +77,14 @@ final case class Project(name         : Project.Name,
     //ShowSize(this).showTree
 
   lazy val deadReqIds: Set[ReqId] =
-    content.reqs.reqIterator.filter(_.live(config.reqTypes) is Dead).map(_.id).toSet
+    content.reqs.reqIterator().filter(_.live(config.reqTypes) is Dead).map(_.id).toSet
 
   lazy val deadReqCount: Int =
     deadReqIds.size
 
   lazy val reqTypeCount: LiveDeadStatMap[ReqTypeId, Int] = {
     val b = new LiveDeadStatMap.Builder[ReqTypeId, Int]
-    for (r <- content.reqs.reqIterator) {
+    for (r <- content.reqs.reqIterator()) {
       val live = r.live(config.reqTypes)
       b(r.reqTypeId).mod(live)(_ + 1)
     }
@@ -142,11 +142,11 @@ final case class Project(name         : Project.Name,
   private def implicationTransitiveClosure(dir: Direction): TransitiveClosure[ReqId] =
     content.implications.transitiveClosure(
       dir,
-      content.reqs.idIterator,
+      content.reqs.idIterator(),
       TransitiveClosure.Filter terminalSet deadReqIds)
 
   def liveReqIterator(): Iterator[Req] =
-    content.reqs.reqIterator.filter(_.live(config.reqTypes) is Live)
+    content.reqs.reqIterator().filter(_.live(config.reqTypes) is Live)
 
   lazy val liveReqCount: Int =
     liveReqIterator().size
@@ -159,6 +159,9 @@ final case class Project(name         : Project.Name,
     val tagLookup = dataLogic.tagLookup(filterDead)
     reqId => tagLookup(reqId).fieldDefaultApplied(scope)
   }
+
+  def isReqTypeInUse(id: CustomReqTypeId): Boolean =
+    content.reqs.pubids.value(id).nonEmpty
 
   def prettyPrintImplicationGraph: String =
     Util.quickJSB { sb =>
@@ -190,6 +193,6 @@ final case class Project(name         : Project.Name,
           go(content.implications.forwards(id), indent + 1)
         }
       }
-      go(content.reqs.idIterator.filter(content.implications.backwards(_).isEmpty), 0)
+      go(content.reqs.idIterator().filter(content.implications.backwards(_).isEmpty), 0)
     }
 }

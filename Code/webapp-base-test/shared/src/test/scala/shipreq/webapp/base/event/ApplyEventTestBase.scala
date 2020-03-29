@@ -75,7 +75,8 @@ object ApplyEventTestFns {
       case _: GenericReqCreate        => genericReqs += 1
       case _: UseCaseCreate           => useCases += 1
       case _: CustomIssueTypeCreate   => customIssueTypes += 1
-      case _: CustomReqTypeCreate     => customReqTypes += 1
+      case _: CustomReqTypeCreateV1
+         | _: CustomReqTypeCreate     => customReqTypes += 1
       case _: FieldCustomTextCreateV1
          | _: FieldCustomTextCreate
          | _: FieldCustomTagCreateV1
@@ -120,6 +121,7 @@ object ApplyEventTestFns {
          | _: CustomReqTypeDeleteHard
          | _: CustomReqTypeDeleteSoft
          | _: CustomReqTypeRestore
+         | _: CustomReqTypeUpdateV1
          | _: CustomReqTypeUpdate
          | _: FieldCustomDelete
          | _: FieldCustomImpUpdateV1

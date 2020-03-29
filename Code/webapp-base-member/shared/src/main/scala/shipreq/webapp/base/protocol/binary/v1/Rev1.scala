@@ -707,6 +707,36 @@ object Rev1 {
     pickleNonEmptyMono[Values](values, implicitly)
   }
 
+  implicit lazy val pickleCustomReqTypeGD: Pickler[CustomReqTypeGD.NonEmptyValues] = {
+    import CustomReqTypeGD._
+
+    implicit val picklerValueForImplication = transformPickler(ValueForImplication.apply)(_.value)
+    implicit val picklerValueForMnemonic    = transformPickler(ValueForMnemonic   .apply)(_.value)
+    implicit val picklerValueForName        = transformPickler(ValueForName       .apply)(_.value)
+
+    implicit val picklerValue: Pickler[Value] =
+      new Pickler[Value] {
+        private[this] final val KeyImplication = 'I'
+        private[this] final val KeyMnemonic    = 'M'
+        private[this] final val KeyName        = 'N'
+        override def pickle(a: Value)(implicit state: PickleState): Unit =
+          a match {
+            case b: ValueForImplication => state.enc.writeByte(KeyImplication); state.pickle(b)
+            case b: ValueForMnemonic    => state.enc.writeByte(KeyMnemonic   ); state.pickle(b)
+            case b: ValueForName        => state.enc.writeByte(KeyName       ); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): Value =
+          state.dec.readByte match {
+            case KeyImplication => state.unpickle[ValueForImplication]
+            case KeyMnemonic    => state.unpickle[ValueForMnemonic]
+            case KeyName        => state.unpickle[ValueForName]
+          }
+      }
+
+    val values: Pickler[Values] = pickleIMap(emptyValues)
+    pickleNonEmptyMono[Values](values, implicitly)
+  }
+
   implicit lazy val pickleCustomTagFieldGD: Pickler[CustomTagFieldGD.NonEmptyValues] = {
     import CustomTagFieldGD._
 
@@ -907,6 +937,32 @@ object Rev1 {
   private[v1] implicit lazy val picklerEventCustomReqTypeDeleteSoft: Pickler[Event.CustomReqTypeDeleteSoft] =
     transformPickler(Event.CustomReqTypeDeleteSoft.apply)(_.id)
 
+  private[v1] implicit lazy val picklerEventCustomReqTypeCreate: Pickler[Event.CustomReqTypeCreate] =
+    new Pickler[Event.CustomReqTypeCreate] {
+      override def pickle(a: Event.CustomReqTypeCreate)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.vs)
+      }
+      override def unpickle(implicit state: UnpickleState): Event.CustomReqTypeCreate = {
+        val id = state.unpickle[CustomReqTypeId]
+        val vs = state.unpickle[CustomReqTypeGD.NonEmptyValues]
+        Event.CustomReqTypeCreate(id, vs)
+      }
+    }
+
+  private[v1] implicit lazy val picklerEventCustomReqTypeUpdate: Pickler[Event.CustomReqTypeUpdate] =
+    new Pickler[Event.CustomReqTypeUpdate] {
+      override def pickle(a: Event.CustomReqTypeUpdate)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.vs)
+      }
+      override def unpickle(implicit state: UnpickleState): Event.CustomReqTypeUpdate = {
+        val id = state.unpickle[CustomReqTypeId]
+        val vs = state.unpickle[CustomReqTypeGD.NonEmptyValues]
+        Event.CustomReqTypeUpdate(id, vs)
+      }
+    }
+
   private[v1] implicit lazy val picklerEventSavedViewCreate: Pickler[Event.SavedViewCreate] =
     new Pickler[Event.SavedViewCreate] {
       override def pickle(a: Event.SavedViewCreate)(implicit state: PickleState): Unit = {
@@ -954,10 +1010,10 @@ object Rev1 {
       private[this] final val KeyCustomIssueTypeDelete   = 7
       private[this] final val KeyCustomIssueTypeRestore  = 8
       private[this] final val KeyCustomIssueTypeUpdate   = 9
-      private[this] final val KeyCustomReqTypeCreate     = 10
+      private[this] final val KeyCustomReqTypeCreateV1   = 10
       private[this] final val KeyCustomReqTypeDelete     = 11
       private[this] final val KeyCustomReqTypeRestore    = 12
-      private[this] final val KeyCustomReqTypeUpdate     = 13
+      private[this] final val KeyCustomReqTypeUpdateV1   = 13
       private[this] final val KeyFieldCustomDelete       = 14
       private[this] final val KeyFieldCustomImpCreateV1  = 15
       private[this] final val KeyFieldCustomImpUpdateV1  = 16
@@ -1008,6 +1064,8 @@ object Rev1 {
       private[this] final val KeyFieldCustomTagUpdate    = 61
       private[this] final val KeyFieldCustomTextCreate   = 62
       private[this] final val KeyFieldCustomTextUpdate   = 63
+      private[this] final val KeyCustomReqTypeCreate     = 64
+      private[this] final val KeyCustomReqTypeUpdate     = 65
 
       override def pickle(a: Event)(implicit state: PickleState): Unit =
         a match {
@@ -1024,11 +1082,13 @@ object Rev1 {
           case b: CustomIssueTypeRestore  => state.enc.writeByte(KeyCustomIssueTypeRestore ); state.pickle(b)
           case b: CustomIssueTypeUpdate   => state.enc.writeByte(KeyCustomIssueTypeUpdate  ); state.pickle(b)
           case b: CustomReqTypeCreate     => state.enc.writeByte(KeyCustomReqTypeCreate    ); state.pickle(b)
+          case b: CustomReqTypeCreateV1   => state.enc.writeByte(KeyCustomReqTypeCreateV1  ); state.pickle(b)
           case b: CustomReqTypeDelete     => state.enc.writeByte(KeyCustomReqTypeDelete    ); state.pickle(b)
           case b: CustomReqTypeDeleteHard => state.enc.writeByte(KeyCustomReqTypeDeleteHard); state.pickle(b)
           case b: CustomReqTypeDeleteSoft => state.enc.writeByte(KeyCustomReqTypeDeleteSoft); state.pickle(b)
           case b: CustomReqTypeRestore    => state.enc.writeByte(KeyCustomReqTypeRestore   ); state.pickle(b)
           case b: CustomReqTypeUpdate     => state.enc.writeByte(KeyCustomReqTypeUpdate    ); state.pickle(b)
+          case b: CustomReqTypeUpdateV1   => state.enc.writeByte(KeyCustomReqTypeUpdateV1  ); state.pickle(b)
           case b: FieldCustomDelete       => state.enc.writeByte(KeyFieldCustomDelete      ); state.pickle(b)
           case b: FieldCustomImpCreate    => state.enc.writeByte(KeyFieldCustomImpCreate   ); state.pickle(b)
           case b: FieldCustomImpCreateV1  => state.enc.writeByte(KeyFieldCustomImpCreateV1 ); state.pickle(b)
@@ -1092,11 +1152,13 @@ object Rev1 {
           case KeyCustomIssueTypeRestore  => state.unpickle[CustomIssueTypeRestore]
           case KeyCustomIssueTypeUpdate   => state.unpickle[CustomIssueTypeUpdate]
           case KeyCustomReqTypeCreate     => state.unpickle[CustomReqTypeCreate]
+          case KeyCustomReqTypeCreateV1   => state.unpickle[CustomReqTypeCreateV1]
           case KeyCustomReqTypeDelete     => state.unpickle[CustomReqTypeDelete]
           case KeyCustomReqTypeDeleteHard => state.unpickle[CustomReqTypeDeleteHard]
           case KeyCustomReqTypeDeleteSoft => state.unpickle[CustomReqTypeDeleteSoft]
           case KeyCustomReqTypeRestore    => state.unpickle[CustomReqTypeRestore]
           case KeyCustomReqTypeUpdate     => state.unpickle[CustomReqTypeUpdate]
+          case KeyCustomReqTypeUpdateV1   => state.unpickle[CustomReqTypeUpdateV1]
           case KeyFieldCustomDelete       => state.unpickle[FieldCustomDelete]
           case KeyFieldCustomImpCreate    => state.unpickle[FieldCustomImpCreate]
           case KeyFieldCustomImpCreateV1  => state.unpickle[FieldCustomImpCreateV1]

@@ -164,8 +164,8 @@ object Events {
     pickleNonEmptyMono[Values](values, implicitly)
   }
 
-  implicit val pickleCustomReqTypeGD: Pickler[CustomReqTypeGD.NonEmptyValues] = {
-    import CustomReqTypeGD._
+  implicit val pickleCustomReqTypeGDv1: Pickler[CustomReqTypeGDv1.NonEmptyValues] = {
+    import CustomReqTypeGDv1._
 
     implicit val picklerValueForImplication = transformPickler(ValueForImplication.apply)(_.value)
     implicit val picklerValueForMnemonic    = transformPickler(ValueForMnemonic   .apply)(_.value)
@@ -487,29 +487,29 @@ object Events {
   private[v1] implicit val picklerEventCustomIssueTypeRestore: Pickler[Event.CustomIssueTypeRestore] =
     transformPickler(Event.CustomIssueTypeRestore.apply)(_.id)
 
-  private[v1] implicit val picklerEventCustomReqTypeCreate: Pickler[Event.CustomReqTypeCreate] =
-    new Pickler[Event.CustomReqTypeCreate] {
-      override def pickle(a: Event.CustomReqTypeCreate)(implicit state: PickleState): Unit = {
+  private[v1] implicit val picklerEventCustomReqTypeCreateV1: Pickler[Event.CustomReqTypeCreateV1] =
+    new Pickler[Event.CustomReqTypeCreateV1] {
+      override def pickle(a: Event.CustomReqTypeCreateV1)(implicit state: PickleState): Unit = {
         state.pickle(a.id)
         state.pickle(a.vs)
       }
-      override def unpickle(implicit state: UnpickleState): Event.CustomReqTypeCreate = {
+      override def unpickle(implicit state: UnpickleState): Event.CustomReqTypeCreateV1 = {
         val id = state.unpickle[CustomReqTypeId]
-        val vs = state.unpickle[CustomReqTypeGD.NonEmptyValues]
-        Event.CustomReqTypeCreate(id, vs)
+        val vs = state.unpickle[CustomReqTypeGDv1.NonEmptyValues]
+        Event.CustomReqTypeCreateV1(id, vs)
       }
     }
 
-  private[v1] implicit val picklerEventCustomReqTypeUpdate: Pickler[Event.CustomReqTypeUpdate] =
-    new Pickler[Event.CustomReqTypeUpdate] {
-      override def pickle(a: Event.CustomReqTypeUpdate)(implicit state: PickleState): Unit = {
+  private[v1] implicit val picklerEventCustomReqTypeUpdateV1: Pickler[Event.CustomReqTypeUpdateV1] =
+    new Pickler[Event.CustomReqTypeUpdateV1] {
+      override def pickle(a: Event.CustomReqTypeUpdateV1)(implicit state: PickleState): Unit = {
         state.pickle(a.id)
         state.pickle(a.vs)
       }
-      override def unpickle(implicit state: UnpickleState): Event.CustomReqTypeUpdate = {
+      override def unpickle(implicit state: UnpickleState): Event.CustomReqTypeUpdateV1 = {
         val id = state.unpickle[CustomReqTypeId]
-        val vs = state.unpickle[CustomReqTypeGD.NonEmptyValues]
-        Event.CustomReqTypeUpdate(id, vs)
+        val vs = state.unpickle[CustomReqTypeGDv1.NonEmptyValues]
+        Event.CustomReqTypeUpdateV1(id, vs)
       }
     }
 

@@ -13,12 +13,14 @@ object EventTypes {
 
   final val TypeProjectTemplateApply    = 1000
 
-  final val TypeCustomReqTypeCreate     = 1010
-  final val TypeCustomReqTypeUpdate     = 1011
+  final val TypeCustomReqTypeCreateV1   = 1010
+  final val TypeCustomReqTypeUpdateV1   = 1011
   final val TypeCustomReqTypeDelete     = 1012
   final val TypeCustomReqTypeRestore    = 1013
   final val TypeCustomReqTypeDeleteSoft = 1014
   final val TypeCustomReqTypeDeleteHard = 1015
+  final val TypeCustomReqTypeCreateV2   = 1016
+  final val TypeCustomReqTypeUpdateV2   = 1017
 
   final val TypeTagGroupCreate          = 1020
   final val TypeTagGroupUpdate          = 1021
@@ -111,12 +113,14 @@ object EventTypes {
     case _: CustomIssueTypeDelete   => TypeCustomIssueTypeDelete
     case _: CustomIssueTypeRestore  => TypeCustomIssueTypeRestore
     case _: CustomIssueTypeUpdate   => TypeCustomIssueTypeUpdate
-    case _: CustomReqTypeCreate     => TypeCustomReqTypeCreate
+    case _: CustomReqTypeCreateV1   => TypeCustomReqTypeCreateV1
+    case _: CustomReqTypeCreate     => TypeCustomReqTypeCreateV2
     case _: CustomReqTypeDelete     => TypeCustomReqTypeDelete
     case _: CustomReqTypeDeleteHard => TypeCustomReqTypeDeleteHard
     case _: CustomReqTypeDeleteSoft => TypeCustomReqTypeDeleteSoft
     case _: CustomReqTypeRestore    => TypeCustomReqTypeRestore
-    case _: CustomReqTypeUpdate     => TypeCustomReqTypeUpdate
+    case _: CustomReqTypeUpdateV1   => TypeCustomReqTypeUpdateV1
+    case _: CustomReqTypeUpdate     => TypeCustomReqTypeUpdateV2
     case _: FieldCustomDelete       => TypeFieldCustomDelete
     case _: FieldCustomImpCreateV1  => TypeFieldCustomImpCreateV1
     case _: FieldCustomImpCreate    => TypeFieldCustomImpCreateV2

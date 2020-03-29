@@ -148,5 +148,5 @@ v2.1
 
 * ReqTypes
   * Build and test new UI
-  * Events - separate hard/soft deletion
+  * Events - on hard-delete, remove from savedViews and everywhere else
   * Events - don't consume mnemonic if not in-use

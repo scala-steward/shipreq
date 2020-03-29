@@ -21,11 +21,13 @@ trait EventEquality {
   implicit val equalCustomIssueTypeRestore : Equal[CustomIssueTypeRestore ] = ScalazMacros.deriveEqual
   implicit val equalCustomIssueTypeUpdate  : Equal[CustomIssueTypeUpdate  ] = ScalazMacros.deriveEqual
   implicit val equalCustomReqTypeCreate    : Equal[CustomReqTypeCreate    ] = ScalazMacros.deriveEqual
+  implicit val equalCustomReqTypeCreateV1  : Equal[CustomReqTypeCreateV1  ] = ScalazMacros.deriveEqual
   implicit val equalCustomReqTypeDelete    : Equal[CustomReqTypeDelete    ] = ScalazMacros.deriveEqual
   implicit val equalCustomReqTypeDeleteHard: Equal[CustomReqTypeDeleteHard] = ScalazMacros.deriveEqual
   implicit val equalCustomReqTypeDeleteSoft: Equal[CustomReqTypeDeleteSoft] = ScalazMacros.deriveEqual
   implicit val equalCustomReqTypeRestore   : Equal[CustomReqTypeRestore   ] = ScalazMacros.deriveEqual
   implicit val equalCustomReqTypeUpdate    : Equal[CustomReqTypeUpdate    ] = ScalazMacros.deriveEqual
+  implicit val equalCustomReqTypeUpdateV1  : Equal[CustomReqTypeUpdateV1  ] = ScalazMacros.deriveEqual
   implicit val equalFieldCustomDelete      : Equal[FieldCustomDelete      ] = ScalazMacros.deriveEqual
   implicit val equalFieldCustomImpCreateV1 : Equal[FieldCustomImpCreateV1 ] = ScalazMacros.deriveEqual
   implicit val equalFieldCustomImpCreate   : Equal[FieldCustomImpCreate   ] = ScalazMacros.deriveEqual

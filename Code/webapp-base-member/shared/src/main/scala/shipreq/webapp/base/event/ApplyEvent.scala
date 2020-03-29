@@ -78,11 +78,13 @@ final class ApplyEvent(implicit val trust: Trust)
       case e: CustomIssueTypeRestore  => CustomIssueTypeEvents   applyRestore               e
       case e: CustomIssueTypeUpdate   => CustomIssueTypeEvents   applyUpdate                e
       case e: CustomReqTypeCreate     => CustomReqTypeEvents     applyCreate                e
-      case e: CustomReqTypeDelete     => CustomReqTypeEvents     applyDelete                e
+      case e: CustomReqTypeCreateV1   => CustomReqTypeEventsV1   applyCreate                e
+      case e: CustomReqTypeDelete     => CustomReqTypeEventsV1   applyDelete                e
       case e: CustomReqTypeDeleteSoft => CustomReqTypeEvents     applySoftDelete            e
       case e: CustomReqTypeDeleteHard => CustomReqTypeEvents     applyHardDelete            e
       case e: CustomReqTypeRestore    => CustomReqTypeEvents     applyRestore               e
       case e: CustomReqTypeUpdate     => CustomReqTypeEvents     applyUpdate                e
+      case e: CustomReqTypeUpdateV1   => CustomReqTypeEventsV1   applyUpdate                e
       case e: FieldCustomDelete       => FieldEvents             applyCustomDelete          e
       case e: FieldCustomImpCreateV1  => CustomImpFieldEventsV1  applyCreate                e
       case e: FieldCustomImpCreate    => CustomImpFieldEvents    applyCreate                e

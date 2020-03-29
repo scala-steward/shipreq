@@ -364,6 +364,15 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
     }
   }
 
+  object customReqTypeGDv1 extends GenericDataGen(CustomReqTypeGDv1) {
+    import gd._
+    override def valueFor(a: Attr) = a match {
+      case Name        => customReqTypeName   map Name       .apply
+      case Implication => implicationRequired map Implication.apply
+      case gd.Mnemonic => reqTypeMnemonic     map gd.Mnemonic.apply
+    }
+  }
+
   object customReqTypeGD extends GenericDataGen(CustomReqTypeGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
@@ -609,6 +618,9 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
 
   def genCustomIssueTypeCreate: Gen[CustomIssueTypeCreate] =
     Gen.apply2(CustomIssueTypeCreate)(nextCustomIssueTypeId, customIssueTypeGD.allValues)
+
+  def genCustomReqTypeCreateV1: Gen[CustomReqTypeCreateV1] =
+    Gen.apply2(CustomReqTypeCreateV1)(nextCustomReqTypeId, customReqTypeGDv1.allValues)
 
   def genCustomReqTypeCreate: Gen[CustomReqTypeCreate] =
     Gen.apply2(CustomReqTypeCreate)(nextCustomReqTypeId, customReqTypeGD.allValues)
@@ -871,6 +883,10 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
     customIssueTypeId(Live).map(id =>
       Gen.apply2(CustomIssueTypeUpdate)(id, customIssueTypeGD.nonEmptyValues))
 
+  def genCustomReqTypeUpdateV1: Option[Gen[CustomReqTypeUpdateV1]] =
+    customReqTypeId(Live).map(id =>
+      Gen.apply2(CustomReqTypeUpdateV1)(id, customReqTypeGDv1.nonEmptyValues))
+
   def genCustomReqTypeUpdate: Option[Gen[CustomReqTypeUpdate]] =
     customReqTypeId(Live).map(id =>
       Gen.apply2(CustomReqTypeUpdate)(id, customReqTypeGD.nonEmptyValues))
@@ -1020,6 +1036,8 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
       // Note: not using [case e: Xxx => EventName(e) -> xxx] here because the valuesForAdt doesn't like it
       case _: ApplicableTagCreateV1   => EventName("ApplicableTagCreateV1"  ) -> genApplicableTagCreateV1
       case _: ApplicableTagUpdateV1   => EventName("ApplicableTagUpdateV1"  ) -> genApplicableTagUpdateV1
+      case _: CustomReqTypeCreateV1   => EventName("CustomReqTypeCreateV1"  ) -> genCustomReqTypeCreateV1
+      case _: CustomReqTypeUpdateV1   => EventName("CustomReqTypeUpdateV1"  ) -> genCustomReqTypeUpdateV1
       case _: CustomReqTypeDelete     => EventName("CustomReqTypeDelete"    ) -> genCustomReqTypeDelete
       case _: FieldCustomImpCreateV1  => EventName("FieldCustomImpCreateV1" ) -> genFieldCustomImpCreateV1
       case _: FieldCustomImpUpdateV1  => EventName("FieldCustomImpUpdateV1" ) -> genFieldCustomImpUpdateV1

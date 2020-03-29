@@ -54,6 +54,87 @@ trait ApplyConfigEvent {
   }
 
   // ===================================================================================================================
+  object CustomReqTypeEventsV1 {
+    private val ^    = CustomReqTypeGDv1
+    private val GD   = GenericDataApp[CustomReqType](^)
+            val imap = IMapStoreL(Project.reqTypes ^|-> ReqTypes.custom)(CustomReqType.live)
+
+    private val validateName     = validateA(V.reqType.name.stateless)
+    private val validateMnemonic = validateI(V.reqType.mnemonic.stateless)(_.value)
+    private val updateIdCeiling  = updateIdCeilingFn(IdCeilings.customReqType)
+
+    def applyCreate(e: CustomReqTypeCreateV1): SE[Unit] =
+      for {
+        n <- GD.need(^.Name)       (e.vs) >>= validateName
+        m <- GD.need(^.Mnemonic)   (e.vs) >>= validateMnemonic
+        i <- GD.need(^.Implication)(e.vs)
+        _ <- imap create CustomReqType(e.id, m, Set.empty, n, i, Live)
+        _ <- updateIdCeiling(e.id)
+      } yield ()
+
+    private val updateName        = validateName >>=@ CustomReqType.name
+    private val updateMnemonic    = Memo.bool(validateMnemonic >>=@ CustomReqType.mnemonic(_))
+    private val updateImplication = fieldUpdateFn(CustomReqType.imp)
+
+    private val updateValues = Memo.bool(retainMnemonic =>
+      GD.updateEachValue {
+        case v: ^.ValueForName        => updateName       (v.value)
+        case v: ^.ValueForImplication => updateImplication(v.value)
+        case v: ^.ValueForMnemonic    => updateMnemonic   (retainMnemonic)(v.value)
+      })
+
+    def applyUpdate(e: CustomReqTypeUpdateV1): SE[Unit] =
+      isCustomReqTypeInUse(e.id).flatMap(inUse =>
+        imap.updateLive(e.id, updateValues(inUse)(e.vs)))
+
+    private def isCustomReqTypeInUse(id: CustomReqTypeId): SE[Boolean] =
+      SE.get { p =>
+
+        def hasReqs =
+          p.content.reqs.pubids.value(id).nonEmpty
+
+        lazy val customFields =
+          p.config.fields.customFields.valuesIterator
+            .filter(CustomField.referencesCustomReqType(id))
+            .map(f => reqtable.Column.CustomField(f.id))
+            .toList
+
+        def inSavedViews =
+          p.reqtableViewIterator.exists(sv =>
+            sv.view.referencesReqType(id) ||
+              customFields.exists(sv.view.referencesColumn))
+
+        hasReqs || inSavedViews
+      }
+
+    /**
+      * If there is no content associated with a req type, then it is hard-deleted and references to it are hard-deleted
+      * from config.
+      *
+      * This is a slight deviation from UX consistency. Normally users can delete anything and then restore it back to
+      * it's previous state, "state" including related entities so that change/error is cheap from the user's PoV.
+      *
+      * In this instance, deleting a req type with that's never been associated with any content deletes:
+      *   - the req type itself
+      *   - custom implication fields based on the req type
+      *   - references to the req type in fields' ReqTypeApplicability
+      *
+      * The tradeoff is that it allows users to mess around with req type config without mnemonics being permanently
+      * consumed within the project. It also allows us to create nice ProjectTemplates whilst giving users the freedom
+      * to properly remove what they don't want.
+      */
+    def applyDelete(e: CustomReqTypeDelete): SE[Unit] =
+      ifInUse(e.id,
+        notInUse  = CustomReqTypeEvents.hardDelete(e.id),
+        whenInUse = CustomReqTypeEvents.softDelete(e.id))
+
+    private def ifInUse[A](id       : CustomReqTypeId,
+                           notInUse : => SE[A],
+                           whenInUse: => SE[A]): SE[A] =
+      isCustomReqTypeInUse(id).flatMap(inUse => if (inUse) whenInUse else notInUse)
+  }
+
+  // ===================================================================================================================
   object CustomReqTypeEvents {
     private val ^    = CustomReqTypeGD
     private val GD   = GenericDataApp[CustomReqType](^)
@@ -84,29 +165,8 @@ trait ApplyConfigEvent {
       })
 
     def applyUpdate(e: CustomReqTypeUpdate): SE[Unit] =
-      isInUse(e.id).flatMap(inUse =>
+      isCustomReqTypeInUse(e.id).flatMap(inUse =>
         imap.updateLive(e.id, updateValues(inUse)(e.vs)))
-
-    /**
-      * If there is no content associated with a req type, then it is hard-deleted and references to it are hard-deleted
-      * from config.
-      *
-      * This is a slight deviation from UX consistency. Normally users can delete anything and then restore it back to
-      * it's previous state, "state" including related entities so that change/error is cheap from the user's PoV.
-      *
-      * In this instance, deleting a req type with that's never been associated with any content deletes:
-      *   - the req type itself
-      *   - custom implication fields based on the req type
-      *   - references to the req type in fields' ReqTypeApplicability
-      *
-      * The tradeoff is that it allows users to mess around with req type config without mnemonics being permanently
-      * consumed within the project. It also allows us to create nice ProjectTemplates whilst giving users the freedom
-      * to properly remove what they don't want.
-      */
-    def applyDelete(e: CustomReqTypeDelete): SE[Unit] =
-      ifInUse(e.id,
-        notInUse  = hardDelete(e.id),
-        whenInUse = softDelete(e.id))
 
     def applyHardDelete(e: CustomReqTypeDeleteHard): SE[Unit] =
       hardDelete(e.id)
@@ -117,30 +177,8 @@ trait ApplyConfigEvent {
     def applyRestore(e: CustomReqTypeRestore): SE[Unit] =
       deleteOrRestore(e.id, Live, ReqCodeLogic.restoreBelongingToReqs)
 
-    private def isInUse(id: CustomReqTypeId): SE[Boolean] =
-      SE.get { p =>
-
-        def hasReqs =
-          p.content.reqs.pubids.value(id).nonEmpty
-
-        lazy val customFields =
-          p.config.fields.customFields.valuesIterator
-            .filter(CustomField.referencesCustomReqType(id))
-            .map(f => reqtable.Column.CustomField(f.id))
-            .toList
-
-        def inSavedViews =
-          p.reqtableViewIterator.exists(sv =>
-            sv.view.referencesReqType(id) ||
-              customFields.exists(sv.view.referencesColumn))
-
-        hasReqs || inSavedViews
-      }
-
-    private def ifInUse[A](id       : CustomReqTypeId,
-                           notInUse : => SE[A],
-                           whenInUse: => SE[A]): SE[A] =
-      isInUse(id).flatMap(inUse => if (inUse) whenInUse else notInUse)
+    private def isCustomReqTypeInUse(id: CustomReqTypeId): SE[Boolean] =
+      SE.get(_.isReqTypeInUse(id))
 
     private def deleteOrRestore(id: CustomReqTypeId, newState: Live, cascade: Set[ReqId] => SE[Unit]): SE[Unit] =
       imap.setLive(id, newState) >> reqsToCascadeReqTypeLiveChange(id) >>= cascade
@@ -152,7 +190,7 @@ trait ApplyConfigEvent {
         .map(_.id: ReqId)
         .toSet)
 
-    private def softDelete(id: CustomReqTypeId): SE[Unit] =
+    def softDelete(id: CustomReqTypeId): SE[Unit] =
       deleteOrRestore(id, Dead, ReqCodeLogic.inactivateBelongingToReqs)
 
     private val fieldReqTypeRules1: Traversal[Project, FieldReqTypeRules[Any]] =
@@ -161,7 +199,7 @@ trait ApplyConfigEvent {
     private val reqTypeApplicability1: Traversal[Project, ApplicableReqTypes] =
       Project.applicableTags ^|-> ApplicableTag.applicableReqTypes
 
-    private def hardDelete(id: CustomReqTypeId): SE[Unit] = {
+    def hardDelete(id: CustomReqTypeId): SE[Unit] = {
       def deleteImpFields: SE[Unit] =
         SE.get(_.config.fields.customImpFields.filter(_.reqTypeId ==* id))
           .flatMap(SE.foldMapRun(_)(f => FieldEvents.hardDelete(f.id)))

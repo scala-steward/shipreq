@@ -150,8 +150,8 @@ object Events {
   //   codecNonEmptyMono[Values]
   // }
 
-  private[v1] implicit val codecCustomReqTypeGD: JsonCodec[CustomReqTypeGD.NonEmptyValues] = {
-    import CustomReqTypeGD._
+  private[v1] implicit val codecCustomReqTypeGDv1: JsonCodec[CustomReqTypeGDv1.NonEmptyValues] = {
+    import CustomReqTypeGDv1._
 
     implicit val codecValueForImplication = JsonCodec.xmap(ValueForImplication.apply)(_.value)
     implicit val codecValueForMnemonic    = JsonCodec.xmap(ValueForMnemonic   .apply)(_.value)
@@ -410,16 +410,16 @@ object Events {
     implicit val encoderEventCustomIssueTypeRestore: Encoder[Event.CustomIssueTypeRestore] =
       Encoder[CustomIssueTypeId].contramap(_.id)
 
-    implicit val decoderEventCustomReqTypeCreate: Decoder[Event.CustomReqTypeCreate] =
-      Decoder.forProduct2("id", "values")(Event.CustomReqTypeCreate.apply)
+    implicit val decoderEventCustomReqTypeCreateV1: Decoder[Event.CustomReqTypeCreateV1] =
+      Decoder.forProduct2("id", "values")(Event.CustomReqTypeCreateV1.apply)
 
-    implicit val encoderEventCustomReqTypeCreate: Encoder[Event.CustomReqTypeCreate] =
+    implicit val encoderEventCustomReqTypeCreateV1: Encoder[Event.CustomReqTypeCreateV1] =
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-    implicit val decoderEventCustomReqTypeUpdate: Decoder[Event.CustomReqTypeUpdate] =
-      Decoder.forProduct2("id", "values")(Event.CustomReqTypeUpdate.apply)
+    implicit val decoderEventCustomReqTypeUpdateV1: Decoder[Event.CustomReqTypeUpdateV1] =
+      Decoder.forProduct2("id", "values")(Event.CustomReqTypeUpdateV1.apply)
 
-    implicit val encoderEventCustomReqTypeUpdate: Encoder[Event.CustomReqTypeUpdate] =
+    implicit val encoderEventCustomReqTypeUpdateV1: Encoder[Event.CustomReqTypeUpdateV1] =
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
     implicit val decoderEventCustomReqTypeDelete: Decoder[Event.CustomReqTypeDelete] =

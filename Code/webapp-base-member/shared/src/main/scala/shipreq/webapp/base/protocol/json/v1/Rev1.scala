@@ -430,6 +430,29 @@ object Rev1 {
     codecNonEmptyMono[Values]
   }
 
+  private[v1] implicit lazy val codecCustomReqTypeGD: JsonCodec[CustomReqTypeGD.NonEmptyValues] = {
+    import CustomReqTypeGD._
+
+    implicit val codecValueForImplication = JsonCodec.xmap(ValueForImplication.apply)(_.value)
+    implicit val codecValueForMnemonic    = JsonCodec.xmap(ValueForMnemonic   .apply)(_.value)
+    implicit val codecValueForName        = JsonCodec.xmap(ValueForName       .apply)(_.value)
+
+    implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
+      case ("imp"     , c) => c.as[ValueForImplication]
+      case ("mnemonic", c) => c.as[ValueForMnemonic]
+      case ("name"    , c) => c.as[ValueForName]
+    }
+
+    implicit val encoderValue: Encoder[Value] = Encoder.instance {
+      case a: ValueForImplication => Json.obj("imp"      -> a.asJson)
+      case a: ValueForMnemonic    => Json.obj("mnemonic" -> a.asJson)
+      case a: ValueForName        => Json.obj("name"     -> a.asJson)
+    }
+
+    implicit val values: JsonCodec[Values] = codecIMap(emptyValues)
+    codecNonEmptyMono[Values]
+  }
+
   private[v1] implicit lazy val codecCustomTagFieldGDv1: JsonCodec[CustomTagFieldGDv1.NonEmptyValues] = {
     import CustomTagFieldGDv1._
 
@@ -665,6 +688,18 @@ object Rev1 {
 
     implicit val encoderEventCustomReqTypeDeleteSoft: Encoder[Event.CustomReqTypeDeleteSoft] =
       Encoder[CustomReqTypeId].contramap(_.id)
+
+    implicit val decoderEventCustomReqTypeCreate: Decoder[Event.CustomReqTypeCreate] =
+      Decoder.forProduct2("id", "values")(Event.CustomReqTypeCreate.apply)
+
+    implicit val encoderEventCustomReqTypeCreate: Encoder[Event.CustomReqTypeCreate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+
+    implicit val decoderEventCustomReqTypeUpdate: Decoder[Event.CustomReqTypeUpdate] =
+      Decoder.forProduct2("id", "values")(Event.CustomReqTypeUpdate.apply)
+
+    implicit val encoderEventCustomReqTypeUpdate: Encoder[Event.CustomReqTypeUpdate] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
   }
 
   import EventData._
@@ -682,12 +717,14 @@ object Rev1 {
     case ("CustomIssueTypeDelete"  , c) => c.as[Event.CustomIssueTypeDelete]
     case ("CustomIssueTypeRestore" , c) => c.as[Event.CustomIssueTypeRestore]
     case ("CustomIssueTypeUpdate"  , c) => c.as[Event.CustomIssueTypeUpdate]
-    case ("CustomReqTypeCreate"    , c) => c.as[Event.CustomReqTypeCreate]
+    case ("CustomReqTypeCreate"    , c) => c.as[Event.CustomReqTypeCreateV1]
+    case ("CustomReqTypeCreate:2"  , c) => c.as[Event.CustomReqTypeCreate]
     case ("CustomReqTypeDelete"    , c) => c.as[Event.CustomReqTypeDelete]
     case ("CustomReqTypeDeleteHard", c) => c.as[Event.CustomReqTypeDeleteHard]
     case ("CustomReqTypeDeleteSoft", c) => c.as[Event.CustomReqTypeDeleteSoft]
     case ("CustomReqTypeRestore"   , c) => c.as[Event.CustomReqTypeRestore]
-    case ("CustomReqTypeUpdate"    , c) => c.as[Event.CustomReqTypeUpdate]
+    case ("CustomReqTypeUpdate"    , c) => c.as[Event.CustomReqTypeUpdateV1]
+    case ("CustomReqTypeUpdate:2"  , c) => c.as[Event.CustomReqTypeUpdate]
     case ("FieldCustomDelete"      , c) => c.as[Event.FieldCustomDelete]
     case ("FieldCustomImpCreate"   , c) => c.as[Event.FieldCustomImpCreateV1]
     case ("FieldCustomImpCreate:2" , c) => c.as[Event.FieldCustomImpCreate]
@@ -737,10 +774,10 @@ object Rev1 {
   }
 
   implicit lazy val encoderEvent: Encoder[Event] = Encoder.instance {
-    case a: Event.ApplicableTagCreate     => Json.obj("ApplicableTagCreate:2"   -> a.asJson)
     case a: Event.ApplicableTagCreateV1   => Json.obj("ApplicableTagCreate"     -> a.asJson)
-    case a: Event.ApplicableTagUpdate     => Json.obj("ApplicableTagUpdate:2"   -> a.asJson)
+    case a: Event.ApplicableTagCreate     => Json.obj("ApplicableTagCreate:2"   -> a.asJson)
     case a: Event.ApplicableTagUpdateV1   => Json.obj("ApplicableTagUpdate"     -> a.asJson)
+    case a: Event.ApplicableTagUpdate     => Json.obj("ApplicableTagUpdate:2"   -> a.asJson)
     case a: Event.CodeGroupCreate         => Json.obj("CodeGroupCreate"         -> a.asJson)
     case a: Event.CodeGroupUpdate         => Json.obj("CodeGroupUpdate"         -> a.asJson)
     case a: Event.CodeGroupsDelete        => Json.obj("CodeGroupsDelete"        -> a.asJson)
@@ -749,12 +786,14 @@ object Rev1 {
     case a: Event.CustomIssueTypeDelete   => Json.obj("CustomIssueTypeDelete"   -> a.asJson)
     case a: Event.CustomIssueTypeRestore  => Json.obj("CustomIssueTypeRestore"  -> a.asJson)
     case a: Event.CustomIssueTypeUpdate   => Json.obj("CustomIssueTypeUpdate"   -> a.asJson)
-    case a: Event.CustomReqTypeCreate     => Json.obj("CustomReqTypeCreate"     -> a.asJson)
+    case a: Event.CustomReqTypeCreateV1   => Json.obj("CustomReqTypeCreate"     -> a.asJson)
+    case a: Event.CustomReqTypeCreate     => Json.obj("CustomReqTypeCreate:2"   -> a.asJson)
     case a: Event.CustomReqTypeDelete     => Json.obj("CustomReqTypeDelete"     -> a.asJson)
     case a: Event.CustomReqTypeDeleteHard => Json.obj("CustomReqTypeDeleteHard" -> a.asJson)
     case a: Event.CustomReqTypeDeleteSoft => Json.obj("CustomReqTypeDeleteSoft" -> a.asJson)
     case a: Event.CustomReqTypeRestore    => Json.obj("CustomReqTypeRestore"    -> a.asJson)
-    case a: Event.CustomReqTypeUpdate     => Json.obj("CustomReqTypeUpdate"     -> a.asJson)
+    case a: Event.CustomReqTypeUpdateV1   => Json.obj("CustomReqTypeUpdate"     -> a.asJson)
+    case a: Event.CustomReqTypeUpdate     => Json.obj("CustomReqTypeUpdate:2"   -> a.asJson)
     case a: Event.FieldCustomDelete       => Json.obj("FieldCustomDelete"       -> a.asJson)
     case a: Event.FieldCustomImpCreateV1  => Json.obj("FieldCustomImpCreate"    -> a.asJson)
     case a: Event.FieldCustomImpCreate    => Json.obj("FieldCustomImpCreate:2"  -> a.asJson)

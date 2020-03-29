@@ -264,10 +264,12 @@ object EventSeqSummary {
       case e: Event.CustomIssueTypeDelete   => customIssueTypes.deleted += e.id
       case e: Event.CustomIssueTypeRestore  => customIssueTypes.restored += e.id
       case e: Event.CustomIssueTypeUpdate   => customIssueTypes.updated += e.id
+      case e: Event.CustomReqTypeCreateV1   => customReqTypes.created += e.id
       case e: Event.CustomReqTypeCreate     => customReqTypes.created += e.id
       case e: Event.CustomReqTypeDelete     => customReqTypeDelete(e.id)
       case e: Event.CustomReqTypeDeleteSoft => customReqTypeDelete(e.id)
       case e: Event.CustomReqTypeDeleteHard => customReqTypeDelete(e.id)
+      case e: Event.CustomReqTypeUpdateV1   => customReqTypes.updated += e.id
       case e: Event.CustomReqTypeUpdate     => customReqTypes.updated += e.id
       case e: Event.FieldCustomDelete       => customFieldType(Deleted, e.id)
       case e: Event.FieldCustomImpCreateV1  => customFieldImpTypes.created += e.id

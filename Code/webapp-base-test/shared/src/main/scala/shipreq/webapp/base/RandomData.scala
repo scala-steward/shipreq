@@ -2002,6 +2002,15 @@ object RandomData {
       }
     }
 
+    object customReqTypeGDv1 extends GenericDataGen(CustomReqTypeGDv1) {
+      import gd._
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Name        => customReqTypeName   map Name       .apply
+        case Implication => implicationRequired map Implication.apply
+        case gd.Mnemonic => reqTypeMnemonic     map gd.Mnemonic.apply
+      }
+    }
+
     object customReqTypeGD extends GenericDataGen(CustomReqTypeGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
@@ -2190,6 +2199,9 @@ object RandomData {
     val genCustomIssueTypeCreate: Gen[CustomIssueTypeCreate] =
       Gen.apply2(CustomIssueTypeCreate)(customIssueTypeId, customIssueTypeGD.nonEmptyValues)
 
+    val genCustomReqTypeCreateV1: Gen[CustomReqTypeCreateV1] =
+      Gen.apply2(CustomReqTypeCreateV1)(customReqTypeId, customReqTypeGDv1.nonEmptyValues)
+
     val genCustomReqTypeCreate: Gen[CustomReqTypeCreate] =
       Gen.apply2(CustomReqTypeCreate)(customReqTypeId, customReqTypeGD.nonEmptyValues)
 
@@ -2318,6 +2330,9 @@ object RandomData {
     val genCustomIssueTypeUpdate: Gen[CustomIssueTypeUpdate] =
       Gen.apply2(CustomIssueTypeUpdate)(customIssueTypeId, customIssueTypeGD.nonEmptyValues)
 
+    val genCustomReqTypeUpdateV1: Gen[CustomReqTypeUpdateV1] =
+      Gen.apply2(CustomReqTypeUpdateV1)(customReqTypeId, customReqTypeGDv1.nonEmptyValues)
+
     val genCustomReqTypeUpdate: Gen[CustomReqTypeUpdate] =
       Gen.apply2(CustomReqTypeUpdate)(customReqTypeId, customReqTypeGD.nonEmptyValues)
 
@@ -2432,6 +2447,8 @@ object RandomData {
       valuesForAdt[RetiredEvent, Gen[RetiredEvent]] {
         case _: ApplicableTagCreateV1   => genApplicableTagCreateV1
         case _: ApplicableTagUpdateV1   => genApplicableTagUpdateV1
+        case _: CustomReqTypeCreateV1   => genCustomReqTypeCreateV1
+        case _: CustomReqTypeUpdateV1   => genCustomReqTypeUpdateV1
         case _: CustomReqTypeDelete     => genCustomReqTypeDelete
         case _: FieldCustomImpCreateV1  => genFieldCustomImpCreateV1
         case _: FieldCustomImpUpdateV1  => genFieldCustomImpUpdateV1

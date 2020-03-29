@@ -143,6 +143,62 @@ object RetiredGenericData {
 
   // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
+  object CustomReqTypeGDv1 extends GenericData {
+    sealed abstract class Attr extends AttrBase
+    sealed abstract class Value extends ValueBase
+
+    case object Implication extends Attr {
+      override type Data = Mandatory
+      override def apply(data: Data) = ValueForImplication(data)
+      override val dataEquality: Equal[Data] = implicitly[Equal[Mandatory]]
+    }
+    final case class ValueForImplication(value: Implication.Data) extends Value {
+      override val attr: Implication.type = Implication
+      override def equals(o: Any): Boolean = o match {
+        case v2: ValueForImplication => Implication.dataEquality.equal(value, v2.value)
+        case _ => false
+      }
+    }
+
+    case object Mnemonic extends Attr {
+      override type Data = ReqType.Mnemonic
+      override def apply(data: Data) = ValueForMnemonic(data)
+      override val dataEquality: Equal[Data] = implicitly[Equal[ReqType.Mnemonic]]
+    }
+    final case class ValueForMnemonic(value: Mnemonic.Data) extends Value {
+      override val attr: Mnemonic.type = Mnemonic
+      override def equals(o: Any): Boolean = o match {
+        case v2: ValueForMnemonic => Mnemonic.dataEquality.equal(value, v2.value)
+        case _ => false
+      }
+    }
+
+    case object Name extends Attr {
+      override type Data = String
+      override def apply(data: Data) = ValueForName(data)
+      override val dataEquality: Equal[Data] = implicitly[Equal[String]]
+    }
+    final case class ValueForName(value: Name.Data) extends Value {
+      override val attr: Name.type = Name
+      override def equals(o: Any): Boolean = o match {
+        case v2: ValueForName => Name.dataEquality.equal(value, v2.value)
+        case _ => false
+      }
+    }
+
+    override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
+      Util.univEqAndArbitraryOrder(Vector(Implication, Mnemonic, Name))
+
+    @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
+
+    override val attrs = NonEmptySet[Attr](Implication, Mnemonic, Name)
+
+    def apply(mnemonic: ReqType.Mnemonic, name: String, implication: Mandatory): NonEmptyValues =
+      NonEmpty.force(emptyValues + ValueForMnemonic(mnemonic) + ValueForName(name) + ValueForImplication(implication))
+  }
+
+  // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
   object CustomTagFieldGDv1 extends GenericData {
     sealed abstract class Attr extends AttrBase
     sealed abstract class Value extends ValueBase
