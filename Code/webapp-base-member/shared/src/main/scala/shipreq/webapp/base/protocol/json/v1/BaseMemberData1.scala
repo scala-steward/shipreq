@@ -418,7 +418,7 @@ private[v1] object BaseMemberData1 {
     Decoder.forProduct6("id", "mnemonic", "oldMnemonics", "name", "imp", "live")(CustomReqType.apply)
 
   implicit lazy val encoderCustomReqType: Encoder[CustomReqType] =
-    Encoder.forProduct6("id", "mnemonic", "oldMnemonics", "name", "imp", "live")(a => (a.id, a.mnemonic, a.oldMnemonics, a.name, a.imp, a.live))
+    Encoder.forProduct6("id", "mnemonic", "oldMnemonics", "name", "imp", "live")(a => (a.id, a.mnemonic, a.oldMnemonics, a.name, a.implication, a.live))
 
   implicit lazy val codecCustomReqTypeId: JsonCodec[CustomReqTypeId] =
     codecTaggedI(CustomReqTypeId)
@@ -455,9 +455,6 @@ private[v1] object BaseMemberData1 {
 
   implicit lazy val codecHashRefKey: JsonCodec[HashRefKey] =
     codecTaggedS(HashRefKey)
-
-  implicit lazy val codecImplRequired: JsonCodec[ImplicationRequired] =
-    codecBool(ImplicationRequired)
 
   implicit lazy val codecIssueCategory: JsonCodec[IssueCategory] =
     JsonCodec.enumAdt(AdtMacros.adtIsoSet[IssueCategory, String] {

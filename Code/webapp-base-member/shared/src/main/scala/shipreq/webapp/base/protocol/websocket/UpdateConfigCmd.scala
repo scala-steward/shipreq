@@ -57,9 +57,9 @@ object UpdateConfigCmd {
   final case class CustomIssueTypeValues(key : HashRefKey,
                                          desc: Option[String])
 
-  final case class CustomReqTypeValues(mnemonic: ReqType.Mnemonic,
-                                       name    : String,
-                                       imp     : ImplicationRequired)
+  final case class CustomReqTypeValues(mnemonic   : ReqType.Mnemonic,
+                                       name       : String,
+                                       implication: Mandatory)
 
   // ===================================================================================================================
 
@@ -94,12 +94,12 @@ object UpdateConfigCmd {
         override def pickle(a: CustomReqTypeValues)(implicit state: PickleState): Unit = {
           state.pickle(a.mnemonic)
           state.pickle(a.name)
-          state.pickle(a.imp)
+          state.pickle(a.implication)
         }
         override def unpickle(implicit state: UnpickleState): CustomReqTypeValues = {
           val mnemonic = state.unpickle[ReqType.Mnemonic]
           val name     = state.unpickle[String]
-          val imp      = state.unpickle[ImplicationRequired]
+          val imp      = state.unpickle[Mandatory]
           CustomReqTypeValues(mnemonic, name, imp)
         }
       }

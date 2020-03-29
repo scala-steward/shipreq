@@ -785,17 +785,17 @@ object ProjectSpaLogic extends StrictLogging {
            |}
            |""".stripMargin)
 
-    // InitApp               - Unit                                   - ErrorMsg \/ InitAppData
-    // Reconnect             - Option[EventOrd.Latest]                - VerifiedEvent.Seq
-    // Sync                  - NonEmptySet[EventOrd]                  - Unit
-    // UpdateConfig          - UpdateConfigCmd                        - ErrorMsg \/ VerifiedEvent.Seq
-    // CreateContent         - CreateContentCmd                       - ErrorMsg \/ VerifiedEvent.Seq
-    // UpdateContent         - UpdateContentCmd                       - ErrorMsg \/ VerifiedEvent.Seq
-    // ProjectNameSet        - String                                 - ErrorMsg \/ VerifiedEvent.Seq
-    // UpdateSavedViews      - SavedViewCmd                           - ErrorMsg \/ VerifiedEvent.Seq
-    // UpdateManualIssues    - ManualIssueCmd                         - ErrorMsg \/ VerifiedEvent.Seq
-    // FieldMandatorinessMod - (CustomFieldId, Mandatory)             - ErrorMsg \/ VerifiedEvent.Seq
-    // ReqTypeImplicationMod - (CustomReqTypeId, ImplicationRequired) - ErrorMsg \/ VerifiedEvent.Seq
+    // InitApp               - Unit                         - ErrorMsg \/ InitAppData
+    // Reconnect             - Option[EventOrd.Latest]      - VerifiedEvent.Seq
+    // Sync                  - NonEmptySet[EventOrd]        - Unit
+    // UpdateConfig          - UpdateConfigCmd              - ErrorMsg \/ VerifiedEvent.Seq
+    // CreateContent         - CreateContentCmd             - ErrorMsg \/ VerifiedEvent.Seq
+    // UpdateContent         - UpdateContentCmd             - ErrorMsg \/ VerifiedEvent.Seq
+    // ProjectNameSet        - String                       - ErrorMsg \/ VerifiedEvent.Seq
+    // UpdateSavedViews      - SavedViewCmd                 - ErrorMsg \/ VerifiedEvent.Seq
+    // UpdateManualIssues    - ManualIssueCmd               - ErrorMsg \/ VerifiedEvent.Seq
+    // FieldMandatorinessMod - (CustomFieldId, Mandatory)   - ErrorMsg \/ VerifiedEvent.Seq
+    // ReqTypeImplicationMod - (CustomReqTypeId, Mandatory) - ErrorMsg \/ VerifiedEvent.Seq
 
     private def asJsonStr[A: Encoder](a: A): String =
       "\"\"\"" + a.asJson.noSpacesSortKeys + "\"\"\""

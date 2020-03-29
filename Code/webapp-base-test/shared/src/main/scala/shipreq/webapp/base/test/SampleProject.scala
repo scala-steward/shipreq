@@ -45,12 +45,12 @@ object SampleProject {
     CustomIssueType(3, "PENDING", "Just pendin'", Dead))
 
   lazy val customReqTypes = emptyDataMap(CustomReqType).addAll(
-    CustomReqType(co, "CO", Set.empty, "Constraint",             ImplicationRequired.Not, Live),
-    CustomReqType(mf, "MF", Set.empty, "Major Feature",          ImplicationRequired.Not, Live),
-    CustomReqType(fr, "FR", Set.empty, "Functional Requirement", ImplicationRequired,     Live),
-    CustomReqType(br, "BR", Set.empty, "Business Rule",          ImplicationRequired.Not, Live),
-    CustomReqType(dd, "DD", Set("DA", "DDF"), "Data Definition", ImplicationRequired.Not, Dead),
-    CustomReqType(si, "SI", Set.empty, "Solution Idea",          ImplicationRequired,     Dead))
+    CustomReqType(co, "CO", Set.empty, "Constraint",             Mandatory.Not, Live),
+    CustomReqType(mf, "MF", Set.empty, "Major Feature",          Mandatory.Not, Live),
+    CustomReqType(fr, "FR", Set.empty, "Functional Requirement", Mandatory,     Live),
+    CustomReqType(br, "BR", Set.empty, "Business Rule",          Mandatory.Not, Live),
+    CustomReqType(dd, "DD", Set("DA", "DDF"), "Data Definition", Mandatory.Not, Dead),
+    CustomReqType(si, "SI", Set.empty, "Solution Idea",          Mandatory,     Dead))
 
   lazy val v10d = Some("Released: 17/14/1976\nFirst release.")
   lazy val v11d = Some("Released: 1/2/2001")

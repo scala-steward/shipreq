@@ -120,7 +120,6 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
 
   implicit def boolToExclusivity(b: Boolean) = Exclusive when b
   implicit def boolToMandatory(b: Boolean) = Mandatory when b
-  implicit def boolToImplicationRequired(b: Boolean) = ImplicationRequired when b
 
   def ∅[A](implicit e: MakeEmpty[A]): A = e.empty
 

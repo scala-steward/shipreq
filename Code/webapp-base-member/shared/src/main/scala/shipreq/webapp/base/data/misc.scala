@@ -19,18 +19,6 @@ case object Dead extends Live
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-sealed trait ImplicationRequired extends IsoBool[ImplicationRequired] {
-  override final def companion = ImplicationRequired
-}
-
-case object ImplicationRequired extends ImplicationRequired with IsoBool.Object[ImplicationRequired] {
-  override def positive = this
-  override def negative = Not
-  case object Not extends ImplicationRequired
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 sealed trait Mandatory extends IsoBool[Mandatory] {
   override final def companion = Mandatory
 }

@@ -368,7 +368,7 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
     import gd._
     override def valueFor(a: Attr) = a match {
       case Name        => customReqTypeName   map Name       .apply
-      case Imp         => implicationRequired map Imp        .apply
+      case Implication => implicationRequired map Implication.apply
       case gd.Mnemonic => reqTypeMnemonic     map gd.Mnemonic.apply
     }
   }

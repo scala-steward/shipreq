@@ -240,7 +240,7 @@ object DataLogic {
                            reqs    : Requirements): ImpRequiredResult = {
 
     val reqTypesRequiringImp: Vector[ReqType] =
-      reqTypes.all.whole.filter(_.imp is ImplicationRequired)
+      reqTypes.all.whole.filter(_.implication is Mandatory)
 
     @tailrec
     def go(maybeGood: Set[ReqId],

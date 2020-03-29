@@ -72,9 +72,9 @@ val gens = List(
     "Desc" -> "Option[String]",
   ),
   Gen("CustomReqTypeGD")(
-    "Mnemonic" -> "ReqType.Mnemonic",
-    "Name"     -> "String",
-    "Imp"      -> "ImplicationRequired",
+    "Mnemonic"    -> "ReqType.Mnemonic",
+    "Name"        -> "String",
+    "Implication" -> "Mandatory",
   ),
   Gen("TagGroupGD")(
     "Name"        -> "String",

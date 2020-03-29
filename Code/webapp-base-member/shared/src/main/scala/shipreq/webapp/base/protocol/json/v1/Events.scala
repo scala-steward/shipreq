@@ -153,20 +153,20 @@ object Events {
   private[v1] implicit val codecCustomReqTypeGD: JsonCodec[CustomReqTypeGD.NonEmptyValues] = {
     import CustomReqTypeGD._
 
-    implicit val codecValueForImp      = JsonCodec.xmap(ValueForImp     .apply)(_.value)
-    implicit val codecValueForMnemonic = JsonCodec.xmap(ValueForMnemonic.apply)(_.value)
-    implicit val codecValueForName     = JsonCodec.xmap(ValueForName    .apply)(_.value)
+    implicit val codecValueForImplication = JsonCodec.xmap(ValueForImplication.apply)(_.value)
+    implicit val codecValueForMnemonic    = JsonCodec.xmap(ValueForMnemonic   .apply)(_.value)
+    implicit val codecValueForName        = JsonCodec.xmap(ValueForName       .apply)(_.value)
 
     implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
-      case ("imp"     , c) => c.as[ValueForImp]
+      case ("imp"     , c) => c.as[ValueForImplication]
       case ("mnemonic", c) => c.as[ValueForMnemonic]
       case ("name"    , c) => c.as[ValueForName]
     }
 
     implicit val encoderValue: Encoder[Value] = Encoder.instance {
-      case a: ValueForImp      => Json.obj("imp"      -> a.asJson)
-      case a: ValueForMnemonic => Json.obj("mnemonic" -> a.asJson)
-      case a: ValueForName     => Json.obj("name"     -> a.asJson)
+      case a: ValueForImplication => Json.obj("imp"      -> a.asJson)
+      case a: ValueForMnemonic    => Json.obj("mnemonic" -> a.asJson)
+      case a: ValueForName        => Json.obj("name"     -> a.asJson)
     }
 
     implicit val values: JsonCodec[Values] = codecIMap(emptyValues)

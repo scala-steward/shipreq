@@ -7,12 +7,9 @@ import japgolly.microlibs.utils.Memo
 import monocle.Lens
 import monocle.macros.{GenLens, Lenses}
 import scalaz.Order
-import scalaz.std.anyVal.intInstance
-import scalaz.syntax.order._
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes._
 import shipreq.base.util.univeq._
-import shipreq.webapp.base.util.Must._
 import DataImplicits._
 import ReqType.Mnemonic
 
@@ -25,7 +22,7 @@ sealed trait ReqType {
   def mnemonic    : Mnemonic
   def oldMnemonics: Set[Mnemonic]
   def name        : String
-  def imp         : ImplicationRequired
+  def implication : Mandatory
   def live        : Live
 
   def fold[A](s: StaticReqType => A, c: CustomReqType => A): A
@@ -59,14 +56,14 @@ object StaticReqType {
     override def mnemonic     = Mnemonic("UC")
     override def oldMnemonics = UnivEq.emptySet
     override def name         = "Use Case"
-    override def imp          = ImplicationRequired.Not // TODO Should be configurable
+    override def implication  = Mandatory.Not // TODO Should be configurable
   }
 
   val values: NonEmptyVector[StaticReqType] =
     AdtMacros.adtValues[StaticReqType]
 
   val requiringImplication: Set[StaticReqType] =
-    values.iterator.filter(_.imp is ImplicationRequired).toSet
+    values.iterator.filter(_.implication is Mandatory).toSet
 
   implicit val order = Util.univEqAndArbitraryOrder(values.whole)
 
@@ -84,7 +81,7 @@ final case class CustomReqType(id          : CustomReqTypeId,
                                mnemonic    : Mnemonic,
                                oldMnemonics: Set[Mnemonic],
                                name        : String,
-                               imp         : ImplicationRequired,
+                               implication : Mandatory,
                                live        : Live) extends ReqType {
 
   def fullName = s"${mnemonic.value}: $name"
@@ -107,10 +104,10 @@ object CustomReqType {
     override val unapplyData: AnyRef => Option[CustomReqType] = {case r: CustomReqType => Some(r); case _ => None}
   }
 
-  val name        : Lens[CustomReqType, String]              = GenLens[CustomReqType](_.name)
-  val imp         : Lens[CustomReqType, ImplicationRequired] = GenLens[CustomReqType](_.imp)
-  val live        : Lens[CustomReqType, Live]                = GenLens[CustomReqType](_.live)
-  def oldMnemonics: Lens[CustomReqType, Set[Mnemonic]]       = GenLens[CustomReqType](_.oldMnemonics)
+  val name        : Lens[CustomReqType, String]        = GenLens[CustomReqType](_.name)
+  val imp         : Lens[CustomReqType, Mandatory]     = GenLens[CustomReqType](_.implication)
+  val live        : Lens[CustomReqType, Live]          = GenLens[CustomReqType](_.live)
+  def oldMnemonics: Lens[CustomReqType, Set[Mnemonic]] = GenLens[CustomReqType](_.oldMnemonics)
 
   val mnemonic: Boolean => Lens[CustomReqType, Mnemonic] =
     Memo.bool(retain => Lens((_: CustomReqType).mnemonic)(m => _.setMnemonic(m, retain)))
@@ -145,7 +142,7 @@ final case class ReqTypes(custom: IMap[CustomReqTypeId, CustomReqType]) {
     NonEmptyVector force allSortedByMnemonic.whole.filter(_.live is Live) // UC is always live. NEV.force is fine.
 
   lazy val idsRequiringImplication: Set[ReqTypeId] = {
-    def customIds = custom.valuesIterator.filter(_.imp is ImplicationRequired).map(_.id).toSet
+    def customIds = custom.valuesIterator.filter(_.implication is Mandatory).map(_.id).toSet
     Util.mergeSets(StaticReqType.requiringImplication, customIds)
   }
 

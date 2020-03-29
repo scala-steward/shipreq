@@ -184,7 +184,7 @@ object RandomData {
 //    Gen.int.map(i => if ((i & 7) == 0) Dead else Live)
 
   val implicationRequired =
-    Gen.choose[ImplicationRequired](ImplicationRequired, ImplicationRequired.Not)
+    Gen.choose[Mandatory](Mandatory, Mandatory.Not)
 
   val mandatory =
     Gen.choose[Mandatory](Mandatory, Mandatory.Not)
@@ -2006,7 +2006,7 @@ object RandomData {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
         case Name        => customReqTypeName   map Name       .apply
-        case Imp         => implicationRequired map Imp        .apply
+        case Implication => implicationRequired map Implication.apply
         case gd.Mnemonic => reqTypeMnemonic     map gd.Mnemonic.apply
       }
     }

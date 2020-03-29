@@ -147,10 +147,10 @@ object DataValidators {
     }
 
     val all: State => Composite.Validator[
-      (String, String, ImplicationRequired),
-      (String, String, ImplicationRequired),
-      (Mnemonic, String, ImplicationRequired)] =
-      s => mnemonic(s).named tuple name(s).named tuple Validator.id[ImplicationRequired]
+      (String, String, Mandatory),
+      (String, String, Mandatory),
+      (Mnemonic, String, Mandatory)] =
+      s => mnemonic(s).named tuple name(s).named tuple Validator.id[Mandatory]
   }
 
   // ===================================================================================================================

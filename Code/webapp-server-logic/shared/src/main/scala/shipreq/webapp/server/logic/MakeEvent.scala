@@ -48,7 +48,7 @@ object MakeEvent {
 
   def reqTypeImplicationMod(input: ReqTypeImplicationMod.RequestType): Result = {
     val (id, imp) = input
-    CustomReqTypeUpdate(id, CustomReqTypeGD.Imp(imp))
+    CustomReqTypeUpdate(id, CustomReqTypeGD.Implication(imp))
   }
 
   def updateConfig(cmd: UpdateConfigCmd, project: Project): Result = {

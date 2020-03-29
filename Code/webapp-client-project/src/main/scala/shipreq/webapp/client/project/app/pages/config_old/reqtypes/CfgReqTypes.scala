@@ -36,7 +36,7 @@ object CfgReqTypes {
   }
   implicit val reusability = Reusability.derive[Props]
 
-  val fields = FieldSet3[CustomReqType](_.mnemonic.value, _.name, _.imp)(("", "", ImplicationRequired.Not))
+  val fields = FieldSet3[CustomReqType](_.mnemonic.value, _.name, _.implication)(("", "", Mandatory.Not))
   val storesAndState = TypicalStoresAndState(fields).keyedBy[CustomReqTypeId]
   import storesAndState._
   val changeListener = ChangeListener.store(savedRowStoreS)(_.customReqTypes.all, _.config.reqTypes.custom.get)
@@ -68,7 +68,7 @@ object CfgReqTypes {
 
     private val supp = TypicalSupp(storesAndState)(crudIO.value(), $)
 
-    private val onWhenImplicationRequired = On <=> ImplicationRequired
+    private val onWhenMandatory = On <=> Mandatory
 
     private def validatorState(k: Option[CustomReqTypeId]): V.State =
       validatorState(k, $.state.runNow())
@@ -79,7 +79,7 @@ object CfgReqTypes {
     private val rowE = {
       val mnemonicE = Editors.textInputEditor.applyStatefulValidator(V.mnemonic.unnamedFn)
       val nameE     = Editors.textInputEditor.applyStatefulValidator(V.name.unnamedFn)
-      val impE      = Editors.checkboxEditor.imap(onWhenImplicationRequired).strengthL[V.State]
+      val impE      = Editors.checkboxEditor.imap(onWhenMandatory).strengthL[V.State]
       val e = Editor.merge3S(fields, mnemonicE, nameE, impE).tupleI.zoomU[S]
       import supp.sas
       val saveFn = supp.crudIO.map(c =>
@@ -89,7 +89,7 @@ object CfgReqTypes {
           sas.newRowStoreS,
           validatorState(None, _),
           k => validatorState(Some(k), _),
-          supp.saveNeed(p => (p.mnemonic, p.name, p.imp)),
+          supp.saveNeed(p => (p.mnemonic, p.name, p.implication)),
           c.createIO,
           c.updateIO,
           supp.realise)
@@ -99,8 +99,8 @@ object CfgReqTypes {
       .applyOnEditFinishedK(saveFn)(_._1.subject)
     }
 
-    private def checkbox(i: ImplicationRequired) =
-      Widgets.checkbox(onWhenImplicationRequired from i)
+    private def checkbox(i: Mandatory) =
+      Widgets.checkbox(onWhenMandatory from i)
 
     private val usageFn = Usage((_: ReqType).reqTypeId)(
       _.reqTypeCount,
@@ -117,7 +117,7 @@ object CfgReqTypes {
             case ((mnemonic, name, impReq), p) => (mnemonic, p.oldMnemonics, name, impReq, Some(usageFn(p)))
           }
           override def deletedRow = p =>
-            (p.mnemonic.value, p.oldMnemonics, p.name, checkbox(p.imp)(^.disabled := true), Some(usageFn(p)))
+            (p.mnemonic.value, p.oldMnemonics, p.name, checkbox(p.implication)(^.disabled := true), Some(usageFn(p)))
 
           override def render = {
             case (mnemonic, oldMnemonics, name, impReq, usage) =>
@@ -158,7 +158,7 @@ object CfgReqTypes {
 
       val staticRows: cfgTable.RowStream = {
         def rr(r: StaticReqType): VdomElement = {
-          val imp = checkbox(r.imp)(^.disabled := true)
+          val imp = checkbox(r.implication)(^.disabled := true)
           val usage = Some(usageFn(r))
           val norm: cfgTable.RowContent = (r.mnemonic.value, r.oldMnemonics, r.name, imp, usage)
           cfgTable.row("static", RowStatus.Sync, norm, EmptyVdom)(^.key := r.mnemonic.value)

@@ -39,7 +39,7 @@ object ProjectTemplate {
       events :+= e
 
     val reqTypeId = new IdCounter(CustomReqTypeId)
-    def reqType(mnemonicStr: String, name: String, imp: ImplicationRequired) = {
+    def reqType(mnemonicStr: String, name: String, implication: Mandatory) = {
       val mnemonic = ReqType.Mnemonic(mnemonicStr)
       val id = reqTypeId.next()
       add(CustomReqTypeCreate(id, gdAllValues(CustomReqTypeGD, "")))
@@ -104,11 +104,11 @@ object ProjectTemplate {
       val qb = new QuickBuilder
       import qb._
 
-      val co = reqType("CO", "Constraint",                     ImplicationRequired.Not)
-      val fr = reqType("FR", "Functional Requirement",         ImplicationRequired)
-      val mf = reqType("MF", "Major Feature",                  ImplicationRequired.Not)
-      val oe = reqType("OE", "Operating Environment",          ImplicationRequired.Not)
-      val qa = reqType("QA", "Quality Attribute",              ImplicationRequired)
+      val co = reqType("CO", "Constraint",             Mandatory.Not)
+      val fr = reqType("FR", "Functional Requirement", Mandatory)
+      val mf = reqType("MF", "Major Feature",          Mandatory.Not)
+      val oe = reqType("OE", "Operating Environment",  Mandatory.Not)
+      val qa = reqType("QA", "Quality Attribute",      Mandatory)
 
       issueType("TO"+"DO", "Work needs to be done.")
       issueType("PENDING", "Waiting on external information, or an external event.")

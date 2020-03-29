@@ -17,8 +17,8 @@ import RetiredGenericData._
 trait CustomReqTypeEvents {
   val mfName = "Major Feature"
   type CE = CustomReqTypeCreate
-  val c1  = CustomReqTypeCreate(1, nev(Mnemonic("MF"), Name(mfName), Imp(ImplicationRequired)))
-  val c2  = CustomReqTypeCreate(2, nev(Mnemonic("FR"), Name("Functional Req"), Imp(ImplicationRequired.Not)))
+  val c1  = CustomReqTypeCreate(1, nev(Mnemonic("MF"), Name(mfName), Implication(Mandatory)))
+  val c2  = CustomReqTypeCreate(2, nev(Mnemonic("FR"), Name("Functional Req"), Implication(Mandatory.Not)))
   val u1  = CustomReqTypeUpdate(1, nev(Mnemonic("M")))
   val sd1 = CustomReqTypeDelete(1)
   val r1  = CustomReqTypeRestore(1)
@@ -42,7 +42,7 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
     'create {
       'needName - assertFail("Name")    (c1.mod(_ - Name))
       'needMne  - assertFail("Mnemonic")(c1.mod(_ - Mnemonic))
-      'needImp  - assertFail("Imp")     (c1.mod(_ - Imp))
+      'needImp  - assertFail("Imp")     (c1.mod(_ - Implication))
       'badName  - assertFail("blank")   (c1.mod(_ + Name("")))
       'badMne   - assertFail("Mnemonic")(c1.mod(_ + Mnemonic("?")))
       'dupName  - assertFail("unique")  (c1, c2.mod(_ + Name(mfName)))
@@ -53,24 +53,24 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
       'notInUse - {
         var es = Vector(c1, u1)
         def r = _assertPass(es: _*).config.reqTypes.custom.get(1).get
-        assertEq(r, CustomReqType(1, "M", Set(), mfName, ImplicationRequired, Live))
+        assertEq(r, CustomReqType(1, "M", Set(), mfName, Mandatory, Live))
 
         es :+= CustomReqTypeUpdate(1, nev(Mnemonic("X"), Name("xxx")))
-        assertEq(r, CustomReqType(1, "X", Set(), "xxx", ImplicationRequired, Live))
+        assertEq(r, CustomReqType(1, "X", Set(), "xxx", Mandatory, Live))
 
-        es :+= CustomReqTypeUpdate(1, nev(Mnemonic("MF"), Imp(ImplicationRequired.Not)))
-        assertEq(r ,CustomReqType(1, "MF", Set(), "xxx", ImplicationRequired.Not, Live))
+        es :+= CustomReqTypeUpdate(1, nev(Mnemonic("MF"), Implication(Mandatory.Not)))
+        assertEq(r ,CustomReqType(1, "MF", Set(), "xxx", Mandatory.Not, Live))
       }
       'inUse - {
         var es = Vector(c1, use1, u1)
         def r = _assertPass(es: _*).config.reqTypes.custom.get(1).get
-        assertEq(r, CustomReqType(1, "M", Set("MF"), mfName, ImplicationRequired, Live))
+        assertEq(r, CustomReqType(1, "M", Set("MF"), mfName, Mandatory, Live))
 
         es :+= CustomReqTypeUpdate(1, nev(Mnemonic("X"), Name("xxx")))
-        assertEq(r, CustomReqType(1, "X", Set("MF", "M"), "xxx", ImplicationRequired, Live))
+        assertEq(r, CustomReqType(1, "X", Set("MF", "M"), "xxx", Mandatory, Live))
 
-        es :+= CustomReqTypeUpdate(1, nev(Mnemonic("MF"), Imp(ImplicationRequired.Not)))
-        assertEq(r ,CustomReqType(1, "MF", Set("M", "X"), "xxx", ImplicationRequired.Not, Live))
+        es :+= CustomReqTypeUpdate(1, nev(Mnemonic("MF"), Implication(Mandatory.Not)))
+        assertEq(r ,CustomReqType(1, "MF", Set("M", "X"), "xxx", Mandatory.Not, Live))
       }
       'badName  - assertFail("blank")   (c1, CustomReqTypeUpdate(1, nev(Name(""))))
       'badMne   - assertFail("Mnemonic")(c1, CustomReqTypeUpdate(1, nev(Mnemonic("?"))))

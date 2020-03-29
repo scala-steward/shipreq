@@ -22,7 +22,7 @@ private[issues] object ReqTypeImplication {
     @inline def component = Component(this)
   }
 
-  val rowStore = SavedRowStore.data[CustomReqType](_.imp)
+  val rowStore = SavedRowStore.data[CustomReqType](_.implication)
   import rowStore.{State => S}
   val  ST = ReactS.FixCB[S]
   type ST = ST.T[Unit]
@@ -48,11 +48,11 @@ private[issues] object ReqTypeImplication {
         Persistence.simpleAsyncUpdate(rowStore)(p.remote, $ runState _, id))
 
     val genEditor =
-      Editors.checkboxEditor.imap(On <=> ImplicationRequired)
+      Editors.checkboxEditor.imap(On <=> Mandatory)
         .strengthR[ReqType].labelSuffix(a => label(a._2))
 
     val editor =
-      genEditor.cmapA[(ImplicationRequired, CustomReqType)](a => a)
+      genEditor.cmapA[(Mandatory, CustomReqType)](a => a)
         .zoomU[S].applyRowUpdate(rowStore)(_._2.id)
         .paddSTA(a => { case OnEditFinished(_) => save(a._2.id).runNow() })
 
@@ -76,7 +76,7 @@ private[issues] object ReqTypeImplication {
       StaticReqType.values.iterator.toStream.map(s => {
         val re: VdomElement =
           <.div(^.key := s.mnemonic.value,
-            genEditor render EditorI((s.imp, s), "", None))
+            genEditor render EditorI((s.implication, s), "", None))
         (s.mnemonic, re)
       })
 

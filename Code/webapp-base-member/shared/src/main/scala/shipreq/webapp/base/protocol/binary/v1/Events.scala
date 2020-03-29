@@ -167,26 +167,26 @@ object Events {
   implicit val pickleCustomReqTypeGD: Pickler[CustomReqTypeGD.NonEmptyValues] = {
     import CustomReqTypeGD._
 
-    implicit val picklerValueForImp      = transformPickler(ValueForImp     .apply)(_.value)
-    implicit val picklerValueForMnemonic = transformPickler(ValueForMnemonic.apply)(_.value)
-    implicit val picklerValueForName     = transformPickler(ValueForName    .apply)(_.value)
+    implicit val picklerValueForImplication = transformPickler(ValueForImplication.apply)(_.value)
+    implicit val picklerValueForMnemonic    = transformPickler(ValueForMnemonic   .apply)(_.value)
+    implicit val picklerValueForName        = transformPickler(ValueForName       .apply)(_.value)
 
     implicit val picklerValue: Pickler[Value] =
       new Pickler[Value] {
-        private[this] final val KeyImp      = 'I'
-        private[this] final val KeyMnemonic = 'M'
-        private[this] final val KeyName     = 'N'
+        private[this] final val KeyImplication = 'I'
+        private[this] final val KeyMnemonic    = 'M'
+        private[this] final val KeyName        = 'N'
         override def pickle(a: Value)(implicit state: PickleState): Unit =
           a match {
-            case b: ValueForImp      => state.enc.writeByte(KeyImp     ); state.pickle(b)
-            case b: ValueForMnemonic => state.enc.writeByte(KeyMnemonic); state.pickle(b)
-            case b: ValueForName     => state.enc.writeByte(KeyName    ); state.pickle(b)
+            case b: ValueForImplication => state.enc.writeByte(KeyImplication); state.pickle(b)
+            case b: ValueForMnemonic    => state.enc.writeByte(KeyMnemonic   ); state.pickle(b)
+            case b: ValueForName        => state.enc.writeByte(KeyName       ); state.pickle(b)
           }
         override def unpickle(implicit state: UnpickleState): Value =
           state.dec.readByte match {
-            case KeyImp      => state.unpickle[ValueForImp]
-            case KeyMnemonic => state.unpickle[ValueForMnemonic]
-            case KeyName     => state.unpickle[ValueForName]
+            case KeyImplication => state.unpickle[ValueForImplication]
+            case KeyMnemonic    => state.unpickle[ValueForMnemonic]
+            case KeyName        => state.unpickle[ValueForName]
           }
       }
 

@@ -108,7 +108,7 @@ object ProjectSpaProtocols {
     implicit val picklerFieldMandatorinessModReq: Pickler[(CustomFieldId, Mandatory)] =
       Tuple2Pickler
 
-    implicit val picklerReqTypeImplicationModReq: Pickler[(CustomReqTypeId, ImplicationRequired)] =
+    implicit val picklerReqTypeImplicationModReq: Pickler[(CustomReqTypeId, Mandatory)] =
       Tuple2Pickler
 
     implicit val picklerEventResult: Pickler[WsReqRes.EventResult] =
@@ -225,7 +225,7 @@ object ProjectSpaProtocols {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onFieldMandatorinessMod(r)
     }
 
-    case object ReqTypeImplicationMod extends Base[(CustomReqTypeId, ImplicationRequired), EventResult](10) {
+    case object ReqTypeImplicationMod extends Base[(CustomReqTypeId, Mandatory), EventResult](10) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onReqTypeImplicationMod(r)
     }
 

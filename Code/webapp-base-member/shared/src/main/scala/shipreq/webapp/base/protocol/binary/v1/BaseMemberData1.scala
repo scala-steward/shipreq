@@ -624,7 +624,7 @@ object BaseMemberData1 {
         state.pickle(a.mnemonic)
         state.pickle(a.oldMnemonics)
         state.pickle(a.name)
-        state.pickle(a.imp)
+        state.pickle(a.implication)
         state.pickle(a.live)
       }
       override def unpickle(implicit state: UnpickleState): CustomReqType = {
@@ -632,7 +632,7 @@ object BaseMemberData1 {
         val mnemonic     = state.unpickle[ReqType.Mnemonic]
         val oldMnemonics = state.unpickle[Set[ReqType.Mnemonic]]
         val name         = state.unpickle[String]
-        val imp          = state.unpickle[ImplicationRequired]
+        val imp          = state.unpickle[Mandatory]
         val live         = state.unpickle[Live]
         CustomReqType(id, mnemonic, oldMnemonics, name, imp, live)
       }
@@ -680,9 +680,6 @@ object BaseMemberData1 {
 
   implicit lazy val picklerHashRefKey: Pickler[HashRefKey] =
     pickleTaggedS(HashRefKey)
-
-  implicit lazy val picklerImplRequired: Pickler[ImplicationRequired] =
-    pickleBool(ImplicationRequired)
 
   implicit lazy val picklerIssueCategory: Pickler[IssueCategory] =
     new Pickler[IssueCategory] {
