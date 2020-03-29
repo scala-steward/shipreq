@@ -147,9 +147,6 @@ v2.1
   * `AllTags` and `RemainingTags` fields #should be optional [FR-19]
 
 * ReqTypes
-  * Might be a good idea to store a description & examples. (eg. "BR" means xxx + examples)
-  * Users should be able to change the mnemonic (without retention) if not in use yet
-  * Prototype new UI (here we go again!)
-  * Support hard & soft deletion from UI
-      - explain difference and reasoning
-      - explain effect on appreqtypes in tags & fields
+  * Build and test new UI
+  * Events - separate hard/soft deletion
+  * Events - don't consume mnemonic if not in-use
