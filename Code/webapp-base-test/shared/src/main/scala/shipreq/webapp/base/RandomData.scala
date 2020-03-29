@@ -171,6 +171,9 @@ object RandomData {
 
   def imapToMapLens[K, V] = Lens((_: IMap[K, V]).underlyingMap)(v => _ replaceUnderlying v)
 
+  val desc =
+    unicodeString1.option
+
   val live =
     Gen.choose[Live](Live, Live, Live, Dead)
 
@@ -294,9 +297,10 @@ object RandomData {
       n  <- customReqTypeName
       mn <- reqTypeMnemonic
       om <- reqTypeMnemonic.set(0 to 10)
-      ir <- implicationRequired
+      d  <- desc
+      i  <- implicationRequired
       a  <- live
-    } yield CustomReqType(id, mn, om - mn, n, ir, a)
+    } yield CustomReqType(id, mn, om - mn, n, d, i, a)
 
   def genCustomReqTypes(g: Gen[List[CustomReqType]]) = {
     def dname = Distinct.str.at(CustomReqType.name)
@@ -1997,8 +2001,8 @@ object RandomData {
     object customIssueTypeGD extends GenericDataGen(CustomIssueTypeGD) {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
-        case Key  => hashRefKey            map Key .apply
-        case Desc => unicodeString1.option map Desc.apply
+        case Key  => hashRefKey map Key .apply
+        case Desc => desc       map Desc.apply
       }
     }
 
@@ -2015,6 +2019,7 @@ object RandomData {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
         case Name        => customReqTypeName   map Name       .apply
+        case Description => desc                map Description.apply
         case Implication => implicationRequired map Implication.apply
         case gd.Mnemonic => reqTypeMnemonic     map gd.Mnemonic.apply
       }
@@ -2113,7 +2118,7 @@ object RandomData {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
         case Name     => unicodeString1        map Name    .apply
-        case Desc     => unicodeString1.option map Desc    .apply
+        case Desc     => desc                  map Desc    .apply
         case Key      => hashRefKey            map Key     .apply
         case Children => tagChildren           map Children.apply
         case Parents  => tagParents            map Parents .apply
@@ -2125,7 +2130,7 @@ object RandomData {
       override def valueFor(a: Attr): Gen[Value] = a match {
         case ApplicableReqTypes => anyApplicableReqTypes map ApplicableReqTypes.apply
         case Colour             => genColour.option      map Colour            .apply
-        case Desc               => unicodeString1.option map Desc              .apply
+        case Desc               => desc                  map Desc              .apply
         case Key                => hashRefKey            map Key               .apply
         case Children           => tagChildren           map Children          .apply
         case Parents            => tagParents            map Parents           .apply
@@ -2136,7 +2141,7 @@ object RandomData {
       import gd._
       override def valueFor(a: Attr): Gen[Value] = a match {
         case Name        => tagGroupName          map Name       .apply
-        case Desc        => unicodeString1.option map Desc       .apply
+        case Desc        => desc                  map Desc       .apply
         case Exclusivity => exclusivity           map Exclusivity.apply
         case Children    => tagChildren           map Children   .apply
         case Parents     => tagParents            map Parents    .apply

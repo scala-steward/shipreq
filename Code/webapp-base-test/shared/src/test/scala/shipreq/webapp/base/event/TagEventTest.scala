@@ -165,7 +165,7 @@ trait TagGroupEvents {
       Children(Vector(children.map(_.TG): _*)), Parents(parents.map(_.TG -> none[TagId]).toMap)))
   def tagId1 = 1.TG
 
-  def createTagField1 = CustomTagFieldEventTestV1.mkC1(tagId1)
+  def createTagField1 = CustomTagFieldEventV1Test.mkC1(tagId1)
 
   val c1Name = "Version"
   type CE = TagGroupCreate
@@ -236,8 +236,8 @@ object TagGroupEventTest extends TestSuite with TagGroupEvents {
         testTagFieldLiveness(Live, Live)(c1, createTagField1, sd1, r1)
       }
       'whenDeadTagField {
-        testTagFieldLiveness(Dead, Dead)(c1, createTagField1, CustomTagFieldEventTestV1.sd1, sd1)
-        testTagFieldLiveness(Dead, Dead)(c1, createTagField1, CustomTagFieldEventTestV1.sd1, sd1, r1)
+        testTagFieldLiveness(Dead, Dead)(c1, createTagField1, CustomTagFieldEventV1Test.sd1, sd1)
+        testTagFieldLiveness(Dead, Dead)(c1, createTagField1, CustomTagFieldEventV1Test.sd1, sd1, r1)
       }
     }
   }
@@ -359,7 +359,7 @@ object ApplicableTagEventTest extends TestSuite with ApplicableTagEvents {
 
     'update {
       'ok - {
-        var es = Vector(c1, u1)
+        var es = Vector[Event](c1, u1)
         def r1 = _assertPass(es: _*).config.tags.tree.get(1.AT).get
         def r2 = _assertPass(es: _*).config.tags.tree.get(2.AT).get
         assertEq(r1, TagInTree(ApplicableTag(1, "c1", Some("versionness"), Some("#def"), allReqTypes, Live), Vector.empty))

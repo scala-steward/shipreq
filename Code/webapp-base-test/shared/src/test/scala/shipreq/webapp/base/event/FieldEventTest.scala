@@ -12,7 +12,7 @@ import ApplyEventTestFns._
 import Event._
 import RetiredGenericData._
 
-object CustomFieldEventTestHelpersV1 {
+object CustomFieldEventV1TestHelpers {
   val onlyUC  = onlyReqTypes(StaticReqType.UseCase)
   val onlyRT1 = onlyReqTypes(1)
   val notRT2  = notReqTypes(2)
@@ -27,10 +27,10 @@ object CustomFieldEventTestHelpers {
 object CustomFieldEventTest extends TestSuite {
   import StaticField._
 
-  implicit val init = InitialEvents(CustomTextFieldEventTestV1.c1, CustomTextFieldEventTestV1.c2)
+  implicit val init = InitialEvents(CustomTextFieldEventV1Test.c1, CustomTextFieldEventV1Test.c2)
 
-  val t1 = CustomTextFieldEventTestV1.c1.id
-  val t2 = CustomTextFieldEventTestV1.c2.id
+  val t1 = CustomTextFieldEventV1Test.c1.id
+  val t2 = CustomTextFieldEventV1Test.c2.id
 
   override def tests = Tests {
 
@@ -68,7 +68,7 @@ object CustomFieldEventTest extends TestSuite {
 
 // =====================================================================================================================
 trait CustomTextFieldEventsV1 {
-  import CustomFieldEventTestHelpersV1._
+  import CustomFieldEventV1TestHelpers._
   import CustomTextFieldGDv1._
 
   val c1Name = "Stuff"
@@ -86,8 +86,8 @@ object CustomTextFieldEventSharedTests extends SharedTests()(NoInitialEvents.ini
   def copyId(to: CE, from: CE) = to.copy(id = from.id)
 }
 
-object CustomTextFieldEventTestV1 extends TestSuite with CustomTextFieldEventsV1 {
-  import CustomFieldEventTestHelpersV1._
+object CustomTextFieldEventV1Test extends TestSuite with CustomTextFieldEventsV1 {
+  import CustomFieldEventV1TestHelpers._
   import CustomTextFieldGDv1._
   import NoInitialEvents._
 
@@ -187,7 +187,7 @@ object CustomTextFieldEventTest extends TestSuite with CustomTextFieldEvents {
 
 // =====================================================================================================================
 trait CustomTagFieldEventsV1 {
-  import CustomFieldEventTestHelpersV1._
+  import CustomFieldEventV1TestHelpers._
   import CustomTagFieldGDv1._
 
   def mkC1(tagId: TagGroupId) = FieldCustomTagCreateV1(1, nev(TagId(tagId), Mandatory(true), ApplicableReqTypes(allReqTypes)))
@@ -200,13 +200,13 @@ trait CustomTagFieldEventsV1 {
   val r1  = FieldCustomRestore(1.CFTag)
 }
 
-object CustomTagFieldEventSharedTests extends SharedTests()(CustomTagFieldEventTestV1.init) with CustomTagFieldEventsV1 {
+object CustomTagFieldEventSharedTests extends SharedTests()(CustomTagFieldEventV1Test.init) with CustomTagFieldEventsV1 {
   def setId(c: CE, i: Int) = c.copy(id = i)
   def copyId(to: CE, from: CE) = to.copy(id = from.id)
 }
 
-object CustomTagFieldEventTestV1 extends TestSuite with CustomTagFieldEventsV1 {
-  import CustomFieldEventTestHelpersV1._
+object CustomTagFieldEventV1Test extends TestSuite with CustomTagFieldEventsV1 {
+  import CustomFieldEventV1TestHelpers._
   import CustomTagFieldGDv1._
 
   val createTG2 = TagGroupCreate(2, TagGroupGD("c2", Some("r"), NonExclusive, ∅, ∅))
@@ -353,7 +353,7 @@ object CustomTagFieldEventTest extends TestSuite with CustomTagFieldEvents {
 
 // =====================================================================================================================
 trait CustomImpFieldEventsV1 {
-  import CustomFieldEventTestHelpersV1._
+  import CustomFieldEventV1TestHelpers._
   import CustomImpFieldGDv1._
 
   type CE = FieldCustomImpCreateV1
@@ -364,13 +364,13 @@ trait CustomImpFieldEventsV1 {
   val r1  = FieldCustomRestore(1.CFImp)
 }
 
-object CustomImpFieldEventSharedTests extends SharedTests()(CustomImpFieldEventTestV1.init) with CustomImpFieldEventsV1 {
+object CustomImpFieldEventSharedTests extends SharedTests()(CustomImpFieldEventV1Test.init) with CustomImpFieldEventsV1 {
   def setId(c: CE, i: Int) = c.copy(id = i)
   def copyId(to: CE, from: CE) = to.copy(id = from.id)
 }
 
-object CustomImpFieldEventTestV1 extends TestSuite with CustomImpFieldEventsV1 {
-  import CustomFieldEventTestHelpersV1._
+object CustomImpFieldEventV1Test extends TestSuite with CustomImpFieldEventsV1 {
+  import CustomFieldEventV1TestHelpers._
   import CustomImpFieldGDv1._
 
   implicit val init = InitialEvents(CustomReqTypeEventTest.c1, CustomReqTypeEventTest.use1)

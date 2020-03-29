@@ -77,6 +77,7 @@ object MakeEvent {
 
       case UpdateConfigCmd.CustomReqTypeCreate(vs) =>
         val id = CustomReqTypeId(project.idCeilings.customReqType + 1)
+        val description = Option.empty[String] // TODO remove
         import vs._
         val values = gdAllValues(CustomReqTypeGD , "")
         CustomReqTypeCreate(id, values)
@@ -85,6 +86,7 @@ object MakeEvent {
         project.config.reqTypes.get(id) match {
           case Some(cur: CustomReqType) =>
             import vs._
+            val description = Option.empty[String] // TODO remove
             val vs2 = gdUnequalValues(CustomReqTypeGD, cur, "")
             eventIfNonEmpty(vs2)(CustomReqTypeUpdate(id, _))
           case Some(f) => Failure(s"$f must be a CustomReqType.")

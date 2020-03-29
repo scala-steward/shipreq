@@ -8,32 +8,33 @@ import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
 import ApplyEventTestFns._
 import AutoNES._
-import CustomReqTypeGD._
 import DataImplicits._
 import Event._
 import NoInitialEvents._
 import RetiredGenericData._
 
-trait CustomReqTypeEvents {
+trait CustomReqTypeEventsV1 {
+  import CustomReqTypeGDv1._
   val mfName = "Major Feature"
-  type CE = CustomReqTypeCreate
-  val c1  = CustomReqTypeCreate(1, nev(Mnemonic("MF"), Name(mfName), Implication(Mandatory)))
-  val c2  = CustomReqTypeCreate(2, nev(Mnemonic("FR"), Name("Functional Req"), Implication(Optional)))
-  val u1  = CustomReqTypeUpdate(1, nev(Mnemonic("M")))
+  type CE = CustomReqTypeCreateV1
+  val c1  = CustomReqTypeCreateV1(1, nev(Mnemonic("MF"), Name(mfName), Implication(Mandatory)))
+  val c2  = CustomReqTypeCreateV1(2, nev(Mnemonic("FR"), Name("Functional Req"), Implication(Optional)))
+  val u1  = CustomReqTypeUpdateV1(1, nev(Mnemonic("M")))
   val sd1 = CustomReqTypeDelete(1)
   val r1  = CustomReqTypeRestore(1)
   val use1 = GenericReqCreate(1.GR, 1, GenericReqGD.emptyValues)
 }
 
-object CustomReqTypeEventSharedTests extends SharedTests with CustomReqTypeEvents {
+object CustomReqTypeEventSharedTests extends SharedTests with CustomReqTypeEventsV1 {
   override def setId(c: CE, i: Int) = c.copy(id = i)
   override def copyId(to: CE, from: CE) = to.copy(id = from.id)
   override def prepForSoftDelete(es: Event*) = c1 +: use1 +: es
 }
 
-object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
+object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEventsV1 {
+  import CustomReqTypeGDv1._
 
-  implicit class CustomReqTypeCreateExt(private val a: CustomReqTypeCreate) extends AnyVal {
+  implicit class CustomReqTypeCreateExt(private val a: CustomReqTypeCreateV1) extends AnyVal {
     def mod(f: Values => Values) =
       a.copy(vs = NonEmpty.force(f(a.vs.value)))
   }
@@ -53,45 +54,45 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
       'notInUse - {
         var es = Vector(c1, u1)
         def r = _assertPass(es: _*).config.reqTypes.custom.get(1).get
-        assertEq(r, CustomReqType(1, "M", Set(), mfName, Mandatory, Live))
+        assertEq(r, CustomReqType.v1(1, "M", Set(), mfName, Mandatory, Live))
 
-        es :+= CustomReqTypeUpdate(1, nev(Mnemonic("X"), Name("xxx")))
-        assertEq(r, CustomReqType(1, "X", Set(), "xxx", Mandatory, Live))
+        es :+= CustomReqTypeUpdateV1(1, nev(Mnemonic("X"), Name("xxx")))
+        assertEq(r, CustomReqType.v1(1, "X", Set(), "xxx", Mandatory, Live))
 
-        es :+= CustomReqTypeUpdate(1, nev(Mnemonic("MF"), Implication(Optional)))
-        assertEq(r ,CustomReqType(1, "MF", Set(), "xxx", Optional, Live))
+        es :+= CustomReqTypeUpdateV1(1, nev(Mnemonic("MF"), Implication(Optional)))
+        assertEq(r ,CustomReqType.v1(1, "MF", Set(), "xxx", Optional, Live))
       }
       'inUse - {
         var es = Vector(c1, use1, u1)
         def r = _assertPass(es: _*).config.reqTypes.custom.get(1).get
-        assertEq(r, CustomReqType(1, "M", Set("MF"), mfName, Mandatory, Live))
+        assertEq(r, CustomReqType.v1(1, "M", Set("MF"), mfName, Mandatory, Live))
 
-        es :+= CustomReqTypeUpdate(1, nev(Mnemonic("X"), Name("xxx")))
-        assertEq(r, CustomReqType(1, "X", Set("MF", "M"), "xxx", Mandatory, Live))
+        es :+= CustomReqTypeUpdateV1(1, nev(Mnemonic("X"), Name("xxx")))
+        assertEq(r, CustomReqType.v1(1, "X", Set("MF", "M"), "xxx", Mandatory, Live))
 
-        es :+= CustomReqTypeUpdate(1, nev(Mnemonic("MF"), Implication(Optional)))
-        assertEq(r ,CustomReqType(1, "MF", Set("M", "X"), "xxx", Optional, Live))
+        es :+= CustomReqTypeUpdateV1(1, nev(Mnemonic("MF"), Implication(Optional)))
+        assertEq(r ,CustomReqType.v1(1, "MF", Set("M", "X"), "xxx", Optional, Live))
       }
-      'badName  - assertFail("blank")   (c1, CustomReqTypeUpdate(1, nev(Name(""))))
-      'badMne   - assertFail("Mnemonic")(c1, CustomReqTypeUpdate(1, nev(Mnemonic("?"))))
-      'dupName  - assertFail("unique")  (c1, c2, CustomReqTypeUpdate(2, nev(Name(mfName))))
-      'dupMne   - assertFail("unique")  (c1, c2, CustomReqTypeUpdate(2, nev(Mnemonic("MF"))))
+      'badName  - assertFail("blank")   (c1, CustomReqTypeUpdateV1(1, nev(Name(""))))
+      'badMne   - assertFail("Mnemonic")(c1, CustomReqTypeUpdateV1(1, nev(Mnemonic("?"))))
+      'dupName  - assertFail("unique")  (c1, c2, CustomReqTypeUpdateV1(2, nev(Name(mfName))))
+      'dupMne   - assertFail("unique")  (c1, c2, CustomReqTypeUpdateV1(2, nev(Mnemonic("MF"))))
     }
 
     'delete {
       def testImpFieldLiveness(imp: Live, exp: Live)(es: Event*): Unit = {
         val p = _assertPass(es: _*)
-        val f = p.config.fields.custom(CustomImpFieldEventTestV1.c1.id)
+        val f = p.config.fields.custom(CustomImpFieldEventV1Test.c1.id)
         assertEq("live", imp, f live p.config)
         assertEq("liveExplicitly", exp, f.liveExplicitly)
       }
       'whenLiveImpField {
-        testImpFieldLiveness(Dead, Live)(c1, CustomImpFieldEventTestV1.c1, use1, sd1)
-        testImpFieldLiveness(Live, Live)(c1, CustomImpFieldEventTestV1.c1, use1, sd1, r1)
+        testImpFieldLiveness(Dead, Live)(c1, CustomImpFieldEventV1Test.c1, use1, sd1)
+        testImpFieldLiveness(Live, Live)(c1, CustomImpFieldEventV1Test.c1, use1, sd1, r1)
       }
       'whenDeadImpField {
-        testImpFieldLiveness(Dead, Dead)(c1, CustomImpFieldEventTestV1.c1, use1, CustomImpFieldEventTestV1.sd1, sd1)
-        testImpFieldLiveness(Dead, Dead)(c1, CustomImpFieldEventTestV1.c1, use1, CustomImpFieldEventTestV1.sd1, sd1, r1)
+        testImpFieldLiveness(Dead, Dead)(c1, CustomImpFieldEventV1Test.c1, use1, CustomImpFieldEventV1Test.sd1, sd1)
+        testImpFieldLiveness(Dead, Dead)(c1, CustomImpFieldEventV1Test.c1, use1, CustomImpFieldEventV1Test.sd1, sd1, r1)
       }
       'hardDelete {
         'notInUse {

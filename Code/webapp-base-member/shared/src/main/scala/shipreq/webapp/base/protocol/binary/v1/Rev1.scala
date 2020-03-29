@@ -5,6 +5,7 @@ import java.time.Instant
 import scalaz.\/
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data.reqtable.SavedView
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.filter.Filter
@@ -332,7 +333,7 @@ object Rev1 {
         state.pickle(a.applicableReqTypes)
         state.pickle(a.live)
       }
-      override def unpickle(implicit state: UnpickleState): ApplicableTag = {
+      override def unpickle(implicit state: UnpickleState): ApplicableTag =
         state.dec.peek(_.readInt) match {
 
           // v1.1
@@ -358,7 +359,6 @@ object Rev1 {
           case n =>
             throw UnsupportedVersionException(found = Version.v1(n), maxSupported = Version.v1(n))
         }
-      }
     }
 
   implicit lazy val picklerTag: Pickler[Tag] =
@@ -603,6 +603,55 @@ object Rev1 {
         }
     }
 
+  implicit lazy val picklerCustomReqType: Pickler[CustomReqType] =
+    new Pickler[CustomReqType] {
+      private[this] implicit val picklerSetMnemonics: Pickler[Set[ReqType.Mnemonic]] = iterablePickler
+      override def pickle(a: CustomReqType)(implicit state: PickleState): Unit = {
+        state.enc.writeInt(1) // v1.1
+        state.pickle(a.id)    // first byte is <=0 because of PicklerReuse
+        state.pickle(a.mnemonic)
+        state.pickle(a.oldMnemonics)
+        state.pickle(a.name)
+        state.pickle(a.description)
+        state.pickle(a.implication)
+        state.pickle(a.live)
+      }
+      override def unpickle(implicit state: UnpickleState): CustomReqType =
+        state.dec.peek(_.readInt) match {
+
+          // v1.1
+          case 1 =>
+            state.dec.readInt
+            val id           = state.unpickle[CustomReqTypeId]
+            val mnemonic     = state.unpickle[ReqType.Mnemonic]
+            val oldMnemonics = state.unpickle[Set[ReqType.Mnemonic]]
+            val name         = state.unpickle[String]
+            val desc         = state.unpickle[Option[String]]
+            val imp          = state.unpickle[Mandatory]
+            val live         = state.unpickle[Live]
+            CustomReqType(id, mnemonic, oldMnemonics, name, desc, imp, live)
+
+          // v1.0
+          case n if n <= 0 =>
+            val id           = state.unpickle[CustomReqTypeId]
+            val mnemonic     = state.unpickle[ReqType.Mnemonic]
+            val oldMnemonics = state.unpickle[Set[ReqType.Mnemonic]]
+            val name         = state.unpickle[String]
+            val imp          = state.unpickle[Mandatory]
+            val live         = state.unpickle[Live]
+            CustomReqType.v1(id, mnemonic, oldMnemonics, name, imp, live)
+
+          case n =>
+            throw UnsupportedVersionException(found = Version.v1(n), maxSupported = Version.v1(n))
+        }
+    }
+
+  implicit lazy val picklerReqTypesCustom: Pickler[ReqTypes.Custom] =
+    pickleIMapD[CustomReqTypeId, CustomReqType]
+
+  implicit lazy val picklerReqTypes: Pickler[ReqTypes] =
+    transformPickler(ReqTypes.apply)(_.custom)
+
   implicit lazy val picklerProject: Pickler[Project] =
     new Pickler[Project] {
       override def pickle(a: Project)(implicit state: PickleState): Unit = {
@@ -710,6 +759,7 @@ object Rev1 {
   implicit lazy val pickleCustomReqTypeGD: Pickler[CustomReqTypeGD.NonEmptyValues] = {
     import CustomReqTypeGD._
 
+    implicit val picklerValueForDescription = transformPickler(ValueForDescription.apply)(_.value)
     implicit val picklerValueForImplication = transformPickler(ValueForImplication.apply)(_.value)
     implicit val picklerValueForMnemonic    = transformPickler(ValueForMnemonic   .apply)(_.value)
     implicit val picklerValueForName        = transformPickler(ValueForName       .apply)(_.value)
@@ -719,14 +769,17 @@ object Rev1 {
         private[this] final val KeyImplication = 'I'
         private[this] final val KeyMnemonic    = 'M'
         private[this] final val KeyName        = 'N'
+        private[this] final val KeyDescription = 'D'
         override def pickle(a: Value)(implicit state: PickleState): Unit =
           a match {
+            case b: ValueForDescription => state.enc.writeByte(KeyDescription); state.pickle(b)
             case b: ValueForImplication => state.enc.writeByte(KeyImplication); state.pickle(b)
             case b: ValueForMnemonic    => state.enc.writeByte(KeyMnemonic   ); state.pickle(b)
             case b: ValueForName        => state.enc.writeByte(KeyName       ); state.pickle(b)
           }
         override def unpickle(implicit state: UnpickleState): Value =
           state.dec.readByte match {
+            case KeyDescription => state.unpickle[ValueForDescription]
             case KeyImplication => state.unpickle[ValueForImplication]
             case KeyMnemonic    => state.unpickle[ValueForMnemonic]
             case KeyName        => state.unpickle[ValueForName]

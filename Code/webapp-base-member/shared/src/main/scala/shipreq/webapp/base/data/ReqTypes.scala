@@ -22,6 +22,7 @@ sealed trait ReqType {
   def mnemonic    : Mnemonic
   def oldMnemonics: Set[Mnemonic]
   def name        : String
+  def description : Option[String]
   def implication : Mandatory
   def live        : Live
 
@@ -56,6 +57,7 @@ object StaticReqType {
     override def mnemonic     = Mnemonic("UC")
     override def oldMnemonics = UnivEq.emptySet
     override def name         = "Use Case"
+    override def description  = None
     override def implication  = Optional // TODO Should be configurable
   }
 
@@ -81,6 +83,7 @@ final case class CustomReqType(id          : CustomReqTypeId,
                                mnemonic    : Mnemonic,
                                oldMnemonics: Set[Mnemonic],
                                name        : String,
+                               description : Option[String],
                                implication : Mandatory,
                                live        : Live) extends ReqType {
 
@@ -104,13 +107,32 @@ object CustomReqType {
     override val unapplyData: AnyRef => Option[CustomReqType] = {case r: CustomReqType => Some(r); case _ => None}
   }
 
-  val name        : Lens[CustomReqType, String]        = GenLens[CustomReqType](_.name)
-  val imp         : Lens[CustomReqType, Mandatory]     = GenLens[CustomReqType](_.implication)
-  val live        : Lens[CustomReqType, Live]          = GenLens[CustomReqType](_.live)
-  def oldMnemonics: Lens[CustomReqType, Set[Mnemonic]] = GenLens[CustomReqType](_.oldMnemonics)
+  val name        : Lens[CustomReqType, String]         = GenLens[CustomReqType](_.name)
+  val imp         : Lens[CustomReqType, Mandatory]      = GenLens[CustomReqType](_.implication)
+  val live        : Lens[CustomReqType, Live]           = GenLens[CustomReqType](_.live)
+  def oldMnemonics: Lens[CustomReqType, Set[Mnemonic]]  = GenLens[CustomReqType](_.oldMnemonics)
+
+  val desc: Lens[CustomReqType, Option[String]] =
+    Lens[CustomReqType, Option[String]](_.description)(d => _.copy(description = d.filter(_.nonEmpty)))
 
   val mnemonic: Boolean => Lens[CustomReqType, Mnemonic] =
     Memo.bool(retain => Lens((_: CustomReqType).mnemonic)(m => _.setMnemonic(m, retain)))
+
+  @inline def v1(id          : CustomReqTypeId,
+                 mnemonic    : Mnemonic,
+                 oldMnemonics: Set[Mnemonic],
+                 name        : String,
+                 implication : Mandatory,
+                 live        : Live): CustomReqType =
+    apply(
+      id           = id,
+      mnemonic     = mnemonic,
+      oldMnemonics = oldMnemonics,
+      name         = name,
+      description  = None,
+      implication  = implication,
+      live         = live,
+    )
 }
 
 // =====================================================================================================================

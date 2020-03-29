@@ -9,6 +9,7 @@ import scalaz.{-\/, \/-}
 import shipreq.base.util.JsonUtil._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.event.RetiredGenericData._
 import shipreq.webapp.base.filter.Filter
@@ -268,6 +269,19 @@ object Rev1 {
     case _: StaticReqType.UseCase => Json.fromString("uc")
   }
 
+  implicit lazy val decoderCustomReqType: Decoder[CustomReqType] =
+    Decoder.forProduct7("id", "mnemonic", "oldMnemonics", "name", "desc", "imp", "live")(CustomReqType.apply)
+
+  implicit lazy val encoderCustomReqType: Encoder[CustomReqType] =
+    Encoder.forProduct7("id", "mnemonic", "oldMnemonics", "name", "desc", "imp", "live")(a =>
+      (a.id, a.mnemonic, a.oldMnemonics, a.name, a.description,  a.implication, a.live))
+
+  implicit lazy val codecReqTypes: JsonCodec[ReqTypes] =
+    JsonCodec.xmap(ReqTypes.apply)(_.custom)
+
+  implicit lazy val codecReqTypesCustom: JsonCodec[ReqTypes.Custom] =
+    codecIMapD[CustomReqTypeId, CustomReqType]
+
   implicit lazy val codecApplicableReqTypes: JsonCodec[ApplicableReqTypes] = {
     val unit = ().asJson
 
@@ -436,17 +450,20 @@ object Rev1 {
     implicit val codecValueForImplication = JsonCodec.xmap(ValueForImplication.apply)(_.value)
     implicit val codecValueForMnemonic    = JsonCodec.xmap(ValueForMnemonic   .apply)(_.value)
     implicit val codecValueForName        = JsonCodec.xmap(ValueForName       .apply)(_.value)
+    implicit val codecValueForDescription = JsonCodec.xmap(ValueForDescription.apply)(_.value)
 
     implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
       case ("imp"     , c) => c.as[ValueForImplication]
       case ("mnemonic", c) => c.as[ValueForMnemonic]
       case ("name"    , c) => c.as[ValueForName]
+      case ("desc"    , c) => c.as[ValueForDescription]
     }
 
     implicit val encoderValue: Encoder[Value] = Encoder.instance {
       case a: ValueForImplication => Json.obj("imp"      -> a.asJson)
       case a: ValueForMnemonic    => Json.obj("mnemonic" -> a.asJson)
       case a: ValueForName        => Json.obj("name"     -> a.asJson)
+      case a: ValueForDescription => Json.obj("desc"     -> a.asJson)
     }
 
     implicit val values: JsonCodec[Values] = codecIMap(emptyValues)

@@ -9,7 +9,6 @@ import nyaya.util.Multimap
 import shipreq.base.util._
 import shipreq.base.util.JsonUtil._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.issue.IssueCategory
 import shipreq.webapp.base.protocol.json.JsonCodec
 import shipreq.webapp.base.sort.SortMethod
@@ -414,11 +413,12 @@ private[v1] object BaseMemberData1 {
   implicit lazy val codecCustomIssueTypeId: JsonCodec[CustomIssueTypeId] =
     codecTaggedI(CustomIssueTypeId)
 
-  implicit lazy val decoderCustomReqType: Decoder[CustomReqType] =
-    Decoder.forProduct6("id", "mnemonic", "oldMnemonics", "name", "imp", "live")(CustomReqType.apply)
-
-  implicit lazy val encoderCustomReqType: Encoder[CustomReqType] =
-    Encoder.forProduct6("id", "mnemonic", "oldMnemonics", "name", "imp", "live")(a => (a.id, a.mnemonic, a.oldMnemonics, a.name, a.implication, a.live))
+  // Replaced by v1.1
+//  implicit lazy val decoderCustomReqType: Decoder[CustomReqType] =
+//    Decoder.forProduct6("id", "mnemonic", "oldMnemonics", "name", "imp", "live")(CustomReqType.apply)
+//
+//  implicit lazy val encoderCustomReqType: Encoder[CustomReqType] =
+//    Encoder.forProduct6("id", "mnemonic", "oldMnemonics", "name", "imp", "live")(a => (a.id, a.mnemonic, a.oldMnemonics, a.name, a.implication, a.live))
 
   implicit lazy val codecCustomReqTypeId: JsonCodec[CustomReqTypeId] =
     codecTaggedI(CustomReqTypeId)
@@ -538,11 +538,12 @@ private[v1] object BaseMemberData1 {
   implicit lazy val codecReqTypeMnemonic: JsonCodec[ReqType.Mnemonic] =
     codecTaggedS(ReqType.Mnemonic)
 
-  implicit lazy val codecReqTypes: JsonCodec[ReqTypes] =
-    JsonCodec.xmap(ReqTypes.apply)(_.custom)
-
-  implicit lazy val codecReqTypesCustom: JsonCodec[ReqTypes.Custom] =
-    codecIMapD
+  // Replaced by v1.1
+  //implicit lazy val codecReqTypes: JsonCodec[ReqTypes] =
+  //  JsonCodec.xmap(ReqTypes.apply)(_.custom)
+  //
+  // implicit lazy val codecReqTypesCustom: JsonCodec[ReqTypes.Custom] =
+  //   codecIMapD
 
   implicit lazy val codecStaticField: JsonCodec[StaticField] =
     JsonCodec.enumAdt(AdtMacros.adtIsoSet[StaticField, String] {

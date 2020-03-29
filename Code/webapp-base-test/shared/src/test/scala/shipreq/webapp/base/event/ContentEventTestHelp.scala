@@ -209,8 +209,8 @@ object ContentEventTestHelp {
   val fr: CustomReqTypeId = 101
   val (createMF, createFR) = {
     import CustomReqTypeGD._
-    ( CustomReqTypeCreate(mf, nev(Mnemonic("MF"), Name("MajFea"), Implication(false)))
-    , CustomReqTypeCreate(fr, nev(Mnemonic("FR"), Name("FunReq"), Implication(false)))
+    ( CustomReqTypeCreate(mf, nev(Mnemonic("MF"), Name("MajFea"), Description(None), Implication(false)))
+    , CustomReqTypeCreate(fr, nev(Mnemonic("FR"), Name("FunReq"), Description(None), Implication(false)))
     )
   }
 

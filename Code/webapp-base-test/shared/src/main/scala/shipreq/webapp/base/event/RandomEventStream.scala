@@ -25,7 +25,7 @@ import ApplicableEventGen.ObserveFn
 import Event._
 import RetiredGenericData._
 import RandomData.{genColour, fieldName, fieldRefKey, filter, filterDead, hashRefKey, implicationRequired, mandatory, exclusivity}
-import RandomData.{TextGen, TextGenExt, reqCode, customReqTypeName, reqTypeMnemonic, tagGroupName, unicodeString1}
+import RandomData.{TextGen, TextGenExt, reqCode, customReqTypeName, desc, reqTypeMnemonic, tagGroupName, unicodeString1}
 import RandomEventStream.{State, ProjectDepGen}
 import ScalaExt._
 
@@ -359,8 +359,8 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
   object customIssueTypeGD extends GenericDataGen(CustomIssueTypeGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Key  => hashRefKey            map Key .apply
-      case Desc => unicodeString1.option map Desc.apply
+      case Key  => hashRefKey map Key .apply
+      case Desc => desc       map Desc.apply
     }
   }
 
@@ -377,6 +377,7 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
     import gd._
     override def valueFor(a: Attr) = a match {
       case Name        => customReqTypeName   map Name       .apply
+      case Description => desc                map Description.apply
       case Implication => implicationRequired map Implication.apply
       case gd.Mnemonic => reqTypeMnemonic     map gd.Mnemonic.apply
     }
@@ -458,7 +459,7 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
   object codeGroupGD extends GenericDataGen(CodeGroupGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Code  => reqCode.value     map Code .apply
+      case Code  => reqCode.value  map Code .apply
       case Title => codeGroupTitle map Title.apply
     }
   }
@@ -466,34 +467,34 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
   object applicableTagGDv1 extends GenericDataGen(ApplicableTagGDv1) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Name     => unicodeString1        map Name    .apply
-      case Desc     => unicodeString1.option map Desc    .apply
-      case Key      => hashRefKey            map Key     .apply
-      case Children => tagChildren           map Children.apply
-      case Parents  => tagParents            map Parents .apply
+      case Name     => unicodeString1 map Name    .apply
+      case Desc     => desc           map Desc    .apply
+      case Key      => hashRefKey     map Key     .apply
+      case Children => tagChildren    map Children.apply
+      case Parents  => tagParents     map Parents .apply
     }
   }
 
   object applicableTagGD extends GenericDataGen(ApplicableTagGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case ApplicableReqTypes => applicableReqTypes    map ApplicableReqTypes.apply
-      case Colour             => genColour.option      map Colour  .apply
-      case Desc               => unicodeString1.option map Desc    .apply
-      case Key                => hashRefKey            map Key     .apply
-      case Children           => tagChildren           map Children.apply
-      case Parents            => tagParents            map Parents .apply
+      case ApplicableReqTypes => applicableReqTypes map ApplicableReqTypes.apply
+      case Colour             => genColour.option   map Colour  .apply
+      case Desc               => desc               map Desc    .apply
+      case Key                => hashRefKey         map Key     .apply
+      case Children           => tagChildren        map Children.apply
+      case Parents            => tagParents         map Parents .apply
     }
   }
 
   object tagGroupGD extends GenericDataGen(TagGroupGD) {
     import gd._
     override def valueFor(a: Attr) = a match {
-      case Name        => tagGroupName          map Name       .apply
-      case Desc        => unicodeString1.option map Desc       .apply
-      case Exclusivity => exclusivity           map Exclusivity.apply
-      case Children    => tagChildren           map Children   .apply
-      case Parents     => tagParents            map Parents    .apply
+      case Name        => tagGroupName map Name       .apply
+      case Desc        => desc         map Desc       .apply
+      case Exclusivity => exclusivity  map Exclusivity.apply
+      case Children    => tagChildren  map Children   .apply
+      case Parents     => tagParents   map Parents    .apply
     }
   }
 

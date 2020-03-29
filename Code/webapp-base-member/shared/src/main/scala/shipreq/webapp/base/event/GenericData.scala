@@ -230,6 +230,19 @@ object CustomReqTypeGD extends GenericData {
   sealed abstract class Attr extends AttrBase
   sealed abstract class Value extends ValueBase
 
+  case object Description extends Attr {
+    override type Data = Option[String]
+    override def apply(data: Data) = ValueForDescription(data)
+    override val dataEquality: Equal[Data] = implicitly[Equal[Option[String]]]
+  }
+  final case class ValueForDescription(value: Description.Data) extends Value {
+    override val attr: Description.type = Description
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForDescription => Description.dataEquality.equal(value, v2.value)
+      case _ => false
+    }
+  }
+
   case object Implication extends Attr {
     override type Data = Mandatory
     override def apply(data: Data) = ValueForImplication(data)
@@ -270,14 +283,14 @@ object CustomReqTypeGD extends GenericData {
   }
 
   override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-    Util.univEqAndArbitraryOrder(Vector(Implication, Mnemonic, Name))
+    Util.univEqAndArbitraryOrder(Vector(Description, Implication, Mnemonic, Name))
 
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
-  override val attrs = NonEmptySet[Attr](Implication, Mnemonic, Name)
+  override val attrs = NonEmptySet[Attr](Description, Implication, Mnemonic, Name)
 
-  def apply(mnemonic: ReqType.Mnemonic, name: String, implication: Mandatory): NonEmptyValues =
-    NonEmpty.force(emptyValues + ValueForMnemonic(mnemonic) + ValueForName(name) + ValueForImplication(implication))
+  def apply(mnemonic: ReqType.Mnemonic, name: String, implication: Mandatory, description: Option[String]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForMnemonic(mnemonic) + ValueForName(name) + ValueForImplication(implication) + ValueForDescription(description))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████

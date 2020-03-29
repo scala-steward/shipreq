@@ -68,7 +68,7 @@ trait ApplyConfigEvent {
         n <- GD.need(^.Name)       (e.vs) >>= validateName
         m <- GD.need(^.Mnemonic)   (e.vs) >>= validateMnemonic
         i <- GD.need(^.Implication)(e.vs)
-        _ <- imap create CustomReqType(e.id, m, Set.empty, n, i, Live)
+        _ <- imap create CustomReqType.v1(e.id, m, Set.empty, n, i, Live)
         _ <- updateIdCeiling(e.id)
       } yield ()
 
@@ -148,20 +148,23 @@ trait ApplyConfigEvent {
       for {
         n <- GD.need(^.Name)       (e.vs) >>= validateName
         m <- GD.need(^.Mnemonic)   (e.vs) >>= validateMnemonic
+        d <- GD.need(^.Description)(e.vs)
         i <- GD.need(^.Implication)(e.vs)
-        _ <- imap create CustomReqType(e.id, m, Set.empty, n, i, Live)
+        _ <- imap create CustomReqType(e.id, m, Set.empty, n, d, i, Live)
         _ <- updateIdCeiling(e.id)
       } yield ()
 
     private val updateName        = validateName >>=@ CustomReqType.name
     private val updateMnemonic    = Memo.bool(validateMnemonic >>=@ CustomReqType.mnemonic(_))
+    private val updateDesc        = fieldUpdateFn(CustomReqType.desc)
     private val updateImplication = fieldUpdateFn(CustomReqType.imp)
 
     private val updateValues = Memo.bool(retainMnemonic =>
       GD.updateEachValue {
         case v: ^.ValueForName        => updateName       (v.value)
-        case v: ^.ValueForImplication => updateImplication(v.value)
         case v: ^.ValueForMnemonic    => updateMnemonic   (retainMnemonic)(v.value)
+        case v: ^.ValueForDescription => updateDesc       (v.value)
+        case v: ^.ValueForImplication => updateImplication(v.value)
       })
 
     def applyUpdate(e: CustomReqTypeUpdate): SE[Unit] =

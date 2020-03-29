@@ -75,6 +75,7 @@ val gens = List(
     "Mnemonic"    -> "ReqType.Mnemonic",
     "Name"        -> "String",
     "Implication" -> "Mandatory",
+    "Description" -> "Option[String]",
   ),
   Gen("TagGroupGD")(
     "Name"        -> "String",

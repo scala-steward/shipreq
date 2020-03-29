@@ -2,13 +2,11 @@ package shipreq.webapp.base.protocol.binary.v1
 
 import boopickle.ConstPickler
 import boopickle.DefaultBasic._
-import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
+import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.univeq.UnivEq
 import nyaya.util.Multimap
 import shipreq.base.util.{Applicable, Exclusive, Exclusivity, IMap, NotApplicable}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.DataImplicits._
-import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.issue.IssueCategory
 import shipreq.webapp.base.sort.SortMethod
 import shipreq.webapp.base.text.AtomTC
@@ -616,27 +614,28 @@ object BaseMemberData1 {
   implicit lazy val picklerCustomIssueTypeId: Pickler[CustomIssueTypeId] =
     pickleTaggedI(CustomIssueTypeId).reuseByUnivEq
 
-  implicit lazy val picklerCustomReqType: Pickler[CustomReqType] =
-    new Pickler[CustomReqType] {
-      private[this] implicit val picklerSetMnemonics: Pickler[Set[ReqType.Mnemonic]] = iterablePickler
-      override def pickle(a: CustomReqType)(implicit state: PickleState): Unit = {
-        state.pickle(a.id)
-        state.pickle(a.mnemonic)
-        state.pickle(a.oldMnemonics)
-        state.pickle(a.name)
-        state.pickle(a.implication)
-        state.pickle(a.live)
-      }
-      override def unpickle(implicit state: UnpickleState): CustomReqType = {
-        val id           = state.unpickle[CustomReqTypeId]
-        val mnemonic     = state.unpickle[ReqType.Mnemonic]
-        val oldMnemonics = state.unpickle[Set[ReqType.Mnemonic]]
-        val name         = state.unpickle[String]
-        val imp          = state.unpickle[Mandatory]
-        val live         = state.unpickle[Live]
-        CustomReqType(id, mnemonic, oldMnemonics, name, imp, live)
-      }
-    }
+  // Replaced by v1.1
+  // implicit lazy val picklerCustomReqType: Pickler[CustomReqType] =
+  //   new Pickler[CustomReqType] {
+  //     private[this] implicit val picklerSetMnemonics: Pickler[Set[ReqType.Mnemonic]] = iterablePickler
+  //     override def pickle(a: CustomReqType)(implicit state: PickleState): Unit = {
+  //       state.pickle(a.id)
+  //       state.pickle(a.mnemonic)
+  //       state.pickle(a.oldMnemonics)
+  //       state.pickle(a.name)
+  //       state.pickle(a.implication)
+  //       state.pickle(a.live)
+  //     }
+  //     override def unpickle(implicit state: UnpickleState): CustomReqType = {
+  //       val id           = state.unpickle[CustomReqTypeId]
+  //       val mnemonic     = state.unpickle[ReqType.Mnemonic]
+  //       val oldMnemonics = state.unpickle[Set[ReqType.Mnemonic]]
+  //       val name         = state.unpickle[String]
+  //       val imp          = state.unpickle[Mandatory]
+  //       val live         = state.unpickle[Live]
+  //       CustomReqType(id, mnemonic, oldMnemonics, name, imp, live)
+  //     }
+  //   }
 
   implicit lazy val picklerCustomReqTypeId: Pickler[CustomReqTypeId] =
     pickleTaggedI(CustomReqTypeId).reuseByUnivEq
@@ -782,11 +781,12 @@ object BaseMemberData1 {
   implicit lazy val picklerReqTypeMnemonic: Pickler[ReqType.Mnemonic] =
     pickleTaggedS(ReqType.Mnemonic)
 
-  implicit lazy val picklerReqTypes: Pickler[ReqTypes] =
-    transformPickler(ReqTypes.apply)(_.custom)
-
-  implicit lazy val picklerReqTypesCustom: Pickler[ReqTypes.Custom] =
-    pickleIMapD
+  // Replaced by v1.1
+  // implicit lazy val picklerReqTypesCustom: Pickler[ReqTypes.Custom] =
+  //   pickleIMapD
+  //
+  // implicit lazy val picklerReqTypes: Pickler[ReqTypes] =
+  //   transformPickler(ReqTypes.apply)(_.custom)
 
   implicit lazy val picklerStaticField: Pickler[StaticField] =
     new Pickler[StaticField] {
