@@ -2262,7 +2262,7 @@ object RandomData {
       reqCode.groupId.nes map CodeGroupsDelete
 
     val genReqsDelete: Gen[ReqsDelete] =
-      Gen.apply3(ReqsDelete)(reqId.nes, reqCode.groupId.set, deletionReason)
+      Gen.apply3(ReqsDelete.apply)(reqId.nes, reqCode.groupId.set, deletionReason)
 
     val genFieldStaticRemove: Gen[FieldStaticRemove] =
       staticFieldOptional map FieldStaticRemove

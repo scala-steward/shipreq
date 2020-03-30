@@ -699,7 +699,7 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
 
   def genReqsDelete: Option[Gen[ReqsDelete]] =
     liveReqId.map(reqId =>
-      Gen.apply3(ReqsDelete)(reqId.nes, codeGroupId(Live).setE, deletionReason))
+      Gen.apply3(ReqsDelete.apply)(reqId.nes, codeGroupId(Live).setE, deletionReason))
 
   def genFieldStaticRemove: Option[Gen[FieldStaticRemove]] =
     Gen.tryGenChoose(staticFieldsToDel).map(_ map FieldStaticRemove)

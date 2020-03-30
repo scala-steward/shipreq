@@ -555,6 +555,9 @@ object DataProp {
       ∧ validReqTypeIds("CustomField.Implication.reqTypeIds",
           p => fields.filteredFields({ case t: CustomField.Implication => t.reqTypeId})(p.fields))
 
+      ∧ validReqTypeIds("ApplicableTag.applicableReqTypes",
+        _.tags.applicableTagIterator().flatMap(_.applicableReqTypes.reqTypes))
+
       ).rename("Cross-constituent refs").contramap[P](_ mapStrengthR mkRefs)
     }
 
@@ -696,7 +699,6 @@ object DataProp {
       }
 
       ( validReqTypeIds("Pubid keys",                       _.content.reqs.pubids.value.m.keys)
-      ∧ validReqTypeIds("Config.tags.*.applicableReqTypes", _.config.tags.applicableTagIterator().flatMap(_.applicableReqTypes.reqTypes))
       ∧ validReqIds    ("ReqCode ReqIds (active)",          _.content.reqCodes.activeReqCodesByReqId.keys)
       ∧ validReqIds    ("ReqCode ReqIds (inactive)",        _.content.reqCodes.inactiveIdsByReqId.keys)
       ∧ validFieldIds  ("ReqData.text TextField ids",       _.content.reqText.keys)

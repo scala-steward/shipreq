@@ -46,6 +46,9 @@ object Project {
   def reqtableView(id: reqtable.SavedView.Id): monocle.Optional[Project, reqtable.SavedView] =
     reqtableViewsNE ^|-? reqtable.SavedViews.NonEmpty.at(id)
 
+  val reqtableViewTraversal: Traversal[Project, reqtable.View] =
+    reqtableViewsNE ^|->> reqtable.SavedViews.NonEmpty.traversalSavedView ^|-> reqtable.SavedView.view
+
   implicit lazy val equality: Equal[Project] = ScalazMacros.deriveEqual
 
   // Not allowed by validator.

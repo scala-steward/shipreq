@@ -106,6 +106,7 @@ object SampleProject7 {
     ApplicableTagUpdate(prod, ApplicableTagGD.ValueForApplicableReqTypes(onlyReqTypes(uc, mf)))
   )
 
-  lazy val plainText  = PlainText.ForProject.noCtx(project)
-  lazy val textSearch = TextSearch(project, plainText)
+  lazy val plainText    = PlainText.ForProject.noCtx(project)
+  lazy val textSearch   = TextSearch(project, plainText)
+  lazy val filterParser = WebappTestUtil.parseFilterSuccessfully(project.config)
 }

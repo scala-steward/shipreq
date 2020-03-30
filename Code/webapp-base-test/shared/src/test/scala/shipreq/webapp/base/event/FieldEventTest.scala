@@ -373,7 +373,7 @@ object CustomImpFieldEventV1Test extends TestSuite with CustomImpFieldEventsV1 {
   import CustomFieldEventV1TestHelpers._
   import CustomImpFieldGDv1._
 
-  implicit val init = InitialEvents(CustomReqTypeEventTest.c1, CustomReqTypeEventTest.use1)
+  implicit val init = InitialEvents(CustomReqTypeEventTest.c1, CustomReqTypeEventTest.gr1)
 
   val softDelRT1 = CustomReqTypeEventTest.sd1
 
@@ -426,7 +426,7 @@ object CustomImpFieldEventTest extends TestSuite with CustomImpFieldEvents {
   import CustomFieldEventTestHelpers._
   import CustomImpFieldGD._
 
-  implicit val init = InitialEvents(CustomReqTypeEventTest.c1, CustomReqTypeEventTest.use1)
+  implicit val init = InitialEvents(CustomReqTypeEventTest.c1, CustomReqTypeEventTest.gr1)
 
   val softDelRT1 = CustomReqTypeEventTest.sd1
 

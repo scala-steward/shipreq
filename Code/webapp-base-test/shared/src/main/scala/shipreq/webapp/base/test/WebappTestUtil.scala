@@ -11,6 +11,7 @@ import sourcecode.Line
 import shipreq.base.test._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.filter._
 import shipreq.webapp.base.protocol.json.v1.Rev1._
 import shipreq.webapp.base.text.Text
 
@@ -100,4 +101,12 @@ trait WebappTestUtil extends BaseTestUtil {
 
   def verifiedEventsFromJson(jsons: String*): VerifiedEvent.Seq =
     VerifiedEvent.Seq.empty ++ jsons.iterator.map(decode[VerifiedEvent](_).needRight)
+
+  def parseFilterSuccessfully(cfg: ProjectConfig): String => Filter.Valid = {
+    val validator = FilterAlgebra.validate(cfg)
+    filterTxt => {
+      val pf        = FilterParser.parse(filterTxt).needRight.get
+      Filter.Potential.validate(pf, validator).needRight
+    }
+  }
 }

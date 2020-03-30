@@ -216,6 +216,11 @@ object Event {
                               codeGroups: Set[ReqCodeGroupId],
                               reason    : DeletionReason.OptionalText) extends ActiveEvent
 
+  object ReqsDelete {
+    def one(reqId: ReqId): ReqsDelete =
+      ReqsDelete(NonEmptySet one reqId, Set.empty, Vector.empty)
+  }
+
   final case class ContentRestore(reqs      : Set[ReqId],
                                   codeGroups: Set[ReqCodeGroupId]) extends ActiveEvent
 

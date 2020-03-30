@@ -135,6 +135,11 @@ object Filter {
       else
         compiler
     }
+
+    def remove(fields  : Set[data.FieldId  ] = Set.empty,
+               reqTypes: Set[data.ReqTypeId] = Set.empty,
+              ): Valid => Boolean \/ Valid =
+      RecursionFn.cata(FilterAlgebra.remove(fields, reqTypes))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

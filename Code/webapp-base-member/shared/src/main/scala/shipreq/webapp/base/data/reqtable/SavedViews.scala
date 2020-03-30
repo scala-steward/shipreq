@@ -1,7 +1,8 @@
 package shipreq.webapp.base.data.reqtable
 
+import monocle.Traversal
 import monocle.macros.Lenses
-import scalaz.Equal
+import scalaz.{Applicative, Equal}
 import shipreq.base.util.univeq._
 import shipreq.base.util.IMap
 import shipreq.base.util.TaggedTypes.TaggedInt
@@ -120,6 +121,17 @@ object SavedViews {
             NonEmpty(newView, ne.nonDefault - id) // id changed to default, replace it, remove old id
           else
             nonDefault.modify(_ - id + newView)(ne)) // id changed within non-default, replace it, remove old id
+
+    val traversalSavedView: Traversal[NonEmpty, SavedView] = {
+      val traversalNonDefault = IMap.traversal[SavedView.Id, SavedView]
+      new Traversal[NonEmpty, SavedView] {
+        override def modifyF[F[_]](f: SavedView => F[SavedView])(s: NonEmpty)(implicit F: Applicative[F]): F[NonEmpty] = {
+          def fDefault    = f(s.default)
+          def fNonDefault = traversalNonDefault.modifyF(f)(s.nonDefault)
+          F.apply2(fDefault, fNonDefault)(apply)
+        }
+      }
+    }
   }
 
   def apply(default: SavedView): NonEmpty =

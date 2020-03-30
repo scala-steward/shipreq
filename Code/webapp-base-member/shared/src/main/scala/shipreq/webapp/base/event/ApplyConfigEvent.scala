@@ -8,6 +8,7 @@ import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{DataValidators => V, _}
 import shipreq.webapp.base.event.RetiredGenericData._
+import shipreq.webapp.base.filter._
 import shipreq.webapp.base.util.GenericData
 import ApplyEventLib._, SE.SE
 import DataImplicits._
@@ -203,9 +204,27 @@ trait ApplyConfigEvent {
       Project.applicableTags ^|-> ApplicableTag.applicableReqTypes
 
     def hardDelete(id: CustomReqTypeId): SE[Unit] = {
-      def deleteImpFields: SE[Unit] =
+
+      def getImpFieldsToDelete: SE[List[CustomField.Implication]] =
         SE.get(_.config.fields.customImpFields.filter(_.reqTypeId ==* id))
-          .flatMap(SE.foldMapRun(_)(f => FieldEvents.hardDelete(f.id)))
+
+      def deleteImpFields(fields: List[CustomField.Implication]): SE[Unit] =
+        SE.foldMapRun(fields)(f => FieldEvents.hardDelete(f.id))
+
+      def removeFromSavedViews(fields: Set[FieldId]): SE[Unit] = {
+        import reqtable._
+        val remove = Filter.Valid.remove(fields = fields, reqTypes = Set(id))
+        SE.mod {
+          Project.reqtableViewTraversal.modify { view =>
+            view
+              .filterColumns {
+                case Column.CustomField(f) if fields.contains(f) => false
+                case _                                           => true
+              }
+              .withFilter(view.filter.flatMap(remove(_).toOption))
+          }
+        }
+      }
 
       def removeFromReqTypeApplicability: SE[Unit] = {
         val f: EndoFn[ApplicableReqTypes]     = _.hardDelete(id)
@@ -216,7 +235,13 @@ trait ApplyConfigEvent {
       def deleteReqType: SE[Unit] =
         imap.hardDelete(id)
 
-      deleteImpFields >> removeFromReqTypeApplicability >> deleteReqType
+      for {
+        badFields <- getImpFieldsToDelete
+        _         <- deleteImpFields(badFields)
+        _         <- removeFromSavedViews(badFields.iterator.map(_.fieldId).toSet)
+        _         <- removeFromReqTypeApplicability
+        _         <- deleteReqType
+      } yield ()
     }
   }
 

@@ -2,10 +2,10 @@ package shipreq.webapp.base.filter
 
 import scalaz.{-\/, \/-}
 import utest._
-import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.data.SpecialBuiltInField._
 import shipreq.webapp.base.test._
+import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.filter.Filter.Implicits._
 
 object ValidFilterTest extends TestSuite {
@@ -37,6 +37,35 @@ object ValidFilterTest extends TestSuite {
         'caseWrong - assertTranslation(PF.fieldProp("descriPTION", "blank"))(VF.fieldProp(\/-(descField), Blank))
         'title - assertTranslation(PF.fieldProp("TITLE", "BLANK"))(VF.fieldProp(-\/(Title), Blank))
       }
+    }
+
+    'remove {
+      def test(test: (String, String)): Unit = {
+        import SampleProject7.Values._
+
+        val (beforeTxt, expectedTxt) = test
+
+        val before    = SampleProject7.filterParser(beforeTxt)
+        val removal   = Filter.Valid.remove(
+                          fields   = Set(),
+                          reqTypes = Set(mf),
+                        )
+        val actual    = removal(before).toOption
+        val actualTxt = actual.fold("")(Filter.Valid.toText(SampleProject7.project.config, _))
+
+        assertEq(actualTxt, expectedTxt)
+      }
+
+      'any2          - test("DD | MF | FR" -> "DD | FR")
+      'any1          - test("DD | MF"      -> "DD")
+      'any0          - test("MF | MF"      -> "")
+      'all2          - test("DD MF FR"     -> "")
+      'all1          - test("DD MF"        -> "")
+      'all0          - test("MF MF"        -> "")
+      'andNot        - test("DD -MF"       -> "DD")
+      'orNot         - test("DD | -MF"     -> "DD")
+      'notAndAnd     - test("-(MF MF) FR"  -> "FR")
+      'notNotAndAnd  - test("--(MF MF) FR" -> "")
     }
   }
 }

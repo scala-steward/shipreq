@@ -2,10 +2,13 @@ package shipreq.webapp.base.filter
 
 import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.microlibs.recursion._
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.ConciseIntSetFormat
 import japgolly.univeq._
 import java.util.regex.Pattern
+import scala.annotation.tailrec
 import scalaz.{-\/, Functor, Traverse, \/, \/-}
+import scalaz.std.option._
 import scalaz.syntax.traverse1._
 import shipreq.base.util.{Applicable, OptionalBoolFn, TransitiveClosure}
 import shipreq.webapp.base.data
@@ -22,6 +25,7 @@ import shipreq.webapp.base.text.{Atom, Grammar, PlainText, TextSearch}
   *   unvalidate     : FAlgebra [             ValidF,       Potential              ]
   *   makeExtensional: FAlgebra [             ValidF,       Extensional            ]
   *   compile        : FAlgebra [             ExtensionalF, CompiledFilter         ]
+  *   remove         : FAlgebra [             ValidF,       Boolean \/ Valid       ]
   * }}}
   */
 object FilterAlgebra {
@@ -402,5 +406,51 @@ object FilterAlgebra {
     }
     alg
   }
-  // TODO also auto-complete
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  def remove(fields  : Set[data.FieldId  ],
+             reqTypes: Set[data.ReqTypeId],
+            ): FAlgebra[ValidF, Boolean \/ Valid] = {
+
+    def check1(isBad: Boolean, ok: Valid): Boolean \/ Valid =
+      if (isBad) -\/(false) else \/-(ok)
+
+    {
+      case a: Text                                   => \/-(Valid(a))
+      case a: Regex                                  => \/-(Valid(a))
+      case a: Presence      [Valid.Attr]             => \/-(Valid(a))
+      case a: HasIssue      [Valid.IssueCat]         => \/-(Valid(a))
+      case a: HashRef       [Valid.HashTag]          => \/-(Valid(a))
+      case a: ImpliesAnyOf  [Valid.ReqSet]           => \/-(Valid(a))
+      case a: ImpliedByAnyOf[Valid.ReqSet]           => \/-(Valid(a))
+      case a: Reqs          [Valid.ReqSet]           => \/-(Valid(a))
+      case a: ReqType       [Valid.ReqType]          => check1(reqTypes.contains(a.reqType), Valid(a))
+      case a: FieldProp     [Valid.Field, FieldAttr] => a.field.fold(_ => \/-(Valid(a)), f => check1(fields.contains(f), Valid(a)))
+      case a: Not           [Boolean \/ Valid]       => a.clause.fold(b => -\/(!b), c => \/-(Valid(Not(c))))
+
+      case a: AnyOf[Boolean \/ Valid] =>
+        val as = (a.head +: a.tail.whole).iterator.map(_.toOption).filterDefined.toVector
+        as.length match {
+          case 0 => -\/(false)
+          case 1 => \/-(as.head)
+          case _ => \/-(Valid(AnyOf(as.head, NonEmptyVector force as.tail)))
+        }
+
+      case a: AllOf[Boolean \/ Valid] =>
+        @tailrec
+        def go(rem: Vector[Boolean \/ Valid], acc: Vector[Valid]): Boolean \/ Valid =
+          rem.headOption match {
+            case Some(exit @ -\/(false)) => exit
+            case Some(-\/(true))         => go(rem.tail, acc)
+            case Some(\/-(v))            => go(rem.tail, acc :+ v)
+            case None =>
+              NonEmptyVector.option(acc) match {
+                case Some(clauses) => \/-(Valid(AllOf(clauses)))
+                case None          => -\/(true)
+              }
+          }
+        go(a.clauses.whole, Vector.empty)
+    }
+  }
 }
