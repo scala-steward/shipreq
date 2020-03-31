@@ -75,23 +75,23 @@ object MakeEvent {
       case UpdateConfigCmd.CustomIssueTypeRestore(id) =>
         CustomIssueTypeRestore(id)
 
-      case UpdateConfigCmd.CustomReqTypeCreate(vs) =>
+      case cmd: UpdateConfigCmd.CustomReqTypeCreate =>
         val id = CustomReqTypeId(project.idCeilings.customReqType + 1)
-        val description = Option.empty[String] // TODO remove
-        import vs._
+        import cmd._
         val values = gdAllValues(CustomReqTypeGD , "")
         CustomReqTypeCreate(id, values)
 
       case UpdateConfigCmd.CustomReqTypeUpdate(id, vs) =>
         project.config.reqTypes.get(id) match {
           case Some(cur: CustomReqType) =>
-            import vs._
-            val description = Option.empty[String] // TODO remove
-            val vs2 = gdUnequalValues(CustomReqTypeGD, cur, "")
+            val vs2 = gdUnequalValues2(CustomReqTypeGD, cur, vs)
             eventIfNonEmpty(vs2)(CustomReqTypeUpdate(id, _))
           case Some(f) => Failure(s"$f must be a CustomReqType.")
           case None    => Failure(s"$id not found")
         }
+
+      case UpdateConfigCmd.CustomReqTypeDeleteHard(id) =>
+        CustomReqTypeDeleteHard(id)
 
       case UpdateConfigCmd.CustomReqTypeDeleteSoft(id) =>
         CustomReqTypeDeleteSoft(id)

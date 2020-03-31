@@ -15,11 +15,15 @@ object UpdateConfigCmd {
   final case class CustomIssueTypeDelete (id: CustomIssueTypeId)                                   extends ToModifyCustomIssueTypes
   final case class CustomIssueTypeRestore(id: CustomIssueTypeId)                                   extends ToModifyCustomIssueTypes
 
-  sealed trait ToModifyCustomReqTypes                                                           extends UpdateConfigCmd
-  final case class CustomReqTypeCreate    (values: CustomReqTypeValues)                         extends ToModifyCustomReqTypes
-  final case class CustomReqTypeUpdate    (id: CustomReqTypeId, newValues: CustomReqTypeValues) extends ToModifyCustomReqTypes
-  final case class CustomReqTypeDeleteSoft(id: CustomReqTypeId)                                 extends ToModifyCustomReqTypes
-  final case class CustomReqTypeRestore   (id: CustomReqTypeId)                                 extends ToModifyCustomReqTypes
+  sealed trait ToModifyCustomReqTypes                                                                      extends UpdateConfigCmd
+  final case class CustomReqTypeCreate    (mnemonic   : ReqType.Mnemonic,
+                                           name       : String,
+                                           description: Option[String],
+                                           implication: Mandatory)                                         extends ToModifyCustomReqTypes
+  final case class CustomReqTypeUpdate    (id: CustomReqTypeId, newValues: CustomReqTypeGD.NonEmptyValues) extends ToModifyCustomReqTypes
+  final case class CustomReqTypeDeleteHard(id: CustomReqTypeId)                                            extends ToModifyCustomReqTypes
+  final case class CustomReqTypeDeleteSoft(id: CustomReqTypeId)                                            extends ToModifyCustomReqTypes
+  final case class CustomReqTypeRestore   (id: CustomReqTypeId)                                            extends ToModifyCustomReqTypes
 
   sealed trait ToModifyFields                                                                                         extends UpdateConfigCmd
   final case class CustomFieldCreateImp (reqTypeId: ReqTypeId , fieldReqTypeRules: FieldReqTypeRules.ForImpField )    extends ToModifyFields
@@ -57,14 +61,9 @@ object UpdateConfigCmd {
   final case class CustomIssueTypeValues(key : HashRefKey,
                                          desc: Option[String])
 
-  final case class CustomReqTypeValues(mnemonic   : ReqType.Mnemonic,
-                                       name       : String,
-                                       implication: Mandatory)
-
   // ===================================================================================================================
 
   implicit def univEqCustomIssueTypeValues : UnivEq[CustomIssueTypeValues] = UnivEq.derive
-  implicit def univEqCustomReqTypeValues   : UnivEq[CustomReqTypeValues  ] = UnivEq.derive
   implicit def univEq                      : UnivEq[UpdateConfigCmd      ] = UnivEq.derive
 
   // ===================================================================================================================
@@ -86,21 +85,6 @@ object UpdateConfigCmd {
           val key  = state.unpickle[HashRefKey]
           val desc = state.unpickle[Option[String]]
           CustomIssueTypeValues(key, desc)
-        }
-      }
-
-    private implicit val picklerCustomReqTypeValues: Pickler[CustomReqTypeValues] =
-      new Pickler[CustomReqTypeValues] {
-        override def pickle(a: CustomReqTypeValues)(implicit state: PickleState): Unit = {
-          state.pickle(a.mnemonic)
-          state.pickle(a.name)
-          state.pickle(a.implication)
-        }
-        override def unpickle(implicit state: UnpickleState): CustomReqTypeValues = {
-          val mnemonic = state.unpickle[ReqType.Mnemonic]
-          val name     = state.unpickle[String]
-          val imp      = state.unpickle[Mandatory]
-          CustomReqTypeValues(mnemonic, name, imp)
         }
       }
 
@@ -129,7 +113,21 @@ object UpdateConfigCmd {
       transformPickler(CustomIssueTypeRestore.apply)(_.id)
 
     private implicit val picklerCustomReqTypeCreate: Pickler[CustomReqTypeCreate] =
-      transformPickler(CustomReqTypeCreate.apply)(_.values)
+      new Pickler[CustomReqTypeCreate] {
+        override def pickle(a: CustomReqTypeCreate)(implicit state: PickleState): Unit = {
+          state.pickle(a.mnemonic)
+          state.pickle(a.name)
+          state.pickle(a.description)
+          state.pickle(a.implication)
+        }
+        override def unpickle(implicit state: UnpickleState): CustomReqTypeCreate = {
+          val mnemonic    = state.unpickle[ReqType.Mnemonic]
+          val name        = state.unpickle[String]
+          val description = state.unpickle[Option[String]]
+          val implication = state.unpickle[Mandatory]
+          CustomReqTypeCreate(mnemonic, name, description, implication)
+        }
+      }
 
     private implicit val picklerCustomReqTypeUpdate: Pickler[CustomReqTypeUpdate] =
       new Pickler[CustomReqTypeUpdate] {
@@ -139,12 +137,15 @@ object UpdateConfigCmd {
         }
         override def unpickle(implicit state: UnpickleState): CustomReqTypeUpdate = {
           val id        = state.unpickle[CustomReqTypeId]
-          val newValues = state.unpickle[CustomReqTypeValues]
+          val newValues = state.unpickle[CustomReqTypeGD.NonEmptyValues]
           CustomReqTypeUpdate(id, newValues)
         }
       }
 
-    private implicit val picklerCustomReqTypeDelete: Pickler[CustomReqTypeDeleteSoft] =
+    private implicit val picklerCustomReqTypeDeleteHard: Pickler[CustomReqTypeDeleteHard] =
+      transformPickler(CustomReqTypeDeleteHard.apply)(_.id)
+
+    private implicit val picklerCustomReqTypeDeleteSoft: Pickler[CustomReqTypeDeleteSoft] =
       transformPickler(CustomReqTypeDeleteSoft.apply)(_.id)
 
     private implicit val picklerCustomReqTypeRestore: Pickler[CustomReqTypeRestore] =
@@ -314,7 +315,7 @@ object UpdateConfigCmd {
         private[this] final val KeyCustomIssueTypeRestore  = 6
         private[this] final val KeyCustomIssueTypeUpdate   = 7
         private[this] final val KeyCustomReqTypeCreate     = 8
-        private[this] final val KeyCustomReqTypeDelete     = 9
+      //private[this] final val KeyCustomReqTypeDelete     = 9
         private[this] final val KeyCustomReqTypeRestore    = 10
         private[this] final val KeyCustomReqTypeUpdate     = 11
       //private[this] final val KeyFieldDelete             = 12
@@ -334,6 +335,8 @@ object UpdateConfigCmd {
         private[this] final val KeyCustomFieldRestore      = 26
         private[this] final val KeyStaticFieldAdd          = 27
         private[this] final val KeyStaticFieldRemove       = 28
+        private[this] final val KeyCustomReqTypeDeleteHard = 29
+        private[this] final val KeyCustomReqTypeDeleteSoft = 30
         override def pickle(a: UpdateConfigCmd)(implicit state: PickleState): Unit =
           a match {
             case b: CustomFieldCreateImp    => state.enc.writeByte(KeyCustomFieldCreateImp   ); state.pickle(b)
@@ -347,7 +350,8 @@ object UpdateConfigCmd {
             case b: CustomIssueTypeRestore  => state.enc.writeByte(KeyCustomIssueTypeRestore ); state.pickle(b)
             case b: CustomIssueTypeUpdate   => state.enc.writeByte(KeyCustomIssueTypeUpdate  ); state.pickle(b)
             case b: CustomReqTypeCreate     => state.enc.writeByte(KeyCustomReqTypeCreate    ); state.pickle(b)
-            case b: CustomReqTypeDeleteSoft => state.enc.writeByte(KeyCustomReqTypeDelete    ); state.pickle(b)
+            case b: CustomReqTypeDeleteHard => state.enc.writeByte(KeyCustomReqTypeDeleteHard); state.pickle(b)
+            case b: CustomReqTypeDeleteSoft => state.enc.writeByte(KeyCustomReqTypeDeleteSoft); state.pickle(b)
             case b: CustomReqTypeRestore    => state.enc.writeByte(KeyCustomReqTypeRestore   ); state.pickle(b)
             case b: CustomReqTypeUpdate     => state.enc.writeByte(KeyCustomReqTypeUpdate    ); state.pickle(b)
             case b: CustomFieldDelete       => state.enc.writeByte(KeyCustomFieldDelete      ); state.pickle(b)
@@ -376,7 +380,8 @@ object UpdateConfigCmd {
             case KeyCustomIssueTypeRestore  => state.unpickle[CustomIssueTypeRestore]
             case KeyCustomIssueTypeUpdate   => state.unpickle[CustomIssueTypeUpdate]
             case KeyCustomReqTypeCreate     => state.unpickle[CustomReqTypeCreate]
-            case KeyCustomReqTypeDelete     => state.unpickle[CustomReqTypeDeleteSoft]
+            case KeyCustomReqTypeDeleteHard => state.unpickle[CustomReqTypeDeleteHard]
+            case KeyCustomReqTypeDeleteSoft => state.unpickle[CustomReqTypeDeleteSoft]
             case KeyCustomReqTypeRestore    => state.unpickle[CustomReqTypeRestore]
             case KeyCustomReqTypeUpdate     => state.unpickle[CustomReqTypeUpdate]
             case KeyCustomFieldDelete       => state.unpickle[CustomFieldDelete]
