@@ -7,6 +7,8 @@ import shipreq.base.util.IfApplicable
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.issue._
 import shipreq.webapp.base.UiText.{Issues => UI}
+import shipreq.webapp.client.project.app.pages.root.Routes
+import shipreq.webapp.client.project.app.pages.root.Routes.RouterCtl
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.lib.EditorNavParent
 import shipreq.webapp.client.project.widgets.ProjectWidgets
@@ -112,9 +114,9 @@ object Row {
     }
   }
 
-  def fromIssue(p: Project, rf: RenderFeature.ForProject): Issue => Row = {
+  def fromIssue(p: Project, rf: RenderFeature.ForProject, routerCtl: Routes.RouterCtl): Issue => Row = {
     implicit val cfg = p.config
-    val actionBuilder = new Actions.Builder(p)
+    val actionBuilder = new Actions.Builder(p, routerCtl)
 
     def forReqA(i: Issue, desc: String, req: Req, fk: IssueField[EditorFeature.FieldKey.ForAllReqs]): ForReq =
       req match {

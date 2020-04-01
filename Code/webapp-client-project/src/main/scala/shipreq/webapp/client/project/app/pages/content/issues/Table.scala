@@ -18,6 +18,7 @@ import shipreq.webapp.base.sort.FusedSorters
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.ui.semantic
 import shipreq.webapp.client.project.app.Style.{issues => *}
+import shipreq.webapp.client.project.app.pages.root.Routes
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.lib.EditorNavParent
 import shipreq.webapp.client.project.widgets.{NoFilterResults, ProjectWidgets}
@@ -29,6 +30,7 @@ object Table {
                                pxPlainText     : Px[PlainText.ForProject.NoCtx],
                                pxProjectWidgets: Px[ProjectWidgets.NoCtx],
                                pxFieldNameFn   : Px[FieldId ~=> String],
+                               routerCtl       : Routes.RouterCtl,
                                cmdInvoker      : Action.Cmd ~=> Callback) {
 
     val reusablePxPW  = Reusable.byRef(pxProjectWidgets)
@@ -69,10 +71,11 @@ object Table {
 
   final class RenderPrep(project      : Project,
                          plainText    : PlainText.ForProject.NoCtx,
+                         routerCtl    : Routes.RouterCtl,
                          issues       : Issues,
                          renderFeature: RenderFeature.ForProject) {
     private val sortFn  = sorter.result(new Sorter.Setup(project, plainText))
-    private val toRow   = Row.fromIssue(project, renderFeature)
+    private val toRow   = Row.fromIssue(project, renderFeature, routerCtl)
     val rows            = sortFn(issues.vector.iterator.map(toRow)).iterator.toVector
     val csIssueCategory = TableRow.consolidateIssueCategories(rows.iterator.map(_.issueCategoryDesc))
     val csIssueClass    = TableRow.consolidateIssueClasses   (rows.iterator.map(_.issueClassDesc))
@@ -103,7 +106,7 @@ object Table {
     import static.{component => _, _}
 
     private val pxIssues     = Px.props($).map(_.issues).withReuse.autoRefresh
-    private val pxRenderPrep = Px.apply4(pxProject, pxPlainText, pxIssues, pxRenderFeature)(new RenderPrep(_, _, _, _))
+    private val pxRenderPrep = Px.apply4(pxProject, pxPlainText, pxIssues, pxRenderFeature)(new RenderPrep(_, _, routerCtl, _, _))
 
     /** When a user closes a field editor, either
       *
@@ -152,7 +155,7 @@ object Table {
               editor,
               pubidFormat,
               cmdInvoker,
-              p.cmdAsync.filterHolistic(cmd => row.actions.exists(_.cmd ==* cmd)), // for better Reusability
+              p.cmdAsync.filterHolistic(cmd => row.actions.exists(_.cmdOption.exists(_ ==* cmd))), // for better Reusability
               issueCategory = csIssueCategory(rowIdx),
               issueClass    = csIssueClass(rowIdx),
               idBase        = csIds(rowIdx),

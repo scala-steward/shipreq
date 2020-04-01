@@ -223,6 +223,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       pxPlainText,
       pxProjectWidgets,
       pxFilterCompilerHideDead,
+      routerCtl,
       updateConfigOrContentCmdInvoker)
 
     private val issuesPageSS =

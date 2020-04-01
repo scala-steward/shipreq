@@ -14,6 +14,7 @@ import shipreq.webapp.base.issue.Issues
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.project.app.Style.{issues => *}
+import shipreq.webapp.client.project.app.pages.root.Routes
 import shipreq.webapp.client.project.feature.{CreateFeature, EditorFeature}
 import shipreq.webapp.client.project.widgets.{FilterEditor, ProjectWidgets}
 
@@ -24,6 +25,7 @@ object IssuesPage {
                                pxPlainText     : Px[PlainText.ForProject.NoCtx],
                                pxProjectWidgets: Px[ProjectWidgets.NoCtx],
                                pxFilterCompiler: Px[Filter.Valid.Compiler],
+                               routerCtl       : Routes.RouterCtl,
                                cmdInvoker      : Action.Cmd ~=> Callback) {
 
     val pxConfig      = pxProject.map(_.config).withReuse
@@ -40,6 +42,7 @@ object IssuesPage {
       pxPlainText,
       pxProjectWidgets,
       pxFieldNameFn,
+      routerCtl,
       cmdInvoker)
   }
 

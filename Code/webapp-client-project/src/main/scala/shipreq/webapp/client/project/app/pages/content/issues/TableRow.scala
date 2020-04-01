@@ -115,16 +115,22 @@ object TableRow {
             if (row.actions.isEmpty)
               na
             else
-              row.actions.mkTagMod(<.br) { a =>
-                import AsyncFeature.Status._
-                val async = p.cmdAsync(a.cmd)
-                def ok = a.button(Enabled)(^.onClick --> p.cmdInvoker(a.cmd))
-                async match {
-                  case None                    => ok
-                  case Some(InProgress)        => a.button(Disabled)
-                  case Some(Failed(err, _, _)) => TagMod(ok, <.br, BaseStyles.errorPointingUp(err.value))
-                }
+              row.actions.mkTagMod(<.br) {
+
+                case a: Action.Button =>
+                  import AsyncFeature.Status._
+                  val async = p.cmdAsync(a.cmd)
+                  def ok = a.button(Enabled)(^.onClick --> p.cmdInvoker(a.cmd))
+                  async match {
+                    case None                    => ok
+                    case Some(InProgress)        => a.button(Disabled)
+                    case Some(Failed(err, _, _)) => TagMod(ok, <.br, BaseStyles.errorPointingUp(err.value))
+                  }
+
+                case a: Action.Link =>
+                  a.render
               }
+
           addTD(content, allowCopy = false)
       }
     }

@@ -23,10 +23,12 @@ object Routes {
 
   sealed trait Page
   object Page {
-    case object CfgFields   extends Page
-    case object CfgIssues   extends Page
-    case object CfgReqTypes extends Page
-    case object CfgTags     extends Page
+    sealed abstract class HasStaticTitle(final val title: String) extends Page
+
+    case object CfgFields   extends HasStaticTitle("Field Config")
+    case object CfgIssues   extends HasStaticTitle("Issue Config")
+    case object CfgReqTypes extends HasStaticTitle("Req Type Config")
+    case object CfgTags     extends HasStaticTitle("Tag Config")
     case object ImpGraph    extends Page
     case object Issues      extends Page
     case object Index       extends Page
