@@ -518,4 +518,19 @@ final case class Requirements(genericReqs: GenericReqIMap,
 
   lazy val useCaseStepLabelLookup: UseCaseStepLabelLookup =
     new UseCaseStepLabelLookup(this)
+
+  /** For a given req type, returns the set of requirements that used to be associated with the given req type but
+   * no longer are primarily (hence the term "ex-req").
+   */
+  val exReqs: ReqTypeId => Set[ReqId] =
+    Memo {
+      case _: StaticReqType =>
+        Set.empty
+
+      case id: CustomReqTypeId =>
+        pubids.value(id)
+          .iterator
+          .filter(need(_).reqTypeId !=* id)
+          .toSet
+    }
 }

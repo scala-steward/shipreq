@@ -907,6 +907,23 @@ object LogicTest extends TestSuite {
     testFilter(P3, F.reqType(co))("", dead = "CO-1  CO-2")
   }
 
+  def testFilterReqTypeExLive(): Unit = {
+    // Change FR-1 to BR-1
+    val p = applyEventsSuccessfully(P3, E.GenericReqTypeSet(frs(1), br))
+    testFilter(p, F.reqType(fr))("FR-2", "BR-1")
+    testFilter(p, F.reqType(br))("BR-1", "")
+  }
+
+  def testFilterReqTypeExDead(): Unit = {
+    // Change FR-1 to CO-3
+    val p = applyEventsSuccessfully(P3,
+      E.GenericReqTypeSet(frs(1), co),
+      E.CustomReqTypeDeleteSoft(co),
+    )
+    testFilter(p, F.reqType(fr))("FR-2", "CO-3")
+    testFilter(p, F.reqType(co))("", "CO-1  CO-2  CO-3")
+  }
+
   def testFilterImplies(): Unit = {
     import SampleImplicationGraph._
     val justFR2 = F.reqSet(SomeOfType(fr, NonEmptySet(2)))
@@ -1214,6 +1231,8 @@ object LogicTest extends TestSuite {
       'tag                  - testFilterTag()
       'customIssue          - testFilterCustomIssue()
       'reqType              - testFilterReqType()
+      'reqTypeExLive        - testFilterReqTypeExLive()
+      'reqTypeExDead        - testFilterReqTypeExDead()
       'impliesAnyOf         - testFilterImplies()
       'impliedByAnyOf       - testFilterImpliedBy()
       'implyNothing         - testFilterImplyNothing()

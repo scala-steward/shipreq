@@ -87,10 +87,20 @@ final case class Project(name         : Project.Name,
 
   lazy val reqTypeCount: LiveDeadStatMap[ReqTypeId, Int] = {
     val b = new LiveDeadStatMap.Builder[ReqTypeId, Int]
+
+    // Add reqs
     for (r <- content.reqs.reqIterator()) {
       val live = r.live(config.reqTypes)
       b(r.reqTypeId).mod(live)(_ + 1)
     }
+
+    // Add ex-reqs
+    for (reqTypeId <- config.reqTypes.custom.keys) {
+      val exs = content.reqs.exReqs(reqTypeId)
+      if (exs.nonEmpty)
+        b(reqTypeId).mod(Dead)(_ + exs.size)
+    }
+
     b.result()
   }
 

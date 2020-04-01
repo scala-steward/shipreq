@@ -338,6 +338,16 @@ object FilterAlgebra {
       )
     }
 
+    def byReqType(rt: ReqTypeId): CompiledFilter =
+      filterDead match {
+        case HideDead =>
+          reqOnly(_.reqTypeId ==* rt)
+
+        case ShowDead =>
+          val exReqs = p.content.reqs.exReqs(rt)
+          reqOnly(r => r.reqTypeId ==* rt || exReqs.contains(r.id))
+      }
+
     def byFieldProp(fieldArg: Filter.Valid.Field, attr: FieldAttr): CompiledFilter = {
       import FieldReqTypeRules.Resolution
       (attr, fieldArg) match {
@@ -389,7 +399,7 @@ object FilterAlgebra {
       case Reqs          (reqs)          => reqOnly(r => reqs.contains(r.id))
       case ImpliesAnyOf  (reqs)          => byImplication(reqs, p.implicationTgtToSrcTC)
       case ImpliedByAnyOf(reqs)          => byImplication(reqs, p.implicationSrcToTgtTC)
-      case ReqType       (rt)            => reqOnly(_.reqTypeId ==* rt)
+      case ReqType       (rt)            => byReqType(rt)
       case Presence      (Attr.AnyIssue) => byIssue(_.issues.nonEmpty)
       case Presence      (Attr.AnyTag)   => byTag(_.nonEmpty)
       case HashRef       (-\/(issue))    => byCustomIssueType(_.exists(_.typ ==* issue))
