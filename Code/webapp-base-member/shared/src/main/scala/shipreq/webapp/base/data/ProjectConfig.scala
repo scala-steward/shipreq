@@ -294,6 +294,9 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
   def deadTagFieldDistribution(deadTagFilter: Option[CustomField.Tag.Id => Boolean]): TagFieldDistribution.TagIds =
     deadTagFilter.fold(deadTagFieldDistribution)(deadTagFieldDistribution(_))
 
+  def naTags(id: Option[ReqTypeId]): NaTags =
+    id.fold(NaTags.none)(naTags)
+
   val naTags: ReqTypeId => NaTags =
     Memo(NaTags.forReqType(_, this))
 }

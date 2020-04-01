@@ -23,6 +23,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
   sealed trait Props {
     val project         : Project
+    val naTags          : NaTags
     val plainTextNoCtx  : PlainText.ForProject.NoCtx
     val textSearch      : TextSearch
     val projectWidgets  : ProjectWidgets.AnyCtx
@@ -41,6 +42,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
   // ===================================================================================================================
 
   case class Optional(project         : Project,
+                      naTags          : NaTags,
                       plainTextNoCtx  : PlainText.ForProject.NoCtx,
                       textSearch      : TextSearch,
                       projectWidgets  : ProjectWidgets.AnyCtx,
@@ -73,6 +75,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
   // ===================================================================================================================
 
   case class NonEmpty(project         : Project,
+                      naTags          : NaTags,
                       plainTextNoCtx  : PlainText.ForProject.NoCtx,
                       textSearch      : TextSearch,
                       projectWidgets  : ProjectWidgets.AnyCtx,
@@ -175,8 +178,8 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
       def richText: VdomTag =
         p match {
-          case p2: Optional => p.projectWidgets.text(p2.richText, hardcodedLive, data.Optional)
-          case p2: NonEmpty => p.projectWidgets.text(text.toOptional(p2.richTextO), hardcodedLive, Mandatory)
+          case p2: Optional => p.projectWidgets.text(p2.richText, hardcodedLive, p.naTags, data.Optional)
+          case p2: NonEmpty => p.projectWidgets.text(text.toOptional(p2.richTextO), hardcodedLive, p.naTags, Mandatory)
         }
 
       def preview: VdomNode =

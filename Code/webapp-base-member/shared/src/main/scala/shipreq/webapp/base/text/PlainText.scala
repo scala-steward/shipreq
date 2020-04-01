@@ -117,7 +117,7 @@ object PlainText {
     override protected def _tagList(ids: Vector[ApplicableTagId], validity: ApplicableTagId => Validity): String =
       ids.iterator.map(p.config.tags.needApplicableTag(_).key.value).mkString(" ")
 
-    override protected def _text(text: Text.AnyOptional, live: Live): String =
+    override protected def _text(text: Text.AnyOptional, live: Live, tagValidity: ApplicableTagId => Validity): String =
       nestedText("", "", live, text)
 
     // Keep in sync with ProjectWidgets because it's used together for sorting/rendering in ReqTable
@@ -288,6 +288,9 @@ object PlainText {
 
     override def reqTypeFull(id: ReqTypeId): String =
       p.config.reqTypes.get(id).fold("?")(PlainText.reqTypeFull)
+
+    def text(text: Text.AnyOptional, live: Live, mandatory: Mandatory): String =
+      this.text(text, live, Valid.always, mandatory) // Valid.always because TagValidity doesn't affect PlainText output
 
     override def useCaseStepTextAndFlow(step: UseCaseStepFlowText.TextAndFlow[Text.AnyOptional, Set[UseCaseStepId]],
                                         live: Live): String =

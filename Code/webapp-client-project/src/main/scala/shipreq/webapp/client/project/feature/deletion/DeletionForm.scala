@@ -45,6 +45,7 @@ object DeletionForm {
     private def reasonEditorProps(p: Props, s: State): RichTextEditor.DeletionReason.Optional =
       RichTextEditor.DeletionReason.Optional(
         project          = p.data.project,
+        naTags           = NaTags.none,
         plainTextNoCtx   = p.widgets.plainText,
         textSearch       = p.textSearch,
         projectWidgets   = p.widgets,

@@ -670,7 +670,8 @@ object NewEditor {
 
         protected def start(cmd           : T.OptionalText => UpdateContentCmd,
                             initialValueCB: CallbackOption[T.OptionalText],
-                            pid           : PreviewId): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
+                            pid           : PreviewId,
+                            reqId         : Option[ReqId]): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
           import ictx._
 
           val (abort, commitFn) =
@@ -689,13 +690,14 @@ object NewEditor {
           initialData       = initCB,
           initalValueOption = ivo)(
           initialValueFn    = _._2)(
-          editor            = i => new State(_, Some(i._1), args.cbProjectWidgets, pid, abort, commitFn))
+          editor            = i => new State(_, Some(i._1), args.cbProjectWidgets, pid, reqId, abort, commitFn))
         }
 
         private class State(ss              : StateSnapshot[String],
                             initial         : Some[T.OptionalText],
                             projectWidgetsCB: CallbackTo[ProjectWidgets.AnyCtx],
                             pid             : PreviewId,
+                            reqId           : Option[ReqId],
                             abort           : Some[Callback],
                             commitFn        : Some[editor.Optional.CommitFn]) extends EditorImpl {
 
@@ -715,6 +717,7 @@ object NewEditor {
               projectWidgets <- projectWidgetsCB
             } yield editor.Optional(
               project          = project,
+              naTags           = project.naTagsForReq(reqId),
               plainTextNoCtx   = plainTextNoCtx,
               textSearch       = textSearch,
               projectWidgets   = projectWidgets,
@@ -739,30 +742,34 @@ object NewEditor {
 
       object CodeGroupTitle extends Base(RichTextEditor.CodeGroupTitle) {
         def apply(id: ReqCodeGroupId, pid: PreviewId): InitFn = start(
-          UpdateContentCmd.SetCodeGroupTitle(id, _),
-          getCodeGroup(id).map(_.title).widen,
-          pid)
+          cmd            = UpdateContentCmd.SetCodeGroupTitle(id, _),
+          initialValueCB = getCodeGroup(id).map(_.title).widen,
+          pid            = pid,
+          reqId          = None)
       }
 
       object CustomTextField extends Base(RichTextEditor.CustomTextField) {
         def apply(id: ReqId, fid: CustomField.Text.Id, pid: PreviewId): InitFn = start(
-          UpdateContentCmd.SetCustomTextField(id, fid, _),
-          pxProject.toCallback.map(p => ReqData.textAt(fid, id).get(p.content.reqText)).toCBO,
-          pid)
+          cmd            = UpdateContentCmd.SetCustomTextField(id, fid, _),
+          initialValueCB = pxProject.toCallback.map(p => ReqData.textAt(fid, id).get(p.content.reqText)).toCBO,
+          pid            = pid,
+          reqId          = Some(id))
       }
 
       object GenericReqTitle extends Base(RichTextEditor.GenericReqTitle) {
         def apply(id: GenericReqId, pid: PreviewId): InitFn = start(
-          UpdateContentCmd.SetGenericReqTitle(id, _),
-          getGenericReq(id).map(_.title),
-          pid)
+          cmd            = UpdateContentCmd.SetGenericReqTitle(id, _),
+          initialValueCB = getGenericReq(id).map(_.title),
+          pid            = pid,
+          reqId          = Some(id))
       }
 
       object UseCaseTitle extends Base(RichTextEditor.UseCaseTitle) {
         def apply(id: UseCaseId, pid: PreviewId): InitFn = start(
-          UpdateContentCmd.SetUseCaseTitle(id, _),
-          getUseCase(id).map(_.title),
-          pid)
+          cmd            = UpdateContentCmd.SetUseCaseTitle(id, _),
+          initialValueCB = getUseCase(id).map(_.title),
+          pid            = pid,
+          reqId          = Some(id))
       }
     }
 
@@ -782,7 +789,8 @@ object NewEditor {
 
         protected def start(cmd           : T.NonEmptyText => Cmd,
                             initialValueCB: CallbackOption[T.NonEmptyText],
-                            pid           : PreviewId): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
+                            pid           : PreviewId,
+                            reqId         : Option[ReqId]): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
           import ictx._
 
           val (abort, commitFn) =
@@ -801,13 +809,14 @@ object NewEditor {
             initialData       = initCB,
             initalValueOption = ivo)(
             initialValueFn    = _._2)(
-            editor            = i => new State(_, Some(i._1), args.cbProjectWidgets, pid, abort, commitFn))
+            editor            = i => new State(_, Some(i._1), args.cbProjectWidgets, pid, reqId, abort, commitFn))
         }
 
         private class State(ss              : StateSnapshot[String],
                             initial         : Some[T.NonEmptyText],
                             projectWidgetsCB: CallbackTo[ProjectWidgets.AnyCtx],
                             pid             : PreviewId,
+                            reqId           : Option[ReqId],
                             abort           : Some[Callback],
                             commitFn        : Some[editor.NonEmpty.CommitFn]) extends EditorImpl {
 
@@ -827,6 +836,7 @@ object NewEditor {
               projectWidgets <- projectWidgetsCB
             } yield editor.NonEmpty(
               project          = project,
+              naTags           = project.naTagsForReq(reqId),
               plainTextNoCtx   = plainTextNoCtx,
               textSearch       = textSearch,
               projectWidgets   = projectWidgets,
@@ -851,9 +861,10 @@ object NewEditor {
 
        object ManualIssue extends Base(RichTextEditor.ManualIssue, sspManualIssue) {
          def apply(id: ManualIssueId, pid: PreviewId): InitFn = start(
-           ManualIssueCmd.Update(id, _),
-           pxProject.toCallback.map(_.manualIssues.imap.need(id).text).toCBO,
-           pid)
+           cmd            = ManualIssueCmd.Update(id, _),
+           initialValueCB = pxProject.toCallback.map(_.manualIssues.imap.need(id).text).toCBO,
+           pid            = pid,
+           reqId          = None)
        }
     }
 

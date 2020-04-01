@@ -79,24 +79,24 @@ object NewEditor {
 
       def prepareCG(r: RowKey.CodeGroup.type) = FieldKey.FoldForCodeGroup[LogicPerField](
         _ => EditReqCodes.Single.apply,
-        f => EditRichText.CodeGroupTitle(PreviewId(RowKey.CodeGroup, f)))
+        f => EditRichText.CodeGroupTitle(PreviewId(RowKey.CodeGroup, f), None))
 
       def prepareGR(r: RowKey.GenericReq) = FieldKey.FoldForGenericReq[LogicPerField](
         _ => EditReqCodes.Multiple.apply,
-        f => EditRichText.CustomTextField(PreviewId(r, f)),
+        f => EditRichText.CustomTextField(PreviewId(r, f), Some(r.reqTypeId)),
         f => EditImplications(f.scope),
         f => EditTags(f.field, r.reqTypeId),
-        f => EditRichText.GenericReqTitle(PreviewId(r, f)))
+        f => EditRichText.GenericReqTitle(PreviewId(r, f), Some(r.reqTypeId)))
 
       def prepareUC(r: RowKey.UseCase.type) = FieldKey.FoldForUseCase[LogicPerField](
         _ => EditReqCodes.Multiple.apply,
-        f => EditRichText.CustomTextField(PreviewId(r, f)),
+        f => EditRichText.CustomTextField(PreviewId(r, f), Some(StaticReqType.UseCase)),
         f => EditImplications(f.scope),
         f => EditTags(f.field, r.reqTypeId),
-        f => EditRichText.UseCaseTitle(PreviewId(r, f)))
+        f => EditRichText.UseCaseTitle(PreviewId(r, f), Some(StaticReqType.UseCase)))
 
       def prepareMI(r: RowKey.ManualIssue.type) = FieldKey.FoldForManualIssue[LogicPerField](
-        f => EditRichTextNonEmpty.ManualIssue(PreviewId(r, f)))
+        f => EditRichTextNonEmpty.ManualIssue(PreviewId(r, f), None))
 
       RowKey.Fold[ForFields](
         codeGroup   = prepareCG(_).map(logicToPerField),
@@ -297,10 +297,10 @@ object NewEditor {
 
         override type Value = T.OptionalText
 
-        def apply(pid: PreviewId): InitFn =
-          _.startWithStateSnapshot("")(new State(_, pid))
+        def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn =
+          _.startWithStateSnapshot("")(new State(_, pid, reqTypeId))
 
-        private class State(ss: StateSnapshot[String], pid: PreviewId) extends EditorImpl {
+        private class State(ss: StateSnapshot[String], pid: PreviewId, reqTypeId: Option[ReqTypeId]) extends EditorImpl {
           override type Props = editor.Optional
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
@@ -313,6 +313,7 @@ object NewEditor {
               projectWidgets <- pxProjectWidgets.toCallback
             } yield editor.Optional(
               project          = project,
+              naTags           = project.config.naTags(reqTypeId),
               plainTextNoCtx   = plainTextNoCtx,
               textSearch       = textSearch,
               projectWidgets   = projectWidgets,
@@ -345,10 +346,10 @@ object NewEditor {
 
         override type Value = T.NonEmptyText
 
-        def apply(pid: PreviewId): InitFn =
-          _.startWithStateSnapshot("")(new State(_, pid))
+        def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn =
+          _.startWithStateSnapshot("")(new State(_, pid, reqTypeId))
 
-        private class State(ss: StateSnapshot[String], pid: PreviewId) extends EditorImpl {
+        private class State(ss: StateSnapshot[String], pid: PreviewId, reqTypeId: Option[ReqTypeId]) extends EditorImpl {
           override type Props = editor.NonEmpty
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
@@ -361,6 +362,7 @@ object NewEditor {
               projectWidgets <- pxProjectWidgets.toCallback
             } yield editor.NonEmpty(
               project          = project,
+              naTags           = project.config.naTags(reqTypeId),
               plainTextNoCtx   = plainTextNoCtx,
               textSearch       = textSearch,
               projectWidgets   = projectWidgets,

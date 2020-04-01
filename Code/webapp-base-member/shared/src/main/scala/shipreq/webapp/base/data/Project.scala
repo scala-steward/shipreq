@@ -121,7 +121,7 @@ final case class Project(name         : Project.Name,
     )
   }
 
-  lazy val conflictingTagsPerReq: Multimap[ReqId, Set, ApplicableTagId] = {
+  private lazy val conflictingTagsPerReq: Multimap[ReqId, Set, ApplicableTagId] = {
     var m = Multimap.empty[ReqId, Set, ApplicableTagId]
     issues.vector.foreach {
 
@@ -135,6 +135,14 @@ final case class Project(name         : Project.Name,
     }
     m
   }
+
+  lazy val invalidTagsPerReq: ReqId => Set[ApplicableTagId] =
+    Memo { reqId =>
+      val req           = content.reqs.need(reqId)
+      val conflicting   = conflictingTagsPerReq(reqId)
+      val nonApplicable = config.naTags(req.reqTypeId).set
+      conflicting ++ nonApplicable
+    }
 
   /**
    * Transitive closure of implications going source → target.
@@ -175,6 +183,9 @@ final case class Project(name         : Project.Name,
 
   def isReqTypeInUse(id: CustomReqTypeId): Boolean =
     content.reqs.pubids.value(id).nonEmpty
+
+  def naTagsForReq(reqId: Option[ReqId]): NaTags =
+    reqId.fold(NaTags.none)(naTagsForReq(_))
 
   def naTagsForReq(reqId: ReqId): NaTags = {
     val req = content.reqs.need(reqId)

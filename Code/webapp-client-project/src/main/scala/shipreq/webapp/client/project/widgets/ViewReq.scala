@@ -60,7 +60,7 @@ final case class ViewReq[A](data           : Data,
     pt pastPubids data.pastPubids
 
   private val tagValidity: ApplicableTagId => Validity =
-    Invalid when data.conflictingTags.contains(_)
+    Invalid when data.invalidTags.contains(_)
 
   def tags: A =
     pt.tagList(data.generalTags, data.live, Optional, tagValidity)
@@ -124,7 +124,7 @@ object ViewReq {
                         codes           : Traversable[ReqCode.Value],
                         generalTags     : Vector[ApplicableTagId],
                         customTags      : CustomField.Tag.Id => Vector[ApplicableTagId],
-                        conflictingTags : Set[ApplicableTagId],
+                        invalidTags     : Set[ApplicableTagId],
                         generalImps     : Direction => Vector[Pubid],
                         customImps      : CustomField.Implication.Id => Vector[Pubid],
                         pastPubids      : SortedSet[ExternalPubid],
@@ -200,7 +200,7 @@ object ViewReq {
         codes            = codes,
         generalTags      = generalTags,
         customTags       = customTags,
-        conflictingTags  = project.conflictingTagsPerReq(id),
+        invalidTags      = project.invalidTagsPerReq(id),
         generalImps      = generalImps,
         customImps       = fid => sortPubids(customImpLookup(fid)(id)),
         pastPubids       = pastPubids,

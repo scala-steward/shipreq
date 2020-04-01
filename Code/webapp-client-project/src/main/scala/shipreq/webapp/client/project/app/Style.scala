@@ -1261,9 +1261,12 @@ object Style extends StyleSheet.Inline {
 
     val tagInText = styleF(D.`live * validity`){ case (l, v) => styleS(
       tagBase(l, helpIconOnHover = true),
-      mixinIf(l is Live)(refColour),
-      mixinIf(l is Dead)(deadMaybeValid(v)))
-    }
+      (l, v) match {
+        case (Live, Valid)   => styleS(refColour)
+        case (Live, Invalid) => styleS(hasError, textDecoration := ^.lineThrough)
+        case (Dead, _)       => deadMaybeValid(v)
+      },
+    )}
 
     val reqTypeShort = styleF(D.live)(a => styleS(
       hoverShowsInfo,
