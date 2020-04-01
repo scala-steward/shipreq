@@ -14,6 +14,7 @@ import shipreq.webapp.base.data.{FilterDead, HideDead, Project, ProjectConfig, R
 import shipreq.webapp.base.event.EventSeqSummary
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.filter.Filter
+import shipreq.webapp.base.lib.ConfirmJs
 import shipreq.webapp.base.protocol.ajax.CommonProtocolsJs
 import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint
 import shipreq.webapp.base.protocol.websocket._
@@ -37,7 +38,7 @@ object LoadedRoot {
   case class Props(page: Page, routerCtl: RouterCtl)
 }
 
-final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Global) {
+final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Global, confirmJs: ConfirmJs) {
 
   val pxProject = global.pxProject
   def unsafeProject() = global.unsafeProject()
@@ -385,6 +386,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
             state   = StateSnapshot.zoomL(State.reqTypeConfig)(s).setStateVia($),
             ssp     = sspUpdateConfig,
             async   = AsyncFeature.ReadWrite.D0(reqTypeConfigAsyncW, s.reqTypeConfigAsync),
+            confirm = confirmJs,
             toast   = toast,
             usage   = usage,
           ).render

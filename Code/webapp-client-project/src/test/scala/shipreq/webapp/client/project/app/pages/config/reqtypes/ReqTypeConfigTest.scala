@@ -111,7 +111,9 @@ object ReqTypeConfigTest extends TestSuite {
         >> clickRestoreButton
         +> buttonsEnabled.assert(Buttons(hardDel = Enabled, delete = Enabled, close = Enabled, save = Disabled))
 
+        +> confirms.assert(0)
         >> clickHardDeleteButton
+        +> confirms.assert(1)
         +> isEditorOpen.assert(false)
         +> mnemonicList.assert("BR", "CO", "DD, DA, DDF", "MF", "SI", "UC")
     )
@@ -158,10 +160,27 @@ object ReqTypeConfigTest extends TestSuite {
         +> pastMnemonics.assert("XX")
     )
 
+  private def testRejectHardDeletion()(implicit tp: TestPath) =
+    runActions(SampleProject.project)(
+      selectReqType("FR")
+
+        >> setConfirmResponse(false)
+
+        +> confirms.assert(0)
+        >> clickHardDeleteButton
+        +> confirms.assert(1)
+
+        +> isEditorOpen.assert(true)
+        +> mnemonicList.assert("BR", "CO", "FR", "MF", "UC")
+        +> editorTitle.assert("FR: Functional Requirement")
+        +> buttonsEnabled.assert(Buttons(hardDel = Enabled, delete = Enabled, close = Enabled, save = Disabled))
+    )
+
   override def tests = Tests {
-    'view     - testView()
-    'new      - testNew()
-    'notInUse - testNotInUse()
-    'inUse    - testInUse()
+    'view      - testView()
+    'new       - testNew()
+    'notInUse  - testNotInUse()
+    'inUse     - testInUse()
+    'rejectDel - testRejectHardDeletion()
   }
 }

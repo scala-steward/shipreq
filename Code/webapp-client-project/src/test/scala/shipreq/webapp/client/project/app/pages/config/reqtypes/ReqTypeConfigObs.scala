@@ -8,6 +8,7 @@ import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.pages.config.Buttons
 import shipreq.webapp.client.project.test.CommonObs._
+import shipreq.webapp.client.project.test.TestConfirmJs
 
 object ReqTypeConfigObs {
 
@@ -57,8 +58,10 @@ object ReqTypeConfigObs {
 
 // =====================================================================================================================
 
-final class ReqTypeConfigObs($: DomZipperJs) {
+final class ReqTypeConfigObs($: DomZipperJs, confirmJs: TestConfirmJs) {
   import ReqTypeConfigObs._
+
+  val confirms = confirmJs.calls()
 
   val left  = $.child("section", 1 of 2)
   val right = $.child("section", 2 of 2).child(selRightOn)

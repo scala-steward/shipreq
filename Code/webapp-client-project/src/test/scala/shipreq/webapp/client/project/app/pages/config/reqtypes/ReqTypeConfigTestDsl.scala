@@ -4,9 +4,10 @@ import japgolly.scalajs.react.test._
 import org.scalajs.dom.html
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.app.pages.config.Buttons
+import shipreq.webapp.client.project.test.TestConfirmJs
 
 object ReqTypeConfigTestDsl {
-  val * = Dsl[Unit, ReqTypeConfigObs, Unit]
+  val * = Dsl[TestConfirmJs, ReqTypeConfigObs, Unit]
 
   val invariants: *.Invariants =
     *.emptyInvariant
@@ -23,6 +24,7 @@ object ReqTypeConfigTestDsl {
   val editorDesc          = *.focus("Editor desc"          ).option(_.obs.editor.map(_.desc.value))
   val pastMnemonics       = *.focus("Past mnemonics"       ).option(_.obs.editor.flatMap(_.pastMnemonics))
   val editorEditables     = *.focus("Editor editables"     ).value(_.obs.editor.fold(0)(_.editables.length))
+  val confirms            = *.focus("Confirms"             ).value(_.obs.confirms)
 
   // ===================================================================================================================
 
@@ -72,4 +74,6 @@ object ReqTypeConfigTestDsl {
   val clickNew: *.Actions =
     *.action(s"Click new button")(Simulate click _.obs.newButton)
 
+  def setConfirmResponse(b: Boolean): *.Actions =
+    *.action("Set next confirm response to " + b)(_.ref.response = b)
 }

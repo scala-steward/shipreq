@@ -10,6 +10,7 @@ import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{ErrorMsg, Optics, PotentialChange}
 import shipreq.webapp.base.data.{Colour => _, _}
 import shipreq.webapp.base.feature.AsyncFeature
+import shipreq.webapp.base.lib.ConfirmJs
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
@@ -39,6 +40,7 @@ object ReqTypeConfig {
                          pw     : ProjectWidgets.NoCtx,
                          ssp    : ServerSideProcInvoker[UpdateConfigCmd.ToModifyReqTypes, ErrorMsg, NewEvents],
                          async  : AsyncFeature.ReadWrite.D0[ErrorMsg],
+                         confirm: ConfirmJs,
                          toast  : Toast,
                          usage  : Usage,
                         ) {
@@ -202,9 +204,10 @@ object ReqTypeConfig {
       def createOrUpdateButtons(idOption: Option[CustomReqTypeId], hard: Boolean): EditorButtons.Props =
         if (hard)
           EditorButtons.createOrHardUpdate(args)(idOption, p.potentialSaveCmd)(
-            submitCmd     = submitCmd(p, _, _, _),
-            hardDeleteCmd = UpdateConfigCmd.CustomReqTypeDeleteHard,
-            softDeleteCmd = UpdateConfigCmd.CustomReqTypeDeleteSoft)
+            submitCmd         = submitCmd(p, _, _, _),
+            hardDeleteConfirm = p.confirm("Are you sure you want to permanently delete this?"),
+            hardDeleteCmd     = UpdateConfigCmd.CustomReqTypeDeleteHard,
+            softDeleteCmd     = UpdateConfigCmd.CustomReqTypeDeleteSoft)
 
         else
           EditorButtons.createOrUpdate(args)(idOption, p.potentialSaveCmd)(

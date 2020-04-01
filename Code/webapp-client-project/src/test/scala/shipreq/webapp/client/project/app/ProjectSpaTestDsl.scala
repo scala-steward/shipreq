@@ -43,7 +43,7 @@ object ProjectSpaTestDsl {
       component = ReactTestUtils.modifyProps(c, component)(f)
   }
 
-  case class Ref(global: TestGlobal, tester: ComponentTester[Props, State, _]) {
+  final case class Ref(global: TestGlobal, tester: ComponentTester[Props, State, _], confirmJs: TestConfirmJs) {
     def observe(): Obs = {
       val $ = tester.component.domZipper
       val inner = $(">div")(">div:nth-child(2),>main")
@@ -56,7 +56,7 @@ object ProjectSpaTestDsl {
 
       nav.page match {
         case Page.Index        => empty.copy(home        = Try(new ProjectHomeObs(inner)))
-        case Page.CfgReqTypes  => empty.copy(cfgReqTypes = Try(new ReqTypeConfigObs(inner)))
+        case Page.CfgReqTypes  => empty.copy(cfgReqTypes = Try(new ReqTypeConfigObs(inner, confirmJs)))
         case Page.CfgFields    => empty.copy(cfgFields   = Try(new FieldConfigObs(inner)))
         case Page.CfgTags      => empty.copy(cfgTags     = Try(new TagConfigObs(inner)))
         case Page.ReqTable     => empty.copy(reqTable    = Try(new ReqTableObs(global, inner)))
@@ -126,7 +126,7 @@ object ProjectSpaTestDsl {
 
   implicit lazy val transformCRT =
     CRT.*.transformer
-      .mapR[Ref](_ => ())
+      .mapR[Ref](_.confirmJs)
       .pmapO[Obs](_.cfgReqTypes)
       .mapS[TestState](_ => ())((s, _) => s)
 
@@ -240,8 +240,9 @@ object ProjectSpaTestDsl {
                           assertPass: Boolean = true): Report[String] = {
 
     val global       = TestGlobal(project)
+    val confirmJs    = TestConfirmJs()
     val initPageData = ProjectSpaEntryPoint.InitData(Username("testuser"), Obfuscated("xyz"), project.name)
-    val spa          = new LoadedRoot(initPageData, global)
+    val spa          = new LoadedRoot(initPageData, global, confirmJs)
     val rc           = MockRouterCtl[Page]()
     val init         = TestState(page, global.unsafeProject(), rd)
 
@@ -251,7 +252,7 @@ object ProjectSpaTestDsl {
       val report = Plan(action, invariants)
                      .test(Observer(_.observe()))
                      .withInitialState(init)
-                     .withRefByName(Ref(global, tester))
+                     .withRefByName(Ref(global, tester, confirmJs))
                      .run()
       if (assertPass)
         assertTestState(report)

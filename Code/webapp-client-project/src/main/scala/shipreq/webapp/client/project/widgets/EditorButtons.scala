@@ -34,17 +34,18 @@ object EditorButtons {
         )
     }
 
-  def createOrHardUpdate[N, Id, Id2 <: Id, S, Cmd](args            : SplitScreenCrud.EditorArgs[N, Id, S])
-                                                  (idOption        : Option[Id2],
-                                                   potentialSaveCmd: PotentialChange[Any, Cmd])
-                                                  (submitCmd       : (Cmd, String, (Project, Id2) => Callback) => Callback,
-                                                   hardDeleteCmd   : Id2 => Cmd,
-                                                   softDeleteCmd   : Id2 => Cmd): Props =
+  def createOrHardUpdate[N, Id, Id2 <: Id, S, Cmd](args             : SplitScreenCrud.EditorArgs[N, Id, S])
+                                                  (idOption         : Option[Id2],
+                                                   potentialSaveCmd : PotentialChange[Any, Cmd])
+                                                  (submitCmd        : (Cmd, String, (Project, Id2) => Callback) => Callback,
+                                                   hardDeleteConfirm: CallbackTo[Boolean],
+                                                   hardDeleteCmd    : Id2 => Cmd,
+                                                   softDeleteCmd    : Id2 => Cmd): Props =
     idOption match {
       case Some(id) =>
         Props.HardUpdate(
           abort      = args.close,
-          hardDelete = submitCmd(hardDeleteCmd(id), "Permanently deleted", (_, _) => args.close),
+          hardDelete = hardDeleteConfirm.flatMap(submitCmd(hardDeleteCmd(id), "Permanently deleted", (_, _) => args.close).when_(_)),
           softDelete = submitCmd(softDeleteCmd(id), "Deleted", (p, _) => args.reset(p)),
           update     = potentialSaveCmd.map(submitCmd(_, "Updated", (p, _) => args.reset(p))),
         )
