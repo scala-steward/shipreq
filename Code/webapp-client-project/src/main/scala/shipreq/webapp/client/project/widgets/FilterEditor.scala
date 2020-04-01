@@ -7,7 +7,7 @@ import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/-}
 import shipreq.base.util.{Invalid, Valid, Validity}
-import shipreq.webapp.base.data.{Contextualise, CustomField, Project, ProjectConfig, ShowDead}
+import shipreq.webapp.base.data.{Contextualise, CustomField, NaTags, Project, ProjectConfig, ShowDead}
 import shipreq.webapp.base.filter._
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.issue.IssueCategory
@@ -91,7 +91,13 @@ object FilterEditor {
     private val pxAutoComplete: Px[AutoComplete.Strategies] =
       pxProject.map { p =>
 
-        val hashtags = AutoComplete.Project.hashtag(p, ShowDead, issues = true, tags = true)(Contextualise)
+        val hashtags = AutoComplete.Project.hashtag(
+          p,
+          ShowDead,
+          issues = true,
+          tags = true,
+          naTags = NaTags.none)(
+          Contextualise)
 
         val fieldNames =
           p.config.fieldsByName

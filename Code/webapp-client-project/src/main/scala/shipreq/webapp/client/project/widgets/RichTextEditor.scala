@@ -118,11 +118,12 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.EditorBackend {
     private val pxProject    = Px.props($).map(_.project).withReuse.autoRefresh
+    private val pxNaTags     = Px.props($).map(_.naTags).withReuse.autoRefresh
     private val pxPlainText  = Px.props($).map(_.projectWidgets.plainText).withReuse.autoRefresh
     private val pxTextSearch = Px.props($).map(_.textSearch).withReuse.autoRefresh
 
     override val pxAutoComplete =
-      Px.apply3(pxProject, pxPlainText, pxTextSearch)(AutoComplete.Project.richText(text))
+      Px.apply4(pxProject, pxNaTags, pxPlainText, pxTextSearch)(AutoComplete.Project.richText(text))
 
     private val scrollIntoView: Callback =
       TaskRepeater.millis(

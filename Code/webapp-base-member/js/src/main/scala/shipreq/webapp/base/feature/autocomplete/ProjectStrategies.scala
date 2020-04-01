@@ -28,11 +28,18 @@ object ProjectStrategies {
 
   def richText(text: Text.Generic)
               (p: Project,
+               naTags: NaTags,
                pt: PlainText.ForProject.AnyCtx,
                ts: TextSearch): Strategies = {
     val s = Vector.newBuilder[Strategy[_]]
 
-    s ++= hashtag(p, HideDead, issues = text.supports(TypeGroup.Issue), tags = text.supports(TypeGroup.TagRef))(Contextualise)
+    s ++= hashtag(
+      p,
+      HideDead,
+      issues = text.supports(TypeGroup.Issue),
+      tags   = text.supports(TypeGroup.TagRef),
+      naTags = naTags)(
+      Contextualise)
 
     if (text.supports(TypeGroup.ContentRef)) {
       s ++= reqCode.ref(p, pt)
@@ -64,13 +71,23 @@ object ProjectStrategies {
       fd(issues)(_.live).map(_.key) append
       fd(tags  )(_.live).map(_.key))
 
-  def hashtag(p: Project, fd: FilterDead, issues: Boolean, tags: Boolean): Contextualise => Strategies =
-    if (issues || tags)
-      hashtag(
-        if (issues) p.config.customIssueTypes.values.toStream      else Stream.empty,
-        if (tags)   p.config.tags.applicableTagIterator().toStream else Stream.empty,
-        fd)
-    else
+  def hashtag(p: Project, fd: FilterDead, issues: Boolean, tags: Boolean, naTags: NaTags): Contextualise => Strategies =
+    if (issues || tags) {
+
+      val issueOptions =
+        if (issues)
+          p.config.customIssueTypes.values.toStream
+        else
+          Stream.empty
+
+      val tagOptions =
+        if (tags)
+          p.config.tags.applicableTagIterator().filter(_.live is Live).filter(t => !naTags.set.contains(t.id)).toStream
+        else
+          Stream.empty
+
+      hashtag(issueOptions, tagOptions, fd)
+    } else
       _ => Vector.empty
 
 //  def issueTag(legal: Stream[CustomIssueType], fd: FilterDead): Contextualise => Strategies =
