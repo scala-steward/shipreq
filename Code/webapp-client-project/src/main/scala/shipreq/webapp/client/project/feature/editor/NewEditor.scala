@@ -591,7 +591,7 @@ object NewEditor {
 
         val lookupFn = fid.fold[Project => Lookup](Lookup.notUsedInTagFields)(Lookup.forTagField)
         val pxLookup = pxProject map lookupFn
-        val pxNaTags = pxProject.map(TagEditor.NaTags.forReq(id, _))
+        val pxNaTags = pxProject.map(_.naTagsForReq(id))
 
         val pxInit: Px[(Set[ApplicableTagId], String)] =
           for {
@@ -619,7 +619,7 @@ object NewEditor {
       private class State(ss           : StateSnapshot[String],
                           initialValues: Some[Set[ApplicableTagId]],
                           pxLookup     : Px[Lookup],
-                          pxNaTags     : Px[TagEditor.NaTags],
+                          pxNaTags     : Px[NaTags],
                           abort        : Some[Callback],
                           commitFn     : Some[CommitFn]) extends EditorImpl {
 

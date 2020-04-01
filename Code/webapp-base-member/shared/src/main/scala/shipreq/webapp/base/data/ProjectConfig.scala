@@ -294,13 +294,6 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
   def deadTagFieldDistribution(deadTagFilter: Option[CustomField.Tag.Id => Boolean]): TagFieldDistribution.TagIds =
     deadTagFilter.fold(deadTagFieldDistribution)(deadTagFieldDistribution(_))
 
-  /** Includes dead tags */
-  val nonApplicableTagsPerReqType: ReqTypeId => Set[ApplicableTagId] =
-    Memo { reqTypeId =>
-      tags
-        .applicableTagIterator()
-        .filter(_.applicableReqTypes(reqTypeId) is NotApplicable)
-        .map(_.id)
-        .toSet
-    }
+  val naTags: ReqTypeId => NaTags =
+    Memo(NaTags.forReqType(_, this))
 }

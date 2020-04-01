@@ -176,10 +176,13 @@ final case class Project(name         : Project.Name,
   def isReqTypeInUse(id: CustomReqTypeId): Boolean =
     content.reqs.pubids.value(id).nonEmpty
 
-  def nonApplicableTagsForReq(reqId: ReqId): Set[ApplicableTagId] = {
+  def naTagsForReq(reqId: ReqId): NaTags = {
     val req = content.reqs.need(reqId)
-    config.nonApplicableTagsPerReqType(req.reqTypeId)
+    naTagsForReq(req)
   }
+
+  @inline def naTagsForReq(req: Req): NaTags =
+    config.naTags(req.reqTypeId)
 
   def prettyPrintImplicationGraph: String =
     Util.quickJSB { sb =>

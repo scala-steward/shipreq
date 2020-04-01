@@ -1,10 +1,9 @@
 package shipreq.webapp.client.project.widgets
 
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
-import scalaz.{-\/, \/}
+import scalaz.\/
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
@@ -56,40 +55,6 @@ object TagEditor {
 
   type Output   = SetDiff.NE[ApplicableTagId]
   type CommitFn = Output ~=> Callback
-
-  final case class NaTags(set: Set[ApplicableTagId], auditor: Auditor[ApplicableTag, ApplicableTag])
-
-  object NaTags {
-
-    def none: NaTags =
-      apply(Set.empty, Auditor.id)
-
-    def forReq(reqId: ReqId, p: Project): NaTags = {
-      val req = p.content.reqs.need(reqId)
-      forReqType(req.reqTypeId, p)
-    }
-
-    def forReqType(reqTypeId: ReqTypeId, p: Project): NaTags =
-      p.config.reqTypes.get(reqTypeId) match {
-        case Some(rt) => forReqType(rt, p)
-        case None     => none
-      }
-
-    def forReqType(reqType: ReqType, p: Project): NaTags = {
-      val set =
-        p.config.nonApplicableTagsPerReqType(reqType.reqTypeId)
-
-      val auditor =
-        Auditor.test((tag: ApplicableTag) =>
-          Option.when(set contains tag.id)(
-            Invalidity(s"#${tag.name} is not applicable to ${reqType.mnemonic.value}s.")))
-
-      apply(set, auditor)
-    }
-
-    implicit val reusability: Reusability[NaTags] =
-      Reusability.by(_.set)
-  }
 
   val liveCorrect: String => String =
     _.replace("\n", "")

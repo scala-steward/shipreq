@@ -190,7 +190,7 @@ object DataLogic {
     private[DataLogic] final class Builder(req: Req, p: Project) {
 
       private val nonApplicableTags: Set[ApplicableTagId] =
-        p.config.nonApplicableTagsPerReqType(req.reqTypeId)
+        p.config.naTags(req.reqTypeId).set
 
       private var _other              = emptyOther
       private var _deadTagsInLiveText = emptyDeadTagsInLiveText

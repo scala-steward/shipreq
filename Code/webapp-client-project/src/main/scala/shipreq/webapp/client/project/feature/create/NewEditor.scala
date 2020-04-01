@@ -260,11 +260,11 @@ object NewEditor {
         import ictx._
         val lookupFn = fid.fold[Project => Lookup](Lookup.notUsedInTagFields)(Lookup.forTagField)
         val pxLookup = pxProject map lookupFn
-        val pxNaTags = pxProject.map(TagEditor.NaTags.forReqType(reqTypeId, _))
+        val pxNaTags = pxProject.map(_.config.naTags(reqTypeId))
         startWithStateSnapshot("")(new State(_, pxLookup, pxNaTags))
       }
 
-      private class State(ss: StateSnapshot[String], pxLookup: Px[Lookup], pxNaTags: Px[TagEditor.NaTags]) extends EditorImpl {
+      private class State(ss: StateSnapshot[String], pxLookup: Px[Lookup], pxNaTags: Px[NaTags]) extends EditorImpl {
         override type Props = TagEditor.Props
         override def renderImpl = _.render
         override def valueImpl = _.parseResultSet

@@ -58,6 +58,9 @@ abstract class DataReusability extends BaseReusability {
   implicit def reusabilityReactKey: Reusability[Key] =
     Reusability.by_==
 
+  implicit def reusabilityNaTags: Reusability[NaTags] =
+    Reusability.byRef || Reusability.by(_.set)
+
   implicit def reusabilityProject: Reusability[Project] =
     Reusability.byRef
 
