@@ -16,7 +16,7 @@ object Dependencies {
 
   object Scala {
     private val mm = scalaItself(version)
-    def version  = "2.12.10"
+    def version  = "2.12.11"
     val library  = mm("scala-library")
     val reflect  = mm("scala-reflect")
     val compiler = mm("scala-compiler") ++ reflect ++ scalaXml
@@ -64,7 +64,7 @@ object Dependencies {
   }
 
   object TestState {
-    val Ver = "2.3.0"
+    val Ver = "2.4.0"
     private val mm = MultiModule.jvmAndJs("com.github.japgolly.test-state", Ver)
     private val js = MultiModule.js("com.github.japgolly.test-state", Ver)
     val core            = mm("core")

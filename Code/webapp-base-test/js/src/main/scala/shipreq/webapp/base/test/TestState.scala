@@ -47,7 +47,6 @@ object TestState
 
   def KB = japgolly.scalajs.react.test.SimEvent.Keyboard
 
-  // TODO Patch TestState to support using custom fail instead of throwing
   def assertTestState(r: Report[String], onFailure: => Unit = ())(implicit as: AssertionSettings, se: DisplayError[String]): Unit =
     r.failureReason match {
       case None =>
@@ -118,7 +117,7 @@ object TestState
       private def _editCell(old: Option[String], newValue: String, editors: Int): Actions =
         (openEditor
           +> editorCount.assert.increaseBy(editors)
-          +> editorValue.rename("Initial editor value").assert(old.getOrElse("")).when(_ => old.isDefined) // TODO test-state should support optional assertions
+          +> editorValue.rename("Initial editor value").assert.equalWhenDefined(old)
           >> setEditValue(newValue)
           >> commit
           +> editorCount.assert.decreaseBy(editors)

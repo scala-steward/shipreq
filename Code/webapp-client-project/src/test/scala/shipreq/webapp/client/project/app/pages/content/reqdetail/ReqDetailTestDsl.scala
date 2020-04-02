@@ -198,7 +198,7 @@ object ReqDetailTestDsl {
 
   private def _editStepText(label: String, old: Option[String], newValue: String): *.Actions =
     ( openEditor(label)
-      +> stepText(label).rename("Initial editor text").assert(old.getOrElse("")).when(_ => old.isDefined) // TODO test-state should support optional assertions
+      +> stepText(label).rename("Initial editor text").assert.equalWhenDefined(old)
       >> setStepTextEditValue(label, newValue)
       >> commitStepTextEdit(label)
     ).group(s"Edit $label text to ${quoteStringForDisplay(newValue)}")
