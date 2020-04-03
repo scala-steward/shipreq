@@ -64,6 +64,8 @@ object ReqTableTestDsl {
   def visibleColumns(obs: ReqTableObs): Set[String] =
     mandatoryColumns(obs.filterDead) ++ obs.columnSelector.onColumns
 
+  val tableColumns = *.focus("Table columns").collection(_.obs.table.fieldColumns)
+
   val selectableColumns = *.focus("Selectable columns").collection(_.obs.columnSelector.allColumns)
 
   val filterDead = *.focus("FilterDead").value(_.obs.filterDead)
@@ -218,8 +220,7 @@ object ReqTableTestDsl {
     }
 
     def tableColumns =
-      *.focus("Table columns").collection(_.obs.table.fieldColumns)
-        .assert.equalIgnoringOrderBy(i => visibleColumns(i.obs))
+      ReqTableTestDsl.tableColumns.assert.equalIgnoringOrderBy(i => visibleColumns(i.obs))
 
     def tableContents = {
       val rowEitherDeadOrLive = *.focus("")

@@ -284,6 +284,7 @@ object ReqTableTest extends TestSuite {
 
   def testKeyboardNavigation = Plan.action(
     setFocus(_.table.cell(1, 1).domAsHtml)
+      +> tableColumns.assert("ID", "Title", "Tags")
       >> press(KB.Down)      +> activeElement.assert.equalBy(_.obs.table.cell(2, 1).dom)
       >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.cell(2, 2).dom)
       >> press(KB.Up)        +> activeElement.assert.equalBy(_.obs.table.cell(1, 2).dom)
