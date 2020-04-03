@@ -3,10 +3,11 @@ package shipreq.webapp.base.test
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.base.util.VectorTree
 import shipreq.base.util.VectorTree.{Location => Loc}
-import shipreq.webapp.base.data._, DataImplicits._
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.event.Event
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.test.UnsafeTypes._
-import UseCases.StepFlow
+import shipreq.webapp.base.test.WebappTestUtil._
 
 /**
  * Builds on SampleProject #3 to add:
@@ -21,6 +22,8 @@ import UseCases.StepFlow
  *   - (#15) 1.1.1
  */
 object SampleProject4 {
+  import DataImplicits._
+  import UseCases.StepFlow
 
   trait Values extends SampleProject3.Values {
     val uc1 = UseCaseId(1203)
@@ -99,4 +102,10 @@ object SampleProject4 {
 
   lazy val plainText  = PlainText.ForProject.noCtx(project)
   lazy val textSearch = TextSearch(project, plainText)
+
+  lazy val projectWithOtherTags =
+    applyEventSuccessfully(project, Event.FieldStaticAdd(StaticField.OtherTags))
+
+  lazy val projectWithAllAndOtherTags =
+    applyEventSuccessfully(projectWithOtherTags, Event.FieldStaticAdd(StaticField.AllTags))
 }

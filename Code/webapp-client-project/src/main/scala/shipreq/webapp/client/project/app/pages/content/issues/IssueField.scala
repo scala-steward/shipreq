@@ -13,7 +13,7 @@ object IssueField {
   val CodeGroupTitle  = IssueField(FieldKey.CodeGroupTitle , Some(SpecialBuiltInField.Title.name))
   val GenericReqTitle = IssueField(FieldKey.GenericReqTitle, Some(SpecialBuiltInField.Title.name))
   val UseCaseTitle    = IssueField(FieldKey.UseCaseTitle   , Some(SpecialBuiltInField.Title.name))
-  val Tags            = IssueField(FieldKey.Tags(None)     , Some(SpecialBuiltInField.Tags.name))
+  val OtherTags       = IssueField(FieldKey.OtherTags      , Some(StaticField.OtherTags.name))
 
   def customField(id: CustomFieldId)(implicit cfg: ProjectConfig): IssueField[FieldKey.ForAllReqs] =
     customField(cfg.fields.customFields.need(id))
@@ -28,7 +28,7 @@ object IssueField {
   def customField(id: CustomField.Text.Id)(implicit cfg: ProjectConfig): IssueField[FieldKey.CustomTextField] =
     customField(cfg.fields.custom(id))
 
-  def customField(id: CustomField.Tag.Id)(implicit cfg: ProjectConfig): IssueField[FieldKey.Tags] =
+  def customField(id: CustomField.Tag.Id)(implicit cfg: ProjectConfig): IssueField[FieldKey.CustomFieldTags] =
     customField(cfg.fields.custom(id))
 
   def customField(id: CustomField.Implication.Id)(implicit cfg: ProjectConfig): IssueField[FieldKey.Implications] =
@@ -37,8 +37,8 @@ object IssueField {
   def customField(f: CustomField.Text): IssueField[FieldKey.CustomTextField] =
     IssueField(FieldKey.CustomTextField(f. id), Some(f.name))
 
-  def customField(f: CustomField.Tag)(implicit cfg: ProjectConfig): IssueField[FieldKey.Tags] =
-    IssueField(FieldKey.Tags(Some(f.id)), Some(f.name(cfg.tags.tree)))
+  def customField(f: CustomField.Tag)(implicit cfg: ProjectConfig): IssueField[FieldKey.CustomFieldTags] =
+    IssueField(FieldKey.CustomFieldTags(f.id), Some(f.name(cfg.tags.tree)))
 
   def customField(f: CustomField.Implication)(implicit cfg: ProjectConfig): IssueField[FieldKey.Implications] =
     IssueField(FieldKey.Implications(-\/(f.id)), Some(f.name(cfg.reqTypes)))
@@ -47,12 +47,6 @@ object IssueField {
     Direction.memo(d => IssueField(FieldKey.Implications(\/-(d)), Some(SpecialBuiltInField.implication(d).name)))
 
   def impliedBy = implications(Backwards)
-
-  def tags(id: Option[CustomField.Tag.Id])(implicit cfg: ProjectConfig): IssueField[FieldKey.Tags] =
-    id match {
-      case Some(i) => customField(i)
-      case None    => Tags
-    }
 
   def useCaseStep(id: UseCaseStepId, p: Project): IssueField[FieldKey.UseCaseStep] = {
     val focus = p.content.reqs.useCases.focusStep(id)

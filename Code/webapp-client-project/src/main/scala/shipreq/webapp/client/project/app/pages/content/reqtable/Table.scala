@@ -330,7 +330,8 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
         req              = row.req,
         live             = row.live,
         codes            = row.exp.reqCodes,
-        generalTags      = row.mv.tags,
+        allTags          = row.mv.allTags,
+        otherTags        = row.mv.otherTags,
         customTags       = row.exp.cfTags.getOrElse(_, Vector.empty),
         invalidTags      = row.invalidTags,
         generalImps      = row.exp.implications.apply,
@@ -350,7 +351,8 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
         case Column.CustomField(id)   => viewReq.customField(id) getOrElse `n/a`
         case Column.Title             => viewReq.title
         case Column.ReqType           => viewReq.reqType
-        case Column.Tags              => viewReq.tags
+        case Column.OtherTags         => viewReq.otherTags
+        case Column.AllTags           => viewReq.allTags
         case Column.Implications(dir) => viewReq.imps(dir)
         case Column.Code              => renderCodes
         case Column.Pubid             => pubidFmt(row.req)
@@ -389,7 +391,8 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
         case _: Column.CustomField
            | _: Column.Implications
            | Column.ReqType
-           | Column.Tags
+           | Column.OtherTags
+           | Column.AllTags
            | Column.Pubid
            | Column.DeletionReason  => reusableNA
         case c@ Column.Title        => ret(c, pw.codeGroupTitle(row.group))

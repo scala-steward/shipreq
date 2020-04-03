@@ -133,11 +133,11 @@ object ProjectTemplate {
       import reqtable._, SortCriterion.SyntaxHelpers._
 
       savedView("Default",
-        NonEmptyVector(Column.Pubid, Column.Title, Column.Tags),
+        NonEmptyVector(Column.Pubid, Column.Title, Column.OtherTags),
         SortCriteria(Vector.empty, Column.Pubid / SortMethod.Asc))
 
       savedView("By Code",
-        NonEmptyVector(Column.Code, Column.Pubid, Column.Title, Column.Tags),
+        NonEmptyVector(Column.Code, Column.Pubid, Column.Title, Column.OtherTags),
         SortCriteria(Vector(Column.Code / SortMethod.AscThenBlanks), Column.Pubid / SortMethod.Asc))
 
       qb.events

@@ -102,7 +102,7 @@ object View {
 
   def default(fd: FilterDead): View = {
     import Column._
-    val cols = NonEmptyVector[Column.BuiltIn](Pubid, Title, Tags)
+    val cols = NonEmptyVector[Column.BuiltIn](Pubid, Title)
 
     import SortCriterion.SyntaxHelpers._
     val order = SortCriteria(

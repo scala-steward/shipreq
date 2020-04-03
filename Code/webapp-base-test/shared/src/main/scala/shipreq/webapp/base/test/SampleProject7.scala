@@ -46,8 +46,14 @@ import UnsafeTypes._
  *       MF       : N/A
  *       Otherwise: Default to pri=low (not in scope)
  *
+ *   - Other Tags field
+ *   - All Tags field
+ *
+ *   - New tag: #misc1
+ *   - New tag: #misc2 (dead)
+ *
  *   - BR-1: Must make moneh
- *   - BR-2: Must make moar moneh! #prod (note: #prod n/a to BR)
+ *   - BR-2: Must make moar moneh! #misc1 #misc2 #prod (note: #prod n/a to BR)
  *   - BR-3: CEO owns islands! #wip
  *   - MF-3: tag with #prod
  *   - MF-4: Business Justification = "x"
@@ -61,6 +67,7 @@ object SampleProject7 {
 
   trait Values extends SampleProject6.Values {
     val List(bizJustField, alternativesField, componentField) = List[CustomField.Text.Id](8, 9, 10)
+    val List(misc1, misc2) = List[ApplicableTagId](31, 32)
 
     val brs = (0 to 10).iterator.map(i => GenericReqId(i + 1400)).toVector
   }
@@ -69,6 +76,9 @@ object SampleProject7 {
   import Values._
 
   lazy val project = WebappTestUtil.applyEventsSuccessfully(project0,
+
+    ApplicableTagCreate(misc1, ApplicableTagGD("misc1", ∅, ∅, allReqTypes, ∅, ∅)),
+    ApplicableTagCreate(misc2, ApplicableTagGD("misc2", ∅, ∅, allReqTypes, ∅, ∅)),
 
     FieldCustomTextCreate(bizJustField, CustomTextFieldGD("Business Justification",
       FieldReqTypeRules.mandatory.optional(fr).notApplicable(co, si))),
@@ -96,14 +106,19 @@ object SampleProject7 {
     GenericReqCreate(brs(2), br, GenericReqGD.ValueForTitle("Must make moar moneh")),
     GenericReqCreate(brs(3), br, GenericReqGD.ValueForTitle("CEO owns islands!")),
 
-    ReqTagsPatch(brs(2), nesd()(prod)),
+    ReqTagsPatch(brs(2), nesd()(misc1, misc2, prod)),
     ReqTagsPatch(brs(3), nesd()(wip)),
     ReqTagsPatch(mfs(3), nesd()(prod)),
     ReqTagsPatch(uc1   , nesd()(v10, prod)),
 
     ReqFieldCustomTextSet(mfs(4), bizJustField, Vector(Text.CustomTextField.Literal("x"))),
 
-    ApplicableTagUpdate(prod, ApplicableTagGD.ValueForApplicableReqTypes(onlyReqTypes(uc, mf)))
+    ApplicableTagUpdate(prod, ApplicableTagGD.ValueForApplicableReqTypes(onlyReqTypes(uc, mf))),
+
+    FieldStaticAdd(StaticField.OtherTags),
+    FieldStaticAdd(StaticField.AllTags),
+
+    TagDelete(misc2),
   )
 
   lazy val plainText    = PlainText.ForProject.noCtx(project)

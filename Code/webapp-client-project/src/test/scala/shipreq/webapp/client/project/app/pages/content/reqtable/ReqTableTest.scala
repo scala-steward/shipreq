@@ -166,9 +166,9 @@ object ReqTableTest extends TestSuite {
 
   def testTagsColumnEditor = {
     val p = GReq(reqType = co, title = reqTitleTagRefs(v11, v13, v4x)).tag(wip, uat, v11, v1x, v3x) !
-      SampleProject.project
+      SampleProject.projectWithOtherTags
 
-    val ce = cellEditor(pubid = "CO-1", col = "Tags")
+    val ce = cellEditor(pubid = "CO-1", col = StaticField.OtherTags.name)
     import ce._
 
     Plan.action(
@@ -260,10 +260,10 @@ object ReqTableTest extends TestSuite {
 
   val nopMod = ("No change.", (s: String) => s)
 
-  def testNopEdits(pubid: String, col: String): *.Plan =
+  def testNopEdits(pubid: String, col: String) =
     testNopEditsBy(pubid, col)("Trailing whitespace." -> (_ + " "))
 
-  def testNopEditsBy(pubid: String, col: String)(mods: (String, String => String)*): *.Plan = {
+  def testNopEditsBy(pubid: String, col: String)(mods: (String, String => String)*) = {
     val ce = cellEditor(pubid, col)
     import ce._
 
@@ -279,35 +279,40 @@ object ReqTableTest extends TestSuite {
         >> (startEdit >> commitNop).group("Commit without edit.")
         >> (nopMod +: mods).map(nopEdit).combine
         >> (startEdit >> abortEdit +> post).group("Abort.")
-    ) named s"NOP edits: $pubid/$col"
+    ).named(s"NOP edits: $pubid/$col").withInitialState(SampleProject4.projectWithAllAndOtherTags)
   }
 
-  def testKeyboardNavigation = Plan.action(
-    setFocus(_.table.cell(1, 1).domAsHtml)
-      +> tableColumns.assert("ID", "Title", "Tags")
-      >> press(KB.Down)      +> activeElement.assert.equalBy(_.obs.table.cell(2, 1).dom)
-      >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.cell(2, 2).dom)
-      >> press(KB.Up)        +> activeElement.assert.equalBy(_.obs.table.cell(1, 2).dom)
-      >> press(KB.Left)      +> activeElement.assert.equalBy(_.obs.table.cell(1, 1).dom)
-      >> press(KB.End)       +> activeElement.assert.equalBy(_.obs.table.cell(1, -1).dom)
-      >> press(KB.Home)      +> activeElement.assert.equalBy(_.obs.table.rowSelectionInput(1))
-      >> press(KB.Left)      +> activeElement.assert.equalBy(_.obs.table.cell(1, -1).dom)
-      >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.rowSelectionInput(1))
-      >> press(KB.Down)      +> activeElement.assert.equalBy(_.obs.table.rowSelectionInput(2))
-      >> press(KB.End.ctrl)  +> activeElement.assert.equalBy(_.obs.table.cell(-1, -1).dom)
-      >> press(KB.Home.ctrl) +> activeElement.assert.equalBy(_.obs.table.allRowSelectionInput)
-      >> press(KB.Left)      +> activeElement.assert.equalBy(_.obs.table.columnDoms.last.headerCell)
-      >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.allRowSelectionInput)
-      >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.columnDoms(1).headerCell)
-      >> press(KB.Down)      +> activeElement.assert.equalBy(_.obs.table.cell(0, 1).dom)
-      >> press(KB.Up)        +> activeElement.assert.equalBy(_.obs.table.columnDoms(1).headerCell)
-      >> press(KB.Up)        +> activeElement.assert.equalBy(_.obs.table.cell(-1, 1).dom)
-      >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.cell(-1, 2).dom)
-      >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.cell(-1, 3).dom) // The Title column
-      >> press(KB.F2)        +> activeElement.assert.equalBy(_.obs.table.cell(-1, 3)("textarea").dom)
-      >> press(KB.Tab)       +> activeElement.assert.equalBy(_.obs.table.cell(-1, 3).dom) // tab out to cell
-      >> press(KB.F2)        +> activeElement.assert.equalBy(_.obs.table.cell(-1, 3)("textarea").dom)
-  ) named "Keyboard navigation"
+  def testKeyboardNavigation()(implicit path: utest.framework.TestPath) =
+    runTest(
+      Plan.action(
+        showHideColumn(StaticField.OtherTags.name)
+          +> tableColumns.assert("ID", "Title", StaticField.OtherTags.name)
+          >> setFocus(_.table.cell(1, 1).domAsHtml)
+          >> press(KB.Down)      +> activeElement.assert.equalBy(_.obs.table.cell(2, 1).dom)
+          >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.cell(2, 2).dom)
+          >> press(KB.Up)        +> activeElement.assert.equalBy(_.obs.table.cell(1, 2).dom)
+          >> press(KB.Left)      +> activeElement.assert.equalBy(_.obs.table.cell(1, 1).dom)
+          >> press(KB.End)       +> activeElement.assert.equalBy(_.obs.table.cell(1, -1).dom)
+          >> press(KB.Home)      +> activeElement.assert.equalBy(_.obs.table.rowSelectionInput(1))
+          >> press(KB.Left)      +> activeElement.assert.equalBy(_.obs.table.cell(1, -1).dom)
+          >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.rowSelectionInput(1))
+          >> press(KB.Down)      +> activeElement.assert.equalBy(_.obs.table.rowSelectionInput(2))
+          >> press(KB.End.ctrl)  +> activeElement.assert.equalBy(_.obs.table.cell(-1, -1).dom)
+          >> press(KB.Home.ctrl) +> activeElement.assert.equalBy(_.obs.table.allRowSelectionInput)
+          >> press(KB.Left)      +> activeElement.assert.equalBy(_.obs.table.columnDoms.last.headerCell)
+          >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.allRowSelectionInput)
+          >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.columnDoms(1).headerCell)
+          >> press(KB.Down)      +> activeElement.assert.equalBy(_.obs.table.cell(0, 1).dom)
+          >> press(KB.Up)        +> activeElement.assert.equalBy(_.obs.table.columnDoms(1).headerCell)
+          >> press(KB.Up)        +> activeElement.assert.equalBy(_.obs.table.cell(-1, 1).dom)
+          >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.cell(-1, 2).dom)
+          >> press(KB.Right)     +> activeElement.assert.equalBy(_.obs.table.cell(-1, 3).dom)
+          >> press(KB.F2)        +> activeElement.assert.equalBy(_.obs.table.cell(-1, 3)("textarea").dom)
+          >> press(KB.Tab)       +> activeElement.assert.equalBy(_.obs.table.cell(-1, 3).dom) // tab out to cell
+          >> press(KB.F2)        +> activeElement.assert.equalBy(_.obs.table.cell(-1, 3)("textarea").dom)
+      ) named "Keyboard navigation",
+      SampleProject4.projectWithOtherTags
+    )
 
 //  def newUseCaseWithMinimalColumns: *.Actions = Plan.action(
 //    // select minimal columns
@@ -561,26 +566,27 @@ object ReqTableTest extends TestSuite {
 
       'tagLegality {
         'status   - testTagLegality("BR-1", "Status")
-        'col      - testTagLegality("BR-1", "Tags")
+        'col      - testTagLegality("BR-1", StaticField.OtherTags.name)
         'exStatus - testTagLegality("BR-2", "Status")
-        'exCol    - testTagLegality("BR-2", "Tags")
+        'exCol    - testTagLegality("BR-2", StaticField.OtherTags.name)
       }
 
       'nop {
         // RCG title
         // RCG code
-        'title    - runTest(testNopEdits("MF-6", SpecialBuiltInField.Title.name))
-        'textCol  - runTest(testNopEdits("MF-1", "Description"))
-        'impSrc   - runTest(testNopEdits("MF-1", SpecialBuiltInField.ImplyBackward.name))
-        'impTgt   - runTest(testNopEdits("MF-1", SpecialBuiltInField.ImplyForward.name))
-        'impCol   - runTest(testNopEdits("MF-1", "Major Feature"))
-        'tags     - runTest(testNopEdits("MF-1", SpecialBuiltInField.Tags.name))
-        'tagCol   - runTest(testNopEdits("MF-1", "Status"))
-        'reqCodes - runTest(testNopEditsBy("MF-1", SpecialBuiltInField.Code.name)("Trailing \\n." -> (_ + "\n")))
+        'title     - runTest(testNopEdits("MF-6", SpecialBuiltInField.Title.name))
+        'textCol   - runTest(testNopEdits("MF-1", "Description"))
+        'impSrc    - runTest(testNopEdits("MF-1", SpecialBuiltInField.ImplyBackward.name))
+        'impTgt    - runTest(testNopEdits("MF-1", SpecialBuiltInField.ImplyForward.name))
+        'impCol    - runTest(testNopEdits("MF-1", "Major Feature"))
+        'otherTags - runTest(testNopEdits("MF-1", StaticField.OtherTags.name))
+        'allTags   - runTest(testNopEdits("MF-1", StaticField.AllTags.name))
+        'tagCol    - runTest(testNopEdits("MF-1", "Status"))
+        'reqCodes  - runTest(testNopEditsBy("MF-1", SpecialBuiltInField.Code.name)("Trailing \\n." -> (_ + "\n")))
       }
     }
 
-    'kbNav - runTest(testKeyboardNavigation)
+    'kbNav - testKeyboardNavigation()
 
 //    'new {
 //      'useCaseWithMinimalColumns - ???

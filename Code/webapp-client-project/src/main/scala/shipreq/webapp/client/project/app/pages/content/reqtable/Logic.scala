@@ -160,11 +160,12 @@ private[reqtable] object Logic {
 
   private def multiValuesFn(tagFieldDist: TagFieldDistribution.TagIds,
                             tagLookup   : TagLookup): ReqId => MultiValues = {
-    val tagValuesFn = DataLogic.generalTags(tagFieldDist, tagLookup)
-    id => {
-      val tags = tagValuesFn(id).toVector
-      MultiValues(tags)
-    }
+    val otherTagValuesFn = DataLogic.otherTags(tagFieldDist, tagLookup)
+    id =>
+      MultiValues(
+        otherTags = otherTagValuesFn(id).toVector,
+        allTags   = tagLookup(id).all.toVector,
+      )
   }
 
   // ===================================================================================================================

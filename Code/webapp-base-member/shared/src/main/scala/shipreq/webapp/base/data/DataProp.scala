@@ -637,7 +637,9 @@ object DataProp {
 
       val reqtableColumnField: reqtable.Column => List[CustomFieldId] = {
         case x: reqtable.Column.CustomField => x.id :: Nil
-        case _: reqtable.Column.BuiltIn     => Nil
+        case reqtable.Column.AllTags
+           | reqtable.Column.OtherTags
+           | _: reqtable.Column.BuiltIn     => Nil
       }
     }
 

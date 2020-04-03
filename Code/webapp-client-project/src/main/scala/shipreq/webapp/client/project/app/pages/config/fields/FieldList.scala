@@ -2,6 +2,7 @@ package shipreq.webapp.client.project.app.pages.config.fields
 
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
@@ -46,9 +47,27 @@ object FieldList {
       case StaticField.ExceptionStepTree => "e"
       case StaticField.ImplicationGraph  => "i"
       case StaticField.StepGraph         => "s"
+      case StaticField.OtherTags         => "o"
+      case StaticField.AllTags           => "a"
     }
 
   final class Backend($: BackendScope[Props, Unit]) {
+
+    private val pxProjectConfig: Px[ProjectConfig] =
+      Px.props($).map(_.config).withReuse.autoRefresh
+
+    private val pxFilerDead: Px[FilterDead] =
+      Px.props($).map(_.filterDead).withReuse.autoRefresh
+
+    private val pxOtherTags: Px[Set[ApplicableTagId]] =
+      for {
+        cfg <- pxProjectConfig
+        fd  <- pxFilerDead
+      } yield {
+        val allTags = cfg.liveTagFieldDistribution.notUsedInFields
+        val tagIds  = fd.filterFn.collection(allTags)(cfg.tags.needApplicableTag(_).live)
+        tagIds
+      }
 
     private val dnd = DragToReorderFeature[FieldId](
       getData             = $.props.map(_.fieldIds),
@@ -179,15 +198,31 @@ object FieldList {
         val field = p.config.fields.need(id)
         val live = field.live(p.config)
 
-        val detail =
+        val detail: VdomNode =
           field match {
             case StaticField.ImplicationGraph  => detailAllVisible
             case StaticField.NormalAltStepTree => detailUcOptional
             case StaticField.ExceptionStepTree => detailUcOptional
             case StaticField.StepGraph         => detailUcVisible
+            case StaticField.AllTags           => "Displays all tags, even those assigned to other fields."
             case f: CustomField.Text           => renderDetailRules(p, f.fieldReqTypeRulesByResolution)(impossible)
             case f: CustomField.Implication    => renderDetailRules(p, f.fieldReqTypeRulesByResolution)(impossible)
             case f: CustomField.Tag            => renderDetailRules(p, f.fieldReqTypeRulesByResolution)(p.pw.tagSimple(_, includeDesc = true))
+
+            case StaticField.OtherTags =>
+              val desc = <.div("Displays tags not assigned to a field.")
+              val tagIds = pxOtherTags.value()
+              if (tagIds.isEmpty)
+                <.div(
+                  desc,
+                  <.div(*.fieldListDetailNoOtherTags, "(Currently no tags fit this criteria.)"))
+              else {
+                val sortedTagIds = p.config.tags.sortTagIds(tagIds).toVector
+                val tags = p.pw.tagList(sortedTagIds, Live, Optional, Valid.always)
+                <.div(
+                  desc,
+                  <.div(*.fieldListDetailOtherTags, tags))
+              }
           }
 
         val usage: TagMod =

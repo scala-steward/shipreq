@@ -26,7 +26,6 @@ object SpecialBuiltInField {
   case object Title          extends Instance("Title")           with Always with FilterOk
   case object ImplyBackward  extends Instance("Implied By")      with Always
   case object ImplyForward   extends Instance("Implies")         with Always
-  case object Tags           extends Instance("Tags")            with Always
   case object ReqType        extends Instance("Req Type")        with Always
   case object DeletionReason extends Instance("Deletion Reason") with DeadOnly
 

@@ -243,7 +243,8 @@ object LogicPropTest extends TestSuite {
       case C.Pubid           => sortIB(sortByPubid)
       case C.Code            => sortCB(sortByReqCode)
       case C.Title           => sortCB(sortByTitle)
-      case C.Tags            => nop
+      case C.AllTags         => nop
+      case C.OtherTags       => nop
       case C.Implications(_) => nop
       case C.DeletionReason  => nop
       case C.CustomField(id) =>

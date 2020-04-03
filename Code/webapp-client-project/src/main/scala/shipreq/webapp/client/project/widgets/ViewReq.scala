@@ -62,10 +62,13 @@ final case class ViewReq[A](data           : Data,
   private val tagValidity: ApplicableTagId => Validity =
     Invalid when data.invalidTags.contains(_)
 
-  def tags: A =
-    pt.tagList(data.generalTags, data.live, Optional, tagValidity)
+  def otherTags: A =
+    pt.tagList(data.otherTags, data.live, Optional, tagValidity)
 
-  def tags(id: CustomField.Tag.Id): IfApplicable[A] = {
+  def allTags: A =
+    pt.tagList(data.allTags, data.live, Optional, tagValidity)
+
+  def fieldTags(id: CustomField.Tag.Id): IfApplicable[A] = {
     val tags = data.customTags(id)
     data.fieldRules.tag(id) match {
       case Resolution.Optional      => \/-(pt.tagList(tags, data.live, Optional, tagValidity))
@@ -76,12 +79,6 @@ final case class ViewReq[A](data           : Data,
         \/-(pt.tagList(t, data.live, Optional, tagValidity))
     }
   }
-
-  def tags(id: Option[CustomField.Tag.Id]): IfApplicable[A] =
-    id match {
-      case Some(id) => tags(id)
-      case None     => \/-(tags)
-    }
 
   def text(id: CustomField.Text.Id): IfApplicable[A] =
     data.fieldRules.text(id) match {
@@ -96,17 +93,19 @@ final case class ViewReq[A](data           : Data,
 
   val customField: CustomFieldId => IfApplicable[A] = {
     case id: CustomField.Implication.Id => imps(id)
-    case id: CustomField.Tag        .Id => tags(id)
+    case id: CustomField.Tag        .Id => fieldTags(id)
     case id: CustomField.Text       .Id => text(id)
   }
 
   val render: RenderFeature.FieldKey.ForSomeReq => IfApplicable[A] = {
     case RenderFeature.FieldKey.CustomTextField(field) => text(field)
-    case RenderFeature.FieldKey.Tags           (field) => tags(field)
+    case RenderFeature.FieldKey.CustomFieldTags(field) => fieldTags(field)
     case RenderFeature.FieldKey.Implications   (scope) => imps(scope)
     case RenderFeature.FieldKey.Codes                  => \/-(codes)
     case RenderFeature.FieldKey.Title                  => \/-(title)
     case RenderFeature.FieldKey.ReqType                => \/-(reqType)
+    case RenderFeature.FieldKey.OtherTags              => \/-(otherTags)
+    case RenderFeature.FieldKey.AllTags                => \/-(allTags)
   }
 
   val editable: EditorFeature.FieldKey.ForSomeReq => IfApplicable[A] =
@@ -122,7 +121,8 @@ object ViewReq {
   final case class Data(req             : Req,
                         live            : Live,
                         codes           : Traversable[ReqCode.Value],
-                        generalTags     : Vector[ApplicableTagId],
+                        otherTags       : Vector[ApplicableTagId],
+                        allTags         : Vector[ApplicableTagId],
                         customTags      : CustomField.Tag.Id => Vector[ApplicableTagId],
                         invalidTags     : Set[ApplicableTagId],
                         generalImps     : Direction => Vector[Pubid],
@@ -151,11 +151,13 @@ object ViewReq {
       val customImpLookup = project.dataLogic.customFieldImps(filterDead)
       val tagDist         = project.dataLogic.tagFieldDist(filterDead)
       val tagLookup       = project.dataLogic.tagLookup(filterDead)
+      val reqTags         = tagLookup(id)
       val tagOrderByName  = project.dataLogic.tagOrderByName
       val tagOrderByPos   = project.dataLogic.tagOrderByPos
       val impFilter       = cfg.reqFilter(filterDead)
-      val generalTagSet   = DataLogic.generalTags(tagDist, tagLookup)(id)
-      val generalTags     = MutableArray(generalTagSet).sortBy(tagOrderByName.apply).iterator.to[Vector]
+      val otherTagSet     = DataLogic.otherTags(tagDist, tagLookup)(id)
+      val otherTags       = MutableArray(otherTagSet).sortBy(tagOrderByName.apply).iterator.to[Vector]
+      val allTags         = MutableArray(reqTags.all).sortBy(tagOrderByName.apply).iterator.to[Vector]
 
       val customTags: CustomField.Tag.Id => Vector[ApplicableTagId] =
         Memo { fid =>
@@ -198,7 +200,8 @@ object ViewReq {
         req              = req,
         live             = req.live(cfg.reqTypes),
         codes            = codes,
-        generalTags      = generalTags,
+        otherTags        = otherTags,
+        allTags          = allTags,
         customTags       = customTags,
         invalidTags      = project.invalidTagsPerReq(id),
         generalImps      = generalImps,

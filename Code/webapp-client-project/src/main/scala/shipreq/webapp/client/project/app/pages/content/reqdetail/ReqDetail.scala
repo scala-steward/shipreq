@@ -281,7 +281,8 @@ object ReqDetail {
           row match {
             case Row.Codes
                | Row.ReqType
-               | Row.Tags
+               | Row.OtherTags
+               | Row.AllTags
                | Row.Implications
                | Row.ImplicationGraph
                | Row.UseCaseStepsN
@@ -309,7 +310,8 @@ object ReqDetail {
           case Row.CustomField(id)  => fieldName(id)
           case Row.Codes            => SpecialBuiltInField.Codes.name
           case Row.ReqType          => SpecialBuiltInField.ReqType.name
-          case Row.Tags             => SpecialBuiltInField.Tags.name
+          case Row.OtherTags        => StaticField.OtherTags.name
+          case Row.AllTags          => StaticField.AllTags.name
           case Row.Implications     => UiText.FieldNames.implications
           case Row.ImplicationGraph => StaticField.ImplicationGraph.name
           case Row.UseCaseStepsN    => UiText.FieldNames.useCaseStepTreeN
@@ -345,7 +347,7 @@ object ReqDetail {
             editableCell(FieldKey.CustomTextField(id))
 
           case Row.CustomField(id: CustomField.Tag.Id) =>
-            editableCell(FieldKey.Tags(Some(id)))
+            editableCell(FieldKey.CustomFieldTags(id))
 
           case Row.CustomField(id: CustomField.Implication.Id) =>
             editableCell(FieldKey.Implications(-\/(id)))
@@ -356,8 +358,11 @@ object ReqDetail {
           case Row.ReqType =>
             editableCell(FieldKey.ReqType)
 
-          case Row.Tags =>
-            editableCell(FieldKey.Tags(None))
+          case Row.OtherTags =>
+            editableCell(FieldKey.OtherTags)
+
+          case Row.AllTags =>
+            editableCell(FieldKey.AllTags)
 
           case Row.DeletionReason =>
             nonDirectlyEditorNavParent(view.deletionReason getOrElse emptySpan)

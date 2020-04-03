@@ -76,11 +76,12 @@ object Editability {
             case FieldKey.Codes
                | FieldKey.GenericReqTitle
                | FieldKey.ReqType
-               | FieldKey.Tags(None)
-               | FieldKey.Implications   (\/-(_))    => Allow
-            case FieldKey.Implications   (-\/(fid))  => customField(cfg, reqTypeId, fid)
-            case FieldKey.CustomTextField(fid)       => customField(cfg, reqTypeId, fid)
-            case FieldKey.Tags           (Some(fid)) => customField(cfg, reqTypeId, fid)
+               | FieldKey.Implications   (\/-(_))   => Allow
+            case FieldKey.Implications   (-\/(fid)) => customField(cfg, reqTypeId, fid)
+            case FieldKey.CustomTextField(fid)      => customField(cfg, reqTypeId, fid)
+            case FieldKey.CustomFieldTags(fid)      => customField(cfg, reqTypeId, fid)
+            case FieldKey.AllTags                   => staticField(cfg, StaticField.AllTags)
+            case FieldKey.OtherTags                 => staticField(cfg, StaticField.OtherTags)
           }
         case None => Deny
       }
@@ -95,15 +96,19 @@ object Editability {
           k match {
             case FieldKey.Codes
                | FieldKey.UseCaseTitle
-               | FieldKey.Tags(None)
-               | FieldKey.Implications   (\/-(_))    => Allow
-            case FieldKey.Implications   (-\/(fid))  => customField(cfg, reqTypeId, fid)
-            case FieldKey.CustomTextField(fid)       => customField(cfg, reqTypeId, fid)
-            case FieldKey.Tags           (Some(fid)) => customField(cfg, reqTypeId, fid)
+               | FieldKey.Implications   (\/-(_))   => Allow
+            case FieldKey.Implications   (-\/(fid)) => customField(cfg, reqTypeId, fid)
+            case FieldKey.CustomTextField(fid)      => customField(cfg, reqTypeId, fid)
+            case FieldKey.CustomFieldTags(fid)      => customField(cfg, reqTypeId, fid)
+            case FieldKey.AllTags                   => staticField(cfg, StaticField.AllTags)
+            case FieldKey.OtherTags                 => staticField(cfg, StaticField.OtherTags)
           }
         case None => Deny
       }
   }
+
+  private def staticField(cfg: ProjectConfig, f: StaticField): Permission =
+    Allow when cfg.fields.includes(f)
 
   private def customField(cfg: ProjectConfig, reqTypeId: ReqTypeId, fid: CustomFieldId): Permission =
     cfg.fields.get(fid) match {

@@ -8,7 +8,6 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.issue._
 import shipreq.webapp.base.UiText.{Issues => UI}
 import shipreq.webapp.client.project.app.pages.root.Routes
-import shipreq.webapp.client.project.app.pages.root.Routes.RouterCtl
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.lib.EditorNavParent
 import shipreq.webapp.client.project.widgets.ProjectWidgets
@@ -202,10 +201,11 @@ object Row {
         forUcs(i, UI.descBlankUseCaseStep, i.step)
 
       case i: Issue.ConflictingTags =>
-        val tag   = cfg.tags.needTagGroup(i.tagGroupId)
-        val desc  = UI.descConflictingTags(tag.name)
-        val field = cfg.mostRelevantLiveFieldForTag(i.tagGroupId).map(_.id)
-        forReqA(i, desc, i.req, IssueField.tags(field))
+        val tag        = cfg.tags.needTagGroup(i.tagGroupId)
+        val desc       = UI.descConflictingTags(tag.name)
+        val field      = cfg.mostRelevantLiveFieldForTag(i.tagGroupId).map(_.id)
+        val issueField = field.fold[IssueField[EditorFeature.FieldKey.ForAllReqs]](IssueField.OtherTags)(IssueField.customField(_))
+        forReqA(i, desc, i.req, issueField)
 
       case i: Issue.DeadIssueTagInRcg =>
         val it   = cfg.customIssueTypes.need(i.issue.typ)

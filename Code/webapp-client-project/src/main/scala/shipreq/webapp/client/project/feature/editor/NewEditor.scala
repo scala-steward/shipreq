@@ -173,19 +173,23 @@ object NewEditor {
         f => EditRichText.CodeGroupTitle(r.id, PreviewId(r, f)))
 
       def prepareGR(r: RowKey.GenericReq) = FieldKey.FoldForGenericReq[LogicPerField](
-        _ => EditReqCodes.Multiple(r.id),
-        f => EditRichText.CustomTextField(r.id, f.field, PreviewId(r, f)),
-        f => EditImplications(r.id, f.scope),
-        _ => EditReqType(r.id),
-        f => EditTags(r.id, f.field),
-        f => EditRichText.GenericReqTitle(r.id, PreviewId(r, f)))
+        codes           = _ => EditReqCodes.Multiple(r.id),
+        customTextField = f => EditRichText.CustomTextField(r.id, f.field, PreviewId(r, f)),
+        implications    = f => EditImplications(r.id, f.scope),
+        reqType         = _ => EditReqType(r.id),
+        allTags         = f => EditTags.allTags(r.id),
+        otherTags       = f => EditTags.otherTags(r.id),
+        customFieldTags = f => EditTags.customField(r.id, f.field),
+        title           = f => EditRichText.GenericReqTitle(r.id, PreviewId(r, f)))
 
       def prepareUC(r: RowKey.UseCase) = FieldKey.FoldForUseCase[LogicPerField](
-        _ => EditReqCodes.Multiple(r.id),
-        f => EditRichText.CustomTextField(r.id, f.field, PreviewId(r, f)),
-        f => EditImplications(r.id, f.scope),
-        f => EditTags(r.id, f.field),
-        f => EditRichText.UseCaseTitle(r.id, PreviewId(r, f)))
+        codes           = _ => EditReqCodes.Multiple(r.id),
+        customTextField = f => EditRichText.CustomTextField(r.id, f.field, PreviewId(r, f)),
+        implications    = f => EditImplications(r.id, f.scope),
+        allTags         = f => EditTags.allTags(r.id),
+        otherTags       = f => EditTags.otherTags(r.id),
+        customFieldTags = f => EditTags.customField(r.id, f.field),
+        title           = f => EditRichText.UseCaseTitle(r.id, PreviewId(r, f)))
 
       lazy val forUseCaseSteps = FieldKey.FoldForUseCaseSteps[ForEditor](
         f => logicToPerField(EditUseCaseStep(f.id, PreviewId(RowKey.UseCaseSteps, f))))
@@ -586,10 +590,18 @@ object NewEditor {
       override type Args   = Unit
       override type Change = TagEditor.Output
 
-      def apply(id: ReqId, fid: Option[CustomField.Tag.Id]): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
+      def allTags(id: ReqId): InitFn =
+        apply(id, Lookup.all)
+
+      def otherTags(id: ReqId): InitFn =
+        apply(id, Lookup.notUsedInTagFields)
+
+      def customField(id: ReqId, fid: CustomField.Tag.Id): InitFn =
+        apply(id, Lookup.forTagField(fid))
+
+      def apply(id: ReqId, lookupFn: Project => Lookup): InitFn = ictx => Internal.init(potentialValueAcceptor) { ivo => args =>
         import ictx._
 
-        val lookupFn = fid.fold[Project => Lookup](Lookup.notUsedInTagFields)(Lookup.forTagField)
         val pxLookup = pxProject map lookupFn
         val pxNaTags = pxProject.map(_.naTagsForReq(id))
 

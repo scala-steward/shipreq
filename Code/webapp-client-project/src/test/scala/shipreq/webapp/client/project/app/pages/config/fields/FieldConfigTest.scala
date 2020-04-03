@@ -4,7 +4,7 @@ import utest._
 import utest.framework.TestPath
 import shipreq.base.util.Exclusive
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.{ApplicableTagGD, CustomImpFieldGD, Event, TagGroupGD}
+import shipreq.webapp.base.event._
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.test.WebappTestUtil._
@@ -478,9 +478,16 @@ object FieldConfigTest extends TestSuite {
     )
 
   private def testStaticFieldOptional()(implicit tp: TestPath) = {
-    val newItems = List(StaticField.ImplicationGraph.name, "Implication field", "Tag field", "Text field")
-    runActions(SampleProject6.project)(
+    val newItems = List(
+      StaticField.ImplicationGraph.name,
+      StaticField.OtherTags.name,
+      StaticField.AllTags.name,
+      "Implication field",
+      "Tag field",
+      "Text field"
+    )
 
+    runActions(SampleProject6.project)(
       newChoices.assert.equalIgnoringOrder(newItems: _*)
         +> selectField(StaticField.StepGraph.name)
         +> newChoices.assert.equalIgnoringOrder(newItems: _*)
@@ -506,7 +513,7 @@ object FieldConfigTest extends TestSuite {
         +> buttonsEnabled.assert(Buttons(add = Enabled, close = Enabled))
 
         >> clickAddButton
-        +> newChoices.assert(newItems: _*)
+        +> newChoices.assert.equalIgnoringOrder(newItems: _*)
         +> fieldList.assert(
         "Description",
         "Major Feature",
@@ -521,6 +528,48 @@ object FieldConfigTest extends TestSuite {
     )
   }
 
+  private def testNoOtherTags()(implicit tp: TestPath) =
+    runActions(
+      applyEventsSuccessfully(
+        SampleProject7.project,
+        Event.TagGroupCreate(1000.TG, TagGroupGD("X", ∅, Exclusive, ∅, Vector(misc1, misc2))),
+        Event.FieldCustomTagCreate(1000.CFTag, 1000.TG, CustomTagFieldGD(FieldReqTypeRules.empty))
+      )
+    )(
+      *.emptyAction
+        +> fieldDetail(StaticField.OtherTags.name).assert("Displays tags not assigned to a field.(Currently no tags fit this criteria.)")
+
+        >> clickFilterDead
+        +> filterDead.assert(ShowDead)
+        +> fieldDetail(StaticField.OtherTags.name).assert("Displays tags not assigned to a field.(Currently no tags fit this criteria.)")
+
+        >> selectField(StaticField.OtherTags.name)
+        +> buttonsEnabled.assert(Buttons(remove = Enabled, close = Enabled))
+        +> editorEditables.assert(0)
+    )
+
+  private def testOtherTags()(implicit tp: TestPath) =
+    runActions(
+      applyEventsSuccessfully(
+        SampleProject7.project,
+        Event.TagDelete(misc1),
+        Event.TagDelete(misc2),
+        Event.TagDelete(priLow),
+        Event.FieldCustomDelete(priField),
+      )
+    )(
+      *.emptyAction
+        +> fieldDetail(StaticField.OtherTags.name).assert("Displays tags not assigned to a field.pri=high pri=med")
+
+        >> clickFilterDead
+        +> filterDead.assert(ShowDead)
+        +> fieldDetail(StaticField.OtherTags.name).assert("Displays tags not assigned to a field.misc1 misc2 pri=high pri=low pri=med")
+
+        >> selectField(StaticField.OtherTags.name)
+        +> buttonsEnabled.assert(Buttons(remove = Enabled, close = Enabled))
+        +> editorEditables.assert(0)
+    )
+
   override def tests = Tests {
 
     'fieldList - {
@@ -528,8 +577,10 @@ object FieldConfigTest extends TestSuite {
     }
 
     'static - {
-      'mandatory - testStaticFieldMandatory()
-      'optional  - testStaticFieldOptional()
+      'mandatory   - testStaticFieldMandatory()
+      'optional    - testStaticFieldOptional()
+      'noOtherTags - testNoOtherTags()
+      'otherTags   - testOtherTags()
     }
 
     'textField - {

@@ -5,7 +5,7 @@ import java.time.Instant
 import nyaya.gen.Gen
 import scalaz.{Equal, \/-}
 import shipreq.webapp.base.{RandomData => R}
-import shipreq.webapp.base.data.Project
+import shipreq.webapp.base.data.{Project, StaticField}
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.test.BinaryTestUtil._
 import shipreq.webapp.base.test.WebappTestUtil._
@@ -27,7 +27,7 @@ object RedisProtocolTest extends TestSuite {
 //    }
 
     'saved - {
-      def run(ver: Int) = {
+      def run(ver: Int, assertSnapshot: Boolean = true) = {
         val rows = RedisProtocolTestData.load(ver)
 
         var prev: Option[Redis.ProjectSnapshot] = None
@@ -41,11 +41,12 @@ object RedisProtocolTest extends TestSuite {
           val ps     = Redis.ProjectSnapshot(p2, ord.asLatest)
           prev       = Some(ps)
           assertEq(s"$prefix ${row.eventJson.noSpaces}", row.parseEventBinary, \/-(event))
-          assertEq(prefix, row.parseSnapshotBinary, \/-(ps))
+          if (assertSnapshot)
+            assertEq(prefix, row.parseSnapshotBinary, \/-(ps))
         }
       }
 
-      "v01" - run(1)
+      "v01" - run(1, false) // Snapshot differs now cos OtherTags has been added to Project.empty and thus the result
       "v02" - run(2)
     }
 
@@ -85,7 +86,16 @@ object RedisProtocolTest extends TestSuite {
 
       "v1.0" - {
         'empty - {
-          val bin    = BinaryData.fromHex("5C303D7101000000000004494E4547000000000000000000000000010100000000000000007BDEC22AB7")
+          val bin        = BinaryData.fromHex("5C303D7101000000000004494E4547000000000000000000000000010100000000000000007BDEC22AB7")
+          val oldProject = applyEventsSuccessfully(Project.empty, Event.FieldStaticRemove(StaticField.OtherTags))
+          val expect     = ProjectSnapshot(oldProject, 123)
+          assertDecodeOk(codec)(bin, expect)
+        }
+      }
+
+      "v1.1" - {
+        'empty - {
+          val bin    = BinaryData.fromHex("5C303D710101000000000523494E4547000000000000000000000000010100000000000000007BDEC22AB7")
           val expect = ProjectSnapshot(Project.empty, 123)
           assertDecodeOk(codec)(bin, expect)
         }

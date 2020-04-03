@@ -43,7 +43,8 @@ object Row {
   case object DeletionReason                extends Row(autoKey)
   case object ReqType                       extends Row(autoKey)
   case object Codes                         extends Row(autoKey)
-  case object Tags                          extends Row(autoKey)
+  case object OtherTags                     extends Row(autoKey)
+  case object AllTags                       extends Row(autoKey)
   case object Implications                  extends Row(autoKey)
   case object ImplicationGraph              extends Row(autoKey)
   case object StepGraph                     extends Row("f")
@@ -61,15 +62,19 @@ object Row {
   implicit val reusability: Reusability[Row] =
     Reusability.byUnivEq
 
+  /** The hardcoded rows that appear before all user-defined rows. */
   def head(fd: FilterDead): Vector[Row] =
     if (fd is ShowDead) headDead else headLive
 
+  /** The hardcoded rows that appear before all user-defined rows. */
   private def headLive: Vector[Row] =
     headDead.filter {
-      case PastPubids | DeletionReason => false
-      case _ => true
+      case PastPubids
+         | DeletionReason => false
+      case _              => true
     }
 
+  /** The hardcoded rows that appear before all user-defined rows. */
   private def headDead: Vector[Row] =
     Vector(
       ReqType,
@@ -77,7 +82,6 @@ object Row {
       PastPubids,
       DeletionReason,
       Codes,
-      Tags,
       Implications)
 
   val fromField: FieldId => List[Row] = {
@@ -86,5 +90,7 @@ object Row {
     case StaticField.ExceptionStepTree => UseCaseStepsE :: Nil
     case StaticField.StepGraph         => StepGraph :: Nil
     case StaticField.ImplicationGraph  => ImplicationGraph :: Nil
+    case StaticField.OtherTags         => OtherTags :: Nil
+    case StaticField.AllTags           => AllTags :: Nil
   }
 }

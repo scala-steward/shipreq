@@ -615,24 +615,25 @@ object BaseMemberData2 {
 
   implicit lazy val picklerSetDiffNEReqCodeValue: Pickler[SetDiff.NE[ReqCode.Value]] = pickleNonEmptyMono
 
-  implicit lazy val picklerStaticFieldType: Pickler[StaticFieldType] =
-    new Pickler[StaticFieldType] {
-      private[this] final val KeyImplicationGraph = 'i'
-      private[this] final val KeyUseCaseSteps     = 't'
-      private[this] final val KeyUseCaseStepGraph = 'g'
-      override def pickle(a: StaticFieldType)(implicit state: PickleState): Unit =
-        a match {
-          case StaticFieldType.ImplicationGraph => state.enc.writeByte(KeyImplicationGraph)
-          case StaticFieldType.UseCaseSteps     => state.enc.writeByte(KeyUseCaseSteps    )
-          case StaticFieldType.UseCaseStepGraph => state.enc.writeByte(KeyUseCaseStepGraph)
-        }
-      override def unpickle(implicit state: UnpickleState): StaticFieldType =
-        state.dec.readByte match {
-          case KeyImplicationGraph => StaticFieldType.ImplicationGraph
-          case KeyUseCaseSteps     => StaticFieldType.UseCaseSteps
-          case KeyUseCaseStepGraph => StaticFieldType.UseCaseStepGraph
-        }
-    }
+  // Replaced by v1.1
+  // implicit lazy val picklerStaticFieldType: Pickler[StaticFieldType] =
+  //   new Pickler[StaticFieldType] {
+  //     private[this] final val KeyImplicationGraph = 'i'
+  //     private[this] final val KeyUseCaseSteps     = 't'
+  //     private[this] final val KeyUseCaseStepGraph = 'g'
+  //     override def pickle(a: StaticFieldType)(implicit state: PickleState): Unit =
+  //       a match {
+  //         case StaticFieldType.ImplicationGraph => state.enc.writeByte(KeyImplicationGraph)
+  //         case StaticFieldType.UseCaseSteps     => state.enc.writeByte(KeyUseCaseSteps    )
+  //         case StaticFieldType.UseCaseStepGraph => state.enc.writeByte(KeyUseCaseStepGraph)
+  //       }
+  //     override def unpickle(implicit state: UnpickleState): StaticFieldType =
+  //       state.dec.readByte match {
+  //         case KeyImplicationGraph => StaticFieldType.ImplicationGraph
+  //         case KeyUseCaseSteps     => StaticFieldType.UseCaseSteps
+  //         case KeyUseCaseStepGraph => StaticFieldType.UseCaseStepGraph
+  //       }
+  //   }
 
   implicit lazy val picklerStaticReqType: Pickler[StaticReqType] =
     new Pickler[StaticReqType] {

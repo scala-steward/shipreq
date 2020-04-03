@@ -11,6 +11,7 @@ import shipreq.webapp.base.event._
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.base.protocol.binary.UnsupportedVersionException
+import shipreq.webapp.base.sort.SortMethod
 
 /** v1.1
   *
@@ -266,6 +267,180 @@ object Rev1 {
   object ReqTableDataPicklers {
     import reqtable._
 
+    implicit val picklerColumn: Pickler[Column] =
+      new Pickler[Column] {
+        import Column._
+        private[this] final val KeyCode           = 0
+        private[this] final val KeyCustomField    = 1
+        private[this] final val KeyDeletionReason = 2
+        private[this] final val KeyImplications   = 3
+        private[this] final val KeyPubid          = 4
+        private[this] final val KeyReqType        = 5
+        private[this] final val KeyOtherTags      = 6
+        private[this] final val KeyTitle          = 7
+        private[this] final val KeyAllTags        = 8
+        override def pickle(a: Column)(implicit state: PickleState): Unit =
+          a match {
+            case Code              => state.enc.writeByte(KeyCode          )
+            case b: CustomField    => state.enc.writeByte(KeyCustomField   ); state.pickle(b)
+            case DeletionReason    => state.enc.writeByte(KeyDeletionReason)
+            case b: Implications   => state.enc.writeByte(KeyImplications  ); state.pickle(b)
+            case Pubid             => state.enc.writeByte(KeyPubid         )
+            case ReqType           => state.enc.writeByte(KeyReqType       )
+            case OtherTags         => state.enc.writeByte(KeyOtherTags     )
+            case AllTags           => state.enc.writeByte(KeyAllTags       )
+            case Title             => state.enc.writeByte(KeyTitle         )
+          }
+        override def unpickle(implicit state: UnpickleState): Column =
+          state.dec.readByte match {
+            case KeyCode           => Code
+            case KeyCustomField    => state.unpickle[CustomField]
+            case KeyDeletionReason => DeletionReason
+            case KeyImplications   => state.unpickle[Implications]
+            case KeyPubid          => Pubid
+            case KeyReqType        => ReqType
+            case KeyOtherTags      => OtherTags
+            case KeyAllTags        => AllTags
+            case KeyTitle          => Title
+          }
+      }
+
+    implicit val picklerColumnSortInconclusive: Pickler[Column.SortInconclusive] =
+      new Pickler[Column.SortInconclusive] {
+        private[this] final val KeyCode           = 0
+        private[this] final val KeyCustomField    = 1
+        private[this] final val KeyDeletionReason = 2
+        private[this] final val KeyImplications   = 3
+        private[this] final val KeyReqType        = 4
+        private[this] final val KeyOtherTags      = 5
+        private[this] final val KeyTitle          = 6
+        private[this] final val KeyAllTags        = 7
+        override def pickle(a: Column.SortInconclusive)(implicit state: PickleState): Unit =
+          a match {
+            case Column.Code              => state.enc.writeByte(KeyCode          )
+            case b: Column.CustomField    => state.enc.writeByte(KeyCustomField   ); state.pickle(b)
+            case Column.DeletionReason    => state.enc.writeByte(KeyDeletionReason)
+            case b: Column.Implications   => state.enc.writeByte(KeyImplications  ); state.pickle(b)
+            case Column.ReqType           => state.enc.writeByte(KeyReqType       )
+            case Column.OtherTags         => state.enc.writeByte(KeyOtherTags     )
+            case Column.AllTags           => state.enc.writeByte(KeyAllTags       )
+            case Column.Title             => state.enc.writeByte(KeyTitle         )
+          }
+        override def unpickle(implicit state: UnpickleState): Column.SortInconclusive =
+          state.dec.readByte match {
+            case KeyCode           => Column.Code
+            case KeyCustomField    => state.unpickle[Column.CustomField]
+            case KeyDeletionReason => Column.DeletionReason
+            case KeyImplications   => state.unpickle[Column.Implications]
+            case KeyReqType        => Column.ReqType
+            case KeyOtherTags      => Column.OtherTags
+            case KeyAllTags        => Column.AllTags
+            case KeyTitle          => Column.Title
+          }
+      }
+
+    implicit val picklerColumnSortInconclusiveHasBlanks: Pickler[Column.SortInconclusiveHasBlanks] =
+      new Pickler[Column.SortInconclusiveHasBlanks] {
+        private[this] final val KeyCode           = 0
+        private[this] final val KeyCustomField    = 1
+        private[this] final val KeyDeletionReason = 2
+        private[this] final val KeyImplications   = 3
+        private[this] final val KeyOtherTags      = 4
+        private[this] final val KeyTitle          = 5
+        private[this] final val KeyAllTags        = 6
+        override def pickle(a: Column.SortInconclusiveHasBlanks)(implicit state: PickleState): Unit =
+          a match {
+            case Column.Code              => state.enc.writeByte(KeyCode          )
+            case b: Column.CustomField    => state.enc.writeByte(KeyCustomField   ); state.pickle(b)
+            case Column.DeletionReason    => state.enc.writeByte(KeyDeletionReason)
+            case b: Column.Implications   => state.enc.writeByte(KeyImplications  ); state.pickle(b)
+            case Column.OtherTags         => state.enc.writeByte(KeyOtherTags     )
+            case Column.AllTags           => state.enc.writeByte(KeyAllTags       )
+            case Column.Title             => state.enc.writeByte(KeyTitle         )
+          }
+        override def unpickle(implicit state: UnpickleState): Column.SortInconclusiveHasBlanks =
+          state.dec.readByte match {
+            case KeyCode           => Column.Code
+            case KeyCustomField    => state.unpickle[Column.CustomField]
+            case KeyDeletionReason => Column.DeletionReason
+            case KeyImplications   => state.unpickle[Column.Implications]
+            case KeyOtherTags      => Column.OtherTags
+            case KeyAllTags        => Column.AllTags
+            case KeyTitle          => Column.Title
+          }
+      }
+
+    implicit val pickleColumnSIs: Pickler[Vector[Column.SortInconclusive]] =
+      iterablePickler
+
+    implicit val pickleColumnNEV: Pickler[NonEmptyVector[Column]] =
+      pickleNEV
+
+    implicit val picklerSortCriterionInconclusiveCB: Pickler[SortCriterion.InconclusiveCB] =
+      new Pickler[SortCriterion.InconclusiveCB] {
+        override def pickle(a: SortCriterion.InconclusiveCB)(implicit state: PickleState): Unit = {
+          state.pickle(a.column)
+          state.pickle(a.method)
+        }
+        override def unpickle(implicit state: UnpickleState): SortCriterion.InconclusiveCB = {
+          val column = state.unpickle[Column.SortInconclusiveHasBlanks]
+          val method = state.unpickle[SortMethod.ConsiderBlanks]
+          SortCriterion.InconclusiveCB(column, method)
+        }
+      }
+
+    implicit val picklerSortCriterionInconclusive: Pickler[SortCriterion.Inconclusive] =
+      new Pickler[SortCriterion.Inconclusive] {
+        private[this] final val KeyInconclusiveCB = 0
+        private[this] final val KeyInconclusiveIB = 1
+        override def pickle(a: SortCriterion.Inconclusive)(implicit state: PickleState): Unit =
+          a match {
+            case b: SortCriterion.InconclusiveCB => state.enc.writeByte(KeyInconclusiveCB); state.pickle(b)
+            case b: SortCriterion.InconclusiveIB => state.enc.writeByte(KeyInconclusiveIB); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): SortCriterion.Inconclusive =
+          state.dec.readByte match {
+            case KeyInconclusiveCB => state.unpickle[SortCriterion.InconclusiveCB]
+            case KeyInconclusiveIB => state.unpickle[SortCriterion.InconclusiveIB]
+          }
+      }
+
+    implicit val picklerSortCriterion: Pickler[SortCriterion] =
+      new Pickler[SortCriterion] {
+        import SortCriterion._
+        private[this] final val KeyConclusive     = 0
+        private[this] final val KeyInconclusiveCB = 1
+        private[this] final val KeyInconclusiveIB = 2
+        override def pickle(a: SortCriterion)(implicit state: PickleState): Unit =
+          a match {
+            case b: Conclusive     => state.enc.writeByte(KeyConclusive    ); state.pickle(b)
+            case b: InconclusiveCB => state.enc.writeByte(KeyInconclusiveCB); state.pickle(b)
+            case b: InconclusiveIB => state.enc.writeByte(KeyInconclusiveIB); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): SortCriterion =
+          state.dec.readByte match {
+            case KeyConclusive     => state.unpickle[Conclusive]
+            case KeyInconclusiveCB => state.unpickle[InconclusiveCB]
+            case KeyInconclusiveIB => state.unpickle[InconclusiveIB]
+          }
+      }
+
+    implicit val pickleSortCriterionIs: Pickler[Vector[SortCriterion.Inconclusive]] =
+      iterablePickler
+
+    implicit val picklerSortCriteria: Pickler[SortCriteria] =
+      new Pickler[SortCriteria] {
+        override def pickle(a: SortCriteria)(implicit state: PickleState): Unit = {
+          state.pickle(a.init)
+          state.pickle(a.last)
+        }
+        override def unpickle(implicit state: UnpickleState): SortCriteria = {
+          val init = state.unpickle[Vector[SortCriterion.Inconclusive]]
+          val last = state.unpickle[SortCriterion.Conclusive]
+          SortCriteria(init, last)
+        }
+      }
+
     implicit val picklerView: Pickler[View] =
       new Pickler[View] {
         override def pickle(a: View)(implicit state: PickleState): Unit = {
@@ -315,7 +490,7 @@ object Rev1 {
       }
   }
 
-  import ReqTableDataPicklers.pickleSavedViews
+  import ReqTableDataPicklers._
 
   // ===================================================================================================================
 
@@ -559,6 +734,97 @@ object Rev1 {
         }
     }
 
+  implicit lazy val picklerFieldId: Pickler[FieldId] =
+    new Pickler[FieldId] {
+      private[this] final val KeyCustomImplication       = 'i'
+      private[this] final val KeyCustomTag               = 't'
+      private[this] final val KeyCustomText              = 'x'
+      private[this] final val KeyStaticExceptionStepTree = 'E'
+      private[this] final val KeyStaticImplicationGraph  = 'I'
+      private[this] final val KeyStaticNormalAltStepTree = 'N'
+      private[this] final val KeyStaticStepGraph         = 'G'
+      private[this] final val KeyStaticOtherTags         = '#'
+      private[this] final val KeyStaticAllTags           = 'T'
+      override def pickle(a: FieldId)(implicit state: PickleState): Unit =
+        a match {
+          case b: CustomField.Implication.Id => state.enc.writeByte(KeyCustomImplication          ); state.pickle(b)
+          case b: CustomField.Tag        .Id => state.enc.writeByte(KeyCustomTag                  ); state.pickle(b)
+          case b: CustomField.Text       .Id => state.enc.writeByte(KeyCustomText                 ); state.pickle(b)
+          case StaticField.ExceptionStepTree => state.enc.writeByte(KeyStaticExceptionStepTree    )
+          case StaticField.ImplicationGraph  => state.enc.writeByte(KeyStaticImplicationGraph     )
+          case StaticField.NormalAltStepTree => state.enc.writeByte(KeyStaticNormalAltStepTree    )
+          case StaticField.StepGraph         => state.enc.writeByte(KeyStaticStepGraph            )
+          case StaticField.OtherTags         => state.enc.writeByte(KeyStaticOtherTags            )
+          case StaticField.AllTags           => state.enc.writeByte(KeyStaticAllTags              )
+        }
+      override def unpickle(implicit state: UnpickleState): FieldId =
+        state.dec.readByte match {
+          case KeyCustomImplication       => state.unpickle[CustomField.Implication.Id]
+          case KeyCustomTag               => state.unpickle[CustomField.Tag        .Id]
+          case KeyCustomText              => state.unpickle[CustomField.Text       .Id]
+          case KeyStaticExceptionStepTree => StaticField.ExceptionStepTree
+          case KeyStaticImplicationGraph  => StaticField.ImplicationGraph
+          case KeyStaticNormalAltStepTree => StaticField.NormalAltStepTree
+          case KeyStaticStepGraph         => StaticField.StepGraph
+          case KeyStaticOtherTags         => StaticField.OtherTags
+          case KeyStaticAllTags           => StaticField.AllTags
+        }
+    }
+
+  implicit lazy val picklerStaticField: Pickler[StaticField] =
+    new Pickler[StaticField] {
+      import StaticField._
+      private[this] final val KeyExceptionStepTree = 'e'
+      private[this] final val KeyImplicationGraph  = 'i'
+      private[this] final val KeyNormalAltStepTree = 'n'
+      private[this] final val KeyStepGraph         = 'g'
+      private[this] final val KeyOtherTags         = '#'
+      private[this] final val KeyAllTags           = 'T'
+      override def pickle(a: StaticField)(implicit state: PickleState): Unit =
+        a match {
+          case ExceptionStepTree => state.enc.writeByte(KeyExceptionStepTree)
+          case ImplicationGraph  => state.enc.writeByte(KeyImplicationGraph )
+          case NormalAltStepTree => state.enc.writeByte(KeyNormalAltStepTree)
+          case StepGraph         => state.enc.writeByte(KeyStepGraph        )
+          case OtherTags         => state.enc.writeByte(KeyOtherTags        )
+          case AllTags           => state.enc.writeByte(KeyAllTags          )
+        }
+      override def unpickle(implicit state: UnpickleState): StaticField =
+        state.dec.readByte match {
+          case KeyExceptionStepTree => ExceptionStepTree
+          case KeyImplicationGraph  => ImplicationGraph
+          case KeyNormalAltStepTree => NormalAltStepTree
+          case KeyStepGraph         => StepGraph
+          case KeyOtherTags         => OtherTags
+          case KeyAllTags           => AllTags
+        }
+    }
+
+  implicit lazy val picklerStaticFieldOptional: Pickler[StaticField.Optional] =
+    picklerStaticField.narrow
+
+  implicit lazy val picklerStaticFieldType: Pickler[StaticFieldType] =
+    new Pickler[StaticFieldType] {
+      private[this] final val KeyImplicationGraph = 'i'
+      private[this] final val KeyUseCaseSteps     = 't'
+      private[this] final val KeyUseCaseStepGraph = 'g'
+      private[this] final val KeyTag              = '#'
+      override def pickle(a: StaticFieldType)(implicit state: PickleState): Unit =
+        a match {
+          case StaticFieldType.ImplicationGraph => state.enc.writeByte(KeyImplicationGraph)
+          case StaticFieldType.UseCaseSteps     => state.enc.writeByte(KeyUseCaseSteps    )
+          case StaticFieldType.UseCaseStepGraph => state.enc.writeByte(KeyUseCaseStepGraph)
+          case StaticFieldType.Tag              => state.enc.writeByte(KeyTag             )
+        }
+      override def unpickle(implicit state: UnpickleState): StaticFieldType =
+        state.dec.readByte match {
+          case KeyImplicationGraph => StaticFieldType.ImplicationGraph
+          case KeyUseCaseSteps     => StaticFieldType.UseCaseSteps
+          case KeyUseCaseStepGraph => StaticFieldType.UseCaseStepGraph
+          case KeyTag              => StaticFieldType.Tag
+        }
+    }
+
   implicit lazy val picklerFieldSet: Pickler[FieldSet] =
     new Pickler[FieldSet] {
       override def pickle(a: FieldSet)(implicit state: PickleState): Unit = {
@@ -581,16 +847,18 @@ object Rev1 {
       private[this] final val KeyImplicationGraph = 'I'
       private[this] final val KeyUseCaseStepGraph = 'G'
       private[this] final val KeyUseCaseSteps     = 'T'
-      private[this] final val KeyTag              = 't'
+      private[this] final val KeyCustomTag        = 't'
       private[this] final val KeyText             = 'x'
+      private[this] final val KeyStaticTag        = '#'
       override def pickle(a: FieldType)(implicit state: PickleState): Unit =
         a match {
           case CustomFieldType.Implication      => state.enc.writeByte(KeyImplication     )
           case StaticFieldType.ImplicationGraph => state.enc.writeByte(KeyImplicationGraph)
           case StaticFieldType.UseCaseSteps     => state.enc.writeByte(KeyUseCaseSteps    )
           case StaticFieldType.UseCaseStepGraph => state.enc.writeByte(KeyUseCaseStepGraph)
-          case CustomFieldType.Tag              => state.enc.writeByte(KeyTag             )
           case CustomFieldType.Text             => state.enc.writeByte(KeyText            )
+          case CustomFieldType.Tag              => state.enc.writeByte(KeyCustomTag       )
+          case StaticFieldType.Tag              => state.enc.writeByte(KeyStaticTag       )
         }
       override def unpickle(implicit state: UnpickleState): FieldType =
         state.dec.readByte match {
@@ -598,8 +866,9 @@ object Rev1 {
           case KeyImplicationGraph => StaticFieldType.ImplicationGraph
           case KeyUseCaseSteps     => StaticFieldType.UseCaseSteps
           case KeyUseCaseStepGraph => StaticFieldType.UseCaseStepGraph
-          case KeyTag              => CustomFieldType.Tag
           case KeyText             => CustomFieldType.Text
+          case KeyCustomTag        => CustomFieldType.Tag
+          case KeyStaticTag        => StaticFieldType.Tag
         }
     }
 
@@ -1049,6 +1318,25 @@ object Rev1 {
         Event.SavedViewUpdate(id, vs)
       }
     }
+
+  private[v1] implicit val picklerEventFieldReposition: Pickler[Event.FieldReposition] =
+    new Pickler[Event.FieldReposition] {
+      override def pickle(a: Event.FieldReposition)(implicit state: PickleState): Unit = {
+        state.pickle(a.id)
+        state.pickle(a.newPos)
+      }
+      override def unpickle(implicit state: UnpickleState): Event.FieldReposition = {
+        val id     = state.unpickle[FieldId]
+        val newPos = state.unpickle[Option[FieldId]]
+        Event.FieldReposition(id, newPos)
+      }
+    }
+
+  private[v1] implicit val picklerEventFieldStaticAdd: Pickler[Event.FieldStaticAdd] =
+    transformPickler(Event.FieldStaticAdd.apply)(_.f)
+
+  private[v1] implicit val picklerEventFieldStaticRemove: Pickler[Event.FieldStaticRemove] =
+    transformPickler(Event.FieldStaticRemove.apply)(_.f)
 
   implicit lazy val picklerEvent: Pickler[Event] =
     new Pickler[Event] {

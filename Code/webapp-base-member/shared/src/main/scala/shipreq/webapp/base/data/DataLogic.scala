@@ -225,7 +225,7 @@ object DataLogic {
 
   type TagLookup = ReqId => ReqTags
 
-  def generalTags(dist: TagFieldDistribution.TagIds, lookup: TagLookup): ReqId => Set[ApplicableTagId] = {
+  def otherTags(dist: TagFieldDistribution.TagIds, lookup: TagLookup): ReqId => Set[ApplicableTagId] = {
     val tagsUsedInFields = dist.usedInFields
     id => lookup(id).all &~ tagsUsedInFields
   }

@@ -26,6 +26,7 @@ object StaticFieldType {
   case object UseCaseSteps     extends StaticFieldType("Use Case Steps")
   case object UseCaseStepGraph extends StaticFieldType("Use Case Step Graph")
   case object ImplicationGraph extends StaticFieldType("Implication Graph")
+  case object Tag              extends StaticFieldType("Tag")
 
   val values: NonEmptyVector[StaticFieldType] =
     AdtMacros.adtValues[StaticFieldType]
@@ -81,6 +82,9 @@ object Field {
 sealed trait StaticField extends Field with FieldId {
   val name: String
 
+  /** Whether or not this field can be removed from users' field lists. */
+  def existence: Mandatory
+
   override def fieldReqTypeRules: FieldReqTypeRules[Impossible]
 
   override final def live(cfg: ProjectConfig) = Live
@@ -100,8 +104,13 @@ object UseCaseStepLabelFmt {
 
 object StaticField {
 
-  sealed trait Mandatory extends StaticField
-  sealed trait Optional extends StaticField
+  sealed trait Mandatory extends StaticField {
+    override final def existence = shipreq.webapp.base.data.Mandatory
+  }
+
+  sealed trait Optional extends StaticField {
+    override final def existence = shipreq.webapp.base.data.Optional
+  }
 
   private val useCaseOptionalOnly: FieldReqTypeRules[Impossible] =
     FieldReqTypeRules.only(StaticReqType.UseCase, FieldReqTypeRules.Resolution.Optional)
@@ -248,20 +257,41 @@ object StaticField {
     override val fieldReqTypeRules = FieldReqTypeRules.optional
   }
 
+  case object OtherTags extends Optional {
+    override val name              = "Other Tags"
+    override val fieldType         = T.Tag
+    override val fieldReqTypeRules = FieldReqTypeRules.optional
+  }
+
+  case object AllTags extends Optional {
+    override val name              = "All Tags"
+    override val fieldType         = T.Tag
+    override val fieldReqTypeRules = FieldReqTypeRules.optional
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   // Non lazy causes utest to crash
-  // ORDER MATTERS as this is the default order of fields use in new projects
-  lazy val values: NonEmptyVector[StaticField] =
-    AdtMacros.adtValuesManually[StaticField](
-      ImplicationGraph,
-      NormalAltStepTree,
-      ExceptionStepTree,
-      StepGraph)
+  lazy val values: NonEmptySet[StaticField] =
+    AdtMacros.adtValues[StaticField].toNES
 
   lazy val mandatory: NonEmptySet[Mandatory] =
     AdtMacros.adtValues[Mandatory].toNES
 
   lazy val optional: NonEmptySet[Optional] =
     AdtMacros.adtValues[Optional].toNES
+
+  lazy val default: NonEmptyVector[StaticField] = {
+    val nev = NonEmptyVector[StaticField](
+      OtherTags,
+      ImplicationGraph,
+      NormalAltStepTree,
+      ExceptionStepTree,
+      StepGraph,
+    )
+    assert(mandatory.forall(nev.whole.contains))
+    nev
+  }
 
   lazy val useCaseStepTrees: NonEmptyVector[UseCaseStepTree] =
     AdtMacros.adtValuesManually[UseCaseStepTree](NormalAltStepTree, ExceptionStepTree)
@@ -551,11 +581,17 @@ final case class FieldSet(customFields: FieldSet.CustomFields,
       case id: CustomFieldId => customFields need id
     }
 
-  def staticFieldIterator: Iterator[StaticField] =
+  def idIterator(): Iterator[FieldId] =
+    order.toIterator
+
+  def iterator(): Iterator[Field] =
+    idIterator().map(need)
+
+  def staticFieldIterator(): Iterator[StaticField] =
     order.toIterator.filterSubType[StaticField]
 
   def staticFieldSet: ListSet[StaticField] =
-    staticFieldIterator.to
+    staticFieldIterator().to
 
   def custom[I <: CustomFieldId, D <: CustomField](id: I)(implicit d: DataIdAux[D, I]): D = {
     val f = customFields.need(id)
@@ -588,7 +624,7 @@ final case class FieldSet(customFields: FieldSet.CustomFields,
 
 object FieldSet {
   val empty: FieldSet =
-    FieldSet(emptyCustomFields, StaticField.values.whole)
+    FieldSet(emptyCustomFields, StaticField.default.whole)
 
   // TODO FieldSet.Order should be NonEmptyVector.
   type Order = Vector[FieldId]

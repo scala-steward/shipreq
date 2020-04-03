@@ -34,7 +34,7 @@ object LogicTestUtil {
   def tagsInRow(r: Row): Vector[ApplicableTagId] =
   // Don't use optics here
     r match {
-      case r: Row.ForReq       => r.mv.tags
+      case r: Row.ForReq       => r.mv.otherTags
       case _: Row.ForCodeGroup => Vector.empty
     }
 
@@ -270,41 +270,41 @@ object LogicTest extends TestSuite {
   def modCustomFields(f: EndoFn[IMap[CustomFieldId, CustomField]]): EndoFn[Project] =
     fieldSetL.modify { fs =>
       val cf = f(fs.customFields)
-      FieldSet(cf, StaticField.values.whole ++ cf.values.toVector.map(_.fieldId))
+      FieldSet(cf, StaticField.mandatory.whole.toVector ++ cf.values.iterator.map(_.fieldId))
     }
 
   def clearCustomFields =
     modCustomFields(_ replaceUnderlying Map.empty)
 
-  def testTags_sorted1(): Unit = {
+  def testOtherTags_sorted1(): Unit = {
     def t(ids: ApplicableTagId*) = GReq().tag(ids: _*)
     val p       = GReq().times(2) + t(2) + t(3) + t(11) + t(12) + t(11, 12) + t(12, 11) !! PA
     val p2      = clearCustomFields(p)
-    val fmtRows = rowToTagTxt(p, Row.tags)
+    val fmtRows = rowToTagTxt(p, Row.otherTags)
     // The Tags column is *not* expanded. Only custom tag columns are.
-    testCB(p2, C.Tags, None, ShowDead, fmtRows)(allSortsCB(2,
+    testCB(p2, C.OtherTags, None, ShowDead, fmtRows)(allSortsCB(2,
       asc  = "defer  defer,wip  defer,wip  pri=high  pri=med  wip",
       desc = "wip,defer  wip,defer  wip  pri=med  pri=high  defer"))
   }
 
-  def testTags_sorted2(): Unit = {
+  def testOtherTags_sorted2(): Unit = {
     def t(ids: ApplicableTagId*) = GReq().tag(ids: _*)
     val p       = GReq() + t(2) + t(11) + t(12) + t(11, 12, 2) + t(3, 12, 11) !! PA
     val p2      = modCustomFields(_.filterK(_ == priField))(p)
-    val fmtRows = rowToTagTxt(p, Row.tags)
+    val fmtRows = rowToTagTxt(p, Row.otherTags)
     // The Tags column is *not* expanded. Only custom tag columns are.
-    testCB(p2, C.Tags, None, ShowDead, fmtRows)(allSortsCB(2,
+    testCB(p2, C.OtherTags, None, ShowDead, fmtRows)(allSortsCB(2,
       asc  = "defer  defer,wip  defer,wip  wip",
       desc = "wip,defer  wip,defer  wip  defer"))
   }
 
   /** When tags aren't being sorted by SortCriteria they should be sorted by some default. */
-  def testTags_unsorted(): Unit = {
+  def testOtherTags_unsorted(): Unit = {
     def t(ids: ApplicableTagId*) = GReq().tag(ids: _*)
     val p       = t(11, 12, 2, 3, 4) ! PA
     val p2      = clearCustomFields(p)
-    val fmtRows = rowToTagTxt(p, Row.tags)
-    testUnsorted(p2, C.Tags, None, ShowDead, fmtRows)("defer,pri=high,pri=low,pri=med,wip")
+    val fmtRows = rowToTagTxt(p, Row.otherTags)
+    testUnsorted(p2, C.OtherTags, None, ShowDead, fmtRows)("defer,pri=high,pri=low,pri=med,wip")
   }
 
   def testCustomTagField_sorted1(): Unit = {
@@ -579,33 +579,33 @@ object LogicTest extends TestSuite {
 
   def testFilterDeadTags(): Unit = {
     val p       = GReq(reqType = fr).tag(v1x, v3x) ! PD
-    val fmtRows = rowToTagTxt(p, Row.tags)
-    testUnsorted(p, C.Tags, None, ShowDead, fmtRows)("v1.x,v3.x")
-    testUnsorted(p, C.Tags, None, HideDead, fmtRows)("v1.x")
+    val fmtRows = rowToTagTxt(p, Row.otherTags)
+    testUnsorted(p, C.OtherTags, None, ShowDead, fmtRows)("v1.x,v3.x")
+    testUnsorted(p, C.OtherTags, None, HideDead, fmtRows)("v1.x")
   }
 
   def testFilterDeadTagsInCustomTagField(): Unit = {
     val p        = GReq(reqType = fr).tag(wip, uat, v1x) ! PD
     val fmtRowsC = rowToTagTxt(p, Row cfTag statusField)
-    val fmtRowsT = rowToTagTxt(p, Row.tags)
+    val fmtRowsT = rowToTagTxt(p, Row.otherTags)
     testUnsorted(p, statusField, None, ShowDead, fmtRowsC)("wip,uat")
     testUnsorted(p, statusField, None, HideDead, fmtRowsC)("wip")
-    testUnsorted(p, C.Tags, None, ShowDead, fmtRowsT)("v1.x")
-    testUnsorted(p, C.Tags, None, HideDead, fmtRowsT)("v1.x")
+    testUnsorted(p, C.OtherTags, None, ShowDead, fmtRowsT)("v1.x")
+    testUnsorted(p, C.OtherTags, None, HideDead, fmtRowsT)("v1.x")
   }
 
   def testFilterDeadCustomTagField() = {
     val p        = GReq(reqType = fr).tag(v09, v10, v2x) ! PD
     val fmtRowsC = rowToTagTxt(p, Row cfTag relField)
-    val fmtRowsT = rowToTagTxt(p, Row.tags)
+    val fmtRowsT = rowToTagTxt(p, Row.otherTags)
     // dead-customfield visible
-    val both = NonEmptyVector[C](C.Tags, relField)
+    val both = NonEmptyVector[C](C.OtherTags, relField)
     testUnsorted(p, relField, None, ShowDead, fmtRowsC)("v0.9,v1.0")
     testUnsorted2(p, both, None, ShowDead, fmtRowsC)("v0.9,v1.0")
     testUnsorted2(p, both, None, ShowDead, fmtRowsT)("v2.x")
     // dead-customfield not visible
-    testUnsorted(p, C.Tags, None, HideDead, fmtRowsT)("v1.0,v2.x")
-    testUnsorted(p, C.Tags, None, ShowDead, fmtRowsT)("v0.9,v1.0,v2.x")
+    testUnsorted(p, C.OtherTags, None, HideDead, fmtRowsT)("v1.0,v2.x")
+    testUnsorted(p, C.OtherTags, None, ShowDead, fmtRowsT)("v0.9,v1.0,v2.x")
   }
 
   /** See `Requirements/analysis-deletion.ods`. */
@@ -638,7 +638,7 @@ object LogicTest extends TestSuite {
     private val L = ":defer"
     private val D = ":uat"
 
-    private val fmtRowsNoFilter = prefixWithPubidNoZ(p, rowToTagTxt(p, Row.tags))
+    private val fmtRowsNoFilter = prefixWithPubidNoZ(p, rowToTagTxt(p, Row.otherTags))
     private val fmtRowsHasFilter = rowToPubid(p)
 
     private def test(fd: FilterDead)(tags: String*): Unit = {
@@ -646,13 +646,13 @@ object LogicTest extends TestSuite {
 
       // No filter
       val expect = (for ((t,i) <- withIds) yield s"DD-$i$t") mkString sep
-      testUnsorted(p, C.Tags, None, fd, fmtRowsNoFilter)(expect)
+      testUnsorted(p, C.OtherTags, None, fd, fmtRowsNoFilter)(expect)
 
       // With filters
       def testWithFilters(tag: ApplicableTagId, tagStr: String): Unit = {
         val ids = withIds.filter(_._1 == tagStr).map(_._2)
         val expect = ids.map("DD-" + _) mkString sep
-        testUnsorted(p, C.Tags, F.tag(tag), fd, fmtRowsHasFilter)(expect)
+        testUnsorted(p, C.OtherTags, F.tag(tag), fd, fmtRowsHasFilter)(expect)
       }
       testWithFilters(liveTag, L)
       testWithFilters(deadTag, D)
@@ -703,13 +703,13 @@ object LogicTest extends TestSuite {
 
       // No filter
       val expect = withIds.map("DD-" + _._2) mkString sep
-      testUnsorted(p, C.Tags, None, fd, fmtRows)(expect)
+      testUnsorted(p, C.OtherTags, None, fd, fmtRows)(expect)
 
       // With filters
       def testWithFilters(issue: CustomIssueTypeId, issueStr: String): Unit = {
         val ids = withIds.filter(_._1 == issueStr).map(_._2)
         val expect = ids.map("DD-" + _) mkString sep
-        testUnsorted(p, C.Tags, F.issue(issue), fd, fmtRows)(expect)
+        testUnsorted(p, C.OtherTags, F.issue(issue), fd, fmtRows)(expect)
       }
       testWithFilters(liveIssue, L)
       testWithFilters(deadIssue, D)
@@ -728,15 +728,15 @@ object LogicTest extends TestSuite {
         D, D, D) // dead req, dead issue
   }
 
-  def testTags_inText(): Unit = {
+  def testOtherTags_inText(): Unit = {
     def t(direct: ApplicableTagId*)(inTitle: ApplicableTagId*)(inCustomText: ApplicableTagId*) =
       GReq(title = reqTitleTagRefs(inTitle))
         .cftextO(descField, customTextTagRefs(inCustomText))
         .cftext(reporterField, allLiveTags map Text.CustomTextField.TagRef) // dead column has no effect
         .tag(direct: _*)
     val p       = t()()() + t(v10)(v12)(v1x, v1x) + t(v2x)(v2x, v11)(v11) ! PA
-    val fmtRows = rowToTagTxt(p, Row.tags)
-    testUnsorted(p, C.Tags, None, HideDead, fmtRows)(s"$z  v1.0,v1.2,v1.x  v1.1,v2.x")
+    val fmtRows = rowToTagTxt(p, Row.otherTags)
+    testUnsorted(p, C.OtherTags, None, HideDead, fmtRows)(s"$z  v1.0,v1.2,v1.x  v1.1,v2.x")
     // The Tags column is *not* expanded. Only custom tag columns are.
 //      testCB(p, pt, C.Tags, None, HideDead, fmtRows)(allSortsCB(1,
 //        asc  = "v1.0  v1.1  v1.2,v1.x  v2.x",
@@ -1181,11 +1181,11 @@ object LogicTest extends TestSuite {
       'impTgt   - testImpTgt()
       'impCust  - testCustomImpField()
       'custTxt  - testCustomTextField()
-      'tags {
-        'sorted1  - testTags_sorted1()
-        'sorted2  - testTags_sorted2()
-        'unsorted - testTags_unsorted()
-        'inText   - testTags_inText()
+      'otherTags {
+        'sorted1  - testOtherTags_sorted1()
+        'sorted2  - testOtherTags_sorted2()
+        'unsorted - testOtherTags_unsorted()
+        'inText   - testOtherTags_inText()
       }
       'custTag {
         'sorted1  - testCustomTagField_sorted1()

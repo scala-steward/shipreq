@@ -851,6 +851,14 @@ object Style extends StyleSheet.Inline {
       margin.horizontal(.7 ex)
     )
 
+    val fieldListDetailNoOtherTags = style(
+      color(c"#999"),
+    )
+
+    val fieldListDetailOtherTags = style(
+      marginTop(0.2 em),
+    )
+
     val rulesEditor = style(
       addClassNames("table", "ui", "single", "line", "table")
     )
@@ -900,6 +908,10 @@ object Style extends StyleSheet.Inline {
 
     val staticFieldLI = style(
       marginBottom(0.7 em),
+    )
+
+    val staticFieldTagLI = style(
+      marginTop(0.3 em),
     )
 
     @inline def `N/A` = generic.`N/A`

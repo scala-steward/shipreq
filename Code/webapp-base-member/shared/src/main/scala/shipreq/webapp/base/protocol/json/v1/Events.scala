@@ -470,23 +470,24 @@ object Events {
     implicit val encoderEventApplicableTagUpdateV1: Encoder[Event.ApplicableTagUpdateV1] =
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
-    implicit val decoderEventFieldReposition: Decoder[Event.FieldReposition] =
-      Decoder.forProduct2("id", "newPos")(Event.FieldReposition.apply)
-
-    implicit val encoderEventFieldReposition: Encoder[Event.FieldReposition] =
-      Encoder.forProduct2("id", "newPos")(a => (a.id, a.newPos))
-
-    implicit val decoderEventFieldStaticAdd: Decoder[Event.FieldStaticAdd] =
-      Decoder[StaticField.Optional].map(Event.FieldStaticAdd.apply)
-
-    implicit val encoderEventFieldStaticAdd: Encoder[Event.FieldStaticAdd] =
-      Encoder[StaticField.Optional].contramap(_.f)
-
-    implicit val decoderEventFieldStaticRemove: Decoder[Event.FieldStaticRemove] =
-      Decoder[StaticField.Optional].map(Event.FieldStaticRemove.apply)
-
-    implicit val encoderEventFieldStaticRemove: Encoder[Event.FieldStaticRemove] =
-      Encoder[StaticField.Optional].contramap(_.f)
+    // Replaced by v1.1
+    // implicit val decoderEventFieldReposition: Decoder[Event.FieldReposition] =
+    //   Decoder.forProduct2("id", "newPos")(Event.FieldReposition.apply)
+    //
+    // implicit val encoderEventFieldReposition: Encoder[Event.FieldReposition] =
+    //   Encoder.forProduct2("id", "newPos")(a => (a.id, a.newPos))
+    //
+    // implicit val decoderEventFieldStaticAdd: Decoder[Event.FieldStaticAdd] =
+    //   Decoder[StaticField.Optional].map(Event.FieldStaticAdd.apply)
+    //
+    // implicit val encoderEventFieldStaticAdd: Encoder[Event.FieldStaticAdd] =
+    //   Encoder[StaticField.Optional].contramap(_.f)
+    //
+    // implicit val decoderEventFieldStaticRemove: Decoder[Event.FieldStaticRemove] =
+    //   Decoder[StaticField.Optional].map(Event.FieldStaticRemove.apply)
+    //
+    // implicit val encoderEventFieldStaticRemove: Encoder[Event.FieldStaticRemove] =
+    //   Encoder[StaticField.Optional].contramap(_.f)
 
     implicit val decoderEventFieldCustomDelete: Decoder[Event.FieldCustomDelete] =
       Decoder[CustomFieldId].map(Event.FieldCustomDelete.apply)

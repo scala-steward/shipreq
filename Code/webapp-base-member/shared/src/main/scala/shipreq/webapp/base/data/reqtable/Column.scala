@@ -28,18 +28,20 @@ object Column {
   // -------------------------------------------------------------------------------------------------------------------
 
   // NOTE: Keep .builtInValues in sync
-  case object Pubid                       extends BuiltIn with SortConclusive            with Mandatory
-  case object Code                        extends BuiltIn with SortInconclusiveHasBlanks
-  case object Title                       extends BuiltIn with SortInconclusiveHasBlanks with Mandatory
-  case object ReqType                     extends BuiltIn with SortInconclusiveNoBlanks
-  case object Tags                        extends BuiltIn with SortInconclusiveHasBlanks
-  case class Implications(dir: Direction) extends BuiltIn with SortInconclusiveHasBlanks
-  case object DeletionReason              extends BuiltIn with SortInconclusiveHasBlanks
+  case object Pubid                             extends BuiltIn with SortConclusive            with Mandatory
+  case object Code                              extends BuiltIn with SortInconclusiveHasBlanks
+  case object Title                             extends BuiltIn with SortInconclusiveHasBlanks with Mandatory
+  case object ReqType                           extends BuiltIn with SortInconclusiveNoBlanks
+  case object DeletionReason                    extends BuiltIn with SortInconclusiveHasBlanks
+  final case class Implications(dir: Direction) extends BuiltIn with SortInconclusiveHasBlanks
+
+  case object OtherTags extends SortInconclusiveHasBlanks
+  case object AllTags   extends SortInconclusiveHasBlanks
 
   // Field columns
   // - No applicable StaticFields, else they'd be added manually here.
   // - Currently allows any type of CustomField; this may change in future.
-  case class CustomField(id: CustomFieldId) extends SortInconclusiveHasBlanks
+  final case class CustomField(id: CustomFieldId) extends SortInconclusiveHasBlanks
 
   // -------------------------------------------------------------------------------------------------------------------
 
@@ -63,7 +65,6 @@ object Column {
       Code,
       Title,
       ReqType,
-      Tags,
       Implications(Forwards), Implications(Backwards),
       DeletionReason)
 
@@ -81,7 +82,8 @@ object Column {
          | Pubid
          | Code
          | Title
-         | Tags
+         | OtherTags
+         | AllTags
          | DeletionReason
          | _: Implications => Applicability.always
       case CustomField(id) => a.byField(id)
@@ -93,12 +95,21 @@ object Column {
          | Title           => Applicability.always
       case ReqType
          | Pubid
-         | Tags
+         | OtherTags
+         | AllTags
          | DeletionReason
          | _: CustomField
          | _: Implications => Applicability.never
     }
 
   def all(c: ProjectConfig): NonEmptySet[Column] =
-    builtInValues.toNES[Column] ++ c.fields.customFields.valuesIterator.map(f => CustomField(f.id))
+    builtInValues.toNES[Column] ++ c.fields.idIterator().flatMap {
+      case id: CustomFieldId             => CustomField(id) :: Nil
+      case StaticField.AllTags           => AllTags :: Nil
+      case StaticField.OtherTags         => OtherTags :: Nil
+      case StaticField.NormalAltStepTree
+         | StaticField.ExceptionStepTree
+         | StaticField.ImplicationGraph
+         | StaticField.StepGraph         => Nil
+    }
 }

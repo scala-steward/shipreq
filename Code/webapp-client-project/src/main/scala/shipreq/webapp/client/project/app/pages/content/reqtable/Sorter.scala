@@ -135,7 +135,8 @@ object Sorter {
       }
     case C.Title                            => titleSorter
     case C.Code                             => reqCodeSorter
-    case C.Tags                             => tagSorter(Row.tags, _.p.dataLogic.tagOrderByName)
+    case C.OtherTags                        => tagSorter(Row.otherTags, _.p.dataLogic.tagOrderByName)
+    case C.AllTags                          => tagSorter(Row.allTags, _.p.dataLogic.tagOrderByName)
     case C.Implications(dir)                => pubidVectorSorter(Row.implications(dir))
     case C.DeletionReason                   => deletionReasonSorter
   }

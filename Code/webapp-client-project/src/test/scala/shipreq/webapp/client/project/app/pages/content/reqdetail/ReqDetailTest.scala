@@ -3,6 +3,7 @@ package shipreq.webapp.client.project.app.pages.content.reqdetail
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import utest._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.event._
 import shipreq.webapp.base.test.UnsafeTypes.autoExtPubid
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.UiText
@@ -14,6 +15,7 @@ import shipreq.webapp.client.project.test._
 
 object ReqDetailTest extends TestSuite {
   import ReqDetailTestDsl._
+  import WebappTestUtil._
 
   PrepareEnv()
 
@@ -379,7 +381,6 @@ object ReqDetailTest extends TestSuite {
           "Req Type",
           "Live Status",
           "Codes",
-          "Tags",
           "Implications",
           "Major Feature",
           "Priority",
@@ -388,7 +389,9 @@ object ReqDetailTest extends TestSuite {
           "Notes",
           "Business Justification",
           "Component",
-          "Version")
+          "Version",
+          StaticField.OtherTags.name,
+          StaticField.AllTags.name)
           +> fieldText("Business Justification").assert("") // perReq > otherwise, opt - no content
           +> fieldText("Component").assert("") // opt - no content
           +> fieldText("Released").assert("blank") // man - no content
@@ -404,7 +407,6 @@ object ReqDetailTest extends TestSuite {
           "Past IDs",
           "Deletion Reason",
           "Codes",
-          "Tags",
           "Implications",
           "Major Feature",
           "Priority",
@@ -413,7 +415,9 @@ object ReqDetailTest extends TestSuite {
           "Notes",
           "Business Justification",
           "Component",
-          "Version")
+          "Version",
+          StaticField.OtherTags.name,
+          StaticField.AllTags.name)
           +> fieldText("Business Justification").assert("") // perReq > otherwise, opt - no content
           +> fieldText("Component").assert("") // opt - no content
           +> fieldText("Priority").assert("blank") // man - no content
@@ -440,14 +444,15 @@ object ReqDetailTest extends TestSuite {
           "Req Type",
           "Live Status",
           "Codes",
-          "Tags",
           "Implications",
           "Major Feature",
           "Priority",
           "Released",
           "Status",
           "Business Justification",
-          "Version")
+          "Version",
+          StaticField.OtherTags.name,
+          StaticField.AllTags.name)
           +> fieldText("Business Justification").assert("blank") // man - no content
           +> fieldText("Priority").assert("pri=med") // def:tag:ok - no content
           +> fieldText("Released").assert("blank") // man - no content
@@ -462,7 +467,6 @@ object ReqDetailTest extends TestSuite {
           "Past IDs",
           "Deletion Reason",
           "Codes",
-          "Tags",
           "Implications",
           "Major Feature",
           "Priority",
@@ -470,7 +474,9 @@ object ReqDetailTest extends TestSuite {
           "Released",
           "Status",
           "Business Justification",
-          "Version")
+          "Version",
+          StaticField.OtherTags.name,
+          StaticField.AllTags.name)
           +> fieldText("Business Justification").assert("blank") // man - no content
           +> fieldText("Priority").assert("pri=med") // def:tag:ok - no content
           +> fieldText("Released").assert("blank") // man - no content
@@ -504,14 +510,15 @@ object ReqDetailTest extends TestSuite {
           "Past IDs",
           "Deletion Reason",
           "Codes",
-          "Tags",
           "Implications",
           "Major Feature",
           "Released",
           "Status",
           "Notes",
           "Component",
-          "Version")
+          "Version",
+          StaticField.OtherTags.name,
+          StaticField.AllTags.name)
           +> fieldText("Component").assert("") // perReq > otherwise, opt - no content
           +> fieldText("Released").assert("v1.0") // def:tag:bad - w/ content - ShowDead
           +> fieldText("Status").assert("uat") // def:tag:dead - no content - ShowDead
@@ -523,14 +530,15 @@ object ReqDetailTest extends TestSuite {
           "Req Type",
           "Live Status",
           "Codes",
-          "Tags",
           "Implications",
           "Major Feature",
           "Released",
           "Status",
           "Notes",
           "Component",
-          "Version")
+          "Version",
+          StaticField.OtherTags.name,
+          StaticField.AllTags.name)
           +> fieldText("Component").assert("") // opt - no content
           +> fieldText("Released").assert("v1.0") // def:tag:bad - w/ content - HideDead
           +> fieldText("Status").assert("") // def:tag:dead - no content - HideDead
@@ -544,14 +552,15 @@ object ReqDetailTest extends TestSuite {
           "Past IDs",
           "Deletion Reason",
           "Codes",
-          "Tags",
           "Implications",
           "Major Feature",
           "Released",
           "Status",
           "Notes",
           "Component",
-          "Version")
+          "Version",
+          StaticField.OtherTags.name,
+          StaticField.AllTags.name)
           +> fieldText("Component").assert("") // perReq > otherwise, opt - no content
           +> fieldText("Released").assert("v1.0") // def:tag:bad - w/ content - ShowDead
           +> fieldText("Status").assert("uat") // def:tag:dead - no content - ShowDead
@@ -567,7 +576,6 @@ object ReqDetailTest extends TestSuite {
           "Past IDs",
           "Deletion Reason",
           "Codes",
-          "Tags",
           "Implications",
           "Description",
           "Priority",
@@ -576,12 +584,49 @@ object ReqDetailTest extends TestSuite {
           "Notes",
           "Alternatives",
           "Component",
-          "Version")
+          "Version",
+          StaticField.OtherTags.name,
+          StaticField.AllTags.name)
           +> fieldText("Component").assert("")
           +> fieldText("Priority").assert("")
           +> fieldText("Released").assert("") // dead req with mandatory blank
           +> fieldText("Status").assert("uat3") // dead req with dead default
           +> fieldText("Version").assert("") // dead req with bad live default
+      ))
+    }
+
+    'staticTagFields - {
+      import SampleProject7.Values._
+      import UnsafeTypes._
+      import StaticField._
+
+      val project =
+        applyEventsSuccessfully(
+          SampleProject7.project,
+          Event.ReqTagsPatch(brs(2), nesd()(priLow, priHigh)), // live & dead assigned to live field
+          Event.ReqTagsPatch(brs(2), nesd()(wip, defer)), // live & dead assigned to dead field
+          Event.TagDelete(defer),
+          Event.TagDelete(priHigh),
+          Event.FieldCustomDelete(statusField),
+        )
+
+      // Note: BR-2 already has
+      //   - N/A tag (#prod)
+      //   - live & dead assigned to no field (#misc1 #misc2)
+      test("BR-2", project)(Plan.action(
+        *.emptyAction
+          +> filterDead.assert(HideDead)
+          +> visibleFields.assert.not.contains("Status")
+          +> fieldText("Priority").assert("pri=low")
+          +> fieldText(OtherTags.name).assert("misc1 wip")
+          +> fieldText(AllTags.name).assert("misc1 pri=low wip")
+
+          >> filterDeadToggle
+          +> filterDead.assert(ShowDead)
+          +> fieldText("Priority").assert("pri=high pri=low")
+          +> fieldText("Status").assert("wip defer")
+          +> fieldText(OtherTags.name).assert("misc1 misc2")
+          +> fieldText(AllTags.name).assert("defer misc1 misc2 pri=high pri=low wip")
       ))
     }
 

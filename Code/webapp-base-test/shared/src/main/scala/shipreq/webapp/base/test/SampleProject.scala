@@ -3,8 +3,7 @@ package shipreq.webapp.base.test
 import japgolly.microlibs.nonempty.NonEmptyVector
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import DataImplicits._
-import UnsafeTypes._
+import shipreq.webapp.base.event.Event
 
 /**
  * Sample project with:
@@ -16,6 +15,9 @@ import UnsafeTypes._
  *    - dead: DD, SI
  */
 object SampleProject {
+  import DataImplicits._
+  import WebappTestUtil._
+  import UnsafeTypes._
 
   trait Values {
     def uc = StaticReqType.UseCase
@@ -89,9 +91,16 @@ object SampleProject {
       Implication.v1(mfField      , mf,                        Optional,  notReqTypes(si),                             Live),
       Tag        .v1(relField     , relTG,                     Optional,  allReqTypes,                                 Dead)
     ), Vector(
-      descField, mfField, priField, reporterField,
-      StaticField.NormalAltStepTree, StaticField.ExceptionStepTree, StaticField.StepGraph,
-      relField, statusField, notesField
+      descField,
+      mfField,
+      priField,
+      reporterField,
+      StaticField.NormalAltStepTree,
+      StaticField.ExceptionStepTree,
+      StaticField.StepGraph,
+      relField,
+      statusField,
+      notesField
     ))
   }
 
@@ -115,5 +124,6 @@ object SampleProject {
 
   lazy val tagTree = project.config.tags.tree.mapValues(_.children)
 
-  // lazy val tagTreeB = BiMultimap(Multimap(tagTree.mapValues(_.toSet)))
+  lazy val projectWithOtherTags =
+    applyEventSuccessfully(project, Event.FieldStaticAdd(StaticField.OtherTags))
 }

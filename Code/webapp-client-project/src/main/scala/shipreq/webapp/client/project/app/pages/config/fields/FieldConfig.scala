@@ -330,12 +330,12 @@ object FieldConfig {
           <.div(header, editor, buttons)
 
         case EditorType.Static(f: StaticField.Mandatory) =>
-          val editor  = StaticFieldEditor.Props(f, p.project.config).render
+          val editor  = StaticFieldEditor.Props(f, p.project.config, p.effectiveFilterDead, p.pw).render
           val buttons = EditorButtons.close(args).render
           <.div(header, editor, buttons)
 
         case EditorType.Static(f: StaticField.Optional) =>
-          val editor  = StaticFieldEditor.Props(f, p.project.config).render
+          val editor  = StaticFieldEditor.Props(f, p.project.config, p.effectiveFilterDead, p.pw).render
           val inUse   = p.project.config.fields.includes(f)
           val buttons =
             if (inUse)

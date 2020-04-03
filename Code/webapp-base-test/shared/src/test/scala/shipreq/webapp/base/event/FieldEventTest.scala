@@ -37,25 +37,34 @@ object CustomFieldEventTest extends TestSuite {
     'reposition {
       var es = Vector[Event]()
       def o = _assertPass(es: _*).config.fields.order
-      assertEq(o, Vector(ImplicationGraph, NormalAltStepTree, ExceptionStepTree, StepGraph, t1, t2))
+      assertEq(o, Vector(OtherTags, ImplicationGraph, NormalAltStepTree, ExceptionStepTree, StepGraph, t1, t2))
 
       es :+= FieldReposition(t1, Some(ExceptionStepTree))
-      assertEq(o, Vector(ImplicationGraph, NormalAltStepTree, t1, ExceptionStepTree, StepGraph, t2))
+      assertEq(o, Vector(OtherTags, ImplicationGraph, NormalAltStepTree, t1, ExceptionStepTree, StepGraph, t2))
 
       es :+= FieldReposition(ExceptionStepTree, None)
-      assertEq(o, Vector(ImplicationGraph, NormalAltStepTree, t1, StepGraph, t2, ExceptionStepTree))
+      assertEq(o, Vector(OtherTags, ImplicationGraph, NormalAltStepTree, t1, StepGraph, t2, ExceptionStepTree))
     }
 
     'addStaticField {
-      'ok - assertPass(FieldStaticRemove(StepGraph), FieldStaticAdd(StepGraph))
-      'failIfExists     - assertFail("exists")(FieldStaticAdd(StepGraph))
+      'ok - {
+        for (f <- optional)
+          if (FieldSet.empty.includes(f))
+            assertPass(FieldStaticRemove(f), FieldStaticAdd(f))
+          else
+            assertPass(FieldStaticAdd(f))
+      }
+      'failIfExists - assertFail("exists")(FieldStaticAdd(StepGraph))
     }
 
     'deleteStatic {
       // assertQty allows less detail here
       'ok - {
         for (f <- optional)
-          assertPass(FieldStaticRemove(f))
+          if (FieldSet.empty.includes(f))
+            assertPass(FieldStaticRemove(f))
+          else
+            assertPass(FieldStaticAdd(f), FieldStaticRemove(f))
       }
       'twice - {
         val d = FieldStaticRemove(StepGraph)

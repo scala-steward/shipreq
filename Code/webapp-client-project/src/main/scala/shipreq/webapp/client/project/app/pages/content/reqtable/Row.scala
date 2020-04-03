@@ -81,7 +81,8 @@ object Expansion {
  * Sortable data (ie. lists) that are never expanded.
  */
 @Lenses
-case class MultiValues(tags: Vector[ApplicableTagId])
+final case class MultiValues(otherTags: Vector[ApplicableTagId],
+                             allTags  : Vector[ApplicableTagId])
 
 object MultiValues {
   implicit def equality: UnivEq[MultiValues] = UnivEq.derive
@@ -90,10 +91,13 @@ object MultiValues {
 
   implicit val monoid: Monoid[MultiValues] =
     new Monoid[MultiValues] {
-      override def zero = MultiValues(Vector.empty)
+      override def zero = MultiValues(Vector.empty, Vector.empty)
       override def append(a: MultiValues, _b: => MultiValues) = {
         val b = _b
-        MultiValues(a.tags |+| b.tags)
+        MultiValues(
+          otherTags = a.otherTags |+| b.otherTags,
+          allTags   = a.allTags |+| b.allTags,
+        )
       }
     }
 }
@@ -257,9 +261,10 @@ object Row {
   val implications: Direction => OV[Pubid] =
     Direction.memo(Row.expansion ^|-> Expansion.implications ^|-> Direction.Values.lens(_))
 
-  val cfImps: OMV[CustomField.Implication.Id, Pubid]   = Row.expansion   ^|-> Expansion.cfImps
-  val cfTags: OMV[CustomField.Tag.Id, ApplicableTagId] = Row.expansion   ^|-> Expansion.cfTags
-  val tags  : OV[ApplicableTagId]                      = Row.multiValues ^|-> MultiValues.tags
+  val cfImps   : OMV[CustomField.Implication.Id, Pubid]   = Row.expansion   ^|-> Expansion.cfImps
+  val cfTags   : OMV[CustomField.Tag.Id, ApplicableTagId] = Row.expansion   ^|-> Expansion.cfTags
+  val otherTags: OV[ApplicableTagId]                      = Row.multiValues ^|-> MultiValues.otherTags
+  val allTags  : OV[ApplicableTagId]                      = Row.multiValues ^|-> MultiValues.allTags
 
   private def mmLens[K, V](k: K): Lens[Map[K, Vector[V]], Vector[V]] =
     Lens[Map[K, Vector[V]], Vector[V]](_.getOrElse(k, Vector.empty))(vs => _.updated(k, vs))

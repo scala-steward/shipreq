@@ -577,24 +577,25 @@ object Events {
       }
     }
 
-  private[v1] implicit val picklerEventFieldReposition: Pickler[Event.FieldReposition] =
-    new Pickler[Event.FieldReposition] {
-      override def pickle(a: Event.FieldReposition)(implicit state: PickleState): Unit = {
-        state.pickle(a.id)
-        state.pickle(a.newPos)
-      }
-      override def unpickle(implicit state: UnpickleState): Event.FieldReposition = {
-        val id     = state.unpickle[FieldId]
-        val newPos = state.unpickle[Option[FieldId]]
-        Event.FieldReposition(id, newPos)
-      }
-    }
-
-  private[v1] implicit val picklerEventFieldStaticAdd: Pickler[Event.FieldStaticAdd] =
-    transformPickler(Event.FieldStaticAdd.apply)(_.f)
-
-  private[v1] implicit val picklerEventFieldStaticRemove: Pickler[Event.FieldStaticRemove] =
-    transformPickler(Event.FieldStaticRemove.apply)(_.f)
+  // Replaced by v1.1
+  // private[v1] implicit val picklerEventFieldReposition: Pickler[Event.FieldReposition] =
+  //   new Pickler[Event.FieldReposition] {
+  //     override def pickle(a: Event.FieldReposition)(implicit state: PickleState): Unit = {
+  //       state.pickle(a.id)
+  //       state.pickle(a.newPos)
+  //     }
+  //     override def unpickle(implicit state: UnpickleState): Event.FieldReposition = {
+  //       val id     = state.unpickle[FieldId]
+  //       val newPos = state.unpickle[Option[FieldId]]
+  //       Event.FieldReposition(id, newPos)
+  //     }
+  //   }
+  //
+  // private[v1] implicit val picklerEventFieldStaticAdd: Pickler[Event.FieldStaticAdd] =
+  //   transformPickler(Event.FieldStaticAdd.apply)(_.f)
+  //
+  // private[v1] implicit val picklerEventFieldStaticRemove: Pickler[Event.FieldStaticRemove] =
+  //   transformPickler(Event.FieldStaticRemove.apply)(_.f)
 
   private[v1] implicit val picklerEventFieldCustomDelete: Pickler[Event.FieldCustomDelete] =
     transformPickler(Event.FieldCustomDelete.apply)(_.id)

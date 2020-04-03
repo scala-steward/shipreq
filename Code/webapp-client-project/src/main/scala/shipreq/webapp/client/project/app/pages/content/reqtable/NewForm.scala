@@ -55,7 +55,9 @@ object NewForm {
         codes           = f => (v: f.Value) => c = c.copy(codes = v),
         customTextField = f => (v: f.Value) => c = c.addCustomText(f.field, v),
         implications    = f => (v: f.Value) => c = c.addImps(f.dir, v),
-        tags            = f => (v: f.Value) => c = c.addTags(v),
+        allTags         = f => (v: f.Value) => c = c.addTags(v),
+        otherTags       = f => (v: f.Value) => c = c.addTags(v),
+        customFieldTags = f => (v: f.Value) => c = c.addTags(v),
         title           = f => (v: f.Value) => c = c.copy(title = v))
       o.foreach(_.foldValue(fold))
       Some(c)
@@ -73,7 +75,9 @@ object NewForm {
         codes           = f => (v: f.Value) => c = c.copy(codes = v),
         customTextField = f => (v: f.Value) => c = c.addCustomText(f.field, v),
         implications    = f => (v: f.Value) => c = c.addImps(f.dir, v),
-        tags            = f => (v: f.Value) => c = c.addTags(v),
+        allTags         = f => (v: f.Value) => c = c.addTags(v),
+        otherTags       = f => (v: f.Value) => c = c.addTags(v),
+        customFieldTags = f => (v: f.Value) => c = c.addTags(v),
         title           = f => (v: f.Value) => c = c.copy(title = v))
       o.foreach(_.foldValue(fold))
       Some(c)

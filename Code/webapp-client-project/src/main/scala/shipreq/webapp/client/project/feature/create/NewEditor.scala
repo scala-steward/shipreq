@@ -82,18 +82,22 @@ object NewEditor {
         f => EditRichText.CodeGroupTitle(PreviewId(RowKey.CodeGroup, f), None))
 
       def prepareGR(r: RowKey.GenericReq) = FieldKey.FoldForGenericReq[LogicPerField](
-        _ => EditReqCodes.Multiple.apply,
-        f => EditRichText.CustomTextField(PreviewId(r, f), Some(r.reqTypeId)),
-        f => EditImplications(f.scope),
-        f => EditTags(f.field, r.reqTypeId),
-        f => EditRichText.GenericReqTitle(PreviewId(r, f), Some(r.reqTypeId)))
+        codes           = _ => EditReqCodes.Multiple.apply,
+        customTextField = f => EditRichText.CustomTextField(PreviewId(r, f), Some(r.reqTypeId)),
+        implications    = f => EditImplications(f.scope),
+        otherTags       = f => EditTags.otherTags(r.reqTypeId),
+        allTags         = f => EditTags.allTags(r.reqTypeId),
+        customFieldTags = f => EditTags.customField(r.reqTypeId, f.field),
+        title           = f => EditRichText.GenericReqTitle(PreviewId(r, f), Some(r.reqTypeId)))
 
       def prepareUC(r: RowKey.UseCase.type) = FieldKey.FoldForUseCase[LogicPerField](
-        _ => EditReqCodes.Multiple.apply,
-        f => EditRichText.CustomTextField(PreviewId(r, f), Some(StaticReqType.UseCase)),
-        f => EditImplications(f.scope),
-        f => EditTags(f.field, r.reqTypeId),
-        f => EditRichText.UseCaseTitle(PreviewId(r, f), Some(StaticReqType.UseCase)))
+        codes           = _ => EditReqCodes.Multiple.apply,
+        customTextField = f => EditRichText.CustomTextField(PreviewId(r, f), Some(StaticReqType.UseCase)),
+        implications    = f => EditImplications(f.scope),
+        otherTags       = f => EditTags.otherTags(r.reqTypeId),
+        allTags         = f => EditTags.allTags(r.reqTypeId),
+        customFieldTags = f => EditTags.customField(r.reqTypeId, f.field),
+        title           = f => EditRichText.UseCaseTitle(PreviewId(r, f), Some(StaticReqType.UseCase)))
 
       def prepareMI(r: RowKey.ManualIssue.type) = FieldKey.FoldForManualIssue[LogicPerField](
         f => EditRichTextNonEmpty.ManualIssue(PreviewId(r, f), None))
@@ -254,11 +258,19 @@ object NewEditor {
       import shipreq.webapp.client.project.widgets.TagEditor
       import TagEditor.Lookup
 
-      override type Value = FieldKey.Tags#Value
+      override type Value = Set[ApplicableTagId]
 
-      def apply(fid: Option[CustomField.Tag.Id], reqTypeId: ReqTypeId): InitFn = ictx => {
+      def allTags(reqTypeId: ReqTypeId): InitFn =
+        apply(reqTypeId, Lookup.all)
+
+      def otherTags(reqTypeId: ReqTypeId): InitFn =
+        apply(reqTypeId, Lookup.notUsedInTagFields)
+
+      def customField(reqTypeId: ReqTypeId, fid: CustomField.Tag.Id): InitFn =
+        apply(reqTypeId, Lookup.forTagField(fid))
+
+      def apply(reqTypeId: ReqTypeId, lookupFn: Project => Lookup): InitFn = ictx => {
         import ictx._
-        val lookupFn = fid.fold[Project => Lookup](Lookup.notUsedInTagFields)(Lookup.forTagField)
         val pxLookup = pxProject map lookupFn
         val pxNaTags = pxProject.map(_.config.naTags(reqTypeId))
         startWithStateSnapshot("")(new State(_, pxLookup, pxNaTags))
