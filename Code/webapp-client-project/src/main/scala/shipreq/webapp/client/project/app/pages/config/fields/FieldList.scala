@@ -232,14 +232,14 @@ object FieldList {
               p.usage.fieldLink(id, p.filterDead))
 
           id match {
-            case StaticField.AllTags
-               | StaticField.ImplicationGraph
+            case StaticField.ImplicationGraph
                | StaticField.NormalAltStepTree
                | StaticField.ExceptionStepTree
                | StaticField.StepGraph
                => na
 
             case _: CustomFieldId
+               | StaticField.AllTags
                | StaticField.OtherTags
                => link(id)
           }

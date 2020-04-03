@@ -166,8 +166,8 @@ object FilterAlgebra {
             case (Some(\/-(_: CustomField.Implication))   , DefaultInUse         ) => -\/("Implication fields don't have defaults.")
             case (Some(-\/(f@ Title))                     , _                    ) => blankOnly(-\/(f), f.name)
             case (Some(\/-(f@ StaticField.OtherTags))     , _                    ) => blankOnly(\/-(f), f.name)
-            case (Some(\/-(StaticField.AllTags))          , _                    )
-               | (Some(\/-(StaticField.ImplicationGraph)) , _                    )
+            case (Some(\/-(f@ StaticField.AllTags))       , _                    ) => blankOnly(\/-(f), f.name)
+            case (Some(\/-(StaticField.ImplicationGraph)) , _                    )
                | (Some(\/-(StaticField.NormalAltStepTree)), _                    )
                | (Some(\/-(StaticField.ExceptionStepTree)), _                    )
                | (Some(\/-(StaticField.StepGraph))        , _                    ) => -\/(s"$fieldName can't be used here.")
@@ -394,12 +394,14 @@ object FilterAlgebra {
           val scope = p.config.tagFieldDistribution(filterDead).notUsedInFields
           reqOnly(req => tagLookup(req.id).all.intersect(scope).isEmpty)
 
+        case (FieldAttr.Blank, \/-(StaticField.AllTags)) =>
+          byTag(_.isEmpty)
+
         case (FieldAttr.NotApplicable, -\/(SpecialBuiltInField.Title)) =>
           reqOnly(fail)
 
         case (FieldAttr.Blank,
-                 \/-(StaticField.AllTags)
-               | \/-(StaticField.ImplicationGraph)
+                 \/-(StaticField.ImplicationGraph)
                | \/-(StaticField.NormalAltStepTree)
                | \/-(StaticField.ExceptionStepTree)
                | \/-(StaticField.StepGraph)
