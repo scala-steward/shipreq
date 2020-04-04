@@ -130,8 +130,8 @@ object Sorter {
     case c: C.CustomField =>
       c.id match {
         case id: CustomField.Text       .Id => customTextFieldSorter(id, c)
-        case id: CustomField.Tag        .Id => tagSorter(Row.cfTags ^|-? index(id), _.p.dataLogic.tagOrderByPos)
-        case id: CustomField.Implication.Id => pubidVectorSorter(Row.cfImps ^|-? index(id))
+        case id: CustomField.Tag        .Id => tagSorter(Row.cfTag(id), _.p.dataLogic.tagOrderByPos)
+        case id: CustomField.Implication.Id => pubidVectorSorter(Row.cfImp(id))
       }
     case C.Title                            => titleSorter
     case C.Code                             => reqCodeSorter

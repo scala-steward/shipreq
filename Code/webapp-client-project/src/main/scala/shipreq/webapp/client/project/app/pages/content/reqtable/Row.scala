@@ -132,7 +132,7 @@ object Row {
   })
 
   val reqCodes = Lens[Row, Vector[ReqCode.Value]] {
-    case r: ForReq       => r.exp.reqCodes
+    case r: ForReq       => r.exp.reqCodes.values
     case r: ForCodeGroup => Vector1(r.reqCode)
   }(nv => {
     case ForReq(r, l, c, e, f, i)          => ForReq(r, l, c, e.copyReqCodes(nv), f, i)
@@ -142,7 +142,7 @@ object Row {
   val reqCodesO = reqCodes.asOptional
 
   val reqCodeTree = Lens[Row, Vector[ReqCodeTreeItem]] {
-    case r: ForReq       => r.exp.reqCodeTree
+    case r: ForReq       => r.exp.reqCodeTree.values
     case r: ForCodeGroup => r.reqCodeTreeItem.toVector
   }(nv => {
     case ForReq(r, l, c, e, f, i) => ForReq(r, l, c, e.copyReqCodeTree(nv), f, i)
@@ -153,20 +153,30 @@ object Row {
     }
   })
 
-  type OV[A]     = Optional[Row, Vector[A]]
-  type OMV[K, V] = Optional[Row, Map[K, Vector[V]]]
+  private def mapExpansionValues[K, V](k: K): Lens[Map[K, Expansion[V]], Vector[V]] =
+    Lens[Map[K, Expansion[V]], Vector[V]](
+      _.get(k).fold(Vector.empty[V])(_.values))(
+      vs => m => m.updated(k, m.get(k).fold(Expansion(vs, Set.empty))(_.copy(values = vs))))
 
-  val implications: Direction => OV[Pubid] =
-    Direction.memo(Row.expansion ^|-> Expansions.implications ^|-> Direction.Values.lens(_))
+  val implications: Direction => Optional[Row, Vector[Pubid]] =
+    Direction.memo(Row.expansion ^|-> Expansions.implications ^|-> Direction.Values.lens(_) ^|-> Expansion.values)
 
-  val cfImps   : OMV[CustomField.Implication.Id, Pubid]   = Row.expansion ^|-> Expansions.cfImps
-  val cfTags   : OMV[CustomField.Tag.Id, ApplicableTagId] = Row.expansion ^|-> Expansions.cfTags
-  val otherTags: OV[ApplicableTagId]                      = Row.expansion ^|-> Expansions.otherTags
-  val allTags  : OV[ApplicableTagId]                      = Row.expansion ^|-> Expansions.allTags
+  val otherTags: Optional[Row, Vector[ApplicableTagId]] =
+    Row.expansion ^|-> Expansions.otherTags ^|-> Expansion.values
 
-  private def mmLens[K, V](k: K): Lens[Map[K, Vector[V]], Vector[V]] =
-    Lens[Map[K, Vector[V]], Vector[V]](_.getOrElse(k, Vector.empty))(vs => _.updated(k, vs))
+  val allTags: Optional[Row, Vector[ApplicableTagId]] =
+    Row.expansion ^|-> Expansions.allTags ^|-> Expansion.values
 
-  def cfImp(id: CustomField.Implication.Id): OV[Pubid]           = cfImps ^|-> mmLens(id)
-  def cfTag(id: CustomField.Tag        .Id): OV[ApplicableTagId] = cfTags ^|-> mmLens(id)
+  val cfImps: Optional[Row, Map[CustomField.Implication.Id, Expansion[Pubid]]] =
+    Row.expansion ^|-> Expansions.cfImps
+
+  val cfTags: Optional[Row, Map[CustomField.Tag.Id, Expansion[ApplicableTagId]]] =
+    Row.expansion ^|-> Expansions.cfTags
+
+  def cfImp(id: CustomField.Implication.Id): Optional[Row, Vector[Pubid]] =
+    cfImps ^|-> mapExpansionValues(id)
+
+  def cfTag(id: CustomField.Tag.Id): Optional[Row, Vector[ApplicableTagId]] =
+    cfTags ^|-> mapExpansionValues(id)
+
 }

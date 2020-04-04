@@ -27,7 +27,7 @@ object LogicTestUtil {
   def codesInRow(r: Row): Vector[ReqCode.Value] =
   // Don't use optics here
     r match {
-      case r: Row.ForReq       => r.exp.reqCodes
+      case r: Row.ForReq       => r.exp.reqCodes.values
       case r: Row.ForCodeGroup => Vector1(r.reqCode)
     }
 
@@ -255,7 +255,7 @@ object LogicTest extends TestSuite {
     rowToStrAp2(rowToPubid(p), f)((a, b) => if (b ==* z) a else a + ":" + b)
 
   private val rowToReqCodes: Row => String =
-    rowToAsToStr(_.exp.reqCodes, r => Vector1(r.reqCode))(PlainText.reqCode)
+    rowToAsToStr(_.exp.reqCodes.values, r => Vector1(r.reqCode))(PlainText.reqCode)
 
   private val pubidSep = " +".r.pattern
   private val pubidFmt = "^([A-Z]+)-(\\d+)$".r

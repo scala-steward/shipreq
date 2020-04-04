@@ -64,7 +64,7 @@ object LogicPropTest extends TestSuite {
     def noEmptyAndNonEmptyReqCodesMixed = {
       val data: List[Vector[Vector[ReqCode.Value]]] =
         Multimap.empty[ReqId, Vector, Vector[ReqCode.Value]]
-          .addPairs(gatheredG.map(r => (r.req.id, r.exp.reqCodes)): _*)
+          .addPairs(gatheredG.map(r => (r.req.id, r.exp.reqCodes.values)): _*)
           .m.values.toList
       E.forall(data)(l =>
         E.test("Either all empty or all non-empty", !(l.exists(_.isEmpty) && l.exists(_.nonEmpty))))

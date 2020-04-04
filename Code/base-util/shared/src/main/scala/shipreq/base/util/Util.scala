@@ -6,7 +6,7 @@ import japgolly.microlibs.utils.Memo
 import japgolly.univeq.UnivEq
 import java.net.URL
 import scala.annotation.tailrec
-import scalaz.{-\/, Order, \/, \/-}
+import scalaz.{-\/, Equal, Order, \/, \/-}
 import scalaz.std.anyVal.intInstance
 import scala.collection.GenTraversable
 import scala.collection.generic.CanBuildFrom
@@ -354,4 +354,13 @@ object Util {
         None
     }
   }
+
+  def vectorConcatDistinct[A](x: Vector[A], y: Vector[A])(implicit e: Equal[A]): Vector[A] =
+    if (x eq y)
+      x
+    else if (x.isEmpty)
+      y
+    else
+      y.foldLeft(x)((q, a) =>
+        if (x.exists(e.equal(_, a))) q else q :+ a)
 }

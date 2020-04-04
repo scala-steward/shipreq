@@ -329,21 +329,21 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
       val viewReq = ViewReq.Data(
         req              = row.req,
         live             = row.live,
-        codes            = row.exp.reqCodes,
-        allTags          = row.exp.allTags,
-        otherTags        = row.exp.otherTags,
-        customTags       = row.exp.cfTags.getOrElse(_, Vector.empty),
+        codes            = row.exp.reqCodes.result,
+        allTags          = row.exp.allTags.result,
+        otherTags        = row.exp.otherTags.result,
+        customTags       = row.exp.cfTags.get(_).fold(Vector.empty[ApplicableTagId])(_.result),
         invalidTags      = row.invalidTags,
-        generalImps      = row.exp.implications.apply,
-        customImps       = row.exp.cfImps.getOrElse(_, Vector.empty),
+        generalImps      = row.exp.implications(_).result,
+        customImps       = row.exp.cfImps.get(_).fold(Vector.empty[Pubid])(_.result),
         pastPubids       = SortedSet.empty[ExternalPubid], // ReqTable doesn't display pastPubids
         impsAreMandatory = cfg.reqTypes.idsRequiringImplication.contains(row.req.reqTypeId),
         fieldRules       = row.fieldRules
       ).apply(pw)
 
       def renderCodes: VdomElement =
-        if (row.exp.reqCodeTree.nonEmpty)
-          pw.reqCodeTree(row.exp.reqCodeTree)
+        if (row.exp.reqCodeTree.values.nonEmpty)
+          pw.reqCodeTree(row.exp.reqCodeTree.values)
         else
           viewReq.codes
 

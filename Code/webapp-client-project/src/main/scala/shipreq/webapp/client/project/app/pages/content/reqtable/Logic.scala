@@ -29,57 +29,68 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Expansion
 
-  private type Expanded[A] = NonEmptyVector[Vector[A]]
+  /**
+    * Nothing to expand = [ [] ]
+    * Don't expand      = [ [a,b,c] ]
+    * Expanded          = [ [a], [b], [c] ]
+    */
+  private case class Expanded[A](exp: NonEmptyVector[Vector[A]], original: Set[A]) {
+    def isEmpty: Boolean =
+      exp.head.isEmpty && exp.tail.isEmpty
+
+    def expansions: NonEmptyVector[Expansion[A]] =
+      exp.map(Expansion(_, original))
+  }
+
+  private object Expanded {
+
+  def empty[A]: Expanded[A] =
+    Expanded(NonEmptyVector.one(Vector.empty), Set.empty)
+
+    /**
+     * @param visible Is the column visible? If not, just pretend everything is empty.
+     * @param expand  When visible, does the data need to be expanded?
+     */
+    def build[A](visible: Boolean, expand: => Boolean): Expander[A] = {
+      @inline def nonEmpty(f: (A, Vector[A]) => NonEmptyVector[Vector[A]]): Expander[A] =
+        dataFn => {
+          val set = dataFn()
+          if (set.isEmpty)
+            empty
+          else {
+            val vec = set.toVector
+            val exp = f(vec.head, vec.tail)
+            Expanded(exp, set)
+          }
+        }
+
+      def doExpand: Expander[A] =
+        nonEmpty((h, t) =>
+          NonEmptyVector(Vector1(h), t map Vector1))
+
+      def dontExpand: Expander[A] =
+        nonEmpty((h, t) => NonEmptyVector.one(h +: t))
+
+      if (visible) {
+        if (expand) doExpand else dontExpand
+      } else
+        _ => empty
+    }
+
+    def forColumn[A](view: View, c: Column.SortInconclusive): Expander[A] =
+      build(view isVisible c, view isOrderedI c)
+  }
+
   private type Expander[A] = (() => Set[A]) => Expanded[A]
 
   private final val emptyExpansions: NonEmptyVector[Expansions] =
     NonEmptyVector.one(Expansions.empty)
 
-  @inline private def emptyExpanded[A]: Expanded[A] =
-    NonEmptyVector.one(Vector.empty)
-
-  @inline private def isEmptyExp[A](e: Expanded[A]): Boolean =
-    e.head.isEmpty && e.tail.isEmpty
-
-  /**
-   * Nothing to expand = [ [] ]
-   * Don't expand      = [ [a,b,c] ]
-   * Expanded          = [ [a], [b], [c] ]
-   *
-   * @param visible Is the column visible? If not, just pretend everything is empty.
-   * @param expand  When visible, does the data need to be expanded?
-   */
-  private def expander[A](visible: Boolean, expand: => Boolean): Expander[A] = {
-    @inline def nonEmpty(f: (A, Vector[A]) => Expanded[A]): Expander[A] =
-      e => {
-        val v = e().toVector
-        if (v.isEmpty)
-          emptyExpanded
-        else
-          f(v.head, v.tail)
-      }
-
-    def doExpand: Expander[A] =
-      nonEmpty((h, t) =>
-        NonEmptyVector(Vector1(h), t map Vector1))
-
-    def dontExpand: Expander[A] =
-      nonEmpty((h, t) => NonEmptyVector.one(h +: t))
-
-    if (visible) {
-      if (expand) doExpand else dontExpand
-    } else
-      _ => emptyExpanded
-  }
-
-  private def expanderC[A](view: View, c: Column.SortInconclusive): Expander[A] =
-    expander(view isVisible c, view isOrderedI c)
-
   private def fieldExpander[A: UnivEq](view  : View,
                                        col   : Column.SortInconclusive,
                                        ap    : ProjectApplicability[Column, ReqTypeId],
                                        dataFn: ReqId => Set[A]): Req => Expanded[A] = {
-    val expander = expanderC[A](view, col)
+    val expander = Expanded.forColumn[A](view, col)
     r => expander(() =>
       ap(r.reqTypeId, col) match {
         case Applicable    => dataFn(r.id)
@@ -116,16 +127,16 @@ private[reqtable] object Logic {
                                     tagLookup   : TagLookup): Req => Map[CustomField.Tag.Id, Expanded[ApplicableTagId]] =
     customFieldExpander(view, ap, fid => DataLogic.customFieldTags(tagFieldDist, tagLookup, fid))
 
-  private def expandMapValues[K, V](src: Map[K, Expanded[V]]): NonEmptyVector[Map[K, Vector[V]]] = {
-    type M = Map[K, Vector[V]]
+  private def expandMapValues[K, V](src: Map[K, Expanded[V]]): NonEmptyVector[Map[K, Expansion[V]]] = {
+    type M = Map[K, Expansion[V]]
     def go(keys: Vector[K], cur: M, r: Vector[M]): NonEmptyVector[M] =
       if (keys.isEmpty)
         NonEmptyVector(cur, r)
       else {
         val k  = keys.head
         val ks = keys.tail
-        @inline def next(ms: Vector[M], v: Vector[V]) = go(ks, cur.updated(k, v), ms)
-        src(k).foldMapLeft1(next(r, _))((r2, v) => next(r2.whole, v))
+        @inline def next(ms: Vector[M], v: Expansion[V]) = go(ks, cur.updated(k, v), ms)
+        src(k).expansions.foldMapLeft1(next(r, _))((r2, v) => next(r2.whole, v))
       }
     go(src.keys.toVector, Map.empty, Vector.empty)
   }
@@ -150,24 +161,24 @@ private[reqtable] object Logic {
                          otherTags: Expanded[ApplicableTagId],
                          allTags  : Expanded[ApplicableTagId],
                         ): NonEmptyVector[Expansions] =
-    if (   isEmptyExp(codes)
-        && isEmptyExp(imps(Backwards))
-        && isEmptyExp(imps(Forwards))
-        && isEmptyExp(otherTags)
-        && isEmptyExp(allTags)
-        && cfImps.values.forall(isEmptyExp)
-        && cfTags.values.forall(isEmptyExp)
+    if (   codes.isEmpty
+        && imps(Backwards).isEmpty
+        && imps(Forwards).isEmpty
+        && otherTags.isEmpty
+        && allTags.isEmpty
+        && cfImps.values.forall(_.isEmpty)
+        && cfTags.values.forall(_.isEmpty)
     )
       emptyExpansions
     else
       for {
-        a <- imps(Backwards)
-        b <- imps(Forwards)
-        c <- codes
+        a <- imps(Backwards).expansions
+        b <- imps(Forwards).expansions
+        c <- codes.expansions
         d <- expandMapValues(cfImps)
         e <- expandMapValues(cfTags)
-        f <- otherTags
-        g <- allTags
+        f <- otherTags.expansions
+        g <- allTags.expansions
       } yield {
         val imps2 = Direction.Values {
           case Backwards => a
@@ -176,7 +187,7 @@ private[reqtable] object Logic {
         Expansions(
           implications = imps2,
           reqCodes     = c,
-          reqCodeTree  = Vector.empty[ReqCodeTreeItem],
+          reqCodeTree  = Expansion.empty[ReqCodeTreeItem],
           cfImps       = d,
           cfTags       = e,
           otherTags    = f,
@@ -213,8 +224,8 @@ private[reqtable] object Logic {
     val tagFieldDist    = DataLogic.tagFieldDist(p.config, fd, Some(f => view isVisible Column.CustomField(f)))
     val tagLookup       = p.dataLogic.tagLookup(fd)
     val applicability   = Column.applicabilityForReq(p.config.applicability)
-    val expandImps      = Direction.memo(dir => expanderC[Pubid](view, Column.Implications(dir)))
-    val expandCodes     = expanderC[ReqCode.Value](view, Column.Code)
+    val expandImps      = Direction.memo(dir => Expanded.forColumn[Pubid](view, Column.Implications(dir)))
+    val expandCodes     = Expanded.forColumn[ReqCode.Value](view, Column.Code)
     val expandImpCols   = impColValueExpander(view, fd, p, applicability)
     val expandTagCols   = tagFieldValueExpander(view, applicability, tagFieldDist, tagLookup)
     val expandOtherTags = otherTagsValueExpander(view, applicability, tagFieldDist, tagLookup)
@@ -262,7 +273,7 @@ private[reqtable] object Logic {
       val output              = cbf()
       val restorableRCGs      = DataLog.list[Row.ForCodeGroup].disableUnless(restoreFilteredRCGs)
       val codesSeen           = DataLog.mtrie[ReqCode.Node].disableUnless(restoreFilteredRCGs)
-      val seeExpandedCodes    = codesSeen.addFn[Expanded[ReqCode.Value]](add => _.foreach(_ foreach add))
+      val seeExpandedCodes    = codesSeen.addFn[Expanded[ReqCode.Value]](add => _.exp.foreach(_ foreach add))
       val fieldRulesByReqType = p.config.fieldRules(fd)
 
       // Add requirements
