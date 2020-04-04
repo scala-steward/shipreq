@@ -136,5 +136,4 @@ Phase 3A
 v2.1
 ========================================================================================================================
 
-* tag expansion should still retain all values (else we're presenting wrong information)
 * New issues screen

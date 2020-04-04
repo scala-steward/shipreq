@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.app.pages.content.reqtable
 import japgolly.microlibs.nonempty._
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
-import monocle.Optional
+import monocle.{Lens, Optional}
 import scala.annotation.tailrec
 import scalaz.{-\/, Equal, \/-}
 import sourcecode.Line
@@ -127,6 +127,15 @@ object LogicTest extends TestSuite {
   }
 
   private def defaultOrder = View.default.order
+
+  private def expansionResults[A]: Lens[Expansion[A], Vector[A]] =
+    Lens[Expansion[A], Vector[A]](_.result)(_ => identity)
+
+  private val otherTags: Optional[Row, Vector[ApplicableTagId]] =
+    Row.expansion ^|-> Expansions.otherTags ^|-> expansionResults
+
+  private val allTags: Optional[Row, Vector[ApplicableTagId]] =
+    Row.expansion ^|-> Expansions.allTags ^|-> expansionResults
 
   private def testUnsorted[A: Equal](p: Project, c: C, f: Filter, fd: FilterDead, extract: Rows => A)(expect: A)(implicit l: Line): Unit =
     testUnsorted2(p, NonEmptyVector one c, f, fd, extract)(expect)
@@ -315,7 +324,7 @@ object LogicTest extends TestSuite {
     def t(ids: ApplicableTagId*) = GReq().tag(ids: _*)
     val p       = t(wip, defer, priHigh, priMed, priLow) ! PA
     val p2      = clearCustomFields(p)
-    val fmtRows = rowToTagTxt(p, Row.otherTags)
+    val fmtRows = rowToTagTxt(p, otherTags)
     testUnsorted(p2, C.OtherTags, None, ShowDead, fmtRows)("defer,pri=high,pri=low,pri=med,wip")
   }
 
@@ -591,7 +600,7 @@ object LogicTest extends TestSuite {
 
   def testFilterDeadTags(): Unit = {
     val p       = GReq(reqType = fr).tag(v1x, v3x) ! P1
-    val fmtRows = rowToTagTxt(p, Row.otherTags)
+    val fmtRows = rowToTagTxt(p, otherTags)
     testUnsorted(p, C.OtherTags, None, ShowDead, fmtRows)("v1.x,v3.x")
     testUnsorted(p, C.OtherTags, None, HideDead, fmtRows)("v1.x")
   }
@@ -599,7 +608,7 @@ object LogicTest extends TestSuite {
   def testFilterDeadTagsInCustomTagField(): Unit = {
     val p        = GReq(reqType = fr).tag(wip, uat, v1x) ! P1
     val fmtRowsC = rowToTagTxt(p, Row cfTag statusField)
-    val fmtRowsT = rowToTagTxt(p, Row.otherTags)
+    val fmtRowsT = rowToTagTxt(p, otherTags)
     testUnsorted(p, statusField, None, ShowDead, fmtRowsC)("wip,uat")
     testUnsorted(p, statusField, None, HideDead, fmtRowsC)("wip")
     testUnsorted(p, C.OtherTags, None, ShowDead, fmtRowsT)("v1.x")
@@ -609,7 +618,7 @@ object LogicTest extends TestSuite {
   def testFilterDeadCustomTagField() = {
     val p        = GReq(reqType = fr).tag(v09, v10, v2x) ! P1
     val fmtRowsC = rowToTagTxt(p, Row cfTag relField)
-    val fmtRowsT = rowToTagTxt(p, Row.otherTags)
+    val fmtRowsT = rowToTagTxt(p, otherTags)
     // dead-customfield visible
     val both = NonEmptyVector[C](C.OtherTags, relField)
     testUnsorted(p, relField, None, ShowDead, fmtRowsC)("v0.9,v1.0")
@@ -650,7 +659,7 @@ object LogicTest extends TestSuite {
     private val L = ":defer"
     private val D = ":uat"
 
-    private val fmtRowsNoFilter = prefixWithPubidNoZ(p, rowToTagTxt(p, Row.otherTags))
+    private val fmtRowsNoFilter = prefixWithPubidNoZ(p, rowToTagTxt(p, otherTags))
     private val fmtRowsHasFilter = rowToPubid(p)
 
     private def test(fd: FilterDead)(tags: String*): Unit = {
@@ -747,7 +756,7 @@ object LogicTest extends TestSuite {
         .cftext(reporterField, allLiveTags map Text.CustomTextField.TagRef) // dead column has no effect
         .tag(direct: _*)
     val p       = t()()() + t(v10)(v12)(v1x, v1x) + t(v2x)(v2x, v11)(v11) ! PA
-    val fmtRows = rowToTagTxt(p, Row.otherTags)
+    val fmtRows = rowToTagTxt(p, otherTags)
     testUnsorted(p, C.OtherTags, None, HideDead, fmtRows)(s"$z  v1.0,v1.2,v1.x  v1.1,v2.x")
     // The Tags column is *not* expanded. Only custom tag columns are.
 //      testCB(p, pt, C.Tags, None, HideDead, fmtRows)(allSortsCB(1,
@@ -1222,24 +1231,24 @@ object LogicTest extends TestSuite {
     // DD    1        2           3            4           5                    6 (∅)    7                8
     val p1 = GReq() + t(priLow) + t(priHigh) + t(priMed) + t(priLow, priHigh) + t(wip) + t(priMed, v10) + t(v10, priLow) ! P1
     val p  = applyEventSuccessfully(p1, E.FieldCustomDelete(priField))
-    val fmtRows = prefixWithPubid(p, rowToTagTxt(p, Row.otherTags))
+    val fmtRows = prefixWithPubid(p, rowToTagTxt(p, otherTags))
 
     // Order: pri=high pri=low pri=med v10
     testCB(p, C.OtherTags, None, ShowDead, fmtRows)(allSortsCB(2,
-      asc  = "DD-3:pri=high  DD-5:pri=high  DD-2:pri=low  DD-5:pri=low  DD-8:pri=low  DD-4:pri=med  DD-7:pri=med,v1.0  DD-8:v1.0",
-      desc = "DD-7:v1.0  DD-8:v1.0  DD-4:pri=med  DD-7:pri=med  DD-2:pri=low  DD-5:pri=low  DD-8:pri=low  DD-3:pri=high  DD-5:pri=high"))
+      asc  = "DD-3:pri=high  DD-5:pri=high,pri=low  DD-2:pri=low  DD-5:pri=low,pri=high  DD-8:pri=low,v1.0  DD-4:pri=med  DD-7:pri=med,v1.0  DD-8:v1.0,pri=low",
+      desc = "DD-7:v1.0,pri=med  DD-8:v1.0,pri=low  DD-4:pri=med  DD-7:pri=med,v1.0  DD-2:pri=low  DD-5:pri=low,pri=high  DD-8:pri=low,v1.0  DD-3:pri=high  DD-5:pri=high,pri=low"))
   }
 
   def testAllTags_expansion(): Unit = {
     def t(ids: ApplicableTagId*) = GReq(reqType = dd).tag(ids: _*)
     // DD   1        2           3            4           5                    6        7                8
     val p = GReq() + t(priLow) + t(priHigh) + t(priMed) + t(priLow, priHigh) + t(wip) + t(priMed, v10) + t(v10, priLow) ! P1
-    val fmtRows = prefixWithPubid(p, rowToTagTxt(p, Row.allTags))
+    val fmtRows = prefixWithPubid(p, rowToTagTxt(p, allTags))
 
     // Order: pri=high pri=low pri=med v10 wip
     testCB(p, C.AllTags, None, ShowDead, fmtRows)(allSortsCB(1,
-      asc  = "DD-3:pri=high  DD-5:pri=high  DD-2:pri=low  DD-5:pri=low  DD-8:pri=low  DD-4:pri=med  DD-7:pri=med,v1.0  DD-8:v1.0  DD-6:wip",
-      desc = "DD-6:wip  DD-7:v1.0  DD-8:v1.0  DD-4:pri=med  DD-7:pri=med  DD-2:pri=low  DD-5:pri=low  DD-8:pri=low  DD-3:pri=high  DD-5:pri=high"))
+      asc  = "DD-3:pri=high  DD-5:pri=high,pri=low  DD-2:pri=low  DD-5:pri=low,pri=high  DD-8:pri=low,v1.0  DD-4:pri=med  DD-7:pri=med,v1.0  DD-8:v1.0,pri=low  DD-6:wip",
+      desc = "DD-6:wip  DD-7:v1.0,pri=med  DD-8:v1.0,pri=low  DD-4:pri=med  DD-7:pri=med,v1.0  DD-2:pri=low  DD-5:pri=low,pri=high  DD-8:pri=low,v1.0  DD-3:pri=high  DD-5:pri=high,pri=low"))
   }
 
   // ===================================================================================================================

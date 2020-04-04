@@ -156,7 +156,7 @@ object Row {
   private def mapExpansionValues[K, V](k: K): Lens[Map[K, Expansion[V]], Vector[V]] =
     Lens[Map[K, Expansion[V]], Vector[V]](
       _.get(k).fold(Vector.empty[V])(_.values))(
-      vs => m => m.updated(k, m.get(k).fold(Expansion(vs, Set.empty))(_.copy(values = vs))))
+      vs => m => m.updated(k, m.get(k).fold(Expansion(vs, vs))(_.copy(values = vs))))
 
   val implications: Direction => Optional[Row, Vector[Pubid]] =
     Direction.memo(Row.expansion ^|-> Expansions.implications ^|-> Direction.Values.lens(_) ^|-> Expansion.values)

@@ -34,7 +34,7 @@ private[reqtable] object Logic {
     * Don't expand      = [ [a,b,c] ]
     * Expanded          = [ [a], [b], [c] ]
     */
-  private case class Expanded[A](exp: NonEmptyVector[Vector[A]], original: Set[A]) {
+  private case class Expanded[+A](exp: NonEmptyVector[Vector[A]], original: Vector[A]) {
     def isEmpty: Boolean =
       exp.head.isEmpty && exp.tail.isEmpty
 
@@ -44,29 +44,34 @@ private[reqtable] object Logic {
 
   private object Expanded {
 
-  def empty[A]: Expanded[A] =
-    Expanded(NonEmptyVector.one(Vector.empty), Set.empty)
+    val empty: Expanded[Nothing] =
+      Expanded(NonEmptyVector.one(Vector.empty), Vector.empty)
 
     /**
+     * [[UnivEq]] is required just as an extra check because [[Expander]] provides a `Set[A]`.
+     *
      * @param visible Is the column visible? If not, just pretend everything is empty.
      * @param expand  When visible, does the data need to be expanded?
      */
-    def build[A](visible: Boolean, expand: => Boolean): Expander[A] = {
+    private def build[A: UnivEq](visible: Boolean, expand: => Boolean, ordering: => Option[Ordering[A]]): Expander[A] = {
       @inline def nonEmpty(f: (A, Vector[A]) => NonEmptyVector[Vector[A]]): Expander[A] =
         dataFn => {
           val set = dataFn()
           if (set.isEmpty)
             empty
           else {
-            val vec = set.toVector
+            val vec =
+              ordering match {
+                case Some(ord) => MutableArray(set).sort(ord).iterator.toVector
+                case None      => set.toVector
+              }
             val exp = f(vec.head, vec.tail)
-            Expanded(exp, set)
+            Expanded(exp, vec)
           }
         }
 
       def doExpand: Expander[A] =
-        nonEmpty((h, t) =>
-          NonEmptyVector(Vector1(h), t map Vector1))
+        nonEmpty((h, t) => NonEmptyVector(Vector1(h), t map Vector1))
 
       def dontExpand: Expander[A] =
         nonEmpty((h, t) => NonEmptyVector.one(h +: t))
@@ -77,8 +82,13 @@ private[reqtable] object Logic {
         _ => empty
     }
 
-    def forColumn[A](view: View, c: Column.SortInconclusive): Expander[A] =
-      build(view isVisible c, view isOrderedI c)
+    def forColumn[A: UnivEq](view: View, c: Column.SortInconclusive, ordering: => Option[Ordering[A]]): Expander[A] = {
+      lazy val orderCriteria = view.order.init.find(_.column ==* c)
+      build(
+        view.isVisible(c),
+        orderCriteria.isDefined,
+        if (orderCriteria.exists(_.method.descending)) ordering.map(_.reverse) else ordering)
+    }
   }
 
   private type Expander[A] = (() => Set[A]) => Expanded[A]
@@ -86,11 +96,12 @@ private[reqtable] object Logic {
   private final val emptyExpansions: NonEmptyVector[Expansions] =
     NonEmptyVector.one(Expansions.empty)
 
-  private def fieldExpander[A: UnivEq](view  : View,
-                                       col   : Column.SortInconclusive,
-                                       ap    : ProjectApplicability[Column, ReqTypeId],
-                                       dataFn: ReqId => Set[A]): Req => Expanded[A] = {
-    val expander = Expanded.forColumn[A](view, col)
+  private def fieldExpander[A: UnivEq](view    : View,
+                                       col     : Column.SortInconclusive,
+                                       ap      : ProjectApplicability[Column, ReqTypeId],
+                                       dataFn  : ReqId => Set[A],
+                                       ordering: => Option[Ordering[A]]): Req => Expanded[A] = {
+    val expander = Expanded.forColumn[A](view, col, ordering)
     r => expander(() =>
       ap(r.reqTypeId, col) match {
         case Applicable    => dataFn(r.id)
@@ -100,7 +111,8 @@ private[reqtable] object Logic {
 
   private def customFieldExpander[K <: CustomFieldId : ClassTag, V: UnivEq](view: View,
                                                                             ap: ProjectApplicability[Column, ReqTypeId],
-                                                                            f: K => ReqId => Set[V]): Req => Map[K, Expanded[V]] = {
+                                                                            f: K => ReqId => Set[V],
+                                                                            ordering: => Option[Ordering[V]]): Req => Map[K, Expanded[V]] = {
 
     val cols = view.columns.whole.collect { case c@ Column.CustomField(id: K) => (id, c) }
 
@@ -108,24 +120,72 @@ private[reqtable] object Logic {
         val colId  = ct._1
         val col    = ct._2
         val dataFn = f(colId)
-        val fn     = fieldExpander(view, col, ap, dataFn)
+        val fn     = fieldExpander(view, col, ap, dataFn, ordering)
         (colId, fn)
       }.toMap
 
     req => expandersPerCol.mapValuesNow(_(req))
   }
 
-  private def impColValueExpander(view: View,
-                                  fd  : FilterDead,
-                                  p   : Project,
-                                  ap  : ProjectApplicability[Column, ReqTypeId]): Req => Map[CustomField.Implication.Id, Expanded[Pubid]] =
-    customFieldExpander(view: View, ap, p.dataLogic.customFieldImps(fd))
+  private def impExpander(view: View,
+                          fd  : FilterDead,
+                          p   : Project,
+                          ap  : ProjectApplicability[Column, ReqTypeId]): Req => Map[CustomField.Implication.Id, Expanded[Pubid]] =
+    customFieldExpander(
+      view,
+      ap,
+      p.dataLogic.customFieldImps(fd),
+      Some(Sorter.orderingForImpField(p.dataLogic)))
 
-  private def tagFieldValueExpander(view        : View,
+  private def impExpander(dir      : Direction,
+                          view     : View,
+                          dataLogic: DataLogic): Expander[Pubid] =
+    Expanded.forColumn[Pubid](
+      view,
+      Column.Implications(dir),
+      Some(Sorter.orderingForImpField(dataLogic)))
+
+  private def tagFieldExpander(view        : View,
                                     ap          : ProjectApplicability[Column, ReqTypeId],
+                                    dataLogic   : DataLogic,
                                     tagFieldDist: TagFieldDistribution.TagIds,
                                     tagLookup   : TagLookup): Req => Map[CustomField.Tag.Id, Expanded[ApplicableTagId]] =
-    customFieldExpander(view, ap, fid => DataLogic.customFieldTags(tagFieldDist, tagLookup, fid))
+    customFieldExpander(
+      view,
+      ap,
+      fid => DataLogic.customFieldTags(tagFieldDist, tagLookup, fid),
+      Some(Sorter.orderingForTagField(dataLogic)))
+
+  private def otherTagsExpander(view        : View,
+                                     ap          : ProjectApplicability[Column, ReqTypeId],
+                                     dataLogic   : DataLogic,
+                                     tagFieldDist: TagFieldDistribution.TagIds,
+                                     tagLookup   : TagLookup): Req => Expanded[ApplicableTagId] = {
+    fieldExpander(
+      view,
+      Column.OtherTags,
+      ap,
+      DataLogic.otherTags(tagFieldDist, tagLookup),
+      Some(Sorter.orderingForOtherTags(dataLogic)))
+  }
+
+  private def allTagsExpander(view     : View,
+                                   ap       : ProjectApplicability[Column, ReqTypeId],
+                                   dataLogic: DataLogic,
+                                   tagLookup: TagLookup): Req => Expanded[ApplicableTagId] = {
+    fieldExpander(
+      view,
+      Column.AllTags,
+      ap,
+      tagLookup(_).all,
+      Some(Sorter.orderingForAllTags(dataLogic)))
+  }
+
+  private def codeExpander(view: View): Expander[ReqCode.Value] =
+    Expanded.forColumn[ReqCode.Value](
+      view,
+      Column.Code,
+      None)
 
   private def expandMapValues[K, V](src: Map[K, Expanded[V]]): NonEmptyVector[Map[K, Expansion[V]]] = {
     type M = Map[K, Expansion[V]]
@@ -139,19 +199,6 @@ private[reqtable] object Logic {
         src(k).expansions.foldMapLeft1(next(r, _))((r2, v) => next(r2.whole, v))
       }
     go(src.keys.toVector, Map.empty, Vector.empty)
-  }
-
-  private def otherTagsValueExpander(view        : View,
-                                     ap          : ProjectApplicability[Column, ReqTypeId],
-                                     tagFieldDist: TagFieldDistribution.TagIds,
-                                     tagLookup   : TagLookup): Req => Expanded[ApplicableTagId] = {
-    fieldExpander(view, Column.OtherTags, ap, DataLogic.otherTags(tagFieldDist, tagLookup))
-  }
-
-  private def allTagsValueExpander(view     : View,
-                                   ap       : ProjectApplicability[Column, ReqTypeId],
-                                   tagLookup: TagLookup): Req => Expanded[ApplicableTagId] = {
-    fieldExpander(view, Column.AllTags, ap, tagLookup(_).all)
   }
 
   private def expansions(imps     : Direction.Values[Expanded[Pubid]],
@@ -187,7 +234,7 @@ private[reqtable] object Logic {
         Expansions(
           implications = imps2,
           reqCodes     = c,
-          reqCodeTree  = Expansion.empty[ReqCodeTreeItem],
+          reqCodeTree  = Expansion.empty,
           cfImps       = d,
           cfTags       = e,
           otherTags    = f,
@@ -201,7 +248,7 @@ private[reqtable] object Logic {
   /**
    * Gathers [[Row]]s for display in [[Table]].
    * Performs expansion.
-   * Does not perform any sorting.
+   * Does not perform any sorting with the exception of expansion values.
    */
   def gather[C[_]](p             : Project,
                    view          : View,
@@ -214,22 +261,21 @@ private[reqtable] object Logic {
     //
     // * Column.ImplicationSrc isn't transitive; custom implication columns are.
     //   There can potentially be overlap but culling this could be misleading.
-    //
-    // * The Tags column is not expanded. Only custom tag columns are.
 
+    val dataLogic       = p.dataLogic
     val fd              = view.filterDead
     val filterDeadReq   = fd.filterFn.contramap[Req](_ live p.config.reqTypes)
     val filterDeadRCG   = fd.filterFn.contramap[CodeGroup](_.live)
     val filterDead      = CompiledFilter(filterDeadReq, filterDeadRCG, OptionalBoolFn.empty)
     val tagFieldDist    = DataLogic.tagFieldDist(p.config, fd, Some(f => view isVisible Column.CustomField(f)))
-    val tagLookup       = p.dataLogic.tagLookup(fd)
+    val tagLookup       = dataLogic.tagLookup(fd)
     val applicability   = Column.applicabilityForReq(p.config.applicability)
-    val expandImps      = Direction.memo(dir => Expanded.forColumn[Pubid](view, Column.Implications(dir)))
-    val expandCodes     = Expanded.forColumn[ReqCode.Value](view, Column.Code)
-    val expandImpCols   = impColValueExpander(view, fd, p, applicability)
-    val expandTagCols   = tagFieldValueExpander(view, applicability, tagFieldDist, tagLookup)
-    val expandOtherTags = otherTagsValueExpander(view, applicability, tagFieldDist, tagLookup)
-    val expandAllTags   = allTagsValueExpander(view, applicability, tagLookup)
+    val expandImps      = Direction.memo(impExpander(_, view, dataLogic))
+    val expandCodes     = codeExpander(view)
+    val expandImpCols   = impExpander(view, fd, p, applicability)
+    val expandTagCols   = tagFieldExpander(view, applicability, dataLogic, tagFieldDist, tagLookup)
+    val expandOtherTags = otherTagsExpander(view, applicability, dataLogic, tagFieldDist, tagLookup)
+    val expandAllTags   = allTagsExpander(view, applicability, dataLogic, tagLookup)
 
     // The segregation of live/dead is because live reqs can have inactive reqcodes (leftovers of CodeRefs).
     // It would be erroneous to display inactive reqs for a live req.
@@ -334,7 +380,7 @@ private[reqtable] object Logic {
     val last   = view.order.last |> Sorter.conclusive
     val sorter = new FusedSorters(NonEmptyVector.end(init, last))
     val setup  = new Sorter.Setup(p, pt)
-    sorter.result(setup, Sorter.sortUnspecified(view))
+    sorter.result(setup, None)
   }
 
   // ===================================================================================================================
@@ -371,7 +417,7 @@ private[reqtable] object Logic {
             invalidTags = a.invalidTags,
             exp         = a.exp |+| b.exp,
             fieldRules  = a.fieldRules,
-            instanceId  = a.instanceId min b.instanceId)) // TODO resort
+            instanceId  = a.instanceId min b.instanceId))
         case _ =>
           None
       }

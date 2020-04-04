@@ -36,7 +36,7 @@ object Sorter {
   type PrepFn[-Setup, -Row, +A] = Setup => Row => A
 
   /** Sorts values in Expansion and MultiValues. */
-  type RowModFn[Setup, Row]   = Option[(Setup, Dir) => EndoFn[Row]]
+  type RowModFn[Setup, Row] = Option[(Setup, Dir) => EndoFn[Row]]
 
   def apply[Setup, Row, A](prep: PrepFn[Setup, Row, A], sort: SortFn[A], rowMod: Sorter.RowModFn[Setup, Row] = None): Sorter[Setup, Row] =
     new Sorter[Setup, Row] {

@@ -115,6 +115,9 @@ final class DataLogic(p: Project) {
       .iterator
       .mapToOrder
 
+  lazy val tagOrderingByName: Ordering[ApplicableTagId] =
+    Ordering.by(tagOrderByName)
+
   lazy val tagOrderByPos: TagOrder =
     p.config.tags
       .flatRowsUnfiltered
@@ -122,6 +125,9 @@ final class DataLogic(p: Project) {
       .map(_.id)
       .filterSubType[ApplicableTagId]
       .mapToOrder
+
+  lazy val tagOrderingByPos: Ordering[ApplicableTagId] =
+    Ordering.by(tagOrderByPos)
 
   val customFieldImps: FilterDead => CustomField.Implication.Id => ReqId => Set[Pubid] =
     FilterDead.memoLazy { fd =>
@@ -142,6 +148,9 @@ final class DataLogic(p: Project) {
     val reqTypeOrder = p.config.reqTypes.order
     i => (reqTypeOrder(i.reqTypeId), i.pos.value)
   }
+
+  lazy val pubidOrdering: Ordering[Pubid] =
+    Ordering.by(pubidSortKeyFn)
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████

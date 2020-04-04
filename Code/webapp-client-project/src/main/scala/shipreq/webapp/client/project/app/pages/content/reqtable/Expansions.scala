@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.app.pages.content.reqtable
 
 import monocle.macros.Lenses
-import scalaz.{Equal, Monoid, Semigroup}
+import scalaz.Monoid
 import scalaz.std.map._
 import scalaz.syntax.semigroup._
 import shipreq.base.util._

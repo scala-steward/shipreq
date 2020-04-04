@@ -153,21 +153,8 @@ object Sorter {
     r(sc.method)
   }
 
-  /**
-   * Sort visible data in [[Expansions]]/[[MultiValues]] that won't be sorted by [[SortCriteria]].
-   */
-  def sortUnspecified(view: View): RowModFn = {
-    val fns =
-      view.columns.whole
-        .iterator
-        .filterSubType[C.SortInconclusive]
-        .filterNot(view.isOrdered)
-        .map({
-          case c: C.SortInconclusiveHasBlanks => inconclusiveCB(c)(SM.BlanksThenAsc)
-          case c: C.SortInconclusiveNoBlanks  => inconclusiveIB(c)(SM.Asc)
-        })
-        .map(_.rowModFn)
-
-    consolidateRowModFns(fns)
-  }
+  def orderingForAllTags  (d: DataLogic): Ordering[ApplicableTagId] = d.tagOrderingByName
+  def orderingForOtherTags(d: DataLogic): Ordering[ApplicableTagId] = d.tagOrderingByName
+  def orderingForTagField (d: DataLogic): Ordering[ApplicableTagId] = d.tagOrderingByPos
+  def orderingForImpField (d: DataLogic): Ordering[Pubid          ] = d.pubidOrdering
 }
