@@ -137,16 +137,24 @@ private[reqtable] object Logic {
     fieldExpander(view, Column.OtherTags, ap, DataLogic.otherTags(tagFieldDist, tagLookup))
   }
 
+  private def allTagsValueExpander(view     : View,
+                                   ap       : ProjectApplicability[Column, ReqTypeId],
+                                   tagLookup: TagLookup): Req => Expanded[ApplicableTagId] = {
+    fieldExpander(view, Column.AllTags, ap, tagLookup(_).all)
+  }
+
   private def expansions(imps     : Direction.Values[Expanded[Pubid]],
                          codes    : Expanded[ReqCode.Value],
                          cfImps   : Map[CustomField.Implication.Id, Expanded[Pubid]],
                          cfTags   : Map[CustomField.Tag.Id,         Expanded[ApplicableTagId]],
                          otherTags: Expanded[ApplicableTagId],
+                         allTags  : Expanded[ApplicableTagId],
                         ): NonEmptyVector[Expansion] =
     if (   isEmptyExp(codes)
         && isEmptyExp(imps(Backwards))
         && isEmptyExp(imps(Forwards))
         && isEmptyExp(otherTags)
+        && isEmptyExp(allTags)
         && cfImps.values.forall(isEmptyExp)
         && cfTags.values.forall(isEmptyExp)
     )
@@ -159,6 +167,7 @@ private[reqtable] object Logic {
         d <- expandMapValues(cfImps)
         e <- expandMapValues(cfTags)
         f <- otherTags
+        g <- allTags
       } yield {
         val imps2 = Direction.Values {
           case Backwards => a
@@ -171,18 +180,9 @@ private[reqtable] object Logic {
           cfImps       = d,
           cfTags       = e,
           otherTags    = f,
+          allTags      = g,
         )
       }
-
-  // ===================================================================================================================
-  // MultiValues
-
-  private def multiValuesFn(tagFieldDist: TagFieldDistribution.TagIds,
-                            tagLookup   : TagLookup): ReqId => MultiValues =
-    id =>
-      MultiValues(
-        allTags = tagLookup(id).all.toVector,
-      )
 
   // ===================================================================================================================
   // Gathering
@@ -218,6 +218,7 @@ private[reqtable] object Logic {
     val expandImpCols   = impColValueExpander(view, fd, p, applicability)
     val expandTagCols   = tagFieldValueExpander(view, applicability, tagFieldDist, tagLookup)
     val expandOtherTags = otherTagsValueExpander(view, applicability, tagFieldDist, tagLookup)
+    val expandAllTags   = allTagsValueExpander(view, applicability, tagLookup)
 
     // The segregation of live/dead is because live reqs can have inactive reqcodes (leftovers of CodeRefs).
     // It would be erroneous to display inactive reqs for a live req.
@@ -230,7 +231,6 @@ private[reqtable] object Logic {
     }
 
     val pImplications = p.content.implications
-    val multiValuesFn = this.multiValuesFn(tagFieldDist, tagLookup)
 
     def pubid(reqId: ReqId): Option[Pubid] = {
       val req = p.content.reqs.need(reqId)
@@ -278,12 +278,12 @@ private[reqtable] object Logic {
           val cfImps    = expandImpCols(r)
           val cfTags    = expandTagCols(r)
           val otherTags = expandOtherTags(r)
-          val exps      = expansions(imps, codes, cfImps, cfTags, otherTags)
+          val allTags   = expandAllTags(r)
+          val exps      = expansions(imps, codes, cfImps, cfTags, otherTags, allTags)
 
           // Build
-          val mv = multiValuesFn(id)
           exps.foreachWithIndex((exp, i) =>
-            output += Row.ForReq(r, live, p.invalidTagsPerReq(id), exp, mv, fieldRules, i))
+            output += Row.ForReq(r, live, p.invalidTagsPerReq(id), exp, fieldRules, i))
 
           seeExpandedCodes(codes)
         }
@@ -359,7 +359,6 @@ private[reqtable] object Logic {
             live        = a.live,
             invalidTags = a.invalidTags,
             exp         = a.exp |+| b.exp,
-            mv          = a.mv |+| b.mv,
             fieldRules  = a.fieldRules,
             instanceId  = a.instanceId min b.instanceId)) // TODO resort
         case _ =>

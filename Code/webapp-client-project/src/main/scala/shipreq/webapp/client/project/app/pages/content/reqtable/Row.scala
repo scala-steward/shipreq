@@ -32,6 +32,7 @@ final case class Expansion(implications: Direction.Values[Vector[Pubid]],
                            cfImps      : Map[CustomField.Implication.Id, Vector[Pubid]],
                            cfTags      : Map[CustomField.Tag.Id, Vector[ApplicableTagId]],
                            otherTags   : Vector[ApplicableTagId],
+                           allTags     : Vector[ApplicableTagId],
                           ) {
 
   // Workaround for stupid https://issues.scala-lang.org/browse/SI-6391
@@ -53,6 +54,7 @@ object Expansion {
       Vector.empty,
       UnivEq.emptyMap,
       UnivEq.emptyMap,
+      Vector.empty,
       Vector.empty,
     )
 
@@ -83,31 +85,7 @@ object Expansion {
           a.cfImps       |+| b.cfImps,
           a.cfTags       |+| b.cfTags,
           a.otherTags    |+| b.otherTags,
-        )
-      }
-    }
-}
-
-// =====================================================================================================================
-
-/**
- * Sortable data (ie. lists) that are never expanded.
- */
-@Lenses
-final case class MultiValues(allTags: Vector[ApplicableTagId])
-
-object MultiValues {
-  implicit def equality: UnivEq[MultiValues] = UnivEq.derive
-
-  import Expansion.vectorUniqSemigroup
-
-  implicit val monoid: Monoid[MultiValues] =
-    new Monoid[MultiValues] {
-      override def zero = MultiValues(Vector.empty)
-      override def append(a: MultiValues, _b: => MultiValues) = {
-        val b = _b
-        MultiValues(
-          allTags = a.allTags |+| b.allTags,
+          a.allTags      |+| b.allTags,
         )
       }
     }
@@ -132,12 +110,11 @@ object Row {
                           live       : Live,
                           invalidTags: Set[ApplicableTagId],
                           exp        : Expansion,
-                          mv         : MultiValues,
                           fieldRules : FieldSetRules,
                           instanceId : Int) extends Row {
     override val id       = Row.Id.ForReq(req.id, instanceId)
     override def sourceId = Row.SourceId.ForReq(req.id)
-    override def toString = s"$id\n$req\n$exp\n$mv\n"
+    override def toString = s"$id\n$req\n$exp\n"
   }
 
   final case class ForCodeGroup(group: CodeGroup,
@@ -232,23 +209,15 @@ object Row {
     case r: ForReq       => Some(r.exp)
     case _: ForCodeGroup => None
   }(nv => {
-    case ForReq(r, l, c, _, m, f, i) => ForReq(r, l, c, nv, m, f, i)
-    case r: ForCodeGroup             => r
-  })
-
-  val multiValues = Optional[Row, MultiValues] {
-    case r: ForReq       => Some(r.mv)
-    case _: ForCodeGroup => None
-  }(nv => {
-    case ForReq(r, l, c, e, _, f, i) => ForReq(r, l, c, e, nv, f, i)
-    case r: ForCodeGroup             => r
+    case ForReq(r, l, c, _, f, i) => ForReq(r, l, c, nv, f, i)
+    case r: ForCodeGroup          => r
   })
 
   val reqCodes = Lens[Row, Vector[ReqCode.Value]] {
     case r: ForReq       => r.exp.reqCodes
     case r: ForCodeGroup => Vector1(r.reqCode)
   }(nv => {
-    case ForReq(r, l, c, e, m, f, i)       => ForReq(r, l, c, e.copyReqCodes(nv), m, f, i)
+    case ForReq(r, l, c, e, f, i)          => ForReq(r, l, c, e.copyReqCodes(nv), f, i)
     case r: ForCodeGroup if nv.length == 1 => r.copy(reqCode = nv.head)
     case r: ForCodeGroup if nv.length != 1 => assert(false, s"Can't apply $nv to $r") ;r
   })
@@ -258,7 +227,7 @@ object Row {
     case r: ForReq       => r.exp.reqCodeTree
     case r: ForCodeGroup => r.reqCodeTreeItem.toVector
   }(nv => {
-    case ForReq(r, l, c, e, m, f, i) => ForReq(r, l, c, e.copyReqCodeTree(nv), m, f, i)
+    case ForReq(r, l, c, e, f, i) => ForReq(r, l, c, e.copyReqCodeTree(nv), f, i)
     case r: ForCodeGroup => nv.length match {
       case 1 => r.copy(reqCodeTreeItem = Some(nv.head))
       case 0 => r.copy(reqCodeTreeItem = None)
@@ -272,10 +241,10 @@ object Row {
   val implications: Direction => OV[Pubid] =
     Direction.memo(Row.expansion ^|-> Expansion.implications ^|-> Direction.Values.lens(_))
 
-  val cfImps   : OMV[CustomField.Implication.Id, Pubid]   = Row.expansion   ^|-> Expansion.cfImps
-  val cfTags   : OMV[CustomField.Tag.Id, ApplicableTagId] = Row.expansion   ^|-> Expansion.cfTags
-  val otherTags: OV[ApplicableTagId]                      = Row.expansion   ^|-> Expansion.otherTags
-  val allTags  : OV[ApplicableTagId]                      = Row.multiValues ^|-> MultiValues.allTags
+  val cfImps   : OMV[CustomField.Implication.Id, Pubid]   = Row.expansion ^|-> Expansion.cfImps
+  val cfTags   : OMV[CustomField.Tag.Id, ApplicableTagId] = Row.expansion ^|-> Expansion.cfTags
+  val otherTags: OV[ApplicableTagId]                      = Row.expansion ^|-> Expansion.otherTags
+  val allTags  : OV[ApplicableTagId]                      = Row.expansion ^|-> Expansion.allTags
 
   private def mmLens[K, V](k: K): Lens[Map[K, Vector[V]], Vector[V]] =
     Lens[Map[K, Vector[V]], Vector[V]](_.getOrElse(k, Vector.empty))(vs => _.updated(k, vs))

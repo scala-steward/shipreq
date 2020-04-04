@@ -1228,7 +1228,18 @@ object LogicTest extends TestSuite {
     testCB(p, C.OtherTags, None, ShowDead, fmtRows)(allSortsCB(2,
       asc  = "DD-3:pri=high  DD-5:pri=high  DD-2:pri=low  DD-5:pri=low  DD-8:pri=low  DD-4:pri=med  DD-7:pri=med,v1.0  DD-8:v1.0",
       desc = "DD-7:v1.0  DD-8:v1.0  DD-4:pri=med  DD-7:pri=med  DD-2:pri=low  DD-5:pri=low  DD-8:pri=low  DD-3:pri=high  DD-5:pri=high"))
+  }
 
+  def testAllTags_expansion(): Unit = {
+    def t(ids: ApplicableTagId*) = GReq(reqType = dd).tag(ids: _*)
+    // DD   1        2           3            4           5                    6        7                8
+    val p = GReq() + t(priLow) + t(priHigh) + t(priMed) + t(priLow, priHigh) + t(wip) + t(priMed, v10) + t(v10, priLow) ! P1
+    val fmtRows = prefixWithPubid(p, rowToTagTxt(p, Row.allTags))
+
+    // Order: pri=high pri=low pri=med v10 wip
+    testCB(p, C.AllTags, None, ShowDead, fmtRows)(allSortsCB(1,
+      asc  = "DD-3:pri=high  DD-5:pri=high  DD-2:pri=low  DD-5:pri=low  DD-8:pri=low  DD-4:pri=med  DD-7:pri=med,v1.0  DD-8:v1.0  DD-6:wip",
+      desc = "DD-6:wip  DD-7:v1.0  DD-8:v1.0  DD-4:pri=med  DD-7:pri=med  DD-2:pri=low  DD-5:pri=low  DD-8:pri=low  DD-3:pri=high  DD-5:pri=high"))
   }
 
   // ===================================================================================================================
@@ -1248,6 +1259,9 @@ object LogicTest extends TestSuite {
         'unsorted  - testOtherTags_unsorted()
         'inText    - testOtherTags_inText()
         'expansion - testOtherTags_expansion()
+      }
+      'allTags {
+        'expansion - testAllTags_expansion()
       }
       'custTag {
         'sorted1  - testCustomTagField_sorted1()
