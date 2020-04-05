@@ -85,14 +85,14 @@ object Register1Test extends TestSuite {
 
   override def tests = Tests {
 
-    'success - test(
+    "success" - test(
       emailValue.assert("")        +> emailEnabled.assert(Enabled) +> submitEnabled.assert(Disabled)
         +> enterEmail("x@qwe.com") +> emailEnabled.assert(Enabled) +> submitEnabled.assert(Enabled)
         >> enterEmail("x@")        +> emailEnabled.assert(Enabled) +> submitEnabled.assert(Disabled)
         >> enterEmail("x@qwe.com") +> emailEnabled.assert(Enabled) +> submitEnabled.assert(Enabled)
         >> success)
 
-    'disabled - test(
+    "disabled" - test(
       message.assert(Some("Registration disabled")) +> *.emptyAction,
       Deny)
 

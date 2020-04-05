@@ -24,20 +24,20 @@ object JsonProtocolTest extends TestSuite {
 
   override def tests = Tests {
 
-    'savedViews - propTestRoundTrip(R.project.flatMap(R.reqtableData.nonEmptySavedViewsForProject))
+    "savedViews" - propTestRoundTrip(R.project.flatMap(R.reqtableData.nonEmptySavedViewsForProject))
 
-    'text - {
+    "text" - {
       def gr = R.reqId
       def gu = R.useCaseStepId
       def gc = R.reqCode.id
       def gi = R.customIssueTypeId
       def ga = R.applicableTagId
-      'CodeGroupTitle  - propTestRoundTrip(R.TextGen.codeGroupTitleAtom (gr, gu, gc, gi    ).text)
-      'GenericReqTitle - propTestRoundTrip(R.TextGen.genericReqTitleAtom(gr, gu, gc, gi, ga).text)
-      'InlineIssueDesc - propTestRoundTrip(R.TextGen.inlineIssueDescAtom(gr, gu, gc        ).text)
-      'CustomTextField - propTestRoundTrip(R.TextGen.customTextFieldAtom(gr, gu, gc, gi, ga).text1(CustomTextField))
+      "CodeGroupTitle"  - propTestRoundTrip(R.TextGen.codeGroupTitleAtom (gr, gu, gc, gi    ).text)
+      "GenericReqTitle" - propTestRoundTrip(R.TextGen.genericReqTitleAtom(gr, gu, gc, gi, ga).text)
+      "InlineIssueDesc" - propTestRoundTrip(R.TextGen.inlineIssueDescAtom(gr, gu, gc        ).text)
+      "CustomTextField" - propTestRoundTrip(R.TextGen.customTextFieldAtom(gr, gu, gc, gi, ga).text1(CustomTextField))
     }
 
-    'event - assertRoundTrips(RandomEventStream.sampleEventStreamWithProjects.map(_._1.event))
+    "event" - assertRoundTrips(RandomEventStream.sampleEventStreamWithProjects.map(_._1.event))
   }
 }

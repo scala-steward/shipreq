@@ -40,7 +40,7 @@ object PublicSpaLogicTest extends TestSuite {
 
   override def tests = Tests {
 
-    'register1 {
+    "register1" - {
       implicit val t = Tester(); import t._, mockInterpreters._
 
       def runSuccessfully(tokensIssued: Int, msgsSubmitted: Int, emailAddr: EmailAddr = ea): Unit =
@@ -78,14 +78,14 @@ object PublicSpaLogicTest extends TestSuite {
         taskman.assertSubmitted(0)
       }
 
-      'registrationsOff {
+      "registrationsOff" - {
         val t2 = t.withConfig(_.copy(publicRegistration = Deny))
         import t2._, mockInterpreters._
         runRegister1(ea).needLeft
       }
     }
 
-    'register2 {
+    "register2" - {
       import PublicSpaProtocols.Register2._
 
       def testSuccess(t: Tester, req: Request) = {
@@ -113,7 +113,7 @@ object PublicSpaLogicTest extends TestSuite {
       val token = db.prevToken()
       val req = Request(token, PersonName("Big Bob"), Username("bob"), PlainTextPassword("big_BOB_123!"), false)
 
-      'success - testSuccess(t, req)
+      "success" - testSuccess(t, req)
 
       def assertFailure(req: Request) = {
         val r =
@@ -137,7 +137,7 @@ object PublicSpaLogicTest extends TestSuite {
       "reject a taken username" -
         assertEq(assertFailure(req.copy(username = user2.username)), \/-(Result.UsernameTaken))
 
-      'registrationsOff {
+      "registrationsOff" - {
         val t2 = t.withConfig(_.copy(publicRegistration = Deny))
         import t2._, mockInterpreters._
         db.userPlaceholders = Map(ea -> DB.UserRegistration.Pending(UserId(2), token, svr.clock))
@@ -145,7 +145,7 @@ object PublicSpaLogicTest extends TestSuite {
       }
     }
 
-    'resetPassword1 {
+    "resetPassword1" - {
       def runSuccessfully(id: Username \/ EmailAddr, tokensIssued: Int, msgsSubmitted: Int)(implicit t: Tester): Unit = {
         import t._, mockInterpreters._
         db.assertIssuesTokens(tokensIssued)(
@@ -208,7 +208,7 @@ object PublicSpaLogicTest extends TestSuite {
       }
     }
 
-    'resetPassword2 {
+    "resetPassword2" - {
       import PublicSpaProtocols.ResetPassword2._
       implicit val t = Tester(); import t._, mockInterpreters._
       val i = \/-(user2.emailAddr)

@@ -42,33 +42,33 @@ abstract class SharedTagEventTests extends TestSuite {
   def tagId1: TagId
 
   override def tests = Tests {
-    'create {
-      'three - {
+    "create" - {
+      "three" - {
         val a = _assertPass(c1, c2, c3)
         val b = _assertPass(c1, c3, c2)
         assertEq(a, b)
       }
-      'badDesc           - assertFail("Desc")          (addDesc(c1, Some(tooLongStr)))
-      'badChildNotFound  - assertFail("")              (addChild(c1, 2))
-      'badParentNotFound - assertFail("")              (addParent(c1, 2))
-      'badChildSelf      - assertFail("")              (addChild(c1, 1))
-      'badParentSelf     - assertFail("")              (addParent(c1, 1))
-      'badCycle          - assertFail("Cycle")         (c1, addChild(c2, 1))
+      "badDesc"           - assertFail("Desc")          (addDesc(c1, Some(tooLongStr)))
+      "badChildNotFound"  - assertFail("")              (addChild(c1, 2))
+      "badParentNotFound" - assertFail("")              (addParent(c1, 2))
+      "badChildSelf"      - assertFail("")              (addChild(c1, 1))
+      "badParentSelf"     - assertFail("")              (addParent(c1, 1))
+      "badCycle"          - assertFail("Cycle")         (c1, addChild(c2, 1))
       // child/parent to dead subject = bad?
     }
 
-    'update {
-      'badDesc           - assertFail("Desc")     (c1, updateDesc(1, Some(tooLongStr)))
-      'badChildNotFound  - assertFail("")         (c1, updateChild(1, 2))
-      'badParentNotFound - assertFail("")         (c1, updateParent(1, 2))
-      'badChildSelf      - assertFail("")         (c1, updateChild(1, 1))
-      'badParentSelf     - assertFail("")         (c1, updateParent(1, 1))
-      'badCycle          - assertFail("Cycle")    (c1, c2, updateParent(1, 2))
+    "update" - {
+      "badDesc"           - assertFail("Desc")     (c1, updateDesc(1, Some(tooLongStr)))
+      "badChildNotFound"  - assertFail("")         (c1, updateChild(1, 2))
+      "badParentNotFound" - assertFail("")         (c1, updateParent(1, 2))
+      "badChildSelf"      - assertFail("")         (c1, updateChild(1, 1))
+      "badParentSelf"     - assertFail("")         (c1, updateParent(1, 1))
+      "badCycle"          - assertFail("Cycle")    (c1, c2, updateParent(1, 2))
       // child/parent to dead subject = bad?
     }
 
-    'delete {
-      'delRest1 {
+    "delete" - {
+      "delRest1" - {
         var es = Vector[Event](c1)
         def test(e: Event, ab: String): Unit = {
           es :+= e
@@ -90,7 +90,7 @@ abstract class SharedTagEventTests extends TestSuite {
         test(r1,  "AB") // restore with live children (sole parent)
       }
 
-      'delRest2 {
+      "delRest2" - {
         val c3 = create(3)()(2)
         var es = Vector[Event](c1, c2)
         def test(e: Event, acb: String): Unit = {
@@ -111,7 +111,7 @@ abstract class SharedTagEventTests extends TestSuite {
         test(r3,  "[AC]B") // restore with live children
       }
 
-      'delRest3 {
+      "delRest3" - {
         val cC = create(3)(2)()
         val cD = create(4)()(2)
         var es = Vector[Event](c1, c2, cC)
@@ -130,7 +130,7 @@ abstract class SharedTagEventTests extends TestSuite {
         test(r1,  "[AD]BC")
       }
 
-      'delRest4 {
+      "delRest4" - {
         val cC = create(3)(2)()
         val cD = create(4)()(3)
         var es = Vector[Event](c1, c2, cC)
@@ -204,12 +204,12 @@ object TagGroupEventTest extends TestSuite with TagGroupEvents {
   import TagGroupGD._
 
   override def tests = Tests {
-    'create {
-      'needMC - assertFail("Exclusiv")(c1.mod(_ - Exclusivity))
+    "create" - {
+      "needMC" - assertFail("Exclusiv")(c1.mod(_ - Exclusivity))
     }
 
-    'update {
-      'ok - {
+    "update" - {
+      "ok" - {
         var es = Vector(c1, u1)
         def r1 = _assertPass(es: _*).config.tags.tree.get(1.TG).get
         def r2 = _assertPass(es: _*).config.tags.tree.get(2.TG).get
@@ -224,18 +224,18 @@ object TagGroupEventTest extends TestSuite with TagGroupEvents {
       }
     }
 
-    'delete {
+    "delete" - {
       def testTagFieldLiveness(imp: Live, exp: Live)(es: Event*): Unit = {
         val p = _assertPass(es: _*)
         val f = p.config.fields.custom(createTagField1.id)
         assertEq("live", imp, f live p.config)
         assertEq("liveExplicitly", exp, f.liveExplicitly)
       }
-      'whenLiveTagField {
+      "whenLiveTagField" - {
         testTagFieldLiveness(Dead, Live)(c1, createTagField1, sd1)
         testTagFieldLiveness(Live, Live)(c1, createTagField1, sd1, r1)
       }
-      'whenDeadTagField {
+      "whenDeadTagField" - {
         testTagFieldLiveness(Dead, Dead)(c1, createTagField1, CustomTagFieldEventV1Test.sd1, sd1)
         testTagFieldLiveness(Dead, Dead)(c1, createTagField1, CustomTagFieldEventV1Test.sd1, sd1, r1)
       }
@@ -318,16 +318,16 @@ object ApplicableTagEventV1Test extends TestSuite {
 
   override def tests = Tests {
 
-    'create {
-      'needKey  - assertFail("Key")   (c1.mod(_ - Key))
-      'dupKey   - assertFail("unique")(c1, c2.mod(_ + Key("c1")))
-      'needName - assertFail("Name")  (delName(c1))
-      'badName  - assertFail("blank") (addName(c1, ""))
+    "create" - {
+      "needKey"  - assertFail("Key")   (c1.mod(_ - Key))
+      "dupKey"   - assertFail("unique")(c1, c2.mod(_ + Key("c1")))
+      "needName" - assertFail("Name")  (delName(c1))
+      "badName"  - assertFail("blank") (addName(c1, ""))
       //'dupName  - assertFail("unique")(c1, addName(c2, c1Name))
     }
 
-    'update {
-      'ok - {
+    "update" - {
+      "ok" - {
         var es = Vector(c1, u1)
         def r1 = _assertPass(es: _*).config.tags.tree.get(1.AT).get
         def r2 = _assertPass(es: _*).config.tags.tree.get(2.AT).get
@@ -339,7 +339,7 @@ object ApplicableTagEventV1Test extends TestSuite {
         assertEq(r2, TagInTree(ApplicableTag.v1(2, "Released", Some("r"), "c2", Live), Vector.empty))
       }
 
-      'dupKey  - assertFail("unique")(c1, c2, ApplicableTagUpdateV1(2, nev(Key("c1"))))
+      "dupKey"  - assertFail("unique")(c1, c2, ApplicableTagUpdateV1(2, nev(Key("c1"))))
       //'badName - assertFail("blank") (c1, updateName(1, ""))
       //'dupName - assertFail("unique")(c1, c2, updateName(2, c1Name))
     }
@@ -350,15 +350,15 @@ object ApplicableTagEventTest extends TestSuite with ApplicableTagEvents {
   import ApplicableTagGD._
 
   override def tests = Tests {
-    'create {
-      'blankKey   - assertFail("Key")     (c1.mod(_ + Key("")))
-      'needKey    - assertFail("Key")     (c1.mod(_ - Key))
-      'dupKey     - assertFail("unique")  (c1, c2.mod(_ + Key("c1")))
-      'badReqType - assertFail("ReqTypes")(c1.mod(_ + ApplicableReqTypes(onlyReqTypes(1234))))
+    "create" - {
+      "blankKey"   - assertFail("Key")     (c1.mod(_ + Key("")))
+      "needKey"    - assertFail("Key")     (c1.mod(_ - Key))
+      "dupKey"     - assertFail("unique")  (c1, c2.mod(_ + Key("c1")))
+      "badReqType" - assertFail("ReqTypes")(c1.mod(_ + ApplicableReqTypes(onlyReqTypes(1234))))
     }
 
-    'update {
-      'ok - {
+    "update" - {
+      "ok" - {
         var es = Vector[Event](c1, u1)
         def r1 = _assertPass(es: _*).config.tags.tree.get(1.AT).get
         def r2 = _assertPass(es: _*).config.tags.tree.get(2.AT).get
@@ -373,9 +373,9 @@ object ApplicableTagEventTest extends TestSuite with ApplicableTagEvents {
         // TODO confirm parent order
       }
 
-      'blankKey   - assertFail("Key")     (c1.mod(_ + Key("")))
-      'dupKey     - assertFail("unique")  (c1, c2, ApplicableTagUpdate(2, nev(Key("c1"))))
-      'badReqType - assertFail("ReqTypes")(c1.mod(_ + ApplicableReqTypes(onlyReqTypes(1234))))
+      "blankKey"   - assertFail("Key")     (c1.mod(_ + Key("")))
+      "dupKey"     - assertFail("unique")  (c1, c2, ApplicableTagUpdate(2, nev(Key("c1"))))
+      "badReqType" - assertFail("ReqTypes")(c1.mod(_ + ApplicableReqTypes(onlyReqTypes(1234))))
     }
   }
 }

@@ -177,10 +177,10 @@ object ReqTypeConfigTest extends TestSuite {
     )
 
   override def tests = Tests {
-    'view      - testView()
-    'new       - testNew()
-    'notInUse  - testNotInUse()
-    'inUse     - testInUse()
-    'rejectDel - testRejectHardDeletion()
+    "view"      - testView()
+    "new"       - testNew()
+    "notInUse"  - testNotInUse()
+    "inUse"     - testInUse()
+    "rejectDel" - testRejectHardDeletion()
   }
 }

@@ -184,7 +184,7 @@ object SavedViewLogicTest extends TestSuite {
 
   override def tests = Tests {
 
-    'actions {
+    "actions" - {
       import Action._
 
       def test(svs: SavedViews.Optional, state: State)
@@ -195,20 +195,20 @@ object SavedViewLogicTest extends TestSuite {
         assertEq("Next View", s2.activeView(Option(svs2) getOrElse svs, HideDead), expectedView)
       }
 
-      'modify {
-        'e_u - test(None, State(None, None))(Modify(Dirty1))(State(Some(Dirty1), None), Dirty1)
-        'sc_sd - test(SVs, State(None, SVa))(Modify(Dirty1))(State(Some(Dirty1), SVa), Dirty1)
-        'sd_sd - test(SVs, State(Dirty1, SVa))(Modify(Dirty2))(State(Some(Dirty2), SVa), Dirty2)
-        'sd_sc - test(SVs, State(Dirty1, SVa))(Modify(SVa.view))(State(Some(SVa.view), SVa), SVa.view)
+      "modify" - {
+        "e_u" - test(None, State(None, None))(Modify(Dirty1))(State(Some(Dirty1), None), Dirty1)
+        "sc_sd" - test(SVs, State(None, SVa))(Modify(Dirty1))(State(Some(Dirty1), SVa), Dirty1)
+        "sd_sd" - test(SVs, State(Dirty1, SVa))(Modify(Dirty2))(State(Some(Dirty2), SVa), Dirty2)
+        "sd_sc" - test(SVs, State(Dirty1, SVa))(Modify(SVa.view))(State(Some(SVa.view), SVa), SVa.view)
       }
 
-      'select {
-        'sc_sc - test(SVs, State(None, None))(Select(SVa.id))(State(None, SVa), SVa.view)
-        'sc_sc - test(SVs, State(None, SVb))(Select(SVa.id))(State(None, SVa), SVa.view)
-        'sd_sc - test(SVs, State(Dirty1, SVb))(Select(SVa.id))(State(None, SVa), SVa.view)
+      "select" - {
+        "sc_sc" - test(SVs, State(None, None))(Select(SVa.id))(State(None, SVa), SVa.view)
+        "sc_sc" - test(SVs, State(None, SVb))(Select(SVa.id))(State(None, SVa), SVa.view)
+        "sd_sc" - test(SVs, State(Dirty1, SVb))(Select(SVa.id))(State(None, SVa), SVa.view)
       }
 
-      'delete {
+      "delete" - {
         def testDel(state: State)(del: SavedView, svs2: SavedViews.Optional)(expectedState: State, expectedView: View) = {
           val ma = MenuAction.delete(del, state, SVs)
           test(svs2, state)(ma.action, svs2)(expectedState, expectedView)
@@ -218,22 +218,22 @@ object SavedViewLogicTest extends TestSuite {
         // 1. [_m]  - Manual view
         // 2. [_ab] - Ref view id
         // 3. [ab]  - Delete
-        '__b - testDel(State(None  , None))(SVb, `SVs-B`)(State(SVb.view, None), SVb.view)
-        '__a - testDel(State(None  , None))(SVa, `SVs-A`)(State(None    , None), SVb.view)
-        '_bb - testDel(State(None  , SVb ))(SVb, `SVs-B`)(State(SVb.view, None), SVb.view)
-        '_ba - testDel(State(None  , SVb ))(SVa, `SVs-A`)(State(None    , SVb ), SVb.view)
-        '_ab - testDel(State(None  , SVa ))(SVb, `SVs-B`)(State(None    , SVa ), SVa.view)
-        '_aa - testDel(State(None  , SVa ))(SVa, `SVs-A`)(State(SVa.view, None), SVa.view)
-        'm_b - testDel(State(Dirty1, None))(SVb, `SVs-B`)(State(Dirty1  , None), Dirty1  )
-        'm_a - testDel(State(Dirty1, None))(SVa, `SVs-A`)(State(Dirty1  , None), Dirty1  )
-        'mbb - testDel(State(Dirty1, SVb ))(SVb, `SVs-B`)(State(Dirty1  , None), Dirty1  )
-        'mba - testDel(State(Dirty1, SVb ))(SVa, `SVs-A`)(State(Dirty1  , SVb ), Dirty1  )
-        'mab - testDel(State(Dirty1, SVa ))(SVb, `SVs-B`)(State(Dirty1  , SVa ), Dirty1  )
-        'maa - testDel(State(Dirty1, SVa ))(SVa, `SVs-A`)(State(Dirty1  , None), Dirty1  )
+        "__b" - testDel(State(None  , None))(SVb, `SVs-B`)(State(SVb.view, None), SVb.view)
+        "__a" - testDel(State(None  , None))(SVa, `SVs-A`)(State(None    , None), SVb.view)
+        "_bb" - testDel(State(None  , SVb ))(SVb, `SVs-B`)(State(SVb.view, None), SVb.view)
+        "_ba" - testDel(State(None  , SVb ))(SVa, `SVs-A`)(State(None    , SVb ), SVb.view)
+        "_ab" - testDel(State(None  , SVa ))(SVb, `SVs-B`)(State(None    , SVa ), SVa.view)
+        "_aa" - testDel(State(None  , SVa ))(SVa, `SVs-A`)(State(SVa.view, None), SVa.view)
+        "m_b" - testDel(State(Dirty1, None))(SVb, `SVs-B`)(State(Dirty1  , None), Dirty1  )
+        "m_a" - testDel(State(Dirty1, None))(SVa, `SVs-A`)(State(Dirty1  , None), Dirty1  )
+        "mbb" - testDel(State(Dirty1, SVb ))(SVb, `SVs-B`)(State(Dirty1  , None), Dirty1  )
+        "mba" - testDel(State(Dirty1, SVb ))(SVa, `SVs-A`)(State(Dirty1  , SVb ), Dirty1  )
+        "mab" - testDel(State(Dirty1, SVa ))(SVb, `SVs-B`)(State(Dirty1  , SVa ), Dirty1  )
+        "maa" - testDel(State(Dirty1, SVa ))(SVa, `SVs-A`)(State(Dirty1  , None), Dirty1  )
       }
     }
 
-    'menu {
+    "menu" - {
       import Menu._
 
       def testNE(filterDeadFallback: FilterDead)(implicit s: State, svs: SavedViews.NonEmpty): Menu = {
@@ -254,7 +254,7 @@ object SavedViewLogicTest extends TestSuite {
         MenuItem.Unsaved(saveAsNew, Some(replace))
       }
 
-      'noSaved {
+      "noSaved" - {
         // no matter the current view state, the user can save it
 
         def test(filterDeadFallback: FilterDead)
@@ -268,74 +268,74 @@ object SavedViewLogicTest extends TestSuite {
 
         def saveAsNew(v: View) = MenuAction.saveAsNew(nvForId(None)(nameValidationFn()), v)
 
-        'clean {
+        "clean" - {
           val fd = HideDead
           val m = test(fd)(None, None)
           assertEq(m, NoSaved(MenuItem.Unsaved(saveAsNew(View.default(fd)), None)))
         }
 
-        'dirty {
+        "dirty" - {
           val m = test(HideDead)(SVa.view, None)
           assertEq(m, NoSaved(MenuItem.Unsaved(saveAsNew(SVa.view), None)))
         }
       }
 
-      'savedClean {
+      "savedClean" - {
         implicit def _svs: SavedViews.NonEmpty = SVs.getOrElse(???)
 
-        'defaultUnclicked {
+        "defaultUnclicked" - {
           implicit val s = State(None, None)
           val m = testNE(SVb)
           assertEq(m, SavedClean(SVb.asDefault, Vector(SVa.asNonDefault, SVc.asNonDefault), SVb.id))
         }
 
-        'defaultClicked {
+        "defaultClicked" - {
           implicit val s = State(None, SVb.id)
           val m = testNE(SVb)
           assertEq(m, SavedClean(SVb.asDefault, Vector(SVa.asNonDefault, SVc.asNonDefault), SVb.id))
         }
 
-        'nonDefaultClickedA {
+        "nonDefaultClickedA" - {
           implicit val s = State(None, SVa.id)
           val m = testNE(SVa)
           assertEq(m, SavedClean(SVb.asDefault, Vector(SVa.asNonDefault, SVc.asNonDefault), SVa.id))
         }
 
-        'nonDefaultClickedC {
+        "nonDefaultClickedC" - {
           implicit val s = State(None, SVc.id)
           val m = testNE(SVc)
           assertEq(m, SavedClean(SVb.asDefault, Vector(SVa.asNonDefault, SVc.asNonDefault), SVc.id))
         }
       }
 
-      'savedDirty {
+      "savedDirty" - {
         implicit def _svs: SavedViews.NonEmpty = SVs.getOrElse(???)
 
-        'postDeletion {
+        "postDeletion" - {
           implicit val s = State(SVa.view, None)
           val m = testNE(SVa)
           assertEq(m, SavedDirty(SVb.asDefault, Vector(SVa.asNonDefault, SVc.asNonDefault), dirtyAnon(SVa.view)))
         }
 
-        'defaultClicked {
+        "defaultClicked" - {
           implicit val s = State(SVa.view, SVb.id)
           val m = testNE(ShowDead)
           assertEq(m, SavedDirty(SVb.asDefault, Vector(SVa.asNonDefault, SVc.asNonDefault), dirty(SVb, `SVb->a`, SVa.view)))
         }
 
-        'nonDefaultClickedAB {
+        "nonDefaultClickedAB" - {
           implicit val s = State(SVb.view, SVa.id)
           val m = testNE(ShowDead)
           assertEq(m, SavedDirty(SVb.asDefault, Vector(SVa.asNonDefault, SVc.asNonDefault), dirty(SVa, `SVa->b`, SVb.view)))
         }
 
-        'nonDefaultClickedCA {
+        "nonDefaultClickedCA" - {
           implicit val s = State(SVa.view, SVc.id)
           val m = testNE(ShowDead)
           assertEq(m, SavedDirty(SVb.asDefault, Vector(SVa.asNonDefault, SVc.asNonDefault), dirty(SVc, `SVc->a`, SVa.view)))
         }
 
-        'nonDefaultClickedCB {
+        "nonDefaultClickedCB" - {
           implicit val s = State(SVb.view, SVc.id)
           val m = testNE(ShowDead)
           assertEq(m, SavedDirty(SVb.asDefault, Vector(SVa.asNonDefault, SVc.asNonDefault), dirty(SVc, `SVc->b`, SVb.view)))

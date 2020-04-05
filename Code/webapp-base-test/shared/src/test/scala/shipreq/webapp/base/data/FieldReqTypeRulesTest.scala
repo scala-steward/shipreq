@@ -27,7 +27,7 @@ object FieldReqTypeRulesTest extends TestSuite {
   }
 
   override def tests = Tests {
-    'prop - {
+    "prop" - {
       val gen = RandomData.fieldReqTypeRules(Some(RandomData.reqTypeId), Some(Gen.chooseInt(4))).map(new Laws(_))
       gen.mustSatisfyE(_.eval)
     }

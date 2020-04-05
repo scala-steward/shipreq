@@ -66,7 +66,7 @@ object MakeEventTest extends TestSuite {
     val t = new Tester()
     import t._
 
-    'CreateCodeGroup {
+    "CreateCodeGroup" - {
       import CreateContentCmd.{CreateCodeGroup => Cmd}
       def apply(cmd: Cmd) =
         assertApplies(assertMakeEvent(_.createContent(cmd, _), {case e: CodeGroupCreate => e}))
@@ -95,7 +95,7 @@ object MakeEventTest extends TestSuite {
       assertEq(e1b.id, e1.id)
     }
 
-    'CreateGenericReq {
+    "CreateGenericReq" - {
       import CreateContentCmd.{CreateGenericReq => Cmd}
       def applyCmd(cmd: Cmd)(implicit l: Line) =
         assertApplies(assertMakeEvent(_.createContent(cmd, _), {case e: GenericReqCreate => e}))
@@ -116,23 +116,23 @@ object MakeEventTest extends TestSuite {
 
     // TODO More MakeEvent tests would be good (esp for PatchReqCodes)
 
-    'UpdateConfigCmd {
+    "UpdateConfigCmd" - {
 
-      'TagSetLiveChildrenOrder {
+      "TagSetLiveChildrenOrder" - {
         import UpdateConfigCmd.{TagSetLiveChildrenOrder => Cmd}
         val ^ = TagGroupGD
 
-        'mismatch - assertFails(_.updateConfig(Cmd(priTG, Vector(priHigh, priLow)), _))
+        "mismatch" - assertFails(_.updateConfig(Cmd(priTG, Vector(priHigh, priLow)), _))
 
-        'noop - assertNoChange(_.updateConfig(Cmd(priTG, Vector(priHigh, priMed, priLow)), _))
+        "noop" - assertNoChange(_.updateConfig(Cmd(priTG, Vector(priHigh, priMed, priLow)), _))
 
-        'allLive - {
+        "allLive" - {
           val c = Vector(priMed, priHigh, priLow)
           val e = assertMakeEvent(_.updateConfig(Cmd(priTG, c), _), { case e: TagGroupUpdate => e })
           assertEq(e.vs, ^.nev(^.ValueForChildren(c)))
         }
 
-        'someDead - {
+        "someDead" - {
           assertApplies(TagGroupUpdate(priTG, ^.nev(^.ValueForChildren(Vector(priMed, priHigh, priLow, statusTG)))))
           assertApplies(TagDelete(priLow))
           assertApplies(TagDelete(statusTG))
@@ -142,18 +142,18 @@ object MakeEventTest extends TestSuite {
         }
       }
 
-      'ApplicableTagUpdate  {
+      "ApplicableTagUpdate"  - {
         import UpdateConfigCmd.{ApplicableTagUpdate => Cmd}
         val ^ = ApplicableTagGD
 
         def applyCmd(cmd: Cmd)(implicit l: Line) =
           assertApplies(assertMakeEvent(_.updateConfig(cmd, _), {case e: ApplicableTagUpdate => e}))
 
-        'noop         - assertNoChange(_.updateConfig(Cmd(priLow, ^.ValueForColour(None)), _))
-        'children     - assertFails(_.updateConfig(Cmd(priLow, ^.ValueForChildren(Vector(priMed))), _))
-        'deadReqTypes - assertFails(_.updateConfig(Cmd(priLow, ^.ValueForApplicableReqTypes(onlyReqTypes(dd))), _))
+        "noop"         - assertNoChange(_.updateConfig(Cmd(priLow, ^.ValueForColour(None)), _))
+        "children"     - assertFails(_.updateConfig(Cmd(priLow, ^.ValueForChildren(Vector(priMed))), _))
+        "deadReqTypes" - assertFails(_.updateConfig(Cmd(priLow, ^.ValueForApplicableReqTypes(onlyReqTypes(dd))), _))
 
-        'applicableReqTypes - {
+        "applicableReqTypes" - {
           val tag = priMed
           def applicableReqTypes() = project().config.tags.needApplicableTag(tag).applicableReqTypes
 
@@ -176,7 +176,7 @@ object MakeEventTest extends TestSuite {
           assertEq(applicableReqTypes(), notReqTypes(si))
         }
 
-        'parents  - {
+        "parents"  - {
           val tag = priMed
           def parents() = project().config.tags.parents(tag)
 
@@ -191,22 +191,22 @@ object MakeEventTest extends TestSuite {
           assertEq(parents(), Map(statusTG -> ∅): TagInTree.Parents)
         }
 
-        'deadParent - {
+        "deadParent" - {
           assertApplies(TagDelete(statusTG))
           assertFails(_.updateConfig(Cmd(priLow, ^.ValueForParents(Map(statusTG -> None))), _))
         }
       }
 
-      'TagGroupUpdate  {
+      "TagGroupUpdate"  - {
         import UpdateConfigCmd.{TagGroupUpdate => Cmd}
         val ^ = TagGroupGD
 
         def applyCmd(cmd: Cmd)(implicit l: Line) =
           assertApplies(assertMakeEvent(_.updateConfig(cmd, _), {case e: TagGroupUpdate => e}))
 
-        'noop - assertNoChange(_.updateConfig(Cmd(priTG, ^.ValueForDesc(None)), _))
+        "noop" - assertNoChange(_.updateConfig(Cmd(priTG, ^.ValueForDesc(None)), _))
 
-        'children - {
+        "children" - {
           val tag = relTG
           def children() = project().config.tags.directChildren(tag)
 
@@ -225,7 +225,7 @@ object MakeEventTest extends TestSuite {
 
         // 'deadChildren
 
-        'parents  - {
+        "parents"  - {
           val tag = relTG
           def parents() = project().config.tags.parents(tag)
 
@@ -240,7 +240,7 @@ object MakeEventTest extends TestSuite {
           assertEq(parents(), Map(statusTG -> ∅): TagInTree.Parents)
         }
 
-        'deadParent - {
+        "deadParent" - {
           assertApplies(TagDelete(statusTG))
           assertFails(_.updateConfig(Cmd(relTG, ^.ValueForParents(Map(statusTG -> None))), _))
         }

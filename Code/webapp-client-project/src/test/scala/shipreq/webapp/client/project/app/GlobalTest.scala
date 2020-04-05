@@ -38,10 +38,10 @@ object GlobalTest extends TestSuite {
   }
 
   override def tests = Tests {
-    'sync - {
+    "sync" - {
       val st = new SyncTest; import st._
 
-      'simple - {
+      "simple" - {
         addEvents(1)
         t.advanceTimeByMs(100)
         syncIfStaleForMs(20)
@@ -49,7 +49,7 @@ object GlobalTest extends TestSuite {
         assertSyncRequest(0)
       }
 
-      'two - {
+      "two" - {
         addEvents(1)
         addEvents(2)
         t.advanceTimeByMs(100)
@@ -63,7 +63,7 @@ object GlobalTest extends TestSuite {
         assertSyncRequest(0, 3)
       }
 
-      'clear - {
+      "clear" - {
         addEvents(1)
         t.advanceTimeByMs(100)
         addEvents(0)
@@ -72,7 +72,7 @@ object GlobalTest extends TestSuite {
         t.assertReqsSent(0)
       }
 
-      'overlap - {
+      "overlap" - {
         //  0 1 2 3 4 5
         // |  *     *
         // -*--|  *

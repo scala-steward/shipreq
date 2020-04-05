@@ -37,10 +37,10 @@ object GraphsTest extends TestSuite {
 
   override def tests = Tests {
 
-    'stepFlow {
+    "stepFlow" - {
       // TODO Test Graphs.useCaseStepFlow with more complicated flow
 
-      'init {
+      "init" - {
         import UnsafeTypes._
         val uc = UseCaseId(1)
         val project = applyEventsSuccessfully(Project.empty, UseCaseCreate(uc, 2, UseCaseGD.emptyValues))
@@ -63,7 +63,7 @@ object GraphsTest extends TestSuite {
         assertDOT(actual, expect)
       }
 
-      'sp6 {
+      "sp6" - {
         import SampleProject6._, Values._
         val actual = Graphs.useCaseStepFlow(uc1, project, ProjectText.Context.Req(uc1))
         val expect = DOT(
@@ -109,8 +109,8 @@ object GraphsTest extends TestSuite {
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    'implicationFocused {
-      'basic {
+    "implicationFocused" - {
+      "basic" - {
         import SampleImplicationGraph._
         val actual = Graphs.implicationFocused(mf3, HideDead, project)
         val expect = DOT(
@@ -153,7 +153,7 @@ object GraphsTest extends TestSuite {
         assertDOT(actual, expect)
       }
 
-      'hideDead {
+      "hideDead" - {
         import SampleImplicationGraph._
         val actual = Graphs.implicationFocused(mf3, HideDead, SIG_deadMF4)
         val expect = DOT(
@@ -192,7 +192,7 @@ object GraphsTest extends TestSuite {
         assertDOT(actual, expect)
       }
 
-      'showDead {
+      "showDead" - {
         import SampleImplicationGraph._
         val actual = Graphs.implicationFocused(mf3, ShowDead, SIG_deadMF4)
         val expect = DOT(
@@ -238,10 +238,10 @@ object GraphsTest extends TestSuite {
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    'implicationAll {
+    "implicationAll" - {
       import SampleImplicationGraph._
 
-      'basic {
+      "basic" - {
         val actual = Graphs.implicationAll(HideDead, project)
         val expect = DOT(
           s"""
@@ -285,7 +285,7 @@ object GraphsTest extends TestSuite {
         assertDOT(actual, expect)
       }
 
-      'showDead {
+      "showDead" - {
         val actual = Graphs.implicationAll(ShowDead, SIG_deadMF4)
         val expect = DOT(
           s"""
@@ -329,7 +329,7 @@ object GraphsTest extends TestSuite {
         assertDOT(actual, expect)
       }
 
-      'hideDead {
+      "hideDead" - {
         val actual = Graphs.implicationAll(HideDead, SIG_deadMF4)
         val expect = DOT(
           s"""
@@ -370,7 +370,7 @@ object GraphsTest extends TestSuite {
         assertDOT(actual, expect)
       }
 
-      'impRequired {
+      "impRequired" - {
         import UnsafeTypes._, AutoNES._
         import SampleProject.Values._
         val GD = GenericReqGD

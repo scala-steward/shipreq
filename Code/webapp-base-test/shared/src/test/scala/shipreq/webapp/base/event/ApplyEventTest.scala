@@ -162,8 +162,8 @@ object ApplyEventTest extends TestSuite {
 
   override def tests = Tests {
 
-    'applyVerified {
-      'pass {
+    "applyVerified" - {
+      "pass" - {
         import Data1._
         ApplyEvent.untrusted.applyVerified(Vector(ve))(p1) match {
           case \/-(p) => assertEq(p, p2)

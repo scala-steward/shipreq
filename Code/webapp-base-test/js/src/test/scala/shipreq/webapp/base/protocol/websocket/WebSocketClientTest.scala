@@ -35,7 +35,7 @@ object WebSocketClientTest extends TestSuite {
       receivedResponses.last
     }
 
-    'ok - {
+    "ok" - {
       val t = WebSocketClientTester(); import t._
       client.connect.runNow()
       ws().open()
@@ -44,8 +44,8 @@ object WebSocketClientTest extends TestSuite {
       awaitResponse(ab) ==> ResMsg(103)
     }
 
-    'failure - {
-      'connectingToClosed - {
+    "failure" - {
+      "connectingToClosed" - {
         val t = WebSocketClientTester(); import t._
         client.connect.runNow()
         ws().close()
@@ -55,7 +55,7 @@ object WebSocketClientTest extends TestSuite {
         assertEq(reauthAttempts, 0)
       }
 
-      'inFlight - {
+      "inFlight" - {
         val t = WebSocketClientTester(); import t._
         client.connect.runNow()
         ws().open()
@@ -66,8 +66,8 @@ object WebSocketClientTest extends TestSuite {
       }
     }
 
-    'auth - {
-      'expiryWithImmediateLogin - {
+    "auth" - {
+      "expiryWithImmediateLogin" - {
         val t = WebSocketClientTester(); import t._
         client.connect.runNow()
         ws().open()
@@ -90,7 +90,7 @@ object WebSocketClientTest extends TestSuite {
         assertEq("Shouldn't try to re-authenticate", reauthAttempts, 1)
       }
 
-      'expiryWithEventualLogin - {
+      "expiryWithEventualLogin" - {
         val t = WebSocketClientTester(); import t._
         client.connect.runNow()
         ws().open()
@@ -123,7 +123,7 @@ object WebSocketClientTest extends TestSuite {
       }
     }
 
-    'bug - {
+    "bug" - {
       val tester = WebSocketClientTester()
       import tester._
 

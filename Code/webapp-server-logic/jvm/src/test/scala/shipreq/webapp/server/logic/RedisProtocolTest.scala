@@ -26,7 +26,7 @@ object RedisProtocolTest extends TestSuite {
 //      RedisProtocolTestData.main(Array.empty)
 //    }
 
-    'saved - {
+    "saved" - {
       def run(ver: Int, assertSnapshot: Boolean = true) = {
         val rows = RedisProtocolTestData.load(ver)
 
@@ -52,15 +52,15 @@ object RedisProtocolTest extends TestSuite {
 
     // =================================================================================================================
 
-    'event - {
+    "event" - {
       def codec = RedisProtocol.picklerEvent
 
-      'roundTrip - {
+      "roundTrip" - {
         propTestRoundTrip(codec)(R.events.verifiedEvent)
       }
 
       "v1.0" - {
-        'ManualIssueCreate - {
+        "ManualIssueCreate" - {
           val bin    = BinaryData.fromHex("010081F41C7B016C046F6D6667E0E57B8D5D00E66307")
           val expect = VerifiedEvent(500, Event.ManualIssueCreate(123, "omfg"), Instant.ofEpochSecond(1569553381, 123987456))
           assertDecodeOk(codec)(bin, expect)
@@ -70,12 +70,12 @@ object RedisProtocolTest extends TestSuite {
 
     // =================================================================================================================
 
-    'projectSnapshot - {
+    "projectSnapshot" - {
       import Redis.ProjectSnapshot
 
       def codec = RedisProtocol.picklerProjectSnapshot
 
-      'roundTrip - {
+      "roundTrip" - {
         val gen: Gen[ProjectSnapshot] =
           for {
             p <- R.project
@@ -85,7 +85,7 @@ object RedisProtocolTest extends TestSuite {
       }
 
       "v1.0" - {
-        'empty - {
+        "empty" - {
           val bin        = BinaryData.fromHex("5C303D7101000000000004494E4547000000000000000000000000010100000000000000007BDEC22AB7")
           val oldProject = applyEventsSuccessfully(Project.empty, Event.FieldStaticRemove(StaticField.OtherTags))
           val expect     = ProjectSnapshot(oldProject, 123)
@@ -94,7 +94,7 @@ object RedisProtocolTest extends TestSuite {
       }
 
       "v1.1" - {
-        'empty - {
+        "empty" - {
           val bin    = BinaryData.fromHex("5C303D710101000000000523494E4547000000000000000000000000010100000000000000007BDEC22AB7")
           val expect = ProjectSnapshot(Project.empty, 123)
           assertDecodeOk(codec)(bin, expect)

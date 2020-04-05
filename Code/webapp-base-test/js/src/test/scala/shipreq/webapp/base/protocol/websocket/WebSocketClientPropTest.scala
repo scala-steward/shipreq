@@ -149,6 +149,6 @@ object WebSocketClientPropTest extends TestSuite {
   }
 
   override def tests = Tests {
-    'prop - test(999)
+    "prop" - test(999)
   }
 }

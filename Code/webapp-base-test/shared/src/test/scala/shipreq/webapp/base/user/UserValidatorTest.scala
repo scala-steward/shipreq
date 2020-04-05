@@ -47,15 +47,15 @@ object UserValidatorTest extends TestSuite {
 
   override def tests = Tests {
 
-    'email {
+    "email" - {
       val test = Tester(UserValidators.emailAddr.unnamed.mapValid(_.value))
 
-      'correction {
+      "correction" - {
         assertEq(test.v.corrector(" he   he  "), "hehe") // removes ALL whitespace
       }
-      'plain - test("hehe@asd.com")(pass)
-      'plus - test("ffs+yay@gmail.com")(pass)
-      'invalid - test.each(
+      "plain" - test("hehe@asd.com")(pass)
+      "plus" - test("ffs+yay@gmail.com")(pass)
+      "invalid" - test.each(
           "heheasd.com",
           "hehe@asdcom",
           "hehe@.com",
@@ -68,7 +68,7 @@ object UserValidatorTest extends TestSuite {
           "hehe@as>d.com")(fail("invalid"))
     }
 
-    'password {
+    "password" - {
       val test = Tester(UserValidators.password.unnamed.mapValid(_.value))
       * - test("abc12345")(pass)
       * - test("abc12345" * 10)(pass)
@@ -93,12 +93,12 @@ object UserValidatorTest extends TestSuite {
       * - assertEq(test.v.auditor.validity("a" + "1" * WebappConfig.passwordLength.max), Invalid) // too long
     }
 
-    'passwordTwice {
-      'diff - assertEq(UserValidators.passwordTwice.validity(("qweqwe123", "qweqwe123h")), Invalid)
-      'same - assertEq(UserValidators.passwordTwice.validity(("qweqwe123", "qweqwe123")), Valid)
+    "passwordTwice" - {
+      "diff" - assertEq(UserValidators.passwordTwice.validity(("qweqwe123", "qweqwe123h")), Invalid)
+      "same" - assertEq(UserValidators.passwordTwice.validity(("qweqwe123", "qweqwe123")), Valid)
     }
 
-    'passwordChange {
+    "passwordChange" - {
       val v = UserValidators.passwordChange(_ ==* "blahblah8")
       * - assertEq(v.validity(("blahblah", ("qweqwe123", "qweqwe123"))), Invalid)
       * - assertEq(v.validity(("blahblah8", ("qweqwe12", "qweqwe123"))), Invalid)
@@ -106,7 +106,7 @@ object UserValidatorTest extends TestSuite {
       * - assertEq(v(("blahblah8", ("qweqwe123", "qweqwe123"))), \/-(PlainTextPassword("qweqwe123")))
     }
 
-    'username {
+    "username" - {
       val test = Tester(UserValidators.username.stateless.unnamed.mapValid(_.value))
       * - test("hehe", "HEHE", "  Hehe  ")(pass)
       * - test("a" * 3)(pass)

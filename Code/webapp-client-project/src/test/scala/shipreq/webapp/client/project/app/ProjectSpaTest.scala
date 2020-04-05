@@ -76,9 +76,9 @@ object ProjectSpaTest extends TestSuite {
   }
 
   override def tests = Tests {
-    'reqTableColumnsSync    - runTest(reqTableColumnsSync   , Page.ReqTable)
-    'reqTableFilterDeadSync - runTest(reqTableFilterDeadSync, Page.ReqTable)
-    'cfgUsageLinkToReqTable - runTest(cfgUsageLinkToReqTable, Page.ReqTable)
-    'unsavedChanges         - runTest(testUnsavedChanges    , Page.Index)
+    "reqTableColumnsSync"    - runTest(reqTableColumnsSync   , Page.ReqTable)
+    "reqTableFilterDeadSync" - runTest(reqTableFilterDeadSync, Page.ReqTable)
+    "cfgUsageLinkToReqTable" - runTest(cfgUsageLinkToReqTable, Page.ReqTable)
+    "unsavedChanges"         - runTest(testUnsavedChanges    , Page.Index)
   }
 }

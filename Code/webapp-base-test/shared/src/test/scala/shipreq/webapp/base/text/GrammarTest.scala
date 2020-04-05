@@ -8,8 +8,8 @@ import shipreq.webapp.base.test.UnsafeTypes._
 object GrammarTest extends TestSuite {
 
   override def tests = Tests {
-    'pubid {
-      'stringPrism {
+    "pubid" - {
+      "stringPrism" - {
         import Grammar.pubid.stringPrism
 
         def test(m: ReqType.Mnemonic, p: ReqTypePos)(exact: String)(ok: String*): Unit = {
@@ -22,7 +22,7 @@ object GrammarTest extends TestSuite {
         * - test("OMG", 10)("OMG-10")("Omg10", "OMG10", "omg10", "oMG-00010")
         * - test("MF", 0)("MF-0")("mf0")
 
-        'bad {
+        "bad" - {
           for (b <- List("mf-", "MF-9X", "9MF-9", "X--9"))
             assertEq("bad path", stringPrism.getOption(b), None)
         }

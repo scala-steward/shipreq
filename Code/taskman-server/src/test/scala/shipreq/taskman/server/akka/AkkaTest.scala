@@ -17,7 +17,7 @@ import utest.asserts.RetryMax
 object AkkaTest extends TestSuite with HasLogger {
 
   override def tests = Tests {
-    'integrationTest - ServerImplTestHelpers.imperative(false) { helper =>
+    "integrationTest" - ServerImplTestHelpers.imperative(false) { helper =>
       import helper._
 
       logger.info("Akka integration test starting...")

@@ -8,7 +8,7 @@ import shipreq.webapp.server.logic.Redis
 object RedisInMemoryTest extends TestSuite {
 
   override def tests = Tests {
-    'laws {
+    "laws" - {
       val id1     = ProjectId(3)
       val id2     = ProjectId(7)
       val redis   = new Redis.InMemory[Name]

@@ -142,7 +142,7 @@ object EditorTest extends TestSuite {
 //      testSimpleEditorB(e)("hehe ", onChange = "hehe ", onEditFinished = "hehe")
 //    }
 
-    'applyInputValidation {
+    "applyInputValidation" - {
       val e = textInputEditor.applyInputValidation(usernameV.stateless.unnamed.toInvalidator)
       def test(i: String, expect: Option[String]): Unit = {
         val re: VdomElement = e.render(EditorI(i, "", None))
@@ -154,13 +154,13 @@ object EditorTest extends TestSuite {
       test("Happy", None)
     }
 
-    'applyRowUpdateAndRevert {
+    "applyRowUpdateAndRevert" - {
       val props = Props(fieldValidation = false, updateRevert = true, saveIO = None)
       val c = ReactTestUtils.renderIntoDocument(Component(props))
       testUpdateRevert(c)
     }
 
-    'weirdKeyDownIssue {
+    "weirdKeyDownIssue" - {
       val props = Props(fieldValidation = false, updateRevert = true, saveIO = None)
       val c = ReactTestUtils.renderIntoDocument(Component(props))
       val tgt = Sizzle(".id-7 .username", c).soleDom[HTMLInputElement]()
@@ -174,13 +174,13 @@ object EditorTest extends TestSuite {
       test("post", "abc")
     }
 
-    'combos {
-      'liveAndPostCorrection {
+    "combos" - {
+      "liveAndPostCorrection" - {
         val e = SimpleTestEditor[String].applyCorrection(_ => usernameV.stateless.corrector)
         testSimpleEditorB(e)("HeHe ", onChange = "hehe ", onEditFinished = "hehe")
       }
 
-      'validationAndUpdateRevert {
+      "validationAndUpdateRevert" - {
         val props = Props(fieldValidation = true, updateRevert = true, saveIO = None)
         val c = ReactTestUtils.renderIntoDocument(Component(props))
         testUpdateRevert(c)
@@ -191,7 +191,7 @@ object EditorTest extends TestSuite {
         assertEq("Post correction", u4.value, "hehe")
       }
 
-      'allWithAsyncCreateAndUpdate {
+      "allWithAsyncCreateAndUpdate" - {
         var saves = Vector.empty[SaveI]
         val s: SaveIO = i => Callback(saves :+= i)
 
@@ -205,7 +205,7 @@ object EditorTest extends TestSuite {
         val props = Props(fieldValidation = true, updateRevert = true, saveIO = s.some)
         val c = ReactTestUtils.renderIntoDocument(Component(props))
 
-        'saved {
+        "saved" - {
           val tgt = Sizzle(".id-7 .username", c).soleDom[HTMLInputElement]()
 
           def assertNoSave(): Unit = {
@@ -219,7 +219,7 @@ object EditorTest extends TestSuite {
             assertEq(saves(0).p, person7.some)
           }
 
-          'validationFails {
+          "validationFails" - {
             Simulation.focusChangeBlur(" X@  ") run tgt
             assertNoSave()
             // Confirm post-correction still applied
@@ -227,25 +227,25 @@ object EditorTest extends TestSuite {
             assertEq(savedRowStoreS.getI(7)(c.state)._1, "x@")
           }
 
-          'noNeedToSave {
+          "noNeedToSave" - {
             Simulation.focusChangeBlur(" mike ") run tgt
             assertNoSave()
           }
 
-          'save {
+          "save" - {
             Simulation.focusChangeBlur("right") run tgt
             assertSave()
             assertEq(saves(0).u._1, Username("right"))
           }
 
-          'rpcSuccess {
+          "rpcSuccess" - {
             Simulation.focusChangeBlur("blahblah") run tgt
             assertSave()
             saves(0).s.runNow()
             assertEq(savedRowStoreS.getStatus(7)(c.state), RowStatus.Locked) // success = nop
           }
 
-          'rpcFailure {
+          "rpcFailure" - {
             Simulation.focusChangeBlur("blahblah") run tgt
             assertSave()
             saves(0).f.runNow()
@@ -254,7 +254,7 @@ object EditorTest extends TestSuite {
           }
         }
 
-        'new {
+        "new" - {
           c.modState(newRowStoreS.enableEdit)
           val tgt = Sizzle(".new .username", c).soleDom[HTMLInputElement]
 
@@ -268,7 +268,7 @@ object EditorTest extends TestSuite {
             assertEq(newRowStoreS.getStatus(c.state), RowStatus.Locked.some)
           }
 
-          'validationFails {
+          "validationFails" - {
             Simulation.focusChangeBlur("  X@  ") run tgt
             assertNoSave()
             // Confirm post-correction still applied
@@ -276,20 +276,20 @@ object EditorTest extends TestSuite {
             assertEq(newRowStoreS.getI(c.state).map(_._1), "x@".some)
           }
 
-          'save {
+          "save" - {
             Simulation.focusChangeBlur("blahblah") run tgt
             assertSave()
             assertEq(saves(0).u._1, Username("blahblah"))
           }
 
-          'rpcSuccess {
+          "rpcSuccess" - {
             Simulation.focusChangeBlur("blahblah") run tgt
             assertSave()
             saves(0).s.runNow()
             assertEq(newRowStoreS.getStatus(c.state), None)
           }
 
-          'rpcFailure {
+          "rpcFailure" - {
             Simulation.focusChangeBlur("blahblah") run tgt
             assertSave()
             saves(0).f.runNow()

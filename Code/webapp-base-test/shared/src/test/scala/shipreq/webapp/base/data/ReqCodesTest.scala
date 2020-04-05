@@ -45,6 +45,6 @@ object ReqCodesTest extends TestSuite {
   }
 
   override def tests = Tests {
-    'props - gen.mustSatisfyE(_.all)
+    "props" - gen.mustSatisfyE(_.all)
   }
 }

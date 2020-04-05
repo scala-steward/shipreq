@@ -180,66 +180,66 @@ object AutoCompleteTest extends TestSuite {
 
   override def tests = Tests {
 
-    'issue {
+    "issue" - {
       implicit val ctx = TestCtx(cIssuesC)
 
-      'start {
+      "start" - {
         test("#T")("TBD", "TO"+"DO")
         testSelect("#TBD")
       }
-      'mid {
+      "mid" - {
         test("#DO")("TO"+"DO")
         testSelect("#TO"+"DO")
       }
-      'noSyntax -
+      "noSyntax" -
         test("T")()
-      'filterDead -
+      "filterDead" -
         test("#D")("TBD", "TO"+"DO") // PENDING is dead
     }
 
-    'tagC {
+    "tagC" - {
       implicit val ctx = TestCtx(cTagsC)
 
-      'start {
+      "start" - {
         test("#pri")("pri=high", "pri=low", "pri=med")
         testSelect("#pri=high")
       }
-      'mid {
+      "mid" - {
         test("#1")("v1.0", "v1.1", "v1.2", "v1.3", "v1.x")
         testSelect("#v1.0")
       }
-      'noSyntax -
+      "noSyntax" -
         test("pri")()
-      'filterDead -
+      "filterDead" -
         test("#x")("v1.x", "v2.x") // v3.x & v4.x are dead
     }
 
-    'tagP {
+    "tagP" - {
       implicit val ctx = TestCtx(cTagsP)
 
-      'start {
+      "start" - {
         test("pri")("pri=high", "pri=low", "pri=med")
         testSelect("pri=high")
       }
-      'mid {
+      "mid" - {
         test("1")("v1.0", "v1.1", "v1.2", "v1.3", "v1.x")
         testSelect("v1.0")
       }
-      'withSyntax - {
+      "withSyntax" - {
         test("#pri")("pri=high", "pri=low", "pri=med")
         testSelect("pri=high")
       }
-      'filterDead -
+      "filterDead" -
         test("#x")("v1.x", "v2.x") // v3.x & v4.x are dead
     }
 
-    'reqC {
+    "reqC" - {
       implicit val ctx = TestCtx(cReqC, "div div:first-child")
 
       def testMF(input: String)(exp: Int*): Unit =
         test(input)(exp.map("MF-" + _): _*)
 
-      'pubid {
+      "pubid" - {
         testMF("[mf1")(1, 10, 11, 12, 13, 14, 15, 16, 17, 18)
         testMF("[mf8")(8)
         testMF("[mf-8")(8)
@@ -247,22 +247,22 @@ object AutoCompleteTest extends TestSuite {
         testMF("[14")(14)
         testSelect("[MF-14] ")
       }
-      'title {
+      "title" - {
         testMF("[save")(17)
         testMF("[Collab")(9, 10, 11)
         testSelect("[MF-9] ")
       }
-      'ignoreCase {
+      "ignoreCase" - {
         testMF("[require")(12, 13, 22, 23, 24)
         testMF("[REQUIRE")(12, 13, 22, 23, 24)
       }
-      'filterDeadByPubid -
+      "filterDeadByPubid" -
         testMF("[mf28")()
-      'filterDeadByTitle -
+      "filterDeadByTitle" -
         testMF("[search")(25) // excludes CO-{1,2}
     }
 
-    'reqCodePrefixes {
+    "reqCodePrefixes" - {
       implicit val ctx = TestCtx(cReqCodePrefixes)
       implicit val multilineData = List[(String, String)](
         ("hehe.no\n", ""),
@@ -272,7 +272,7 @@ object AutoCompleteTest extends TestSuite {
         ("omg.yay\n", "\nhehe.no"),
         ("more.again\nomg.yay\n", "\nhehe.no\nok.then"))
 
-      'root {
+      "root" - {
         test("a")("aaaa1", "abc", "amp", "apple", "apply")
         testSelect("aaaa1")
         test("ap")("apple", "apply")
@@ -280,53 +280,53 @@ object AutoCompleteTest extends TestSuite {
         test("2")("2a", "2b")
         test("d")() // no dead.eggs
       }
-      'soleExact {
+      "soleExact" - {
         test("1")()
         test("c")("c", "cant")
       }
-      'path {
+      "path" - {
         test("abc.a")("aqua", "around", "art")
         test("abc.ar")("around", "art")
         test("abc.arou")("around")
         test("abc.around.t")("tbc", "torn")
         testSelect("abc.around.tbc")
       }
-      'open {
+      "open" - {
         test("abc.")("aqua", "around", "art", "bark")
         test("abc.around.")("1", "2", "now", "tbc", "torn")
         test("apply.")()
         test("bcd.")("aaaz")
         testSelect("bcd.aaaz")
       }
-      'dot - {
+      "dot" - {
         test("x"*100)() // Clear previous
         test(".")()
       }
-      'mid {
+      "mid" - {
         test(".eg")("goat.damn.egg", "goat.damn.egglike", "shit.eggs")
         test(".egg")("goat.damn.egg", "goat.damn.egglike", "shit.eggs")
         test(".eggs")("shit.eggs")
       }
-      'multilinePrefix -
+      "multilinePrefix" -
         testML("ap")("apple", "apply")("apple")
-      'multilineMid -
+      "multilineMid" -
         testML(".eggs")("shit.eggs")("shit.eggs")
-      'filterDead -
+      "filterDead" -
         test("dea")()
     }
 
-    'reqCodeRefs {
+    "reqCodeRefs" - {
       implicit val ctx = TestCtx(cReqCodeRefs, "div > div > span:first-child")
-      'root {
+      "root" - {
         test("[app")("apple", "apply")
         testSelect("[apple] ")
         test("[goa")("goat.damn.egg.crap", "goat.damn.egg.stuff", "goat.damn.egglike")
       }
-      'mid -
+      "mid" -
         test("[aqu")("abc.aqua")
-      'soleExact -
+      "soleExact" -
         test("[aaaa1")("aaaa1")
-      'path {
+      "path" - {
         val arounds = List("abc.around.1", "abc.around.2", "abc.around.now", "abc.around.tbc", "abc.around.torn")
         test("[abc.arou")(arounds: _*)
         testSelect("[abc.around.1] ")
@@ -335,21 +335,21 @@ object AutoCompleteTest extends TestSuite {
         test("[c.round")(arounds: _*)
         test("[g.d.e.s")("goat.damn.egg.stuff")
       }
-      'skipNode {
+      "skipNode" - {
         test("[g.e.s")("goat.damn.egg.stuff")
         test("[a.now")("abc.around.now")
         test("[abc.t")("abc.around.tbc", "abc.around.torn", "abc.art")
         test("[arou.t")("abc.around.tbc", "abc.around.torn")
       }
-      'dotStart -
+      "dotStart" -
         test("[.egg")("goat.damn.egg.crap", "goat.damn.egg.stuff", "goat.damn.egglike", "shit.eggs")
-      'dotEnd -
+      "dotEnd" -
         test("[egg.")("goat.damn.egg.crap", "goat.damn.egg.stuff")
-      'filterDead -
+      "filterDead" -
         test("[dea")()
     }
 
-    'tex {
+    "tex" - {
       implicit val ctx = TestCtx(editor(AutoComplete.Project.math))
       test("<t")(Grammar.texTag)
       testSelect(s"<${Grammar.texTag}>|</${Grammar.texTag}>")

@@ -233,7 +233,7 @@ object DeletionLogicTest extends TestSuite {
 
   override def tests = Tests {
 
-    'deletableReqs {
+    "deletableReqs" - {
       val manual        = expectedDeletableReqs_manual
       val parseManual   = "^[. ]*?(\\d+)(?: .*)?$".r
       val codesInManual = manual.split("\n").map { case parseManual(i) => i.toInt }
@@ -248,7 +248,7 @@ object DeletionLogicTest extends TestSuite {
       assertEq(fmtReqRows(result), expect)
     }
 
-    'deletableGroups {
+    "deletableGroups" - {
       val e = expectDeletableRCGs
       val a = result.actionableGroups
       assertSet("Deletable groups", a.toSet, e.toSet)
@@ -257,10 +257,10 @@ object DeletionLogicTest extends TestSuite {
         assertEq("Deletable group", ar, er)
     }
 
-    'initialReqs   - assertSet("Initial reqs"  , result.initialReqs, expectInitialReqs)
-    'initialGroups - assertSet("Initial groups", result.initialGroups, expectInitialRCGs)
+    "initialReqs"   - assertSet("Initial reqs"  , result.initialReqs, expectInitialReqs)
+    "initialGroups" - assertSet("Initial groups", result.initialGroups, expectInitialRCGs)
 
-    'props - {
+    "props" - {
       val g = DeletionProps.RandomData(Delete).genProps
       g.mustSatisfyE(_.allProps)(DefaultSettings.propSettings.setSampleSize(2))
       // scala.util.Try(g.bugHunt(10009, 8)(Prop.eval(_.allProps))(DefaultSettings.propSettings.setDebug)); ()

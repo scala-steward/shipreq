@@ -39,18 +39,18 @@ object CustomReqTypeEventV1Test extends TestSuite with CustomReqTypeEventsV1 {
   }
 
   override def tests = Tests {
-    'create {
-      'needName - assertFail("Name")    (c1.mod(_ - Name))
-      'needMne  - assertFail("Mnemonic")(c1.mod(_ - Mnemonic))
-      'needImp  - assertFail("Imp")     (c1.mod(_ - Implication))
-      'badName  - assertFail("blank")   (c1.mod(_ + Name("")))
-      'badMne   - assertFail("Mnemonic")(c1.mod(_ + Mnemonic("?")))
-      'dupName  - assertFail("unique")  (c1, c2.mod(_ + Name(mfName)))
-      'dupMne   - assertFail("unique")  (c1, c2.mod(_ + Mnemonic("MF")))
+    "create" - {
+      "needName" - assertFail("Name")    (c1.mod(_ - Name))
+      "needMne"  - assertFail("Mnemonic")(c1.mod(_ - Mnemonic))
+      "needImp"  - assertFail("Imp")     (c1.mod(_ - Implication))
+      "badName"  - assertFail("blank")   (c1.mod(_ + Name("")))
+      "badMne"   - assertFail("Mnemonic")(c1.mod(_ + Mnemonic("?")))
+      "dupName"  - assertFail("unique")  (c1, c2.mod(_ + Name(mfName)))
+      "dupMne"   - assertFail("unique")  (c1, c2.mod(_ + Mnemonic("MF")))
     }
 
-    'update {
-      'notInUse - {
+    "update" - {
+      "notInUse" - {
         var es = Vector(c1, u1)
         def r = _assertPass(es: _*).config.reqTypes.custom.get(1).get
         assertEq(r, CustomReqType.v1(1, "M", Set(), mfName, Mandatory, Live))
@@ -61,7 +61,7 @@ object CustomReqTypeEventV1Test extends TestSuite with CustomReqTypeEventsV1 {
         es :+= CustomReqTypeUpdateV1(1, nev(Mnemonic("MF"), Implication(Optional)))
         assertEq(r ,CustomReqType.v1(1, "MF", Set(), "xxx", Optional, Live))
       }
-      'inUse - {
+      "inUse" - {
         var es = Vector(c1, use1, u1)
         def r = _assertPass(es: _*).config.reqTypes.custom.get(1).get
         assertEq(r, CustomReqType.v1(1, "M", Set("MF"), mfName, Mandatory, Live))
@@ -72,38 +72,38 @@ object CustomReqTypeEventV1Test extends TestSuite with CustomReqTypeEventsV1 {
         es :+= CustomReqTypeUpdateV1(1, nev(Mnemonic("MF"), Implication(Optional)))
         assertEq(r ,CustomReqType.v1(1, "MF", Set("M", "X"), "xxx", Optional, Live))
       }
-      'badName  - assertFail("blank")   (c1, CustomReqTypeUpdateV1(1, nev(Name(""))))
-      'badMne   - assertFail("Mnemonic")(c1, CustomReqTypeUpdateV1(1, nev(Mnemonic("?"))))
-      'dupName  - assertFail("unique")  (c1, c2, CustomReqTypeUpdateV1(2, nev(Name(mfName))))
-      'dupMne   - assertFail("unique")  (c1, c2, CustomReqTypeUpdateV1(2, nev(Mnemonic("MF"))))
+      "badName"  - assertFail("blank")   (c1, CustomReqTypeUpdateV1(1, nev(Name(""))))
+      "badMne"   - assertFail("Mnemonic")(c1, CustomReqTypeUpdateV1(1, nev(Mnemonic("?"))))
+      "dupName"  - assertFail("unique")  (c1, c2, CustomReqTypeUpdateV1(2, nev(Name(mfName))))
+      "dupMne"   - assertFail("unique")  (c1, c2, CustomReqTypeUpdateV1(2, nev(Mnemonic("MF"))))
     }
 
-    'delete {
+    "delete" - {
       def testImpFieldLiveness(imp: Live, exp: Live)(es: Event*): Unit = {
         val p = _assertPass(es: _*)
         val f = p.config.fields.custom(CustomImpFieldEventV1Test.c1.id)
         assertEq("live", imp, f live p.config)
         assertEq("liveExplicitly", exp, f.liveExplicitly)
       }
-      'whenLiveImpField {
+      "whenLiveImpField" - {
         testImpFieldLiveness(Dead, Live)(c1, CustomImpFieldEventV1Test.c1, use1, sd1)
         testImpFieldLiveness(Live, Live)(c1, CustomImpFieldEventV1Test.c1, use1, sd1, r1)
       }
-      'whenDeadImpField {
+      "whenDeadImpField" - {
         testImpFieldLiveness(Dead, Dead)(c1, CustomImpFieldEventV1Test.c1, use1, CustomImpFieldEventV1Test.sd1, sd1)
         testImpFieldLiveness(Dead, Dead)(c1, CustomImpFieldEventV1Test.c1, use1, CustomImpFieldEventV1Test.sd1, sd1, r1)
       }
-      'hardDelete {
-        'notInUse {
+      "hardDelete" - {
+        "notInUse" - {
           val p = _assertPass(c1, sd1)
           assertEq(p.config.reqTypes.custom.values.toList, Nil)
         }
-        'inUseAsField {
+        "inUseAsField" - {
           val p = _assertPass(c1, CustomImpFieldEventSharedTests.c1, sd1)
           assertEq(p.config.reqTypes.custom.values.toList, Nil)
           assertEq(p.config.fields.customImpFields.filter(_.reqTypeId == c1.id), Nil)
         }
-        'inUseAsFieldApplicability {
+        "inUseAsFieldApplicability" - {
           import FieldReqTypeRules.Resolution
           def test(before: ApplicableReqTypes, after: FieldReqTypeRules.ForTextField) = {
             import CustomTextFieldGDv1._
@@ -113,14 +113,14 @@ object CustomReqTypeEventV1Test extends TestSuite with CustomReqTypeEventsV1 {
             assertEq(p.config.fields.customTextFields.size, 1)
             assertEq(p.config.fields.customTextFields.head.fieldReqTypeRules, after)
           }
-          'not1   - test(notReqTypes(1), FieldReqTypeRules.v1(data.Optional, allReqTypes))
-          'only1  - test(onlyReqTypes(1), FieldReqTypeRules.notApplicable)
-          'not12  - test(notReqTypes(1, 2), FieldReqTypeRules.v1(data.Optional, notReqTypes(2)))
-          'only12 - test(onlyReqTypes(1, 2), FieldReqTypeRules.v1(data.Optional, onlyReqTypes(2)))
+          "not1"   - test(notReqTypes(1), FieldReqTypeRules.v1(data.Optional, allReqTypes))
+          "only1"  - test(onlyReqTypes(1), FieldReqTypeRules.notApplicable)
+          "not12"  - test(notReqTypes(1, 2), FieldReqTypeRules.v1(data.Optional, notReqTypes(2)))
+          "only12" - test(onlyReqTypes(1, 2), FieldReqTypeRules.v1(data.Optional, onlyReqTypes(2)))
         }
       }
 
-      'deleteRestoreReqsAndReqCodes {
+      "deleteRestoreReqsAndReqCodes" - {
         val t     = new EventTester
         t.makeName = (i, e) => s"#$i: $e"
         val reqId = GenericReqId(8)

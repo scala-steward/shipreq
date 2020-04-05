@@ -22,7 +22,7 @@ object DbTriggerTest extends TestSuite {
 
   override def tests = Tests {
 
-    'usr_login_log {
+    "usr_login_log" - {
       def logLogin(u: UserId, ip: Option[IP])(implicit xa: SingleConnectionXA): Unit =
         xa ! DbInterpreter.ForSecurity.logLoginSuccess(u, ip)
 
@@ -59,7 +59,7 @@ object DbTriggerTest extends TestSuite {
       }
     }
 
-    'usrd {
+    "usrd" - {
       def nameHistory(userId: Long)(implicit xa: SingleConnectionXA) =
         xa ! Query0[String](s"select name from usrh_name where usr_id=$userId order by updated_at").list
 
@@ -91,7 +91,7 @@ object DbTriggerTest extends TestSuite {
       }
     }
 
-    'project {
+    "project" - {
       "should update project_access_per_hour" - TestDb().runNow { implicit xa =>
 
         val db = new DbInterpreter()(PrepareEnv.global().config.server.security)

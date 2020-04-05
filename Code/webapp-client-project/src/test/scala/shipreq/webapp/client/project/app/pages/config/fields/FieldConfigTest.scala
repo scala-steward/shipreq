@@ -572,36 +572,36 @@ object FieldConfigTest extends TestSuite {
 
   override def tests = Tests {
 
-    'fieldList - {
-      'view - testFieldListView()
+    "fieldList" - {
+      "view" - testFieldListView()
     }
 
-    'static - {
-      'mandatory   - testStaticFieldMandatory()
-      'optional    - testStaticFieldOptional()
-      'noOtherTags - testNoOtherTags()
-      'otherTags   - testOtherTags()
+    "static" - {
+      "mandatory"   - testStaticFieldMandatory()
+      "optional"    - testStaticFieldOptional()
+      "noOtherTags" - testNoOtherTags()
+      "otherTags"   - testOtherTags()
     }
 
-    'textField - {
-      'edit - testTextFieldEdit()
-      'dead - testTextFieldDead()
+    "textField" - {
+      "edit" - testTextFieldEdit()
+      "dead" - testTextFieldDead()
     }
 
-    'impField - {
+    "impField" - {
       def p = SampleProject7.project
-      'create       - testImpFieldCreate(p)
-      'createCant   - testImpFieldCreateCant()
-      'createDeadMF - testImpFieldCreate(applyEventSuccessfully(p, Event.FieldCustomDelete(mfField)))
-      'update       - testImpFieldUpdate()
-      'dead         - testImpFieldDead()
+      "create"       - testImpFieldCreate(p)
+      "createCant"   - testImpFieldCreateCant()
+      "createDeadMF" - testImpFieldCreate(applyEventSuccessfully(p, Event.FieldCustomDelete(mfField)))
+      "update"       - testImpFieldUpdate()
+      "dead"         - testImpFieldDead()
     }
 
-    'tagField - {
-      'create     - testTagFieldCreate()
-      'createCant - testTagFieldCreateCant()
-      'update     - testTagFieldUpdate()
-      'dead       - testTagFieldDead()
+    "tagField" - {
+      "create"     - testTagFieldCreate()
+      "createCant" - testTagFieldCreateCant()
+      "update"     - testTagFieldUpdate()
+      "dead"       - testTagFieldDead()
     }
 
   }

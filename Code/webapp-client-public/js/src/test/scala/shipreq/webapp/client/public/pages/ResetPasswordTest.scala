@@ -105,7 +105,7 @@ object ResetPasswordTest extends TestSuite {
 
   override def tests = Tests {
 
-    'success - test(
+    "success" - test(
       assertForm("", Invalid, "", Invalid, Enabled)
         +> submitEnabled.assert(Disabled)
         +> password1F.assert(Some("Must be between 8 and 255 characters long."))

@@ -99,31 +99,31 @@ object TagCrudTest extends TestSuite {
   override def tests = Tests {
     import S.Values._
 
-    'PovRelations {
-      'derive {
+    "PovRelations" - {
+      "derive" - {
         // Multiple prepend parents, no children
-        'v10 - assertEq(derive(v10, S.tagTree), Relations[TagId](
+        "v10" - assertEq(derive(v10, S.tagTree), Relations[TagId](
           parents = Map(v1x -> v11, 27.TG -> v11),
           children = Vector.empty))
 
         // Append parent, no children
-        'v13 - assertEq(derive(v13, S.tagTree), Relations[TagId](
+        "v13" - assertEq(derive(v13, S.tagTree), Relations[TagId](
           parents = Map(v1x -> None),
           children = Vector.empty))
 
         // No parents, children
-        'status - assertEq(derive(10.TG, S.tagTree), Relations[TagId](
+        "status" - assertEq(derive(10.TG, S.tagTree), Relations[TagId](
           parents = Map.empty,
           children = Vector(wip, defer, uat, uat2, uat3, prod)))
 
         // Parents and children
-        'released - assertEq(derive(27.TG, S.tagTree), Relations[TagId](
+        "released" - assertEq(derive(27.TG, S.tagTree), Relations[TagId](
           parents = Map(20.TG -> v1x),
           children = Vector(v09, v10, v11)))
       }
     }
 
-    'flatTagTree {
+    "flatTagTree" - {
       def show(rows: Vector[FlatTag]) = rows
         .map(r => s"${"  "*r.depth}${r.tag.name} - ${r.status} - {${r.parentPath.map(_.value).mkString(",")}}")
         .mkString("\n")
@@ -134,7 +134,7 @@ object TagCrudTest extends TestSuite {
         assertEq(p.toString, aa, expect.trim)
       }
 
-      'OmitNothing - test(OmitNothing,
+      "OmitNothing" - test(OmitNothing,
           """
             |A - Good - {}
             |  B* - BadParentGoodKids - {1}
@@ -156,7 +156,7 @@ object TagCrudTest extends TestSuite {
             |    DA - Good - {1,17}
           """.stripMargin)
 
-      'OmitBadBranches - test(OmitBadBranches,
+      "OmitBadBranches" - test(OmitBadBranches,
         """
           |A - Good - {}
           |  B* - BadParentGoodKids - {1}
@@ -171,7 +171,7 @@ object TagCrudTest extends TestSuite {
           |    DA - Good - {1,17}
         """.stripMargin)
 
-      'OmitAnythingWithBadParent - test(OmitAnythingWithBadParent,
+      "OmitAnythingWithBadParent" - test(OmitAnythingWithBadParent,
         """
           |A - Good - {}
           |  D - Good - {1}
@@ -179,6 +179,6 @@ object TagCrudTest extends TestSuite {
         """.stripMargin)
     }
 
-    'props - tagPropGen.mustSatisfyE(_.prop)
+    "props" - tagPropGen.mustSatisfyE(_.prop)
   }
 }

@@ -40,7 +40,7 @@ object TagConfigTest extends TestSuite {
   override def tests = Tests {
 
     // =================================================================================================================
-    'view - runActions(SampleProject6.project)(
+    "view" - runActions(SampleProject6.project)(
 
       *.emptyAction
       +> filterDead.assert(HideDead)
@@ -93,7 +93,7 @@ object TagConfigTest extends TestSuite {
     )
 
     // =================================================================================================================
-    'deleteRestoreAT - runActions(SampleProject6.project)(
+    "deleteRestoreAT" - runActions(SampleProject6.project)(
 
       selectTag("defer")
         +> filterDead.assert(HideDead)
@@ -181,7 +181,7 @@ object TagConfigTest extends TestSuite {
     )
 
     // =================================================================================================================
-    'deleteRestoreTG - runActions(SampleProject6.project)(
+    "deleteRestoreTG" - runActions(SampleProject6.project)(
 
       selectTag("Priority")
         +> filterDead.assert(HideDead)
@@ -284,7 +284,7 @@ object TagConfigTest extends TestSuite {
     )
 
     // =================================================================================================================
-    'deadChildren - runActions(SampleProject6.project)(
+    "deadChildren" - runActions(SampleProject6.project)(
 
       selectTag("Status")
         +> tagTreeText.assert(
@@ -351,7 +351,7 @@ object TagConfigTest extends TestSuite {
     )
 
     // =================================================================================================================
-    'deadParent - runActions(SampleProject6.project)(
+    "deadParent" - runActions(SampleProject6.project)(
 
       selectTag("Status")
 
@@ -488,7 +488,7 @@ object TagConfigTest extends TestSuite {
     )
 
     // =================================================================================================================
-    'applicableReqTypes - runActions(
+    "applicableReqTypes" - runActions(
       applyEventsSuccessfully(SampleProject6.project,
         Event.CustomReqTypeRestore(dd),
         Event.ApplicableTagUpdate(priMed, ApplicableTagGD.ValueForApplicableReqTypes(onlyReqTypes(dd, mf, fr))),

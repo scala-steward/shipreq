@@ -14,13 +14,13 @@ object HomeSpaProtocolsTest extends TestSuite {
   override def tests = Tests {
 
     // =================================================================================================================
-    'createProject - {
+    "createProject" - {
       import HomeSpaProtocols.CreateProject._
 
-      'req - {
+      "req" - {
         import ajax.req.codec
 
-        'roundTrip - {
+        "roundTrip" - {
           val gen = Gen.chooseGen(Gen.ascii, Gen.unicode).string(0 to 4)
           propTestRoundTrip(codec)(gen)
         }
@@ -32,10 +32,10 @@ object HomeSpaProtocolsTest extends TestSuite {
         }
       }
 
-      'res - {
+      "res" - {
         import ajax.res.codec
 
-        'roundTrip - {
+        "roundTrip" - {
           propTestRoundTrip(codec)(RandomData.projectMetaData)
         }
 

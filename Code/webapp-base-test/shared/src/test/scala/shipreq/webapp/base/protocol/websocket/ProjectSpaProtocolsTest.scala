@@ -447,7 +447,7 @@ object ProjectSpaProtocolsTest extends TestSuite {
     }
 
     // =================================================================================================================
-    'push {
+    "push" - {
       import webSocket.push.codec
 
       "v1.0" - {

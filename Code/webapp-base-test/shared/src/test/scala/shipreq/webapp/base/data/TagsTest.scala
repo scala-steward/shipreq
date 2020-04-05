@@ -62,7 +62,7 @@ object TagsTest extends TestSuite {
 
   override def tests = Tests {
 
-    'treeViews - {
+    "treeViews" - {
 
       val tags = mkTags(
           tg(1, Dead)(3.AT, 4.AT),

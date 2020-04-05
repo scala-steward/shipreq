@@ -131,7 +131,7 @@ object FeedbackModalTest extends TestSuite {
   override def tests = Tests {
     import Internal._
 
-    'various -
+    "various" -
       runTest(Some(-\/(ErrorMsg("servers down!"))))(
         enterFeedback(" \n ")
           +> serverCallCount.assert(0)
@@ -172,7 +172,7 @@ object FeedbackModalTest extends TestSuite {
           +> serverLastFeedback.assert(Some("omgOMFG12345"))
       )
 
-    'inFlight -
+    "inFlight" -
       runTest(None)(
         enterFeedback("qweasdzcQWEASDZXC123!@#")
           >> clickSend

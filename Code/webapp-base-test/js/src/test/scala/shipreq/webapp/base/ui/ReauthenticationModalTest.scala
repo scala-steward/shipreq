@@ -133,7 +133,7 @@ object ReauthenticationModalTest extends TestSuite {
   override def tests = Tests {
     import Internal._
 
-    'various -
+    "various" -
       runTest(Some(-\/(ErrorMsg("servers down!"))))(
         enterPassword(" omg ")
           +> serverCallCount.assert(0)
@@ -174,7 +174,7 @@ object ReauthenticationModalTest extends TestSuite {
           +> serverLastPassword.assert(Some(" omgOMFG12345 "))
       )
 
-    'inFlight -
+    "inFlight" -
       runTest(None)(
         enterPassword("qweasdzcQWEASDZXC123!@#")
           >> clickLogin

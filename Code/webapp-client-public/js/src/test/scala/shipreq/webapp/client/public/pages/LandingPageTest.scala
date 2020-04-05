@@ -96,7 +96,7 @@ object LandingPageTest extends TestSuite {
   }
 
   override def tests = Tests {
-    'validity - test(validity)
-    'invalidity - test(invalidity)
+    "validity" - test(validity)
+    "invalidity" - test(invalidity)
   }
 }

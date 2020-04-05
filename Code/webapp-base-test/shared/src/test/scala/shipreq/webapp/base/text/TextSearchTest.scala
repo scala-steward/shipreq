@@ -28,11 +28,11 @@ object TextSearchTest extends TestSuite {
   def domain = (words(1) *** words(0)).map((Input.apply _).tupled)
 
   override def tests = Tests {
-    'algorithm {
+    "algorithm" - {
       println(s"Proving text search algorithm with ${domain.size} samples...")
       domain.mustProve(prop)(DefaultSettings.propSettings.setSingleThreaded)
     }
-    'normalisation {
+    "normalisation" - {
       assertEq(String valueOf Normaliser.ignoreCaseSingleSpaces("AB cd 3 EF").data, "ab cd 3 ef")
     }
   }

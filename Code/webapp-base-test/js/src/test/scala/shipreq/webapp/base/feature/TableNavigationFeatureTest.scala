@@ -573,49 +573,49 @@ object TableNavigationFeatureTest extends TestSuite {
 
   override def tests = Tests {
 
-    'lr {
+    "lr" - {
       implicit val ts = TableStyle(hasRowSpans = false)
       def t = lr
       def T = LR
-      'posDetection   - testCellLabels(t)
-      'moveRight      - testMoves(t, LeftRight, Next, T.rightMoves, Forwards)
-      'moveLeft       - testMoves(t, LeftRight, Prev, T.rightMoves, Backwards)
-      'moveDown       - testMoves(t, UpDown   , Next, T.downMoves , Forwards)
-      'moveUp         - testMoves(t, UpDown   , Prev, T.upMoves   , Forwards)
-      'subMoveLeft    - testSubMoves(t, Prev, T.rightMoves, Backwards)
-      'subMoveRight   - testSubMoves(t, Next, T.rightMoves, Forwards)
+      "posDetection"   - testCellLabels(t)
+      "moveRight"      - testMoves(t, LeftRight, Next, T.rightMoves, Forwards)
+      "moveLeft"       - testMoves(t, LeftRight, Prev, T.rightMoves, Backwards)
+      "moveDown"       - testMoves(t, UpDown   , Next, T.downMoves , Forwards)
+      "moveUp"         - testMoves(t, UpDown   , Prev, T.upMoves   , Forwards)
+      "subMoveLeft"    - testSubMoves(t, Prev, T.rightMoves, Backwards)
+      "subMoveRight"   - testSubMoves(t, Next, T.rightMoves, Forwards)
     }
 
-    'td {
+    "td" - {
       implicit val ts = TableStyle(hasRowSpans = false)
       def t = td
       def T = TD
-      'posDetection   - testCellLabels(t)
-      'moveRight      - testMoves(t, LeftRight, Next, T.rightMoves, Forwards)
-      'moveLeft       - testMoves(t, LeftRight, Prev, T.rightMoves, Backwards)
-      'moveDown       - testMoves(t, UpDown   , Next, T.downMoves , Forwards)
-      'moveUp         - testMoves(t, UpDown   , Prev, T.downMoves , Backwards)
-      'subMoveLeft    - testSubMoves(t, Prev, T.rightMoves, Backwards)
-      'subMoveRight   - testSubMoves(t, Next, T.rightMoves, Forwards)
+      "posDetection"   - testCellLabels(t)
+      "moveRight"      - testMoves(t, LeftRight, Next, T.rightMoves, Forwards)
+      "moveLeft"       - testMoves(t, LeftRight, Prev, T.rightMoves, Backwards)
+      "moveDown"       - testMoves(t, UpDown   , Next, T.downMoves , Forwards)
+      "moveUp"         - testMoves(t, UpDown   , Prev, T.downMoves , Backwards)
+      "subMoveLeft"    - testSubMoves(t, Prev, T.rightMoves, Backwards)
+      "subMoveRight"   - testSubMoves(t, Next, T.rightMoves, Forwards)
 
-      'fromOuter {
+      "fromOuter" - {
         val z = init(t)
-        'up     - testMove(z, UpDown, Prev, VirtualLoc(1, 1, 5, None), VirtualLoc(1, 0, 5, Some(PosXY(0, 2))))
-        'down   - testMove(z, UpDown, Next, VirtualLoc(1, 1, 5, None), VirtualLoc(1, 1, 5, Some(PosXY(0, 0))))
-        'top    - testMove(z, UpDown, Head, VirtualLoc(1, 1, 5, None), VirtualLoc(0, 0, 5, None))
-        'bottom - testMove(z, UpDown, Last, VirtualLoc(1, 1, 5, None), VirtualLoc(1, 1, 5, Some(PosXY(0, 1))))
+        "up"     - testMove(z, UpDown, Prev, VirtualLoc(1, 1, 5, None), VirtualLoc(1, 0, 5, Some(PosXY(0, 2))))
+        "down"   - testMove(z, UpDown, Next, VirtualLoc(1, 1, 5, None), VirtualLoc(1, 1, 5, Some(PosXY(0, 0))))
+        "top"    - testMove(z, UpDown, Head, VirtualLoc(1, 1, 5, None), VirtualLoc(0, 0, 5, None))
+        "bottom" - testMove(z, UpDown, Last, VirtualLoc(1, 1, 5, None), VirtualLoc(1, 1, 5, Some(PosXY(0, 1))))
       }
     }
 
-    'rowSpans {
+    "rowSpans" - {
       implicit val ts = TableStyle(hasRowSpans = true)
       def t = rowSpans
       def T = RowSpans
-      'posDetection   - testCellLabels(t)
-      'moveRight      - testMoves(t, LeftRight, Next, T.rightMoves, Forwards)
-      'moveLeft       - testMoves(t, LeftRight, Prev, T.leftMoves , Forwards)
-      'moveDown       - testMoves(t, UpDown   , Next, T.downMoves , Forwards)
-      'moveUp         - testMoves(t, UpDown   , Prev, T.downMoves , Backwards)
+      "posDetection"   - testCellLabels(t)
+      "moveRight"      - testMoves(t, LeftRight, Next, T.rightMoves, Forwards)
+      "moveLeft"       - testMoves(t, LeftRight, Prev, T.leftMoves , Forwards)
+      "moveDown"       - testMoves(t, UpDown   , Next, T.downMoves , Forwards)
+      "moveUp"         - testMoves(t, UpDown   , Prev, T.downMoves , Backwards)
     }
 
   }

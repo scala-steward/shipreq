@@ -36,14 +36,14 @@ object LiveTest extends TestSuite {
   override def tests = Tests {
     prepare()
 
-    'root {
+    "root" - {
       get("/")
         .assertSpa(AssetManifest.webappClientPublicJs, PublicSpaEntryPoint.proc)
         .assertBodyTitle(WebappConfig.makePageTitle())
       ()
     }
 
-    'loginAjax {
+    "loginAjax" - {
       val st = Security.SessionToken.anonymous()
       ajaxPost(CommonProtocols.Login.ajax)(CommonProtocols.Login.Request(-\/(user1.username), user1.password), st)
         .assertOk
@@ -52,7 +52,7 @@ object LiveTest extends TestSuite {
       ()
     }
 
-    'logout {
+    "logout" - {
       val st = user1.toToken()
       get(Urls.logout.relativeUrl, Some(st))
         .assertRedirectTo("/")
@@ -60,7 +60,7 @@ object LiveTest extends TestSuite {
       ()
     }
 
-    'webappClientPublicJs {
+    "webappClientPublicJs" - {
       get(AssetManifest.webappClientPublicJs)
         .assertOk
         .assertContentTypeJs
@@ -69,21 +69,21 @@ object LiveTest extends TestSuite {
       ()
     }
 
-    'favicon {
+    "favicon" - {
       get(AssetManifest.favicon)
         .assertOk
         .assertContentType("image/x-icon")
       ()
     }
 
-    'membersHome {
+    "membersHome" - {
       get(Urls.memberHome.relativeUrl, user1)
         .assertSpa(AssetManifest.webappClientHomeJs, HomeSpaEntryPoint.proc)
         .assertBodyTitle(WebappConfig.makePageTitle())
       ()
     }
 
-    'projectSpa {
+    "projectSpa" - {
       val p = Obfuscators.projectId.obfuscate(pid.get)
       get(Urls.project(p).relativeUrl, user1)
         .assertSpa(AssetManifest.webappClientProjectJs, ProjectSpaEntryPoint.proc)
@@ -91,33 +91,33 @@ object LiveTest extends TestSuite {
     }
 
     // ensure we don't block these (and other Lift stuff we don't know about)
-    'contentSecurityPolicyReport {
+    "contentSecurityPolicyReport" - {
       get(s"/${WebappConfig.liftCtxPath}/content-security-policy-report")
         .assertBodyContains("content security policy report")
       ()
     }
 
     // Lift parses x.y.z as having no extension
-    'sourceMaps {
+    "sourceMaps" - {
       get("/blah.js.map").assertStatus(404)
       ()
     }
 
-    'opsOk {
+    "opsOk" - {
       get("/ops/ok").assertOk.assertStatelessLift
       ()
     }
 
-    'metrics {
+    "metrics" - {
       def test(token: String = null) =
         get("/ops/metrics", headers = Option(token).map(t => "Authorization" -> s"Bearer $t").toList).assertStatelessLift
 
-      'noAuth - test().assertStatus(404)
-      'badAuth - test("xxx").assertStatus(401)
-      'goodAuth - test("metric_test_secret").assertStatus(200)
+      "noAuth" - test().assertStatus(404)
+      "badAuth" - test("xxx").assertStatus(401)
+      "goodAuth" - test("metric_test_secret").assertStatus(200)
     }
 
-    'templateAccess {
+    "templateAccess" - {
       val templates = List(
         "admin-stats.html",
         "404.html",
@@ -128,7 +128,7 @@ object LiveTest extends TestSuite {
         get(s"/$t").assertStatus(404)
     }
 
-    'jwtLifespanExtension {
+    "jwtLifespanExtension" - {
       val Some(s1) = get("/").newJwt()
       assert(s1.authenticatedUser.isEmpty)
 
@@ -155,7 +155,7 @@ object LiveTest extends TestSuite {
       ()
     }
 
-    'teardown {
+    "teardown" - {
       xa ! DbTable.Event.truncate
       xa ! DbTable.Project.truncate
       userFixture.teardown.unsafeRun()

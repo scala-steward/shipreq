@@ -13,7 +13,7 @@ object HomeSpaTest extends TestSuite {
 
   override def tests = Tests {
 
-    'createProject {
+    "createProject" - {
       def test(name: String): Unit =
         UserFixture.Transaction.runNow { uf =>
           import uf.xa

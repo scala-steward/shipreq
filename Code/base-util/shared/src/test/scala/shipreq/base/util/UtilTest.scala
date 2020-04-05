@@ -8,7 +8,7 @@ import utest._
 object UtilTest extends TestSuite {
 
   override def tests = Tests {
-    'partitionConsecutive {
+    "partitionConsecutive" - {
       def test(in: Int*)(a: Int*)(b: Int*) =
         assertEq(Util.partitionConsecutive(in.toList), (a.toList, b.toList))
       * - test()()()
@@ -20,9 +20,9 @@ object UtilTest extends TestSuite {
       * - test(3, 4, 5, 6)(3, 4, 5, 6)()
     }
 
-    'unindent {
+    "unindent" - {
 
-      'equal {
+      "equal" - {
         assertEq(
           Util.unindentBy(
             """  omfg
@@ -37,7 +37,7 @@ object UtilTest extends TestSuite {
         )
       }
 
-      'oneUnder {
+      "oneUnder" - {
         assertEq(
           Util.unindentBy(
             """  omfg
@@ -52,7 +52,7 @@ object UtilTest extends TestSuite {
         )
       }
 
-      'oneOver {
+      "oneOver" - {
         assertEq(
           Util.unindentBy(
             """  omfg
@@ -67,7 +67,7 @@ object UtilTest extends TestSuite {
         )
       }
 
-      'allUnder {
+      "allUnder" - {
         assertEq(
           Util.unindentBy(
             """ omfg
@@ -82,7 +82,7 @@ object UtilTest extends TestSuite {
         )
       }
 
-      'allOver {
+      "allOver" - {
         assertEq(
           Util.unindentBy(
             """   omfg
@@ -99,13 +99,13 @@ object UtilTest extends TestSuite {
 
     }
 
-    'separateByWhitespaceOrCommas {
+    "separateByWhitespaceOrCommas" - {
 
-      'manual - assertEq(
+      "manual" - assertEq(
         Util.separateByWhitespaceOrCommas("omg  , k qq"),
         Vector(\/-("omg"), -\/("  , "), \/-("k"), -\/(" "), \/-("qq")))
 
-      'prop - {
+      "prop" - {
         val gen = Gen.chooseChar(' ', ",ab")
         for {
           n <- 0 to 6

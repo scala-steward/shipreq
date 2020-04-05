@@ -29,11 +29,11 @@ object UseCaseStepLabelLookupTest extends TestSuite {
 
   override def tests = Tests {
 
-    'sp6 {
+    "sp6" - {
       implicit val ll = SampleProject6.project.content.reqs.useCaseStepLabelLookup
       implicit val pos1 = ReqTypePos(1)
 
-      'unique {
+      "unique" - {
         testOk(10, "1.0")
         testOk(11, "1.0.1")
         testOk(12, "1.0.2")
@@ -47,7 +47,7 @@ object UseCaseStepLabelLookupTest extends TestSuite {
         testOk(20, "1.x.0")
       }
 
-      'aliases {
+      "aliases" - {
         testOk(11, ".0.1")
         testOk(12, "102")
         testOk(12, "1.02")
@@ -69,20 +69,20 @@ object UseCaseStepLabelLookupTest extends TestSuite {
         testOk(19, ".2a")
       }
 
-      'notFound {
+      "notFound" - {
         testNotFound("102.")
         testNotFound("1.0.2.")
         testNotFound(".1.0.2")
         testNotFound(".102")
       }
 
-      'ambiguous {
+      "ambiguous" - {
         testAmbiguous("11")("1.1", "1.1.1")
         testAmbiguous("x1")("1.E.X.1", "1.0.X.1")
       }
 
-      'extraZeros {
-        'unique {
+      "extraZeros" - {
+        "unique" - {
           testOk(11, "1.00.1")
           testOk(11, "1.00.01")
           testOk(19, "0001.000.0002.a")
@@ -92,7 +92,7 @@ object UseCaseStepLabelLookupTest extends TestSuite {
           testNotFound("1.0.20.a")
         }
 
-        'aliases {
+        "aliases" - {
           testNotFound("1002")
           testNotFound("1.002")
           testNotFound(".0a")

@@ -499,10 +499,10 @@ object IssueDetectorTest extends TestSuite {
 
     // Just testing sample projects' states without any modification.
     // In targeted tests below however, we modify projects to elicit specific issues.
-    'sampleProjects {
+    "sampleProjects" - {
       implicit val filter = IssueFilter.any
 
-      'p3 - assertIssues(p3)(
+      "p3" - assertIssues(p3)(
         IssueLite.BlankCustomField(P3.frs(1), P3.priField),
         IssueLite.BlankCustomField(P3.frs(2), P3.priField),
         IssueLite.DeadRefInReq(P3.frs(2), Location.Text.Title, ContentRef.ReqRef(P3.mfs(28))),
@@ -510,7 +510,7 @@ object IssueDetectorTest extends TestSuite {
         IssueLite.IssueTagInReq(P3.frs(2), Location.Text.Title, T.GenericReqTitle.Issue(2, SampleProject3.inlineIssueDesc)),
       )
 
-      'p4 - assertIssues(p4)(
+      "p4" - assertIssues(p4)(
         IssueLite.BlankCustomField(P4.frs(1), P4.priField),
         IssueLite.BlankCustomField(P4.frs(2), P4.priField),
         IssueLite.BlankCustomField(P4.uc1, P4.priField),
@@ -519,7 +519,7 @@ object IssueDetectorTest extends TestSuite {
         IssueLite.IssueTagInReq(P4.frs(2), Location.Text.Title, T.GenericReqTitle.Issue(2, SampleProject3.inlineIssueDesc)),
       )
 
-      'p6 - assertIssues(p6)(
+      "p6" - assertIssues(p6)(
         IssueLite.BlankCustomField(P6.frs(1), P6.priField),
         IssueLite.BlankCustomField(P6.frs(2), P6.priField),
         IssueLite.BlankCustomField(P6.uc1, P6.priField),
@@ -534,105 +534,105 @@ object IssueDetectorTest extends TestSuite {
       )
     }
 
-    'Blank {
+    "Blank" - {
       import BlankTests._
-      'title             - title()
-      'ucSteps           - ucSteps()
-      'ucSteps2          - ucSteps2()
-      'emptyStepAndTitle - emptyStepAndTitle()
+      "title"             - title()
+      "ucSteps"           - ucSteps()
+      "ucSteps2"          - ucSteps2()
+      "emptyStepAndTitle" - emptyStepAndTitle()
     }
 
-    'BlankCustomField {
+    "BlankCustomField" - {
       import BlankCustomFieldTests._
-      'notAllReqTypes - notAllReqTypes()
-      'imps1          - imps1()
-      'imps2          - imps2()
+      "notAllReqTypes" - notAllReqTypes()
+      "imps1"          - imps1()
+      "imps2"          - imps2()
     }
 
-    'ConflictingTag {
+    "ConflictingTag" - {
       import ConflictingTagTests._
-      'ko           - ko()
-      'deadTag      - deadTag()
-      'deadTagGroup - deadTagGroup()
-      'tagInText    - tagInText()
+      "ko"           - ko()
+      "deadTag"      - deadTag()
+      "deadTagGroup" - deadTagGroup()
+      "tagInText"    - tagInText()
     }
 
-    'DeadRef {
+    "DeadRef" - {
       import DeadRefTests._
-      'issueDesc - issueDesc()
-      'inRcg     - inRcg()
-      'toRcg     - toRcg()
+      "issueDesc" - issueDesc()
+      "inRcg"     - inRcg()
+      "toRcg"     - toRcg()
     }
 
-    'DeadTag {
+    "DeadTag" - {
       import DeadTagTests._
-      'ko - ko()
+      "ko" - ko()
     }
 
-    'EmptyCodeGroup {
+    "EmptyCodeGroup" - {
       import EmptyCodeGroupTests._
-      'ko            - ko()
-      'deadChild     - deadChild()
-      'deadCodeGroup - deadCodeGroup()
+      "ko"            - ko()
+      "deadChild"     - deadChild()
+      "deadCodeGroup" - deadCodeGroup()
     }
 
-    'FieldDefaultTagDead {
+    "FieldDefaultTagDead" - {
       import FieldDefaultTagDeadTests._
-      'ko        - ko()
-      'otherwise - otherwise()
-      'unrelated - unrelated()
-      'liveOnly  - liveOnly()
+      "ko"        - ko()
+      "otherwise" - otherwise()
+      "unrelated" - unrelated()
+      "liveOnly"  - liveOnly()
     }
 
-    'FieldDefaultTagNotApplicable {
+    "FieldDefaultTagNotApplicable" - {
       import FieldDefaultTagNotApplicableTests._
-      'ok              - ok()
-      'specific        - specific()
-      'otherwise       - otherwise()
-      'liveReqTypeOnly - liveReqTypeOnly()
-      'liveFieldOnly   - liveFieldOnly()
+      "ok"              - ok()
+      "specific"        - specific()
+      "otherwise"       - otherwise()
+      "liveReqTypeOnly" - liveReqTypeOnly()
+      "liveFieldOnly"   - liveFieldOnly()
     }
 
-    'FieldDefaultTagUnrelated {
+    "FieldDefaultTagUnrelated" - {
       import FieldDefaultTagUnrelatedTests._
-      'ko              - ko()
-      'deadTag         - deadTag()
-      'liveFieldOnly   - liveFieldOnly()
-      'liveReqTypeOnly - liveReqTypeOnly()
+      "ko"              - ko()
+      "deadTag"         - deadTag()
+      "liveFieldOnly"   - liveFieldOnly()
+      "liveReqTypeOnly" - liveReqTypeOnly()
     }
 
-    'ImplicationRequired {
+    "ImplicationRequired" - {
       import ImplicationRequiredTests._
-      'ko - ko()
+      "ko" - ko()
     }
 
-    'IssueTags {
+    "IssueTags" - {
       import IssueTagTests._
-      'rcg       - rcg()
-      'deadIssue - deadIssue()
-      'deadCtx   - deadCtx()
-      'ok        - ok()
-      'txtField  - txtField()
-      'ucs       - ucs()
+      "rcg"       - rcg()
+      "deadIssue" - deadIssue()
+      "deadCtx"   - deadCtx()
+      "ok"        - ok()
+      "txtField"  - txtField()
+      "ucs"       - ucs()
     }
 
-    'NonApplicableField {
+    "NonApplicableField" - {
       import NonApplicableFieldTests._
-      'onlyLiveFields     - onlyLiveFields()
-      'onlyDeadApplicable - onlyDeadApplicable()
-      'noRules            - noRules()
+      "onlyLiveFields"     - onlyLiveFields()
+      "onlyDeadApplicable" - onlyDeadApplicable()
+      "noRules"            - noRules()
     }
 
-    'NonApplicableTag {
+    "NonApplicableTag" - {
       import NonApplicableTagTests._
-      'ko   - ko()
-      'dead - dead()
+      "ko"   - ko()
+      "dead" - dead()
     }
 
-    'UninhabitableTagField {
+    "UninhabitableTagField" - {
       import UninhabitableTagFieldTests._
-      'ko        - ko()
-      'deadField - deadField()
+      "ko"        - ko()
+      "deadField" - deadField()
     }
   }
 }

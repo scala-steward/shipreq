@@ -235,25 +235,25 @@ abstract class SharedTests(implicit val init: InitialEvents) extends TestSuite {
     c1 +: es
 
   override def tests = Tests {
-    'create {
-      'one      - assertPass(c1)
-      'two      - assertPass(c1, c2)
-      'zeroId   - assertFail(" id ")          (setId(c1, 0))
-      'negId    - assertFail(" id ")          (setId(c1, -1))
-      'dupId    - assertFail("already exists")(c1, copyId(c2, from = c1))
+    "create" - {
+      "one"      - assertPass(c1)
+      "two"      - assertPass(c1, c2)
+      "zeroId"   - assertFail(" id ")          (setId(c1, 0))
+      "negId"    - assertFail(" id ")          (setId(c1, -1))
+      "dupId"    - assertFail("already exists")(c1, copyId(c2, from = c1))
     }
 
-    'update {
-      'notFound - assertFail("not found")(u1)
-      'dead     - assertFail("dead")     (prepForSoftDelete(sd1, u1): _*)
+    "update" - {
+      "notFound" - assertFail("not found")(u1)
+      "dead"     - assertFail("dead")     (prepForSoftDelete(sd1, u1): _*)
       //'afterHD  - assertFail("not found")(c1, hd1, u1)
     }
 
-    'delete {
-      'okSoft    - assertPass(prepForSoftDelete(sd1): _*)
-      'okRest    - assertPass(prepForSoftDelete(sd1, r1): _*)
-      'okMulti   - assertPass(prepForSoftDelete(sd1, r1, sd1, r1): _*)
-      'notFound  - List(sd1, r1).foreach(d => assertFail("not found")(d))
+    "delete" - {
+      "okSoft"    - assertPass(prepForSoftDelete(sd1): _*)
+      "okRest"    - assertPass(prepForSoftDelete(sd1, r1): _*)
+      "okMulti"   - assertPass(prepForSoftDelete(sd1, r1, sd1, r1): _*)
+      "notFound"  - List(sd1, r1).foreach(d => assertFail("not found")(d))
 
       // All hard-deletion has been removed
       // 'okHard    - assertPass(c1, hd1)

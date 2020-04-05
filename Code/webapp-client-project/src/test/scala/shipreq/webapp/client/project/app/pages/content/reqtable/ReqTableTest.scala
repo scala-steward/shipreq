@@ -544,79 +544,79 @@ object ReqTableTest extends TestSuite {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = Tests {
-    'initialState - {
-      'default - runTest(*.emptyPlan)
-      'filter - testInitialFilter()
+    "initialState" - {
+      "default" - runTest(*.emptyPlan)
+      "filter" - testInitialFilter()
     }
 
-    'filter - runTest(Plan.action(testFilter).named("testFilter").withInitialState(SampleProject3.project))
+    "filter" - runTest(Plan.action(testFilter).named("testFilter").withInitialState(SampleProject3.project))
 
-    'dead {
-      'cols - runTest(Plan action testDeadColumns named "testDeadColumns")
+    "dead" - {
+      "cols" - runTest(Plan action testDeadColumns named "testDeadColumns")
       // 'toggle - runTest(testDeadToggleInvariants) TODO Should dead col stay on but hidden when ShowDead→HideDead?
-      'notEditable - runTest(testDeadNotEditable named "testDeadNotEditable")
+      "notEditable" - runTest(testDeadNotEditable named "testDeadNotEditable")
     }
 
-    'editor {
-      'impSrc       - runTest(testImplicationSrcColumnEditor    named "testImplicationSrcColumnEditor"   )
-      'impTgt       - runTest(testImplicationTgtColumnEditor    named "testImplicationTgtColumnEditor"   )
-      'impCol       - runTest(testCustomImplicationColumnEditor named "testCustomImplicationColumnEditor")
-      'tagsOther    - runTest(testOtherTagsColumnEditor         named "testOtherTagsColumnEditor"        )
-      'tagsCustom   - runTest(testCustomTagColumnEditor         named "testCustomTagColumnEditor"        )
-      'titleIO      - runTest(testEditorTitleIO                 named "testEditorTitleIO"                )
-      'failClear    - runTest(testFailureClearedOnEsc           named "testFailureClearedOnEsc"          )
+    "editor" - {
+      "impSrc"       - runTest(testImplicationSrcColumnEditor    named "testImplicationSrcColumnEditor"   )
+      "impTgt"       - runTest(testImplicationTgtColumnEditor    named "testImplicationTgtColumnEditor"   )
+      "impCol"       - runTest(testCustomImplicationColumnEditor named "testCustomImplicationColumnEditor")
+      "tagsOther"    - runTest(testOtherTagsColumnEditor         named "testOtherTagsColumnEditor"        )
+      "tagsCustom"   - runTest(testCustomTagColumnEditor         named "testCustomTagColumnEditor"        )
+      "titleIO"      - runTest(testEditorTitleIO                 named "testEditorTitleIO"                )
+      "failClear"    - runTest(testFailureClearedOnEsc           named "testFailureClearedOnEsc"          )
 
-      'tagLegality {
-        'status   - testTagLegality("BR-1", "Status")
-        'col      - testTagLegality("BR-1", StaticField.OtherTags.name)
-        'exStatus - testTagLegality("BR-2", "Status")
-        'exCol    - testTagLegality("BR-2", StaticField.OtherTags.name)
+      "tagLegality" - {
+        "status"   - testTagLegality("BR-1", "Status")
+        "col"      - testTagLegality("BR-1", StaticField.OtherTags.name)
+        "exStatus" - testTagLegality("BR-2", "Status")
+        "exCol"    - testTagLegality("BR-2", StaticField.OtherTags.name)
       }
 
-      'nop {
+      "nop" - {
         // RCG title
         // RCG code
-        'title     - runTest(testNopEdits("MF-6", SpecialBuiltInField.Title.name))
-        'textCol   - runTest(testNopEdits("MF-1", "Description"))
-        'impSrc    - runTest(testNopEdits("MF-1", SpecialBuiltInField.ImplyBackward.name))
-        'impTgt    - runTest(testNopEdits("MF-1", SpecialBuiltInField.ImplyForward.name))
-        'impCol    - runTest(testNopEdits("MF-1", "Major Feature"))
-        'otherTags - runTest(testNopEdits("MF-1", StaticField.OtherTags.name))
-        'allTags   - runTest(testNopEdits("MF-1", StaticField.AllTags.name))
-        'tagCol    - runTest(testNopEdits("MF-1", "Status"))
-        'reqCodes  - runTest(testNopEditsBy("MF-1", SpecialBuiltInField.Code.name)("Trailing \\n." -> (_ + "\n")))
+        "title"     - runTest(testNopEdits("MF-6", SpecialBuiltInField.Title.name))
+        "textCol"   - runTest(testNopEdits("MF-1", "Description"))
+        "impSrc"    - runTest(testNopEdits("MF-1", SpecialBuiltInField.ImplyBackward.name))
+        "impTgt"    - runTest(testNopEdits("MF-1", SpecialBuiltInField.ImplyForward.name))
+        "impCol"    - runTest(testNopEdits("MF-1", "Major Feature"))
+        "otherTags" - runTest(testNopEdits("MF-1", StaticField.OtherTags.name))
+        "allTags"   - runTest(testNopEdits("MF-1", StaticField.AllTags.name))
+        "tagCol"    - runTest(testNopEdits("MF-1", "Status"))
+        "reqCodes"  - runTest(testNopEditsBy("MF-1", SpecialBuiltInField.Code.name)("Trailing \\n." -> (_ + "\n")))
       }
     }
 
-    'kbNav - testKeyboardNavigation()
+    "kbNav" - testKeyboardNavigation()
 
 //    'new {
 //      'useCaseWithMinimalColumns - ???
 //      'codeGroupWithMinimalColumns - ???
 //    }
 
-    'copy - {
-      'title     - runTest(testCopy("MF-1", "Title")("Use Case Editor"))
-      'desc      - runTest(testCopy("UC-1", "Description")("This UC is about eating."))
-      'id        - runTest(testCopy("MF-1", "ID")("MF-1"))
-      'grReqType - runTest(testCopy("MF-1", "Req Type")("MF"))
-      'ucReqType - runTest(testCopy("UC-1", "Req Type")("UC"))
-      'imps      - runTest(testCopy("FR-1", "Implies")("CO-2, FR-2"))
-      'tags      - runTest(testCopy("MF-5", "Priority")("pri=high"))
-      'tagsEmpty - runTest(testCopy("MF-2", "Status")(""))
-      'dead      - runTest(testCopy("CO-1", "Title")("Search entities!"))
+    "copy" - {
+      "title"     - runTest(testCopy("MF-1", "Title")("Use Case Editor"))
+      "desc"      - runTest(testCopy("UC-1", "Description")("This UC is about eating."))
+      "id"        - runTest(testCopy("MF-1", "ID")("MF-1"))
+      "grReqType" - runTest(testCopy("MF-1", "Req Type")("MF"))
+      "ucReqType" - runTest(testCopy("UC-1", "Req Type")("UC"))
+      "imps"      - runTest(testCopy("FR-1", "Implies")("CO-2, FR-2"))
+      "tags"      - runTest(testCopy("MF-5", "Priority")("pri=high"))
+      "tagsEmpty" - runTest(testCopy("MF-2", "Status")(""))
+      "dead"      - runTest(testCopy("CO-1", "Title")("Search entities!"))
     }
 
-    'paste - {
-      'closedDesc  - runTest(testPasteClosedDesc)
-      'closedTitle - runTest(testPasteClosedTitle)
-      'openDesc    - runTest(testPasteOpenDesc)
+    "paste" - {
+      "closedDesc"  - runTest(testPasteClosedDesc)
+      "closedTitle" - runTest(testPasteClosedTitle)
+      "openDesc"    - runTest(testPasteOpenDesc)
     }
 
-    'fieldRules - {
-      'main    - testFieldRules()
-      'sorting - testFieldRulesAndSorting()
-      'filter  - testFieldRulesAndFilter()
+    "fieldRules" - {
+      "main"    - testFieldRules()
+      "sorting" - testFieldRulesAndSorting()
+      "filter"  - testFieldRulesAndFilter()
     }
   }
 }

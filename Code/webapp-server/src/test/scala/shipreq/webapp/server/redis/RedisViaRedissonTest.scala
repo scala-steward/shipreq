@@ -12,7 +12,7 @@ object RedisViaRedissonTest extends TestSuite {
   private def reps = 24
 
   override def tests = Tests {
-    'laws {
+    "laws" - {
       val client = PrepareEnv.redissonClient
       val schema = RedisSchema(s"test:${Instant.now()}:")
       val id     = ProjectId(1)
@@ -30,12 +30,12 @@ object RedisViaRedissonTest extends TestSuite {
         Thread.sleep(10) // Don't remove else published messages can leak into next test
       }
 
-      'left - {
+      "left" - {
         val t = new RedisLaws.Tester[Fx](id, redis, id, inmem, evictSS, await)
         t.testAllLaws(reps)
       }
 
-      'right - {
+      "right" - {
         val t = new RedisLaws.Tester[Fx](id, inmem, id, redis, evictSS, await)
         t.testAllLaws(reps)
       }

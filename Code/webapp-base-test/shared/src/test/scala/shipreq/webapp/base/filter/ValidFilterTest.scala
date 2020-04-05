@@ -27,19 +27,19 @@ object ValidFilterTest extends TestSuite {
     import SampleProject6.Values._
     import FilterAst.FieldAttr._
 
-    'fromPotential {
-      'reqType {
-        'ok  - assertTranslation(PF.reqType("MF"))(VF.reqType(mf))
-        'bad - assertTranslationFails(PF.reqType("XWE"))("unknown type")
+    "fromPotential" - {
+      "reqType" - {
+        "ok"  - assertTranslation(PF.reqType("MF"))(VF.reqType(mf))
+        "bad" - assertTranslationFails(PF.reqType("XWE"))("unknown type")
       }
-      'field {
-        'exact - assertTranslation(PF.fieldProp("Description", "blank"))(VF.fieldProp(\/-(descField), Blank))
-        'caseWrong - assertTranslation(PF.fieldProp("descriPTION", "blank"))(VF.fieldProp(\/-(descField), Blank))
-        'title - assertTranslation(PF.fieldProp("TITLE", "BLANK"))(VF.fieldProp(-\/(Title), Blank))
+      "field" - {
+        "exact" - assertTranslation(PF.fieldProp("Description", "blank"))(VF.fieldProp(\/-(descField), Blank))
+        "caseWrong" - assertTranslation(PF.fieldProp("descriPTION", "blank"))(VF.fieldProp(\/-(descField), Blank))
+        "title" - assertTranslation(PF.fieldProp("TITLE", "BLANK"))(VF.fieldProp(-\/(Title), Blank))
       }
     }
 
-    'remove {
+    "remove" - {
       def test(test: (String, String)): Unit = {
         import SampleProject7.Values._
 
@@ -56,16 +56,16 @@ object ValidFilterTest extends TestSuite {
         assertEq(actualTxt, expectedTxt)
       }
 
-      'any2          - test("DD | MF | FR" -> "DD | FR")
-      'any1          - test("DD | MF"      -> "DD")
-      'any0          - test("MF | MF"      -> "")
-      'all2          - test("DD MF FR"     -> "")
-      'all1          - test("DD MF"        -> "")
-      'all0          - test("MF MF"        -> "")
-      'andNot        - test("DD -MF"       -> "DD")
-      'orNot         - test("DD | -MF"     -> "DD")
-      'notAndAnd     - test("-(MF MF) FR"  -> "FR")
-      'notNotAndAnd  - test("--(MF MF) FR" -> "")
+      "any2"          - test("DD | MF | FR" -> "DD | FR")
+      "any1"          - test("DD | MF"      -> "DD")
+      "any0"          - test("MF | MF"      -> "")
+      "all2"          - test("DD MF FR"     -> "")
+      "all1"          - test("DD MF"        -> "")
+      "all0"          - test("MF MF"        -> "")
+      "andNot"        - test("DD -MF"       -> "DD")
+      "orNot"         - test("DD | -MF"     -> "DD")
+      "notAndAnd"     - test("-(MF MF) FR"  -> "FR")
+      "notNotAndAnd"  - test("--(MF MF) FR" -> "")
     }
   }
 }

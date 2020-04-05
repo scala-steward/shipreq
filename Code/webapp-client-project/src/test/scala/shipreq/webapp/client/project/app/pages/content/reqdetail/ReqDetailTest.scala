@@ -137,14 +137,14 @@ object ReqDetailTest extends TestSuite {
 
   override def tests = Tests {
 
-    'badReqType - testError("QL-1", "QL-1 doesn't exist")
-    'badReq     - testError("FR-9", "FR-9 doesn't exist")
+    "badReqType" - testError("QL-1", "QL-1 doesn't exist")
+    "badReq"     - testError("FR-9", "FR-9 doesn't exist")
 
-    'gr - test("FR-1")(Plan invariants testLifeRowInnerText(liveCanDelete))
+    "gr" - test("FR-1")(Plan invariants testLifeRowInnerText(liveCanDelete))
 
-    'uc {
+    "uc" - {
 
-      'tree - test("UC-1")(Plan.action( allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1")
+      "tree" - test("UC-1")(Plan.action( allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1")
           +> addTailStepEC           +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1", "1.E.1")
           >> delStep("1.1")          +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1")
           >> shiftStepLeft("1.0.3")  +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.1", "1.E.1")
@@ -160,7 +160,7 @@ object ReqDetailTest extends TestSuite {
           >> restoreStep("1.X.0")    +> allSteps.assert("1.0", "1.0.1", "1.0.1.a", "1.0.X.1", "1.1", "1.1.1", "1.E.1", "1.E.1.a")
       ))
 
-      'text - test("UC-1")(Plan.action(
+      "text" - test("UC-1")(Plan.action(
              stepText("1.1").assert("Have no food")
           +> stepText("1.0.2").assert("Put in mouth←1.1.1")
           +> stepText("1.1.1").assert("Steal food→1.0.2")
@@ -188,19 +188,19 @@ object ReqDetailTest extends TestSuite {
           +> stepText("1.0.3").assert("Still hungry?→1.0.1")
       ))
 
-      'flowComma - test("UC-1")(Plan.action(
+      "flowComma" - test("UC-1")(Plan.action(
         editStepText("1.1", "omg --> 1.0.2,1.0.1")
           +> stepText("1.1").assert("omg→1.0.1, 1.0.2")
       ))
 
-      'dead - test("UC-1")(Plan.action(
+      "dead" - test("UC-1")(Plan.action(
         clickDeleteOrRestore.updateState(stateMode set Mode.Delete) >> deleteScreenDelete
           +> life.assert(Dead)
           +> tailStepAC.test("doesn't exist")(_.isEmpty)
           +> tailStepEC.test("doesn't exist")(_.isEmpty)
       ))
 
-      'deadFlow - test("UC-2", SampleProject6.project)(Plan.action(
+      "deadFlow" - test("UC-2", SampleProject6.project)(Plan.action(
            addStep("2.0")
         >> addStep("2.0.1")
         >> addStep("2.0.2")
@@ -241,10 +241,10 @@ object ReqDetailTest extends TestSuite {
 //                    sets          = 3,
 //                    stopWhenFound = true)
 
-      'bugs {
+      "bugs" - {
 
         // Turned out the problem was in UnsavedChanges.derive
-        'useCaseStepIdNotFound - test("UC-1", SampleProject6.project)(Plan.action(
+        "useCaseStepIdNotFound" - test("UC-1", SampleProject6.project)(Plan.action(
                                       // 1.0  1.0.1  1.0.2  1.0.2.a  1.0.3                                                          1.1  1.1.1  1.E.1
           addStep("1.0")           >> // 1.0  1.0.1  1.0.2           1.0.3    1.0.3.a  1.0.4                                        1.1  1.1.1  1.E.1
           shiftStepLeft("1.0.3.a") >> // 1.0  1.0.1  1.0.2           1.0.3             1.0.4                        1.0.5           1.1  1.1.1  1.E.1
@@ -256,7 +256,7 @@ object ReqDetailTest extends TestSuite {
         ))
 
 
-        'extraUnsavedChanges - test("UC-1", SampleProject6.project)(Plan.action(
+        "extraUnsavedChanges" - test("UC-1", SampleProject6.project)(Plan.action(
                                                                  // 1.0  1.0.1  1.0.2  1.0.2.a  1.0.3  1.1  1.1.1  1.E.1
           shiftStepRight("1.1")   +> unsavedChanges.assert(0) >> // 1.0  1.0.1  1.0.2  1.0.2.a  1.0.3  1.0.4  1.0.4.a  1.E.1
           delStep("1.0.2")        +> unsavedChanges.assert(0) >> // 1.0  1.0.1  1.0.2  1.0.3  1.0.3.a  1.E.1
@@ -271,32 +271,32 @@ object ReqDetailTest extends TestSuite {
       }
     }
 
-    'deadExplicitly - test("MF-19")(Plan invariants testLifeRowInnerText(deadCanRestore))
+    "deadExplicitly" - test("MF-19")(Plan invariants testLifeRowInnerText(deadCanRestore))
 
-    'deadImplicitly - test("SI-1")(Plan invariants testLifeRowInnerText(deadNoRestore))
+    "deadImplicitly" - test("SI-1")(Plan invariants testLifeRowInnerText(deadNoRestore))
 
-    'deadImplicitlyAndExplicitly - test("SI-2")(Plan invariants testLifeRowInnerText(deadNoRestore))
+    "deadImplicitlyAndExplicitly" - test("SI-2")(Plan invariants testLifeRowInnerText(deadNoRestore))
 
-    'deadFields - test("UC-1")(Plan.action(
+    "deadFields" - test("UC-1")(Plan.action(
       filterDeadToggle
         .addCheck(reporterFieldExistence.beforeAndAfter)
         .times(3)
     ))
 
-    'inapplicableFields - {
+    "inapplicableFields" - {
       def check(expectVisible: Boolean) =
         visibleFields.assertB(expectVisible).contains("Description")
       def t(pubid: ExternalPubid, expectVisible: Boolean) =
         test(pubid)(Plan invariants check(expectVisible))
-      'mf1 - t("MF-1", true)
-      'fr1 - t("FR-1", false)
+      "mf1" - t("MF-1", true)
+      "fr1" - t("FR-1", false)
     }
 
-    'deleteRestore - test("UC-1")(Plan.action(
+    "deleteRestore" - test("UC-1")(Plan.action(
       deleteReq >> restoreReq
     ))
 
-    'editors - test("UC-1")(Plan(
+    "editors" - test("UC-1")(Plan(
       doubleClickTitle                     +> editorCount.assert.beforeAndAfter(0, 1) <+ filterDead.assert(HideDead)
       >> doubleClickFieldValue("Notes")    +> editorCount.assert(2)
       >> showDead                          +> editorCount.assert(2)
@@ -304,7 +304,7 @@ object ReqDetailTest extends TestSuite {
       >> hideDead                          +> editorCount.assert(2)
     , reporterFieldExistence))
 
-    'unsavedDeadChanges - test("UC-1")(Plan.action(
+    "unsavedDeadChanges" - test("UC-1")(Plan.action(
       filterDead.assert(HideDead)
         +> editorCount.assert(0)
         +> unsavedChanges.assert(0)
@@ -338,7 +338,7 @@ object ReqDetailTest extends TestSuite {
         +> unsavedChanges.assert(2)
     ))
 
-    'fieldRules {
+    "fieldRules" - {
       // +--------------------------------------+---------------+
       // | TEST                                 | IN            |
       // +--------------------------------------+---------------+
@@ -373,7 +373,7 @@ object ReqDetailTest extends TestSuite {
       //   - priority     : pr : man
       //   - released     : ow : man
       //   - status       : pr : def:deadTag
-      'fr1 - test("FR-1", SampleProject7.project)(Plan.action(
+      "fr1" - test("FR-1", SampleProject7.project)(Plan.action(
 
         *.emptyAction
           +> filterDead.assert(HideDead)
@@ -436,7 +436,7 @@ object ReqDetailTest extends TestSuite {
       //   - pr : def
       //   - ow : opt
       //   - pr : def:dead -> ow:opt
-      'br1 - test("BR-1", SampleProject7.project)(Plan.action(
+      "br1" - test("BR-1", SampleProject7.project)(Plan.action(
 
         *.emptyAction
           +> filterDead.assert(HideDead)
@@ -500,7 +500,7 @@ object ReqDetailTest extends TestSuite {
       //   - priority     : pr : na
       //   - released     : pr : def:badTag
       //   - status       : pr : def:deadTag
-      'co1 - test("CO-1", SampleProject7.project)(Plan.action(
+      "co1" - test("CO-1", SampleProject7.project)(Plan.action(
 
         *.emptyAction
           +> filterDead.assert(ShowDead)
@@ -567,7 +567,7 @@ object ReqDetailTest extends TestSuite {
           +> fieldText("Version").assert("v1.0 v3.x") // def:tag:bad - w/ content - ShowDead
       ))
 
-      'si1 - test("SI-1", SampleProject7.project)(Plan.action(
+      "si1" - test("SI-1", SampleProject7.project)(Plan.action(
         *.emptyAction
           +> filterDead.assert(ShowDead)
           +> visibleFields.assert(
@@ -595,7 +595,7 @@ object ReqDetailTest extends TestSuite {
       ))
     }
 
-    'staticTagFields - {
+    "staticTagFields" - {
       import SampleProject7.Values._
       import UnsafeTypes._
       import StaticField._

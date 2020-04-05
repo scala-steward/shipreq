@@ -20,7 +20,7 @@ object DbTest extends TestSuite {
 
   override def tests = Tests {
 
-    'to_iso8601_str {
+    "to_iso8601_str" - {
       def test(in: String, out: String): Unit =
         TestDb().runNow { xa =>
           val q = Query0[String](s"select to_iso8601_str(timestamptz '$in')")
@@ -28,45 +28,45 @@ object DbTest extends TestSuite {
           assertEq(r, out)
         }
 
-      'typicalPrecision -
+      "typicalPrecision" -
         test("2013-08-16 09:32:48.002474+10", "2013-08-15T23:32:48Z")
 
-      'morePrecision -
+      "morePrecision" -
         test("2010-10-20 20:32:48.00247489+10", "2010-10-20T10:32:48Z")
 
-      'lesserPrecision -
+      "lesserPrecision" -
         test("2012-09-10 09:56:23.2157+11", "2012-09-09T22:56:23Z")
 
-      'null - TestDb().runNow { xa =>
+      "null" - TestDb().runNow { xa =>
         val q = Query0[Option[String]](s"select to_iso8601_str(NULL)")
         assertEq(xa ! q.unique, None)
       }
     }
 
-    'instant {
+    "instant" - {
       def assertApproxEqual(a: Instant, e: Instant): Unit =
         assertEq(Duration.between(a, e).abs.minusSeconds(2).isNegative, true)
 
-      'read - TestDb().runNow { xa =>
+      "read" - TestDb().runNow { xa =>
         val (dbNow, i) = xa ! Query0[(Instant, Int)](s"select now(), 2").unique
         assertEq(i, 2)
         assertApproxEqual(dbNow, Instant.now())
       }
 
-      'readSome - TestDb().runNow { xa =>
+      "readSome" - TestDb().runNow { xa =>
         val (dbNow, i) = xa ! Query0[(Option[Instant], Int)](s"select now(), 3").unique
         assertEq(i, 3)
         assertEq(dbNow.isDefined, true)
         assertApproxEqual(dbNow.get, Instant.now())
       }
 
-      'readNone - TestDb().runNow { xa =>
+      "readNone" - TestDb().runNow { xa =>
         val (dbNow, i) = xa ! Query0[(Option[Instant], Int)](s"select null :: timestamptz, 5").unique
         assertEq(i, 5)
         assertEq(dbNow.isDefined, false)
       }
 
-      'write - TestDb().runNow { xa =>
+      "write" - TestDb().runNow { xa =>
         val u = DbUtil(xa).newUserId()
         val l = LocalDateTime.of(2084, 5, 2, 18, 30, 8)
         val i = l.toInstant(ZoneOffset.of("+11:00"))
@@ -77,7 +77,7 @@ object DbTest extends TestSuite {
         assertEq(ai, i)
       }
 
-      'writeOption - TestDb().runNow { xa =>
+      "writeOption" - TestDb().runNow { xa =>
         val u = DbUtil(xa).newUserId()
         val l = LocalDateTime.of(2030, 9, 7, 20, 20, 4)
         val i = l.toInstant(ZoneOffset.of("+15:00"))
@@ -90,8 +90,8 @@ object DbTest extends TestSuite {
       }
     }
 
-    'user {
-      'resetPasswordFns - TestDb().runNow { xa =>
+    "user" - {
+      "resetPasswordFns" - TestDb().runNow { xa =>
         val dbu = DbUtil(xa)
         val u = dbu.newUserId()
         val username = xa ! Query0[String](s"select username from usr where id=${u.value: Long}").unique
@@ -176,9 +176,9 @@ object DbTest extends TestSuite {
 ////    }
 //  }
 
-    'event {
+    "event" - {
 
-      'prop - {
+      "prop" - {
         import IgnoreEqualityOfVerifiedEventTimestamps._
         TestDb().runNow { xa =>
 
@@ -225,7 +225,7 @@ object DbTest extends TestSuite {
 
     }
 
-    'visitorStats - {
+    "visitorStats" - {
       def add(uniqueIps: Set[String], requests: Int)(implicit xa: SingleConnectionXA) =
         xa ! DbInterpreter.logVisitorStats(ResponseType.`1xx`, uniqueIps, requests)
 
@@ -235,7 +235,7 @@ object DbTest extends TestSuite {
         assertEq((actualIps, actualRequests), (expectIps, expectRequests))
       }
 
-      'startWithoutIps - TestDb().runNow { implicit xa =>
+      "startWithoutIps" - TestDb().runNow { implicit xa =>
 //        xa ! DbTable.VisitorStatsPerHour.truncate
         test(0, 0)
 
@@ -249,7 +249,7 @@ object DbTest extends TestSuite {
         test(2, 14)
       }
 
-      'startWithIps - TestDb().runNow { implicit xa =>
+      "startWithIps" - TestDb().runNow { implicit xa =>
 //        xa ! DbTable.VisitorStatsPerHour.truncate
         test(0, 0)
 
@@ -263,7 +263,7 @@ object DbTest extends TestSuite {
         test(3, 20)
       }
 
-      'responseTypes - {
+      "responseTypes" - {
         import ResponseType._
         val tests = List(
            -1 -> Other,

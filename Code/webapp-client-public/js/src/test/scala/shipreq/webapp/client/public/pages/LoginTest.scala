@@ -113,16 +113,16 @@ object LoginTest extends TestSuite {
   override def tests = Tests {
     window.localStorage.clear()
 
-    'login {
-      'localValidation - test(
+    "login" - {
+      "localValidation" - test(
         clickLogin
           +> loginEnabled.assert(Enabled)
           +> assertLoginFailed
           +> reqsSent.assert(0))
 
-      'success - test(enterUser("blah") >> enterPassword("hhhhhh345345") >> success)
+      "success" - test(enterUser("blah") >> enterPassword("hhhhhh345345") >> success)
 
-      'failureThenSuccess - test(
+      "failureThenSuccess" - test(
         enterUser("blah") >> enterPassword("hhhhhh345345") +> errorTitle.assert(None) >> (
           clickLogin
             +> loginEnabled.assert(Disabled)
@@ -134,7 +134,7 @@ object LoginTest extends TestSuite {
           ).times(2)
           >> success)
 
-      'rememberMe {
+      "rememberMe" - {
         test(assertForm("", "", On) +> enterUser("b") >> enterPassword("x"))
         test(assertForm("b", "", On) +> toggleRememberMe +> assertForm("b", "", Off))
         test(assertForm("", "", Off) +> enterUser("b") >> enterPassword("x"))
@@ -146,14 +146,14 @@ object LoginTest extends TestSuite {
 //      }
     }
 
-    'resetPassword {
-      'localValidation - test(
+    "resetPassword" - {
+      "localValidation" - test(
         clickForgotPwd
           +> loginEnabled.assert(Enabled)
           +> assertForgotPwdFailed
           +> reqsSent.assert(0))
 
-      'success - test(
+      "success" - test(
         enterUser("blah")
           >> clickForgotPwd
             +> loginEnabled.assert(Disabled)

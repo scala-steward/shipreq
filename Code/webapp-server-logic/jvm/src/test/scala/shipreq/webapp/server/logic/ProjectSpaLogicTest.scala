@@ -216,12 +216,12 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
   override def tests = Tests {
 
-    'msgName - {
+    "msgName" - {
       val n = WsReqRes.InitApp.name
       assertEq(n, "InitApp")
     }
 
-    'connect {
+    "connect" - {
       implicit val t = new Tester; import t._
       import ConnectRejection._
 
@@ -231,15 +231,15 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
           assertEq(a, expect)
         }
 
-      'noSession        - test(None, p1.id)(-\/(NoSession))
-      'anonymousSession - test(SessionToken.anonymous(), p1.id)(-\/(AnonymousSession))
-      'invalidProjectId - test(user2.token, Obfuscated("!"))(-\/(InvalidProjectId))
-      'projectNotFound  - test(user2.token, ProjectId(23432))(-\/(ProjectNotFound))
-      'accessDenied     - test(user3.token, p1.id)(-\/(AccessDenied))
-      'ok               - test(user2.token, p1.id)(\/-((p1.static.copy(sessionId = user2.token.sessionId, expiresAt = security.expiry()), emptyState)))
+      "noSession"        - test(None, p1.id)(-\/(NoSession))
+      "anonymousSession" - test(SessionToken.anonymous(), p1.id)(-\/(AnonymousSession))
+      "invalidProjectId" - test(user2.token, Obfuscated("!"))(-\/(InvalidProjectId))
+      "projectNotFound"  - test(user2.token, ProjectId(23432))(-\/(ProjectNotFound))
+      "accessDenied"     - test(user3.token, p1.id)(-\/(AccessDenied))
+      "ok"               - test(user2.token, p1.id)(\/-((p1.static.copy(sessionId = user2.token.sessionId, expiresAt = security.expiry()), emptyState)))
     }
 
-    'initApp - {
+    "initApp" - {
       def test(expectCacheWrites: Int, expectFullDbReads: Int)(implicit t: Tester): Unit = {
         import t._
         assertDifference("full db reads", db.loadProjectLog.length)(expectFullDbReads) {
@@ -264,7 +264,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       }}
     }
 
-    'expiry {
+    "expiry" - {
       implicit val t = new Tester; import t._
       val \/-((static, state)) = projectSpa.onConnect(user2.token, p1.id).value
       def twice(f: => Unit) = {f; f}
@@ -289,7 +289,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       }
     }
 
-    'updateProject - {
+    "updateProject" - {
       def test(c: CacheState, expectCacheWrites: Int, expectFullDbReads: Int)(implicit t: Tester): Unit = {
         import t._
         assertDifference(s"[$c] db reads", db.loadProjectLog.length)(expectFullDbReads) {
@@ -314,7 +314,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       }}
     }
 
-    'updatesAndListeners - {
+    "updatesAndListeners" - {
       implicit val t = new Tester; import t._
       val static = p1.static
 
@@ -348,9 +348,9 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       assertEq("[C]", recv2, Vector(ves2, ves3, ves4))
     }
 
-    'reconnect - {
+    "reconnect" - {
 
-      'current - {
+      "current" - {
         implicit val t = new Tester; import t._
         assertDifference("db reads", db.loadProjectLog.length)(0) {
           val (\/-(events), newState) = sendMsg(WsReqRes.Reconnect.AndReq(p1.projectAndOrd.ord), p1.static, emptyState)
@@ -359,7 +359,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         }
       }
 
-      'stale - {
+      "stale" - {
         def test(c: CacheState, expectFullDbReads: Int)(implicit t: Tester): Unit = {
           import t._
           import IgnoreEqualityOfVerifiedEventTimestamps._
@@ -379,7 +379,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       }
     }
 
-    'sync - {
+    "sync" - {
       implicit val t = new Tester; import t._
       val ords     = NonEmptySet(1, 3, 666).map(EventOrd(_))
       var recv     = Vector.empty[VerifiedEvent.NonEmptySeq]

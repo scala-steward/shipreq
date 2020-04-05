@@ -138,13 +138,13 @@ object Register2Test extends TestSuite {
 
   override def tests = Tests {
 
-    'success - test(
+    "success" - test(
       assertForm(Enabled)
         +> tos.checked.assert(false)
         +> enterValidDetails
         >> success)
 
-    'failureThenSuccess - test(
+    "failureThenSuccess" - test(
       enterValidDetails
         >> username.set("")       +> submitEnabled.assert(Enabled)
         >> clickSubmit            +> username.validity.assert(Invalid) +> reqsSent.assert.noChange
@@ -153,7 +153,7 @@ object Register2Test extends TestSuite {
         >> username.set("okfine") +> submitEnabled.assert(Enabled)
         >> success)
 
-    'remembersTakenUsernames - test(
+    "remembersTakenUsernames" - test(
       enterValidDetails
         >> username.set("hello") +> submitEnabled.assert(Enabled)
         >> submitToUsernameTaken
@@ -166,7 +166,7 @@ object Register2Test extends TestSuite {
         >> username.set("great") +> submitEnabled.assert(Enabled)
         >> success)
 
-    'tosRequired - test(
+    "tosRequired" - test(
       enterValidDetails
         >> tos.uncheck
         >> clickSubmit +> tos.validity.assert(Invalid) +> reqsSent.assert.noChange

@@ -14,7 +14,7 @@ object VersionTest extends TestSuite {
   private val v22 = Version.fromInts(2, 2)
 
   override def tests = Tests {
-    'comparison {
+    "comparison" - {
       val all = List(v10, v11, v12, v20, v21, v22)
       val flat = all.mapToOrder
       for {

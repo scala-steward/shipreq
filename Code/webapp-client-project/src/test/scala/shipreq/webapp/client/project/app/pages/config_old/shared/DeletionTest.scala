@@ -19,24 +19,24 @@ object DeletionTest extends TestSuite {
     val d = Persistence.asyncDelete[MockState]((s, f) => Callback{cb = (s,f).some}, r, setRowStatus)
     val dio = r(d)
 
-    'uninvoked {
+    "uninvoked" - {
       assert(cb.isEmpty)
       assertEq(s.status, RowStatus.Sync)
     }
 
-    'invoked {
+    "invoked" - {
       dio.runNow()
       assert(cb.isDefined)
       assertEq(s.status, RowStatus.Locked)
     }
 
-    'rpcSuccess {
+    "rpcSuccess" - {
       dio.runNow()
       cb.get._1.runNow()
       assertEq(s.status, RowStatus.Locked) // success = nop
     }
 
-    'rpcFailure {
+    "rpcFailure" - {
       dio.runNow()
       cb.get._2.runNow()
       val retry = assertRowStatusFailed(s.status).retry

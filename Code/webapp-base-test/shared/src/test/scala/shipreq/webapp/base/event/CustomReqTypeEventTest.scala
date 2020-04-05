@@ -74,18 +74,18 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
 
   override def tests = Tests {
 
-    'create {
-      'needName - assertFail("Name")    (c1.mod(_ - Name))
-      'needMne  - assertFail("Mnemonic")(c1.mod(_ - Mnemonic))
-      'needImp  - assertFail("Imp")     (c1.mod(_ - Implication))
-      'needDesc - assertFail("Desc")    (c1.mod(_ - Description))
-      'badName  - assertFail("blank")   (c1.mod(_ + Name("")))
-      'badMne   - assertFail("Mnemonic")(c1.mod(_ + Mnemonic("?")))
-      'dupName  - assertFail("unique")  (c1, c2.mod(_ + Name(mfName)))
-      'dupMne   - assertFail("unique")  (c1, c2.mod(_ + Mnemonic("MF")))
+    "create" - {
+      "needName" - assertFail("Name")    (c1.mod(_ - Name))
+      "needMne"  - assertFail("Mnemonic")(c1.mod(_ - Mnemonic))
+      "needImp"  - assertFail("Imp")     (c1.mod(_ - Implication))
+      "needDesc" - assertFail("Desc")    (c1.mod(_ - Description))
+      "badName"  - assertFail("blank")   (c1.mod(_ + Name("")))
+      "badMne"   - assertFail("Mnemonic")(c1.mod(_ + Mnemonic("?")))
+      "dupName"  - assertFail("unique")  (c1, c2.mod(_ + Name(mfName)))
+      "dupMne"   - assertFail("unique")  (c1, c2.mod(_ + Mnemonic("MF")))
     }
 
-    'update {
+    "update" - {
 
       def assertNoRetention(events: Event*): Unit = {
         var es = c1 +: c2 +: events.toVector :+ u1
@@ -113,22 +113,22 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
         assertEq(r(), CustomReqType.v1(1, "MF", Set("M", "X"), "xxx", Optional, Live))
       }
 
-      'notInUse   - assertNoRetention()
-      'liveReq    - assertRetention(gr1)
-      'deadReq    - assertRetention(gr1, ReqsDelete.one(1.GR))
-      'exReq      - assertRetention(gr1, GenericReqTypeSet(1.GR, 2))
-      'impField   - assertNoRetention(createImpF1, createImpF2)
-      'savedViews - assertNoRetention(createImpF1, createImpF2, createSV)
-      'fieldRules - assertNoRetention(createImpF1, createImpF2)
-      'tagRules   - assertNoRetention(createTag1)
+      "notInUse"   - assertNoRetention()
+      "liveReq"    - assertRetention(gr1)
+      "deadReq"    - assertRetention(gr1, ReqsDelete.one(1.GR))
+      "exReq"      - assertRetention(gr1, GenericReqTypeSet(1.GR, 2))
+      "impField"   - assertNoRetention(createImpF1, createImpF2)
+      "savedViews" - assertNoRetention(createImpF1, createImpF2, createSV)
+      "fieldRules" - assertNoRetention(createImpF1, createImpF2)
+      "tagRules"   - assertNoRetention(createTag1)
 
-      'badName    - assertFail("blank")   (c1, CustomReqTypeUpdate(1, nev(Name(""))))
-      'badMne     - assertFail("Mnemonic")(c1, CustomReqTypeUpdate(1, nev(Mnemonic("?"))))
-      'dupName    - assertFail("unique")  (c1, c2, CustomReqTypeUpdate(2, nev(Name(mfName))))
-      'dupMne     - assertFail("unique")  (c1, c2, CustomReqTypeUpdate(2, nev(Mnemonic("MF"))))
+      "badName"    - assertFail("blank")   (c1, CustomReqTypeUpdate(1, nev(Name(""))))
+      "badMne"     - assertFail("Mnemonic")(c1, CustomReqTypeUpdate(1, nev(Mnemonic("?"))))
+      "dupName"    - assertFail("unique")  (c1, c2, CustomReqTypeUpdate(2, nev(Name(mfName))))
+      "dupMne"     - assertFail("unique")  (c1, c2, CustomReqTypeUpdate(2, nev(Mnemonic("MF"))))
     }
 
-    'softDelete - {
+    "softDelete" - {
       def test(events: Event*): Unit = {
         val es = c1 +: c2 +: events.toVector
         val p1 = _assertPass(es: _*)
@@ -138,17 +138,17 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
         assertEq(p3, p1)
       }
 
-      'notInUse   - test()
-      'liveReq    - test(gr1)
-      'deadReq    - test(gr1, ReqsDelete.one(1.GR))
-      'exReq      - test(gr1, GenericReqTypeSet(1.GR, 2))
-      'impField   - test(createImpF1, createImpF2)
-      'savedViews - test(createImpF1, createImpF2, createSV)
-      'fieldRules - test(createImpF1, createImpF2)
-      'tagRules   - test(createTag1)
+      "notInUse"   - test()
+      "liveReq"    - test(gr1)
+      "deadReq"    - test(gr1, ReqsDelete.one(1.GR))
+      "exReq"      - test(gr1, GenericReqTypeSet(1.GR, 2))
+      "impField"   - test(createImpF1, createImpF2)
+      "savedViews" - test(createImpF1, createImpF2, createSV)
+      "fieldRules" - test(createImpF1, createImpF2)
+      "tagRules"   - test(createTag1)
     }
 
-    'hardDelete - {
+    "hardDelete" - {
 
       def assertFail(events: Event*): Unit = {
         val es = c1 +: c2 +: events.toVector
@@ -167,17 +167,17 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
       def assertPass(events: Event*): Unit =
         assertPassP(events: _*)
 
-      'notInUse  - assertPass()
-      'liveReq   - assertFail(gr1)
-      'deadReq   - assertFail(gr1, ReqsDelete.one(1.GR))
-      'exReq     - assertFail(gr1, GenericReqTypeSet(1.GR, 2))
+      "notInUse"  - assertPass()
+      "liveReq"   - assertFail(gr1)
+      "deadReq"   - assertFail(gr1, ReqsDelete.one(1.GR))
+      "exReq"     - assertFail(gr1, GenericReqTypeSet(1.GR, 2))
 
-      'impField - {
+      "impField" - {
         val p = assertPassP(createImpF1, createImpF2)
         assertEq(p.config.fields.customFields.get(impf1), None)
       }
 
-      'savedViews - {
+      "savedViews" - {
         val p = assertPassP(createImpF1, createImpF2, createSV)
         val sv = p.reqtableViews.get.get(sv1).get
         assertEq(sv.view, View(
@@ -188,7 +188,7 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
         ))
       }
 
-      'fieldRules - {
+      "fieldRules" - {
         val p = assertPassP(createImpF1, createImpF2)
         assertEq(p.config.fields.custom(impf2), CustomField.Implication(
           id                = impf2,
@@ -198,7 +198,7 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
         ))
       }
 
-      'tagRules - {
+      "tagRules" - {
         val p = assertPassP(createTag1)
         val t = p.config.tags.needApplicableTag(tag1)
         assertEq(t.applicableReqTypes, notReqTypes(2, uc))

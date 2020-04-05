@@ -1254,95 +1254,95 @@ object LogicTest extends TestSuite {
   // ===================================================================================================================
 
   override def tests = Tests {
-    'sort {
-      'reqCodes - testReqCodes()
-      'reqType  - testReqType()
-      'title    - testTitle()
-      'impSrc   - testImpSrc()
-      'impTgt   - testImpTgt()
-      'impCust  - testCustomImpField()
-      'custTxt  - testCustomTextField()
-      'otherTags {
-        'sorted1   - testOtherTags_sorted1()
-        'sorted2   - testOtherTags_sorted2()
-        'unsorted  - testOtherTags_unsorted()
-        'inText    - testOtherTags_inText()
-        'expansion - testOtherTags_expansion()
+    "sort" - {
+      "reqCodes" - testReqCodes()
+      "reqType"  - testReqType()
+      "title"    - testTitle()
+      "impSrc"   - testImpSrc()
+      "impTgt"   - testImpTgt()
+      "impCust"  - testCustomImpField()
+      "custTxt"  - testCustomTextField()
+      "otherTags" - {
+        "sorted1"   - testOtherTags_sorted1()
+        "sorted2"   - testOtherTags_sorted2()
+        "unsorted"  - testOtherTags_unsorted()
+        "inText"    - testOtherTags_inText()
+        "expansion" - testOtherTags_expansion()
       }
-      'allTags {
-        'expansion - testAllTags_expansion()
+      "allTags" - {
+        "expansion" - testAllTags_expansion()
       }
-      'custTag {
-        'sorted1  - testCustomTagField_sorted1()
-        'sorted2  - testCustomTagField_sorted2()
-        'unsorted - testCustomTagField_unsorted()
-        'inText   - testCustomTagField_inText()
+      "custTag" - {
+        "sorted1"  - testCustomTagField_sorted1()
+        "sorted2"  - testCustomTagField_sorted2()
+        "unsorted" - testCustomTagField_unsorted()
+        "inText"   - testCustomTagField_inText()
       }
     }
-    'applicability {
-      'custTxt - testApplicabilityOfCustomTextFields()
-      'custTag - testApplicabilityOfCustomTagFields()
-      'custImp - testApplicabilityOfCustomImpFields()
+    "applicability" - {
+      "custTxt" - testApplicabilityOfCustomTextFields()
+      "custTag" - testApplicabilityOfCustomTagFields()
+      "custImp" - testApplicabilityOfCustomImpFields()
     }
-    'filterDead {
-      'rows       - testFilterDeadRows()
-      'impSrc     - testFilterDeadImpsSrc()
-      'impTgt     - testFilterDeadImpsTgt()
-      'impCust    - testFilterDeadCustomImps()
-      'tags       - testFilterDeadTags()
-      'tagsCust   - testFilterDeadTagsInCustomTagField()
-      'tagField   - testFilterDeadCustomTagField()
+    "filterDead" - {
+      "rows"       - testFilterDeadRows()
+      "impSrc"     - testFilterDeadImpsSrc()
+      "impTgt"     - testFilterDeadImpsTgt()
+      "impCust"    - testFilterDeadCustomImps()
+      "tags"       - testFilterDeadTags()
+      "tagsCust"   - testFilterDeadTagsInCustomTagField()
+      "tagField"   - testFilterDeadCustomTagField()
     }
-    'deadData {
+    "deadData" - {
       // These comprehensively test all combinations of dead data
-      'tags {
-        'hideDead - DeadTags.testHideDead()
-        'showDead - DeadTags.testShowDead()
+      "tags" - {
+        "hideDead" - DeadTags.testHideDead()
+        "showDead" - DeadTags.testShowDead()
       }
-      'issues {
-        'hideDead - DeadIssues.testHideDead()
-        'showDead - DeadIssues.testShowDead()
+      "issues" - {
+        "hideDead" - DeadIssues.testHideDead()
+        "showDead" - DeadIssues.testShowDead()
       }
     }
-    'filter {
-      'text                 - testFilterText()
-      'textPattern          - testFilterTextPattern()
-      'anyIssue             - testFilterAnyIssue()
-      'anyTag               - testFilterAnyTag()
-      'hasIssueOn1          - testFilterHasIssueOn1()
-      'hasIssueOn2          - testFilterHasIssueOn2()
-      'hasIssueOff1         - testFilterHasIssueOff1()
-      'hasIssueOff2         - testFilterHasIssueOff2()
-      'tag                  - testFilterTag()
-      'customIssue          - testFilterCustomIssue()
-      'reqType              - testFilterReqType()
-      'reqTypeExLive        - testFilterReqTypeExLive()
-      'reqTypeExDead        - testFilterReqTypeExDead()
-      'impliesAnyOf         - testFilterImplies()
-      'impliedByAnyOf       - testFilterImpliedBy()
-      'implyNothing         - testFilterImplyNothing()
-      'impFieldNA           - testFilterImpFieldNA()
-      'impFieldBlank        - testFilterImpFieldBlank()
-      'textFieldNA          - testFilterTextFieldNA()
-      'textFieldBlank       - testFilterTextFieldBlank()
-      'tagFieldNA           - testFilterTagFieldNA()
-      'tagFieldBlank        - testFilterTagFieldBlank()
-      'tagFieldDefault      - testFilterTagFieldDefault()
-      'ignoreNATags         - testFilterIgnoreNATags()
-      'tagsIncludesDefaults - testFilterByTagsIncludesDefaults()
-      'title                - testFilterTitle()
-      'otherTags            - testFilterOtherTags()
-      'allTags              - testFilterAllTags()
-      'ncac                 - testFilterNCAC()
-      'ec                   - testFilterEC()
-      'allOf                - testFilterAll()
-      'anyOf                - testFilterAny()
-      'not                  - testFilterNot()
+    "filter" - {
+      "text"                 - testFilterText()
+      "textPattern"          - testFilterTextPattern()
+      "anyIssue"             - testFilterAnyIssue()
+      "anyTag"               - testFilterAnyTag()
+      "hasIssueOn1"          - testFilterHasIssueOn1()
+      "hasIssueOn2"          - testFilterHasIssueOn2()
+      "hasIssueOff1"         - testFilterHasIssueOff1()
+      "hasIssueOff2"         - testFilterHasIssueOff2()
+      "tag"                  - testFilterTag()
+      "customIssue"          - testFilterCustomIssue()
+      "reqType"              - testFilterReqType()
+      "reqTypeExLive"        - testFilterReqTypeExLive()
+      "reqTypeExDead"        - testFilterReqTypeExDead()
+      "impliesAnyOf"         - testFilterImplies()
+      "impliedByAnyOf"       - testFilterImpliedBy()
+      "implyNothing"         - testFilterImplyNothing()
+      "impFieldNA"           - testFilterImpFieldNA()
+      "impFieldBlank"        - testFilterImpFieldBlank()
+      "textFieldNA"          - testFilterTextFieldNA()
+      "textFieldBlank"       - testFilterTextFieldBlank()
+      "tagFieldNA"           - testFilterTagFieldNA()
+      "tagFieldBlank"        - testFilterTagFieldBlank()
+      "tagFieldDefault"      - testFilterTagFieldDefault()
+      "ignoreNATags"         - testFilterIgnoreNATags()
+      "tagsIncludesDefaults" - testFilterByTagsIncludesDefaults()
+      "title"                - testFilterTitle()
+      "otherTags"            - testFilterOtherTags()
+      "allTags"              - testFilterAllTags()
+      "ncac"                 - testFilterNCAC()
+      "ec"                   - testFilterEC()
+      "allOf"                - testFilterAll()
+      "anyOf"                - testFilterAny()
+      "not"                  - testFilterNot()
     }
-    'codeGroupsWithFilter {
-      'hideDead - testCodeGroupWhenFilteredAndHideDead()
-      'showDead - testCodeGroupWhenFilteredAndShowDead()
+    "codeGroupsWithFilter" - {
+      "hideDead" - testCodeGroupWhenFilteredAndHideDead()
+      "showDead" - testCodeGroupWhenFilteredAndShowDead()
     }
-    'reqCodeTree - testReqCodeTree()
+    "reqCodeTree" - testReqCodeTree()
   }
 }

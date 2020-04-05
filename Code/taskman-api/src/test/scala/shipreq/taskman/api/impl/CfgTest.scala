@@ -10,9 +10,9 @@ object CfgTest extends TestSuite with ApiImplTestHelpers {
 
   override def tests = Tests {
 
-    'cfgPut - {
+    "cfgPut" - {
 
-      'insert - {
+      "insert" - {
         val result = run(xa =>
           for {
             _ <- xa.cfgPut("a", "start")
@@ -23,7 +23,7 @@ object CfgTest extends TestSuite with ApiImplTestHelpers {
         assert(result == List(("a", "start"), ("b", "omg")))
       }
 
-      'update - {
+      "update" - {
         val result = run(xa =>
           for {
             _ <- xa.cfgPut("a", "start")

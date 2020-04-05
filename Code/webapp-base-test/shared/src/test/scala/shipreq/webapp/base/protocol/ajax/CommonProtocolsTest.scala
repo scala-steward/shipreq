@@ -25,13 +25,13 @@ object CommonProtocolsTest extends TestSuite {
   override def tests = Tests {
 
     // =================================================================================================================
-    'Login - {
+    "Login" - {
       import CommonProtocols.Login._
 
-      'req - {
+      "req" - {
         import ajax.req.codec
 
-        'roundTrip - {
+        "roundTrip" - {
           val gen = Gen.apply2(Request.apply)(R.username \/ R.emailAddr, R.plainTextPassword)
           propTestRoundTrip(codec)(gen)
         }
@@ -43,21 +43,21 @@ object CommonProtocolsTest extends TestSuite {
         }
       }
 
-      'res - {
+      "res" - {
         import ajax.res.codec
 
-        'roundTrip - {
+        "roundTrip" - {
           assertRoundTrip(codec)(Allow)
           assertRoundTrip(codec)(Deny)
         }
 
         "v1.0" - {
-          'allow - {
+          "allow" - {
             val bin    = BinaryData.fromHex("35BED9BA01000171ECACBC")
             val expect = Allow
             assertDecodeOk(codec)(bin, expect)
           }
-          'deny - {
+          "deny" - {
             val bin    = BinaryData.fromHex("35BED9BA01000071ECACBC")
             val expect = Deny
             assertDecodeOk(codec)(bin, expect)
@@ -67,13 +67,13 @@ object CommonProtocolsTest extends TestSuite {
     }
 
     // =================================================================================================================
-    'ReportClientError - {
+    "ReportClientError" - {
       import CommonProtocols.ReportClientError._
 
-      'req - {
+      "req" - {
         import ajax.req.codec
 
-        'roundTrip - {
+        "roundTrip" - {
           val genErrorInfo       = Gen.apply5(ErrorInfo)(str, str, str, str, str.mapBy(str)(0 to 4))
           val genRequest         = Gen.apply2(Request)(genErrorInfo, genMetadataClient)
           propTestRoundTrip(codec)(genRequest)
@@ -87,10 +87,10 @@ object CommonProtocolsTest extends TestSuite {
         }
       }
 
-      'res - {
+      "res" - {
         import ajax.res.codec
 
-        'roundTrip - {
+        "roundTrip" - {
           assertRoundTrip(codec)(())
         }
 
@@ -103,13 +103,13 @@ object CommonProtocolsTest extends TestSuite {
     }
 
     // =================================================================================================================
-    'SubmitFeedback - {
+    "SubmitFeedback" - {
       import CommonProtocols.SubmitFeedback._
 
-      'req - {
+      "req" - {
         import ajax.req.codec
 
-        'roundTrip - {
+        "roundTrip" - {
           val genUserInput = str.map(UserInput)
           val genRequest   = Gen.apply2(Request)(genUserInput, genMetadataClient)
           propTestRoundTrip(codec)(genRequest)
@@ -148,10 +148,10 @@ object CommonProtocolsTest extends TestSuite {
         }
       }
 
-      'res - {
+      "res" - {
         import ajax.res.codec
 
-        'roundTrip - {
+        "roundTrip" - {
           assertRoundTrip(codec)(())
         }
 

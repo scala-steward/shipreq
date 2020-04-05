@@ -20,18 +20,18 @@ object SortCriteriaTest extends TestSuite {
   val sc1 = SortCriteria(Vector(Code / AscThenBlanks, ReqType / Desc, Title / BlanksThenAsc), Pubid / Desc)
 
   override def tests = Tests {
-    'want {
-      'inconclusive {
-        'new_cb - testWant(sc1, Tags, )
-        'new_ib - testWant(sc1, Tags, )
-        'head_cb1234 - ???
-        'head_ib12   - ???
-        'mid - ???
-        'last - ???
+    "want" - {
+      "inconclusive" - {
+        "new_cb" - testWant(sc1, Tags, )
+        "new_ib" - testWant(sc1, Tags, )
+        "head_cb1234" - ???
+        "head_ib12"   - ???
+        "mid" - ???
+        "last" - ???
       }
-      'conclusive {
-        'same12 - ???
-        'diff - ???
+      "conclusive" - {
+        "same12" - ???
+        "diff" - ???
       }
     }
   }
@@ -76,8 +76,8 @@ object SortCriteriaTest extends TestSuite {
   } yield WantTest(sc, ci, cc)
 
   override def tests = Tests {
-    'want {
-      'props - wantTest.mustSatisfyE(_.all)
+    "want" - {
+      "props" - wantTest.mustSatisfyE(_.all)
     }
   }
 }
