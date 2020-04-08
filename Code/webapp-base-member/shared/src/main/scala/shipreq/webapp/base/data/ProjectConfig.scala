@@ -213,18 +213,20 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
       case HideDead =>
         Memo { reqTypeId =>
           FieldSetRules(
-            imp  = fields.custom(_).fieldReqTypeRules(reqTypeId),
-            tag  = tagFieldRulesFixedHideDead(_).fixed(reqTypeId),
-            text = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            imp    = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            tag    = tagFieldRulesFixedHideDead(_).fixed(reqTypeId),
+            text   = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            static = _.fieldReqTypeRules(reqTypeId),
           )
         }
 
       case ShowDead =>
         Memo { reqTypeId =>
           FieldSetRules(
-            imp  = fields.custom(_).fieldReqTypeRules(reqTypeId),
-            tag  = tagFieldRulesFixedShowDead(_).fixed(reqTypeId),
-            text = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            imp    = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            tag    = tagFieldRulesFixedShowDead(_).fixed(reqTypeId),
+            text   = fields.custom(_).fieldReqTypeRules(reqTypeId),
+            static = _.fieldReqTypeRules(reqTypeId),
           )
         }
     }
