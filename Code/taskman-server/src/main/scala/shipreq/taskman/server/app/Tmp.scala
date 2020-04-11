@@ -3,7 +3,6 @@ package shipreq.taskman.server.app
 import cats.effect.{ExitCode, IO}
 import java.time.Instant
 import scalaz.Equal
-import scalaz.old.NonEmptyList
 import scalaz.syntax.bind._
 import shipreq.taskman.api._
 import shipreq.base.util.univeq._

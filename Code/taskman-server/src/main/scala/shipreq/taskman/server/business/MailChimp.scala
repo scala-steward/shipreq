@@ -111,7 +111,7 @@ object MailChimp {
         implicit val enc = Encoder.AsObject.instance[BatchSubscribe](i =>
           JsonObject.fromIterable(
             ("id" -> i.listId.value.asJson) ::
-              ("batch" -> Json.arr(i.subs.list.map(s => Json.obj(buildReqSubscription(s): _*)): _*)) ::
+              ("batch" -> Json.arr(i.subs.iterator.map(s => Json.obj(buildReqSubscription(s): _*)).toSeq: _*)) ::
               batchSubscribeStatic))
 
         implicit val dec = decoderBatchSubscribe
