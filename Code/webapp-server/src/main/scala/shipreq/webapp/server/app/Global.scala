@@ -22,7 +22,7 @@ final case class Global(config      : ServerConfig,
                         ssr         : SsrAlgebra.Prepared[Fx],
                         statRecorder: StatRecorder,
                         taskman     : TaskmanApi[Fx],
-                        trace       : TraceInterpreter.ForLift[Fx]) {
+                        trace       : TraceInterpreter.ForHttp[Fx]) {
 
   val analyticsProxy: AnalyticsProxy =
     config.analyticsProxy.build
@@ -64,7 +64,7 @@ object Global {
     t("default") {
 
       implicit val trace = t("trace") {
-        TraceLogic.on: TraceInterpreter.ForLift[Fx]
+        TraceLogic.on: TraceInterpreter.ForHttp[Fx]
       }
 
       implicit val runDB = t("runDB") {

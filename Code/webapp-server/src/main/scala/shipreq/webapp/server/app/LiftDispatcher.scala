@@ -158,7 +158,7 @@ final class LiftDispatcher(global: Global) extends StrictLogging {
     }
   }
 
-  val logic: DispatchLogic[Fx, LiftReq, Box[LiftResponse]] = {
+  val logic: DispatchLogic[Fx, LiftReq] = {
     implicit val config    = global.config.server
     implicit val metrics   = global.metrics
     implicit val trace     = global.trace
@@ -170,7 +170,7 @@ final class LiftDispatcher(global: Global) extends StrictLogging {
     implicit val ops       = global.ops
     implicit val db        = DB.VerificationTokenReadOnly.trans(DbInterpreter.VerificationTokenReadOnly)(global.db.fx.trans)
     implicit val server    = ServerInterpreter
-    new DispatchLogic(parseReq, makeResponse)
+    new DispatchLogic[Fx, LiftReq](parseReq)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -193,8 +193,15 @@ final class LiftDispatcher(global: Global) extends StrictLogging {
     val dispatch = logic.all(testMode = Props.testMode)
 
     {
-      case r if (r.request ne null) && noFileExtension(r) && !isLiftRequest(r) => () => dispatch(r).unsafeRun()
-      case r if (r.request ne null) && hasHtmlFileExtension(r)                 => () => Full(r.createNotFound)
+      case r if (r.request ne null) && noFileExtension(r) && !isLiftRequest(r) =>
+        () => {
+          val genericResponse = dispatch(r).unsafeRun()
+          val realResponse = makeResponse(r, genericResponse).unsafeRun()
+          realResponse
+        }
+
+      case r if (r.request ne null) && hasHtmlFileExtension(r) =>
+        () => Full(r.createNotFound)
     }
   }
 

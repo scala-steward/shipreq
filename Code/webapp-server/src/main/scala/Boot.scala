@@ -237,7 +237,7 @@ class Boot {
       // Duplicating Global :S
       import TraceInterpreter.Implicits._
       implicit val traceAlgebra = cfg.traceAlgebraFx
-      implicit val trace        = TraceLogic.on: TraceInterpreter.ForLift[Fx]
+      implicit val trace        = TraceLogic.on: TraceInterpreter.ForHttp[Fx]
       implicit val server       = trace.injectServer(ServerInterpreter)
       new MinimalSsr[Fx]
     } else

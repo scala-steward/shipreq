@@ -164,6 +164,7 @@ object Trace {
     final case class ShipReqUserId   (value: Long)      extends Attr(Tag.ShipReqUserId)
 
     val HttpStatus200 = HttpStatusCode(200)
+    val HttpStatus302 = HttpStatusCode(302)
 
     def httpStatusCode(code: Int): HttpStatusCode =
       if (code == 200) HttpStatus200 else HttpStatusCode(code)

@@ -53,13 +53,22 @@ object DispatchLogicTest extends TestSuite {
     def withConfig(f: ServerLogicConfig => ServerLogicConfig): Tester =
       Tester(mockInterpreters.withConfig(f))
 
-    implicit val traceLogic = TraceLogic.off[Name, TestRequest, TestResponse]
+    implicit val traceLogic = TraceLogic.off[Name, TestRequest, Response]
 
-    val dispatcher = new DispatchLogic[Name, TestRequest, TestResponse](
+    val dispatcher = new DispatchLogic[Name, TestRequest](
       _.toAbstract,
-      (req, res) => Name(TestResponse(res.cmd, res.cookies, patchCookies(req.cookies, res.cookies))))
+      )
 
-    val routeDispatcher = dispatcher.all(testMode = false)
+    def makeRealRes(req: TestRequest, res: Response): Name[TestResponse] =
+      Name(TestResponse(res.cmd, res.cookies, patchCookies(req.cookies, res.cookies)))
+
+    val routeDispatcher: TestRequest => Name[TestResponse] = {
+      val d = dispatcher.all(testMode = false)
+      req => Name {
+        val res = d(req).value
+        makeRealRes(req, res).value
+      }
+    }
 
     db.users ::= user2
     db.users ::= user3

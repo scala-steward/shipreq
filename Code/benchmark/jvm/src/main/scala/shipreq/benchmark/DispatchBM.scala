@@ -268,8 +268,8 @@ object DispatchBM {
       override def getProjectEvents(pid: ProjectId)  = F.pure(null)
     }
 
-    val dispatchLogic = new DispatchLogic[F, Request[Unit], Response](
-      r => Request(r.method, r.path, noBody, r.param, r.cookie, r), (_, r) => F.point(r))
+    val dispatchLogic = new DispatchLogic[F, Request[Unit]](
+      r => Request(r.method, r.path, noBody, r.param, r.cookie, r))
 
     val dispatcher = dispatchLogic.allLogic(testMode = false)
   }
