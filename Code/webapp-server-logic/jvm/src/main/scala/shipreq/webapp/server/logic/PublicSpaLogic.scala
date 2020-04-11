@@ -132,11 +132,10 @@ object PublicSpaLogic extends HasLogger {
 
         def register1(emailAddrStr: String): F[ErrorMsg \/ TaskId] = {
           def registerInDb(emailAddr: EmailAddr, now: Instant): D[(Task, Security.Result)] =
-            db.inDbTransaction(
-              db.getUserRegistration(emailAddr).flatMap {
-                case None    => onNewUser(emailAddr)
-                case Some(u) => preRegistrationMsg(emailAddr, u, now)
-              })
+            db.getUserRegistration(emailAddr).flatMap {
+              case None    => onNewUser(emailAddr)
+              case Some(u) => preRegistrationMsg(emailAddr, u, now)
+            }
 
           def onNewUser(email: EmailAddr): D[(Task, Security.Result)] =
             db.createUserPlaceholder(email).map(registrationRequestedTask(email, _))
@@ -256,8 +255,8 @@ object PublicSpaLogic extends HasLogger {
 
             def resetInDb(now: Instant): D[(Option[Task], Security.Result)] = {
               import DB.PasswordResetState._
-              db.inDbTransaction(Connection.TRANSACTION_SERIALIZABLE,
-                db.getPasswordResetState(user) flatMap {
+              db.withTransactionLevel(Connection.TRANSACTION_SERIALIZABLE)(
+                db.getPasswordResetState(user).flatMap {
 
                   // No token
                   case Some((email, t: NoToken)) =>

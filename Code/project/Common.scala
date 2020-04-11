@@ -200,7 +200,6 @@ object Common {
 
     invoke("shipreq.webapp.server.test.LiveTestUtils", "shutdown")
     invoke("shipreq.webapp.server.test.TestJetty",     "shutdown")
-    invoke("shipreq.webapp.server.test.TestDb",        "shutdown")
     invoke("shipreq.base.test.db.TestDb",              "shutdown")
   }
 

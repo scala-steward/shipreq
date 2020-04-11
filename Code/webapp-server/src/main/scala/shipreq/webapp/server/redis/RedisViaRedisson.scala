@@ -75,7 +75,7 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
   import Redis._
   import RedisViaRedisson.Internals._
 
-  override protected def F = fxInstance
+  override protected def F = fxScalazInstance
 
   private val byteArrayClass = classOf[Array[Byte]]
   private val scriptString   = client.getScript(StringCodec.INSTANCE)

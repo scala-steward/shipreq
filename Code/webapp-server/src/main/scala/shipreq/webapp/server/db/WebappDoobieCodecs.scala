@@ -1,7 +1,7 @@
 package shipreq.webapp.server.db
 
-import doobie.imports._
-import doobie.postgres.imports._
+import doobie._
+import doobie.postgres.implicits._
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.univeq.UnivEq
 import shipreq.base.db.DoobieHelpers._
@@ -9,44 +9,46 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.user._
 import shipreq.webapp.server.logic._
 
-object DbMeta {
+object WebappDoobieCodecs {
 
-  implicit val doobieAtomResponseType: Atom[ResponseType] =
+  implicit val doobieMetaResponseType: Meta[ResponseType] =
     pgEnumString[ResponseType]("response_type", _ => ???, _.dbValue)
 
   implicit val doobieMetaEmailAddr: Meta[EmailAddr] =
-    meta1(EmailAddr.apply)(_.value)
+    Meta[String].timap(EmailAddr.apply)(_.value)
 
   implicit val doobieMetaIP: Meta[IP] =
-    meta1(IP.apply)(_.value)
+    Meta[String].timap(IP.apply)(_.value)
 
   implicit val doobieMetaPasswordHash: Meta[PasswordHash] =
-    meta1(PasswordHash.apply)(_.value)
+    Meta[String].timap(PasswordHash.apply)(_.value)
 
   implicit val doobieMetaPersonName: Meta[PersonName] =
-    meta1(PersonName.apply)(_.value)
+    Meta[String].timap(PersonName.apply)(_.value)
 
   implicit val doobieMetaProjectId: Meta[ProjectId] =
-    meta1(ProjectId.apply)(_.value)
+    Meta[Long].timap(ProjectId.apply)(_.value)
 
   implicit val doobieMetaSalt: Meta[Salt] =
-    meta1(Salt.apply)(_.base64)
+    Meta[String].timap(Salt.apply)(_.base64)
 
   implicit val doobieMetaVerificationToken: Meta[VerificationToken] =
-    meta1(VerificationToken.apply)(_.value)
+    Meta[String].timap(VerificationToken.apply)(_.value)
 
   implicit val doobieMetaUserId: Meta[UserId] =
-    meta1(UserId.apply)(_.value)
+    Meta[Long].timap(UserId.apply)(_.value)
 
   implicit val doobieMetaUsername: Meta[Username] =
-    meta1(Username.apply)(_.value)
+    Meta[String].timap(Username.apply)(_.value)
 
-  implicit val doobieCompositePasswordAndSalt: Composite[PasswordAndSalt] =
-    Composite.generic
+  implicit val doobieReadPasswordAndSalt: Read[PasswordAndSalt] =
+    Read.apply2(PasswordAndSalt.apply)
 
-  implicit val doobieCompositeUser: Composite[User] = {
-    Composite[(UserId, Username)].readOnly(r => User(r._1, r._2))
-  }
+  implicit val doobieWritePasswordAndSalt: Write[PasswordAndSalt] =
+    Write.apply2(a => (a.passwordHash, a.salt))
+
+  implicit val doobieReadUser: Read[User] =
+    Read.apply2(User.apply)
 
 }
 

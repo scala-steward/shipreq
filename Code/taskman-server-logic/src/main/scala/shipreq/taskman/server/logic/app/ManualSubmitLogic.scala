@@ -1,5 +1,6 @@
 package shipreq.taskman.server.logic.app
 
+import cats.effect.{ExitCode, IO, IOApp}
 import io.circe.parser._
 import io.circe.syntax._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
@@ -12,15 +13,15 @@ import shipreq.taskman.api.{TaskType => T, _}
 /**
  * Submits message(s) specified on the command line.
  */
-abstract class ManualSubmitBase extends HasLogger {
+trait ManualSubmitLogic extends IOApp with HasLogger {
 
-  def runner: (TaskmanApi[Fx] => Fx[Unit]) => Fx[Unit]
+  protected def runner: (TaskmanApi[Fx] => Fx[Unit]) => Fx[Unit]
 
-  def main(args: Array[String]): Unit =
+  final override def run(args: List[String]): IO[ExitCode] =
     parseA(args) match {
-      case Ok(Nil) | Help => println(helpText)
-      case ParseError(e)  => println(s"ERROR: $e"); System exit 1
-      case Ok(tasks)       => runner(submitAll(tasks)).unsafeRun()
+      case Ok(Nil) | Help => Fx { println(helpText); ExitCode.Success }
+      case ParseError(e)  => Fx { println(s"ERROR: $e"); ExitCode.Error }
+      case Ok(tasks)      => runner(submitAll(tasks)).map(_ => ExitCode.Success)
     }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -31,8 +32,8 @@ abstract class ManualSubmitBase extends HasLogger {
   case class Ok(tasks: List[Task]) extends ParseResult
   case object Help extends ParseResult
 
-  def parseA(args: Array[String]): ParseResult =
-    args.toList.foldLeft(Ok(Nil): ParseResult)(parse)
+  def parseA(args: List[String]): ParseResult =
+    args.foldLeft(Ok(Nil): ParseResult)(parse)
 
   val parse: (ParseResult, String) => ParseResult = {
     case (Help, _) | (_, "-h") | (_, "--help") => Help
@@ -42,7 +43,7 @@ abstract class ManualSubmitBase extends HasLogger {
     case (Ok(tasks), arg) =>
       decode(arg)(TaskJson.decoderTask) match {
         case Right(task) => Ok(task :: tasks)
-        case Left(e)    => ParseError(s"Unable to parse task: ${JsonUtil.errorMsg(e)}")
+        case Left(e)     => ParseError(s"Unable to parse task: ${JsonUtil.errorMsg(e)}")
       }
   }
 

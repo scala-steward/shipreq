@@ -1,5 +1,6 @@
 package shipreq.base.util
 
+import cats.CommutativeApplicative
 import cats.effect.IO
 import cats.effect.IO.ioEffect
 import java.time.{Duration, Instant}
@@ -16,29 +17,45 @@ object FxModule {
 
   type Fx[A] = IO[A]
 
-  implicit val fxInstance: Monad[Fx] with BindRec[Fx] =
-    new Monad[Fx] with BindRec[Fx] {
-      override def ap[A, B](fa: => Fx[A])(f: => Fx[A => B]): Fx[B] = ioEffect.ap(f)(fa)
-      override def point[A](a: => A): Fx[A] = IO(a)
-      override def bind[A, B](fa: Fx[A])(f: A => Fx[B]): Fx[B] = fa.flatMap(f)
-      override def map[A, B](fa: Fx[A])(f: A => B): Fx[B] = fa.map(f)
-      override def tailrecM[A, B](f: A => Fx[A \/ B])(a: A): Fx[B] =
-        ioEffect.tailRecM(a)(f(_).map(_.toEither)) // TODO Use either in Fx interface?
-    }
+  implicit object fxScalazInstance extends Monad[Fx] with BindRec[Fx] with Catchable[Fx] {
+    override def ap[A, B](fa: => Fx[A])(f: => Fx[A => B]): Fx[B] =
+      ioEffect.ap(f)(fa)
 
-  implicit val fxInstanceCatchable: Catchable[Fx] =
-    new Catchable[Fx] {
-      override def attempt[A](f: Fx[A]): Fx[Throwable \/ A] =
-        Fx {
-          try \/-(f.unsafeRun())
-          catch {
-            case t: Throwable => -\/(t)
-          }
+    override def point[A](a: => A): Fx[A] =
+      IO(a)
+
+    override def bind[A, B](fa: Fx[A])(f: A => Fx[B]): Fx[B] =
+      fa.flatMap(f)
+
+    override def map[A, B](fa: Fx[A])(f: A => B): Fx[B] =
+      fa.map(f)
+
+    override def tailrecM[A, B](f: A => Fx[A \/ B])(a: A): Fx[B] =
+      ioEffect.tailRecM(a)(f(_).map(_.toEither)) // TODO Use either in Fx interface?
+
+    override def attempt[A](f: Fx[A]): Fx[Throwable \/ A] =
+      Fx {
+        try \/-(f.unsafeRun())
+        catch {
+          case t: Throwable => -\/(t)
         }
+      }
 
-      override def fail[A](err: Throwable): Fx[A] =
-        Fx.fail(err)
-    }
+    override def fail[A](err: Throwable): Fx[A] =
+      Fx.fail(err)
+  }
+
+  implicit object fxCatsInstance extends CommutativeApplicative[Fx] {
+
+    override def pure[A](a: A) =
+      IO.pure(a)
+
+    override def ap[A, B](ff: Fx[A => B])(fa: Fx[A]) =
+      for {
+        a <- fa
+        f <- ff
+      } yield f(a)
+  }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -165,7 +182,7 @@ object FxModule {
       )
 
     @inline def attemptFx: Fx[Throwable \/ A] =
-      fxInstanceCatchable.attempt(fx)
+      fxScalazInstance.attempt(fx)
 
     /**
       * @param continue Int arg            = number of attempts thus far (i.e. ≥ 1)

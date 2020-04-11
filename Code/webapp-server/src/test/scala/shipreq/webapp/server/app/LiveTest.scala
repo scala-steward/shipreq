@@ -3,7 +3,6 @@ package shipreq.webapp.server.app
 import scalaz.-\/
 import utest._
 import shipreq.base.test.BaseTestUtil._
-import shipreq.base.util.FxModule._
 import shipreq.webapp.base.{AssetManifest, Urls, WebappConfig}
 import shipreq.webapp.base.data.{Project, ProjectId}
 import shipreq.webapp.base.protocol.ajax.CommonProtocols
@@ -12,25 +11,24 @@ import shipreq.webapp.base.user.{EmailAddr, PersonName}
 import shipreq.webapp.client.public.PublicSpaProtocols.LandingPage.Request
 import shipreq.webapp.client.public.{PublicSpaEntryPoint, PublicSpaProtocols}
 import shipreq.webapp.server.logic.{Obfuscators, Security}
-import shipreq.webapp.server.test.LiveTestUtils._
 import shipreq.webapp.server.test._
 
 object LiveTest extends TestSuite {
 
-  import userFixture.{user1, user2}
+  private lazy val liveTestUtils = new LiveTestUtils
 
-  var pid = Option.empty[ProjectId]
+  import liveTestUtils._
+  import userFixture.{TestUser, user1, user2}
 
-  val prepare = onceUnit {
-    LiveTestUtils.init()
-    userFixture.setup.unsafeRun()
+  private var pid = Option.empty[ProjectId]
+
+  private val prepare = onceUnit {
+    init()
+    userFixture.setup()
     pid = Some(xa ! dbAlgebra.createProject(user1.id, Vector.empty, Project.empty))
   }
 
-  implicit def temp[I](c: ClientSideProc[I]): ClientSideProc[I] =
-    ClientSideProc[I](c.objectName)(c.pickler)
-
-  implicit def userToToken(u: UserFixture.TestUser): Option[Security.SessionToken[Unit]] =
+  private implicit def userToToken(u: TestUser): Option[Security.SessionToken[Unit]] =
     Some(Security.SessionToken.anonymous().login(u.toUserDescriptor).withoutExpiry)
 
   override def tests = Tests {
@@ -156,9 +154,9 @@ object LiveTest extends TestSuite {
     }
 
     "teardown" - {
-      xa ! DbTable.Event.truncate
-      xa ! DbTable.Project.truncate
-      userFixture.teardown.unsafeRun()
+      // Yes this makes sense because SBT is configured with:`parallelExecution := false`
+      shutdown()
+      PrepareEnv.db()
     }
   }
 }

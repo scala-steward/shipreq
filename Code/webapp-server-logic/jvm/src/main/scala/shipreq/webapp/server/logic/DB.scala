@@ -63,10 +63,9 @@ object DB {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   trait Base[F[_]] {
-    def inDbTransaction[A](f: F[A]): F[A]
 
     /** @param level See java.sql.Connection */
-    def inDbTransaction[A](level: Int, f: F[A]): F[A]
+    def withTransactionLevel[A](level: Int)(f: F[A]): F[A]
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

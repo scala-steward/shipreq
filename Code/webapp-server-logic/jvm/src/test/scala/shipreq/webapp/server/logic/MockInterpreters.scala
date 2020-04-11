@@ -278,8 +278,8 @@ final class MockDb(_now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecu
       -\/(DB.SaveProjectEventError.OrdInUse)
   }
 
-  override def inDbTransaction[A](f: Name[A]) = f
-  override def inDbTransaction[A](l: Int, f: Name[A]) = f
+  override def withTransactionLevel[A](l: Int)(f: Name[A]) =
+    f
 
   def assertNoDbChange[A](a: => A): A =
     assertNoChange("assertNoChange:userPlaceholders", userPlaceholders.iterator.map(_.toString).mkString("\n"))(

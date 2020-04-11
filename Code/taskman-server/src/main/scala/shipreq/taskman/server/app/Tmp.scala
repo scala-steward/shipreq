@@ -1,5 +1,6 @@
 package shipreq.taskman.server.app
 
+import cats.effect.{ExitCode, IO}
 import java.time.Instant
 import scalaz.Equal
 import scalaz.old.NonEmptyList
@@ -15,10 +16,11 @@ import shipreq.taskman.server.logic.business._
 import MailingList.API._
 import Support.API._
 
-object Tmp extends MainTemplate {
+object Tmp extends TaskmanApp {
 
-  def main(args: Array[String]): Unit =
-    withTaskmanCtx(_ => Fx.unit).unsafeRun()
+  override def run(args: List[String]): IO[ExitCode] =
+    withTaskmanCtx(_ => Fx.unit).map(_ => ExitCode.Success)
+
 //    withTaskmanCtx(testFreshDesk).unsafeRun()
 //    withTaskmanCtx(testMailChimp).unsafeRun()
 //    withTaskmanCtx(testSendMail).unsafeRun()

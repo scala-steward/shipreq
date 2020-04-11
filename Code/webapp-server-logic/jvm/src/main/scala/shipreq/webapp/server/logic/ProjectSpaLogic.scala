@@ -461,10 +461,10 @@ object ProjectSpaLogic extends StrictLogging {
             step("readDb")(
               for {
                 (mdo, read) <- runDB(
-                                 db.inDbTransaction(for {
+                                 for {
                                    a <- db.getProjectMetaData(pid)
                                    b <- db.getProjectEvents(pid, DB.EventFilter.given(p.ord))
-                                 } yield (a, b))
+                                 } yield (a, b)
                                )
                 result      <- read.traverse(apEvent.append(pid, p, _))
               } yield

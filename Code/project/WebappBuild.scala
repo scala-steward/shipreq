@@ -266,7 +266,7 @@ object WebappBuild {
         javaOptions                  += s"-Dshipreq.assets=${(baseDirectory.value / Frontend.serve).absolutePath}",
         unmanagedResourceDirectories += baseDirectory.value / Frontend.serve,
         unmanagedResourceDirectories += baseDirectory.value / "src/main/webapp",
-        parallelExecution            := false) // Due to UserFixture and LiveTest
+        parallelExecution            := false) // Due to LiveTest
       ): _*)
 
     def consoleCmds = "def initLift() = {val b = new bootstrap.liftweb.Boot; b.configureLift; b}"

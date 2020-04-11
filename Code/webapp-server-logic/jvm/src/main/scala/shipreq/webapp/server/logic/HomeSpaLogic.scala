@@ -1,6 +1,5 @@
 package shipreq.webapp.server.logic
 
-import java.time.Instant
 import scalaz.syntax.monad._
 import scalaz.{Monad, ~>}
 import shipreq.webapp.base.data.{Project, ProjectMetaData}
@@ -25,25 +24,21 @@ object HomeSpaLogic {
   val InitProjectEventV = Vector.empty[ActiveEvent] :+ InitProject.event
 
   def createProject[D[_]](userId: UserId,
-                          name: Project.Name,
-                          now: Instant)
+                          name: Project.Name)
                          (implicit db: DB.ForHomeSpa[D], D: Monad[D]): D[ProjectMetaData] = {
 
     val e2 = ProjectNameSet(name)
     val p2 = ApplyNewEvent.mustApply(e2, InitProject.project).project
     val events = InitProjectEventV :+ e2
 
-    db.inDbTransaction(
-      for {
-        pid ← db.createProject(userId, events, p2)
-        pmd ← db.getProjectMetaData(pid)
-      } yield pmd.get
-    )
+    for {
+      pid ← db.createProject(userId, events, p2)
+      pmd ← db.getProjectMetaData(pid)
+    } yield pmd.get
   }
 
   def apply[D[_], F[_]](implicit db: DB.ForHomeSpa[D],
                         runDB: D ~> F,
-                        svr: Server.Algebra[F],
                         D: Monad[D],
                         F: Monad[F]): HomeSpaLogic[F] =
     new HomeSpaLogic[F] {
@@ -54,6 +49,6 @@ object HomeSpaLogic {
         } yield HomeSpaEntryPoint.InitData(user.username, p)
 
       override val ajaxCreateProject =
-        (user, name) => svr.now.flatMap(now => runDB(createProject(user.id, name, now)))
+        (user, name) => runDB(createProject(user.id, name))
     }
 }
