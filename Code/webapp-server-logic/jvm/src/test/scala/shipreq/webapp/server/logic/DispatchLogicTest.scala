@@ -205,17 +205,17 @@ object DispatchLogicTest extends TestSuite {
 
       "register1" - {
         "enabled" - {
-          publicSpa.ajaxRegister1(newEmail).value.needRight
+          publicSpa.ajaxRegister1(newEmail).value.getOrThrow()
         }
         "disabled" - {
           val t2 = withConfig(_.copy(publicRegistration = Deny))
           import t2._, mockInterpreters._
-          publicSpa.ajaxRegister1(newEmail).value.needLeft
+          publicSpa.ajaxRegister1(newEmail).value.getLeftOrThrow()
         }
       }
 
       "register2" - {
-        publicSpa.ajaxRegister1(newEmail).value.needRight
+        publicSpa.ajaxRegister1(newEmail).value.getOrThrow()
 
         "enabled" - {
           "invalid" - assertProtected(testRun(ResponseCmd.redirectToPublicHome, Register2.url(VerificationToken("wwwweeeeeeeeeee66666"))))

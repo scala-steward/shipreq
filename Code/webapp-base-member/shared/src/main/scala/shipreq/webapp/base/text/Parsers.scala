@@ -1,6 +1,7 @@
 package shipreq.webapp.base.text
 
 import japgolly.microlibs.nonempty.NonEmptyVector
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import org.parboiled2.{CharPredicate => CP, _}
 import scalaz.{-\/, \/, \/-}
 import shapeless._
@@ -166,7 +167,8 @@ object Parsers {
       (startIndent, lang, codeTxt, endIndent) => {
         val indent = startIndent min endIndent
         val code =
-          Util.unindentBy(codeTxt, indent)
+          codeTxt
+            .unindent(indent)
             .linesWithSeparators
             .map(_.replaceFirst("[ \r\n]+$", "")) // right-trim all lines
             .dropWhile(_.isEmpty)                 // remove leading blank lines

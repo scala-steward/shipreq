@@ -186,11 +186,11 @@ object RedisLaws {
   }
 
   private def read: Logic[ProjectCache] = new Logic[ProjectCache] {
-    override def apply[G[_] : Monad] = _.read(_).map(_.needRight)
+    override def apply[G[_] : Monad] = _.read(_).map(_.getOrThrow())
   }
 
   private def readEvents(o: O): Logic[VerifiedEvent.Seq] = new Logic[VerifiedEvent.Seq] {
-    override def apply[G[_] : Monad] = _.readEvents(_, o).map(_.needRight)
+    override def apply[G[_] : Monad] = _.readEvents(_, o).map(_.getOrThrow())
   }
 
   private def writeEvents(c: E, cp: E): Logic[Boolean] = new Logic[Boolean] {
@@ -266,7 +266,7 @@ object RedisLaws {
     def clear() = synchronized(s.clear())
     private def add(e: ListenerError \/ VerifiedEvent) = F.point[Unit] { synchronized {
 //      val before = get()
-      s += e.needRight
+      s += e.getOrThrow()
 //      val after = get()
 //      val p =  if (r.toString.contains("Memory")) "<<M>>" else "<<R>>"
 //      println(s"${p} ${before} + ${e} --> ${after}")
@@ -311,8 +311,8 @@ object RedisLaws {
 
     def assertState(name: String): Unit = {
       // Test state
-      val s1 = redis1.read(id1).unsafeRun().needRight
-      val s2 = redis2.read(id2).unsafeRun().needRight
+      val s1 = redis1.read(id1).unsafeRun().getOrThrow()
+      val s2 = redis2.read(id2).unsafeRun().getOrThrow()
       assertEq(s"$name -> redis state", actual = s1, expect = s2)
 
       // Test invariants

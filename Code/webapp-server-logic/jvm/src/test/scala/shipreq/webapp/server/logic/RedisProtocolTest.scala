@@ -34,7 +34,7 @@ object RedisProtocolTest extends TestSuite {
         for (i <- rows.indices) {
           def prefix = s"[${i+1}/${rows.length}]"
           val row    = rows(i)
-          val event  = row.parseEventJson.needRight
+          val event  = row.parseEventJson.getOrThrow()
           val ord    = prev.fold(EventOrd.first)(x => EventOrd(x.ord.value) + 1)
           val p1     = prev.fold(Project.empty)(_.project)
           val p2     = applyVerifiedEventSuccessfully(p1, event)

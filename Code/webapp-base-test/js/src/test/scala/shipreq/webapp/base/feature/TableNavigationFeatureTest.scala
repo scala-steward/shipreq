@@ -500,13 +500,13 @@ object TableNavigationFeatureTest extends TestSuite {
     assert(cells.nonEmpty)
     for (c <- cells) {
       val z = TableCellZipper(c)
-      val loc = z.focusVLoc.needRight
-      val tableRoot = z.virtualTable.needRight.root
+      val loc = z.focusVLoc.getOrThrow()
+      val tableRoot = z.virtualTable.getOrThrow().root
       assertEq("focusVLoc", loc.toString, text(c))
       assert(tableRoot == table)
 
-      val z2 = z.goto(loc).needRight
-      val loc2 = z2.focusVLoc.needRight
+      val z2 = z.goto(loc).getOrThrow()
+      val loc2 = z2.focusVLoc.getOrThrow()
       assertEq("goto(focusVLoc).focusVLoc", loc2.toString, expect = text(c))
       assertEq(loc2, loc)
     }
@@ -518,7 +518,7 @@ object TableNavigationFeatureTest extends TestSuite {
     TableCellZipper(table.querySelectorAll("td,th").iterator.focusable.next())
 
   def needGoto(z: TableCellZipper, pos: VirtualLoc)(implicit l: Line): TableCellZipper = {
-    val z2 = z.goto(pos).needRight
+    val z2 = z.goto(pos).getOrThrow()
     assertEq(s"goto($pos).focusVLoc", z2.focusVLoc, \/-(pos))
     z2
   }

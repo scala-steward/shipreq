@@ -32,7 +32,7 @@ object ProjectMetaDataTest extends TestSuite {
           ve.event match {
             case ae: ActiveEvent =>
               val r = xa ! dbAlgebra.saveProjectEvent(pid, EventOrd.fromIndex(idx), ae, p, uid)
-              r.needRight
+              r.getOrThrow()
               ()
             case x =>
               fail("Can't create non-active event: " + x)

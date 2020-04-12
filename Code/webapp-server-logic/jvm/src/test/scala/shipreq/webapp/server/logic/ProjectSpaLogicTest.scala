@@ -151,7 +151,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
   }
 
   private def sendMsgAndBroadcast(msg: WsReqRes.AndReq, static: WebSocketStatic, state: WebSocketState)(implicit t: Tester): msg.reqRes.ResponseType = {
-    val r = sendMsg(msg, static, state)._1.needRight
+    val r = sendMsg(msg, static, state)._1.getOrThrow()
     t.broadcastAll()
     r
   }
@@ -165,8 +165,8 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
   private def onPush(f: VerifiedEvent.NonEmptySeq => Unit): BinaryData => Name[Unit] =
     bin => Name {
-      val value = pushProtocol.codec.decode(bin).needRight
-      val push = value.swap.needRight
+      val value = pushProtocol.codec.decode(bin).getOrThrow()
+      val push = value.swap.getOrThrow()
       f(push)
     }
 
@@ -251,7 +251,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
             assertEq(actual, \/-(expect))
             assert(result._2.isEmpty)
 
-            val cache = redis.read(p1.id).value.needRight
+            val cache = redis.read(p1.id).value.getOrThrow()
             assertEq(cache.ord, Some(p1.latestOrd))
           }
         }
@@ -301,7 +301,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
             assertEq(s"[$c] response", actual.map(_.map(_.toList.map(_.ord))), \/-(expect))
             assert(result._2.isEmpty)
 
-            val cache = redis.read(p1.id).value.needRight
+            val cache = redis.read(p1.id).value.getOrThrow()
             assertEq(s"[$c] cache state", cache.ord, Some((p1.latestOrd.asEventOrd + 1).asLatest))
           }
         }
@@ -320,30 +320,30 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
       var recv1     = Vector.empty[VerifiedEvent.NonEmptySeq]
       val subState1 = projectSpa.onOpen(static, emptyState, onPush(recv1 :+= _), _ => ???).value
-      val initData1 = sendMsgAndBroadcast(initAppMsg, static, subState1).needRight
+      val initData1 = sendMsgAndBroadcast(initAppMsg, static, subState1).getOrThrow()
       assertEq("[1]", recv1, Vector.empty)
 
-      val ves1 = sendMsgAndBroadcast(newUC, static, subState1).needRight.needNES
+      val ves1 = sendMsgAndBroadcast(newUC, static, subState1).getOrThrow().needNES
       assertEq("[2]", recv1, Vector(ves1))
 
       var recv2     = Vector.empty[VerifiedEvent.NonEmptySeq]
       val subState2 = projectSpa.onOpen(static, emptyState, onPush(recv2 :+= _), _ => ???).value
-      val initData2 = sendMsgAndBroadcast(initAppMsg, static, subState2).needRight
+      val initData2 = sendMsgAndBroadcast(initAppMsg, static, subState2).getOrThrow()
       assertEq("[3]", recv2, Vector.empty)
       assertEq("[4]", recv1, Vector(ves1))
       assertEq("[5]", initData2.project.ord, Some(initData1.project.nextOrd.asLatest))
       assertEq("[6]", initData2.project.project.content.reqs.size, 1)
 
-      val ves2 = sendMsgAndBroadcast(newUC, static, subState2).needRight.needNES
+      val ves2 = sendMsgAndBroadcast(newUC, static, subState2).getOrThrow().needNES
       assertEq("[7]", recv1, Vector(ves1, ves2))
       assertEq("[8]", recv2, Vector(ves2))
 
-      val ves3 = sendMsgAndBroadcast(newUC, static, subState1).needRight.needNES
+      val ves3 = sendMsgAndBroadcast(newUC, static, subState1).getOrThrow().needNES
       assertEq("[9]", recv1, Vector(ves1, ves2, ves3))
       assertEq("[A]", recv2, Vector(ves2, ves3))
 
       subState1.sub.get.unsubscribe.value
-      val ves4 = sendMsgAndBroadcast(newUC, static, subState2).needRight.needNES
+      val ves4 = sendMsgAndBroadcast(newUC, static, subState2).getOrThrow().needNES
       assertEq("[B]", recv1, Vector(ves1, ves2, ves3))
       assertEq("[C]", recv2, Vector(ves2, ves3, ves4))
     }

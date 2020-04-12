@@ -5,6 +5,7 @@ import io.circe.parser._
 import io.circe.syntax._
 import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.microlibs.utils.FileUtils
 import java.time.Instant
 import java.util.concurrent.Executors
 import nyaya.gen.{Gen, GenCtx, GenSize, ThreadNumber}
@@ -61,8 +62,16 @@ object RedisProtocolTestData {
   def resourceName(ver: Int): String =
     "RedisProtocolTestData/v%02d.json".format(ver)
 
-  def load(ver: Int): Vector[Row] =
-    decode[Vector[Row]](readResourceFile(resourceName(ver))).needRight
+  def load(ver: Int): Vector[Row] = {
+    // TODO fix microlibs
+    import scala.io._
+    def readResource(filename: String): String = {
+      val res = filename // if (filename.startsWith("/")) filename else "/" + filename
+      val src = Source.fromResource(res)(Codec.UTF8)
+      try src.mkString finally src.close()
+    }
+    decode[Vector[Row]](readResource(resourceName(ver))).getOrThrow()
+  }
 
   def main(args: Array[String]): Unit = {
     val _ = picklerEvent // Ensure the classpath is correct - thanks SBT
@@ -73,7 +82,7 @@ object RedisProtocolTestData {
     val filename = "/tmp/RedisProtocolTestData.json"
     println(s"Writing to $filename")
     val content = rows.map(prettyPrintJson(_).indent("  ")).mkString("[\n", ",\n", "\n]")
-    writeFile(filename, content)
+    FileUtils.write(filename, content)
     printf("File size: %,d\n", content.length)
 
     println(s"mv $filename webapp-server-logic/jvm/src/test/resources/${resourceName(2)}")

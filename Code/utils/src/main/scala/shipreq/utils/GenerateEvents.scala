@@ -1,6 +1,7 @@
 package shipreq.utils
 
 import io.circe.syntax._
+import japgolly.microlibs.utils.FileUtils
 import java.time.Instant
 import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.event.RandomEventStream
@@ -27,7 +28,7 @@ object GenerateEvents {
 
     val filename = s"/tmp/shipreq-events-${Instant.now().toString.filter(_.isDigit)}.json"
     println(s"Writing to $filename")
-    writeFile(filename, json)
+    FileUtils.write(filename, json)
 
     println("Done")
   }

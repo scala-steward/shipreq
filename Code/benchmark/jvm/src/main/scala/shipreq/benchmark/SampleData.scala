@@ -25,5 +25,5 @@ object SampleData {
   lazy val events_1000: Vector[Event] =
     loadJsonFromResource("shipreq-events-1000.json")
     .as[Vector[Event]]
-    .needRight
+    .getOrThrow()
 }

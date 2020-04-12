@@ -3,6 +3,7 @@ package shipreq.webapp.client.project.widgets
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
@@ -43,7 +44,7 @@ object TagEditor {
               \/-(tag)
             else {
               def tagFields = config.liveCustomTagFields.iterator.filter(f => tagDist.inField(f.id).contains(tag.id))
-              Util.soleElement(tagFields) match {
+              tagFields.soleElement match {
                 case Some(f) => -\/(Invalidity(s"${tag.key.with_#} belongs in the ${f.name(tagTree)} field."))
                 case None    => -\/(Invalidity(s"${tag.key.with_#} is not applicable here."))
               }

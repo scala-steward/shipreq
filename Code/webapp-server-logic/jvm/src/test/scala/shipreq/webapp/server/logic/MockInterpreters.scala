@@ -50,7 +50,7 @@ object MockDb {
                                 lastUpdatedAt: Option[Instant]) {
 
     lazy val project: Project =
-      ApplyEvent.trusted.applyVerified(events)(Project.empty).needRight
+      ApplyEvent.trusted.applyVerified(events)(Project.empty).getOrThrow()
 
     lazy val projectMetaData: ProjectMetaData =
       ProjectMetaData.fromProject(project)(

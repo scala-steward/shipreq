@@ -114,7 +114,7 @@ class WebSocketClientTester {
 
   object server {
     def parseRequest(msg: Message = latestMsg()) =
-      serverProtocols.protocolCS.codec.decode(msg.binaryData).needRight
+      serverProtocols.protocolCS.codec.decode(msg.binaryData).getOrThrow()
 
     def respondBy(f: ReqMsg => ResMsg) = {
       val (reqId, reqMsg) = parseRequest()
@@ -130,7 +130,7 @@ class WebSocketClientTester {
     def respondToNextPending(): Unit =
       ws().respondToNextPending { sent =>
         debugPrintln(s"Server received ${sent.binaryData}")
-        val (reqId, reqMsg) = serverProtocols.protocolCS.codec.decode(sent.binaryData).needRight
+        val (reqId, reqMsg) = serverProtocols.protocolCS.codec.decode(sent.binaryData).getOrThrow()
         val resMsg = ResMsg(reqMsg.msg * -1)
         debugPrintln(s"Responding to $reqId $reqMsg with $resMsg")
         val res = \/-((reqId, P.res.andValue(resMsg)))

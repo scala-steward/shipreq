@@ -56,10 +56,10 @@ class SerialisationEventsBM {
     format match {
       case "json" =>
         writeFn = () => jsonEnc(events).noSpaces
-        readFn = () => decode(json)(jsonDec).needRight
+        readFn = () => decode(json)(jsonDec).getOrThrow()
       case "binary" =>
         writeFn = () => binCodec.encode(events)
-        readFn = () => binCodec.decode(bin).needRight
+        readFn = () => binCodec.decode(bin).getOrThrow()
     }
   }
 

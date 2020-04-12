@@ -100,13 +100,13 @@ trait WebappTestUtil extends BaseTestUtil {
   }
 
   def verifiedEventsFromJson(jsons: String*): VerifiedEvent.Seq =
-    VerifiedEvent.Seq.empty ++ jsons.iterator.map(decode[VerifiedEvent](_).needRight)
+    VerifiedEvent.Seq.empty ++ jsons.iterator.map(decode[VerifiedEvent](_).getOrThrow())
 
   def parseFilterSuccessfully(cfg: ProjectConfig): String => Filter.Valid = {
     val validator = FilterAlgebra.validate(cfg)
     filterTxt => {
-      val pf        = FilterParser.parse(filterTxt).needRight.get
-      Filter.Potential.validate(pf, validator).needRight
+      val pf        = FilterParser.parse(filterTxt).getOrThrow().get
+      Filter.Potential.validate(pf, validator).getOrThrow()
     }
   }
 }

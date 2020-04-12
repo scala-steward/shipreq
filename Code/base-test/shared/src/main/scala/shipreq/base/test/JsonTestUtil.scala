@@ -59,9 +59,6 @@ object JsonTestUtil {
   def propTestRoundTrip[A: Decoder: Encoder: Equal](g: Gen[A])(implicit l: Line): Unit =
     g.samples().take(propTestSize).foreach(assertRoundTrip(_))
 
-  def loadJsonResFile[A: Decoder](filename: String): A =
-    decode[A](readResourceFile(filename)).needRight
-
   def decoderTester[A: Equal](d: Decoder[A]): JsonDecoderTest[A] =
     new JsonDecoderTest()(d, implicitly)
 }

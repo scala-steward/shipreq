@@ -1,14 +1,9 @@
 package shipreq.base.test
 
 import japgolly.microlibs.testutil.TestUtilInternals
-import japgolly.microlibs.stdlib_ext.StdlibExt._
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
-import java.time.{Duration, Instant}
 import scalaz.std.string.stringInstance
-import scalaz.{Equal, Order, \/}
+import scalaz.{Equal, Order}
 import sourcecode.Line
-import shipreq.base.util.Identity
 import shipreq.base.util.univeq._
 
 object BaseTestUtil extends BaseTestEquality with BaseTestUtil {
@@ -19,20 +14,6 @@ object BaseTestUtil extends BaseTestEquality with BaseTestUtil {
 
     def assertEqN(name: => String, expect: A)(implicit e: Equal[A]): Unit =
       BaseTestUtil.assertEq(name, a, expect)
-  }
-
-  final class BaseTestUtilOpsEither[A, B](private val e: Either[A, B]) extends AnyVal {
-    def needLeft(implicit l: Line): A =
-      e.fold(Identity.apply, e => fail(s"needLeft got Right($e)"))
-    def needRight(implicit l: Line): B =
-      e.fold(e => fail(s"needRight got Left($e)"), Identity.apply)
-  }
-
-  final class BaseTestUtilOpsDisj[A, B](private val d: A \/ B) extends AnyVal {
-    def needLeft(implicit l: Line): A =
-      d.fold(Identity.apply, e => fail(s"needLeft got \\/-($e)"))
-    def needRight(implicit l: Line): B =
-      d.fold(e => fail(s"needRight got -\\/($e)"), Identity.apply)
   }
 
   final class FieldAssert[A](actual: A, expect: A) {
@@ -54,12 +35,6 @@ trait BaseTestUtil
 
   implicit def BaseTestUtilOpsAny[A](a: A) =
     new BaseTestUtil.BaseTestUtilOpsAny(a)
-
-  implicit def BaseTestUtilOpsDisj[A, B](d: A \/ B) =
-    new BaseTestUtil.BaseTestUtilOpsDisj(d)
-
-  implicit def BaseTestUtilOpsEither[A, B](e: Either[A, B]) =
-    new BaseTestUtil.BaseTestUtilOpsEither(e)
 
   def forceUnivEqOrderByToString[A]: Order[A] with UnivEq[A] = {
     val o = Order.orderBy((_: A).toString)
@@ -86,13 +61,6 @@ trait BaseTestUtil
 //  def assertMatch[A](a: A)(pf: PartialFunction[A, Unit]): Unit =
 //    if (!pf.isDefinedAt(a))
 //      fail(s"Wrong shape: $a")
-
-  // TODO move into microlibs
-  def equalInstantWithTolerance(tolerance: Duration): Equal[Instant] =
-    Equal((a, b) => {
-      val d = Duration.between(b, a).abs()
-      tolerance.compareTo(d) > 0
-    })
 
   def shrinkUnequalStrings(str1: String, str2: String): (String, String) = {
     var a = str1
@@ -125,37 +93,6 @@ trait BaseTestUtil
         s
     val (a, b) = shrinkUnequalStrings(str1, str2)
     (f(a), f(b))
-  }
-
-  def assertEqWithTolerance(actual: Double, expect: Double, tolerance: Double = 0.01)(implicit l: Line): Unit = {
-    val d = Math.abs(actual - expect)
-    if (d > tolerance)
-      fail(
-        s"""
-           |assertEqWithTolerance failed.
-           |actual: $actual
-           |expect: $expect
-           | delta: $d
-           |   tol: $tolerance
-           |""".stripMargin)
-  }
-
-  // TODO Move getOrThrow() into microlibs
-  // TODO Move these into microlibs(jvm-only)
-
-  import scala.io.{Codec, Source}
-
-  def writeFile(filename: String, content: String): Unit =
-    Files.write(Paths get filename, content getBytes StandardCharsets.UTF_8)
-
-  def readFile(filename: String): String = {
-    val src = Source.fromFile(filename)(Codec.UTF8)
-    try src.mkString finally src.close()
-  }
-
-  def readResourceFile(filename: String): String = {
-    val src = Source.fromResource(filename)(Codec.UTF8)
-    try src.mkString finally src.close()
   }
 
 }

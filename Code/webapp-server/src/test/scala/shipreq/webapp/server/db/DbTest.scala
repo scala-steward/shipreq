@@ -197,7 +197,7 @@ object DbTest extends TestSuite {
             assertEq(a, e)
           }
 
-          val read1 = (xa ! db.getAllProjectEvents(pid)).needRight
+          val read1 = (xa ! db.getAllProjectEvents(pid)).getOrThrow()
           assertEq("init event count", read1.size, data1.length)
           assertEq("first ord", read1.head.ord, EventOrd.first)
           assertPMD(a => ProjectMetaData.fromProject(data1.last._2)(
@@ -211,9 +211,9 @@ object DbTest extends TestSuite {
           var ord = read1.last.ord
           for ((e, p) <- data2) {
             ord = EventOrd(ord.value + 1)
-            (xa ! db.saveProjectEvent(pid, ord, e.event.active, p, uid)).needRight
+            (xa ! db.saveProjectEvent(pid, ord, e.event.active, p, uid)).getOrThrow()
           }
-          val readAll = (xa ! db.getAllProjectEvents(pid)).needRight
+          val readAll = (xa ! db.getAllProjectEvents(pid)).getOrThrow()
           assertSeq(readAll, data.map(_._1))
           assertPMD(a => ProjectMetaData.fromProject(data.last._2)(
             id            = a.id,

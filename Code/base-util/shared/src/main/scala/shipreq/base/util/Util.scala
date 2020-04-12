@@ -280,36 +280,6 @@ object Util {
     s
   }
 
-  // TODO Move into microlibs
-  def unindentBy(str: String, spaces: Int): String = {
-    if (spaces <= 0)
-      return str
-
-    var smallest = spaces
-
-    val lines =
-      str.linesWithSeparators.map { line =>
-        if (line.stripLineEnd.nonEmpty) {
-          val indent = line.iterator.takeWhile(_ == ' ').size
-          if (indent == 0)
-            return str
-          if (indent < smallest)
-            smallest = indent
-        }
-        line
-      }.toArray
-
-    if (smallest == Int.MaxValue)
-      return str
-
-    lines.iterator.map { line =>
-      if (line.stripLineEnd.nonEmpty)
-        line.drop(smallest)
-      else
-        line
-    }.mkString("")
-  }
-
   def separate(input: String, g: String => Int): Vector[String \/ String] = {
     val b = Vector.newBuilder[String \/ String]
     var i = 0
@@ -340,20 +310,6 @@ object Util {
 
   def separateByWhitespaceOrCommas(input: String): Vector[String \/ String] =
     separate(input, _.takeWhile(c => c == ',' || c.isWhitespace).length)
-
-  // TODO Move into microlibs
-  def soleElement[A](as: TraversableOnce[A]): Option[A] = {
-    val it = as.toIterator
-    if (it.isEmpty)
-      None
-    else {
-      val a = it.next()
-      if (it.isEmpty)
-        Some(a)
-      else
-        None
-    }
-  }
 
   def vectorConcatDistinct[A](x: Vector[A], y: Vector[A])(implicit e: Equal[A]): Vector[A] =
     if (x eq y)

@@ -46,7 +46,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
   type Response = Protocol.AndValue[SafePickler]
 
   case class Req(msg: FakeWebSocket.Message) {
-    lazy val (reqId, req) = svr.protocolCS.codec.decode(msg.binaryData).needRight
+    lazy val (reqId, req) = svr.protocolCS.codec.decode(msg.binaryData).getOrThrow()
 
     private var _responded = false
     def responded = _responded

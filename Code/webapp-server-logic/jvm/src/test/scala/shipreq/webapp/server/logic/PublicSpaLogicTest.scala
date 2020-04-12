@@ -46,7 +46,7 @@ object PublicSpaLogicTest extends TestSuite {
       def runSuccessfully(tokensIssued: Int, msgsSubmitted: Int, emailAddr: EmailAddr = ea): Unit =
         db.assertIssuesTokens(tokensIssued)(
           taskman.assertSubmits(msgsSubmitted)(
-            runRegister1(emailAddr).needRight))
+            runRegister1(emailAddr).getOrThrow()))
 
       "email is valid and new -- should create a user, token and send email" - {
         runSuccessfully(1, 1)
@@ -74,14 +74,14 @@ object PublicSpaLogicTest extends TestSuite {
       }
 
       "email is invalid -- should reject request" - {
-        runRegister1(EmailAddr("not_an_email")).needLeft
+        runRegister1(EmailAddr("not_an_email")).getLeftOrThrow()
         taskman.assertSubmitted(0)
       }
 
       "registrationsOff" - {
         val t2 = t.withConfig(_.copy(publicRegistration = Deny))
         import t2._, mockInterpreters._
-        runRegister1(ea).needLeft
+        runRegister1(ea).getLeftOrThrow()
       }
     }
 
@@ -109,7 +109,7 @@ object PublicSpaLogicTest extends TestSuite {
       val t = Tester(); import t._, mockInterpreters._
 
       // Mock user (pending)
-      runRegister1(ea).needRight
+      runRegister1(ea).getOrThrow()
       val token = db.prevToken()
       val req = Request(token, PersonName("Big Bob"), Username("bob"), PlainTextPassword("big_BOB_123!"), false)
 
@@ -126,13 +126,13 @@ object PublicSpaLogicTest extends TestSuite {
       }
 
       "reject an invalid name" -
-        assertFailure(req.copy(personName = PersonName(""))).needLeft
+        assertFailure(req.copy(personName = PersonName(""))).getLeftOrThrow()
 
       "reject an invalid username" -
-        assertFailure(req.copy(username = Username("9000"))).needLeft
+        assertFailure(req.copy(username = Username("9000"))).getLeftOrThrow()
 
       "reject an invalid password" -
-        assertFailure(req.copy(password = PlainTextPassword("abc"))).needLeft
+        assertFailure(req.copy(password = PlainTextPassword("abc"))).getLeftOrThrow()
 
       "reject a taken username" -
         assertEq(assertFailure(req.copy(username = user2.username)), \/-(Result.UsernameTaken))
@@ -202,7 +202,7 @@ object PublicSpaLogicTest extends TestSuite {
 
       "send registration email when user found and account not activated" - {
         implicit val t = Tester(); import t._, mockInterpreters._
-        assertDifference(db.userPlaceholders.size)(1)(runRegister1(ea).needRight)
+        assertDifference(db.userPlaceholders.size)(1)(runRegister1(ea).getOrThrow())
         runSuccessfully(\/-(ea), 0, 1)
         assertRegistrationEmailSent()
       }
@@ -223,7 +223,7 @@ object PublicSpaLogicTest extends TestSuite {
       }
 
       "reject invalid passwords" -
-        runResetPassword2(Request(token, PlainTextPassword("x"))).needLeft
+        runResetPassword2(Request(token, PlainTextPassword("x"))).getLeftOrThrow()
 
       "reject invalid tokens" -
         assertEq(runResetPassword2(Request(VerificationToken("xxxx"), p2)), \/-(Result.TokenInvalid))
