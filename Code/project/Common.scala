@@ -1,14 +1,18 @@
 import sbt._, Keys._
-import java.nio.file.{Files, Path}
-import scala.concurrent.duration._
 import com.typesafe.sbt.GitPlugin.autoImport._
+import java.nio.file.{Files, Path}
 import org.scalajs.core.tools.sem._
 import org.scalajs.jsenv.phantomjs.PhantomJSEnv
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
-import sbtcrossproject.CrossProject
 import sbtcrossproject.CrossPlugin.autoImport._
+import sbtcrossproject.CrossProject
+import sbtdocker.DockerPlugin
+import sbtdocker.DockerPlugin.autoImport._
+import scala.{Console => C}
+import scala.concurrent.duration._
+import scalafix.sbt.ScalafixPlugin
+import scalafix.sbt.ScalafixPlugin.autoImport._
 import scalajscrossproject.ScalaJSCrossPlugin.autoImport._
-import sbtdocker.DockerPlugin, DockerPlugin.autoImport._
 import LibDependency.{Dep, HasBoth, HasJs, HasJvm, JS, JVM, ModDepScope}
 
 sealed trait JsTestType
@@ -21,9 +25,12 @@ object Common {
   lazy val releaseMode: Boolean = {
     val mode = System.getProperty("MODE", "").trim
     val r = mode.compareToIgnoreCase("release") == 0
-    if (r) println("[info] \u001b[1;31mRelease Mode.\u001b[0m")
+    if (r) println(s"[info] ${C.RED_B}${C.WHITE}Release Mode.${C.RESET}")
     r
   }
+
+  def scalafixEnabled =
+    !releaseMode
 
   lazy val emitSourceMapsValue: Boolean =
     System.getProperty("emitSourceMaps", "0").trim.toLowerCase match {
@@ -108,6 +115,12 @@ object Common {
     ) compose
     nonTestCompilerFlags(optimisationScalacFlags: _*)
 
+  val scalafixSettings: Project => Project =
+    if (scalafixEnabled)
+      _.enablePlugins(ScalafixPlugin).settings(addCompilerPlugin(scalafixSemanticdb), scalacOptions += "-Yrangepos")
+    else
+      _.disablePlugins(ScalafixPlugin)
+
   val redirectTargetDir: File => File =
     System.getenv(if (releaseMode) "SHIPREQ_RELEASE_TARGET" else "SHIPREQ_TARGET") match {
       case null | "" => identity
@@ -162,6 +175,7 @@ object Common {
       minForcegcInterval          := 3.minutes,
       target                      := redirectTargetDir(target.value))
     .configure(
+      scalafixSettings,
       packageBinaryOnly,
       dockerLayerReuse,
       Dependencies.useKindProjector,
