@@ -57,15 +57,14 @@ object Common {
     "-Xlint:inaccessible",                           // Warn about inaccessible types in method signatures.
     "-Xlint:infer-any",                              // A type argument was inferred as Any.
     "-Xlint:missing-interpolator",                   // A string literal appears to be missing an interpolator id.
-  //"-Xlint:nonlocal-return",                        // A return statement used an exception for flow control.
+    "-Xlint:nonlocal-return",                        // A return statement used an exception for flow control.
     "-Xlint:nullary-override",                       // Non-nullary `def f()` overrides nullary `def f`.
     "-Xlint:nullary-unit",                           // `def f: Unit` looks like an accessor; add parens to look side-effecting.
     "-Xlint:option-implicit",                        // Option.apply used an implicit view.
     "-Xlint:poly-implicit-overload",                 // Parameterized overloaded implicit methods are not visible as view bounds.
     "-Xlint:private-shadow",                         // A private field (or class parameter) shadows a superclass field.
     "-Xlint:stars-align",                            // In a pattern, a sequence wildcard `_*` should match all of a repeated parameter.
-  //"-Xlint:type-parameter-shadow",                  // A local type parameter shadows a type already in scope.
-  //"-Xlint:valpattern",                             // Enable pattern checks in val definitions.
+    "-Xlint:valpattern",                             // Enable pattern checks in val definitions.
     "-Xmixin-force-forwarders:false",                // Only generate mixin forwarders required for program correctness.
     "-Xno-forwarders",                               // Do not generate static forwarders in mirror classes.
     "-Xsource:2.13",
@@ -78,15 +77,18 @@ object Common {
     "-Ypatmat-exhaust-depth", "off"
   )
 /*
-    "-Wdead-code"                                    // Warn when dead code is identified.
-    "-Wself-implicit",                               // Warn when an implicit resolves to an enclosing self-definition.
-    "-Wvalue-discard",                               // Warn when non-Unit expression results are unused.
-    "-Wunused:explicits",                            // Warn if an explicit parameter is unused.
+    "-Xsource:2.14",                                 // Prepare for Dotty -- Disabled because of warnings in macro-generated code. Fix 3rd-libs first.
+    "-Wdead-code",                                   // Warn when dead code is identified. -- Disabled due to js.native / https://github.com/scala/bug/issues/11942
+    "-Wunused:explicits",                            // Warn if an explicit parameter is unused. -- Disabled due to js.native / https://github.com/scala/bug/issues/11942
     "-Wunused:imports",                              // Warn if an import selector is not referenced.
     "-Wunused:locals",                               // Warn if a local definition is unused.
 */
 
-  def scalacTestFlags = Seq("-language:reflectiveCalls")
+  def scalacTestFlags = Seq(
+    "-language:reflectiveCalls")
+
+  def scalacTestNonFlags = Seq(
+    "-Xlint:valpattern")
 
   val debugSettings: Project => Project =
     _.settings(
@@ -193,7 +195,8 @@ object Common {
     _.configure(settingsMin)
       .settings(
         excludeDependencies += "commons-logging" % "commons-logging", // commons-logging should be replaced by jcl-over-slf4j
-        scalacOptions in Test ++= scalacTestFlags)
+        scalacOptions in Test ++= scalacTestFlags,
+        scalacOptions in Test --= scalacTestNonFlags)
       .configure(debugOrRelease(debugSettings, optimisationSettings))
 
   lazy val jvmSettings: Project => Project =
