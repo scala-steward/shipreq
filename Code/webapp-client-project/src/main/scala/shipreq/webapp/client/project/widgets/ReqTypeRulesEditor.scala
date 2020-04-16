@@ -142,6 +142,7 @@ object ReqTypeRulesEditor {
 
     implicit def reusabilityProps[D: UnivEq]: Reusability[Props[D]] = {
       implicit val a: Reusability[Vector[D]] = Reusability.byRefOrUnivEq
+      val _ = a // -Wunused:locals gets it wrong
       Reusability.derive
     }
   }

@@ -46,6 +46,7 @@ object Common {
     "-target:" + Dependencies.Java.major,            // Target platform for object files. ([8],9,10,11,12)
     "-unchecked",                                    // Enable additional warnings where generated code depends on assumptions.
     "-Wunused:implicits",                            // Warn if an implicit parameter is unused.
+    "-Wunused:locals",                               // Warn if a local definition is unused.
     "-Wunused:patvars",                              // Warn if a variable bound in a pattern is unused.
     "-Wunused:privates",                             // Warn if a private member is unused.
     "-Xlint:adapted-args",                           // An argument list was modified to match the receiver.
@@ -81,7 +82,6 @@ object Common {
     "-Wdead-code",                                   // Warn when dead code is identified. -- Disabled due to js.native / https://github.com/scala/bug/issues/11942
     "-Wunused:explicits",                            // Warn if an explicit parameter is unused. -- Disabled due to js.native / https://github.com/scala/bug/issues/11942
     "-Wunused:imports",                              // Warn if an import selector is not referenced.
-    "-Wunused:locals",                               // Warn if a local definition is unused.
 */
 
   def scalacTestFlags = Seq(

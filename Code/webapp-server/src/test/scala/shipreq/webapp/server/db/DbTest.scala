@@ -95,7 +95,7 @@ object DbTest extends TestSuite {
         val dbu = DbUtil(xa)
         val db = dbu.dbAlgebra
         val u = dbu.newUserId()
-        val username = xa ! Query0[String](s"select username from usr where id=${u.value: Long}").unique
+//        val username = xa ! Query0[String](s"select username from usr where id=${u.value: Long}").unique
         val token = xa ! db.createResetPasswordToken(u)
 
 //        val date = xa ! db.getResetPasswordTokenIssueDate(token)

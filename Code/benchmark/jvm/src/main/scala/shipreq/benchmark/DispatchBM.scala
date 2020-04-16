@@ -278,7 +278,7 @@ object DispatchBM {
 
   val DispatchRequests: List[Request[Unit]] = {
     import Method._
-    implicit def autoXID(p: ProjectId): ProjectId.Public = Obfuscators.projectId.obfuscate(p)
+    // implicit def autoXID(p: ProjectId): ProjectId.Public = Obfuscators.projectId.obfuscate(p)
     val param: String => Option[String] = _ => None
     val cookie: Cookie.Name => Option[String] = _ => None
     val token = VerificationToken("MnVC8cvPX9b1jiCpyxoYLk4RqQ8idHlV4lf7OHzIQctHLgw6C")

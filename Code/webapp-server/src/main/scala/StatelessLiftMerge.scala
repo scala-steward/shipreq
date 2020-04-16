@@ -124,7 +124,7 @@ final case class StatelessLiftMerge(self: LiftSession) extends AnyVal {
     addlHead ++= S.forHead()
     val addlTail = new ListBuffer[Node]
     addlTail ++= S.atEndOfBody()
-    val rewrite = URLRewriter.rewriteFunc
+    // val rewrite = URLRewriter.rewriteFunc
 
     val contextPath: String = S.contextPath
 
@@ -242,7 +242,7 @@ final case class StatelessLiftMerge(self: LiftSession) extends AnyVal {
 //        Text("")
 //      }
     } else {
-      val eventJs =
+//      val eventJs =
         normalizeMergeAndExtractEvents(xhtml, HtmlState(mergeHeadAndTail = true)).js
 
       val htmlKids = new ListBuffer[Node]

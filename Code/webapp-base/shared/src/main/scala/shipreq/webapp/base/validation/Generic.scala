@@ -234,7 +234,6 @@ object Generic {
         Invalidator(ta => {
           val ok: E \/ Unit = Auditor.unitResult
           val result: E \/ Unit = T.traverse_(ta)(invalidate(_).fold(ok)(-\/(_)))(AccumuateErrors.applicativeInstance)
-          val G = AccumuateErrors.applicativeInstance[E]
           result.fold(Some(_), _ => None)
         })
     }

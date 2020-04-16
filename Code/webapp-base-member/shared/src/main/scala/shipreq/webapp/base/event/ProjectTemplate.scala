@@ -40,16 +40,21 @@ object ProjectTemplate {
 
     val reqTypeId = new IdCounter(CustomReqTypeId)
     def reqTypeV1(mnemonicStr: String, name: String, implication: Mandatory) = {
-      val mnemonic = ReqType.Mnemonic(mnemonicStr)
       val id = reqTypeId.next()
-      add(CustomReqTypeCreateV1(id, gdAllValues(CustomReqTypeGDv1, "")))
+      add(CustomReqTypeCreateV1(id, CustomReqTypeGDv1(
+        mnemonic    = ReqType.Mnemonic(mnemonicStr),
+        name        = name,
+        implication = implication,
+      )))
       id
     }
 
     val issueTypeId = new IdCounter(CustomIssueTypeId)
     def issueType(keyStr: String, desc: Option[String]): Unit = {
-      val key = HashRefKey(keyStr)
-      add(CustomIssueTypeCreate(issueTypeId.next(), gdAllValues(CustomIssueTypeGD, "")))
+      add(CustomIssueTypeCreate(issueTypeId.next(), CustomIssueTypeGD(
+        key  = HashRefKey(keyStr),
+        desc = desc,
+      )))
     }
 
     val tagId = new IdCounter(identity)
@@ -104,11 +109,11 @@ object ProjectTemplate {
       val qb = new QuickBuilder
       import qb._
 
-      val co = reqTypeV1("CO", "Constraint",             Optional)
-      val fr = reqTypeV1("FR", "Functional Requirement", Mandatory)
+    /*val co */reqTypeV1("CO", "Constraint",             Optional)
+    /*val fr */reqTypeV1("FR", "Functional Requirement", Mandatory)
       val mf = reqTypeV1("MF", "Major Feature",          Optional)
       val oe = reqTypeV1("OE", "Operating Environment",  Optional)
-      val qa = reqTypeV1("QA", "Quality Attribute",      Mandatory)
+    /*val qa */reqTypeV1("QA", "Quality Attribute",      Mandatory)
 
       issueType("TO"+"DO", "Work needs to be done.")
       issueType("PENDING", "Waiting on external information, or an external event.")

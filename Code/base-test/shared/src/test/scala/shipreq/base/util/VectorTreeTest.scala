@@ -222,7 +222,7 @@ object VectorTreeTest extends TestSuite {
           expect)
 
       test(          )(Some(r(n(10, n(20, n(30))), n(90))))
-      test(0         )(Some(r(n(1, n(20, n(30))), n(9))))
+      test(Seq(0): _*)(Some(r(n(1, n(20, n(30))), n(9)))) // "Seq(0): _*" because of a bug in -Wunused:locals
       test(0, 0      )(Some(r(n(1, n(2, n(30))), n(9))))
       test(0, 0, 0   )(None)
       test(0, 0, 0, 0)(None)

@@ -530,7 +530,6 @@ object RandomData {
   def fieldSet(reqTypeIds: Set[ReqTypeId], tagIds: Set[TagId]): Gen[FieldSet] = {
     val tagGroupIds   = tagIds.iterator.filterSubType[TagGroupId].toSet
     val genApTagId    = NonEmptySet.option(tagIds.iterator.filterSubType[ApplicableTagId].toSet).map(Gen.chooseNE(_))
-    val genTagGroupId = NonEmptySet.option(tagGroupIds).map(Gen.chooseNE(_))
     val genReqTypeId  = NonEmptySet.option(reqTypeIds).map(Gen.chooseNE(_))
     val rulesAny      = fieldReqTypeRules[Impossible](genReqTypeId, None)
     val rulesTag      = fieldReqTypeRules(genReqTypeId, genApTagId)
@@ -664,7 +663,6 @@ object RandomData {
 
     private[this] def multiLinePlusI(t: MultiLine)(plus: Gen.Freq[t.Atom]*): Gen[t.Atom] = {
       type G  = Gen[t.Atom]
-      type IG = Gen.Freq[G]
 
       lazy val lvls: Vector[Need[G]] =
         (0 to DepthIncrease.length)

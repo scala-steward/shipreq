@@ -203,7 +203,6 @@ private[tags] object TagGroupEditor {
       ).render
 
     def render(p: Props): VdomNode = {
-      val s = p.state.value
 
       val nameField =
         Form.Field.text

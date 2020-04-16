@@ -379,7 +379,6 @@ trait ApplyContentEvent {
 
     val applyStepUpdate: UseCaseStepUpdate => SE[Unit] = {
       val ^ = UseCaseStepGD
-      val GD = GenericDataApp[UseCaseStep](^)
 
       val noFlow = SetDiff.empty[UseCaseStepId]
 

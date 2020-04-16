@@ -102,32 +102,28 @@ private[issues] object CustomIssueTypeEditor {
 
   private implicit def vux = ValidationUX.Full
 
-  final class Backend($: BackendScope[Props, Unit]) {
+  private def render(p: Props): VdomNode = {
 
-    def render(p: Props): VdomNode = {
-      val s = p.state.value
+    val key =
+      Form.Field.text
+        .withLabel(FieldNames.hashRefKey)
+        .withState(p.state.zoomStateL(State.key))
+        .withValidator(DataValidators.customIssueType.key.unnamedFn(p.validatorState))
+        .withEnabledAndAutoFocus(p.enabled)
 
-      val key =
-        Form.Field.text
-          .withLabel(FieldNames.hashRefKey)
-          .withState(p.state.zoomStateL(State.key))
-          .withValidator(DataValidators.customIssueType.key.unnamedFn(p.validatorState))
-          .withEnabledAndAutoFocus(p.enabled)
+    val desc =
+      Form.Field.text
+        .withEditor(AutosizeTextarea.editor)
+        .withLabel(FieldNames.desc)
+        .withState(p.state.zoomStateL(State.desc))
+        .withValidator(DataValidators.customIssueType.desc.unnamedFn(p.validatorState))
+        .withEnabled(p.enabled)
 
-      val desc =
-        Form.Field.text
-          .withEditor(AutosizeTextarea.editor)
-          .withLabel(FieldNames.desc)
-          .withState(p.state.zoomStateL(State.desc))
-          .withValidator(DataValidators.customIssueType.desc.unnamedFn(p.validatorState))
-          .withEnabled(p.enabled)
-
-      Form(key, desc)
-    }
+    Form(key, desc)
   }
 
   val Component = ScalaComponent.builder[Props]("CustomIssueTypeEditor")
-    .renderBackend[Backend]
+    .render_P(render)
     .configure(Reusability.shouldComponentUpdate)
     .build
 }

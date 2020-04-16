@@ -679,7 +679,7 @@ object DataProp {
           .contramap[TR](t => t put2 refs(t))
 
       def validFieldIds   = whitelist(_._2.fieldIds) _
-      def validIssueIds   = whitelist(_._2.issueIds) _
+    //def validIssueIds   = whitelist(_._2.issueIds) _
       def validReqIds     = whitelist(_._2.reqIds) _
       def validUCStepIds  = whitelist(_._2.useCaseStepIds) _
       def validReqCodeIds = whitelist(_._2.reqCodeIds) _

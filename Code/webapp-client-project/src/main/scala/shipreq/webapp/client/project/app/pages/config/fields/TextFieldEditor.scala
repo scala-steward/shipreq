@@ -81,36 +81,33 @@ object TextFieldEditor {
 
   // ===================================================================================================================
 
-  final class Backend($: BackendScope[Props, Unit]) {
-    def render(p: Props): VdomNode = {
-      val s = p.state.value
+  private def render(p: Props): VdomNode = {
 
-      val nameField =
-        Form.Field.text
-          .withLabel("Name")
-          .withState(p.state.zoomStateL(State.name))
-          .withValidator(DataValidators.field.name.unnamedFn(p.validatorState))
-          .withEnabledAndAutoFocus(p.enabled)
+    val nameField =
+      Form.Field.text
+        .withLabel("Name")
+        .withState(p.state.zoomStateL(State.name))
+        .withValidator(DataValidators.field.name.unnamedFn(p.validatorState))
+        .withEnabledAndAutoFocus(p.enabled)
 
-      val rules =
-        ReqTypeRulesEditor.NoDefault.Component(
-          ReqTypeRulesEditor.Props.noDefaults(
-            state         = p.state.zoomStateL(State.rules),
-            reqTypes      = p.cfg.reqTypes,
-            filterDead    = p.filterDead,
-            enabled       = p.enabled))
+    val rules =
+      ReqTypeRulesEditor.NoDefault.Component(
+        ReqTypeRulesEditor.Props.noDefaults(
+          state         = p.state.zoomStateL(State.rules),
+          reqTypes      = p.cfg.reqTypes,
+          filterDead    = p.filterDead,
+          enabled       = p.enabled))
 
-      <.div(
-        Form(nameField)(ValidationUX.Full),
-        rules)
-    }
+    <.div(
+      Form(nameField)(ValidationUX.Full),
+      rules)
   }
 
   implicit val reusabilityState: Reusability[State] = Reusability.derive
   implicit val reusabilityProps: Reusability[Props] = Reusability.derive
 
   val Component = ScalaComponent.builder[Props]("TextFieldEditor")
-    .renderBackend[Backend]
+    .render_P(render)
     .configure(Reusability.shouldComponentUpdate)
     .build
 }

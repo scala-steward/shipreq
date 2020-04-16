@@ -50,7 +50,7 @@ object CommonProtocols {
           state.pickle(a.futureEvents)
         }
         override def unpickle(implicit state: UnpickleState): Project = {
-          val version      = state.dec.readInt
+          state.dec.readInt // version
           val id           = state.unpickle[ProjectId.Public]
           val ord          = state.unpickle[Option[Int]]
           val futureEvents = state.unpickle[Set[Int]]
@@ -224,7 +224,7 @@ object CommonProtocols {
             state.pickle(a.feedback)
           }
           override def unpickle(implicit state: UnpickleState): UserInput = {
-            val version = state.dec.readInt
+            state.dec.readInt // version
             val feedback = state.unpickle[String]
             UserInput(feedback)
           }

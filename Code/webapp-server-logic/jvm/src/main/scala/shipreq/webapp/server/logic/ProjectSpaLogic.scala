@@ -129,8 +129,7 @@ object ProjectSpaLogic extends StrictLogging {
 
     val webSocketHelper = WebSocketServerHelper(ProjectSpaProtocols.WebSocket(Obfuscated(null)))
 
-    val OnConnect  = Monads.FDisj[F, ConnectRejection]
-    val OnMsgError = Monads.FDisj[F, MsgError]
+    val OnConnect = Monads.FDisj[F, ConnectRejection]
 
     val fUnit = F.pure(())
 
@@ -338,7 +337,6 @@ object ProjectSpaLogic extends StrictLogging {
                              push           : BinaryData => F[Unit],
                              onListenerError: ListenerError => F[Unit],
                              onError        : MsgError => F[Unit]): F[OptionState] = {
-        val M = OnMsgError
 
         val span = getSpan(static)
 
