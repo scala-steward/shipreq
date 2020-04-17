@@ -61,6 +61,16 @@ object PublicSpaLogic extends HasLogger {
     issueDate(_).flatMap(f)
   }
 
+  def registrationTokenStatusFn[D[_], F[_] : Monad : Server.Time](db    : DB.ForPublicSpa[D],
+                                                                  runDB : D ~> F,
+                                                                  config: ServerLogicConfig.Security): VerificationToken => F[VerificationToken.Status] =
+    tokenStatusFn(t => runDB(db.getUserRegistrationTokenIssueDate(t)), config.registrationTokenLifespan)
+
+  def passwordResetTokenStatusFn[D[_], F[_] : Monad : Server.Time](db    : DB.ForPublicSpa[D],
+                                                                   runDB : D ~> F,
+                                                                   config: ServerLogicConfig.Security): VerificationToken => F[VerificationToken.Status] =
+    tokenStatusFn(t => runDB(db.getResetPasswordTokenIssueDate(t)), config.passwordResetTokenLifespan)
+
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   def apply[D[_], F[_]](implicit config  : ServerLogicConfig,
@@ -105,7 +115,7 @@ object PublicSpaLogic extends HasLogger {
         private val absUrlRegister2 = config.baseUrl / Urls.PublicSpaRoute.Register2.url
 
         private val getTokenStatus: VerificationToken => F[VerificationToken.Status] =
-          tokenStatusFn(t => runDB(db.getUserRegistrationTokenIssueDate(t)), config.security.registrationTokenLifespan)
+          registrationTokenStatusFn(db, runDB, config.security)
 
         def preRegistrationMsg(email: EmailAddr, u: DB.UserRegistration, now: Instant): D[(Task, Security.Result)] =
           u match {
@@ -246,7 +256,7 @@ object PublicSpaLogic extends HasLogger {
       private[this] object ResetPasswordFns {
 
         private val getTokenStatus: VerificationToken => F[VerificationToken.Status] =
-          tokenStatusFn(t => runDB(db.getResetPasswordTokenIssueDate(t)), config.security.passwordResetTokenLifespan)
+          passwordResetTokenStatusFn(db, runDB, config.security)
 
         private val absUrlRegister2 = config.baseUrl / Urls.PublicSpaRoute.ResetPassword.url
 
