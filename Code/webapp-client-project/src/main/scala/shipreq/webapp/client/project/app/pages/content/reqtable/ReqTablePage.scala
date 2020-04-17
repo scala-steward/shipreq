@@ -19,7 +19,6 @@ import shipreq.webapp.base.data.reqtable._
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.filter.Filter
-import shipreq.webapp.base.filter.Filter.Implicits._
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.{SavedViewCmd, UpdateContentCmd}
@@ -198,23 +197,23 @@ object ReqTablePage {
     val modifyViewFn: ModFn[View] =
       Reusable.byRef(ModStateFn((mod, cb) =>
         for {
-          p       ← pxProject.toCallback
-          (_, s1) ← stateAccess.state
-          fd      ← pxFilterDead.toCallback
+          p       <- pxProject.toCallback
+          (_, s1) <- stateAccess.state
+          fd      <- pxFilterDead.toCallback
           v1      = s1.view.activeView(p.reqtableViews, fd)
           v2      = mod(v1) getOrElse v1
           s2      = State.setModifiedView(p, updateFilterText = false)(v2)(s1)
-          _       ← stateAccess.setState((v2.filterDead, s2), cb)
+          _       <- stateAccess.setState((v2.filterDead, s2), cb)
         } yield ()))
 
     val setFilterDeadFn: SetFn[FilterDead] =
       Reusable.byRef(SetStateFn((fdO, cb) =>
         fdO.fold(cb)(fd =>
           for {
-            p       ← pxProject.toCallback
-            (_, s1) ← stateAccess.state
+            p       <- pxProject.toCallback
+            (_, s1) <- stateAccess.state
             s2      = s1.setFilterDead(fd, p)
-            _       ← stateAccess.setState((fd, s2), cb)
+            _       <- stateAccess.setState((fd, s2), cb)
           } yield ())))
 
     val pxRows: Px[Vector[Row]] =
@@ -258,11 +257,11 @@ object ReqTablePage {
     val onFilterChange: FilterEditor.UpdateFn =
       (newState, newFilter, cb) =>
         for {
-          p  ← pxProject.toCallback
-          fd ← pxFilterDead.toCallback
+          p  <- pxProject.toCallback
+          fd <- pxFilterDead.toCallback
           m1 = State.filter.set(newState)
           m2 = State.modifyView(p, fd, updateFilterText = false)(_.withFilter(newFilter))
-          _ ← stateAccessS.modState(m1 compose m2, cb)
+          _ <- stateAccessS.modState(m1 compose m2, cb)
         } yield ()
 
     val pxTableContentStats: Px[TableContentStats] =
@@ -324,9 +323,9 @@ object ReqTablePage {
     val runSavedViewAction: SavedViewLogic.Action ~=> Callback =
       Reusable.fn { action =>
         for {
-          project ← pxProject.toCallback
+          project <- pxProject.toCallback
           mod     = State.runSavedViewAction(project, true)(action)
-          _       ← stateAccessS.modState(mod)
+          _       <- stateAccessS.modState(mod)
         } yield ()
     }
 

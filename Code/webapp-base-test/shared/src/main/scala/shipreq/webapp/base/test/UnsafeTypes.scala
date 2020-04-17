@@ -6,7 +6,7 @@ import nyaya.util.Multimap
 import shipreq.base.util._
 import shipreq.base.util.univeq.UnivEq
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{Grammar, ProjectText, Text}
+import shipreq.webapp.base.text.{Grammar, Text}
 import ScalaExt._
 import VectorTree.{Location, ParentLocation, PartialLocation}
 import shipreq.webapp.base.event._
@@ -57,10 +57,10 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
     NonEmptyVector(v.head, v.tail)
   }
 
-  implicit def autoReqCodeSet[C <% ReqCode.Value](c: C): ReqCode.CodeSet =
+  implicit def autoReqCodeSet[C](c: C)(implicit f: C => ReqCode.Value): ReqCode.CodeSet =
     ReqCode.CodeSet.empty.put(c, ())
 
-  implicit def autoReqCodeSetFromSet[C <% ReqCode.Value](cs: Set[C]): ReqCode.CodeSet =
+  implicit def autoReqCodeSetFromSet[C](cs: Set[C])(implicit f: C => ReqCode.Value): ReqCode.CodeSet =
     cs.foldLeft(ReqCode.CodeSet.empty)(_.put(_, ()))
 
   implicit def autoEventOrd(i: Int) = EventOrd(i)

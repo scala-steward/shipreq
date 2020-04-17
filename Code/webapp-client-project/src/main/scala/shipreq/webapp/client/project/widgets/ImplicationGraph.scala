@@ -1,7 +1,6 @@
 package shipreq.webapp.client.project.widgets
 
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import org.scalajs.dom.document
 import shipreq.base.util.univeq._
@@ -26,11 +25,12 @@ object ImplicationGraph {
     @inline def render = Component(this)
 
     def isEmpty: Boolean =
-      focus.isEmpty && reqs.reqIterator.map(_.live(reqTypes)).filter(filterDead.filter).isEmpty
+      focus.isEmpty && reqs.reqIterator().map(_.live(reqTypes)).filter(filterDead.filter).isEmpty
   }
 
   implicit val reusabilityProps: Reusability[Props] = {
     implicit def a: Reusability[Implications.BiDir] = Reusability.byRef
+    val _ = a // -Wunused:locals gets it wrong
     Reusability.derive
   }
 

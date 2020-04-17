@@ -1,6 +1,5 @@
 package shipreq.webapp.server.protocol.entrypoint
 
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.base.util.Util.quickJSB
 import shipreq.webapp.base.AssetManifest
 
@@ -41,7 +40,7 @@ object LoadJs {
       new Bundle(rs)
   }
 
-  final class Bundle(resources: Traversable[Resource]) {
+  final class Bundle(resources: Iterable[Resource]) {
 
     assert(resources.nonEmpty, "Empty bundles aren't yet handled.")
 

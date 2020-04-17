@@ -233,7 +233,7 @@ object ServerOpFxTest extends TestSuite {
         "INSERT INTO msgq(type, data, node, worker, created_at, updated_at, effective_from, priority, priority_base)" +
           "VALUES(?, ?, ?, ?, now()-?, now()-?, now()-?, 5,5) RETURNING id")
 
-      def insert(node: Option[NodeId] = None, worker: Option[WorkerId] = None, msg: Task = defaultTask) = {
+      def insert(node: Option[NodeId], worker: Option[WorkerId] = None, msg: Task = defaultTask) = {
         val d: Duration = 2.days
         insertQ.toQuery0((msg, node, worker, d, d, d)).unique
       }

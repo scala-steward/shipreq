@@ -228,6 +228,7 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
 
     implicit final val reusabilityProps: Reusability[Props] = {
       implicit val a = reusabilityRowEditor
+      val _ = a // -Wunused:locals gets it wrong
       Reusability.derive
     }
 
@@ -410,10 +411,8 @@ final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]]) {
                      view     : Reusable[TagMod])
 
     object Props {
-      implicit val reusability: Reusability[Props] = {
-        implicit val cs: Reusability[CellState] = Reusability.byRef
+      implicit val reusability: Reusability[Props] =
         Reusability.derive
-      }
 
       val `n/a`: On => Props =
         On.memo(on =>

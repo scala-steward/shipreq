@@ -1,7 +1,7 @@
 package shipreq.benchmark
 
 import cats.effect.IO
-import scalaz.zio.UIO
+import zio.UIO
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.{Duration, Instant}
 import java.util.concurrent.TimeUnit
@@ -278,7 +278,7 @@ object DispatchBM {
 
   val DispatchRequests: List[Request[Unit]] = {
     import Method._
-    implicit def autoXID(p: ProjectId): ProjectId.Public = Obfuscators.projectId.obfuscate(p)
+    // implicit def autoXID(p: ProjectId): ProjectId.Public = Obfuscators.projectId.obfuscate(p)
     val param: String => Option[String] = _ => None
     val cookie: Cookie.Name => Option[String] = _ => None
     val token = VerificationToken("MnVC8cvPX9b1jiCpyxoYLk4RqQ8idHlV4lf7OHzIQctHLgw6C")
@@ -310,7 +310,7 @@ object DispatchBM {
     override def map[A, B](fa: UIO[A])(f: A => B): UIO[B] = fa map f
   }
 
-  val zioRuntime = new scalaz.zio.DefaultRuntime {}
+  val zioRuntime = _root_.zio.Runtime.default
 
   val catsIO     = new Interpreters[IO        ](_.unsafeRunSync())
   val fn0        = new Interpreters[Function0 ](_.apply())

@@ -1,7 +1,6 @@
 package shipreq.webapp.client.project.app.pages.config.issues
 
 import japgolly.microlibs.stdlib_ext.MutableArray
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
@@ -79,12 +78,12 @@ object OtherIssueSources {
 
     def renderData[A](title : VdomNode,
                       page  : Routes.Page,
-                      data  : TraversableOnce[A])(
+                      data  : IterableOnce[A])(
                       sortBy: A => String,
                       render: A => TagMod) = {
 
       val content =
-        if (data.isEmpty)
+        if (data.iterator.isEmpty)
           <.div(*.otherSourcesNone, "None.")
         else
           <.ul(

@@ -142,6 +142,7 @@ object ReqTypeRulesEditor {
 
     implicit def reusabilityProps[D: UnivEq]: Reusability[Props[D]] = {
       implicit val a: Reusability[Vector[D]] = Reusability.byRefOrUnivEq
+      val _ = a // -Wunused:locals gets it wrong
       Reusability.derive
     }
   }
@@ -231,10 +232,10 @@ object ReqTypeRulesEditor {
 
       def from[D](res: Resolution[D]): ResValue[D] =
         res match {
-          case Resolution.DefaultTo(d)     => apply(Resolution.DefaultTo(()), Some(d))
-          case r@ Resolution.Mandatory     => apply(r, None)
-          case r@ Resolution.Optional      => apply(r, None)
-          case r@ Resolution.NotApplicable => apply(r, None)
+          case Resolution.DefaultTo(d)          => apply(Resolution.DefaultTo(()), Some(d))
+          case r: Resolution.Mandatory.type     => apply(r, None)
+          case r: Resolution.Optional.type      => apply(r, None)
+          case r: Resolution.NotApplicable.type => apply(r, None)
         }
     }
 

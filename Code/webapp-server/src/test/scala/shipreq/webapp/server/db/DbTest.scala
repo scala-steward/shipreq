@@ -9,11 +9,12 @@ import shipreq.base.test.db.{ImperativeXA, TestDb}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.user._
-import shipreq.webapp.server.app.Global
+import shipreq.webapp.server.app.{Global, ServerInterpreter}
 import shipreq.webapp.server.test.WebappServerTestUtil._
 import shipreq.webapp.server.test._
 import sourcecode.Line
 import utest._
+import shipreq.webapp.server.logic.PublicSpaLogic
 
 object DbTest extends TestSuite {
 
@@ -92,90 +93,75 @@ object DbTest extends TestSuite {
 
     "user" - {
       "resetPasswordFns" - TestDb.withImperativeXA { xa =>
+        implicit val timer = ServerInterpreter
         val dbu = DbUtil(xa)
         val db = dbu.dbAlgebra
         val u = dbu.newUserId()
-        val username = xa ! Query0[String](s"select username from usr where id=${u.value: Long}").unique
         val token = xa ! db.createResetPasswordToken(u)
 
-//        val date = xa ! db.getResetPasswordTokenIssueDate(token)
-//        assert(!ResetPassword.isTokenExpired(date.get)) TODO
+        val tokenStatus = PublicSpaLogic.passwordResetTokenStatusFn(db, xa.transZ, Global.config.server.security)
+        assertEq(tokenStatus(token).unsafeRun(), VerificationToken.Status.Valid)
 
         xa ! db.updateResetPasswordTokenOnReissue(u)
-//        val date2 = xa ! db.getResetPasswordTokenIssueDate(token)
-//        assert(!ResetPassword.isTokenExpired(date2.get)) TODO
+        assertEq(tokenStatus(token).unsafeRun(), VerificationToken.Status.Valid)
 
         val p = PlainTextPassword("hehegreat100")
         val ps = Global.security.hashPassword(p).unsafeRun()
         xa ! db.updateUserPassword(token, ps)
 
         assertEq(xa ! db.getResetPasswordTokenIssueDate(token), None)
-//        val ps2 = (xa ! dbSec.getUserAndPassword(username)).get._2
-//        assertEq(ps2.matches(p), true)
       }
     }
 
-//  describe("Project") {
-//    import Tables.{Project => TProject}
-//
-////    def newUserAndProject() = {
-////      val u = newUserId()
-////      val p = dao.createProject(u)
-////      (u, p)
-////    }
-//
-//    describe("create") {
-//      it("should create a new project") {
-//        val u = newUserId()
-//        assertTableDiffs(TProject -> 1) {dao.createProject(u)}
+    "project" - {
+
+      def createProject(u: UserId, name: String)(implicit xa: ImperativeXA): ProjectId = {
+        val e = Event.ProjectNameSet(name)
+        val p = applyEventsSuccessfully(Project.empty, e)
+        xa ! DbUtil(xa).dbAlgebra.createProject(u, Vector(e), p)
+      }
+
+      "create" - TestDb.withImperativeXA { implicit xa =>
+        val dbu = DbUtil(xa)
+        val db = dbu.dbAlgebra
+        val u = dbu.newUserId()
+        val pid = xa.assertRowCountChanges("project" -> 1, "event" -> 1, "project_access_per_hour" -> 1) {
+          createProject(u, "xxx")
+        }
+        val pmd = xa ! db.getProjectMetaData(pid)
+        assertEq(pmd.map(_.name), Some("xxx"))
+      }
+
+//      "rename" - {
+
+//        def newUserAndProject(name: String)(implicit xa: ImperativeXA) = {
+//          val dbu = DbUtil(xa)
+//          val db = dbu.dbAlgebra
+//          val u = dbu.newUserId()
+//          val pid = createProject(u, name)
+//          (dbu, db, u, pid)
+//        }
+
+        // We don't bother rejecting duplicate names anymore, doesn't really matter like it does with Github.
+        // This wouldn't be so trivial once multi-user support is added.
+//        "reject duplicate names" - TestDb.withImperativeXA { implicit xa =>
+//          val (dbu, db, u, p1) = newUserAndProject("A")
+//          val p2 = createProject(u, "A")
+//          dao.updateProject(p2, u, "A") ==== NameAlreadyInUse
+//        }
+
+        // This isn't checked at the DB level. It *will* be checked in ProjectSpaLogic once multi-user support is added
+//        "fail when project doesnt belong to user" - TestDb.withImperativeXA { implicit xa =>
+//          val (dbu, db, _, p) = newUserAndProject("A")
+//          val es = (xa ! db.getAllProjectEvents(p)).getOrThrow()
+//          val e = Event.ProjectNameSet("qwe")
+//          val p2 = applyEventSuccessfully(Project.empty, e)
+//          val u2 = dbu.newUserId()
+//          val result = xa ! db.saveProjectEvent(p, es.max.ord.next, e, p2, u2)
+//          result
+//        }
 //      }
-//    }
-//
-////    describe("rename") {
-////      import UpdateProjectResult._
-////
-////      it("should update the project name") {
-////        val (u, p) = newUserAndProject("A")
-////        assertTableDiffs()(dao.updateProject(p, u, "B")) ==== DbSuccess
-////        dao.findProject(p).get.name ==== "B"
-////      }
-////
-////      it("should reject duplicate names") {
-////        val (u, p1) = newUserAndProject("A")
-////        val p2 = dao.createProject(u, "B").gimme
-////        dao.updateProject(p2, u, "A") ==== NameAlreadyInUse
-////      }
-////
-////      it("should fail when project not found") {
-////        dao.updateProject(ProjectId(0), UserId(0), "A") ==== ProjectNotFound
-////      }
-////
-////      it("should fail when project doesnt belong to user") {
-////        val (u, p) = newUserAndProject("A")
-////        dao.updateProject(p, newUserId(), "B") ==== ProjectNotFound
-////      }
-////    }
-//
-////    def afterDeletion: (UserId, ProjectId, ProjectId) = {
-////      val (uid, p1) = newUserAndProject("wow")
-////      assertTableDiffs()(dao deleteProjectSoft p1)
-////      val p2 = dao.createProject(uid, "wow").gimme
-////      assertTableDiffs()(dao deleteProjectSoft p2)
-////      (uid, p1, p2)
-////    }
-////
-////    it("deletion should be soft and hard") {
-////      val (_, p1, p2) = afterDeletion
-////      val a = new AsyncDao
-////      assertTableDiffs(Tables.Project -> -1)(a deleteProject p1)
-////      assertTableDiffs(Tables.Project -> -1)(a deleteProject p2)
-////    }
-////
-////    it("soft deletion should hide the project from view") {
-////      val (u, p, _) = afterDeletion
-////      dao.findProject(p) shouldBe None
-////    }
-//  }
+    }
 
     "event" - {
 
@@ -252,7 +238,6 @@ object DbTest extends TestSuite {
       }
 
       "startWithIps" - TestDb.withImperativeXA { implicit xa =>
-//        xa ! DbTable.VisitorStatsPerHour.truncate
         test(0, 0)
 
         add(Set("a", "b"), 5)

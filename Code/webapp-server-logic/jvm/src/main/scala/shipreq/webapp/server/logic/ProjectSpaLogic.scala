@@ -129,8 +129,7 @@ object ProjectSpaLogic extends StrictLogging {
 
     val webSocketHelper = WebSocketServerHelper(ProjectSpaProtocols.WebSocket(Obfuscated(null)))
 
-    val OnConnect  = Monads.FDisj[F, ConnectRejection]
-    val OnMsgError = Monads.FDisj[F, MsgError]
+    val OnConnect = Monads.FDisj[F, ConnectRejection]
 
     val fUnit = F.pure(())
 
@@ -191,7 +190,7 @@ object ProjectSpaLogic extends StrictLogging {
           trace.newSubSpan("onConnect", span)(_ =>
             security.protect(
               for {
-                (r, dur) ← svr.measureDuration(main(span).value)
+                (r, dur) <- svr.measureDuration(main(span).value)
                 mresult  = r match {
                              case \/-(_)                => "ok"
                              case -\/(NoSession       ) => "NoSession"
@@ -201,7 +200,7 @@ object ProjectSpaLogic extends StrictLogging {
                              case -\/(ProjectNotFound ) => "ProjectNotFound"
                              case -\/(AccessDenied    ) => "AccessDenied"
                            }
-                _        ← metrics.projectSpaWebSocketConnected(dur, mresult)
+                _        <- metrics.projectSpaWebSocketConnected(dur, mresult)
               } yield r
             )))
       }
@@ -280,10 +279,10 @@ object ProjectSpaLogic extends StrictLogging {
           case Some(static) =>
             trace.newSubSpan("onClose", getSpan(static)) { _ =>
               for {
-                dur        ← svr.measureDuration_(main)
-                now        ← svr.now
+                dur        <- svr.measureDuration_(main)
+                now        <- svr.now
                 sessionDur = Duration.between(static.connectedAt, now)
-                _          ← metrics.projectSpaWebSocketClosed(dur, sessionDur)
+                _          <- metrics.projectSpaWebSocketClosed(dur, sessionDur)
               } yield logger.info(s"WebSocket closed after ${sessionDur.conciseDesc}")
             }
           case None =>
@@ -338,7 +337,6 @@ object ProjectSpaLogic extends StrictLogging {
                              push           : BinaryData => F[Unit],
                              onListenerError: ListenerError => F[Unit],
                              onError        : MsgError => F[Unit]): F[OptionState] = {
-        val M = OnMsgError
 
         val span = getSpan(static)
 
@@ -365,10 +363,10 @@ object ProjectSpaLogic extends StrictLogging {
                   }
                 }
                 for {
-                  _           ← trace.rename("onMessage: " + req.reqRes.name)
+                  _           <- trace.rename("onMessage: " + req.reqRes.name)
                   msgFnIn     = MsgFnIn(req.req, static, state, push, onListenerError)
-                  msgErrOrOut ← msgFold(req.reqRes)(msgFnIn): F[MsgError \/ MsgFnOut[F, req.reqRes.ResponseType]]
-                  result      ← msgErrOrOut match {
+                  msgErrOrOut <- msgFold(req.reqRes)(msgFnIn): F[MsgError \/ MsgFnOut[F, req.reqRes.ResponseType]]
+                  result      <- msgErrOrOut match {
                                      case \/-(msgFnOut) => respondWith(msgFnOut)
                                      case -\/(e)        => handleError(FreeOption.empty, e)
                                    }
@@ -387,10 +385,10 @@ object ProjectSpaLogic extends StrictLogging {
         }
 
         for {
-          (r, dur) ← svr.measureDuration(trace.newSubSpan("onMessage", span)(body(_)))
+          (r, dur) <- svr.measureDuration(trace.newSubSpan("onMessage", span)(body(_)))
           pid      = static.projectId.value
-          _        ← metrics.projectSpaWebSocketMsg(r.msgType, msg.length, r.bytesOut, dur, r.ok)
-          _        ← F.point(logger.info(s"WebSocket for project #$pid processed request in ${dur.conciseDesc}"))
+          _        <- metrics.projectSpaWebSocketMsg(r.msgType, msg.length, r.bytesOut, dur, r.ok)
+          _        <- F.point(logger.info(s"WebSocket for project #$pid processed request in ${dur.conciseDesc}"))
         } yield r.newState
       }
 
@@ -582,11 +580,11 @@ object ProjectSpaLogic extends StrictLogging {
           }
 
         for {
-          newState ← redisSubscribe
-          mdOpt    ← runDB(db.getProjectMetaData(pid))
+          newState <- redisSubscribe
+          mdOpt    <- runDB(db.getProjectMetaData(pid))
           md       = mdOpt.get // This will fail during connection usage after project deleted
           dbLatest = md.latestOrd
-          events   ← if (dbLatest > userOrd)
+          events   <- if (dbLatest > userOrd)
                        loadEvents(dbLatest)
                      else
                        F.pure(\/-(VerifiedEvent.Seq.empty))
@@ -667,10 +665,10 @@ object ProjectSpaLogic extends StrictLogging {
 
           case ReadDb =>
             for {
-              cacheBuilt     ← s.redis.buildNonEmpty(pid)
+              cacheBuilt     <- s.redis.buildNonEmpty(pid)
               p1             = s.local max cacheBuilt
-              newEventsOrErr ← runDB(db.getProjectEvents(pid, DB.EventFilter.given(p1.ord)))
-              result         ← newEventsOrErr match {
+              newEventsOrErr <- runDB(db.getProjectEvents(pid, DB.EventFilter.given(p1.ord)))
+              result         <- newEventsOrErr match {
                                  case \/-(newEvents) => apEvent.append(pid, p1, newEvents) map {
                                    case \/-(p2) => -\/(s.copy(local = p2, status = WriteRedis1(newEvents)))
                                    case -\/(e)  => \/-(Result.Reject(e))
@@ -761,7 +759,7 @@ object ProjectSpaLogic extends StrictLogging {
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   /** Generates code to paste into ProjectSpaProtocolsTest.scala */
-  private[this] object GenerateUnitTest {
+  protected object GenerateUnitTest {
     import io.circe._
     import io.circe.syntax._
     import org.apache.commons.text.StringEscapeUtils

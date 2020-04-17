@@ -5,7 +5,7 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import nyaya.prop.CycleDetector
 import monocle.{Lens, Traversal}
-import monocle.macros.{GenLens, Lenses}
+import monocle.macros.Lenses
 import nyaya.util.Multimap
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -189,12 +189,12 @@ final case class TagInTree(tag: Tag, children: TagInTree.Children) {
   def hasChild(id: TagId): Boolean =
     children contains id
 
-  def lookupChildren(implicit tt: TagTree): Stream[TagInTree] =
-    children.toStream.map(tt.need)
+  private def lookupChildren()(implicit tt: TagTree): Iterator[TagInTree] =
+    children.iterator.map(tt.need)
 
   /** @return Itself and all reachable children. */
   def transitiveChildren(implicit tt: TagTree): Set[TagId] =
-    TagInTree.transitiveChildren(lookupChildren, Set(id))
+    TagInTree.transitiveChildren(lookupChildren(), Set(id))
 }
 
 object TagInTree {
@@ -213,16 +213,16 @@ object TagInTree {
   val live = tag ^|-> Tag.live
 
   /** @return Itself and all reachable children. */
-  @tailrec def transitiveChildren(queue: Stream[TagInTree], seen: Set[TagId])(implicit tt: TagTree): Set[TagId] =
+  @tailrec def transitiveChildren(queue: Iterator[TagInTree], seen: Set[TagId])(implicit tt: TagTree): Set[TagId] =
     if (queue.isEmpty)
       seen
     else {
-      val focus = queue.head
+      val focus = queue.next()
       val id = focus.id
       if (seen contains id)
-        transitiveChildren(queue.tail, seen)
+        transitiveChildren(queue, seen)
       else
-        transitiveChildren(queue.tail append focus.lookupChildren, seen + id)
+        transitiveChildren(queue ++ focus.lookupChildren(), seen + id)
     }
 }
 
@@ -422,7 +422,7 @@ final case class Tags(tree: TagTree) {
   def filterLiveParents(parents: TagInTree.Parents): TagInTree.Parents =
     parents.iterator.filter(kv => tree.get(kv._1).forall(_.tag.live is Live)).toMap
 
-  def sortTagIds(ids: TraversableOnce[ApplicableTagId]): Iterator[ApplicableTagId] =
+  def sortTagIds(ids: IterableOnce[ApplicableTagId]): Iterator[ApplicableTagId] =
     MutableArray(ids).sortBySchwartzian(needApplicableTag(_).name).iterator
 }
 

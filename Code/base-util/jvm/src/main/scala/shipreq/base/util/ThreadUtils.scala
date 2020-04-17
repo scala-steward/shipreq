@@ -1,9 +1,10 @@
 package shipreq.base.util
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.{ContextShift, IO, Timer}
 import com.typesafe.scalalogging.Logger
 import java.util.concurrent.{Executors, LinkedBlockingQueue, ThreadFactory, ThreadPoolExecutor, TimeUnit}
 import java.time.Duration
+import java.util.{Timer => JTimer, TimerTask}
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.ExecutionContext
 
@@ -26,7 +27,7 @@ object ThreadUtils {
   def newThreadFactory(groupName: String): ThreadFactory = {
     val group  = new ThreadGroup(groupName)
     val count  = new AtomicInteger(0)
-    val prefix = group + "-thread-"
+    val prefix = groupName + "-thread-"
     new ThreadFactory {
       override def newThread(r: Runnable) = {
         val name = prefix + count.incrementAndGet()
@@ -74,18 +75,30 @@ object ThreadUtils {
   // ===================================================================================================================
 
   def newThreadPool(threadGroupName: String, logger: Logger): ThreadPool =
-    new ThreadPool(newThreadFactory(threadGroupName), logger)
+    new ThreadPool(threadGroupName, newThreadFactory(threadGroupName), logger)
 
-  final class ThreadPool(threadFactory: ThreadFactory, logger: Logger) {
-    def withThreads(n: Int) = ThreadPool2(newThreadPoolExecutor(n, threadFactory), logger)
+  final class ThreadPool(threadGroupName: String, threadFactory: ThreadFactory, logger: Logger) {
+    def withThreads(n: Int) = ThreadPool2(threadGroupName, newThreadPoolExecutor(n, threadFactory), logger)
+    def withMaxThreads() = withThreads(Runtime.getRuntime.availableProcessors())
   }
 
-  final case class ThreadPool2(threadPoolExecutor: ThreadPoolExecutor, logger: Logger) {
+  final case class ThreadPool2(threadGroupName: String, threadPoolExecutor: ThreadPoolExecutor, logger: Logger) {
     def executionContext: ExecutionContext =
       ExecutionContext.fromExecutor(threadPoolExecutor).logUncaughtErrors(logger)
 
     def contextShift: ContextShift[IO] =
       IO.contextShift(executionContext)
+
+    def timer: Timer[IO] =
+      IO.timer(executionContext)
+
+    def shutdownFx: Fx[Unit] =
+      Fx(threadPoolExecutor.shutdown())
+
+    def autoShutdown(): ThreadPool2 = {
+      runOnShutdownFx(threadGroupName, shutdownFx)
+      this
+    }
   }
 
   // ===================================================================================================================
@@ -94,13 +107,14 @@ object ThreadUtils {
     new Scheduler(threadName, threadGroup)
 
   final class Scheduler(threadName: String, threadGroup: ThreadGroup) {
-    private val es = Executors.newSingleThreadScheduledExecutor(new Thread(threadGroup, _, threadName))
+    val executorService =
+      Executors.newSingleThreadScheduledExecutor(new Thread(threadGroup, _, threadName))
 
     def scheduleAtFixedRate[A](fx: Fx[A], period: Duration): Scheduler =
       scheduleAtFixedRate(fx, period, period)
 
     def scheduleAtFixedRate[A](fx: Fx[A], initialDelay: Duration, period: Duration): Scheduler = {
-      es.scheduleAtFixedRate(fx.toJavaRunnable, initialDelay.toMillis, period.toMillis, TimeUnit.MILLISECONDS)
+      executorService.scheduleAtFixedRate(fx.toJavaRunnable, initialDelay.toMillis, period.toMillis, TimeUnit.MILLISECONDS)
       this
     }
 
@@ -110,4 +124,67 @@ object ThreadUtils {
     }
   }
 
+  // ===================================================================================================================
+
+  def unsafeRunWithTimeLimit[A](maxDur: Duration)(task: => A): Option[A] = {
+    val lock   = new AnyRef
+    val sync   = new AnyRef
+    var result = Option.empty[A]
+    var done   = false
+    val timer  = new JTimer("unsafeRunWithTimeLimit", true)
+    var thread = null : Thread
+
+    def complete(r: Option[A]) = {
+      val notify =
+        lock.synchronized {
+          if (done)
+            false
+          else {
+            done = true
+            result = r
+            if (r.isEmpty) {
+              if (thread ne null) thread.interrupt()
+            } else
+              timer.cancel()
+            true
+          }
+        }
+
+      if (notify)
+        sync.synchronized {
+          sync.notify()
+        }
+    }
+
+    try {
+      val taskRunnable: Runnable = () => {
+        try {
+          val a = task
+          complete(Some(a))
+        } catch {
+          case _: InterruptedException =>
+        } finally
+          complete(None)
+      }
+
+      thread = new Thread(taskRunnable)
+      thread.start()
+
+      val timeout = new TimerTask {
+        override def run(): Unit = {
+          complete(None)
+        }
+      }
+
+      timer.schedule(timeout, maxDur.toMillis)
+
+      sync.synchronized {
+        sync.wait(maxDur.toMillis)
+      }
+
+      result
+    } finally {
+      timer.cancel()
+    }
+  }
 }

@@ -30,8 +30,8 @@ object StaticFieldEditor {
     li("This field is mandatory and cannot be removed.")
 
   private def renderOtherTags(p: Props): VdomNode = {
-    def renderTagList(ids: TraversableOnce[ApplicableTagId]): TagMod =
-      if (ids.isEmpty)
+    def renderTagList(ids: IterableOnce[ApplicableTagId]): TagMod =
+      if (ids.iterator.isEmpty)
         EmptyVdom
       else
         <.ul(

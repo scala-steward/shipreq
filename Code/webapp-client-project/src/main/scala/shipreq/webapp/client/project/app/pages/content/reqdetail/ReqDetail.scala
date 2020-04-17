@@ -1,7 +1,6 @@
 package shipreq.webapp.client.project.app.pages.content.reqdetail
 
 import japgolly.microlibs.nonempty._
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.router.RouterCtl
@@ -186,13 +185,13 @@ object ReqDetail {
 
     def startUseCaseStepEditor(id: UseCaseStepId): Callback =
       for {
-        data      ← cbData
-        props     ← $.props.toCBO
+        data      <- cbData
+        props     <- $.props.toCBO
         key       = EditorFeature.FieldKey.UseCaseStep(id)
         editor    = props.editorUCS(key, data.pxProjectWidgets, data.filterDead)
-        ref       ← CallbackTo(useCaseStepRefs.get(id)).asCBO
-        component ← ref.get
-        _         ← CallbackOption.liftOptionCallback(component.backend.startEdit(editor))
+        ref       <- CallbackTo(useCaseStepRefs.get(id)).asCBO
+        component <- ref.get
+        _         <- CallbackOption.liftOptionCallback(component.backend.startEdit(editor))
       } yield ()
 
     def setModal(modal: Modal.State): Callback =

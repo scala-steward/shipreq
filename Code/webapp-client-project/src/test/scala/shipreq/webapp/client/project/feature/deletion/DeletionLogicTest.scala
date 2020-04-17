@@ -15,7 +15,7 @@ import WebappTestUtil._
 
 object DeletionLogicTestData {
   import ProjectDsl._
-  import ProjectDslInternals.{ToState, Composite}
+  import ProjectDslInternals.Composite
   import SampleProject.Values._
 
   private var _selectedReqIds = Set.empty[ReqId]
@@ -48,7 +48,7 @@ object DeletionLogicTestData {
   }
 
   private val pairStr = "^(\\d+):(.*)$".r
-  private def split(s: String) = s.trim.split(" *, *").toIterator.filterNot(_.isEmpty)
+  private def split(s: String) = s.trim.split(" *, *").iterator.filterNot(_.isEmpty)
   private def pairs[A](s: String, f: Int => A) = split(s).map{ case pairStr(a,b) => (f(a.toInt), b)}.toSet
 
   private implicit class RCGroupExt(private val x: RCGroup) {

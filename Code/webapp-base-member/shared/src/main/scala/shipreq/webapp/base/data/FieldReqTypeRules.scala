@@ -211,10 +211,10 @@ object FieldReqTypeRules {
   }
 
   object ByResolution {
-    def build[D](perRes: TraversableOnce[(Resolution[D], Set[ReqTypeId])], otherwise: Resolution[D]): ByResolution[D] = {
+    def build[D](perRes: IterableOnce[(Resolution[D], Set[ReqTypeId])], otherwise: Resolution[D]): ByResolution[D] = {
       var m = Map.empty[Resolution[D], NonEmptySet[ReqTypeId]]
       for {
-        (res, ids) <- perRes
+        (res, ids) <- perRes.iterator
         id         <- ids
       }
         m = m.setOrModifyValue(res, NonEmptySet one id, _ + id)

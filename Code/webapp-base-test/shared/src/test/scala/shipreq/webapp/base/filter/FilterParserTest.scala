@@ -5,17 +5,15 @@ import nyaya.gen.Gen
 import nyaya.prop._
 import nyaya.test._
 import nyaya.test.PropTestOps._
-import nyaya.util._
 import org.parboiled2.ErrorFormatter
 import scalaz.{-\/, Functor, \/-}
 import utest._
-import shipreq.base.util.Debug._
 import shipreq.base.util._
 import shipreq.webapp.base.{RandomData => $}
-import shipreq.webapp.base.data.{ExternalPubid, HashRefKey, Off, On, ProjectConfig, ReqTypePos}
+import shipreq.webapp.base.data.{HashRefKey, Off, On, ProjectConfig}
 import shipreq.webapp.base.data.ReqType.Mnemonic
 import shipreq.webapp.base.filter._
-import shipreq.webapp.base.filter.Filter.{Potential, PotentialF, Valid}
+import shipreq.webapp.base.filter.Filter.{Potential, Valid}
 import shipreq.webapp.base.filter.Filter.Implicits._
 import shipreq.webapp.base.filter.IntensionalReqSet._
 import shipreq.webapp.base.test.WebappTestUtil._
@@ -158,9 +156,9 @@ object FilterParserTest extends TestSuite {
     }
 
     "reqType" - {
-      * - test("X",  reqType("X"))
-      * - test("MF", reqType("MF"))
-      * - test("BOBOP", reqType("BOBOP"))
+      "1" - test("X",  reqType("X"))
+      "2" - test("MF", reqType("MF"))
+      "3" - test("BOBOP", reqType("BOBOP"))
     }
 
     "hashRef" - {
@@ -272,9 +270,9 @@ object FilterParserTest extends TestSuite {
 
       "parens2" - test("a (b | c) d", allOf(text("a"), anyOf(text("b"), text("c")), text("d")))
 
-      * - test(" a b_c ", allOf(text("a"), text("b_c")))
+      "*" - test(" a b_c ", allOf(text("a"), text("b_c")))
 
-      * - test("abc  (MF|FR)  -( eat drink (has:a|has:b))", allOf(
+      "*" - test("abc  (MF|FR)  -( eat drink (has:a|has:b))", allOf(
             text("abc"),
             anyOf(reqType("MF"), reqType("FR")),
             not(allOf(text("eat"), text("drink"), anyOf(presence("a"), presence("b"))))

@@ -8,7 +8,6 @@ import monocle.macros.Lenses
 import scala.annotation.elidable
 import scalaz.~~>
 import shipreq.base.util.ScalaExt._
-import shipreq.base.util.VectorTree.LocationOps
 import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.UseCaseStepGD
@@ -60,6 +59,7 @@ object NewEditor {
 
     implicit val reusability: Reusability[Hooks] = {
       implicit val x: Reusability[Callback] = Reusability.by((_: Callback).toScalaFn)(Reusability.byRef) // TODO Use Reusability.callbackByRef
+      val _ = x // -Wunused:locals gets it wrong
       Reusability.byRef || Reusability.derive
     }
   }
@@ -80,7 +80,7 @@ object NewEditor {
 
   type ForFields[FK <: FieldKey] = FieldKey.Fold[FK, ForEditor]
 
-  type ForEditor[A, Change] = Ctx[A, Change] ⇒ NewEditor
+  type ForEditor[A, Change] = Ctx[A, Change] => NewEditor
 
   def forRow(static: Static, rowKey: RowKey): ForFields[rowKey.FieldKey] =
     static.internal.perRow(rowKey)
@@ -120,7 +120,7 @@ object NewEditor {
       protected def changeArgs: Args
 
       final override def render(p: Permission, as: AsyncState, args: Args): Option[VdomElement] =
-        // Looks like this could block async but not so. Can't go from edit → async → notAllowed.
+        // Looks like this could block async but not so. Can't go from edit -> async -> notAllowed.
         // Unsafety is allowed here because EditorInstance is never Reusable
         p match {
           case Allow => Some(renderImpl(props(args, as).runNow()))

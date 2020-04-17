@@ -17,11 +17,9 @@ import scalaz.{-\/, Need, \/-}
 import scalaz.std.list._
 import scalaz.std.option.{none => _, _}
 import scalaz.std.set._
-import scalaz.std.stream._
 import scalaz.std.vector._
 import shipreq.base.test.BaseUtilGen._
 import shipreq.base.util._
-import shipreq.base.util.Debug._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.webapp.base.data._
@@ -30,7 +28,7 @@ import shipreq.webapp.base.issue.IssueCategory
 import shipreq.webapp.base.sort.SortMethod
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.text.{Grammar, GrammarSpec, Text}
-import shipreq.webapp.base.util.{GenericData, PreProcessor}
+import shipreq.webapp.base.util.PreProcessor
 import shipreq.webapp.base.user._
 
 // TODO RandomData is inaccurate in that CorrectionParts aren't applied.
@@ -44,7 +42,6 @@ object RandomData {
   import DataImplicits._
   import MTrie.Ops
   import Optics.Implicits._
-  import ReqType.Mnemonic
   import TestOptics.{customReqTypesLive => _, _}
   import WebappBaseGen._
 
@@ -97,10 +94,10 @@ object RandomData {
   val unicodeString : Gen[String] = unicodeChar.string
   val unicodeString1: Gen[String] = unicodeChar.string1
 
-//  private val _charPredAllChars = ('\u0001' to '\ud7ff').seq
-  private val _charPredAllChars = ('\u0001' to '\u0100').seq
-//  private val _charPredAllChars = ('\u0020' to '\u0100').seq
-//  private val _charPredAllChars = ('\u0020' to '\u0080').seq
+//  private val _charPredAllChars = ('\u0001' to '\ud7ff')
+  private val _charPredAllChars = ('\u0001' to '\u0100')
+//  private val _charPredAllChars = ('\u0020' to '\u0100')
+//  private val _charPredAllChars = ('\u0020' to '\u0080')
   def charPred(p: CharPredicate): Gen[Char] =
     //Gen.choose_!(_charPredAllChars filter p.apply)
     Gen.chooseArray_!((_charPredAllChars filter p.apply).toArray)
@@ -124,12 +121,12 @@ object RandomData {
   def CaseInsensitive(s: String): CaseInsensitive =
     new CaseInsensitive(s.toLowerCase, s)
 
-  def legalGrammar[G](g: G)(first: G => GrammarSpec.Chars, rest: G => GrammarSpec.Chars): Stream[String] = {
-    val g1 = first(g).toStream.map(_.toString)
-    val gn = rest(g).toStream.map(_.toString)
-    def grow(ss: Stream[String]): Stream[String] = {
-      val x = ss append ss.flatMap(s => gn.map(s + _))
-      x append grow(x)
+  def legalGrammar[G](g: G)(first: G => GrammarSpec.Chars, rest: G => GrammarSpec.Chars): LazyList[String] = {
+    val g1 = first(g).iterator().map(_.toString).to(LazyList)
+    val gn = rest(g).iterator().map(_.toString).to(LazyList)
+    def grow(ss: LazyList[String]): LazyList[String] = {
+      val x = ss #::: ss.flatMap(s => gn.map(s + _))
+      x #::: grow(x)
     }
     grow(g1)
   }
@@ -214,7 +211,7 @@ object RandomData {
       a <- Gen.lower
       b <- Gen.chooseChar('_', 'a' to 'z', '0' to '9').string(x to y)
       c <- Gen.chooseChar('a', 'b' to 'z', '0' to '9')
-    } yield Username(a + b + c)
+    } yield Username("" + a + b + c)
   }
 
   lazy val errorMsg: Gen[ErrorMsg] =
@@ -357,8 +354,8 @@ object RandomData {
 
   def tagAndRels(genReqTypeIds: Gen[Set[ReqTypeId]]): Gen[(Tag, TagInTree.Relations)] =
     for {
-      t      ← tag(genReqTypeIds)
-      (p, c) ← tagId.set.pair
+      t      <- tag(genReqTypeIds)
+      (p, c) <- tagId.set.pair
     } yield {
       val children = (c - t.id -- p).toVector
       val parents  = (p - t.id -- c).iterator.map(_ -> none[TagId]).toMap
@@ -388,16 +385,16 @@ object RandomData {
       Gen.pure(Map.empty)
     else {
       val idset = Gen.subset(tags)
-      idset.map(_.toStream)
+      idset.map(_.toList)
         .flatMap(ks => Gen sequence ks.map(k => idset.map(ids => (k, (ids - k).toVector))))
         .map(s => preventCycles(Tag.CycleDetectors.multimap)(s.toMap))
     }
 
   def tagTree(genReqTypeIds: Gen[Set[ReqTypeId]]): Gen[TagTree] =
     for {
-      l ← tags(genReqTypeIds)
+      l <- tags(genReqTypeIds)
       m = Tag.IdAccess.mapById(l)
-      s ← tagTreeStructure(m.keySet)
+      s <- tagTreeStructure(m.keySet)
     } yield
       m.values.foldLeft(TagTree.empty)((q, t) =>
         q.add(TagInTree(t, s.getOrElse(t.id, Vector.empty))))
@@ -523,22 +520,21 @@ object RandomData {
     } yield f3.toList ::: f2.toList ::: f1
     def id   = distinctId(CustomField.IdAccess, CustomFieldId_T)
     def name = Distinct.str.at(CustomField.independentName)
-    val dist = (id * name).lift[Stream]
-    cf.map(fs => emptyDataMap(CustomField) ++ dist.run(fs.toStream))
+    val dist = (id * name).lift[List]
+    cf.map(fs => emptyDataMap(CustomField) ++ dist.run(fs))
   }
 
   def fieldSet(reqTypeIds: Set[ReqTypeId], tagIds: Set[TagId]): Gen[FieldSet] = {
     val tagGroupIds   = tagIds.iterator.filterSubType[TagGroupId].toSet
     val genApTagId    = NonEmptySet.option(tagIds.iterator.filterSubType[ApplicableTagId].toSet).map(Gen.chooseNE(_))
-    val genTagGroupId = NonEmptySet.option(tagGroupIds).map(Gen.chooseNE(_))
     val genReqTypeId  = NonEmptySet.option(reqTypeIds).map(Gen.chooseNE(_))
     val rulesAny      = fieldReqTypeRules[Impossible](genReqTypeId, None)
     val rulesTag      = fieldReqTypeRules(genReqTypeId, genApTagId)
     for {
-      cf           ← customFields(reqTypeIds, tagGroupIds, rulesAny, rulesTag)
+      cf           <- customFields(reqTypeIds, tagGroupIds, rulesAny, rulesTag)
       mandatoryIds = cf.keySet.map(f => f: FieldId) ++ StaticField.mandatory.iterator
-      optionalIds  ← Gen.subset(StaticField.optional.whole)
-      order        ← Gen.shuffle((mandatoryIds ++ optionalIds).toVector)
+      optionalIds  <- Gen.subset(StaticField.optional.whole)
+      order        <- Gen.shuffle((mandatoryIds ++ optionalIds).toVector)
     } yield FieldSet(cf, order)
   }
 
@@ -664,7 +660,6 @@ object RandomData {
 
     private[this] def multiLinePlusI(t: MultiLine)(plus: Gen.Freq[t.Atom]*): Gen[t.Atom] = {
       type G  = Gen[t.Atom]
-      type IG = Gen.Freq[G]
 
       lazy val lvls: Vector[Need[G]] =
         (0 to DepthIncrease.length)
@@ -1131,7 +1126,7 @@ object RandomData {
     txt mapByKeySubset reqs mapByKeySubset cols
 
   private[this] val emptyATagIdSet = Gen.pure(Set.empty[ApplicableTagId])
-  def reqFieldDataTags(reqs: Traversable[ReqId], tags: Set[ApplicableTagId]): Gen[ReqData.Tags] = {
+  def reqFieldDataTags(reqs: Iterable[ReqId], tags: Set[ApplicableTagId]): Gen[ReqData.Tags] = {
     val rndTags = Gen.chooseGen(Gen.subset(tags), emptyATagIdSet)
     (rndTags mapByKeySubset reqs.toIterable).map(Multimap(_))
 //    subset2(reqs, 1, 0).flatMap(rndTags.mapByEachKey).map(Multimap(_))
@@ -1341,9 +1336,9 @@ object RandomData {
       case None => Gen pure DeletionReasons.empty
       case Some(g) =>
         for {
-          reasons  ← gText.vector
-          ids      = reasons.indices.toStream.map(i => Option(DeletionReasonId(i)))
-          idToReqs ← g.set1.fill(reasons.length).map(ids zip _)
+          reasons  <- gText.vector
+          ids      = reasons.indices.iterator.map(i => Option(DeletionReasonId(i)))
+          idToReqs <- g.set1.fill(reasons.length)(List).map(ids.zip)
         } yield {
           var ra = DeletionReasons.emptyReqApplication
           idToReqs.foreach { t =>
@@ -1367,12 +1362,12 @@ object RandomData {
 
   lazy val projectConfig: Gen[ProjectConfig] =
     for {
-      reqtypes       ← customReqTypes
+      reqtypes       <- customReqTypes
       reqTypeIds     = StaticReqType.values ++ reqtypes.keys
       reqTypeIdSet   = reqTypeIds.whole.toSet
       genReqTypeIds  = Gen.chooseNE(reqTypeIds).set(0 to 2)
-      (issues, tags) ← Gen.tuple2(customIssueTypes, tagTree(genReqTypeIds)) map distinctHashRefKeys.run
-      fields         ← fieldSet(reqTypeIdSet, tags.keySet)
+      (issues, tags) <- Gen.tuple2(customIssueTypes, tagTree(genReqTypeIds)) map distinctHashRefKeys.run
+      fields         <- fieldSet(reqTypeIdSet, tags.keySet)
     } yield ProjectConfig(issues, ReqTypes(reqtypes), fields, Tags(tags))
 
   def genProject(cfg            : ProjectConfig,
@@ -1382,12 +1377,12 @@ object RandomData {
                  reqImps        : Implications): Gen[Project] = {
     val cissueIds       = cfg.customIssueTypes.keySet
     val cissueIdG       = Gen tryGenChoose cissueIds.toSeq
-    val activeCodeIds   = reqCodes1.trie.allValues.flatMap(_.activeId.toStream)
+    val activeCodeIds   = reqCodes1.trie.allValues.flatMap(_.activeId.iterator)
     val activeCodeIdG   = Gen tryGenChoose activeCodeIds
     val atagIds         = cfg.tags.tree.valuesIterator.map(_.tag).filterSubType[ApplicableTag].map(_.id).toSet
     val atagIdG         = Gen.tryGenChoose(atagIds.toSeq)
     val textColIds      = cfg.fields.customFields.valuesIterator.filterSubType[CustomField.Text].map(_.id).toSet
-    val reqIdSet        = reqsWithoutText.idIterator.toSet
+    val reqIdSet        = reqsWithoutText.idIterator().toSet
     val reqIdG          = Gen tryGenChoose reqIdSet.toIndexedSeq
     def ucStepIds       = reqsWithoutText.useCases.stepIterator.map(_.id)
     val ucStepIdG       = Gen tryGenChoose ucStepIds.toIndexedSeq
@@ -1395,12 +1390,12 @@ object RandomData {
     val delReasonText   = TextGen.deletionReasonAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.DeletionReason)
     val manualIssueText = TextGen.manualIssueAtom(reqIdG, ucStepIdG, activeCodeIdG, atagIdG).text1(Text.ManualIssue)
     for {
-      name       ← projectName
-      reqText    ← reqFieldDataText2(reqIdSet, textColIds, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
-      reqs       ← setReqText(reqsWithoutText, reqIdG, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
-      reqCodes2  ← reqCode.updateGroupText(rcgTitleText)(reqCodes1.trie)
-      dr         ← deletionReasons(reqIdG, delReasonText)
-      mis        ← genManualIssues(manualIssueText)
+      name       <- projectName
+      reqText    <- reqFieldDataText2(reqIdSet, textColIds, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
+      reqs       <- setReqText(reqsWithoutText, reqIdG, ucStepIdG, activeCodeIdG, cissueIdG, atagIdG)
+      reqCodes2  <- reqCode.updateGroupText(rcgTitleText)(reqCodes1.trie)
+      dr         <- deletionReasons(reqIdG, delReasonText)
+      mis        <- genManualIssues(manualIssueText)
       p1         = Project(
                      name,
                      cfg,
@@ -1414,26 +1409,26 @@ object RandomData {
                      mis,
                      reqtable.SavedViews.empty,
                      IdCeilings.zero)
-      savedViews ← reqtableData.savedViewsForProject(p1)
+      savedViews <- reqtableData.savedViewsForProject(p1)
     } yield IdCeilings.supply(ic => p1.copy(reqtableViews = savedViews, idCeilings = ic))
   }
 
   lazy val project: Gen[Project] =
     for {
-      cfg             ← projectConfig
+      cfg             <- projectConfig
       atagIds         = cfg.tags.tree.valuesIterator.map(_.tag).filterSubType[ApplicableTag].map(_.id).toSet
-      reqCount        ← Gen.chooseSize
-      ucCount         ← Gen.chooseSize map (_ >> 1)
-      reqsWithoutText ← reqsWithoutText(cfg, reqCount, ucCount)
-      reqIdSet        = reqsWithoutText.idIterator.toSet
+      reqCount        <- Gen.chooseSize
+      ucCount         <- Gen.chooseSize map (_ >> 1)
+      reqsWithoutText <- reqsWithoutText(cfg, reqCount, ucCount)
+      reqIdSet        = reqsWithoutText.idIterator().toSet
       reqIdG          = Gen tryGenChoose reqIdSet.toIndexedSeq
-      liveReqIds      = reqsWithoutText.reqIterator.filter(_.live(cfg.reqTypes) is Live).map(_.id)
+      liveReqIds      = reqsWithoutText.reqIterator().filter(_.live(cfg.reqTypes) is Live).map(_.id)
       liveReqIdG      = Gen tryGenChoose liveReqIds.toIndexedSeq
       reqCodeDataG    = reqCode.data(liveReqIdG, reqIdG)(0 to (3 `JVM|JS` 2))
-      reqCodes        ← reqCodes(reqCode.trie(reqCodeDataG, 2 `JVM|JS` 2))
-      reqTags         ← reqFieldDataTags(reqIdSet, atagIds)
-      reqImps         ← reqFieldDataImplications(reqIdSet)
-      p               ← genProject(cfg, reqsWithoutText, reqCodes, reqTags, reqImps)
+      reqCodes        <- reqCodes(reqCode.trie(reqCodeDataG, 2 `JVM|JS` 2))
+      reqTags         <- reqFieldDataTags(reqIdSet, atagIds)
+      reqImps         <- reqFieldDataImplications(reqIdSet)
+      p               <- genProject(cfg, reqsWithoutText, reqCodes, reqTags, reqImps)
     } yield p
 
   lazy val projectAndOrd: Gen[ProjectAndOrd] =
@@ -1484,9 +1479,9 @@ object RandomData {
 
     def visibleColumns(p: Project): Gen[NonEmptyVector[Column]] =
       for {
-        long ← Gen.long
+        long <- Gen.long
         all  = Column all p.config
-        cols ← Gen shuffle all.whole.toVector
+        cols <- Gen shuffle all.whole.toVector
       } yield {
         var i = long
         val vs = cols.filter(c =>
@@ -1659,7 +1654,6 @@ object RandomData {
 
   // ===================================================================================================================
   object routines {
-    import shipreq.webapp.base.protocol._
     import shipreq.webapp.base.protocol.entrypoint._
     import shipreq.webapp.base.protocol.websocket._
 //    import RandomData.protocol._
@@ -2285,11 +2279,11 @@ object RandomData {
     val genReqCodesPatch: Gen[ReqCodesPatch] = {
       val codes = reqCode.apId.set(0 to 3)
       for {
-        id      ← reqId
-        add     ← codes.mapBy(reqCode.value).map(Multimap(_)) // TODO Could have same ID with different codes
+        id      <- reqId
+        add     <- codes.mapBy(reqCode.value).map(Multimap(_)) // TODO Could have same ID with different codes
         addIds  = add.valueIterator.toSet
-        remove  ← codes.map(_ -- addIds)
-        restore ← codes.map(_ -- addIds -- remove)
+        remove  <- codes.map(_ -- addIds)
+        restore <- codes.map(_ -- addIds -- remove)
       } yield ReqCodesPatch(id, remove, restore, add)
     }
 

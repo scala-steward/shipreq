@@ -38,7 +38,7 @@ object Style extends StyleSheet.Inline {
   }
 
   final val animSpeedMs = 220
-  protected final val animSpeed = animSpeedMs + "ms"
+  protected final val animSpeed = animSpeedMs.toString + "ms"
 
   private def monospace =
     fontFamily :=! "monospace"
@@ -415,7 +415,7 @@ object Style extends StyleSheet.Inline {
 
       val dragArea = style(
         display.inlineBlock,
-        paddingRight(10.ex)) // ← Gives a bit more room to drag to tail, rather than outside
+        paddingRight(10.ex)) // <- Gives a bit more room to drag to tail, rather than outside
 
       val draggableCriterion = styleF(D.dragStatus)(status =>
         styleS(

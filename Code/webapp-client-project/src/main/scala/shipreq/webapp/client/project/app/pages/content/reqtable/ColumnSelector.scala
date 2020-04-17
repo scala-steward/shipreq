@@ -3,7 +3,6 @@ package shipreq.webapp.client.project.app.pages.content.reqtable
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
@@ -91,7 +90,7 @@ object ColumnSelector {
         MutableArray.map(p.available.columns.whole)(c => (c, On when activeColumns.contains(c.column)))
           .sortBy(_._1.name)
           .iterator
-          .to[Vector])
+          .to(Vector))
 
     val items: NonEmptyVector[ColumnCheckboxes.Item] =
       columns.map { case (c, on) =>

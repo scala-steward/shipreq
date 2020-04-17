@@ -47,19 +47,19 @@ object FilterEditor {
   private val autoCompleteKeywords: AutoComplete.Strategy =
     AutoComplete.Strategy.builder
       .regex("""(^|[^\w:])([a-z]+)$""", index = 2)
-      .search(AutoComplete.Utils caseInsensitiveStartsWith Stream("field", "has", "no", "implies", "impliedBy"))
+      .search(AutoComplete.Utils caseInsensitiveStartsWith Seq("field", "has", "no", "implies", "impliedBy"))
       .replace("$1" + _ + ":")
       .result()
 
   private val autoCompletePresenceLackAttr: AutoComplete.Strategy =
     AutoComplete.Strategy.builder
       .regex("""\b((?:has|no):)([a-z]*)$""", index = 2)
-      .search(AutoComplete.Utils caseInsensitiveStartsWith FilterAst.Attr.values.iterator.map(_.name).toStream)
+      .search(AutoComplete.Utils caseInsensitiveStartsWith FilterAst.Attr.values.iterator.map(_.name).toSeq)
       .replace("$1" + _ + " ")
       .result()
 
   private val autoCompleteHasIssue: AutoComplete.Strategy = {
-    val values = IssueCategory.values.iterator.map(FilterAst.issueCategoryToStr).toStream
+    val values = IssueCategory.values.iterator.map(FilterAst.issueCategoryToStr).toSeq
     AutoComplete.Strategy.builder
       .regex("""\b(has:issue:-?(?:[a-z]+?,)*)([a-z]*)$""", index = 2)
       .search(AutoComplete.Utils caseInsensitiveStartsWith values)
@@ -124,7 +124,7 @@ object FilterEditor {
             .sort
             .iterator
             .map(FilterAlgebra.quoteFieldName)
-            .toStream
+            .toArray
         }
 
         val autoCompleteFieldName =
@@ -147,10 +147,10 @@ object FilterEditor {
 
     def updateFilterText(input: String, cb: Callback): Callback =
       for {
-        v ← pxFilterValidator.toCallback
+        v <- pxFilterValidator.toCallback
         r = parseAndValidate(input, v)
-        p ← $.props
-        _ ← p.update(State(input, r._1), r._2, cb)
+        p <- $.props
+        _ <- p.update(State(input, r._1), r._2, cb)
       } yield ()
 
     val inputNode = Ref[html.Input]

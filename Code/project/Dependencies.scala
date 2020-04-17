@@ -16,7 +16,7 @@ object Dependencies {
 
   object Scala {
     private val mm = scalaItself(version)
-    def version  = "2.12.11"
+    def version  = "2.13.1"
     val library  = mm("scala-library")
     val reflect  = mm("scala-reflect")
     val compiler = mm("scala-compiler") ++ reflect ++ scalaXml
@@ -32,7 +32,7 @@ object Dependencies {
   }
 
   object Microlibs {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "2.1")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "2.2")
     val adtMacros  = mm("adt-macros")
     val macroUtils = mm("macro-utils")
     val nonempty   = mm("nonempty")
@@ -193,7 +193,7 @@ object Dependencies {
   val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.1.8")
   val scalaz      = jvmAndJs("org.scalaz",                       "scalaz-core", "7.2.30")
   val shapeless   = jvmAndJs("com.chuusai",                      "shapeless",   "2.3.3")
-  val μTest       = jvmAndJs("com.lihaoyi",                      "utest",       "0.7.2")
+  val μTest       = jvmAndJs("com.github.japgolly.fork",         "utest",       "1.0.0")
 
   val catsEffect   = jvmOnly("org.typelevel"              %% "cats-effect"           % "2.1.2")
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
@@ -212,9 +212,6 @@ object Dependencies {
 
   val betterMonadicFor = compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
   val useBetterMonadicFor = (_: Project).settings(addCompilerPlugin(betterMonadicFor))
-
-  val macroParadise = compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
-  val useMacroParadise = (_: Project).settings(addCompilerPlugin(macroParadise))
 
   val kindProjector = compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
   val useKindProjector = (_: Project).settings(addCompilerPlugin(kindProjector))

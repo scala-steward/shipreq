@@ -40,11 +40,11 @@ object IdCeilings {
 
   def zero = init(0)
 
-  def maxOf(ts: TraversableOnce[TaggedInt]): Int =
+  def maxOf(ts: IterableOnce[TaggedInt]): Int =
     maxOfF(ts)(_.value)
 
-  def maxOfF[F](ts: TraversableOnce[F])(f: F => Int): Int =
-    ts.foldLeft(0)(_ max f(_))
+  def maxOfF[F](ts: IterableOnce[F])(f: F => Int): Int =
+    ts.iterator.foldLeft(0)(_ max f(_))
 
   /**
    * This should only be used for two reasons:

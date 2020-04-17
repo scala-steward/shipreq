@@ -1,14 +1,18 @@
 import sbt._, Keys._
-import java.nio.file.{Files, Path}
-import scala.concurrent.duration._
 import com.typesafe.sbt.GitPlugin.autoImport._
+import java.nio.file.{Files, Path}
 import org.scalajs.core.tools.sem._
 import org.scalajs.jsenv.phantomjs.PhantomJSEnv
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
-import sbtcrossproject.CrossProject
 import sbtcrossproject.CrossPlugin.autoImport._
+import sbtcrossproject.CrossProject
+import sbtdocker.DockerPlugin
+import sbtdocker.DockerPlugin.autoImport._
+import scala.{Console => C}
+import scala.concurrent.duration._
+import scalafix.sbt.ScalafixPlugin
+import scalafix.sbt.ScalafixPlugin.autoImport._
 import scalajscrossproject.ScalaJSCrossPlugin.autoImport._
-import sbtdocker.DockerPlugin, DockerPlugin.autoImport._
 import LibDependency.{Dep, HasBoth, HasJs, HasJvm, JS, JVM, ModDepScope}
 
 sealed trait JsTestType
@@ -21,9 +25,12 @@ object Common {
   lazy val releaseMode: Boolean = {
     val mode = System.getProperty("MODE", "").trim
     val r = mode.compareToIgnoreCase("release") == 0
-    if (r) println("[info] \u001b[1;31mRelease Mode.\u001b[0m")
+    if (r) println(s"[info] ${C.RED_B}${C.WHITE}Release Mode.${C.RESET}")
     r
   }
+
+  def scalafixEnabled =
+    !releaseMode
 
   lazy val emitSourceMapsValue: Boolean =
     System.getProperty("emitSourceMaps", "0").trim.toLowerCase match {
@@ -34,7 +41,7 @@ object Common {
     }
 
 
-  private val availableProcessors = java.lang.Runtime.getRuntime.availableProcessors()
+  private val cores = java.lang.Runtime.getRuntime.availableProcessors()
 
   def scalacFlags = Seq(
     "-deprecation",
@@ -43,29 +50,52 @@ object Common {
     "-language:higherKinds",
     "-language:implicitConversions",
     "-language:postfixOps",
-    "-unchecked",
-    "-Xlint:infer-any",
+    "-target:" + Dependencies.Java.major,            // Target platform for object files. ([8],9,10,11,12)
+    "-unchecked",                                    // Enable additional warnings where generated code depends on assumptions.
+    "-Wunused:implicits",                            // Warn if an implicit parameter is unused.
+    "-Wunused:imports",                              // Warn if an import selector is not referenced.
+    "-Wunused:locals",                               // Warn if a local definition is unused.
+    "-Wunused:patvars",                              // Warn if a variable bound in a pattern is unused.
+    "-Wunused:privates",                             // Warn if a private member is unused.
+    "-Xlint:adapted-args",                           // An argument list was modified to match the receiver.
+    "-Xlint:constant",                               // Evaluation of a constant arithmetic expression resulted in an error.
+    "-Xlint:delayedinit-select",                     // Selecting member of DelayedInit.
+    "-Xlint:deprecation",                            // Enable -deprecation and also check @deprecated annotations.
+    "-Xlint:eta-zero",                               // Usage `f` of parameterless `def f()` resulted in eta-expansion, not empty application `f()`.
+    "-Xlint:implicit-not-found",                     // Check @implicitNotFound and @implicitAmbiguous messages.
+    "-Xlint:inaccessible",                           // Warn about inaccessible types in method signatures.
+    "-Xlint:infer-any",                              // A type argument was inferred as Any.
+    "-Xlint:missing-interpolator",                   // A string literal appears to be missing an interpolator id.
+    "-Xlint:nonlocal-return",                        // A return statement used an exception for flow control.
+    "-Xlint:nullary-override",                       // Non-nullary `def f()` overrides nullary `def f`.
+    "-Xlint:nullary-unit",                           // `def f: Unit` looks like an accessor; add parens to look side-effecting.
+    "-Xlint:option-implicit",                        // Option.apply used an implicit view.
+    "-Xlint:poly-implicit-overload",                 // Parameterized overloaded implicit methods are not visible as view bounds.
+    "-Xlint:private-shadow",                         // A private field (or class parameter) shadows a superclass field.
+    "-Xlint:stars-align",                            // In a pattern, a sequence wildcard `_*` should match all of a repeated parameter.
+    "-Xlint:valpattern",                             // Enable pattern checks in val definitions.
+    "-Xmixin-force-forwarders:false",                // Only generate mixin forwarders required for program correctness.
+    "-Xno-forwarders",                               // Do not generate static forwarders in mirror classes.
     "-Xsource:2.13",
-    "-Ybackend-parallelism", availableProcessors.min(16).toString,
+    "-Ybackend-parallelism", cores.min(16).toString,
     "-Ycache-macro-class-loader:last-modified",
     "-Ycache-plugin-class-loader:last-modified",
-    "-Yno-adapted-args",
-    "-Yno-generic-signatures",
-    "-Ypartial-unification",
-    "-Ypatmat-exhaust-depth", "off",
-    "-Ywarn-inaccessible",
-    "-Ywarn-infer-any",
-    "-Ywarn-unused:implicits",
-    "-Ywarn-unused:patvars",
-    "-Ywarn-unused:privates"
+    "-Yjar-compression-level", "9",                  // compression level to use when writing jar files
+    "-Ymacro-annotations",                           // Enable support for macro annotations, formerly in macro paradise.
+    "-Yno-generic-signatures",                       // Suppress generation of generic signatures for Java.
+    "-Ypatmat-exhaust-depth", "off"
   )
-    // "-Xstrict-inference", // Don't infer known-unsound types
-    // "-Ywarn-self-implicit",
-    // "-Ywarn-unused-import"
-    // "-Ywarn-unused:explicits",
-    // "-Ywarn-unused:locals",
+/*
+    "-Xsource:2.14",                                 // Prepare for Dotty -- Disabled because of warnings in macro-generated code. Fix 3rd-libs first.
+    "-Wdead-code",                                   // Warn when dead code is identified. -- Disabled due to js.native / https://github.com/scala/bug/issues/11942
+    "-Wunused:explicits",                            // Warn if an explicit parameter is unused. -- Disabled due to js.native / https://github.com/scala/bug/issues/11942
+*/
 
-  def scalacTestFlags = Seq("-language:reflectiveCalls")
+  def scalacTestFlags = Seq(
+    "-language:reflectiveCalls")
+
+  def scalacTestNonFlags = Seq(
+    "-Xlint:valpattern")
 
   val debugSettings: Project => Project =
     _.settings(
@@ -79,8 +109,17 @@ object Common {
   )
 
   val optimisationSettings: Project => Project =
-    nonTestCompilerFlags("-Xelide-below", "OFF") compose
+    nonTestCompilerFlags(
+      "-Xdisable-assertions",
+      "-Xelide-below", "OFF"
+    ) compose
     nonTestCompilerFlags(optimisationScalacFlags: _*)
+
+  val scalafixSettings: Project => Project =
+    if (scalafixEnabled)
+      _.enablePlugins(ScalafixPlugin).settings(addCompilerPlugin(scalafixSemanticdb), scalacOptions += "-Yrangepos")
+    else
+      _.disablePlugins(ScalafixPlugin)
 
   val redirectTargetDir: File => File =
     System.getenv(if (releaseMode) "SHIPREQ_RELEASE_TARGET" else "SHIPREQ_TARGET") match {
@@ -136,12 +175,12 @@ object Common {
       minForcegcInterval          := 3.minutes,
       target                      := redirectTargetDir(target.value))
     .configure(
+      scalafixSettings,
       packageBinaryOnly,
       dockerLayerReuse,
       Dependencies.useKindProjector,
       Dependencies.useBetterMonadicFor,
       addCommandAliases(
-        "/"   -> "project root",
         "B"   -> "project base",
         "BU"  -> "project base-util-jvm",
         "BT"  -> "project base-test-jvm",
@@ -163,16 +202,15 @@ object Common {
         "WSL" -> "project webapp-server-logic-jvm",
         "WS"  -> "project webapp-server",
         "BM"  -> "project benchmark-jvm",
-        "BMJ" -> "project benchmark-js",
-        "C"   -> "root/clean",
-        "CT"  -> ";root/clean;root/test"))
+        "BMJ" -> "project benchmark-js"))
 
   /** Common settings used by standard modules - not benchmarks, not test modules */
   private def settings: Project => Project =
     _.configure(settingsMin)
       .settings(
         excludeDependencies += "commons-logging" % "commons-logging", // commons-logging should be replaced by jcl-over-slf4j
-        scalacOptions in Test ++= scalacTestFlags)
+        scalacOptions in Test ++= scalacTestFlags,
+        scalacOptions in Test --= scalacTestNonFlags)
       .configure(debugOrRelease(debugSettings, optimisationSettings))
 
   lazy val jvmSettings: Project => Project =
@@ -336,7 +374,7 @@ object Common {
     bos.toByteArray.length
   }
 
-  def printFileBatches(batchesT: Traversable[Traversable[File]]): Unit = {
+  def printFileBatches(batchesT: Iterable[Iterable[File]]): Unit = {
     val sep = "=" * 100
     println(sep)
     val batches = batchesT.toVector

@@ -7,7 +7,7 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.VdomElement
 import monocle.Lens
 import org.scalajs.dom.window
-import scalaz.{-\/, \/, \/-}
+import scalaz.{-\/, \/-}
 import shipreq.base.util.{Allow, ErrorMsg}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, HideDead, Project, ProjectConfig, ReqId}
@@ -298,9 +298,9 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       override def reqTableWithFilter(fd: FilterDead, filter: => Filter.Valid): router.RouterCtl[Unit] = {
         def setReqTableView: Callback =
           for {
-            p ← pxProject.toCallback
+            p <- pxProject.toCallback
             f = ReqTablePage.State.modifyView(p, fd, updateFilterText = true)(_.withFilter(Some(filter)))
-            _ ← $.modState(s => State.reqTable.modify(f)(s).setFilterDead(fd, p))
+            _ <- $.modState(s => State.reqTable.modify(f)(s).setFilterDead(fd, p))
           } yield ()
         routerCtl.onSet(setReqTableView >> _).contramap(_ => Page.ReqTable)
       }

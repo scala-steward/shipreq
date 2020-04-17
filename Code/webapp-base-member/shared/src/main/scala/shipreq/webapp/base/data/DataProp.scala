@@ -5,11 +5,10 @@ import japgolly.microlibs.recursion._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import nyaya.prop._
 import scala.annotation.tailrec
-import scala.collection.GenTraversableOnce
+import scala.collection.IterableOnce
 import scala.collection.mutable
 import scala.reflect.ClassTag
 import scalaz.{-\/, Foldable, Monoid, \/-}
-import scalaz.syntax.equal._
 import scalaz.std.list.listInstance
 import scalaz.std.option.optionInstance
 import scalaz.std.vector.vectorInstance
@@ -20,7 +19,6 @@ import shipreq.webapp.base.filter.Filter.Implicits._
 import shipreq.webapp.base.text.{Atom, Text}
 import shipreq.webapp.base.WebappConfig
 import DataImplicits._
-import Debug._
 import MTrie.Ops
 import ScalaExt._
 import TaggedTypes.TaggedInt
@@ -57,7 +55,7 @@ object DataProp {
    * WARNING: Ignores negative numbers.
    * WARNING: Slow with large number values.
    */
-  def uniqueNonNegInts[C[x] <: Traversable[x], A](name: => String, f: A => Int): Prop[C[A]] =
+  def uniqueNonNegInts[C[x] <: Iterable[x], A](name: => String, f: A => Int): Prop[C[A]] =
     Prop.atom[C[A]]("Unique " + name, as => {
       val log = mutable.BitSet.empty
       if (as.forall(a => {
@@ -66,7 +64,7 @@ object DataProp {
       }))
         None
       else {
-        val is = as.toIterator.map(f).toList
+        val is = as.iterator.map(f).toList
         val dups = is.diff(is.distinct).sorted
         Some(dups.mkString("Dups detected: [", ",", "]"))
       }
@@ -76,7 +74,7 @@ object DataProp {
    * WARNING: Ignores negative numbers.
    * WARNING: Slow with large number values.
    */
-  def uniqueNonNegIntsT[C[x] <: Traversable[x], A <: TaggedInt](name: => String): Prop[C[A]] =
+  def uniqueNonNegIntsT[C[x] <: Iterable[x], A <: TaggedInt](name: => String): Prop[C[A]] =
     uniqueNonNegInts[C, A](name, _.value)
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -276,10 +274,10 @@ object DataProp {
         var errors: Set[UseCaseStepId] = UnivEq.emptySet
         val useCaseStepTrees = StaticField.useCaseStepTrees.whole
         for {
-          uc ← ucs.imap.valuesIterator
+          uc <- ucs.imap.valuesIterator
           id = uc.id
-          f  ← useCaseStepTrees
-          s  ← f.useCaseStepTree.get(uc).valueIterator
+          f  <- useCaseStepTrees
+          s  <- f.useCaseStepTree.get(uc).valueIterator
         } {
           count += 1
           ucs.stepIndex.get(s.id) match {
@@ -531,10 +529,10 @@ object DataProp {
       type TR = (P, Refs)
 
       def mkRefs(p: ProjectConfig): Refs = Refs(
-        p.reqTypes.all.whole.map(_.reqTypeId)(collection.breakOut),
+        p.reqTypes.all.iterator.map(_.reqTypeId).toSet,
         p.tags.tree.keySet)
 
-      def whitelist[A](refs: TR => Set[A])(name: String, test: P => TraversableOnce[A]) =
+      def whitelist[A](refs: TR => Set[A])(name: String, test: P => IterableOnce[A]) =
         // Two steps here results in better failure messages
         Prop.whitelist[(P, Set[A])](name + " resolve")(_._2, _._1 |> test)
           .contramap[TR](t => t put2 refs(t))
@@ -657,29 +655,28 @@ object DataProp {
 
     def liveReqCodeRequiresLiveTarget =
       Prop.whitelist[Project]("Live ReqCode requires Live Target")(
-        p => p.content.reqs.reqIterator.filter(_.live(p.config.reqTypes) is Live).map(_.id).toSet,
+        p => p.content.reqs.reqIterator().filter(_.live(p.config.reqTypes) is Live).map(_.id).toSet,
         _.content.reqCodes.activeReqCodesByReqId.keySet)
 
     def validRefs = {
       type TR = (P, Refs)
-      import Atom._
 
       def mkRefs(p: Project): Refs = Refs(
         p.config.fields.customFields.keySet,
         p.config.customIssueTypes.keySet,
-        p.content.reqs.reqIterator.map(_.id).toSet,
+        p.content.reqs.reqIterator().map(_.id).toSet,
         p.content.reqCodes.idSet,
         p.content.reqs.useCases.stepIterator.map(_.id).toSet,
-        p.config.reqTypes.all.whole.map(_.reqTypeId)(collection.breakOut),
+        p.config.reqTypes.all.iterator.map(_.reqTypeId).toSet,
         p.config.tags.tree.keySet)
 
-      def whitelist[A](refs: TR => Set[A])(name: String, test: P => TraversableOnce[A]): Prop[TR] =
+      def whitelist[A](refs: TR => Set[A])(name: String, test: P => IterableOnce[A]): Prop[TR] =
         // Two steps here results in better failure messages
         Prop.whitelist[(P, Set[A])](name + " resolve")(_._2, _._1 |> test)
           .contramap[TR](t => t put2 refs(t))
 
       def validFieldIds   = whitelist(_._2.fieldIds) _
-      def validIssueIds   = whitelist(_._2.issueIds) _
+    //def validIssueIds   = whitelist(_._2.issueIds) _
       def validReqIds     = whitelist(_._2.reqIds) _
       def validUCStepIds  = whitelist(_._2.useCaseStepIds) _
       def validReqCodeIds = whitelist(_._2.reqCodeIds) _

@@ -199,9 +199,9 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   private val ucTagValidity: ApplicableTagId => Validity =
     project.config.naTags(StaticReqType.UseCase)
 
-  private def makeUseCaseStepTextAndFlow[C[x] <: TraversableOnce[x], A](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[A]],
-                                                                        l: Live)
-                                                                       (render: C[A] => TraversableOnce[VdomTag]): VdomTag = {
+  private def makeUseCaseStepTextAndFlow[C[x] <: Iterable[x], A](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[A]],
+                                                                 l: Live)
+                                                                (render: C[A] => IterableOnce[VdomTag]): VdomTag = {
 
     val stepText = text(s.text, l, ucTagValidity, Mandatory.when(s.flow.forall(_.isEmpty)))
 
@@ -210,7 +210,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       Option.unless(flowElements.isEmpty)(
         stepFlowClauseBase(dir)(
           TagMod.fromTraversableOnce(
-            render(flowElements).toIterator.map(t => t: TagMod).intersperse(sepComma))))
+            render(flowElements).iterator.map(t => t: TagMod).intersperse(sepComma))))
     }
 
     val flowsMaybe: Option[VdomTag] =
@@ -317,13 +317,13 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
 
   override def pastPubids(ids: SortedSet[ExternalPubid]): VdomTag =
     renderSeq(
-      ids.toIterator.map(ep => <.span(*.pastPubid, PlainText.pubid(ep))),
+      ids.iterator.map(ep => <.span(*.pastPubid, PlainText.pubid(ep))),
       sepComma)
 
   override def reqCode(c: ReqCode.Value): VdomTag =
     <.pre(*.reqCodeFlat, PlainText reqCode c)
 
-  override def reqCodes(reqCodes: TraversableOnce[ReqCode.Value]): VdomTag =
+  override def reqCodes(reqCodes: IterableOnce[ReqCode.Value]): VdomTag =
     <.div(reqCodes toTagMod reqCode)
 
   override def reqCodeTree(items: Vector[ReqCodeTreeItem]): VdomTag =
@@ -427,14 +427,14 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       *.tag(((tag.live, Valid), false)),
       tagColour(tag.colour, tag.live))
 
-  def useCaseStepTextAndMaybeInvalidFlow[C[x] <: Traversable[x]](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[String \/ UseCaseStepId]],
-                                                                 l: Live): VdomTag = {
+  def useCaseStepTextAndMaybeInvalidFlow[C[x] <: Iterable[x]](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[String \/ UseCaseStepId]],
+                                                              l: Live): VdomTag = {
     /** eg. "1.p" instead of "1.0" */
     def erroneousUseCaseStepRef(s: String): VdomTag =
       <.span(*.erroneousUseCaseStepRef, s)
 
     makeUseCaseStepTextAndFlow(s, l)(
-      _.map(_.fold(erroneousUseCaseStepRef, useCaseFlowElementById))(collection.breakOut))
+      _.map(_.fold(erroneousUseCaseStepRef, useCaseFlowElementById)))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

@@ -1,11 +1,11 @@
 package shipreq.webapp.base.data
 
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import japgolly.microlibs.utils.{BiMap, Memo}
 import monocle.{Iso, Traversal}
 import monocle.macros.Lenses
 import nyaya.util.Multimap
+import scala.collection.View
 import scalaz.{-\/, Equal, \/, \/-}
 import shipreq.base.util._
 import shipreq.base.util.TaggedTypes._
@@ -424,10 +424,10 @@ object UseCases {
   def calcStepIndex(imap: UseCaseIMap): StepIndex = {
     var m = emptyStepIndex
     for {
-      uc ← imap.valuesIterator
+      uc <- imap.valuesIterator
       id = uc.id
-      f  ← StaticField.useCaseStepTrees
-      s  ← f.useCaseStepTree.get(uc).valueIterator
+      f  <- StaticField.useCaseStepTrees
+      s  <- f.useCaseStepTree.get(uc).valueIterator
     } m = m.updated(s.id, StepTreeKey(id, f))
     m
   }
@@ -480,6 +480,9 @@ final case class Requirements(genericReqs: GenericReqIMap,
 
   def idIterator(): Iterator[ReqId] =
     reqIterator().map(_.id)
+
+  val all: View[Req] =
+    View.fromIteratorProvider(() => reqIterator())
 
   def reqIterator(): Iterator[Req] =
     genericReqs.valuesIterator ++

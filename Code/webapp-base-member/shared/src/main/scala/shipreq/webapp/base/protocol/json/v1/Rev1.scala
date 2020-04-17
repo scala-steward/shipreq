@@ -306,12 +306,6 @@ object Rev1 {
     implicit val encoderFilterAstFieldProp: Encoder[FilterAst.FieldProp[Valid.Field, Valid.FieldAttr]] =
       Encoder.forProduct2("field", "attr")(a => (a.field, a.attr))
 
-    implicit val decoderFilterAstRegex: Decoder[FilterAst.Regex] =
-      Decoder[String].map(FilterAst.Regex.apply)
-
-    implicit val encoderFilterAstRegex: Encoder[FilterAst.Regex] =
-      Encoder[String].contramap(_.text)
-
     implicit val decoderFilterAstHashRef: Decoder[FilterAst.HashRef[Valid.HashTag]] =
       Decoder[Valid.HashTag].map(FilterAst.HashRef.apply)
 
