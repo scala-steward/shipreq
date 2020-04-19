@@ -6,7 +6,7 @@ import japgolly.scalajs.benchmark._
 import japgolly.scalajs.benchmark.gui._
 import japgolly.scalajs.react.vdom.html_<^._
 
-object BinarySerialisation {
+object BinarySerialisationBM {
 
   type BM = Benchmark[SampleData]
 
@@ -41,7 +41,7 @@ object BinarySerialisation {
   }
 }
 
-final case class BinarySerialisation(data: BenchmarkData) {
-  val suite    = Suite("Binary Serialisation")(BinarySerialisation.Method.all.whole.map(_.bm): _*)
+final case class BinarySerialisationBM(data: BenchmarkData) {
+  val suite    = Suite("Binary Serialisation")(BinarySerialisationBM.Method.all.whole.map(_.bm): _*)
   val guiSuite = GuiSuite(suite, data.guiParam)
 }
