@@ -25,7 +25,7 @@ object BenchmarkData {
     for {
       data <- AsyncCallback.sequence(SampleData.all)
     } yield
-      BenchmarkData(data, data.take(1))
+      BenchmarkData(data, data.take(2))
 
   val verifiedEvents       = Benchmark.setup[SampleData, VerifiedEvent.Seq](_.verifiedEvents)
   val verifiedEventsBinary = Benchmark.setup[SampleData, ByteBuffer       ](_.verifiedEventsBinary.toNewByteBuffer)

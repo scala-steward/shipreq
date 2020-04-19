@@ -16,6 +16,7 @@ function link {
 py="$(basename "$0").py"
 link "$src/bin/$py"
 link "$src/benchmark/jvm/src/main/resources/shipreq-events-1000.json"
+link "$src/benchmark/jvm/src/main/resources/shipreq-events-2000.json"
 link "$src/benchmark/jvm/src/main/resources/shipreq-events-10000.json"
 
 fast="${SHIPREQ_TARGET:-$src}"

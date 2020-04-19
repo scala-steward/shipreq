@@ -25,8 +25,8 @@ object ApplyEventBM {
     case object Trusted extends Method(ApplyEvent.trusted)
     case object Untrusted extends Method(ApplyEvent.untrusted)
 
-    val all      = AdtMacros.adtValues[Method]
-    val guiParam = GuiParam.`enum`("Method", all.whole.sortBy(_.name): _*)(_.name, initialValues = List(Trusted))
+    lazy val all      = AdtMacros.adtValues[Method]
+    lazy val guiParam = GuiParam.`enum`("Method", all.whole.sortBy(_.name): _*)(_.name, initialValues = Seq(Trusted))
   }
 }
 
