@@ -68,6 +68,8 @@ Backlog
 Phase 3A
 ========
 
+* Add gzip to WebSocket comms
+
 * User profile page
 
 * Bulk tag add/remove
@@ -111,7 +113,6 @@ Phase 3A
   * User profile: password
   * User profile: email
   * User profile: newsletter
-  * New tag config screen
   * Project deletion
   * Multi user
 
