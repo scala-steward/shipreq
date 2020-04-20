@@ -3,7 +3,6 @@ package shipreq.benchmark
 import japgolly.scalajs.benchmark._
 import japgolly.scalajs.benchmark.gui._
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.vdom.html_<^._
 import java.nio.ByteBuffer
 import scala.collection.immutable.BitSet
 import shipreq.webapp.base.data.Project
@@ -15,7 +14,7 @@ final case class BenchmarkData(data: Vector[SampleData], defaults: Vector[Sample
     GuiParam.`enum`[SampleData](
       header        = "Sample data",
       values        = data: _*)(
-      resultLabel   = _.name,
+      resultTxt     = _.name,
       initialValues = defaults)
 }
 

@@ -4,7 +4,6 @@ import boopickle.UnpickleImpl
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.scalajs.benchmark._
 import japgolly.scalajs.benchmark.gui._
-import japgolly.scalajs.react.vdom.html_<^._
 
 object BinarySerialisationBM {
 

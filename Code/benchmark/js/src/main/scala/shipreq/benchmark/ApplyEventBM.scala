@@ -3,7 +3,6 @@ package shipreq.benchmark
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.scalajs.benchmark._
 import japgolly.scalajs.benchmark.gui._
-import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.ApplyEvent
 import shipreq.webapp.base.test.WebappTestUtil._
