@@ -5,14 +5,20 @@ trait SampleDataManifest[D] {
 
   lazy val  `1000`: D = load("shipreq-events-1000.json")
   lazy val  `2000`: D = load("shipreq-events-2000.json")
+  lazy val  `4000`: D = load("shipreq-events-4000.json")
   lazy val `10000`: D = load("shipreq-events-10000.json")
 
   lazy val all: Vector[D] =
-    Vector(`1000`, `2000`, `10000`)
+    Vector(
+       `1000`,
+       `2000`,
+       `4000`,
+      `10000`)
 
   val byName: String => D = {
     case  "1000" =>  `1000`
     case  "2000" =>  `2000`
+    case  "4000" =>  `4000`
     case "10000" => `10000`
   }
 }

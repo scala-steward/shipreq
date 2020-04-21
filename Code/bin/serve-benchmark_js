@@ -15,9 +15,9 @@ function link {
 
 py="$(basename "$0").py"
 link "$src/bin/$py"
-link "$src/webapp-sampledata/jvm/src/main/resources/shipreq-events-1000.json"
-link "$src/webapp-sampledata/jvm/src/main/resources/shipreq-events-2000.json"
-link "$src/webapp-sampledata/jvm/src/main/resources/shipreq-events-10000.json"
+for f in "$src/webapp-sampledata/jvm/src/main/resources/"*; do
+  link "$f"
+done
 
 fast="${SHIPREQ_TARGET:-$src}"
 link "$src/benchmark/js/fast.html"

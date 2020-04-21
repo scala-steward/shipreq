@@ -25,7 +25,7 @@ object SerialisationEventsBM {
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 class SerialisationEventsBM {
 
-  @Param(Array("1000", "2000"))
+  @Param(Array("1000", "2000", "4000"))
   var events: String = _
 
   @Param(Array("json", "binary"))

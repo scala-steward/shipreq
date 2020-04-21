@@ -24,7 +24,7 @@ object SerialisationProjectBM {
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 class SerialisationProjectBM {
 
-  @Param(Array("1000", "2000"))
+  @Param(Array("1000", "2000", "4000"))
   var events: String = _
 
   private var p: Project = _
