@@ -1,4 +1,4 @@
-package shipreq.base.util
+package shipreq.base.util.fp
 
 import scalaz.{Applicative, Monad}
 

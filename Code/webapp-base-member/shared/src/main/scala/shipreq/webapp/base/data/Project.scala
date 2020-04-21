@@ -9,8 +9,8 @@ import monocle.macros.Lenses
 import monocle.std.option.pSome
 import nyaya.util.Multimap
 import scalaz.Equal
-import scalaz.std.anyVal.intInstance
 import shipreq.base.util._
+import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.issue.{Issue, IssueTracker}
 

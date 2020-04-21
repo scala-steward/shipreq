@@ -7,10 +7,10 @@ import scala.annotation.tailrec
 import scala.collection.Iterable
 import scala.collection.Factory
 import scala.reflect.ClassTag
-import scalaz.std.anyVal.intInstance
 import scalaz.syntax.semigroup._
 import shipreq.base.util._
 import shipreq.base.util.ScalaExt._
+import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.reqtable._

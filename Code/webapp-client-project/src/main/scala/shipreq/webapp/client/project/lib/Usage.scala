@@ -6,7 +6,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import scalaz.\/-
-import scalaz.std.anyVal.intInstance
+import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter._
 import shipreq.webapp.base.text.{PlainText, TextSearch}

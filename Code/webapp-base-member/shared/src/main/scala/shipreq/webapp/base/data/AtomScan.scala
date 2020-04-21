@@ -1,7 +1,6 @@
 package shipreq.webapp.base.data
 
-import scalaz.std.anyVal.intInstance
-import scalaz.std.vector.vectorMonoid
+import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.text.Atom._
 import shipreq.webapp.base.text.Text
@@ -34,13 +33,11 @@ final class AtomScan(val tagRefs          : LiveDeadStatMap[ReqId, Set[LocAndVal
 
 object AtomScan {
 
-  private implicit val tagSetMonoid = scalazMonoidSet[LocAndValue[LocationOf.Tag.InReq, ApplicableTagId]]
-
   def apply(p: Project): AtomScan = {
-    val tagRefs           = new LiveDeadStatMap.Builder[ReqId, Set[LocAndValue[LocationOf.Tag.InReq, ApplicableTagId]]]
-    val issuesInReqs      = new LiveDeadStatMap.Builder[ReqId, Vector[LocAndValue[LocationOf.Text.InReq, AnyIssue]]]
+    val tagRefs           = new LiveDeadStatMap.Builder[ReqId,          Set[LocAndValue[LocationOf.Tag.InReq, ApplicableTagId]]]
+    val issuesInReqs      = new LiveDeadStatMap.Builder[ReqId,          Vector[LocAndValue[LocationOf.Text.InReq, AnyIssue]]]
     val issuesInRcgs      = new LiveDeadStatMap.Builder[ReqCodeGroupId, Vector[Text.CodeGroupTitle.Issue]]
-    val contentRefsInReqs = new LiveDeadStatMap.Builder[ReqId, Vector[LocAndValue[LocationOf.Text.InReq, AnyContentRef]]]
+    val contentRefsInReqs = new LiveDeadStatMap.Builder[ReqId,          Vector[LocAndValue[LocationOf.Text.InReq, AnyContentRef]]]
     val contentRefsInRcgs = new LiveDeadStatMap.Builder[ReqCodeGroupId, Vector[LocAndValue[LocationOf.Text.InReqCodeGroup, AnyContentRef]]]
     val reqRefs           = UnivEq.setBuilder[ReqId]
     val codeRefs          = UnivEq.setBuilder[ReqCodeId]

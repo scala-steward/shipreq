@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.app.pages.content.reqtable
 import japgolly.scalajs.react.Reusability
 import japgolly.univeq.UnivEq
 import nyaya.prop._
-import scalaz.std.anyVal.intInstance
+import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.webapp.base.data.LiveDeadStat
 import shipreq.webapp.base.lib.DataReusability._
 

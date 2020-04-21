@@ -2,15 +2,15 @@ package shipreq.webapp.base.data
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import scala.collection.{mutable, Iterable}
-import scalaz.{Monoid, Semigroup}
-import scalaz.std.anyVal.intInstance
-import scalaz.syntax.semigroup._
+import shipreq.base.util.fp.{Monoid, Semigroup}
+import shipreq.base.util.fp.Monoid.Implicits.monoidIntAddition
+import shipreq.base.util.fp.Semigroup.Syntax._
 import shipreq.base.util.univeq._
 
 /**
  * Stats partitioned into Live & Dead.
  */
-final case class LiveDeadStat[A] private[LiveDeadStat](live: A, dead: A, all: A) {
+final case class LiveDeadStat[@specialized(Int) A] private[data](live: A, dead: A, all: A) {
 
   def +(c: LiveDeadStat[A])(implicit a: Semigroup[A]): LiveDeadStat[A] =
     LiveDeadStat(live |+| c.live, dead |+| c.dead)
@@ -29,22 +29,22 @@ final case class LiveDeadStat[A] private[LiveDeadStat](live: A, dead: A, all: A)
 }
 
 object LiveDeadStat {
-  def apply[A: Semigroup](live: A, dead: A): LiveDeadStat[A] =
+  def apply[@specialized(Int) A: Semigroup](live: A, dead: A): LiveDeadStat[A] =
     new LiveDeadStat(live, dead, live |+| dead)
 
-  def empty[A](implicit m: Monoid[A]): LiveDeadStat[A] =
+  def empty[@specialized(Int) A](implicit m: Monoid[A]): LiveDeadStat[A] =
     LiveDeadStat(m.zero, m.zero)
 
   implicit def univEq[A: UnivEq]: UnivEq[LiveDeadStat[A]] =
     UnivEq.derive
 
-  def newBuilder[A: Monoid]: Builder[A] =
+  def newBuilder[@specialized(Int) A: Monoid]: Builder[A] =
     new Builder
 
   /**
    * Mutable [[LiveDeadStat]] builder.
    */
-  final class Builder[A](implicit m: Monoid[A]) {
+  final class Builder[@specialized(Int) A](implicit m: Monoid[A]) {
     var live = m.zero
     var dead = m.zero
 
@@ -66,9 +66,9 @@ object LiveDeadStat {
       LiveDeadStat(live, dead)
   }
 
-  def sum[A: Monoid](cs: Iterable[LiveDeadStat[A]]): LiveDeadStat[A] = {
+  def sum[@specialized(Int) A: Monoid](cs: Iterable[LiveDeadStat[A]]): LiveDeadStat[A] = {
     val b = new Builder[A]
-    cs foreach (b += _)
+    cs.foreach(b += _)
     b.result()
   }
 }
@@ -78,7 +78,7 @@ object LiveDeadStat {
 /**
  * A collection of stats mapped by a key.
  */
-final case class LiveDeadStatMap[Key: UnivEq, A: Monoid] private[LiveDeadStatMap](raw: Map[Key, LiveDeadStat[A]]) {
+final case class LiveDeadStatMap[Key: UnivEq, @specialized(Int) A: Monoid] private[data](raw: Map[Key, LiveDeadStat[A]]) {
   def isEmpty = raw.isEmpty
 
   val all: LiveDeadStat[A] =
@@ -129,7 +129,7 @@ object LiveDeadStatMap {
   /**
    * Mutable [[LiveDeadStatMap]] builder.
    */
-  final class Builder[Key: UnivEq, A: Monoid] {
+  final class Builder[Key: UnivEq, @specialized(Int) A: Monoid] {
     private val map = mutable.Map.empty[Key, LiveDeadStat.Builder[A]]
 
     def apply(key: Key): LiveDeadStat.Builder[A] =
