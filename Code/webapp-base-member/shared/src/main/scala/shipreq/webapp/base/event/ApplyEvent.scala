@@ -3,8 +3,7 @@ package shipreq.webapp.base.event
 import nyaya.prop.LogicPropExt
 import scalaz.{\/, \/-}
 import shipreq.webapp.base.data.{DataProp, Project}
-import ApplyEventLib._, SE.SE
-import ApplyEvent.{Events, Result}
+import ApplyEventLib._
 
 object ApplyEvent {
   type Result = String \/ Project
@@ -26,16 +25,18 @@ final class ApplyEvent(implicit val trust: Trust)
        with ApplyContentEvent
        with ApplyOtherEvent {
 
+  import ApplyEvent.{Events, Result}
+
   def apply(events: Events)(p: Project): Result =
     applyAllSafely(events) exec p
 
   def apply1(event: Event)(p: Project): Result =
     applyOneSafely(event) exec p
 
-  private val validateDataProps: SE[Unit] =
+  private val validateDataProps: Eval[Unit] =
     whenUntrusted {
       val prop = DataProp.project.allIncludingConfig
-      SE.testO { p =>
+      Eval.failOptions { p =>
         val e = prop(p)
         if (e.success)
           None
@@ -50,19 +51,19 @@ final class ApplyEvent(implicit val trust: Trust)
     else
       applyAllSafely(ves.iterator.map(_.event)).exec(p)
 
-  private def safely(apply: SE[Unit]): SE[Unit] =
-    (apply >> validateDataProps) attempt onError
+  private def safely(apply: Eval[Unit]): Eval[Unit] =
+    (apply >> validateDataProps).catchErrors(onError)
 
-  private def applyAllSafely(events: Events): SE[Unit] =
+  private def applyAllSafely(events: Events): Eval[Unit] =
     safely(applyAllUnsafely(events))
 
-  private def applyAllUnsafely(events: Events): SE[Unit] =
-    SE.foldMapRun(events)(applyOneUnsafely)
+  private def applyAllUnsafely(events: Events): Eval[Unit] =
+    Eval.foldMapRun(events)(applyOneUnsafely)
 
-  private def applyOneSafely(event: Event): SE[Unit] =
+  private def applyOneSafely(event: Event): Eval[Unit] =
     safely(applyOneUnsafely(event))
 
-  private def applyOneUnsafely(event: Event): SE[Unit] = {
+  private def applyOneUnsafely(event: Event): Eval[Unit] = {
     import Event._
     event match {
       case e: ApplicableTagCreate     => ApplicableTagEvents     applyCreate                e

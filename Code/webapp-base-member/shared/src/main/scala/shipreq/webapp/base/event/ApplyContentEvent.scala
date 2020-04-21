@@ -14,7 +14,6 @@ import ApplyEventLib._
 import DataImplicits._
 import Event._
 import MTrie.Ops
-import SE.{SE, monadSE}
 
 trait ApplyContentEvent {
   this: ApplyEvent =>
@@ -28,47 +27,47 @@ trait ApplyContentEvent {
 
     val updateReqIdCeiling = updateIdCeilingFn(IdCeilings.req)
 
-    def ensureLiveReqId(reqId: ReqId): SE[Unit] =
+    def ensureLiveReqId(reqId: ReqId): Eval[Unit] =
       whenUntrusted(
-        needReq(reqId) >>= ensureLiveReq)
+        needReq(reqId).flatMap(ensureLiveReq))
 
-    def ensureLiveReq(req: Req): SE[Unit] =
+    def ensureLiveReq(req: Req): Eval[Unit] =
       whenUntrusted(
-        SE.test(p => req.live(p.config.reqTypes) is Live, s"${show(req)} is dead."))
+        Eval.tests(p => req.live(p.config.reqTypes) is Live, s"${show(req)} is dead."))
 
-    def ensureLiveTextFieldId(id: CustomField.Text.Id): SE[Unit] =
+    def ensureLiveTextFieldId(id: CustomField.Text.Id): Eval[Unit] =
       whenUntrusted(
-        SE.getE(_.config.fields.customAttempt(id)) >>= ensureLiveTextField)
+        Eval.eithers(_.config.fields.customAttempt(id)).flatMap(ensureLiveTextField))
 
-    def ensureLiveTextField(cf: CustomField.Text): SE[Unit] =
-      SE.feed(p => ensureLive(cf live p.config)(show(cf)))
+    def ensureLiveTextField(cf: CustomField.Text): Eval[Unit] =
+      Eval.getFlatMap(p => ensureLive(cf live p.config)(show(cf)))
 
-    def needReq[T <: ReqTypeId](reqId: ReqIdT[T]): SE[ReqT[T]] =
+    def needReq[T <: ReqTypeId](reqId: ReqIdT[T]): Eval[ReqT[T]] =
       reqId match {
         case id: GenericReqId => grIMap.need(id)
         case id: UseCaseId    => ucIMap.need(id)
       }
 
-    private def deleteReq(id: ReqId): SE[Unit] =
+    private def deleteReq(id: ReqId): Eval[Unit] =
       id match {
         case gr: GenericReqId => grIMap.update(gr, grLiveExplicitly.makeDead)
         case uc: UseCaseId    => ucIMap.update(uc, ucLiveExplicitly.makeDead)
       }
 
-    private def restoreReq(id: ReqId): SE[Unit] =
+    private def restoreReq(id: ReqId): Eval[Unit] =
       id match {
         case gr: GenericReqId => grIMap.update(gr, grLiveExplicitly.makeLive)
         case uc: UseCaseId    => ucIMap.update(uc, ucLiveExplicitly.makeLive)
       }
 
     /** Ignores reqcodes */
-    def restore(reqIds: Iterable[ReqId]): SE[Unit] =
-      SE.foldMapRun(reqIds)(restoreReq) // TODO Use one Project get/put
+    def restore(reqIds: Iterable[ReqId]): Eval[Unit] =
+      Eval.foldMapRun(reqIds)(restoreReq) // TODO Use one Project get/put
 
-    def applyDelete(e: ReqsDelete): SE[Unit] = {
+    def applyDelete(e: ReqsDelete): Eval[Unit] = {
       val reqIds = e.reqs.whole
       for {
-        _  <- SE.foldMapRun(reqIds)(deleteReq) // TODO Use one Project get/put
+        _  <- Eval.foldMapRun(reqIds)(deleteReq) // TODO Use one Project get/put
         t1 <- ReqCodeLogic.getTrie
         t2 <- ReqCodeLogic.inactivateBelongingToReqsT(t1, reqIds)
         t3 <- ReqCodeLogic.inactivateGroupsByIdT(t2, e.codeGroups, remember = true)
@@ -101,21 +100,21 @@ trait ApplyContentEvent {
       NonEmptyVector.maybe(reason, noReason)(hasReason)
     }
 
-    def validateTags(tagIds: => Iterable[ApplicableTagId]): SE[Unit] =
+    def validateTags(tagIds: => Iterable[ApplicableTagId]): Eval[Unit] =
       whenUntrusted(
-        SE.testO(p =>
+        Eval.failOptions(p =>
         tagIds.iterator.map(p.config.tags.validateApplicableTag).find(_.isDefined) match {
           case Some(None) | None => None
           case Some(Some(err))   => Some(err)
         }
       ))
 
-    def applyReqTagsPatch(e: ReqTagsPatch): SE[Unit] =
+    def applyReqTagsPatch(e: ReqTagsPatch): Eval[Unit] =
       ensureLiveReqId(e.id) >>
       validateTags(e.patch.value.allValues) >>
       Project.reqTags.modify(_.mod(e.id, e.patch.value.apply))
 
-    def applyReqImplicationsPatch(e: ReqImplicationsPatch): SE[Unit] =
+    def applyReqImplicationsPatch(e: ReqImplicationsPatch): Eval[Unit] =
       ensureLiveReqId(e.id) >>
         Project.implicationsSrcToTgt.modify(is =>
           e.dir match {
@@ -124,10 +123,10 @@ trait ApplyContentEvent {
           }
         )
 
-    def applyReqFieldCustomTextSet(e: ReqFieldCustomTextSet): SE[Unit] =
+    def applyReqFieldCustomTextSet(e: ReqFieldCustomTextSet): Eval[Unit] =
       ensureLiveReqId(e.id) >> setCustomTextValue(e.id, e.fid, e.value)
 
-    def applyRestoreContent(e: ContentRestore): SE[Unit] =
+    def applyRestoreContent(e: ContentRestore): Eval[Unit] =
       for {
         _  <- ContentCommon.restore(e.reqs)
         t1 <- ReqCodeLogic.getTrie
@@ -138,25 +137,25 @@ trait ApplyContentEvent {
 
     def setCustomTextValue(id   : ReqId,
                            fid  : CustomField.Text.Id,
-                           value: Text.CustomTextField.OptionalText): SE[Unit] =
+                           value: Text.CustomTextField.OptionalText): Eval[Unit] =
       ensureLiveTextFieldId(fid) >> (Project.reqText ^|-> ReqData.textAt(fid, id)).set(value)
 
     def setCustomTextValueMap(id: ReqId,
-                              values: NonEmpty[Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText]]): SE[Unit] =
+                              values: NonEmpty[Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText]]): Eval[Unit] =
       values.iterator
         .map { case (fid, value) => setCustomTextValue(id, fid, value.whole) }
         .reduce(_ >> _)
 
-    def setReqCodes(id: ReqId, v: NonEmptySet[ApReqCodeId.AndValue]): SE[Unit] =
+    def setReqCodes(id: ReqId, v: NonEmptySet[ApReqCodeId.AndValue]): Eval[Unit] =
       ReqCodeLogic.addAllToReq(v.whole, id, addToActive = true)
 
-    def setReqTags(id: ReqId, v: NonEmptySet[ApplicableTagId]): SE[Unit] =
+    def setReqTags(id: ReqId, v: NonEmptySet[ApplicableTagId]): Eval[Unit] =
       Project.reqTags.modify(_.addvs(id, v.whole))
 
-    def setReqImpSrcs(id: ReqId, v: NonEmptySet[ReqId]): SE[Unit] =
+    def setReqImpSrcs(id: ReqId, v: NonEmptySet[ReqId]): Eval[Unit] =
       Project.implicationsSrcToTgt.modify(_.addks(v.whole, id))
 
-    def setReqImpTgts(id: ReqId, v: NonEmptySet[ReqId]): SE[Unit] =
+    def setReqImpTgts(id: ReqId, v: NonEmptySet[ReqId]): Eval[Unit] =
       Project.implicationsSrcToTgt.modify(_.addvs(id, v.whole))
   }
 
@@ -165,29 +164,29 @@ trait ApplyContentEvent {
   object GenericReqEvents {
     import ContentCommon.{ucIMap => _, _}
 
-    def ensureLiveCustomReqType(rt: CustomReqType): SE[Unit] =
+    def ensureLiveCustomReqType(rt: CustomReqType): Eval[Unit] =
       ensureLive(rt.live)(show(rt))
 
-    def ensureLiveCustomReqTypeId(id: CustomReqTypeId): SE[Unit] =
-      whenUntrusted(needCustomReqType(id) >>= ensureLiveCustomReqType)
+    def ensureLiveCustomReqTypeId(id: CustomReqTypeId): Eval[Unit] =
+      whenUntrusted(needCustomReqType(id).flatMap(ensureLiveCustomReqType))
 
-    def needCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
+    def needCustomReqType(id: CustomReqTypeId): Eval[CustomReqType] =
       CustomReqTypeEvents.imap need id
 
-    def needLiveCustomReqType(id: CustomReqTypeId): SE[CustomReqType] =
+    def needLiveCustomReqType(id: CustomReqTypeId): Eval[CustomReqType] =
       needCustomReqType(id).flatTap(rt => ensureLive(rt.live)(rt.mnemonic.value))
 
-    val applyGenericReqCreate: GenericReqCreate => SE[Unit] = {
+    val applyGenericReqCreate: GenericReqCreate => Eval[Unit] = {
       val ^ = GenericReqGD
 
-      def foreachValue(id: GenericReqId, vs: ^.Values): SE[Unit] =
-        SE.foldMapRun(vs.values) {
+      def foreachValue(id: GenericReqId, vs: ^.Values): Eval[Unit] =
+        Eval.foldMapRun(vs.values) {
           case ^.ValueForCodes     (v) => setReqCodes          (id, v)
           case ^.ValueForCustomText(v) => setCustomTextValueMap(id, v)
           case ^.ValueForImpSrcs   (v) => setReqImpSrcs        (id, v)
           case ^.ValueForImpTgts   (v) => setReqImpTgts        (id, v)
           case ^.ValueForTags      (v) => setReqTags           (id, v)
-          case ^.ValueForTitle     (_) => SE.nop // Handled below
+          case ^.ValueForTitle     (_) => Eval.unit // Handled below
         }
 
       @inline def emptyTitle: Text.GenericReqTitle.OptionalText =
@@ -195,7 +194,7 @@ trait ApplyContentEvent {
 
       e => for {
         rt      <- needLiveCustomReqType(e.rt)
-        reqData <- SE.get(_.content.reqs)
+        reqData <- Eval.gets(_.content.reqs)
         id      = e.id
         title   = ^.Title.get(e.vs).fold(emptyTitle)(_.value.whole)
         pp      = reqData.pubids.allocC(rt.id)(id)
@@ -207,7 +206,7 @@ trait ApplyContentEvent {
       } yield ()
     }
 
-    def applyGenericReqTypeSet(e: GenericReqTypeSet): SE[Unit] =
+    def applyGenericReqTypeSet(e: GenericReqTypeSet): Eval[Unit] =
       for {
         r <- grIMap.need(e.id)
         _ <- ensureLiveReq(r)
@@ -219,7 +218,7 @@ trait ApplyContentEvent {
              }
       } yield ()
 
-    def applyGenericReqTitleSet(e: GenericReqTitleSet): SE[Unit] =
+    def applyGenericReqTitleSet(e: GenericReqTitleSet): Eval[Unit] =
       ensureLiveReqId(e.id) >>
         grIMap.updateF(e.id, _.copy(title = e.value))
   }
@@ -234,19 +233,19 @@ trait ApplyContentEvent {
     val StepFlowUni: Lens[Project, UseCases.StepFlow.UniDir] =
       Project.useCases ^|-> UseCases.stepFlow ^<-> UseCases.StepFlow.biToUni
 
-    @inline def ensureStepExists(id: UseCaseStepId): SE[Unit] =
+    @inline def ensureStepExists(id: UseCaseStepId): Eval[Unit] =
       ensureStepExistence(id, true)
 
-    @inline def ensureStepDoesntExist(id: UseCaseStepId): SE[Unit] =
+    @inline def ensureStepDoesntExist(id: UseCaseStepId): Eval[Unit] =
       ensureStepExistence(id, false)
 
-    def ensureStepExistence(id: UseCaseStepId, expectToExist: Boolean): SE[Unit] =
-      whenUntrusted(SE.test(
+    def ensureStepExistence(id: UseCaseStepId, expectToExist: Boolean): Eval[Unit] =
+      whenUntrusted(Eval.tests(
         _.content.reqs.useCases.stepIndex.contains(id) ==* expectToExist,
         show(id) + (if (expectToExist) " not found." else " already exists.")))
 
-    def ensureStepsExist(_ids: => Iterable[UseCaseStepId]): SE[Unit] =
-      whenUntrusted(SE.testO { p =>
+    def ensureStepsExist(_ids: => Iterable[UseCaseStepId]): Eval[Unit] =
+      whenUntrusted(Eval.failOptions { p =>
         val si = p.content.reqs.useCases.stepIndex
         val ids = _ids
         if (ids forall si.contains)
@@ -257,19 +256,19 @@ trait ApplyContentEvent {
         }
       })
 
-    def applyTitleSet(e: UseCaseTitleSet): SE[Unit] =
+    def applyTitleSet(e: UseCaseTitleSet): Eval[Unit] =
       ensureLiveReqId(e.id) >>
         ucIMap.updateF(e.id, _.copy(title = e.value))
 
-    def postAddStep(ucId: UseCaseId, stepId: UseCaseStepId, field: StepField): SE[Unit] =
+    def postAddStep(ucId: UseCaseId, stepId: UseCaseStepId, field: StepField): Eval[Unit] =
       postAddStep(ucId, stepId, field,
         (r, ucs) => r.copy(useCases = ucs),
         (ic, i) => ic.copy(useCaseStep = i))
 
     def postAddStep(ucId: UseCaseId, stepId: UseCaseStepId, field: StepField,
                     updReqs: (Requirements, UseCases) => Requirements,
-                    updStepIdCeil: (IdCeilings, Int) => IdCeilings): SE[Unit] =
-      SE.mod { p =>
+                    updStepIdCeil: (IdCeilings, Int) => IdCeilings): Eval[Unit] =
+      Eval.mod { p =>
         // Update step index
         val ptr = UseCases.StepTreeKey(ucId, field)
         val si2 = p.content.reqs.useCases.stepIndex.updated(stepId, ptr)
@@ -284,50 +283,50 @@ trait ApplyContentEvent {
         p.copy(content = p.content.copy(reqs = reqs2), idCeilings = ic2)
       }
 
-    val applyCreate: UseCaseCreate => SE[Unit] = {
+    val applyCreate: UseCaseCreate => Eval[Unit] = {
       val ^ = UseCaseGD
 
-      def foreachValue(id: UseCaseId, vs: ^.Values): SE[Unit] =
-        SE.foldMapRun(vs.values) {
+      def foreachValue(id: UseCaseId, vs: ^.Values): Eval[Unit] =
+        Eval.foldMapRun(vs.values) {
           case ^.ValueForCodes     (v) => setReqCodes          (id, v)
           case ^.ValueForCustomText(v) => setCustomTextValueMap(id, v)
           case ^.ValueForImpSrcs   (v) => setReqImpSrcs        (id, v)
           case ^.ValueForImpTgts   (v) => setReqImpTgts        (id, v)
           case ^.ValueForTags      (v) => setReqTags           (id, v)
-          case ^.ValueForTitle     (_) => SE.nop // Handled below
+          case ^.ValueForTitle     (_) => Eval.unit // Handled below
         }
 
-      def postAdd(pr: PubidRegister, ucId: UseCaseId, stepId: UseCaseStepId): SE[Unit] =
+      def postAdd(pr: PubidRegister, ucId: UseCaseId, stepId: UseCaseStepId): Eval[Unit] =
         postAddStep(ucId, stepId, NCAC,
           (r, ucs) => r.copy(useCases = ucs, pubids = pr),
           (ic, i) => ic.copy(useCaseStep = i, req = ic.req max ucId))
 
       e => for {
-        _       <- ensureStepDoesntExist(e.stepId)
+        _      <- ensureStepDoesntExist(e.stepId)
         id      = e.id
         title   = ^.Title.get(e.vs).fold(Text.UseCaseTitle.empty)(_.value.whole)
-        pp      <- SE get (_.content.reqs.pubids allocUC id)
+        pp     <- Eval.gets(_.content.reqs.pubids allocUC id)
         uc      = UseCase.empty(id, pp._2.pos, title, e.stepId)
-        _       <- ucIMap.create(uc)
-        _       <- postAdd(pp._1, id, e.stepId)
-        _       <- foreachValue(id, e.vs)
+        _      <- ucIMap.create(uc)
+        _      <- postAdd(pp._1, id, e.stepId)
+        _      <- foreachValue(id, e.vs)
       } yield ()
     }
 
-    def applyStepCreate(e: UseCaseStepCreate): SE[Unit] = {
+    def applyStepCreate(e: UseCaseStepCreate): Eval[Unit] = {
       val step = UseCaseStep(e.id, Text.UseCaseStep.empty, Live)
       val tree = e.field.useCaseStepTree
 
-      def insert(loc: Location, uc: UseCase): SE[Unit] =
+      def insert(loc: Location, uc: UseCase): Eval[Unit] =
         tree.modifyF(_.insertAfter(loc, step))(uc) match {
           case Some(uc2) => ucIMap addOrUpdate uc2
           case None =>
             val ploc = VectorTree.PartialLocation(loc, Valid)
             val locStr = e.field.stepLabel(uc.pos, ploc, UseCaseStepLabelFmt.`N.m`)
-            SE fail s"${show(step.id)} cannot be added to ${show(uc.id)} at location: $locStr"
+            Eval.fail(s"${show(step.id)} cannot be added to ${show(uc.id)} at location: $locStr")
         }
 
-      def append(uc: UseCase): SE[Unit] =
+      def append(uc: UseCase): Eval[Unit] =
         ucIMap addOrUpdate tree.modify(_ append step)(uc)
 
       for {
@@ -339,14 +338,14 @@ trait ApplyContentEvent {
       } yield ()
     }
 
-    def needStepIndex(id: UseCaseStepId): SE[UseCases.StepTreeKey] =
-      SE.get(_.content.reqs.useCases.stepIndex.get(id)) >>= (optionGet(_, s"${show(id)} not found."))
+    def needStepIndex(id: UseCaseStepId): Eval[UseCases.StepTreeKey] =
+      Eval.getFlatMap(p => Eval.some(p.content.reqs.useCases.stepIndex.get(id), s"${show(id)} not found."))
 
-    def needStepFocus(id: UseCaseStepId): SE[UseCaseStep.Focus] =
-      needStepIndex(id) >> SE.get(_.content.reqs.useCases.focusStep(id))
+    def needStepFocus(id: UseCaseStepId): Eval[UseCaseStep.Focus] =
+      needStepIndex(id) >> Eval.gets(_.content.reqs.useCases.focusStep(id))
 
-    private def findStepModTree(id: UseCaseStepId)(mod: (UseCaseSteps, StepField, Location, UseCaseStep) => SE[UseCaseSteps.Tree]): SE[Unit] =
-      needStepIndex(id) >>= { idx =>
+    private def findStepModTree(id: UseCaseStepId)(mod: (UseCaseSteps, StepField, Location, UseCaseStep) => Eval[UseCaseSteps.Tree]): Eval[Unit] =
+      needStepIndex(id).flatMap { idx =>
         val ucId = idx.useCaseId
         val f    = idx.field
         // It's fast to use findLoc below to find the step location rather than using some lazy index because
@@ -355,29 +354,29 @@ trait ApplyContentEvent {
         // 2) findLoc will stop when it finds the step. An index scans the whole tree.
         ucIMap.update(ucId, uc =>
           ensureLiveReq(uc) >>
-            optionGet(f.useCaseSteps.get(uc).tree.findLocAndValue(_.id ==* id), s"${show(id)} not found.") >>=
-              (ls => f.useCaseSteps.modifyF[SE](t => mod(t, f, ls._1, ls._2).map(UseCaseSteps(_)))(uc)))
+            Eval.some(f.useCaseSteps.get(uc).tree.findLocAndValue(_.id ==* id), s"${show(id)} not found.")
+              .flatMap(ls => f.useCaseSteps.modifyF[Eval](t => mod(t, f, ls._1, ls._2).map(UseCaseSteps(_)))(uc)))
       }
 
-    private def mapStep(id: UseCaseStepId)(mod: UseCaseStep => UseCaseStep): SE[Unit] =
+    private def mapStep(id: UseCaseStepId)(mod: UseCaseStep => UseCaseStep): Eval[Unit] =
       findStepModTree(id)((steps, _, l, s) =>
         setStep(steps.tree, l)(mod(s)))
 
-    private def setStep(t: UseCaseSteps.Tree, loc: Location)(s: UseCaseStep): SE[UseCaseSteps.Tree] =
-      optionGet(t.modifyValueAt(loc)(_ => s), badStepIndex(s.id, loc))
+    private def setStep(t: UseCaseSteps.Tree, loc: Location)(s: UseCaseStep): Eval[UseCaseSteps.Tree] =
+      Eval.some(t.modifyValueAt(loc)(_ => s), badStepIndex(s.id, loc))
 
-    def applyStepShiftLeft(e: UseCaseStepShiftLeft): SE[Unit] =
+    def applyStepShiftLeft(e: UseCaseStepShiftLeft): Eval[Unit] =
       findStepModTree(e.id)((s, _, l, _) =>
-        optionGet(s.tree shiftLeft l, s"${show(e.id)} cannot be shifted left."))
+        Eval.some(s.tree shiftLeft l, s"${show(e.id)} cannot be shifted left."))
 
-    def applyStepShiftRight(e: UseCaseStepShiftRight): SE[Unit] =
+    def applyStepShiftRight(e: UseCaseStepShiftRight): Eval[Unit] =
       findStepModTree(e.id)((s, _, l, _) =>
-        optionGet(s.tree.shiftRightV(l, s.locValidity), s"${show(e.id)} cannot be shifted right."))
+        Eval.some(s.tree.shiftRightV(l, s.locValidity), s"${show(e.id)} cannot be shifted right."))
 
     private def badStepIndex(id: UseCaseStepId, loc: Location) =
       s"${show(id)} expected at ${showLoc(loc)}."
 
-    val applyStepUpdate: UseCaseStepUpdate => SE[Unit] = {
+    val applyStepUpdate: UseCaseStepUpdate => Eval[Unit] = {
       val ^ = UseCaseStepGD
 
       val noFlow = SetDiff.empty[UseCaseStepId]
@@ -385,9 +384,9 @@ trait ApplyContentEvent {
       def getFlow(values: UseCaseStepGD.Values, a: UseCaseStepGD.Attr {type Data = SetDiff.NE[UseCaseStepId]}): SetDiff[UseCaseStepId] =
         a.get(values).fold(noFlow)(_.value)
 
-      def updateFlow(id: UseCaseStepId, flow_<- : SetDiff[UseCaseStepId], flow_-> : SetDiff[UseCaseStepId]): SE[Unit] =
+      def updateFlow(id: UseCaseStepId, flow_<- : SetDiff[UseCaseStepId], flow_-> : SetDiff[UseCaseStepId]): Eval[Unit] =
         if (flow_<-.isEmpty && flow_->.isEmpty)
-          SE.nop
+          Eval.unit
         else
           ensureStepsExist(flow_->.allValues ++ flow_<-.allValues) >>
           StepFlowUni.modify { f0 =>
@@ -397,32 +396,32 @@ trait ApplyContentEvent {
             f
           }
 
-      def updateTitle(id: UseCaseStepId, title: Text.UseCaseStep.OptionalText): SE[Unit] =
+      def updateTitle(id: UseCaseStepId, title: Text.UseCaseStep.OptionalText): Eval[Unit] =
         mapStep(id)(_.copy(titleExplicitly = title))
 
       e => {
         val gd       = e.vs.value
         def updFlow  = updateFlow(e.id, getFlow(gd, ^.FlowIn), getFlow(gd, ^.FlowOut))
-        def updTitle = ^.Title.get(gd).fold(SE.nop)(v => updateTitle(e.id, v.value))
+        def updTitle = ^.Title.get(gd).fold(Eval.unit)(v => updateTitle(e.id, v.value))
 
         ensureStepExists(e.id) >> updFlow >> updTitle
       }
     }
 
-    def applyStepDelete(e: UseCaseStepDelete): SE[Unit] =
+    def applyStepDelete(e: UseCaseStepDelete): Eval[Unit] =
       for {
         f   <- needStepFocus(e.id)
-        _   <- whenUntrusted(SE.test(f.field.canDelete(f.loc) is Allow, s"Deletion of step ${show(e.id)} forbidden."))
-        del <- SE.get(_.deletionMethodForUseCaseStep(e.id))
+        _   <- whenUntrusted(Eval.test(f.field.canDelete(f.loc) is Allow, s"Deletion of step ${show(e.id)} forbidden."))
+        del <- Eval.gets(_.deletionMethodForUseCaseStep(e.id))
         _   <- del match {
                  case DeletionMethod.Soft => setUseCaseStepLive(e.id, Dead)
                  case DeletionMethod.Hard => hardDeleteStep(f)
                }
       } yield ()
 
-    private def hardDeleteStep(f: UseCaseStep.Focus): SE[Unit] =
+    private def hardDeleteStep(f: UseCaseStep.Focus): Eval[Unit] =
       for {
-        _ <- findStepModTree(f.id)((steps, _, loc, _) => SE.ret(steps.tree.remove(loc).get))
+        _ <- findStepModTree(f.id)((steps, _, loc, _) => Eval.pure(steps.tree.remove(loc).get))
         _ <- postHardDelete(f.subtree)
       } yield ()
 
@@ -433,10 +432,10 @@ trait ApplyContentEvent {
         ucs.copy(stepIndex = si2)
       }
 
-    def applyStepRestore(e: UseCaseStepRestore): SE[Unit] =
+    def applyStepRestore(e: UseCaseStepRestore): Eval[Unit] =
       setUseCaseStepLive(e.id, Live)
 
-    private def setUseCaseStepLive(id: UseCaseStepId, life: Live): SE[Unit] =
+    private def setUseCaseStepLive(id: UseCaseStepId, life: Live): Eval[Unit] =
       findStepModTree(id)((steps, _, loc, step) =>
         ensureLiveIsNot(step.liveIgnoringUC(steps))(life, show(id)) >>
           setStep(steps.tree, loc)(step.copy(liveExplicitly = life)))
@@ -473,46 +472,46 @@ trait ApplyContentEvent {
 
     val validateCode = validateA(V.reqCode.valueAndNodes named SpecialBuiltInField.Code.name)
 
-    val getTrie = SE get Project.reqCodeTrie.get
+    val getTrie = Eval.gets(Project.reqCodeTrie.get)
 
-    def ensureInactive(d: Data, v: Value): SE[Unit] =
+    def ensureInactive(d: Data, v: Value): Eval[Unit] =
       whenUntrusted(d match {
-        case _: Inactive    => SE.nop
+        case _: Inactive    => Eval.unit
         case _: ActiveReq
-           | _: ActiveGroup => SE fail s"${show(v)} shouldn't be in use."
+           | _: ActiveGroup => Eval.fail(s"${show(v)} shouldn't be in use.")
       })
 
-    def ensureActiveReqIs(reqId: ReqId): ActiveReq => SE[Unit] =
-      whenUntrusted(a => SE.test(a.reqId ==* reqId, s"Expected ReqCode target to be $reqId, found: ${a.reqId}."))
+    def ensureActiveReqIs(reqId: ReqId): ActiveReq => Eval[Unit] =
+      whenUntrusted(a => Eval.test(a.reqId ==* reqId, s"Expected ReqCode target to be $reqId, found: ${a.reqId}."))
 
-    def ensureRefToReqExists(v: Value, d: Data, rc: ApReqCodeId)(reqId: ReqId): SE[Unit] =
+    def ensureRefToReqExists(v: Value, d: Data, rc: ApReqCodeId)(reqId: ReqId): Eval[Unit] =
       whenUntrusted(
-        SE.test(d.reqInactive(reqId) contains rc, s"Ref to ${show(reqId)} not found in ${show(v)}."))
+        Eval.test(d.reqInactive(reqId) contains rc, s"Ref to ${show(reqId)} not found in ${show(v)}."))
 
-    def needData(t: Trie, v: Value): SE[Data] =
-      t.valueAtPath[SE[Data]](v, SE fail s"${show(v)} not found.")(SE.ret)
+    def needData(t: Trie, v: Value): Eval[Data] =
+      t.valueAtPath[Eval[Data]](v, Eval.fail(s"${show(v)} not found."))(Eval.pure)
 
-    def needActiveReq(d: Data, v: Value): SE[ActiveReq] =
+    def needActiveReq(d: Data, v: Value): Eval[ActiveReq] =
       narrowCC[Data, ActiveReq](d, s"${show(v)} is not an ActiveReq.")
 
-    def needActiveGroup(d: Data, v: Value): SE[ActiveGroup] =
+    def needActiveGroup(d: Data, v: Value): Eval[ActiveGroup] =
       narrowCC[Data, ActiveGroup](d, s"${show(v)} is not an ActiveGroup.")
 
-    def needDeadGroup(d: Data, v: Value): SE[DeadCodeGroup] =
-      optionGet(d.deadGroup, s"Expected to find dead group at ${show(v)}.")
+    def needDeadGroup(d: Data, v: Value): Eval[DeadCodeGroup] =
+      Eval.some(d.deadGroup, s"Expected to find dead group at ${show(v)}.")
 
-    def needCode(id: ReqCodeId): SE[Value] =
-      SE(p => optionGetR(p, p.content.reqCodes.getReqCode(id), s"${show(id)} not found."))
+    def needCode(id: ReqCodeId): Eval[Value] =
+      Eval.getFlatMap(p => Eval.some(p.content.reqCodes.getReqCode(id), s"${show(id)} not found."))
 
-    def needApCodes[A](ids: Iterable[ApReqCodeId], f: (ApReqCodeId, Value) => A): SE[Vector[A]] =
+    def needApCodes[A](ids: Iterable[ApReqCodeId], f: (ApReqCodeId, Value) => A): Eval[Vector[A]] =
       needCodes(ids)(_.content.reqCodes.apReqCodesById.get, f)
 
-    def needCodeGroups[A](ids: Iterable[ReqCodeGroupId], f: (ReqCodeGroupId, Value) => A): SE[Vector[A]] =
+    def needCodeGroups[A](ids: Iterable[ReqCodeGroupId], f: (ReqCodeGroupId, Value) => A): Eval[Vector[A]] =
       needCodes(ids)(_.content.reqCodes.reqCodeGroupsById.get, f)
 
     def needCodes[I <: ReqCodeId, A](ids: Iterable[I])
-                                    (getFn: Project => I => Option[Value], f: (I, Value) => A): SE[Vector[A]] = {
-      SE { p =>
+                                    (getFn: Project => I => Option[Value], f: (I, Value) => A): Eval[Vector[A]] = {
+      Eval.getFlatMap { p =>
         val get = getFn(p)
         val found = Vector.newBuilder[A]
         var missing = Vector.empty[I]
@@ -522,9 +521,9 @@ trait ApplyContentEvent {
             case None    => missing :+= id
           }
         if (missing.nonEmpty)
-          SE Failure s"Codes not found: ${missing.map(_.value).sorted.map("#" + _).mkString(", ")}"
+          Eval.fail(s"Codes not found: ${missing.map(_.value).sorted.map("#" + _).mkString(", ")}")
         else
-          SE.Ok(p, found.result())
+          Eval.pure(found.result())
       }
     }
 
@@ -533,7 +532,7 @@ trait ApplyContentEvent {
 
     sealed trait Adder[A] {
       def reqCodeId(a: A): ReqCodeId
-      def apply(t: Trie, a: A): SE[Trie]
+      def apply(t: Trie, a: A): Eval[Trie]
     }
 
     /** Command to add a ReqCode to a requirement. */
@@ -542,24 +541,24 @@ trait ApplyContentEvent {
     implicit object ReqAdder extends Adder[AddReq] {
       override def reqCodeId(a: AddReq) = a.id
 
-      override def apply(t: Trie, cmd: AddReq): SE[Trie] =
+      override def apply(t: Trie, cmd: AddReq): Eval[Trie] =
         cmd.codeValidated.mapValidated(cmd.code)(validateCode) { v =>
-          type MakeNewData = SE[ActiveReq]
+          type MakeNewData = Eval[ActiveReq]
           import cmd.{addToActive, id, reqId}
 
           def createNode: MakeNewData =
             if (addToActive)
-              SE ret ActiveReq(id, reqId, None, emptyReqInactive)
+              Eval.pure(ActiveReq(id, reqId, None, emptyReqInactive))
             else
-              SE fail s"${show(v)} not found; can't add inactive ${show(id)} ."
+              Eval.fail(s"${show(v)} not found; can't add inactive ${show(id)} .")
 
           def modifyNode(d: Data): MakeNewData =
             if (addToActive)
-              ensureInactive(d, v) |>>
-                ActiveReq(id, reqId, d.deadGroup, d.reqInactive.del(reqId, id))
+              ensureInactive(d, v)
+                .andReturn(ActiveReq(id, reqId, d.deadGroup, d.reqInactive.del(reqId, id)))
             else
-              needActiveReq(d, v) |> (ar =>
-                ar.copy(reqInactive = ar.reqInactive.add(reqId, id)))
+              needActiveReq(d, v)
+                .map(ar => ar.copy(reqInactive = ar.reqInactive.add(reqId, id)))
 
           t.valueAtPath(v, createNode)(modifyNode).map(t.put(v, _))
         }
@@ -571,37 +570,36 @@ trait ApplyContentEvent {
     implicit object GroupAdder extends Adder[AddGroup] {
       override def reqCodeId(a: AddGroup) = a.g.id
 
-      override def apply(t: Trie, cmd: AddGroup): SE[Trie] =
+      override def apply(t: Trie, cmd: AddGroup): Eval[Trie] =
         cmd.codeValidated.mapValidated(cmd.code)(validateCode) { v =>
-          type MakeNewData = SE[ActiveGroup]
+          type MakeNewData = Eval[ActiveGroup]
           import cmd.g
 
           def createNode: MakeNewData =
-            SE ret ActiveGroup(g, emptyReqInactive)
+            Eval.pure(ActiveGroup(g, emptyReqInactive))
 
           def modifyNode(d: Data): MakeNewData =
-            ensureInactive(d, v) |>>
-              ActiveGroup(g, d.reqInactive)
+            ensureInactive(d, v).andReturn(ActiveGroup(g, d.reqInactive))
 
           t.valueAtPath(v, createNode)(modifyNode).map(t.put(v, _))
         }
     }
 
-    def addOne[A](a: A)(implicit adder: Adder[A]): SE[Unit] =
-      getTrie >>= (addOneT(_, a)) >>= Project.reqCodeTrie.set
+    def addOne[A](a: A)(implicit adder: Adder[A]): Eval[Unit] =
+      getTrie.flatMap(addOneT(_, a)).flatMap(Project.reqCodeTrie.set)
 
-    def addAll[A](as: Iterable[A])(implicit adder: Adder[A]): SE[Unit] =
-      getTrie >>= (addAllT(_, as)) >>= Project.reqCodeTrie.set
+    def addAll[A](as: Iterable[A])(implicit adder: Adder[A]): Eval[Unit] =
+      getTrie.flatMap(addAllT(_, as)).flatMap(Project.reqCodeTrie.set)
 
-    def addOneT[A](t: Trie, a: A)(implicit adder: Adder[A]): SE[Trie] =
+    def addOneT[A](t: Trie, a: A)(implicit adder: Adder[A]): Eval[Trie] =
       updateIdCeiling(adder.reqCodeId(a).value) >>
         adder(t, a)
 
-    def addAllT[A](t: Trie, as: Iterable[A])(implicit adder: Adder[A]): SE[Trie] =
+    def addAllT[A](t: Trie, as: Iterable[A])(implicit adder: Adder[A]): Eval[Trie] =
       updateIdCeiling(IdCeilings.maxOfF(as)(adder.reqCodeId(_).value)) >>
         foldMapBind(t, as)(a => adder(_, a))
 
-    def addAllToReq(vs: Iterable[ApReqCodeId.AndValue], reqId: ReqId, addToActive: Boolean): SE[Unit] =
+    def addAllToReq(vs: Iterable[ApReqCodeId.AndValue], reqId: ReqId, addToActive: Boolean): Eval[Unit] =
       addAll(vs map (iv =>
         AddReq(iv.value, Unvalidated, iv.id, reqId, addToActive)))
 
@@ -625,7 +623,7 @@ trait ApplyContentEvent {
       putInactive(trie, code, d2)
     }
 
-    def inactivateReqsByCodeT(t: Trie, codes: Iterable[Value], remember: ReqCodeId => Boolean, validateTarget: ActiveReq => SE[Unit]): SE[Trie] =
+    def inactivateReqsByCodeT(t: Trie, codes: Iterable[Value], remember: ReqCodeId => Boolean, validateTarget: ActiveReq => Eval[Unit]): Eval[Trie] =
       foldMapBind(t, codes)(v => t =>
         for {
           d <- needData(t, v)
@@ -634,15 +632,15 @@ trait ApplyContentEvent {
         } yield inactivateReq(t, v, a, remember(a.id))
       )
 
-    def inactivateReqsByIdT(t: Trie, ids: Iterable[ApReqCodeId], remember: ReqCodeId => Boolean, validateTarget: ActiveReq => SE[Unit]): SE[Trie] =
-      needApCodes(ids, (_, v) => v) >>= (vs =>
+    def inactivateReqsByIdT(t: Trie, ids: Iterable[ApReqCodeId], remember: ReqCodeId => Boolean, validateTarget: ActiveReq => Eval[Unit]): Eval[Trie] =
+      needApCodes(ids, (_, v) => v).flatMap(vs =>
         inactivateReqsByCodeT(t, vs, remember, validateTarget))
 
-    def inactivateBelongingToReqs(reqIds: Set[ReqId]): SE[Unit] =
-      getTrie >>= (inactivateBelongingToReqsT(_, reqIds)) >>= Project.reqCodeTrie.set
+    def inactivateBelongingToReqs(reqIds: Set[ReqId]): Eval[Unit] =
+      getTrie.flatMap(inactivateBelongingToReqsT(_, reqIds)).flatMap(Project.reqCodeTrie.set)
 
-    def inactivateBelongingToReqsT(trie: Trie, reqIds: Set[ReqId]): SE[Trie] =
-      SE.get(_.content.reqCodes.activeReqCodesByReqId) >>= (m =>
+    def inactivateBelongingToReqsT(trie: Trie, reqIds: Set[ReqId]): Eval[Trie] =
+      Eval.gets(_.content.reqCodes.activeReqCodesByReqId).flatMap(m =>
         foldMapBind(trie, reqIds)(reqId => inactivateReqsByCodeT(_, m(reqId), _ => true, ensureActiveReqIs(reqId))))
 
     /**
@@ -659,11 +657,11 @@ trait ApplyContentEvent {
       putInactive(trie, code, d2)
     }
 
-    def inactivateGroupsByIdT(t: Trie, ids: Iterable[ReqCodeGroupId], remember: Boolean): SE[Trie] =
-      needCodeGroups(ids, (_, v) => v) >>= (vs =>
+    def inactivateGroupsByIdT(t: Trie, ids: Iterable[ReqCodeGroupId], remember: Boolean): Eval[Trie] =
+      needCodeGroups(ids, (_, v) => v).flatMap(vs =>
         inactivateGroupsByCodeT(t, vs, remember))
 
-    def inactivateGroupsByCodeT(t: Trie, codes: Iterable[Value], remember: Boolean): SE[Trie] =
+    def inactivateGroupsByCodeT(t: Trie, codes: Iterable[Value], remember: Boolean): Eval[Trie] =
       foldMapBind(t, codes)(code => t =>
         for {
           d <- needData(t, code)
@@ -707,7 +705,7 @@ trait ApplyContentEvent {
      * If the ReqCode is already active with another ID, then it has been usurped while it was inactive.
      * Usurped ReqCodes are renamed to avoid conflict before being restored.
      */
-    def restoreCodeToReqT(trie: Trie, reqId: ReqId, id: ApReqCodeId, code: Value): SE[Trie] =
+    def restoreCodeToReqT(trie: Trie, reqId: ReqId, id: ApReqCodeId, code: Value): Eval[Trie] =
       for {
         d <- needData(trie, code)
         _ <- ensureRefToReqExists(code, d, id)(reqId)
@@ -733,17 +731,17 @@ trait ApplyContentEvent {
      *
      * If more than one id refers to the same ReqCode, then only the id with the smallest value is activated.
      */
-    def restoreToReqByIdsT(t0: Trie, reqId: ReqId, ids: Iterable[ApReqCodeId]): SE[Trie] = {
+    def restoreToReqByIdsT(t0: Trie, reqId: ReqId, ids: Iterable[ApReqCodeId]): Eval[Trie] = {
       // Sort IDs here because only the first ID/reqcode is restored and we want determinism
       var idsSorted = ids.toVector
       if (idsSorted.length > 1)
         idsSorted = idsSorted.sorted
 
-      needApCodes(idsSorted, ApReqCodeId.AndValue) >>= { ivs =>
+      needApCodes(idsSorted, ApReqCodeId.AndValue).flatMap { ivs =>
         var valuesSeen = Set.empty[Value]
         foldMapBind(t0, ivs)(iv => t =>
           if (valuesSeen contains iv.value)
-            SE ret t
+            Eval.pure(t)
           else {
             valuesSeen += iv.value
             restoreCodeToReqT(t, reqId, iv.id, iv.value)
@@ -752,28 +750,28 @@ trait ApplyContentEvent {
       }
     }
 
-    def restoreBelongingToReqT(trie: Trie, reqId: ReqId): SE[Trie] =
+    def restoreBelongingToReqT(trie: Trie, reqId: ReqId): Eval[Trie] =
       restoreBelongingToReqsT(trie, set1(reqId))
 
-    def restoreBelongingToReqsT(trie: Trie, reqIds: Set[ReqId]): SE[Trie] =
-      SE.get(_.content.reqCodes.inactiveIdsByReqId) >>= (m =>
+    def restoreBelongingToReqsT(trie: Trie, reqIds: Set[ReqId]): Eval[Trie] =
+      Eval.gets(_.content.reqCodes.inactiveIdsByReqId).flatMap(m =>
         foldMapBind(trie, reqIds)(reqId => restoreToReqByIdsT(_, reqId, m(reqId))))
 
-    def restoreBelongingToReqs(reqIds: Set[ReqId]): SE[Unit] =
-      getTrie >>= (restoreBelongingToReqsT(_, reqIds)) >>= Project.reqCodeTrie.set
+    def restoreBelongingToReqs(reqIds: Set[ReqId]): Eval[Unit] =
+      getTrie.flatMap(restoreBelongingToReqsT(_, reqIds)).flatMap(Project.reqCodeTrie.set)
 
-    def restoreGroupAtCodeT(trie: Trie, id: ReqCodeId, code: Value): SE[Trie] =
-      needData(trie, code) >>= {
+    def restoreGroupAtCodeT(trie: Trie, id: ReqCodeId, code: Value): Eval[Trie] =
+      needData(trie, code).flatMap {
         case d: Inactive =>
           // ReqCode is available. Restore simply.
-          needDeadGroup(d, code) |> { g =>
+          needDeadGroup(d, code).map { g =>
             val a = ActiveGroup(awakenGroup(g), d.reqInactive)
             trie.put(code, a)
           }
 
         case d: ActiveReq =>
           // ReqCode has been usurped. Rename before restoration.
-          needDeadGroup(d, code) |> { g =>
+          needDeadGroup(d, code).map { g =>
             val v2 = renameReqCodeToAvoidConflict(code, trie)
             val d2 = ActiveGroup(awakenGroup(g), emptyReqInactive)
             trie
@@ -782,11 +780,11 @@ trait ApplyContentEvent {
           }
 
         case _: ActiveGroup =>
-          SE fail s"Group at ${show(code)} is already live."
+          Eval.fail(s"Group at ${show(code)} is already live.")
       }
 
-    def restoreGroupsByIdT(t0: Trie, ids: Iterable[ReqCodeGroupId]): SE[Trie] =
-      needCodeGroups(ids, (_, _)) >>= (ivs =>
+    def restoreGroupsByIdT(t0: Trie, ids: Iterable[ReqCodeGroupId]): Eval[Trie] =
+      needCodeGroups(ids, (_, _)).flatMap(ivs =>
         foldMapBind(t0, ivs)(iv => t =>
           restoreGroupAtCodeT(t, iv._1, iv._2)))
 
@@ -812,9 +810,9 @@ trait ApplyContentEvent {
       r.result()
     }
 
-    def applyReqCodesPatch(e: ReqCodesPatch): SE[Unit] =
+    def applyReqCodesPatch(e: ReqCodesPatch): Eval[Unit] =
       for {
-        p    <- SE.get
+        p    <- Eval.get
         refd = p.atomScan.codeRefs
         keep = e.add.values.foldLeft(refd)(_ -- _)
         t0   = p.content.reqCodes.trie
@@ -832,7 +830,7 @@ trait ApplyContentEvent {
     val ^ = CodeGroupGD
     val GD = GenericDataApp[ReqCodes](^)
 
-    def applyCreate(e: CodeGroupCreate): SE[Unit] = {
+    def applyCreate(e: CodeGroupCreate): Eval[Unit] = {
       implicit val vs = e.vs
       for {
         c <- GD.need(^.Code)
@@ -842,7 +840,7 @@ trait ApplyContentEvent {
       } yield ()
     }
 
-    private def updateGroupCode(id: ReqCodeId, newCode: ReqCode.Value): SE[Unit] =
+    private def updateGroupCode(id: ReqCodeId, newCode: ReqCode.Value): Eval[Unit] =
       for {
         t  <- getTrie
         v  <- needCode(id)
@@ -853,7 +851,7 @@ trait ApplyContentEvent {
         _  <- Project.reqCodeTrie set t3
       } yield ()
 
-    private def modifyGroup(id: ReqCodeId, f: LiveCodeGroup => LiveCodeGroup): SE[Unit] =
+    private def modifyGroup(id: ReqCodeId, f: LiveCodeGroup => LiveCodeGroup): Eval[Unit] =
       for {
         t  <- getTrie
         v  <- needCode(id)
@@ -864,13 +862,13 @@ trait ApplyContentEvent {
         _  <- Project.reqCodeTrie set t2
       } yield ()
 
-    def applyUpdate(e: CodeGroupUpdate): SE[Unit] =
-      SE.foldMapRun(e.vs.values) {
+    def applyUpdate(e: CodeGroupUpdate): Eval[Unit] =
+      Eval.foldMapRun(e.vs.values) {
         case ^.ValueForTitle(t) => modifyGroup(e.id, _.copy(title = t))
         case ^.ValueForCode (v) => updateGroupCode(e.id, v)
       }
 
-    def applyDelete(e: CodeGroupsDelete): SE[Unit] =
-      getTrie >>= (inactivateGroupsByIdT(_, e.ids.whole, true)) >>= Project.reqCodeTrie.set
+    def applyDelete(e: CodeGroupsDelete): Eval[Unit] =
+      getTrie.flatMap(inactivateGroupsByIdT(_, e.ids.whole, true)).flatMap(Project.reqCodeTrie.set)
   }
 }
