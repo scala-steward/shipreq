@@ -48,51 +48,50 @@ object EitherState {
 
   type Underlying[S, E, A] = S => Trampoline[(S, E \/ A)]
 
-  final case class Instance[S, E, A](codensity: Codensity[Underlying[S, E, *], A]) extends AnyVal { self =>
+  final case class Instance[S, E, A](self: Underlying[S, E, A]) extends AnyVal {
     type Self[B] = Instance[S, E, B]
 
-    def widen[B >: A]: Self[B] =
+    def widen[B >: A](implicit F: Monad[Underlying[S, E, *]]): Self[B] =
       map(a => a) // TODO *************************************************************************************************************************************
 
-    def map[B](f: A => B): Self[B] =
-      Instance(codensity.map(f))
+    def map[B](f: A => B)(implicit F: Monad[Underlying[S, E, *]]): Self[B] =
+      Instance(F.map(self)(f))
 
-    def flatMap[B](f: A => Self[B]): Self[B] =
-      Instance(codensity.flatMap(f(_).codensity))
+    def flatMap[B](f: A => Self[B])(implicit F: Monad[Underlying[S, E, *]]): Self[B] =
+      Instance(F.bind(self)(f(_).self))
 
-    def flatTap[B](f: A => Self[B]): Self[A] =
-      Instance(codensity.flatTap(f(_).codensity))
+    def flatTap[B](f: A => Self[B])(implicit F: Monad[Underlying[S, E, *]]): Self[A] =
+      for {
+        a <- this
+        _ <- f(a)
+      } yield a
 
-    def >>[B](next: Self[B]): Self[B] =
+    def >>[B](next: Self[B])(implicit F: Monad[Underlying[S, E, *]]): Self[B] =
       flatMap(_ => next)
 
-    @inline def <<[B](prev: Self[B]): Self[A] =
+    @inline def <<[B](prev: Self[B])(implicit F: Monad[Underlying[S, E, *]]): Self[A] =
       prev >> this
 
-    def andReturn[B](b: B): Self[B] =
-      Instance(codensity.andReturn(b))
+    def andReturn[B](b: B)(implicit F: Monad[Underlying[S, E, *]]): Self[B] =
+      map(_ => b)
 
-    def void: Self[Unit] =
+    def void(implicit F: Monad[Underlying[S, E, *]]): Self[Unit] =
       map(_ => ())
 
     def catchErrors(h: Throwable => E)(implicit F: Applicative[Underlying[S, E, *]]): Self[A] =
-      Instance(new Codensity[Underlying[S, E, *], A] {
-        override def apply[B](f: A => Underlying[S, E, B]): Underlying[S, E, B] =
+      Instance(
           s =>
-            Trampoline.suspend {
+            Trampoline.delay {
               try
-                self.run(s)(F) match {
-                  case (s2, \/-(a))    => f(a)(s2)
-                  case (s2, e@ -\/(_)) => Trampoline.pure((s2, e))
-                }
+                Trampoline.run(self(s))
               catch {
-                case t: Throwable => Trampoline.pure((s, -\/(h(t))))
+                case t: Throwable => (s, -\/(h(t)))
               }
             }
-      })
+      )
 
     def run(s: S)(implicit F: Applicative[Underlying[S, E, *]]): (S, E \/ A) = {
-      Trampoline.run(codensity.lower(F)(s))
+      Trampoline.run(self(s))
     }
 
     def exec(s: S)(implicit F: Applicative[Underlying[S, E, *]]): E \/ S = {
@@ -129,12 +128,12 @@ object EitherState {
           }
 
         override def bind[A, B](fa: Underlying[A])(f: A => Underlying[B]): Underlying[B] =
-          s => fa(s).flatMap { result1 =>
+          s => Trampoline.suspend(fa(s).flatMap { result1 =>
             result1._2 match {
               case \/-(a)    => f(a)(result1._1)
               case e@ -\/(_) => Trampoline.pure((result1._1, e))
             }
-          }
+          })
       }
 
     implicit val eitherStateMonad: Monad[Instance] =
@@ -150,22 +149,16 @@ object EitherState {
       }
 
     def apply[A](f: S => (S, E \/ A)): Instance[A] =
-      Instance(Codensity.lift[Underlying, A](s => Trampoline.delay(f(s))))
+      Instance(s => Trampoline.pure(f(s)))
 
     def getFlatMap[A](f: S => Instance[A]): Instance[A] =
-      Instance {
-        new Codensity[Underlying, A] {
-          override def apply[B](g: A => Underlying[B]): Underlying[B] =
-            s => f(s).codensity(g)(s)
-        }
-      }
+      get.flatMap(f)
 
     def pure[A](a: A): Instance[A] =
-      Instance(Codensity.pure[Underlying, A](a))
+      either(\/-(a))
 
     def point[A](a: => A): Instance[A] =
-//      Instance(Codensity.point[Underlying, A](a))
-      Instance(Codensity.lift(eitherStateUnderlyingMonad.point(a)))
+      Instance(eitherStateUnderlyingMonad.point(a))
 
     def either[A](ea: E \/ A): Instance[A] =
       apply((_, ea))
