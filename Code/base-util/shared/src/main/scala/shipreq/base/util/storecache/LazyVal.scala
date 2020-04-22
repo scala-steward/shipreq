@@ -1,40 +1,50 @@
 package shipreq.base.util.storecache
 
-import scalaz.Applicative
+import shipreq.base.util.EitherState.ScalazTrampoline._
 
-final class LazyVal[A](create: () => A) {
+final class LazyVal[A](create: Trampoline[A]) {
 
-  @volatile private[this] var createFn = create
+  private var _create = create
 
-  lazy val value: A = {
-    val a = createFn()
-    createFn = null
-    a
-  }
+  private[LazyVal] val trampoline: Trampoline[A] =
+    Trampoline.suspend {
+      val v = _value
+      if (v.isEmpty)
+        _create.map { a =>
+          synchronized {
+            __value = Some(a)
+            _create = Trampoline.pure(a)
+          }
+          a
+        }
+      else
+        _create
+    }
+
+  private[this] var __value = Option.empty[A]
+
+  private[this] def _value: Option[A] =
+    __value.orElse(synchronized(__value))
+
+  def value: A =
+    _value.getOrElse(Trampoline.run(trampoline))
 
   def map[B](f: A => B): LazyVal[B] =
-    LazyVal(f(value))
+    // new LazyVal(trampoline.map(f))
+    new LazyVal(trampoline.flatMap { a =>
+      Trampoline.delay(f(a))
+    })
 
   def flatMap[B](f: A => LazyVal[B]): LazyVal[B] =
-    LazyVal(f(value).value)
+    new LazyVal(trampoline.flatMap { a =>
+      Trampoline.suspend(f(a).trampoline)
+    })
 }
 
 object LazyVal {
   def apply[A](a: => A): LazyVal[A] =
-    new LazyVal(() => a)
+    new LazyVal(Trampoline.delay(a))
 
-  implicit val scalazInstance: Applicative[LazyVal] =
-    new Applicative[LazyVal] {
-      override def point[A](a: => A): LazyVal[A] =
-        LazyVal(a)
-
-      override def ap[A, B](_fa: => LazyVal[A])(_ff: => LazyVal[A => B]): LazyVal[B] = {
-        val fa = _fa
-        val ff = _ff
-        for {
-          a <- fa
-          f <- ff
-        } yield f(a)
-      }
-    }
+  def suspend[A](l: => LazyVal[A]): LazyVal[A] =
+    new LazyVal(Trampoline.suspend(l.trampoline))
 }
