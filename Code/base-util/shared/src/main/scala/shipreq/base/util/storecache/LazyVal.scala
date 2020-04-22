@@ -45,6 +45,21 @@ object LazyVal {
   def apply[A](a: => A): LazyVal[A] =
     new LazyVal(Trampoline.delay(a))
 
+  def pure[A](a: A): LazyVal[A] =
+    new LazyVal(Trampoline.pure(a))
+
   def suspend[A](l: => LazyVal[A]): LazyVal[A] =
     new LazyVal(Trampoline.suspend(l.trampoline))
+
+  private[this] val False = LazyVal.pure(false)
+
+  def exists[A](ls: LazyVal[A]*)(f: A => Boolean): LazyVal[Boolean] =
+    ls.foldLeft(False)((q, n) =>
+      q.flatMap { found =>
+        if (found)
+          q
+        else
+          n.map(f)
+      }
+    )
 }

@@ -57,6 +57,12 @@ object GenBoilerplateForStoreCache {
         val valueTypesWithQE = values.ABCs.map(a => s"$a: QuickEq").mkString(", ")
         val allTypeParams = sources.ABCs.zip(values.ABCs).map {case (s, v) => s"$s,$v"}.mkString(", ")
 
+        def lazyValApply(src: Int => String, yld: Seq[String] => String) = {
+          val forArgs = (1 to n).map(i => s"v$i <- ${src(i)}").mkString("; ")
+          val yldClause = yld((1 to n).map(i => s"v$i"))
+          s"for {$forArgs} yield $yldClause"
+        }
+
         val storeCache =
           s"""
              |private[storecache] final class StoreCache$n[In, $allTypeParams, Z](
@@ -82,7 +88,7 @@ object GenBoilerplateForStoreCache {
              |final def apply$n[In, $allTypeParams, Z](
              |    $scDefs)(
              |    mapOut: (${values.ABC}) => Z) = {
-             |  val lo = LazyVal(mapOut(${(1 to n).map(i => s"s$i.value").mkString(", ")}))
+             |  val lo = ${lazyValApply(i => s"s$i.lazyVal", _.mkString("mapOut(", ", ", ")"))}
              |  new StoreCache$n($scs, lo, mapOut)
              |}
              |""".stripMargin
@@ -111,14 +117,13 @@ object GenBoilerplateForStoreCache {
              |  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
              |${(1 to n).map(i => s"    val n$i = l$i.nextFull(prev.s$i, i)").mkString("\n")}
              |${(1 to n).map(i => s"    val s$i = n$i.value").mkString("\n")}
-             |${(1 to n).map(i => s"    val c$i = n$i.changed").mkString("\n")}
-             |    val changed = LazyVal(${(1 to n).map(i => s"c$i.value").mkString(" || ")})
+             |    val changed = LazyVal.exists(${(1 to n).map(i => s"n$i.changed").mkString(", ")})(Identity.apply)
              |    val prevLo = prev.lo
-             |    val lo = LazyVal[Z] {
-             |      if (changed.value)
-             |        mapOut(${(1 to n).map(i => s"s$i.value").mkString(", ")})
+             |    val lo = changed.flatMap { isChanged =>
+             |      if (isChanged)
+             |        LazyVal(mapOut(${(1 to n).map(i => s"s$i.value").mkString(", ")}))
              |      else
-             |        prevLo.value
+             |        prevLo
              |    }
              |    Next(new StoreCache$n(${(1 to n).map(i => s"s$i").mkString(", ")}, lo, mapOut), changed)
              |  }
@@ -145,6 +150,8 @@ object GenBoilerplateForStoreCache {
     val content =
       s"""
          |package $pkg
+         |
+         |import shipreq.base.util.Identity
          |
          |${groups.drop(1).map(_.storeCache.trim).mkString("\n\n")}
          |

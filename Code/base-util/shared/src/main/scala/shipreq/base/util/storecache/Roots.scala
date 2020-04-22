@@ -2,9 +2,9 @@ package shipreq.base.util.storecache
 
 final case class Next[A](value: A, changed: LazyVal[Boolean])
 
-final class StoreCache1[I, S, A](mapInput: I => S,
-                                 source  : LazyVal[S],
-                                 lazyVal : LazyVal[A])
+final class StoreCache1[I, S, A](mapInput   : I => S,
+                                 source     : LazyVal[S],
+                                 val lazyVal: LazyVal[A])
                                 (implicit qe: QuickEq[S]) extends StoreCache[I, A] {
   override def value: A =
     lazyVal.value
@@ -16,21 +16,20 @@ final class StoreCache1[I, S, A](mapInput: I => S,
     new StoreCache1(mapInput, source, lazyVal map f)
 
   private[storecache] def next(nextInput: => I, run: S => A): Next[StoreCache1[I, S, A]] = {
-    val newSource: LazyVal[Either[S, S]] = LazyVal {
-      val s1 = source.value
-      val s2 = mapInput(nextInput)
-      if (qe.areEq(s1, s2))
-        Left(s1)
-      else
-        Right(s2)
-    }
-
-    val newValue: LazyVal[A] = LazyVal {
-      newSource.value match {
-        case Left(_)  => lazyVal.value
-        case Right(s) => run(s)
+    val newSource: LazyVal[Either[S, S]] =
+      source.map { s1 =>
+        val s2 = mapInput(nextInput)
+        if (qe.areEq(s1, s2))
+          Left(s1)
+        else
+          Right(s2)
       }
-    }
+
+    val newValue: LazyVal[A] =
+      newSource.flatMap {
+        case Left(_)  => lazyVal
+        case Right(s) => LazyVal(run(s))
+      }
 
     val sc = new StoreCache1(mapInput, newSource.map(_.merge), newValue)
 

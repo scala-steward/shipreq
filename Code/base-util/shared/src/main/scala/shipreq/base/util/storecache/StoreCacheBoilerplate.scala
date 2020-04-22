@@ -1,5 +1,7 @@
 package shipreq.base.util.storecache
 
+import shipreq.base.util.Identity
+
 private[storecache] final class StoreCache2[In, SA,A, SB,B, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
@@ -594,7 +596,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s1: StoreCache1[In, SA, A],
       s2: StoreCache1[In, SB, B])(
       mapOut: (A,B) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal} yield mapOut(v1, v2)
     new StoreCache2(s1, s2, lo, mapOut)
   }
 
@@ -603,7 +605,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s2: StoreCache1[In, SB, B],
       s3: StoreCache1[In, SC, C])(
       mapOut: (A,B,C) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal} yield mapOut(v1, v2, v3)
     new StoreCache3(s1, s2, s3, lo, mapOut)
   }
 
@@ -613,7 +615,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s3: StoreCache1[In, SC, C],
       s4: StoreCache1[In, SD, D])(
       mapOut: (A,B,C,D) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal} yield mapOut(v1, v2, v3, v4)
     new StoreCache4(s1, s2, s3, s4, lo, mapOut)
   }
 
@@ -624,7 +626,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s4: StoreCache1[In, SD, D],
       s5: StoreCache1[In, SE, E])(
       mapOut: (A,B,C,D,E) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal} yield mapOut(v1, v2, v3, v4, v5)
     new StoreCache5(s1, s2, s3, s4, s5, lo, mapOut)
   }
 
@@ -636,7 +638,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s5: StoreCache1[In, SE, E],
       s6: StoreCache1[In, SF, F])(
       mapOut: (A,B,C,D,E,F) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6)
     new StoreCache6(s1, s2, s3, s4, s5, s6, lo, mapOut)
   }
 
@@ -649,7 +651,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s6: StoreCache1[In, SF, F],
       s7: StoreCache1[In, SG, G])(
       mapOut: (A,B,C,D,E,F,G) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7)
     new StoreCache7(s1, s2, s3, s4, s5, s6, s7, lo, mapOut)
   }
 
@@ -663,7 +665,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s7: StoreCache1[In, SG, G],
       s8: StoreCache1[In, SH, H])(
       mapOut: (A,B,C,D,E,F,G,H) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8)
     new StoreCache8(s1, s2, s3, s4, s5, s6, s7, s8, lo, mapOut)
   }
 
@@ -678,7 +680,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s8: StoreCache1[In, SH, H],
       s9: StoreCache1[In, SI, I])(
       mapOut: (A,B,C,D,E,F,G,H,I) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9)
     new StoreCache9(s1, s2, s3, s4, s5, s6, s7, s8, s9, lo, mapOut)
   }
 
@@ -694,7 +696,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s9: StoreCache1[In, SI, I],
       s10: StoreCache1[In, SJ, J])(
       mapOut: (A,B,C,D,E,F,G,H,I,J) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10)
     new StoreCache10(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, lo, mapOut)
   }
 
@@ -711,7 +713,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s10: StoreCache1[In, SJ, J],
       s11: StoreCache1[In, SK, K])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11)
     new StoreCache11(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, lo, mapOut)
   }
 
@@ -729,7 +731,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s11: StoreCache1[In, SK, K],
       s12: StoreCache1[In, SL, L])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K,L) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal; v12 <- s12.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12)
     new StoreCache12(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, lo, mapOut)
   }
 
@@ -748,7 +750,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s12: StoreCache1[In, SL, L],
       s13: StoreCache1[In, SM, M])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal; v12 <- s12.lazyVal; v13 <- s13.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13)
     new StoreCache13(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, lo, mapOut)
   }
 
@@ -768,7 +770,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s13: StoreCache1[In, SM, M],
       s14: StoreCache1[In, SN, N])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal; v12 <- s12.lazyVal; v13 <- s13.lazyVal; v14 <- s14.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14)
     new StoreCache14(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, lo, mapOut)
   }
 
@@ -789,7 +791,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s14: StoreCache1[In, SN, N],
       s15: StoreCache1[In, SO, O])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal; v12 <- s12.lazyVal; v13 <- s13.lazyVal; v14 <- s14.lazyVal; v15 <- s15.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15)
     new StoreCache15(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, lo, mapOut)
   }
 
@@ -811,7 +813,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s15: StoreCache1[In, SO, O],
       s16: StoreCache1[In, SP, P])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal; v12 <- s12.lazyVal; v13 <- s13.lazyVal; v14 <- s14.lazyVal; v15 <- s15.lazyVal; v16 <- s16.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16)
     new StoreCache16(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, lo, mapOut)
   }
 
@@ -834,7 +836,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s16: StoreCache1[In, SP, P],
       s17: StoreCache1[In, SQ, Q])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal; v12 <- s12.lazyVal; v13 <- s13.lazyVal; v14 <- s14.lazyVal; v15 <- s15.lazyVal; v16 <- s16.lazyVal; v17 <- s17.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17)
     new StoreCache17(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, lo, mapOut)
   }
 
@@ -858,7 +860,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s17: StoreCache1[In, SQ, Q],
       s18: StoreCache1[In, SR, R])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal; v12 <- s12.lazyVal; v13 <- s13.lazyVal; v14 <- s14.lazyVal; v15 <- s15.lazyVal; v16 <- s16.lazyVal; v17 <- s17.lazyVal; v18 <- s18.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18)
     new StoreCache18(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, lo, mapOut)
   }
 
@@ -883,7 +885,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s18: StoreCache1[In, SR, R],
       s19: StoreCache1[In, SS, S])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal; v12 <- s12.lazyVal; v13 <- s13.lazyVal; v14 <- s14.lazyVal; v15 <- s15.lazyVal; v16 <- s16.lazyVal; v17 <- s17.lazyVal; v18 <- s18.lazyVal; v19 <- s19.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19)
     new StoreCache19(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, lo, mapOut)
   }
 
@@ -909,7 +911,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s19: StoreCache1[In, SS, S],
       s20: StoreCache1[In, ST, T])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal; v12 <- s12.lazyVal; v13 <- s13.lazyVal; v14 <- s14.lazyVal; v15 <- s15.lazyVal; v16 <- s16.lazyVal; v17 <- s17.lazyVal; v18 <- s18.lazyVal; v19 <- s19.lazyVal; v20 <- s20.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20)
     new StoreCache20(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, lo, mapOut)
   }
 
@@ -936,7 +938,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s20: StoreCache1[In, ST, T],
       s21: StoreCache1[In, SU, U])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal; v12 <- s12.lazyVal; v13 <- s13.lazyVal; v14 <- s14.lazyVal; v15 <- s15.lazyVal; v16 <- s16.lazyVal; v17 <- s17.lazyVal; v18 <- s18.lazyVal; v19 <- s19.lazyVal; v20 <- s20.lazyVal; v21 <- s21.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21)
     new StoreCache21(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, lo, mapOut)
   }
 
@@ -964,7 +966,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s21: StoreCache1[In, SU, U],
       s22: StoreCache1[In, SV, V])(
       mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V) => Z) = {
-    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value, s22.value))
+    val lo = for {v1 <- s1.lazyVal; v2 <- s2.lazyVal; v3 <- s3.lazyVal; v4 <- s4.lazyVal; v5 <- s5.lazyVal; v6 <- s6.lazyVal; v7 <- s7.lazyVal; v8 <- s8.lazyVal; v9 <- s9.lazyVal; v10 <- s10.lazyVal; v11 <- s11.lazyVal; v12 <- s12.lazyVal; v13 <- s13.lazyVal; v14 <- s14.lazyVal; v15 <- s15.lazyVal; v16 <- s16.lazyVal; v17 <- s17.lazyVal; v18 <- s18.lazyVal; v19 <- s19.lazyVal; v20 <- s20.lazyVal; v21 <- s21.lazyVal; v22 <- s22.lazyVal} yield mapOut(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22)
     new StoreCache22(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, lo, mapOut)
   }
 }
@@ -995,15 +997,13 @@ private[storecache] final class Logic2[In, SA,A, SB,B, Z](
     val n2 = l2.nextFull(prev.s2, i)
     val s1 = n1.value
     val s2 = n2.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val changed = LazyVal(c1.value || c2.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache2(s1, s2, lo, mapOut), changed)
   }
@@ -1039,16 +1039,13 @@ private[storecache] final class Logic3[In, SA,A, SB,B, SC,C, Z](
     val s1 = n1.value
     val s2 = n2.value
     val s3 = n3.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache3(s1, s2, s3, lo, mapOut), changed)
   }
@@ -1088,17 +1085,13 @@ private[storecache] final class Logic4[In, SA,A, SB,B, SC,C, SD,D, Z](
     val s2 = n2.value
     val s3 = n3.value
     val s4 = n4.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache4(s1, s2, s3, s4, lo, mapOut), changed)
   }
@@ -1142,18 +1135,13 @@ private[storecache] final class Logic5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z](
     val s3 = n3.value
     val s4 = n4.value
     val s5 = n5.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache5(s1, s2, s3, s4, s5, lo, mapOut), changed)
   }
@@ -1201,19 +1189,13 @@ private[storecache] final class Logic6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, Z
     val s4 = n4.value
     val s5 = n5.value
     val s6 = n6.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache6(s1, s2, s3, s4, s5, s6, lo, mapOut), changed)
   }
@@ -1265,20 +1247,13 @@ private[storecache] final class Logic7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
     val s5 = n5.value
     val s6 = n6.value
     val s7 = n7.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache7(s1, s2, s3, s4, s5, s6, s7, lo, mapOut), changed)
   }
@@ -1334,21 +1309,13 @@ private[storecache] final class Logic8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
     val s6 = n6.value
     val s7 = n7.value
     val s8 = n8.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache8(s1, s2, s3, s4, s5, s6, s7, s8, lo, mapOut), changed)
   }
@@ -1408,22 +1375,13 @@ private[storecache] final class Logic9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
     val s7 = n7.value
     val s8 = n8.value
     val s9 = n9.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache9(s1, s2, s3, s4, s5, s6, s7, s8, s9, lo, mapOut), changed)
   }
@@ -1487,23 +1445,13 @@ private[storecache] final class Logic10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s8 = n8.value
     val s9 = n9.value
     val s10 = n10.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache10(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, lo, mapOut), changed)
   }
@@ -1571,24 +1519,13 @@ private[storecache] final class Logic11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s9 = n9.value
     val s10 = n10.value
     val s11 = n11.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache11(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, lo, mapOut), changed)
   }
@@ -1660,25 +1597,13 @@ private[storecache] final class Logic12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s10 = n10.value
     val s11 = n11.value
     val s12 = n12.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val c12 = n12.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed, n12.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache12(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, lo, mapOut), changed)
   }
@@ -1754,26 +1679,13 @@ private[storecache] final class Logic13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s11 = n11.value
     val s12 = n12.value
     val s13 = n13.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val c12 = n12.changed
-    val c13 = n13.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed, n12.changed, n13.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache13(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, lo, mapOut), changed)
   }
@@ -1853,27 +1765,13 @@ private[storecache] final class Logic14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s12 = n12.value
     val s13 = n13.value
     val s14 = n14.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val c12 = n12.changed
-    val c13 = n13.changed
-    val c14 = n14.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed, n12.changed, n13.changed, n14.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache14(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, lo, mapOut), changed)
   }
@@ -1957,28 +1855,13 @@ private[storecache] final class Logic15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s13 = n13.value
     val s14 = n14.value
     val s15 = n15.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val c12 = n12.changed
-    val c13 = n13.changed
-    val c14 = n14.changed
-    val c15 = n15.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed, n12.changed, n13.changed, n14.changed, n15.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache15(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, lo, mapOut), changed)
   }
@@ -2066,29 +1949,13 @@ private[storecache] final class Logic16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s14 = n14.value
     val s15 = n15.value
     val s16 = n16.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val c12 = n12.changed
-    val c13 = n13.changed
-    val c14 = n14.changed
-    val c15 = n15.changed
-    val c16 = n16.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed, n12.changed, n13.changed, n14.changed, n15.changed, n16.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache16(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, lo, mapOut), changed)
   }
@@ -2180,30 +2047,13 @@ private[storecache] final class Logic17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s15 = n15.value
     val s16 = n16.value
     val s17 = n17.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val c12 = n12.changed
-    val c13 = n13.changed
-    val c14 = n14.changed
-    val c15 = n15.changed
-    val c16 = n16.changed
-    val c17 = n17.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed, n12.changed, n13.changed, n14.changed, n15.changed, n16.changed, n17.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache17(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, lo, mapOut), changed)
   }
@@ -2299,31 +2149,13 @@ private[storecache] final class Logic18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s16 = n16.value
     val s17 = n17.value
     val s18 = n18.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val c12 = n12.changed
-    val c13 = n13.changed
-    val c14 = n14.changed
-    val c15 = n15.changed
-    val c16 = n16.changed
-    val c17 = n17.changed
-    val c18 = n18.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value || c18.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed, n12.changed, n13.changed, n14.changed, n15.changed, n16.changed, n17.changed, n18.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache18(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, lo, mapOut), changed)
   }
@@ -2423,32 +2255,13 @@ private[storecache] final class Logic19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s17 = n17.value
     val s18 = n18.value
     val s19 = n19.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val c12 = n12.changed
-    val c13 = n13.changed
-    val c14 = n14.changed
-    val c15 = n15.changed
-    val c16 = n16.changed
-    val c17 = n17.changed
-    val c18 = n18.changed
-    val c19 = n19.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value || c18.value || c19.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed, n12.changed, n13.changed, n14.changed, n15.changed, n16.changed, n17.changed, n18.changed, n19.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache19(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, lo, mapOut), changed)
   }
@@ -2552,33 +2365,13 @@ private[storecache] final class Logic20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s18 = n18.value
     val s19 = n19.value
     val s20 = n20.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val c12 = n12.changed
-    val c13 = n13.changed
-    val c14 = n14.changed
-    val c15 = n15.changed
-    val c16 = n16.changed
-    val c17 = n17.changed
-    val c18 = n18.changed
-    val c19 = n19.changed
-    val c20 = n20.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value || c18.value || c19.value || c20.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed, n12.changed, n13.changed, n14.changed, n15.changed, n16.changed, n17.changed, n18.changed, n19.changed, n20.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache20(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, lo, mapOut), changed)
   }
@@ -2686,34 +2479,13 @@ private[storecache] final class Logic21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s19 = n19.value
     val s20 = n20.value
     val s21 = n21.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val c12 = n12.changed
-    val c13 = n13.changed
-    val c14 = n14.changed
-    val c15 = n15.changed
-    val c16 = n16.changed
-    val c17 = n17.changed
-    val c18 = n18.changed
-    val c19 = n19.changed
-    val c20 = n20.changed
-    val c21 = n21.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value || c18.value || c19.value || c20.value || c21.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed, n12.changed, n13.changed, n14.changed, n15.changed, n16.changed, n17.changed, n18.changed, n19.changed, n20.changed, n21.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache21(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, lo, mapOut), changed)
   }
@@ -2825,35 +2597,13 @@ private[storecache] final class Logic22[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s20 = n20.value
     val s21 = n21.value
     val s22 = n22.value
-    val c1 = n1.changed
-    val c2 = n2.changed
-    val c3 = n3.changed
-    val c4 = n4.changed
-    val c5 = n5.changed
-    val c6 = n6.changed
-    val c7 = n7.changed
-    val c8 = n8.changed
-    val c9 = n9.changed
-    val c10 = n10.changed
-    val c11 = n11.changed
-    val c12 = n12.changed
-    val c13 = n13.changed
-    val c14 = n14.changed
-    val c15 = n15.changed
-    val c16 = n16.changed
-    val c17 = n17.changed
-    val c18 = n18.changed
-    val c19 = n19.changed
-    val c20 = n20.changed
-    val c21 = n21.changed
-    val c22 = n22.changed
-    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value || c18.value || c19.value || c20.value || c21.value || c22.value)
+    val changed = LazyVal.exists(n1.changed, n2.changed, n3.changed, n4.changed, n5.changed, n6.changed, n7.changed, n8.changed, n9.changed, n10.changed, n11.changed, n12.changed, n13.changed, n14.changed, n15.changed, n16.changed, n17.changed, n18.changed, n19.changed, n20.changed, n21.changed, n22.changed)(Identity.apply)
     val prevLo = prev.lo
-    val lo = LazyVal[Z] {
-      if (changed.value)
-        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value, s22.value)
+    val lo = changed.flatMap { isChanged =>
+      if (isChanged)
+        LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value, s22.value))
       else
-        prevLo.value
+        prevLo
     }
     Next(new StoreCache22(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, lo, mapOut), changed)
   }
