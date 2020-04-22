@@ -61,18 +61,19 @@ object GenBoilerplateForStoreCache {
           s"""
              |private[storecache] final class StoreCache$n[In, $allTypeParams, Z](
              |    $scValDefs,
+             |    val lo: LazyVal[Z],
              |    mapOut: (${values.ABC}) => Z) extends StoreCache[In, Z] {
              |
              |  type Self[II, ZZ] = StoreCache$n[II, $allTypeParams, ZZ]
              |
-             |  override lazy val value: Z =
-             |    mapOut($vs)
+             |  override def value: Z =
+             |    lo.value
              |
              |  override def contramap[X](ff: X => In): Self[X, Z] =
-             |    new StoreCache$n(${_scs.map(_ + ".contramap(ff)").mkString(", ")}, mapOut)
+             |    new StoreCache$n(${_scs.map(_ + ".contramap(ff)").mkString(", ")}, lo, mapOut)
              |
              |  override def map[X](ff: Z => X): Self[In, X] =
-             |    new StoreCache$n($scs, (${values.abc}) => ff(mapOut(${values.abc})))
+             |    new StoreCache$n($scs, lo.map(ff), (${values.abc}) => ff(mapOut(${values.abc})))
              |}
              |""".stripMargin
 
@@ -80,8 +81,10 @@ object GenBoilerplateForStoreCache {
           s"""
              |final def apply$n[In, $allTypeParams, Z](
              |    $scDefs)(
-             |    mapOut: (${values.ABC}) => Z): StoreCache[In, Z] =
-             |  new StoreCache$n($scs, mapOut)
+             |    mapOut: (${values.ABC}) => Z) = {
+             |  val lo = LazyVal(mapOut(${(1 to n).map(i => s"s$i.value").mkString(", ")}))
+             |  new StoreCache$n($scs, lo, mapOut)
+             |}
              |""".stripMargin
 
         val logic =
@@ -100,17 +103,24 @@ object GenBoilerplateForStoreCache {
              |  override def map[X](ff: Z => X): Self[In, X] =
              |    new Logic$n($ls, (${values.abc}) => ff(mapOut(${values.abc})))
              |
-             |  override def init(i: In): Cache = {
+             |  override def init(i: => In): Cache = {
              |${(1 to n).map(i => s"    val s$i = l$i.init(i)").mkString("\n")}
-             |    new StoreCache$n($scs, mapOut)
+             |    StoreCache.apply$n($scs)(mapOut)
              |  }
              |
-             |  override def next(prev: Cache, i: In): Cache = {
-             |${(1 to n).map(i => s"    val x$i = l$i.next(prev.s$i, i)").mkString("\n")}
-             |    if (${(1 to n).map(i => s"(x$i eq prev.s$i)").mkString(" && ")})
-             |      prev
-             |    else
-             |      new StoreCache$n(${(1 to n).map(i => s"x$i").mkString(", ")}, mapOut)
+             |  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+             |${(1 to n).map(i => s"    val n$i = l$i.nextFull(prev.s$i, i)").mkString("\n")}
+             |${(1 to n).map(i => s"    val s$i = n$i.value").mkString("\n")}
+             |${(1 to n).map(i => s"    val c$i = n$i.changed").mkString("\n")}
+             |    val changed = LazyVal(${(1 to n).map(i => s"c$i.value").mkString(" || ")})
+             |    val prevLo = prev.lo
+             |    val lo = LazyVal[Z] {
+             |      if (changed.value)
+             |        mapOut(${(1 to n).map(i => s"s$i.value").mkString(", ")})
+             |      else
+             |        prevLo.value
+             |    }
+             |    Next(new StoreCache$n(${(1 to n).map(i => s"s$i").mkString(", ")}, lo, mapOut), changed)
              |  }
              |}
              |""".stripMargin

@@ -21,11 +21,14 @@ object StoreCache extends StoreCacheBoilerplate {
   trait Logic[I, A] {
     type Cache <: StoreCache[I, A]
 
-    def init(init: I): Cache
+    def init(init: => I): Cache
 
-    def next(prev: Cache, i: I): Cache
+    def nextFull(prev: Cache, i: => I): Next[Cache]
 
-    final def next(prev: Option[Cache], i: I): Cache =
+    final def next(prev: Cache, i: => I): Cache =
+      nextFull(prev, i).value
+
+    final def next(prev: Option[Cache], i: => I): Cache =
       prev.fold(init(i))(next(_, i))
 
     def contramap[J](f: J => I): Logic[J, A]

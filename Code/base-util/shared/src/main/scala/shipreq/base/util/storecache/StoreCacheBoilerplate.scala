@@ -3,36 +3,38 @@ package shipreq.base.util.storecache
 private[storecache] final class StoreCache2[In, SA,A, SB,B, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
+    val lo: LazyVal[Z],
     mapOut: (A,B) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache2[II, SA,A, SB,B, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache2(s1.contramap(ff), s2.contramap(ff), mapOut)
+    new StoreCache2(s1.contramap(ff), s2.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache2(s1, s2, (a,b) => ff(mapOut(a,b)))
+    new StoreCache2(s1, s2, lo.map(ff), (a,b) => ff(mapOut(a,b)))
 }
 
 private[storecache] final class StoreCache3[In, SA,A, SB,B, SC,C, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache3[II, SA,A, SB,B, SC,C, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache3(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), mapOut)
+    new StoreCache3(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache3(s1, s2, s3, (a,b,c) => ff(mapOut(a,b,c)))
+    new StoreCache3(s1, s2, s3, lo.map(ff), (a,b,c) => ff(mapOut(a,b,c)))
 }
 
 private[storecache] final class StoreCache4[In, SA,A, SB,B, SC,C, SD,D, Z](
@@ -40,18 +42,19 @@ private[storecache] final class StoreCache4[In, SA,A, SB,B, SC,C, SD,D, Z](
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
     val s4: StoreCache1[In, SD, D],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache4[II, SA,A, SB,B, SC,C, SD,D, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache4(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), mapOut)
+    new StoreCache4(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache4(s1, s2, s3, s4, (a,b,c,d) => ff(mapOut(a,b,c,d)))
+    new StoreCache4(s1, s2, s3, s4, lo.map(ff), (a,b,c,d) => ff(mapOut(a,b,c,d)))
 }
 
 private[storecache] final class StoreCache5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z](
@@ -60,18 +63,19 @@ private[storecache] final class StoreCache5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z]
     val s3: StoreCache1[In, SC, C],
     val s4: StoreCache1[In, SD, D],
     val s5: StoreCache1[In, SE, E],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache5[II, SA,A, SB,B, SC,C, SD,D, SE,E, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache5(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), mapOut)
+    new StoreCache5(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache5(s1, s2, s3, s4, s5, (a,b,c,d,e) => ff(mapOut(a,b,c,d,e)))
+    new StoreCache5(s1, s2, s3, s4, s5, lo.map(ff), (a,b,c,d,e) => ff(mapOut(a,b,c,d,e)))
 }
 
 private[storecache] final class StoreCache6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, Z](
@@ -81,18 +85,19 @@ private[storecache] final class StoreCache6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF
     val s4: StoreCache1[In, SD, D],
     val s5: StoreCache1[In, SE, E],
     val s6: StoreCache1[In, SF, F],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache6[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache6(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), mapOut)
+    new StoreCache6(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache6(s1, s2, s3, s4, s5, s6, (a,b,c,d,e,f) => ff(mapOut(a,b,c,d,e,f)))
+    new StoreCache6(s1, s2, s3, s4, s5, s6, lo.map(ff), (a,b,c,d,e,f) => ff(mapOut(a,b,c,d,e,f)))
 }
 
 private[storecache] final class StoreCache7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, Z](
@@ -103,18 +108,19 @@ private[storecache] final class StoreCache7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF
     val s5: StoreCache1[In, SE, E],
     val s6: StoreCache1[In, SF, F],
     val s7: StoreCache1[In, SG, G],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache7[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache7(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), mapOut)
+    new StoreCache7(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache7(s1, s2, s3, s4, s5, s6, s7, (a,b,c,d,e,f,g) => ff(mapOut(a,b,c,d,e,f,g)))
+    new StoreCache7(s1, s2, s3, s4, s5, s6, s7, lo.map(ff), (a,b,c,d,e,f,g) => ff(mapOut(a,b,c,d,e,f,g)))
 }
 
 private[storecache] final class StoreCache8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, Z](
@@ -126,18 +132,19 @@ private[storecache] final class StoreCache8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF
     val s6: StoreCache1[In, SF, F],
     val s7: StoreCache1[In, SG, G],
     val s8: StoreCache1[In, SH, H],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache8[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache8(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), mapOut)
+    new StoreCache8(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache8(s1, s2, s3, s4, s5, s6, s7, s8, (a,b,c,d,e,f,g,h) => ff(mapOut(a,b,c,d,e,f,g,h)))
+    new StoreCache8(s1, s2, s3, s4, s5, s6, s7, s8, lo.map(ff), (a,b,c,d,e,f,g,h) => ff(mapOut(a,b,c,d,e,f,g,h)))
 }
 
 private[storecache] final class StoreCache9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, Z](
@@ -150,18 +157,19 @@ private[storecache] final class StoreCache9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF
     val s7: StoreCache1[In, SG, G],
     val s8: StoreCache1[In, SH, H],
     val s9: StoreCache1[In, SI, I],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache9[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache9(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), mapOut)
+    new StoreCache9(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache9(s1, s2, s3, s4, s5, s6, s7, s8, s9, (a,b,c,d,e,f,g,h,i) => ff(mapOut(a,b,c,d,e,f,g,h,i)))
+    new StoreCache9(s1, s2, s3, s4, s5, s6, s7, s8, s9, lo.map(ff), (a,b,c,d,e,f,g,h,i) => ff(mapOut(a,b,c,d,e,f,g,h,i)))
 }
 
 private[storecache] final class StoreCache10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, Z](
@@ -175,18 +183,19 @@ private[storecache] final class StoreCache10[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s8: StoreCache1[In, SH, H],
     val s9: StoreCache1[In, SI, I],
     val s10: StoreCache1[In, SJ, J],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache10[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache10(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), mapOut)
+    new StoreCache10(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache10(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, (a,b,c,d,e,f,g,h,i,j) => ff(mapOut(a,b,c,d,e,f,g,h,i,j)))
+    new StoreCache10(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, lo.map(ff), (a,b,c,d,e,f,g,h,i,j) => ff(mapOut(a,b,c,d,e,f,g,h,i,j)))
 }
 
 private[storecache] final class StoreCache11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, Z](
@@ -201,18 +210,19 @@ private[storecache] final class StoreCache11[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s9: StoreCache1[In, SI, I],
     val s10: StoreCache1[In, SJ, J],
     val s11: StoreCache1[In, SK, K],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache11[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache11(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), mapOut)
+    new StoreCache11(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache11(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, (a,b,c,d,e,f,g,h,i,j,k) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k)))
+    new StoreCache11(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k)))
 }
 
 private[storecache] final class StoreCache12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, Z](
@@ -228,18 +238,19 @@ private[storecache] final class StoreCache12[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s10: StoreCache1[In, SJ, J],
     val s11: StoreCache1[In, SK, K],
     val s12: StoreCache1[In, SL, L],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K,L) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache12[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache12(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), mapOut)
+    new StoreCache12(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache12(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, (a,b,c,d,e,f,g,h,i,j,k,l) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l)))
+    new StoreCache12(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l)))
 }
 
 private[storecache] final class StoreCache13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, Z](
@@ -256,18 +267,19 @@ private[storecache] final class StoreCache13[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s11: StoreCache1[In, SK, K],
     val s12: StoreCache1[In, SL, L],
     val s13: StoreCache1[In, SM, M],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache13[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache13(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), mapOut)
+    new StoreCache13(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache13(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, (a,b,c,d,e,f,g,h,i,j,k,l,m) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m)))
+    new StoreCache13(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m)))
 }
 
 private[storecache] final class StoreCache14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, Z](
@@ -285,18 +297,19 @@ private[storecache] final class StoreCache14[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s12: StoreCache1[In, SL, L],
     val s13: StoreCache1[In, SM, M],
     val s14: StoreCache1[In, SN, N],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache14[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache14(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), mapOut)
+    new StoreCache14(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache14(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, (a,b,c,d,e,f,g,h,i,j,k,l,m,n) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n)))
+    new StoreCache14(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n)))
 }
 
 private[storecache] final class StoreCache15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, Z](
@@ -315,18 +328,19 @@ private[storecache] final class StoreCache15[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s13: StoreCache1[In, SM, M],
     val s14: StoreCache1[In, SN, N],
     val s15: StoreCache1[In, SO, O],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache15[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache15(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), mapOut)
+    new StoreCache15(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache15(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o)))
+    new StoreCache15(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o)))
 }
 
 private[storecache] final class StoreCache16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, Z](
@@ -346,18 +360,19 @@ private[storecache] final class StoreCache16[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s14: StoreCache1[In, SN, N],
     val s15: StoreCache1[In, SO, O],
     val s16: StoreCache1[In, SP, P],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache16[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache16(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), mapOut)
+    new StoreCache16(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache16(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p)))
+    new StoreCache16(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p)))
 }
 
 private[storecache] final class StoreCache17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, Z](
@@ -378,18 +393,19 @@ private[storecache] final class StoreCache17[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s15: StoreCache1[In, SO, O],
     val s16: StoreCache1[In, SP, P],
     val s17: StoreCache1[In, SQ, Q],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache17[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache17(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), mapOut)
+    new StoreCache17(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache17(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q)))
+    new StoreCache17(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q)))
 }
 
 private[storecache] final class StoreCache18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, Z](
@@ -411,18 +427,19 @@ private[storecache] final class StoreCache18[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s16: StoreCache1[In, SP, P],
     val s17: StoreCache1[In, SQ, Q],
     val s18: StoreCache1[In, SR, R],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache18[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache18(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), s18.contramap(ff), mapOut)
+    new StoreCache18(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), s18.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache18(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r)))
+    new StoreCache18(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r)))
 }
 
 private[storecache] final class StoreCache19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, Z](
@@ -445,18 +462,19 @@ private[storecache] final class StoreCache19[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s17: StoreCache1[In, SQ, Q],
     val s18: StoreCache1[In, SR, R],
     val s19: StoreCache1[In, SS, S],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache19[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache19(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), s18.contramap(ff), s19.contramap(ff), mapOut)
+    new StoreCache19(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), s18.contramap(ff), s19.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache19(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s)))
+    new StoreCache19(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s)))
 }
 
 private[storecache] final class StoreCache20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, Z](
@@ -480,18 +498,19 @@ private[storecache] final class StoreCache20[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s18: StoreCache1[In, SR, R],
     val s19: StoreCache1[In, SS, S],
     val s20: StoreCache1[In, ST, T],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache20[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache20(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), s18.contramap(ff), s19.contramap(ff), s20.contramap(ff), mapOut)
+    new StoreCache20(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), s18.contramap(ff), s19.contramap(ff), s20.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache20(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t)))
+    new StoreCache20(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t)))
 }
 
 private[storecache] final class StoreCache21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, Z](
@@ -516,18 +535,19 @@ private[storecache] final class StoreCache21[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s19: StoreCache1[In, SS, S],
     val s20: StoreCache1[In, ST, T],
     val s21: StoreCache1[In, SU, U],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache21[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache21(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), s18.contramap(ff), s19.contramap(ff), s20.contramap(ff), s21.contramap(ff), mapOut)
+    new StoreCache21(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), s18.contramap(ff), s19.contramap(ff), s20.contramap(ff), s21.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache21(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u)))
+    new StoreCache21(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u)))
 }
 
 private[storecache] final class StoreCache22[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, SV,V, Z](
@@ -553,18 +573,19 @@ private[storecache] final class StoreCache22[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     val s20: StoreCache1[In, ST, T],
     val s21: StoreCache1[In, SU, U],
     val s22: StoreCache1[In, SV, V],
+    val lo: LazyVal[Z],
     mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V) => Z) extends StoreCache[In, Z] {
 
   type Self[II, ZZ] = StoreCache22[II, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, SV,V, ZZ]
 
-  override lazy val value: Z =
-    mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value, s22.value)
+  override def value: Z =
+    lo.value
 
   override def contramap[X](ff: X => In): Self[X, Z] =
-    new StoreCache22(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), s18.contramap(ff), s19.contramap(ff), s20.contramap(ff), s21.contramap(ff), s22.contramap(ff), mapOut)
+    new StoreCache22(s1.contramap(ff), s2.contramap(ff), s3.contramap(ff), s4.contramap(ff), s5.contramap(ff), s6.contramap(ff), s7.contramap(ff), s8.contramap(ff), s9.contramap(ff), s10.contramap(ff), s11.contramap(ff), s12.contramap(ff), s13.contramap(ff), s14.contramap(ff), s15.contramap(ff), s16.contramap(ff), s17.contramap(ff), s18.contramap(ff), s19.contramap(ff), s20.contramap(ff), s21.contramap(ff), s22.contramap(ff), lo, mapOut)
 
   override def map[X](ff: Z => X): Self[In, X] =
-    new StoreCache22(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v)))
+    new StoreCache22(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v)))
 }
 
 abstract class StoreCacheBoilerplate private[storecache]() {
@@ -572,23 +593,29 @@ abstract class StoreCacheBoilerplate private[storecache]() {
   final def apply2[In, SA,A, SB,B, Z](
       s1: StoreCache1[In, SA, A],
       s2: StoreCache1[In, SB, B])(
-      mapOut: (A,B) => Z): StoreCache[In, Z] =
-    new StoreCache2(s1, s2, mapOut)
+      mapOut: (A,B) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value))
+    new StoreCache2(s1, s2, lo, mapOut)
+  }
 
   final def apply3[In, SA,A, SB,B, SC,C, Z](
       s1: StoreCache1[In, SA, A],
       s2: StoreCache1[In, SB, B],
       s3: StoreCache1[In, SC, C])(
-      mapOut: (A,B,C) => Z): StoreCache[In, Z] =
-    new StoreCache3(s1, s2, s3, mapOut)
+      mapOut: (A,B,C) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value))
+    new StoreCache3(s1, s2, s3, lo, mapOut)
+  }
 
   final def apply4[In, SA,A, SB,B, SC,C, SD,D, Z](
       s1: StoreCache1[In, SA, A],
       s2: StoreCache1[In, SB, B],
       s3: StoreCache1[In, SC, C],
       s4: StoreCache1[In, SD, D])(
-      mapOut: (A,B,C,D) => Z): StoreCache[In, Z] =
-    new StoreCache4(s1, s2, s3, s4, mapOut)
+      mapOut: (A,B,C,D) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value))
+    new StoreCache4(s1, s2, s3, s4, lo, mapOut)
+  }
 
   final def apply5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z](
       s1: StoreCache1[In, SA, A],
@@ -596,8 +623,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s3: StoreCache1[In, SC, C],
       s4: StoreCache1[In, SD, D],
       s5: StoreCache1[In, SE, E])(
-      mapOut: (A,B,C,D,E) => Z): StoreCache[In, Z] =
-    new StoreCache5(s1, s2, s3, s4, s5, mapOut)
+      mapOut: (A,B,C,D,E) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value))
+    new StoreCache5(s1, s2, s3, s4, s5, lo, mapOut)
+  }
 
   final def apply6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, Z](
       s1: StoreCache1[In, SA, A],
@@ -606,8 +635,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s4: StoreCache1[In, SD, D],
       s5: StoreCache1[In, SE, E],
       s6: StoreCache1[In, SF, F])(
-      mapOut: (A,B,C,D,E,F) => Z): StoreCache[In, Z] =
-    new StoreCache6(s1, s2, s3, s4, s5, s6, mapOut)
+      mapOut: (A,B,C,D,E,F) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value))
+    new StoreCache6(s1, s2, s3, s4, s5, s6, lo, mapOut)
+  }
 
   final def apply7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, Z](
       s1: StoreCache1[In, SA, A],
@@ -617,8 +648,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s5: StoreCache1[In, SE, E],
       s6: StoreCache1[In, SF, F],
       s7: StoreCache1[In, SG, G])(
-      mapOut: (A,B,C,D,E,F,G) => Z): StoreCache[In, Z] =
-    new StoreCache7(s1, s2, s3, s4, s5, s6, s7, mapOut)
+      mapOut: (A,B,C,D,E,F,G) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value))
+    new StoreCache7(s1, s2, s3, s4, s5, s6, s7, lo, mapOut)
+  }
 
   final def apply8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, Z](
       s1: StoreCache1[In, SA, A],
@@ -629,8 +662,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s6: StoreCache1[In, SF, F],
       s7: StoreCache1[In, SG, G],
       s8: StoreCache1[In, SH, H])(
-      mapOut: (A,B,C,D,E,F,G,H) => Z): StoreCache[In, Z] =
-    new StoreCache8(s1, s2, s3, s4, s5, s6, s7, s8, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value))
+    new StoreCache8(s1, s2, s3, s4, s5, s6, s7, s8, lo, mapOut)
+  }
 
   final def apply9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, Z](
       s1: StoreCache1[In, SA, A],
@@ -642,8 +677,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s7: StoreCache1[In, SG, G],
       s8: StoreCache1[In, SH, H],
       s9: StoreCache1[In, SI, I])(
-      mapOut: (A,B,C,D,E,F,G,H,I) => Z): StoreCache[In, Z] =
-    new StoreCache9(s1, s2, s3, s4, s5, s6, s7, s8, s9, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value))
+    new StoreCache9(s1, s2, s3, s4, s5, s6, s7, s8, s9, lo, mapOut)
+  }
 
   final def apply10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, Z](
       s1: StoreCache1[In, SA, A],
@@ -656,8 +693,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s8: StoreCache1[In, SH, H],
       s9: StoreCache1[In, SI, I],
       s10: StoreCache1[In, SJ, J])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J) => Z): StoreCache[In, Z] =
-    new StoreCache10(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value))
+    new StoreCache10(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, lo, mapOut)
+  }
 
   final def apply11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, Z](
       s1: StoreCache1[In, SA, A],
@@ -671,8 +710,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s9: StoreCache1[In, SI, I],
       s10: StoreCache1[In, SJ, J],
       s11: StoreCache1[In, SK, K])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K) => Z): StoreCache[In, Z] =
-    new StoreCache11(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value))
+    new StoreCache11(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, lo, mapOut)
+  }
 
   final def apply12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, Z](
       s1: StoreCache1[In, SA, A],
@@ -687,8 +728,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s10: StoreCache1[In, SJ, J],
       s11: StoreCache1[In, SK, K],
       s12: StoreCache1[In, SL, L])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L) => Z): StoreCache[In, Z] =
-    new StoreCache12(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value))
+    new StoreCache12(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, lo, mapOut)
+  }
 
   final def apply13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, Z](
       s1: StoreCache1[In, SA, A],
@@ -704,8 +747,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s11: StoreCache1[In, SK, K],
       s12: StoreCache1[In, SL, L],
       s13: StoreCache1[In, SM, M])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M) => Z): StoreCache[In, Z] =
-    new StoreCache13(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value))
+    new StoreCache13(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, lo, mapOut)
+  }
 
   final def apply14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, Z](
       s1: StoreCache1[In, SA, A],
@@ -722,8 +767,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s12: StoreCache1[In, SL, L],
       s13: StoreCache1[In, SM, M],
       s14: StoreCache1[In, SN, N])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N) => Z): StoreCache[In, Z] =
-    new StoreCache14(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value))
+    new StoreCache14(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, lo, mapOut)
+  }
 
   final def apply15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, Z](
       s1: StoreCache1[In, SA, A],
@@ -741,8 +788,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s13: StoreCache1[In, SM, M],
       s14: StoreCache1[In, SN, N],
       s15: StoreCache1[In, SO, O])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O) => Z): StoreCache[In, Z] =
-    new StoreCache15(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value))
+    new StoreCache15(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, lo, mapOut)
+  }
 
   final def apply16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, Z](
       s1: StoreCache1[In, SA, A],
@@ -761,8 +810,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s14: StoreCache1[In, SN, N],
       s15: StoreCache1[In, SO, O],
       s16: StoreCache1[In, SP, P])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P) => Z): StoreCache[In, Z] =
-    new StoreCache16(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value))
+    new StoreCache16(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, lo, mapOut)
+  }
 
   final def apply17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, Z](
       s1: StoreCache1[In, SA, A],
@@ -782,8 +833,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s15: StoreCache1[In, SO, O],
       s16: StoreCache1[In, SP, P],
       s17: StoreCache1[In, SQ, Q])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q) => Z): StoreCache[In, Z] =
-    new StoreCache17(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value))
+    new StoreCache17(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, lo, mapOut)
+  }
 
   final def apply18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, Z](
       s1: StoreCache1[In, SA, A],
@@ -804,8 +857,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s16: StoreCache1[In, SP, P],
       s17: StoreCache1[In, SQ, Q],
       s18: StoreCache1[In, SR, R])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R) => Z): StoreCache[In, Z] =
-    new StoreCache18(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value))
+    new StoreCache18(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, lo, mapOut)
+  }
 
   final def apply19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, Z](
       s1: StoreCache1[In, SA, A],
@@ -827,8 +882,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s17: StoreCache1[In, SQ, Q],
       s18: StoreCache1[In, SR, R],
       s19: StoreCache1[In, SS, S])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S) => Z): StoreCache[In, Z] =
-    new StoreCache19(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value))
+    new StoreCache19(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, lo, mapOut)
+  }
 
   final def apply20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, Z](
       s1: StoreCache1[In, SA, A],
@@ -851,8 +908,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s18: StoreCache1[In, SR, R],
       s19: StoreCache1[In, SS, S],
       s20: StoreCache1[In, ST, T])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T) => Z): StoreCache[In, Z] =
-    new StoreCache20(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value))
+    new StoreCache20(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, lo, mapOut)
+  }
 
   final def apply21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, Z](
       s1: StoreCache1[In, SA, A],
@@ -876,8 +935,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s19: StoreCache1[In, SS, S],
       s20: StoreCache1[In, ST, T],
       s21: StoreCache1[In, SU, U])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U) => Z): StoreCache[In, Z] =
-    new StoreCache21(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value))
+    new StoreCache21(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, lo, mapOut)
+  }
 
   final def apply22[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, SV,V, Z](
       s1: StoreCache1[In, SA, A],
@@ -902,8 +963,10 @@ abstract class StoreCacheBoilerplate private[storecache]() {
       s20: StoreCache1[In, ST, T],
       s21: StoreCache1[In, SU, U],
       s22: StoreCache1[In, SV, V])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V) => Z): StoreCache[In, Z] =
-    new StoreCache22(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, mapOut)
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V) => Z) = {
+    val lo = LazyVal(mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value, s22.value))
+    new StoreCache22(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, lo, mapOut)
+  }
 }
 
 private[storecache] final class Logic2[In, SA,A, SB,B, Z](
@@ -921,19 +984,28 @@ private[storecache] final class Logic2[In, SA,A, SB,B, Z](
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic2(l1, l2, (a,b) => ff(mapOut(a,b)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
-    new StoreCache2(s1, s2, mapOut)
+    StoreCache.apply2(s1, s2)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2))
-      prev
-    else
-      new StoreCache2(x1, x2, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val changed = LazyVal(c1.value || c2.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache2(s1, s2, lo, mapOut), changed)
   }
 }
 
@@ -953,21 +1025,32 @@ private[storecache] final class Logic3[In, SA,A, SB,B, SC,C, Z](
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic3(l1, l2, l3, (a,b,c) => ff(mapOut(a,b,c)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
-    new StoreCache3(s1, s2, s3, mapOut)
+    StoreCache.apply3(s1, s2, s3)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3))
-      prev
-    else
-      new StoreCache3(x1, x2, x3, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache3(s1, s2, s3, lo, mapOut), changed)
   }
 }
 
@@ -988,23 +1071,36 @@ private[storecache] final class Logic4[In, SA,A, SB,B, SC,C, SD,D, Z](
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic4(l1, l2, l3, l4, (a,b,c,d) => ff(mapOut(a,b,c,d)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
     val s4 = l4.init(i)
-    new StoreCache4(s1, s2, s3, s4, mapOut)
+    StoreCache.apply4(s1, s2, s3, s4)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4))
-      prev
-    else
-      new StoreCache4(x1, x2, x3, x4, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache4(s1, s2, s3, s4, lo, mapOut), changed)
   }
 }
 
@@ -1026,25 +1122,40 @@ private[storecache] final class Logic5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z](
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic5(l1, l2, l3, l4, l5, (a,b,c,d,e) => ff(mapOut(a,b,c,d,e)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
     val s4 = l4.init(i)
     val s5 = l5.init(i)
-    new StoreCache5(s1, s2, s3, s4, s5, mapOut)
+    StoreCache.apply5(s1, s2, s3, s4, s5)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5))
-      prev
-    else
-      new StoreCache5(x1, x2, x3, x4, x5, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache5(s1, s2, s3, s4, s5, lo, mapOut), changed)
   }
 }
 
@@ -1067,27 +1178,44 @@ private[storecache] final class Logic6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, Z
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic6(l1, l2, l3, l4, l5, l6, (a,b,c,d,e,f) => ff(mapOut(a,b,c,d,e,f)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
     val s4 = l4.init(i)
     val s5 = l5.init(i)
     val s6 = l6.init(i)
-    new StoreCache6(s1, s2, s3, s4, s5, s6, mapOut)
+    StoreCache.apply6(s1, s2, s3, s4, s5, s6)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6))
-      prev
-    else
-      new StoreCache6(x1, x2, x3, x4, x5, x6, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache6(s1, s2, s3, s4, s5, s6, lo, mapOut), changed)
   }
 }
 
@@ -1111,7 +1239,7 @@ private[storecache] final class Logic7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic7(l1, l2, l3, l4, l5, l6, l7, (a,b,c,d,e,f,g) => ff(mapOut(a,b,c,d,e,f,g)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1119,21 +1247,40 @@ private[storecache] final class Logic7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
     val s5 = l5.init(i)
     val s6 = l6.init(i)
     val s7 = l7.init(i)
-    new StoreCache7(s1, s2, s3, s4, s5, s6, s7, mapOut)
+    StoreCache.apply7(s1, s2, s3, s4, s5, s6, s7)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7))
-      prev
-    else
-      new StoreCache7(x1, x2, x3, x4, x5, x6, x7, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache7(s1, s2, s3, s4, s5, s6, s7, lo, mapOut), changed)
   }
 }
 
@@ -1158,7 +1305,7 @@ private[storecache] final class Logic8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic8(l1, l2, l3, l4, l5, l6, l7, l8, (a,b,c,d,e,f,g,h) => ff(mapOut(a,b,c,d,e,f,g,h)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1167,22 +1314,43 @@ private[storecache] final class Logic8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
     val s6 = l6.init(i)
     val s7 = l7.init(i)
     val s8 = l8.init(i)
-    new StoreCache8(s1, s2, s3, s4, s5, s6, s7, s8, mapOut)
+    StoreCache.apply8(s1, s2, s3, s4, s5, s6, s7, s8)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8))
-      prev
-    else
-      new StoreCache8(x1, x2, x3, x4, x5, x6, x7, x8, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache8(s1, s2, s3, s4, s5, s6, s7, s8, lo, mapOut), changed)
   }
 }
 
@@ -1208,7 +1376,7 @@ private[storecache] final class Logic9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic9(l1, l2, l3, l4, l5, l6, l7, l8, l9, (a,b,c,d,e,f,g,h,i) => ff(mapOut(a,b,c,d,e,f,g,h,i)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1218,23 +1386,46 @@ private[storecache] final class Logic9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
     val s7 = l7.init(i)
     val s8 = l8.init(i)
     val s9 = l9.init(i)
-    new StoreCache9(s1, s2, s3, s4, s5, s6, s7, s8, s9, mapOut)
+    StoreCache.apply9(s1, s2, s3, s4, s5, s6, s7, s8, s9)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9))
-      prev
-    else
-      new StoreCache9(x1, x2, x3, x4, x5, x6, x7, x8, x9, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache9(s1, s2, s3, s4, s5, s6, s7, s8, s9, lo, mapOut), changed)
   }
 }
 
@@ -1261,7 +1452,7 @@ private[storecache] final class Logic10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic10(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, (a,b,c,d,e,f,g,h,i,j) => ff(mapOut(a,b,c,d,e,f,g,h,i,j)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1272,24 +1463,49 @@ private[storecache] final class Logic10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s8 = l8.init(i)
     val s9 = l9.init(i)
     val s10 = l10.init(i)
-    new StoreCache10(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, mapOut)
+    StoreCache.apply10(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10))
-      prev
-    else
-      new StoreCache10(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache10(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, lo, mapOut), changed)
   }
 }
 
@@ -1317,7 +1533,7 @@ private[storecache] final class Logic11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic11(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, (a,b,c,d,e,f,g,h,i,j,k) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1329,25 +1545,52 @@ private[storecache] final class Logic11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s9 = l9.init(i)
     val s10 = l10.init(i)
     val s11 = l11.init(i)
-    new StoreCache11(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, mapOut)
+    StoreCache.apply11(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11))
-      prev
-    else
-      new StoreCache11(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache11(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, lo, mapOut), changed)
   }
 }
 
@@ -1376,7 +1619,7 @@ private[storecache] final class Logic12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic12(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, (a,b,c,d,e,f,g,h,i,j,k,l) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1389,26 +1632,55 @@ private[storecache] final class Logic12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s10 = l10.init(i)
     val s11 = l11.init(i)
     val s12 = l12.init(i)
-    new StoreCache12(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, mapOut)
+    StoreCache.apply12(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    val x12 = l12.next(prev.s12, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11) && (x12 eq prev.s12))
-      prev
-    else
-      new StoreCache12(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val n12 = l12.nextFull(prev.s12, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val s12 = n12.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val c12 = n12.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache12(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, lo, mapOut), changed)
   }
 }
 
@@ -1438,7 +1710,7 @@ private[storecache] final class Logic13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic13(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, (a,b,c,d,e,f,g,h,i,j,k,l,m) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1452,27 +1724,58 @@ private[storecache] final class Logic13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s11 = l11.init(i)
     val s12 = l12.init(i)
     val s13 = l13.init(i)
-    new StoreCache13(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, mapOut)
+    StoreCache.apply13(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    val x12 = l12.next(prev.s12, i)
-    val x13 = l13.next(prev.s13, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11) && (x12 eq prev.s12) && (x13 eq prev.s13))
-      prev
-    else
-      new StoreCache13(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val n12 = l12.nextFull(prev.s12, i)
+    val n13 = l13.nextFull(prev.s13, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val s12 = n12.value
+    val s13 = n13.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val c12 = n12.changed
+    val c13 = n13.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache13(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, lo, mapOut), changed)
   }
 }
 
@@ -1503,7 +1806,7 @@ private[storecache] final class Logic14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic14(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, (a,b,c,d,e,f,g,h,i,j,k,l,m,n) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1518,28 +1821,61 @@ private[storecache] final class Logic14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s12 = l12.init(i)
     val s13 = l13.init(i)
     val s14 = l14.init(i)
-    new StoreCache14(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, mapOut)
+    StoreCache.apply14(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    val x12 = l12.next(prev.s12, i)
-    val x13 = l13.next(prev.s13, i)
-    val x14 = l14.next(prev.s14, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11) && (x12 eq prev.s12) && (x13 eq prev.s13) && (x14 eq prev.s14))
-      prev
-    else
-      new StoreCache14(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val n12 = l12.nextFull(prev.s12, i)
+    val n13 = l13.nextFull(prev.s13, i)
+    val n14 = l14.nextFull(prev.s14, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val s12 = n12.value
+    val s13 = n13.value
+    val s14 = n14.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val c12 = n12.changed
+    val c13 = n13.changed
+    val c14 = n14.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache14(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, lo, mapOut), changed)
   }
 }
 
@@ -1571,7 +1907,7 @@ private[storecache] final class Logic15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic15(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1587,29 +1923,64 @@ private[storecache] final class Logic15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s13 = l13.init(i)
     val s14 = l14.init(i)
     val s15 = l15.init(i)
-    new StoreCache15(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, mapOut)
+    StoreCache.apply15(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    val x12 = l12.next(prev.s12, i)
-    val x13 = l13.next(prev.s13, i)
-    val x14 = l14.next(prev.s14, i)
-    val x15 = l15.next(prev.s15, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11) && (x12 eq prev.s12) && (x13 eq prev.s13) && (x14 eq prev.s14) && (x15 eq prev.s15))
-      prev
-    else
-      new StoreCache15(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val n12 = l12.nextFull(prev.s12, i)
+    val n13 = l13.nextFull(prev.s13, i)
+    val n14 = l14.nextFull(prev.s14, i)
+    val n15 = l15.nextFull(prev.s15, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val s12 = n12.value
+    val s13 = n13.value
+    val s14 = n14.value
+    val s15 = n15.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val c12 = n12.changed
+    val c13 = n13.changed
+    val c14 = n14.changed
+    val c15 = n15.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache15(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, lo, mapOut), changed)
   }
 }
 
@@ -1642,7 +2013,7 @@ private[storecache] final class Logic16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic16(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1659,30 +2030,67 @@ private[storecache] final class Logic16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s14 = l14.init(i)
     val s15 = l15.init(i)
     val s16 = l16.init(i)
-    new StoreCache16(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, mapOut)
+    StoreCache.apply16(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    val x12 = l12.next(prev.s12, i)
-    val x13 = l13.next(prev.s13, i)
-    val x14 = l14.next(prev.s14, i)
-    val x15 = l15.next(prev.s15, i)
-    val x16 = l16.next(prev.s16, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11) && (x12 eq prev.s12) && (x13 eq prev.s13) && (x14 eq prev.s14) && (x15 eq prev.s15) && (x16 eq prev.s16))
-      prev
-    else
-      new StoreCache16(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val n12 = l12.nextFull(prev.s12, i)
+    val n13 = l13.nextFull(prev.s13, i)
+    val n14 = l14.nextFull(prev.s14, i)
+    val n15 = l15.nextFull(prev.s15, i)
+    val n16 = l16.nextFull(prev.s16, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val s12 = n12.value
+    val s13 = n13.value
+    val s14 = n14.value
+    val s15 = n15.value
+    val s16 = n16.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val c12 = n12.changed
+    val c13 = n13.changed
+    val c14 = n14.changed
+    val c15 = n15.changed
+    val c16 = n16.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache16(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, lo, mapOut), changed)
   }
 }
 
@@ -1716,7 +2124,7 @@ private[storecache] final class Logic17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic17(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1734,31 +2142,70 @@ private[storecache] final class Logic17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s15 = l15.init(i)
     val s16 = l16.init(i)
     val s17 = l17.init(i)
-    new StoreCache17(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, mapOut)
+    StoreCache.apply17(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    val x12 = l12.next(prev.s12, i)
-    val x13 = l13.next(prev.s13, i)
-    val x14 = l14.next(prev.s14, i)
-    val x15 = l15.next(prev.s15, i)
-    val x16 = l16.next(prev.s16, i)
-    val x17 = l17.next(prev.s17, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11) && (x12 eq prev.s12) && (x13 eq prev.s13) && (x14 eq prev.s14) && (x15 eq prev.s15) && (x16 eq prev.s16) && (x17 eq prev.s17))
-      prev
-    else
-      new StoreCache17(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val n12 = l12.nextFull(prev.s12, i)
+    val n13 = l13.nextFull(prev.s13, i)
+    val n14 = l14.nextFull(prev.s14, i)
+    val n15 = l15.nextFull(prev.s15, i)
+    val n16 = l16.nextFull(prev.s16, i)
+    val n17 = l17.nextFull(prev.s17, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val s12 = n12.value
+    val s13 = n13.value
+    val s14 = n14.value
+    val s15 = n15.value
+    val s16 = n16.value
+    val s17 = n17.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val c12 = n12.changed
+    val c13 = n13.changed
+    val c14 = n14.changed
+    val c15 = n15.changed
+    val c16 = n16.changed
+    val c17 = n17.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache17(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, lo, mapOut), changed)
   }
 }
 
@@ -1793,7 +2240,7 @@ private[storecache] final class Logic18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic18(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1812,32 +2259,73 @@ private[storecache] final class Logic18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s16 = l16.init(i)
     val s17 = l17.init(i)
     val s18 = l18.init(i)
-    new StoreCache18(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, mapOut)
+    StoreCache.apply18(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    val x12 = l12.next(prev.s12, i)
-    val x13 = l13.next(prev.s13, i)
-    val x14 = l14.next(prev.s14, i)
-    val x15 = l15.next(prev.s15, i)
-    val x16 = l16.next(prev.s16, i)
-    val x17 = l17.next(prev.s17, i)
-    val x18 = l18.next(prev.s18, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11) && (x12 eq prev.s12) && (x13 eq prev.s13) && (x14 eq prev.s14) && (x15 eq prev.s15) && (x16 eq prev.s16) && (x17 eq prev.s17) && (x18 eq prev.s18))
-      prev
-    else
-      new StoreCache18(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val n12 = l12.nextFull(prev.s12, i)
+    val n13 = l13.nextFull(prev.s13, i)
+    val n14 = l14.nextFull(prev.s14, i)
+    val n15 = l15.nextFull(prev.s15, i)
+    val n16 = l16.nextFull(prev.s16, i)
+    val n17 = l17.nextFull(prev.s17, i)
+    val n18 = l18.nextFull(prev.s18, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val s12 = n12.value
+    val s13 = n13.value
+    val s14 = n14.value
+    val s15 = n15.value
+    val s16 = n16.value
+    val s17 = n17.value
+    val s18 = n18.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val c12 = n12.changed
+    val c13 = n13.changed
+    val c14 = n14.changed
+    val c15 = n15.changed
+    val c16 = n16.changed
+    val c17 = n17.changed
+    val c18 = n18.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value || c18.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache18(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, lo, mapOut), changed)
   }
 }
 
@@ -1873,7 +2361,7 @@ private[storecache] final class Logic19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic19(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1893,33 +2381,76 @@ private[storecache] final class Logic19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s17 = l17.init(i)
     val s18 = l18.init(i)
     val s19 = l19.init(i)
-    new StoreCache19(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, mapOut)
+    StoreCache.apply19(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    val x12 = l12.next(prev.s12, i)
-    val x13 = l13.next(prev.s13, i)
-    val x14 = l14.next(prev.s14, i)
-    val x15 = l15.next(prev.s15, i)
-    val x16 = l16.next(prev.s16, i)
-    val x17 = l17.next(prev.s17, i)
-    val x18 = l18.next(prev.s18, i)
-    val x19 = l19.next(prev.s19, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11) && (x12 eq prev.s12) && (x13 eq prev.s13) && (x14 eq prev.s14) && (x15 eq prev.s15) && (x16 eq prev.s16) && (x17 eq prev.s17) && (x18 eq prev.s18) && (x19 eq prev.s19))
-      prev
-    else
-      new StoreCache19(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val n12 = l12.nextFull(prev.s12, i)
+    val n13 = l13.nextFull(prev.s13, i)
+    val n14 = l14.nextFull(prev.s14, i)
+    val n15 = l15.nextFull(prev.s15, i)
+    val n16 = l16.nextFull(prev.s16, i)
+    val n17 = l17.nextFull(prev.s17, i)
+    val n18 = l18.nextFull(prev.s18, i)
+    val n19 = l19.nextFull(prev.s19, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val s12 = n12.value
+    val s13 = n13.value
+    val s14 = n14.value
+    val s15 = n15.value
+    val s16 = n16.value
+    val s17 = n17.value
+    val s18 = n18.value
+    val s19 = n19.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val c12 = n12.changed
+    val c13 = n13.changed
+    val c14 = n14.changed
+    val c15 = n15.changed
+    val c16 = n16.changed
+    val c17 = n17.changed
+    val c18 = n18.changed
+    val c19 = n19.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value || c18.value || c19.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache19(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, lo, mapOut), changed)
   }
 }
 
@@ -1956,7 +2487,7 @@ private[storecache] final class Logic20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic20(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -1977,34 +2508,79 @@ private[storecache] final class Logic20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s18 = l18.init(i)
     val s19 = l19.init(i)
     val s20 = l20.init(i)
-    new StoreCache20(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, mapOut)
+    StoreCache.apply20(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    val x12 = l12.next(prev.s12, i)
-    val x13 = l13.next(prev.s13, i)
-    val x14 = l14.next(prev.s14, i)
-    val x15 = l15.next(prev.s15, i)
-    val x16 = l16.next(prev.s16, i)
-    val x17 = l17.next(prev.s17, i)
-    val x18 = l18.next(prev.s18, i)
-    val x19 = l19.next(prev.s19, i)
-    val x20 = l20.next(prev.s20, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11) && (x12 eq prev.s12) && (x13 eq prev.s13) && (x14 eq prev.s14) && (x15 eq prev.s15) && (x16 eq prev.s16) && (x17 eq prev.s17) && (x18 eq prev.s18) && (x19 eq prev.s19) && (x20 eq prev.s20))
-      prev
-    else
-      new StoreCache20(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val n12 = l12.nextFull(prev.s12, i)
+    val n13 = l13.nextFull(prev.s13, i)
+    val n14 = l14.nextFull(prev.s14, i)
+    val n15 = l15.nextFull(prev.s15, i)
+    val n16 = l16.nextFull(prev.s16, i)
+    val n17 = l17.nextFull(prev.s17, i)
+    val n18 = l18.nextFull(prev.s18, i)
+    val n19 = l19.nextFull(prev.s19, i)
+    val n20 = l20.nextFull(prev.s20, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val s12 = n12.value
+    val s13 = n13.value
+    val s14 = n14.value
+    val s15 = n15.value
+    val s16 = n16.value
+    val s17 = n17.value
+    val s18 = n18.value
+    val s19 = n19.value
+    val s20 = n20.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val c12 = n12.changed
+    val c13 = n13.changed
+    val c14 = n14.changed
+    val c15 = n15.changed
+    val c16 = n16.changed
+    val c17 = n17.changed
+    val c18 = n18.changed
+    val c19 = n19.changed
+    val c20 = n20.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value || c18.value || c19.value || c20.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache20(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, lo, mapOut), changed)
   }
 }
 
@@ -2042,7 +2618,7 @@ private[storecache] final class Logic21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic21(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -2064,35 +2640,82 @@ private[storecache] final class Logic21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s19 = l19.init(i)
     val s20 = l20.init(i)
     val s21 = l21.init(i)
-    new StoreCache21(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, mapOut)
+    StoreCache.apply21(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    val x12 = l12.next(prev.s12, i)
-    val x13 = l13.next(prev.s13, i)
-    val x14 = l14.next(prev.s14, i)
-    val x15 = l15.next(prev.s15, i)
-    val x16 = l16.next(prev.s16, i)
-    val x17 = l17.next(prev.s17, i)
-    val x18 = l18.next(prev.s18, i)
-    val x19 = l19.next(prev.s19, i)
-    val x20 = l20.next(prev.s20, i)
-    val x21 = l21.next(prev.s21, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11) && (x12 eq prev.s12) && (x13 eq prev.s13) && (x14 eq prev.s14) && (x15 eq prev.s15) && (x16 eq prev.s16) && (x17 eq prev.s17) && (x18 eq prev.s18) && (x19 eq prev.s19) && (x20 eq prev.s20) && (x21 eq prev.s21))
-      prev
-    else
-      new StoreCache21(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val n12 = l12.nextFull(prev.s12, i)
+    val n13 = l13.nextFull(prev.s13, i)
+    val n14 = l14.nextFull(prev.s14, i)
+    val n15 = l15.nextFull(prev.s15, i)
+    val n16 = l16.nextFull(prev.s16, i)
+    val n17 = l17.nextFull(prev.s17, i)
+    val n18 = l18.nextFull(prev.s18, i)
+    val n19 = l19.nextFull(prev.s19, i)
+    val n20 = l20.nextFull(prev.s20, i)
+    val n21 = l21.nextFull(prev.s21, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val s12 = n12.value
+    val s13 = n13.value
+    val s14 = n14.value
+    val s15 = n15.value
+    val s16 = n16.value
+    val s17 = n17.value
+    val s18 = n18.value
+    val s19 = n19.value
+    val s20 = n20.value
+    val s21 = n21.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val c12 = n12.changed
+    val c13 = n13.changed
+    val c14 = n14.changed
+    val c15 = n15.changed
+    val c16 = n16.changed
+    val c17 = n17.changed
+    val c18 = n18.changed
+    val c19 = n19.changed
+    val c20 = n20.changed
+    val c21 = n21.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value || c18.value || c19.value || c20.value || c21.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache21(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, lo, mapOut), changed)
   }
 }
 
@@ -2131,7 +2754,7 @@ private[storecache] final class Logic22[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   override def map[X](ff: Z => X): Self[In, X] =
     new Logic22(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v)))
 
-  override def init(i: In): Cache = {
+  override def init(i: => In): Cache = {
     val s1 = l1.init(i)
     val s2 = l2.init(i)
     val s3 = l3.init(i)
@@ -2154,36 +2777,85 @@ private[storecache] final class Logic22[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
     val s20 = l20.init(i)
     val s21 = l21.init(i)
     val s22 = l22.init(i)
-    new StoreCache22(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, mapOut)
+    StoreCache.apply22(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22)(mapOut)
   }
 
-  override def next(prev: Cache, i: In): Cache = {
-    val x1 = l1.next(prev.s1, i)
-    val x2 = l2.next(prev.s2, i)
-    val x3 = l3.next(prev.s3, i)
-    val x4 = l4.next(prev.s4, i)
-    val x5 = l5.next(prev.s5, i)
-    val x6 = l6.next(prev.s6, i)
-    val x7 = l7.next(prev.s7, i)
-    val x8 = l8.next(prev.s8, i)
-    val x9 = l9.next(prev.s9, i)
-    val x10 = l10.next(prev.s10, i)
-    val x11 = l11.next(prev.s11, i)
-    val x12 = l12.next(prev.s12, i)
-    val x13 = l13.next(prev.s13, i)
-    val x14 = l14.next(prev.s14, i)
-    val x15 = l15.next(prev.s15, i)
-    val x16 = l16.next(prev.s16, i)
-    val x17 = l17.next(prev.s17, i)
-    val x18 = l18.next(prev.s18, i)
-    val x19 = l19.next(prev.s19, i)
-    val x20 = l20.next(prev.s20, i)
-    val x21 = l21.next(prev.s21, i)
-    val x22 = l22.next(prev.s22, i)
-    if ((x1 eq prev.s1) && (x2 eq prev.s2) && (x3 eq prev.s3) && (x4 eq prev.s4) && (x5 eq prev.s5) && (x6 eq prev.s6) && (x7 eq prev.s7) && (x8 eq prev.s8) && (x9 eq prev.s9) && (x10 eq prev.s10) && (x11 eq prev.s11) && (x12 eq prev.s12) && (x13 eq prev.s13) && (x14 eq prev.s14) && (x15 eq prev.s15) && (x16 eq prev.s16) && (x17 eq prev.s17) && (x18 eq prev.s18) && (x19 eq prev.s19) && (x20 eq prev.s20) && (x21 eq prev.s21) && (x22 eq prev.s22))
-      prev
-    else
-      new StoreCache22(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10, x11, x12, x13, x14, x15, x16, x17, x18, x19, x20, x21, x22, mapOut)
+  override def nextFull(prev: Cache, i: => In): Next[Cache] = {
+    val n1 = l1.nextFull(prev.s1, i)
+    val n2 = l2.nextFull(prev.s2, i)
+    val n3 = l3.nextFull(prev.s3, i)
+    val n4 = l4.nextFull(prev.s4, i)
+    val n5 = l5.nextFull(prev.s5, i)
+    val n6 = l6.nextFull(prev.s6, i)
+    val n7 = l7.nextFull(prev.s7, i)
+    val n8 = l8.nextFull(prev.s8, i)
+    val n9 = l9.nextFull(prev.s9, i)
+    val n10 = l10.nextFull(prev.s10, i)
+    val n11 = l11.nextFull(prev.s11, i)
+    val n12 = l12.nextFull(prev.s12, i)
+    val n13 = l13.nextFull(prev.s13, i)
+    val n14 = l14.nextFull(prev.s14, i)
+    val n15 = l15.nextFull(prev.s15, i)
+    val n16 = l16.nextFull(prev.s16, i)
+    val n17 = l17.nextFull(prev.s17, i)
+    val n18 = l18.nextFull(prev.s18, i)
+    val n19 = l19.nextFull(prev.s19, i)
+    val n20 = l20.nextFull(prev.s20, i)
+    val n21 = l21.nextFull(prev.s21, i)
+    val n22 = l22.nextFull(prev.s22, i)
+    val s1 = n1.value
+    val s2 = n2.value
+    val s3 = n3.value
+    val s4 = n4.value
+    val s5 = n5.value
+    val s6 = n6.value
+    val s7 = n7.value
+    val s8 = n8.value
+    val s9 = n9.value
+    val s10 = n10.value
+    val s11 = n11.value
+    val s12 = n12.value
+    val s13 = n13.value
+    val s14 = n14.value
+    val s15 = n15.value
+    val s16 = n16.value
+    val s17 = n17.value
+    val s18 = n18.value
+    val s19 = n19.value
+    val s20 = n20.value
+    val s21 = n21.value
+    val s22 = n22.value
+    val c1 = n1.changed
+    val c2 = n2.changed
+    val c3 = n3.changed
+    val c4 = n4.changed
+    val c5 = n5.changed
+    val c6 = n6.changed
+    val c7 = n7.changed
+    val c8 = n8.changed
+    val c9 = n9.changed
+    val c10 = n10.changed
+    val c11 = n11.changed
+    val c12 = n12.changed
+    val c13 = n13.changed
+    val c14 = n14.changed
+    val c15 = n15.changed
+    val c16 = n16.changed
+    val c17 = n17.changed
+    val c18 = n18.changed
+    val c19 = n19.changed
+    val c20 = n20.changed
+    val c21 = n21.changed
+    val c22 = n22.changed
+    val changed = LazyVal(c1.value || c2.value || c3.value || c4.value || c5.value || c6.value || c7.value || c8.value || c9.value || c10.value || c11.value || c12.value || c13.value || c14.value || c15.value || c16.value || c17.value || c18.value || c19.value || c20.value || c21.value || c22.value)
+    val prevLo = prev.lo
+    val lo = LazyVal[Z] {
+      if (changed.value)
+        mapOut(s1.value, s2.value, s3.value, s4.value, s5.value, s6.value, s7.value, s8.value, s9.value, s10.value, s11.value, s12.value, s13.value, s14.value, s15.value, s16.value, s17.value, s18.value, s19.value, s20.value, s21.value, s22.value)
+      else
+        prevLo.value
+    }
+    Next(new StoreCache22(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, s22, lo, mapOut), changed)
   }
 }
 
