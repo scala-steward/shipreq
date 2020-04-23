@@ -515,7 +515,7 @@ private[v1] object BaseMemberData1 {
     JsonCodec.xmap(ReqCode.Node.apply)(_.value) // xmap[String] already reuses
 
   implicit lazy val codecReqCodeValue: JsonCodec[ReqCode.Value] =
-    codecNEV
+    codecNEA
 
   implicit lazy val decoderReqId: Decoder[ReqId] = decodeSumBySoleKey {
     case ("gr", c) => c.as[GenericReqId]

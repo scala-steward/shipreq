@@ -1,10 +1,9 @@
 package shipreq.base.util
 
-import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.univeq.UnivEq
 import scala.annotation.tailrec
-import scalaz.{Applicative, Equal, Order, Traverse}
-import scalaz.std.map.mapEqual
+import scala.collection.immutable.ArraySeq
+import scalaz.{Applicative, Traverse}
 import scalaz.std.option.optionInstance
 import scalaz.syntax.traverse._
 
@@ -64,7 +63,7 @@ object MTrie {
     type Branch = MTrie.Branch[K, V]
     type Value  = MTrie.Value[K, V]
     type Entry  = (K, Node)
-    type Path   = NonEmptyVector[K]
+    type Path   = NonEmptyArraySeq[K]
     val  Branch = MTrie.Branch.apply[K, V] _
     val  Value  = MTrie.Value.apply[K, V] _
     def  empty  = MTrie.empty[K, V]
@@ -74,8 +73,11 @@ object MTrie {
 
   def empty[K: UnivEq, V]: Trie[K, V] = UnivEq.emptyMap
 
-  implicit def equality[K: Order, V: Equal]: Equal[Trie[K, V]] =
-    Equal[Map[NonEmptyVector[K], V]] contramap (_.flattenTrie)
+  implicit def univEq[K: UnivEq, V: UnivEq]: UnivEq[Trie[K, V]] =
+    UnivEq.force
+
+//  implicit def equality[K: Order, V: Equal]: Equal[Trie[K, V]] =
+//    Equal[Map[NonEmptyArraySeq[K], V]] contramap (_.flattenTrie)
 
   class FixK[K: UnivEq] {
     type Trie  [V] = MTrie.Trie[K, V]
@@ -125,7 +127,7 @@ object MTrie {
     type Node   = MTrie.Node[K, V]
     type Branch = MTrie.Branch[K, V]
     type Value  = MTrie.Value[K, V]
-    type Path   = NonEmptyVector[K]
+    type Path   = NonEmptyArraySeq[K]
     @inline implicit private[this] def keyUnivEq: UnivEq[K] = UnivEq.force // evident from existence of trie
 
     def foreachValue[U](f: V => U): Unit =
@@ -135,7 +137,7 @@ object MTrie {
       // This is a *very* hot path. Measure affect on ApplyEventBM.
 
       type It = Iterator[(K, Node)]
-      type Work = (It, Vector[K])
+      type Work = (It, ArraySeq[K])
 
       @tailrec def go(ws: List[Work]): Unit =
         if (ws.nonEmpty) {
@@ -152,21 +154,21 @@ object MTrie {
             node match {
               case b: MTrie.Branch[K, V] =>
                 for (v <- b.value) {
-                  val path = NonEmptyVector.end(pathPrefix, key)
+                  val path = NonEmptyArraySeq.end(pathPrefix, key)
                   f(path, v.value)
                 }
                 val newWork = (b.next.iterator, pathPrefix :+ key)
                 go(newWork :: ws)
 
               case v: MTrie.Value[K, V] =>
-                val path = NonEmptyVector.end(pathPrefix, key)
+                val path = NonEmptyArraySeq.end(pathPrefix, key)
                 f(path, v.value)
                 go(ws)
             }
           }
         }
 
-      go((trie.iterator, Vector.empty) :: Nil)
+      go((trie.iterator, ArraySeq.empty) :: Nil)
     }
 
     /**
@@ -204,7 +206,7 @@ object MTrie {
     }
 
     def cata[A](z: A)(f: (A, Path, Option[Value]) => A): A =
-      cataP[A, Vector[K], Path](z, Vector.empty, _.whole)(NonEmptyVector.end, f)
+      cataP[A, ArraySeq[K], Path](z, ArraySeq.empty, _.whole)(NonEmptyArraySeq.end, f)
 
     def cataV[A](z: A)(f: (A, Path, V) => A): A =
       cata(z)((a, p, o) => o.fold(a)(v => f(a, p, v.value)))
@@ -217,22 +219,22 @@ object MTrie {
         ot.fold(m)(t => m.updated(f(p), t.value)))
 
     def flatIterator(): Iterator[(Path, V)] = {
-      def go(trie: Trie, p: Vector[K]): Iterator[(Path, V)] =
+      def go(trie: Trie, p: ArraySeq[K]): Iterator[(Path, V)] =
         trie.iterator.flatMap { kv =>
           val k = kv._1
-          @inline def result(t: Value) = (NonEmptyVector.end(p, k), t.value)
+          @inline def result(t: Value) = (NonEmptyArraySeq.end(p, k), t.value)
           kv._2.fold(
             b => b.value.map(result).iterator ++ go(b.next, p :+ k),
             v => result(v) :: Nil)
         }
-      go(trie, Vector.empty)
+      go(trie, ArraySeq.empty)
     }
 
     def atPath[A](path: Path, fail: => A)(f: Branch => A, g: Value => A): A = {
-      @tailrec def go(t: Trie, pathH: K, pathT: Vector[K]): A =
+      @tailrec def go(t: Trie, pathH: K, pathT: ArraySeq[K]): A =
         t.get(pathH) match {
           case Some(b@ Branch(_, n)) =>
-            NonEmptyVector.option(pathT) match {
+            NonEmptyArraySeq.option(pathT) match {
               case None    => f(b)
               case Some(p) => go(n, p.head, p.tail)
             }
@@ -264,7 +266,7 @@ object MTrie {
 
     def remove(path: Path): Trie = {
 
-      def notLast(t: Trie, ki: Vector[K], kl: K): Trie =
+      def notLast(t: Trie, ki: ArraySeq[K], kl: K): Trie =
         if (ki.isEmpty)
           last(t, kl)
         else {
@@ -309,7 +311,7 @@ object MTrie {
       val v = Value[K, V](value)
       @inline def empty = MTrie.empty[K, V]
 
-      @tailrec def go(t: Trie, pathH: K, pathT: Vector[K], unwind: Trie => Trie): Trie =
+      @tailrec def go(t: Trie, pathH: K, pathT: ArraySeq[K], unwind: Trie => Trie): Trie =
         if (pathT.isEmpty) {
 
           // At target-path's end

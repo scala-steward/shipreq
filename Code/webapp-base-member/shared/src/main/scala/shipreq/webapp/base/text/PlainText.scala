@@ -36,7 +36,7 @@ object PlainText {
     }
   }
 
-  val reqCodeIndentation: NonEmptyVector[ReqCodeTreeItem.Indent] => String =
+  val reqCodeIndentation: NonEmptyArraySeq[ReqCodeTreeItem.Indent] => String =
     Memo { is =>
       import ReqCodeTreeItem._
       val I = "│"
@@ -47,7 +47,7 @@ object PlainText {
     }
 
   def reqCodeTreeItem(ti: ReqCodeTreeItem): String =
-    NonEmptyVector.option(ti.indent) match {
+    NonEmptyArraySeq.option(ti.indent) match {
       case None     => reqCode(ti.suffix)
       case Some(is) => reqCodeIndentation(is) ~ G.reqCode.nodeSeparator ~ reqCode(ti.suffix)
     }

@@ -1,6 +1,5 @@
 package shipreq.webapp.base.data
 
-import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import japgolly.microlibs.utils.Memo
 import nyaya.util.Multimap
@@ -42,7 +41,7 @@ object ReqCode {
    *
    * Eg. "system.email.failure" would be `NonEmptyVector(Node("system"), Node("email"), Node("failure"))`.
    */
-  type Value = NonEmptyVector[Node]
+  type Value = NonEmptyArraySeq[Node]
 
   object Value {
 
@@ -62,7 +61,7 @@ object ReqCode {
 
     /** Unsafe because it assumes perfection, doesn't handle errors or additional whitespace etc */
     def unsafeFromStr(s: String, sep: Char): Value =
-      NonEmptyVector.force(s.split(sep).iterator.map(Node.applyFn).toVector)
+      NonEmptyArraySeq.split(s, sep).map(Node.applyFn)
   }
 
   def debugShowCodes(codes: IterableOnce[Value]): String =

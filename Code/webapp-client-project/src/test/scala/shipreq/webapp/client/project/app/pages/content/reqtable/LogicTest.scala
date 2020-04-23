@@ -879,10 +879,8 @@ object LogicTest extends TestSuite {
 
     import ReqCode._
 
-    val mkReqCode: String => Value = line => {
-      val v = line.split("\\.").map(Node.applyFn).toVector
-      NonEmptyVector(v.head, v.tail)
-    }
+    val mkReqCode: String => Value = line =>
+      NonEmptyArraySeq.split(line, "\\.").map(Node.applyFn)
 
     def formatTreeItems(ts: Vector[ReqCodeTreeItem]) =
       ts map PlainText.reqCodeTreeItem map (_.replace('│', '|')) mkString "\n"

@@ -1,6 +1,5 @@
 package shipreq.base.util
 
-import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.univeq.UnivEq
 
 /**
@@ -70,6 +69,6 @@ object DataLog {
   def vector[A]: DataLog[A, Vector[A]] =
     apply[A, Vector[A]](Vector.empty, _ :+ _)
 
-  def mtrie[N]: DataLog[NonEmptyVector[N], MTrie.Trie[N, Unit]] =
-    apply[NonEmptyVector[N], MTrie.Trie[N, Unit]](Map.empty, _ add _)
+  def mtrie[N]: DataLog[NonEmptyArraySeq[N], MTrie.Trie[N, Unit]] =
+    apply[NonEmptyArraySeq[N], MTrie.Trie[N, Unit]](Map.empty, _ add _)
 }
