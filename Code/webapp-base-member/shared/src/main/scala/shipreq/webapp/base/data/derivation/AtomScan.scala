@@ -14,10 +14,10 @@ import shipreq.webapp.base.text.Text
   * @param issuesInReqs  Live/Dead refers to the requirement context; not the life-state of the issue itself.
   * @param codeRefs ReqCodes referenced in anything anywhere (including text in dead custom-text fields).
   */
-final class AtomScan(_tagRefs          : LiveDeadStatMap[ReqId, Set[LocAndValue[LocationOf.Tag.InReq, ApplicableTagId]]],
-                     _issuesInReqs     : LiveDeadStatMap[ReqId, Vector[LocAndValue[LocationOf.Text.InReq, AnyIssue]]],
+final class AtomScan(_tagRefs          : LiveDeadStatMap[ReqId,          Set[LocAndValue[LocationOf.Tag.InReq, ApplicableTagId]]],
+                     _issuesInReqs     : LiveDeadStatMap[ReqId,          Vector[LocAndValue[LocationOf.Text.InReq, AnyIssue]]],
                      _issuesInRcgs     : LiveDeadStatMap[ReqCodeGroupId, Vector[Text.CodeGroupTitle.Issue]],
-                     _contentRefsInReqs: LiveDeadStatMap[ReqId, Vector[LocAndValue[LocationOf.Text.InReq, AnyContentRef]]],
+                     _contentRefsInReqs: LiveDeadStatMap[ReqId,          Vector[LocAndValue[LocationOf.Text.InReq, AnyContentRef]]],
                      _contentRefsInRcgs: LiveDeadStatMap[ReqCodeGroupId, Vector[LocAndValue[LocationOf.Text.InReqCodeGroup, AnyContentRef]]],
                      _reqRefs          : Set[ReqId],
                      _codeRefs         : Set[ReqCodeId],
@@ -28,7 +28,7 @@ final class AtomScan(_tagRefs          : LiveDeadStatMap[ReqId, Set[LocAndValue[
 
   lazy val issueCounts: LiveDeadStatMap[CustomIssueTypeId, Int] = {
     CC.inc("AtomScan.issueCounts")
-    val r = new LiveDeadStatMap.Builder[CustomIssueTypeId, Int]
+    val r = LiveDeadStatMap.Builder.ofInts[CustomIssueTypeId]()
     issuesInReqs.countByValues(r, _.iterator.map(_.value.typ))
     issuesInRcgs.countByValues(r, _.iterator.map(_.typ))
     r.result()
@@ -47,11 +47,11 @@ final class AtomScan(_tagRefs          : LiveDeadStatMap[ReqId, Set[LocAndValue[
 object AtomScan {
 
   def apply(p: Project): AtomScan = {
-    val tagRefs           = new LiveDeadStatMap.Builder[ReqId,          Set[LocAndValue[LocationOf.Tag.InReq, ApplicableTagId]]]
-    val issuesInReqs      = new LiveDeadStatMap.Builder[ReqId,          Vector[LocAndValue[LocationOf.Text.InReq, AnyIssue]]]
-    val issuesInRcgs      = new LiveDeadStatMap.Builder[ReqCodeGroupId, Vector[Text.CodeGroupTitle.Issue]]
-    val contentRefsInReqs = new LiveDeadStatMap.Builder[ReqId,          Vector[LocAndValue[LocationOf.Text.InReq, AnyContentRef]]]
-    val contentRefsInRcgs = new LiveDeadStatMap.Builder[ReqCodeGroupId, Vector[LocAndValue[LocationOf.Text.InReqCodeGroup, AnyContentRef]]]
+    val tagRefs           = LiveDeadStatMap.Builder.set[ReqId,          LocAndValue[LocationOf.Tag.InReq, ApplicableTagId]        ]()
+    val issuesInReqs      = LiveDeadStatMap.Builder.vec[ReqId,          LocAndValue[LocationOf.Text.InReq, AnyIssue]              ]()
+    val issuesInRcgs      = LiveDeadStatMap.Builder.vec[ReqCodeGroupId, Text.CodeGroupTitle.Issue                                 ]()
+    val contentRefsInReqs = LiveDeadStatMap.Builder.vec[ReqId,          LocAndValue[LocationOf.Text.InReq, AnyContentRef]         ]()
+    val contentRefsInRcgs = LiveDeadStatMap.Builder.vec[ReqCodeGroupId, LocAndValue[LocationOf.Text.InReqCodeGroup, AnyContentRef]]()
     val reqRefs           = UnivEq.setBuilder[ReqId]
     val codeRefs          = UnivEq.setBuilder[ReqCodeId]
     val useCaseStepRefs   = UnivEq.setBuilder[UseCaseStepId]
@@ -73,23 +73,23 @@ object AtomScan {
             => ()
 
           case a: ContentRef#ReqRef =>
-            contentRefsInReqs(reqId).mod(live)(_ :+ LocAndValue(loc, a))
+            contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
             reqRefs += a.value
 
           case a: ContentRef#CodeRef =>
-            contentRefsInReqs(reqId).mod(live)(_ :+ LocAndValue(loc, a))
+            contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
             codeRefs += a.value
 
           case a: ContentRef#UseCaseStepRef =>
-            contentRefsInReqs(reqId).mod(live)(_ :+ LocAndValue(loc, a))
+            contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
             useCaseStepRefs += a.value
 
           case a: Issue#Issue =>
-            issuesInReqs(reqId).mod(live)(_ :+ LocAndValue(loc, a))
+            issuesInReqs(reqId).add(live, LocAndValue(loc, a))
             go(a.desc)
 
           case a: TagRef#TagRef =>
-            tagRefs(reqId).mod(live)(_ + LocAndValue(loc, a.value))
+            tagRefs(reqId).add(live, LocAndValue(loc, a.value))
 
           case a: ListMarkup#UnorderedList =>
             a.items foreach go
@@ -115,20 +115,20 @@ object AtomScan {
             => ()
 
           case a: ContentRef#ReqRef =>
-            contentRefsInRcgs(reqCodeId).mod(live)(_ :+ LocAndValue(loc, a))
+            contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
             reqRefs += a.value
 
           case a: ContentRef#CodeRef =>
-            contentRefsInRcgs(reqCodeId).mod(live)(_ :+ LocAndValue(loc, a))
+            contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
             codeRefs += a.value
 
           case a: ContentRef#UseCaseStepRef =>
-            contentRefsInRcgs(reqCodeId).mod(live)(_ :+ LocAndValue(loc, a))
+            contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
             useCaseStepRefs += a.value
 
           case a: Issue#Issue =>
             a match {
-              case i: Text.CodeGroupTitle.Issue => issuesInRcgs(reqCodeId).mod(live)(_ :+ i)
+              case i: Text.CodeGroupTitle.Issue => issuesInRcgs(reqCodeId).add(live, i)
               case _                            => ()
             }
             go(a.desc)

@@ -10,7 +10,6 @@ import monocle.std.option.pSome
 import nyaya.util.Multimap
 import scalaz.Equal
 import shipreq.base.util._
-import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.issue.{Issue, IssueTracker}
@@ -115,19 +114,19 @@ final case class Project(name           : Project.Name,
     deadReqIds.size
 
   lazy val reqTypeCount: LiveDeadStatMap[ReqTypeId, Int] = {
-    val b = new LiveDeadStatMap.Builder[ReqTypeId, Int]
+    val b = LiveDeadStatMap.Builder.ofInts[ReqTypeId]()
 
     // Add reqs
     for (r <- content.reqs.reqIterator()) {
       val live = r.live(config.reqTypes)
-      b(r.reqTypeId).mod(live)(_ + 1)
+      b(r.reqTypeId).add(live, 1)
     }
 
     // Add ex-reqs
     for (reqTypeId <- config.reqTypes.custom.keys) {
       val exs = content.reqs.exReqs(reqTypeId)
       if (exs.nonEmpty)
-        b(reqTypeId).mod(Dead)(_ + exs.size)
+        b(reqTypeId).add(Dead, exs.size)
     }
 
     b.result()

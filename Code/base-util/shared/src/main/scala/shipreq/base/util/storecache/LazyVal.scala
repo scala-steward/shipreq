@@ -1,5 +1,6 @@
 package shipreq.base.util.storecache
 
+import japgolly.univeq.UnivEq
 import shipreq.base.util.EitherState.ScalazTrampoline._
 
 final class LazyVal[A](create: Trampoline[A]) {
@@ -39,6 +40,17 @@ final class LazyVal[A](create: Trampoline[A]) {
     new LazyVal(trampoline.flatMap { a =>
       Trampoline.suspend(f(a).trampoline)
     })
+
+  override def hashCode =
+    trampoline.hashCode
+
+  override def toString =
+    s"LazyVal(${_value.fold("?")(_.toString)})"
+
+  override def equals(obj: Any): Boolean = obj match {
+    case l: LazyVal[_] => (this eq l) || (value == l.value)
+    case _             => false
+  }
 }
 
 object LazyVal {
@@ -52,6 +64,9 @@ object LazyVal {
     new LazyVal(Trampoline.suspend(l.trampoline))
 
   private[this] val False = LazyVal.pure(false)
+
+  implicit def univEq[A]: UnivEq[A] =
+    UnivEq.force
 
   def exists[A](ls: LazyVal[A]*)(f: A => Boolean): LazyVal[Boolean] =
     ls.foldLeft(False)((q, n) =>

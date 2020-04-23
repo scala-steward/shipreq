@@ -499,7 +499,7 @@ private[reqtable] object Logic {
     // Scan rows
     var codeGroups        = 0
     var rowsByReq         = UnivEq.emptyMap[ReqId, Int]
-    val uniqueReqsInTable = LiveDeadStat.newBuilder[Int]
+    val uniqueReqsInTable = LiveDeadStat.Builder.ofInts()
     rows.iterator foreach {
       case r: Row.ForReq =>
         val id = r.req.id

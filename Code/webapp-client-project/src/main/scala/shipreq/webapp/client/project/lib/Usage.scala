@@ -6,7 +6,6 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import scalaz.\/-
-import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.filter._
@@ -18,14 +17,14 @@ final class Usage(p: Project, router: SpecialRouterCtl) {
 
   lazy val tags: LiveDeadStatMap[ApplicableTagId, Int] = {
     val tagLookup = p.dataLogic.tagLookup(ShowDead)
-    val b = new LiveDeadStatMap.Builder[ApplicableTagId, Int]
+    val b = LiveDeadStatMap.Builder.ofInts[ApplicableTagId]()
     for {
       req    <- p.content.reqs.reqIterator()
       reqLive = req.live(p.config.reqTypes)
       tagId  <- tagLookup(req.id).all
     } {
       val live = reqLive & p.config.tags.needApplicableTag(tagId).live
-      b(tagId).mod(live)(_ + 1)
+      b(tagId).add(live, 1)
     }
     b.result()
   }
