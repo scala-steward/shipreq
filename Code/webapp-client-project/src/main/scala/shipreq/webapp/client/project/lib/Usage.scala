@@ -8,6 +8,7 @@ import scalacss.ScalaCssReact._
 import scalaz.\/-
 import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.filter._
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.client.project.app.Style

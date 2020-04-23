@@ -1,4 +1,4 @@
-package shipreq.webapp.base.data
+package shipreq.webapp.base.data.derivation
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import scala.collection.{mutable, Iterable}
@@ -6,6 +6,7 @@ import shipreq.base.util.fp.{Monoid, Semigroup}
 import shipreq.base.util.fp.Monoid.Implicits.monoidIntAddition
 import shipreq.base.util.fp.Semigroup.Syntax._
 import shipreq.base.util.univeq._
+import shipreq.webapp.base.data._
 
 /**
  * Stats partitioned into Live & Dead.

@@ -12,6 +12,7 @@ import scalaz.Equal
 import shipreq.base.util._
 import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.base.util.univeq._
+import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.issue.{Issue, IssueTracker}
 
 object Project {

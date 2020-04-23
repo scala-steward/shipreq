@@ -1,6 +1,7 @@
-package shipreq.webapp.base.data
+package shipreq.webapp.base.data.derivation
 
 import shipreq.base.util.storecache._
+import shipreq.webapp.base.data._
 import ProjectDerivations.Logic
 
 final case class ProjectDerivations()

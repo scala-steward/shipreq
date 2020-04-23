@@ -7,6 +7,7 @@ import scalaz.{-\/, \/-}
 import shapeless._
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.derivation.UseCaseStepLabelLookup
 import shipreq.webapp.base.text.{Grammar => G}
 import shipreq.webapp.base.util.{ParsingUtil, PreProcessed, PreProcessor}
 

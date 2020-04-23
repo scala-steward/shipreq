@@ -2,7 +2,8 @@ package shipreq.benchmark
 
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
-import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.Project
+import shipreq.webapp.base.data.derivation.AtomScan
 import shipreq.webapp.sampledata.SampleData
 
 /*

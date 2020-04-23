@@ -8,6 +8,7 @@ import scalaz.{-\/, Equal, \/-}
 import shipreq.base.util.NotApplicable
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.DataImplicits._
+import shipreq.webapp.base.data.derivation._
 
 object ProjectConfig {
   implicit lazy val equality: Equal[ProjectConfig] =

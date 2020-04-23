@@ -1,8 +1,9 @@
-package shipreq.webapp.base.data
+package shipreq.webapp.base.data.derivation
 
 import shipreq.webapp.base.text.Atom._
 import nyaya.util.Multimap
 import shipreq.base.util.Direction
+import shipreq.webapp.base.data._
 
 final class ReverseDependencies(atomScan: AtomScan, useCases: UseCases) {
 

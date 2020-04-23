@@ -14,6 +14,7 @@ import shipreq.webapp.base.text.{Text, UseCaseStepFlowText}
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.util.Must._
 import DataImplicits._
+import shipreq.webapp.base.data.derivation.UseCaseStepLabelLookup
 
 /**
  * The ID of a top-level, or sub- requirement.
