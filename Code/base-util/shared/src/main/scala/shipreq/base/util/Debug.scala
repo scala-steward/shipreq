@@ -1,56 +1,88 @@
 package shipreq.base.util
 
-import scala.annotation.elidable
+import japgolly.microlibs.stdlib_ext.MutableArray
+import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.microlibs.utils.AsciiTable
+import java.time.Duration
 
-/**
- * Methods to help with debugging.
- */
 object Debug {
 
-  implicit class DebugAnyExt[T](val v: T) extends AnyVal {
-    def pp(): T = {println(v); v}
-    def pp(title: Any): T = {println(s"$title: $v"); v}
-    def pp(f: T => Any): T = {println(f(v)); v}
+  trait Implicits {
+    final implicit def debugAnyExt[A](a: A): DebugAnyExt[A] =
+      new DebugAnyExt(a)
   }
 
-  def time[A](name: String)(a: => A): A = {
-    val start  = __start
-    val result = a
-    __stop(name, start)
-    result
+  object Implicits extends Implicits
+
+  final class DebugAnyExt[A](private val self: A) extends AnyVal {
+    def tapPrint()           : A = {println(self); self}
+    def tapPrint(title: Any) : A = {println(s"$title: $self"); self}
+    def tapPrint(f: A => Any): A = {println(f(self)); self}
   }
 
-  import System.{nanoTime => clock}
+  // ===================================================================================================================
 
-  private type Clock = Long
+  def logDuration[A](run: => A): A =
+    logDuration(None, run)
 
-  @elidable(elidable.FINE)
-  private def __start: Clock =
-    clock()
+  def logDuration[A](name: String, run: => A): A =
+    logDuration(Some(name), run)
 
-  @elidable(elidable.FINE)
-  private def __stop(name: String, start: Clock): Unit = {
-    val end = clock()
-    val timeInMs = (end - start).toDouble / 1000000
-    printf("[%s] Completed in %.3f ms.\n", name, timeInMs)
+  def logDuration[A](name: Option[String], run: => A): A = {
+    val start = System.nanoTime()
+    try
+      run
+    finally {
+      val end = System.nanoTime()
+      val dur = Duration.ofNanos(end - start)
+      name match {
+        case Some(n) => println(s"$n completed in ${dur.conciseDesc}")
+        case None    => println(s"Completed in ${dur.conciseDesc}")
+      }
+    }
   }
 
-  def loggerWithColour[A](colour: String): A => String => Unit = {
-    import Console._
-    a => msg => println(s"$BOLD$colour[$a]$RESET$colour $msg$RESET")
+  // ===================================================================================================================
+
+  private final class MutInt(init: Int) {
+    var value = init
   }
 
-  def loggerBlack[A] = loggerWithColour[A](Console.BLACK)
-  def loggerBlue[A] = loggerWithColour[A](Console.BLUE)
-  def loggerCyan[A] = loggerWithColour[A](Console.CYAN)
-  def loggerGreen[A] = loggerWithColour[A](Console.GREEN)
-  def loggerMagenta[A] = loggerWithColour[A](Console.MAGENTA)
-  def loggerRed[A] = loggerWithColour[A](Console.RED)
-  def loggerWhite[A] = loggerWithColour[A](Console.WHITE)
-  def loggerYellow[A] = loggerWithColour[A](Console.YELLOW)
-}
+  def CallCounter(): CallCounter =
+    new CallCounter
 
-trait DebugImplicits {
-  import Debug._
-  implicit def debugAnyExt[T](v: T) = DebugAnyExt(v)
+  final class CallCounter {
+    private[this] val lock = new AnyRef
+    private var stats = Map.empty[String, MutInt]
+
+    def clear(): Unit =
+      lock.synchronized {
+        stats = Map.empty[String, MutInt]
+      }
+
+    def inc(name: String): Unit = {
+      val n = name.trim
+      lock.synchronized {
+        stats.get(n) match {
+          case Some(m) => m.value += 1
+          case None    => stats = stats.updated(n, new MutInt(1))
+        }
+      }
+    }
+
+    def apply[A](name: String)(a: => A): A = {
+      inc(name)
+      a
+    }
+
+    def report(): String =
+      lock.synchronized {
+        val rows = MutableArray(stats).sortBy(_._1).iterator().map { case (n, m) => Seq(n, "%,10d".format(m.value))}.toList
+        val content = Seq("NAME", "COUNT") :: rows
+        AsciiTable(content)
+      }
+
+    def printReport(): Unit =
+      println(report())
+  }
 }
