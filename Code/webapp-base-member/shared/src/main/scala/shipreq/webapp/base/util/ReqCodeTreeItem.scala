@@ -1,13 +1,12 @@
 package shipreq.webapp.base.util
 
-import scala.collection.immutable.ArraySeq
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.ReqCode
 
 /**
  * Representation of a ReqCode when viewed like a tree.
  */
-final case class ReqCodeTreeItem(indent: ArraySeq[ReqCodeTreeItem.Indent], suffix: ReqCode.Value)
+case class ReqCodeTreeItem(indent: Vector[ReqCodeTreeItem.Indent], suffix: ReqCode.Value)
 
 object ReqCodeTreeItem {
   sealed trait Indent

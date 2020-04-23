@@ -679,7 +679,7 @@ trait ApplyContentEvent {
      */
     def renameReqCodeToAvoidConflict(conflicted: Value, trie: Trie): Value = {
       val init     = conflicted.init
-      val t        = NonEmptyArraySeq.maybe(init, trie)(trie.dropPath)
+      val t        = NonEmptyVector.maybe(init, trie)(trie.dropPath)
 
       @tailrec
       def go(root: String, i: Int): Node = {
@@ -696,7 +696,7 @@ trait ApplyContentEvent {
       }
 
       val n = go(conflicted.last.value, 2)
-      NonEmptyArraySeq.end(init, n)
+      NonEmptyVector.end(init, n)
     }
 
     /**

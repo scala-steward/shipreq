@@ -1,5 +1,6 @@
 package shipreq.base.util
 
+import japgolly.microlibs.nonempty.NonEmptyVector
 import nyaya.gen.Gen
 import nyaya.prop.Prop
 import nyaya.test.PropTest._
@@ -10,7 +11,7 @@ object MTrieTest extends TestSuite {
   val  Trie = new MTrie.Types[String, Int]
   import Trie._
 
-  implicit def autoPath(s: String) = NonEmptyArraySeq.split(s, '.')
+  implicit def autoPath(s: String) = NonEmptyVector force s.split('.').toVector
 
   def testRevert(expect: Trie, f: Trie => Trie): Unit = {
     val actual = f(expect)
@@ -37,12 +38,12 @@ object MTrieTest extends TestSuite {
     })
 
   val genPath: Gen[Path] =
-    Gen.numeric.string(1 to 3).arraySeq(1 to 3).map(NonEmptyArraySeq.force)
+    Gen.numeric.string(1 to 3).vector(1 to 3).map(NonEmptyVector.force)
 
   val removeGen: Gen[(Trie, Iterable[Path])] =
     for {
-      trieKeys <- genPath.arraySeq
-      remove1 <- genPath.arraySeq
+      trieKeys <- genPath.vector
+      remove1 <- genPath.vector
       remove2 <- Gen.subset(trieKeys)
     } yield {
       val t = trieKeys.foldLeft(empty)(_.put(_, 0))

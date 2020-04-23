@@ -6,7 +6,6 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import scala.annotation.tailrec
 import scala.collection.Iterable
 import scala.collection.Factory
-import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 import scalaz.syntax.semigroup._
 import shipreq.base.util._
@@ -458,15 +457,15 @@ private[reqtable] object Logic {
       : S[O] =
     hmap[I, V, ReqCode.Value, ReqCodeTreeItem, S, O](
       input, extract, put,
-      c => ReqCodeTreeItem(ArraySeq.empty, c),
+      c => ReqCodeTreeItem(Vector.empty, c),
       mkReqCodeTreeItem)
 
   def mkReqCodeTreeItem(prevV: ReqCode.Value, prevI: ReqCodeTreeItem, cur: ReqCode.Value): ReqCodeTreeItem = {
     import ReqCodeTreeItem._
-    import ArraySeqCase._
+    import VectorCase._
 
     @tailrec
-    def go(ci: ArraySeq[Indent], cv: ReqCode.Value)(pi: ArraySeq[Indent], pv: ReqCode.Value): ReqCodeTreeItem =
+    def go(ci: Vector[Indent], cv: ReqCode.Value)(pi: Vector[Indent], pv: ReqCode.Value): ReqCodeTreeItem =
       cv.tail match {
         case NonEmpty(nextc) if cv.head ==* pv.head =>
           pv.tail match {
@@ -475,7 +474,7 @@ private[reqtable] object Logic {
             case NonEmpty(nextp) =>
               pi match {
                 case Empty() =>
-                  go(ci :+ IndentSpace(pv.head.value.length), nextc)(ArraySeq.empty, nextp)
+                  go(ci :+ IndentSpace(pv.head.value.length), nextc)(Vector.empty, nextp)
                 case NonEmpty(is) =>
                   go(ci :+ is.head, nextc)(is.tail, nextp)
               }
@@ -484,7 +483,7 @@ private[reqtable] object Logic {
           ReqCodeTreeItem(ci, cv)
       }
 
-    go(ArraySeq.empty, cur)(prevI.indent, prevV)
+    go(Vector.empty, cur)(prevI.indent, prevV)
   }
 
   val addReqCodeTreeToRows: EndoFn[Vector[Row]] = rows =>

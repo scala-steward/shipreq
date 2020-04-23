@@ -1,11 +1,10 @@
 package shipreq.webapp.base.text
 
+import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import org.parboiled2.{CharPredicate => CP, _}
-import scala.collection.immutable.ArraySeq
 import scalaz.{-\/, \/-}
 import shapeless._
-import shipreq.base.util.NonEmptyArraySeq
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.{Grammar => G}
@@ -241,7 +240,7 @@ object Parsers {
         ~> lookupCode ~ popOptional[ReqCodeId] ~> t.CodeRef)
 
     val lookupCode: Seq[Node] => Option[ReqCodeId] = ss =>
-      NonEmptyArraySeq.maybe(ss.to(ArraySeq), None: Option[ReqCodeId])(code =>
+      NonEmptyVector.maybe(ss.toVector, None: Option[ReqCodeId])(code =>
         project.content.reqCodes.get(code).flatMap(_.activeId))
 
     override def useCaseStepLabelLookup = project.content.reqs.useCaseStepLabelLookup

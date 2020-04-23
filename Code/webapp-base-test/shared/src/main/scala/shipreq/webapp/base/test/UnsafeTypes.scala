@@ -3,7 +3,6 @@ package shipreq.webapp.base.test
 import japgolly.microlibs.nonempty._
 import java.time._
 import nyaya.util.Multimap
-import scala.collection.immutable.ArraySeq
 import shipreq.base.util._
 import shipreq.base.util.univeq.UnivEq
 import shipreq.webapp.base.data._
@@ -54,8 +53,8 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
   implicit def autoColour     (s: String) = Colour(s).get
 
   implicit def autoReqCode(s: String): ReqCode.Value = {
-    val v = Grammar.reqCode.nodeSeqFormat.split(s).map(ReqCode.Node.applyFn).to(ArraySeq)
-    NonEmptyArraySeq(v.head, v.tail)
+    val v = Grammar.reqCode.nodeSeqFormat.split(s).map(ReqCode.Node.applyFn).toVector
+    NonEmptyVector(v.head, v.tail)
   }
 
   implicit def autoReqCodeSet[C](c: C)(implicit f: C => ReqCode.Value): ReqCode.CodeSet =

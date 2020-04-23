@@ -1,11 +1,10 @@
 package shipreq.webapp.base.validation
 
 import monocle.Iso
-import scala.collection.immutable.ArraySeq
 import scalaz.Isomorphism.<=>
 import scalaz.{-\/, Applicative, Semigroup, Traverse, \/, \/-}
 import scalaz.std.vector.vectorInstance
-import shipreq.base.util.{GenTuple, Identity, Scalaz213, Valid, Validity}
+import shipreq.base.util.{GenTuple, Identity, Valid, Validity}
 
 object Generic {
 
@@ -235,13 +234,6 @@ object Generic {
         Invalidator(ta => {
           val ok: E \/ Unit = Auditor.unitResult
           val result: E \/ Unit = T.traverse_(ta)(invalidate(_).fold(ok)(-\/(_)))(AccumuateErrors.applicativeInstance)
-          result.fold(Some(_), _ => None)
-        })
-
-      def liftArraySeq(implicit E: Semigroup[E]): Invalidator[E, ArraySeq[A]] =
-        Invalidator(as => {
-          val ok: E \/ Unit = Auditor.unitResult
-          val result: E \/ Unit = Scalaz213.traverseArraySeq_(as)(invalidate(_).fold(ok)(-\/(_)))(AccumuateErrors.applicativeInstance)
           result.fold(Some(_), _ => None)
         })
     }

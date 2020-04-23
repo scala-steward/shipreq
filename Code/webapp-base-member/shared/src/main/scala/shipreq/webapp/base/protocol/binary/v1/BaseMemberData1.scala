@@ -748,7 +748,7 @@ object BaseMemberData1 {
     transformPickler(ReqCode.Node.apply)(_.value) // xmap[String] already reuses
 
   implicit lazy val picklerReqCodeValue: Pickler[ReqCode.Value] =
-    pickleNEA
+    pickleNEV
 
   implicit lazy val picklerReqId: Pickler[ReqId] =
     new Pickler[ReqId] {

@@ -1,11 +1,12 @@
 package shipreq.webapp.base.data
 
+import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import monocle.Iso
-import scala.collection.immutable.ArraySeq
 import scalaz.{-\/, Equal, \/, \/-}
 import scalaz.std.string.stringInstance
 import scalaz.std.list._
+import scalaz.std.vector._
 import shipreq.base.util.MTrie.Ops
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
@@ -361,7 +362,7 @@ object DataValidators {
       node.unnamed.auditor
         .toInvalidator
         .contramap[Node](_.value)
-        .liftArraySeq
+        .liftTraverse[Vector]
         .contramap(_.whole)
 
     val valueAndNodes: Validator[Value, Value, Value] =
@@ -381,7 +382,7 @@ object DataValidators {
       Auditor.traverse(node.unnamed.apply)
 
     private def nodesToValue: Auditor[List[Node], Value] =
-      V.auditor.optionDefined[Value].contramap(NonEmptyArraySeq option _.to(ArraySeq))
+      V.auditor.optionDefined[Value].contramap(NonEmptyVector option _.toVector)
 
     private def stringsToValue: Auditor[List[String], Value] =
       stringsToNodes.andThen(nodesToValue)

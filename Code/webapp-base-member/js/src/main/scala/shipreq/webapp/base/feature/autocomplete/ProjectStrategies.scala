@@ -1,5 +1,6 @@
 package shipreq.webapp.base.feature.autocomplete
 
+import japgolly.microlibs.nonempty._
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.{Utils => Util}
@@ -172,12 +173,12 @@ object ProjectStrategies {
       def completeFromStart(trie: Trie): Strategies = {
         val mainRegex = s"($node($sep$node)*$sep?)"
 
-        type A = (ArraySeq[Node], String)
+        type A = (Vector[Node], String)
 
         val searchFn0: Utils.Query[A] = { term =>
 
           // Parse input
-          var nodes = term.split(G.nodeSeparator).to(ArraySeq)
+          var nodes = term.split(G.nodeSeparator).toVector
           var lead: Option[String] = None
           if (term.last != G.nodeSeparator) {
             lead = nodes.lastOption
@@ -186,7 +187,7 @@ object ProjectStrategies {
           val path = nodes.map(Node.applyFn)
 
           // Find suggestions
-          val t = NonEmptyArraySeq.maybe(path, trie)(trie.dropPath)
+          val t = NonEmptyVector.maybe(path, trie)(trie.dropPath)
           var r = t.iterator.filter(_._2.existsV(_.isActive)).map(_._1.value)
           for (l <- lead)
             r = r.filter(_ startsWith l)
@@ -214,14 +215,14 @@ object ProjectStrategies {
             trie.flatIterator().filter(_._2.isActive).map(_._1))
 
         def isMatch(term: String, path: Path): UndefOr[Path] = {
-          @tailrec def go(prefix: Path, suffix: ArraySeq[Node]): UndefOr[Path] =
+          @tailrec def go(prefix: Path, suffix: Vector[Node]): UndefOr[Path] =
             if (suffix.isEmpty)
               undefined
             else if (suffix.head.value startsWith term)
               prefix :+ suffix.head
             else
               go(prefix :+ suffix.head, suffix.tail)
-          go(NonEmptyArraySeq one path.head, path.tail)
+          go(NonEmptyVector one path.head, path.tail)
         }
 
         val searchFn: Utils.Query[String] = term =>

@@ -329,12 +329,12 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   override def reqCodeTree(items: Vector[ReqCodeTreeItem]): VdomTag =
     <.div(items toTagMod reqCodeTreeItem)
 
-  private val reqCodeTreeIdentation: NonEmptyArraySeq[ReqCodeTreeItem.Indent] => VdomTag =
+  private val reqCodeTreeIdentation: NonEmptyVector[ReqCodeTreeItem.Indent] => VdomTag =
     Memo(is =>
       <.pre(*.reqCodeTreeIndent, PlainText.reqCodeIndentation(is)))
 
   override def reqCodeTreeItem(item: ReqCodeTreeItem): VdomTag = {
-    val indentation = NonEmptyArraySeq.option(item.indent)
+    val indentation = NonEmptyVector.option(item.indent)
     var code = PlainText.reqCode(item.suffix)
     if (indentation.isDefined)
       code = G.reqCode.nodeSeparator ~ code

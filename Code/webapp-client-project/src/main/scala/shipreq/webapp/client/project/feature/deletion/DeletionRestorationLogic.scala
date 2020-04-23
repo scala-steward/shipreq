@@ -191,13 +191,11 @@ object DeletionRestorationLogic {
       t.getNode(c).forall(isNodeUseless)
     }
 
-    private def codesOfActiveChildGroups(t: Trie, c: Code): Set[Code] = {
-
+    private def codesOfActiveChildGroups(t: Trie, c: Code): Set[Code] =
       t.dropPath(c)
         .flatIterator()
         .collect { case (code, _: ActiveGroup) => c ++ code }
         .toSet
-    }
 
     @tailrec
     private def codesOfUselessChildGroups(trie: Trie, queue: List[Code], acc: Set[Code]): Set[Code] =
@@ -217,7 +215,7 @@ object DeletionRestorationLogic {
       queue match {
         case h :: t =>
           if (isUselessLookingDown(trie, h)) {
-            val next = NonEmptyArraySeq.maybe(h.init, t)(_ :: t)
+            val next = NonEmptyVector.maybe(h.init, t)(_ :: t)
             codesOfUselessParentGroups(trie, next, acc + h)
           } else
             codesOfUselessParentGroups(trie, t, acc)
