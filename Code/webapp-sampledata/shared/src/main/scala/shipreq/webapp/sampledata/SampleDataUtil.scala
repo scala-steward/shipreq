@@ -17,8 +17,8 @@ private[sampledata] object SampleDataUtil {
     }
 
   def applyVerifiedEventSuccessfully(p: Project, e: VerifiedEvent): Project =
-    ApplyEvent.untrusted.applyVerified(Vector(e))(p).fold(sys.error, identity)
+    applyVerifiedEventsSuccessfully(p, VerifiedEvent.Seq.empty + e)
 
   def applyVerifiedEventsSuccessfully(p: Project, es: VerifiedEvent.Seq): Project =
-    es.foldLeft(p)(applyVerifiedEventSuccessfully)
+    ApplyEvent.trusted.applyVerified(es)(p).fold(sys.error, identity)
 }
