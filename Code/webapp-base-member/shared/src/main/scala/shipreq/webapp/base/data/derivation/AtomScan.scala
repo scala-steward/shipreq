@@ -63,14 +63,6 @@ object AtomScan {
 
       def go(as: IterableOnce[AnyAtom]): Unit =
         as.iterator foreach {
-          case _: Literal         # Literal
-             | _: NewLine         # BlankLine
-             | _: PlainTextMarkup # EmailAddress
-             | _: PlainTextMarkup # Monospace
-             | _: PlainTextMarkup # TeX
-             | _: PlainTextMarkup # WebAddress
-             | _: CodeBlock       # CodeBlock
-            => ()
 
           case a: ContentRef#ReqRef =>
             contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
@@ -93,6 +85,12 @@ object AtomScan {
 
           case a: ListMarkup#UnorderedList =>
             a.items foreach go
+
+          // Leave this as a catch-all rather than a specific list.
+          // Yes it means that when a new Atom type is added there's a chance you'll forget to consider this area but
+          // this is a hot-path due to ApplyEvent and benchmarks show that a catch-all here is a significant speedup.
+          case _ =>
+            ()
         }
 
       go(text)
@@ -105,14 +103,6 @@ object AtomScan {
 
       def go(as: IterableOnce[AnyAtom]): Unit =
         as.iterator foreach {
-          case _: Literal         # Literal
-             | _: NewLine         # BlankLine
-             | _: PlainTextMarkup # EmailAddress
-             | _: PlainTextMarkup # Monospace
-             | _: PlainTextMarkup # TeX
-             | _: PlainTextMarkup # WebAddress
-             | _: CodeBlock       # CodeBlock
-            => ()
 
           case a: ContentRef#ReqRef =>
             contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
@@ -138,6 +128,12 @@ object AtomScan {
 
           case a: ListMarkup#UnorderedList =>
             a.items foreach go
+
+          // Leave this as a catch-all rather than a specific list.
+          // Yes it means that when a new Atom type is added there's a chance you'll forget to consider this area but
+          // this is a hot-path due to ApplyEvent and benchmarks show that a catch-all here is a significant speedup.
+          case _ =>
+            ()
         }
 
       go(text)
