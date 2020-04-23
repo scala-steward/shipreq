@@ -239,7 +239,6 @@ object CodeGroup {
 @Lenses
 final case class ReqCodes(trie: ReqCode.Trie) {
   import ReqCode._
-  import MTrie.Ops
 
   private lazy val scan = new ReqCodes.Scan(trie)
 

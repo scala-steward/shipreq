@@ -131,8 +131,43 @@ object MTrie {
     def foreachValue[U](f: V => U): Unit =
       allValues.foreach(f)
 
-    def foreachPathAndValue[U](f: (Path, V) => U): Unit =
-      flatIterator().foreach(f.tupled)
+    def foreachPathAndValue[U](f: (Path, V) => U): Unit = {
+      // This is a *very* hot path. Measure affect on ApplyEventBM.
+
+      type It = Iterator[(K, Node)]
+      type Work = (It, Vector[K])
+
+      @tailrec def go(ws: List[Work]): Unit =
+        if (ws.nonEmpty) {
+          val work = ws.head
+          val it   = work._1
+
+          if (it.isEmpty)
+            go(ws.tail)
+          else {
+            val pathPrefix = work._2
+            val cur        = it.next()
+            val key        = cur._1
+            val node       = cur._2
+            node match {
+              case b: MTrie.Branch[K, V] =>
+                for (v <- b.value) {
+                  val path = NonEmptyVector.end(pathPrefix, key)
+                  f(path, v.value)
+                }
+                val newWork = (b.next.iterator, pathPrefix :+ key)
+                go(newWork :: ws)
+
+              case v: MTrie.Value[K, V] =>
+                val path = NonEmptyVector.end(pathPrefix, key)
+                f(path, v.value)
+                go(ws)
+            }
+          }
+        }
+
+      go((trie.iterator, Vector.empty) :: Nil)
+    }
 
     /**
      * Flat left fold. Sugar to expand the key-value tuple.
