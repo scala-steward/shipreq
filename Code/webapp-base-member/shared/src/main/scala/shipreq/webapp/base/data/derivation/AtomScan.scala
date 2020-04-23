@@ -159,12 +159,14 @@ object AtomScan {
     // Parse custom-text-field text
     val customTextFieldText = p.content.reqText
     val liveTextFields      = p.config.liveCustomTextFields.map(_.id).toSet
-    for {
-      (tf, textByReqId) <- customTextFieldText
-      live              = Live when (liveTextFields contains tf)
-      (id, txt)         <- textByReqId
-    } {
-      scanReqText(live, id, Location.Text.CustomTextField(tf))(txt.whole)
+
+    // Don't use a for-comprehension here
+    // https://github.com/scala/bug/issues/11951
+    customTextFieldText.foreach { case (tf, textByReqId) =>
+      val live = Live when (liveTextFields contains tf)
+      textByReqId.foreach { case (id, txt) =>
+        scanReqText(live, id, Location.Text.CustomTextField(tf))(txt.whole)
+      }
     }
 
     // Parse ReqCode groups
