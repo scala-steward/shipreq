@@ -59,39 +59,49 @@ object AtomScan {
     def scanReqText(live : Live,
                     reqId: ReqId,
                     loc  : Location.Text)
-                   (text : IterableOnce[AnyAtom]): Unit = {
+                   (text : Vector[AnyAtom]): Unit = {
 
-      def go(as: IterableOnce[AnyAtom]): Unit =
-        as.iterator foreach {
+      def go(as: Vector[AnyAtom]): Unit = {
+        var i = as.length
+        while (i > 0) {
+          i -= 1
+          as(i) match {
 
-          case a: ContentRef#ReqRef =>
-            contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
-            reqRefs += a.value
+            case a: ContentRef#ReqRef =>
+              contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
+              reqRefs += a.value
 
-          case a: ContentRef#CodeRef =>
-            contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
-            codeRefs += a.value
+            case a: ContentRef#CodeRef =>
+              contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
+              codeRefs += a.value
 
-          case a: ContentRef#UseCaseStepRef =>
-            contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
-            useCaseStepRefs += a.value
+            case a: ContentRef#UseCaseStepRef =>
+              contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
+              useCaseStepRefs += a.value
 
-          case a: Issue#Issue =>
-            issuesInReqs(reqId).add(live, LocAndValue(loc, a))
-            go(a.desc)
+            case a: Issue#Issue =>
+              issuesInReqs(reqId).add(live, LocAndValue(loc, a))
+              go(a.desc)
 
-          case a: TagRef#TagRef =>
-            tagRefs(reqId).add(live, LocAndValue(loc, a.value))
+            case a: TagRef#TagRef =>
+              tagRefs(reqId).add(live, LocAndValue(loc, a.value))
 
-          case a: ListMarkup#UnorderedList =>
-            a.items foreach go
+            case a: ListMarkup#UnorderedList =>
+              val items = a.items
+              var j = items.length
+              while (j > 0) {
+                j -= 1
+                items(j).foreach(go)
+              }
 
-          // Leave this as a catch-all rather than a specific list.
-          // Yes it means that when a new Atom type is added there's a chance you'll forget to consider this area but
-          // this is a hot-path due to ApplyEvent and benchmarks show that a catch-all here is a significant speedup.
-          case _ =>
-            ()
+            // Leave this as a catch-all rather than a specific list.
+            // Yes it means that when a new Atom type is added there's a chance you'll forget to consider this area but
+            // this is a hot-path due to ApplyEvent and benchmarks show that a catch-all here is a significant speedup.
+            case _ =>
+              ()
+          }
         }
+      }
 
       go(text)
     }
@@ -99,57 +109,67 @@ object AtomScan {
     def scanReqCodeGroupText(live     : Live,
                              reqCodeId: ReqCodeGroupId,
                              loc      : LocationOf.Text.InReqCodeGroup)
-                            (text     : IterableOnce[AnyAtom]): Unit = {
+                            (text     : Vector[AnyAtom]): Unit = {
 
-      def go(as: IterableOnce[AnyAtom]): Unit =
-        as.iterator foreach {
+      def go(as: Vector[AnyAtom]): Unit = {
+        var i = as.length
+        while (i > 0) {
+          i -= 1
+          as(i) match {
 
-          case a: ContentRef#ReqRef =>
-            contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
-            reqRefs += a.value
+            case a: ContentRef#ReqRef =>
+              contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
+              reqRefs += a.value
 
-          case a: ContentRef#CodeRef =>
-            contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
-            codeRefs += a.value
+            case a: ContentRef#CodeRef =>
+              contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
+              codeRefs += a.value
 
-          case a: ContentRef#UseCaseStepRef =>
-            contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
-            useCaseStepRefs += a.value
+            case a: ContentRef#UseCaseStepRef =>
+              contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
+              useCaseStepRefs += a.value
 
-          case a: Issue#Issue =>
-            a match {
-              case i: Text.CodeGroupTitle.Issue => issuesInRcgs(reqCodeId).add(live, i)
-              case _                            => ()
-            }
-            go(a.desc)
+            case a: Issue#Issue =>
+              a match {
+                case i: Text.CodeGroupTitle.Issue => issuesInRcgs(reqCodeId).add(live, i)
+                case _                            => ()
+              }
+              go(a.desc)
 
-          case a: TagRef#TagRef =>
-            assert(false, s"ReqCodes shouldn't have tags! Found $a in $reqCodeId")
+            case a: TagRef#TagRef =>
+              assert(false, s"ReqCodes shouldn't have tags! Found $a in $reqCodeId")
 
-          case a: ListMarkup#UnorderedList =>
-            a.items foreach go
+            case a: ListMarkup#UnorderedList =>
+              val items = a.items
+              var j = items.length
+              while (j > 0) {
+                j -= 1
+                items(j).foreach(go)
+              }
 
-          // Leave this as a catch-all rather than a specific list.
-          // Yes it means that when a new Atom type is added there's a chance you'll forget to consider this area but
-          // this is a hot-path due to ApplyEvent and benchmarks show that a catch-all here is a significant speedup.
-          case _ =>
-            ()
+
+            // Leave this as a catch-all rather than a specific list.
+            // Yes it means that when a new Atom type is added there's a chance you'll forget to consider this area but
+            // this is a hot-path due to ApplyEvent and benchmarks show that a catch-all here is a significant speedup.
+            case _ =>
+              ()
+          }
         }
+      }
 
       go(text)
     }
 
-    // Parse reqs
+    // Parse generic reqs
     val rts = p.config.reqTypes
-    p.content.reqs.reqIterator().foreach {
+    for (r <- p.content.reqs.genericReqs.valuesIterator)
+      scanReqText(r.live(rts), r.id, Location.Text.Title)(r.title)
 
-      case r: GenericReq =>
-        scanReqText(r.live(rts), r.id, Location.Text.Title)(r.title)
-
-      case uc: UseCase =>
-        scanReqText(uc.liveUC, uc.id, Location.Text.Title)(uc.title)
-        for (s <- uc.stepIterator)
-          scanReqText(uc.liveUC, uc.id, Location.Text.UseCaseStep(s.id))(s.titleExplicitly)
+    // Parse use cases
+    for (uc <- p.content.reqs.useCases.imap.valuesIterator) {
+      scanReqText(uc.liveUC, uc.id, Location.Text.Title)(uc.title)
+      for (s <- uc.stepIterator)
+        scanReqText(uc.liveUC, uc.id, Location.Text.UseCaseStep(s.id))(s.titleExplicitly)
     }
 
     // Parse custom-text-field text
