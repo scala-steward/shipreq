@@ -1,30 +1,24 @@
 package shipreq.base.util
 
-import japgolly.microlibs.nonempty.NonEmpty
+import japgolly.microlibs.nonempty._
 import japgolly.univeq.UnivEq
 import scala.collection.{AbstractIterator, Factory}
-import scala.collection.immutable.{ArraySeq, Range}
+import scala.collection.immutable.ArraySeq
 import scala.math.Ordering
 import scala.reflect.ClassTag
 
-final class NonEmptyArraySeq[+A](val head: A, val tail: ArraySeq[A]) {
+final class NonEmptyArraySeq[+A] private[NonEmptyArraySeq](val whole: ArraySeq[A]) {
   override def toString = "NonEmpty" + whole.toString
 
-  override def hashCode = head.## * 31 + tail.##
+  override def hashCode = whole.hashCode
 
   override def equals(o: Any) = o match {
-    case that: NonEmptyArraySeq[Any] => this.head == that.head && this.tail == that.tail
+    case that: NonEmptyArraySeq[Any] => this.whole == that.whole
     case _ => false
   }
 
-  def length: Int =
-    tail.length + 1
-
-  def unsafeApply(i: Int): A =
-    if (i == 0)
-      head
-    else
-      tail(i - 1)
+  @inline def unsafeApply(i: Int): A =
+    whole(i)
 
   def apply(i: Int): Option[A] =
     try {
@@ -33,90 +27,96 @@ final class NonEmptyArraySeq[+A](val head: A, val tail: ArraySeq[A]) {
       case _: IndexOutOfBoundsException => None
     }
 
-  def init: ArraySeq[A] =
-    if (tail.isEmpty)
-      ArraySeq.empty
-    else
-      head +: tail.init
+  @inline def head     = whole.head
+  @inline def tail     = whole.tail
+  @inline def init     = whole.init
+  @inline def last     = whole.last
+  @inline def length   = whole.length
+  @inline def indices  = whole.indices
+  @inline def iterator = whole.iterator
 
   def initNonEmpty: Option[NonEmptyArraySeq[A]] = NonEmptyArraySeq option init
   def tailNonEmpty: Option[NonEmptyArraySeq[A]] = NonEmptyArraySeq option tail
 
   def map[B](f: A => B): NonEmptyArraySeq[B] =
-    NonEmptyArraySeq(f(head), tail map f)
+    new NonEmptyArraySeq(whole map f)
 
-  def flatMap[B](f: A => NonEmptyArraySeq[B]): NonEmptyArraySeq[B] =
-    reduceMapLeft1(f)(_ ++ _)
+  def flatMap[B: ClassTag](f: A => NonEmptyArraySeq[B]): NonEmptyArraySeq[B] =
+    if (length == 1)
+      f(head)
+    else {
+      val b = ArraySeq.newBuilder[B]
+      for (a <- this) {
+        val bs = f(a)
+        b ++= bs.whole
+      }
+      new NonEmptyArraySeq(b.result())
+    }
 
   def foreach[U](f: A => U): Unit = {
-    f(head)
-    tail foreach f
+    var i = whole.length
+    while (i > 0) {
+      i -= 1
+      f(whole(i))
+    }
   }
 
   def foreachWithIndex[U](f: (A, Int) => U): Unit = {
-    f(head, 0)
-    var i = 0
-    for (a <- tail) {
-      i += 1
-      f(a, i)
+    var i = whole.length
+    while (i > 0) {
+      i -= 1
+      f(whole(i), i)
     }
   }
 
-  def indices: Range =
-    0 until length
+  @inline def forall(f: A => Boolean): Boolean =
+    whole.forall(f)
 
-  def forall(f: A => Boolean): Boolean =
-    f(head) && tail.forall(f)
+  @inline def exists(f: A => Boolean): Boolean =
+    whole.exists(f)
 
-  def exists(f: A => Boolean): Boolean =
-    f(head) || tail.exists(f)
-
-  def find(f: A => Boolean): Option[A] =
-    if (f(head)) Some(head) else tail.find(f)
-
-  def mapTail[B >: A](f: ArraySeq[A] => ArraySeq[B]): NonEmptyArraySeq[B] =
-    NonEmptyArraySeq(head, f(tail))
+  @inline def find(f: A => Boolean): Option[A] =
+    whole.find(f)
 
   def mapWithIndex[B: ClassTag](f: (A, Int) => B): NonEmptyArraySeq[B] = {
-    val h = f(head, 0)
-    var i = 0
-    var t = ArraySeq.empty[B]
-    for (a <- tail) {
-      i += 1
-      t :+= f(a, i)
+    val n = new Array[B](length)
+    var i = whole.length
+    while (i > 0) {
+      i -= 1
+      n(i) = f(whole(i), i)
     }
-    NonEmptyArraySeq(h, t)
+    new NonEmptyArraySeq(ArraySeq.unsafeWrapArray(n))
   }
 
   def :+[B >: A](a: B): NonEmptyArraySeq[B] =
-    mapTail(_ :+ a)
+    new NonEmptyArraySeq(whole :+ a)
 
   def +:[B >: A](a: B): NonEmptyArraySeq[B] =
-    NonEmptyArraySeq(a, head +: tail)
+    new NonEmptyArraySeq(a +: whole)
 
   def ++[B >: A](as: IterableOnce[B]): NonEmptyArraySeq[B] =
-    mapTail(_ ++ as)
+    new NonEmptyArraySeq(whole ++ as)
 
   def ++[B >: A](b: NonEmptyArraySeq[B]): NonEmptyArraySeq[B] =
-    ++(b.whole)
+    new NonEmptyArraySeq(whole ++ b.whole)
 
   def ++:[B >: A](as: ArraySeq[B]): NonEmptyArraySeq[B] =
-    if (as.isEmpty) this else NonEmptyArraySeq(as.head, as.tail ++ whole)
-
-  def last: A =
-    if (tail.isEmpty) head else tail.last
-
-  lazy val whole: ArraySeq[A] =
-    head +: tail
+    new NonEmptyArraySeq(as ++ whole)
 
   def reverse: NonEmptyArraySeq[A] =
-    if (tail.isEmpty) this else NonEmptyArraySeq.end(tail.reverse, head)
+    new NonEmptyArraySeq(whole.reverse)
 
-  def foldLeft[B](z: B)(f: (B, A) => B): B =
-    tail.foldLeft(f(z, head))(f)
+  @inline def foldLeft[B](z: B)(f: (B, A) => B): B =
+    whole.foldLeft(z)(f)
 
-  def foldMapLeft1[B](g: A => B)(f: (B, A) => B): B =
-    tail.foldLeft(g(head))(f)
+  def foldMapLeft1[B](g: A => B)(f: (B, A) => B): B = {
+    val it = iterator
+    var result = g(it.next())
+    while (it.hasNext) {
+      result = f(result, it.next())
+    }
+    result
+  }
 
   def reduceMapLeft1[B](f: A => B)(g: (B, B) => B): B =
     foldMapLeft1(f)((b, a) => g(b, f(a)))
@@ -124,36 +124,23 @@ final class NonEmptyArraySeq[+A](val head: A, val tail: ArraySeq[A]) {
   def reduce[B >: A](f: (B, B) => B): B =
     reduceMapLeft1[B](a => a)(f)
 
-  // Reduce bullshit red in IntelliJ
-//  def traverseD[L, B](f: A => L \/ B): L \/ NonEmptyArraySeq[B] =
-//    NonEmptyArraySeq.traverse1.traverseU(this)(f)
-
-//  def intercalate[B >: A](b: B): NonEmptyArraySeq[B] =
-//    intercalateF(b)(a => a)
-//
-//  def intercalateF[B](b: B)(f: A => B): NonEmptyArraySeq[B] = {
-//    val r = implicitly[Factory[B, ArraySeq[B]]].newBuilder
-//    for (a <- tail) {
-//      r += b
-//      r += f(a)
-//    }
-//    NonEmptyArraySeq(f(head), r.result())
-//  }
-
   def filter(f: A => Boolean): Option[NonEmptyArraySeq[A]] =
     NonEmptyArraySeq.option(whole filter f)
 
   def filterNot(f: A => Boolean): Option[NonEmptyArraySeq[A]] =
     filter(!f(_))
 
-  def iterator: Iterator[A] =
-    whole.iterator
+  def mapToNES[B: UnivEq](f: A => B): NonEmptySet[B] =
+    NonEmptySet force iterator.map(f).toSet
 
-//  def mapToNES[B: UnivEq](f: A => B): NonEmptySet[B] =
-//    NonEmptySet force iterator.map(f).toSet
-//
-//  def toNES[B >: A : UnivEq]: NonEmptySet[B] =
-//    NonEmptySet(head, tail.toSet[B])
+  def toNES[B >: A : UnivEq]: NonEmptySet[B] =
+    NonEmptySet(head, tail.toSet[B])
+
+  def mapToNEV[B: UnivEq](f: A => B): NonEmptyVector[B] =
+    NonEmptyVector force iterator.map(f).toVector
+
+  def toNEV[B >: A : UnivEq]: NonEmptyVector[B] =
+    NonEmptyVector(head, tail.toVector)
 
   private def safeTrans[B](f: ArraySeq[A] => ArraySeq[B]): NonEmptyArraySeq[B] =
     NonEmptyArraySeq force f(whole)
@@ -213,12 +200,14 @@ final class NonEmptyArraySeq[+A](val head: A, val tail: ArraySeq[A]) {
       }
     }
 
-  def mkString(start: String, sep: String, end: String): String =
+  @inline def mkString(start: String, sep: String, end: String): String =
     whole.mkString(start, sep, end)
 
-  def mkString(sep: String): String = mkString("", sep, "")
+  @inline def mkString(sep: String): String =
+    whole.mkString(sep)
 
-  def mkString: String = mkString("")
+  @inline def mkString: String =
+    whole.mkString
 
   def to[B](factory: Factory[A, B]): B =
     factory.fromSpecific(whole)
@@ -227,39 +216,41 @@ final class NonEmptyArraySeq[+A](val head: A, val tail: ArraySeq[A]) {
 // =====================================================================================================================
 
 object NonEmptyArraySeq extends NonEmptyArraySeqImplicits0 {
-  def one[A](h: A): NonEmptyArraySeq[A] =
-    new NonEmptyArraySeq(h, ArraySeq.empty)
 
-//  /** Avoids failed type-inference with NonEmptyArraySeq(ArraySeq.empty[Int], ArraySeq.empty[Int]) */
-//  def varargs[A](h: A, t: A*): NonEmptyArraySeq[A] =
-//    apply(h, ArraySeq.unsafeWrapArray())
-//
-//  def apply[A](h: A, t: A*): NonEmptyArraySeq[A] =
-//    apply(h, t.toArraySeq)
-//
-  def apply[A](h: A, t: ArraySeq[A]): NonEmptyArraySeq[A] =
-    new NonEmptyArraySeq(h, t)
+  def force[A](v: ArraySeq[A]): NonEmptyArraySeq[A] =
+    new NonEmptyArraySeq(v)
 
-  def endOV[A](init: Option[ArraySeq[A]], last: A): NonEmptyArraySeq[A] =
+  def apply[A: ClassTag](h: A, t: A*): NonEmptyArraySeq[A] =
+    if (t.isEmpty)
+      one(h)
+    else {
+      val a = h +: ArraySeq.unsafeWrapArray(t.toArray)
+      new NonEmptyArraySeq(a)
+    }
+
+  def one[A: ClassTag](h: A): NonEmptyArraySeq[A] = {
+    val a = new Array[A](1)
+    a(0) = h
+    new NonEmptyArraySeq(ArraySeq.unsafeWrapArray(a))
+  }
+
+  def endOV[A: ClassTag](init: Option[ArraySeq[A]], last: A): NonEmptyArraySeq[A] =
     init.fold(one(last))(end(_, last))
 
-  def endO[A](init: Option[NonEmptyArraySeq[A]], last: A): NonEmptyArraySeq[A] =
+  def endO[A: ClassTag](init: Option[NonEmptyArraySeq[A]], last: A): NonEmptyArraySeq[A] =
     init.fold(one(last))(_ :+ last)
 
-  def end[A](init: ArraySeq[A], last: A): NonEmptyArraySeq[A] =
+  def end[A: ClassTag](init: ArraySeq[A], last: A): NonEmptyArraySeq[A] =
     if (init.isEmpty)
       one(last)
     else
-      new NonEmptyArraySeq(init.head, init.tail :+ last)
+      new NonEmptyArraySeq(init :+ last)
 
   def maybe[A, B](v: ArraySeq[A], empty: => B)(f: NonEmptyArraySeq[A] => B): B =
-    if (v.isEmpty) empty else f(NonEmptyArraySeq(v.head, v.tail))
+    if (v.isEmpty) empty else f(force(v))
 
   def option[A](v: ArraySeq[A]): Option[NonEmptyArraySeq[A]] =
     maybe[A, Option[NonEmptyArraySeq[A]]](v, None)(Some.apply)
-
-  def force[A](v: ArraySeq[A]): NonEmptyArraySeq[A] =
-    apply(v.head, v.tail)
 
   def split(string: String, regex: String): NonEmptyArraySeq[String] =
     force(ArraySeq.unsafeWrapArray(string.split(regex)))
@@ -280,25 +271,24 @@ object NonEmptyArraySeq extends NonEmptyArraySeqImplicits0 {
   }
 
   final class Builder[A: ClassTag](head: A) {
-    private[this] val tail = ArraySeq.newBuilder[A]
+    private[this] val whole = ArraySeq.newBuilder[A]
+    whole += head
 
     def +=(a: A): Unit = {
-      tail += a
+      whole += a
       ()
     }
 
     def ++=(as: IterableOnce[A]): Unit = {
-      tail ++= as
+      whole ++= as
       ()
     }
 
-    def ++=(as: NonEmptyArraySeq[A]): Unit = {
-      this += as.head
-      this ++= as.tail
-    }
+    def ++=(as: NonEmptyArraySeq[A]): Unit =
+      this ++= as.whole
 
     def result(): NonEmptyArraySeq[A] =
-      NonEmptyArraySeq(head, tail.result())
+      NonEmptyArraySeq.force(whole.result())
   }
 
   implicit def univEq[A: UnivEq]: UnivEq[NonEmptyArraySeq[A]] =
