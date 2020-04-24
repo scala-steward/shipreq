@@ -104,6 +104,16 @@ final case class Project(name           : Project.Name,
       prevDerivations = Some(derivations))
   }
 
+  def forgetPreviousProjectDerivations: Project =
+    Project(
+      name            = name           ,
+      config          = config         ,
+      content         = content        ,
+      manualIssues    = manualIssues   ,
+      reqtableViews   = reqtableViews  ,
+      idCeilings      = idCeilings     ,
+      prevDerivations = None)
+
   val derivations: ProjectDerivations =
     ProjectDerivations.next(prevDerivations, this)
 

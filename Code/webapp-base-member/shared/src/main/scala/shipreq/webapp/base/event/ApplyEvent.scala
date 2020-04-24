@@ -27,11 +27,19 @@ final class ApplyEvent(implicit val trust: Trust)
 
   import ApplyEvent.{Events, Result}
 
-  def apply(events: Events)(p: Project): Result =
-    applyAllSafely(events) exec p
-
   def apply1(event: Event)(p: Project): Result =
-    applyOneSafely(event) exec p
+    applyOneSafely(event).exec(p)
+
+  def apply(events: Events)(p: Project): Result =
+    applyAllSafely(events).exec(p)
+
+  def applyVerified(ves: IterableOnce[VerifiedEvent])(p: Project): Result =
+    if (ves.iterator.isEmpty)
+      \/-(p)
+    else
+      applyAllSafely(ves.iterator.map(_.event)).exec(p)
+
+  // ===================================================================================================================
 
   private val validateDataProps: Eval[Unit] =
     whenUntrusted {
@@ -45,17 +53,19 @@ final class ApplyEvent(implicit val trust: Trust)
       }
     }
 
-  def applyVerified(ves: IterableOnce[VerifiedEvent])(p: Project): Result =
-    if (ves.iterator.isEmpty)
-      \/-(p)
-    else
-      applyAllSafely(ves.iterator.map(_.event)).exec(p)
+  // Avoid space leaks.
+  // There could be a large amount of memory still lazily referenced by previous project derivations. Not just a single
+  // instance, but a chain of instances all linked because certain derivations haven't been referenced (evaluated) yet.
+  private val forgetPreviousProjectDerivations: Eval[Unit] =
+    Eval.mod(_.forgetPreviousProjectDerivations)
 
   private def safely(apply: Eval[Unit]): Eval[Unit] =
     (apply >> validateDataProps).catchErrors(onError)
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   private def applyAllSafely(events: Events): Eval[Unit] =
-    safely(applyAllUnsafely(events))
+    safely(applyAllUnsafely(events)) >> forgetPreviousProjectDerivations
 
   private def applyAllUnsafely(events: Events): Eval[Unit] =
 //    events.iterator.foldLeft(Eval.unit)((q, e) => q >> Eval.restack(applyOneUnsafely(e)))
