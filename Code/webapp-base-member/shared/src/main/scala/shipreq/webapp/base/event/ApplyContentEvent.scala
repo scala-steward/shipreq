@@ -97,7 +97,7 @@ trait ApplyContentEvent {
           reqIds.foldLeft(dr.reqApplication)(_.add(_, id)))
       }
 
-      NonEmptyVector.maybe(reason, noReason)(hasReason)
+      NonEmptyArraySeq.maybe(reason, noReason)(hasReason)
     }
 
     def validateTags(tagIds: => Iterable[ApplicableTagId]): Eval[Unit] =
@@ -190,7 +190,7 @@ trait ApplyContentEvent {
         }
 
       @inline def emptyTitle: Text.GenericReqTitle.OptionalText =
-        Vector.empty
+        Text.empty
 
       e => for {
         rt      <- needLiveCustomReqType(e.rt)
@@ -834,7 +834,7 @@ trait ApplyContentEvent {
       implicit val vs = e.vs
       for {
         c <- GD.need(^.Code)
-        t = GD.want(^.Title)(Vector.empty)
+        t = GD.want(^.Title)(Text.empty)
         g = LiveCodeGroup(e.id, t)
         _ <- addOne(AddGroup(c, Unvalidated, g))
       } yield ()

@@ -222,6 +222,13 @@ object BaseData {
       }
     }
 
+  implicitly[Pickler[Vector[Int]]]
+  def pickleArraySeq[A](implicit pa: Pickler[A], ct: ClassTag[A]): Pickler[ArraySeq[A]] =
+    // Can't use boopickle.BasicPicklers.ArrayPickler here because internally, it uses writeRawInt to write length,
+    // where as IterablePickler uses writeInt. We need to be compatible because we're switching out a Vector for an
+    // ArraySeq in some impls without affecting the codec.
+    boopickle.BasicPicklers.IterablePickler[A, ArraySeq]
+
   def pickleMultimap[K: UnivEq, L[_], V](implicit p: Pickler[Map[K, L[V]]], l: MultiValues[L]): Pickler[Multimap[K, L, V]] =
     p.xmap(Multimap(_))(_.m) // TODO optimise
 

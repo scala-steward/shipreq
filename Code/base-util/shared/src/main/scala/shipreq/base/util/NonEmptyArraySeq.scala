@@ -6,6 +6,7 @@ import scala.collection.{AbstractIterator, Factory}
 import scala.collection.immutable.ArraySeq
 import scala.math.Ordering
 import scala.reflect.ClassTag
+import scalaz.Semigroup
 
 final class NonEmptyArraySeq[+A] private[NonEmptyArraySeq](val whole: ArraySeq[A]) {
   override def toString = "NonEmpty" + whole.toString
@@ -54,18 +55,20 @@ final class NonEmptyArraySeq[+A] private[NonEmptyArraySeq](val whole: ArraySeq[A
     }
 
   def foreach[U](f: A => U): Unit = {
-    var i = whole.length
-    while (i > 0) {
-      i -= 1
-      f(whole(i))
+    var i = 0
+    while (i < whole.length) {
+      val a = whole(i)
+      i += 1
+      f(a)
     }
   }
 
   def foreachWithIndex[U](f: (A, Int) => U): Unit = {
-    var i = whole.length
-    while (i > 0) {
-      i -= 1
-      f(whole(i), i)
+    var i = 0
+    while (i < whole.length) {
+      val a = whole(i)
+      f(a, i)
+      i += 1
     }
   }
 
@@ -80,10 +83,11 @@ final class NonEmptyArraySeq[+A] private[NonEmptyArraySeq](val whole: ArraySeq[A
 
   def mapWithIndex[B: ClassTag](f: (A, Int) => B): NonEmptyArraySeq[B] = {
     val n = new Array[B](length)
-    var i = whole.length
-    while (i > 0) {
-      i -= 1
+    var i = 0
+    while (i < whole.length) {
       n(i) = f(whole(i), i)
+      i += 1
+
     }
     new NonEmptyArraySeq(ArraySeq.unsafeWrapArray(n))
   }
@@ -110,12 +114,14 @@ final class NonEmptyArraySeq[+A] private[NonEmptyArraySeq](val whole: ArraySeq[A
     whole.foldLeft(z)(f)
 
   def foldMapLeft1[B](g: A => B)(f: (B, A) => B): B = {
-    val it = iterator
-    var result = g(it.next())
-    while (it.hasNext) {
-      result = f(result, it.next())
+    var b = g(head)
+    var i = 1
+    while (i < whole.length) {
+      val a = whole(i)
+      b = f(b, a)
+      i += 1
     }
-    result
+    b
   }
 
   def reduceMapLeft1[B](f: A => B)(g: (B, B) => B): B =
@@ -224,8 +230,10 @@ object NonEmptyArraySeq extends NonEmptyArraySeqImplicits0 {
     if (t.isEmpty)
       one(h)
     else {
-      val a = h +: ArraySeq.unsafeWrapArray(t.toArray)
-      new NonEmptyArraySeq(a)
+      val b = ArraySeq.newBuilder[A]
+      b += h
+      b ++= t
+      new NonEmptyArraySeq(b.result())
     }
 
   def one[A: ClassTag](h: A): NonEmptyArraySeq[A] = {
@@ -251,6 +259,12 @@ object NonEmptyArraySeq extends NonEmptyArraySeqImplicits0 {
 
   def option[A](v: ArraySeq[A]): Option[NonEmptyArraySeq[A]] =
     maybe[A, Option[NonEmptyArraySeq[A]]](v, None)(Some.apply)
+
+  def fromNEV[A: ClassTag](nev: NonEmptyVector[A]): NonEmptyArraySeq[A] = {
+    val as = new Array[A](nev.length)
+    nev.foreachWithIndex((a, i) => as(i) = a)
+    force(ArraySeq.unsafeWrapArray(as))
+  }
 
   def split(string: String, regex: String): NonEmptyArraySeq[String] =
     force(ArraySeq.unsafeWrapArray(string.split(regex)))
@@ -284,7 +298,7 @@ object NonEmptyArraySeq extends NonEmptyArraySeqImplicits0 {
       ()
     }
 
-    def ++=(as: NonEmptyArraySeq[A]): Unit =
+    def +++=(as: NonEmptyArraySeq[A]): Unit =
       this ++= as.whole
 
     def result(): NonEmptyArraySeq[A] =
@@ -297,11 +311,11 @@ object NonEmptyArraySeq extends NonEmptyArraySeqImplicits0 {
   implicit def proveNEA[A]: NonEmpty.Proof[ArraySeq[A], NonEmptyArraySeq[A]] =
     NonEmpty.Proof(option[A])
 
-//  implicit def semigroup[A]: Semigroup[NonEmptyArraySeq[A]] =
-//    new Semigroup[NonEmptyArraySeq[A]] {
-//      override def append(a: NonEmptyArraySeq[A], b: => NonEmptyArraySeq[A]): NonEmptyArraySeq[A] = a ++ b
-//    }
-//
+  implicit def semigroup[A]: Semigroup[NonEmptyArraySeq[A]] =
+    new Semigroup[NonEmptyArraySeq[A]] {
+      override def append(a: NonEmptyArraySeq[A], b: => NonEmptyArraySeq[A]): NonEmptyArraySeq[A] = a ++ b
+    }
+
 //  implicit def traverse1: Traverse1[NonEmptyArraySeq] = new Traverse1[NonEmptyArraySeq] {
 //    override def foldLeft[A, B](fa: NonEmptyArraySeq[A], z: B)(f: (B, A) => B): B =
 //      fa.foldLeft(z)(f)

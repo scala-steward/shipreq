@@ -13,8 +13,9 @@ import shipreq.base.util.univeq._
 
 object BaseUtilGen {
 
-  implicit def NevToNonEmptySeq[A] = Gen.ToNonEmptySeq[NonEmptyVector[A], A](_.whole)
-  implicit def NesToNonEmptySeq[A] = Gen.ToNonEmptySeq[NonEmptySet   [A], A](_.whole.toVector)
+  implicit def NeaToNonEmptySeq[A] = Gen.ToNonEmptySeq[NonEmptyArraySeq[A], A](_.whole)
+  implicit def NesToNonEmptySeq[A] = Gen.ToNonEmptySeq[NonEmptySet     [A], A](_.whole.toVector)
+  implicit def NevToNonEmptySeq[A] = Gen.ToNonEmptySeq[NonEmptyVector  [A], A](_.whole)
 
   implicit def BaseUtilGen_GenExt[A](g: Gen[A]) = new BaseUtilGen_GenExt(g.run)
   class BaseUtilGen_GenExt[A](private val _g: Gen.Run[A]) extends AnyVal {

@@ -7,6 +7,7 @@ import japgolly.univeq._
 import shipreq.base.util.JsonUtil._
 import nyaya.util.{MultiValues, Multimap}
 import scala.collection.compat.immutable.ArraySeq
+import scala.reflect.ClassTag
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util._
 import shipreq.webapp.base.data._
@@ -75,6 +76,11 @@ private[v1] object BaseData {
   def encodeLazily[A](f: => Encoder[A]): Encoder[A] = {
     lazy val g = f
     Encoder.instance(c => g(c))
+  }
+
+  def codecArraySeq[A: ClassTag : Decoder : Encoder]: JsonCodec[ArraySeq[A]] = {
+    import CirceHacks.{decodeArraySeq, encodeArraySeq}
+    JsonCodec.summon
   }
 
   def codecMap[K: KeyDecoder: KeyEncoder, V: Decoder: Encoder]: JsonCodec[Map[K, V]] =

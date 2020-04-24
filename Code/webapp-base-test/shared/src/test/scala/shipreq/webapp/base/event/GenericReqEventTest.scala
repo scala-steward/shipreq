@@ -15,7 +15,7 @@ object GenericReqEventTest extends TestSuite {
   import GenericReqGD._
 
   val someTitleGR: GRT.OptionalText =
-    Vector(GRT.Literal("Look at "), GRT.WebAddress("https://google.com"))
+    GRT(GRT.Literal("Look at "), GRT.WebAddress("https://google.com"))
 
   val setTitleGR1 = GenericReqTitleSet(1, someTitleGR)
 
@@ -30,7 +30,7 @@ object GenericReqEventTest extends TestSuite {
       }
 
       "title" - {
-        val t = NonEmptyVector(GRT.Literal("cool"))
+        val t = GRT.nonEmpty(GRT.Literal("cool"))
         val p = _assertPass(emptyGR1.copy(vs = nev(Title(t))))
         assertGR(p, 1)(GenericReq(1, PubidT(mf, 1), t.whole, Live))
       }

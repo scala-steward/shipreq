@@ -15,9 +15,9 @@ object Debug {
   object Implicits extends Implicits
 
   final class DebugAnyExt[A](private val self: A) extends AnyVal {
-    def tapPrint()           : A = {println(self); self}
-    def tapPrint(title: Any) : A = {println(s"$title: $self"); self}
-    def tapPrint(f: A => Any): A = {println(f(self)); self}
+    def tapPrint()            : A = {println(self); self}
+    def tapPrint(title: Any)  : A = {println(s"$title: $self"); self}
+    def tapPrintF(f: A => Any): A = {println(f(self)); self}
   }
 
   // ===================================================================================================================

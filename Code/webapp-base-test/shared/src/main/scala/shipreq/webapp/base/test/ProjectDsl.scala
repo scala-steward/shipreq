@@ -121,9 +121,10 @@ object ProjectDslInternals {
   }
 
   class MrTagRef[T <: Atom.TagRef](val t: T) extends AnyVal {
-    def apply(ids: Seq[ApplicableTagId])                  : t.OptionalText = ids.toVector map t.TagRef
-    def apply(id1: ApplicableTagId, ids: ApplicableTagId*): t.NonEmptyText = apply(NonEmptyVector(id1, ids.toVector))
-    def apply(ids: NonEmptyVector[ApplicableTagId])       : t.NonEmptyText = ids map t.TagRef
+    def optional(ids: Seq[ApplicableTagId])               : t.OptionalText = t(ids.map(t.TagRef): _*)
+    def apply(id1: ApplicableTagId, ids: ApplicableTagId*): t.NonEmptyText = apply(NonEmptyArraySeq(id1, ids: _*))
+    def apply(ids: NonEmptyVector[ApplicableTagId])       : t.NonEmptyText = apply(NonEmptyArraySeq.fromNEV(ids))
+    def apply(ids: NonEmptyArraySeq[ApplicableTagId])     : t.NonEmptyText = ids.map(t.TagRef)
   }
 }
 
@@ -134,7 +135,7 @@ object ProjectDsl {
   implicit def projectDsl_autoComposite(s: ToState): Composite =
     Composite(NonEmptyVector.one(s.state), None)
 
-  case class GReq(title  : Text.GenericReqTitle.OptionalText = Vector.empty,
+  case class GReq(title  : Text.GenericReqTitle.OptionalText = Text.empty,
                   id     : Option[GenericReqId]              = None,
                   reqType: Option[CustomReqTypeId]           = None,
                   live   : Live                              = Live,
@@ -149,7 +150,7 @@ object ProjectDsl {
     def impSrc (ids: ReqId*)                 : GReq = copy(impSrcs = this.impSrcs ++ ids)
     def impTgt (ids: ReqId*)                 : GReq = copy(impTgts = this.impTgts ++ ids)
     def cftext (k: CFTextId, v: CFTextValue) : GReq = copy(cftexts = this.cftexts.updated(k,v))
-    def cftextO(k: CFTextId, v: CFTextValueO): GReq = NonEmptyVector.maybe(v, this)(cftext(k, _))
+    def cftextO(k: CFTextId, v: CFTextValueO): GReq = NonEmptyArraySeq.maybe(v, this)(cftext(k, _))
     def cftextS(k: CFTextId, s: String)      : GReq = if (s.isEmpty) this else {import UnsafeTypes._ ;cftext(k, s)}
 
     def times(n: Int): Composite =
@@ -180,7 +181,7 @@ object ProjectDsl {
 
   case class RCGroup(code : ReqCode.Value,
                      id   : Option[ReqCodeGroupId] = None,
-                     title: Text.CodeGroupTitle.OptionalText = Vector.empty) extends ToState {
+                     title: Text.CodeGroupTitle.OptionalText = Text.empty) extends ToState {
     def state: Mod[LiveCodeGroup] =
       State[ProjectState, LiveCodeGroup]{ p =>
         val ad = p.newActiveGroup(id, title)

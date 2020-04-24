@@ -347,7 +347,7 @@ object MakeEvent {
         for (v <- NonEmptySet.option(i.imps(Backwards))) vs += GenericReqGD.ImpSrcs(v)
         for (v <- NonEmptySet.option(i.imps(Forwards)))  vs += GenericReqGD.ImpTgts(v)
         for (v <- NonEmptySet.option(i.tags))            vs += GenericReqGD.Tags(v)
-        for (v <- NonEmptyVector.option(i.title))        vs += GenericReqGD.Title(v)
+        for (v <- NonEmptyArraySeq.option(i.title))      vs += GenericReqGD.Title(v)
         val id = GenericReqId(project.idCeilings.req + 1)
         GenericReqCreate(id, i.reqType, vs)
 
@@ -362,7 +362,7 @@ object MakeEvent {
         for (v <- NonEmptySet.option(i.imps(Backwards))) vs += UseCaseGD.ImpSrcs(v)
         for (v <- NonEmptySet.option(i.imps(Forwards)))  vs += UseCaseGD.ImpTgts(v)
         for (v <- NonEmptySet.option(i.tags))            vs += UseCaseGD.Tags(v)
-        for (v <- NonEmptyVector.option(i.title))        vs += UseCaseGD.Title(v)
+        for (v <- NonEmptyArraySeq.option(i.title))      vs += UseCaseGD.Title(v)
         val id = UseCaseId(project.idCeilings.req + 1)
         val stepId = UseCaseStepId(project.idCeilings.useCaseStep + 1)
         UseCaseCreate(id, stepId, vs)

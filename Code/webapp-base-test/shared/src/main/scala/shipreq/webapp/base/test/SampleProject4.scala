@@ -47,7 +47,7 @@ object SampleProject4 {
     var rt  = p.content.reqText
 
     def addUseCase(id   : Int                            = -1,
-                   title: Text.UseCaseTitle.OptionalText ,// = Vector.empty,
+                   title: Text.UseCaseTitle.OptionalText ,// = Text.empty,
                    ncac : UseCaseSteps.Tree              ,// = rootOnlyStepTree(),
                    ec   : UseCaseSteps.Tree              = VectorTree.empty,
                    live : Live                           = Live): UseCaseId = {
@@ -64,7 +64,7 @@ object SampleProject4 {
     }
 
     def newStep(id   : Int,
-                title: Text.UseCaseStep.OptionalText = Vector.empty,
+                title: Text.UseCaseStep.OptionalText = Text.empty,
                 live : Live                          = Live): UseCaseStep = {
       val i = UseCaseStepId(if (id > 0) id else (ic.useCaseStep + 1))
       ic = ic.copy(useCaseStep = ic.useCaseStep max i.value)

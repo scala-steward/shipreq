@@ -1,5 +1,6 @@
 package shipreq.webapp.base.data.derivation
 
+import scala.collection.immutable.ArraySeq
 import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
@@ -59,9 +60,9 @@ object AtomScan {
     def scanReqText(live : Live,
                     reqId: ReqId,
                     loc  : Location.Text)
-                   (text : Vector[AnyAtom]): Unit = {
+                   (text : ArraySeq[AnyAtom]): Unit = {
 
-      def go(as: Vector[AnyAtom]): Unit = {
+      def go(as: ArraySeq[AnyAtom]): Unit = {
         var i = as.length
         while (i > 0) {
           i -= 1
@@ -109,9 +110,9 @@ object AtomScan {
     def scanReqCodeGroupText(live     : Live,
                              reqCodeId: ReqCodeGroupId,
                              loc      : LocationOf.Text.InReqCodeGroup)
-                            (text     : Vector[AnyAtom]): Unit = {
+                            (text     : ArraySeq[AnyAtom]): Unit = {
 
-      def go(as: Vector[AnyAtom]): Unit = {
+      def go(as: ArraySeq[AnyAtom]): Unit = {
         var i = as.length
         while (i > 0) {
           i -= 1
