@@ -5,6 +5,7 @@ import japgolly.microlibs.scalaz_ext.ScalazMacros
 import japgolly.microlibs.utils.Memo
 import nyaya.util.Multimap
 import monocle.macros.Lenses
+import scala.annotation.elidable
 import scalaz.{Equal, Order}
 import scalaz.std.string.stringInstance
 import shipreq.base.util._
@@ -362,4 +363,8 @@ object ReqCodes {
     lazy val idSet                 = CC("ReqCodesScan.read.idSet                ")(_idSet)
     lazy val reqCodeGroupsById     = CC("ReqCodesScan.read.reqCodeGroupsById    ")(_reqCodeGroupsById)
   }
+
+  @elidable(elidable.INFO)
+  def benchmarkScan(trie: ReqCode.Trie): AnyRef =
+    new Scan(trie)
 }

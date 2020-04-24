@@ -7,11 +7,9 @@ import shipreq.webapp.base.data.derivation.AtomScan
 import shipreq.webapp.sampledata.SampleData
 
 /*
-
 > jmh:run -wi 1 -i 3 -f 1 AtomScanBM
 
-[info] AtomScanBM.atomScan     10000  avgt    3  2.333 ± 0.462  ms/op
-
+[info] AtomScanBM.atomScan     10000  avgt    3  1.889 ± 0.358  ms/op
  */
 
 @State(Scope.Benchmark)
