@@ -4,8 +4,39 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.AsciiTable
 import java.time.Duration
+import scala.annotation.tailrec
 
 object Debug {
+
+  def printStackTrace(filter: String = "shipreq"): Unit = {
+    val t = new RuntimeException()
+      .stackTraceAsString
+      .linesIterator
+      .drop(2)
+      .filter(_ contains filter)
+      .map(t => s"\u001b[96m$t${Console.RESET}")
+      .mkString("\n")
+    printInIsolation(t, sep = true)
+  }
+
+  def printInIsolation(str: String, sep: Boolean = false): Unit =
+    synchronized {
+      System.out.flush()
+      System.err.flush()
+      Thread.sleep(10)
+
+      if (sep) {
+        val s = "=" * 120
+        println(s)
+        println(str)
+        println(s)
+      } else
+        println(str)
+
+      System.out.flush()
+      System.err.flush()
+      Thread.sleep(60)
+    }
 
   trait Implicits {
     final implicit def debugAnyExt[A](a: A): DebugAnyExt[A] =
@@ -15,10 +46,13 @@ object Debug {
   object Implicits extends Implicits
 
   final class DebugAnyExt[A](private val self: A) extends AnyVal {
-    def tapPrint()            : A = {println(self); self}
-    def tapPrint(title: Any)  : A = {println(s"$title: $self"); self}
-    def tapPrintF(f: A => Any): A = {println(f(self)); self}
+    def tapPrint()                          : A = {println(self); self}
+    def tapPrint(title: Any)                : A = {println(s"$title: $self"); self}
+    def tapPrintF(f: A => Any)              : A = {println(f(self)); self}
+    def printStackTraceWhen(f: A => Boolean): A = {if (f(self)) Debug.printStackTrace(); self}
   }
+
+  private val blank = Console.INVISIBLE + " " + Console.RESET
 
   // ===================================================================================================================
 
@@ -82,7 +116,98 @@ object Debug {
         AsciiTable(content)
       }
 
-    def printReport(): Unit =
-      println(report())
+    def printReport(): Unit = {
+      printInIsolation(report())
+    }
+  }
+
+  // ===================================================================================================================
+
+  trait ABTest {
+    def clear(): Unit
+    val addA: String => Unit
+    val addB: String => Unit
+    def complete(): Unit
+  }
+
+  object ABTest {
+    object Off extends ABTest {
+      override def clear(): Unit = ()
+      override val addA = _ => ()
+      override val addB = addA
+      override def complete(): Unit = ()
+    }
+
+    def apply(): ABTest =
+      new ABTest {
+        private[this] val lock = new AnyRef
+        private[this] val a = collection.mutable.ArrayBuffer.empty[String]
+        private[this] val b = collection.mutable.ArrayBuffer.empty[String]
+        private[this] var lastOk = -1
+
+        override def clear(): Unit =
+          lock.synchronized {
+            a.clear()
+            b.clear()
+          }
+
+        override val addA: String => Unit = add(_, true)
+        override val addB: String => Unit = add(_, false)
+
+        private def add(s: String, addToA: Boolean): Unit =
+          lock.synchronized {
+            (if (addToA) a else b) += s
+            val limit = a.length.min(b.length)
+
+            // min
+            @tailrec def check(i: Int): Unit =
+              if (i < limit) {
+                val x = a(i)
+                val y = b(i)
+                if (x != y) {
+                  val n = 8
+                  val err =
+                    new AssertionError(
+                      s"""
+                         |Discrepancy found at [$i]:
+                         |$blank
+                         |A: $x
+                         |B: $y
+                         |$blank
+                         |As:
+                         |${a.toVector.take(i + n).zipWithIndex.drop(i - n).map {case (s, i) => s"  a[$i] $s"}.mkString("\n")}
+                         |$blank
+                         |Bs:
+                         |${b.toVector.take(i + n).zipWithIndex.drop(i - n).map {case (s, i) => s"  b[$i] $s"}.mkString("\n")}
+                         |$blank
+                         |""".stripMargin)
+                  err.printStackTrace()
+                  Thread.sleep(100)
+                  throw err
+                }
+                lastOk = i
+                check(i + 1)
+              }
+
+            check(lastOk + 1)
+          }
+
+        override def complete(): Unit =
+          lock.synchronized {
+            val x = a.length
+            val y = b.length
+            if (x != y) {
+              val min = x.min(y)
+              throw new AssertionError(
+                s"""
+                   |Discrepancy found! A had $x steps but B had $y steps.
+                   |$blank
+                   |Extra steps:
+                   |${(a.drop(min) ++ b.drop(min)).mkString("\n")}
+                   |$blank
+                   |""".stripMargin)
+            }
+          }
+      }
   }
 }
