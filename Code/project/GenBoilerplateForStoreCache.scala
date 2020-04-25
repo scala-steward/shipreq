@@ -66,7 +66,7 @@ object GenBoilerplateForStoreCache {
 
         val storeCache =
           s"""
-             |private[storecache] final class StoreCache$n[In, $allTypeParams, Z](
+             |final class StoreCache$n[In, $allTypeParams, Z](
              |    $scValDefs,
              |    val lo: LazyVal[Z],
              |    mapOut: (${values.ABC}) => Z) extends StoreCache[In, Z] {
@@ -96,7 +96,7 @@ object GenBoilerplateForStoreCache {
 
         val logic =
           s"""
-             |private[storecache] final class Logic$n[In, $allTypeParams, Z](
+             |final class Logic$n[In, $allTypeParams, Z](
              |    $lDefs,
              |    mapOut: (${values.ABC}) => Z) extends StoreCache.Logic[In, Z] {
              |
@@ -148,7 +148,7 @@ object GenBoilerplateForStoreCache {
           s"""
              |final def apply$n[In, $allTypeParams, Z](
              |    $lDefs)(
-             |    mapOut: (${values.ABC}) => Z): StoreCache.Logic[In, Z] =
+             |    mapOut: (${values.ABC}) => Z): Logic$n[In, $allTypeParams, Z] =
              |  new Logic$n($ls, mapOut)
              |""".stripMargin
 

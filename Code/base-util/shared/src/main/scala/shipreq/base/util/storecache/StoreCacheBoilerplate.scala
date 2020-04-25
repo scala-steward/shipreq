@@ -2,7 +2,7 @@ package shipreq.base.util.storecache
 
 import shipreq.base.util._
 
-private[storecache] final class StoreCache2[In, SA,A, SB,B, Z](
+final class StoreCache2[In, SA,A, SB,B, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val lo: LazyVal[Z],
@@ -20,7 +20,7 @@ private[storecache] final class StoreCache2[In, SA,A, SB,B, Z](
     new StoreCache2(s1, s2, lo.map(ff), (a,b) => ff(mapOut(a,b)))
 }
 
-private[storecache] final class StoreCache3[In, SA,A, SB,B, SC,C, Z](
+final class StoreCache3[In, SA,A, SB,B, SC,C, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -39,7 +39,7 @@ private[storecache] final class StoreCache3[In, SA,A, SB,B, SC,C, Z](
     new StoreCache3(s1, s2, s3, lo.map(ff), (a,b,c) => ff(mapOut(a,b,c)))
 }
 
-private[storecache] final class StoreCache4[In, SA,A, SB,B, SC,C, SD,D, Z](
+final class StoreCache4[In, SA,A, SB,B, SC,C, SD,D, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -59,7 +59,7 @@ private[storecache] final class StoreCache4[In, SA,A, SB,B, SC,C, SD,D, Z](
     new StoreCache4(s1, s2, s3, s4, lo.map(ff), (a,b,c,d) => ff(mapOut(a,b,c,d)))
 }
 
-private[storecache] final class StoreCache5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z](
+final class StoreCache5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -80,7 +80,7 @@ private[storecache] final class StoreCache5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z]
     new StoreCache5(s1, s2, s3, s4, s5, lo.map(ff), (a,b,c,d,e) => ff(mapOut(a,b,c,d,e)))
 }
 
-private[storecache] final class StoreCache6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, Z](
+final class StoreCache6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -102,7 +102,7 @@ private[storecache] final class StoreCache6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF
     new StoreCache6(s1, s2, s3, s4, s5, s6, lo.map(ff), (a,b,c,d,e,f) => ff(mapOut(a,b,c,d,e,f)))
 }
 
-private[storecache] final class StoreCache7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, Z](
+final class StoreCache7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -125,7 +125,7 @@ private[storecache] final class StoreCache7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF
     new StoreCache7(s1, s2, s3, s4, s5, s6, s7, lo.map(ff), (a,b,c,d,e,f,g) => ff(mapOut(a,b,c,d,e,f,g)))
 }
 
-private[storecache] final class StoreCache8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, Z](
+final class StoreCache8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -149,7 +149,7 @@ private[storecache] final class StoreCache8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF
     new StoreCache8(s1, s2, s3, s4, s5, s6, s7, s8, lo.map(ff), (a,b,c,d,e,f,g,h) => ff(mapOut(a,b,c,d,e,f,g,h)))
 }
 
-private[storecache] final class StoreCache9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, Z](
+final class StoreCache9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -174,7 +174,7 @@ private[storecache] final class StoreCache9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF
     new StoreCache9(s1, s2, s3, s4, s5, s6, s7, s8, s9, lo.map(ff), (a,b,c,d,e,f,g,h,i) => ff(mapOut(a,b,c,d,e,f,g,h,i)))
 }
 
-private[storecache] final class StoreCache10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, Z](
+final class StoreCache10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -200,7 +200,7 @@ private[storecache] final class StoreCache10[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache10(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, lo.map(ff), (a,b,c,d,e,f,g,h,i,j) => ff(mapOut(a,b,c,d,e,f,g,h,i,j)))
 }
 
-private[storecache] final class StoreCache11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, Z](
+final class StoreCache11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -227,7 +227,7 @@ private[storecache] final class StoreCache11[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache11(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k)))
 }
 
-private[storecache] final class StoreCache12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, Z](
+final class StoreCache12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -255,7 +255,7 @@ private[storecache] final class StoreCache12[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache12(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l)))
 }
 
-private[storecache] final class StoreCache13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, Z](
+final class StoreCache13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -284,7 +284,7 @@ private[storecache] final class StoreCache13[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache13(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m)))
 }
 
-private[storecache] final class StoreCache14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, Z](
+final class StoreCache14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -314,7 +314,7 @@ private[storecache] final class StoreCache14[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache14(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n)))
 }
 
-private[storecache] final class StoreCache15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, Z](
+final class StoreCache15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -345,7 +345,7 @@ private[storecache] final class StoreCache15[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache15(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o)))
 }
 
-private[storecache] final class StoreCache16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, Z](
+final class StoreCache16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -377,7 +377,7 @@ private[storecache] final class StoreCache16[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache16(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p)))
 }
 
-private[storecache] final class StoreCache17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, Z](
+final class StoreCache17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -410,7 +410,7 @@ private[storecache] final class StoreCache17[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache17(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q)))
 }
 
-private[storecache] final class StoreCache18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, Z](
+final class StoreCache18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -444,7 +444,7 @@ private[storecache] final class StoreCache18[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache18(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r)))
 }
 
-private[storecache] final class StoreCache19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, Z](
+final class StoreCache19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -479,7 +479,7 @@ private[storecache] final class StoreCache19[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache19(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s)))
 }
 
-private[storecache] final class StoreCache20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, Z](
+final class StoreCache20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -515,7 +515,7 @@ private[storecache] final class StoreCache20[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache20(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t)))
 }
 
-private[storecache] final class StoreCache21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, Z](
+final class StoreCache21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -552,7 +552,7 @@ private[storecache] final class StoreCache21[In, SA,A, SB,B, SC,C, SD,D, SE,E, S
     new StoreCache21(s1, s2, s3, s4, s5, s6, s7, s8, s9, s10, s11, s12, s13, s14, s15, s16, s17, s18, s19, s20, s21, lo.map(ff), (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u) => ff(mapOut(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u)))
 }
 
-private[storecache] final class StoreCache22[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, SV,V, Z](
+final class StoreCache22[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, SV,V, Z](
     val s1: StoreCache1[In, SA, A],
     val s2: StoreCache1[In, SB, B],
     val s3: StoreCache1[In, SC, C],
@@ -971,7 +971,7 @@ abstract class StoreCacheBoilerplate private[storecache]() {
   }
 }
 
-private[storecache] final class Logic2[In, SA,A, SB,B, Z](
+final class Logic2[In, SA,A, SB,B, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     mapOut: (A,B) => Z) extends StoreCache.Logic[In, Z] {
@@ -1024,7 +1024,7 @@ private[storecache] final class Logic2[In, SA,A, SB,B, Z](
   }
 }
 
-private[storecache] final class Logic3[In, SA,A, SB,B, SC,C, Z](
+final class Logic3[In, SA,A, SB,B, SC,C, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -1083,7 +1083,7 @@ private[storecache] final class Logic3[In, SA,A, SB,B, SC,C, Z](
   }
 }
 
-private[storecache] final class Logic4[In, SA,A, SB,B, SC,C, SD,D, Z](
+final class Logic4[In, SA,A, SB,B, SC,C, SD,D, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -1148,7 +1148,7 @@ private[storecache] final class Logic4[In, SA,A, SB,B, SC,C, SD,D, Z](
   }
 }
 
-private[storecache] final class Logic5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z](
+final class Logic5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -1219,7 +1219,7 @@ private[storecache] final class Logic5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z](
   }
 }
 
-private[storecache] final class Logic6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, Z](
+final class Logic6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -1296,7 +1296,7 @@ private[storecache] final class Logic6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, Z
   }
 }
 
-private[storecache] final class Logic7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, Z](
+final class Logic7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -1379,7 +1379,7 @@ private[storecache] final class Logic7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
   }
 }
 
-private[storecache] final class Logic8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, Z](
+final class Logic8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -1468,7 +1468,7 @@ private[storecache] final class Logic8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
   }
 }
 
-private[storecache] final class Logic9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, Z](
+final class Logic9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -1563,7 +1563,7 @@ private[storecache] final class Logic9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, S
   }
 }
 
-private[storecache] final class Logic10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, Z](
+final class Logic10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -1664,7 +1664,7 @@ private[storecache] final class Logic10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, Z](
+final class Logic11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -1771,7 +1771,7 @@ private[storecache] final class Logic11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, Z](
+final class Logic12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -1884,7 +1884,7 @@ private[storecache] final class Logic12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, Z](
+final class Logic13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -2003,7 +2003,7 @@ private[storecache] final class Logic13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, Z](
+final class Logic14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -2128,7 +2128,7 @@ private[storecache] final class Logic14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, Z](
+final class Logic15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -2259,7 +2259,7 @@ private[storecache] final class Logic15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, Z](
+final class Logic16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -2396,7 +2396,7 @@ private[storecache] final class Logic16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, Z](
+final class Logic17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -2539,7 +2539,7 @@ private[storecache] final class Logic17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, Z](
+final class Logic18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -2688,7 +2688,7 @@ private[storecache] final class Logic18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, Z](
+final class Logic19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -2843,7 +2843,7 @@ private[storecache] final class Logic19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, Z](
+final class Logic20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -3004,7 +3004,7 @@ private[storecache] final class Logic20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, Z](
+final class Logic21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -3171,7 +3171,7 @@ private[storecache] final class Logic21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, 
   }
 }
 
-private[storecache] final class Logic22[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, SV,V, Z](
+final class Logic22[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, SV,V, Z](
     l1: Logic1[In, SA, A],
     l2: Logic1[In, SB, B],
     l3: Logic1[In, SC, C],
@@ -3350,14 +3350,14 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
   final def apply2[In, SA,A, SB,B, Z](
       l1: Logic1[In, SA, A],
       l2: Logic1[In, SB, B])(
-      mapOut: (A,B) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B) => Z): Logic2[In, SA,A, SB,B, Z] =
     new Logic2(l1, l2, mapOut)
 
   final def apply3[In, SA,A, SB,B, SC,C, Z](
       l1: Logic1[In, SA, A],
       l2: Logic1[In, SB, B],
       l3: Logic1[In, SC, C])(
-      mapOut: (A,B,C) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C) => Z): Logic3[In, SA,A, SB,B, SC,C, Z] =
     new Logic3(l1, l2, l3, mapOut)
 
   final def apply4[In, SA,A, SB,B, SC,C, SD,D, Z](
@@ -3365,7 +3365,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l2: Logic1[In, SB, B],
       l3: Logic1[In, SC, C],
       l4: Logic1[In, SD, D])(
-      mapOut: (A,B,C,D) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D) => Z): Logic4[In, SA,A, SB,B, SC,C, SD,D, Z] =
     new Logic4(l1, l2, l3, l4, mapOut)
 
   final def apply5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z](
@@ -3374,7 +3374,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l3: Logic1[In, SC, C],
       l4: Logic1[In, SD, D],
       l5: Logic1[In, SE, E])(
-      mapOut: (A,B,C,D,E) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E) => Z): Logic5[In, SA,A, SB,B, SC,C, SD,D, SE,E, Z] =
     new Logic5(l1, l2, l3, l4, l5, mapOut)
 
   final def apply6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, Z](
@@ -3384,7 +3384,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l4: Logic1[In, SD, D],
       l5: Logic1[In, SE, E],
       l6: Logic1[In, SF, F])(
-      mapOut: (A,B,C,D,E,F) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F) => Z): Logic6[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, Z] =
     new Logic6(l1, l2, l3, l4, l5, l6, mapOut)
 
   final def apply7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, Z](
@@ -3395,7 +3395,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l5: Logic1[In, SE, E],
       l6: Logic1[In, SF, F],
       l7: Logic1[In, SG, G])(
-      mapOut: (A,B,C,D,E,F,G) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G) => Z): Logic7[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, Z] =
     new Logic7(l1, l2, l3, l4, l5, l6, l7, mapOut)
 
   final def apply8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, Z](
@@ -3407,7 +3407,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l6: Logic1[In, SF, F],
       l7: Logic1[In, SG, G],
       l8: Logic1[In, SH, H])(
-      mapOut: (A,B,C,D,E,F,G,H) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H) => Z): Logic8[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, Z] =
     new Logic8(l1, l2, l3, l4, l5, l6, l7, l8, mapOut)
 
   final def apply9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, Z](
@@ -3420,7 +3420,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l7: Logic1[In, SG, G],
       l8: Logic1[In, SH, H],
       l9: Logic1[In, SI, I])(
-      mapOut: (A,B,C,D,E,F,G,H,I) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I) => Z): Logic9[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, Z] =
     new Logic9(l1, l2, l3, l4, l5, l6, l7, l8, l9, mapOut)
 
   final def apply10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, Z](
@@ -3434,7 +3434,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l8: Logic1[In, SH, H],
       l9: Logic1[In, SI, I],
       l10: Logic1[In, SJ, J])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J) => Z): Logic10[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, Z] =
     new Logic10(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, mapOut)
 
   final def apply11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, Z](
@@ -3449,7 +3449,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l9: Logic1[In, SI, I],
       l10: Logic1[In, SJ, J],
       l11: Logic1[In, SK, K])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K) => Z): Logic11[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, Z] =
     new Logic11(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, mapOut)
 
   final def apply12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, Z](
@@ -3465,7 +3465,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l10: Logic1[In, SJ, J],
       l11: Logic1[In, SK, K],
       l12: Logic1[In, SL, L])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L) => Z): Logic12[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, Z] =
     new Logic12(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, mapOut)
 
   final def apply13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, Z](
@@ -3482,7 +3482,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l11: Logic1[In, SK, K],
       l12: Logic1[In, SL, L],
       l13: Logic1[In, SM, M])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M) => Z): Logic13[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, Z] =
     new Logic13(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, mapOut)
 
   final def apply14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, Z](
@@ -3500,7 +3500,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l12: Logic1[In, SL, L],
       l13: Logic1[In, SM, M],
       l14: Logic1[In, SN, N])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N) => Z): Logic14[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, Z] =
     new Logic14(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, mapOut)
 
   final def apply15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, Z](
@@ -3519,7 +3519,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l13: Logic1[In, SM, M],
       l14: Logic1[In, SN, N],
       l15: Logic1[In, SO, O])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O) => Z): Logic15[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, Z] =
     new Logic15(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, mapOut)
 
   final def apply16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, Z](
@@ -3539,7 +3539,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l14: Logic1[In, SN, N],
       l15: Logic1[In, SO, O],
       l16: Logic1[In, SP, P])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P) => Z): Logic16[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, Z] =
     new Logic16(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, mapOut)
 
   final def apply17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, Z](
@@ -3560,7 +3560,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l15: Logic1[In, SO, O],
       l16: Logic1[In, SP, P],
       l17: Logic1[In, SQ, Q])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q) => Z): Logic17[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, Z] =
     new Logic17(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, mapOut)
 
   final def apply18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, Z](
@@ -3582,7 +3582,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l16: Logic1[In, SP, P],
       l17: Logic1[In, SQ, Q],
       l18: Logic1[In, SR, R])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R) => Z): Logic18[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, Z] =
     new Logic18(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, mapOut)
 
   final def apply19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, Z](
@@ -3605,7 +3605,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l17: Logic1[In, SQ, Q],
       l18: Logic1[In, SR, R],
       l19: Logic1[In, SS, S])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S) => Z): Logic19[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, Z] =
     new Logic19(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, mapOut)
 
   final def apply20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, Z](
@@ -3629,7 +3629,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l18: Logic1[In, SR, R],
       l19: Logic1[In, SS, S],
       l20: Logic1[In, ST, T])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T) => Z): Logic20[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, Z] =
     new Logic20(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, mapOut)
 
   final def apply21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, Z](
@@ -3654,7 +3654,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l19: Logic1[In, SS, S],
       l20: Logic1[In, ST, T],
       l21: Logic1[In, SU, U])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U) => Z): Logic21[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, Z] =
     new Logic21(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, mapOut)
 
   final def apply22[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, SV,V, Z](
@@ -3680,7 +3680,7 @@ abstract class StoreCacheLogicBoilerplate private[storecache]() {
       l20: Logic1[In, ST, T],
       l21: Logic1[In, SU, U],
       l22: Logic1[In, SV, V])(
-      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V) => Z): StoreCache.Logic[In, Z] =
+      mapOut: (A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V) => Z): Logic22[In, SA,A, SB,B, SC,C, SD,D, SE,E, SF,F, SG,G, SH,H, SI,I, SJ,J, SK,K, SL,L, SM,M, SN,N, SO,O, SP,P, SQ,Q, SR,R, SS,S, ST,T, SU,U, SV,V, Z] =
     new Logic22(l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, mapOut)
 
   final def fn1[A, Z](f: (A) => Z): DslFn1[A, Z] =
