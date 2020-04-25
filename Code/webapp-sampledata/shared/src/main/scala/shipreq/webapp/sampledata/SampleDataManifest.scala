@@ -1,12 +1,14 @@
 package shipreq.webapp.sampledata
 
-trait SampleDataManifest[D] {
-  protected def load(filename: String): D
+final case class SampleDataMeta(filename: String, projectConfigHash: Int, projectContentHash: Int)
 
-  lazy val  `1000`: D = load("shipreq-events-1000.json")
-  lazy val  `2000`: D = load("shipreq-events-2000.json")
-  lazy val  `4000`: D = load("shipreq-events-4000.json")
-  lazy val `10000`: D = load("shipreq-events-10000.json")
+trait SampleDataManifest[D] {
+  protected def load(meta: SampleDataMeta): D
+
+  lazy val  `1000`: D = load(SampleDataMeta("shipreq-events-1000.json", -15975327, -1248354367))
+  lazy val  `2000`: D = load(SampleDataMeta("shipreq-events-2000.json", 454447920, 1367503418))
+  lazy val  `4000`: D = load(SampleDataMeta("shipreq-events-4000.json", 106265614, -1464809499))
+  lazy val `10000`: D = load(SampleDataMeta("shipreq-events-10000.json", -1981610195, 1192003615))
 
   lazy val all: Vector[D] =
     Vector(

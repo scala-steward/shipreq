@@ -9,17 +9,19 @@ object Profile {
 
   def main(args: Array[String]): Unit = {
     println("Loading sample data...")
+    val sd = SampleData.`10000`
+    sd.assertValid()
 
 //    import shipreq.webapp.base.data.derivation._
-//    val project = SampleData.`10000`.project
+//    val project = sd.project
 //    profile(1)(Array.fill(100)(AtomScan(project)))
 
-//    val trie = SampleData.`10000`.project.content.reqCodes.trie
+//    val trie = sd.project.content.reqCodes.trie
 //    profile(2)(Array.fill(100)(ReqCodes.benchmarkScan(trie)))
 
     import shipreq.webapp.base.event._
     val trusted = ApplyEvent.trusted
-    val verifiedEvents = SampleData.`10000`.verifiedEvents
+    val verifiedEvents = sd.verifiedEvents
     profile(1)(trusted.applyVerified(verifiedEvents)(Project.empty))
   }
 
@@ -42,5 +44,4 @@ object Profile {
     CC.printReport()
     println("Done.")
   }
-
 }
