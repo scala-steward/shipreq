@@ -11,9 +11,9 @@ import shipreq.webapp.base.data.CC
 /**
  * A collection of stats mapped by a key.
  */
-final case class LiveDeadStatMap[Key, @specialized(Int) A] private[data](raw: Map[Key, LiveDeadStat[A]],
-                                                                         allLazy: LazyVal[LiveDeadStat[A]])
-                                                                        (implicit A: Monoid[A]) {
+final case class LiveDeadStatMap[Key, @specialized(Int) A] private[derivation](raw: Map[Key, LiveDeadStat[A]],
+                                                                               allLazy: LazyVal[LiveDeadStat[A]])
+                                                                              (implicit A: Monoid[A]) {
   def isEmpty = raw.isEmpty
 
   def all: LiveDeadStat[A] =
