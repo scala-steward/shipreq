@@ -128,45 +128,63 @@ object MTrie {
     type Path   = NonEmptyVector[K]
     @inline implicit private[this] def keyUnivEq: UnivEq[K] = UnivEq.force // evident from existence of trie
 
-    def foreachValue[U](f: V => U): Unit =
-      allValues.foreach(f)
+    def foreachValue[U](f: V => U): Unit = {
+      type It = Iterator[(K, Node)]
+      var more = List.empty[It]
+      var it = trie.iterator
+      while({
+        while (it.hasNext)
+          it.next()._2 match {
+            case b: MTrie.Branch[K, V] =>
+              for (v <- b.value)
+                f(v.value)
+              more ::= b.next.iterator
+
+            case v: MTrie.Value[K, V] =>
+              f(v.value)
+          }
+        !more.isEmpty
+      }) {
+        it = more.head
+        more = more.tail
+      }
+    }
 
     def foreachPathAndValue[U](f: (Path, V) => U): Unit = {
       // This is a *very* hot path. Measure affect on ApplyEventBM.
 
-      type It = Iterator[(K, Node)]
+      type It   = Iterator[(K, Node)]
       type Work = (It, Vector[K])
 
-      @tailrec def go(ws: List[Work]): Unit =
-        if (ws.nonEmpty) {
-          val work = ws.head
-          val it   = work._1
+      var workQueue  = List.empty[Work]
+      var it         = trie.iterator
+      var pathPrefix = Vector.empty[K]
 
-          if (it.isEmpty)
-            go(ws.tail)
-          else {
-            val pathPrefix = work._2
-            val cur        = it.next()
-            val key        = cur._1
-            val node       = cur._2
-            node match {
-              case b: MTrie.Branch[K, V] =>
-                for (v <- b.value) {
-                  val path = NonEmptyVector.end(pathPrefix, key)
-                  f(path, v.value)
-                }
-                val newWork = (b.next.iterator, pathPrefix :+ key)
-                go(newWork :: ws)
-
-              case v: MTrie.Value[K, V] =>
+      while({
+        while (it.hasNext) {
+          val cur = it.next()
+          val key = cur._1
+          cur._2 match {
+            case b: MTrie.Branch[K, V] =>
+              for (v <- b.value) {
                 val path = NonEmptyVector.end(pathPrefix, key)
                 f(path, v.value)
-                go(ws)
-            }
+              }
+              val newWork = (b.next.iterator, pathPrefix :+ key)
+              workQueue ::= newWork
+
+            case v: MTrie.Value[K, V] =>
+              val path = NonEmptyVector.end(pathPrefix, key)
+              f(path, v.value)
           }
         }
-
-      go((trie.iterator, Vector.empty) :: Nil)
+        !workQueue.isEmpty
+      }) {
+        val w = workQueue.head
+        it = w._1
+        pathPrefix = w._2
+        workQueue = workQueue.tail
+      }
     }
 
     /**
