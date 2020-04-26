@@ -175,7 +175,7 @@ object AtomScan {
 
     // Parse custom-text-field text
     val customTextFieldText = p.content.reqText
-    val liveTextFields      = p.config.liveCustomTextFields.map(_.id).toSet
+    val liveTextFields      = p.config.liveCustomTextFieldIdSet
 
     // Don't use a for-comprehension here
     // https://github.com/scala/bug/issues/11951
