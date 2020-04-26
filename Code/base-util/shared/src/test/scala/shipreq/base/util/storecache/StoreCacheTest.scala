@@ -137,6 +137,13 @@ object StoreCacheTest extends TestSuite {
     }
 
     "nested" - {
+      var countS = 0
+      var srcVar = 4
+      def src(): Int = {
+        countS += 1
+        srcVar
+      }
+
       var countA = 0
       def aye(i: Int): String = {
         countA += 1
@@ -149,51 +156,51 @@ object StoreCacheTest extends TestSuite {
         s"$s|$s"
       }
 
-      var countS = 0
-      var srcVar = 4
-      def src(): Int = {
-        countS += 1
-        srcVar
+      var countC = 0
+      def see(s1: String, s2: String): String = {
+        countC += 1
+        s"$s1:$s2"
       }
 
-      def counts() = (countS, countA, countB)
+      def counts() = (countS, countA, countB, countC)
 
       val la = StoreCache.Logic(aye)
       val lb = StoreCache.Logic(bee)
+      val lc = StoreCache.Logic.apply2(lb, lb)(see)
 
       val a1 = la.initStrict(src())
-      val b1 = lb.initLazy(a1.value)
-      assertEq(counts(), (1, 0, 0))
+      val c1 = lc.initLazy(a1.value)
+      assertEq(counts(), (1, 0, 0, 0))
 
       val a2 = la.nextStrict(a1, src())
-      val b2 = lb.nextLazy(b1, a2.value)
-      assertEq(counts(), (2, 0, 0))
+      val c2 = lc.nextLazy(c1, a2.value)
+      assertEq(counts(), (2, 0, 0, 0))
 
       val a3 = la.nextStrict(a2, src())
-      val b3 = lb.nextLazy(b2, a3.value)
-      assertEq(counts(), (3, 0, 0))
+      val c3 = lc.nextLazy(c2, a3.value)
+      assertEq(counts(), (3, 0, 0, 0))
 
       a3.value
-      assertEq(counts(), (3, 1, 0))
-      b3.value
-      assertEq(counts(), (3, 1, 1))
+      assertEq(counts(), (3, 1, 0, 0))
+      c3.value
+      assertEq(counts(), (3, 1, 2, 1))
 
       val a4 = la.nextStrict(a3, src())
-      val b4 = lb.nextLazy(b3, a4.value)
-      assertEq(counts(), (4, 1, 1))
+      val c4 = lc.nextLazy(c3, a4.value)
+      assertEq(counts(), (4, 1, 2, 1))
 
       srcVar = 7
 
       val a5 = la.nextStrict(a4, src())
-      val b5 = lb.nextLazy(b4, a5.value)
-      assertEq(counts(), (5, 1, 1))
+      val c5 = lc.nextLazy(c4, a5.value)
+      assertEq(counts(), (5, 1, 2, 1))
 
       val a6 = la.nextStrict(a5, src())
-      val b6 = lb.nextLazy(b5, a6.value)
-      assertEq(counts(), (6, 1, 1))
+      val c6 = lc.nextLazy(c5, a6.value)
+      assertEq(counts(), (6, 1, 2, 1))
 
-      b6.value
-      assertEq(counts(), (6, 2, 2))
+      c6.value
+      assertEq(counts(), (6, 2, 4, 2))
     }
   }
 }

@@ -3,51 +3,15 @@ package shipreq.base.util
 import japgolly.univeq.UnivEq
 import shipreq.base.util.EitherState.ScalazTrampoline._
 
-final class LazyVal[A](create: Trampoline[A]) {
+sealed abstract class LazyVal[A] {
+  def isEvaluated(): Boolean
+  def value: A
+  def map[B](f: A => B): LazyVal[B]
+  def flatMap[B](f: A => LazyVal[B]): LazyVal[B]
 
-  private var _create = create
+  protected[util] val trampoline: Trampoline[A]
 
-  private[LazyVal] val trampoline: Trampoline[A] =
-    Trampoline.suspend {
-      val v = _value
-      if (v.isEmpty)
-        _create.map { a =>
-          synchronized {
-            __value = Some(a)
-            _create = Trampoline.pure(a)
-          }
-          a
-        }
-      else
-        _create
-    }
-
-  private[this] var __value = Option.empty[A]
-
-  private[this] def _value: Option[A] =
-    __value.orElse(synchronized(__value))
-
-  def value: A =
-    _value.getOrElse(Trampoline.run(trampoline))
-
-  def map[B](f: A => B): LazyVal[B] =
-    // new LazyVal(trampoline.map(f))
-    new LazyVal(trampoline.flatMap { a =>
-      Trampoline.delay(f(a))
-    })
-
-  def flatMap[B](f: A => LazyVal[B]): LazyVal[B] =
-    new LazyVal(trampoline.flatMap { a =>
-      Trampoline.suspend(f(a).trampoline)
-    })
-
-  override def hashCode =
-    trampoline.hashCode
-
-  override def toString =
-    s"LazyVal(${_value.fold("?")(_.toString)})"
-
-  override def equals(obj: Any): Boolean = obj match {
+  final override def equals(obj: Any): Boolean = obj match {
     case l: LazyVal[_] => (this eq l) || (value == l.value)
     case _             => false
   }
@@ -55,15 +19,16 @@ final class LazyVal[A](create: Trampoline[A]) {
 
 object LazyVal {
   def apply[A](a: => A): LazyVal[A] =
-    new LazyVal(Trampoline.delay(a))
+    new Lazy(Trampoline.delay(a))
 
   def pure[A](a: A): LazyVal[A] =
-    new LazyVal(Trampoline.pure(a))
+    Pure(a)
 
   def suspend[A](l: => LazyVal[A]): LazyVal[A] =
-    new LazyVal(Trampoline.suspend(l.trampoline))
+    new Lazy(Trampoline.suspend(l.trampoline))
 
-  private[this] val False = LazyVal.pure(false)
+  val False = pure(false)
+  val True = pure(true)
 
   implicit def univEq[A]: UnivEq[A] =
     UnivEq.force
@@ -77,4 +42,72 @@ object LazyVal {
           n.map(f)
       }
     )
+
+  // ===================================================================================================================
+
+  private final case class Pure[A](value: A) extends LazyVal[A] {
+    override def toString =
+      s"LazyVal($value})"
+
+    override def isEvaluated() =
+      true
+
+    override def map[B](f: A => B): LazyVal[B] =
+      LazyVal(f(value))
+
+    override def flatMap[B](f: A => LazyVal[B]): LazyVal[B] =
+      f(value)
+
+    override protected[util] val trampoline: Trampoline[A] =
+      Trampoline.pure(value)
+  }
+
+  private final class Lazy[A](create: Trampoline[A]) extends LazyVal[A] {
+
+    private var _create = create
+
+    override protected[util] val trampoline: Trampoline[A] =
+      Trampoline.suspend {
+        val v = _value
+        if (v.isEmpty)
+          _create.map { a =>
+            synchronized {
+              __value = Some(a)
+              _create = Trampoline.pure(a)
+            }
+            a
+          }
+        else
+          _create
+      }
+
+    private[this] var __value = Option.empty[A]
+
+    private[this] def _value: Option[A] =
+      __value.orElse(synchronized(__value))
+
+    override def isEvaluated(): Boolean =
+      __value.isDefined || synchronized(__value).isDefined
+
+    override def value: A =
+      _value.getOrElse(Trampoline.run(trampoline))
+
+    override def map[B](f: A => B): LazyVal[B] =
+      // new LazyVal(trampoline.map(f))
+      new Lazy(trampoline.flatMap { a =>
+        Trampoline.delay(f(a))
+      })
+
+    override def flatMap[B](f: A => LazyVal[B]): LazyVal[B] =
+      new Lazy(trampoline.flatMap { a =>
+        Trampoline.suspend(f(a).trampoline)
+      })
+
+    override def hashCode =
+      trampoline.hashCode
+
+    override def toString =
+      s"LazyVal(${_value.fold("?")(_.toString)})"
+  }
+
 }
