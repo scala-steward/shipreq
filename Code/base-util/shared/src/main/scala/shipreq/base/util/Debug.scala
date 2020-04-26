@@ -119,6 +119,44 @@ object Debug {
     def printReport(): Unit = {
       printInIsolation(report())
     }
+
+    def results(): Map[String, Int] =
+      lock.synchronized(stats.mapValuesNow(_.value))
+  }
+
+  // ===================================================================================================================
+
+  def StackTraceCounter(): StackTraceCounter =
+    new StackTraceCounter
+
+  final class StackTraceCounter {
+    private[this] val cc = CallCounter()
+
+    def clear(): Unit =
+      cc.clear()
+
+    def here(): Unit = {
+      val stackTrace = new RuntimeException().stackTraceAsString
+      cc.inc(stackTrace)
+    }
+
+    def report(): String = {
+      val results = cc.results()
+      val n = 3
+      val top = MutableArray(results).sortBy(-_._2).iterator().take(n).map { case (s, c) => s"$c hits -- $s" }.toList
+      val c = results.size
+      s"""$c stack traces
+         |$blank
+         |Top ${n.min(c)}:
+         |$blank
+         |${top.mkString(s"\n$blank\n")}
+         |$blank
+         |""".stripMargin
+    }
+
+    def printReport(): Unit = {
+      printInIsolation(report())
+    }
   }
 
   // ===================================================================================================================
