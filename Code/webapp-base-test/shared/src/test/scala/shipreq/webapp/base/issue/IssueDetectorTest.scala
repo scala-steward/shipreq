@@ -7,6 +7,7 @@ import scala.reflect.ClassTag
 import sourcecode.Line
 import shipreq.base.util._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.event.RetiredGenericData._
 import shipreq.webapp.base.test._
