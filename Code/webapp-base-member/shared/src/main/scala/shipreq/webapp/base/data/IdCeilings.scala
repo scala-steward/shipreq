@@ -59,7 +59,7 @@ object IdCeilings {
       customReqType   = imapKeys(p.config.reqTypes.custom),
       customField     = imapKeys(p.config.fields.customFields),
       tag             = imapKeys(p.config.tags.tree),
-      req             = imapKeys(p.content.reqs.genericReqs) max imapKeys(p.content.reqs.useCases.imap),
+      req             = imapKeys(p.content.reqs.genericReqs.imap) max imapKeys(p.content.reqs.useCases.imap),
       useCaseStep     = maxOfF(p.content.reqs.useCases.stepIterator)(_.id.value),
       reqCode         = maxOf(p.content.reqCodes.idList),
       reqtableView    = maxOf(p.reqtableViewIterator.map(_.id)),

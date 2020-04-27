@@ -214,7 +214,8 @@ trait ApplyContentEvent {
         _ <- Project.reqs.modify { reqs =>
                val pp = reqs.pubids.allocC(e.value)(e.id)
                val r2 = r.copy(pubid = pp._2)
-               Requirements(reqs.genericReqs + r2, reqs.useCases, pp._1)
+               val grs = GenericReqs(reqs.genericReqs.imap + r2)
+               Requirements(grs, reqs.useCases, pp._1)
              }
       } yield ()
 

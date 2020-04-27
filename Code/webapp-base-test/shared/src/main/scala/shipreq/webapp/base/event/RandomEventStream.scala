@@ -276,7 +276,7 @@ final class ApplicableEventGen(curState: State, generateRetiredEvents: Boolean) 
     Gen.tryGenChoose(liveReqIds)
 
   val genericReqId: Live => Option[Gen[GenericReqId]] =
-    tryGenChooseLiveDead(l => p.content.reqs.genericReqs.valuesIterator.filter(_.live(cfg.reqTypes) is l).map(_.id))
+    tryGenChooseLiveDead(l => p.content.reqs.genericReqs.imap.valuesIterator.filter(_.live(cfg.reqTypes) is l).map(_.id))
 
   def liveUseCaseIterator: Iterator[UseCase] =
     p.content.reqs.useCases.imap.valuesIterator.filter(_.liveUC is Live)

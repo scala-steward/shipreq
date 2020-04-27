@@ -625,7 +625,7 @@ object ContentEventTest extends TestSuite {
               txt.fold(none)(_.mkString("").replaceAll("Literal\\((.*?)\\)", "$1"))
 
             def req(id: GenericReqId): R =
-              p.content.reqs.genericReqs.need(id) match {
+              p.content.reqs.genericReqs.imap.need(id) match {
                 case r if r.live(p.config.reqTypes) is Live => live
                 case _                                      => fmt(p.content.deletionReasons getLatest id)
               }

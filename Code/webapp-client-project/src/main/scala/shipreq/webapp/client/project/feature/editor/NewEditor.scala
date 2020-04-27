@@ -255,7 +255,7 @@ object NewEditor {
     }
 
     def getGenericReq(id: GenericReqId): CallbackOption[GenericReq] =
-      pxProject.toCallback.map(_.content.reqs.genericReqs.get(id)).asCBO
+      pxProject.toCallback.map(_.content.reqs.genericReqs.imap.get(id)).asCBO
 
     def getUseCase(id: UseCaseId): CallbackOption[UseCase] =
       pxProject.toCallback.map(_.content.reqs.useCases.imap.get(id)).asCBO

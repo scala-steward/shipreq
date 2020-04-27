@@ -9,7 +9,7 @@ import shipreq.webapp.base.text.{Atom, Text}
 import shipreq.webapp.base.util.ShowSize
 
 object ProjectContent {
-  val genericReqs         : Lens[ProjectContent, GenericReqIMap     ] = reqs ^|-> Requirements.genericReqs
+  val genericReqs         : Lens[ProjectContent, GenericReqIMap     ] = reqs ^|-> Requirements.genericReqs ^|-> GenericReqs.imap
   val useCases            : Lens[ProjectContent, UseCases           ] = reqs ^|-> Requirements.useCases
   val pubidRegister       : Lens[ProjectContent, PubidRegister      ] = reqs ^|-> Requirements.pubids
   val reqCodeTrie         : Lens[ProjectContent, ReqCode.Trie       ] = reqCodes ^|-> ReqCodes.trie
@@ -45,7 +45,7 @@ final case class ProjectContent(reqs           : Requirements,
   def allRichText: List[(String, Iterator[Text.AnyOptional])] =
     ("Deletion reasons",  deletionReasons.reasons.iterator.map(_.whole))                 ::
     ("CodeGroups",        reqCodes.groups.iterator.map(_.title))                         ::
-    ("GenericReq titles", reqs.genericReqs.valuesIterator.map(_.title))                  ::
+    ("GenericReq titles", reqs.genericReqs.imap.valuesIterator.map(_.title))             ::
     ("UseCase titles",    reqs.useCases.imap.valuesIterator.map(_.title))                ::
     ("UseCase steps",     reqs.useCases.stepIterator.map(_.titleExplicitly))             ::
     ("Text fields",       reqText.valuesIterator.flatMap(_.valuesIterator).map(_.whole)) ::

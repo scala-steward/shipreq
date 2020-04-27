@@ -164,7 +164,7 @@ object AtomScan {
 
     // Parse generic reqs
     val rts = p.config.reqTypes
-    for (r <- p.content.reqs.genericReqs.valuesIterator)
+    for (r <- p.content.reqs.genericReqs.imap.valuesIterator)
       scanReqText(r.live(rts), r.id, Location.Text.Title)(r.title)
 
     // Parse use cases

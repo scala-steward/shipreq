@@ -270,6 +270,9 @@ object BaseMemberData2 {
   implicit lazy val picklerGenericReqsById: Pickler[GenericReqIMap] =
     pickleIMapD
 
+  implicit lazy val picklerGenericReqs: Pickler[GenericReqs] =
+    picklerGenericReqsById.xmap(GenericReqs.apply)(_.imap)
+
   implicit lazy val picklerIdCeilings: Pickler[IdCeilings] =
     new Pickler[IdCeilings] {
       override def pickle(a: IdCeilings)(implicit state: PickleState): Unit = {
@@ -603,7 +606,7 @@ object BaseMemberData2 {
         state.pickle(a.pubids)
       }
       override def unpickle(implicit state: UnpickleState): Requirements = {
-        val genericReqs = state.unpickle[GenericReqIMap]
+        val genericReqs = state.unpickle[GenericReqs]
         val useCases    = state.unpickle[UseCases]
         val pubids      = state.unpickle[PubidRegister]
         Requirements(genericReqs, useCases, pubids)

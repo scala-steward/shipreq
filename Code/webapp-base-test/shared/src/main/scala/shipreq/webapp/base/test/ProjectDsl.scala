@@ -62,7 +62,7 @@ object ProjectDslInternals {
     def done: Project =
       IdCeilings.supply { ids =>
         var f = Project.idCeilings set ids
-        f = f compose Project.reqs        .modify(r => succ(r, Requirements(reqs, r.useCases, pubids)))
+        f = f compose Project.reqs        .modify(r => succ(r, Requirements(GenericReqs(reqs), r.useCases, pubids)))
         f = f compose Project.reqCodes    .modify(succ(_, ReqCodes(reqCodeTrie)))
         f = f compose Project.reqText     .modify(succ(_, text))
         f = f compose Project.reqTags     .modify(succ(_, tags))
@@ -74,9 +74,9 @@ object ProjectDslInternals {
   private def succ[A](old: A, n: A) = n // obsolete. Used to increse Rev
 
   def projectState(p: Project) = ProjectState(p,
-    nextId         = p.content.reqs.idIterator.ifelse(_.isEmpty, _ => 1, _.max.value),
+    nextId         = p.content.reqs.idIterator().ifelse(_.isEmpty, _ => 1, _.max.value),
     defaultReqType = p.config.reqTypes.custom.values.headOption.map(_.id),
-    reqs           = p.content.reqs.genericReqs,
+    reqs           = p.content.reqs.genericReqs.imap,
     pubids         = p.content.reqs.pubids,
     reqCodeTrie    = p.content.reqCodes.trie,
     maxReqCodeId   = p.content.reqCodes.idList match {case Nil => 0; case l => l.iterator.map(_.value).max},

@@ -23,7 +23,7 @@ object DetachedGenericReq {
   implicit def equality: UnivEq[DetachedGenericReq] = UnivEq.derive
 
   def extract(p: Project, id: GenericReqId): Option[DetachedGenericReq] =
-    p.content.reqs.genericReqs.get(id).map { r =>
+    p.content.reqs.genericReqs.imap.get(id).map { r =>
       val codes      = p.content.reqCodes.activeReqCodesByReqId(id)
       val customText = ReqData.allTextForReq(id, p.content.reqText)
       val impliedBy  = p.content.implications.backwards(id)

@@ -1076,7 +1076,7 @@ object RandomData {
       val stepFlow: UseCases.StepFlow =
         genDigraphBiO(Gen.tryGenChoose(ucStepIds))(implicitly, 0 to 4) run ctx
 
-      Requirements(grs, UseCases.Stateless(ucs, stepFlow).withState, pr)
+      Requirements(GenericReqs(grs), UseCases.Stateless(ucs, stepFlow).withState, pr)
     }
   }
 
