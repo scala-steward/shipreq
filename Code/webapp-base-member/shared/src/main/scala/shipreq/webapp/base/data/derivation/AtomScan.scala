@@ -1,6 +1,7 @@
 package shipreq.webapp.base.data.derivation
 
 import scala.collection.immutable.ArraySeq
+import scala.collection.mutable
 import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
@@ -13,7 +14,6 @@ import shipreq.webapp.base.text.Text
   *
   * @param tagRefs  Live/Dead refers to the requirement context; not the life-state of the tag itself.
   * @param issuesInReqs  Live/Dead refers to the requirement context; not the life-state of the issue itself.
-  * @param codeRefs ReqCodes referenced in anything anywhere (including text in dead custom-text fields).
   */
 final class AtomScan(_tagRefs          : LiveDeadStatMap[ReqId,          Set[LocAndValue[LocationOf.Tag.InReq, ApplicableTagId]]],
                      _issuesInReqs     : LiveDeadStatMap[ReqId,          Vector[LocAndValue[LocationOf.Text.InReq, AnyIssue]]],
@@ -21,7 +21,6 @@ final class AtomScan(_tagRefs          : LiveDeadStatMap[ReqId,          Set[Loc
                      _contentRefsInReqs: LiveDeadStatMap[ReqId,          Vector[LocAndValue[LocationOf.Text.InReq, AnyContentRef]]],
                      _contentRefsInRcgs: LiveDeadStatMap[ReqCodeGroupId, Vector[LocAndValue[LocationOf.Text.InReqCodeGroup, AnyContentRef]]],
                      _reqRefs          : Set[ReqId],
-                     _codeRefs         : Set[ReqCodeId],
                      _useCaseStepRefs  : Set[UseCaseStepId]
                     ) {
 
@@ -41,7 +40,6 @@ final class AtomScan(_tagRefs          : LiveDeadStatMap[ReqId,          Set[Loc
   lazy val contentRefsInReqs = CC("AtomScan.read.contentRefsInReqs")(_contentRefsInReqs)
   lazy val contentRefsInRcgs = CC("AtomScan.read.contentRefsInRcgs")(_contentRefsInRcgs)
   lazy val reqRefs           = CC("AtomScan.read.reqRefs          ")(_reqRefs          )
-  lazy val codeRefs          = CC("AtomScan.read.codeRefs         ")(_codeRefs         )
   lazy val useCaseStepRefs   = CC("AtomScan.read.useCaseStepRefs  ")(_useCaseStepRefs  )
 }
 
@@ -54,113 +52,66 @@ object AtomScan {
     val contentRefsInReqs = LiveDeadStatMap.Builder.vec[ReqId,          LocAndValue[LocationOf.Text.InReq, AnyContentRef]         ]()
     val contentRefsInRcgs = LiveDeadStatMap.Builder.vec[ReqCodeGroupId, LocAndValue[LocationOf.Text.InReqCodeGroup, AnyContentRef]]()
     val reqRefs           = UnivEq.setBuilder[ReqId]
-    val codeRefs          = UnivEq.setBuilder[ReqCodeId]
     val useCaseStepRefs   = UnivEq.setBuilder[UseCaseStepId]
 
     def scanReqText(live : Live,
                     reqId: ReqId,
-                    loc  : Location.Text)
-                   (text : ArraySeq[AnyAtom]): Unit = {
+                    loc  : Location.Text): ArraySeq[AnyAtom] => Unit =
+      scan {
+        case a: ContentRef#ReqRef =>
+          contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
+          reqRefs += a.value
 
-      def go(as: ArraySeq[AnyAtom]): Unit = {
-        val array = as.unsafeArray
-        var i = array.length
-        while (i > 0) {
-          i -= 1
-          array(i).asInstanceOf[AnyAtom] match {
+        case a: ContentRef#CodeRef =>
+          contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
 
-            case a: ContentRef#ReqRef =>
-              contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
-              reqRefs += a.value
+        case a: ContentRef#UseCaseStepRef =>
+          contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
+          useCaseStepRefs += a.value
 
-            case a: ContentRef#CodeRef =>
-              contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
-              codeRefs += a.value
+        case a: Issue#Issue =>
+          issuesInReqs(reqId).add(live, LocAndValue(loc, a))
 
-            case a: ContentRef#UseCaseStepRef =>
-              contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
-              useCaseStepRefs += a.value
+        case a: TagRef#TagRef =>
+          tagRefs(reqId).add(live, LocAndValue(loc, a.value))
 
-            case a: Issue#Issue =>
-              issuesInReqs(reqId).add(live, LocAndValue(loc, a))
-              go(a.desc)
-
-            case a: TagRef#TagRef =>
-              tagRefs(reqId).add(live, LocAndValue(loc, a.value))
-
-            case a: ListMarkup#UnorderedList =>
-              val items = a.items
-              var j = items.length
-              while (j > 0) {
-                j -= 1
-                items(j).foreach(go)
-              }
-
-            // Leave this as a catch-all rather than a specific list.
-            // Yes it means that when a new Atom type is added there's a chance you'll forget to consider this area but
-            // this is a hot-path due to ApplyEvent and benchmarks show that a catch-all here is a significant speedup.
-            case _ =>
-              ()
-          }
-        }
+        // Leave this as a catch-all rather than a specific list.
+        // Yes it means that when a new Atom type is added there's a chance you'll forget to consider this area but
+        // this is a hot-path due to ApplyEvent and benchmarks show that a catch-all here is a significant speedup.
+        case _ =>
+          ()
       }
-
-      go(text)
-    }
 
     def scanReqCodeGroupText(live     : Live,
                              reqCodeId: ReqCodeGroupId,
-                             loc      : LocationOf.Text.InReqCodeGroup)
-                            (text     : ArraySeq[AnyAtom]): Unit = {
+                             loc      : LocationOf.Text.InReqCodeGroup): ArraySeq[AnyAtom] => Unit =
+      scan {
+        case a: ContentRef#ReqRef =>
+          contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
+          reqRefs += a.value
 
-      def go(as: ArraySeq[AnyAtom]): Unit = {
-        val array = as.unsafeArray
-        var i = array.length
-        while (i > 0) {
-          i -= 1
-          array(i).asInstanceOf[AnyAtom] match {
+        case a: ContentRef#CodeRef =>
+          contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
 
-            case a: ContentRef#ReqRef =>
-              contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
-              reqRefs += a.value
+        case a: ContentRef#UseCaseStepRef =>
+          contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
+          useCaseStepRefs += a.value
 
-            case a: ContentRef#CodeRef =>
-              contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
-              codeRefs += a.value
-
-            case a: ContentRef#UseCaseStepRef =>
-              contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
-              useCaseStepRefs += a.value
-
-            case a: Issue#Issue =>
-              a match {
-                case i: Text.CodeGroupTitle.Issue => issuesInRcgs(reqCodeId).add(live, i)
-                case _                            => ()
-              }
-              go(a.desc)
-
-            case a: TagRef#TagRef =>
-              assert(false, s"ReqCodes shouldn't have tags! Found $a in $reqCodeId")
-
-            case a: ListMarkup#UnorderedList =>
-              val items = a.items
-              var j = items.length
-              while (j > 0) {
-                j -= 1
-                items(j).foreach(go)
-              }
-
-            // Leave this as a catch-all rather than a specific list.
-            // Yes it means that when a new Atom type is added there's a chance you'll forget to consider this area but
-            // this is a hot-path due to ApplyEvent and benchmarks show that a catch-all here is a significant speedup.
-            case _ =>
-              ()
+        case a: Issue#Issue =>
+          a match {
+            case i: Text.CodeGroupTitle.Issue => issuesInRcgs(reqCodeId).add(live, i)
+            case _                            => ()
           }
-        }
-      }
 
-      go(text)
-    }
+        case a: TagRef#TagRef =>
+          assert(false, s"ReqCodes shouldn't have tags! Found $a in $reqCodeId")
+
+        // Leave this as a catch-all rather than a specific list.
+        // Yes it means that when a new Atom type is added there's a chance you'll forget to consider this area but
+        // this is a hot-path due to ApplyEvent and benchmarks show that a catch-all here is a significant speedup.
+        case _ =>
+          ()
+      }
 
     // Parse generic reqs
     val rts = p.config.reqTypes
@@ -198,7 +149,71 @@ object AtomScan {
       contentRefsInReqs.result(),
       contentRefsInRcgs.result(),
       reqRefs.result(),
-      codeRefs.result(),
       useCaseStepRefs.result())
+  }
+
+  // ===================================================================================================================
+
+  object ReqCodeRefs {
+
+    def apply(f: Builder => Unit): Set[ReqCodeId] = {
+      val b = newBuilder()
+      f(b)
+      b.result()
+    }
+
+    def newBuilder(): Builder =
+      new Builder(UnivEq.setBuilder[ReqCodeId])
+
+    final class Builder(private val b: mutable.Builder[ReqCodeId, Set[ReqCodeId]]) {
+
+      val scan =
+        AtomScan.scan {
+          case a: ContentRef # CodeRef => b += a.value
+          case _                       => ()
+        }
+
+      def result(): Set[ReqCodeId] =
+        b.result()
+    }
+  }
+
+  // ===================================================================================================================
+
+  def scan(f: AnyAtom => Unit): ArraySeq[AnyAtom] => Unit = {
+    var go: ArraySeq[AnyAtom] => Unit = null
+
+    go = as => {
+      val array = as.unsafeArray
+      var i = array.length
+      while (i > 0) {
+        i -= 1
+        val a = array(i).asInstanceOf[AnyAtom]
+
+        // Self
+        f(a)
+
+        // Recursive cases
+        a match {
+
+          case a: Issue # Issue =>
+            go(a.desc)
+
+          case a: ListMarkup # UnorderedList =>
+            val items = a.items.whole.unsafeArray
+            var j = items.length
+            while (j > 0) {
+              j -= 1
+              val li = items(j).asInstanceOf[ArraySeq[AnyAtom]]
+              go(li)
+            }
+
+          case _ =>
+            ()
+        }
+      }
+    }
+
+    go
   }
 }

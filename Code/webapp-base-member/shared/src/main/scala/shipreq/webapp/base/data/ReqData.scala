@@ -17,6 +17,14 @@ object ReqData {
   @Lenses
   final case class Text(data: Map[CustomField.Text.Id, Map[ReqId, T.CustomTextField.NonEmptyText]]) {
 
+    private[data] lazy val localCodeRefs =
+      derivation.AtomScan.ReqCodeRefs { b =>
+        for {
+          (_, textByReqId) <- data
+          (_, txt)         <- textByReqId
+        } b.scan(txt.whole)
+      }
+
     // Only used in tests
     def allTextForReq(id: ReqId): Map[CustomField.Text.Id, T.CustomTextField.NonEmptyText] =
       data.iterator

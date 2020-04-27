@@ -4,6 +4,7 @@ import japgolly.microlibs.scalaz_ext.ScalazMacros
 import monocle.Lens
 import monocle.macros.Lenses
 import scalaz.Equal
+import shipreq.base.util.Util
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.text.{Atom, Text}
 import shipreq.webapp.base.util.ShowSize
@@ -40,6 +41,15 @@ final case class ProjectContent(reqs           : Requirements,
                                 reqTags        : ReqData.Tags,
                                 implications   : Implications.BiDir,
                                 deletionReasons: DeletionReasons) {
+
+  /** ReqCodes referenced in anything anywhere (including text in dead custom-text fields). */
+  lazy val codeRefs: Set[ReqCodeId] =
+    Util.mergeSets(
+      reqs.genericReqs.localCodeRefs,
+      reqs.useCases.localCodeRefs,
+      reqText.localCodeRefs,
+      reqCodes.scan.localCodeRefs,
+    )
 
   /** Dead or alive */
   def allRichText: List[(String, Iterator[Text.AnyOptional])] =

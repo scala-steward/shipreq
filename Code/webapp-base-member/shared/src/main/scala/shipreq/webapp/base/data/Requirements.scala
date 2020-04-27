@@ -130,7 +130,14 @@ object GenericReq {
 }
 
 @Lenses
-final case class GenericReqs(imap: GenericReqIMap)
+final case class GenericReqs(imap: GenericReqIMap) {
+
+  private[data] lazy val localCodeRefs =
+    derivation.AtomScan.ReqCodeRefs { b =>
+      for (gr <- imap.valuesIterator)
+        b.scan(gr.title)
+    }
+}
 
 object GenericReqs {
   val empty: GenericReqs =
@@ -406,6 +413,15 @@ final case class UseCases(imap: UseCaseIMap, stepIndex: UseCases.StepIndex, step
 
   def needStep(id: UseCaseStepId): UseCaseStep =
     stepIndex(id).need(imap).need(id)
+
+  private[data] lazy val localCodeRefs =
+    derivation.AtomScan.ReqCodeRefs { b =>
+      for (uc <- imap.valuesIterator) {
+        b.scan(uc.title)
+        for (s <- uc.stepIterator)
+          b.scan(s.titleExplicitly)
+      }
+    }
 }
 
 object UseCases {

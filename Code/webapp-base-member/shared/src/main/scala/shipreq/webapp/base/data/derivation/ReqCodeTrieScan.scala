@@ -17,6 +17,7 @@ final class ReqCodeTrieScan(trie: ReqCode.Trie) {
   private var _liveGroups            = List.empty[LiveCodeGroup]
   private var _liveGroupsById        = Map.empty[ReqCodeGroupId, LiveCodeGroup]
   private var _reqCodeGroupsById     = Map.empty[ReqCodeGroupId, Value]
+  private val _localReqCodeRefs      = AtomScan.ReqCodeRefs.newBuilder()
 
   trie.foreachPathAndValue { (code, data) =>
 
@@ -32,19 +33,23 @@ final class ReqCodeTrieScan(trie: ReqCode.Trie) {
     _inactiveIdsByReqId ++= data.reqInactive.m
 
     data match {
-      case d: ActiveReq   =>
+      case d: ActiveReq =>
         _activeReqCodesByReqId = _activeReqCodesByReqId.add(d.reqId, code)
 
       case d: ActiveGroup =>
         _liveGroupsById = _liveGroupsById.updated(d.id, d.group)
         _liveGroups ::= d.group
         _groups ::= d.group
+        _localReqCodeRefs.scan(d.group.title)
 
-      case _: Inactive    =>
+      case _: Inactive =>
         ()
     }
 
-    data.deadGroup.foreach(_groups ::= _)
+    for (g <- data.deadGroup) {
+      _groups ::= g
+      _localReqCodeRefs.scan(g.title)
+    }
   }
 
   lazy val activeReqCodesByReqId = CC("ReqCodesScan.read.activeReqCodesByReqId")(_activeReqCodesByReqId)
@@ -56,5 +61,5 @@ final class ReqCodeTrieScan(trie: ReqCode.Trie) {
   lazy val idList                = CC("ReqCodesScan.read.idList               ")(_idList)
   lazy val idSet                 = CC("ReqCodesScan.read.idSet                ")(_idSet)
   lazy val reqCodeGroupsById     = CC("ReqCodesScan.read.reqCodeGroupsById    ")(_reqCodeGroupsById)
+  lazy val localCodeRefs         = CC("ReqCodesScan.read.localCodeRefs        ")(_localReqCodeRefs.result())
 }
-

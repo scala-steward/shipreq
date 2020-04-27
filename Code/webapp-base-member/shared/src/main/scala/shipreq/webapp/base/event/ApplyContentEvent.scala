@@ -814,7 +814,7 @@ trait ApplyContentEvent {
     def applyReqCodesPatch(e: ReqCodesPatch): Eval[Unit] =
       for {
         p    <- Eval.get
-        refd = p.atomScan.codeRefs
+        refd = p.content.codeRefs
         keep = e.add.values.foldLeft(refd)(_ -- _)
         t0   = p.content.reqCodes.trie
         t1   <- inactivateReqsByIdT(t0, e.remove, keep.contains, ensureActiveReqIs(e.id))

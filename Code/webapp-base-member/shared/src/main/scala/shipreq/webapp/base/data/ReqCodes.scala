@@ -240,7 +240,7 @@ object CodeGroup {
 final case class ReqCodes(trie: ReqCode.Trie) {
   import ReqCode._
 
-  private[this] lazy val scan =
+  private[data] lazy val scan =
     new derivation.ReqCodeTrieScan(trie)
 
   def isEmpty: Boolean =
