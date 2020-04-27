@@ -63,10 +63,11 @@ object AtomScan {
                    (text : ArraySeq[AnyAtom]): Unit = {
 
       def go(as: ArraySeq[AnyAtom]): Unit = {
-        var i = as.length
+        val array = as.unsafeArray
+        var i = array.length
         while (i > 0) {
           i -= 1
-          as(i) match {
+          array(i).asInstanceOf[AnyAtom] match {
 
             case a: ContentRef#ReqRef =>
               contentRefsInReqs(reqId).add(live, LocAndValue(loc, a))
@@ -113,10 +114,11 @@ object AtomScan {
                             (text     : ArraySeq[AnyAtom]): Unit = {
 
       def go(as: ArraySeq[AnyAtom]): Unit = {
-        var i = as.length
+        val array = as.unsafeArray
+        var i = array.length
         while (i > 0) {
           i -= 1
-          as(i) match {
+          array(i).asInstanceOf[AnyAtom] match {
 
             case a: ContentRef#ReqRef =>
               contentRefsInRcgs(reqCodeId).add(live, LocAndValue(loc, a))
@@ -147,7 +149,6 @@ object AtomScan {
                 j -= 1
                 items(j).foreach(go)
               }
-
 
             // Leave this as a catch-all rather than a specific list.
             // Yes it means that when a new Atom type is added there's a chance you'll forget to consider this area but
