@@ -32,6 +32,8 @@ class ApplyEventBM {
       case -\/(e) => println(e); sys.error(e)
     }
 
-  @Benchmark def untrusted = go(ae_untrusted)
-  @Benchmark def trusted   = go(ae_trusted)
+  // Speed of untrusted doesn't really matter. It only ever does one event at a time.
+  // @Benchmark def untrusted = go(ae_untrusted)
+
+  @Benchmark def trusted = go(ae_trusted)
 }
