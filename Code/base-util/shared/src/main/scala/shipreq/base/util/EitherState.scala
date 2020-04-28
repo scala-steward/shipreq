@@ -64,8 +64,8 @@ object EitherState {
   final case class Instance[S, E, A](self: Underlying[S, E, A]) extends AnyVal {
     type Self[B] = Instance[S, E, B]
 
-    def widen[B >: A](implicit F: Monad[Underlying[S, E, *]]): Self[B] =
-      map(a => a) // TODO *************************************************************************************************************************************
+    def widen[B >: A]: Self[B] =
+      Instance(self.asInstanceOf[Underlying[S, E, B]])
 
     def map[B](f: A => B)(implicit F: Monad[Underlying[S, E, *]]): Self[B] =
       Instance(F.map(self)(f))
@@ -91,7 +91,7 @@ object EitherState {
     def void(implicit F: Monad[Underlying[S, E, *]]): Self[Unit] =
       map(_ => ())
 
-    def catchErrors(h: Throwable => E)(implicit F: Applicative[Underlying[S, E, *]]): Self[A] =
+    def catchErrors(h: Throwable => E): Self[A] =
       Instance(
           s =>
             Trampoline.delay {
@@ -103,16 +103,15 @@ object EitherState {
             }
       )
 
-    def run(s: S)(implicit F: Applicative[Underlying[S, E, *]]): (S, E \/ A) = {
+    def run(s: S): (S, E \/ A) =
       Trampoline.run(self(s))
-    }
 
-    def exec(s: S)(implicit F: Applicative[Underlying[S, E, *]]): E \/ S = {
+    def exec(s: S): E \/ S = {
       val r = run(s)
       r._2.map(_ => r._1)
     }
 
-    def eval(s: S)(implicit F: Applicative[Underlying[S, E, *]]): E \/ A =
+    def eval(s: S): E \/ A =
       run(s)._2
   }
 
@@ -197,8 +196,6 @@ object EitherState {
     def gets[A](f: S => A): Instance[A] =
       apply(s => (s, \/-(f(s))))
 
-    // TODO Some of these combinators might be faster by switching to use getFlatMap
-
     val unit: Instance[Unit] =
       pure(())
 
@@ -212,11 +209,10 @@ object EitherState {
       if (isOk) unit else fail(whenFalse)
 
     def tests(isOk: S => Boolean, whenFalse: => E): Instance[Unit] =
-      get.flatMap(s => test(isOk(s), whenFalse))
+      Instance(s => test(isOk(s), whenFalse).self(s))
 
-    def foldMapRun[A](as: IterableOnce[A])(f: A => Instance[Unit]): Instance[Unit] = // TODO ***************************************************************
-    // as.foldLeft(nop)(_ >> f(_))
-      Util.mapReduce(as, unit)(f, _ >> _)
+    def foldMapRun[A](as: IterableOnce[A])(f: A => Instance[Unit]): Instance[Unit] =
+      as.iterator.foldLeft(unit)(_ >> f(_))
   }
 
 }
