@@ -1,9 +1,17 @@
 package shipreq.base.util
 
 import scala.collection.immutable.ArraySeq
-import scalaz.{Foldable, Monoid}
+import scalaz.{Applicative, Foldable, Monoid}
 
 object ScalazExtra {
+
+  // So we don't pull everything into the Scala.JS output
+  implicit lazy val applicativeFunction0: Applicative[Function0] =
+    new Applicative[Function0] {
+      override def point[A]  (a: => A)                            : () => A = () => a
+      override def ap   [A, B](fa: => () => A)(f: => () => A => B): () => B = () => f()(fa())
+      override def map  [A, B](fa: () => A)(f: A => B)            : () => B = () => f(fa())
+    }
 
   implicit lazy val iteratorFoldable: Foldable[Iterator] =
     new Foldable[Iterator] {

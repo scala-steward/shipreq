@@ -1,63 +1,13 @@
 package shipreq.base.util
 
-import scalaz.{-\/, Applicative, Monad, \/, \/-}
+import scalaz.{-\/, Monad, \/, \/-}
 
 /** Either monad + state monad stack.
   *
   * s => (s, e \/ a)
   */
 object EitherState {
-
-  object ScalaTrampoline {
-    import scala.util.control.TailCalls._
-    type Trampoline[A] = TailRec[A]
-    object Trampoline {
-      def pure[A](a: A): Trampoline[A] = done(a)
-      def suspend[A](t: => Trampoline[A]): Trampoline[A] = tailcall(t)
-      def delay[A](a: => A): Trampoline[A] = suspend(pure(a))
-      def run[A](t: Trampoline[A]): A = t.result
-    }
-  }
-
-  object ScalazTrampoline {
-    import scalaz.Free
-    import scalaz.std.function.function0Instance
-    type Trampoline[A] = Free.Trampoline[A]
-    object Trampoline {
-      def pure[A](a: A): Trampoline[A] = Free.pure(a)
-      def suspend[A](t: => Trampoline[A]): Trampoline[A] = Free.suspend(t)
-      def delay[A](a: => A): Trampoline[A] = suspend(pure(a))
-      def run[A](t: Trampoline[A]): A = t.run
-    }
-  }
-
-  object NoTrampoline {
-    final class Trampoline[A](val result: A) extends AnyVal {
-      def map[B](f: A => B): Trampoline[B] = new Trampoline(f(result))
-      def flatMap[B](f: A => Trampoline[B]): Trampoline[B] = f(result)
-    }
-    object Trampoline {
-      def pure[A](a: A): Trampoline[A] = new Trampoline(a)
-      def suspend[A](t: => Trampoline[A]): Trampoline[A] = t
-      def delay[A](a: => A): Trampoline[A] = suspend(pure(a))
-      def run[A](t: Trampoline[A]): A = t.result
-    }
-  }
-
-  object Fn0Trampoline {
-    final class Trampoline[A](val result: () => A) extends AnyVal {
-      def map[B](f: A => B): Trampoline[B] = new Trampoline(() => f(result()))
-      def flatMap[B](f: A => Trampoline[B]): Trampoline[B] = f(result())
-    }
-    object Trampoline {
-      def pure[A](a: A): Trampoline[A] = new Trampoline(() => a)
-      def suspend[A](t: => Trampoline[A]): Trampoline[A] = new Trampoline(() => t.result())
-      def delay[A](a: => A): Trampoline[A] = suspend(pure(a))
-      def run[A](t: Trampoline[A]): A = t.result()
-    }
-  }
-
-  import ScalazTrampoline._
+  import Trampoline.Default._
 
   type Underlying[S, E, A] = S => Trampoline[(S, E \/ A)]
 
