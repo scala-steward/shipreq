@@ -13,6 +13,7 @@ final class ReqCodeTrieScan(trie: ReqCode.Trie) {
   private var _liveGroupsById        = Map.empty[ReqCodeGroupId, LiveCodeGroup]
   private val _localReqCodeRefs      = UnivEq.setBuilder[ReqCodeId]
   private val _localUseCaseStepRefs  = UnivEq.setBuilder[UseCaseStepId]
+  private val _idSeq                 = ArraySeq.newBuilder[ReqCodeId]
 
   private[this] val scan = AtomScan.scan {
     case a: ContentRef # CodeRef        => _localReqCodeRefs += a.value
@@ -21,6 +22,8 @@ final class ReqCodeTrieScan(trie: ReqCode.Trie) {
   }
 
   trie.foreachValue { data =>
+
+    _idSeq ++= data.ids
 
     data match {
 
@@ -43,6 +46,8 @@ final class ReqCodeTrieScan(trie: ReqCode.Trie) {
   val groups         = _groups
   val liveGroups     = _liveGroups
   val liveGroupsById = _liveGroupsById
+  val idSeq          = _idSeq.result()
+
 
   private[data] val localCodeRefs         = _localReqCodeRefs.result()
   private[data] val localUseCaseStepRefs  = _localUseCaseStepRefs.result()
@@ -57,12 +62,10 @@ object ReqCodeTrieScan {
     var apReqCodesById        = Map.empty[ApReqCodeId, Value]
     var inactiveIdsByReqId    = UnivEq.emptySetMultimap[ReqId, ApReqCodeId]
     var reqCodeGroupsById     = Map.empty[ReqCodeGroupId, Value]
-    val idSeq                  = ArraySeq.newBuilder[ReqCodeId]
 
     trie.foreachPathAndValue { (code, data) =>
 
       for (id <- data.ids) {
-        idSeq += id
         id match {
           case i: ApReqCodeId    => apReqCodesById    = apReqCodesById   .updated(i, code)
           case i: ReqCodeGroupId => reqCodeGroupsById = reqCodeGroupsById.updated(i, code)
@@ -82,7 +85,6 @@ object ReqCodeTrieScan {
       reqCodeGroupsById     = reqCodeGroupsById,
       activeReqCodesByReqId = activeReqCodesByReqId,
       inactiveIdsByReqId    = inactiveIdsByReqId,
-      idSeq                 = idSeq.result(),
     )
   }
 }

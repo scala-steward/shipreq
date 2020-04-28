@@ -244,17 +244,11 @@ object CodeGroup {
 final case class ReqCodeManifest(apReqCodesById       : Map[ApReqCodeId, ReqCode.Value],
                                  reqCodeGroupsById    : Map[ReqCodeGroupId, ReqCode.Value],
                                  activeReqCodesByReqId: Multimap[ReqId, Set, ReqCode.Value],
-                                 inactiveIdsByReqId   : Multimap[ReqId, Set, ApReqCodeId],
-                                 idSeq                : ArraySeq[ReqCodeId]) {
-
-  lazy val idSet: Set[ReqCodeId] =
-    idSeq.toSet
-}
+                                 inactiveIdsByReqId   : Multimap[ReqId, Set, ApReqCodeId])
 
 object ReqCodeManifest {
   implicit def univEq: UnivEq[ReqCodeManifest] = UnivEq.derive
 }
-
 
 /**
  * All req code data for in a project.
@@ -296,11 +290,11 @@ final case class ReqCodes(trie: ReqCode.Trie) {
    * This is needed in addition to [[idSet]] so that [[DataProp]] can detect duplicate IDs.
    */
   def idSeq: ArraySeq[ReqCodeId] =
-    manifest.idSeq
+    scan.idSeq
 
   /** Active and inactive [[ReqCodeId]]s alike. */
-  def idSet: Set[ReqCodeId] =
-    manifest.idSet
+  lazy val idSet: Set[ReqCodeId] =
+    idSeq.toSet
 
   def getReqCode(id: ReqCodeId): Option[Value] =
     id match {
