@@ -441,6 +441,7 @@ trait ApplyContentEvent {
 
   // ===================================================================================================================
   object CodeGroupEvents {
+    import ApplyReqCodeLogic._
     import ReqCodeLogic._
 
     val ^ = CodeGroupGD

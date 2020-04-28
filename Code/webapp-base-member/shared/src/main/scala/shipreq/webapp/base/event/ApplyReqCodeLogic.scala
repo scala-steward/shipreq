@@ -11,11 +11,12 @@ import shipreq.webapp.base.validation.Implicits._
 import ApplyEventLib._
 import Event._
 import MTrie.Ops
+import ReqCode._
 
 trait ApplyReqCodeLogic {
   this: ApplyEvent =>
 
-  // ===================================================================================================================
+  import ApplyReqCodeLogic._
 
   /**
    * Why the hell is all this req-code changing logic so complicated?
@@ -40,13 +41,56 @@ trait ApplyReqCodeLogic {
    *   and assigned to other targets).
    */
   object ReqCodeLogic {
-    import ReqCode._
 
     val updateIdCeiling = updateIdCeilingFn(IdCeilings.reqCode)
 
     val validateCode = validateA(V.reqCode.valueAndNodes named SpecialBuiltInField.Code.name)
 
     val getTrie = Eval.gets(Project.reqCodeTrie.get)
+
+    implicit object ReqAdder extends Adder[AddReq] {
+      override def reqCodeId(a: AddReq) = a.id
+
+      override def apply(t: Trie, cmd: AddReq): Eval[Trie] =
+        cmd.codeValidated.mapValidated(cmd.code)(validateCode) { v =>
+          type MakeNewData = Eval[ActiveReq]
+          import cmd.{addToActive, id, reqId}
+
+          def createNode: MakeNewData =
+            if (addToActive)
+              Eval.pure(ActiveReq(id, reqId, None, emptyReqInactive))
+            else
+              Eval.fail(s"${show(v)} not found; can't add inactive ${show(id)} .")
+
+          def modifyNode(d: Data): MakeNewData =
+            if (addToActive)
+              ensureInactive(d, v)
+                .andReturn(ActiveReq(id, reqId, d.deadGroup, d.reqInactive.del(reqId, id)))
+            else
+              needActiveReq(d, v)
+                .map(ar => ar.copy(reqInactive = ar.reqInactive.add(reqId, id)))
+
+          t.valueAtPath(v, createNode)(modifyNode).map(t.put(v, _))
+        }
+    }
+
+    implicit object GroupAdder extends Adder[AddGroup] {
+      override def reqCodeId(a: AddGroup) = a.liveGroup.id
+
+      override def apply(t: Trie, cmd: AddGroup): Eval[Trie] =
+        cmd.codeValidated.mapValidated(cmd.code)(validateCode) { v =>
+          type MakeNewData = Eval[ActiveGroup]
+          import cmd.liveGroup
+
+          def createNode: MakeNewData =
+            Eval.pure(ActiveGroup(liveGroup, emptyReqInactive))
+
+          def modifyNode(d: Data): MakeNewData =
+            ensureInactive(d, v).andReturn(ActiveGroup(liveGroup, d.reqInactive))
+
+          t.valueAtPath(v, createNode)(modifyNode).map(t.put(v, _))
+        }
+    }
 
     def ensureInactive(d: Data, v: Value): Eval[Unit] =
       whenUntrusted(d match {
@@ -103,61 +147,6 @@ trait ApplyReqCodeLogic {
 
     private def awakenGroup(g: DeadCodeGroup) = LiveCodeGroup(g.id, g.title)
     private def killGroup  (g: LiveCodeGroup) = DeadCodeGroup(g.id, g.title)
-
-    sealed trait Adder[A] {
-      def reqCodeId(a: A): ReqCodeId
-      def apply(t: Trie, a: A): Eval[Trie]
-    }
-
-    /** Command to add a ReqCode to a requirement. */
-    case class AddReq(code: Value, codeValidated: Validated, id: ApReqCodeId, reqId: ReqId, addToActive: Boolean)
-
-    implicit object ReqAdder extends Adder[AddReq] {
-      override def reqCodeId(a: AddReq) = a.id
-
-      override def apply(t: Trie, cmd: AddReq): Eval[Trie] =
-        cmd.codeValidated.mapValidated(cmd.code)(validateCode) { v =>
-          type MakeNewData = Eval[ActiveReq]
-          import cmd.{addToActive, id, reqId}
-
-          def createNode: MakeNewData =
-            if (addToActive)
-              Eval.pure(ActiveReq(id, reqId, None, emptyReqInactive))
-            else
-              Eval.fail(s"${show(v)} not found; can't add inactive ${show(id)} .")
-
-          def modifyNode(d: Data): MakeNewData =
-            if (addToActive)
-              ensureInactive(d, v)
-                .andReturn(ActiveReq(id, reqId, d.deadGroup, d.reqInactive.del(reqId, id)))
-            else
-              needActiveReq(d, v)
-                .map(ar => ar.copy(reqInactive = ar.reqInactive.add(reqId, id)))
-
-          t.valueAtPath(v, createNode)(modifyNode).map(t.put(v, _))
-        }
-    }
-
-    /** Command to add an active CodeGroup. */
-    case class AddGroup(code: Value, codeValidated: Validated, g: LiveCodeGroup)
-
-    implicit object GroupAdder extends Adder[AddGroup] {
-      override def reqCodeId(a: AddGroup) = a.g.id
-
-      override def apply(t: Trie, cmd: AddGroup): Eval[Trie] =
-        cmd.codeValidated.mapValidated(cmd.code)(validateCode) { v =>
-          type MakeNewData = Eval[ActiveGroup]
-          import cmd.g
-
-          def createNode: MakeNewData =
-            Eval.pure(ActiveGroup(g, emptyReqInactive))
-
-          def modifyNode(d: Data): MakeNewData =
-            ensureInactive(d, v).andReturn(ActiveGroup(g, d.reqInactive))
-
-          t.valueAtPath(v, createNode)(modifyNode).map(t.put(v, _))
-        }
-    }
 
     def addOne[A](a: A)(implicit adder: Adder[A]): Eval[Unit] =
       getTrie.flatMap(addOneT(_, a)).flatMap(Project.reqCodeTrie.set)
@@ -398,3 +387,27 @@ trait ApplyReqCodeLogic {
   }
 
 }
+
+// =====================================================================================================================
+
+object ApplyReqCodeLogic {
+
+  sealed trait Adder[A] {
+    def reqCodeId(a: A): ReqCodeId
+    def apply(t: Trie, a: A): Eval[Trie]
+  }
+
+  /** Command to add a ReqCode to a requirement. */
+  final case class AddReq(code         : Value,
+                          codeValidated: Validated,
+                          id           : ApReqCodeId,
+                          reqId        : ReqId,
+                          addToActive  : Boolean)
+
+  /** Command to add an active CodeGroup. */
+  final case class AddGroup(code         : Value,
+                            codeValidated: Validated,
+                            liveGroup    : LiveCodeGroup)
+
+}
+
