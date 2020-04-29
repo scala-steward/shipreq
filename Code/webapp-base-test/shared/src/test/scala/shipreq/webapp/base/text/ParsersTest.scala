@@ -601,7 +601,7 @@ object ParsersTest extends TestSuite {
         )(
           T.CodeBlock(Some("js"), "// here we go"),
           T.UnorderedList(NEA(
-            LI(T.CodeBlock(Some("tla"), """x = /\ \/ /\ \/ /\ \/ \/ /\""" + "\n    ...")),
+            LI(T.CodeBlock(Some("tla"), """x = /\ \/ /\ \/ /\ \/ """ + """\/ /\""" + "\n    ...")),
           )),
         )
       }

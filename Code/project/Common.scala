@@ -30,7 +30,8 @@ object Common {
   }
 
   def scalafixEnabled =
-    !releaseMode
+    false // Disabled until Scala 2.13.2 supported
+    // !releaseMode
 
   lazy val emitSourceMapsValue: Boolean =
     System.getProperty("emitSourceMaps", "0").trim.toLowerCase match {
