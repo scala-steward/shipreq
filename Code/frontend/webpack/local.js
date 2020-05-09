@@ -14,6 +14,7 @@ const config = {
 
     // Projects access this via symlink in src/test/resources
     'webapp-base-test': [
+      'core-js/features/object/assign',
       'core-js/features/map',
       'core-js/features/set',
       'expose-loader?React!react',
@@ -25,6 +26,7 @@ const config = {
 
     // Projects access this via symlink in src/test/resources
     'webapp-client-test': [
+      'core-js/features/object/assign',
       'core-js/features/map',
       'core-js/features/set',
       'expose-loader?React!react',
