@@ -81,7 +81,7 @@ object Dependencies {
   }
 
   object React {
-    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "1.7.0-SNAPSHOT")
+    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "1.7.0")
     val core    = mm("core")
     val test    = mm("test")
     val monocle = mm("ext-monocle-scalaz") ++ Monocle.core
