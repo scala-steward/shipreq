@@ -13,8 +13,7 @@ bms=(
   ApplyEventBM
   DispatchBM
   JwtBM
-  ObfuscationBM
-  PickleFixBM
+  PropCheckBM
   SerialisationEventsBM
   SerialisationProjectBM
 )
