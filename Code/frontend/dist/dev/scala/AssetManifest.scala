@@ -28,28 +28,28 @@ object AssetManifest {
   def memberLibBundleJs = "/assets/member-lib-bundle.js"
 
   def prismJsAutoloader = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.19.0/plugins/autoloader/prism-autoloader.min.js",
-    integrity = Some("sha256-WIuEtgHNTdrDT2obGtHYz/emxxAj04sJBdMhRjDXd8I="))
+    href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/plugins/autoloader/prism-autoloader.min.js",
+    integrity = Some("sha256-3S2PESHNt0YNL65z57WuHPHIv12fibpBDXepyCGHftw="))
 
   def prismJsCore = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.19.0/components/prism-core.min.js",
-    integrity = Some("sha256-D05OTvzyl8h0SDpcQF6UNo3gl2rKDMmRuqX8ZZ06pNE="))
+    href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/components/prism-core.min.js",
+    integrity = Some("sha256-9h14mWYYiQGkeAKg2JtijbqApb56kgw57WN6sI6dwH0="))
 
   def prismJsCss = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.19.0/themes/prism.css",
+    href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/themes/prism.css",
     integrity = Some("sha256-LArq5Cddn4QETLgVbBZppSkBLJbL1dhacPVQF/EPH00="))
 
   def reactDomJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.8.6/umd/react-dom.development.js",
-    integrity = Some("sha256-I/ClrYyzlYEQkMUjqr7G3m/83znlycDCeI2xuBZsQx0="))
+    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.13.1/umd/react-dom.development.js",
+    integrity = Some("sha256-/z9BuuCDG5rQaHQBQWtzk3dBOTjTAOrn+SUSRGDjR40="))
 
   def reactDomServerJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.8.6/umd/react-dom-server.browser.development.js",
-    integrity = Some("sha256-4poHykVozXGJlko3X1QSfmkyXb7ZIh56YZ9gB7AwPoA="))
+    href = "https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.13.1/umd/react-dom-server.browser.development.js",
+    integrity = Some("sha256-e8L+Ctskvl/QseYUB0FNyOexbyaeDBCx9O9jAvXs4I0="))
 
   def reactJs = CDN(
-    href = "https://cdnjs.cloudflare.com/ajax/libs/react/16.8.6/umd/react.development.js",
-    integrity = Some("sha256-9H05eCUa5x4G28dytYBwoAXkR3XgPE3sCogyXhrINwo="))
+    href = "https://cdnjs.cloudflare.com/ajax/libs/react/16.13.1/umd/react.development.js",
+    integrity = Some("sha256-4gJGEx/zXAxofkLPGXiU2IJHqSOmYV33Ru0zw0TeJ30="))
 
   def semanticCss = "/assets/semantic.css"
 

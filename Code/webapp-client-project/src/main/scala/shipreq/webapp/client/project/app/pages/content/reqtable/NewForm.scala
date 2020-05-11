@@ -173,18 +173,10 @@ sealed trait NewForm {
         val pubid = project.content.reqs.need(reqId).pubid.external(project)
 
         p.toast.addWithCtrls { ctrls =>
-          // TODO Simplify after https://github.com/japgolly/scalajs-react/issues/652
-
-          val onClick: ReactMouseEvent => Callback =
-            e =>
-              CallbackOption.unless(ReactMouseEvent targetsNewTab_? e) >>
-                (p.routerCtl.setEH(pubid)(e) >> ctrls.close)
 
           val link =
-            <.a(
+            p.routerCtl.onSetRun(ctrls.close).link(pubid)(
               *.toastLink,
-              ^.href := p.routerCtl.urlFor(pubid).value,
-              ^.onClick ==> onClick,
               PlainText.pubid(pubid))
 
           <.span("Created ", link)
@@ -262,7 +254,7 @@ sealed trait NewForm {
     }
   }
 
-  val Component = ScalaComponent.builder[Props]("NewForm")
+  val Component = ScalaComponent.builder[Props]
     .renderBackend[Backend]
     .build
 
@@ -278,7 +270,7 @@ sealed trait NewForm {
           p.whole.toTagMod(col =>
             <.th(*.formHeaderCell, col.name))))
 
-    val Component = ScalaComponent.builder[Props]("Header")
+    val Component = ScalaComponent.builder[Props]
       .render_P(render)
       .configure(shouldComponentUpdate)
       .build

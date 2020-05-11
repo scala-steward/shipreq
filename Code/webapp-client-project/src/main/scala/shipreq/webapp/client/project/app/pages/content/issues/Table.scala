@@ -35,7 +35,7 @@ object Table {
     val reusablePxPW  = Reusable.byRef(pxProjectWidgets)
     val pxPubidFormat = pxProjectWidgets.map(_.PubidFormat(Plain, _ => *.pubidColumnValue, titleFn = _ => None))
 
-    val component = ScalaComponent.builder[Props]("Table")
+    val component = ScalaComponent.builder[Props]
       .backend(new Backend(this, _))
       .renderBackend
       .configure(shouldComponentUpdate)
@@ -114,7 +114,7 @@ object Table {
       */
     private def focusAlternateRow(p: EditorNavParent.Props, rowIdx: Int): Callback =
       for {
-        focus <- DomUtil.activeHtmlElement.toCBO
+        focus <- CallbackOption.activeHtmlElement.asCallback
         _     <- CallbackOption.require(focus.isEmpty)
         table <- $.getDOMNode.map(_.toHtml).asCBO
       } yield {
