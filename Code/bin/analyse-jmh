@@ -2,8 +2,6 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-[ $# -ne 0 ] && echo "Usage: $0" && exit 1
-
 JMH_OPTIONS="${JMH_OPTIONS:-}"
 timestamp=$(date +%Y%m%d_%H%M%S)
 machine="$(tr - _ </etc/hostname)"
@@ -18,6 +16,8 @@ bms=(
   SerialisationBinaryProjectBM
   SerialisationJsonEventsBM
 )
+
+[ $# -ne 0 ] && bms=("$@")
 
 cmd=(
   sbt
