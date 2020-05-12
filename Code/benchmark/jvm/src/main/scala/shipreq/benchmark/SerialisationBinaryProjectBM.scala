@@ -8,7 +8,7 @@ import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.protocol.binary.v1.Rev1.picklerProject
 import shipreq.webapp.sampledata.SampleData
 
-object SerialisationProjectBM {
+object SerialisationBinaryProjectBM {
 
   val deser: ByteBuffer => Project = {
     val unpickler = UnpickleImpl[Project]
@@ -21,8 +21,8 @@ object SerialisationProjectBM {
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
-@OutputTimeUnit(TimeUnit.MICROSECONDS)
-class SerialisationProjectBM {
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+class SerialisationBinaryProjectBM {
 
   @Param(Array("full", "no_req_codes"))
   var `type`: String = _
@@ -33,7 +33,7 @@ class SerialisationProjectBM {
   private var p: Project = _
   private var b: ByteBuffer = _
 
-  private[this] val deser = SerialisationProjectBM.deser
+  private[this] val deser = SerialisationBinaryProjectBM.deser
 
   @Setup
   def setup(): Unit = {
