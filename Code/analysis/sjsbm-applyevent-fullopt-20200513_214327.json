@@ -15,7 +15,7 @@
     "measurementTime" : "1 s",
     "measurementBatchSize" : 1,
     "params" : {
-      "Sample data" : "shipreq-events-no_req_codes-10000.json"
+      "Sample_data" : "shipreq-events-no_req_codes-10000.json"
     },
     "primaryMetric" : {
       "score" : 1371.328777,
@@ -59,7 +59,7 @@
     "measurementTime" : "1 s",
     "measurementBatchSize" : 1,
     "params" : {
-      "Sample data" : "shipreq-events-no_req_codes-1000.json"
+      "Sample_data" : "shipreq-events-no_req_codes-1000.json"
     },
     "primaryMetric" : {
       "score" : 27.388685,
@@ -103,7 +103,7 @@
     "measurementTime" : "1 s",
     "measurementBatchSize" : 1,
     "params" : {
-      "Sample data" : "shipreq-events-full-2000.json"
+      "Sample_data" : "shipreq-events-full-2000.json"
     },
     "primaryMetric" : {
       "score" : 224.678155,
@@ -147,7 +147,7 @@
     "measurementTime" : "1 s",
     "measurementBatchSize" : 1,
     "params" : {
-      "Sample data" : "shipreq-events-no_req_codes-2000.json"
+      "Sample_data" : "shipreq-events-no_req_codes-2000.json"
     },
     "primaryMetric" : {
       "score" : 84.122535,
@@ -191,7 +191,7 @@
     "measurementTime" : "1 s",
     "measurementBatchSize" : 1,
     "params" : {
-      "Sample data" : "shipreq-events-full-1000.json"
+      "Sample_data" : "shipreq-events-full-1000.json"
     },
     "primaryMetric" : {
       "score" : 58.780696,
@@ -235,7 +235,7 @@
     "measurementTime" : "1 s",
     "measurementBatchSize" : 1,
     "params" : {
-      "Sample data" : "shipreq-events-full-4000.json"
+      "Sample_data" : "shipreq-events-full-4000.json"
     },
     "primaryMetric" : {
       "score" : 654.129555,
@@ -279,7 +279,7 @@
     "measurementTime" : "1 s",
     "measurementBatchSize" : 1,
     "params" : {
-      "Sample data" : "shipreq-events-full-10000.json"
+      "Sample_data" : "shipreq-events-full-10000.json"
     },
     "primaryMetric" : {
       "score" : 3912.026777,
@@ -323,7 +323,7 @@
     "measurementTime" : "1 s",
     "measurementBatchSize" : 1,
     "params" : {
-      "Sample data" : "shipreq-events-no_req_codes-4000.json"
+      "Sample_data" : "shipreq-events-no_req_codes-4000.json"
     },
     "primaryMetric" : {
       "score" : 247.85659,
