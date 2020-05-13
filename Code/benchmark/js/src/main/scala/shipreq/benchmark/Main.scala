@@ -17,9 +17,7 @@ object Main {
     val baseUrl = BaseUrl(dom.window.location.href.takeWhile(_ != '#'))
 
     val options: EngineOptions =
-      EngineOptions.default.copy(
-        maxTime = 60.seconds,
-      )
+      EngineOptions.default
 
     val async =
       for (bd <- BenchmarkData.load) yield
