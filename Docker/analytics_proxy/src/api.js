@@ -29,6 +29,8 @@ export async function init () {
         app = express();
         app.disable("x-powered-by");
 
+        app.get('/ok', (_, res) => res.send('OK'));
+
         enableDefaultProxy(app);
 
         if (config.isLocalEnv) {
@@ -38,8 +40,6 @@ export async function init () {
                 "<html><head><title>Proxy API</title></head><body>It works! Try requesting something like <a href=\"www.google-analytics.com/analytics.js\">www.google-analytics.com/analytics.js</a>.</body></html>"
             ));
         }
-
-        app.get('/ok', (_, res) => res.send('OK'));
 
         app.use((err, _, res, next) => { // Express error handler
             if (res.headersSent) {
