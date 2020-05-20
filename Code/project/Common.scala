@@ -30,8 +30,7 @@ object Common {
   }
 
   def scalafixEnabled =
-    false // Disabled until Scala 2.13.2 supported
-    // !releaseMode
+    !releaseMode
 
   lazy val emitSourceMapsValue: Boolean =
     System.getProperty("emitSourceMaps", "0").trim.toLowerCase match {
@@ -119,7 +118,7 @@ object Common {
 
   val scalafixSettings: Project => Project =
     if (scalafixEnabled)
-      _.enablePlugins(ScalafixPlugin).settings(addCompilerPlugin(scalafixSemanticdb), scalacOptions += "-Yrangepos")
+      _.enablePlugins(ScalafixPlugin)
     else
       _.disablePlugins(ScalafixPlugin)
 
