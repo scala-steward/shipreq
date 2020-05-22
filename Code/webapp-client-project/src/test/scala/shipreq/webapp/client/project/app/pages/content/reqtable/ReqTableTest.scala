@@ -15,6 +15,7 @@ import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.client.project.app.ProjectSpaTestDsl
 import shipreq.webapp.client.project.app.pages.root.Routes.Page
+import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
 import shipreq.webapp.client.project.test._
 
 object ReqTableTest extends TestSuite {

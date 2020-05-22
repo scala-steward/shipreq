@@ -46,10 +46,10 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
   private val stateLensFilterDead =
     Lens[State, FilterDead](_._filterDead)(fd => _.setFilterDead(fd, unsafeProject()))
 
-  private val stateLensFilterDeadAndReqTable =
-    Lens[State, (FilterDead, ReqTablePage.State)](
-      s => (s.filterDead, s.reqTable))(
-      n => _.copy(reqTable = n._2).setFilterDead(n._1, unsafeProject()))
+  private val stateLensFilterDeadAndSavedViewState =
+    Lens[State, (FilterDead, SavedViewFeature.State)](
+      s => (s.filterDead, s.savedViews))(
+      n => _.copy(savedViews = n._2).setFilterDead(n._1, unsafeProject()))
 
   final class Backend($: BackendScope[Props, State]) extends OnUnmount {
     import global.cbProjectMetaData
@@ -77,6 +77,9 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
 
     private val pxState =
       Px.state($).withReuse.autoRefresh
+
+    private val pxFilterDead =
+      pxState.map(_.filterDead).withReuse
 
     private val pxUseCases =
       pxProject.map(_.content.reqs.useCases).withReuse
@@ -219,6 +222,15 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
         case -\/(\/-(cmd)) => updateConfigCmdInvoker(cmd)
       }
 
+    private val savedViewFeatureStatic: SavedViewFeature.Static =
+      SavedViewFeature.Static(
+        stateAccess     = $.zoomStateL(stateLensFilterDeadAndSavedViewState),
+        pxProject       = pxProject,
+        pxFilterDead    = pxFilterDead,
+        savedViewAsyncW = savedViewAsyncW,
+        savedViewIO     = sspUpdateSavedViews,
+      )
+
     private val issuesPage = content.issues.IssuesPage.StaticProps(
       pxProject,
       pxRenderFeature,
@@ -233,17 +245,16 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
 
     private val reqTable = ReqTablePage(
       ReqTablePage.StaticProps(
-        $ zoomStateL stateLensFilterDeadAndReqTable,
-        pxProject,
-        pxTextSearch,
-        pxProjectWidgets,
-        pxFilterCompilerFromFilterDead,
-        reqDetailRC,
-        toast,
-        sspUpdateContent,
-        sspUpdateSavedViews,
-        rowAsyncW.mapKey(content.reqtable.Row.SourceId.ToEditorRow.reverse),
-        savedViewAsyncW))
+        stateAccess            = $ zoomStateL State.reqTable,
+        savedViewStatic        = savedViewFeatureStatic,
+        pxTextSearch           = pxTextSearch,
+        pxProjectWidgets       = pxProjectWidgets,
+        pxFilterCompilerFromFD = pxFilterCompilerFromFilterDead,
+        reqDetailRC            = reqDetailRC,
+        toast                  = toast,
+        updateIO               = sspUpdateContent,
+        rowAsyncW              = rowAsyncW.mapKey(content.reqtable.Row.SourceId.ToEditorRow.reverse),
+      ))
 
     private val pxReqDetailId = Px[Option[ReqId]](None).withReuse.manualUpdate
 
@@ -299,8 +310,8 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
         def setReqTableView: Callback =
           for {
             p <- pxProject.toCallback
-            f = ReqTablePage.State.modifyView(p, fd, updateFilterText = true)(_.withFilter(Some(filter)))
-            _ <- $.modState(s => State.reqTable.modify(f)(s).setFilterDead(fd, p))
+            f = SavedViewFeature.State.modifyView(p, fd, updateFilterText = true)(_.withFilter(Some(filter)))
+            _ <- $.modState(s => State.savedViews.modify(f)(s).setFilterDead(fd, p))
           } yield ()
         routerCtl.onSet(setReqTableView >> _).contramap(_ => Page.ReqTable)
       }
@@ -324,15 +335,16 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
 
     def render(p: Props, s: State): VdomElement = {
       lazy val editAsyncState = s.editAsync.toRead
-      def createR        = CreateFeature.Read.ForProject(s.create, pxCreateEditability.value(), s.createAsync.toRead)
-      def createRW       = createW.toReadWrite(createR)
-      def renderFeature  = pxRenderFeatureText.value()(s.filterDead)
-      def editR          = EditorFeature.Read.ForProject(s.edit, renderFeature, pxEditEditability.value(), editAsyncState.mapKey1(AsyncKey.ToEditor))
-      def editRW         = editW.toReadWrite(editR)
-      def filterDeadSS   = StateSnapshot.withReuse(s.filterDead)(setFilterDead)
-      def project        = unsafeProject()
-      def projectWidgets = pxProjectWidgets.value.value()
-      def usage          = pxUsage.value()
+      def createR          = CreateFeature.Read.ForProject(s.create, pxCreateEditability.value(), s.createAsync.toRead)
+      def createRW         = createW.toReadWrite(createR)
+      def editR            = EditorFeature.Read.ForProject(s.edit, renderFeature, pxEditEditability.value(), editAsyncState.mapKey1(AsyncKey.ToEditor))
+      def editRW           = editW.toReadWrite(editR)
+      def filterDeadSS     = StateSnapshot.withReuse(s.filterDead)(setFilterDead)
+      def project          = unsafeProject()
+      def projectWidgets   = pxProjectWidgets.value.value()
+      def renderFeature    = pxRenderFeatureText.value()(s.filterDead)
+      def savedViewFeature = SavedViewFeature(savedViewFeatureStatic, s.savedViews)
+      def usage            = pxUsage.value()
       // def previewRW = previewW.toReadWrite(s.preview)
 
       val body: VdomElement = p.page match {
@@ -414,47 +426,50 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
             .withKey1(AsyncKey.WholeReq)
           reqTable(
             ReqTablePage.Props(
-              createRW,
-              editRW,
-              rowAsync,
-              s.savedViewAsync,
-              s.filterDead,
-              s.reqTable))
+              create     = createRW,
+              editor     = editRW,
+              savedViews = savedViewFeature,
+              rowAsync   = rowAsync,
+              filterDead = s.filterDead,
+              state      = s.reqTable))
 
         case Page.ReqDetail(pubid) =>
           val props = ReqDetail.DynamicProps(
-            pubid,
-            filterDeadSS,
-            reqDetailReqPropsFn(s),
-            editRW.forUseCaseSteps,
-            StateSnapshot.withReuse(s.reqDetail)(reqDetailSetState))
+            extPubid   = pubid,
+            filterDead = filterDeadSS,
+            reqProps   = reqDetailReqPropsFn(s),
+            editorUCS  = editRW.forUseCaseSteps,
+            state      = StateSnapshot.withReuse(s.reqDetail)(reqDetailSetState))
           reqDetail(props)
 
         case Page.ImpGraph =>
           val p = project
           val g = ImplicationGraph.Props(
-            None, s.filterDead,
-            p.content.implications, p.content.reqs, p.config.reqTypes,
-            pxPlainText.value(),
-            reqDetailRC,
-            ww)
+            focus       = None,
+            filterDead  = s.filterDead,
+            imps        = p.content.implications,
+            reqs        = p.content.reqs,
+            reqTypes    = p.config.reqTypes,
+            plainText   = pxPlainText.value(),
+            reqDetailRC = reqDetailRC,
+            webWorker   = ww)
           content.impgraph.ImplicationGraphPage.Props(g, setFilterDead).render
       }
 
       State.recorder.record(s)
 
       Layout.Props(
-        initPageData.username,
-        cbProjectMetaData.runNow(),
-        pxLayoutUnsavedChangeData.value(),
-        global.connectedStatusHub.unsafeGet(),
-        global.setConnectionStatus,
-        global.reauthModal,
-        feedbackModal,
-        StateSnapshot.zoomL(State.toast)(s).setStateVia($),
-        routerCtl,
-        p.page,
-        body,
+        username            = initPageData.username,
+        project             = cbProjectMetaData.runNow(),
+        unsavedChanges      = pxLayoutUnsavedChangeData.value(),
+        connectionStatus    = global.connectedStatusHub.unsafeGet(),
+        setConnectionStatus = global.setConnectionStatus,
+        reauthModal         = global.reauthModal,
+        feedbackModal       = feedbackModal,
+        toast               = StateSnapshot.zoomL(State.toast)(s).setStateVia($),
+        rc                  = routerCtl,
+        page                = p.page,
+        content             = body,
       ).render
     }
 

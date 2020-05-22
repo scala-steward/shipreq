@@ -132,7 +132,7 @@ object ProjectSpaTestDsl {
 
   implicit lazy val transformRT =
     RT.*.transformer
-      .mapR[Ref](r => RT.Ref(r.tester.component zoomStateL State.reqTable, r.global))
+      .mapR[Ref](r => RT.Ref(r.tester.component zoomStateL State.savedViews, r.global))
       .pmapO[Obs](_.reqTable)
       .mapS(TestState.project.get)((a, b) => TestState.project.set(b)(a)) // TODO Add Monocle support
 

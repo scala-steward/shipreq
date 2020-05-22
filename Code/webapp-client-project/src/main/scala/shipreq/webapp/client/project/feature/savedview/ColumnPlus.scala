@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.app.pages.content.reqtable
+package shipreq.webapp.client.project.feature.savedview
 
 import japgolly.microlibs.nonempty.{NonEmptySet, NonEmptyVector}
 import japgolly.scalajs.react._

@@ -13,13 +13,16 @@ import shipreq.webapp.base.feature.clipboard.TestClipboard
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.util.Browser
 import shipreq.webapp.client.project.app.Style
+import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
+import shipreq.webapp.client.project.feature.SavedViewFeature
 import shipreq.webapp.client.project.test._
 import teststate.domzipper.DomZipper.EditableSel
 import TestState._
 
 object ReqTableTestDsl {
 
-  case class Ref($: StateAccessImpure[ReqTablePage.State], global: TestGlobal)
+  final case class Ref(savedViewState: StateAccessImpure[SavedViewFeature.State],
+                       global: TestGlobal)
 
   val * = Dsl[Ref, ReqTableObs, Project]
 
@@ -270,12 +273,9 @@ object ReqTableTestDsl {
 
   implicit def autoGetDomFromZipper(d: DomZipperJs): ReactOrDomNode = d.domAsHtml
 
-  def modState(name: => String, mod: (Project, ReqTablePage.State) => ReqTablePage.State): *.Actions =
-    *.action(name)(i => i.ref.$.modState(s => mod(i.state, s)))
-
   def setViewSettings(name: => String, fd: FilterDead, mod: (Project, View) => View): *.Actions =
     (setFilterDead(fd) >> *.action("setView")(i =>
-      i.ref.$.modState(ReqTablePage.State.modifyView(i.state, fd, true)(mod(i.state, _)))))
+      i.ref.savedViewState.modState(SavedViewFeature.State.modifyView(i.state, fd, true)(mod(i.state, _)))))
       .renameContextFree(name)
 
 //  def applyTableSettings(ts: TableSettings): *.Actions =

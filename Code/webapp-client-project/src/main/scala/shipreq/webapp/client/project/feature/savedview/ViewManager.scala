@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.app.pages.content.reqtable
+package shipreq.webapp.client.project.feature.savedview
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
@@ -12,9 +12,9 @@ import shipreq.webapp.base.ui.semantic.Dropdown.JsOptionsOps
 import shipreq.webapp.base.ui.semantic.{Colour, Dropdown, Icon, SemExtAny, Menu => SemUiMenu}
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.Style.reqtable.{savedViews => *}
-import SavedViewLogic._
 
-object SavedViewsUI {
+object ViewManager {
+  import ViewLogic._
 
   final case class Props(menu       : Menu,
                          asyncRW    : AsyncFeature.ReadWrite.D0[ErrorMsg],
