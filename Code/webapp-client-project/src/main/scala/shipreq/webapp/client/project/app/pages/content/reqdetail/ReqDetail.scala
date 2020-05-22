@@ -67,11 +67,11 @@ object ReqDetail {
    *
    * Cached by its inputs.
    */
-  final class Data(sp              : StaticProps,
-               val project         : Project,
-               val req             : Req,
-                   viewReqDataCache: ViewReqDataCache,
-                   upstreamFD      : FilterDead) {
+  private final class Data(sp              : StaticProps,
+                       val project         : Project,
+                       val req             : Req,
+                           viewReqDataCache: ViewReqDataCache,
+                           upstreamFD      : FilterDead) {
 
     val pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]] =
       Reusable.byRef(
@@ -110,7 +110,7 @@ object ReqDetail {
       filterDead.filterFnBy(Live whenValid _.validity)
   }
 
-  final class UseCaseData(val uc: UseCase) {
+  private final class UseCaseData(val uc: UseCase) {
     private def stepData(row: Row.UseCaseSteps) = {
       val steps = row.field.useCaseSteps.get(uc)
       val range = row.treeFilter(steps.tree)
@@ -122,19 +122,18 @@ object ReqDetail {
   }
 
   // TODO Better performance if cells are (components + shouldComponentRender) or cached
-  // TODO Make everything private
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   final class Backend(SP: StaticProps, $: BackendScope[DynamicProps, Unit]) {
     import SP._
 
-    val pxExtPubid   = Px.props($).map(_.extPubid).withReuse.manualRefresh
-    val pxUpstreamFD = Px.props($).map(_.filterDead.value).withReuse.manualRefresh
+    private val pxExtPubid   = Px.props($).map(_.extPubid).withReuse.manualRefresh
+    private val pxUpstreamFD = Px.props($).map(_.filterDead.value).withReuse.manualRefresh
 
     private def refreshPx(): Unit =
       Px.refresh(pxExtPubid, pxUpstreamFD)
 
-    val pxData: Px[LookupFailure \/ Data] =
+    private val pxData: Px[LookupFailure \/ Data] =
       for {
         p <- pxProject
         e <- pxExtPubid
@@ -143,10 +142,10 @@ object ReqDetail {
       } yield
         e.lookup(p).map(new Data(SP, p, _, v, f))
 
-    val cbData: CallbackOption[Data] =
+    private val cbData: CallbackOption[Data] =
       Callback(refreshPx()).toCBO >> pxData.toCallback.map(_.toOption).asCBO
 
-    val setFilterDead: Reusable[StateSnapshot.SetFn[FilterDead]] =
+    private val setFilterDead: Reusable[StateSnapshot.SetFn[FilterDead]] =
       Reusable.byRef((v, cb) => $.props.flatMap(_.filterDead.setStateOption(v, cb)))
 
     private def mkRunCmdFn[Cmd <: UpdateContentCmd](onSuccess: VerifiedEvent.Seq => Callback) =
@@ -159,10 +158,10 @@ object ReqDetail {
           )
       )
 
-    val runCmd: ReqId ~=> (Cell ~=> (UpdateContentCmd ~=> Callback)) =
+    private val runCmd: ReqId ~=> (Cell ~=> (UpdateContentCmd ~=> Callback)) =
       mkRunCmdFn(_ => Callback.empty)
 
-    val runAddAndEditNewUseCaseStep: ReqId ~=> (Cell ~=> (UpdateContentCmd.AddUseCaseStep ~=> Callback)) =
+    private val runAddAndEditNewUseCaseStep: ReqId ~=> (Cell ~=> (UpdateContentCmd.AddUseCaseStep ~=> Callback)) =
       mkRunCmdFn { ves =>
 
         val startEditor: Callback =
@@ -183,7 +182,7 @@ object ReqDetail {
         ref
       }
 
-    def startUseCaseStepEditor(id: UseCaseStepId): Callback =
+    private def startUseCaseStepEditor(id: UseCaseStepId): Callback =
       for {
         data      <- cbData
         props     <- $.props.toCBO
@@ -194,13 +193,13 @@ object ReqDetail {
         _         <- CallbackOption.liftOptionCallback(component.backend.startEdit(editor))
       } yield ()
 
-    def setModal(modal: Modal.State): Callback =
+    private def setModal(modal: Modal.State): Callback =
       $.props >>= (_.state setState modal)
 
-    def clearModal: Callback =
+    private def clearModal: Callback =
       setModal(Modal.none)
 
-    def renderNotFound(ep: ExternalPubid): VdomElement = {
+    private def renderNotFound(ep: ExternalPubid): VdomElement = {
       val projectName: String = pxProject.value().name
       val id         : String = PlainText pubid ep
       NoContentMessage.becauseNotFound(
@@ -213,9 +212,7 @@ object ReqDetail {
       )(*.errorCont)
     }
 
-    val emptyRow: VdomElement = <.span
-
-    val impRowSubBase =
+    private val impRowSubBase =
       <.td(*.generalImpsSide, ^.tabIndex := -1)
 
     def render(p: DynamicProps): VdomElement =
@@ -243,7 +240,7 @@ object ReqDetail {
           *.detailTableValue(l),
           ^.tabIndex := -1))
 
-    def renderDetail(props: DynamicProps, data: Data): VdomElement = {
+    private def renderDetail(props: DynamicProps, data: Data): VdomElement = {
       import data.{project, req, pubidText}
 
       val pw        = data.pxProjectWidgets.value()
@@ -478,10 +475,10 @@ object ReqDetail {
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    def runActionNoAsync(cmd: UpdateContentCmd): Callback =
+    private def runActionNoAsync(cmd: UpdateContentCmd): Callback =
       updateIO(cmd).leftFlatTapSync(e => Callback.alert(e.value)).toCallback
 
-    def delete(id: ReqId): Callback =
+    private def delete(id: ReqId): Callback =
       CallbackTo {
         def run(cmd: UpdateContentCmd): Callback = runActionNoAsync(cmd) >> clearModal
         import Px.AutoValue._
