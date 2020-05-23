@@ -18,6 +18,9 @@ final case class State(view  : ViewLogic.State,
                        filter: FilterEditor.State,
                        async : AsyncFeature.State.D0[EditorFeature.AsyncError]) {
 
+  def filterDead(p: Project, fd: FilterDead): FilterDead =
+    view.activeView(p.savedViews, fd).filterDead
+
   def setFilterDead(fd: FilterDead, p: Project): State = {
     val showingBuiltInDefault = p.savedViews.isEmpty && view.manualView.isEmpty
     if (showingBuiltInDefault)
@@ -25,10 +28,40 @@ final case class State(view  : ViewLogic.State,
     else {
       val v1 = view.activeView(p.savedViews, fd)
       val v2 = v1.copy(filterDead = fd)
-      State.setModifiedView(p, updateFilterText = false)(v2)(this)
+      setModifiedView(p, updateFilterText = false)(v2)
     }
   }
 
+  def modifyView(project           : Project,
+                 filterDeadFallback: FilterDead,
+                 updateFilterText  : Boolean)
+                (modify            : View => View): State = {
+    val newView = modify(view.activeView(project.savedViews, filterDeadFallback))
+    setModifiedView(project, updateFilterText)(newView)
+  }
+
+  def setModifiedView(project         : Project,
+                      updateFilterText: Boolean)
+                     (newView         : View): State =
+    runSavedViewAction(project, updateFilterText)(ViewLogic.Action.Modify(newView))
+
+  def runSavedViewAction(project         : Project,
+                         updateFilterText: Boolean)
+                        (action          : ViewLogic.Action): State = {
+    val newView  = ViewLogic.Action.interpret(project.savedViews)(action)(view)
+    val newState = copy(view = newView)
+    if (updateFilterText)
+      newState.updateFilterText(project)
+    else
+      newState
+  }
+
+  def updateFilterText(project: Project): State = {
+    val filterDeadFallback = ShowDead // This doesn't impact filter text
+    val v = view.activeView(project.savedViews, filterDeadFallback)
+    val txt = v.filter.fold("")(Filter.Valid.toText(project.config, _))
+    copy(filter = FilterEditor.State(txt, Valid))
+  }
 }
 
 object State {
@@ -40,44 +73,11 @@ object State {
     )
 
   def init(p: Project): State =
-    updateFilterText(p)(init)
+    init.updateFilterText(p)
 
   implicit def reusability: Reusability[State] =
     Reusability.byRef || Reusability.derive
 
   val manualView: Optional[State, View] =
     view ^|-> ViewLogic.State.manualView ^<-? pSome
-
-
-  def modifyView(project           : Project,
-                 filterDeadFallback: FilterDead,
-                 updateFilterText  : Boolean)
-                (modify            : View => View): State => State =
-    s => {
-      val newView = modify(s.view.activeView(project.savedViews, filterDeadFallback))
-      setModifiedView(project, updateFilterText)(newView)(s)
-    }
-
-  def setModifiedView(project         : Project,
-                      updateFilterText: Boolean)
-                     (newView         : View): State => State =
-    runSavedViewAction(project, updateFilterText)(ViewLogic.Action.Modify(newView))
-
-  def runSavedViewAction(project         : Project,
-                         updateFilterText: Boolean)
-                        (action          : ViewLogic.Action): State => State = {
-    val modSVS   = ViewLogic.Action.interpret(project.savedViews)(action)
-    val modState = view.modify(modSVS)
-    if (updateFilterText)
-      modState andThen this.updateFilterText(project)
-    else
-      modState
-  }
-
-  def updateFilterText(project: Project): State => State = s => {
-    val filterDeadFallback = ShowDead // This doesn't impact filter text
-    val v = s.view.activeView(project.savedViews, filterDeadFallback)
-    val txt = v.filter.fold("")(Filter.Valid.toText(project.config, _))
-    filter.set(FilterEditor.State(txt, Valid))(s)
-  }
 }

@@ -14,7 +14,7 @@ import shipreq.webapp.base.data.{FilterDead, HideDead, Project, ProjectConfig, R
 import shipreq.webapp.base.event.EventSeqSummary
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.filter.Filter
-import shipreq.webapp.base.lib.ConfirmJs
+import shipreq.webapp.base.lib.{ConfirmJs, PromptJs}
 import shipreq.webapp.base.protocol.ajax.CommonProtocolsJs
 import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint
 import shipreq.webapp.base.protocol.websocket._
@@ -38,7 +38,10 @@ object LoadedRoot {
   case class Props(page: Page, routerCtl: RouterCtl)
 }
 
-final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Global, confirmJs: ConfirmJs) {
+final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData,
+                       global      : Global,
+                       confirmJs   : ConfirmJs,
+                       promptJs    : PromptJs) {
 
   val pxProject = global.pxProject
   def unsafeProject() = global.unsafeProject()
@@ -46,10 +49,10 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
   private val stateLensFilterDead =
     Lens[State, FilterDead](_._filterDead)(fd => _.setFilterDead(fd, unsafeProject()))
 
-  private val stateLensFilterDeadAndSavedViewState =
-    Lens[State, (FilterDead, SavedViewFeature.State)](
-      s => (s.filterDead, s.savedViews))(
-      n => _.copy(savedViews = n._2).setFilterDead(n._1, unsafeProject()))
+  private val stateLensSavedViewStateAndFilterDead =
+    Lens[State, (SavedViewFeature.State, FilterDead)](
+      s => (s.savedViews, s.filterDead))(
+      n => _.copy(savedViews = n._1).setFilterDead(n._2, unsafeProject()))
 
   final class Backend($: BackendScope[Props, State]) extends OnUnmount {
     import global.cbProjectMetaData
@@ -224,9 +227,11 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
 
     private val savedViewFeatureStatic: SavedViewFeature.Static =
       SavedViewFeature.Static(
-        stateAccess     = $.zoomStateL(stateLensFilterDeadAndSavedViewState),
+        stateAccess     = $.zoomStateL(stateLensSavedViewStateAndFilterDead),
         pxProject       = pxProject,
         pxFilterDead    = pxFilterDead,
+        confirmJs       = confirmJs,
+        promptJs        = promptJs,
         savedViewAsyncW = savedViewAsyncW,
         savedViewIO     = sspUpdateSavedViews,
       )
@@ -307,11 +312,14 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData, global: Glob
       override val general = routerCtl
 
       override def reqTableWithFilter(fd: FilterDead, filter: => Filter.Valid): router.RouterCtl[Unit] = {
+        def mod(p: Project, s: State): State =
+          State.savedViews.modify(
+            _.modifyView(p, fd, updateFilterText = true)(_.withFilter(Some(filter)))
+          )(s).setFilterDead(fd, p)
         def setReqTableView: Callback =
           for {
             p <- pxProject.toCallback
-            f = SavedViewFeature.State.modifyView(p, fd, updateFilterText = true)(_.withFilter(Some(filter)))
-            _ <- $.modState(s => State.savedViews.modify(f)(s).setFilterDead(fd, p))
+            _ <- $.modState(mod(p, _))
           } yield ()
         routerCtl.onSet(setReqTableView >> _).contramap(_ => Page.ReqTable)
       }

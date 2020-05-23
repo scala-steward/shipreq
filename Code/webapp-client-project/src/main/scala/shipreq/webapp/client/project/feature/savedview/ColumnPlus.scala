@@ -43,6 +43,12 @@ object ColumnPlus {
     }
   }
 
+  def byProject(p: Project, fd: FilterDead): Column => Option[ColumnPlus] =
+    fd match {
+      case HideDead => byProject(p).andThen(_.filter(_.live is Live))
+      case ShowDead => byProject(p)
+    }
+
   /** Forcing is fine because
     * 1. certain built-in columns are mandatory and can't be removed
     * 2. built-in columns always have a corresponding [[ColumnPlus]] value

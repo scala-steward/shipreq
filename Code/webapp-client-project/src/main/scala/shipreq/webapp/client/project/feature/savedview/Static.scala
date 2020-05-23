@@ -2,40 +2,39 @@ package shipreq.webapp.client.project.feature.savedview
 
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.vdom.VdomElement
-import shipreq.base.util.{ErrorMsg, Optics}
-import shipreq.webapp.base.data.{FilterDead, Project}
+import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.savedview.{Column, SavedViews, SortCriteria, View}
+import shipreq.webapp.base.data.{FilterDead, Project}
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.DataReusability._
+import shipreq.webapp.base.lib.{ConfirmJs, PromptJs}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.SavedViewCmd
 import shipreq.webapp.client.project.widgets.FilterEditor
 
-final case class Static(stateAccess    : StateAccessPure[(FilterDead, State)],
+final case class Static(stateAccess    : StateAccessPure[(State, FilterDead)],
                         pxProject      : Px[Project],
                         pxFilterDead   : Px[FilterDead],
+                        confirmJs      : ConfirmJs,
+                        promptJs       : PromptJs,
                         savedViewAsyncW: AsyncFeature.Write.D0[ErrorMsg],
                         savedViewIO    : ServerSideProcInvoker[SavedViewCmd, ErrorMsg, VerifiedEvent.Seq]) {
-
-  val stateAccessS: StateAccessPure[State] =
-    stateAccess.zoomStateL(Optics.lensTuple2_2)
 
   val setFilterDeadFn: Reusable[SetStateFnPure[FilterDead]] =
     Reusable.byRef(SetStateFn((fdO, cb) =>
       fdO.fold(cb)(fd =>
         for {
           p       <- pxProject.toCallback
-          (_, s1) <- stateAccess.state
+          (s1, _) <- stateAccess.state
           s2      = s1.setFilterDead(fd, p)
-          _       <- stateAccess.setState((fd, s2), cb)
+          _       <- stateAccess.setState((s2, fd), cb)
         } yield ())))
 
   val pxViewState: Px[ViewLogic.State] =
-    Px.callback(stateAccess.state.map(_._2.view)).withReuse.autoRefresh
+    Px.callback(stateAccess.state.map(_._1.view)).withReuse.autoRefresh
 
   val pxSavedViews: Px[SavedViews.Optional] =
     pxProject.map(_.savedViews).withReuse
@@ -54,7 +53,7 @@ final case class Static(stateAccess    : StateAccessPure[(FilterDead, State)],
       fd <- pxFilterDead
       cs <- pxColumnPlusAll
     } yield vs.activeView(sv, fd).filterColumns(cs.containsColumn)
-      ).withReuse
+    ).withReuse
 
   val activeViewCB: Reusable[CallbackTo[View]] = {
     val f = pxActiveView.toCallback.toScalaFn
@@ -64,6 +63,14 @@ final case class Static(stateAccess    : StateAccessPure[(FilterDead, State)],
   val pxActiveColumns: Px[NonEmptyVector[Column]] =
     pxActiveView.map(_.columns).withReuse
 
+  val pxActiveColumnsPlus: Px[NonEmptyVector[ColumnPlus]] =
+    (for {
+      p  <- pxProject
+      fd <- pxFilterDead
+      cs <- pxActiveColumns
+    } yield ColumnPlus.forceNEV(ColumnPlus.byProject(p, fd))(cs)
+    ).withReuse
+
   val pxActiveOrder: Px[SortCriteria] =
     pxActiveView.map(_.order).withReuse
 
@@ -71,20 +78,13 @@ final case class Static(stateAccess    : StateAccessPure[(FilterDead, State)],
     Reusable.byRef(ModStateFn((mod, cb) =>
       for {
         p       <- pxProject.toCallback
-        (_, s1) <- stateAccess.state
+        (s1, _) <- stateAccess.state
         fd      <- pxFilterDead.toCallback
         v1      = s1.view.activeView(p.savedViews, fd)
         v2      = mod(v1) getOrElse v1
-        s2      = State.setModifiedView(p, updateFilterText = false)(v2)(s1)
-        _       <- stateAccess.setState((v2.filterDead, s2), cb)
+        s2      = s1.setModifiedView(p, updateFilterText = false)(v2)
+        _      <- stateAccess.setState((s2, v2.filterDead), cb)
       } yield ()))
-
-  val pxActiveColumnsPlus: Px[NonEmptyVector[ColumnPlus]] =
-    (for {
-      p  <- pxProject
-      cs <- pxActiveColumns
-    } yield ColumnPlus.forceNEV(ColumnPlus.byProject(p))(cs))
-      .withReuse
 
   val pxSavedViewsMenu: Px[ViewLogic.Menu] =
     for {
@@ -93,22 +93,31 @@ final case class Static(stateAccess    : StateAccessPure[(FilterDead, State)],
       activeView <- pxActiveView
     } yield ViewLogic.Menu(savedViews, viewState, activeView, activeViewCB)
 
-  private val onFilterChange: FilterEditor.UpdateFn =
-    (newState, newFilter, cb) =>
-      for {
-        p  <- pxProject.toCallback
-        fd <- pxFilterDead.toCallback
-        m1 = State.filter.set(newState)
-        m2 = State.modifyView(p, fd, updateFilterText = false)(_.withFilter(newFilter))
-        _ <- stateAccessS.modState(m1 compose m2, cb)
-      } yield ()
-
-  private val runSavedViewAction: ViewLogic.Action ~=> Callback =
+  private val runSavedViewAction: ViewLogic.Action ~=> Callback = {
+    def mod(p: Project, a: ViewLogic.Action, state: (State, FilterDead)): (State, FilterDead) = {
+      val (s1, fd1) = state
+      val s2 = s1.runSavedViewAction(p, updateFilterText = true)(a)
+      val fd2 = s2.filterDead(p, fd1)
+      (s2, fd2)
+    }
     Reusable.fn { action =>
       for {
-        project <- pxProject.toCallback
-        mod     = State.runSavedViewAction(project, updateFilterText = true)(action)
-        _       <- stateAccessS.modState(mod)
+        p <- pxProject.toCallback
+        _ <- stateAccess.modState(mod(p, action, _))
+      } yield ()
+    }
+  }
+
+  private val onFilterChange: FilterEditor.UpdateFn =
+    (newState, newFilter, cb) => {
+      def mod(p: Project, state: (State, FilterDead)): (State, FilterDead) = {
+        val (s1, fd) = state
+        val s2 = s1.copy(filter = newState).modifyView(p, fd, updateFilterText = false)(_.withFilter(newFilter))
+        (s2, fd)
+      }
+      for {
+        p <- pxProject.toCallback
+        _ <- stateAccess.modState(mod(p, _), cb)
       } yield ()
     }
 
@@ -116,6 +125,8 @@ final case class Static(stateAccess    : StateAccessPure[(FilterDead, State)],
     ViewManager.Props(
       menu        = pxSavedViewsMenu.value(),
       asyncRW     = AsyncFeature.ReadWrite.D0(savedViewAsyncW, savedViewAsync),
+      confirmJs   = confirmJs,
+      promptJs    = promptJs,
       runAction   = runSavedViewAction,
       savedViewIO = savedViewIO,
     ).render
