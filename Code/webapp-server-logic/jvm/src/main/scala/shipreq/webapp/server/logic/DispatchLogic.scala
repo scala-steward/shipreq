@@ -156,7 +156,7 @@ final class DispatchLogic[F[_], RealReq](readRealReq: RealReq => dispatch.Reques
   private def parseParams[A](parsed: Option[A])(f: A => F[Response]): F[Response] =
     parsed match {
       case Some(a) => f(a)
-      case None    => F pure ResponseCmd.StatusOnly.BadRequest.withoutCookieUpdate
+      case None    => F pure ResponseCmd.Text(StatusCode.BadRequest, "Invalid params.").withoutCookieUpdate
     }
 
   /**
@@ -569,6 +569,18 @@ final class DispatchLogic[F[_], RealReq](readRealReq: RealReq => dispatch.Reques
         )
       )
 
+    private val createProject: Request ?=> F[Response] =
+      endpoint(Post, Url.Relative("project/create"))(req =>
+        parseParams(
+          for {
+            user   <- req.param("user")
+            events <- req.param("events")
+          } yield (Username.orEmail(user), events)
+        ){ case (user, events) =>
+          ops.createProject(user, events).map(response)
+        }
+      )
+
     private val testSendMail: Request ?=> F[Response] =
       endpoint(Post, Url.Relative("test-sendmail"))(req =>
         parseParams(req.param("email"))(email =>
@@ -576,7 +588,7 @@ final class DispatchLogic[F[_], RealReq](readRealReq: RealReq => dispatch.Reques
             jsonResponse)))
 
     private def innerRoutes: Request ?=> F[Response] =
-      ok | register1 | statsDb | statsUsers | task | testSendMail | getProjectEvents
+      ok | register1 | statsDb | statsUsers | task | testSendMail | getProjectEvents | createProject
 
     private val fallback: Request => F[Response] =
       _ => notFoundSecure

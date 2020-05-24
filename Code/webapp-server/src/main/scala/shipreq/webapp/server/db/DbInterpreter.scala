@@ -2,6 +2,7 @@ package shipreq.webapp.server.db
 
 import cats.free.Free
 import cats.instances.int._
+import cats.instances.vector._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -398,6 +399,20 @@ object DbInterpreter {
     override def getAllProjectMetaDataForUser(id: UserId): ConnectionIO[List[ProjectMetaData]] =
       getAllProjectMetaDataForUserQuery.toQuery0(id).to[List]
 
+    override def createProject(uid: UserId, es: Vector[ActiveEvent], p: Project): ConnectionIO[ProjectId] = {
+      val events = es.length
+      val name   = es.reverseIterator.collectFirst { case e: Event.ProjectNameSet => e.name }.getOrElse("")
+      val data   = (uid, events, events, p.liveReqCount, p.content.reqs.size, name)
+      for {
+        pid  <- ForHomeSpa.createProjectQuery.toQuery0(data).unique
+        adds = es.iterator.zipWithIndex.map(x => SaveProjectEventLogic.unsafeInsertEvent(pid, EventOrd.fromIndex(x._2), x._1, uid))
+        done <- sequentially(adds, pid)
+      } yield done
+    }
+  }
+
+  object ForHomeSpa {
+
     private[db] val createProjectQuery: Query[(UserId, Int, Int, Int, Int, String), ProjectId] =
       Query(
         """
@@ -405,17 +420,6 @@ object DbInterpreter {
           |VALUES(?,?,?,?,?,?)
           |RETURNING id
         """.stripMargin.sql)
-
-    override def createProject(uid: UserId, es: Vector[ActiveEvent], p: Project): ConnectionIO[ProjectId] = {
-      val events = es.length
-      val name   = es.reverseIterator.collectFirst { case e: Event.ProjectNameSet => e.name }.getOrElse("")
-      val data   = (uid, events, events, p.liveReqCount, p.content.reqs.size, name)
-      for {
-        pid  <- createProjectQuery.toQuery0(data).unique
-        adds = es.iterator.zipWithIndex.map(x => SaveProjectEventLogic.unsafeInsertEvent(pid, EventOrd.fromIndex(x._2), x._1, uid))
-        done <- sequentially(adds, pid)
-      } yield done
-    }
   }
 
   trait ForProjectSpa
@@ -487,5 +491,39 @@ object DbInterpreter {
       dbSizeSql
         .toQuery0(dbName.replaceFirst("^.*/", ""))
         .unique
+
+    private[db] val userIdByUsernameSql =
+      Query[Username, UserId]("SELECT id FROM usr WHERE username=?")
+
+    private[db] val userIdByEmailSql =
+      Query[EmailAddr, UserId]("SELECT id FROM usr WHERE email=?")
+
+    override def getUserId(user: Username \/ EmailAddr): ConnectionIO[Option[UserId]] =
+      user match {
+        case -\/(u) => userIdByUsernameSql.option(u)
+        case \/-(e) => userIdByEmailSql.option(e)
+      }
+
+    private[db] val insertVerifiedEventSql: Update[(ProjectId, VerifiedEvent, UserId)] =
+      Update[(ProjectId, EventOrd, Short, Json, UserId, Instant)](
+        "INSERT INTO event (project_id, ord, type, data, usr_id, created_at) VALUES(?,?,?,?,?,?)")
+        .contramap[(ProjectId, VerifiedEvent, UserId)] { case (pid, ve, uid) =>
+          val (typeId, data) = EventSerialisation.encodeActiveOrRetired(ve.event)
+          (pid, ve.ord, typeId, data, uid, ve.createdAt)
+        }
+
+    override def createProject(userId: UserId, events: VerifiedEvent.Seq, project: Project): ConnectionIO[ProjectId] = {
+      val events_init  = 0
+      val events_total = events.size
+      val reqs_live    = project.content.reqs.reqIterator().count(_.live(project.config.reqTypes) is Live)
+      val reqs_total   = project.content.reqs.size
+      val name         = project.name
+      val creationArgs = (userId, events_init, events_total, reqs_live, reqs_total, name)
+      val eventArgs    = (pid: ProjectId) => events.iterator.map((pid, _, userId)).toVector
+      for {
+        pid <- ForHomeSpa.createProjectQuery.toQuery0(creationArgs).unique
+        _   <- insertVerifiedEventSql.updateMany(eventArgs(pid))
+      } yield pid
+    }
   }
 }

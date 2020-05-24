@@ -60,7 +60,7 @@ object SqlTest extends TestSuite {
     }
 
     "homeSpa" - {
-      "createProject"                - TestDb.check(db.createProjectQuery)
+      "createProject"                - TestDb.check(DbInterpreter.ForHomeSpa.createProjectQuery)
       "getAllProjectMetaDataForUser" - TestDb.check(db.getAllProjectMetaDataForUserQuery)
     }
 
@@ -70,10 +70,13 @@ object SqlTest extends TestSuite {
 
     "ops" - {
       val db = new ForOps("blah")
-      "nowSql"        - TestDb.check(db.nowSql)
-      "userStatsSql"  - TestDb.check(db.userStatsSql)
-      "tableStatsSql" - TestDb.check(db.tableStatsSql)
-      "dbSizeSql"     - TestDb.check(db.dbSizeSql)
+      "nowSql"                 - TestDb.check(db.nowSql)
+      "userStatsSql"           - TestDb.check(db.userStatsSql)
+      "tableStatsSql"          - TestDb.check(db.tableStatsSql)
+      "dbSizeSql"              - TestDb.check(db.dbSizeSql)
+      "userIdByUsernameSql"    - TestDb.check(db.userIdByUsernameSql)
+      "userIdByEmailSql"       - TestDb.check(db.userIdByEmailSql)
+      "insertVerifiedEventSql" - TestDb.check(db.insertVerifiedEventSql)
     }
 
   }

@@ -4,7 +4,7 @@ import io.circe._
 import io.circe.syntax._
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.JsonUtil
-import shipreq.webapp.base.event.{ActiveEvent, Event, EventOrd}
+import shipreq.webapp.base.event._
 import shipreq.webapp.base.protocol.json.v1.Events.EventData._
 import shipreq.webapp.base.protocol.json.v1.Rev1.EventData._
 import shipreq.webapp.server.logic.DB.ReadProjectEventError
@@ -69,6 +69,25 @@ object EventSerialisation {
     case e: UseCaseStepShiftRight   => (TypeUseCaseStepShiftRight  , e.asJson)
     case e: UseCaseStepUpdate       => (TypeUseCaseStepUpdate      , e.asJson)
     case e: UseCaseTitleSet         => (TypeUseCaseTitleSet        , e.asJson)
+  }
+
+  val encodeRetired: RetiredEvent => (Short, Json) = {
+    case e: ApplicableTagCreateV1   => (TypeApplicableTagCreateV1  , e.asJson)
+    case e: ApplicableTagUpdateV1   => (TypeApplicableTagUpdateV1  , e.asJson)
+    case e: CustomReqTypeCreateV1   => (TypeCustomReqTypeCreateV1  , e.asJson)
+    case e: CustomReqTypeDelete     => (TypeCustomReqTypeDelete    , e.asJson)
+    case e: CustomReqTypeUpdateV1   => (TypeCustomReqTypeUpdateV1  , e.asJson)
+    case e: FieldCustomImpCreateV1  => (TypeFieldCustomImpCreateV1 , e.asJson)
+    case e: FieldCustomImpUpdateV1  => (TypeFieldCustomImpUpdateV1 , e.asJson)
+    case e: FieldCustomTagCreateV1  => (TypeFieldCustomTagCreateV1 , e.asJson)
+    case e: FieldCustomTagUpdateV1  => (TypeFieldCustomTagUpdateV1 , e.asJson)
+    case e: FieldCustomTextCreateV1 => (TypeFieldCustomTextCreateV1, e.asJson)
+    case e: FieldCustomTextUpdateV1 => (TypeFieldCustomTextUpdateV1, e.asJson)
+  }
+
+  val encodeActiveOrRetired: Event => (Short, Json) = {
+    case e: ActiveEvent  => encode(e)
+    case e: RetiredEvent => encodeRetired(e)
   }
 
   // ===================================================================================================================
