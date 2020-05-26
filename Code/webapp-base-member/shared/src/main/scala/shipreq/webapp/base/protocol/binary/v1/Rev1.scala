@@ -22,7 +22,7 @@ object Rev1 {
   import BaseData._
   import Events._
   import BaseMemberData1._
-  import BaseMemberData1.ReqTableDataPicklers._
+  import BaseMemberData1.SavedViewPicklers._
   import BaseMemberData2._
   import PostEvents._
 
@@ -264,7 +264,7 @@ object Rev1 {
 
   // ===================================================================================================================
 
-  object ReqTableDataPicklers {
+  object SavedViewPicklers {
     import shipreq.webapp.base.data.savedview._
 
     implicit val picklerColumn: Pickler[Column] =
@@ -490,7 +490,7 @@ object Rev1 {
       }
   }
 
-  import ReqTableDataPicklers._
+  import SavedViewPicklers._
 
   // ===================================================================================================================
 

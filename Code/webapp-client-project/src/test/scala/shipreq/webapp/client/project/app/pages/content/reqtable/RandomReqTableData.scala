@@ -7,7 +7,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.filter.Filter
 
-object RandomReqTableData {
+object RandomSavedView {
 
   val noFilter: Gen[Option[Filter.Valid]] =
     Gen pure None

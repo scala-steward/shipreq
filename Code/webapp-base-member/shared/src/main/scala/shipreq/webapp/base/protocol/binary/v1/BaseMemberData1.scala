@@ -151,7 +151,7 @@ object BaseMemberData1 {
       transformPickler((i: NonEmptyArraySeq[t.ListItem]) => t.UnorderedList(i))(_.items)
   }
 
-  object ReqTableDataPicklers {
+  object SavedViewPicklers {
     import shipreq.webapp.base.data.savedview._
 
     implicit val picklerColumnImplications: Pickler[Column.Implications] =

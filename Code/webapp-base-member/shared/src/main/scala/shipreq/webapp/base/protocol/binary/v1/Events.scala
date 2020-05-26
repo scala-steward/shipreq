@@ -13,7 +13,7 @@ object Events {
   import BaseData._
   import BaseMemberData1._
   import BaseMemberData1.AtomPicklers.instances._
-  import BaseMemberData1.ReqTableDataPicklers._
+  import BaseMemberData1.SavedViewPicklers._
 
   implicit val picklerEventNonEmptyCustomTextMap    : Pickler[Event.NonEmptyCustomTextMap      ] = pickleNonEmptyMono
   implicit val picklerNonEmptySetApplicableTagId    : Pickler[NonEmptySet[ApplicableTagId]     ] = pickleNES

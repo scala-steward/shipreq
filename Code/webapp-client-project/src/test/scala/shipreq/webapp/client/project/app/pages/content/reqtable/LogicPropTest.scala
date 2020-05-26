@@ -275,7 +275,7 @@ object LogicPropTest extends TestSuite {
     for {
       p  <- RandomData.project
       fd <- RandomData.filterDead
-      v  <- RandomReqTableData.view(p, fd, allowFilter = false)
+      v  <- RandomSavedView.view(p, fd, allowFilter = false)
     } yield
       LogicTests(v, p)
 

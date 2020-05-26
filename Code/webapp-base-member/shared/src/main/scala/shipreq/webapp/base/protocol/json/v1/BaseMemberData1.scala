@@ -139,7 +139,7 @@ private[v1] object BaseMemberData1 {
       h.xmap((i: NonEmptyArraySeq[t.ListItem]) => t.UnorderedList(i))(_.items)
   }
 
-  object ReqTableDataCodecs {
+  object SavedViewCodecs {
     import shipreq.webapp.base.data.savedview._
 
     implicit val codecColumnImplications: JsonCodec[Column.Implications] =

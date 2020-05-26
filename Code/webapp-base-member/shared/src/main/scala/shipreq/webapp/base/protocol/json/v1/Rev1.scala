@@ -29,9 +29,9 @@ object Rev1 {
 
   // ===================================================================================================================
 
-  import BaseMemberData1.ReqTableDataCodecs._
+  import BaseMemberData1.SavedViewCodecs._
 
-  object ReqTableDataCodecs {
+  object SavedViewCodecs {
     import shipreq.webapp.base.data.savedview._
 
     private[this] final val KeyCustomField    = "custom"
@@ -189,7 +189,7 @@ object Rev1 {
       Encoder.forProduct2("default", "nonDefault")(a => (a.default, a.nonDefault))
   }
 
-  import ReqTableDataCodecs._
+  import SavedViewCodecs._
 
   // ===================================================================================================================
 

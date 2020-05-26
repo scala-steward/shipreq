@@ -62,7 +62,7 @@ object ReqTableTest extends TestSuite {
     *.genActionsBy("testDeadToggleInvariants")(i =>
         for {
           fd <- RandomData.filterDead
-          ts <- RandomReqTableData.view(i.state, fd, allowFilter = true)
+          ts <- RandomSavedView.view(i.state, fd, allowFilter = true)
         } yield setViewSettings("Apply random view settings", fd, (_, _) => ts) >> filterDeadShowHide)
 
   def testDeadNotEditable =

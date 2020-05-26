@@ -18,7 +18,7 @@ object Events {
   import BaseData._
   import BaseMemberData1._
   import BaseMemberData1.AtomCodecs.instances._
-  import BaseMemberData1.ReqTableDataCodecs._
+  import BaseMemberData1.SavedViewCodecs._
 
   private[v1] implicit val codecEventNonEmptyCustomTextMap    : JsonCodec[Event.NonEmptyCustomTextMap      ] = codecNonEmptyMono
   private[v1] implicit val codecNonEmptySetApplicableTagId    : JsonCodec[NonEmptySet[ApplicableTagId]     ] = codecNES
