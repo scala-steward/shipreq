@@ -242,10 +242,10 @@ object ReqTablePage {
       )
 
       val savedViews =
-        p.savedViews.renderSavedViewManager()
+        p.savedViews.renderSavedViewManager
 
       val filterEditor =
-        p.savedViews.renderFilterEditor()
+        p.savedViews.renderFilterEditor
 
       def renderTable(mode: Table.Mode) = reqTable.Whole.Props(
         mode,

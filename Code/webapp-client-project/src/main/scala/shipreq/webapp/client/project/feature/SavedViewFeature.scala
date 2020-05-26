@@ -3,6 +3,7 @@ package shipreq.webapp.client.project.feature
 import japgolly.scalajs.react.Reusability
 import japgolly.scalajs.react.vdom.VdomElement
 import scala.annotation.nowarn
+import shipreq.webapp.base.data.savedview.View
 import shipreq.webapp.base.data.{FilterDead, Project}
 import shipreq.webapp.base.lib.DataReusability._
 
@@ -47,9 +48,15 @@ final case class SavedViewFeature(static    : SavedViewFeature.Static,
                                   project   : Project,
                                   filterDead: FilterDead) {
 
-  def renderSavedViewManager(): VdomElement =
+  // Here I'm using lazy vals EXPLICITLY BECAUSE the underlying state can change and these methods/vals are meant to
+  // be stable themselves, and only used immediately during a render function.
+
+  lazy val activeView: View =
+    static.pxActiveView.value()
+
+  lazy val renderSavedViewManager: VdomElement =
     static.renderSavedViewManager(state.async)
 
-  def renderFilterEditor(): VdomElement =
+  lazy val renderFilterEditor: VdomElement =
     static.renderFilterEditor(state)
 }
