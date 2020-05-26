@@ -241,9 +241,6 @@ object ReqTablePage {
         newFormColumns,
       )
 
-      val savedViews =
-        p.savedViews.renderSavedViewManager
-
       val filterEditor =
         p.savedViews.renderFilterEditor
 
@@ -268,9 +265,7 @@ object ReqTablePage {
         }
 
       mainBase(
-        <.div(*.viewRow,
-          <.div(*.viewRowSV, savedViews),
-          <.div(*.filterDeadButtonContainer, filterDeadButton)),
+        p.savedViews.renderSavedViewsAndFilterDeadButton(filterDeadButton),
         <.div(*.actionCtrls,
           newStuff.buttonProps.render,
           pxSelectionCtrls.value().render,

@@ -65,4 +65,10 @@ final case class SavedViewFeature(static            : SavedViewFeature.Static,
 
   lazy val renderFilterDeadButton: VdomElement =
     static.renderFilterDeadButton(filterDead)
+
+  lazy val renderSavedViewsAndFilterDeadButton: VdomElement =
+    static.renderSavedViewsAndFilterDeadButton(state.async, filterDead)
+
+  def renderSavedViewsAndFilterDeadButton(filterDeadButton: VdomElement): VdomElement =
+    static.renderSavedViewsAndFilterDeadButton(state.async, filterDeadButton)
 }

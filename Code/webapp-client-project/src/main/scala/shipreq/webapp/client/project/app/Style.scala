@@ -282,12 +282,6 @@ object Style extends StyleSheet.Inline {
 
       val ctrlHGap = 1.2 ex
 
-      val viewRow = style(display.flex)
-
-      val viewRowSV = style(
-        flexGrow(1),
-        paddingRight(1.rem))
-
       val viewCtrls = style(
         display.flex,
         alignContent.center,
@@ -305,9 +299,6 @@ object Style extends StyleSheet.Inline {
         textAlign.right)
 
       val flexGap = style(flexGrow(1))
-
-      val filterDeadButtonContainer = style(
-        paddingRight(`0`).important)
     }
 
     object creation {
@@ -467,6 +458,15 @@ object Style extends StyleSheet.Inline {
 
   // ===================================================================================================================
   object savedViews {
+
+    val viewRow = style(display.flex)
+
+    val viewRowSV = style(
+      flexGrow(1),
+      paddingRight(1.rem))
+
+    val filterDeadButtonContainer = style(
+      paddingRight(`0`).important)
 
     val menu = TagMod(^^.display.flex, ^^.flexWrap.wrap)
 

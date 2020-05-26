@@ -33,7 +33,7 @@ object ProjectSpaTest extends TestSuite {
       >> testReqDetail(RD.filterDeadToggle)
       >> setPage(Page.ReqTable)
     )
-    .addCheck(RT.filterDead.assert.change.lift)
+    .addCheck(RT.savedViews.filterDead.assert.change.lift)
     .times(3)
 
   /** The Usage links in config screens should configure the ReqTable state appropriately */

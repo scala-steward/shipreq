@@ -1,22 +1,28 @@
 package shipreq.webapp.client.project.feature.savedview
 
-import japgolly.scalajs.react.test.SimEvent
+import japgolly.univeq._
+import japgolly.scalajs.react.test.{SimEvent, Simulate}
+import shipreq.webapp.base.data.FilterDead
 import shipreq.webapp.base.data.savedview.SavedView
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.test.TestPromptJs
 
 final case class SavedViewTestDsl[R, O, S](* : Dsl[Id, R, O, S, String])
-                                          (getFilterEditorObs: O => FilterEditorObs,
-                                           getSavedViewManagerObs: O => SavedViewManagerObs,
-                                           getPromptJs: R => TestPromptJs) {
+                                          (getSavedViewManagerObs: O => SavedViewManagerObs,
+                                           getFilterDeadButtonObs: O => FilterDeadButtonObs,
+                                           getFilterEditorObs    : O => FilterEditorObs,
+                                           getPromptJs           : R => TestPromptJs) {
   private implicit class RefExt(r: R) {
     def promptJs = getPromptJs(r)
   }
 
   private implicit class ObsExt(o: O) {
-    def filter = getFilterEditorObs(o)
+    def filter     = getFilterEditorObs(o)
+    def filterDead = getFilterDeadButtonObs(o)
     def savedViews = getSavedViewManagerObs(o)
   }
+
+  val filterDead = *.focus("FilterDead").value(_.obs.filterDead.value)
 
   val filterText = *.focus("Filter text").value(_.obs.filter.value)
 
@@ -44,5 +50,12 @@ final case class SavedViewTestDsl[R, O, S](* : Dsl[Id, R, O, S, String])
       x.ref.promptJs.setNextResponse(name)
       x.obs.savedViews.activeView.saveAsNew()
     }
+
+  lazy val filterDeadToggle =
+    *.action("filterDeadToggle")(Simulate click _.obs.filterDead.button)
+      .addCheck(filterDead.assert.change)
+
+  def setFilterDead(fd: FilterDead) =
+    filterDeadToggle.unless(_.obs.filterDead.value ==* fd).rename(s"setFilterDead($fd)")
 
 }

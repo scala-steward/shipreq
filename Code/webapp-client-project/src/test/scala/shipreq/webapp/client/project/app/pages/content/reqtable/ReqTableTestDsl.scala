@@ -32,7 +32,7 @@ object ReqTableTestDsl {
   def apply(action: *.Actions = *.emptyAction): *.Plan =
     Plan(action, invariants)
 
-  val savedViews = SavedViewTestDsl(*)(_.filter, _.savedViews, _.promptJs)
+  val savedViews = SavedViewTestDsl(*)(_.savedViews, _.filterDead, _.filter, _.promptJs)
 
 //  import scala.util.Try
 //  def propTrySuccess(name: => String): Prop[Try[Any]] =
@@ -67,13 +67,11 @@ object ReqTableTestDsl {
         .toSet)
 
   def visibleColumns(obs: ReqTableObs): Set[String] =
-    mandatoryColumns(obs.filterDead) ++ obs.columnSelector.onColumns
+    mandatoryColumns(obs.filterDead.value) ++ obs.columnSelector.onColumns
 
   val tableColumns = *.focus("Table columns").collection(_.obs.table.fieldColumns)
 
   val selectableColumns = *.focus("Selectable columns").collection(_.obs.columnSelector.allColumns)
-
-  val filterDead = *.focus("FilterDead").value(_.obs.filterDead)
 
   val tablePubids = *.focus("Visible pubids").collection(_.obs.table.rowPubids)
 
@@ -215,7 +213,7 @@ object ReqTableTestDsl {
 
       val deadColumns =
         **.assert.existenceOfAllBy("dead custom field columns")(i => customFieldNames(i.state, Dead))(
-          _.obs.filterDead is ShowDead)
+          _.obs.filterDead.value is ShowDead)
 
       uniqueColumns & liveCustomFieldColumnsAlwaysAvailable & deadColumns
     }
@@ -277,7 +275,7 @@ object ReqTableTestDsl {
   implicit def autoGetDomFromZipper(d: DomZipperJs): ReactOrDomNode = d.domAsHtml
 
   def setViewSettings(name: => String, fd: FilterDead, mod: (Project, View) => View): *.Actions =
-    (setFilterDead(fd) >> *.action("setView")(i =>
+    (savedViews.setFilterDead(fd) >> *.action("setView")(i =>
       i.ref.savedViewState.modState(_.modifyView(i.state, fd, updateFilterText = true)(mod(i.state, _)))))
       .renameContextFree(name)
 
@@ -325,16 +323,9 @@ object ReqTableTestDsl {
   val sortByPubid =
     sortBy(SpecialBuiltInField.Pubid.name)
 
-  lazy val filterDeadToggle =
-    *.action("filterDeadToggle")(Simulate click _.obs.filterDeadButton)
-      .addCheck(filterDead.assert.change)
-
-  def setFilterDead(fd: FilterDead) =
-    filterDeadToggle.unless(_.obs.filterDead == fd).rename(s"setFilterDead($fd)")
-
   val filterDeadShowHide =
-    setFilterDead(HideDead) >>
-    filterDeadToggle.times(2).addCheck(
+    savedViews.setFilterDead(HideDead) >>
+    savedViews.filterDeadToggle.times(2).addCheck(
       *.focus("On-columns").value(_.obs.columnSelector.onColumns).assert.noChange)
 
   val logTable = *.print(_.obs.table.entireContent)

@@ -1,9 +1,11 @@
 package shipreq.webapp.client.project.feature.savedview
 
+import scalacss.ScalaCssReact._
+import shipreq.webapp.client.project.app.Style.{savedViews => *}
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.{Px, StateSnapshot}
-import japgolly.scalajs.react.vdom.VdomElement
+import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.savedview.{Column, SavedViews, SortCriteria, View}
 import shipreq.webapp.base.data.{FilterDead, Project}
@@ -141,4 +143,16 @@ final case class Static(stateAccess    : StateAccessPure[(State, FilterDead)],
 
   def renderFilterDeadButton(filterDead: FilterDead): VdomElement =
     FilterDeadButton.Component(StateSnapshot.withReuse(filterDead)(setFilterDeadFn))
+
+  private[this] val divViewRow                   = <.div(*.viewRow)
+  private[this] val divViewRowSV                 = <.div(*.viewRowSV)
+  private[this] val divFilterDeadButtonContainer = <.div(*.filterDeadButtonContainer)
+
+  def renderSavedViewsAndFilterDeadButton(async: AsyncFeature.Read.D0[ErrorMsg], filterDead: FilterDead): VdomElement =
+    renderSavedViewsAndFilterDeadButton(async, renderFilterDeadButton(filterDead))
+
+  def renderSavedViewsAndFilterDeadButton(async: AsyncFeature.Read.D0[ErrorMsg], filterDeadButton: VdomElement): VdomElement =
+    divViewRow(
+      divViewRowSV(renderSavedViewManager(async)),
+      divFilterDeadButtonContainer(filterDeadButton))
 }

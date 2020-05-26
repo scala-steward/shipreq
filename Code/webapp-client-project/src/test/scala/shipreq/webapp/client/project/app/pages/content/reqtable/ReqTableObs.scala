@@ -9,7 +9,7 @@ import shipreq.webapp.base.lib.DomUtil._
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.client.project.app.Style
-import shipreq.webapp.client.project.feature.savedview.{FilterEditorObs, SavedViewManagerObs}
+import shipreq.webapp.client.project.feature.savedview.{FilterDeadButtonObs, FilterEditorObs, SavedViewManagerObs}
 import shipreq.webapp.client.project.test._
 import TestState._
 
@@ -63,6 +63,8 @@ final class ReqTableObs(global: TestGlobal, $: DomZipperJs) {
 
   val savedViews = SavedViewManagerObs.needIn($)
 
+  val filterDead = FilterDeadButtonObs.needIn($)
+
   val filter = FilterEditorObs.needIn($)
 
   private def findOne[A: UnivEq, B](a: A, bs: Iterable[B])(f: B => A): B =
@@ -93,12 +95,6 @@ final class ReqTableObs(global: TestGlobal, $: DomZipperJs) {
       entirety.filter(_.on is On).map(_.name)
   }
   columnSelector // force
-
-  val filterDeadButton: html.Button =
-    $(s"${Style.reqtable.page.filterDeadButtonContainer.selector} button").domAs[html.Button]
-
-  val filterDead: FilterDead =
-    ShowDead when filterDeadButton.classList.contains("red")
 
   object sorting {
 //    private val all = (SortMethod.ignoreBlanks ++ SortMethod.considerBlanks).whole
