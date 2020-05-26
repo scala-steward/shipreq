@@ -35,6 +35,9 @@ object GraphsTest extends TestSuite {
   lazy val SIG_deadMF4: Project =
     applyEventsSuccessfully(SampleImplicationGraph.project, deleteReqs(SampleImplicationGraph.mf4))
 
+  private def implicationAll(fd: FilterDead, p: Project): DOT =
+    Graphs.implicationAll(fd, p.content.implications, p.content.reqs, p.config.reqTypes)
+
   override def tests = Tests {
 
     "stepFlow" - {
@@ -242,7 +245,7 @@ object GraphsTest extends TestSuite {
       import SampleImplicationGraph._
 
       "basic" - {
-        val actual = Graphs.implicationAll(HideDead, project)
+        val actual = implicationAll(HideDead, project)
         val expect = DOT(
           s"""
             |digraph G{bgcolor=transparent;rankdir=TB;
@@ -286,7 +289,7 @@ object GraphsTest extends TestSuite {
       }
 
       "showDead" - {
-        val actual = Graphs.implicationAll(ShowDead, SIG_deadMF4)
+        val actual = implicationAll(ShowDead, SIG_deadMF4)
         val expect = DOT(
           s"""
             |digraph G{bgcolor=transparent;rankdir=TB;
@@ -330,7 +333,7 @@ object GraphsTest extends TestSuite {
       }
 
       "hideDead" - {
-        val actual = Graphs.implicationAll(HideDead, SIG_deadMF4)
+        val actual = implicationAll(HideDead, SIG_deadMF4)
         val expect = DOT(
           s"""
             |digraph G{bgcolor=transparent;rankdir=TB;
@@ -395,7 +398,7 @@ object GraphsTest extends TestSuite {
 
         // TODO also confirm dead fr with no imp doesn't stem from R
 
-        val actual = Graphs.implicationAll(ShowDead, p)
+        val actual = implicationAll(ShowDead, p)
         val expect = DOT(
           s"""
             |digraph G{bgcolor=transparent;rankdir=TB;
