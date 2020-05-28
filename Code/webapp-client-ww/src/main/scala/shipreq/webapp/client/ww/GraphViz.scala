@@ -19,6 +19,7 @@ object GraphViz {
   }
 
   private lazy val instance: RawFn = {
+    DedicatedWorkerGlobalScope.self.asInstanceOf[js.Dynamic].vizWasmFile = AssetManifest.vizWasm
     DedicatedWorkerGlobalScope.self.importScripts(js.Array(AssetManifest.vizJs))
     js.Dynamic.global.viz.asInstanceOf[RawFn]
   }

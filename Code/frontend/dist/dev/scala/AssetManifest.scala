@@ -80,6 +80,8 @@ object AssetManifest {
 
   def vizJs = "/assets/viz.js"
 
+  def vizWasm = "/assets/viz.wasm"
+
   def webappClientHomeJs = "/j/shipreq-home.js"
 
   def webappClientProjectJs = "/j/shipreq-project.js"

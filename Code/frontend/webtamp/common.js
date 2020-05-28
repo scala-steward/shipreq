@@ -200,6 +200,8 @@ const makeConfig = ({ mode, name, sjsName, staticDir, htmlMinifyOptions }) => {
 
       vizJs: { type: 'local', files: 'vendor/viz.js', manifest: true },
 
+      vizWasm: { type: 'local', files: 'vendor/viz.wasm', manifest: true },
+
       loadjs: { type: 'local', files: `node_modules/loadjs/dist/loadjs${dotMin}.js`, manifest: true },
     },
 
