@@ -1,61 +1,93 @@
 package shipreq.webapp.client.ww.api
 
-import japgolly.scalajs.react.AsyncCallback
+import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
+import japgolly.univeq._
 import org.scalajs.dom.window.navigator
 import scalajs.LinkingInfo.productionMode
 import scala.util.Try
-import scala.collection.immutable.ListMap
+import shipreq.base.util.ErrorMsg
 
 trait Client[Cmd[_], R[_]] {
   def post[A](cmd: Cmd[A])(implicit readResult: R[A]): AsyncCallback[A]
 }
 
-object Client extends Settings {
-  import org.scalajs.dom.ErrorEvent
+object Client {
   import org.scalajs.dom.webworkers.Worker
   import Protocol._
-  import codec._
+  import Codec.default.{Reader, Writer}
 
-  def apply[Cmd[_]](worker: Worker)(implicit writeCmd: Writer[Cmd[_]]): Client[Cmd, Reader] =
-    new Impl(codec, new InterfaceImpl(worker), onError)
+  def default[Cmd[_]](worker: Worker)(implicit writeCmd: Writer[Cmd[_]]): Client[Cmd, Reader] = {
+    import Codec.{default => codec}
+    apply(codec)(interface(codec, worker), OnError.logToConsole)
+  }
 
-  private final class InterfaceImpl(worker: Worker) extends Interface[Encoded] {
-    override def listen(hnd: Message[Encoded] => Unit, onError: OnError): Unit = {
-      if (
-        productionMode // Put first for that the Phantom check is DCE'd
-          || !navigator.userAgent.contains("Phantom") // Abort if PhantomJs cos it doesn't support onerror
-      ) {
-        worker.onerror = (e: ErrorEvent) => onError(e.message)
-      }
-      worker.onmessage = Interface.onMessageFn(hnd)
+  // ===================================================================================================================
+
+  def apply[Cmd[_]](codec    : Codec)
+                   (interface: Interface[codec.Encoded],
+                    onError  : OnError)
+                   (implicit writeCmd: codec.Writer[Cmd[_]]): Client[Cmd, codec.Reader] = {
+
+    import codec.{Encoded, Reader}
+
+    var lastPromiseId = 0
+    var promises = List.empty[Promise[Encoded]]
+
+    new Client[Cmd, codec.Reader] {
+
+      interface.listen(receive, onError).runNow()
+
+      override def post[A](cmd: Cmd[A])(implicit readResult: Reader[A]): AsyncCallback[A] =
+        AsyncCallback.promise[A].map { case (result, complete) =>
+          lastPromiseId += 1
+          val id = lastPromiseId
+          val p = Promise[Encoded](id, msg => complete(Try(codec.decode[A](msg))))
+          promises ::= p
+          interface.post(new Message(id, codec.encode[Cmd[_]](cmd))).runNow()
+          result
+        }.asAsyncCallback.flatten.memo()
+
+      private def popPromise(id: Int): CallbackTo[Option[Promise[Encoded]]] =
+        CallbackTo {
+          var result = Option.empty[Promise[Encoded]]
+          promises = promises.filter { p =>
+            if (p.id ==* id) {
+              result = Some(p)
+              false // don't keep
+            } else
+              true // keep
+          }
+          result
+        }
+
+      private def receive(m: Message[Encoded]): Callback =
+        popPromise(m.id).flatMap {
+          case Some(p) => p.complete(m.cmd)
+          case None    => onError.handle(ErrorMsg(s"Promise #${m.id} not found"))
+        }
     }
-
-    override def post(msg: Message[Encoded]): Unit =
-      worker.postMessage(msg, transferables(msg.cmd))
   }
 
-  private final class Impl[Cmd[_], Enc, R[_], W[_]](codec    : Codec[Enc, R, W],
-                                                    interface: Interface[Enc],
-                                                    onError  : OnError)
-                                                   (implicit writeCmd: W[Cmd[_]]) extends Client[Cmd, R] {
+  private final case class Promise[A](id: Int, complete: A => Callback)
 
-    private var i = 0
-    private var callbacks = ListMap.empty[Int, Enc => Unit]
+  // ===================================================================================================================
 
-    interface.listen(receiveResult, onError)
+  def interface(codec: Codec, worker: Worker): Interface[codec.Encoded] =
+    new Interface[codec.Encoded] {
+      import codec.Encoded
 
-    override def post[A](cmd: Cmd[A])(implicit readResult: R[A]): AsyncCallback[A] =
-      AsyncCallback.promise[A].map { case (result, complete) =>
-        i += 1
-        callbacks = callbacks.updated(i, e => complete(Try(codec.decode[A](e))).runNow())
-        interface.post(new Message(i, codec.encode[Cmd[_]](cmd)))
-        result
-      }.asAsyncCallback.flatten.memo()
+      override def listen(f: Message[Encoded] => Callback, onError: OnError): Callback =
+        Callback {
+          if (
+            productionMode // Put first for that the Phantom check is DCE'd
+              || !navigator.userAgent.contains("Phantom") // Abort if PhantomJs cos it doesn't support onerror
+          ) {
+            worker.onerror = Interface.onErrorFn(onError.handle)
+          }
+          worker.onmessage = Interface.onMessageFn(f)
+        }
 
-    private def receiveResult(m: Message[Enc]): Unit =
-      callbacks.get(m.key) match {
-        case Some(cb) => callbacks -= m.key; cb(m.cmd)
-        case None     => onError(s"Callback not found for Message(${m.key}, ${m.cmd}).")
-      }
-  }
+      override def post(msg: Message[Encoded]): Callback =
+        Callback(worker.postMessage(msg, codec.transferables(msg.cmd)))
+    }
 }

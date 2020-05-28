@@ -1,7 +1,7 @@
 package shipreq.webapp.client.ww
 
 import shipreq.webapp.client.ww.api._
-import Server.codec.Writer
+import shipreq.webapp.client.ww.api.Protocol.Codec.default.Writer
 
 /**
  * Initialises the WebWorker thread.
@@ -11,22 +11,12 @@ import Server.codec.Writer
 object Main {
 
   def main(): Unit = {
-    Server(Handler)(ResultEncoder)
+    Server.startDefault(Service, ResultEncoder).runNow()
   }
 
-  object ResultEncoder extends ResultEncoder[WebWorkerCmd, Writer] {
-    override def apply[R](cmd: WebWorkerCmd[R]): Writer[R] =
+  object ResultEncoder extends Server.ResultEncoder[WebWorkerCmd, Writer] {
+    override def apply[A](cmd: WebWorkerCmd[A]): Writer[A] =
       cmd.resultPickler
-  }
-
-  object Handler extends Handler[WebWorkerCmd] {
-    import WebWorkerCmd._
-    override def apply[R](cmd: WebWorkerCmd[R]): R =
-      cmd match {
-        case GraphUseCaseStepFlow(a, b, c)       => Graphs.useCaseStepFlow(a, b, c).toSvg
-        case GraphReqImplications(a, b, c, d, e) => Graphs.implicationFocused(a, b, c, d, e).toSvg
-        case a: GraphAllImplications             => Graphs.implicationAll(a).toSvg
-      }
   }
 }
 

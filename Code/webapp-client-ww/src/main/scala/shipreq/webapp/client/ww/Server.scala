@@ -1,55 +1,67 @@
 package shipreq.webapp.client.ww
 
-import shipreq.webapp.client.ww.api._
-import Protocol._
+import japgolly.scalajs.react.{Callback, CallbackTo}
+import org.scalajs.dom.webworkers.DedicatedWorkerGlobalScope
+import shipreq.webapp.client.ww.api.Protocol._
 
-trait Handler[Cmd[_]] {
-  def apply[R](cmd: Cmd[R]): R
-}
+object Server {
 
-trait ResultEncoder[Cmd[_], W[_]] {
-  def apply[R](cmd: Cmd[R]): W[R]
-}
-
-final class Server[Cmd[_], Encoded, R[_], W[_]](handler  : Handler[Cmd],
-                                                resultEnc: ResultEncoder[Cmd, W],
-                                                codec    : Codec[Encoded, R, W],
-                                                interface: Interface[Encoded],
-                                                onError  : OnError)
-                                               (implicit readCmd: R[Cmd[_]]) {
-
-  interface.listen(receiveRequest, onError)
-
-  private def receiveRequest(m: Message[Encoded]): Unit = {
-    val cmd = codec.decode[Cmd[_]](m.cmd)
-    receiveRequestA(m.key, cmd)
+  def startDefault[Cmd[_]](service: Service[Cmd],
+                           resultEnc: ResultEncoder[Cmd, Codec.default.Writer])
+                          (implicit cmdReader: Codec.default.Reader[Cmd[_]]): Callback = {
+    import Codec.{default => codec}
+    start(codec, service)(interface(codec), resultEnc, OnError.logToConsole)
   }
 
-  private def receiveRequestA[A](key: Int, cmd: Cmd[A]): Unit = {
-    val result = handler(cmd)
-    val re     = codec.encode(result)(resultEnc(cmd))
-    val reply  = new Message(key, re)
-    interface.post(reply)
-  }
-}
+  def start[Cmd[_]](codec    : Codec,
+                    service  : Service[Cmd])
+                   (interface: Interface[codec.Encoded],
+                    resultEnc: ResultEncoder[Cmd, codec.Writer],
+                    onError  : OnError)
+                   (implicit cmdReader: codec.Reader[Cmd[_]]): Callback = {
 
-object Server extends Settings {
-  import org.scalajs.dom.webworkers.DedicatedWorkerGlobalScope
-  import codec._
+    import codec.Encoded
 
-  def apply[Cmd[_]](handler  : Handler[Cmd])
-                   (resultEnc: ResultEncoder[Cmd, Writer])
-                   (implicit cmdReader: Reader[Cmd[_]]): Server[Cmd, Encoded, Reader, Writer] =
-    new Server(handler, resultEnc, codec, WebWorkerInterface, onError)
+    def respondForSome[A](id: Int, cmd: Cmd[A]): Callback =
+      CallbackTo {
+        val a = service(cmd)
+        val e = codec.encode(a)(resultEnc(cmd))
+        new Message(id, e)
+      }.flatMap(interface.post(_))
 
-  object WebWorkerInterface extends Interface[Encoded] {
-    private val worker = DedicatedWorkerGlobalScope.self
-
-    override def listen(hnd: Message[Encoded] => Unit, onError: OnError): Unit = {
-      worker.onmessage = Interface.onMessageFn(hnd)
+    def respond(m: Message[Encoded]): Callback = {
+      val cmd = codec.decode[Cmd[_]](m.cmd)
+      respondForSome(m.id, cmd)
     }
 
-    override def post(msg: Message[Encoded]): Unit =
-      worker.postMessage(msg, transferables(msg.cmd))
+    interface.listen(respond, onError)
   }
+
+  // ===================================================================================================================
+
+  trait Service[Cmd[_]] {
+    def apply[R](cmd: Cmd[R]): R
+  }
+
+  trait ResultEncoder[Cmd[_], W[_]] {
+    def apply[A](cmd: Cmd[A]): W[A]
+  }
+
+  // ===================================================================================================================
+
+  def interface(codec: Codec): Interface[codec.Encoded] =
+    new Interface[codec.Encoded] {
+      import codec.Encoded
+
+      private[this] val worker = DedicatedWorkerGlobalScope.self
+
+      override def listen(hnd: Message[Encoded] => Callback, onError: OnError): Callback =
+        Callback {
+          worker.onmessage = Interface.onMessageFn(hnd)
+          worker.onError = Interface.onErrorFn(onError.handle)
+        }
+
+      override def post(msg: Message[Encoded]): Callback =
+        Callback(worker.postMessage(msg, codec.transferables(msg.cmd)))
+    }
 }
