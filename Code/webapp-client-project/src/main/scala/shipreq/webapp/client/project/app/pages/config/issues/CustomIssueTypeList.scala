@@ -90,7 +90,7 @@ private[issues] object CustomIssueTypeList {
 
     def render(p: Props): VdomNode = {
       val rows =
-        MutableArray(p.filterDead.filterFn.iterator(p.customIssueTypes.valuesIterator)(_.live))
+        MutableArray(p.filterDead.filterFn.iteratorBy(p.customIssueTypes.valuesIterator)(_.live))
           .sortBy(_.key.value)
 
       if (rows.isEmpty)

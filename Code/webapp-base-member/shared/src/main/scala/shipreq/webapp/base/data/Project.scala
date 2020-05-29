@@ -8,6 +8,7 @@ import monocle.{Lens, Traversal}
 import monocle.macros.Lenses
 import monocle.std.option.pSome
 import nyaya.util.Multimap
+import scala.collection.compat.immutable.ArraySeq
 import scalaz.Equal
 import shipreq.base.util._
 import shipreq.base.util.univeq._
@@ -65,6 +66,12 @@ object Project {
       manualIssues = ManualIssues.empty,
       savedViews   = savedview.SavedViews.empty,
       idCeilings   = IdCeilings.zero)
+
+  def reqIdsSortedByPubId(reqs: Requirements, reqTypes: ReqTypes): ArraySeq[ReqId] =
+    reqTypes.allSortedByMnemonic
+      .iterator
+      .flatMap(rt => reqs.pubids.value(rt.reqTypeId))
+      .to(ArraySeq)
 }
 
 @Lenses

@@ -19,6 +19,7 @@ import shipreq.webapp.base.data.DataImplicits._
  */
 abstract class TagFieldDistribution[A] {
   def all: A
+  val inTagGroup: TagGroupId => A
   val inField: CustomField.Tag.Id => A
   def usedInFields: A
   def notUsedInFields: A
@@ -41,11 +42,15 @@ object TagFieldDistribution {
     override lazy val all =
       tagTree.valuesIterator.map(_.tag.id).filterSubType[ApplicableTagId].toSet
 
+    override val inTagGroup: TagGroupId => Set[ApplicableTagId] =
+      Memo { tagGroupId =>
+        tagTree.need(tagGroupId).transitiveChildren.iterator.filterSubType[ApplicableTagId].toSet
+      }
+
     override val inField =
       Memo { (fid: CustomField.Tag.Id) =>
         val field = p.fields.custom(fid)
-        val tag = tagTree.need(field.tagId)
-        tag.transitiveChildren.iterator.filterSubType[ApplicableTagId].toSet
+        inTagGroup(field.tagId)
       }
 
     override lazy val usedInFields = {
@@ -63,6 +68,7 @@ object TagFieldDistribution {
   // ===================================================================================================================
   final class Mapped[A, B](u: TagFieldDistribution[A], f: A => B) extends TagFieldDistribution[B] {
     override lazy val all               = f(u.all)
+    override      val inTagGroup       = f compose u.inTagGroup
     override      val inField          = f compose u.inField
     override lazy val usedInFields     = f(u.usedInFields)
     override lazy val notUsedInFields  = f(u.notUsedInFields)

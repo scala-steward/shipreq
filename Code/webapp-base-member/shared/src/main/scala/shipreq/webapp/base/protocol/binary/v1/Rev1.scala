@@ -458,17 +458,23 @@ object Rev1 {
           }
       }
 
+    implicit val picklerImpGraphConfigColoursByTag: Pickler[ImpGraphConfig.Colours.ByTag] =
+      transformPickler(ImpGraphConfig.Colours.ByTag.apply)(_.tagGroupId)
+
     implicit val picklerImpGraphConfigColours: Pickler[ImpGraphConfig.Colours] =
       new Pickler[ImpGraphConfig.Colours] {
         import ImpGraphConfig.Colours
-        private[this] final val KeyAutoByReqType = 0
+        private[this] final val KeyByReqType = 0
+        private[this] final val KeyByTag     = 1
         override def pickle(a: Colours)(implicit state: PickleState): Unit =
           a match {
-            case Colours.AutoByReqType => state.enc.writeByte(KeyAutoByReqType)
+            case Colours.ByReqType => state.enc.writeByte(KeyByReqType)
+            case b: Colours.ByTag  => state.enc.writeByte(KeyByTag    ); state.pickle(b)
           }
         override def unpickle(implicit state: UnpickleState): Colours =
           state.dec.readByte match {
-            case KeyAutoByReqType => Colours.AutoByReqType
+            case KeyByReqType => Colours.ByReqType
+            case KeyByTag     => state.unpickle[Colours.ByTag]
           }
       }
 

@@ -2,7 +2,7 @@ package shipreq.webapp.base.data.savedview
 
 import ImpGraphConfig._
 import shipreq.base.util.OptionalBoolFn
-import shipreq.webapp.base.data.{FilterDead, Project, Req, ReqId}
+import shipreq.webapp.base.data.{FilterDead, Project, Req, ReqId, TagGroupId}
 import shipreq.webapp.base.filter.CompiledFilter
 
 final case class ImpGraphConfig(graphDir      : GraphDir,
@@ -15,7 +15,7 @@ object ImpGraphConfig {
   val default: ImpGraphConfig =
     apply(
       graphDir = GraphDir.TopToBottom,
-      colours = Colours.AutoByReqType,
+      colours = Colours.ByReqType,
     )
 
   sealed trait GraphDir
@@ -26,7 +26,8 @@ object ImpGraphConfig {
 
   sealed trait Colours
   object Colours {
-    case object AutoByReqType extends Colours
+    case object ByReqType extends Colours
+    final case class ByTag(tagGroupId: TagGroupId) extends Colours
   }
 
   def buildReqWhitelist(filterDead: FilterDead, filter: Option[CompiledFilter], p: Project): Option[Set[ReqId]] = {

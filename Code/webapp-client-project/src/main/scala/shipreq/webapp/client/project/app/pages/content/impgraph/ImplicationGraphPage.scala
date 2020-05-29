@@ -20,9 +20,7 @@ import shipreq.webapp.client.project.feature.SavedViewFeature
 
 object ImplicationGraphPage {
 
-  final case class Props(imps            : Implications.BiDir,
-                         reqs            : Requirements,
-                         reqTypes        : ReqTypes,
+  final case class Props(project         : Project,
                          plainText       : PlainText.ForProject.AnyCtx,
                          reqDetailRC     : RouterCtl[ExternalPubid],
                          webWorker       : WebWorkerClient,
@@ -36,10 +34,9 @@ object ImplicationGraphPage {
 
     val impGraph = ImplicationGraph.Props.All(
       reqWhitelist = p.savedViewFeature.reqWhitelist,
+      filterDead   = filterDead,
       config       = ImpGraphConfig.default,
-      imps         = p.imps,
-      reqs         = p.reqs,
-      reqTypes     = p.reqTypes,
+      project      = p.project,
       plainText    = p.plainText,
       reqDetailRC  = p.reqDetailRC,
       webWorker    = p.webWorker,

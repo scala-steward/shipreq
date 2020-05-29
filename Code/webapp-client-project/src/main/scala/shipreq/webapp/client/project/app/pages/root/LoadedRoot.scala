@@ -452,11 +452,8 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData,
           reqDetail(props)
 
         case Page.ImpGraph =>
-          val p = project
           content.impgraph.ImplicationGraphPage.Props(
-            imps             = p.content.implications,
-            reqs             = p.content.reqs,
-            reqTypes         = p.config.reqTypes,
+            project          = project,
             plainText        = pxPlainText.value(),
             reqDetailRC      = reqDetailRC,
             webWorker        = ww,

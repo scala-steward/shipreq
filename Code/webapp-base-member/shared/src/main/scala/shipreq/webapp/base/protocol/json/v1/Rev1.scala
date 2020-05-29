@@ -177,12 +177,20 @@ object Rev1 {
       case ImpGraphConfig.GraphDir.TopToBottom => Json.obj("topToBottom" -> ().asJson)
     }
 
+    implicit val decoderImpGraphConfigColoursByTag: Decoder[ImpGraphConfig.Colours.ByTag] =
+      Decoder.forProduct1("tagGroupId")(ImpGraphConfig.Colours.ByTag.apply)
+
+    implicit val encoderImpGraphConfigColoursByTag: Encoder[ImpGraphConfig.Colours.ByTag] =
+      Encoder.forProduct1("tagGroupId")(_.tagGroupId)
+
     implicit val decoderImpGraphConfigColours: Decoder[ImpGraphConfig.Colours] = decodeSumBySoleKey {
-      case ("autoByReqType", _) => Right(ImpGraphConfig.Colours.AutoByReqType)
+      case ("byReqType", _) => Right(ImpGraphConfig.Colours.ByReqType)
+      case ("byTag"    , c) => c.as[ImpGraphConfig.Colours.ByTag]
     }
 
     implicit val encoderImpGraphConfigColours: Encoder[ImpGraphConfig.Colours] = Encoder.instance {
-      case ImpGraphConfig.Colours.AutoByReqType => Json.obj("autoByReqType" -> ().asJson)
+      case ImpGraphConfig.Colours.ByReqType => Json.obj("byReqType" -> ().asJson)
+      case a: ImpGraphConfig.Colours.ByTag  => Json.obj("byTag"     -> a.asJson)
     }
 
     implicit val decoderImpGraphConfigImpGraphConfig: Decoder[ImpGraphConfig] =

@@ -47,9 +47,6 @@ object ProjectWidgets {
 
   private[ProjectWidgets] object Internal {
 
-    /** This is "main blue" in TagPalette.scala */
-    val DefaultTagColour = Colour("#0076f5").get
-
     val deadValidity: Validity => Live => (Live, Validity) =
       Validity.memo(validityWhenDead =>
         Live.memo {
@@ -379,8 +376,9 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     }
 
   private def tagColour(o: Option[Colour], live: Live): TagMod =
+    // Do nothing if Dead because of the *.tag style and tagLabelColour which results in .ui.label.grey for dead tags
     TagMod.when(live is Live) {
-      val c = o.getOrElse(DefaultTagColour)
+      val c = o.getOrElse(Colour.tagDefault)
       TagMod(
         ^.backgroundColor := c.value,
         ^.borderColor     := c.value,

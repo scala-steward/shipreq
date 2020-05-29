@@ -5,6 +5,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.Memo
 import nyaya.util.Multimap
 import scala.annotation.tailrec
+import scala.collection.immutable.ArraySeq
 import scala.collection.mutable
 import shipreq.base.util.VectorTree.PartialLocation
 import shipreq.base.util._
@@ -216,30 +217,41 @@ object Graphs {
     val nodeName: ReqId => String = _.value.toString
     val node    : ReqId => Unit   = id => b.append(id.value)
 
-    def declare(ids: IterableOnce[ReqId]): Unit =
-      for (id <- ids.iterator) {
-        node(id)
-        b.labelAttr(pubid(id))
-        if (live(id) is Dead)
-          b append """[fillcolor="#dddddd" color="#777777" fontcolor="#666666"]"""
-      }
-
-    def deadLink()(implicit b: GraphViz.Builder): Unit =
-      b append """[color="#bbbbbb" style=dashed]"""
+    lazy val reqIdsSortedByPubId = Project.reqIdsSortedByPubId(reqs, reqTypes)
   }
 
-  private def implicationNodeStyle()(implicit b: GraphViz.Builder): Unit =
+  private def deadLink()(implicit b: GraphViz.Builder): Unit =
+    b append """[color="#bbbbbb" style=dashed]"""
+
+  private def styleSubsequentNodesAsImplications()(implicit b: GraphViz.Builder): Unit =
     b append """node[style=filled color="#333333"]"""
+
+  private def deadNodeStyle()(implicit b: GraphViz.Builder): Unit =
+    b append """[fillcolor="#dddddd" color="#777777" fontcolor="#666666"]"""
+
+  @inline private def deadNodeStyleIfDead(live: Live)(implicit b: GraphViz.Builder): Unit =
+    if (live is Dead) deadNodeStyle()
+
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   def implicationFocused(focus: ReqId, fd: FilterDead, p: Project): DOT =
     implicationFocused(focus, fd, p.content.implications, p.content.reqs, p.config.reqTypes)
 
-  def implicationFocused(focus: ReqId, fd: FilterDead,
-                         imps: Implications.BiDir, reqs: Requirements, reqTypes: ReqTypes): DOT =
+  def implicationFocused(focus   : ReqId,
+                         fd      : FilterDead,
+                         imps    : Implications.BiDir,
+                         reqs    : Requirements,
+                         reqTypes: ReqTypes): DOT =
     GraphViz.digraph { implicit b =>
 
       val impHelpers = new ImpHelpers(reqs, reqTypes)
       import impHelpers._
+
+      def declareNode(id: ReqId): Unit = {
+        node(id)
+        b.labelAttr(pubid(id))
+        deadNodeStyleIfDead(live(id))
+      }
 
       val filterIdSet: Set[ReqId] => Set[ReqId] =
         fd(_)(live)
@@ -301,7 +313,7 @@ object Graphs {
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
       b.rankdirLR()
-      implicationNodeStyle()
+      styleSubsequentNodesAsImplications()
 
       // Focus
       b append Focus
@@ -309,15 +321,29 @@ object Graphs {
       b.setLabel(pubid(focus))
       b append ']'
 
-      b append """node[fillcolor="#FFEDE2"]""";                              declare(backwards.indirect.decl)
-      b.attrGroup("""rank=same;node[fillcolor="#FFC19C"]"""                )(declare(backwards.direct  .decl))
-      b.attrGroup("""rank=same;node[fillcolor="#7692B7" fontcolor=white]""")(declare(forwards .direct  .decl))
-      b append """node[fillcolor="#D6E1EF"]""";                              declare(forwards .indirect.decl)
+      b append """node[fillcolor="#FFEDE2"]""";
+      backwards.indirect.decl.foreach(declareNode)
 
-      b append """edge[color="#FFC19C"]"""; backwards.indirect.flow.foreach(_())
-      b append """edge[color="#C27040"]"""; backwards.direct  .flow.foreach(_())
-      b append """edge[color="#31537F"]"""; forwards .direct  .flow.foreach(_())
-      b append """edge[color="#7692B7"]"""; forwards .indirect.flow.foreach(_())
+      b.attrGroup("""rank=same;node[fillcolor="#FFC19C"]""")(
+        backwards.direct.decl.foreach(declareNode))
+
+      b.attrGroup("""rank=same;node[fillcolor="#7692B7" fontcolor=white]""")(
+        forwards.direct.decl.foreach(declareNode))
+
+      b append """node[fillcolor="#D6E1EF"]""";
+      forwards.indirect.decl.foreach(declareNode)
+
+      b append """edge[color="#FFC19C"]"""
+      backwards.indirect.flow.foreach(_ ())
+
+      b append """edge[color="#C27040"]"""
+      backwards.direct.flow.foreach(_ ())
+
+      b append """edge[color="#31537F"]"""
+      forwards.direct.flow.foreach(_ ())
+
+      b append """edge[color="#7692B7"]"""
+      forwards.indirect.flow.foreach(_ ())
     }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -342,7 +368,7 @@ object Graphs {
       def declareNodes: () => Unit =
         config.colours match {
 
-          case Colours.AutoByReqType => () => {
+          case Colours.ByReqType => () => {
 
             // Add to reqTypesWithReqs regardless of live status so that colours don't change when user toggles the
             // FilterDead setting. Colours jumping around it's a needless cognitive burden when you're trying to analyse
@@ -373,12 +399,52 @@ object Graphs {
                 .sortBy(x => reqTypes.order(x._1))
                 .iterator
 
+            def declareNode(id: ReqId): Unit = {
+              node(id)
+              b.labelAttr(pubid(id))
+              deadNodeStyleIfDead(live(id))
+            }
+
             for ((reqType, reqs) <- nodeData) {
               val color = colourFn(reqTypesWithReqs(reqType))
               b append """node[fillcolor="#"""
               b append color
               b append """"]"""
-              declare(reqs.iterator.map(_.id))
+              for (req <- reqs)
+                declareNode(req.id)
+            }
+          }
+
+          case Colours.ByTag(_) => () => {
+
+            val coloursByReqId = reqColours.get
+
+            def declareNode(id: ReqId): Unit = {
+              node(id)
+              b.labelAttr(pubid(id))
+              live(id) match {
+                case Live =>
+                  val colours = coloursByReqId.get(id).filter(_.nonEmpty).getOrElse(ArraySeq(Colour.tagDefault))
+                  val style =
+                    if (colours.length == 1) {
+                      // style=wedged requires at least 2 colours
+                      val c = colours(0)
+                      s"""[style=filled fillcolor="${c.`#rrggbb`}" fontcolor="${c.foreground.`#rrggbb`}"]"""
+                    } else {
+                      val fill = colours.iterator.map(_.`#rrggbb`).mkString(":")
+                      val font = Colour.chooseForegroundOverMultipleBackgroundColours(colours)
+                      s"""[style=wedged fillcolor="$fill" fontcolor="${font.`#rrggbb`}"]"""
+                    }
+                  b.append(style)
+                case Dead =>
+                  deadNodeStyle()
+              }
+            }
+
+            b.append("""node[color="#111111"]""")
+            for (reqId <- reqIdFilter.iterator(reqIdsSortedByPubId.iterator)) {
+              declareNode(reqId)
+              coloursByReqId
             }
           }
         }
@@ -406,7 +472,7 @@ object Graphs {
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
       declareDirection()
-      implicationNodeStyle()
+      styleSubsequentNodesAsImplications()
       b append """edge[color="#333333"]"""
 
       declareNodes()

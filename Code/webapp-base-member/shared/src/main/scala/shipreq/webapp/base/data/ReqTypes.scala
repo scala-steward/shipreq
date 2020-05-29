@@ -175,8 +175,8 @@ final case class ReqTypes(custom: IMap[CustomReqTypeId, CustomReqType]) {
     all.iterator.flatMap(t => t.allMnemonics.iterator.map((_, t))).toMap
 
   lazy val order: Map[ReqTypeId, Int] =
-    MutableArray(all.whole)
-      .sortBySchwartzian(_.mnemonic.value)
+    allSortedByMnemonic
+      .iterator
       .map(_.reqTypeId)
       .iterator
       .zipWithIndex

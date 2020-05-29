@@ -138,3 +138,4 @@ v2.1
 ========================================================================================================================
 
 * add Option[ImpGraphConfig] to saved views
+* ColourByTag -- need to handle tags being deleted

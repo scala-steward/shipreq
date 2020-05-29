@@ -412,14 +412,14 @@ object FilterAlgebra {
 
         case (FieldAttr.Blank, \/-(StaticField.NormalAltStepTree)) =>
           ucOnly { uc =>
-            filterDead.filterFn.iterator(uc.stepsNA.tree.valueIterator)(_.liveIgnoringUC(uc.stepsNA))
+            filterDead.filterFn.iteratorBy(uc.stepsNA.tree.valueIterator)(_.liveIgnoringUC(uc.stepsNA))
               .drop(1)
               .isEmpty
           }
 
         case (FieldAttr.Blank, \/-(StaticField.ExceptionStepTree)) =>
           ucOnly { uc =>
-            filterDead.filterFn.iterator(uc.stepsE.tree.valueIterator)(_.liveIgnoringUC(uc.stepsE))
+            filterDead.filterFn.iteratorBy(uc.stepsE.tree.valueIterator)(_.liveIgnoringUC(uc.stepsE))
               .isEmpty
           }
 

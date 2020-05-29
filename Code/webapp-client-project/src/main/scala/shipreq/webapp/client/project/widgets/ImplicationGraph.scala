@@ -46,13 +46,16 @@ object ImplicationGraph {
     }
 
     final case class All(reqWhitelist: Option[Set[ReqId]],
+                         filterDead  : FilterDead,
                          config      : ImpGraphConfig,
-                         imps        : Implications.BiDir,
-                         reqs        : Requirements,
-                         reqTypes    : ReqTypes,
+                         project     : Project,
                          plainText   : PlainText.ForProject.AnyCtx,
                          reqDetailRC : RouterCtl[ExternalPubid],
                          webWorker   : WebWorkerClient) extends Props {
+
+      override val imps = project.content.implications
+      override val reqs = project.content.reqs
+      override val reqTypes = project.config.reqTypes
 
       override val isEmpty: Boolean =
         reqWhitelist match {
@@ -72,10 +75,20 @@ object ImplicationGraph {
     override def cmd(props: Props) =
       props match {
         case p: Props.FocusReq =>
-          WebWorkerCmd.GraphReqImplications(p.focus, p.filterDead, p.imps, p.reqs, p.reqTypes)
+          WebWorkerCmd.GraphReqImplications(
+            focus      = p.focus,
+            filterDead = p.filterDead,
+            imps       = p.imps,
+            reqs       = p.reqs,
+            reqTypes   = p.reqTypes)
 
         case p: Props.All =>
-          WebWorkerCmd.GraphAllImplications(p.imps, p.reqs, p.reqTypes, p.reqWhitelist, p.config)
+          WebWorkerCmd.GraphAllImplications.build(
+            project    = p.project,
+            filterDead = p.filterDead,
+            scope      = p.reqWhitelist,
+            config     = p.config,
+          )
       }
 
     override def enrich(p: Props): Callback =

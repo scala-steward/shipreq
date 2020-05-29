@@ -1,6 +1,7 @@
 package shipreq.webapp.client.ww.api
 
 import boopickle.DefaultBasic._
+import scala.collection.compat.immutable.ArraySeq
 import scalaz.\/
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data._
@@ -24,11 +25,51 @@ object WebWorkerCmd {
                                         reqs      : Requirements,
                                         reqTypes  : ReqTypes) extends WebWorkerCmd[ErrorMsg \/ Svg]
 
-  final case class GraphAllImplications(imps    : Implications.BiDir,
-                                        reqs    : Requirements,
-                                        reqTypes: ReqTypes,
-                                        scope   : Option[Set[ReqId]],
-                                        config  : ImpGraphConfig) extends WebWorkerCmd[ErrorMsg \/ Svg]
+  final case class GraphAllImplications(imps      : Implications.BiDir,
+                                        reqs      : Requirements,
+                                        reqTypes  : ReqTypes,
+                                        scope     : Option[Set[ReqId]],
+                                        reqColours: Option[Map[ReqId, ArraySeq[Colour]]],
+                                        config    : ImpGraphConfig) extends WebWorkerCmd[ErrorMsg \/ Svg]
+
+  object GraphAllImplications {
+
+    def build(project   : Project,
+              filterDead: FilterDead,
+              scope     : Option[Set[ReqId]],
+              config    : ImpGraphConfig): GraphAllImplications = {
+
+      def reqIds = scope.fold(project.content.reqs.idIterator())(_.iterator)
+      val reqColours: Option[Map[ReqId, ArraySeq[Colour]]] =
+        config.colours match {
+          case ImpGraphConfig.Colours.ByReqType =>
+            None
+          case ImpGraphConfig.Colours.ByTag(tagGroupId) =>
+            val tagLookup = project.dataLogic.tagLookup(filterDead)
+            val tags      = project.config.tags
+            val tagScope  = project.config.tagFieldDistribution(filterDead).inTagGroup(tagGroupId)
+            val colourMap =
+              reqIds.map { reqId =>
+                val colours =
+                  tagLookup(reqId).all
+                    .iterator
+                    .filter(tagScope.contains)
+                    .map(tags.needApplicableTag)
+                    .map(t => t.colour.getOrElse(Colour.tagDefault).live(t.live))
+                    .to(ArraySeq)
+                reqId -> colours
+              }.toMap
+            Some(colourMap)
+        }
+      apply(
+        imps       = project.content.implications,
+        reqs       = project.content.reqs,
+        reqTypes   = project.config.reqTypes,
+        scope      = scope,
+        reqColours = reqColours,
+        config     = config)
+    }
+  }
 
   // ===================================================================================================================
 
@@ -63,15 +104,17 @@ object WebWorkerCmd {
         state.pickle(a.reqs)
         state.pickle(a.reqTypes)
         state.pickle(a.scope)
+        state.pickle(a.reqColours)
         state.pickle(a.config)
       }
       override def unpickle(implicit state: UnpickleState): GraphAllImplications = {
-        val imps     = state.unpickle[Implications.BiDir]
-        val reqs     = state.unpickle[Requirements]
-        val reqTypes = state.unpickle[ReqTypes]
-        val scope    = state.unpickle[Option[Set[ReqId]]]
-        val config   = state.unpickle[ImpGraphConfig]
-        GraphAllImplications(imps, reqs, reqTypes, scope, config)
+        val imps       = state.unpickle[Implications.BiDir]
+        val reqs       = state.unpickle[Requirements]
+        val reqTypes   = state.unpickle[ReqTypes]
+        val scope      = state.unpickle[Option[Set[ReqId]]]
+        val reqColours = state.unpickle[Option[Map[ReqId, ArraySeq[Colour]]]]
+        val config     = state.unpickle[ImpGraphConfig]
+        GraphAllImplications(imps, reqs, reqTypes, scope, reqColours, config)
       }
     }
 

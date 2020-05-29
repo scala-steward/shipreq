@@ -19,6 +19,12 @@ final class Colour private[Colour](val value: String) extends TaggedString {
   val hex: String =
     value.drop(1)
 
+  val `#rrggbb`: String =
+    hex.length match {
+      case 3 => "#" + hex(0) + hex(0) + hex(1) + hex(1) + hex(2) + hex(2)
+      case 6 => value
+    }
+
   val rgb: (Int, Int, Int) = {
     def parseHex(hex: String): Int =
       Integer.parseInt(hex, 16)
@@ -66,6 +72,57 @@ final class Colour private[Colour](val value: String) extends TaggedString {
     else
       black
   }
+
+  def averageContrastRatio(colours: IterableOnce[Colour]): Double = {
+    var count = 0
+    var sum = 0.0
+    for (c <- colours.iterator) {
+      count += 1
+      sum += contrastRatio(c)
+    }
+    if (count == 0)
+      Double.NaN
+    else
+      sum / count
+  }
+
+  private def greyscaleInt: Int = {
+    // https://stackoverflow.com/questions/17615963/standard-rgb-to-grayscale-conversion
+    // https://en.wikipedia.org/wiki/Grayscale#Converting_color_to_grayscale
+    val cSRGB = if (luminanace <= 0.0031308) 12.92 * luminanace else 1.055 * Math.pow(luminanace, 1 / 2.4) - 0.055
+    (cSRGB * 255.0 + 0.5).toInt.min(255)
+  }
+
+  def greyscale: Colour = {
+    val x = greyscaleInt
+    Colour.fromRGB(x, x, x)
+  }
+
+  /** A version of this colour to use to indicate it's subject is dead. */
+  lazy val dead: Colour = {
+    val x = applyOpacity(greyscaleInt, 0.5)
+    Colour.fromRGB(x, x, x)
+  }
+
+  @inline def live(l: Live): Colour =
+    if (l is Live) this else dead
+
+  /** @param x [0,255]
+    * @param p [0,1]
+    * @return [0,255]
+    */
+  private def applyOpacity(x: Int, p: Double): Int = {
+    assert(x >= 0 && x <= 255)
+    assert(p >= 0 && p <= 1)
+    (255 - p * (255 - x)).toInt
+  }
+
+  def withOpacity(p: Double): Colour = {
+    val r = applyOpacity(rgb._1, p)
+    val g = applyOpacity(rgb._2, p)
+    val b = applyOpacity(rgb._3, p)
+    Colour.fromRGB(r, g, b)
+  }
 }
 
 object Colour {
@@ -75,10 +132,16 @@ object Colour {
   val white = force("#fff")
   val black = force("#000")
 
+  /** This is "main blue" in TagPalette.scala */
+  val tagDefault = force("#0076f5")
+
   def apply(s: String): Option[Colour] = {
     val c = correct(s)
     Option.when(isValid(c))(force(c))
   }
+
+  def fromRGB(r: Int, g: Int, b: Int): Colour =
+    force("#%02x%02x%02x".format(r, g, b))
 
   def liveCorrect(s: String): String = {
     val a =
@@ -108,5 +171,24 @@ object Colour {
       \/-(Some(force(c)))
     else
       -\/("Not a valid colour. Expected #rgb or #rrggbb")
+  }
+
+  def chooseForegroundOverMultipleBackgroundColours(bgCols: IndexedSeq[Colour]): Colour = {
+    val all    = bgCols.length
+    val half   = all / 2.0
+    val whites = bgCols.count(_.foreground eq Colour.white)
+    val blacks = all - whites
+    if (whites > half)
+      white
+    else if (blacks > half)
+      black
+    else {
+      val w = white.averageContrastRatio(bgCols)
+      val b = black.averageContrastRatio(bgCols)
+      if (w > b)
+        white
+      else
+        black
+    }
   }
 }
