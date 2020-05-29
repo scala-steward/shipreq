@@ -6,7 +6,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/, \/-}
-import shipreq.base.util.ErrorMsg
+import shipreq.base.util._
 import shipreq.webapp.base.lib.DomUtil._
 import shipreq.webapp.client.project.app.{Style, WebWorkerClient}
 import shipreq.webapp.client.project.lib.DataReusability._
@@ -28,32 +28,50 @@ object GraphComponent {
     val webWorker: WebWorkerClient
   }
 
-  type State = Option[ErrorMsg \/ Svg]
+  /**
+   * @param validity Invalid means data is stale (i.e. there's a new graph on the way)
+   */
+  final case class State(value: Option[ErrorMsg \/ Svg], validity: Validity)
 
-  def initialState: State = None
+  object State {
+    def init: State =
+      apply(None, Valid)
+
+    implicit def reusability: Reusability[State] =
+      Reusability.byRef || Reusability.derive
+  }
 
   abstract class GraphBackend[Props <: HasWebWorker]($: BackendScope[Props, State]) {
 
     def cmd(p: Props): WebWorkerCmd[ErrorMsg \/ Svg]
 
     def refresh(p: Props): Callback =
-      p.webWorker.post(cmd(p)).flatMapSync(result => $.setState(Some(result))).toCallback
+      $.modState(_.copy(validity = Invalid)) >>
+        p.webWorker.post(cmd(p))
+          .flatMapSync(result => $.setState(State(Some(result), Valid)))
+          .toCallback
 
     def onRender(prevProps: Option[Props], p: Props, s: State)(implicit r: Reusability[Props]): Callback = {
       val maybeRefresh = Callback.unless(prevProps.exists(_ ~=~ p))(refresh(p))
-      val maybeEnrich  = Callback.when(s.isDefined)(enrich(p))
+      val maybeEnrich  = Callback.when(s.value.exists(_.isRight))(enrich(p))
       maybeRefresh >> maybeEnrich
     }
 
     def enrich(p: Props): Callback =
       Callback.empty
 
-    def render(s: State): VdomElement =
-      s match {
-        case Some(\/-(svg)) => <.div(Style.svgGraph, ^.dangerouslySetInnerHtml := svg.content)
-        case Some(-\/(err)) => <.div(Style.svgGraphError, err.value)
-        case None           => <.div
+    def render(s: State): VdomElement = {
+      val content: VdomTag =
+        s.value match {
+          case Some(\/-(svg)) => <.div(Style.svgGraph, ^.dangerouslySetInnerHtml := svg.content)
+          case Some(-\/(err)) => <.div(Style.svgGraphError, err.value)
+          case None           => <.div
+        }
+      s.validity match {
+        case Valid   => content
+        case Invalid => content(Style.svgGraphInvalid)
       }
+    }
 
     protected def graphNodeIterator(root: dom.Element): Iterator[dom.svg.G] =
       root.querySelectorAll("g.node").iterator.map(_.domCast[dom.svg.G])

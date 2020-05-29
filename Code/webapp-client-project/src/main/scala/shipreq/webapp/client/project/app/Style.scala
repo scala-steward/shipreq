@@ -107,6 +107,9 @@ object Style extends StyleSheet.Inline {
   val svgGraphError = style(
     errorRedOnRed)
 
+  val svgGraphInvalid = style(
+    opacity(0.2))
+
   private val selectionCellBase = style(
     width(24.px).important,
     textAlign.center.important)
