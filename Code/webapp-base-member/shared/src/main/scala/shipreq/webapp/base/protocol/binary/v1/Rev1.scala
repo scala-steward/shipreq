@@ -441,16 +441,22 @@ object Rev1 {
     implicit val picklerImpGraphConfigGraphDir: Pickler[ImpGraphConfig.GraphDir] =
       new Pickler[ImpGraphConfig.GraphDir] {
         import ImpGraphConfig.GraphDir
-        private[this] final val KeyLeftToRight = 0
-        private[this] final val KeyTopToBottom = 1
+        private[this] final val KeyBottomToTop = 'B'
+        private[this] final val KeyLeftToRight = 'L'
+        private[this] final val KeyRightToLeft = 'R'
+        private[this] final val KeyTopToBottom = 'T'
         override def pickle(a: GraphDir)(implicit state: PickleState): Unit =
           a match {
+            case GraphDir.BottomToTop => state.enc.writeByte(KeyBottomToTop)
             case GraphDir.LeftToRight => state.enc.writeByte(KeyLeftToRight)
+            case GraphDir.RightToLeft => state.enc.writeByte(KeyRightToLeft)
             case GraphDir.TopToBottom => state.enc.writeByte(KeyTopToBottom)
           }
         override def unpickle(implicit state: UnpickleState): GraphDir =
           state.dec.readByte match {
+            case KeyBottomToTop => GraphDir.BottomToTop
             case KeyLeftToRight => GraphDir.LeftToRight
+            case KeyRightToLeft => GraphDir.RightToLeft
             case KeyTopToBottom => GraphDir.TopToBottom
           }
       }

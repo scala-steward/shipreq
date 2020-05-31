@@ -29,47 +29,69 @@ object ImplicationGraphPage {
     @inline def render: VdomElement = Component(this)
   }
 
-  def render(p: Props) = {
-    val filterDead = p.savedViewFeature.filterDead
+  final class Backend($: BackendScope[Props, Unit]) {
 
-    val impGraph = ImplicationGraph.Props.All(
-      reqWhitelist = p.savedViewFeature.reqWhitelist,
-      filterDead   = filterDead,
-      config       = ImpGraphConfig.default,
-      project      = p.project,
-      plainText    = p.plainText,
-      reqDetailRC  = p.reqDetailRC,
-      webWorker    = p.webWorker,
-    )
+    private val setConfigFn: Reusable[StateSnapshot.SetFn[ImpGraphConfig]] =
+      Reusable.byRef((oc, cb) =>
+        $.props.flatMap(_.savedViewFeature.static.modifyViewFn.modStateOption(
+          s => oc.map(c => s.copy(impGraphConfig = Some(c))),
+          cb)))
 
-    val filterDeadButton =
-      <.div(*.filterDeadButton,
-        FilterDeadButton.Component(StateSnapshot.withReuse(filterDead)(p.setFilterDead)))
+    def render(p: Props) = {
+      val filterDead = p.savedViewFeature.filterDead
 
-    def noContentMessage =
-      if (filterDead.is(HideDead) && !impGraph.copy(reqWhitelist = p.savedViewFeature.pxReqWhitelistIgnoringFilterDead).isEmpty)
-        NoContentMessage.becauseAllDead(
-          TagMod(
-            "Enable display of dead content (via the ",
-            Icon.TrashOutline.tag,
-            "button in the top-right)."))
-      else
-        NoContentMessage(
-          "You don't have any requirements yet.",
-          s"Head over to the ${ProjectIndex.Item.ReqTable.title} page to get started.")
+      val impGraphConfig: ImpGraphConfig =
+        p.savedViewFeature.activeView.impGraphConfig.getOrElse(ImpGraphConfig.default)
 
-    val content =
-      if (impGraph.isEmpty)
-        <.div(*.noContent, noContentMessage)
-      else
-        <.div(*.graph, impGraph.render)
+      val impGraph = ImplicationGraph.Props.All(
+        reqWhitelist = p.savedViewFeature.reqWhitelist,
+        filterDead   = filterDead,
+        config       = impGraphConfig,
+        project      = p.project,
+        plainText    = p.plainText,
+        reqDetailRC  = p.reqDetailRC,
+        webWorker    = p.webWorker,
+      )
 
-    <.div(BaseStyles.containerFull,
-      filterDeadButton,
-      p.savedViewFeature.renderSavedViewManager,
-      p.savedViewFeature.renderFilterEditor,
-      content)
+      val filterDeadButton =
+        <.div(*.filterDeadButton,
+          FilterDeadButton.Component(StateSnapshot.withReuse(filterDead)(p.setFilterDead)))
+
+      def noContentMessage =
+        if (filterDead.is(HideDead) && !impGraph.copy(reqWhitelist = p.savedViewFeature.pxReqWhitelistIgnoringFilterDead).isEmpty)
+          NoContentMessage.becauseAllDead(
+            TagMod(
+              "Enable display of dead content (via the ",
+              Icon.TrashOutline.tag,
+              "button in the top-right)."))
+        else
+          NoContentMessage(
+            "You don't have any requirements yet.",
+            s"Head over to the ${ProjectIndex.Item.ReqTable.title} page to get started.")
+
+      val config =
+        ConfigEditor.Props(
+          state         = StateSnapshot.withReuse(impGraphConfig)(setConfigFn),
+          filterDead    = filterDead,
+          projectConfig = p.project.config,
+        ).render
+
+      val content =
+        if (impGraph.isEmpty)
+          <.div(*.noContent, noContentMessage)
+        else
+          <.div(*.graph, impGraph.render)
+
+      <.div(BaseStyles.containerFull,
+        filterDeadButton,
+        p.savedViewFeature.renderSavedViewManager,
+        p.savedViewFeature.renderFilterEditor,
+        config,
+        content)
+    }
   }
 
-  val Component = ScalaFnComponent(render)
+  val Component = ScalaComponent.builder[Props]
+    .renderBackend[Backend]
+    .build
 }

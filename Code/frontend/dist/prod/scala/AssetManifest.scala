@@ -51,7 +51,7 @@ object AssetManifest {
     href = "https://cdnjs.cloudflare.com/ajax/libs/react/16.13.1/umd/react.production.min.js",
     integrity = Some("sha256-yUhvEmYVhZ/GGshIQKArLvySDSh6cdmdcIx0spR3UP4="))
 
-  def semanticCss = "/s/9395a3b82fb273670f9b517d42bbad33.css"
+  def semanticCss = "/s/1968d59149b0d92a40b166aa61f66559.css"
 
   def semanticCssUrls: List[String] =
     "icons.eot" ::

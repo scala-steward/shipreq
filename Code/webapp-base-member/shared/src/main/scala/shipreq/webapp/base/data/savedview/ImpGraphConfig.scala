@@ -34,10 +34,18 @@ object ImpGraphConfig {
   sealed trait GraphDir
 
   object GraphDir {
-    case object TopToBottom extends GraphDir
+    case object BottomToTop extends GraphDir
     case object LeftToRight extends GraphDir
+    case object RightToLeft extends GraphDir
+    case object TopToBottom extends GraphDir
 
-    lazy val values = AdtMacros.adtValues[GraphDir]
+    lazy val values = AdtMacros.adtValuesManually[GraphDir](
+      BottomToTop,
+      LeftToRight,
+      RightToLeft,
+      TopToBottom,
+    )
+
     implicit def univEq: UnivEq[GraphDir] = UnivEq.derive
   }
 

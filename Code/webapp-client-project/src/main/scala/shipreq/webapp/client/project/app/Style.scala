@@ -251,6 +251,10 @@ object Style extends StyleSheet.Inline {
     val graph = style(
       textAlign.center,
       margin.horizontal(auto))
+
+    val deadDropdownItem = style(
+      textDecoration := "line-through",
+      color(c"#999"))
   }
 
   // ===================================================================================================================

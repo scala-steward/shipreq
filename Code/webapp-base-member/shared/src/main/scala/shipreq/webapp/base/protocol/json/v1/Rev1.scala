@@ -165,12 +165,16 @@ object Rev1 {
       Encoder.forProduct2("init", "last")(a => (a.init, a.last))
 
     implicit val decoderImpGraphConfigGraphDir: Decoder[ImpGraphConfig.GraphDir] = decodeSumBySoleKey {
+      case ("bottomToTop", _) => Right(ImpGraphConfig.GraphDir.BottomToTop)
       case ("leftToRight", _) => Right(ImpGraphConfig.GraphDir.LeftToRight)
+      case ("rightToLeft", _) => Right(ImpGraphConfig.GraphDir.RightToLeft)
       case ("topToBottom", _) => Right(ImpGraphConfig.GraphDir.TopToBottom)
     }
 
     implicit val encoderImpGraphConfigGraphDir: Encoder[ImpGraphConfig.GraphDir] = Encoder.instance {
+      case ImpGraphConfig.GraphDir.BottomToTop => Json.obj("bottomToTop" -> ().asJson)
       case ImpGraphConfig.GraphDir.LeftToRight => Json.obj("leftToRight" -> ().asJson)
+      case ImpGraphConfig.GraphDir.RightToLeft => Json.obj("rightToLeft" -> ().asJson)
       case ImpGraphConfig.GraphDir.TopToBottom => Json.obj("topToBottom" -> ().asJson)
     }
 

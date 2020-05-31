@@ -7,6 +7,7 @@ import scala.scalajs.js
 import scala.scalajs.js.JSON
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{Backwards, Direction, ErrorMsg, Forwards}
+import shipreq.webapp.base.data.savedview.ImpGraphConfig.GraphDir
 import shipreq.webapp.base.{AssetManifest, UiText}
 import shipreq.webapp.client.ww.api.Svg
 
@@ -63,11 +64,18 @@ object GraphViz {
     def append(i: Int): Unit = sb append i
     def append(s: String): Unit = sb append s
 
-    def rankdirLR(): Unit =
-      sb append "rankdir=LR;"
-
-    def rankdirTB(): Unit =
-      sb append "rankdir=TB;"
+    def rankdir(graphDir: GraphDir): Unit = {
+      sb append "rankdir="
+      val dir: String =
+        graphDir match {
+          case GraphDir.BottomToTop => "BT"
+          case GraphDir.LeftToRight => "LR"
+          case GraphDir.RightToLeft => "RL"
+          case GraphDir.TopToBottom => "TB"
+        }
+      sb append dir
+      sb append ';'
+    }
 
     def group(group: String)(inner: => Unit): Unit = {
       sb append group

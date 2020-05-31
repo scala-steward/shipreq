@@ -176,7 +176,7 @@ object Graphs {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      b.rankdirLR()
+      b.rankdir(GraphDir.LeftToRight)
       b append "ranksep=0.28;"
 
       startNode()
@@ -312,7 +312,7 @@ object Graphs {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      b.rankdirLR()
+      b.rankdir(GraphDir.LeftToRight)
       styleSubsequentNodesAsImplications()
 
       // Focus
@@ -358,12 +358,6 @@ object Graphs {
       val reqIdFilter    = OptionalBoolFn[ReqId](cmd.scope.map(s => s.contains _))
       val reqIdSetFilter = reqIdFilter.setFilter
       val reqFilter      = reqIdFilter.contramap[Req](_.id)
-
-      def declareDirection: () => Unit =
-        config.graphDir match {
-          case GraphDir.TopToBottom => () => b.rankdirTB()
-          case GraphDir.LeftToRight => () => b.rankdirLR()
-        }
 
       def declareNodes: () => Unit =
         config.colours match {
@@ -471,7 +465,7 @@ object Graphs {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      declareDirection()
+      b.rankdir(config.graphDir)
       styleSubsequentNodesAsImplications()
       b append """edge[color="#333333"]"""
 

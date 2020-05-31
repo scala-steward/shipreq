@@ -1,6 +1,10 @@
 .angle.double.left
 .angle.double.right
 .angle.right
+.arrow.down
+.arrow.left
+.arrow.right
+.arrow.up
 .ban
 .checkmark
 .checkmark.box
