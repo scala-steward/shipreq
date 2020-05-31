@@ -99,7 +99,7 @@ object ProjectTemplate {
                   order     : savedview.SortCriteria,
                   filterDead: FilterDead                      = HideDead,
                   filter    : Option[Filter.Valid]            = None): Unit =
-      add(SavedViewCreate(savedViewId.next(), savedview.SavedView.Name(name), columns, order, filterDead, filter))
+      add(SavedViewCreateV1(savedViewId.next(), savedview.SavedView.Name(name), columns, order, filterDead, filter))
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████

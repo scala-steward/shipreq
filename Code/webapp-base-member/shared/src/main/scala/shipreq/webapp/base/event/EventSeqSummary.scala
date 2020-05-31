@@ -310,9 +310,11 @@ object EventSeqSummary {
          | _: Event.ManualIssueCreate
          | _: Event.ManualIssueDelete
          | _: Event.ManualIssueUpdate
+         | _: Event.SavedViewCreateV1
          | _: Event.SavedViewCreate
          | _: Event.SavedViewDefaultSet
          | _: Event.SavedViewDelete
+         | _: Event.SavedViewUpdateV1
          | _: Event.SavedViewUpdate        => ()
     }
 

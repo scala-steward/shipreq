@@ -5,6 +5,7 @@ import scalaz.{Equal, Order}
 import shipreq.base.util._
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.filter.Filter.Implicits._
 import shipreq.webapp.base.util._
 
 object RetiredGenericData {
@@ -88,7 +89,7 @@ object RetiredGenericData {
     override val attrs = NonEmptySet[Attr](Children, Desc, Key, Name, Parents)
   }
 
-  // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   object CustomImpFieldGDv1 extends GenericData {
     sealed abstract class Attr extends AttrBase
@@ -141,7 +142,7 @@ object RetiredGenericData {
     override val attrs = NonEmptySet[Attr](ApplicableReqTypes, Mandatory, ReqTypeId)
   }
 
-  // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   object CustomReqTypeGDv1 extends GenericData {
     sealed abstract class Attr extends AttrBase
@@ -197,7 +198,7 @@ object RetiredGenericData {
       NonEmpty.force(emptyValues + ValueForMnemonic(mnemonic) + ValueForName(name) + ValueForImplication(implication))
   }
 
-  // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   object CustomTagFieldGDv1 extends GenericData {
     sealed abstract class Attr extends AttrBase
@@ -250,7 +251,7 @@ object RetiredGenericData {
     override val attrs = NonEmptySet[Attr](ApplicableReqTypes, Mandatory, TagId)
   }
 
-  // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   object CustomTextFieldGDv1 extends GenericData {
     sealed abstract class Attr extends AttrBase
@@ -317,5 +318,88 @@ object RetiredGenericData {
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+  object SavedViewGDv1 extends GenericData {
+    import shipreq.webapp.base.filter.Filter.{Valid => ValidFilter}
+    import shipreq.webapp.base.data.savedview._
+
+    sealed abstract class Attr extends AttrBase
+    sealed abstract class Value extends ValueBase
+
+    case object Columns extends Attr {
+      override type Data = NonEmptyVector[Column]
+      override def apply(data: Data) = ValueForColumns(data)
+      override val dataEquality: Equal[Data] = implicitly[Equal[NonEmptyVector[Column]]]
+    }
+    final case class ValueForColumns(value: Columns.Data) extends Value {
+      override val attr: Columns.type = Columns
+      override def equals(o: Any): Boolean = o match {
+        case v2: ValueForColumns => Columns.dataEquality.equal(value, v2.value)
+        case _ => false
+      }
+    }
+
+    case object Filter extends Attr {
+      override type Data = Option[ValidFilter]
+      override def apply(data: Data) = ValueForFilter(data)
+      override val dataEquality: Equal[Data] = implicitly[Equal[Option[ValidFilter]]]
+    }
+    final case class ValueForFilter(value: Filter.Data) extends Value {
+      override val attr: Filter.type = Filter
+      override def equals(o: Any): Boolean = o match {
+        case v2: ValueForFilter => Filter.dataEquality.equal(value, v2.value)
+        case _ => false
+      }
+    }
+
+    case object FilterDead extends Attr {
+      override type Data = FilterDead
+      override def apply(data: Data) = ValueForFilterDead(data)
+      override val dataEquality: Equal[Data] = implicitly[Equal[FilterDead]]
+    }
+    final case class ValueForFilterDead(value: FilterDead.Data) extends Value {
+      override val attr: FilterDead.type = FilterDead
+      override def equals(o: Any): Boolean = o match {
+        case v2: ValueForFilterDead => FilterDead.dataEquality.equal(value, v2.value)
+        case _ => false
+      }
+    }
+
+    case object Name extends Attr {
+      override type Data = SavedView.Name
+      override def apply(data: Data) = ValueForName(data)
+      override val dataEquality: Equal[Data] = implicitly[Equal[SavedView.Name]]
+    }
+    final case class ValueForName(value: Name.Data) extends Value {
+      override val attr: Name.type = Name
+      override def equals(o: Any): Boolean = o match {
+        case v2: ValueForName => Name.dataEquality.equal(value, v2.value)
+        case _ => false
+      }
+    }
+
+    case object Order extends Attr {
+      override type Data = SortCriteria
+      override def apply(data: Data) = ValueForOrder(data)
+      override val dataEquality: Equal[Data] = implicitly[Equal[SortCriteria]]
+    }
+    final case class ValueForOrder(value: Order.Data) extends Value {
+      override val attr: Order.type = Order
+      override def equals(o: Any): Boolean = o match {
+        case v2: ValueForOrder => Order.dataEquality.equal(value, v2.value)
+        case _ => false
+      }
+    }
+
+    override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
+      Util.univEqAndArbitraryOrder(Vector(Columns, Filter, FilterDead, Name, Order))
+
+    @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
+
+    override val attrs = NonEmptySet[Attr](Columns, Filter, FilterDead, Name, Order)
+
+    def apply(name: SavedView.Name, filterDead: FilterDead, columns: NonEmptyVector[Column], order: SortCriteria, filter: Option[ValidFilter]): NonEmptyValues =
+      NonEmpty.force(emptyValues + ValueForName(name) + ValueForFilterDead(filterDead) + ValueForColumns(columns) + ValueForOrder(order) + ValueForFilter(filter))
+  }
 
 }

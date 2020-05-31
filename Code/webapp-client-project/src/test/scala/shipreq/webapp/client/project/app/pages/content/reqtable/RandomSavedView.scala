@@ -17,6 +17,6 @@ object RandomSavedView {
       cs     <- visibleColumns(p)
       order  <- sortCriteria(cs)
       filter <- if (allowFilter) RandomData.filter.valid.forProject(p).option else noFilter
-      cfg    <- impGraphConfig(p).option
+      cfg    <- impGraphConfigForProject(p).option
     } yield View(cs, order, fd, filter, cfg)
 }

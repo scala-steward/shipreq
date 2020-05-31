@@ -62,7 +62,7 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
   private def filterAfter        = Filter.Valid.reqType(2)
 
   private def createSV =
-    SavedViewCreate(
+    SavedViewCreateV1(
       id         = sv1,
       name       = SavedView.Name("yes"),
       columns    = columnsBefore,

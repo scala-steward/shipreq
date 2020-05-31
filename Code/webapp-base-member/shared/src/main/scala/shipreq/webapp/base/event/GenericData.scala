@@ -514,6 +514,19 @@ object SavedViewGD extends GenericData {
     }
   }
 
+  case object ImpGraphConfig extends Attr {
+    override type Data = Option[ImpGraphConfig]
+    override def apply(data: Data) = ValueForImpGraphConfig(data)
+    override val dataEquality: Equal[Data] = implicitly[Equal[Option[ImpGraphConfig]]]
+  }
+  final case class ValueForImpGraphConfig(value: ImpGraphConfig.Data) extends Value {
+    override val attr: ImpGraphConfig.type = ImpGraphConfig
+    override def equals(o: Any): Boolean = o match {
+      case v2: ValueForImpGraphConfig => ImpGraphConfig.dataEquality.equal(value, v2.value)
+      case _ => false
+    }
+  }
+
   case object Name extends Attr {
     override type Data = SavedView.Name
     override def apply(data: Data) = ValueForName(data)
@@ -541,14 +554,14 @@ object SavedViewGD extends GenericData {
   }
 
   override implicit val equalityAttr: Order[Attr] with UnivEq[Attr] =
-    Util.univEqAndArbitraryOrder(Vector(Columns, Filter, FilterDead, Name, Order))
+    Util.univEqAndArbitraryOrder(Vector(Columns, Filter, FilterDead, ImpGraphConfig, Name, Order))
 
   @inline override implicit def equalityValue: UnivEq[Value] = UnivEq.force
 
-  override val attrs = NonEmptySet[Attr](Columns, Filter, FilterDead, Name, Order)
+  override val attrs = NonEmptySet[Attr](Columns, Filter, FilterDead, ImpGraphConfig, Name, Order)
 
-  def apply(name: SavedView.Name, filterDead: FilterDead, columns: NonEmptyVector[Column], order: SortCriteria, filter: Option[ValidFilter]): NonEmptyValues =
-    NonEmpty.force(emptyValues + ValueForName(name) + ValueForFilterDead(filterDead) + ValueForColumns(columns) + ValueForOrder(order) + ValueForFilter(filter))
+  def apply(name: SavedView.Name, filterDead: FilterDead, columns: NonEmptyVector[Column], order: SortCriteria, filter: Option[ValidFilter], impGraphConfig: Option[ImpGraphConfig]): NonEmptyValues =
+    NonEmpty.force(emptyValues + ValueForName(name) + ValueForFilterDead(filterDead) + ValueForColumns(columns) + ValueForOrder(order) + ValueForFilter(filter) + ValueForImpGraphConfig(impGraphConfig))
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████

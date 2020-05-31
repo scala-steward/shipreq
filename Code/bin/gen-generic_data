@@ -137,12 +137,13 @@ val gens = List(
     "FlowIn"  -> "SetDiff.NE[UseCaseStepId]",
     "FlowOut" -> "SetDiff.NE[UseCaseStepId]",
   ),
-  Gen("SavedViewGD", init = "import shipreq.webapp.base.filter.Filter.{Valid => ValidFilter}\nimport reqtable._")(
-    "Name"       -> "SavedView.Name",
-    "FilterDead" -> "FilterDead",
-    "Columns"    -> "NonEmptyVector[Column]",
-    "Order"      -> "SortCriteria",
-    "Filter"     -> "Option[ValidFilter]",
+  Gen("SavedViewGD", init = "import shipreq.webapp.base.filter.Filter.{Valid => ValidFilter}\nimport shipreq.webapp.base.data.savedview._")(
+    "Name"           -> "SavedView.Name",
+    "FilterDead"     -> "FilterDead",
+    "Columns"        -> "NonEmptyVector[Column]",
+    "Order"          -> "SortCriteria",
+    "Filter"         -> "Option[ValidFilter]",
+    "ImpGraphConfig" -> "Option[ImpGraphConfig]",
   ),
 )
 

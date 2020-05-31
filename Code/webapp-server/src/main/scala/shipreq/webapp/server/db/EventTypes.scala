@@ -93,10 +93,12 @@ object EventTypes {
   final val TypeManualIssueUpdate       = 3011
   final val TypeManualIssueDelete       = 3012
 
-  final val TypeSavedViewCreate         = 3020
-  final val TypeSavedViewUpdate         = 3021
+  final val TypeSavedViewCreateV1       = 3020
+  final val TypeSavedViewUpdateV1       = 3021
   final val TypeSavedViewDelete         = 3022
   final val TypeSavedViewDefaultSet     = 3023
+  final val TypeSavedViewCreate         = 3024
+  final val TypeSavedViewUpdate         = 3025
 
   // ===================================================================================================================
 
@@ -151,9 +153,11 @@ object EventTypes {
     case _: ReqImplicationsPatch    => TypeReqImplicationsPatch
     case _: ReqsDelete              => TypeReqsDelete
     case _: ReqTagsPatch            => TypeReqTagsPatch
+    case _: SavedViewCreateV1       => TypeSavedViewCreateV1
     case _: SavedViewCreate         => TypeSavedViewCreate
     case _: SavedViewDefaultSet     => TypeSavedViewDefaultSet
     case _: SavedViewDelete         => TypeSavedViewDelete
+    case _: SavedViewUpdateV1       => TypeSavedViewUpdateV1
     case _: SavedViewUpdate         => TypeSavedViewUpdate
     case _: TagDelete               => TypeTagDelete
     case _: TagGroupCreate          => TypeTagGroupCreate

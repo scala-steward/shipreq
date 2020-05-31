@@ -390,7 +390,7 @@ object ReqTableTest extends TestSuite {
 
   def testInitialFilter()(implicit path: utest.framework.TestPath) = {
     val project = applyEventsSuccessfully(SampleProject4.project,
-      Event.SavedViewCreate(
+      Event.SavedViewCreateV1(
         id         = SavedView.Id(1),
         name       = SavedView.Name("ewrsd"),
         columns    = Column.mandatory.toNEV,

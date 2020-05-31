@@ -5,7 +5,7 @@ import nyaya.util.Multimap
 import scala.collection.immutable.ArraySeq
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview.SavedView
+import shipreq.webapp.base.data.savedview.{ImpGraphConfig, SavedView}
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.text.Text
 import Text.{UseCaseStep => _, _}
@@ -239,14 +239,26 @@ object Event {
   // ===================================================================================================================
   // Saved Views
 
-  final case class SavedViewCreate(id        : SavedView.Id,
-                                   name      : SavedView.Name,
-                                   columns   : NonEmptyVector[savedview.Column],
-                                   order     : savedview.SortCriteria,
-                                   filterDead: FilterDead,
-                                   filter    : Option[Filter.Valid]) extends ActiveEvent
+  final case class SavedViewCreate(id            : SavedView.Id,
+                                   name          : SavedView.Name,
+                                   columns       : NonEmptyVector[savedview.Column],
+                                   order         : savedview.SortCriteria,
+                                   filterDead    : FilterDead,
+                                   filter        : Option[Filter.Valid],
+                                   impGraphConfig: Option[ImpGraphConfig]) extends ActiveEvent
 
   final case class SavedViewUpdate    (id: SavedView.Id, vs: SavedViewGD.NonEmptyValues) extends ActiveEvent
   final case class SavedViewDelete    (id: SavedView.Id)                                 extends ActiveEvent
   final case class SavedViewDefaultSet(id: SavedView.Id)                                 extends ActiveEvent
+
+
+  final case class SavedViewCreateV1(id        : SavedView.Id,
+                                     name      : SavedView.Name,
+                                     columns   : NonEmptyVector[savedview.Column],
+                                     order     : savedview.SortCriteria,
+                                     filterDead: FilterDead,
+                                     filter    : Option[Filter.Valid]) extends RetiredEvent
+
+  final case class SavedViewUpdateV1(id: SavedView.Id,
+                                     vs: RetiredGenericData.SavedViewGDv1.NonEmptyValues) extends RetiredEvent
 }

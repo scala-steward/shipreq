@@ -1588,7 +1588,7 @@ object RandomData {
       NonEmptyVector.maybe(tgs, Option.empty[Gen[TagGroupId]])(x => Some(Gen.chooseNE(x)))
     }
 
-    def impGraphConfigColours(p: Project): Gen[ImpGraphConfig.Colours] =
+    def impGraphConfigColoursForProject(p: Project): Gen[ImpGraphConfig.Colours] =
       impGraphConfigColours(genTagGroupIdFromProject(p))
 
     def impGraphConfigColours(genTagGroupId: Option[Gen[TagGroupId]]): Gen[ImpGraphConfig.Colours] = {
@@ -1602,7 +1602,7 @@ object RandomData {
       Gen.chooseGen_!(gens)
     }
 
-    def impGraphConfig(p: Project): Gen[ImpGraphConfig] =
+    def impGraphConfigForProject(p: Project): Gen[ImpGraphConfig] =
       impGraphConfig(genTagGroupIdFromProject(p))
 
     def impGraphConfig(genTagGroupId: Option[Gen[TagGroupId]]): Gen[ImpGraphConfig] =
@@ -1614,7 +1614,7 @@ object RandomData {
         c <- visibleColumns(p)
         o <- sortCriteria(c)
         f <- filter.valid.forProject(p).option
-        x <- impGraphConfig(p).option
+        x <- impGraphConfigForProject(p).option
       } yield View(c, o, d, f, x)
 
     def savedViewForProject(p: Project): Gen[SavedView] =
@@ -2182,7 +2182,7 @@ object RandomData {
       }
     }
 
-    object savedViewGD extends GenericDataGen(SavedViewGD) {
+    object savedViewGDv1 extends GenericDataGen(SavedViewGDv1) {
       import gd._
       import savedViews._
       private val colNev = customFieldColumn.vector.map(ColumnIGen).flatMap(_.columnNEV)
@@ -2199,6 +2199,28 @@ object RandomData {
         case FilterDead => genFilterDead   map FilterDead.apply
         case Name       => genName         map Name      .apply
         case Order      => genSortCriteria map Order     .apply
+      }
+    }
+
+    object savedViewGD extends GenericDataGen(SavedViewGD) {
+      import gd._
+      import savedViews._
+      private val colNev = customFieldColumn.vector.map(ColumnIGen).flatMap(_.columnNEV)
+
+      val genColumns        = colNev
+      val genFilter         = filter.valid.arbitrary.option
+      val genFilterDead     = filterDead
+      val genName           = savedViewName
+      val genSortCriteria   = colNev.flatMap(sortCriteria)
+      val genImpGraphConfig = impGraphConfig(Some(tagGroupId)).option
+
+      override def valueFor(a: Attr): Gen[Value] = a match {
+        case Columns        => genColumns        map Columns       .apply
+        case Filter         => genFilter         map Filter        .apply
+        case FilterDead     => genFilterDead     map FilterDead    .apply
+        case Name           => genName           map Name          .apply
+        case Order          => genSortCriteria   map Order         .apply
+        case ImpGraphConfig => genImpGraphConfig map ImpGraphConfig.apply
       }
     }
 
@@ -2387,20 +2409,33 @@ object RandomData {
     val genUseCaseStepUpdate: Gen[UseCaseStepUpdate] =
       Gen.apply2(UseCaseStepUpdate)(useCaseStepId, useCaseStepGD.nonEmptyValues)
 
+    val genSavedViewCreateV1: Gen[SavedViewCreateV1] =
+      Gen.apply6(SavedViewCreateV1)(
+        savedViews.savedViewId,
+        savedViewGDv1.genName,
+        savedViewGDv1.genColumns,
+        savedViewGDv1.genSortCriteria,
+        savedViewGDv1.genFilterDead,
+        savedViewGDv1.genFilter)
+
     val genSavedViewCreate: Gen[SavedViewCreate] =
-      Gen.apply6(SavedViewCreate)(
+      Gen.apply7(SavedViewCreate)(
         savedViews.savedViewId,
         savedViewGD.genName,
         savedViewGD.genColumns,
         savedViewGD.genSortCriteria,
         savedViewGD.genFilterDead,
-        savedViewGD.genFilter)
+        savedViewGD.genFilter,
+        savedViewGD.genImpGraphConfig)
 
     val genSavedViewDefaultSet: Gen[SavedViewDefaultSet] =
       savedViews.savedViewId map SavedViewDefaultSet
 
     val genSavedViewDelete: Gen[SavedViewDelete] =
       savedViews.savedViewId map SavedViewDelete
+
+    val genSavedViewUpdateV1: Gen[SavedViewUpdateV1] =
+      Gen.apply2(SavedViewUpdateV1)(savedViews.savedViewId, savedViewGDv1.nonEmptyValues)
 
     val genSavedViewUpdate: Gen[SavedViewUpdate] =
       Gen.apply2(SavedViewUpdate)(savedViews.savedViewId, savedViewGD.nonEmptyValues)
@@ -2486,6 +2521,8 @@ object RandomData {
         case _: FieldCustomTagUpdateV1  => genFieldCustomTagUpdateV1
         case _: FieldCustomTextCreateV1 => genFieldCustomTextCreateV1
         case _: FieldCustomTextUpdateV1 => genFieldCustomTextUpdateV1
+        case _: SavedViewCreateV1       => genSavedViewCreateV1
+        case _: SavedViewUpdateV1       => genSavedViewUpdateV1
       }
 
     val activeEvent: Gen[ActiveEvent] =

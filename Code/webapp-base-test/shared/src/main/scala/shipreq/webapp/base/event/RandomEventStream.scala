@@ -553,22 +553,43 @@ final class ApplicableEventGen(curState: State, config: RandomEventStreamConfig)
     }
   }
 
-  object savedViewGD extends GenericDataGen(SavedViewGD) {
+  object savedViewGDv1 extends GenericDataGen(SavedViewGDv1) {
     import gd._
     import shipreq.webapp.base.data.savedview.Column
     import RandomData.savedViews._
     private val colNev = ColumnIGen(p.config.fields.customFields.keysIterator.map(Column.CustomField).toVector).columnNEV
-    val genColumns      = colNev
-    val genFilter       = filter.valid.forProject(p).option
-    val genFilterDead   = filterDead
-    val genName         = savedViewName
-    val genSortCriteria = colNev.flatMap(sortCriteria)
+    val genColumns        = colNev
+    val genFilter         = filter.valid.forProject(p).option
+    val genFilterDead     = filterDead
+    val genName           = savedViewName
+    val genSortCriteria   = colNev.flatMap(sortCriteria)
     override def valueFor(a: Attr) = a match {
       case Columns    => genColumns      map Columns   .apply
       case Filter     => genFilter       map Filter    .apply
       case FilterDead => genFilterDead   map FilterDead.apply
       case Name       => genName         map Name      .apply
       case Order      => genSortCriteria map Order     .apply
+    }
+  }
+
+  object savedViewGD extends GenericDataGen(SavedViewGD) {
+    import gd._
+    import shipreq.webapp.base.data.savedview.Column
+    import RandomData.savedViews._
+    private val colNev = ColumnIGen(p.config.fields.customFields.keysIterator.map(Column.CustomField).toVector).columnNEV
+    val genColumns        = colNev
+    val genFilter         = filter.valid.forProject(p).option
+    val genFilterDead     = filterDead
+    val genName           = savedViewName
+    val genSortCriteria   = colNev.flatMap(sortCriteria)
+    val genImpGraphConfig = impGraphConfigForProject(p).option
+    override def valueFor(a: Attr) = a match {
+      case Columns        => genColumns        map Columns       .apply
+      case Filter         => genFilter         map Filter        .apply
+      case FilterDead     => genFilterDead     map FilterDead    .apply
+      case Name           => genName           map Name          .apply
+      case Order          => genSortCriteria   map Order         .apply
+      case ImpGraphConfig => genImpGraphConfig map ImpGraphConfig.apply
     }
   }
 
@@ -964,14 +985,27 @@ final class ApplicableEventGen(curState: State, config: RandomEventStreamConfig)
   def genProjectNameSet: Gen[ProjectNameSet] =
     RandomData.projectName.map(Some(_).filter(_ !=* p.name)).optionGet map ProjectNameSet
 
-  def genSavedViewCreate: Gen[SavedViewCreate] =
-      Gen.apply6(SavedViewCreate)(
+  def genSavedViewCreateV1: Gen[SavedViewCreateV1] =
+      Gen.apply6(SavedViewCreateV1)(
         nextSavedViewId,
         savedViewGD.genName,
         savedViewGD.genColumns,
         savedViewGD.genSortCriteria,
         savedViewGD.genFilterDead,
         savedViewGD.genFilter)
+
+  def genSavedViewCreate: Gen[SavedViewCreate] =
+      Gen.apply7(SavedViewCreate)(
+        nextSavedViewId,
+        savedViewGD.genName,
+        savedViewGD.genColumns,
+        savedViewGD.genSortCriteria,
+        savedViewGD.genFilterDead,
+        savedViewGD.genFilter,
+        savedViewGD.genImpGraphConfig)
+
+  def genSavedViewUpdateV1: Option[Gen[SavedViewUpdateV1]] =
+    savedViewId.map(Gen.apply2(SavedViewUpdateV1)(_, savedViewGDv1.nonEmptyValues))
 
   def genSavedViewUpdate: Option[Gen[SavedViewUpdate]] =
     savedViewId.map(Gen.apply2(SavedViewUpdate)(_, savedViewGD.nonEmptyValues))
@@ -1065,6 +1099,8 @@ final class ApplicableEventGen(curState: State, config: RandomEventStreamConfig)
       case _: FieldCustomTagUpdateV1  => EventName("FieldCustomTagUpdateV1" ) -> genFieldCustomTagUpdateV1
       case _: FieldCustomTextCreateV1 => EventName("FieldCustomTextCreateV1") -> genFieldCustomTextCreateV1
       case _: FieldCustomTextUpdateV1 => EventName("FieldCustomTextUpdateV1") -> genFieldCustomTextUpdateV1
+      case _: SavedViewCreateV1       => EventName("SavedViewCreateV1"      ) -> genSavedViewCreateV1
+      case _: SavedViewUpdateV1       => EventName("SavedViewUpdateV1"      ) -> genSavedViewUpdateV1
     }
 
   private val possibleEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[Event]])] = {

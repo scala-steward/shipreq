@@ -83,6 +83,8 @@ object EventSerialisation {
     case e: FieldCustomTagUpdateV1  => (TypeFieldCustomTagUpdateV1 , e.asJson)
     case e: FieldCustomTextCreateV1 => (TypeFieldCustomTextCreateV1, e.asJson)
     case e: FieldCustomTextUpdateV1 => (TypeFieldCustomTextUpdateV1, e.asJson)
+    case e: SavedViewCreateV1       => (TypeSavedViewCreateV1      , e.asJson)
+    case e: SavedViewUpdateV1       => (TypeSavedViewUpdateV1      , e.asJson)
   }
 
   val encodeActiveOrRetired: Event => (Short, Json) = {
@@ -156,9 +158,11 @@ object EventSerialisation {
       case TypeReqImplicationsPatch    => parse[ReqImplicationsPatch]
       case TypeReqsDelete              => parse[ReqsDelete]
       case TypeReqTagsPatch            => parse[ReqTagsPatch]
+      case TypeSavedViewCreateV1       => parse[SavedViewCreateV1]
       case TypeSavedViewCreate         => parse[SavedViewCreate]
       case TypeSavedViewDefaultSet     => parse[SavedViewDefaultSet]
       case TypeSavedViewDelete         => parse[SavedViewDelete]
+      case TypeSavedViewUpdateV1       => parse[SavedViewUpdateV1]
       case TypeSavedViewUpdate         => parse[SavedViewUpdate]
       case TypeTagDelete               => parse[TagDelete]
       case TypeTagGroupCreate          => parse[TagGroupCreate]

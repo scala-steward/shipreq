@@ -65,17 +65,30 @@ trait ApplyOtherEvent {
     private val ^ = SavedViewGD
     private val GD = GenericDataApp[SavedView](^)
 
-    private val updateColumns      = fieldUpdateFn(SavedView.columns)
-    private val updateFilter       = fieldUpdateFn(SavedView.filter)
-    private val updateFilterDead   = fieldUpdateFn(SavedView.filterDead)
-    private val updateOrder        = fieldUpdateFn(SavedView.order)
+    private val v1 = RetiredGenericData.SavedViewGDv1
+    private val GDv1 = GenericDataApp[SavedView](v1)
+
+    private val updateColumns        = fieldUpdateFn(SavedView.columns)
+    private val updateFilter         = fieldUpdateFn(SavedView.filter)
+    private val updateFilterDead     = fieldUpdateFn(SavedView.filterDead)
+    private val updateOrder          = fieldUpdateFn(SavedView.order)
+    private val updateImpGraphConfig = fieldUpdateFn(SavedView.impGraphConfig)
+
+    private val updateValuesV1 = GDv1.updateEachValue {
+      case v: v1.ValueForName       => sv => validateName(Some(sv.id), v.value).map(SavedView.name.set(_)(sv))
+      case v: v1.ValueForColumns    => updateColumns   (v.value)
+      case v: v1.ValueForFilter     => updateFilter    (v.value)
+      case v: v1.ValueForFilterDead => updateFilterDead(v.value)
+      case v: v1.ValueForOrder      => updateOrder     (v.value)
+    }
 
     private val updateValues = GD.updateEachValue {
-      case v: ^.ValueForName       => sv => validateName(Some(sv.id), v.value).map(SavedView.name.set(_)(sv))
-      case v: ^.ValueForColumns    => updateColumns   (v.value)
-      case v: ^.ValueForFilter     => updateFilter    (v.value)
-      case v: ^.ValueForFilterDead => updateFilterDead(v.value)
-      case v: ^.ValueForOrder      => updateOrder     (v.value)
+      case v: ^.ValueForName           => sv => validateName(Some(sv.id), v.value).map(SavedView.name.set(_)(sv))
+      case v: ^.ValueForColumns        => updateColumns       (v.value)
+      case v: ^.ValueForFilter         => updateFilter        (v.value)
+      case v: ^.ValueForFilterDead     => updateFilterDead    (v.value)
+      case v: ^.ValueForOrder          => updateOrder         (v.value)
+      case v: ^.ValueForImpGraphConfig => updateImpGraphConfig(v.value)
     }
 
     private val updateIdCeiling = updateIdCeilingFn(IdCeilings.savedView)
@@ -89,6 +102,17 @@ trait ApplyOtherEvent {
           val validate = validateI(SavedView.Name.validator(state))(_.value)
           validate(newName)
         }
+
+    def applyCreate(e: SavedViewCreateV1): Eval[Unit] =
+      applyCreate(SavedViewCreate(
+        id             = e.id,
+        name           = e.name,
+        columns        = e.columns,
+        order          = e.order,
+        filterDead     = e.filterDead,
+        filter         = e.filter,
+        impGraphConfig = None,
+      ))
 
     def applyCreate(e: SavedViewCreate): Eval[Unit] = {
 
@@ -120,6 +144,10 @@ trait ApplyOtherEvent {
     }
 
     private def notFound(id: SavedView.Id) = s"${show(id)} not found."
+
+    def applyUpdate(e: SavedViewUpdateV1): Eval[Unit] =
+      optionalModEval(Project.savedView(e.id), notFound(e.id))(
+        updateValuesV1(e.vs))
 
     def applyUpdate(e: SavedViewUpdate): Eval[Unit] =
       optionalModEval(Project.savedView(e.id), notFound(e.id))(

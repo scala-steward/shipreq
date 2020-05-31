@@ -20,10 +20,11 @@ import shipreq.webapp.base.validation.{CommonValidation => V, _}
 final case class SavedView(id: SavedView.Id, name: SavedView.Name, view: View)
 
 object SavedView {
-  val columns    = view ^|-> View.columns
-  val order      = view ^|-> View.order
-  val filterDead = view ^|-> View.filterDead
-  val filter     = view ^|-> View.filter
+  val columns        = view ^|-> View.columns
+  val order          = view ^|-> View.order
+  val filterDead     = view ^|-> View.filterDead
+  val filter         = view ^|-> View.filter
+  val impGraphConfig = view ^|-> View.impGraphConfig
 
   final case class Id(value: Int) extends TaggedInt
 

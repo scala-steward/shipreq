@@ -106,8 +106,9 @@ object ApplyEventTestFns {
       case r: ContentRestore =>
         activeRCGs += r.codeGroups.size
 
-      case _: SavedViewCreate => savedViews += 1
-      case _: SavedViewDelete => savedViews -= 1
+      case _: SavedViewCreate   => savedViews += 1
+      case _: SavedViewCreateV1 => savedViews += 1
+      case _: SavedViewDelete   => savedViews -= 1
 
       case _: ManualIssueCreate => manualIssues += 1
       case _: ManualIssueDelete => manualIssues -= 1
@@ -144,6 +145,7 @@ object ApplyEventTestFns {
          | _: ReqImplicationsPatch
          | _: ReqTagsPatch
          | _: SavedViewDefaultSet
+         | _: SavedViewUpdateV1
          | _: SavedViewUpdate
          | _: TagDelete
          | _: TagGroupUpdate

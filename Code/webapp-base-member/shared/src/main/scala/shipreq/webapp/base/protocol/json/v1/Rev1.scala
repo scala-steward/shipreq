@@ -764,8 +764,8 @@ object Rev1 {
     codecNonEmptyMono[Values]
   }
 
-  private[v1] implicit lazy val codecSavedViewGD: JsonCodec[SavedViewGD.NonEmptyValues] = {
-    import SavedViewGD._
+  private[v1] implicit lazy val codecSavedViewGDv1: JsonCodec[SavedViewGDv1.NonEmptyValues] = {
+    import SavedViewGDv1._
 
     implicit val codecValueForColumns    = JsonCodec.xmap(ValueForColumns   .apply)(_.value)
     implicit val codecValueForFilter     = JsonCodec.xmap(ValueForFilter    .apply)(_.value)
@@ -787,6 +787,38 @@ object Rev1 {
       case a: ValueForFilterDead => Json.obj("filterDead" -> a.asJson)
       case a: ValueForName       => Json.obj("name"       -> a.asJson)
       case a: ValueForOrder      => Json.obj("order"      -> a.asJson)
+    }
+
+    implicit val values: JsonCodec[Values] = codecIMap(emptyValues)
+    codecNonEmptyMono[Values]
+  }
+
+  private[v1] implicit lazy val codecSavedViewGD: JsonCodec[SavedViewGD.NonEmptyValues] = {
+    import SavedViewGD._
+
+    implicit val codecValueForColumns        = JsonCodec.xmap(ValueForColumns       .apply)(_.value)
+    implicit val codecValueForFilter         = JsonCodec.xmap(ValueForFilter        .apply)(_.value)
+    implicit val codecValueForFilterDead     = JsonCodec.xmap(ValueForFilterDead    .apply)(_.value)
+    implicit val codecValueForName           = JsonCodec.xmap(ValueForName          .apply)(_.value)
+    implicit val codecValueForOrder          = JsonCodec.xmap(ValueForOrder         .apply)(_.value)
+    implicit val codecValueForImpGraphConfig = JsonCodec.xmap(ValueForImpGraphConfig.apply)(_.value)
+
+    implicit val decoderValue: Decoder[Value] = decodeSumBySoleKey {
+      case ("columns"       , c) => c.as[ValueForColumns]
+      case ("filter"        , c) => c.as[ValueForFilter]
+      case ("filterDead"    , c) => c.as[ValueForFilterDead]
+      case ("name"          , c) => c.as[ValueForName]
+      case ("order"         , c) => c.as[ValueForOrder]
+      case ("impGraphConfig", c) => c.as[ValueForImpGraphConfig]
+    }
+
+    implicit val encoderValue: Encoder[Value] = Encoder.instance {
+      case a: ValueForColumns        => Json.obj("columns"        -> a.asJson)
+      case a: ValueForFilter         => Json.obj("filter"         -> a.asJson)
+      case a: ValueForFilterDead     => Json.obj("filterDead"     -> a.asJson)
+      case a: ValueForName           => Json.obj("name"           -> a.asJson)
+      case a: ValueForOrder          => Json.obj("order"          -> a.asJson)
+      case a: ValueForImpGraphConfig => Json.obj("impGraphConfig" -> a.asJson)
     }
 
     implicit val values: JsonCodec[Values] = codecIMap(emptyValues)
@@ -818,11 +850,25 @@ object Rev1 {
     implicit val encoderEventCustomIssueTypeUpdate: Encoder[Event.CustomIssueTypeUpdate] =
       Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
 
+    implicit val decoderEventSavedViewCreateV1: Decoder[Event.SavedViewCreateV1] =
+      Decoder.forProduct6("id", "name", "columns", "order", "filterDead", "filter")(Event.SavedViewCreateV1.apply)
+
+    implicit val encoderEventSavedViewCreateV1: Encoder[Event.SavedViewCreateV1] =
+      Encoder.forProduct6("id", "name", "columns", "order", "filterDead", "filter")(a => (a.id, a.name, a.columns, a.order, a.filterDead, a.filter))
+
+    implicit val decoderEventSavedViewUpdateV1: Decoder[Event.SavedViewUpdateV1] =
+      Decoder.forProduct2("id", "values")(Event.SavedViewUpdateV1.apply)
+
+    implicit val encoderEventSavedViewUpdateV1: Encoder[Event.SavedViewUpdateV1] =
+      Encoder.forProduct2("id", "values")(a => (a.id, a.vs))
+
     implicit val decoderEventSavedViewCreate: Decoder[Event.SavedViewCreate] =
-      Decoder.forProduct6("id", "name", "columns", "order", "filterDead", "filter")(Event.SavedViewCreate.apply)
+      Decoder.forProduct7("id", "name", "columns", "order", "filterDead", "filter", "impGraphConfig")(
+        Event.SavedViewCreate.apply)
 
     implicit val encoderEventSavedViewCreate: Encoder[Event.SavedViewCreate] =
-      Encoder.forProduct6("id", "name", "columns", "order", "filterDead", "filter")(a => (a.id, a.name, a.columns, a.order, a.filterDead, a.filter))
+      Encoder.forProduct7("id", "name", "columns", "order", "filterDead", "filter", "impGraphConfig")(
+        a => (a.id, a.name, a.columns, a.order, a.filterDead, a.filter, a.impGraphConfig))
 
     implicit val decoderEventSavedViewUpdate: Decoder[Event.SavedViewUpdate] =
       Decoder.forProduct2("id", "values")(Event.SavedViewUpdate.apply)
@@ -998,10 +1044,12 @@ object Rev1 {
     case ("ReqImplicationsPatch"   , c) => c.as[Event.ReqImplicationsPatch]
     case ("ReqTagsPatch"           , c) => c.as[Event.ReqTagsPatch]
     case ("ReqsDelete"             , c) => c.as[Event.ReqsDelete]
-    case ("SavedViewCreate"        , c) => c.as[Event.SavedViewCreate]
+    case ("SavedViewCreate"        , c) => c.as[Event.SavedViewCreateV1]
+    case ("SavedViewCreate:2"      , c) => c.as[Event.SavedViewCreate]
     case ("SavedViewDefaultSet"    , c) => c.as[Event.SavedViewDefaultSet]
     case ("SavedViewDelete"        , c) => c.as[Event.SavedViewDelete]
-    case ("SavedViewUpdate"        , c) => c.as[Event.SavedViewUpdate]
+    case ("SavedViewUpdate"        , c) => c.as[Event.SavedViewUpdateV1]
+    case ("SavedViewUpdate:2"      , c) => c.as[Event.SavedViewUpdate]
     case ("TagDelete"              , c) => c.as[Event.TagDelete]
     case ("TagGroupCreate"         , c) => c.as[Event.TagGroupCreate]
     case ("TagGroupUpdate"         , c) => c.as[Event.TagGroupUpdate]
@@ -1067,10 +1115,12 @@ object Rev1 {
     case a: Event.ReqImplicationsPatch    => Json.obj("ReqImplicationsPatch"    -> a.asJson)
     case a: Event.ReqTagsPatch            => Json.obj("ReqTagsPatch"            -> a.asJson)
     case a: Event.ReqsDelete              => Json.obj("ReqsDelete"              -> a.asJson)
-    case a: Event.SavedViewCreate         => Json.obj("SavedViewCreate"         -> a.asJson)
+    case a: Event.SavedViewCreateV1       => Json.obj("SavedViewCreate"         -> a.asJson)
+    case a: Event.SavedViewCreate         => Json.obj("SavedViewCreate:2"       -> a.asJson)
     case a: Event.SavedViewDefaultSet     => Json.obj("SavedViewDefaultSet"     -> a.asJson)
     case a: Event.SavedViewDelete         => Json.obj("SavedViewDelete"         -> a.asJson)
-    case a: Event.SavedViewUpdate         => Json.obj("SavedViewUpdate"         -> a.asJson)
+    case a: Event.SavedViewUpdateV1       => Json.obj("SavedViewUpdate"         -> a.asJson)
+    case a: Event.SavedViewUpdate         => Json.obj("SavedViewUpdate:2"       -> a.asJson)
     case a: Event.TagDelete               => Json.obj("TagDelete"               -> a.asJson)
     case a: Event.TagGroupCreate          => Json.obj("TagGroupCreate"          -> a.asJson)
     case a: Event.TagGroupUpdate          => Json.obj("TagGroupUpdate"          -> a.asJson)
