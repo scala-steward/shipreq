@@ -1,5 +1,7 @@
 package shipreq.webapp.base.data.savedview
 
+import japgolly.microlibs.adt_macros.AdtMacros
+import japgolly.univeq.UnivEq
 import ImpGraphConfig._
 import shipreq.base.util.OptionalBoolFn
 import shipreq.webapp.base.data.{FilterDead, Project, Req, ReqId, TagGroupId}
@@ -18,22 +20,35 @@ object ImpGraphConfig {
       colours = Colours.ByReqType,
     )
 
-  sealed trait GraphDir
-  object GraphDir {
-    case object TopToBottom extends GraphDir
-    case object LeftToRight extends GraphDir
-  }
-
-  sealed trait Colours
-  object Colours {
-    case object ByReqType extends Colours
-    final case class ByTag(tagGroupId: TagGroupId) extends Colours
-  }
-
   def buildReqWhitelist(filterDead: FilterDead, filter: Option[CompiledFilter], p: Project): Option[Set[ReqId]] = {
     val fl = filterDead.filterFn.contramap[Req](_.live(p.config.reqTypes))
     val ff = OptionalBoolFn(filter.flatMap(_.req.value))
     val f  = fl && ff
     f.value.map(p.content.reqs.reqIterator().filter(_).map(_.id).toSet)
+  }
+
+  implicit def univEq: UnivEq[ImpGraphConfig] = UnivEq.derive
+
+  // ===================================================================================================================
+
+  sealed trait GraphDir
+
+  object GraphDir {
+    case object TopToBottom extends GraphDir
+    case object LeftToRight extends GraphDir
+
+    lazy val values = AdtMacros.adtValues[GraphDir]
+    implicit def univEq: UnivEq[GraphDir] = UnivEq.derive
+  }
+
+  // ===================================================================================================================
+
+  sealed trait Colours
+
+  object Colours {
+    case object ByReqType                          extends Colours
+    final case class ByTag(tagGroupId: TagGroupId) extends Colours
+
+    implicit def univEq: UnivEq[Colours] = UnivEq.derive
   }
 }

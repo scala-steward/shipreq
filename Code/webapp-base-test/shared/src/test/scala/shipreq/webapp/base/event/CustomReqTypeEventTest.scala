@@ -180,10 +180,11 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
         val p = assertPassP(createImpF1, createImpF2, createSV)
         val sv = p.savedViews.get.get(sv1).get
         assertEq(sv.view, View(
-          columns    = columnsAfter,
-          order      = sortCriteriaAfter,
-          filterDead = HideDead,
-          filter     = Some(filterAfter),
+          columns        = columnsAfter,
+          order          = sortCriteriaAfter,
+          filterDead     = HideDead,
+          filter         = Some(filterAfter),
+          impGraphConfig = None,
         ))
       }
 

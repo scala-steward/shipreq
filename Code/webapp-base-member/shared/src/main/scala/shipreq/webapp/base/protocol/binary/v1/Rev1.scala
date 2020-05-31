@@ -494,18 +494,33 @@ object Rev1 {
     implicit val picklerView: Pickler[View] =
       new Pickler[View] {
         override def pickle(a: View)(implicit state: PickleState): Unit = {
+          writeVersion(1) // v1.1
           state.pickle(a.columns)
           state.pickle(a.order)
           state.pickle(a.filterDead)
           state.pickle(a.filter)
+          state.pickle(a.impGraphConfig)
         }
-        override def unpickle(implicit state: UnpickleState): View = {
-          val columns    = state.unpickle[NonEmptyVector[Column]]
-          val order      = state.unpickle[SortCriteria]
-          val filterDead = state.unpickle[FilterDead]
-          val filter     = state.unpickle[Option[Filter.Valid]]
-          View(columns, order, filterDead, filter)
-        }
+        override def unpickle(implicit state: UnpickleState): View =
+          readByVersion(1) {
+
+            // v1.0
+            case 0 =>
+              val columns    = state.unpickle[NonEmptyVector[Column]]
+              val order      = state.unpickle[SortCriteria]
+              val filterDead = state.unpickle[FilterDead]
+              val filter     = state.unpickle[Option[Filter.Valid]]
+              View(columns, order, filterDead, filter, None)
+
+            // v1.1
+            case 1 =>
+              val columns        = state.unpickle[NonEmptyVector[Column]]
+              val order          = state.unpickle[SortCriteria]
+              val filterDead     = state.unpickle[FilterDead]
+              val filter         = state.unpickle[Option[Filter.Valid]]
+              val impGraphConfig = state.unpickle[Option[ImpGraphConfig]]
+              View(columns, order, filterDead, filter, impGraphConfig)
+          }
       }
 
     implicit val picklerSavedView: Pickler[SavedView] =

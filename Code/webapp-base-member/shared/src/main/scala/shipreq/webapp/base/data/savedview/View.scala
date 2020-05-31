@@ -8,10 +8,11 @@ import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.filter.Filter.Implicits._
 
 @Lenses
-final case class View(columns   : NonEmptyVector[Column],
-                      order     : SortCriteria,
-                      filterDead: FilterDead,
-                      filter    : Option[Filter.Valid]) {
+final case class View(columns       : NonEmptyVector[Column],
+                      order         : SortCriteria,
+                      filterDead    : FilterDead,
+                      filter        : Option[Filter.Valid],
+                      impGraphConfig: Option[ImpGraphConfig]) {
 
   def referencesColumn(c: Column): Boolean =
     columns.exists(_ ==* c) ||
@@ -55,7 +56,7 @@ final case class View(columns   : NonEmptyVector[Column],
     })
     val newOrder = order.whitelistColumns(icols)
 
-    View(newCols, newOrder, filterDead, filter)
+    View(newCols, newOrder, filterDead, filter, impGraphConfig)
   }
 
   def filterByFilterDead(l: Column => Live): View =
@@ -108,6 +109,6 @@ object View {
       Vector.empty, // (Column.Code / SortMethod.AscThenBlanks, Column.Title / SortMethod.BlanksThenAsc),
       SortCriteria.defaultConclusive)
 
-    View(cols, order, fd, None)
+    View(cols, order, fd, None, None)
   }
 }

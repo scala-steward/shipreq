@@ -1,5 +1,6 @@
 package shipreq.webapp.base
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.adt_macros.AdtMacros._
 import japgolly.microlibs.nonempty._
 import japgolly.microlibs.recursion._
@@ -1579,13 +1580,42 @@ object RandomData {
       } yield SavedView.Name.validator.stateless.unnamed(d)
         .valueOr(e => sys error s"$e: '${SavedView.Name.validator.stateless.corrector.full(d)}' ← '$d'")
 
+    val impGraphConfigGraphDir: Gen[ImpGraphConfig.GraphDir] =
+      Gen.chooseNE(ImpGraphConfig.GraphDir.values)
+
+    def genTagGroupIdFromProject(p: Project): Option[Gen[TagGroupId]] = {
+      val tgs = p.config.tags.tagGroupIterator().map(_.id).toVector
+      NonEmptyVector.maybe(tgs, Option.empty[Gen[TagGroupId]])(x => Some(Gen.chooseNE(x)))
+    }
+
+    def impGraphConfigColours(p: Project): Gen[ImpGraphConfig.Colours] =
+      impGraphConfigColours(genTagGroupIdFromProject(p))
+
+    def impGraphConfigColours(genTagGroupId: Option[Gen[TagGroupId]]): Gen[ImpGraphConfig.Colours] = {
+      var gens: Vector[Gen[ImpGraphConfig.Colours]] = Vector.empty
+
+      gens :+= Gen.pure(ImpGraphConfig.Colours.ByReqType)
+
+      for (g <- genTagGroupId)
+        gens :+= g.map(ImpGraphConfig.Colours.ByTag)
+
+      Gen.chooseGen_!(gens)
+    }
+
+    def impGraphConfig(p: Project): Gen[ImpGraphConfig] =
+      impGraphConfig(genTagGroupIdFromProject(p))
+
+    def impGraphConfig(genTagGroupId: Option[Gen[TagGroupId]]): Gen[ImpGraphConfig] =
+      Gen.apply2(ImpGraphConfig.apply)(impGraphConfigGraphDir, impGraphConfigColours(genTagGroupId))
+
     def viewForProject(p: Project): Gen[View] =
       for {
         d <- filterDead
         c <- visibleColumns(p)
         o <- sortCriteria(c)
         f <- filter.valid.forProject(p).option
-      } yield View(c, o, d, f)
+        x <- impGraphConfig(p).option
+      } yield View(c, o, d, f, x)
 
     def savedViewForProject(p: Project): Gen[SavedView] =
       for {

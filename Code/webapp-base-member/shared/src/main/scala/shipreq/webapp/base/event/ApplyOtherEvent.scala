@@ -102,15 +102,19 @@ trait ApplyOtherEvent {
         case Some(svs) => Some(svs + sv)
       }
 
+      def createSV(name: SavedView.Name) =
+        SavedView(e.id, name, View(
+          filterDead     = e.filterDead,
+          columns        = e.columns,
+          order          = e.order,
+          filter         = e.filter,
+          impGraphConfig = None,
+        ))
+
       for {
         _    <- whenUntrusted(validateId)
         name <- validateName(None, e.name)
-        sv   = SavedView(e.id, name, View(
-                 filterDead = e.filterDead,
-                 columns    = e.columns,
-                 order      = e.order,
-                 filter     = e.filter))
-        _    <- Project.savedViews.modify(add(sv))
+        _    <- Project.savedViews.modify(add(createSV(name)))
         _    <- updateIdCeiling(e.id)
       } yield ()
     }

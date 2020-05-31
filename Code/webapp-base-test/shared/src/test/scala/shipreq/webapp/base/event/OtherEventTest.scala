@@ -31,10 +31,12 @@ object OtherEventTest extends TestSuite {
     SavedView.Id(1),
     SavedView.Name("View1"),
     View(
-      filterDead = HideDead,
-      columns    = Column.mandatory.toNEV,
-      order      = SortCriteria.byPubidOnly,
-      filter     = None))
+      filterDead     = HideDead,
+      columns        = Column.mandatory.toNEV,
+      order          = SortCriteria.byPubidOnly,
+      filter         = None,
+      impGraphConfig = None,
+    ))
 
   private val SV2 = SavedView(
     SavedView.Id(2),
@@ -57,16 +59,20 @@ object OtherEventTest extends TestSuite {
           regex("[a-z]"),
           reqType(fr),
           reqType(StaticReqType.UseCase))
-      }))
+      },
+      impGraphConfig = None,
+    ))
 
   private val SV3 = SavedView(
     SavedView.Id(3),
     SavedView.Name("Three!"),
     View(
-      filterDead = ShowDead,
-      columns    = Column.builtInValues,
-      order      = SortCriteria(Vector(Column.Title / AscThenBlanks), Column.Pubid / Asc),
-      filter     = None))
+      filterDead     = ShowDead,
+      columns        = Column.builtInValues,
+      order          = SortCriteria(Vector(Column.Title / AscThenBlanks), Column.Pubid / Asc),
+      filter         = None,
+      impGraphConfig = None,
+    ))
 
   private val badColImp = Column.CustomField(CustomField.Implication.Id(5000))
   private val badColTag = Column.CustomField(CustomField.Tag.Id(5000))

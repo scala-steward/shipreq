@@ -137,5 +137,5 @@ Phase 3A
 v2.1
 ========================================================================================================================
 
-* add Option[ImpGraphConfig] to saved views
 * ColourByTag -- need to handle tags being deleted
+* change all multi-ver binary codecs to use `writeVersion` and `readByVersion`

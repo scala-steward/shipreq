@@ -366,7 +366,7 @@ object ProjectSpaProtocolsTest extends TestSuite {
               NonEmptyVector(Column.Pubid, Column.Title, Column.OtherTags, Column.CustomField(CustomField.Tag.Id(4)),
                 Column.Implications(Forwards), Column.CustomField(CustomField.Tag.Id(3)), Column.Implications(Backwards),
                 Column.CustomField(CustomField.Implication.Id(7)), Column.CustomField(CustomField.Text.Id(1))),
-              SortCriteria(Vector(), SortCriterion.Conclusive(Column.Pubid, Asc)), HideDead, None))))
+              SortCriteria(Vector(), SortCriterion.Conclusive(Column.Pubid, Asc)), HideDead, None, None))))
             assertRequest(bin, expect)
           }
         }

@@ -23,28 +23,34 @@ object SavedViewLogicTest extends TestSuite {
     SavedView.Id(1),
     SavedView.Name("B!!"),
     View(
-      columns    = Column.mandatory.toNEV,
-      order      = SortCriteria.byPubidOnly,
-      filterDead = HideDead,
-      filter     = None))
+      columns        = Column.mandatory.toNEV,
+      order          = SortCriteria.byPubidOnly,
+      filterDead     = HideDead,
+      filter         = None,
+      impGraphConfig = None,
+    ))
 
   val SVa = SavedView(
     SavedView.Id(2),
     SavedView.Name("Aah"),
     View(
-      columns    = Column.builtInValues.reverse,
-      order      = SortCriteria(Vector(Column.Implications(Forwards) / AscThenBlanks), Column.Pubid / Desc),
-      filterDead = ShowDead,
-      filter     = Some(Filter.Valid.text("ah"))))
+      columns        = Column.builtInValues.reverse,
+      order          = SortCriteria(Vector(Column.Implications(Forwards) / AscThenBlanks), Column.Pubid / Desc),
+      filterDead     = ShowDead,
+      filter         = Some(Filter.Valid.text("ah")),
+      impGraphConfig = None,
+    ))
 
   val SVc = SavedView(
     SavedView.Id(3),
     SavedView.Name("CC's"),
     View(
-      columns    = Column.builtInValues,
-      order      = SortCriteria(Vector(Column.Title / AscThenBlanks), Column.Pubid / Asc),
-      filterDead = ShowDead,
-      filter     = None))
+      columns        = Column.builtInValues,
+      order          = SortCriteria(Vector(Column.Title / AscThenBlanks), Column.Pubid / Asc),
+      filterDead     = ShowDead,
+      filter         = None,
+      impGraphConfig = None,
+    ))
 
   val SVs = SavedViews(SVb) + SVa + SVc
   val `SVs-A` = SavedViews(SVb) + SVc

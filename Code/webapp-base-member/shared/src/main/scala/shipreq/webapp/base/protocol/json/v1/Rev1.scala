@@ -200,10 +200,24 @@ object Rev1 {
       Encoder.forProduct2("graphDir", "colours")(a => (a.graphDir, a.colours))
 
     implicit val decoderView: Decoder[View] =
-      Decoder.forProduct4("columns", "order", "filterDead", "filter")(View.apply)
+      Decoder.instance { c =>
+        for {
+          columns        <- c.get[NonEmptyVector[Column]]("columns")
+          order          <- c.get[SortCriteria          ]("order")
+          filterDead     <- c.get[FilterDead            ]("filterDead")
+          filter         <- c.get[Option[Filter.Valid]  ]("filter")
+          impGraphConfig <- c.get[Option[ImpGraphConfig]]("impGraphConfig")
+        } yield View(columns, order, filterDead, filter, impGraphConfig)
+      }
 
     implicit val encoderView: Encoder[View] =
-      Encoder.forProduct4("columns", "order", "filterDead", "filter")(a => (a.columns, a.order, a.filterDead, a.filter))
+      Encoder.instance(value => Json.obj(
+        "columns"        -> value.columns       .asJson,
+        "order"          -> value.order         .asJson,
+        "filterDead"     -> value.filterDead    .asJson,
+        "filter"         -> value.filter        .asJson,
+        "impGraphConfig" -> value.impGraphConfig.asJson,
+      ).dropNullValues)
 
     implicit val decoderSavedView: Decoder[SavedView] =
       Decoder.forProduct3("id", "name", "view")(SavedView.apply)

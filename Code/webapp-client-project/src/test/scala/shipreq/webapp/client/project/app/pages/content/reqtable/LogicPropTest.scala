@@ -143,7 +143,7 @@ object LogicPropTest extends TestSuite {
       if (v isVisible c)
         gathered
       else
-        Logic.gather(p, View(columnState(p, c), sc, fd, v.filter), plainText, textSearch, filterCompiler)
+        Logic.gather(p, View(columnState(p, c), sc, fd, v.filter, None), plainText, textSearch, filterCompiler)
 
     def sortCriAndGather(c: SC.Inconclusive) =
       sortCri(c).mapStrengthR(gatherOn(c.column, _))

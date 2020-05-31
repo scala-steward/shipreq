@@ -303,13 +303,13 @@ object ReqTableTestDsl {
   val showBuiltInColumnsSortedByPubid: *.Actions =
     setViewSettings("Show built-in columns sorted by pubid.", ShowDead, (p, s) => {
       val cs = selectVisibleColumns(Column.builtInValues.whole.contains, p, ShowDead)
-      View(cs, SortCriteria.byPubidOnly, s.filterDead, None)
+      View(cs, SortCriteria.byPubidOnly, s.filterDead, None, None)
     })
 
   val showMandatoryColumnsSortedByPubid: *.Actions =
     setViewSettings("Show mandatory columns sorted by pubid.", HideDead, (p, s) => {
       val cs = selectVisibleColumns(Column.isMandatory, p, HideDead)
-      View(cs, SortCriteria.byPubidOnly, s.filterDead, None)
+      View(cs, SortCriteria.byPubidOnly, s.filterDead, None, None)
     })
 
   def showHideColumn(columnName: String): *.Actions =
