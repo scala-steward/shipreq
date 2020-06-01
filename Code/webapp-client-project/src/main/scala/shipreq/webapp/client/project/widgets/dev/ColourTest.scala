@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.widgets
+package shipreq.webapp.client.project.widgets.dev
 
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.webapp.base.data.Colour
