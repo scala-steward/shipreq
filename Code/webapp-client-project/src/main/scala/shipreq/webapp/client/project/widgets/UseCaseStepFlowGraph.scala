@@ -14,7 +14,7 @@ object UseCaseStepFlowGraph {
   final case class Props(id       : UseCaseId,
                          project  : Project,
                          ctx      : ProjectText.Context,
-                         webWorker: WebWorkerClient) extends HasWebWorker {
+                         webWorker: WebWorkerClient.Instance) extends HasWebWorker {
     @inline def render = Component(this)
   }
 

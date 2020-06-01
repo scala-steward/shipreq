@@ -40,7 +40,7 @@ object ReqDetail {
 
   final case class StaticProps(updateIO             : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, VerifiedEvent.Seq],
                                reqDetailRC          : RouterCtl[ExternalPubid],
-                               webWorker            : WebWorkerClient,
+                               webWorker            : WebWorkerClient.Instance,
                                pxProject            : Px[Project],
                                pxViewReqDataCache   : Px[ViewReqDataCache],
                                pxTextSearch         : Px[TextSearch],

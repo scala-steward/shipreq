@@ -25,7 +25,7 @@ import shipreq.webapp.client.ww.api.WebWorkerCmd.picklerErrorMsgOrSvg
 object GraphComponent {
 
   abstract class HasWebWorker {
-    val webWorker: WebWorkerClient
+    val webWorker: WebWorkerClient.Instance
   }
 
   /**

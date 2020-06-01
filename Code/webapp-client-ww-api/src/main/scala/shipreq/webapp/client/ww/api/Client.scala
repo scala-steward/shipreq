@@ -1,6 +1,6 @@
 package shipreq.webapp.client.ww.api
 
-import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
+import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo, Reusability}
 import japgolly.univeq._
 import org.scalajs.dom.window.navigator
 import scalajs.LinkingInfo.productionMode
@@ -20,6 +20,9 @@ object Client {
     import Codec.{default => codec}
     apply(codec)(interface(codec, worker, _), OnError.logToConsole)
   }
+
+  implicit def reusability[Cmd[_], R[_]]: Reusability[Client[Cmd, R]] =
+    Reusability.byRef
 
   // ===================================================================================================================
 

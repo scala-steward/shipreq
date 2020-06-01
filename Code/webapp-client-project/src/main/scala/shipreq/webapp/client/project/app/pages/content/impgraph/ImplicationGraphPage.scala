@@ -23,7 +23,7 @@ object ImplicationGraphPage {
   final case class Props(project         : Project,
                          plainText       : PlainText.ForProject.AnyCtx,
                          reqDetailRC     : RouterCtl[ExternalPubid],
-                         webWorker       : WebWorkerClient,
+                         webWorker       : WebWorkerClient.Instance,
                          savedViewFeature: SavedViewFeature,
                          setFilterDead   : Reusable[StateSnapshot.SetFn[FilterDead]]) {
     @inline def render: VdomElement = Component(this)

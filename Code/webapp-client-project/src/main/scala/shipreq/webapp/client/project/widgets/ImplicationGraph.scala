@@ -23,7 +23,7 @@ object ImplicationGraph {
     val reqTypes   : ReqTypes
     val plainText  : PlainText.ForProject.AnyCtx
     val reqDetailRC: RouterCtl[ExternalPubid]
-    val webWorker  : WebWorkerClient
+    val webWorker  : WebWorkerClient.Instance
 
     def isEmpty: Boolean
 
@@ -39,7 +39,7 @@ object ImplicationGraph {
                               reqTypes   : ReqTypes,
                               plainText  : PlainText.ForProject.AnyCtx,
                               reqDetailRC: RouterCtl[ExternalPubid],
-                              webWorker  : WebWorkerClient) extends Props {
+                              webWorker  : WebWorkerClient.Instance) extends Props {
 
       override def isEmpty: Boolean =
         false
@@ -51,7 +51,7 @@ object ImplicationGraph {
                          project     : Project,
                          plainText   : PlainText.ForProject.AnyCtx,
                          reqDetailRC : RouterCtl[ExternalPubid],
-                         webWorker   : WebWorkerClient) extends Props {
+                         webWorker   : WebWorkerClient.Instance) extends Props {
 
       override val imps = project.content.implications
       override val reqs = project.content.reqs
