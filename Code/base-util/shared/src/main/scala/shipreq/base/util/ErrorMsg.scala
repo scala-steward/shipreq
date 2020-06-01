@@ -10,6 +10,15 @@ final case class ErrorMsg(value: String) {
 
   def throwException(): Nothing =
     throw exception
+
+  def modMsg(f: String => String): ErrorMsg = {
+    val e = ErrorMsg(f(value))
+    e.exception.setStackTrace(exception.getStackTrace)
+    e
+  }
+
+  def withPrefix(s: String): ErrorMsg =
+    modMsg(s + _)
 }
 
 object ErrorMsg {

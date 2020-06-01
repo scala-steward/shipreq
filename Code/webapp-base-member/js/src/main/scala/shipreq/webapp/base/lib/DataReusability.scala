@@ -8,6 +8,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
+import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd}
 import shipreq.webapp.base.filter.{CompiledFilter, Filter}
 import shipreq.webapp.base.filter.Filter.Implicits._
 import shipreq.webapp.base.issue.{Issue, Issues}
@@ -71,6 +72,15 @@ abstract class DataReusability extends BaseReusability {
 
   implicit def reusabilityNaTags: Reusability[NaTags] =
     Reusability.byRef || Reusability.by(_.set)
+
+  implicit def reusabilityEventOrd: Reusability[EventOrd] =
+    Reusability.byUnivEq
+
+  implicit def reusabilityEventOrdLatest: Reusability[EventOrd.Latest] =
+    Reusability.byUnivEq
+
+  implicit def reusabilityProjectAndOrd: Reusability[ProjectAndOrd] =
+    Reusability.byRef || Reusability.derive
 
   implicit def reusabilityProject: Reusability[Project] =
     Reusability.byRef

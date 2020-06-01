@@ -11,7 +11,7 @@ import scala.util.{Failure, Success}
 import scalaz.{-\/, \/-}
 import shipreq.base.util.{ErrorMsg, JsTimers}
 import shipreq.webapp.base.data.{Project, ProjectId, ProjectMetaData}
-import shipreq.webapp.base.event.{EventOrd, VerifiedEvent}
+import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
@@ -40,7 +40,7 @@ abstract class Global(onFirstLoad  : (Global, InitAppData) => Callback,
 
   final protected def unsafeSetState(s: State): Unit = {
     _state = s
-    _pxProject.refresh()
+    _pxProjectAndOrd.refresh()
   }
 
   final val cbProjectMetaData: CallbackTo[ProjectMetaData] =
@@ -52,16 +52,19 @@ abstract class Global(onFirstLoad  : (Global, InitAppData) => Callback,
   final val pxProjectMetaData: Px[ProjectMetaData] =
     Px.callback(cbProjectMetaData).withReuse.autoRefresh
 
-  final private val _pxProject: Px.ThunkM[Project] = {
+  final private val _pxProjectAndOrd: Px.ThunkM[ProjectAndOrd] = {
     def f() = unsafeState match {
-      case s: State.Active  => s.projectState.project
-      case _: State.Loading => Project.empty
+      case s: State.Active  => s.projectState.projectAndOrd
+      case _: State.Loading => ProjectAndOrd.empty
     }
     Px(f()).withReuse.manualRefresh
   }
 
+  final val pxProjectAndOrd: Px[ProjectAndOrd] =
+    _pxProjectAndOrd
+
   final val pxProject: Px[Project] =
-    _pxProject
+    _pxProjectAndOrd.map(_.project)
 
   final def unsafeProject(): Project =
     pxProject.value()

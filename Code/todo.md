@@ -137,6 +137,7 @@ Phase 3A
 v2.1
 ========================================================================================================================
 
+* any more cases of Instant.now() being used with ProjectMetaData?
 * ColourByTag -- need to handle tags being deleted
 * change all multi-ver binary codecs to use `writeVersion` and `readByVersion`
 * add new protocol safety tests after ImpGraphConfig is finished

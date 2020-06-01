@@ -11,7 +11,7 @@ import scalaz.{-\/, \/-}
 import shipreq.base.util.{Allow, ErrorMsg}
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data.{FilterDead, HideDead, Project, ProjectConfig, ReqId}
-import shipreq.webapp.base.event.EventSeqSummary
+import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.lib.{ConfirmJs, PromptJs}
@@ -29,10 +29,11 @@ import shipreq.webapp.client.project.app.pages.content.reqtable.ReqTablePage
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.Usage
-import shipreq.webapp.client.project.widgets.{ImplicationGraph, ProjectWidgets, ViewReqCache, ViewReqDataCache}
+import shipreq.webapp.client.project.widgets.{ProjectWidgets, ViewReqCache, ViewReqDataCache}
 import AsyncFeature.Implicits._
 import LoadedRoot._
 import Routes.{Page, RouterCtl}
+import shipreq.webapp.client.ww.api.WebWorkerCmd
 
 object LoadedRoot {
   case class Props(page: Page, routerCtl: RouterCtl)
@@ -43,7 +44,8 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData,
                        confirmJs   : ConfirmJs,
                        promptJs    : PromptJs) {
 
-  val pxProject = global.pxProject
+  val pxProjectAndOrd = global.pxProjectAndOrd
+  val pxProject       = global.pxProject
   def unsafeProject() = global.unsafeProject()
 
   private val stateLensFilterDead =
@@ -295,12 +297,13 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData,
       pxReqDetailReqProps.value().get(s)
     }
 
-    def ww = WebWorkerClient.Instance
+    private val webWorkerClient: WebWorkerClient.Instance =
+      WebWorkerClient.Instance
 
     private val reqDetail = ReqDetail(ReqDetail.StaticProps(
       sspUpdateContent,
       reqDetailRC,
-      ww,
+      webWorkerClient,
       pxProject,
       pxViewReqDataCache,
       pxTextSearch,
@@ -456,7 +459,7 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData,
             project          = project,
             plainText        = pxPlainText.value(),
             reqDetailRC      = reqDetailRC,
-            webWorker        = ww,
+            webWorker        = webWorkerClient,
             savedViewFeature = savedViewFeature,
             setFilterDead    = setFilterDead
           ).render
@@ -479,8 +482,35 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData,
       ).render
     }
 
-    val onProjectChange: Callback = // TODO I don't like this
-      $.forceUpdate
+    def onMount: Callback = {
+      val sendProjectToWebWorker: Callback =
+        pxProjectAndOrd.toCallback.asAsyncCallback
+          .flatMap(p => webWorkerClient.post(WebWorkerCmd.SetProject(p)))
+          .toCallback
+
+      val installHooks: Callback =
+        Callback {
+          window.onbeforeunload = event => {
+            val u = pxUnsavedChanges.value()
+            if (u.nonEmpty) {
+              event.preventDefault()
+              event.returnValue = ""
+              ""
+            } else
+              ()
+          }
+        }
+
+      sendProjectToWebWorker >> installHooks
+    }
+
+    def onProjectChange(u: ProjectState.Update): Callback = {
+      val updateWebWorker: Callback =
+        Callback.traverseOption(VerifiedEvent.NonEmptySeq.maybe(u.newlyAppliedEvents))(ves =>
+          webWorkerClient.post(WebWorkerCmd.UpdateProject(ves)).toCallback)
+
+      updateWebWorker >> $.forceUpdate
+    }
 
     def onConnectionStatusChange(c: ConnectionStatus): Callback = {
       val msg = c match {
@@ -489,26 +519,13 @@ final class LoadedRoot(initPageData: ProjectSpaEntryPoint.InitData,
       }
       $.forceUpdate(toast.add(msg))
     }
-
-    val installHooks: Callback =
-      Callback {
-        window.onbeforeunload = event => {
-          val u = pxUnsavedChanges.value()
-          if (u.nonEmpty) {
-            event.preventDefault()
-            event.returnValue = ""
-            ""
-          } else
-            ()
-        }
-      }
   }
 
   val Component = ScalaComponent.builder[Props]
     .initialStateCallback(State.recorder.getOrElseCB(pxProject.toCallback.map(State.init)))
     .renderBackend[Backend]
-    .componentDidMount(_.backend.installHooks)
-    .configure(Listenable.listen(_ => global, b => (_: Any) => b.backend.onProjectChange))
+    .componentDidMount(_.backend.onMount)
+    .configure(Listenable.listen(_ => global, _.backend.onProjectChange))
     .configure(Listenable.listen(_ => global.connectedStatusHub, _.backend.onConnectionStatusChange))
     .build
 }
