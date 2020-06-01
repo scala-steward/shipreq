@@ -54,7 +54,7 @@ object DropdownButton {
       )
 
     val enableDropdown: Callback =
-      Dropdown.enable($.getDOMNode)
+      Dropdown.enable($.getDOMNode, clearActive = true, clearSelected = true)
   }
 
   val Component = ScalaComponent.builder[Props]

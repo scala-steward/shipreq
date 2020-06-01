@@ -60,7 +60,9 @@ object Dropdown {
 
   val itemValue = VdomAttr[String]("data-value")
 
-  def enable(getDom: CallbackTo[ComponentDom]): Callback =
+  def enable(getDom       : CallbackTo[ComponentDom],
+             clearActive  : Boolean = false,
+             clearSelected: Boolean = false): Callback =
     for {
       n <- getDom.toCBO
       e <- CallbackOption.liftOption(n.toElement)
@@ -70,8 +72,8 @@ object Dropdown {
       if (!j.is(sel))
         j = j.find(sel)
       j.dropdown()
-      j.find(".active").toggleClass("active")
-      j.find(".selected").toggleClass("selected")
+      if (clearActive) j.find(".active").toggleClass("active")
+      if (clearSelected) j.find(".selected").toggleClass("selected")
       ()
     }
 
