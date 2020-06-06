@@ -332,6 +332,21 @@ final case class Tags(tree: TagTree) {
     case ShowDead => _ => true
   }
 
+  def applicableTagOrdering(root: TagId, filterDead: FilterDead): Ordering[ApplicableTagId] = {
+    val o = tagOrdering(root, filterDead)
+    o.compare(_, _)
+  }
+
+  def tagOrdering(root: TagId, filterDead: FilterDead): Ordering[TagId] = {
+    val tagOrder =
+      flatRowsWithRoot(root, filterDead)
+        .iterator
+        .zipWithIndex
+        .map { case (t, i) => t.id -> i}
+        .toMap
+    Ordering.by[TagId, Int](tagId => tagOrder.getOrElse(tagId, -tagId.value))
+  }
+
   def flatRowsWithRoots(roots: Set[TagId], isGood: Tag => Boolean, policy: FilterPolicy): Vector[FlatTag] =
     FlatTag.flatRows(roots, tree.get(_).get)(isGood, policy)
 

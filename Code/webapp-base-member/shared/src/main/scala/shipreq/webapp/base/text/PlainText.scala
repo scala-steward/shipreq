@@ -117,7 +117,7 @@ object PlainText {
       ids.iterator.map(p.config.tags.needApplicableTag(_).key.value).mkString(" ")
 
     override protected def _text(text: Text.AnyOptional, live: Live, tagValidity: ApplicableTagId => Validity): String =
-      nestedText("", "", live, text)
+      nestedText("", "", live, text, true)
 
     // Keep in sync with ProjectWidgets because it's used together for sorting/rendering in ReqTable
     override protected def deletionReasonWhenNoneGiven: String =
@@ -150,7 +150,7 @@ object PlainText {
       desc.foldLeft(hashtag(it.key))(_ ~ G.issueDescSurround(_))
     }
 
-    private def nestedText(acc: String, indent: String, live: Live, atoms: ArraySeq[AnyAtom]): String = {
+    private def nestedText(acc: String, indent: String, live: Live, atoms: ArraySeq[AnyAtom], includeMarkup: Boolean): String = {
       @tailrec def go(acc: String, atoms: ArraySeq[AnyAtom], idx: Int): String = {
         val nextIdx = idx + 1
         val nextIsEmpty = nextIdx == atoms.length
@@ -163,7 +163,7 @@ object PlainText {
           case a: ContentRef      # UseCaseStepRef => useCaseStepRef(a.value)
           case a: Issue           # Issue          => issue(a.typ, a.desc.asOption.map(text(_, live, Optional)))
           case a: PlainTextMarkup # EmailAddress   => a.value
-          case a: PlainTextMarkup # Monospace      => '`' ~ a.value ~ '`'
+          case a: PlainTextMarkup # Monospace      => if (includeMarkup) '`' ~ a.value ~ '`' else a.value
           case a: PlainTextMarkup # TeX            => G.texSurround(a.value)
           case a: PlainTextMarkup # WebAddress     => a.value
           case a: TagRef          # TagRef         => tagRef(a.value)
@@ -186,7 +186,7 @@ object PlainText {
                   else
                     q ~ "\n" ~ bullet
 
-            val r = a.items.foldLeft("")((q, li) => nestedText(prefix(q), nextIndent, live, li))
+            val r = a.items.foldLeft("")((q, li) => nestedText(prefix(q), nextIndent, live, li, includeMarkup))
 
             if (nextIsEmpty) r else r ~ "\n\n"
 
@@ -194,10 +194,13 @@ object PlainText {
           case a: CodeBlock # CodeBlock =>
 
             val firstLine: String =
-              a.language match {
-                case Some(lang) => "```" ~ lang ~ '\n'
-                case None       => "```\n"
-              }
+              if (includeMarkup)
+                a.language match {
+                  case Some(lang) => "```" ~ lang ~ '\n'
+                  case None       => "```\n"
+                }
+              else
+                ""
 
             if (indent.isEmpty) {
               // top-level
@@ -212,7 +215,9 @@ object PlainText {
 
               val tail = if (nextIsEmpty) "" else "\n\n"
 
-              head ~ firstLine ~ a.code ~ "\n```" ~ tail
+              val lastLine = if (includeMarkup) "\n```" else ""
+
+              head ~ firstLine ~ a.code ~ lastLine ~ tail
 
             } else {
               // we're in a list
@@ -227,7 +232,9 @@ object PlainText {
 
               val tail = if (nextIsEmpty) "" else "\n\n" ~ indent
 
-              head ~ firstLine ~ a.code.indent(indent) ~ "\n" ~ indent ~ "```" ~ tail
+              val lastLine = if (includeMarkup) "\n" ~ indent ~ "```" else ""
+
+              head ~ firstLine ~ a.code.indent(indent) ~ lastLine ~ tail
             }
 
         }
@@ -319,5 +326,22 @@ object PlainText {
         this.asInstanceOf[ForProject[Ctx2]]
       else
         ForProject(p, newCtx)
+
+    def tagListWithHashtags(ids: Vector[ApplicableTagId]): String =
+      ids.iterator.map(p.config.tags.needApplicableTag(_).key.with_#).mkString(" ")
+
+    val reqTitleWithoutMarkup: Req => String = {
+      def make(t: Text.AnyOptional, req: Req) = textWithoutMarkup(t, req.live(cfg.reqTypes))
+      memoByReqId {
+        case gr: GenericReq => make(gr.title, gr)
+        case uc: UseCase    => make(uc.title, uc)
+      }
+    }
+
+    def reqTitleWithoutMarkupById(id: ReqId): String =
+      reqTitleWithoutMarkup(p.content.reqs.need(id))
+
+    def textWithoutMarkup(text: Text.AnyOptional, live: Live): String =
+      nestedText("", "", live, text, false)
   }
 }

@@ -117,6 +117,18 @@ final case class Project(name        : Project.Name,
 
   lazy val issues = IssueTracker(this).issues
 
+  def reqTagsFn(tagGroupId: TagGroupId, filterDead: FilterDead): ReqId => Vector[ApplicableTagId] = {
+    val tagLookup = dataLogic.tagLookup(filterDead)
+    val tagScope  = config.tagFieldDistribution(filterDead).inTagGroup(tagGroupId)
+    val tagOrder  = config.tags.applicableTagOrdering(tagGroupId, filterDead)
+
+    reqId =>
+      MutableArray(tagLookup(reqId).all.iterator.filter(tagScope.contains))
+        .sort(tagOrder)
+        .iterator()
+        .toVector
+  }
+
   def deletionMethodForUseCaseStep(id: UseCaseStepId): DeletionMethod =
     DeletionMethod.Hard.unless {
       val f           = content.reqs.useCases.focusStep(id)

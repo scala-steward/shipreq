@@ -132,16 +132,14 @@ v2.1
 * upgrade graal (and re-run BMs)
 * SJS 1.0 (and re-run BMs)
 
-* any more cases of Instant.now() being used with ProjectMetaData?
 * add to `GraphsTest`
 * ColourByTag -- need to handle tags being deleted in DataProp and/or ApplyEvent
 * change all multi-ver binary codecs to use `writeVersion` and `readByVersion`
 * add new protocol safety tests after ImpGraphConfig is finished
 * show a legend, filter out unused colours
-* use markup-free ProjectText for graph labels
-* revise hover text for graphs
 * style ImpGraphPage properly (i.e. the controls)
 * (?) Rename ImpGraphPage to "Req Graph"
 * (?) Filter by chain size (eg. 0=all, 1 removes all nodes without imp, 2 removes A-B but not A-B-C)
   (?) or maybe add `isImplied` & `implies` (or similar) to FilterAst
-* (?) allow users to control wrapWidth (currently hardcoded to 26em)
+* (?) allow users to control wrapWidth (currently hardcoded to 28em)
+* allow zooming in/out

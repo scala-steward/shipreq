@@ -243,9 +243,10 @@ object Graphs {
     val live: ReqId => Live =
       Memo(reqs.need(_).live(reqTypes))
 
-    val pubid   : ReqId => String = PlainText.pubidByReqId(_, reqs, reqTypes)
-    val nodeName: ReqId => String = _.value.toString
-    val node    : ReqId => Unit   = id => b.append(id.value)
+    val pubid    : ReqId => String = PlainText.pubidByReqId(_, reqs, reqTypes)
+    val nodeName : ReqId => String = _.value.toString
+    val node     : ReqId => Unit   = id => b.append(id.value)
+    val declareId: ReqId => Unit   = id => b.idAttr(pubid(id))
 
     lazy val reqIdsSortedByPubId = Project.reqIdsSortedByPubId(reqs, reqTypes)
   }
@@ -281,6 +282,7 @@ object Graphs {
 
       def declareNode(id: ReqId): Unit = {
         node(id)
+        declareId(id)
         b.labelAttr(pubid(id))
         deadNodeStyleIfDead(live(id))
       }
@@ -415,14 +417,19 @@ object Graphs {
           case LabelFormat.PubidAndTitle =>
             id => {
               val p = pubid(id)
-              val t = plainText.reqTitleById(id)
+              val t = plainText.reqTitleWithoutMarkupById(id)
               val l = p + "\n" + t
               WrapText(l, maxWidth)
             }
         }
 
-      def declareNodeLabel(id: ReqId): Unit =
-        b.labelAttr(label(id))
+      def declareNodeAttrs(id: ReqId): Unit = {
+        b.append('[')
+        b.setId(pubid(id))
+        b.append(' ')
+        b.setLabel(label(id))
+        b.append(']')
+      }
 
       def declareNodes: () => Unit =
         config.colours match {
@@ -460,7 +467,7 @@ object Graphs {
 
             def declareNode(id: ReqId): Unit = {
               node(id)
-              declareNodeLabel(id)
+              declareNodeAttrs(id)
               deadNodeStyleIfDead(live(id))
             }
 
@@ -477,15 +484,13 @@ object Graphs {
           case Colours.ByTag(tagGroupId) => () => {
 
             val coloursByReqId: Map[ReqId, ArraySeq[Colour]] = {
-              val tagLookup = project.dataLogic.tagLookup(filterDead)
-              val tags      = project.config.tags
-              val tagScope  = project.config.tagFieldDistribution(filterDead).inTagGroup(tagGroupId)
-              val reqIds    = scope.fold(project.content.reqs.idIterator())(_.iterator)
+              val tags    = project.config.tags
+              val reqTags = project.reqTagsFn(tagGroupId, filterDead)
+              val reqIds  = scope.fold(project.content.reqs.idIterator())(_.iterator)
               reqIds.map { reqId =>
                 val colours =
-                  tagLookup(reqId).all
+                  reqTags(reqId)
                     .iterator
-                    .filter(tagScope.contains)
                     .map(tags.needApplicableTag)
                     .map(t => t.colour.getOrElse(Colour.tagDefault).live(t.live))
                     .to(ArraySeq)
@@ -495,7 +500,7 @@ object Graphs {
 
             def declareNode(id: ReqId): Unit = {
               node(id)
-              declareNodeLabel(id)
+              declareNodeAttrs(id)
               live(id) match {
                 case Live =>
                   val colours = coloursByReqId.get(id).filter(_.nonEmpty).getOrElse(ArraySeq(Colour.tagDefault))

@@ -392,9 +392,7 @@ object ReqDetail {
                 ord         = data.ord,
                 focus       = req.id,
                 filterDead  = data.filterDead,
-                imps        = project.content.implications,
-                reqs        = project.content.reqs,
-                reqTypes    = project.config.reqTypes,
+                project     = project,
                 plainText   = data.pxPlainText.value(),
                 reqDetailRC = reqDetailRC,
                 webWorker   = webWorker

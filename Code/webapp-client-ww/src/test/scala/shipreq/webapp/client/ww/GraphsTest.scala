@@ -11,14 +11,13 @@ import Event._
 import GraphViz.DOT
 import WebappTestUtil._
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
-import shipreq.webapp.client.ww.api.WebWorkerCmd
 
 object GraphsTest extends TestSuite {
 
   val _normalise = "([\\]{};])".r
 
   def normaliseDOT(d: DOT): String =
-    _normalise.replaceAllIn(d.content, "$1\n")
+    _normalise.replaceAllIn(d.content, "$1\n").replace("]\n[", " ")
 
   def assertDOT(actual: DOT, expect: DOT)(implicit l: Line): Unit = {
     val expect2 = expect.content
@@ -28,7 +27,7 @@ object GraphsTest extends TestSuite {
       .replaceAll("(?:GenericReqId|UseCaseId)\\((\\d+)\\)", "$1")
     val e = normaliseDOT(DOT(expect2))
     val a = normaliseDOT(actual)
-    assertMultiline(a, e)
+    assertMultiline(actual = a, expect = e)
   }
 
   def deleteReqs(id: ReqId*) =
@@ -127,26 +126,26 @@ object GraphsTest extends TestSuite {
         val expect = DOT(
           """
             |digraph G{bgcolor=transparent;rankdir=LR;
-            |node[style=filled color="#333333"]
+            |node[style=filled shape=ellipse color="#222222"]
             |
             |F[style=bold fillcolor="#cccccc" label="MF-3"]
             |
             |node[fillcolor="#FFEDE2"]
-            |21[label="BR-1"]
+            |21[id="BR-1" label="BR-1"]
             |
             |{rank=same;node[fillcolor="#FFC19C"]
-            |22[label="BR-2"]
+            |22[id="BR-2" label="BR-2"]
             |}
             |
             |{rank=same;node[fillcolor="#7692B7" fontcolor=white]
-            |14[label="MF-4"]
-            |34[label="FR-4"]
+            |14[id="MF-4" label="MF-4"]
+            |34[id="FR-4" label="FR-4"]
             |}
             |
             |node[fillcolor="#D6E1EF"]
-            |36[label="FR-6"]
-            |35[label="FR-5"]
-            |15[label="MF-5"]
+            |36[id="FR-6" label="FR-6"]
+            |35[id="FR-5" label="FR-5"]
+            |15[id="MF-5" label="MF-5"]
             |
             |edge[color="#FFC19C"]
             |21->22;
@@ -170,24 +169,24 @@ object GraphsTest extends TestSuite {
         val expect = DOT(
           """
             |digraph G{bgcolor=transparent;rankdir=LR;
-            |node[style=filled color="#333333"]
+            |node[style=filled shape=ellipse color="#222222"]
             |
             |F[style=bold fillcolor="#cccccc" label="MF-3"]
             |
             |node[fillcolor="#FFEDE2"]
-            |21[label="BR-1"]
+            |21[id="BR-1" label="BR-1"]
             |
             |{rank=same;node[fillcolor="#FFC19C"]
-            |22[label="BR-2"]
+            |22[id="BR-2" label="BR-2"]
             |}
             |
             |{rank=same;node[fillcolor="#7692B7" fontcolor=white]
-            |34[label="FR-4"]
+            |34[id="FR-4" label="FR-4"]
             |}
             |
             |node[fillcolor="#D6E1EF"]
-            |35[label="FR-5"]
-            |15[label="MF-5"]
+            |35[id="FR-5" label="FR-5"]
+            |15[id="MF-5" label="MF-5"]
             |
             |edge[color="#FFC19C"]
             |21->22;
@@ -209,26 +208,26 @@ object GraphsTest extends TestSuite {
         val expect = DOT(
           """
             |digraph G{bgcolor=transparent;rankdir=LR;
-            |node[style=filled color="#333333"]
+            |node[style=filled shape=ellipse color="#222222"]
             |
             |F[style=bold fillcolor="#cccccc" label="MF-3"]
             |
             |node[fillcolor="#FFEDE2"]
-            |21[label="BR-1"]
+            |21[id="BR-1" label="BR-1"]
             |
             |{rank=same;node[fillcolor="#FFC19C"]
-            |22[label="BR-2"]
+            |22[id="BR-2" label="BR-2"]
             |}
             |
             |{rank=same;node[fillcolor="#7692B7" fontcolor=white]
-            |14[label="MF-4"][fillcolor="#dddddd" color="#777777" fontcolor="#666666"]
-            |34[label="FR-4"]
+            |14[id="MF-4" label="MF-4"][fillcolor="#dddddd" color="#777777" fontcolor="#666666"]
+            |34[id="FR-4" label="FR-4"]
             |}
             |
             |node[fillcolor="#D6E1EF"]
-            |36[label="FR-6"]
-            |35[label="FR-5"]
-            |15[label="MF-5"]
+            |36[id="FR-6" label="FR-6"]
+            |35[id="FR-5" label="FR-5"]
+            |15[id="MF-5" label="MF-5"]
             |
             |edge[color="#FFC19C"]
             |21->22;
@@ -257,27 +256,27 @@ object GraphsTest extends TestSuite {
         val expect = DOT(
           s"""
             |digraph G{bgcolor=transparent;rankdir=TB;
-            |node[style=filled color="#333333"]
-            |edge[color="#333333"]
+            |node[style=filled shape=ellipse color="#222222"]
+            |edge[color="#222222"]
             |
             |node[fillcolor="#B7D058"]
-            |$br2[label="BR-2"]
-            |$br1[label="BR-1"]
+            |$br2[id="BR-2" label="BR-2"]
+            |$br1[id="BR-1" label="BR-1"]
             |
             |node[fillcolor="#D5A8C9"]
-            |$fr5[label="FR-5"]
-            |$fr1[label="FR-1"]
-            |$fr6[label="FR-6"]
-            |$fr3[label="FR-3"]
-            |$fr2[label="FR-2"]
-            |$fr4[label="FR-4"]
+            |$fr5[id="FR-5" label="FR-5"]
+            |$fr1[id="FR-1" label="FR-1"]
+            |$fr6[id="FR-6" label="FR-6"]
+            |$fr3[id="FR-3" label="FR-3"]
+            |$fr2[id="FR-2" label="FR-2"]
+            |$fr4[id="FR-4" label="FR-4"]
             |
             |node[fillcolor="#93D5BA"]
-            |$mf4[label="MF-4"]
-            |$mf3[label="MF-3"]
-            |$mf2[label="MF-2"]
-            |$mf1[label="MF-1"]
-            |$mf5[label="MF-5"]
+            |$mf4[id="MF-4" label="MF-4"]
+            |$mf3[id="MF-3" label="MF-3"]
+            |$mf2[id="MF-2" label="MF-2"]
+            |$mf1[id="MF-1" label="MF-1"]
+            |$mf5[id="MF-5" label="MF-5"]
             |
             |$mf4->$fr6;
             |$br1->$mf2;
@@ -301,27 +300,27 @@ object GraphsTest extends TestSuite {
         val expect = DOT(
           s"""
             |digraph G{bgcolor=transparent;rankdir=TB;
-            |node[style=filled color="#333333"]
-            |edge[color="#333333"]
+            |node[style=filled shape=ellipse color="#222222"]
+            |edge[color="#222222"]
             |
             |node[fillcolor="#B7D058"]
-            |$br2[label="BR-2"]
-            |$br1[label="BR-1"]
+            |$br2[id="BR-2" label="BR-2"]
+            |$br1[id="BR-1" label="BR-1"]
             |
             |node[fillcolor="#D5A8C9"]
-            |$fr5[label="FR-5"]
-            |$fr1[label="FR-1"]
-            |$fr6[label="FR-6"]
-            |$fr3[label="FR-3"]
-            |$fr2[label="FR-2"]
-            |$fr4[label="FR-4"]
+            |$fr5[id="FR-5" label="FR-5"]
+            |$fr1[id="FR-1" label="FR-1"]
+            |$fr6[id="FR-6" label="FR-6"]
+            |$fr3[id="FR-3" label="FR-3"]
+            |$fr2[id="FR-2" label="FR-2"]
+            |$fr4[id="FR-4" label="FR-4"]
             |
             |node[fillcolor="#93D5BA"]
-            |$mf4[label="MF-4"][fillcolor="#dddddd" color="#777777" fontcolor="#666666"]
-            |$mf3[label="MF-3"]
-            |$mf2[label="MF-2"]
-            |$mf1[label="MF-1"]
-            |$mf5[label="MF-5"]
+            |$mf4[id="MF-4" label="MF-4"][fillcolor="#dddddd" color="#777777" fontcolor="#666666"]
+            |$mf3[id="MF-3" label="MF-3"]
+            |$mf2[id="MF-2" label="MF-2"]
+            |$mf1[id="MF-1" label="MF-1"]
+            |$mf5[id="MF-5" label="MF-5"]
             |
             |$mf4->$fr6[color="#bbbbbb" style=dashed];
             |$br1->$mf2;
@@ -345,26 +344,26 @@ object GraphsTest extends TestSuite {
         val expect = DOT(
           s"""
             |digraph G{bgcolor=transparent;rankdir=TB;
-            |node[style=filled color="#333333"]
-            |edge[color="#333333"]
+            |node[style=filled shape=ellipse color="#222222"]
+            |edge[color="#222222"]
             |
             |node[fillcolor="#B7D058"]
-            |$br2[label="BR-2"]
-            |$br1[label="BR-1"]
+            |$br2[id="BR-2" label="BR-2"]
+            |$br1[id="BR-1" label="BR-1"]
             |
             |node[fillcolor="#D5A8C9"]
-            |$fr5[label="FR-5"]
-            |$fr1[label="FR-1"]
-            |$fr6[label="FR-6"]
-            |$fr3[label="FR-3"]
-            |$fr2[label="FR-2"]
-            |$fr4[label="FR-4"]
+            |$fr5[id="FR-5" label="FR-5"]
+            |$fr1[id="FR-1" label="FR-1"]
+            |$fr6[id="FR-6" label="FR-6"]
+            |$fr3[id="FR-3" label="FR-3"]
+            |$fr2[id="FR-2" label="FR-2"]
+            |$fr4[id="FR-4" label="FR-4"]
             |
             |node[fillcolor="#93D5BA"]
-            |$mf3[label="MF-3"]
-            |$mf2[label="MF-2"]
-            |$mf1[label="MF-1"]
-            |$mf5[label="MF-5"]
+            |$mf3[id="MF-3" label="MF-3"]
+            |$mf2[id="MF-2" label="MF-2"]
+            |$mf1[id="MF-1" label="MF-1"]
+            |$mf5[id="MF-5" label="MF-5"]
             |
             |$br1->$mf2;
             |$br1->$br2;
@@ -410,32 +409,32 @@ object GraphsTest extends TestSuite {
         val expect = DOT(
           s"""
             |digraph G{bgcolor=transparent;rankdir=TB;
-            |node[style=filled color="#333333"]
-            |edge[color="#333333"]
+            |node[style=filled shape=ellipse color="#222222"]
+            |edge[color="#222222"]
             |
             |node[fillcolor="#B7D058"]
-            |$br2[label="BR-2"]
-            |$br1[label="BR-1"]
-            |$br3[label="BR-3"]
+            |$br2[id="BR-2" label="BR-2"]
+            |$br1[id="BR-1" label="BR-1"]
+            |$br3[id="BR-3" label="BR-3"]
             |
             |node[fillcolor="#D5A8C9"]
-            |$fr7[label="FR-7"]
-            |$fr9[label="FR-9"]
-            |$fr5[label="FR-5"]
-            |$fr1[label="FR-1"]
-            |$fr6[label="FR-6"]
-            |$fr8[label="FR-8"]
-            |$fr3[label="FR-3"]
-            |$fr2[label="FR-2"]
-            |$fr4[label="FR-4"]
-            |$fr10[label="FR-10"][fillcolor="#dddddd" color="#777777" fontcolor="#666666"]
+            |$fr7[id="FR-7" label="FR-7"]
+            |$fr9[id="FR-9" label="FR-9"]
+            |$fr5[id="FR-5" label="FR-5"]
+            |$fr1[id="FR-1" label="FR-1"]
+            |$fr6[id="FR-6" label="FR-6"]
+            |$fr8[id="FR-8" label="FR-8"]
+            |$fr3[id="FR-3" label="FR-3"]
+            |$fr2[id="FR-2" label="FR-2"]
+            |$fr4[id="FR-4" label="FR-4"]
+            |$fr10[id="FR-10" label="FR-10"][fillcolor="#dddddd" color="#777777" fontcolor="#666666"]
             |
             |node[fillcolor="#93D5BA"]
-            |$mf4[label="MF-4"]
-            |$mf3[label="MF-3"]
-            |$mf2[label="MF-2"]
-            |$mf1[label="MF-1"]
-            |$mf5[label="MF-5"]
+            |$mf4[id="MF-4" label="MF-4"]
+            |$mf3[id="MF-3" label="MF-3"]
+            |$mf2[id="MF-2" label="MF-2"]
+            |$mf1[id="MF-1" label="MF-1"]
+            |$mf5[id="MF-5" label="MF-5"]
             |
             |{edge[color="#dd0000"]
             |R[shape=octagon fillcolor=red fontcolor=white margin=0 fontsize=18 label="?"]

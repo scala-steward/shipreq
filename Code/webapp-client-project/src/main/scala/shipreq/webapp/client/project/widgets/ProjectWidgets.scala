@@ -130,7 +130,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
           ref(
             linkOrSpan(req)(*.reqRef(req live project.config.reqTypes)),
             code,
-            plainText reqTitle req)
+            plainText reqTitleWithoutMarkup req)
         }
 
         def toGroup(code: ReqCode.Value, g: CodeGroup): VdomTag =
@@ -225,7 +225,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
 
   private def mkUseCaseStep[A](r: (VdomTag, (Live, Validity), String) => A)(f: UseCaseStep.Focus): A = {
     val label = plainText.useCaseStepLabel(f)
-    val title = UiText.hoverText(plainText.text(f.titleA, f.live, Mandatory))
+    val title = UiText.hoverText(plainText.textWithoutMarkup(f.titleA, f.live))
     val ld = deadValidity(Invalid)(f.live)
     val base = linkOrSpan(f.uc)(^.title := title)
     r(base, ld, label)
