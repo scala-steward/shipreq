@@ -68,7 +68,7 @@ private[impgraph] object ConfigEditor {
   private val labelFormatOptions = {
     val text: LabelFormat => String = {
       case LabelFormat.Pubid         => SpecialBuiltInField.Pubid.name
-      case LabelFormat.PubidAndTitle => s"${SpecialBuiltInField.Pubid.name}: ${SpecialBuiltInField.Title.name}"
+      case LabelFormat.PubidAndTitle => s"${SpecialBuiltInField.Pubid.name} and ${SpecialBuiltInField.Title.name}"
     }
 
     NonEmptyArraySeq.fromNEV(

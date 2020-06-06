@@ -253,8 +253,10 @@ object Graphs {
   private def deadLink()(implicit b: GraphViz.Builder): Unit =
     b append """[color="#bbbbbb" style=dashed]"""
 
+  private final val blackish = "#222222"
+
   private def styleSubsequentNodesAsImplications(shape: Shape)(implicit b: GraphViz.Builder): Unit =
-    b append s"""node[${shape.styleFilled} ${shape.declareShape} color="#333333"]"""
+    b append s"""node[${shape.styleFilled} ${shape.declareShape} color="$blackish"]"""
 
   private def deadNodeStyle()(implicit b: GraphViz.Builder): Unit =
     b append """[fillcolor="#dddddd" color="#777777" fontcolor="#666666"]"""
@@ -378,6 +380,8 @@ object Graphs {
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
+  private val maxWidth = CharWidths('m') * 28
+
   def implicationAll(project   : Project,
                      plainText : PlainText.ForProject.NoCtx,
                      filterDead: FilterDead,
@@ -412,7 +416,8 @@ object Graphs {
             id => {
               val p = pubid(id)
               val t = plainText.reqTitleById(id)
-              WrapText(s"$p:\n$t", CharWidths('m') * 26)
+              val l = p + "\n" + t
+              WrapText(l, maxWidth)
             }
         }
 
@@ -510,7 +515,7 @@ object Graphs {
               }
             }
 
-            b.append("""node[color="#111111"]""")
+            b.append(s"""node[color="$blackish"]""")
             for (reqId <- reqIdFilter.iterator(reqIdsSortedByPubId.iterator)) {
               declareNode(reqId)
               coloursByReqId
@@ -542,7 +547,7 @@ object Graphs {
 
       b.rankdir(config.graphDir)
       styleSubsequentNodesAsImplications(shape)
-      b append """edge[color="#333333"]"""
+      b.append(s"""edge[color="$blackish"]""")
 
       declareNodes()
 
