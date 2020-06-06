@@ -8,7 +8,7 @@ import shipreq.webapp.base.data.{FilterDead, Project, Req, ReqId, TagGroupId}
 import shipreq.webapp.base.filter.CompiledFilter
 
 final case class ImpGraphConfig(graphDir      : GraphDir,
-                              //labelFormat   : Unit
+                                labelFormat   : LabelFormat,
                               //minChainLength: Int,
                                 colours       : Colours)
 
@@ -16,8 +16,9 @@ object ImpGraphConfig {
 
   val default: ImpGraphConfig =
     apply(
-      graphDir = GraphDir.TopToBottom,
-      colours = Colours.ByReqType,
+      graphDir    = GraphDir.TopToBottom,
+      labelFormat = LabelFormat.Pubid,
+      colours     = Colours.ByReqType,
     )
 
   def buildReqWhitelist(filterDead: FilterDead, filter: Option[CompiledFilter], p: Project): Option[Set[ReqId]] = {
@@ -58,5 +59,21 @@ object ImpGraphConfig {
     final case class ByTag(tagGroupId: TagGroupId) extends Colours
 
     implicit def univEq: UnivEq[Colours] = UnivEq.derive
+  }
+
+  // ===================================================================================================================
+
+  sealed trait LabelFormat
+
+  object LabelFormat {
+    case object Pubid         extends LabelFormat
+    case object PubidAndTitle extends LabelFormat
+
+    lazy val values = AdtMacros.adtValuesManually[LabelFormat](
+      Pubid,
+      PubidAndTitle,
+    )
+
+    implicit def univEq: UnivEq[LabelFormat] = UnivEq.derive
   }
 }

@@ -1583,6 +1583,9 @@ object RandomData {
     val impGraphConfigGraphDir: Gen[ImpGraphConfig.GraphDir] =
       Gen.chooseNE(ImpGraphConfig.GraphDir.values)
 
+    val impGraphConfigLabelFormat: Gen[ImpGraphConfig.LabelFormat] =
+      Gen.chooseNE(ImpGraphConfig.LabelFormat.values)
+
     def genTagGroupIdFromProject(p: Project): Option[Gen[TagGroupId]] = {
       val tgs = p.config.tags.tagGroupIterator().map(_.id).toVector
       NonEmptyVector.maybe(tgs, Option.empty[Gen[TagGroupId]])(x => Some(Gen.chooseNE(x)))
@@ -1606,7 +1609,10 @@ object RandomData {
       impGraphConfig(genTagGroupIdFromProject(p))
 
     def impGraphConfig(genTagGroupId: Option[Gen[TagGroupId]]): Gen[ImpGraphConfig] =
-      Gen.apply2(ImpGraphConfig.apply)(impGraphConfigGraphDir, impGraphConfigColours(genTagGroupId))
+      Gen.apply3(ImpGraphConfig.apply)(
+        impGraphConfigGraphDir,
+        impGraphConfigLabelFormat,
+        impGraphConfigColours(genTagGroupId))
 
     def viewForProject(p: Project): Gen[View] =
       for {

@@ -7,9 +7,9 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scala.collection.immutable.ArraySeq
 import shipreq.base.util.NonEmptyArraySeq
 import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data.{Dead, FilterDead, ProjectConfig, TagGroupId, Tags}
+import shipreq.webapp.base.data.{Dead, FilterDead, ProjectConfig, SpecialBuiltInField, TagGroupId, Tags}
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
-import shipreq.webapp.base.data.savedview.ImpGraphConfig.{Colours, GraphDir}
+import shipreq.webapp.base.data.savedview.ImpGraphConfig.{Colours, GraphDir, LabelFormat}
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.ui.widgets.Dropdown
 import scalacss.ScalaCssReact._
@@ -35,7 +35,6 @@ private[impgraph] object ConfigEditor {
   }
 
   private val graphDirOptions = {
-
     val text: GraphDir => String = {
       case GraphDir.BottomToTop => "Bottom to top"
       case GraphDir.LeftToRight => "Left to right"
@@ -55,6 +54,28 @@ private[impgraph] object ConfigEditor {
         Dropdown.Item(
           key = graphDirKey(d),
           label = <.span(icon(d).tagNoMargin, " ", text(d)),
+          value = d,
+        )
+      )
+    )
+  }
+
+  private val labelFormatKey: LabelFormat => Dropdown.ItemKey = {
+    case LabelFormat.Pubid         => "P"
+    case LabelFormat.PubidAndTitle => "T"
+  }
+
+  private val labelFormatOptions = {
+    val text: LabelFormat => String = {
+      case LabelFormat.Pubid         => SpecialBuiltInField.Pubid.name
+      case LabelFormat.PubidAndTitle => s"${SpecialBuiltInField.Pubid.name}: ${SpecialBuiltInField.Title.name}"
+    }
+
+    NonEmptyArraySeq.fromNEV(
+      LabelFormat.values.map(d =>
+        Dropdown.Item(
+          key = labelFormatKey(d),
+          label = text(d),
           value = d,
         )
       )
@@ -136,6 +157,13 @@ private[impgraph] object ConfigEditor {
           onChange = i => p.state.modState(_.copy(graphDir = i.value))
         ).render
 
+      val labelFormat =
+        Dropdown.Props.NonEmpty(
+          items    = labelFormatOptions,
+          selected = labelFormatKey(p.state.value.labelFormat))(
+          onChange = i => p.state.modState(_.copy(labelFormat = i.value))
+        ).render
+
       val colours =
         Dropdown.Props.NonEmpty(
           items    = pxColourOptions.value(),
@@ -145,6 +173,7 @@ private[impgraph] object ConfigEditor {
 
       <.div(
         graphDir,
+        labelFormat,
         colours,
       )
     }

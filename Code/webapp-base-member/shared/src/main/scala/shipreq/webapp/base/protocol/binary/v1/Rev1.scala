@@ -481,16 +481,34 @@ object Rev1 {
           }
       }
 
+    implicit val picklerImpGraphConfigLabelFormat: Pickler[ImpGraphConfig.LabelFormat] =
+      new Pickler[ImpGraphConfig.LabelFormat] {
+        private[this] final val KeyPubid         = 0
+        private[this] final val KeyPubidAndTitle = 1
+        override def pickle(a: ImpGraphConfig.LabelFormat)(implicit state: PickleState): Unit =
+          a match {
+            case ImpGraphConfig.LabelFormat.Pubid         => state.enc.writeByte(KeyPubid        )
+            case ImpGraphConfig.LabelFormat.PubidAndTitle => state.enc.writeByte(KeyPubidAndTitle)
+          }
+        override def unpickle(implicit state: UnpickleState): ImpGraphConfig.LabelFormat =
+          state.dec.readByte match {
+            case KeyPubid         => ImpGraphConfig.LabelFormat.Pubid
+            case KeyPubidAndTitle => ImpGraphConfig.LabelFormat.PubidAndTitle
+          }
+      }
+
     implicit val picklerImpGraphConfig: Pickler[ImpGraphConfig] =
       new Pickler[ImpGraphConfig] {
         override def pickle(a: ImpGraphConfig)(implicit state: PickleState): Unit = {
           state.pickle(a.graphDir)
+          state.pickle(a.labelFormat)
           state.pickle(a.colours)
         }
         override def unpickle(implicit state: UnpickleState): ImpGraphConfig = {
-          val graphDir = state.unpickle[ImpGraphConfig.GraphDir]
-          val colours  = state.unpickle[ImpGraphConfig.Colours]
-          ImpGraphConfig(graphDir, colours)
+          val graphDir    = state.unpickle[ImpGraphConfig.GraphDir]
+          val labelFormat = state.unpickle[ImpGraphConfig.LabelFormat]
+          val colours     = state.unpickle[ImpGraphConfig.Colours]
+          ImpGraphConfig(graphDir, labelFormat, colours)
         }
       }
 

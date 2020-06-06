@@ -232,6 +232,9 @@ abstract class DataReusability extends BaseReusability {
   implicit lazy val reusabilityImpGraphConfigGraphDir: Reusability[ImpGraphConfig.GraphDir] =
     Reusability.derive
 
+  implicit lazy val reusabilityImpGraphConfigLabelFormat: Reusability[ImpGraphConfig.LabelFormat] =
+    Reusability.derive
+
   implicit lazy val reusabilityImpGraphConfig: Reusability[ImpGraphConfig] =
     Reusability.byRef || Reusability.derive
 }

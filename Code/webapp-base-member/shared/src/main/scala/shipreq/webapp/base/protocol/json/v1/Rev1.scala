@@ -194,11 +194,21 @@ object Rev1 {
       case a: ImpGraphConfig.Colours.ByTag  => Json.obj("byTag"     -> a.asJson)
     }
 
+    implicit val decoderImpGraphConfigLabelFormat: Decoder[ImpGraphConfig.LabelFormat] = decodeSumBySoleKey {
+      case ("id"        , _) => Right(ImpGraphConfig.LabelFormat.Pubid)
+      case ("idAndTitle", _) => Right(ImpGraphConfig.LabelFormat.PubidAndTitle)
+    }
+
+    implicit val encoderImpGraphConfigLabelFormat: Encoder[ImpGraphConfig.LabelFormat] = Encoder.instance {
+      case ImpGraphConfig.LabelFormat.Pubid         => Json.obj("id"         -> ().asJson)
+      case ImpGraphConfig.LabelFormat.PubidAndTitle => Json.obj("idAndTitle" -> ().asJson)
+    }
+
     implicit val decoderImpGraphConfigImpGraphConfig: Decoder[ImpGraphConfig] =
-      Decoder.forProduct2("graphDir", "colours")(ImpGraphConfig.apply)
+      Decoder.forProduct3("graphDir", "labelFormat", "colours")(ImpGraphConfig.apply)
 
     implicit val encoderImpGraphConfig: Encoder[ImpGraphConfig] =
-      Encoder.forProduct2("graphDir", "colours")(a => (a.graphDir, a.colours))
+      Encoder.forProduct3("graphDir", "labelFormat", "colours")(a => (a.graphDir, a.labelFormat, a.colours))
 
     implicit val decoderView: Decoder[View] =
       Decoder.instance { c =>

@@ -12,7 +12,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
-import shipreq.webapp.base.data.savedview.ImpGraphConfig.{Colours, GraphDir}
+import shipreq.webapp.base.data.savedview.ImpGraphConfig.{Colours, GraphDir, LabelFormat}
 import shipreq.webapp.base.text.{PlainText, ProjectText}
 import shipreq.webapp.client.ww.GraphViz.DOT
 import shipreq.webapp.client.ww.api.WebWorkerCmd
@@ -367,10 +367,16 @@ object Graphs {
       import impHelpers._
 
       val label: ReqId => String =
-        id => {
-          val p = pubid(id)
-          val t = plainText.reqTitleById(id)
-          WrapText(s"$p:\n$t", CharWidths('m') * 26)
+        config.labelFormat match {
+          case LabelFormat.Pubid =>
+            pubid
+
+          case LabelFormat.PubidAndTitle =>
+            id => {
+              val p = pubid(id)
+              val t = plainText.reqTitleById(id)
+              WrapText(s"$p:\n$t", CharWidths('m') * 26)
+            }
         }
 
       def declareNodeLabel(id: ReqId): Unit =
