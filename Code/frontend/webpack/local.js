@@ -14,48 +14,20 @@ const config = {
 
     // Projects access this via symlink in src/test/resources
     'webapp-base-test': [
-      'core-js/features/map',
-      'core-js/features/object/assign',
-      'core-js/features/set',
-      'expose-loader?React!react',
-      'expose-loader?ReactDOM!react-dom',
-      'expose-loader?ReactDOMServer!react-dom/server',
-      'expose-loader?ReactTestUtils!react-dom/test-utils',
-      'expose-loader?TextComplete!textcomplete/lib/textcomplete',
-      'expose-loader?TextCompleteTA!textcomplete/lib/textarea',
+      './shipreq/js/webapp-base-test.js',
       'expose-loader?$!expose-loader?jQuery!jquery', // for Semantic UI -- must precede it! order in this array matters
       './semantic/dist/semantic.min', //.js
     ],
 
     // Projects access this via symlink in src/test/resources
     'webapp-client-test': [
-      'core-js/features/map',
-      'core-js/features/object/assign',
-      'core-js/features/set',
-      'expose-loader?autosize!autosize',
-      'expose-loader?ChromePicker!react-color/lib/components/chrome/Chrome',
-      'expose-loader?GithubPicker!react-color/lib/components/github/Github',
-      'expose-loader?moment!moment',
-      'expose-loader?React!react',
-      'expose-loader?ReactCollapse!react-collapse',
-      'expose-loader?ReactDOM!react-dom',
-      'expose-loader?ReactDOMServer!react-dom/server',
-      'expose-loader?ReactTestUtils!react-dom/test-utils',
-      'expose-loader?scrollIntoView!scroll-into-view-if-needed',
-      'expose-loader?TextComplete!textcomplete/lib/textcomplete',
-      'expose-loader?TextCompleteTA!textcomplete/lib/textarea',
-      'expose-loader?tinycolor!tinycolor2/tinycolor',
+      './shipreq/js/webapp-client-test.js',
       'expose-loader?$!expose-loader?jQuery!jquery', // for Semantic UI -- must precede it! order in this array matters
       './semantic/dist/semantic.min', //.js
     ],
 
     // webappSsrJvm accesses this via symlink in src/main/resources
-    'webapp-ssr-deps': [
-      'expose-loader?React!react',
-      'expose-loader?ReactDOMServer!react-dom/server',
-      // 'expose-loader?React!react/umd/react.production.min.js',
-      // 'expose-loader?ReactDOMServer!react-dom/umd/react-dom-server.browser.production.min.js',
-    ],
+    'webapp-ssr-deps': './shipreq/js/webapp-ssr-deps.js',
   },
 
   output: {

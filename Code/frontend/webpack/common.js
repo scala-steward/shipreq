@@ -10,23 +10,9 @@ const entryPoints = es => es.filter(e => !!e);
 const config = ({ mode }) => ({
 
   entry: {
-
-    semantic: `./shipreq/semantic/require-${mode}`,
-
-    'member-lib-bundle': entryPoints([
-      'expose-loader?ReactCollapse!react-collapse',
-      'expose-loader?moment!moment/min/moment.min.js',
-      'expose-loader?autosize!autosize',
-      'expose-loader?clipboard!clipboard-polyfill',
-      'expose-loader?scrollIntoView!scroll-into-view-if-needed',
-      'expose-loader?TextComplete!textcomplete/lib/textcomplete',
-      'expose-loader?TextCompleteTA!textcomplete/lib/textarea',
-      'expose-loader?GithubPicker!react-color/lib/components/github/Github',
-      'expose-loader?ChromePicker!react-color/lib/components/chrome/Chrome',
-      'expose-loader?tinycolor!tinycolor2/tinycolor',
-    ]),
-
-    analytics: './shipreq/js/analytics.js',
+    'analytics'        : './shipreq/js/analytics.js',
+    'member-lib-bundle': './shipreq/js/member-lib-bundle.js',
+    'semantic'         : `./shipreq/semantic/require-${mode}`,
   },
 
   output: {

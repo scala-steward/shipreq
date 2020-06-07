@@ -1,0 +1,10 @@
+window.autosize       = require('autosize');
+window.ChromePicker   = require('react-color/lib/components/chrome/Chrome');
+window.clipboard      = require('clipboard-polyfill');
+window.GithubPicker   = require('react-color/lib/components/github/Github');
+window.moment         = require('moment/min/moment.min.js');
+window.ReactCollapse  = require('react-collapse');
+window.scrollIntoView = require('scroll-into-view-if-needed');
+window.TextComplete   = require('textcomplete/lib/textcomplete');
+window.TextCompleteTA = require('textcomplete/lib/textarea');
+window.tinycolor      = require('tinycolor2/tinycolor');
