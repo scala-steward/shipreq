@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.widgets.dev
 
 import japgolly.scalajs.react.vdom.html_<^._
+import scala.annotation.elidable
 import shipreq.webapp.base.data.Colour
 
 /** This renders a table of colours to compare black & white foregrounds.
@@ -11,6 +12,7 @@ import shipreq.webapp.base.data.Colour
 object ColourTest {
   import Ordering.Double.TotalOrdering
 
+  @elidable(elidable.FINEST)
   def demo = {
 
     val chars = "fc840".toList
@@ -31,7 +33,6 @@ object ColourTest {
       )
 
     val td = <.td(^.border := "solid 1px #888", ^.padding := "0 2ex", ^.lineHeight := "1.2em")
-
 
     <.table(^.borderCollapse.collapse,
       <.tbody(
