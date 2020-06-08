@@ -10,7 +10,7 @@ fi
 # ====================================================================================================================
 
 args="$@"
-[ $# -eq 0 ] && args=(dev prod local)
+[ $# -eq 0 ] && args=(dev prod test ssr)
 
 webpack="node_modules/.bin/webpack --color --display-reasons --display-modules --progress --config"
 webtamp="node_modules/.bin/webtamp"
@@ -55,10 +55,18 @@ for mode in ${args[@]}; do
       du -sh $target2/serve
       ;;
 
-    local)
-      target=dist/local
+    test)
+      target=dist/test
       rm -rf $target
-      $webpack webpack/local.js || exit $?
+      $webpack webpack/test.js || exit $?
+      echo
+      ls -l $target
+      ;;
+
+    ssr)
+      target=dist/ssr
+      rm -rf $target
+      $webpack webpack/ssr.js || exit $?
       echo
       ls -l $target
       ;;

@@ -109,11 +109,11 @@ const makeConfig = ({ mode, name, sjsName, staticDir, htmlMinifyOptions }) => {
 
     assets: {
 
-      html: { type: 'local', src: 'shipreq/html', files: '**/*.html', outputName: '[path]/[basename]' },
+      html: { type: 'local', src: 'src/html', files: '**/*.html', outputName: '[path]/[basename]' },
 
-      favicon: { type: 'local', src: 'shipreq/assets', files: 'favicon.ico', manifest: true },
+      favicon: { type: 'local', src: 'src/images', files: 'favicon.ico', manifest: true },
 
-      images: { type: 'local', src: 'shipreq/assets', files: '*.{svg,png}', manifest: CamelCase },
+      images: { type: 'local', src: 'src/images', files: '*.{svg,png}', manifest: CamelCase },
 
       webappClientPublic: [
         sjs('public', 'webappClientPublicJs'),
@@ -136,7 +136,7 @@ const makeConfig = ({ mode, name, sjsName, staticDir, htmlMinifyOptions }) => {
 
       analytics: fromWebpack({ files: 'analytics.js', manifest: CamelCase }),
 
-      analyticsConfig: { type: 'local', src: 'shipreq/js', files: 'analytics.js', outputPath: '../scala', outputName: 'AnalyticsConfig.scala' },
+      analyticsConfig: { type: 'local', src: 'src/js', files: 'analytics.js', outputPath: '../scala', outputName: 'AnalyticsConfig.scala' },
 
       // ---------------------------------------------------------------------------------------------------------------
       // BE ADVISED that when you changes these bundles, you may need to change how assets are used from Scala.

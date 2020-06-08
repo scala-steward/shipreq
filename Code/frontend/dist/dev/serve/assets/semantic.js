@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./shipreq/semantic/require-dev.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/semantic/require-dev.js");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -108,58 +108,58 @@ eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./sema
 
 /***/ }),
 
-/***/ "./shipreq/semantic/require-common.js":
-/*!********************************************!*\
-  !*** ./shipreq/semantic/require-common.js ***!
-  \********************************************/
+/***/ "./src/semantic/require-common.js":
+/*!****************************************!*\
+  !*** ./src/semantic/require-common.js ***!
+  \****************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("// This is loaded by webpack\n// require('../../semantic/dist/semantic.min.css');\n__webpack_require__(/*! ../../semantic/dist/semantic.pruned.min.css */ \"./semantic/dist/semantic.pruned.min.css\");\n\n__webpack_require__(/*! ../styles/semantic-fixes.css */ \"./shipreq/styles/semantic-fixes.css\");\n\n__webpack_require__(/*! ../styles/semantic-textcomplete.css */ \"./shipreq/styles/semantic-textcomplete.css\"); // This has nothing to do with semantic but it's very convenient to include this here in leiu of global styles\n\n\n__webpack_require__(/*! ../styles/react-collapse.css */ \"./shipreq/styles/react-collapse.css\");\n\n//# sourceURL=webpack:///./shipreq/semantic/require-common.js?");
+eval("// This is loaded by webpack\n// require('../../semantic/dist/semantic.min.css');\n__webpack_require__(/*! ../../semantic/dist/semantic.pruned.min.css */ \"./semantic/dist/semantic.pruned.min.css\");\n\n__webpack_require__(/*! ../styles/semantic-fixes.css */ \"./src/styles/semantic-fixes.css\");\n\n__webpack_require__(/*! ../styles/semantic-textcomplete.css */ \"./src/styles/semantic-textcomplete.css\"); // This has nothing to do with semantic but it's very convenient to include this here in leiu of global styles\n\n\n__webpack_require__(/*! ../styles/react-collapse.css */ \"./src/styles/react-collapse.css\");\n\n//# sourceURL=webpack:///./src/semantic/require-common.js?");
 
 /***/ }),
 
-/***/ "./shipreq/semantic/require-dev.js":
-/*!*****************************************!*\
-  !*** ./shipreq/semantic/require-dev.js ***!
-  \*****************************************/
+/***/ "./src/semantic/require-dev.js":
+/*!*************************************!*\
+  !*** ./src/semantic/require-dev.js ***!
+  \*************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("// This is loaded by webpack\n__webpack_require__(/*! ../../semantic/dist/semantic */ \"./semantic/dist/semantic.js\");\n\n__webpack_require__(/*! ./require-common */ \"./shipreq/semantic/require-common.js\");\n\n//# sourceURL=webpack:///./shipreq/semantic/require-dev.js?");
+eval("// This is loaded by webpack\n__webpack_require__(/*! ../../semantic/dist/semantic */ \"./semantic/dist/semantic.js\");\n\n__webpack_require__(/*! ./require-common */ \"./src/semantic/require-common.js\");\n\n//# sourceURL=webpack:///./src/semantic/require-dev.js?");
 
 /***/ }),
 
-/***/ "./shipreq/styles/react-collapse.css":
-/*!*******************************************!*\
-  !*** ./shipreq/styles/react-collapse.css ***!
-  \*******************************************/
+/***/ "./src/styles/react-collapse.css":
+/*!***************************************!*\
+  !*** ./src/styles/react-collapse.css ***!
+  \***************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./shipreq/styles/react-collapse.css?");
+eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./src/styles/react-collapse.css?");
 
 /***/ }),
 
-/***/ "./shipreq/styles/semantic-fixes.css":
-/*!*******************************************!*\
-  !*** ./shipreq/styles/semantic-fixes.css ***!
-  \*******************************************/
+/***/ "./src/styles/semantic-fixes.css":
+/*!***************************************!*\
+  !*** ./src/styles/semantic-fixes.css ***!
+  \***************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./shipreq/styles/semantic-fixes.css?");
+eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./src/styles/semantic-fixes.css?");
 
 /***/ }),
 
-/***/ "./shipreq/styles/semantic-textcomplete.css":
-/*!**************************************************!*\
-  !*** ./shipreq/styles/semantic-textcomplete.css ***!
-  \**************************************************/
+/***/ "./src/styles/semantic-textcomplete.css":
+/*!**********************************************!*\
+  !*** ./src/styles/semantic-textcomplete.css ***!
+  \**********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./shipreq/styles/semantic-textcomplete.css?");
+eval("// extracted by mini-css-extract-plugin\n\n//# sourceURL=webpack:///./src/styles/semantic-textcomplete.css?");
 
 /***/ })
 
