@@ -248,9 +248,6 @@ object Style extends StyleSheet.Inline {
       height(100 %%),
     )
 
-    val filterDeadButton = style(
-      textAlign.right)
-
     val noContent = style(
       marginTop(1 em))
 
@@ -260,6 +257,47 @@ object Style extends StyleSheet.Inline {
     val deadDropdownItem = style(
       textDecoration := "line-through",
       color(c"#999"))
+
+    val controlsRow1 = style(
+      display.flex)
+
+    val controlsSavedViews = style(
+      flexGrow(1))
+
+    val controlsFilterDead = style(
+      marginLeft(1.4 rem),
+      textAlign.right)
+
+    val controlsRow2 = style(
+      display.flex,
+      marginTop(1.1 rem),
+      marginBottom(2.3 rem))
+
+    val configContainer = style(
+      display.grid,
+      gridTemplateColumns := "auto auto auto",
+      gridTemplateRows := "auto auto",
+      gridTemplateAreas(
+        "dh lh ch",
+        "de le ce",
+      ),
+      columnGap(1 em))
+
+    val controlsFilter = style(
+      flexGrow(1),
+      marginLeft(1 rem),
+      textAlign.right,
+      unsafeChild("input")(textAlign.left))
+
+    private val configHeader = mixin(
+      fontWeight.bold)
+
+    val configGraphDirHeader = style(gridArea := "dh", configHeader)
+    val configGraphDirEditor = style(gridArea := "de")
+    val configLabelsHeader   = style(gridArea := "lh", configHeader)
+    val configLabelsEditor   = style(gridArea := "le")
+    val configColoursHeader  = style(gridArea := "ch", configHeader)
+    val configColoursEditor  = style(gridArea := "ce")
   }
 
   // ===================================================================================================================

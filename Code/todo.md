@@ -136,7 +136,6 @@ v2.1
 * ColourByTag -- need to handle tags being deleted in DataProp and/or ApplyEvent
 * change all multi-ver binary codecs to use `writeVersion` and `readByVersion`
 * add new protocol safety tests after ImpGraphConfig is finished
-* style ImpGraphPage properly (i.e. the controls)
 
 ### Rejected (at least for now)
 * (?) show a legend, filter out unused colours - maybe not needed anymore cos of tooltip

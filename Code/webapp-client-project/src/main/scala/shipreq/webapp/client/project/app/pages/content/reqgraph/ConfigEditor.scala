@@ -148,34 +148,37 @@ private[reqgraph] object ConfigEditor {
         NonEmptyArraySeq.force(MutableArray(all).sortBy(_._1).map(_._2).arraySeq)
       }
 
+    private val graphDirHeader = <.div(*.configGraphDirHeader, "Direction")
+    private val labelsHeader   = <.div(*.configLabelsHeader, "Labels")
+    private val coloursHeader  = <.div(*.configColoursHeader, "Colours")
+
     def render(p: Props): VdomNode = {
 
-      val graphDir =
+      val graphDirEditor =
         Dropdown.Props.NonEmpty(
           items    = graphDirOptions,
           selected = graphDirKey(p.state.value.graphDir))(
           onChange = i => p.state.modState(_.copy(graphDir = i.value))
         ).render
 
-      val labelFormat =
+      val labelsEditor =
         Dropdown.Props.NonEmpty(
           items    = labelFormatOptions,
           selected = labelFormatKey(p.state.value.labelFormat))(
           onChange = i => p.state.modState(_.copy(labelFormat = i.value))
         ).render
 
-      val colours =
+      val coloursEditor =
         Dropdown.Props.NonEmpty(
           items    = pxColourOptions.value(),
           selected = coloursKey(p.state.value.colours))(
           onChange = i => p.state.modState(_.copy(colours = i.value))
         ).render
 
-      <.div(
-        graphDir,
-        labelFormat,
-        colours,
-      )
+      <.div(*.configContainer,
+        graphDirHeader, <.div(*.configGraphDirEditor, graphDirEditor),
+        labelsHeader  , <.div(*.configLabelsEditor  , labelsEditor  ),
+        coloursHeader , <.div(*.configColoursEditor , coloursEditor ))
     }
   }
 

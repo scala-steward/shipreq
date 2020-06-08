@@ -57,8 +57,7 @@ object ReqGraphPage {
       )
 
       val filterDeadButton =
-        <.div(*.filterDeadButton,
-          FilterDeadButton.Component(StateSnapshot.withReuse(filterDead)(p.setFilterDead)))
+        FilterDeadButton.Component(StateSnapshot.withReuse(filterDead)(p.setFilterDead))
 
       def noContentMessage =
         if (filterDead.is(HideDead) && !impGraph.copy(reqWhitelist = p.savedViewFeature.pxReqWhitelistIgnoringFilterDead).isEmpty)
@@ -86,12 +85,15 @@ object ReqGraphPage {
           <.div(*.graph, impGraph.render)
 
       <.div(*.container,
-        <.div(
-          filterDeadButton,
-          p.savedViewFeature.renderSavedViewManager,
-          p.savedViewFeature.renderFilterEditor,
+
+        <.div(*.controlsRow1,
+          <.div(*.controlsSavedViews, p.savedViewFeature.renderSavedViewManager),
+          <.div(*.controlsFilterDead, filterDeadButton)),
+
+        <.div(*.controlsRow2,
           config,
-        ),
+          <.div(*.controlsFilter, p.savedViewFeature.renderFilterEditor)),
+
         content)
     }
   }
