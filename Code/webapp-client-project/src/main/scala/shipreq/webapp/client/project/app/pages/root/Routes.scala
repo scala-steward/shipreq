@@ -89,7 +89,6 @@ object Routes {
       def title(p: Page): String =
         WebappConfig.makePageTitle(Page.title(p) :+ rootInstance.unsafeProject().name: _*)
 
-
       ( staticPage(dsl.root       , Page.Index      )
       | staticPage(reqTablePath   , Page.ReqTable   )
       | staticPage("#issues"      , Page.Issues     )

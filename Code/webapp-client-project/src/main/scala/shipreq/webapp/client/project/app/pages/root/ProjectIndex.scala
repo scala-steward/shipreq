@@ -68,11 +68,21 @@ object ProjectIndex {
 
     case object Content extends Category(
       "Content", Icon.FileTextOutline, Colour.Blue, Colour.Default,
-      NonEmptyVector(ReqTable, ReqDetail, Issues, ReqGraph))
+      NonEmptyVector(
+        ReqTable,
+        ReqDetail,
+        ReqGraph,
+        Issues,
+      ))
 
     case object Configuration extends Category(
       "Configuration", Icon.Setting, Colour.Yellow, Colour.Grey,
-      NonEmptyVector(CfgFields, CfgIssues, CfgReqTypes, CfgTags))
+      NonEmptyVector(
+        CfgFields,
+        CfgIssues,
+        CfgReqTypes,
+        CfgTags,
+      ))
 
     implicit def univEq: UnivEq[Category] = UnivEq.derive
 
