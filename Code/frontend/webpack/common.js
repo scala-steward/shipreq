@@ -5,8 +5,6 @@ const
   MiniCssExtractPlugin = require('mini-css-extract-plugin'),
   NodeModules = Path.resolve(__dirname, '../node_modules');
 
-const entryPoints = es => es.filter(e => !!e);
-
 const config = ({ mode }) => ({
 
   entry: {
@@ -19,6 +17,8 @@ const config = ({ mode }) => ({
     path: `/tmp/shipreq.webpack.${mode}`,
     filename: '[name].js',
     chunkFilename: 'chunk-[name]-[id].[ext]',
+    library: '',
+    libraryTarget: 'window',
   },
 
   context: Path.resolve(__dirname, '..'),
@@ -38,10 +38,8 @@ const config = ({ mode }) => ({
   module: {
     rules: [
 
-      // Transpile our analytics.js & libs autotrack & dom-utils out of ES6
-      // See: https://github.com/googleanalytics/autotrack/issues/137
       {
-        resource: { test: /node_modules\/(autotrack|dom-utils)\/|analytics\.js$/ },
+        test: /\.js$/,
         use: {
           loader: 'babel-loader',
           options: {
@@ -60,7 +58,7 @@ const config = ({ mode }) => ({
       },
 
       {
-        test: /.css$/,
+        test: /\.css$/,
         use: [
           MiniCssExtractPlugin.loader,
           'css-loader',

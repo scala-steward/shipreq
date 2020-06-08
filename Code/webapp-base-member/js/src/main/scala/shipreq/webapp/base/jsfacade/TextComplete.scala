@@ -8,7 +8,7 @@ import scalajs.js
 import TextComplete._
 
 @js.native
-@JSGlobal("TextComplete.default")
+@JSGlobal("TextComplete")
 final class TextComplete(val editor: Editor, options: Options = js.native) extends js.Any {
 
   def register(ss: js.Array[Strategy[_]]): this.type = js.native
@@ -37,7 +37,7 @@ object TextComplete {
   }
 
   @js.native
-  @JSGlobal("TextCompleteTA.default")
+  @JSGlobal("TextCompleteTA")
   final class TextArea(element: html.TextArea) extends Editor
 
   @js.native

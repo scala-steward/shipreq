@@ -2,10 +2,12 @@ import 'core-js/features/map';
 import 'core-js/features/object/assign';
 import 'core-js/features/set';
 
-window.React          = require('react');
-window.ReactDOM       = require('react-dom');
-window.ReactDOMServer = require('react-dom/server');
-window.ReactTestUtils = require('react-dom/test-utils');
+export { default as React          } from 'react';
+export { default as ReactDOM       } from 'react-dom';
+export { default as ReactDOMServer } from 'react-dom/server';
+export { default as ReactTestUtils } from 'react-dom/test-utils';
 
-window.TextComplete   = require('textcomplete/lib/textcomplete');
-window.TextCompleteTA = require('textcomplete/lib/textarea');
+export { default as TextComplete   } from 'textcomplete/lib/textcomplete';
+export { default as TextCompleteTA } from 'textcomplete/lib/textarea';
+
+export * from './semantic-ui';

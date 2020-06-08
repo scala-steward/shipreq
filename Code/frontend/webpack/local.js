@@ -8,23 +8,13 @@ const
 
 const config = {
 
-  // NOTE: airbnb-js-shims can be upgraded to airbnb-browser-shims if future shit crashes PhantomJS
-
   entry: {
 
     // Projects access this via symlink in src/test/resources
-    'webapp-base-test': [
-      './shipreq/js/webapp-base-test.js',
-      'expose-loader?$!expose-loader?jQuery!jquery', // for Semantic UI -- must precede it! order in this array matters
-      './semantic/dist/semantic.min', //.js
-    ],
+    'webapp-base-test': './shipreq/js/webapp-base-test.js',
 
     // Projects access this via symlink in src/test/resources
-    'webapp-client-test': [
-      './shipreq/js/webapp-client-test.js',
-      'expose-loader?$!expose-loader?jQuery!jquery', // for Semantic UI -- must precede it! order in this array matters
-      './semantic/dist/semantic.min', //.js
-    ],
+    'webapp-client-test': './shipreq/js/webapp-client-test.js',
 
     // webappSsrJvm accesses this via symlink in src/main/resources
     'webapp-ssr-deps': './shipreq/js/webapp-ssr-deps.js',
@@ -34,6 +24,8 @@ const config = {
     path: Path.resolve(__dirname, '../dist/local'),
     filename: '[name].js',
     chunkFilename: 'chunk-[name]-[id].[ext]',
+    library: '',
+    libraryTarget: 'window',
   },
 
   context: Path.resolve(__dirname, '..'),
@@ -47,6 +39,19 @@ const config = {
   resolveLoader: {
     modules: [
       NodeModules,
+    ],
+  },
+
+  module: {
+    rules: [
+      {
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env'],
+          },
+        },
+      },
     ],
   },
 
