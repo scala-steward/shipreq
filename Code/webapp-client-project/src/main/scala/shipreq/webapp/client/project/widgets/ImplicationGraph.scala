@@ -4,8 +4,8 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.VdomElement
 import org.scalajs.dom.document
+import org.scalajs.dom.raw.SVGSVGElement
 import scala.annotation.nowarn
-import shipreq.base.util.Valid
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
@@ -69,6 +69,12 @@ object ImplicationGraph {
 
   final class Backend($: BackendScope[Props, State]) extends GraphBackend($) {
 
+    override protected def displayMode(p: Props): DisplayMode =
+      p match {
+        case _: Props.FocusReq => DisplayMode.FitToWidth
+        case _: Props.All      => DisplayMode.PanZoom
+      }
+
     override def cmd(props: Props) =
       props match {
         case p: Props.FocusReq =>
@@ -87,8 +93,8 @@ object ImplicationGraph {
           )
       }
 
-    override def enrich(p: Props): Callback =
-      $.getDOMNode.map(_.toElement.foreach { root =>
+    override def enrich(p: Props, root: SVGSVGElement): Callback =
+      Callback {
 
         val hoverTextFor: Req => String =
           p match {
@@ -121,7 +127,7 @@ object ImplicationGraph {
                 node.style.cursor = "pointer"
             }
         }
-      })
+      }
   }
 
   private[widgets] object HoverText {

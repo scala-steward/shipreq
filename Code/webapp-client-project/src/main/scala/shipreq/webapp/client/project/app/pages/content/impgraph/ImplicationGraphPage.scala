@@ -85,11 +85,13 @@ object ImplicationGraphPage {
         else
           <.div(*.graph, impGraph.render)
 
-      <.div(BaseStyles.containerFull,
-        filterDeadButton,
-        p.savedViewFeature.renderSavedViewManager,
-        p.savedViewFeature.renderFilterEditor,
-        config,
+      <.div(*.container,
+        <.div(
+          filterDeadButton,
+          p.savedViewFeature.renderSavedViewManager,
+          p.savedViewFeature.renderFilterEditor,
+          config,
+        ),
         content)
     }
   }

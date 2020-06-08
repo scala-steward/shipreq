@@ -43,7 +43,7 @@ object ReactVirtualized {
 
       val p = (new js.Object).asInstanceOf[Props]
       p.children = dims => {
-        println(s"dims = ${dims.width} x ${dims.height}")
+        // println(s"dims = ${dims.width} x ${dims.height}")
         if (requireNonZero && (dims.width == 0 || dims.height == 0))
           null
         else

@@ -136,10 +136,11 @@ v2.1
 * ColourByTag -- need to handle tags being deleted in DataProp and/or ApplyEvent
 * change all multi-ver binary codecs to use `writeVersion` and `readByVersion`
 * add new protocol safety tests after ImpGraphConfig is finished
-* show a legend, filter out unused colours
 * style ImpGraphPage properly (i.e. the controls)
 * (?) Rename ImpGraphPage to "Req Graph"
+
+### Rejected (at least for now)
+* (?) show a legend, filter out unused colours - maybe not needed anymore cos of tooltip
+* (?) allow users to control wrapWidth (currently hardcoded to 28em)
 * (?) Filter by chain size (eg. 0=all, 1 removes all nodes without imp, 2 removes A-B but not A-B-C)
   (?) or maybe add `isImplied` & `implies` (or similar) to FilterAst
-* (?) allow users to control wrapWidth (currently hardcoded to 28em)
-* allow zooming in/out

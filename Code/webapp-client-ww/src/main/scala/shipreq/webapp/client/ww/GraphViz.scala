@@ -7,9 +7,9 @@ import scala.scalajs.js
 import scala.scalajs.js.JSON
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.{Backwards, Direction, ErrorMsg, Forwards}
+import shipreq.webapp.base.data.Svg
 import shipreq.webapp.base.data.savedview.ImpGraphConfig.GraphDir
 import shipreq.webapp.base.{AssetManifest, UiText}
-import shipreq.webapp.client.ww.api.Svg
 
 object GraphViz {
   private type RawFn = js.Function1[String, js.Thenable[String]]

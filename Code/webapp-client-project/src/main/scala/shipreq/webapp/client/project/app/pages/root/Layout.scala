@@ -185,7 +185,11 @@ object Layout {
         p.feedbackModal.render,
         p.reauthModal.render,
         RichTextEditorHelp.allRendered,
-        p.content))
+        <.div(BaseStyles.containerFull,
+          p.content
+        )
+      )
+    )
       .render
   }
 

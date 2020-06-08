@@ -46,6 +46,9 @@ object WebWorkerCmd {
   import shipreq.webapp.base.protocol.binary.v1.Rev1._
   import shipreq.webapp.base.protocol.binary.v1.Rev1.SavedViewPicklers._
 
+  implicit val picklerSvg: Pickler[Svg] =
+    transformPickler(Svg.apply)(_.content)
+
   implicit val picklerNoResult: Pickler[NoResult.type] =
     ConstPickler(NoResult)
 

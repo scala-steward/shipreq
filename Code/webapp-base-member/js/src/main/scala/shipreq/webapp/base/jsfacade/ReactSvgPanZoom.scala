@@ -59,7 +59,7 @@ object ReactSvgPanZoom {
 
   type OnChangeTool  = js.Function1[Tool, Unit]
   type OnChangeValue = js.Function1[Value, Unit]
-  type onMouseEvent = js.Function1[ViewerMouseEvent, Unit]
+  type OnMouseEvent  = js.Function1[ViewerMouseEvent, Unit]
 
   @js.native
   trait Props extends js.Object {
@@ -129,9 +129,9 @@ object ReactSvgPanZoom {
       width          = width,
       height         = height,
       value          = value,
-      onChangeValue  = onChangeValue.andThen(_.runNow()),
+      onChangeValue  = onChangeValue.andThen(_.runNow()): OnChangeValue,
       tool           = tool,
-      onChangeTool   = onChangeTool.andThen(_.runNow()),
+      onChangeTool   = onChangeTool.andThen(_.runNow()): OnChangeTool,
       background     = background,
       detectAutoPan  = detectAutoPan,
       miniatureProps = miniatureProps,

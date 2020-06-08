@@ -100,7 +100,7 @@ object Style extends StyleSheet.Inline {
     unsafeRoot(".ui.dropdown>.text")(minHeight(0.8 em)),
   )
 
-  val svgGraph = style(
+  val svgGraphFitToWidth = style(
     unsafeChild("svg")(
       maxWidth(100 %%)))
 
@@ -242,6 +242,12 @@ object Style extends StyleSheet.Inline {
   // ===================================================================================================================
   object impgraphPage {
 
+    val container = style(
+      display.flex,
+      flexDirection.column,
+      height(100 %%),
+    )
+
     val filterDeadButton = style(
       textAlign.right)
 
@@ -249,8 +255,7 @@ object Style extends StyleSheet.Inline {
       marginTop(1 em))
 
     val graph = style(
-      textAlign.center,
-      margin.horizontal(auto))
+      flexGrow(1))
 
     val deadDropdownItem = style(
       textDecoration := "line-through",
