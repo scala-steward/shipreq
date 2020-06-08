@@ -42,7 +42,20 @@ const config = ({ mode }) => ({
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-env'],
+            presets: [
+              [
+                '@babel/preset-env',
+                {
+                  targets: [
+                    "last 2 Chrome versions",
+                    "last 2 Firefox versions",
+                    "last 2 Edge versions",
+                    "last 2 iOS versions",
+                    "last 2 Safari versions",
+                  ]
+                }
+              ],
+            ],
           },
         },
       },

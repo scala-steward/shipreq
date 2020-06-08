@@ -42,7 +42,17 @@ const config = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-env'],
+            presets: [
+              [
+                '@babel/preset-env',
+                {
+                  targets: [
+                    "PhantomJS 2.1",
+                    "maintained node versions",
+                  ]
+                }
+              ],
+            ],
           },
         },
       },
