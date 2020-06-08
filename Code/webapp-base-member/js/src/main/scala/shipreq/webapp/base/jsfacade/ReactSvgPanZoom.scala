@@ -9,57 +9,71 @@ import scalajs.js.annotation._
 // https://github.com/chrvadala/react-svg-pan-zoom/blob/master/docs/documentation.md
 object ReactSvgPanZoom {
 
-  sealed trait Action   extends js.Any
-  sealed trait Align    extends js.Any
-  sealed trait Mode     extends js.Any
-  sealed trait Position extends js.Any
-  sealed trait Tool     extends js.Any
-  sealed trait Value    extends js.Any
+  @js.native sealed trait Action   extends js.Any
+  @js.native sealed trait AlignX   extends js.Any
+  @js.native sealed trait AlignY   extends js.Any
+  @js.native sealed trait Mode     extends js.Any
+  @js.native sealed trait Position extends js.Any
+  @js.native sealed trait Tool     extends js.Any
+
+  @js.native
+  sealed trait Value extends js.Object {
+    var viewerWidth : js.UndefOr[Double]
+    var viewerHeight: js.UndefOr[Double]
+    var SVGWidth    : js.UndefOr[Double]
+    var SVGHeight   : js.UndefOr[Double]
+    var SVGMinX     : js.UndefOr[Double]
+    var SVGMinY     : js.UndefOr[Double]
+  }
+
+  def Value(): Value =
+    (new js.Object).asInstanceOf[Value]
 
   @JSGlobal("RSPZ")
   @js.native
   object Exports extends js.Object {
-  //val ACTION_PAN                  : Action    = js.native
-  //val ACTION_ZOOM                 : Action    = js.native
-  //val ALIGN_BOTTOM                : Align     = js.native
-  //val ALIGN_CENTER                : Align     = js.native
-  //val ALIGN_COVER                 : Align     = js.native
-  //val ALIGN_LEFT                  : Align     = js.native
-  //val ALIGN_RIGHT                 : Align     = js.native
-  //val ALIGN_TOP                   : Align     = js.native
-    val INITIAL_VALUE               : Value     = js.native
-  //val MODE_IDLE                   : Mode      = js.native
-  //val MODE_PANNING                : Mode      = js.native
-  //val MODE_ZOOMING                : Mode      = js.native
-  //val Miniature                   : js.Any    = js.native // f(props)
-  //val POSITION_BOTTOM             : Position  = js.native
-  //val POSITION_LEFT               : Position  = js.native
-  //val POSITION_NONE               : Position  = js.native
-    val POSITION_RIGHT              : Position  = js.native
-  //val POSITION_TOP                : Position  = js.native
-    val ReactSVGPanZoom             : js.Any    = js.native // f(props, context)
-    val TOOL_AUTO                   : Tool      = js.native
-  //val TOOL_NONE                   : Tool      = js.native
-  //val TOOL_PAN                    : Tool      = js.native
-  //val TOOL_ZOOM_IN                : Tool      = js.native
-  //val TOOL_ZOOM_OUT               : Tool      = js.native
-  //val Toolbar                     : js.Any    = js.native // f(_ref)
-  //val UncontrolledReactSVGPanZoom : js.Any    = js.native // f(props)
-  //val Viewer                      : js.Any    = js.native // f()
-  //val closeMiniature              : js.Any    = js.native // f(value)
-  //val fitSelection                : js.Any    = js.native // f(value, selectionSVGPointX, selectionSVGPointY, selectionWidth, selectionHeight)
-  //val fitToViewer                 : js.Any    = js.native // f(value)
-  //val openMiniature               : js.Any    = js.native // f(value)
-  //val pan                         : js.Any    = js.native // f(value, SVGDeltaX, SVGDeltaY)
-  //val reset                       : js.Any    = js.native // f(value)
-  //val setPointOnViewerCenter      : js.Any    = js.native // f(value, SVGPointX, SVGPointY, zoomLevel)
-  //val zoom                        : js.Any    = js.native // f(value, SVGPointX, SVGPointY, scaleFactor)
-  //val zoomOnViewerCenter          : js.Any    = js.native // f(value, scaleFactor)
+  //val ACTION_PAN                  : Action             = js.native
+  //val ACTION_ZOOM                 : Action             = js.native
+  //val ALIGN_BOTTOM                : AlignY             = js.native
+    val ALIGN_CENTER                : AlignX with AlignY = js.native
+  //val ALIGN_COVER                 : Align?             = js.native
+  //val ALIGN_LEFT                  : AlignX             = js.native
+  //val ALIGN_RIGHT                 : AlignX             = js.native
+  //val ALIGN_TOP                   : AlignY             = js.native
+    val INITIAL_VALUE               : Value              = js.native
+  //val MODE_IDLE                   : Mode               = js.native
+  //val MODE_PANNING                : Mode               = js.native
+  //val MODE_ZOOMING                : Mode               = js.native
+  //val Miniature                   : js.Any             = js.native // f(props)
+  //val POSITION_BOTTOM             : Position           = js.native
+  //val POSITION_LEFT               : Position           = js.native
+  //val POSITION_NONE               : Position           = js.native
+    val POSITION_RIGHT              : Position           = js.native
+  //val POSITION_TOP                : Position           = js.native
+    val ReactSVGPanZoom             : js.Any             = js.native // f(props, context)
+    val TOOL_AUTO                   : Tool               = js.native
+  //val TOOL_NONE                   : Tool               = js.native
+  //val TOOL_PAN                    : Tool               = js.native
+  //val TOOL_ZOOM_IN                : Tool               = js.native
+  //val TOOL_ZOOM_OUT               : Tool               = js.native
+  //val Toolbar                     : js.Any             = js.native // f(_ref)
+  //val UncontrolledReactSVGPanZoom : js.Any             = js.native // f(props)
+  //val Viewer                      : js.Any             = js.native // f()
+  //val closeMiniature              : js.Any             = js.native // f(value)
+  //val fitSelection                : js.Any             = js.native // f(value, selectionSVGPointX, selectionSVGPointY, selectionWidth, selectionHeight)
+    val fitToViewer                 : FitToViewer        = js.native // f(value)
+  //val openMiniature               : js.Any             = js.native // f(value)
+  //val pan                         : js.Any             = js.native // f(value, SVGDeltaX, SVGDeltaY)
+  //val reset                       : js.Any             = js.native // f(value)
+  //val setPointOnViewerCenter      : js.Any             = js.native // f(value, SVGPointX, SVGPointY, zoomLevel)
+  //val zoom                        : js.Any             = js.native // f(value, SVGPointX, SVGPointY, scaleFactor)
+  //val zoomOnViewerCenter          : js.Any             = js.native // f(value, scaleFactor)
   }
 
   type OnChangeTool  = js.Function1[Tool, Unit]
   type OnChangeValue = js.Function1[Value, Unit]
   type OnMouseEvent  = js.Function1[ViewerMouseEvent, Unit]
+  type FitToViewer   = js.Function3[Value, AlignX, AlignY, Value]
 
   @js.native
   trait Props extends js.Object {
@@ -72,6 +86,7 @@ object ReactSvgPanZoom {
     var background    : js.UndefOr[String]         = js.native
     var detectAutoPan : js.UndefOr[Boolean]        = js.native
     var miniatureProps: js.UndefOr[MiniatureProps] = js.native
+    var toolbarProps  : js.UndefOr[ToolbarProps]   = js.native
 
     // SVGBackground                       white    String                                 Background of the SVG
     // SVGStyle                            {}       Object                                 Style of the SVG
@@ -100,19 +115,22 @@ object ReactSvgPanZoom {
     // disableDoubleClickZoomWithToolAuto  false    Boolean                                Turn off zoom on double click
     // customMiniature                     -        Component                              Override miniature component
     // customToolbar                       -        Component                              Override toolbar component
-    // toolbarProps                        {}       Object                                 Toolbar settings
-    // toolbarProps.position               right    one of none, top, right, bottom, left  Toolbar position
-    // toolbarProps.SVGAlignX              left     one of left, center, right             X Alignment used for "Fit to Viewer" action
-    // toolbarProps.SVGAlignY              top      one of top, center, bottom             Y Alignment used for "Fit to Viewer" action
-    // toolbarProps.activeToolColor        #1CA6FC  String                                 Color of active and hovered tool icons
   }
 
   @js.native
   trait MiniatureProps extends js.Object {
-    var position   : js.UndefOr[Position] = js.native // Default = left
-    var background : js.UndefOr[String]   = js.native // Default = #616264
-    var width      : js.UndefOr[Double]   = js.native // Default = 100
-    var height     : js.UndefOr[Double]   = js.native // Default = 80
+    var position  : js.UndefOr[Position] = js.native // Default = left
+    var background: js.UndefOr[String]   = js.native // Default = #616264
+    var width     : js.UndefOr[Double]   = js.native // Default = 100
+    var height    : js.UndefOr[Double]   = js.native // Default = 80
+  }
+
+  @js.native
+  trait ToolbarProps extends js.Object {
+    var position       : js.UndefOr[Position] = js.native // Default = right   Toolbar position
+    var SVGAlignX      : js.UndefOr[AlignX]   = js.native // Default = left    X Alignment used for "Fit to Viewer" action
+    var SVGAlignY      : js.UndefOr[AlignY]   = js.native // Default = top     Y Alignment used for "Fit to Viewer" action
+    var activeToolColor: js.UndefOr[String]   = js.native // Default = #1CA6FC Color of active and hovered tool icons
   }
 
   def Props(width         : Double,
@@ -121,9 +139,10 @@ object ReactSvgPanZoom {
             onChangeValue : Value => Callback,
             tool          : Tool,
             onChangeTool  : Tool => Callback,
-            background    : js.UndefOr[String]                       = js.undefined,
-            detectAutoPan : js.UndefOr[Boolean]                      = js.undefined,
-            miniatureProps: js.UndefOr[MiniatureProps]               = js.undefined,
+            background    : js.UndefOr[String]         = js.undefined,
+            detectAutoPan : js.UndefOr[Boolean]        = js.undefined,
+            miniatureProps: js.UndefOr[MiniatureProps] = js.undefined,
+            toolbarProps  : js.UndefOr[ToolbarProps]   = js.undefined,
            ): Props =
     js.Dynamic.literal(
       width          = width,
@@ -135,6 +154,7 @@ object ReactSvgPanZoom {
       background     = background,
       detectAutoPan  = detectAutoPan,
       miniatureProps = miniatureProps,
+      toolbarProps   = toolbarProps,
     ).asInstanceOf[Props]
 
   def MiniatureProps(position  : js.UndefOr[Position] = js.undefined,
@@ -148,6 +168,18 @@ object ReactSvgPanZoom {
       width      = width,
       height     = height,
     ).asInstanceOf[MiniatureProps]
+
+  def ToolbarProps(position       : js.UndefOr[Position] = js.undefined,
+                   SVGAlignX      : js.UndefOr[AlignX]   = js.undefined,
+                   SVGAlignY      : js.UndefOr[AlignY]   = js.undefined,
+                   activeToolColor: js.UndefOr[String]   = js.undefined,
+                    ): ToolbarProps =
+    js.Dynamic.literal(
+      position        = position,
+      SVGAlignX       = SVGAlignX,
+      SVGAlignY       = SVGAlignY,
+      activeToolColor = activeToolColor,
+    ).asInstanceOf[ToolbarProps]
 
   @js.native
   sealed trait ViewerMouseEvent extends js.Object {
@@ -163,6 +195,34 @@ object ReactSvgPanZoom {
     def stopPropagation(): Unit
   }
 
-  val Component = JsComponent[Props, Children.Varargs, Null](Exports.ReactSVGPanZoom)
+  @js.native
+  sealed trait State extends js.Object {
+    val defaultValue: Value
+  }
+
+  @js.native
+  sealed trait Backend extends js.Object {
+
+    /** Fit all SVG to Viewer (SVGAlignX: one of left, center, right, SVGAlignY: one of top, center, bottom) */
+    def fitToViewer(SVGAlignX: AlignX = js.native, SVGAlignY: AlignY = js.native): Unit
+
+    /** Reset Viewer view to default */
+    def reset(): Unit
+
+    // def pan(SVGDeltaX, SVGDeltaY)	Apply a pan
+    // def zoom(SVGPointX, SVGPointY, scaleFactor)	Zoom in or out the SVG
+    // def fitSelection(selectionSVGPointX, selectionSVGPointY, selectionWidth, selectionHeight)	Fit an SVG area to viewer
+    // def setPointOnViewerCenter(SVGPointX, SVGPointY, zoomLevel)	Set a point on Viewer center
+    // def zoomOnViewerCenter(scaleFactor)	Zoom SVG on center
+    // def getValue()	Get current viewer value
+    // def setValue(value)	Through this method you can set a new value
+    // def getTool()	Get current tool
+    // def changeTool(tool)	Change the tool (one of none,pan,zoom-in,zoom-out,auto)
+    // def openMiniature	Open the miniature
+    // def closeMiniature	Close the miniature
+  }
+
+  val Component = JsComponent[Props, Children.Varargs, State](Exports.ReactSVGPanZoom)
+    .addFacade[Backend]
 
 }

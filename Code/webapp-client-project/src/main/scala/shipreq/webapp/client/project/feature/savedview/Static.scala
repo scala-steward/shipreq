@@ -7,7 +7,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.{Px, StateSnapshot}
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util.{ErrorMsg, OptionalBoolFn}
-import shipreq.webapp.base.data.savedview.{Column, ImpGraphConfig, SavedViews, SortCriteria, View}
+import shipreq.webapp.base.data.savedview.{Column, ImpGraphConfig, SavedView, SavedViews, SortCriteria, View}
 import shipreq.webapp.base.data.{FilterDead, Live, Project, Req, ReqId, ShowDead}
 import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.feature.AsyncFeature
@@ -39,6 +39,9 @@ final case class Static(stateAccess                   : StateAccessPure[(State, 
 
   val pxViewState: Px[ViewLogic.State] =
     Px.callback(stateAccess.state.map(_._1.view)).withReuse.autoRefresh
+
+  val pxSavedViewId: Px[Option[SavedView.Id]] =
+    pxViewState.map(_.referenceViewId).withReuse
 
   val pxSavedViews: Px[SavedViews.Optional] =
     pxProject.map(_.savedViews).withReuse
