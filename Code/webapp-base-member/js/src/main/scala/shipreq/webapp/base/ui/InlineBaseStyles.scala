@@ -12,10 +12,6 @@ object InlineBaseStyles {
     ^.marginRight.auto,
     ^.maxWidth := s"calc(723px + $pageMarginStr + $pageMarginStr)")
 
-  val containerFull = TagMod(
-    ^.flexGrow := "1",
-  )
-
   object layout {
     val root = TagMod(
       ^.display.flex,
@@ -32,7 +28,6 @@ object InlineBaseStyles {
       ^.marginRight := "0.8em")
 
     val main = TagMod(
-      ^.display.flex,
       ^.flex         := "1",
       ^.marginTop    := pageMarginStr,
       ^.marginBottom := pageMarginStr,

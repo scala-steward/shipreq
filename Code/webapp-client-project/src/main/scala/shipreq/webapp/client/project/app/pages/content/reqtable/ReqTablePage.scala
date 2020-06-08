@@ -181,8 +181,6 @@ object ReqTablePage {
       p.state.modal renderOrElse renderMain(p)
     }
 
-    private val mainBase = <.main(BaseStyles.containerFull)
-
     def renderEmptyProject: VdomTag =
       NoContentMessage(
         "Welcome to your new project!",
@@ -264,7 +262,7 @@ object ReqTablePage {
           case Mode.EmptyProject         => renderEmptyProject
         }
 
-      mainBase(
+      <.main(
         p.savedViews.renderSavedViewsAndFilterDeadButton(filterDeadButton),
         <.div(*.actionCtrls,
           newStuff.buttonProps.render,

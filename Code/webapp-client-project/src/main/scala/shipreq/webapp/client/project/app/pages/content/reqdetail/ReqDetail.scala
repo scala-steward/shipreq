@@ -220,7 +220,6 @@ object ReqDetail {
 
     def render(p: DynamicProps): VdomElement =
       <.main(
-        BaseStyles.containerFull,
         p.state.value renderOrElse {
           refreshPx()
           pxData.value() match {

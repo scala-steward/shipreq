@@ -16,7 +16,6 @@ object BaseStyles extends StyleSheet.Inline {
   }
 
   @inline def containerLarge = InlineBaseStyles.containerLarge
-  @inline def containerFull  = InlineBaseStyles.containerFull
   @inline def layout         = InlineBaseStyles.layout
 
   val pageMargin = InlineBaseStyles.pageMarginRem.rem

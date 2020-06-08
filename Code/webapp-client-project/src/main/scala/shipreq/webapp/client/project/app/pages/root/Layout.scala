@@ -178,6 +178,7 @@ object Layout {
     MemberLayout.Props(
       navBar,
       <.div(
+        ^.display.flex,
         _,
         Style.layout,
         FilterHelp.modal.render,
@@ -185,7 +186,8 @@ object Layout {
         p.feedbackModal.render,
         p.reauthModal.render,
         RichTextEditorHelp.allRendered,
-        <.div(BaseStyles.containerFull,
+        <.div(
+          ^.flexGrow := "1",
           p.content
         )
       )
