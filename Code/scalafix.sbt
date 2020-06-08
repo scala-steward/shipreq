@@ -1,9 +1,18 @@
-ThisBuild / scalacOptions += "-Yrangepos"
+{
+  if (Common.releaseMode)
+    Nil
+  else
+    Seq(
 
-ThisBuild / semanticdbEnabled := true
+      ThisBuild / scalacOptions += "-Yrangepos",
 
-ThisBuild / semanticdbVersion := "4.3.13"
+      ThisBuild / semanticdbEnabled := true,
 
-ThisBuild / scalafixDependencies ++= Seq(
-  "com.github.liancheng" %% "organize-imports" % "0.3.1-RC2"
-)
+      ThisBuild / semanticdbVersion := "4.3.13",
+
+      ThisBuild / scalafixDependencies ++= Seq(
+        "com.github.liancheng" %% "organize-imports" % "0.3.1-RC2"
+      )
+
+    )
+}
