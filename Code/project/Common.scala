@@ -3,7 +3,7 @@ import sbt.Keys._
 import com.typesafe.sbt.GitPlugin.autoImport._
 import java.nio.file.{Files, Path}
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
-import org.scalajs.jsenv.phantomjs.PhantomJSEnv
+import org.scalajs.jsenv.phantomjs.sbtplugin.PhantomJSEnvPlugin.autoImport._
 import org.scalajs.linker.interface.{CheckedBehavior, Semantics}
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import org.scalajs.sbtplugin.Stage
@@ -226,7 +226,6 @@ object Common {
       InBrowserTesting.js)
     .depsForJs(Dependencies.scalajsJavaTime)
     .settings(
-      scalacOptions += "-P:scalajs:sjsDefinedByDefault",
       parallelExecution in testOnly := false,
       scalaJSLinkerConfig ~= { _.withSourceMap(emitSourceMapsValue) })
 
@@ -275,7 +274,7 @@ object Common {
       case UsePhantomJs =>
         _.settings(
           scalaJSLinkerConfig in Test ~= { _.withESFeatures(_.withUseECMAScript2015(false)) },
-          jsEnv in Test := new PhantomJSEnv(PhantomJSEnv.Config()))
+          jsEnv in Test := PhantomJSEnv().value)
     }
 
   def devMode: Boolean = !releaseMode

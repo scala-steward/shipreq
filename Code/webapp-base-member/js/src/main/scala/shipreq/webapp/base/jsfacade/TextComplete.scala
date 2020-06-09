@@ -116,9 +116,9 @@ object TextComplete {
     @inline def builder = Step1
 
     object Step1 {
-      def regex(pattern: String, flags: String = "", index: Index = undefined): Step2 = regexp(new RegExp(pattern, flags), index)
-      def regexp(r: RegExp,                          index: Index = undefined): Step2 = new Step2(r, index)
-      def apply(f: String => MatchData,              index: Index = undefined): Step2 = new Step2(f: String --> MatchData, index)
+      def regex(pattern: String, flags: String = "", index: Index = ()): Step2 = regexp(new RegExp(pattern, flags), index)
+      def regexp(r: RegExp,                          index: Index = ()): Step2 = new Step2(r, index)
+      def apply(f: String => MatchData,              index: Index = ()): Step2 = new Step2(f: String --> MatchData, index)
     }
 
     final class Step2(`match`: Match, index: Index) {

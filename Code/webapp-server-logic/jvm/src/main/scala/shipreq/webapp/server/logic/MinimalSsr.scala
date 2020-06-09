@@ -62,14 +62,14 @@ final class MinimalSsr[F[_]]()(implicit F: Monad[F],
 
       val public: F[Public[F]] = logAndTrace("public")(F.point {
 
-        def render(u: Option[Username]) =
+        def render(u: Option[Username]): Expr.Result[String] =
           ctx.eval(RealSsr.renderPublic(PublicInitData(publicRegistration, u)))
 
         val cached =
           for {
             _    <- ctx.eval(ReactSsr.setUrl(baseUrl.value))
             anon <- render(None)
-            user <- CacheAndReplace.compile1((u: Username) => render(Some(u)))
+            user <- CacheAndReplace.compileF1((u: Username) => render(Some(u)))
           } yield (Html(anon), user.andThen(Html.apply))
 
         cached match {
@@ -91,10 +91,10 @@ final class MinimalSsr[F[_]]()(implicit F: Monad[F],
 
       val home: F[HomeSpaLoader[F]] = logAndTrace("home")(F.point {
 
-        def render(u: Username) =
+        def render(u: Username): Expr.Result[String] =
           ctx.eval(RealSsr.renderHomeSpaLoader(HomeSpaLoaderData(u)))
 
-        CacheAndReplace.compile1(render) match {
+        CacheAndReplace.compileF1(render) match {
           case Right(t) => i => F.pure(Some(Html(t(i.username))))
           case Left(e)  => fail1("home SPA loader", e)
         }
@@ -104,10 +104,10 @@ final class MinimalSsr[F[_]]()(implicit F: Monad[F],
 
       val project: F[ProjectSpaLoader[F]] = logAndTrace("project")(F.point {
 
-        def render(u: Username, p: Project.Name) =
+        def render(u: Username, p: Project.Name): Expr.Result[String] =
           ctx.eval(RealSsr.renderProjectSpaLoader(ProjectSpaLoaderData(u, p)))
 
-        CacheAndReplace.compile2(render) match {
+        CacheAndReplace.compileF2(render) match {
           case Right(t) => i => F.pure(Some(Html(t(i.username, i.projectName))))
           case Left(e)  => fail1("project SPA loader", e)
         }

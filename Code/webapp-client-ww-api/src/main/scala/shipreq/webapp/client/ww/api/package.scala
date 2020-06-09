@@ -5,8 +5,6 @@ import scala.scalajs.js
 
 package object api {
 
-  @inline private[api] lazy val console = {
-    def g = js.Dynamic.global
-    (g.self || g.window).console.asInstanceOf[Console]
-  }
+  @inline private[api] lazy val console =
+    (js.Dynamic.global.self || js.Dynamic.global.window).console.asInstanceOf[Console]
 }
