@@ -1,8 +1,10 @@
-
-import sbt._, Keys._
-import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
+import sbt._
+import sbt.Keys._
+import org.scalajs.jsdependencies.sbtplugin.JSDependenciesPlugin
+import org.scalajs.jsdependencies.sbtplugin.JSDependenciesPlugin.autoImport._
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
+import sbtcrossproject.CrossPlugin.autoImport._
 import sbtcrossproject.CrossProject
-import sbtcrossproject.CrossPlugin.autoImport.{crossProject => _, _}
 import scalajscrossproject.ScalaJSCrossPlugin.autoImport._
 import Common._
 import Dependencies._
@@ -125,14 +127,14 @@ object ShipReqBuild {
     def jsSettings: Project => Project = {
       import org.scalajs.sbtplugin._
 
-      _.enablePlugins(ScalaJSPlugin)
+      _.enablePlugins(ScalaJSPlugin, JSDependenciesPlugin)
         .dependsOn(webappClientProject, webappClientWw)
         .depsForJs(scalajsBenchmark)
         .configure(
           Common.jsSettings(NoTests))
         .settings(
-          skip in packageJSDependencies := false,
-          emitSourceMaps := true)
+          scalaJSLinkerConfig ~= { _.withSourceMap(true) },
+          skip in packageJSDependencies := false)
     }
   }
 

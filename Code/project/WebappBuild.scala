@@ -1,11 +1,12 @@
-import sbt.{project => _, _}, Keys._
-import org.scalajs.core.tools.io.{FileVirtualJSFile, VirtualJSFile}
+import sbt.{project => _, _}
+import sbt.Keys._
+import org.scalajs.jsdependencies.sbtplugin.JSDependenciesPlugin
+import org.scalajs.jsdependencies.sbtplugin.JSDependenciesPlugin.autoImport._
 import org.scalajs.sbtplugin.{ScalaJSPlugin, Stage}
-import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
-import org.scalajs.sbtplugin.ScalaJSPluginInternal.stageKeys
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import sbtcrossproject.CrossPlugin.autoImport.{crossProject => _, _}
+import sbtdocker.DockerPlugin
 import scalajscrossproject.ScalaJSCrossPlugin.autoImport._
-import sbtdocker.DockerPlugin, DockerPlugin.autoImport._
 import Common._
 import Dependencies._
 import LibDependency.JVM
@@ -107,7 +108,7 @@ object WebappBuild {
       .configureBoth(Common.testModuleSettings)
       .configureJvm(Common.jvmSettings)
       .configureJvm(_.dependsOn(webappSampleDataJvm))
-      .configureJs(Common.jsSettings(UsePhantomJs))
+      .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UsePhantomJs))
       .dependsOn(baseTest, webappBaseMember)
       .depsForBoth(μTest ++ Nyaya.test ++ Circe.main)
       .depsForJs(
@@ -120,7 +121,7 @@ object WebappBuild {
     * ScalaCss is deliberately missing because it's too heavy for the public SPA.
     */
   private lazy val clientSpa: Project => Project =
-    _.enablePlugins(ScalaJSPlugin)
+    _.enablePlugins(ScalaJSPlugin, JSDependenciesPlugin)
       .configure(Common.jsSettings(UsePhantomJs))
       .dependsOn(webappBaseJs, webappBaseTestJs % Test, webappServerLogicJs % Test)
       .settings(jsDependencies in Test += ProvidedJS / "webapp-client-test.js")
@@ -130,7 +131,7 @@ object WebappBuild {
   lazy val webappClientPublic =
     crossProject("webapp-client-public")
       .configureJvm(Common.jvmSettings)
-      .configureJs(Common.jsSettings(UsePhantomJs))
+      .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UsePhantomJs))
       .dependsOn(webappBase, webappBaseTest % Test)
       .jsSettings(jsDependencies in Test += ProvidedJS / "webapp-client-test.js")
 
@@ -165,6 +166,7 @@ object WebappBuild {
         boopickle ++ scalajsDom ++
         testScope(μTest))
       .settings(
+        scalacOptions in Compile -= "-Xno-forwarders", // https://github.com/scala-js/scala-js/issues/4030
         scalaJSUseMainModuleInitializer := true,
         mainClass in Compile := Some("shipreq.webapp.client.ww.Main"))
 
@@ -185,14 +187,14 @@ object WebappBuild {
     .deps(ScalaGraal.util ++ ScalaGraal.extPrometheus ++ scalaXml)
     .settings(unmanagedResources in Compile += Def.taskDyn {
       val stage = (scalaJSStage in Compile in webappSsrJs).value
-      val task = stageKeys(stage)
+      val task = stageKey(stage)
       Def.task((task in Compile in webappSsrJs).value.data)
     }.value)
 
   lazy val webappSsrJs = webappSsr.js
     .dependsOn(webappClientLoaders)
     .settings(
-      emitSourceMaps := false,
+      scalaJSLinkerConfig ~= { _.withSourceMap(emitSourceMapsValue) },
       artifactPath in (Compile, fastOptJS) := (crossTarget.value / "webapp-ssr.js"),
       artifactPath in (Compile, fullOptJS) := (crossTarget.value / "webapp-ssr.js"))
 
@@ -242,13 +244,10 @@ object WebappBuild {
           (target: File) => {
 
             // Copy Scala.JS output
-            def copyScalaJs(jsf: VirtualJSFile, to: String): Unit =
-              jsf match {
-                case f: FileVirtualJSFile =>
-                  fileSync(f.file, target / to, mandatory = true)
-                case other =>
-                  sys.error("Unsupported virtual file type: " + other)
-              }
+            def copyScalaJs(file: Attributed[File], to: String): Unit = {
+              fileSync(file.data, target / to, mandatory = true)
+            }
+
             copyScalaJs(jsWebappClientPublicJs, pathScalaJsPathPublic )
             copyScalaJs(jsWebappClientHome    , pathScalaJsPathHome   )
             copyScalaJs(jsWebappClientProject , pathScalaJsPathProject)
@@ -342,10 +341,10 @@ object WebappBuild {
     println()
     println(header)
     println("=" * header.length)
-    report((moduleName in webappClientPublicJs).value, (stageKeys(stage) in Compile in webappClientPublicJs).value)
-    report((moduleName in webappClientHome    ).value, (stageKeys(stage) in Compile in webappClientHome    ).value)
-    report((moduleName in webappClientProject ).value, (stageKeys(stage) in Compile in webappClientProject ).value)
-    report((moduleName in webappClientWw      ).value, (stageKeys(stage) in Compile in webappClientWw      ).value)
+    report((moduleName in webappClientPublicJs).value, (stageKey(stage) in Compile in webappClientPublicJs).value)
+    report((moduleName in webappClientHome    ).value, (stageKey(stage) in Compile in webappClientHome    ).value)
+    report((moduleName in webappClientProject ).value, (stageKey(stage) in Compile in webappClientProject ).value)
+    report((moduleName in webappClientWw      ).value, (stageKey(stage) in Compile in webappClientWw      ).value)
     println()
   }
 

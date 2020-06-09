@@ -1,8 +1,6 @@
 import sbt._
 import scala.languageFeature._
 import LibDependency._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{CrossType => _, crossProject => _, _}
 
 object Dependencies {
 
@@ -52,7 +50,7 @@ object Dependencies {
   }
 
   object ScalaGraal {
-    private val ver   = "0.4.0"
+    private val ver   = "0.5.0"
     private val jvm   = MultiModule.scala("com.github.japgolly.scala-graal", ver)
     private val both  = MultiModule.jvmAndJs("com.github.japgolly.scala-graal", ver)
     val core          = jvm("core") ++ graal
@@ -189,7 +187,7 @@ object Dependencies {
 
   val boopickle   = jvmAndJs("io.suzaku",                        "boopickle",   "1.3.3")
   val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",        "1.4.0")
-  val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.1.8")
+  val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.2.0")
   val scalaz      = jvmAndJs("org.scalaz",                       "scalaz-core", "7.2.30")
   val shapeless   = jvmAndJs("com.chuusai",                      "shapeless",   "2.3.3")
   val μTest       = jvmAndJs("com.github.japgolly.fork",         "utest",       "1.0.1")
