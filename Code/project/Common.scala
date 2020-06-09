@@ -2,6 +2,7 @@ import sbt._
 import sbt.Keys._
 import com.typesafe.sbt.GitPlugin.autoImport._
 import java.nio.file.{Files, Path}
+import org.scalajs.jsenv.Input
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.jsenv.phantomjs.sbtplugin.PhantomJSEnvPlugin.autoImport._
 import org.scalajs.linker.interface.{CheckedBehavior, Semantics}
@@ -273,8 +274,9 @@ object Common {
           jsEnv in Test := new JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()))
       case UsePhantomJs =>
         _.settings(
-          scalaJSLinkerConfig in Test ~= { _.withESFeatures(_.withUseECMAScript2015(false)) },
-          jsEnv in Test := PhantomJSEnv().value)
+          Test / scalaJSLinkerConfig ~= { _.withESFeatures(_.withUseECMAScript2015(false)) },
+          Test / jsEnv := PhantomJSEnv().value,
+          Test / jsEnvInput := Input.Script(((ThisBuild / baseDirectory).value / "project/phantomjs-fix.js").toPath) +: (Test / jsEnvInput).value)
     }
 
   def devMode: Boolean = !releaseMode
