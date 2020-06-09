@@ -50,7 +50,7 @@ RUN n=jdk11-graalvm-bin \
  && cd /tmp \
  && git clone https://aur.archlinux.org/$n.git \
  && cd $n \
- && git checkout 4afe747695d75ff4517b88e677f81c2d1222beb0 2>/dev/null \
+ && git checkout 38587e749aa06e8a29d8a21febde89675cd46c34 2>/dev/null \
  && makepkg -sri --noconfirm \
  && cd /tmp \
  && rm -rf $n

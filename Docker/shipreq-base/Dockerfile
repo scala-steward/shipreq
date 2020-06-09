@@ -29,7 +29,7 @@ RUN yum update -y \
 #=======#
 
 # Don't forget to update the gitsha of aur/jdk11-graalvm-bin in ../dev-build_env/Dockerfile
-ENV GRAAL_VERSION=20.0.0
+ENV GRAAL_VERSION=20.1.0
 
 RUN cd /opt \
  && f=graalvm-ce-java11-linux-amd64-${GRAAL_VERSION}.tar.gz \
