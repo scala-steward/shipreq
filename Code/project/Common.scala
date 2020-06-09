@@ -1,17 +1,17 @@
-import sbt._, Keys._
+import sbt._
+import sbt.Keys._
 import com.typesafe.sbt.GitPlugin.autoImport._
 import java.nio.file.{Files, Path}
-import org.scalajs.core.tools.sem._
+import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.jsenv.phantomjs.PhantomJSEnv
-import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport.{crossProject => _, CrossType => _, _}
+import org.scalajs.linker.interface.{CheckedBehavior, Semantics}
+import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
+import org.scalajs.sbtplugin.Stage
 import sbtcrossproject.CrossPlugin.autoImport._
 import sbtcrossproject.CrossProject
-import sbtdocker.DockerPlugin
-import sbtdocker.DockerPlugin.autoImport._
 import scala.{Console => C}
 import scala.concurrent.duration._
 import scalafix.sbt.ScalafixPlugin
-import scalafix.sbt.ScalafixPlugin.autoImport._
 import scalajscrossproject.ScalaJSCrossPlugin.autoImport._
 import LibDependency.{Dep, HasBoth, HasJs, HasJvm, JS, JVM, ModDepScope}
 
@@ -39,7 +39,6 @@ object Common {
         println("[info] \u001b[1;93mSource maps enabled.\u001b[0m")
         true
     }
-
 
   private val cores = java.lang.Runtime.getRuntime.availableProcessors()
 
@@ -229,23 +228,25 @@ object Common {
     .settings(
       scalacOptions += "-P:scalajs:sjsDefinedByDefault",
       parallelExecution in testOnly := false,
-      // scalaJSOptimizerOptions in fullOptJS ~= (_ withPrettyPrintFullOptJS true),
-      scalaJSSemantics in fullOptJS ~= (_
-        .withProductionMode(true)
-        .withRuntimeClassNameMapper(Semantics.RuntimeClassNameMapper.discardAll())
-        .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
-        .withAsInstanceOfs(CheckedBehavior.Unchecked)))
+      scalaJSLinkerConfig ~= { _.withSourceMap(emitSourceMapsValue) })
 
   private def jsDevSettings: Project => Project =
-    _.settings(emitSourceMaps := emitSourceMapsValue)
+    identity
 
   private def jsProdSettings: Project => Project =
     _.settings(
-      emitSourceMaps := emitSourceMapsValue,
       scalaJSStage := FullOptStage,
-      scalaJSOptimizerOptions ~= (_
-        .withBatchMode(true)
-        .withCheckScalaJSIR(true)),
+      scalaJSLinkerConfig ~= { _
+        .withSemantics(_
+          .withRuntimeClassNameMapper(Semantics.RuntimeClassNameMapper.discardAll())
+          .withArrayIndexOutOfBounds(CheckedBehavior.Unchecked)
+          .withAsInstanceOfs(CheckedBehavior.Unchecked)
+          .withProductionMode(true)
+        )
+          .withPrettyPrint(false)
+          .withClosureCompiler(true)
+          .withCheckIR(true)
+      },
       // More than 1 running instance of Google Closure exponentially increases time & mem-usage
       Global / concurrentRestrictions += Tags.limit(ScalaJSTags.Link, 1)
     )
@@ -264,23 +265,17 @@ object Common {
       scalacOptions += "-language:experimental.macros",
       libraryDependencies ++= Dependencies.Scala.macroDef(JVM))
 
-  // Compile-scope only
-  def jsFastDevSettings = (_: Project).settings(
-    scalaJSOptimizerOptions in fastOptJS ~= { _.withDisableOptimizer(true) },
-    emitSourceMaps in Compile in fastOptJS := false)
-
   private def jsTests(t: JsTestType): Project => Project =
     t match {
       case NoTests =>
         _.settings(test := {})
       case UseNode =>
         _.settings(
-          jsEnv in Test := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv)
+          jsEnv in Test := new JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()))
       case UsePhantomJs =>
         _.settings(
-          emitSourceMaps in fastOptJS in Test := false, // PhantomJS doesn't use
-          jsEnv                       in Test := new PhantomJS2Env(PhantomJSEnv.Config().withJettyClassLoader(scalaJSPhantomJSClassLoader.value)))
-//          emitSourceMaps in fastOptJS in Test := true)
+          scalaJSLinkerConfig in Test ~= { _.withESFeatures(_.withUseECMAScript2015(false)) },
+          jsEnv in Test := new PhantomJSEnv(PhantomJSEnv.Config()))
     }
 
   def devMode: Boolean = !releaseMode
@@ -419,4 +414,10 @@ object Common {
     if (!wait) s += ",nowait"
     s
   }
+
+  def stageKey(stage: Stage) =
+    stage match {
+      case Stage.FastOpt => fastOptJS
+      case Stage.FullOpt => fullOptJS
+    }
 }
