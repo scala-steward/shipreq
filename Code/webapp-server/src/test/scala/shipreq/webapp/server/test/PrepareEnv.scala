@@ -44,7 +44,10 @@ object PrepareEnv {
     boot.configureLift()
   }
 
-  val dbOnce = onceUnit(db())
+  val dbOnce = onceUnit {
+    db()
+    TestDb.init()
+  }
 
   def db(): Unit =
     dbVia(TestDb.db)

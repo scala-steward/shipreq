@@ -97,8 +97,8 @@ object TestDb extends TestDbHelpers with HasLogger {
           val s = db.xa.allocated.unsafeRun().map1(new XA(_))
           state = Some(s)
           ThreadUtils.runOnShutdown("TestDb", shutdown())
-          truncateAllWithoutLocking()
           db.migrator.migrate[Fx].unsafeRun()
+          truncateAllWithoutLocking()
           debugLog("Database initialised.")
         }
       )
