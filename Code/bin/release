@@ -42,6 +42,9 @@ for m in $defargs "$@"; do
     -C|no-clean)
       noclean=1
       ;;
+    -D|no-docker)
+      nodocker=1
+      ;;
     -n|--dry-run)
       dryrun=1
       ;;
@@ -51,6 +54,7 @@ for m in $defargs "$@"; do
       echo "Options:"
       echo "  -C, --no-clean    Don't purge previous output directories"
       echo "  -T, --no-test     Don't run tests"
+      echo "  -D, --no-docker   Don't build or publish Docker images"
       echo "  -n, --dry-run     Show the command but don't run it"
       echo
       echo "Modules:"
@@ -69,8 +73,9 @@ case "$((taskman + webapp))" in
   1) sbt_test=(base/test "${sbt_test[@]}") ;;
   2) sbt_test=(test) ;;
 esac
-[ -n "$notest" ] && sbt_test=()
 [ -z "$noclean" ] && sbt+=(clean)
+[ -n "$notest" ] && sbt_test=()
+[ -n "$nodocker" ] && sbt_pkg=() && sbt_push=()
 
 # ======================================================================================================================
 # Perform release

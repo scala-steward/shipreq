@@ -16,7 +16,8 @@ phases:
       - >
         /bin/bash -c '
           set -o pipefail;
-          bin/release | strip-ansi
+          bin/release -D | strip-ansi && \
+          bin/release -C -T | strip-ansi
         '
     finally:
       - find /root/.cache/coursier /root/.ivy2 /root/.sbt -name '*.lock' -type f -exec rm -fv {} +
