@@ -8,7 +8,7 @@ import org.scalajs.dom.html
 import scalacss.internal.StyleA
 import teststate.domzipper.DomZipperJsF.Dom
 import teststate.run.Report.AssertionSettings
-import shipreq.base.util.Debug
+import shipreq.base.util.{Debug, ErrorMsg}
 import shipreq.webapp.base.data.{Disabled, Enabled}
 import shipreq.webapp.base.lib.DomUtil._
 
@@ -30,21 +30,16 @@ object TestState
   }
 
   implicit class TestStateElementExt(private val self: html.Element) extends AnyVal {
-    def get(v: VdomAttr[_]): String = {
-      val n = v.attrName
-      if (n.startsWith("data-"))
-        self.dataset.get(n.drop(5)).getOrElse("")
-      else {
-        println("================================================================================")
-        println("TestStateElementExt")
-        println("name: " + n)
-        println("self: " + self)
-        println("self.attributes: " + self.attributes)
-        println("self.attributes.getNamedItem(n): " + self.attributes.getNamedItem(n))
-        println("self.attributes.getNamedItem(n).value: " + self.attributes.getNamedItem(n).value)
-        self.attributes.getNamedItem(n).value
+    def get(v: VdomAttr[_])(implicit srcFile: sourcecode.File, srcLine: sourcecode.Line): String =
+      Option(v.attrName.trim).filter(_.nonEmpty) match {
+        case Some(n) =>
+          if (n.startsWith("data-"))
+            self.dataset.get(n.drop(5)).getOrElse("")
+          else
+            Option(self.attributes.getNamedItem(n)).flatMap(x => Option(x.value)).getOrElse("")
+        case None =>
+          ErrorMsg(s"html.Element.get(∅) called from ${srcFile.value}:${srcLine.value}").throwException()
       }
-    }
   }
 
 //  implicit val displayTestReq: Display[TestClientProtocol.Req] =

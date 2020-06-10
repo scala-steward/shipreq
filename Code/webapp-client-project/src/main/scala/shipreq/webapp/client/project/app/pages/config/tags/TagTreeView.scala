@@ -34,7 +34,8 @@ private[tags] object TagTreeView {
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.derive
 
-  val selected = VdomAttr.devOnly[Boolean]("data-selected")
+  // Don't make this .devOnly or else the tests fail in CI/prod
+  val selected = VdomAttr[Boolean]("data-selected")
 
   final class Backend($: BackendScope[Props, Unit]) {
 
