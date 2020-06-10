@@ -35,12 +35,13 @@ dockerfile in docker := {
   // Prepare exploded WAR
   val tmpWar = prepareTmpDir("war")
   val warTiers = {
-    val scalaJsPathPublic  = Frontend.scalaJsPathPublic    .value
-    val scalaJsPathHome    = Frontend.scalaJsPathHome      .value
-    val scalaJsPathProject = Frontend.scalaJsPathProject   .value
-    val scalaJsPathWw      = Frontend.scalaJsPathWw        .value
-    val vizJs              = Frontend.manifestPath("vizJs").value
-    val japgollyLib        = ".*(adt-macros|config_|macro-utils|nonempty|nyaya|scalaz-ext|stdlib-ext|univeq).*"
+    val scalaJsPathPublic  = Frontend.scalaJsPathPublic      .value
+    val scalaJsPathHome    = Frontend.scalaJsPathHome        .value
+    val scalaJsPathProject = Frontend.scalaJsPathProject     .value
+    val scalaJsPathWw      = Frontend.scalaJsPathWw          .value
+    val vizJs              = Frontend.manifestPath("vizJs")  .value
+    val vizWasm            = Frontend.manifestPath("vizWasm").value
+    val japgollyLib        = ".*(adt-macros|config_|macro-utils|nonempty|nyaya|scalaz-ext|stdlib-ext|univeq|scala.?graal).*"
     val images             = ".*\\.(?:ico|svg|png)$"
     def withLibPart(path: String) = {
       val x = "WEB-INF/lib/"
@@ -71,6 +72,7 @@ dockerfile in docker := {
         case (_, Some(l)) if l startsWith "lift"              => (14, false) // 5.7M ******
         case (_, Some(l)) if l matches    "^scalap?-.*"       => (12, false) // 19M  *******************
         case (p, None)    if p ==          vizJs              => (10, false) // 1.6M **
+        case (p, None)    if p ==          vizWasm            => (10, false) // 1.6M **
 
         // These general patterns need to come last (eg. *.js must be after vizJs)
         case (p, None)    if p endsWith   ".js"               => (83, false) // 808K *
