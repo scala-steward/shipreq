@@ -95,9 +95,13 @@ object ReauthenticationModalTest extends TestSuite {
 
     val observer: Observer[Ref, Obs, String] =
       Observer { ref =>
-        val $ =
-          DomZipperJs(ref.backend.dom()).collect01(".modal").zippers
-            .getOrElse(DomZipperJs(document.body).apply(".modal"))
+        val $: DomZipperJs =
+          DomZipperJs(ref.backend.dom()).collect01(".modal").zippers.getOrElse {
+            DomZipperJs(document.body)
+              .collect0n(".modal")
+              .filter(_(".header").innerText == ReauthenticationModal.header)
+              .singleton
+          }
         new Obs($, ref.server)
       }
 

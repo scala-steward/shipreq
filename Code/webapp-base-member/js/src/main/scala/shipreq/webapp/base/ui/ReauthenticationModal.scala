@@ -44,6 +44,9 @@ object ReauthenticationModal {
   def apply(username: Username, attemptLogin: AttemptLogin): ReauthenticationModal =
     apply(username, attemptLogin, document.body, 280)
 
+  private[ui] final val header =
+    "Session Expired"
+
   def apply(username    : Username,
             attemptLogin: AttemptLogin,
             rootDom     : Element,
@@ -81,7 +84,7 @@ object ReauthenticationModal {
         passwordDom.map(_.value = "")
 
       override val header: TagMod =
-        "Session Expired"
+        ReauthenticationModal.header
 
       override val content = TagMod(
         <.p("You must login again to be able to save changes or receive updates."),
