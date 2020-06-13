@@ -20,4 +20,3 @@ RUN mv /etc/squid/squid.conf /etc/squid/squid.conf.orig
 COPY ./squid.conf /etc/squid/squid.conf
 
 COPY ./domain-whitelist.txt /etc/squid/domain-whitelist.txt
-

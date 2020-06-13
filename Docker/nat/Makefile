@@ -1,4 +1,4 @@
-.PHONY: default build run exec extract .extract test .test extract_and_test watch cert
+.PHONY: default build run exec extract .extract test .test extract_and_test watch cert export import
 
 SSL = ssl
 
