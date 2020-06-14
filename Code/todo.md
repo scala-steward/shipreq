@@ -1,6 +1,34 @@
 v2.2
 ========================================================================================================================
 
+### Analyse
+* Common workflows
+* Github integration
+* ImpGraph column in ReqTable
+* Multi user
+  * notification / change tracking
+  * personal vs global saved views? impact on audit trail.
+    maybe store views as Map[Option[UserId], List[SavedView]], just show "X created a personal saved view" in public audit trail
+  * new filters: {createdBy,updatedBy,containsRefTo} {me,@blah}
+  * refs to users in rich text
+  * Audit trail
+    * global/per req
+    * open project at revision x in R/O mode
+    * diff between revisions
+    * tag/baseline
+  * Add LastUpdated field to ReqTable/Detail
+* Project templates (and copies/user-defined)
+
+### Prototype
+* User profile: name
+* User profile: username
+* User profile: password
+* User profile: email
+* User profile: newsletter
+* Project deletion
+* Multi user
+
+### Implement
 * Fix: "TODO should be .devOnly but breaks tests in release mode"
 * Markdown: bold
 * Markdown: italics
@@ -9,24 +37,13 @@ v2.2
 * Project deletion. Maybe soft delete with ShowFilterButton. What about unique name constraint?
 * User profile page
 
-### Prototype
-  * User profile: name
-  * User profile: username
-  * User profile: password
-  * User profile: email
-  * User profile: newsletter
-  * Project deletion
-  * Multi user
-
-
 
 Backlog (maybe-probably soon)
 ========================================================================================================================
 
 * Use WebSockets on home SPA to see projects and project stats update
-* Allow users to choose template when creating a project
-* Add LastUpdated field to ReqTable/Detail
 * Add Change Count field to ReqTable/Detail (help find most volatile/unstable reqs)
+* Bulk tag add/remove
 
 * Remove Scalaz
 
@@ -49,22 +66,6 @@ Backlog (maybe-probably soon)
     * audit trail (per req)
     * notifications
 
-### Analyse Requirements
-  * github integration
-  * anon shares
-  * audit trail
-    * global/per req
-    * open project at revision x in R/O mode
-    * diff between revisions
-    * tag/baseline
-  * multi user
-    * notification / change tracking
-    * personal vs global saved views? impact on audit trail.
-      maybe store views as Map[Option[UserId], List[SavedView]], just show "X created a personal saved view" in public audit trail
-    * new filters: {createdBy,updatedBy,containsRefTo} {me,@blah}
-    * refs to users in rich text
-  * Common workflows
-
 
 
 Backlog (eventually)
@@ -75,7 +76,6 @@ Backlog (eventually)
 * Tag/Implication Browser (aka Distribution manager/console)
 
 ### Functional changes
-* Bulk tag add/remove
 * Markdown: Support nested lists
 * Keyboard nav for ReqTablePage (not just the table) (?)
 * Show past IDs in ReqTable
