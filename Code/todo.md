@@ -1,6 +1,16 @@
 v2.2
 ========================================================================================================================
 
+### Plan
+* Do the markdown tasks
+* Add old interviews to ShipReq
+* Do new interviews for [Derivative tags] and [Github integration]
+  * Don't forget to make it analog instead of digital (eg. imagine Dinko, he'll likely want to see a percentage; not just red for 1.9 weeks then suddenly green)
+  * Agile workflow for free! Create sprint, imply everything in scope, sprint automatically updates!
+* Analyse, dev, deploy
+* Use new features to cut out all the noise in my ShipReq (so I can really see what's left)
+* New plan for the rest of v2.2
+
 ### Analyse
 * Common workflows pt2: SDLC to deployment
 * Derivative tags
@@ -44,6 +54,8 @@ v2.2
 * Markdown: italics
 * Markdown: strike-through
 * Markdown: underline
+* Markdown: headings
+* Fix bug: commit change -> session expires -> re-auth -> connection re-established but change never completes: stuck spinning around
 
 
 Backlog (maybe-probably soon)
