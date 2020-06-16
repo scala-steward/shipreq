@@ -36,16 +36,16 @@ object Client {
     var lastPromiseId = 0
     var promises = List.empty[Promise[Encoded]]
 
-    val (awaitInit, onInit) = AsyncCallback.promise[Unit].runNow()
+    val initBarrier = AsyncCallback.barrier.runNow()
 
-    val interface = mkInterface(onInit(Try(())))
+    val interface = mkInterface(initBarrier.complete)
 
     new Client[Cmd, codec.Reader] {
 
       interface.listen(receive, onError).runNow()
 
       override def post[A](cmd: Cmd[A])(implicit readResult: Reader[A]): AsyncCallback[A] =
-        awaitInit >> AsyncCallback.promise[A].map { case (result, complete) =>
+        initBarrier.waitForCompletion >> AsyncCallback.promise[A].map { case (result, complete) =>
           lastPromiseId += 1
           val id = lastPromiseId
           val p = Promise[Encoded](id, msg => complete(Try(codec.decode[A](msg))))

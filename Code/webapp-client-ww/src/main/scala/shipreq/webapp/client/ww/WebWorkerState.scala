@@ -3,7 +3,6 @@ package shipreq.webapp.client.ww
 import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
 import monocle.macros.Lenses
-import scala.util.Try
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.EventOrd.Implicits._
 import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
@@ -65,10 +64,10 @@ final class WebWorkerState {
         // No need to wait
         AsyncCallback.unit
       else
-        AsyncCallback.promise[Unit].asAsyncCallback.flatMap { case (promise, tryComplete) =>
-          val ordPromise = OrdPromise(ord, tryComplete(tryUnit))
+        AsyncCallback.barrier.asAsyncCallback.flatMap { barrier =>
+          val ordPromise = OrdPromise(ord, barrier.complete)
           val save = modState(Immutable.ordPromises.modify(ordPromise :: _)).asAsyncCallback
-          save >> promise
+          save >> barrier.waitForCompletion
         }
     }
 }
@@ -86,6 +85,4 @@ object WebWorkerState {
   }
 
   final case class OrdPromise(ord: Option[EventOrd.Latest], complete: Callback)
-
-  private[WebWorkerState] val tryUnit = Try(()) // TODO Remove after https://github.com/japgolly/scalajs-react/issues/730
 }

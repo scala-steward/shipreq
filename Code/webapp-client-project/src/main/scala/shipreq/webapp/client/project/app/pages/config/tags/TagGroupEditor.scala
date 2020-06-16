@@ -117,9 +117,6 @@ private[tags] object TagGroupEditor {
 
     val exclusive: Lens[State, On] =
       exclusivity ^<-> On.isoWhen(Exclusive)
-
-    val parentsR = Reusable.byRef(parents)
-    val childrenR = Reusable.byRef(children)
   }
 
   private def buildNewRels(sourceId   : Option[TagGroupId],
@@ -143,6 +140,12 @@ private[tags] object TagGroupEditor {
   private implicit def vux = ValidationUX.Full
 
   final class Backend($: BackendScope[Props, Unit]) {
+
+    private val setChildren =
+      StateSnapshot.withReuse.zoomL(State.children).prepareViaProps($)(_.state)
+
+    private val setParents =
+      StateSnapshot.withReuse.zoomL(State.parents).prepareViaProps($)(_.state)
 
     private val fakeTagGroupId =
       TagGroupId(-1)
@@ -197,7 +200,7 @@ private[tags] object TagGroupEditor {
         filterDead       = p.filterDead,
         hypotheticalTags = hypotheticalTags,
         pw               = p.pw,
-        state            = p.state.withReuse.zoomStateL(if (children) State.childrenR else State.parentsR),
+        state            = (if (children) setChildren else setParents)(p.state.value),
         children         = children,
         enabled          = p.enabled,
       ).render

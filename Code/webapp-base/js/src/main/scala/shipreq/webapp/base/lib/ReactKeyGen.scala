@@ -1,6 +1,6 @@
 package shipreq.webapp.base.lib
 
-import japgolly.scalajs.react.Key
+import japgolly.scalajs.react.{Key, Reusability}
 import japgolly.univeq.UnivEq
 
 /**
@@ -20,5 +20,8 @@ object ReactKeyGen {
 
   object UnivEqImplicits {
     implicit def univEqReactKey: UnivEq[Key] = UnivEq.force
+  }
+  object ReusabilityImplicits {
+    implicit def reusabilityReactKey: Reusability[Key] = Reusability.by_==
   }
 }

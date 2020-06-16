@@ -1,6 +1,8 @@
 package shipreq.webapp.base.lib
 
 import japgolly.scalajs.react._
+import java.time.Duration
+import scala.annotation.nowarn
 import scala.collection.immutable.ArraySeq
 import scalaz.Equal
 import shipreq.base.util._
@@ -22,10 +24,6 @@ import shipreq.webapp.base.user._
 object DataReusability extends DataReusability
 
 abstract class DataReusability extends BaseReusability {
-
-  // TODO Remove after https://github.com/japgolly/scalajs-react/issues/728
-  implicit def arraySeq[A: Reusability]: Reusability[ArraySeq[A]] =
-    Reusability.byRef[ArraySeq[A]] || Reusability.indexedSeq[ArraySeq, A]
 
   final def reusabilityByRefOrEqual[A <: AnyRef](implicit e: Equal[A]): Reusability[A] =
     Reusability.byRef || Reusability(e.equal)
@@ -64,8 +62,10 @@ abstract class DataReusability extends BaseReusability {
   implicit def reusabilityFieldReqTypeRulesByResolution[D: UnivEq]: Reusability[FieldReqTypeRules.ByResolution[D]] =
     Reusability.byRefOrUnivEq
 
-  implicit lazy val reusabilityProjectMetaData: Reusability[ProjectMetaData] =
+  implicit lazy val reusabilityProjectMetaData: Reusability[ProjectMetaData] = {
+    @nowarn("cat=unused") implicit val instant = Reusability.instant(Duration.ofMillis(500))
     Reusability.byRef || Reusability.derive
+  }
 
   implicit def reusabilityReactKey: Reusability[Key] =
     Reusability.by_==

@@ -25,6 +25,7 @@ import shipreq.webapp.base.data.FieldReqTypeRules.Resolution
 import shipreq.webapp.base.data.{Colour => _, _}
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.lib.ReactKeyGen
+import shipreq.webapp.base.lib.ReactKeyGen.ReusabilityImplicits._
 import shipreq.webapp.base.lib.ReactKeyGen.UnivEqImplicits._
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.{Dropdown => _, _}
@@ -142,11 +143,8 @@ object ReqTypeRulesEditor {
     private val renderImpossible: Impossible ~=> VdomNode =
       Reusable.always(_.impossible)
 
-    implicit def reusabilityProps[D: UnivEq]: Reusability[Props[D]] = {
-      implicit val a: Reusability[ArraySeq[D]] = Reusability.byRefOrUnivEq
-      locally(a) // -Wunused:locals gets it wrong
+    implicit def reusabilityProps[D: Reusability]: Reusability[Props[D]] =
       Reusability.derive
-    }
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -271,7 +269,7 @@ object ReqTypeRulesEditor {
 
 // =====================================================================================================================
 
-final class ReqTypeRulesEditor[D: UnivEq](allowDefaults: Boolean, keyFor: D => String) {
+final class ReqTypeRulesEditor[D: Reusability: UnivEq](allowDefaults: Boolean, keyFor: D => String) {
 
   type Props           = ReqTypeRulesEditor.Props[D]
   type State           = ReqTypeRulesEditor.State[D]

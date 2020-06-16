@@ -2,7 +2,6 @@ package shipreq.webapp.base.lib
 
 import japgolly.microlibs.nonempty._
 import japgolly.scalajs.react._
-import java.time.Instant
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util._
 import shipreq.base.util.univeq._
@@ -33,9 +32,6 @@ abstract class BaseReusability {
 
   implicit def toReusabilityObjExt(r: Reusability.type): ReusabilityObjExt =
     new ReusabilityObjExt(r)
-
-  implicit def reusabilityInstant: Reusability[Instant] =
-    Reusability.by(_.toEpochMilli)
 
   private[this] def taggedIntReuse = Reusability.byUnivEq[TaggedInt]
   implicit def reusabilityTaggedInt[T <: TaggedInt]: Reusability[T] =

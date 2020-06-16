@@ -111,8 +111,6 @@ private[tags] object ApplicableTagEditor {
         reqTypes = ApplicableReqTypeEditor.State.empty,
         parents = TagRelationshipEditor.State.empty,
       )
-
-    val parentsR = Reusable.byRef(parents)
   }
 
   private def buildNewRels(sourceId   : Option[ApplicableTagId],
@@ -135,6 +133,9 @@ private[tags] object ApplicableTagEditor {
 
   final class Backend($: BackendScope[Props, Unit]) {
     import Shared.{fakeApplicableTagId, fakeApplicableTagInTree}
+
+    private val setParents =
+      StateSnapshot.withReuse.zoomL(State.parents).prepareViaProps($)(_.state)
 
     private val pxSourceId: Px[Option[ApplicableTagId]] =
       Px.props($).map(_.subject).withReuse.autoRefresh
@@ -171,7 +172,7 @@ private[tags] object ApplicableTagEditor {
         filterDead       = p.filterDead,
         hypotheticalTags = hypotheticalTags,
         pw               = p.pw,
-        state            = p.state.withReuse.zoomStateL(State.parentsR),
+        state            = setParents(p.state.value),
         children         = false,
         enabled          = p.enabled,
       ).render
