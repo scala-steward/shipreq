@@ -11,6 +11,7 @@
       ThisBuild / semanticdbVersion := "4.3.14",
 
       ThisBuild / scalafixDependencies ++= Seq(
+//        "com.github.liancheng" %% "organize-imports" % "tmp-SNAPSHOT"
         "com.github.liancheng" %% "organize-imports" % "0.3.1-RC2"
       )
 

@@ -552,8 +552,8 @@ object RandomData {
     private val asciiSL     = (32.toChar to 127.toChar).toArray
     private val asciiML     = ('\n' :: '\r' :: asciiSL.toList).toArray
     private val highChars   = Gen.chooseInt(128, 255).map(_.toChar) // Gen.unicode // TODO Disabled due to PhantomJS-2.1.1-8 crashing
-            val genCharSL   = Gen.chooseGen(Gen chooseArray_! asciiSL, highChars)
-            val genCharML   = Gen.chooseGen(Gen chooseArray_! asciiML, highChars)
+            val genCharSL   = if (disableUnicode) Gen.chooseArray_!(asciiSL) else Gen.chooseGen(Gen.chooseArray_!(asciiSL), highChars)
+            val genCharML   = if (disableUnicode) Gen.chooseArray_!(asciiML) else Gen.chooseGen(Gen.chooseArray_!(asciiML), highChars)
     private val literalStr  = genCharSL                       .string(1 to 24).map(_.replace('`', ' '))
     private val texStr      = genCharSL                       .string(1 to 20)
     private val webAddressR = charPred(Parsers.webAddressChar).string(1 to 30)
@@ -678,7 +678,7 @@ object RandomData {
         plus.foldLeft[List[Gen.Freq[t.Atom]]](Nil)((q, o) =>
           o.fold(q)(g => (9, g) :: q)): _*)
 
-    def reqRefs(r: Option[Gen[ReqId]], c: Option[Gen[ReqCodeId]])(implicit t: ContentRef): List[Gen[t.Atom]] = {
+    def reqAndCodeRefs(r: Option[Gen[ReqId]], c: Option[Gen[ReqCodeId]])(implicit t: ContentRef): List[Gen[t.Atom]] = {
       var result = List.empty[Gen[t.Atom]]
       r.foreach(result ::= _ map t.ReqRef)
       c.foreach(result ::= _ map t.CodeRef)
@@ -690,6 +690,12 @@ object RandomData {
 
     def tagRef(g: Gen[ApplicableTagId])(implicit t: TagRef): Gen[t.TagRef] =
       g map t.TagRef
+
+    def contentRef(r: Option[Gen[ReqId]],
+                   c: Option[Gen[ReqCodeId]],
+                   u: Option[Gen[UseCaseStepId]])(implicit t: ContentRef): List[Gen[t.Atom]] =
+      u.map(useCaseStepRef(_)).toList :::
+      reqAndCodeRefs(r, c)
 
     def issue(i: Gen[CustomIssueTypeId],
               r: Option[Gen[ReqId]],
@@ -718,13 +724,20 @@ object RandomData {
          | _: TagRef          # TagRef
          | _: CodeBlock       # CodeBlock
          | _: NewLine         # BlankLine     => true
-      case _: ListMarkup      # UnorderedList => false
+      case _: Headings        # Heading1
+         | _: Headings        # Heading2
+         | _: Headings        # Heading3
+         | _: Headings        # Heading4
+         | _: Headings        # Heading5
+         | _: Headings        # Heading6
+         | _: ListMarkup      # UnorderedList => false
     }
 
     sealed trait AtomCtx
-    case object InIssueDesc  extends AtomCtx
-    case object InListItem   extends AtomCtx
-    case object TopLevelAtom extends AtomCtx
+    case object InHeadingTitle extends AtomCtx
+    case object InIssueDesc    extends AtomCtx
+    case object InListItem     extends AtomCtx
+    case object TopLevelAtom   extends AtomCtx
 
     def noWhitespaceLeft(a: String) = "l" + a
     def noWhitespaceRight(a: String) = a + "r"
@@ -736,7 +749,7 @@ object RandomData {
       (s"<${Grammar.texTag}>" + """|[#@]+|[a-z]://|\*( )|\[\s*(?:""" + s"$reqOrStepRefInside|$codeRefInside)\\s*\\]").r
     }
     def removeFromLiterals[L <: Literal#Literal](l: L): L =
-      l.map(removeFromLiteralsR.replaceAllIn(_, "*$1"))
+      l.modText(removeFromLiteralsR.replaceAllIn(_, "*$1"))
 
     def postProcessAtoms[T <: Atom.Base](ctx: AtomCtx)(as0: ArraySeq[T#Atom]): ArraySeq[T#Atom] = {
       type Blank = NewLine#BlankLine
@@ -744,18 +757,27 @@ object RandomData {
       type Lit   = Literal#Literal
 
       def fixHead: T#Atom => T#Atom = {
-        case l: Lit => l map noWhitespaceLeft
+        case l: Lit => l modText noWhitespaceLeft
         case o => o
       }
 
       def fixLast: T#Atom => T#Atom = {
-        case l: Lit => l map noWhitespaceRight
+        case l: Lit => l modText noWhitespaceRight
         case o => o
       }
 
       def fix2: T#Atom => T#Atom = {
         case l: Lit => removeFromLiterals(l)
         case o => o
+      }
+
+      def fixHeading(h: Headings#Heading): Headings#Heading = {
+        val hh = h.asInstanceOf[h.parent.Heading]
+        hh.modTitle { t1 =>
+          val t2 = postProcessAtoms(InHeadingTitle)(t1.whole)
+          val r = NonEmptyArraySeq.option(t2).getOrElse(t1)
+          r.asInstanceOf[h.parent.headerTitle.NonEmptyText]
+        }
       }
 
       // Trim multiline
@@ -768,10 +790,12 @@ object RandomData {
         import Atom.{PlainTextMarkup => PTM}
 
         val a: T#Atom = a0 match {
-          case l: Lit if ctx == InIssueDesc => l.map(_.replace('}', 'x'))
-          case i: Issue#Issue               => i.copy(desc = postProcessAtoms(InIssueDesc)(i.desc))
-          case ul: UL                       => ul.filterAtoms(legalListItemAtom).map(postProcessAtoms(InListItem))
-          case o => o
+          case l: Lit if ctx == InIssueDesc          => l.modText(_.replace('}', 'x'))
+          case i: Issue#Issue                        => i.copy(desc = postProcessAtoms(InIssueDesc)(i.desc))
+          case ul: UL                                => ul.filterAtoms(legalListItemAtom).map(postProcessAtoms(InListItem))
+          case h: Headings # Heading                 => fixHeading(h)
+          case m: PTM # Monospace if m.value.isEmpty => m.copy("X")
+          case o                                     => o
         }
 
         def i = q.init
@@ -781,42 +805,47 @@ object RandomData {
         else
           (q.last, a) match {
 
-            case (x: Lit                , y: Lit                ) => i :+ x.map(_ + y.value)
-            case (x: Lit                , y: PTM#EmailAddress   ) => i :+ x.map(_ + " ") :+ y
-            case (x: Lit                , y: PTM#WebAddress     ) => i :+ x.map(_ + " ") :+ y
-          //case (x: Lit                , y: Issue#Issue        ) => i :+ x.map(_ + " ") :+ y
-          //case (x: Lit                , y: TagRef#Tagref      ) => i :+ x.map(_ + " ") :+ y
-            case (x: Lit                , y: Blank              ) => i :+ x.map(noWhitespaceRight) :+ y
-            case (x: Lit                , y: UL                 ) => i :+ x.map(noWhitespaceRight) :+ y
+            case (x: Lit                , y: Lit                ) => i :+ x.modText(_ + y.value)
+            case (x: Lit                , y: PTM#EmailAddress   ) => i :+ x.modText(_ + " ") :+ y
+            case (x: Lit                , y: PTM#WebAddress     ) => i :+ x.modText(_ + " ") :+ y
+          //case (x: Lit                , y: Issue#Issue        ) => i :+ x.modText(_ + " ") :+ y
+          //case (x: Lit                , y: TagRef#Tagref      ) => i :+ x.modText(_ + " ") :+ y
+            case (x: Lit                , y: Blank              ) => i :+ x.modText(noWhitespaceRight) :+ y
+            case (x: Lit                , y: UL                 ) => i :+ x.modText(noWhitespaceRight) :+ y
 
-            case (x: Blank              , y: Lit                ) => i :+ x :+ y.map(noWhitespaceLeft)
+            case (x: Blank              , y: Lit                ) => i :+ x :+ y.modText(noWhitespaceLeft)
             case (_: Blank              , _: Blank              ) => drop
             case (_: Blank              , _: UL                 ) => drop
 
-            case (x: PTM#EmailAddress   , y: Lit                ) => i :+ x :+ y.map(" " + _)
+            case (x: PTM#EmailAddress   , y: Lit                ) => i :+ x :+ y.modText(" " + _)
             case (_: PTM#EmailAddress   , _: PTM#EmailAddress   ) => drop
             case (_: PTM#EmailAddress   , _: PTM#WebAddress     ) => drop
 
-            case (x: PTM#WebAddress     , y: Lit                ) => i :+ x :+ y.map(" " + _)
+            case (x: PTM#WebAddress     , y: Lit                ) => i :+ x :+ y.modText(" " + _)
             case (_: PTM#WebAddress     , _: PTM#EmailAddress   ) => drop
             case (_: PTM#WebAddress     , _: PTM#WebAddress     ) => drop
             case (_: PTM#WebAddress     , _: Issue#Issue        ) => drop
             case (_: PTM#WebAddress     , _: TagRef#TagRef      ) => drop
 
-            case (x: TagRef#TagRef      , y: Lit                ) => i :+ x :+ y.map(" " + _)
+            case (x: TagRef#TagRef      , y: Lit                ) => i :+ x :+ y.modText(" " + _)
             case (_: TagRef#TagRef      , _: PTM#EmailAddress   ) => drop
             case (_: TagRef#TagRef      , _: PTM#WebAddress     ) => drop
 
             case (_: CodeBlock#CodeBlock, _: Blank              ) => drop
-            case (x: CodeBlock#CodeBlock, y: Lit                ) => i :+ x :+ y.map(noWhitespaceLeft)
+            case (x: CodeBlock#CodeBlock, y: Lit                ) => i :+ x :+ y.modText(noWhitespaceLeft)
             case (_: Blank              , _: CodeBlock#CodeBlock) => drop
-            case (x: Lit                , y: CodeBlock#CodeBlock) => i :+ x.map(noWhitespaceRight) :+ y
+            case (x: Lit                , y: CodeBlock#CodeBlock) => i :+ x.modText(noWhitespaceRight) :+ y
 
-            case (x: Issue#Issue        , y: Lit                ) if x.desc.isEmpty => i :+ x :+ y.map(" i" + _)
+            case (_: Headings#Heading   , _: Blank              ) => drop
+            case (x: Headings#Heading   , y: Lit                ) => i :+ x :+ y.modText(noWhitespaceLeft)
+            case (_: Blank              , _: Headings#Heading   ) => drop
+            case (x: Lit                , y: Headings#Heading   ) => i :+ x.modText(noWhitespaceRight) :+ y
+
+            case (x: Issue#Issue        , y: Lit                ) if x.desc.isEmpty => i :+ x :+ y.modText(" i" + _)
             case (x: Issue#Issue        , _: PTM#EmailAddress   ) if x.desc.isEmpty => drop
             case (x: Issue#Issue        , _: PTM#WebAddress     ) if x.desc.isEmpty => drop
 
-            case (x: UL                 , y: Lit                ) => i :+ x :+ y.map(noWhitespaceLeft)
+            case (x: UL                 , y: Lit                ) => i :+ x :+ y.modText(noWhitespaceLeft)
             case (_: UL                 , _: Blank              ) => drop
             case (_: UL                 , _: UL                 ) => drop //.copy(items = x.items ++ y.items)
 
@@ -840,7 +869,7 @@ object RandomData {
                               a: Option[Gen[ApplicableTagId]]): Gen[t.Atom] = {
       @inline implicit def tt: t.type = t
       val gs = NonEmptyArraySeq newBuilderNE singleLineGens(t)
-      gs ++= reqRefs(r, c)
+      gs ++= reqAndCodeRefs(r, c)
       gs ++= u.map(useCaseStepRef(_))
       gs ++= i.map(issue(_, r, u, c))
       gs ++= a.map(tagRef(_))
@@ -853,7 +882,7 @@ object RandomData {
                               i: Option[Gen[CustomIssueTypeId]]): Gen[CodeGroupTitle.Atom] = {
       @inline implicit def t: CodeGroupTitle.type = CodeGroupTitle
       val gs = NonEmptyArraySeq newBuilderNE singleLineGens(t)
-      gs ++= reqRefs(r, c)
+      gs ++= reqAndCodeRefs(r, c)
       gs ++= u.map(useCaseStepRef(_))
       gs ++= i.map(issue(_, r, u, c))
       Gen.chooseGenNE(gs.result())
@@ -863,15 +892,60 @@ object RandomData {
 
     def useCaseTitleAtom = reqTitle(UseCaseTitle) _
 
+    def useCaseStepAtom(r: Option[Gen[ReqId]],
+                        u: Option[Gen[UseCaseStepId]],
+                        c: Option[Gen[ReqCodeId]],
+                        i: Option[Gen[CustomIssueTypeId]],
+                        a: Option[Gen[ApplicableTagId]]): Gen[UseCaseStep.Atom] = {
+      @inline implicit def t: UseCaseStep.type = UseCaseStep
+      val gs = NonEmptyArraySeq newBuilderNE singleLineGens(t)
+      gs ++= contentRef(r, c, u)
+      gs ++= i.map(issue(_, r, u, c))
+      gs ++= a.map(tagRef(_))
+      Gen.chooseGenNE(gs.result())
+    }
+
     def inlineIssueDescAtom(r: Option[Gen[ReqId]],
                             u: Option[Gen[UseCaseStepId]],
                             c: Option[Gen[ReqCodeId]]): Gen[InlineIssueDesc.Atom] = {
       @inline implicit def t: InlineIssueDesc.type = InlineIssueDesc
       val gs = NonEmptyArraySeq newBuilderNE singleLineGens(t)
-      gs ++= reqRefs(r, c)
+      gs ++= reqAndCodeRefs(r, c)
       gs ++= u.map(useCaseStepRef(_))
       Gen.chooseGenNE(gs.result())
     }
+
+    def headingTitleFull(a: Option[Gen[ApplicableTagId]],
+                         i: Option[Gen[CustomIssueTypeId]],
+                         c: Option[Gen[ReqCodeId]],
+                         r: Option[Gen[ReqId]],
+                         u: Option[Gen[UseCaseStepId]]): Gen[HeadingTitleFull.NonEmptyText] = {
+      implicit val t: HeadingTitleFull.type = HeadingTitleFull
+      val atomGens =
+        singleLineGens ++
+        contentRef(r, c, u) ++
+        i.map(issue(_, r, u, c)) ++
+        a.map(tagRef(_))
+      Gen.chooseGenNE(atomGens).nea(1 to 6)
+    }
+
+    def headingTitleNoIssues(a: Option[Gen[ApplicableTagId]],
+                             c: Option[Gen[ReqCodeId]],
+                             r: Option[Gen[ReqId]],
+                             u: Option[Gen[UseCaseStepId]]): Gen[HeadingTitleNoIssues.NonEmptyText] = {
+      implicit val t: HeadingTitleNoIssues.type = HeadingTitleNoIssues
+      val atomGens =
+        singleLineGens ++
+        contentRef(r, c, u) ++
+        a.map(tagRef(_))
+      Gen.chooseGenNE(atomGens).nea(1 to 6)
+    }
+
+    def heading(t: Atom.Headings)(g: Gen[t.HeadingTitle]): Gen[t.Atom] =
+      for {
+        title <- g
+        size  <- Gen.chooseInt(6)
+      } yield t.unsafeHeadingByIdx(size, title)
 
     def customTextFieldAtom(r: Option[Gen[ReqId]],
                             u: Option[Gen[UseCaseStepId]],
@@ -879,11 +953,10 @@ object RandomData {
                             i: Option[Gen[CustomIssueTypeId]],
                             a: Option[Gen[ApplicableTagId]]): Gen[CustomTextField.Atom] = {
       implicit val t: CustomTextField.type = CustomTextField
-      var gs: List[Option[Gen[t.Atom]]]
-           = reqRefs(r, c).map(_.some)
-      gs ::= u.map(useCaseStepRef(_))
+      var gs: List[Option[Gen[t.Atom]]] = contentRef(r, c, u).map(_.some)
       gs ::= i.map(issue(_, r, u, c))
       gs ::= a.map(tagRef(_))
+      gs ::= Some(heading(t)(headingTitleFull(a, i, c, r, u)))
       multiLinePlus(t)(gs: _*)
     }
 
@@ -892,10 +965,9 @@ object RandomData {
                            c: Option[Gen[ReqCodeId]],
                            a: Option[Gen[ApplicableTagId]]): Gen[DeletionReason.Atom] = {
       implicit val t: DeletionReason.type = DeletionReason
-      var gs: List[Option[Gen[t.Atom]]]
-           = reqRefs(r, c).map(_.some)
-      gs ::= u.map(useCaseStepRef(_))
+      var gs: List[Option[Gen[t.Atom]]] = contentRef(r, c, u).map(_.some)
       gs ::= a.map(tagRef(_))
+      gs ::= Some(heading(t)(headingTitleNoIssues(a, c, r, u)))
       multiLinePlus(t)(gs: _*)
     }
 
@@ -904,25 +976,10 @@ object RandomData {
                         c: Option[Gen[ReqCodeId]],
                         a: Option[Gen[ApplicableTagId]]): Gen[ManualIssue.Atom] = {
       implicit val t: ManualIssue.type = ManualIssue
-      var gs: List[Option[Gen[t.Atom]]]
-           = reqRefs(r, c).map(_.some)
-      gs ::= u.map(useCaseStepRef(_))
+      var gs: List[Option[Gen[t.Atom]]] = contentRef(r, c, u).map(_.some)
       gs ::= a.map(tagRef(_))
+      gs ::= Some(heading(t)(headingTitleNoIssues(a, c, r, u)))
       multiLinePlus(t)(gs: _*)
-    }
-
-    def useCaseStepAtom(r: Option[Gen[ReqId]],
-                        u: Option[Gen[UseCaseStepId]],
-                        c: Option[Gen[ReqCodeId]],
-                        i: Option[Gen[CustomIssueTypeId]],
-                        a: Option[Gen[ApplicableTagId]]): Gen[UseCaseStep.Atom] = {
-      @inline implicit def t: UseCaseStep.type = UseCaseStep
-      val gs = NonEmptyArraySeq newBuilderNE singleLineGens(t)
-      gs ++= reqRefs(r, c)
-      gs ++= u.map(useCaseStepRef(_))
-      gs ++= i.map(issue(_, r, u, c))
-      gs ++= a.map(tagRef(_))
-      Gen.chooseGenNE(gs.result())
     }
   }
 

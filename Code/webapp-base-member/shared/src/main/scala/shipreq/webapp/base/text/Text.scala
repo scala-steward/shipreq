@@ -167,11 +167,55 @@ object Text {
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  object HeadingTitleFull extends Base
+      with A.HeadingTitleFull { self =>
+
+    final class Parser(override val project       : Project,
+                       override val currentUseCase: Option[ReqTypePos],
+                       override val input         : ParserInput) extends P.TopBase
+        with P.SingleLine
+        with P.Issue
+        with P.ContentRef
+        with P.TagRef
+        with P.HeadingTitle {
+
+      override           val t: self.type   = self
+                         def hashToken      = rule(hashRef ~ (tagRef | issueRef))
+      override           val token          = () => rule(hashToken | contentRef | singleLine)
+      override protected def issueInnerDesc = rule(runSubParser(InlineIssueDesc.parserI(project, currentUseCase)(_).inline))
+    }
+
+    override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  object HeadingTitleNoIssues extends Base
+      with A.HeadingTitleNoIssues { self =>
+
+    final class Parser(override val project       : Project,
+                       override val currentUseCase: Option[ReqTypePos],
+                       override val input         : ParserInput) extends P.TopBase
+        with P.SingleLine
+        with P.ContentRef
+        with P.TagRef
+        with P.HeadingTitle {
+
+      override val t: self.type = self
+               def hashToken    = rule(hashRef ~ tagRef)
+      override val token        = () => rule(hashToken | contentRef | singleLine)
+    }
+
+    override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object CustomTextField extends Base
       with A.MultiLine
       with A.Issue
       with A.ContentRef
       with A.TagRef { self =>
+
+    override val headerTitle: HeadingTitleFull.type = HeadingTitleFull
 
     final class Parser(override val project       : Project,
                        override val currentUseCase: Option[ReqTypePos],
@@ -179,12 +223,14 @@ object Text {
         with P.MultiLine
         with P.Issue
         with P.ContentRef
-        with P.TagRef {
+        with P.TagRef
+        with P.Headings {
 
       override           val t: self.type     = self
                          def hashToken        = rule(hashRef ~ (tagRef | issueRef))
       override protected val additionalTokens = () => rule(hashToken | contentRef)
       override protected def issueInnerDesc   = rule(runSubParser(InlineIssueDesc.parserI(project, currentUseCase)(_).inline))
+      override protected def headingTitle     = rule(runSubParser(HeadingTitleFull.parserI(project, currentUseCase)(_).inline))
     }
 
     override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
@@ -218,7 +264,14 @@ object Text {
         Literal("Atom demonstration."),
         blankLine,
         Literal("Here we go:"),
-        UnorderedList(uls))
+        UnorderedList(uls),
+        Heading1(NonEmptyArraySeq(HeadingTitleFull.Literal("H1"))),
+        Heading2(NonEmptyArraySeq(HeadingTitleFull.Literal("H2"))),
+        Heading3(NonEmptyArraySeq(HeadingTitleFull.Literal("H3"))),
+        Heading4(NonEmptyArraySeq(HeadingTitleFull.Literal("H4"))),
+        Heading5(NonEmptyArraySeq(HeadingTitleFull.Literal("H5"))),
+        Heading6(NonEmptyArraySeq(HeadingTitleFull.Literal("H6"))),
+      )
     }
   }
 
@@ -252,16 +305,20 @@ object Text {
       with A.ContentRef
       with A.TagRef { self =>
 
+    override val headerTitle: HeadingTitleNoIssues.type = HeadingTitleNoIssues
+
     final class Parser(override val project       : Project,
                        override val currentUseCase: Option[ReqTypePos],
                        override val input         : ParserInput) extends P.TopBase
         with P.MultiLine
         with P.ContentRef
-        with P.TagRef {
+        with P.TagRef
+        with P.Headings {
 
       override           val t: self.type     = self
                          def hashToken        = rule(hashRef ~ tagRef)
       override protected val additionalTokens = () => rule(hashToken | contentRef)
+      override protected def headingTitle     = rule(runSubParser(HeadingTitleNoIssues.parserI(project, currentUseCase)(_).inline))
     }
 
     override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)
@@ -273,16 +330,20 @@ object Text {
       with A.ContentRef
       with A.TagRef { self =>
 
+    override val headerTitle: HeadingTitleNoIssues.type = HeadingTitleNoIssues
+
     final class Parser(override val project       : Project,
                        override val currentUseCase: Option[ReqTypePos],
                        override val input         : ParserInput) extends P.TopBase
         with P.MultiLine
         with P.ContentRef
-        with P.TagRef {
+        with P.TagRef
+        with P.Headings {
 
       override           val t: self.type     = self
                          def hashToken        = rule(hashRef ~ tagRef)
       override protected val additionalTokens = () => rule(hashToken | contentRef)
+      override protected def headingTitle     = rule(runSubParser(HeadingTitleNoIssues.parserI(project, currentUseCase)(_).inline))
     }
 
     override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) = new Parser(p, currentUseCase, i)

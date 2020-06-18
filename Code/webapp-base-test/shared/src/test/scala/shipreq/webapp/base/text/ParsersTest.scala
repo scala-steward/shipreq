@@ -1,5 +1,6 @@
 package shipreq.webapp.base.text
 
+import io.circe.syntax._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import java.util.concurrent.atomic.AtomicInteger
@@ -11,17 +12,20 @@ import org.parboiled2._
 import scala.collection.immutable.ArraySeq
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
-import scalaz.Equal
-import shipreq.base.util.NonEmptyArraySeq
+import scalaz.{Applicative, Equal}
+import sourcecode.Line
+import shipreq.base.test._
+import shipreq.base.util.{NonEmptyArraySeq, Valid}
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.base.test.{ProjectDsl, SampleProject6 => SP, UnsafeTypes}
+import shipreq.webapp.base.test.{TextShrink, ProjectDsl, UnsafeTypes, SampleProject6 => SP}
 import shipreq.webapp.base.text.Atom.AnyAtom
 import shipreq.webapp.base.{RandomData => $}
 import utest._
 
 object ParsersTest extends TestSuite {
+//  shipreq.webapp.base.RandomDataSettings.disableUnicode = true
 
   def preprocessStr(s: String, lc: LineCardinality): String =
     Parsers.preProcessor(lc)(s).asString
@@ -55,7 +59,7 @@ object ParsersTest extends TestSuite {
     val txt2str = PlainText.ForProject.noCtx(p).text(_: Text.AnyOptional, Live, Optional)
 
     val genericReqTitles =
-      p.content.reqs.reqIterator
+      p.content.reqs.reqIterator()
         .filterSubType[GenericReq]
         //.filter(_.live(p.config.reqTypes) :: Live)
         .map(_.title)
@@ -64,24 +68,53 @@ object ParsersTest extends TestSuite {
     val customTextFieldValues =
       p.content.reqText.data.values.iterator.flatMap(_.values).toList
 
-    def cmp[A <: AnyAtom](t: => String, actual0: Iterable[A], expect0: Iterable[A]): EvalL = {
+    def cmp[A <: AnyAtom](t: => String, expect: ArraySeq[A])(f: ArraySeq[A] => ArraySeq[A]): EvalL = {
 
-      val actual = actual0.toVector
-      val expect = expect0.toVector
+      val actual = f(expect)
       var a = actual
       var e = expect
-      while (a.nonEmpty && e.nonEmpty && a.head == e.head) {
-        a = a.tail
-        e = e.tail
-      }
+
+      // These cause issues cos it can break the composition rules avoided in RandomData.TextGen.postProcessAtoms
+//      while (a.nonEmpty && e.nonEmpty && a.head == e.head) {
+//        a = a.tail
+//        e = e.tail
+//      }
 //      while (a.nonEmpty && e.nonEmpty && a.last == e.last) {
 //        a = a.init
 //        e = e.init
 //      }
 
-//      if (a != e) debug(t)
-      E.equal(t.take(2000), a, e)
-//       E.equal(t.takeRight(200), actual, expect)
+      if (a == e)
+        E.pass
+      else {
+        def size(): Double = e.toString.length + a.toString.length
+        val sizeBefore = size()
+        e = TextShrink(e)(ee => Valid.when(f(ee) == ee))
+        a = f(e)
+        val sizeAfter = size()
+
+        def toText(x: ArraySeq[A]): String = x.mkString("(", ", ", ")").asJson.noSpaces
+        val je = toText(e)
+        val ja = toText(a)
+
+        val errMsg =
+          s"""====================================================================================================
+             |Expect AST: $je
+             |
+             |Actual AST: $ja
+             |
+             |Expect text:
+             |${txt2str(e)}%
+             |
+             |Actual text:
+             |${txt2str(a)}%
+             |
+             |Shrink rate: ${(sizeAfter / sizeBefore * 100).toInt}%
+             |====================================================================================================
+             |""".stripMargin
+
+        E.fail(t, errMsg)
+      }
     }
 
 //    var first = true
@@ -100,18 +133,22 @@ object ParsersTest extends TestSuite {
 
     def testGenericReqTitle(src: Text.GenericReqTitle.OptionalText) = {
       count(src)
-      val txt = txt2str(src)
-      val parser = Text.GenericReqTitle.parser(p, None)(txt)
-      val parsed = assertSuccess(parser, parser.optionalText.run())
-      cmp("[GenericReqDesc] toStr |> parse = id", parsed, src)
+      cmp("[GenericReqDesc] toStr |> parse = id", src) { src =>
+        val txt = txt2str(src)
+        val parser = Text.GenericReqTitle.parser(p, None)(txt)
+        val parsed = assertSuccess(parser, parser.optionalText.run())
+        parsed
+      }
     }
 
     def testCustomTextField(t: Text.CustomTextField.NonEmptyText) = {
       val src = t.whole
       count(src)
-      val txt = txt2str(src)
-      val parsed = Text.CustomTextField.parse(p, None)(txt)
-      cmp(s"[CustomTextField] toStr |> parse = id\n${quoteStringForDisplay(txt)}", parsed, src)
+      cmp("[CustomTextField] toStr |> parse = id", src) { src =>
+        val txt = txt2str(src)
+        val parsed = Text.CustomTextField.parse(p, None)(txt)
+        parsed
+      }
     }
 
     def testStringML(in0: String) = {
@@ -120,19 +157,26 @@ object ParsersTest extends TestSuite {
       val par1   = assertSuccess(parser, parser.optionalText.run())
       val in2    = txt2str(par1)
       val in3    = preprocessStr(in2, MultiLine)
-      val par2   = Text.CustomTextField.parse(p, None)(in2)
-//      if (in2 startsWith "\n")
-//        println(
-//          List(
-//            "in0" -> in0,
-//            "in1" -> in1,
-//            "par1" -> par1.toString,
-//            "in2" -> in2,
-//            "in3" -> in3,
-//            "par2" -> par2.toString)
-//            .map{case (k,v) => s"$k: [${v.replace("\n", "↲")}]"}.mkString("\n") + "\n")
       count(par1)
-      cmp(in1, par1, par2).rename("parse |> toStr |> parse = parse") ∧
+
+      def parseToStringAndBack =
+        cmp(in1, par1) { par1 =>
+          val in2  = txt2str(par1)
+          val par2 = Text.CustomTextField.parse(p, None)(in2)
+          // if (in2 startsWith "\n")
+          //   println(
+          //     List(
+          //       "in0" -> in0,
+          //       "in1" -> in1,
+          //       "par1" -> par1.toString,
+          //       "in2" -> in2,
+          //       "in3" -> in3,
+          //       "par2" -> par2.toString)
+          //       .map{case (k,v) => s"$k: [${v.replace("\n", "↲")}]"}.mkString("\n") + "\n")
+          par2
+        }.rename("parse |> toStr |> parse = parse")
+
+      parseToStringAndBack ∧
       Eval.equal("txt2str |> preprocess = txt2str", in0, in2, in3) ∧
       DataProp.text.anyText(par1).liftL.rename("DataProp.anyText")
     }
@@ -219,7 +263,7 @@ object ParsersTest extends TestSuite {
       import SP.Values._
       import UnsafeTypes._
 
-      def testT[A <: AnyAtom: ClassTag](p: Project, parse: Project => String => ArraySeq[A], text: String)(as: A*): Unit = {
+      def testT[A <: AnyAtom: ClassTag](p: Project, parse: Project => String => ArraySeq[A], text: String)(as: A*)(implicit l: Line): Unit = {
         val e = as.to(ArraySeq)
         assertEq(quoteStringForDisplay(preprocessStr(text, MultiLine)), parse(p)(text), e)
 
@@ -231,16 +275,16 @@ object ParsersTest extends TestSuite {
         assertEq(s"txt -> parsed -> txt:\n$text2", parse(p)(text2), e)
       }
 
-      def test(text: String)(as: T.Atom*): Unit = {
+      def test(text: String)(as: T.Atom*)(implicit l: Line): Unit = {
         testWithUcCtx(text, None)(as: _*)
         testWithUcCtx(text, Some(1))(as: _*)
         testWithUcCtx(text, Some(99999))(as: _*)
       }
 
-      def testWithUcCtx(text: String, currentUC: Option[ReqTypePos])(as: T.Atom*): Unit =
+      def testWithUcCtx(text: String, currentUC: Option[ReqTypePos])(as: T.Atom*)(implicit l: Line): Unit =
         testT(P, T.parse(_, currentUC), text)(as: _*)
 
-      def testLit(text: String): Unit =
+      def testLit(text: String)(implicit l: Line): Unit =
         test(text)(T.Literal(text))
 
       "hashHashHash" -
@@ -253,6 +297,7 @@ object ParsersTest extends TestSuite {
       "whitespace" - {
         "empty"   - test("    ")()
         "lit"     - test("  hehe  ")(L("hehe"))
+        "litMid"  - test("  he   he  ")(L("he   he"))
         "email"   - test("  asd@abc.com  ")(T.EmailAddress("asd@abc.com"))
         "li"      - test("*     hehe    \n*     yay    ")(T.UnorderedList(NEA(LI(L("hehe")), LI(L("yay")))))
         "nl"      - test("here\nthere")(L("here"), T.blankLine, L("there"))
@@ -265,6 +310,7 @@ object ParsersTest extends TestSuite {
 
       "monospace" - {
         @inline def M(s: String) = T.Monospace(s)
+        "empty"     - test("``")(L("``"))
         "easy"      - test("`a`")(M("a"))
         "trim"      - test("` abc  `")(M(" abc  "))
         "blank"     - test("` ``  `")(M(" "), M("  "))
@@ -605,6 +651,90 @@ object ParsersTest extends TestSuite {
         )
       }
 
+      "headings" - {
+        import Text.{HeadingTitleFull => H}
+        "simple" - test(
+          """
+            |# H1
+            |#not
+            |#  h1  again
+            |## h2
+            |### h3
+            |#### h4
+            |##### h5
+            |###### h6
+            |""".stripMargin.replace("!", "")
+          )(
+          T.Heading1(NonEmptyArraySeq(H.Literal("H1"))),
+          T.Literal("#not"),
+          T.Heading1(NonEmptyArraySeq(H.Literal("h1  again"))),
+          T.Heading2(NonEmptyArraySeq(H.Literal("h2"))),
+          T.Heading3(NonEmptyArraySeq(H.Literal("h3"))),
+          T.Heading4(NonEmptyArraySeq(H.Literal("h4"))),
+          T.Heading5(NonEmptyArraySeq(H.Literal("h5"))),
+          T.Heading6(NonEmptyArraySeq(H.Literal("h6"))),
+        )
+
+        "space" - test(
+          """
+            | # H1
+            | #not
+            |  #   h1  again     !
+            |      wow
+            |
+            | # # nope
+            |### h3
+            |
+            |
+            |
+            |#### h4
+            |
+            |
+            |###x
+            |
+            |
+            |##### h5
+            |x # h1
+            |###### h6
+            |""".stripMargin.replace("!", "")
+        )(
+          T.Heading1(NonEmptyArraySeq(H.Literal("H1"))),
+          T.Literal("#not"),
+          T.Heading1(NonEmptyArraySeq(H.Literal("h1  again"))),
+          T.Literal("wow"),
+          T.Heading1(NonEmptyArraySeq(H.Literal("# nope"))),
+          T.Heading3(NonEmptyArraySeq(H.Literal("h3"))),
+          T.Heading4(NonEmptyArraySeq(H.Literal("h4"))),
+          T.Literal("###x"),
+          T.Heading5(NonEmptyArraySeq(H.Literal("h5"))),
+          T.Literal("x # h1"),
+          T.Heading6(NonEmptyArraySeq(H.Literal("h6"))),
+        )
+
+        "combo" - test(
+          """
+            |x !
+            |# h1 tag: #wip, issue: #TODO, ref: [fr1]
+            |* !
+            |# h1   !
+            |  lit with space  !
+            |""".stripMargin.replace("!", "")
+        )(
+          L("x"),
+          T.Heading1(NonEmptyArraySeq(
+            H.Literal("h1 tag: "),
+            H.TagRef(11),
+            H.Literal(", issue: "),
+            H.Issue(1, I.empty),
+            H.Literal(", ref: "),
+            H.ReqRef(frs(1)),
+          )),
+          T.UnorderedList(NonEmptyArraySeq(ArraySeq.empty)),
+          T.Heading1(NonEmptyArraySeq(H.Literal("h1"))),
+          L("lit with space"),
+        )
+      }
+
       "useCaseStepRef" - {
         def testU(id: UseCaseStepId, stepLabel: String): Unit = {
           val stepLabelUC = wrapString(stepLabel).takeWhile(Character.isDigit).toString.toInt
@@ -670,8 +800,8 @@ object ParsersTest extends TestSuite {
     // Eg. Dead text can have CodeRefs to dead codes.
     // Parsing text only happens to live text, and it only looks at active codes.
     "big" - {
-      // tester.bugHunt(0, 10000)(Prop.eval(_.all))(DefaultSettings.propSettings.setSeed(0).setDebug.setSingleThreaded)
-      tester.mustSatisfyE(_.all) //(DefaultSettings.propSettings.setSampleSize(20000).setDebug)
+      // tester.bugHunt(0, 10000)(Prop.eval(_.all))(nyaya.test.DefaultSettings.propSettings.setSeed(0).setDebug.setSingleThreaded)
+      // tester.mustSatisfyE(_.all)(nyaya.test.DefaultSettings.propSettings.setSampleSize(20000))
       println()
       val graphUnit = 1000 `JVM|JS` 10
       val graphChar = "#" `JVM|JS` "."

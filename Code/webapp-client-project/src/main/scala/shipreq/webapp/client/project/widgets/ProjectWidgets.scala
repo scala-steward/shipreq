@@ -271,11 +271,22 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       }
     }
 
+  private val h1 = <.h1(*.h1)
+  private val h2 = <.h2(*.h2)
+  private val h3 = <.h3(*.h3)
+  private val h4 = <.h4(*.h4)
+  private val h5 = <.h5(*.h5)
+  private val h6 = <.h6(*.h6)
+
   private def tagWithoutStyle(c: Contextualise, t: ApplicableTag, includeDesc: Boolean): VdomTag =
     tagWithoutStyleMemo(includeDesc)(c)(t)
 
   private def textAtom(liveText: Live, tagValidity: ApplicableTagId => Validity): Atom.AnyAtom => TagMod = {
     import Atom._
+
+    def heading(tag: VdomTag, title: Headings#HeadingTitle) =
+      tag(title.whole.toTagMod(atom))
+
     lazy val atom: AnyAtom => TagMod = {
       case a: Literal         # Literal        => <.span(a.value)
       case _: NewLine         # BlankLine      => <.div(*.blankLine)
@@ -288,6 +299,12 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       case a: ContentRef      # UseCaseStepRef => useCaseStepRefById(a.value)
       case a: Issue           # Issue          => issue(a.typ, a.desc, liveText)
       case a: CodeBlock       # CodeBlock      => CodeBlockWithSyntaxHighlighting(a.language, a.code)
+      case a: Headings        # Heading1       => heading(h1, a.title)
+      case a: Headings        # Heading2       => heading(h2, a.title)
+      case a: Headings        # Heading3       => heading(h3, a.title)
+      case a: Headings        # Heading4       => heading(h4, a.title)
+      case a: Headings        # Heading5       => heading(h5, a.title)
+      case a: Headings        # Heading6       => heading(h6, a.title)
 
       case a: TagRef          # TagRef         =>
         val tag = project.config.tags.needApplicableTag(a.value)

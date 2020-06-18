@@ -3,7 +3,12 @@ package shipreq.webapp.base.text
 import japgolly.microlibs.adt_macros.AdtMacros
 import monocle.Iso
 import scala.collection.immutable.ArraySeq
+import scalaz.Applicative
+import scalaz.Scalaz.Id
+import scalaz.syntax.traverse
+import shipreq.base.util.ScalazExtra.foldableArraySeq
 import shipreq.base.util.NonEmptyArraySeq
+import shipreq.base.util.Util.ShipReqOpsForArraySeq
 import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.{text => T}
@@ -22,11 +27,13 @@ object Atom {
   // - Issue
   // - ContentRef
   // - TagRef
+  // - Headings
 
   sealed abstract class TypeGroup
   object TypeGroup {
     case object CodeBlock       extends TypeGroup
     case object ContentRef      extends TypeGroup
+    case object Headings        extends TypeGroup
     case object Issue           extends TypeGroup
     case object ListMarkup      extends TypeGroup
     case object Literal         extends TypeGroup
@@ -43,6 +50,12 @@ object Atom {
     case object CodeBlock      extends Type(TypeGroup.CodeBlock)
     case object CodeRef        extends Type(TypeGroup.ContentRef)
     case object EmailAddress   extends Type(TypeGroup.PlainTextMarkup)
+    case object Heading1       extends Type(TypeGroup.Headings)
+    case object Heading2       extends Type(TypeGroup.Headings)
+    case object Heading3       extends Type(TypeGroup.Headings)
+    case object Heading4       extends Type(TypeGroup.Headings)
+    case object Heading5       extends Type(TypeGroup.Headings)
+    case object Heading6       extends Type(TypeGroup.Headings)
     case object Issue          extends Type(TypeGroup.Issue)
     case object Literal        extends Type(TypeGroup.Literal)
     case object Monospace      extends Type(TypeGroup.PlainTextMarkup)
@@ -60,6 +73,12 @@ object Atom {
       case _: ContentRef      # CodeRef        => CodeRef
       case _: ContentRef      # ReqRef         => ReqRef
       case _: ContentRef      # UseCaseStepRef => UseCaseStepRef
+      case _: Headings        # Heading1       => Heading1
+      case _: Headings        # Heading2       => Heading2
+      case _: Headings        # Heading3       => Heading3
+      case _: Headings        # Heading4       => Heading4
+      case _: Headings        # Heading5       => Heading5
+      case _: Headings        # Heading6       => Heading6
       case _: Issue           # Issue          => Issue
       case _: ListMarkup      # UnorderedList  => UnorderedList
       case _: Literal         # Literal        => Literal
@@ -88,7 +107,12 @@ object Atom {
       def isBlankLine = false
       def allowBlankLineAfter = true
       @inline final def allowBlankLineBefore = allowBlankLineAfter // so far this holds but it might not always
+
+      // For tests
+      def modText(f: String => String): this.type = this
+      def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] = F.pure(this)
     }
+
     final type OptionalText = ArraySeq[Atom]
     final type NonEmptyText = NonEmptyArraySeq[Atom]
 
@@ -113,14 +137,15 @@ object Atom {
 
     final def supports(g: TypeGroup): Boolean =
       g match {
-        case TypeGroup.CodeBlock       => this.isInstanceOf[Atom.CodeBlock]
-        case TypeGroup.ContentRef      => this.isInstanceOf[Atom.ContentRef]
-        case TypeGroup.Issue           => this.isInstanceOf[Atom.Issue]
-        case TypeGroup.ListMarkup      => this.isInstanceOf[Atom.ListMarkup]
-        case TypeGroup.Literal         => this.isInstanceOf[Atom.Literal]
-        case TypeGroup.NewLine         => this.isInstanceOf[Atom.NewLine]
-        case TypeGroup.PlainTextMarkup => this.isInstanceOf[Atom.PlainTextMarkup]
-        case TypeGroup.TagRef          => this.isInstanceOf[Atom.TagRef]
+        case TypeGroup.CodeBlock        => this.isInstanceOf[Atom.CodeBlock]
+        case TypeGroup.ContentRef       => this.isInstanceOf[Atom.ContentRef]
+        case TypeGroup.Headings         => this.isInstanceOf[Atom.Headings]
+        case TypeGroup.Issue            => this.isInstanceOf[Atom.Issue]
+        case TypeGroup.ListMarkup       => this.isInstanceOf[Atom.ListMarkup]
+        case TypeGroup.Literal          => this.isInstanceOf[Atom.Literal]
+        case TypeGroup.NewLine          => this.isInstanceOf[Atom.NewLine]
+        case TypeGroup.PlainTextMarkup  => this.isInstanceOf[Atom.PlainTextMarkup]
+        case TypeGroup.TagRef           => this.isInstanceOf[Atom.TagRef]
       }
 
     final def supports(t: Type): Boolean =
@@ -132,8 +157,14 @@ object Atom {
     case class Literal(value: String) extends Atom {
       override final def isPlain = true
       override final def containsMultipleLines = false
+
       // For tests
-      def map(f: String => String): this.type = Literal(f(value)).asInstanceOf[this.type]
+
+      override def modText(f: String => String): this.type =
+        copy(f(value)).asInstanceOf[this.type]
+
+      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
+        F.map(f(value))(copy(_).asInstanceOf[this.type])
     }
   }
 
@@ -147,17 +178,99 @@ object Atom {
     final val blankLine = BlankLine()
   }
 
-  trait ListMarkup extends Base {
+  trait Headings extends Base { self =>
+    val headerTitle: Base
+
+    final type HeadingTitleAtom = headerTitle.Atom
+    final type HeadingTitle     = headerTitle.NonEmptyText
+
+    sealed abstract class Heading extends Atom {
+      type Self <: Heading
+      final val parent: self.type = self
+      override final def isPlain = false
+      override final def containsMultipleLines = false
+      val title: HeadingTitle
+      def copy(title: HeadingTitle): Self
+
+      // For tests
+
+      final def modTitle(f: HeadingTitle => HeadingTitle) =
+        copy(f(title))
+
+      final override def modText(f: String => String): this.type =
+        copy(title.map(_.modText(f))).asInstanceOf[this.type]
+
+      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
+        F.map(title.traverse(_.modTextF(f).asInstanceOf[F[HeadingTitleAtom]]))(copy(_).asInstanceOf[this.type])
+    }
+
+    final def unsafeHeadingByIdx(n: Int, title: HeadingTitle): Heading =
+      n match {
+        case 0 => Heading1(title)
+        case 1 => Heading2(title)
+        case 2 => Heading3(title)
+        case 3 => Heading4(title)
+        case 4 => Heading5(title)
+        case 5 => Heading6(title)
+      }
+
+    case class Heading1(title: HeadingTitle) extends Heading {
+      override type Self = Heading1
+      override def copy(title: HeadingTitle) = Heading1(title)
+    }
+
+    case class Heading2(title: HeadingTitle) extends Heading {
+      override type Self = Heading2
+      override def copy(title: HeadingTitle) = Heading2(title)
+    }
+
+    case class Heading3(title: HeadingTitle) extends Heading {
+      override type Self = Heading3
+      override def copy(title: HeadingTitle) = Heading3(title)
+    }
+
+    case class Heading4(title: HeadingTitle) extends Heading {
+      override type Self = Heading4
+      override def copy(title: HeadingTitle) = Heading4(title)
+    }
+
+    case class Heading5(title: HeadingTitle) extends Heading {
+      override type Self = Heading5
+      override def copy(title: HeadingTitle) = Heading5(title)
+    }
+
+    case class Heading6(title: HeadingTitle) extends Heading {
+      override type Self = Heading6
+      override def copy(title: HeadingTitle) = Heading6(title)
+    }
+  }
+
+  trait ListMarkup extends Base { self =>
     final type ListItem = ArraySeq[Atom]
+
     case class UnorderedList(items: NonEmptyArraySeq[ListItem]) extends Atom {
+      val parent: self.type = self
       override final def isPlain = false
       override final def containsMultipleLines = (items.length > 1) || items.head.exists(_.containsMultipleLines)
 
       val itemsContainMultipleLines = items.exists(_.exists(_.containsMultipleLines))
 
       // For tests
-      def filterAtoms(f: Atom => Boolean): this.type = UnorderedList(items.map(_ filter f)).asInstanceOf[this.type]
-      def map(f: ListItem => ListItem): this.type = UnorderedList(items map f).asInstanceOf[this.type]
+
+      def filterAtoms(f: Atom => Boolean): this.type =
+        UnorderedList(items.map(_ filter f)).asInstanceOf[this.type]
+
+      def map(f: ListItem => ListItem): this.type =
+        UnorderedList(items map f).asInstanceOf[this.type]
+
+      def unsafeWithItems(items: NonEmptyArraySeq[ArraySeq[Base#Atom]]): UnorderedList =
+        UnorderedList(items.asInstanceOf[NonEmptyArraySeq[ListItem]])
+
+      override def modText(f: String => String): this.type =
+        map(_.map(_.modText(f)))
+
+      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
+        F.map(items.traverse(_.traverse(_.modTextF(f).asInstanceOf[F[Atom]])))(copy(_).asInstanceOf[this.type])
     }
   }
 
@@ -166,24 +279,59 @@ object Atom {
     case class WebAddress(value: String) extends Atom {
       override final def isPlain = false
       override final def containsMultipleLines = false
+
+      // For tests
+
+      override def modText(f: String => String): this.type =
+        copy(f(value)).asInstanceOf[this.type]
+
+      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
+        F.map(f(value))(copy(_).asInstanceOf[this.type])
     }
 
     /** Email address, like "bob@hotmail.com" */
     case class EmailAddress(value: String) extends Atom {
       override final def isPlain = false
       override final def containsMultipleLines = false
+
+      // For tests
+
+      override def modText(f: String => String): this.type =
+        copy(f(value)).asInstanceOf[this.type]
+
+      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
+        F.map(f(value))(copy(_).asInstanceOf[this.type])
     }
 
     /** Content in TeX format, like "\frac{22}{7}-\pi" */
     case class TeX(value: String) extends Atom {
       override final def isPlain = false
       override final def containsMultipleLines = false
+
+      // For tests
+
+      override def modText(f: String => String): this.type =
+        copy(f(value)).asInstanceOf[this.type]
+
+      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
+        F.map(f(value))(copy(_).asInstanceOf[this.type])
     }
 
-    /** Inline monospace block, like `omg_yes("no")` */
+    /** Inline monospace block, like `omg_yes("no")`
+     *
+     * @param value Non-empty. Guarded by ParsersTest.
+     */
     case class Monospace(value: String) extends Atom {
       override final def isPlain = false
       override final def containsMultipleLines = false
+
+      // For tests
+
+      override def modText(f: String => String): this.type =
+        copy(f(value)).asInstanceOf[this.type]
+
+      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
+        F.map(f(value))(copy(_).asInstanceOf[this.type])
     }
   }
 
@@ -192,14 +340,29 @@ object Atom {
       override final def isPlain = false
       override final def containsMultipleLines = true
       override final def allowBlankLineAfter = false
+
+      // For tests
+
+      override def modText(f: String => String): this.type =
+        copy(code = f(code)).asInstanceOf[this.type]
+
+      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
+        F.map(f(code))(c => copy(code = c).asInstanceOf[this.type])
     }
   }
 
-  trait SingleLine extends Literal with PlainTextMarkup {
+  trait SingleLine
+      extends Literal
+         with PlainTextMarkup {
     val lineCardinality: LineCardinality = T.SingleLine
   }
 
-  trait MultiLine extends SingleLine with NewLine with ListMarkup with CodeBlock {
+  trait MultiLine
+      extends SingleLine
+         with NewLine
+         with Headings
+         with ListMarkup
+         with CodeBlock {
     override final val lineCardinality = T.MultiLine
   }
 
@@ -259,4 +422,8 @@ object Atom {
     with Issue
     with ContentRef
     with TagRef
+
+  trait HeadingTitleFull     extends SingleLine with Issue with ContentRef with TagRef
+  trait HeadingTitleNoIssues extends SingleLine            with ContentRef with TagRef
+
 }

@@ -14,7 +14,10 @@ object TextMacros {
 class TextMacroImpls(val c: Context) extends WhiteboxMacroUtils {
   import c.universe._
 
-  val atomFQN = "shipreq.webapp.base.text.Atom.Base.Atom"
+  val atomFQN     = "shipreq.webapp.base.text.Atom.Base.Atom"
+  val headingsFQN = "shipreq.webapp.base.text.Atom.Headings"
+
+  val headingNo = "^heading(\\d)$".r
 
   /**
    * Using an AtomTC, generate TC[Atom], TC[OptionalText], TC[NonEmptyText] for some text type T.
@@ -34,6 +37,11 @@ class TextMacroImpls(val c: Context) extends WhiteboxMacroUtils {
     val atomTypeNames = atomTypes.map(_.name)
     debug(s"atomTypes = $atomTypeNames")
 
+    val hasHeadings      = tType.baseClasses.exists(_.fullName == headingsFQN)
+    val headingTitleType = Option.when(hasHeadings)(tType.member(TermName("headerTitle")).typeSignature.finalResultType.toString)
+    val useHeadingFull   = headingTitleType.exists(_ contains "HeadingTitleFull")
+    debug(s"headingTitleType = $headingTitleType, useHeadingFull = $useHeadingFull")
+
     var allVals     = Vector.empty[TermName]
     var valDefs     = Vector.empty[ValDef]
     var lazyValDefs = Vector.empty[ValDef]
@@ -50,6 +58,7 @@ class TextMacroImpls(val c: Context) extends WhiteboxMacroUtils {
       val nStr = lowerCaseHead(t.toString)
       val nTerm = TermName(nStr)
       var valLazy = false
+      val atomTypeName = t.toTermName
       val body = nStr match {
         case "issue" =>
           valLazy = true
@@ -58,6 +67,18 @@ class TextMacroImpls(val c: Context) extends WhiteboxMacroUtils {
           valLazy = true
           needLI = true
           q"a.$nTerm(t)(li)"
+        case headingNo(h) =>
+          val ht = {
+            val name =
+              if (useHeadingFull)
+                "Full"
+              else
+                "NoIssues"
+            q"${TermName(s"headingTitle${name}3")}._3"
+          }
+          val fn = "heading" + h
+          val term = TermName(fn)
+          q"""this.$term(t)($ht)"""
         case _ =>
           q"a.$nTerm(t)"
       }
@@ -68,7 +89,7 @@ class TextMacroImpls(val c: Context) extends WhiteboxMacroUtils {
       else
         valDefs :+= valDef
 
-      cases :+= cq"Atom.Type.${t.toTermName} => $nTerm"
+      cases :+= cq"Atom.Type.$atomTypeName => $nTerm"
     }
 
     cases :+= {

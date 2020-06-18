@@ -435,6 +435,12 @@ object DataProp {
       case a: Issue           # Issue          => anyText(a.desc)
       case _: TagRef          # TagRef         => nop
       case _: CodeBlock       # CodeBlock      => nop
+      case a: Headings        # Heading1       => anyText(a.title.whole)
+      case a: Headings        # Heading2       => anyText(a.title.whole)
+      case a: Headings        # Heading3       => anyText(a.title.whole)
+      case a: Headings        # Heading4       => anyText(a.title.whole)
+      case a: Headings        # Heading5       => anyText(a.title.whole)
+      case a: Headings        # Heading6       => anyText(a.title.whole)
     } rename "AnyAtom"
 
     lazy val anyText: Prop[Text.AnyOptional] =

@@ -3,6 +3,7 @@ package shipreq.webapp.base.text
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import org.parboiled2.{CharPredicate => CP, _}
+import scala.annotation.tailrec
 import scala.collection.immutable.ArraySeq
 import scalaz.{-\/, \/-}
 import shapeless._
@@ -58,6 +59,33 @@ object Parsers {
     def OWSNL: Rule0 =
       rule(anyOf(" \r\n").*)
 
+    private val isWS: Char => Boolean =
+      _ == ' '
+
+    private val isNL: Char => Boolean = {
+      case '\n' | '\r' => true
+      case _           => false
+    }
+
+    @tailrec private def isStartOfLineAfterOWS(i: Int): Boolean =
+      if (i < 0)
+        true
+      else {
+        val c = input.charAt(i)
+        if (isNL(c))
+          true
+        else if (isWS(c))
+          isStartOfLineAfterOWS(i - 1)
+        else
+          false
+      }
+
+    def startOfLine: Rule0 =
+      rule(BOI | test(isNL(lastChar)))
+
+    def startOfLineAfterOWS: Rule0 =
+      rule(BOI | test(isStartOfLineAfterOWS(cursor - 1)))
+
     val untilEOL = () => rule(OWS ~ EOL)
 
     val lookupReq: (ReqType.Mnemonic, ReqTypePos) => Option[ReqId] =
@@ -110,7 +138,7 @@ object Parsers {
       rule(zeroOrMore(token() | literalUntil(endOrToken)) ~ end() ~> atomsToArraySeq)
     }
 
-    def text(token: TokenRule): Rule1[t.OptionalText] =
+    def textUntilEOL(token: TokenRule): Rule1[t.OptionalText] =
       textUntil(token, untilEOL)
   }
 
@@ -219,7 +247,7 @@ object Parsers {
       )
 
      def unorderedList(listToken: TokenRule): Rule1[t.UnorderedList] =
-       rule((BOI | (OWS ~ NL)) ~ listItem(listToken).+ ~ OWSNL ~ popSeqToNEA[t.ListItem] ~> t.UnorderedList)
+       rule((OWS ~ NL).? ~ startOfLine ~ listItem(listToken).+ ~ OWSNL ~ popSeqToNEA[t.ListItem] ~> t.UnorderedList)
   }
 
   trait ContentRef extends Base with UseCaseStepLabel {
@@ -313,6 +341,43 @@ object Parsers {
     protected def issueInnerDesc: Rule1[I.NonEmptyText] //= rule(runSubParser(I.parserI(project)(_).inline))
   }
 
+  trait HeadingTitle extends Literal {
+    val token: TokenRule
+    final def inline: Rule1[t.NonEmptyText] = rule(textUntilEOL(token) ~ popNEA)
+  }
+
+  trait Headings extends Base { self: Literal with Headings =>
+    override val t: Atom.Headings
+
+    // Hack due to https://github.com/sirthias/parboiled2/issues/120
+    // runSubParser can only be used in a method directly in a class, not a trait like this
+    protected def headingTitle: Rule1[t.headerTitle.NonEmptyText]
+
+    final val heading: TokenRule =
+      () => rule(
+        OWSNL ~ startOfLineAfterOWS
+          ~ capture(
+            '#' // 1
+              ~ ('#' // 2
+              ~ ('#' // 3
+              ~ ('#' // 4
+              ~ ('#' // 5
+              ~ ('#' // 6
+              ).? // 6
+              ).? // 5
+              ).? // 4
+              ).? // 3
+              ).? // 2
+          ) ~ ' '
+          ~ OWS ~ headingTitle
+          ~ OWSNL
+        ~> { (hstr: String, title: t.headerTitle.NonEmptyText) =>
+          val n = hstr.length - 1
+          t.unsafeHeadingByIdx(n, title)
+        }
+      )
+  }
+
   // ===================================================================================================================
 
   trait SingleLine extends PlainTextMarkup with Literal {
@@ -320,7 +385,7 @@ object Parsers {
     def singleLine = plainTextMarkup
   }
 
-  trait MultiLine extends SingleLine with NewLine with ListMarkup with CodeBlock {
+  trait MultiLine extends SingleLine with NewLine with ListMarkup with CodeBlock with Headings {
     override val t: Atom.MultiLine
     protected val additionalTokens: TokenRule
 
@@ -328,14 +393,14 @@ object Parsers {
       () => rule(additionalTokens() | singleLine)
 
     final val token: TokenRule =
-      () => rule(unorderedList(listToken) | codeBlock | additionalTokens() | blankLine | singleLine)
+      () => rule(unorderedList(listToken) | heading() | codeBlock | additionalTokens() | blankLine | singleLine)
   }
 
   // ===================================================================================================================
 
   trait TopBase extends Literal {
     protected val token: TokenRule
-    final def optionalText: Rule1[t.OptionalText] = rule(OWS ~ text(token) ~ EOI)
+    final def optionalText: Rule1[t.OptionalText] = rule(OWS ~ textUntilEOL(token) ~ EOI)
     final def nonEmptyText: Rule1[t.NonEmptyText] = rule(optionalText ~ popNEA)
   }
 }

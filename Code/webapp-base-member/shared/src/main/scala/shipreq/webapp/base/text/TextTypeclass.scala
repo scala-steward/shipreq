@@ -11,6 +11,8 @@ trait AtomTC[TC[_]] {
 
   def lazily[A](a: => TC[A]): TC[A]
 
+  def xmap[A, B](fa: TC[A])(f: A => B)(g: B => A): TC[B]
+
   def arr[A](implicit a: TC[A], ct: ClassTag[A]): TC[ArraySeq[A]]
   def nea[A](as: TC[ArraySeq[A]])(implicit a: TC[A]): TC[NonEmptyArraySeq[A]]
 
@@ -41,22 +43,56 @@ object TextTC {
 
 class TextTC[TC[_]](a: AtomTC[TC]) {
   import TextMacros.generateTypeclasses
+  import a.xmap
 
-  private[this] lazy val issue3      = generateTypeclasses(Text.InlineIssueDesc)
-  private[this] val genericReqTitle3 = generateTypeclasses(Text.GenericReqTitle)
-  private[this] val codeGroupTitle3  = generateTypeclasses(Text.CodeGroupTitle)
-  private[this] val customTextField3 = generateTypeclasses(Text.CustomTextField)
-  private[this] val deletionReason3  = generateTypeclasses(Text.DeletionReason)
-  private[this] val manualIssue3     = generateTypeclasses(Text.ManualIssue)
-  private[this] val useCaseStep3     = generateTypeclasses(Text.UseCaseStep)
-  private[this] val useCaseTitle3    = generateTypeclasses(Text.UseCaseTitle)
+  final def heading1[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading1] = xmap(h)(t.Heading1(_))(_.title)
+  final def heading2[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading2] = xmap(h)(t.Heading2(_))(_.title)
+  final def heading3[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading3] = xmap(h)(t.Heading3(_))(_.title)
+  final def heading4[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading4] = xmap(h)(t.Heading4(_))(_.title)
+  final def heading5[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading5] = xmap(h)(t.Heading5(_))(_.title)
+  final def heading6[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading6] = xmap(h)(t.Heading6(_))(_.title)
 
-  implicit val (inlineIssueDescA, inlineIssueDescO, inlineIssueDescN) = issue3
-  implicit val (genericReqTitleA, genericReqTitleO, genericReqTitleN) = genericReqTitle3
-  implicit val ( codeGroupTitleA,  codeGroupTitleO,  codeGroupTitleN) = codeGroupTitle3
-  implicit val (customTextFieldA, customTextFieldO, customTextFieldN) = customTextField3
-  implicit val ( deletionReasonA,  deletionReasonO,  deletionReasonN) = deletionReason3
-  implicit val (    manualIssueA,     manualIssueO,     manualIssueN) = manualIssue3
-  implicit val (    useCaseStepA,     useCaseStepO,     useCaseStepN) = useCaseStep3
-  implicit val (   useCaseTitleA,    useCaseTitleO,    useCaseTitleN) = useCaseTitle3
+  private[this] lazy val codeGroupTitle3       = generateTypeclasses(Text.CodeGroupTitle)
+  private[this] lazy val customTextField3      = generateTypeclasses(Text.CustomTextField)
+  private[this] lazy val deletionReason3       = generateTypeclasses(Text.DeletionReason)
+  private[this] lazy val genericReqTitle3      = generateTypeclasses(Text.GenericReqTitle)
+  private[this] lazy val headingTitleFull3     = generateTypeclasses(Text.HeadingTitleFull)
+  private[this] lazy val headingTitleNoIssues3 = generateTypeclasses(Text.HeadingTitleNoIssues)
+  private[this] lazy val issue3                = generateTypeclasses(Text.InlineIssueDesc)
+  private[this] lazy val manualIssue3          = generateTypeclasses(Text.ManualIssue)
+  private[this] lazy val useCaseStep3          = generateTypeclasses(Text.UseCaseStep)
+  private[this] lazy val useCaseTitle3         = generateTypeclasses(Text.UseCaseTitle)
+
+  implicit def codeGroupTitleA       = codeGroupTitle3      ._1
+  implicit def customTextFieldA      = customTextField3     ._1
+  implicit def deletionReasonA       = deletionReason3      ._1
+  implicit def genericReqTitleA      = genericReqTitle3     ._1
+  implicit def headingTitleFullA     = headingTitleFull3    ._1
+  implicit def headingTitleNoIssuesA = headingTitleNoIssues3._1
+  implicit def issueA                = issue3               ._1
+  implicit def manualIssueA          = manualIssue3         ._1
+  implicit def useCaseStepA          = useCaseStep3         ._1
+  implicit def useCaseTitleA         = useCaseTitle3        ._1
+
+  implicit def codeGroupTitleO       = codeGroupTitle3      ._2
+  implicit def customTextFieldO      = customTextField3     ._2
+  implicit def deletionReasonO       = deletionReason3      ._2
+  implicit def genericReqTitleO      = genericReqTitle3     ._2
+  implicit def headingTitleFullO     = headingTitleFull3    ._2
+  implicit def headingTitleNoIssuesO = headingTitleNoIssues3._2
+  implicit def issueO                = issue3               ._2
+  implicit def manualIssueO          = manualIssue3         ._2
+  implicit def useCaseStepO          = useCaseStep3         ._2
+  implicit def useCaseTitleO         = useCaseTitle3        ._2
+
+  implicit def codeGroupTitleN       = codeGroupTitle3      ._3
+  implicit def customTextFieldN      = customTextField3     ._3
+  implicit def deletionReasonN       = deletionReason3      ._3
+  implicit def genericReqTitleN      = genericReqTitle3     ._3
+  implicit def headingTitleFullN     = headingTitleFull3    ._3
+  implicit def headingTitleNoIssuesN = headingTitleNoIssues3._3
+  implicit def issueN                = issue3               ._3
+  implicit def manualIssueN          = manualIssue3         ._3
+  implicit def useCaseStepN          = useCaseStep3         ._3
+  implicit def useCaseTitleN         = useCaseTitle3        ._3
 }
