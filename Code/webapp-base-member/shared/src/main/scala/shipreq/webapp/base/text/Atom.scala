@@ -275,8 +275,10 @@ object Atom {
   }
 
   trait PlainTextMarkup extends Base {
-    /** Web address, like "https://www.google.com" */
-    case class WebAddress(value: String) extends Atom {
+    sealed trait PlainTextMarkup extends Atom {
+      type Self <: PlainTextMarkup
+      val value: String
+      def copy(title: String): Self
       override final def isPlain = false
       override final def containsMultipleLines = false
 
@@ -287,51 +289,33 @@ object Atom {
 
       override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
         F.map(f(value))(copy(_).asInstanceOf[this.type])
+    }
+
+    /** Web address, like "https://www.google.com" */
+    case class WebAddress(value: String) extends PlainTextMarkup {
+      override type Self = WebAddress
+      override def copy(title: String) = WebAddress(title)
     }
 
     /** Email address, like "bob@hotmail.com" */
-    case class EmailAddress(value: String) extends Atom {
-      override final def isPlain = false
-      override final def containsMultipleLines = false
-
-      // For tests
-
-      override def modText(f: String => String): this.type =
-        copy(f(value)).asInstanceOf[this.type]
-
-      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
-        F.map(f(value))(copy(_).asInstanceOf[this.type])
+    case class EmailAddress(value: String) extends PlainTextMarkup {
+      override type Self = EmailAddress
+      override def copy(title: String) = EmailAddress(title)
     }
 
     /** Content in TeX format, like "\frac{22}{7}-\pi" */
-    case class TeX(value: String) extends Atom {
-      override final def isPlain = false
-      override final def containsMultipleLines = false
-
-      // For tests
-
-      override def modText(f: String => String): this.type =
-        copy(f(value)).asInstanceOf[this.type]
-
-      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
-        F.map(f(value))(copy(_).asInstanceOf[this.type])
+    case class TeX(value: String) extends PlainTextMarkup {
+      override type Self = TeX
+      override def copy(title: String) = TeX(title)
     }
 
     /** Inline monospace block, like `omg_yes("no")`
      *
      * @param value Non-empty. Guarded by ParsersTest.
      */
-    case class Monospace(value: String) extends Atom {
-      override final def isPlain = false
-      override final def containsMultipleLines = false
-
-      // For tests
-
-      override def modText(f: String => String): this.type =
-        copy(f(value)).asInstanceOf[this.type]
-
-      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
-        F.map(f(value))(copy(_).asInstanceOf[this.type])
+    case class Monospace(value: String) extends PlainTextMarkup {
+      override type Self = Monospace
+      override def copy(title: String) = Monospace(title)
     }
   }
 
