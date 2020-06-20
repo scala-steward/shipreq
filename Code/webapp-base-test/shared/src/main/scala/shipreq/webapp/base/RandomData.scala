@@ -1016,7 +1016,7 @@ object RandomData {
           x.updated(n, fixLast(x(n)))
         }
 
-      result3
+      Parsers.fixOptionalText(result3)
     }
 
     def postProcessAtoms1[T <: Atom.Literal](t: T, ctx: AtomCtx = TopLevelAtom)(as: NonEmptyArraySeq[T#Atom]): NonEmptyArraySeq[T#Atom] = {

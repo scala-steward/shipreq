@@ -9,6 +9,7 @@ import shipreq.base.util.univeq._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Parsers.{StyleCtx, StyleType}
 import shipreq.webapp.base.text.{Atom => A, Parsers => P}
+import shipreq.webapp.base.util.TextMod
 
 object Text {
 
@@ -59,7 +60,8 @@ object Text {
     final def parse(p: Project, currentUseCase: Option[ReqTypePos])(text: String): OptionalText = {
       val pp = parser(p, currentUseCase)(text)
 //      try
-        pp.optionalText.run().get
+      val t = pp.optionalText.run().get
+      Parsers.fixOptionalText(t)
 //      catch {
 //        case e: ParseError =>
 //          println(pp.formatError(e, new ErrorFormatter(showTraces = true, traceCutOff = 500)))
@@ -68,7 +70,7 @@ object Text {
     }
 
     final def parseNonEmpty(p: Project, currentUseCase: Option[ReqTypePos])(text: String): Option[NonEmptyText] =
-      parser(p, currentUseCase)(text).nonEmptyText.run().toOption
+      parser(p, currentUseCase)(text).nonEmptyText.run().toOption.map(Parsers.fixNonEmptyText(_))
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████

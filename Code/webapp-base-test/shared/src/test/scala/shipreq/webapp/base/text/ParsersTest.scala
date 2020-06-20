@@ -339,7 +339,7 @@ object ParsersTest extends TestSuite {
           "empty"   - test("****")(L("****"))
           "spaceM"  - test("** **")(L("** **"))
           "spaceL"  - test("** x**")(L("** x**"))
-          "spaceR"  - test("**x **")(SS(S.Literal("x ")))
+          "spaceR"  - test("**x ****x **")(SS(S.Literal("x ")), SS(S.Literal("x")))
           "words"   - test("**a b c**")(SS(S.Literal("a b c")))
           "nl"      - test("**a\nc**")(L("**a"), T.blankLine, L("c**"))
           "heading" - test("**# nope**")(SS(S.Literal("# nope")))
@@ -352,7 +352,7 @@ object ParsersTest extends TestSuite {
           "empty"   - test("////")(L("////"))
           "spaceM"  - test("// //")(L("// //"))
           "spaceL"  - test("// x//")(L("// x//"))
-          "spaceR"  - test("//x //")(SS(S.Literal("x ")))
+          "spaceR"  - test("//x ////x //")(SS(S.Literal("x ")), SS(S.Literal("x")))
           "words"   - test("//a b c//")(SS(S.Literal("a b c")))
           "nl"      - test("//a\nc//")(L("//a"), T.blankLine, L("c//"))
           "heading" - test("//# nope//")(SS(S.Literal("# nope")))
@@ -365,7 +365,7 @@ object ParsersTest extends TestSuite {
           "empty"   - test("~~~~")(L("~~~~"))
           "spaceM"  - test("~~ ~~")(L("~~ ~~"))
           "spaceL"  - test("~~ x~~")(L("~~ x~~"))
-          "spaceR"  - test("~~x ~~")(SS(S.Literal("x ")))
+          "spaceR"  - test("~~x ~~~~x ~~")(SS(S.Literal("x ")), SS(S.Literal("x")))
           "words"   - test("~~a b c~~")(SS(S.Literal("a b c")))
           "nl"      - test("~~a\nc~~")(L("~~a"), T.blankLine, L("c~~"))
           "heading" - test("~~# nope~~")(SS(S.Literal("# nope")))
@@ -378,11 +378,11 @@ object ParsersTest extends TestSuite {
           "empty"      - test("____")(L("____"))
           "spaceM"     - test("__ __")(L("__ __"))
           "spaceL"     - test("__ x__")(L("__ x__"))
-          "spaceR"     - test("__x __")(SS(S.Literal("x ")))
+          "spaceR"     - test("__x ____x __")(SS(S.Literal("x ")), SS(S.Literal("x")))
           "words"      - test("__a b c__")(SS(S.Literal("a b c")))
           "nl"         - test("__a\nc__")(L("__a"), T.blankLine, L("c__"))
           "heading"    - test("__# nope__")(SS(S.Literal("# nope")))
-          "tag"        - test("__#pri=high __")(SS(S.TagRef(2), S.Literal(" ")))
+          "tag"        - test("__#pri=high ____#pri=high __")(SS(S.TagRef(2), S.Literal(" ")), SS(S.TagRef(2)))
           "tag0"       - test("__#pri=high__")(SS(S.TagRef(2)))
           "tagFirst"   - test("#pri=high__nice__")(T.TagRef(2), SS(S.Literal("nice")))
           "tagOnly1"   - test("#pri=high__")(T.TagRef(2), T.Literal("__"))
@@ -498,6 +498,11 @@ object ParsersTest extends TestSuite {
                   ArraySeq(T.Underline(NonEmptyArraySeq(S.TagRef(id)))))))
             }
           }
+
+          "innerWS" - test("**X  Y  ****X  Y  **")(
+            T.Bold(NonEmptyArraySeq(S.Literal("X Y "))),
+            T.Bold(NonEmptyArraySeq(S.Literal("X Y"))), // DataProp requires that last is not allowed to end in whitespace
+          )
         }
       }
 

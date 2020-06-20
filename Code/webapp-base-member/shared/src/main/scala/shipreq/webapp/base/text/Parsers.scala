@@ -8,13 +8,53 @@ import scala.annotation.tailrec
 import scala.collection.immutable.ArraySeq
 import scalaz.{-\/, \/-}
 import shapeless._
+import shipreq.base.util.NonEmptyArraySeq
 import shipreq.base.util.ScalaExt._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.derivation.UseCaseStepLabelLookup
 import shipreq.webapp.base.text.{Grammar => G}
-import shipreq.webapp.base.util.{ParsingUtil, PreProcessed, PreProcessor}
+import shipreq.webapp.base.util._
 
 object Parsers {
+
+  def fixOptionalText[T <: Atom.Base](text: T#OptionalText): T#OptionalText =
+    if (text.isEmpty)
+      text
+    else
+      fixNonEmptyText(NonEmptyArraySeq.force(text)).whole
+
+  def fixNonEmptyText[T <: Atom.Base](text: T#NonEmptyText): T#NonEmptyText = {
+    val last: Atom.AnyAtom = text.last
+    val newLast: Atom.AnyAtom =
+      last match {
+        case a: Atom.Literal         # Literal               =>
+          val a2 = a.modText(TextMod.noWhitespaceRight.run)
+          if (a2.value.isEmpty)
+            null
+          else
+            a2
+        case a: Atom.Headings        # Heading               => a.modTitle(fixNonEmptyText(_))
+        case a: Atom.PlainTextMarkup # PlainTextMarkupStyled => a.unsafeWithInner(fixNonEmptyText(a.inner))
+        case _: Atom.CodeBlock       # CodeBlock
+           | _: Atom.ContentRef      # CodeRef
+           | _: Atom.ContentRef      # ReqRef
+           | _: Atom.ContentRef      # UseCaseStepRef
+           | _: Atom.Issue           # Issue
+           | _: Atom.ListMarkup      # UnorderedList
+           | _: Atom.NewLine         # BlankLine
+           | _: Atom.PlainTextMarkup # EmailAddress
+           | _: Atom.PlainTextMarkup # Monospace
+           | _: Atom.PlainTextMarkup # TeX
+           | _: Atom.PlainTextMarkup # WebAddress
+           | _: Atom.TagRef          # TagRef                => last
+      }
+    if (newLast eq null)
+      NonEmptyArraySeq.maybe(text.whole.dropRight(1), text)(identity)
+    else if (newLast eq last)
+      text
+    else
+      text.updated(text.length - 1, newLast.asInstanceOf[T#Atom])
+  }
 
   // Because there are special cases, not all whitespace is trimmed.
   // Not all whitespace need be trimmed because the parser already contains space handing - for example, literals are
