@@ -55,12 +55,12 @@ class TextTC[TC[_]](a: AtomTC[TC]) {
   private final def strikethrough[T <: Atom.PlainTextMarkup](t: T)(h: TC[t.styled.NonEmptyText]): TC[t.Strikethrough] = xmap(h)(t.Strikethrough(_))(_.inner)
   private final def underline    [T <: Atom.PlainTextMarkup](t: T)(h: TC[t.styled.NonEmptyText]): TC[t.Underline    ] = xmap(h)(t.Underline    (_))(_.inner)
 
-  private final def heading1[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading1] = xmap(h)(t.Heading1(_))(_.title)
-  private final def heading2[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading2] = xmap(h)(t.Heading2(_))(_.title)
-  private final def heading3[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading3] = xmap(h)(t.Heading3(_))(_.title)
-  private final def heading4[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading4] = xmap(h)(t.Heading4(_))(_.title)
-  private final def heading5[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading5] = xmap(h)(t.Heading5(_))(_.title)
-  private final def heading6[T <: Atom.Headings](t: T)(h: TC[t.headerTitle.NonEmptyText]): TC[t.Heading6] = xmap(h)(t.Heading6(_))(_.title)
+  private final def heading1[T <: Atom.Headings](t: T)(h: TC[t.headingTitle.NonEmptyText]): TC[t.Heading1] = xmap(h)(t.Heading1(_))(_.title)
+  private final def heading2[T <: Atom.Headings](t: T)(h: TC[t.headingTitle.NonEmptyText]): TC[t.Heading2] = xmap(h)(t.Heading2(_))(_.title)
+  private final def heading3[T <: Atom.Headings](t: T)(h: TC[t.headingTitle.NonEmptyText]): TC[t.Heading3] = xmap(h)(t.Heading3(_))(_.title)
+  private final def heading4[T <: Atom.Headings](t: T)(h: TC[t.headingTitle.NonEmptyText]): TC[t.Heading4] = xmap(h)(t.Heading4(_))(_.title)
+  private final def heading5[T <: Atom.Headings](t: T)(h: TC[t.headingTitle.NonEmptyText]): TC[t.Heading5] = xmap(h)(t.Heading5(_))(_.title)
+  private final def heading6[T <: Atom.Headings](t: T)(h: TC[t.headingTitle.NonEmptyText]): TC[t.Heading6] = xmap(h)(t.Heading6(_))(_.title)
 
   private[this] lazy val codeGroupTitle3        = generateTypeclasses(Text.CodeGroupTitle)
   private[this] lazy val customTextField3       = generateTypeclasses(Text.CustomTextField)

@@ -187,10 +187,10 @@ object Atom {
   }
 
   trait Headings extends Base { self =>
-    val headerTitle: Base
+    val headingTitle: Base
 
-    final type HeadingTitleAtom = headerTitle.Atom
-    final type HeadingTitle     = headerTitle.NonEmptyText
+    final type HeadingTitleAtom = headingTitle.Atom
+    final type HeadingTitle     = headingTitle.NonEmptyText
 
     sealed abstract class Heading extends Atom {
       type Self <: Heading

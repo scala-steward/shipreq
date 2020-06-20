@@ -2,7 +2,6 @@ v2.2
 ========================================================================================================================
 
 ### Plan
-* Do the markdown tasks
 * Add old interviews to ShipReq
 * Do new interviews for [Derivative tags] and [Github integration]
   * Don't forget to make it analog instead of digital (eg. imagine Dinko, he'll likely want to see a percentage; not just red for 1.9 weeks then suddenly green)
@@ -50,7 +49,6 @@ v2.2
 
 ### Implement
 * Fix: "TODO should be .devOnly but breaks tests in release mode"
-* s/headerTitle/headingTitle/
 * Add new protocol stability tests
 * support all kinds of URL schemes in WebAddress
 * Rich text preview should be on the right (instead of below) in ReqDetail (and/or) introduce zen mode for multiline editors

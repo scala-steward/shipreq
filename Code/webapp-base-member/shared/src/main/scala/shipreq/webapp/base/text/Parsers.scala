@@ -523,7 +523,7 @@ object Parsers {
 
     // Hack due to https://github.com/sirthias/parboiled2/issues/120
     // runSubParser can only be used in a method directly in a class, not a trait like this
-    protected def headingTitle: Rule1[t.headerTitle.NonEmptyText]
+    protected def headingTitle: Rule1[t.headingTitle.NonEmptyText]
 
     final val heading: TokenRule =
       () => rule(
@@ -543,7 +543,7 @@ object Parsers {
           ) ~ ' '
           ~ OWS ~ headingTitle
           ~ OWSNL
-        ~> { (hstr: String, title: t.headerTitle.NonEmptyText) =>
+        ~> { (hstr: String, title: t.headingTitle.NonEmptyText) =>
           val n = hstr.length - 1
           t.unsafeHeadingByIdx(n, title)
         }

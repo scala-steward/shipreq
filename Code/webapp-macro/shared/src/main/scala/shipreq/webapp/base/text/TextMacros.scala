@@ -59,7 +59,7 @@ class TextMacroImpls(val c: Context) extends WhiteboxMacroUtils {
       )
     }
 
-    val headingTitleType = getInnerType(headingsFQN, "headerTitle", "HeadingTitle")
+    val headingTitleType = getInnerType(headingsFQN, "headingTitle", "HeadingTitle")
     val styledInnerType  = getInnerType(plainTextMarkupFQN, "styled", "StyledInner")
     val isStyledInner    = tType.toString.contains("Text.StyledInner")
     debug(s"headingTitleType = $headingTitleType, styledInnerType = $styledInnerType, isStyledInner = $isStyledInner")

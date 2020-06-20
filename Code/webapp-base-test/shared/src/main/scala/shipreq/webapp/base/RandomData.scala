@@ -892,7 +892,7 @@ object RandomData {
         hh.modTitle { t1 =>
           val t2 = postProcessAtoms(InHeadingTitle)(t1.whole)
           val r = NonEmptyArraySeq.option(t2).getOrElse(t1)
-          r.asInstanceOf[h.parent.headerTitle.NonEmptyText]
+          r.asInstanceOf[h.parent.headingTitle.NonEmptyText]
         }
       }
 

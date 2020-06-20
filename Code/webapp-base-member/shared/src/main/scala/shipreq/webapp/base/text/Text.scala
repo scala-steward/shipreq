@@ -411,7 +411,7 @@ object Text {
       with A.ContentRef
       with A.TagRef { self =>
 
-    override val headerTitle: HeadingTitleFull.type = HeadingTitleFull
+    override val headingTitle: HeadingTitleFull.type = HeadingTitleFull
     override val styled: StyledInnerFull.type = StyledInnerFull
 
     override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) =
@@ -438,7 +438,7 @@ object Text {
         rule(runSubParser(InlineIssueDesc.parserI(project, currentUseCase)(_).inline))
 
       override protected def headingTitle =
-        rule(runSubParser(headerTitle.parserI(project, currentUseCase)(_).inline))
+        rule(runSubParser(self.headingTitle.parserI(project, currentUseCase)(_).inline))
 
       override protected def styledInner(s: StyleType) =
         rule(runSubParser(styled.parserI2(project, currentUseCase, StyleCtx.begin(s))(_).inline))
@@ -526,7 +526,7 @@ object Text {
       with A.ContentRef
       with A.TagRef { self =>
 
-    override val headerTitle: HeadingTitleNoIssues.type = HeadingTitleNoIssues
+    override val headingTitle: HeadingTitleNoIssues.type = HeadingTitleNoIssues
     override val styled: StyledInnerNoIssues.type = StyledInnerNoIssues
 
     override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) =
@@ -562,7 +562,7 @@ object Text {
       with A.ContentRef
       with A.TagRef { self =>
 
-    override val headerTitle: HeadingTitleNoIssues.type = HeadingTitleNoIssues
+    override val headingTitle: HeadingTitleNoIssues.type = HeadingTitleNoIssues
     override val styled: StyledInnerNoIssues.type = StyledInnerNoIssues
 
     override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput) =
