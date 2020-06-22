@@ -138,18 +138,34 @@ abstract class ParsingUtil extends Parser {
   def reqTypePos: Rule1[ReqTypePos] =
     rule(int1n ~> ReqTypePos)
 
-  def grammarStr[G](g: G)(f: G => FirstChar, w: G => CharWhitelist, l: G => Length): Rule0 =
-    rule(f(g).charPredicate ~ (l(g).minus1 times w(g).charPredicate))
+  def grammarStr[G](g        : G)
+                   (firstChar: G => FirstChar,
+                    midChar  : G => CharWhitelist,
+                    lastChar : Option[G => LastChar],
+                    getLen   : G => Length): Rule0 = {
+    val len   = getLen(g)
+    val first = firstChar(g).charPredicate
+    val mid   = midChar(g).charPredicate
+    lastChar match {
+      case Some(last) => rule(first ~ len.minus2.times(mid) ~ last(g).charPredicate.?)
+      case None       => rule(first ~ len.minus1.times(mid))
+    }
+  }
 
-  def parseGrammarWithOptionalStop[G, A](g: G, possibleStop: String => Boolean)
-                                        (f: G => FirstChar, w: G => CharWhitelist, l: G => Length)
-                                        (parse: String => Option[A]): Rule1[A] = {
-    val len = l(g)
+  def parseGrammarWithOptionalStop[G, A](g           : G,
+                                         possibleStop: String => Boolean)
+                                        (firstChar   : G => FirstChar,
+                                         midChar     : G => CharWhitelist,
+                                         lastChar    : Option[G => LastChar],
+                                         getLen      : G => Length)
+                                        (parse       : String => Option[A]): Rule1[A] = {
+    val len = getLen(g)
     val minLen = len.total.head
+    def refRule: Rule0 = grammarStr(g)(firstChar, midChar, lastChar, getLen)
     rule(
       run(
         push(__saveState)
-          ~ capture(f(g).charPredicate ~ (len.minus1.times(w(g).charPredicate)))
+          ~ capture(refRule)
           ~> ((start: Parser.Mark, full: String) => {
           @tailrec def go(s: String): Option[A] =
             if (s.length < minLen)
@@ -175,11 +191,11 @@ abstract class ParsingUtil extends Parser {
   def hashRefStr[A](possibleStop: String => Boolean, parse: String => Option[A]): Rule1[A] =
     rule(
       G.hashRefKey.prefix ~
-      parseGrammarWithOptionalStop(G.hashRefKey, possibleStop)(_.firstChar, _.tailChars, _.length)(parse)
+      parseGrammarWithOptionalStop(G.hashRefKey, possibleStop)(_.firstChar, _.midChars, Some(_.lastChar), _.length)(parse)
     )
 
   def hashRefStr_! : Rule1[String] =
-    rule(G.hashRefKey.prefix ~!~ capture(grammarStr(G.hashRefKey)(_.firstChar, _.tailChars, _.length)))
+    rule(G.hashRefKey.prefix ~!~ capture(grammarStr(G.hashRefKey)(_.firstChar, _.midChars, Some(_.lastChar), _.length)))
 
   def indentationLevelSoFar: Rule1[Int] =
     indentationLevelSoFar(0)

@@ -108,11 +108,29 @@ object RandomData {
   def grammarChars(c: GrammarSpec.Chars): Gen[Char] =
     Gen.chooseChar(c.ch1, c.chn, c.rs: _*)
 
-  def grammarStr1[G](g: G)(f: G => GrammarSpec.Chars, w: G => GrammarSpec.Chars, l: G => GrammarSpec.Length): Gen[String] =
-    for {
-      h <- grammarChars(f(g))
-      t <- grammarChars(w(g)).list(0 to l(g).minus1.max)
-    } yield (h :: t).mkString
+  def grammarStr1[G](g: G)
+                    (firstChar   : G => GrammarSpec.Chars,
+                     midChar     : G => GrammarSpec.CharWhitelist,
+                     lastChar    : Option[G => GrammarSpec.Chars],
+                     getLen      : G => GrammarSpec.Length): Gen[String] = {
+    val len = getLen(g)
+
+    val tail: Gen[String] =
+      lastChar match {
+        case Some(last) =>
+          val genLast = grammarChars(last(g)).map(_.toString)
+          // ↓ len.total not len.minus1 cos it's actually len.minus1 + 1 for ∅
+          Gen.chooseInt(len.total.max).flatMap {
+            case 0 => Gen.pure("")
+            case 1 => genLast
+            case n => Gen.lift2(grammarChars(midChar(g)).string(n - 1), genLast)(_ + _)
+          }
+        case None =>
+          grammarChars(midChar(g)).string(len.minus1)
+      }
+
+    Gen.lift2(grammarChars(firstChar(g)), tail)(_.toString + _)
+  }
 
   class CaseInsensitive(val norm: String, val str: String) {
     override def hashCode = norm.##
@@ -124,25 +142,36 @@ object RandomData {
   def CaseInsensitive(s: String): CaseInsensitive =
     new CaseInsensitive(s.toLowerCase, s)
 
-  def legalGrammar[G](g: G)(first: G => GrammarSpec.Chars, rest: G => GrammarSpec.Chars): LazyList[String] = {
-    val g1 = first(g).iterator().map(_.toString).to(LazyList)
+  def legalGrammar[G](g: G)(first: G => GrammarSpec.Chars, rest: G => GrammarSpec.Chars, last: Option[G => GrammarSpec.Chars]): LazyList[String] = {
+    val gf = first(g).iterator().map(_.toString).to(LazyList)
     val gn = rest(g).iterator().map(_.toString).to(LazyList)
+    val genNewValues: String => LazyList[String] =
+      last match {
+        case Some(l) =>
+          val gl = l(g).iterator().map(_.toString).to(LazyList)
+          s => s.length match {
+                case 1 => gl.map(s + _)
+                case _ => gn.map(s.patch(s.length - 1, _, 0))
+              }
+        case None =>
+          s => gn.map(s + _)
+      }
     def grow(ss: LazyList[String]): LazyList[String] = {
-      val x = ss #::: ss.flatMap(s => gn.map(s + _))
+      val x = ss #::: ss.flatMap(genNewValues)
       x #::: grow(x)
     }
-    grow(g1)
+    grow(gf)
   }
 
-  def grammarFixer[G](g: G)(first: G => GrammarSpec.Chars, rest: G => GrammarSpec.Chars) = {
-    val all = legalGrammar(g)(first, rest)
+  def grammarFixer[G](g: G)(first: G => GrammarSpec.Chars, rest: G => GrammarSpec.Chars, last: Option[G => GrammarSpec.Chars]) = {
+    val all = legalGrammar(g)(first, rest, last)
     def fix(used: Set[String]): String =
       all.filter(!used.contains(_)).head
     Distinct.Fixer.lift(fix)
   }
 
-  def grammarFixerIgnoreCase[G](g: G)(first: G => GrammarSpec.Chars, rest: G => GrammarSpec.Chars) = {
-    val all = legalGrammar(g)(first, rest) map CaseInsensitive
+  def grammarFixerIgnoreCase[G](g: G)(first: G => GrammarSpec.Chars, rest: G => GrammarSpec.Chars, last: Option[G => GrammarSpec.Chars]) = {
+    val all = legalGrammar(g)(first, rest, last) map CaseInsensitive
     def fix(used: Set[CaseInsensitive]): CaseInsensitive =
       all.filter(!used.contains(_)).head
     Distinct.Fixer.lift(fix).xmap(_.str)(CaseInsensitive)
@@ -193,7 +222,7 @@ object RandomData {
     Gen.choose[Mandatory](Mandatory, Optional)
 
   val hashRefKey: Gen[HashRefKey] =
-    grammarStr1(Grammar.hashRefKey)(_.firstChar, _.tailChars, _.length) map HashRefKey
+    grammarStr1(Grammar.hashRefKey)(_.firstChar, _.midChars, Some(_.lastChar), _.length) map HashRefKey
 
   val dir =
     Gen.choose[Direction](Forwards, Backwards)
@@ -269,10 +298,10 @@ object RandomData {
   // ReqTypes
 
   val reqTypeMnemonic =
-    grammarStr1(Grammar.reqTypeMnemonic)(_.chars, _.chars, _.length) map ReqType.Mnemonic
+    grammarStr1(Grammar.reqTypeMnemonic)(_.chars, _.chars, None, _.length) map ReqType.Mnemonic
 
   val reqTypeMnemonicFixer =
-    grammarFixer(Grammar.reqTypeMnemonic)(_.chars, _.chars)
+    grammarFixer(Grammar.reqTypeMnemonic)(_.chars, _.chars, None)
       .xmap(ReqType.Mnemonic.apply)(_.value)
       .addhs(StaticReqType.mnemonics)
 
@@ -1486,7 +1515,7 @@ object RandomData {
     import ReqCode._
 
     val node: Gen[Node] =
-      grammarStr1(Grammar.reqCode)(_.firstChar, _.tailChars, _.nodeLength) map Node.applyFn
+      grammarStr1(Grammar.reqCode)(_.firstChar, _.tailChars, None, _.nodeLength) map Node.applyFn
 
     val value: Gen[Value] =
       node.nev(1 to Grammar.reqCode.maxNodes)
@@ -1606,7 +1635,7 @@ object RandomData {
   // Project
 
   lazy val hashRefFixer =
-    grammarFixerIgnoreCase(Grammar.hashRefKey)(_.firstChar, _.tailChars)
+    grammarFixerIgnoreCase(Grammar.hashRefKey)(_.firstChar, _.midChars, Some(_.lastChar))
       .xmap(HashRefKey.apply)(_.value)
 
   def distinctHashRefKeys = {

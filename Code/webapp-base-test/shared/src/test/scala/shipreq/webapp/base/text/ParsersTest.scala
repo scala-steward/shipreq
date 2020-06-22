@@ -255,6 +255,16 @@ object ParsersTest extends TestSuite {
 
   val maybeSpace = List("", " ")
 
+  private def applicableTagGD(key: String) =
+    ApplicableTagGD(
+      applicableReqTypes = ApplicableReqTypes.empty,
+      children           = Vector.empty,
+      colour             = None,
+      desc               = None,
+      key                = HashRefKey(key),
+      parents            = Map.empty,
+    )
+
   override val tests = Tests {
     "preprocess" - {
       // This isn't a standard trim - see preprocess() for explanation
@@ -294,9 +304,22 @@ object ParsersTest extends TestSuite {
       def testLit(text: String)(implicit l: Line): Unit =
         test(text)(T.Literal(text))
 
-      "hashHashHash" -
-        test("#v1.x#v1.0#TBD#TBD{ whatever}#pri=high")(
-          T.TagRef(21), T.TagRef(22), T.Issue(2, I.empty), T.Issue(2, I(I.Literal("whatever"))), T.TagRef(2))
+      "hashRefs" - {
+        "chain" -
+          test("#v1.x#v1.0#TBD#TBD{ whatever}#pri=high")(
+            T.TagRef(21), T.TagRef(22), T.Issue(2, I.empty), T.Issue(2, I(I.Literal("whatever"))), T.TagRef(2))
+
+        "long" - {
+          def testLong(key: String) = {
+            val id = ApplicableTagId(1237645)
+            val vs = applicableTagGD(key)
+            implicit val p = applyEventSuccessfully(P, Event.ApplicableTagCreate(id, vs))
+            test(s"#$key #$key")(T.TagRef(id), L(" "), T.TagRef(id))
+          }
+          "a"   - testLong("a" * 20)
+          "a_a" - testLong("a" + ("_" * 18) + "a")
+        }
+      }
 
       "innerBraceInIssueDesc" -
         test(s"#TBD{ <${Grammar.texTag}>\\frac{22}</${Grammar.texTag}> }")(T.Issue(2, I(I.TeX("\\frac{22}"))))
@@ -484,14 +507,7 @@ object ParsersTest extends TestSuite {
               a <- zs
               b <- zs
             } {
-              val vs = ApplicableTagGD(
-                applicableReqTypes = ApplicableReqTypes.empty,
-                children           = Vector.empty,
-                colour             = None,
-                desc               = None,
-                key                = HashRefKey(a),
-                parents            = Map.empty,
-              )
+              val vs = applicableTagGD(a)
               implicit val p = applyEventSuccessfully(P, Event.ApplicableTagCreate(id, vs))
               test(s"* __#${b}__")(
                 T.UnorderedList(NonEmptyArraySeq(
