@@ -49,7 +49,6 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
-* Fix: "TODO should be .devOnly but breaks tests in release mode"
 * Markdown: bold
 * Markdown: italics
 * Markdown: strike-through
