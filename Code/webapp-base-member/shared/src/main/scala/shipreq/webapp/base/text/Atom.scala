@@ -2,6 +2,7 @@ package shipreq.webapp.base.text
 
 import japgolly.microlibs.adt_macros.AdtMacros
 import monocle.Iso
+import scala.annotation.nowarn
 import scala.collection.immutable.ArraySeq
 import scalaz.Applicative
 import scalaz.Scalaz.Id
@@ -117,8 +118,8 @@ object Atom {
       @inline final def allowBlankLineBefore = allowBlankLineAfter // so far this holds but it might not always
 
       // For tests
-      def modText(f: String => String): this.type = this
-      def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] = F.pure(this)
+      @nowarn("cat=unused") def modText(f: String => String): this.type = this
+      @nowarn("cat=unused") def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] = F.pure(this)
     }
 
     final type OptionalText = ArraySeq[Atom]

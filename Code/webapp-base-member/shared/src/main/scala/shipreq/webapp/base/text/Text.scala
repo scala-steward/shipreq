@@ -2,7 +2,7 @@ package shipreq.webapp.base.text
 
 import japgolly.microlibs.adt_macros.AdtMacros
 import org.parboiled2._
-import scala.annotation.elidable
+import scala.annotation.{elidable, nowarn}
 import scala.collection.immutable.ArraySeq
 import shipreq.base.util.NonEmptyArraySeq
 import shipreq.base.util.univeq._
@@ -152,6 +152,7 @@ object Text {
 
   sealed abstract class StyledInner extends Base with A.Literal {
 
+    @nowarn
     final override protected[text] def parserI(p: Project, currentUseCase: Option[ReqTypePos])(i: ParserInput): Parser = {
       @elidable(elidable.FINEST) def fail(): Nothing =
         throw new UnsupportedOperationException("You can't call parserI on StyledInners. Call parserI2 instead.")

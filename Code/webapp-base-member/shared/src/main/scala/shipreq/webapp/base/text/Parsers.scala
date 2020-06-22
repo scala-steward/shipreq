@@ -4,7 +4,7 @@ import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import org.parboiled2.{CharPredicate => CP, _}
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.ArraySeq
 import scalaz.{-\/, \/-}
 import shapeless._
@@ -283,6 +283,7 @@ object Parsers {
     def monospace =
       rule('`' ~ capture(oneOrMore(!('`' | NL | EOI) ~ ANY)) ~ '`' ~> t.Monospace)
 
+    @nowarn("cat=unused")
     protected def styleCheck(s: StyleType): Rule0 =
       rule(test(true))
 
