@@ -49,7 +49,6 @@ v2.2
 
 ### Implement
 * Fix: "TODO should be .devOnly but breaks tests in release mode"
-* support all kinds of URL schemes in WebAddress
 * Rich text preview should be on the right (instead of below) in ReqDetail (and/or) introduce zen mode for multiline editors
 * Fix bug: commit change -> session expires -> re-auth -> connection re-established but change never completes: stuck spinning around
 
@@ -92,6 +91,7 @@ Backlog (eventually)
 * Tag/Implication Browser (aka Distribution manager/console)
 
 ### Functional changes
+* support all kinds of URL schemes in WebAddress (maybe - what considerations are necessary? security?)
 * Bug: field editor doesn't fit (and no scroll) when window is left 50% of screen
 * Markdown: Support nested lists
 * Keyboard nav for ReqTablePage (not just the table) (?)
