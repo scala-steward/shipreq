@@ -410,6 +410,21 @@ object BaseMemberData2 {
   implicit lazy val picklerReqTypePos: Pickler[ReqTypePos] =
     pickleTaggedI(ReqTypePos)
 
+  implicit lazy val picklerRequirements: Pickler[Requirements] =
+    new Pickler[Requirements] {
+      override def pickle(a: Requirements)(implicit state: PickleState): Unit = {
+        state.pickle(a.genericReqs)
+        state.pickle(a.useCases)
+        state.pickle(a.pubids)
+      }
+      override def unpickle(implicit state: UnpickleState): Requirements = {
+        val genericReqs = state.unpickle[GenericReqs]
+        val useCases    = state.unpickle[UseCases]
+        val pubids      = state.unpickle[PubidRegister]
+        Requirements(genericReqs, useCases, pubids)
+      }
+    }
+
   implicit lazy val picklerSetDiffReqCodeValue: Pickler[SetDiff[ReqCode.Value]] = pickleSetDiff
 
   implicit lazy val picklerSetDiffNEReqCodeValue: Pickler[SetDiff.NE[ReqCode.Value]] = pickleNonEmptyMono
