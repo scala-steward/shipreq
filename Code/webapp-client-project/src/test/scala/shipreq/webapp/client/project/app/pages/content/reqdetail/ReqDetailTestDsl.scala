@@ -86,6 +86,15 @@ object ReqDetailTestDsl {
   val editorCount =
     *.focus("Editor count").value(_.obs.editables.length)
 
+  val titleChangeInProgress =
+    *.focus("Title change is in progress").value(_.obs.generic.titleSpinning)
+
+  val titleText =
+    *.focus("Title text").value(_.obs.generic.titleText)
+
+  val titleEditor =
+    *.focus("Title editor").option(_.obs.generic.titleEditor.map(_.value))
+
   val tailStepAC = *.focus("AC tail step").value(_.obs.uc.tailStepRowAC)
   val tailStepEC = *.focus("EC tail step").value(_.obs.uc.tailStepRowEC)
 
@@ -240,6 +249,10 @@ object ReqDetailTestDsl {
   def commitFieldEditor(field: String): *.Actions =
     *.action(s"Commit $field editor")(KB.Enter.ctrl simulateKeyDown _.obs.generic.field(field).editor.get) +>
       editorCount.assert.decrement
+
+  lazy val commitTitleEditor: *.Actions =
+    *.action("Commit title editor")(KB.Enter.ctrl simulateKeyDown _.obs.generic.titleEditor.get)
+    // +> editorCount.assert.decrement
 
   val filterDeadToggle =
     *.action(NameFn {

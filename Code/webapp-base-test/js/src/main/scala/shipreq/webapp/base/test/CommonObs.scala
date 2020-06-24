@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.test
+package shipreq.webapp.base.test
 
 import japgolly.scalajs.react.test._
 import org.scalajs.dom.html
@@ -11,6 +11,7 @@ object CommonObs {
     val dom = $.domAs[html.Input]
     val value = dom.value
     def setValue(v: String) = SimEvent.Change(v).simulate(dom)
+    def setValueDirect(v: String): Unit = dom.value = v
   }
 
   final class TextArea($: DomZipperJs) {

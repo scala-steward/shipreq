@@ -54,7 +54,7 @@ object ProjectSpaTestDsl {
 
       val base: Obs = {
         val e = Left("Chosen page is: " + nav.page)
-        Obs(global.unsafeProject(), global.obs(), nav, e, e, e, e, e, e, e, e, e)
+        Obs($, global.unsafeProject(), new TestGlobal.Obs($, global), nav, e, e, e, e, e, e, e, e, e)
       }
 
       nav.page match {
@@ -105,7 +105,8 @@ object ProjectSpaTestDsl {
       nav.collect01(".icon.edit").zippers.fold(0)(_.parent("span").innerText.toInt)
   }
 
-  final case class Obs(project    : Project,
+  final case class Obs($          : DomZipperJs,
+                       project    : Project,
                        global     : TestGlobal.Obs,
                        nav        : NavObs,
                        home       : Maybe[ProjectHomeObs],
@@ -124,6 +125,10 @@ object ProjectSpaTestDsl {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   val * = Dsl[Ref, Obs, TestState]
+
+  val svr = new TestGlobal.TestDslWithObs(*)(_.global, _.global)
+
+  val reauth = new TestReauthenticationModal.TestDsl(*)(_.global.reauthModal)
 
   implicit lazy val transformPH =
     PH.*.transformer

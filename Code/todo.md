@@ -49,7 +49,6 @@ v2.2
 
 ### Implement
 * Rich text preview should be on the right (instead of below) in ReqDetail (and/or) introduce zen mode for multiline editors
-* Fix bug: commit change -> session expires -> re-auth -> connection re-established but change never completes: stuck spinning around
 
 
 Backlog (maybe-probably soon)

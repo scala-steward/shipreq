@@ -1,5 +1,6 @@
 package shipreq.webapp.client.project.app
 
+import shipreq.webapp.base.data.ExternalPubid
 import shipreq.webapp.base.event.Event.FieldCustomDelete
 import shipreq.webapp.base.test.SampleProject.Values.priField
 import shipreq.webapp.base.test.TestState._
@@ -18,6 +19,11 @@ object ProjectSpaTest extends TestSuite {
   import ProjectSpaTestDsl._
 
   PrepareEnv()
+
+  private def runReqDetailTest(action: *.Actions, pubid: String) = {
+    val ep = ExternalPubid.parse(pubid).get
+    runTest(action, Page.ReqDetail(ep), rd = RD.State(ep, RD.Mode.Details))
+  }
 
   /** ReqTable columns after local config change */
   private def reqTableColumnsSync: *.Actions = (
@@ -75,10 +81,63 @@ object ProjectSpaTest extends TestSuite {
     )
   }
 
+  private def testReauthCommit(online: Boolean, relogin: Boolean): Unit = {
+    val edit: *.Actions =
+      (RD.doubleClickTitle >> RD.setTitleEditValue("alright!") >> RD.commitTitleEditor).lift
+
+    val start: *.Actions =
+      if (online)
+        (  svr.disableAutoResponse
+        >> edit
+        >> svr.expireSession)
+      else
+        (  svr.disableAutoResponse
+        >> svr.expireSession
+        +> reauth.isVisible.assert(true)
+        >> reauth.clickCancel
+        +> reauth.isVisible.assert(false)
+        >> edit)
+
+    val postModal: *.Actions =
+      if (relogin)
+        (  reauth.setPassword("abcdEFGH123!@#")
+        +> reauth.requestCount.assert(0)
+        >> reauth.clickLogin
+        +> reauth.requestCount.assert(1)
+        +> reauth.isVisible.assert(false)
+        +> RD.titleChangeInProgress.assert(false).lift
+        +> RD.titleEditor.isEmpty.assert(true).lift
+        +> RD.titleText.assert("alright!").lift
+        +> unsavedChanges.assert(0)
+        +> svr.requestCount.assert(1)
+        )
+      else
+        (  reauth.clickCancel
+        +> reauth.requestCount.assert(0)
+        +> reauth.isVisible.assert(false)
+        +> RD.titleChangeInProgress.assert(false).lift
+        +> RD.titleEditor.assert.contains("alright!").lift
+        +> unsavedChanges.assert(1)
+        +> svr.requestCount.assert(0)
+        )
+
+    val test: *.Actions =
+      start +> reauth.isVisible.assert(true) >> svr.clearReqs >> svr.enableAutoResponse >> postModal
+
+    runReqDetailTest(test, "MF-1")
+  }
+
   override def tests = Tests {
-    "reqTableColumnsSync"    - runTest(reqTableColumnsSync   , Page.ReqTable)
-    "reqTableFilterDeadSync" - runTest(reqTableFilterDeadSync, Page.ReqTable)
-    "cfgUsageLinkToReqTable" - runTest(cfgUsageLinkToReqTable, Page.ReqTable)
-    "unsavedChanges"         - runTest(testUnsavedChanges    , Page.Index)
+    "reqTableColumnsSync"    - runTest(reqTableColumnsSync     , Page.ReqTable)
+    "reqTableFilterDeadSync" - runTest(reqTableFilterDeadSync  , Page.ReqTable)
+    "cfgUsageLinkToReqTable" - runTest(cfgUsageLinkToReqTable  , Page.ReqTable)
+    "unsavedChanges"         - runTest(testUnsavedChanges      , Page.Index)
+
+    "reauth" - {
+      "onlineLogin"   - testReauthCommit(true,  true)
+      "onlineCancel"  - testReauthCommit(true,  false)
+      "offlineLogin"  - testReauthCommit(false, true)
+      "offlineCancel" - testReauthCommit(false, false)
+    }
   }
 }

@@ -49,8 +49,10 @@ final class ReqDetailObs($: DomZipperJs, val nav: NavObs) {
     val pubid = headerRow(">*", 1 of 3).innerText.replace(":", "").trim
 
     private val title = headerRow(">*", 2 of 3)
-    val titleDom = title.domAsHtml
-    val titleEditor = title.collect01("textarea").domsAs[html.TextArea]
+    val titleDom      = title.domAsHtml
+    val titleEditor   = title.collect01("textarea").domsAs[html.TextArea]
+    val titleSpinning = title.exists(".loading")
+    val titleText     = titleDom.textContent
 
     val filterDeadButton = headerRow(">*", 3 of 3)("button").domAs[html.Button]
 
