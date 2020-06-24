@@ -12,14 +12,15 @@ import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes
 import shipreq.webapp.base.protocol.websocket.WebSocket.ReadyState
+import shipreq.webapp.base.protocol.websocket.WebSocketShared.CloseCode
 import shipreq.webapp.base.protocol.websocket._
-import shipreq.webapp.base.test.{TestReauthenticationModal, WebappTestUtil}
 import shipreq.webapp.base.test.WebappTestUtil._
+import shipreq.webapp.base.test.{TestReauthenticationModal, WebappTestUtil}
 import shipreq.webapp.base.user.Username
 import shipreq.webapp.client.project.app.state.{Global, ProjectState}
 import shipreq.webapp.server.logic.{ApplyNewEvent, MakeEvent}
 
-final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) => Callback.empty, _ => Callback.empty, LoggerJs.on) {
+final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) => Callback.empty, _ => Callback.empty, LoggerJs.off) {
 
   override def toString = unsafeState match {
     case Global.State.Active(a, b) => s"TestGlobal(Active($a, $b))"
@@ -31,8 +32,6 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
   val username = Username("nimander")
 
   override val reauthModal = reauth.modal(username)
-
-  override protected val logger = LoggerJs.off
 
   override protected def unsafeNow() = now
   var now = Instant.now()
@@ -158,6 +157,7 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
   }
   def disableAutoResponse() = setAutoRespond(false)
   def enableAutoResponse() = setAutoRespond(true)
+  def clearReqs(): Unit = _reqs = Vector.empty
 
   def autoRespondToLast(): Unit = {
     val req = _reqs.last
@@ -230,9 +230,6 @@ final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) 
 
   unsafeSetState(Global.State.Active(initialProjectState, None))
   wsClient.connect.runNow()
-
-  def obs(): TestGlobal.Obs =
-    TestGlobal.Obs(this)
 }
 
 object TestGlobal {
@@ -244,18 +241,25 @@ object TestGlobal {
     new TestGlobal(ps)
   }
 
-  final case class Obs(g: TestGlobal) {
-    val reqs = g.reqs()
-  }
-
   import shipreq.webapp.base.test.TestState._
+
+  final class Obs($: DomZipperJs, g: TestGlobal) {
+    val reqs        = g.reqs()
+    val reauthModal = TestReauthenticationModal.Obs(g.reauthModal.id)($.parent.parent, g.reauth)
+  }
 
   class TestDsl[R, O, S](final val * : Dsl[Id, R, O, S, String])(getRef: R => TestGlobal) {
     protected final implicit def autoRef(r: R): TestGlobal =
       getRef(r)
 
+    val clearReqs =
+      *.action("Server: Clear requests.")(_.ref.clearReqs())
+
     val disableAutoResponse =
-      *.action("Disable auto-respond.")(_.ref.disableAutoResponse())
+      *.action("Server: Disable auto-respond.")(_.ref.disableAutoResponse())
+
+    val enableAutoResponse =
+      *.action("Server: Enable auto-respond.")(_.ref.enableAutoResponse())
 
     val autoRespondToLast =
       *.action("Server responds.")(_.ref.autoRespondToLast())
@@ -265,6 +269,12 @@ object TestGlobal {
 
     def receiveExternalEvent(e: Event): *.Actions =
       *.action("Receive external event: " + e)(_.ref.applyTestEventsCB(e).void.runNow())
+
+    def disconnect(code: CloseCode): *.Actions =
+      *.action("Disconnect with " + code)(_.ref.ws().close(code))
+
+    val expireSession: *.Actions =
+      disconnect(CloseCode.unauthorised).rename("Expire session")
   }
 
   final class TestDslWithObs[R, O, S](dsl   : Dsl[Id, R, O, S, String])
