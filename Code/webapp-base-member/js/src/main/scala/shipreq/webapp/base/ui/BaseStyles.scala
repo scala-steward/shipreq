@@ -2,6 +2,7 @@ package shipreq.webapp.base.ui
 
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.univeq._
+import scala.concurrent.duration._
 import shipreq.base.util.Validity
 import shipreq.webapp.base.CssSettings._
 import shipreq.webapp.base.data.{Off, On}
@@ -12,7 +13,9 @@ object BaseStyles extends StyleSheet.Inline {
 
   /** Domains */
   object D {
-    val on = Domain.ofValues[On](On, Off)
+    val on                = Domain.ofValues[On](On, Off)
+    val editStylePosition = Domain.ofValues(EditTheme.Position.values.whole: _*)
+    val editorStateAndPos = EditorState.domain *** editStylePosition
   }
 
   @inline def containerLarge = InlineBaseStyles.containerLarge
@@ -140,7 +143,7 @@ object BaseStyles extends StyleSheet.Inline {
   }
   projectItems // eager eval
 
-  val textEditor = styleF(EditorState.domain) { state =>
+  val textEditor = styleF(D.editorStateAndPos) { case (state, pos) =>
     styleS(
       width(100 %%),
       margin(`0`),
@@ -150,7 +153,10 @@ object BaseStyles extends StyleSheet.Inline {
       transition := "color .1s ease,border-color .1s ease",
       fontSize(1 em),
       lineHeight(1.2857),
-      maxHeight(50 vh),
+      pos match {
+        case EditTheme.Position.Right => styleS(maxHeight :=! "calc(100vh - 2em)")
+        case EditTheme.Position.Under => styleS(maxHeight(50 vh))
+      },
       // overflow: scroll - autosize avoids this
       resize.none,
       color(state match {
@@ -192,29 +198,58 @@ object BaseStyles extends StyleSheet.Inline {
     flexGrow(1),
     opacity(0.5))
 
+  val textEditorLeftPreviewRight = style(
+    display.flex,
+    flexWrap.nowrap,
+    alignItems.stretch,
+    justifyContent.spaceBetween,
+    width(100 %%),
+    unsafeChild(">div")(
+      width :=! "calc(50% - 0.35rem)"
+    )
+  )
+
+  val previewToggleWrapper = style(
+    position.relative)
+
+  val previewToggleButton = style(
+    position.absolute,
+    animationDuration(400 millis),
+    top(.8 rem),
+    right(.8 rem),
+    zIndex(1000),
+  )
+
   val errorPointingUp = Label.Style(Label.Type.PointingUp, Colour.Red).div
 
-  val richTextPreview = style(
-    addClassNames("ui", "segments", "raised"))
+  val richTextPreview = styleF(D.editStylePosition)(pos => styleS(
+    pos match {
+      case EditTheme.Position.Right => styleS(height(100 %%))
+      case EditTheme.Position.Under => styleS()
+    },
+    addClassNames("ui", "segments", "raised")))
 
   val richTextPreviewHeader = style(
     addClassNames("ui", "segment", "inverted"),
     paddingLeft(1 ex).important,
     paddingTop(0.3 em).important,
     paddingBottom(0.3 em).important,
-    (background := c"#89d6e5").important,
+    (background := c"#ccf6ff").important,
     color(c"#0d1516").important)
 
   val richTextPreviewBodyOuter = style(
     padding(1 ex).important,
     addClassNames("ui", "segment"),
-    (backgroundImage := "repeating-linear-gradient(-225deg,rgba(0,0,0,0),rgba(0,0,0,0)5ex,rgba(137,214,229,.1)5ex,rgba(137,214,229,.1)10ex)").important)
+    (backgroundImage := "repeating-linear-gradient(-225deg,rgba(0,0,0,0),rgba(0,0,0,0)5ex,rgba(137,214,229,.05)5ex,rgba(137,214,229,.05)10ex)").important)
 
-  val richTextPreviewBodyInner = style(
+  val richTextPreviewBodyInner = styleF(D.editStylePosition)(pos => styleS(
     minHeight(1.4 em),
-    maxHeight(33.33333 vh),
+    pos match {
+      case EditTheme.Position.Right => styleS(maxHeight :=! "calc(100vh - (1.4285em + (.3em + 1ex) * 2))")
+      case EditTheme.Position.Under => styleS(maxHeight(33.33333 vh))
+    },
     overflowY.auto,
-  )
+  ))
 
   private def editorInstructionMarginV = 0.4 em
 
