@@ -201,7 +201,7 @@ object UseCaseStepEditor {
 
     def render(p: Props) = {
       @inline def editorStyle =
-        EditTheme.Style.OptionalPreviewUnderText
+        EditTheme.Style.default
 
       def editor(validity: Validity): VdomElement =
         editorRef.component(EditTheme.autosizeTextareaProps(editorStyle, validity, p.edit.value, textareaConst))

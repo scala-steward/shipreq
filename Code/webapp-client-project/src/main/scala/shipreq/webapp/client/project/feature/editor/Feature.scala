@@ -21,7 +21,7 @@ object Feature {
   type AsyncState = AsyncFeature.Read.D0[AsyncError]
 
   @inline private def defaultEditorStyle =
-    EditTheme.Style.OptionalPreviewUnderText
+    EditTheme.Style.default
 
   /** This is not safe for reusability because implementation calls `CallbackTo#runNow()`. */
   trait Editor[-Args, +Change] {

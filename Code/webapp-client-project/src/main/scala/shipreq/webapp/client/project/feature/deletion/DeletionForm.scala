@@ -57,7 +57,7 @@ object DeletionForm {
         autoFocus        = true,
         commitFn         = None,
         commitVerb       = "",
-        editorStyle      = EditTheme.Style.PreviewUnderText,
+        editorStyle      = EditTheme.Style.default,
         preview          = PreviewFeature.ReadWrite.Single.alwaysShow,
         preEditValue     = None,
         extraKbShortcuts = KeyboardTheme.Shortcuts.empty,

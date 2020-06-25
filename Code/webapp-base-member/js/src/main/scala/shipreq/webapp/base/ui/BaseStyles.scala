@@ -12,9 +12,11 @@ object BaseStyles extends StyleSheet.Inline {
 
   /** Domains */
   object D {
-    val on = Domain.ofValues[On](On, Off)
-    val editStyle = Domain.ofValues[EditTheme.Style](AdtMacros.adtValues[EditTheme.Style].whole: _*)
-    val editorStateAndStyle = EditorState.domain *** editStyle
+    val on                   = Domain.ofValues[On](On, Off)
+    val editStylePosition    = Domain.ofValues(EditTheme.Position.values.whole: _*)
+    val editStyleOpenPreview = Domain.ofValues(EditTheme.OpenPreview.values.whole: _*)
+    val editStyle            = (editStylePosition *** editStyleOpenPreview).map((EditTheme.Style.apply _).tupled)
+    val editorStateAndPos    = EditorState.domain *** editStylePosition
   }
 
   @inline def containerLarge = InlineBaseStyles.containerLarge
@@ -142,7 +144,7 @@ object BaseStyles extends StyleSheet.Inline {
   }
   projectItems // eager eval
 
-  val textEditor = styleF(D.editorStateAndStyle) { case (state, style) =>
+  val textEditor = styleF(D.editorStateAndPos) { case (state, pos) =>
     styleS(
       width(100 %%),
       margin(`0`),
@@ -152,10 +154,9 @@ object BaseStyles extends StyleSheet.Inline {
       transition := "color .1s ease,border-color .1s ease",
       fontSize(1 em),
       lineHeight(1.2857),
-      style match {
-        case EditTheme.Style.PreviewOnRightOfText => styleS(maxHeight :=! "calc(100vh - 2em)")
-        case EditTheme.Style.PreviewUnderText
-           | EditTheme.Style.OptionalPreviewUnderText => styleS(maxHeight(50 vh))
+      pos match {
+        case EditTheme.Position.Right => styleS(maxHeight :=! "calc(100vh - 2em)")
+        case EditTheme.Position.Under => styleS(maxHeight(50 vh))
       },
       // overflow: scroll - autosize avoids this
       resize.none,
@@ -211,11 +212,10 @@ object BaseStyles extends StyleSheet.Inline {
 
   val errorPointingUp = Label.Style(Label.Type.PointingUp, Colour.Red).div
 
-  val richTextPreview = styleF(D.editStyle)(s => styleS(
-    s match {
-      case EditTheme.Style.PreviewOnRightOfText => styleS(height(100 %%))
-      case EditTheme.Style.PreviewUnderText
-         | EditTheme.Style.OptionalPreviewUnderText => styleS()
+  val richTextPreview = styleF(D.editStylePosition)(pos => styleS(
+    pos match {
+      case EditTheme.Position.Right => styleS(height(100 %%))
+      case EditTheme.Position.Under => styleS()
     },
     addClassNames("ui", "segments", "raised")))
 
@@ -232,12 +232,11 @@ object BaseStyles extends StyleSheet.Inline {
     addClassNames("ui", "segment"),
     (backgroundImage := "repeating-linear-gradient(-225deg,rgba(0,0,0,0),rgba(0,0,0,0)5ex,rgba(137,214,229,.05)5ex,rgba(137,214,229,.05)10ex)").important)
 
-  val richTextPreviewBodyInner = styleF(D.editStyle)(s => styleS(
+  val richTextPreviewBodyInner = styleF(D.editStylePosition)(pos => styleS(
     minHeight(1.4 em),
-    s match {
-      case EditTheme.Style.PreviewOnRightOfText => styleS(maxHeight :=! "calc(100vh - (1.4285em + (.3em + 1ex) * 2))")
-      case EditTheme.Style.PreviewUnderText
-         | EditTheme.Style.OptionalPreviewUnderText => styleS(maxHeight(33.33333 vh))
+    pos match {
+      case EditTheme.Position.Right => styleS(maxHeight :=! "calc(100vh - (1.4285em + (.3em + 1ex) * 2))")
+      case EditTheme.Position.Under => styleS(maxHeight(33.33333 vh))
     },
     overflowY.auto,
   ))

@@ -1,5 +1,6 @@
 package shipreq.webapp.base.ui
 
+import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq.UnivEq
@@ -26,7 +27,7 @@ object EditTheme {
 
   def autosizeTextareaProps(style: Style, validity: Validity, value: String, tagMod: TagMod): TagMod =
     TagMod(
-      BaseStyles.textEditor((validity, style)),
+      BaseStyles.textEditor((validity, style.position)),
       ^.value := value,
       tagMod)
 
@@ -52,17 +53,35 @@ object EditTheme {
   val spinner: VdomTag =
     Icon.CircleNotched.loading.tag(^.marginRight := "0")
 
-  sealed trait Style
+  sealed trait Position
+  object Position {
+    case object Under extends Position
+    case object Right extends Position
+
+    implicit def univEq: UnivEq[Position] = UnivEq.derive
+    implicit def reusability: Reusability[Position] = Reusability.by_==
+    val values = AdtMacros.adtValues[Position]
+  }
+
+  sealed trait OpenPreview
+  object OpenPreview {
+    case object Minimally  extends OpenPreview
+    case object Always     extends OpenPreview
+    case object WhenWanted extends OpenPreview
+    case object Never      extends OpenPreview
+
+    implicit def univEq: UnivEq[OpenPreview] = UnivEq.derive
+    implicit def reusability: Reusability[OpenPreview] = Reusability.by_==
+    val values = AdtMacros.adtValues[OpenPreview]
+  }
+
+  final case class Style(position: Position, openPreview: OpenPreview)
+
   object Style {
-    case object OptionalPreviewUnderText extends Style
-    case object PreviewUnderText         extends Style
-    case object PreviewOnRightOfText     extends Style
+    val default = Style(Position.Under, OpenPreview.Minimally)
 
-    implicit def univEq: UnivEq[Style] =
-      UnivEq.derive
-
-    implicit def reusability: Reusability[Style] =
-      Reusability.by_==
+    implicit def univEq: UnivEq[Style] = UnivEq.derive
+    implicit def reusability: Reusability[Style] = Reusability.byRef || Reusability.derive
   }
 
   def renderEditor(status      : EditorStatus,
@@ -74,7 +93,7 @@ object EditTheme {
       editor       = editor,
       readOnlyView = readOnlyView,
       instructions = instructions,
-      style        = Style.OptionalPreviewUnderText,
+      style        = Style.default,
       preview      = EmptyVdom,
     )
 
@@ -87,15 +106,15 @@ object EditTheme {
 
     status match {
       case EditorStatus.Ignore | EditorStatus.Valid(_) =>
-        style match {
+        style.position match {
 
-          case Style.OptionalPreviewUnderText | Style.PreviewUnderText =>
+          case Position.Under =>
             <.div(
               editor(Valid),
               instructions,
               preview)
 
-          case Style.PreviewOnRightOfText =>
+          case Position.Right =>
             <.div(*.textEditorLeftPreviewRight,
               <.div(editor(Valid), instructions),
               <.div(preview))
@@ -114,7 +133,7 @@ object EditTheme {
           preview)
 
       case EditorStatus.InTransit =>
-        <.div(*.textEditor((*.EditorState.InTransit, style)),
+        <.div(*.textEditor((*.EditorState.InTransit, style.position)),
           <.div(spinner),
           <.div(*.textEditorInTransitValue, readOnlyView))
     }
@@ -125,15 +144,16 @@ object EditTheme {
                     wantOpen: => Boolean,
                     view    : => VdomNode): VdomNode = {
     def render =
-      <.div(*.richTextPreview(style),
+      <.div(*.richTextPreview(style.position),
         <.div(*.richTextPreviewHeader, "Preview"),
         <.div(*.richTextPreviewBodyOuter,
-          <.div(*.richTextPreviewBodyInner(style), view)))
+          <.div(*.richTextPreviewBodyInner(style.position), view)))
 
-    style match {
-      case Style.OptionalPreviewUnderText => p.reactCollapse(wantOpen)(render)
-      case Style.PreviewUnderText
-         | Style.PreviewOnRightOfText     => render
+    style.openPreview match {
+      case OpenPreview.Minimally  => p.reactCollapse(wantOpen)(render)
+      case OpenPreview.Always     => render
+      case OpenPreview.Never      => EmptyVdom
+      case OpenPreview.WhenWanted => PreviewFeature.ReadWrite.Single.show(wantOpen).reactCollapse(wantOpen)(render)
     }
   }
 }

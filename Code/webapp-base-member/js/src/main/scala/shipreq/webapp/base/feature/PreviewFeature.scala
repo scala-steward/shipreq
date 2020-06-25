@@ -2,6 +2,7 @@ package shipreq.webapp.base.feature
 
 import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.vdom.VdomElement
 import japgolly.univeq._
 import monocle.Lens
 import scalaz.Equal
@@ -221,6 +222,9 @@ object PreviewFeature {
     object Single {
       def const(status: Option[Status]): Single =
         Single(Read.Single(status), Write.Single.doNothing)
+
+      def show(show: Boolean): Single =
+        if (show) alwaysShow else neverShow
 
       lazy val alwaysShow: Single = const(Some(Status.NeedOpen))
       lazy val neverShow : Single = const(None)
