@@ -64,7 +64,7 @@ object NewEditor {
 
     final val ShowInstructions = true
 
-    @inline def editorStyle = EditTheme.Style.default
+    @inline def editorStyle = EditTheme.Style(EditTheme.Position.Under, EditTheme.OpenPreview.WhenWanted)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
