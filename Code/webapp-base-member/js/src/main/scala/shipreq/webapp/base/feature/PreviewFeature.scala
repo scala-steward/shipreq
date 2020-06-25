@@ -6,14 +6,14 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
 import monocle.Lens
+import scalacss.ScalaCssReact._
 import scalaz.Equal
 import scalaz.syntax.equal.ToEqualOps
 import shipreq.base.util.Intersection
 import shipreq.webapp.base.jsfacade.ReactCollapse
-import shipreq.webapp.base.ui.{BaseStyles => *}
-import scalacss.ScalaCssReact._
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon}
+import shipreq.webapp.base.ui.{BaseStyles => *}
 
 /** Supplies logic to determine whether or not to show a preview for some rich-text editor.
   *
