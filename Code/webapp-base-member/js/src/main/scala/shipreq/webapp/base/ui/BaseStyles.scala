@@ -2,6 +2,7 @@ package shipreq.webapp.base.ui
 
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.univeq._
+import scala.concurrent.duration._
 import shipreq.base.util.Validity
 import shipreq.webapp.base.CssSettings._
 import shipreq.webapp.base.data.{Off, On}
@@ -213,6 +214,7 @@ object BaseStyles extends StyleSheet.Inline {
 
   val previewToggleButton = style(
     position.absolute,
+    animationDuration(400 millis),
     top(.8 rem),
     right(.8 rem),
     zIndex(1000),

@@ -5,6 +5,7 @@ import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
+import java.time.Duration
 import monocle.Lens
 import scalacss.ScalaCssReact._
 import scalaz.Equal
@@ -12,8 +13,8 @@ import scalaz.syntax.equal.ToEqualOps
 import shipreq.base.util.Intersection
 import shipreq.webapp.base.jsfacade.ReactCollapse
 import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon}
-import shipreq.webapp.base.ui.{BaseStyles => *}
+import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Transition}
+import shipreq.webapp.base.ui.{BaseStyles => *, OnlyVisibleOnMouseMove}
 
 /** Supplies logic to determine whether or not to show a preview for some rich-text editor.
   *
@@ -240,11 +241,21 @@ object PreviewFeature {
             Icon.AngleDoubleRight
           else
             Icon.AngleDoubleLeft
+
+        val tip =
+          if (currentlyShown)
+            "Hide preview"
+          else
+            "Show preview"
+
         Button(
           tipe = Button.Type.IconOnly(icon),
           colour = Colour.Blue,
-        ).tag(*.previewToggleButton)
+        ).tag(*.previewToggleButton, ^.title := tip)
       }
+
+    private val toggleButtonDecay =
+      Duration.ofMillis(1200)
 
     final case class Single(read: Read.Single, write: Write.Single) {
       def onFocus(wantOpen: Boolean): Callback =
@@ -273,9 +284,21 @@ object PreviewFeature {
             case _                         => defaultShow
           }
 
-        <.div(*.previewToggleWrapper,
+        val toggleButton =
           toggleButtonBase(currentlyShown)(
-            ^.onClick --> write.setManually(forceShow = !currentlyShown)))
+            ^.onClick --> write.setManually(forceShow = !currentlyShown))
+
+        val fadeProps =
+          OnlyVisibleOnMouseMove.Props(
+            content       = toggleButton,
+            transition    = Transition.fade,
+            direction     = Transition.Direction.left,
+            decay         = toggleButtonDecay,
+            showInitially = currentlyShown,
+          )
+
+        <.div(*.previewToggleWrapper,
+          fadeProps.render)
       }
     }
 
