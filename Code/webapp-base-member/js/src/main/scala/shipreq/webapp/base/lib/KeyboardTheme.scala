@@ -7,8 +7,8 @@ import scalacss.ScalaCssReact._
 import shipreq.webapp.base.lib.KeyHandler._
 import shipreq.webapp.base.text.{LineCardinality, MultiLine, SingleLine}
 import shipreq.webapp.base.ui.BaseStyles.{editorInstructions => *}
-import shipreq.webapp.base.ui.{EditTheme, OptionalFullscreen}
 import shipreq.webapp.base.ui.semantic.Icon
+import shipreq.webapp.base.ui.{EditTheme, OptionalFullscreen}
 
 /**
   * Keyboard functionality consistent throughout the entire app.

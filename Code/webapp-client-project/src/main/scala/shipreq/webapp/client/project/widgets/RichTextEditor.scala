@@ -23,42 +23,44 @@ import shipreq.webapp.client.project.widgets.RichTextEditor.hardcodedLive
 sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, final val text: TextType) {
 
   sealed trait Props {
-    val project         : Project
-    val naTags          : NaTags
-    val plainTextNoCtx  : PlainText.ForProject.NoCtx
-    val textSearch      : TextSearch
-    val projectWidgets  : ProjectWidgets.AnyCtx
-    val edit            : StateSnapshot[String]
-    val asyncStatus     : Option[EditorStatus.Async]
-    val abort           : Option[Callback]
-    val commitVerb      : String
-    val preview         : PreviewFeature.ReadWrite.Single
-    val extraKbShortcuts: KeyboardTheme.Shortcuts
-    val showInstructions: Boolean
-    val status          : EditorStatus
-    val wantPreview     : Boolean
-    val autoFocus       : Boolean
-    val editorStyle     : EditTheme.Style
+    val project           : Project
+    val naTags            : NaTags
+    val plainTextNoCtx    : PlainText.ForProject.NoCtx
+    val textSearch        : TextSearch
+    val projectWidgets    : ProjectWidgets.AnyCtx
+    val edit              : StateSnapshot[String]
+    val asyncStatus       : Option[EditorStatus.Async]
+    val abort             : Option[Callback]
+    val commitVerb        : String
+    val preview           : PreviewFeature.ReadWrite.Single
+    val extraKbShortcuts  : KeyboardTheme.Shortcuts
+    val showInstructions  : Boolean
+    val status            : EditorStatus
+    val wantPreview       : Boolean
+    val autoFocus         : Boolean
+    val editorStyle       : EditTheme.Style
+    val optionalFullscreen: Option[OptionalFullscreen]
   }
 
   // ===================================================================================================================
 
-  case class Optional(project         : Project,
-                      naTags          : NaTags,
-                      plainTextNoCtx  : PlainText.ForProject.NoCtx,
-                      textSearch      : TextSearch,
-                      projectWidgets  : ProjectWidgets.AnyCtx,
-                      edit            : StateSnapshot[String],
-                      asyncStatus     : Option[EditorStatus.Async],
-                      abort           : Option[Callback],
-                      autoFocus       : Boolean,
-                      commitFn        : Option[Optional.CommitFn],
-                      commitVerb      : String,
-                      editorStyle     : EditTheme.Style,
-                      preview         : PreviewFeature.ReadWrite.Single,
-                      preEditValue    : Option[text.OptionalText],
-                      extraKbShortcuts: KeyboardTheme.Shortcuts,
-                      showInstructions: Boolean) extends Props {
+  case class Optional(project           : Project,
+                      naTags            : NaTags,
+                      plainTextNoCtx    : PlainText.ForProject.NoCtx,
+                      textSearch        : TextSearch,
+                      projectWidgets    : ProjectWidgets.AnyCtx,
+                      edit              : StateSnapshot[String],
+                      asyncStatus       : Option[EditorStatus.Async],
+                      abort             : Option[Callback],
+                      autoFocus         : Boolean,
+                      commitFn          : Option[Optional.CommitFn],
+                      commitVerb        : String,
+                      editorStyle       : EditTheme.Style,
+                      preview           : PreviewFeature.ReadWrite.Single,
+                      preEditValue      : Option[text.OptionalText],
+                      extraKbShortcuts  : KeyboardTheme.Shortcuts,
+                      showInstructions  : Boolean,
+                      optionalFullscreen: Option[OptionalFullscreen]) extends Props {
 
     val ucNum       = projectWidgets.ctx.ucNum(project)
     val richText    = text.parse(project, ucNum)(edit.value)
@@ -77,22 +79,23 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
   // ===================================================================================================================
 
-  case class NonEmpty(project         : Project,
-                      naTags          : NaTags,
-                      plainTextNoCtx  : PlainText.ForProject.NoCtx,
-                      textSearch      : TextSearch,
-                      projectWidgets  : ProjectWidgets.AnyCtx,
-                      edit            : StateSnapshot[String],
-                      asyncStatus     : Option[EditorStatus.Async],
-                      abort           : Option[Callback],
-                      autoFocus       : Boolean,
-                      commitFn        : Option[NonEmpty.CommitFn],
-                      commitVerb      : String,
-                      editorStyle     : EditTheme.Style,
-                      preview         : PreviewFeature.ReadWrite.Single,
-                      preEditValue    : Option[text.NonEmptyText],
-                      extraKbShortcuts: KeyboardTheme.Shortcuts,
-                      showInstructions: Boolean) extends Props {
+  case class NonEmpty(project           : Project,
+                      naTags            : NaTags,
+                      plainTextNoCtx    : PlainText.ForProject.NoCtx,
+                      textSearch        : TextSearch,
+                      projectWidgets    : ProjectWidgets.AnyCtx,
+                      edit              : StateSnapshot[String],
+                      asyncStatus       : Option[EditorStatus.Async],
+                      abort             : Option[Callback],
+                      autoFocus         : Boolean,
+                      commitFn          : Option[NonEmpty.CommitFn],
+                      commitVerb        : String,
+                      editorStyle       : EditTheme.Style,
+                      preview           : PreviewFeature.ReadWrite.Single,
+                      preEditValue      : Option[text.NonEmptyText],
+                      extraKbShortcuts  : KeyboardTheme.Shortcuts,
+                      showInstructions  : Boolean,
+                      optionalFullscreen: Option[OptionalFullscreen]) extends Props {
 
     val ucNum       = projectWidgets.ctx.ucNum(project)
     val richTextO   = text.parseNonEmpty(project, ucNum)(edit.value)
@@ -166,14 +169,12 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
     private val renderFn: Props => VdomNode =
       text.lineCardinality match {
         case SingleLine => _render(_, None)
-        case MultiLine  => p => OptionalFullscreen.Props(ctx => _render(p, Some(ctx))).render
+        case MultiLine  => p => _render(p, p.optionalFullscreen)
       }
 
-    private def _render(p: Props, fullscreen: Option[OptionalFullscreen.Ctx]) = {
+    private def _render(p: Props, optionalFullscreen: Option[OptionalFullscreen]): VdomNode = {
 
-      val mode = EditTheme.Mode.derive(fullscreen)
-
-      def editor(validity: Validity): VdomElement = {
+      def editor(validity: Validity, mode: EditTheme.Mode): VdomElement = {
         val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
         val base = TagMod(
           textareaConst,
@@ -188,7 +189,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         editorRef.component(autosizeProps)
       }
 
-      def instructions: TagMod =
+      def instructions(fullscreenCtx: Option[OptionalFullscreen.Ctx]): TagMod =
         TagMod.when(p.showInstructions) {
 
           val textEditorInstructions =
@@ -204,7 +205,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
           KeyboardTheme.Instructions(
             clauses    = clauses,
             help       = Some(RichTextEditorHelp.modalFor(text).show),
-            fullscreen = fullscreen,
+            fullscreen = fullscreenCtx,
           )
         }
 
@@ -218,14 +219,14 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         EditTheme.renderPreview(p.preview, p.editorStyle, p.wantPreview, richText)
 
       EditTheme.renderEditor(
-        status       = p.status,
-        editor       = editor,
-        readOnlyView = richText,
-        instructions = instructions,
-        style        = p.editorStyle,
-        mode         = mode,
-        previewRW    = p.preview,
-        preview      = preview)
+        status             = p.status,
+        optionalFullscreen = optionalFullscreen,
+        editor             = editor,
+        readOnlyView       = richText,
+        instructions       = instructions,
+        style              = p.editorStyle,
+        previewRW          = p.preview,
+        preview            = preview)
     }
 
     val onMount: Callback =

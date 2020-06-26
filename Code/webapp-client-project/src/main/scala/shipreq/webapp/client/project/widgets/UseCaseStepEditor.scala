@@ -228,7 +228,6 @@ object UseCaseStepEditor {
         readOnlyView = richText,
         instructions = instructions(p),
         style        = editorStyle,
-        mode         = EditTheme.Mode.Inline,
         previewRW    = p.preview,
         preview      = preview)
     }

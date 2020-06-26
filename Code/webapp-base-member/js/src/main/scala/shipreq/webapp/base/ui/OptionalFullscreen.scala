@@ -6,61 +6,86 @@ import scalacss.ScalaCssReact._
 import shipreq.webapp.base.jsfacade.Screenfull
 import shipreq.webapp.base.ui.{BaseStyles => *}
 
+trait OptionalFullscreen {
+  def apply(f: OptionalFullscreen.Ctx => VdomNode): VdomNode
+}
+
 object OptionalFullscreen {
 
   final case class Ctx(currentlyFullscreen: Boolean,
-                       toggleFullscreen: Callback)
+                       toggleFullscreen   : Callback) {
 
-  final case class Props(renderer: Ctx => VdomNode) {
-    @inline def render: VdomElement = Component(this)
+    def enterFullscreen: Option[Callback] =
+      Option.unless(currentlyFullscreen)(toggleFullscreen)
+
+    def exitFullscreen: Option[Callback] =
+      Option.when(currentlyFullscreen)(toggleFullscreen)
   }
 
-  final case class State(fullscreen: Boolean) {
-    def toggle = State(!fullscreen)
+  implicit def reusability: Reusability[OptionalFullscreen] =
+    Reusability.byRef
+
+  val real: OptionalFullscreen = {
+    val browserFullscreenEnter: Callback =
+      Callback {
+        if (Screenfull.isEnabled)
+          Screenfull.request()
+      }
+
+    val browserFullscreenExit: Callback =
+      Callback {
+        if (Screenfull.isEnabled)
+          Screenfull.exit()
+      }
+
+    val impl = new Impl(browserFullscreenEnter, browserFullscreenExit)
+
+    impl.Component(_)
   }
 
-  object State {
-    def init: State =
-      apply(fullscreen = false)
-  }
+  final class Impl(fullscreenEnter: Callback, fullscreenExit: Callback) {
 
-  private val fullscreenContainer =
-    <.div(*.fullscreen)
+    type Props = Ctx => VdomNode
 
-  private val browserFullscreenEnter: Callback =
-    Callback {
-      if (Screenfull.isEnabled)
-        Screenfull.request()
+    case class State(fullscreen: Boolean) {
+      def toggle = State(!fullscreen)
     }
 
-  private val browserFullscreenExit: Callback =
-    Callback {
-      if (Screenfull.isEnabled)
-        Screenfull.exit()
+    object State {
+      def init: State =
+        apply(fullscreen = false)
     }
 
-  final class Backend($: BackendScope[Props, State]) {
+    private val fullscreenContainer =
+      <.div(*.fullscreen)
 
-    private val toggleFullscreen: Callback =
-      for {
-        s1 <- $.state
-        s2 <- CallbackTo.pure(s1.toggle)
-        _  <- $.setState(s2)
-        _  <- if (s2.fullscreen) browserFullscreenEnter else browserFullscreenExit
-      } yield ()
+    final class Backend($: BackendScope[Props, State]) {
 
-    def render(p: Props, s: State): VdomNode = {
-      val ctx = Ctx(s.fullscreen, toggleFullscreen)
-      val inner = p.renderer(ctx)
-      if (s.fullscreen)
-        fullscreenContainer(inner)
-      else
-        inner
+      private val toggleFullscreen: Callback =
+        for {
+          s1 <- $.state
+          s2 <- CallbackTo.pure(s1.toggle)
+          _  <- $.setState(s2)
+          _  <- if (s2.fullscreen) fullscreenEnter else fullscreenExit
+        } yield ()
+
+      def render(p: Props, s: State): VdomNode = {
+        val ctx = Ctx(s.fullscreen, toggleFullscreen)
+        val inner = p(ctx)
+        if (s.fullscreen)
+          fullscreenContainer(inner)
+        else
+          inner
+      }
+
+      val onUnmount =
+        $.state.flatMap(s => fullscreenExit.when_(s.fullscreen))
     }
+
+    val Component = ScalaComponent.builder[Props]
+      .initialState(State.init)
+      .renderBackend[Backend]
+      .componentWillUnmount(_.backend.onUnmount)
+      .build
   }
-
-  val Component = ScalaComponent.builder[Props]
-    .initialState(State.init)
-    .renderBackend[Backend]
-    .build
 }

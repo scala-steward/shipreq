@@ -116,6 +116,7 @@ object EditTheme {
 
   // ===================================================================================================================
 
+  /** helper for no preview or fullscreen */
   def renderEditor(status      : EditorStatus,
                    editor      : Validity => VdomElement,
                    readOnlyView: => VdomNode,
@@ -126,41 +127,59 @@ object EditTheme {
       readOnlyView = readOnlyView,
       instructions = instructions,
       style        = Style.default,
-      mode         = Mode.Inline,
       previewRW    = PreviewFeature.ReadWrite.Single.neverShow,
       preview      = EmptyVdom,
     )
 
-  def renderEditor(status      : EditorStatus,
-                   editor      : Validity => VdomElement,
-                   readOnlyView: => VdomNode,
-                   instructions: => TagMod,
-                   style       : Style,
-                   mode        : Mode,
-                   previewRW   : => PreviewFeature.ReadWrite.Single,
-                   preview     : => TagMod): VdomNode = {
+  /** helper for no fullscreen */
+  def renderEditor(status            : EditorStatus,
+                   editor            : Validity => VdomElement,
+                   readOnlyView      : => VdomNode,
+                   instructions      : => TagMod,
+                   style             : Style,
+                   previewRW         : => PreviewFeature.ReadWrite.Single,
+                   preview           : => TagMod): VdomNode =
+    renderEditor(
+      status             = status,
+      optionalFullscreen = None,
+      editor             = (v, _) => editor(v),
+      readOnlyView       = readOnlyView,
+      instructions       = _ => instructions,
+      style              = style,
+      previewRW          = previewRW,
+      preview            = preview,
+    )
+
+  def renderEditor(status            : EditorStatus,
+                   optionalFullscreen: Option[OptionalFullscreen],
+                   editor            : (Validity, Mode) => VdomElement,
+                   readOnlyView      : => VdomNode,
+                   instructions      : Option[OptionalFullscreen.Ctx] => TagMod,
+                   style             : Style,
+                   previewRW         : => PreviewFeature.ReadWrite.Single,
+                   preview           : => TagMod): VdomNode = {
 
     status match {
       case EditorStatus.Ignore | EditorStatus.Valid(_) =>
         style.position match {
-          case Position.Under => renderActiveUnder(editor, instructions, preview)
-          case Position.Right => renderActiveRight(editor, mode, instructions, previewRW, preview, style.openPreview)
+          case Position.Under => renderActiveUnder(editor(_, Mode.Inline), instructions(None), preview)
+          case Position.Right => renderActiveRight(editor, optionalFullscreen, instructions, previewRW, preview, style.openPreview)
         }
 
       case EditorStatus.Invalid(err) =>
         <.div(
-          editor(Invalid), // TODO add error background
+          editor(Invalid, Mode.Inline), // TODO add error background
           *.errorPointingUp(err),
           preview)
 
       case EditorStatus.AsyncError(err, _, _) =>
         <.div(
-          editor(Valid),
+          editor(Valid, Mode.Inline),
           *.errorPointingUp(err),
           preview)
 
       case EditorStatus.InTransit =>
-        <.div(*.textEditor((*.EditorState.InTransit, style.position, mode)),
+        <.div(*.textEditor((*.EditorState.InTransit, style.position, Mode.Inline)),
           <.div(spinner),
           <.div(*.textEditorInTransitValue, readOnlyView))
     }
@@ -178,36 +197,47 @@ object EditTheme {
 
   // ===================================================================================================================
 
-  private def renderActiveRight(editor      : Validity => VdomElement,
-                                mode        : Mode,
-                                instructions: => TagMod,
-                                previewRW   : => PreviewFeature.ReadWrite.Single,
-                                preview     : => TagMod,
-                                openPreview : OpenPreview): VdomNode = {
+  private def renderActiveRight(editor            : (Validity, Mode) => VdomElement,
+                                optionalFullscreen: Option[OptionalFullscreen],
+                                instructionsFn    : Option[OptionalFullscreen.Ctx] => TagMod,
+                                previewRW         : => PreviewFeature.ReadWrite.Single,
+                                preview           : => TagMod,
+                                openPreview       : OpenPreview): VdomNode = {
 
-    def renderWithPreview: VdomTag =
-      <.div(*.textEditorLeftPreviewRight(mode),
-        <.div(editor(Valid), instructions),
-        <.div(preview))
+    def inner(fullscreen: Option[OptionalFullscreen.Ctx]): VdomNode = {
+      val mode = EditTheme.Mode.derive(fullscreen)
 
-    def renderWithoutPreview: VdomTag =
-      <.div(editor(Valid), instructions)
+      val instructions = instructionsFn(fullscreen)
 
-    @inline def render(preview: Boolean): VdomTag =
-      if (preview) renderWithPreview else renderWithoutPreview
+      def renderWithPreview: VdomTag =
+        <.div(*.textEditorLeftPreviewRight(mode),
+          <.div(editor(Valid, mode), instructions),
+          <.div(preview))
 
-    def manual(defaultShow: Boolean) = {
-      val show = previewRW.read.showManuallyControlledPreview(defaultShow)
-      val inner = render(preview = show)
-      previewRW.toggleButton(defaultShow = defaultShow)(inner)
+      def renderWithoutPreview: VdomTag =
+        <.div(editor(Valid, mode), instructions)
+
+      @inline def render(preview: Boolean): VdomTag =
+        if (preview) renderWithPreview else renderWithoutPreview
+
+      def manual(defaultShow: Boolean) = {
+        val show = previewRW.read.showManuallyControlledPreview(defaultShow)
+        val inner = render(preview = show)
+        previewRW.toggleButton(defaultShow = defaultShow)(inner)
+      }
+
+      openPreview match {
+        case OpenPreview.Minimally
+           | OpenPreview.Always
+           | OpenPreview.Never
+           | OpenPreview.WhenWanted     => renderWithPreview
+        case OpenPreview.ShowWithToggle => manual(true)
+      }
     }
 
-    openPreview match {
-      case OpenPreview.Minimally
-         | OpenPreview.Always
-         | OpenPreview.Never
-         | OpenPreview.WhenWanted     => renderWithPreview
-      case OpenPreview.ShowWithToggle => manual(true)
+    optionalFullscreen match {
+      case None => inner(None)
+      case Some(f) => f(ctx => inner(Some(ctx)))
     }
   }
 

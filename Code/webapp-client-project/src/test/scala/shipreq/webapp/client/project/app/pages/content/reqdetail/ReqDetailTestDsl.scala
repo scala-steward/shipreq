@@ -10,6 +10,7 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.client.project.test.TestGlobal
 
 object ReqDetailTestDsl {
 
@@ -54,7 +55,9 @@ object ReqDetailTestDsl {
 
   val stateMode = TestState.state ^|-> State.mode
 
-  val * = Dsl[Unit, ReqDetailObs, TestState]
+  val * = Dsl[TestGlobal, ReqDetailObs, TestState]
+
+  val global = new TestGlobal.TestDslWithObs(*)(identity, _.global)
 
   def checkErrorReason(e: String) =
     *.focus("Error reason").value(_.obs.error.reason).test(s"contains '$e'")(_ contains e)
@@ -80,11 +83,26 @@ object ReqDetailTestDsl {
   def fieldEditorValue(field: String) =
     *.focus(s"$field field editor value").option(_.obs.generic.field(field).editor.map(_.value))
 
+  def fieldIsFullscreen(field: String) =
+    *.focus(s"$field is fullscreen").value(_.obs.generic.field(field).isFullscreen)
+
+  def fieldHasPreview(field: String) =
+    *.focus(s"$field field has preview").value(_.obs.generic.field(field).hasPreview)
+
+  def fieldHasEnabledFullscreenButton(field: String) =
+    *.focus(s"$field field has enabled fullscreen button").value(_.obs.generic.field(field).hasEnabledFullscreenButton)
+
+  def fieldIsSpinning(field: String) =
+    *.focus(s"$field field has spinner").value(_.obs.generic.field(field).isSpinning)
+
   val life =
     *.focus("Life").value(_.obs.generic.live)
 
   val editorCount =
     *.focus("Editor count").value(_.obs.editables.length)
+
+  val spinnerCount =
+    *.focus("Spinner count").value(_.obs.spinnerCount)
 
   val titleChangeInProgress =
     *.focus("Title change is in progress").value(_.obs.generic.titleSpinning)
@@ -158,7 +176,8 @@ object ReqDetailTestDsl {
     *.point("unsavedChanges ≤ editors") { x =>
       val u = unsavedChanges.run(x)
       val e = editorCount.run(x)
-      Option.unless(u <= e)(s"unsavedChanges ($u) must be ≤ editorCount ($e)")
+      val s = spinnerCount.run(x)
+      Option.unless(u <= (e + s))(s"unsavedChanges ($u) must be ≤ editorCount ($e) + spinnerCount ($s)")
     }
 
   private def clickEnabled(b: html.Button): Unit = {
@@ -244,10 +263,15 @@ object ReqDetailTestDsl {
     changeField(field, editorFromTo, textFromTo) >> changeField(field, editorFromTo.swap, textFromTo.swap)
 
   def setFieldEditorValue(field: String, value: String): *.Actions =
-    *.action(s"Set $field editor to '$value'")(SimEvent.Change(value) simulate _.obs.generic.field(field).editor.get)
+    *.action(s"Set $field editor to ${quoteStringForDisplay(value)}")(
+      SimEvent.Change(value) simulate _.obs.generic.field(field).editor.get)
 
   def commitFieldEditor(field: String): *.Actions =
     *.action(s"Commit $field editor")(KB.Enter.ctrl simulateKeyDown _.obs.generic.field(field).editor.get) +>
+      editorCount.assert.decrement
+
+  def abortFieldEditor(field: String): *.Actions =
+    *.action(s"Abort $field editor")(KB.Escape simulateKeyDown _.obs.generic.field(field).editor.get) +>
       editorCount.assert.decrement
 
   lazy val commitTitleEditor: *.Actions =
@@ -312,13 +336,15 @@ object ReqDetailTestDsl {
   def doubleClickFieldValue(field: String) =
     *.action("Double-click " + field)(Simulate doubleClick _.obs.generic.fields(field).dom)
 
+  def toggleFieldPreview(field: String) =
+    *.action("Toggle preview in " + field)(Simulate click _.obs.generic.fields(field).togglePreviewButton.get)
+
+  def toggleFieldFullscreen(field: String) =
+    *.action("Toggle fullscreen editing in " + field)(Simulate click _.obs.generic.fields(field).fullscreenButton.get)
+
   def setTitleEditValue(newValue: String): *.Actions =
     *.action(s"Set title text to ${quoteStringForDisplay(newValue)}")(
       SimEvent.Change(newValue) simulate _.obs.generic.titleEditor.get)
-
-  def setFieldEditValue(field: String, newValue: String): *.Actions =
-    *.action(s"Set $field to ${quoteStringForDisplay(newValue)}")(
-      SimEvent.Change(newValue) simulate _.obs.generic.fields(field).editor.get)
 
   val randomUseCaseStepAction: *.Actions = {
 

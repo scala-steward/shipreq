@@ -144,7 +144,7 @@ object ReqDetailTest extends TestSuite {
 
     "uc" - {
 
-      "tree" - test("UC-1")(Plan.action( allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1")
+      "tree" - test("UC-1")(Plan.action(allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1")
           +> addTailStepEC           +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.1", "1.1.1", "1.E.1")
           >> delStep("1.1")          +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.0.3", "1.E.1")
           >> shiftStepLeft("1.0.3")  +> allSteps.assert("1.0", "1.0.1", "1.0.2", "1.1", "1.E.1")
@@ -321,7 +321,7 @@ object ReqDetailTest extends TestSuite {
         +> editorCount.assert.noChange
         +> unsavedChanges.assert.increaseBy(1)
 
-        >> setFieldEditValue("Notes", "zzzzzzzzzzzzzzzzz")
+        >> setFieldEditorValue("Notes", "zzzzzzzzzzzzzzzzz")
         +> editorCount.assert.noChange
         +> unsavedChanges.assert.increaseBy(1)
 
@@ -630,5 +630,46 @@ object ReqDetailTest extends TestSuite {
       ))
     }
 
+    "fullscreenEditor" - {
+      val f = "Description"
+      def assert(editors: Int, hasPreview: Boolean, isFS: Boolean, canFS: Boolean, spin: Boolean) = (
+        editorCount.assert(editors)
+        & fieldHasPreview(f).assert(hasPreview)
+        & fieldIsFullscreen(f).assert(isFS)
+        & global.isBrowserFullscreen.assert(isFS)
+        & fieldHasEnabledFullscreenButton(f).assert(canFS)
+        & fieldIsSpinning(f).assert(spin)
+      )
+      @inline def y = true
+      @inline def n = false
+
+      "saveChange" - test("MF-1")(Plan.action(
+        global.disableAutoResponse  +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
+        >> doubleClickFieldValue(f) +> assert(editors = 1, hasPreview = y, isFS = n, canFS = y, spin = n)
+        >> toggleFieldPreview(f)    +> assert(editors = 1, hasPreview = n, isFS = n, canFS = y, spin = n)
+        >> toggleFieldFullscreen(f) +> assert(editors = 1, hasPreview = n, isFS = y, canFS = y, spin = n)
+        >> toggleFieldPreview(f)    +> assert(editors = 1, hasPreview = y, isFS = y, canFS = y, spin = n)
+        >> toggleFieldFullscreen(f) +> assert(editors = 1, hasPreview = y, isFS = n, canFS = y, spin = n)
+        >> toggleFieldFullscreen(f) +> assert(editors = 1, hasPreview = y, isFS = y, canFS = y, spin = n)
+        >> setFieldEditorValue(f, "zxc")
+        >> commitFieldEditor(f)     +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = y)
+        >> global.autoRespondToLast +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
+      ))
+
+      "saveNoOp" - test("MF-1")(Plan.action(
+        global.disableAutoResponse  +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
+        >> doubleClickFieldValue(f) +> assert(editors = 1, hasPreview = y, isFS = n, canFS = y, spin = n)
+        >> toggleFieldFullscreen(f) +> assert(editors = 1, hasPreview = y, isFS = y, canFS = y, spin = n)
+        >> commitFieldEditor(f)     +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
+      ))
+
+      "cancel" - test("MF-1")(Plan.action(
+        global.disableAutoResponse  +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
+        >> doubleClickFieldValue(f) +> assert(editors = 1, hasPreview = y, isFS = n, canFS = y, spin = n)
+        >> toggleFieldFullscreen(f) +> assert(editors = 1, hasPreview = y, isFS = y, canFS = y, spin = n)
+        >> abortFieldEditor(f)      +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
+      ))
+
+    }
   }
 }

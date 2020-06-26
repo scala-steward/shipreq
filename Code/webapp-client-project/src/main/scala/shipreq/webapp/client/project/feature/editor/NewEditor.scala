@@ -19,7 +19,7 @@ import shipreq.webapp.base.lib.KeyboardTheme
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.{ManualIssueCmd, UpdateContentCmd}
 import shipreq.webapp.base.text._
-import shipreq.webapp.base.ui.EditTheme
+import shipreq.webapp.base.ui.{EditTheme, OptionalFullscreen}
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.feature.editor.Feature.{AsyncError, AsyncState, Editor, PreviewId, State}
 import shipreq.webapp.client.project.widgets.ProjectWidgets
@@ -67,13 +67,17 @@ object NewEditor {
     }
   }
 
-  final case class Static(previewW        : PreviewFeature.Write.Composite[PreviewId],
-                          pxProject       : Px[Project],
-                          pxPlainTextNoCtx: Px[PlainText.ForProject.NoCtx],
-                          pxTextSearch    : Px[TextSearch],
-                          sspUpdateContent: ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
-                          sspManualIssue  : ServerSideProcInvoker[ManualIssueCmd, ErrorMsg, Any],
+  final case class Static(previewW          : PreviewFeature.Write.Composite[PreviewId],
+                          pxProject         : Px[Project],
+                          pxPlainTextNoCtx  : Px[PlainText.ForProject.NoCtx],
+                          pxTextSearch      : Px[TextSearch],
+                          sspUpdateContent  : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
+                          sspManualIssue    : ServerSideProcInvoker[ManualIssueCmd, ErrorMsg, Any],
+                          optionalFullscreen: OptionalFullscreen,
                          ) {
+
+    val someOptionalFullscreen =
+      Some(optionalFullscreen)
 
     private[NewEditor] val internal = new Internal(this)
   }
@@ -732,22 +736,23 @@ object NewEditor {
               textSearch     <- pxTextSearch.toCallback
               projectWidgets <- projectWidgetsCB
             } yield editor.Optional(
-              project          = project,
-              naTags           = project.naTagsForReq(reqId),
-              plainTextNoCtx   = plainTextNoCtx,
-              textSearch       = textSearch,
-              projectWidgets   = projectWidgets,
-              edit             = ss,
-              asyncStatus      = EditorStatus.async(asyncState),
-              abort            = abort,
-              autoFocus        = true,
-              commitFn         = commitFn,
-              commitVerb       = commitVerb,
-              editorStyle      = editorStyle,
-              preview          = previewRW(pid),
-              preEditValue     = initial,
-              extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
-              showInstructions = true)
+              project            = project,
+              naTags             = project.naTagsForReq(reqId),
+              plainTextNoCtx     = plainTextNoCtx,
+              textSearch         = textSearch,
+              projectWidgets     = projectWidgets,
+              edit               = ss,
+              asyncStatus        = EditorStatus.async(asyncState),
+              abort              = abort,
+              autoFocus          = true,
+              commitFn           = commitFn,
+              commitVerb         = commitVerb,
+              editorStyle        = editorStyle,
+              preview            = previewRW(pid),
+              preEditValue       = initial,
+              extraKbShortcuts   = KeyboardTheme.Shortcuts.empty,
+              showInstructions   = true,
+              optionalFullscreen = someOptionalFullscreen)
 
           override def clipboardData: Option[ClipboardData] =
             Some(ClipboardData(ss.value))
@@ -853,22 +858,23 @@ object NewEditor {
               textSearch     <- pxTextSearch.toCallback
               projectWidgets <- projectWidgetsCB
             } yield editor.NonEmpty(
-              project          = project,
-              naTags           = project.naTagsForReq(reqId),
-              plainTextNoCtx   = plainTextNoCtx,
-              textSearch       = textSearch,
-              projectWidgets   = projectWidgets,
-              edit             = ss,
-              asyncStatus      = EditorStatus.async(asyncState),
-              abort            = abort,
-              autoFocus        = true,
-              commitFn         = commitFn,
-              commitVerb       = commitVerb,
-              editorStyle      = editorStyle,
-              preview          = previewRW(pid),
-              preEditValue     = initial,
-              extraKbShortcuts = KeyboardTheme.Shortcuts.empty,
-              showInstructions = true)
+              project            = project,
+              naTags             = project.naTagsForReq(reqId),
+              plainTextNoCtx     = plainTextNoCtx,
+              textSearch         = textSearch,
+              projectWidgets     = projectWidgets,
+              edit               = ss,
+              asyncStatus        = EditorStatus.async(asyncState),
+              abort              = abort,
+              autoFocus          = true,
+              commitFn           = commitFn,
+              commitVerb         = commitVerb,
+              editorStyle        = editorStyle,
+              preview            = previewRW(pid),
+              preEditValue       = initial,
+              extraKbShortcuts   = KeyboardTheme.Shortcuts.empty,
+              showInstructions   = true,
+              optionalFullscreen = someOptionalFullscreen)
 
           override def clipboardData: Option[ClipboardData] =
             Some(ClipboardData(ss.value))

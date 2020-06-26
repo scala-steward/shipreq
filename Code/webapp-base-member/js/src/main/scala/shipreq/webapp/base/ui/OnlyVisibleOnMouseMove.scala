@@ -14,6 +14,9 @@ import shipreq.webapp.base.ui.semantic._
   */
 object OnlyVisibleOnMouseMove {
 
+  // For unit tests
+  var allowHide = true
+
   final case class Props(content      : VdomTag,
                          transition   : Transition,
                          direction    : Transition.Direction,
@@ -44,11 +47,14 @@ object OnlyVisibleOnMouseMove {
         }
       }
 
+    private val hide: Callback =
+      $.setState(State.hidden).when_(mounted && allowHide)
+
     private val decay: Callback =
       for {
         _ <- clearTimeout
         p <- $.props
-        d <- $.setState(State.hidden).when(mounted).setTimeout(p.decay).when(mounted)
+        d <- hide.setTimeout(p.decay).when(mounted && allowHide)
         _ <- $.modStateOption(s => d.map(_ => s.copy(decaying = d)))
       } yield ()
 
