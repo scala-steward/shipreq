@@ -20,6 +20,7 @@
     "react-motion": "0.5.2",
     "react-svg-pan-zoom": "3.8.0",
     "react-virtualized": "9.21.2",
+    "screenfull": "^5.0.2",
     "scroll-into-view-if-needed": "2.2.25",
     "semantic-ui": "2.2.13",
     "textcomplete": "0.18.2"
