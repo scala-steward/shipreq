@@ -35,6 +35,8 @@ object OnlyVisibleOnMouseMove {
 
   final class Backend($: BackendScope[Props, State]) {
 
+    private var mounted = false
+
     private val clearTimeout: Callback =
       $.state.flatMap { s =>
         Callback.traverseOption(s.decaying) { h =>
@@ -46,8 +48,8 @@ object OnlyVisibleOnMouseMove {
       for {
         _ <- clearTimeout
         p <- $.props
-        d <- $.setState(State.hidden).setTimeout(p.decay)
-        _ <- $.modState(_.copy(decaying = Some(d)))
+        d <- $.setState(State.hidden).when(mounted).setTimeout(p.decay).when(mounted)
+        _ <- $.modStateOption(s => d.map(_ => s.copy(decaying = d)))
       } yield ()
 
     private val show: Callback =
@@ -69,13 +71,18 @@ object OnlyVisibleOnMouseMove {
         .map { dom => dom.onmousemove = f }
 
     val onMount: Callback = {
-      val installMouseListener = hackySetMouseMoveListener((show >> decay).toJsFn1)
+      val setMounted           = Callback { mounted = true }
+      val mouseListener        = (show >> decay).when_(mounted)
+      val installMouseListener = hackySetMouseMoveListener(mouseListener.toJsFn1)
       val startDecay           = $.state.flatMap(s => Callback.when(s.show)(decay))
-      installMouseListener >> startDecay
+      setMounted >> installMouseListener >> startDecay
     }
 
-    val onUnmount: Callback =
-      hackySetMouseMoveListener(null)
+    val onUnmount: Callback = {
+      val setUnmounted        = Callback { mounted = false }
+      val removeMouseListener = hackySetMouseMoveListener(null)
+      setUnmounted >> removeMouseListener >> clearTimeout
+    }
   }
 
   val Component = ScalaComponent.builder[Props]
