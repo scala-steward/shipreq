@@ -49,7 +49,9 @@ v2.2
 
 ### Implement
 * prompt user to confirm aborting a dirty editor
-
+* fix preview right/under when switching from detail↔table
+* [MAYBE] remember last preview toggle state and use for new editors (eg. if I close one, next new editor should be closed too)
+* [MAYBE] allow preview toggle in req table too
 
 Backlog (maybe-probably soon)
 ========================================================================================================================
