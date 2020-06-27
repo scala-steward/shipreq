@@ -6,8 +6,8 @@ import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.{Invalid, Valid}
 import shipreq.webapp.base.feature.PreviewFeature.Position
 import shipreq.webapp.base.test.TestState._
-import shipreq.webapp.base.ui.{BaseStyles, EditTheme}
 import shipreq.webapp.base.ui.semantic.JQuery
+import shipreq.webapp.base.ui.{BaseStyles, EditTheme}
 
 object CommonObs {
 

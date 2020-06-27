@@ -216,19 +216,24 @@ object NewEditor {
     final class InternalCtx[A, C](val ctx: Ctx[A, C]) {
       import ctx._
 
-      def abort(hooks: Hooks): Callback =
-        stateAccess.setState(None, asyncFeature.clearAsyncStatus >> hooks.onClose)
+      def abort(hooks: Hooks, previewId: Option[PreviewId]): Callback = {
+        val onClose: Callback =
+          Callback.traverseOption(previewId)(previewW(_).clear) >> asyncFeature.clearAsyncStatus >> hooks.onClose
+        stateAccess.setState(None, onClose)
+      }
 
       def commit[Cmd](ssp: ServerSideProcInvoker[Cmd, ErrorMsg, Any])
-                     (cmd: Cmd, hooks: Hooks): Callback =
+                     (cmd: Cmd, hooks: Hooks, previewId: Option[PreviewId]): Callback =
         asyncFeature(
-          ssp(cmd)
-            .rightFlatTap(_ => abort(hooks).asAsyncCallback)
+          ssp(cmd).rightFlatTap(_ => abort(hooks, previewId).asAsyncCallback)
         )
 
       def makeAbortCommitFn[Cmd, B](ssp: ServerSideProcInvoker[Cmd, ErrorMsg, Any])
-                                   (cmd: B => Cmd, hooks: Hooks): (Some[Callback], Some[B ~=> Callback]) =
-        (Some(abort(hooks)), Some(Reusable.fn(v => commit(ssp)(cmd(v), hooks))))
+                                   (cmd: B => Cmd, hooks: Hooks, previewId: Option[PreviewId]): (Some[Callback], Some[B ~=> Callback]) =
+        (
+          Some(abort(hooks, previewId)),
+          Some(Reusable.fn(v => commit(ssp)(cmd(v), hooks, previewId)))
+        )
 
       /** Creates a Callback that when invoked, will initialise and start an editor.
         *
@@ -340,7 +345,7 @@ object NewEditor {
         }
 
         val (abort, commitFn) =
-          makeAbortCommitFn(sspUpdateContent)((t: RT) => UpdateContentCmd.SetGenericReqType(id, t.id), args.hooks)
+          makeAbortCommitFn(sspUpdateContent)((t: RT) => UpdateContentCmd.SetGenericReqType(id, t.id), args.hooks, None)
 
         for {
           req      <- getGenericReq(id)
@@ -380,7 +385,7 @@ object NewEditor {
             pxProject.toCallback.map(_.content.reqCodes.activeReqCodesByReqId(id))
 
           val (abort, commitFn) =
-            makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchReqCodes(id, _), args.hooks)
+            makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchReqCodes(id, _), args.hooks, None)
 
         startWithStateSnapshot(
           initialData       = initialValuesCB.toCBO,
@@ -435,7 +440,7 @@ object NewEditor {
             pxProject.toCallback.map(_.content.reqCodes.reqCode(id)).toCBO
 
           val (abort, commitFn) =
-            makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.SetCodeGroupCode(id, _), args.hooks)
+            makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.SetCodeGroupCode(id, _), args.hooks, None)
 
         startWithStateSnapshot(
           initialData       = initialValueCB,
@@ -531,7 +536,7 @@ object NewEditor {
         Internal.init(potentialValueAcceptor) { ivo => args =>
 
           val (abort, commitFn) =
-            makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchImplications(id, dir, _), args.hooks)
+            makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchImplications(id, dir, _), args.hooks, None)
 
         startWithStateSnapshot(
           initialData       = pxInit.toCallback.toCBO,
@@ -620,7 +625,7 @@ object NewEditor {
           } yield TagEditor.initialValues(project.content.reqTags(id), project.config, lookup, naTags)
 
         val (abort, commitFn) =
-          makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchReqTags(id, _), args.hooks)
+          makeAbortCommitFn(sspUpdateContent)(UpdateContentCmd.PatchReqTags(id, _), args.hooks, None)
 
         startWithStateSnapshot(
           initialData       = pxInit.toCallback.toCBO,
@@ -694,7 +699,7 @@ object NewEditor {
           import ictx._
 
           val (abort, commitFn) =
-            makeAbortCommitFn(sspUpdateContent)(cmd, args.hooks)
+            makeAbortCommitFn(sspUpdateContent)(cmd, args.hooks, Some(pid))
 
           val initCB =
             for {
@@ -816,7 +821,7 @@ object NewEditor {
           import ictx._
 
           val (abort, commitFn) =
-            makeAbortCommitFn(ssp)(cmd, args.hooks)
+            makeAbortCommitFn(ssp)(cmd, args.hooks, Some(pid))
 
           val initCB =
             for {
@@ -910,7 +915,7 @@ object NewEditor {
           // Below you'll see that we're filtering flow to create visibleFlow
           // There's no need to re-insert invisibleFlow here because flow is passed as a SetDiff
           // meaning that regardless of what the actual flow is, we only send what the user changes.
-          Reusable.fn(v => commit(sspUpdateContent)(UpdateContentCmd.UpdateUseCaseStep(id, v), args.hooks))
+          Reusable.fn(v => commit(sspUpdateContent)(UpdateContentCmd.UpdateUseCaseStep(id, v), args.hooks, Some(pid)))
 
         val pxStepFocus: Px[UseCaseStep.Focus] =
           pxProject.map(_.content.reqs.useCases.focusStep(id))
@@ -933,7 +938,7 @@ object NewEditor {
           initialData       = pxInit.toCallback.toCBO,
           initalValueOption = ivo)(
           initialValueFn    = _._2)(
-          editor            = i => new State(_, Some(i._1), args.cbProjectWidgets, pxStepFocus.toCallback, pid, abort(args.hooks), commitFn))
+          editor            = i => new State(_, Some(i._1), args.cbProjectWidgets, pxStepFocus.toCallback, pid, abort(args.hooks, Some(pid)), commitFn))
       }
 
       private class State(ss              : StateSnapshot[String],

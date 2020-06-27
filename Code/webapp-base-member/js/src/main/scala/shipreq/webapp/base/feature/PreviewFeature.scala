@@ -239,6 +239,7 @@ object PreviewFeature {
       def onFocus(wantOpen: Boolean): Callback
       def onEdit(wantOpened: Boolean): Callback
       def onBlur: Callback
+      def clear: Callback
       def setManually(m: Status.Manual): Callback
     }
 
@@ -280,6 +281,12 @@ object PreviewFeature {
             case _               => Some(None)
           }
 
+        override def clear: Callback =
+          $.modStateOption {
+            case Some(_) => Some(None)
+            case None    => None
+          }
+
         override def setManually(m: Manual): Callback =
           $.setState(Some(m))
       }
@@ -288,6 +295,7 @@ object PreviewFeature {
         override def onFocus(wantOpen: Boolean)    = Callback.empty
         override def onEdit (wantOpen: Boolean)    = Callback.empty
         override def onBlur                        = Callback.empty
+        override def clear                         = Callback.empty
         override def setManually(m: Status.Manual) = Callback.empty
       }
     }
@@ -342,6 +350,9 @@ object PreviewFeature {
 
       def onBlur: Callback =
         write.onBlur
+
+      def clear: Callback =
+        write.clear
 
       def showPreview(wantOpen: => Boolean): Boolean =
         read.showPreview(wantOpen)

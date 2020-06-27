@@ -630,6 +630,30 @@ object ReqDetailTest extends TestSuite {
       ))
     }
 
+    // Test that preview state is forgotten when the editor closes.
+    // This is subtly important because once a user makes a manual change (ie. show/hide/down/right), there's no way to
+    // restore the state to auto. Closing the editor gives users a way. Without this, if a user manually closed a
+    // preview in ReqDetail then when to ReqTable and opened up the same editor again, they would never get the nice
+    // show-minimally behaviour that is the default in ReqTable where space is limited.
+    "previewReset" - {
+      val f = field("Description")
+
+      def testPreviewReset(closeEditor: *.Actions) = test("MF-1")(Plan.action(
+        f.doubleClick
+        >> f.setEditorValue("pwoeir") +> f.previewButtonsStr.assert("-hd-")
+        >> f.clickPreviewDown         +> f.previewButtonsStr.assert("-h-r")
+        >> closeEditor                +> f.previewButtonsStr.assert("----")
+        >> f.doubleClick              +> f.previewButtonsStr.assert("-hd-") // this is the point
+        >> f.setEditorValue("qwe")    +> f.previewButtonsStr.assert("-hd-")
+        >> f.clickPreviewHide         +> f.previewButtonsStr.assert("s---")
+        >> closeEditor                +> f.previewButtonsStr.assert("----")
+        >> f.doubleClick              +> f.previewButtonsStr.assert("-hd-") // this is the point
+      ))
+
+      "onCommit" - testPreviewReset(f.commit)
+      "onAbort" - testPreviewReset(f.abort)
+    }
+
     "fullscreenEditor" - {
       val f = field("Description")
 

@@ -53,7 +53,6 @@ v2.2
   a problem with that is there's no way to go from manual back to auto.
   Maybe just remember the orientation... per screen... per field... now it seems like goldplating for sure.
   Probably drop this whole idea and implement later if real-world usage proves annoying
-* forget preview state on abort/commit
 * controls on reqtable
 * preview should never be auto in fullscreen (include in tests)
 * async error & invalid input hardcoded to Under
