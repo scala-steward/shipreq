@@ -54,15 +54,17 @@ object ReqTableObs {
     ".pointing.red.label"
 
   final class Cell($: DomZipperJs) {
-         def dom            = $.domAsHtml
-    lazy val isNA           = $.exists(naSel)
-    lazy val cellText       = $.innerText
-    lazy val editor         = $.editables01.domsAsHtml
-    lazy val editorValue    = editor.map(editableDomValue)
-         def editing        = editor.isDefined
-    lazy val locked         = $.exists(".loading")
-    lazy val editorValidity = Invalid when $.exists(editorInvalidSel)
-    lazy val editorError    = $.collect01(editorInvalidSel).innerTexts
+         def dom                 = $.domAsHtml
+    lazy val isNA                = $.exists(naSel)
+    lazy val cellText            = $.innerText
+    lazy val editor              = $.editables01.domsAsHtml
+    lazy val editorValue         = editor.map(editableDomValue)
+         def editing             = editor.isDefined
+    lazy val locked              = $.exists(".loading")
+    lazy val editorValidity      = Invalid when $.exists(editorInvalidSel)
+    lazy val editorError         = $.collect01(editorInvalidSel).innerTexts
+    lazy val previewIsOnRight    = $.exists(Selector.textEditorLeftPreviewRight)
+    lazy val hasFullscreenButton = $.exists("i.icon.maximize")
   }
 }
 

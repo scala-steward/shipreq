@@ -87,6 +87,7 @@ final class ReqDetailObs($: DomZipperJs, val nav: NavObs, val global: TestGlobal
       val isFullscreen               = $.exists(ReqDetailObs.fullscreen)
       val togglePreviewButton        = $.collect01(ReqDetailObs.previewToggleWrapper).zippers.map(_("button").domAsButton)
       val isSpinning                 = $.exists(".loading")
+      val previewIsOnRight           = $.exists(Selector.textEditorLeftPreviewRight)
     }
 
     val lifeRow = fields(UiText.Life.field)

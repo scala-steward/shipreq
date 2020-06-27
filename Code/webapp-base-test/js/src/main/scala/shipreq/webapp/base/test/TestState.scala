@@ -9,6 +9,7 @@ import scalacss.internal.StyleA
 import shipreq.base.util.{Debug, ErrorMsg}
 import shipreq.webapp.base.data.{Disabled, Enabled}
 import shipreq.webapp.base.lib.DomUtil._
+import shipreq.webapp.base.ui.{BaseStyles, EditTheme}
 import teststate.domzipper.DomZipperJsF.Dom
 import teststate.run.Report.AssertionSettings
 
@@ -86,6 +87,14 @@ object TestState
       }
     $.collect0n(types.mkString(","))
       .filter(_.domAsHtml.findParent(e => semanticUiClasses.exists(e.classList.contains)).isEmpty)
+  }
+
+  // ===================================================================================================================
+
+  object Selector {
+
+    val textEditorLeftPreviewRight =
+      EditTheme.Mode.values.map(BaseStyles.textEditorLeftPreviewRight(_).selector).mkString(",")
   }
 
   // ===================================================================================================================

@@ -95,6 +95,9 @@ object ReqDetailTestDsl {
   def fieldIsSpinning(field: String) =
     *.focus(s"$field field has spinner").value(_.obs.generic.field(field).isSpinning)
 
+  def fieldPreviewOnRight(field: String) =
+    *.focus(s"$field preview is on the right").value(_.obs.generic.field(field).previewIsOnRight)
+
   val life =
     *.focus("Life").value(_.obs.generic.live)
 

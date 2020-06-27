@@ -97,9 +97,11 @@ object ReqTableTestDsl {
 
     private val cell = *.focus("Subject cell").value(s => s.obs.table.cell(loc(s.obs)))
 
-    val isNA           = cell.map(_.isNA)           rename "Cell is N/A"
-    val cellText       = cell.map(_.cellText)       rename "Cell innerText"
-    val editorValidity = cell.map(_.editorValidity) rename "Editor validity"
+    val isNA                = cell.map(_.isNA)                rename "Cell is N/A"
+    val cellText            = cell.map(_.cellText)            rename "Cell innerText"
+    val editorValidity      = cell.map(_.editorValidity)      rename "Editor validity"
+    val previewIsOnRight    = cell.map(_.previewIsOnRight)    rename "Preview is on the right"
+    val hasFullscreenButton = cell.map(_.hasFullscreenButton) rename "Has fullscreen button"
 
     val editorValue    = *.focus("Editor value").option(cell.run(_).editorValue)
     val editorError    = *.focus("Editor error").option(cell.run(_).editorError)

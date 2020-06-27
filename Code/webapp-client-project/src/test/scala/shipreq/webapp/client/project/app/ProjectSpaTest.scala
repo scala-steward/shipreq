@@ -127,7 +127,45 @@ object ProjectSpaTest extends TestSuite {
     runReqDetailTest(test, "MF-1")
   }
 
+  private def testEditorStyle(): Unit = {
+    val pubid = "MF-1"
+    val field = "Description"
+    val ce = RT.cellEditor(pubid, field)
+
+    val test: *.Actions = (
+      // Open editor in ReqDetail
+      RD.doubleClickFieldValue(field).lift
+      >> RD.setFieldEditorValue(field, "Okay.").lift
+      +> RD.fieldHasPreview(field).assert(true).lift
+      +> RD.fieldPreviewOnRight(field).assert(true).lift
+
+      // Switch to ReqTable
+      >> setPage(Page.ReqTable)
+      >> RT.showAllColumns.lift
+      +> ce.editorValue.assert("Okay.").lift
+      +> ce.previewIsOnRight.assert(false).lift
+      +> ce.hasFullscreenButton.assert(false).lift
+
+      // Reopen editor
+      >> ce.abortEdit.lift
+      >> ce.startEdit.lift
+      >> ce.enterValue("Wow!").lift
+      +> ce.previewIsOnRight.assert(false).lift
+      +> ce.hasFullscreenButton.assert(false).lift
+
+      // Switch to ReqDetail
+      >> setPageToReqDetail(pubid, RD.Mode.Details)
+      >> RD.setFieldEditorValue(field, "Wow!").lift
+      +> RD.fieldHasPreview(field).assert(true).lift
+      +> RD.fieldPreviewOnRight(field).assert(true).lift
+      +> RD.fieldHasEnabledFullscreenButton(field).assert(true).lift
+    )
+
+    runReqDetailTest(test, pubid)
+  }
+
   override def tests = Tests {
+    "editorStyle"            - testEditorStyle()
     "reqTableColumnsSync"    - runTest(reqTableColumnsSync     , Page.ReqTable)
     "reqTableFilterDeadSync" - runTest(reqTableFilterDeadSync  , Page.ReqTable)
     "cfgUsageLinkToReqTable" - runTest(cfgUsageLinkToReqTable  , Page.ReqTable)
