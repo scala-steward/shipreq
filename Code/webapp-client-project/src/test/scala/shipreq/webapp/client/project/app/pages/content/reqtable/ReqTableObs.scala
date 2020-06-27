@@ -1,5 +1,6 @@
 package shipreq.webapp.client.project.app.pages.content.reqtable
 
+import japgolly.microlibs.utils.Memo
 import org.parboiled2.ParseError
 import org.parboiled2.Parser.DeliveryScheme.Throw
 import org.scalajs.dom.{document, html}
@@ -240,10 +241,16 @@ final class ReqTableObs($: DomZipperJs, val global: TestGlobal.Obs) {
       tbody(s">tr:nth-child(${r + 1}) >td:nth-child(${c + 1})")
     }
 
-    def cell(row: Int, col: Int): Cell = {
-      val z = cellZipper(row, col)
-      new Cell(z)
-    }
+    private val cellMemo: Int => Int => Cell =
+      Memo.int { row =>
+        Memo.int { col =>
+          val z = cellZipper(row, col)
+          new Cell(z)
+        }
+      }
+
+    def cell(row: Int, col: Int): Cell =
+      cellMemo(row)(col)
 
     def cell(loc: CellLoc): Cell =
       cell(row = loc.row, col = loc.col)
