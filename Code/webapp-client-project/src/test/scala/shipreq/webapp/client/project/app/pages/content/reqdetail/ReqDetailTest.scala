@@ -632,40 +632,53 @@ object ReqDetailTest extends TestSuite {
 
     "fullscreenEditor" - {
       val f = field("Description")
-      def assert(editors: Int, hasPreview: Boolean, isFS: Boolean, canFS: Boolean, spin: Boolean) = (
-        editorCount.assert(editors)
-        & f.hasPreview.assert(hasPreview)
-        & f.isFullscreen.assert(isFS)
-        & global.isBrowserFullscreen.assert(isFS)
-        & f.hasEnabledFullscreenButton.assert(canFS)
-        & f.isSpinning.assert(spin)
-      )
+
+      def assert(editors: Int, preview: String, isFS: Boolean, canFS: Boolean, spin: Boolean) = {
+        val p = if (preview == "none") "----" else preview
+        (
+          editorCount.assert(editors)
+          & f.hasPreview.assert(p.startsWith("-h"))
+          & f.previewButtonsStr.assert(p)
+          & f.isFullscreen.assert(isFS)
+          & global.isBrowserFullscreen.assert(isFS)
+          & f.hasEnabledFullscreenButton.assert(canFS)
+          & f.isSpinning.assert(spin)
+        )
+      }
 
       "saveChange" - test("MF-1")(Plan.action(
-        global.disableAutoResponse  +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
-        >> f.doubleClick            +> assert(editors = 1, hasPreview = y, isFS = n, canFS = y, spin = n)
-        >> f.clickPreviewHide       +> assert(editors = 1, hasPreview = n, isFS = n, canFS = y, spin = n)
-        >> f.toggleFullscreen       +> assert(editors = 1, hasPreview = n, isFS = y, canFS = y, spin = n)
-        >> f.clickPreviewShow       +> assert(editors = 1, hasPreview = y, isFS = y, canFS = y, spin = n)
-        >> f.toggleFullscreen       +> assert(editors = 1, hasPreview = y, isFS = n, canFS = y, spin = n)
-        >> f.toggleFullscreen       +> assert(editors = 1, hasPreview = y, isFS = y, canFS = y, spin = n)
-        >> f.setEditorValue("zxc")  +> assert(editors = 1, hasPreview = y, isFS = y, canFS = y, spin = n)
-        >> f.commit                 +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = y)
-        >> global.autoRespondToLast +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
+        global.disableAutoResponse  +> assert(editors = 0, preview = "none", isFS = n, canFS = n, spin = n)
+        >> f.doubleClick            +> assert(editors = 1, preview = "-hd-", isFS = n, canFS = y, spin = n)
+        >> f.clickPreviewHide       +> assert(editors = 1, preview = "s---", isFS = n, canFS = y, spin = n)
+        >> f.toggleFullscreen       +> assert(editors = 1, preview = "s---", isFS = y, canFS = y, spin = n)
+        >> f.clickPreviewShow       +> assert(editors = 1, preview = "-hd-", isFS = y, canFS = y, spin = n)
+        >> f.toggleFullscreen       +> assert(editors = 1, preview = "-hd-", isFS = n, canFS = y, spin = n)
+        >> f.clickPreviewDown       +> assert(editors = 1, preview = "-h-r", isFS = n, canFS = y, spin = n)
+        >> f.clickPreviewHide       +> assert(editors = 1, preview = "s---", isFS = n, canFS = y, spin = n)
+        >> f.clickPreviewShow       +> assert(editors = 1, preview = "-h-r", isFS = n, canFS = y, spin = n)
+        >> f.toggleFullscreen       +> assert(editors = 1, preview = "-h-r", isFS = y, canFS = y, spin = n)
+        >> f.clickPreviewHide       +> assert(editors = 1, preview = "s---", isFS = y, canFS = y, spin = n)
+        >> f.clickPreviewShow       +> assert(editors = 1, preview = "-h-r", isFS = y, canFS = y, spin = n)
+        >> f.clickPreviewRight      +> assert(editors = 1, preview = "-hd-", isFS = y, canFS = y, spin = n)
+        >> f.clickPreviewHide       +> assert(editors = 1, preview = "s---", isFS = y, canFS = y, spin = n)
+        >> f.clickPreviewShow       +> assert(editors = 1, preview = "-hd-", isFS = y, canFS = y, spin = n)
+        >> f.setEditorValue("zxc")  +> assert(editors = 1, preview = "-hd-", isFS = y, canFS = y, spin = n)
+        >> f.commit                 +> assert(editors = 0, preview = "none", isFS = n, canFS = n, spin = y)
+        >> global.autoRespondToLast +> assert(editors = 0, preview = "none", isFS = n, canFS = n, spin = n)
       ))
 
       "saveNoOp" - test("MF-1")(Plan.action(
-        global.disableAutoResponse +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
-        >> f.doubleClick           +> assert(editors = 1, hasPreview = y, isFS = n, canFS = y, spin = n)
-        >> f.toggleFullscreen      +> assert(editors = 1, hasPreview = y, isFS = y, canFS = y, spin = n)
-        >> f.commit                +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
+        global.disableAutoResponse +> assert(editors = 0, preview = "none", isFS = n, canFS = n, spin = n)
+        >> f.doubleClick           +> assert(editors = 1, preview = "-hd-", isFS = n, canFS = y, spin = n)
+        >> f.toggleFullscreen      +> assert(editors = 1, preview = "-hd-", isFS = y, canFS = y, spin = n)
+        >> f.commit                +> assert(editors = 0, preview = "none", isFS = n, canFS = n, spin = n)
       ))
 
       "cancel" - test("MF-1")(Plan.action(
-        global.disableAutoResponse +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
-        >> f.doubleClick           +> assert(editors = 1, hasPreview = y, isFS = n, canFS = y, spin = n)
-        >> f.toggleFullscreen      +> assert(editors = 1, hasPreview = y, isFS = y, canFS = y, spin = n)
-        >> f.abort                 +> assert(editors = 0, hasPreview = n, isFS = n, canFS = n, spin = n)
+        global.disableAutoResponse +> assert(editors = 0, preview = "none", isFS = n, canFS = n, spin = n)
+        >> f.doubleClick           +> assert(editors = 1, preview = "-hd-", isFS = n, canFS = y, spin = n)
+        >> f.toggleFullscreen      +> assert(editors = 1, preview = "-hd-", isFS = y, canFS = y, spin = n)
+        >> f.abort                 +> assert(editors = 0, preview = "none", isFS = n, canFS = n, spin = n)
       ))
 
     }

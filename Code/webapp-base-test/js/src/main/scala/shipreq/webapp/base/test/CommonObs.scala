@@ -143,6 +143,7 @@ object CommonObs {
                                         hide : A,
                                         down : A,
                                         right: A) {
+
       def map[B](f: A => B): PreviewButtons[B] =
         PreviewButtons(
           show = f(show),
@@ -150,6 +151,15 @@ object CommonObs {
           down = f(down),
           right = f(right),
         )
+
+      def asStr(implicit ev: A <:< Boolean): String = {
+        var s = ""
+        s += (if (show)  "s" else "-")
+        s += (if (hide)  "h" else "-")
+        s += (if (down)  "d" else "-")
+        s += (if (right) "r" else "-")
+        s
+      }
     }
 
     object PreviewButtons {
@@ -170,6 +180,7 @@ object CommonObs {
       final val hasPreview                 = *.focus(field + " editor has preview"                  ).value(_.obs.hasPreview)
       final val previewPosition            = *.focus(field + " editor preview position"             ).option(_.obs.previewPosition)
       final val previewButtons             = *.focus(field + " editor preview buttons"              ).value(_.obs.previewButtonExistence)
+      final val previewButtonsStr          = *.focus(field + " editor preview buttons"              ).value(_.obs.previewButtonExistence.asStr)
 
       final def doubleClick: *.Actions =
         *.action("Double-click " + field)(Simulate doubleClick _.obs.dom)
