@@ -13,7 +13,7 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.ExternalPubid.LookupFailure
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{Event, ProjectAndOrd, VerifiedEvent}
-import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
+import shipreq.webapp.base.feature.{AsyncFeature, PreviewFeature, TableNavigationFeature}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.base.text._
@@ -33,7 +33,7 @@ object ReqDetail {
 
   private implicit val tableNavigationFeature = TableNavigationFeature.NoRowSpans
 
-  private val cellEditorStyle = EditTheme.Style(EditTheme.Position.Right, EditTheme.OpenPreview.ShowWithToggle)
+  private val cellEditorStyle = EditTheme.Style(PreviewFeature.Position.Right, EditTheme.OpenPreview.ShowWithControls)
 
   def apply(staticProps: StaticProps) =
     ScalaComponent.builder[DynamicProps]

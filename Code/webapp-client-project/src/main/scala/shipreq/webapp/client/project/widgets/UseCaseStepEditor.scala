@@ -208,7 +208,7 @@ object UseCaseStepEditor {
 
       def editor(validity: Validity): VdomElement = {
         val autosizeProps = EditTheme.autosizeTextareaProps(
-          style    = editorStyle,
+          position = None,
           mode     = EditTheme.Mode.Inline,
           validity = validity,
           value    = p.edit.value,
@@ -219,17 +219,16 @@ object UseCaseStepEditor {
       def richText =
         p.projectWidgets.useCaseStepTextAndMaybeInvalidFlow(p.parsed, hardcodedLive)
 
-      def preview =
-        EditTheme.renderPreview(p.preview, editorStyle, p.wantPreview, richText)
-
       EditTheme.renderEditor(
-        status       = p.status,
-        editor       = editor,
-        readOnlyView = richText,
-        instructions = instructions(p),
-        style        = editorStyle,
-        previewRW    = p.preview,
-        preview      = preview)
+        status          = p.status,
+        editor          = editor,
+        readOnlyView    = richText,
+        instructions    = instructions(p),
+        style           = editorStyle,
+        previewRW       = p.preview,
+        previewWantOpen = p.wantPreview,
+        previewBody     = richText,
+      )
     }
 
     val onMount: Callback =

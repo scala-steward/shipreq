@@ -165,7 +165,7 @@ object ImplicationEditor {
           keys,
           ^.autoFocus  := p.autoFocus)
         val autosizeProps = EditTheme.autosizeTextareaProps(
-          style    = EditTheme.Style.default,
+          position = Some(EditTheme.Style.default.position),
           mode     = EditTheme.Mode.Inline,
           validity = validity,
           value    = p.edit.value,

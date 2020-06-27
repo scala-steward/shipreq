@@ -174,18 +174,23 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
     private def _render(p: Props, optionalFullscreen: Option[OptionalFullscreen]): VdomNode = {
 
-      def editor(validity: Validity, mode: EditTheme.Mode): VdomElement = {
+      def editor(validity: Validity,
+                 position: Option[PreviewFeature.Position],
+                 mode    : EditTheme.Mode): VdomElement = {
         val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
+
         val base = TagMod(
           textareaConst,
           keys,
           ^.autoFocus  := p.autoFocus)
+
         val autosizeProps = EditTheme.autosizeTextareaProps(
-          style    = p.editorStyle,
           mode     = mode,
+          position = position,
           validity = validity,
           value    = p.edit.value,
           tagMod   = base)
+
         editorRef.component(autosizeProps)
       }
 
@@ -215,9 +220,6 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
           case p2: NonEmpty => p.projectWidgets.text(text.toOptional(p2.richTextO), hardcodedLive, p.naTags, Mandatory)
         }
 
-      def preview: VdomNode =
-        EditTheme.renderPreview(p.preview, p.editorStyle, p.wantPreview, richText)
-
       EditTheme.renderEditor(
         status             = p.status,
         optionalFullscreen = optionalFullscreen,
@@ -226,7 +228,9 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         instructions       = instructions,
         style              = p.editorStyle,
         previewRW          = p.preview,
-        preview            = preview)
+        previewWantOpen    = p.wantPreview,
+        previewBody        = richText,
+      )
     }
 
     val onMount: Callback =
