@@ -193,10 +193,10 @@ object PreviewFeature {
       def showPreview(wantOpen: => Boolean): Boolean =
         status.exists(_.show || wantOpen)
 
-      def showManuallyControlledPreview(defaultShow: Boolean): Boolean =
+      def showManuallyControlledPreview(default: Boolean): Boolean =
         status match {
-          case Some(s) => s.show
-          case _       => defaultShow
+          case Some(m: Status.Manual) => m.show
+          case _                      => default
         }
 
       def position(default: Position): Position =
