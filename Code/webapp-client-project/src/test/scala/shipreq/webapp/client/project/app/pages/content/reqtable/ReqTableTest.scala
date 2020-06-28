@@ -220,26 +220,26 @@ object ReqTableTest extends TestSuite {
         +> text.map(TestUtil.removeEditInstructionText).assert("Incompletions")
         >> setEditorValue(newValue)
         >> commit
-        +> svr.requestCount.assert.increment
+        +> global.requestCount.assert.increment
         +> assertState(Locked)
         >> assertCantStartEdit
       ) group "editChangeCommit"
 
     val fail =
-      svr.failLastRequest +> assertState(Failed) // Should be in failed state after I/O failure
+      global.failLastRequest +> assertState(Failed) // Should be in failed state after I/O failure
 
     val retry = (
       commit
         +> assertState(Locked)
-        +> svr.requestCount.assert.increment
-        +> svr.assertLastTwoRequestsAreEqual
+        +> global.requestCount.assert.increment
+        +> global.assertLastTwoRequestsAreEqual
       )
 
     val saveSucceeds =
-      svr.autoRespondToLast +> assertState(Normal)
+      global.autoRespondToLast +> assertState(Normal)
 
     Plan.action(
-      svr.disableAutoResponse >>
+      global.disableAutoResponse >>
       editChangeCommit >> fail >> retry >> fail >> retry >> saveSucceeds)
   }
 
@@ -248,12 +248,12 @@ object ReqTableTest extends TestSuite {
     import ce._
     val origValue = "Incompletions"
     Plan.action(
-      svr.disableAutoResponse
+      global.disableAutoResponse
         >> startEdit
         +> editorValue.assert(origValue)
         >> setEditorValue("boop")
-        >> commit +> svr.requestCount.assert.increment
-        >> svr.failLastRequest +> assertState(Failed)
+        >> commit +> global.requestCount.assert.increment
+        >> global.failLastRequest +> assertState(Failed)
         >> abort
         >> startEdit // This is the key point of the test - it asserts the previous server failure is cleared
         +> editorValue.assert(origValue)
@@ -269,7 +269,7 @@ object ReqTableTest extends TestSuite {
     val ce = cellEditor(pubid, col)
     import ce._
 
-    val post = svr.requestCount.assert.noChange & assertState(Normal).after
+    val post = global.requestCount.assert.noChange & assertState(Normal).after
 
     val commitNop = commit +> post
 

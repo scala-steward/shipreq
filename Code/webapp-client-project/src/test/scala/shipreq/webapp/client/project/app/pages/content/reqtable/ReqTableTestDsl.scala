@@ -27,7 +27,7 @@ object ReqTableTestDsl {
 
   val * = Dsl[Ref, ReqTableObs, Project]
 
-  val svr = new TestGlobal.TestDslWithObs(*)(_.global, _.global)
+  val global = new TestGlobal.TestDslWithObs(*)(_.global, _.global)
 
   def apply(action: *.Actions = *.emptyAction): *.Plan =
     Plan(action, invariants)
@@ -126,12 +126,12 @@ object ReqTableTestDsl {
     val startEdit = (
       isNA.assert(false)
         +> tryStartEdit
-        +> svr.requestCount.assert.noChange
+        +> global.requestCount.assert.noChange
         +> assertState(Editing))
 
     val assertCantStartEdit = (
       tryStartEdit.rename("Attempt to start editor.")
-        +> svr.requestCount.assert.noChange
+        +> global.requestCount.assert.noChange
         +> assertNotEditing)
   } // CellEditor
 
@@ -274,7 +274,7 @@ object ReqTableTestDsl {
   val logTable = *.print(_.obs.table.entireContent)
 
   def receiveExternalEvent(e: Event): *.Actions =
-    svr.receiveExternalEvent(e)
+    global.receiveExternalEvent(e)
       .updateState(WebappTestUtil.applyEventSuccessfully(_, e))
 
   def setFocus(f: ReqTableObs => html.Element): *.Actions =
