@@ -2,7 +2,7 @@ locals {
 
   versions_common = {
     cadvisor      = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
-    node_exporter = "git-c0d3aea21afe262461041b5454554ba8dc0129da"
+    node_exporter = "git-25d47cbe77ac423485a372ebf3c8f7ceffae3aad"
   }
 
   versions = {
