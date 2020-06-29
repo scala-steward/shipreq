@@ -26,14 +26,23 @@ object OnlyVisibleOnMouseMove {
     @inline def render: VdomNode = Component(this)
   }
 
-  final case class State(show: Boolean, decaying: Option[Callback.SetTimeoutResult])
+  final case class State(shownYet: Boolean,
+                         show    : Boolean,
+                         decaying: Option[Callback.SetTimeoutResult]) {
+
+    def onShow: State =
+      copy(shownYet = true, show = true)
+
+    def onHide: State =
+      copy(show = false)
+  }
 
   object State {
     def init(show: Boolean): State =
-      apply(show, None)
-
-    val hidden: State =
-      apply(false, None)
+      apply(
+        shownYet = show,
+        show     = show,
+        decaying = None)
   }
 
   final class Backend($: BackendScope[Props, State]) {
@@ -48,7 +57,7 @@ object OnlyVisibleOnMouseMove {
       }
 
     private val hide: Callback =
-      $.setState(State.hidden).when_(mounted && allowHide)
+      $.modState(_.onHide).when_(mounted && allowHide)
 
     private val decay: Callback =
       for {
@@ -59,7 +68,7 @@ object OnlyVisibleOnMouseMove {
       } yield ()
 
     private val show: Callback =
-      clearTimeout >> $.modStateOption(s => Option.unless(s.show)(s.copy(show = true)))
+      clearTimeout >> $.modStateOption(s => Option.unless(s.show)(s.onShow))
 
     private val mods: TagMod =
       TagMod(
@@ -68,7 +77,11 @@ object OnlyVisibleOnMouseMove {
 
     def render(p: Props, s: State): VdomNode = {
       val cls = Transition.cls(s.show, p.transition, p.direction)
-      p.content(mods, cls)
+
+      if (!s.shownYet && !s.show)
+        p.content(mods, cls, ^.visibility.hidden) // avoid closing animation
+      else
+        p.content(mods, cls)
     }
 
     private def hackySetMouseMoveListener(f: js.Function1[MouseEvent, _]): Callback =
@@ -92,7 +105,7 @@ object OnlyVisibleOnMouseMove {
   }
 
   val Component = ScalaComponent.builder[Props]
-    .initialStateFromProps(p => State(p.showInitially, None))
+    .initialStateFromProps(p => State.init(p.showInitially))
     .renderBackend[Backend]
     .componentDidMount(_.backend.onMount)
     .componentWillUnmount(_.backend.onUnmount)

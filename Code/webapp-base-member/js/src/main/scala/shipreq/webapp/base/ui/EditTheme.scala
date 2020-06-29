@@ -260,19 +260,23 @@ object EditTheme {
     def content(fullscreen: Option[OptionalFullscreen.Ctx]): VdomNode = {
       val mode = Mode.derive(fullscreen)
 
-      def renderWithManualControls(defaultShow: Boolean) = {
+      def renderWithManualControls(defaultShow: Boolean, showControlsInitially: Boolean) = {
         val show  = previewRW.read.showManuallyControlledPreview(defaultShow)
         val cmd   = RenderCmd(show, mode, fullscreen)
         val rr    = render(cmd)
-        val inner = previewRW.manualControls(defaultPosition = defaultPosition, previewIsShown = show)(rr.inner)
+        val inner = previewRW.manualControls(
+                      defaultPosition       = defaultPosition,
+                      previewIsShown        = show,
+                      showControlsInitially = showControlsInitially,
+                    )(rr.inner)
         rr.outer(inner)
       }
 
       mode match {
         case Mode.Inline =>
           openPreview match {
-            case OpenPreview.MinimallyWithControls => renderWithManualControls(previewWantOpen)
-            case OpenPreview.ShowWithControls      => renderWithManualControls(true)
+            case OpenPreview.MinimallyWithControls => renderWithManualControls(defaultShow = previewWantOpen, showControlsInitially = false)
+            case OpenPreview.ShowWithControls      => renderWithManualControls(defaultShow = true, showControlsInitially = true)
             case OpenPreview.Minimally
                | OpenPreview.Always
                | OpenPreview.WhenWanted            => render(RenderCmd(true, mode, fullscreen)).self
@@ -280,7 +284,7 @@ object EditTheme {
           }
 
         case Mode.Fullscreen =>
-          renderWithManualControls(true)
+          renderWithManualControls(defaultShow = true, showControlsInitially = false)
       }
     }
 

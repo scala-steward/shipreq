@@ -360,7 +360,9 @@ object PreviewFeature {
       def reactCollapse(wantOpen: => Boolean) =
         ReactCollapse(showPreview(wantOpen))
 
-      def manualControls(defaultPosition: Position, previewIsShown: Boolean): VdomTag = {
+      def manualControls(defaultPosition      : Position,
+                         previewIsShown       : Boolean,
+                         showControlsInitially: Boolean): VdomTag = {
         import Status.Manual
 
         val position =
@@ -391,7 +393,7 @@ object PreviewFeature {
             transition    = Transition.fade,
             direction     = Transition.Direction.left,
             decay         = ManualControls.decay,
-            showInitially = true,
+            showInitially = showControlsInitially,
           )
 
         ManualControls.wrapper1(props.render)
