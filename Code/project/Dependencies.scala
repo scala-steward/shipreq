@@ -23,6 +23,15 @@ object Dependencies {
     val macroDef = reflect ++ library ++ (compiler % Provided)
   }
 
+  object React {
+    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "1.7.3")
+    val core    = mm("core")
+    val test    = mm("test")
+    val monocle = mm("ext-monocle-scalaz") ++ Monocle.core
+    val extra   = mm("extra")
+    val most    = core ++ monocle ++ extra
+  }
+
   object Monocle {
     private val mm = MultiModule.jvmAndJs("com.github.julien-truffaut", "1.6.3")
     val core   = mm("monocle-core")
@@ -76,15 +85,6 @@ object Dependencies {
     private val mm = MultiModule.jvmAndJs("com.github.japgolly.univeq", "1.2.1")
     val univeq = mm("univeq")
     val scalaz = mm("univeq-scalaz") ++ univeq ++ Dependencies.scalaz
-  }
-
-  object React {
-    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "1.7.2")
-    val core    = mm("core")
-    val test    = mm("test")
-    val monocle = mm("ext-monocle-scalaz") ++ Monocle.core
-    val extra   = mm("extra")
-    val most    = core ++ monocle ++ extra
   }
 
   object ScalaCSS {
