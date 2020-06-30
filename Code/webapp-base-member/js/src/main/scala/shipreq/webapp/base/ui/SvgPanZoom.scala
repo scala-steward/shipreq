@@ -3,7 +3,6 @@ package shipreq.webapp.base.ui
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
-import scala.scalajs.js
 import shipreq.webapp.base.data.Svg
 import shipreq.webapp.base.jsfacade.{ReactSvgPanZoom, ReactVirtualized}
 
@@ -14,9 +13,10 @@ object SvgPanZoom {
     @inline def render: VdomElement = Component(this)
   }
 
-  final case class State(svg  : Svg,
-                         value: ReactSvgPanZoom.Value,
-                         tool : ReactSvgPanZoom.Tool)
+  final case class State(svg        : Svg,
+                         value      : ReactSvgPanZoom.Value,
+                         tool       : ReactSvgPanZoom.Tool,
+                         var autoFit: Boolean)
 
   private val container = <.div(^.width := "100%", ^.height := "100%")
 
@@ -33,62 +33,22 @@ object SvgPanZoom {
 
   final class Backend($: BackendScope[Props, State]) {
 
-    // private var autoFitted: Boolean = false
+    private val ref = Ref.toJsComponent(ReactSvgPanZoom.Component)
 
-    def render(p: Props, s: State): VdomNode = {
+    val onUpdate: Callback =
+      for {
+        m <- ref.get
+        s <- $.state.toCBO
+        _ <- CallbackOption.require(s.autoFit)
+      } yield {
+        s.autoFit = false // using a var to avoid a modState here which would cause a re-render
+        m.raw.fitToViewer(ALIGN_CENTER, ALIGN_CENTER)
+        ()
+      }
+
+    def render(p: Props, s: State): VdomNode =
       container(
         ReactVirtualized.AutoSize { dims =>
-
-          // Can't get ReactSvgPanZoom to center on start
-//          var v = s.value
-//          if (!autoFitted) {
-//            autoFitted = true
-//
-//            val svgProps = p.svg.vdom.rawNode.asInstanceOf[js.Dynamic].props
-//            def parse(value: js.Any): Double = value.asInstanceOf[String].stripSuffix("pt").toDouble
-//            val svgW = parse(svgProps.width)
-//            val svgH = parse(svgProps.height)
-//
-//            if (svgW < dims.width) {
-//              v = js.Object.assign(new js.Object, v).asInstanceOf[ReactSvgPanZoom.Value]
-//              v.viewerWidth = dims.width
-//              v.viewerHeight = dims.height
-//              v.SVGWidth = svgW
-//              v.SVGHeight = svgH
-//              v.SVGMinX = 0.0
-//              v.SVGMinY = 0.0
-//
-//              v = fitToViewer(v, ALIGN_CENTER, ALIGN_CENTER)
-//              org.scalajs.dom.console.log(s"($svgW,$svgH) vs (${dims.width},${dims.height}) ==> ", s.value, v)
-//            }
-//          }
-
-//          for (rendered <- lastRendered) {
-//            val lastAutoFitForCurrentSvg = lastAutoFitted.exists(_ eq rendered)
-//            if (!lastAutoFitForCurrentSvg) {
-//              lastAutoFitted = Some(rendered)
-//              //            m.raw.fitToViewer(ALIGN_CENTER, ALIGN_CENTER)
-//              //m.raw.reset()
-//
-//              org.scalajs.dom.console.log("SVG:" , p.svg.vdom.rawNode)
-//              val svgProps = p.svg.vdom.rawNode.asInstanceOf[js.Dynamic].props
-//              def parse(value: js.Any): Double = value.asInstanceOf[String].stripSuffix("pt").toDouble
-//
-//              val svgW = parse(svgProps.width)
-//              val svgH = parse(svgProps.height)
-//
-//              if (svgW < dims.width) {
-//                v = js.Object.assign(new js.Object, v).asInstanceOf[ReactSvgPanZoom.Value]
-//                v.viewerWidth = dims.width
-//                v.viewerHeight = dims.height
-//                v.SVGWidth = svgW
-//                v.SVGHeight = svgH
-//
-//                org.scalajs.dom.console.log(s"($svgW,$svgH) vs (${dims.width},${dims.height}) ==> ", v, fitToViewer(v, ALIGN_CENTER, ALIGN_CENTER))
-//                v = fitToViewer(v, ALIGN_CENTER, ALIGN_CENTER)
-//              }
-//            }
-//          }
 
           val props = ReactSvgPanZoom.Props(
             width          = dims.width,
@@ -102,12 +62,11 @@ object SvgPanZoom {
             miniatureProps = miniatureProps,
             toolbarProps   = toolbarProps,
           )
-          ReactSvgPanZoom.Component(props)(
+          ReactSvgPanZoom.Component.withRef(ref).withKey(s.svg.content)(props)(
             p.svg.vdom
           )
         }
       )
-    }
   }
 
   implicit val reusabilityProps: Reusability[Props] = Reusability.derive
@@ -119,9 +78,10 @@ object SvgPanZoom {
         s // no state change
       case _ =>
         State(
-          svg   = p.svg,
-          value = INITIAL_VALUE,
-          tool  = TOOL_AUTO,
+          svg     = p.svg,
+          value   = INITIAL_VALUE,
+          tool    = TOOL_AUTO,
+          autoFit = true,
         )
     }
 
@@ -129,5 +89,6 @@ object SvgPanZoom {
     .getDerivedStateFromPropsAndState(deriveState)
     .renderBackend[Backend]
     .configure(Reusability.shouldComponentUpdate)
+    .componentDidUpdate(_.backend.onUpdate)
     .build
 }
