@@ -532,29 +532,22 @@ object DataProp {
       def validReqTypeIds = whitelist(_._2.reqTypeIds) _
       def validTagIds     = whitelist(_._2.tagIds) _
 
-      val workaround1 =
-        validTagIds("Field.fieldReqTypeRules.defaults",
-          p => fields.filteredFields({ case t: CustomField.Tag => t.fieldReqTypeRules})(p.fields)
-            .flatMap(_.resolutionIterator().collect { case FieldReqTypeRules.Resolution.DefaultTo(id) => id }))
+      ( validReqTypeIds("Field.fieldReqTypeRules.reqTypes",
+         _.fields.customFields.valuesIterator.flatMap(_.fieldReqTypeRules.perReqType.keys))
 
-      val workaround2 =
-        validTagIds("CustomField.Tag.tagIds",
-          p => fields.filteredFields({ case t: CustomField.Tag => t.tagId})(p.fields))
+      ∧ validTagIds("Field.fieldReqTypeRules.defaults",
+        p => fields.filteredFields({ case t: CustomField.Tag => t.fieldReqTypeRules})(p.fields)
+          .flatMap(_.resolutionIterator().collect { case FieldReqTypeRules.Resolution.DefaultTo(id) => id }))
 
-      val workaround3 =
-        validReqTypeIds("CustomField.Implication.reqTypeIds",
-          p => fields.filteredFields({ case t: CustomField.Implication => t.reqTypeId})(p.fields))
+      ∧ validTagIds("CustomField.Tag.tagIds",
+        p => fields.filteredFields({ case t: CustomField.Tag => t.tagId})(p.fields))
 
-      val workaround4 =
-        validReqTypeIds("ApplicableTag.applicableReqTypes",
-          _.tags.applicableTagIterator().flatMap(_.applicableReqTypes.reqTypes))
+      ∧ validReqTypeIds("CustomField.Implication.reqTypeIds",
+        p => fields.filteredFields({ case t: CustomField.Implication => t.reqTypeId})(p.fields))
 
-      (  validReqTypeIds("Field.fieldReqTypeRules.reqTypes",
-          _.fields.customFields.valuesIterator.flatMap(_.fieldReqTypeRules.perReqType.keys))
-      ∧ workaround1
-      ∧ workaround2
-      ∧ workaround3
-      ∧ workaround4
+      ∧ validReqTypeIds("ApplicableTag.applicableReqTypes",
+        _.tags.applicableTagIterator().flatMap(_.applicableReqTypes.reqTypes))
+
       ).rename("Cross-constituent refs").contramap[P](_ mapStrengthR mkRefs)
     }
 
