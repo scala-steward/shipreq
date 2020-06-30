@@ -532,22 +532,29 @@ object DataProp {
       def validReqTypeIds = whitelist(_._2.reqTypeIds) _
       def validTagIds     = whitelist(_._2.tagIds) _
 
-      (  validReqTypeIds("Field.fieldReqTypeRules.reqTypes",
-          _.fields.customFields.valuesIterator.flatMap(_.fieldReqTypeRules.perReqType.keys))
+      val workaround1 =
+        validTagIds("Field.fieldReqTypeRules.defaults",
+          p => fields.filteredFields({ case t: CustomField.Tag => t.fieldReqTypeRules})(p.fields)
+            .flatMap(_.resolutionIterator().collect { case FieldReqTypeRules.Resolution.DefaultTo(id) => id }))
 
-      ∧ validTagIds("Field.fieldReqTypeRules.defaults",
-        p => fields.filteredFields({ case t: CustomField.Tag => t.fieldReqTypeRules})(p.fields)
-          .flatMap(_.resolutionIterator().collect { case FieldReqTypeRules.Resolution.DefaultTo(id) => id }))
+      val workaround2 =
+        validTagIds("CustomField.Tag.tagIds",
+          p => fields.filteredFields({ case t: CustomField.Tag => t.tagId})(p.fields))
 
-      ∧ validTagIds("CustomField.Tag.tagIds",
-        p => fields.filteredFields({ case t: CustomField.Tag => t.tagId})(p.fields))
-
-      ∧ validReqTypeIds("CustomField.Implication.reqTypeIds",
+      val workaround3 =
+        validReqTypeIds("CustomField.Implication.reqTypeIds",
           p => fields.filteredFields({ case t: CustomField.Implication => t.reqTypeId})(p.fields))
 
-      ∧ validReqTypeIds("ApplicableTag.applicableReqTypes",
-        _.tags.applicableTagIterator().flatMap(_.applicableReqTypes.reqTypes))
+      val workaround4 =
+        validReqTypeIds("ApplicableTag.applicableReqTypes",
+          _.tags.applicableTagIterator().flatMap(_.applicableReqTypes.reqTypes))
 
+      (  validReqTypeIds("Field.fieldReqTypeRules.reqTypes",
+          _.fields.customFields.valuesIterator.flatMap(_.fieldReqTypeRules.perReqType.keys))
+      ∧ workaround1
+      ∧ workaround2
+      ∧ workaround3
+      ∧ workaround4
       ).rename("Cross-constituent refs").contramap[P](_ mapStrengthR mkRefs)
     }
 
