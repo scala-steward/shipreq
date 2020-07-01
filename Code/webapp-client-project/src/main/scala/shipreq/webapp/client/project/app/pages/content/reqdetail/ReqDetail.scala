@@ -41,7 +41,7 @@ object ReqDetail {
       .renderBackend
       .build
 
-  final case class StaticProps(updateIO             : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, VerifiedEvent.Seq],
+  final case class StaticProps(sspUpdateContent     : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, VerifiedEvent.Seq],
                                reqDetailRC          : RouterCtl[ExternalPubid],
                                webWorker            : WebWorkerClient.Instance,
                                pxProjectAndOrd      : Px[ProjectAndOrd],
@@ -158,7 +158,7 @@ object ReqDetail {
         (reqId, cell, cmd) =>
           $.props.flatMap(p =>
             p.reqProps(reqId).async.write(cell)(
-              updateIO(cmd).rightFlatMap(onSuccess(_).asAsyncCallback)
+              sspUpdateContent(cmd).rightFlatMap(onSuccess(_).asAsyncCallback)
             )
           )
       )
@@ -481,7 +481,7 @@ object ReqDetail {
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     private def runActionNoAsync(cmd: UpdateContentCmd): Callback =
-      updateIO(cmd).leftFlatTapSync(e => Callback.alert(e.value)).toCallback
+      sspUpdateContent(cmd).leftFlatTapSync(e => Callback.alert(e.value)).toCallback
 
     private def delete(id: ReqId): Callback =
       CallbackTo {
