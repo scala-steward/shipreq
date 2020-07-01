@@ -18,6 +18,7 @@ import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
 import shipreq.webapp.client.project.test._
 import utest._
 import utest.framework.TestPath
+import shipreq.base.util.{Invalid, Valid}
 
 object ReqTableTest extends TestSuite {
   import ReqTableTestDsl.{savedViews => _, _}
@@ -734,6 +735,36 @@ object ReqTableTest extends TestSuite {
     runTest(Plan.action(test) withInitialState SampleProject3.project)
   }
 
+  private def testEditorFocusRetention()(implicit path: TestPath): Unit = {
+    implicit val ce   = cellEditor("FR-1", "Major Feature")
+    val assertFocus   = activeElement.assert.equalBy(ce.editorDom.run(_).get)
+    val assertSameDom = ce.editorDom.valueBy(_.get).assert.not.change
+
+    val test = (
+      showHideColumn("Major Feature")
+        >> cellEditor("FR-1", "Title").startEdit
+
+        >> ce.startEdit
+        +> assertFocus
+
+        >> ce.setEditorValue("")
+        +> assertFocus
+        +> assertSameDom
+
+        >> ce.setEditorValue("mf")
+        +> assertFocus
+        +> assertSameDom
+        +> ce.editorValidity.assert.equal(Invalid)
+
+        >> ce.setEditorValue("mf3")
+        +> assertFocus
+        +> assertSameDom
+        +> ce.editorValidity.assert.equal(Valid)
+      )
+
+    runTest(Plan.action(test) withInitialState SampleProject3.project)
+  }
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = Tests {
@@ -751,13 +782,14 @@ object ReqTableTest extends TestSuite {
     }
 
     "editor" - {
-      "impSrc"       - runTest(testImplicationSrcColumnEditor    named "testImplicationSrcColumnEditor"   )
-      "impTgt"       - runTest(testImplicationTgtColumnEditor    named "testImplicationTgtColumnEditor"   )
-      "impCol"       - runTest(testCustomImplicationColumnEditor named "testCustomImplicationColumnEditor")
-      "tagsOther"    - runTest(testOtherTagsColumnEditor         named "testOtherTagsColumnEditor"        )
-      "tagsCustom"   - runTest(testCustomTagColumnEditor         named "testCustomTagColumnEditor"        )
-      "titleIO"      - runTest(testEditorTitleIO                 named "testEditorTitleIO"                )
-      "failClear"    - runTest(testFailureClearedOnEsc           named "testFailureClearedOnEsc"          )
+      "impSrc"         - runTest(testImplicationSrcColumnEditor    named "testImplicationSrcColumnEditor"   )
+      "impTgt"         - runTest(testImplicationTgtColumnEditor    named "testImplicationTgtColumnEditor"   )
+      "impCol"         - runTest(testCustomImplicationColumnEditor named "testCustomImplicationColumnEditor")
+      "tagsOther"      - runTest(testOtherTagsColumnEditor         named "testOtherTagsColumnEditor"        )
+      "tagsCustom"     - runTest(testCustomTagColumnEditor         named "testCustomTagColumnEditor"        )
+      "titleIO"        - runTest(testEditorTitleIO                 named "testEditorTitleIO"                )
+      "failClear"      - runTest(testFailureClearedOnEsc           named "testFailureClearedOnEsc"          )
+      "focusRetention" - testEditorFocusRetention()
 
       "tagLegality" - {
         "status"   - testTagLegality("BR-1", "Status")

@@ -233,10 +233,16 @@ object EditTheme {
         // when (if) it's actually needed.
         val mode = Mode.Inline
         val pos = Position.Under
+
+        // Two divs here because the textarea is two-divs in when rendering without error.
+        // If only one div here, React doesn't realise the textarea is the same, and so it destroys the first and
+        // creates a new one which causes the cursor to reset to the beginning of the line, meaning that if a user
+        // tries to type "mf6 mf7" it becomes "f7 mf6m".
         <.div(
-          editor(Invalid, Some(pos), mode), // TODO add error background
-          *.errorPointingUp(err),
-          renderPreview(pos, mode))
+          <.div(
+            editor(Invalid, Some(pos), mode), // TODO add error background
+            *.errorPointingUp(err),
+            renderPreview(pos, mode)))
 
       case EditorStatus.InTransit =>
         // This is correct and guarded by tests in ReqDetailTest that confirm fullscreen is closed on commit, and that

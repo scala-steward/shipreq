@@ -171,6 +171,7 @@ object CommonObs {
 
       final val text                       = *.focus(field + " editor text"                         ).value(_.obs.text)
       final val editing                    = *.focus(field + " editing"                             ).value(_.obs.editing)
+      final val editorDom                  = *.focus(field + " editor dom"                          ).option(_.obs.editor)
       final val editorValue                = *.focus(field + " editor value"                        ).option(_.obs.editorValue)
       final val editorError                = *.focus(field + " editor error"                        ).option(_.obs.editorError)
       final val editorValidity             = *.focus(field + " editor validity"                     ).value(_.obs.editorValidity)
@@ -188,6 +189,10 @@ object CommonObs {
       final def setEditorValue(value: String): *.Actions =
         *.action(s"Set $field editor to ${quoteString(value)}")(
           SimEvent.Change(value) simulate _.obs.editor.get)
+
+      final def pressKeyInEditor(k: SimEvent.Keyboard): *.Actions =
+        *.action(s"Press $k in $field editor")(
+          k.simulationKeyDownPressUp run _.obs.editor.get)
 
       final def commit: *.Actions =
         *.action(s"Commit $field editor")(KB.Enter.ctrl simulateKeyDown _.obs.editor.get) +>
