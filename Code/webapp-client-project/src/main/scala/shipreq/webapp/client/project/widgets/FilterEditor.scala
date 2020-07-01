@@ -160,7 +160,8 @@ object FilterEditor {
       inputNode.get.map(AutoCompleteCtx(pxAutoComplete.value(), _))
 
     private lazy val inputTagMod = TagMod(
-      ^.onBlur     --> autoCompleteBlur,
+      ^.onBlur     --> autoCompleteOnBlur,
+      ^.onClick    ==> autoCompleteOnClick,
       ^.placeholder := "Filter...",
       ^.minWidth    := "32ex",
     )

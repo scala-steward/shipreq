@@ -23,7 +23,11 @@ import shipreq.webapp.base.ui.AutosizeTextarea
   * 4. Add a dom ref to the backend: `private val inputDomRef = Ref[html.Input]`
   *    Add it to the dom using `.withRef`
   *
-  * 5. Wire up your editor: `^.onBlur --> autoCompleteBlur`
+  * 5. Wire up your editor:
+  *    ```
+  *    ^.onBlur  --> autoCompleteOnBlur,
+  *    ^.onClick ==> autoCompleteOnClick,
+  *    ```
   *
   * 6. Add `.configure(AutoComplete.install)` to your component builder.
   *    If you're using an input instead of a textarea use

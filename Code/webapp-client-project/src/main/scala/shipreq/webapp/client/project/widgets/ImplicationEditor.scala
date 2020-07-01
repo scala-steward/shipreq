@@ -151,7 +151,8 @@ object ImplicationEditor {
           p.status.wrapEdit(p.edit.setState(e.target.value.replace("\n", ""))))
 
       TagMod(
-        ^.onBlur    --> autoCompleteBlur,
+        ^.onBlur    --> autoCompleteOnBlur,
+        ^.onClick   ==> autoCompleteOnClick,
         ^.onChange  ==> updateState,
         ^.spellCheck := false,
         RichTextEditor.minRows(lineCardinality))

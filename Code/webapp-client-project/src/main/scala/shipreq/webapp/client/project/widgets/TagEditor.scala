@@ -163,7 +163,8 @@ object TagEditor {
 
       TagMod(
         ^.spellCheck := false,
-        ^.onBlur   --> autoCompleteBlur,
+        ^.onBlur   --> autoCompleteOnBlur,
+        ^.onClick  ==> autoCompleteOnClick,
         ^.onChange ==> updateState,
         RichTextEditor.minRows(lineCardinality))
     }

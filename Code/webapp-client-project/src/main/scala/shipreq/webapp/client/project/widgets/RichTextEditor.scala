@@ -154,12 +154,13 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
             p.preview.onEdit(p.wantPreview)))
 
       val onBlur: Callback =
-        autoCompleteBlur >> $.props.flatMap(_.preview.onBlur)
+        autoCompleteOnBlur >> $.props.flatMap(_.preview.onBlur)
 
       TagMod(
         ^.onFocus  --> onFocus,
         ^.onChange ==> onChange,
         ^.onBlur   --> onBlur,
+        ^.onClick  ==> autoCompleteOnClick,
         RichTextEditor.minRows(text.lineCardinality))
     }
 

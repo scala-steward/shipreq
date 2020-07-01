@@ -15,7 +15,9 @@ object InputComponent {
   final class Backend($: BackendScope[Props, Unit]) extends ForComponent.Backend[html.Input] {
 
     def render(p: Props): VdomNode =
-      p.render(^.onBlur --> autoCompleteBlur)
+      p.render(TagMod(
+        ^.onBlur --> autoCompleteOnBlur,
+        ^.onClick ==> autoCompleteOnClick))
 
     override val autoCompleteCtx: CallbackOption[AutoCompleteCtx] =
       for {

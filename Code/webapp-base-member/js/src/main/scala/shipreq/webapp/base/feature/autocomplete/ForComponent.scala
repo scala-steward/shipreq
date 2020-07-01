@@ -85,8 +85,19 @@ object ForComponent {
         textCompletePrev = None
       }
 
-    final protected val autoCompleteBlur: Callback =
+    final private val autoCompleteClose: Callback =
       Callback(textComplete.foreach(_.dropdown.deactivate())).attempt.void
+
+    final protected def autoCompleteOnBlur =
+      autoCompleteClose
+
+    final protected val autoCompleteOnClick: ReactMouseEvent => Callback = e =>
+      for {
+        _ <- CallbackOption.unless(e.isDefaultPrevented())
+        _ <- CallbackOption.require(e.target == e.currentTarget)
+        _ <- e.preventDefaultCB.toCBO
+        _ <- autoCompleteClose.toCBO
+      } yield ()
 
     final private val addEventListeners: Callback =
       for {

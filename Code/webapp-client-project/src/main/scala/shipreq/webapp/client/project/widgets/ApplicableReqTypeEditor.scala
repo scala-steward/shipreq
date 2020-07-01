@@ -70,9 +70,10 @@ object ApplicableReqTypeEditor {
 
     private lazy val inputTagMod: TagMod =
       TagMod(
-        ^.onBlur --> autoCompleteBlur,
+        ^.onBlur  --> autoCompleteOnBlur,
+        ^.onClick ==> autoCompleteOnClick,
         ^.placeholder := "Req types...",
-        ^.spellCheck := false,
+        ^.spellCheck  := false,
       )
 
     private val clear =

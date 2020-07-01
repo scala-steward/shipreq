@@ -78,7 +78,8 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
           p.status.wrapEdit(p.edit.setState(liveCorrect(e.target.value))))
 
       TagMod(
-        ^.onBlur   --> autoCompleteBlur,
+        ^.onBlur   --> autoCompleteOnBlur,
+        ^.onClick  ==> autoCompleteOnClick,
         ^.onChange ==> updateState,
         RichTextEditor.minRows(lineCardinality))
     }
