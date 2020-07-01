@@ -62,7 +62,7 @@ private[reqtable] object Logic {
           else {
             val vec =
               ordering match {
-                case Some(ord) => MutableArray(set).sort(ord).iterator.toVector
+                case Some(ord) => MutableArray(set).sort(ord).iterator().toVector
                 case None      => set.toVector
               }
             val exp = f(vec.head, vec.tail)
@@ -544,7 +544,7 @@ private[reqtable] object Logic {
 
     def r1: Array       [Row] = gather(p, v, fc)
     def r2: MutableArray[Row] = sorter(p, v, pt)(r1)
-    val r3: Vector      [Row] = consolidateAdjacentDups(r2.iterator)
+    val r3: Vector      [Row] = consolidateAdjacentDups(r2.iterator())
     val r4: Vector      [Row] = if (v.viewReqCodesAsTree) addReqCodeTreeToRows(r3) else r3
     r4
   }

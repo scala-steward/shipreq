@@ -74,7 +74,7 @@ object Table {
                          renderFeature: RenderFeature.ForProject) {
     private val sortFn  = sorter.result(new Sorter.Setup(project, plainText))
     private val toRow   = Row.fromIssue(project, renderFeature, routerCtl)
-    val rows            = sortFn(issues.vector.iterator.map(toRow)).iterator.toVector
+    val rows            = sortFn(issues.vector.iterator.map(toRow)).iterator().toVector
     val csIssueCategory = TableRow.consolidateIssueCategories(rows.iterator.map(_.issueCategoryDesc))
     val csIssueClass    = TableRow.consolidateIssueClasses   (rows.iterator.map(_.issueClassDesc))
 

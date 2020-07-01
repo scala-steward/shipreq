@@ -166,7 +166,7 @@ final class TextSearch(project: Project,  plainText: PlainText.ForProject.NoCtx)
         ))
         IndexEntryR(r, title, textFields)
       }
-      project.content.reqs.reqIterator map each
+      project.content.reqs.reqIterator() map each
     }
 
     def indexValuesG: Iterator[IndexEntryG] = {

@@ -187,19 +187,19 @@ object DataProp {
     type T = Requirements
 
     def ids =
-      id[ReqId].forall((_: T).idIterator)
+      id[ReqId].forall((_: T).idIterator())
 
     def idsUnique =
-      uniqueNonNegIntsT[List, ReqId]("req IDs").contramap[T](_.idIterator.toList)
+      uniqueNonNegIntsT[List, ReqId]("req IDs").contramap[T](_.idIterator().toList)
 
     def reqPubidsInRegister =
-      Prop.forall((_: T).reqIterator)(t =>
+      Prop.forall((_: T).reqIterator())(t =>
         Prop.equal[Req]("Req's pubid refers to itself in the Pubid register")(
           _.id.some,
           r => t.pubids(r.pubid)))
 
     def pubidsResolveToReqs =
-      Prop.whitelist[T]("Pubid register")(_.idIterator.toSet, _.pubids.value.valueIterator)
+      Prop.whitelist[T]("Pubid register")(_.idIterator().toSet, _.pubids.value.valueIterator)
 
     def pubidReqTypeAssociations = {
       import StaticReqType._

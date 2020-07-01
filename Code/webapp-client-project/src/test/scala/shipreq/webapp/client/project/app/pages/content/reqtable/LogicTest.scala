@@ -104,7 +104,7 @@ object LogicTest extends TestSuite {
     val fc                    = Filter.Valid.compiler(p, pt, ts, v.filterDead, applyFilterDeadToReqs = false)
     def r1: Array       [Row] = Logic.gather(p, v, fc)
     def r2: MutableArray[Row] = Logic.sorter(p, v, pt)(r1)
-    val r3: Vector      [Row] = Logic.consolidateAdjacentDups(r2.iterator)
+    val r3: Vector      [Row] = Logic.consolidateAdjacentDups(r2.iterator())
 
 //    def renderReq(reqId: ReqId) = PlainText.pubidByReqId(reqId, p)
 //    def renderTags(tagIds: Vector[ApplicableTagId]) = pt.tagList(tagIds, Live, !Mandatory, Valid.always)
