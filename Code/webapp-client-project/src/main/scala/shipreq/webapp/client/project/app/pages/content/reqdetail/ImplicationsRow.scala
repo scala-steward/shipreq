@@ -25,7 +25,7 @@ private[reqdetail] object ImplicationsRow {
                          editorB  : EditorFeature.ReadWrite.For[Field],
                          view     : Reusable[ViewReq[VdomTag]],
                         ) {
-    @inline def render: VdomElement = Component(this)
+    @inline def render: VdomElement = Component.withKey(row.key)(this)
   }
 
   implicit val reusabilityProps: Reusability[Props] =

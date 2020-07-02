@@ -29,7 +29,7 @@ private[reqdetail] object ReqTypeRow {
                          newReqAsync     : AsyncFeature.ReadWrite.D0[ErrorMsg],
                          sspCreateContent: ServerSideProcInvoker[CreateContentCmd, ErrorMsg, NewEvents],
                          reqDetailRC     : RouterCtl[ExternalPubid]) {
-    @inline def render: VdomElement = Component(this)
+    @inline def render: VdomElement = Component.withKey(row.key)(this)
   }
 
   implicit val reusabilityProps: Reusability[Props] =

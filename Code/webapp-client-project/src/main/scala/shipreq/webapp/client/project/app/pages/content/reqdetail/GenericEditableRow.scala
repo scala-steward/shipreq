@@ -19,7 +19,7 @@ private[reqdetail] object GenericEditableRow {
                          editor    : EditorFeature.ReadWrite.ForAnyEditor,
                          view      : Reusable[ViewReq[VdomTag]],
                         ) {
-    @inline def render: VdomElement = Component(this)
+    @inline def render: VdomElement = Component.withKey(row.key)(this)
   }
 
   implicit val reusabilityProps: Reusability[Props] = {

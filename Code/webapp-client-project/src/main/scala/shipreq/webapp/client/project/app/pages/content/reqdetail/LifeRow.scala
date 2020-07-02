@@ -17,7 +17,7 @@ private[reqdetail] object LifeRow {
                          delete         : Reusable[ReqId => Callback],
                          restore        : Reusable[ReqId => Callback],
                         ) {
-    @inline def render: VdomElement = Component(this)
+    @inline def render: VdomElement = Component.withKey(row.key)(this)
   }
 
   implicit val reusabilityProps: Reusability[Props] =
