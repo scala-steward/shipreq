@@ -36,13 +36,12 @@ object Parsers {
             a2
         case a: Atom.Headings        # Heading               => a.modTitle(fixNonEmptyText(_))
         case a: Atom.PlainTextMarkup # PlainTextMarkupStyled => a.unsafeWithInner(fixNonEmptyText(a.inner))
+        case a: Atom.ListMarkup      # ListBase              => a.map(fixOptionalText(_))
         case _: Atom.CodeBlock       # CodeBlock
            | _: Atom.ContentRef      # CodeRef
            | _: Atom.ContentRef      # ReqRef
            | _: Atom.ContentRef      # UseCaseStepRef
            | _: Atom.Issue           # Issue
-           | _: Atom.ListMarkup      # OrderedList
-           | _: Atom.ListMarkup      # UnorderedList
            | _: Atom.NewLine         # BlankLine
            | _: Atom.PlainTextMarkup # EmailAddress
            | _: Atom.PlainTextMarkup # Monospace

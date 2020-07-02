@@ -53,7 +53,6 @@ v2.2
 * `What kind of incompletions are there?\n    *  Empty fields` <-- first bullet not matching (from interview 3)
 * If validation fails due to DataProp, raise a support ticket (once) and display a different error msg
 * s/\t(etc)/ /g as live correction
-* bug parsing `* //a //`
 * revise async
   * req detail uses singleton for new
   * req detail should use req row for deletion

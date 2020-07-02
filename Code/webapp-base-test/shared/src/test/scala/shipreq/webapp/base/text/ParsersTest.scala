@@ -334,6 +334,10 @@ object ParsersTest extends TestSuite {
         "codeRef" - test("[ here . i . am_3 ]")(T.CodeRef(reqCode_hereiam3))
         "headNL"  - whitespaceCombos.foreach(w => test(w + "good")(T.Literal("good")))
         "tailNL"  - whitespaceCombos.foreach(w => test("good" + w)(T.Literal("good")))
+        "ulStyle" - test("* //a //\n* //b //")(T.UnorderedList(NonEmptyArraySeq(
+          ArraySeq(T.Italic(NonEmptyArraySeq(S.Literal("a")))),
+          ArraySeq(T.Italic(NonEmptyArraySeq(S.Literal("b")))),
+        )))
       }
 
       "monospace" - {
