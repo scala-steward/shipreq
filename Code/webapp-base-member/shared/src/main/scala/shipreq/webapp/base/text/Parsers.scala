@@ -75,12 +75,15 @@ object Parsers {
           }
         }
       case c =>
-        PreProcessor.canTrimWhitespaceFn(c)
+        PreProcessor.CanTrim.whitespaceFn(c)
     }
+
+  private val preProcessorMultiLine =
+    PreProcessor(PreProcessor.FixChar.multiLine, multiLineCanTrim)
 
   val preProcessor: LineCardinality => String => PreProcessed =
     LineCardinality.memo {
-      case MultiLine  => PreProcessor(PreProcessor.fixCharMultiLine, multiLineCanTrim)
+      case MultiLine  => preProcessorMultiLine
       case SingleLine => PreProcessor.singleLine
     }
 

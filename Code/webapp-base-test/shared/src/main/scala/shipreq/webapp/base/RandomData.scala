@@ -85,7 +85,7 @@ object RandomData {
         .map(_.toChar)
         .filter { c =>
           a(0) = c
-          PreProcessor.fixCharMultiLine(a, 0)
+          PreProcessor.FixChar.multiLine(a, 0)
           a(0) ==* c
         }
         .toVector

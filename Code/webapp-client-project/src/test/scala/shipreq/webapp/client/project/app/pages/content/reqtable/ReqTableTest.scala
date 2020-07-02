@@ -3,6 +3,7 @@ package shipreq.webapp.client.project.app.pages.content.reqtable
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.scalajs.react.test.SimEvent.{Keyboard => KB}
 import nyaya.test.PropTest._
+import shipreq.base.util.{Invalid, Valid}
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview._
@@ -18,7 +19,6 @@ import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
 import shipreq.webapp.client.project.test._
 import utest._
 import utest.framework.TestPath
-import shipreq.base.util.{Invalid, Valid}
 
 object ReqTableTest extends TestSuite {
   import ReqTableTestDsl.{savedViews => _, _}

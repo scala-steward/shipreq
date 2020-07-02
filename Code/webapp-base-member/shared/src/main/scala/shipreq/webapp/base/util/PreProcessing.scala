@@ -6,52 +6,61 @@ import scala.annotation.switch
 final class PreProcessed private[util] (private val chars: Array[Char]) extends AnyVal {
   def value: ParserInput = chars
 
-  // For tests
-  def asString: String = String valueOf chars
+  def asString: String =
+    String valueOf chars
 }
 
 object PreProcessor {
 
   type FixChar = (Array[Char], Int) => Unit
 
-  private def _fixChar(a: Array[Char], i: Int, c: Char, nl: Char): Unit =
-    c match {
+  object FixChar {
 
-      case '\u0085'    // NEL: Next Line
-         | '\u2028'    // LS : Line Separator
-         | '\u2029' => // PS : Paragraph Separator
-        a(i) = nl
+    private def _fixChar(a: Array[Char], i: Int, c: Char, nl: Char): Unit =
+      c match {
 
-      case _ =>
-        if (
-          c < 32
-            || c == 130 // BREAK PERMITTED HERE (basically blank char)
-            || (c >= 55296 && c <= 63743) // invalid + private-use chars
-            || (c >= 64976 && c <= 65007) // private-use chars
-            || c == 65279 // BOM
-            || c >= 65534 // private-use chars (ffff is special to Parboiled)
-        ) a(i) = ' '
-    }
+        case '\u0085'    // NEL: Next Line
+           | '\u2028'    // LS : Line Separator
+           | '\u2029' => // PS : Paragraph Separator
+          a(i) = nl
 
-  val fixCharSingleLine: FixChar =
-    (a, i) => _fixChar(a, i, a(i), ' ')
+        case _ =>
+          if (
+            c < 32
+              || c == 130 // BREAK PERMITTED HERE (basically blank char)
+              || (c >= 55296 && c <= 63743) // invalid + private-use chars
+              || (c >= 64976 && c <= 65007) // private-use chars
+              || c == 65279 // BOM
+              || c >= 65534 // private-use chars (ffff is special to Parboiled)
+          ) a(i) = ' '
+      }
 
-  val fixCharMultiLine: FixChar =
-    (a, i) =>
-      (a(i): @switch) match {
-          case '\n' | '\r' => ()
-          case c => _fixChar(a, i, c, '\n')
-        }
+    val singleLine: FixChar =
+      (a, i) => _fixChar(a, i, a(i), ' ')
+
+    val multiLine: FixChar =
+      (a, i) =>
+        (a(i): @switch) match {
+            case '\n' | '\r' => ()
+            case c           => _fixChar(a, i, c, '\n')
+          }
+
+  }
 
   type CanTrim = (Array[Char], Int) => Boolean
 
-  @inline def canTrimWhitespaceFn(c: Char): Boolean =
-    java.lang.Character.isWhitespace(c)
+  object CanTrim {
+    @inline def whitespaceFn(c: Char): Boolean =
+      java.lang.Character.isWhitespace(c)
 
-  val canTrimWhitespace: CanTrim =
-    (a, i) => canTrimWhitespaceFn(a(i))
+    val whitespace: CanTrim =
+      (a, i) => whitespaceFn(a(i))
 
-  val singleLine = apply(fixCharSingleLine, canTrimWhitespace)
+    val no: CanTrim =
+      (_, _) => false
+  }
+
+  val singleLine = apply(FixChar.singleLine, CanTrim.whitespace)
 
   def apply(fixChar: FixChar, canTrim: CanTrim): String => PreProcessed =
     input => {

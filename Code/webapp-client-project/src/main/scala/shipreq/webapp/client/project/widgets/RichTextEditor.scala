@@ -16,6 +16,7 @@ import shipreq.webapp.base.lib.{KeyHandlers, KeyboardTheme, TaskRepeater}
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.ui.{EditTheme, OptionalFullscreen}
+import shipreq.webapp.base.util.PreProcessor
 import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.RichTextEditor.hardcodedLive
@@ -256,23 +257,17 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
 object RichTextEditor {
 
-  private val correctSingleLineText: EndoFn[String] = {
-    val r = "[\u000a-\u000d\u0085\u2028\u2029]+".r
-    val f = (c: Char) => (c >= 10 && c <= 13) || c == 8232 || c == 8233
-    s0 => {
-      var s = s0
-      while (s.nonEmpty && f(s.last))
-        s = s.dropRight(1)
-      s = r.replaceAllIn(s, " ")
-      s
+  private val preprocessor = {
+    val preprocessSL = PreProcessor(PreProcessor.FixChar.singleLine, PreProcessor.CanTrim.no)
+    val preprocessML = PreProcessor(PreProcessor.FixChar.multiLine, PreProcessor.CanTrim.no)
+    LineCardinality.memo[EndoFn[String]] {
+      case SingleLine => preprocessSL(_).asString
+      case MultiLine  => preprocessML(_).asString
     }
   }
 
   def liveCorrect(text: Text.Generic): EndoFn[String] =
-    text.lineCardinality match {
-      case SingleLine => RichTextEditor.correctSingleLineText
-      case MultiLine  => identity
-    }
+    preprocessor(text.lineCardinality)
 
   val minRows = LineCardinality.memo[TagMod] {
     case SingleLine => ^.rows := 1
