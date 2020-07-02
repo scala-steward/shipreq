@@ -465,12 +465,14 @@ object ReqDetail {
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    private def runActionNoAsync(cmd: UpdateContentCmd): Callback =
-      sspUpdateContent(cmd).leftFlatTapSync(e => Callback.alert(e.value)).toCallback
+    private def wholeReqCmd(reqId: ReqId, cmd: UpdateContentCmd): Callback =
+      $.props.flatMap(p =>
+        p.reqProps(reqId).async.write(Cell.WholeReq).onFailureShowAndForget(
+          sspUpdateContent(cmd)))
 
     private def delete(id: ReqId): Callback =
       CallbackTo {
-        def run(cmd: UpdateContentCmd): Callback = runActionNoAsync(cmd) >> clearModal
+        def run(cmd: UpdateContentCmd): Callback = wholeReqCmd(id, cmd) >> clearModal
         import Px.AutoValue._
         val data = DeletionFeature.deletionData(pxProject, NonEmptySet one id)
         val props = DeletionFeature.DeletionFormProps(data, pxProjectWidgetsNoCtx, pxTextSearch, run, clearModal)
@@ -479,7 +481,7 @@ object ReqDetail {
 
     private def restore(id: ReqId): Callback =
       CallbackTo {
-        def run(cmd: UpdateContentCmd): Callback = runActionNoAsync(cmd) >> clearModal
+        def run(cmd: UpdateContentCmd): Callback = wholeReqCmd(id, cmd) >> clearModal
         import Px.AutoValue._
         val data = DeletionFeature.restorationData(pxProject, NonEmptySet one id)
         val props = DeletionFeature.RestorationFormProps(data, pxProjectWidgetsNoCtx, run, clearModal)

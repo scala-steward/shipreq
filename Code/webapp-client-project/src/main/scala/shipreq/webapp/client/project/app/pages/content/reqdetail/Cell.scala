@@ -9,6 +9,7 @@ import shipreq.webapp.client.project.lib.DataReusability._
 sealed abstract class Cell
 
 object Cell {
+  case object WholeReq                                                      extends Cell
   final case class ReqField          (f: EditorFeature.FieldKey.ForSomeReq) extends Cell
   final case class UseCaseStep       (id: UseCaseStepId)                    extends Cell
   final case class UseCaseStepCtrls  (id: UseCaseStepId)                    extends Cell

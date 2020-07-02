@@ -48,7 +48,6 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
-* req detail deletion should use WholeReq async
 * prompt user to confirm aborting a dirty editor
 
 

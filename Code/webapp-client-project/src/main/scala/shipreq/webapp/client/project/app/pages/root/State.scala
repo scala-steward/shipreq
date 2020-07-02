@@ -77,8 +77,9 @@ object AsyncKey {
     case UseCaseStepCtrls  (id) => Some(reqdetail.Cell.UseCaseStepCtrls  (id))
     case AddUseCaseStep    (id) => Some(reqdetail.Cell.AddUseCaseStep    (id))
     case AddUseCaseTailStep(s)  => Some(reqdetail.Cell.AddUseCaseTailStep(s))
-    case WholeReq               => None // TODO ReqDetail doesn't lock the whole requirement when deleting
+    case WholeReq               => Some(reqdetail.Cell.WholeReq)
   } {
+    case reqdetail.Cell.WholeReq               => Some(WholeReq)
     case reqdetail.Cell.ReqField          (f)  => Some(Editor(f))
     case reqdetail.Cell.UseCaseStep       (id) => Some(Editor(EditorFeature.FieldKey.UseCaseStep(id)))
     case reqdetail.Cell.UseCaseStepCtrls  (id) => Some(UseCaseStepCtrls  (id))
