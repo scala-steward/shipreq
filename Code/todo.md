@@ -48,8 +48,6 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
-* multiline headings (?)
-* remove margins when headings right next to each other (same level, or next is smaller)
 * If validation fails due to DataProp, raise a support ticket (once) and display a different error msg
 * revise async
   * req detail uses singleton for new
