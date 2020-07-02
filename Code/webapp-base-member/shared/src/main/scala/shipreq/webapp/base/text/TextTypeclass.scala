@@ -29,6 +29,7 @@ trait AtomTC[TC[_]] {
   def useCaseStepRef[T <: Atom.ContentRef](t: T): TC[t.UseCaseStepRef]
 
   def issue        [T <: Atom.Issue     ](t: T)(implicit x: TC[Text.InlineIssueDesc.OptionalText]): TC[t.Issue]
+  def orderedList  [T <: Atom.ListMarkup](t: T)(implicit x: TC[NonEmptyArraySeq[t.ListItem]])     : TC[t.OrderedList]
   def unorderedList[T <: Atom.ListMarkup](t: T)(implicit x: TC[NonEmptyArraySeq[t.ListItem]])     : TC[t.UnorderedList]
 
   final val instances = TextTC[TC](this)

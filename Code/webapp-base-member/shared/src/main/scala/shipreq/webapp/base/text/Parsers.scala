@@ -41,6 +41,7 @@ object Parsers {
            | _: Atom.ContentRef      # ReqRef
            | _: Atom.ContentRef      # UseCaseStepRef
            | _: Atom.Issue           # Issue
+           | _: Atom.ListMarkup      # OrderedList
            | _: Atom.ListMarkup      # UnorderedList
            | _: Atom.NewLine         # BlankLine
            | _: Atom.PlainTextMarkup # EmailAddress
@@ -63,12 +64,16 @@ object Parsers {
   //
   // Special cases:
   // 1) "* " is a valid multiline bullet with no content. "*" is not.
+  // 2) "1. " is a valid multiline leader with no content. "1." is not.
   private val multiLineCanTrim: PreProcessor.CanTrim =
     (a, i) => a(i) match {
       case ' ' =>
         (i == 0) || {
-          val prevChar = a(i - 1)
-          prevChar != '*' // Space need only be preserved after an asterisk
+          a(i - 1) match {
+            case '*' => false
+            case '.' => !(i >= 2 && a(i - 2).isDigit)
+            case _   => true
+          }
         }
       case c =>
         PreProcessor.canTrimWhitespaceFn(c)
@@ -387,20 +392,16 @@ object Parsers {
   trait ListMarkup extends Literal with CodeBlock {
     override val t: Atom.ListMarkup with Atom.Literal with Atom.NewLine with Atom.CodeBlock
 
-    private def bullet: Rule0 =
-      // See https://en.wikipedia.org/wiki/Bullet_(typography)
-      rule("* " | anyOf("•‣⁃⁌⁍∙○◘◦☙❥❧⦾⦿"))
-
     private def firstLineCodeBlock =
       rule(codeBlock ~> ((x: t.CodeBlock) => ArraySeq(x)))
 
-    def listItem(listToken: TokenRule): Rule1[t.ListItem] = {
+    def listItem(lead: () => Rule0, listToken: TokenRule): Rule1[t.ListItem] = {
       val tailLines: TokenRule = () => rule(codeBlock | listToken())
       rule(
         OWSNL
-          ~ bullet ~ OWS
+          ~ lead() ~ OWS
           ~ (firstLineCodeBlock | textUntil(listToken, untilEOL))
-          ~ extraLine(tailLines).*
+          ~ extraLine(lead, tailLines).*
           ~> combineListItemLines
       )
     }
@@ -414,14 +415,28 @@ object Parsers {
       }
     }
 
-    private def extraLine(listToken: TokenRule): Rule1[ArraySeq[t.Atom]] =
+    private def extraLine(lead: () => Rule0, listToken: TokenRule): Rule1[ArraySeq[t.Atom]] =
       rule(
-        (NL ~ extraLine(listToken)) |
-        (' ' ~ OWS ~ !bullet ~ textUntil(listToken, untilEOL))
+        (NL ~ extraLine(lead, listToken)) |
+        (' ' ~ OWS ~ !lead() ~ textUntil(listToken, untilEOL))
       )
 
-     def unorderedList(listToken: TokenRule): Rule1[t.UnorderedList] =
-       rule((OWS ~ NL).? ~ startOfLine ~ listItem(listToken).+ ~ OWSNL ~ popSeqToNEA[t.ListItem] ~> t.UnorderedList)
+    private def genericList(lead: () => Rule0, listToken: TokenRule): Rule1[NonEmptyArraySeq[t.ListItem]] =
+      rule((OWS ~ NL).? ~ startOfLine ~ listItem(lead, listToken).+ ~ OWSNL ~ popSeqToNEA[t.ListItem])
+
+    private def orderedList(listToken: TokenRule): Rule1[t.OrderedList] = {
+      def lead: Rule0 = rule(CP.Digit.+ ~ ". ")
+      rule(genericList(() => lead, listToken) ~> t.OrderedList)
+    }
+
+    private def unorderedList(listToken: TokenRule): Rule1[t.UnorderedList] = {
+      // See https://en.wikipedia.org/wiki/Bullet_(typography)
+      def bullet: Rule0 = rule("* " | anyOf("•‣⁃⁌⁍∙○◘◦☙❥❧⦾⦿"))
+      rule(genericList(() => bullet, listToken) ~> t.UnorderedList)
+    }
+
+    def listMarkup(listToken: TokenRule): Rule1[t.ListBase] =
+      rule(orderedList(listToken) | unorderedList(listToken))
   }
 
   trait ContentRef extends Base with UseCaseStepLabel {
@@ -567,7 +582,7 @@ object Parsers {
       () => rule(additionalTokens() | singleLine)
 
     final val token: TokenRule =
-      () => rule(unorderedList(listToken) | heading() | codeBlock | additionalTokens() | blankLine | singleLine)
+      () => rule(listMarkup(listToken) | heading() | codeBlock | additionalTokens() | blankLine | singleLine)
   }
 
   // ===================================================================================================================

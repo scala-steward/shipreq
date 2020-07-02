@@ -50,7 +50,16 @@ object RichTextEditorHelp {
         "A list of bullet points can be created by starting new lines with an asterisk (", code("*"), ") followed by a space."
       )(
         "* item 1",
-        "* item 2"))
+        "* item 2"),
+      Example(
+        "A numbered list can be created by starting new lines with a number, followed by a dot and a space.",
+        <.br,
+        "The numbers themselves don't matter; they'll be automatically replaced to reflect their order when you save."
+      )(
+        "1. item 1",
+        "1. item 2",
+        "1. item 3"),
+    )
 
   private val styling =
     Group("Styling")(

@@ -43,10 +43,61 @@ object PlainTextTest extends TestSuite {
             |
             |ok
             |
-            |* a
-            |* b
+            |1. a
+            |2. b
             |
-            |yes
+            |how about both kinds of lists together
+            |
+            |* a
+            |
+            |1. a
+            |
+            |* a
+            |* a
+            |
+            |1. a
+            |2. a
+            |
+            |""".stripMargin.trim
+        assertRoundTrip(input)
+      }
+
+      "olWithNLs1" - {
+        val input =
+          """
+            |ok
+            |
+            |1. a
+            |
+            |2. b1
+            |
+            |   b2
+            |
+            |3. c
+            |
+            |4. d
+            |
+            |5. e1
+            |
+            |   e2
+            |
+            |6. f1
+            |
+            |   f2
+            |
+            |   f3
+            |
+            |7. x
+            |
+            |8. x
+            |
+            |9. x
+            |
+            |10. x
+            |
+            |    e
+            |
+            |good
             |""".stripMargin.trim
         assertRoundTrip(input)
       }
@@ -77,6 +128,22 @@ object PlainTextTest extends TestSuite {
             |  f3
             |
             |good
+            |""".stripMargin.trim
+        assertRoundTrip(input)
+      }
+
+      "olWithNLs2" - {
+        val input =
+          """
+            |1. a
+            |
+            |2. b1
+            |
+            |   b2
+            |
+            |3. c1
+            |
+            |   c2
             |""".stripMargin.trim
         assertRoundTrip(input)
       }

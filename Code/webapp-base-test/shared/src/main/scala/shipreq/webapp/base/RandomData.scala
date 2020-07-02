@@ -647,7 +647,10 @@ object RandomData {
       Gen.pure(g).flatMap(_.value).arraySeq(MaxTextAtoms)
 
     def listItems(t: ListMarkup)(g: Name[Gen[t.Atom]]): Gen[NonEmptyArraySeq[t.ListItem]] =
-      listItem(t)(g).nea(0 to 7)
+      listItem(t)(g).nea(0 to 11)
+
+    def orderedList(t: ListMarkup)(g: Name[Gen[t.Atom]]): Gen[t.OrderedList] =
+      listItems(t)(g) map t.OrderedList
 
     def unorderedList(t: ListMarkup)(g: Name[Gen[t.Atom]]): Gen[t.UnorderedList] =
       listItems(t)(g) map t.UnorderedList
@@ -699,8 +702,11 @@ object RandomData {
       var gs = singleLineGens(t)(Some(gsa)).map(g => (9, g))
       gs :+= ((9, blankLine(t)))
       gs :+= ((4, codeBlock(t)))
-      if (depth < DepthIncrease.length)
-        gs :+= ((DepthIncrease(depth), unorderedList(t)(g)))
+      if (depth < DepthIncrease.length) {
+        val f = DepthIncrease(depth)
+        gs :+= ((f, orderedList(t)(g)))
+        gs :+= ((f, unorderedList(t)(g)))
+      }
       gs
     }
 
@@ -778,6 +784,7 @@ object RandomData {
          | _: Headings        # Heading4
          | _: Headings        # Heading5
          | _: Headings        # Heading6
+         | _: ListMarkup      # OrderedList
          | _: ListMarkup      # UnorderedList  => false
     }
 
@@ -812,16 +819,19 @@ object RandomData {
       val codeRefInside      = s"(?:$codeNode(?:\\.$codeNode)*)"
       val insideRef          = s"$reqOrStepRefInside|$codeRefInside"
       val styles             = """(?:\*\*|~~|__|//)"""
-      (s"<${Grammar.texTag}>|$styles" + """|[#@]+|[a-z]://|\*( )|\[\s*(?:""" + s"$insideRef)\\s*\\]").r
+      val olPrefix           = """^\d+\. """
+      (s"<${Grammar.texTag}>|(?:$olPrefix)|$styles" + """|[#@]+|[a-z]://|\*( )|\[\s*(?:""" + s"$insideRef)\\s*\\]").r
     }
 
     val fixLiteral: String => String =
       s0 => {
         val startWithWS = s0.startsWith(" ")
         val endWithWS = s0.endsWith(" ")
+
         var s = s0
         s = removeFromLiteralsR.replaceAllIn(s, "x$1")
         s = Parsers.fixLiteralWhiteSpace(s)
+
         if (startWithWS != s.startsWith(" "))
           s = if (startWithWS) " " + s else s.drop(1)
         if (endWithWS != s.endsWith(" "))
@@ -842,6 +852,7 @@ object RandomData {
       import Atom.{PlainTextMarkup => PTM}
 
       type Blank = NewLine#BlankLine
+      type OL    = ListMarkup#OrderedList
       type UL    = ListMarkup#UnorderedList
       type Lit   = Literal#Literal
 
@@ -858,6 +869,7 @@ object RandomData {
       def fixEvery: T#Atom => T#Atom = {
         case l: Lit if ctx == InIssueDesc          => l.modText(_.replace('}', 'x'))
         case i: Issue#Issue                        => i.copy(desc = postProcessAtoms(InIssueDesc)(i.desc))
+        case ol: OL                                => ol.filterAtoms(legalListItemAtom).map(postProcessAtoms(InListItem))
         case ul: UL                                => ul.filterAtoms(legalListItemAtom).map(postProcessAtoms(InListItem))
         case h: Headings # Heading                 => fixHeading(h)
         case s: PTM # PlainTextMarkupStyled        => fixStyled(s)
@@ -896,6 +908,7 @@ object RandomData {
                | _: Headings        # Heading5
                | _: Headings        # Heading6
                | _: Issue           # Issue
+               | _: ListMarkup      # OrderedList
                | _: ListMarkup      # UnorderedList
                | _: NewLine         # BlankLine
                | _: PlainTextMarkup # Bold
@@ -981,6 +994,7 @@ object RandomData {
             //case (x: Lit                , y: Issue#Issue              ) => i :+ x.modText(withWhitespaceRight) :+ y
             //case (x: Lit                , y: TagRef#Tagref            ) => i :+ x.modText(withWhitespaceRight) :+ y
               case (x: Lit                , y: Blank                    ) => i :+ x.modText(noWhitespaceRight) :+ y
+              case (x: Lit                , y: OL                       ) => i :+ x.modText(noWhitespaceRight) :+ y
               case (x: Lit                , y: UL                       ) => i :+ x.modText(noWhitespaceRight) :+ y
               case (x: Lit                , y: PTM#Bold                 ) => i :+ x.modText(removeFromRight(_, '*')) :+ y
               case (x: Lit                , y: PTM#Italic               ) => i :+ x.modText(removeFromRight(_, '/')) :+ y
@@ -989,6 +1003,7 @@ object RandomData {
 
               case (x: Blank              , y: Lit                      ) => i :+ x :+ y.modText(noWhitespaceLeft)
               case (_: Blank              , _: Blank                    ) => drop
+              case (_: Blank              , _: OL                       ) => drop
               case (_: Blank              , _: UL                       ) => drop
 
               case (x: PTM#EmailAddress   , y: Lit                      ) => i :+ x :+ y.modText(withWhitespaceLeft)
@@ -1017,8 +1032,14 @@ object RandomData {
               case (_: Blank              , _: Headings#Heading         ) => drop
               case (x: Lit                , y: Headings#Heading         ) => i :+ x.modText(noWhitespaceRight) :+ y
 
+              case (x: OL                 , y: Lit                      ) => i :+ x :+ y.modText(noWhitespaceLeft)
+              case (_: OL                 , _: Blank                    ) => drop
+              case (_: OL                 , _: OL                       ) => drop //.copy(items = x.items ++ y.items)
+              case (_: OL                 , _: UL                       ) => drop //.copy(items = x.items ++ y.items)
+
               case (x: UL                 , y: Lit                      ) => i :+ x :+ y.modText(noWhitespaceLeft)
               case (_: UL                 , _: Blank                    ) => drop
+              case (_: UL                 , _: OL                       ) => drop //.copy(items = x.items ++ y.items)
               case (_: UL                 , _: UL                       ) => drop //.copy(items = x.items ++ y.items)
 
               case (_: PTM#PlainTextMarkupStyled, _: PTM#EmailAddress   ) => drop

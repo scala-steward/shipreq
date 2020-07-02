@@ -433,6 +433,7 @@ object DataProp {
       case a: PlainTextMarkup # Italic         => anyText(a.inner.whole)
       case a: PlainTextMarkup # Underline      => anyText(a.inner.whole)
       case a: PlainTextMarkup # Strikethrough  => anyText(a.inner.whole)
+      case a: ListMarkup      # OrderedList    => anyTextV(a.items.whole)
       case a: ListMarkup      # UnorderedList  => anyTextV(a.items.whole)
       case _: ContentRef      # ReqRef         => nop
       case _: ContentRef      # CodeRef        => nop

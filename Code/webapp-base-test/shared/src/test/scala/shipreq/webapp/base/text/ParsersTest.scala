@@ -520,8 +520,88 @@ object ParsersTest extends TestSuite {
         }
       }
 
-      "list" - {
+      "ol" - {
+        "empty" - test("1. ")(T.OrderedList(NEA(LI())))
+        "noSpace" - test("1.x")(L("1.x"))
+        "spaceDot" - test("1 . x")(L("1 . x"))
+        "empties" - test("1. \n1. ")(T.OrderedList(NEA(LI(), LI())))
+        "mid" - test("a 1. b")(L("a 1. b"))
+        "between" - test("before\n1. mid\nafter")(L("before"), T.OrderedList(NEA(LI(L("mid")))), L("after"))
+        "between2" - test("before\n1. mid\n after")(L("before"), T.OrderedList(NEA(LI(L("mid"), T.blankLine, L("after")))))
+        "between3" - test("before\n1. mid \n\n \n after")(L("before"), T.OrderedList(NEA(LI(L("mid"), T.blankLine, L("after")))))
+        "between4" - test("before\n1. mid\n     \n\n      \nafter")(L("before"), T.OrderedList(NEA(LI(L("mid")))), L("after"))
+
+        "newlines" - test(
+          """
+            |999. a1
+            |  a2
+            |345. b
+            |
+            |1. c1
+            |
+            |   c2
+            |
+            |
+            |    c3
+            |
+            |
+            |
+            |0.  d
+            |4.    e1
+            |
+            |
+            |
+            |  e2
+            |
+            |
+            |yo
+            |""".stripMargin)(
+          T.OrderedList(NEA(
+            LI(L("a1"), T.blankLine, L("a2")),
+            LI(L("b")),
+            LI(L("c1"), T.blankLine, L("c2"), T.blankLine, L("c3")),
+            LI(L("d")),
+            LI(L("e1"), T.blankLine, L("e2")),
+          )),
+          L("yo"))
+
+        "indents" - test(
+          """
+            |  1. a1
+            |  a2
+            | a3
+            |  1. b
+            |omg
+            |    1. c1
+            |      c2
+            |             c3
+            |    1. d1
+            | 1.d2
+            |
+            |    1. e1
+            |
+            |  e2
+            |
+            |1. ok
+            |ah
+            |""".stripMargin)(
+          T.OrderedList(NEA(
+            LI(L("a1"), T.blankLine, L("a2"), T.blankLine, L("a3")),
+            LI(L("b")),
+          )),
+          L("omg"),
+          T.OrderedList(NEA(
+            LI(L("c1"), T.blankLine, L("c2"), T.blankLine, L("c3")),
+            LI(L("d1"), T.blankLine, L("1.d2")),
+            LI(L("e1"), T.blankLine, L("e2")),
+            LI(L("ok")),
+          )),
+          L("ah"))
+      }
+
+      "ul" - {
         "empty" - test("* ")(T.UnorderedList(NEA(LI())))
+        "noSpace" - test("*x")(L("*x"))
         "empties" - test("* \n* ")(T.UnorderedList(NEA(LI(), LI())))
         "mid" - test("a* b")(L("a* b"))
         "between" - test("before\n* mid\nafter")(L("before"), T.UnorderedList(NEA(LI(L("mid")))), L("after"))

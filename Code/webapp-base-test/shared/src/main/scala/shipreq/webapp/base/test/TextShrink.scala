@@ -69,6 +69,9 @@ object TextShrink {
           case l: Atom.ListMarkup # UnorderedList =>
             _listItemsShrinker.shrink(l.items).iterator.map(t => r(l.unsafeWithItems(t.value)))
 
+          case l: Atom.ListMarkup # OrderedList =>
+            _listItemsShrinker.shrink(l.items).iterator.map(t => r(l.unsafeWithItems(t.value)))
+
           case _: Atom.Literal # Literal =>
             modTextNE
 

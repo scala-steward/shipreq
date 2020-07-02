@@ -86,7 +86,7 @@ class TextMacroImpls(val c: Context) extends WhiteboxMacroUtils {
         case "issue" =>
           valLazy = true
           q"a.$nTerm(t)(issue3._2)"
-        case "unorderedList" =>
+        case "orderedList" | "unorderedList" =>
           valLazy = true
           needLI = true
           q"a.$nTerm(t)(li)"

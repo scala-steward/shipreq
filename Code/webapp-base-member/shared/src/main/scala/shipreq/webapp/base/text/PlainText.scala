@@ -104,8 +104,6 @@ object PlainText {
       NonEmptyArraySeq.option(_t)
   }
 
-  private final val bullet = "* "
-
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   final class ForProject[+Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
@@ -150,6 +148,25 @@ object PlainText {
       desc.foldLeft(hashtag(it.key))(_ ~ G.issueDescSurround(_))
     }
 
+    private val ulLead: () => String =
+      () => "* "
+
+    private def olLead(): () => String = {
+      var prev = 0
+      () => {
+        prev += 1
+        prev.toString ~ ". "
+      }
+    }
+
+    private def spaces(len: Int): String =
+      len match {
+        case 2 => "  "
+        case 3 => "   "
+        case 4 => "    "
+        case n => " " * n
+      }
+
     private def nestedText(acc: String, indent: String, live: Live, atoms: ArraySeq[AnyAtom], includeMarkup: Boolean): String = {
       @tailrec def go(acc: String, atoms: ArraySeq[AnyAtom], idx: Int): String = {
         val nextIdx = idx + 1
@@ -179,6 +196,36 @@ object PlainText {
             inner
         }
 
+        def list(a: ListMarkup # ListBase, lead: () => String) = {
+          var bullet = ""
+
+          val prefix: String => String = {
+            val gapBetweenBullets =
+              if (a.itemsContainMultipleLines)
+                "\n\n"
+              else
+                "\n"
+            q => {
+              bullet = lead()
+              if (q.isEmpty) {
+                if (acc.isEmpty || acc.endsWith("\n\n"))
+                  bullet
+                else
+                  "\n\n" ~ bullet
+              } else
+                q ~ gapBetweenBullets ~ bullet
+            }
+          }
+
+          val r = a.items.foldLeft("") { (q, li) =>
+            val p = prefix(q) // side-effects to re-populate bullet
+            val nextIndent = indent + spaces(bullet.length)
+            nestedText(p, nextIndent, live, li, includeMarkup)
+          }
+
+          if (nextIsEmpty) r else r ~ "\n\n"
+        }
+
         val cur = atoms(idx) match {
           case a: Literal         # Literal        => a.value
           case _: NewLine         # BlankLine      => "\n\n" ~ indent
@@ -201,27 +248,8 @@ object PlainText {
           case a: PlainTextMarkup # Italic         => style("//", a.inner)
           case a: PlainTextMarkup # Strikethrough  => style("~~", a.inner)
           case a: PlainTextMarkup # Underline      => style("__", a.inner)
-
-          // ---------------------------------------------------------------------------------------------------------
-          case a: ListMarkup # UnorderedList  =>
-            val nextIndent = indent + "  "
-
-            val prefix: String => String = {
-              val gapBetweenBullets =
-                if (a.itemsContainMultipleLines)
-                  "\n\n"
-                else
-                  "\n"
-              q =>
-                if (q.isEmpty)
-                  (if (acc.isEmpty) bullet else "\n\n" ~ bullet)
-                else
-                  q ~ gapBetweenBullets ~ bullet
-            }
-
-            val r = a.items.foldLeft("")((q, li) => nestedText(prefix(q), nextIndent, live, li, includeMarkup))
-
-            if (nextIsEmpty) r else r ~ "\n\n"
+          case a: ListMarkup      # OrderedList    => list(a, olLead())
+          case a: ListMarkup      # UnorderedList  => list(a, ulLead)
 
           // ---------------------------------------------------------------------------------------------------------
           case a: CodeBlock # CodeBlock =>

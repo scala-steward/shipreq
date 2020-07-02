@@ -59,6 +59,7 @@ object Atom {
     case object Italic         extends Type(TypeGroup.PlainTextMarkup)
     case object Literal        extends Type(TypeGroup.Literal)
     case object Monospace      extends Type(TypeGroup.PlainTextMarkup)
+    case object OrderedList    extends Type(TypeGroup.ListMarkup)
     case object ReqRef         extends Type(TypeGroup.ContentRef)
     case object Strikethrough  extends Type(TypeGroup.PlainTextMarkup)
     case object TagRef         extends Type(TypeGroup.TagRef)
@@ -82,6 +83,7 @@ object Atom {
       case _: Headings        # Heading5       => Heading5
       case _: Headings        # Heading6       => Heading6
       case _: Issue           # Issue          => Issue
+      case _: ListMarkup      # OrderedList    => OrderedList
       case _: ListMarkup      # UnorderedList  => UnorderedList
       case _: Literal         # Literal        => Literal
       case _: NewLine         # BlankLine      => BlankLine
@@ -254,29 +256,39 @@ object Atom {
   trait ListMarkup extends Base { self =>
     final type ListItem = ArraySeq[Atom]
 
-    case class UnorderedList(items: NonEmptyArraySeq[ListItem]) extends Atom {
-      val parent: self.type = self
-      override final def isPlain = false
-      override final def containsMultipleLines = (items.length > 1) || items.head.exists(_.containsMultipleLines)
+    sealed abstract class ListBase(_items: NonEmptyArraySeq[ListItem]) extends Atom {
+      val items: NonEmptyArraySeq[ListItem]
 
-      val itemsContainMultipleLines = items.exists(_.exists(_.containsMultipleLines))
+      final val parent: self.type = self
+      final override def isPlain = false
+      final override def containsMultipleLines = (_items.length > 1) || _items.head.exists(_.containsMultipleLines)
+      final val itemsContainMultipleLines = _items.exists(_.exists(_.containsMultipleLines))
 
       // For tests
 
-      def filterAtoms(f: Atom => Boolean): this.type =
-        UnorderedList(items.map(_ filter f)).asInstanceOf[this.type]
+      def unsafeWithItems(items: NonEmptyArraySeq[ArraySeq[Base#Atom]]): this.type
 
-      def map(f: ListItem => ListItem): this.type =
-        UnorderedList(items map f).asInstanceOf[this.type]
+      final def filterAtoms(f: Atom => Boolean): this.type =
+        unsafeWithItems(_items.map(_ filter f))
 
-      def unsafeWithItems(items: NonEmptyArraySeq[ArraySeq[Base#Atom]]): UnorderedList =
-        UnorderedList(items.asInstanceOf[NonEmptyArraySeq[ListItem]])
+      final def map(f: ListItem => ListItem): this.type =
+        unsafeWithItems(_items map f)
 
-      override def modText(f: String => String): this.type =
+      final override def modText(f: String => String): this.type =
         map(_.map(_.modText(f)))
 
-      override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
-        F.map(items.traverse(_.traverse(_.modTextF(f).asInstanceOf[F[Atom]])))(copy(_).asInstanceOf[this.type])
+      final override def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] =
+        F.map(_items.traverse(_.traverse(_.modTextF(f).asInstanceOf[F[Atom]])))(unsafeWithItems(_))
+    }
+
+    case class OrderedList(items: NonEmptyArraySeq[ListItem]) extends ListBase(items) {
+      override def unsafeWithItems(items: NonEmptyArraySeq[ArraySeq[Base#Atom]]): this.type =
+        OrderedList(items.asInstanceOf[NonEmptyArraySeq[ListItem]]).asInstanceOf[this.type]
+    }
+
+    case class UnorderedList(items: NonEmptyArraySeq[ListItem]) extends ListBase(items) {
+      override def unsafeWithItems(items: NonEmptyArraySeq[ArraySeq[Base#Atom]]): this.type =
+        UnorderedList(items.asInstanceOf[NonEmptyArraySeq[ListItem]]).asInstanceOf[this.type]
     }
   }
 

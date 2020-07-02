@@ -291,6 +291,11 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     def wrapped(tag: VdomTag, inner: NonEmptyArraySeq[Atom.AnyAtom]) =
       tag(inner.whole.toTagMod(atom))
 
+    def list(tag: VdomTag, a: Atom.ListMarkup # ListBase) = {
+      val style = if (a.itemsContainMultipleLines) *.ulSpacious else *.ulCompact
+      tag(style, a.items.whole.toTagMod(row => <.li(row toTagMod atom)))
+    }
+
     lazy val atom: AnyAtom => TagMod = {
       case a: Literal         # Literal        => <.span(a.value)
       case a: CodeBlock       # CodeBlock      => CodeBlockWithSyntaxHighlighting(a.language, a.code)
@@ -304,6 +309,8 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
       case a: Headings        # Heading5       => wrapped(h5, a.title)
       case a: Headings        # Heading6       => wrapped(h6, a.title)
       case a: Issue           # Issue          => issue(a.typ, a.desc, liveText)
+      case a: ListMarkup      # OrderedList    => list(<.ol, a)
+      case a: ListMarkup      # UnorderedList  => list(<.ul, a)
       case _: NewLine         # BlankLine      => <.div(*.blankLine)
       case a: PlainTextMarkup # Bold           => wrapped(bold, a.inner)
       case a: PlainTextMarkup # EmailAddress   => <.a(^.href := "mailto:" ~ a.value, a.value)
@@ -318,11 +325,8 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
         val tag = project.config.tags.needApplicableTag(a.value)
         val valid = tagValidity(tag.id) & Invalid.when(liveText.is(Live) && tag.live.is(Dead))
         tagWithoutStyle(Contextualise, tag, includeDesc = true)(*.tagInText((tag.live, valid)))
-
-      case a: ListMarkup      # UnorderedList  =>
-        val style = if (a.itemsContainMultipleLines) *.ulSpacious else *.ulCompact
-        <.ul(style, a.items.whole.toTagMod(row => <.li(row toTagMod atom)))
     }
+
     atom
   }
 
