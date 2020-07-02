@@ -385,7 +385,7 @@ object ReqDetail {
           case Row.UseCaseStepsE => useCaseStepsCell(StaticField.ExceptionStepTree.name, _.stepsE)
 
           case Row.StepGraph =>
-            withoutReusability(UiText.FieldNames.pastPubids) { cell =>
+            withoutReusability(StaticField.StepGraph.name) { cell =>
               val ucId = data.useCaseData.get.uc.id
               cell.nonDirectlyEditableNavParent(UseCaseStepFlowGraph.Props(data.ord, ucId, pw.ctx, webWorker).render)
             }
