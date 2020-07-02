@@ -3,6 +3,7 @@ package shipreq.webapp.server.logic
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import scala.annotation.nowarn
+import scala.collection.immutable.ArraySeq
 import scalaz.{-\/, Equal, Name, \/, \/-}
 import shipreq.base.util.{BinaryData, Direction}
 import shipreq.webapp.base.data._
@@ -395,6 +396,23 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       val actual = recv.flatMap(_.values.iterator.map(_.ord)).toSet
       val expect = ords.whole.filter(_ <= p1.verifiedEvents.last.ord)
       assertEq(actual, expect)
+    }
+
+    "dataPropFailure" - {
+      implicit val t = new Tester; import t._
+      val subState = projectSpa.onOpen(p1.static, emptyState, onPush(_ => ()), _ => ???).value
+      val text = ArraySeq(Text.UseCaseTitle.Literal(" "))
+      val cmd = CreateContentCmd.CreateUseCase(Set.empty, Map.empty, Direction.Values.both(Set.empty), Set.empty, text)
+      val cmdWS = WsReqRes.CreateContent.AndReq(cmd)
+      def sendBadMsg() = {
+        val result = sendMsg(cmdWS, p1.static, subState)
+        val err = result._1.getOrThrow().getLeftOrThrow()
+        assertContains(err.value, "Our staff have been notified")
+      }
+      sendBadMsg()
+      assertEq(taskman.msgs.length, 1)
+      sendBadMsg()
+      assertEq(taskman.msgs.length, 1)
     }
 
   }

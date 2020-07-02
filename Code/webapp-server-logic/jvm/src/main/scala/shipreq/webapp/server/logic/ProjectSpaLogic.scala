@@ -9,9 +9,10 @@ import scalaz.syntax.monad._
 import scalaz.{-\/, BindRec, Monad, \/, \/-, ~>}
 import shipreq.base.ops.Trace
 import shipreq.base.util._
+import shipreq.taskman.api.{Task, TaskmanApi, UserId => TaskmanUserId}
 import shipreq.webapp.base.data.{Obfuscated, Project, ProjectId, ProjectMetaData}
 import shipreq.webapp.base.event.EventOrd.Implicits._
-import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.base.event.{ApplyEvent, EventOrd, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint
 import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes.EventResult
@@ -71,6 +72,9 @@ object ProjectSpaLogic extends StrictLogging {
       )(apply)
   }
 
+  val userFacingErrorMsgWhenDataPropFails =
+    ErrorMsg("Invalid input. The fact the we can't be more specific is a bug. Our staff have been notified and we'll endeavour to fix this ASAP.")
+
   final case class WebSocketStatic(user       : User,
                                    projectId  : ProjectId,
                                    sessionId  : Security.SessionId,
@@ -125,6 +129,7 @@ object ProjectSpaLogic extends StrictLogging {
                         runDB   : D ~> F,
                         security: Security.Algebra[F],
                         svr     : Server.Time[F],
+                        taskman : TaskmanApi[F],
                         trace   : Trace.Algebra[F]): ProjectSpaLogic[F] = {
 
     val webSocketHelper = WebSocketServerHelper(ProjectSpaProtocols.WebSocket(Obfuscated(null)))
@@ -428,7 +433,31 @@ object ProjectSpaLogic extends StrictLogging {
             _ % eventSnapshotCacheRatio == 0
         }
 
-      private val projectUpdater = new ProjectUpdater[D, F](writeSnapshotInsteadOfEvents)
+      private val submitDataPropError: (UserId, ErrorMsg) => F[Unit] = {
+        var submitted = false
+        (userId, err) =>
+          F.point {
+            if (submitted)
+              F.pure(())
+            else {
+              val nameKey = "error.name"
+              val msgKey  = "error.message"
+              val task =
+                Task.ReportServerError(
+                  userId     = Some(TaskmanUserId(userId.value)),
+                  nameKey    = nameKey,
+                  messageKey = msgKey,
+                  data       = Map(nameKey -> "DataProp failure", msgKey -> err.value)
+                )
+              for {
+                _ <- taskman.submit(task)
+                _ <- F.point { submitted = true }
+              } yield ()
+            }
+          }.flatMap(identity)
+      }
+
+      private val projectUpdater = new ProjectUpdater[D, F](writeSnapshotInsteadOfEvents, submitDataPropError)
 
       private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFn[I, EventResult] =
         in => projectUpdater(in.static.projectId, in.static.user.id, mkEvent(in.input, _)).map {
@@ -625,7 +654,8 @@ object ProjectSpaLogic extends StrictLogging {
     def bytesOut: Long    = if (ok) len else 0
   }
 
-  private final class ProjectUpdater[D[_], F[_]](writeSnapshot: Int => Boolean)
+  private final class ProjectUpdater[D[_], F[_]](writeSnapshot: Int => Boolean,
+                                                 submitDataPropError: (UserId, ErrorMsg) => F[Unit])
                                                 (implicit
                                                  F       : Monad[F] with BindRec[F],
                                                  apEvent : ApplyEventLogic[F],
@@ -702,7 +732,14 @@ object ProjectSpaLogic extends StrictLogging {
                 F pure \/-(Result.Ok(VerifiedEvent.Seq.empty))
 
               case PotentialChange.Failure(e) =>
-                F pure \/-(Result.Reject(e))
+                ApplyEvent.propertyFailure(e) match {
+                  case Some(propFailure) =>
+                    for {
+                      _ <- submitDataPropError(userId, propFailure)
+                    } yield \/-(Result.Reject(userFacingErrorMsgWhenDataPropFails))
+                  case None =>
+                    F pure \/-(Result.Reject(e))
+                }
             }
 
           case WriteRedis2(newProject, newEvent) =>

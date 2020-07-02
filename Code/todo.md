@@ -48,7 +48,6 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
-* If validation fails due to DataProp, raise a support ticket (once) and display a different error msg
 * revise async
   * req detail uses singleton for new
   * req detail should use req row for deletion

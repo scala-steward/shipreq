@@ -19,6 +19,16 @@ object ApplyEvent {
    * Applies untrusted events (i.e. new events created in response to a user request).
    */
   val untrusted = new ApplyEvent()(Untrusted)
+
+  private final val propertyMarker = "222e67c6-455b-4f09-ae0c-bac3f5a808f1"
+
+  lazy val properties =
+    DataProp.project.allIncludingConfig
+      .rename("ApplyEvent.properties" + propertyMarker)
+
+  def propertyFailure(err: ErrorMsg): Option[ErrorMsg] =
+    Option.when(err.value.contains(propertyMarker))(
+      ErrorMsg(err.value.replace(propertyMarker, "")))
 }
 
 final class ApplyEvent(implicit val trust: Trust)
@@ -45,7 +55,7 @@ final class ApplyEvent(implicit val trust: Trust)
 
   private val validateDataProps: Eval[Unit] =
     whenUntrusted {
-      val prop = DataProp.project.allIncludingConfig
+      val prop = ApplyEvent.properties
       Eval.failOptions { p =>
         val e = prop(p)
         if (e.success)
