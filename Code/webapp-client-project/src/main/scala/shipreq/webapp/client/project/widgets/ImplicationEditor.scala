@@ -23,19 +23,32 @@ import shipreq.webapp.client.project.lib.DataReusability._
 
 object ImplicationEditor {
 
-  final case class Lookup(legal: List[ReqItem], illegal: Map[String, Invalidity]) {
-    lazy val legalm = legal.iterator.map(_.mapStrengthL(_.pubidStrNorm)).toMap
+  final case class Lookup(legal                : List[ReqItem],
+                          illegal              : Map[String, Invalidity],
+                          excludeFromSuggestion: Set[ReqId]) {
+
+    lazy val legalm: Map[String, ReqItem] =
+      legal.iterator.map(_.mapStrengthL(_.pubidStrNorm)).toMap
+
+    lazy val suggestions: Iterable[ReqItem] =
+      if (excludeFromSuggestion.isEmpty)
+        legal
+      else
+        legal.filter(i => !excludeFromSuggestion.contains(i.reqId))
 
     def outlaw(isBad: ReqItem => Boolean, rej: ReqItem => Invalidity): Lookup = {
       val (ko, ok) = legal.partition(isBad)
       val illegal2 = ko.foldLeft(illegal)((m, i) => m.updated(i.pubidStrNorm, rej(i)))
-      Lookup(ok, illegal2)
+      Lookup(ok, illegal2, excludeFromSuggestion)
     }
+
+    def dontSuggest(reqId: ReqId): Lookup =
+      copy(excludeFromSuggestion = excludeFromSuggestion + reqId)
   }
 
   object Lookup {
     def all(p: Project, pt: PlainText.ForProject.AnyCtx): Lookup =
-      Lookup(AutoComplete.Project.reqItems(p, pt).toList, UnivEq.emptyMap)
+      Lookup(AutoComplete.Project.reqItems(p, pt).toList, UnivEq.emptyMap, UnivEq.emptySet)
 
     def forCustomColumn(p: Project, l: Lookup, fid: CustomField.Implication.Id): Lookup = {
       val f = p.config.fields.custom(fid)
@@ -136,7 +149,7 @@ object ImplicationEditor {
         l <- pxLookup
         s <- pxTextSearch
       } yield
-        AutoComplete.Project.req(s, l.legal, Plain)
+        AutoComplete.Project.req(s, l.suggestions, Plain)
 
     @inline private def lineCardinality = SingleLine
 

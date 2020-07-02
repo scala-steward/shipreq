@@ -489,7 +489,10 @@ object NewEditor {
       import shipreq.webapp.client.project.widgets.ImplicationEditor
       import ImplicationEditor.{CommitFn, Lookup, ValidationFn}
 
-      val pxLookupAll = Px.apply2(pxProject, pxPlainTextNoCtx)(ImplicationEditor.Lookup.all)
+      private val _pxLookupAll = Px.apply2(pxProject, pxPlainTextNoCtx)(ImplicationEditor.Lookup.all)
+
+      private def pxLookupAllExceptSelf(reqId: ReqId) =
+        _pxLookupAll.map(_.dontSuggest(reqId))
 
       override type Args   = Unit
       override type Change = ImplicationEditor.Output
@@ -498,11 +501,11 @@ object NewEditor {
         scope.fold(customField(id, _), all(id, _))
 
       def all(id: ReqId, dir: Direction): InitFn =
-        start(id, dir, pxLookupAll)
+        start(id, dir, pxLookupAllExceptSelf(id))
 
       def customField(id: ReqId, fid: CustomField.Implication.Id): InitFn = {
         val dir = CustomField.Implication.dir
-        val lookup = Px.apply2(pxProject, pxLookupAll)(ImplicationEditor.Lookup.forCustomColumn(_, _, fid))
+        val lookup = Px.apply2(pxProject, pxLookupAllExceptSelf(id))(ImplicationEditor.Lookup.forCustomColumn(_, _, fid))
         start(id, dir, lookup)
       }
 
