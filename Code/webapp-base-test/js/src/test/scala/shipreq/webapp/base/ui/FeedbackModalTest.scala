@@ -95,9 +95,17 @@ object FeedbackModalTest extends TestSuite {
 
     val observer: Observer[Ref, Obs, String] =
       Observer { ref =>
+        def attempt(z: DomZipperJs) =
+          z.collect0n(".modal").zippers.find(_.innerText contains "Feedback")
+
         val $ =
-          DomZipperJs(ref.backend.dom()).collect01(".modal").zippers
-            .getOrElse(DomZipperJs(document.body).apply(".modal"))
+          attempt(DomZipperJs(ref.backend.dom()))
+            .orElse(attempt(DomZipperJs(document.body)))
+            .getOrElse {
+              println(s"\n\n${document.body.outerHTML}\n\n")
+              ErrorMsg("Feedback modal not found").throwException()
+            }
+
         new Obs($, ref.server)
       }
 
