@@ -10,6 +10,7 @@ v2.2
 * New plan for the rest of v2.2
 
 ### Analyse
+* Add a field to show where a req is being referenced (i.e. FB-9 references FR-5 in its detail field, I should be able to see that from FB-5's page. "Citations?")
 * Req Code config
   * completely disable (don't show in ReqDetail or ReqTable, even remove from auto-complete)
   * disable for some req types (and don't show in ReqDetail)
