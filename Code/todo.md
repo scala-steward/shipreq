@@ -10,6 +10,10 @@ v2.2
 * New plan for the rest of v2.2
 
 ### Analyse
+* Req Code config
+  * completely disable (don't show in ReqDetail or ReqTable, even remove from auto-complete)
+  * disable for some req types (and don't show in ReqDetail)
+  * mandatory for some req types
 * Common workflows pt2: SDLC to deployment
 * Derivative tags
   * eg. MFs default to "not started" if no (implied) children, else take the max of children's tags
