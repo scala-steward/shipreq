@@ -277,6 +277,7 @@ object AutoCompleteTest extends TestSuite {
       }
       "filterDeadByPubid" - quickTestSuggestions("[mf28")()
       "filterDeadByTitle" - quickTestSuggestions("[search")("MF-25") // excludes CO-{1,2}
+      "complete" - quickTestSuggestions("[MF-9]")()
     }
 
     "reqCodePrefixes" - {

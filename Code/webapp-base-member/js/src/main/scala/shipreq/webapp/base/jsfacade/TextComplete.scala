@@ -127,8 +127,8 @@ object TextComplete {
 
     final class Step2(`match`: Match, index: Index) {
       def search  [A](f: String => IterableOnce[A]): Step3a[A] = new Step3a(`match`, index, Search(f))
-      def replace [A](f: A => String)                 : Step3b[A] = new Step3b[A](`match`, index, Replace apply f)
-      def replace2[A](f: A => (String, String))       : Step3b[A] = new Step3b[A](`match`, index, Replace pair f)
+      def replace [A](f: A => String)              : Step3b[A] = new Step3b[A](`match`, index, Replace apply f)
+      def replace2[A](f: A => (String, String))    : Step3b[A] = new Step3b[A](`match`, index, Replace pair f)
     }
 
     final class Step3a[A](`match`: Match, index: Index, search: Search[A]) {

@@ -15,8 +15,15 @@ object Utils {
                       val applyContext: String => String,
                       val prefixGroups: Int) {
 
-    // Util.regexEscapeAndWrap turns empty strings into (?:) which is fine
-    // val acSuffix = if (suffixRegex.isEmpty) "$" else suffixRegex + "?$"
+    // We want to only make suggestions when the suffix isn't present.
+    // If it is present, then the user has already completed it.
+    // Eg. If I type `[mf9`, please suggest; but if I type `[mf9]` don't suggest anything -- I've just indicated that
+    // I've made my decision.
+    private val notSuffix =
+      suffixRegex match {
+        case "" | "(?:)" => ""
+        case suffix      => s"(?!$suffix)"
+      }
 
     private val prefixCapture1 =
       1.to(prefixGroups).iterator.map("$" + _.toString).mkString
@@ -31,13 +38,13 @@ object Utils {
 
       case Contextualise =>
         rest(Strategy.builder
-          .regex(s"$prefixRegex$mainRegex$suffixRegex?$$", index = 1 + prefixGroups)
+          .regex(s"$prefixRegex$mainRegex$notSuffix$$", index = 1 + prefixGroups)
           .replace(s => prefixCapture1 + applyContext(replacementA(s)) + replacementEnd))
           .result()
 
       case Plain =>
         rest(Strategy.builder
-          .regex(s"(^|\\s)$prefixRegex?$mainRegex$suffixRegex?$$", index = 2 + prefixGroups)
+          .regex(s"(^|\\s)$prefixRegex?$mainRegex$notSuffix$$", index = 2 + prefixGroups)
           .replace(s => prefixCapture2 + replacementA(s) + replacementEnd))
           .result()
     }
