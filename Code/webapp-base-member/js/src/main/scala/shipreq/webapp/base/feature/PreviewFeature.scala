@@ -193,6 +193,12 @@ object PreviewFeature {
       def showPreview(wantOpen: => Boolean): Boolean =
         status.exists(_.show || wantOpen)
 
+      def isManual: Boolean =
+        status match {
+          case Some(_: Status.Manual) => true
+          case _                      => false
+        }
+
       def showManuallyControlledPreview(default: Boolean): Boolean =
         status match {
           case Some(m: Status.Manual) => m.show
