@@ -735,7 +735,7 @@ object ReqTableTest extends TestSuite {
     runTest(Plan.action(test) withInitialState SampleProject3.project)
   }
 
-  private def testEditorFocusRetention()(implicit path: TestPath): Unit = {
+  private def testImpEditorFocusRetention()(implicit path: TestPath): Unit = {
     implicit val ce   = cellEditor("FR-1", "Major Feature")
     val assertFocus   = activeElement.assert.equalBy(ce.editorDom.run(_).get)
     val assertSameDom = ce.editorDom.valueBy(_.get).assert.not.change
@@ -760,6 +760,36 @@ object ReqTableTest extends TestSuite {
         +> assertFocus
         +> assertSameDom
         +> ce.editorValidity.assert.equal(Valid)
+      )
+
+    runTest(Plan.action(test) withInitialState SampleProject3.project)
+  }
+
+  private def testTextEditorFocusRetention()(implicit path: TestPath): Unit = {
+    implicit val ce   = cellEditor("MF-1", "Description")
+    val assertFocus   = activeElement.assert.equalBy(ce.editorDom.run(_).get)
+    val assertSameDom = ce.editorDom.valueBy(_.get).assert.not.change
+
+    val test = (
+      showHideColumn("Description")
+        >> cellEditor("MF-1", "Title").startEdit
+
+        >> ce.startEdit
+        +> assertFocus
+
+        >> ce.setEditorValue("")
+        +> assertFocus
+        +> assertSameDom
+
+        >> ce.setEditorValue("*")
+        +> assertFocus
+        +> assertSameDom
+        +> ce.hasPreview.assert(false)
+
+        >> ce.setEditorValue("* ")
+        +> assertFocus
+        +> assertSameDom
+        +> ce.hasPreview.assert(true)
       )
 
     runTest(Plan.action(test) withInitialState SampleProject3.project)
@@ -827,7 +857,11 @@ object ReqTableTest extends TestSuite {
       "tagsCustom"     - runTest(testCustomTagColumnEditor         named "testCustomTagColumnEditor"        )
       "titleIO"        - runTest(testEditorTitleIO                 named "testEditorTitleIO"                )
       "failClear"      - runTest(testFailureClearedOnEsc           named "testFailureClearedOnEsc"          )
-      "focusRetention" - testEditorFocusRetention()
+
+      "focusRetention" - {
+        "imp"  - testImpEditorFocusRetention()
+        "text" - testTextEditorFocusRetention()
+      }
 
       "tagLegality" - {
         "status"   - testTagLegality("BR-1", "Status")
