@@ -40,6 +40,7 @@ object EditThemeTest extends TestSuite {
     }
 
     EditTheme.renderEditor(
+      ids                = EditTheme.Ids(),
       status             = status,
       optionalFullscreen = None,
       editor             = editor,

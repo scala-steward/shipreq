@@ -87,17 +87,18 @@ object TagEditor {
   val potentialValueAcceptor: PotentialValueAcceptor[String] =
     PotentialValueAcceptor.correct(liveCorrect)
 
-  case class Props(preEditValue    : Option[Set[ApplicableTagId]],
-                   naTags          : NaTags,
-                   edit            : StateSnapshot[String],
-                   lookup          : Lookup,
-                   asyncStatus     : Option[EditorStatus.Async],
-                   abort           : Option[Callback],
-                   autoFocus       : Boolean,
-                   commitFn        : Option[CommitFn],
-                   commitVerb      : String,
-                   extraKbShortcuts: KeyboardTheme.Shortcuts,
-                   showInstructions: Boolean) {
+  final case class Props(preEditValue    : Option[Set[ApplicableTagId]],
+                         editorIds       : EditTheme.Ids,
+                         naTags          : NaTags,
+                         edit            : StateSnapshot[String],
+                         lookup          : Lookup,
+                         asyncStatus     : Option[EditorStatus.Async],
+                         abort           : Option[Callback],
+                         autoFocus       : Boolean,
+                         commitFn        : Option[CommitFn],
+                         commitVerb      : String,
+                         extraKbShortcuts: KeyboardTheme.Shortcuts,
+                         showInstructions: Boolean) {
 
     private val auditor: Auditor[String, ApplicableTag] =
       Auditor { str =>
@@ -197,7 +198,12 @@ object TagEditor {
             help = None,
             fullscreen = None))
 
-      EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)
+      EditTheme.renderEditor(
+        ids          = p.editorIds,
+        status       = p.status,
+        editor       = editor,
+        readOnlyView = p.edit.value,
+        instructions = instructions)
     }
 
     val onMount: Callback =

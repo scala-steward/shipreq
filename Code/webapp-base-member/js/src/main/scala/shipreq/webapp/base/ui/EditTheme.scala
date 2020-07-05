@@ -10,6 +10,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.feature.PreviewFeature.Position
 import shipreq.webapp.base.feature.{EditorStatus, PreviewFeature}
+import shipreq.webapp.base.jsfacade.ReactReversePortal
 import shipreq.webapp.base.ui.semantic.Icon
 import shipreq.webapp.base.ui.{BaseStyles => *}
 
@@ -110,12 +111,24 @@ object EditTheme {
 
   // ===================================================================================================================
 
+  final class Ids(private[EditTheme] val editor : ReactReversePortal.Node,
+                  private[EditTheme] val preview: ReactReversePortal.Node)
+
+  object Ids {
+    def apply(): Ids =
+      new Ids(
+        ReactReversePortal.Instance.createHtmlPortalNode(),
+        ReactReversePortal.Instance.createHtmlPortalNode())
+  }
+
   /** helper for no preview or fullscreen */
-  def renderEditor(status      : EditorStatus,
+  def renderEditor(ids         : Ids,
+                   status      : EditorStatus,
                    editor      : Validity => VdomElement,
                    readOnlyView: => VdomNode,
                    instructions: => TagMod): VdomNode =
     renderEditor(
+      ids             = ids,
       status          = status,
       editor          = editor,
       readOnlyView    = readOnlyView,
@@ -127,7 +140,8 @@ object EditTheme {
     )
 
   /** helper for no fullscreen */
-  def renderEditor(status            : EditorStatus,
+  def renderEditor(ids               : Ids,
+                   status            : EditorStatus,
                    editor            : Validity => VdomElement,
                    readOnlyView      : => VdomNode,
                    instructions      : => TagMod,
@@ -136,6 +150,7 @@ object EditTheme {
                    previewWantOpen   : => Boolean,
                    previewBody       : => VdomNode): VdomNode =
     renderEditor(
+      ids                = ids,
       status             = status,
       optionalFullscreen = None,
       editor             = (v, _, _) => editor(v),
@@ -147,7 +162,8 @@ object EditTheme {
       previewBody        = previewBody,
     )
 
-  def renderEditor(status            : EditorStatus,
+  def renderEditor(ids               : Ids,
+                   status            : EditorStatus,
                    optionalFullscreen: Option[OptionalFullscreen],
                    editor            : (Validity, Option[Position], Mode) => VdomElement,
                    readOnlyView      : => VdomNode,

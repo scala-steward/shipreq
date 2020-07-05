@@ -88,17 +88,18 @@ object ImplicationEditor {
   type Output   = SetDiff.NE[ReqId]
   type CommitFn = Output ~=> Callback
 
-  case class Props(edit            : StateSnapshot[String],
-                   lookup          : Lookup,
-                   validationFn    : ValidationFn,
-                   asyncStatus     : Option[EditorStatus.Async],
-                   abort           : Option[Callback],
-                   autoFocus       : Boolean,
-                   commitFn        : Option[CommitFn],
-                   commitVerb      : String,
-                   textSearch      : TextSearch,
-                   extraKbShortcuts: KeyboardTheme.Shortcuts,
-                   showInstructions: Boolean) {
+  final case class Props(edit            : StateSnapshot[String],
+                         editorIds       : EditTheme.Ids,
+                         lookup          : Lookup,
+                         validationFn    : ValidationFn,
+                         asyncStatus     : Option[EditorStatus.Async],
+                         abort           : Option[Callback],
+                         autoFocus       : Boolean,
+                         commitFn        : Option[CommitFn],
+                         commitVerb      : String,
+                         textSearch      : TextSearch,
+                         extraKbShortcuts: KeyboardTheme.Shortcuts,
+                         showInstructions: Boolean) {
 
     val parseResult = validationFn(lookup)(edit.value)
     val validated   = PotentialChange.fromDisjunction(parseResult).ignoreEmpty
@@ -198,7 +199,12 @@ object ImplicationEditor {
             help = None,
             fullscreen = None))
 
-      EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)
+      EditTheme.renderEditor(
+        ids          = p.editorIds,
+        status       = p.status,
+        editor       = editor,
+        readOnlyView = p.edit.value,
+        instructions = instructions)
     }
 
     val onMount: Callback =

@@ -40,6 +40,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
     PotentialValueAcceptor.correct(liveCorrect)
 
   case class Props(edit            : StateSnapshot[String],
+                   editorIds       : EditTheme.Ids,
                    initialValue    : Option[In],
                    trie            : ReqCode.Trie,
                    asyncStatus     : Option[EditorStatus.Async],
@@ -111,7 +112,12 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
             help = None,
             fullscreen = None))
 
-      EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)
+      EditTheme.renderEditor(
+        ids          = p.editorIds,
+        status       = p.status,
+        editor       = editor,
+        readOnlyView = p.edit.value,
+        instructions = instructions)
     }
 
     val onMount: Callback =
