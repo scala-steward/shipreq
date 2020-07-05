@@ -186,30 +186,29 @@ object EditTheme {
               case Some(e) => <.div(*.errorAndInstructions(position), *.errorPointingUp(e), instructions)
             }
 
-          implicit def noOuter(v: VdomTag): RenderResult =
-            RenderResult(identity, v)
+          def renderWithPreviewRight =
+            RenderResult.noOuter(
+              <.div(*.textEditorLeftPreviewRight(mode),
+                <.div(editor(allowPreview = true), errorAndInstructions),
+                <.div(preview)))
 
-          def previewRight =
-            <.div(*.textEditorLeftPreviewRight(mode),
-              <.div(editor(allowPreview = true), errorAndInstructions),
-              <.div(preview))
-
-          def previewUnder =
+          def renderWithPreviewUnder =
             RenderResult(
               outer = <.div(*.textEditorTopPreviewUnder(mode), <.div(editor(allowPreview = true), errorAndInstructions), _),
               inner = <.div(preview)
             )
 
-          def noPreview =
-            <.div(editor(allowPreview = false), errorAndInstructions)
+          def renderWithoutPreview =
+            RenderResult.noOuter(
+              <.div(editor(allowPreview = false), errorAndInstructions))
 
           if (cmd.allowPreview)
             position match {
-              case Position.Right => previewRight
-              case Position.Under => previewUnder
+              case Position.Under => renderWithPreviewUnder
+              case Position.Right => renderWithPreviewRight
             }
           else
-            noPreview
+            renderWithoutPreview
         }
 
       this.renderActive(
@@ -261,13 +260,18 @@ object EditTheme {
 
   // ===================================================================================================================
 
-  private final case class RenderCmd(allowPreview: Boolean,
-                                     mode        : Mode,
-                                     fullscreen  : Option[OptionalFullscreen.Ctx])
+  private final case class RenderCmd(mode        : Mode,
+                                     fullscreen  : Option[OptionalFullscreen.Ctx],
+                                     allowPreview: Boolean)
 
   private final case class RenderResult(outer: VdomNode => VdomNode,
                                         inner: VdomTag) {
     def self = outer(inner)
+  }
+
+  private object RenderResult {
+    def noOuter(inner: VdomTag): RenderResult =
+      apply(identity, inner)
   }
 
   private def renderActive(render            : RenderCmd => RenderResult,
@@ -282,7 +286,7 @@ object EditTheme {
 
       def renderWithManualControls(defaultShow: Boolean, showControlsInitially: Boolean) = {
         val show  = previewRW.read.showManuallyControlledPreview(defaultShow)
-        val cmd   = RenderCmd(show, mode, fullscreen)
+        val cmd   = RenderCmd(mode, fullscreen, allowPreview = show)
         val rr    = render(cmd)
         val inner = previewRW.manualControls(
                       defaultPosition       = defaultPosition,
@@ -299,8 +303,8 @@ object EditTheme {
             case OpenPreview.ShowWithControls      => renderWithManualControls(defaultShow = true, showControlsInitially = true)
             case OpenPreview.Minimally
                | OpenPreview.Always
-               | OpenPreview.WhenWanted            => render(RenderCmd(true, mode, fullscreen)).self
-            case OpenPreview.Never                 => render(RenderCmd(false, mode, fullscreen)).self
+               | OpenPreview.WhenWanted            => render(RenderCmd(mode, fullscreen, allowPreview = true)).self
+            case OpenPreview.Never                 => render(RenderCmd(mode, fullscreen, allowPreview = false)).self
           }
 
         case Mode.Fullscreen =>
