@@ -111,27 +111,14 @@ object EditTheme {
 
   // ===================================================================================================================
 
-  final class Id(node: ReactReversePortal.Node) {
-    private val props = ReactReversePortal.Props(node)
-
-    private[EditTheme] def wrap(node: VdomNode): VdomNode =
-      ReactReversePortal.InPortal(props)(node)
-
-    private[EditTheme] val render: VdomNode =
-      ReactReversePortal.OutPortal(props)
-  }
-
-  object Id {
-    private[EditTheme] def apply(): Id =
-      new Id(ReactReversePortal.Instance.createHtmlPortalNode())
-  }
-
-  final class Ids(private[EditTheme] val editor : Id,
-                  private[EditTheme] val preview: Id)
+  final class Ids(private[EditTheme] val editor : ReactReversePortal.Node,
+                  private[EditTheme] val preview: ReactReversePortal.Node)
 
   object Ids {
     def apply(): Ids =
-      new Ids(Id(), Id())
+      new Ids(
+        ReactReversePortal.Instance.createHtmlPortalNode(),
+        ReactReversePortal.Instance.createHtmlPortalNode())
   }
 
   /** helper for no preview or fullscreen */
@@ -186,16 +173,14 @@ object EditTheme {
                    previewWantOpen   : => Boolean,
                    previewBody       : => VdomNode): VdomNode = {
 
-    def renderPreview(position: Position, mode: Mode): VdomNode =
-      ids.preview.wrap(
-        this.renderPreview(
-          previewRW   = previewRW,
-          position    = position,
-          openPreview = style.openPreview,
-          mode        = mode,
-          wantOpen    = previewWantOpen,
-          body        = previewBody,
-        )
+    def renderPreview(position: Position, mode: Mode) =
+      this.renderPreview(
+        previewRW   = previewRW,
+        position    = position,
+        openPreview = style.openPreview,
+        mode        = mode,
+        wantOpen    = previewWantOpen,
+        body        = previewBody,
       )
 
     def renderActive(error: Option[TagMod]) = {
@@ -208,7 +193,7 @@ object EditTheme {
         cmd => {
           import cmd.mode
           val instructions                  = instructionsFn(cmd.fullscreen)
-          def editor(allowPreview: Boolean) = ids.editor.wrap(editorFn(Valid, Option.when(allowPreview)(position), mode))
+          def editor(allowPreview: Boolean) = editorFn(Valid, Option.when(allowPreview)(position), mode)
           def preview                       = renderPreview(position, mode)
 
           val errorAndInstructions: TagMod =
@@ -220,29 +205,18 @@ object EditTheme {
           def renderWithPreviewRight =
             RenderResult.noOuter(
               <.div(*.textEditorLeftPreviewRight(mode),
-                <.div(
-                  editor(allowPreview = true),
-                  ids.editor.render,
-                  errorAndInstructions),
-                <.div(preview, ids.preview.render)))
+                <.div(editor(allowPreview = true), errorAndInstructions),
+                <.div(preview)))
 
           def renderWithPreviewUnder =
             RenderResult(
-              outer = <.div(*.textEditorTopPreviewUnder(mode),
-                        <.div(
-                          editor(allowPreview = true),
-                          ids.editor.render,
-                          errorAndInstructions),
-                        _),
-              inner = <.div(preview, ids.preview.render)
+              outer = <.div(*.textEditorTopPreviewUnder(mode), <.div(editor(allowPreview = true), errorAndInstructions), _),
+              inner = <.div(preview)
             )
 
           def renderWithoutPreview =
             RenderResult.noOuter(
-              <.div(
-                editor(allowPreview = false),
-                ids.editor.render,
-                errorAndInstructions))
+              <.div(editor(allowPreview = false), errorAndInstructions))
 
           if (cmd.allowPreview)
             position match {
@@ -275,12 +249,15 @@ object EditTheme {
         val mode = Mode.Inline
         val pos = Position.Under
 
+        // Two divs here because the textarea is two-divs in when rendering without error.
+        // If only one div here, React doesn't realise the textarea is the same, and so it destroys the first and
+        // creates a new one which causes the cursor to reset to the beginning of the line, meaning that if a user
+        // tries to type "mf6 mf7" it becomes "f7 mf6m".
         <.div(
-          ids.editor.wrap(editor(Invalid, Some(pos), mode)), // TODO add error background
-          ids.editor.render,
-          *.errorPointingUp(err),
-          renderPreview(pos, mode),
-          ids.preview.render)
+          <.div(
+            editor(Invalid, Some(pos), mode), // TODO add error background
+            *.errorPointingUp(err),
+            renderPreview(pos, mode)))
 
       case EditorStatus.InTransit =>
         // This is correct and guarded by tests in ReqDetailTest that confirm fullscreen is closed on commit, and that
