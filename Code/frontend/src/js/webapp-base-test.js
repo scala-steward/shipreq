@@ -12,8 +12,4 @@ export { default as ReactCollapse  } from 'react-collapse';
 export { default as TextComplete   } from 'textcomplete/lib/textcomplete';
 export { default as TextCompleteTA } from 'textcomplete/lib/textarea';
 
-// react-reverse-portal
-import * as RRP from 'react-reverse-portal';
-export { RRP };
-
 export * from './semantic-ui-test';

@@ -15,10 +15,6 @@ export { default as tinycolor      } from 'tinycolor2/tinycolor';
 import * as screenfull from 'screenfull';
 export { screenfull };
 
-// react-reverse-portal
-import * as RRP from 'react-reverse-portal';
-export { RRP };
-
 // react-svg-pan-zoom
 import ReactSVGPanZoom from 'react-svg-pan-zoom/build-es/viewer';
 import { fitToViewer } from 'react-svg-pan-zoom/build-es/features/zoom';

@@ -7555,11 +7555,6 @@ react-property@1.0.1:
   resolved "https://registry.yarnpkg.com/react-property/-/react-property-1.0.1.tgz#4ae4211557d0a0ae050a71aa8ad288c074bea4e6"
   integrity sha512-1tKOwxFn3dXVomH6pM9IkLkq2Y8oh+fh/lYW3MJ/B03URswUTqttgckOlbxY2XHF3vPG6uanSc4dVsLW/wk3wQ==
 
-react-reverse-portal@2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/react-reverse-portal/-/react-reverse-portal-2.0.0.tgz#a262df2a2238d1baf356022c6b5c731879bcc24d"
-  integrity sha512-dXdPYa8ysVtj1iS/DkmgS9S0P8Fb/i82UJyyalt16duNk11qtAwBmC1qA81787CUDcflyBQvxgxdQcjmgg736Q==
-
 react-svg-pan-zoom@3.8.0:
   version "3.8.0"
   resolved "https://registry.yarnpkg.com/react-svg-pan-zoom/-/react-svg-pan-zoom-3.8.0.tgz#5724c71d257a07233c9cc511a5c6498d80bb397a"
