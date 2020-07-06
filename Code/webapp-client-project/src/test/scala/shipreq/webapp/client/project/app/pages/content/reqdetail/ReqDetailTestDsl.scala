@@ -61,6 +61,8 @@ object ReqDetailTestDsl {
 
   val global = new TestGlobal.TestDslWithObs(*)(identity, _.global)
 
+  val title = new CommonObs.Editor.TestDsl(*, "title")(_.generic.title)
+
   val field = Memo((f: String) => new CommonObs.Editor.TestDsl(*, f)(_.generic.field(f)))
 
   def checkErrorReason(e: String) =
@@ -89,15 +91,6 @@ object ReqDetailTestDsl {
 
   val spinnerCount =
     *.focus("Spinner count").value(_.obs.spinnerCount)
-
-  val titleChangeInProgress =
-    *.focus("Title change is in progress").value(_.obs.generic.titleSpinning)
-
-  val titleText =
-    *.focus("Title text").value(_.obs.generic.titleText)
-
-  val titleEditor =
-    *.focus("Title editor").option(_.obs.generic.titleEditor.map(_.value))
 
   val tailStepAC = *.focus("AC tail step").value(_.obs.uc.tailStepRowAC)
   val tailStepEC = *.focus("EC tail step").value(_.obs.uc.tailStepRowEC)
@@ -229,10 +222,6 @@ object ReqDetailTestDsl {
     *.action(s"Abort $label text edit")(KB.Escape simulateKeyDown _.obs.uc.row(label).textEditor.get) +>
       editorCount.assert.decrement
 
-  lazy val commitTitleEditor: *.Actions =
-    *.action("Commit title editor")(KB.Enter.ctrl simulateKeyDown _.obs.generic.titleEditor.get)
-    // +> editorCount.assert.decrement
-
   val filterDeadToggle =
     *.action(NameFn {
       case None    => "Toggle FilterDead"
@@ -284,13 +273,6 @@ object ReqDetailTestDsl {
     clickDeleteOrRestore.updateState(stateMode set Mode.Restore) <+ life.assert(Dead) >>
       restoreScreenRestore +> life.assert(Live)
     ).group("Restore req")
-
-  val doubleClickTitle =
-    *.action("Double-click title")(Simulate doubleClick _.obs.generic.titleDom)
-
-  def setTitleEditValue(newValue: String): *.Actions =
-    *.action(s"Set title text to ${quoteStringForDisplay(newValue)}")(
-      SimEvent.Change(newValue) simulate _.obs.generic.titleEditor.get)
 
   val randomUseCaseStepAction: *.Actions = {
 

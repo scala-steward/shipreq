@@ -297,7 +297,7 @@ object ReqDetailTest extends TestSuite {
     ))
 
     "editors" - test("UC-1")(Plan(
-      doubleClickTitle                 +> editorCount.assert.beforeAndAfter(0, 1) <+ filterDead.assert(HideDead)
+      title.doubleClick                +> editorCount.assert.beforeAndAfter(0, 1) <+ filterDead.assert(HideDead)
       >> field("Notes").doubleClick    +> editorCount.assert(2)
       >> showDead                      +> editorCount.assert(2)
       >> field("Reporter").doubleClick +> editorCount.assert(2) // dead field
@@ -309,7 +309,7 @@ object ReqDetailTest extends TestSuite {
         +> editorCount.assert(0)
         +> unsavedChanges.assert(0)
 
-        +> doubleClickTitle
+        +> title.doubleClick
         +> editorCount.assert.increaseBy(1)
         +> unsavedChanges.assert.noChange
 
@@ -317,7 +317,7 @@ object ReqDetailTest extends TestSuite {
         +> editorCount.assert.increaseBy(1)
         +> unsavedChanges.assert.noChange
 
-        >> setTitleEditValue("xxxxxxxxxxx")
+        >> title.setEditorValue("xxxxxxxxxxx")
         +> editorCount.assert.noChange
         +> unsavedChanges.assert.increaseBy(1)
 

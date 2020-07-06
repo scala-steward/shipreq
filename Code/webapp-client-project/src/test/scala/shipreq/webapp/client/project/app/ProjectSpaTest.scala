@@ -84,7 +84,7 @@ object ProjectSpaTest extends TestSuite {
 
   private def testReauthCommit(online: Boolean, relogin: Boolean): Unit = {
     val edit: *.Actions =
-      (RD.doubleClickTitle >> RD.setTitleEditValue("alright!") >> RD.commitTitleEditor).lift
+      (RD.title.doubleClick >> RD.title.setEditorValue("alright!") >> RD.title.commit).lift
 
     val start: *.Actions =
       if (online)
@@ -106,9 +106,9 @@ object ProjectSpaTest extends TestSuite {
         >> reauth.clickLogin
         +> reauth.requestCount.assert(1)
         +> reauth.isVisible.assert(false)
-        +> RD.titleChangeInProgress.assert(false).lift
-        +> RD.titleEditor.isEmpty.assert(true).lift
-        +> RD.titleText.assert("alright!").lift
+        +> RD.title.isSpinning.assert(false).lift
+        +> RD.title.editorValue.isEmpty.assert(true).lift
+        +> RD.title.text.assert("alright!").lift
         +> unsavedChanges.assert(0)
         +> global.requestCount.assert(1)
         )
@@ -116,8 +116,8 @@ object ProjectSpaTest extends TestSuite {
         (  reauth.clickCancel
         +> reauth.requestCount.assert(0)
         +> reauth.isVisible.assert(false)
-        +> RD.titleChangeInProgress.assert(false).lift
-        +> RD.titleEditor.assert.contains("alright!").lift
+        +> RD.title.isSpinning.assert(false).lift
+        +> RD.title.editorValue.assert.contains("alright!").lift
         +> unsavedChanges.assert(1)
         +> global.requestCount.assert(0)
         )
