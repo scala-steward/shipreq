@@ -274,6 +274,20 @@ object ReqDetailTestDsl {
       restoreScreenRestore +> life.assert(Live)
     ).group("Restore req")
 
+  val titleCellHasFocus =
+    global.activeElement.assert.equalBy(_.obs.generic.title.dom)
+
+  def assertTableCellFocused(row: Int) =
+    global.activeElement.assert.equalBy { x =>
+      val rowIdx =
+        if (row >= 0)
+          row
+        else
+          x.obs.generic.fieldsInOrder.length + row
+      val name = x.obs.generic.fieldsInOrder(rowIdx)
+      x.obs.generic.field(name).dom
+    }
+
   val randomUseCaseStepAction: *.Actions = {
 
     val addTailSteps = Vector.empty :+ addTailStepAC :+ addTailStepEC

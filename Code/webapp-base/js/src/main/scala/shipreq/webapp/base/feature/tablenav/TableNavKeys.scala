@@ -3,7 +3,9 @@ package shipreq.webapp.base.feature.tablenav
 import japgolly.scalajs.react._
 import org.scalajs.dom
 import org.scalajs.dom.ext.KeyCode
+import org.scalajs.dom.html
 import scala.annotation.elidable
+import shipreq.webapp.base.lib.DomUtil._
 
 final class TableNavKeys(implicit ts: TableStyle) {
 
@@ -14,6 +16,12 @@ final class TableNavKeys(implicit ts: TableStyle) {
     handlerFn(e)
 
   val handlerFn: ReactKeyboardEventFromHtml => CallbackOption[Unit] = e => {
+
+    val exceptions: CallbackOption[Unit] =
+      for {
+        t <- CallbackOption.liftOption(e.target.findParent(_.tagName.toUpperCase == "TABLE"))
+        _ <- SpecialCases.run(t.domCast[html.Table], e)
+      } yield ()
 
     // The outer-only restriction prevents arrow-keys being overridden in textarea
     val outerOnly: CallbackOption[Unit] =
@@ -42,7 +50,7 @@ final class TableNavKeys(implicit ts: TableStyle) {
         case KeyCode.Tab    => subMove(e, Movement.Prev)
       }
 
-    (outerOnly | outerAndInner).asEventDefault(e)
+    (exceptions | outerOnly | outerAndInner).asEventDefault(e)
   }
 
   val handler: ReactKeyboardEventFromHtml => Callback =

@@ -6,6 +6,8 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
+import org.scalajs.dom.ext.KeyCode
+import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util._
@@ -13,11 +15,10 @@ import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.ExternalPubid.LookupFailure
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{Event, ProjectAndOrd, VerifiedEvent}
-import shipreq.webapp.base.feature.{AsyncFeature, PreviewFeature}
+import shipreq.webapp.base.feature.{AsyncFeature, PreviewFeature, TableNavigationFeature}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.{CreateContentCmd, UpdateContentCmd}
 import shipreq.webapp.base.text._
-import shipreq.webapp.base.ui.semantic.Header
 import shipreq.webapp.base.ui.{EditTheme, NoContentMessage}
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
@@ -40,6 +41,7 @@ object ReqDetail {
     ScalaComponent.builder[DynamicProps]
       .backend(new Backend(staticProps, _))
       .renderBackend
+      .componentDidMount(_.backend.onMount)
       .build
 
   final case class StaticProps(sspUpdateContent     : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, VerifiedEvent.Seq],
@@ -239,8 +241,27 @@ object ReqDetail {
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    private val headerStyle: Live => Header.Style =
-      Live.memo(l => Header.Style(Header.Type.H1, other = *.headerText(l)))
+    private val titleCellRef = Ref[html.Element]
+    private val tableRef     = Ref[html.Table]
+    private val tableBase    = <.table.withRef(tableRef)(*.detailTable)
+
+    val onMount: Callback =
+      for {
+        table <- tableRef.get
+        _     <- TableNavigationFeature.SpecialCases(table)(tableNavExceptions)
+      } yield ()
+
+    private def tableNavExceptions: TableNavigationFeature.SpecialCases.Handler =
+      ctx => {
+        def cell(row: Int) = ctx.bodyRow(row).children(1)
+        def isFirstRow     = ctx.target == cell(0)
+        def isLastRow      = ctx.target == cell(-1)
+        def focusTitle     = titleCellRef.get.map(_.focus()).toCallback
+        CallbackOption.keyCodeSwitch(ctx.event) {
+          case KeyCode.Up   if isFirstRow => focusTitle
+          case KeyCode.Down if isLastRow  => focusTitle
+        }
+      }
 
     private def renderDetail(props: DynamicProps, data: Data): VdomElement = {
       import data.{project, req, pubidText}
@@ -254,24 +275,19 @@ object ReqDetail {
       def reqEditor(fk: FieldKey.ForSomeReq): EditorFeature.ReadWrite.For[fk.type] =
         reqProps.editor(fk, data.pxProjectWidgets, data.filterDead)
 
-      def renderHeader: VdomElement = {
-        val hstyle = headerStyle(data.live)
-
-        <.div(*.headerRow,
-
-          <.div(*.headerPubid,
-            Header(hstyle, pubidText + ":")),
-
-          <.div(*.headerTitle,
-            reqEditor(FieldKey.reqTitle(req.id)).themedRenderOr(())(
-                Header(hstyle, view.title))),
-
-          <.div(*.headerFilterDeadButton,
-            FilterDeadButton.whenLive(data.live)(StateSnapshot.withReuse(props.filterDead.value)(setFilterDead))))
-      }
+      def renderPageHeader: VdomElement =
+        HeaderRow.Props(
+          pubidText    = pubidText,
+          live         = data.live,
+          titleEditor  = reqEditor(FieldKey.reqTitle(req.id)),
+          titleView    = Reusable.byRef(view.title),
+          filterDead   = StateSnapshot.withReuse(props.filterDead.value)(setFilterDead),
+          tableRef     = tableRef,
+          titleCellRef = titleCellRef,
+        ).render
 
       def renderRows =
-        <.table(*.detailTable,
+        tableBase(
           <.tbody(
             data.rows.toVdomArray(renderRow)))
 
@@ -459,7 +475,7 @@ object ReqDetail {
       }
 
       <.div(
-        renderHeader,
+        renderPageHeader,
         renderRows)
     }
 

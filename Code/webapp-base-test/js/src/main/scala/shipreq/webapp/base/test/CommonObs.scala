@@ -183,6 +183,9 @@ object CommonObs {
       final val previewButtons             = *.focus(field + " editor preview buttons"              ).value(_.obs.previewButtonExistence)
       final val previewButtonsStr          = *.focus(field + " editor preview buttons"              ).value(_.obs.previewButtonExistence.asStr)
 
+      final def focusCell =
+        *.action("Focus cell")(_.obs.dom.focus())
+
       final def doubleClick: *.Actions =
         *.action("Double-click " + field)(Simulate doubleClick _.obs.dom)
 

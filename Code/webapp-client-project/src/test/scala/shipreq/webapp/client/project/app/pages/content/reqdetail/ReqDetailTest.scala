@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.app.pages.content.reqdetail
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.scalajs.react.test.SimEvent.{Keyboard => KB}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
@@ -16,6 +17,7 @@ import utest._
 object ReqDetailTest extends TestSuite {
   import ReqDetailTestDsl._
   import WebappTestUtil._
+  import global.press
 
   PrepareEnv()
 
@@ -704,7 +706,20 @@ object ReqDetailTest extends TestSuite {
         >> f.toggleFullscreen      +> assert(editors = 1, preview = "-hd-", isFS = y, canFS = y, spin = n)
         >> f.abort                 +> assert(editors = 0, preview = "none", isFS = n, canFS = n, spin = n)
       ))
-
     }
+
+    "titleFocus" - test("MF-1")(Plan.action(
+      title.focusCell     +> titleCellHasFocus +> title.editorValue.assert.empty
+        >> press(KB.d)    +> title.editorValue.assert(Some("d"))
+        >> title.abort    +> titleCellHasFocus
+        >> press(KB.Down) +> assertTableCellFocused(0)
+        >> press(KB.Down) +> assertTableCellFocused(1)
+        >> press(KB.Up)   +> assertTableCellFocused(0)
+        >> press(KB.Up)   +> titleCellHasFocus
+        >> press(KB.Up)   +> assertTableCellFocused(-1)
+        >> press(KB.Up)   +> assertTableCellFocused(-2)
+        >> press(KB.Down) +> assertTableCellFocused(-1)
+        >> press(KB.Down) +> titleCellHasFocus
+    ))
   }
 }

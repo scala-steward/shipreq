@@ -626,7 +626,8 @@ object Style extends StyleSheet.Inline {
 
     val headerTitle = style(
       flexGrow(1),
-      paddingLeft(0.4 rem))
+      paddingLeft(0.4 rem),
+      &.focus(BaseStyles.focus.glowOutline))
 
     val headerText = styleF(D.live)(live => styleS(
       margin(`0`).important,

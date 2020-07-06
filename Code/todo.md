@@ -52,7 +52,6 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
-* allow title focus in ReqDetail
 
 
 Backlog (maybe-probably soon)

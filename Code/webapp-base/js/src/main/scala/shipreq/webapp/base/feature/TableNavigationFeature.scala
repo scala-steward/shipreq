@@ -9,7 +9,7 @@ import japgolly.scalajs.react.vdom.html_<^._
   *   1. Create a normal vdom table
   *   2. For th/td cells that can have focus and be reachable by keyboard
   *     i. Add `^.tabIndex := -1`
-  *     i. Either add `TableNavigationFeature.onKeyDown`,
+  *     i. Either add `TableNavigationFeature.{NoRowSpans,HasRowSpans}.onKeyDown`,
   *        or use `EditorNavParent`,
   *        or something like `^.onKeyDown ==> (e => TableNavigationFeature.Keys(e) | myOtherKeys(e))`.
   *        Composition of key handlers is a downstream responsibility.
@@ -22,6 +22,16 @@ import japgolly.scalajs.react.vdom.html_<^._
   *     i. Add [[TableNavigationFeature.nestedTable]] to the nested table vdom.
   *   6. If a cell contains anything that should behave as a row, add [[TableNavigationFeature.newRow]] to it.
   *      An example of this is use case steps which are a bunch of divs in a single td cell.
+  *
+  * == Overriding navigation behaviour ==
+  *
+  * You can add special cases to the table that override the default behaviour.
+  * This is currently being used in ReqDetail so that the title cell (which is outside of the table) can be navigated to
+  * and from the table.
+  *
+  * 1. In the `componentDidMount` callback, call `TableNavigationFeature.SpecialCases(table)(handler)`
+  *
+  * That's it. The provided handler will take precedence over the default rules.
   */
 object TableNavigationFeature {
 
@@ -36,6 +46,8 @@ object TableNavigationFeature {
 
   type TableStyle = tablenav.TableStyle
   val  TableStyle = tablenav.TableStyle
+
+  val SpecialCases = tablenav.SpecialCases
 
   def apply(ts: TableStyle): Bundle =
     if (ts.hasRowSpans)
