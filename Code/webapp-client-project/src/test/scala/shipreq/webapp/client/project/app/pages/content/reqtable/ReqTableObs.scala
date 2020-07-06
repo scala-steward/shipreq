@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.app.pages.content.reqtable
 import japgolly.microlibs.utils.Memo
 import org.parboiled2.ParseError
 import org.parboiled2.Parser.DeliveryScheme.Throw
-import org.scalajs.dom.{document, html}
+import org.scalajs.dom.html
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.clipboard.TestClipboard
 import shipreq.webapp.base.lib.DomUtil._
@@ -61,8 +61,6 @@ object ReqTableObs {
  */
 final class ReqTableObs($: DomZipperJs, val global: TestGlobal.Obs, val confirmJs: TestConfirmJs.Obs) {
   import ReqTableObs._
-
-  val activeElement = document.activeElement
 
   val clipboardText = TestClipboard.readText()
 

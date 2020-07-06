@@ -78,8 +78,6 @@ object ReqTableTestDsl {
 
   val tablePubids = *.focus("Visible pubids").collection(_.obs.table.rowPubids)
 
-  val activeElement = *.focus("activeElement").value(_.obs.activeElement)
-
   val clipboardText = *.focus("clipboardText").value(_.obs.clipboardText)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -282,10 +280,7 @@ object ReqTableTestDsl {
 
   def setFocus(f: ReqTableObs => html.Element): *.Actions =
     *.action("Set focus")(i => f(i.obs).focus()) +>
-      activeElement.assert.equalBy(i => f(i.obs))
-
-  def press(k: SimEvent.Keyboard): *.Actions =
-    *.action(s"Press ${k.desc}.")(k simulateKeyDownPressUp _.obs.activeElement)
+      global.activeElement.assert.equalBy(i => f(i.obs))
 
   def copyToClipboard(text: String): *.Actions =
     *.action(s"Copy to clipboard: ${quoteString(text)}")(_ => TestClipboard.writeText(text))

@@ -23,6 +23,7 @@ import utest.framework.TestPath
 object ReqTableTest extends TestSuite {
   import ReqTableTestDsl.{savedViews => _, _}
   import ReqTableTestDsl.savedViews.{* => _, _}
+  import global.{activeElement, press}
 
   PrepareEnv()
 

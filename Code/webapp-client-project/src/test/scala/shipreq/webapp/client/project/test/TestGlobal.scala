@@ -1,7 +1,9 @@
 package shipreq.webapp.client.project.test
 
+import japgolly.scalajs.react.test.SimEvent
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import java.time.{Duration, Instant}
+import org.scalajs.dom.document
 import scalaz.{-\/, \/-}
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{Allow, ErrorMsg, JsTimers, PotentialChange, Retries}
@@ -247,6 +249,7 @@ object TestGlobal {
   import shipreq.webapp.base.test.TestState._
 
   final class Obs($: DomZipperJs, g: TestGlobal) {
+    val activeElement       = document.activeElement
     val reqs                = g.reqs()
     val reauthModal         = TestReauthenticationModal.Obs(g.reauthModal.id)($.parent.parent, g.reauth)
     val fullscreenCount     = $.collect0n(BaseStyles.fullscreen.selector).size
@@ -288,6 +291,8 @@ object TestGlobal {
     protected final implicit def autoObs(o: O): Obs =
       getObs(o)
 
+    val activeElement = *.focus("activeElement").value(_.obs.activeElement)
+
     val fullscreenCount = *.focus("Fullscreen elements").value(_.obs.fullscreenCount)
 
     val isBrowserFullscreen = *.focus("Browser is fullscreen").value(_.obs.isBrowserFullscreen)
@@ -297,5 +302,8 @@ object TestGlobal {
     val lastTwoRequests = *.focus("Last two requests").compare(_.obs.reqs.last, _.obs.reqs.init.last)
 
     val assertLastTwoRequestsAreEqual = lastTwoRequests.map(_.req).assert.equal(Equal.by_==, implicitly)
+
+    def press(k: SimEvent.Keyboard): *.Actions =
+      *.action(s"Press ${k.desc}.")(k simulateKeyDownPressUp _.obs.activeElement)
   }
 }
