@@ -14,11 +14,12 @@ object BaseStyles extends StyleSheet.Inline {
 
   /** Domains */
   object D {
-    val on                 = Domain.ofValues[On](On, Off)
-    val editorMode         = Domain.ofValues(EditTheme.Mode.values.whole: _*)
-    val previewPosition    = Domain.ofValues(Position.values.whole: _*)
-    val editorPosMode      = previewPosition *** editorMode
-    val editorStatePosMode = (EditorState.domain *** previewPosition.option *** editorMode).map { case ((a, b), c) => (a, b, c) }
+    val on              = Domain.ofValues[On](On, Off)
+    val editorMode      = Domain.ofValues(EditTheme.Mode.values.whole: _*)
+    val previewPosition = Domain.ofValues(Position.values.whole: _*)
+    val editorPosMode   = previewPosition *** editorMode
+    val font            = Domain.ofValues(EditTheme.Font.values.whole: _*)
+    val textEditor      = (EditorState.domain *** previewPosition.option *** editorMode *** font).map { case (((a, b), c), d) => (a, b, c, d) }
   }
 
   object ZIndex {
@@ -30,6 +31,9 @@ object BaseStyles extends StyleSheet.Inline {
   @inline def layout         = InlineBaseStyles.layout
 
   val pageMargin = InlineBaseStyles.pageMarginRem.rem
+
+  // https://stackoverflow.com/questions/38781089/font-family-monospace-monospace
+  private val monospace = fontFamily :=! "monospace, monospace"
 
   sealed abstract class EditorState extends Product with Serializable
   object EditorState {
@@ -154,8 +158,8 @@ object BaseStyles extends StyleSheet.Inline {
   private val fullscreenEditorAndPreviewHeight =
     "calc(50vh - (" + editorInstructions.heightEm + "em / 2) - " + fullscreenPaddingEx + "ex)"
 
-  val textEditor = styleF(D.editorStatePosMode) { case (state, pos, mode) =>
-    import EditTheme.Mode
+  val textEditor = styleF(D.textEditor) { case (state, pos, mode, font) =>
+    import EditTheme.{Font, Mode}
     styleS(
       width(100 %%),
       margin(`0`),
@@ -165,6 +169,10 @@ object BaseStyles extends StyleSheet.Inline {
       transition := "color .1s ease,border-color .1s ease",
       fontSize(1 em),
       lineHeight(1.2857),
+      font match {
+        case Font.Default   => styleS()
+        case Font.Monospace => styleS(monospace)
+      },
       (mode, pos) match {
 
         case (Mode.Inline, Some(Position.Right)) =>
@@ -381,13 +389,11 @@ object BaseStyles extends StyleSheet.Inline {
         // color(c"#525456"),
         textDecoration := "underline"))
 
-    val helpIcon = style(
+    val icon = style(
       marginLeft(0.35 ex).important,
       marginRight(`0`).important,
       cursor.pointer,
       &.hover(color(hoverColour)))
-
-    val fullscreenIcon = helpIcon
   }
 
   val autoComplete = new AutoComplete

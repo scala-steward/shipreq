@@ -62,7 +62,9 @@ object PlainTextEditor {
           commitVerb = KeyboardTheme.Instructions.defaultCommitVerb,
           abort      = p.abort,
           help       = None,
-          fullscreen = None)
+          fullscreen = None,
+          monospace  = None,
+        )
 
         def renderWithError(err: TagMod) =
           <.div(

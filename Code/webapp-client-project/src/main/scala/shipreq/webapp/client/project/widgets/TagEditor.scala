@@ -195,7 +195,9 @@ object TagEditor {
               commitVerb = p.commitVerb,
               abort = p.abort),
             help = None,
-            fullscreen = None))
+            fullscreen = None,
+            monospace = None,
+          ))
 
       EditTheme.renderEditor(p.status, editor, p.edit.value, instructions)
     }

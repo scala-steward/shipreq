@@ -800,7 +800,7 @@ object Icon {
   // case object TextCursor                        extends Unmodified("text cursor")
   // case object TextHeight                        extends Unmodified("text height")
   // case object TextTelephone                     extends Unmodified("text telephone")
-  // case object TextWidth                         extends Unmodified("text width")
+  case object TextWidth                         extends Unmodified("text width")
   // case object Theme                             extends Unmodified("theme")
   // case object Themeisle                         extends Unmodified("themeisle")
   // case object ThemeIsle                         extends Unmodified("theme isle")

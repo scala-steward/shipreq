@@ -2,6 +2,7 @@ package shipreq.webapp.base.lib
 
 import japgolly.microlibs.nonempty.NonEmptyVector
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.webapp.base.lib.KeyHandler._
@@ -90,8 +91,9 @@ object KeyboardTheme {
     private val clauseCont    : VdomTag = <.span(*.clause)
     private val comma         : TagMod  = ","
     private val fullStop      : TagMod  = "."
-    private val helpIcon      : VdomTag = Icon.HelpCircle.tag(*.helpIcon, ^.title := "help")
-    private val fullscreenIcon: VdomTag = Icon.Maximize.tag(*.fullscreenIcon, ^.title := "fullscreen")
+    private val helpIcon      : VdomTag = Icon.HelpCircle.tag(*.icon, ^.title := "help")
+    private val fullscreenIcon: VdomTag = Icon.Maximize.tag(*.icon, ^.title := "fullscreen")
+    private val monospaceIcon : VdomTag = Icon.TextWidth.tag(*.icon, ^.title := "use monospace font")
 
     private val renderAtom: Atom => TagMod = {
       case Vdom(v)    => v
@@ -100,10 +102,10 @@ object KeyboardTheme {
 
     def apply(clauses   : IterableOnce[Clause],
               help      : Option[Callback],
-              fullscreen: Option[OptionalFullscreen.Ctx]): VdomTag = {
+              fullscreen: Option[OptionalFullscreen.Ctx],
+              monospace : Option[StateSnapshot[Boolean]]): VdomTag = {
 
       val buttons: TagMod = {
-
         val helpButton =
           help.whenDefined { h =>
             val eh = preventDefaultAndStopPropagation.andThen(_ >> h)
@@ -116,7 +118,17 @@ object KeyboardTheme {
             fullscreenIcon(^.onClick ==> eh)
           }
 
-        TagMod(helpButton, toggleFullscreenButton)
+        val toggleMonospace =
+          monospace.whenDefined { ss =>
+            val eh = preventDefaultAndStopPropagation.andThen(_ >> ss.modState(!_))
+            monospaceIcon(^.onClick ==> eh)
+          }
+
+        TagMod(
+          toggleMonospace,
+          toggleFullscreenButton,
+          helpButton,
+        )
       }
 
       val content: TagMod =
@@ -152,11 +164,13 @@ object KeyboardTheme {
                       abort     : Option[Callback],
                       help      : Option[Callback],
                       fullscreen: Option[OptionalFullscreen.Ctx],
+                      monospace : Option[StateSnapshot[Boolean]],
                      ): VdomTag =
       apply(
-        Clauses.forTextEditor(lc, commit = commit, commitVerb = commitVerb, abort = abort),
-        help = help,
+        clauses    = Clauses.forTextEditor(lc, commit = commit, commitVerb = commitVerb, abort = abort),
+        help       = help,
         fullscreen = fullscreen,
+        monospace  = monospace,
       )
   }
 

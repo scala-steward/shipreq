@@ -1513,7 +1513,7 @@
     35 [remove] i.icon.bold:before
     37 [remove] i.icon.italic:before
     42 [remove] i.icon.text.height:before
-    41 [remove] i.icon.text.width:before
+    41 [keep  ] i.icon.text.width:before
     41 [remove] i.icon.align.left:before
     43 [remove] i.icon.align.center:before
     42 [remove] i.icon.align.right:before

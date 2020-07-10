@@ -200,7 +200,9 @@ object UseCaseStepEditor {
       Instructions(
         clauses,
         help = Some(RichTextEditorHelp.modalFor(Text.UseCaseStep).show),
-        fullscreen = None)
+        fullscreen = None,
+        monospace = None,
+      )
     }
 
     def render(p: Props) = {

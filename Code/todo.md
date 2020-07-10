@@ -52,7 +52,6 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
-* Add ability to switch a multi-line editor to use a monospace font
 * NewForm state shouldn't be scoped by req type!
 
 

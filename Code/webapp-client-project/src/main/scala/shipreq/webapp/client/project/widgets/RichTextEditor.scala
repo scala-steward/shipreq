@@ -1,8 +1,10 @@
 package shipreq.webapp.client.project.widgets
 
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
+import monocle.macros.Lenses
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
 import shipreq.base.util.{PotentialChange, Validity}
@@ -22,6 +24,7 @@ import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.RichTextEditor.hardcodedLive
 
 sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, final val text: TextType) {
+  import RichTextEditor.State
 
   sealed trait Props {
     val project           : Project
@@ -147,7 +150,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       case MultiLine  => _.positionIfShown
     }
 
-  final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.EditorBackend {
+  final class Backend($: BackendScope[Props, State]) extends AutoComplete.EditorBackend {
     private val pxProject    = Px.props($).map(_.project).withReuse.autoRefresh
     private val pxNaTags     = Px.props($).map(_.naTags).withReuse.autoRefresh
     private val pxPlainText  = Px.props($).map(_.projectWidgets.plainText).withReuse.autoRefresh
@@ -188,16 +191,16 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         RichTextEditor.minRows(text.lineCardinality))
     }
 
-    def render(p: Props): VdomNode =
-      renderFn(p)
+    def render(p: Props, s: State): VdomNode =
+      renderFn(p, s)
 
-    private val renderFn: Props => VdomNode =
+    private val renderFn: (Props, State) => VdomNode =
       text.lineCardinality match {
-        case SingleLine => _render(_, None)
-        case MultiLine  => p => _render(p, p.optionalFullscreen)
+        case SingleLine => _render(_, _, None)
+        case MultiLine  => (p, s) => _render(p, s, p.optionalFullscreen)
       }
 
-    private def _render(p: Props, optionalFullscreen: Option[OptionalFullscreen]): VdomNode = {
+    private def _render(p: Props, s: State, optionalFullscreen: Option[OptionalFullscreen]): VdomNode = {
 
       def editor(layout: EditTheme.Layout, validity: Validity): VdomElement = {
         val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
@@ -212,7 +215,9 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
           position = layoutPosition(layout),
           validity = validity,
           value    = p.edit.value,
-          tagMod   = base)
+          tagMod   = base,
+          font     = if (s.monospace) EditTheme.Font.Monospace else EditTheme.Font.Default,
+        )
 
         editorRef.component(autosizeProps)
       }
@@ -234,6 +239,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
             clauses    = clauses,
             help       = Some(RichTextEditorHelp.modalFor(text).show),
             fullscreen = fullscreenCtx,
+            monospace  = Some(StateSnapshot.zoomL(State.monospace)(s).setStateVia($))
           )
         }
 
@@ -266,6 +272,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
   val Component =
     ScalaComponent.builder[Props]("RichTextEditor:" + name)
+      .initialState(State.init)
       .renderBackend[Backend]
       .configure(
         //Reusability.shouldComponentUpdate,
@@ -277,6 +284,15 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 // ===================================================================================================================
 
 object RichTextEditor {
+
+  @Lenses
+  final case class State(monospace: Boolean)
+
+  object State {
+    val init = apply(
+      monospace = false,
+    )
+  }
 
   private val preprocessor = {
     val preprocessSL = PreProcessor(PreProcessor.FixChar.singleLine, PreProcessor.CanTrim.no)

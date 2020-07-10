@@ -27,13 +27,25 @@ object EditTheme {
   def editableInline(startEdit: Option[Callback]): TagMod =
     startEdit.fold(TagMod.empty)(editableInline(_))
 
+  sealed trait Font
+
+  object Font {
+    case object Default extends Font
+    case object Monospace extends Font
+
+    implicit def univEq: UnivEq[Font] = UnivEq.derive
+    implicit val reusability: Reusability[Font] = Reusability.derive
+    val values = AdtMacros.adtValues[Font]
+  }
+
   def autosizeTextareaProps(mode    : Mode,
                             position: Option[Position],
                             validity: Validity,
                             value   : String,
-                            tagMod  : TagMod): TagMod =
+                            tagMod  : TagMod,
+                            font    : Font = Font.Default): TagMod =
     TagMod(
-      *.textEditor((validity, position, mode)),
+      *.textEditor((validity, position, mode, font)),
       ^.value := value,
       tagMod)
 
@@ -301,7 +313,11 @@ object EditTheme {
         // This is correct and guarded by tests in ReqDetailTest that confirm fullscreen is closed on commit, and that
         // the fullscreen button is disabled.
         val mode = Mode.Inline
-        <.div(*.textEditor((*.EditorState.InTransit, None, mode)),
+
+        // This is fine because you can see we're not rendering an editor
+        val font = Font.Default
+
+        <.div(*.textEditor((*.EditorState.InTransit, None, mode, font)),
           <.div(spinner),
           <.div(*.textEditorInTransitValue, readOnlyView))
 
