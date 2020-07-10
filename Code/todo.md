@@ -54,7 +54,6 @@ v2.2
 * If a user selects a bunch of text and presses ctrl-c, it is instead handled by the focused cell
 * Add ability to switch a multi-line editor to use a monospace font
 * Add LastUpdated field to ReqTable/Detail
-* Do I really need moment js? Too heavy right? I only need TimeAgo and local-locale date/time formats
 * NewForm state shouldn't be scoped by req type!
 
 
