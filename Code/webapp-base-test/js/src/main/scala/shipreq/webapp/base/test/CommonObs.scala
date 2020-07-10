@@ -59,6 +59,8 @@ object CommonObs {
 
     val hasError = $.domAsHtml.classList.contains("error")
 
+    val text = $.child("span").innerText
+
     val selected = $$.collect01(".text").innerTexts.map(_.trim)
 
     val items = $$.collect0n(".menu .item").map(new DropdownItem(_))
@@ -75,8 +77,22 @@ object CommonObs {
             case Some(value) => JQuery(dom).dropdown("set selected", value)
             case None        => throw new RuntimeException(s"Don't know how to select item in:\n\n${dom.outerHTML}")
           }
-      } else
-        throw new RuntimeException(itemDoms.map(_.innerText).mkString("Multiple candidates: ", ", ", ""))
+      } else if (itemDoms.nonEmpty)
+        throw new RuntimeException(itemDoms.map(_.innerText).mkString("Multiple candidates: ", ", ", "."))
+      else if (items.isEmpty)
+        throw new RuntimeException(s"No items found. DOM =\n${dom.outerHTML}")
+      else
+        throw new RuntimeException(items.map(_.text).mkString("Item not found. Found = ", ", ", "."))
+    }
+  }
+
+  object Dropdown {
+    final class TestDsl[R, O, S](val * : Dsl[Id, R, O, S, String], name: String)(getObs: O => Dropdown) {
+      protected implicit def autoObs(o: O): Dropdown = getObs(o)
+      val text                     = *.focus(s"$name: text").value(_.obs.text)
+      val selected                 = *.focus(s"$name: selected").option(_.obs.selected)
+      val items                    = *.focus(s"$name: items").collection(_.obs.items.map(_.text))
+      def select(itemName: String) = *.action(s"Select $name ${quoteString(itemName)}")(_.obs.select(itemName))
     }
   }
 
@@ -85,10 +101,25 @@ object CommonObs {
     val text = dom.innerText.trim
   }
 
+//  object DropdownItem {
+//    final class TestDsl[R, O, S](val * : Dsl[Id, R, O, S, String], name: String)(getObs: O => DropdownItem) {
+//      protected implicit def autoObs(o: O): DropdownItem = getObs(o)
+//      val text = *.focus(s"$name text")
+//    }
+//  }
+
   final class DropdownButton($: DomZipperJs) {
     val dropdown      = new Dropdown($(".ui.dropdown"))
     val buttonDom     = $(".ui.button").domAsHtml
     def click(): Unit = Simulate click buttonDom
+  }
+
+  object DropdownButton {
+    final class TestDsl[R, O, S](val * : Dsl[Id, R, O, S, String], name: String)(getObs: O => DropdownButton) {
+      protected implicit def autoObs(o: O): DropdownButton = getObs(o)
+      val dropdown = new Dropdown.TestDsl(*, s"$name dropdown")(_.dropdown)
+      val click = *.action(s"Click $name button")(_.obs.click())
+    }
   }
 
   // ===================================================================================================================

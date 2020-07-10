@@ -835,6 +835,53 @@ object ReqTableTest extends TestSuite {
     runTest(Plan.action(test) withInitialState SampleProject3.project)
   }
 
+  private def testNewFormStateSharedBetweenReqTypes()(implicit path: TestPath): Unit = {
+    val T = "Title"
+    val B = "Business Justification"
+    val C = "Component"
+    // Type B C
+    // CO   n y
+    // FR   y y
+    // UC   y n
+
+    val test = (
+      showHideColumn(B)
+      >> showHideColumn(C)
+      >> newFormButton.dropdown.select("CO: Constraint")
+      >> newFormButton.click
+      +> newFormButton.dropdown.text.assert("CO")
+      +> newFormFields.assert(T, C)
+      >> newFormEditor(T).setEditorValue("T")
+      >> newFormEditor(C).setEditorValue("C")
+
+      >> newFormButton.dropdown.select("UC: Use Case")
+      +> newFormButton.dropdown.text.assert("UC")
+      +> newFormFields.assert(T, B)
+      +> newFormEditor(T).editorValue.assert("T")
+      +> newFormEditor(B).editorValue.assert("")
+      >> newFormEditor(B).setEditorValue("B")
+
+      >> newFormButton.dropdown.select("FR: Functional Requirement")
+      +> newFormButton.dropdown.text.assert("FR")
+      +> newFormFields.assert(T, B, C)
+      +> newFormEditor(T).editorValue.assert("T")
+      +> newFormEditor(B).editorValue.assert("B")
+      +> newFormEditor(C).editorValue.assert("C")
+      >> newFormEditor(T).setEditorValue("T2")
+
+      >> showHideColumn("Code")
+      >> sortBy("Code")
+      >> newFormButton.dropdown.select("Code Group")
+
+      >> newFormButton.dropdown.select("CO: Constraint")
+      +> newFormButton.dropdown.text.assert("CO")
+      +> newFormFields.assert(T, C)
+      +> newFormEditor(T).editorValue.assert("T2")
+      +> newFormEditor(C).editorValue.assert("C")
+    )
+    runTest(Plan.action(test) withInitialState SampleProject7.project)
+  }
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   override def tests = Tests {
@@ -849,6 +896,10 @@ object ReqTableTest extends TestSuite {
       "cols" - runTest(Plan action testDeadColumns named "testDeadColumns")
       // 'toggle - runTest(testDeadToggleInvariants) TODO Should dead col stay on but hidden when ShowDead→HideDead?
       "notEditable" - runTest(testDeadNotEditable named "testDeadNotEditable")
+    }
+
+    "new" - {
+      "state" - testNewFormStateSharedBetweenReqTypes()
     }
 
     "editor" - {

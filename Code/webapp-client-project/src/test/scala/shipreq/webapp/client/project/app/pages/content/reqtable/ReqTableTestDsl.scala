@@ -32,6 +32,8 @@ object ReqTableTestDsl {
 
   val confirmJs = new TestConfirmJs.TestDsl(*)(_.confirmJs, _.confirmJs)
 
+  val newFormButton = new CommonObs.DropdownButton.TestDsl(*, "New-Form button")(_.newForm.button)
+
   def apply(action: *.Actions = *.emptyAction): *.Plan =
     Plan(action, invariants)
 
@@ -71,6 +73,12 @@ object ReqTableTestDsl {
 
   def visibleColumns(obs: ReqTableObs): Set[String] =
     mandatoryColumns(obs.filterDead.value) ++ obs.columnSelector.onColumns
+
+  val newFormIsVisible = *.focus("New-form is visible").value(_.obs.newForm.form.isDefined)
+
+  val newFormFields = *.focus("New-form fields").collection(_.obs.newForm.form.fold(Vector.empty[String])(_.fields.map(_.name)))
+
+  def newFormEditor(name: String) = new CommonObs.Editor.TestDsl(*, s"New-form $name")(_.newForm.form.get.field(name).editor)
 
   val tableColumns = *.focus("Table columns").collection(_.obs.table.fieldColumns)
 

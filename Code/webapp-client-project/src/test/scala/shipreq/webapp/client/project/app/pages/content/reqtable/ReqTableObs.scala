@@ -52,6 +52,17 @@ object ReqTableObs {
   final class Cell($: DomZipperJs) extends CommonObs.Editor($) {
     lazy val isNA = $.exists(naSel)
   }
+
+  final class NewForm($: DomZipperJs) {
+    private val table    = $.child("table")
+    private val headRows = table.child("thead")("tr").children1n.zippers
+    private val dataRows = table.child("tbody")("tr", 1 of 2).children1n.zippers
+    val fieldCount = headRows.length
+    val fields = (0 until fieldCount).iterator.map(i => NewFormField(headRows(i).innerText, new CommonObs.Editor(dataRows(i)))).toVector
+    def field(name: String) = fields.find(_.name == name).get
+  }
+
+  final case class NewFormField(name: String, editor: CommonObs.Editor)
 }
 
 /**
@@ -73,6 +84,11 @@ final class ReqTableObs($: DomZipperJs, val global: TestGlobal.Obs, val confirmJ
       case b :: Nil => b
       case x => sys error s"Expected to find one result for '$a' but found: $x. Available are: ${bs.iterator.map(f).mkString(", ")}."
     }
+
+  object newForm {
+    val button = new CommonObs.DropdownButton($(Style.reqtable.page.viewCtrls.selector, 1 of 2).child(".ui.labeled.button"))
+    val form = $.collect01(Style.reqtable.creation.formOuter.selector).zippers.map(new NewForm(_))
+  }
 
   object columnSelector {
     val root = $(".ui.popup:has(.ui.checkbox)")
