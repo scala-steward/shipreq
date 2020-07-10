@@ -10,7 +10,7 @@ v2.2
 * New plan for the rest of v2.2
 
 ### Analyse
-* Add a field to show where a req is being referenced (i.e. FB-9 references FR-5 in its detail field, I should be able to see that from FB-5's page. "Citations?")
+* Add a field to show where a req is being referenced (i.e. FB-9 references FR-5 in its detail field, I should be able to see that from FB-5's page. "References"? "Citations"?)
 * Req Code config
   * completely disable (don't show in ReqDetail or ReqTable, even remove from auto-complete)
   * disable for some req types (and don't show in ReqDetail)
@@ -40,7 +40,6 @@ v2.2
     * open project at revision x in R/O mode
     * diff between revisions
     * tag/baseline
-  * Add LastUpdated field to ReqTable/Detail
 * Project templates (and copies/user-defined)
 
 ### Prototype
@@ -52,6 +51,11 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
+* If a user selects a bunch of text and presses ctrl-c, it is instead handled by the focused cell
+* Add ability to switch a multi-line editor to use a monospace font
+* Add LastUpdated field to ReqTable/Detail
+* Do I really need moment js? Too heavy right? I only need TimeAgo and local-locale date/time formats
+* NewForm state shouldn't be scoped by req type!
 
 
 Backlog (maybe-probably soon)
