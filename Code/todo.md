@@ -40,6 +40,7 @@ v2.2
     * open project at revision x in R/O mode
     * diff between revisions
     * tag/baseline
+    * Add LastUpdated field to ReqTable/Detail
 * Project templates (and copies/user-defined)
 
 ### Prototype
@@ -53,7 +54,6 @@ v2.2
 ### Implement
 * If a user selects a bunch of text and presses ctrl-c, it is instead handled by the focused cell
 * Add ability to switch a multi-line editor to use a monospace font
-* Add LastUpdated field to ReqTable/Detail
 * NewForm state shouldn't be scoped by req type!
 
 
