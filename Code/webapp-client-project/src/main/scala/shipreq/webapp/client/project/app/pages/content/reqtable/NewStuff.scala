@@ -6,7 +6,7 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import japgolly.univeq._
 import shipreq.base.util._
-import shipreq.webapp.base.data.{ExternalPubid, ReqTypes}
+import shipreq.webapp.base.data.{CustomReqTypeId, ExternalPubid, ReqTypes, StaticReqType}
 import shipreq.webapp.base.ui.Toast
 import shipreq.webapp.client.project.app.pages.content.reqtable.NewStuff.State
 import shipreq.webapp.client.project.feature.CreateFeature
@@ -21,30 +21,30 @@ object NewStuff {
 
   sealed abstract class State {
     def close: State
-    def toggle(r: RowKey): State
-    def setSelection(r: RowKey): State
+    def toggle(r: RowKey.AndId): State
+    def setSelection(r: RowKey.AndId): State
   }
 
   object State {
-    final case class Open(selected: RowKey) extends State {
+    final case class Open(selected: RowKey.AndId) extends State {
       override def close =
         Closed(Some(selected))
 
-      override def setSelection(r: RowKey) =
+      override def setSelection(r: RowKey.AndId) =
         Open(r)
 
-      override def toggle(r: RowKey) =
+      override def toggle(r: RowKey.AndId) =
         Closed(Some(r))
     }
 
-    final case class Closed(selected: Option[RowKey]) extends State {
+    final case class Closed(selected: Option[RowKey.AndId]) extends State {
       override def close =
         this
 
-      override def setSelection(r: RowKey) =
+      override def setSelection(r: RowKey.AndId) =
         Closed(Some(r))
 
-      override def toggle(r: RowKey) =
+      override def toggle(r: RowKey.AndId) =
         Open(r)
     }
 
@@ -61,7 +61,6 @@ final class NewStuff(state        : State,
                      toast        : Toast,
                      reqTypes     : ReqTypes,
                      allowRCG     : Permission,
-                     defaultType  : Option[RowKey],
                      create       : CreateFeature.ReadWrite.ForProject,
                      activeColumns: NonEmptyVector[ColumnPlus]) {
 
@@ -74,39 +73,40 @@ final class NewStuff(state        : State,
   val buttonProps: NewButton.Props =
     state match {
       case State.Open(s) =>
-        var b = NewButton.Props(Some(s), reqTypes, allowRCG, pw, defaultType, Some(buttonUpdate))
+        var b = NewButton.Props(Some(s), reqTypes, allowRCG, pw, Some(buttonUpdate))
         // If what we thought was open is no longer acceptable, proceed as if closed
         if (b.dropdownProps.selected.forall(_ !=* s))
           b = b.copy(state = None)
         b
 
       case State.Closed(o) =>
-        NewButton.Props(o, reqTypes, allowRCG, pw, defaultType, Some(buttonUpdate))
+        NewButton.Props(o, reqTypes, allowRCG, pw, Some(buttonUpdate))
     }
 
   private val cancel: Callback =
     modState.modState(_.close)
 
+  private def codeGroupForm(r: RowKey.CodeGroup.AndId): Option[VdomElement] =
+    Some(NewForm.ForCodeGroup.Props((), activeColumns, create(r), routerCtl, toast, cancel).render)
+
+  private def reqForm(r: RowKey.Req.AndId): Option[VdomElement] =
+    r.id match {
+      case reqTypeId: CustomReqTypeId =>
+        reqTypes.custom.get(reqTypeId).map { rt =>
+          NewForm.ForGenericReq.Props(rt, activeColumns, create(r), routerCtl, toast, cancel).render
+        }
+      case StaticReqType.UseCase =>
+        Some(NewForm.ForUseCase.Props((), activeColumns, create(r), routerCtl, toast, cancel).render)
+    }
+
   val form: Option[VdomElement] =
     state match {
       case State.Open(s) if buttonProps.state.isDefined =>
-
-        s match {
-
-          case r: RowKey.CodeGroup.type =>
-            Some(NewForm.ForCodeGroup.Props((), activeColumns, create(r), routerCtl, toast, cancel).render)
-
-          case r: RowKey.GenericReq =>
-            reqTypes.custom.get(r.reqTypeId).map { rt =>
-              NewForm.ForGenericReq.Props(rt, activeColumns, create(r), routerCtl, toast, cancel).render
-            }
-
-          case r: RowKey.UseCase.type =>
-            Some(NewForm.ForUseCase.Props((), activeColumns, create(r), routerCtl, toast, cancel).render)
-
-          case RowKey.ManualIssue =>
-            None
-        }
+        s.fold(
+          codeGroup   = codeGroupForm,
+          req         = reqForm,
+          manualIssue = _ => None,
+        )
 
       case _ =>
         None

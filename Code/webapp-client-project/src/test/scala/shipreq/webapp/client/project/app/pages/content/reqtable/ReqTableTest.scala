@@ -853,6 +853,8 @@ object ReqTableTest extends TestSuite {
       +> newFormFields.assert(T, C)
       >> newFormEditor(T).setEditorValue("T")
       >> newFormEditor(C).setEditorValue("C")
+      +> newFormEditor(T).editorValue.assert("T")
+      +> newFormEditor(C).editorValue.assert("C")
 
       >> newFormButton.dropdown.select("UC: Use Case")
       +> newFormButton.dropdown.text.assert("UC")
