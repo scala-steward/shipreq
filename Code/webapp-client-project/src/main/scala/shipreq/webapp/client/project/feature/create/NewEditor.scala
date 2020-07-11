@@ -4,6 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import scala.annotation.nowarn
+import scala.reflect.ClassTag
 import scalaz.~~>
 import shipreq.base.util._
 import shipreq.webapp.base.data._
@@ -62,6 +63,14 @@ object NewEditor {
         valueImpl(props(args, None).runNow())
     }
 
+    trait StringState { self: Editor[Nothing, Any] =>
+      val ss: StateSnapshot[String]
+      final override type State             = String
+      final override val stateType          = implicitly[ClassTag[String]]
+      final override val state              = ss.value
+      final override def setState(s: State) = ss.setState(s)
+    }
+
     final val ShowInstructions = true
 
     @inline def editorStyle = EditTheme.Style(PreviewFeature.Position.Under, EditTheme.OpenPreview.WhenWanted)
@@ -70,7 +79,7 @@ object NewEditor {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   private final class Internal(static: Static) {
-    import Internal.{ShowInstructions, editorStyle}
+    import Internal.{ShowInstructions, StringState, editorStyle}
     import static._
 
     val perRow: RowKey.Fold[ForFields] = {
@@ -153,7 +162,7 @@ object NewEditor {
         def apply: InitFn =
           _.startWithStateSnapshot("")(new State(_))
 
-        private class State(ss: StateSnapshot[String]) extends EditorImpl {
+        private class State(val ss: StateSnapshot[String]) extends EditorImpl with StringState {
           override type Props = RCE.Props
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
@@ -171,11 +180,6 @@ object NewEditor {
               commitVerb       = args.commitVerb,
               extraKbShortcuts = args.extraKbShortcuts,
               showInstructions = ShowInstructions)
-
-          override type State             = String
-          override val stateType          = implicitly
-          override val state              = ss.value
-          override def setState(s: State) = ss.setState(s)
         }
       }
 
@@ -187,7 +191,7 @@ object NewEditor {
         def apply: InitFn =
           _.startWithStateSnapshot("")(new State(_))
 
-        private class State(ss: StateSnapshot[String]) extends EditorImpl {
+        private class State(val ss: StateSnapshot[String]) extends EditorImpl with StringState {
           override type Props = RCE.Props
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
@@ -205,11 +209,6 @@ object NewEditor {
               commitVerb       = args.commitVerb,
               extraKbShortcuts = args.extraKbShortcuts,
               showInstructions = ShowInstructions)
-
-          override type State             = String
-          override val stateType          = implicitly
-          override val state              = ss.value
-          override def setState(s: State) = ss.setState(s)
         }
       }
     }
@@ -244,7 +243,9 @@ object NewEditor {
         startWithStateSnapshot("")(new State(_, pxLookup, pxValFn))
       }
 
-      private class State(ss: StateSnapshot[String], pxLookup: Px[Lookup], pxValFn: Px[ValidationFn]) extends EditorImpl {
+      private class State(val ss  : StateSnapshot[String],
+                          pxLookup: Px[Lookup],
+                          pxValFn : Px[ValidationFn]) extends EditorImpl with StringState {
         override type Props = ImplicationEditor.Props
         override def renderImpl = _.render
         override def valueImpl = _.parseResult.map(_.added)
@@ -265,11 +266,6 @@ object NewEditor {
             textSearch       = textSearch,
             extraKbShortcuts = args.extraKbShortcuts,
             showInstructions = ShowInstructions)
-
-        override type State             = String
-        override val stateType          = implicitly
-        override val state              = ss.value
-        override def setState(s: State) = ss.setState(s)
       }
     }
 
@@ -296,7 +292,10 @@ object NewEditor {
         startWithStateSnapshot("")(new State(_, pxLookup, pxNaTags))
       }
 
-      private class State(ss: StateSnapshot[String], pxLookup: Px[Lookup], pxNaTags: Px[NaTags]) extends EditorImpl {
+      private class State(val ss  : StateSnapshot[String],
+                          pxLookup: Px[Lookup],
+                          pxNaTags: Px[NaTags]) extends EditorImpl with StringState {
+
         override type Props = TagEditor.Props
         override def renderImpl = _.render
         override def valueImpl = _.parseResultSet
@@ -316,11 +315,6 @@ object NewEditor {
             commitVerb       = args.commitVerb,
             extraKbShortcuts = args.extraKbShortcuts,
             showInstructions = ShowInstructions)
-
-        override type State             = String
-        override val stateType          = implicitly
-        override val state              = ss.value
-        override def setState(s: State) = ss.setState(s)
       }
     }
 
@@ -337,7 +331,10 @@ object NewEditor {
         def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn =
           _.startWithStateSnapshot("")(new State(_, pid, reqTypeId))
 
-        private class State(ss: StateSnapshot[String], pid: PreviewId, reqTypeId: Option[ReqTypeId]) extends EditorImpl {
+        private class State(val ss   : StateSnapshot[String],
+                            pid      : PreviewId,
+                            reqTypeId: Option[ReqTypeId]) extends EditorImpl with StringState {
+
           override type Props = editor.Optional
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
@@ -367,11 +364,6 @@ object NewEditor {
               extraKbShortcuts   = args.extraKbShortcuts,
               showInstructions   = ShowInstructions,
               optionalFullscreen = None)
-
-          override type State             = String
-          override val stateType          = implicitly
-          override val state              = ss.value
-          override def setState(s: State) = ss.setState(s)
         }
       }
 
@@ -394,7 +386,10 @@ object NewEditor {
         def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn =
           _.startWithStateSnapshot("")(new State(_, pid, reqTypeId))
 
-        private class State(ss: StateSnapshot[String], pid: PreviewId, reqTypeId: Option[ReqTypeId]) extends EditorImpl {
+        private class State(val ss   : StateSnapshot[String],
+                            pid      : PreviewId,
+                            reqTypeId: Option[ReqTypeId]) extends EditorImpl with StringState {
+
           override type Props = editor.NonEmpty
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
@@ -424,11 +419,6 @@ object NewEditor {
               extraKbShortcuts   = args.extraKbShortcuts,
               showInstructions   = ShowInstructions,
               optionalFullscreen = None)
-
-          override type State             = String
-          override val stateType          = implicitly
-          override val state              = ss.value
-          override def setState(s: State) = ss.setState(s)
         }
       }
 
