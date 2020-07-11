@@ -59,7 +59,7 @@ object CommonObs {
 
     val hasError = $.domAsHtml.classList.contains("error")
 
-    val text = $.child("span").innerText
+    val text = dom.children(0).innerText
 
     val selected = $$.collect01(".text").innerTexts.map(_.trim)
 
