@@ -5,6 +5,8 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.Iso
 import monocle.macros.Lenses
+import scala.annotation.elidable
+import scala.reflect.ClassTag
 import scalaz.\/
 import shipreq.base.util._
 import shipreq.base.util.univeq._
@@ -35,17 +37,16 @@ object Feature {
   trait Editor[-Args, +Value] {
     def render(as: AsyncState, args: Args)(): VdomElement
     def value(args: Args): Editor.Value[Value]
+
+    type State
+    val stateType: ClassTag[State]
+    val state: State
+    def withState(state: State): Editor[Args, Value]
   }
 
   object Editor {
     type Invalidity = shipreq.webapp.base.validation.Simple.Invalidity
     type Value[+A] = Invalidity \/ A
-
-    def fromCallback[A, V](cb: CallbackTo[Editor[A, V]]): Editor[A, V] =
-      new Editor[A, V] {
-        override def render(as: AsyncState, args: A)() = cb.runNow().render(as, args)()
-        override def value(args: A) = cb.runNow().value(args)
-      }
   }
 
   /** Id used for [[shipreq.webapp.base.feature.PreviewFeature]] */
@@ -75,7 +76,19 @@ object Feature {
     }
 
     @Lenses
-    final case class ForProject(untyped: Map[RowKey, ForFields[FieldKey]]) {
+    final case class ForProject(untyped: Map[RowKey, ForFields[FieldKey]], selectionHistory: Vector[RowKey]) {
+
+      @elidable(elidable.INFO)
+      override def toString: String = {
+        def fs(s: State.ForFields[FieldKey]) = s.untyped.iterator.map { case (f, e) => s"\n                FieldKey.$f -> ${e.state},"}.mkString
+        val u = untyped.iterator.map { case (r, vs) => s"\n              RowKey.$r -> ${fs(vs)}"}.mkString
+        s"""
+          |CreateFeature.State.ForProject(
+          |  untyped = Map($u)
+          |  history = $selectionHistory)
+          |""".stripMargin.trim
+      }
+
       def apply(r: RowKey): ForFields[r.FieldKey] =
         untyped.get(r) match {
           case Some(f) => f
@@ -83,8 +96,10 @@ object Feature {
         }
     }
 
-    val initForProject: ForProject =
-      ForProject(UnivEq.emptyMap)
+    object ForProject {
+      val init: ForProject =
+        ForProject(UnivEq.emptyMap, Vector.empty)
+    }
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -137,7 +152,7 @@ object Feature {
         rowEditors(field)(ctx)
       }
 
-      /** Initiates a call to the server to create content for this row. */
+      /** Send a request to the server to create the content for this row. */
       def create(cmd      : Cmd,
                  onSuccess: NewEvents => Callback = _ => Callback.empty): Callback =
         async(ssp(cmd).rightFlatTap(onSuccess(_).asAsyncCallback))
@@ -197,6 +212,43 @@ object Feature {
     final case class ForProject(read: Read.ForProject, write: Write.ForProject) {
       def apply(r: RowKey): ForRow[r.FieldKey, r.Cmd] =
         ForRow(read(r), write(r))
+
+      /** This preserves state of editors when users change the req type.
+        *
+        * See `ReqTableTest.new.state` for the scenario this enables.
+        */
+      def selectWithRetention(prevRowKey: Option[RowKey], rowKey: RowKey): AsyncCallback[Unit] = {
+        type RowState = State.ForFields[FieldKey]
+
+        val currentState       = read.state
+        val historyWithoutSelf = currentState.selectionHistory.filterNot(r => prevRowKey.contains(r) || (r ==* rowKey)) ++ prevRowKey
+        val newHistory         = historyWithoutSelf :+ rowKey
+
+        var rowModifications: RowState => RowState =
+          r => r
+
+        // This is inefficient but it's also O(|reqTypes|) which is tiny
+        for {
+          srcRow                <- historyWithoutSelf
+          srcState              <- currentState.untyped.get(srcRow)
+          (srcField, srcEditor) <- srcState.untyped
+          tgtField              <- rowKey.convertField(srcField)
+        } {
+          val tgtEditor = currentState(rowKey)(tgtField).getOrElse(write(rowKey).startEditor(tgtField))
+          for (tgtState <- tgtEditor.stateType.unapply(srcEditor.state)) {
+            val tgtEditor2 = tgtEditor.withState(tgtState)
+            rowModifications = rowModifications.andThen(s => s.copy(s.untyped.updated(tgtField, tgtEditor2)))
+          }
+        }
+
+        write.stateAccess.modStateAsync { s1 =>
+          val s2 = s1.copy(selectionHistory = newHistory)
+          val r1 = s2.untyped.getOrElse(rowKey, State.ForFields.empty)
+          val r2 = rowModifications(r1)
+          val s3 = s2.copy(s2.untyped.updated(rowKey, r2))
+          s3
+        }
+      }
     }
   }
 }

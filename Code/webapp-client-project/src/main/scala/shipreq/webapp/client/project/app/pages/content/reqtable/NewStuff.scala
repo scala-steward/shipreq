@@ -61,27 +61,39 @@ final class NewStuff(state        : State,
                      toast        : Toast,
                      reqTypes     : ReqTypes,
                      allowRCG     : Permission,
-                     defaultType  : Option[RowKey],
                      create       : CreateFeature.ReadWrite.ForProject,
                      activeColumns: NonEmptyVector[ColumnPlus]) {
 
   private val buttonUpdate: Reusable[NewButton.Update] =
-    modState.map(f =>
+    modState.map { f =>
+
+      def selectRow(next: RowKey): Callback = {
+        val prev: Option[RowKey] =
+          state match {
+            case State.Open(k)   => Some(k)
+            case State.Closed(o) => o
+          }
+        val retainState = create.selectWithRetention(prev, next)
+        val select      = f.modStateAsync(_.setSelection(next))
+        (retainState >> select).toCallback
+      }
+
       NewButton.Update(
-        select = s => f.modState(_.setSelection(s)),
-        click  = s => f.modState(_.toggle(s))))
+        select = selectRow,
+        click = s => f.modState(_.toggle(s)))
+    }
 
   val buttonProps: NewButton.Props =
     state match {
       case State.Open(s) =>
-        var b = NewButton.Props(Some(s), reqTypes, allowRCG, pw, defaultType, Some(buttonUpdate))
+        var b = NewButton.Props(Some(s), reqTypes, allowRCG, pw, Some(buttonUpdate))
         // If what we thought was open is no longer acceptable, proceed as if closed
         if (b.dropdownProps.selected.forall(_ !=* s))
           b = b.copy(state = None)
         b
 
       case State.Closed(o) =>
-        NewButton.Props(o, reqTypes, allowRCG, pw, defaultType, Some(buttonUpdate))
+        NewButton.Props(o, reqTypes, allowRCG, pw, Some(buttonUpdate))
     }
 
   private val cancel: Callback =
