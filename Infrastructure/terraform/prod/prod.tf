@@ -54,11 +54,11 @@ module "shipreq" {
   postgres_exporter_db_username         = "postgres_exporter"
   postgres_instance_type                = "db.t3.micro"
   postgres_root_password                = local.passwords.db.root
-  prometheus_biz_backup_retention_days  = 6 * 7
+  prometheus_biz_backup_retention_days  = 5 * 7
   prometheus_biz_data_retention         = "time=10y"
   prometheus_biz_ebs_size               = 2
   prometheus_biz_scrape_interval        = "15m"
-  prometheus_tech_backup_retention_days = 4 * 7
+  prometheus_tech_backup_retention_days = 4 # so low because each backup is 20GB and it's crazy expensive
   prometheus_tech_data_retention        = "time=53w"
   prometheus_tech_ebs_size              = 20
   prometheus_tech_scrape_interval_sec   = 30

@@ -53,7 +53,6 @@ v2.2
 
 ### Implement
 * Prune ECR
-* reduce prometheus backups (too expensive)
 
 
 Backlog (maybe-probably soon)
