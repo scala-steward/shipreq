@@ -31,5 +31,7 @@ object SampleData extends SampleDataManifest[AsyncCallback[SampleData]] {
     loadJsonFromResource(meta.filename)
       .map(_.as[Vector[Event]].getOrThrow())
       .map(SampleData(meta, _))
+      .attemptTry
+      .map(t => meta.annotateExceptions(t.get))
       .memo()
 }

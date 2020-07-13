@@ -16,14 +16,15 @@ object SampleData extends SampleDataManifest[SampleData] {
     parse(jsonStr).getOrThrow()
   }
 
-  override protected def load(meta: SampleDataMeta): SampleData = {
-    val events: Vector[Event] =
-      loadJsonFromResource(meta.filename)
-        .as[Vector[Event]]
-        .getOrThrow()
+  override protected def load(meta: SampleDataMeta): SampleData =
+    meta.annotateExceptions {
+      val events: Vector[Event] =
+        loadJsonFromResource(meta.filename)
+          .as[Vector[Event]]
+          .getOrThrow()
 
-    SampleData(meta, events)
-  }
+      SampleData(meta, events)
+    }
 
   lazy val errors: List[String] =
     all.iterator.flatMap(_.errors).toList

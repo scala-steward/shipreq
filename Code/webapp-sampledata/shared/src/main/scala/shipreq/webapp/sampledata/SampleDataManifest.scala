@@ -1,6 +1,14 @@
 package shipreq.webapp.sampledata
 
-final case class SampleDataMeta(filename: String, projectConfigHash: Int, projectContentHash: Int)
+final case class SampleDataMeta(filename: String, projectConfigHash: Int, projectContentHash: Int) {
+  def annotateExceptions[A](a: => A): A =
+    try
+      a
+    catch {
+      case t: Throwable =>
+        throw new RuntimeException(s"Error in $filename", t)
+    }
+}
 
 trait SampleDataManifest[D] { self =>
   protected def load(meta: SampleDataMeta): D
