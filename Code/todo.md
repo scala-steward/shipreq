@@ -52,6 +52,9 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
+* NewForm: keep rendering previews while in-transit so the buttons don't move up & down
+* [FR-20] Implication fields #must include external implication sources
+* [FR-21] Implication graph #must include external implication sources
 
 
 Backlog (maybe-probably soon)
