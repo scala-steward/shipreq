@@ -1,6 +1,21 @@
 package shipreq.webapp.sampledata
 
-final case class SampleDataMeta(filename: String, projectConfigHash: Int, projectContentHash: Int) {
+import io.circe.Json
+import japgolly.microlibs.testutil.TestUtilImplicits._
+import shipreq.webapp.base.event.{Event, VerifiedEvent}
+import shipreq.webapp.base.protocol.json.v1.Latest._
+
+final case class SampleDataMeta(filename: String,
+                                verifiedEvents: Boolean,
+                                projectConfigHash: Int,
+                                projectContentHash: Int) {
+
+  val decode: Json => Vector[Event] =
+    if (verifiedEvents)
+      _.as[VerifiedEvent.Seq].getOrThrow().iterator.map(_.event).toVector
+    else
+      _.as[Vector[Event]].getOrThrow()
+
   def annotateExceptions[A](a: => A): A =
     try
       a
@@ -15,7 +30,7 @@ trait SampleDataManifest[D] { self =>
 
   object full {
     def load(size: Int, projectConfigHash: Int, projectContentHash: Int): D =
-      self.load(SampleDataMeta(s"shipreq-events-full-$size.json", projectConfigHash, projectContentHash))
+      self.load(SampleDataMeta(s"shipreq-events-full-$size.json", false, projectConfigHash, projectContentHash))
 
     lazy val  `1000`: D = load( 1000,   -15975327, -1910444130)
     lazy val  `2000`: D = load( 2000,   454447920, -1851467186)
@@ -25,7 +40,7 @@ trait SampleDataManifest[D] { self =>
 
   object noReqCodes {
     def load(size: Int, projectConfigHash: Int, projectContentHash: Int): D =
-      self.load(SampleDataMeta(s"shipreq-events-no_req_codes-$size.json", projectConfigHash, projectContentHash))
+      self.load(SampleDataMeta(s"shipreq-events-no_req_codes-$size.json", false, projectConfigHash, projectContentHash))
 
     lazy val  `1000`: D = load( 1000,  251955416, -2078654579)
     lazy val  `2000`: D = load( 2000,  325713993,   682764916)

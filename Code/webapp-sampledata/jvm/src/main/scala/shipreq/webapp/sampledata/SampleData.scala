@@ -5,7 +5,6 @@ import io.circe.parser.parse
 import japgolly.microlibs.testutil.TestUtilImplicits._
 import scala.io.{Codec, Source}
 import shipreq.webapp.base.event.Event
-import shipreq.webapp.base.protocol.json.v1.Latest.decoderEvent
 
 final case class SampleData(meta: SampleDataMeta, events: Vector[Event]) extends AbstractSampleData(meta, events)
 
@@ -18,11 +17,7 @@ object SampleData extends SampleDataManifest[SampleData] {
 
   override protected def load(meta: SampleDataMeta): SampleData =
     meta.annotateExceptions {
-      val events: Vector[Event] =
-        loadJsonFromResource(meta.filename)
-          .as[Vector[Event]]
-          .getOrThrow()
-
+      val events = meta.decode(loadJsonFromResource(meta.filename))
       SampleData(meta, events)
     }
 
