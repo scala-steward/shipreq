@@ -5,6 +5,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.Memo
 import nyaya.util.Multimap
 import scala.annotation.tailrec
+import scala.collection.mutable
 import shipreq.base.util.Digraph.BiDir
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.univeq._
@@ -15,6 +16,8 @@ import shipreq.webapp.base.text.{Atom, Text}
 final class DataLogic(p: Project) {
   import DataLogic._
   import FieldReqTypeRules._
+
+  private val reqTypes = p.config.reqTypes
 
   val issueLookup: FilterDead => IssueLookup =
     FilterDead.memoLazy(new IssueLookup(p, _))
@@ -133,20 +136,95 @@ final class DataLogic(p: Project) {
   val customFieldImps: FilterDead => CustomField.Implication.Id => ReqId => Set[Pubid] =
     FilterDead.memoLazy { fd =>
       val filter = p.config.reqFilter(fd)
+
+      def filterIds(it: Iterator[ReqId]): Iterator[ReqId] =
+        fd.filterFn.iteratorBy(it)(p.content.reqs.need(_).live(reqTypes))
+
       Memo { fid =>
-        // (source of implication for this column) -> (all it transitively implies)
-        val f = p.config.fields.custom(fid)
-        val srcs: List[(Pubid, Set[ReqId])] =
-          p.content.reqs.reqsByType(f.reqTypeId).iterator
-            .filter(filter)
-            .map(r => (r.pubid, p.implicationSrcToTgtTC(r.id)))
-            .toList
-        id => srcs.iterator.filter(_._2 contains id).map(_._1).toSet
+        val field = p.config.fields.custom(fid)
+        val subjectType = field.reqTypeId
+        val backwards = p.content.implications.backwards
+
+        // TODO consider different collection types (2x LongMaps?) - BM & check JS size
+        type MutableSet = mutable.Set[ReqId]
+        type MutableMap = mutable.Map[ReqId, MutableSet]
+        @inline def newSet(): MutableSet = mutable.Set.empty
+        @inline def newMap(): MutableMap = mutable.Map.empty
+
+//        val stateBySrc = newMap()
+//        val stateByTgt = newMap()
+        val state = newMap()
+
+        def add(id: ReqId, fieldValue: ReqId): Unit = {
+          @inline def addTo(m: MutableMap, k: ReqId, v: ReqId): Unit =
+            m.getOrElseUpdate(k, newSet())  += v
+          addTo(state, id, fieldValue)
+        }
+//        def add(src: ReqId, tgt: ReqId): Unit = {
+//          @inline def addTo(m: MutableMap, k: ReqId, v: ReqId): Unit =
+//            m.getOrElseUpdate(k, newSet())  += v
+//          addTo(stateBySrc, src, tgt)
+//          addTo(stateByTgt, tgt, src)
+//        }
+
+        def addBackwards(fieldValue: ReqId): Unit = {
+          def go(id: ReqId): Unit = {
+            val it = filterIds(backwards(id).iterator)
+            while (it.hasNext) {
+              val next = it.next()
+              add(next, fieldValue)
+              go(next)
+            }
+          }
+          go(fieldValue)
+        }
+
+        def addForwards(fieldValue: ReqId, start: ReqId, internal: ReqId => Boolean): Unit = {
+          def go(id: ReqId, allowSameType: Boolean): Unit = {
+            @inline def hasDifferentType = p.content.reqs.need(id).reqTypeId != subjectType
+
+            if (allowSameType || hasDifferentType) {
+              // TODO optimise: avoid traversing the same branches
+
+              add(id, fieldValue)
+
+              val it = filterIds(backwards(id).iterator).filterNot(internal)
+              while (it.hasNext) {
+                val next = it.next()
+                go(next, allowSameType = false)
+              }
+            }
+          }
+          go(start, allowSameType = true)
+        }
+
+        for (fieldValueReq <- p.content.reqs.reqsByType(field.reqTypeId).iterator.filter(filter)) {
+          val fieldValue          = fieldValueReq.id
+          val everythingBackwards = p.implicationTgtToSrcTC.nonRefl(fieldValue)
+          val everythingForwards  = p.implicationSrcToTgtTC(fieldValue)
+
+          addBackwards(fieldValue)
+
+          for (id <- everythingForwards)
+            addForwards(fieldValue, id, i => everythingBackwards.contains(i) || everythingForwards.contains(i))
+        }
+
+        Memo { id =>
+          state.get(id) match {
+            case Some(s) =>
+              val result = s.iterator.map(p.content.reqs.need(_).pubid).toSet
+              state.update(id, null) // free memory
+              result
+
+            case None =>
+              Set.empty
+          }
+        }
       }
     }
 
   val pubidSortKeyFn: Pubid => (Int, Int) = {
-    val reqTypeOrder = p.config.reqTypes.order
+    val reqTypeOrder = reqTypes.order
     i => (reqTypeOrder(i.reqTypeId), i.pos.value)
   }
 
