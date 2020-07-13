@@ -35,7 +35,11 @@ import shipreq.webapp.client.ww.api.WebWorkerCmd
 object ReqDetail {
   import Shared.tableNavigationFeature
 
-  private val bigTextEditorStyle = EditTheme.Style(PreviewFeature.Position.Right, EditTheme.OpenPreview.ShowWithControls)
+  private val bigTextEditorStyle = EditTheme.Style(
+    PreviewFeature.Position.Right,
+    EditTheme.OpenPreview.ShowWithControls,
+    EditTheme.WhenInTransit.ReadOnlyViewWithSpinner,
+  )
 
   def apply(staticProps: StaticProps) =
     ScalaComponent.builder[DynamicProps]

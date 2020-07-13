@@ -42,6 +42,7 @@ object Button {
     def enabledWhen(e: Boolean): State = if (e) Default else Disabled
     @inline def disabledWhen(d: Boolean): State = enabledWhen(!d)
     def loadingWhen(e: Boolean): State = if (e) Loading else Default
+    def loadingOrEnabled(loading: Boolean, enabled: Boolean): State = if (loading) Loading else if (enabled) Default else Disabled
   }
 
   def group(bs: VdomTagOf[html.Button]*) =

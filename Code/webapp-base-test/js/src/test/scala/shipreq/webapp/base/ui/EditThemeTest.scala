@@ -2,11 +2,12 @@ package shipreq.webapp.base.ui
 
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util.Validity
+import shipreq.webapp.base.data.Enabled
 import shipreq.webapp.base.feature.PreviewFeature.{Position, Status}
 import shipreq.webapp.base.feature.{EditorStatus, PreviewFeature}
 import shipreq.webapp.base.test.RenderTestUtil._
 import shipreq.webapp.base.test.TestOptionalFullscreen
-import shipreq.webapp.base.ui.EditTheme.{OpenPreview, Style}
+import shipreq.webapp.base.ui.EditTheme.{OpenPreview, Style, WhenInTransit}
 import utest._
 
 object EditThemeTest extends TestSuite {
@@ -16,7 +17,8 @@ object EditThemeTest extends TestSuite {
     def editor(validity: Validity): VdomElement = {
       val autosizeProps = EditTheme.autosizeTextareaProps(
         mode     = EditTheme.Mode.Inline,
-        position = Some(EditTheme.Style.default.position),
+        position = Some(Position.Under),
+        enabled  = Enabled,
         validity = validity,
         value    = "{editor.value}",
         tagMod   = EmptyVdom)
@@ -44,13 +46,15 @@ object EditThemeTest extends TestSuite {
         PreviewFeature.Read.Single(previewState),
         PreviewFeature.Write.Single.doNothing)
 
-    def editor(layout: EditTheme.Layout, validity: Validity): VdomElement = {
+    def editor(layout: EditTheme.Layout, enabled: Enabled, validity: Validity): VdomElement = {
       val autosizeProps = EditTheme.autosizeTextareaProps(
         mode     = layout.mode,
         position = position(layout),
+        enabled  = enabled,
         validity = validity,
         value    = "{editor.value}",
-        tagMod   = EmptyVdom)
+        tagMod   = EmptyVdom,
+      )
       AutosizeTextarea.Component(autosizeProps)
     }
 
@@ -61,6 +65,7 @@ object EditThemeTest extends TestSuite {
       readOnlyView       = "{readOnlyView}",
       instructions       = _ => "{instructions}",
       style              = style,
+      font               = EditTheme.Font.Default,
       previewRW          = previewRW,
       previewWantOpen    = previewWantOpen,
       previewBody        = "{previewBody}",
@@ -111,6 +116,180 @@ object EditThemeTest extends TestSuite {
             |      </div>
             |      {instructions}
             |    </div>
+            |  </div>
+            |  <div>
+            |  </div>
+            |</div>
+            |""".stripMargin
+        assertRender(a, e)
+      }
+    }
+
+    // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+    "reqTableNewForm" - {
+
+      val style = EditTheme.Style(
+        Position.Under,
+        OpenPreview.WhenWanted,
+        WhenInTransit.DisableEditor,
+      )
+      val position = (_: EditTheme.Layout).position
+
+      "previewNotWanted" - {
+        val a = renderTextEditor(
+          status          = EditorStatus.Valid(None),
+          style           = style,
+          previewState    = Some(Status.Closed),
+          previewWantOpen = false,
+          position        = position,
+        )
+        // editor : 1.1.1
+        // preview: 1.2
+        val e =
+          """<div class="BaseStyles-textEditorTopPreviewUnder-2">
+            |  <div>
+            |    <textarea class="BaseStyles-textEditor-18">
+            |      {editor.value}
+            |    </textarea>
+            |    {instructions}
+            |  </div>
+            |  <div>
+            |  </div>
+            |</div>
+            |""".stripMargin
+        assertRender(a, e)
+      }
+
+      "previewOpen" - {
+        val a = renderTextEditor(
+          status          = EditorStatus.Valid(None),
+          style           = style,
+          previewState    = Some(Status.NeedOpen),
+          previewWantOpen = true,
+          position        = position,
+        )
+        // editor : 1.1.1
+        // preview: 1.2
+        val e =
+          """<div class="BaseStyles-textEditorTopPreviewUnder-2">
+            |  <div>
+            |    <textarea class="BaseStyles-textEditor-18">
+            |      {editor.value}
+            |    </textarea>
+            |    {instructions}
+            |  </div>
+            |  <div>
+            |    <div class="ReactCollapse--collapse" style="height:auto;overflow:initial">
+            |      <div class="ReactCollapse--content">
+            |        <div class="BaseStyles-richTextPreview-4 ui segments raised">
+            |          <div class="BaseStyles-richTextPreviewHeader ui segment inverted">
+            |            Preview
+            |          </div>
+            |          <div class="BaseStyles-richTextPreviewBodyOuter ui segment">
+            |            <div class="BaseStyles-richTextPreviewBodyInner-2">
+            |              {previewBody}
+            |            </div>
+            |          </div>
+            |        </div>
+            |      </div>
+            |    </div>
+            |  </div>
+            |</div>
+            |""".stripMargin
+        assertRender(a, e)
+      }
+
+      "previewNeededOpen" - {
+        val a = renderTextEditor(
+          status          = EditorStatus.Valid(None),
+          style           = style,
+          previewState    = Some(Status.NeededOpen),
+          previewWantOpen = false,
+          position        = position,
+        )
+        // editor : 1.1.1
+        // preview: 1.2
+        val e =
+          """<div class="BaseStyles-textEditorTopPreviewUnder-2">
+            |  <div>
+            |    <textarea class="BaseStyles-textEditor-18">
+            |      {editor.value}
+            |    </textarea>
+            |    {instructions}
+            |  </div>
+            |  <div>
+            |    <div class="ReactCollapse--collapse" style="height:auto;overflow:initial">
+            |      <div class="ReactCollapse--content">
+            |        <div class="BaseStyles-richTextPreview-4 ui segments raised">
+            |          <div class="BaseStyles-richTextPreviewHeader ui segment inverted">
+            |            Preview
+            |          </div>
+            |          <div class="BaseStyles-richTextPreviewBodyOuter ui segment">
+            |            <div class="BaseStyles-richTextPreviewBodyInner-2">
+            |              {previewBody}
+            |            </div>
+            |          </div>
+            |        </div>
+            |      </div>
+            |    </div>
+            |  </div>
+            |</div>
+            |""".stripMargin
+        assertRender(a, e)
+      }
+
+      "inTransitWithPreview" - {
+        val a = renderTextEditor(
+          status          = EditorStatus.InTransit,
+          style           = style,
+          previewState    = None,
+          previewWantOpen = true,
+          position        = position,
+        )
+        val e =
+          """<div class="BaseStyles-textEditorTopPreviewUnder-2">
+            |  <div>
+            |    <textarea disabled="" class="BaseStyles-textEditor-18">
+            |      {editor.value}
+            |    </textarea>
+            |    {instructions}
+            |  </div>
+            |  <div>
+            |    <div class="ReactCollapse--collapse" style="height:auto;overflow:initial">
+            |      <div class="ReactCollapse--content">
+            |        <div class="BaseStyles-richTextPreview-4 ui segments raised">
+            |          <div class="BaseStyles-richTextPreviewHeader ui segment inverted">
+            |            Preview
+            |          </div>
+            |          <div class="BaseStyles-richTextPreviewBodyOuter ui segment">
+            |            <div class="BaseStyles-richTextPreviewBodyInner-2">
+            |              {previewBody}
+            |            </div>
+            |          </div>
+            |        </div>
+            |      </div>
+            |    </div>
+            |  </div>
+            |</div>
+            |""".stripMargin
+        assertRender(a, e)
+      }
+
+      "inTransitWithoutPreview" - {
+        val a = renderTextEditor(
+          status          = EditorStatus.InTransit,
+          style           = style,
+          previewState    = None,
+          previewWantOpen = false,
+          position        = position,
+        )
+        val e =
+          """<div class="BaseStyles-textEditorTopPreviewUnder-2">
+            |  <div>
+            |    <textarea disabled="" class="BaseStyles-textEditor-18">
+            |      {editor.value}
+            |    </textarea>
+            |    {instructions}
             |  </div>
             |  <div>
             |  </div>
@@ -194,7 +373,7 @@ object EditThemeTest extends TestSuite {
     // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████
     "reqTableCustomText" - {
 
-      val style = Style(Position.Under, OpenPreview.MinimallyWithControls)
+      val style = Style(Position.Under, OpenPreview.MinimallyWithControls, WhenInTransit.ReadOnlyViewWithSpinner)
       val position = (_: EditTheme.Layout).positionIfShown
 
       "previewClosed" - {

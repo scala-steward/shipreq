@@ -202,7 +202,8 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
     private def _render(p: Props, s: State, optionalFullscreen: Option[OptionalFullscreen]): VdomNode = {
 
-      def editor(layout: EditTheme.Layout, validity: Validity): VdomElement = {
+
+      def editor(layout: EditTheme.Layout, enabled: Enabled, validity: Validity): VdomElement = {
         val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
 
         val base = TagMod(
@@ -213,10 +214,11 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         val autosizeProps = EditTheme.autosizeTextareaProps(
           mode     = layout.mode,
           position = layoutPosition(layout),
+          enabled  = enabled,
           validity = validity,
           value    = p.edit.value,
           tagMod   = base,
-          font     = if (s.monospace) EditTheme.Font.Monospace else EditTheme.Font.Default,
+          font     = s.font,
         )
 
         editorRef.component(autosizeProps)
@@ -256,6 +258,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         readOnlyView       = richText,
         instructions       = instructions,
         style              = p.editorStyle,
+        font               = s.font,
         previewRW          = p.preview,
         previewWantOpen    = p.wantPreview,
         previewBody        = richText,
@@ -286,7 +289,10 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 object RichTextEditor {
 
   @Lenses
-  final case class State(monospace: Boolean)
+  final case class State(monospace: Boolean) {
+    val font: EditTheme.Font =
+      if (monospace) EditTheme.Font.Monospace else EditTheme.Font.Default
+  }
 
   object State {
     val init = apply(

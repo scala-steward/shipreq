@@ -207,6 +207,9 @@ object Feature {
 
       def clearState(field: FK): Callback =
         write.clearState(field)
+
+      def asyncInProgress =
+        AsyncFeature.isInProgress(read.async)
     }
 
     final case class ForProject(read: Read.ForProject, write: Write.ForProject) {

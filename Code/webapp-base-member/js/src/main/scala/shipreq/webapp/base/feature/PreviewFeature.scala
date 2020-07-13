@@ -10,7 +10,6 @@ import monocle.Lens
 import scala.annotation.nowarn
 import scalacss.ScalaCssReact._
 import shipreq.base.util.Intersection
-import shipreq.webapp.base.jsfacade.ReactCollapse
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Transition}
 import shipreq.webapp.base.ui.{BaseStyles => *, OnlyVisibleOnMouseMove}
@@ -365,12 +364,6 @@ object PreviewFeature {
 
       def clear: Callback =
         write.clear
-
-      def showPreview(wantOpen: => Boolean): Boolean =
-        read.showPreview(wantOpen)
-
-      def reactCollapse(wantOpen: => Boolean) =
-        ReactCollapse(showPreview(wantOpen))
 
       def manualControls(defaultPosition      : Position,
                          previewIsShown       : Boolean,

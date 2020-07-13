@@ -226,7 +226,12 @@ object BaseStyles extends StyleSheet.Inline {
             case EditorState.InTransit => styleS()
           }): StyleS
         )
-      )
+      ),
+      &.disabled(
+        color(c"#999"),
+        backgroundColor(c"#fcfcfc"),
+        borderColor(c"#ddd").important,
+      ),
     )
   }
 

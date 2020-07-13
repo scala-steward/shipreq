@@ -9,8 +9,10 @@ import scala.annotation.elidable
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.UiText
+import shipreq.webapp.base.data.{Disabled, Enabled}
 import shipreq.webapp.base.feature.PreviewFeature.Position
 import shipreq.webapp.base.feature.{EditorStatus, PreviewFeature}
+import shipreq.webapp.base.jsfacade.ReactCollapse
 import shipreq.webapp.base.ui.semantic.Icon
 import shipreq.webapp.base.ui.{BaseStyles => *}
 
@@ -40,6 +42,7 @@ object EditTheme {
 
   def autosizeTextareaProps(mode    : Mode,
                             position: Option[Position],
+                            enabled : Enabled,
                             validity: Validity,
                             value   : String,
                             tagMod  : TagMod,
@@ -47,6 +50,7 @@ object EditTheme {
     TagMod(
       *.textEditor((validity, position, mode, font)),
       ^.value := value,
+      ^.disabled := enabled.is(Disabled),
       tagMod)
 
   def onTextareaEditorMount(ref: Ref.ToScalaComponent[_, _, _], autoFocus: CallbackTo[Boolean]): CallbackOption[Unit] =
@@ -112,10 +116,26 @@ object EditTheme {
     implicit def reusability: Reusability[OpenPreview] = Reusability.by_==
   }
 
-  final case class Style(position: Position, openPreview: OpenPreview)
+  sealed trait WhenInTransit
+  object WhenInTransit {
+    case object ReadOnlyViewWithSpinner extends WhenInTransit
+    case object DisableEditor           extends WhenInTransit
+
+    implicit def univEq: UnivEq[WhenInTransit] = UnivEq.derive
+    implicit def reusability: Reusability[WhenInTransit] = Reusability.by_==
+  }
+
+  final case class Style(position     : Position,
+                         openPreview  : OpenPreview,
+                         whenInTransit: WhenInTransit)
 
   object Style {
-    val default = Style(Position.Under, OpenPreview.Minimally)
+
+    val default = Style(
+      Position.Under,
+      OpenPreview.Minimally,
+      WhenInTransit.ReadOnlyViewWithSpinner,
+    )
 
     implicit def univEq: UnivEq[Style] = UnivEq.derive
     implicit def reusability: Reusability[Style] = Reusability.byRef || Reusability.derive
@@ -192,8 +212,12 @@ object EditTheme {
             Layout(mode, preview, controls)
 
           case OpenPreview.WhenWanted =>
-            val show    = previewRW.read.showPreview(previewWantOpen)
-            val preview = Layout.Preview(style.position, isShown = show, collapsible = false)
+            val show =
+              previewRW.read.status match {
+                case Some(_) => previewRW.read.showPreview(previewWantOpen) // using state to avoid jitter while type
+                case None    => previewWantOpen
+              }
+            val preview = Layout.Preview(style.position, isShown = show, collapsible = true)
             Layout(mode, Some(preview), None)
 
           case OpenPreview.Always =>
@@ -225,14 +249,14 @@ object EditTheme {
 
   // ===================================================================================================================
 
-  /** no preview or fullscreen */
+  /** no preview, fullscreen, or font */
   def renderEditor(status      : EditorStatus,
                    editor      : Validity => VdomElement,
                    readOnlyView: => VdomNode,
                    instructions: => TagMod): VdomNode =
     renderEditor(
       status          = status,
-      editor          = editor,
+      editor          = (_, v) => editor(v),
       readOnlyView    = readOnlyView,
       instructions    = instructions,
       style           = Style.default,
@@ -241,9 +265,9 @@ object EditTheme {
       previewBody     = EmptyVdom,
     )
 
-  /** no fullscreen */
+  /** no fullscreen or font */
   def renderEditor(status            : EditorStatus,
-                   editor            : Validity => VdomElement,
+                   editor            : (Enabled, Validity) => VdomElement,
                    readOnlyView      : => VdomNode,
                    instructions      : => TagMod,
                    style             : Style,
@@ -253,10 +277,11 @@ object EditTheme {
     renderEditor(
       status             = status,
       optionalFullscreen = None,
-      editor             = (_, v) => editor(v),
+      editor             = (_, e, v) => editor(e, v),
       readOnlyView       = readOnlyView,
       instructions       = _ => instructions,
       style              = style,
+      font               = Font.Default,
       previewRW          = previewRW,
       previewWantOpen    = previewWantOpen,
       previewBody        = previewBody,
@@ -266,15 +291,16 @@ object EditTheme {
   /** full */
   def renderEditor(status            : EditorStatus,
                    optionalFullscreen: Option[OptionalFullscreen],
-                   editor            : (Layout, Validity) => VdomElement,
+                   editor            : (Layout, Enabled, Validity) => VdomElement,
                    readOnlyView      : => VdomNode,
                    instructions      : Option[OptionalFullscreen.Ctx] => TagMod,
                    style             : Style,
+                   font              : Font,
                    previewRW         : PreviewFeature.ReadWrite.Single,
                    previewWantOpen   : => Boolean,
                    previewBody       : => VdomNode): VdomNode = {
 
-    def renderActive(error: Option[TagMod]) = {
+    def renderActive(error: Option[TagMod], enabled: Enabled) = {
       def go(fullscreen: Option[OptionalFullscreen.Ctx]): VdomNode = {
 
         val layout =
@@ -286,7 +312,7 @@ object EditTheme {
           )
 
         this.renderActive(
-          editorFn        = editor,
+          editorFn        = editor(_, enabled, _),
           defaultPosition = style.position,
           instructions    = instructions(fullscreen),
           previewRW       = previewRW,
@@ -304,27 +330,30 @@ object EditTheme {
 
     status match {
       case EditorStatus.Ignore | EditorStatus.Valid(_) =>
-        renderActive(None)
+        renderActive(None, Enabled)
 
       case EditorStatus.Invalid(err) =>
-        renderActive(Some(err))
+        renderActive(Some(err), Enabled)
 
       case EditorStatus.InTransit =>
         // This is correct and guarded by tests in ReqDetailTest that confirm fullscreen is closed on commit, and that
         // the fullscreen button is disabled.
         val mode = Mode.Inline
 
-        // This is fine because you can see we're not rendering an editor
-        val font = Font.Default
+        style.whenInTransit match {
+          case WhenInTransit.ReadOnlyViewWithSpinner =>
+            <.div(*.textEditor((*.EditorState.InTransit, None, mode, font)),
+              <.div(spinner),
+              <.div(*.textEditorInTransitValue, readOnlyView))
 
-        <.div(*.textEditor((*.EditorState.InTransit, None, mode, font)),
-          <.div(spinner),
-          <.div(*.textEditorInTransitValue, readOnlyView))
+          case WhenInTransit.DisableEditor =>
+            renderActive(None, Disabled)
+        }
 
       case EditorStatus.AsyncError(err, _, _) =>
         // As described above, this is safe in that we don't have to worry about fullscreen css;
         // it's always Mode.Inline here.
-        renderActive(Some(err))
+        renderActive(Some(err), Enabled)
     }
   }
 
@@ -361,7 +390,7 @@ object EditTheme {
 
         val collapsiblePreview: VdomNode =
           if (collapsible)
-            previewRW.reactCollapse(previewShown)(preview)
+            ReactCollapse(previewShown)(preview)
           else
             preview
 
@@ -378,7 +407,7 @@ object EditTheme {
 
         val collapsiblePreview: VdomNode =
           if (collapsible)
-            previewRW.reactCollapse(previewShown)(preview)
+            ReactCollapse(previewShown)(preview)
           else
             preview
 

@@ -65,7 +65,11 @@ object NewEditor {
 
     final val ShowInstructions = true
 
-    @inline def editorStyle = EditTheme.Style(PreviewFeature.Position.Under, EditTheme.OpenPreview.WhenWanted)
+    val editorStyle = EditTheme.Style(
+      PreviewFeature.Position.Under,
+      EditTheme.OpenPreview.WhenWanted,
+      EditTheme.WhenInTransit.DisableEditor, // else buttons move up & down jarringly
+    )
 
     // TODO https://github.com/japgolly/scalajs-react/issues/748
     implicit class StateSnapshotExt[S](private val self: StateSnapshot[S]) extends AnyVal {

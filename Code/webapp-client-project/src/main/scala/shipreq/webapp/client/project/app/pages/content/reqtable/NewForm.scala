@@ -186,6 +186,9 @@ sealed trait NewForm {
 
     def render(p: Props): VdomElement = {
 
+      val asyncInProgress =
+        p.createFeature.asyncInProgress
+
       val createAnd: Option[Callback => Callback] =
         validOutput(p.editableCols.iterator.map(_._2))
           .flatMap(createCmd(p.input, _))
@@ -227,17 +230,17 @@ sealed trait NewForm {
         Button(
           tipe = Button.Type.BasicIconAndText(Icon.Plus, createButtonLabel(p.input)),
           colour = Colour.Green,
-          state = Button.State.enabledWhen(createAndKeepFormOpen.isDefined))
+          state = Button.State.loadingOrEnabled(asyncInProgress, createAndKeepFormOpen.isDefined))
           .tag(*.formCreateButton,
-            ^.onClick -->? createAndKeepFormOpen)
+            ^.onClick -->? createAndKeepFormOpen.filterNot(_ => asyncInProgress))
 
       val createAndCloseButton: VdomElement =
         Button(
           tipe = Button.Type.BasicIconAndText(Icon.Plus, createAndCloseButtonLabel(p.input)),
           colour = Colour.Green,
-          state = Button.State.enabledWhen(createAndCloseForm.isDefined))
+          state = Button.State.loadingOrEnabled(asyncInProgress, createAndCloseForm.isDefined))
           .tag(*.formCreateButton,
-            ^.onClick -->? createAndCloseForm)
+            ^.onClick -->? createAndCloseForm.filterNot(_ => asyncInProgress))
 
       <.section(*.formOuter,
         SemTable.celledCompactUnstackable(

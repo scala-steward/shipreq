@@ -209,13 +209,15 @@ object UseCaseStepEditor {
       @inline def editorStyle =
         EditTheme.Style.default
 
-      def editor(validity: Validity): VdomElement = {
+      def editor(enabled: Enabled, validity: Validity): VdomElement = {
         val autosizeProps = EditTheme.autosizeTextareaProps(
           position = None,
           mode     = EditTheme.Mode.Inline,
+          enabled  = enabled,
           validity = validity,
           value    = p.edit.value,
-          tagMod   = textareaConst)
+          tagMod   = textareaConst,
+        )
         editorRef.component(autosizeProps)
       }
 
