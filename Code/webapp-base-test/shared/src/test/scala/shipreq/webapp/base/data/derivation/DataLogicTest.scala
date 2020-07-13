@@ -2,12 +2,12 @@ package shipreq.webapp.base.data.derivation
 
 import japgolly.microlibs.nonempty.NonEmptySet
 import japgolly.microlibs.stdlib_ext.MutableArray
+import shipreq.base.util.Forwards
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
-import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
+import shipreq.webapp.base.test.WebappTestUtil._
 import utest._
-import shipreq.base.util.Forwards
 
 object DataLogicTest extends TestSuite {
 

@@ -48,16 +48,24 @@ trait SampleDataManifest[D] { self =>
     lazy val `10000`: D = load(10000,  -679426977,   729017725)
   }
 
+  object real {
+    def load(size: Int, projectConfigHash: Int, projectContentHash: Int): D =
+      self.load(SampleDataMeta(s"shipreq-events-real-$size.json", true, projectConfigHash, projectContentHash))
+
+    lazy val `582`: D = load(582, -376644927, 1214255403)
+  }
+
   lazy val all: Vector[D] =
     Vector(
-      full. `1000`,
-      full. `2000`,
-      full. `4000`,
-      full.`10000`,
+      full      . `1000`,
+      full      . `2000`,
+      full      . `4000`,
+      full      .`10000`,
       noReqCodes. `1000`,
       noReqCodes. `2000`,
       noReqCodes. `4000`,
       noReqCodes.`10000`,
+      real      .  `582`,
     )
 
   def byParams(`type`: String, size: String): D =
@@ -70,6 +78,14 @@ trait SampleDataManifest[D] { self =>
       case ("no_req_codes",  "2000") => noReqCodes. `2000`
       case ("no_req_codes",  "4000") => noReqCodes. `4000`
       case ("no_req_codes", "10000") => noReqCodes.`10000`
+      case ("real",           "582") => real      .  `582`
       case _                         => ???
+    }
+
+  private val idFmt = "(.+):(.+)".r
+
+  def byId(id: String): D =
+    id match {
+      case idFmt(t, s) => byParams(t, s)
     }
 }
