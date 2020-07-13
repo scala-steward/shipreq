@@ -221,8 +221,12 @@ sealed trait NewForm {
               renderArgsWithoutAutoFocus.copy(autoFocus = true)
             else
               renderArgsWithoutAutoFocus
+          // Below we make all columns the same length to avoid horizontal jitter when hitting create.
+          // Horizontal jitter occurs when a progress is in flight because the instructions change. The instructions
+          // change because the commit and abort callbacks change from Some to None.
           <.td(
             ^.key := ColumnLogic.key(cp.column),
+            ^.width := s"calc(100% / ${cols.length})",
             e.value.render(renderArgs))
         }
 

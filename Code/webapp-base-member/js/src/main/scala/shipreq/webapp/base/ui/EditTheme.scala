@@ -300,7 +300,7 @@ object EditTheme {
                    previewWantOpen   : => Boolean,
                    previewBody       : => VdomNode): VdomNode = {
 
-    def renderActive(error: Option[TagMod], enabled: Enabled) = {
+    def renderActive(error: Option[TagMod], enabled: Enabled, modInstructions: TagMod => TagMod) = {
       def go(fullscreen: Option[OptionalFullscreen.Ctx]): VdomNode = {
 
         val layout =
@@ -314,7 +314,7 @@ object EditTheme {
         this.renderActive(
           editorFn        = editor(_, enabled, _),
           defaultPosition = style.position,
-          instructions    = instructions(fullscreen),
+          instructions    = modInstructions(instructions(fullscreen)),
           previewRW       = previewRW,
           previewBody     = previewBody,
           layout          = layout,
@@ -330,10 +330,10 @@ object EditTheme {
 
     status match {
       case EditorStatus.Ignore | EditorStatus.Valid(_) =>
-        renderActive(None, Enabled)
+        renderActive(None, Enabled, identity)
 
       case EditorStatus.Invalid(err) =>
-        renderActive(Some(err), Enabled)
+        renderActive(Some(err), Enabled, identity)
 
       case EditorStatus.InTransit =>
         // This is correct and guarded by tests in ReqDetailTest that confirm fullscreen is closed on commit, and that
@@ -347,13 +347,20 @@ object EditTheme {
               <.div(*.textEditorInTransitValue, readOnlyView))
 
           case WhenInTransit.DisableEditor =>
-            renderActive(None, Disabled)
+            // We're rendering the instructions here with visibility=hidden because
+            // 1. We don't want the layout to change. Users shouldn't see the buttons move and up down; everything
+            //    should stay where it is.
+            // 2. The instructions change and become incorrect. This is because commit and abort callbacks change from
+            //    Some to None, but other instructions (like alt-enter to commit and close) remain.
+            // 3. Even if they were correct, they're irrelevant. A request is in progress -- they can't follow those
+            //    instructions anymore.
+            renderActive(None, Disabled, i => <.span(^.visibility.hidden, i))
         }
 
       case EditorStatus.AsyncError(err, _, _) =>
         // As described above, this is safe in that we don't have to worry about fullscreen css;
         // it's always Mode.Inline here.
-        renderActive(Some(err), Enabled)
+        renderActive(Some(err), Enabled, identity)
     }
   }
 

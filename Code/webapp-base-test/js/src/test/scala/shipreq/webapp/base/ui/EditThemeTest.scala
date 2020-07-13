@@ -252,7 +252,9 @@ object EditThemeTest extends TestSuite {
             |    <textarea disabled="" class="BaseStyles-textEditor-18">
             |      {editor.value}
             |    </textarea>
-            |    {instructions}
+            |    <span style="visibility:hidden">
+            |      {instructions}
+            |    </span>
             |  </div>
             |  <div>
             |    <div class="ReactCollapse--collapse" style="height:auto;overflow:initial">
@@ -289,7 +291,9 @@ object EditThemeTest extends TestSuite {
             |    <textarea disabled="" class="BaseStyles-textEditor-18">
             |      {editor.value}
             |    </textarea>
-            |    {instructions}
+            |    <span style="visibility:hidden">
+            |      {instructions}
+            |    </span>
             |  </div>
             |  <div>
             |  </div>
