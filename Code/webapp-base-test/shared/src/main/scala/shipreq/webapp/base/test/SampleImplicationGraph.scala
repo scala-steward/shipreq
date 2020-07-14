@@ -11,6 +11,7 @@ import shipreq.webapp.base.test.UnsafeTypes._
  * br1             ↗ mf4 → fr6
  *     ↘ br2 → mf3
  *                 ↘ fr4 → fr5 → mf5
+ * fr7
  */
 object SampleImplicationGraph {
 

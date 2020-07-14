@@ -37,6 +37,9 @@ object GraphTestUtil {
   def deleteReqs(id: ReqId*) =
     ReqsDelete(NonEmptySet force id.toSet, Set.empty, Text.empty)
 
-  lazy val SIG_deadMF4: Project =
-    applyEventsSuccessfully(SampleImplicationGraph.project, deleteReqs(SampleImplicationGraph.mf4))
+  lazy val SIG_dead_FR7: Project =
+    applyEventsSuccessfully(SampleImplicationGraph.project, deleteReqs(SampleImplicationGraph.fr7))
+
+  lazy val SIG_dead_FR7_MF4: Project =
+    applyEventsSuccessfully(SIG_dead_FR7, deleteReqs(SampleImplicationGraph.mf4))
 }

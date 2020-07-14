@@ -31,7 +31,7 @@ object ReqGraphGraphTest extends TestSuite {
   override def tests = Tests {
 
     "basic" - {
-      val actual = render(HideDead, project)
+      val actual = render(HideDead, SIG_dead_FR7)
       val expect = DOT(
         s"""
            |digraph G{bgcolor=transparent;rankdir=TB;
@@ -75,7 +75,7 @@ object ReqGraphGraphTest extends TestSuite {
     }
 
     "showDead" - {
-      val actual = render(ShowDead, SIG_deadMF4)
+      val actual = render(ShowDead, SIG_dead_FR7_MF4)
       val expect = DOT(
         s"""
            |digraph G{bgcolor=transparent;rankdir=TB;
@@ -87,6 +87,7 @@ object ReqGraphGraphTest extends TestSuite {
            |$br1[id="BR-1" label="BR-1"]
            |
            |node[fillcolor="#D5A8C9"]
+           |$fr7[id="FR-7" label="FR-7" fillcolor="#dddddd" color="#777777" fontcolor="#666666"]
            |$fr5[id="FR-5" label="FR-5"]
            |$fr1[id="FR-1" label="FR-1"]
            |$fr6[id="FR-6" label="FR-6"]
@@ -95,7 +96,7 @@ object ReqGraphGraphTest extends TestSuite {
            |$fr4[id="FR-4" label="FR-4"]
            |
            |node[fillcolor="#93D5BA"]
-           |$mf4[id="MF-4" label="MF-4"][fillcolor="#dddddd" color="#777777" fontcolor="#666666"]
+           |$mf4[id="MF-4" label="MF-4" fillcolor="#dddddd" color="#777777" fontcolor="#666666"]
            |$mf3[id="MF-3" label="MF-3"]
            |$mf2[id="MF-2" label="MF-2"]
            |$mf1[id="MF-1" label="MF-1"]
@@ -119,7 +120,7 @@ object ReqGraphGraphTest extends TestSuite {
     }
 
     "hideDead" - {
-      val actual = render(HideDead, SIG_deadMF4)
+      val actual = render(HideDead, SIG_dead_FR7_MF4)
       val expect = DOT(
         s"""
            |digraph G{bgcolor=transparent;rankdir=TB;
@@ -264,13 +265,11 @@ object ReqGraphGraphTest extends TestSuite {
       //       fr9 -> br2
       // br1 ↗
       val br3: GenericReqId = 23
-      val fr7: GenericReqId = 37
       val fr8: GenericReqId = 38
       val fr9: GenericReqId = 39
       val fr10: GenericReqId = 40
       val p = applyEventsSuccessfully(project,
         GenericReqCreate(br3, br, GD.emptyValues),
-        GenericReqCreate(fr7, fr, GD.emptyValues),
         GenericReqCreate(fr8, fr, GD.emptyValues + GD.ImpSrcs(fr7)),
         GenericReqCreate(fr9, fr, GD.emptyValues + GD.ImpSrcs(NonEmptySet(br1, fr7)) + GD.ImpTgts(br2)),
         GenericReqCreate(fr10, fr, GD.emptyValues),
