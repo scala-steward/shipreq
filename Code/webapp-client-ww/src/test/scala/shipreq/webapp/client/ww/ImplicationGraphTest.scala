@@ -12,7 +12,7 @@ object ImplicationGraphTest extends TestSuite {
 
     "basic" - {
       import SampleImplicationGraph._
-      val actual = Graphs.implicationFocused(mf3, HideDead, project)
+      val actual = ImplicationGraph(mf3, HideDead, project)
       val expect = DOT(
         """
           |digraph G{bgcolor=transparent;rankdir=LR;
@@ -55,7 +55,7 @@ object ImplicationGraphTest extends TestSuite {
 
     "hideDead" - {
       import SampleImplicationGraph._
-      val actual = Graphs.implicationFocused(mf3, HideDead, SIG_dead_FR7_MF4)
+      val actual = ImplicationGraph(mf3, HideDead, SIG_dead_FR7_MF4)
       val expect = DOT(
         """
           |digraph G{bgcolor=transparent;rankdir=LR;
@@ -94,7 +94,7 @@ object ImplicationGraphTest extends TestSuite {
 
     "showDead" - {
       import SampleImplicationGraph._
-      val actual = Graphs.implicationFocused(mf3, ShowDead, SIG_dead_FR7_MF4)
+      val actual = ImplicationGraph(mf3, ShowDead, SIG_dead_FR7_MF4)
       val expect = DOT(
         """
           |digraph G{bgcolor=transparent;rankdir=LR;

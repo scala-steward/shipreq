@@ -9,7 +9,7 @@ import shipreq.webapp.base.text.ProjectText
 import shipreq.webapp.client.ww.GraphViz.DOT
 import utest._
 
-object StepFlowTest extends TestSuite {
+object UseCaseStepFlowTest extends TestSuite {
   import GraphTestUtil._
 
   override def tests = Tests {
@@ -20,7 +20,7 @@ object StepFlowTest extends TestSuite {
       import UnsafeTypes._
       val uc = UseCaseId(1)
       val project = applyEventsSuccessfully(Project.empty, UseCaseCreate(uc, 2, UseCaseGD.emptyValues))
-      val actual = Graphs.useCaseStepFlow(uc, project, ProjectText.Context.Req(uc))
+      val actual = UseCaseStepFlow(uc, project, ProjectText.Context.Req(uc))
       val expect = DOT(
         """
           |digraph G{bgcolor=transparent;rankdir=LR;ranksep=0.28;
@@ -42,7 +42,7 @@ object StepFlowTest extends TestSuite {
     "sp6" - {
       import SampleProject6._
       import Values._
-      val actual = Graphs.useCaseStepFlow(uc1, project, ProjectText.Context.Req(uc1))
+      val actual = UseCaseStepFlow(uc1, project, ProjectText.Context.Req(uc1))
       val expect = DOT(
         """
           |digraph G{bgcolor=transparent;rankdir=LR;ranksep=0.28;

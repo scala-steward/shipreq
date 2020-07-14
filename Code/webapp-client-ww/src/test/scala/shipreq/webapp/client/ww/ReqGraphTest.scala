@@ -20,7 +20,7 @@ object ReqGraphTest extends TestSuite {
                      p: Project,
                      filter: CompiledFilter = null,
                      config: ImpGraphConfig = ImpGraphConfig.default): DOT =
-    Graphs.implicationAll(
+    ReqGraph(
       project    = p,
       plainText  = PlainText.ForProject.noCtx(p),
       filterDead = fd,
