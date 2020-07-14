@@ -54,7 +54,7 @@ v2.2
 ### Implement
 * [FR-20] Implication fields #must include external implication sources
 * [FR-21] Implication graph #must include external implication sources
-
+* A a req-type dropdown on the new-button in the ReqDetail page
 
 Backlog (maybe-probably soon)
 ========================================================================================================================
