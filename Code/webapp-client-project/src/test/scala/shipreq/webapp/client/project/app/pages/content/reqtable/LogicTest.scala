@@ -65,10 +65,14 @@ object LogicTest extends TestSuite {
   import UnsafeTypes._
   import SampleProject7.Values._
   import shipreq.webapp.base.filter.Filter.{Valid => F}
+  import shipreq.webapp.base.filter.Filter.Valid.FieldCriteria
   import shipreq.webapp.base.filter.FilterAst.Attr.{AnyIssue, AnyTag}
   import shipreq.webapp.base.filter.FilterAst.FieldAttr
   import shipreq.webapp.base.filter.IntensionalReqSet._
   import LogicTestUtil._
+
+  private implicit def liftFieldAttr(a: FieldAttr): FieldCriteria =
+    FieldCriteria.Attr(a)
 
   private      def P1  = SampleProject.project
   private      def P3  = SampleProject3.project
@@ -1064,6 +1068,14 @@ object LogicTest extends TestSuite {
     testFilter(P7, F.fieldProp(\/-(mfField), FieldAttr.Blank))("BR-1  BR-2  BR-3  UC-1  UC-2", "")
   }
 
+  def testFilterImpFieldPos(): Unit = {
+    // Filter by field:MF=2
+    import SampleImplicationGraph2._
+    testFilter(project, F.fieldProp(\/-(mfField), FieldCriteria.ReqTypePosSet(NonEmptySet(2))))(
+      "FB-1  IV-1  IV-2  MF-2  MF-3  UC-2",
+      "UC-1")
+  }
+
   def testFilterTagFieldNA(): Unit = {
     testFilter(P7, F.fieldProp(\/-(priField), FieldAttr.NotApplicable))("", "CO-1  CO-2")
 
@@ -1407,6 +1419,7 @@ object LogicTest extends TestSuite {
       "implyNothing"         - testFilterImplyNothing()
       "impFieldNA"           - testFilterImpFieldNA()
       "impFieldBlank"        - testFilterImpFieldBlank()
+      "impFieldPos"          - testFilterImpFieldPos()
       "textFieldNA"          - testFilterTextFieldNA()
       "textFieldBlank"       - testFilterTextFieldBlank()
       "tagFieldNA"           - testFilterTagFieldNA()

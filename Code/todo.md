@@ -52,7 +52,6 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
-* [FR-22] User #must be able to filter by imp-field values
 * A a req-type dropdown on the new-button in the ReqDetail page
 
 Backlog (maybe-probably soon)
