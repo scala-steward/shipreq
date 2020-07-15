@@ -92,6 +92,7 @@ object AutoCompleteFeature extends autocomplete.Implicits {
           n <- r.withEffectsPure.getDOMNode.map(_.toElement).asCBO
         } yield Ctx(pxAutoComplete.value(), n.domCast[html.TextArea])
     }
-
   }
+
+  final val MaxResults = shipreq.webapp.base.feature.autocomplete.strategies.MaxResults
 }

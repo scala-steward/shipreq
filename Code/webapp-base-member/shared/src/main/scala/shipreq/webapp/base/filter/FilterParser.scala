@@ -45,10 +45,7 @@ object FilterParser {
     CharPredicate.Alpha ++ CharPredicate.from(_ == '/')
 
   val fieldNameUnquotedChar =
-    CharPredicate.from {
-      case ':' | '=' | '"' | `EOI` => false
-      case c                       => !c.isWhitespace
-    }
+    CharPredicate.from(c => (c != EOI) && FilterAlgebra.isFieldNameUnquotedChar(c))
 
   // Allows ' / -
   val simpleTextChar =

@@ -31,11 +31,16 @@ object FilterAlgebra {
   import Filter._
   import FilterAst._
 
-  def quoteFieldName(s: String): String =
-    if (s.exists(c => c == ':' || c.isWhitespace))
-      "\"" + s + "\""
+  val isFieldNameUnquotedChar: Char => Boolean = {
+    case ':' | '=' | '"' => false
+    case c               => !c.isWhitespace
+  }
+
+  def quoteFieldName(name: String): String =
+    if (name.forall(isFieldNameUnquotedChar))
+      name
     else
-      s
+      "\"" + name + "\""
 
   val unparse: FAlgebra[PotentialF, AtomOrComposite[String]] = {
     import shipreq.base.util.SafeStringOps._

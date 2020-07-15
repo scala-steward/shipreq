@@ -13,19 +13,21 @@ object FilterEditorTest extends TestSuite {
       "field" - {
 
         "all" - assertSuggestionsFor("field:")(
-          "\"All Tags\"",
+          "All Tags",
           "Description",
-          "\"Exception Courses\"",
-          "\"Major Feature\"",
-          "\"Normal and Alternate Courses\"",
+          "Exception Courses",
+          "Major Feature",
+          "Normal and Alternate Courses",
           "Notes",
-          "\"Other Tags\"",
+          "Other Tags",
           "Priority",
           "Released",
           "Reporter",
         )
 
-        "simple" - assertSuggestionsAndSelectionFor("field:pri")("Priority")("field:Priority")
+        "simple"   - assertSuggestionsAndSelectionFor("field:pri")("Priority")("field:Priority")
+        "middle"   - assertSuggestionsAndSelectionFor("field:tes")("Notes")("field:Notes")
+        "quotes"   - assertSuggestionsAndSelectionFor("field:OTH")("Other Tags")("field:\"Other Tags\"")
 
       }
 
