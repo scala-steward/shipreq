@@ -5,11 +5,13 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html
+import scala.collection.immutable.ArraySeq
 import scalacss.ScalaCssReact._
 import scalaz.{-\/, \/-}
 import shipreq.base.util.{Invalid, Valid, Validity}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.derivation.NaTags
+import shipreq.webapp.base.feature.AutoCompleteFeature
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.filter._
 import shipreq.webapp.base.issue.IssueCategory
@@ -79,7 +81,99 @@ object FilterEditor {
       case -\/(_) => (Invalid, None)
     }
 
+  private def normaliseAutoCompleteText(s: String): String =
+    s.filter(FilterAlgebra.isFieldNameUnquotedChar).toLowerCase
+
+  private final class FieldSuggestion(val display: String, value: String) {
+    val displayNormalised = normaliseAutoCompleteText(display)
+    def quotedValue = FilterAlgebra.quoteFieldName(value)
+  }
+
+  private object FieldSuggestion {
+    @inline def apply(value: String): FieldSuggestion =
+      apply(value, value)
+
+    def apply(display: String, value: String): FieldSuggestion =
+      new FieldSuggestion(display, value)
+  }
+
+  private val specialFields: ArraySeq[FieldSuggestion] =
+    SpecialBuiltInField.filterOk
+      .iterator
+      .map(f => FieldSuggestion(f.name))
+      .to(ArraySeq)
+
+  private[widgets] def autoCompleteStrategies(p: Project): AutoComplete.Strategies = {
+
+    val hashtags = AutoComplete.Project.hashtag(
+      project    = p,
+      filterDead = ShowDead,
+      issues     = true,
+      tags       = true,
+      naTags     = NaTags.none)(
+      Contextualise)
+
+    val fieldNames: ArraySeq[FieldSuggestion] = {
+      lazy val allNames: Set[String] =
+        p.config.fieldsByName.iterator.map(_._1).toSet ++ SpecialBuiltInField.filterOk.iterator.map(_.name)
+
+      def projectFields =
+        p.config.fieldsByName
+          .iterator
+          .filter(_._2 match {
+            case _: CustomField
+               | StaticField.AllTags
+               | StaticField.OtherTags
+               | StaticField.NormalAltStepTree
+               | StaticField.ExceptionStepTree
+            => true
+            case StaticField.ImplicationGraph
+               | StaticField.StepGraph
+            => false
+          })
+          .map { case (name, field) =>
+            def value: String =
+              field match {
+                case f: CustomField.Implication =>
+                  val reqType = p.config.reqTypes.need(f.reqTypeId).mnemonic.value
+                  if (allNames.contains(reqType))
+                    name
+                  else
+                    reqType
+                case _ =>
+                  name
+              }
+            FieldSuggestion(name, value)
+          }
+
+      MutableArray(projectFields ++ specialFields)
+        .sortBy(_.display)
+        .arraySeq
+    }
+
+    val query: String => IterableOnce[FieldSuggestion] =
+      input => {
+        val i = normaliseAutoCompleteText(input)
+        fieldNames.iterator
+          .filter(_.displayNormalised contains i)
+          .take(AutoCompleteFeature.MaxResults)
+      }
+
+    val autoCompleteFieldName =
+      AutoComplete.Strategy.builder
+        .regex("""\b(field:)([^ :=]*)$""", index = 2)
+        .search(query)
+        .replace(f => "$1" + f.quotedValue)
+        .template((f, _) => f.display)
+        .result()
+
+    hashtags :+ autoCompleteFieldName :+ autoCompletePresenceLackAttr :+ autoCompleteHasIssue :+ autoCompleteKeywords
+  }
+
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.BackendI {
+
+    override protected def getTextFromHeadToCaret =
+      AutoComplete.getTextFromHeadToCaretI
 
     private val pxProject: Px[Project] =
       Px.props($).map(_.project).withReuse.autoRefresh
@@ -91,52 +185,7 @@ object FilterEditor {
       pxProjectConfig.map(FilterAlgebra.validate)
 
     private val pxAutoComplete: Px[AutoComplete.Strategies] =
-      pxProject.map { p =>
-
-        val hashtags = AutoComplete.Project.hashtag(
-          project    = p,
-          filterDead = ShowDead,
-          issues     = true,
-          tags       = true,
-          naTags     = NaTags.none)(
-          Contextualise)
-
-        val fieldNames = {
-          def projectFields =
-            p.config.fieldsByName
-              .iterator
-              .filter(_._2 match {
-                case _: CustomField
-                   | StaticField.AllTags
-                   | StaticField.OtherTags
-                   | StaticField.NormalAltStepTree
-                   | StaticField.ExceptionStepTree
-                   => true
-                case StaticField.ImplicationGraph
-                   | StaticField.StepGraph
-                   => false
-              })
-            .map(_._1)
-
-          def specialFields =
-            SpecialBuiltInField.filterOk.iterator.map(_.name)
-
-          MutableArray(projectFields ++ specialFields)
-            .sort
-            .iterator()
-            .map(FilterAlgebra.quoteFieldName)
-            .toArray
-        }
-
-        val autoCompleteFieldName =
-          AutoComplete.Strategy.builder
-            .regex("""\b(field:)([a-z]*)$""", index = 2)
-            .search(AutoComplete.Query caseInsensitiveStartsWith fieldNames)
-            .replace("$1" + _)
-            .result()
-
-        hashtags :+ autoCompleteFieldName :+ autoCompletePresenceLackAttr :+ autoCompleteHasIssue :+ autoCompleteKeywords
-      }
+      pxProject.map(autoCompleteStrategies)
 
     private val helpButton: VdomTag =
       Button(tipe = Button.Type.IconOnly(Icon.HelpCircle))
@@ -162,6 +211,7 @@ object FilterEditor {
     private lazy val inputTagMod = TagMod(
       ^.onBlur     --> autoCompleteOnBlur,
       ^.onClick    ==> autoCompleteOnClick,
+      ^.onKeyDown  ==> autoCompleteOnKeyDown,
       ^.placeholder := "Filter...",
       ^.minWidth    := "32ex",
     )

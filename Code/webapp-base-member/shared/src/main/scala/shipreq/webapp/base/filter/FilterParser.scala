@@ -45,7 +45,7 @@ object FilterParser {
     CharPredicate.Alpha ++ CharPredicate.from(_ == '/')
 
   val fieldNameUnquotedChar =
-    CharPredicate.from(c => c != ':' && c != '"' && c != EOI && !c.isWhitespace)
+    CharPredicate.from(c => (c != EOI) && FilterAlgebra.isFieldNameUnquotedChar(c))
 
   // Allows ' / -
   val simpleTextChar =
@@ -159,7 +159,7 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
     def quoteChar: Rule0 = rule('"')
     def name: Rule1[String] = rule(capture(fieldNameUnquotedChar.+) | (quoteChar ~ nonGreedyCapture(() => quoteChar)))
     rule(
-      "field:" ~ name ~ ':' ~ attr
+      "field:" ~ name ~ '=' ~ attr
         ~> ((f: String, a: String) => Potential.fieldProp(f, a))
     )
   }

@@ -109,6 +109,7 @@ object KeyHandler {
     val Enter     = Criterion("enter",      EventType.KeyDown, KeyCode.Enter)
     val AltEnter  = Criterion("alt-enter",  EventType.KeyDown, KeyCode.Enter, ModKey.Alt)
     val CtrlEnter = Criterion("ctrl-enter", EventType.KeyDown, KeyCode.Enter, ModKey.Ctrl)
+    val CtrlSpace = Criterion("ctrl-space", EventType.KeyDown, KeyCode.Space, ModKey.Ctrl)
   }
 
   type Criteria = ListSet[Criterion]

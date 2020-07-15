@@ -25,8 +25,9 @@ import shipreq.webapp.base.ui.AutosizeTextarea
   *
   * 5. Wire up your editor:
   *    ```
-  *    ^.onBlur  --> autoCompleteOnBlur,
-  *    ^.onClick ==> autoCompleteOnClick,
+  *    ^.onBlur    --> autoCompleteOnBlur,
+  *    ^.onClick   ==> autoCompleteOnClick,
+  *    ^.onKeyDown ==> autoCompleteOnKeyDown,
   *    ```
   *
   * 6. Add `.configure(AutoComplete.install)` to your component builder.
@@ -86,6 +87,9 @@ object AutoCompleteFeature extends autocomplete.Implicits {
       final val editorRef =
         Ref.toScalaComponent(AutosizeTextarea.Component)
 
+      override final protected def getTextFromHeadToCaret =
+        getTextFromHeadToCaretTA
+
       override final val autoCompleteCtx =
         for {
           r <- editorRef.get
@@ -93,5 +97,12 @@ object AutoCompleteFeature extends autocomplete.Implicits {
         } yield Ctx(pxAutoComplete.value(), n.domCast[html.TextArea])
     }
 
+    val getTextFromHeadToCaretI: html.Input => Option[String] =
+      i => Some(i.value.substring(0, i.selectionEnd))
+
+    val getTextFromHeadToCaretTA: html.TextArea => Option[String] =
+      t => Some(t.value.substring(0, t.selectionEnd))
   }
+
+  final val MaxResults = shipreq.webapp.base.feature.autocomplete.strategies.MaxResults
 }

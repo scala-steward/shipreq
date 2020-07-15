@@ -168,8 +168,10 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
     private val keyHandlerBase =
       KeyHandlers.base(
-        KeyboardTheme.abortCriterion.handleWhenDefined($.props.map(_.abortWithConfirmation)) +
-        KeyboardTheme.commitCO($.props.map(_.status.getCommit)))
+        autoCompleteKeyHandlers
+          + KeyboardTheme.abortCriterion.handleWhenDefined($.props.map(_.abortWithConfirmation))
+          + KeyboardTheme.commitCO($.props.map(_.status.getCommit))
+      )
 
     val textareaConst: TagMod = {
       val onFocus: Callback =
