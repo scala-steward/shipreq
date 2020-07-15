@@ -56,6 +56,9 @@ object ApplicableReqTypeEditor {
 
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.BackendI {
 
+    override protected def getTextFromHeadToCaret =
+      AutoComplete.getTextFromHeadToCaretI
+
     private val label = <.label(UiText.FieldNames.applicableReqTypes)
 
     private val renderItem: Applicability => TagMod = {
@@ -70,8 +73,9 @@ object ApplicableReqTypeEditor {
 
     private lazy val inputTagMod: TagMod =
       TagMod(
-        ^.onBlur  --> autoCompleteOnBlur,
-        ^.onClick ==> autoCompleteOnClick,
+        ^.onBlur     --> autoCompleteOnBlur,
+        ^.onClick    ==> autoCompleteOnClick,
+        ^.onKeyDown  ==> autoCompleteOnKeyDown,
         ^.placeholder := "Req types...",
         ^.spellCheck  := false,
       )

@@ -3,6 +3,7 @@ package shipreq.webapp.base.feature.autocomplete
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html
+import shipreq.webapp.base.feature.AutoCompleteFeature
 import shipreq.webapp.base.feature.autocomplete.strategies.Strategies
 
 object InputComponent {
@@ -18,7 +19,9 @@ object InputComponent {
     def render(p: Props): VdomNode =
       p.render(TagMod(
         ^.onBlur --> autoCompleteOnBlur,
-        ^.onClick ==> autoCompleteOnClick))
+        ^.onClick ==> autoCompleteOnClick,
+        ^.onKeyDown ==> autoCompleteOnKeyDown,
+      ))
 
     override val autoCompleteCtx: CallbackOption[AutoCompleteCtx] =
       for {
@@ -30,6 +33,9 @@ object InputComponent {
         val i = h.querySelector("input").domCast[html.Input]
         AutoCompleteCtx(a, i)
       }
+
+    override protected def getTextFromHeadToCaret =
+      AutoCompleteFeature.AutoComplete.getTextFromHeadToCaretI
   }
 
   val Component = ScalaComponent.builder[Props]

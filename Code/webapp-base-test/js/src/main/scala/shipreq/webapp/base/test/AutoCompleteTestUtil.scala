@@ -18,6 +18,9 @@ object AutoCompleteTestUtil {
   final case class Backend($: BackendScope[Strategies, String]) extends AutoComplete.BackendTA {
     val domRef = Ref[html.TextArea]
 
+    override def getTextFromHeadToCaret =
+      AutoComplete.getTextFromHeadToCaretTA
+
     def getTextComplete(): TextComplete =
       textCompleteCBO.asCallback.runNow().get
 
@@ -28,6 +31,7 @@ object AutoCompleteTestUtil {
         ^.onChange ==> change,
         ^.onBlur --> autoCompleteOnBlur,
         ^.onClick ==> autoCompleteOnClick,
+        ^.onKeyDown ==> autoCompleteOnKeyDown,
       ).withRef(domRef)
     }
 

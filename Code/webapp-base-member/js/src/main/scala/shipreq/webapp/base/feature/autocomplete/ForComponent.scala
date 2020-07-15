@@ -3,10 +3,12 @@ package shipreq.webapp.base.feature.autocomplete
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.internal.JsUtil
 import japgolly.univeq._
+import org.scalajs.dom.ext.KeyCode
 import org.scalajs.dom.html
 import shipreq.webapp.base.feature.autocomplete.Implicits._
 import shipreq.webapp.base.feature.autocomplete.strategies.Strategies
 import shipreq.webapp.base.jsfacade.TextComplete
+import shipreq.webapp.base.lib.{KeyHandler, KeyHandlers}
 
 object ForComponent {
 
@@ -99,6 +101,14 @@ object ForComponent {
         _ <- autoCompleteClose.toCBO
       } yield ()
 
+    final protected lazy val autoCompleteKeyHandlers: KeyHandlers =
+      KeyHandlers(KeyHandler.Criterion.CtrlSpace.handle(trigger) :: Nil)
+
+    final protected val autoCompleteOnKeyDown: ReactKeyboardEvent => Callback = e =>
+      CallbackOption.keyCodeSwitch(e, ctrlKey = true) {
+        case KeyCode.Space => trigger
+      }.asEventDefault(e)
+
     final private val addEventListeners: Callback =
       for {
         tc <- textCompleteCBO
@@ -113,6 +123,12 @@ object ForComponent {
           })
         }
       }
+
+    protected def getTextFromHeadToCaret: D => Option[String]
+
+    /** Display the auto-complete options */
+    final protected def trigger: CallbackOption[Unit] =
+      trigger(getTextFromHeadToCaret)
 
     /** Display the auto-complete options */
     final protected def trigger(text: D => Option[String]): CallbackOption[Unit] =

@@ -161,6 +161,9 @@ object FilterEditor {
 
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.BackendI {
 
+    override protected def getTextFromHeadToCaret =
+      AutoComplete.getTextFromHeadToCaretI
+
     private val pxProject: Px[Project] =
       Px.props($).map(_.project).withReuse.autoRefresh
 
@@ -197,6 +200,7 @@ object FilterEditor {
     private lazy val inputTagMod = TagMod(
       ^.onBlur     --> autoCompleteOnBlur,
       ^.onClick    ==> autoCompleteOnClick,
+      ^.onKeyDown  ==> autoCompleteOnKeyDown,
       ^.placeholder := "Filter...",
       ^.minWidth    := "32ex",
     )
