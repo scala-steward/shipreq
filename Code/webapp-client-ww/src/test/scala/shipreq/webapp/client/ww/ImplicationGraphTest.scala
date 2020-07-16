@@ -281,9 +281,9 @@ object ImplicationGraphTest extends TestSuite {
              |$fr1[id="FR-1" label="FR-1"]
              |
              |node[fillcolor="#eeeeee" color="#aaaaaa" fontcolor="#444444"]
+             |$uc3[id="UC-3" label="UC-3"]
              |$mf1[id="MF-1" label="MF-1"]
              |$mf4[id="MF-4" label="MF-4"]
-             |$uc3[id="UC-3" label="UC-3"]
              |
              |edge[color="#FFC19C"]
              |edge[color="#C27040"]
@@ -293,10 +293,10 @@ object ImplicationGraphTest extends TestSuite {
              |$fb3->$fr1;
              |
              |edge[color="#aaaaaa" style=dashed]
-             |$uc3->$fr1;
-             |$uc3->$fb3;
              |$mf4->$uc3;
+             |$uc3->$fr1;
              |$mf1->$uc3;
+             |$uc3->$fb3;
              |}
           """.stripMargin)
         assertDOT(actual, expect)

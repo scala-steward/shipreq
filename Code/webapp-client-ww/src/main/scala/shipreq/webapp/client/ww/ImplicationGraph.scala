@@ -110,30 +110,39 @@ object ImplicationGraph {
       }
 
       var externalEdges = List.empty[Content]
+      val externalEdgesSeen = mutable.Set.empty[(ReqId, ReqId)]
 
-      def declareExternals() = {
+      def declareExternals(): Unit = {
         implicit val dir = Forwards
-        mutableGraphTraversal(externals) { id =>
-          if (declared.contains(id))
-            Set.empty
-          else {
-            declareNode(id)
 
-            val from = nodeName(id)
-            val fromLive = live(id)
+        def follow(from: ReqId, history: List[() => Unit]): Unit =
+          if (isInternal(from)) {
+            // We found a link from an external root back to the internal graph
+            history.foreach(_())
 
-            var children = imps.forwards(id).iterator
+          } else {
+            val fromName = nodeName(from)
+            val fromLive = live(from)
+
+            var children = imps.forwards(from).iterator
             children = fd.filterFn.iteratorBy(children)(live)
 
-            // [Order is important] Add edges to both internal & external nodes...
-            children = children.tapEach(c => externalEdges ::= edgeThunk(from, fromLive, c))
-
-            // [Order is important] ...but stop traversing once we reach the internal nodes.
-            children = children.filterNot(isInternal)
-
-            children.toSet
+            for (to <- children) {
+              val add = () => {
+                if (!declared.contains(from)) declareNode(from)
+                if (!declared.contains(to)) declareNode(to)
+                val key = ((from, to))
+                if (!externalEdgesSeen.contains(key)) {
+                  externalEdgesSeen += key
+                  externalEdges ::= edgeThunk(fromName, fromLive, to)
+                }
+              }
+              follow(to, add :: history)
+            }
           }
-        }
+
+        for (e <- externals)
+          follow(e, Nil)
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

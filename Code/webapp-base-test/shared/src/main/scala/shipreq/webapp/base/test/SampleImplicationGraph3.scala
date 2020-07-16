@@ -7,7 +7,7 @@ import shipreq.webapp.base.event._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.test.WebappTestUtil._
 
-//   FR2                                                    MF1   MF4
+//   FR2                                            FR3 <-- MF1   MF4
 //                                                             ↘ ↙
 //   FB4 --------------------------------------------> FB3 <-- UC3
 //                                                       \     /
@@ -27,6 +27,7 @@ object SampleImplicationGraph3 {
       |FB4 - 1,4
       |FR1 - 1,4
       |FR2 -
+      |FR3 - 1
       |IV1 - 1,2,3
       |IV2 - 1,2,3
       |MF1 - 1
@@ -53,6 +54,7 @@ object SampleImplicationGraph3 {
   val iv2     = GenericReqId(32)
   val fr1     = GenericReqId(41)
   val fr2     = GenericReqId(42)
+  val fr3     = GenericReqId(43)
   val uc1     = UseCaseId(51)
   val uc2     = UseCaseId(52)
   val uc3     = UseCaseId(53)
@@ -78,11 +80,12 @@ object SampleImplicationGraph3 {
     Event.GenericReqCreate(iv2, iv, GenericReqGD.emptyValues),
     Event.GenericReqCreate(fr1, fr, GenericReqGD.emptyValues),
     Event.GenericReqCreate(fr2, fr, GenericReqGD.emptyValues),
+    Event.GenericReqCreate(fr3, fr, GenericReqGD.emptyValues),
     Event.UseCaseCreate(uc1, uc1.value, UseCaseGD.emptyValues),
     Event.UseCaseCreate(uc2, uc2.value, UseCaseGD.emptyValues),
     Event.UseCaseCreate(uc3, uc3.value, UseCaseGD.emptyValues),
 
-    Event.ReqImplicationsPatch(mf1, Forwards, nesd()(uc3)),
+    Event.ReqImplicationsPatch(mf1, Forwards, nesd()(uc3, fr3)),
     Event.ReqImplicationsPatch(mf2, Forwards, nesd()(mf3)),
     Event.ReqImplicationsPatch(mf4, Forwards, nesd()(uc3)),
     Event.ReqImplicationsPatch(fb1, Forwards, nesd()(iv1)),
@@ -108,6 +111,7 @@ object SampleImplicationGraph3 {
         |FB4 - 1,4
         |FR1 - 1,4
         |FR2 -
+        |FR3 - 1
         |IV1 -
         |IV2 -
         |MF1 - 1
