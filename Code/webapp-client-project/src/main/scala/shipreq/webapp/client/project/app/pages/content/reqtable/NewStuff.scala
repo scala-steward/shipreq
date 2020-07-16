@@ -12,10 +12,10 @@ import shipreq.webapp.client.project.app.pages.content.reqtable.NewStuff.State
 import shipreq.webapp.client.project.feature.CreateFeature
 import shipreq.webapp.client.project.feature.CreateFeature.RowKey
 import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
-import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.client.project.widgets.{NewReqButton, ProjectWidgets}
 
 /**
-  * Unified, convenience interface to both [[NewButton]] and [[NewForm]].
+  * Unified, convenience interface to both [[NewReqButton]] and [[NewForm]].
   */
 object NewStuff {
 
@@ -51,7 +51,6 @@ object NewStuff {
     def init: State =
       State.Closed(None)
   }
-
 }
 
 final class NewStuff(state        : State,
@@ -64,7 +63,7 @@ final class NewStuff(state        : State,
                      create       : CreateFeature.ReadWrite.ForProject,
                      activeColumns: NonEmptyVector[ColumnPlus]) {
 
-  private val buttonUpdate: Reusable[NewButton.Update] =
+  private val buttonCallbacks: Reusable[NewReqButton.Callbacks] =
     modState.map { f =>
 
       def selectRow(next: RowKey): Callback = {
@@ -78,22 +77,22 @@ final class NewStuff(state        : State,
         (retainState >> select).toCallback
       }
 
-      NewButton.Update(
+      NewReqButton.Callbacks(
         select = selectRow,
         click = s => f.modState(_.toggle(s)))
     }
 
-  val buttonProps: NewButton.Props =
+  val buttonProps: NewReqButton.Props =
     state match {
       case State.Open(s) =>
-        var b = NewButton.Props(Some(s), reqTypes, allowRCG, pw, Some(buttonUpdate))
+        var b = NewReqButton.Props(Some(s), reqTypes, allowRCG, pw, Some(buttonCallbacks))
         // If what we thought was open is no longer acceptable, proceed as if closed
         if (b.dropdownProps.selected.forall(_ !=* s))
           b = b.copy(state = None)
         b
 
       case State.Closed(o) =>
-        NewButton.Props(o, reqTypes, allowRCG, pw, Some(buttonUpdate))
+        NewReqButton.Props(o, reqTypes, allowRCG, pw, Some(buttonCallbacks))
     }
 
   private val cancel: Callback =

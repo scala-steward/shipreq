@@ -206,16 +206,16 @@ object FieldConfig {
 
         case NewArgs.Disabled(sel) =>
           ButtonAndDropdown.Props.forNew[NewFieldType](
-            items    = items,
-            selected = Some(sel),
-            update   = None,
+            items     = items,
+            selected  = Some(sel),
+            callbacks = None,
           )
 
         case a: NewArgs.Enabled[NewState] =>
           ButtonAndDropdown.Props.forNew[NewFieldType](
-            items    = items,
-            selected = Some(a.state.value),
-            update   = Option.unless(p.asyncInProgress)(Reusable.byRef(a).withValue(dropdownButton.Update(
+            items     = items,
+            selected  = Some(a.state.value),
+            callbacks = Option.unless(p.asyncInProgress)(Reusable.byRef(a).withValue(dropdownButton.Callbacks(
               click  = _ => a.openEditor,
               select = a.state.setState,
             ))))

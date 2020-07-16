@@ -18,14 +18,14 @@ import shipreq.webapp.client.project.app.Style.{widgets => *}
 object ButtonAndDropdown {
 
   class Types[A] {
-    final type Item    = ButtonAndDropdown.Item[A]
-    final type Update  = ButtonAndDropdown.Update[A]
-    final type DBProps = ButtonAndDropdown.Props.Of[A]
+    final type Item      = ButtonAndDropdown.Item[A]
+    final type Callbacks = ButtonAndDropdown.Callbacks[A]
+    final type DBProps   = ButtonAndDropdown.Props.Of[A]
 
     @inline final def Item = ButtonAndDropdown.Item
 
-    @inline final def Update(click: A => Callback, select: A => Callback): Update =
-      ButtonAndDropdown.Update(click = click, select = select)
+    @inline final def Callbacks(click: A => Callback, select: A => Callback): Callbacks =
+      ButtonAndDropdown.Callbacks(click = click, select = select)
   }
 
   final case class Item[+A](key             : String,
@@ -40,13 +40,13 @@ object ButtonAndDropdown {
       apply(key, value, render, render)
   }
 
-  final case class Update[-A](click: A => Callback, select: A => Callback)
+  final case class Callbacks[-A](click: A => Callback, select: A => Callback)
 
   sealed trait Props {
     type A
     val items         : NonEmptyVector[Item[A]]
     val selected      : Option[A]
-    val update        : Option[Reusable[Update[A]]]
+    val callbacks     : Option[Reusable[Callbacks[A]]]
     val buttonLabel   : String
     val icon          : Icon
     val colour        : ColourPlus
@@ -69,17 +69,17 @@ object ButtonAndDropdown {
 
     def apply[A](items         : NonEmptyVector[Item[A]],
                  selected      : Option[A],
-                 update        : Option[Reusable[Update[A]]],
+                 callbacks     : Option[Reusable[Callbacks[A]]],
                  buttonLabel   : String,
                  icon          : Icon,
-                 colour        : ColourPlus              = ColourPlus.Default,
-                 buttonTagMod  : TagMod                  = TagMod.empty,
-                 dropdownTagMod: TagMod                  = TagMod.empty,
+                 colour        : ColourPlus = ColourPlus.Default,
+                 buttonTagMod  : TagMod     = TagMod.empty,
+                 dropdownTagMod: TagMod     = TagMod.empty,
                )(implicit A: UnivEq[A]): Of[A] = {
       type _A             = A
       val _items          = items
       val _selected       = selected
-      val _update         = update
+      val _callbacks      = callbacks
       val _buttonLabel    = buttonLabel
       val _icon           = icon
       val _colour         = colour
@@ -89,7 +89,7 @@ object ButtonAndDropdown {
         override type A               = _A
         override val items            = _items
         override val selected         = _selected
-        override val update           = _update
+        override val callbacks        = _callbacks
         override val buttonLabel      = _buttonLabel
         override val icon             = _icon
         override val colour           = _colour
@@ -99,15 +99,15 @@ object ButtonAndDropdown {
       }
     }
 
-    def forNew[A](items         : NonEmptyVector[Item[A]],
-                  selected      : Option[A],
-                  update        : Option[Reusable[Update[A]]],
-                  buttonTagMod  : TagMod = TagMod.empty,
-                )(implicit A: UnivEq[A]): Of[A] =
+    def forNew[A](items       : NonEmptyVector[Item[A]],
+                  selected    : Option[A],
+                  callbacks   : Option[Reusable[Callbacks[A]]],
+                  buttonTagMod: TagMod = TagMod.empty,
+                )(implicit A  : UnivEq[A]): Of[A] =
       apply(
         items          = items,
         selected       = selected,
-        update         = update,
+        callbacks      = callbacks,
         buttonLabel    = "New",
         icon           = Icon.Plus,
         colour         = Colour.Green,
@@ -133,7 +133,7 @@ object ButtonAndDropdown {
           ^.cls := "ui button" <+ p.colour,
           p.icon.tag,
           p.buttonLabel,
-          ^.onClick -->? p.update.map(_.click(p.selectedItem.value)))
+          ^.onClick -->? p.callbacks.map(_.click(p.selectedItem.value)))
 
       def renderDropdown: VdomTag =
         <.div.withRef(dropdownNode)(
@@ -156,7 +156,7 @@ object ButtonAndDropdown {
         *.dropdownButtonOuter,
         p.buttonTagMod,
         ^.cls := "ui labeled button",
-        (^.cls := "disabled").when(p.update.isEmpty),
+        (^.cls := "disabled").when(p.callbacks.isEmpty),
         renderButton,
         renderDropdown)
     }
@@ -164,7 +164,7 @@ object ButtonAndDropdown {
     private def selectItem(key: String): Callback =
       for {
         p <- $.props.toCBO
-        u <- CallbackOption.liftOption(p.update)
+        u <- CallbackOption.liftOption(p.callbacks)
         i <- CallbackOption.liftOption(p.items.find(_.key ==* key))
         _ <- u.select(i.value).toCBO
       } yield ()

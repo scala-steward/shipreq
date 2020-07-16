@@ -149,16 +149,16 @@ object TagConfig {
 
         case NewArgs.Disabled(sel) =>
           ButtonAndDropdown.Props.forNew[NewTagType](
-            items    = NewTagType.items,
-            selected = Some(sel),
-            update   = None,
+            items     = NewTagType.items,
+            selected  = Some(sel),
+            callbacks = None,
           )
 
         case a: NewArgs.Enabled[NewState] =>
           ButtonAndDropdown.Props.forNew[NewTagType](
-            items    = NewTagType.items,
-            selected = Some(a.state.value),
-            update   = Option.unless(p.asyncInProgress)(Reusable.byRef(a).withValue(dropdownButton.Update(
+            items     = NewTagType.items,
+            selected  = Some(a.state.value),
+            callbacks = Option.unless(p.asyncInProgress)(Reusable.byRef(a).withValue(dropdownButton.Callbacks(
               click  = _ => a.openEditor,
               select = a.state.setState,
             ))))
