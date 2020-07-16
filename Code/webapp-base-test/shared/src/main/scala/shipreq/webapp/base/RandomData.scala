@@ -2237,7 +2237,7 @@ object RandomData {
       val impFieldCriteria: Gen[FieldCriteria] =
         Gen.chooseGen_!(
           FieldAttr.values.whole.filterNot(_ == FieldAttr.DefaultInUse).map(FieldCriteria.Attr).map(Gen.pure) :+
-            Gen.chooseInt(20).map(ReqTypePos).nes(1 to 6, implicitly).map(FieldCriteria.ReqTypePosSet)
+            Gen.chooseInt(1, 16).map(ReqTypePos).nes(1 to 6, implicitly).map(FieldCriteria.ReqTypePosSet)
         )
 
       val hasIssue =
