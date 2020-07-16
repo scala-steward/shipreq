@@ -52,7 +52,8 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
-* A a req-type dropdown on the new-button in the ReqDetail page
+
+
 
 Backlog (maybe-probably soon)
 ========================================================================================================================

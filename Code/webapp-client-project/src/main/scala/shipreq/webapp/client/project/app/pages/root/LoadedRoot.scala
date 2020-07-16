@@ -32,7 +32,7 @@ import shipreq.webapp.client.project.app.state._
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.Usage
-import shipreq.webapp.client.project.widgets.{ProjectWidgets, ViewReqCache, ViewReqDataCache}
+import shipreq.webapp.client.project.widgets.{NewReqButton, ProjectWidgets, ViewReqCache, ViewReqDataCache}
 import shipreq.webapp.client.ww.api.WebWorkerCmd
 
 object LoadedRoot {
@@ -113,6 +113,9 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
 
     private val setFilterDead: Reusable[SetStateFnPure[FilterDead]] =
       Reusable.fn.state($ zoomStateL stateLensFilterDead).setStateFn
+
+    private val setNewReqButton: Reusable[SetStateFnPure[NewReqButton.State]] =
+      Reusable.fn.state($ zoomStateL State.newReqButton).setStateFn
 
     private val pxPlainText: Px[PlainText.ForProject.NoCtx] =
       pxProject.map(PlainText.ForProject.noCtx.apply)
@@ -459,6 +462,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
             reqProps    = reqDetailReqPropsFn(s),
             editorUCS   = editRW.forUseCaseSteps,
             state       = StateSnapshot.withReuse(s.reqDetail)(reqDetailSetState),
+            newReqState = StateSnapshot.withReuse(s.newReqButton)(setNewReqButton),
             newReqAsync = AsyncFeature.ReadWrite.D0(newReqAsyncW, s.newReqAsync),
           )
           reqDetail(props)

@@ -19,11 +19,14 @@ object NewReqButton extends ButtonAndDropdown.Types[CreateFeature.RowKey] {
   @inline def initState: State =
     None
 
-  final case class Props(state    : State,
-                         reqTypes : ReqTypes,
-                         allowRCG : Permission,
-                         pw       : ProjectWidgets.NoCtx,
-                         callbacks: Option[Reusable[Callbacks]]) {
+  final case class Props(state     : State,
+                         reqTypes  : ReqTypes,
+                         allowRCG  : Permission,
+                         pw        : ProjectWidgets.AnyCtx,
+                         callbacks : Option[Reusable[Callbacks]],
+                         inProgress: Boolean,
+                         basic     : Boolean = false,
+                        ) {
 
     private lazy val items: NonEmptyVector[Item] = {
 
@@ -44,9 +47,12 @@ object NewReqButton extends ButtonAndDropdown.Types[CreateFeature.RowKey] {
 
     val dropdownProps: DBProps =
       ButtonAndDropdown.Props.forNew(
-       items     = items,
-       selected  = state,
-       callbacks = callbacks)
+       items      = items,
+       selected   = state,
+       callbacks  = callbacks,
+       inProgress = inProgress,
+       basic      = basic,
+      )
 
     @inline def render: VdomNode =
       dropdownProps.render

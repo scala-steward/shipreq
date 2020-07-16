@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.app.pages.content.reqdetail
 
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
@@ -9,7 +10,6 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.CreateContentCmd
-import shipreq.webapp.base.ui.semantic.{Button, Colour => SColour, Icon}
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
 import shipreq.webapp.client.project.app.state.NewEvents
@@ -26,6 +26,9 @@ private[reqdetail] object ReqTypeRow {
                          filterDead      : FilterDead,
                          editor          : EditorFeature.ReadWrite.For[field.type],
                          view            : Reusable[ViewReq[VdomTag]],
+                         projectWidgets  : ProjectWidgets.AnyCtx,
+                         reqTypes        : ReqTypes,
+                         newReqState     : StateSnapshot[NewReqButton.State],
                          newReqAsync     : AsyncFeature.ReadWrite.D0[ErrorMsg],
                          sspCreateContent: ServerSideProcInvoker[CreateContentCmd, ErrorMsg, NewEvents],
                          reqDetailRC     : RouterCtl[ExternalPubid]) {
@@ -35,60 +38,76 @@ private[reqdetail] object ReqTypeRow {
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.derive
 
-  private def render(p: Props): VdomNode =
-    Shared.renderRow(
-      row        = row,
-      name       = SpecialBuiltInField.ReqType.name,
-      headerLive = Live,
-      dataLive   = p.live,
-    )(renderRowData(_, p))
+  final class Backend($: BackendScope[Props, Unit]) {
 
-  private def renderRowData(cell: Shared.DataCell, p: Props): VdomNode = {
+    private val newReqButtonCallbacks =
+      Some {
+        Reusable.byRef {
 
-    val editor =
-      p.editor.themedRenderOr(())(p.view.editable(field).getOrElse(EmptyVdom))
-
-    def newButton = {
-      val async = p.newReqAsync
-
-      val newReq: Callback =
-        Callback.byName {
-          val cmd = CreateContentCmd.empty(p.reqType.reqTypeId)
-          async.write.onFailureShowAndForget(
-            p.sspCreateContent(cmd).rightFlatTapSync(newEvents =>
-              Callback.traverseOption(newEvents.summary.newReqIds.headOption) { reqId =>
-                import newEvents.project
-                val pubid = project.content.reqs.need(reqId).pubid.external(project)
-                p.reqDetailRC.set(pubid)
+          val click: NewReqButton.DropdownValue => Callback =
+            rowKey =>
+              CallbackOption.traverseOption(rowKey.reqTypeIdOption) { reqTypeId =>
+                $.props.flatMap { p =>
+                  val cmd = CreateContentCmd.empty(reqTypeId)
+                  p.newReqAsync.write.onFailureShowAndForget(
+                    p.sspCreateContent(cmd).rightFlatTapSync(newEvents =>
+                      Callback.traverseOption(newEvents.summary.newReqIds.headOption) { reqId =>
+                        import newEvents.project
+                        val pubid = project.content.reqs.need(reqId).pubid.external(project)
+                        p.reqDetailRC.set(pubid)
+                      }
+                    )
+                  )
+                }
               }
-            )
-          )
+
+          val select: NewReqButton.DropdownValue => Callback =
+            rowKey => $.props.flatMap(_.newReqState.setState(Some(rowKey)))
+
+          NewReqButton.Callbacks(click = click, select = select)
         }
+      }
 
-      val asyncInProgress =
-        async.isInProgress
+    private def renderRowData(cell: Shared.DataCell, p: Props): VdomNode = {
+      val editor = p.editor.themedRenderOr(())(p.view.editable(field).getOrElse(EmptyVdom))
 
-      Button(
-        tipe   = Button.Type.BasicIconAndText(Icon.Plus, "New " + p.reqType.mnemonic.value),
-        state  = Button.State.loadingWhen(asyncInProgress),
-        colour = SColour.Green,
-      ).tag(^.onClick --> newReq.unless_(asyncInProgress))
+      def defaultSelected =
+        Some(CreateFeature.RowKey.req(p.reqType.reqTypeId))
+
+      def newButton =
+        NewReqButton.Props(
+          state      = p.newReqState.value.orElse(defaultSelected),
+          reqTypes   = p.reqTypes,
+          allowRCG   = Deny,
+          pw         = p.projectWidgets,
+          callbacks  = newReqButtonCallbacks,
+          inProgress = p.newReqAsync.isInProgress,
+          basic      = true,
+        ).render
+
+      p.live match {
+        case Live =>
+          cell.nonDirectlyEditableNavParent(
+            <.div(*.reqTypeRow,
+              <.div(*.reqTypeRowL, editor),
+              <.div(*.reqTypeRowR, newButton)))
+
+        case Dead =>
+          cell.nonDirectlyEditableNavParent(editor)
+      }
     }
 
-    p.live match {
-      case Live =>
-        cell.nonDirectlyEditableNavParent(
-          <.div(*.reqTypeRow,
-            <.div(*.reqTypeRowL, editor),
-            <.div(*.reqTypeRowR, newButton)))
-
-      case Dead =>
-        cell.nonDirectlyEditableNavParent(editor)
-    }
+    def render(p: Props): VdomNode =
+      Shared.renderRow(
+        row        = row,
+        name       = SpecialBuiltInField.ReqType.name,
+        headerLive = Live,
+        dataLive   = p.live,
+      )(renderRowData(_, p))
   }
 
   val Component = ScalaComponent.builder[Props]
-    .render_P(render)
+    .renderBackend[Backend]
     .configure(Reusability.shouldComponentUpdate)
     .build
 }

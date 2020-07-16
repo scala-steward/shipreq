@@ -65,6 +65,7 @@ object ReqDetail {
                                 reqProps   : ReqId => ReqProps,
                                 editorUCS  : EditorFeature.ReadWrite.ForUseCaseSteps,
                                 state      : StateSnapshot[State],
+                                newReqState: StateSnapshot[NewReqButton.State],
                                 newReqAsync: AsyncFeature.ReadWrite.D0[ErrorMsg])
 
   final case class ReqProps(editor: EditorFeature.ReadWrite.ForReq,
@@ -348,6 +349,9 @@ object ReqDetail {
               filterDead       = data.filterDead,
               editor           = reqEditor(FieldKey.ReqType),
               view             = reusableView,
+              projectWidgets   = pw,
+              reqTypes         = project.config.reqTypes,
+              newReqState      = props.newReqState,
               newReqAsync      = props.newReqAsync,
               sspCreateContent = sspCreateContent,
               reqDetailRC      = reqDetailRC,

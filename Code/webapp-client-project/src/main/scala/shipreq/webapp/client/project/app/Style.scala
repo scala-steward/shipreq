@@ -1484,9 +1484,19 @@ object Style extends StyleSheet.Inline {
     val dropdownButtonOuter = style(
       marginRight(`0`).important)
 
-    val dropdownButtonGreenDropdown = style(
-      color(c"#eee").important,
-      backgroundColor(c"#00a632").important)
+    val dropdownButtonGreenDropdown = styleF(Domain.boolean)(basic =>
+      if (basic)
+        styleS(
+          color(c"#21ba45").important,
+          outlineColor(c"#21ba45").important,
+          borderColor(c"#21ba45").important,
+        )
+      else
+        styleS(
+          color(c"#eee").important,
+          backgroundColor(c"#00a632").important,
+        )
+    )
 
     object reqTypeSelector {
       val dropdown = style(

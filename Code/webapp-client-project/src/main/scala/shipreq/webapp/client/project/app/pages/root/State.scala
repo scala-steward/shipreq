@@ -17,6 +17,7 @@ import shipreq.webapp.client.project.app.pages.content.reqdetail.ReqDetail
 import shipreq.webapp.client.project.app.pages.content.{reqdetail, reqtable}
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.widgets.NewReqButton
 
 sealed trait PreviewId
 object PreviewId {
@@ -102,6 +103,7 @@ final case class State(projectName               : ProjectItem.WithEditableName.
                        _filterDead               : FilterDead,
                        reqTable                  : reqtable.ReqTablePage.State,
                        reqDetail                 : ReqDetail.State,
+                       newReqButton              : NewReqButton.State,
                        issuesPage                : IssuesPage.State,
                        toast                     : Toast.State,
                        updateConfigCmdAsync      : AsyncFeature.State.D1[UpdateConfigCmd, ErrorMsg], // TODO eh?
@@ -146,6 +148,7 @@ object State {
       _filterDead                = p.savedViews.map(_.default.view.filterDead).getOrElse(HideDead),
       reqTable                   = reqtable.ReqTablePage.State.init,
       reqDetail                  = ReqDetail.initState,
+      newReqButton               = None,
       issuesPage                 = IssuesPage.State.init,
       toast                      = Toast.State.init,
       updateConfigCmdAsync       = AsyncFeature.State.initD1,

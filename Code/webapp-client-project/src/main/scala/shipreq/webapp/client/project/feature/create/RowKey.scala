@@ -12,6 +12,7 @@ sealed abstract class RowKey {
   type Cmd
   def foldF[F[_ <: AnyFieldKey]](f: RowKey.Fold[F]): F[FieldKey]
   def foldC[F[_]](f: RowKey.FoldCmd[F]): F[Cmd]
+  def reqTypeIdOption: Option[ReqTypeId]
 
   /** "convert" and not "narrow" because this also maps FieldKeys from one domain to another.
     *
@@ -27,6 +28,7 @@ object RowKey {
     override type Cmd      = CreateContentCmd
     override def foldF[F[_ <: AnyFieldKey]](f: Fold[F]): F[FieldKey] = f.codeGroup(this)
     override def foldC[F[_]](f: FoldCmd[F]): F[Cmd] = f.codeGroup(this)
+    override def reqTypeIdOption = None
     override val convertField = {
       case f: FieldKey.ForCodeGroup => Some(f)
       case _                        => None
@@ -38,6 +40,7 @@ object RowKey {
     override type Cmd      = CreateContentCmd
     override def foldF[F[_ <: AnyFieldKey]](f: Fold[F]): F[FieldKey] = f.genericReq(this)
     override def foldC[F[_]](f: FoldCmd[F]): F[Cmd] = f.genericReq(this)
+    override def reqTypeIdOption = Some(reqTypeId)
     override val convertField = {
       case f: FieldKey.ForGenericReq  => Some(f)
       case FieldKey.UseCaseTitle      => Some(FieldKey.GenericReqTitle)
@@ -57,6 +60,7 @@ object RowKey {
       case _: FieldKey.ForCodeGroup
          | _: FieldKey.ForManualIssue => None
     }
+    override def reqTypeIdOption = Some(reqTypeId)
     @inline def reqTypeId = StaticReqType.UseCase
   }
 
@@ -65,6 +69,7 @@ object RowKey {
     override type Cmd      = ManualIssueCmd
     override def foldF[F[_ <: AnyFieldKey]](f: Fold[F]): F[FieldKey] = f.manualIssue(this)
     override def foldC[F[_]](f: FoldCmd[F]): F[Cmd] = f.manualIssue(this)
+    override def reqTypeIdOption = None
     override val convertField = {
       case f: FieldKey.ForManualIssue => Some(f)
       case _                          => None

@@ -85,14 +85,29 @@ final class NewStuff(state        : State,
   val buttonProps: NewReqButton.Props =
     state match {
       case State.Open(s) =>
-        var b = NewReqButton.Props(Some(s), reqTypes, allowRCG, pw, Some(buttonCallbacks))
+        var b = NewReqButton.Props(
+          state      = Some(s),
+          reqTypes   = reqTypes,
+          allowRCG   = allowRCG,
+          pw         = pw,
+          callbacks  = Some(buttonCallbacks),
+          inProgress = false,
+        )
+
         // If what we thought was open is no longer acceptable, proceed as if closed
         if (b.dropdownProps.selected.forall(_ !=* s))
           b = b.copy(state = None)
         b
 
       case State.Closed(o) =>
-        NewReqButton.Props(o, reqTypes, allowRCG, pw, Some(buttonCallbacks))
+        NewReqButton.Props(
+          state      = o,
+          reqTypes   = reqTypes,
+          allowRCG   = allowRCG,
+          pw         = pw,
+          callbacks  = Some(buttonCallbacks),
+          inProgress = false,
+        )
     }
 
   private val cancel: Callback =
