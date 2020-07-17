@@ -19,7 +19,7 @@ object ShareUrlTokenGen extends Logger {
   }
   val charSpace = chars.length
 
-  assume(charSpace >= 40 && charSpace < 62)
+  assert(charSpace >= 40 && charSpace < 62)
   debug(s"ShareUrlToken space = $charSpace^$len = ${Math.pow(charSpace, len).toLong}")
 
   private val rnd = new Random()

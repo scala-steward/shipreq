@@ -57,6 +57,12 @@ object ParsingUtil {
 abstract class ParsingUtil extends Parser {
   import ParsingUtil._
 
+  protected final def require(assertion: Boolean): Unit =
+    if (!assertion) throw new IllegalArgumentException()
+
+  protected final def require(assertion: Boolean, message: => Any): Unit =
+    if (!assertion) throw new IllegalArgumentException("" + message)
+
   final type RuleAB[-A, +B] = Rule[A :: HNil, B :: HNil]
 
   /** Beginning Of Input */

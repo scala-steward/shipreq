@@ -5,6 +5,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt.DurationExt
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 import org.apache.commons.io.FileUtils
+import scala.Predef.classOf
 import scala.concurrent.duration._
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.{HasLogger, MdcValues, TaskmanLogFields}

@@ -9,6 +9,7 @@ import java.time.Instant
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import org.apache.commons.text.StringEscapeUtils
+import scala.Predef.classOf
 import scala.concurrent.blocking
 import scala.util.{Failure, Success, Try}
 import scalaz.syntax.monad._
@@ -114,7 +115,8 @@ final class SecurityInterpreter[F[_]](implicit _F: Monad[F],
       }
 
       val sessionId = SessionId(claims.get(claimSessionId, classOf[String]))
-      require(sessionId.value ne null, "Session ID not specified")
+      if (sessionId.value eq null)
+        throw new RuntimeException("Session ID not specified")
 
       val authenticatedUser: Option[User] =
         claims.getSubject match {

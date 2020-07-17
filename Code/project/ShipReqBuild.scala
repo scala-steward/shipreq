@@ -50,7 +50,18 @@ object ShipReqBuild {
   lazy val base =
     project("base")
       .configure(Common.jvmSettings)
-      .aggregate(baseUtilJvm, baseUtilJs, baseOps, baseDb, baseTestJvm, baseTestJs)
+      .aggregate(basePredefJvm, basePredefJs, baseUtilJvm, baseUtilJs, baseOps, baseDb, baseTestJvm, baseTestJs)
+
+  lazy val basePredefJvm = basePredef.jvm
+  lazy val basePredefJs  = basePredef.js
+  lazy val basePredef =
+    crossProject("base-predef")
+      .depsForBoth(UnivEq.scalaz ++ scalaz)
+      .configureJvm(Common.jvmSettings)
+      .configureJs(Common.jsSettings(NoTests))
+      .settings(
+        scalacOptions ~= (_.filterNot(_.startsWith("-Yimports:")) :+ "-Yimports:scala"),
+        test := (()))
 
   lazy val baseUtilJvm = baseUtil.jvm
   lazy val baseUtilJs  = baseUtil.js
@@ -58,6 +69,7 @@ object ShipReqBuild {
     crossProject("base-util")
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(UseNode))
+      .dependsOn(basePredef)
       .depsForBoth(
         UnivEq.scalaz ++ scalaz ++ Nyaya.prop ++ Monocle.core ++
         Microlibs.adtMacros ++ Microlibs.nonempty ++ Microlibs.recursion ++

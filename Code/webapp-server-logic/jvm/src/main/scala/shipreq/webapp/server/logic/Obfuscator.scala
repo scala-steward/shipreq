@@ -27,7 +27,7 @@ object Obfuscator {
     type A = Long
 
     val base62 = new BaseX(dictionary, 4)
-    require(base62.base.longValue == 62)
+    assert(base62.base.longValue == 62)
 
     val obfuscate: A => Obfuscated[A] =
       internal => {

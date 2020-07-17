@@ -7,6 +7,7 @@ import org.redisson.api.RScript.Mode
 import org.redisson.api.listener.MessageListener
 import org.redisson.api.{RScript, RedissonClient}
 import org.redisson.client.codec.{ByteArrayCodec, StringCodec}
+import scala.Predef.classOf
 import scala.collection.immutable.ArraySeq
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._

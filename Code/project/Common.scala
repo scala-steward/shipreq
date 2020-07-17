@@ -84,6 +84,7 @@ object Common {
     "-Ybackend-parallelism", cores.min(16).toString,
     "-Ycache-macro-class-loader:last-modified",
     "-Ycache-plugin-class-loader:last-modified",
+    "-Yimports:java.lang,scala,shipreq.Predef",      // Use custom Predef
     "-Yjar-compression-level", "9",                  // compression level to use when writing jar files
     "-Ymacro-annotations",                           // Enable support for macro annotations, formerly in macro paradise.
     "-Yno-generic-signatures",                       // Suppress generation of generic signatures for Java.

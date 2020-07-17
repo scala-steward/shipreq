@@ -125,7 +125,7 @@ object ReqDetailTest extends TestSuite {
           if (stopWhenFound)
             assertTestState(report)
           else
-            println(s"  FAILED AFTER ${wrapString(code).count(_ == '\n') + 1} ACTIONS\n$block")
+            println(s"  FAILED AFTER ${predefWrapString(code).count(_ == '\n') + 1} ACTIONS\n$block")
         }
       }
 

@@ -1028,12 +1028,12 @@ object ParsersTest extends TestSuite {
 
       "useCaseStepRef" - {
         def testU(id: UseCaseStepId, stepLabel: String): Unit = {
-          val stepLabelUC = wrapString(stepLabel).takeWhile(Character.isDigit).toString.toInt
+          val stepLabelUC = predefWrapString(stepLabel).takeWhile(Character.isDigit).toString.toInt
           val expect = T.UseCaseStepRef(id)
           for {
             ucCtx    <- List[Option[ReqTypePos]](None, Some(1), Some(99999))
             useCtx   = ucCtx.exists(_.value ==* stepLabelUC)
-            stepStr  = if (useCtx) wrapString(stepLabel).dropWhile(Character.isDigit).toString else stepLabel
+            stepStr  = if (useCtx) predefWrapString(stepLabel).dropWhile(Character.isDigit).toString else stepLabel
             prefix   <- if (useCtx) maybeSpace else List("", "UC-", "uc", " Uc - ")
             suffix   <- maybeSpace
             dotNoise <- null :: " ." :: ". " :: "  .  " :: Nil

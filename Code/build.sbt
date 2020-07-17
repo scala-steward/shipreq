@@ -8,6 +8,8 @@ val root                  = ShipReqBuild.root
 val js                    = ShipReqBuild.js
 
 val base                  = ShipReqBuild.base
+val basePredefJvm         = ShipReqBuild.basePredefJvm
+val basePredefJs          = ShipReqBuild.basePredefJs
 val baseUtilJvm           = ShipReqBuild.baseUtilJvm
 val baseUtilJs            = ShipReqBuild.baseUtilJs
 val baseOps               = ShipReqBuild.baseOps

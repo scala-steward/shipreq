@@ -1,0 +1,155 @@
+package shipreq
+
+import java.lang.CharSequence
+import scala.annotation.elidable
+import scala.annotation.elidable.ASSERTION
+import scala.collection.{ArrayOps, StringOps, immutable}
+
+// Scala's Predef LowPriorityImplicits without extending LowPriorityImplicits2
+abstract class LowPriorityImplicits {
+  @inline implicit final def predefByteWrapper              (x: Byte)               = scala.Predef.byteWrapper     (x)
+  @inline implicit final def predefShortWrapper             (x: Short)              = scala.Predef.shortWrapper    (x)
+  @inline implicit final def predefIntWrapper               (x: Int)                = scala.Predef.intWrapper      (x)
+  @inline implicit final def predefCharWrapper              (c: Char)               = scala.Predef.charWrapper     (c)
+  @inline implicit final def predefLongWrapper              (x: Long)               = scala.Predef.longWrapper     (x)
+  @inline implicit final def predefFloatWrapper             (x: Float)              = scala.Predef.floatWrapper    (x)
+  @inline implicit final def predefDoubleWrapper            (x: Double)             = scala.Predef.doubleWrapper   (x)
+  @inline implicit final def predefBooleanWrapper           (x: Boolean)            = scala.Predef.booleanWrapper  (x)
+  @inline implicit final def predefGenericWrapArray[T]      (xs: Array[T])          = scala.Predef.genericWrapArray(xs)
+  @inline implicit final def predefWrapRefArray[T <: AnyRef](xs: Array[T])          = scala.Predef.wrapRefArray    (xs)
+  @inline implicit final def predefWrapIntArray             (xs: Array[Int])        = scala.Predef.wrapIntArray    (xs)
+  @inline implicit final def predefWrapDoubleArray          (xs: Array[Double])     = scala.Predef.wrapDoubleArray (xs)
+  @inline implicit final def predefWrapLongArray            (xs: Array[Long])       = scala.Predef.wrapLongArray   (xs)
+  @inline implicit final def predefWrapFloatArray           (xs: Array[Float])      = scala.Predef.wrapFloatArray  (xs)
+  @inline implicit final def predefWrapCharArray            (xs: Array[Char])       = scala.Predef.wrapCharArray   (xs)
+  @inline implicit final def predefWrapByteArray            (xs: Array[Byte])       = scala.Predef.wrapByteArray   (xs)
+  @inline implicit final def predefWrapShortArray           (xs: Array[Short])      = scala.Predef.wrapShortArray  (xs)
+  @inline implicit final def predefWrapBooleanArray         (xs: Array[Boolean])    = scala.Predef.wrapBooleanArray(xs)
+  @inline implicit final def predefWrapUnitArray            (xs: Array[Unit])       = scala.Predef.wrapUnitArray   (xs)
+  @inline implicit final def predefWrapString               (s: java.lang.String)   = scala.Predef.wrapString      (s)
+}
+
+abstract class PredefShared extends LowPriorityImplicits {
+
+//  @inline final def classOf[T]: Class[T] = scala.Predef.classOf[T]
+//
+//  @inline final def valueOf[T](implicit vt: ValueOf[T]): T = vt.value
+
+  final type String = java.lang.String
+
+  final type Class[T] = java.lang.Class[T]
+
+  // miscellaneous -----------------------------------------------------
+  scala.`package`                         // to force scala package object to be seen.
+  scala.collection.immutable.List         // to force Nil, :: to be seen.
+
+  final type Map[K, +V] = immutable.Map[K, V]
+  final type Set[A]     = immutable.Set[A]
+  final val Map         = immutable.Map
+  final val Set         = immutable.Set
+
+  final val -> = Tuple2
+
+  @inline final def identity[A](x: A): A = x // see `$conforms` for the implicit version
+
+  @inline final def implicitly[T](implicit e: T): T = e
+
+  @inline final def locally[T](x: T): T = x
+
+  // assertions ---------------------------------------------------------
+
+  @elidable(ASSERTION)
+  @inline
+  final def assert(assertion: Boolean): Unit =
+    if (!assertion)
+      throw new java.lang.AssertionError("assertion failed")
+
+  @elidable(ASSERTION)
+  @inline
+  final def assert(assertion: Boolean, message: => Any): Unit =
+    if (!assertion)
+      throw new java.lang.AssertionError("assertion failed: "+ message)
+
+//  def require(requirement: Boolean): Unit = {
+//    if (!requirement)
+//      throw new IllegalArgumentException("requirement failed")
+//  }
+//
+//  @inline final def require(requirement: Boolean, message: => Any): Unit = {
+//    if (!requirement)
+//      throw new IllegalArgumentException("requirement failed: "+ message)
+//  }
+
+  @inline final def ??? : Nothing = throw new NotImplementedError
+
+  // implicit classes -----------------------------------------------------
+
+  @inline final implicit def predefArrowAssoc[A](a: A): PredefShared.ArrowAssoc[A] = new PredefShared.ArrowAssoc(a)
+
+  implicit final class SeqCharSequence(sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
+    def length: Int                                     = sequenceOfChars.length
+    def charAt(index: Int): Char                        = sequenceOfChars(index)
+    def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(sequenceOfChars.slice(start, end))
+    override def toString                               = sequenceOfChars.mkString
+  }
+
+  implicit final class ArrayCharSequence(arrayOfChars: Array[Char]) extends CharSequence {
+    def length: Int                                     = arrayOfChars.length
+    def charAt(index: Int): Char                        = arrayOfChars(index)
+    def subSequence(start: Int, end: Int): CharSequence = new runtime.ArrayCharSequence(arrayOfChars, start, end)
+    override def toString                               = arrayOfChars.mkString
+  }
+
+  @inline final implicit def predefAugmentString(x: String): StringOps = new StringOps(x)
+
+  // printing -----------------------------------------------------------
+
+  def print  (x: Any)                : Unit = Console.print(x)
+  def println()                      : Unit = Console.println()
+  def println(x: Any)                : Unit = Console.println(x)
+  def printf (text: String, xs: Any*): Unit = Console.print(text.format(xs: _*))
+
+  // views --------------------------------------------------------------
+
+  @inline final implicit def predefGenericArrayOps[T]      (xs: Array[T])      : ArrayOps[T]       = scala.Predef.genericArrayOps(xs)
+  @inline final implicit def predefBooleanArrayOps         (xs: Array[Boolean]): ArrayOps[Boolean] = scala.Predef.booleanArrayOps(xs)
+  @inline final implicit def predefByteArrayOps            (xs: Array[Byte])   : ArrayOps[Byte]    = scala.Predef.byteArrayOps(xs)
+  @inline final implicit def predefCharArrayOps            (xs: Array[Char])   : ArrayOps[Char]    = scala.Predef.charArrayOps(xs)
+  @inline final implicit def predefDoubleArrayOps          (xs: Array[Double]) : ArrayOps[Double]  = scala.Predef.doubleArrayOps(xs)
+  @inline final implicit def predefFloatArrayOps           (xs: Array[Float])  : ArrayOps[Float]   = scala.Predef.floatArrayOps(xs)
+  @inline final implicit def predefIntArrayOps             (xs: Array[Int])    : ArrayOps[Int]     = scala.Predef.intArrayOps(xs)
+  @inline final implicit def predefLongArrayOps            (xs: Array[Long])   : ArrayOps[Long]    = scala.Predef.longArrayOps(xs)
+  @inline final implicit def predefRefArrayOps[T <: AnyRef](xs: Array[T])      : ArrayOps[T]       = scala.Predef.refArrayOps(xs)
+  @inline final implicit def predefShortArrayOps           (xs: Array[Short])  : ArrayOps[Short]   = scala.Predef.shortArrayOps(xs)
+  @inline final implicit def predefUnitArrayOps            (xs: Array[Unit])   : ArrayOps[Unit]    = scala.Predef.unitArrayOps(xs)
+
+  // "Autoboxing" and "Autounboxing" ---------------------------------------------------
+
+  @inline final implicit def predefBoxByte   (x: Byte   ): java.lang.Byte      = x.asInstanceOf[java.lang.Byte]
+  @inline final implicit def predefBoxShort  (x: Short  ): java.lang.Short     = x.asInstanceOf[java.lang.Short]
+  @inline final implicit def predefBoxChar   (x: Char   ): java.lang.Character = x.asInstanceOf[java.lang.Character]
+  @inline final implicit def predefBoxInt    (x: Int    ): java.lang.Integer   = x.asInstanceOf[java.lang.Integer]
+  @inline final implicit def predefBoxLong   (x: Long   ): java.lang.Long      = x.asInstanceOf[java.lang.Long]
+  @inline final implicit def predefBoxFloat  (x: Float  ): java.lang.Float     = x.asInstanceOf[java.lang.Float]
+  @inline final implicit def predefBoxDouble (x: Double ): java.lang.Double    = x.asInstanceOf[java.lang.Double]
+  @inline final implicit def predefBoxBoolean(x: Boolean): java.lang.Boolean   = x.asInstanceOf[java.lang.Boolean]
+
+  @inline final implicit def predefUnboxByte     (x: java.lang.Byte     ): Byte    = x.asInstanceOf[Byte]
+  @inline final implicit def predefUnboxShort    (x: java.lang.Short    ): Short   = x.asInstanceOf[Short]
+  @inline final implicit def predefUnboxCharacter(x: java.lang.Character): Char    = x.asInstanceOf[Char]
+  @inline final implicit def predefUnboxInteger  (x: java.lang.Integer  ): Int     = x.asInstanceOf[Int]
+  @inline final implicit def predefUnboxLong     (x: java.lang.Long     ): Long    = x.asInstanceOf[Long]
+  @inline final implicit def predefUnboxFloat    (x: java.lang.Float    ): Float   = x.asInstanceOf[Float]
+  @inline final implicit def predefUnboxDouble   (x: java.lang.Double   ): Double  = x.asInstanceOf[Double]
+  @inline final implicit def predefUnboxBoolean  (x: java.lang.Boolean  ): Boolean = x.asInstanceOf[Boolean]
+
+  @inline final implicit def predefConforms[A]: A => A = <:<.refl
+}
+
+object PredefShared {
+
+  final class ArrowAssoc[A](private val self: A) extends AnyVal {
+    @inline def ->[B](y: B): (A, B) = (self, y)
+  }
+
+}

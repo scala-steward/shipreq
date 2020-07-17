@@ -116,7 +116,7 @@ object FeedbackModalTest extends TestSuite {
     val feedbackEnabled    = *.focus("feedback enabled").value(_.obs.feedbackEnabled)
     val feedbackValue      = *.focus("feedback").value(_.obs.feedbackValue)
     val serverCallCount    = *.focus("server call count").value(_.obs.serverAttempts.length)
-    val serverLastFeedback = *.focus("most recently submitted feedback").option(_.obs.serverAttempts.lastOption.map(_.feedback.value))
+    val serverLastFeedback = *.focus("most recently submitted feedback").option(_.obs.serverAttempts.lastOption.map(_.feedback))
 
     val clickCancel = *.action("Click cancel")(_.obs.cancelButton.click())
     val clickSend   = *.action("Click submit")(_.obs.sendButton.click())

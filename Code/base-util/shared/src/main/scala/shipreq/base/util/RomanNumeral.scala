@@ -13,7 +13,7 @@ object RomanNumeral {
       ("L", 50), ("XL", 40), ("X", 10), ("IX", 9), ("V", 5), ("IV", 4), ("I", 1))
 
   def apply(number: Int): String = {
-    require(number > 0)
+    assert(number > 0)
     val sb = new StringBuilder
     var n = number
     for (d <- genData) {

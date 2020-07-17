@@ -4,6 +4,7 @@ import com.typesafe.scalalogging.StrictLogging
 import javax.websocket.server._
 import javax.websocket.{CloseReason => _, _}
 import org.slf4j.MDC
+import scala.Predef.classOf
 import scala.annotation.nowarn
 import scalaz.{-\/, \/, \/-}
 import shipreq.base.util.BinaryData
