@@ -1488,6 +1488,7 @@ object Style extends StyleSheet.Inline {
     val dropdownButtonGreenDropdown = styleF(Domain.boolean)(basic =>
       if (basic)
         styleS(
+          paddingLeft(2.6 ex).important,
           color(c"#21ba45").important,
           outlineColor(c"#21ba45").important,
           borderColor(c"#21ba45").important,
