@@ -53,7 +53,6 @@ v2.2
 
 ### Implement
 * Support filter: `field:MF=(#v2.1 | #v2.2)`
-* Middle-click doesn't work for nodes in ReqGraph
 * copying an ID cell should copy the title too
 * Add `<dot></dot>` for inline graphs (!).
   Alternatively, could just render inline code blocks of type dot/gv?
@@ -61,6 +60,7 @@ v2.2
   Render by fit to width (or other option?)
   Don't require digraph X{}
 * Get rid of accordions in help
+* Make my own Predef - add console to JS
 
 
 

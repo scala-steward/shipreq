@@ -123,8 +123,13 @@ object ImplicationGraph {
                 }
 
                 // Make link
-                node.onclick = p.reqDetailRC.set(ep).toJsFn1
-                node.style.cursor = "pointer"
+                val parent = node.parentNode
+                if (parent.nodeName.toUpperCase != "A") {
+                  val a = document.createElementNS(SvgNS, "a")
+                  a.setAttributeNS(XlinkNS, "xlink:href", p.reqDetailRC.urlFor(ep).value)
+                  parent.replaceChild(a, node)
+                  a.appendChild(node)
+                }
             }
         }
       }

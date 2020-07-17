@@ -10,6 +10,7 @@ import shipreq.base.util.Util
 object DomUtil {
 
   val SvgNS = "http://www.w3.org/2000/svg"
+  val XlinkNS = "http://www.w3.org/1999/xlink"
 
   @tailrec
   private def findParent(e: html.Element, f: html.Element => Boolean, self: Boolean): Option[html.Element] = {
