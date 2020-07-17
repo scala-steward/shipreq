@@ -30,7 +30,7 @@ object Filter {
   object Potential extends FilterAst.Dsl {
     type Attr          = String
     type Field         = String
-    type FieldCriteria = String
+    type FieldCriteria = FilterAst.FieldCriteria[String, NonEmptySet[ReqTypePos]]
     type IssueCat      = String
     type HashTag       = data.HashRefKey
     type ReqSubset     = IntensionalReqSet[data.ReqType.Mnemonic]
@@ -64,20 +64,12 @@ object Filter {
   object Valid extends FilterAst.Dsl {
     type Attr          = FilterAst.Attr
     type Field         = data.SpecialBuiltInField.FilterOk \/ data.FieldId
+    type FieldCriteria = FilterAst.FieldCriteria[FilterAst.FieldAttr, NonEmptySet[ReqTypePos]]
     type IssueCat      = IssueCategory
     type HashTag       = data.CustomIssueTypeId \/ data.ApplicableTagId
     type ReqSubset     = IntensionalReqSet[data.ReqTypeId]
     type ReqSet        = NonEmptyVector[ReqSubset]
     type ReqType       = data.ReqTypeId
-
-    sealed trait FieldCriteria
-
-    object FieldCriteria {
-      final case class Attr         (attr: FilterAst.FieldAttr)       extends FieldCriteria
-      final case class ReqTypePosSet(values: NonEmptySet[ReqTypePos]) extends FieldCriteria
-
-      implicit def univEq: UnivEq[FieldCriteria] = UnivEq.derive
-    }
 
     def reqSet(i1: ReqSubset, in: ReqSubset*): ReqSet =
       NonEmptyVector(i1, in.toVector)

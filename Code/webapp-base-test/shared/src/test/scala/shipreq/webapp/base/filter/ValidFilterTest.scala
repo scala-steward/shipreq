@@ -29,10 +29,10 @@ object ValidFilterTest extends TestSuite {
   }
 
   private implicit def liftFieldAttr(a: FilterAst.FieldAttr): VF.FieldCriteria =
-    VF.FieldCriteria.Attr(a)
+    FilterAst.FieldCriteria.Attr(a)
 
   private def poses(i1: Int, in: Int*): VF.FieldCriteria =
-    VF.FieldCriteria.ReqTypePosSet(NonEmptySet(i1, in: _ *).map(ReqTypePos))
+    FilterAst.FieldCriteria.ReqTypePosSet(NonEmptySet(i1, in: _ *).map(ReqTypePos))
 
   override def tests = Tests {
     import UnsafeTypes._
@@ -45,16 +45,17 @@ object ValidFilterTest extends TestSuite {
         "bad" - assertTranslationFails(PF.reqType("XWE"))("unknown type")
       }
       "field" - {
+        import FilterAst.FieldCriteria._
+        import shipreq.webapp.base.test.UnsafeTypes._
         def posNA = "You can't specify values"
-        "exact"    - assertTranslation(PF.fieldProp("Description", "blank"))(VF.fieldProp(\/-(descField), Blank))
-        "caseWrong"- assertTranslation(PF.fieldProp("descriPTION", "blank"))(VF.fieldProp(\/-(descField), Blank))
-        "title"    - assertTranslation(PF.fieldProp("TITLE", "BLANK"))(VF.fieldProp(-\/(Title), Blank))
-        "impField" - assertTranslation(PF.fieldProp("MF", "BLANK"))(VF.fieldProp(\/-(mfField), Blank))
-        "posMF"    - assertTranslation(PF.fieldProp("MF", "1,4-6,9,9,2"))(VF.fieldProp(\/-(mfField), poses(1,4,5,6,9,2)))
-        "posMFx"   - assertTranslationFails(PF.fieldProp("MF", "1,x4-6,9,9,2"))("isn't a legal set")
-        "posTitle" - assertTranslationFails(PF.fieldProp("Title", "1,4-6,9,9,2"))(posNA)
-        "posTxt"   - assertTranslationFails(PF.fieldProp("Description", "1,4-6,9,9,2"))(posNA)
-        "posTag"   - assertTranslationFails(PF.fieldProp("Priority", "1,4-6,9,9,2"))(posNA)
+        "exact"    - assertTranslation(PF.fieldProp("Description", Attr("blank")))(VF.fieldProp(\/-(descField), Blank))
+        "caseWrong"- assertTranslation(PF.fieldProp("descriPTION", Attr("blank")))(VF.fieldProp(\/-(descField), Blank))
+        "title"    - assertTranslation(PF.fieldProp("TITLE", Attr("BLANK")))(VF.fieldProp(-\/(Title), Blank))
+        "impField" - assertTranslation(PF.fieldProp("MF", Attr("BLANK")))(VF.fieldProp(\/-(mfField), Blank))
+        "posMF"    - assertTranslation(PF.fieldProp("MF", ReqTypePosSet(NonEmptySet(1, 3))))(VF.fieldProp(\/-(mfField), poses(1,3)))
+        "posTitle" - assertTranslationFails(PF.fieldProp("Title", ReqTypePosSet(NonEmptySet(1, 3))))(posNA)
+        "posTxt"   - assertTranslationFails(PF.fieldProp("Description", ReqTypePosSet(NonEmptySet(1, 3))))(posNA)
+        "posTag"   - assertTranslationFails(PF.fieldProp("Priority", ReqTypePosSet(NonEmptySet(1, 3))))(posNA)
       }
     }
 

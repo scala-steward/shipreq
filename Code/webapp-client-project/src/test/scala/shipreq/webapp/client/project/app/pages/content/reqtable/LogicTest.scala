@@ -63,13 +63,12 @@ object LogicTest extends TestSuite {
   import UnsafeTypes._
   import SampleProject7.Values._
   import shipreq.webapp.base.filter.Filter.{Valid => F}
-  import shipreq.webapp.base.filter.Filter.Valid.FieldCriteria
   import shipreq.webapp.base.filter.FilterAst.Attr.{AnyIssue, AnyTag}
-  import shipreq.webapp.base.filter.FilterAst.FieldAttr
+  import shipreq.webapp.base.filter.FilterAst.{FieldAttr, FieldCriteria}
   import shipreq.webapp.base.filter.IntensionalReqSet._
   import LogicTestUtil._
 
-  private implicit def liftFieldAttr(a: FieldAttr): FieldCriteria =
+  private implicit def liftFieldAttr(a: FieldAttr): F.FieldCriteria =
     FieldCriteria.Attr(a)
 
   private      def P1  = SampleProject.project

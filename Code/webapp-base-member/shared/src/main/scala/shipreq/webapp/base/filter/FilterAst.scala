@@ -73,6 +73,15 @@ object FilterAst {
       Iterator.single(a.name)
   }
 
+  sealed trait FieldCriteria[+A, +P]
+
+  object FieldCriteria {
+    final case class Attr[+A]         (value: A) extends FieldCriteria[A, Nothing]
+    final case class ReqTypePosSet[+P](value: P) extends FieldCriteria[Nothing, P]
+
+    implicit def univEq[A: UnivEq, P: UnivEq]: UnivEq[FieldCriteria[A, P]] = UnivEq.derive
+  }
+
   val issueCategoryToStr: IssueCategory => String = {
     case IssueCategory.BadData     => "bad"
     case IssueCategory.Futility    => "futile"

@@ -4,7 +4,6 @@ import japgolly.microlibs.adt_macros.AdtMacros._
 import japgolly.microlibs.nonempty.NonEmpty
 import japgolly.microlibs.recursion._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
-import japgolly.microlibs.utils.ConciseIntSetFormat
 import java.time.Instant
 import monocle.function.Field1.first
 import monocle.function.Field2.second
@@ -2069,6 +2068,7 @@ object RandomData {
   // ===================================================================================================================
   object filter {
     import shipreq.webapp.base.filter._
+    import shipreq.webapp.base.filter.FilterAst.FieldCriteria
     import shipreq.webapp.base.filter.Filter._
     import shipreq.webapp.base.filter.Filter.Implicits._
     import shipreq.webapp.base.filter.IntensionalReqSet._
@@ -2149,14 +2149,6 @@ object RandomData {
           genAlphaSlash.string1(1 to 4),
           valid.attr.map(_.name))
 
-      val fieldAttr: Gen[String] =
-        Gen.chooseGen(
-          genAlphaSlash.string1(1 to 4),
-          valid.fieldAttr.map {
-            case Valid.FieldCriteria.Attr(a) => a.name
-            case Valid.FieldCriteria.ReqTypePosSet(s) => ConciseIntSetFormat(s.iterator.map(_.value).toSet)
-          })
-
       val hasIssue = {
         val ic = Gen.chooseGen(
           Gen.alpha.string1(1 to 4),
@@ -2164,8 +2156,17 @@ object RandomData {
         Gen.lift2(on, ic.nev(1 to 3))(FilterAst.HasIssue(_, _))
       }
 
+      val fieldCriteria: Gen[Potential.FieldCriteria] =
+        Gen.chooseGen(
+          genAlphaSlash.string(1 to 4).map(FieldCriteria.Attr(_)),
+          valid.fieldAttr.map {
+            case FieldCriteria.Attr(a)             => FieldCriteria.Attr(a.name)
+            case s@ FieldCriteria.ReqTypePosSet(_) => s
+          },
+        )
+
       val fieldProp =
-        Gen.lift2(fieldName, genAlphaSlash.string(1 to 4))(FilterAst.FieldProp(_, _))
+        Gen.lift2(fieldName, fieldCriteria)(FilterAst.FieldProp(_, _))
 
       val reqType    = reqTypeMnemonic.map(FilterAst.ReqType(_))
       val hashRef    = hashRefKey     .map(FilterAst.HashRef(_))
@@ -2226,15 +2227,15 @@ object RandomData {
         Gen.chooseNE(Attr.values)
 
       val fieldAttr: Gen[FieldCriteria] =
-        Gen.chooseNE(FieldAttr.values).map(FieldCriteria.Attr)
+        Gen.chooseNE(FieldAttr.values).map(FieldCriteria.Attr(_))
 
       val fieldAttrNoDefault: Gen[FieldCriteria] =
-        Gen.choose_!(FieldAttr.values.whole.filterNot(_ == FieldAttr.DefaultInUse)).map(FieldCriteria.Attr)
+        Gen.choose_!(FieldAttr.values.whole.filterNot(_ == FieldAttr.DefaultInUse)).map(FieldCriteria.Attr(_))
 
       val impFieldCriteria: Gen[FieldCriteria] =
         Gen.chooseGen_!(
-          FieldAttr.values.whole.filterNot(_ == FieldAttr.DefaultInUse).map(FieldCriteria.Attr).map(Gen.pure) :+
-            Gen.chooseInt(1, 16).map(ReqTypePos).nes(1 to 6, implicitly).map(FieldCriteria.ReqTypePosSet)
+          FieldAttr.values.whole.filterNot(_ == FieldAttr.DefaultInUse).map(FieldCriteria.Attr(_)).map(Gen.pure) :+
+            Gen.chooseInt(1, 16).map(ReqTypePos).nes(1 to 6, implicitly).map(FieldCriteria.ReqTypePosSet(_))
         )
 
       val hasIssue =

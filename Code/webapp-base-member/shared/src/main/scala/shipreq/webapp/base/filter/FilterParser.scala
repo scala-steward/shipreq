@@ -5,7 +5,7 @@ import org.parboiled2.{Parser => _, _}
 import scala.util.{Failure, Success, Try}
 import shipreq.webapp.base.data
 import shipreq.webapp.base.data.ReqType.Mnemonic
-import shipreq.webapp.base.data.{Off, On}
+import shipreq.webapp.base.data.{Off, On, ReqTypePos}
 import shipreq.webapp.base.filter.Filter.Potential
 import shipreq.webapp.base.filter.FilterAst._
 import shipreq.webapp.base.util.ParsingUtil._
@@ -39,11 +39,6 @@ object FilterParser {
       format(new ErrorFormatter())
     def format(ef: ErrorFormatter): String =
       formatter(ef)
-  }
-
-  def parseNumberRange(input: String): Failure \/ NonEmptySet[Int] = {
-    val parser = new FilterParser(input)
-    parseResult(parser.numberRangeAsFullString.run(), parser)
   }
 
   val attrChar =
@@ -119,9 +114,6 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
   def numberRange: Rule1[NonEmptySet[Int]] =
     rule((numberRangeElement + ',') ~> flattenIntSets1)
 
-  def numberRangeAsFullString: Rule1[NonEmptySet[Int]] =
-    rule(numberRange ~ EOI)
-
   /** 1 or {1,3,5-9,12} */
   def numberOrRange: Rule1[NonEmptySet[Int]] =
     rule((int1n ~> mkIntSet1) | ('{' ~ numberRange ~ '}'))
@@ -167,12 +159,22 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
     rule(capture(attrChar.+) ~ end)
 
   private def field: Rule1[Potential] = {
-    def quoteChar: Rule0 = rule('"')
-    def name: Rule1[String] = rule(capture(fieldNameUnquotedChar.+) | (quoteChar ~ nonGreedyCapture(() => quoteChar)))
-    rule(
-      "field:" ~ name ~ '=' ~ attr
-        ~> ((f: String, a: String) => Potential.fieldProp(f, a))
-    )
+    def quoteChar: Rule0 =
+      rule('"')
+
+    def name: Rule1[String] =
+      rule(capture(fieldNameUnquotedChar.+) | (quoteChar ~ nonGreedyCapture(() => quoteChar)))
+
+    def valueRule[A](r: () => Rule1[A])(f: A => Potential.FieldCriteria): RuleAB[String, Potential] =
+      rule(r() ~> ((name: String, a: A) => Potential.fieldProp(name, f(a))))
+
+    def value: RuleAB[String, Potential] =
+      rule(
+        valueRule(() => numberRange)(is => FieldCriteria.ReqTypePosSet(is.map(ReqTypePos)))
+      | valueRule(() => attr)(FieldCriteria.Attr(_))
+      )
+
+    rule("field:" ~ name ~ '=' ~ value)
   }
 
   private def presence: Rule1[Potential] =

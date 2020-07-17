@@ -48,6 +48,7 @@ final class Usage(p: Project, router: SpecialRouterCtl) {
 
   private def fieldFilter(fid: FieldId): Filter.Valid = {
     import FilterAst.FieldAttr._
+    import FilterAst.FieldCriteria.Attr
     import Filter.Valid._
     val f = \/-(fid)
     fid match {
@@ -55,15 +56,15 @@ final class Usage(p: Project, router: SpecialRouterCtl) {
       case StaticField.AllTags
          | StaticField.OtherTags
          | StaticField.ImplicationGraph =>
-        not(fieldProp(f, FieldCriteria.Attr(Blank)))
+        not(fieldProp(f, Attr(Blank)))
 
       case _: CustomFieldId
          | StaticField.NormalAltStepTree
          | StaticField.ExceptionStepTree
          | StaticField.StepGraph =>
         not(anyOf(
-          fieldProp(f, FieldCriteria.Attr(Blank)),
-          fieldProp(f, FieldCriteria.Attr(NotApplicable))))
+          fieldProp(f, Attr(Blank)),
+          fieldProp(f, Attr(NotApplicable))))
     }
   }
 

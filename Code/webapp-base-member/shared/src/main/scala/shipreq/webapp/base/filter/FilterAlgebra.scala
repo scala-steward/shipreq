@@ -64,13 +64,18 @@ object FilterAlgebra {
       m.value ~ '-' ~ n
     }
 
+    val fieldCriteria: Potential.FieldCriteria => String = {
+      case FilterAst.FieldCriteria.Attr(a)          => a
+      case FilterAst.FieldCriteria.ReqTypePosSet(s) => ConciseIntSetFormat(s.whole.map(_.value))
+    }
+
     {
       case Text          (text, None)        => text
       case Text          (text, Some(qChar)) => qChar ~ text ~ qChar
       case Regex         (text)              => '/' ~ text.replace("/", "\\/") ~ '/'
       case ReqType       (value)             => value.value
       case HashRef       (text)              => Grammar.hashRefKey.prefix ~ text.value
-      case FieldProp     (field, attr)       => "field:" ~ quoteFieldName(field) ~ "=" ~ attr
+      case FieldProp     (field, attr)       => "field:" ~ quoteFieldName(field) ~ "=" ~ fieldCriteria(attr)
       case HasIssue      (on, criteria)      => "has:issue:" ~ (if (on is On) "" else "-") ~ criteria.mkString(",")
       case ImpliesAnyOf  (reqs)              => "implies:" ~ fmtReqs(reqs, ',')
       case ImpliedByAnyOf(reqs)              => "impliedBy:" ~ fmtReqs(reqs, ',')
@@ -130,7 +135,7 @@ object FilterAlgebra {
         case _: Throwable => -\/(s"Invalid regex: /$regex/")
       }
 
-    def byField(fieldName: String, criteriaText: String): R = {
+    def byField(fieldName: String, criteria: Potential.FieldCriteria): R = {
       import FieldAttr._
       import data._
 
@@ -142,8 +147,8 @@ object FilterAlgebra {
         tryL orElse tryR
       }
 
-      def parseAsAttr(field: ParsedField): R =
-        lookupFieldAttr(criteriaText) { attr =>
+      def parseAsAttr(field: ParsedField, attrText: String): R =
+        lookupFieldAttr(attrText) { attr =>
           import SpecialBuiltInField._
 
           def blankOnly(f: Valid.Field, name: String): String \/ Valid =
@@ -176,25 +181,18 @@ object FilterAlgebra {
           }
         }
 
-      def parseAsPoses(field: ParsedField): R =
+      def parseAsPoses(field: ParsedField, s: FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]]): R =
         field match {
-          case \/-(f: CustomField.Implication) =>
-            FilterParser.parseNumberRange(criteriaText) match {
-              case \/-(ints) =>
-                \/-(Valid(FieldProp(\/-(f.id), FieldCriteria.ReqTypePosSet(ints.map(ReqTypePos)))))
-              case -\/(_) =>
-                -\/(s"$criteriaText isn't a legal set of req numbers.")
-            }
-          case _ =>
-            -\/(s"You can't specify values for $fieldName.")
+          case \/-(f: CustomField.Implication) => \/-(Valid(FieldProp(\/-(f.id), s)))
+          case _                               => -\/(s"You can't specify values for $fieldName.")
         }
 
       parsedField match {
         case Some(field) =>
-          if (criteriaText.exists(_.isDigit))
-            parseAsPoses(field)
-          else
-            parseAsAttr(field)
+          criteria match {
+            case FieldCriteria.Attr            (a) => parseAsAttr(field, a)
+            case s@ FieldCriteria.ReqTypePosSet(_) => parseAsPoses(field, s)
+          }
         case None =>
           -\/(s"Unknown field: '$fieldName'")
       }
@@ -202,19 +200,19 @@ object FilterAlgebra {
 
     // explicit types here because IntelliJ is a piece of shit
     val alg: PotentialF[Valid] => String \/ Valid = {
-      case HashRef       (key)          => byHashTag(key)
-      case ImpliesAnyOf  (reqs)         => byReqSet(reqs, ImpliesAnyOf.apply)
-      case ImpliedByAnyOf(reqs)         => byReqSet(reqs, ImpliedByAnyOf.apply)
-      case Reqs          (reqs)         => byReqSet(reqs, Reqs.apply)
-      case Presence      (attr)         => byAttr(attr, Presence.apply)
-      case HasIssue      (on, c)        => c.traverse1(FilterAst.issueCategoryFromStr).map(Valid.hasIssue(on, _))
-      case Regex         (regex)        => byRegex(regex)
-      case ReqType       (mn)           => lookupReqType(mn).map(rt => Valid(ReqType(rt.reqTypeId)))
-      case c: Text                      => \/-(Valid(c))
-      case c: Not  [Valid]              => \/-(Valid(c))
-      case c: AllOf[Valid]              => \/-(Valid(c))
-      case c: AnyOf[Valid]              => \/-(Valid(c))
-      case f: FieldProp[String, String] => byField(f.field, f.criteria)
+      case HashRef       (key)             => byHashTag(key)
+      case ImpliesAnyOf  (reqs)            => byReqSet(reqs, ImpliesAnyOf.apply)
+      case ImpliedByAnyOf(reqs)            => byReqSet(reqs, ImpliedByAnyOf.apply)
+      case Reqs          (reqs)            => byReqSet(reqs, Reqs.apply)
+      case Presence      (attr)            => byAttr(attr, Presence.apply)
+      case HasIssue      (on, c)           => c.traverse1(FilterAst.issueCategoryFromStr).map(Valid.hasIssue(on, _))
+      case Regex         (regex)           => byRegex(regex)
+      case ReqType       (mn)              => lookupReqType(mn).map(rt => Valid(ReqType(rt.reqTypeId)))
+      case FieldProp     (field, criteria) => byField(field, criteria)
+      case c: Text                         => \/-(Valid(c))
+      case c: Not  [Valid]                 => \/-(Valid(c))
+      case c: AllOf[Valid]                 => \/-(Valid(c))
+      case c: AnyOf[Valid]                 => \/-(Valid(c))
     }
 
     alg
@@ -246,9 +244,9 @@ object FilterAlgebra {
       }
     }
 
-    val fieldCriteria: FieldCriteria => String = {
-      case FieldCriteria.Attr(a)          => a.name
-      case FieldCriteria.ReqTypePosSet(s) => ConciseIntSetFormat(s.iterator.map(_.value).toSet)
+    val fieldCriteria: FieldCriteria => Potential.FieldCriteria = {
+      case FieldCriteria.Attr(a)             => FieldCriteria.Attr(a.name)
+      case s@ FieldCriteria.ReqTypePosSet(_) => s
     }
 
     {

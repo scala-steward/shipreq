@@ -132,33 +132,33 @@ object Rev4 {
     implicit val encoderFilterAstHasIssue: Encoder[FilterAst.HasIssue[Valid.IssueCat]] =
       Encoder.forProduct2("on", "criteria")(a => (a.on, a.criteria))
 
-    implicit val decoderFieldCriteriaAttr: Decoder[FieldCriteria.Attr] =
-      Decoder[FilterAst.FieldAttr].map(FieldCriteria.Attr.apply)
+    implicit val decoderFieldCriteriaAttr: Decoder[FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]] =
+      Decoder[FilterAst.FieldAttr].map(FilterAst.FieldCriteria.Attr.apply)
 
-    implicit val encoderFieldCriteriaAttr: Encoder[FieldCriteria.Attr] =
-      Encoder[FilterAst.FieldAttr].contramap(_.attr)
+    implicit val encoderFieldCriteriaAttr: Encoder[FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]] =
+      Encoder[FilterAst.FieldAttr].contramap(_.value)
 
-    implicit val decoderFieldCriteriaReqTypePosSet: Decoder[FieldCriteria.ReqTypePosSet] =
-      Decoder[NonEmptySet[ReqTypePos]].map(FieldCriteria.ReqTypePosSet.apply)
+    implicit val decoderFieldCriteriaReqTypePosSet: Decoder[FilterAst.FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]]] =
+      Decoder[NonEmptySet[ReqTypePos]].map(FilterAst.FieldCriteria.ReqTypePosSet.apply)
 
-    implicit val encoderFieldCriteriaReqTypePosSet: Encoder[FieldCriteria.ReqTypePosSet] =
-      Encoder[NonEmptySet[ReqTypePos]].contramap(_.values)
+    implicit val encoderFieldCriteriaReqTypePosSet: Encoder[FilterAst.FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]]] =
+      Encoder[NonEmptySet[ReqTypePos]].contramap(_.value)
 
     implicit val decoderFieldCriteria: Decoder[FieldCriteria] = decodeSumBySoleKey {
-      case ("attr" , c) => c.as[FieldCriteria.Attr]
-      case ("rtpos", c) => c.as[FieldCriteria.ReqTypePosSet]
+      case ("attr" , c) => c.as[FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]]
+      case ("rtpos", c) => c.as[FilterAst.FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]]]
     }
 
     implicit val encoderFieldCriteria: Encoder[FieldCriteria] = Encoder.instance {
-      case a: FieldCriteria.Attr          => Json.obj("attr"  -> a.asJson)
-      case a: FieldCriteria.ReqTypePosSet => Json.obj("rtpos" -> a.asJson)
+      case a: FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]              => Json.obj("attr"  -> a.asJson)
+      case a: FilterAst.FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]] => Json.obj("rtpos" -> a.asJson)
     }
 
     implicit val decoderFilterAstFieldProp: Decoder[FilterAst.FieldProp[Valid.Field, Valid.FieldCriteria]] =
       Decoder.instance { c =>
         for {
           field    <- c.get[Valid.Field]("field")
-          criteria <- c.get[Valid.FieldCriteria]("criteria") orElse c.get[FilterAst.FieldAttr]("attr").map(Valid.FieldCriteria.Attr)
+          criteria <- c.get[Valid.FieldCriteria]("criteria") orElse c.get[FilterAst.FieldAttr]("attr").map(FilterAst.FieldCriteria.Attr(_))
         } yield FilterAst.FieldProp(field, criteria)
       }
 
