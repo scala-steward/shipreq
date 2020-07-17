@@ -4,6 +4,7 @@ import japgolly.microlibs.adt_macros.AdtMacros
 import monocle.Iso
 import scala.annotation.nowarn
 import scala.collection.immutable.ArraySeq
+import scala.reflect.ClassTag
 import scalaz.Applicative
 import shipreq.base.util.NonEmptyArraySeq
 import shipreq.base.util.Util.ShipReqOpsForArraySeq
@@ -116,6 +117,11 @@ object Atom {
       def allowBlankLineAfter = true
       @inline final def allowBlankLineBefore = allowBlankLineAfter // so far this holds but it might not always
 
+      def exists(f: AnyAtom => Boolean): Boolean
+
+      final def containsType[T <: AnyAtom](implicit ct: ClassTag[T]): Boolean =
+        exists(ct.runtimeClass.isInstance)
+
       // For tests
       @nowarn("cat=unused") def modText(f: String => String): this.type = this
       @nowarn("cat=unused") def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] = F.pure(this)
@@ -165,6 +171,7 @@ object Atom {
     case class Literal(value: String) extends Atom {
       override final def isPlain = true
       override final def containsMultipleLines = false
+      override final def exists(f: AnyAtom => Boolean) = f(this)
 
       // For tests
 
@@ -182,6 +189,7 @@ object Atom {
       override final def isBlankLine = true
       override final def containsMultipleLines = true
       override final def allowBlankLineAfter = false
+      override final def exists(f: AnyAtom => Boolean) = f(this)
     }
     final val blankLine = BlankLine()
   }
@@ -199,6 +207,9 @@ object Atom {
       override final def containsMultipleLines = false
       val title: HeadingTitle
       def copy(title: HeadingTitle): Self
+
+      override final def exists(f: AnyAtom => Boolean) =
+        f(this) || title.exists(_.exists(f))
 
       // For tests
 
@@ -264,6 +275,9 @@ object Atom {
       final override def containsMultipleLines = (_items.length > 1) || _items.head.exists(_.containsMultipleLines)
       final val itemsContainMultipleLines = _items.exists(_.exists(_.containsMultipleLines))
 
+      override final def exists(f: AnyAtom => Boolean) =
+        f(this) || _items.exists(_.exists(_.exists(f)))
+
       // For tests
 
       def unsafeWithItems(items: NonEmptyArraySeq[ArraySeq[Base#Atom]]): this.type
@@ -302,6 +316,7 @@ object Atom {
     sealed trait PlainTextMarkupOfString extends Atom {
       override final def isPlain = false
       override final def containsMultipleLines = false
+      override final def exists(f: AnyAtom => Boolean) = f(this)
       type Self <: PlainTextMarkupOfString
       val value: String
       def copy(value: String): Self
@@ -322,6 +337,9 @@ object Atom {
       type Self <: PlainTextMarkupStyled
       val inner: Styled
       def copy(inner: Styled): Self
+
+      override final def exists(f: AnyAtom => Boolean) =
+        f(this) || inner.exists(_.exists(f))
 
       // For tests
 
@@ -388,6 +406,7 @@ object Atom {
       override final def isPlain = false
       override final def containsMultipleLines = true
       override final def allowBlankLineAfter = false
+      override final def exists(f: AnyAtom => Boolean) = f(this)
 
       // For tests
 
@@ -422,11 +441,14 @@ object Atom {
     case class Issue(typ: CustomIssueTypeId, desc: Text.InlineIssueDesc.OptionalText) extends Atom {
       override final def isPlain = false
       override final def containsMultipleLines = false
+      override final def exists(f: AnyAtom => Boolean) = f(this) || desc.exists(_.exists(f))
     }
   }
 
   trait ContentRef extends Base { self =>
-    sealed trait ContentRef extends Atom
+    sealed trait ContentRef extends Atom {
+      override final def exists(f: AnyAtom => Boolean) = f(this)
+    }
 
     /** Reference to a requirement, like "UC-4". */
     case class ReqRef(value: ReqId) extends self.ContentRef {
@@ -452,6 +474,7 @@ object Atom {
     case class TagRef(value: ApplicableTagId) extends Atom {
       override final def isPlain = false
       override final def containsMultipleLines = false
+      override final def exists(f: AnyAtom => Boolean) = f(this)
     }
   }
 

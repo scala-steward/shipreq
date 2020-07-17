@@ -47,6 +47,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
     val optionalFullscreen: Option[OptionalFullscreen]
 
     def validated: PotentialChange[Any, Any]
+    val richText: text.OptionalText
 
     final lazy val abortWithConfirmation: Option[Callback] =
       abort.map { actuallyAbort =>
@@ -125,6 +126,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
     def commit      = (t: text.NonEmptyText) => commitFn.map(_ apply t)
     val status      = asyncStatus getOrElse EditorStatus.fromValidatedChange(validated)(commit, abortWithConfirmation)
     val wantPreview = richTextO.exists(Text isRich _.whole)
+    val richText    = text.toOptional(richTextO)
 
     def render: VdomElement = Component(this)
   }
@@ -275,9 +277,14 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       } yield ()
   }
 
+  private def initialState(p: Props) =
+    State(
+      monospace = p.richText.exists(_.containsType[Atom.CodeBlock#CodeBlock]),
+    )
+
   val Component =
     ScalaComponent.builder[Props]("RichTextEditor:" + name)
-      .initialState(State.init)
+      .initialStateFromProps(initialState)
       .renderBackend[Backend]
       .configure(
         //Reusability.shouldComponentUpdate,
@@ -294,12 +301,6 @@ object RichTextEditor {
   final case class State(monospace: Boolean) {
     val font: EditTheme.Font =
       if (monospace) EditTheme.Font.Monospace else EditTheme.Font.Default
-  }
-
-  object State {
-    val init = apply(
-      monospace = false,
-    )
   }
 
   private val preprocessor = {

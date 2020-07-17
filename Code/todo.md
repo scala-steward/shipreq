@@ -55,7 +55,6 @@ v2.2
 * Support filter: `field:MF=(#v2.1 | #v2.2)`
 * Middle-click doesn't work for nodes in ReqGraph
 * copying an ID cell should copy the title too
-* default to monospace when code blocks exist?
 * Add `<dot></dot>` for inline graphs (!).
   Alternatively, could just render inline code blocks of type dot/gv?
   Maybe even add support for options eg. `html:render`, `dot:render`
