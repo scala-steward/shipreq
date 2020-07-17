@@ -129,7 +129,8 @@ depsJvm = M.fromList [
          ("taskman-server-logic",    ["taskman-api-logic"]) ,
          ("base-db",                 ["base-ops"]) ,
          ("base-ops",                ["base-util"]) ,
-         ("base-util",               []) ]
+         ("base-util",               ["base-predef"]),
+         ("base-predef",             []) ]
 depsJs = M.fromList [
          ("webapp-ssr",              ["webapp-client-public", "webapp-client-loaders"]),
          ("webapp-server-logic",     ["webapp-base-member"]) ,

@@ -6,6 +6,7 @@ edge[color="#cc0000"]
 subgraph cluster_base {
   style=filled fillcolor="#f4fff4" node[fillcolor="#bbffbb"]
   baseMacro [label="base-macro\n(JVM & JS)"]
+  basePredef [label="base-predef\n(JVM & JS)"]
   baseUtil [label="base-util\n(JVM & JS)"]
   baseDb [label="base-db\n(JVM)"]
   baseOps [label="base-ops\n(JVM)"]
@@ -76,6 +77,7 @@ subgraph cluster_supp {
 root [label="[aggregate]\nroot" fillcolor="#cccccc"]
 
 // Deps
+basePredef -> baseUtil
 baseUtil -> baseMacro
 baseOps -> baseUtil
 baseDb -> baseOps
