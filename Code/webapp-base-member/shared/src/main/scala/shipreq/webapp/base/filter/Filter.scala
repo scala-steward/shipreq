@@ -4,7 +4,7 @@ import japgolly.microlibs.recursion._
 import scalaz.Traverse
 import shipreq.base.util.Identity
 import shipreq.webapp.base.data
-import shipreq.webapp.base.data.{FilterDead, HideDead, Req, ReqTypePos}
+import shipreq.webapp.base.data.{FilterDead, HideDead, Req}
 import shipreq.webapp.base.issue.IssueCategory
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 
@@ -30,7 +30,7 @@ object Filter {
   object Potential extends FilterAst.Dsl {
     type Attr          = String
     type Field         = String
-    type FieldCriteria = FilterAst.FieldCriteria[String, NonEmptySet[ReqTypePos]]
+    type FieldCriteria = FilterAst.FieldCriteria[String]
     type IssueCat      = String
     type HashTag       = data.HashRefKey
     type ReqSubset     = IntensionalReqSet[data.ReqType.Mnemonic]
@@ -64,7 +64,7 @@ object Filter {
   object Valid extends FilterAst.Dsl {
     type Attr          = FilterAst.Attr
     type Field         = data.SpecialBuiltInField.FilterOk \/ data.FieldId
-    type FieldCriteria = FilterAst.FieldCriteria[FilterAst.FieldAttr, NonEmptySet[ReqTypePos]]
+    type FieldCriteria = FilterAst.FieldCriteria[FilterAst.FieldAttr]
     type IssueCat      = IssueCategory
     type HashTag       = data.CustomIssueTypeId \/ data.ApplicableTagId
     type ReqSubset     = IntensionalReqSet[data.ReqTypeId]

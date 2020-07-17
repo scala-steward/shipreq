@@ -181,7 +181,7 @@ object FilterAlgebra {
           }
         }
 
-      def parseAsPoses(field: ParsedField, s: FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]]): R =
+      def parseAsPoses(field: ParsedField, s: FieldCriteria.ReqTypePosSet): R =
         field match {
           case \/-(f: CustomField.Implication) => \/-(Valid(FieldProp(\/-(f.id), s)))
           case _                               => -\/(s"You can't specify values for $fieldName.")
@@ -190,8 +190,8 @@ object FilterAlgebra {
       parsedField match {
         case Some(field) =>
           criteria match {
-            case FieldCriteria.Attr            (a) => parseAsAttr(field, a)
-            case s@ FieldCriteria.ReqTypePosSet(_) => parseAsPoses(field, s)
+            case FieldCriteria.Attr(a)          => parseAsAttr(field, a)
+            case s: FieldCriteria.ReqTypePosSet => parseAsPoses(field, s)
           }
         case None =>
           -\/(s"Unknown field: '$fieldName'")

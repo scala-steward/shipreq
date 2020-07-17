@@ -197,8 +197,8 @@ object Rev4 {
     implicit val picklerFieldCriteriaAttr: Pickler[FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]] =
       transformPickler(FilterAst.FieldCriteria.Attr.apply[FilterAst.FieldAttr])(_.value)
 
-    implicit val picklerFieldCriteriaReqTypePosSet: Pickler[FilterAst.FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]]] =
-      transformPickler(FilterAst.FieldCriteria.ReqTypePosSet.apply[NonEmptySet[ReqTypePos]])(_.value)
+    implicit val picklerFieldCriteriaReqTypePosSet: Pickler[FilterAst.FieldCriteria.ReqTypePosSet] =
+      transformPickler(FilterAst.FieldCriteria.ReqTypePosSet.apply)(_.value)
 
     implicit val picklerFieldCriteria: Pickler[FieldCriteria] =
       new Pickler[FieldCriteria] {
@@ -206,13 +206,13 @@ object Rev4 {
         private[this] final val KeyReqTypePosSet = 'p'
         override def pickle(a: FieldCriteria)(implicit state: PickleState): Unit =
           a match {
-            case b: FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]              => state.enc.writeByte(KeyAttr         ); state.pickle(b)
-            case b: FilterAst.FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]] => state.enc.writeByte(KeyReqTypePosSet); state.pickle(b)
+            case b: FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr] => state.enc.writeByte(KeyAttr         ); state.pickle(b)
+            case b: FilterAst.FieldCriteria.ReqTypePosSet             => state.enc.writeByte(KeyReqTypePosSet); state.pickle(b)
           }
         override def unpickle(implicit state: UnpickleState): FieldCriteria =
           state.dec.readByte match {
             case KeyAttr          => state.unpickle[FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]]
-            case KeyReqTypePosSet => state.unpickle[FilterAst.FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]]]
+            case KeyReqTypePosSet => state.unpickle[FilterAst.FieldCriteria.ReqTypePosSet]
           }
       }
 

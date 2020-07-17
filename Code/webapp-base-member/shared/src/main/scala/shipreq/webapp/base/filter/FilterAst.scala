@@ -4,7 +4,7 @@ import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.recursion.Fix
 import japgolly.microlibs.utils.StaticLookupFn
 import scalaz.{Applicative, Traverse, Traverse1}
-import shipreq.webapp.base.data.On
+import shipreq.webapp.base.data.{On, ReqTypePos}
 import shipreq.webapp.base.issue.IssueCategory
 
 sealed trait FilterAst[+Attr, +Field, +FieldCriteria, +IssueCat, +HashTag, +ReqSet, +ReqType, +F]
@@ -73,13 +73,13 @@ object FilterAst {
       Iterator.single(a.name)
   }
 
-  sealed trait FieldCriteria[+A, +P]
+  sealed trait FieldCriteria[+A]
 
   object FieldCriteria {
-    final case class Attr[+A]         (value: A) extends FieldCriteria[A, Nothing]
-    final case class ReqTypePosSet[+P](value: P) extends FieldCriteria[Nothing, P]
+    final case class Attr[+A](value: A) extends FieldCriteria[A]
+    final case class ReqTypePosSet(value: NonEmptySet[ReqTypePos]) extends FieldCriteria[Nothing]
 
-    implicit def univEq[A: UnivEq, P: UnivEq]: UnivEq[FieldCriteria[A, P]] = UnivEq.derive
+    implicit def univEq[A: UnivEq]: UnivEq[FieldCriteria[A]] = UnivEq.derive
   }
 
   val issueCategoryToStr: IssueCategory => String = {

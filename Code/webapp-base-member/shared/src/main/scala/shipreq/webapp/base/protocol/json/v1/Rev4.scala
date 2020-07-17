@@ -138,20 +138,20 @@ object Rev4 {
     implicit val encoderFieldCriteriaAttr: Encoder[FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]] =
       Encoder[FilterAst.FieldAttr].contramap(_.value)
 
-    implicit val decoderFieldCriteriaReqTypePosSet: Decoder[FilterAst.FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]]] =
+    implicit val decoderFieldCriteriaReqTypePosSet: Decoder[FilterAst.FieldCriteria.ReqTypePosSet] =
       Decoder[NonEmptySet[ReqTypePos]].map(FilterAst.FieldCriteria.ReqTypePosSet.apply)
 
-    implicit val encoderFieldCriteriaReqTypePosSet: Encoder[FilterAst.FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]]] =
+    implicit val encoderFieldCriteriaReqTypePosSet: Encoder[FilterAst.FieldCriteria.ReqTypePosSet] =
       Encoder[NonEmptySet[ReqTypePos]].contramap(_.value)
 
     implicit val decoderFieldCriteria: Decoder[FieldCriteria] = decodeSumBySoleKey {
       case ("attr" , c) => c.as[FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]]
-      case ("rtpos", c) => c.as[FilterAst.FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]]]
+      case ("rtpos", c) => c.as[FilterAst.FieldCriteria.ReqTypePosSet]
     }
 
     implicit val encoderFieldCriteria: Encoder[FieldCriteria] = Encoder.instance {
-      case a: FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr]              => Json.obj("attr"  -> a.asJson)
-      case a: FilterAst.FieldCriteria.ReqTypePosSet[NonEmptySet[ReqTypePos]] => Json.obj("rtpos" -> a.asJson)
+      case a: FilterAst.FieldCriteria.Attr[FilterAst.FieldAttr] => Json.obj("attr"  -> a.asJson)
+      case a: FilterAst.FieldCriteria.ReqTypePosSet             => Json.obj("rtpos" -> a.asJson)
     }
 
     implicit val decoderFilterAstFieldProp: Decoder[FilterAst.FieldProp[Valid.Field, Valid.FieldCriteria]] =
