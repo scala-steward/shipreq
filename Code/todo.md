@@ -10,7 +10,7 @@ v2.2
 * New plan for the rest of v2.2
 
 ### Analyse
-* Add a field to show where a req is being referenced (i.e. FB-9 references FR-5 in its detail field, I should be able to see that from FB-5's page. "References"? "Citations"?)
+* [FB-11] Add a field to show where a req is being referenced (i.e. FB-9 references FR-5 in its detail field, I should be able to see that from FB-5's page. "References"? "Citations"?)
 * Req Code config
   * completely disable (don't show in ReqDetail or ReqTable, even remove from auto-complete)
   * disable for some req types (and don't show in ReqDetail)
@@ -52,6 +52,16 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
+* Support filter: `field:MF=(#v2.1 | #v2.2)`
+* Middle-click doesn't work for nodes in ReqGraph
+* copying an ID cell should copy the title too
+* default to monospace when code blocks exist?
+* Add `<dot></dot>` for inline graphs (!).
+  Alternatively, could just render inline code blocks of type dot/gv?
+  Maybe even add support for options eg. `html:render`, `dot:render`
+  Render by fit to width (or other option?)
+  Don't require digraph X{}
+* Get rid of accordions in help
 
 
 
