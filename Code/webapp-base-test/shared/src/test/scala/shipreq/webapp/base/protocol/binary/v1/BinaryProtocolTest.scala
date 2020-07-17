@@ -4,6 +4,7 @@ import nyaya.gen.Gen
 import shipreq.webapp.base.RandomData.TextGenExt
 import shipreq.webapp.base.event.EventEquality._
 import shipreq.webapp.base.event.RandomEventStream
+import shipreq.webapp.base.filter.Filter.Implicits.univEqFilterValid
 import shipreq.webapp.base.test.BinaryTestUtil._
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.text.Text._
@@ -18,6 +19,8 @@ object BinaryProtocolTest extends TestSuite {
   private implicit def autoSomeG[A](g: Gen[A]): Option[Gen[A]] = Some(g)
 
   override def tests = Tests {
+
+    "filters" - propTestRoundTripP(R.projectConfig.flatMap(R.filter.valid.forProjectConfig))
 
     "savedViews" - propTestRoundTripP(R.project.flatMap(R.savedViews.nonEmptySavedViewsForProject))
 

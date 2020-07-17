@@ -114,7 +114,9 @@ object WebappBuild {
       .depsForJs(
         React.test ++ ScalaCSS.react ++
         TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact)
-      .jsSettings(jsDependencies in Test += ProvidedJS / "webapp-base-test.js")
+      .jsSettings(
+        parallelExecution := false, // I don't know why this is needed
+        jsDependencies in Test += ProvidedJS / "webapp-base-test.js")
 
   /** Settings for client SPA projects.
     *

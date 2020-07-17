@@ -52,7 +52,6 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
-* Support filter: `field:MF=(#v2.1 | #v2.2)`
 * Add `<dot></dot>` for inline graphs (!).
   Alternatively, could just render inline code blocks of type dot/gv?
   Maybe even add support for options eg. `html:render`, `dot:render`

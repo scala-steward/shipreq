@@ -10,7 +10,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.data.savedview.{Column => C, SortCriterion => SC}
 import shipreq.webapp.base.event.{Event => E, UseCaseGD, UseCaseStepGD}
-import shipreq.webapp.base.filter.Filter
+import shipreq.webapp.base.filter.{Filter, IntensionalReqSet}
 import shipreq.webapp.base.issue.IssueCategory
 import shipreq.webapp.base.sort.SortMethod._
 import shipreq.webapp.base.test.WebappTestUtil._
@@ -1073,6 +1073,15 @@ object LogicTest extends TestSuite {
       "UC-1")
   }
 
+  def testFilterImpFieldQuery(): Unit = {
+    // Filter by field:MF=(MF2)
+    import SampleImplicationGraph2._
+    val subQuery = F.reqs(NonEmptyVector(IntensionalReqSet.SomeOfType(mf, NonEmptySet(2))))
+    testFilter(project, F.fieldProp(\/-(mfField), FieldCriteria.Query(subQuery)))(
+      "FB-1  IV-1  IV-2  MF-2  MF-3  UC-2",
+      "UC-1")
+  }
+
   def testFilterTagFieldNA(): Unit = {
     testFilter(P7, F.fieldProp(\/-(priField), FieldAttr.NotApplicable))("", "CO-1  CO-2")
 
@@ -1417,6 +1426,7 @@ object LogicTest extends TestSuite {
       "impFieldNA"           - testFilterImpFieldNA()
       "impFieldBlank"        - testFilterImpFieldBlank()
       "impFieldPos"          - testFilterImpFieldPos()
+      "impFieldQuery"        - testFilterImpFieldQuery()
       "textFieldNA"          - testFilterTextFieldNA()
       "textFieldBlank"       - testFilterTextFieldBlank()
       "tagFieldNA"           - testFilterTagFieldNA()

@@ -27,6 +27,13 @@ object JsonCodec {
   def xmap[A, B](f: A => B)(g: B => A)(implicit encoder: Encoder[A], decoder: Decoder[A]): JsonCodec[B] =
     summon[A].xmap(f)(g)
 
+  def lazily[A](j: => JsonCodec[A]): JsonCodec[A] = {
+    lazy val l = j
+    apply(
+      Encoder.instance(a => l.encoder(a)),
+      Decoder.instance(a => l.decoder(a)))
+  }
+
   def const[A](a: A): JsonCodec[A] =
     apply(Encoder.encodeUnit.contramap(_ => ()), Decoder.const(a))
 

@@ -192,15 +192,17 @@ object FilterParserTest extends TestSuite {
 
     "field" - {
       import FilterAst.FieldCriteria._
-      import shipreq.webapp.base.test.UnsafeTypes._
-      "na"         - test("field:poop=n/a",     fieldProp("poop", Attr("n/a")))
-      "default"    - test("field:poop=default", fieldProp("poop", Attr("default")))
-      "blank"      - test("field:poop=blank",   fieldProp("poop", Attr("blank")))
-      "quoteSpace" - test("field:\"a b\"=xx",   fieldProp("a b", Attr("xx")))
-      "quoteColon" - test("field:\"a:b\"=xx",   fieldProp("a:b", Attr("xx")))
-      "quoteEqual" - test("field:\"a=b\"=xx",   fieldProp("a=b", Attr("xx")))
-      "pos1"       - test("field:X=1",          fieldProp("X", ReqTypePosSet(NonEmptySet(1))))
-      "posM"       - test("field:n=1,3,5-9,40", fieldProp("n", ReqTypePosSet(NonEmptySet(1, 3, 5, 6, 7, 8, 9, 40))))
+      import shipreq.webapp.base.test.UnsafeTypes.{autoHashRefKey => _, _}
+      "na"         - test("field:poop=n/a",                 fieldProp("poop", Attr("n/a")))
+      "default"    - test("field:poop=default",             fieldProp("poop", Attr("default")))
+      "blank"      - test("field:poop=blank",               fieldProp("poop", Attr("blank")))
+      "quoteSpace" - test("field:\"a b\"=xx",               fieldProp("a b", Attr("xx")))
+      "quoteColon" - test("field:\"a:b\"=xx",               fieldProp("a:b", Attr("xx")))
+      "quoteEqual" - test("field:\"a=b\"=xx",               fieldProp("a=b", Attr("xx")))
+      "pos1"       - test("field:X=1",                      fieldProp("X", ReqTypePosSet(NonEmptySet(1))))
+      "posM"       - test("field:n=1,3,5-9,40",             fieldProp("n", ReqTypePosSet(NonEmptySet(1, 3, 5, 6, 7, 8, 9, 40))))
+      "query1"     - test("field:MF=(#a)"     ,             fieldProp("MF", Query(hashRef("a"))))
+      "query2"     - test("field:MF=((#a | #b) (#c | #d))", fieldProp("MF", Query(allOf(anyOf(hashRef("a"), hashRef("b")), anyOf(hashRef("c"), hashRef("d"))))))
     }
 
     "hasIssue" - {

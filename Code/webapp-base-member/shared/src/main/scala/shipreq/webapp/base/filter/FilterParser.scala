@@ -170,12 +170,16 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
 
     def value: RuleAB[String, Potential] =
       rule(
-        valueRule(() => numberRange)(is => FieldCriteria.ReqTypePosSet(is.map(ReqTypePos)))
-      | valueRule(() => attr)(FieldCriteria.Attr(_))
+        valueRule(() => subQuery   )(FieldCriteria.Query(_))
+      | valueRule(() => numberRange)(is => FieldCriteria.ReqTypePosSet(is.map(ReqTypePos)))
+      | valueRule(() => attr       )(FieldCriteria.Attr(_))
       )
 
     rule("field:" ~ name ~ '=' ~ value)
   }
+
+  private def subQuery: Rule1[Potential] =
+    rule("(" ~ mainNonEmpty ~ OWS ~ ")")
 
   private def presence: Rule1[Potential] =
     rule("has:" ~!~ attr ~> ((i: String) => Potential.presence(i)))

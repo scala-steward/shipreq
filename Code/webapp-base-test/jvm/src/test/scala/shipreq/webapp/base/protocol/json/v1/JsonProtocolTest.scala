@@ -5,6 +5,7 @@ import shipreq.base.test.JsonTestUtil._
 import shipreq.webapp.base.RandomData.TextGenExt
 import shipreq.webapp.base.event.EventEquality._
 import shipreq.webapp.base.event.RandomEventStream
+import shipreq.webapp.base.filter.Filter.Implicits.univEqFilterValid
 import shipreq.webapp.base.protocol.json.JsonCodec.Implicits._
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.text.Text._
@@ -19,6 +20,8 @@ object JsonProtocolTest extends TestSuite {
   private implicit def autoSomeG[A](g: Gen[A]): Option[Gen[A]] = Some(g)
 
   override def tests = Tests {
+
+    "filters" - propTestRoundTrip(R.projectConfig.flatMap(R.filter.valid.forProjectConfig))
 
     "savedViews" - propTestRoundTrip(R.project.flatMap(R.savedViews.nonEmptySavedViewsForProject))
 

@@ -20,7 +20,7 @@ object Filter {
   type PotentialF[+F] = FilterAst[
     Potential.Attr,
     Potential.Field,
-    Potential.FieldCriteria,
+    Potential.FieldCriteriaF,
     Potential.IssueCat,
     Potential.HashTag,
     Potential.ReqSet,
@@ -28,14 +28,14 @@ object Filter {
     F]
 
   object Potential extends FilterAst.Dsl {
-    type Attr          = String
-    type Field         = String
-    type FieldCriteria = FilterAst.FieldCriteria[String]
-    type IssueCat      = String
-    type HashTag       = data.HashRefKey
-    type ReqSubset     = IntensionalReqSet[data.ReqType.Mnemonic]
-    type ReqSet        = NonEmptyVector[ReqSubset]
-    type ReqType       = data.ReqType.Mnemonic
+    type Attr               = String
+    type Field              = String
+    type FieldCriteriaF[+A] = FilterAst.FieldCriteria[String, A]
+    type IssueCat           = String
+    type HashTag            = data.HashRefKey
+    type ReqSubset          = IntensionalReqSet[data.ReqType.Mnemonic]
+    type ReqSet             = NonEmptyVector[ReqSubset]
+    type ReqType            = data.ReqType.Mnemonic
 
     def reqSet(i1: ReqSubset, in: ReqSubset*): ReqSet =
       NonEmptyVector(i1, in.toVector)
@@ -54,7 +54,7 @@ object Filter {
   type ValidF[+F] = FilterAst[
     Valid.Attr,
     Valid.Field,
-    Valid.FieldCriteria,
+    Valid.FieldCriteriaF,
     Valid.IssueCat,
     Valid.HashTag,
     Valid.ReqSet,
@@ -62,14 +62,14 @@ object Filter {
     F]
 
   object Valid extends FilterAst.Dsl {
-    type Attr          = FilterAst.Attr
-    type Field         = data.SpecialBuiltInField.FilterOk \/ data.FieldId
-    type FieldCriteria = FilterAst.FieldCriteria[FilterAst.FieldAttr]
-    type IssueCat      = IssueCategory
-    type HashTag       = data.CustomIssueTypeId \/ data.ApplicableTagId
-    type ReqSubset     = IntensionalReqSet[data.ReqTypeId]
-    type ReqSet        = NonEmptyVector[ReqSubset]
-    type ReqType       = data.ReqTypeId
+    type Attr               = FilterAst.Attr
+    type Field              = data.SpecialBuiltInField.FilterOk \/ data.FieldId
+    type FieldCriteriaF[+A] = FilterAst.FieldCriteria[FilterAst.FieldAttr, A]
+    type IssueCat           = IssueCategory
+    type HashTag            = data.CustomIssueTypeId \/ data.ApplicableTagId
+    type ReqSubset          = IntensionalReqSet[data.ReqTypeId]
+    type ReqSet             = NonEmptyVector[ReqSubset]
+    type ReqType            = data.ReqTypeId
 
     def reqSet(i1: ReqSubset, in: ReqSubset*): ReqSet =
       NonEmptyVector(i1, in.toVector)
@@ -85,19 +85,19 @@ object Filter {
                reqSet : ReqSet          => Boolean,
                reqType: ReqType         => Boolean): Valid => Boolean =
       RecursionFn.cata[ValidF, Boolean] {
-        case c: FilterAst.Text                                 => text (c)
-        case c: FilterAst.Regex                                => regex(c)
-        case c: FilterAst.HashRef       [HashTag]              => hashRef(c.value)
-        case c: FilterAst.Presence      [Attr]                 => attr(c.attr)
-        case c: FilterAst.FieldProp     [Field, FieldCriteria] => field(c.field)
-        case _: FilterAst.HasIssue      [IssueCat]             => false
-        case c: FilterAst.ReqType       [ReqType]              => reqType(c.reqType)
-        case c: FilterAst.ImpliesAnyOf  [ReqSet]               => reqSet(c.reqs)
-        case c: FilterAst.ImpliedByAnyOf[ReqSet]               => reqSet(c.reqs)
-        case c: FilterAst.Reqs          [ReqSet]               => reqSet(c.reqs)
-        case c: FilterAst.Not           [Boolean]              => c.clause
-        case c: FilterAst.AllOf         [Boolean]              => c.clauses.exists(Identity.apply)
-        case c: FilterAst.AnyOf         [Boolean]              => c.head || c.tail.exists(Identity.apply)
+        case c: FilterAst.Text                                           => text (c)
+        case c: FilterAst.Regex                                          => regex(c)
+        case c: FilterAst.HashRef       [HashTag]                        => hashRef(c.value)
+        case c: FilterAst.Presence      [Attr]                           => attr(c.attr)
+        case c: FilterAst.FieldProp     [Field, FieldCriteriaF, Boolean] => field(c.field)
+        case _: FilterAst.HasIssue      [IssueCat]                       => false
+        case c: FilterAst.ReqType       [ReqType]                        => reqType(c.reqType)
+        case c: FilterAst.ImpliesAnyOf  [ReqSet]                         => reqSet(c.reqs)
+        case c: FilterAst.ImpliedByAnyOf[ReqSet]                         => reqSet(c.reqs)
+        case c: FilterAst.Reqs          [ReqSet]                         => reqSet(c.reqs)
+        case c: FilterAst.Not           [Boolean]                        => c.clause
+        case c: FilterAst.AllOf         [Boolean]                        => c.clauses.exists(Identity.apply)
+        case c: FilterAst.AnyOf         [Boolean]                        => c.head || c.tail.exists(Identity.apply)
       }
 
     def toText(cfg: data.ProjectConfig, f: Valid): String =
@@ -147,7 +147,7 @@ object Filter {
   type ExtensionalF[+F] = FilterAst[
     Extensional.Attr,
     Extensional.Field,
-    Extensional.FieldCriteria,
+    Extensional.FieldCriteriaF,
     Extensional.IssueCat,
     Extensional.HashTag,
     Extensional.ReqSet,
@@ -155,13 +155,13 @@ object Filter {
     F]
 
   object Extensional extends FilterAst.Dsl {
-    type Attr          = Valid.Attr
-    type Field         = Valid.Field
-    type FieldCriteria = Valid.FieldCriteria
-    type IssueCat      = Valid.IssueCat
-    type HashTag       = Valid.HashTag
-    type ReqSet        = Set[data.ReqId]
-    type ReqType       = Valid.ReqType
+    type Attr              = Valid.Attr
+    type Field             = Valid.Field
+    type FieldCriteriaF[A] = Valid.FieldCriteriaF[A]
+    type IssueCat          = Valid.IssueCat
+    type HashTag           = Valid.HashTag
+    type ReqSet            = Set[data.ReqId]
+    type ReqType           = Valid.ReqType
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -169,22 +169,22 @@ object Filter {
   object Implicits {
 
     implicit val traverseFilterPotential: Traverse[PotentialF] =
-      FilterAst.traverse
+      FilterAst.traverse(FilterAst.FieldCriteria.traverse)
 
     implicit val traverseFilterValid: Traverse[ValidF] =
-      FilterAst.traverse
+      FilterAst.traverse(FilterAst.FieldCriteria.traverse)
 
     implicit val traverseFilterExtensional: Traverse[ExtensionalF] =
-      FilterAst.traverse
+      FilterAst.traverse(FilterAst.FieldCriteria.traverse)
 
     implicit val univEqFilterPotential: UnivEq[Potential] = {
       import Potential._
-      FilterAst.univEqFix[Attr, Field, FieldCriteria, IssueCat, HashTag, ReqSet, ReqType]
+      FilterAst.univEqFix[Attr, Field, FieldCriteriaF, IssueCat, HashTag, ReqSet, ReqType]
     }
 
     implicit val univEqFilterValid: UnivEq[Valid] = {
       import Valid._
-      FilterAst.univEqFix[Attr, Field, FieldCriteria, IssueCat, HashTag, ReqSet, ReqType]
+      FilterAst.univEqFix[Attr, Field, FieldCriteriaF, IssueCat, HashTag, ReqSet, ReqType]
     }
   }
 

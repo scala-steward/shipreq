@@ -46,21 +46,26 @@ object ValidFilterTest extends TestSuite {
       }
       "field" - {
         import FilterAst.FieldCriteria._
-        import shipreq.webapp.base.test.UnsafeTypes._
-        def posNA = "You can't specify values"
-        "exact"    - assertTranslation(PF.fieldProp("Description", Attr("blank")))(VF.fieldProp(\/-(descField), Blank))
-        "caseWrong"- assertTranslation(PF.fieldProp("descriPTION", Attr("blank")))(VF.fieldProp(\/-(descField), Blank))
-        "title"    - assertTranslation(PF.fieldProp("TITLE", Attr("BLANK")))(VF.fieldProp(-\/(Title), Blank))
-        "impField" - assertTranslation(PF.fieldProp("MF", Attr("BLANK")))(VF.fieldProp(\/-(mfField), Blank))
-        "posMF"    - assertTranslation(PF.fieldProp("MF", ReqTypePosSet(NonEmptySet(1, 3))))(VF.fieldProp(\/-(mfField), poses(1,3)))
-        "posTitle" - assertTranslationFails(PF.fieldProp("Title", ReqTypePosSet(NonEmptySet(1, 3))))(posNA)
-        "posTxt"   - assertTranslationFails(PF.fieldProp("Description", ReqTypePosSet(NonEmptySet(1, 3))))(posNA)
-        "posTag"   - assertTranslationFails(PF.fieldProp("Priority", ReqTypePosSet(NonEmptySet(1, 3))))(posNA)
+        import shipreq.webapp.base.test.UnsafeTypes.{autoHashRefKey => _, _}
+        def posNA =   "You can't specify values"
+        "exact"      - assertTranslation(PF.fieldProp("Description", Attr("blank")))(VF.fieldProp(\/-(descField), Blank))
+        "caseWrong"  - assertTranslation(PF.fieldProp("descriPTION", Attr("blank")))(VF.fieldProp(\/-(descField), Blank))
+        "title"      - assertTranslation(PF.fieldProp("TITLE", Attr("BLANK")))(VF.fieldProp(-\/(Title), Blank))
+        "impField"   - assertTranslation(PF.fieldProp("MF", Attr("BLANK")))(VF.fieldProp(\/-(mfField), Blank))
+        "posMF"      - assertTranslation(PF.fieldProp("MF", ReqTypePosSet(NonEmptySet(1, 3))))(VF.fieldProp(\/-(mfField), poses(1,3)))
+        "posTitle"   - assertTranslationFails(PF.fieldProp("Title", ReqTypePosSet(NonEmptySet(1, 3))))(posNA)
+        "posTxt"     - assertTranslationFails(PF.fieldProp("Description", ReqTypePosSet(NonEmptySet(1, 3))))(posNA)
+        "posTag"     - assertTranslationFails(PF.fieldProp("Priority", ReqTypePosSet(NonEmptySet(1, 3))))(posNA)
+        "queryMF"    - assertTranslation(PF.fieldProp("MF", Query(PF.text("x"))))(VF.fieldProp(\/-(mfField), Query(VF.text("x"))))
+        "queryTitle" - assertTranslationFails(PF.fieldProp("Title", Query(PF.text("x"))))(posNA)
+        "queryTxt"   - assertTranslationFails(PF.fieldProp("Description", Query(PF.text("x"))))(posNA)
+        "queryTag"   - assertTranslationFails(PF.fieldProp("Priority", Query(PF.text("x"))))(posNA)
       }
     }
 
     "validToText" - {
       "field" - {
+        import FilterAst.FieldCriteria._
         "title"     - assertValidToText(VF.fieldProp(-\/(Title), Blank))("field:Title=blank")
         "customTxt" - assertValidToText(VF.fieldProp(\/-(descField), Blank))("field:Description=blank")
         "customImp" - assertValidToText(VF.fieldProp(\/-(mfField), Blank))("field:MF=blank")
@@ -70,6 +75,8 @@ object ValidFilterTest extends TestSuite {
           assertValidToText(VF.fieldProp(\/-(descField), Blank), p)("field:\"ok good\"=blank")
         }
         "pos" - assertValidToText(VF.fieldProp(\/-(mfField), poses(1,3,4,5,6,9)))("field:MF=1,3-6,9")
+        "query1" - assertValidToText(VF.fieldProp(\/-(mfField), Query(VF.text("x"))))("field:MF=(x)")
+        "query2" - assertValidToText(VF.fieldProp(\/-(mfField), Query(VF.anyOf(VF.text("x"), VF.text("y")))))("field:MF=(x | y)")
       }
     }
 

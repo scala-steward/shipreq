@@ -27,10 +27,15 @@ object FilterHelp {
       code("field:<NAME>=<VALUES>"), ", replacing ", code("<NAME>"), " with the field name or mnemonic, and ",
       code("<VALUES>"), " with the numbers of matching requirements.",
       <.br, <.br,
-      "You can specify multiple requirements by separating the numbers by commas, and/or using a dash for an inclusive range."
+      "You can specify multiple requirements by separating the numbers by commas, and/or using a dash for an inclusive range.",
+      <.br, <.br,
+      "You can even choose field values by running a sub-query. Do do so replace ", code("<VALUES>"),
+      " with a complete expression in parentheses.",
     )(
       "field:MF=2",
-      "field:MF=1,3,6-9")
+      "field:MF=1,3,6-9",
+      "field:MF=(#v1.2 | #v1.3)",
+    )
 
   val modal = HelpModal("Filter Help", Groups(
 
