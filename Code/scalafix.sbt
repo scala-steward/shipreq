@@ -10,10 +10,12 @@ val enableScalaRewrites = false
 
       ThisBuild / semanticdbEnabled := true,
 
+      ThisBuild / scalafixScalaBinaryVersion := "2.13",
+
       ThisBuild / semanticdbVersion := "4.3.20",
 
       ThisBuild / scalafixDependencies ++= Seq(
-        "com.github.liancheng" %% "organize-imports" % "0.3.1-RC3"
+        "com.github.liancheng" %% "organize-imports" % "0.4.0"
       )
 
     )
