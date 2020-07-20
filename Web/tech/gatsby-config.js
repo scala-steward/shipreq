@@ -1,32 +1,43 @@
-/**
- * Configure your Gatsby site with this file.
- *
- * See: https://www.gatsbyjs.org/docs/gatsby-config/
- */
-
- const manifest = {
-  resolve: `gatsby-plugin-manifest`,
-  options: {
-    name: "ShipReq tech blog",
-    start_url: "/",
-    background_color: "#ffffff",
-    theme_color: "#ffffff",
-    display: "browser",
-    icon: "src/images/shipreq-logo-only.svg",
-    crossOrigin: `use-credentials`,
-  },
-};
-
-const typography = {
-  resolve: `gatsby-plugin-typography`,
-  options: {
-    pathToConfigModule: `src/utils/typography`,
-  },
-};
+const siteMetadata = require('./src/siteMetadata');
 
 module.exports = {
+  siteMetadata,
+
   plugins: [
-    manifest,
-    typography,
+
+    // =============================================================================================
+    `gatsby-plugin-mdx`,
+
+    // =============================================================================================
+    {
+      resolve: "gatsby-source-filesystem",
+      options: {
+        name: "posts",
+        path: "src/posts/",
+      },
+    },
+
+    // =============================================================================================
+    {
+      resolve: `gatsby-plugin-manifest`,
+      options: {
+        name            : "ShipReq tech blog",
+        start_url       : "/",
+        display         : "browser",
+        icon            : "src/images/shipreq-logo-only.svg",
+        crossOrigin     : `use-credentials`,
+        background_color: "#ffffff",
+        theme_color     : "#ffffff",
+      },
+    },
+
+    // =============================================================================================
+    {
+      resolve: `gatsby-plugin-typography`,
+      options: {
+        pathToConfigModule: `src/utils/typography`,
+      },
+    },
+
   ],
 }
