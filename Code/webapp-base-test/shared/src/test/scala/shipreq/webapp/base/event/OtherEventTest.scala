@@ -14,7 +14,7 @@ object OtherEventTest extends TestSuite {
   import ApplyEventTestFns._
   import ContentEventTestHelp.{assertBadIdsRejected, fr, at1, issueType1}
   import Event._
-  import FilterAst.Attr
+  import FilterAst.{Attr, ImpCriteria}
   import RetiredGenericData.SavedViewGDv1
   import SortCriterion.SyntaxHelpers._
   import SortMethod.{Asc, AscThenBlanks, BlanksThenDesc, Desc}
@@ -52,8 +52,8 @@ object OtherEventTest extends TestSuite {
           not(text("hehe")),
           presence(Attr.AnyIssue),
           reqs(reqSet),
-          impliesAnyOf(reqSet),
-          impliedByAnyOf(reqSet),
+          impliesAnyOf(ImpCriteria.Reqs(reqSet)),
+          impliedByAnyOf(ImpCriteria.Reqs(reqSet)),
           tag(at1),
           issue(issueType1),
           regex("[a-z]"),

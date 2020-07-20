@@ -2121,10 +2121,10 @@ object RandomData {
     val regex =
       unicodeString1.map(s => FilterAst.Regex(fixRegex(s)))
 
-    def fixRoot[A, B, C[_], D, E, F, G](f: FilterAst.Fixed[A, B, C, D, E, F, G]): FilterAst.Fixed[A, B, C, D, E, F, G] =
+    def fixRoot[A[_], B[_], C, D, E, F, G, H](f: FilterAst.Fixed[A, B, C, D, E, F, G, H]): FilterAst.Fixed[A, B, C, D, E, F, G, H] =
       f.unfix match {
         case FilterAst.AllOf(a) if a.tail.isEmpty => a.head
-        case _ => f
+        case _                                    => f
       }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -2146,7 +2146,7 @@ object RandomData {
         Gen.chooseGen(wholeType, someOfType)
 
       val reqSpecs: Gen[Potential.ReqSet] =
-        reqsSpec.nev(0 to 5)
+        reqsSpec.nev(0 to 4)
 
       val attr: Gen[String] =
         Gen.chooseGen(
@@ -2170,15 +2170,27 @@ object RandomData {
       def fieldProp[A](ga: Option[Gen[A]]): Gen[PotentialF[A]] =
         Gen.lift2(fieldName, fieldCriteria(ga))(FilterAst.FieldProp(_, _))
 
-      val reqType    = reqTypeMnemonic.map(FilterAst.ReqType(_))
-      val hashRef    = hashRefKey     .map(FilterAst.HashRef(_))
-      val reqs       = someOfType     .map(s => FilterAst.Reqs(NonEmptyVector.one(s)))
-      val implies    = reqSpecs       .map(FilterAst.ImpliesAnyOf(_))
-      val impliedBy  = reqSpecs       .map(FilterAst.ImpliedByAnyOf(_))
-      val presence   = attr           .map(FilterAst.Presence(_))
+      private val _impCriteria = reqSpecs.map(FilterAst.ImpCriteria.Reqs(_))
+
+      def impCriteria[A](ga: Option[Gen[A]]): Gen[Potential.ImpCriteriaF[A]] =
+        ga match {
+          case Some(g) => Gen.chooseGen(_impCriteria, g.map(FilterAst.ImpCriteria.Query(_)))
+          case None    => _impCriteria
+        }
+
+      def impliesAnyOf[A](ga: Option[Gen[A]]): Gen[PotentialF[A]] =
+        impCriteria(ga).map(FilterAst.ImpliesAnyOf(_): PotentialF[A])
+
+      def impliedByAnyOf[A](ga: Option[Gen[A]]): Gen[PotentialF[A]] =
+        impCriteria(ga).map(FilterAst.ImpliedByAnyOf(_): PotentialF[A])
+
+      val reqType  = reqTypeMnemonic.map(FilterAst.ReqType(_))
+      val hashRef  = hashRefKey     .map(FilterAst.HashRef(_))
+      val reqs     = someOfType     .map(s => FilterAst.Reqs(NonEmptyVector.one(s)))
+      val presence = attr           .map(FilterAst.Presence(_))
 
       private val flatGens: NonEmptyVector[Gen[PotentialF[Nothing]]] =
-        NonEmptyVector(quotedText, simpleText, regex, reqs, reqType, hashRef, implies, impliedBy, presence, hasIssue)
+        NonEmptyVector(quotedText, simpleText, regex, reqs, reqType, hashRef, presence, hasIssue)
 
       private val flatGen: Gen[PotentialF[Nothing]] =
         Gen.chooseGenNE(flatGens :+ fieldProp(None))
@@ -2190,10 +2202,13 @@ object RandomData {
           else {
             val next = remainingDepth - 1
             val gNext = Gen.pure(next)
+            val sgNext = Some(gNext)
             val genNEV = gNext.nev(1 to (5 `JVM|JS` 3))
             var gens: NonEmptyVector[Gen[PotentialF[Int]]] = flatGens
             gens :+= Gen.pure(FilterAst.Not(next))
-            gens :+= fieldProp(Some(gNext))
+            gens :+= fieldProp(sgNext)
+            gens :+= impliesAnyOf(sgNext)
+            gens :+= impliedByAnyOf(sgNext)
             gens :+= genNEV.map(FilterAst.AllOf(_))
             gens :+= genNEV.map(FilterAst.AnyOf(next, _))
             Gen.chooseGenNE(flatGens)
@@ -2225,7 +2240,7 @@ object RandomData {
         Gen.chooseGen(wholeType(g), someOfType(g))
 
       def reqSpecs(g: Gen[Valid.ReqType]): Gen[Valid.ReqSet] =
-        reqsSpec(g).nev(0 to 5)
+        reqsSpec(g).nev(0 to 4)
 
       val attr: Gen[Attr] =
         Gen.chooseNE(Attr.values)
@@ -2249,8 +2264,6 @@ object RandomData {
       val presence = attr.map(FilterAst.Presence(_))
 
       def reqs       (g: Gen[Valid.ReqType])    : Gen[ValidF[Nothing]] = someOfType(g).map(s => FilterAst.Reqs(NonEmptyVector.one(s)))
-      def implies    (g: Gen[Valid.ReqSet])     : Gen[ValidF[Nothing]] = g.map(FilterAst.ImpliesAnyOf(_))
-      def impliedBy  (g: Gen[Valid.ReqSet])     : Gen[ValidF[Nothing]] = g.map(FilterAst.ImpliedByAnyOf(_))
       def reqType    (g: Gen[Valid.ReqType])    : Gen[ValidF[Nothing]] = g.map(FilterAst.ReqType(_))
       def tag        (g: Gen[ApplicableTagId])  : Gen[ValidF[Nothing]] = g.map(i => FilterAst.HashRef(\/-(i)))
       def customIssue(g: Gen[CustomIssueTypeId]): Gen[ValidF[Nothing]] = g.map(i => FilterAst.HashRef(-\/(i)))
@@ -2271,22 +2284,36 @@ object RandomData {
         }
       }
 
+      def impCriteria[A](gr: Option[Gen[Valid.ReqSet]], ga: Option[Gen[A]]): Option[Gen[Valid.ImpCriteriaF[A]]] = {
+        type O = Valid.ImpCriteriaF[A]
+        var gens = Vector.empty[Gen[O]]
+        for (g <- gr)
+          gens :+= g.map[O](FilterAst.ImpCriteria.Reqs(_))
+        for (g <- ga)
+          gens :+= g.map[O](FilterAst.ImpCriteria.Query(_))
+        Option.when(gens.nonEmpty)(Gen.chooseGen_!(gens))
+      }
+
+      def implies[A](gr: Option[Gen[Valid.ReqSet]], ga: Option[Gen[A]]): Option[Gen[ValidF[A]]] =
+        impCriteria(gr, ga).map(_.map[ValidF[A]](FilterAst.ImpliesAnyOf(_)))
+
+      def impliedBy[A](gr: Option[Gen[Valid.ReqSet]], ga: Option[Gen[A]]): Option[Gen[ValidF[A]]] =
+        impCriteria(gr, ga).map(_.map[ValidF[A]](FilterAst.ImpliedByAnyOf(_)))
+
       type FlatGens = NonEmptyVector[Gen[ValidF[Nothing]]]
 
       def flatGens(gy: Option[Gen[ReqTypeId]],
                    gt: Option[Gen[ApplicableTagId]],
                    gi: Option[Gen[CustomIssueTypeId]]): FlatGens = {
-        val greqs = gy.map(reqSpecs)
         NonEmptyVector[Gen[ValidF[Nothing]]](quotedText, simpleText, regex, presence, hasIssue) ++
           gy.map(reqType) ++
           gt.map(tag) ++
           gi.map(customIssue) ++
-          gy.map(reqs) ++
-          greqs.map(implies) ++
-          greqs.map(impliedBy)
+          gy.map(reqs)
       }
 
-      private def coalgebra(gf: Option[Gen[CustomFieldId]], flatGens: FlatGens): FCoalgebraM[Gen, ValidF, Int] = {
+      private def coalgebra(gf: Option[Gen[CustomFieldId]], gy: Option[Gen[ReqTypeId]], flatGens: FlatGens): FCoalgebraM[Gen, ValidF, Int] = {
+        val gr = gy.map(reqSpecs)
         val flatGen = Gen.chooseGenNE(flatGens ++ gf.map(fieldProp(_, None)))
         remainingDepth =>
           if (remainingDepth <= 0)
@@ -2294,18 +2321,21 @@ object RandomData {
           else {
             val next = remainingDepth - 1
             val gNext = Gen.pure(next)
+            val sgNext = Some(gNext)
             val genNEV = gNext.nev(1 to (5 `JVM|JS` 3))
             var gens: NonEmptyVector[Gen[ValidF[Int]]] = flatGens
             gens :+= Gen.pure(FilterAst.Not(next))
             gens :+= genNEV.map(FilterAst.AllOf(_))
             gens :+= genNEV.map(FilterAst.AnyOf(next, _))
-            for (g <- gf) gens :+= fieldProp(g, Some(gNext))
+            for (g <- gf) gens :+= fieldProp(g, sgNext)
+            implies(gr, sgNext).foreach(gens :+= _)
+            impliedBy(gr, sgNext).foreach(gens :+= _)
             Gen.chooseGenNE(flatGens)
           }
       }
 
-      private def deepGen(gf: Option[Gen[CustomFieldId]], f: FlatGens): Gen[Valid] =
-        Recursion.anaM(coalgebra(gf, f))(4 `JVM|JS` 3).map(fixRoot)
+      private def deepGen(gf: Option[Gen[CustomFieldId]], gy: Option[Gen[ReqTypeId]], f: FlatGens): Gen[Valid] =
+        Recursion.anaM(coalgebra(gf, gy, f))(4 `JVM|JS` 3).map(fixRoot)
 
       @inline def forProject(p: Project): Gen[Valid] =
         forProjectConfig(p.config)
@@ -2315,7 +2345,7 @@ object RandomData {
         val gy: Option[Gen[ReqTypeId]]         = Gen tryGenChoose p.reqTypes.all.whole.map(_.reqTypeId)
         val gt: Option[Gen[ApplicableTagId]]   = Gen tryGenChoose p.tags.applicableTagIterator().map(_.id)
         val gi: Option[Gen[CustomIssueTypeId]] = Gen tryGenChoose p.customIssueTypes.keys.toVector
-        deepGen(gf, flatGens(gy, gt, gi))
+        deepGen(gf, gy, flatGens(gy, gt, gi))
       }
 
       lazy val arbitrary: Gen[Valid] = {
@@ -2323,7 +2353,7 @@ object RandomData {
         val gy: Option[Gen[ReqTypeId]]         = Some(reqTypeId)
         val gt: Option[Gen[ApplicableTagId]]   = Some(applicableTagId)
         val gi: Option[Gen[CustomIssueTypeId]] = Some(customIssueTypeId)
-        deepGen(gf, flatGens(gy, gt, gi))
+        deepGen(gf, gy, flatGens(gy, gt, gi))
       }
     }
   }

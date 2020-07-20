@@ -64,11 +64,20 @@ object FilterAlgebra {
       m.value ~ '-' ~ n
     }
 
+    val subquery: AtomOrComposite[String] => String = {
+      case AtomOrComposite.Atom(a)            => "(" ~ a ~ ")"
+      case c@ AtomOrComposite.Composite(_, _) => c.atom
+    }
+
     val fieldCriteria: Potential.FieldCriteriaF[AtomOrComposite[String]] => String = {
-      case FieldCriteria.Attr(a)                                   => a
-      case FieldCriteria.ReqTypePosSet(s)                          => ConciseIntSetFormat(s.whole.map(_.value))
-      case FieldCriteria.Query(AtomOrComposite.Atom(a))            => "(" + a + ")"
-      case FieldCriteria.Query(c@ AtomOrComposite.Composite(_, _)) => c.atom
+      case FieldCriteria.Attr(a)          => a
+      case FieldCriteria.ReqTypePosSet(s) => ConciseIntSetFormat(s.whole.map(_.value))
+      case FieldCriteria.Query(q)         => subquery(q)
+    }
+
+    val impCriteria: Potential.ImpCriteriaF[AtomOrComposite[String]] => String = {
+      case ImpCriteria.Reqs(r)  => fmtReqs(r, ',')
+      case ImpCriteria.Query(q) => subquery(q)
     }
 
     {
@@ -79,8 +88,8 @@ object FilterAlgebra {
       case HashRef       (text)              => Grammar.hashRefKey.prefix ~ text.value
       case FieldProp     (field, attr)       => "field:" ~ quoteFieldName(field) ~ "=" ~ fieldCriteria(attr)
       case HasIssue      (on, criteria)      => "has:issue:" ~ (if (on is On) "" else "-") ~ criteria.mkString(",")
-      case ImpliesAnyOf  (reqs)              => "implies:" ~ fmtReqs(reqs, ',')
-      case ImpliedByAnyOf(reqs)              => "impliedBy:" ~ fmtReqs(reqs, ',')
+      case ImpliesAnyOf  (criteria)          => "implies:" ~ impCriteria(criteria)
+      case ImpliedByAnyOf(criteria)          => "impliedBy:" ~ impCriteria(criteria)
       case Reqs          (reqs)              => fmtReqs(reqs, ' ')
       case Presence      (attr)              => "has:" ~ attr
       case Not           (clause)            => '-' ~ clause.atom
@@ -124,7 +133,7 @@ object FilterAlgebra {
     val lookupReqSubset: Potential.ReqSubset => String \/ Valid.ReqSubset =
       Traverse[IntensionalReqSet].traverse(_)(lookupReqType(_).map(_.reqTypeId))
 
-    def byReqSet(reqs: Potential.ReqSet, f: Valid.ReqSet => ValidF[Nothing]): R =
+    def byReqSet(reqs: Potential.ReqSet, f: Valid.ReqSet => ValidF[Valid]): R =
       reqs.traverse1(lookupReqSubset).map(nev => Valid(f(nev)))
 
     def byRegex(regex: String): R =
@@ -210,10 +219,16 @@ object FilterAlgebra {
       }
     }
 
+    def impCriteria(criteria: Potential.ImpCriteriaF[Valid], f: Valid.ImpCriteria => ValidF[Valid]): R =
+      criteria match {
+        case ImpCriteria.Reqs(reqs)  => byReqSet(reqs, x => f(ImpCriteria.Reqs(x)))
+        case q@ ImpCriteria.Query(_) => \/-(Valid(f(q)))
+      }
+
     {
       case HashRef       (key)             => byHashTag(key)
-      case ImpliesAnyOf  (reqs)            => byReqSet(reqs, ImpliesAnyOf.apply)
-      case ImpliedByAnyOf(reqs)            => byReqSet(reqs, ImpliedByAnyOf.apply)
+      case ImpliesAnyOf  (criteria)        => impCriteria(criteria, ImpliesAnyOf.apply)
+      case ImpliedByAnyOf(criteria)        => impCriteria(criteria, ImpliedByAnyOf.apply)
       case Reqs          (reqs)            => byReqSet(reqs, Reqs.apply)
       case Presence      (attr)            => byAttr(attr, Presence.apply)
       case HasIssue      (on, c)           => c.traverse1(FilterAst.issueCategoryFromStr).map(Valid.hasIssue(on, _))
@@ -259,21 +274,27 @@ object FilterAlgebra {
       case x@ FieldCriteria.Query(_)         => x
     }
 
+    def impCriteria(criteria: Valid.ImpCriteriaF[Potential]): Potential.ImpCriteria =
+      criteria match {
+        case ImpCriteria.Reqs(reqs) => ImpCriteria.Reqs(convReqSet(reqs))
+        case x@ImpCriteria.Query(_) => x
+      }
+
     {
-      case HashRef       (\/-(id)) => Potential(HashRef       (cfg.tags.needApplicableTag(id).key))
-      case HashRef       (-\/(id)) => Potential(HashRef       (cfg.customIssueTypes.need(id).key))
-      case Presence      (attr)    => Potential(Presence      (attr.name))
-      case ImpliesAnyOf  (reqs)    => Potential(ImpliesAnyOf  (convReqSet(reqs)))
-      case ImpliedByAnyOf(reqs)    => Potential(ImpliedByAnyOf(convReqSet(reqs)))
-      case Reqs          (reqs)    => Potential(Reqs          (convReqSet(reqs)))
-      case ReqType       (id)      => Potential(ReqType       (convReqType(id)))
-      case HasIssue      (on, c)   => Potential(HasIssue      (on, c.map(FilterAst.issueCategoryToStr)))
-      case FieldProp     (f, c)    => Potential(FieldProp     (f.fold(_.name, fieldName), fieldCriteria(c)))
-      case c: Regex                => Potential(c)
-      case c: Text                 => Potential(c)
-      case c: Not  [Potential]     => Potential(c)
-      case c: AllOf[Potential]     => Potential(c)
-      case c: AnyOf[Potential]     => Potential(c)
+      case HashRef       (\/-(id))  => Potential(HashRef       (cfg.tags.needApplicableTag(id).key))
+      case HashRef       (-\/(id))  => Potential(HashRef       (cfg.customIssueTypes.need(id).key))
+      case Presence      (attr)     => Potential(Presence      (attr.name))
+      case ImpliesAnyOf  (criteria) => Potential(ImpliesAnyOf  (impCriteria(criteria)))
+      case ImpliedByAnyOf(criteria) => Potential(ImpliedByAnyOf(impCriteria(criteria)))
+      case Reqs          (reqs)     => Potential(Reqs          (convReqSet(reqs)))
+      case ReqType       (id)       => Potential(ReqType       (convReqType(id)))
+      case HasIssue      (on, c)    => Potential(HasIssue      (on, c.map(FilterAst.issueCategoryToStr)))
+      case FieldProp     (f, c)     => Potential(FieldProp     (f.fold(_.name, fieldName), fieldCriteria(c)))
+      case c: Regex                 => Potential(c)
+      case c: Text                  => Potential(c)
+      case c: Not  [Potential]      => Potential(c)
+      case c: AllOf[Potential]      => Potential(c)
+      case c: AnyOf[Potential]      => Potential(c)
     }
   }
 
@@ -295,9 +316,15 @@ object FilterAlgebra {
     def lookupReqSet(ss: NonEmptyVector[Valid.ReqSubset]): Extensional.ReqSet =
       ss.reduceMapLeft1(lookupReqSubset)(_ ++ _)
 
+    def impCriteria(criteria: Valid.ImpCriteriaF[Extensional]): Extensional.ImpCriteria =
+      criteria match {
+        case ImpCriteria.Reqs(reqs) => ImpCriteria.Reqs(lookupReqSet(reqs))
+        case x@ImpCriteria.Query(_) => x
+      }
+
     {
-      case ImpliesAnyOf  (reqs)         => Extensional(ImpliesAnyOf  (lookupReqSet(reqs)))
-      case ImpliedByAnyOf(reqs)         => Extensional(ImpliedByAnyOf(lookupReqSet(reqs)))
+      case ImpliesAnyOf  (criteria)     => Extensional(ImpliesAnyOf  (impCriteria(criteria)))
+      case ImpliedByAnyOf(criteria)     => Extensional(ImpliedByAnyOf(impCriteria(criteria)))
       case Reqs          (reqs)         => Extensional(Reqs          (lookupReqSet(reqs)))
       case c: Regex                     => Extensional(c)
       case c: Text                      => Extensional(c)
@@ -371,6 +398,9 @@ object FilterAlgebra {
         case uc: UseCase   => f(uc)
       }
 
+    def runSubQuery(subquery: CompiledFilter): Set[ReqId] =
+      subquery.req.iterator(p.reqIterator(filterDead)).map(_.id).toSet
+
     def fieldApplicableReqOnly(fieldId: FieldId)(f: Req => Boolean): CompiledFilter = {
       val applicability = p.config.applicability.byField(fieldId)
       reqOnly(req => applicability(req.reqTypeId).is(Applicable) && f(req))
@@ -397,8 +427,14 @@ object FilterAlgebra {
         manualIssue = fail,
       )
 
-    def byImplication(reqs: Extensional.ReqSet, tc: TransitiveClosure[ReqId]): CompiledFilter = {
-      val whitelist = reqs.foldLeft(UnivEq.emptySet[ReqId])(_ ++ tc(_))
+    def byImplication(criteria: Extensional.ImpCriteriaF[CompiledFilter], tc: TransitiveClosure[ReqId]): CompiledFilter = {
+      val sources: Set[ReqId] =
+        criteria match {
+          case ImpCriteria.Reqs(reqs)      => reqs
+          case ImpCriteria.Query(subquery) => runSubQuery(subquery)
+        }
+      val whitelist: Set[ReqId] =
+        sources.foldLeft(UnivEq.emptySet[ReqId])(_ ++ tc(_))
       reqOnly(whitelist contains _.id)
     }
 
@@ -447,7 +483,7 @@ object FilterAlgebra {
           reqOnly(req => lookup.getPubids(req.id).exists(pubid => criteria.contains(pubid.pos)))
 
         case (FieldCriteria.Query(subquery), \/-(id: CustomField.Implication.Id)) =>
-          val criteria = subquery.req.iterator(p.reqIterator(filterDead)).map(_.id).toSet
+          val criteria = runSubQuery(subquery)
           val lookup = p.dataLogic.customFieldImps(filterDead)(id)
           reqOnly(req => lookup.getReqIds(req.id).exists(criteria.contains))
 
@@ -535,8 +571,8 @@ object FilterAlgebra {
     alg = {
       case Text          (substr, _)     => byText(substr)
       case Reqs          (reqs)          => reqOnly(r => reqs.contains(r.id))
-      case ImpliesAnyOf  (reqs)          => byImplication(reqs, p.implicationTgtToSrcTC)
-      case ImpliedByAnyOf(reqs)          => byImplication(reqs, p.implicationSrcToTgtTC)
+      case ImpliesAnyOf  (criteria)      => byImplication(criteria, p.implicationTgtToSrcTC)
+      case ImpliedByAnyOf(criteria)      => byImplication(criteria, p.implicationSrcToTgtTC)
       case ReqType       (rt)            => byReqType(rt)
       case Presence      (Attr.AnyIssue) => byIssue(_.issues.nonEmpty)
       case Presence      (Attr.AnyTag)   => byTag(_.nonEmpty)
@@ -557,38 +593,53 @@ object FilterAlgebra {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+  /** Attempts to remove data from a filter.
+   *
+   * @param fields Fields to remove.
+   * @param reqTypes Req types to remove.
+   * @return `\/-(f)` = successful filter
+   *         `-\/(b)` = with data removed, the result is constantly `b`
+   */
   def remove(fields  : Set[data.FieldId  ],
              reqTypes: Set[data.ReqTypeId],
             ): FAlgebra[ValidF, Boolean \/ Valid] = {
 
-    def check1(isBad: Boolean, ok: Valid): Boolean \/ Valid =
+    type Result = Boolean \/ Valid
+
+    def check1(isBad: Boolean, ok: Valid): Result =
       if (isBad) -\/(false) else \/-(ok)
 
-    def fieldCriteria(x: Valid.FieldCriteriaF[Boolean \/ Valid]): Boolean \/ Valid.FieldCriteria =
+    def fieldCriteria(x: Valid.FieldCriteriaF[Result]): Boolean \/ Valid.FieldCriteria =
       x match {
         case c@ FieldCriteria.Attr         (_) => \/-(c)
         case c@ FieldCriteria.ReqTypePosSet(_) => \/-(c)
         case FieldCriteria.Query           (d) => d.map(FieldCriteria.Query(_))
       }
 
+    def impCriteria(x: Valid.ImpCriteriaF[Result]): Boolean \/ Valid.ImpCriteria =
+      x match {
+        case r@ ImpCriteria.Reqs(_) => \/-(r)
+        case ImpCriteria.Query(d)   => d.map(ImpCriteria.Query(_))
+      }
+
     {
-      case a: Text                             => \/-(Valid(a))
-      case a: Regex                            => \/-(Valid(a))
-      case a: Presence      [Valid.Attr]       => \/-(Valid(a))
-      case a: HasIssue      [Valid.IssueCat]   => \/-(Valid(a))
-      case a: HashRef       [Valid.HashTag]    => \/-(Valid(a))
-      case a: ImpliesAnyOf  [Valid.ReqSet]     => \/-(Valid(a))
-      case a: ImpliedByAnyOf[Valid.ReqSet]     => \/-(Valid(a))
-      case a: Reqs          [Valid.ReqSet]     => \/-(Valid(a))
-      case a: ReqType       [Valid.ReqType]    => check1(reqTypes.contains(a.reqType), Valid(a))
-      case a: Not           [Boolean \/ Valid] => a.clause.fold(b => -\/(!b), c => \/-(Valid(Not(c))))
+      case a: Text                                       => \/-(Valid(a))
+      case a: Regex                                      => \/-(Valid(a))
+      case a: Presence      [Valid.Attr]                 => \/-(Valid(a))
+      case a: HasIssue      [Valid.IssueCat]             => \/-(Valid(a))
+      case a: HashRef       [Valid.HashTag]              => \/-(Valid(a))
+      case a: Reqs          [Valid.ReqSet]               => \/-(Valid(a))
+      case a: ReqType       [Valid.ReqType]              => check1(reqTypes.contains(a.reqType), Valid(a))
+      case a: Not           [Result]                     => a.clause.fold(b => -\/(!b), c => \/-(Valid(Not(c))))
+      case a: ImpliesAnyOf  [Valid.ImpCriteriaF, Result] => impCriteria(a.criteria).map(Valid.impliesAnyOf)
+      case a: ImpliedByAnyOf[Valid.ImpCriteriaF, Result] => impCriteria(a.criteria).map(Valid.impliedByAnyOf)
 
       case p @ FieldProp(_, _) =>
         fieldCriteria(p.criteria).flatMap { criteria =>
-          val ok = Valid.fieldProp(p.field, criteria)
+          val fieldIsOk = Valid.fieldProp(p.field, criteria)
           p.field match {
-            case \/-(f) => check1(fields.contains(f), ok)
-            case -\/(_) => \/-(ok)
+            case \/-(f) => check1(fields.contains(f), fieldIsOk)
+            case -\/(_) => \/-(fieldIsOk)
           }
         }
 

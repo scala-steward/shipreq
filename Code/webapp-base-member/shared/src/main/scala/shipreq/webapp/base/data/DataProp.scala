@@ -603,23 +603,37 @@ object DataProp {
             case IntensionalReqSet.SomeOfType(r, _) => r
           }.toSet)
 
+      import FilterAst.{ImpCriteria, FieldCriteria}
+
       private val validFilter: FAlgebra[Filter.ValidF, Refs] = {
-        case FilterAst.FieldProp     (\/-(f: CustomFieldId), _) => Refs.empty addCustomFieldId f
         case FilterAst.Reqs          (reqs)                     => validFilterReqSetRefs(reqs)
-        case FilterAst.ImpliesAnyOf  (reqs)                     => validFilterReqSetRefs(reqs)
-        case FilterAst.ImpliedByAnyOf(reqs)                     => validFilterReqSetRefs(reqs)
+        case FilterAst.ImpliesAnyOf  (ImpCriteria.Reqs(reqs))   => validFilterReqSetRefs(reqs)
+        case FilterAst.ImpliedByAnyOf(ImpCriteria.Reqs(reqs))   => validFilterReqSetRefs(reqs)
+        case FilterAst.ImpliesAnyOf  (ImpCriteria.Query(refs))  => refs
+        case FilterAst.ImpliedByAnyOf(ImpCriteria.Query(refs))  => refs
         case FilterAst.ReqType       (rt)                       => Refs.empty addReqTypeId rt
         case FilterAst.HashRef       (-\/(issue))               => Refs.empty addCustomIssueTypeId issue
         case FilterAst.HashRef       (\/-(tag))                 => Refs.empty addTagId tag
         case FilterAst.AllOf         (fs)                       => fs.reduce(_ ++ _)
         case FilterAst.AnyOf         (f, fs)                    => f ++ fs.reduce(_ ++ _)
         case FilterAst.Not           (f)                        => f
-        case FilterAst.FieldProp     (-\/(_), _)
-           | FilterAst.FieldProp     (\/-(_: StaticField), _)
-           | _: FilterAst.Text
+        case _: FilterAst.Text
            | _: FilterAst.Regex
            | _: FilterAst.HasIssue[Filter.Valid.IssueCat]
            | _: FilterAst.Presence[Filter.Valid.Attr] => Refs.empty
+
+        case FilterAst.FieldProp(field, criteria) =>
+          var refs: Refs =
+            criteria match {
+              case FieldCriteria.Query(r)         => r
+              case FieldCriteria.Attr(_)
+                 | FieldCriteria.ReqTypePosSet(_) => Refs.empty
+            }
+          field match {
+            case \/-(f: CustomFieldId) => refs = refs.addCustomFieldId(f)
+            case _                     => ()
+          }
+          refs
       }
 
       val reqtableColumnField: savedview.Column => List[CustomFieldId] = {

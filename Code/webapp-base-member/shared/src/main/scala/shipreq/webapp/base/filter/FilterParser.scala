@@ -76,10 +76,10 @@ object FilterParser {
       case Some(ns) => IntensionalReqSet.SomeOfType(rt, ns)
     }
 
-  private type ImpType = Potential.ReqSet => Potential
+  private type ImpType = Potential.ImpCriteria => Potential
   private val mkImplies  : ImpType = i => Potential.impliesAnyOf(i)
   private val mkImpliedBy: ImpType = i => Potential.impliedByAnyOf(i)
-  private val mkImplication: (ImpType, Potential.ReqSet) => Potential = _(_)
+  private val mkImplication: (ImpType, Potential.ImpCriteria) => Potential = _(_)
 
   private val mkReqs: (Mnemonic, NonEmptySet[Int]) => Potential =
     (m, ns) => Potential.reqs(NonEmptyVector(IntensionalReqSet.SomeOfType(m, ns)))
@@ -175,7 +175,7 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
       | valueRule(() => attr       )(FieldCriteria.Attr(_))
       )
 
-    rule("field:" ~ name ~ '=' ~ value)
+    rule("field:" ~ name ~ '=' ~!~ value)
   }
 
   private def subQuery: Rule1[Potential] =
@@ -189,10 +189,20 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
       ((o: Option[On], h: String, t: Seq[String]) => Potential.hasIssue(o.getOrElse(On), h, t: _*)))
 
   /** implies:MF or impliedBy:FR,CC-1 */
-  private def implication: Rule1[Potential] =
-    rule("implie" ~ (
-      ('s' ~ push(mkImplies)) | ("dBy" ~ push(mkImpliedBy))
-      ) ~ ':' ~!~ reqSpecs ~ end ~> mkImplication)
+  private def implication: Rule1[Potential] = {
+    def criteria: Rule1[Potential.ImpCriteria] =
+      rule(
+        (subQuery ~> (FilterAst.ImpCriteria.Query.apply[Potential] _))
+        | (reqSpecs ~> (FilterAst.ImpCriteria.Reqs.apply[Potential.ReqSet] _))
+      )
+
+    rule(
+      "implie" ~ (('s' ~ push(mkImplies)) | ("dBy" ~ push(mkImpliedBy)))
+        ~ ':'
+        ~!~ criteria
+        ~ end
+        ~> mkImplication)
+  }
 
   private def positive: Rule1[Potential] =
     rule(anyOf | allOf | quotedText | regex | hashRef | hasIssue | presence | field | implication | reqs | reqType | simpleText)

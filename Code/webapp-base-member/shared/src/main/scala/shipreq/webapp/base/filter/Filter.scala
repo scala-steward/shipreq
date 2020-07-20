@@ -5,6 +5,7 @@ import scalaz.Traverse
 import shipreq.base.util.Identity
 import shipreq.webapp.base.data
 import shipreq.webapp.base.data.{FilterDead, HideDead, Req}
+import shipreq.webapp.base.filter.FilterAst.ImpCriteria
 import shipreq.webapp.base.issue.IssueCategory
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 
@@ -18,9 +19,10 @@ object Filter {
   type Potential = Fix[PotentialF]
 
   type PotentialF[+F] = FilterAst[
+    Potential.FieldCriteriaF,
+    Potential.ImpCriteriaF,
     Potential.Attr,
     Potential.Field,
-    Potential.FieldCriteriaF,
     Potential.IssueCat,
     Potential.HashTag,
     Potential.ReqSet,
@@ -28,9 +30,10 @@ object Filter {
     F]
 
   object Potential extends FilterAst.Dsl {
+    type FieldCriteriaF[+A] = FilterAst.FieldCriteria[String, A]
+    type ImpCriteriaF  [+A] = FilterAst.ImpCriteria[ReqSet, A]
     type Attr               = String
     type Field              = String
-    type FieldCriteriaF[+A] = FilterAst.FieldCriteria[String, A]
     type IssueCat           = String
     type HashTag            = data.HashRefKey
     type ReqSubset          = IntensionalReqSet[data.ReqType.Mnemonic]
@@ -52,9 +55,10 @@ object Filter {
   type Valid = Fix[ValidF]
 
   type ValidF[+F] = FilterAst[
+    Valid.FieldCriteriaF,
+    Valid.ImpCriteriaF,
     Valid.Attr,
     Valid.Field,
-    Valid.FieldCriteriaF,
     Valid.IssueCat,
     Valid.HashTag,
     Valid.ReqSet,
@@ -62,9 +66,10 @@ object Filter {
     F]
 
   object Valid extends FilterAst.Dsl {
+    type FieldCriteriaF[+A] = FilterAst.FieldCriteria[FilterAst.FieldAttr, A]
+    type ImpCriteriaF  [+A] = FilterAst.ImpCriteria[ReqSet, A]
     type Attr               = FilterAst.Attr
     type Field              = data.SpecialBuiltInField.FilterOk \/ data.FieldId
-    type FieldCriteriaF[+A] = FilterAst.FieldCriteria[FilterAst.FieldAttr, A]
     type IssueCat           = IssueCategory
     type HashTag            = data.CustomIssueTypeId \/ data.ApplicableTagId
     type ReqSubset          = IntensionalReqSet[data.ReqTypeId]
@@ -83,7 +88,14 @@ object Filter {
                attr   : Attr            => Boolean,
                field  : Field           => Boolean,
                reqSet : ReqSet          => Boolean,
-               reqType: ReqType         => Boolean): Valid => Boolean =
+               reqType: ReqType         => Boolean): Valid => Boolean = {
+
+      def impCriteria(i: ImpCriteriaF[Boolean]): Boolean =
+        i match {
+          case ImpCriteria.Reqs(r) => reqSet(r)
+          case ImpCriteria.Query    (b) => b
+        }
+
       RecursionFn.cata[ValidF, Boolean] {
         case c: FilterAst.Text                                           => text (c)
         case c: FilterAst.Regex                                          => regex(c)
@@ -92,13 +104,14 @@ object Filter {
         case c: FilterAst.FieldProp     [Field, FieldCriteriaF, Boolean] => field(c.field)
         case _: FilterAst.HasIssue      [IssueCat]                       => false
         case c: FilterAst.ReqType       [ReqType]                        => reqType(c.reqType)
-        case c: FilterAst.ImpliesAnyOf  [ReqSet]                         => reqSet(c.reqs)
-        case c: FilterAst.ImpliedByAnyOf[ReqSet]                         => reqSet(c.reqs)
+        case c: FilterAst.ImpliesAnyOf  [ImpCriteriaF, Boolean]          => impCriteria(c.criteria)
+        case c: FilterAst.ImpliedByAnyOf[ImpCriteriaF, Boolean]          => impCriteria(c.criteria)
         case c: FilterAst.Reqs          [ReqSet]                         => reqSet(c.reqs)
         case c: FilterAst.Not           [Boolean]                        => c.clause
         case c: FilterAst.AllOf         [Boolean]                        => c.clauses.exists(Identity.apply)
         case c: FilterAst.AnyOf         [Boolean]                        => c.head || c.tail.exists(Identity.apply)
       }
+    }
 
     def toText(cfg: data.ProjectConfig, f: Valid): String =
       Potential.toText(
@@ -145,9 +158,10 @@ object Filter {
   type Extensional = Fix[ExtensionalF]
 
   type ExtensionalF[+F] = FilterAst[
+    Extensional.FieldCriteriaF,
+    Extensional.ImpCriteriaF,
     Extensional.Attr,
     Extensional.Field,
-    Extensional.FieldCriteriaF,
     Extensional.IssueCat,
     Extensional.HashTag,
     Extensional.ReqSet,
@@ -155,13 +169,14 @@ object Filter {
     F]
 
   object Extensional extends FilterAst.Dsl {
-    type Attr              = Valid.Attr
-    type Field             = Valid.Field
-    type FieldCriteriaF[A] = Valid.FieldCriteriaF[A]
-    type IssueCat          = Valid.IssueCat
-    type HashTag           = Valid.HashTag
-    type ReqSet            = Set[data.ReqId]
-    type ReqType           = Valid.ReqType
+    type FieldCriteriaF[+A] = Valid.FieldCriteriaF[A]
+    type ImpCriteriaF  [+A] = FilterAst.ImpCriteria[ReqSet, A]
+    type Attr               = Valid.Attr
+    type Field              = Valid.Field
+    type IssueCat           = Valid.IssueCat
+    type HashTag            = Valid.HashTag
+    type ReqSet             = Set[data.ReqId]
+    type ReqType            = Valid.ReqType
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -169,22 +184,22 @@ object Filter {
   object Implicits {
 
     implicit val traverseFilterPotential: Traverse[PotentialF] =
-      FilterAst.traverse(FilterAst.FieldCriteria.traverse)
+      FilterAst.traverse(FilterAst.FieldCriteria.traverse, FilterAst.ImpCriteria.traverse)
 
     implicit val traverseFilterValid: Traverse[ValidF] =
-      FilterAst.traverse(FilterAst.FieldCriteria.traverse)
+      FilterAst.traverse(FilterAst.FieldCriteria.traverse, FilterAst.ImpCriteria.traverse)
 
     implicit val traverseFilterExtensional: Traverse[ExtensionalF] =
-      FilterAst.traverse(FilterAst.FieldCriteria.traverse)
+      FilterAst.traverse(FilterAst.FieldCriteria.traverse, FilterAst.ImpCriteria.traverse)
 
     implicit val univEqFilterPotential: UnivEq[Potential] = {
       import Potential._
-      FilterAst.univEqFix[Attr, Field, FieldCriteriaF, IssueCat, HashTag, ReqSet, ReqType]
+      FilterAst.univEqFix[FieldCriteriaF, ImpCriteriaF, Attr, Field, IssueCat, HashTag, ReqSet, ReqType]
     }
 
     implicit val univEqFilterValid: UnivEq[Valid] = {
       import Valid._
-      FilterAst.univEqFix[Attr, Field, FieldCriteriaF, IssueCat, HashTag, ReqSet, ReqType]
+      FilterAst.univEqFix[FieldCriteriaF, ImpCriteriaF, Attr, Field, IssueCat, HashTag, ReqSet, ReqType]
     }
   }
 

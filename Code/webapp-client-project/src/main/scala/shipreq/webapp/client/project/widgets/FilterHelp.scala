@@ -139,6 +139,10 @@ object FilterHelp {
       )("impliedBy:MF,FR-{1-10,20,24},CO-7"),
 
       Row(
+        "You can also specify a sub-query rather than specifying requirements manually."
+      )("impliedBy:(#v1.2 | #v1.3)"),
+
+      Row(
         "When multiple requirements are specified, the filter matches when ", <.em("any"),
         " parts match. To require that ", <.em("all"), " parts match instead of ", <.em("any"), ", use multiple terms.",
         <.br,

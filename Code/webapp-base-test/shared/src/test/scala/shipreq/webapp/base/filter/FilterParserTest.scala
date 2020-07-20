@@ -18,8 +18,8 @@ import sourcecode.Line
 import utest._
 
 object FilterParserTest extends TestSuite {
-
   import Filter.Potential._
+  import FilterAst.ImpCriteria
 
   private implicit def autoSome(f: Potential) = Option(f)
   private implicit def autoMne(s: String) = Mnemonic(s)
@@ -174,15 +174,16 @@ object FilterParserTest extends TestSuite {
       "open1"        - testFail("impliedBy:MF-")
       "open2"        - testFail("impliedBy:MF-{")
       "open3"        - testFail("impliedBy:MF-{3,4")
-      "wholeType"    - test("impliedBy:MF",                  impliedByAnyOf(WholeType("MF")))
-      "specific"     - test("impliedBy:CO-{3,5,7}",          impliedByAnyOf(SomeOfType("CO", NES(3,5,7))))
-      "rangeRev"     - test("impliedBy:CO-{9-7}",            impliedByAnyOf(SomeOfType("CO", NES(7,8,9))))
-      "lowercase"    - test("impliedBy:dgh",                 impliedByAnyOf(WholeType("DGH")))
-      "single"       - test("implies:MF-2",                  impliesAnyOf  (SomeOfType("MF", NES(2))))
-      "singleNoDash" - test("implies:MF2",                   impliesAnyOf  (SomeOfType("MF", NES(2))))
-      "range"        - test("implies:CO-{3-6}",              impliesAnyOf  (SomeOfType("CO", NES(3,4,5,6))))
-      "rangeNoDash"  - test("implies:CO{3-6}",               impliesAnyOf  (SomeOfType("CO", NES(3,4,5,6))))
-      "combo"        - test("implies:SI,DD-{3-5,9,12-14,1}", impliesAnyOf  (reqSet(WholeType("SI"), SomeOfType("DD", NES(3,4,5,9,12,13,14,1)))))
+      "wholeType"    - test("impliedBy:MF",                  impliedByAnyOf(ImpCriteria.Reqs(WholeType("MF"))))
+      "specific"     - test("impliedBy:CO-{3,5,7}",          impliedByAnyOf(ImpCriteria.Reqs(SomeOfType("CO", NES(3,5,7)))))
+      "rangeRev"     - test("impliedBy:CO-{9-7}",            impliedByAnyOf(ImpCriteria.Reqs(SomeOfType("CO", NES(7,8,9)))))
+      "lowercase"    - test("impliedBy:dgh",                 impliedByAnyOf(ImpCriteria.Reqs(WholeType("DGH"))))
+      "single"       - test("implies:MF-2",                  impliesAnyOf  (ImpCriteria.Reqs(SomeOfType("MF", NES(2)))))
+      "singleNoDash" - test("implies:MF2",                   impliesAnyOf  (ImpCriteria.Reqs(SomeOfType("MF", NES(2)))))
+      "range"        - test("implies:CO-{3-6}",              impliesAnyOf  (ImpCriteria.Reqs(SomeOfType("CO", NES(3,4,5,6)))))
+      "rangeNoDash"  - test("implies:CO{3-6}",               impliesAnyOf  (ImpCriteria.Reqs(SomeOfType("CO", NES(3,4,5,6)))))
+      "combo"        - test("implies:SI,DD-{3-5,9,12-14,1}", impliesAnyOf  (ImpCriteria.Reqs(reqSet(WholeType("SI"), SomeOfType("DD", NES(3,4,5,9,12,13,14,1))))))
+      "subQuery"     - test("implies:(SI | (DD))",           impliesAnyOf  (ImpCriteria.Query(anyOf(reqType("SI"), allOf(reqType("DD"))))))
     }
 
     "presence" - {
@@ -256,8 +257,8 @@ object FilterParserTest extends TestSuite {
       "regex"      - test("-/a .*b/",        not(regex         ("a .*b")))
       "reqType"    - test("-MF",             not(reqType       ("MF")))
       "hashRef"    - test("-#boo",           not(hashRef       ("boo")))
-      "implies"    - test("-implies:XYZ",    not(impliesAnyOf  (WholeType("XYZ"))))
-      "impliedBy"  - test("-impliedBy:B-12", not(impliedByAnyOf(SomeOfType("B", NES(12)))))
+      "implies"    - test("-implies:XYZ",    not(impliesAnyOf  (ImpCriteria.Reqs(WholeType("XYZ")))))
+      "impliedBy"  - test("-impliedBy:B-12", not(impliedByAnyOf(ImpCriteria.Reqs(SomeOfType("B", NES(12))))))
       "presence"   - test("-has:face",       not(presence      ("face")))
       "allOf"      - test("-(my god)",       not(allOf         (text("my"), text("god"))))
       "anyOf"      - test("-(my|god)",       not(anyOf         (text("my"), text("god"))))

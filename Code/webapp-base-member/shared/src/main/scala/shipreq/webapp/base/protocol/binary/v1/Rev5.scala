@@ -913,11 +913,55 @@ object Rev5 {
     implicit val picklerFilterAstHashRef: Pickler[FilterAst.HashRef[Valid.HashTag]] =
       transformPickler(FilterAst.HashRef.apply[Valid.HashTag])(_.value)
 
-    implicit val picklerFilterAstImpliesAnyOf: Pickler[FilterAst.ImpliesAnyOf[Valid.ReqSet]] =
-      transformPickler(FilterAst.ImpliesAnyOf.apply[Valid.ReqSet])(_.reqs)
+    implicit def picklerFilterAstImpCriteriaReqs[R: Pickler]: Pickler[FilterAst.ImpCriteria.Reqs[R]] =
+      transformPickler(FilterAst.ImpCriteria.Reqs.apply[R])(_.value)
 
-    implicit val picklerFilterAstImpliedByAnyOf: Pickler[FilterAst.ImpliedByAnyOf[Valid.ReqSet]] =
-      transformPickler(FilterAst.ImpliedByAnyOf.apply[Valid.ReqSet])(_.reqs)
+    implicit def picklerFilterAstImpCriteriaQuery[Q: Pickler]: Pickler[FilterAst.ImpCriteria.Query[Q]] =
+      transformPickler(FilterAst.ImpCriteria.Query.apply[Q])(_.value)
+
+    implicit def picklerFilterAstImpCriteria[R, Q](implicit p1: Pickler[FilterAst.ImpCriteria.Query[Q]], p2: Pickler[FilterAst.ImpCriteria.Reqs[R]]): Pickler[FilterAst.ImpCriteria[R, Q]] =
+      new Pickler[FilterAst.ImpCriteria[R, Q]] {
+        private[this] final val KeyQuery = 'q'
+        private[this] final val KeyReqs  = 'r'
+        override def pickle(a: FilterAst.ImpCriteria[R, Q])(implicit state: PickleState): Unit =
+          a match {
+            case b: FilterAst.ImpCriteria.Query[Q] => state.enc.writeByte(KeyQuery); state.pickle(b)
+            case b: FilterAst.ImpCriteria.Reqs[R]  => state.enc.writeByte(KeyReqs ); state.pickle(b)
+          }
+        override def unpickle(implicit state: UnpickleState): FilterAst.ImpCriteria[R, Q] =
+          state.dec.readByte match {
+            case KeyQuery => state.unpickle[FilterAst.ImpCriteria.Query[Q]]
+            case KeyReqs  => state.unpickle[FilterAst.ImpCriteria.Reqs[R]]
+          }
+      }
+
+    implicit val picklerFilterAstImpliesAnyOf: Pickler[FilterAst.ImpliesAnyOf[Valid.ImpCriteriaF, Unit]] = {
+      type F[A] = Valid.ImpCriteriaF[A]
+      type T = FilterAst.ImpliesAnyOf[Valid.ImpCriteriaF, Unit]
+      new Pickler[T] {
+        override def pickle(a: T)(implicit state: PickleState): Unit = {
+          writeVersion(1)
+          state.pickle(a.criteria)
+        }
+        override def unpickle(implicit state: UnpickleState): T =
+          readByVersion(1) {
+
+            // v1.0
+            case 0 =>
+              val reqs = state.unpickle[Valid.ReqSet]
+              val criteria = FilterAst.ImpCriteria.Reqs(reqs): F[Unit]
+              FilterAst.ImpliesAnyOf(criteria)
+
+            // v1.1
+            case 1 =>
+              val criteria = state.unpickle[F[Unit]]
+              FilterAst.ImpliesAnyOf(criteria)
+          }
+      }
+    }
+
+    implicit val picklerFilterAstImpliedByAnyOf: Pickler[FilterAst.ImpliedByAnyOf[Valid.ImpCriteriaF, Unit]] =
+      picklerFilterAstImpliesAnyOf.xmap(x => FilterAst.ImpliedByAnyOf(x.criteria))(x => FilterAst.ImpliesAnyOf(x.criteria))
 
     implicit val picklerFilterAstReqs: Pickler[FilterAst.Reqs[Valid.ReqSet]] =
       transformPickler(FilterAst.Reqs.apply[Valid.ReqSet])(_.reqs)
@@ -1019,35 +1063,35 @@ object Rev5 {
         private[this] final val KeyFieldProp      = 12
         override def pickle(a: ValidF[Unit])(implicit state: PickleState): Unit =
           a match {
-            case b: FilterAst.AllOf         [Unit]           => state.enc.writeByte(KeyAllOf         ); state.pickle(b)
-            case b: FilterAst.AnyOf         [Unit]           => state.enc.writeByte(KeyAnyOf         ); state.pickle(b)
-            case b: FilterAst.HasIssue      [Valid.IssueCat] => state.enc.writeByte(KeyHasIssue      ); state.pickle(b)
-            case b: FilterAst.HashRef       [Valid.HashTag]  => state.enc.writeByte(KeyHashRef       ); state.pickle(b)
-            case b: FilterAst.ImpliedByAnyOf[Valid.ReqSet]   => state.enc.writeByte(KeyImpliedByAnyOf); state.pickle(b)
-            case b: FilterAst.ImpliesAnyOf  [Valid.ReqSet]   => state.enc.writeByte(KeyImpliesAnyOf  ); state.pickle(b)
-            case b: FilterAst.Not           [Unit]           => state.enc.writeByte(KeyNot           ); state.pickle(b)
-            case b: FilterAst.Presence      [Valid.Attr]     => state.enc.writeByte(KeyPresence      ); state.pickle(b)
-            case b: FilterAst.Regex                          => state.enc.writeByte(KeyRegex         ); state.pickle(b)
-            case b: FilterAst.ReqType       [Valid.ReqType]  => state.enc.writeByte(KeyReqType       ); state.pickle(b)
-            case b: FilterAst.Reqs          [Valid.ReqSet]   => state.enc.writeByte(KeyReqs          ); state.pickle(b)
-            case b: FilterAst.Text                           => state.enc.writeByte(KeyText          ); state.pickle(b)
-            case b: Valid.FieldPropF        [Unit]           => state.enc.writeByte(KeyFieldProp     ); state.pickle(b)
+            case b: FilterAst.AllOf         [Unit]                     => state.enc.writeByte(KeyAllOf         ); state.pickle(b)
+            case b: FilterAst.AnyOf         [Unit]                     => state.enc.writeByte(KeyAnyOf         ); state.pickle(b)
+            case b: FilterAst.HasIssue      [Valid.IssueCat]           => state.enc.writeByte(KeyHasIssue      ); state.pickle(b)
+            case b: FilterAst.HashRef       [Valid.HashTag]            => state.enc.writeByte(KeyHashRef       ); state.pickle(b)
+            case b: FilterAst.ImpliedByAnyOf[Valid.ImpCriteriaF, Unit] => state.enc.writeByte(KeyImpliedByAnyOf); state.pickle(b)
+            case b: FilterAst.ImpliesAnyOf  [Valid.ImpCriteriaF, Unit] => state.enc.writeByte(KeyImpliesAnyOf  ); state.pickle(b)
+            case b: FilterAst.Not           [Unit]                     => state.enc.writeByte(KeyNot           ); state.pickle(b)
+            case b: FilterAst.Presence      [Valid.Attr]               => state.enc.writeByte(KeyPresence      ); state.pickle(b)
+            case b: FilterAst.Regex                                    => state.enc.writeByte(KeyRegex         ); state.pickle(b)
+            case b: FilterAst.ReqType       [Valid.ReqType]            => state.enc.writeByte(KeyReqType       ); state.pickle(b)
+            case b: FilterAst.Reqs          [Valid.ReqSet]             => state.enc.writeByte(KeyReqs          ); state.pickle(b)
+            case b: FilterAst.Text                                     => state.enc.writeByte(KeyText          ); state.pickle(b)
+            case b: Valid.FieldPropF        [Unit]                     => state.enc.writeByte(KeyFieldProp     ); state.pickle(b)
           }
         override def unpickle(implicit state: UnpickleState): ValidF[Unit] =
           state.dec.readByte match {
-            case KeyAllOf          => state.unpickle[FilterAst.AllOf         [Unit          ]]
-            case KeyAnyOf          => state.unpickle[FilterAst.AnyOf         [Unit          ]]
-            case KeyHasIssue       => state.unpickle[FilterAst.HasIssue      [Valid.IssueCat]]
-            case KeyHashRef        => state.unpickle[FilterAst.HashRef       [Valid.HashTag ]]
-            case KeyImpliedByAnyOf => state.unpickle[FilterAst.ImpliedByAnyOf[Valid.ReqSet  ]]
-            case KeyImpliesAnyOf   => state.unpickle[FilterAst.ImpliesAnyOf  [Valid.ReqSet  ]]
-            case KeyNot            => state.unpickle[FilterAst.Not           [Unit          ]]
-            case KeyPresence       => state.unpickle[FilterAst.Presence      [Valid.Attr    ]]
-            case KeyRegex          => state.unpickle[FilterAst.Regex                         ]
-            case KeyReqType        => state.unpickle[FilterAst.ReqType       [Valid.ReqType ]]
-            case KeyReqs           => state.unpickle[FilterAst.Reqs          [Valid.ReqSet  ]]
-            case KeyText           => state.unpickle[FilterAst.Text                          ]
-            case KeyFieldProp      => state.unpickle[Valid.FieldPropF        [Unit          ]]
+            case KeyAllOf          => state.unpickle[FilterAst.AllOf         [Unit                    ]]
+            case KeyAnyOf          => state.unpickle[FilterAst.AnyOf         [Unit                    ]]
+            case KeyHasIssue       => state.unpickle[FilterAst.HasIssue      [Valid.IssueCat          ]]
+            case KeyHashRef        => state.unpickle[FilterAst.HashRef       [Valid.HashTag           ]]
+            case KeyImpliedByAnyOf => state.unpickle[FilterAst.ImpliedByAnyOf[Valid.ImpCriteriaF, Unit]]
+            case KeyImpliesAnyOf   => state.unpickle[FilterAst.ImpliesAnyOf  [Valid.ImpCriteriaF, Unit]]
+            case KeyNot            => state.unpickle[FilterAst.Not           [Unit                    ]]
+            case KeyPresence       => state.unpickle[FilterAst.Presence      [Valid.Attr              ]]
+            case KeyRegex          => state.unpickle[FilterAst.Regex                                   ]
+            case KeyReqType        => state.unpickle[FilterAst.ReqType       [Valid.ReqType           ]]
+            case KeyReqs           => state.unpickle[FilterAst.Reqs          [Valid.ReqSet            ]]
+            case KeyText           => state.unpickle[FilterAst.Text                                    ]
+            case KeyFieldProp      => state.unpickle[Valid.FieldPropF        [Unit                    ]]
           }
       }
 

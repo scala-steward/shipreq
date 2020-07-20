@@ -333,17 +333,46 @@ object Rev5 {
     implicit val encoderFilterAstHashRef: Encoder[FilterAst.HashRef[Valid.HashTag]] =
       Encoder[Valid.HashTag].contramap(_.value)
 
-    implicit val decoderFilterAstImpliesAnyOf: Decoder[FilterAst.ImpliesAnyOf[Valid.ReqSet]] =
-      Decoder[Valid.ReqSet].map(FilterAst.ImpliesAnyOf.apply)
+    implicit def decoderFilterAstImpCriteriaReqs[R: Decoder]: Decoder[FilterAst.ImpCriteria.Reqs[R]] =
+      Decoder[R].map(FilterAst.ImpCriteria.Reqs.apply[R])
 
-    implicit val encoderFilterAstImpliesAnyOf: Encoder[FilterAst.ImpliesAnyOf[Valid.ReqSet]] =
-      Encoder[Valid.ReqSet].contramap(_.reqs)
+    implicit def encoderFilterAstImpCriteriaReqs[R: Encoder]: Encoder[FilterAst.ImpCriteria.Reqs[R]] =
+      Encoder[R].contramap(_.value)
 
-    implicit val decoderFilterAstImpliedByAnyOf: Decoder[FilterAst.ImpliedByAnyOf[Valid.ReqSet]] =
-      Decoder[Valid.ReqSet].map(FilterAst.ImpliedByAnyOf.apply)
+    implicit val decoderFilterAstImpCriteriaQuery: Decoder[FilterAst.ImpCriteria.Query[ACursor]] =
+      Decoder.instance(c => Right(FilterAst.ImpCriteria.Query(c)))
 
-    implicit val encoderFilterAstImpliedByAnyOf: Encoder[FilterAst.ImpliedByAnyOf[Valid.ReqSet]] =
-      Encoder[Valid.ReqSet].contramap(_.reqs)
+    implicit val encoderFilterAstImpCriteriaQuery: Encoder[FilterAst.ImpCriteria.Query[Json]] =
+      Encoder[Json].contramap(_.value)
+
+    implicit def decoderFilterAstImpCriteria[R, Q](implicit d1: Decoder[FilterAst.ImpCriteria.Query[Q]], d2: Decoder[FilterAst.ImpCriteria.Reqs[R]]): Decoder[FilterAst.ImpCriteria[R, Q]] = decodeSumBySoleKey {
+      case ("query", c) => c.as[FilterAst.ImpCriteria.Query[Q]]
+      case ("reqs" , c) => c.as[FilterAst.ImpCriteria.Reqs[R]]
+    }
+
+    implicit def encoderFilterAstImpCriteria[R, Q](implicit e1: Encoder[FilterAst.ImpCriteria.Query[Q]], e2: Encoder[FilterAst.ImpCriteria.Reqs[R]]): Encoder[FilterAst.ImpCriteria[R, Q]] = Encoder.instance {
+      case a: FilterAst.ImpCriteria.Query[Q] => Json.obj("query" -> a.asJson)
+      case a: FilterAst.ImpCriteria.Reqs[R]  => Json.obj("reqs"  -> a.asJson)
+    }
+
+    val decoderImpCriteria: Decoder[Valid.ImpCriteriaF[ACursor]] =
+      decoderFilterAstImpCriteria[Valid.ReqSet, ACursor]
+        .or(Decoder[Valid.ReqSet].map(FilterAst.ImpCriteria.Reqs(_))) // backwards-compatibility
+
+    val encoderImpCriteria: Encoder[Valid.ImpCriteriaF[Json]] =
+      encoderFilterAstImpCriteria
+
+    implicit val decoderFilterAstImpliesAnyOf: Decoder[FilterAst.ImpliesAnyOf[Valid.ImpCriteriaF, ACursor]] =
+      decoderImpCriteria.map(FilterAst.ImpliesAnyOf(_))
+
+    implicit val encoderFilterAstImpliesAnyOf: Encoder[FilterAst.ImpliesAnyOf[Valid.ImpCriteriaF, Json]] =
+      encoderImpCriteria.contramap(_.criteria)
+
+    implicit val decoderFilterAstImpliedByAnyOf: Decoder[FilterAst.ImpliedByAnyOf[Valid.ImpCriteriaF, ACursor]] =
+      decoderImpCriteria.map(FilterAst.ImpliedByAnyOf(_))
+
+    implicit val encoderFilterAstImpliedByAnyOf: Encoder[FilterAst.ImpliedByAnyOf[Valid.ImpCriteriaF, Json]] =
+      encoderImpCriteria.contramap(_.criteria)
 
     implicit val decoderFilterAstReqs: Decoder[FilterAst.Reqs[Valid.ReqSet]] =
       Decoder[Valid.ReqSet].map(FilterAst.Reqs.apply)
@@ -363,8 +392,8 @@ object Rev5 {
       case a: FilterAst.Presence      [Valid.Attr]     => Json.obj(KeyAstPresence       -> a.asJson)
       case a: FilterAst.HasIssue      [Valid.IssueCat] => Json.obj(KeyAstHasIssue       -> a.asJson)
       case a: FilterAst.HashRef       [Valid.HashTag]  => Json.obj(KeyAstHashRef        -> a.asJson)
-      case a: FilterAst.ImpliesAnyOf  [Valid.ReqSet]   => Json.obj(KeyAstImpliesAnyOf   -> a.asJson)
-      case a: FilterAst.ImpliedByAnyOf[Valid.ReqSet]   => Json.obj(KeyAstImpliedByAnyOf -> a.asJson)
+      case a@ FilterAst.ImpliesAnyOf  (_)              => Json.obj(KeyAstImpliesAnyOf   -> a.asJson)
+      case a@ FilterAst.ImpliedByAnyOf(_)              => Json.obj(KeyAstImpliedByAnyOf -> a.asJson)
       case a: FilterAst.Reqs          [Valid.ReqSet]   => Json.obj(KeyAstReqs           -> a.asJson)
       case a: FilterAst.ReqType       [Valid.ReqType]  => Json.obj(KeyAstReqType        -> a.asJson)
       case a@ FilterAst.FieldProp     (_, _)           => Json.obj(KeyAstFieldProp      -> a.asJson)
@@ -377,8 +406,8 @@ object Rev5 {
       case (KeyAstPresence      , c) => c.as[FilterAst.Presence      [Valid.Attr]]
       case (KeyAstHasIssue      , c) => c.as[FilterAst.HasIssue      [Valid.IssueCat]]
       case (KeyAstHashRef       , c) => c.as[FilterAst.HashRef       [Valid.HashTag]]
-      case (KeyAstImpliesAnyOf  , c) => c.as[FilterAst.ImpliesAnyOf  [Valid.ReqSet]]
-      case (KeyAstImpliedByAnyOf, c) => c.as[FilterAst.ImpliedByAnyOf[Valid.ReqSet]]
+      case (KeyAstImpliesAnyOf  , c) => c.as[FilterAst.ImpliesAnyOf  [Valid.ImpCriteriaF, ACursor]]
+      case (KeyAstImpliedByAnyOf, c) => c.as[FilterAst.ImpliedByAnyOf[Valid.ImpCriteriaF, ACursor]]
       case (KeyAstFieldProp     , c) => c.as[Valid.FieldPropF        [ACursor]]
       case (KeyAstReqs          , c) => c.as[FilterAst.Reqs          [Valid.ReqSet]]
       case (KeyAstReqType       , c) => c.as[FilterAst.ReqType       [Valid.ReqType]]

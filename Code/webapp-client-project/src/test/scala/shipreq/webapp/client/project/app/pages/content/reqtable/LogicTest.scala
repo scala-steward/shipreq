@@ -64,7 +64,7 @@ object LogicTest extends TestSuite {
   import SampleProject7.Values._
   import shipreq.webapp.base.filter.Filter.{Valid => F}
   import shipreq.webapp.base.filter.FilterAst.Attr.{AnyIssue, AnyTag}
-  import shipreq.webapp.base.filter.FilterAst.{FieldAttr, FieldCriteria}
+  import shipreq.webapp.base.filter.FilterAst.{FieldAttr, FieldCriteria, ImpCriteria}
   import shipreq.webapp.base.filter.IntensionalReqSet._
   import LogicTestUtil._
 
@@ -1032,27 +1032,37 @@ object LogicTest extends TestSuite {
 
   def testFilterImplies(): Unit = {
     import SampleImplicationGraph._
-    val justFR2 = F.reqSet(SomeOfType(fr, NonEmptySet(2)))
+    val justFR2 = ImpCriteria.Reqs(F.reqSet(SomeOfType(fr, NonEmptySet(2))))
     testFilter(project, F.impliesAnyOf(justFR2))("BR-1  FR-1  FR-2  MF-1  MF-2", "")
     //                                               reflexivity ↑
-    val fr5and6 = F.reqSet(SomeOfType(fr, NonEmptySet(5, 6)))
+    val fr5and6 = ImpCriteria.Reqs(F.reqSet(SomeOfType(fr, NonEmptySet(5, 6))))
     testFilter(project, F.impliesAnyOf(fr5and6))("BR-1  BR-2  FR-4  FR-5  FR-6  MF-3  MF-4", "")
     //                                                            ↗ reflexivity ↖
   }
 
   def testFilterImpliedBy(): Unit = {
     import SampleImplicationGraph._
-    val justMF2 = F.reqSet(SomeOfType(mf, NonEmptySet(2)))
+    val justMF2 = ImpCriteria.Reqs(F.reqSet(SomeOfType(mf, NonEmptySet(2))))
     testFilter(project, F.impliedByAnyOf(justMF2))("FR-2  FR-3  MF-2", "")
     //                                                 reflexivity ↑
-    val mf1and2 = F.reqSet(SomeOfType(mf, NonEmptySet(1, 2)))
+    val mf1and2 = ImpCriteria.Reqs(F.reqSet(SomeOfType(mf, NonEmptySet(1, 2))))
+    testFilter(project, F.impliedByAnyOf(mf1and2))("FR-1  FR-2  FR-3  MF-1  MF-2", "")
+    //                                                                ↑ reflexivity ↖
+  }
+
+  def testFilterImpliedByQuery(): Unit = {
+    import SampleImplicationGraph._
+    val justMF2 = ImpCriteria.Query(F.reqs(NonEmptyVector(IntensionalReqSet.SomeOfType(mf, NonEmptySet(2)))))
+    testFilter(project, F.impliedByAnyOf(justMF2))("FR-2  FR-3  MF-2", "")
+    //                                                 reflexivity ↑
+    val mf1and2 = ImpCriteria.Query(F.reqs(NonEmptyVector(IntensionalReqSet.SomeOfType(mf, NonEmptySet(1, 2)))))
     testFilter(project, F.impliedByAnyOf(mf1and2))("FR-1  FR-2  FR-3  MF-1  MF-2", "")
     //                                                                ↑ reflexivity ↖
   }
 
   def testFilterImplyNothing(): Unit = {
     import SampleImplicationGraph._
-    val e = F.reqSet(SomeOfType(mf, NonEmptySet(9999999)))
+    val e = ImpCriteria.Reqs(F.reqSet(SomeOfType(mf, NonEmptySet(9999999))))
     testFilter(project, F.impliedByAnyOf(e))("", "")
     testFilter(project, F.impliesAnyOf  (e))("", "")
   }
@@ -1422,6 +1432,7 @@ object LogicTest extends TestSuite {
       "reqTypeExDead"        - testFilterReqTypeExDead()
       "impliesAnyOf"         - testFilterImplies()
       "impliedByAnyOf"       - testFilterImpliedBy()
+      "impliedByQuery"       - testFilterImpliedByQuery()
       "implyNothing"         - testFilterImplyNothing()
       "impFieldNA"           - testFilterImpFieldNA()
       "impFieldBlank"        - testFilterImpFieldBlank()
