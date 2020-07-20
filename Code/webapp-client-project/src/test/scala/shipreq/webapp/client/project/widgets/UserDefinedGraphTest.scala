@@ -16,7 +16,7 @@ object UserDefinedGraphTest extends TestSuite {
           graph      <- List("graph ", "digraph ")
           id         <- List("", "G", "my_graph_1000")
           postHeader <- List("{\n", " {")
-        } yield {
+        } {
           val input  = strict + graph + id + postHeader + body + "}"
           val expect = (strict + graph + id).trim + "{bgcolor=transparent;rankdir=LR;" + body + "}"
           val actual = UserDefinedGraph.correct(input)
@@ -28,10 +28,13 @@ object UserDefinedGraphTest extends TestSuite {
         UserDefinedGraph.correct(
           """a [label=qwe]
             |a -> b
+            |# wow
             |""".stripMargin.trim
         ),
         """digraph{bgcolor=transparent;rankdir=LR;a [label=qwe]
-          |a -> b;}
+          |a -> b
+          |# wow
+          |}
           |""".stripMargin.trim
       )
 
@@ -42,7 +45,8 @@ object UserDefinedGraphTest extends TestSuite {
             |""".stripMargin.trim
         ),
         """digraph{bgcolor=transparent;rankdir=LR;a [label=qwe]
-          |a -> b;}
+          |a -> b
+          |}
           |""".stripMargin.trim
       )
 
@@ -50,10 +54,13 @@ object UserDefinedGraphTest extends TestSuite {
         UserDefinedGraph.correct(
           """a [label=qwe]
             |a -- b
+            |// ha
             |""".stripMargin.trim
         ),
         """graph{bgcolor=transparent;rankdir=LR;a [label=qwe]
-          |a -- b;}
+          |a -- b
+          |// ha
+          |}
           |""".stripMargin.trim
       )
 

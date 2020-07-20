@@ -55,7 +55,7 @@ object UserDefinedGraph {
         val d = Util.countOccurrences(content, "->")
         val u = Util.countOccurrences(content, "--")
         val graph = if (u > d) "graph" else "digraph"
-        s"$graph{$defaults;$dot;}"
+        s"$graph{$defaults;$dot\n}"
     }
 
   final class Backend($: BackendScope[Props, State]) extends GraphBackend($) {
