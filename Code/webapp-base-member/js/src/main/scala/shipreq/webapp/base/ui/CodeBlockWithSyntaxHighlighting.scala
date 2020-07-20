@@ -37,6 +37,7 @@ object CodeBlockWithSyntaxHighlighting {
     def render(p: Props): VdomElement =
       <.div( // so that React has a stable root
         <.pre(
+          ^.cls := "line-numbers",
           <.code.withRef(ref)(
             ^.cls := s"language-${p.language.getOrElse(txt)} match-braces",
             p.code)))

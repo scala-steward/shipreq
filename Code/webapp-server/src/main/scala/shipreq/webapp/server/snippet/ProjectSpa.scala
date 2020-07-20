@@ -24,6 +24,8 @@ object ProjectSpa extends SingleOpStatelessSnippet {
       LoadJs.Resource(AssetManifest.prismJsCss),
       LoadJs.Resource(AssetManifest.prismJsCore),
       LoadJs.Resource(AssetManifest.prismJsAutoloader),
+      LoadJs.Resource(AssetManifest.prismJsLineNumbers),
+      LoadJs.Resource(AssetManifest.prismJsLineNumbersCss),
       LoadJs.Resource(AssetManifest.prismJsMatchBraces),
       LoadJs.Resource(AssetManifest.prismJsMatchBracesCss),
     )

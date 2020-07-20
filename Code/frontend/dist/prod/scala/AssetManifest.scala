@@ -39,6 +39,14 @@ object AssetManifest {
     href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/themes/prism-okaidia.css",
     integrity = Some("sha256-PCIRBVLXb7L62+EomqoQYE4fCb7LpmGlAcPrbnbRAyw="))
 
+  def prismJsLineNumbers = CDN(
+    href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/plugins/line-numbers/prism-line-numbers.min.js",
+    integrity = Some("sha256-hep5s8952MqR7Y79JYfCXZD6vQjVHs7sOu/ZGrs1OEQ="))
+
+  def prismJsLineNumbersCss = CDN(
+    href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/plugins/line-numbers/prism-line-numbers.css",
+    integrity = Some("sha256-udLi8HM3vM4cuDDMGyRFzG8ek0UN0+uytPLWkbTpagg="))
+
   def prismJsMatchBraces = CDN(
     href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.20.0/plugins/match-braces/prism-match-braces.min.js",
     integrity = Some("sha256-ICsqq6gRT8YxNMWqiSlCk+Xxr8XpkSaSVW+apneJuYs="))

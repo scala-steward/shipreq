@@ -196,6 +196,8 @@ const makeConfig = ({ mode, name, sjsName, staticDir, htmlMinifyOptions }) => {
         fromCdnjs({npm:'prismjs', cdn:'prism'}, 'prism-core.min.js',         {manifest: 'prismJsCore',           path: 'components'}),
         fromCdnjs({npm:'prismjs', cdn:'prism'}, 'prism-okaidia.css',         {manifest: 'prismJsCss',            path: 'themes'}),
         fromCdnjs({npm:'prismjs', cdn:'prism'}, 'prism-autoloader.min.js',   {manifest: 'prismJsAutoloader',     path: 'plugins/autoloader'}),
+        fromCdnjs({npm:'prismjs', cdn:'prism'}, 'prism-line-numbers.min.js', {manifest: 'prismJsLineNumbers',    path: 'plugins/line-numbers'}),
+        fromCdnjs({npm:'prismjs', cdn:'prism'}, 'prism-line-numbers.css',    {manifest: 'prismJsLineNumbersCss', path: 'plugins/line-numbers'}),
         fromCdnjs({npm:'prismjs', cdn:'prism'}, 'prism-match-braces.min.js', {manifest: 'prismJsMatchBraces',    path: 'plugins/match-braces'}),
         fromCdnjs({npm:'prismjs', cdn:'prism'}, 'prism-match-braces.css',    {manifest: 'prismJsMatchBracesCss', path: 'plugins/match-braces'}),
       ],
