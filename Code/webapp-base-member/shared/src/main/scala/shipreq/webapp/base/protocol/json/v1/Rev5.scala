@@ -264,6 +264,7 @@ object Rev5 {
     implicit lazy val codecFilterAstFieldAttr: JsonCodec[FilterAst.FieldAttr] =
       JsonCodec.enumAdt(AdtMacros.adtIsoSet[FilterAst.FieldAttr, String] {
         case FilterAst.FieldAttr.Blank         => "blank"
+        case FilterAst.FieldAttr.NotBlank      => "notBlank"
         case FilterAst.FieldAttr.NotApplicable => "n/a"
         case FilterAst.FieldAttr.DefaultInUse  => "default"
       })

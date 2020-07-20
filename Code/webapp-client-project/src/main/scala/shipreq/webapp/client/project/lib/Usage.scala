@@ -50,22 +50,7 @@ final class Usage(p: Project, router: SpecialRouterCtl) {
     import FilterAst.FieldAttr._
     import FilterAst.FieldCriteria.Attr
     import Filter.Valid._
-    val f = \/-(fid)
-    fid match {
-
-      case StaticField.AllTags
-         | StaticField.OtherTags
-         | StaticField.ImplicationGraph =>
-        not(fieldProp(f, Attr(Blank)))
-
-      case _: CustomFieldId
-         | StaticField.NormalAltStepTree
-         | StaticField.ExceptionStepTree
-         | StaticField.StepGraph =>
-        not(anyOf(
-          fieldProp(f, Attr(Blank)),
-          fieldProp(f, Attr(NotApplicable))))
-    }
+    fieldProp(\/-(fid), Attr(NotBlank))
   }
 
   val fields: FilterDead => FieldId => Int =

@@ -991,17 +991,20 @@ object Rev5 {
         private[this] final val KeyBlank         = 0
         private[this] final val KeyDefaultInUse  = 1
         private[this] final val KeyNotApplicable = 2
+        private[this] final val KeyNotBlank      = 3
         override def pickle(a: FilterAst.FieldAttr)(implicit state: PickleState): Unit =
           a match {
             case FilterAst.FieldAttr.Blank         => state.enc.writeByte(KeyBlank        )
             case FilterAst.FieldAttr.DefaultInUse  => state.enc.writeByte(KeyDefaultInUse )
             case FilterAst.FieldAttr.NotApplicable => state.enc.writeByte(KeyNotApplicable)
+            case FilterAst.FieldAttr.NotBlank      => state.enc.writeByte(KeyNotBlank)
           }
         override def unpickle(implicit state: UnpickleState): FilterAst.FieldAttr =
           state.dec.readByte match {
             case KeyBlank         => FilterAst.FieldAttr.Blank
             case KeyDefaultInUse  => FilterAst.FieldAttr.DefaultInUse
             case KeyNotApplicable => FilterAst.FieldAttr.NotApplicable
+            case KeyNotBlank      => FilterAst.FieldAttr.NotBlank
           }
       }
 

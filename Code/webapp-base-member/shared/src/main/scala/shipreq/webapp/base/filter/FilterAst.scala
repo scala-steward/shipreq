@@ -73,6 +73,7 @@ object FilterAst {                                                              
     case object Blank         extends FieldAttr("blank")
     case object DefaultInUse  extends FieldAttr("default")
     case object NotApplicable extends FieldAttr("n/a")
+    case object NotBlank      extends FieldAttr("notBlank")
 
     implicit def univEq: UnivEq[FieldAttr] = UnivEq.derive
 

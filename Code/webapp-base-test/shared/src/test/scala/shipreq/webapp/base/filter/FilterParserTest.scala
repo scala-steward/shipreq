@@ -197,6 +197,7 @@ object FilterParserTest extends TestSuite {
       "na"         - test("field:poop=n/a",                 fieldProp("poop", Attr("n/a")))
       "default"    - test("field:poop=default",             fieldProp("poop", Attr("default")))
       "blank"      - test("field:poop=blank",               fieldProp("poop", Attr("blank")))
+      "notBlank"   - test("field:poop=notBlank",            fieldProp("poop", Attr("notBlank")))
       "quoteSpace" - test("field:\"a b\"=xx",               fieldProp("a b", Attr("xx")))
       "quoteColon" - test("field:\"a:b\"=xx",               fieldProp("a:b", Attr("xx")))
       "quoteEqual" - test("field:\"a=b\"=xx",               fieldProp("a=b", Attr("xx")))

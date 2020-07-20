@@ -164,7 +164,8 @@ object FilterAlgebra {
 
           def blankOnly(f: Valid.Field, name: String): String \/ Valid =
             attr match {
-              case Blank         => \/-(Valid.fieldProp(f, FieldCriteria.Attr(attr)))
+              case Blank
+                 | NotBlank      => \/-(Valid.fieldProp(f, FieldCriteria.Attr(attr)))
               case DefaultInUse  => -\/(s"$name doesn't have defaults")
               case NotApplicable => -\/(s"$name is always applicable")
             }
@@ -172,23 +173,26 @@ object FilterAlgebra {
           def noDefault(f: Valid.Field, name: String): String \/ Valid =
             attr match {
               case Blank
+                 | NotBlank
                  | NotApplicable => \/-(Valid.fieldProp(f, FieldCriteria.Attr(attr)))
               case DefaultInUse  => -\/(s"$name doesn't have defaults")
             }
 
           // Keep FilterEditor pxAutoComplete in sync with below
           (field, attr) match {
-            case (\/-(f: CustomField)                       , Blank | NotApplicable) => \/-(Valid.fieldProp(\/-(f.id), FieldCriteria.Attr(attr)))
-            case (\/-(f: CustomField.Tag)                   , DefaultInUse         ) => \/-(Valid.fieldProp(\/-(f.id), FieldCriteria.Attr(attr)))
-            case (\/-(_: CustomField.Text)                  , DefaultInUse         ) => -\/("Text fields don't have defaults.")
-            case (\/-(_: CustomField.Implication)           , DefaultInUse         ) => -\/("Implication fields don't have defaults.")
-            case (-\/(f: Title.type)                        , _                    ) => blankOnly(-\/(f), f.name)
-            case (\/-(f: StaticField.OtherTags.type)        , _                    ) => blankOnly(\/-(f), f.name)
-            case (\/-(f: StaticField.AllTags.type)          , _                    ) => blankOnly(\/-(f), f.name)
-            case (\/-(f: StaticField.NormalAltStepTree.type), _                    ) => noDefault(\/-(f), f.name)
-            case (\/-(f: StaticField.ExceptionStepTree.type), _                    ) => noDefault(\/-(f), f.name)
-            case (\/-(StaticField.ImplicationGraph)         , _                    )
-               | (\/-(StaticField.StepGraph)                , _                    ) => -\/(s"$fieldName can't be used here.")
+            case (\/-(f: CustomField)                       , Blank
+                                                            | NotBlank
+                                                            | NotApplicable) => \/-(Valid.fieldProp(\/-(f.id), FieldCriteria.Attr(attr)))
+            case (\/-(f: CustomField.Tag)                   , DefaultInUse ) => \/-(Valid.fieldProp(\/-(f.id), FieldCriteria.Attr(attr)))
+            case (\/-(_: CustomField.Text)                  , DefaultInUse ) => -\/("Text fields don't have defaults.")
+            case (\/-(_: CustomField.Implication)           , DefaultInUse ) => -\/("Implication fields don't have defaults.")
+            case (-\/(f: Title.type)                        , _            ) => blankOnly(-\/(f), f.name)
+            case (\/-(f: StaticField.OtherTags.type)        , _            ) => blankOnly(\/-(f), f.name)
+            case (\/-(f: StaticField.AllTags.type)          , _            ) => blankOnly(\/-(f), f.name)
+            case (\/-(f: StaticField.NormalAltStepTree.type), _            ) => noDefault(\/-(f), f.name)
+            case (\/-(f: StaticField.ExceptionStepTree.type), _            ) => noDefault(\/-(f), f.name)
+            case (\/-(StaticField.ImplicationGraph)         , _)
+               | (\/-(StaticField.StepGraph)                , _            ) => -\/(s"$fieldName can't be used here.")
           }
         }
 
@@ -357,6 +361,7 @@ object FilterAlgebra {
               textSearch : TextSearch,
               issueLookup: IssueLookup,
               tagLookup  : TagLookup): FAlgebra[ExtensionalF, CompiledFilter] = {
+    var cata: Extensional => CompiledFilter = null
 
     // Possible optimisations:
     // - overlap between has Tag & Presence(AnyTag)
@@ -487,11 +492,6 @@ object FilterAlgebra {
           val lookup = p.dataLogic.customFieldImps(filterDead)(id)
           reqOnly(req => lookup.getReqIds(req.id).exists(criteria.contains))
 
-        case (FieldCriteria.Attr(NotApplicable), \/-(id)) =>
-          val field = p.config.fields.need(id)
-          val na = p.config.reqTypesWithRes(field.fieldReqTypeRules)(Resolution.NotApplicable).map(_.reqTypeId).toSet
-          reqOnly(req => na.contains(req.reqTypeId))
-
         case (FieldCriteria.Attr(Blank), \/-(f: CustomField.Text.Id)) =>
           val text = p.content.reqTextFor(f)
           fieldApplicableReqOnly(f)(req => !text.contains(req.id))
@@ -503,10 +503,6 @@ object FilterAlgebra {
         case (FieldCriteria.Attr(Blank), \/-(f: CustomField.Tag.Id)) =>
           val scope = p.config.tagFieldDistribution(filterDead).inField(f)
           fieldApplicableReqOnly(f)(req => tagLookup(req.id).all.intersect(scope).isEmpty)
-
-        case (FieldCriteria.Attr(DefaultInUse), \/-(f: CustomField.Tag.Id)) =>
-          val fieldDefaultApplied = p.fieldDefaultApplied(f, filterDead)
-          fieldApplicableReqOnly(f)(req => fieldDefaultApplied(req.id))
 
         case (FieldCriteria.Attr(Blank), -\/(SpecialBuiltInField.Title)) =>
           make(
@@ -535,8 +531,26 @@ object FilterAlgebra {
               .isEmpty
           }
 
+        case (FieldCriteria.Attr(DefaultInUse), \/-(f: CustomField.Tag.Id)) =>
+          val fieldDefaultApplied = p.fieldDefaultApplied(f, filterDead)
+          fieldApplicableReqOnly(f)(req => fieldDefaultApplied(req.id))
+
         case (FieldCriteria.Attr(NotApplicable), -\/(SpecialBuiltInField.Title)) =>
           reqOnly(fail)
+
+        case (FieldCriteria.Attr(NotApplicable), \/-(id)) =>
+          val field = p.config.fields.need(id)
+          val na = p.config.reqTypesWithRes(field.fieldReqTypeRules)(Resolution.NotApplicable).map(_.reqTypeId).toSet
+          reqOnly(req => na.contains(req.reqTypeId))
+
+        case (FieldCriteria.Attr(NotBlank), field) =>
+          import Extensional._
+          import FilterAst.FieldCriteria.Attr
+          val rewritten: Extensional =
+            not(anyOf(
+              fieldProp(field, Attr(Blank)),
+              fieldProp(field, Attr(NotApplicable))))
+          cata(rewritten)
 
         case (FieldCriteria.ReqTypePosSet(_) | FieldCriteria.Query(_),
                  -\/(_)
@@ -567,8 +581,7 @@ object FilterAlgebra {
       }
     }
 
-    var alg: ExtensionalF[CompiledFilter] => CompiledFilter = null
-    alg = {
+    val self: FAlgebra[ExtensionalF, CompiledFilter] = {
       case Text          (substr, _)     => byText(substr)
       case Reqs          (reqs)          => reqOnly(r => reqs.contains(r.id))
       case ImpliesAnyOf  (criteria)      => byImplication(criteria, p.implicationTgtToSrcTC)
@@ -588,7 +601,11 @@ object FilterAlgebra {
         val categories = cs.whole.toSet
         byIssue(i => i.issues.nonEmpty && i.categories.exists(!categories.contains(_)))
     }
-    alg
+
+    import Filter.Implicits.traverseFilterExtensional
+    cata = RecursionFn.cata(self)
+
+    self
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

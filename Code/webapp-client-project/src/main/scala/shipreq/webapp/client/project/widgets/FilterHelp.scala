@@ -173,6 +173,11 @@ object FilterHelp {
       )("field:Priority=n/a"),
 
       Row(
+        "To find requirements that are not blank (or N/A) for some field, enter ",
+        code("field:<NAME>=notBlank"), " and replace ", code("<NAME>"), " with the real field name."
+      )("field:Priority=notBlank"),
+
+      Row(
         "If your field name contains spaces, an equals (", code("="), "), or a colon (", code(":"),
         "), wrap the field name in quotes."
       )("field:\"Foo Bar\"=blank"),

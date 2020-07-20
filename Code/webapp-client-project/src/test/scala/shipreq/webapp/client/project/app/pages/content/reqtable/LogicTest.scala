@@ -9,7 +9,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.data.savedview.{Column => C, SortCriterion => SC}
-import shipreq.webapp.base.event.{Event => E, UseCaseGD, UseCaseStepGD}
+import shipreq.webapp.base.event.{CustomImpFieldGD, Event => E, GenericReqGD, UseCaseGD, UseCaseStepGD}
 import shipreq.webapp.base.filter.{Filter, IntensionalReqSet}
 import shipreq.webapp.base.issue.IssueCategory
 import shipreq.webapp.base.sort.SortMethod._
@@ -1075,6 +1075,18 @@ object LogicTest extends TestSuite {
     testFilter(P7, F.fieldProp(\/-(mfField), FieldAttr.Blank))("BR-1  BR-2  BR-3  UC-1  UC-2", "")
   }
 
+  def testFilterImpFieldNotBlank(): Unit = {
+    val f = F.fieldProp(\/-(mfField), FieldAttr.NotBlank)
+
+    testFilter(P7, f)(
+      "FR-1  FR-2  MF-1  MF-2  MF-3  MF-4  MF-5  MF-6  MF-7  MF-8  MF-9  MF-10  MF-11  MF-12  MF-13  MF-14  MF-15  MF-16  MF-17  MF-18  MF-20  MF-21  MF-22  MF-23  MF-24  MF-25  MF-26  MF-27",
+      "CO-1  CO-2  MF-19  MF-28")
+
+    val p = applyEventsSuccessfully(P7,
+      E.FieldCustomImpUpdate(mfField, CustomImpFieldGD.ValueForFieldReqTypeRules(FieldReqTypeRules.optional.notApplicable(mf))))
+    testFilter(p, f)("FR-1  FR-2", "CO-1  CO-2")
+  }
+
   def testFilterImpFieldPos(): Unit = {
     // Filter by field:MF=2
     import SampleImplicationGraph2._
@@ -1137,7 +1149,7 @@ object LogicTest extends TestSuite {
     testFilter(P7, F.tag(prod))("MF-3  UC-1", "")
   }
 
-  def testFilterTitle(): Unit = {
+  def testFilterTitleBlank(): Unit = {
     val p = applyEventsSuccessfully(P7,
       E.GenericReqTitleSet(mfs(15), ∅),
       E.ContentRestore(Set(cos(1)), ∅),
@@ -1146,6 +1158,17 @@ object LogicTest extends TestSuite {
     )
     val f = F.fieldProp(-\/(SpecialBuiltInField.Title), FieldAttr.Blank)
     testFilter(p, f)("MF-15", "CO-1")
+  }
+
+  def testFilterTitleNotBlank(): Unit = {
+    val p = applyEventsSuccessfully(P7,
+      E.ContentRestore(Set(cos(1), cos(2)), ∅),
+      E.GenericReqTitleSet(cos(2), ∅),
+      E.GenericReqCreate(cos(9), co, GenericReqGD.values(GenericReqGD.ValueForTitle("qwe"))),
+      E.ReqsDelete(NonEmptySet.one(cos(1)), ∅, ∅),
+    )
+    val f = F.allOf(F.reqType(co), F.fieldProp(-\/(SpecialBuiltInField.Title), FieldAttr.NotBlank))
+    testFilter(p, f)("CO-3", "CO-1")
   }
 
   def testFilterOtherTags(): Unit = {
@@ -1436,6 +1459,7 @@ object LogicTest extends TestSuite {
       "implyNothing"         - testFilterImplyNothing()
       "impFieldNA"           - testFilterImpFieldNA()
       "impFieldBlank"        - testFilterImpFieldBlank()
+      "impFieldNotBlank"     - testFilterImpFieldNotBlank()
       "impFieldPos"          - testFilterImpFieldPos()
       "impFieldQuery"        - testFilterImpFieldQuery()
       "textFieldNA"          - testFilterTextFieldNA()
@@ -1445,7 +1469,8 @@ object LogicTest extends TestSuite {
       "tagFieldDefault"      - testFilterTagFieldDefault()
       "ignoreNATags"         - testFilterIgnoreNATags()
       "tagsIncludesDefaults" - testFilterByTagsIncludesDefaults()
-      "title"                - testFilterTitle()
+      "titleBlank"           - testFilterTitleBlank()
+      "titleNotBlank"        - testFilterTitleNotBlank()
       "otherTags"            - testFilterOtherTags()
       "allTags"              - testFilterAllTags()
       "ncac"                 - testFilterNCAC()
