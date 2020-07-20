@@ -1,4 +1,4 @@
-.PHONY: info deploy prod_diff prod_ver publish push rm_targets since_prod watch_codebuild
+.PHONY: info deploy diff_prod prod_ver publish push rm_targets since_prod watch_codebuild
 
 BRANCH   := $(shell git rev-parse --abbrev-ref HEAD)
 CHANGES  := $(shell git status --porcelain)
@@ -12,7 +12,7 @@ info:
 	@echo "Commands:"
 	@echo
 	@echo "  * deploy          -- Publish to AWS, start a build, update prod Terraform."
-	@echo "  * prod_diff       -- Show a diff between ShipReq that's currently in production, and local HEAD."
+	@echo "  * diff_prod       -- Show a diff between ShipReq that's currently in production, and local HEAD."
 	@echo "  * prod_ver        -- Show the Git SHA of ShipReq that's currently in production."
 	@echo "  * publish         -- Publish to AWS, start a build."
 	@echo "  * push            -- Git push to origin and Github"
@@ -25,7 +25,7 @@ deploy: publish
 	../Infrastructure/terraform/prod/update_shipreq.sh
 	$(WATCH_CODEBUILD)
 
-prod_diff:
+diff_prod:
 	git diff -w $(PROD_REV)... -- '*.scala' '*.sbt' frontend/{package.json,src,w*}
 
 prod_ver:
