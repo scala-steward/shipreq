@@ -93,6 +93,7 @@ Backlog (eventually)
 * Tag/Implication Browser (aka Distribution manager/console)
 
 ### Functional changes
+* big long (SVG) code blocks take over the screen. Preview not visible anymore when editing.
 * support all kinds of URL schemes in WebAddress (maybe - what considerations are necessary? security?)
 * Bug: field editor doesn't fit (and no scroll) when window is left 50% of screen
 * Markdown: Support nested lists
