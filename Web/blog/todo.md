@@ -4,7 +4,6 @@
 * comments (?)
 * google analytics
 * mobile
-* prism
 * RSS
 * search
 * sitemap

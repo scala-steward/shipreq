@@ -16,6 +16,13 @@ module.exports = {
       options: {
         gatsbyRemarkPlugins: [
           "gatsby-remark-check-links",
+          {
+            resolve: "gatsby-remark-prismjs",
+            options: {
+              inlineCodeMarker: "→",
+              showLineNumbers: false,
+            },
+          },
         ],
       },
     },
