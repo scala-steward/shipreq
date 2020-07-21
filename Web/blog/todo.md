@@ -1,4 +1,3 @@
-* 404
 * blog article tags
 * comments (?)
 * google analytics

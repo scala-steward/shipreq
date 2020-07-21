@@ -2,5 +2,6 @@
 // for npm module without type declarations, and assets files.
 
 // Exclude from type-checking
-declare module "react-helmet"
 declare module "*.svg"
+declare module "react-helmet"
+declare module "styled-components"
