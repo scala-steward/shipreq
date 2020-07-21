@@ -17,6 +17,8 @@
     "@mdx-js/mdx": "^1.6.11",
     "@mdx-js/react": "^1.6.11",
     "@svgr/webpack": "^5.4.0",
+    "@types/react-helmet": "^6.0.0",
+    "@types/styled-components": "^5.1.1",
     "babel-plugin-styled-components": "^1.10.7",
     "gatsby": "^2.23.12",
     "gatsby-plugin-catch-links": "^2.3.11",
