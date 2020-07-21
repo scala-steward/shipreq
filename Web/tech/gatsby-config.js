@@ -25,7 +25,7 @@ module.exports = {
         name            : "ShipReq tech blog",
         start_url       : "/",
         display         : "browser",
-        icon            : "src/images/shipreq-logo-only.svg",
+        icon            : "src/images/favicon.svg",
         crossOrigin     : "use-credentials",
         background_color: "#ffffff",
         theme_color     : "#ffffff",
