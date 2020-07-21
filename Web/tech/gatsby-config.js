@@ -29,6 +29,7 @@ module.exports = {
     },
 
     // =============================================================================================
+    // This has to come before gatsby-plugin-offline
     {
       resolve: "gatsby-plugin-manifest",
       options: {
@@ -39,6 +40,17 @@ module.exports = {
         crossOrigin     : "use-credentials",
         background_color: "#ffffff",
         theme_color     : "#ffffff",
+      },
+    },
+
+    // =============================================================================================
+    // This has to come after gatsby-plugin-manifest
+    {
+      resolve: "gatsby-plugin-offline",
+      options: {
+        workboxConfig: {
+          importWorkboxFrom: "cdn",
+        },
       },
     },
 
