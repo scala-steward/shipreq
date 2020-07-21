@@ -1,8 +1,9 @@
 import React from "react"
+import { Helmet } from "react-helmet"
 import styled from "styled-components"
 import { graphql } from "gatsby"
 import SEO from "../components/seo"
-import "./404.css"
+import tileQuestionSvg from "../images/tile-question.svg"
 
 const Container = styled.div`
   height:66.67vh; width:100vw; display:flex;`
@@ -12,6 +13,30 @@ export default function({ data }: Query) {
 
   return (
     <Container>
+      <Helmet>
+        <style>{`
+          body {
+            background: url(${tileQuestionSvg}) 0/14rem, #fbfcfd;
+          }
+
+          main>div {line-height:1em}
+
+          a {font-weight:bold}
+
+          main {margin:auto; padding:0 2vw}
+
+          #a {font-size:37vw; font-weight:bold}
+          #b {font-size:9.75vw}
+          #c {font-size:5.2vw; margin-top:3.7em}
+
+          @media screen and (min-width: 512px) {
+            #a {font-size:9rem}
+            #b {font-size:2.69rem}
+            #c {font-size:1.2rem}
+          }
+        `}</style>
+      </Helmet>
+
       <SEO
         article = {false}
         desc    = {md.description}

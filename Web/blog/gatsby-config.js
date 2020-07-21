@@ -7,7 +7,9 @@ module.exports = {
 
     // =============================================================================================
     "gatsby-plugin-catch-links",
+    "gatsby-plugin-postcss",
     "gatsby-plugin-react-helmet",
+    "gatsby-plugin-sass",
     "gatsby-plugin-sharp",
     "gatsby-plugin-styled-components",
     "gatsby-plugin-svgr-svgo",
