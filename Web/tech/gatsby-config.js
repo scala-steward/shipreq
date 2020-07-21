@@ -6,6 +6,7 @@ module.exports = {
   plugins: [
 
     // =============================================================================================
+    "gatsby-plugin-catch-links",
     "gatsby-plugin-mdx",
     "gatsby-plugin-svgr-svgo",
 
