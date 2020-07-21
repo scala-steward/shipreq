@@ -1,8 +1,8 @@
 const path = require("path")
-const postComponentPath = path.resolve(`./src/components/post.tsx`);
+const postTemplatePath = path.resolve(`./src/templates/post.tsx`);
 
 function postPath(node) {
-  return `/post/${node.frontmatter.slug}`;
+  return `/post/${node.frontmatter.slug.replace(/^\/+/, '')}`;
 }
 
 // =================================================================================================
@@ -31,7 +31,7 @@ exports.createPages = async ({ graphql, actions, reporter }) => {
   result.data.allMdx.edges.forEach(({ node }, index) => {
     createPage({
       path: postPath(node),
-      component: postComponentPath,
+      component: postTemplatePath,
       context: { id: node.id },
     })
   })
