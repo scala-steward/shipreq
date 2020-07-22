@@ -46,11 +46,12 @@ export default function PageTemplate({ data: { mdx } }: Query) {
 
   return (
     <div>
+
       <SEO
-        article = {true}
-        desc    = {mdx.frontmatter.desc}
-        path    = {mdx.fields.path}
-        title   = {title}
+        article  = {true}
+        desc     = {mdx.frontmatter.desc}
+        path     = {mdx.fields.path}
+        subtitle = {title}
       />
 
       <h1>{title}</h1>

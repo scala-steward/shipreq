@@ -1,31 +1,8 @@
-import { graphql } from "gatsby"
 import { Helmet } from "react-helmet"
 import React from "react"
 import SEO from "../components/seo"
 import styled from "styled-components"
 import tileQuestionSvg from "../images/tile-question.svg"
-
-export const pageQuery = graphql`
-  query {
-    site {
-      siteMetadata {
-        description
-        title
-      }
-    }
-  }
-`
-
-type Query = {
-  data: {
-    site: {
-      siteMetadata: {
-        description: string
-        title: string
-      }
-    }
-  }
-}
 
 const Container = styled.div`
   height: 66.67vh;
@@ -33,8 +10,7 @@ const Container = styled.div`
   display: flex;
 `
 
-export default function({ data }: Query) {
-  const md = data.site.siteMetadata
+export default function() {
 
   return (
     <Container>
@@ -62,17 +38,14 @@ export default function({ data }: Query) {
         `}</style>
       </Helmet>
 
-      <SEO
-        article = {false}
-        desc    = {md.description}
-        path    = {null}
-        title   = {`404 | ${md.title}`}
-      />
+      <SEO subtitle = "404" />
+
       <main>
         <div id="a">404</div>
         <div id="b">Page not found.</div>
         <div id="c"><a href="/">Let's go home...</a></div>
       </main>
+
     </Container>
   )
 }

@@ -1,6 +1,9 @@
 import { Link, graphql } from "gatsby"
 import { linkToTagIndex } from "../utils/routes"
+import { pathForTag } from "../utils/routes"
+import lo from "lodash"
 import React from "react"
+import SEO from "../components/seo"
 
 export const pageQuery = graphql`
   query($tag: String) {
@@ -49,13 +52,23 @@ export default function({ pageContext, data }: Props) {
   const { tag } = pageContext
   const { edges, totalCount } = data.allMdx
 
+  const tagTitleCase = lo.upperFirst(lo.toLower(tag))
+
   const tagHeader = `${totalCount} post${
     totalCount === 1 ? "" : "s"
   } tagged with "${tag}"`
 
   return (
     <div>
+
+      <SEO
+        article  = {false}
+        path     = {pathForTag(tag)}
+        subtitle = {tagTitleCase}
+      />
+
       <h1>{tagHeader}</h1>
+
       <ul>
         {edges.map(({ node }) => {
           const { path } = node.fields
@@ -67,7 +80,9 @@ export default function({ pageContext, data }: Props) {
           )
         })}
       </ul>
+
       {linkToTagIndex}
+
     </div>
   )
 }

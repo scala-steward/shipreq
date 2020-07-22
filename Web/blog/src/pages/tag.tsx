@@ -1,16 +1,12 @@
-import { Helmet } from "react-helmet"
 import { Link, graphql } from "gatsby"
 import { pathForTag } from "../utils/routes"
+import { pathForTagIndex } from "../utils/routes"
 import React from "react"
+import SEO from "../components/seo"
 import sortBy from "lodash/sortBy"
 
 export const pageQuery = graphql`
   query {
-    site {
-      siteMetadata {
-        title
-      }
-    }
     allMdx {
       tags: group(field: frontmatter___tags) {
         name: fieldValue
@@ -23,17 +19,10 @@ export const pageQuery = graphql`
 type Props = {
   data: {
     allMdx: {
-      tags: [
-        {
-          name: string
-          totalCount: number
-        }
-      ]
-    }
-    site: {
-      siteMetadata: {
-        title: string
-      }
+      tags: [{
+        name: string
+        totalCount: number
+      }]
     }
   }
 }
@@ -44,7 +33,12 @@ export default function({ data }: Props) {
 
   return (
     <div>
-      <Helmet title={data.site.siteMetadata.title} />
+
+      <SEO
+        path     = {pathForTagIndex}
+        subtitle = "Tags"
+      />
+
       <div>
         <h1>Tags</h1>
         <ul>

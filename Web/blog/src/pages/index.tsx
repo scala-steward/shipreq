@@ -5,12 +5,6 @@ import ShipreqBanner from "../components/shipreqBanner"
 
 export const pageQuery = graphql`
   query {
-    site {
-      siteMetadata {
-        description
-        title
-      }
-    }
     allMdx {
       edges {
         node {
@@ -30,12 +24,6 @@ export const pageQuery = graphql`
 
 type Query = {
   data: {
-    site: {
-      siteMetadata: {
-        description: string
-        title: string
-      }
-    }
     allMdx: {
       edges: [{
         node: {
@@ -55,17 +43,11 @@ type Query = {
 
 export default function({ data }: Query) {
   const { edges: posts } = data.allMdx
-  const md = data.site.siteMetadata
 
   return (
     <div>
 
-      <SEO
-        article = {false}
-        desc    = {md.description}
-        path    = ""
-        title   = {md.title}
-      />
+      <SEO path = "" />
 
       <ShipreqBanner height={100} />
 
