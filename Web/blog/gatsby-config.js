@@ -30,7 +30,15 @@ module.exports = {
       resolve: "gatsby-plugin-mdx",
       options: {
         gatsbyRemarkPlugins: [
+          "gatsby-remark-autolink-headers",
           "gatsby-remark-check-links",
+          "gatsby-remark-smartypants",
+          {
+            resolve: "gatsby-remark-external-links",
+            options: {
+              rel: "noopener"
+            }
+          },
           {
             resolve: "gatsby-remark-prismjs",
             options: {
