@@ -29,7 +29,7 @@ exports.createPages = async ({ graphql, actions, reporter }) => {
   }
 
   // Create pages for posts
-  const postTemplatePath = path.resolve(`./src/templates/post.tsx`);
+  const postTemplatePath = path.resolve(`./src/components/template-post.tsx`);
   result.data.allMdx.edges.forEach(({ node }, index) => {
     createPage({
       path     : routes.pathForPost({node}),
@@ -39,7 +39,7 @@ exports.createPages = async ({ graphql, actions, reporter }) => {
   })
 
   // Create pages for tags
-  const tagsTemplatePath = path.resolve(`./src/templates/tag.tsx`);
+  const tagsTemplatePath = path.resolve(`./src/components/template-tag.tsx`);
   result.data.allMdx.tags.forEach(tag => {
     createPage({
       path     : routes.pathForTag(tag.name),

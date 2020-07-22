@@ -40,7 +40,7 @@ type Query = {
   }
 }
 
-export default function PageTemplate({ data: { mdx } }: Query) {
+export default function({ data: { mdx } }: Query) {
   const title = mdx.frontmatter.title
   const tags = mdx.frontmatter.tags.sort()
 

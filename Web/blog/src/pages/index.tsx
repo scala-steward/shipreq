@@ -1,7 +1,7 @@
 import { Link, graphql } from "gatsby"
 import React from "react"
 import SEO from "../components/seo"
-import ShipreqBanner from "../components/shipreqBanner"
+import ShipreqBanner from "../components/shipreq-banner"
 
 export const pageQuery = graphql`
   query {
