@@ -63,12 +63,12 @@ module.exports = {
     {
       resolve: "gatsby-plugin-manifest",
       options: {
-        name            : "ShipReq tech blog",
+        name            : siteMetadata.title,
         start_url       : "/",
         display         : "browser",
         icon            : "src/images/favicon.svg",
         crossOrigin     : "use-credentials",
-        background_color: "#ffffff",
+        background_color: "#001a30",
         theme_color     : "#ffffff",
       },
     },
