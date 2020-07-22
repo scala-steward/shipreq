@@ -1,7 +1,6 @@
 * comments (?)
 * google analytics
 * mobile
-* RSS
-* search
+* search (?)
 * statcounter
 * tests

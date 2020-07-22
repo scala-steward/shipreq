@@ -92,5 +92,48 @@ module.exports = {
       },
     },
 
+
+    // =============================================================================================
+    {
+      resolve: `gatsby-plugin-feed`,
+      options: {
+        feeds: [
+          {
+            query: `
+              {
+                allMdx(sort: { order: DESC, fields: [frontmatter___date] }) {
+                  edges {
+                    node {
+                      fields {
+                        path
+                      }
+                      frontmatter {
+                        title
+                        desc
+                        date
+                      }
+                    }
+                  }
+                }
+              }
+            `,
+            serialize: ({ query: { allMdx } }) => {
+              return allMdx.edges.map(edge => {
+                const n = edge.node
+                return Object.assign({}, {
+                  title      : n.frontmatter.title,
+                  description: n.frontmatter.desc,
+                  date       : n.frontmatter.date,
+                  url        : siteMetadata.siteUrl + n.fields.path,
+                })
+              })
+            },
+            output: "/rss.xml",
+            title: siteMetadata.title,
+          },
+        ],
+      },
+    },
+
   ],
 }
