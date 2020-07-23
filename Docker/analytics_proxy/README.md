@@ -1,32 +1,41 @@
 # Setup
 
-1. git remote add analytics https://github.com/ZitRos/save-analytics-from-content-blockers.git
-2. git fetch analytics
-3. git checkout a5c5320
-4. git checkout -b fork/analytics
+```sh
+git remote add analytics https://github.com/ZitRos/save-analytics-from-content-blockers.git
+git fetch analytics
+git checkout a5c5320
+git checkout -b fork/analytics
+```
 
 # Copying custom changes to fork source
 
-1. ./copy
-2. git checkout fork/analytics
-3. unzip /tmp/analytics_proxy-Xxxxxxxxxx
-4. Inspect changes
-5. git add -u
-6. git commit
+```sh
+./copy
+cd $sq
+git checkout fork/analytics
+unzip /tmp/analytics_proxy-Xxxxxxxxxx
+# Inspect changes
+git add -u
+git commit -m 'Integrate my custom changes'
+git checkout -
+cd Docker/analytics_proxy
+```
 
 # Merging upstream fork source
 
-1. cd $sq
-2. git checkout fork/analytics
-3. git fetch analytics
-4. git merge analytics/master
-5. ./copy
-6. git checkout -
-7. cd $sq/Docker/analytics_proxy
-8. rm -rf src && unzip -o /tmp/analytics_proxy-Xxxxxxxxxx
-9. Inspect changes
-10. git add .
-11. git commit
+```sh
+cd $sq
+git checkout fork/analytics
+git fetch analytics
+git merge analytics/master
+./copy
+git checkout -
+cd $sq/Docker/analytics_proxy
+rm -rf src && unzip -o /tmp/analytics_proxy-Xxxxxxxxxx
+# Inspect changes
+git add .
+git commit
+```
 
 # Testing
 
