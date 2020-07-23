@@ -1,4 +1,4 @@
-import { StatCounter } from "./types"
+import { GoogleAnalytics, StatCounter } from "./types"
 
 const isProd: boolean = /prod/.test("" + process.env.ENV)
 const isDev : boolean = !isProd
@@ -11,6 +11,17 @@ else
 function singleLine(l: string) {
   return l.replace(/\s+/g, " ").trim()
 }
+
+const googleAnalytics: GoogleAnalytics | null =
+  isDev ?
+  {
+    trackingId: "UA-173267009-2",
+    jsUrl     : "http://localhost:3000/*(d3d3Lmdvb2dsZXRhZ21hbmFnZXIuY29t)*/*(Z3RhZw)*/*(anM%2FaWQ9VUEtMTczMjY3MDA5LTI)*",
+    disabled  : true,
+  } : {
+    trackingId: "UA-105581783-3",
+    jsUrl     : "https://ap.shipreq.com/*(d3d3Lmdvb2dsZXRhZ21hbmFnZXIuY29t)*/*(Z3RhZw)*/*(anM%2FaWQ9VUEtMTA1NTgxNzgzLTM)*",
+  }
 
 const statCounter: StatCounter | null =
   isDev ?
@@ -49,6 +60,7 @@ module.exports = {
   `),
 
   analytics: {
+    googleAnalytics,
     statCounter,
   },
 

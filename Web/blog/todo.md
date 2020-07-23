@@ -1,5 +1,4 @@
 * tasks
-  * add google analytics
   * add tests
 
 * content
