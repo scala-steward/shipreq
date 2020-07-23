@@ -35,3 +35,15 @@ jspm_packages
 
 # Optional REPL history
 .node_repl_history
+
+
+Code/
+Design/
+Experimentation/
+Infrastructure/
+Misc/
+Presentations/
+Requirements/
+TLA+/
+Web/
+
