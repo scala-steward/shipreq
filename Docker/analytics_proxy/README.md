@@ -17,6 +17,7 @@ unzip /tmp/analytics_proxy-Xxxxxxxxxx
 # Inspect changes
 git add -u
 git commit -m 'Integrate my custom changes'
+git push && github fork/analytics
 git checkout -
 cd Docker/analytics_proxy
 ```
@@ -34,13 +35,16 @@ cd $sq/Docker/analytics_proxy
 rm -rf src && unzip -o /tmp/analytics_proxy-Xxxxxxxxxx
 # Inspect changes
 git add .
-git commit
+git commit -m 'Integrate upstream changes'
+git push && github fork/analytics
+git checkout -
+cd Docker/analytics_proxy
 ```
 
 # Testing
 
 1. Run `make test` or `make run`
-2. Open up test-static/index.html in a browser
+2. Open up static-test/index.html in a browser
 3. In the browser tab, click the AdBlock button, then click Open Logger (the 3rd button under the power button)
 4. Reload and look at the network tab, ensure all requests succeed
    If you see `net::ERR_BLOCKED_BY_CLIENT` errors, that means AdBlock is blocking requests.
