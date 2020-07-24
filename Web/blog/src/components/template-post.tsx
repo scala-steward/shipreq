@@ -1,10 +1,14 @@
 import { graphql } from "gatsby"
-import { Link } from "gatsby"
+import { Layout, Page } from "../components/layout"
+import { linkToTag } from "../utils/routes"
 import { MDXProvider } from "@mdx-js/react"
 import { MDXRenderer } from "gatsby-plugin-mdx"
-import { pathForTag } from "../utils/routes"
+import { Props as SeoProps } from "../components/seo"
+import A from "./a"
+import Date from "./date"
+import moment from "moment"
 import React from "react"
-import SEO from "../components/seo"
+import styled from "styled-components"
 
 export const pageQuery = graphql`
   query BlogPostQuery($id: String) {
@@ -17,6 +21,7 @@ export const pageQuery = graphql`
       frontmatter {
         tags
         title
+        date
         desc
       }
     }
@@ -34,42 +39,88 @@ type Query = {
       frontmatter: {
         tags: Array<string>
         title: string
+        date: string
         desc: string
       }
     }
   }
 }
 
+const components = {
+  A,
+  ScalaJS: () => <A href="https://www.scala-js.org">Scala.JS</A>,
+  ShipReq: () => <A href="https://shipreq.com">ShipReq</A>,
+}
+
+const Article = styled.article`
+  line-height:1.5em;
+  .huddle > li {
+    margin-bottom:0;
+  }
+`
+const Title = styled.h1`
+  display:block;
+  font-weight: bold;
+  xtext-decoration: underline;
+  border-bottom: solid 1px #ccc;
+  color: #933;
+  margin-bottom: 0;
+  font-size: 250%;
+`
+
+const Header = styled.header`
+  margin-bottom: 2rem;
+`
+
+const DateContainer = styled.header`
+  color:#888;
+  text-align: right;
+  margin-top: 0.2em;
+  font-size: 85%;
+`
+
+const Footer = styled.footer`
+`
+
 export default function({ data: { mdx } }: Query) {
+  // setLocale()
+
   const title = mdx.frontmatter.title
   const tags = mdx.frontmatter.tags.sort()
+  // const date = moment.utc(mdx.frontmatter.date)
+
+  const seo: SeoProps =  {
+    article : true,
+    desc    : mdx.frontmatter.desc,
+    path    : mdx.fields.path,
+    subtitle: title,
+  }
 
   return (
-    <div>
+    <Layout page={Page.Post} seo={seo}>
 
-      <SEO
-        article  = {true}
-        desc     = {mdx.frontmatter.desc}
-        path     = {mdx.fields.path}
-        subtitle = {title}
-      />
+      <Article>
 
-      <h1>{title}</h1>
+        <Header>
+          <Title>{title}</Title>
+          <DateContainer><Date date={mdx.frontmatter.date} /></DateContainer>
+        </Header>
 
-      <MDXProvider>
-        <MDXRenderer>{mdx.body}</MDXRenderer>
-      </MDXProvider>
+        <MDXProvider components={components}>
+          <MDXRenderer>{mdx.body}</MDXRenderer>
+        </MDXProvider>
 
-      <ul>
-        {tags.map(tag => (
-          <li key={tag}>
-            <Link to={pathForTag(tag)}>
-              {tag}
-            </Link>
-          </li>
-        ))}
-      </ul>
+        <Footer>
 
-    </div>
+        </Footer>
+
+        <ul>
+          {tags.map(tag => (
+            <li key={tag}>{linkToTag(tag)}</li>
+          ))}
+        </ul>
+      </Article>
+
+    </Layout>
   )
 };

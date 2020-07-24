@@ -2,7 +2,7 @@ import { Link, graphql } from "gatsby"
 import { pathForTag } from "../utils/routes"
 import { pathForTagIndex } from "../utils/routes"
 import React from "react"
-import SEO from "../components/seo"
+import {SEO} from "../components/seo"
 import sortBy from "lodash/sortBy"
 
 export const pageQuery = graphql`

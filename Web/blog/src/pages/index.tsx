@@ -1,8 +1,6 @@
+import { Layout, Page } from "../components/layout"
 import { Link, graphql } from "gatsby"
-import Analytics from "../components/analytics"
 import React from "react"
-import SEO from "../components/seo"
-import ShipreqBanner from "../components/shipreq-banner"
 
 export const pageQuery = graphql`
   query {
@@ -46,14 +44,7 @@ export default function({ data }: Query) {
   const { edges: posts } = data.allMdx
 
   return (
-    <div>
-
-      <Analytics />
-      <SEO path = "" />
-
-      <ShipreqBanner height={100} />
-
-      <h1>Awesome MDX Blog</h1>
+    <Layout page={Page.Index} seo={{}}>
 
       <ul>
         {posts.map(({ node: post }) => (
@@ -65,6 +56,7 @@ export default function({ data }: Query) {
           </li>
         ))}
       </ul>
-    </div>
+
+    </Layout>
   )
 }

@@ -15,5 +15,8 @@ export const pathForTag: (name: string) => string =
 export const pathForTagIndex =
   "/tag"
 
+export const linkToTag: (name: string) => JSX.Element =
+  (name) => <Link to={pathForTag(name)}>{name}</Link>
+
 export const linkToTagIndex =
   <Link to={pathForTagIndex}>Tags</Link>

@@ -2,7 +2,7 @@ import { Helmet } from "react-helmet"
 import { useStaticQuery, graphql } from "gatsby"
 import React from "react"
 
-type Props = {
+export type Props = {
   article?: boolean | null
   title?: string | null
   subtitle?: string | null
@@ -10,7 +10,7 @@ type Props = {
   path?: string | null
 }
 
-export default function(p: Props) {
+export function SEO(p: Props) {
 
   type Query = {
     card: {

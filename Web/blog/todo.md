@@ -1,3 +1,6 @@
+* pagination of articles (else /index will become HUGE)
+* reddit link via frontmatter
+
 * content
   * global layout with analytics
   * about

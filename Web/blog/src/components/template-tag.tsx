@@ -3,7 +3,7 @@ import { linkToTagIndex } from "../utils/routes"
 import { pathForTag } from "../utils/routes"
 import lo from "lodash"
 import React from "react"
-import SEO from "../components/seo"
+import {SEO} from "../components/seo"
 
 export const pageQuery = graphql`
   query($tag: String) {

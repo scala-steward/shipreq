@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet"
 import React from "react"
-import SEO from "../components/seo"
+import {SEO} from "../components/seo"
 import styled from "styled-components"
 import tileQuestionSvg from "../images/tile-question.svg"
 
@@ -26,9 +26,9 @@ export default function() {
 
           main {margin:auto; padding:0 2vw}
 
-          #a {font-size:37vw; font-weight:bold}
-          #b {font-size:9.75vw}
-          #c {font-size:5.2vw; margin-top:3.7em}
+          #a {font-size:37vw; font-weight:bold; margin-top:3rem; margin-bottom:0.3rem;}
+          #b {font-size:9.75vw; margin:0}
+          #c {font-size:5.2vw; margin-top:4rem}
 
           @media screen and (min-width: 512px) {
             #a {font-size:9rem}

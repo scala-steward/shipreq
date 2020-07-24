@@ -4,3 +4,6 @@
 export function minifyJs(js: string): string {
   return js.trim().replace(/(?<=[;,}])\s+/gm,'').replace(/;$/,'')
 }
+
+// Shitty hack to ensure exhaustivity
+export function exhaustiveCheck(arg: never): void { }
