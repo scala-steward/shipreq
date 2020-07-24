@@ -1,6 +1,6 @@
 require("ts-node").register({ files: true })
 
-const siteMetadata = require('./src/config/site-metadata');
+const siteMetadata = require('./src/config/site').default;
 
 module.exports = {
   siteMetadata,
@@ -142,7 +142,7 @@ module.exports = {
                 })
               })
             },
-            output: "/rss.xml",
+            output: siteMetadata.rssPath,
             title: siteMetadata.title,
           },
         ],

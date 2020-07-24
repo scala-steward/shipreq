@@ -38,17 +38,18 @@ const statCounter: StatCounter | null =
     jsUrl   : "https://ap.shipreq.com/*(d3d3LnN0YXRjb3VudGVyLmNvbQ)*/*(Y291bnRlcg)*/*(Y291bnRlci5qcw)*",
   }
 
-module.exports = {
+export default {
 
   title: "ShipReq Blog",
 
   siteUrl: "https://blog.shipreq.com",
 
-  cardImageUrl: "https://blog.shipreq.com/qwe.png",
+  cardImageUrl: "https://blog.shipreq.com/static/ab7f7f3a4df0120151227c3bbb6eed6e/logo-title-1024.png",
+
+  copyright1: `© 2013-${new Date().getFullYear()} Bearded Logic.`,
+  copyright2: "All rights reserved.",
 
   locale: "en_AU",
-
-  twitterHandle: "@shipreq",
 
   description: singleLine(`
     A blog detailing technical learnings and experiences during work on ShipReq.
@@ -59,12 +60,32 @@ module.exports = {
     ShipReq is a modern, online tool for software requirements development and management.
   `),
 
+  rssPath: "/rss.xml",
+
   analytics: {
     googleAnalytics,
     statCounter,
   },
 
-  author: {
-    twitterHandle: "@japgolly",
-  }
+  email: {
+    address: "contact@shipreq.com",
+    mailto: "mailto:contact@shipreq.com",
+  },
+
+  reddit: {
+    url: "https://www.reddit.com/r/shipreq/",
+  },
+
+  twitter: {
+    handle: "@shipreq",
+    url: "https://twitter.com/shipreq",
+  },
+
+  japgolly: {
+    twitter: {
+      handle: "@japgolly",
+      url: "https://twitter.com/japgolly",
+    },
+    },
+
 };
