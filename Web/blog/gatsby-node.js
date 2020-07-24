@@ -16,9 +16,6 @@ exports.createPages = async ({ graphql, actions, reporter }) => {
             }
           }
         }
-        tags: group(field: frontmatter___tags) {
-          name: fieldValue
-        }
       }
     }
   `)
@@ -29,22 +26,12 @@ exports.createPages = async ({ graphql, actions, reporter }) => {
   }
 
   // Create pages for posts
-  const postTemplatePath = path.resolve(`./src/pages/template-post.tsx`);
+  const postTemplatePath = path.resolve(`./src/pages/post.tsx`);
   result.data.allMdx.edges.forEach(({ node }, index) => {
     createPage({
       path     : routes.pathForPost({node}),
       component: postTemplatePath,
       context  : { id: node.id },
-    })
-  })
-
-  // Create pages for tags
-  const tagsTemplatePath = path.resolve(`./src/pages/template-tag.tsx`);
-  result.data.allMdx.tags.forEach(tag => {
-    createPage({
-      path     : routes.pathForTag(tag.name),
-      component: tagsTemplatePath,
-      context  : { tag: tag.name },
     })
   })
 
