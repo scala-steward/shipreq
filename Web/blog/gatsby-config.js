@@ -60,15 +60,15 @@ module.exports = {
     {
       resolve: "gatsby-source-filesystem",
       options: {
-        name: "images",
-        path: "src/images/",
+        name: "posts",
+        path: "content/posts/",
       },
     },
     {
       resolve: "gatsby-source-filesystem",
       options: {
-        name: "posts",
-        path: "src/posts/",
+        name: "images",
+        path: "src/images/",
       },
     },
 
