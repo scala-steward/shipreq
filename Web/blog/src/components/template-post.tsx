@@ -1,12 +1,11 @@
 import { graphql } from "gatsby"
-import { Layout, Page } from "../components/layout"
 import { linkToTag } from "../utils/routes"
 import { MDXProvider } from "@mdx-js/react"
 import { MDXRenderer } from "gatsby-plugin-mdx"
 import { Props as SeoProps } from "../components/seo"
+import Layout from "../layouts/focused"
 import A from "./a"
 import Date from "./date"
-import moment from "moment"
 import React from "react"
 import styled from "styled-components"
 
@@ -61,7 +60,6 @@ const Article = styled.article`
 const Title = styled.h1`
   display:block;
   font-weight: bold;
-  xtext-decoration: underline;
   border-bottom: solid 1px #ccc;
   color: #933;
   margin-bottom: 0;
@@ -69,7 +67,7 @@ const Title = styled.h1`
 `
 
 const Header = styled.header`
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
 `
 
 const DateContainer = styled.header`
@@ -97,8 +95,7 @@ export default function({ data: { mdx } }: Query) {
   }
 
   return (
-    <Layout page={Page.Post} seo={seo}>
-
+    <Layout seo={seo}>
       <Article>
 
         <Header>
@@ -119,8 +116,8 @@ export default function({ data: { mdx } }: Query) {
             <li key={tag}>{linkToTag(tag)}</li>
           ))}
         </ul>
-      </Article>
 
+      </Article>
     </Layout>
   )
 };

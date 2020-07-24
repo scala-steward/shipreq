@@ -10,7 +10,8 @@ export default {
   small    : media.lessThan("small"),
   notSmall : media.greaterThan("small"),
 
-  maxWidth : "max-width: 1024px;"
+  phoneAny: media.lessThan("medium"),
+  notPhone: media.greaterThan("medium"),
 }
 
 /*

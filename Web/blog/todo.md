@@ -2,6 +2,7 @@
 * reddit link via frontmatter
 * link to /r/shipreq
 * moment locale doesn't work - it's all evaluated on build :/
+* babel-plugin-styled-components
 
 * content
   * global layout with analytics

@@ -1,4 +1,4 @@
-import { Layout, Page } from "../components/layout"
+import Layout from "../layouts/regular"
 import { Link, graphql } from "gatsby"
 import React from "react"
 
@@ -44,7 +44,7 @@ export default function({ data }: Query) {
   const { edges: posts } = data.allMdx
 
   return (
-    <Layout page={Page.Index} seo={{}}>
+    <Layout seo={{}}>
 
       <ul>
         {posts.map(({ node: post }) => (

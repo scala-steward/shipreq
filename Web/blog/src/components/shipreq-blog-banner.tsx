@@ -1,12 +1,12 @@
-import React from "react"
 import { Link as GatsbyLink } from "gatsby"
-import styled from "styled-components"
+import R from "../utils/responsive"
+import React from "react"
 import ShipreqBanner from "./shipreq-banner"
+import styled from "styled-components"
 
 const Link = styled(GatsbyLink)`
   display: inline-block;
   width: 100%;
-  max-width: 500px;
 `
 
 const Title = styled.h1`
@@ -14,7 +14,18 @@ const Title = styled.h1`
   text-align: right;
   font-weight: bold;
   color: #00488c;
-  font-size: 250%;
+  ${R.phone`
+    font-size: 250%;
+  `}
+  ${R.phoneWide`
+    font-size: 160%;
+  `}
+  ${R.tablet`
+    font-size: 180%;
+  `}
+  ${R.desktop`
+    font-size: 230%;
+  `}
 `
 
 export default function(): JSX.Element {
