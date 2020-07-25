@@ -9,6 +9,8 @@ import Author from "../components/author"
 import Date from "../components/date"
 import React from "react"
 import styled from "styled-components"
+import { PageContext } from "../config/post"
+import PostSiblingNav from "../components/post-sibling-nav"
 
 export const pageQuery = graphql`
   query BlogPostQuery($id: String) {
@@ -28,7 +30,7 @@ export const pageQuery = graphql`
   }
 `
 
-type Query = {
+type Props = {
   data: {
     mdx: {
       id: string
@@ -44,6 +46,7 @@ type Query = {
       }
     }
   }
+  pageContext: PageContext
 }
 
 const components = {
@@ -78,15 +81,19 @@ const DateContainer = styled.header`
   font-size: 85%;
 `
 
+const footerGap = "1.8rem"
+
 const Footer = styled.footer`
+  border-top: solid 1px #ccc;
+  margin-top: ${footerGap};
+  padding-top: ${footerGap};
 `
 
-export default function({ data: { mdx } }: Query) {
-  // setLocale()
+export default function({ data, pageContext }: Props) {
+  const mdx = data.mdx
 
   const title = mdx.frontmatter.title
   const tags = mdx.frontmatter.tags.sort()
-  // const date = moment.utc(mdx.frontmatter.date)
 
   const seo: SeoProps =  {
     article : true,
@@ -109,15 +116,19 @@ export default function({ data: { mdx } }: Query) {
         </MDXProvider>
 
         <Footer>
+          <Author />
+
+          <ul>
+            {tags.map(tag => (
+              <li key={tag}>{linkToTag(tag)}</li>
+            ))}
+          </ul>
+
+          <div>social buttons: twitter (link to tweet), reddit (link to post), share FB, share LI, web share</div>
+
+          <PostSiblingNav pageContext={pageContext} />
+
         </Footer>
-
-        <Author />
-
-        <ul>
-          {tags.map(tag => (
-            <li key={tag}>{linkToTag(tag)}</li>
-          ))}
-        </ul>
 
       </Article>
     </Layout>

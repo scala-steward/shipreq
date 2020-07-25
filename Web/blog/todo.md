@@ -3,6 +3,7 @@
 * link to /r/shipreq
 * moment locale doesn't work - it's all evaluated on build :/
 * babel-plugin-styled-components
+* meta keywords
 
 * content
   * global layout with analytics
