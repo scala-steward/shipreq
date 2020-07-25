@@ -2,29 +2,33 @@ import { graphql } from "gatsby"
 import { linkToTag } from "../utils/routes"
 import { MDXProvider } from "@mdx-js/react"
 import { MDXRenderer } from "gatsby-plugin-mdx"
+import { NodeWithFields, PageContext } from "../config/post"
 import { Props as SeoProps } from "../components/seo"
-import Layout from "../layouts/focused"
 import A from "../components/a"
 import Author from "../components/author"
 import Date from "../components/date"
+import Layout from "../layouts/focused"
+import PostShare from "../components/post-share"
+import PostSiblingNav from "../components/post-sibling-nav"
 import React from "react"
 import styled from "styled-components"
-import { PageContext } from "../config/post"
-import PostSiblingNav from "../components/post-sibling-nav"
 
 export const pageQuery = graphql`
   query BlogPostQuery($id: String) {
     mdx(id: { eq: $id }) {
       id
       body
-      fields {
-        path
-      }
       frontmatter {
-        tags
         title
+        slug
         date
         desc
+        twitter
+        reddit
+        tags
+      }
+      fields {
+        path
       }
     }
   }
@@ -32,19 +36,7 @@ export const pageQuery = graphql`
 
 type Props = {
   data: {
-    mdx: {
-      id: string
-      body: string
-      fields: {
-        path: string
-      }
-      frontmatter: {
-        tags: Array<string>
-        title: string
-        date: string
-        desc: string
-      }
-    }
+    mdx: NodeWithFields & { body: string }
   }
   pageContext: PageContext
 }
@@ -90,15 +82,14 @@ const Footer = styled.footer`
 `
 
 export default function({ data, pageContext }: Props) {
-  const mdx = data.mdx
-
-  const title = mdx.frontmatter.title
-  const tags = mdx.frontmatter.tags.sort()
+  const post  = data.mdx
+  const title = post.frontmatter.title
+  const tags  = post.frontmatter.tags.sort()
 
   const seo: SeoProps =  {
     article : true,
-    desc    : mdx.frontmatter.desc,
-    path    : mdx.fields.path,
+    desc    : post.frontmatter.desc,
+    path    : post.fields.path,
     subtitle: title,
   }
 
@@ -108,11 +99,11 @@ export default function({ data, pageContext }: Props) {
 
         <Header>
           <Title>{title}</Title>
-          <DateContainer><Date date={mdx.frontmatter.date} /></DateContainer>
+          <DateContainer><Date date={post.frontmatter.date} /></DateContainer>
         </Header>
 
         <MDXProvider components={components}>
-          <MDXRenderer>{mdx.body}</MDXRenderer>
+          <MDXRenderer>{post.body}</MDXRenderer>
         </MDXProvider>
 
         <Footer>
@@ -124,8 +115,7 @@ export default function({ data, pageContext }: Props) {
             ))}
           </ul>
 
-          <div>social buttons: twitter (link to tweet), reddit (link to post), share FB, share LI, web share</div>
-
+          <PostShare post={post} />
           <PostSiblingNav pageContext={pageContext} />
 
         </Footer>

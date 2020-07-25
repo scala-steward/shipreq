@@ -5,10 +5,13 @@ import { pathForPost } from "../utils/routes"
 export type Node = {
   id: string
   frontmatter: {
-    title: string
-    slug: string
-    date: string
-    desc: string
+    title   : string
+    slug    : string
+    date    : string
+    desc    : string
+    twitter?: string
+    reddit? : string
+    tags    : Array<string>
   }
 }
 
@@ -48,6 +51,9 @@ export const createPages: GatsbyNode["createPages"] = async ({ graphql, actions,
               slug
               date
               desc
+              twitter
+              reddit
+              tags
             }
           }
         }
