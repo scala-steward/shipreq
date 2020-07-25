@@ -3,7 +3,7 @@ require("ts-node").register({ files: true })
 const siteMetadata = require("./src/config/site").default
 const { isProd } = siteMetadata
 
-const compressExts = ['css', 'html', 'js', 'json', 'svg', 'xml']
+const compressExts = ['css', 'html', 'js', 'svg', 'xml']
 
 module.exports = {
   siteMetadata,
