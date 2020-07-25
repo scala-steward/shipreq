@@ -1,13 +1,13 @@
 export interface GoogleAnalytics {
   trackingId: string
   jsUrl     : string
-  disabled? : boolean
+  enabled   : boolean
 }
 
 export interface StatCounter {
-  project  : number
-  security : string
-  https    : boolean
-  jsUrl    : string
-  disabled?: boolean
+  project : number
+  security: string
+  https   : boolean
+  jsUrl   : string
+  enabled : boolean
 }

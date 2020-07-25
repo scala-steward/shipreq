@@ -17,10 +17,11 @@ const googleAnalytics: GoogleAnalytics | null =
   {
     trackingId: "UA-173267009-2",
     jsUrl     : "http://localhost:3000/*(d3d3Lmdvb2dsZXRhZ21hbmFnZXIuY29t)*/*(Z3RhZw)*/*(anM%2FaWQ9VUEtMTczMjY3MDA5LTI)*",
-    disabled  : true,
+    enabled   : false,
   } : {
     trackingId: "UA-105581783-3",
     jsUrl     : "https://ap.shipreq.com/*(d3d3Lmdvb2dsZXRhZ21hbmFnZXIuY29t)*/*(Z3RhZw)*/*(anM%2FaWQ9VUEtMTA1NTgxNzgzLTM)*",
+    enabled   : true,
   }
 
 const statCounter: StatCounter | null =
@@ -30,17 +31,20 @@ const statCounter: StatCounter | null =
     security: "bec10e58",
     https   : false,
     jsUrl   : "http://localhost:3000/*(d3d3LnN0YXRjb3VudGVyLmNvbQ)*/*(Y291bnRlcg)*/*(Y291bnRlci5qcw)*",
-    disabled: true,
+    enabled : false,
   } : {
     project : 12363377,
     security: "e1f055a7",
     https   : true,
     jsUrl   : "https://ap.shipreq.com/*(d3d3LnN0YXRjb3VudGVyLmNvbQ)*/*(Y291bnRlcg)*/*(Y291bnRlci5qcw)*",
+    enabled : true,
   }
 
 const Year = new Date().getFullYear()
 
 export default {
+  isProd,
+  isDev,
 
   title: "ShipReq Blog",
 

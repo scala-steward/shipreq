@@ -1,6 +1,9 @@
 require("ts-node").register({ files: true })
 
 const siteMetadata = require("./src/config/site").default
+const { isProd } = siteMetadata
+
+const compressExts = ['css', 'html', 'js', 'json', 'svg', 'xml']
 
 module.exports = {
   siteMetadata,
@@ -148,5 +151,22 @@ module.exports = {
       },
     },
 
-  ],
+    // =============================================================================================
+    isProd && {
+      resolve: 'gatsby-plugin-brotli',
+      options: {
+        extensions: compressExts,
+      },
+    },
+
+
+    // =============================================================================================
+    isProd && {
+      resolve: 'gatsby-plugin-zopfli',
+      options: {
+        extensions: compressExts,
+      },
+    },
+
+  ].filter(o => !!o),
 }

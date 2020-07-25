@@ -18,7 +18,9 @@ const MiddleGap = styled.div`
 `
 
 const PotentialLink = ({node, prefix, suffix} : {node: Node | null, prefix?: string, suffix?: string}) =>
-  node && <Link to={pathForPost(node)}>{`${prefix || ""}${node.frontmatter.title}${suffix || ""}`}</Link>
+  node ?
+  <Link to={pathForPost(node)}>{`${prefix || ""}${node.frontmatter.title}${suffix || ""}`}</Link> :
+  null
 
 export default ({ pageContext: ctx }: Props) => (
   <Container>

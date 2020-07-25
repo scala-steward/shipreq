@@ -26,14 +26,14 @@ export default function() {
               googleAnalytics {
                 trackingId
                 jsUrl
-                disabled
+                enabled
               }
               statCounter {
                 project
                 security
                 https
                 jsUrl
-                disabled
+                enabled
               }
             }
           }
@@ -78,7 +78,7 @@ export default function() {
   }
 
   return (<>
-    {a.googleAnalytics && !a.googleAnalytics.disabled && googleAnalytics(a.googleAnalytics)}
-    {a.statCounter     && !a.statCounter    .disabled && statCounter    (a.statCounter    )}
+    {a.googleAnalytics && a.googleAnalytics.enabled && googleAnalytics(a.googleAnalytics)}
+    {a.statCounter     && a.statCounter    .enabled && statCounter    (a.statCounter    )}
   </>)
 }
