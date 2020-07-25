@@ -134,20 +134,28 @@ import "moment/locale/zh-hk"
 import "moment/locale/zh-mo"
 import "moment/locale/zh-tw"
 
-export function setLocale(): void {
-  let lang = window.navigator.languages ? window.navigator.languages[0] : null;
-  // @ts-ignore
-  lang = lang || window.navigator.language || window.navigator.browserLanguage || window.navigator.userLanguage;
-  if (lang) {
-    // console.log(`Locales are ${moment.locales()}`)
-    // console.log(`Setting locale to ${lang}`)
-    moment.locale(lang)
-    // console.log(`Locale is now ${moment.locale()}`)
+let localeIsSet = false
+
+function setLocale(): void {
+  if (!localeIsSet) {
+    localeIsSet = true
+
+    let lang = window.navigator.languages ? window.navigator.languages[0] : null;
+    // @ts-ignore
+    lang = lang || window.navigator.language || window.navigator.browserLanguage || window.navigator.userLanguage;
+    // console.log(`Detected lang as ${lang}`)
+    if (lang) {
+      // console.log(`Locales are ${moment.locales()}`)
+      // console.log(`Setting locale to ${lang}`)
+      moment.locale(lang)
+    }
   }
+  // console.log(`Locale is now ${moment.locale()}`)
 }
 
 const tz = momentTZ.tz.guess()
 
 export function localiseDate(date: string) {
+  setLocale()
   return moment.utc(date).tz(tz)
 }

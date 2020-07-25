@@ -1,12 +1,7 @@
-import { localiseDate } from "../utils/locale"
+import { Props } from "./client-side/date"
+import loadable from '@loadable/component'
 import React from "react"
 
-type Props = {
-  date: string
-  format?: string
-}
+const LazyDate = loadable(() => import("./client-side/date"))
 
-export default function(p: Props) {
-  const d = localiseDate(p.date)
-  return <time dateTime={d.toISOString()}>{d.format("LL")}</time>
-}
+export default (p: Props) => <LazyDate {...p} />
