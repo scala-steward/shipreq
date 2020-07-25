@@ -13,7 +13,9 @@
 * link to app
 * meta keywords
 * about page
+* error page (see S3/CDN doc first)
 
 * maybe...
   * comments
   * search
+  * hacker news link
