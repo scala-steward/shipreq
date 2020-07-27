@@ -6,6 +6,7 @@ import R from "../utils/responsive"
 import React from "react"
 import ShipReqBanner from "../components/shipreq-blog-banner"
 import styled from "styled-components"
+import TagList from "../components/tag-list"
 
 type Props = {
   seo     : SeoProps
@@ -16,6 +17,7 @@ const GridArea = {
   banner   : 'b',
   contact  : 'c',
   copyright: 'l',
+  tagList  : 't',
   main     : 'm',
 }
 
@@ -29,11 +31,12 @@ const Container = styled.div`
   min-height: 100vh;
 
   ${R.phoneAny`
-    grid-template-rows: auto auto auto 1fr;
+    grid-template-rows: auto auto auto auto 1fr;
     grid-template-areas:
       "${GridArea.banner}"
       "${GridArea.main}"
       "${GridArea.contact}"
+      "${GridArea.tagList}"
       "${GridArea.copyright}"
     ;
   `}
@@ -42,6 +45,7 @@ const Container = styled.div`
     grid-template-areas:
       "${GridArea.banner}    ${GridArea.main}"
       "${GridArea.contact}   ${GridArea.main}"
+      "${GridArea.tagList}   ${GridArea.main}"
       "${GridArea.copyright} ${GridArea.main}"
     ;
   `}
@@ -99,6 +103,17 @@ const ContactCell = styled.section`
   `}
 `
 
+const TagListCell = styled.section`
+  grid-area: ${GridArea.tagList};
+  text-align: right;
+  ${R.phone`
+    display:none;
+  `}
+  ${R.phoneWide`
+    display:none;
+  `}
+`
+
 const CopyrightCell = styled.footer`
   grid-area: ${GridArea.copyright};
   align-self: end;
@@ -134,6 +149,10 @@ export default function(p: Props) {
         <ContactCell>
           <ContactLinks />
         </ContactCell>
+
+        <TagListCell>
+          <TagList />
+        </TagListCell>
 
         <CopyrightCell>
           <Copyright />

@@ -1,6 +1,7 @@
 import { Props as SeoProps } from "../components/seo"
 import ContactLinks from "../components/contact-links"
 import Copyright from "../components/copyright"
+import TagList from "../components/tag-list"
 import Layout from "./layout"
 import R from "../utils/responsive"
 import React from "react"
@@ -16,6 +17,7 @@ const GridArea = {
   banner   : 'b',
   contact  : 'c',
   copyright: 'l',
+  tagList  : 't',
   main     : 'm',
 }
 
@@ -29,19 +31,21 @@ const Container = styled.div`
   min-height: 100vh;
 
   ${R.small`
-    grid-template-rows: auto auto auto 1fr;
+    grid-template-rows: auto auto auto auto 1fr;
     grid-template-areas:
       "${GridArea.banner}"
       "${GridArea.contact}"
+      "${GridArea.tagList}"
       "${GridArea.main}"
       "${GridArea.copyright}"
     ;
   `}
   ${R.notSmall`
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto auto 1fr;
     grid-template-areas:
       "${GridArea.banner}    ${GridArea.main}"
       "${GridArea.contact}   ${GridArea.main}"
+      "${GridArea.tagList}   ${GridArea.main}"
       "${GridArea.copyright} ${GridArea.main}"
     ;
   `}
@@ -85,7 +89,7 @@ const ContactCell = styled.section`
   align-self: end;
   justify-self: end;
   ${R.phone`
-    margin: 1rem 0;
+    margin: 1rem 0 0 0;
   `}
   ${R.phoneWide`
   `}
@@ -94,6 +98,14 @@ const ContactCell = styled.section`
   `}
   ${R.desktop`
     margin: 2rem 0;
+  `}
+`
+
+const TagListCell = styled.section`
+  grid-area: ${GridArea.tagList};
+  text-align: right;
+  ${R.phone`
+    margin-top: 0.2rem;
   `}
 `
 
@@ -110,6 +122,7 @@ const CopyrightCell = styled.footer`
 const MainCell = styled.main`
   grid-area: ${GridArea.main};
   ${R.phone`
+    margin-top: 1.4rem;
   `}
   ${R.phoneWide`
     margin-top: 2rem;
@@ -136,6 +149,10 @@ export default function(p: Props) {
         <ContactCell>
           <ContactLinks />
         </ContactCell>
+
+        <TagListCell>
+          <TagList />
+        </TagListCell>
 
         <CopyrightCell>
           <Copyright />
