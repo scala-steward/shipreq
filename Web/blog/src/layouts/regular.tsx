@@ -1,7 +1,7 @@
 import { Props as SeoProps } from "../components/seo"
 import ContactLinks from "../components/contact-links"
 import Copyright from "../components/copyright"
-import TagList from "../components/tag-list"
+import TagIndex from "../components/tag-index"
 import Layout from "./layout"
 import R from "../utils/responsive"
 import React from "react"
@@ -151,7 +151,7 @@ export default function(p: Props) {
         </ContactCell>
 
         <TagListCell>
-          <TagList />
+          <TagIndex />
         </TagListCell>
 
         <CopyrightCell>

@@ -6,7 +6,7 @@ import R from "../utils/responsive"
 import React from "react"
 import ShipReqBanner from "../components/shipreq-blog-banner"
 import styled from "styled-components"
-import TagList from "../components/tag-list"
+import TagIndex from "../components/tag-index"
 
 type Props = {
   seo     : SeoProps
@@ -151,7 +151,7 @@ export default function(p: Props) {
         </ContactCell>
 
         <TagListCell>
-          <TagList />
+          <TagIndex />
         </TagListCell>
 
         <CopyrightCell>
