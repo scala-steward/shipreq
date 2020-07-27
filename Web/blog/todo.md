@@ -1,4 +1,3 @@
-* remove date from post URLs
 * hacker news link
 * link to app
 * meta keywords
