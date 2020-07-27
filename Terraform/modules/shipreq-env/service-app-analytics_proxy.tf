@@ -30,6 +30,20 @@ resource "aws_ecs_task_definition" "analytics_proxy" {
   {
     "name": "${local.analytics_proxy_container_name}",
     "image": "${data.aws_ecr_repository.analytics_proxy.repository_url}:${var.app_analytics_proxy_image_tag}",
+    "environment": [
+      {
+        "name": "ENV",
+        "value": "production"
+      },
+      {
+        "name": "APP__ENV_NAME",
+        "value": "production"
+      },
+      {
+        "name": "APP__HOSTS_WHITELIST_REGEX",
+        "value": "^(?:.*\\.)?${replace(local.shipreq_domain, ".", "\\\\.")}$"
+      }
+    ],
     "portMappings": [
       {
         "protocol": "tcp",
