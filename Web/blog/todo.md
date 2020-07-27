@@ -1,2 +1,2 @@
-* hacker news link
 * about page
+* finish welcome page
