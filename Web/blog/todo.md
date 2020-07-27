@@ -1,6 +1,5 @@
 * hacker news link
 * link to app
-* meta keywords
 * about page
 
 * maybe...
