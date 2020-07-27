@@ -2,6 +2,7 @@ import { Props as SeoProps } from "../components/seo"
 import ContactLinks from "../components/contact-links"
 import Copyright from "../components/copyright"
 import Layout from "./layout"
+import PageIndex from "../components/page-index"
 import R from "../utils/responsive"
 import React from "react"
 import ShipReqBanner from "../components/shipreq-blog-banner"
@@ -17,7 +18,8 @@ const GridArea = {
   banner   : 'b',
   contact  : 'c',
   copyright: 'l',
-  tagList  : 't',
+  tagIndex : 't',
+  pageIndex: 'p',
   main     : 'm',
 }
 
@@ -31,21 +33,24 @@ const Container = styled.div`
   min-height: 100vh;
 
   ${R.phoneAny`
-    grid-template-rows: auto auto auto auto 1fr;
+    grid-template-rows: auto auto auto auto auto 1fr;
     grid-template-areas:
       "${GridArea.banner}"
       "${GridArea.main}"
       "${GridArea.contact}"
-      "${GridArea.tagList}"
+      "${GridArea.tagIndex}"
+      "${GridArea.pageIndex}"
       "${GridArea.copyright}"
     ;
   `}
   ${R.notPhone`
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto auto auto 1fr;
+    grid-template-columns: auto 1fr;
     grid-template-areas:
       "${GridArea.banner}    ${GridArea.main}"
       "${GridArea.contact}   ${GridArea.main}"
-      "${GridArea.tagList}   ${GridArea.main}"
+      "${GridArea.tagIndex}  ${GridArea.main}"
+      "${GridArea.pageIndex} ${GridArea.main}"
       "${GridArea.copyright} ${GridArea.main}"
     ;
   `}
@@ -102,14 +107,31 @@ const ContactCell = styled.section`
   `}
 `
 
-const TagListCell = styled.section`
-  grid-area: ${GridArea.tagList};
+const TagIndexCell = styled.section`
+  grid-area: ${GridArea.tagIndex};
   text-align: right;
   ${R.phone`
     display:none;
   `}
   ${R.phoneWide`
     display:none;
+  `}
+`
+
+const PageIndexCell = styled.section`
+  grid-area: ${GridArea.pageIndex};
+  text-align: right;
+  ${R.phone`
+    display:none;
+  `}
+  ${R.phoneWide`
+    display:none;
+  `}
+  ${R.tablet`
+    margin: 1rem 0;
+  `}
+  ${R.desktop`
+    margin: 2rem 0;
   `}
 `
 
@@ -148,9 +170,13 @@ export default function(p: Props) {
           <ContactLinks />
         </ContactCell>
 
-        <TagListCell>
+        <TagIndexCell>
           <TagIndex />
-        </TagListCell>
+        </TagIndexCell>
+
+        <PageIndexCell>
+          <PageIndex />
+        </PageIndexCell>
 
         <CopyrightCell>
           <Copyright />
