@@ -12,7 +12,7 @@ import PostShare from "../components/post-share"
 import PostSiblingNav from "../components/post-sibling-nav"
 import React from "react"
 import styled from "styled-components"
-import Tag from "../components/tag"
+import TagList from "../components/tag-list"
 
 export const pageQuery = graphql`
   query PostPageQuery($id: String) {
@@ -73,7 +73,7 @@ const Footer = styled.footer`
 export default function({ data, pageContext }: Props) {
   const post  = data.mdx
   const title = post.frontmatter.title
-  const tags  = post.frontmatter.tags.sort()
+  const tags  = post.frontmatter.tags
 
   const seo: SeoProps =  {
     article : true,
@@ -88,7 +88,9 @@ export default function({ data, pageContext }: Props) {
 
         <Header>
           <Title>{title}</Title>
-          <DateContainer><Date date={post.frontmatter.date} /></DateContainer>
+          <DateContainer>
+            <Date date={post.frontmatter.date} />
+          </DateContainer>
         </Header>
 
         <MDXProvider components={components}>
@@ -96,13 +98,8 @@ export default function({ data, pageContext }: Props) {
         </MDXProvider>
 
         <Footer>
-          <Author />
 
-          <ul>
-            {tags.map(tag => (
-              <li key={tag}><Tag name={tag} /></li>
-            ))}
-          </ul>
+          <Author />
 
           <PostShare post={post} />
           <PostSiblingNav pageContext={pageContext} />

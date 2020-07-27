@@ -1,8 +1,3 @@
-* tags
-  * index
-    * show tags beside posts
-    * show date beside posts
-
 * pagination of articles (else /index will become HUGE) -- or maybe infinite scroll?
 * link to /r/shipreq
 * link to app
@@ -14,3 +9,4 @@
   * comments
   * search
   * hacker news link
+  * remove date from post URLs

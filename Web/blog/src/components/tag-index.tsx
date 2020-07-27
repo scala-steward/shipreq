@@ -11,11 +11,11 @@ const Item = styled.div`
   ${R.small`
     display: inline;
   `}
-   & ~ & {
+  & ~ & {
     ${R.small`
       margin-left: 1ex;
   `}
-   }
+  }
 `
 
 export default () => {
@@ -37,8 +37,6 @@ export default () => {
       }
     }
   `)
-
-  console.log(query)
 
   const tags = query.allMdx.tags.map(t => t.name).sort()
 
