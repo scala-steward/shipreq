@@ -1,8 +1,8 @@
 import { graphql } from "gatsby"
-import { linkToTag } from "../utils/routes"
+import { linkToTag, pathForPost } from "../utils/routes"
 import { MDXProvider } from "@mdx-js/react"
 import { MDXRenderer } from "gatsby-plugin-mdx"
-import { NodeWithFields, PageContext } from "../config/post"
+import { Node, PageContext } from "../config/post"
 import { Props as SeoProps } from "../components/seo"
 import A from "../components/a"
 import Author from "../components/author"
@@ -27,16 +27,13 @@ export const pageQuery = graphql`
         reddit
         tags
       }
-      fields {
-        path
-      }
     }
   }
 `
 
 type Props = {
   data: {
-    mdx: NodeWithFields & { body: string }
+    mdx: Node & { body: string }
   }
   pageContext: PageContext
 }
@@ -89,7 +86,7 @@ export default function({ data, pageContext }: Props) {
   const seo: SeoProps =  {
     article : true,
     desc    : post.frontmatter.desc,
-    path    : post.fields.path,
+    path    : pathForPost(post),
     subtitle: title,
   }
 

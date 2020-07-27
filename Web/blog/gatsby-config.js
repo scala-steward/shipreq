@@ -1,6 +1,7 @@
 require("ts-node").register({ files: true })
 
 const siteMetadata = require("./src/config/site").default
+const routes = require("./src/utils/routes")
 const { isProd } = siteMetadata
 
 const compressExts = ['css', 'html', 'js', 'svg', 'xml']
@@ -120,11 +121,9 @@ module.exports = {
                 allMdx(sort: { order: DESC, fields: [frontmatter___date] }) {
                   edges {
                     node {
-                      fields {
-                        path
-                      }
                       frontmatter {
                         title
+                        slug
                         desc
                         date
                       }
@@ -140,7 +139,7 @@ module.exports = {
                   title      : n.frontmatter.title,
                   description: n.frontmatter.desc,
                   date       : n.frontmatter.date,
-                  url        : siteMetadata.siteUrl + n.fields.path,
+                  url        : routes.urlForPost(n),
                 })
               })
             },

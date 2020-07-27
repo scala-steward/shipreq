@@ -15,12 +15,6 @@ export type Node = {
   }
 }
 
-export type NodeWithFields = Node & {
-  fields: {
-    path: string
-  }
-}
-
 export type PageContext = {
   id   : string
   older: Node | null
@@ -85,14 +79,5 @@ export const createPages: GatsbyNode["createPages"] = async ({ graphql, actions,
         context,
       })
     })
-  }
-}
-
-export const onCreateNode: GatsbyNode["onCreateNode"] = ({ node, actions }) => {
-  const { createNodeField } = actions
-
-  if (node.internal.type === "Mdx") {
-    const n = node as unknown as Node
-    createNodeField({ node, name: `path`, value: pathForPost(n) })
   }
 }

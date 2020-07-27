@@ -1,6 +1,8 @@
-import Layout from "../layouts/regular"
 import { Link, graphql } from "gatsby"
+import Layout from "../layouts/regular"
 import React from "react"
+import { pathForPost } from "../utils/routes"
+import { Node as Post } from "../config/post"
 
 export const pageQuery = graphql`
   query {
@@ -10,10 +12,8 @@ export const pageQuery = graphql`
           id
           excerpt
           frontmatter {
+            slug
             title
-          }
-          fields {
-            path
           }
         }
       }
@@ -25,15 +25,8 @@ type Query = {
   data: {
     allMdx: {
       edges: [{
-        node: {
-          id: string
+        node: Post & {
           excerpt: string
-          frontmatter: {
-            title: string
-          }
-          fields: {
-            path: string
-          }
         }
       }]
     }
@@ -49,7 +42,7 @@ export default function({ data }: Query) {
       <ul>
         {posts.map(({ node: post }) => (
           <li key={post.id}>
-            <Link to={post.fields.path}>
+            <Link to={pathForPost(post)}>
               <h2>{post.frontmatter.title}</h2>
             </Link>
             <p>{post.excerpt}</p>
