@@ -22,7 +22,7 @@ export type PageContext = {
   newer: Node | null
 }
 
-const templatePath = path.resolve(`${__dirname}/../pages/post.tsx`)
+const templatePath = path.resolve(`${__dirname}/../templates/post.tsx`)
 
 export const createPages: GatsbyNode["createPages"] = async ({ graphql, actions, reporter }) => {
   const { createPage } = actions

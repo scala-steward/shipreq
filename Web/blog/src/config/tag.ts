@@ -2,7 +2,7 @@ import { GatsbyNode } from "gatsby"
 import { pathForTag } from "../utils/routes"
 import * as path from "path"
 
-const templatePath = path.resolve(`${__dirname}/../pages/tag.tsx`)
+const templatePath = path.resolve(`${__dirname}/../templates/tag.tsx`)
 
 export const createPages: GatsbyNode["createPages"] = async ({ graphql, actions, reporter }) => {
   const { createPage } = actions
