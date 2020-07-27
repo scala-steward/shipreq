@@ -6,7 +6,10 @@ import React from "react"
 
 export const pageQuery = graphql`
   query {
-    allMdx(sort: { fields: [frontmatter___date], order: DESC }) {
+    allMdx(
+      sort: { fields: [frontmatter___date], order: DESC }
+      filter: {fileAbsolutePath: {glob: "**/posts/*"}}
+    ) {
       edges {
         node {
           ...PostNode

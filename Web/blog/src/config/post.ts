@@ -37,7 +37,10 @@ export const createPages: GatsbyNode["createPages"] = async ({ graphql, actions,
 
   const result = await graphql<Query>(`
     query {
-      allMdx(sort: { fields: [frontmatter___date], order: DESC }) {
+      allMdx(
+        sort: { fields: [frontmatter___date], order: DESC },
+        filter: {fileAbsolutePath: {glob: "**/posts/*"}}
+      ) {
         edges {
           node {
             id

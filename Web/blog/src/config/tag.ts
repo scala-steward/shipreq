@@ -17,7 +17,7 @@ export const createPages: GatsbyNode["createPages"] = async ({ graphql, actions,
 
   const result = await graphql<Query>(`
     query {
-      allMdx {
+      allMdx(filter: {fileAbsolutePath: {glob: "**/posts/*"}}) {
         tags: group(field: frontmatter___tags) {
           name: fieldValue
         }

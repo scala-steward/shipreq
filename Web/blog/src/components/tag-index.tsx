@@ -30,7 +30,7 @@ export default () => {
 
   const query: Query = useStaticQuery(graphql`
     query {
-      allMdx {
+      allMdx(filter: {fileAbsolutePath: {glob: "**/posts/*"}}) {
         tags: group(field: frontmatter___tags) {
           name: fieldValue
         }

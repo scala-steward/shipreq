@@ -9,7 +9,10 @@ import styled from "styled-components"
 
 export const pageQuery = graphql`
   query TagPageQuery($tag: String) {
-    allMdx(sort: {fields: [frontmatter___date], order: DESC}, filter: {frontmatter: {tags: {in: [$tag]}}}) {
+    allMdx(
+      sort: {fields: [frontmatter___date], order: DESC},
+      filter: {fileAbsolutePath: {glob: "**/posts/*"}, frontmatter: {tags: {in: [$tag]}}}
+    ) {
       edges {
         node {
           ...PostNode

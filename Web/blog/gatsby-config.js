@@ -117,7 +117,10 @@ module.exports = {
           {
             query: `
               {
-                allMdx(sort: { order: DESC, fields: [frontmatter___date] }) {
+                allMdx(
+                  sort: {fields: [frontmatter___date], order: DESC},
+                  filter: {fileAbsolutePath: {glob: "**/posts/*"}}
+                ) {
                   edges {
                     node {
                       ...PostNode
