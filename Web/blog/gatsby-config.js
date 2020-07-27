@@ -40,7 +40,6 @@ module.exports = {
         gatsbyRemarkPlugins: [
           // "gatsby-remark-autolink-headers",
           "gatsby-remark-check-links",
-          "gatsby-remark-emoji",
           "gatsby-remark-smartypants",
           {
             resolve: "gatsby-remark-external-links",
