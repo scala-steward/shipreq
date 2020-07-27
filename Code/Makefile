@@ -22,7 +22,7 @@ info:
 	@echo
 
 deploy: publish
-	../Infrastructure/terraform/prod/update_shipreq.sh
+	../Terraform/prod/update_shipreq.sh
 	$(WATCH_CODEBUILD)
 
 diff_prod:
