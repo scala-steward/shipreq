@@ -78,12 +78,17 @@ module.exports = {
       resolve: "gatsby-plugin-manifest",
       options: {
         name            : siteMetadata.title,
+        short_name      : siteMetadata.title,
         start_url       : "/",
-        display         : "browser",
-        icon            : "src/images/favicon.svg",
+        display         : "minimal-ui",
+        lang            : "en",
         crossOrigin     : "use-credentials",
-        background_color: "#001a30",
-        theme_color     : "#ffffff",
+        background_color: "#ffffff",
+        theme_color     : "#001a30",
+        icon            : "src/images/favicon.svg",
+        icon_options    : {
+          purpose: "any maskable",
+        },
       },
     },
 
