@@ -1,41 +1,61 @@
-GATSBY := ./node_modules/gatsby-cli/cli.js
-TF_DIR := ../../Terraform/web
-TF_OUT := ./src/config/terraform.ts
+.PHONY: build-dev build-prod c cd ci clean cp d deploy dev p prod serve sync
 
+GATSBY    := ./node_modules/gatsby-cli/cli.js
+GATSBY_s3 := ./node_modules/gatsby-plugin-s3/bin.js
+TF_DIR    := ../../Terraform/web
+TF_OUT    := ./src/config/terraform.ts
 
-.PHONY: clean cd cp dev prod dev-build prod-build watch-prod sync
+info:
+	@echo "ShipReq Blog."
+	@echo
+	@echo "Commands:"
+	@echo
+	@echo "  * build-dev  -- Builds in dev mode"
+	@echo "  * build-prod -- Builds in prod mode"
+	@echo "  * ci         -- Builds and deploys from CI"
+	@echo "  * clean      -- gatsby clean"
+	@echo "  * deploy     -- Deploys what's build to S3"
+	@echo "  * dev        -- gatsby develop"
+	@echo "  * serve      -- gatsby serve"
+	@echo "  * prod       -- Watches for changes and builds prod"
+	@echo "  * sync       -- Synchronise config here with the latest values from Terraform"
+	@echo
 
-default: dev
+# Aliases
+c : clean
+cd: clean dev
+cp: clean prod
+d : dev
+p : prod
 
 clean:
 	$(GATSBY) clean
+	@echo
 
 dev:
 	$(GATSBY) develop
 
-dev-build:
+build-dev:
 	$(GATSBY) build
 
-prod-build:
+build-prod:
 	ENV=prod $(GATSBY) build
 	find public -name '*.map' -delete
+	@echo
 
-prod: prod-build
+serve: prod-build
 	$(GATSBY) serve
 
-cd: clean dev
-cp: clean prod
+prod: clean
+	git ls-files | entr -cr make build-prod
 
-watch-prod: clean
-	git ls-files | entr -cr make prod-build
+deploy:
+	$(GATSBY_s3) deploy
+
+ci: clean build-prod deploy
 
 sync:
 	echo '// Re-generate this by running "make sync"' > $(TF_OUT)
 	< $(TF_DIR)/blog.tf grep ' domain *=' | perl -pe 's/.*(".+").*/export const hostname = \1/' >> $(TF_OUT)
 	< $(TF_DIR)/blog.tf fgrep s3_bucket_name | perl -pe 's/.*(".+").*/export const s3_bucket = \1/' >> $(TF_OUT)
 	< $(TF_DIR)/setup.tf fgrep blog/gatsy | fgrep ' region ' | perl -pe 's/.*(".+").*/export const s3_region = \1/' >> $(TF_OUT)
-
-deploy:
-	./node_modules/gatsby-plugin-s3/bin.js deploy
-
-ci: clean prod-build deploy
