@@ -40,9 +40,8 @@ export async function init () {
             app.use("/", express.static(`${ __dirname }/../static-test`));
         } else {
             app.use("/", (_, res) => res.status(200).set("Content-Type", "text/html").send(
-                '<html><head><title>Mirror</title><meta charset="UTF-8"/><meta name="robots" content="noindex, nofollow"></head>' +
-                '<body><noscript></noscript>It works! Try requesting something like ' +
-                '<a href="www.google-analytics.com/analytics.js">www.google-analytics.com/analytics.js</a>.</body></html>'
+                '<html><head><meta charset="UTF-8"/><meta name="robots" content="noindex, nofollow"></head>' +
+                '<body></body></html>'
             ));
         }
 
