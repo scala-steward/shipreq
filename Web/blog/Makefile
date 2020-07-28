@@ -1,4 +1,4 @@
-.PHONY: build-dev build-prod c cd ci clean cp d deploy dev p prod serve sync
+.PHONY: build-dev build-prod c cd ci clean cp d deploy dev p prod sync watch-prod
 
 GATSBY    := ./node_modules/gatsby-cli/cli.js
 GATSBY_s3 := ./node_modules/gatsby-plugin-s3/bin.js
@@ -16,9 +16,9 @@ info:
 	@echo "  * clean      -- gatsby clean"
 	@echo "  * deploy     -- Deploys what's build to S3"
 	@echo "  * dev        -- gatsby develop"
-	@echo "  * serve      -- gatsby serve"
-	@echo "  * prod       -- Watches for changes and builds prod"
+	@echo "  * prod       -- gatsby build && gatsby serve"
 	@echo "  * sync       -- Synchronise config here with the latest values from Terraform"
+	@echo "  * watch-prod -- Watches for changes and builds prod"
 	@echo
 
 # Aliases
@@ -27,6 +27,7 @@ cd: clean dev
 cp: clean prod
 d : dev
 p : prod
+wp: watch-prod
 
 clean:
 	$(GATSBY) clean
@@ -43,10 +44,10 @@ build-prod:
 	find public -name '*.map' -delete
 	@echo
 
-serve: prod-build
+prod: build-prod
 	$(GATSBY) serve
 
-prod: clean
+watch-prod: clean
 	git ls-files | entr -cr make build-prod
 
 deploy:
