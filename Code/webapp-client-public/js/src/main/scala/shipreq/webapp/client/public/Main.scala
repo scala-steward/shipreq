@@ -1,5 +1,6 @@
 package shipreq.webapp.client.public
 
+import japgolly.scalajs.react.ReactDOM
 import japgolly.scalajs.react.extra.router.{BaseUrl, Router}
 import japgolly.scalajs.react.vdom.PackageBase._
 import scala.scalajs.js.annotation.JSExportTopLevel
@@ -17,7 +18,7 @@ object Main extends ClientSideProcImpl(PublicSpaEntryPoint.proc) {
 
     val spa      = new PublicSpa(i, AjaxClient.Binary)
     val reactApp = component(i, spa)
-    hydrateOrRender(reactApp, `#root`)
+    ReactDOM.hydrateOrRender(reactApp, `#root`)
   }
 
   def component(i: PublicSpaEntryPoint.InitData, spa: PublicSpa): VdomElement = {

@@ -23,4 +23,3 @@ object Main extends ClientSideProcImpl(HomeSpaEntryPoint.proc) {
     reactApp.renderIntoDOM(`#root`)
   }
 }
-

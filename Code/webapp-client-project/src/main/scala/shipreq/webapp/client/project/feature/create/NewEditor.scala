@@ -69,18 +69,12 @@ object NewEditor {
       EditTheme.OpenPreview.WhenWanted,
       EditTheme.WhenInTransit.DisableEditor, // else buttons move up & down jarringly
     )
-
-    // TODO https://github.com/japgolly/scalajs-react/issues/748
-    implicit class StateSnapshotExt[S](private val self: StateSnapshot[S]) extends AnyVal {
-      def withValue(s: S): StateSnapshot[S] =
-        StateSnapshot(s)(self.underlyingSetFn) // do this properly with reuse later
-    }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   private final class Internal(static: Static) {
-    import Internal.{ShowInstructions, StateSnapshotExt, editorStyle}
+    import Internal.{ShowInstructions, editorStyle}
     import static._
 
     val perRow: RowKey.Fold[ForFields] = {
