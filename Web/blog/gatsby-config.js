@@ -15,6 +15,7 @@ module.exports = {
     "gatsby-plugin-lodash",
     "gatsby-plugin-postcss",
     "gatsby-plugin-react-helmet",
+    "gatsby-plugin-remove-serviceworker",
     "gatsby-plugin-sass",
     "gatsby-plugin-sharp",
     "gatsby-plugin-sitemap",
@@ -76,7 +77,6 @@ module.exports = {
     },
 
     // =============================================================================================
-    // This has to come before gatsby-plugin-offline
     {
       resolve: "gatsby-plugin-manifest",
       options: {
@@ -91,17 +91,6 @@ module.exports = {
         icon            : "src/images/favicon.svg",
         icon_options    : {
           purpose: "any maskable",
-        },
-      },
-    },
-
-    // =============================================================================================
-    // This has to come after gatsby-plugin-manifest
-    {
-      resolve: "gatsby-plugin-offline",
-      options: {
-        workboxConfig: {
-          importWorkboxFrom: "cdn",
         },
       },
     },
