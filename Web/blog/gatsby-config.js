@@ -38,6 +38,7 @@ module.exports = {
         gatsbyRemarkPlugins: [
           // "gatsby-remark-autolink-headers",
           "gatsby-remark-check-links",
+          "gatsby-remark-graphviz", // has to come before gatsby-remark-prismjs
           "gatsby-remark-smartypants",
           {
             resolve: "gatsby-remark-external-links",
@@ -46,7 +47,7 @@ module.exports = {
             },
           },
           {
-            resolve: "gatsby-remark-prismjs",
+            resolve: "gatsby-remark-prismjs", // has to come after gatsby-remark-graphviz
             options: {
               inlineCodeMarker: "→",
               showLineNumbers: false,

@@ -30,11 +30,21 @@ type Props = {
   pageContext: PageContext
 }
 
+const MrB = ({type}: {type: "app" | "github"}) => (
+  (type == "app")
+  ? <A href="https://japgolly.github.io/mr.boilerplate">Mr. Boilerplate</A>
+  : <A href="https://github.com/japgolly/mr.boilerplate">Mr. Boilerplate</A>
+)
+
 const components = {
   A,
-  About: () => <Link to="/about">About</Link>,
-  ScalaJS: () => <A href="https://www.scala-js.org">Scala.JS</A>,
-  ShipReq: () => <A href="https://shipreq.com">ShipReq</A>,
+  MrB,
+  About    : () => <Link to="/about">About</Link>,
+  BooPickle: () => <A href="https://github.com/suzaku-io/boopickle">BooPickle</A>,
+  ScalaJS  : () => <A href="https://www.scala-js.org">Scala.JS</A>,
+  SG       : () => <A href="https://github.com/japgolly/scala-graal">scala-graal</A>,
+  ShipReq  : () => <A href="https://shipreq.com">ShipReq</A>,
+  SJR      : () => <A href="https://github.com/japgolly/scalajs-react">scalajs-react</A>,
 }
 
 const Article = styled.article`
