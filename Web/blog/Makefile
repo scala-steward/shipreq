@@ -1,24 +1,26 @@
-.PHONY: build-dev build-prod c cd ci clean cp d deploy dev p prod sync watch-prod
+.PHONY: build-dev build-prod c cd ci clean cp d deploy dev invalidate-prod p prod sync watch-prod
 
-GATSBY    := ./node_modules/gatsby-cli/cli.js
-GATSBY_s3 := ./node_modules/gatsby-plugin-s3/bin.js
-TF_DIR    := ../../Terraform/web
-TF_OUT    := ./src/config/terraform.ts
+GATSBY        := ./node_modules/gatsby-cli/cli.js
+GATSBY_s3     := ./node_modules/gatsby-plugin-s3/bin.js
+TF_DIR        := ../../Terraform/web
+TF_OUT        := ./src/config/terraform.ts
+CLOUDFRONT_ID := E1G9VKU9QVZZKL
 
 info:
 	@echo "ShipReq Blog."
 	@echo
 	@echo "Commands:"
 	@echo
-	@echo "  * build-dev  -- Builds in dev mode"
-	@echo "  * build-prod -- Builds in prod mode"
-	@echo "  * ci         -- Builds and deploys from CI"
-	@echo "  * clean      -- gatsby clean"
-	@echo "  * deploy     -- Deploys what's build to S3"
-	@echo "  * dev        -- gatsby develop"
-	@echo "  * prod       -- gatsby build && gatsby serve"
-	@echo "  * sync       -- Synchronise config here with the latest values from Terraform"
-	@echo "  * watch-prod -- Watches for changes and builds prod"
+	@echo "  * build-dev       -- Builds in dev mode"
+	@echo "  * build-prod      -- Builds in prod mode"
+	@echo "  * ci              -- Builds and deploys from CI"
+	@echo "  * clean           -- gatsby clean"
+	@echo "  * deploy          -- Deploys what's build to S3"
+	@echo "  * dev             -- gatsby develop"
+	@echo "  * invalidate-prod -- Invalidate everything in CloudFront"
+	@echo "  * prod            -- gatsby build && gatsby serve"
+	@echo "  * sync            -- Synchronise config here with the latest values from Terraform"
+	@echo "  * watch-prod      -- Watches for changes and builds prod"
 	@echo
 
 # Aliases
@@ -53,7 +55,10 @@ watch-prod: clean
 deploy:
 	$(GATSBY_s3) deploy
 
-ci: clean build-prod deploy
+invalidate-prod:
+	aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_ID) --paths "/*"
+
+ci: clean build-prod deploy invalidate-prod
 
 sync:
 	echo '// Re-generate this by running "make sync"' > $(TF_OUT)
