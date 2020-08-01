@@ -1,20 +1,12 @@
 import { hostname, s3_bucket, s3_region } from "./terraform"
 import { GoogleAnalytics, StatCounter } from "./types"
 
-const isProd: boolean = /prod/.test("" + process.env.ENV)
-const isDev : boolean = !isProd
-
-if (isProd)
-  console.log("\u001b[41;1;37;1mUsing Production config\u001b[0m")
-else
-  console.log("\u001b[43;30mUsing Development config\u001b[0m")
-
 function singleLine(l: string) {
   return l.replace(/\s+/g, " ").trim()
 }
 
 const googleAnalytics: GoogleAnalytics | null =
-  isDev ?
+  (process.env.NODE_ENV !== `production`) ?
   {
     trackingId: "UA-173267009-2",
     jsUrl     : "http://localhost:3000/*(d3d3Lmdvb2dsZXRhZ21hbmFnZXIuY29t)*/*(Z3RhZw)*/*(anM%2FaWQ9VUEtMTczMjY3MDA5LTI)*",
@@ -26,7 +18,7 @@ const googleAnalytics: GoogleAnalytics | null =
   }
 
 const statCounter: StatCounter | null =
-  isDev ?
+  (process.env.NODE_ENV !== `production`) ?
   {
     project : 12363376,
     security: "bec10e58",
@@ -43,12 +35,9 @@ const statCounter: StatCounter | null =
 
 const Year = new Date().getFullYear()
 
-if (isProd)
-  console.log(`Terraform settings: [${hostname}] via S3 bucket [${s3_bucket}] @ [${s3_region}]`)
+console.log(`Terraform settings: [${hostname}] via S3 bucket [${s3_bucket}] @ [${s3_region}]`)
 
 export default {
-  isProd,
-  isDev,
 
   title: "ShipReq Blog",
 
