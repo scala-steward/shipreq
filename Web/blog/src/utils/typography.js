@@ -10,6 +10,10 @@ const customOptions = {
       marginTop: 0,
       marginBottom: rhythm(2),
     },
+    "blockquote": {
+      fontSize: "95%",
+      marginBottom: rhythm(1/2),
+    }
   }),
 }
 

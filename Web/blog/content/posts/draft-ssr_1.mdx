@@ -2,7 +2,7 @@
 title: Scala, React, and SSR (part 1)
 slug : scala_react_and_ssr_part_1
 date : 2020-07-21T17:00:00+1000
-desc : todo
+desc : In the JS world, React users can render their pages on the server side for a better user experience. Here's how to do in the Scala world.
 tags : ["tech"]
 ---
 
@@ -20,60 +20,69 @@ You're probably serving pages like this:
 </html>
 ```
 
-meaning that users first load and render an empty page, then wait for the JS to fetch, parse, and finally initialise and render your app.
-This results in the user waiting a short while.
-React has a feature called "SSR", short for "server-side rendering", which allows you to render your app on the backend and
-send the resulting HTML immediately. This allows users' experience to begin faster, as the loading of the JS and app initialisation can happen
-in parallel as the reader spends a few seconds reading your page. That means you start serving pages like this:
+...meaning that users first load and render an empty page, then wait for the JS to fetch, parse, and finally initialise and render your app.
+In other words, the user experiences a delay when they visit your site/app.
+
+React has a feature called **"SSR", short for "server-side rendering",** which allows you to render your app on the backend and
+send the resulting HTML immediately. This allows the user's experience to begin faster, because the loading of the JS and app initialisation can happen
+seamlessly in the background as the reader starts reading your page. It means you start serving pages like this:
 
 ```html
 <html>
   <body>
     <div id="mount_my_app_here">
 
-      <div data-reactroot="">
+      <!-- This is the initial rendering of your React component -->
+      <div>
         <h1>HELLO AND WELCOME TO MY SITE!</h1>
         <p>Let me tell you all about blah blah blah...</p>
       </div>
 
     </div>
+
+    <!-- Here you load React and your app as usual -->
     <script src="react_itself.js" />
     <script src="my_scalajs_react_app.js" />
   </body>
 </html>
 ```
 
-How to accomplish this is quite well documented in the JS world but what about in the Scala world?
+It's quite well documented in the JS world how you accomplish this, but what about in the Scala world?
 
-## Step 1: Graal
+## Step 1/5: Graal
 
-The first thing you'll want to do is install GraalVM.
-It by Oracle and it's your normal JDK with a bunch of extra stuff that I believe will
-eventually make it's way back into Java proper.
-The reason we want to switch to Graal is because of its Polyglot API.
+The first thing you'll want to do is install <Graal/>.
+It by Oracle and it's your normal JDK with a bunch of extra stuff that, as far as I know,
+will eventually make it's way back into Java proper.
+The reason we want use Graal is because of its <A href="https://www.graalvm.org/docs/reference-manual/polyglot">Polyglot support</A>.
 Java's made a few attempts at being able to embed JavaScript, first with Rhino, then Nashhorn,
 and now again with the Polyglot/Truffle API. Unlike previous attempts, this new approach...
 
-1. converts JS into JVM bytecode or Polyglot IR, can't remember which, but whichever it is, it's able to be optimised by the new Graal optimiser (i.e. successor to HotSpot)
-2. is capable of way more than just JS, and already supports R, Python, LLVM and Ruby.
+1. converts JS into Truffle IR where it's able to be heavily optimised by the new Graal JIT/optimiser (i.e. successor to HotSpot)
+2. it's capable of way more than just JS, and out-of-the-box it already supports R, Python, LLVM and Ruby.
 
 If "Oracle" makes you wary due to licencing, don't worry: there are two editions of Graal available.
 
-1. Community Edition (CE) which is completely free, and ~3% faster than the standard JVM
+1. Community Edition (CE) which is completely free, and ~5% faster than the standard JVM
 2. Enterprise Edition (EE) which is not free, but has more JIT optimisations giving you 5-15% better runtime performance
 
 We'll use Graal (not just locally but as the JVM you deploy to production with your app), so that it can execute JS.
 Specifically, it will execute the transpiled output of your <ScalaJS /> app.
 
-## Step 2: scala-graal
+> Note: even without embedding JS, there's a compelling reason to run your Scala with <Graal/>:
+> the new JIT is significantly better at optimising Scala. <A href="https://www.graalvm.org/scala">Read mode...</A>
+
+
+
+## Step 2/5: scala-graal
 
 We're going to use <SG/> to help glue all of our pieces together.
-What scala-graal is going to give us is:
+What <SG/> is going to give us is:
 
 * make calling JS from JVM nice, easy, and safe by providing a concise, Scala-friendly interface
 * allow interpolation, meaning you don't have to worry about safely marshalling arguments and composing with your commands
-* precompilation of your SSR
-* huge performance increases to your SSR - either by caching (I'll cover this in a sequel to this article) or by JIT warmup
+* pre-compilation of your SSR
+* huge performance increases to your SSR - either by a special type of caching (to be covered in part 2 of this article) or by JIT warmup
 * helpers for SSR specifically
 * we won't use them here, but there are a bunch of other features like thread-pools, async, time-limits, metrics and more
   so check that out in <A href="https://github.com/japgolly/scala-graal">scala-graal's doc</A> if you're interested.
@@ -85,11 +94,11 @@ digraph {
   rankdir=TB
   node[style=filled]
 
-  shared [label="Shared\nScala" fillcolor="#ccf4ff"]
-  graalJVM [label="scala-graal\n\(JVM)" fillcolor="#ffddaa"]
-  graalJS [label="scala-graal\n\(JS)" fillcolor="#ffddaa"]
-  sbtJVM [label="SBT module\nScala/JVM" fillcolor="#aaeeff"]
-  sbtJS [label="SBT module\nScala.JS" fillcolor="#aaeeff"]
+  shared [label="Your Shared\nScala" fillcolor="#ccf4ff"]
+  graalJVM [label="scala-graal\n\(Scala/JVM)" fillcolor="#ffddaa"]
+  graalJS [label="scala-graal\n\(Scala.JS)" fillcolor="#ffddaa"]
+  sbtJVM [label="Your SBT module\n(Scala/JVM)" fillcolor="#aaeeff"]
+  sbtJS [label="Your SBT module\n(Scala.JS)" fillcolor="#aaeeff"]
   JS [label="Generated\nJS file" fillcolor="#ddffdd"]
   jar [label="JAR / WAR\nGoes to prod" fillcolor="#ffccf4"]
 
@@ -102,10 +111,9 @@ digraph {
 }
 ```
 
-
 I'll assume that if you're already using <SJR/> that you're already
-familiar with cross-projects in SBT. Thus I'll simply say,
-create a new cross-projects in SBT that looks like this:
+familiar with <ScalaJS/> cross-projects in SBT. Thus I'll simply say,
+create a new cross-project in SBT that looks like this:
 
 ```scala
 val scalaGraalVer = "0.5.0"
@@ -146,13 +154,19 @@ This is going to give you a few things.
 * `webapp-ssr/js/src/main/scala` ← for exposing the React components that we'll equip with SSR
 * `webapp-ssr/jvm/src/main/scala` ← for performing the SSR from the JVM
 * `webapp-ssr/jvm/src/main/resources/webapp-ssr.js` ← SBT will automatically populate this with the output of the `webappSsrJs` module
-* it will use <BooPickle/>, a very fast binary serialisation library, to marshall data back and forth between the JVM and JS-embedded-in-the-JVM
+* Embedded JS is still JS; it doesn't speak Scala, even though you're on the JVM, so you need a communication protocol.
+  We'll use <BooPickle/>, a very fast binary serialisation library, to marshall data back and forth between the JVM and JS-embedded-in-the-JVM.
+
+> Note: Whether you're enabling SSR on 1 page or 100 pages, you only need to create one SSR project.
+> The pages/SPAs can (and should) live in their own SBT modules. Every time you want to equip a new component
+> with SSR, you simply add it's module to the `.dependsOn(…)` list above.
 
 
-## Step 3: Prepare the SSR JS
+
+## Step 3/5: Prepare the SSR JS
 
 Firstly we'll create a little API in `webapp-ssr/shared/src/main/scala`,
-to be shared between the JVM & JS modules:
+to be shared between the JVM & JS modules. This will serve as the contract and protocol between both worlds.
 
 ```scala
 import boopickle.Default._
@@ -176,13 +190,16 @@ Here we're doing three things.
     Its value can be anything so long as it's unique and doesn't conflict with anything
     available in the global JS environment.
 
-    It has to be a `final val` so that it can be used in annotations, which we'll do in the
-    next step.
+    It has to be a `final val` so that it can be used in annotations.
 
 2. We declare a `MySpaInputs` class to contain all the inputs/args/props to our React component.
 
 3. We declare an implicit `Pickler[MySpaInputs]` instance so that we can serialise the data
     we need to send from the JVM to JS.
+
+You might wonder why I'm creating a `Manifest` object with only one constant. Seems a bit wasteful.
+It's because you might have more than just one page you want to equip with SSR, in which case you would
+add a new entry to manifest, and (optionally) a new input class & pickler.
 
 Next, let's expose the component we want to serve with SSR.
 Create the following in `webapp-ssr/js/src/main/scala`:
@@ -192,7 +209,7 @@ import japgolly.scalagraal.Pickled
 import japgolly.scalajs.react.ReactDOMServer
 import scala.scalajs.js.annotation.JSExportTopLevel
 
-/** This code is compiled into JS and executed on the JVM through Graal JS. */
+/** This code is compiled into JS and executed on the JVM via Graal JS. */
 object SsrJs {
   import SsrSharedData._
 
@@ -210,7 +227,9 @@ We take serialised input, deserialise it, pass it to our component, then
 get React to render it to a string. The resulting string is the HTML that we'll
 soon serve to users.
 
-## Step 4: Hydrate yourself
+
+
+## Step 4/5: Hydrate yourself
 
 When the frontend loads, it mounts itself into the DOM.
 You'll need to now change this to "hydrate" the DOM that you rendered on the backend
@@ -228,25 +247,29 @@ and sent as part of the page HTML. Change it as follows:
 
 We could've used `ReactDOM.hydrate` directly but I prefer to use `ReactDOM.hydrateOrRender`
 because we can set it once and forget about it, regardless of whether we decide to
-server-side-render it. Otherwise, you'd have a code dependency where you'd have to keep
+server-side-render it, or not. Otherwise, you'd have a code dependency where you'd have to keep
 the frontend code in sync (by choosing either `render` or `hydrate`) with whatever the
 backend code does.
 
 It also allows you to make SSR conditional at runtime.
 An example use case for this (which <SG/> has support for doing easily),
-is set a time limit for each server-side-render, and let the page render
-without SSR if it cant complete in it. In such a case the frontend _must_
-use `ReactDOM.hydrateOrRender` as it doesn't know which it will need to do.
+is to set a time limit for each server-side-render, and let the page render
+without SSR if the backend cant render the page fast enough. In such a case the frontend _must_
+use `ReactDOM.hydrateOrRender` as it doesn't know ahead of time what the server's going to do.
 
-## Step 5: SSR in the JVM
+
+
+## Step 5/5: SSR in the JVM
 
 The final step. Here we'll execute JS and React in the JVM.
 
 We've already got our <ScalaJS/> output file on our classpath; we did that in step 2
-by configuring SBT. You're also gonna need React itself on your classpath. I'll leave
-that as an exercise to the reader as how you do that is quite open-ended and should align
-with other ways you're managing JS in your project. The quickest way is simply just to
-download React itself and dump it into your `webapp-ssr/jvm/src/main/resources` directory.
+by configuring SBT. You'll also need React itself on your classpath.
+The quickest way is to just download React JS and dump it into your `webapp-ssr/jvm/src/main/resources` directory.
+That's not the optimal way.
+The optimal way is quite open-ended and should align with other ways you're managing JS dependencies in your project,
+so I'll leave that that as an exercise to the reader.
+*(In my case, I have a webpack build outside of SBT that manages all of my JS, and I have symlinks in SBT to its output.)*
 
 Let's start by creating a file in `webapp-ssr/jvm/src/main/scala`:
 
@@ -268,15 +291,17 @@ object MySsr {
 
 Let's break this down a bit.
 
-* We create a `setup` mini-program/function/procedure that we can execute in JS.
-  We don't actually execute it here, just create it as an `Expr[Unit]`, which is
-  code that will return a `Unit` when you later choose to execute it.
+* We create a `val setup`, which is a mini-program/function/procedure that we can execute in JS.
+  We don't actually execute it here, just create it as an `Expr[Unit]`,
+  meaning it will return `Unit` when you later choose to execute it.
 
 * The arguments we pass to `ReactSsr.Setup` need to load React itself, and optionally,
-  any other dependencies. You must not pass in your <ScalaJS/> output here.
+  any other dependencies. You *must not* pass in your <ScalaJS/> output here.
 
-* One we last line we have `>>` which means "and then".
-  This line ends in `.void` which means "discard the result and return Unit".
+* On the last line we have `>>` which means "and then".
+  If you don't like `a >> b` you can also write it as `a.flatMap(_ => b)`.
+
+* The last line ends in `.void` which means "discard the result and return Unit".
 
 * Putting it all together, we load React, let `ReactSsr` from <SG/> prepare your embedded JS
   env for SSR, then we load our <ScalaJS/> output which contains our component(s).
@@ -289,6 +314,9 @@ Next we'll add a function (and pre-compile it) to call the endpoint we exported 
   val renderMySpa: MySpaInputs => Expr[String] =
     Expr.fn1[MySpaInputs](Manifest.MySpa).compile(_.asString)
 ```
+
+The `1` in `.fn1` means our function has one argument.
+The `(_.asString)` function is where we process the JS function's output.
 
 Pretty easy. Now we've got a function that accepts `MySpaInputs`, automatically serialises
 them, calls the code that we exported above, and returns a String which is the rendered HTML.
@@ -315,17 +343,24 @@ Let's unpack this.
   sandbox for it. When React loads, it modifies the global state to make globals like `React`
   and `ReactDOMServer` available. Here we're using `ContextSync.newContextPerUse`
   which will create a new context (stateful sandbox) on each call to `.eval`, and then
-  discard it as soon as it's no longer needed.
+  discard it.
 
-* The `Sync` in `ContextSync` means we interact with the context is a synchronous manner.
-  <SG/> provides asynchronous versions as well.
+* The `Sync` in `ContextSync` means we interact with the context is a synchronous manner. <SG/>
+  provides asynchronous versions as well.
 
-So, this works! But it does have a flaw as far as SSR is concerned.
+> Note: if you're rendering an SPA, it needs to know which route to render based on the URL.
+> Use `ReactSsr.setUrl` before rendering to set the URL. <br/>
+> Eg. `scala→ReactSsr.setUrl("https://blah.com/login") >> renderMySpa`
+
+So, this works! We did it!
+
+But it does have a flaw as far as SSR is concerned.
 On each request, this approach would
-create a new context, and spend time loading React, any deps, and all of your Scala.JS into it,
-and then call your component slowly because the env (just like the JVM) is cold.
+create a new context, spend time loading React, any deps, and all of your Scala.JS into it,
+and then when it finally gets around to calling your component, it will do so slowly
+because the env/context/sandbox is new and cold (just like cold vs hot JVMs).
 
-That's terribly ineffeficent. Let's fix that by replacing the last snippet with this:
+That's terribly inefficient so let's fix that by replacing the last snippet with this:
 
 ```scala
   private val ctx = ContextSync.fixedContext()
@@ -337,16 +372,22 @@ That's terribly ineffeficent. Let's fix that by replacing the last snippet with 
     init.flatMap(_ => ctx.eval(renderMySpa))
 ```
 
-Now we create a single, fixed context that will be initialised once,
-and reused for all future calls. Great!!
+Now we create a single context that will be initialised once,
+and reused for all SSR requests. Great!!
+
+
+## Performance
 
 Now as to how fast that's going to be, it depends on how many times you call it (JIT warmup).
-It could be ~10 ms but it's likely to be ~100ms (from memory).
+It's likely to be about ~100ms,
+can become ~10ms after around 1000 runs,
+and if you spend ~30 sec doing 10000 runs, it comes down to ~1ms (for the same inputs).
+Ideally you'd want to warmup it with different inputs.
 
-There are approaches to speed this up, <SG/> provides functionality for creating context pools,
-and warming up contexts which you can run on startup.
+The point is, the performance is volatile.
+There are approaches to speed this up; <SG/> provides functionality for creating pools of contexts,
+and warming up contexts which you can use on startup.
 
 But there's an even better way. We can make this constant time (no more JIT fluctuation),
 and we can make it consistent take ~0ms. It doesn't work for all types of components,
-but it does work for many. This article is long enough though so stay tuned for part 2...
-
+but it does work for many. This article is long enough so stay tuned for part 2...

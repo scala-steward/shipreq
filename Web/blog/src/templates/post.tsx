@@ -41,6 +41,7 @@ const components = {
   MrB,
   About    : () => <Link to="/about">About</Link>,
   BooPickle: () => <A href="https://github.com/suzaku-io/boopickle">BooPickle</A>,
+  Graal    : () => <A href="https://www.graalvm.org">GraalVM</A>,
   ScalaJS  : () => <A href="https://www.scala-js.org">Scala.JS</A>,
   SG       : () => <A href="https://github.com/japgolly/scala-graal">scala-graal</A>,
   ShipReq  : () => <A href="https://shipreq.com">ShipReq</A>,
