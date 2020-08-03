@@ -52,6 +52,10 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
+* Stop making the browser full-screen :(
+* Add ctrl-s to save editor without closing
+* Make line numbers in blocks optional
+* stop changing the scroll as I'm typing
 
 
 
