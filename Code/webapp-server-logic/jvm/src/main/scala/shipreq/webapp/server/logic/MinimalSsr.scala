@@ -4,6 +4,7 @@ import cats.instances.either._
 import com.typesafe.scalalogging.StrictLogging
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalagraal._
+import japgolly.scalagraal.js._
 import japgolly.scalagraal.util._
 import scalaz.Monad
 import scalaz.syntax.monad._
@@ -43,9 +44,9 @@ final class MinimalSsr[F[_]]()(implicit F: Monad[F],
       }
     }
 
-  private def withCtx[A](f: ContextSync => F[A]): F[A] =
+  private def withCtx[A](f: GraalContext => F[A]): F[A] =
     for {
-      ctx <- F.point(ContextSync.fixedContext())
+      ctx <- F.point(GraalContext.fixedContext())
       res <- logAndTrace("setup")(F.point(ctx.eval(RealSsr.setup)))
       _   <- assertOk(res)
       a   <- f(ctx)

@@ -60,13 +60,13 @@ object Dependencies {
   }
 
   object ScalaGraal {
-    private val ver   = "0.5.0"
+    private val ver   = "1.0.0"
     private val jvm   = MultiModule.scala("com.github.japgolly.scala-graal", ver)
     private val both  = MultiModule.jvmAndJs("com.github.japgolly.scala-graal", ver)
     val core          = jvm("core") ++ graal
-    val util          = jvm("util") ++ core
+    val coreJs        = jvm("corejs") ++ core
     val extBoopickle  = both("ext-boopickle")
-    val extPrometheus = jvm("ext-prometheus") ++ core
+    val extPrometheus = jvm("ext-prometheus") ++ coreJs
 
     lazy val graal = jvmOnly("org.graalvm.sdk" % "graal-sdk" % Graal.ver)
   }

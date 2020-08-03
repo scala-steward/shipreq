@@ -1,7 +1,7 @@
 package shipreq.webapp.ssr
 
 import japgolly.scalagraal._
-import japgolly.scalagraal.util.ReactSsr
+import japgolly.scalagraal.js._
 
 object RealSsr {
   import GraalBoopickle._
