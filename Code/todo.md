@@ -55,7 +55,6 @@ v2.2
 * Stop making the browser full-screen :(
 * Add ctrl-s to save editor without closing
 * Make line numbers in blocks optional
-* stop changing the scroll as I'm typing
 
 
 

@@ -180,7 +180,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
       val onChange: ReactEventFromTextArea => Callback =
         e => $.props.flatMap(p =>
-          p.status.wrapEdit(p.edit.setState(liveCorrect(e.target.value), scrollIntoView) >>
+          p.status.wrapEdit(p.edit.setState(liveCorrect(e.target.value)) >>
             p.preview.onEdit(p.wantPreview)))
 
       val onBlur: Callback =
