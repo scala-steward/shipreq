@@ -77,7 +77,9 @@ object RichTextEditorHelp {
     )
   }
 
-  private val codeBlocks =
+  private val codeBlocks = {
+    import RichCodeBlock.Attribute._
+
     Group("Code blocks")(
       Row(
         "To create a block of code, wrap it between lines of ", code("```"), ".",
@@ -111,7 +113,21 @@ object RichTextEditorHelp {
       ),
 
       Row(
-        "The following languages accept a ", code("render"), " option that will interpret and embed the content.",
+        "If you'd like to line numbers in your block add the ", code(lineNumbers), " option after the language."
+      )(
+        <.div(
+          ^.whiteSpace.pre,
+          s"""
+            |```javascript:$lineNumbers
+            |const Y =
+            |  g => g( () => Y(g) )
+            |```
+            |""".stripMargin.trim
+        )
+      ),
+
+      Row(
+        "The following languages accept a ", code(render), " option that will interpret and embed the content.",
         <.ul(
           <.li(<.code("html"), " - Embeds the given HTML"),
           <.li(<.code("svg"), " - Draws a vector graphic"),
@@ -120,8 +136,8 @@ object RichTextEditorHelp {
       )(
         <.div(
           ^.whiteSpace.pre,
-          """
-            |```html:render
+          s"""
+            |```html:$render
             |<table>
             |  <tr><th>First Name:</th><td>Felisin</td></tr>
             |  <tr><th>Last Name:</th><td>Paran</td></tr>
@@ -131,8 +147,8 @@ object RichTextEditorHelp {
         ),
         <.div(
           ^.whiteSpace.pre,
-          """
-            |```dot:render
+          s"""
+            |```dot:$render
             |a,b -> c
             |b -> d
             |```
@@ -140,6 +156,7 @@ object RichTextEditorHelp {
         ),
       )
     )
+  }
 
   private val useCaseFlow =
     Group("Use Case flow")(

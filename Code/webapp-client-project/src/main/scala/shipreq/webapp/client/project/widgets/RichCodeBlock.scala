@@ -13,6 +13,11 @@ import shipreq.webapp.client.project.app.WebWorkerClient
 
 object RichCodeBlock {
 
+  object Attribute {
+    final val render      = "render"
+    final val lineNumbers = "line-numbers"
+  }
+
   final case class Props(detail   : Option[CodeBlockDetail],
                          code     : String,
                          webWorker: WebWorkerClient.Instance) {
@@ -22,25 +27,28 @@ object RichCodeBlock {
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.derive
 
+  private val errCode = <.code(*.richCodeBlockErrorCode)
+
   private def render(p: Props): VdomNode =
     p.detail match {
-      case None                              => renderCodeBlock(p.code, None)
+      case None                              => renderCodeBlock(p.code, None, lineNumbers = false)
       case Some(CodeBlockDetail(lang, attr)) => renderSpecialised(p.code, lang, attr, p.webWorker)
     }
 
-  private def renderCodeBlock(code: String, language: Option[String]): VdomNode =
+  private def renderCodeBlock(code: String, language: Option[String], lineNumbers: Boolean): VdomNode =
     CodeBlockWithSyntaxHighlighting.Props(
       code        = code,
       language    = language,
-      lineNumbers = language.isDefined,
+      lineNumbers = lineNumbers,
     ).render
 
-  private def renderUnrecognisedAttr(language: String, attributes: TreeSet[String]): VdomNode =
+  private def renderUnrecognisedAttr(language: String, suffix: TagMod, attributes: TreeSet[String]): VdomNode =
     <.div(
       *.richCodeBlockError,
       ^.key := 1,
       "Unsupported options for ",
-      <.code(*.richCodeBlockErrorCode, language),
+      errCode(language),
+      suffix,
       ":",
       <.ul(*.richCodeBlockErrorUL, attributes.toTagMod(a =>
         <.li(<.code(*.richCodeBlockErrorCode, a)))))
@@ -57,21 +65,33 @@ object RichCodeBlock {
       attributes.contains(a)
     }
 
+    var suffix: TagMod = null
     var result: VdomNode = null
+    var lineNumbers = false
+
+    def acceptRender(rendered: => VdomNode): Unit =
+      if (readAttr(Attribute.render)) {
+        suffix = TagMod(" with ", errCode(Attribute.render))
+        result = rendered
+      }
 
     language match {
-      case "html" => if (readAttr("render")) result = renderHtml(code)
-      case "svg"  => if (readAttr("render")) result = renderHtml(code)
-      case "dot"  => if (readAttr("render")) result = renderDot(code, webWorker)
+      case "html" => acceptRender(renderHtml(code))
+      case "svg"  => acceptRender(renderHtml(code))
+      case "dot"  => acceptRender(renderDot(code, webWorker))
       case _      => ()
     }
 
+    if (result eq null) {
+      if (readAttr("line-numbers")) lineNumbers = true
+    }
+
     if (unrecognised.nonEmpty)
-      renderUnrecognisedAttr(language, unrecognised)
+      renderUnrecognisedAttr(language, Option(suffix).whenDefined, unrecognised)
     else if (result ne null)
       result
     else
-      renderCodeBlock(code = code, language = Some(language))
+      renderCodeBlock(code = code, language = Some(language), lineNumbers = lineNumbers)
   }
 
   private def renderHtml(code: String): VdomNode =
