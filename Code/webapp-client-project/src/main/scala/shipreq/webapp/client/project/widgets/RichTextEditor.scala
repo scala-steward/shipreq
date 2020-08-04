@@ -205,7 +205,6 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
     private def _render(p: Props, s: State, optionalFullscreen: Option[OptionalFullscreen]): VdomNode = {
 
-
       def editor(layout: EditTheme.Layout, enabled: Enabled, validity: Validity): VdomElement = {
         val keys = keyHandlerBase(p.extraKbShortcuts.keyHandlers)
 

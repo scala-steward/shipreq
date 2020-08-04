@@ -13,6 +13,15 @@ trait OptionalFullscreen {
 
 object OptionalFullscreen {
 
+  // When true, hitting the fullscreen button will make the browser itself go fullscreen.
+  // When false, we only go fullscreen within the viewport.
+  //
+  // Setting to false because I always have to toggle browser fullscreen off when I use this.
+  // We'll leave it to users to control the browser themselves.
+  //
+  // Maybe this should be a setting in users' profiles one day?
+  private final val browserFullscreen = false
+
   final case class Ctx(currentlyFullscreen: Boolean,
                        toggleFullscreen   : Callback) {
 
@@ -31,10 +40,10 @@ object OptionalFullscreen {
       Callback {
 
         // Hide scroll bars. Just because we're overlaying a div to the viewport, doesn't mean the rest of the content
-        // thats underneath the overlay, goes away.
+        // that's underneath the overlay, goes away.
         document.body.style.overflow = "hidden"
 
-        if (Screenfull.isEnabled)
+        if (browserFullscreen && Screenfull.isEnabled)
           Screenfull.request()
       }
 
