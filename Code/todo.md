@@ -54,6 +54,7 @@ v2.2
 ### Implement
 * Add ctrl-s to save editor without closing
 * Make line numbers in blocks optional
+* KB shortcuts for fullscreen & monospace
 
 
 
