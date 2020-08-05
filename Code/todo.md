@@ -2,9 +2,7 @@ v2.2
 ========================================================================================================================
 
 ### Plan
-* Do new interviews for [Derivative tags] and [Github integration]
-  * Don't forget to make it analog instead of digital (eg. imagine Dinko, he'll likely want to see a percentage; not just red for 1.9 weeks then suddenly green)
-  * Agile workflow for free! Create sprint, imply everything in scope, sprint automatically updates!
+* Analyse [Collapsible Trees] and [Github integration]
 * Analyse, dev, deploy
 * Use new features to cut out all the noise in my ShipReq (so I can really see what's left)
 * New plan for the rest of v2.2
@@ -16,12 +14,6 @@ v2.2
   * disable for some req types (and don't show in ReqDetail)
   * mandatory for some req types
 * Common workflows pt2: SDLC to deployment
-* Derivative tags
-  * eg. MFs default to "not started" if no (implied) children, else take the max of children's tags
-  * might even need a semigroup table/rules
-  * maybe even something like for FRs in #analysed, if children exists, take their max else remain as #analysed
-    which would automate the process of changing all #analysed parents to #implemented after dev is complete
-    and would provide a live view of the real status as
 * Tag aliases - a map of ReqType -> ApTagId. eg #done = FR:#analysed, CO:#implemented -- probably a bad idea because
   if derivative tags are powerful enough you cover the underlying motivation with it appearing explicit instead of implicit
   (by that I mean you can see the real value in the column, not see one value and get another.
@@ -53,6 +45,10 @@ v2.2
 
 ### Implement
 * KB shortcuts for fullscreen & monospace
+* further lighten the preview stripes, maybe even remove
+* I want an option to see `[MF-35: xxxxxxxxx]` instead of just `[MF-35]` in rich text
+* New form: alt-enter loses focus
+* Derivative tags
 
 
 
