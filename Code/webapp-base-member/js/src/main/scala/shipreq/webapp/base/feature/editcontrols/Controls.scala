@@ -53,16 +53,18 @@ object Controls {
       commitAndProgress ::
       Nil)
 
-    def abort(f: P => Callback): Standard[P] =
+    def abort(f: P => Callback,
+              verb: P => String = _ => Instructions.defaultAbortVerb): Standard[P] =
       copy(abort = Control[P](
         keys        = c => Keys.abort.handle(c.flatMap(f)).toKeyHandlers,
-        instruction = p => Some(Instructions.Clause.abort(f(p)))
+        instruction = p => Some(Instructions.Clause.abort(f(p), verb(p)))
       ))
 
-    def abortWhenDefined(f: P => Option[Callback]): Standard[P] =
+    def abortWhenDefined(f   : P => Option[Callback],
+                         verb: P => String = _ => Instructions.defaultAbortVerb): Standard[P] =
       copy(abort = Control[P](
         keys        = c => Keys.abort.handleWhenDefined(c.map(f)).toKeyHandlers,
-        instruction = f(_).map(Instructions.Clause.abort),
+        instruction = p => f(p).map(Instructions.Clause.abort(_, verb(p))),
       ))
 
     def commitWhenDefined(f   : P => Option[Callback],

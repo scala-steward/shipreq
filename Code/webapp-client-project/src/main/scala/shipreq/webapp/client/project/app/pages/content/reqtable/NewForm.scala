@@ -201,6 +201,7 @@ sealed trait NewForm {
       val renderArgsWithoutAutoFocus =
         CreateFeature.EditorArgs(
           abort         = Some(p.close),
+          abortVerb     = "close",
           autoFocus     = false,
           commit        = createAndCloseForm,
           commitVerb    = "create and close",

@@ -41,6 +41,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
                    trie            : ReqCode.Trie,
                    asyncStatus     : Option[EditorStatus.Async],
                    abort           : Option[Callback],
+                   abortVerb       : String,
                    autoFocus       : Boolean,
                    commitFn        : Option[CommitFn],
                    commitVerb      : String,
@@ -66,7 +67,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
 
     private val editControls =
       EditControlsFeature.Controls[Props](lineCardinality)
-        .abortWhenDefined(_.abort)
+        .abortWhenDefined(_.abort, _.abortVerb)
         .commitWhenDefined(_.status.getCommit, _.commitVerb)
         .addDynamicExtras(_.extraControls)
 

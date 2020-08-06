@@ -283,6 +283,7 @@ object NewEditor {
     def getCustomReqTypeCB(id: CustomReqTypeId): CallbackOption[CustomReqType] =
       pxProject.toCallback.map(_.config.reqTypes.custom.get(id)).asCBO
 
+    final val abortVerb = EditControlsFeature.defaultAbortVerb
     final val commitVerb = EditControlsFeature.defaultCommitVerb
 
     trait ForChangeType {
@@ -413,6 +414,7 @@ object NewEditor {
               trie             = trie,
               asyncStatus      = EditorStatus.async(asyncState),
               abort            = abort,
+              abortVerb        = abortVerb,
               autoFocus        = true,
               commitFn         = commitFn,
               commitVerb       = commitVerb,
@@ -471,6 +473,7 @@ object NewEditor {
               trie             = trie,
               asyncStatus      = EditorStatus.async(asyncState),
               abort            = abort,
+              abortVerb        = abortVerb,
               autoFocus        = true,
               commitFn         = commitFn,
               commitVerb       = commitVerb,
@@ -578,6 +581,7 @@ object NewEditor {
             validationFn     = valFn,
             asyncStatus      = EditorStatus.async(asyncState),
             abort            = abort,
+            abortVerb        = abortVerb,
             autoFocus        = true,
             commitFn         = commitFn,
             commitVerb       = commitVerb,
@@ -669,6 +673,7 @@ object NewEditor {
             lookup           = lookup,
             asyncStatus      = EditorStatus.async(asyncState),
             abort            = abort,
+            abortVerb        = abortVerb,
             autoFocus        = true,
             commitFn         = commitFn,
             commitVerb       = commitVerb,
@@ -767,6 +772,7 @@ object NewEditor {
               edit               = ss,
               asyncStatus        = EditorStatus.async(asyncState),
               abort              = abort,
+              abortVerb          = abortVerb,
               abortConfirmation  = someConfirmJs,
               autoFocus          = true,
               commitFn           = commitFn,
@@ -891,6 +897,7 @@ object NewEditor {
               edit               = ss,
               asyncStatus        = EditorStatus.async(asyncState),
               abort              = abort,
+              abortVerb          = abortVerb,
               abortConfirmation  = someConfirmJs,
               autoFocus          = true,
               commitFn           = commitFn,

@@ -36,6 +36,7 @@ object EditControlsFeature {
   type WhenInTransit = shipreq.webapp.base.feature.editcontrols.WhenInTransit
   val  WhenInTransit = shipreq.webapp.base.feature.editcontrols.WhenInTransit
 
+  final val defaultAbortVerb  = editcontrols.Instructions.defaultAbortVerb
   final val defaultCommitVerb = editcontrols.Instructions.defaultCommitVerb
 
   def spinner = shipreq.webapp.base.feature.editcontrols.EditTheme.spinner

@@ -12,6 +12,7 @@ import shipreq.webapp.base.ui.semantic.Icon
 
 object Instructions {
 
+  final val defaultAbortVerb  = "cancel"
   final val defaultCommitVerb = "save"
 
   sealed trait Atom
@@ -24,8 +25,8 @@ object Instructions {
     def keyToAction(key: String)(action: String, actionCB: Callback): Clause =
       NonEmptyVector(Vdom(key + " to "), Vector.empty :+ Link(action, actionCB))
 
-    def abort(c: Callback): Clause =
-      keyToAction(Keys.abort.desc)("cancel", c)
+    def abort(c: Callback, verb: String): Clause =
+      keyToAction(Keys.abort.desc)(verb, c)
 
     def commit(c: Callback, verb: String): Clause =
       keyToAction(Keys.commit.desc)(verb, c)

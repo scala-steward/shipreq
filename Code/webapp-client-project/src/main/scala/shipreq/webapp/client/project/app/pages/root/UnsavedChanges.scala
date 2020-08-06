@@ -122,7 +122,7 @@ object UnsavedChanges {
       import shipreq.webapp.client.project.feature.CreateFeature
       import CreateFeature.{FieldKey, RowKey}
 
-      private val uselessArgs = NewEditorArgs(None, false, None, "", EditControlsFeature.ExtraControls.empty)
+      private val uselessArgs = NewEditorArgs(None, "", false, None, "", EditControlsFeature.ExtraControls.empty)
 
       override def determine(input: Input) =
         CallbackTo {

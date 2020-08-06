@@ -4,6 +4,7 @@ import japgolly.scalajs.react.{Callback, Reusable, ~=>}
 import shipreq.webapp.base.feature.EditControlsFeature
 
 final case class NewEditorArgs(abort        : Option[Callback],
+                               abortVerb    : String,
                                autoFocus    : Boolean,
                                commit       : Option[Callback],
                                commitVerb   : String,
@@ -16,17 +17,13 @@ final case class NewEditorArgs(abort        : Option[Callback],
 object NewEditorArgs {
 
   val empty: NewEditorArgs =
-    apply(
-      abort         = None,
-      autoFocus     = true,
-      commit        = None,
-      commitVerb    = "",
-      extraControls = EditControlsFeature.ExtraControls.empty)
+    basic(None, None)
 
   def basic(abort : Option[Callback],
             commit: Option[Callback]): NewEditorArgs =
     apply(
       abort         = abort,
+      abortVerb     = EditControlsFeature.defaultAbortVerb,
       autoFocus     = true,
       commit        = commit,
       commitVerb    = EditControlsFeature.defaultCommitVerb,

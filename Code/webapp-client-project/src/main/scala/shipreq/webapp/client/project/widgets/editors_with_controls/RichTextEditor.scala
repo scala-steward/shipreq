@@ -36,6 +36,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
     val asyncStatus       : Option[EditorStatus.Async]
     val abort             : Option[Callback]
     val abortConfirmation : Option[ConfirmJs]
+    val abortVerb         : String
     val commitVerb        : String
     val preview           : PreviewFeature.ReadWrite.Single
     val extraControls     : EditControlsFeature.ExtraControls
@@ -73,6 +74,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
                       asyncStatus       : Option[EditorStatus.Async],
                       abort             : Option[Callback],
                       abortConfirmation : Option[ConfirmJs],
+                      abortVerb         : String,
                       autoFocus         : Boolean,
                       commitFn          : Option[Optional.CommitFn],
                       commitVerb        : String,
@@ -109,6 +111,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
                       asyncStatus       : Option[EditorStatus.Async],
                       abort             : Option[Callback],
                       abortConfirmation : Option[ConfirmJs],
+                      abortVerb         : String,
                       autoFocus         : Boolean,
                       commitFn          : Option[NonEmpty.CommitFn],
                       commitVerb        : String,
@@ -170,7 +173,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
     private val editControls =
       EditControlsFeature.Controls[Props](text.lineCardinality)
-        .abortWhenDefined(_.abortWithConfirmation)
+        .abortWhenDefined(_.abortWithConfirmation, _.abortVerb)
         .commitWhenDefined(_.status.getCommit, _.commitVerb)
         .withHelp(RichTextEditorHelp.modalFor(text).show)
         .addDynamicExtras(_.extraControls)

@@ -90,6 +90,7 @@ object ImplicationEditor {
                    validationFn    : ValidationFn,
                    asyncStatus     : Option[EditorStatus.Async],
                    abort           : Option[Callback],
+                   abortVerb       : String,
                    autoFocus       : Boolean,
                    commitFn        : Option[CommitFn],
                    commitVerb      : String,
@@ -152,7 +153,7 @@ object ImplicationEditor {
 
     private val editControls =
       EditControlsFeature.Controls[Props](lineCardinality)
-        .abortWhenDefined(_.abort)
+        .abortWhenDefined(_.abort, _.abortVerb)
         .commitWhenDefined(_.status.getCommit, _.commitVerb)
         .addDynamicExtras(_.extraControls)
 
