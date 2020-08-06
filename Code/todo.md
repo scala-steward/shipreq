@@ -45,7 +45,6 @@ v2.2
 
 ### Implement
 * I want an option to see `[MF-35: xxxxxxxxx]` instead of just `[MF-35]` in rich text
-* New form: alt-enter loses focus
 * Derivative tags
 
 

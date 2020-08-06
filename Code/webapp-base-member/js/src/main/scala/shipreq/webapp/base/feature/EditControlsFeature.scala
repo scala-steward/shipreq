@@ -51,9 +51,9 @@ object EditControlsFeature {
                             tagMod  : TagMod,
                             font    : Font = Font.Default): TagMod =
     TagMod(
-      *.textEditor((validity, position, mode, font)),
+      *.textEditor((validity, position, mode, font, enabled)),
       ^.value := value,
-      ^.disabled := enabled.is(Disabled),
+      ^.readOnly := enabled.is(Disabled), // readOnly instead of disabled so that editor doesn't lose focus
       tagMod)
 
   // ===================================================================================================================

@@ -4,7 +4,7 @@ import japgolly.microlibs.adt_macros.AdtMacros
 import scala.concurrent.duration._
 import shipreq.base.util.Validity
 import shipreq.webapp.base.CssSettings._
-import shipreq.webapp.base.data.{Off, On}
+import shipreq.webapp.base.data.{Disabled, Enabled, Off, On}
 import shipreq.webapp.base.feature.EditControlsFeature
 import shipreq.webapp.base.feature.PreviewFeature.Position
 import shipreq.webapp.base.ui.semantic.{Colour, Label}
@@ -15,11 +15,19 @@ object BaseStyles extends StyleSheet.Inline {
   /** Domains */
   object D {
     val on              = Domain.ofValues[On](On, Off)
+    val enabled         = Domain.ofValues[Enabled](Enabled, Disabled)
     val editorMode      = Domain.ofValues(EditControlsFeature.Mode.values.whole: _*)
     val previewPosition = Domain.ofValues(Position.values.whole: _*)
     val editorPosMode   = previewPosition *** editorMode
     val font            = Domain.ofValues(EditControlsFeature.Font.values.whole: _*)
-    val textEditor      = (EditorState.domain *** previewPosition.option *** editorMode *** font).map { case (((a, b), c), d) => (a, b, c, d) }
+
+    val textEditor = (
+      EditorState.domain
+        *** previewPosition.option
+        *** editorMode
+        *** font
+        *** enabled
+      ).map { case ((((a, b), c), d), e) => (a, b, c, d, e) }
   }
 
   object ZIndex {
@@ -158,8 +166,15 @@ object BaseStyles extends StyleSheet.Inline {
   private val fullscreenEditorAndPreviewHeight =
     "calc(50vh - (" + editorInstructions.heightEm + "em / 2) - " + fullscreenPaddingEx + "ex)"
 
-  val textEditor = styleF(D.textEditor) { case (state, pos, mode, font) =>
+  val textEditor = styleF(D.textEditor) { case (state, pos, mode, font, enabled) =>
     import EditControlsFeature.{Font, Mode}
+
+    val disabledStyle = styleS(
+      color(c"#999"),
+      backgroundColor(c"#fcfcfc"),
+      borderColor(c"#ddd").important,
+    )
+
     styleS(
       width(100 %%),
       margin(`0`),
@@ -195,16 +210,23 @@ object BaseStyles extends StyleSheet.Inline {
       },
       // overflow: scroll - autosize avoids this
       resize.none,
-      color(state match {
-        case EditorState.Valid
-           | EditorState.InTransit => rgba(0, 0, 0, .87)
-        case EditorState.Invalid   => c"#9F3A38"
-      }),
-      backgroundColor(state match {
-        case EditorState.Valid     => editor.backgroundColor
-        case EditorState.Invalid   => c"#FFF6F6"
-        case EditorState.InTransit => rgba(255,244,227,0.7)
-      }),
+      mixinIf(enabled is Enabled)(
+        color(state match {
+          case EditorState.Valid
+             | EditorState.InTransit => rgba(0, 0, 0, .87)
+          case EditorState.Invalid   => c"#9F3A38"
+        }),
+        backgroundColor(state match {
+          case EditorState.Valid     => editor.backgroundColor
+          case EditorState.Invalid   => c"#FFF6F6"
+          case EditorState.InTransit => rgba(255,244,227,0.7)
+        }),
+        borderColor(state match {
+          case EditorState.Valid
+             | EditorState.InTransit => editor.borderColor
+          case EditorState.Invalid   => c"#E0B4B4"
+        }),
+      ),
       borderWidth(1 px),
       borderStyle(state match {
         case EditorState.Valid
@@ -212,11 +234,6 @@ object BaseStyles extends StyleSheet.Inline {
         case EditorState.InTransit => dashed
       }),
       borderRadius(.28571429 rem),
-      borderColor(state match {
-        case EditorState.Valid
-           | EditorState.InTransit => editor.borderColor
-        case EditorState.Invalid   => c"#E0B4B4"
-      }),
       mixinIf(state ==* EditorState.InTransit)(display.flex),
       mixinIf(mode != Mode.Fullscreen)(
         &.focus(
@@ -227,11 +244,8 @@ object BaseStyles extends StyleSheet.Inline {
           }): StyleS
         )
       ),
-      &.disabled(
-        color(c"#999"),
-        backgroundColor(c"#fcfcfc"),
-        borderColor(c"#ddd").important,
-      ),
+      mixinIf(enabled is Disabled)(disabledStyle),
+      &.disabled(disabledStyle),
     )
   }
 

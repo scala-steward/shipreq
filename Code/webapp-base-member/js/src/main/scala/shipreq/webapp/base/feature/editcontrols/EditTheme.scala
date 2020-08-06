@@ -68,7 +68,7 @@ private[feature] object EditTheme {
 
         style.whenInTransit match {
           case WhenInTransit.ReadOnlyViewWithSpinner =>
-            <.div(*.textEditor((*.EditorState.InTransit, None, mode, font)),
+            <.div(*.textEditor((*.EditorState.InTransit, None, mode, font, Enabled)),
               <.div(spinner),
               <.div(*.textEditorInTransitValue, readOnlyView))
 
