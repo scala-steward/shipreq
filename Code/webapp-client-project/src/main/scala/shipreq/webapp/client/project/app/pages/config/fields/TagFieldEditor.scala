@@ -40,6 +40,8 @@ object TagFieldEditor {
     }
   }
 
+  // ===================================================================================================================
+
   final case class Props(state     : StateSnapshot[State],
                          cfg       : ProjectConfig,
                          filterDead: FilterDead,
@@ -72,10 +74,12 @@ object TagFieldEditor {
     @inline def render: VdomElement = Component(this)
   }
 
+  // ===================================================================================================================
+
   sealed trait State {
     def idOption: Option[CustomField.Tag.Id]
 
-    val rules: ReqTypeRulesEditor.ApplicableTagDefault.State
+    val reqTypeRules: ReqTypeRulesEditor.ApplicableTagDefault.State
 
     final def validatorState(cfg: ProjectConfig): DataValidators.field.State =
       DataValidators.field.State.from(idOption, cfg)
@@ -86,31 +90,8 @@ object TagFieldEditor {
   object State {
 
     @Lenses
-    final case class ForUpdate(id   : CustomField.Tag.Id,
-                               rules: ReqTypeRulesEditor.ApplicableTagDefault.State) extends State {
-
-      override def idOption = Some(id)
-
-      override def updateCmd(cfg: ProjectConfig): PotentialChange[Unit, UpdateConfigCmd.ToModifyFields] = {
-        val ds = legalDefaultIterator(this, cfg).toSet
-
-        val pass1 =
-          PotentialChange.needFromOption(rules.validation(cfg.reqTypes).resultWhenValid(ds))
-
-        pass1.flatMap { rules =>
-          val old = cfg.fields.custom(id)
-          val b = CustomTagFieldGD.valueBuilder()
-          b.addIfChanged(CustomTagFieldGD.FieldReqTypeRules)(old.fieldReqTypeRules, rules)
-          PotentialChange.fromOption(b.nev()).map { newValues =>
-            UpdateConfigCmd.CustomFieldUpdateTag(id, newValues)
-          }
-        }
-      }
-    }
-
-    @Lenses
-    final case class ForCreate(tagId: Option[TagGroupId],
-                               rules: ReqTypeRulesEditor.ApplicableTagDefault.State) extends State {
+    final case class ForCreate(tagId       : Option[TagGroupId],
+                               reqTypeRules: ReqTypeRulesEditor.ApplicableTagDefault.State) extends State {
 
       override def idOption = None
 
@@ -121,20 +102,44 @@ object TagFieldEditor {
         val pass1 =
           for {
             a <- PotentialChange.fromDisjunction(DataValidators.field.tagGroup(vs).unnamed(tagId).leftMap(_ => ()))
-            b <- PotentialChange.needFromOption(rules.validation(cfg.reqTypes).resultWhenValid(ds))
+            b <- PotentialChange.needFromOption(reqTypeRules.validation(cfg.reqTypes).resultWhenValid(ds))
           } yield (a, b)
 
-        pass1.flatMap { case (tagId, rules) =>
-          val cmd = UpdateConfigCmd.CustomFieldCreateTag(tagId, rules, DerivativeTags.emptyDisabled)
+        pass1.flatMap { case (tagId, reqTypeRules) =>
+          val derivativeTags = DerivativeTags.emptyDisabled
+          val cmd = UpdateConfigCmd.CustomFieldCreateTag(tagId, reqTypeRules, derivativeTags)
           PotentialChange.Success(cmd)
         }
       }
     }
 
-    val rules: Lens[State, ReqTypeRulesEditor.ApplicableTagDefault.State] =
-      Lens[State, ReqTypeRulesEditor.ApplicableTagDefault.State](_.rules)(r => {
-        case s: ForCreate => s.copy(rules = r)
-        case s: ForUpdate => s.copy(rules = r)
+    @Lenses
+    final case class ForUpdate(id          : CustomField.Tag.Id,
+                               reqTypeRules: ReqTypeRulesEditor.ApplicableTagDefault.State) extends State {
+
+      override def idOption = Some(id)
+
+      override def updateCmd(cfg: ProjectConfig): PotentialChange[Unit, UpdateConfigCmd.ToModifyFields] = {
+        val ds = legalDefaultIterator(this, cfg).toSet
+
+        val pass1 =
+          PotentialChange.needFromOption(reqTypeRules.validation(cfg.reqTypes).resultWhenValid(ds))
+
+        pass1.flatMap { reqTypeRules =>
+          val old = cfg.fields.custom(id)
+          val b = CustomTagFieldGD.valueBuilder()
+          b.addIfChanged(CustomTagFieldGD.FieldReqTypeRules)(old.fieldReqTypeRules, reqTypeRules)
+          PotentialChange.fromOption(b.nev()).map { newValues =>
+            UpdateConfigCmd.CustomFieldUpdateTag(id, newValues)
+          }
+        }
+      }
+    }
+
+    val reqTypeRules: Lens[State, ReqTypeRulesEditor.ApplicableTagDefault.State] =
+      Lens[State, ReqTypeRulesEditor.ApplicableTagDefault.State](_.reqTypeRules)(r => {
+        case s: ForCreate => s.copy(reqTypeRules = r)
+        case s: ForUpdate => s.copy(reqTypeRules = r)
       })
 
     def initCreate: ForCreate =
@@ -157,10 +162,10 @@ object TagFieldEditor {
       val renderDefault: ApplicableTagId ~=> VdomNode =
         Reusable.implicitly(p.pw).map(pw => id => pw.tagSimple(id, includeDesc = true))
 
-      val rules =
+      val reqTypeRules =
         ReqTypeRulesEditor.ApplicableTagDefault.Component(
           ReqTypeRulesEditor.Props(
-            state         = p.state.zoomStateL(State.rules),
+            state         = p.state.zoomStateL(State.reqTypeRules),
             reqTypes      = p.cfg.reqTypes,
             renderDefault = renderDefault,
             defaults      = p.legalDefaults,
@@ -170,7 +175,7 @@ object TagFieldEditor {
       p.state.value match {
 
         case _: State.ForUpdate =>
-          <.div(rules)
+          <.div(reqTypeRules)
 
         case s: State.ForCreate =>
 
@@ -190,7 +195,7 @@ object TagFieldEditor {
               .withValidationUX(ValidationUX.Highlight)
               .withEnabled(p.enabled)
 
-          <.div(Form(sourceField)(ValidationUX.Full), rules)
+          <.div(Form(sourceField)(ValidationUX.Full), reqTypeRules)
       }
     } else {
 
