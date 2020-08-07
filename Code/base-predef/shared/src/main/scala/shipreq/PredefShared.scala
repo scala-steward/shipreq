@@ -60,6 +60,8 @@ abstract class PredefShared
     ArraySeq.unsafeWrapArray(x)
   }
 
+  @inline def Vector1[A](a: A): Vector[A] =
+    Vector.empty :+ a
 }
 
 object PredefShared {
