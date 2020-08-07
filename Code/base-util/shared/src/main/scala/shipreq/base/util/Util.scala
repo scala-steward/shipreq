@@ -302,6 +302,15 @@ object Util {
       y.foldLeft(x)((q, a) =>
         if (x.exists(e.equal(_, a))) q else q :+ a)
 
+  def arraySeqConcatDistinct[A](x: ArraySeq[A], y: ArraySeq[A])(implicit e: Equal[A]): ArraySeq[A] =
+    if (x eq y)
+      x
+    else if (x.isEmpty)
+      y
+    else
+      y.foldLeft(x)((q, a) =>
+        if (x.exists(e.equal(_, a))) q else q :+ a)
+
   implicit class ShipReqOpsForArraySeq[A](private val self: ArraySeq[A]) extends AnyVal {
     def traverse[G[_], B: ClassTag](f: A => G[B])(implicit G: Applicative[G]): G[ArraySeq[B]] = {
       if (self.isEmpty)
