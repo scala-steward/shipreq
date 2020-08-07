@@ -40,6 +40,18 @@ abstract class PredefShared
   @scala.annotation.nowarn("cat=unused")
   final implicit def UnivEqObjExt(self: UnivEq.type) =
     new PredefShared.UnivEqObjExt(UnivEq)
+
+  @inline
+  final implicit def predefExtInt(a: Int) =
+    new PredefShared.ExtInt(a)
+
+  @inline
+  final implicit def predefExtLong(a: Long) =
+    new PredefShared.ExtLong(a)
+
+  @inline
+  final implicit def predefExtAnyRef[A <: AnyRef](a: A) =
+    new PredefShared.ExtAnyRef(a)
 }
 
 object PredefShared {
@@ -59,6 +71,21 @@ object PredefShared {
     @scala.annotation.nowarn("cat=unused")
     @inline def emptyMultimap[K: UnivEq, L[_] : MultiValues, V](implicit ev: L[V] =:!= immutable.Set[V]) =
       Multimap.empty[K, L, V]
+  }
+
+  final class ExtInt(private val a: Int) extends AnyVal {
+    type A = Int
+    @inline def |>[@specialized B](f: A => B)   : B = f(a)
+    @inline def <|                (f: A => Unit): A = {f(a); a}
+  }
+  final class ExtLong(private val a: Long) extends AnyVal {
+    type A = Long
+    @inline def |>[@specialized B](f: A => B)   : B = f(a)
+    @inline def <|                (f: A => Unit): A = {f(a); a}
+  }
+  final class ExtAnyRef[A <: AnyRef](private val a: A) extends AnyVal {
+    @inline def |>[@specialized B](f: A => B)   : B = f(a)
+    @inline def <|                (f: A => Unit): A = {f(a); a}
   }
 }
 
