@@ -62,6 +62,9 @@ abstract class PredefShared
 
   @inline def Vector1[A](a: A): Vector[A] =
     Vector.empty :+ a
+
+  @inline def Set1[A](a: A): Set[A] =
+    Set.empty + a
 }
 
 object PredefShared {

@@ -3,6 +3,7 @@ package shipreq.webapp.base.data
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.microlibs.utils.Memo
 import monocle.macros.Lenses
 import monocle.{Lens, Traversal}
 import nyaya.prop.CycleDetector
@@ -10,6 +11,7 @@ import nyaya.util.Multimap
 import scala.collection.mutable
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util._
+import shipreq.webapp.base.data.derivation.TagGroupTags
 import shipreq.webapp.base.util.Must._
 
 sealed trait TagId extends TaggedInt
@@ -53,11 +55,10 @@ final case class ApplicableTag(id                : ApplicableTagId,
 
 object ApplicableTag {
   def v1(id  : ApplicableTagId,
-         name: String,
+         name: String, // unused
          desc: Option[String],
          key : HashRefKey,
          live: Live): ApplicableTag = {
-    locally(name) // removed
     apply(
       id                 = id,
       key                = key,
@@ -463,6 +464,8 @@ final case class Tags(tree: TagTree) {
   lazy val orderingByPos: Ordering[ApplicableTagId] =
     Ordering.by(orderByPos)
 
+  val tagGroupTags: FilterDead => TagGroupId => TagGroupTags =
+    FilterDead.memoLazy(fd => Memo(TagGroupTags.derive(this, _, fd)))
 }
 
 final class RecursiveTagIterator(tags      : Tags,
