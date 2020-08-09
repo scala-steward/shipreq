@@ -286,29 +286,35 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     }
   }
 
+  private def _genericTag(c: Contextualise, t: ApplicableTag, name: String, includeDesc: Boolean): VdomTag = {
+    var desc = ""
+    if (includeDesc) {
+      desc =
+        if (name.compareToIgnoreCase(t.key.value) == 0)
+          ""
+        else
+          G.hashRefKey.prefix ~ t.key.value
+      for (d <- t.desc) {
+        if (desc.nonEmpty)
+          desc += "\n\n"
+        desc += d
+      }
+    }
+    val displayTxt = c match {
+      case Contextualise => G.hashRefKey.prefix ~ name
+      case Plain         => name
+    }
+    <.span(
+      TagMod.when(desc.nonEmpty)(^.title := desc),
+      displayTxt)
+  }
+
   private val tagWithoutStyleMemo: Boolean => Contextualise => ApplicableTag => VdomTag =
     Memo.bool { includeDesc =>
       Contextualise.memo { c =>
 
-        def render(t: ApplicableTag): VdomTag = {
-          var desc = ""
-          if (includeDesc) {
-            desc = if (t.name.compareToIgnoreCase(t.key.value) == 0) "" else t.name
-            for (d <- t.desc) {
-              if (desc.nonEmpty)
-                desc += "\n\n"
-              desc += d
-            }
-          }
-          val keyTxt = t.key.value
-          val displayTxt = c match {
-            case Contextualise => G.hashRefKey.prefix ~ keyTxt
-            case Plain         => keyTxt
-          }
-          <.span(
-            TagMod.when(desc.nonEmpty)(^.title := desc),
-            displayTxt)
-        }
+        def render(t: ApplicableTag): VdomTag =
+          _genericTag(c, t, t.name, includeDesc)
 
         val memo = Memo.by((_: ApplicableTag).id)(render)
 
@@ -498,10 +504,16 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     tagSimple(tag, includeDesc)
   }
 
-  def tagSimple(tag: ApplicableTag, includeDesc: Boolean): VdomTag =
-    tagWithoutStyle(Plain, tag, includeDesc = includeDesc)(
+  private def tagStyle(tag: ApplicableTag): TagMod =
+    TagMod(
       *.tag(((tag.live, Valid), false)),
       tagColour(tag.colour, tag.live))
+
+  def tagSimple(tag: ApplicableTag, includeDesc: Boolean): VdomTag =
+    tagWithoutStyle(Plain, tag, includeDesc = includeDesc)(tagStyle(tag))
+
+  def tagWithCustomName(tag: ApplicableTag, name: String): VdomTag =
+    _genericTag(Plain, tag, name, includeDesc = true)(tagStyle(tag))
 
   def useCaseStepTextAndMaybeInvalidFlow[C[x] <: Iterable[x]](s: UseCaseStepFlowText.TextAndFlow[AnyOptional, C[String \/ UseCaseStepId]],
                                                               l: Live): VdomTag = {

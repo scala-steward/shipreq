@@ -44,8 +44,11 @@ object Style extends StyleSheet.Inline {
   private val hasErrorBackground =
     backgroundColor(c"#fee")
 
+  private val errorRed = c"#c00"
+  private val warningYellow = c"#948a00"
+
   private val hasErrorColor =
-    color(c"#c00")
+    color(errorRed)
 
   private val errorRedOnRed = mixin(
     hasErrorColor,
@@ -967,6 +970,48 @@ object Style extends StyleSheet.Inline {
     @inline def editorTitle = tagConfig.editorTitle
     @inline def fieldListDetailDead = rulesOtherDeadReqType
     @inline def rulesOtherDeadReqType = generic.deadTextStrikeThrough
+
+    val derivativeTagMatrixSame = style(
+      opacity(0.5),
+      backgroundColor(c"#eee"))
+
+    val derivativeTagMatrixNone = style(
+      color(c"#bbb"))
+
+    val derivativeTagsEditorContainer = style(
+      marginTop(1 em))
+
+    val derivativeTagsEditorDesc = style(
+      display.flex,
+      margin.vertical(1 em))
+
+    val derivativeTagsEditorDescLeft = style(
+      color(c"#777"),
+      paddingLeft(1 ex),
+      paddingRight(1 ex))
+
+    val derivativeTagsEditorDescRight = style(
+      color(c"#666"),
+      flexGrow(1))
+
+    val derivativeTagsEditor = styleF(D.validity)(validity => styleS(
+      monospace,
+      mixinIf(validity is Invalid)(borderColor(errorRed)),
+    ))
+
+    val derivativeTagsEditorWarningBody = style(
+      color(warningYellow))
+
+    val derivativeTagsEditorErrorBody = style(
+      color(errorRed))
+
+    val derivativeTagsEditorWarningTitle = style(
+      derivativeTagsEditorWarningBody,
+      fontWeight.bold)
+
+    val derivativeTagsEditorErrorTitle = style(
+      derivativeTagsEditorErrorBody,
+      fontWeight.bold)
   }
 
   // ===================================================================================================================

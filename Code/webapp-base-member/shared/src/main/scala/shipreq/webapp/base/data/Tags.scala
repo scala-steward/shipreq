@@ -237,6 +237,12 @@ final case class Tags(tree: TagTree) {
   import FlatTag.FilterPolicy
   import Tags.TagOrder
 
+  private lazy val _applicableTagsByName: Map[String, ApplicableTag] =
+    applicableTagIterator().map(t => (t.key.value.toLowerCase, t)).toMap
+
+  def applicableTagLookup(key: String): Option[ApplicableTag] =
+    _applicableTagsByName.get(key.toLowerCase)
+
   def validateApplicableTag(id: ApplicableTagId): Option[ErrorMsg] =
     applicableTag(id) match {
       case \/-(_) => None
@@ -278,6 +284,9 @@ final case class Tags(tree: TagTree) {
       case t: TagGroup      => t
       case a: ApplicableTag => mustNotHappen(ErrorMsg(s"$a is not a TagGroup."))
     }
+
+  def needTag(id: TagId): Tag =
+    tree.need(id).tag
 
   lazy val deadApplicableTagIds: Set[ApplicableTagId] =
     applicableTagIterator().filter(_.live is Dead).map(_.id).toSet
@@ -464,8 +473,17 @@ final case class Tags(tree: TagTree) {
   lazy val orderingByPos: Ordering[ApplicableTagId] =
     Ordering.by(orderByPos)
 
-  val tagGroupTags: FilterDead => TagGroupId => TagGroupTags =
-    FilterDead.memoLazy(fd => Memo(TagGroupTags.derive(this, _, fd)))
+  val tagGroupTags: TagGroupId => FilterDead => TagGroupTags =
+    Memo(id => FilterDead.memoLazy(TagGroupTags.derive(this, id, _)))
+
+  def tagGroupTagsFDV(id: TagGroupId): FilterDead.Values[TagGroupTags] =
+    FilterDead.Values(tagGroupTags(id))
+
+  def tagGroupTagsFDV(id: Option[TagGroupId]): FilterDead.Values[TagGroupTags] =
+    id match {
+      case Some(i) => tagGroupTagsFDV(i)
+      case None    => FilterDead.Values.both(TagGroupTags.empty)
+    }
 }
 
 final class RecursiveTagIterator(tags      : Tags,

@@ -44,8 +44,12 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
+* style inline graphs by default
 * Derivative tags
-  * invalid tag rules when tags out of scope. Hide or Issues page?
+  * autocomplete
+  * new issues:
+    * result tag is dead
+    * result tag is out-of-scope
 
 
 

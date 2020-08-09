@@ -8,6 +8,12 @@ import shipreq.webapp.base.data._
   * Tags are ordered.
   */
 final case class TagGroupTags(tags: Vector[ApplicableTag]) {
+  def isEmpty = tags.isEmpty
+
+  private val idSet = tags.iterator.map(_.id).toSet
+
+  val contains: ApplicableTagId => Boolean =
+    idSet.contains
 
   lazy val abbreviations =
     new TagGroupTags.Abbreviations(tags)
@@ -73,12 +79,30 @@ object TagGroupTags {
       go(MinAbbreviationLen, b, x)
     }
 
-    private val byId = rawResults.iterator.map(_.map1(_.id)).toMap
+    private val byId =
+      rawResults.iterator.map(_.map1(_.id)).toMap
+
+    private val byName =
+      rawResults.iterator
+        .flatMap { case (tag, abb) =>
+          val full = tag.name.toLowerCase
+          @tailrec
+          def go(len: Int, res: List[(String, ApplicableTag)]): List[(String, ApplicableTag)] =
+            if (len == full.length)
+              (full, tag) :: res
+            else
+              go(len + 1, (full.take(len), tag) :: res)
+          go(abb.length, Nil)
+        }
+        .toMap
 
     rawResults = null // free memory
 
     def apply(tag: ApplicableTag): String =
       byId.getOrElse(tag.id, tag.name)
+
+    def getByName(s: String): Option[ApplicableTag] =
+      byName.get(s.toLowerCase)
   }
 
 }

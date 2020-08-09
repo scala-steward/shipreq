@@ -312,6 +312,25 @@ object Util {
         if (x.exists(e.equal(_, a))) q else q :+ a)
 
   implicit class ShipReqOpsForArraySeq[A](private val self: ArraySeq[A]) extends AnyVal {
+
+    def splitOn(sep: A)(implicit e: Equal[A]): ArraySeq[ArraySeq[A]] = {
+      val b = ArraySeq.newBuilder[ArraySeq[A]]
+
+      @tailrec
+      def go(rem: ArraySeq[A]): Unit =
+        if (rem.nonEmpty)
+          rem.indexWhere(e.equal(sep, _)) match {
+            case -1 =>
+              b += rem
+            case n =>
+              b += rem.take(n)
+              go(rem.drop(n + 1))
+          }
+
+      go(self)
+      b.result()
+    }
+
     def traverse[G[_], B: ClassTag](f: A => G[B])(implicit G: Applicative[G]): G[ArraySeq[B]] = {
       if (self.isEmpty)
         G.pure(ArraySeq.empty[B])
