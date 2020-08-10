@@ -170,9 +170,10 @@ object FieldList {
       }
     }
 
-    private val detailAllVisible = renderDetailRule("All", "Visible")
-    private val detailUcOptional = renderDetailRule(StaticReqType.UseCase.mnemonic.value, "Optional")
-    private val detailUcVisible  = renderDetailRule(StaticReqType.UseCase.mnemonic.value, "Visible")
+    private val detailAllVisible  = renderDetailRule("All", "Visible")
+    private val detailUcOptional  = renderDetailRule(StaticReqType.UseCase.mnemonic.value, "Optional")
+    private val detailUcVisible   = renderDetailRule(StaticReqType.UseCase.mnemonic.value, "Visible")
+    private val detailDerivTagsOn = renderDetailRule("Derivative Tags", "Enabled")
 
     def render(p: Props): VdomNode = {
 
@@ -206,7 +207,11 @@ object FieldList {
             case StaticField.AllTags           => "Displays all tags, even those assigned to other fields."
             case f: CustomField.Text           => renderDetailRules(p, f.fieldReqTypeRulesByResolution)(impossible)
             case f: CustomField.Implication    => renderDetailRules(p, f.fieldReqTypeRulesByResolution)(impossible)
-            case f: CustomField.Tag            => renderDetailRules(p, f.fieldReqTypeRulesByResolution)(p.pw.tagSimple(_, includeDesc = true))
+
+            case f: CustomField.Tag =>
+              val reqTypeRules   = renderDetailRules(p, f.fieldReqTypeRulesByResolution)(p.pw.tagSimple(_, includeDesc = true))
+              val derivativeTags = TagMod.when(f.derivativeTags.enabled is Enabled)(detailDerivTagsOn)
+              <.div(reqTypeRules, derivativeTags)
 
             case StaticField.OtherTags =>
               val desc = <.div("Displays tags not assigned to a field.")
