@@ -438,7 +438,7 @@ object ReqTableTest extends TestSuite {
       >> fr1_biz.changeToAndBack("" -> "X")
       >> fr1_cmp.changeToAndBack("" -> "X")
       >> fr1_pri.changeToAndBack("" -> "pri=low", "blank" -> "pri=low")
-      >> fr1_sts.changeToAndBack("" -> "wip", "uat2" -> "wip")
+      >> fr1_sts.changeToAndBack("" -> "wip")
       >> fr1_ver.changeToAndBack("" -> "v1.0")
 
       +> br1_alt.isNA.assert(true)

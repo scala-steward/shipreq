@@ -220,7 +220,7 @@ object IssueDetectors {
               reqTypeIds
                 .iterator
                 .flatMap(rt => ctx.project.content.reqs.reqsByType(rt).filter(_.live(cfg.reqTypes) is Live))
-                .filter(req => tags(req.id).defaults.contains(f.id))
+                .filter(req => tags(req.id, ShowDead).defaults.contains(f.id))
                 .toList
 
             ctx.add(Issue.FieldDefaultTagDead(f, tag, affectedReqs))

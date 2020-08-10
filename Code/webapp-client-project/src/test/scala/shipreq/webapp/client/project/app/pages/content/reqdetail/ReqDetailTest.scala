@@ -400,7 +400,7 @@ object ReqDetailTest extends TestSuite {
           +> field("Component").text.assert("") // opt - no content
           +> field("Released").text.assert("blank") // man - no content
           +> field("Priority").text.assert("blank") // man - no content
-          +> field("Status").text.assert("uat2") // def:tag:dead - no content - HideDead
+          +> field("Status").text.assert("") // def:tag:dead - no content - HideDead
           +> field("Version").text.assert("") // def:tag:bad - no content - HideDead
 
           >> filterDeadToggle
@@ -460,7 +460,7 @@ object ReqDetailTest extends TestSuite {
           +> field("Business Justification").text.assert("blank") // man - no content
           +> field("Priority").text.assert("pri=med") // def:tag:ok - no content
           +> field("Released").text.assert("blank") // man - no content
-          +> field("Status").text.assert("uat") // perReq > otherwise, def:tag:dead - no content - HideDead
+          +> field("Status").text.assert("") // perReq > otherwise, def:tag:dead - no content - HideDead
           +> field("Version").text.assert("") // def:tag:bad - no content - HideDead
 
           >> filterDeadToggle
@@ -493,7 +493,7 @@ object ReqDetailTest extends TestSuite {
 
           >> filterDeadToggle
           +> filterDead.assert(HideDead)
-          >> field("Status").changeToAndBack("" -> "wip", "uat" -> "wip") // def:tag:dead - w/ content - HideDead
+          >> field("Status").changeToAndBack("" -> "wip", "" -> "wip") // def:tag:dead - w/ content - HideDead
           >> field("Version").changeToAndBack("" -> "v1.0", "" -> "v1.0") // def:tag:bad - w/ content - HideDead
       ))
 
@@ -545,7 +545,7 @@ object ReqDetailTest extends TestSuite {
           StaticField.AllTags.name)
           +> field("Component").text.assert("") // opt - no content
           +> field("Released").text.assert("v1.0") // def:tag:bad - w/ content - HideDead
-          +> field("Status").text.assert("uat") // def:tag:dead - no content - HideDead
+          +> field("Status").text.assert("") // def:tag:dead - no content - HideDead
           +> field("Version").text.assert("v1.0") // def:tag:bad - w/ content - HideDead
 
           >> filterDeadToggle

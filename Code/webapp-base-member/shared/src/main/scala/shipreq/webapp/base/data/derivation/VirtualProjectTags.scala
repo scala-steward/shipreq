@@ -4,6 +4,7 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.utils.Memo
 import nyaya.util.Multimap
 import scala.collection.mutable
+import shipreq.base.util.Util
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.PlainText
@@ -45,9 +46,6 @@ object VirtualProjectTags {
   sealed trait ResultsMono {
     def manualLiveValues: Multimap[ApplicableTagId, List, LocationOf.Tag.InReq]
     def naTagsInLiveText: Multimap[ApplicableTagId, List, Location.Text]
-
-    def defaults: Map[CustomField.Tag.Id, ApplicableTagId]
-    final def usesDefaults = defaults.nonEmpty
   }
 
   /** Results indexed by FilterDead. */
@@ -59,6 +57,8 @@ object VirtualProjectTags {
     val fieldOrdered: CustomField.Tag.Id => Vector[ApplicableTagId]
     def allOrdered  : Vector[ApplicableTagId]
     def otherOrdered: Vector[ApplicableTagId]
+
+    def defaults: Map[CustomField.Tag.Id, ApplicableTagId]
 
     def withTagFieldDist(dist: TagFieldDistribution.TagIds): ResultsLiveDead
 
@@ -80,7 +80,8 @@ object VirtualProjectTags {
       var manualDead         = ForReq.emptyInReq
       var deadTagsInLiveText = ForReq.emptyInText
       var naTagsInLiveText   = ForReq.emptyInText
-      var defaults           = Map.empty[CustomField.Tag.Id, ApplicableTagId]
+      var liveDefaults       = Map.empty[CustomField.Tag.Id, ApplicableTagId]
+      var deadDefaults       = Map.empty[CustomField.Tag.Id, ApplicableTagId]
 
       def addManual(id     : ApplicableTagId,
                     loc    : LocationOf.Tag.InReq,
@@ -101,7 +102,10 @@ object VirtualProjectTags {
           manualLive = manualLive.add(id, loc)
 
       def addDefault(f: CustomField.Tag.Id, id: ApplicableTagId): Unit =
-        defaults = defaults.updated(f, id)
+        tagLive(id) match {
+          case Live => liveDefaults = liveDefaults.updated(f, id)
+          case Dead => deadDefaults = deadDefaults.updated(f, id)
+        }
     }
   }
 
@@ -188,7 +192,6 @@ object VirtualProjectTags {
           new ResultsMono {
             override def manualLiveValues = b.manualLive
             override def naTagsInLiveText = b.naTagsInLiveText
-            override def defaults         = b.defaults
           }
         }
 
@@ -205,13 +208,14 @@ object VirtualProjectTags {
                 var results = b.manualLive.keySet
                 results ++= b.deadTagsInLiveText.keys
                 results ++= b.naTagsInLiveText.keys
-                results ++= b.defaults.values
+                results ++= b.liveDefaults.values
                 results
               }
             case ShowDead =>
               Memo { reqId =>
                 val b = data(reqId)
                 var results = live(reqId)
+                results ++= b.deadDefaults.values
                 results ++= b.manualDead.keys
                 results
               }
@@ -220,11 +224,19 @@ object VirtualProjectTags {
         x
       }
 
+      val defaultsFdFn: FilterDead => ForReq => Map[CustomField.Tag.Id, ApplicableTagId] =
+        FilterDead.memo {
+          case HideDead => _.liveDefaults
+          case ShowDead => b => Util.mergeMaps(b.liveDefaults, b.deadDefaults)
+        }
+
       def allLiveDeadResults(distFn: FilterDead => TagFieldDistribution.TagIds): FilterDead => ReqId => ResultsLiveDead = {
         FilterDead.memoLazy { fd =>
           val allSetFD = allSetMemo(fd)
           val defaultDist = distFn(fd)
+          val defaultsFn = defaultsFdFn(fd)
           Memo { reqId =>
+            @inline def b = data(reqId)
             def liveDeadResults(dist: TagFieldDistribution.TagIds): ResultsLiveDead =
               new ResultsLiveDead {
 
@@ -253,6 +265,9 @@ object VirtualProjectTags {
                 override val fieldOrdered = Memo { fid =>
                   MutableArray(fieldSet(fid)).sortBy(tagOrderByPos.apply).to(Vector)
                 }
+
+                override def defaults =
+                  defaultsFn(b)
 
                 override def withTagFieldDist(dist2: TagFieldDistribution.TagIds) =
                   if (dist eq dist2)
@@ -328,7 +343,8 @@ object VirtualProjectTags {
               items ++= showM(b.manualDead        ).map("manualDead         : " + _)
               items ++= showM(b.deadTagsInLiveText).map("deadTagsInLiveText : " + _)
               items ++= showM(b.naTagsInLiveText  ).map("naTagsInLiveText   : " + _)
-              items ++= showD(b.defaults          ).map("defaults           : " + _)
+              items ++= showD(b.liveDefaults      ).map("liveDefaults       : " + _)
+              items ++= showD(b.deadDefaults      ).map("deadDefaults       : " + _)
               val detail = items.sorted.map("  - " + _).mkString("\n")
               if (detail.isEmpty)
                 title

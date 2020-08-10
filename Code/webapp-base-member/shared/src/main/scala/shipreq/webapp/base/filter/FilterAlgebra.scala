@@ -533,7 +533,7 @@ object FilterAlgebra {
           }
 
         case (FieldCriteria.Attr(DefaultInUse), \/-(f: CustomField.Tag.Id)) =>
-          fieldApplicableReqOnly(f)(req => tags(req.id).defaults.contains(f))
+          fieldApplicableReqOnly(f)(req => tags(req.id, filterDead).defaults.contains(f))
 
         case (FieldCriteria.Attr(NotApplicable), -\/(SpecialBuiltInField.Title)) =>
           reqOnly(fail)
