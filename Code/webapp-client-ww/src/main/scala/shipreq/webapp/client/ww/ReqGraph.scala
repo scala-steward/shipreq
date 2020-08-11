@@ -23,7 +23,7 @@ object ReqGraph {
 
     GraphViz.digraph { implicit b =>
 
-      val imps           = project.content.implications
+      val imps           = project.content.implications.graph
       val reqs           = project.content.reqs
       val reqTypes       = project.config.reqTypes
       val impHelpers     = new ImpHelpers(reqs, reqTypes)
@@ -170,7 +170,7 @@ object ReqGraph {
         b.flowOneToMany(fromId, toIds)(node, atEnd())
       }
 
-      def allFlow(graph: Implications.UniDir): Unit =
+      def allFlow(graph: Implications.Graph.UniDir): Unit =
         for ((fromId, toIds) <- graph.iterator)
           if (reqIdFilter(fromId)) {
             val fromLive = live(fromId)

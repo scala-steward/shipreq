@@ -545,7 +545,7 @@ object Rev6 {
         val reqCodes        = state.unpickle[ReqCodes]
         val reqText         = state.unpickle[ReqData.Text]
         val reqTags         = state.unpickle[ReqData.Tags]
-        val implications    = state.unpickle[Implications.BiDir]
+        val implications    = state.unpickle[Implications]
         val deletionReasons = state.unpickle[DeletionReasons]
         ProjectContent(reqs, reqCodes, reqText, reqTags, implications, deletionReasons)
       }

@@ -12,7 +12,6 @@ import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.project.app.ProjectSpaTestDsl
 import shipreq.webapp.client.project.app.pages.root.Routes.Page
 import shipreq.webapp.client.project.test._
-import sourcecode.Line
 import utest._
 
 object ReqDetailTest extends TestSuite {
@@ -62,8 +61,7 @@ object ReqDetailTest extends TestSuite {
   // webapp-client-project/testOnly -- shipreq.webapp.client.project.app.pages.content.reqdetail.ReqDetailTest.uc.propTest
   protected def useCaseStepEditorPropTest(reps         : Int,
                                           sets         : Int,
-                                          stopWhenFound: Boolean)
-                                         (implicit l: Line): Unit = {
+                                          stopWhenFound: Boolean): Unit = {
 
     val plan = Plan.action(randomUseCaseStepAction.times(reps))
 

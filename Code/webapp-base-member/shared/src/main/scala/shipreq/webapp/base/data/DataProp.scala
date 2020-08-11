@@ -309,7 +309,7 @@ object DataProp {
 
   // -------------------------------------------------------------------------------------------------------------------
   object implications {
-    @inline def all = Implications.acyclicPropBi
+    @inline def all = Implications.Graph.acyclicPropBi
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -651,7 +651,7 @@ object DataProp {
     def constituents = (
                    reqs.all.contramap[P](_.content.reqs)
       ∧        reqCodes.all.contramap[P](_.content.reqCodes)
-      ∧    implications.all.contramap[P](_.content.implications)
+      ∧    implications.all.contramap[P](_.content.implications.graph)
       ∧ deletionReasons.all.contramap[P](_.content.deletionReasons)
       ∧ savedViews.optional.contramap[P](_.savedViews)
     ) rename "constituents"
@@ -707,7 +707,7 @@ object DataProp {
       ∧ validReqIds    ("ReqData.text.*.reqIds",            _.content.reqText.data.valuesIterator.flatMap(_.keysIterator))
       ∧ validReqIds    ("ReqData.config.tags keys",         _.content.reqTags.keys)
       ∧ validTagIds    ("ReqData.config.tags values",       _.content.reqTags.valueIterator)
-      ∧ validReqIds    ("ReqData.implications",             _.content.implications.members)
+      ∧ validReqIds    ("ReqData.implications",             _.content.implications.graph.members)
       ∧ validReqIds    ("Atoms: ReqRefs",                   _.atomScan.reqRefs)
       ∧ validReqCodeIds("Atoms: CodeRefs",                  _.content.codeRefs)
       ∧ validUCStepIds ("Atoms: UseCaseStepRefs",           _.content.useCaseStepRefs)

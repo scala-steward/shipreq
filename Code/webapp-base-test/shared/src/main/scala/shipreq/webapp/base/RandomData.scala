@@ -1511,7 +1511,7 @@ object RandomData {
 
   type ImplicationsUM = Map[ReqId, Set[ReqId]]
   @tailrec def preventImplicationCycles(m: ImplicationsUM): ImplicationsUM =
-    Implications.cycleDetector.findCycle(m) match {
+    Implications.Graph.cycleDetector.findCycle(m) match {
       case None         => m
       case Some((_, b)) => preventImplicationCycles(m - b)
     }
@@ -1525,7 +1525,7 @@ object RandomData {
   val implicationsMethodDefault: ImpMethod = (g, fix) =>
     g.pair
       .list(MaxImplicationPairs)
-      .map(kvs => Implications.emptyUniDir.addPairs(kvs: _*).m |> fix)
+      .map(kvs => Implications.Graph.emptyUniDir.addPairs(kvs: _*).m |> fix)
 
   def implicationsMethod2(maxImpsPerSrc: Int, maxImpKeys: Int): ImpMethod = (g, fix) =>
     Gen.tuple2(g, g.set1(1 to maxImpsPerSrc))
@@ -1536,12 +1536,12 @@ object RandomData {
     def fix(m: ImplicationsUM): Implications = {
       val m2 = preventImplicationCycles(m)
       // println(m2); println()
-      Implications.BiDir(Multimap(m2))
+      Implications(Implications.Graph.BiDir(Multimap(m2)))
     }
 
     Gen.tryGenChoose(reqIds.toSeq) match {
       case Some(g) => method(g, fix)
-      case None    => Gen pure Implications.emptyBiDir
+      case None    => Gen pure Implications.empty
     }
   }
 

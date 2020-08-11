@@ -148,12 +148,12 @@ object DataLogic {
   // ===================================================================================================================
   // Implications
 
-  final case class ImpRequiredResult(goodImpGraph: Implications.BiDir,
+  final case class ImpRequiredResult(goodImpGraph: Implications.Graph.BiDir,
                                      badIds      : Set[ReqId],
-                                     badImpGraph : Implications.BiDir)
+                                     badImpGraph : Implications.Graph.BiDir)
 
   def requiringImplication(reqTypes: ReqTypes,
-                           imps    : Implications.BiDir,
+                           imps    : Implications.Graph.BiDir,
                            reqs    : Requirements): ImpRequiredResult = {
 
     val reqTypesRequiringImp: Vector[ReqType] =
@@ -161,9 +161,9 @@ object DataLogic {
 
     @tailrec
     def go(maybeGood: Set[ReqId],
-           goodImps : Implications.UniDir,
+           goodImps : Implications.Graph.UniDir,
            bad      : Set[ReqId],
-           badImps  : Implications.UniDir): (Implications.UniDir, Set[ReqId], Implications.UniDir) = {
+           badImps  : Implications.Graph.UniDir): (Implications.Graph.UniDir, Set[ReqId], Implications.Graph.UniDir) = {
 
       val (b, g) = maybeGood.partition(goodImps(_).isEmpty)
       if (b.isEmpty)
@@ -171,7 +171,7 @@ object DataLogic {
       else {
         val bad2      = bad ++ b
         var badImps2  = badImps
-        var goodImps2 = Implications.emptyUniDir
+        var goodImps2 = Implications.Graph.emptyUniDir
         for ((k, vs) <- goodImps.iterator)
           if (bad2.contains(k))
             badImps2 = badImps2.addvs(k, vs)
@@ -196,10 +196,10 @@ object DataLogic {
       allLiveIdsRequiringImp,
       imps.backwards,
       UnivEq.emptySet,
-      Implications.emptyUniDir)
+      Implications.Graph.emptyUniDir)
 
     if (r._2.isEmpty)
-      ImpRequiredResult(imps, r._2, Implications.emptyBiDir)
+      ImpRequiredResult(imps, r._2, Implications.Graph.emptyBiDir)
     else
       ImpRequiredResult(BiDir(r._1.reverse), r._2, BiDir(r._3.reverse))
   }

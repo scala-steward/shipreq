@@ -61,7 +61,7 @@ object ImplicationGraph {
 
 
   implicit val reusabilityProps: Reusability[Props] = {
-    @nowarn("cat=unused") implicit def a: Reusability[Implications.BiDir] = Reusability.byRef
+    @nowarn("cat=unused") implicit def a: Reusability[Implications] = Reusability.byRef
     Reusability.derive
   }
 

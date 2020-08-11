@@ -16,24 +16,24 @@ import shipreq.webapp.base.issue.{Issue, IssueTracker}
 object Project {
   type Name = String
 
-  val customIssueTypes    : Lens[Project, CustomIssueTypeIMap  ] = config  ^|-> ProjectConfig.customIssueTypes
-  val reqTypes            : Lens[Project, ReqTypes             ] = config  ^|-> ProjectConfig.reqTypes
-  val fields              : Lens[Project, FieldSet             ] = config  ^|-> ProjectConfig.fields
-  val tagTree             : Lens[Project, TagTree              ] = config  ^|-> ProjectConfig.tags ^|-> Tags.tree
-  val customFields        : Lens[Project, FieldSet.CustomFields] = fields  ^|-> FieldSet.customFields
-  val reqs                : Lens[Project, Requirements         ] = content ^|-> ProjectContent.reqs
-  val reqCodes            : Lens[Project, ReqCodes             ] = content ^|-> ProjectContent.reqCodes
-  val reqText             : Lens[Project, ReqData.Text         ] = content ^|-> ProjectContent.reqText
-  val reqTags             : Lens[Project, ReqData.Tags         ] = content ^|-> ProjectContent.reqTags
-  val implications        : Lens[Project, Implications.BiDir   ] = content ^|-> ProjectContent.implications
-  val deletionReasons     : Lens[Project, DeletionReasons      ] = content ^|-> ProjectContent.deletionReasons
-  val genericReqs         : Lens[Project, GenericReqIMap       ] = content ^|-> ProjectContent.genericReqs
-  val useCases            : Lens[Project, UseCases             ] = content ^|-> ProjectContent.useCases
-  val pubidRegister       : Lens[Project, PubidRegister        ] = content ^|-> ProjectContent.pubidRegister
-  val reqCodeTrie         : Lens[Project, ReqCode.Trie         ] = content ^|-> ProjectContent.reqCodeTrie
-  val implicationsSrcToTgt: Lens[Project, Implications.UniDir  ] = content ^|-> ProjectContent.implicationsSrcToTgt
-  val useCaseIMap         : Lens[Project, UseCaseIMap          ] = content ^|-> ProjectContent.useCaseIMap
-  val useCaseStepIndex    : Lens[Project, UseCases.StepIndex   ] = content ^|-> ProjectContent.useCaseStepIndex
+  val customIssueTypes    : Lens[Project, CustomIssueTypeIMap      ] = config  ^|-> ProjectConfig.customIssueTypes
+  val reqTypes            : Lens[Project, ReqTypes                 ] = config  ^|-> ProjectConfig.reqTypes
+  val fields              : Lens[Project, FieldSet                 ] = config  ^|-> ProjectConfig.fields
+  val tagTree             : Lens[Project, TagTree                  ] = config  ^|-> ProjectConfig.tags ^|-> Tags.tree
+  val customFields        : Lens[Project, FieldSet.CustomFields    ] = fields  ^|-> FieldSet.customFields
+  val reqs                : Lens[Project, Requirements             ] = content ^|-> ProjectContent.reqs
+  val reqCodes            : Lens[Project, ReqCodes                 ] = content ^|-> ProjectContent.reqCodes
+  val reqText             : Lens[Project, ReqData.Text             ] = content ^|-> ProjectContent.reqText
+  val reqTags             : Lens[Project, ReqData.Tags             ] = content ^|-> ProjectContent.reqTags
+  val implications        : Lens[Project, Implications.Graph.BiDir ] = content ^|-> ProjectContent.implications ^|-> Implications.graph
+  val deletionReasons     : Lens[Project, DeletionReasons          ] = content ^|-> ProjectContent.deletionReasons
+  val genericReqs         : Lens[Project, GenericReqIMap           ] = content ^|-> ProjectContent.genericReqs
+  val useCases            : Lens[Project, UseCases                 ] = content ^|-> ProjectContent.useCases
+  val pubidRegister       : Lens[Project, PubidRegister            ] = content ^|-> ProjectContent.pubidRegister
+  val reqCodeTrie         : Lens[Project, ReqCode.Trie             ] = content ^|-> ProjectContent.reqCodeTrie
+  val implicationsSrcToTgt: Lens[Project, Implications.Graph.UniDir] = content ^|-> ProjectContent.implicationsSrcToTgt
+  val useCaseIMap         : Lens[Project, UseCaseIMap              ] = content ^|-> ProjectContent.useCaseIMap
+  val useCaseStepIndex    : Lens[Project, UseCases.StepIndex       ] = content ^|-> ProjectContent.useCaseStepIndex
 
   val applicableTags: Traversal[Project, ApplicableTag] =
     tagTree ^|->> TagTree.traversal ^|-> TagInTree.tag ^|-? Tag.applicableTag
@@ -167,7 +167,7 @@ final case class Project(name        : Project.Name,
     implicationTransitiveClosure(Backwards)
 
   private def implicationTransitiveClosure(dir: Direction): TransitiveClosure[ReqId] =
-    content.implications.transitiveClosure(
+    content.implications.graph.transitiveClosure(
       dir,
       content.reqs.idIterator(),
       TransitiveClosure.Filter terminalSet deadReqIds)
