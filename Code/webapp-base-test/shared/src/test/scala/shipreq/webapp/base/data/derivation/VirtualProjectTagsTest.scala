@@ -4,11 +4,13 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.Duration
 import shipreq.base.test.BaseTestUtil._
+import shipreq.base.util.Enabled
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.text.PlainText
 import sourcecode.Line
 import utest._
+import shipreq.webapp.base.RandomData
 
 object VirtualProjectTagsTest extends TestSuite {
   import VirtualProjectTags.DerivativeTagFactor
@@ -119,6 +121,63 @@ object VirtualProjectTagsTest extends TestSuite {
     "Derivation took " + dur.conciseDesc
   }
 
+  // TODO Move into microlibs
+  private def assertEqWithTolerance(name: => String, actual: Double, expect: Double, tolerance: Double = 0.001)(implicit l: Line): Unit = {
+    import japgolly.microlibs.testutil.TestUtilInternals._
+    import Console._
+    val d = Math.abs(actual - expect)
+    if (d > tolerance) {
+      println(
+        s"""
+           |${YELLOW_B}${BLACK}assertEqWithTolerance failed:$RESET ${BOLD_BRIGHT_YELLOW}$name$RESET
+           |${BOLD_BRIGHT_GREEN}expect: $expect$RESET
+           |${BOLD_BRIGHT_RED}actual: $actual$RESET
+           |${BOLD_BRIGHT_RED} delta: $d$RESET
+           |$YELLOW   tol: $tolerance$RESET
+           |""".stripMargin)
+      fail(s"[$name] $actual ≠ $expect by $d which exceeds tolerance of $tolerance")
+    }
+  }
+
+  private def assertProps(p: Project)(implicit l: Line): Unit = {
+    val fields   = p.config.liveCustomTagFields.filter(_.derivativeTags.enabled is Enabled)
+    val reqTypes = p.config.reqTypes
+    val tags     = p.virtualTags
+
+    if (fields.nonEmpty)
+      for (req <- p.content.reqs.reqIterator()) {
+        val reqTags = tags(req.id)
+        val reqLive = req.live(reqTypes)
+
+        val reqChildren: ArraySeq[Req] =
+          reqLive match {
+            case Live =>
+              (p.implicationSrcToTgtTC(req.id) - req.id).iterator
+                .map(p.content.reqs.need)
+                .filter(_.live(reqTypes) is Live)
+                .to(ArraySeq)
+            case Dead =>
+              ArraySeq.empty
+          }
+
+        for (f <- fields)
+          if (!f.fieldReqTypeRules(req.reqTypeId).isNA) {
+            def desc = s"${PlainText.pubid(req.pubid, p)} ${p.config.tags.needTagGroup(f.tagId).name}"
+            val c = reqTags.childrenSummary(f.id)
+            reqLive match {
+              case Live =>
+                val relevantChildren = reqChildren.filterNot(r => f.fieldReqTypeRules(r.reqTypeId).isNA)
+                assertEqWithTolerance(desc, c.aggregated.valuesIterator.sum, relevantChildren.length)
+                assertEq(c.total, relevantChildren.length)
+
+              case Dead =>
+                assertEq(c.aggregated, Map.empty[Option[ApplicableTagId], Double])
+                assertEq(c.total, 0)
+            }
+          }
+      }
+  }
+
   override def tests = Tests {
     "derivativeTags" - {
 
@@ -161,7 +220,24 @@ object VirtualProjectTagsTest extends TestSuite {
         "x" - assertDerivativeTags(project, xField)(virtualTagsX)
         "w" - assertDerivativeTags(project, wField)(virtualTagsW)
       }
+    }
 
+    "childrenSummary" - {
+      "props" - {
+        "sdt1"   - assertProps(SampleDerivativeTags1.project)
+        "sdt2-1" - assertProps(SampleDerivativeTags2.step1.project)
+        "sdt2-2" - assertProps(SampleDerivativeTags2.step2.project)
+        "sdt2-3" - assertProps(SampleDerivativeTags2.step3.project)
+        "sdt2-4" - assertProps(SampleDerivativeTags2.step4.project)
+        "sdt2-5" - assertProps(SampleDerivativeTags2.step5.project)
+        "sdt3-1" - assertProps(SampleDerivativeTags3.step1.project)
+        "sdt3-2" - assertProps(SampleDerivativeTags3.step2.project)
+        "sdt3-3" - assertProps(SampleDerivativeTags3.step3.project)
+        "sdt3-4" - assertProps(SampleDerivativeTags3.step4.project)
+        "sdt3-5" - assertProps(SampleDerivativeTags3.step5.project)
+        "sdt4"   - assertProps(SampleDerivativeTags4.project)
+        "random" - RandomData.project.samples().take(3).foreach(assertProps)
+      }
     }
   }
 }

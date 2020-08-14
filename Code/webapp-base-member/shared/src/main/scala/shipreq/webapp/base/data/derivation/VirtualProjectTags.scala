@@ -48,6 +48,7 @@ object VirtualProjectTags {
     def manualLiveValues: Multimap[ApplicableTagId, List, LocationOf.Tag.InReq]
     def naTagsInLiveText: Multimap[ApplicableTagId, List, Location.Text]
     def derivativeTagFactors(field: CustomField.Tag.Id): Set[DerivativeTagFactor]
+    def childrenSummary(field: CustomField.Tag.Id): ChildrenSummary
   }
 
   /** Results indexed by FilterDead. */
@@ -96,6 +97,15 @@ object VirtualProjectTags {
     }
 
     implicit def univEq: UnivEq[DerivativeTagFactor] = UnivEq.derive
+  }
+
+  sealed trait ChildrenSummary {
+    def aggregated: Map[Option[ApplicableTagId], Double]
+
+    /** The number of live, relevant, unique, transitive children.
+      * Also the sum of all aggregated values.
+      */
+    def total: Int
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -527,6 +537,59 @@ object VirtualProjectTags {
       val monoResults: ReqId => ResultsMono =
         Memo { reqId =>
           val b = data(reqId)
+
+          val childrenSummaries: CustomField.Tag.Id => ChildrenSummary =
+            Memo { fieldId =>
+
+              lazy val _aggregated: (Map[Option[ApplicableTagId], Double], Int) =
+                dtFactors.get(fieldId) match {
+                  case Some(allFactors) =>
+
+                    // Group by reqId
+                    val byReq = mutable.HashMap.empty[ReqId, MutableRef[List[ApplicableTagId]]]
+
+                    def add(reqId: ReqId, tag: ApplicableTagId): Unit =
+                      byReq.getOrElseUpdate(reqId, MutableRef(Nil)).mod(tag :: _)
+
+                    allFactors.value(reqId).foreach {
+                      case DerivativeTagFactor.EmptyRelation(req, Forwards)    => add(req, null)
+                      case DerivativeTagFactor.Relation(req, Forwards, tag, _) => add(req, tag)
+                      case _                                                   => ()
+                    }
+
+                    // Aggregate by tag
+                    val agg = mutable.HashMap.empty[ApplicableTagId, MutableRef[Double]]
+                    var noTag = 0d
+                    var total = 0
+                    for (ref <- byReq.valuesIterator) {
+                      total += 1
+                      val tags = ref.value
+                      val length = tags.length
+                      val weight = if (length > 1) 1d / length.toDouble else 1d
+                      tags foreach {
+                        case null => noTag += weight
+                        case t    => agg.getOrElseUpdate(t, MutableRef.double()).mod(_ + weight)
+                      }
+                    }
+
+                    // Reorganise results
+                    var results = Map.empty[Option[ApplicableTagId], Double]
+                    results = agg.foldLeft(results) { case (q, (k, v)) => q.updated(Some(k), v.value) }
+                    if (noTag > 0d)
+                      results = results.updated(None,noTag)
+
+                    (results, total)
+
+                  case None =>
+                    (Map.empty, 0)
+                }
+
+              new ChildrenSummary {
+                override def aggregated = _aggregated._1
+                override def total = _aggregated._2
+              }
+            }
+
           new ResultsMono {
             override def manualLiveValues =
               b.manualLive
@@ -539,6 +602,9 @@ object VirtualProjectTags {
                 case Some(m) => m.value(reqId)
                 case None    => Set.empty
               }
+
+            override def childrenSummary(field: CustomField.Tag.Id) =
+              childrenSummaries(field)
           }
         }
 
