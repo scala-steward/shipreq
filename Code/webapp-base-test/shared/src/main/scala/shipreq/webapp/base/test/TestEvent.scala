@@ -84,4 +84,15 @@ object TestEvent {
     val ne = NonEmpty(sd) getOrElse sys.error(s"reqTagsPatch called with no data.")
     ReqTagsPatch(id, ne)
   }
+
+  def reqsDelete(id        : ReqId                        = null,
+                 ids       : IterableOnce[ReqId]          = Nil,
+                 codeGroups: IterableOnce[ReqCodeGroupId] = Nil,
+                 reason    : String                       = null,
+                ): ReqsDelete =
+    ReqsDelete(
+      reqs       = NonEmptySet.force(ids.iterator.toSet ++ Option(id)),
+      codeGroups = codeGroups.iterator.toSet,
+      reason     = Option(reason).map(Text.DeletionReason.Literal(_)).to(ArraySeq),
+    )
 }

@@ -53,8 +53,12 @@ object VirtualProjectTagsTest extends TestSuite {
     def perReq: Iterator[Item] = {
       p.content.reqs.reqIterator().map { r =>
         val pubid       = req(r.id)
-        val liveResults = tags(r.id, HideDead).fieldOrdered(fieldId) |> tagVec
         val deadResults = tags(r.id, ShowDead).fieldOrdered(fieldId) |> tagVec
+        val liveResults =
+          if (r.live(p.config.reqTypes) is Dead)
+            tagVec(Vector.empty)
+          else
+            tags(r.id, HideDead).fieldOrdered(fieldId) |> tagVec
 
         val factors =
           MutableArray(
@@ -78,7 +82,7 @@ object VirtualProjectTagsTest extends TestSuite {
                                    reqTypeOrder: Vector[ReqTypeId] = Vector.empty,
                                    alwaysSimplifyFirst: Boolean = false)(_expect: String)(implicit l: Line): Unit = {
     val actual = summariseDerivativeTags(p, f, reqTypeOrder)
-    val expect = _expect.trim.replaceAll(" *//.+?(?=\n|$)", "")
+    val expect = _expect.trim.replaceAll(" *//.+?(?=\n|$)", "").replaceAll("(?<=^|\n) *\n", "")
     if (actual != expect) {
 
       def simplify(s: String): String =
