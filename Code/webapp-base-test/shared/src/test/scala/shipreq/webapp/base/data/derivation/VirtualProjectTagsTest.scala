@@ -2,6 +2,7 @@ package shipreq.webapp.base.data.derivation
 
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import java.time.Duration
 import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test._
@@ -77,17 +78,25 @@ object VirtualProjectTagsTest extends TestSuite {
     MutableArray(perReq).sortBy(_._1).iterator().map(_._2).mkString("\n")
   }
 
-  private def assertDerivativeTags(p: Project,
+  private def assertDerivativeTags(p0: Project,
                                    f: CustomField.Tag.Id,
                                    reqTypeOrder: Vector[ReqTypeId] = Vector.empty,
-                                   alwaysSimplifyFirst: Boolean = false)(_expect: String)(implicit l: Line): Unit = {
+                                   alwaysSimplifyFirst: Boolean = false)(_expect: String)(implicit l: Line): String = {
+
+    val p = p0.copy() // avoid pre-computed virtualTags so that we can measure derivation time
+    val startTime = System.nanoTime()
+    p.virtualTags
+    val endTime = System.nanoTime()
+    val dur = Duration.ofNanos(endTime - startTime)
+
     val actual = summariseDerivativeTags(p, f, reqTypeOrder)
 
     val expect = _expect
       .trim
-      .replaceAll(" *//.+?(?=\n|$)", "") // remove comments
-      .replaceAll("(?<=^|\n) *\n", "") // remove blank links
-      .replaceAll("(?<=\\d) * =", "\n  =") // expand concise no-factor lines
+      .replaceAll(" *//.+?(\n|$)", "$1") // remove comments
+      .replaceAll("(^|\n) *\n", "$1") // remove blank links
+      .replaceAll("(\\d) * =", "$1\n  =") // expand concise no-factor lines
+      .replaceAll("(\\{.*?\\}) / (\\{.*?\\})", "$1\n    $2 (ShowDead)") // expand multi-result lines
 
     if (actual != expect) {
 
@@ -102,10 +111,12 @@ object VirtualProjectTagsTest extends TestSuite {
         println(simplify(actual))
 
       //println(actual)
-      if (alwaysSimplifyFirst || !expect.contains("  +"))
+      if (alwaysSimplifyFirst || !(expect.contains("  +") || expect.contains("ShowDead")))
         assertMultiline(simplify(actual), simplify(expect))
       assertMultiline(actual, expect)
     }
+
+    "Derivation took " + dur.conciseDesc
   }
 
   override def tests = Tests {

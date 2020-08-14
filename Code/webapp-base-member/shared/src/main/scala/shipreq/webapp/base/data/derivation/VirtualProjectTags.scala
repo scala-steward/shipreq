@@ -140,14 +140,15 @@ object VirtualProjectTags {
         else
           manualLive = manualLive.add(id, loc)
 
-      def addDefault(f: CustomField.Tag.Id, id: ApplicableTagId): Unit =
+      def addDefault(f: CustomField.Tag.Id, id: ApplicableTagId, fieldLive: Live): Unit =
         reqLive match {
           case Live =>
-            tagLive(id) match {
+            (fieldLive & tagLive(id)) match {
               case Live => liveDefaults = liveDefaults.updated(f, id)
               case Dead => deadDefaults = deadDefaults.updated(f, id)
             }
           case Dead =>
+            deadDefaults = deadDefaults.updated(f, id)
         }
     }
 
@@ -205,13 +206,15 @@ object VirtualProjectTags {
       lazy val effectiveTags: Set[ApplicableTagId] =
         b.manualLive.keySet ++ b.deadTagsInLiveText.keySet ++ b.naTagsInLiveText.keySet
 
-      for (f <- p.config.liveCustomTagFields) {
-        fieldRules(req.reqTypeId).tag(f.id) match {
+      val rules = fieldRules(req.reqTypeId)
+
+      for (f <- p.config.fields.customTagFields) {
+        rules.tag(f.id) match {
 
           case Resolution.DefaultTo(default) =>
             val relevant = liveTagDist.inField(f.id)
             if (!effectiveTags.exists(relevant.contains))
-              b.addDefault(f.id, default)
+              b.addDefault(f.id, default, f.live(p.config))
 
           case Resolution.Mandatory
              | Resolution.Optional
@@ -686,7 +689,9 @@ object VirtualProjectTags {
 
             p.content.reqs.reqIterator().map { req =>
               val b = data(req.id)
-              val title = s"${PlainText.pubid(req.pubid, p)}: ${pt.reqTitle(req)}"
+              var title = s"${PlainText.pubid(req.pubid, p)}: ${pt.reqTitle(req)}"
+              if (req.live(p.config.reqTypes) is Dead)
+                title += " (DEAD)"
               var items = Vector.empty[String]
               items ++= showM(b.manualLive        ).map("manualLive         : " + _)
               items ++= showM(b.manualDead        ).map("manualDead         : " + _)

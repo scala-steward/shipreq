@@ -311,16 +311,14 @@ object SampleDerivativeTags4 {
       |A-5
       |  + self: z2 (manual)
       |  = {z2}
-      |A-6
-      |  = {}
+      |A-6 = {} / {z1}
       |A-7
       |  + self: z1 (default)
       |  = {z1}
       |A-8
       |  // + self: z1 (default) // omitted because derivative tags not applied to this isolated req
       |  = {z1}
-      |A-9
-      |  = {}
+      |A-9 = {} / {z1}
       |A-10
       |  + A-11: z2 (derived)
       |  + A-11: z3 (derived)
@@ -352,9 +350,7 @@ object SampleDerivativeTags4 {
       |A-16
       |  + self: z2 (manual)
       |  = {z2}
-      |A-17
-      |  = {}
-      |    {z2} (ShowDead)
+      |A-17 = {} / {z2}
       |A-18
       |  + B-11: z1 (derived)
       |  + B-11: z3 (derived)
@@ -608,16 +604,63 @@ object SampleDerivativeTags4 {
       |    {y1 y2 y3} (ShowDead)
       |""".stripMargin
 
+  def virtualTagsX =
+    """A-1 = {} / {x1}
+      |A-2 = {} / {x1}
+      |A-3 = {} / {x1}
+      |A-4 = {} / {x1}
+      |A-5 = {} / {x1}
+      |A-6 = {} / {x1}
+      |A-7 = {} / {x1}
+      |A-8 = {} / {x1}
+      |A-9 = {} / {x1}
+      |A-10 = {} / {x1}
+      |A-11 = {} / {x1}
+      |A-12 = {} / {x1}
+      |A-13 = {} / {x1}
+      |A-14 = {} / {x1}
+      |A-15 = {} / {x1}
+      |A-16 = {} / {x1}
+      |A-17 = {} / {x1}
+      |A-18 = {} / {x1}
+      |A-19 = {} / {x1}
+      |B-1 = {} / {x1}
+      |B-2 = {} / {x1}
+      |B-3 = {} / {x1}
+      |B-4 = {} / {x1}
+      |B-5 = {} / {x1}
+      |B-6 = {} / {x1}
+      |B-7 = {} / {x1}
+      |B-8 = {} / {x1}
+      |B-9 = {} / {x1}
+      |B-10 = {} / {x1}
+      |B-11 = {} / {x1}
+      |B-12 = {} / {x1}
+      |B-13 = {} / {x1}
+      |C-1 = {} / {x1}
+      |C-2 = {} / {x1}
+      |C-3 = {} / {x1}
+      |C-4 = {} / {x1}
+      |C-5 = {} / {x1}
+      |C-6 = {} / {x1}
+      |D-1 = {} / {x1}
+      |D-2 = {} / {x1}
+      |D-3 = {} / {x1}
+      |E-1 = {} / {x1}
+      |E-2 = {} / {x1}
+      |E-3 = {} / {x1}
+      |""".stripMargin
+
   def virtualTagsW =
     """A-1 = {w1}
       |A-2 = {w1}
       |A-3 = {w1}
       |A-4 = {w1}
       |A-5 = {w1}
-      |A-6 = {}
+      |A-6 = {} / {w1}
       |A-7 = {w1}
       |A-8 = {w1}
-      |A-9 = {}
+      |A-9 = {} / {w1}
       |A-10 = {w1}
       |A-11 = {w1}
       |A-12 = {w1}
@@ -625,7 +668,7 @@ object SampleDerivativeTags4 {
       |A-14 = {w1}
       |A-15 = {w1}
       |A-16 = {w1}
-      |A-17 = {}
+      |A-17 = {} / {w1}
       |A-18 = {w1}
       |A-19 = {w1}
       |B-1 = {w1}
@@ -654,8 +697,5 @@ object SampleDerivativeTags4 {
       |E-2 = {w1}
       |E-3 = {w1}
       |""".stripMargin
-
-  def virtualTagsX =
-    virtualTagsW.replace("w1", "")
 
 }
