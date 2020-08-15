@@ -40,9 +40,6 @@ sealed trait VirtualProjectTags {
 
 object VirtualProjectTags {
 
-  def apply(p: Project): VirtualProjectTags =
-    new Mutable(p).result
-
   /** Results that aren't indexed by anything. */
   sealed trait ResultsMono {
     def manualLiveValues: Multimap[ApplicableTagId, List, LocationOf.Tag.InReq]
@@ -168,20 +165,41 @@ object VirtualProjectTags {
                                         liveTags      : Set[ApplicableTagId])
   }
 
-  private final class Mutable(p: Project) {
+  private final class Mutable(val p: Project) {
     import Mutable._
 
-    val deadTags    = p.config.tags.deadApplicableTagIds
-    val tagsInText  = p.atomScan.tagRefs
-    val tagLive     = (id: ApplicableTagId) => Dead when deadTags.contains(id)
-    val reqTags     = p.content.reqTags
-    val reqTypes    = p.config.reqTypes
-    val fieldRules  = p.config.fieldRules(ShowDead) // ShowDead so that it doesn't replace dead defaults with Optional
-    val liveTagDist = p.config.liveTagFieldDistribution
-    val imps        = p.content.implications
+    val deadTags       = p.config.tags.deadApplicableTagIds
+    val tagsInText     = p.atomScan.tagRefs
+    val tagLive        = (id: ApplicableTagId) => Dead when deadTags.contains(id)
+    val reqTags        = p.content.reqTags
+    val reqTypes       = p.config.reqTypes
+    val fieldRules     = p.config.fieldRules(ShowDead) // ShowDead so that it doesn't replace dead defaults with Optional
+    val liveTagDist    = p.config.liveTagFieldDistribution
+    val imps           = p.content.implications
+    val tagOrderByName = p.config.tags.orderByName
+    val tagOrderByPos  = p.config.tags.orderByPos
+
+    type Data = mutable.HashMap[ReqId, ForReq]
+
+    val data: Data = mutable.HashMap.empty
+
+    // Step 1: Scan all requirements
+    for (req <- p.content.reqs.reqIterator()) {
+      val nonApplicableTags = p.config.naTags(req.reqTypeId).set
+      val b = new ForReq(req, req.live(reqTypes), nonApplicableTags, tagLive)
+      data.update(req.id, b)
+
+      // Process current req
+      collectManualTags(req, b)
+      addDefaults(req, b)
+    }
+
+    // Step 2: Derivative tags
+    val dtFactors: DerivativeTagFactors =
+      applyDerivativeTags(data)
 
     // =================================================================================================================
-    def collectManualTags(req: Req, b: ForReq): Unit = {
+    private def collectManualTags(req: Req, b: ForReq): Unit = {
 
       // Scan live text
       {
@@ -210,7 +228,7 @@ object VirtualProjectTags {
     }
 
     // =================================================================================================================
-    def addDefaults(req: Req, b: ForReq): Unit = {
+    private def addDefaults(req: Req, b: ForReq): Unit = {
       import FieldReqTypeRules.Resolution
 
       lazy val effectiveTags: Set[ApplicableTagId] =
@@ -250,7 +268,7 @@ object VirtualProjectTags {
 
     private final val debugDerivativeTags = false
 
-    def applyDerivativeTags(data: Data): DerivativeTagFactors = {
+    private def applyDerivativeTags(data: Data): DerivativeTagFactors = {
       import DerivativeTagFactor.SourceType
 
       var factorsPerField: DerivativeTagFactors = Map.empty
@@ -508,279 +526,290 @@ object VirtualProjectTags {
 
       factorsPerField
     }
+  } // class Mutable
 
-    // =================================================================================================================
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-    type Data = mutable.HashMap[ReqId, ForReq]
+  def apply(p: Project): VirtualProjectTags = {
+    val m = new Mutable(p)
+    import m.data
 
-    val result: VirtualProjectTags = {
-      val data: Data = mutable.HashMap.empty
+    val allSetMemo: FilterDead => ReqId => Set[ApplicableTagId] = {
+      var live: ReqId => Set[ApplicableTagId] = null
+      val fn: FilterDead => ReqId => Set[ApplicableTagId] =
+        FilterDead.memo {
+          case HideDead =>
+            Memo { reqId =>
+              val b = data(reqId)
+              var results = b.liveDerived
+              results ++= b.manualLive.keys
+              results ++= b.deadTagsInLiveText.keys
+              results ++= b.naTagsInLiveText.keys
+              results ++= b.liveDefaults.values
+              results
+            }
+          case ShowDead =>
+            Memo { reqId =>
+              val b = data(reqId)
+              var results = live(reqId)
+              results ++= b.deadDefaults.values
+              results ++= b.manualDead.keys
+              results ++= b.deadDerived
+              results
+            }
+        }
+      live = fn(HideDead)
+      fn
+    }
 
-      // Step 1: Scan all requirements
-      val reqTypes = p.config.reqTypes
-      for (req <- p.content.reqs.reqIterator()) {
-        val nonApplicableTags = p.config.naTags(req.reqTypeId).set
-        val b = new ForReq(req, req.live(reqTypes), nonApplicableTags, tagLive)
-        data.update(req.id, b)
+    val allLiveDeadResults: AllLiveDeadResults =
+      distFn =>
+        FilterDead.memoLazy { fd =>
+          val allSetFD    = allSetMemo(fd)
+          val defaultDist = distFn(fd)
 
-        // Process current req
-        collectManualTags(req, b)
-        addDefaults(req, b)
-      }
-
-      // Step 2: Derivative tags
-      val dtFactors = applyDerivativeTags(data)
-
-      // Done.
-      // Now we provide results...
-
-      val monoResults: ReqId => ResultsMono =
-        Memo { reqId =>
-          val b = data(reqId)
-
-          val childrenSummaries: CustomField.Tag.Id => ChildrenSummary =
-            Memo { fieldId =>
-
-              lazy val _aggregated: (Map[Option[ApplicableTagId], Double], Int) =
-                dtFactors.get(fieldId) match {
-                  case Some(allFactors) =>
-
-                    // Group by reqId
-                    val byReq = mutable.HashMap.empty[ReqId, MutableRef[List[ApplicableTagId]]]
-
-                    def add(reqId: ReqId, tag: ApplicableTagId): Unit =
-                      byReq.getOrElseUpdate(reqId, MutableRef(Nil)).mod(tag :: _)
-
-                    allFactors.value(reqId).foreach {
-                      case DerivativeTagFactor.EmptyRelation(req, Forwards)    => add(req, null)
-                      case DerivativeTagFactor.Relation(req, Forwards, tag, _) => add(req, tag)
-                      case _                                                   => ()
-                    }
-
-                    // Aggregate by tag
-                    val agg = mutable.HashMap.empty[ApplicableTagId, MutableRef[Double]]
-                    var noTag = 0d
-                    var total = 0
-                    for (ref <- byReq.valuesIterator) {
-                      total += 1
-                      val tags = ref.value
-                      val length = tags.length
-                      val weight = if (length > 1) 1d / length.toDouble else 1d
-                      tags foreach {
-                        case null => noTag += weight
-                        case t    => agg.getOrElseUpdate(t, MutableRef.double()).mod(_ + weight)
-                      }
-                    }
-
-                    // Reorganise results
-                    var results = Map.empty[Option[ApplicableTagId], Double]
-                    results = agg.foldLeft(results) { case (q, (k, v)) => q.updated(Some(k), v.value) }
-                    if (noTag > 0d)
-                      results = results.updated(None,noTag)
-
-                    (results, total)
-
-                  case None =>
-                    (Map.empty, 0)
-                }
-
-              new ChildrenSummary {
-                override def aggregated = _aggregated._1
-                override def total = _aggregated._2
-              }
+          val defaultsFn: Mutable.ForReq => Map[CustomField.Tag.Id, ApplicableTagId] =
+            fd match {
+              case HideDead => _.liveDefaults
+              case ShowDead => b => Util.mergeMaps(b.liveDefaults, b.deadDefaults)
             }
 
-          new ResultsMono {
-            override def manualLiveValues =
-              b.manualLive
-
-            override def naTagsInLiveText =
-              b.naTagsInLiveText
-
-            override def derivativeTagFactors(f: CustomField.Tag.Id) =
-              dtFactors.get(f) match {
-                case Some(m) => m.value(reqId)
-                case None    => Set.empty
-              }
-
-            override def childrenSummary(field: CustomField.Tag.Id) =
-              childrenSummaries(field)
-          }
-        }
-
-      val tagOrderByName = p.config.tags.orderByName
-      val tagOrderByPos  = p.config.tags.orderByPos
-
-      val allSetMemo: FilterDead => ReqId => Set[ApplicableTagId] = {
-        var live: ReqId => Set[ApplicableTagId] = null
-        val x: FilterDead => ReqId => Set[ApplicableTagId] =
-          FilterDead.memo {
-            case HideDead =>
-              Memo { reqId =>
-                val b = data(reqId)
-                var results = b.liveDerived
-                results ++= b.manualLive.keys
-                results ++= b.deadTagsInLiveText.keys
-                results ++= b.naTagsInLiveText.keys
-                results ++= b.liveDefaults.values
-                results
-              }
-            case ShowDead =>
-              Memo { reqId =>
-                val b = data(reqId)
-                var results = live(reqId)
-                results ++= b.deadDefaults.values
-                results ++= b.manualDead.keys
-                results ++= b.deadDerived
-                results
-              }
-          }
-        live = x(HideDead)
-        x
-      }
-
-      val defaultsFdFn: FilterDead => ForReq => Map[CustomField.Tag.Id, ApplicableTagId] =
-        FilterDead.memo {
-          case HideDead => _.liveDefaults
-          case ShowDead => b => Util.mergeMaps(b.liveDefaults, b.deadDefaults)
-        }
-
-      def allLiveDeadResults(distFn: FilterDead => TagFieldDistribution.TagIds): FilterDead => ReqId => ResultsLiveDead = {
-        FilterDead.memoLazy { fd =>
-          val allSetFD = allSetMemo(fd)
-          val defaultDist = distFn(fd)
-          val defaultsFn = defaultsFdFn(fd)
           Memo { reqId =>
-            @inline def b = data(reqId)
             def liveDeadResults(dist: TagFieldDistribution.TagIds): ResultsLiveDead =
-              new ResultsLiveDead {
-
-                override def isEmpty =
-                  allSet.isEmpty
-
-                override def allSet =
-                  allSetFD(reqId)
-
-                override lazy val otherSet = {
-                  val tagsUsedInFields = dist.usedInFields
-                  allSet &~ tagsUsedInFields
-                }
-
-                override val fieldSet = Memo { fid =>
-                  val legal = dist inField fid
-                  allSet & legal
-                }
-
-                override lazy val allOrdered =
-                  MutableArray(allSet).sortBy(tagOrderByName.apply).to(Vector)
-
-                override def otherOrdered =
-                  MutableArray(otherSet).sortBy(tagOrderByName.apply).to(Vector)
-
-                override val fieldOrdered = Memo { fid =>
-                  MutableArray(fieldSet(fid)).sortBy(tagOrderByPos.apply).to(Vector)
-                }
-
-                override def defaults =
-                  defaultsFn(b)
-
-                override def withTagFieldDist(dist2: TagFieldDistribution.TagIds) =
-                  if (dist eq dist2)
-                    this
-                  else
-                    liveDeadResults(dist2)
-              }
-
+              new LiveDeadImpl(
+                reqId           = reqId,
+                dist            = dist,
+                allSetFD        = allSetFD,
+                defaultsFn      = defaultsFn,
+                liveDeadResults = liveDeadResults,
+                mutableResults  = m,
+              )
             liveDeadResults(defaultDist)
           }
         }
-      }
 
-      def allResults(distFn: FilterDead => TagFieldDistribution.TagIds): VirtualProjectTags = {
-        val fdResults = allLiveDeadResults(distFn)
+    new Impl(p.dataLogic.tagFieldDist, allLiveDeadResults, m)
+  }
 
-        new VirtualProjectTags {
-          override def apply(reqId: ReqId): ResultsMono =
-            monoResults(reqId)
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
-          override def apply(reqId: ReqId, filterDead: FilterDead): ResultsLiveDead =
-            fdResults(filterDead)(reqId)
+  private type AllLiveDeadResults = (FilterDead => TagFieldDistribution.TagIds) => FilterDead => ReqId => ResultsLiveDead
 
-          override def underTagGroup(tagGroupId: TagGroupId, filterDead: FilterDead): ReqId => Vector[ApplicableTagId] = {
-            val tagLookup = fdResults(filterDead)
-            val tagScope  = p.config.tagFieldDistribution(filterDead).inTagGroup(tagGroupId)
-            val tagOrder  = p.config.tags.applicableTagOrdering(tagGroupId, filterDead)
+  private final class Impl(distFn            : FilterDead => TagFieldDistribution.TagIds,
+                           allLiveDeadResults: AllLiveDeadResults,
+                           mutableResults    : Mutable) extends VirtualProjectTags {
+    import mutableResults._
 
-            reqId =>
-              MutableArray(tagLookup(reqId).allSet.iterator.filter(tagScope.contains))
-                .sort(tagOrder)
-                .iterator()
-                .toVector
-          }
+    private val fdResults = allLiveDeadResults(distFn)
 
-          override def withTagFieldDistFn(distFn2: FilterDead => TagFieldDistribution.TagIds) =
-            allResults(distFn2)
+    private val monoResults: ReqId => ResultsMono =
+      Memo(new MonoImpl(_, mutableResults))
 
-          @elidable(elidable.INFO)
-          override def prettyPrint = {
-            val pt = PlainText.ForProject.noCtx(p)
-            val sep = "=" * 80
+    override def apply(reqId: ReqId): ResultsMono =
+      monoResults(reqId)
 
-            def show(id: ApplicableTagId): String = {
-              val tag = p.config.tags.needApplicableTag(id)
-              tag.live match {
-                case Live => tag.name
-                case Dead => s"${tag.name} (DEAD)"
-              }
-            }
+    override def apply(reqId: ReqId, filterDead: FilterDead): ResultsLiveDead =
+      fdResults(filterDead)(reqId)
 
-            def showS(i: Set[ApplicableTagId]): Iterator[String] =
-              i.iterator.map(show)
+    override def underTagGroup(tagGroupId: TagGroupId, filterDead: FilterDead): ReqId => Vector[ApplicableTagId] = {
+      val tagLookup = fdResults(filterDead)
+      val tagScope  = p.config.tagFieldDistribution(filterDead).inTagGroup(tagGroupId)
+      val tagOrder  = p.config.tags.applicableTagOrdering(tagGroupId, filterDead)
 
-            def showM[A](i: Multimap[ApplicableTagId, List, A]): Iterator[String] =
-              i.iterator.map { case (tagId, as) =>
-                s"${show(tagId)} found in ${MutableArray(as.map(_.toString)).sort.mkString("[", ", ", "]")}"
-              }
+      reqId =>
+        MutableArray(tagLookup(reqId).allSet.iterator.filter(tagScope.contains))
+          .sort(tagOrder)
+          .iterator()
+          .toVector
+    }
 
-            def showD(i: Map[CustomField.Tag.Id, ApplicableTagId]): Iterator[String] =
-              i.iterator.map { case (fieldId, tagId) =>
-                val field = p.config.fields.custom(fieldId)
-                val group = p.config.tags.needTagGroup(field.tagId).name
-                val s = s"${show(tagId)} from $group field (#${fieldId.value})"
-                field.live(p.config) match {
-                  case Live => s
-                  case Dead => s + " (DEAD)"
-                }
-              }
+    override def withTagFieldDistFn(distFn2: FilterDead => TagFieldDistribution.TagIds) =
+      new Impl(distFn2, allLiveDeadResults, mutableResults)
 
-            p.content.reqs.reqIterator().map { req =>
-              val b = data(req.id)
-              var title = s"${PlainText.pubid(req.pubid, p)}: ${pt.reqTitle(req)}"
-              if (req.live(p.config.reqTypes) is Dead)
-                title += " (DEAD)"
-              var items = Vector.empty[String]
-              items ++= showM(b.manualLive        ).map("manualLive         : " + _)
-              items ++= showM(b.manualDead        ).map("manualDead         : " + _)
-              items ++= showM(b.deadTagsInLiveText).map("deadTagsInLiveText : " + _)
-              items ++= showM(b.naTagsInLiveText  ).map("naTagsInLiveText   : " + _)
-              items ++= showD(b.liveDefaults      ).map("liveDefaults       : " + _)
-              items ++= showD(b.deadDefaults      ).map("deadDefaults       : " + _)
-              items ++= showS(b.liveDerived       ).map("liveDerived        : " + _)
-              items ++= showS(b.deadDerived       ).map("deadDerived        : " + _)
-              val detail = items.sorted.map("  - " + _).mkString("\n")
-              if (detail.isEmpty)
-                title
-              else
-                s"$title\n$detail"
-            }
-              .toVector
-              .sorted
-              .mkString(sep + "\n", "\n", "\n" + sep)
-          }
+    @elidable(elidable.INFO)
+    override def prettyPrint = {
+      val pt = PlainText.ForProject.noCtx(p)
+      val sep = "=" * 80
+
+      def show(id: ApplicableTagId): String = {
+        val tag = p.config.tags.needApplicableTag(id)
+        tag.live match {
+          case Live => tag.name
+          case Dead => s"${tag.name} (DEAD)"
         }
       }
 
-      allResults(p.dataLogic.tagFieldDist)
+      def showS(i: Set[ApplicableTagId]): Iterator[String] =
+        i.iterator.map(show)
+
+      def showM[A](i: Multimap[ApplicableTagId, List, A]): Iterator[String] =
+        i.iterator.map { case (tagId, as) =>
+          s"${show(tagId)} found in ${MutableArray(as.map(_.toString)).sort.mkString("[", ", ", "]")}"
+        }
+
+      def showD(i: Map[CustomField.Tag.Id, ApplicableTagId]): Iterator[String] =
+        i.iterator.map { case (fieldId, tagId) =>
+          val field = p.config.fields.custom(fieldId)
+          val group = p.config.tags.needTagGroup(field.tagId).name
+          val s = s"${show(tagId)} from $group field (#${fieldId.value})"
+          field.live(p.config) match {
+            case Live => s
+            case Dead => s + " (DEAD)"
+          }
+        }
+
+      p.content.reqs.reqIterator().map { req =>
+        val b = data(req.id)
+        var title = s"${PlainText.pubid(req.pubid, p)}: ${pt.reqTitle(req)}"
+        if (req.live(p.config.reqTypes) is Dead)
+          title += " (DEAD)"
+        var items = Vector.empty[String]
+        items ++= showM(b.manualLive        ).map("manualLive         : " + _)
+        items ++= showM(b.manualDead        ).map("manualDead         : " + _)
+        items ++= showM(b.deadTagsInLiveText).map("deadTagsInLiveText : " + _)
+        items ++= showM(b.naTagsInLiveText  ).map("naTagsInLiveText   : " + _)
+        items ++= showD(b.liveDefaults      ).map("liveDefaults       : " + _)
+        items ++= showD(b.deadDefaults      ).map("deadDefaults       : " + _)
+        items ++= showS(b.liveDerived       ).map("liveDerived        : " + _)
+        items ++= showS(b.deadDerived       ).map("deadDerived        : " + _)
+        val detail = items.sorted.map("  - " + _).mkString("\n")
+        if (detail.isEmpty)
+          title
+        else
+          s"$title\n$detail"
+      }
+        .toVector
+        .sorted
+        .mkString(sep + "\n", "\n", "\n" + sep)
     }
+  }
+
+  // ===================================================================================================================
+
+  private final class MonoImpl(reqId: ReqId, mutableResults: Mutable) extends ResultsMono {
+    import mutableResults._
+
+    private val b = data(reqId)
+
+    override def manualLiveValues =
+      b.manualLive
+
+    override def naTagsInLiveText =
+      b.naTagsInLiveText
+
+    override def derivativeTagFactors(f: CustomField.Tag.Id) =
+      dtFactors.get(f) match {
+        case Some(m) => m.value(reqId)
+        case None    => Set.empty
+      }
+
+    private val childrenSummaries: CustomField.Tag.Id => ChildrenSummary =
+      Memo(new ChildrenSummaryImpl(reqId, _, mutableResults))
+
+    override def childrenSummary(field: CustomField.Tag.Id) =
+      childrenSummaries(field)
+  }
+
+  // ===================================================================================================================
+
+  private final class ChildrenSummaryImpl(reqId: ReqId,
+                                          fieldId: CustomField.Tag.Id,
+                                          mutableResults: Mutable) extends ChildrenSummary {
+
+    import mutableResults._
+
+    private lazy val _aggregated: (Map[Option[ApplicableTagId], Double], Int) =
+      dtFactors.get(fieldId) match {
+        case Some(allFactors) =>
+
+          // Group by reqId
+          val byReq = mutable.HashMap.empty[ReqId, MutableRef[List[ApplicableTagId]]]
+
+          def add(reqId: ReqId, tag: ApplicableTagId): Unit =
+            byReq.getOrElseUpdate(reqId, MutableRef(Nil)).mod(tag :: _)
+
+          allFactors.value(reqId).foreach {
+            case DerivativeTagFactor.EmptyRelation(req, Forwards)    => add(req, null)
+            case DerivativeTagFactor.Relation(req, Forwards, tag, _) => add(req, tag)
+            case _                                                   => ()
+          }
+
+          // Aggregate by tag
+          val agg = mutable.HashMap.empty[ApplicableTagId, MutableRef[Double]]
+          var noTag = 0d
+          var total = 0
+          for (ref <- byReq.valuesIterator) {
+            total += 1
+            val tags = ref.value
+            val length = tags.length
+            val weight = if (length > 1) 1d / length.toDouble else 1d
+            tags foreach {
+              case null => noTag += weight
+              case t    => agg.getOrElseUpdate(t, MutableRef.double()).mod(_ + weight)
+            }
+          }
+
+          // Reorganise results
+          var results = Map.empty[Option[ApplicableTagId], Double]
+          results = agg.foldLeft(results) { case (q, (k, v)) => q.updated(Some(k), v.value) }
+          if (noTag > 0d)
+            results = results.updated(None,noTag)
+
+          (results, total)
+
+        case None =>
+          (Map.empty, 0)
+      }
+
+    override def aggregated = _aggregated._1
+    override def total      = _aggregated._2
+  }
+
+  // ===================================================================================================================
+
+  private final class LiveDeadImpl(reqId          : ReqId,
+                                   dist           : TagFieldDistribution.TagIds,
+                                   allSetFD       : ReqId => Set[ApplicableTagId],
+                                   defaultsFn     : Mutable.ForReq => Map[CustomField.Tag.Id, ApplicableTagId],
+                                   liveDeadResults: TagFieldDistribution.TagIds => ResultsLiveDead,
+                                   mutableResults : Mutable) extends ResultsLiveDead {
+    import mutableResults._
+
+    private val b = data(reqId)
+
+    override def isEmpty =
+      allSet.isEmpty
+
+    override def allSet =
+      allSetFD(reqId)
+
+    override lazy val otherSet = {
+      val tagsUsedInFields = dist.usedInFields
+      allSet &~ tagsUsedInFields
+    }
+
+    override val fieldSet = Memo { fid =>
+      val legal = dist inField fid
+      allSet & legal
+    }
+
+    override lazy val allOrdered =
+      MutableArray(allSet).sortBy(tagOrderByName.apply).to(Vector)
+
+    override def otherOrdered =
+      MutableArray(otherSet).sortBy(tagOrderByName.apply).to(Vector)
+
+    override val fieldOrdered = Memo { fid =>
+      MutableArray(fieldSet(fid)).sortBy(tagOrderByPos.apply).to(Vector)
+    }
+
+    override def defaults =
+      defaultsFn(b)
+
+    override def withTagFieldDist(dist2: TagFieldDistribution.TagIds) =
+      if (dist eq dist2)
+        this
+      else
+        liveDeadResults(dist2)
   }
 }
