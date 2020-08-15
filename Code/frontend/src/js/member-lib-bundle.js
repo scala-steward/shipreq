@@ -19,6 +19,10 @@ export { DOMPurify as DP }
 import * as screenfull from 'screenfull'
 export { screenfull }
 
+// text-field-edit
+import * as TFE from 'text-field-edit'
+export { TFE }
+
 // react-svg-pan-zoom
 import ReactSVGPanZoom from 'react-svg-pan-zoom/build-es/viewer'
 import { isZoomLevelGoingOutOfBounds, limitZoomLevel } from 'react-svg-pan-zoom/build-es/features/zoom'
@@ -50,4 +54,4 @@ const TM = { scale, transform, translate }
 export { TM }
 
 // Paste the following into web console for quick testing.
-// console.log("G: ", {autosize, ChromePicker, clipboard, GithubPicker, HRP, moment, ReactCollapse, RSPZ, RVAS, scrollIntoView, screenfull, TextComplete, TextCompleteTA, TM, tinycolor})
+// console.log("G: ", {autosize, ChromePicker, clipboard, GithubPicker, HRP, moment, ReactCollapse, RSPZ, RVAS, scrollIntoView, screenfull, TextComplete, TextCompleteTA, TM, TFE, tinycolor})
