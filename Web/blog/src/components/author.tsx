@@ -11,10 +11,6 @@ const Container = styled.section`
   display: flex;
 `
 
-const Avatar = styled(Img)`
-  border-radius: 50%;
-`
-
 const TextContainer = styled.div`
   flex-grow: 1;
   ${R.small`
@@ -73,10 +69,11 @@ export default function() {
     <Container>
 
       <div>
-        <Avatar
+        <Img
           fixed={query.file.childImageSharp.fixed}
           loading="eager"
           alt={`Avatar of ${author.name}`}
+          imgStyle={{borderRadius: "50%"}}
         />
       </div>
 
