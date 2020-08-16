@@ -30,7 +30,6 @@ const Container = styled.div`
   justify-content: stretch;
   justify-items: stretch;
   margin: 0 auto;
-  min-height: 100vh;
 
   ${R.phoneAny`
     grid-template-rows: auto auto auto auto auto 1fr;
@@ -57,18 +56,22 @@ const Container = styled.div`
 
   ${R.phone`
     padding: 0.8rem;
+    min-height: calc(100vh - 1.6rem);
   `}
   ${R.phoneWide`
     padding: 0.8rem;
+    min-height: calc(100vh - 1.6rem);
   `}
   ${R.tablet`
     padding: 1rem;
     column-gap: 2.4rem;
+    min-height: calc(100vh - 2rem);
   `}
   ${R.desktop`
-    padding: 1rem;
     column-gap: 4.8rem;
     max-width: 1200px;
+    padding: 1rem;
+    min-height: calc(100vh - 2rem);
   `}
 `
 

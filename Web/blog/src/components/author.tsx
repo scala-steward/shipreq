@@ -23,12 +23,12 @@ const TextContainer = styled.div`
 
 const Title = styled.div`
   font-size: 90%;
-  color: #444;
+  color: #222;
   font-weight: bold;
 `
 
 const Bio = styled.div`
-  color: #777;
+  color: #707070;
   font-size: 85%;
   line-height: 1.3em;
   hyphens: auto;

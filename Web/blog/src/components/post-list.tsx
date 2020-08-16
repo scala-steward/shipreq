@@ -12,31 +12,38 @@ type Props = {
 }
 
 const Item = styled.div`
-  margin-bottom: 2rem;
+  margin-bottom: 3.6rem;
   ${R.phoneWide`
-    margin-bottom: 1.2rem;
+    margin-bottom: 2.8rem;
   `}
 `
 
+const Header = styled.h1`
+  margin-bottom: 0;
+  a:not(:hover) { color: #000; }
+`
+
 const Attributes = styled.div`
-  opacity: 0.6;
-  font-size: 80%;
-  text-align: right;
+  font-size: 16px;
+  margin-top: .4em;
+  margin-bottom: .4em;
 `
 
-const TagListWrapper = styled.span`
-  margin: 0 1ex;
+const DateStyle = styled.span`
+  color: #888;
 `
 
-const Header = styled.h2`
-  margin-bottom: 0.2em;
+const AttributeSeparatorStyle = styled.span`
+  color: #ddd;
+  margin: 0 1.7ex;
 `
 
 const Desc = styled.p`
-  line-height: 1.45em;
-  color: #555;
+  color: #3a3a3a;
   margin: 0;
 `
+
+const AttrSep = (<AttributeSeparatorStyle>|</AttributeSeparatorStyle>)
 
 function renderPost(post: Post) {
 
@@ -50,14 +57,15 @@ function renderPost(post: Post) {
         <Link to={pathForPost(post)}>{post.frontmatter.title}</Link>
       </Header>
 
+      <Attributes>
+        <DateStyle><Date date={post.frontmatter.date} /></DateStyle>
+        {AttrSep}
+        <TagList tags={tags} separator={AttrSep} style={{opacity: 0.7}} />
+      </Attributes>
+
       <Desc>
         {post.frontmatter.desc}
       </Desc>
-
-      <Attributes>
-        <TagListWrapper><TagList tags={tags} /></TagListWrapper>
-        <Date date={post.frontmatter.date} />
-      </Attributes>
 
     </Item>
   )

@@ -13,10 +13,8 @@ const Link = styled(GatsbyLink)`
 const Title = styled.h1`
   margin: 0;
   text-align: right;
-  font-weight: bold;
-  color: #00488c;
   ${R.phone`
-    font-size: 250%;
+    font-size: 280%;
   `}
   ${R.phoneWide`
     font-size: 160%;
@@ -27,6 +25,9 @@ const Title = styled.h1`
   ${R.desktop`
     font-size: 230%;
   `}
+  letter-spacing: 3.6px;
+  margin: .1em -3.6px 0 0;
+  line-height: 1em;
 `
 
 export default function(): JSX.Element {
