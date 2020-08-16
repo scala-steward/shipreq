@@ -1,11 +1,10 @@
 import { Link } from "gatsby"
 import { Node as Post } from "../config/post"
 import { pathForPost } from "../utils/routes"
-import Date from "./date"
+import PostAttr from "./post-attributes"
 import R from "../utils/responsive"
 import React from "react"
 import styled from "styled-components"
-import TagList from "./tag-list"
 
 type Props = {
   posts: Array<Post>
@@ -23,16 +22,6 @@ const Header = styled.h1`
   a:not(:hover) { color: #000; }
 `
 
-const Attributes = styled.div`
-  font-size: 16px;
-  margin-top: .4em;
-  margin-bottom: .4em;
-`
-
-const DateStyle = styled.span`
-  color: #888;
-`
-
 const AttributeSeparatorStyle = styled.span`
   color: #ddd;
   margin: 0 1.7ex;
@@ -42,8 +31,6 @@ const Desc = styled.p`
   color: #3a3a3a;
   margin: 0;
 `
-
-const AttrSep = (<AttributeSeparatorStyle>|</AttributeSeparatorStyle>)
 
 function renderPost(post: Post) {
 
@@ -57,11 +44,7 @@ function renderPost(post: Post) {
         <Link to={pathForPost(post)}>{post.frontmatter.title}</Link>
       </Header>
 
-      <Attributes>
-        <DateStyle><Date date={post.frontmatter.date} /></DateStyle>
-        {AttrSep}
-        <TagList tags={tags} separator={AttrSep} style={{opacity: 0.7}} />
-      </Attributes>
+      <PostAttr date={post.frontmatter.date} tags={tags}  />
 
       <Desc>
         {post.frontmatter.desc}

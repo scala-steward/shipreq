@@ -29,7 +29,7 @@ const Link = styled.a`
   display: flex;
   color: #222;
   &:hover, &:focus {
-    color: #5d93ff;
+    color: #d90166;
   }
 `
 

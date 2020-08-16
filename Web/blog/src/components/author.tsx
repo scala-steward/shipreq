@@ -35,8 +35,9 @@ const Bio = styled.div`
   overflow-wrap: break-word;
   text-align: justify;
   word-break: break-word;
-  ${R.notPhone`
-    margin-top: 0.4em;
+  margin-top: 0.4em;
+  ${R.phone`
+    margin-top: 0.1em;
   `}
 `
 

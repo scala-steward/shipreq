@@ -6,13 +6,12 @@ import { pathForPost } from "../utils/routes"
 import { Props as SeoProps } from "../components/seo"
 import A from "../components/a"
 import Author from "../components/author"
-import Date from "../components/date"
 import Layout from "../layouts/focused"
+import PostAttr from "../components/post-attributes"
 import PostShare from "../components/post-share"
 import PostSiblingNav from "../components/post-sibling-nav"
 import React from "react"
 import styled from "styled-components"
-import TagList from "../components/tag-list"
 
 export const pageQuery = graphql`
   query PostPageQuery($id: String) {
@@ -48,57 +47,24 @@ const components = {
   SJR      : () => <A href="https://github.com/japgolly/scalajs-react">scalajs-react</A>,
 }
 
-const Article = styled.article`
-  line-height: 1.5em;
-  .huddle > li {
-    margin-bottom: 0;
-  }
-`
 const Header = styled.header`
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 `
 
 const Title = styled.h1`
-  display: block;
-  font-weight: bold;
-  border-bottom: solid 1px #ccc;
-  color: #933;
+  font-size: 220%;
   margin-bottom: 0;
-  font-size: 250%;
 `
-
-const DateContainer = styled.div`
-  color: #888;
-  text-align: right;
-  margin-top: 0.2em;
-  font-size: 85%;
-`
-
-const Body = styled.section`
-  h1,h2,h3,h4,h5,h6 {
-    margin-top: 0;
-    &:not(:first-child) {
-      margin-top: 1.5em;
-    }
-    margin-bottom: 1em;
-  }
-  p {
-    margin-bottom: 1em;
-  }
-`
-
-const footerGap = "1.8rem"
 
 const Footer = styled.footer`
-  border-top: solid 1px #ccc;
-  margin-top: ${footerGap};
-  padding-top: ${footerGap};
+  border-top: solid 1px #888;
+  margin-top: 3rem;
+  padding-top: 1rem;
 `
 
 export default function({ data, pageContext }: Props) {
-  const post  = data.mdx
-  const title = post.frontmatter.title
-  const tags  = post.frontmatter.tags
+  const post = data.mdx
+  const { date, title, tags } = post.frontmatter
 
   const seo: SeoProps =  {
     article : true,
@@ -109,20 +75,18 @@ export default function({ data, pageContext }: Props) {
 
   return (
     <Layout seo={seo}>
-      <Article>
+      <article className="post">
 
         <Header>
           <Title>{title}</Title>
-          <DateContainer>
-            <Date date={post.frontmatter.date} />
-          </DateContainer>
+          <PostAttr date={date} tags={tags} />
         </Header>
 
-        <Body>
+        <section className="body">
           <MDXProvider components={components}>
             <MDXRenderer>{post.body}</MDXRenderer>
           </MDXProvider>
-        </Body>
+        </section>
 
         <Footer>
           <Author />
@@ -130,7 +94,7 @@ export default function({ data, pageContext }: Props) {
           <PostSiblingNav pageContext={pageContext} />
         </Footer>
 
-      </Article>
+      </article>
     </Layout>
   )
 };

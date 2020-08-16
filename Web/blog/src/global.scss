@@ -9,13 +9,18 @@ body {
   line-height: 1.333333em;
 }
 
+header {
+  overflow-wrap: break-word;
+}
+
 h1,h2,h3,h4,h5,h6 {
   // font-family: 'Nunito', sans-serif;
+  line-height: 1.2em;
+  overflow-wrap: break-word;
   margin-top: 0;
   &:not(:first-child) {
-    margin-top: 1em;
+    margin-top: 1.6em;
   }
-  line-height: 1.2em;
 }
 
 h1 {
@@ -41,4 +46,29 @@ a {
 blockquote {
   font-size: "95%";
   margin-bottom: 0.5em;
+}
+
+article.post {
+
+  & > .body {
+
+    h2 {
+      background-color: lighten($yellow, 15%);
+      padding: .18em 1ex 0.05em;
+      border-radius: 2ex;
+    }
+
+    code {
+      font-size:90%;
+    }
+
+    pre[class*="language-"] {
+      padding: 0.4em 1ex;
+    }
+
+    .huddle > li {
+      margin-bottom: 0;
+    }
+  }
+
 }

@@ -18,8 +18,6 @@ const Item = styled.span`
 
 function render(p: Props): JSX.Element {
 
-  console.log("Props: ", p)
-
   if (p.separator) {
     const tags =
       p.tags.sort().map(tag => (

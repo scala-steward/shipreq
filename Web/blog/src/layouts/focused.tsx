@@ -30,6 +30,8 @@ const Container = styled.div`
   justify-content: stretch;
   justify-items: stretch;
   margin: 0 auto;
+  min-width: 0;
+  box-sizing: border-box;
 
   ${R.phoneAny`
     grid-template-rows: auto auto auto auto auto 1fr;
@@ -56,11 +58,15 @@ const Container = styled.div`
 
   ${R.phone`
     padding: 0.8rem;
+    max-width: calc(100vw - 1.6rem);
     min-height: calc(100vh - 1.6rem);
+    width: 100%;
   `}
   ${R.phoneWide`
     padding: 0.8rem;
+    max-width: calc(100vw - 1.6rem);
     min-height: calc(100vh - 1.6rem);
+    width: 100%;
   `}
   ${R.tablet`
     padding: 1rem;
@@ -81,7 +87,7 @@ const BannerCell = styled.header`
 
 const BannerWrapper = styled.div`
   ${R.phoneWide`
-    width:400px;
+    width:440px;
     margin-left: auto;
   `}
   ${R.tablet`
@@ -106,7 +112,7 @@ const ContactCell = styled.section`
     margin: 1rem 0;
   `}
   ${R.desktop`
-    margin: 2rem 0;
+    margin-top: 3rem;
   `}
 `
 
@@ -134,7 +140,7 @@ const PageIndexCell = styled.section`
     margin: 1rem 0;
   `}
   ${R.desktop`
-    margin: 2rem 0;
+    margin-top: 3rem;
   `}
 `
 
@@ -142,15 +148,20 @@ const CopyrightCell = styled.footer`
   grid-area: ${GridArea.copyright};
   align-self: end;
   text-align: right;
-  margin-top: 1rem;
+  margin-top: 2rem;
 `
 
+// `min-width: 0;` below is very important!!
+// Without it, long code blocks will push out the width of the entire container!
 const MainCell = styled.main`
   grid-area: ${GridArea.main};
+  min-width: 0;
+  max-width: 100%;
   ${R.phone`
     margin-top: 2rem;
   `}
   ${R.phoneWide`
+    margin-top: 1rem;
   `}
   ${R.tablet`
   `}
@@ -182,7 +193,7 @@ export default function(p: Props) {
         </PageIndexCell>
 
         <CopyrightCell>
-          <Copyright />
+          <Copyright flattenOnPhones={true} />
         </CopyrightCell>
 
         <MainCell>
