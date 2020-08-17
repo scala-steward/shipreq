@@ -1,6 +1,6 @@
 import { GatsbyNode } from "gatsby"
-import * as path from "path"
 import { pathForPost } from "../utils/routes"
+import * as path from "path"
 
 export type Node = {
   id: string

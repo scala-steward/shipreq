@@ -1,12 +1,12 @@
-import { graphql, Link } from "gatsby"
+import { graphql } from "gatsby"
 import { MDXProvider } from "@mdx-js/react"
 import { MDXRenderer } from "gatsby-plugin-mdx"
 import { Node, PageContext } from "../config/posts"
 import { pathForPost } from "../utils/routes"
 import { Props as SeoProps } from "../components/seo"
-import A from "../components/a"
 import Author from "../components/author"
 import Layout from "../layouts/focused"
+import MdxComponents from "../components/mdx_components"
 import PostAttr from "../components/post-attributes"
 import PostShare from "../components/post-share"
 import PostSiblingNav from "../components/post-sibling-nav"
@@ -27,24 +27,6 @@ type Props = {
     mdx: Node & { body: string }
   }
   pageContext: PageContext
-}
-
-const MrB = ({type}: {type: "app" | "github"}) => (
-  (type == "app")
-  ? <A href="https://japgolly.github.io/mr.boilerplate">Mr. Boilerplate</A>
-  : <A href="https://github.com/japgolly/mr.boilerplate">Mr. Boilerplate</A>
-)
-
-const components = {
-  A,
-  MrB,
-  About    : () => <Link to="/about">About</Link>,
-  BooPickle: () => <A href="https://github.com/suzaku-io/boopickle">BooPickle</A>,
-  Graal    : () => <A href="https://www.graalvm.org">GraalVM</A>,
-  ScalaJS  : () => <A href="https://www.scala-js.org">Scala.JS</A>,
-  SG       : () => <A href="https://github.com/japgolly/scala-graal">scala-graal</A>,
-  ShipReq  : () => <A href="https://shipreq.com">ShipReq</A>,
-  SJR      : () => <A href="https://github.com/japgolly/scalajs-react">scalajs-react</A>,
 }
 
 const Header = styled.header`
@@ -84,7 +66,7 @@ export default function({ data, pageContext }: Props) {
         </Header>
 
         <section className="body">
-          <MDXProvider components={components}>
+          <MDXProvider components={MdxComponents}>
             <MDXRenderer>{post.body}</MDXRenderer>
           </MDXProvider>
         </section>
