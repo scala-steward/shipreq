@@ -4,32 +4,36 @@ import site from "../config/site"
 import styled from "styled-components"
 
 type Props = {
-  flattenOnPhones?: boolean
+  layout?: "regular" | "focused"
 }
 
 const Copyright = styled.div`
   color: #aaa;
   font-size: 75%;
   line-height: 1.5em;
+  letter-spacing: 0;
 `
 
-const FlattenOnPhones = styled(Copyright)`
-  ${R.phoneAny`
+const FlattenUnlessDesktop = styled(Copyright)`
+  ${R.phone`
+    font-size: 70%;
+  `}
+  ${R.notDesktop`
     display: flex;
     justify-content: center;
     div:first-child {
-      margin-right: 1ex;
+      margin-right: .6ex;
     }
   `}
 `
 
 export default function(p: Props = {}) {
-  return p.flattenOnPhones ?
+  return p.layout == "focused" ?
   (
-    <FlattenOnPhones>
+    <FlattenUnlessDesktop>
       <div>{site.copyright1}</div>
       <div>{site.copyright2}</div>
-    </FlattenOnPhones>
+    </FlattenUnlessDesktop>
   ) : (
     <Copyright>
       <div>{site.copyright1}</div>

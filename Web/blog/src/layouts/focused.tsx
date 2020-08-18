@@ -106,7 +106,7 @@ const ContactCell = styled.section`
     display:none;
   `}
   ${R.tablet`
-    margin: 1rem 0;
+    display:none;
   `}
   ${R.desktop`
     margin-top: 3rem;
@@ -136,7 +136,7 @@ const PageIndexCell = styled.section`
     display:none;
   `}
   ${R.tablet`
-    margin: 1rem 0;
+    display:none;
   `}
   ${R.desktop`
     margin-top: 3rem;
@@ -193,7 +193,7 @@ export default function(p: Props) {
         </PageIndexCell>
 
         <CopyrightCell>
-          <Copyright flattenOnPhones={true} />
+          <Copyright layout="focused" />
         </CopyrightCell>
 
         <MainCell>
