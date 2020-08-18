@@ -33,26 +33,27 @@ how those problems are and aren't addressed by existing tools,
 and what a next-generation solution could be.
 In fact there were many, many months of literally nothing but thought and detailed analysis to get
 to where we are now, which is an entirely modernised, and newly-innovated solution
-that we hope even reluctant users will fall in love with.
+that we hope even disinterested users will fall in love with.
 
 ### Lightning fast; offline capable
 
 How many hours have been collectively wasted by teams sitting around in meeting rooms,
-trying to get their chosen tools to work?
+trying to get their project tools to work?
 Maybe it's because a different region just came online,
 maybe it's because the internet in some meeting rooms never seem to work properly.
 We've all had our share of frustration and that's something we've worked very hard
-to avoid in ShipReq.
-ShipReq has been built from it's core to be lightning fast; now and always.
-In fact, ShipReq is already 98% offline capable — with 100% offline just around the corner.
+to avoid being an issue for ShipReq users.
+ShipReq has been built from it's core to be lightning fast; now and always,
+and resilient to suboptimal environments.
+In fact, ShipReq is already 95% offline capable — with 100% offline just around the corner.
 
-### An IDE for your data
+### A compiler for your content
 
-Compilers check your code and present you with errors where things are definitely wrong
-and warnings where things are like wrong.
+Compilers check code and present errors where code is definitely wrong,
+and warnings where code is likely wrong.
 ShipReq is like a compiler over your data and its integrity.
-It prevents entire classes of incorrectness in your data,
-and it provides warnings for other classes of potential incorrectness.
+It prevents entire categories of incorrectness in your content,
+and warnings for other categories of potential incorrectness or ambiguity.
 It's even like an IDE in that when you make certain changes, it will
 ensure everything affected by your change is updated appropriately and automatically.
 
@@ -67,43 +68,55 @@ without administrative distractions consuming time and mental energy.
 
 One of our core design goals is to minimise the time you spend in ShipReq, and maximise the value you get out of ShipReq.
 
-### Never lose data
+### Fail without fear
 
-With ShipReq, you'll never lose data because it's never permanently discarded in the first place.
-You can make experimental changes and immediately return to your original state — even if you're affecting hundreds of requirements at a time,
+
+The real world changes all the time. The cost of change,
+of experimentation,
+of failure,
+even of plain old human mistakes,
+should all be inexpensive, and trivial to revise or revert.
+In ShipReq you're free to
+make experimental changes and immediately return to your original state — even if you're affecting hundreds of requirements at a time,
 even if other users have added new content in the interim.
-More advanced users can access the entire data history (including point-in-time) in the same way you would in Git and other version control tools.
+
+Likewise, with ShipReq you'll never lose data because it's never permanently discarded in the first place.
+More advanced users can access the entire data history (including point-in-time) similar to how you can in Git and other version control tools.
 
 ### Solve non-technical problems
 
 ShipReq doesn’t just aim to be a technical solution, it aims to solve human problems too.
 Just because a requirement or a task is written down,
 doesn't mean that all the people involved are going to act in an optimal, textbook manner.
-In fact a significant subset of people who (have to) interact with these processes have lost faith in,
-and/or are completely uninterested in process-related tools.
-And understandably so, given the history and evolution in our industry.
-ShipReq aims to specifically address these woes,
-and ultimately ensure that it's as useful socially as it is technically.
+It's common that a significant subset of a team will have lost faith in,
+or are completely uninterested in process-related tools,
+and understandably so, all things considered.
+ShipReq aims to specifically address these problems,
+and ensure that it's as useful socially as it is technically.
 
 ### We "eat our own dog food"
 
 At ShipReq, we use ShipReq to develop ShipReq.
 As user #1, we're not only living through our customer experience, but we don't treat end-users like guinea pigs to ensure
-the integrity of our service. We're always finding new ways to improve and refine our platform.
+the integrity of our service.
+We're always finding new ways to improve and refine our platform.
 
 ### Highly configurable; highly flexible
 
-ShipReq is designed to serve your software development team in all its aspects — regardless of how you operate and achieve your objectives.
+ShipReq is designed to serve your software development team in all its aspects — regardless of how you operate.
 As such, we've employed very careful consideration to remove implicit assumptions and constraints on your unique workflow.
-We want you to have the freedom to work your own way and configure the ShipReq system to your process — not the other way around.
+We want you to have the freedom to work your own way and configure ShipReq to your process — not the other way around.
 
 ### Happiness leads to productivity
 
-The main purpose of ShipReq has less to do with technicality and more to do with a passion for improvement — we simply
-want to bring happiness to our users’ lives. (Well, and ours too; we use ShipReq ourselves).
+The main purpose of ShipReq has less to do with technicality and more to do with a passion for
+improvement — we simply
+want to bring happiness to our users’ lives. (Well, ours too as the first end-users of ShipReq).
 It's our mission to make enthusiastic users ecstatic, and even cantankerous users grudgingly pleased.
-Sometimes that means carefully thought-out features and automation,
+We strive to spark joy.
+Sometimes that means carefully thought-out functionality and automation,
 sometimes it just means giving you what you need as quickly and effortlessly as possible, and then getting out of the way.
+
 
 ## Is ShipReq generally available yet?
 
@@ -113,27 +126,3 @@ know more,
 participate in the beta,
 or subscribe to the newsletter,
 get it touch @ <A href="https://shipreq.com">shipreq.com</A>.
-
-<!--
-* Focus on quality / extremely high-quality -- it's received a lot of attention to detail, very careful consideration and validation of edge cases, bugs are very rare, it's a core value that ShipReq will never become flakey, annoying, or unreliable.
-
-* real time -- Collaborators see each others changes in real-time. You can also open up multiple tabs just by yourself and each tab will be updated to changes made in the other tab, in real time.
-
-
-## Our philosophy
-
-ShipReq also brings to life an important philosophy of mine (David Barri, the founder and creator).
-There's a lot of *"rush rush rush PIVOT! PIVOT! rush rush sorry we actually need something completely different, ok cool rush rush rush"*
-that goes on in the software development industry. There are contexts in which those attitudes make sense and are smart,
-but I've personally been involved in a lot of the other contexts where those trade-offs aren't appropriate for the situation, are used anyway,
-and end up being extraordinarily detrimental to everyone involved.
-I strongly believe that there are many cases in which a different approach will lead to more efficiency (thus lower costs, especially over time),
-and more team morale. I believe that if you put in extra time, care, and effort
-and the beginning of a project to ensure that all of foundations are of high quality, then that enables you and your team to build
-all future features, and make all future changes without the typical problems that large projects encounter when they get to a certain size;
-things like quality degradation, fear of change due to fear of bugs, changes costing more money because they cost more time because devs and testers
-have to navigate more complexity and fragility with each added change.
-In the creation of ShipReq I was able to test my own beliefs and thankfully, it's worked out exactly as I'd hoped.
-Users of ShipReq should feel that everything works really well (sometimes shockingly well), that it's really fast,
-and should feel a subtle sense of joy in their interactions.
--->
