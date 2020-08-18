@@ -9,3 +9,4 @@
 smtp.gmail.com
 stats.grafana.org
 www.google-analytics.com
+www.googletagmanager.com
