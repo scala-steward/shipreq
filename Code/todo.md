@@ -45,7 +45,6 @@ v2.2
 
 ### Implement
 * Add link to blog
-* Update LP copy
 * I want an option to see `[MF-35: xxxxxxxxx]` instead of just `[MF-35]` in rich text
 * Derivative tags
 
