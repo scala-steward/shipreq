@@ -10,7 +10,7 @@ object Dependencies {
   }
 
   object Graal {
-    val ver = "20.1.0"
+    val ver = "20.2.0"
   }
 
   object Scala {
