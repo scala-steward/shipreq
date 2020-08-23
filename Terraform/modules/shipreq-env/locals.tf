@@ -107,7 +107,7 @@ EOB
   # App cluster
 
   app_cluster_cpu = {
-    analytics_proxy = 6
+    analytics_proxy = 8
     cadvisor        = 3
     filebeat        = 3
     node_exporter   = 3
