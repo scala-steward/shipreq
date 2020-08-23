@@ -17,7 +17,7 @@ java_opt=(
 
   # Use Graal's JIT
   -Dgraal.ShowConfiguration=verbose
-  -Dgraal.MitigateSpeculativeExecutionAttacks=None
+  -Dgraal.SpectrePHTBarriers=None
   -XX:+EagerJVMCI
 
   # Useful for diagnostics
