@@ -83,7 +83,7 @@ object TagConfig {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.plainNoHover
+  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.tagNoDesc
 
   private val rightEmpty =
     SplitScreenCrud.emptyEditorMessage("tag")

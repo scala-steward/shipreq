@@ -26,11 +26,10 @@ object Style extends StyleSheet.Inline {
     val dragStatus =
       Domain.ofValues[DragStatus](DragStatus.allValues.whole: _*)
 
-    val `enabled * live`         = enabled *** live
-    val `live * live`            = live *** live
-    val `live * on`              = live *** on
-    val `live * validity`        = live *** validity
-    val `live * validity * bool` = live *** validity *** Domain.boolean
+    val `enabled * live`  = enabled *** live
+    val `live * live`     = live *** live
+    val `live * on`       = live *** on
+    val `live * validity` = live *** validity
 
     val ucStepIndent = Domain.ofRange(0 until StaticField.useCaseStepTrees.iterator.map(_.maxDepth).max)
   }
@@ -1433,17 +1432,9 @@ object Style extends StyleSheet.Inline {
       width(11 ex),
       borderRadius(0.3 ex))
 
-    private def tagBase(live: Live, helpIconOnHover: Boolean) = mixin(
+    private def tagBase(live: Live) = mixin(
       mixinIf(live is Dead)(&.not(_.hover)(textDecoration := ^.lineThrough)),
-      if (helpIconOnHover)
-        styleS(
-          hoverShowsInfo,
-//          &.not(hasTitle)(cursor.default),
-        )
-      else
-        styleS(
-//          cursor.default,
-        ),
+//      cursor.default,
     )
 
     private val tagLabelColour: Live => String = {
@@ -1452,15 +1443,15 @@ object Style extends StyleSheet.Inline {
     }
 
     @UsesSemanticUiManually
-    val tag = styleF(D.`live * validity * bool`) { case ((live, validity), helpIconOnHover) => styleS(
-      tagBase(live, helpIconOnHover = helpIconOnHover),
+    val tag = styleF(D.`live * validity`) { case (live, validity) => styleS(
+      tagBase(live),
       padding(4 px, 6 px).important,
       mixinIf(validity is Invalid)(hasErrorBackground.important, hasErrorColor.important, textDecoration := ^.lineThrough),
       addClassName(s"ui label ${tagLabelColour(live)}"),
     )}
 
-    val tagInText = styleF(D.`live * validity * bool`) { case ((live, validity), helpIconOnHover) => styleS(
-      tagBase(live, helpIconOnHover = helpIconOnHover),
+    val tagInText = styleF(D.`live * validity`) { case (live, validity) => styleS(
+      tagBase(live),
       (live, validity) match {
         case (Live, Valid)   => styleS(refColour)
         case (Live, Invalid) => styleS(hasError, textDecoration := ^.lineThrough)

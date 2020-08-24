@@ -40,7 +40,7 @@ object FieldList {
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.derive
 
-  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.plain
+  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.tag
 
   private def fieldKey(f: FieldId): Key =
     f match {

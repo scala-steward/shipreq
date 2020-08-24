@@ -22,7 +22,7 @@ object StaticFieldEditor {
   implicit val reusabilityProps: Reusability[Props] =
     Reusability.derive
 
-  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.plain
+  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.tag
 
   private val ul    = <.ul(*.staticFieldUL)
   private val li    = <.li(*.staticFieldLI)

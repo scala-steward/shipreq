@@ -126,7 +126,7 @@ object TagRelationshipEditor {
 
   // ===================================================================================================================
 
-  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.plain
+  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.tag
 
   final class Backend($: BackendScope[Props, Unit]) {
 

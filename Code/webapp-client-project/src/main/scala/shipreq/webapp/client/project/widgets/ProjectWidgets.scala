@@ -89,7 +89,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
     PubidFormat.validWhenDead.pubids(ids)
 
   override protected def _tagList(ids: Vector[ApplicableTagId], validity: ApplicableTagId => Validity): VdomTag =
-    viewTags.vectorById(ids, sepSpace, validity)(ViewTags.DisplaySettings.plainWithHelpCursor)
+    viewTags.vectorById(ids, sepSpace, validity)(ViewTags.DisplaySettings.tag)
 
   override protected def _text(text: AnyOptional, live: Live, tagValidity: ApplicableTagId => Validity): VdomTag =
     <.span(text.map(textAtom(live, tagValidity)): _*)

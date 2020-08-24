@@ -84,11 +84,10 @@ final class ViewTags(vtags: VirtualProjectTags, tagConfig: Tags) {
     }
 
   private def _render(tag: ApplicableTag, ds: DisplaySettings, ts: TagSettings): Out = {
-    val name            = ts.customName.getOrElse(tag.name)
-    val live            = tag.live
-    val tagInText       = ds.contextualise ==* Contextualise
-    val helpIconOnHover = ds.hoverText ==* HoverText.ShowWithHelpCursor
-    val styleArgs       = ((live, ts.validity), helpIconOnHover)
+    val name      = ts.customName.getOrElse(tag.name)
+    val live      = tag.live
+    val tagInText = ds.contextualise ==* Contextualise
+    val styleArgs = (live, ts.validity)
 
 
     val hoverText: String =
@@ -175,18 +174,16 @@ object ViewTags {
   object DisplaySettings {
     implicit def univEq: UnivEq[DisplaySettings] = UnivEq.derive
 
-    val inText              = apply(HoverText.ShowWithHelpCursor, Contextualise)
-    val plainWithHelpCursor = apply(HoverText.ShowWithHelpCursor, Plain)
-    val plain               = apply(HoverText.Show, Plain)
-    val plainNoHover        = apply(HoverText.Omit, Plain)
+    val inText    = apply(HoverText.Show, Contextualise)
+    val tag       = apply(HoverText.Show, Plain)
+    val tagNoDesc = apply(HoverText.Omit, Plain)
   }
 
   sealed trait HoverText
 
   object HoverText {
-    case object Omit               extends HoverText
-    case object Show               extends HoverText
-    case object ShowWithHelpCursor extends HoverText
+    case object Omit extends HoverText
+    case object Show extends HoverText
 
     implicit def univEq: UnivEq[HoverText] = UnivEq.derive
   }

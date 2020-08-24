@@ -34,7 +34,7 @@ private[tags] object TagTreeView {
 
   val selected = VdomAttr.elidable[Boolean]("data-selected")
 
-  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.plain
+  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.tag
 
   final class Backend($: BackendScope[Props, Unit]) {
 

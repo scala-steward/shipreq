@@ -187,7 +187,7 @@ object TagFieldEditor {
 
   // ===================================================================================================================
 
-  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.plain
+  private implicit def tagDisplaySettings = ViewTags.DisplaySettings.tag
 
   private def render(p: Props): VdomNode =
     if (p.isPossible) {
