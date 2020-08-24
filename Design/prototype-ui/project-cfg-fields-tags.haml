@@ -251,7 +251,9 @@
                   %span.types Other
                   %span.value Optional
                 .rule
-                  %span.types Derivative tags
+                  %span.types
+                    %i.icon.sitemap(style="margin-left:0;margin-right:.4ex")
+                    Derivative tags
                   %span.value Enabled
               %td
                 <button class="ui button basic  negative " style="white-space: nowrap;"><i class="icon trash"></i>Delete</button>
@@ -352,9 +354,15 @@
             %div(style="margin-bottom:1rem")
               .ui.checkbox
                 %input(type="checkbox" checked=true)
-                %label Derivative tags
+                %label
+                  -# %i.icon.sitemap(style="margin-left:0;margin-right:.4ex")
+                  Derivative tags
+                  -# %i.icon.sitemap(style="margin-left:.5ex;margin-right:0")
 
-            Explanation of derivative tags. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Dui sapien eget mi proin sed libero enim. Eu facilisis sed odio morbi quis commodo odio aenean. Ut sem nulla pharetra diam. Ut venenatis tellus in metus vulputate eu scelerisque felis. Sed blandit libero volutpat sed.
+            .ui.icon.message.info
+              %i.icon.sitemap
+              .content
+                %p Explanation of derivative tags. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Dui sapien eget mi proin sed libero enim. Eu facilisis sed odio morbi quis commodo odio aenean. Ut sem nulla pharetra diam. Ut venenatis tellus in metus vulputate eu scelerisque felis. Sed blandit libero volutpat sed.
 
             %h4 Tag merging rules
 
