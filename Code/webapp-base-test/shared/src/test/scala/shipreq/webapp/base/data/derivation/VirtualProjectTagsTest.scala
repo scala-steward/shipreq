@@ -5,16 +5,15 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.Duration
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.Enabled
+import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.text.PlainText
 import sourcecode.Line
 import utest._
-import shipreq.webapp.base.RandomData
 
 object VirtualProjectTagsTest extends TestSuite {
-  import VirtualProjectTags.DerivativeTagFactor
-  import VirtualProjectTags.DerivativeTagFactor.SourceType
+  import VirtualProjectTags.{DerivativeTagFactor, TagProvenance}
 
   private def summariseDerivativeTags(p: Project,
                                       fieldId: CustomField.Tag.Id,
@@ -24,10 +23,10 @@ object VirtualProjectTagsTest extends TestSuite {
     def tag(id: ApplicableTagId) = p.config.tags.needApplicableTag(id).name
     def tagVec(ids: Vector[ApplicableTagId]) = ids.iterator.map(tag).mkString("{", " ", "}")
 
-    val showType: SourceType => String = {
-      case SourceType.Default => "default"
-      case SourceType.Derived => "derived"
-      case SourceType.Manual  => "manual"
+    val showType: TagProvenance => String = {
+      case TagProvenance.Default => "default"
+      case TagProvenance.Derived => "derived"
+      case TagProvenance.Manual  => "manual"
     }
 
     val showFactor: DerivativeTagFactor => String = {

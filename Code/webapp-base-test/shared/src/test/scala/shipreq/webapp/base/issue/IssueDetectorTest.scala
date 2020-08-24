@@ -8,6 +8,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.event.RetiredGenericData._
 import shipreq.webapp.base.event._
+import shipreq.webapp.base.test.SampleDerivativeTags4.yDerivativeTags
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test._
@@ -15,7 +16,6 @@ import shipreq.webapp.base.text.Atom.DisplayReqRef
 import shipreq.webapp.base.text.{Text => T}
 import sourcecode.Line
 import utest._
-import shipreq.webapp.base.test.SampleDerivativeTags4.yDerivativeTags
 
 object IssueDetectorTest extends TestSuite {
 

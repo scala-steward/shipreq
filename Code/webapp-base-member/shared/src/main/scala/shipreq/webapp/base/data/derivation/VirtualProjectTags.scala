@@ -75,25 +75,28 @@ object VirtualProjectTags {
                                    dir      : Direction) extends DerivativeTagFactor
 
     final case class Self(tag       : ApplicableTagId,
-                          sourceType: SourceType.NonDerived) extends DerivativeTagFactor
+                          provenance: TagProvenance.NonDerived) extends DerivativeTagFactor
 
     final case class Relation(sourceReq : ReqId,
                               dir       : Direction,
                               tag       : ApplicableTagId,
-                              sourceType: SourceType) extends DerivativeTagFactor
-
-    sealed trait SourceType
-    object SourceType {
-      sealed trait NonDerived extends SourceType
-      case object Manual  extends NonDerived
-      case object Default extends NonDerived
-      case object Derived extends SourceType
-
-      implicit def univEqN: UnivEq[NonDerived] = UnivEq.derive
-      implicit def univEq: UnivEq[SourceType] = UnivEq.derive
-    }
+                              provenance: TagProvenance) extends DerivativeTagFactor
 
     implicit def univEq: UnivEq[DerivativeTagFactor] = UnivEq.derive
+  }
+
+  /** From whence thy tags did come. */
+  sealed trait TagProvenance
+
+  object TagProvenance {
+    sealed trait NonDerived extends TagProvenance
+
+    case object Manual  extends NonDerived
+    case object Default extends NonDerived
+    case object Derived extends TagProvenance
+
+    implicit def univEqN: UnivEq[NonDerived] = UnivEq.derive
+    implicit def univEq: UnivEq[TagProvenance] = UnivEq.derive
   }
 
   sealed trait ChildrenSummary {
@@ -269,7 +272,6 @@ object VirtualProjectTags {
     private final val debugDerivativeTags = false
 
     private def applyDerivativeTags(data: Data): DerivativeTagFactors = {
-      import DerivativeTagFactor.SourceType
 
       var factorsPerField: DerivativeTagFactors = Map.empty
 
@@ -325,7 +327,7 @@ object VirtualProjectTags {
                 val relevantManuals: Set[DerivativeTagFactor] =
                   if (hasManual) {
                     // Discard parents' manuals and override with our own
-                    manuals.map(DerivativeTagFactor.Relation(nodeId, Backwards, _, SourceType.Manual))
+                    manuals.map(DerivativeTagFactor.Relation(nodeId, Backwards, _, TagProvenance.Manual))
                   } else node.liveDefaults.get(f.fieldId) match {
                     case None =>
                       parentsManuals
@@ -350,7 +352,7 @@ object VirtualProjectTags {
 
                       // Parent's values changed nothing - ignore them
                       if (results ==* ourDefault)
-                        Set1(DerivativeTagFactor.Relation(nodeId, Backwards, d, SourceType.Default))
+                        Set1(DerivativeTagFactor.Relation(nodeId, Backwards, d, TagProvenance.Default))
                       else
                         parentsManuals
                   }
@@ -433,8 +435,8 @@ object VirtualProjectTags {
                   // Add data from ourself
                   if (hasManual) {
                     for (t <- manuals) {
-                      factors.mod(_.add(nodeId, DerivativeTagFactor.Self(t, SourceType.Manual)))
-                      addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, SourceType.Manual)
+                      factors.mod(_.add(nodeId, DerivativeTagFactor.Self(t, TagProvenance.Manual)))
+                      addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, TagProvenance.Manual)
                     }
                   } else if (hasDefault) {
                     defaultAddable = true
@@ -477,14 +479,14 @@ object VirtualProjectTags {
                   if (liveDerived.isEmpty) {
                     if (defaultAddable)
                       for (d <- default) {
-                        factors.mod(_.add(nodeId, DerivativeTagFactor.Self(d, SourceType.Default)))
-                        addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, d, SourceType.Default)
+                        factors.mod(_.add(nodeId, DerivativeTagFactor.Self(d, TagProvenance.Default)))
+                        addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, d, TagProvenance.Default)
                       }
                     else if (!hasManual)
                       addToParents += DerivativeTagFactor.EmptyRelation(nodeId, Forwards)
                   } else {
                     for (t <- liveDerived)
-                      addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, SourceType.Derived)
+                      addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, TagProvenance.Derived)
                     if (hasDefault && !defaultAddable)
                       node.liveDefaults = node.liveDefaults.removed(f.fieldId)
                   }
