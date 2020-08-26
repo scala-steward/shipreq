@@ -15,6 +15,8 @@ import shipreq.webapp.client.project.test._
 import utest._
 
 object ReqDetailTest extends TestSuite {
+  import SampleDerivativeTags3.step3.{project => DT3_3}
+  import SampleDerivativeTags4.{project => DT4}
   import ReqDetailTestDsl._
   import WebappTestUtil._
   import global.press
@@ -565,8 +567,8 @@ object ReqDetailTest extends TestSuite {
           StaticField.AllTags.name)
           +> field("Component").text.assert("") // perReq > otherwise, opt - no content
           +> field("Released").text.assert("v1.0") // def:tag:bad - w/ content - ShowDead
-          +> field("Status").text.assert("uat") // def:tag:dead - no content - ShowDead
-          +> field("Version").text.assert("v1.0 v3.x") // def:tag:bad - w/ content - ShowDead
+          +> tagFieldDesc("Status").assert("uat?-") // def:tag:dead - no content - ShowDead
+          +> tagFieldDesc("Version").assert("v1.0 v3.x-") // def:tag:bad - w/ content - ShowDead
       ))
 
       "si1" - test("SI-1", SampleProject7.project)(Plan.action(
@@ -730,26 +732,56 @@ object ReqDetailTest extends TestSuite {
     ))
 
     "derivativeTags" - {
-      import SampleDerivativeTags3.step3.{project => DT3_3}
-
-      def testTags(project: Project, pubid: String, expectations: (String, String)*): Unit =
-        test(pubid, project = project)(Plan.action(
-          expectations.foldLeft(*.emptyAction)((p, e) => p +> tagFieldDesc(e._1).assert(e._2))
-        ))
 
       "dt3-3" - {
+        "mf1" - test("MF-1", project = DT3_3)(Plan.action(
+          *.emptyAction +> tagFieldDescs(
+            "Status"   -> "readyForDev+",
+            "Version"  -> "v1+ v2",
+            "All Tags" -> "readyForDev+ v1+ v2")
+        ))
 
-        "mf1" - testTags(DT3_3, "MF-1",
-          "Status"   -> "readyForDev+",
-          "Version"  -> "v1+ v2",
-          "All Tags" -> "readyForDev+ v1+ v2")
-
-        "fr1" - testTags(DT3_3, "FR-1",
-          "Status"   -> "readyForDev?",
-          "Version"  -> "v1",
-          "All Tags" -> "readyForDev? v1")
-
+        "fr1" - test("FR-1", project = DT3_3)(Plan.action(
+          *.emptyAction +> tagFieldDescs(
+            "Status"   -> "readyForDev?",
+            "Version"  -> "v1",
+            "All Tags" -> "readyForDev? v1")
+        ))
       }
+
+      "dt4" - {
+        "d3" - test("D-3", project = DT4)(Plan.action(
+          *.emptyAction +> tagFieldDescs(
+            "W"        -> "w1?",
+            "Y"        -> "y1+ y2+",
+            "All Tags" -> "w1? y1+ y2+")
+          >> filterDeadToggle +> tagFieldDescs(
+            "W"        -> "w1?",
+            "Y"        -> "y1+ y2+ y3+- y5?-",
+            "X"        -> "x1?-",
+            "All Tags" -> "w1? x1?- y1+ y2+ y3+- y5?-")
+        ))
+
+        "other" - {
+          import SampleDerivativeTags4.Values._
+          val p = applyEventsSuccessfully(DT4,
+            Event.TagRestore(z4),
+            TestEvent.applicableTagUpdate(z4, parents = Vector.empty),
+            Event.TagDelete(z4),
+          )
+          test("A-12", p)(Plan.action(
+            *.emptyAction +> tagFieldDescs(
+              "W"          -> "w1?",
+              "Other Tags" -> "",
+              "All Tags"   -> "w1? z1?")
+          >> filterDeadToggle +> tagFieldDescs(
+              "W"          -> "w1?",
+              "Other Tags" -> "z4-",
+              "All Tags"   -> "w1? x1?- z1? z4-")
+          ))
+        }
+      }
+
     }
 
   }

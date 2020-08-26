@@ -34,10 +34,11 @@ object ReqDetailObs {
 
   final class Tag($: DomZipperJs) {
     val text    = $.innerText.trim
-    val icon    = $.collect01(".icon").map(_.classes)
+    val icon    = $.collect0n(".icon").map(_.classes)
     val derived = icon.exists(_ contains "sitemap")
     val default = icon.exists(_ contains "sliders")
-    val suffix  = if (derived) "+" else if (default) "?" else ""
+    val dead    = icon.exists(_ contains "trash")
+    val suffix  = (if (derived) "+" else if (default) "?" else "") + (if (dead) "-" else "")
     val desc    = text + suffix
   }
 

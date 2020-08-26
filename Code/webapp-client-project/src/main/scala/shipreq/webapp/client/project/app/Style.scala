@@ -1318,6 +1318,11 @@ object Style extends StyleSheet.Inline {
       marginRight(`0`).important,
     )
 
+    val tagIconDead = style(
+      tagIconBase,
+      opacity(0.7).important,
+    )
+
     val tagIconDefault = styleF(Domain.boolean)(foregroundIsBlack => styleS(
       tagIconBase,
       opacity(if (foregroundIsBlack) 0.4 else 0.7).important,

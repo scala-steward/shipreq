@@ -7,6 +7,7 @@ import scala.collection.mutable
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.derivation.VirtualProjectTags
 import shipreq.webapp.base.data.derivation.VirtualProjectTags.TagProvenance
 import shipreq.webapp.base.lib.ClientUtil
 import shipreq.webapp.base.text.Grammar
@@ -154,6 +155,11 @@ final class ViewTags(project: Project) {
       }
     }
 
+  private val neverDeadFn: (VirtualProjectTags.ResultsLiveDead => Set[ApplicableTagId]) => ApplicableTagId => Boolean = {
+    val f = (_: Any) => false
+    _ => f
+  }
+
   private def _forReq(reqId: ReqId, fd: FilterDead): ForReq[Out] = {
     type Fn         = ApplicableTagId => VdomTag
     implicit def ds = DisplaySettings.tag
@@ -163,20 +169,34 @@ final class ViewTags(project: Project) {
     val provenance  = this.vtags(reqId).provenance
     val vtags       = this.vtags(reqId, fd)
 
-    def isForegroundBlack(t: ApplicableTagId): Boolean = {
-      val tag = tagConfig.needApplicableTag(t)
-      val colour = tag.colour.getOrElse(Colour.tagDefault)
-      colour.foreground eq Colour.black
-    }
+    val makeIsDeadFn: (VirtualProjectTags.ResultsLiveDead => Set[ApplicableTagId]) => ApplicableTagId => Boolean =
+      if (fd is HideDead)
+        neverDeadFn
+      else
+        f => {
+          val allIds = f(vtags)
+          val liveIds = f(this.vtags(reqId, HideDead))
+          val deadIds = allIds -- liveIds
+          deadIds.contains
+        }
 
-    val renderInAll: Fn =
+    def isForegroundBlack(t: ApplicableTagId, isDead: Boolean): Boolean =
+      if (isDead)
+        false // foreground is always white for dead tags
+      else {
+        val tag = tagConfig.needApplicableTag(t)
+        val colour = tag.colour.getOrElse(Colour.tagDefault)
+        colour.foreground eq Colour.black
+      }
+
+    val renderInAll: Fn = {
+      val isDeadFn = makeIsDeadFn(_.allSet)
       Util.memoWithMapVar { t =>
+        val isDead         = isDeadFn(t)
+        lazy val fgIsBlack = isForegroundBlack(t, isDead)
+        var default        = false
+        var derivedIn      = Set.empty[CustomField.Tag.Id]
 
-        lazy val fgIsBlack =
-          isForegroundBlack(t)
-
-        var default = false
-        var derivedIn = Set.empty[CustomField.Tag.Id]
         for {
           of <- vtags.tagSources(t)
           f  <- of
@@ -189,21 +209,35 @@ final class ViewTags(project: Project) {
         basicTag(t)(
           TagMod.when(default)(provenanceIcon(TagProvenance.Default, fgIsBlack)),
           TagMod.when(derivedIn.nonEmpty)(provenanceIcon(TagProvenance.Derived, fgIsBlack)),
-        )
+          TagMod.when(isDead)(tagIconDead))
       }
+    }
+
+    val renderInOther: Fn = {
+      val isDeadFn = makeIsDeadFn(_.otherSet)
+      t => {
+        val isDead = isDeadFn(t)
+        basicTag(t)(
+          TagMod.when(isDead)(tagIconDead))
+      }
+    }
 
     val renderInField: CustomField.Tag.Id => Fn =
       f => {
         val fp = provenance(f)
+        val isDeadFn = makeIsDeadFn(_.fieldSet(f))
         t => {
           val p = fp(t)
-          basicTag(t)(provenanceIcon(p, isForegroundBlack(t)))
+          val isDead = isDeadFn(t)
+          basicTag(t)(
+            provenanceIcon(p, isForegroundBlack(t, isDead)),
+            TagMod.when(isDead)(tagIconDead))
         }
       }
 
     new ForReq[Out] {
       override val all     = renderInAll
-      override val other   = basicTag
+      override val other   = renderInOther
       override val inField = renderInField
 
       override def vector(ids: Vector[ApplicableTagId], render: ApplicableTagId => Out): Out =
@@ -278,6 +312,7 @@ object ViewTags {
     def vector(ids: Vector[ApplicableTagId], render: ApplicableTagId => A): A
   }
 
+  private val tagIconDead    = Icon.Trash.tag(*.tagIconDead)
   private val tagIconDefault = Memo.bool(b => Icon.Sliders.tag(*.tagIconDefault(b)))
   private val tagIconDerived = Memo.bool(b => Icon.Sitemap.tag(*.tagIconDerived(b)))
 
