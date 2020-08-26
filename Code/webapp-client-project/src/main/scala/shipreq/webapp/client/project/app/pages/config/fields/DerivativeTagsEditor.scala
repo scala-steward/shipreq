@@ -105,7 +105,7 @@ private[fields] object DerivativeTagsEditor {
           head += <.th(rowKey, rowTagVdom)
 
           val row = VdomArray.empty()
-          row += <.td(^.key := "h", pw.viewTags(rowTag).render)
+          row += <.td(^.key := "h", pw.viewTags.render(rowTag))
           for (colTag <- tags.tags) {
 
             val content: TagMod =

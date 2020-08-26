@@ -193,7 +193,7 @@ object TagFieldEditor {
     if (p.isPossible) {
 
       val renderDefault: ApplicableTagId ~=> VdomNode =
-        Reusable.implicitly(p.pw).map(pw => id => pw.viewTags(id).render)
+        Reusable.implicitly(p.pw).map(pw => id => pw.viewTags.render(id))
 
       val reqTypeRules =
         ReqTypeRulesEditor.ApplicableTagDefault.Component(

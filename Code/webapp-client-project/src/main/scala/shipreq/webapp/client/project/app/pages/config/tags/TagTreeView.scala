@@ -141,7 +141,7 @@ private[tags] object TagTreeView {
             ^.key := id.value,
             ^.onClick ==>? select,
             TagMod.when(canAnyDrag)(Shared.dragHandle(item, modificationEnabled, tag.live)),
-            pw.viewTags(id).render,
+            pw.viewTags.render(id),
             <.div(*.usage, p.usage.tagLink(id, p.filterDead))
           )
 

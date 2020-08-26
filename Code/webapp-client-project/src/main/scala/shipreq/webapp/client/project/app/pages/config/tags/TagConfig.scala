@@ -209,14 +209,14 @@ object TagConfig {
           case \/-(id: ApplicableTagId) =>
             var tag = p.project.config.tags.needApplicableTag(id)
             colourOverride.foreach(c => tag = tag.copy(colour = c))
-            p.pw.viewTags(tag).render.apply(*.editorApTagHeader)
+            p.pw.viewTags.render(tag).apply(*.editorApTagHeader)
 
           case -\/(NewTagType.Tag) =>
             ateState.flatMap(s => DataValidators.hashRefKey.hashRefKey.stateless.unnamed(s.key).toOption) match {
 
               case Some(k) =>
                 val tag = Shared.fakeApplicableTag.copy(key = k, colour = colourOverride.flatten)
-                <.span("New tag: ", p.pw.viewTags(tag).render.apply(*.editorApTagHeader))
+                <.span("New tag: ", p.pw.viewTags.render(tag).apply(*.editorApTagHeader))
 
               case None =>
                 "New tag"

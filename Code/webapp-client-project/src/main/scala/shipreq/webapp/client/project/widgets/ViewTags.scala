@@ -4,7 +4,6 @@ import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react.Reusable
 import japgolly.scalajs.react.vdom.html_<^._
 import scala.collection.mutable
-import scala.scalajs.js.|
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
@@ -22,19 +21,10 @@ final class ViewTags(project: Project) {
 
   type Out = VdomTag
 
-  def apply(id: ApplicableTagId): Dsl =
-    new Dsl(id, null)
+  def apply(t: ApplicableTag.OrId): Dsl =
+    new Dsl(t)
 
-  def apply(tag: ApplicableTag): Dsl =
-    new Dsl(tag.id, tag)
-
-  def apply(tag: TagOrId): Dsl =
-    if ((tag: Any).isInstanceOf[ApplicableTagId])
-      apply(tag.asInstanceOf[ApplicableTagId])
-    else
-      apply(tag.asInstanceOf[ApplicableTag])
-
-  final class Dsl(id: ApplicableTagId, private var tagOrNull: ApplicableTag) {
+  final class Dsl(t: ApplicableTag.OrId) {
 
     private var ts: TagSettings = TagSettings.default
 
@@ -48,41 +38,39 @@ final class ViewTags(project: Project) {
       this
     }
 
-    private def tag(): ApplicableTag = {
-      if (tagOrNull eq null)
-        tagOrNull = tagConfig.needApplicableTag(id)
-      tagOrNull
-    }
-
-    def render(implicit ds: DisplaySettings): Out = {
-      val useCache = (
-        id.value >= 0 // TagConfig creates a fake ApplicableTag with id of -1 to render new tags before they're saved
-        && ts.customName.isEmpty // Custom names are not cached
-      )
-
-      if (useCache) {
-        val tag: TagOrId = if (tagOrNull ne null) tagOrNull else id
-        cache(ds)(ts.validity)(tag)
-      } else
-        _render(tag(), ds, ts)
-    }
+    def render(implicit ds: DisplaySettings): Out =
+      ViewTags.this.render(t, ts)
   }
 
-  private[this] val cache: DisplaySettings => Validity => TagOrId => Out =
+  def render(t: ApplicableTag.OrId, ts: TagSettings = TagSettings.default)(implicit ds: DisplaySettings): Out = {
+    val id = t.id
+
+    val useCache = (
+      id.value >= 0 // TagConfig creates a fake ApplicableTag with id of -1 to render new tags before they're saved
+      && ts.customName.isEmpty // Custom names are not cached
+    )
+
+    if (useCache)
+      cache(ds)(ts.validity)(t)
+    else
+      _render(t.tag(tagConfig), ds, ts)
+  }
+
+  private[this] val cache: DisplaySettings => Validity => ApplicableTag.OrId => Out =
     Util.memoWithMapVar { ds =>
       Validity.memo { validity =>
         val ts = TagSettings(None, validity)
         val cache = new mutable.HashMap[ApplicableTagId, Out]()
-        tagOrId =>
-          (tagOrId: Any) match {
-            case id: ApplicableTagId =>
-              cache.getOrElseUpdate(id, {
-                val tag = tagConfig.needApplicableTag(id)
-                _render(tag, ds, ts)
-              })
-            case _ =>
-              val tag = tagOrId.asInstanceOf[ApplicableTag]
-              cache.getOrElseUpdate(tag.id, _render(tag, ds, ts))
+        t =>
+          if (t.isId) {
+            val id = t.id
+            cache.getOrElseUpdate(id, {
+              val tag = tagConfig.needApplicableTag(id)
+              _render(tag, ds, ts)
+            })
+          } else {
+            val tag = t.unsafeAsTag
+            cache.getOrElseUpdate(tag.id, _render(tag, ds, ts))
           }
       }
     }
@@ -272,8 +260,6 @@ object ViewTags {
   object TagSettings {
     val default = apply(None, Valid)
   }
-
-  type TagOrId = ApplicableTag | ApplicableTagId
 
   trait ForReq[A] {
     def inField: CustomField.Tag.Id => ApplicableTagId => A

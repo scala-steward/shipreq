@@ -221,7 +221,7 @@ object FieldList {
             case f: CustomField.Implication    => renderDetailRules(p, f.fieldReqTypeRulesByResolution)(impossible)
 
             case f: CustomField.Tag =>
-              val reqTypeRules   = renderDetailRules(p, f.fieldReqTypeRulesByResolution)(p.pw.viewTags(_).render)
+              val reqTypeRules   = renderDetailRules(p, f.fieldReqTypeRulesByResolution)(p.pw.viewTags.render(_))
               val derivativeTags = TagMod.when(f.derivativeTags.enabled is Enabled)(detailDerivTagsOn)
               <.div(reqTypeRules, derivativeTags)
 

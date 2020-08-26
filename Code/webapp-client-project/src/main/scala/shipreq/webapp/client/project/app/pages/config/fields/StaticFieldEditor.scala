@@ -38,7 +38,7 @@ object StaticFieldEditor {
       else
         <.ul(
           p.config.tags.sortTagIds(ids).toTagMod(id =>
-            liTag(p.pw.viewTags(id).render)))
+            liTag(p.pw.viewTags.render(id))))
 
     val allTags = p.config.liveTagFieldDistribution.notUsedInFields
     val (live, dead) = allTags.partition(p.config.tags.needApplicableTag(_).live is Live)

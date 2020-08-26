@@ -68,6 +68,37 @@ object ApplicableTag {
       live               = live,
     )
   }
+
+  sealed trait OrId extends AnyRef
+
+  object OrId {
+    implicit def fromId(id: ApplicableTagId): OrId =
+      id.asInstanceOf[OrId]
+
+    implicit def fromTag(tag: ApplicableTag): OrId =
+      tag.asInstanceOf[OrId]
+
+    final implicit class Ops(private val x: OrId) extends AnyVal {
+
+      @inline def isId: Boolean =
+        (x: AnyRef).isInstanceOf[ApplicableTagId]
+
+      @inline def isTag: Boolean =
+        !isId
+
+      @inline def unsafeAsId: ApplicableTagId =
+        x.asInstanceOf[ApplicableTagId]
+
+      @inline def unsafeAsTag: ApplicableTag =
+        x.asInstanceOf[ApplicableTag]
+
+      @inline def id: ApplicableTagId =
+        if (isId) unsafeAsId else unsafeAsTag.id
+
+      @inline def tag(tags: Tags): ApplicableTag =
+        if (isId) tags.needApplicableTag(unsafeAsId) else unsafeAsTag
+    }
+  }
 }
 
 sealed abstract class TagType(val name: String) { type Data <: Tag }
