@@ -1,5 +1,5 @@
   core-js            38.02 KB   88.4%
-<self>               702.62 KB  54.8%
+<self>               702.65 KB  54.8%
   <self>             5.01 KB    11.6%
 lodash               139.84 KB  10.9%
 moment               77.24 KB   6.02%
@@ -19,7 +19,7 @@ react-virtualized    7.73 KB    0.603%
 inline-style-parser  4.94 KB    0.385%
 textarea-caret       4.36 KB    0.340%
 screenfull           3.95 KB    0.308%
-prop-types           2.56 KB    0.200%
+prop-types           2.56 KB    0.199%
 @icons/material      1.69 KB    0.132%
 undate               1.48 KB    0.115%
 webpack              1021 B     0.0777%

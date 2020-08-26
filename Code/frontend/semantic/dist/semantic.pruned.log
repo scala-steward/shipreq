@@ -1834,7 +1834,7 @@
     34 [remove] i.icon.try:before
     41 [remove] i.icon.graduation:before
     45 [remove] i.icon.circle.outline:before
-    38 [remove] i.icon.sliders:before
+    38 [keep  ] i.icon.sliders:before
     37 [remove] i.icon.weixin:before
     34 [remove] i.icon.tty:before
     39 [remove] i.icon.teletype:before

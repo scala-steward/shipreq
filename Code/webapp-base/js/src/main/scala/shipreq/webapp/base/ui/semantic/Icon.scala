@@ -727,7 +727,7 @@ object Icon {
   // case object Skyatlas                          extends Unmodified("skyatlas")
   // case object Skype                             extends Unmodified("skype")
   // case object Slack                             extends Unmodified("slack")
-  // case object Sliders                           extends Unmodified("sliders")
+  case object Sliders                           extends Unmodified("sliders")
   // case object Slideshare                        extends Unmodified("slideshare")
   // case object Smile                             extends Unmodified("smile")
   // case object Snapchat                          extends Unmodified("snapchat")
