@@ -163,8 +163,17 @@ final class ViewTags(project: Project) {
     val provenance  = this.vtags(reqId).provenance
     val vtags       = this.vtags(reqId, fd)
 
+    def isForegroundBlack(t: ApplicableTagId): Boolean = {
+      val tag = tagConfig.needApplicableTag(t)
+      val colour = tag.colour.getOrElse(Colour.tagDefault)
+      colour.foreground eq Colour.black
+    }
+
     val renderInAll: Fn =
       Util.memoWithMapVar { t =>
+
+        lazy val fgIsBlack =
+          isForegroundBlack(t)
 
         var default = false
         var derivedIn = Set.empty[CustomField.Tag.Id]
@@ -178,8 +187,8 @@ final class ViewTags(project: Project) {
         }
 
         basicTag(t)(
-          TagMod.when(default)(provenanceIcon(TagProvenance.Default)),
-          TagMod.when(derivedIn.nonEmpty)(provenanceIcon(TagProvenance.Derived)),
+          TagMod.when(default)(provenanceIcon(TagProvenance.Default, fgIsBlack)),
+          TagMod.when(derivedIn.nonEmpty)(provenanceIcon(TagProvenance.Derived, fgIsBlack)),
         )
       }
 
@@ -188,7 +197,7 @@ final class ViewTags(project: Project) {
         val fp = provenance(f)
         t => {
           val p = fp(t)
-          basicTag(t)(provenanceIcon(p))
+          basicTag(t)(provenanceIcon(p, isForegroundBlack(t)))
         }
       }
 
@@ -269,12 +278,13 @@ object ViewTags {
     def vector(ids: Vector[ApplicableTagId], render: ApplicableTagId => A): A
   }
 
-  private val tagIconDefault = Icon.Sliders.tag(*.tagIconDefault)
-  private val tagIconDerived = Icon.Sitemap.tag(*.tagIconDerived)
+  private val tagIconDefault = Memo.bool(b => Icon.Sliders.tag(*.tagIconDefault(b)))
+  private val tagIconDerived = Memo.bool(b => Icon.Sitemap.tag(*.tagIconDerived(b)))
 
-  private[ViewTags] val provenanceIcon: TagProvenance => TagMod = {
-    case TagProvenance.Manual  => TagMod.empty
-    case TagProvenance.Default => tagIconDefault
-    case TagProvenance.Derived => tagIconDerived
-  }
+  private[ViewTags] def provenanceIcon(p: TagProvenance, fgIsBlack: => Boolean): TagMod =
+    p match {
+      case TagProvenance.Manual  => TagMod.empty
+      case TagProvenance.Default => tagIconDefault(fgIsBlack)
+      case TagProvenance.Derived => tagIconDerived(fgIsBlack)
+    }
 }

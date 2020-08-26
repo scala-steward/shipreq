@@ -1318,15 +1318,15 @@ object Style extends StyleSheet.Inline {
       marginRight(`0`).important,
     )
 
-    val tagIconDefault = style(
+    val tagIconDefault = styleF(Domain.boolean)(foregroundIsBlack => styleS(
       tagIconBase,
-      opacity(0.7).important,
-    )
+      opacity(if (foregroundIsBlack) 0.4 else 0.7).important,
+    ))
 
-    val tagIconDerived = style(
+    val tagIconDerived = styleF(Domain.boolean)(foregroundIsBlack => styleS(
       tagIconBase,
-      opacity(0.6).important,
-    )
+      opacity(if (foregroundIsBlack) 0.45 else 0.6).important,
+    ))
 
     val richCodeBlockError = style(
       backgroundColor(c"#ddd"),
