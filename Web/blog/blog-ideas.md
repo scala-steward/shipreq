@@ -11,6 +11,8 @@
     * quality means happy users
     * quality means faster iteration
     * quality makes me happy
+  * don't just write tests so your immediate work works, write so that it will always work in the future
+    * if that sounds expensive, invest so that your testing is as cheap as possible
   * unit tests
   * prop tests
   * integration tests (test-state, user PoV/UX)
