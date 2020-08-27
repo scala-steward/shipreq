@@ -414,7 +414,7 @@ object FilterAlgebra {
 
     def byTag(f: Set[ApplicableTagId] => Boolean): CompiledFilter =
       make(
-        req         = r => f(tags(r.id, filterDead).allSet),
+        req         = r => f(tags(r.id, filterDead).set(TagFieldId.All)),
         codeGroup   = ignore,
         manualIssue = i => f(i.tags),
       )
@@ -503,7 +503,7 @@ object FilterAlgebra {
 
         case (FieldCriteria.Attr(Blank), \/-(f: CustomField.Tag.Id)) =>
           val scope = p.config.tagFieldDistribution(filterDead).inField(f)
-          fieldApplicableReqOnly(f)(req => tags(req.id, filterDead).allSet.intersect(scope).isEmpty)
+          fieldApplicableReqOnly(f)(req => tags(req.id, filterDead).set(TagFieldId.All).intersect(scope).isEmpty)
 
         case (FieldCriteria.Attr(Blank), -\/(SpecialBuiltInField.Title)) =>
           make(
@@ -514,7 +514,7 @@ object FilterAlgebra {
 
         case (FieldCriteria.Attr(Blank), \/-(StaticField.OtherTags)) =>
           val scope = p.config.tagFieldDistribution(filterDead).notUsedInFields
-          reqOnly(req => tags(req.id, filterDead).allSet.intersect(scope).isEmpty)
+          reqOnly(req => tags(req.id, filterDead).set(TagFieldId.All).intersect(scope).isEmpty)
 
         case (FieldCriteria.Attr(Blank), \/-(StaticField.AllTags)) =>
           byTag(_.isEmpty)

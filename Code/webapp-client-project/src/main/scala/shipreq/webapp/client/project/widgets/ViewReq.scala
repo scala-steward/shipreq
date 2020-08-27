@@ -61,10 +61,10 @@ final class ViewReq[A](data           : Data,
     pt pastPubids data.pastPubids
 
   def otherTags: A =
-    viewTags.vector(data.otherTags, viewTags.other)
+    viewTags.vector(data.otherTags, viewTags(TagFieldId.Other))
 
   def allTags: A =
-    viewTags.vector(data.allTags, viewTags.all)
+    viewTags.vector(data.allTags, viewTags(TagFieldId.All))
 
   def fieldTags(fid: CustomField.Tag.Id): IfApplicable[A] = {
     val tags = data.customTags(fid)
@@ -73,7 +73,7 @@ final class ViewReq[A](data           : Data,
     else if (tags.isEmpty && data.live.is(Live) && data.fieldRules.tag(fid).isMandatory)
       \/-(pt.whenBlankButMandatory)
     else
-      \/-(viewTags.vector(tags, viewTags.inField(fid)))
+      \/-(viewTags.vector(tags, viewTags(fid.asTagFieldId)))
   }
 
   def text(id: CustomField.Text.Id): IfApplicable[A] =
@@ -188,9 +188,9 @@ object ViewReq {
         filterDead       = filterDead,
         live             = req.live(cfg.reqTypes),
         codes            = codes,
-        otherTags        = tags.otherOrdered,
-        allTags          = tags.allOrdered,
-        customTags       = tags.fieldOrdered,
+        otherTags        = tags.ordered(TagFieldId.Other),
+        allTags          = tags.ordered(TagFieldId.All),
+        customTags       = f => tags.ordered(f.asTagFieldId),
         invalidTags      = project.invalidTagsPerReq(id),
         generalImps      = generalImps,
         customImps       = fid => sortPubids(customImpLookup(fid).getPubids(id)),

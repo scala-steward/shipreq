@@ -53,13 +53,8 @@ object VirtualProjectTags {
   sealed trait ResultsLiveDead {
     def tagSources(id: ApplicableTagId): Set[Option[CustomField.Tag.Id]]
 
-    val fieldSet: CustomField.Tag.Id => Set[ApplicableTagId]
-    def allSet  : Set[ApplicableTagId]
-    def otherSet: Set[ApplicableTagId]
-
-    val fieldOrdered: CustomField.Tag.Id => Vector[ApplicableTagId]
-    def allOrdered  : Vector[ApplicableTagId]
-    def otherOrdered: Vector[ApplicableTagId]
+    def set: TagFieldId => Set[ApplicableTagId]
+    def ordered: TagFieldId => Vector[ApplicableTagId]
 
     def defaults: Map[CustomField.Tag.Id, ApplicableTagId]
 
@@ -641,7 +636,7 @@ object VirtualProjectTags {
       val tagOrder  = p.config.tags.applicableTagOrdering(tagGroupId, filterDead)
 
       reqId =>
-        MutableArray(tagLookup(reqId).allSet.iterator.filter(tagScope.contains))
+        MutableArray(tagLookup(reqId).set(TagFieldId.All).iterator.filter(tagScope.contains))
           .sort(tagOrder)
           .iterator()
           .toVector
@@ -864,30 +859,39 @@ object VirtualProjectTags {
     override def isEmpty =
       allTagsByField.value.isEmpty
 
-    def tagSources(id: ApplicableTagId) =
+    override def tagSources(id: ApplicableTagId) =
       allTagsByField.value(id)
 
-    override def allSet =
+    private val allSet =
       allTagsByField.value.keySet
 
-    override lazy val otherSet = {
-      val tagsUsedInFields = dist.usedInFields
-      allSet &~ tagsUsedInFields
+    private val otherSet =
+      allSet &~ dist.usedInFields
+
+    private val fieldSet = Memo { (fid: CustomField.Tag.Id) =>
+      allSet & dist.inField(fid)
     }
 
-    override val fieldSet = Memo { fid =>
-      val legal = dist inField fid
-      allSet & legal
+    override val set = {
+      case TagFieldId.Custom(f) => fieldSet(f)
+      case TagFieldId.All       => allSet
+      case TagFieldId.Other     => otherSet
     }
 
-    override lazy val allOrdered =
+    private lazy val allOrdered =
       MutableArray(allSet).sortBy(tagOrderByName.apply).to(Vector)
 
-    override def otherOrdered =
+    private def otherOrdered =
       MutableArray(otherSet).sortBy(tagOrderByName.apply).to(Vector)
 
-    override val fieldOrdered = Memo { fid =>
+    private val fieldOrdered = Memo { (fid: CustomField.Tag.Id) =>
       MutableArray(fieldSet(fid)).sortBy(tagOrderByPos.apply).to(Vector)
+    }
+
+    override val ordered = {
+      case TagFieldId.Custom(f) => fieldOrdered(f)
+      case TagFieldId.All       => allOrdered
+      case TagFieldId.Other     => otherOrdered
     }
 
     override def defaults =

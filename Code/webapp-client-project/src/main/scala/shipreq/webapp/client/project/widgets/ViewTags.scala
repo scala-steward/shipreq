@@ -190,7 +190,7 @@ final class ViewTags(project: Project) {
       }
 
     val renderInAll: Fn = {
-      val isDeadFn = makeIsDeadFn(_.allSet)
+      val isDeadFn = makeIsDeadFn(_.set(TagFieldId.All))
       Util.memoWithMapVar { t =>
         val isDead         = isDeadFn(t)
         lazy val fgIsBlack = isForegroundBlack(t, isDead)
@@ -214,7 +214,7 @@ final class ViewTags(project: Project) {
     }
 
     val renderInOther: Fn = {
-      val isDeadFn = makeIsDeadFn(_.otherSet)
+      val isDeadFn = makeIsDeadFn(_.set(TagFieldId.Other))
       t => {
         val isDead = isDeadFn(t)
         basicTag(t)(
@@ -225,7 +225,7 @@ final class ViewTags(project: Project) {
     val renderInField: CustomField.Tag.Id => Fn =
       f => {
         val fp = provenance(f)
-        val isDeadFn = makeIsDeadFn(_.fieldSet(f))
+        val isDeadFn = makeIsDeadFn(_.set(f.asTagFieldId))
         t => {
           val p = fp(t)
           val isDead = isDeadFn(t)
@@ -236,9 +236,13 @@ final class ViewTags(project: Project) {
       }
 
     new ForReq[Out] {
-      override val all     = renderInAll
-      override val other   = renderInOther
-      override val inField = renderInField
+
+      override def apply(f: TagFieldId): ApplicableTagId => Out =
+        f match {
+          case TagFieldId.Custom(f) => renderInField(f)
+          case TagFieldId.All       => renderInAll
+          case TagFieldId.Other     => renderInOther
+        }
 
       override def vector(ids: Vector[ApplicableTagId], render: ApplicableTagId => Out): Out =
         ClientUtil.renderVector(ids, ClientUtil.sepSpace)(render)
@@ -253,10 +257,7 @@ final class ViewTags(project: Project) {
       project.config.tags.needApplicableTag(_).name
 
     new ForReq[String] {
-      override def all     = renderOne
-      override def other   = renderOne
-      override val inField = _ => renderOne
-
+      override def apply(f: TagFieldId) = renderOne
       override def vector(ids: Vector[ApplicableTagId], render: ApplicableTagId => String) =
         ids.iterator.map(render).mkString(" ")
     }
@@ -305,10 +306,7 @@ object ViewTags {
   }
 
   trait ForReq[A] {
-    def inField: CustomField.Tag.Id => ApplicableTagId => A
-    def other  : ApplicableTagId => A
-    def all    : ApplicableTagId => A
-
+    def apply(f: TagFieldId): ApplicableTagId => A
     def vector(ids: Vector[ApplicableTagId], render: ApplicableTagId => A): A
   }
 

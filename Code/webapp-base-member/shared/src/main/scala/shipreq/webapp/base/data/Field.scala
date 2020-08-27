@@ -49,6 +49,15 @@ object FieldType {
   implicit def equality: UnivEq[FieldType] = UnivEq.derive
 }
 
+sealed trait TagFieldId
+object TagFieldId {
+  case object All extends TagFieldId
+  case object Other extends TagFieldId
+  final case class Custom(id: CustomField.Tag.Id) extends TagFieldId
+
+  implicit def univEq: UnivEq[TagFieldId] = UnivEq.derive
+}
+
 // =====================================================================================================================
 // Instances
 
@@ -446,7 +455,8 @@ object CustomField {
 
     final case class Id(value: Int) extends CustomFieldId  {
       override def toString = s"CustomField.Tag.Id($value)"
-      val some = Some(this)
+      val some = Some(this) // TODO remove?
+      val asTagFieldId = TagFieldId.Custom(this)
     }
 
     object IdAccess extends ObjDataId[Tag.type, Tag, Id] {

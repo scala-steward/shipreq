@@ -65,7 +65,7 @@ object VirtualProjectTagsTest extends TestSuite {
 
         def results(fd: FilterDead): String =
           tags(r.id, fd)
-            .fieldOrdered(fieldId)
+            .ordered(fieldId.asTagFieldId)
             .iterator
             .map(t => tag(t) + provenanceSuffix(mono.provenance(fieldId)(t)))
             .|>(resultTags)

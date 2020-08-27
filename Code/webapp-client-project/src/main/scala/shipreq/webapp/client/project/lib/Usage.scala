@@ -20,7 +20,7 @@ final class Usage(p: Project, router: SpecialRouterCtl) {
     for {
       req    <- p.content.reqs.reqIterator()
       reqLive = req.live(p.config.reqTypes)
-      tagId  <- tags(req.id, ShowDead).allSet
+      tagId  <- tags(req.id, ShowDead).set(TagFieldId.All)
     } {
       val live = reqLive & p.config.tags.needApplicableTag(tagId).live
       b(tagId).add(live, 1)
