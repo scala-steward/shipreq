@@ -56,6 +56,52 @@ object TagFieldId {
   final case class Custom(id: CustomField.Tag.Id) extends TagFieldId
 
   implicit def univEq: UnivEq[TagFieldId] = UnivEq.derive
+
+  final class Mutable[A](empty: => A) {
+    var all = empty
+    var other = empty
+    var fields = Map.empty[CustomField.Tag.Id, A]
+
+    def get(f: TagFieldId): A =
+      f match {
+        case Custom(id) => field(id)
+        case All        => all
+        case Other      => other
+      }
+
+    def field(f: CustomField.Tag.Id): A =
+      fields.getOrElse(f, {
+        val a = empty
+        fields = fields.updated(f, a)
+        a
+      })
+
+    @inline def mod(field: TagFieldId, m: A => Unit): Unit =
+      field match {
+        case All       => m(all)
+        case Other     => modOther(m)
+        case Custom(f) => modField(f, m)
+      }
+
+    @inline def modOther(m: A => Unit): Unit = {
+      m(other)
+      m(all)
+    }
+
+    @inline def modField(f: CustomField.Tag.Id, m: A => Unit): Unit = {
+      m(field(f))
+      m(all)
+    }
+
+    @inline def modFields(fs: IterableOnce[CustomField.Tag.Id], m: A => Unit): Unit = {
+      val it = fs.iterator
+      if (it.nonEmpty) {
+        for (f <- it)
+          m(field(f))
+        m(all)
+      }
+    }
+  }
 }
 
 // =====================================================================================================================

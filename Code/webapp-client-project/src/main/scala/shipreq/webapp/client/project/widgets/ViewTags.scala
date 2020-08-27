@@ -7,7 +7,6 @@ import scala.collection.mutable
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation.VirtualProjectTags
 import shipreq.webapp.base.data.derivation.VirtualProjectTags.TagProvenance
 import shipreq.webapp.base.lib.ClientUtil
 import shipreq.webapp.base.text.Grammar
@@ -155,93 +154,36 @@ final class ViewTags(project: Project) {
       }
     }
 
-  private val neverDeadFn: (VirtualProjectTags.ResultsLiveDead => Set[ApplicableTagId]) => ApplicableTagId => Boolean = {
-    val f = (_: Any) => false
-    _ => f
-  }
-
   private def _forReq(reqId: ReqId, fd: FilterDead): ForReq[Out] = {
-    type Fn         = ApplicableTagId => VdomTag
     implicit def ds = DisplaySettings.tag
-    val invalidTags = project.invalidTagsPerReq(reqId)
     val basicCache  = cache(ds)
-    val basicTag    = (id: ApplicableTagId) => basicCache(Invalid when invalidTags.contains(id))(id)
-    val provenance  = this.vtags(reqId).provenance
     val vtags       = this.vtags(reqId, fd)
 
-    val makeIsDeadFn: (VirtualProjectTags.ResultsLiveDead => Set[ApplicableTagId]) => ApplicableTagId => Boolean =
-      if (fd is HideDead)
-        neverDeadFn
-      else
-        f => {
-          val allIds = f(vtags)
-          val liveIds = f(this.vtags(reqId, HideDead))
-          val deadIds = allIds -- liveIds
-          deadIds.contains
+    def render(t: ApplicableTagId, f: TagFieldId): Out = {
+      val vtag = vtags(t, f)
+
+      lazy val foregroundIsBlack: Boolean =
+        if (vtag.isDead)
+          false // foreground is always white for dead tags
+        else {
+          val tag = tagConfig.needApplicableTag(t)
+          val colour = tag.colour.getOrElse(Colour.tagDefault)
+          colour.foreground eq Colour.black
         }
 
-    def isForegroundBlack(t: ApplicableTagId, isDead: Boolean): Boolean =
-      if (isDead)
-        false // foreground is always white for dead tags
-      else {
-        val tag = tagConfig.needApplicableTag(t)
-        val colour = tag.colour.getOrElse(Colour.tagDefault)
-        colour.foreground eq Colour.black
-      }
-
-    val renderInAll: Fn = {
-      val isDeadFn = makeIsDeadFn(_.set(TagFieldId.All))
-      Util.memoWithMapVar { t =>
-        val isDead         = isDeadFn(t)
-        lazy val fgIsBlack = isForegroundBlack(t, isDead)
-        var default        = false
-        var derivedIn      = Set.empty[CustomField.Tag.Id]
-
-        for {
-          of <- vtags.tagSources(t)
-          f  <- of
-        } provenance(f)(t) match {
-          case TagProvenance.Derived => derivedIn += f
-          case TagProvenance.Default => default = true
-          case TagProvenance.Manual  =>
-        }
-
-        basicTag(t)(
-          TagMod.when(default)(provenanceIcon(TagProvenance.Default, fgIsBlack)),
-          TagMod.when(derivedIn.nonEmpty)(provenanceIcon(TagProvenance.Derived, fgIsBlack)),
-          TagMod.when(isDead)(tagIconDead))
-      }
+      basicCache(vtag.validity)(t)(
+        TagMod.when(vtag.isDefault)(provenanceIcon(TagProvenance.Default, foregroundIsBlack)),
+        TagMod.when(vtag.isDerived)(provenanceIcon(TagProvenance.Derived, foregroundIsBlack)),
+        tagIconDead.when(vtag.isDead),
+      )
     }
-
-    val renderInOther: Fn = {
-      val isDeadFn = makeIsDeadFn(_.set(TagFieldId.Other))
-      t => {
-        val isDead = isDeadFn(t)
-        basicTag(t)(
-          TagMod.when(isDead)(tagIconDead))
-      }
-    }
-
-    val renderInField: CustomField.Tag.Id => Fn =
-      f => {
-        val fp = provenance(f)
-        val isDeadFn = makeIsDeadFn(_.set(f.asTagFieldId))
-        t => {
-          val p = fp(t)
-          val isDead = isDeadFn(t)
-          basicTag(t)(
-            provenanceIcon(p, isForegroundBlack(t, isDead)),
-            TagMod.when(isDead)(tagIconDead))
-        }
-      }
 
     new ForReq[Out] {
-
       override def apply(f: TagFieldId): ApplicableTagId => Out =
         f match {
-          case TagFieldId.Custom(f) => renderInField(f)
-          case TagFieldId.All       => renderInAll
-          case TagFieldId.Other     => renderInOther
+          case TagFieldId.Custom(f) => render(_, f.asTagFieldId)
+          case TagFieldId.All       => render(_, TagFieldId.All)
+          case TagFieldId.Other     => render(_, TagFieldId.Other)
         }
 
       override def vector(ids: Vector[ApplicableTagId], render: ApplicableTagId => Out): Out =

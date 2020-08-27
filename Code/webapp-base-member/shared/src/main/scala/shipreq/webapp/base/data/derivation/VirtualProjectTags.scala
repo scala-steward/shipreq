@@ -45,13 +45,12 @@ object VirtualProjectTags {
     def manualLiveValues: Multimap[ApplicableTagId, List, LocationOf.Tag.InReq]
     def naTagsInLiveText: Multimap[ApplicableTagId, List, Location.Text]
     def derivativeTagFactors(field: CustomField.Tag.Id): Set[DerivativeTagFactor]
-    val provenance: CustomField.Tag.Id => ApplicableTagId => TagProvenance
     def childrenSummary(field: CustomField.Tag.Id): ChildrenSummary
   }
 
   /** Results indexed by FilterDead. */
   sealed trait ResultsLiveDead {
-    def tagSources(id: ApplicableTagId): Set[Option[CustomField.Tag.Id]]
+    def apply(id: ApplicableTagId, f: TagFieldId): VirtualTag
 
     def set: TagFieldId => Set[ApplicableTagId]
     def ordered: TagFieldId => Vector[ApplicableTagId]
@@ -97,6 +96,29 @@ object VirtualProjectTags {
     implicit def univEq: UnivEq[TagProvenance] = UnivEq.derive
   }
 
+  sealed trait VirtualTag {
+    def provenances: Set[TagProvenance]
+    def live       : Live
+    def validity   : Validity
+    def isManual   : Boolean
+    def isDefault  : Boolean
+    def isDerived  : Boolean
+
+    @inline final def isDead = live is Dead
+  }
+
+  object VirtualTag {
+    val empty: VirtualTag =
+      new VirtualTag {
+        override def provenances = Set.empty
+        override def live        = Live
+        override def validity    = Valid
+        override def isManual    = false
+        override def isDefault   = false
+        override def isDerived   = false
+      }
+  }
+
   sealed trait ChildrenSummary {
     def aggregated: Map[Option[ApplicableTagId], Double]
 
@@ -110,14 +132,11 @@ object VirtualProjectTags {
 
   private object Mutable {
 
-    type TagsByField = Multimap[ApplicableTagId, Set, Option[CustomField.Tag.Id]]
-    val emptyTagsByField: TagsByField = Multimap.empty
+    type DerivedTags = Multimap[ApplicableTagId, Set, CustomField.Tag.Id]
+    val emptyDerivedTags: DerivedTags = Multimap.empty
 
-    def addTagsByField(prev: TagsByField, field: Option[CustomField.Tag.Id], tags: Set[ApplicableTagId]): TagsByField =
+    def addDerivedTags(prev: DerivedTags, field: CustomField.Tag.Id, tags: Set[ApplicableTagId]): DerivedTags =
       tags.foldLeft(prev)(_.add(_, field))
-
-    def addTagsByField(prev: TagsByField, m: Map[CustomField.Tag.Id, ApplicableTagId]): TagsByField =
-      m.foldLeft(prev)((q, e) => q.add(e._2, e._1.some))
 
     val emptyDTF = Multimap.empty[ReqId, Set, DerivativeTagFactor]
 
@@ -130,14 +149,14 @@ object VirtualProjectTags {
                        val reqLive: Live,
                        nonApplicableTags: Set[ApplicableTagId],
                        tagLive: ApplicableTagId => Live) {
-      var manualLive          = ForReq.emptyInReq
-      var manualDead          = ForReq.emptyInReq
-      var deadTagsInLiveText  = ForReq.emptyInText
-      var naTagsInLiveText    = ForReq.emptyInText
-      var liveDefaults        = Map.empty[CustomField.Tag.Id, ApplicableTagId]
-      var deadDefaults        = Map.empty[CustomField.Tag.Id, ApplicableTagId] // dead tags in live reqs, not defaults applied to dead reqs
-      var liveDerived         = emptyTagsByField
-      var deadDerived         = emptyTagsByField
+      var manualLive         = ForReq.emptyInReq
+      var manualDead         = ForReq.emptyInReq
+      var deadTagsInLiveText = ForReq.emptyInText
+      var naTagsInLiveText   = ForReq.emptyInText
+      var liveDefaults       = Map.empty[CustomField.Tag.Id, ApplicableTagId]
+      var deadDefaults       = Map.empty[CustomField.Tag.Id, ApplicableTagId] // dead tags in live reqs, not defaults applied to dead reqs
+      var liveDerived        = emptyDerivedTags
+      var deadDerived        = emptyDerivedTags
 
       def addManual(id     : ApplicableTagId,
                     loc    : LocationOf.Tag.InReq,
@@ -499,8 +518,8 @@ object VirtualProjectTags {
                   }
 
                   // Add this field's derivation to this req's other derived tags
-                  node.liveDerived = addTagsByField(node.liveDerived, f.fieldId.some, liveDerived)
-                  node.deadDerived = addTagsByField(node.deadDerived, f.fieldId.some, deadDerived)
+                  node.liveDerived = addDerivedTags(node.liveDerived, f.fieldId, liveDerived)
+                  node.deadDerived = addDerivedTags(node.deadDerived, f.fieldId, deadDerived)
 
                   if (debugDerivativeTags) {
                     println(s"defaultAddable = $defaultAddable, hasManual = $hasManual, hasDefault = $hasDefault")
@@ -538,54 +557,146 @@ object VirtualProjectTags {
   } // class Mutable
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+  // Finally, calculate results
 
-  import Mutable.{TagsByField, addTagsByField}
+  private class MutableVirtualTag extends VirtualTag {
+    override def provenances = _provenances
+    override def live        = _live
+    override def validity    = _validity
+    override def isManual    = _isManual
+    override def isDefault   = _isDefault
+    override def isDerived   = _isDerived
+
+    var _provenances = Set.empty[TagProvenance]
+    var _live        = Live: Live
+    var _validity    = Valid: Validity
+    var _isManual    = false
+    var _isDefault   = false
+    var _isDerived   = false
+
+    def markAsDead(): this.type = {
+      _live = Dead
+      this
+    }
+
+    def markAsInvalid(): this.type = {
+      _validity = Invalid
+      this
+    }
+
+    def markAsDefault(): Unit = {
+      _provenances += TagProvenance.Default
+      _isDefault = true
+    }
+
+    def markAsDerived(): Unit = {
+      _provenances += TagProvenance.Derived
+      _isDerived = true
+    }
+
+    def markAsManual(): Unit = {
+      _provenances += TagProvenance.Manual
+      _isManual = true
+    }
+  }
+
+  private type MutableVirtualTagsByField = TagFieldId.Mutable[MutableVirtualTag]
+
+  private class MutableVirtualTags {
+    type TagState = MutableVirtualTagsByField
+    var state = Map.empty[ApplicableTagId, TagState]
+
+    def tagState(id: ApplicableTagId): TagState =
+      state.getOrElse(id, {
+        val s = new TagFieldId.Mutable(new MutableVirtualTag)
+        state = state.updated(id, s)
+        s
+      })
+
+    def modTags(tags: IterableOnce[ApplicableTagId],
+                dist: TagFieldDistribution.TagIds,
+                m   : MutableVirtualTag => Unit): Unit =
+      for (tag <- tags.iterator) {
+        val s = tagState(tag)
+        val fields = dist.fieldsFor(tag)
+        if (fields.isEmpty)
+          s.modOther(m)
+        else
+          s.modFields(fields, m)
+      }
+  }
+
+  private def calculateVirtualTagsShared(data: Mutable.ForReq, dist: TagFieldDistribution.TagIds): MutableVirtualTags = {
+    val s = new MutableVirtualTags
+    import s._
+
+    for ((tag, fields) <- data.liveDerived.m)
+      tagState(tag).modFields(fields, _.markAsDerived())
+
+    for ((field, tag) <- data.liveDefaults)
+      tagState(tag).modField(field, _.markAsDefault())
+
+    modTags(data.manualLive.keyIterator, dist, _.markAsManual())
+
+    modTags(data.deadTagsInLiveText.keyIterator, dist, _.markAsDead().markAsManual())
+
+    modTags(data.naTagsInLiveText.keyIterator, dist, _.markAsInvalid().markAsManual())
+
+    s
+  }
+
+  private def calculateVirtualTagsLive(m: Mutable, data: Mutable.ForReq): MutableVirtualTags = {
+    val dist = m.liveTagDist
+    val s = calculateVirtualTagsShared(data, dist)
+    s
+  }
+
+  private def calculateVirtualTagsDead(m: Mutable, data: Mutable.ForReq): MutableVirtualTags = {
+    val dist = m.p.config.deadTagFieldDistribution
+    val s = calculateVirtualTagsShared(data, dist)
+    import s._
+
+    modTags(data.manualDead.keyIterator, dist, _.markAsDead().markAsManual())
+
+    for ((tag, fields) <- data.deadDerived.m)
+      tagState(tag).modFields(fields, _.markAsDead().markAsDerived())
+
+    for ((field, tag) <- data.deadDefaults)
+      tagState(tag).modField(field, _.markAsDead().markAsDefault())
+
+    s
+  }
+
+  // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   def apply(p: Project): VirtualProjectTags = {
 
     val m = new Mutable(p)
     import m.data
 
-    // Field attribution is only required so that we can display provenance of tags in the
-    // "All tags" field. As such, manual tags (which have no further provenance) are not
-    // associated with their source field because it's just computationally easier that way.
-    val allTagsByFieldMemo: FilterDead => ReqId => LazyVal[TagsByField] = {
-      var live: ReqId => LazyVal[TagsByField] = null
-      val fn: FilterDead => ReqId => LazyVal[TagsByField] =
-        FilterDead.memo {
-          case HideDead =>
-            Memo { reqId =>
-              LazyVal {
-                val b = data(reqId)
-                var results = b.liveDerived
-                results = results.addks(b.manualLive.keySet, None)
-                results = results.addks(b.deadTagsInLiveText.keySet, None)
-                results = results.addks(b.naTagsInLiveText.keySet, None)
-                results = addTagsByField(results, b.liveDefaults)
-                results
-              }
+    val virtualTagsMemo: FilterDead => ReqId => LazyVal[MutableVirtualTags] =
+      FilterDead.memo {
+        case HideDead =>
+          Memo { reqId =>
+            LazyVal {
+              val d = data(reqId)
+              calculateVirtualTagsLive(m, d)
             }
-          case ShowDead =>
-            Memo { reqId =>
-              LazyVal {
-                val b = data(reqId)
-                var results = live(reqId).value
-                results = results ++ b.deadDerived.m
-                results = results.addks(b.manualDead.keySet, None)
-                results = addTagsByField(results, b.deadDefaults)
-                results
-              }
+          }
+        case ShowDead =>
+          Memo { reqId =>
+            LazyVal {
+              val d = data(reqId)
+              calculateVirtualTagsDead(m, d)
             }
-        }
-      live = fn(HideDead)
-      fn
-    }
+          }
+      }
 
     val allLiveDeadResults: AllLiveDeadResults =
       distFn =>
         FilterDead.memoLazy { fd =>
-          val allTagsByField = allTagsByFieldMemo(fd)
-          val defaultDist    = distFn(fd)
+          val virtualTagsForReq = virtualTagsMemo(fd)
+          val defaultDist       = distFn(fd)
 
           val defaultsFn: Mutable.ForReq => Map[CustomField.Tag.Id, ApplicableTagId] =
             fd match {
@@ -598,7 +709,7 @@ object VirtualProjectTags {
               new LiveDeadImpl(
                 reqId           = reqId,
                 dist            = dist,
-                allTagsByField  = allTagsByField(reqId),
+                virtualTags     = virtualTagsForReq(reqId),
                 defaultsFn      = defaultsFn,
                 liveDeadResults = liveDeadResults,
                 mutableResults  = m,
@@ -722,62 +833,6 @@ object VirtualProjectTags {
       else
         Set.empty
 
-    override val provenance = Util.memoWithMapVar { f =>
-      import TagProvenance._
-
-      if (!dtFactors.contains(f)) {
-
-        // No derivative tags
-        val allManualTags = p.content.reqTags(reqId)
-        t =>
-          if (allManualTags.contains(t))
-            Manual
-          else
-            Default
-
-      } else {
-        val factors = dtFactors(f).value(reqId)
-        if (factors.isEmpty) {
-          // No derivative tag factors
-          val allManualTags = p.content.reqTags(reqId)
-          t =>
-            if (allManualTags.contains(t))
-              Manual
-            else
-              Default
-
-        } else {
-          // Inspect derivative tag factors
-          Util.memoWithMapVar { t =>
-            val it = factors.iterator
-            var result: TagProvenance = null
-            while (it.hasNext && (result eq null)) {
-              val fac = it.next()
-              fac match {
-                case DerivativeTagFactor.EmptySelf =>
-                  result =
-                    if (b.deadDefaults.contains(f) && b.deadDefaults(f) ==* t)
-                      Default
-                    else
-                      Derived
-                case DerivativeTagFactor.Self(tag, provenance) =>
-                  if (tag ==* t)
-                    result = provenance
-                case _ =>
-              }
-            }
-
-            if (result ne null)
-              result
-            else if (b.manualDead.m.contains(t))
-              Manual
-            else
-              Derived
-          }
-        }
-      }
-    }
-
     private val childrenSummaries: CustomField.Tag.Id => ChildrenSummary =
       Memo(new ChildrenSummaryImpl(reqId, _, mutableResults))
 
@@ -841,14 +896,9 @@ object VirtualProjectTags {
 
   // ===================================================================================================================
 
-  /**
-   * @param allTagsByField Field attribution is only required so that we can display provenance of tags in the
-   *                       "All tags" field. As such, manual tags (which have no further provenance) are not
-   *                       associated with their source field because it's just computationally easier that way.
-   */
   private final class LiveDeadImpl(reqId          : ReqId,
                                    dist           : TagFieldDistribution.TagIds,
-                                   allTagsByField : LazyVal[TagsByField],
+                                   virtualTags    : LazyVal[MutableVirtualTags],
                                    defaultsFn     : Mutable.ForReq => Map[CustomField.Tag.Id, ApplicableTagId],
                                    liveDeadResults: TagFieldDistribution.TagIds => ResultsLiveDead,
                                    mutableResults : Mutable) extends ResultsLiveDead {
@@ -857,15 +907,20 @@ object VirtualProjectTags {
     private val b = data(reqId)
 
     override def isEmpty =
-      allTagsByField.value.isEmpty
+      virtualTags.value.state.isEmpty
 
-    override def tagSources(id: ApplicableTagId) =
-      allTagsByField.value(id)
+    override def apply(id: ApplicableTagId, f: TagFieldId) = {
+      val ts = virtualTags.value.state.getOrElse(id, null)
+      if (ts eq null)
+        VirtualTag.empty
+      else
+        ts.get(f)
+    }
 
-    private val allSet =
-      allTagsByField.value.keySet
+    @inline private def allSet =
+      virtualTags.value.state.keySet
 
-    private val otherSet =
+    private lazy val otherSet =
       allSet &~ dist.usedInFields
 
     private val fieldSet = Memo { (fid: CustomField.Tag.Id) =>

@@ -13,7 +13,7 @@ import sourcecode.Line
 import utest._
 
 object VirtualProjectTagsTest extends TestSuite {
-  import VirtualProjectTags.{DerivativeTagFactor, TagProvenance}
+  import VirtualProjectTags.{DerivativeTagFactor, TagProvenance, VirtualTag}
 
   private def summariseDerivativeTags(p: Project,
                                       fieldId: CustomField.Tag.Id,
@@ -29,10 +29,12 @@ object VirtualProjectTagsTest extends TestSuite {
       case TagProvenance.Manual  => "manual"
     }
 
-    val provenanceSuffix: TagProvenance => String = {
-      case TagProvenance.Default => "?"
-      case TagProvenance.Derived => "+"
-      case TagProvenance.Manual  => ""
+    def describeTag(t: VirtualTag): String = {
+      var desc = ""
+      if (t.isDefault) desc += "?"
+      if (t.isDerived) desc += "+"
+      if (t.live is Dead) desc += "-"
+      desc
     }
 
     val showFactor: DerivativeTagFactor => String = {
@@ -61,14 +63,14 @@ object VirtualProjectTagsTest extends TestSuite {
     def perReq: Iterator[Item] = {
       p.content.reqs.reqIterator().map { r =>
         val pubid = req(r.id)
-        val mono = tags(r.id)
 
-        def results(fd: FilterDead): String =
-          tags(r.id, fd)
-            .ordered(fieldId.asTagFieldId)
+        def results(fd: FilterDead): String = {
+          val v = tags(r.id, fd)
+          v.ordered(fieldId.asTagFieldId)
             .iterator
-            .map(t => tag(t) + provenanceSuffix(mono.provenance(fieldId)(t)))
+            .map(t => tag(t) + describeTag(v(t, fieldId.asTagFieldId)))
             .|>(resultTags)
+        }
 
         val deadResults =
           results(ShowDead)
