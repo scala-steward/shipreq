@@ -50,6 +50,8 @@ import shipreq.webapp.base.test.WebappTestUtil._
   *
   * C7 (text:N/A) -> B15 (empty)
   *
+  * A21 (text:dead) -> B16 (empty)
+
   * Derivative tag field is dead (xField)
   *
   * Derivative tag field is disabled (wField)
@@ -83,6 +85,7 @@ object SampleDerivativeTags4 {
     val a18 = GenericReqId(118)
     val a19 = GenericReqId(119)
     val a20 = GenericReqId(120)
+    val a21 = GenericReqId(121)
 
     val b1 = GenericReqId(201)
     val b2 = GenericReqId(202)
@@ -99,6 +102,7 @@ object SampleDerivativeTags4 {
     val b13 = GenericReqId(213)
     val b14 = GenericReqId(214)
     val b15 = GenericReqId(215)
+    val b16 = GenericReqId(216)
 
     val c1 = GenericReqId(301)
     val c2 = GenericReqId(302)
@@ -297,12 +301,16 @@ object SampleDerivativeTags4 {
     genericReqCreate(e3, e, impSrcs = d3, impTgts = b13),
 
     // A20 (text) -> B14 (empty)
-    genericReqCreate(a20, a, titleTagRef = z1),
+    genericReqCreate(a20, a, titleTagRef = z1, tags = y1),
     genericReqCreate(b14, b, impSrcs = a20),
 
     // C7 (text:N/A) -> B15 (empty)
-    genericReqCreate(c7, c, titleTagRef = z1),
+    genericReqCreate(c7, c, titleTagRef = z1, tags = y1),
     genericReqCreate(b15, b, impSrcs = c7),
+
+    // A21 (text:dead) -> B16 (empty)
+    genericReqCreate(a21, a, titleTagRef = z4, tags = y1),
+    genericReqCreate(b16, b, impSrcs = a21),
 
     // Delete tags
     Event.TagDelete(z4),
@@ -382,6 +390,10 @@ object SampleDerivativeTags4 {
       |  + B-14: z1 (derived)
       |  + self: z1 (text)
       |  = {z1#}
+      |A-21
+      |  + B-16: ∅
+      |  + self: z4 (text)
+      |  = {z4#-}
       |B-1
       |  + A-1: z1 (default)
       |  + self: ∅
@@ -446,6 +458,9 @@ object SampleDerivativeTags4 {
       |  + self: ∅
       |  = {z1+}
       |B-15
+      |  + self: ∅
+      |  = {}
+      |B-16
       |  + self: ∅
       |  = {}
       |C-1 = {}
@@ -535,9 +550,13 @@ object SampleDerivativeTags4 {
       |  + self: ∅
       |  = {}
       |A-20
-      |  + B-14: ∅
-      |  + self: ∅
-      |  = {}
+      |  + B-14: y1 (derived)
+      |  + self: y1 (manual)
+      |  = {y1}
+      |A-21
+      |  + B-16: y1 (derived)
+      |  + self: y1 (manual)
+      |  = {y1}
       |B-1
       |  + self: ∅
       |  = {}
@@ -592,11 +611,17 @@ object SampleDerivativeTags4 {
       |  + self: y2 (manual)
       |  = {y2}
       |B-14
+      |  + A-20: y1 (manual)
       |  + self: ∅
-      |  = {}
+      |  = {y1+}
       |B-15
+      |  + C-7: y1 (manual)
       |  + self: ∅
-      |  = {}
+      |  = {y1+}
+      |B-16
+      |  + A-21: y1 (manual)
+      |  + self: ∅
+      |  = {y1+}
       |C-1
       |  + B-3: ∅
       |  + self: ∅
@@ -621,9 +646,9 @@ object SampleDerivativeTags4 {
       |  + self: y4 (manual)
       |  = {y4}
       |C-7
-      |  + B-15: ∅
-      |  + self: ∅
-      |  = {}
+      |  + B-15: y1 (derived)
+      |  + self: y1 (manual)
+      |  = {y1}
       |D-1
       |  = {}
       |    {y5?-} (ShowDead)
@@ -669,6 +694,7 @@ object SampleDerivativeTags4 {
       |A-18 = {} / {x1?-}
       |A-19 = {} / {x1?-}
       |A-20 = {} / {x1?-}
+      |A-21 = {} / {x1?-}
       |B-1 = {} / {x1?-}
       |B-2 = {} / {x1?-}
       |B-3 = {} / {x1?-}
@@ -684,6 +710,7 @@ object SampleDerivativeTags4 {
       |B-13 = {} / {x1?-}
       |B-14 = {} / {x1?-}
       |B-15 = {} / {x1?-}
+      |B-16 = {} / {x1?-}
       |C-1 = {} / {x1?-}
       |C-2 = {} / {x1?-}
       |C-3 = {} / {x1?-}
@@ -720,6 +747,7 @@ object SampleDerivativeTags4 {
       |A-18 = {w1?}
       |A-19 = {w1?}
       |A-20 = {w1?}
+      |A-21 = {w1?}
       |B-1 = {w1?}
       |B-2 = {w1?}
       |B-3 = {w1?}
@@ -735,6 +763,7 @@ object SampleDerivativeTags4 {
       |B-13 = {w1?}
       |B-14 = {w1?}
       |B-15 = {w1?}
+      |B-16 = {w1?}
       |C-1 = {w1?}
       |C-2 = {w1?}
       |C-3 = {w1?}

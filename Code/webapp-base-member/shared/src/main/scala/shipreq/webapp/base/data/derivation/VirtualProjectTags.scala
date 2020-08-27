@@ -202,7 +202,7 @@ object VirtualProjectTags {
     final case class DerivativeTagField(fieldId       : CustomField.Tag.Id,
                                         derivativeTags: DerivativeTags,
                                         naReqTypes    : Set[ReqTypeId],
-                                        liveTags      : Set[ApplicableTagId])
+                                        tags          : Set[ApplicableTagId])
   }
 
   private final class Mutable(val p: Project) {
@@ -335,7 +335,7 @@ object VirtualProjectTags {
       def getFieldManuals(node: ForReq, f: DerivativeTagField): Map[ApplicableTagId, Set[TagProvenance.Manual]] =
         node.manualLive
           .iterator
-          .filter(e => f.liveTags.contains(e._1))
+          .filter(e => f.tags.contains(e._1))
           .map(e => (e._1, e._2.iterator.map(TagProvenance.fromTagLoc).toSet))
           .toMap
 
@@ -459,10 +459,11 @@ object VirtualProjectTags {
                   processChildren()
 
                 } else {
-                  val manuals    = getFieldManuals(node, f)
-                  val hasManual  = manuals.nonEmpty
-                  val default    = node.liveDefaults.get(f.fieldId)
-                  val hasDefault = default.isDefined
+                  val manuals     = getFieldManuals(node, f)
+                  val deadManuals = node.deadTagsInLiveText.keyIterator.filter(f.tags.contains).toSet
+                  val hasManual   = manuals.nonEmpty || deadManuals.nonEmpty
+                  val default     = node.liveDefaults.get(f.fieldId)
+                  val hasDefault  = default.isDefined
 
                   // Complete all children
                   val addedFromChildren = processChildren()
@@ -489,6 +490,8 @@ object VirtualProjectTags {
                       factors.mod(_.add(nodeId, DerivativeTagFactor.Self(t, p)))
                       addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, p)
                     }
+                    for (tag <- deadManuals)
+                      factors.mod(_.add(nodeId, DerivativeTagFactor.Self(tag, TagProvenance.ManualInText)))
                   } else if (hasDefault) {
                     defaultAddable = true
                   } else {
@@ -519,7 +522,8 @@ object VirtualProjectTags {
                   }
 
                   // Don't say we've derived manual results
-                  liveDerived = liveDerived &~ node.manualLive.keySet
+                  liveDerived = liveDerived &~ manuals.keySet
+                  liveDerived = liveDerived &~ deadManuals
 
                   // Don't say we've derived the default; just use the default
                   if (defaultAddable)

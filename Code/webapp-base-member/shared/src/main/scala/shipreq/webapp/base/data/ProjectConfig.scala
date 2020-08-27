@@ -302,7 +302,9 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
       case ShowDead => deadTagFieldDistribution
     }
 
-  /** Only live fields considered. All tags, live & dead, included. */
+  /** "Live" refers to fields, not tags.
+    * In other words, only live fields considered and then all tags, live & dead, are included.
+    */
   lazy val liveTagFieldDistribution: TagFieldDistribution.TagIds =
     TagFieldDistribution(this, _.live(this) is Live)
 
