@@ -532,13 +532,16 @@ object VirtualProjectTags {
 
                   // Clean up
                   if (liveDerived.isEmpty) {
-                    if (defaultAddable)
+                    if (defaultAddable) {
                       for (d <- default) {
                         factors.mod(_.add(nodeId, DerivativeTagFactor.Self(d, Provenance.Default)))
                         addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, d, Provenance.Default)
                       }
-                    else if (!hasManual)
+                    } else if (manuals.isEmpty) {
+                      // Note: Only checking `manuals` here instead of using hasManual because badManuals aren't
+                      // propagated to parents.
                       addToParents += DerivativeTagFactor.EmptyRelation(nodeId, Forwards)
+                    }
                   } else {
                     for (t <- liveDerived)
                       addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, Provenance.Derived)
@@ -560,9 +563,27 @@ object VirtualProjectTags {
                     println(s"node.liveDefaults: ${node.liveDefaults}")
                     println(s"node.deadDefaults: ${node.deadDefaults}")
                     println(s"node.manualLive: ${node.manualLive.keys.map(_.value).toVector.sorted}")
+                    println(s"badManuals: $badManuals")
                   }
 
-                  assert(addToParents.nonEmpty, s"There need to be factors for $descReq")
+                  assert(addToParents.nonEmpty, {
+                    val sep = "=" * 100
+                    println(sep)
+                    println(p.prettyPrintImplicationGraph)
+                    println(sep)
+                    println(p.config.tags.prettyPrint)
+                    println(sep)
+                    println(s"req id = ${nodeId}")
+                    println(s"defaultAddable = $defaultAddable, hasManual = $hasManual, hasDefault = $hasDefault")
+                    println(s"node.liveDefaults: ${node.liveDefaults}")
+                    println(s"node.deadDefaults: ${node.deadDefaults}")
+                    println(s"node.manualLive: ${node.manualLive.keys.map(_.value).toVector.sorted}")
+                    println(s"badManuals: ${badManuals}")
+                    println(s"fieldFactors: ${factors.value(nodeId)}")
+                    println(s"addedFromChildren: $addedFromChildren")
+                    println(sep)
+                    s"There need to be factors for $descReq"
+                  })
                   seen.update(nodeId, addToParents)
                   addToParents
                 }
