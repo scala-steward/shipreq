@@ -1333,6 +1333,8 @@ object Style extends StyleSheet.Inline {
       opacity(if (foregroundIsBlack) 0.45 else 0.6).important,
     ))
 
+    def tagIconText = tagIconDefault
+
     val richCodeBlockError = style(
       backgroundColor(c"#ddd"),
       padding(1 ex, 2 ex),

@@ -87,22 +87,32 @@ object VirtualProjectTags {
 
   object TagProvenance {
     sealed trait NonDerived extends TagProvenance
+    sealed trait Manual     extends NonDerived
 
-    case object Manual  extends NonDerived
-    case object Default extends NonDerived
-    case object Derived extends TagProvenance
+    case object ManualTag    extends Manual
+    case object ManualInText extends Manual
+    case object Default      extends NonDerived
+    case object Derived      extends TagProvenance
 
+    implicit def univEqM: UnivEq[Manual] = UnivEq.derive
     implicit def univEqN: UnivEq[NonDerived] = UnivEq.derive
     implicit def univEq: UnivEq[TagProvenance] = UnivEq.derive
+
+    def fromTagLoc(loc: LocationOf.Tag.InReq): Manual =
+      loc match {
+        case Location.Tags    => ManualTag
+        case _: Location.Text => ManualInText
+      }
   }
 
   sealed trait VirtualTag {
-    def provenances: Set[TagProvenance]
-    def live       : Live
-    def validity   : Validity
-    def isManual   : Boolean
-    def isDefault  : Boolean
-    def isDerived  : Boolean
+    def provenances   : Set[TagProvenance]
+    def live          : Live
+    def validity      : Validity
+    def isManualTag   : Boolean
+    def isManualInText: Boolean
+    def isDefault     : Boolean
+    def isDerived     : Boolean
 
     @inline final def isDead = live is Dead
   }
@@ -110,12 +120,13 @@ object VirtualProjectTags {
   object VirtualTag {
     val empty: VirtualTag =
       new VirtualTag {
-        override def provenances = Set.empty
-        override def live        = Live
-        override def validity    = Valid
-        override def isManual    = false
-        override def isDefault   = false
-        override def isDerived   = false
+        override def provenances    = Set.empty
+        override def live           = Live
+        override def validity       = Valid
+        override def isManualTag    = false
+        override def isManualInText = false
+        override def isDefault      = false
+        override def isDerived      = false
       }
   }
 
@@ -321,6 +332,13 @@ object VirtualProjectTags {
 
       val graph = imps.forwards
 
+      def getFieldManuals(node: ForReq, f: DerivativeTagField): Map[ApplicableTagId, Set[TagProvenance.Manual]] =
+        node.manualLive
+          .iterator
+          .filter(e => f.liveTags.contains(e._1))
+          .map(e => (e._1, e._2.iterator.map(TagProvenance.fromTagLoc).toSet))
+          .toMap
+
       // ---------------------------------------------------------------------------------------------------------------
       // Add parents' influences to children
       def pass1(): Unit = {
@@ -346,14 +364,18 @@ object VirtualProjectTags {
 
               } else {
                 val dt        = f.derivativeTags
-                val manuals   = node.manualLive.keyIterator.filter(f.liveTags.contains).toSet
+                val manuals   = getFieldManuals(node, f)
                 val hasManual = manuals.nonEmpty
                 val factors   = factorsPerField(f.fieldId)
 
                 val relevantManuals: Set[DerivativeTagFactor] =
                   if (hasManual) {
                     // Discard parents' manuals and override with our own
-                    manuals.map(DerivativeTagFactor.Relation(nodeId, Backwards, _, TagProvenance.Manual))
+                    manuals.iterator.flatMap { case (tag, provenance) =>
+                      provenance.iterator.map { p =>
+                        DerivativeTagFactor.Relation(nodeId, Backwards, tag, p)
+                      }
+                    }.toSet
 
                   } else if (node.liveDefaults.contains(f.fieldId)) {
 
@@ -437,7 +459,7 @@ object VirtualProjectTags {
                   processChildren()
 
                 } else {
-                  val manuals    = node.manualLive.keyIterator.filter(f.liveTags.contains).toSet
+                  val manuals    = getFieldManuals(node, f)
                   val hasManual  = manuals.nonEmpty
                   val default    = node.liveDefaults.get(f.fieldId)
                   val hasDefault = default.isDefined
@@ -460,9 +482,12 @@ object VirtualProjectTags {
 
                   // Add data from ourself
                   if (hasManual) {
-                    for (t <- manuals) {
-                      factors.mod(_.add(nodeId, DerivativeTagFactor.Self(t, TagProvenance.Manual)))
-                      addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, TagProvenance.Manual)
+                    for {
+                      (t, provenance) <- manuals
+                      p               <- provenance
+                    } {
+                      factors.mod(_.add(nodeId, DerivativeTagFactor.Self(t, p)))
+                      addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, p)
                     }
                   } else if (hasDefault) {
                     defaultAddable = true
@@ -560,19 +585,21 @@ object VirtualProjectTags {
   // Finally, calculate results
 
   private class MutableVirtualTag extends VirtualTag {
-    override def provenances = _provenances
-    override def live        = _live
-    override def validity    = _validity
-    override def isManual    = _isManual
-    override def isDefault   = _isDefault
-    override def isDerived   = _isDerived
+    override def provenances    = _provenances
+    override def live           = _live
+    override def validity       = _validity
+    override def isManualTag    = _isManualTag
+    override def isManualInText = _isManualInText
+    override def isDefault      = _isDefault
+    override def isDerived      = _isDerived
 
-    var _provenances = Set.empty[TagProvenance]
-    var _live        = Live: Live
-    var _validity    = Valid: Validity
-    var _isManual    = false
-    var _isDefault   = false
-    var _isDerived   = false
+    var _provenances    = Set.empty[TagProvenance]
+    var _live           = Live: Live
+    var _validity       = Valid: Validity
+    var _isManualTag    = false
+    var _isManualInText = false
+    var _isDefault      = false
+    var _isDerived      = false
 
     def markAsDead(): this.type = {
       _live = Dead
@@ -594,9 +621,19 @@ object VirtualProjectTags {
       _isDerived = true
     }
 
-    def markAsManual(): Unit = {
-      _provenances += TagProvenance.Manual
-      _isManual = true
+    val markAsManual: TagProvenance.Manual => Unit = {
+      case TagProvenance.ManualTag    => markAsManualTag()
+      case TagProvenance.ManualInText => markAsManualInText()
+    }
+
+    def markAsManualTag(): Unit = {
+      _provenances += TagProvenance.ManualTag
+      _isManualTag = true
+    }
+
+    def markAsManualInText(): Unit = {
+      _provenances += TagProvenance.ManualInText
+      _isManualInText = true
     }
   }
 
@@ -619,10 +656,19 @@ object VirtualProjectTags {
       for (tag <- tags.iterator) {
         val s = tagState(tag)
         val fields = dist.fieldsFor(tag)
-        if (fields.isEmpty)
-          s.modOther(m)
-        else
-          s.modFields(fields, m)
+        s.modFieldsOrOther(fields, m)
+      }
+
+    def addManuals(manuals: Map[ApplicableTagId, List[LocationOf.Tag.InReq]],
+                   dist: TagFieldDistribution.TagIds,
+                   m   : TagProvenance.Manual => MutableVirtualTag => Unit): Unit =
+      for ((tag, locs) <- manuals) {
+        val fields = dist.fieldsFor(tag)
+        val s = tagState(tag)
+        for (loc <- locs) {
+          val p = TagProvenance.fromTagLoc(loc)
+          s.modFieldsOrOther(fields, m(p))
+        }
       }
   }
 
@@ -636,11 +682,11 @@ object VirtualProjectTags {
     for ((field, tag) <- data.liveDefaults)
       tagState(tag).modField(field, _.markAsDefault())
 
-    modTags(data.manualLive.keyIterator, dist, _.markAsManual())
+    addManuals(data.manualLive.m, dist, p => _.markAsManual(p))
 
-    modTags(data.deadTagsInLiveText.keyIterator, dist, _.markAsDead().markAsManual())
+    modTags(data.deadTagsInLiveText.keyIterator, dist, _.markAsDead().markAsManualInText())
 
-    modTags(data.naTagsInLiveText.keyIterator, dist, _.markAsInvalid().markAsManual())
+    modTags(data.naTagsInLiveText.keyIterator, dist, _.markAsInvalid().markAsManualInText())
 
     s
   }
@@ -656,7 +702,7 @@ object VirtualProjectTags {
     val s = calculateVirtualTagsShared(data, dist)
     import s._
 
-    modTags(data.manualDead.keyIterator, dist, _.markAsDead().markAsManual())
+    addManuals(data.manualDead.m, dist, p => _.markAsDead().markAsManual(p))
 
     for ((tag, fields) <- data.deadDerived.m)
       tagState(tag).modFields(fields, _.markAsDead().markAsDerived())

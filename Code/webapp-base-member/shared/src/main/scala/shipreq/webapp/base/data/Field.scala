@@ -101,6 +101,12 @@ object TagFieldId {
         m(all)
       }
     }
+
+    @inline def modFieldsOrOther(fields: Set[CustomField.Tag.Id], m: A => Unit): Unit =
+      if (fields.isEmpty)
+        modOther(m)
+      else
+        modFields(fields, m)
   }
 }
 

@@ -24,13 +24,15 @@ object VirtualProjectTagsTest extends TestSuite {
     def resultTags(results: IterableOnce[String]) = results.iterator.mkString("{", " ", "}")
 
     val showProvenance: TagProvenance => String = {
-      case TagProvenance.Default => "default"
-      case TagProvenance.Derived => "derived"
-      case TagProvenance.Manual  => "manual"
+      case TagProvenance.Default      => "default"
+      case TagProvenance.Derived      => "derived"
+      case TagProvenance.ManualTag    => "manual"
+      case TagProvenance.ManualInText => "text"
     }
 
     def describeTag(t: VirtualTag): String = {
       var desc = ""
+      if (t.isManualInText) desc += "#"
       if (t.isDefault) desc += "?"
       if (t.isDerived) desc += "+"
       if (t.live is Dead) desc += "-"
@@ -105,9 +107,10 @@ object VirtualProjectTagsTest extends TestSuite {
 
     val p = p0.copy() // avoid pre-computed virtualTags so that we can measure derivation time
     val startTime = System.nanoTime()
-    p.virtualTags
+    val x = p.virtualTags
     val endTime = System.nanoTime()
     val dur = Duration.ofNanos(endTime - startTime)
+    if (x eq null) ???
 
     val actual = summariseDerivativeTags(p, f, reqTypeOrder)
 

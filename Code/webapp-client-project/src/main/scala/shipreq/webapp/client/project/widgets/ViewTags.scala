@@ -7,7 +7,6 @@ import scala.collection.mutable
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation.VirtualProjectTags.TagProvenance
 import shipreq.webapp.base.lib.ClientUtil
 import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.ui.semantic.Icon
@@ -172,8 +171,9 @@ final class ViewTags(project: Project) {
         }
 
       basicCache(vtag.validity)(t)(
-        TagMod.when(vtag.isDefault)(provenanceIcon(TagProvenance.Default, foregroundIsBlack)),
-        TagMod.when(vtag.isDerived)(provenanceIcon(TagProvenance.Derived, foregroundIsBlack)),
+        TagMod.when(vtag.isManualInText)(tagIsFromText(foregroundIsBlack)),
+        TagMod.when(vtag.isDefault)(tagIconDefault(foregroundIsBlack)),
+        TagMod.when(vtag.isDerived)(tagIconDerived(foregroundIsBlack)),
         tagIconDead.when(vtag.isDead),
       )
     }
@@ -255,11 +255,5 @@ object ViewTags {
   private val tagIconDead    = Icon.Trash.tag(*.tagIconDead)
   private val tagIconDefault = Memo.bool(b => Icon.Sliders.tag(*.tagIconDefault(b)))
   private val tagIconDerived = Memo.bool(b => Icon.Sitemap.tag(*.tagIconDerived(b)))
-
-  private[ViewTags] def provenanceIcon(p: TagProvenance, fgIsBlack: => Boolean): TagMod =
-    p match {
-      case TagProvenance.Manual  => TagMod.empty
-      case TagProvenance.Default => tagIconDefault(fgIsBlack)
-      case TagProvenance.Derived => tagIconDerived(fgIsBlack)
-    }
+  private val tagIsFromText  = Memo.bool(b => <.span(*.tagIconText(b), "#"))
 }
