@@ -72,31 +72,31 @@ object VirtualProjectTags {
                                    dir      : Direction) extends DerivativeTagFactor
 
     final case class Self(tag       : ApplicableTagId,
-                          provenance: TagProvenance.NonDerived) extends DerivativeTagFactor
+                          provenance: Provenance.NonDerived) extends DerivativeTagFactor
 
     final case class Relation(sourceReq : ReqId,
                               dir       : Direction,
                               tag       : ApplicableTagId,
-                              provenance: TagProvenance) extends DerivativeTagFactor
+                              provenance: Provenance) extends DerivativeTagFactor
 
     implicit def univEq: UnivEq[DerivativeTagFactor] = UnivEq.derive
   }
 
   /** From whence thy tags did come. */
-  sealed trait TagProvenance
+  sealed trait Provenance
 
-  object TagProvenance {
-    sealed trait NonDerived extends TagProvenance
+  object Provenance {
+    sealed trait NonDerived extends Provenance
     sealed trait Manual     extends NonDerived
 
     case object ManualTag    extends Manual
     case object ManualInText extends Manual
     case object Default      extends NonDerived
-    case object Derived      extends TagProvenance
+    case object Derived      extends Provenance
 
     implicit def univEqM: UnivEq[Manual] = UnivEq.derive
     implicit def univEqN: UnivEq[NonDerived] = UnivEq.derive
-    implicit def univEq: UnivEq[TagProvenance] = UnivEq.derive
+    implicit def univEq: UnivEq[Provenance] = UnivEq.derive
 
     def fromTagLoc(loc: LocationOf.Tag.InReq): Manual =
       loc match {
@@ -106,7 +106,7 @@ object VirtualProjectTags {
   }
 
   sealed trait VirtualTag {
-    def provenances   : Set[TagProvenance]
+    def provenances   : Set[Provenance]
     def live          : Live
     def validity      : Validity
     def isManualTag   : Boolean
@@ -332,11 +332,11 @@ object VirtualProjectTags {
 
       val graph = imps.forwards
 
-      def getFieldManuals(node: ForReq, f: DerivativeTagField): Map[ApplicableTagId, Set[TagProvenance.Manual]] =
+      def getFieldManuals(node: ForReq, f: DerivativeTagField): Map[ApplicableTagId, Set[Provenance.Manual]] =
         node.manualLive
           .iterator
           .filter(e => f.tags.contains(e._1))
-          .map(e => (e._1, e._2.iterator.map(TagProvenance.fromTagLoc).toSet))
+          .map(e => (e._1, e._2.iterator.map(Provenance.fromTagLoc).toSet))
           .toMap
 
       // ---------------------------------------------------------------------------------------------------------------
@@ -398,7 +398,7 @@ object VirtualProjectTags {
 
                     // Parent's values changed nothing - ignore them
                     if (results ==* ourDefault)
-                      Set1(DerivativeTagFactor.Relation(nodeId, Backwards, d, TagProvenance.Default))
+                      Set1(DerivativeTagFactor.Relation(nodeId, Backwards, d, Provenance.Default))
                     else
                       parentsManuals
 
@@ -491,7 +491,7 @@ object VirtualProjectTags {
                       addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, p)
                     }
                     for (tag <- badManuals)
-                      factors.mod(_.add(nodeId, DerivativeTagFactor.Self(tag, TagProvenance.ManualInText)))
+                      factors.mod(_.add(nodeId, DerivativeTagFactor.Self(tag, Provenance.ManualInText)))
                   } else if (hasDefault) {
                     defaultAddable = true
                   } else {
@@ -534,14 +534,14 @@ object VirtualProjectTags {
                   if (liveDerived.isEmpty) {
                     if (defaultAddable)
                       for (d <- default) {
-                        factors.mod(_.add(nodeId, DerivativeTagFactor.Self(d, TagProvenance.Default)))
-                        addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, d, TagProvenance.Default)
+                        factors.mod(_.add(nodeId, DerivativeTagFactor.Self(d, Provenance.Default)))
+                        addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, d, Provenance.Default)
                       }
                     else if (!hasManual)
                       addToParents += DerivativeTagFactor.EmptyRelation(nodeId, Forwards)
                   } else {
                     for (t <- liveDerived)
-                      addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, TagProvenance.Derived)
+                      addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, Provenance.Derived)
                     if (hasDefault && !defaultAddable)
                       node.liveDefaults = node.liveDefaults.removed(f.fieldId)
                   }
@@ -597,7 +597,7 @@ object VirtualProjectTags {
     override def isDefault      = _isDefault
     override def isDerived      = _isDerived
 
-    var _provenances    = Set.empty[TagProvenance]
+    var _provenances    = Set.empty[Provenance]
     var _live           = Live: Live
     var _validity       = Valid: Validity
     var _isManualTag    = false
@@ -616,27 +616,27 @@ object VirtualProjectTags {
     }
 
     def markAsDefault(): Unit = {
-      _provenances += TagProvenance.Default
+      _provenances += Provenance.Default
       _isDefault = true
     }
 
     def markAsDerived(): Unit = {
-      _provenances += TagProvenance.Derived
+      _provenances += Provenance.Derived
       _isDerived = true
     }
 
-    val markAsManual: TagProvenance.Manual => Unit = {
-      case TagProvenance.ManualTag    => markAsManualTag()
-      case TagProvenance.ManualInText => markAsManualInText()
+    val markAsManual: Provenance.Manual => Unit = {
+      case Provenance.ManualTag    => markAsManualTag()
+      case Provenance.ManualInText => markAsManualInText()
     }
 
     def markAsManualTag(): Unit = {
-      _provenances += TagProvenance.ManualTag
+      _provenances += Provenance.ManualTag
       _isManualTag = true
     }
 
     def markAsManualInText(): Unit = {
-      _provenances += TagProvenance.ManualInText
+      _provenances += Provenance.ManualInText
       _isManualInText = true
     }
   }
@@ -665,12 +665,12 @@ object VirtualProjectTags {
 
     def addManuals(manuals: Map[ApplicableTagId, List[LocationOf.Tag.InReq]],
                    dist: TagFieldDistribution.TagIds,
-                   m   : TagProvenance.Manual => MutableVirtualTag => Unit): Unit =
+                   m   : Provenance.Manual => MutableVirtualTag => Unit): Unit =
       for ((tag, locs) <- manuals) {
         val fields = dist.fieldsFor(tag)
         val s = tagState(tag)
         for (loc <- locs) {
-          val p = TagProvenance.fromTagLoc(loc)
+          val p = Provenance.fromTagLoc(loc)
           s.modFieldsOrOther(fields, m(p))
         }
       }

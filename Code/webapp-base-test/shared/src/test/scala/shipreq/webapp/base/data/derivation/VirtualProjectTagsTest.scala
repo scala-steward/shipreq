@@ -13,7 +13,7 @@ import sourcecode.Line
 import utest._
 
 object VirtualProjectTagsTest extends TestSuite {
-  import VirtualProjectTags.{DerivativeTagFactor, TagProvenance, VirtualTag}
+  import VirtualProjectTags.{DerivativeTagFactor, Provenance, VirtualTag}
 
   private def summariseDerivativeTags(p: Project,
                                       fieldId: CustomField.Tag.Id,
@@ -23,11 +23,11 @@ object VirtualProjectTagsTest extends TestSuite {
     def tag(id: ApplicableTagId) = p.config.tags.needApplicableTag(id).name
     def resultTags(results: IterableOnce[String]) = results.iterator.mkString("{", " ", "}")
 
-    val showProvenance: TagProvenance => String = {
-      case TagProvenance.Default      => "default"
-      case TagProvenance.Derived      => "derived"
-      case TagProvenance.ManualTag    => "manual"
-      case TagProvenance.ManualInText => "text"
+    val showProvenance: Provenance => String = {
+      case Provenance.Default      => "default"
+      case Provenance.Derived      => "derived"
+      case Provenance.ManualTag    => "manual"
+      case Provenance.ManualInText => "text"
     }
 
     def describeTag(t: VirtualTag): String = {
