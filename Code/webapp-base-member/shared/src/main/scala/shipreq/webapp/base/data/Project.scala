@@ -142,14 +142,6 @@ final case class Project(name        : Project.Name,
     m
   }
 
-  lazy val invalidTagsPerReq: ReqId => Set[ApplicableTagId] =
-    Memo { reqId =>
-      val req           = content.reqs.need(reqId)
-      val conflicting   = conflictingTagsPerReq(reqId)
-      val nonApplicable = config.naTags(req.reqTypeId).set
-      Util.mergeSets(conflicting, nonApplicable)
-    }
-
   /**
    * Transitive closure of implications going source -> target.
    *

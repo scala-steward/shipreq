@@ -331,7 +331,7 @@ private[reqtable] object Logic {
 
           // Build
           exps.foreachWithIndex((exp, i) =>
-            output += Row.ForReq(r, live, p.invalidTagsPerReq(id), exp, fieldRules, i))
+            output += Row.ForReq(r, live, exp, fieldRules, i))
 
           seeExpandedCodes(codes)
         }
@@ -405,7 +405,6 @@ private[reqtable] object Logic {
           Some(Row.ForReq(
             req         = a.req,
             live        = a.live,
-            invalidTags = a.invalidTags,
             exp         = a.exp |+| b.exp,
             fieldRules  = a.fieldRules,
             instanceId  = a.instanceId min b.instanceId))
