@@ -93,12 +93,12 @@ object IssueDetectors {
       val exclusiveGroups = ctx.project.config.tags.exclusiveGroups
       val tags            = ctx.project.virtualTags
       req => {
-        val reqId     = req.id
-        val tagIds    = tags(reqId).manualLiveValues
-        val conflicts = Util.uniqueDupsNested(tagIds.keyIterator)(exclusiveGroups)
-        for (g <- conflicts) {
+        val reqId   = req.id
+        val results = tags(reqId)
+        for (g <- results.conflictingTagGroups) {
           val locs: Set[LocationOf.Tag.InReq] =
-            tagIds.iterator
+            results.conflictingTags.m
+              .iterator
               .filter(x => exclusiveGroups(x._1).contains(g))
               .flatMap(_._2)
               .toSet

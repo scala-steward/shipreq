@@ -42,7 +42,8 @@ object VirtualProjectTags {
 
   /** Results that aren't indexed by anything. */
   sealed trait ResultsMono {
-    def manualLiveValues: Multimap[ApplicableTagId, List, LocationOf.Tag.InReq]
+    def conflictingTagGroups: Set[TagGroupId]
+    def conflictingTags: Multimap[ApplicableTagId, List, LocationOf.Tag.InReq]
     def naTagsInLiveText: Multimap[ApplicableTagId, List, Location.Text]
     def derivativeTagFactors(field: CustomField.Tag.Id): Set[DerivativeTagFactor]
     def childrenSummary(field: CustomField.Tag.Id): ChildrenSummary
@@ -103,6 +104,9 @@ object VirtualProjectTags {
         case Location.Tags    => ManualTag
         case _: Location.Text => ManualInText
       }
+
+    def fromTagLocs(locs: IterableOnce[LocationOf.Tag.InReq]): Set[Manual] =
+      locs.iterator.map(fromTagLoc).toSet
   }
 
   sealed trait VirtualTag {
@@ -160,6 +164,8 @@ object VirtualProjectTags {
                        val reqLive: Live,
                        nonApplicableTags: Set[ApplicableTagId],
                        tagLive: ApplicableTagId => Live) {
+      var conflictingGroups  = Set.empty[TagGroupId]
+      var conflictingTags    = ForReq.emptyInReq
       var manualLive         = ForReq.emptyInReq
       var manualDead         = ForReq.emptyInReq
       var manualHiddenNA     = ForReq.emptyInReq
@@ -210,16 +216,17 @@ object VirtualProjectTags {
   private final class Mutable(val p: Project) {
     import Mutable._
 
-    val deadTags       = p.config.tags.deadApplicableTagIds
-    val tagsInText     = p.atomScan.tagRefs
-    val tagLive        = (id: ApplicableTagId) => Dead when deadTags.contains(id)
-    val reqTags        = p.content.reqTags
-    val reqTypes       = p.config.reqTypes
-    val fieldRules     = p.config.fieldRules(ShowDead) // ShowDead so that it doesn't replace dead defaults with Optional
-    val liveTagDist    = p.config.liveTagFieldDistribution
-    val imps           = p.content.implications
-    val tagOrderByName = p.config.tags.orderByName
-    val tagOrderByPos  = p.config.tags.orderByPos
+    val deadTags        = p.config.tags.deadApplicableTagIds
+    val tagsInText      = p.atomScan.tagRefs
+    val tagLive         = (id: ApplicableTagId) => Dead when deadTags.contains(id)
+    val reqTags         = p.content.reqTags
+    val reqTypes        = p.config.reqTypes
+    val fieldRules      = p.config.fieldRules(ShowDead) // ShowDead so that it doesn't replace dead defaults with Optional
+    val liveTagDist     = p.config.liveTagFieldDistribution
+    val imps            = p.content.implications
+    val tagOrderByName  = p.config.tags.orderByName
+    val tagOrderByPos   = p.config.tags.orderByPos
+    val exclusiveGroups = p.config.tags.exclusiveGroups
 
     type Data = mutable.HashMap[ReqId, ForReq]
 
@@ -234,6 +241,7 @@ object VirtualProjectTags {
       // Process current req
       collectManualTags(req, b)
       addDefaults(req, b)
+      separateConflictingTags(b)
     }
 
     // Step 2: Derivative tags
@@ -294,6 +302,21 @@ object VirtualProjectTags {
     }
 
     // =================================================================================================================
+    private def separateConflictingTags(b: ForReq): Unit = {
+      val conflicts = Util.uniqueDupsNested(b.manualLive.keyIterator)(exclusiveGroups)
+      for (tagGroup <- conflicts) {
+        val it = b.manualLive.iterator.filter(x => exclusiveGroups(x._1).contains(tagGroup))
+        if (it.nonEmpty) {
+          b.conflictingGroups += tagGroup
+          for ((tag, locs) <- it) {
+            b.manualLive = b.manualLive.delk(tag)
+            b.conflictingTags = b.conflictingTags.addvs(tag, locs)
+          }
+        }
+      }
+    }
+
+    // =================================================================================================================
     // Derivative tags
 
     // Notes about factors:
@@ -334,8 +357,9 @@ object VirtualProjectTags {
 
       val graph = imps.forwards
 
-      def getFieldManuals(node: ForReq, f: DerivativeTagField): Map[ApplicableTagId, Set[Provenance.Manual]] =
-        node.manualLive
+      def getFieldManuals(f: DerivativeTagField,
+                          values: IterableOnce[(ApplicableTagId, List[LocationOf.Tag.InReq])]): Map[ApplicableTagId, Set[Provenance.Manual]] =
+        values
           .iterator
           .filter(e => f.tags.contains(e._1))
           .map(e => (e._1, e._2.iterator.map(Provenance.fromTagLoc).toSet))
@@ -366,7 +390,7 @@ object VirtualProjectTags {
 
               } else {
                 val dt        = f.derivativeTags
-                val manuals   = getFieldManuals(node, f)
+                val manuals   = getFieldManuals(f, node.manualLive.m)
                 val hasManual = manuals.nonEmpty
                 val factors   = factorsPerField(f.fieldId)
 
@@ -461,9 +485,10 @@ object VirtualProjectTags {
                   processChildren()
 
                 } else {
-                  val manuals    = getFieldManuals(node, f)
-                  val badManuals = (node.deadTagsInLiveText.keyIterator ++ node.naTagsInLiveText.keyIterator).filter(f.tags.contains).toSet
-                  val hasManual  = manuals.nonEmpty || badManuals.nonEmpty
+                  val manuals    = getFieldManuals(f, node.manualLive.m)
+                  val badManuals = getFieldManuals(f, node.deadTagsInLiveText.iterator ++ node.naTagsInLiveText.iterator)
+                  val conflicts  = getFieldManuals(f, node.conflictingTags.m)
+                  val hasManual  = manuals.nonEmpty || badManuals.nonEmpty || conflicts.nonEmpty
                   val default    = node.liveDefaults.get(f.fieldId)
                   val hasDefault = default.isDefined
 
@@ -485,15 +510,24 @@ object VirtualProjectTags {
 
                   // Add data from ourself
                   if (hasManual) {
-                    for {
-                      (t, provenance) <- manuals
-                      p               <- provenance
-                    } {
+                    def addManuals(m: Map[ApplicableTagId, Set[Provenance.Manual]])
+                                  (f: (ApplicableTagId, Provenance.Manual) => Unit): Unit =
+                      for {
+                        (t, ps) <- m
+                        p <- ps
+                      } f(t, p)
+
+                    addManuals(manuals) { (t, p) =>
                       factors.mod(_.add(nodeId, DerivativeTagFactor.Self(t, p)))
                       addToParents += DerivativeTagFactor.Relation(nodeId, Forwards, t, p)
                     }
-                    for (tag <- badManuals)
-                      factors.mod(_.add(nodeId, DerivativeTagFactor.Self(tag, Provenance.ManualInText)))
+                    addManuals(badManuals) { (t, p) =>
+                      factors.mod(_.add(nodeId, DerivativeTagFactor.Self(t, p)))
+                    }
+                    addManuals(conflicts) { (t, p) =>
+                      factors.mod(_.add(nodeId, DerivativeTagFactor.Self(t, p)))
+                    }
+
                   } else if (hasDefault) {
                     defaultAddable = true
                   } else {
@@ -525,7 +559,8 @@ object VirtualProjectTags {
 
                   // Don't say we've derived manual results
                   liveDerived = liveDerived &~ manuals.keySet
-                  liveDerived = liveDerived &~ badManuals
+                  liveDerived = liveDerived &~ badManuals.keySet
+                  liveDerived = liveDerived &~ conflicts.keySet
 
                   // Don't say we've derived the default; just use the default
                   if (defaultAddable)
@@ -713,6 +748,8 @@ object VirtualProjectTags {
 
     addManuals(data.manualLive.m, dist, p => _.markAsManual(p))
 
+    addManuals(data.conflictingTags.m, dist, p => _.markAsInvalid().markAsManual(p))
+
     modTags(data.deadTagsInLiveText.keyIterator, dist, _.markAsDead().markAsManualInText())
 
     modTags(data.naTagsInLiveText.keyIterator, dist, _.markAsInvalid().markAsManualInText())
@@ -898,8 +935,11 @@ object VirtualProjectTags {
 
     private val b = data(reqId)
 
-    override def manualLiveValues =
-      b.manualLive
+    override def conflictingTagGroups =
+      b.conflictingGroups
+
+    override def conflictingTags =
+      b.conflictingTags
 
     override def naTagsInLiveText =
       b.naTagsInLiveText

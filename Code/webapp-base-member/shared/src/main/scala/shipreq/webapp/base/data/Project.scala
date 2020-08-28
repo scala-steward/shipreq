@@ -2,16 +2,14 @@ package shipreq.webapp.base.data
 
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import japgolly.microlibs.stdlib_ext.MutableArray
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.Memo
 import monocle.macros.Lenses
 import monocle.std.option.pSome
 import monocle.{Lens, Traversal}
-import nyaya.util.Multimap
 import scalaz.Equal
 import shipreq.base.util._
 import shipreq.webapp.base.data.derivation._
-import shipreq.webapp.base.issue.{Issue, IssueTracker}
+import shipreq.webapp.base.issue.IssueTracker
 
 object Project {
   type Name = String
@@ -126,21 +124,6 @@ final case class Project(name        : Project.Name,
       def refdInText  = content.useCaseStepRefs.contains(id)
       hasTitle || childNeeded || hasFlow || refdInText
     }
-
-  private lazy val conflictingTagsPerReq: Multimap[ReqId, Set, ApplicableTagId] = {
-    var m = Multimap.empty[ReqId, Set, ApplicableTagId]
-    issues.vector.foreach {
-
-      case i: Issue.ConflictingTags =>
-        val tagGroup = config.tags.tree.need(i.tagGroupId)
-        val children = tagGroup.transitiveChildren(config.tags.tree)
-        val atags    = children.iterator.filterSubType[ApplicableTagId].toSet
-        m = m.addvs(i.req.id, atags)
-
-      case _ => ()
-    }
-    m
-  }
 
   /**
    * Transitive closure of implications going source -> target.

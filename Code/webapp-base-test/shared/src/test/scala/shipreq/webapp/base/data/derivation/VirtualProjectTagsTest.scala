@@ -217,12 +217,18 @@ object VirtualProjectTagsTest extends TestSuite {
         }
       }
 
-      "edge" - {
+      "edge1" - {
         import SampleDerivativeTags4._, Values._
         "z" - assertDerivativeTags(project, zField)(virtualTagsZ)
         "y" - assertDerivativeTags(project, yField)(virtualTagsY)
         "x" - assertDerivativeTags(project, xField)(virtualTagsX)
         "w" - assertDerivativeTags(project, wField)(virtualTagsW)
+      }
+
+      "edge2" - {
+        import SampleDerivativeTags5._, Values._
+        "z" - assertDerivativeTags(project, zField)(virtualTagsZ)
+        "y" - assertDerivativeTags(project, yField)(virtualTagsY)
       }
     }
 
