@@ -60,7 +60,7 @@ object Dependencies {
   }
 
   object ScalaGraal {
-    private val ver   = "1.0.1"
+    private val ver   = "1.1.1"
     private val jvm   = MultiModule.scala("com.github.japgolly.scala-graal", ver)
     private val both  = MultiModule.jvmAndJs("com.github.japgolly.scala-graal", ver)
     val core          = jvm("core") ++ graal
