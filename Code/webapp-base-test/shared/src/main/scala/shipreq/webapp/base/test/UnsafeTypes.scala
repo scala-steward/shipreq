@@ -101,7 +101,7 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
   implicit def autoCustomIssueTypeIdO(i: Int): Option[CustomIssueTypeId]          = Some(i)
   implicit def autoCustomReqTypeIdO  (i: Int): Option[CustomReqTypeId]            = Some(i)
   implicit def autoTagGroupIdO       (i: Int): Option[TagGroupId]                 = Some(i)
-  implicit def autoApplicableTagIdO  (i: Int): Option[ApplicableTagId]            = Some(i)
+  implicit def autoApplicableTagIdO  (i: Int): Option[ApplicableTagId]            = i.some
   implicit def autoDeletionReasonIdO (i: Int): Option[DeletionReasonId]           = Some(i)
 
   implicit def autoObfuscated[A](s: String): Obfuscated[A] = Obfuscated(s)

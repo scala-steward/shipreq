@@ -21,7 +21,7 @@ final case class DerivativeTags(enabled: Enabled, rules: DerivativeTags.Rules) {
 
   def combineOption(tag1: ApplicableTagId, tag2: ApplicableTagId): Option[ApplicableTagId] =
     if (tag1 ==* tag2)
-      Some(tag1)
+      tag1.some
     else {
       val pair = TagPair(tag1, tag2)
       rules.get(pair)

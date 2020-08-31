@@ -15,8 +15,10 @@ import shipreq.webapp.base.data.derivation.TagGroupTags
 import shipreq.webapp.base.util.Must._
 
 sealed trait TagId extends TaggedInt
-final case class TagGroupId     (value: Int) extends TagId with TaggedInt
-final case class ApplicableTagId(value: Int) extends TagId with TaggedInt
+final case class TagGroupId     (value: Int) extends TagId
+final case class ApplicableTagId(value: Int) extends TagId {
+  val some = Some(this)
+}
 
 sealed trait Tag {
   val id     : TagId

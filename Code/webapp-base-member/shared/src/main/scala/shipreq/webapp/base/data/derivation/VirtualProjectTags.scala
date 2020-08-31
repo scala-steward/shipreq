@@ -1055,7 +1055,7 @@ object VirtualProjectTags {
         var byTag = Map.empty[Option[ApplicableTagId], Double] // TODO remove?
         val _progressBar = Array.newBuilder[ProgressBarPortion]
         for ((k, v) <- _byTag) {
-          val tagId = Some(k)
+          val tagId = k.some
           val tag = Some(tags.needApplicableTag(k))
           byTag = byTag.updated(tagId, v.value)
           _progressBar += ProgressBarPortion(tagId, tag, v.value, total)

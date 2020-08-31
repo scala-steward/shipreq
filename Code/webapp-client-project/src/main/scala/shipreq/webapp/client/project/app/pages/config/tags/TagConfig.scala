@@ -233,7 +233,7 @@ object TagConfig {
         args.id match {
           case \/-(id) if p.project.config.tags.tree.need(id).tag.live.is(Dead) => EditorType.Dead(id)
           case \/-(id: TagGroupId)                                       => EditorType.TagGroup(Some(id))
-          case \/-(id: ApplicableTagId)                                  => EditorType.ApplicableTag(Some(id))
+          case \/-(id: ApplicableTagId)                                  => EditorType.ApplicableTag(id.some)
           case -\/(NewTagType.TagGroup)                                  => EditorType.TagGroup(None)
           case -\/(NewTagType.Tag)                                       => EditorType.ApplicableTag(None)
         }
@@ -279,7 +279,7 @@ object TagConfig {
         case EditorType.Dead(id) =>
           val editor =
             id match {
-              case i: ApplicableTagId => applicableTagEditor(Some(i), Disabled)
+              case i: ApplicableTagId => applicableTagEditor(i.some, Disabled)
               case i: TagGroupId      => tagGroupEditor(Some(i), Disabled)
             }
 
