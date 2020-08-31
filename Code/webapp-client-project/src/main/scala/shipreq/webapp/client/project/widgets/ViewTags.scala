@@ -216,7 +216,7 @@ final class ViewTags(project: Project) {
     val renderFactor: DerivationDesc.Factor => VdomNode = f =>
       <.tr(
         factorKey(f.tag.fold("No tag": VdomNode)(basic)),
-        factorValues("— ", f.reqs))
+        factorValues(f.reqs))
 
     val stepIndices = d.steps.indices
 
@@ -307,7 +307,7 @@ object ViewTags {
   private val headingFactors   = <.h4(*.derivDescHeading, "Derivation Factors")
   private val headingDeriv     = <.h4(*.derivDescHeading, "Derivation")
   private val factorKey        = <.td(*.derivDescFactorKey)
-  private val factorValues     = <.td(*.derivDescFactorValues)
+  private val factorValues     = <.td(*.derivDescFactorValues, <.span(*.derivDescFactorDash, "—"))
   private val derivEquals      = <.span(*.derivDescDerivationStepEquals, "=")
   private val derivPlus        = <.span(*.derivDescDerivationStepPlus, "+"): TagMod
   private val derivSpace       = " ": TagMod

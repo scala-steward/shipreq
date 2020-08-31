@@ -1350,6 +1350,7 @@ object Style extends StyleSheet.Inline {
   object tags {
 
     private def tagBase(live: Live) = mixin(
+      whiteSpace.nowrap,
       mixinIf(live is Dead)(&.not(_.hover)(textDecoration := ^.lineThrough)),
 //      cursor.default,
     )
@@ -1412,16 +1413,25 @@ object Style extends StyleSheet.Inline {
       wordBreak.keepAll,
     )
 
+    private val derivDescGap = 0.75 ex
+
     val derivDescFactors = style(
       derivDescDetails,
     )
 
     val derivDescFactorKey = style(
       textAlign.right,
+      padding(`0`).important, // for when in ReqTable
+      border.none.important, // for when in ReqTable
+    )
+
+    val derivDescFactorDash = style(
+      margin.horizontal(derivDescGap),
     )
 
     val derivDescFactorValues = style(
-      marginLeft(1 ex),
+      padding(`0`).important, // for when in ReqTable
+      border.none.important, // for when in ReqTable
     )
 
     val derivDescDerivationSteps = style(
@@ -1433,7 +1443,7 @@ object Style extends StyleSheet.Inline {
     )
 
     val derivDescDerivationStepEquals = style(marginRight(1 ex))
-    val derivDescDerivationStepPlus = style(margin.horizontal(0.5 ex))
+    val derivDescDerivationStepPlus = style(margin.horizontal(derivDescGap))
   }
 
   // ===================================================================================================================
