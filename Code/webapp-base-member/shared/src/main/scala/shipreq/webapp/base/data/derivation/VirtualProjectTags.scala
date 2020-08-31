@@ -141,6 +141,7 @@ object VirtualProjectTags {
 
     def pct1    = portion / total.toDouble
     def pct100d = pct1 * 100d
+    val pct100s = pct100d.toString + "%"
     def pct100i = Math.round(pct100d).toInt
     def name    = tag.fold("no tag")(_.name)
     val desc    = s"${pct100i}% $name"

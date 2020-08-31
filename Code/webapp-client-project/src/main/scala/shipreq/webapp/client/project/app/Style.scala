@@ -691,6 +691,39 @@ object Style extends StyleSheet.Inline {
     val reqTypeRowL = style(flexGrow(1))
     val reqTypeRowR = style(background := "#fff", marginLeft(0.6 rem))
 
+    val derivativeTagRow = style(
+      display.flex,
+      alignItems.center,
+    )
+
+    val derivativeTagRowTags = style(
+      flexGrow(1),
+    )
+
+    val derivativeTagRowBar = style(
+      background := "#fef",
+      boxSizing.borderBox,
+      width(20 vw),
+      whiteSpace.nowrap,
+      wordBreak.keepAll,
+    )
+
+    val progressBar = style(
+      display.flex,
+      height(8 px),
+      overflow.hidden,
+      background := "#e1e4e8",
+      borderRadius(6 px),
+      outline(1 px, solid, c"#0000"),
+    )
+
+    val progressBarItem = style(
+      outline(2 px, solid, c"#0000"),
+      &.not(_.firstChild)(
+        marginLeft(2 px),
+      )
+    )
+
     object useCaseStep {
 
       val container = style(
