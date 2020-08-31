@@ -8,8 +8,9 @@ import scalafix.sbt.ScalafixTestkitPlugin.autoImport._
 object ScalafixBuild {
 
   private val settings: Project => Project =
-    Common.settingsMinForScalafix.andThen(
-      _.settings(scalacOptions ~= { _.filterNot(_ startsWith "-Yimports") })
+    Common.settingsMinForScalafix.andThen(_
+      .disablePlugins(ScalafixPlugin)
+      .settings(scalacOptions ~= { _.filterNot(_ startsWith "-Yimports") })
     )
 
   private val testSettings: Project => Project =
@@ -23,15 +24,12 @@ object ScalafixBuild {
 
   lazy val `scalafix-input` = (project in file("scalafix/input"))
     .configure(testSettings)
-    .disablePlugins(ScalafixPlugin)
 
   lazy val `scalafix-output` = (project in file("scalafix/output"))
     .configure(testSettings)
-    .disablePlugins(ScalafixPlugin)
 
   lazy val `scalafix-rules` = (project in file("scalafix/rules"))
     .configure(settings)
-    .disablePlugins(ScalafixPlugin)
     .settings(libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % ScalafixVer)
 
   // Pending: https://github.com/scalacenter/scalafix/issues/1230
