@@ -1438,8 +1438,9 @@ object Style extends StyleSheet.Inline {
       derivDescDetails,
       listStyleType := "none",
       paddingInlineStart(`0`),
-      marginBlockStart(`0`),
-      marginBlockEnd(`0`),
+      marginRight(`0`),
+      marginBottom(`0`),
+      marginTop(`0`),
     )
 
     val derivDescDerivationStepEquals = style(marginRight(1 ex))
