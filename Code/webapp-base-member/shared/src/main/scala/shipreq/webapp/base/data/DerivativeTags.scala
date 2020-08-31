@@ -53,8 +53,9 @@ final case class DerivativeTags(enabled: Enabled, rules: DerivativeTags.Rules) {
       tags + newTag
   }
 
-  def reduce(tags  : Set[ApplicableTagId],
-             filter: ApplicableTagId => Boolean = _ => true): Set[ApplicableTagId] = {
+  def reduce(tags       : Set[ApplicableTagId],
+             filter     : ApplicableTagId => Boolean = _ => true,
+             recursively: Boolean = true): Set[ApplicableTagId] = {
 
     val it1 = tags.iterator
     while (it1.hasNext) {
@@ -67,7 +68,11 @@ final case class DerivativeTags(enabled: Enabled, rules: DerivativeTags.Rules) {
         if (t1.value < t2.value) {
           val p = TagPair(t1, t2)
           rules.get(p) match {
-            case Some(r) => if (filter(r)) return reduce(tags - t1 - t2 + r)
+            case Some(r) =>
+              if (filter(r)) {
+                val next = tags - t1 - t2 + r
+                return if (recursively) reduce(next) else next
+              }
             case None    =>
           }
         }

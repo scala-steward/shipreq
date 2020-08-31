@@ -156,6 +156,8 @@ object VirtualProjectTags {
     final type ProgressBar = ArraySeq[ProgressBarPortion]
     def progressBar: ProgressBar
 
+    def descDerivation: Option[String]
+
     /** The number of live, relevant, unique, transitive children.
       * Also the sum of all aggregated values.
       */
@@ -1077,6 +1079,84 @@ object VirtualProjectTags {
     override def total       = results._1
     override def byTag       = results._2
     override def progressBar = results._3
+
+    override lazy val descDerivation: Option[String] =
+      Option.when(dtFactors.contains(fieldId)) {
+        val allFactors    = dtFactors(fieldId)
+        val tagCfg        = p.config.tags
+        val orderingByPos = tagCfg.orderingByPos
+        val showNoTag     = "no tag"
+
+        // Group factors by tag
+        var byTag = Multimap.empty[ApplicableTagId, Set, ReqId]
+        var noTag = Set.empty[ReqId]
+        allFactors.value(selfId).foreach {
+          case DerivativeTagFactor.Relation(req, _, tag, _) => byTag = byTag.add(tag, req)
+          case DerivativeTagFactor.Self(tag, _)             => byTag = byTag.add(tag, selfId)
+          case DerivativeTagFactor.EmptyRelation(req, _)    => noTag += req
+          case DerivativeTagFactor.EmptySelf                => noTag += selfId
+        }
+        val allTags = MutableArray(byTag.keyIterator).sort(orderingByPos).arraySeq
+
+        // Work out tag alignment
+        val tagAlignment = Aligner.forStrings()
+        if (noTag.nonEmpty)
+          tagAlignment.consider(showNoTag)
+        for (tagId <- allTags) {
+          val tag = tagCfg.needApplicableTag(tagId)
+          tagAlignment.consider(tag.name, plus = 1)
+        }
+
+        val result = new StringBuilder
+
+        // Describe factors
+        result.append("Factors\n")
+
+        for (reqs <- NonEmptySet.option(noTag)) {
+          result.append("\n  ")
+          tagAlignment.padLeft(result, showNoTag)
+          result.append(" - ")
+          result.append(PlainText.concisePubidSet(reqs, p))
+        }
+
+        for (tagId <- allTags.iterator) {
+          val tag  = tagCfg.needApplicableTag(tagId)
+          result.append("\n  ")
+          tagAlignment.padLeft(result, tag.key.with_#)
+          result.append(" - ")
+          result.append(PlainText.concisePubidSet(NonEmptySet.force(byTag(tagId)), p))
+        }
+
+        // Describe derivation
+        if (allTags.nonEmpty) {
+          val dt = p.config.fields.custom(fieldId).derivativeTags
+          result.append("\n\nDerivation\n")
+
+          @tailrec
+          def showDerivation(tags: Set[ApplicableTagId]): Unit = {
+            def render(sep: String): Unit = {
+              result.append("\n  = ")
+              MutableArray(tags)
+                .sort(orderingByPos)
+                .iterator()
+                .map(tagCfg.needApplicableTag(_).key.with_#)
+                .mkString(sep)
+                .|>(result.append)
+            }
+            val next = dt.reduce(tags, recursively = false)
+            if (next eq tags) {
+              render(" ")
+            } else {
+              render(" + ")
+              showDerivation(next)
+            }
+          }
+
+          showDerivation(allTags.toSet)
+        }
+
+        result.toString
+      }
   }
 
   // ===================================================================================================================

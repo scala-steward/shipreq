@@ -1,7 +1,9 @@
 package shipreq.webapp.base.text
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
-import japgolly.microlibs.utils.Memo
+import japgolly.microlibs.utils.{ConciseIntSetFormat, Memo}
+import nyaya.util.Multimap
 import scala.collection.immutable.SortedSet
 import shipreq.base.util.SafeStringOps._
 import shipreq.base.util._
@@ -84,6 +86,24 @@ object PlainText {
 
   def pubid(mnemonic: ReqType.Mnemonic, pos: ReqTypePos): String =
     mnemonic.value ~ "-" ~ pos.value
+
+  def concisePubidSet(reqIds: NonEmptySet[ReqId], p: Project): String = {
+    val reqs = p.content.reqs
+    var byType = Multimap.empty[ReqTypeId, Set, Int]
+    for (reqId <- reqIds) {
+      val pubid = reqs.need(reqId).pubid
+      byType = byType.add(pubid.reqTypeId, pubid.pos.value)
+    }
+    val reqTypes = MutableArray(byType.keyIterator).sort(p.config.reqTypes.reqTypeIdOrdering)
+    reqTypes.iterator().map { rt =>
+      val prefix = p.config.reqTypes.need(rt).mnemonic.value + "-"
+      val ps = byType(rt)
+      if (ps.sizeIs == 1)
+        prefix + ps.head.toString
+      else
+        s"$prefix{${ConciseIntSetFormat(ps)}}"
+    }.mkString(",")
+  }
 
   def reqTypeShort(rt: ReqType): String =
     rt.mnemonic.value

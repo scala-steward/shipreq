@@ -198,6 +198,18 @@ object VirtualProjectTagsTest extends TestSuite {
     assertEq(PlainText.pubidByReqId(reqId, p), actual = actual, expect = expect)
   }
 
+  private def assertDescDerivation(p     : Project,
+                                   f     : CustomField.Tag.Id,
+                                   reqId : ReqId)
+                                  (expect: String)(implicit l: Line): Unit = {
+    val actual =
+      p.virtualTags(reqId)
+        .childrenSummary(f)
+        .descDerivation
+        .orNull
+    assertMultiline(PlainText.pubidByReqId(reqId, p), actual = actual, expect = expect.trim)
+  }
+
   override def tests = Tests {
     "derivativeTags" - {
 
@@ -307,6 +319,36 @@ object VirtualProjectTagsTest extends TestSuite {
                 assertProgressBar(p, f, fb1)("(1.0) 11% analysed, (7.0) 78% implemented, (1.0) 11% rejected")
               }
             }
+          }
+        }
+        "descDerivation" - {
+          def p = step5.project
+          "fb1" - {
+            // + FR-1: implemented (manual)
+            // + FR-2: implemented (manual)
+            // + FR-3: implemented (manual)
+            // + FR-4: implemented (manual)
+            // + IV-1: analysed (manual)
+            // + IV-1: implemented (derived)
+            // + IV-2: rejected (manual)
+            // + IV-3: analysed (manual)
+            // + IV-3: implemented (derived)
+            // + MF-1: implemented (derived)
+            assertDescDerivation(p, statusField, fb1)(
+              """
+                |Factors
+                |
+                |  #analysed    - IV-{1,3}
+                |  #implemented - FR-{1-4},IV-{1,3},MF-1
+                |  #rejected    - IV-2
+                |
+                |Derivation
+                |
+                |  = #analysed + #implemented + #rejected
+                |  = #implemented + #rejected
+                |  = #implemented
+                |
+                |""".stripMargin)
           }
         }
       }
