@@ -160,9 +160,6 @@ object VirtualProjectTags {
   }
 
   sealed trait ChildrenSummary {
-    final type ByTag = Map[Option[ApplicableTagId], Double]
-    def byTag: ByTag
-
     final type ProgressBar = ArraySeq[ProgressBarPortion]
     def progressBar: ProgressBar
 
@@ -1101,7 +1098,7 @@ object VirtualProjectTags {
 
     import mutableResults._
 
-    private lazy val results: (Int, ByTag, ProgressBar) =
+    private lazy val results: (Int, ProgressBar) =
       if (dtFactors.contains(fieldId)) {
         val allFactors = dtFactors(fieldId)
         val tags       = p.config.tags
@@ -1163,16 +1160,13 @@ object VirtualProjectTags {
         }
 
         // Reorganise results
-        var byTag = Map.empty[Option[ApplicableTagId], Double] // TODO remove?
         val _progressBar = Array.newBuilder[ProgressBarPortion]
         for ((k, v) <- _byTag) {
           val tagId = k.some
           val tag = Some(tags.needApplicableTag(k))
-          byTag = byTag.updated(tagId, v.value)
           _progressBar += ProgressBarPortion(tagId, tag, v.value, total)
         }
         if (noTag > 0d) {
-          byTag = byTag.updated(None, noTag)
           _progressBar += ProgressBarPortion(None, None, noTag, total)
         }
 
@@ -1182,14 +1176,13 @@ object VirtualProjectTags {
         scala.util.Sorting.quickSort(progressBarArray)(progressBarOrder)
         val progressBar = ArraySeq.unsafeWrapArray(progressBarArray)
 
-        (total, byTag, progressBar)
+        (total, progressBar)
 
       } else
-        (0, Map.empty, ArraySeq.empty)
+        (0, ArraySeq.empty)
 
     override def total       = results._1
-    override def byTag       = results._2
-    override def progressBar = results._3
+    override def progressBar = results._2
   }
 
   // ===================================================================================================================

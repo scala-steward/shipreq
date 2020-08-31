@@ -172,12 +172,10 @@ object VirtualProjectTagsTest extends TestSuite {
               case Live =>
                 val relevantChildren = reqChildren.filterNot(r => f.fieldReqTypeRules(r.reqTypeId).isNA)
                 val expectedTotal = relevantChildren.length + 1
-                assertEqWithTolerance(desc, c.byTag.valuesIterator.sum, expectedTotal)
                 assertEqWithTolerance(desc, c.progressBar.iterator.map(_.portion).sum, expectedTotal)
                 assertEq(c.total, expectedTotal)
 
               case Dead =>
-                assertEq(c.byTag, Map.empty: c.ByTag)
                 assertEq(c.progressBar, ArraySeq.empty: c.ProgressBar)
                 assertEq(c.total, 0)
             }
