@@ -341,14 +341,35 @@
                 .tags
                   .ui.label.is-tag(style="background:#f5f100; color:#000")
                     analysed
-                  .ui.label.is-tag(style="background:#ccf000; color:#000")
-                    ready_for_dev
-                    %i.icon.sitemap(style="margin-left:.5ex;margin-right:.0ex; opacity:.6")
+                  %div(style="display:inline-block")
+                    .has-popup.ui.label.is-tag(style="background:#ccf000; color:#000")
+                      ready_for_dev
+                      %i.icon.sitemap(style="margin-left:.5ex;margin-right:.0ex; opacity:.6")
+                    .ui.popup(style="display:none")
+                      %h4 Factors
+                      %table(style="margin-left: 2ex")
+                        %tbody
+                          %tr
+                            %td no tag
+                            %td FR-1
+                          %tr
+                            %td
+                              .ui.label.is-tag(style="background:#f5f100; color:#000") analysed
+                            %td FR-1
+                      %h4 Derivation
+                      %ol(style="margin-left: 2ex; list-style-type: none; padding-inline-start: 0; line-height: 2em; margin-block-start: 0; margin-block-end: 0;")
+                        %li
+                          = "= "
+                          .ui.label.is-tag(style="background:#f5f100; color:#000") analysed
+                          = " + "
+                          .ui.label.is-tag(style="background:#ccf000; color:#000") ready_for_dev
+                        %li
+                          = "= "
+                          .ui.label.is-tag(style="background:#ccf000; color:#000") ready_for_dev
                 .github
                   %span.progress
                     %span.progress_item(style="background:#f5f100; width:40%" title="40% analysed")
                     %span.progress_item(style="background:#ccf000; width:60%" title="60% ready_for_dev")
-
           %tr
             %th Implications
             %td
@@ -536,7 +557,7 @@
 
     $('.ui.dropdown:not(.onhover)').dropdown();
     $('.ui.dropdown.onhover').dropdown({on:"hover", delay: { show: 400 }});
-    $('.ui.has-popup').popup({delay: { show: 400, hide: 0 }});
+    $('.has-popup').popup({inline: true, delay: { show: 1, hide: 0 }});
     $('#cols-button')
       .popup({
         inline   : true,
@@ -551,13 +572,3 @@
 
     $('.ui.modal').modal();
     $('.ui.accordion').accordion('open');
-
-    // $('.ui.modal').modal('show');
-
-    /*
-    $('.inline-edit > a').on('mouseover', function(){
-      $(this).parent().removeClass('inline-edit');
-    }).on('mouseout', function(){
-      $(this).parent().addClass('inline-edit');
-    })
-    */

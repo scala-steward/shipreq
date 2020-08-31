@@ -7,10 +7,11 @@ import scala.collection.mutable
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.derivation.VirtualProjectTags.DerivationDesc
 import shipreq.webapp.base.lib.ClientUtil
 import shipreq.webapp.base.text.Grammar
-import shipreq.webapp.base.ui.semantic.Icon
-import shipreq.webapp.client.project.app.Style.{widgets => *}
+import shipreq.webapp.base.ui.semantic.{Icon, Popup}
+import shipreq.webapp.client.project.app.Style.{tags => *}
 
 final class ViewTags(project: Project) {
   import ViewTags._
@@ -99,7 +100,7 @@ final class ViewTags(project: Project) {
       }
 
     val hoverTextVdom =
-      TagMod.when(hoverText.nonEmpty)(^.title := hoverText)
+      ^.title := hoverText // yes, even when hoverText is empty so that it doesn't show "double-click to edit"
 
     if (tagInText) {
       // ---------------------------------------------------------------------------------------------------------------
@@ -132,6 +133,9 @@ final class ViewTags(project: Project) {
         name)
     }
   }
+
+  private val basic: ApplicableTagId => VdomNode =
+    cache(DisplaySettings.tag)(Valid)(_)
 
   /** Basic here means the tag has context-specific decorations. So...
     * - no provenance icon
@@ -170,12 +174,28 @@ final class ViewTags(project: Project) {
           colour.foreground eq Colour.black
         }
 
-      basicCache(vtag.validity)(t)(
-        TagMod.when(vtag.isManualInText)(tagIsFromText(foregroundIsBlack)),
-        TagMod.when(vtag.isDefault)(tagIconDefault(foregroundIsBlack)),
-        TagMod.when(vtag.isDerived)(tagIconDerived(foregroundIsBlack)),
-        tagIconDead.when(vtag.isDead),
-      )
+      val base =
+        basicCache(vtag.validity)(t)(
+          TagMod.when(vtag.isManualInText)(tagIsFromText(foregroundIsBlack)),
+          TagMod.when(vtag.isDefault)(tagIconDefault(foregroundIsBlack)),
+          TagMod.when(vtag.isDerived)(tagIconDerived(foregroundIsBlack)),
+          tagIconDead.when(vtag.isDead),
+        )
+
+      if (vtag.isDerived) {
+        <.span(
+          Popup.Js.Props(
+            options = popupOptions,
+            base    = <.span,
+            display = base,
+            popup   = vtag.derivationDesc.whenDefined(renderDerivationDesc),
+          ).render)
+      } else if (vtag.isDefault)
+        base(tagTitleDefault)
+      else if (vtag.isManualInText)
+        base(tagTitleFromText)
+      else
+        base
     }
 
     new ForReq[Out] {
@@ -189,6 +209,32 @@ final class ViewTags(project: Project) {
       override def vector(ids: Vector[ApplicableTagId], render: ApplicableTagId => Out): Out =
         ClientUtil.renderVector(ids, ClientUtil.sepSpace)(render)
     }
+  }
+
+  private def renderDerivationDesc(d: DerivationDesc): VdomNode = {
+
+    val renderFactor: DerivationDesc.Factor => VdomNode = f =>
+      <.tr(
+        factorKey(f.tag.fold("No tag": VdomNode)(basic)),
+        factorValues("— ", f.reqs))
+
+    val stepIndices = d.steps.indices
+
+    val renderStep: Int => TagMod = i => {
+      val sep = if (i == stepIndices.last) derivSpace else derivPlus
+      val step = d.steps(i)
+      <.li(derivEquals, ClientUtil.renderVector(step.tags.whole, sep)(basic))
+    }
+
+    <.div(
+      headingFactors,
+      <.table(*.derivDescFactors,
+        <.tbody(
+          d.factors.toTagMod(renderFactor))),
+      TagMod.when(stepIndices.nonEmpty)(TagMod(
+        headingDeriv,
+        <.ol(*.derivDescDerivationSteps,
+          stepIndices.toTagMod(renderStep)))))
   }
 
   val forPlainTextViewReqCache: Reusable[FilterDead => ReqId => ViewTags.ForReq[String]] =
@@ -252,8 +298,29 @@ object ViewTags {
     def vector(ids: Vector[ApplicableTagId], render: ApplicableTagId => A): A
   }
 
-  private val tagIconDead    = Icon.Trash.tag(*.tagIconDead)
-  private val tagIconDefault = Memo.bool(b => Icon.Sliders.tag(*.tagIconDefault(b)))
-  private val tagIconDerived = Memo.bool(b => Icon.Sitemap.tag(*.tagIconDerived(b)))
-  private val tagIsFromText  = Memo.bool(b => <.span(*.tagIconText(b), "#"))
+  private val tagIconDead      = Icon.Trash.tag(*.iconDead)
+  private val tagIconDefault   = Memo.bool(b => Icon.Sliders.tag(*.iconDefault(b)))
+  private val tagIconDerived   = Memo.bool(b => Icon.Sitemap.tag(*.iconDerived(b)))
+  private val tagIsFromText    = Memo.bool(b => <.span(*.iconText(b), "#"))
+  private val tagTitleDefault  = ^.title := "Tag is here because it's a tag field default"
+  private val tagTitleFromText = ^.title := "Tag is specified in this requirement's text"
+  private val headingFactors   = <.h4(*.derivDescHeading, "Derivation Factors")
+  private val headingDeriv     = <.h4(*.derivDescHeading, "Derivation")
+  private val factorKey        = <.td(*.derivDescFactorKey)
+  private val factorValues     = <.td(*.derivDescFactorValues)
+  private val derivEquals      = <.span(*.derivDescDerivationStepEquals, "=")
+  private val derivPlus        = <.span(*.derivDescDerivationStepPlus, "+"): TagMod
+  private val derivSpace       = " ": TagMod
+
+  private val popupOptions =
+    new Popup.Js.Options {
+      override val inline = true
+      override val hoverable = true
+      override val prefer = "opposite"
+      override val position = Popup.Position.TopLeft.value
+      override val delay = new Popup.Js.Options.Delay {
+        override val show = 200
+        override val hide = 300
+      }
+    }
 }

@@ -49,12 +49,13 @@ object ColumnSelector {
   private val button = Button(
     tipe = Button.Type.IconOnly(Icon.Columns))
 
-  private val ColumnCheckboxes = CheckboxList[Column] (rs =>
+  private val ColumnCheckboxes = CheckboxList[Column](rs =>
     Popup.Js.Props(
-      popupOptions,
-      button.tag,
-      rs.toTagMod(r => Popup.renderCheckbox(r.checkbox, r.label)))
-      .render)
+      options = popupOptions,
+      base    = <.div,
+      display = button.tag,
+      popup   = rs.toTagMod(r => Popup.renderCheckbox(r.checkbox, r.label))
+    ).render)
 
   private def updateColumnList(active: NonEmptyVector[Column], clicked: Column, addClicked: Boolean): NonEmptyVector[Column] =
     NonEmptyVector force {

@@ -40,6 +40,9 @@ object Style extends StyleSheet.Inline {
   private def monospace =
     BaseStyles.monospace
 
+  private val refColour =
+    color(c"#2363A1")
+
   private val hasErrorBackground =
     backgroundColor(c"#fee")
 
@@ -1344,29 +1347,97 @@ object Style extends StyleSheet.Inline {
   }
 
   // ===================================================================================================================
-  object widgets {
+  object tags {
 
-    private val tagIconBase = styleS(
+    private def tagBase(live: Live) = mixin(
+      mixinIf(live is Dead)(&.not(_.hover)(textDecoration := ^.lineThrough)),
+//      cursor.default,
+    )
+
+    private val tagLabelColour: Live => String = {
+      case Live => ""
+      case Dead => "grey"
+    }
+
+    @UsesSemanticUiManually
+    val tag = styleF(D.`live * validity`) { case (live, validity) => styleS(
+      tagBase(live),
+      padding(4 px, 6 px).important,
+      mixinIf(validity is Invalid)(hasErrorBackground.important, hasErrorColor.important, textDecoration := ^.lineThrough),
+      addClassName(s"ui label ${tagLabelColour(live)}"),
+    )}
+
+    val tagInText = styleF(D.`live * validity`) { case (live, validity) => styleS(
+      tagBase(live),
+      (live, validity) match {
+        case (Live, Valid)   => styleS(refColour)
+        case (Live, Invalid) => styleS(hasError, textDecoration := ^.lineThrough)
+        case (Dead, _)       => deadMaybeValid(validity)
+      },
+    )}
+
+    private val iconBase = styleS(
       marginLeft(0.5 ex).important,
       marginRight(`0`).important,
     )
 
-    val tagIconDead = style(
-      tagIconBase,
+    val iconDead = style(
+      iconBase,
       opacity(0.7).important,
     )
 
-    val tagIconDefault = styleF(Domain.boolean)(foregroundIsBlack => styleS(
-      tagIconBase,
+    val iconDefault = styleF(Domain.boolean)(foregroundIsBlack => styleS(
+      iconBase,
       opacity(if (foregroundIsBlack) 0.4 else 0.7).important,
     ))
 
-    val tagIconDerived = styleF(Domain.boolean)(foregroundIsBlack => styleS(
-      tagIconBase,
+    val iconDerived = styleF(Domain.boolean)(foregroundIsBlack => styleS(
+      iconBase,
       opacity(if (foregroundIsBlack) 0.45 else 0.6).important,
     ))
 
-    def tagIconText = tagIconDefault
+    def iconText = iconDefault
+
+    val derivDescHeading = style(
+      marginBottom(0.6 em),
+      &.not(_.firstChild)(
+        marginTop(1 em),
+      )
+    )
+
+    private val derivDescDetails = mixin(
+      marginLeft(2 ex),
+      lineHeight(2 em),
+      whiteSpace.nowrap,
+      wordBreak.keepAll,
+    )
+
+    val derivDescFactors = style(
+      derivDescDetails,
+    )
+
+    val derivDescFactorKey = style(
+      textAlign.right,
+    )
+
+    val derivDescFactorValues = style(
+      marginLeft(1 ex),
+    )
+
+    val derivDescDerivationSteps = style(
+      derivDescDetails,
+      listStyleType := "none",
+      paddingInlineStart(`0`),
+      marginBlockStart(`0`),
+      marginBlockEnd(`0`),
+    )
+
+    val derivDescDerivationStepEquals = style(marginRight(1 ex))
+    val derivDescDerivationStepPlus = style(margin.horizontal(0.5 ex))
+  }
+
+  // ===================================================================================================================
+  object widgets {
 
     val richCodeBlockError = style(
       backgroundColor(c"#ddd"),
@@ -1424,8 +1495,6 @@ object Style extends StyleSheet.Inline {
         padding(1 px, `0`).important,
       ),
     )
-
-    private val refColour = color(c"#2363A1")
 
     private def blankLineHeight = 0.8 em
 
@@ -1486,33 +1555,6 @@ object Style extends StyleSheet.Inline {
       height(100 %%),
       width(11 ex),
       borderRadius(0.3 ex))
-
-    private def tagBase(live: Live) = mixin(
-      mixinIf(live is Dead)(&.not(_.hover)(textDecoration := ^.lineThrough)),
-//      cursor.default,
-    )
-
-    private val tagLabelColour: Live => String = {
-      case Live => ""
-      case Dead => "grey"
-    }
-
-    @UsesSemanticUiManually
-    val tag = styleF(D.`live * validity`) { case (live, validity) => styleS(
-      tagBase(live),
-      padding(4 px, 6 px).important,
-      mixinIf(validity is Invalid)(hasErrorBackground.important, hasErrorColor.important, textDecoration := ^.lineThrough),
-      addClassName(s"ui label ${tagLabelColour(live)}"),
-    )}
-
-    val tagInText = styleF(D.`live * validity`) { case (live, validity) => styleS(
-      tagBase(live),
-      (live, validity) match {
-        case (Live, Valid)   => styleS(refColour)
-        case (Live, Invalid) => styleS(hasError, textDecoration := ^.lineThrough)
-        case (Dead, _)       => deadMaybeValid(validity)
-      },
-    )}
 
     val reqTypeShort = styleF(D.live)(a => styleS(
       hoverShowsInfo,
@@ -1750,6 +1792,7 @@ object Style extends StyleSheet.Inline {
     reqTypeConfig.implicationHelp,
     savedViews.activeItem,
     tagConfig.tagTree,
+    tags.iconDead,
     widgets.issueDesc,
     widgets.reqTypeSelector.dropdown,
     widgets.splitScreen.left,
