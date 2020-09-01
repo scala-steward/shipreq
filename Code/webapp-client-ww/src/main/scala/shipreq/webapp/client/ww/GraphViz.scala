@@ -104,7 +104,7 @@ object GraphViz {
       sb append escapeAttrValue(label)
     }
 
-    def setId(id: String): Unit = {
+    def setIdAttr(id: String): Unit = {
       sb append "id="
       sb append escapeAttrValue(id)
     }
@@ -115,7 +115,7 @@ object GraphViz {
 
     /** [id="x"] */
     def idAttr(id: String): Unit =
-      attrBlock(setId(id))
+      attrBlock(setIdAttr(id))
 
     /** hover text. TITLE in HTML */
     def setTooltip(tooltip: String): Unit = {

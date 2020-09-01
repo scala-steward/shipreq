@@ -24,9 +24,9 @@ object WebWorkerCmd {
 
   type Ord = Option[EventOrd.Latest]
 
-  final case class GraphUseCaseStepFlow(ord: Ord,
-                                        id : UseCaseId,
-                                        ctx: ProjectText.Context) extends WebWorkerCmd[ErrorMsg \/ Svg]
+  final case class GraphUseCaseFlow(ord: Ord,
+                                    id : UseCaseId,
+                                    ctx: ProjectText.Context) extends WebWorkerCmd[ErrorMsg \/ Svg]
 
   final case class GraphReqImplications(ord       : Ord,
                                         focus     : ReqId,
@@ -67,18 +67,18 @@ object WebWorkerCmd {
   implicit val picklerErrorMsgOrSvg: Pickler[ErrorMsg \/ Svg] =
     pickleDisj
 
-  private implicit val picklerGraphUseCaseStepFlow: Pickler[GraphUseCaseStepFlow] =
-    new Pickler[GraphUseCaseStepFlow] {
-      override def pickle(a: GraphUseCaseStepFlow)(implicit state: PickleState): Unit = {
+  private implicit val picklerGraphUseCaseStepFlow: Pickler[GraphUseCaseFlow] =
+    new Pickler[GraphUseCaseFlow] {
+      override def pickle(a: GraphUseCaseFlow)(implicit state: PickleState): Unit = {
         state.pickle(a.ord)
         state.pickle(a.id)
         state.pickle(a.ctx)
       }
-      override def unpickle(implicit state: UnpickleState): GraphUseCaseStepFlow = {
+      override def unpickle(implicit state: UnpickleState): GraphUseCaseFlow = {
         val ord = state.unpickle[Ord]
         val id  = state.unpickle[UseCaseId]
         val ctx = state.unpickle[ProjectText.Context]
-        GraphUseCaseStepFlow(ord, id, ctx)
+        GraphUseCaseFlow(ord, id, ctx)
       }
     }
 
@@ -123,7 +123,7 @@ object WebWorkerCmd {
       private[this] final val KeyUpdateProject        = 1
       private[this] final val KeyGraphAllImplications = 2
       private[this] final val KeyGraphReqImplications = 3
-      private[this] final val KeyGraphUseCaseStepFlow = 4
+      private[this] final val KeyGraphUseCaseFlow     = 4
       private[this] final val KeyGraphInline          = 5
       override def pickle(a: WebWorkerCmd[_])(implicit state: PickleState): Unit =
         a match {
@@ -131,7 +131,7 @@ object WebWorkerCmd {
           case b: UpdateProject        => state.enc.writeByte(KeyUpdateProject       ); state.pickle(b)
           case b: GraphAllImplications => state.enc.writeByte(KeyGraphAllImplications); state.pickle(b)
           case b: GraphReqImplications => state.enc.writeByte(KeyGraphReqImplications); state.pickle(b)
-          case b: GraphUseCaseStepFlow => state.enc.writeByte(KeyGraphUseCaseStepFlow); state.pickle(b)
+          case b: GraphUseCaseFlow     => state.enc.writeByte(KeyGraphUseCaseFlow    ); state.pickle(b)
           case b: GraphInline          => state.enc.writeByte(KeyGraphInline         ); state.pickle(b)
         }
       override def unpickle(implicit state: UnpickleState): WebWorkerCmd[_] =
@@ -140,7 +140,7 @@ object WebWorkerCmd {
           case KeyUpdateProject        => state.unpickle[UpdateProject]
           case KeyGraphAllImplications => state.unpickle[GraphAllImplications]
           case KeyGraphReqImplications => state.unpickle[GraphReqImplications]
-          case KeyGraphUseCaseStepFlow => state.unpickle[GraphUseCaseStepFlow]
+          case KeyGraphUseCaseFlow     => state.unpickle[GraphUseCaseFlow]
           case KeyGraphInline          => state.unpickle[GraphInline]
         }
     }

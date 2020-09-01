@@ -18,18 +18,18 @@ object Service extends Server.Service[WebWorkerCmd] {
       case UpdateProject(ves) =>
         state.updateProject(ves).asAsyncCallback.ret(NoResult)
 
-      case GraphUseCaseStepFlow(ord, id, ctx) =>
+      case GraphUseCaseFlow(ord, id, ctx) =>
         for {
           _ <- state.await(ord)
           p <- state.acProject
-          x <- UseCaseStepFlow(id, p, ctx).toSvg
+          x <- new UseCaseFlowGraph(id, p, ctx).svg
         } yield x
 
       case GraphReqImplications(ord, focus, filterDead) =>
         for {
           _ <- state.await(ord)
           p <- state.acProject
-          x <- ImplicationGraph(focus, filterDead, p).toSvg
+          x <- new ReqImpGraph(focus, filterDead, p).svg
         } yield x
 
       case GraphAllImplications(ord, filterDead, scope, config) =>
@@ -37,11 +37,10 @@ object Service extends Server.Service[WebWorkerCmd] {
           _  <- state.await(ord)
           p  <- state.acProject
           pt <- state.acPlainText
-          x  <- ReqGraph(p, pt, filterDead, scope, config).toSvg
+          x  <- new ProjectImpGraph(p, pt, filterDead, scope, config).svg
         } yield x
 
       case GraphInline(dot) =>
         DOT(dot).toSvg
-
     }
 }

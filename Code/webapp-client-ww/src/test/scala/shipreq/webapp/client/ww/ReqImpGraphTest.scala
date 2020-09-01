@@ -5,14 +5,19 @@ import shipreq.webapp.base.test._
 import shipreq.webapp.client.ww.GraphViz.DOT
 import utest._
 
-object ImplicationGraphTest extends TestSuite {
+object ReqImpGraphTest extends TestSuite {
   import GraphTestUtil._
 
+  private def render(focus     : ReqId,
+                     filterDead: FilterDead,
+                     project   : Project): DOT =
+    new ReqImpGraph(focus, filterDead, project).dot
+  
   override def tests = Tests {
 
     "basic" - {
       import SampleImplicationGraph._
-      val actual = ImplicationGraph(mf3, HideDead, project)
+      val actual = render(mf3, HideDead, project)
       val expect = DOT(
         """
           |digraph G{bgcolor=transparent;rankdir=LR;
@@ -62,7 +67,7 @@ object ImplicationGraphTest extends TestSuite {
 
     "hideDead" - {
       import SampleImplicationGraph._
-      val actual = ImplicationGraph(mf3, HideDead, SIG_dead_FR7_MF4)
+      val actual = render(mf3, HideDead, SIG_dead_FR7_MF4)
       val expect = DOT(
         """
           |digraph G{bgcolor=transparent;rankdir=LR;
@@ -108,7 +113,7 @@ object ImplicationGraphTest extends TestSuite {
 
     "showDead" - {
       import SampleImplicationGraph._
-      val actual = ImplicationGraph(mf3, ShowDead, SIG_dead_FR7_MF4)
+      val actual = render(mf3, ShowDead, SIG_dead_FR7_MF4)
       val expect = DOT(
         """
           |digraph G{bgcolor=transparent;rankdir=LR;
@@ -164,7 +169,7 @@ object ImplicationGraphTest extends TestSuite {
         //               fr2 → fr3
         //         mf2 ↗
         import SampleImplicationGraph._
-        val actual = ImplicationGraph(fr1, HideDead, project)
+        val actual = render(fr1, HideDead, project)
         val expect = DOT(
           s"""
              |digraph G{bgcolor=transparent;rankdir=LR;
@@ -210,7 +215,7 @@ object ImplicationGraphTest extends TestSuite {
         //          ↑     ↑
         //         MF4   MF1
         import SampleImplicationGraph2._
-        val actual = ImplicationGraph(fb4, HideDead, project)
+        val actual = render(fb4, HideDead, project)
         val expect = DOT(
           s"""
              |digraph G{bgcolor=transparent;rankdir=LR;
@@ -258,7 +263,7 @@ object ImplicationGraphTest extends TestSuite {
         //           ↙   ↘
         // [FB4] → FB3 → FR1
         import SampleImplicationGraph3._
-        val actual = ImplicationGraph(fb4, HideDead, project)
+        val actual = render(fb4, HideDead, project)
         val expect = DOT(
           s"""
              |digraph G{bgcolor=transparent;rankdir=LR;
