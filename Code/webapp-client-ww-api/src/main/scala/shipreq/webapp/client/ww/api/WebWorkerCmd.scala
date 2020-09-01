@@ -30,7 +30,8 @@ object WebWorkerCmd {
 
   final case class GraphReqImplications(ord       : Ord,
                                         focus     : ReqId,
-                                        filterDead: FilterDead) extends WebWorkerCmd[ErrorMsg \/ Svg]
+                                        filterDead: FilterDead,
+                                        colours   : Option[ImpGraphConfig.Colours]) extends WebWorkerCmd[ErrorMsg \/ Svg]
 
   final case class GraphAllImplications(ord       : Ord,
                                         filterDead: FilterDead,
@@ -88,12 +89,14 @@ object WebWorkerCmd {
         state.pickle(a.ord)
         state.pickle(a.focus)
         state.pickle(a.filterDead)
+        state.pickle(a.colours)
       }
       override def unpickle(implicit state: UnpickleState): GraphReqImplications = {
         val ord        = state.unpickle[Ord]
         val focus      = state.unpickle[ReqId]
         val filterDead = state.unpickle[FilterDead]
-        GraphReqImplications(ord, focus, filterDead)
+        val colours    = state.unpickle[Option[ImpGraphConfig.Colours]]
+        GraphReqImplications(ord, focus, filterDead, colours)
       }
     }
 

@@ -1,13 +1,15 @@
 package shipreq.webapp.client.ww
 
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview.ImpGraphConfig.GraphDir
 import scala.collection.mutable
 import shipreq.base.util._
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.savedview.ImpGraphConfig.{Colours, GraphDir}
 
 final class ReqImpGraph(focus     : ReqId,
                         filterDead: FilterDead,
-                        project   : Project) extends AbstractGraph(project, filterDead, None) {
+                        project   : Project,
+                        colours   : Option[Colours]
+                       ) extends AbstractGraph(project, filterDead) {
   import AbstractGraph._
   import ReqImpGraph._
 
@@ -15,14 +17,20 @@ final class ReqImpGraph(focus     : ReqId,
     implicit val lblFmt = LabelFormatter.pubid
     implicit val shape  = Shape.Ellipse
     val focusedReq      = reqs.need(focus)
+    val colourProvider  = colours.map(ColourProvider(_))
 
     val declared = mutable.Set.empty[ReqId]
 
     def declareNode(id: ReqId): Unit = {
       assert(!declared.contains(id))
-      nodeDeclare(id)
-      nodeAddIdAndLabel(id)
-      nodeStyleLiveOrDead(live(id))
+      colourProvider match {
+        case None =>
+          nodeDeclare(id)
+          nodeAddIdAndLabel(id)
+          nodeStyleLiveOrDead(live(id))
+        case Some(c) =>
+          c.declareNode(id)
+      }
       declared += id
     }
 
@@ -157,10 +165,13 @@ final class ReqImpGraph(focus     : ReqId,
     b.attrGroup("""rank=same;node[fillcolor="#FFC19C"]""")(
       backwards.direct.decl.foreach(declareNode))
 
-    b.attrGroup("""rank=same;node[fillcolor="#7692B7" fontcolor=white]""")(
+    var forwardsAttr = "rank=same;"
+    if (colours.isEmpty)
+      forwardsAttr += """node[fillcolor="#7692B7" fontcolor=white]"""
+    b.attrGroup(forwardsAttr)(
       forwards.direct.decl.foreach(declareNode))
 
-    b append """node[fillcolor="#D6E1EF"]""";
+    b append """node[fillcolor="#D6E1EF"]"""
     forwards.indirect.decl.foreach(declareNode)
 
     b append """node[fillcolor="#eeeeee" color="#aaaaaa" fontcolor="#444444"]"""

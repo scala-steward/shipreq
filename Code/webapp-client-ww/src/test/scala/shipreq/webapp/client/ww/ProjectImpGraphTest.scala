@@ -23,7 +23,7 @@ object ProjectImpGraphTest extends TestSuite {
       project    = p,
       plainText  = PlainText.ForProject.noCtx(p),
       filterDead = fd,
-      scope      = ImpGraphConfig.buildReqWhitelist(fd, Option(filter), p),
+      _scope     = ImpGraphConfig.buildReqWhitelist(fd, Option(filter), p),
       config     = config,
     ).dot
 

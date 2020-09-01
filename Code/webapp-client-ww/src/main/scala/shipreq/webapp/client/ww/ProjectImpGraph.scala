@@ -8,14 +8,16 @@ import shipreq.webapp.base.text.PlainText
 final class ProjectImpGraph(project   : Project,
                             plainText : PlainText.ForProject.NoCtx,
                             filterDead: FilterDead,
-                            scope     : Option[Set[ReqId]],
-                            config    : ImpGraphConfig) extends AbstractGraph(project, filterDead, scope) {
+                            _scope    : Option[Set[ReqId]],
+                            config    : ImpGraphConfig) extends AbstractGraph(project, filterDead) {
   import AbstractGraph._
+
+  override protected def scope = _scope
 
   override protected def create()(implicit b: GraphViz.Builder): Unit = {
     implicit val lblFmt = LabelFormatter(config.labelFormat, plainText)
     implicit val shape  = Shape(config.labelFormat)
-    val declareNodes    = nodeDeclarationWithColours(config.colours)
+    val colourProvider  = ColourProvider(config.colours)
     val impReqResult    = DataLogic.requiringImplication(reqTypes, imps.graph, reqs)
 
     def flow(fromId: ReqId, fromLive: Live, toIds: IterableOnce[ReqId], toLive: Live): Unit = {
@@ -42,7 +44,7 @@ final class ProjectImpGraph(project   : Project,
     subsequentNodesStyleAsImplications(shape)
     b.append(s"""edge[color="$blackish"]""")
 
-    declareNodes()
+    colourProvider.declareAllReqsInScope()
 
     // Implication required
     if (impReqResult.badIds.nonEmpty)

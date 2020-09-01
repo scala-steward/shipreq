@@ -4,7 +4,7 @@ import japgolly.scalajs.react.vdom.html_<^.{^ => ^^, _}
 import scalacss.internal.ValueT
 import shipreq.base.util._
 import shipreq.webapp.base.CssSettings._
-import shipreq.webapp.base.data.{Dead, Live, StaticField, _}
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.DragToReorderFeature.{Status => DragStatus}
 import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.ui.BaseStyles
@@ -726,6 +726,31 @@ object Style extends StyleSheet.Inline {
         marginLeft(2 px),
       )
     )
+
+    object impGraph {
+      val container = style(
+        position.relative,
+      )
+
+      val controls = style(
+        position.absolute,
+        top.`0`,
+        right.`0`,
+        background := "#fffe",
+        padding(.5 em, 1 ex, 18 px, 18 px),
+        opacity(0),
+        &.hover(
+          visibility.visible,
+          opacity(1),
+        ),
+        transition := "opacity 300ms",
+      )
+
+      val controlHeader = style(
+        fontWeight.bold,
+        marginBottom(0.25 em),
+      )
+    }
 
     object useCaseStep {
 
@@ -1818,6 +1843,7 @@ object Style extends StyleSheet.Inline {
     reqtable.page.viewCtrls,
     reqtable.table.selectionColumnHeader,
     reqdetail.detailTable,
+    reqdetail.impGraph.container,
     reqdetail.useCaseStep.container,
     fieldConfig.fieldListTable,
     reqTypeConfig.implicationHelp,

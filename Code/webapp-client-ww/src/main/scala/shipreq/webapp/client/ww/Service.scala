@@ -25,11 +25,11 @@ object Service extends Server.Service[WebWorkerCmd] {
           x <- new UseCaseFlowGraph(id, p, ctx).svg
         } yield x
 
-      case GraphReqImplications(ord, focus, filterDead) =>
+      case GraphReqImplications(ord, focus, filterDead, colours) =>
         for {
           _ <- state.await(ord)
           p <- state.acProject
-          x <- new ReqImpGraph(focus, filterDead, p).svg
+          x <- new ReqImpGraph(focus, filterDead, p, colours).svg
         } yield x
 
       case GraphAllImplications(ord, filterDead, scope, config) =>

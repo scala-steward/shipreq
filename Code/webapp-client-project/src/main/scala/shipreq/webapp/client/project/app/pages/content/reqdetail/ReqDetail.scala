@@ -1,9 +1,11 @@
 package shipreq.webapp.client.project.app.pages.content.reqdetail
 
+import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
+import monocle.macros.Lenses
 import org.scalajs.dom.ext.KeyCode
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
@@ -68,10 +70,16 @@ object ReqDetail {
   final case class ReqProps(editor: EditorFeature.ReadWrite.ForReq,
                             async : AsyncFeature.ReadWrite.D1[Cell, ErrorMsg])
 
-  type State = Modal.State
+  @Lenses
+  final case class State(modal: Modal.State, graph: ReqImplicationGraph.State)
 
-  def initState: State =
-    Modal.none
+  object State {
+    def init: State =
+      apply(Modal.none, ReqImplicationGraph.State.init)
+
+    implicit val reusability: Reusability[State] =
+      Reusability.derive
+  }
 
   /**
    * All data associated with a requirement required for this screen.
@@ -164,6 +172,9 @@ object ReqDetail {
     private val setFilterDead: Reusable[StateSnapshot.SetFn[FilterDead]] =
       Reusable.byRef((v, cb) => $.props.flatMap(_.filterDead.setStateOption(v, cb)))
 
+    private val ssGraph =
+      StateSnapshot.withReuse.zoomL(State.graph).prepareViaProps($)(_.state)
+
     private def mkRunCmdFn[Cmd <: UpdateContentCmd](onSuccess: VerifiedEvent.Seq => Callback) =
       Reusable.fn[ReqId, Cell, Cmd, Callback](
         (reqId, cell, cmd) =>
@@ -192,11 +203,11 @@ object ReqDetail {
       UnivEq.emptyMap
 
     private def useCaseStepRef(id: UseCaseStepId): EditorNavParent.ComponentRef =
-      useCaseStepRefs.get(id).getOrElse {
+      useCaseStepRefs.getOrElse(id, {
         val ref = Ref.toScalaComponent(EditorNavParent.Component)
         useCaseStepRefs = useCaseStepRefs.updated(id, ref)
         ref
-      }
+      })
 
     private def startUseCaseStepEditor(id: UseCaseStepId): Callback =
       for {
@@ -210,7 +221,7 @@ object ReqDetail {
       } yield ()
 
     private def setModal(modal: Modal.State): Callback =
-      $.props >>= (_.state setState modal)
+      $.props.flatMap(_.state.zoomStateL(State.modal) setState modal)
 
     private def clearModal: Callback =
       setModal(Modal.none)
@@ -230,7 +241,7 @@ object ReqDetail {
 
     def render(p: DynamicProps): VdomElement =
       <.main(
-        p.state.value renderOrElse {
+        p.state.value.modal renderOrElse {
           refreshPx()
           pxData.value() match {
             case \/-(data)             => renderDetail(p, data)
@@ -270,6 +281,7 @@ object ReqDetail {
       val view         = reusableView.value
       val reqProps     = props.reqProps(req.id)
       val fieldName    = pxProjectConfig.value().fieldName
+      val state        = props.state.value
 
       def reqEditor(fk: FieldKey.ForSomeReq): EditorFeature.ReadWrite.For[fk.type] =
         reqProps.editor(fk, data.pxProjectWidgets, data.filterDead)
@@ -404,16 +416,21 @@ object ReqDetail {
 
           case Row.ImplicationGraph =>
             withoutReusability(StaticField.ImplicationGraph.name) { cell =>
-              cell.nonDirectlyEditableNavParent(
-                ImplicationGraph.Props.FocusReq(
-                  ord         = data.ord,
-                  focus       = req.id,
-                  filterDead  = data.filterDead,
-                  project     = project,
-                  plainText   = data.pxPlainText.value(),
-                  reqDetailRC = reqDetailRC,
-                  webWorker   = webWorker
-                ).render)
+              cell.nonDirectlyEditableNavParent {
+                val graph =
+                  ImplicationGraph.Props.FocusReq(
+                    ord         = data.ord,
+                    focus       = req.id,
+                    filterDead  = data.filterDead,
+                    project     = project,
+                    plainText   = data.pxPlainText.value(),
+                    colours     = state.graph.colours,
+                    reqDetailRC = reqDetailRC,
+                    webWorker   = webWorker
+                  )
+                val ss = ssGraph(state)
+                ReqImplicationGraph.Props(graph, ss).render
+              }
             }
 
           case Row.UseCaseStepsN => useCaseStepsCell(UiText.FieldNames.useCaseStepTreeN, _.stepsN)

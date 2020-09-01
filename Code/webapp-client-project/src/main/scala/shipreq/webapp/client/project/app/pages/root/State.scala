@@ -146,7 +146,7 @@ object State {
       preview                    = PreviewFeature.State.Composite.init,
       _filterDead                = p.savedViews.map(_.default.view.filterDead).getOrElse(HideDead),
       reqTable                   = reqtable.ReqTablePage.State.init,
-      reqDetail                  = ReqDetail.initState,
+      reqDetail                  = ReqDetail.State.init,
       newReqButton               = None,
       issuesPage                 = IssuesPage.State.init,
       toast                      = Toast.State.init,

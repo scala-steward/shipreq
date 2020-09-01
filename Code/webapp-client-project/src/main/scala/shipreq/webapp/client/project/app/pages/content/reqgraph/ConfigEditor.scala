@@ -1,19 +1,18 @@
 package shipreq.webapp.client.project.app.pages.content.reqgraph
 
-import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.NonEmptyArraySeq
-import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
 import shipreq.webapp.base.data.savedview.ImpGraphConfig.{Colours, GraphDir, LabelFormat}
-import shipreq.webapp.base.data.{Dead, FilterDead, ProjectConfig, SpecialBuiltInField, TagGroupId, Tags}
+import shipreq.webapp.base.data.{FilterDead, ProjectConfig, SpecialBuiltInField, Tags}
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.ui.semantic.Icon
 import shipreq.webapp.base.ui.widgets.Dropdown
 import shipreq.webapp.client.project.app.Style.{reqgraphPage => *}
+import shipreq.webapp.client.project.lib.GraphColours
 
 private[reqgraph] object ConfigEditor {
 
@@ -92,60 +91,8 @@ private[reqgraph] object ConfigEditor {
     private val pxSelectedColours: Px[Colours] =
       Px.props($).map(_.state.value.colours).withReuse.autoRefresh
 
-    private val coloursKey: Colours => Dropdown.ItemKey = {
-      case Colours.ByReqType => "r"
-      case Colours.ByTag(id) => "t" + id.value.toString
-    }
-
-    private type Unsorted = (String, Dropdown.Item[Colours])
-
-    private val staticItems: ArraySeq[Unsorted] =
-      ArraySeq(
-        UiText.FieldNames.fieldType -> Dropdown.Item(
-          key = coloursKey(Colours.ByReqType),
-          label = UiText.FieldNames.fieldType,
-          value = Colours.ByReqType,
-        ),
-      )
-
     private val pxColourOptions: Px[NonEmptyArraySeq[Dropdown.Item[Colours]]] =
-      for {
-        tags     <- pxTags
-        fd       <- pxFilterDead
-        selected <- pxSelectedColours
-      } yield {
-
-        var extraTagGroupId: Option[TagGroupId] =
-          selected match {
-            case Colours.ByReqType => None
-            case Colours.ByTag(id) => Some(id)
-          }
-
-        var tagGroups =
-          fd.filterFn.iteratorBy(tags.tagGroupIterator())(_.live)
-
-            .tapEach(tg => if (extraTagGroupId.contains(tg.id)) extraTagGroupId = None)
-            .toVector
-
-        for (id <- extraTagGroupId)
-          tagGroups :+= tags.needTagGroup(id)
-
-        def tagGroupItems: Iterator[Unsorted] =
-          tagGroups.iterator.map { g =>
-            val txt = "Tag: " + g.name
-            val col = Colours.ByTag(g.id)
-            txt -> Dropdown.Item(
-              key = coloursKey(col),
-              label = <.span(*.deadDropdownItem.when(g.live is Dead), txt),
-              value = col,
-            )
-          }
-
-        def all: Iterator[Unsorted] =
-          staticItems.iterator ++ tagGroupItems
-
-        NonEmptyArraySeq.force(MutableArray(all).sortBy(_._1).map(_._2).arraySeq)
-      }
+      GraphColours.pxOptions(pxTags, pxFilterDead, pxSelectedColours.map(Some(_)))
 
     private val graphDirHeader = <.div(*.configGraphDirHeader, "Direction")
     private val labelsHeader   = <.div(*.configLabelsHeader, "Labels")
@@ -170,7 +117,7 @@ private[reqgraph] object ConfigEditor {
       val coloursEditor =
         Dropdown.Props.NonEmpty(
           items    = pxColourOptions.value(),
-          selected = coloursKey(p.state.value.colours))(
+          selected = GraphColours.key(p.state.value.colours))(
           onChange = i => p.state.modState(_.copy(colours = i.value))
         ).render
 

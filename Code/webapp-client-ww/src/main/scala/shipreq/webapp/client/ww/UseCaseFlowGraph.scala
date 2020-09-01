@@ -15,7 +15,7 @@ import shipreq.webapp.base.text.{PlainText, ProjectText}
  */
 final class UseCaseFlowGraph(id     : UseCaseId,
                              project: Project,
-                             ctx    : ProjectText.Context) extends AbstractGraph(project, HideDead, None) {
+                             ctx    : ProjectText.Context) extends AbstractGraph(project, HideDead) {
 
   import AbstractGraph._
   import StaticField.{ExceptionStepTree => E, NormalAltStepTree => NA, UseCaseStepTree => F}
