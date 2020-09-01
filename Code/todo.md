@@ -48,7 +48,6 @@ v2.2
 
 ### Implement
 * add control to req detail imp graph to change colours (eg. show Priority colours)
-* ability to embed tweets
 * pressing enter on reqtable in pubid should navigate to req
 * when session expired, it should still always retry in case re-auth occurred in another tab
 * if I have a flat list of unconnected nodes in ReqGraph, they appear backwards (ie. IV1, FR3, FR2, FR1)
@@ -96,6 +95,7 @@ Backlog (eventually)
 * Tag/Implication Browser (aka Distribution manager/console)
 
 ### Functional changes
+* ability to embed tweets & images
 * Dual clipboard formats: one for ShipReq, one for everywhere else. Exclude ref titles from ShipReq version.
   (waiting for Chrome/FF to implement https://www.w3.org/TR/clipboard-apis; Currently only text/plain & image/png supported.)
 * big long (SVG) code blocks take over the screen. Preview not visible anymore when editing.
