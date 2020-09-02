@@ -1,18 +1,25 @@
 package shipreq.webapp.client.ww
 
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.data.savedview.ImpGraphConfig.Colours
 import shipreq.webapp.base.test._
 import shipreq.webapp.client.ww.GraphViz.DOT
 import utest._
 
-object ImplicationGraphTest extends TestSuite {
+object ReqImpGraphTest extends TestSuite {
   import GraphTestUtil._
 
+  private def render(focus     : ReqId,
+                     filterDead: FilterDead,
+                     project   : Project,
+                     colours   : Option[Colours] = None): DOT =
+    new ReqImpGraph(focus, filterDead, project, colours).dot
+  
   override def tests = Tests {
 
     "basic" - {
       import SampleImplicationGraph._
-      val actual = ImplicationGraph(mf3, HideDead, project)
+      val actual = render(mf3, HideDead, project)
       val expect = DOT(
         """
           |digraph G{bgcolor=transparent;rankdir=LR;
@@ -62,7 +69,7 @@ object ImplicationGraphTest extends TestSuite {
 
     "hideDead" - {
       import SampleImplicationGraph._
-      val actual = ImplicationGraph(mf3, HideDead, SIG_dead_FR7_MF4)
+      val actual = render(mf3, HideDead, SIG_dead_FR7_MF4)
       val expect = DOT(
         """
           |digraph G{bgcolor=transparent;rankdir=LR;
@@ -108,7 +115,7 @@ object ImplicationGraphTest extends TestSuite {
 
     "showDead" - {
       import SampleImplicationGraph._
-      val actual = ImplicationGraph(mf3, ShowDead, SIG_dead_FR7_MF4)
+      val actual = render(mf3, ShowDead, SIG_dead_FR7_MF4)
       val expect = DOT(
         """
           |digraph G{bgcolor=transparent;rankdir=LR;
@@ -164,7 +171,7 @@ object ImplicationGraphTest extends TestSuite {
         //               fr2 → fr3
         //         mf2 ↗
         import SampleImplicationGraph._
-        val actual = ImplicationGraph(fr1, HideDead, project)
+        val actual = render(fr1, HideDead, project)
         val expect = DOT(
           s"""
              |digraph G{bgcolor=transparent;rankdir=LR;
@@ -210,7 +217,7 @@ object ImplicationGraphTest extends TestSuite {
         //          ↑     ↑
         //         MF4   MF1
         import SampleImplicationGraph2._
-        val actual = ImplicationGraph(fb4, HideDead, project)
+        val actual = render(fb4, HideDead, project)
         val expect = DOT(
           s"""
              |digraph G{bgcolor=transparent;rankdir=LR;
@@ -258,7 +265,7 @@ object ImplicationGraphTest extends TestSuite {
         //           ↙   ↘
         // [FB4] → FB3 → FR1
         import SampleImplicationGraph3._
-        val actual = ImplicationGraph(fb4, HideDead, project)
+        val actual = render(fb4, HideDead, project)
         val expect = DOT(
           s"""
              |digraph G{bgcolor=transparent;rankdir=LR;
@@ -303,5 +310,95 @@ object ImplicationGraphTest extends TestSuite {
       }
     }
 
+    "colourByReqType" - {
+      import SampleImplicationGraph._
+      val actual = render(mf3, HideDead, project, Some(Colours.ByReqType))
+      val expect = DOT(
+        """
+          |digraph G{bgcolor=transparent;rankdir=LR;
+          |node[style=filled shape=ellipse color="#222222"]
+          |
+          |F[style=bold fillcolor="#cccccc" label="MF-3"]
+          |
+          |node[fillcolor="#FFEDE2"]
+          |21[id="BR-1" label="BR-1" fillcolor="#B7D058"]
+          |
+          |{rank=same;node[fillcolor="#FFC19C"]
+          |22[id="BR-2" label="BR-2" fillcolor="#B7D058"]
+          |}
+          |
+          |{rank=same;
+          |14[id="MF-4" label="MF-4" fillcolor="#93D5BA"]
+          |34[id="FR-4" label="FR-4" fillcolor="#D5A8C9"]
+          |}
+          |
+          |node[fillcolor="#D6E1EF"]
+          |36[id="FR-6" label="FR-6" fillcolor="#D5A8C9"]
+          |35[id="FR-5" label="FR-5" fillcolor="#D5A8C9"]
+          |15[id="MF-5" label="MF-5" fillcolor="#93D5BA"]
+          |
+          |node[fillcolor="#eeeeee" color="#aaaaaa" fontcolor="#444444"]
+          |
+          |edge[color="#FFC19C"]
+          |21->22;
+          |
+          |edge[color="#C27040"]
+          |22->F;
+          |
+          |edge[color="#31537F"]
+          |F->14;
+          |F->34;
+          |
+          |edge[color="#7692B7"]
+          |14->36;
+          |34->35;
+          |35->15;
+          |
+          |edge[color="#aaaaaa" style=dashed]
+          |}
+          """.stripMargin)
+      assertDOT(actual, expect)
+    }
+
+    "colourByReqType" - {
+      import SampleProject8.Values._
+      import SampleProject8._
+      val actual = render(mfs(1), HideDead, project, Some(Colours.ByTag(priTG)))
+      val expect = DOT(
+        """
+          |digraph G{
+          |bgcolor=transparent;
+          |rankdir=LR;
+          |node[style=filled shape=ellipse color="#222222"]
+          |F[style=bold fillcolor="#cccccc" label="MF-1"]
+          |
+          |node[fillcolor="#FFEDE2"]
+          |{rank=same;
+          |  node[fillcolor="#FFC19C"]
+          |}
+          |
+          |{rank=same;
+          |  1002[id="FR-2" label="FR-2" style=filled fillcolor="#0076f5" fontcolor="#ffffff"]
+          |}
+          |
+          |node[fillcolor="#D6E1EF"]
+          |1127[id="MF-27" label="MF-27" style=filled fillcolor="#0076f5" fontcolor="#ffffff"]
+          |
+          |node[fillcolor="#eeeeee" color="#aaaaaa" fontcolor="#444444"]
+          |edge[color="#FFC19C"]
+          |edge[color="#C27040"]
+          |edge[color="#31537F"]
+          |
+          |F->1002;
+          |
+          |edge[color="#7692B7"]
+          |
+          |1002->1127;
+          |
+          |edge[color="#aaaaaa" style=dashed]
+          |}
+          """.stripMargin)
+      assertDOT(actual, expect)
+    }
   }
 }

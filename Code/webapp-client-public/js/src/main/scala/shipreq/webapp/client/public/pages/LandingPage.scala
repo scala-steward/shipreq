@@ -5,8 +5,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
-import shipreq.base.util.ErrorMsg
-import shipreq.webapp.base.data._
+import shipreq.base.util.{Disabled, Enabled, ErrorMsg}
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
@@ -19,8 +18,9 @@ import shipreq.webapp.client.public.Styles.{landingPage => *}
 
 object LandingPage {
 
-  final case class Props(state: StateSnapshot[State],
+  final case class Props(state : StateSnapshot[State],
                          asyncW: AsyncFeature.Write.D0[ErrorMsg],
+                         am    : AssetManifest,
                          submit: ServerSideProcInvoker[Request, ErrorMsg, Unit]) {
     @inline def render = Component(this)
 
@@ -42,10 +42,10 @@ object LandingPage {
             async     = None)
   }
 
-  private val header: TagMod =
+  private def header(am: AssetManifest): TagMod =
     TagMod(
       <.div(
-        <.img(*.banner, ^.src := AssetManifest.shipreqBannerSvg, ^.alt := WebappConfig.appName)),
+        <.img(*.banner, ^.src := am.shipreqBannerSvg, ^.alt := WebappConfig.appName)),
       <.div(*.tagline,
         "Ship quality products with quality requirements."))
 
@@ -137,7 +137,7 @@ object LandingPage {
     }
 
     def render(p: Props): VdomElement =
-      <.div(*.cont, header,
+      <.div(*.cont, header(p.am),
         <.div(*.part2,
           yap(),
           renderForm(p)))

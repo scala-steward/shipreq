@@ -126,7 +126,7 @@ object CommonObs {
   // ===================================================================================================================
 
   final class Message($: DomZipperJs) {
-    val header = $(".header").innerText.trim
+    val header = $.collect01(".header").innerTexts.fold("")(_.trim)
 
     lazy val body = {
       var t = $(".content").innerText
@@ -235,6 +235,9 @@ object CommonObs {
 
       final def abort: *.Actions =
         *.action(s"Abort $field editor")(KB.Escape simulateKeyDown _.obs.editor.get)
+
+      final def set(newValue: String): *.Actions =
+        (doubleClick >> setEditorValue(newValue) >> commit).group(s"Set $field field to '$newValue'")
 
       final def change(fromTo: (String, String)): *.Actions =
         (doubleClick

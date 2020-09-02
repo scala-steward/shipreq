@@ -510,10 +510,12 @@ object MockInterpreters {
 
   val config = ServerLogicConfig(
     baseUrl                    = Url.Absolute.Base("https://test.shipreq.com"),
+    staticAssetCdn             = Some(Url.Absolute.Base("https://static.shipreq.com")),
     publicRegistration         = Allow,
     applyEventThresholdMs      = 1000,
     googleAnalyticsTrackingId  = None,
     taskmanSchema              = "test_taskman",
+    scalaJsManifest            = ScalaJsManifest("/public.js", "/home.js", "/project.js", "/ww.js"),
     ssr                        = ServerLogicConfig.SsrConfig(false),
     initTaskmanOnBoot          = false,
     initTaskmanRetry           = Retries.none,
@@ -554,6 +556,8 @@ class MockInterpreters(modCfg         : ServerLogicConfig => ServerLogicConfig =
   import MockInterpreters.catchableName
 
   implicit val config         = modCfg(MockInterpreters.config)
+  implicit val assetManifest  = config.assetManifest
+  implicit val sjsManifest    = config.scalaJsManifest
   implicit val svr            = new MockServer[Name]
   implicit val db             = specificMockDb.getOrElse(new MockDb(svr.now))
   implicit val security       = new MockSecurity(db, svr.now, config.security)

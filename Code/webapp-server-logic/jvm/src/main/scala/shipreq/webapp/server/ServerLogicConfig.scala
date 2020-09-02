@@ -9,10 +9,13 @@ import scalaz.syntax.applicative._
 import shipreq.base.ops._
 import shipreq.base.util.FxModule._
 import shipreq.base.util._
-import shipreq.webapp.server.logic.{DispatchLogic, ProjectSpaLogic}
+import shipreq.webapp.base.AssetManifest
+import shipreq.webapp.server.logic.{DispatchLogic, ProjectSpaLogic, ScalaJsManifest}
 
 @Lenses
 final case class ServerLogicConfig(baseUrl: Url.Absolute.Base,
+
+                                   staticAssetCdn: Option[Url.Absolute.Base],
 
                                    /** Whether or not public registrations are allowed.
                                      * (Registration tokens already issued will still be accepted.)
@@ -32,8 +35,12 @@ final case class ServerLogicConfig(baseUrl: Url.Absolute.Base,
                                    projectSpa: ProjectSpaLogic.Config,
                                    prometheus: ServerLogicConfig.Prometheus,
                                    security: ServerLogicConfig.Security,
+                                   scalaJsManifest: ScalaJsManifest[String],
                                    ssr: ServerLogicConfig.SsrConfig,
                                    jaegerTracingConfig: Option[Configuration]) {
+
+  val assetManifest: AssetManifest =
+    AssetManifest(staticAssetCdn)
 
   lazy val traceAlgebraFx: Trace.Algebra[Fx] =
     Trace.Algebra(
@@ -147,21 +154,72 @@ object ServerLogicConfig {
       ConfigDef.getOrUse("enabled", true).map(apply)
   }
 
-  def config: ConfigDef[ServerLogicConfig] =
-    JaegerTracingConfig.external *>
-    ( ConfigDef.need       [String  ]       ("url").map(Url.Absolute.Base.apply) |@|
-      ConfigDef.getOrUse   [Boolean ]       ("feature.publicRegistration", true).map(Allow.when) |@|
-      ConfigDef.getOrUse   [Int     ]       ("applyEvent.thresholdMs", 200).ensure_>=(0).ensure_<(1000) |@|
-      ConfigDef.get        [String  ]       ("googleAnalytics.trackingId") |@|
-      ConfigDef.need       [String  ]       ("taskman.schema") |@|
-      ConfigDef.getOrUse   [Boolean ]       ("taskman.init", true) |@|
-      RetriesJvm.config.withPrefix          ("taskman.init.retry.") |@|
-      ProjectSpaLogic.Config.defn.withPrefix("projectSpa.") |@|
-      Prometheus.config.withPrefix          ("prometheus.") |@|
-      Security.config.withPrefix            ("security.") |@|
-      SsrConfig.config.withPrefix           ("ssr.") |@|
-      JaegerTracingConfig.main              ("webapp")
-  ) (apply)
-      .withPrefix("shipreq.")
+  def config: ConfigDef[ServerLogicConfig] = {
+
+    val part1 = (
+      ConfigDef.need     [String  ]("url").map(Url.Absolute.Base.apply) |@|
+      ConfigDef.get      [String  ]("staticAssetCdn").map(_.map(Url.Absolute.Base.apply)) |@|
+      ConfigDef.getOrUse [Boolean ]("feature.publicRegistration", true).map(Allow.when) |@|
+      ConfigDef.getOrUse [Int     ]("applyEvent.thresholdMs", 200).ensure_>=(0).ensure_<(1000) |@|
+      ConfigDef.get      [String  ]("googleAnalytics.trackingId") |@|
+      ConfigDef.need     [String  ]("taskman.schema") |@|
+      ConfigDef.getOrUse [Boolean ]("taskman.init", true)
+    ).tupled
+
+    val part2 = (
+      RetriesJvm.config.withPrefix             ("taskman.init.retry.") |@|
+      ProjectSpaLogic.Config.defn.withPrefix   ("projectSpa.") |@|
+      Prometheus.config.withPrefix             ("prometheus.") |@|
+      Security.config.withPrefix               ("security.") |@|
+      ScalaJsManifest.config[String].withPrefix("scalajs.") |@|
+      SsrConfig.config.withPrefix              ("ssr.") |@|
+      JaegerTracingConfig.main                 ("webapp")
+    ).tupled
+
+    val parts = (part1 |@| part2) {
+      case ((
+          baseUrl,
+          staticAssetCdn,
+          publicRegistration,
+          applyEventThresholdMs,
+          googleAnalyticsTrackingId,
+          taskmanSchema,
+          initTaskmanOnBoot,
+        ), (
+          initTaskmanRetry,
+          projectSpa,
+          prometheus,
+          security,
+          scalaJsManifest,
+          ssr,
+          jaegerTracingConfig,
+        )) =>
+
+        val scalaJsManifest2 =
+          staticAssetCdn match {
+            case Some(cdn) => scalaJsManifest.map(path => if (path.startsWith("/s/")) (cdn / Url.Relative(path)).absoluteUrl else path)
+            case None      => scalaJsManifest
+          }
+
+        apply(
+          baseUrl                   = baseUrl,
+          staticAssetCdn            = staticAssetCdn,
+          publicRegistration        = publicRegistration,
+          applyEventThresholdMs     = applyEventThresholdMs,
+          googleAnalyticsTrackingId = googleAnalyticsTrackingId,
+          taskmanSchema             = taskmanSchema,
+          initTaskmanOnBoot         = initTaskmanOnBoot,
+          initTaskmanRetry          = initTaskmanRetry,
+          projectSpa                = projectSpa,
+          prometheus                = prometheus,
+          security                  = security,
+          scalaJsManifest           = scalaJsManifest2,
+          ssr                       = ssr,
+          jaegerTracingConfig       = jaegerTracingConfig,
+        )
+    }
+
+    JaegerTracingConfig.external *> parts.withPrefix("shipreq.")
+  }
 
 }

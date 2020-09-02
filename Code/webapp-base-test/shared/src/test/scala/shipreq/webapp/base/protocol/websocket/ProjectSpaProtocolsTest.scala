@@ -12,6 +12,7 @@ import shipreq.webapp.base.sort.SortMethod._
 import shipreq.webapp.base.test.BinaryTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.test.WebappTestUtil.verifiedEventsFromJson
+import shipreq.webapp.base.text.Atom.DisplayReqRef
 import shipreq.webapp.base.text.Text
 import sourcecode.Line
 import utest._
@@ -197,12 +198,6 @@ object ProjectSpaProtocolsTest extends TestSuite {
             assertRequest(bin, expect)
           }
 
-          "CustomFieldCreateTag" - {
-            val bin = BinaryData.fromHex("5945B41D0101020317002F0363000403000E63000703900475010038295653")
-            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldCreateTag(47.TG, FieldReqTypeRules.notApplicable.defaultTo(14.AT)(4, 7).optional(StaticReqType.UseCase))))
-            assertRequest(bin, expect)
-          }
-
           "CustomFieldCreateText" - {
             val bin = BinaryData.fromHex("5945B41D010102031804706F6F7002630080B100630001000238295653")
             val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldCreateText("poop", FieldReqTypeRules.mandatory.notApplicable(177, 1))))
@@ -217,7 +212,7 @@ object ProjectSpaProtocolsTest extends TestSuite {
 
           "CustomFieldUpdateTag" - {
             val bin = BinaryData.fromHex("5945B41D0101020302000B01520363000403000E630007039004750390040038295653")
-            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldUpdateTag(11.CFTag, CustomTagFieldGD(FieldReqTypeRules.notApplicable.defaultTo(14.AT)(4, 7, StaticReqType.UseCase)))))
+            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldUpdateTag(11.CFTag, CustomTagFieldGD.ValueForFieldReqTypeRules(FieldReqTypeRules.notApplicable.defaultTo(14.AT)(4, 7, StaticReqType.UseCase)))))
             assertRequest(bin, expect)
           }
 
@@ -254,6 +249,17 @@ object ProjectSpaProtocolsTest extends TestSuite {
           "FieldUpdateOrder" - {
             val bin = BinaryData.fromHex("5945B41D010102030E740007024E38295653")
             val expect = (ReqId(2), UpdateConfig.AndReq(FieldUpdateOrder(7.CFTag, Some(StaticField.NormalAltStepTree))))
+            assertRequest(bin, expect)
+          }
+        }
+
+        "v1.2" - {
+          "CustomFieldCreateTag" - {
+            import DerivativeTags.TagPair
+            val bin    = BinaryData.fromHex("5945B41D0106020317002F0363000403000E630007039004750100010200030005000600040008000938295653")
+            val rules  = FieldReqTypeRules.notApplicable.defaultTo(14.AT)(4, 7).optional(StaticReqType.UseCase)
+            val deriv  = DerivativeTags(Enabled, Map(TagPair(3.AT, 5.AT) -> 6.AT, TagPair(4.AT, 8.AT) -> 9.AT))
+            val expect = (ReqId(2), UpdateConfig.AndReq(CustomFieldCreateTag(47.TG, rules, deriv)))
             assertRequest(bin, expect)
           }
         }
@@ -403,7 +409,7 @@ object ProjectSpaProtocolsTest extends TestSuite {
         "v1.0" - {
           "create" - {
             val bin    = BinaryData.fromHex("5945B41D01000B0863026C04617364207267000138295653")
-            val expect = (ReqId(11),UpdateManualIssues.AndReq(Create(nonEmpty(Literal("asd "), ReqRef(GenericReqId(1))))))
+            val expect = (ReqId(11),UpdateManualIssues.AndReq(Create(nonEmpty(Literal("asd "), ReqRef(GenericReqId(1), DisplayReqRef.AsId)))))
             assertRequest(bin, expect)
           }
           "delete" - {

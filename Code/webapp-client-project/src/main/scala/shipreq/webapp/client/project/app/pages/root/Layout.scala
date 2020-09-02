@@ -5,6 +5,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
+import shipreq.webapp.base.AssetManifest
 import shipreq.webapp.base.data.{Project, ProjectMetaData}
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.text.PlainText
@@ -25,6 +26,7 @@ object Layout {
                          setConnectionStatus: ConnectionStatus => Reusable[Callback],
                          reauthModal        : ReauthenticationModal,
                          feedbackModal      : FeedbackModal,
+                         assetManifest      : AssetManifest,
                          toast              : Toast.Props,
                          rc                 : RouterCtl,
                          page               : Page,
@@ -172,6 +174,7 @@ object Layout {
     val navBar = MemberNavBar.Props(
       p.username,
       Some(p.feedbackModal),
+      p.assetManifest,
       menuLeft,
       menuRight)
 

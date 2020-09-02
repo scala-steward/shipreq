@@ -24,6 +24,7 @@ object MemberNavBar {
 
   final case class Props(username     : Username,
                          feedbackModal: Option[FeedbackModal],
+                         am           : AssetManifest,
                          left         : LeftProps,
                          right        : RightProps = noRightProps) {
     lazy val leftWithDividers = left.iterator.intersperse(Divider).toList
@@ -54,12 +55,12 @@ object MemberNavBar {
     }
   }
 
-  private val itemLogo =
+  private def itemLogo(am: AssetManifest) =
     Menu.ItemType.Link(
       <.a(
         ^.href := Urls.publicHome.relativeUrl,
         <.img(
-          ^.src := AssetManifest.shipreqCircleDarkSvg,
+          ^.src := am.shipreqCircleDarkSvg,
           ^.alt := WebappConfig.appName))
     ).toItem
 
@@ -89,7 +90,7 @@ object MemberNavBar {
       ).toItem
 
     val leftMenuItems =
-      itemLogo :: leftBreadcrumb :: Nil
+      itemLogo(p.am) :: leftBreadcrumb :: Nil
 
     val rightMenuItems =
       p.right :+ rightDropdown

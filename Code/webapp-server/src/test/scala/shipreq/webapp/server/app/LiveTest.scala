@@ -5,7 +5,7 @@ import shipreq.webapp.base.data.{Project, ProjectId}
 import shipreq.webapp.base.protocol.ajax.CommonProtocols
 import shipreq.webapp.base.protocol.entrypoint._
 import shipreq.webapp.base.user.{EmailAddr, PersonName}
-import shipreq.webapp.base.{AssetManifest, Urls, WebappConfig}
+import shipreq.webapp.base.{Urls, WebappConfig}
 import shipreq.webapp.client.public.PublicSpaProtocols.LandingPage.Request
 import shipreq.webapp.client.public.{PublicSpaEntryPoint, PublicSpaProtocols}
 import shipreq.webapp.server.logic.{Obfuscators, Security}
@@ -18,6 +18,9 @@ object LiveTest extends TestSuite {
 
   import liveTestUtils._
   import userFixture.{TestUser, user1}
+
+  private lazy val am = PrepareEnv.global().config.server.assetManifest
+  private lazy val sjsm = PrepareEnv.global().config.server.scalaJsManifest
 
   private var pid = Option.empty[ProjectId]
 
@@ -35,7 +38,7 @@ object LiveTest extends TestSuite {
 
     "root" - {
       get("/")
-        .assertSpa(AssetManifest.webappClientPublicJs, PublicSpaEntryPoint.proc)
+        .assertSpa(sjsm.public, PublicSpaEntryPoint.proc)
         .assertBodyTitle(WebappConfig.makePageTitle())
       ()
     }
@@ -58,7 +61,7 @@ object LiveTest extends TestSuite {
     }
 
     "webappClientPublicJs" - {
-      get(AssetManifest.webappClientPublicJs)
+      get(sjsm.public)
         .assertOk
         .assertContentTypeJs
         .assertBodyContains("function")
@@ -67,7 +70,7 @@ object LiveTest extends TestSuite {
     }
 
     "faviconIco" - {
-      get(AssetManifest.faviconIco)
+      get(am.faviconIco)
         .assertOk
         .assertContentType("image/x-icon")
       ()
@@ -75,7 +78,7 @@ object LiveTest extends TestSuite {
 
     "membersHome" - {
       get(Urls.memberHome.relativeUrl, user1)
-        .assertSpa(AssetManifest.webappClientHomeJs, HomeSpaEntryPoint.proc)
+        .assertSpa(sjsm.home, HomeSpaEntryPoint.proc)
         .assertBodyTitle(WebappConfig.makePageTitle())
       ()
     }
@@ -83,7 +86,7 @@ object LiveTest extends TestSuite {
     "projectSpa" - {
       val p = Obfuscators.projectId.obfuscate(pid.get)
       get(Urls.project(p).relativeUrl, user1)
-        .assertSpa(AssetManifest.webappClientProjectJs, ProjectSpaEntryPoint.proc)
+        .assertSpa(sjsm.project, ProjectSpaEntryPoint.proc)
       ()
     }
 
@@ -136,7 +139,7 @@ object LiveTest extends TestSuite {
 
       // GETs shouldn't increase session time
       assertEq(get(Urls.memberHome.relativeUrl, Some(s2)).newJwt(), None)
-      assertEq(get(AssetManifest.faviconIco, Some(s2)).newJwt(), None)
+      assertEq(get(am.faviconIco, Some(s2)).newJwt(), None)
       assertEq(get(Urls.project(Obfuscators.projectId.obfuscate(pid.get)).relativeUrl, Some(s2)).newJwt(), None)
 
       // Non-login AJAX shouldn't increase session time

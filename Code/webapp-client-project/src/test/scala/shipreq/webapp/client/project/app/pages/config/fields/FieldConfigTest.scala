@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.pages.config.fields
 
-import shipreq.base.util.Exclusive
+import shipreq.base.util.{Disabled, Enabled, Exclusive}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event._
 import shipreq.webapp.base.test.TestState._
@@ -365,7 +365,6 @@ object FieldConfigTest extends TestSuite {
 
       clickNew("Tag field")
         +> filterDead.assert(HideDead)
-        +> messageHeader.assert.empty
         +> editorDropdown.assert.contains("")
         +> editorDropdownError.assert(true) // blank
         +> editorDropdownItems.assert("Nada", "Surprise")
@@ -374,7 +373,6 @@ object FieldConfigTest extends TestSuite {
 
         >> clickFilterDead
         +> filterDead.assert(ShowDead)
-        +> messageHeader.assert.empty
         +> editorDropdown.assert.contains("")
         +> editorDropdownError.assert(true) // blank
         +> editorDropdownItems.assert("Nada", "Surprise")
@@ -383,7 +381,6 @@ object FieldConfigTest extends TestSuite {
         +> buttonsEnabled.assert(Buttons(cancel = Enabled, save = Disabled))
 
         >> setEditorDropdown("Surprise")
-        +> messageHeader.assert.empty
         +> editorDropdown.assert.contains("Surprise")
         +> editorDropdownError.assert(false)
         +> editorDropdownItems.assert("Nada", "Surprise")
@@ -533,7 +530,7 @@ object FieldConfigTest extends TestSuite {
       applyEventsSuccessfully(
         SampleProject7.project,
         Event.TagGroupCreate(1000.TG, TagGroupGD("X", ∅, Exclusive, ∅, Vector(misc1, misc2))),
-        Event.FieldCustomTagCreate(1000.CFTag, 1000.TG, CustomTagFieldGD(FieldReqTypeRules.empty))
+        Event.FieldCustomTagCreate(1000.CFTag, 1000.TG, CustomTagFieldGD.ValueForFieldReqTypeRules(FieldReqTypeRules.empty))
       )
     )(
       *.emptyAction
@@ -559,11 +556,11 @@ object FieldConfigTest extends TestSuite {
       )
     )(
       *.emptyAction
-        +> fieldDetail(StaticField.OtherTags.name).assert("Displays tags not assigned to a field.pri=high pri=med")
+        +> fieldDetail(StaticField.OtherTags.name).assert("Displays tags not assigned to a field.pri=highpri=med")
 
         >> clickFilterDead
         +> filterDead.assert(ShowDead)
-        +> fieldDetail(StaticField.OtherTags.name).assert("Displays tags not assigned to a field.misc1 misc2 pri=high pri=low pri=med")
+        +> fieldDetail(StaticField.OtherTags.name).assert("Displays tags not assigned to a field.misc1misc2pri=highpri=lowpri=med")
 
         >> selectField(StaticField.OtherTags.name)
         +> buttonsEnabled.assert(Buttons(remove = Enabled, close = Enabled))

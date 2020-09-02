@@ -9,6 +9,7 @@ import monocle.macros.Lenses
 import org.scalajs.dom.document
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{Allow, ErrorMsg}
+import shipreq.webapp.base.AssetManifest
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.feature.AsyncFeature
@@ -40,6 +41,7 @@ object ReqTablePage {
                                pxProjectWidgets      : Reusable[Px[ProjectWidgets.NoCtx]],
                                pxFilterCompilerFromFD: Px[FilterDead => Filter.Valid.Compiler],
                                reqDetailRC           : RouterCtl[ExternalPubid],
+                               assetManifest         : AssetManifest,
                                toast                 : Toast,
                                updateIO              : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
                                rowAsyncW             : AsyncFeature.Write.D1[Row.SourceId, ErrorMsg])
@@ -141,11 +143,13 @@ object ReqTablePage {
         PageSummary.Props(stats, totalSelected, fd).render
       }
 
+    val sortCriteriaEditor = new SortCriteriaEditor(assetManifest)
+
     val pxSortCriteriaEditor: Px[VdomElement] =
       for {
         o <- pxActiveOrder
         c <- pxColumnPlusAll
-      } yield SortCriteriaEditor.Props(o, modifyViewFn.map(m => o => m.modState(View.order set o)), c).render
+      } yield sortCriteriaEditor.Props(o, modifyViewFn.map(m => o => m.modState(View.order set o)), c).render
 
     val pxSelectionCtrls: Px[SelectionCtrls.Props] =
       for {

@@ -11,7 +11,7 @@ import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.ww.GraphViz.DOT
 import utest._
 
-object ReqGraphTest extends TestSuite {
+object ProjectImpGraphTest extends TestSuite {
   import GraphTestUtil._
   import SampleImplicationGraph._
 
@@ -19,13 +19,13 @@ object ReqGraphTest extends TestSuite {
                      p: Project,
                      filter: CompiledFilter = null,
                      config: ImpGraphConfig = ImpGraphConfig.default): DOT =
-    ReqGraph(
+    new ProjectImpGraph(
       project    = p,
       plainText  = PlainText.ForProject.noCtx(p),
       filterDead = fd,
-      scope      = ImpGraphConfig.buildReqWhitelist(fd, Option(filter), p),
+      _scope     = ImpGraphConfig.buildReqWhitelist(fd, Option(filter), p),
       config     = config,
-    )
+    ).dot
 
   override def tests = Tests {
 

@@ -28,7 +28,7 @@ object UseCaseStepFlowGraph {
       DisplayMode.FitToWidth
 
     override def cmd(p: Props) =
-      WebWorkerCmd.GraphUseCaseStepFlow(p.ord, p.id, p.ctx)
+      WebWorkerCmd.GraphUseCaseFlow(p.ord, p.id, p.ctx)
 
     override def enrich(p: Props, root: SVGSVGElement): Callback =
       Callback {

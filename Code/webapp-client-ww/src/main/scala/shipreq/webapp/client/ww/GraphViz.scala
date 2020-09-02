@@ -9,38 +9,38 @@ import shipreq.webapp.base.data.Svg
 import shipreq.webapp.base.data.savedview.ImpGraphConfig.GraphDir
 import shipreq.webapp.base.{AssetManifest, UiText}
 
-object GraphViz {
-  private type RawFn = js.Function1[String, js.Thenable[String]]
+final class GraphViz(raw: GraphViz.RawFn) {
+  import GraphViz._
 
-  def init(): Unit = {
-    instance
-    ()
-  }
-
-  private lazy val instance: RawFn = {
-    DedicatedWorkerGlobalScope.self.asInstanceOf[js.Dynamic].vizWasmFile = AssetManifest.vizWasm
-    DedicatedWorkerGlobalScope.self.importScripts(js.Array(AssetManifest.vizJs))
-    js.Dynamic.global.viz.asInstanceOf[RawFn]
-  }
-
-  private val titlesAndComments = "(?:<title>[^<>]*?</title>|<!--[^\u0000]*?-->)".r
-
-  def apply(dot: DOT): AsyncCallback[ErrorMsg \/ Svg] = {
+  def render(dot: DOT): AsyncCallback[ErrorMsg \/ Svg] = {
     // println(dot.content)
+
     val main: AsyncCallback[Svg] =
       for {
-        svg <- AsyncCallback.fromJsPromise(instance(dot.content))
+        svg <- AsyncCallback.fromJsPromise(raw(dot.content))
       } yield Svg(titlesAndComments.replaceAllIn(svg, ""))
+
     main.attempt.map {
       case Right(svg) => \/-(svg)
       case Left(t)    => -\/(ErrorMsg.fromThrowable(t))
     }
   }
 
-  final case class DOT(content: String) extends AnyVal {
-    @inline def toSvg: AsyncCallback[ErrorMsg \/ Svg] =
-      GraphViz(this)
+}
+
+object GraphViz {
+  private type RawFn = js.Function1[String, js.Thenable[String]]
+
+  def load(am: AssetManifest): GraphViz = {
+    DedicatedWorkerGlobalScope.self.asInstanceOf[js.Dynamic].vizWasmFile = am.vizWasm
+    DedicatedWorkerGlobalScope.self.importScripts(js.Array(am.vizJs))
+    val raw = js.Dynamic.global.viz.asInstanceOf[RawFn]
+    new GraphViz(raw)
   }
+
+  private val titlesAndComments = "(?:<title>[^<>]*?</title>|<!--[^\u0000]*?-->)".r
+
+  final case class DOT(content: String) extends AnyVal
 
   // ===================================================================================================================
 
@@ -104,7 +104,7 @@ object GraphViz {
       sb append escapeAttrValue(label)
     }
 
-    def setId(id: String): Unit = {
+    def setIdAttr(id: String): Unit = {
       sb append "id="
       sb append escapeAttrValue(id)
     }
@@ -115,7 +115,7 @@ object GraphViz {
 
     /** [id="x"] */
     def idAttr(id: String): Unit =
-      attrBlock(setId(id))
+      attrBlock(setIdAttr(id))
 
     /** hover text. TITLE in HTML */
     def setTooltip(tooltip: String): Unit = {

@@ -18,7 +18,8 @@ import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.base.{ClientConfig, WebappConfig}
 
 object Home {
-  final case class Props(data: HomeSpaEntryPoint.InitData, ajax: AjaxClient.Binary) {
+  final case class Props(data: HomeSpaEntryPoint.InitData,
+                         ajax: AjaxClient.Binary) {
     @inline def render = Component(this)
 
     def createProjectIO: ServerSideProcInvoker[String, ErrorMsg, ProjectMetaData] =
@@ -73,7 +74,7 @@ object Home {
     def render(p: Props, s: State): VdomElement = {
       State.recorder.record(s)
 
-      val navBar = MemberNavBar.Props(p.data.username, Some(p.feedbackModal), navBarLeft)
+      val navBar = MemberNavBar.Props(p.data.username, Some(p.feedbackModal), p.data.assetManifest, navBarLeft)
 
       def mainContent(m: TagMod): VdomElement =
         HomeContent.Props(

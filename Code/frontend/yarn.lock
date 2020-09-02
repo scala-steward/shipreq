@@ -8793,6 +8793,11 @@ terser@^4.1.2:
     source-map "~0.6.1"
     source-map-support "~0.5.12"
 
+text-field-edit@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/text-field-edit/-/text-field-edit-3.1.0.tgz#f02ea723192f1e164c437b9b6fec296ea89eaddc"
+  integrity sha512-4mVLiSRR5/p0Zhdl8QkjkUeYUDMSQSYdKsEgR6uOySjcc6QB/O2hzuUlxepL2kQQL0NrpYiI6Ywj6TZULYI9/w==
+
 textarea-caret@^3.0.1:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/textarea-caret/-/textarea-caret-3.1.0.tgz#5d5a35bb035fd06b2ff0e25d5359e97f2655087f"
@@ -9474,10 +9479,10 @@ webpack@4.43.0:
     watchpack "^1.6.1"
     webpack-sources "^1.4.1"
 
-webtamp@0.5.1:
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/webtamp/-/webtamp-0.5.1.tgz#cf011f6982461ddf7e3d249d56ba9d8728a7051e"
-  integrity sha512-9InH5eiEiEQfwCNmbnnLI62TIS5S4lSlSSkqwx/VyiJ5ojL7deU2I3CX4RolkNLWZtwuEzO/EkGZkftXmCKLMg==
+webtamp@0.5.4:
+  version "0.5.4"
+  resolved "https://registry.yarnpkg.com/webtamp/-/webtamp-0.5.4.tgz#9c34200be13a2643cebf1f84071ec4b758b04373"
+  integrity sha512-OufrsdcSI1Xn9TljoKfl+ZdfIuI02tQ5v1OTG3hiFUyEqXqaq3iMWl5aGgb15xy5GO17/B2R0k25O7MPqq5NYQ==
   dependencies:
     camelcase "^6.0.0"
     commander "^2.9.0"

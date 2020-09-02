@@ -11,7 +11,6 @@ import shipreq.webapp.client.ww.api._
 object Main {
 
   def main(args: Array[String]): Unit = {
-    GraphViz.init()
     Server.startDefault(Service, ResultEncoder).runNow()
   }
 

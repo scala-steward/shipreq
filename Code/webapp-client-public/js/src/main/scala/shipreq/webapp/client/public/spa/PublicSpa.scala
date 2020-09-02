@@ -6,6 +6,7 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import shipreq.base.util.Url
+import shipreq.webapp.base.AssetManifest
 import shipreq.webapp.base.Urls.PublicSpaRoute
 import shipreq.webapp.base.feature.{AsyncFeature, ErrorHandlingFeature}
 import shipreq.webapp.base.protocol.ajax._
@@ -13,7 +14,7 @@ import shipreq.webapp.client.public.pages._
 import shipreq.webapp.client.public.{PublicSpaEntryPoint, PublicSpaProtocols}
 
 object PublicSpa {
-  final case class Props(page: Page, routerCtl: RouterCtl)
+  final case class Props(page: Page, routerCtl: RouterCtl, am: AssetManifest)
 
   @Lenses
   final case class State(landingPage: LandingPage.State,
@@ -61,7 +62,7 @@ final class PublicSpa(val initData: PublicSpaEntryPoint.InitData, ajax: AjaxClie
 
       def loginPage(redirectOnLogin: Option[Url.Relative]): VdomElement = {
         val ss = StateSnapshot.zoomL(State.login)(s).setStateVia($)
-        Login.Props(ss, awLogin, sspLogin, sspResetPassword1, redirectOnLogin).render
+        Login.Props(ss, awLogin, p.am, sspLogin, sspResetPassword1, redirectOnLogin).render
       }
 
       val content: VdomElement =
@@ -69,7 +70,7 @@ final class PublicSpa(val initData: PublicSpaEntryPoint.InitData, ajax: AjaxClie
 
           case Page.Static(PublicSpaRoute.Home) =>
             val ss = StateSnapshot.zoomL(State.landingPage)(s).setStateVia($)
-            LandingPage.Props(ss, awLandingPage, sspLandingPage).render
+            LandingPage.Props(ss, awLandingPage, p.am, sspLandingPage).render
 
           case Page.Static(PublicSpaRoute.Login) =>
             loginPage(None)
@@ -85,7 +86,7 @@ final class PublicSpa(val initData: PublicSpaEntryPoint.InitData, ajax: AjaxClie
             Register1.Props(initData.publicRegistration, p.routerCtl, ss, awRegister1, sspRegister1).render
 
           case Page.Token(PublicSpaRoute.Register2, token) =>
-            Register2.Props(token, sspRegister2).render
+            Register2.Props(token, sspRegister2, p.am).render
 
           case Page.Static(PublicSpaRoute.Privacy) =>
             Legal.Privacy(p.routerCtl)
@@ -94,7 +95,7 @@ final class PublicSpa(val initData: PublicSpaEntryPoint.InitData, ajax: AjaxClie
             Legal.TermsOfService(p.routerCtl)
         }
 
-      Layout.Component(Layout.Props(initData.loggedInUser, p.page, p.routerCtl, content))
+      Layout.Component(Layout.Props(initData.loggedInUser, p.page, p.am, p.routerCtl, content))
     }
   }
 

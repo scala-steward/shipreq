@@ -35,9 +35,9 @@ object ImplicationGraph {
                               filterDead : FilterDead,
                               project    : Project,
                               plainText  : PlainText.ForProject.AnyCtx,
+                              colours    : Option[ImpGraphConfig.Colours],
                               reqDetailRC: RouterCtl[ExternalPubid],
                               webWorker  : WebWorkerClient.Instance) extends Props {
-
       override def isEmpty: Boolean =
         false
     }
@@ -57,12 +57,16 @@ object ImplicationGraph {
           case None    => project.content.reqs.isEmpty
         }
     }
-  }
 
+    @nowarn("cat=unused")
+    private implicit def reusabilityImplications: Reusability[Implications] =
+      Reusability.byRef
 
-  implicit val reusabilityProps: Reusability[Props] = {
-    @nowarn("cat=unused") implicit def a: Reusability[Implications.BiDir] = Reusability.byRef
-    Reusability.derive
+    implicit val reusabilityFocusReq: Reusability[FocusReq] =
+      Reusability.derive
+
+    implicit val reusabilityProps: Reusability[Props] =
+      Reusability.derive
   }
 
   final class Backend($: BackendScope[Props, State]) extends GraphBackend($) {
@@ -80,6 +84,7 @@ object ImplicationGraph {
             ord        = p.ord,
             focus      = p.focus,
             filterDead = p.filterDead,
+            colours    = p.colours,
           )
 
         case p: Props.All =>
@@ -154,7 +159,7 @@ object ImplicationGraph {
             none
 
           case Colours.ByTag(tagGroupId) =>
-            val reqTags = project.reqTagsFn(tagGroupId, filterDead)
+            val reqTags = project.virtualTags.underTagGroup(tagGroupId, filterDead)
             req => plainText.tagListWithHashtags(reqTags(req.id))
         }
 

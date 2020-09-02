@@ -1,12 +1,14 @@
 package shipreq.webapp.base.text
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
-import japgolly.microlibs.utils.Memo
+import japgolly.microlibs.utils.{ConciseIntSetFormat, Memo}
+import nyaya.util.Multimap
 import scala.collection.immutable.SortedSet
 import shipreq.base.util.SafeStringOps._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.Atom.AnyAtom
+import shipreq.webapp.base.text.Atom.{AnyAtom, DisplayReqRef}
 import shipreq.webapp.base.text.GrammarSpec.Surrounds
 import shipreq.webapp.base.text.{Grammar => G}
 import shipreq.webapp.base.util.ReqCodeTreeItem
@@ -85,6 +87,24 @@ object PlainText {
   def pubid(mnemonic: ReqType.Mnemonic, pos: ReqTypePos): String =
     mnemonic.value ~ "-" ~ pos.value
 
+  def concisePubidSet(reqIds: NonEmptySet[ReqId], p: Project, sep: String = ","): String = {
+    val reqs = p.content.reqs
+    var byType = Multimap.empty[ReqTypeId, Set, Int]
+    for (reqId <- reqIds) {
+      val pubid = reqs.need(reqId).pubid
+      byType = byType.add(pubid.reqTypeId, pubid.pos.value)
+    }
+    val reqTypes = MutableArray(byType.keyIterator).sort(p.config.reqTypes.reqTypeIdOrdering)
+    reqTypes.iterator().map { rt =>
+      val prefix = p.config.reqTypes.need(rt).mnemonic.value + "-"
+      val ps = byType(rt)
+      if (ps.sizeIs == 1)
+        prefix + ps.head.toString
+      else
+        s"$prefix{${ConciseIntSetFormat(ps)}}"
+    }.mkString(sep)
+  }
+
   def reqTypeShort(rt: ReqType): String =
     rt.mnemonic.value
 
@@ -110,9 +130,6 @@ object PlainText {
     override protected def _implicationList(ids: Vector[Pubid]): String =
       ids.iterator.map(pubid(_, p)).mkString(", ")
 
-    override protected def _tagList(ids: Vector[ApplicableTagId], validity: ApplicableTagId => Validity): String =
-      ids.iterator.map(p.config.tags.needApplicableTag(_).key.value).mkString(" ")
-
     override protected def _text(text: Text.AnyOptional, live: Live, tagValidity: ApplicableTagId => Validity): String =
       nestedText("", "", live, text, true)
 
@@ -129,18 +146,7 @@ object PlainText {
     override protected val useCaseFlowElement: UseCaseStep.Focus => String =
       useCaseStepLabel
 
-    override protected def whenBlankButMandatory = ""
-
-    private def codeRef(id: ReqCodeId): String = {
-      import ProjectText.ReqCodeResolution, ReqCodeResolution._
-      ReqCodeResolution(id, p.content.reqCodes) match {
-        case ActiveCodeToReq     (c, _) => G reflinkSurround reqCode(c)
-        case ActiveCodeToGroup   (c, _) => G reflinkSurround reqCode(c)
-        case DeadGroup           (c, _) => G reflinkSurround reqCode(c)
-        case ReqWithAltCode      (c, _) => G reflinkSurround reqCode(c)
-        case ReqWithoutActiveCode(_, r) => reqRef(r)
-      }
-    }
+    override def whenBlankButMandatory = ""
 
     private def issue(id: CustomIssueTypeId, desc: Option[String]): String = {
       val it = p.config.customIssueTypes.need(id)
@@ -228,8 +234,8 @@ object PlainText {
         val cur = atoms(idx) match {
           case a: Literal         # Literal        => a.value
           case _: NewLine         # BlankLine      => "\n\n" ~ indent
-          case a: ContentRef      # ReqRef         => reqRef(a.value)
-          case a: ContentRef      # CodeRef        => codeRef(a.value)
+          case a: ContentRef      # ReqRef         => reqRef(a.id, a.display, includeMarkup = includeMarkup)
+          case a: ContentRef      # CodeRef        => codeRef(a.id, a.display, includeMarkup = includeMarkup)
           case a: ContentRef      # UseCaseStepRef => useCaseStepRef(a.value)
           case a: Issue           # Issue          => issue(a.typ, a.desc.asOption.map(text(_, live, Optional)))
           case a: PlainTextMarkup # EmailAddress   => a.value
@@ -313,10 +319,48 @@ object PlainText {
         go(acc, atoms, 0)
     }
 
-    private def reqRef(req: ReqId): String = {
-      val pid = p.content.reqs.need(req).pubid
-      val rt  = p.config.reqTypes.need(pid.reqTypeId)
-      G.reflinkSurround(pubid(rt, pid.pos))
+    private def _reqRef(display: DisplayReqRef, includeMarkup: Boolean)
+                       (id: String, title: => String): String = {
+      val label =
+        if (includeMarkup)
+          display match {
+            case DisplayReqRef.AsId         => id
+            case DisplayReqRef.AsIdAndTitle => id ~ ":"
+          }
+        else
+          display match {
+            case DisplayReqRef.AsId         => id
+            case DisplayReqRef.AsIdAndTitle => s"$id: $title"
+          }
+      G.reflinkSurround(label)
+    }
+
+    private def codeRef(id: ReqCodeId, display: DisplayReqRef, includeMarkup: Boolean): String = {
+      import ProjectText.ReqCodeResolution, ReqCodeResolution._
+
+      def withCode(c: ReqCode.Value, title: => String) =
+        _reqRef(display, includeMarkup)(
+          id    = reqCode(c),
+          title = title,
+        )
+
+      ReqCodeResolution(id, p.content.reqCodes) match {
+        case ActiveCodeToReq     (c, r) => withCode(c, reqTitleWithoutMarkupById(r))
+        case ActiveCodeToGroup   (c, g) => withCode(c, codeGroupTitle(g))
+        case DeadGroup           (c, g) => withCode(c, codeGroupTitle(g))
+        case ReqWithAltCode      (c, r) => withCode(c, reqTitleWithoutMarkupById(r))
+        case ReqWithoutActiveCode(_, r) => reqRef(r, display, includeMarkup)
+      }
+    }
+
+    private def reqRef(id: ReqId, display: DisplayReqRef, includeMarkup: Boolean): String = {
+      val req      = p.content.reqs.need(id)
+      val rt       = p.config.reqTypes.need(req.pubid.reqTypeId)
+      def live     = req.live(p.config.reqTypes)
+      _reqRef(display, includeMarkup)(
+        id    = pubid(rt, req.pubid.pos),
+        title = textWithoutMarkup(req.title, live),
+      )
     }
 
     private def tagRef(id: ApplicableTagId): String = {

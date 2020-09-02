@@ -57,6 +57,9 @@ object Url {
     def apply(value: String): Relative =
       new Relative(dropHeadSlashes(value))
 
+    def root: Relative =
+      apply("")
+
     implicit def univEq: UnivEq[Relative] = UnivEq.derive
 
     /** Represents `/prefix/<A>`; the param is always last */

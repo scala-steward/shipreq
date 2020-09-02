@@ -143,6 +143,7 @@ object DispatchBM {
 
   implicit val config = ServerLogicConfig(
     baseUrl                    = Url.Absolute.Base("https://test.shipreq.com"),
+    staticAssetCdn             = Some(Url.Absolute.Base("https://static.shipreq.com")),
     publicRegistration         = Allow,
     applyEventThresholdMs      = 1000,
     googleAnalyticsTrackingId  = None,
@@ -152,6 +153,7 @@ object DispatchBM {
     jaegerTracingConfig        = None,
     prometheus                 = ServerLogicConfig.Prometheus.default.copy(enabled = false),
     projectSpa                 = ProjectSpaLogic.Config.default,
+    scalaJsManifest            = ScalaJsManifest("/1.js", "/2.js", "/3.js", "/4.js"),
     ssr                        = ServerLogicConfig.SsrConfig(enabled = false),
     security = ServerLogicConfig.Security(
       attackFrustrationDelay     = 1 hours,

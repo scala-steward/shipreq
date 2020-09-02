@@ -2,13 +2,15 @@ package shipreq.webapp.client.public
 
 import boopickle.DefaultBasic._
 import shipreq.base.util.Permission
+import shipreq.webapp.base.AssetManifest
 import shipreq.webapp.base.protocol.entrypoint.ClientSideProc
 import shipreq.webapp.base.user.Username
 
 object PublicSpaEntryPoint {
 
   final case class InitData(publicRegistration: Permission,
-                            loggedInUser      : Option[Username])
+                            loggedInUser      : Option[Username],
+                            assetManifest     : AssetManifest)
 
   implicit val picklerInitData: Pickler[InitData] =
     new Pickler[InitData] {
@@ -17,12 +19,14 @@ object PublicSpaEntryPoint {
       override def pickle(a: InitData)(implicit state: PickleState): Unit = {
         state.pickle(a.publicRegistration)
         state.pickle(a.loggedInUser)
+        state.pickle(a.assetManifest)
       }
 
       override def unpickle(implicit state: UnpickleState): InitData = {
         val publicRegistration = state.unpickle[Permission]
         val loggedInUser       = state.unpickle[Option[Username]]
-        InitData(publicRegistration, loggedInUser)
+        val assetManifest      = state.unpickle[AssetManifest]
+        InitData(publicRegistration, loggedInUser, assetManifest)
       }
     }
 

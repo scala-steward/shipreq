@@ -8,6 +8,9 @@ v2.2
 * New plan for the rest of v2.2
 
 ### Analyse
+* it would be a cool idea to have a button in req detail that would simplify the forward implication tree
+  (simplify = remove redundant edges)
+  Or maybe we can just apply this option to views without affecting data?
 * [FB-11] Add a field to show where a req is being referenced (i.e. FB-9 references FR-5 in its detail field, I should be able to see that from FB-5's page. "References"? "Citations"?)
 * Req Code config
   * completely disable (don't show in ReqDetail or ReqTable, even remove from auto-complete)
@@ -44,8 +47,11 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
-* I want an option to see `[MF-35: xxxxxxxxx]` instead of just `[MF-35]` in rich text
-* Derivative tags
+* pressing enter on reqtable in pubid should navigate to req
+* when session expired, it should still always retry in case re-auth occurred in another tab
+* if I have a flat list of unconnected nodes in ReqGraph, they appear backwards (ie. IV1, FR3, FR2, FR1)
+* req detail: add prev/next buttons
+* use CloudFront for static assets
 
 
 
@@ -88,6 +94,9 @@ Backlog (eventually)
 * Tag/Implication Browser (aka Distribution manager/console)
 
 ### Functional changes
+* ability to embed tweets & images
+* Dual clipboard formats: one for ShipReq, one for everywhere else. Exclude ref titles from ShipReq version.
+  (waiting for Chrome/FF to implement https://www.w3.org/TR/clipboard-apis; Currently only text/plain & image/png supported.)
 * big long (SVG) code blocks take over the screen. Preview not visible anymore when editing.
 * support all kinds of URL schemes in WebAddress (maybe - what considerations are necessary? security?)
 * Bug: field editor doesn't fit (and no scroll) when window is left 50% of screen

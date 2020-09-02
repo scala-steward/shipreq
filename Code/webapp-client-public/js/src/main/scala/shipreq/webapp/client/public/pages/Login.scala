@@ -1,12 +1,13 @@
 package shipreq.webapp.client.public.pages
 
+import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import org.scalajs.dom.{html, window}
 import shipreq.base.util._
-import shipreq.webapp.base.data.{Disabled, Enabled, TCB}
+import shipreq.webapp.base.data.{On, TCB}
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.{BrowserStorage, ValidationUX}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
@@ -15,7 +16,7 @@ import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic._
 import shipreq.webapp.base.ui.widgets.Form
 import shipreq.webapp.base.user.{EmailAddr, UserValidators, Username}
-import shipreq.webapp.base.{CommmonUiText, Urls}
+import shipreq.webapp.base.{AssetManifest, CommmonUiText, Urls}
 import shipreq.webapp.client.public.Prefetch
 import shipreq.webapp.client.public.Styles.{login => *}
 
@@ -23,6 +24,7 @@ object Login {
 
   final case class Props(state          : StateSnapshot[State],
                          asyncW         : AsyncFeature.Write.D0[ErrorMsg],
+                         am             : AssetManifest,
                          attemptLogin   : ServerSideProcInvoker[Request, ErrorMsg, Permission],
                          resetPassword  : ServerSideProcInvoker[Username \/ EmailAddr, ErrorMsg, Unit],
                          redirectOnLogin: Option[Url.Relative]) {
@@ -90,6 +92,7 @@ object Login {
   object State {
     val usernameOrEmail = req ^|-> Request.Untyped.usernameOrEmail
     val password        = req ^|-> Request.Untyped.password
+    val rememberMeOn    = rememberMe ^<-> On.isoWhen(true).reverse
 
     def empty: State =
       State(Request.Untyped("", ""), true, None, None, None)
@@ -109,7 +112,7 @@ object Login {
   final class Backend($: BackendScope[Props, Unit]) {
 
     // User is likely to log in - prefetch new resources for next page
-    Prefetch.memberHome()
+    Prefetch.memberHome($.props.runNow().am)
 
     /** Stores the current state in client's local storage according to the remember-me setting */
     val writeCredentials: Callback =
@@ -232,7 +235,7 @@ object Login {
 
       val bottomRow =
         <.div(*.bottomRow,
-          <.div(*.rememberMe, Input.Checkbox.fromStateSnapshot(State.rememberMe, p.state, "Remember me")),
+          <.div(*.rememberMe, Input.Checkbox.fromStateSnapshot(p.state.zoomStateL(State.rememberMeOn), "Remember me")),
           <.div(*.submitCont, submitButton))
 
       fields :+= Form.Field.replacement(bottomRow)

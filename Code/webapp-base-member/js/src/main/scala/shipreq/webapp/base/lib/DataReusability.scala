@@ -4,6 +4,7 @@ import japgolly.scalajs.react._
 import java.time.Duration
 import scalaz.Equal
 import shipreq.base.util._
+import shipreq.webapp.base.AssetManifest
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
@@ -22,6 +23,15 @@ import shipreq.webapp.base.user._
 object DataReusability extends DataReusability
 
 abstract class DataReusability extends BaseReusability {
+
+  implicit def reusabilityAssetManifest: Reusability[AssetManifest] =
+    Reusability.byRef
+
+    implicit def reusabilityDerivativeTagsRules: Reusability[DerivativeTags.Rules] =
+    Reusability.byRefOrUnivEq
+
+  implicit def reusabilityDerivativeTags: Reusability[DerivativeTags] =
+    Reusability.byRefOrUnivEq
 
   implicit def reusabilityCodeBlockDetail: Reusability[CodeBlockDetail] =
     Reusability.byRefOrUnivEq

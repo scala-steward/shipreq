@@ -3,7 +3,6 @@ package shipreq.webapp.base.ui.widgets
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util._
-import shipreq.webapp.base.data.{Disabled, Enabled}
 import shipreq.webapp.base.lib.ReactKeyGen
 import shipreq.webapp.base.ui.semantic
 import shipreq.webapp.base.ui.semantic.{Icon, UsesSemanticUiManually}
@@ -13,7 +12,10 @@ object Dropdown {
 
   type ItemKey = String
 
-  final case class Item[+A](key: ItemKey, label: VdomNode, value: A)
+  final case class Item[+A](key: ItemKey, label: VdomNode, value: A) {
+    def map[B](f: A => B): Item[B] =
+      Item(key, label, f(value))
+  }
 
   sealed trait Props {
     type A

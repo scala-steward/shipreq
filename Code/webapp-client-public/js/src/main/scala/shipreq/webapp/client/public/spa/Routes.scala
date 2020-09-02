@@ -7,7 +7,7 @@ import shipreq.webapp.base.Urls.PublicSpaRoute
 import shipreq.webapp.base.data.VerificationToken
 import shipreq.webapp.base.lib.BaseReusability._
 import shipreq.webapp.base.util.GoogleAnalytics
-import shipreq.webapp.base.{Urls, WebappConfig}
+import shipreq.webapp.base.{AssetManifest, Urls, WebappConfig}
 
 sealed trait Page {
   val pageTitle: List[String]
@@ -60,12 +60,12 @@ object Page {
 
 object Routes {
 
-  def routerConfig(spa: PublicSpa) =
+  def routerConfig(spa: PublicSpa, am: AssetManifest) =
     RouterConfigDsl[Page].buildConfig { dsl =>
       import dsl._
 
       def render(page: Page, r: RouterCtl) =
-        spa.Component(PublicSpa.Props(page, r))
+        spa.Component(PublicSpa.Props(page, r, am))
 
       val userIsLoggedIn = spa.initData.loggedInUser.isDefined
 

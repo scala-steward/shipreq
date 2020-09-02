@@ -1,13 +1,15 @@
 package shipreq.webapp.base.protocol.entrypoint
 
 import boopickle.DefaultBasic._
+import shipreq.webapp.base.AssetManifest
 import shipreq.webapp.base.data.ProjectMetaData
 import shipreq.webapp.base.user.Username
 
 object HomeSpaEntryPoint {
 
-  final case class InitData(username: Username,
-                            projects: List[ProjectMetaData])
+  final case class InitData(username     : Username,
+                            projects     : List[ProjectMetaData],
+                            assetManifest: AssetManifest)
 
   implicit val picklerInitData: Pickler[InitData] =
     new Pickler[InitData] {
@@ -17,11 +19,13 @@ object HomeSpaEntryPoint {
       override def pickle(a: InitData)(implicit state: PickleState): Unit = {
         state.pickle(a.username)
         state.pickle(a.projects)
+        state.pickle(a.assetManifest)
       }
       override def unpickle(implicit state: UnpickleState): InitData = {
-        val username = state.unpickle[Username]
-        val projects = state.unpickle[List[ProjectMetaData]]
-        InitData(username, projects)
+        val username      = state.unpickle[Username]
+        val projects      = state.unpickle[List[ProjectMetaData]]
+        val assetManifest = state.unpickle[AssetManifest]
+        InitData(username, projects, assetManifest)
       }
     }
 

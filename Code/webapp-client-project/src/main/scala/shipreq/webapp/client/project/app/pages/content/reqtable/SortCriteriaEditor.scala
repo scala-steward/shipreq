@@ -4,11 +4,11 @@ import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.ClientResources
 import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.feature.DragToReorderFeature
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.sort.SortMethod
+import shipreq.webapp.base.{AssetManifest, ClientResources}
 import shipreq.webapp.client.project.app.Style.reqtable.{sortEditor => *}
 import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
 
@@ -22,7 +22,7 @@ import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
  * - Drag to reorder.
  * - Drag outside to remove criterion.
  */
-object SortCriteriaEditor {
+final class SortCriteriaEditor(am: AssetManifest) {
 
   case class Props(value     : SortCriteria,
                    update    : SortCriteria ~=> Callback,
@@ -34,7 +34,8 @@ object SortCriteriaEditor {
     Reusability.byRef || Reusability.derive
 
   private val renderSortMethod = Memo[SortMethod, VdomElement] { m =>
-    import ClientResources._
+    val cr = new ClientResources(am)
+    import cr._
     def pair(a: VdomTag, b: VdomTag) = <.div(a(*.sortMethodHalfTop), b(*.sortMethodHalfBottom))
     val tag = m match {
       case SortMethod.Asc            => sortAscImg(*.sortMethodFull)
@@ -47,7 +48,7 @@ object SortCriteriaEditor {
     tag(^.title :=  m.description)
   }
 
-  final class Backend($: BackendScope[Props, Unit]) {
+  class Backend($: BackendScope[Props, Unit]) {
 
     private val dnd =
       DragToReorderFeature[SortCriterion](
