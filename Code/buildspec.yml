@@ -18,7 +18,7 @@ phases:
           set -o pipefail;
           export CI=1;
           export MODE=release;
-          SBT="sbt -Dsbt.server.autostart=false --color=never --mem 8096";
+          SBT="sbt -Dsbt.server.autostart=false -no-colors -J-Xmx8g";
           $SBT clean test:compile | strip-ansi && \
           $SBT test | strip-ansi && \
           $SBT taskman-server/docker webapp-server/docker | strip-ansi

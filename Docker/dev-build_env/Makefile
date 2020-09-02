@@ -25,5 +25,5 @@ default: exec
 build: $(INPUTS)
 	docker build -t $(IMAGE) .
 
-exec: build
+exec:
 	docker run $(DOCKER_ARGS) -it $(IMAGE) bash
