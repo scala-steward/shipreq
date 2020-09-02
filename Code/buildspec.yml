@@ -16,6 +16,7 @@ phases:
       - >
         /bin/bash -c '
           set -o pipefail;
+          export CI=1; \
           bin/release -D | strip-ansi && \
           bin/release -C -T | strip-ansi
         '

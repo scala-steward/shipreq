@@ -25,11 +25,21 @@ case object UsePhantomJs extends JsTestType
 
 object Common {
 
-  lazy val releaseMode: Boolean = {
-    val mode = System.getProperty("MODE", "").trim
-    val r = mode.compareToIgnoreCase("release") == 0
-    if (r) println(s"[info] ${C.RED_B}${C.WHITE}Release Mode.${C.RESET}")
-    r
+  private val cores = java.lang.Runtime.getRuntime.availableProcessors()
+
+  private def readConfigVar(name: String): String =
+    Option(System.getProperty(name)).orElse(Option(System.getenv(name)))
+      .fold("")(_.trim.toLowerCase)
+
+  val releaseMode = readConfigVar("MODE") == "release"
+  if (releaseMode) {
+    println(s"[info] ${C.RED_B}${C.WHITE}Release Mode.${C.RESET}")
+  }
+
+  val inCI = readConfigVar("CI") == "1"
+  if (inCI) {
+    println(s"[info] ======== CI Mode ========")
+    println(s"[info] $cores cores available")
   }
 
   def scalafixEnabled =
@@ -42,8 +52,6 @@ object Common {
         println("[info] \u001b[1;93mSource maps enabled.\u001b[0m")
         true
     }
-
-  private val cores = java.lang.Runtime.getRuntime.availableProcessors()
 
   def scalacFlags = Seq(
     "-deprecation",
@@ -119,6 +127,12 @@ object Common {
     ) compose
     nonTestCompilerFlags(optimisationScalacFlags: _*)
 
+  val ciSettings: Project => Project =
+    if (inCI)
+      _.settings(Global / concurrentRestrictions += Tags.limit(Tags.Test, 5))
+    else
+      identity
+
   val scalafixSettings: Project => Project =
     if (scalafixEnabled)
       _.enablePlugins(ScalafixPlugin).dependsOn(ScalafixBuild.`scalafix-rules` % ScalafixConfig)
@@ -179,6 +193,7 @@ object Common {
       target                      := redirectTargetDir(target.value))
     .configure(
       packageBinaryOnly,
+      ciSettings,
       Dependencies.useKindProjector,
       Dependencies.useBetterMonadicFor)
 
