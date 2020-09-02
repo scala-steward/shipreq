@@ -120,8 +120,8 @@ resource "aws_iam_role_policy" "images" {
     {
       "Effect": "Allow",
       "Resource": [
-        "${aws_cloudwatch_log_group.images.arn}",
-        "${aws_cloudwatch_log_group.images.arn}/*"
+        "${aws_cloudwatch_log_group.images.arn}:*",
+        "${aws_cloudwatch_log_group.images.arn}:*/*"
       ],
       "Action": [
         "logs:CreateLogStream",

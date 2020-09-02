@@ -8,35 +8,25 @@ resource "aws_acm_certificate" "shipreq" {
 }
 
 # DNS records for cert validation - keep in mind that this isn't the ALB endpoint record
-resource "aws_route53_record" "cert_validation_0" {
-  name    = aws_acm_certificate.shipreq.domain_validation_options.0.resource_record_name
-  type    = aws_acm_certificate.shipreq.domain_validation_options.0.resource_record_type
-  records = [aws_acm_certificate.shipreq.domain_validation_options.0.resource_record_value]
-  zone_id = local.shipreq_zone_id
-  ttl     = 10800
-}
-resource "aws_route53_record" "cert_validation_1" {
-  name    = aws_acm_certificate.shipreq.domain_validation_options.1.resource_record_name
-  type    = aws_acm_certificate.shipreq.domain_validation_options.1.resource_record_type
-  records = [aws_acm_certificate.shipreq.domain_validation_options.1.resource_record_value]
-  zone_id = local.shipreq_zone_id
-  ttl     = 10800
-}
-resource "aws_route53_record" "cert_validation_2" {
-  name    = aws_acm_certificate.shipreq.domain_validation_options.2.resource_record_name
-  type    = aws_acm_certificate.shipreq.domain_validation_options.2.resource_record_type
-  records = [aws_acm_certificate.shipreq.domain_validation_options.2.resource_record_value]
+resource "aws_route53_record" "cert_validation" {
+  for_each = {
+    for o in aws_acm_certificate.shipreq.domain_validation_options : o.domain_name => {
+      name   = o.resource_record_name
+      record = o.resource_record_value
+      type   = o.resource_record_type
+    }
+  }
+
+  name    = each.value.name
+  type    = each.value.type
+  records = [each.value.record]
   zone_id = local.shipreq_zone_id
   ttl     = 10800
 }
 
 resource "aws_acm_certificate_validation" "cert" {
-  certificate_arn = aws_acm_certificate.shipreq.arn
-  validation_record_fqdns = [
-    aws_route53_record.cert_validation_0.fqdn,
-    aws_route53_record.cert_validation_1.fqdn,
-    aws_route53_record.cert_validation_2.fqdn,
-  ]
+  certificate_arn         = aws_acm_certificate.shipreq.arn
+  validation_record_fqdns = [for r in aws_route53_record.cert_validation : r.fqdn]
 }
 
 # www.shipreq.com -> shipreq.com

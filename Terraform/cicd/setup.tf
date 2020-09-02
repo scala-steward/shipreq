@@ -1,10 +1,10 @@
 provider "aws" {
   region  = "ap-southeast-2"
-  version = "~> 2.70"
+  version = "~> 3.4"
 }
 
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 0.13"
 
   backend "s3" {
     bucket = "shipreq-terraform-state"

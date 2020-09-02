@@ -1,5 +1,5 @@
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 0.13"
 
   backend "s3" {
     bucket = "shipreq-terraform-state"
@@ -10,13 +10,13 @@ terraform {
 
 provider "aws" {
   region  = "ap-southeast-2"
-  version = "~> 2.49"
+  version = "~> 3.4"
 }
 
 provider "aws" {
   alias   = "ap-southeast-2"
   region  = "ap-southeast-2"
-  version = "~> 2.49"
+  version = "~> 3.4"
 }
 
 module "shipreq" {

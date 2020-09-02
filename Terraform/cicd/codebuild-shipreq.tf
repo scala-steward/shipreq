@@ -103,8 +103,8 @@ resource "aws_iam_role_policy" "shipreq" {
     {
       "Effect": "Allow",
       "Resource": [
-        "${aws_cloudwatch_log_group.shipreq.arn}",
-        "${aws_cloudwatch_log_group.shipreq.arn}/*"
+        "${aws_cloudwatch_log_group.shipreq.arn}:*",
+        "${aws_cloudwatch_log_group.shipreq.arn}:*/*"
       ],
       "Action": [
         "logs:CreateLogStream",

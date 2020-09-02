@@ -1,16 +1,16 @@
 provider "aws" {
   region  = "ap-southeast-2" // Comment for blog/gatsy-config.ts
-  version = "~> 2.70"
+  version = "~> 3.4"
 }
 
 provider "aws" {
   alias   = "us_east_1"
   region  = "us-east-1"
-  version = "~> 2.70"
+  version = "~> 3.4"
 }
 
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 0.13"
 
   backend "s3" {
     bucket = "shipreq-terraform-state"
