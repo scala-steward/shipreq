@@ -193,22 +193,30 @@ object ServerLogicConfig {
           scalaJsManifest,
           ssr,
           jaegerTracingConfig,
-        )) => apply(
-                baseUrl                   = baseUrl,
-                staticAssetCdn            = staticAssetCdn,
-                publicRegistration        = publicRegistration,
-                applyEventThresholdMs     = applyEventThresholdMs,
-                googleAnalyticsTrackingId = googleAnalyticsTrackingId,
-                taskmanSchema             = taskmanSchema,
-                initTaskmanOnBoot         = initTaskmanOnBoot,
-                initTaskmanRetry          = initTaskmanRetry,
-                projectSpa                = projectSpa,
-                prometheus                = prometheus,
-                security                  = security,
-                scalaJsManifest           = scalaJsManifest,
-                ssr                       = ssr,
-                jaegerTracingConfig       = jaegerTracingConfig,
-              )
+        )) =>
+
+        val scalaJsManifest2 =
+          staticAssetCdn match {
+            case Some(cdn) => scalaJsManifest.map(path => if (path.startsWith("/s/")) (cdn / Url.Relative(path)).absoluteUrl else path)
+            case None      => scalaJsManifest
+          }
+
+        apply(
+          baseUrl                   = baseUrl,
+          staticAssetCdn            = staticAssetCdn,
+          publicRegistration        = publicRegistration,
+          applyEventThresholdMs     = applyEventThresholdMs,
+          googleAnalyticsTrackingId = googleAnalyticsTrackingId,
+          taskmanSchema             = taskmanSchema,
+          initTaskmanOnBoot         = initTaskmanOnBoot,
+          initTaskmanRetry          = initTaskmanRetry,
+          projectSpa                = projectSpa,
+          prometheus                = prometheus,
+          security                  = security,
+          scalaJsManifest           = scalaJsManifest2,
+          ssr                       = ssr,
+          jaegerTracingConfig       = jaegerTracingConfig,
+        )
     }
 
     JaegerTracingConfig.external *> parts.withPrefix("shipreq.")

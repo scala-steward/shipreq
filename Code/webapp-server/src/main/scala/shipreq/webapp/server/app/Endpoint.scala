@@ -17,10 +17,10 @@ object Endpoint {
   final case class OpsPage       (pageName: String)               extends Endpoint("ops", pageName)
   final case class ServerSideProc(procName: String)               extends Endpoint("ajax", procName)
 
-  private[this] val liftRegex           = "^/[lL]/.*".r.pattern
-  private[this] val assetRegex          = "^/.+/[^/.]*\\.([^/]+)$".r
-  private[this] val opsPrefix           = DispatchLogic.opsRoot.relativeUrlNoTailSlash + "/"
-  private[this] val isSlash             = (_: Char) == '/'
+  private[this] val liftRegex  = "^/[lL]/.*".r.pattern
+  private[this] val assetRegex = "^/.+/[^/.]*\\.([^/]+)$".r
+  private[this] val opsPrefix  = DispatchLogic.opsRoot.relativeUrlNoTailSlash + "/"
+  private[this] val isSlash    = (_: Char) == '/'
 
   type Resolver = (String, FreeOption[Endpoint]) => FreeOption[Endpoint]
 
@@ -32,10 +32,6 @@ object Endpoint {
     val exactMatches = new java.util.HashMap[String, Endpoint]
     exactMatches.put(metricsPath                                    , Metrics)
     exactMatches.put(s"/$liftCtxPath/content-security-policy-report", AssetSecurityPolicy)
-    exactMatches.put(sjs.home                                       , AssetSpecific("js", "shipreq-home"))
-    exactMatches.put(sjs.project                                    , AssetSpecific("js", "shipreq-project"))
-    exactMatches.put(sjs.public                                     , AssetSpecific("js", "shipreq-public"))
-    exactMatches.put(sjs.webWorker                                  , AssetSpecific("js", "shipreq-ww"))
     exactMatches.put(am.analyticsJs                                 , AssetSpecific("js", "analytics"))
     exactMatches.put(am.loadjs                                      , AssetSpecific("js", "load"))
     exactMatches.put(am.memberLibBundleJs                           , AssetSpecific("js", "member_lib_bundle"))
@@ -57,6 +53,11 @@ object Endpoint {
     exactMatches.put(am.faviconMstile70X70Png                       , AssetSpecific("png", "favicon"))
     exactMatches.put(am.faviconSafariPinnedTabSvg                   , AssetSpecific("svg", "favicon"))
     exactMatches.put(am.faviconSiteWebmanifest                      , AssetSpecific("webmanifest", "favicon"))
+
+    if (sjs.home     .startsWith("/")) exactMatches.put(sjs.home     , AssetSpecific("js", "shipreq-home"))
+    if (sjs.project  .startsWith("/")) exactMatches.put(sjs.project  , AssetSpecific("js", "shipreq-project"))
+    if (sjs.public   .startsWith("/")) exactMatches.put(sjs.public   , AssetSpecific("js", "shipreq-public"))
+    if (sjs.webWorker.startsWith("/")) exactMatches.put(sjs.webWorker, AssetSpecific("js", "shipreq-ww"))
 
     (path, provided) => {
       val result =

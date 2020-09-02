@@ -6,7 +6,16 @@ import scalaz.syntax.applicative._
 final case class ScalaJsManifest[+A](public   : A,
                                      home     : A,
                                      project  : A,
-                                     webWorker: A)
+                                     webWorker: A) {
+
+  def map[B](f: A => B): ScalaJsManifest[B] =
+    ScalaJsManifest(
+      public    = f(public),
+      home      = f(home),
+      project   = f(project),
+      webWorker = f(webWorker),
+    )
+}
 
 object ScalaJsManifest {
 
