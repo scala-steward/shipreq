@@ -1,7 +1,7 @@
 val enableScalaRewrites = false
 
 {
-  if (Common.releaseMode)
+  if (Common.inCI)
     Nil
   else
     Seq(

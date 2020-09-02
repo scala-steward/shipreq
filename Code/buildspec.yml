@@ -15,10 +15,13 @@ phases:
     commands:
       - >
         /bin/bash -c '
-          set -o pipefail;
-          export CI=1; \
-          bin/release -D | strip-ansi && \
-          bin/release -C -T | strip-ansi
+          set -o pipefail
+          export CI=1
+          export MODE=release
+          SBT="sbt -Dsbt.server.autostart=false --color=never --mem 8096"
+          $SBT clean test:compile | strip-ansi && \
+          $SBT test | strip-ansi && \
+          $SBT taskman-server/docker webapp-server/docker | strip-ansi
         '
     finally:
       - find /root/.cache/coursier /root/.ivy2 /root/.sbt -name '*.lock' -type f -exec rm -fv {} +
