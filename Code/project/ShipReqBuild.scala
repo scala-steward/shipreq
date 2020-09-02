@@ -25,12 +25,8 @@ object ShipReqBuild {
   lazy val root =
     Project("root", file("."))
       .configure(Common.jvmSettings)
-      .aggregate(
-        ScalafixBuild.`scalafix-input`,
-        ScalafixBuild.`scalafix-output`,
-        ScalafixBuild.`scalafix-rules`,
-        ScalafixBuild.`scalafix-tests`,
-        base, taskman, webapp, utils, benchmarkJvm, benchmarkJs)
+      .aggregate(base, taskman, webapp, utils, benchmarkJvm, benchmarkJs)
+      .aggregate(ScalafixBuild.projects: _*)
 
   /** All JS modules */
   lazy val js =

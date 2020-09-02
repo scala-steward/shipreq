@@ -46,4 +46,13 @@ object ScalafixBuild {
     .dependsOn(`scalafix-input`, `scalafix-rules`)
     .enablePlugins(ScalafixTestkitPlugin)
 
+  def projects: Seq[ProjectReference] =
+    if (Common.releaseMode)
+      Nil
+    else
+      Seq(
+        `scalafix-input`,
+        `scalafix-output`,
+        `scalafix-rules`,
+        `scalafix-tests`)
 }
