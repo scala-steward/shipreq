@@ -11,6 +11,8 @@ import shipreq.webapp.server.app.ServerConfig.Statcounter
   */
 object Analytics extends DispatchSnippet {
 
+  private def am = new AssetManifest
+
   override val dispatch: DispatchIt = {
 
     val logic: Logic[NodeSeq => NodeSeq] =
@@ -63,8 +65,8 @@ object Analytics extends DispatchSnippet {
 
     val scriptInit = <script type="text/javascript" data-lift="head">{initErr};{initGA}</script>
     val scriptGA   = <script type="text/javascript" async="async" src={url.absoluteUrl}></script>
-    val scriptAs   = <script type="text/javascript" async="async" src={AssetManifest.analyticsJs} onload={initAs}></script>
-    val scriptAm   = <script type="text/javascript" async="async" src={AssetManifest.analyticsJs} onload={initAm}></script>
+    val scriptAs   = <script type="text/javascript" async="async" src={am.analyticsJs} onload={initAs}></script>
+    val scriptAm   = <script type="text/javascript" async="async" src={am.analyticsJs} onload={initAm}></script>
 
     Logic(
       singleRoute = Group(scriptInit :: scriptAs :: scriptGA :: Nil),

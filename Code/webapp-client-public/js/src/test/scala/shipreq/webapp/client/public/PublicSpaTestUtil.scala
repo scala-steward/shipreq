@@ -19,7 +19,7 @@ object PublicSpaTestUtil {
 
     def render[A](initPage: Page)(f: DomZipperJs => A): A = {
       val spa = new PublicSpa(initData, ajax)
-      ReactTestUtils.withRenderedIntoDocument(spa.Component(PublicSpa.Props(initPage, rc))) { m =>
+      ReactTestUtils.withRenderedIntoDocument(spa.Component(PublicSpa.Props(initPage, rc, initData.assetManifest))) { m =>
         f(m.domZipper)
       }
     }

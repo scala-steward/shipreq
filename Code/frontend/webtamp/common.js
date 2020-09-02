@@ -232,8 +232,9 @@ const makeConfig = ({ mode, name, staticDir, htmlMinifyOptions }) => {
       // Manifest for Scala
       Webtamp.plugins.Manifest.extractCss({}),
       Webtamp.plugins.Manifest.generate.scala({
-        object: "shipreq.webapp.base.AssetManifest",
+        object    : "shipreq.webapp.base.AbstractAssetManifest",
         outputPath: '../scala',
+        abstract  : true,
       }),
 
       // Build AnalyticsConfig.scala

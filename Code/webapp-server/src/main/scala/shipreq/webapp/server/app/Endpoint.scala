@@ -28,6 +28,7 @@ object Endpoint {
   // Specific requests that DispatchLogic handles correctly set the Endpoint directly via MetricsLogic which results in
   // the FreeOption[Endpoint] param to Resolver being set.
   def resolver(metricsPath: String, sjs: ScalaJsManifest[String]): Resolver = {
+    val am = new AssetManifest
 
     val exactMatches = new java.util.HashMap[String, Endpoint]
     exactMatches.put(metricsPath                                    , Metrics)
@@ -36,27 +37,27 @@ object Endpoint {
     exactMatches.put(sjs.project                                    , AssetSpecific("js", "shipreq-project"))
     exactMatches.put(sjs.public                                     , AssetSpecific("js", "shipreq-public"))
     exactMatches.put(sjs.webWorker                                  , AssetSpecific("js", "shipreq-ww"))
-    exactMatches.put(AssetManifest.analyticsJs                      , AssetSpecific("js", "analytics"))
-    exactMatches.put(AssetManifest.loadjs                           , AssetSpecific("js", "load"))
-    exactMatches.put(AssetManifest.memberLibBundleJs                , AssetSpecific("js", "member_lib_bundle"))
-    exactMatches.put(AssetManifest.vizJs                            , AssetSpecific("js", "viz"))
-    exactMatches.put(AssetManifest.semanticJs                       , AssetSpecific("js", "semantic"))
-    exactMatches.put(AssetManifest.semanticCss                      , AssetSpecific("css", "semantic"))
-    exactMatches.put(AssetManifest.shipreqBannerSvg                 , AssetGeneric("svg"))
-    exactMatches.put(AssetManifest.favicon16X16Png                  , AssetSpecific("png", "favicon"))
-    exactMatches.put(AssetManifest.favicon32X32Png                  , AssetSpecific("png", "favicon"))
-    exactMatches.put(AssetManifest.faviconAndroidChrome192X192Png   , AssetSpecific("png", "favicon"))
-    exactMatches.put(AssetManifest.faviconAndroidChrome512X512Png   , AssetSpecific("png", "favicon"))
-    exactMatches.put(AssetManifest.faviconAppleTouchIconPng         , AssetSpecific("png", "favicon"))
-    exactMatches.put(AssetManifest.faviconBrowserconfigXml          , AssetSpecific("xml", "favicon"))
-    exactMatches.put(AssetManifest.faviconIco                       , AssetSpecific("ico", "favicon"))
-    exactMatches.put(AssetManifest.faviconMstile144X144Png          , AssetSpecific("png", "favicon"))
-    exactMatches.put(AssetManifest.faviconMstile150X150Png          , AssetSpecific("png", "favicon"))
-    exactMatches.put(AssetManifest.faviconMstile310X150Png          , AssetSpecific("png", "favicon"))
-    exactMatches.put(AssetManifest.faviconMstile310X310Png          , AssetSpecific("png", "favicon"))
-    exactMatches.put(AssetManifest.faviconMstile70X70Png            , AssetSpecific("png", "favicon"))
-    exactMatches.put(AssetManifest.faviconSafariPinnedTabSvg        , AssetSpecific("svg", "favicon"))
-    exactMatches.put(AssetManifest.faviconSiteWebmanifest           , AssetSpecific("webmanifest", "favicon"))
+    exactMatches.put(am.analyticsJs                                 , AssetSpecific("js", "analytics"))
+    exactMatches.put(am.loadjs                                      , AssetSpecific("js", "load"))
+    exactMatches.put(am.memberLibBundleJs                           , AssetSpecific("js", "member_lib_bundle"))
+    exactMatches.put(am.vizJs                                       , AssetSpecific("js", "viz"))
+    exactMatches.put(am.semanticJs                                  , AssetSpecific("js", "semantic"))
+    exactMatches.put(am.semanticCss                                 , AssetSpecific("css", "semantic"))
+    exactMatches.put(am.shipreqBannerSvg                            , AssetGeneric("svg"))
+    exactMatches.put(am.favicon16X16Png                             , AssetSpecific("png", "favicon"))
+    exactMatches.put(am.favicon32X32Png                             , AssetSpecific("png", "favicon"))
+    exactMatches.put(am.faviconAndroidChrome192X192Png              , AssetSpecific("png", "favicon"))
+    exactMatches.put(am.faviconAndroidChrome512X512Png              , AssetSpecific("png", "favicon"))
+    exactMatches.put(am.faviconAppleTouchIconPng                    , AssetSpecific("png", "favicon"))
+    exactMatches.put(am.faviconBrowserconfigXml                     , AssetSpecific("xml", "favicon"))
+    exactMatches.put(am.faviconIco                                  , AssetSpecific("ico", "favicon"))
+    exactMatches.put(am.faviconMstile144X144Png                     , AssetSpecific("png", "favicon"))
+    exactMatches.put(am.faviconMstile150X150Png                     , AssetSpecific("png", "favicon"))
+    exactMatches.put(am.faviconMstile310X150Png                     , AssetSpecific("png", "favicon"))
+    exactMatches.put(am.faviconMstile310X310Png                     , AssetSpecific("png", "favicon"))
+    exactMatches.put(am.faviconMstile70X70Png                       , AssetSpecific("png", "favicon"))
+    exactMatches.put(am.faviconSafariPinnedTabSvg                   , AssetSpecific("svg", "favicon"))
+    exactMatches.put(am.faviconSiteWebmanifest                      , AssetSpecific("webmanifest", "favicon"))
 
     (path, provided) => {
       val result =

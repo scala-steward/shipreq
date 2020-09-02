@@ -9,6 +9,7 @@ import utest._
 object EndpointTest extends TestSuite {
 
   private val metricsPath = "/opsssss/metric"
+  private lazy val am = new AssetManifest
   private lazy val sjsm = PrepareEnv.global().config.server.scalaJsManifest
   private lazy val endpoint = Endpoint.resolver(metricsPath, sjsm)
 
@@ -39,13 +40,13 @@ object EndpointTest extends TestSuite {
     }
 
     "specificAssets" - {
-      "faviconIco"        - test(Endpoint.AssetSpecific("ico", "favicon"),          AssetManifest.faviconIco)
-      "analyticsJs"       - test(Endpoint.AssetSpecific("js", "analytics"),         AssetManifest.analyticsJs)
-      "loadjs"            - test(Endpoint.AssetSpecific("js", "load"),              AssetManifest.loadjs)
-      "memberLibBundleJs" - test(Endpoint.AssetSpecific("js", "member_lib_bundle"), AssetManifest.memberLibBundleJs)
-      "vizJs"             - test(Endpoint.AssetSpecific("js", "viz"),               AssetManifest.vizJs)
-      "semanticJs"        - test(Endpoint.AssetSpecific("js", "semantic"),          AssetManifest.semanticJs)
-      "semanticCss"       - test(Endpoint.AssetSpecific("css", "semantic"),         AssetManifest.semanticCss)
+      "faviconIco"        - test(Endpoint.AssetSpecific("ico", "favicon"),          am.faviconIco)
+      "analyticsJs"       - test(Endpoint.AssetSpecific("js", "analytics"),         am.analyticsJs)
+      "loadjs"            - test(Endpoint.AssetSpecific("js", "load"),              am.loadjs)
+      "memberLibBundleJs" - test(Endpoint.AssetSpecific("js", "member_lib_bundle"), am.memberLibBundleJs)
+      "vizJs"             - test(Endpoint.AssetSpecific("js", "viz"),               am.vizJs)
+      "semanticJs"        - test(Endpoint.AssetSpecific("js", "semantic"),          am.semanticJs)
+      "semanticCss"       - test(Endpoint.AssetSpecific("css", "semantic"),         am.semanticCss)
     }
 
     "genericAssets" - {

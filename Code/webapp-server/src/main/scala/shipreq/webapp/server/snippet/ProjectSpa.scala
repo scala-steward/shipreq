@@ -11,24 +11,27 @@ import shipreq.webapp.ssr.SsrSharedData.ProjectSpaLoaderData
 
 object ProjectSpa extends SingleOpStatelessSnippet {
 
-  private def ResourceBundle =
+  private def ResourceBundle = {
+    val am = new AssetManifest
+    val sjsm = Global.config.server.scalaJsManifest
     LoadJs.Bundle(
-      LoadJs.Resource(AssetManifest.semanticJs),
-      LoadJs.Resource(AssetManifest.reactJs),
-      LoadJs.Resource(AssetManifest.reactDomJs),
-      LoadJs.Resource(AssetManifest.reactDomServerJs),
-      LoadJs.Resource(AssetManifest.memberLibBundleJs),
-      LoadJs.Resource(Global.config.server.scalaJsManifest.project),
-      LoadJs.Resource(AssetManifest.katexCss),
-      LoadJs.Resource(AssetManifest.katexJs),
-      LoadJs.Resource(AssetManifest.prismJsCss),
-      LoadJs.Resource(AssetManifest.prismJsCore),
-      LoadJs.Resource(AssetManifest.prismJsAutoloader),
-      LoadJs.Resource(AssetManifest.prismJsLineNumbers),
-      LoadJs.Resource(AssetManifest.prismJsLineNumbersCss),
-      LoadJs.Resource(AssetManifest.prismJsMatchBraces),
-      LoadJs.Resource(AssetManifest.prismJsMatchBracesCss),
+      LoadJs.Resource(am.semanticJs),
+      LoadJs.Resource(am.reactJs),
+      LoadJs.Resource(am.reactDomJs),
+      LoadJs.Resource(am.reactDomServerJs),
+      LoadJs.Resource(am.memberLibBundleJs),
+      LoadJs.Resource(sjsm.project),
+      LoadJs.Resource(am.katexCss),
+      LoadJs.Resource(am.katexJs),
+      LoadJs.Resource(am.prismJsCss),
+      LoadJs.Resource(am.prismJsCore),
+      LoadJs.Resource(am.prismJsAutoloader),
+      LoadJs.Resource(am.prismJsLineNumbers),
+      LoadJs.Resource(am.prismJsLineNumbersCss),
+      LoadJs.Resource(am.prismJsMatchBraces),
+      LoadJs.Resource(am.prismJsMatchBracesCss),
     )
+  }
 
   val EntryPoint = ClientSideProcInvoker(ProjectSpaEntryPoint.proc, ResourceBundle)
 

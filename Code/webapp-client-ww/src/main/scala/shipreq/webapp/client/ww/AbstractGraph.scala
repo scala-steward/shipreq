@@ -21,8 +21,8 @@ abstract class AbstractGraph(protected val project   : Project,
   final def dot: GraphViz.DOT =
     GraphViz.digraph(create()(_))
 
-  @inline final def svg =
-    dot.toSvg
+  @inline final def svg(implicit g: GraphViz) =
+    g.render(dot)
 
   // -------------------------------------------------------------------------------------------------------------------
 

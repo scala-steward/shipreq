@@ -25,7 +25,7 @@ object WebappBuild {
     val serve = s"$dist/serve"
 
     def manifestPath(name: String) = Def.setting {
-      val lines = IO.readLines(file(s"${baseDirectory.value}/$scala/AssetManifest.scala"))
+      val lines = IO.readLines(file(s"${baseDirectory.value}/$scala/AbstractAssetManifest.scala"))
       val List(line) = lines.filter(_.contains(s" $name ="))
       "(?<=\"/)(.+)(?=\")".r.findFirstIn(line).get
     }

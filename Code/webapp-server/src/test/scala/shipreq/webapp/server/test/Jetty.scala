@@ -45,6 +45,7 @@ class Jetty(val port: Int) extends Logger {
   }
 
   private def newServer: Server = {
+    val am = new AssetManifest
     val sjsm = PrepareEnv.global().config.server.scalaJsManifest
     info("Starting Jetty")
 
@@ -65,7 +66,7 @@ class Jetty(val port: Int) extends Logger {
     def assetFile(s: String) = new File(s"$assetDir/$s")
     def warFile(s: String) = new File(s"${tmpWarDir.getAbsolutePath}/$s")
     def copyAsset(s: String) = FileUtils.copyFile(assetFile(s), new File(s"$tmpWarDir/$s"))
-    copyAsset(AssetManifest.faviconIco)
+    copyAsset(am.faviconIco)
     FileUtils.write(warFile(sjsm.public),  "function public(){}") // Fake content
     FileUtils.write(warFile(sjsm.home),    "function home(){}") // Fake content
     FileUtils.write(warFile(sjsm.project), "function project(){}") // Fake content

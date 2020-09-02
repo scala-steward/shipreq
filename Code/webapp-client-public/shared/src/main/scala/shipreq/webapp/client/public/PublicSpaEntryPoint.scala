@@ -2,13 +2,16 @@ package shipreq.webapp.client.public
 
 import boopickle.DefaultBasic._
 import shipreq.base.util.Permission
+import shipreq.webapp.base.AssetManifest
 import shipreq.webapp.base.protocol.entrypoint.ClientSideProc
 import shipreq.webapp.base.user.Username
 
 object PublicSpaEntryPoint {
 
   final case class InitData(publicRegistration: Permission,
-                            loggedInUser      : Option[Username])
+                            loggedInUser      : Option[Username]) {
+    val assetManifest = new AssetManifest
+  }
 
   implicit val picklerInitData: Pickler[InitData] =
     new Pickler[InitData] {

@@ -4,7 +4,7 @@ import japgolly.scalajs.react.AsyncCallback
 import shipreq.webapp.client.ww.GraphViz.DOT
 import shipreq.webapp.client.ww.api.WebWorkerCmd
 
-object Service extends Server.Service[WebWorkerCmd] {
+final class Service(implicit g: GraphViz) extends Server.Service[WebWorkerCmd] {
   import WebWorkerCmd._
 
   val state = new WebWorkerState
@@ -41,6 +41,6 @@ object Service extends Server.Service[WebWorkerCmd] {
         } yield x
 
       case GraphInline(dot) =>
-        DOT(dot).toSvg
+        g.render(DOT(dot))
     }
 }

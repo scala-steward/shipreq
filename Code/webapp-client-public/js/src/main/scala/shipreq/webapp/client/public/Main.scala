@@ -23,7 +23,7 @@ object Main extends ClientSideProcImpl(PublicSpaEntryPoint.proc) {
 
   def component(i: PublicSpaEntryPoint.InitData, spa: PublicSpa): VdomElement = {
     val baseUrl  = BaseUrl.fromWindowOrigin
-    val router   = Router(baseUrl, Routes.routerConfig(spa))
+    val router   = Router(baseUrl, Routes.routerConfig(spa, i.assetManifest))
     val metadata = CommonProtocolsJs.Metadata.client(i.loggedInUser)
     val reactApp = ErrorHandlingFeature(router(), metadata)
     reactApp

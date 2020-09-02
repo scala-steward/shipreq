@@ -19,6 +19,7 @@ object LiveTest extends TestSuite {
   import liveTestUtils._
   import userFixture.{TestUser, user1}
 
+  private lazy val am = new AssetManifest
   private lazy val sjsm = PrepareEnv.global().config.server.scalaJsManifest
 
   private var pid = Option.empty[ProjectId]
@@ -69,7 +70,7 @@ object LiveTest extends TestSuite {
     }
 
     "faviconIco" - {
-      get(AssetManifest.faviconIco)
+      get(am.faviconIco)
         .assertOk
         .assertContentType("image/x-icon")
       ()
@@ -138,7 +139,7 @@ object LiveTest extends TestSuite {
 
       // GETs shouldn't increase session time
       assertEq(get(Urls.memberHome.relativeUrl, Some(s2)).newJwt(), None)
-      assertEq(get(AssetManifest.faviconIco, Some(s2)).newJwt(), None)
+      assertEq(get(am.faviconIco, Some(s2)).newJwt(), None)
       assertEq(get(Urls.project(Obfuscators.projectId.obfuscate(pid.get)).relativeUrl, Some(s2)).newJwt(), None)
 
       // Non-login AJAX shouldn't increase session time

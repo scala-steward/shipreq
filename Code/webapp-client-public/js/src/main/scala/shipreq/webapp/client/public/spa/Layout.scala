@@ -12,6 +12,7 @@ object Layout {
 
   final case class Props(loggedInUser: Option[Username],
                          currentPage : Page,
+                         am          : AssetManifest,
                          routerCtl   : RouterCtl,
                          content     : VdomElement) {
     @inline def render: VdomElement = Component(this)
@@ -66,17 +67,19 @@ object Layout {
     private val left    = <.div(*.headerSides)
     private val mid     = <.div(*.headerMid)
     private def right   = left
-    private val logoImg = <.img(*.headerLogo, ^.src := AssetManifest.shipreqLogoSvg, ^.alt := Page.Home.linkTitle)
     private val links   = List[Link](
       -\/(Urls.External.about),
       \/-(Page.Login),
       \/-(Page.Register1),
     )
 
+    private def logoImg(am: AssetManifest) =
+      <.img(*.headerLogo, ^.src := am.shipreqLogoSvg, ^.alt := Page.Home.linkTitle)
+
     private def render(p: Props): VdomElement = {
       val logo =
         TagMod.unless(p.currentPage ==* Page.Home)(
-          p.routerCtl.link(Page.Home)(logoImg))
+          p.routerCtl.link(Page.Home)(logoImg(p.am)))
 
       <.header(*.header,
         left(logo),
