@@ -27,21 +27,24 @@ resource "aws_cloudfront_distribution" "static" {
   }
 
   default_cache_behavior {
-    allowed_methods        = ["GET", "HEAD"]
-    cached_methods         = ["GET", "HEAD"]
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD", "OPTIONS"]
     target_origin_id       = local.shipreq_cdn_origin_id
-    viewer_protocol_policy = "redirect-to-https"
+    viewer_protocol_policy = "https-only"
     compress               = false # assets are already compressed
     default_ttl            = local.seconds_in_a_year * 8
     min_ttl                = local.seconds_in_a_year * 8
     max_ttl                = local.seconds_in_a_year * 8
 
     forwarded_values {
-      headers      = ["Accept-Encoding"] # use compressed assets
-      query_string = false
+      headers = [
+        "Accept-Encoding", # use compressed assets
+        "Origin"           # for CORS
+      ]
       cookies {
         forward = "none"
       }
+      query_string = false
     }
   }
 

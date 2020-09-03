@@ -64,6 +64,7 @@ class Boot {
         val ssr         = Await.result(ssrF, timeout)
         trace("configureLift")(configureLift())
         Global.Instance = Global.default(db, redisClient, ssr, cfg)
+        addHeaders(Global.Instance)
 
         // Start services
         val f1 = submit("preloadTemplates")(Fx(preloadTemplates()))
@@ -176,6 +177,14 @@ class Boot {
 
     // Handle 404s, 500s, etc
     HttpStatusHandler.init()
+  }
+
+  def addHeaders(g: Global): Unit = {
+    val headers = List[(String, String)](
+      "Access-Control-Allow-Origin" -> g.config.server.baseUrl.value,
+    )
+    val all = LiftRules.supplementalHeaders.default.get() ::: headers
+    LiftRules.supplementalHeaders.default.set(() => all)
   }
 
   def initDatabase(cfg: ServerConfig): DbAccessor = {
