@@ -54,5 +54,6 @@ docker_args=(taskman-server/docker webapp-server/docker)
 
 echo "Ensuring S3 access..." \
   && aws s3 ls s3://shipreq-tmp/ \
+  && run test:compile \
   && run test \
   && run "${docker_args[@]}"
