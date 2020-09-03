@@ -29,7 +29,7 @@ resource "aws_cloudfront_distribution" "web" {
   default_cache_behavior {
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods         = ["GET", "HEAD"]
-    compress               = false    # Doing it myself
+    compress               = true     # cos even with Accept-Encoding forwarded, it doesn't seem to serve compressed
     default_ttl            = 31536000 # 1 yr cos we do an invalidation on publish
     max_ttl                = 31536000 # 1 yr cos we do an invalidation on publish
     min_ttl                = 31536000 # 1 yr cos we do an invalidation on publish
@@ -37,6 +37,7 @@ resource "aws_cloudfront_distribution" "web" {
     viewer_protocol_policy = "redirect-to-https"
 
     forwarded_values {
+      # headers      = ["Accept-Encoding"] # use compressed assets
       query_string = true
       cookies {
         forward = "none"

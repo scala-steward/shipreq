@@ -3,8 +3,6 @@ require("ts-node").register({ files: true })
 const siteMetadata = require("./src/config/site").default
 const routes = require("./src/utils/routes")
 
-const compressExts = ['css', 'html', 'js', 'json', 'svg', 'xml']
-
 module.exports = {
   siteMetadata,
 
@@ -145,22 +143,6 @@ module.exports = {
             title: siteMetadata.title,
           },
         ],
-      },
-    },
-
-    // =============================================================================================
-    (process.env.NODE_ENV === `production`) && {
-      resolve: 'gatsby-plugin-brotli',
-      options: {
-        extensions: compressExts,
-      },
-    },
-
-    // =============================================================================================
-    (process.env.NODE_ENV === `production`) && {
-      resolve: 'gatsby-plugin-zopfli',
-      options: {
-        extensions: compressExts,
       },
     },
 
