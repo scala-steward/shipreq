@@ -13,18 +13,7 @@ phases:
       - bin/env test --no-ansi up -d
   build:
     commands:
-      - >
-        /bin/bash -c '
-          set -o pipefail;
-          export CI=1;
-          export MODE=release;
-          SBT="sbt -Dsbt.server.autostart=false -no-colors -J-Xmx14g";
-          $SBT test:compile | strip-ansi && \
-          $SBT test | strip-ansi && \
-          $SBT taskman-server/docker     webapp-server/docker \
-               taskman-server/dockerPush webapp-server/dockerPush \
-             | strip-ansi
-        '
+      - bin/ci
     finally:
       - find /root/.cache/coursier /root/.ivy2 /root/.sbt -name '*.lock' -type f -exec rm -fv {} +
       - bin/env test --no-ansi down

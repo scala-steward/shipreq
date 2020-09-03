@@ -166,3 +166,8 @@ resource "aws_iam_role_policy" "shipreq" {
 }
 EOB
 }
+
+resource "aws_iam_role_policy_attachment" "shipreq-s3-tmp" {
+  role       = aws_iam_role.shipreq.name
+  policy_arn = data.aws_iam_policy.s3_tmp_rw.arn
+}

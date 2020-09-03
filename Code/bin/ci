@@ -1,0 +1,54 @@
+#!/bin/bash
+
+###########################################
+# Note: To test this locally...           #
+#   1. cd ../Docker/dev-build_env         #
+#   2. make exec                          #
+#   3. bin/ci                             #
+###########################################
+
+unset JAVA_OPTS
+unset SBT_OPTS
+
+set -uo pipefail
+
+cd "$(dirname "$0")"/..
+
+sbt=()
+
+[ -n "${DRY_RUN:-}" ] && sbt+=(echo)
+
+dump=/tmp/ci-oom-$(date +%Y%m%d-%H%M%S).dump
+
+sbt+=(
+  sbt
+  -DCI=1
+  -DMODE=release
+  -Dsbt.server.autostart=false
+  -J-Xmx8g
+  -J-XX:+HeapDumpOnOutOfMemoryError
+  -J-XX:HeapDumpPath=$dump
+  -no-colors
+)
+
+function run {
+  echo
+  echo "> ${sbt[@]} $@"
+  "${sbt[@]}" "$@" | strip-ansi
+  r=$?
+  echo "Exit status = $r"
+  if [ -e $dump ]; then
+    echo "Java OOM detected! filename = ${basename $dump}"
+    gzip -9 <$dump >$dump.gz
+    aws s3 cp $dump.gz s3://shipreq-tmp/
+  fi
+  return $r
+}
+
+docker_args=(taskman-server/docker webapp-server/docker)
+[ "${DOCKER_PUSH:-}" != 0 ] && docker_args+=(taskman-server/dockerPush webapp-server/dockerPush)
+
+echo "Ensuring S3 access..." \
+  && aws s3 ls s3://shipreq-tmp/ \
+  && run test \
+  && run "${docker_args[@]}"
