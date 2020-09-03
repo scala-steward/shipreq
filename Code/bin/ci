@@ -8,7 +8,9 @@
 ###########################################
 
 unset JAVA_OPTS
+unset JVM_OPTS
 unset SBT_OPTS
+unset SBTX_OPTS
 
 set -uo pipefail
 
@@ -26,6 +28,7 @@ sbt+=(
   -DMODE=release
   -Dsbt.server.autostart=false
   -J-Xmx8g
+  -J-XX:+ExitOnOutOfMemoryError
   -J-XX:+HeapDumpOnOutOfMemoryError
   -J-XX:HeapDumpPath=$dump
   -no-colors
@@ -38,7 +41,8 @@ function run {
   r=$?
   echo "Exit status = $r"
   if [ -e $dump ]; then
-    echo "Java OOM detected! filename = ${basename $dump}"
+    echo "Java OOM detected! filename = $(basename $dump)"
+    ls -l $dump
     gzip -9 <$dump >$dump.gz
     aws s3 cp $dump.gz s3://shipreq-tmp/
   fi

@@ -1,4 +1,2 @@
--Xms512m
--Xmx8192m
 -Xss2m
--XX:MaxMetaspaceSize=2048m
+-XX:+CMSClassUnloadingEnabled

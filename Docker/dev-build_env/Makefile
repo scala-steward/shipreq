@@ -36,3 +36,6 @@ exec:
 
 exec2:
 	docker run $(DOCKER_ARGS) -it 930801536115.dkr.ecr.ap-southeast-2.amazonaws.com/$(IMAGE) bash
+
+shell:
+	docker exec -it $(CONTAINER) bash
