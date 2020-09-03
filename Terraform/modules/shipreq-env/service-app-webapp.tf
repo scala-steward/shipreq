@@ -1,7 +1,8 @@
 locals {
-  shipreq_webapp_tags           = merge(local.default_tags, { Name = "${var.env}-shipreq-webapp" })
-  shipreq_webapp_container_name = "${var.env}-shipreq-webapp"
-  s3_config_webapp_folder       = "webapp"
+  shipreq_webapp_tags                 = merge(local.default_tags, { Name = "${var.env}-shipreq-webapp" })
+  shipreq_webapp_container_name       = "${var.env}-shipreq-webapp"
+  shipreq_webapp_use_static_asset_cdn = var.shipreq_webapp_use_cdn && local.shipreq_cdn_url != null
+  s3_config_webapp_folder             = "webapp"
 
   s3_config_webapp_content_hash = md5(join(":", [
     var.shipreq_webapp_properties,
@@ -67,6 +68,13 @@ resource "aws_ecs_task_definition" "shipreq_webapp" {
     "name": "${local.shipreq_webapp_container_name}",
     "image": "${data.aws_ecr_repository.webapp.repository_url}:${var.app_shipreq_images_tag}",
     "environment": [
+      ${! local.shipreq_webapp_use_static_asset_cdn ? "" : <<EOE
+          {
+            "name": "shipreq.staticAssetCdn",
+            "value": "${local.shipreq_cdn_url}"
+          },
+        EOE
+}
       {
         "name": "SHIPREQ_INLINE_PROPERTIES",
         "value": ${jsonencode(trimspace(var.shipreq_webapp_properties))}

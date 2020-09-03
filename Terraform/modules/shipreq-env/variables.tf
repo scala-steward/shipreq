@@ -5,6 +5,11 @@ provider "aws" {
   alias = "ecr"
 }
 
+// Needed for CloudFront SSL
+provider "aws" {
+  alias = "us-east-1"
+}
+
 variable "env" {
   description = "The short textual ID of this environment"
   type        = string
@@ -274,4 +279,21 @@ variable "enable_db_dependant_services" {
 variable "kibana_default_path" {
   type    = string
   default = ""
+}
+
+variable "shipreq_cdn_subdomain" {
+  description = "When specified, this will create a CDN and route webapp static assets through it."
+  type        = string // | null
+  default     = null
+}
+
+variable "shipreq_webapp_use_cdn" {
+  description = "When specified, this will create a CDN and route webapp static assets through it."
+  type        = bool
+  default     = true
+}
+
+variable "shipreq_cdn_price_class" {
+  type    = string
+  default = "PriceClass_All"
 }

@@ -19,12 +19,19 @@ provider "aws" {
   version = "~> 3.4"
 }
 
+provider "aws" {
+  alias   = "us-east-1"
+  region  = "us-east-1"
+  version = "~> 3.4"
+}
+
 module "shipreq" {
   source = "../modules/shipreq-env"
 
   providers = {
-    aws     = aws
-    aws.ecr = aws.ap-southeast-2
+    aws           = aws
+    aws.ecr       = aws.ap-southeast-2
+    aws.us-east-1 = aws.us-east-1
   }
 
   env                 = "prod"
@@ -62,6 +69,7 @@ module "shipreq" {
   prometheus_tech_data_retention        = "time=53w"
   prometheus_tech_ebs_size              = 20
   prometheus_tech_scrape_interval_sec   = 30
+  shipreq_cdn_subdomain                 = "static"
   shipreq_db_name                       = "shipreq"
   shipreq_db_password                   = local.passwords.db.shipreq
   shipreq_db_taskman_schema             = "taskman"
@@ -70,6 +78,7 @@ module "shipreq" {
   shipreq_taskman_properties            = file("taskman.properties")
   shipreq_webapp_google_analytics_id    = "UA-105581783-1"
   shipreq_webapp_properties             = file("webapp.properties")
+  shipreq_webapp_use_cdn                = false
 
   # Versions
   app_analytics_proxy_image_tag   = local.versions.app.analytics_proxy

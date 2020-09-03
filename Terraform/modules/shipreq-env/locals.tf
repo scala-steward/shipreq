@@ -13,6 +13,8 @@ locals {
     Name      = var.name
   }
 
+  seconds_in_a_year = 31556952
+
   nat_cert = file("${path.module}/../../../Docker/nat/ssl/squid.crt")
 
   # I'm not sure this is necessary but it's a logical thing to do
@@ -40,6 +42,9 @@ EOB
   analytics_proxy_subdomain = "ap"
   analytics_proxy_domain    = "${local.analytics_proxy_subdomain}.${local.shipreq_domain}"
   analytics_proxy_url       = "https://${local.analytics_proxy_domain}"
+
+  shipreq_cdn_domain = var.shipreq_cdn_subdomain == null ? null : "${var.shipreq_cdn_subdomain}.${local.shipreq_domain}"
+  shipreq_cdn_url    = var.shipreq_cdn_subdomain == null ? null : "https://${local.shipreq_cdn_domain}"
 
   # TTL for DNS entries pointed at targets I expect to change rarely/never
   dns_stable_ttl = 120
