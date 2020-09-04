@@ -173,7 +173,7 @@ object Dependencies {
     val javaxServletApi   = jvmOnly("javax.servlet"   % "javax.servlet-api"   % "3.1.0")
     val javaxWebsocketApi = jvmOnly("javax.websocket" % "javax.websocket-api" % "1.0")
 
-    val devRun = runner.modAll(_.intransitive()) ++ javaxWebsocketServerImpl
+    val devRun = runner.modAll(_.intransitive()) ++ javaxWebsocketServerImpl ++ servlets
   }
 
   object Prometheus {
