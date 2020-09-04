@@ -15,6 +15,7 @@ Contents
 
 * `analytics_proxy`       - A proxy server for analytics services (like Google Analytics) to avoid ad-blockers. Hosted at `ap.shipreq.com`.
 * `dev-build_env`         - A dev environment with everything needed to compile, test and build Shipreq Webapp & Taskman.
+* `dev-fake_cdn`          - A local simulation of CloudFront / static.shipreq.com. Allows for local testing of CORS issues.
 * `dev-node`              - A consistent, local-platform-independent Node in a container for use by `Code/frontend`.
 * `dev-postgres`          - Postgres with the HLL extension enabled for use in local dev & test environments.
 * `nat`                   - The NAT image that servces internet traffic to everything on private subnets/clusters.

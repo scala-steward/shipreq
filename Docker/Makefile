@@ -16,6 +16,7 @@ build-local:
 	PULL_REPO=930801536115.dkr.ecr.ap-southeast-2.amazonaws.com \
 	ANALYTICS_PROXY_URL="shipreq/analytics_proxy" \
 	DEV_BUILD_ENV_URL="shipreq/dev/build_env" \
+	DEV_FAKE_CDN_URL="shipreq/dev/fake_cdn" \
 	DEV_NODE_URL="shipreq/dev/node" \
 	DEV_POSTGRES_URL="shipreq/dev/postgres" \
 	NAT_URL="shipreq/nat" \

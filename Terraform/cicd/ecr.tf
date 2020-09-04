@@ -3,6 +3,11 @@ resource "aws_ecr_repository" "shipreq_dev_build_env" {
   tags = local.default_tags
 }
 
+resource "aws_ecr_repository" "shipreq_dev_fake_cdn" {
+  name = "shipreq/dev/fake_cdn"
+  tags = local.default_tags
+}
+
 resource "aws_ecr_repository" "shipreq_dev_node" {
   name = "shipreq/dev/node"
   tags = local.default_tags

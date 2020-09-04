@@ -86,6 +86,11 @@ resource "aws_codebuild_project" "images" {
     }
 
     environment_variable {
+      name  = "DEV_FAKE_CDN_URL"
+      value = aws_ecr_repository.shipreq_dev_fake_cdn.repository_url
+    }
+
+    environment_variable {
       name  = "DEV_NODE_URL"
       value = aws_ecr_repository.shipreq_dev_node.repository_url
     }
@@ -132,6 +137,7 @@ resource "aws_iam_role_policy" "images" {
       "Effect": "Allow",
       "Resource": [
         "${aws_ecr_repository.shipreq_dev_build_env.arn}",
+        "${aws_ecr_repository.shipreq_dev_fake_cdn.arn}",
         "${aws_ecr_repository.shipreq_dev_node.arn}",
         "${aws_ecr_repository.shipreq_dev_postgres.arn}",
         "${data.aws_ecr_repository.analytics_proxy.arn}",
