@@ -1,7 +1,8 @@
 package shipreq.webapp.server.app
 
 import com.typesafe.scalalogging.StrictLogging
-import javax.servlet.FilterConfig
+import javax.servlet.http.HttpServletResponse
+import javax.servlet.{FilterChain, FilterConfig, ServletRequest, ServletResponse}
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import scala.jdk.CollectionConverters._
 
@@ -40,5 +41,19 @@ final class CrossOriginServletFilter extends CrossOriginFilter with StrictLoggin
       }
 
     super.init(newConfig)
+  }
+
+  override def doFilter(request: ServletRequest, response: ServletResponse, chain: FilterChain): Unit = {
+    response match {
+      case r : HttpServletResponse =>
+        // This is required because underlying CrossOriginFilter does add Origin to Vary.
+        // Origin is required because Chrome doesn't save the origin when it caches, so when it reads back from disk
+        // it sees that the cached value doesn't pass the origin rules, and then it sees Origin isn't in the vary list
+        // and so it gives up without trying again *with* the origin set properly.
+        //
+        // https://stackoverflow.com/questions/44800431/caching-effect-on-cors-no-access-control-allow-origin-header-is-present-on-th
+        r.addHeader("Vary", "Origin, Accept-Encoding")
+    }
+    super.doFilter(request, response, chain)
   }
 }
