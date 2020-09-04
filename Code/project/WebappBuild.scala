@@ -309,7 +309,7 @@ object WebappBuild {
       .deps(
         scalaz ++ Lift.webkit ++  scalaXml ++ SLF4J.jcl ++ commonsText ++ Nyaya.gen ++ Logback.withPlugins ++ JJWT.all ++
         Prometheus.client ++ Prometheus.hotspot ++ Prometheus.servlet ++ Prometheus.logback ++ redisson ++
-        providedScope(LibJetty.javaxServletApi ++ LibJetty.javaxWebsocketApi) ++
+        providedScope(LibJetty.javaxServletApi ++ LibJetty.javaxWebsocketApi ++ LibJetty.servlets) ++
         testScope(μTest ++ Lift.testkit ++ commonsIo) ++
         (LibJetty.webapp % Test))
       .configure(

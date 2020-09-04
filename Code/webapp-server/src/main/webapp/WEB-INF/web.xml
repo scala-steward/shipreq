@@ -41,6 +41,7 @@
         <url-pattern>/s/*</url-pattern>
     </servlet-mapping>
 
+    <!-- This is no longer used in prod anymore; just dev -->
     <servlet>
         <servlet-name>sjs</servlet-name>
         <servlet-class>org.eclipse.jetty.servlet.DefaultServlet</servlet-class>
@@ -117,6 +118,20 @@
     <filter-mapping>
       <filter-name>LiftFilter</filter-name>
       <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>CorsStatic</filter-name>
+        <filter-class>shipreq.webapp.server.app.CrossOriginServletFilter</filter-class>
+        <init-param>
+            <param-name>allowedMethods</param-name>
+            <param-value>GET,HEAD,OPTIONS</param-value>
+        </init-param>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>CorsStatic</filter-name>
+        <url-pattern>/s/*</url-pattern>
     </filter-mapping>
 
 </web-app>
