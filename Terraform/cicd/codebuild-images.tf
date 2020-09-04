@@ -6,8 +6,8 @@ resource "aws_codebuild_project" "images" {
 
   environment {
     type            = "LINUX_CONTAINER"
-    compute_type    = "BUILD_GENERAL1_SMALL"                                  # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html
-    image           = "aws/codebuild/amazonlinux2-x86_64-standard:1.0-1.13.0" # aws codebuild list-curated-environment-images
+    compute_type    = "BUILD_GENERAL1_SMALL"                                    # https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-compute-types.html
+    image           = "aws/codebuild/amazonlinux2-x86_64-standard:3.0-20.08.14" # aws codebuild list-curated-environment-images
     privileged_mode = true
 
     environment_variable {
