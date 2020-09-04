@@ -15,17 +15,30 @@ import-files || exit 1
 mkdir -p resources
 [ ! -e resources/logback.xml ] && cp webapps/ROOT/WEB-INF/classes/logback.xml resources/logback.xml
 
-# Replace static links in Lift templates
+# Replace static links in webpack output :(
 i="$(printenv shipreq.staticAssetCdn)"
 echo "shipreq.staticAssetCdn = [$i]"
 if [ -n "$i" ]; then
   src=/shipreq/webapps/ROOT
-  orig=/shipreq/original-html
-  [ ! -e $orig/templates-hidden ] && mkdir -p $orig/templates-hidden
-  for f in $(find $src -name '*.html' | sed "s,$src/,,"); do
+  orig=/shipreq/original-res
+
+  for dir in s templates-hidden; do
+    [ ! -e $orig/$dir ] && mkdir -p $orig/$dir
+  done
+
+  for f in $(find $src -name '*.html' -o -path '*/s/*.xml' | sed "s,$src/,,"); do
     echo "Redirecting static assets to $i in $f"
     [ ! -e $orig/$f ] && cp $src/$f $orig/$f
     sed "s,=\"/s/,=\"$i/,g" <$orig/$f >$src/$f
+    rm -f $src/$f.{br,gz}
+  done
+
+  for f in $(find $src -path '*/s/*.webmanifest' | sed "s,$src/,,"); do
+    echo "Redirecting static assets to $i in $f"
+    [ ! -e $orig/$f ] && cp $src/$f $orig/$f
+    sed "s,\" *: *\"/s/,\": \"$i/,g" <$orig/$f >$src/$f
+    rm -f $src/$f.{br,gz}
+    gzip -9 <$src/$f >$src/$f.gz
   done
 fi
 
