@@ -62,7 +62,7 @@ class Boot {
         val db          = Await.result(dbF, timeout)
         val redisClient = redisF.map(Await.result(_, timeout))
         val ssr         = Await.result(ssrF, timeout)
-        trace("configureLift")(configureLift())
+        trace("configureLift")(configureLift(cfg))
         Global.Instance = Global.default(db, redisClient, ssr, cfg)
 
         // Start services
@@ -112,7 +112,8 @@ class Boot {
       throw new IllegalStateException(s"Run mode (${Props.mode}) ≠ desired run mode ($runMode)")
   }
 
-  def configureLift(): Unit = {
+  def configureLift(cfg: ServerConfig): Unit = {
+    val isLocalhost = cfg.server.baseUrl.value.contains("localhost")
 
     // App package path
     LiftRules.addToPackages(packageRoot)
@@ -131,7 +132,7 @@ class Boot {
 
     // Security policies
     LiftRules.securityRules = () => {
-      val nonProd = Props.devMode || Props.testMode
+      val nonProd = isLocalhost || Props.devMode || Props.testMode
       import ContentSourceRestriction._
       var base = List(
         Host("https:"), // allow any https content

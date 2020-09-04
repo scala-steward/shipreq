@@ -15,6 +15,20 @@ import-files || exit 1
 mkdir -p resources
 [ ! -e resources/logback.xml ] && cp webapps/ROOT/WEB-INF/classes/logback.xml resources/logback.xml
 
+# Replace static links in Lift templates
+i="$(printenv shipreq.staticAssetCdn)"
+echo "shipreq.staticAssetCdn = [$i]"
+if [ -n "$i" ]; then
+  src=/shipreq/webapps/ROOT
+  orig=/shipreq/original-html
+  [ ! -e $orig/templates-hidden ] && mkdir -p $orig/templates-hidden
+  for f in $(find $src -name '*.html' | sed "s,$src/,,"); do
+    echo "Redirecting static assets to $i in $f"
+    [ ! -e $orig/$f ] && cp $src/$f $orig/$f
+    sed "s,=\"/s/,=\"$i/,g" <$orig/$f >$src/$f
+  done
+fi
+
 "${cmd[@]}" --list-config | grep -iv password
 
 exec "${cmd[@]}"

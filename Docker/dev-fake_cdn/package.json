@@ -1,0 +1,14 @@
+{
+  "name": "shipreq-dev-fake_cdn",
+  "version": "1.0.0",
+  "description": "A fake CDN so that we can mimic all the prod CDN/CORS concerns into dev.",
+  "private": true,
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "http-proxy-middleware": "^1.0.5"
+  }
+}

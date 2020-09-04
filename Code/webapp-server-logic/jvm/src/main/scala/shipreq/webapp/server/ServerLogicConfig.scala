@@ -197,8 +197,14 @@ object ServerLogicConfig {
 
         val scalaJsManifest2 =
           staticAssetCdn match {
-            case Some(cdn) => scalaJsManifest.map(cdn.modPath)
             case None      => scalaJsManifest
+            case Some(cdn) =>
+              ScalaJsManifest(
+                public    = cdn.modPath(scalaJsManifest.public),
+                home      = cdn.modPath(scalaJsManifest.home),
+                project   = cdn.modPath(scalaJsManifest.project),
+                webWorker = scalaJsManifest.webWorker, // Browsers don't allow different origins (nor is CORS supported) for web worker URLs
+              )
           }
 
         apply(
