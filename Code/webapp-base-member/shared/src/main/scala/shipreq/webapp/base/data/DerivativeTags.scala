@@ -29,7 +29,8 @@ final case class DerivativeTags(enabled: Enabled, rules: DerivativeTags.Rules) {
 
   def derive(tags       : Set[ApplicableTagId],
              tagOrder   : Ordering[ApplicableTagId],
-             filter     : ApplicableTagId => Boolean = _ => true,
+             srcFilter  : ApplicableTagId => Boolean,
+             tgtFilter  : ApplicableTagId => Boolean,
              recursively: Boolean                    = true,
             ): Set[ApplicableTagId] = {
 
@@ -42,23 +43,29 @@ final case class DerivativeTags(enabled: Enabled, rules: DerivativeTags.Rules) {
     while (i1 < orderedTags.length) {
       val t1 = orderedTags(i1)
 
-      i2 = 0
-      while (i2 < orderedTags.length) {
-        if (i1 != i2) {
-          val t2 = orderedTags(i2)
+      if (srcFilter(t1)) {
+        i2 = 0
+        while (i2 < orderedTags.length) {
+          if (i1 != i2) {
+            val t2 = orderedTags(i2)
 
-          val p = TagPair(t1, t2)
-          rules.get(p) match {
-            case Some(r) =>
-              if (filter(r)) {
-                val next = tags - t1 - t2 + r
-                return if (recursively) derive(next, tagOrder, filter) else next
+            if (srcFilter(t2)) {
+              val p = TagPair(t1, t2)
+              rules.get(p) match {
+                case Some(r) =>
+                  if (tgtFilter(r)) {
+                    val next = tags - t1 - t2 + r
+                    return if (recursively) derive(next, tagOrder, srcFilter, tgtFilter) else next
+                  }
+                case None =>
               }
-            case None =>
+            }
+
           }
-        }
-        i2 += 1
-      } // it2
+          i2 += 1
+        } // it2
+      }
+
       i1 += 1
     } // it1
 

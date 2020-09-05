@@ -20,6 +20,9 @@ import shipreq.webapp.base.text.Text
   * B1 (conflicting in N/A custom text field & tags) -> B2 (empty)
   *
   * {B3 (manual), B6 (empty)} -> C1 (N/A) -> C2 (N/A) -> {B4 (manual), B5 (empty)}
+  *
+  * B7 (tag:N/A + ok) mustn't derive
+  * B8 (text:N/A + ok) mustn't derive
   */
 object SampleDerivativeTags5 {
 
@@ -43,6 +46,9 @@ object SampleDerivativeTags5 {
     val b4 = GenericReqId(204)
     val b5 = GenericReqId(205)
     val b6 = GenericReqId(206)
+    val b7 = GenericReqId(207)
+    val b8 = GenericReqId(208)
+    val b9 = GenericReqId(209)
 
     val c1 = GenericReqId(301)
     val c2 = GenericReqId(302)
@@ -51,6 +57,8 @@ object SampleDerivativeTags5 {
     val z      = TagGroupId(10)
     val z1     = ApplicableTagId(11)
     val z2     = ApplicableTagId(12)
+    val z3     = ApplicableTagId(13) // N/A to Bs
+    val z4     = ApplicableTagId(14)
 
     val yField = CustomField.Tag.Id(2)
     val y      = TagGroupId(20)
@@ -66,7 +74,9 @@ object SampleDerivativeTags5 {
   import Values._
 
   val zRules = FieldReqTypeRules.empty.notApplicable(c)
-  val zDerivativeTags = DerivativeTags(Enabled, Map.empty)
+  val zDerivativeTags = DerivativeTags(Enabled, Map(
+    (z1, z3) -> z4,
+  ))
 
   val yRules = FieldReqTypeRules.empty
   val yDerivativeTags = DerivativeTags(Enabled, Map.empty)
@@ -81,6 +91,8 @@ object SampleDerivativeTags5 {
     tagGroupCreate(z, "Z", exclusivity = Exclusive),
     applicableTagCreate(z1, "z1", parent = z),
     applicableTagCreate(z2, "z2", parent = z),
+    applicableTagCreate(z3, "z3", parent = z, applicableReqTypes = ApplicableReqTypes.blacklist(b)),
+    applicableTagCreate(z4, "z4", parent = z),
     fieldCustomTagCreate(zField, z, zRules, zDerivativeTags),
 
     tagGroupCreate(y, "Y"),
@@ -120,6 +132,12 @@ object SampleDerivativeTags5 {
     genericReqCreate(b4, b, impSrcs = c2, tags = z2),
     genericReqCreate(b5, b, impSrcs = c2),
     genericReqCreate(b6, b, impTgts = c1),
+
+    // B7 (tag:N/A + ok) mustn't derive
+    // B8 (text:N/A + ok) mustn't derive
+    genericReqCreate(b7, b, tags = Set(z1, z3)),
+    genericReqCreate(b8, b, tags = z1, titleTagRef = z3),
+    genericReqCreate(b9, b, impSrcs = Set(b7, b8)),
 
     // delete stuff
     Event.FieldCustomDelete(dField),
@@ -185,6 +203,21 @@ object SampleDerivativeTags5 {
       |  + B-5: z1 (derived)
       |  + self: ∅
       |  = {z1+ z2+}
+      |B-7
+      |  + B-9: z1 (derived)
+      |  + self: z1 (manual)
+      |  = {z1}
+      |    {z1 z3!} (ShowDead)
+      |B-8
+      |  + B-9: z1 (derived)
+      |  + self: z1 (manual)
+      |  + self: z3 (text)
+      |  = {z1 z3#!}
+      |B-9
+      |  + B-7: z1 (manual)
+      |  + B-8: z1 (manual)
+      |  + self: ∅
+      |  = {z1+}
       |C-1 = {}
       |C-2 = {}
       |""".stripMargin
@@ -248,6 +281,17 @@ object SampleDerivativeTags5 {
       |  + B-5: ∅
       |  + C-1: ∅
       |  + C-2: ∅
+      |  + self: ∅
+      |  = {}
+      |B-7
+      |  + B-9: ∅
+      |  + self: ∅
+      |  = {}
+      |B-8
+      |  + B-9: ∅
+      |  + self: ∅
+      |  = {}
+      |B-9
       |  + self: ∅
       |  = {}
       |C-1

@@ -301,6 +301,20 @@ final case class ProjectConfig(customIssueTypes: CustomIssueTypeIMap,
       direct.orElse(soleParent)
     }
 
+  val liveValidFieldTags: CustomField.Tag.Id => ReqTypeId => Set[ApplicableTagId] =
+    Memo { fieldId =>
+      val field = fields.custom(fieldId)
+      field.live(this) match {
+        case Live =>
+          val most = tags.liveApplicableTagIds & liveTagFieldDistribution.inField(fieldId)
+          Memo { reqTypeId =>
+            most.filter(tags.needApplicableTag(_).applicableReqTypes(reqTypeId) is Applicable)
+          }
+        case Dead =>
+          _ => Set.empty
+      }
+    }
+
   // ==========================================================================
   // Req types
 

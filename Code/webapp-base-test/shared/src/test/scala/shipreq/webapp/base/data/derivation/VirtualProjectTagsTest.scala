@@ -634,12 +634,27 @@ object VirtualProjectTagsTest extends TestSuite {
         assertProps(p)
       }
 
+      "rnd308" - {
+        val p = RandomData.project.withSeed(308).sample()
+//        val fid = CustomField.Tag.Id(24977)
+//        import DataImplicits._
+//        val f = p.config.fields.custom(fid)
+//        println()
+//        println(p.config.tags.needApplicableTag(ApplicableTagId(41571)))
+//        println()
+//        println(f.fieldReqTypeRules)
+//        println()
+//        println(f.derivativeTags)
+//        println()
+        assertProps(p)
+      }
+
       "random" - {
 //        import scala.util.Try
 //        import nyaya.prop._
 //        import nyaya.test.PropTestOps._
 //        import nyaya.test.DefaultSettings._
-//        RandomData.project.bugHunt(70, seeds = 100)(Prop.eval(p => Eval.atom("Props", (), Try(assertProps(p)).toEither.swap.toOption.map(_.toString))))
+//        RandomData.project.bugHunt(308, seeds = 100)(Prop.eval(p => Eval.atom("Props", (), Try(assertProps(p)).toEither.swap.toOption.map(_.toString))))
 
         RandomData.project.samples().take(3).foreach(assertProps)
       }
