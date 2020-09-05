@@ -725,6 +725,23 @@ object ReqDetailTest extends TestSuite {
         >> press(KB.Down) +> titleCellHasFocus
     ))
 
+    "keysInEditor" - {
+      val f = field("Notes")
+      val editorHasFocus = global.activeElement.assert.equalBy(f.editorDom.run(_).orNull)
+      test("UC-1")(Plan.action(
+        f.focusCell
+          >> press(KB.d)        +> editorHasFocus +> f.editorValue.assert(Some("d"))
+          >> press(KB.Left)     +> editorHasFocus
+          >> press(KB.Right)    +> editorHasFocus
+          >> press(KB.Up)       +> editorHasFocus
+          >> press(KB.Down)     +> editorHasFocus
+          >> press(KB.Home)     +> editorHasFocus
+          >> press(KB.End)      +> editorHasFocus
+          >> press(KB.PageDown) +> editorHasFocus
+          >> press(KB.PageUp)   +> editorHasFocus
+      ))
+    }
+
     "refsWithTitle" - test("MF-1")(Plan.action(
       title.set("[mf2] [mf2:]")
       +> title.text.assert("[MF-2] [MF-2: Anonymous Share]")

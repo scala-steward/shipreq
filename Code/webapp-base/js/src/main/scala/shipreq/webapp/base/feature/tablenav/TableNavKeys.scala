@@ -18,6 +18,7 @@ final class TableNavKeys(implicit ts: TableStyle) {
 
     val exceptions: CallbackOption[Unit] =
       for {
+        _ <- CallbackOption.unless(TableNavKeys.ignorableTargets.contains(e.target.tagName.toLowerCase))
         t <- CallbackOption.liftOption(e.target.findParent(_.tagName.toUpperCase == "TABLE"))
         _ <- SpecialCases.run(t.domCast[html.Table], e)
       } yield ()
@@ -75,4 +76,11 @@ final class TableNavKeys(implicit ts: TableStyle) {
       TableCellZipper(e.target).subMove(m)
         .fold(onError, _.foreach(_.focus.focus()))
     }
+}
+
+object TableNavKeys {
+  private val ignorableTargets = Set[String](
+    "input",
+    "textarea",
+  )
 }
