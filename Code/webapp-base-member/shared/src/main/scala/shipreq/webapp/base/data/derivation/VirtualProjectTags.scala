@@ -234,9 +234,9 @@ object VirtualProjectTags {
     }
 
     final case class DerivativeTagField(fieldId       : CustomField.Tag.Id,
-                                        derivativeTags: DerivativeTags,
+                                        derivativeTags: ReqTypeId => DerivativeTags,
                                         naReqTypes    : Set[ReqTypeId],
-                                        tags          : Set[ApplicableTagId])
+                                        liveValidTags : ReqTypeId => Set[ApplicableTagId])
   }
 
   private final class Mutable(val p: Project) {
@@ -369,25 +369,28 @@ object VirtualProjectTags {
         .filter(_.derivativeTags.enabled is Enabled)
         .map { f =>
           factorsPerField = factorsPerField.updated(f.id, MutableRef(Mutable.emptyDTF))
-          val scope = liveTagDist.inField(f.id)
+          val liveValidFieldTags = p.config.liveValidFieldTags(f.id)
           val naReqTypes =
             p.config.reqTypes.all
               .iterator
               .filter(rt => rt.live.is(Dead) || f.fieldReqTypeRules(rt.reqTypeId).isNA)
               .map(_.reqTypeId)
               .toSet
-          val derivativeTags = f.derivativeTags.filterRulesByResult(scope.contains)
-          DerivativeTagField(f.id, derivativeTags, naReqTypes, scope)
+          val derivativeTags = Memo { (reqTypeId: ReqTypeId) =>
+            f.derivativeTags.filterRulesByResult(liveValidFieldTags(reqTypeId).contains)
+          }
+          DerivativeTagField(f.id, derivativeTags, naReqTypes, liveValidFieldTags)
         }
         .to(ArraySeq)
 
       val graph = imps.forwards
 
       def getFieldManuals(f: DerivativeTagField,
+                          reqTypeId: ReqTypeId,
                           values: IterableOnce[(ApplicableTagId, List[LocationOf.Tag.InReq])]): Map[ApplicableTagId, Set[Provenance.Manual]] =
         values
           .iterator
-          .filter(e => f.tags.contains(e._1))
+          .filter(e => f.liveValidTags(reqTypeId).contains(e._1))
           .map(e => (e._1, e._2.iterator.map(Provenance.fromTagLoc).toSet))
           .toMap
 
@@ -401,6 +404,7 @@ object VirtualProjectTags {
 
         def scan(nodeId: ReqId, parentsInfluence: ParentsInfluencesByField): Unit = {
           val node = data(nodeId)
+          val reqTypeId = node.req.reqTypeId
 
           var newInfluences = emptyInfluencesByField
 
@@ -411,12 +415,12 @@ object VirtualProjectTags {
               if (node.req.live(p.config.reqTypes) is Dead) {
                 Set.empty
 
-              } else if (f.naReqTypes.contains(node.req.reqTypeId)) {
+              } else if (f.naReqTypes.contains(reqTypeId)) {
                 parentsManuals
 
               } else {
-                val dt        = f.derivativeTags
-                val manuals   = getFieldManuals(f, node.manualLive.m)
+                val dt        = f.derivativeTags(reqTypeId)
+                val manuals   = getFieldManuals(f, reqTypeId, node.manualLive.m)
                 val hasManual = manuals.nonEmpty
                 val factors   = factorsPerField(f.fieldId)
 
@@ -439,7 +443,7 @@ object VirtualProjectTags {
                       case DerivativeTagFactor.Relation(_, _, tag, _) if tag !=* d => results += tag
                       case _                                                       =>
                     }
-                    val tagFilter = p.config.liveValidFieldTags(f.fieldId)(node.req.reqTypeId).contains _
+                    val tagFilter = f.liveValidTags(reqTypeId).contains _
                     results = dt.derive(results, tagOrderingByPos, tagFilter, tagFilter)
 
                     if (debugDerivativeTags) {
@@ -483,14 +487,17 @@ object VirtualProjectTags {
         for (f <- fields) {
           val seen    = mutable.Map.empty[ReqId, Set[DerivativeTagFactor]]
           val factors = factorsPerField(f.fieldId)
-          val dt      = f.derivativeTags
 
           def scan(nodeId: ReqId): Set[DerivativeTagFactor] =
             seen.get(nodeId) match {
               case None =>
 
                 seen.update(nodeId, Set.empty)
-                val node = data(nodeId)
+
+                val node      = data(nodeId)
+                val reqTypeId = node.req.reqTypeId
+                val dt        = f.derivativeTags(reqTypeId)
+
                 @inline def descReq = PlainText.pubid(node.req.pubid, p)
 
                 def processChildren(): Set[DerivativeTagFactor] = {
@@ -513,9 +520,9 @@ object VirtualProjectTags {
                     x
 
                   } else {
-                    val manuals    = getFieldManuals(f, node.manualLive.m)
-                    val badManuals = getFieldManuals(f, node.deadTagsInLiveText.iterator ++ node.naTagsInLiveText.iterator)
-                    val conflicts  = getFieldManuals(f, node.conflictingTags.m)
+                    val manuals    = getFieldManuals(f, reqTypeId, node.manualLive.m)
+                    val badManuals = getFieldManuals(f, reqTypeId, node.deadTagsInLiveText.iterator ++ node.naTagsInLiveText.iterator)
+                    val conflicts  = getFieldManuals(f, reqTypeId, node.conflictingTags.m)
                     val hasManual  = manuals.nonEmpty || badManuals.nonEmpty || conflicts.nonEmpty
                     val default    = node.liveDefaults.get(f.fieldId)
                     val hasDefault = default.isDefined
@@ -564,7 +571,7 @@ object VirtualProjectTags {
 
                     // Derive tags from collected factors
                     var deadDerived = Set.empty[ApplicableTagId]
-                    val liveValidTags = p.config.liveValidFieldTags(f.fieldId)(node.req.reqTypeId)
+                    val liveValidTags = f.liveValidTags(reqTypeId)
                     val derivationFilter: ApplicableTagId => Boolean =
                       tagId =>
                         liveValidTags.contains(tagId) || {
@@ -887,7 +894,7 @@ object VirtualProjectTags {
           val req = p.content.reqs.need(reqId)
           Memo { tagId =>
 
-            val relevantFields = dtFields.iterator.filter(_.tags.contains(tagId)).map(_.fieldId).toList
+            val relevantFields = dtFields.iterator.filter(_.liveValidTags(req.reqTypeId).contains(tagId)).map(_.fieldId).toList
 
             var self: TagFieldId => Option[DerivationDesc] = null
             self = Memo {

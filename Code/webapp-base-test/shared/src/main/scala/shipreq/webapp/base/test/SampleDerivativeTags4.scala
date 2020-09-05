@@ -410,7 +410,7 @@ object SampleDerivativeTags4 {
       |  = {z1#}
       |A-21
       |  + B-16: ∅
-      |  + self: z4 (text)
+      |  + self: ∅
       |  = {z4#-}
       |A-22
       |  + self: z1 (default)
@@ -494,7 +494,7 @@ object SampleDerivativeTags4 {
       |    {z1+ z5!} (ShowDead)
       |B-18
       |  + A-23: z1 (default)
-      |  + self: z5 (text)
+      |  + self: ∅
       |  = {z1+ z5#!}
       |C-1 = {}
       |C-2 = {}
@@ -645,7 +645,6 @@ object SampleDerivativeTags4 {
       |  + E-3: y2 (derived)
       |  + self: y1 (manual)
       |  = {y1 y2+}
-      |    {y1 y2+ y3+-} (ShowDead)
       |B-13
       |  + self: y2 (manual)
       |  = {y2}
@@ -681,7 +680,6 @@ object SampleDerivativeTags4 {
       |  + C-4: y2 (manual)
       |  + self: y1 (manual)
       |  = {y1 y2+}
-      |    {y1 y2+ y3+-} (ShowDead)
       |C-4
       |  + self: y2 (manual)
       |  = {y2}
@@ -709,7 +707,7 @@ object SampleDerivativeTags4 {
       |  + E-3: y2 (derived)
       |  + self: ∅
       |  = {y1+ y2+}
-      |    {y1+ y2+ y3+- y5?-} (ShowDead)
+      |    {y1+ y2+ y5?-} (ShowDead)
       |E-1 = {}
       |E-2 = {}
       |E-3
@@ -717,7 +715,6 @@ object SampleDerivativeTags4 {
       |  + B-13: y2 (manual)
       |  + self: ∅
       |  = {y1+ y2+}
-      |    {y1+ y2+ y3+-} (ShowDead)
       |""".stripMargin
 
   def virtualTagsX =

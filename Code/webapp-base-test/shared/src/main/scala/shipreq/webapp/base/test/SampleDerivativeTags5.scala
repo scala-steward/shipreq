@@ -211,7 +211,6 @@ object SampleDerivativeTags5 {
       |B-8
       |  + B-9: z1 (derived)
       |  + self: z1 (manual)
-      |  + self: z3 (text)
       |  = {z1 z3#!}
       |B-9
       |  + B-7: z1 (manual)
