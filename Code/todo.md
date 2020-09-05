@@ -47,6 +47,12 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
+* imp field auto complete adds ":" suffix
+* reorder tags when expansions recombined
+* Add percentages to deriv expl
+* tag in text should combine tag desc and whence-explanation
+* pressing down in reqdetail "Detail" textarea focuses title
+* FB-1 derived #rejected but is saying it derived #needs_more_info
 * pressing enter on reqtable in pubid should navigate to req
 * when session expired, it should still always retry in case re-auth occurred in another tab
 * if I have a flat list of unconnected nodes in ReqGraph, they appear backwards (ie. IV1, FR3, FR2, FR1)
