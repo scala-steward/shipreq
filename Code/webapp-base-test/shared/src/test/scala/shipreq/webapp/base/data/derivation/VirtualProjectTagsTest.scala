@@ -594,61 +594,6 @@ object VirtualProjectTagsTest extends TestSuite {
         assertProps(p)
       }
 
-      "rnd69" - {
-        val p = RandomData.project.withSeed(69).sample()
-//        val r = GenericReqId(11626)
-//        val f = CustomField.Tag.Id(57288)
-//        import DataImplicits._
-//        println()
-//        println(p.config.tags.prettyPrint)
-//        println()
-//        println(p.prettyPrintImplicationGraph.replace(r.value.toString, Console.RED_B + r.value + Console.RESET))
-//        // UC-10 (#54578)
-//        // . UC-7 (#63269)
-//        // . . UC-2 (#14458)
-//        // . . . MLBKM-1 (#11626) <-------------------------------------- subject
-//        // . . . . UC-6 (#31903)                                          (relevant child)
-//        // . . . . UC-3 (#37062)                                          (relevant child)
-//        // . . . . . UC-1 (#7200)                                         (relevant child)
-//        // . . . . . . IVDX-2 (#62984)                                    (N/A for this field)
-//        // . . . . . . . IVDX-1 (#36169)                                  (N/A for this field)
-//        // . . . . . . . . UC-13 (#30030)                                 (relevant child) <---- missing
-//        // . . . . . . . . UC-4 (#28035)                                  (relevant child) <---- missing
-//        // . . . . . . . . . YR-1 (#2113) [DEAD EXP]                      (dead)
-//        // . . . . . . . . . YWZ-1 (#15147) [DEAD IMP] [!RESTORE]         (dead)
-//        println()
-//        println("IVDX: " + p.config.fields.custom(f).fieldReqTypeRules(CustomReqTypeId(45761)))
-//        println()
-//        assertDerivativeTags(p, f, reqId = r)(
-//          """
-//            |MLBKM-1
-//            |  + UC-1: ∅
-//            |  + UC-3: ∅
-//            |  + UC-4: ∅
-//            |  + UC-6: ∅
-//            |  + UC-13: ∅
-//            |  + self: ∅
-//            |  = {}
-//            |""".stripMargin
-//        )
-        assertProps(p)
-      }
-
-      "rnd308" - {
-        val p = RandomData.project.withSeed(308).sample()
-//        val fid = CustomField.Tag.Id(24977)
-//        import DataImplicits._
-//        val f = p.config.fields.custom(fid)
-//        println()
-//        println(p.config.tags.needApplicableTag(ApplicableTagId(41571)))
-//        println()
-//        println(f.fieldReqTypeRules)
-//        println()
-//        println(f.derivativeTags)
-//        println()
-        assertProps(p)
-      }
-
       "random" - {
 //        import scala.util.Try
 //        import nyaya.prop._
