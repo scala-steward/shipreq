@@ -393,7 +393,7 @@ object EditThemeTest extends TestSuite {
           """<div class="BaseStyles-textEditorTopPreviewUnder-2">
             |  <div class="BaseStyles-previewToggleWrapper1">
             |    <div class="BaseStyles-previewToggleWrapper2 transition fade left out" style="visibility:hidden">
-            |      <button title="Show preview" class="ui button icon  blue ">
+            |      <button title="Show preview" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon window restore" style="margin:0"></i>
             |      </button>
             |    </div>
@@ -435,10 +435,10 @@ object EditThemeTest extends TestSuite {
             |  </div>
             |  <div class="BaseStyles-previewToggleWrapper1">
             |    <div class="BaseStyles-previewToggleWrapper2 BaseStyles-previewButtonsWhenUnder transition fade left out" style="visibility:hidden">
-            |      <button title="Move right" class="ui button icon  blue ">
+            |      <button title="Move right" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon angle double right" style="margin:0"></i>
             |      </button>
-            |      <button title="Hide preview" class="ui button icon  blue ">
+            |      <button title="Hide preview" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon close" style="margin:0"></i>
             |      </button>
             |    </div>
@@ -486,10 +486,10 @@ object EditThemeTest extends TestSuite {
             |  </div>
             |  <div class="BaseStyles-previewToggleWrapper1">
             |    <div class="BaseStyles-previewToggleWrapper2 BaseStyles-previewButtonsWhenUnder transition fade left out" style="visibility:hidden">
-            |      <button title="Move right" class="ui button icon  blue ">
+            |      <button title="Move right" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon angle double right" style="margin:0"></i>
             |      </button>
-            |      <button title="Hide preview" class="ui button icon  blue ">
+            |      <button title="Hide preview" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon close" style="margin:0"></i>
             |      </button>
             |    </div>
@@ -537,10 +537,10 @@ object EditThemeTest extends TestSuite {
             |  </div>
             |  <div class="BaseStyles-previewToggleWrapper1">
             |    <div class="BaseStyles-previewToggleWrapper2 BaseStyles-previewButtonsWhenUnder transition fade left out" style="visibility:hidden">
-            |      <button title="Move right" class="ui button icon  blue ">
+            |      <button title="Move right" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon angle double right" style="margin:0"></i>
             |      </button>
-            |      <button title="Hide preview" class="ui button icon  blue ">
+            |      <button title="Hide preview" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon close" style="margin:0"></i>
             |      </button>
             |    </div>
@@ -584,11 +584,11 @@ object EditThemeTest extends TestSuite {
             |  </div>
             |  <div class="BaseStyles-previewToggleWrapper1">
             |    <div class="BaseStyles-previewToggleWrapper2 BaseStyles-previewButtonsWhenRight transition fade left out" style="visibility:hidden">
-            |      <button title="Hide preview" class="ui button icon  blue ">
+            |      <button title="Hide preview" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon close" style="margin:0">
             |        </i>
             |      </button>
-            |      <button title="Move down" class="ui button icon  blue ">
+            |      <button title="Move down" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon angle double down" style="margin:0">
             |        </i>
             |      </button>
@@ -624,7 +624,7 @@ object EditThemeTest extends TestSuite {
           """<div class="BaseStyles-textEditorTopPreviewUnder-2">
             |  <div class="BaseStyles-previewToggleWrapper1">
             |    <div class="BaseStyles-previewToggleWrapper2 transition fade left out" style="visibility:hidden">
-            |      <button title="Show preview" class="ui button icon  blue ">
+            |      <button title="Show preview" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon window restore" style="margin:0">
             |        </i>
             |      </button>
@@ -665,11 +665,11 @@ object EditThemeTest extends TestSuite {
             |  </div>
             |  <div class="BaseStyles-previewToggleWrapper1">
             |    <div class="BaseStyles-previewToggleWrapper2 BaseStyles-previewButtonsWhenRight transition fade left out" style="visibility:hidden">
-            |      <button title="Hide preview" class="ui button icon  blue ">
+            |      <button title="Hide preview" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon close" style="margin:0">
             |        </i>
             |      </button>
-            |      <button title="Move down" class="ui button icon  blue ">
+            |      <button title="Move down" tabindex="-6" class="ui button icon  blue ">
             |        <i class="icon angle double down" style="margin:0">
             |        </i>
             |      </button>

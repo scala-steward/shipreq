@@ -198,7 +198,7 @@ object CommonObs {
       implicit def univEq[A: UnivEq]: UnivEq[PreviewButtons[A]] = UnivEq.derive
     }
 
-    class TestDsl[R, O, S](final val * : Dsl[Id, R, O, S, String], field: String)(getObs: O => Editor) {
+    class TestDsl[R, O, S](final val * : Dsl[Id, R, O, S, String], val field: String)(getObs: O => Editor) {
       protected implicit def autoObs(o: O): Editor = getObs(o)
 
       final val cellDom                    = *.focus(field + " cell dom"                            ).value(_.obs.dom)

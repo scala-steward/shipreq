@@ -107,9 +107,13 @@ object DomUtil {
   def focusableChildren(e: Element): Iterator[html.Element] =
     e.children.deepIteratorDepthFirst.focusable
 
+  final val tabIndexIgnoreInt = -6
+  final val tabIndexIgnoreStr = "-6"
+
   def isFocusable(e: html.Element): Boolean = {
-    @inline def hasTabIndex =
-      e.tabIndex >= 0 || e.hasAttribute("tabIndex") // .tabIndex == -1 when unspecified so check if specified
+    def hasTabIndex =
+      e.tabIndex >= 0 ||
+        (e.hasAttribute("tabIndex") && e.getAttribute("tabIndex") != tabIndexIgnoreStr) // .tabIndex == -1 when unspecified so check if specified
 
     @inline def enabled =
       e._disabled.forall(!_)

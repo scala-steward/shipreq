@@ -333,7 +333,7 @@ object PreviewFeature {
         Button(
           tipe = Button.Type.IconOnly(icon),
           colour = Colour.Blue,
-        ).tag(^.title := tip)
+        ).tag(^.title := tip, TableNavigationFeature.ignore)
 
       val show  = button("Show preview", Icon.WindowRestore)
       val hide  = button("Hide preview", Icon.Close)

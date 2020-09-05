@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.test
 import japgolly.scalajs.react.test.SimEvent
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import java.time.{Duration, Instant}
-import org.scalajs.dom.document
+import org.scalajs.dom.{document, html}
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{Allow, ErrorMsg, JsTimers, PotentialChange, Retries}
 import shipreq.webapp.base.data.Project
@@ -305,10 +305,20 @@ object TestGlobal {
     def press(k: SimEvent.Keyboard): *.Actions =
       *.action(s"Press ${k.desc}.")(k simulateKeyDownPressUp _.obs.activeElement)
 
+    def assertFocusBy(desc: String, f: *.OS => html.Element) =
+      *.point(s"$desc must have focus") { os =>
+        val actual = activeElement.run(os)
+        val expect = f(os)
+        Option.unless(actual == expect) {
+          val h = Option(actual).fold("∅")(_.outerHTML.replace('\n', ' ').take(600))
+          s"Focused is $h"
+        }
+      }
+
     def assertCellHasFocus(f: CommonObs.Editor.TestDsl[R, O, S]) =
-      activeElement.assert.equalBy(f.cellDom.run)
+      assertFocusBy(f.field + " cell", f.cellDom.run)
 
     def assertEditorHasFocus(f: CommonObs.Editor.TestDsl[R, O, S]) =
-      activeElement.assert.equalBy(f.editorDom.run(_).orNull)
+      assertFocusBy(f.field + " editor", f.editorDom.run(_).orNull)
   }
 }

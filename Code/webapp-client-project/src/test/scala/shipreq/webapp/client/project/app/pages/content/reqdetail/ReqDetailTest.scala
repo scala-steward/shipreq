@@ -742,6 +742,20 @@ object ReqDetailTest extends TestSuite {
       ))
     }
 
+    "tabInEditor" - {
+      val f = field("Notes")
+      val cellHasFocus = global.assertCellHasFocus(f)
+      val editorHasFocus = global.assertEditorHasFocus(f)
+      test("UC-1")(Plan.action(
+        f.focusCell              +> cellHasFocus
+          >> press(KB.d)         +> editorHasFocus +> f.editorValue.assert(Some("d"))
+          >> press(KB.Tab.shift) +> cellHasFocus
+          >> press(KB.Tab)       +> editorHasFocus
+          >> press(KB.Tab)       +> cellHasFocus
+          >> press(KB.Tab.shift) +> editorHasFocus
+      ))
+    }
+
     "refsWithTitle" - test("MF-1")(Plan.action(
       title.set("[mf2] [mf2:]")
       +> title.text.assert("[MF-2] [MF-2: Anonymous Share]")

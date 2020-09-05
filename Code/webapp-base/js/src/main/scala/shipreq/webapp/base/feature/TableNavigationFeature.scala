@@ -1,6 +1,7 @@
 package shipreq.webapp.base.feature
 
 import japgolly.scalajs.react.vdom.html_<^._
+import shipreq.webapp.base.lib.DomUtil
 
 /** Allows users to navigate around a table using the keyboard.
   *
@@ -67,6 +68,10 @@ object TableNavigationFeature {
 
   val newRow: TagMod =
     VdomAttr(tablenav.Attrs.NewRow) := 1
+
+  /** Mark a focusable element so that it is ignored by KB navigation. */
+  val ignore: TagMod =
+    ^.tabIndex := DomUtil.tabIndexIgnoreInt
 
   // -------------------------------------------------------------------------------------------------------------------
 
