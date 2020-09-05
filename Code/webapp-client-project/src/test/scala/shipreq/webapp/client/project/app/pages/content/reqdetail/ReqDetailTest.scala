@@ -789,9 +789,9 @@ object ReqDetailTest extends TestSuite {
             "All Tags" -> "w1? y1+ y2+")
           >> filterDeadToggle +> tagFieldDescs(
             "W"        -> "w1?",
-            "Y"        -> "y1+ y2+ y3+- y5?-",
+            "Y"        -> "y1+ y2+ y5?-",
             "X"        -> "x1?-",
-            "All Tags" -> "w1? x1?- y1+ y2+ y3+- y5?-")
+            "All Tags" -> "w1? x1?- y1+ y2+ y5?-")
         ))
 
         "other" - {
