@@ -381,7 +381,7 @@ That's terribly inefficient so let's fix that by replacing the last snippet with
     ctx.eval(setup)
 
   def doIt(input: MySpaInputs): Expr.Result[String] =
-    init.flatMap(_ => ctx.eval(renderMySpa))
+    init.flatMap(_ => ctx.eval(renderMySpa(input)))
 ```
 
 Now we create a single context that will be initialised once,

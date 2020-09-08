@@ -1,0 +1,314 @@
+---
+title  : Scala, React, and SSR (part 2)
+slug   : scala_react_and_ssr_part_2
+date   : 2020-09-09T13:00:00+1000
+desc   : GraalVM lets us perform SSR but it's unfortunately still not fast enough yet. Luckily there's a way to have our cake and eat it too.
+tags   : ["tech"]
+---
+
+In <BlogPost title="part 1" slug="scala_react_and_ssr_part_1" />
+we used <SG/> to implement SSR in a Scala / Scala.JS application but ended by acknowledging that
+although we have the functionality, we don't have the speed. This article will explain how to
+reclaim the speed, once again, by using <SG/>.
+
+## Example scenario
+
+Let's say we want to provide SSR for a page with the following:
+
+```scala
+final case class Username(value: String)
+
+final case class Props(username: Option[Username])
+
+def performSSR(p: Props): Expr.Result[String] =
+  // This is from part 1
+  init.flatMap(_ => ctx.eval(renderMySpa(p)))
+```
+
+And let's say that calling `performSSR` returns the following HTML:
+
+<SideBySide>
+<div>
+
+`scala→Props(None)`
+
+```html
+<main>
+  <h1>Hello stranger!</h1>
+  <a href="/login">Login here.</a>
+</main>
+```
+
+</div>
+<div>
+
+`scala→Props(Some(Username("scalagirl80")))`
+
+```html
+<main>
+  <h1>Hello @scalagirl80!</h1>
+  <p>Welcome back!</p>
+</main>
+```
+
+</div>
+</SideBySide>
+
+Now that we've got our basic example scenario, the first thing you'd notice is that it takes
+over 1000ms the first time you run it, maybe after running it a few times it comes down to 600ms,
+maybe after spamming it you observe it come down to 400ms? That's not good. Running this in Node
+without any warmup takes only 2-10ms. How do we achieve similar speeds? <br/><br/><SG/>
+comes with a utility designed specifically for this case and it brings the speed down to
+much less than 1ms. It's called `StrFnCache` and it's a special type of optimisation for functions
+that return a `String`, which in the case of SSR, is HTML.
+
+Let's adapt our example.
+
+```scala
+val quicklyPerformSSR: Props => Expr.Result[String] =
+  StrFnCache(performSSR)
+```
+
+That definition looks pretty simple.
+* We pass our real SSR function to `StrFnCache`
+* We save the result as a `val`, not a `def`, because we want a single cache.
+  If this were a `def` it would create a new cache every time it's called, use it once
+  and then discard it. That would defeat the purpose of a cache so take care not to do that.
+* The type annotation isn't necessary - it's just for clarity.
+
+Now pretend you just hit compile, you're actually going to get an error telling you that there's
+no implicit instance of `scala→StrFnCacheParam[Props]` available.
+The caching logic needs to behave differently for different types of inputs so we'll need to
+tell it how our custom types affect caching. We'll add the following:
+
+```scala
+implicit def strFnCacheParamUsername: StrFnCacheParam[Username] =
+  StrFnCacheParam.apply1(Username.apply)(_.value)
+
+implicit def strFnCacheParamProps: StrFnCacheParam[Props] =
+  StrFnCacheParam.apply1(Props.apply)(_.username)
+```
+
+In both cases, we're using `StrFnCacheParam.apply1` because we have case classes with 1 field.
+If our case class had 3 fields we would use `StrFnCacheParam.apply3`.
+
+That's it! Our example is now super fast, possibly even less than a microsecond.
+
+## What's going on?
+
+How does it work? What just happened?
+Let's go through what happens under the hood.
+
+Firstly, it will call your real SSR function twice with the following inputs:
+
+<SideBySide>
+<div>
+
+`scala→Props(None)`
+
+```html
+<main>
+  <h1>Hello stranger!</h1>
+  <a href="/login">Login here.</a>
+</main>
+```
+
+</div>
+<div>
+
+`scala→Props(Some(Username(UNIQUE_TOKEN)))`
+
+```html
+<main>
+  <h1>Hello @UNIQUE_TOKEN!</h1>
+  <p>Welcome back!</p>
+</main>
+```
+
+</div>
+</SideBySide>
+
+`UNIQUE_TOKEN` is not literally the string `"UNIQUE_TOKEN"`, but it's a random UUID with the hex
+chars pushed into the unicode free-use region, then wrapped in `[scalagraal:` / `]`.
+Pretty safe to assume you'll never have a component return:
+
+```
+[scalagraal:\UE697\UE6CC\UE69E\UE69A\UE69A\UE6CA\UE69D\UE69F\UE69D\UE6C7\UE6CA\UE69B\UE69A\UE6CA\UE698\UE69E\UE6C8\UE6C8\UE69E\UE69B\UE699\UE69A\UE69F\UE69C\UE69B\UE69A\UE6CA\UE69A\UE6C7\UE69E\UE69E\UE69C]
+```
+
+What this means is that we can now safely simulate SSR by replacing `UNIQUE_TOKEN`
+with the real username provided in subsequent calls. The real implementation is smarter
+and more efficient than what I'm about to show you, but basically we've turned our real SSR
+into this:
+
+```scala
+val simplifiedVersionOfTheCache: Props => Expr.Result[String] = {
+  val anonymous    = "..."
+  val withUsername = "..."
+  val UNIQUE_TOKEN = "..."
+
+  p => p.username match {
+    case None    => anonymous
+    case Some(u) => withUsername.replace(UNIQUE_TOKEN, u.value)
+  }
+}
+```
+
+As you can imagine, this is very, very fast.
+
+## Caveats
+
+Now that you understand how the caching works, you can probably see the caveats.
+Luckily the caveats are pretty easy to workaround if you need to, so that you can still
+enjoy lightning-fast SSR.
+
+1. **Components must be pure (i.e. not contain side-effects).**
+
+  <u>Example:</u> Your component displays the current time.
+  <br/><u>Workaround:</u> Pass in the current time using your props.
+
+1. **All inputs must be opaque or conditional.**
+
+  What I mean by that is choosing different logic paths based on inputs (like our two-path example above)
+  is fine; passing an input as is to the output is fine; inspecting an input and deriving a
+  result or logic-change is *not* fine.
+
+  <u>Example:</u> Calling <code class="language-scala">username.length</code>.
+  <br/><u>Workaround:</u> Pass in the length using your props.
+
+  <br/><br/><u>Example:</u> Some logic like <code class="language-scala">if (username == "admin")</code>
+  <br/><u>Workaround:</u> Either add an <code class="language-scala">admin: Boolean</code> flag to your props,
+  or write a custom <code class="language-scala">StrFnCacheParam</code> that duplicates the logic (not recommended).
+
+1. **Numbers are trickier than Strings**
+
+  Two reasons that numbers are tricky:
+
+  * Rather than UUIDs and `scalagraal` identifiers, we have to just pick a number to use as a token
+  * Numbers are usually formatted somehow
+
+  For this reason there isn't an implicit `StrFnCacheParam[Int]` available out-of-the-box.
+  Instead there are configurable, explicit instances that you create yourself.
+
+  <u>Example:</u> Your component renders numbers with commas.
+  <br/><u>Solution:</u> create your own implicit that does the same:
+
+  ```scala
+  implicit def commaSeparatedInts =
+    StrFnCacheParam.int(toString = "%,d".format(_))
+  ```
+
+## What about my own ADTs?
+
+ADTs are comprised of three elements: values, products, and sums.
+
+### 1. Values
+
+<SG/> provides a bunch of implicits out-of-the-box, and some configurable explicit instances
+for numeric types. Of course you can create your own, custom implicit `StrFnCacheParam` if you
+need, but realistically in 99.99999999% of cases your custom types are going to be
+products or sums.
+
+### 2. Products
+
+Create an instance for your custom product by calling `StrFnCacheParam.applyN` where `N` is the
+number of fields in your product. Example:
+
+```scala
+final case class Eg(name: String, age: Int)
+
+implicit val param: StrFnCacheParam[Eg] =
+  StrFnCacheParam.apply2(Eg.apply)(e => (e.name, e.age))
+```
+
+### 3. Sums
+
+Create an instance for your custom product by calling `StrFnCacheParam.divideN` where `N` is the
+number of subtypes of your sum. Example:
+
+```scala
+sealed trait Sum
+case object Good extends Sum
+final case class Bad(name: String) extends Sum
+
+implicit val paramGood = StrFnCacheParam.const(Good)
+implicit val paramBad  = StrFnCacheParam.apply1(Bad.apply)(_.name)
+implicit val paramSum  = StrFnCacheParam.divide2(paramGood, paramBad)
+```
+
+In fact, the out-of-the-box instances for `Option` and `Either` are defined this way too:
+
+```scala
+implicit def option[A](implicit underlying: StrFnCacheParam[A]): StrFnCacheParam[Option[A]] =
+  divide2(
+    const(None),
+    underlying.xmap(Some(_))(_.value))
+
+implicit def either[A, B](implicit l: StrFnCacheParam[A],
+                                   r: StrFnCacheParam[B]): StrFnCacheParam[Either[A, B]] =
+  divide2(
+    l.xmap(Left(_))(_.value),
+    r.xmap(Right(_))(_.value))
+```
+
+When these instances are used, <SG/> creates a separate cache/template for each branch.
+
+
+## SPA routing
+
+Finally, let's also consider how to have fast SSR with an SPA.
+
+Let's adapt our initial example:
+
+```scala
+val baseUrl = "https://awesome.com"
+
+def performSSR(path: String, p: Props): Expr.Result[String] =
+  init >>
+  ctx.eval(ReactSsr.setUrl(baseUrl + url)) >>
+  ctx.eval(renderMySpa(p))
+```
+
+All we've done is add a `path` parameter and call `ReactSsr.setUrl` before rendering our
+component. There are two ways of adding route-aware caching.
+
+### 1. Total
+
+```scala
+val quicklyPerformSSR: (String, Props) => Expr.Result[String] =
+  StrFnCache.withRoutes(performSSR)
+```
+
+We've changed `StrFnCache` to `StrFnCache.withRoutes`.
+That's it. Done.
+
+The only problem with this is that each route is cached on-demand.
+The caching logic has no way of knowing what all the possible urls are,
+so each time it encounters a new url it hasn't seen before, it calls the real (slow) SSR.
+
+### 2. Partial
+
+```scala
+val quicklyPerformSSR: (String, Props) => Expr.Result[Option[String]] =
+  StrFnCache.withRouteWhitelist(performSSR)(
+    "/",
+    "/login",
+    "/about",
+  )
+```
+
+* We've changed `StrFnCache` to `StrFnCache.withRouteWhitelist`.
+* We're providing a finite set of paths - this allows <SG/> to pre-cache them all on startup.
+* The return type has changed to `Expr.Result[Option[String]]` and will return `None` when
+  called with a path that's not in the whitelist.
+
+This also gives you the option of only adding SSR to a subset of your application.
+
+
+## Success!
+
+Now we've seen how to have our cake and eat it too!
+
+We're performing real SSR in our JVM server,
+and by populating our template-style caching on startup,
+we can guarantee that we respond to requests without any expensive overhead.

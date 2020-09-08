@@ -1,6 +1,8 @@
 import { Link } from "gatsby"
+import { pathForPostSlug } from "../utils/routes"
 import A from "./a"
 import React from "react"
+import styled from "styled-components"
 
 const MrB = ({type}: {type: "app" | "github"}) => (
   (type == "app")
@@ -8,12 +10,35 @@ const MrB = ({type}: {type: "app" | "github"}) => (
   : <A href="https://github.com/japgolly/mr.boilerplate">Mr. Boilerplate</A>
 )
 
+const BlogPost = ({slug, title}: {slug: string, title: string}) =>
+  <Link to={pathForPostSlug(slug)}>{title}</Link>
+
+const sideBySideGap = "2ex"
+const SideBySide = styled.div`
+  display: flex;
+  width: 100%;
+  & > div {
+    padding-bottom: 1em;
+    width: 50%;
+    flex-grow: 0;
+  }
+  & > div:first-child {
+    padding-right: ${sideBySideGap};
+  }
+  & > div:not(:first-child) {
+    border-left: solid 2px #e2e2e2;
+    padding-left: ${sideBySideGap};
+  }
+`
+
 const addClass: (cls: string) => React.FC<{}> =
   cls => props => (<div className={cls}>{props.children}</div>)
 
 export default {
   A,
+  BlogPost,
   MrB,
+  SideBySide,
 
   About     : () => <Link to="/about">About</Link>,
   BooPickle : () => <A href="https://github.com/suzaku-io/boopickle">BooPickle</A>,

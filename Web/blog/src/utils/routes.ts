@@ -11,11 +11,11 @@ export const pathForPage: (node: Page) => string =
     return `/${s.replace(/^\/+/, '')}`
   }
 
+export const pathForPostSlug: (slug: string) => string =
+  (slug) => `/post/${slug.replace(/^\/+/, '')}`
+
 export const pathForPost: (node: Post) => string =
-  (node) => {
-    const s = node.frontmatter.slug
-    return `/post/${s.replace(/^\/+/, '')}`
-  }
+  (node) => pathForPostSlug(node.frontmatter.slug)
 
 export const urlForPost: (node: Post) => string =
   (node) => rootUrl + pathForPost(node)
