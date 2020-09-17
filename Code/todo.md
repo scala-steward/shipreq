@@ -66,6 +66,7 @@ v2.2
 * if I have a flat list of unconnected nodes in ReqGraph, they appear backwards (ie. IV1, FR3, FR2, FR1)
 * req detail: add prev/next buttons
 * bug: pressing down from ReqDetail implications field loses focus
+* when editing existing tag, header should use editor colour, not the saved colour - I need to see how it will look
 
 
 
