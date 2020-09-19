@@ -47,6 +47,10 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
+* bug: WW not working: see `shipreq.com-1600497467968.log.txt`
+  To reproduce: load page @ IV-36, click MF-9
+* search widget in nav bar (like how the gatsby doc works)
+* bug: freshdesk #86
 * When I have a valid filter, and then I start typing it becomes temporarily invalid as I type.
   The problem is that when it's temporarily invalid the whole screen freaks out and somehow changes to width to beyond 100vw
   It should fallback to the valid filter.
