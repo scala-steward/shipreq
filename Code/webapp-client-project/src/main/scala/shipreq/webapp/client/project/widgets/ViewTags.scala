@@ -56,26 +56,28 @@ final class ViewTags(project: Project) {
       _render(t.tag(tagConfig), ds, ts)
   }
 
-  private def hoverTextVdom(tag: ApplicableTag, ds: DisplaySettings, ts: TagSettings): TagMod = {
+  private def hoverText(tag: ApplicableTag, ds: DisplaySettings, ts: TagSettings): String = {
     val name = ts.customName.getOrElse(tag.name)
 
-    val hoverText: String =
-      if (ds.hoverText == HoverText.Omit)
-        ""
-      else {
-        var txt =
-          if (name.compareToIgnoreCase(tag.key.value) == 0)
-            ""
-          else
-            Grammar.hashRefKey.prefix + tag.key.value
-        for (d <- tag.desc) {
-          if (txt.nonEmpty)
-            txt += "\n\n"
-          txt += d
-        }
-        txt
+    if (ds.hoverText == HoverText.Omit)
+      ""
+    else {
+      var txt =
+        if (name.compareToIgnoreCase(tag.key.value) == 0)
+          ""
+        else
+          Grammar.hashRefKey.prefix + tag.key.value
+      for (d <- tag.desc) {
+        if (txt.nonEmpty)
+          txt += "\n\n"
+        txt += d
       }
+      txt
+    }
+  }
 
+  private def hoverTextVdom(tag: ApplicableTag, ds: DisplaySettings, ts: TagSettings): TagMod = {
+    val hoverText = this.hoverText(tag, ds, ts)
     ^.title := hoverText // yes, even when hoverText is empty so that it doesn't show "double-click to edit"
   }
 
@@ -132,22 +134,43 @@ final class ViewTags(project: Project) {
   }
 
   private def decorateTag(vtag: VirtualTag, base: Out, foregroundIsBlack: Boolean): Out = {
-    val decorated =
-      base(
+    @inline def ds = DisplaySettings.tag
+    @inline def ts = TagSettings.default
+
+    val decorations =
+      TagMod(
         TagMod.when(vtag.isManualInText)(tagIsFromText(foregroundIsBlack)),
         TagMod.when(vtag.isDefault)(tagIconDefault(foregroundIsBlack)),
         TagMod.when(vtag.isDerived)(tagIconDerived(foregroundIsBlack)),
         tagIconDead.when(vtag.isDead),
       )
 
+    val decorated =
+      base(decorations)
+
     if (vtag.isDerived) {
-      <.span(
-        Popup.Js.Props(
-          options = popupOptions,
-          base    = <.span,
-          display = decorated,
-          popup   = vtag.derivationDesc.whenDefined(renderDerivationDesc),
-        ).render)
+      val tag       = tagConfig.needApplicableTag(vtag.id)
+      val hoverText = this.hoverText(tag, ds, ts)
+
+      if (hoverText.isEmpty) {
+        // No hover text - attach popup to entire tag
+        <.span(
+          Popup.Js.Props(
+            options = popupOptions,
+            base    = <.span,
+            display = decorated,
+            popup   = vtag.derivationDesc.whenDefined(renderDerivationDesc),
+          ).render)
+      } else
+        // There's hover text - attach popup to the derivation icon
+        base(
+          Popup.Js.Props(
+            options = popupOptions,
+            base    = <.span,
+            display = <.span(decorations),
+            popup   = vtag.derivationDesc.whenDefined(renderDerivationDesc),
+          ).render)
+
     } else if (vtag.isDefault)
       decorated(tagTitleDefault)
     else if (vtag.isManualInText)

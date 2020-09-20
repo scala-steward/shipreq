@@ -110,6 +110,7 @@ object VirtualProjectTags {
   }
 
   sealed trait VirtualTag {
+    def id            : ApplicableTagId
     def provenances   : Set[Provenance]
     def live          : Live
     def validity      : Validity
@@ -123,8 +124,7 @@ object VirtualProjectTags {
   }
 
   object VirtualTag {
-    val empty: VirtualTag =
-      new VirtualTag {
+    final class Empty(val id: ApplicableTagId) extends VirtualTag {
         override def provenances    = Set.empty
         override def live           = Live
         override def validity       = Valid
@@ -689,7 +689,9 @@ object VirtualProjectTags {
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
   // Finally, calculate results
 
-  private class MutableVirtualTag(_derivationDesc: () => Option[DerivationDesc]) extends VirtualTag {
+  private final class MutableVirtualTag(val id: ApplicableTagId,
+                                        _derivationDesc: () => Option[DerivationDesc]) extends VirtualTag {
+
     override def derivationDesc = _derivationDesc()
     override def provenances    = _provenances
     override def live           = _live
@@ -752,7 +754,7 @@ object VirtualProjectTags {
     def tagState(id: ApplicableTagId): TagState =
       state.getOrElse(id, {
         val d = derivationDesc(id)
-        val s = new TagFieldId.Mutable(f => new MutableVirtualTag(() => d(f)))
+        val s = new TagFieldId.Mutable(f => new MutableVirtualTag(id, () => d(f)))
         state = state.updated(id, s)
         s
       })
@@ -1222,7 +1224,7 @@ object VirtualProjectTags {
     override def apply(id: ApplicableTagId, f: TagFieldId) = {
       val ts = virtualTags.value.state.getOrElse(id, null)
       if (ts eq null)
-        VirtualTag.empty
+        new VirtualTag.Empty(id)
       else
         ts.get(f)
     }
