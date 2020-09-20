@@ -2,36 +2,46 @@ package shipreq.webapp.client.ww
 
 import japgolly.scalajs.react.{AsyncCallback, Callback}
 import org.scalajs.dom.webworkers.DedicatedWorkerGlobalScope
+import scala.util.{Failure, Success}
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.client.ww.api.Protocol._
 
 object Server {
 
-  def startDefault[Cmd[_]](service: Service[Cmd],
-                           resultEnc: ResultEncoder[Cmd, Codec.default.Writer])
+  def startDefault[Cmd[_]](service  : Service[Cmd],
+                           resultEnc: ResultEncoder[Cmd, Codec.default.Writer],
+                           logger   : LoggerJs)
                           (implicit cmdReader: Codec.default.Reader[Cmd[_]]): Callback = {
     import Codec.{default => codec}
-    start(codec, service)(interface(codec), resultEnc, OnError.logToConsole)
+    start(codec, service)(interface(codec), resultEnc, logger, OnError.logToConsole)
   }
 
   def start[Cmd[_]](codec    : Codec,
                     service  : Service[Cmd])
                    (interface: Interface[codec.Encoded],
                     resultEnc: ResultEncoder[Cmd, codec.Writer],
+                    logger   : LoggerJs,
                     onError  : OnError)
                    (implicit cmdReader: codec.Reader[Cmd[_]]): Callback = {
 
     import codec.Encoded
 
     def respondForSome[A](id: Int, cmd: Cmd[A]): AsyncCallback[Unit] =
-      for {
-        a <- service(cmd)
-        e  = codec.encode(a)(resultEnc(cmd))
-        m  = new Message(id, e)
-        _ <- interface.post(m).asAsyncCallback
-      } yield ()
+      service(cmd).attemptTry.flatMap {
+        case Success(a) =>
+          logger(_.info(s"Responding to request #$id with result: ${JSON.stringify(""+a).take(300)}"))
+          val e = codec.encode(a)(resultEnc(cmd))
+          val m = new Message(id, e)
+          interface.post(m).asAsyncCallback
+        case Failure(err) =>
+          logger(_.error(s"Failed to service request #$id."))
+          LoggerJs.exception(err)
+          AsyncCallback.unit
+      }
 
     def respond(m: Message[Encoded]): Callback = {
       val cmd = codec.decode[Cmd[_]](m.cmd)
+      logger(_.info(s"Received request #${m.id}: ${JSON.stringify("" + cmd).take(300)}"))
       respondForSome(m.id, cmd).toCallback
     }
 

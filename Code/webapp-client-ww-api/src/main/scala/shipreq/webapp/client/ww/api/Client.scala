@@ -5,6 +5,7 @@ import org.scalajs.dom.window.navigator
 import scala.scalajs.LinkingInfo.productionMode
 import scala.util.Try
 import shipreq.base.util.ErrorMsg
+import shipreq.webapp.base.lib.LoggerJs
 
 trait Client[Cmd[_], R[_]] {
   def post[A](cmd: Cmd[A])(implicit readResult: R[A]): AsyncCallback[A]
@@ -15,9 +16,9 @@ object Client {
   import Protocol._
   import Codec.default.{Reader, Writer}
 
-  def default[Cmd[_]](worker: Worker)(implicit writeCmd: Writer[Cmd[_]]): Client[Cmd, Reader] = {
+  def default[Cmd[_]](worker: Worker, logger: LoggerJs)(implicit writeCmd: Writer[Cmd[_]]): Client[Cmd, Reader] = {
     import Codec.{default => codec}
-    apply(codec)(interface(codec, worker, _), OnError.logToConsole)
+    apply(codec)(interface(codec, worker, _), logger, OnError.logToConsole)
   }
 
   implicit def reusability[Cmd[_], R[_]]: Reusability[Client[Cmd, R]] =
@@ -27,6 +28,7 @@ object Client {
 
   def apply[Cmd[_]](codec      : Codec)
                    (mkInterface: Callback => Interface[codec.Encoded],
+                    logger     : LoggerJs,
                     onError    : OnError)
                    (implicit writeCmd: codec.Writer[Cmd[_]]): Client[Cmd, codec.Reader] = {
 
@@ -47,9 +49,15 @@ object Client {
         initBarrier.waitForCompletion >> AsyncCallback.promise[A].map { case (result, complete) =>
           lastPromiseId += 1
           val id = lastPromiseId
-          val p = Promise[Encoded](id, msg => complete(Try(codec.decode[A](msg))))
+          def listener(msg: Encoded): Callback = {
+            val decoded = Try(codec.decode[A](msg))
+            logger(_.info(s"Received WW response #$id: ${decoded.fold(_.toString, a => JSON.stringify("" + a).take(300))}"))
+            complete(decoded)
+          }
+          val p = Promise[Encoded](id, listener)
           promises ::= p
           val msg = new Message(id, codec.encode[Cmd[_]](cmd))
+          logger(_.info(s"Sending WW request #$id: ${JSON.stringify("" + cmd).take(300)}"))
           interface.post(msg).runNow()
           result
         }.asAsyncCallback.flatten.memo()

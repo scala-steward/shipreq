@@ -1,5 +1,6 @@
 package shipreq.webapp.client.ww
 
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.client.ww.api.Protocol.Codec.default.Writer
 import shipreq.webapp.client.ww.api._
 
@@ -11,7 +12,12 @@ import shipreq.webapp.client.ww.api._
 object Main {
 
   def main(args: Array[String]): Unit = {
-    Server.startDefault(Service, ResultEncoder).runNow()
+    val logger = LoggerJs.devOnly.prefixedWith("[WW] ")
+    Server.startDefault(
+      new Service(logger),
+      ResultEncoder,
+      logger
+    ).runNow()
   }
 
   object ResultEncoder extends Server.ResultEncoder[WebWorkerCmd, Writer] {

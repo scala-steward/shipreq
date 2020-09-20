@@ -1,13 +1,14 @@
 package shipreq.webapp.client.ww
 
 import japgolly.scalajs.react.AsyncCallback
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.client.ww.GraphViz.DOT
 import shipreq.webapp.client.ww.api.WebWorkerCmd
 
-object Service extends Server.Service[WebWorkerCmd] {
+final class Service(logger: LoggerJs) extends Server.Service[WebWorkerCmd] {
   import WebWorkerCmd._
 
-  val state = new WebWorkerState
+  val state = new WebWorkerState(logger)
   import state.Implicits._
 
   override def apply[A](cmd: WebWorkerCmd[A]): AsyncCallback[A] =
@@ -21,6 +22,7 @@ object Service extends Server.Service[WebWorkerCmd] {
 
       case GraphUseCaseFlow(ord, id, ctx) =>
         for {
+          _ <- state.awaitGraphViz
           _ <- state.await(ord)
           p <- state.acProject
           x <- new UseCaseFlowGraph(id, p, ctx).svg
@@ -28,6 +30,7 @@ object Service extends Server.Service[WebWorkerCmd] {
 
       case GraphReqImplications(ord, focus, filterDead, colours) =>
         for {
+          _ <- state.awaitGraphViz
           _ <- state.await(ord)
           p <- state.acProject
           x <- new ReqImpGraph(focus, filterDead, p, colours).svg
@@ -35,6 +38,7 @@ object Service extends Server.Service[WebWorkerCmd] {
 
       case GraphAllImplications(ord, filterDead, scope, config) =>
         for {
+          _  <- state.awaitGraphViz
           _  <- state.await(ord)
           p  <- state.acProject
           pt <- state.acPlainText

@@ -5,6 +5,7 @@ import japgolly.scalajs.react.AsyncCallback
 import java.time.Instant
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.{Event, EventOrd, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.test.UnsafeTypes.autoSomeEventOrdLatest
 import sourcecode.Line
 import utest._
@@ -25,7 +26,7 @@ object WebWorkerStateTest extends TestSuite {
     Instant.now()
 
   override def tests = Tests {
-    val s = new WebWorkerState
+    val s = new WebWorkerState(LoggerJs.off)
 
     def setProject(ord: Int): Unit =
       s.setProject(ProjectAndOrd(Project.empty, ord)).runNow()
@@ -105,6 +106,23 @@ object WebWorkerStateTest extends TestSuite {
         assertEq(pendingPromiseCount(), 0)
         p1.assertComplete()
         p2.assertComplete()
+      }
+
+      "delayedInit" - {
+        val p1 = await(11)
+        val p2 = await(12)
+        val p3 = await(13)
+        assertEq(pendingPromiseCount(), 3)
+
+        setProject(12)
+        p1.assertComplete()
+        p2.assertComplete()
+        p3.assertPending()
+
+        updateProject(13)
+        p1.assertComplete()
+        p2.assertComplete()
+        p3.assertComplete()
       }
 
     }

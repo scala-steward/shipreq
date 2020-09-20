@@ -41,6 +41,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
                        confirmJs         : ConfirmJs,
                        promptJs          : PromptJs,
                        optionalFullscreen: OptionalFullscreen) {
+  import global.logger
 
   val pxProjectAndOrd = global.pxProjectAndOrd
   val pxProject       = global.pxProject
@@ -318,7 +319,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
     }
 
     private val webWorkerClient: WebWorkerClient.Instance =
-      WebWorkerClient(initPageData.webWorkerJsUrl)
+      WebWorkerClient(initPageData.webWorkerJsUrl, logger)
 
     private val reqDetail = ReqDetail(ReqDetail.StaticProps(
       sspUpdateContent      = sspUpdateContent,

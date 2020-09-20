@@ -21,9 +21,9 @@ import shipreq.webapp.base.ui.ReauthenticationModal
 import shipreq.webapp.client.project.app.pages.root.ConnectionStatus
 import shipreq.webapp.client.project.app.state.Global.State
 
-abstract class Global(onFirstLoad         : (Global, InitAppData) => Callback,
-                      onInitFailure       : ErrorMsg => Callback,
-                      protected val logger: LoggerJs) extends Broadcaster[ProjectState.Update] {
+abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
+                      onInitFailure   : ErrorMsg => Callback,
+                      final val logger: LoggerJs) extends Broadcaster[ProjectState.Update] {
 
   val reauthModal: ReauthenticationModal
 

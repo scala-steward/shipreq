@@ -12,6 +12,8 @@ trait LoggerJs {
   def pure(f: => (Dsl[Callback] => Callback)): Callback
 
   def async(f: => (Dsl[AsyncCallback[Unit]] => AsyncCallback[Unit])): AsyncCallback[Unit]
+
+  def prefixedWith(prefix: => String): LoggerJs
 }
 
 object LoggerJs {
@@ -49,9 +51,27 @@ object LoggerJs {
         override def profileEnd                                             = f(() => self.profileEnd)
         override def clear                                                  = f(() => self.clear)
       }
+
+    def prefixedWith(prefix: String): Dsl[Out] =
+      new Dsl[Out] {
+        override def exception (err: Throwable)                             = self.exception (err)
+        override def debug     (msg: js.Any, extra: js.Any*)                = self.debug     (prefix + msg, extra: _*)
+        override def info      (msg: js.Any, extra: js.Any*)                = self.info      (prefix + msg, extra: _*)
+        override def warn      (msg: js.Any, extra: js.Any*)                = self.warn      (prefix + msg, extra: _*)
+        override def error     (msg: js.Any, extra: js.Any*)                = self.error     (prefix + msg, extra: _*)
+        override def log       (msg: js.Any, extra: js.Any*)                = self.log       (prefix + msg, extra: _*)
+        override def assert    (test: Boolean, msg: String, extra: js.Any*) = self.assert    (test, prefix + msg, extra: _*)
+        override def dir       (value: js.Any, extra: js.Any*)              = self.dir       (value, extra: _*)
+        override def time      (label: String)                              = self.time      (prefix + label)
+        override def timeLog   (label: String)                              = self.timeLog   (prefix + label)
+        override def timeEnd   (label: String)                              = self.timeEnd   (prefix + label)
+        override def profile   (reportName: String)                         = self.profile   (prefix + reportName)
+        override def profileEnd                                             = self.profileEnd
+        override def clear                                                  = self.clear
+      }
   }
 
-  private object real extends Dsl[Unit] {
+  private object realDsl extends Dsl[Unit] {
     override def exception (err: Throwable)                             = LoggerJs.exception(err)
     override def debug     (msg: js.Any, extra: js.Any*)                = console.debug     (msg, extra: _*)
     override def info      (msg: js.Any, extra: js.Any*)                = console.info      (msg, extra: _*)
@@ -68,12 +88,12 @@ object LoggerJs {
     override def clear                                                  = console.clear()
   }
 
-  object on extends LoggerJs {
+  private final class On(dsl: Dsl[Unit]) extends LoggerJs {
     override def apply(f: => (Dsl[Unit] => Unit)): Unit =
-      f(real)
+      f(dsl)
 
     private val pureDsl =
-      real.map(f => Callback(f()))
+      dsl.map(f => Callback(f()))
 
     override def pure(f: => (Dsl[Callback] => Callback)): Callback =
       f(pureDsl)
@@ -83,7 +103,13 @@ object LoggerJs {
 
     override def async(f: => (Dsl[AsyncCallback[Unit]] => AsyncCallback[Unit])): AsyncCallback[Unit] =
       f(asyncDsl)
+
+    override def prefixedWith(prefix: => String) =
+      new On(dsl.prefixedWith(prefix))
   }
+
+  lazy val on: LoggerJs =
+    new On(realDsl)
 
   object off extends LoggerJs {
     @elidable(elidable.INFO)
@@ -95,6 +121,9 @@ object LoggerJs {
 
     override def async(f: => (Dsl[AsyncCallback[Unit]] => AsyncCallback[Unit])): AsyncCallback[Unit] =
       AsyncCallback.unit
+
+    override def prefixedWith(prefix: => String) =
+      this
   }
 
   @inline def devOnly: LoggerJs =

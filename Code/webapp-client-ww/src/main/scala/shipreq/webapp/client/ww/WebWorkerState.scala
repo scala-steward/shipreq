@@ -7,9 +7,10 @@ import shipreq.webapp.base.AssetManifest
 import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.event.EventOrd.Implicits._
 import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.text.PlainText
 
-final class WebWorkerState {
+final class WebWorkerState(logger: LoggerJs) {
   import WebWorkerState._
 
   private var _am: AssetManifest =
@@ -56,20 +57,25 @@ final class WebWorkerState {
     Callback {
       val old = state.pao
       state = f(state)
+      logger(_.debug(s"State updated to ord=${state.pao.ord}, ordPromises=${state.ordPromises.length}"))
       val projectChanged = state.pao ne old
 
       if (projectChanged && state.ordPromises.nonEmpty) {
         val newOrd = state.pao.ord
 
-        def releaseFilter(p: OrdPromise): Boolean =
-          if (p.ord <= newOrd) {
-            // release
-            p.complete.runNow()
-            false // don't keep anymore
-          } else
-            true // keep promise
+        // Remove releasable promises
+        val (releasable, pending) = state.ordPromises.partition(_.ord <= newOrd)
+        state = state.copy(ordPromises = pending)
+        logger(_.debug(s"State updated to ord=${state.pao.ord}, ordPromises=${state.ordPromises.length}"))
 
-        state = Immutable.ordPromises.modify(_.filter(releaseFilter))(state)
+        // Execute releasable promises
+        for (p <- releasable) {
+          logger(_.debug(s"Continuing delayed request for ${p.ord}..."))
+          p.complete.attempt.runNow() match {
+            case Right(_)  =>
+            case Left(err) => LoggerJs.exception(err)
+          }
+        }
       }
     }
 
