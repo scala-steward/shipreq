@@ -73,6 +73,25 @@ with no guarantees about how all the features will interact. The class/method pr
 with `final` and `abstract` features is mentally easy enough but every single feature has the ability to
 interact badly with something else and it's not always easy to identify those combinations.
 
+I recently saw <A href="https://github.com/scala/scala/pull/9211">a PR to Scala</A> that's a great
+demonstration of exactly this.
+The `private` and `sealed` keywords have been around for ages and someone's only *just* come up
+with the realisation that private classes are effectively sealed.
+Scala's been in existence for 16 years!
+When you have hundreds of features it doesn't seem feasible to manual consider each possible combination.
+100 features yields 4950 unique pairs. There's nothing special about pairs though, some issues may only
+manifest when three specific features intersect. For 100 features there are:
+* 4950 unique sets of 2
+* 161,700 unique sets of 3
+* 3,921,225 unique sets of 4
+* ...
+* 17,310,309,456,440 unique sets of 10
+
+It's not unlikely to have a bad interaction between 10 features out of a possible 100.
+It's impossible to manually consider.
+
+
+
 ## Similarity #3
 
 Type-safety. It's a pillar that I depend on all the time. And no please don't think of Java's type system
