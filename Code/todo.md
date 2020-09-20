@@ -57,7 +57,6 @@ v2.2
   SI: Or maybe a rule that for MFs, manual always wins / disables DT (granularity=req-type)
 * ReqDetail ImpGraph when coloured by tag, should display the tag in the hover text
   Actually, maybe just always include all tags in the hover text - that's probably better
-* go to req by search (everywhere)
 * reorder tags when expansions recombined
 * Add percentages to deriv expl
 * tag in text should combine tag desc and whence-explanation
