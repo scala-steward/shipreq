@@ -45,13 +45,10 @@ object Common {
   def scalafixEnabled =
     !inCI
 
-  lazy val emitSourceMapsValue: Boolean =
-    System.getProperty("emitSourceMaps", "0").trim.toLowerCase match {
-      case "0" | "no" | "n" | "off" => false
-      case _                        =>
-        println("[info] \u001b[1;93mSource maps enabled.\u001b[0m")
-        true
-    }
+  val emitSourceMapsValue = readConfigVar("emitSourceMaps") == "1"
+  if (emitSourceMapsValue) {
+    println("[info] \u001b[1;93mSource maps enabled.\u001b[0m")
+  }
 
   def scalacFlags = Seq(
     "-deprecation",

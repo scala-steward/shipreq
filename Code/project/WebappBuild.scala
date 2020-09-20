@@ -248,8 +248,13 @@ object WebappBuild {
           (target: File) => {
 
             // Copy Scala.JS output
-            def copyScalaJs(file: Attributed[File], to: String): Unit = {
-              fileSync(file.data, target / to, mandatory = true)
+            def copyScalaJs(f: Attributed[File], to: String): Unit = {
+              fileSync(f.data, target / to, mandatory = true)
+              if (Common.emitSourceMapsValue) {
+                val src = file(f.data.absolutePath + ".map")
+                val tgt = target / to.replaceFirst("[^/]+$", src.getName)
+                fileSync(src, tgt, mandatory = true)
+              }
             }
 
             copyScalaJs(jsWebappClientPublicJs, pathScalaJsPathPublic )
