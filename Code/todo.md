@@ -49,9 +49,6 @@ v2.2
 ### Implement
 * search widget in nav bar (like how the gatsby doc works)
 * bug: freshdesk #86
-* When I have a valid filter, and then I start typing it becomes temporarily invalid as I type.
-  The problem is that when it's temporarily invalid the whole screen freaks out and somehow changes to width to beyond 100vw
-  It should fallback to the valid filter.
 * Problem: I've set MF-33 to #should but it's still deriving #must as well
   SI: Might need to add a field to disable DT for a req for a specific field (granularity=req)
   SI: Or maybe a rule that for MFs, manual always wins / disables DT (granularity=req-type)

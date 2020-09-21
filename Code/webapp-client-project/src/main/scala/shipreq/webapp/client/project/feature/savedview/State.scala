@@ -14,9 +14,10 @@ import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.widgets.FilterEditor
 
 @Lenses
-final case class State(view  : ViewLogic.State,
-                       filter: FilterEditor.State,
-                       async : AsyncFeature.State.D0[EditorFeature.AsyncError]) {
+final case class State(view           : ViewLogic.State,
+                       filter         : FilterEditor.State,
+                       lastValidFilter: Option[Filter.Valid],
+                       async          : AsyncFeature.State.D0[EditorFeature.AsyncError]) {
 
   def filterDead(p: Project, fd: FilterDead): FilterDead =
     view.activeView(p.savedViews, fd).filterDead
@@ -67,9 +68,10 @@ final case class State(view  : ViewLogic.State,
 object State {
   def init: State =
     apply(
-      view   = ViewLogic.State.init,
-      filter = FilterEditor.State.init,
-      async  = AsyncFeature.State.initD0,
+      view            = ViewLogic.State.init,
+      filter          = FilterEditor.State.init,
+      lastValidFilter = None,
+      async           = AsyncFeature.State.initD0,
     )
 
   def init(p: Project): State =

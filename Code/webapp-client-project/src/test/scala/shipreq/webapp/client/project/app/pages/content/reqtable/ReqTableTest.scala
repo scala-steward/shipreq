@@ -41,7 +41,7 @@ object ReqTableTest extends TestSuite {
   import ProjectDsl._
   import UnsafeTypes._
 
-  def testFilter = (
+  def testFilterTotal = Plan.action(
     sortByPubid
       >> enterFilter("-MF")
       +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2")
@@ -51,7 +51,17 @@ object ReqTableTest extends TestSuite {
       +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2")
       >> filterDeadToggle
       +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2")
-  )
+  ).named("testFilterTotal").withInitialState(SampleProject3.project)
+
+  def testFilterPartial = Plan.action(
+    enterFilter("FR")             +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2")
+      >> enterFilter("FR | ")     +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2")
+      >> enterFilter("FR | MF-3") +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2", "MF-3")
+      >> saveCurrentView("x")
+      >> enterFilter("FR | MF-|") +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2", "MF-3")
+      >> enterFilter("FR | MF-4") +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2", "MF-4")
+      >> selectView("x")          +> tablePubids.assert.equalIgnoringOrder("FR-1", "FR-2", "MF-3")
+  ).named("testFilterPartial").withInitialState(SampleProject3.project)
 
   def testDeadColumns = (
     filterDeadToggle
@@ -902,7 +912,10 @@ object ReqTableTest extends TestSuite {
       "filter" - testInitialFilter()
     }
 
-    "filter" - runTest(Plan.action(testFilter).named("testFilter").withInitialState(SampleProject3.project))
+    "filter" - {
+      "total" - runTest(testFilterTotal)
+      "partial" - runTest(testFilterPartial)
+    }
 
     "dead" - {
       "cols" - runTest(Plan action testDeadColumns named "testDeadColumns")

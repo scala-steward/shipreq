@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.{Px, StateSnapshot}
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.base.util.ErrorMsg
+import shipreq.base.util.{ErrorMsg, Invalid, Valid}
 import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.data.{FilterDead, Project, ProjectConfig, ReqId, ShowDead}
 import shipreq.webapp.base.event.VerifiedEvent
@@ -145,11 +145,17 @@ final case class Static(stateAccess                   : StateAccessPure[(State, 
 
   private val onFilterChange: FilterEditor.UpdateFn =
     (newState, newFilter, cb) => {
+
       def mod(p: Project, state: (State, FilterDead)): (State, FilterDead) = {
         val (s1, fd) = state
-        val s2 = s1.copy(filter = newState).modifyView(p, fd, updateFilterText = false)(_.withFilter(newFilter))
-        (s2, fd)
+        val s2 = newState.validity match {
+          case Valid   => s1.copy(lastValidFilter = newFilter)
+          case Invalid => s1
+        }
+        val s3 = s2.copy(filter = newState).modifyView(p, fd, updateFilterText = false)(_.withFilter(s2.lastValidFilter))
+        (s3, fd)
       }
+
       for {
         p <- pxProject.toCallback
         _ <- stateAccess.modState(mod(p, _), cb)
