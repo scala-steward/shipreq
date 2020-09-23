@@ -15,20 +15,21 @@ import shipreq.webapp.client.project.app.Style.{reqdetail => *}
 import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.widgets._
+import shipreq.webapp.client.project.widgets.{ImplyNewReqButton, ProjectWidgets, ViewReq}
 
 private[reqdetail] object ReqTypeRow {
   import Row.{ReqType => row}
   import EditorFeature.FieldKey.{ReqType => field}
 
-  final case class Props(reqType         : ReqType,
+  final case class Props(subject         : ReqId,
+                         reqType         : ReqType,
                          live            : Live,
                          filterDead      : FilterDead,
                          editor          : EditorFeature.ReadWrite.For[field.type],
                          view            : Reusable[ViewReq[VdomTag]],
                          projectWidgets  : ProjectWidgets.AnyCtx,
                          reqTypes        : ReqTypes,
-                         newReqState     : StateSnapshot[NewReqButton.State],
+                         newReqState     : StateSnapshot[ImplyNewReqButton.State],
                          newReqAsync     : AsyncFeature.ReadWrite.D0[ErrorMsg],
                          sspCreateContent: ServerSideProcInvoker[CreateContentCmd, ErrorMsg, NewEvents],
                          reqDetailRC     : RouterCtl[ExternalPubid]) {
@@ -40,33 +41,37 @@ private[reqdetail] object ReqTypeRow {
 
   final class Backend($: BackendScope[Props, Unit]) {
 
-    private val newReqButtonCallbacks =
-      Some {
-        Reusable.byRef {
+    private val onCreate = {
+      val click: ImplyNewReqButton.Method => ImplyNewReqButton.DropdownValue => Callback =
+        method => rowKey =>
+          CallbackOption.traverseOption(rowKey.reqTypeIdOption) { reqTypeId =>
+            $.props.flatMap { p =>
 
-          val click: NewReqButton.DropdownValue => Callback =
-            rowKey =>
-              CallbackOption.traverseOption(rowKey.reqTypeIdOption) { reqTypeId =>
-                $.props.flatMap { p =>
-                  val cmd = CreateContentCmd.empty(reqTypeId)
-                  p.newReqAsync.write.onFailureShowAndForget(
-                    p.sspCreateContent(cmd).rightFlatTapSync(newEvents =>
-                      Callback.traverseOption(newEvents.summary.newReqIds.headOption) { reqId =>
-                        import newEvents.project
-                        val pubid = project.content.reqs.need(reqId).pubid.external(project)
-                        p.reqDetailRC.set(pubid)
-                      }
-                    )
-                  )
+              val cmd: CreateContentCmd =
+                method match {
+                  case ImplyNewReqButton.Method.New   => CreateContentCmd.empty(reqTypeId)
+                  case ImplyNewReqButton.Method.Imply => CreateContentCmd.imply(reqTypeId, Set1(p.subject))
                 }
-              }
 
-          val select: NewReqButton.DropdownValue => Callback =
-            rowKey => $.props.flatMap(_.newReqState.setState(Some(rowKey)))
+              p.newReqAsync.write.onFailureShowAndForget(
+                p.sspCreateContent(cmd).rightFlatTapSync(newEvents =>
+                  Callback.traverseOption(newEvents.summary.newReqIds.headOption) { reqId =>
+                    import newEvents.project
+                    val pubid = project.content.reqs.need(reqId).pubid.external(project)
+                    p.reqDetailRC.set(pubid)
+                  }
+                )
+              )
+            }
+          }
+      Some(Reusable.byRef(click))
+    }
 
-          NewReqButton.Callbacks(click = click, select = select)
-        }
-      }
+    private val onReqTypeSelect = {
+      val select: ImplyNewReqButton.DropdownValue => Callback =
+        rowKey => $.props.flatMap(_.newReqState.setState(Some(rowKey)))
+      Some(Reusable.byRef(select))
+    }
 
     private def renderRowData(cell: Shared.DataCell, p: Props): VdomNode = {
       val editor = p.editor.themedRenderOr(())(p.view.editable(field).getOrElse(EmptyVdom))
@@ -75,12 +80,13 @@ private[reqdetail] object ReqTypeRow {
         Some(CreateFeature.RowKey.req(p.reqType.reqTypeId))
 
       def newButton =
-        NewReqButton.Props(
+        ImplyNewReqButton.Props(
           state      = p.newReqState.value.orElse(defaultSelected),
           reqTypes   = p.reqTypes,
           allowRCG   = Deny,
           pw         = p.projectWidgets,
-          callbacks  = newReqButtonCallbacks,
+          selectItem = onReqTypeSelect,
+          create     = onCreate,
           inProgress = p.newReqAsync.isInProgress,
           basic      = true,
         ).render

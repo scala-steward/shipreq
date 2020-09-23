@@ -1,6 +1,6 @@
 package shipreq.webapp.base.protocol.websocket
 
-import shipreq.base.util.{Direction, NonEmptyArraySeq}
+import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Text
 
@@ -15,6 +15,18 @@ object CreateContentCmd {
       case StaticReqType.UseCase => CreateUseCase.empty
       case rt: CustomReqTypeId   => CreateGenericReq.empty(rt)
     }
+
+  def imply(reqTypeId: ReqTypeId, sources: Set[ReqId]): CreateContentCmd = {
+    val imps: Direction.Values[Set[ReqId]] =
+      Direction.Values {
+        case Backwards => sources
+        case Forwards  => Set.empty
+      }
+    reqTypeId match {
+      case StaticReqType.UseCase => CreateUseCase.empty.copy(imps = imps)
+      case rt: CustomReqTypeId   => CreateGenericReq.empty(rt).copy(imps = imps)
+    }
+  }
 
   final case class CreateGenericReq(codes     : Set[ReqCode.Value],
                                     customText: Map[CustomField.Text.Id, Text.CustomTextField.NonEmptyText],

@@ -371,6 +371,7 @@ object ReqDetail {
 
           case Row.ReqType =>
             ReqTypeRow.Props(
+              subject          = req.id,
               reqType          = data.reqType,
               live             = data.live,
               filterDead       = data.filterDead,

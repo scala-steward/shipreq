@@ -13,6 +13,7 @@ import shipreq.webapp.client.project.feature.CreateFeature
   */
 object NewReqButton extends ButtonAndDropdown.Types[CreateFeature.RowKey] {
 
+  // i.e. currently selected dropdown item
   type State = Option[CreateFeature.RowKey]
 
   @inline def initState: State =
@@ -27,34 +28,36 @@ object NewReqButton extends ButtonAndDropdown.Types[CreateFeature.RowKey] {
                          basic     : Boolean = false,
                         ) {
 
-    private lazy val items: NonEmptyVector[Item] = {
-
-      var items: NonEmptyVector[Item] =
-        reqTypes.liveSortedByMnemonic.map(rt =>
-          Item(
-            key              = rt.mnemonic.value,
-            value            = CreateFeature.RowKey.req(rt.reqTypeId),
-            renderInButton   = pw.reqTypeShort(rt.reqTypeId),
-            renderInDropdown = pw.reqTypeFull(rt.reqTypeId),
-          ))
-
-      if (allowRCG is Allow)
-        items :+= Item(".cg", CreateFeature.RowKey.CodeGroup, UiText.codeGroup)
-
-      items
-    }
-
     val dropdownProps: DBProps =
       ButtonAndDropdown.Props.newReq(
-       items      = items,
-       selectItem = callbacks.map(_.map(_.select)),
-       selected   = state,
-       create     = callbacks.map(_.map(_.click)),
-       inProgress = inProgress,
-       basic      = basic,
+        items      = dropdownItems(reqTypes, allowRCG, pw),
+        selectItem = callbacks.map(_.map(_.select)),
+        selected   = state,
+        create     = callbacks.map(_.map(_.click)),
+        inProgress = inProgress,
+        basic      = basic,
       )
 
     @inline def render: VdomNode =
       dropdownProps.render
+  }
+
+  def dropdownItems(reqTypes: ReqTypes,
+                    allowRCG: Permission,
+                    pw      : ProjectWidgets.AnyCtx): NonEmptyVector[Item] = {
+
+    var items: NonEmptyVector[Item] =
+      reqTypes.liveSortedByMnemonic.map(rt =>
+        Item(
+          key              = rt.mnemonic.value,
+          value            = CreateFeature.RowKey.req(rt.reqTypeId),
+          renderInButton   = pw.reqTypeShort(rt.reqTypeId),
+          renderInDropdown = pw.reqTypeFull(rt.reqTypeId),
+        ))
+
+    if (allowRCG is Allow)
+      items :+= Item(".cg", CreateFeature.RowKey.CodeGroup, UiText.codeGroup)
+
+    items
   }
 }

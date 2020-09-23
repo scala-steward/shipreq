@@ -6,7 +6,6 @@ import scalacss.ScalaCssReact._
 import shipreq.webapp.base.ui.semantic._
 import shipreq.webapp.client.project.app.Style.{widgets => *}
 
-
 /** A button with a dropdown on the right-hand side.
   *
   * Eg. [ New | Tag ↓ ]
@@ -47,13 +46,7 @@ object ButtonAndDropdown {
                   basic       : Boolean = false
                 )(implicit A  : UnivEq[A]): Of[A] = {
 
-      val button = ButtonProps[A](
-        colour     = Colour.Green,
-        label      = "New",
-        icon       = Icon.Plus,
-        callback   = create,
-        inProgress = inProgress,
-      )
+      val button = ButtonProps.newReq(create, inProgress)
 
       ButtonsAndDropdown.Props(
         buttons        = NonEmptyVector.one(button),
