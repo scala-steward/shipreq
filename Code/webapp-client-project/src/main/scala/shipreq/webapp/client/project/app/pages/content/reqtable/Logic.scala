@@ -377,41 +377,59 @@ private[reqtable] object Logic {
   // ===================================================================================================================
   // Post-processing
 
-  def mergeAdjacent[A, C[_]](input: Iterator[A])(merge: (A, A) => Option[A])
+  def mergeAdjacent[A, C[_]](input: Iterator[A])
+                            (merge: (A, A) => Option[A],
+                             postMerge: A => A)
                             (implicit cbf: Factory[A, C[A]]): C[A] = {
 
     val results = cbf.newBuilder
     if (input.hasNext) {
-      @tailrec def go(prev: A): Unit = {
+
+      @tailrec def go(prev: A, prevIsAMerge: Boolean): Unit = {
+        @inline def prev2 = if (prevIsAMerge) postMerge(prev) else prev
         if (input.isEmpty)
-          results += prev
+          results += prev2
         else {
           val next = input.next()
           merge(prev, next) match {
-            case None         => results += prev; go(next)
-            case Some(merged) => go(merged)
+            case None =>
+              results += prev2
+              go(next, false)
+
+            case Some(merged) =>
+              go(merged, true)
           }
         }
       }
-      go(input.next())
+
+      go(input.next(), false)
     }
     results.result()
   }
 
-  def consolidateAdjacentDups[C[_]](rows: Iterator[Row])(implicit cbf: Factory[Row, C[Row]]): C[Row] =
-    mergeAdjacent(rows)((x, y) =>
-      (x, y) match {
-        case (a: Row.ForReq, b: Row.ForReq) if a.req.id ==* b.req.id =>
-          Some(Row.ForReq(
-            req         = a.req,
-            live        = a.live,
-            exp         = a.exp |+| b.exp,
-            fieldRules  = a.fieldRules,
-            instanceId  = a.instanceId min b.instanceId))
-        case _ =>
-          None
-      }
-    )
+  def consolidateAdjacentDups[C[_]](rows: Iterator[Row])(implicit cbf: Factory[Row, C[Row]]): C[Row] = {
+
+    val merge: (Row, Row) => Option[Row] =
+      (x, y) =>
+        (x, y) match {
+          case (a: Row.ForReq, b: Row.ForReq) if a.req.id ==* b.req.id =>
+            Some(Row.ForReq(
+              req         = a.req,
+              live        = a.live,
+              exp         = a.exp |+| b.exp,
+              fieldRules  = a.fieldRules,
+              instanceId  = a.instanceId min b.instanceId))
+          case _ =>
+            None
+        }
+
+    // TODO Actually.... wouldn't it be better to do this in Expansion.++? Yes it would! Otherwise, maybe add a flag
+    // TODO to Expansion to signify that it needs a resort...
+    val postMerge: Row => Row =
+      identity
+
+    mergeAdjacent(rows)(merge, postMerge)
+  }
 
   /**
    * Map with history.
