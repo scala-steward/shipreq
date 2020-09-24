@@ -83,6 +83,8 @@ object LogicTest extends TestSuite {
   private type Rows    = Vector[Row]
   private type Filter  = Option[F]
 
+  private lazy val P1v = applyEventSuccessfully(P1, TestEvent.fieldCustomTagCreate(verField, verTG))
+
   private case class PCache(p: Project, pt: PlainText.ForProject.NoCtx, ts: TextSearch)
   private var _pcache: List[PCache] = Nil
   private def pcache(p: Project): PCache =
@@ -129,6 +131,12 @@ object LogicTest extends TestSuite {
 
   private def expansionResults[A]: Lens[Expansion[A], Vector[A]] =
     Lens[Expansion[A], Vector[A]](_.all)(_ => identity)
+
+  private def cfTagsLens(f: CustomField.Tag.Id): Lens[Expansions, Expansion[ApplicableTagId]] =
+    Lens[Expansions, Expansion[ApplicableTagId]](_.tagsForCF(f))(e => Expansions.cfTags.modify(_.updated(f, e)))
+
+  private def cfTags(f: CustomField.Tag.Id): Optional[Row, Vector[ApplicableTagId]] =
+    Row.expansion ^|-> cfTagsLens(f) ^|-> expansionResults
 
   private val otherTags: Optional[Row, Vector[ApplicableTagId]] =
     Row.expansion ^|-> Expansions.otherTags ^|-> expansionResults
@@ -1393,6 +1401,17 @@ object LogicTest extends TestSuite {
       desc = "DD-6:wip  DD-7:v1.0,pri=med  DD-8:v1.0,pri=low  DD-4:pri=med  DD-7:pri=med,v1.0  DD-2:pri=low  DD-5:pri=low,pri=high  DD-8:pri=low,v1.0  DD-3:pri=high  DD-5:pri=high,pri=low"))
   }
 
+  def testCustomTagField_expansion(): Unit = {
+    def t(ids: ApplicableTagId*) = GReq(reqType = dd).tag(ids: _*)
+    val p = t(v10, v11, v13) + t(v12) + t() ! P1v
+
+    val fmtRows = prefixWithPubid(p, rowToTagTxt(p, cfTags(verField)))
+
+    testCB(p, C.CustomField(verField), None, ShowDead, fmtRows)(allSortsCB(1,
+      asc  = "DD-1:v1.0,v1.1,v1.3  DD-2:v1.2  DD-1:v1.3,v1.0,v1.1",
+      desc = "DD-1:v1.3,v1.1,v1.0  DD-2:v1.2  DD-1:v1.1,v1.0,v1.3"))
+  }
+
   // ===================================================================================================================
 
   override def tests = Tests {
@@ -1415,10 +1434,11 @@ object LogicTest extends TestSuite {
         "expansion" - testAllTags_expansion()
       }
       "custTag" - {
-        "sorted1"  - testCustomTagField_sorted1()
-        "sorted2"  - testCustomTagField_sorted2()
-        "unsorted" - testCustomTagField_unsorted()
-        "inText"   - testCustomTagField_inText()
+        "sorted1"   - testCustomTagField_sorted1()
+        "sorted2"   - testCustomTagField_sorted2()
+        "unsorted"  - testCustomTagField_unsorted()
+        "inText"    - testCustomTagField_inText()
+        "expansion" - testCustomTagField_expansion()
       }
     }
     "applicability" - {

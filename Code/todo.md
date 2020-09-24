@@ -47,7 +47,6 @@ v2.2
 * Project deletion (hard & soft - maybe even call soft "archive")
 
 ### Implement
-* reorder tags when expansions recombined
 * Add percentages to deriv expl
 * tag in text should combine tag desc and whence-explanation
 * pressing enter on reqtable in pubid should navigate to req
@@ -67,6 +66,7 @@ v2.2
 Backlog (maybe-probably soon)
 ========================================================================================================================
 
+* reorder tags when expansions recombined -- hard to find a test case, wait until it appears again
 * Make code block lineNumbers configurable via attribute
 * Use WebSockets on home SPA to see projects and project stats update
 * Add Change Count field to ReqTable/Detail (help find most volatile/unstable reqs)

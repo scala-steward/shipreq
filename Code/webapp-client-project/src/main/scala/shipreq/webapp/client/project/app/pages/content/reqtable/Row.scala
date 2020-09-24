@@ -23,11 +23,12 @@ object Row {
    * @param instanceId An arbitrary number that, coupled with `req.id` serves to uniquely identify a row.
    *                   Reason is that the same GenericReq can appear in multiple rows.
    */
-  final case class ForReq(req        : Req,
-                          live       : Live,
-                          exp        : Expansions,
-                          fieldRules : FieldSetRules,
-                          instanceId : Int) extends Row {
+  final case class ForReq(req       : Req,
+                          live      : Live,
+                          exp       : Expansions,
+                          fieldRules: FieldSetRules,
+                          instanceId: Int) extends Row {
+
     override val id       = Row.Id.ForReq(req.id, instanceId)
     override def sourceId = Row.SourceId.ForReq(req.id)
     override def toString = s"$id\n$req\n$exp\n"
@@ -36,6 +37,7 @@ object Row {
   final case class ForCodeGroup(group: CodeGroup,
                                 reqCode: ReqCode.Value,
                                 reqCodeTreeItem: Option[ReqCodeTreeItem]) extends Row {
+
     override val id         = Row.Id.ForCodeGroup(reqCodeId)
     override def sourceId   = Row.SourceId.ForCodeGroup(reqCodeId)
     override def live       = group.live
