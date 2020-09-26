@@ -13,6 +13,12 @@
   * agile shit
 
 ### Implement
+
+* FR-35: Allow a user to view a project in read-only mode
+* delete & restore projects
+* hard delete
+
+
 * Add percentages to deriv expl
 * when session expired, it should still always retry in case re-auth occurred in another tab
 * if I have a flat list of unconnected nodes in ReqGraph, they appear backwards (ie. IV1, FR3, FR2, FR1)
