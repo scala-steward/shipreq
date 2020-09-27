@@ -1,0 +1,25 @@
+#!/bin/bash
+set -euo pipefail
+[ $# -eq 0 ] && echo "Usage: $0 <gv file>" && exit 1
+
+for f in "$@"; do
+
+  cp -v "$f" "/tmp/$(basename "$f").$(date +%Y%m%d-%H%M%S)-$$.bak"
+
+  perl -pi -e '
+    s/\]([a-zA-Z0-9]+)\[/\]\n$1\[/g;
+    s/\]\{/]\n{/g;
+    s/;/\n/g;
+    s/\n?}/}\n/g;
+    s/](\d+\[)/]\n$1/g;
+    s/\n(?="])//g;
+    s/ G\{b/ G {\nb/;
+    s/}\Z/\n}/;
+    s/\]\}\n/]\n}\n/g;
+    s/\n/\n  /g;
+    s/\s*$/\n/;
+    s/\n  \}\Z/\n}/;
+  ' "$f"
+
+  echo "Formatted $f"
+done

@@ -13,11 +13,10 @@
   * agile shit
 
 ### Implement
-
+* add option to show simplified UC graphs (using the `merged-a` style)
 * FR-35: Allow a user to view a project in read-only mode
 * delete & restore projects
 * hard delete
-
 
 * Add percentages to deriv expl
 * when session expired, it should still always retry in case re-auth occurred in another tab

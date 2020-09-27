@@ -1,0 +1,45 @@
+digraph G {
+  bgcolor=white
+  rankdir=LR
+  ranksep=0.28
+  S[shape=circle tooltip=Start style=filled color=black fontsize=1 height=.3]
+  E[shape=doublecircle tooltip=End style=filled color=black fontsize=1 height=.3]
+  {node[fillcolor=lawngreen style=filled shape=invhouse]
+  // 1[label="1.0" tooltip="Create and complete requirements"]
+  }
+  {node[fillcolor=lawngreen style=filled shape=ellipse]
+  1[label="1.0\nto\n1.0.1" tooltip="Create and complete requirements"]
+  3[label="1.0.2" tooltip="BA records an interview (implied by ~MF)"]
+  9[label="1.0.2.a\nto\n1.0.2.a.ii" tooltip="[Optional] If interview is a follow-up..."]
+  // 11[label="1.0.2.a.i" tooltip="BA links it to the previous interview"]
+  // 10[label="1.0.2.a.ii" tooltip="BA marks previous interview as no longer needing more info"]
+  4[label="1.0.3" tooltip="BA looks at which interviews need more info"]
+  8[label="1.0.3.a" tooltip="BA opens up and reads through an interview"]
+  5[label="1.0.3.b" tooltip="[Optional] BA prepares a follow up interview"]
+  13[label="1.0.3.c" tooltip="BA marks interview as no longer needing more info"]
+  14[label="1.0.4\nto\n1.0.4.b" tooltip="BA analyses interviews"]
+  // 15[label="1.0.4.a" tooltip="BA looks for all interviews requiring analysis"]
+  // 17[label="1.0.4.b" tooltip="BA splits screen between interview and reqtable"]
+  18[label="1.0.4.c" tooltip="BA enters requirements with the interview as the implication source"]
+  19[label="1.0.4.d\nto\n1.0.6" tooltip="When done, BA marks interview as analysed"]
+  // 27[label="1.0.5" tooltip="Same as [1.0.4] except for all downstream requirements until all analysed sufficiently"]
+  // 28[label="1.0.6" tooltip="Move on to [WF-3] and/or [WF-4]"]
+  }
+  {node[fillcolor=skyblue style=filled shape=invhouse]
+  // 21[label="1.1" tooltip="BA wants to complete analysis of a specific high-level requirement"]
+  }
+  {node[fillcolor=skyblue style="filled,rounded" shape=box]
+  21[label="1.1\nto\n1.1.3"]
+  }
+  {edge[weight=9]S->1->3->9->4->8->5->13->14->18->19->E}
+  S->21
+  21->3
+  21->4
+  21->14
+  3->3
+  3->4
+  18->18
+  19->14
+  5->3
+  13->4
+}

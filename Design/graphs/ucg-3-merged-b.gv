@@ -1,0 +1,61 @@
+digraph G {
+  bgcolor=white
+  rankdir=LR
+  ranksep=0.28
+  S[shape=circle tooltip=Start style=filled color=black fontsize=1 height=.3]
+  E[shape=doublecircle tooltip=End style=filled color=black fontsize=1 height=.3]
+  {node[fillcolor=lawngreen style=filled shape=invhouse]
+  // 57[label="3.0" tooltip="Invite someone with an account to a project"]
+  }
+  {node[fillcolor=lawngreen style=filled shape=ellipse]
+  57[label="3.0 ~ 3.0.1" tooltip="Invite someone with an account to a project"]
+  // 58[label="3.0.1" tooltip="A comes to know B's username"]
+  59[label="3.0.2 ~ 3.0.3" tooltip="A opens P and goes to the users/access page"]
+  // 60[label="3.0.3" tooltip="A clicks invite user(s)"]
+  61[label="3.0.4 ~ 3.0.4.a" tooltip="A specifies B as an invitee"]
+  // 73[label="3.0.4.a" tooltip="Either: A types in B's username"]
+  74[label="3.0.4.b ~ 3.0.5" tooltip="Or if coming in from [3.1], A selects B from their \"address book\""]
+  // 62[label="3.0.5" tooltip="System confirms that B's username is indeed belongs to an active user"]
+  63[label="3.0.6" tooltip="A sets the permissions (which is either admin or collaborator at this point)"]
+  64[label="3.0.7 ~ 3.0.9" tooltip="A hits `Invite`"]
+  // 65[label="3.0.8" tooltip="System creates an invitation for B to join P"]
+  // 66[label="3.0.9" tooltip="A can see a pending invite exists"]
+  67[label="3.0.10 ~ 3.0.11" tooltip="B logs in"]
+  // 68[label="3.0.11" tooltip="B sees a pending invitation in their home / dashboard"]
+  69[label="3.0.12" tooltip="B hits `Accept`"]
+  }
+  {node[fillcolor=skyblue style=filled shape=invhouse]
+  // 70[label="3.1" tooltip="A & B have interacted before"]
+  }
+  {node[fillcolor=skyblue style="filled,rounded" shape=box]
+  70[label="3.1 ~ 3.1.2" tooltip="A & B have interacted before"]
+  // 71[label="3.1.1" tooltip="They are in each other's \"address book\""]
+  // 72[label="3.1.2" tooltip="Process begins"]
+  }
+  {node[fillcolor=tomato style=filled shape=octagon]
+  75[label="3.E.1 ~ 3.E.1.a" tooltip="A types in an incorrect username X"]
+  // 76[label="3.E.1.a" tooltip="System tells A that no user exists with username X"]
+  77[label="3.E.2 ~ 3.E.2.a" tooltip="A doesn't specify any permissions"]
+  // 78[label="3.E.2.a" tooltip="System tells them that some access is required"]
+  79[label="3.E.3 ~ 3.E.3.c" tooltip="A changes her mind"]
+  // 80[label="3.E.3.a" tooltip="A indicates she wants to revoke the invitation"]
+  // 81[label="3.E.3.b" tooltip="System revokes the invitation"]
+  // 82[label="3.E.3.c" tooltip="A can see the invitation is `revoked` and not `accepted`"]
+  83[label="3.E.4 ~ 3.E.4.d" tooltip="B changes his mind"]
+  // 84[label="3.E.4.a" tooltip="B clicks `decline` on the invitation"]
+  // 85[label="3.E.4.b" tooltip="System shows B past invitations as well"]
+  // 86[label="3.E.4.c" tooltip="B can see that he declined the invitation"]
+  // 87[label="3.E.4.d" tooltip="A looks at her invitations and can see that B has declined"]
+  }
+  {edge[weight=9]S->57->59->61->74->63->64->67->69->E}
+  S->70
+  61->75
+  63->77
+  64->79
+  67->83
+  70->59
+  75->61
+  77->63
+  79->E
+  83->E
+}
