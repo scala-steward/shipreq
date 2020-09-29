@@ -97,7 +97,6 @@ object FilterParser {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-@nowarn("msg=Auto-application.*deprecated")
 private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
   import FilterParser._
 

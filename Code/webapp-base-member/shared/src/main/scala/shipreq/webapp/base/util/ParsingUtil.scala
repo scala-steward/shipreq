@@ -48,7 +48,6 @@ object ParsingUtil {
   val toInt = (_: String).toInt
 }
 
-@nowarn("msg=Auto-application.*deprecated")
 abstract class ParsingUtil extends Parser {
   import ParsingUtil._
 

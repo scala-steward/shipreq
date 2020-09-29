@@ -13,7 +13,6 @@ import shipreq.webapp.base.text.Atom.{CodeBlockDetail, DisplayReqRef}
 import shipreq.webapp.base.text.{Grammar => G}
 import shipreq.webapp.base.util._
 
-@nowarn("msg=Auto-application.*deprecated")
 object Parsers {
 
   def fixOptionalText[T <: Atom.Base](text: T#OptionalText): T#OptionalText =

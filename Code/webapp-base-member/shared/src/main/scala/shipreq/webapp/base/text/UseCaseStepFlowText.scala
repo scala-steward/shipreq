@@ -69,7 +69,6 @@ object UseCaseStepFlowText {
   def parse(input: String): Seq[Elem[String, String]] =
     new TextAndFlowParser(input).main.run()(Parser.DeliveryScheme.Throw)
 
-  @nowarn("msg=Auto-application.*deprecated")
   private final class TextAndFlowParser(val input: ParserInput) extends ParsingUtil {
     import ParsingUtil._
 

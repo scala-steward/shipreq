@@ -21,7 +21,6 @@ object UserDefinedGraph {
   private val WS = CharPredicate.from(_.isWhitespace)
   private val ID = CharPredicate.Visible -- '{'
 
-  @nowarn
   private class GraphParser(val input: ParserInput) extends Parser {
     def main: Rule1[(String, String)] =
       rule(
