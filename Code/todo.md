@@ -13,7 +13,6 @@
   * agile shit
 
 ### Implement
-* after a lot of use, graphviz stops working. Need to add timeout and/or blank result checks
 * add option to show simplified UC graphs (using the `merged-a` style)
 * FR-35: Allow a user to view a project in read-only mode
 * delete & restore projects

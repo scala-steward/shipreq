@@ -21,34 +21,34 @@ final class Service(logger: LoggerJs) extends Server.Service[WebWorkerCmd] {
         state.updateProject(ves).asAsyncCallback.ret(NoResult)
 
       case GraphUseCaseFlow(ord, id, ctx) =>
-        for {
-          _ <- state.awaitGraphViz
-          _ <- state.await(ord)
-          p <- state.acProject
-          x <- new UseCaseFlowGraph(id, p, ctx).svg
-        } yield x
+        state.withGraphViz(
+          for {
+            _ <- state.await(ord)
+            p <- state.acProject
+            x <- new UseCaseFlowGraph(id, p, ctx).svg
+          } yield x
+        )
 
       case GraphReqImplications(ord, focus, filterDead, colours) =>
-        for {
-          _ <- state.awaitGraphViz
-          _ <- state.await(ord)
-          p <- state.acProject
-          x <- new ReqImpGraph(focus, filterDead, p, colours).svg
-        } yield x
+        state.withGraphViz(
+          for {
+            _ <- state.await(ord)
+            p <- state.acProject
+            x <- new ReqImpGraph(focus, filterDead, p, colours).svg
+          } yield x
+        )
 
       case GraphAllImplications(ord, filterDead, scope, config) =>
-        for {
-          _  <- state.awaitGraphViz
-          _  <- state.await(ord)
-          p  <- state.acProject
-          pt <- state.acPlainText
-          x  <- new ProjectImpGraph(p, pt, filterDead, scope, config).svg
-        } yield x
+        state.withGraphViz(
+          for {
+            _  <- state.await(ord)
+            p  <- state.acProject
+            pt <- state.acPlainText
+            x  <- new ProjectImpGraph(p, pt, filterDead, scope, config).svg
+          } yield x
+        )
 
       case GraphInline(dot) =>
-        for {
-          _ <- state.awaitGraphViz
-          x <- graphviz.render(DOT(dot))
-        } yield x
+        state.withGraphViz(graphviz.render(DOT(dot)))
     }
 }

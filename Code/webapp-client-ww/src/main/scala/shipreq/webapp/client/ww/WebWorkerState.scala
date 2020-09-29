@@ -41,8 +41,33 @@ final class WebWorkerState(logger: LoggerJs) {
   private val graphvizBarrier =
     AsyncCallback.barrier.runNow()
 
-  val awaitGraphViz: AsyncCallback[Unit] =
+  private val awaitGraphViz: AsyncCallback[Unit] =
     graphvizBarrier.waitForCompletion
+
+  def withGraphViz[A](f: => AsyncCallback[A], retries: Int = 3): AsyncCallback[A] = {
+    // TODO https://github.com/japgolly/scalajs-react/issues/782
+    def timeout[B](f: AsyncCallback[B]): AsyncCallback[Option[B]] =
+      AsyncCallback.unit.delayMs(2000).race(f).map(_.toOption)
+
+    val main = timeout(AsyncCallback.byName(f).attempt)
+
+    def go(retries: Int): AsyncCallback[A] =
+      main.flatMap {
+        case Some(Right(a)) =>
+          AsyncCallback.pure(a)
+        case result =>
+          _graphviz = GraphViz.newInstance
+          if (retries > 0)
+            go(retries - 1)
+          else
+            result match {
+              case Some(Left(err)) => AsyncCallback.throwException(err)
+              case _               => AsyncCallback.throwException(new RuntimeException("Timeout rendering graph"))
+            }
+      }
+
+    awaitGraphViz >> go(retries)
+  }
 
   private var state: Immutable =
     Immutable.init

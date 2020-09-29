@@ -34,6 +34,10 @@ object GraphViz {
   def load(am: AssetManifest): GraphViz = {
     DedicatedWorkerGlobalScope.self.asInstanceOf[js.Dynamic].vizWasmFile = am.vizWasm
     DedicatedWorkerGlobalScope.self.importScripts(js.Array(am.vizJs))
+    newInstance
+  }
+
+  def newInstance: GraphViz = {
     val raw = js.Dynamic.global.viz.asInstanceOf[RawFn]
     new GraphViz(raw)
   }
