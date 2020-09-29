@@ -7,21 +7,26 @@ import scala.util.Try
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.lib.LoggerJs
 
-trait Client[Cmd[_], R[_]] {
-  def post[A](cmd: Cmd[A])(implicit readResult: R[A]): AsyncCallback[A]
+trait Client[Cmd[_], R[_], Enc] {
+  final def post[A](cmd: Cmd[A])(implicit readResult: R[A]): AsyncCallback[A] =
+    postEnc(cmd, encode(cmd))
+
+  def encode(cmd: Cmd[_]): Enc
+
+  def postEnc[A](cmd: Cmd[A], enc: Enc)(implicit readResult: R[A]): AsyncCallback[A]
 }
 
 object Client {
   import org.scalajs.dom.webworkers.Worker
   import Protocol._
-  import Codec.default.{Reader, Writer}
+  import Codec.{default => D}
 
-  def default[Cmd[_]](worker: Worker, logger: LoggerJs)(implicit writeCmd: Writer[Cmd[_]]): Client[Cmd, Reader] = {
+  def default[Cmd[_]](worker: Worker, logger: LoggerJs)(implicit writeCmd: D.Writer[Cmd[_]]): Client[Cmd, D.Reader, D.Encoded] = {
     import Codec.{default => codec}
     apply(codec)(interface(codec, worker, _), logger, OnError.logToConsole)
   }
 
-  implicit def reusability[Cmd[_], R[_]]: Reusability[Client[Cmd, R]] =
+  implicit def reusability[Cmd[_], R[_], E]: Reusability[Client[Cmd, R, E]] =
     Reusability.byRef
 
   // ===================================================================================================================
@@ -30,7 +35,7 @@ object Client {
                    (mkInterface: Callback => Interface[codec.Encoded],
                     logger     : LoggerJs,
                     onError    : OnError)
-                   (implicit writeCmd: codec.Writer[Cmd[_]]): Client[Cmd, codec.Reader] = {
+                   (implicit writeCmd: codec.Writer[Cmd[_]]): Client[Cmd, codec.Reader, codec.Encoded] = {
 
     import codec.{Encoded, Reader}
 
@@ -41,11 +46,14 @@ object Client {
 
     val interface = mkInterface(initBarrier.complete)
 
-    new Client[Cmd, codec.Reader] {
+    new Client[Cmd, Reader, Encoded] {
 
       interface.listen(receive, onError).runNow()
 
-      override def post[A](cmd: Cmd[A])(implicit readResult: Reader[A]): AsyncCallback[A] =
+      override def encode(cmd: Cmd[_]) =
+        codec.encode[Cmd[_]](cmd)
+
+      override def postEnc[A](cmd: Cmd[A], enc: Encoded)(implicit readResult: Reader[A]): AsyncCallback[A] =
         initBarrier.waitForCompletion >> AsyncCallback.promise[A].map { case (result, complete) =>
           lastPromiseId += 1
           val id = lastPromiseId
@@ -56,7 +64,7 @@ object Client {
           }
           val p = Promise[Encoded](id, listener)
           promises ::= p
-          val msg = new Message(id, codec.encode[Cmd[_]](cmd))
+          val msg = new Message(id, enc)
           logger(_.info(s"Sending WW request #$id: ${JSON.stringify("" + cmd).take(300)}"))
           interface.post(msg).runNow()
           result

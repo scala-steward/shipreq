@@ -7,7 +7,7 @@ import shipreq.webapp.client.ww.api._
 
 object WebWorkerClient {
 
-  type Instance = Client[WebWorkerCmd, codec.Reader]
+  type Instance = Client[WebWorkerCmd, codec.Reader, codec.Encoded]
 
   def apply(wwJsUrl: String, logger: LoggerJs): Instance = {
     lazy val worker = new Worker(wwJsUrl)
