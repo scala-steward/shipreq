@@ -42,11 +42,11 @@ object Login {
 
   object LocalStorage {
 
+    private implicit def storage = BrowserStorage.localOrEmpty
+
     private final val KeyPrefix = "login-"
     private val FieldRememberMe = BrowserStorage.Field.boolean(KeyPrefix + "remember-me")
     private val FieldUser       = BrowserStorage.Field        (KeyPrefix + "user")
-
-    private implicit def storage = BrowserStorage.localOrEmpty
 
     def read: CallbackTo[LocalStorage] =
       for {

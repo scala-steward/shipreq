@@ -72,18 +72,18 @@ object BrowserStorage {
 
   // ===================================================================================================================
 
-  final class Field[A](key: String, write: A => String, read: String => Option[A]) {
+  final class Field[A](key: String, write: A => String, read: String => Option[A])(implicit s: BrowserStorage) {
 
-    def get(implicit s: BrowserStorage): CallbackTo[Option[A]] =
+    def get: CallbackTo[Option[A]] =
       s.getItem(key).map(_.flatMap(read))
 
-    def set(value: A)(implicit s: BrowserStorage): Callback =
+    def set(value: A): Callback =
       s.setItem(key, write(value))
 
-    def remove(implicit s: BrowserStorage): Callback =
+    def remove: Callback =
       s.removeItem(key)
 
-    def setOrRemove(value: Option[A])(implicit s: BrowserStorage): Callback =
+    def setOrRemove(value: Option[A]): Callback =
       value.fold(remove)(set(_))
 
     def map[B](f: A => Option[B])(g: B => A): Field[B] =
@@ -94,10 +94,10 @@ object BrowserStorage {
   }
 
   object Field {
-    def apply(key: String): Field[String] =
+    def apply(key: String)(implicit s: BrowserStorage): Field[String] =
       new Field(key, identity, Some(_))
 
-    def boolean(key: String): Field[Boolean] =
+    def boolean(key: String)(implicit s: BrowserStorage): Field[Boolean] =
       apply(key).map({
         case "1" => Some(true)
         case "0" => Some(false)
