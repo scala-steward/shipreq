@@ -7,7 +7,7 @@ import org.scalajs.dom.document
 import org.scalajs.dom.raw.SVGSVGElement
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
-import shipreq.webapp.base.data.savedview.ImpGraphConfig.{Colours, LabelFormat}
+import shipreq.webapp.base.data.savedview.ImpGraphConfig.LabelFormat
 import shipreq.webapp.base.lib.DomUtil._
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.project.app.WebWorkerClient
@@ -153,14 +153,9 @@ object ImplicationGraph {
         }
 
       val tags: Req => String =
-        config.colours match {
-
-          case Colours.ByReqType =>
-            none
-
-          case Colours.ByTag(tagGroupId) =>
-            val reqTags = project.virtualTags.underTagGroup(tagGroupId, filterDead)
-            req => plainText.tagListWithHashtags(reqTags(req.id))
+        req => {
+          val tags = project.virtualTags(req.id, filterDead).ordered(TagFieldId.All)
+          plainText.tagListWithHashtags(tags)
         }
 
       val all = (title :: tags :: Nil).filter(_ ne none)

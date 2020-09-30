@@ -17,9 +17,7 @@
 * FR-35: Allow a user to view a project in read-only mode
 * delete & restore projects
 * hard delete
-
-* Add percentages to deriv expl
-* ReqDetail ImpGraph: include all tags in the hover text
+* Add percentages to deriv expl (?)
 
 
 
