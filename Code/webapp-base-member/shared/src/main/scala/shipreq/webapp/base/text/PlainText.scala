@@ -214,11 +214,11 @@ object PlainText {
               bullet = lead()
               if (q.isEmpty) {
                 if (acc.isEmpty || acc.endsWith("\n\n"))
-                  bullet
+                  indent ~ bullet
                 else
-                  "\n\n" ~ bullet
+                  "\n\n" ~ indent ~ bullet
               } else
-                q ~ gapBetweenBullets ~ bullet
+                q ~ gapBetweenBullets ~ indent ~ bullet
             }
           }
 

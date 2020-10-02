@@ -82,6 +82,9 @@ abstract class ParsingUtil extends Parser {
   def int1n: Rule1[Int] =
     rule(ch('0').* ~ capture(CharPredicate.Digit19 ~ CharPredicate.Digit.*) ~> toInt)
 
+  def pop[A]: Rule[A :: HNil, HNil] =
+    rule(run((_: A) => test(true)))
+
   def popOptional[A]: RuleAB[Option[A], A] =
     rule(run((o: Option[A]) => test(o.isDefined) ~ push(o.get)))
 

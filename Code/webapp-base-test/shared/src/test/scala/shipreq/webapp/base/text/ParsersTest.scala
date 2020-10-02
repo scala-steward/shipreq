@@ -16,7 +16,7 @@ import shipreq.base.util.{NonEmptyArraySeq, Valid}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{ApplicableTagGD, Event}
 import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.base.test.{ProjectDsl, SampleProject6 => SP, TextShrink, UnsafeTypes}
+import shipreq.webapp.base.test.{ProjectDsl, TextShrink, UnsafeTypes, SampleProject6 => SP}
 import shipreq.webapp.base.text.Atom.{AnyAtom, CodeBlockDetail, DisplayReqRef}
 import shipreq.webapp.base.{RandomData => $}
 import sourcecode.Line
@@ -281,14 +281,18 @@ object ParsersTest extends TestSuite {
 
       def testT[A <: AnyAtom: ClassTag](p: Project, parse: Project => String => ArraySeq[A], text: String)(as: A*)(implicit l: Line): Unit = {
         val e = as.to(ArraySeq)
-        assertEq(quoteStringForDisplay(preprocessStr(text, MultiLine)), parse(p)(text), e)
 
-//        def x[B](as: Vector[B]) = as.mkString("\n")
-//        def x[B](as: Vector[B]) = as.toString().replaceAll("(?<=[,\\(]) *(?!\\))", "\n")
-//        assertMultiline(x(parse(p)(text)), x(e))
+        def assertParsed(name: => String, a: ArraySeq[A]): Unit = {
+          //  def fmt[B](as: ArraySeq[B]) = as.mkString("\n")
+          def fmt[B](as: ArraySeq[B]) = as.toString().replaceAll("(?<=[,\\(]) *(?!\\))", "\n")
+          assertMultiline(name, fmt(a), fmt(e))
+          // assertEq(name, a, e)
+        }
+
+        assertParsed("Parsing: " + quoteStringForDisplay(preprocessStr(text, MultiLine)), parse(p)(text))
 
         val text2 = PlainText.ForProject.noCtx(p).text(e, Live, Optional)
-        assertEq(s"txt -> parsed -> txt:\n$text2", parse(p)(text2), e)
+        assertParsed(s"txt -> parsed -> txt:\n$text2", parse(p)(text2))
       }
 
       def test(text: String)(as: T.Atom*)(implicit l: Line, p: Project = null): Unit = {
@@ -724,6 +728,114 @@ object ParsersTest extends TestSuite {
           T.blankLine, L("*B"),
           T.blankLine, L("*C"),
           T.blankLine, L("U"))
+      }
+
+      "nestedLists" - {
+
+        "manual1" -
+          test(
+            """1. nice
+              |* a
+              |   * x
+              |    * a
+              |  * y
+              |       * b
+              |       * c
+              |         * c1
+              |        * c2
+              |       * d
+              |        * d1
+              |  *   !
+              |   * x
+              |* b
+              | 1. voi
+              | *  oho
+              | 1. ja
+              | 1. ei
+              | *  miksi
+              |* c
+              | 1. z
+              |  nice
+              | 1. w
+              |  * xx
+              |* d
+              |1. cool
+              |""".stripMargin.replace("!", ""))(
+            T.OrderedList(NEA(LI("nice"))),
+            T.UnorderedList(NEA(
+              LI(
+                L("a"),
+                T.UnorderedList(NEA(
+                  LI(
+                    L("x"),
+                    T.UnorderedList(NEA(
+                      LI(L("a")),
+                    )),
+                  ),
+                  LI(
+                    L("y"),
+                    T.UnorderedList(NEA(
+                      LI(
+                        L("b"),
+                      ),
+                      LI(
+                        L("c"),
+                        T.UnorderedList(NEA(
+                          LI(L("c1")),
+                          LI(L("c2")),
+                        )),
+                      ),
+                      LI(
+                        L("d"),
+                        T.UnorderedList(NEA(
+                          LI(L("d1")),
+                        )),
+                      ),
+                    )),
+                  ),
+                  LI(
+                    T.UnorderedList(NEA(
+                      LI(L("x")),
+                    )),
+                  ),
+                )),
+              ),
+              LI(
+                L("b"),
+                T.OrderedList(NEA(
+                  LI(L("voi")),
+                )),
+                T.UnorderedList(NEA(
+                  LI(L("oho")),
+                )),
+                T.OrderedList(NEA(
+                  LI(L("ja")),
+                  LI(L("ei")),
+                )),
+                T.UnorderedList(NEA(
+                  LI(L("miksi")),
+                )),
+              ),
+              LI(
+                L("c"),
+                T.OrderedList(NEA(
+                  LI(
+                    L("z"), T.BlankLine(), L("nice"),
+                  ),
+                  LI(
+                    L("w"),
+                    T.UnorderedList(NEA(
+                      LI(L("xx")),
+                    )),
+                  ),
+                )),
+              ),
+              LI(
+                L("d"),
+              ),
+            )),
+            T.OrderedList(NEA(LI("cool"))),
+          )
       }
 
       "codeBlocks" - {

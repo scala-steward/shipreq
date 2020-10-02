@@ -679,7 +679,7 @@ object RandomData {
       Gen.pure(g).flatMap(_.value).arraySeq(MaxTextAtoms)
 
     def listItems(t: ListMarkup)(g: Name[Gen[t.Atom]]): Gen[NonEmptyArraySeq[t.ListItem]] =
-      listItem(t)(g).nea(0 to 11)
+      listItem(t)(g).nea(0 to 8)
 
     def orderedList(t: ListMarkup)(g: Name[Gen[t.Atom]]): Gen[t.OrderedList] =
       listItems(t)(g) map t.OrderedList
@@ -803,6 +803,8 @@ object RandomData {
          | _: ContentRef      # ReqRef
          | _: ContentRef      # UseCaseStepRef
          | _: Issue           # Issue
+         | _: ListMarkup      # OrderedList
+         | _: ListMarkup      # UnorderedList
          | _: NewLine         # BlankLine
          | _: PlainTextMarkup # Bold
          | _: PlainTextMarkup # EmailAddress
@@ -818,9 +820,7 @@ object RandomData {
          | _: Headings        # Heading3
          | _: Headings        # Heading4
          | _: Headings        # Heading5
-         | _: Headings        # Heading6
-         | _: ListMarkup      # OrderedList
-         | _: ListMarkup      # UnorderedList  => false
+         | _: Headings        # Heading6       => false
     }
 
     sealed trait AtomCtx

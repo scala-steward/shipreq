@@ -3,6 +3,7 @@ package shipreq.webapp.base.text
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import org.parboiled2.{CharPredicate => CP, _}
+import scala.collection.immutable
 import scala.collection.immutable.TreeSet
 import shapeless._
 import shipreq.base.util._
@@ -417,54 +418,185 @@ object Parsers {
       }
   }
 
+  object ListMarkup {
+    sealed trait ListItemType
+    object ListItemType {
+      case object Unordered extends ListItemType
+      case object Ordered extends ListItemType
+    }
+
+    final case class ListItem[+A](indent: Int, itemType: ListItemType, body: ArraySeq[A])
+  }
+
   trait ListMarkup extends Literal with CodeBlock {
+    import ListMarkup._
+
     override val t: Atom.ListMarkup with Atom.Literal with Atom.NewLine with Atom.CodeBlock
 
-    private def firstLineCodeBlock =
-      rule(codeBlock ~> ((x: t.CodeBlock) => ArraySeq(x)))
+    def listMarkup(listToken: TokenRule): Rule1[ArraySeq[t.ListBase]] =
+      rule(OWSNL ~ listItems(listToken) ~> mkLists)
 
-    def listItem(lead: () => Rule0, listToken: TokenRule): Rule1[t.ListItem] = {
+    private def listItems(listToken: TokenRule): Rule1[NonEmptyArraySeq[ListItem[t.Atom]]] =
+      rule(startOfLineAfterOWS ~ listItem(listToken).+ ~ OWSNL ~ popSeqToNEA[ListItem[t.Atom]])
+
+    private def listItem(listToken: TokenRule): Rule1[ListItem[t.Atom]] = {
       val tailLines: TokenRule = () => rule(codeBlock | listToken())
       rule(
-        OWSNL
-          ~ lead() ~ OWS
+        indent
+          ~ listItemLead ~ OWS
           ~ (firstLineCodeBlock | tokensAndTextUntil(listToken, untilEOL))
-          ~ extraLine(lead, tailLines).*
-          ~> combineListItemLines
+          ~ extraLine(tailLines).*
+          ~> mkListItem
       )
     }
 
-    private val combineListItemLines: (ArraySeq[t.Atom], Seq[ArraySeq[t.Atom]]) => t.ListItem = (head, tail) => {
-      tail.iterator.filter(_.nonEmpty).foldLeft(head) { (q, n) =>
-        if (q.lastOption.exists(_.allowBlankLineAfter) && n.headOption.exists(_.allowBlankLineBefore))
-          (q :+ t.blankLine) ++ n
-        else
-          q ++ n
+    private def indent: Rule1[String] =
+      rule(capture(zeroOrMore(" ")) ~ (NL ~ pop[String] ~ indent).?)
+
+    private def listItemLead: Rule1[ListItemType] =
+      rule(
+        (
+          CP.Digit.+ ~ ". " ~ push(ListItemType.Ordered)
+          ) | (
+          // See https://en.wikipedia.org/wiki/Bullet_(typography)
+          ("* " | anyOf("•‣⁃⁌⁍∙○◘◦☙❥❧⦾⦿")) ~ push(ListItemType.Unordered)
+          )
+      )
+
+    private def firstLineCodeBlock =
+      rule(codeBlock ~> ((x: t.CodeBlock) => ArraySeq1(x)))
+
+    private def extraLine(listToken: TokenRule): Rule1[ArraySeq[t.Atom]] =
+      rule(
+        (NL ~ extraLine(listToken)) |
+        (' ' ~ OWS ~ !listItemLead ~ tokensAndTextUntil(listToken, untilEOL))
+      )
+
+    private val mkListItem: (String, ListItemType, ArraySeq[t.Atom], Seq[ArraySeq[t.Atom]]) => ListItem[t.Atom] =
+      (indent, itemType, head, tail) => {
+        val body: ArraySeq[t.Atom] =
+          tail.iterator.filter(_.nonEmpty).foldLeft(head) { (q, n) =>
+            if (q.lastOption.exists(_.allowBlankLineAfter) && n.headOption.exists(_.allowBlankLineBefore))
+              (q :+ t.blankLine) ++ n
+            else
+              q ++ n
+          }
+        ListItem(indent.length, itemType, body)
+      }
+
+    private final class BuildState(head: ListItem[t.Atom]) {
+
+      @elidable(elidable.FINE)
+      override def toString =
+        s"BuildState(${indent()}, $itemType, ${items.toList})"
+
+      @inline def itemType = head.itemType
+
+      private var _indent = head.indent
+      def indent() = _indent
+
+      private val items = scala.collection.mutable.ArrayBuffer.empty[t.ListItem]
+      items += head.body
+
+      def append(li: ListItem[t.Atom]): this.type = {
+        items += li.body
+        if (li.indent < _indent)
+          _indent = li.indent
+        this
+      }
+
+      def appendNested(list: t.ListBase): Unit = {
+        val i = items.length - 1
+        items.update(i, items(i) :+ list)
+      }
+
+      def result(): t.ListBase = {
+        val lis = NonEmptyArraySeq.force[t.ListItem](items.to(ArraySeq))
+        itemType match {
+          case ListItemType.Unordered => t.UnorderedList(lis)
+          case ListItemType.Ordered   => t.OrderedList(lis)
+        }
       }
     }
 
-    private def extraLine(lead: () => Rule0, listToken: TokenRule): Rule1[ArraySeq[t.Atom]] =
-      rule(
-        (NL ~ extraLine(lead, listToken)) |
-        (' ' ~ OWS ~ !lead() ~ tokensAndTextUntil(listToken, untilEOL))
-      )
+    private val mkLists: NonEmptyArraySeq[ListItem[t.Atom]] => ArraySeq[t.ListBase] =
+      lisNonEmpty => {
+        val lis = lisNonEmpty.whole
 
-    private def genericList(lead: () => Rule0, listToken: TokenRule): Rule1[NonEmptyArraySeq[t.ListItem]] =
-      rule(startOfLineAfterOWS ~ listItem(lead, listToken).+ ~ OWSNL ~ popSeqToNEA[t.ListItem])
+        @tailrec
+        def unfoldParents(parents: List[BuildState],
+                          state: FreeOption[BuildState],
+                          minIndent: Int): (List[BuildState], FreeOption[BuildState]) =
+          parents match {
+            case Nil =>
+              (Nil, state)
+            case immutable.::(p, ps) =>
+              if (p.indent() < minIndent)
+                (parents, state)
+              else {
+                if (state.nonEmpty) {
+                  val li = state.getOrNull.result()
+                  p.appendNested(li)
+                }
+                unfoldParents(ps, FreeOption(p), minIndent)
+              }
+          }
 
-    private def orderedList(listToken: TokenRule): Rule1[t.OrderedList] = {
-      def lead: Rule0 = rule(CP.Digit.+ ~ ". ")
-      rule(genericList(() => lead, listToken) ~> t.OrderedList)
-    }
+        @tailrec
+        def go(pos      : Int,
+               state    : FreeOption[BuildState],
+               parents  : List[BuildState],
+               completed: ArraySeq[t.ListBase]): ArraySeq[t.ListBase] =
 
-    private def unorderedList(listToken: TokenRule): Rule1[t.UnorderedList] = {
-      // See https://en.wikipedia.org/wiki/Bullet_(typography)
-      def bullet: Rule0 = rule("* " | anyOf("•‣⁃⁌⁍∙○◘◦☙❥❧⦾⦿"))
-      rule(genericList(() => bullet, listToken) ~> t.UnorderedList)
-    }
+          if (pos < lis.length) {
+            // Add current item
+            val li = lis(pos)
 
-    def listMarkup(listToken: TokenRule): Rule1[t.ListBase] =
-      rule(OWSNL ~ (orderedList(listToken) | unorderedList(listToken)))
+            if (state.isEmpty) {
+              val newState = new BuildState(li)
+              go(pos + 1, FreeOption(newState), parents, completed)
+
+            } else {
+              val s       = state.getOrNull
+              val indDiff = li.indent.compareTo(s.indent())
+
+              if (indDiff > 0) {
+                // Greater indentation
+                go(pos + 1, FreeOption(new BuildState(li)), s :: parents, completed)
+
+              } else if (indDiff < 0) {
+                // Lesser indentation
+                val (newParents, newState1) = unfoldParents(parents, state, li.indent)
+                val newState2 = newState1.fold(new BuildState(li), _.append(li))
+                go(pos + 1, FreeOption(newState2), newParents, completed)
+
+              } else if (s.itemType == li.itemType) {
+                // Same level, same type
+                s.append(li)
+                go(pos + 1, state, parents, completed)
+
+              } else {
+                // Same level, different type
+                val sibling = s.result()
+                val completed2 = parents match {
+                  case Nil =>
+                    completed :+ sibling
+                  case immutable.::(p, _) =>
+                    p.appendNested(sibling)
+                    completed
+                }
+                val newState = new BuildState(li)
+                go(pos + 1, FreeOption(newState) , parents, completed2)
+              }
+            }
+
+          } else {
+            // Done
+            unfoldParents(parents, state, 0)._2.fold(completed, completed :+ _.result())
+          }
+
+        go(0, FreeOption.empty, Nil, ArraySeq.empty)
+      }
   }
 
   trait ContentRef extends Base with UseCaseStepLabel {
@@ -631,10 +763,10 @@ object Parsers {
       () => rule(additionalTokens() | singleLine)
 
     final val token: TokenRule =
-      () => rule(listMarkup(listToken) | heading() | codeBlock | additionalTokens() | blankLine | singleLine)
+      () => rule(heading() | codeBlock | additionalTokens() | blankLine | singleLine)
 
     val atomSeq: AtomSeqRule =
-      () => rule(token() ~> singleAtomSeq)
+      () => rule(listMarkup(listToken) | (token() ~> singleAtomSeq))
 
     final override def optionalText: Rule1[t.OptionalText] =
       rule(OWS ~ atomSeqsAndTextUntilEOL(atomSeq) ~ EOI)

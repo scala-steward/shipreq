@@ -18,7 +18,6 @@
 * delete & restore projects
 * hard delete
 * Add percentages to deriv expl (?)
-* Markdown: Support nested lists
 
 
 
