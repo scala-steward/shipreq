@@ -309,33 +309,56 @@ object PlainTextTest extends TestSuite {
             |""".stripMargin.replace("!", "")
         val expect =
           """1. nice
+            |
             |* a
+            |
             |  * x
+            |
             |    * a
+            |
             |  * y
+            |
             |    * b
+            |
             |    * c
+            |
             |      * c1
             |      * c2
+            |
             |    * d
+            |
             |      * d1
+            |
             |  * !
+            |
             |    * x
+            |
             |* b
+            |
             |  1. voi
+            |
             |  * oho
+            |
             |  1. ja
             |  2. ei
+            |
             |  * miksi
+            |
             |* c
+            |
             |  1. z
+            |
             |     nice
+            |
             |  2. w
+            |
             |     * xx
+            |
             |* d
+            |
             |1. cool
             |""".stripMargin.replace("!", "")
-        assertCorrection(input, expect, true) // TODO blank lines
+        assertCorrection(input, expect)
       }
     }
   }
