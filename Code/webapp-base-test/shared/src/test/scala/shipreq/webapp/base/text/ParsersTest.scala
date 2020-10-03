@@ -331,6 +331,12 @@ object ParsersTest extends TestSuite {
         "codeRef" - test("[ here . i . am_3 ]")(T.CodeRef(reqCode_hereiam3, DisplayReqRef.AsId))
         "headNL"  - whitespaceCombos.foreach(w => test(w + "good")(T.Literal("good")))
         "tailNL"  - whitespaceCombos.foreach(w => test("good" + w)(T.Literal("good")))
+        "num0"    - test(" 3")(L("3"))
+        "num1"    - test(" 3x ")(L("3x"))
+        "ulLike0" - test(" *")(L("*"))
+        "olLike0" - test(" 1.")(L("1."))
+        "ulLike1" - test(" *x ")(L("*x"))
+        "olLike1" - test(" 1.x ")(L("1.x"))
         "ulStyle" - test("* //a //\n* //b //")(T.UnorderedList(NonEmptyArraySeq(
           ArraySeq(T.Italic(NonEmptyArraySeq(S.Literal("a")))),
           ArraySeq(T.Italic(NonEmptyArraySeq(S.Literal("b")))),

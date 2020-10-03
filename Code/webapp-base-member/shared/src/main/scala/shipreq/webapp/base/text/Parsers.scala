@@ -67,10 +67,17 @@ object Parsers {
   private val multiLineCanTrim: PreProcessor.CanTrim =
     (a, i, leftTrimming) => a(i) match {
       case ' ' =>
+
         if (leftTrimming) {
 
           // Left trim
           val last = a.length - 1
+
+          def postLI(i: Int): Boolean =
+            if (i <= last)
+              a(i) != ' ' // disallow trim if we've got an LI
+            else
+              true // not an LI, we can trim
 
           @tailrec
           def go(i: Int): Boolean =
@@ -79,7 +86,7 @@ object Parsers {
             else
               a(i) match {
                 case ' '            => go(i + 1)
-                case '*'            => false
+                case '*'            => postLI(i + 1)
                 case c if c.isDigit =>
                   @tailrec
                   def canTrimPotentialOrderedListItem(i: Int): Boolean =
@@ -89,8 +96,10 @@ object Parsers {
                       val c = a(i)
                       if (c.isDigit)
                         canTrimPotentialOrderedListItem(i + 1)
+                      else if (c == '.')
+                        postLI(i + 1) // we've confirmed the start of an OL LI, just need a space...
                       else
-                        c != '.'
+                        true
                     }
                   canTrimPotentialOrderedListItem(i + 1)
                 case _ => true
