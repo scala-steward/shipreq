@@ -835,6 +835,79 @@ object ParsersTest extends TestSuite {
             )),
             T.OrderedList(NEA(LI("cool"))),
           )
+
+        "bug1a" -
+          test(
+            """* !
+              | 1. !
+              |  x
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                T.OrderedList(NonEmptyArraySeq(
+                  ArraySeq( // sub item 1
+                    T.blankLine,
+                    L("x"),
+                  ),
+                )),
+              ),
+            )),
+          )
+
+        "bug1b" -
+          test(
+            """* !
+              | 1. !
+              | x
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                T.OrderedList(NonEmptyArraySeq(
+                  ∅, // sub item 1
+                )),
+                L("x"),
+              ),
+            )),
+          )
+
+        "bug1c" -
+          test(
+            """* !
+              | 1. !
+              |x
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                T.OrderedList(NonEmptyArraySeq(
+                  ∅, // sub item 1
+                ))),
+            )),
+            L("x"),
+          )
+
+        "bug1d" -
+          test(
+            """* !
+              | 1. !
+              |  * !
+              |x
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                T.OrderedList(NonEmptyArraySeq(
+                  ArraySeq( // sub item 1
+                    T.UnorderedList(NonEmptyArraySeq(
+                      ∅ // sub sub item 1
+                    )),
+                  ),
+                ))),
+            )),
+            L("x"),
+          )
       }
 
       "codeBlocks" - {

@@ -228,7 +228,7 @@ object PlainText {
             nestedText(p, nextIndent, live, li, includeMarkup)
           }
 
-          if (nextIsEmpty) r else r ~ "\n\n"
+          if (nextIsEmpty) r else r ~ "\n\n" ~ indent
         }
 
         val cur = atoms(idx) match {

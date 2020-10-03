@@ -98,6 +98,12 @@ abstract class ParsingUtil extends Parser {
   def popSeqToNEA[A: ClassTag]: RuleAB[Seq[A], NonEmptyArraySeq[A]] =
     rule(run((v: Seq[A]) => test(v.nonEmpty) ~ push(NonEmptyArraySeq.force(v.to[ArraySeq[A]](ArraySeq)))))
 
+  def popSeqSeqToNEA[A: ClassTag]: RuleAB[Seq[Seq[A]], NonEmptyArraySeq[A]] =
+    rule(run((v: Seq[Seq[A]]) => {
+      val a = v.iterator.flatten.toArray
+      test(a.nonEmpty) ~ push(NonEmptyArraySeq.force(ArraySeq.unsafeWrapArray(a)))
+    }))
+
   def popNEA[A]: RuleAB[ArraySeq[A], NonEmptyArraySeq[A]] =
     rule(run((v: ArraySeq[A]) => test(v.nonEmpty) ~ push(NonEmptyArraySeq.force(v))))
 
