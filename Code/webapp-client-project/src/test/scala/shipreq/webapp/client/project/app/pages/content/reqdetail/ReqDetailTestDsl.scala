@@ -1,6 +1,5 @@
 package shipreq.webapp.client.project.app.pages.content.reqdetail
 
-import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
@@ -212,10 +211,10 @@ object ReqDetailTestDsl {
       +> stepText(label).rename("Initial editor text").assert.equalWhenDefined(old)
       >> setStepTextEditValue(label, newValue)
       >> commitStepTextEdit(label)
-    ).group(s"Edit $label text to ${quoteStringForDisplay(newValue)}")
+    ).group(s"Edit $label text to ${newValue.quote}")
 
   def setStepTextEditValue(label: String, newValue: String): *.Actions =
-    *.action(s"Set $label text to ${quoteStringForDisplay(newValue)}")(
+    *.action(s"Set $label text to ${newValue.quote}")(
       SimEvent.Change(newValue) simulate _.obs.uc.row(label).textEditor.get)
 
   def commitStepTextEdit(label: String): *.Actions =

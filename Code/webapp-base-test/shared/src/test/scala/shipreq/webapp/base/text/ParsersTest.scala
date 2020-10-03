@@ -84,9 +84,9 @@ object ParsersTest extends TestSuite {
         val sizeAfter = size()
 
         def pairOfOutput(name: String, show: ArraySeq[A] => String): String = {
-          val es = quoteString(show(e))
+          val es = show(e).quote
           val as = a match {
-            case Success(s) => quoteString(show(s))
+            case Success(s) => show(s).quote
             case Failure(e) => e.toString
           }
           if (es == as)

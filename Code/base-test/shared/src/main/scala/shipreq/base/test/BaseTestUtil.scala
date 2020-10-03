@@ -1,6 +1,5 @@
 package shipreq.base.test
 
-import io.circe.syntax._
 import java.time.{Duration, Instant}
 import pprint.PPrinter
 import scalaz.std.string.stringInstance
@@ -72,9 +71,6 @@ trait BaseTestUtil
 
   def onceUnit[A](a: => A): () => Unit =
     once { a; () }
-
-  def quoteString(s: String) =
-    s.asJson.noSpaces
 
   def assertFields[A](actual: A, expect: A) =
     new BaseTestUtil.FieldAssert(actual, expect)

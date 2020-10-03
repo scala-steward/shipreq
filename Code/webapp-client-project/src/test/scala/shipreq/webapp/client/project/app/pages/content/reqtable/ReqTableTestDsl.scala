@@ -3,7 +3,6 @@ package shipreq.webapp.client.project.app.pages.content.reqtable
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.test._
 import org.scalajs.dom.html
-import shipreq.base.test.BaseTestUtil.quoteString
 import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview._
@@ -289,5 +288,5 @@ object ReqTableTestDsl {
       global.activeElement.assert.equalBy(i => f(i.obs))
 
   def copyToClipboard(text: String): *.Actions =
-    *.action(s"Copy to clipboard: ${quoteString(text)}")(_ => TestClipboard.writeText(text))
+    *.action(s"Copy to clipboard: ${text.quote}")(_ => TestClipboard.writeText(text))
 }

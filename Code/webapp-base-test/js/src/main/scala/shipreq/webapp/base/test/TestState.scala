@@ -1,7 +1,6 @@
 package shipreq.webapp.base.test
 
 import japgolly.microlibs.testutil.TestUtil
-import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import japgolly.scalajs.react.test._
 import japgolly.scalajs.react.vdom.html_<^.VdomAttr
 import org.scalajs.dom.html
@@ -137,10 +136,10 @@ object TestState
           >> setEditValue(newValue)
           >> commit
           +> editorCount.assert.decreaseBy(editors)
-          ).group(s"Edit $label to ${quoteStringForDisplay(newValue)}")
+          ).group(s"Edit $label to ${newValue.quote}")
 
       final def setEditValue(newValue: String): Actions =
-        *.action(s"Set $label to ${quoteStringForDisplay(newValue)}")(x =>
+        *.action(s"Set $label to ${newValue.quote}")(x =>
           SimEvent.Change(newValue) simulate f(x.obs).editor())
 
       final def commit: Actions =

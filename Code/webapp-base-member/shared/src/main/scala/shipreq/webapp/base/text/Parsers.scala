@@ -608,7 +608,7 @@ object Parsers {
         if (Debug)
           println(
             s"""===============================================================================
-               |inputs:${lisNonEmpty.iterator.map(l => "\n  - " + io.circe.Encoder.encodeString(l.toString).noSpaces.drop(1).dropRight(1)).mkString}
+               |inputs:${lisNonEmpty.iterator.map(l => "\n  - " + l.toString.quoteInner).mkString}
                |""".stripMargin)
 
         @tailrec
@@ -703,7 +703,7 @@ object Parsers {
                 assert(_newState.nonEmpty,
                   s"""Indented bodies ALWAYS have parents.
                      |
-                     |inputs:${lisNonEmpty.iterator.map(l => "\n  - " + io.circe.Encoder.encodeString(l.toString).noSpaces.drop(1).dropRight(1)).mkString}
+                     |inputs:${lisNonEmpty.iterator.map(l => "\n  - " + l.toString.quoteInner).mkString}
                      |
                      |li         = $li
                      |parents    = $parents

@@ -1,6 +1,5 @@
 package shipreq.webapp.base.text
 
-import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import nyaya.gen._
 import nyaya.prop._
 import nyaya.test.PropTest._
@@ -44,7 +43,7 @@ object UseCaseStepFlowTextTest extends TestSuite {
     (arrowRegexS + "[^\r\n]*").r
 
   class Tester(input: String) {
-    override def toString = quoteStringForDisplay(input)
+    override def toString = input.quote
     val E = EvalOver(this)
 
     val parsed = UseCaseStepFlowText.parse(input).toList

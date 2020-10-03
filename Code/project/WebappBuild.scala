@@ -208,7 +208,7 @@ object WebappBuild {
       .configureJs(Common.jsSettings(UsePhantomJs))
       .dependsOn(webappBaseMember)
       .dependsOn(baseTest % Test, webappBaseTest % Test)
-      .depsForJvm(scaffeine ++ Circe.main ++ commonsText)
+      .depsForJvm(scaffeine ++ commonsText)
       .depsForBoth(testScope(μTest ++ Nyaya.test))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

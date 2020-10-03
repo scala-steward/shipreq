@@ -94,7 +94,7 @@ object CommonObs {
       val text                     = *.focus(s"$name: text").value(_.obs.text)
       val selected                 = *.focus(s"$name: selected").option(_.obs.selected)
       val items                    = *.focus(s"$name: items").collection(_.obs.items.map(_.text))
-      def select(itemName: String) = *.action(s"Select $name ${quoteString(itemName)}")(_.obs.select(itemName))
+      def select(itemName: String) = *.action(s"Select $name ${itemName.quote}")(_.obs.select(itemName))
     }
   }
 
@@ -232,7 +232,7 @@ object CommonObs {
         *.action("Double-click " + field)(Simulate doubleClick _.obs.dom)
 
       final def setEditorValue(value: String): *.Actions =
-        *.action(s"Set $field editor to ${quoteString(value)}")(
+        *.action(s"Set $field editor to ${value.quote}")(
           SimEvent.Change(value) simulate _.obs.editor.get)
 
       final def pressKeyInEditor(k: SimEvent.Keyboard): *.Actions =
@@ -296,8 +296,8 @@ object CommonObs {
           setEditorValue(value2)
         })
 
-      final def testValid  (text: String) = setEditorValue(text).rename(s"Enter valid value: ${quoteString(text)}")   +> editorValidity.assert(Valid)
-      final def testInvalid(text: String) = setEditorValue(text).rename(s"Enter invalid value: ${quoteString(text)}") +> editorValidity.assert(Invalid)
+      final def testValid  (text: String) = setEditorValue(text).rename(s"Enter valid value: ${text.quote}")   +> editorValidity.assert(Valid)
+      final def testInvalid(text: String) = setEditorValue(text).rename(s"Enter invalid value: ${text.quote}") +> editorValidity.assert(Invalid)
 
       final def debugPrintInnerHTML: *.Actions =
         *.action("debugPrintInnerHTML")(x => println(s"\n${x.obs.dom.innerHTML}\n"))
