@@ -664,6 +664,20 @@ object Parsers {
                          |""".stripMargin
                     )
 
+                  def completeCurrent(s: FreeOption[BuildState], parents: List[BuildState]) =
+                    if (s.isEmpty)
+                      completed
+                    else {
+                      val sibling = s.getOrNull.result()
+                      parents match {
+                        case Nil =>
+                          completed :+ sibling
+                        case immutable.::(p, _) =>
+                          p.appendNested(sibling)
+                          completed
+                      }
+                    }
+
                   if (indDiff > 0) {
                     // Greater indentation
                     go(pos + 1, FreeOption(newBuildState), s :: parents, completed)
@@ -671,24 +685,27 @@ object Parsers {
                   } else if (indDiff < 0) {
                     // Lesser indentation
                     val (newParents, newState1) = unfoldParents(parents, state, li.indent)
-                    val newState2 = newState1.fold(newBuildState, _.append(li))
-                    go(pos + 1, FreeOption(newState2), newParents, completed)
+                    if (newState1.exists(_.itemType == itemType)) {
+
+                      // Same list type
+                      val newState2 = newState1.fold(newBuildState, _.append(li))
+                      go(pos + 1, FreeOption(newState2), newParents, completed)
+
+                    } else {
+
+                      // Different list type
+                      val completed2 = completeCurrent(newState1, newParents)
+                      go(pos + 1, FreeOption(newBuildState), newParents, completed2)
+                    }
 
                   } else if (s.itemType == itemType) {
-                    // Same level, same type
+                    // Same level, same list type
                     s.append(li)
                     go(pos + 1, state, parents, completed)
 
                   } else {
-                    // Same level, different type
-                    val sibling = s.result()
-                    val completed2 = parents match {
-                      case Nil =>
-                        completed :+ sibling
-                      case immutable.::(p, _) =>
-                        p.appendNested(sibling)
-                        completed
-                    }
+                    // Same level, different list type
+                    val completed2 = completeCurrent(state, parents)
                     go(pos + 1, FreeOption(newBuildState), parents, completed2)
                   }
                 }

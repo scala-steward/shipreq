@@ -273,18 +273,22 @@ object ParsersTest extends TestSuite {
       import UnsafeTypes._
 
       def testT[A <: AnyAtom: ClassTag](p: Project, parse: Project => String => ArraySeq[A], text: String)(as: A*)(implicit l: Line): Unit = {
-        val e = as.to(ArraySeq)
+        val pt = PlainText.ForProject.noCtx(p)
+
+        val actualParsed       = parse(p)(text)
+        val actualParsedAsText = pt.text(actualParsed, Live, Optional)
+
+        val expect       = as.to(ArraySeq)
+        val expectAsText = pt.text(expect, Live, Optional)
 
         def assertParsed(name: => String, a: ArraySeq[A]): Unit = {
           def fmt[B](as: ArraySeq[B]) = pp(as).plainText
-          assertMultiline(name, fmt(a), fmt(e))
-          // assertEq(name, a, e)
+          assertMultiline(name, fmt(a), fmt(expect))
         }
 
-        assertParsed("Parsing:\n" + preprocessStr(text, MultiLine), parse(p)(text))
-
-        val text2 = PlainText.ForProject.noCtx(p).text(e, Live, Optional)
-        assertParsed(s"txt -> parsed -> txt:\n$text2", parse(p)(text2))
+        assertMultiline(actualParsedAsText, expectAsText)
+        assertParsed("Parsing:\n" + preprocessStr(text, MultiLine), actualParsed)
+        assertParsed(s"txt -> parsed -> txt:\n$expectAsText", parse(p)(expectAsText))
       }
 
       def test(text: String)(as: T.Atom*)(implicit l: Line, p: Project = null): Unit = {
@@ -965,6 +969,38 @@ object ParsersTest extends TestSuite {
                 T.Monospace("x"),
               ),
             )),
+          )
+
+        "bug4a" -
+          test(
+            """* x
+              |1. b
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                L("x"),
+              ),
+            )),
+            T.OrderedList(NonEmptyArraySeq(ArraySeq(L("b")))),
+          )
+
+        "bug4b" -
+          test(
+            """* x
+              |  * y
+              | 1. a
+              |1. b
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                L("x"),
+                T.UnorderedList(NonEmptyArraySeq(ArraySeq(L("y")))),
+                T.OrderedList(NonEmptyArraySeq(ArraySeq(L("a")))),
+              ),
+            )),
+            T.OrderedList(NonEmptyArraySeq(ArraySeq(L("b")))),
           )
       }
 
