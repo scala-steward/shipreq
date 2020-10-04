@@ -82,6 +82,9 @@ abstract class ParsingUtil extends Parser {
   def int1n: Rule1[Int] =
     rule(ch('0').* ~ capture(CharPredicate.Digit19 ~ CharPredicate.Digit.*) ~> toInt)
 
+  def pop[A]: Rule[A :: HNil, HNil] =
+    rule(run((_: A) => test(true)))
+
   def popOptional[A]: RuleAB[Option[A], A] =
     rule(run((o: Option[A]) => test(o.isDefined) ~ push(o.get)))
 
@@ -94,6 +97,12 @@ abstract class ParsingUtil extends Parser {
 
   def popSeqToNEA[A: ClassTag]: RuleAB[Seq[A], NonEmptyArraySeq[A]] =
     rule(run((v: Seq[A]) => test(v.nonEmpty) ~ push(NonEmptyArraySeq.force(v.to[ArraySeq[A]](ArraySeq)))))
+
+  def popSeqSeqToNEA[A: ClassTag]: RuleAB[Seq[Seq[A]], NonEmptyArraySeq[A]] =
+    rule(run((v: Seq[Seq[A]]) => {
+      val a = v.iterator.flatten.toArray
+      test(a.nonEmpty) ~ push(NonEmptyArraySeq.force(ArraySeq.unsafeWrapArray(a)))
+    }))
 
   def popNEA[A]: RuleAB[ArraySeq[A], NonEmptyArraySeq[A]] =
     rule(run((v: ArraySeq[A]) => test(v.nonEmpty) ~ push(NonEmptyArraySeq.force(v))))

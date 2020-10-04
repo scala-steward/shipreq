@@ -1,7 +1,6 @@
 package shipreq.webapp.base.text
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
-import japgolly.microlibs.testutil.TestUtilInternals.quoteStringForDisplay
 import java.util.concurrent.atomic.AtomicInteger
 import nyaya.gen._
 import nyaya.prop.{Atom => _, _}
@@ -16,7 +15,7 @@ import shipreq.base.util.{NonEmptyArraySeq, Valid}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.{ApplicableTagGD, Event}
 import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.base.test.{ProjectDsl, SampleProject6 => SP, TextShrink, UnsafeTypes}
+import shipreq.webapp.base.test.{ProjectDsl, TextShrink, UnsafeTypes, SampleProject6 => SP}
 import shipreq.webapp.base.text.Atom.{AnyAtom, CodeBlockDetail, DisplayReqRef}
 import shipreq.webapp.base.{RandomData => $}
 import sourcecode.Line
@@ -68,44 +67,38 @@ object ParsersTest extends TestSuite {
 
     def cmp[A <: AnyAtom](t: => String, expect: ArraySeq[A])(f: ArraySeq[A] => ArraySeq[A]): EvalL = {
 
-      val actual = f(expect)
-      var a = actual
-      var e = expect
+      val actual = Try(f(expect))
 
-      // These cause issues cos it can break the composition rules avoided in RandomData.TextGen.postProcessAtoms
-//      while (a.nonEmpty && e.nonEmpty && a.head == e.head) {
-//        a = a.tail
-//        e = e.tail
-//      }
-//      while (a.nonEmpty && e.nonEmpty && a.last == e.last) {
-//        a = a.init
-//        e = e.init
-//      }
-
-      if (a == e)
+      if (actual.toOption.exists(_ ==* expect))
         E.pass
       else {
         println("Parser error found - shrinking...")
 
+        var a = actual
+        var e = expect
+
         def size(): Double = e.toString.length + a.toString.length
         val sizeBefore = size()
-        e = TextShrink(e)(ee => Valid.when(f(ee) == ee))
-        a = f(e)
+        e = TextShrink(e)(ee => Valid.when(Try(f(ee)).toOption.exists(_ ==* ee)))
+        a = Try(f(e))
         val sizeAfter = size()
 
-        def pairOfOutput(name: String, f: ArraySeq[A] => String): String = {
-          val es = f(e)
-          val as = f(a)
+        def pairOfOutput(name: String, show: ArraySeq[A] => String): String = {
+          val es = show(e).quote
+          val as = a match {
+            case Success(s) => show(s).quote
+            case Failure(e) => e.toString
+          }
           if (es == as)
             s"""Expect & actual $name:
-               |${quoteString(es)}
+               |$es
                |""".stripMargin.trim
           else
             s"""Expect $name:
-               |${quoteString(es)}
+               |$es
                |
                |Actual $name:
-               |${quoteString(as)}
+               |$as
                |""".stripMargin.trim
         }
 
@@ -280,15 +273,22 @@ object ParsersTest extends TestSuite {
       import UnsafeTypes._
 
       def testT[A <: AnyAtom: ClassTag](p: Project, parse: Project => String => ArraySeq[A], text: String)(as: A*)(implicit l: Line): Unit = {
-        val e = as.to(ArraySeq)
-        assertEq(quoteStringForDisplay(preprocessStr(text, MultiLine)), parse(p)(text), e)
+        val pt = PlainText.ForProject.noCtx(p)
 
-//        def x[B](as: Vector[B]) = as.mkString("\n")
-//        def x[B](as: Vector[B]) = as.toString().replaceAll("(?<=[,\\(]) *(?!\\))", "\n")
-//        assertMultiline(x(parse(p)(text)), x(e))
+        val actualParsed       = parse(p)(text)
+        val actualParsedAsText = pt.text(actualParsed, Live, Optional)
 
-        val text2 = PlainText.ForProject.noCtx(p).text(e, Live, Optional)
-        assertEq(s"txt -> parsed -> txt:\n$text2", parse(p)(text2), e)
+        val expect       = as.to(ArraySeq)
+        val expectAsText = pt.text(expect, Live, Optional)
+
+        def assertParsed(name: => String, a: ArraySeq[A]): Unit = {
+          def fmt[B](as: ArraySeq[B]) = pp(as).plainText
+          assertMultiline(name, fmt(a), fmt(expect))
+        }
+
+        assertMultiline(actualParsedAsText, expectAsText)
+        assertParsed("Parsing:\n" + preprocessStr(text, MultiLine), actualParsed)
+        assertParsed(s"txt -> parsed -> txt:\n$expectAsText", parse(p)(expectAsText))
       }
 
       def test(text: String)(as: T.Atom*)(implicit l: Line, p: Project = null): Unit = {
@@ -331,10 +331,16 @@ object ParsersTest extends TestSuite {
         "li"      - test("*     hehe    \n*     yay    ")(T.UnorderedList(NEA(LI(L("hehe")), LI(L("yay")))))
         "nl"      - test("here\nthere")(L("here"), T.blankLine, L("there"))
         "nls"     - test("here \n \n\n there")(L("here"), T.blankLine, L("there"))
-        "listNL"  - test("ok\n\n\n*   hehe \n \n\n  \n *  yay \n\n\nbye")(L("ok"), T.UnorderedList(NEA(LI(L("hehe")), LI(L("yay")))), L("bye"))
+        "listNL"  - test("ok\n\n\n*   hehe \n \n\n  \n*  yay \n\n\nbye")(L("ok"), T.UnorderedList(NEA(LI(L("hehe")), LI(L("yay")))), L("bye"))
         "codeRef" - test("[ here . i . am_3 ]")(T.CodeRef(reqCode_hereiam3, DisplayReqRef.AsId))
         "headNL"  - whitespaceCombos.foreach(w => test(w + "good")(T.Literal("good")))
         "tailNL"  - whitespaceCombos.foreach(w => test("good" + w)(T.Literal("good")))
+        "num0"    - test(" 3")(L("3"))
+        "num1"    - test(" 3x ")(L("3x"))
+        "ulLike0" - test(" *")(L("*"))
+        "olLike0" - test(" 1.")(L("1."))
+        "ulLike1" - test(" *x ")(L("*x"))
+        "olLike1" - test(" 1.x ")(L("1.x"))
         "ulStyle" - test("* //a //\n* //b //")(T.UnorderedList(NonEmptyArraySeq(
           ArraySeq(T.Italic(NonEmptyArraySeq(S.Literal("a")))),
           ArraySeq(T.Italic(NonEmptyArraySeq(S.Literal("b")))),
@@ -724,6 +730,278 @@ object ParsersTest extends TestSuite {
           T.blankLine, L("*B"),
           T.blankLine, L("*C"),
           T.blankLine, L("U"))
+      }
+
+      "nestedLists" - {
+
+        "manual1" -
+          test(
+            """1. nice
+              |* a
+              |   * x
+              |    * a
+              |  * y
+              |       * b
+              |       * c
+              |         * c1
+              |        * c2
+              |       * d
+              |        * d1
+              |  *   !
+              |   * x
+              |* b
+              | 1. voi
+              | *  oho
+              | 1. ja
+              | 1. ei
+              | *  miksi
+              |* c
+              | 1. z
+              |  nice
+              | 1. w
+              |  * xx
+              |* d
+              |1. cool
+              |""".stripMargin.replace("!", ""))(
+            T.OrderedList(NEA(LI("nice"))),
+            T.UnorderedList(NEA(
+              LI(
+                L("a"),
+                T.UnorderedList(NEA(
+                  LI(
+                    L("x"),
+                    T.UnorderedList(NEA(
+                      LI(L("a")),
+                    )),
+                  ),
+                  LI(
+                    L("y"),
+                    T.UnorderedList(NEA(
+                      LI(
+                        L("b"),
+                      ),
+                      LI(
+                        L("c"),
+                        T.UnorderedList(NEA(
+                          LI(L("c1")),
+                          LI(L("c2")),
+                        )),
+                      ),
+                      LI(
+                        L("d"),
+                        T.UnorderedList(NEA(
+                          LI(L("d1")),
+                        )),
+                      ),
+                    )),
+                  ),
+                  LI(
+                    T.UnorderedList(NEA(
+                      LI(L("x")),
+                    )),
+                  ),
+                )),
+              ),
+              LI(
+                L("b"),
+                T.OrderedList(NEA(
+                  LI(L("voi")),
+                )),
+                T.UnorderedList(NEA(
+                  LI(L("oho")),
+                )),
+                T.OrderedList(NEA(
+                  LI(L("ja")),
+                  LI(L("ei")),
+                )),
+                T.UnorderedList(NEA(
+                  LI(L("miksi")),
+                )),
+              ),
+              LI(
+                L("c"),
+                T.OrderedList(NEA(
+                  LI(
+                    L("z"), T.BlankLine(), L("nice"),
+                  ),
+                  LI(
+                    L("w"),
+                    T.UnorderedList(NEA(
+                      LI(L("xx")),
+                    )),
+                  ),
+                )),
+              ),
+              LI(
+                L("d"),
+              ),
+            )),
+            T.OrderedList(NEA(LI("cool"))),
+          )
+
+        "bug1a" -
+          test(
+            """* !
+              | 1. !
+              |  x
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                T.OrderedList(NonEmptyArraySeq(
+                  ArraySeq( // sub item 1
+                    T.blankLine,
+                    L("x"),
+                  ),
+                )),
+              ),
+            )),
+          )
+
+        "bug1b" -
+          test(
+            """* !
+              | 1. !
+              | x
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                T.OrderedList(NonEmptyArraySeq(
+                  ∅, // sub item 1
+                )),
+                L("x"),
+              ),
+            )),
+          )
+
+        "bug1c" -
+          test(
+            """* !
+              | 1. !
+              |x
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                T.OrderedList(NonEmptyArraySeq(
+                  ∅, // sub item 1
+                ))),
+            )),
+            L("x"),
+          )
+
+        "bug1d" -
+          test(
+            """* !
+              | 1. !
+              |  * !
+              |x
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                T.OrderedList(NonEmptyArraySeq(
+                  ArraySeq( // sub item 1
+                    T.UnorderedList(NonEmptyArraySeq(
+                      ∅ // sub sub item 1
+                    )),
+                  ),
+                ))),
+            )),
+            L("x"),
+          )
+
+        "bug1e" -
+          test(
+            """* !
+              |
+              |  1. !
+              |
+              |  x
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                T.OrderedList(NonEmptyArraySeq(
+                  ∅, // sub item 1
+                )),
+                L("x"),
+              ),
+            )),
+          )
+
+        "bug2" -
+          test(
+            """1. x
+              |
+              |   y
+              |""".stripMargin
+          )(
+            T.OrderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                L("x"), T.blankLine, L("y")
+              ),
+            )),
+          )
+
+        "bug3" -
+          test(
+            """1. !
+              |
+              |   * !
+              |
+              |     1. !
+              |
+              |   `x`
+              |""".stripMargin.replace("!", "")
+          )(
+            T.OrderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                T.UnorderedList(NonEmptyArraySeq(
+                  ArraySeq( // sub item 1
+                    T.OrderedList(NonEmptyArraySeq(
+                      ArraySeq( // sub sub item 1
+                      ),
+                    )),
+                  ),
+                )),
+                T.Monospace("x"),
+              ),
+            )),
+          )
+
+        "bug4a" -
+          test(
+            """* x
+              |1. b
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                L("x"),
+              ),
+            )),
+            T.OrderedList(NonEmptyArraySeq(ArraySeq(L("b")))),
+          )
+
+        "bug4b" -
+          test(
+            """* x
+              |  * y
+              | 1. a
+              |1. b
+              |""".stripMargin.replace("!", "")
+          )(
+            T.UnorderedList(NonEmptyArraySeq(
+              ArraySeq( // root item 1
+                L("x"),
+                T.UnorderedList(NonEmptyArraySeq(ArraySeq(L("y")))),
+                T.OrderedList(NonEmptyArraySeq(ArraySeq(L("a")))),
+              ),
+            )),
+            T.OrderedList(NonEmptyArraySeq(ArraySeq(L("b")))),
+          )
       }
 
       "codeBlocks" - {
@@ -1118,7 +1396,7 @@ object ParsersTest extends TestSuite {
     // Parsing text only happens to live text, and it only looks at active codes.
     "big" - {
       // tester.bugHunt(0, 10000)(Prop.eval(_.all))(nyaya.test.DefaultSettings.propSettings.setSeed(0).setDebug.setSingleThreaded)
-      // tester.mustSatisfyE(_.all)(nyaya.test.DefaultSettings.propSettings.setSampleSize(20000))
+      tester.mustSatisfyE(_.all)(nyaya.test.DefaultSettings.propSettings.setSampleSize(30 `JVM|JS` 3))
       println()
       val graphUnit = 1000 `JVM|JS` 10
       val graphChar = "#" `JVM|JS` "."

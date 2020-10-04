@@ -92,7 +92,7 @@ object AutoCompleteTestUtil {
 
   def assertSuggests(input: String)(exp: String*)(implicit ctx: AutoCompleteTestCtx, ls: SuggestionLabelSel, l: Line): Unit = {
     ctx.suggest(input)
-    assertEq(s"assertSuggests(${quoteString(input)})", suggestions().map(_.label), exp.toVector)
+    assertEq(s"assertSuggests(${input.quote})", suggestions().map(_.label), exp.toVector)
   }
 
   private def allTextCompleteULs() =
@@ -125,9 +125,9 @@ object AutoCompleteTestUtil {
     assertEq("Suggestions should disappear", suggestions().map(_.label), Vector.empty)
     val i = expectedTextAfterSelect.indexOf('|')
     if (i < 0)
-      assertEq("assertSelect", quoteString(ctx.txt), quoteString(expectedTextAfterSelect))
+      assertEq("assertSelect", ctx.txt.quote, expectedTextAfterSelect.quote)
     else {
-      assertEq("assertSelect", quoteString(ctx.txt), quoteString(expectedTextAfterSelect.replace("|", "")))
+      assertEq("assertSelect", ctx.txt.quote, expectedTextAfterSelect.replace("|", "").quote)
       assertCursorPos(i)
     }
   }

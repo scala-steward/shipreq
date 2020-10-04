@@ -43,6 +43,7 @@ object ShipReqBuild {
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoTests))
       .depsForBoth(UnivEq.scalaz ++ scalaz ++ Nyaya.prop ++ Microlibs.nonempty)
+      .depsForJvm(Circe.main.widen) // We don't want circe on the frontend
       .settings(
         scalacOptions ~= (_.filterNot(_.startsWith("-Yimports:")) :+ "-Yimports:scala"),
         test := (()))
@@ -87,7 +88,7 @@ object ShipReqBuild {
       .dependsOn(baseUtil)
       .configureJvm(_.dependsOn(baseDb % Provided))
       .depsForBoth(
-        Microlibs.testUtil ++
+        Microlibs.testUtil ++ pprint ++
         providedScope(μTest ++ Nyaya.gen ++ Circe.main) ++
         testScope(μTest ++ Nyaya.test ++ Circe.main))
       .depsForJvm(providedScope(scalaCheck))

@@ -169,8 +169,13 @@ object PlainText {
         case 2 => "  "
         case 3 => "   "
         case 4 => "    "
+        case 5 => "     "
+        case 6 => "      "
         case n => " " * n
       }
+
+//    private def quote(s: String): String =
+//      io.circe.Encoder.encodeString(s).noSpaces
 
     private def nestedText(acc: String, indent: String, live: Live, atoms: ArraySeq[AnyAtom], includeMarkup: Boolean): String = {
       @tailrec def go(acc: String, atoms: ArraySeq[AnyAtom], idx: Int): String = {
@@ -213,12 +218,12 @@ object PlainText {
             q => {
               bullet = lead()
               if (q.isEmpty) {
-                if (acc.isEmpty || acc.endsWith("\n\n"))
+                if (acc.isEmpty || acc.endsWith("\n\n" ~ indent))
                   bullet
                 else
-                  "\n\n" ~ bullet
+                  "\n\n" ~ indent ~ bullet
               } else
-                q ~ gapBetweenBullets ~ bullet
+                q ~ gapBetweenBullets ~ indent ~ bullet
             }
           }
 
@@ -228,7 +233,7 @@ object PlainText {
             nestedText(p, nextIndent, live, li, includeMarkup)
           }
 
-          if (nextIsEmpty) r else r ~ "\n\n"
+          if (nextIsEmpty) r else r ~ "\n\n" ~ indent
         }
 
         val cur = atoms(idx) match {

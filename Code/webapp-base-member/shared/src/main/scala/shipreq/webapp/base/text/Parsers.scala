@@ -3,7 +3,9 @@ package shipreq.webapp.base.text
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import org.parboiled2.{CharPredicate => CP, _}
+import scala.collection.immutable
 import scala.collection.immutable.TreeSet
+import scala.collection.mutable.ArrayBuffer
 import shapeless._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
@@ -60,16 +62,60 @@ object Parsers {
   // Special cases:
   // 1) "* " is a valid multiline bullet with no content. "*" is not.
   // 2) "1. " is a valid multiline leader with no content. "1." is not.
+  // 3) Whitespace before list item leads is important because it's additional context that affects how indentation of
+  //    subsequent list items are interpreted
   private val multiLineCanTrim: PreProcessor.CanTrim =
-    (a, i) => a(i) match {
+    (a, i, leftTrimming) => a(i) match {
       case ' ' =>
-        (i == 0) || {
-          a(i - 1) match {
+
+        if (leftTrimming) {
+
+          // Left trim
+          val last = a.length - 1
+
+          def postLI(i: Int): Boolean =
+            if (i <= last)
+              a(i) != ' ' // disallow trim if we've got an LI
+            else
+              true // not an LI, we can trim
+
+          @tailrec
+          def go(i: Int): Boolean =
+            if (i == last)
+              true // end of string
+            else
+              a(i) match {
+                case ' '            => go(i + 1)
+                case '*'            => postLI(i + 1)
+                case c if c.isDigit =>
+                  @tailrec
+                  def canTrimPotentialOrderedListItem(i: Int): Boolean =
+                    if (i == last)
+                      true // end of string
+                    else {
+                      val c = a(i)
+                      if (c.isDigit)
+                        canTrimPotentialOrderedListItem(i + 1)
+                      else if (c == '.')
+                        postLI(i + 1) // we've confirmed the start of an OL LI, just need a space...
+                      else
+                        true
+                    }
+                  canTrimPotentialOrderedListItem(i + 1)
+                case _ => true
+              }
+
+          go(i + 1)
+
+        } else
+
+          // Right trim
+          (i > 0) && (a(i - 1) match {
             case '*' => false
             case '.' => !(i >= 2 && a(i - 2).isDigit)
             case _   => true
-          }
-        }
+          })
+
       case c =>
         PreProcessor.CanTrim.whitespaceFn(c)
     }
@@ -142,16 +188,29 @@ object Parsers {
     val project: Project
 
     /** Optional whitespace */
-    def OWS: Rule0 =
+    protected final def OWS: Rule0 =
       rule(zeroOrMore(' '))
 
     /** Optional whitespace and/or newlines */
-    def OWSNL: Rule0 =
+    protected final def OWSNL: Rule0 =
       rule(anyOf(" \r\n").*)
 
     /** Wwhitespace and/or newlines */
-    def WSNL: Rule0 =
+    protected final def WSNL: Rule0 =
       rule(anyOf(" \r\n").+)
+
+    protected final def indentationLevel: Rule1[Int] =
+      rule(
+        push {
+          @tailrec
+          def go(offset: Int): Int =
+            charAtRC(offset) match {
+              case ' ' => go(offset - 1)
+              case _   => -offset - 1
+            }
+          go(-1)
+        }
+      )
 
     private val isWS: Char => Boolean =
       _ == ' '
@@ -161,7 +220,8 @@ object Parsers {
       case _           => false
     }
 
-    @tailrec private def isStartOfLineAfterOWS(i: Int): Boolean =
+    @tailrec
+    private def isStartOfLineAfterOWS(i: Int): Boolean =
       if (i < 0)
         true
       else {
@@ -174,21 +234,21 @@ object Parsers {
           false
       }
 
-    def startOfLine: Rule0 =
+    protected final def startOfLine: Rule0 =
       rule(BOI | test(isNL(lastChar)))
 
-    def startOfLineAfterOWS: Rule0 =
+    protected final def startOfLineAfterOWS: Rule0 =
       rule(BOI | test(isStartOfLineAfterOWS(cursor - 1)))
 
-    val untilEOL = () => rule(OWS ~ EOL)
+    protected final val untilEOL = () => rule(OWS ~ EOL)
 
-    val lookupReq: (ReqType.Mnemonic, ReqTypePos) => Option[ReqId] =
+    protected final val lookupReq: (ReqType.Mnemonic, ReqTypePos) => Option[ReqId] =
       (m, n) =>
         project.config.reqTypes.allByMnemonic.get(m)
           .map(t => PubidT(t.reqTypeId, n))
           .flatMap(project.content.reqs.pubids.apply)
 
-    def hashRef: Rule1[HashRefTarget] =
+    protected final def hashRef: Rule1[HashRefTarget] =
       rule(hashRefStr(
         possibleStop = StyleType.isPossibleStart,
         parse        = project.config.hashRefLookup))
@@ -271,6 +331,8 @@ object Parsers {
       atomSeqsAndTextUntil(atomSeqs, untilEOL)
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   trait PlainTextMarkup extends Base {
     override val t: Atom.PlainTextMarkup
 
@@ -329,6 +391,8 @@ object Parsers {
       rule(styles | tex | webAddress | emailAddress | monospace)
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   trait StyledInner extends TopBase with SingleLine {
     val ctx: StyleCtx
 
@@ -356,10 +420,14 @@ object Parsers {
       rule(oneOrMore(innerToken) ~ ctx.latest.suffix ~ popSeqToNEA)
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   trait NewLine extends Base {
     override val t: Atom.NewLine
     def blankLine = rule(OWS ~ NL ~ OWSNL ~ push(t.blankLine))
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   def processCodeBlockCode(code: String): String =
     code
@@ -417,55 +485,303 @@ object Parsers {
       }
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
+
+  object ListMarkup {
+    sealed trait ListItemType {
+      final val some = Some(this)
+    }
+    object ListItemType {
+      case object Unordered extends ListItemType
+      case object Ordered extends ListItemType
+    }
+
+    final case class ListItem[+A](indent: Int, itemType: Option[ListItemType], body: ArraySeq[A])
+
+    private final val Debug = false
+  }
+
   trait ListMarkup extends Literal with CodeBlock {
+    import ListMarkup._
+
     override val t: Atom.ListMarkup with Atom.Literal with Atom.NewLine with Atom.CodeBlock
 
-    private def firstLineCodeBlock =
-      rule(codeBlock ~> ((x: t.CodeBlock) => ArraySeq(x)))
+    def listMarkup(listToken: TokenRule): Rule1[ArraySeq[t.ListBase]] =
+      rule(OWSNL ~ indentationLevel ~ listItems(listToken) ~> mkLists)
 
-    def listItem(lead: () => Rule0, listToken: TokenRule): Rule1[t.ListItem] = {
+    private def listItems(listToken: TokenRule): Rule1[NonEmptyArraySeq[ListItem[t.Atom]]] =
+      rule(startOfLineAfterOWS ~ listItem(listToken).+ ~ OWSNL ~ popSeqSeqToNEA[ListItem[t.Atom]])
+
+    private def listItem(listToken: TokenRule): Rule1[Seq[ListItem[t.Atom]]] = {
       val tailLines: TokenRule = () => rule(codeBlock | listToken())
       rule(
-        OWSNL
-          ~ lead() ~ OWS
+        optionalIndent
+          ~ listItemLead ~ OWS
           ~ (firstLineCodeBlock | tokensAndTextUntil(listToken, untilEOL))
-          ~ extraLine(lead, tailLines).*
-          ~> combineListItemLines
+          ~ extraLine(tailLines).*
+          ~> mkListItem
       )
     }
 
-    private val combineListItemLines: (ArraySeq[t.Atom], Seq[ArraySeq[t.Atom]]) => t.ListItem = (head, tail) => {
-      tail.iterator.filter(_.nonEmpty).foldLeft(head) { (q, n) =>
-        if (q.lastOption.exists(_.allowBlankLineAfter) && n.headOption.exists(_.allowBlankLineBefore))
-          (q :+ t.blankLine) ++ n
-        else
-          q ++ n
+    private def optionalIndent: Rule1[String] =
+      rule(capture(zeroOrMore(" ")) ~ (NL ~ pop[String] ~ optionalIndent).?)
+
+    private def listItemLead: Rule1[ListItemType] =
+      rule(
+        (
+          CP.Digit.+ ~ ". " ~ push(ListItemType.Ordered)
+          ) | (
+          // See https://en.wikipedia.org/wiki/Bullet_(typography)
+          ("* " | anyOf("•‣⁃⁌⁍∙○◘◦☙❥❧⦾⦿")) ~ push(ListItemType.Unordered)
+          )
+      )
+
+    private def firstLineCodeBlock =
+      rule(codeBlock ~> ((x: t.CodeBlock) => ArraySeq1(x)))
+
+    private def extraLine(listToken: TokenRule): Rule1[ListItem[t.Atom]] =
+      rule(
+        (NL ~ extraLine(listToken)) |
+        (capture(' ' ~ OWS) ~ !listItemLead ~ tokensAndTextUntil(listToken, untilEOL) ~> mkExtraLine)
+      )
+
+    private val mkListItem: (String, ListItemType, ArraySeq[t.Atom], Seq[ListItem[t.Atom]]) => Seq[ListItem[t.Atom]] =
+      (indent, itemType, headBody, tail) => {
+        val lead = ListItem(indent.length, itemType.some, headBody)
+        lead +: tail
+      }
+
+    private val mkExtraLine: (String, ArraySeq[t.Atom]) => ListItem[t.Atom] =
+      (indent, body) => ListItem(indent.length, None, body)
+
+    private final class BuildState(val itemType: ListItemType,
+                                   headIndent  : Int,
+                                   headBody    : t.ListItem) {
+
+      @elidable(elidable.FINE)
+      override def toString =
+        s"BuildState(${indent()}, $itemType, ${items.toList})"
+
+      private var _indent = headIndent
+      def indent() = _indent
+
+      private val items = ArrayBuffer.empty[t.ListItem]
+      items += headBody
+
+      def append(li: ListItem[t.Atom]): this.type = {
+        items += li.body
+        if (li.indent < _indent)
+          _indent = li.indent
+        this
+      }
+
+      def appendNested(list: t.ListBase): Unit = {
+        val i = items.length - 1
+        items.update(i, items(i) :+ list)
+      }
+
+      def modLatestListItem(f: t.ListItem => t.ListItem): Unit = {
+        val i = items.length - 1
+        val li1 = items(i)
+        val li2 = f(li1)
+        items.update(i, li2)
+      }
+
+      def result(): t.ListBase = {
+        val lis = NonEmptyArraySeq.force[t.ListItem](ArraySeq.unsafeWrapArray(items.toArray))
+        itemType match {
+          case ListItemType.Unordered => t.UnorderedList(lis)
+          case ListItemType.Ordered   => t.OrderedList(lis)
+        }
       }
     }
 
-    private def extraLine(lead: () => Rule0, listToken: TokenRule): Rule1[ArraySeq[t.Atom]] =
-      rule(
-        (NL ~ extraLine(lead, listToken)) |
-        (' ' ~ OWS ~ !lead() ~ tokensAndTextUntil(listToken, untilEOL))
-      )
+    private val mkLists: (Int, NonEmptyArraySeq[ListItem[t.Atom]]) => ArraySeq[t.ListBase] =
+      (initialIndentation, lisNonEmpty) => {
+        val lis = lisNonEmpty.unsafeWholeArray
 
-    private def genericList(lead: () => Rule0, listToken: TokenRule): Rule1[NonEmptyArraySeq[t.ListItem]] =
-      rule(startOfLineAfterOWS ~ listItem(lead, listToken).+ ~ OWSNL ~ popSeqToNEA[t.ListItem])
+        if (initialIndentation > 0) {
+          val li = lis(0)
+          lis(0) = li.copy(indent = li.indent + initialIndentation)
+        }
 
-    private def orderedList(listToken: TokenRule): Rule1[t.OrderedList] = {
-      def lead: Rule0 = rule(CP.Digit.+ ~ ". ")
-      rule(genericList(() => lead, listToken) ~> t.OrderedList)
-    }
+        if (Debug)
+          println(
+            s"""===============================================================================
+               |inputs:${lisNonEmpty.iterator.map(l => "\n  - " + l.toString.quoteInner).mkString}
+               |""".stripMargin)
 
-    private def unorderedList(listToken: TokenRule): Rule1[t.UnorderedList] = {
-      // See https://en.wikipedia.org/wiki/Bullet_(typography)
-      def bullet: Rule0 = rule("* " | anyOf("•‣⁃⁌⁍∙○◘◦☙❥❧⦾⦿"))
-      rule(genericList(() => bullet, listToken) ~> t.UnorderedList)
-    }
+        @tailrec
+        def unfoldParents(parents: List[BuildState],
+                          state: FreeOption[BuildState],
+                          minIndent: Int): (List[BuildState], FreeOption[BuildState]) =
+          parents match {
+            case Nil =>
+              (Nil, state)
+            case immutable.::(p, ps) =>
+              if (p.indent() < minIndent)
+                (parents, state)
+              else {
+                if (state.nonEmpty) {
+                  val li = state.getOrNull.result()
+                  p.appendNested(li)
+                }
+                unfoldParents(ps, FreeOption(p), minIndent)
+              }
+          }
 
-    def listMarkup(listToken: TokenRule): Rule1[t.ListBase] =
-      rule(OWSNL ~ (orderedList(listToken) | unorderedList(listToken)))
+        @tailrec
+        def go(pos      : Int,
+               state    : FreeOption[BuildState],
+               parents  : List[BuildState],
+               completed: ArraySeq[t.ListBase]): ArraySeq[t.ListBase] =
+
+          if (pos < lis.length) {
+            // Add current item
+            val li = lis(pos)
+
+            li.itemType match {
+
+              case Some(itemType) =>
+                // Add new list item
+
+                def newBuildState = new BuildState(itemType, li.indent, li.body)
+
+                if (state.isEmpty) {
+                  go(pos + 1, FreeOption(newBuildState), parents, completed)
+
+                } else {
+                  val s       = state.getOrNull
+                  val indDiff = li.indent.compareTo(s.indent())
+
+                  if (Debug)
+                    println(
+                      s"""Appending new list item.
+                         |  li         = $li
+                         |  parents    = $parents
+                         |  state      = $state
+                         |  indDiff    = ${indDiff}
+                         |""".stripMargin
+                    )
+
+                  def completeCurrent(s: FreeOption[BuildState], parents: List[BuildState]) =
+                    if (s.isEmpty)
+                      completed
+                    else {
+                      val sibling = s.getOrNull.result()
+                      parents match {
+                        case Nil =>
+                          completed :+ sibling
+                        case immutable.::(p, _) =>
+                          p.appendNested(sibling)
+                          completed
+                      }
+                    }
+
+                  if (indDiff > 0) {
+                    // Greater indentation
+                    go(pos + 1, FreeOption(newBuildState), s :: parents, completed)
+
+                  } else if (indDiff < 0) {
+                    // Lesser indentation
+                    val (newParents, newState1) = unfoldParents(parents, state, li.indent)
+                    if (newState1.exists(_.itemType == itemType)) {
+
+                      // Same list type
+                      val newState2 = newState1.fold(newBuildState, _.append(li))
+                      go(pos + 1, FreeOption(newState2), newParents, completed)
+
+                    } else {
+
+                      // Different list type
+                      val completed2 = completeCurrent(newState1, newParents)
+                      go(pos + 1, FreeOption(newBuildState), newParents, completed2)
+                    }
+
+                  } else if (s.itemType == itemType) {
+                    // Same level, same list type
+                    s.append(li)
+                    go(pos + 1, state, parents, completed)
+
+                  } else {
+                    // Same level, different list type
+                    val completed2 = completeCurrent(state, parents)
+                    go(pos + 1, FreeOption(newBuildState), parents, completed2)
+                  }
+                }
+
+              case None =>
+                // Append indented content to an existing list item
+
+                // Note: this code looks unsafe because we don't have compile-time proof that all indented bodies
+                // have parents, but this is trivially provable by looking at the parser. List items ALWAYS come before
+                // indented bodies.
+                val (_newParents, _newState) = unfoldParents(parents, state, li.indent)
+                assert(_newState.nonEmpty,
+                  s"""Indented bodies ALWAYS have parents.
+                     |
+                     |inputs:${lisNonEmpty.iterator.map(l => "\n  - " + l.toString.quoteInner).mkString}
+                     |
+                     |li         = $li
+                     |parents    = $parents
+                     |state      = $state
+                     |newParents = ${_newParents}
+                     |newState   = ${_newState}
+                     |""".stripMargin)
+
+                if (Debug)
+                  println(
+                    s"""Appending indented content.
+                       |  li         = $li
+                       |  parents    = $parents
+                       |  state      = $state
+                       |  newParents = ${_newParents}
+                       |  newState   = ${_newState}
+                       |""".stripMargin
+                  )
+
+                var newParents = _newParents
+                var newState   = _newState.getOrNull
+
+                if (newParents.nonEmpty && newState.indent() >= li.indent) {
+                  val p = newParents.head
+                  newParents = newParents.tail
+                  p.appendNested(newState.result())
+                  newState = p
+                }
+
+                newState.modLatestListItem { targetLI =>
+                  var newBody = targetLI
+                  val addBlank = newBody.lastOption.forall(_.allowBlankLineAfter) && li.body.headOption.exists(_.allowBlankLineBefore)
+                  if (addBlank)
+                    newBody :+= t.blankLine
+                  newBody ++= li.body
+                  newBody
+                }
+
+                go(pos + 1, FreeOption(newState), newParents, completed)
+            }
+
+          } else {
+            // Done
+            unfoldParents(parents, state, 0)._2.fold(completed, completed :+ _.result())
+          }
+
+        val result = go(0, FreeOption.empty, Nil, ArraySeq.empty)
+
+        if (Debug)
+          println(
+            s"""
+               |result:${result.iterator.map(l => "\n  - " + io.circe.Encoder.encodeString(l.toString).noSpaces.drop(1).dropRight(1)).mkString}
+               |
+               |===============================================================================
+               |""".stripMargin)
+
+        result
+      }
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   trait ContentRef extends Base with UseCaseStepLabel {
     override val t: Atom.ContentRef
@@ -513,16 +829,20 @@ object Parsers {
       rule(useCaseStepRef | codeRef | reqRef)
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   trait TagRef extends Base {
     override val t: Atom.TagRef
 
     def tagRef = popPF[HashRefTarget, t.TagRef] { case -\/(tag) => t.TagRef(tag.id) }
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   trait UseCaseStepLabel extends ParsingUtil {
 
     /** Optional whitespace */
-    def OWS: Rule0
+    protected def OWS: Rule0
 
     def useCaseStepLabelLookup: UseCaseStepLabelLookup
 
@@ -558,6 +878,8 @@ object Parsers {
       rule(useCaseStepLabelAttempt ~ pop_\/-[UseCaseStepId])
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   trait Issue extends Base {
     override val t: Atom.Issue
     import Text.{InlineIssueDesc => I}
@@ -572,6 +894,8 @@ object Parsers {
     // runSubParser can only be used in a method directly in a class, not a trait like this
     protected def issueInnerDesc: Rule1[I.NonEmptyText] //= rule(runSubParser(I.parserI(project)(_).inline))
   }
+
+  // -------------------------------------------------------------------------------------------------------------------
 
   trait HeadingTitle extends Literal {
     val token: TokenRule
@@ -623,6 +947,8 @@ object Parsers {
       rule(OWS ~ tokensAndTextUntilEOL(token) ~ EOI)
   }
 
+  // -------------------------------------------------------------------------------------------------------------------
+
   trait MultiLine extends SingleLine with NewLine with ListMarkup with CodeBlock with Headings {
     override val t: Atom.MultiLine
     protected val additionalTokens: TokenRule
@@ -631,16 +957,16 @@ object Parsers {
       () => rule(additionalTokens() | singleLine)
 
     final val token: TokenRule =
-      () => rule(listMarkup(listToken) | heading() | codeBlock | additionalTokens() | blankLine | singleLine)
+      () => rule(heading() | codeBlock | additionalTokens() | blankLine | singleLine)
 
     val atomSeq: AtomSeqRule =
-      () => rule(token() ~> singleAtomSeq)
+      () => rule(listMarkup(listToken) | (token() ~> singleAtomSeq))
 
     final override def optionalText: Rule1[t.OptionalText] =
-      rule(OWS ~ atomSeqsAndTextUntilEOL(atomSeq) ~ EOI)
+      rule(atomSeqsAndTextUntilEOL(atomSeq) ~ EOI)
   }
 
-  // ===================================================================================================================
+  // -------------------------------------------------------------------------------------------------------------------
 
   trait TopBase extends Literal {
     protected val token: TokenRule

@@ -270,8 +270,12 @@ object Atom {
 
       final val parent: self.type = self
       final override def isPlain = false
+      final override def allowBlankLineAfter = false
       final override def containsMultipleLines = (_items.length > 1) || _items.head.exists(_.containsMultipleLines)
-      final val itemsContainMultipleLines = _items.exists(_.exists(_.containsMultipleLines))
+      final val itemsContainMultipleLines = _items.exists(_.exists {
+        case _: ListBase => true
+        case a           => a.containsMultipleLines
+      })
 
       override final def exists(f: AnyAtom => Boolean) =
         f(this) || _items.exists(_.exists(_.exists(f)))
