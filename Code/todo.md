@@ -19,6 +19,10 @@
 * hard delete
 * Add percentages to deriv expl (?)
 
+* sync up scroll between editor & preview
+* Allow edit of a subset of a rich text field
+  (eg. hover button appears on headers, click and edit just the header and it's contents)
+
 
 
 Backlog (maybe-probably soon)
