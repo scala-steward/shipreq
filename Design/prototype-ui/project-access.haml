@@ -36,6 +36,37 @@
         margin-right:0!important;
       }
 
+      /*
+      .inline-perm {
+        _color:#333;
+        margin-left:1ex;
+      }
+      .inline-perm::before {
+        content: '(';
+      }
+      .inline-perm::after {
+        content: ')';
+      }
+      */
+      .inline-perm {
+        margin-left:1ex;
+      }
+      .inline-perm::before {
+        content: '—';
+        margin-right:1ex;
+      }
+
+      #header-row {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        margin-bottom:1.25rem;
+      }
+      .header-right {
+        float: right;
+        padding-left: 4ex;
+      }
+
       .tree-container {
         xborder: solid 1px red;
         margin-top: 3rem;
@@ -113,6 +144,17 @@
         text-decoration:line-through;
       }
 
+      #access-ro td {
+        padding-top:0.5em;
+        padding-bottom:0.5em;
+      }
+      #access-ro .lvl1 {
+        padding-left: 3ex;
+      }
+      #access-ro .lvl2 {
+        padding-left: 5.5ex;
+      }
+
       .hide {display:none}
       .invis {visibility:hidden}
       _i.icon.users {display:none}
@@ -170,7 +212,11 @@
       .family > .b > table td:not(:nth-child(2)) {
         white-space: nowrap;
       }
-      .family > .b > table td.inv {
+
+      #access-ro .pending-inv {
+        color:#c9621d;
+      }
+      .family table td.inv {
         color:#c9621d;
         font-style:italic;
       }
@@ -266,58 +312,121 @@
               .ui.horizontal.divider.header
                 %h2 Access
             %div.b
-              %table
-                %tbody
-                  %tr
-                    %td
-                      %i.icon.user
-                      You
-                    %td %span.admin admin
-                    %td
-                      .ui.button.basic.negative.invis(style="white-space: nowrap; float:right; background:#fff!important;") %i.icon.trash(style="margin:0!important")
-                  %tr
-                    %td
-                      %i.icon.user
-                      @zatt
-                    %td.inv
-                      %i.icon.envelope
-                      collaborator invitation will be sent
-                    %td .ui.button.basic.negative(style="white-space: nowrap; float:right; background:#fff!important;") %i.icon.trash(style="margin:0!important")
-                  %tr
-                    %td
-                      %i.icon.folder.open.outline
-                      ShipReq
-                    %td %span.member member
-                    %td .ui.button.basic.negative(style="white-space: nowrap; float:right; background:#fff!important;") %i.icon.trash(style="margin:0!important")
-                  %tr
-                    %td.lvl1
-                      %i.icon.users
-                      Dev Team
-                    %td %span.collab collaborator
-                    %td .ui.button.basic.negative(style="white-space: nowrap; float:right; background:#fff!important;") %i.icon.trash(style="margin:0!important")
-                  %tr
-                    %td.lvl2
-                      %i.icon.user
-                      @poop
-                    %td %span.collab collaborator
-                    %td
-                      .ui.button.basic.negative.invis(style="white-space: nowrap; float:right; background:#fff!important;") %i.icon.trash(style="margin:0!important")
-            %div.f
-              .ui.floating.labeled.icon.dropdown.button
-                %i.icon.plus
-                %span.text Add collaborator...
-              .ui.floating.labeled.icon.dropdown.button(style="margin-left:2ex")
-                %i.icon.plus
-                %span.text Add admin...
+
+              .ui.segment.raised#access-ro
+                %table(style="margin-left:2ex")
+                  %tbody
+                    %tr
+                      %td
+                        %i.icon.user
+                        You
+                        %span.inline-perm %span.admin admin
+                    %tr.pending-inv
+                      %td
+                        %i.icon.user
+                        @zatt
+                        %span.inline-perm
+                          collaborator invitation sent
+                    %tr
+                      %td
+                        %i.icon.folder.open.outline
+                        ShipReq
+                        %span.inline-perm %span.member member
+                    %tr
+                      %td.lvl1
+                        %i.icon.users
+                        Dev Team
+                        %span.inline-perm %span.collab collaborator
+                    %tr
+                      %td.lvl2
+                        %i.icon.user
+                        @poop
+                        %span.inline-perm %span.collab collaborator
+                %div(style="text-align:right; margin-top:2rem")
+                  %button.ui.button.blue(style="margin-right:0!important" onClick='toggle_access()')
+                    %i.icon.edit
+                    Edit
+
+              .ui.segment.raised#access-rw(style="display:none")
+                %table(style="width:100%; margin-bottom:1em")
+                  %tbody
+                    %tr
+                      %td
+                        %i.icon.user
+                        You
+                      %td %span.admin admin
+                      %td
+                        .ui.button.basic.negative.invis(style="white-space: nowrap; float:right; background:#fff!important;") %i.icon.trash(style="margin:0!important")
+                    %tr.pending-inv
+                      %td
+                        %i.icon.user
+                        @zatt
+                      %td.inv
+                        %i.icon.envelope
+                        collaborator invitation will be sent
+                      %td .ui.button.basic.negative(style="white-space: nowrap; float:right; background:#fff!important;") %i.icon.trash(style="margin:0!important")
+                    %tr
+                      %td
+                        %i.icon.folder.open.outline
+                        ShipReq
+                      %td %span.member member
+                      %td .ui.button.basic.negative(style="white-space: nowrap; float:right; background:#fff!important;") %i.icon.trash(style="margin:0!important")
+                    %tr
+                      %td.lvl1
+                        %i.icon.users
+                        Dev Team
+                      %td %span.collab collaborator
+                      %td .ui.button.basic.negative(style="white-space: nowrap; float:right; background:#fff!important;") %i.icon.trash(style="margin:0!important")
+                    %tr
+                      %td.lvl2
+                        %i.icon.user
+                        @poop
+                      %td %span.collab collaborator
+                      %td
+                        .ui.button.basic.negative.invis(style="white-space: nowrap; float:right; background:#fff!important;") %i.icon.trash(style="margin:0!important")
+                %div
+                  .ui.floating.labeled.icon.dropdown.button
+                    %i.icon.plus
+                    %span.text Add collaborator...
+                  .ui.floating.labeled.icon.dropdown.button(style="margin-left:2ex")
+                    %i.icon.plus
+                    %span.text Add admin...
+                %div(style="text-align:right; margin-top:2rem")
+                  %button.ui.button.black.basic(style="margin-right:2em" onClick='toggle_access()')
+                    %i.icon.remove
+                    Close
+                  %button.ui.button.green(style="margin-right:0!important" onClick='toggle_access()')
+                    %i.icon.edit
+                    Save
+
+        -# ==========================================================================================================================================
 
         %section(style="margin-top:5rem")
           .family
             %div.h
               .ui.horizontal.divider.header
                 %h2 Invitations
-          %div(style="text-align:right; margin-bottom:1.25rem")
-            %button.ui.button.icon.has-popup#dead-projects{data-content: "Click to show deleted content."}
-              %i.icon.trash.outline.large.grey
+
+          #header-row
+            .header-left
+              %a.ui.button.green
+                %i.icon.plus
+                New invitation page
+              -# .ui.labeled.button
+                %a.ui.button.green
+                  %i.icon.plus
+                  New
+                .ui.dropdown.label{style: "background-color: #00a632; color: #EEE;"}
+                  Invitation
+                  %i.icon.dropdown
+                  .menu
+                    .item Invitation
+                    .item Invitation page
+            .header-right
+              %span // this is important to prevent [.ui.header icon:only-child] affecting below
+              %button.ui.button.icon.has-popup#dead-projects{data-content: "Click to show deleted content."}
+                %i.icon.trash.outline.large.grey
+
           .ui.icon.message.ip.positive
             %i.icon.bullhorn(style="margin:0 2rem 0 0!important; font-size:2.5rem")
             .content
@@ -411,7 +520,7 @@
                   .ui.button.negative
                     %i.icon.close
                     Revoke
-          %div.b(style="margin-top:1.5rem")
+          -# %div.b(style="margin-top:1.5rem")
             .ui.floating.labeled.icon.dropdown.button
               %i.icon.plus
               %span.text Invite...
@@ -423,3 +532,7 @@
   :javascript
     $('.ui.dropdown').dropdown();
     $('.omg-dimmable').dimmer({on: 'hover'});
+
+    function toggle_access() {
+      $('#access-ro,#access-rw').toggle();
+    }
