@@ -14,17 +14,15 @@
 
 ### Implement
 * add option to show simplified UC graphs (using the `merged-a` style)
-* FR-35: Allow a user to view a project in read-only mode
-* delete & restore projects
-* hard delete
 * Add percentages to deriv expl (?)
-
 * add a KB shortcut to show/hide preview
 * lighten editor yellow
 * surround with text with `"` and `'`
 * add blockquotes
 * too many newlines in nested lists (PlainText & ProjectWidgets)
 * sync up scroll between editor & preview
+* In ReqDtail screen, render req sets as ULs and display the req titles
+* FR-46: Users #should be able to merge duplicated reqs
 
 * This causes a parser bug:
   ```
@@ -32,6 +30,10 @@
 
   Similar to Google, there should be a single, simple box where I can type in something I have in mind, and then it shows everywhere relevant in the project: LL reqs, UC steps, etc.
   ```
+
+* FR-35: Allow a user to view a project in read-only mode
+* delete & restore projects
+* hard delete
 
 
 Backlog (maybe-probably soon)
