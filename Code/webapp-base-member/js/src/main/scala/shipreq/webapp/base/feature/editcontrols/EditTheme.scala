@@ -23,7 +23,7 @@ private[feature] object EditTheme {
                    font              : Font,
                    previewRW         : PreviewFeature.ReadWrite.Single,
                    previewWantOpen   : => Boolean,
-                   previewBody       : => VdomNode): VdomNode = {
+                   previewBody       : => TagMod): VdomNode = {
 
     def renderActive(error: Option[TagMod], enabled: Enabled, modInstructions: TagMod => TagMod) = {
       def go(fullscreen: Option[OptionalFullscreen.Ctx]): VdomNode = {
@@ -93,7 +93,7 @@ private[feature] object EditTheme {
                            defaultPosition: Position,
                            instructions   : TagMod,
                            previewRW      : PreviewFeature.ReadWrite.Single,
-                           previewBody    : => VdomNode,
+                           previewBody    : => TagMod,
                            layout         : Layout,
                            error          : Option[TagMod]): VdomNode = {
     import Layout.Controls.Around
@@ -243,7 +243,7 @@ private[feature] object EditTheme {
 
   private def renderPreview(position   : Position,
                             mode       : Mode,
-                            body       : => VdomNode): VdomNode =
+                            body       : => TagMod): VdomNode =
     <.div(*.richTextPreview((position, mode)),
       <.div(*.richTextPreviewHeader, "Preview"),
       <.div(*.richTextPreviewBodyOuter,

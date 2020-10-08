@@ -20,7 +20,6 @@
 * surround with text with `"` and `'`
 * add blockquotes
 * too many newlines in nested lists (PlainText & ProjectWidgets)
-* sync up scroll between editor & preview
 * In ReqDtail screen, render req sets as ULs and display the req titles
 * FR-46: Users #should be able to merge duplicated reqs
 

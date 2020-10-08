@@ -115,7 +115,7 @@ object EditControlsFeature {
                    style          : Style,
                    previewRW      : PreviewFeature.ReadWrite.Single,
                    previewWantOpen: => Boolean,
-                   previewBody    : => VdomNode): VdomNode =
+                   previewBody    : => TagMod): VdomNode =
     renderEditor(
       status             = status,
       optionalFullscreen = None,
@@ -139,7 +139,7 @@ object EditControlsFeature {
                    font              : Font,
                    previewRW         : PreviewFeature.ReadWrite.Single,
                    previewWantOpen   : => Boolean,
-                   previewBody       : => VdomNode): VdomNode =
+                   previewBody       : => TagMod): VdomNode =
     editcontrols.EditTheme.renderEditor(
       status             = status,
       optionalFullscreen = optionalFullscreen,

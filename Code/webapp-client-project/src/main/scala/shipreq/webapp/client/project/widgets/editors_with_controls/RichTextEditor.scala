@@ -11,7 +11,7 @@ import shipreq.webapp.base.data
 import shipreq.webapp.base.data.derivation.NaTags
 import shipreq.webapp.base.data.{Optional => _, _}
 import shipreq.webapp.base.feature.AutoCompleteFeature._
-import shipreq.webapp.base.feature.{EditControlsFeature, EditorStatus, PreviewFeature}
+import shipreq.webapp.base.feature.{EditControlsFeature, EditorStatus, PreviewFeature, ScrollSyncFeature}
 import shipreq.webapp.base.jsfacade.{ScrollIntoViewIfNeeded, TextFieldEdit}
 import shipreq.webapp.base.lib._
 import shipreq.webapp.base.text.Atom.TypeGroup
@@ -172,6 +172,10 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         window = 500,
       ).run
 
+    private val scrollSync        = ScrollSyncFeature()
+    private val scrollPaneEditor  = scrollSync.newPane(editorDom.asCallback)
+    private val scrollPanePreview = scrollSync.newPane()
+
     private val editControls =
       EditControlsFeature.Controls[Props](text.lineCardinality)
         .abortWhenDefined(_.abortWithConfirmation, _.abortVerb)
@@ -186,13 +190,13 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       val onFocus: Callback =
         $.props.flatMap(p => p.preview.onFocus(p.wantPreview)) >> scrollIntoView
 
-      def setValue(text: String): Callback =
+      def setValue(text: String, onSuccess: Callback): Callback =
         $.props.flatMap(p =>
-          p.status.wrapEdit(p.edit.setState(liveCorrect(text)) >>
+          p.status.wrapEdit(p.edit.setState(liveCorrect(text), onSuccess) >>
             p.preview.onEdit(p.wantPreview)))
 
       val onChange: ReactEventFromTextArea => Callback =
-        e => setValue(e.target.value)
+        e => setValue(e.target.value, scrollPaneEditor.syncOthersToThis)
 
       val onBlur: Callback =
         autoCompleteOnBlur >> $.props.flatMap(_.preview.onBlur)
@@ -259,6 +263,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         ^.onChange  ==> onChange,
         ^.onBlur    --> onBlur,
         ^.onClick   ==> autoCompleteOnClick,
+        scrollPaneEditor.tagMod,
         RichTextEditor.minRows(text.lineCardinality))
     }
 
@@ -322,7 +327,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
         font               = s.font,
         previewRW          = p.preview,
         previewWantOpen    = p.wantPreview,
-        previewBody        = richText,
+        previewBody        = TagMod(scrollPanePreview.tagMod, richText),
       )
     }
 

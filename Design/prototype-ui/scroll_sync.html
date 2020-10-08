@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>CardBoard | ShipReq</title>
+  <script src="../node_modules/jquery/dist/jquery.min.js"></script>
+  <link href="../semantic/dist/semantic.min.css" rel="stylesheet" type="text/css" />
+  <script src="../semantic/dist/semantic.min.js"></script>
+  <style type="text/css">
+    body {
+      padding: 1rem
+    }
+
+    main {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      gap: 1rem;
+    }
+
+    main>* {
+      width: 50%;
+    }
+
+    #l textarea {
+      overflow-wrap: break-word;
+      width: 100%;
+      height: 100%;
+      background:#ffffee;
+      scroll-behavior: auto!important;
+    }
+
+    #r {
+      scroll-behavior: auto!important;
+      overflow-x: hidden;
+      overflow-y: scroll;
+      overflow-wrap: break-word;
+      border-bottom:solid 1px #ccc;
+    }
+
+    ._a1n {
+      padding-left: 1ex !important;
+      padding-top: 0.3em !important;
+      padding-bottom: 0.3em !important;
+      background: #ccf6ff !important;
+      color: #0d1516 !important;
+    }
+
+  </style>
+</head>
+
+<body>
+  <main>
+
+    <div id="l">
+      <textarea id="t">Let's start with the basics. We need to store the draft somewhere as the user types. We needn't save on every single keystroke (for performance reasons), but there should be some kind of window., likely temporal. Another way of looking at that window, is how much user change are we happy to lose in the case of disaster? 10, 20, 30 sec worth? Kind of arbitrary so just use a gut-feel to compromise between client performance, server impact, and data protection for the user. Don't forget that we'll also save on certain events like editor blur, tab closing beacon.
+
+**How?** My first thought was local storage but there are some issues with that:
+
+* security risk -- we're talking about IP here although it's only a little I guess, plus encryption could be employed to reduce risk
+* drafts are bound to a single browser cache - that's pretty shitty for users. Users should be able to switch devices and access their drafts
+
+Meaning that we're going with a server-side solution. What options do we have?
+
+* DB - just chuck it all in Postgres
+* setup some other data store?
+
+I guess the only reason not to use Postgres is for performance reasons right?
+
+* more svr ↔ DB traffic
+* more DB storage
+* table performance - there's going to be A LOT of frequent writes (eg. potentially approx every //n// sec per concurrent user)
+
+Oh shit there's something else to consider: **how do we save drafts when a user is offline?** It's a scenario that we #must support for this to be truly useful, and keep in mind that [MF-36:] is going to be a big selling point in the future.
+
+So it looks like we've have two stores:
+
+1. local storage that syncs itself up when an online connection is restored
+2. a server-side store capable of //lots// of RW IO
+
+### Conflicts
+
+Oh dreaded conflicts. It's going to happen. We need to deal with this for both this, for [MF-36:], and for [MF-9:].
+
+Let's with a bit of modelling (for a single editor) to see what we're dealing with...
+
+* client
+
+  * editor: ∅ | V
+  * local storage: ∅ | V
+  * event received: ∅ | V
+  * event sent: ∅ | V
+  * draft sent: ∅ | V
+  * draft received: ∅ | V
+
+* server
+
+  * store: ∅ | V
+
+Hmm looking at it that way it doesn't seem that complicated (so long as we have a sense of a time), maybe we just need sensible propagation logic and a single conflict editor.
+
+```dot:render
+subgraph cluster_server {
+  graph[label=Server]
+  dbd [label="draft\nDB"]
+  dbe [label="event\nDB"]
+}
+subgraph cluster_client {
+  graph[label=Client]
+  e [label="editor"]
+  ls [label="local\nstorage"]
+}
+d [label="remote\ndraft" fontcolor=red fillcolor="#ffeeee"]
+ev [label="event" fontcolor=blue  fillcolor="#eeeeff"]
+
+edge[color=red fontcolor=red]
+e -> ls [label="store"]
+ls -> e [label="restore"]
+dbd -> d -> e [label="store" dir=back]
+dbd -> d -> e [label="restore"]
+
+edge[color=blue fontcolor=blue]
+dbe -> ev -> e [label="commit" dir=back]
+dbe -> ev -> e [label="external change"]
+```
+
+It would be good to automatically resolve trivial conflicts without the user being notified.
+
+Otherwise we need to popup a dialog for the user to deal with it. A critical point is that it #must not be a forceful modal. The user should still maintain full control over their app's state, meaning a few things:
+
+* if the user is editing A and a conflict on B occurs, they users' workflow should not be affected. They should maybe see a little conflict count increase at the top of the screen (or something like that if anything at all), be able to finish what they're doing with editor A, then in their own time check out what the story is with B.
+* when a user has the conflict editor open, they should be able to close it and come back to it later
+
+### Accidental closure
+
+Going back to the original feedback, we also need to protect users from their own mistakes. If I close an editor and then realise //"oh shit, that was the wrong editor/decision"//, how can I get my old value back? Keep in mind that closing and editor to deliberate discard your changes and then opening it back up again is a very common ability that must be preserved. Even if we separated the "close editor" action from the "discard draft", it's the same problem in that how do we handle the user explicitly discarding their draft and then realising that was the wrong move? There's only so much protection we can provide (or at least is feasible for me to implement right now)... #TODO{ Try out a few UCs for this... }
+
+### What does Gmail do
+
+What does gmail do? It keeps drafts as separate entities that are manually discardable. Our situation is a bit different. We don't want floating, separate drafts. A draft is associated with exactly one editor — every where the editor goes, so too should the draft. We could associate multiple drafts with a single editor but that seems stupid. I imagine it would just be a proxy for users to manually manage changes they've made on different devices with using the conflict editor. Actually...
+
+### History UX per field
+
+...as weird as it sounds that could be a path if you consider that editors always have multiple versions (i.e. it's committed history plus any drafts). I wonder if it would make sense to solve draft management and field history in the same stroke? We'd still need a conflict editor though because regardless of where the two states come from, we don't want users having to manually copy-paste to merge themselves with no automated support. Holy shit, this could actually turn into a real solution. Come to think of it, all of the above is written as if there are always, ever only two revisions needing a merge. What happens when a user has a local draft, a remote draft and a new event comes in? Now there are three sources. If we're saying that merges can be postponed does that mean there can also be an unsaved live change in the editor too, being a fourth source?
+
+Interestingly, this might solve the accidental closure issue: even when a user discards a draft, just keep a non-current draft available in the remote store that the user can view in the history. (?)
+
+__//Fuck this is feeling a bit 'troublesome' in terms of tech, performance, architecture but don't worry about that. Know that I'm good enough to craft a good tech solution. Instead just focus of the user's experience.//__
+
+### Misc
+
+* look into some of Lamport's distributed clock stuff
+
+* what about the same user on multiple tabs
+
+* seriously, ensure some kind of max storage limit. We need to be safe to someone pasting 1GB of text
+
+* use TLA+ to ensure things like:
+
+  * we never discard a newer draft in favour of an older one
+
+# __Open Questions__
+
+1.
+
+   * U opens editor
+   * U makes changes
+   * U aborts
+   * ¿how does U get the old draft back?
+
+2.
+
+   * U opens editor
+   * U makes changes
+   * field receives external update
+   * ¿how is U notified of the new change?
+   * ¿how do they merge their draft with the new change?
+
+#### Ideas:
+
+* Have a little context menu or hamburger on each field, initially hidden, that appear on field hover. From there we could access all kinds of actions and views
+* Change fields to be like an imaginary flashcard: the latest value and editor on one side, and a bunch of utils/tabs/controls/menu on the other; one of those utils could be a way to show all history and drafts.
+* I'm very happy to have the entire screen consumed (i.e. be taken to another page) to view all a field's history, see my diffs, do merges. In which case we probably just need to make sure there's an efficient way of getting there.
+      </textarea>
+    </div>
+
+    <div id="r">
+      <div class="_a1l ui segments raised">
+        <div class="_a1n ui segment inverted">Preview</div>
+        <div class="_a1o ui segment" id="p">
+          <div class="_a1p"><span><span>Let's start with the basics. We need to store the draft somewhere as the user
+                types. We needn't save on every single keystroke (for performance reasons), but there should be some
+                kind of window., likely temporal. Another way of looking at that window, is how much user change are
+                we happy to lose in the case of disaster? 10, 20, 30 sec worth? Kind of arbitrary so just use a
+                gut-feel to compromise between client performance, server impact, and data protection for the user.
+                Don't forget that we'll also save on certain events like editor blur, tab closing beacon.</span>
+              <div class="_bbk"></div><strong><span>How?</span></strong><span> My first thought was local storage but
+                there are some issues with that:</span>
+              <ul class="_bbl">
+                <li><span>security risk -- we're talking about IP here although it's only a little I guess, plus
+                    encryption could be employed to reduce risk</span></li>
+                <li><span>drafts are bound to a single browser cache - that's pretty shitty for users. Users should be
+                    able to switch devices and access their drafts</span></li>
+              </ul><span>Meaning that we're going with a server-side solution. What options do we have?</span>
+              <ul class="_bbl">
+                <li><span>DB - just chuck it all in Postgres</span></li>
+                <li><span>setup some other data store?</span></li>
+              </ul><span>I guess the only reason not to use Postgres is for performance reasons right?</span>
+              <ul class="_bbl">
+                <li><span>more svr ↔ DB traffic</span></li>
+                <li><span>more DB storage</span></li>
+                <li><span>table performance - there's going to be A LOT of frequent writes (eg. potentially approx
+                    every </span><em><span>n</span></em><span> sec per concurrent user)</span></li>
+              </ul><span>Oh shit there's something else to consider: </span><strong><span>how do we save drafts when a
+                  user is offline?</span></strong><span> It's a scenario that we </span><span
+                title="Requirement is critical to the current delivery timebox in order for it to be a success. If even one MUST requirement is not included, the project delivery should be considered a failure"
+                class="_bau">#must</span><span> support for this to be truly useful, and keep in mind that </span><a
+                href="https://shipreq.com/project/d6My#/reqs/MF-36" class="_bc4">[MF-36: <span><span>Offline
+                    mode</span></span>]</a><span> is going to be a big selling point in the future.</span>
+              <div class="_bbk"></div><span>So it looks like we've have two stores:</span>
+              <ol class="_bbl">
+                <li><span>local storage that syncs itself up when an online connection is restored</span></li>
+                <li><span>a server-side store capable of </span><em><span>lots</span></em><span> of RW IO</span></li>
+              </ol>
+              <h3 class="_bbp"><span>Conflicts</span></h3><span>Oh dreaded conflicts. It's going to happen. We need to
+                deal with this for both this, for </span><a href="https://shipreq.com/project/d6My#/reqs/MF-36"
+                class="_bc4">[MF-36: <span><span>Offline mode</span></span>]</a><span>, and for </span><a
+                href="https://shipreq.com/project/d6My#/reqs/MF-9" class="_bc4">[MF-9: <span><span>Collaboration:
+                    authoring (aka multi-user)</span></span>]</a><span>.</span>
+              <div class="_bbk"></div><span>Let's with a bit of modelling (for a single editor) to see what we're
+                dealing with...</span>
+              <ul class="_bbm">
+                <li><span>client</span>
+                  <ul class="_bbl">
+                    <li><span>editor: ∅ | V</span></li>
+                    <li><span>local storage: ∅ | V</span></li>
+                    <li><span>event received: ∅ | V</span></li>
+                    <li><span>event sent: ∅ | V</span></li>
+                    <li><span>draft sent: ∅ | V</span></li>
+                    <li><span>draft received: ∅ | V</span></li>
+                  </ul>
+                </li>
+                <li><span>server</span>
+                  <ul class="_bbl">
+                    <li><span>store: ∅ | V</span></li>
+                  </ul>
+                </li>
+              </ul><span>Hmm looking at it that way it doesn't seem that complicated (so long as we have a sense of a
+                time), maybe we just need sensible propagation logic and a single conflict editor.</span>
+              <div style="display: inline;">
+                <div class="_b2">
+                  <!--?xml version="1.0" encoding="UTF-8" standalone="no"?-->
+                  <svg width="653pt" height="200pt" viewBox="0.00 0.00 652.57 200.00"
+                    xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                    <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 196)">
+                      <g id="clust2" class="cluster">
+
+                        <polygon fill="transparent" stroke="black"
+                          points="399.56,-51 399.56,-167 636.57,-167 636.57,-51 399.56,-51"></polygon>
+                        <text text-anchor="middle" x="518.07" y="-150.4" font-family="Times,serif"
+                          font-size="14.00">Client</text>
+                      </g>
+                      <g id="clust1" class="cluster">
+
+                        <polygon fill="transparent" stroke="black" points="8,-8 8,-184 89.51,-184 89.51,-8 8,-8">
+                        </polygon>
+                        <text text-anchor="middle" x="48.75" y="-167.4" font-family="Times,serif"
+                          font-size="14.00">Server</text>
+                      </g>
+
+                      <g id="node1" class="node">
+
+                        <ellipse fill="#e8e8e8" stroke="black" cx="48.75" cy="-122" rx="30" ry="29.33"></ellipse>
+                        <text text-anchor="middle" x="48.75" y="-126.2" font-family="Times,serif"
+                          font-size="14.00">draft</text>
+                        <text text-anchor="middle" x="48.75" y="-109.4" font-family="Times,serif"
+                          font-size="14.00">DB</text>
+                      </g>
+
+                      <g id="node5" class="node">
+
+                        <ellipse fill="#ffeeee" stroke="black" cx="244.54" cy="-125" rx="38.6" ry="29.33"></ellipse>
+                        <text text-anchor="middle" x="244.54" y="-129.2" font-family="Times,serif" font-size="14.00"
+                          fill="red">remote</text>
+                        <text text-anchor="middle" x="244.54" y="-112.4" font-family="Times,serif" font-size="14.00"
+                          fill="red">draft</text>
+                      </g>
+
+                      <g id="edge3" class="edge">
+
+                        <path fill="none" stroke="red"
+                          d="M88.26,-128.81C92.05,-129.3 95.85,-129.71 99.51,-130 138.59,-133.12 148.56,-131.75 187.74,-130 193.66,-129.73 199.93,-129.31 206.05,-128.82">
+                        </path>
+                        <polygon fill="red" stroke="red"
+                          points="88.73,-125.34 78.34,-127.4 87.74,-132.27 88.73,-125.34"></polygon>
+                        <text text-anchor="middle" x="143.62" y="-135.2" font-family="Times,serif" font-size="14.00"
+                          fill="red">store</text>
+                      </g>
+
+                      <g id="edge5" class="edge">
+
+                        <path fill="none" stroke="red"
+                          d="M77.67,-113.51C84.73,-111.72 92.34,-110.11 99.51,-109.2 138.41,-104.28 148.9,-103.81 187.74,-109.2 191.39,-109.71 195.14,-110.39 198.89,-111.2">
+                        </path>
+                        <polygon fill="red" stroke="red"
+                          points="198.19,-114.63 208.73,-113.55 199.82,-107.82 198.19,-114.63"></polygon>
+                        <text text-anchor="middle" x="143.62" y="-113.2" font-family="Times,serif" font-size="14.00"
+                          fill="red">restore</text>
+                      </g>
+
+                      <g id="node2" class="node">
+
+                        <ellipse fill="#e8e8e8" stroke="black" cx="48.75" cy="-45" rx="32.51" ry="29.33"></ellipse>
+                        <text text-anchor="middle" x="48.75" y="-49.2" font-family="Times,serif"
+                          font-size="14.00">event</text>
+                        <text text-anchor="middle" x="48.75" y="-32.4" font-family="Times,serif"
+                          font-size="14.00">DB</text>
+                      </g>
+
+                      <g id="node6" class="node">
+
+                        <ellipse fill="#eeeeff" stroke="black" cx="244.54" cy="-40" rx="31.9" ry="18"></ellipse>
+                        <text text-anchor="middle" x="244.54" y="-35.8" font-family="Times,serif" font-size="14.00"
+                          fill="blue">event</text>
+                      </g>
+
+                      <g id="edge7" class="edge">
+
+                        <path fill="none" stroke="blue" d="M92.03,-43.91C128.33,-42.97 179.83,-41.64 212.45,-40.8">
+                        </path>
+                        <polygon fill="blue" stroke="blue"
+                          points="91.66,-40.42 81.75,-44.17 91.84,-47.42 91.66,-40.42"></polygon>
+                        <text text-anchor="middle" x="143.62" y="-48.2" font-family="Times,serif" font-size="14.00"
+                          fill="blue">commit</text>
+                      </g>
+
+                      <g id="edge9" class="edge">
+
+                        <path fill="none" stroke="blue"
+                          d="M76.59,-29.49C83.8,-26.08 91.76,-22.96 99.51,-21.2 137.75,-12.52 149.04,-14.86 187.74,-21.2 194.65,-22.33 201.86,-24.21 208.71,-26.34">
+                        </path>
+                        <polygon fill="blue" stroke="blue"
+                          points="207.83,-29.74 218.42,-29.61 210.06,-23.1 207.83,-29.74"></polygon>
+                        <text text-anchor="middle" x="143.62" y="-26.2" font-family="Times,serif" font-size="14.00"
+                          fill="blue">external change</text>
+                      </g>
+
+                      <g id="node3" class="node">
+
+                        <ellipse fill="#e8e8e8" stroke="black" cx="441.13" cy="-91" rx="33.62" ry="18"></ellipse>
+                        <text text-anchor="middle" x="441.13" y="-86.8" font-family="Times,serif"
+                          font-size="14.00">editor</text>
+                      </g>
+
+                      <g id="node4" class="node">
+
+                        <ellipse fill="#e8e8e8" stroke="black" cx="588.67" cy="-96" rx="39.8" ry="29.33"></ellipse>
+                        <text text-anchor="middle" x="588.67" y="-100.2" font-family="Times,serif"
+                          font-size="14.00">local</text>
+                        <text text-anchor="middle" x="588.67" y="-83.4" font-family="Times,serif"
+                          font-size="14.00">storage</text>
+                      </g>
+
+                      <g id="edge1" class="edge">
+
+                        <path fill="none" stroke="red"
+                          d="M470.77,-82.44C477.87,-80.68 485.5,-79.1 492.69,-78.2 509.49,-76.11 514.04,-75.64 530.77,-78.2 534.69,-78.8 538.71,-79.62 542.71,-80.57">
+                        </path>
+                        <polygon fill="red" stroke="red" points="541.99,-84 552.55,-83.2 543.79,-77.24 541.99,-84">
+                        </polygon>
+                        <text text-anchor="middle" x="511.73" y="-83.2" font-family="Times,serif" font-size="14.00"
+                          fill="red">store</text>
+                      </g>
+
+                      <g id="edge2" class="edge">
+
+                        <path fill="none" stroke="red"
+                          d="M548.38,-96.19C531.26,-96.12 510.98,-95.82 492.69,-95 490.02,-94.88 487.27,-94.73 484.5,-94.57">
+                        </path>
+                        <polygon fill="red" stroke="red"
+                          points="484.69,-91.07 474.47,-93.89 484.22,-98.05 484.69,-91.07"></polygon>
+                        <text text-anchor="middle" x="511.73" y="-101.2" font-family="Times,serif" font-size="14.00"
+                          fill="red">restore</text>
+                      </g>
+
+                      <g id="edge4" class="edge">
+
+                        <path fill="none" stroke="red"
+                          d="M292.04,-135.47C320.9,-139.91 358.3,-141.87 389.56,-131 403.31,-126.22 416.13,-115.98 425.43,-107.06">
+                        </path>
+                        <polygon fill="red" stroke="red"
+                          points="292.27,-131.96 281.83,-133.74 291.1,-138.86 292.27,-131.96"></polygon>
+                        <text text-anchor="middle" x="345.45" y="-143.2" font-family="Times,serif" font-size="14.00"
+                          fill="red">store</text>
+                      </g>
+
+                      <g id="edge6" class="edge">
+
+                        <path fill="none" stroke="red"
+                          d="M281.1,-114.87C287.79,-113.17 294.75,-111.52 301.33,-110.2 333.48,-103.74 370.25,-98.76 397.86,-95.49">
+                        </path>
+                        <polygon fill="red" stroke="red"
+                          points="398.44,-98.95 407.97,-94.32 397.63,-92 398.44,-98.95"></polygon>
+                        <text text-anchor="middle" x="345.45" y="-114.2" font-family="Times,serif" font-size="14.00"
+                          fill="red">restore</text>
+                      </g>
+
+                      <g id="edge8" class="edge">
+
+                        <path fill="none" stroke="blue"
+                          d="M284.08,-49.26C313.14,-56.35 353.96,-66.52 389.56,-76.2 396.71,-78.14 404.4,-80.34 411.57,-82.43">
+                        </path>
+                        <polygon fill="blue" stroke="blue"
+                          points="284.86,-45.85 274.31,-46.89 283.2,-52.65 284.86,-45.85"></polygon>
+                        <text text-anchor="middle" x="345.45" y="-81.2" font-family="Times,serif" font-size="14.00"
+                          fill="blue">commit</text>
+                      </g>
+
+                      <g id="edge10" class="edge">
+
+                        <path fill="none" stroke="blue"
+                          d="M273.19,-31.85C303.24,-24.55 352,-17.35 389.56,-34.2 404.01,-40.68 416.01,-53.55 424.69,-65.4">
+                        </path>
+                        <polygon fill="blue" stroke="blue"
+                          points="421.88,-67.48 430.42,-73.75 427.65,-63.52 421.88,-67.48"></polygon>
+                        <text text-anchor="middle" x="345.45" y="-39.2" font-family="Times,serif" font-size="14.00"
+                          fill="blue">external change</text>
+                      </g>
+                    </g>
+                  </svg>
+                </div>
+              </div><span>It would be good to automatically resolve trivial conflicts without the user being
+                notified.</span>
+              <div class="_bbk"></div><span>Otherwise we need to popup a dialog for the user to deal with it. A
+                critical point is that it </span><span
+                title="Requirement is critical to the current delivery timebox in order for it to be a success. If even one MUST requirement is not included, the project delivery should be considered a failure"
+                class="_bau">#must</span><span> not be a forceful modal. The user should still maintain full control
+                over their app's state, meaning a few things:</span>
+              <ul class="_bbl">
+                <li><span>if the user is editing A and a conflict on B occurs, they users' workflow should not be
+                    affected. They should maybe see a little conflict count increase at the top of the screen (or
+                    something like that if anything at all), be able to finish what they're doing with editor A, then
+                    in their own time check out what the story is with B.</span></li>
+                <li><span>when a user has the conflict editor open, they should be able to close it and come back to
+                    it later</span></li>
+              </ul>
+              <h3 class="_bbp"><span>Accidental closure</span></h3><span>Going back to the original feedback, we also
+                need to protect users from their own mistakes. If I close an editor and then realise
+              </span><em><span>"oh shit, that was the wrong editor/decision"</span></em><span>, how can I get my old
+                value back? Keep in mind that closing and editor to deliberate discard your changes and then opening
+                it back up again is a very common ability that must be preserved. Even if we separated the "close
+                editor" action from the "discard draft", it's the same problem in that how do we handle the user
+                explicitly discarding their draft and then realising that was the wrong move? There's only so much
+                protection we can provide (or at least is feasible for me to implement right now)... </span><span
+                class="_bbz">#TODO{<span class="_bc2"><span>Try out a few UCs for this...</span></span>}</span>
+              <h3 class="_bbp"><span>What does Gmail do</span></h3><span>What does gmail do? It keeps drafts as
+                separate entities that are manually discardable. Our situation is a bit different. We don't want
+                floating, separate drafts. A draft is associated with exactly one editor — every where the editor
+                goes, so too should the draft. We could associate multiple drafts with a single editor but that seems
+                stupid. I imagine it would just be a proxy for users to manually manage changes they've made on
+                different devices with using the conflict editor. Actually...</span>
+              <h3 class="_bbp"><span>History UX per field</span></h3><span>...as weird as it sounds that could be a
+                path if you consider that editors always have multiple versions (i.e. it's committed history plus any
+                drafts). I wonder if it would make sense to solve draft management and field history in the same
+                stroke? We'd still need a conflict editor though because regardless of where the two states come from,
+                we don't want users having to manually copy-paste to merge themselves with no automated support. Holy
+                shit, this could actually turn into a real solution. Come to think of it, all of the above is written
+                as if there are always, ever only two revisions needing a merge. What happens when a user has a local
+                draft, a remote draft and a new event comes in? Now there are three sources. If we're saying that
+                merges can be postponed does that mean there can also be an unsaved live change in the editor too,
+                being a fourth source?</span>
+              <div class="_bbk"></div><span>Interestingly, this might solve the accidental closure issue: even when a
+                user discards a draft, just keep a non-current draft available in the remote store that the user can
+                view in the history. (?)</span>
+              <div class="_bbk"></div><span class="_bbu"><em><span>Fuck this is feeling a bit 'troublesome' in terms
+                    of tech, performance, architecture but don't worry about that. Know that I'm good enough to craft
+                    a good tech solution. Instead just focus of the user's experience.</span></em></span>
+              <h3 class="_bbp"><span>Misc</span></h3>
+              <ul class="_bbm">
+                <li><span>look into some of Lamport's distributed clock stuff</span></li>
+                <li><span>what about the same user on multiple tabs</span></li>
+                <li><span>seriously, ensure some kind of max storage limit. We need to be safe to someone pasting 1GB
+                    of text</span></li>
+                <li><span>use TLA+ to ensure things like:</span>
+                  <ul class="_bbl">
+                    <li><span>we never discard a newer draft in favour of an older one</span></li>
+                  </ul>
+                </li>
+              </ul>
+              <h1 class="_bbn"><span class="_bbu"><span>Open Questions</span></span></h1>
+              <ol class="_bbm">
+                <li>
+                  <ul class="_bbl">
+                    <li><span>U opens editor</span></li>
+                    <li><span>U makes changes</span></li>
+                    <li><span>U aborts</span></li>
+                    <li><span>¿how does U get the old draft back?</span></li>
+                  </ul>
+                </li>
+                <li>
+                  <ul class="_bbl">
+                    <li><span>U opens editor</span></li>
+                    <li><span>U makes changes</span></li>
+                    <li><span>field receives external update</span></li>
+                    <li><span>¿how is U notified of the new change?</span></li>
+                    <li><span>¿how do they merge their draft with the new change?</span></li>
+                  </ul>
+                </li>
+              </ol>
+              <h4 class="_bbq"><span>Ideas:</span></h4>
+              <ul class="_bbl">
+                <li><span>Have a little context menu or hamburger on each field, initially hidden, that appear on
+                    field hover. From there we could access all kinds of actions and views</span></li>
+                <li><span>Change fields to be like an imaginary flashcard: the latest value and editor on one side,
+                    and a bunch of utils/tabs/controls/menu on the other; one of those utils could be a way to show
+                    all history and drafts.</span></li>
+                <li><span>I'm very happy to have the entire screen consumed (i.e. be taken to another page) to view
+                    all a field's history, see my diffs, do merges. In which case we probably just need to make sure
+                    there's an efficient way of getting there.</span></li>
+              </ul>
+            </span></div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</body>
+
+<!-- ---------------------------------------------------------------------------------------------------------------------------- -->
+
+<script type="text/javascript">
+
+var t = document.getElementById("t");
+var p = document.getElementById("r");
+
+function settings(e) {
+  const y1 = e.scrollTop
+  const y1Max = e.scrollHeight > e.clientHeight ? e.scrollHeight - e.clientHeight : 0
+  return {
+    y1,
+    y2: y1 + e.clientHeight,
+    y1Max,
+    yMax: y1Max + e.clientHeight,
+    pct: y1 / y1Max,
+  }
+}
+function inspect() {
+  // console.log("textarea: ", settings(t))
+  console.log("preview: ", settings(p))
+}
+// inspect()
+
+var scrollingSide = null
+var timeout = null
+
+function clearTO() {
+  if (timeout) {
+    clearTimeout(timeout)
+    timeout = null
+  }
+}
+
+function clearSS() {
+  console.log("Clearing scrollingSide")
+  scrollingSide = null
+}
+
+function addEH(sideName, self, other) {
+  self.onscroll = function(e) {
+    if (!scrollingSide || scrollingSide == sideName) {
+      // console.log("Event: ", e)
+      console.log("Syncing scroll: ", {side: sideName, ss: scrollingSide})
+
+      const s = settings(self)
+      const o = settings(other)
+      const newY1 = o.y1Max * s.pct
+
+      clearTO()
+      scrollingSide = sideName
+      other.scrollTop = newY1
+      timeout = setTimeout(clearSS, 200)
+    }
+  }
+}
+addEH('t', t, p)
+addEH('p', p, t)
+
+</script>
+</html>

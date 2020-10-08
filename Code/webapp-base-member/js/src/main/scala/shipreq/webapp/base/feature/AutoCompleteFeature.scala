@@ -87,13 +87,18 @@ object AutoCompleteFeature extends autocomplete.Implicits {
       final val editorRef =
         Ref.toScalaComponent(AutosizeTextarea.Component)
 
+      final val editorDom: CallbackOption[html.TextArea] =
+        for {
+          r <- editorRef.get
+          n <- r.withEffectsPure.getDOMNode.map(_.toElement).asCBO
+        } yield n.domCast[html.TextArea]
+
       override final protected def getTextFromHeadToCaret =
         getTextFromHeadToCaretTA
 
       override final val autoCompleteCtx =
         for {
-          r <- editorRef.get
-          n <- r.withEffectsPure.getDOMNode.map(_.toElement).asCBO
+          n <- editorDom
         } yield Ctx(pxAutoComplete.value(), n.domCast[html.TextArea])
     }
 
