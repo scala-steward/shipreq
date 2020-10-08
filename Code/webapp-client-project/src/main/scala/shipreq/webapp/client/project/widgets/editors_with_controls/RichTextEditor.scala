@@ -244,7 +244,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
 
                 key match {
                   case "/" | "_" | "*" | "~" => wrap(key + key)
-                  case "`"                   => wrap(key)
+                  case "`" | "'" | "\""      => wrap(key)
                   case "("                   => wrap("(", ")")
                   case "{"                   => wrap("{", "}")
                   case "<"                   => wrap("<", ">")
