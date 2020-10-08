@@ -1596,6 +1596,16 @@ object Style extends StyleSheet.Inline {
     val h5 = heading
     val h6 = heading
 
+    val multilineSetValue = style(
+      margin(`0`),
+      paddingLeft(20 px),
+      unsafeChild("li")(
+        &.not(_.firstChild)(
+          marginTop(0.25 em),
+        )
+      )
+    )
+
     val strikethrough = style(textDecoration := "line-through")
 
     val underline = style(textDecoration := "underline")

@@ -17,6 +17,7 @@ import shipreq.webapp.base.event.{Event, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.feature.{AsyncFeature, EditControlsFeature, PreviewFeature, TableNavigationFeature}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.{CreateContentCmd, UpdateContentCmd}
+import shipreq.webapp.base.text.ProjectText.SetRenderStyle
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.ui.NoContentMessage
 import shipreq.webapp.base.util.CallbackHelpers._
@@ -124,7 +125,7 @@ object ReqDetail {
         Reusable.ap(
           Reusable.byRef(viewData),
           Reusable.byRef(pw),
-        )(_(_).withFullReqTypeFmt)
+        )(_(_).withFullReqTypeFmt.withImplicationsSetStyle(SetRenderStyle.MultiLineDetailed))
       }
 
     val useCaseData: Option[UseCaseData] =

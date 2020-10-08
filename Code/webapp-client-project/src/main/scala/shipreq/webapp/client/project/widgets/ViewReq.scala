@@ -6,6 +6,7 @@ import scala.collection.immutable.SortedSet
 import shipreq.base.util._
 import shipreq.webapp.base.data.FieldReqTypeRules.Resolution
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.text.ProjectText.SetRenderStyle
 import shipreq.webapp.base.text.{PlainText, ProjectText}
 import shipreq.webapp.client.project.feature.{EditorFeature, RenderFeature}
 import shipreq.webapp.client.project.widgets.ViewReq._
@@ -15,11 +16,15 @@ import shipreq.webapp.client.project.widgets.ViewReq._
   */
 final class ViewReq[A](data           : Data,
                        pt             : ProjectText[ProjectText.Context, A],
+                       impsStyle      : SetRenderStyle,
                        viewTags       : ViewTags.ForReq[A],
                        fmtReqTypeShort: Boolean) {
 
   def withFullReqTypeFmt: ViewReq[A] =
-    new ViewReq(data, pt, viewTags, false)
+    new ViewReq(data, pt, impsStyle, viewTags, false)
+
+  def withImplicationsSetStyle(style: SetRenderStyle): ViewReq[A] =
+    new ViewReq(data, pt, style, viewTags, fmtReqTypeShort)
 
   def reqType: A = {
     val id = data.req.reqTypeId
@@ -35,14 +40,14 @@ final class ViewReq[A](data           : Data,
   def imps(dir: Direction): A = {
     val imps      = data.generalImps(dir)
     val mandatory = Mandatory.when(data.impsAreMandatory && dir.is(Backwards))
-    pt.implicationList(imps, data.live, mandatory)
+    pt.implicationList(imps, data.live, mandatory, SetRenderStyle.SingleLineBrief)
   }
 
   def imps(id: CustomField.Implication.Id): IfApplicable[A] = {
     val imps = data.customImps(id)
     data.fieldRules.imp(id) match {
-      case Resolution.Optional      => \/-(pt.implicationList(imps, data.live, Optional))
-      case Resolution.Mandatory     => \/-(pt.implicationList(imps, data.live, Mandatory))
+      case Resolution.Optional      => \/-(pt.implicationList(imps, data.live, Optional, impsStyle))
+      case Resolution.Mandatory     => \/-(pt.implicationList(imps, data.live, Mandatory, impsStyle))
       case Resolution.NotApplicable => NotApplicable.left
       case Resolution.DefaultTo(x)  => x.impossible
     }
@@ -131,7 +136,7 @@ object ViewReq {
       apply(pw, pw.viewTags.forReq(filterDead)(req.id))
 
     def apply[A](pt: ProjectText[ProjectText.Context, A], viewTags: ViewTags.ForReq[A]): ViewReq[A] =
-      new ViewReq(this, pt, viewTags, true)
+      new ViewReq(this, pt, SetRenderStyle.SingleLineBrief, viewTags, true)
   }
 
   object Data {

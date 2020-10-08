@@ -13,6 +13,7 @@ import shipreq.webapp.base.data.{Contextualise, Plain, _}
 import shipreq.webapp.base.jsfacade.KaTeX
 import shipreq.webapp.base.lib.ClientUtil.{renderSeq, renderVector, sepComma, sepSpace}
 import shipreq.webapp.base.text.Atom.DisplayReqRef
+import shipreq.webapp.base.text.ProjectText.SetRenderStyle
 import shipreq.webapp.base.text.Text.AnyOptional
 import shipreq.webapp.base.text.{Grammar => G, _}
 import shipreq.webapp.base.util.ReqCodeTreeItem
@@ -85,8 +86,26 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
 
   import ProjectWidgets.Internal._
 
-  override protected def _implicationList(ids: Vector[Pubid]): VdomTag =
-    PubidFormat.validWhenDead.pubids(ids)
+  override protected def _implicationList(ids: Vector[Pubid], style: SetRenderStyle): VdomTag =
+    style match {
+      case SetRenderStyle.SingleLineBrief =>
+        PubidFormat.validWhenDead.pubids(ids)
+
+      case SetRenderStyle.MultiLineDetailed =>
+        if (ids.isEmpty)
+          <.div
+        else
+          <.ul(*.multilineSetValue,
+            ids.toTagMod { pid =>
+              val reqId = project.content.reqs.reqIdByPubid(pid)
+              <.li(
+                reqDetailRC.link(pid.external(project))(
+                  PlainText.pubid(pid, project),
+                  ": ",
+                  reqTitleById(reqId)))
+            }
+          )
+    }
 
   override protected def _text(text: AnyOptional, live: Live, tagValidity: ApplicableTagId => Validity): VdomTag =
     <.span(text.map(textAtom(live, tagValidity)): _*)

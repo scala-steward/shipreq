@@ -10,6 +10,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Atom.{AnyAtom, DisplayReqRef}
 import shipreq.webapp.base.text.GrammarSpec.Surrounds
+import shipreq.webapp.base.text.ProjectText.SetRenderStyle
 import shipreq.webapp.base.text.{Grammar => G}
 import shipreq.webapp.base.util.ReqCodeTreeItem
 
@@ -127,8 +128,18 @@ object PlainText {
 
   final class ForProject[+Ctx <: ProjectText.Context](p: Project, ctx: Ctx) extends ProjectText[Ctx, String](p, ctx) {
 
-    override protected def _implicationList(ids: Vector[Pubid]): String =
-      ids.iterator.map(pubid(_, p)).mkString(", ")
+    override protected def _implicationList(ids: Vector[Pubid], style: SetRenderStyle): String =
+      style match {
+
+        case SetRenderStyle.SingleLineBrief =>
+          ids.iterator.map(pubid(_, p)).mkString(", ")
+
+        case SetRenderStyle.MultiLineDetailed =>
+          ids.iterator.map { pid =>
+            val reqId = p.content.reqs.reqIdByPubid(pid)
+            "* " + pubid(pid, p) + ": " + reqTitleById(reqId)
+          }.mkString("\n")
+      }
 
     override protected def _text(text: Text.AnyOptional, live: Live, tagValidity: ApplicableTagId => Validity): String =
       nestedText("", "", live, text, true)

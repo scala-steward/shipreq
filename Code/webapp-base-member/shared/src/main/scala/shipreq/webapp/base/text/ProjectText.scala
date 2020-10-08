@@ -23,6 +23,7 @@ object ProjectText {
         case ProjectText.Context.Req(uc: UseCaseId)   => Some(p.content.reqs.need(uc).pubid.pos)
       }
   }
+
   object Context {
 
     /** User is looking at the entire project. */
@@ -35,10 +36,17 @@ object ProjectText {
     implicit def univEq: UnivEq[Context] = UnivEq.derive
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /** How a set of values should be rendered */
+  sealed trait SetRenderStyle
+
+  object SetRenderStyle {
+    case object SingleLineBrief extends SetRenderStyle
+    case object MultiLineDetailed extends SetRenderStyle
+  }
 
   /** Judgement on how a ReqCode-based reference (eg. [email.failure]) should be displayed */
   sealed trait ReqCodeResolution
+
   object ReqCodeResolution {
     case class ActiveCodeToReq     (code: ReqCode.Value, reqId: ReqId)         extends ReqCodeResolution
     case class ReqWithAltCode      (code: ReqCode.Value, reqId: ReqId)         extends ReqCodeResolution
@@ -102,7 +110,7 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // Abstract
 
-  protected def _implicationList(ids: Vector[Pubid]): Out
+  protected def _implicationList(ids: Vector[Pubid], style: SetRenderStyle): Out
 
   protected def _text(text: Text.AnyOptional, live: Live, tagValidity: ApplicableTagId => Validity): Out
 
@@ -228,11 +236,11 @@ abstract class ProjectText[+Ctx <: Context, Out](project: Project, final val ctx
   @inline final def gctx: ProjectText.Context =
     ctx
 
-  final def implicationList(ids: Vector[Pubid], live: Live, mandatory: Mandatory): Out =
+  final def implicationList(ids: Vector[Pubid], live: Live, mandatory: Mandatory, style: SetRenderStyle): Out =
     if (ids.isEmpty && live.is(Live) && mandatory.is(Mandatory))
       whenBlankButMandatory
     else
-      _implicationList(ids)
+      _implicationList(ids, style)
 
   final def manualIssue(text: Text.ManualIssue.NonEmptyText): Out =
     _text(text.whole, Live, Valid.always)
