@@ -113,7 +113,7 @@ object BaseStyles extends StyleSheet.Inline {
   focus // eager eval
 
   object editor {
-    val backgroundColor = c"#fffce5"
+    val backgroundColor = c"#fffdf1"
     val borderColor = rgba(239, 207, 9, .6)
   }
   editor // eager eval

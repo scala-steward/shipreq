@@ -16,7 +16,6 @@
 * add option to show simplified UC graphs (using the `merged-a` style)
 * Add percentages to deriv expl (?)
 * add a KB shortcut to show/hide preview
-* lighten editor yellow
 * add blockquotes
 * too many newlines in nested lists (PlainText & ProjectWidgets)
 * In ReqDtail screen, render req sets as ULs and display the req titles
