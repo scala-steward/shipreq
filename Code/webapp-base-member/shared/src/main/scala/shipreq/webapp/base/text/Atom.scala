@@ -120,7 +120,6 @@ object Atom {
       final def containsType[T <: AnyAtom](implicit ct: ClassTag[T]): Boolean =
         exists(ct.runtimeClass.isInstance)
 
-      // For tests
       @nowarn("cat=unused") def modText(f: String => String): this.type = this
       @nowarn("cat=unused") def modTextF[F[_]](f: String => F[String])(implicit F: Applicative[F]): F[this.type] = F.pure(this)
     }

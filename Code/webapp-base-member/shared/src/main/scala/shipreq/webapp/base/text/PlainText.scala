@@ -210,7 +210,6 @@ object PlainText {
           }
 
         @tailrec def go(acc                        : String,
-                        atoms                      : ArraySeq[AnyAtom],
                         idx                        : Int,
                         seenMultilineAtThisLevelYet: Boolean,
                        ): String = {
@@ -254,15 +253,26 @@ object PlainText {
 
               // Add the new line
               if (i == 0) {
+
                 // First LI
-                val alreadyInPlace = acc.isEmpty || acc.endsWith("\n\n" ~ indent)
+
+                @inline def alreadyInPlace =
+                  acc.isEmpty || acc.endsWith("\n\n" ~ indent)
+
+                @inline def atRoot =
+                  indent.isEmpty
+
+                @inline def separateFromParentListItem =
+                  parentIsSpacyList && (seenMultilineAtThisLevelYet || listsAtThisLevel != 1)
+
                 if (!alreadyInPlace) {
-                  if (indent.isEmpty || (parentIsSpacyList && (seenMultilineAtThisLevelYet || listsAtThisLevel != 1))) {
+                  if (atRoot || separateFromParentListItem) {
                     result += "\n"
                   }
                   result += "\n"
                   result += indent
                 }
+
               } else {
                 // Subsequent LIs
                 result += spaceForSubsequentLIs
@@ -369,13 +379,13 @@ object PlainText {
           if (nextIsEmpty)
             nextAcc
           else
-            go(nextAcc, atoms, nextIdx, seenMultilineAtThisLevelYet || atom.containsMultipleLines)
+            go(nextAcc, nextIdx, seenMultilineAtThisLevelYet || atom.containsMultipleLines)
         }
 
         if (atoms.isEmpty)
           acc
         else
-          go(acc, atoms, 0, seenMultilineAtThisLevelYet = false)
+          go(acc, 0, seenMultilineAtThisLevelYet = false)
       }
 
       nextLevel("", "", atoms)
