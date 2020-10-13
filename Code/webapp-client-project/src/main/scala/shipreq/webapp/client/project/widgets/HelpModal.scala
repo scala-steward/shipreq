@@ -43,14 +43,15 @@ object HelpModal {
   final class Row(val row: TR)
 
   object Row {
-    private val rowText = <.td(*.rowText)
+    private val rowText     = <.td(*.rowText)
     private val rowExamples = <.td(*.rowExamples)
+    private val example     = <.div(*.example)
 
     def apply(text: TagMod*)(sample1: VdomNode, sampleN: VdomNode*): Row =
       new Row(
         <.tr(
           rowText(text: _*),
-          rowExamples((sample1 +: sampleN).iterator.map(s => s: TagMod).intersperse(<.br).toTagMod)
+          rowExamples((sample1 +: sampleN).iterator.toTagMod(example(_)))
         )
       )
   }
