@@ -32,8 +32,8 @@ object FilterAlgebra {
   import FilterAst.FieldCriteria
 
   val isFieldNameUnquotedChar: Char => Boolean = {
-    case ':' | '=' | '"' => false
-    case c               => !c.isWhitespace
+    case ':' | '=' | '"' | ')' => false
+    case c                     => !c.isWhitespace
   }
 
   def quoteFieldName(name: String): String =
