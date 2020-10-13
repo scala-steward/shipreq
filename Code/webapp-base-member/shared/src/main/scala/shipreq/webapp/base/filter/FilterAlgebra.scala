@@ -450,6 +450,7 @@ object FilterAlgebra {
         req         = OptionalBoolFn(Option(req)),
         codeGroup   = OptionalBoolFn(Option(codeGroup)),
         manualIssue = OptionalBoolFn(Option(manualIssue)),
+        derivation  = CompiledFilter.Derivation.emptyReq,
       )
 
     def reqOnly(f: Req => Boolean): CompiledFilter =
@@ -511,6 +512,7 @@ object FilterAlgebra {
         req         = searchFilter.req        .contramap(_.id),
         codeGroup   = searchFilter.codeGroup  .contramap(_.id),
         manualIssue = searchFilter.manualIssue.contramap(_.id),
+        derivation  = CompiledFilter.Derivation.emptyReq,
       )
     }
 
@@ -672,12 +674,24 @@ object FilterAlgebra {
       case AllOf         (fs)            => fs.reduce(_ && _)
       case AnyOf         (f, fs)         => f || fs.reduce(_ || _)
       case Not           (f)             => !f
-      case Scoped        (m, _, c)       => if (m) c else CompiledFilter.empty
       case HasIssue      (On, cs)        => byIssue(i => i.issues.nonEmpty && cs.forall(i.categories.contains))
 
-      case HasIssue      (Off, cs)       =>
+      case HasIssue(Off, cs) =>
         val categories = cs.whole.toSet
         byIssue(i => i.issues.nonEmpty && i.categories.exists(!categories.contains(_)))
+
+      case Scoped(main, scopes, filter) =>
+        val derivation = {
+          var all      = OptionalBoolFn.empty[Req]
+          var perField = Map.empty[CustomField.Tag.Id, Req => Boolean]
+          scopes.foreach {
+            case Scope.Derivation(None)    => all = filter.req
+            case Scope.Derivation(Some(f)) => filter.req.value.foreach(g => perField = perField.updated(f, g))
+          }
+          new CompiledFilter.Derivation(all, perField) && filter.derivation
+        }
+        val root = if (main) filter else CompiledFilter.empty
+        root.copy(derivation = derivation)
     }
 
     import Filter.Implicits.traverseFilterExtensional
