@@ -1884,6 +1884,12 @@ object Style extends StyleSheet.Inline {
       width(32 ex),
       color(c"#f39"))
 
+    val rowHeader = style(
+      textDecoration := "underline",
+      fontWeight.bold,
+      marginBottom(1 em),
+    )
+
     val example = style(
       &.not(_.firstChild)(
         marginTop(1 em),

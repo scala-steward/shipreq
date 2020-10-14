@@ -61,27 +61,47 @@ object ValidFilterTest extends TestSuite {
         "queryTxt"   - assertTranslationFails(PF.fieldProp("Description", Query(PF.text("x"))))(posNA)
         "queryTag"   - assertTranslationFails(PF.fieldProp("Priority", Query(PF.text("x"))))(posNA)
       }
-      "scoped" - {
+      "scoped1" - {
         import FilterAst.Scope.Derivation
         val xp = PF.text("x")
         val xv = VF.text("x")
 
         "basic" - assertTranslation(
-          PF.scoped(false, NonEmptyVector(Derivation(None)), xp))(
-          VF.scoped(false, NonEmptySet(Derivation(None)), xv))
+          PF.scoped1(false, NonEmptyVector(Derivation(None)), xp))(
+          VF.scoped1(false, NonEmptySet(Derivation(None)), xv))
 
         "main" - assertTranslation(
-          PF.scoped(true, NonEmptyVector(Derivation(None)), xp))(
-          VF.scoped(true, NonEmptySet(Derivation(None)), xv))
+          PF.scoped1(true, NonEmptyVector(Derivation(None)), xp))(
+          VF.scoped1(true, NonEmptySet(Derivation(None)), xv))
 
         "fieldTag" - assertTranslation(
-          PF.scoped(false, NonEmptyVector(Derivation(Some("Status"))), xp))(
-          VF.scoped(false, NonEmptySet(Derivation(Some(statusField))), xv))
+          PF.scoped1(false, NonEmptyVector(Derivation(Some("Status"))), xp))(
+          VF.scoped1(false, NonEmptySet(Derivation(Some(statusField))), xv))
 
-        "fieldText"  - assertTranslationFails(PF.scoped(false, NonEmptyVector(Derivation(Some("Notes"))), xp))("")
-        "fieldImp"   - assertTranslationFails(PF.scoped(false, NonEmptyVector(Derivation(Some("Major Feature"))), xp))("")
-        "fieldTitle" - assertTranslationFails(PF.scoped(false, NonEmptyVector(Derivation(Some("Title"))), xp))("")
-        "fieldBad"   - assertTranslationFails(PF.scoped(false, NonEmptyVector(Derivation(Some("x"))), xp))("")
+        "fieldText"  - assertTranslationFails(PF.scoped1(false, NonEmptyVector(Derivation(Some("Notes"))), xp))("")
+        "fieldImp"   - assertTranslationFails(PF.scoped1(false, NonEmptyVector(Derivation(Some("Major Feature"))), xp))("")
+        "fieldTitle" - assertTranslationFails(PF.scoped1(false, NonEmptyVector(Derivation(Some("Title"))), xp))("")
+        "fieldBad"   - assertTranslationFails(PF.scoped1(false, NonEmptyVector(Derivation(Some("x"))), xp))("")
+      }
+      "scoped2" - {
+        import FilterAst.Scope.Derivation
+        val xp = PF.text("x")
+        val xv = VF.text("x")
+        val yp = PF.text("y")
+        val yv = VF.text("y")
+
+        "basic" - assertTranslation(
+          PF.scoped2(NonEmptyVector(Derivation(None)), xp, yp))(
+          VF.scoped2(NonEmptySet(Derivation(None)), xv, yv))
+
+        "fieldTag" - assertTranslation(
+          PF.scoped2(NonEmptyVector(Derivation(Some("Status"))), xp, yp))(
+          VF.scoped2(NonEmptySet(Derivation(Some(statusField))), xv, yv))
+
+        "fieldText"  - assertTranslationFails(PF.scoped2(NonEmptyVector(Derivation(Some("Notes"))), xp, yp))("")
+        "fieldImp"   - assertTranslationFails(PF.scoped2(NonEmptyVector(Derivation(Some("Major Feature"))), xp, yp))("")
+        "fieldTitle" - assertTranslationFails(PF.scoped2(NonEmptyVector(Derivation(Some("Title"))), xp, yp))("")
+        "fieldBad"   - assertTranslationFails(PF.scoped2(NonEmptyVector(Derivation(Some("x"))), xp, yp))("")
       }
     }
 

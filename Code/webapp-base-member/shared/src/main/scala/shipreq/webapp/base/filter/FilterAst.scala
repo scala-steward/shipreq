@@ -31,7 +31,8 @@ object FilterAst {                                                              
   final case class ImpliedByAnyOf[F[_], B](criteria: F[B])                        extends FilterAst[Nothing, F      , Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, B      ]
   final case class Reqs                [A](reqs: A)                               extends FilterAst[Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, A      , Nothing, Nothing, Nothing]
   final case class ReqType             [A](reqType: A)                            extends FilterAst[Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, A      , Nothing, Nothing]
-  final case class Scoped           [S, A](main: Boolean, scope: S, clause: A)    extends FilterAst[Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, S      , A      ]
+  final case class Scoped1          [S, A](main: Boolean, scope: S, clause: A)    extends FilterAst[Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, S      , A      ]
+  final case class Scoped2          [S, A](scope: S, clause: A, mainClause: A)    extends FilterAst[Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, S      , A      ]
   final case class Not                 [A](clause: A)                             extends FilterAst[Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, A      ]
   final case class AllOf               [A](clauses: NonEmptyVector[A])            extends FilterAst[Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, A      ]
   final case class AnyOf               [A](head: A, tail: NonEmptyVector[A])      extends FilterAst[Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, A      ]
@@ -142,9 +143,10 @@ object FilterAst {                                                              
   sealed trait Scope[+DerivativeTagField]
 
   object Scope {
-    final val main      = "+"
-    final val separator = ","
-    final val suffix    = ":"
+    final val mainPrefix = "+" // +derivation
+    final val mainSuffix = "+" // derivation:(a)+(b)
+    final val separator  = ","
+    final val suffix     = ":"
 
     final case class Derivation[+A](field: Option[A]) extends Scope[A]
 
@@ -199,7 +201,8 @@ object FilterAst {                                                              
         case c: Reqs          [ReqSet]                  => c
         case c: ReqType       [RT]                      => c
         case c: FieldProp     [Field, FieldCriteria, A] => c.copy(criteria = traverseFC.map(c.criteria)(f))
-        case c: Scoped        [Scope, A]                => c.copy(clause = f(c.clause))
+        case c: Scoped1       [Scope, A]                => c.copy(clause = f(c.clause))
+        case c: Scoped2       [Scope, A]                => c.copy(clause = f(c.clause), mainClause = f(c.mainClause))
         case c: Not           [A]                       => Not  (f(c.clause))
         case c: AllOf         [A]                       => AllOf(c.clauses map f)
         case c: AnyOf         [A]                       => AnyOf(f(c.head), c.tail map f)
@@ -216,7 +219,8 @@ object FilterAst {                                                              
         case c: Reqs          [ReqSet]                  => G pure c
         case c: ReqType       [RT]                      => G pure c
         case c: FieldProp     [Field, FieldCriteria, A] => G.map(traverseFC.traverse(c.criteria)(f))(x => c.copy(criteria = x))
-        case c: Scoped        [Scope, A]                => G.map(f(c.clause))(x => c.copy(clause = x))
+        case c: Scoped1       [Scope, A]                => G.map(f(c.clause))(x => c.copy(clause = x))
+        case c: Scoped2       [Scope, A]                => G.apply2(f(c.clause), f(c.mainClause))((x, y) => c.copy(clause = x, mainClause = y))
         case c: Not           [A]                       => G.map(f(c.clause))(Not(_))
         case c: AllOf         [A]                       => G.map(Traverse1[NonEmptyVector].traverse1(c.clauses)(f))(AllOf(_))
         case c: AnyOf         [A]                       => G.apply2(f(c.head), Traverse1[NonEmptyVector].traverse1(c.tail)(f))(AnyOf(_, _))
@@ -246,7 +250,8 @@ object FilterAst {                                                              
     final type FieldProp          = FieldPropF[Fix[F]]
     final type ImpliesAnyOf       = ImpliesAnyOfF[Fix[F]]
     final type ImpliedByAnyOf     = ImpliedByAnyOfF[Fix[F]]
-    final type Scoped             = FilterAst.Scoped[Scope, Fix[F]]
+    final type Scoped1            = FilterAst.Scoped1[Scope, Fix[F]]
+    final type Scoped2            = FilterAst.Scoped2[Scope, Fix[F]]
 
     def apply(f: F[Fix[F]]): Fix[F] =
       Fix[F](f)
@@ -290,8 +295,11 @@ object FilterAst {                                                              
     def reqType(reqType: ReqType): Fix[F] =
       Fix[F](ReqType(reqType))
 
-    def scoped(main: Boolean, scope: Scope, clause: Fix[F]): Fix[F] =
-      Fix[F](Scoped(main, scope, clause))
+    def scoped1(main: Boolean, scope: Scope, clause: Fix[F]): Fix[F] =
+      Fix[F](Scoped1(main, scope, clause))
+
+    def scoped2(scope: Scope, clause: Fix[F], mainClause: Fix[F]): Fix[F] =
+      Fix[F](Scoped2(scope, clause, mainClause))
 
     def not(clause: Fix[F]): Fix[F] =
       Fix[F](Not(clause))

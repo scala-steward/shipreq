@@ -619,8 +619,13 @@ object DataProp {
         case FilterAst.AnyOf         (f, fs)                    => f ++ fs.reduce(_ ++ _)
         case FilterAst.Not           (f)                        => f
 
-        case FilterAst.Scoped        (_, ss, f)                 =>
+        case FilterAst.Scoped1       (_, ss, f)                 =>
           f.addCustomFieldIds(ss.iterator.map {
+            case FilterAst.Scope.Derivation(o) => o
+          }.filterDefined.toSeq: _*)
+
+        case FilterAst.Scoped2       (ss, f1, f2)               =>
+          (f1 ++ f2).addCustomFieldIds(ss.iterator.map {
             case FilterAst.Scope.Derivation(o) => o
           }.filterDefined.toSeq: _*)
 

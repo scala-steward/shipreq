@@ -312,18 +312,30 @@ object Rev7 {
     implicit val picklerValidScope: Pickler[Valid.Scope] =
       pickleNES
 
-    implicit val picklerFilterAstScoped: Pickler[FilterAst.Scoped[Valid.Scope, Unit]] =
-      new Pickler[FilterAst.Scoped[Valid.Scope, Unit]] {
-        override def pickle(a: FilterAst.Scoped[Valid.Scope, Unit])(implicit state: PickleState): Unit = {
+    implicit val picklerFilterAstScoped1: Pickler[FilterAst.Scoped1[Valid.Scope, Unit]] =
+      new Pickler[FilterAst.Scoped1[Valid.Scope, Unit]] {
+        override def pickle(a: FilterAst.Scoped1[Valid.Scope, Unit])(implicit state: PickleState): Unit = {
           state.pickle(a.main)
           state.pickle(a.scope)
         }
-        override def unpickle(implicit state: UnpickleState): FilterAst.Scoped[Valid.Scope, Unit] = {
+        override def unpickle(implicit state: UnpickleState): FilterAst.Scoped1[Valid.Scope, Unit] = {
           val main  = state.unpickle[Boolean]
           val scope = state.unpickle[Valid.Scope]
-          FilterAst.Scoped(main, scope, ())
+          FilterAst.Scoped1(main, scope, ())
         }
       }
+
+    implicit val picklerFilterAstScoped2: Pickler[FilterAst.Scoped2[Valid.Scope, Unit]] =
+      new Pickler[FilterAst.Scoped2[Valid.Scope, Unit]] {
+        override def pickle(a: FilterAst.Scoped2[Valid.Scope, Unit])(implicit state: PickleState): Unit = {
+          state.pickle(a.scope)
+        }
+        override def unpickle(implicit state: UnpickleState): FilterAst.Scoped2[Valid.Scope, Unit] = {
+          val scope = state.unpickle[Valid.Scope]
+          FilterAst.Scoped2(scope, (), ())
+        }
+      }
+
     implicit val picklerValidF: Pickler[ValidF[Unit]] =
       new Pickler[ValidF[Unit]] {
         private[this] final val KeyAllOf          = 0
@@ -339,7 +351,8 @@ object Rev7 {
         private[this] final val KeyReqs           = 10
         private[this] final val KeyText           = 11
         private[this] final val KeyFieldProp      = 12
-        private[this] final val KeyScoped         = 13
+        private[this] final val KeyScoped1        = 13
+        private[this] final val KeyScoped2        = 14
         override def pickle(a: ValidF[Unit])(implicit state: PickleState): Unit =
           a match {
             case b: FilterAst.AllOf         [Unit]                     => state.enc.writeByte(KeyAllOf         ); state.pickle(b)
@@ -355,7 +368,8 @@ object Rev7 {
             case b: FilterAst.Reqs          [Valid.ReqSet]             => state.enc.writeByte(KeyReqs          ); state.pickle(b)
             case b: FilterAst.Text                                     => state.enc.writeByte(KeyText          ); state.pickle(b)
             case b: Valid.FieldPropF        [Unit]                     => state.enc.writeByte(KeyFieldProp     ); state.pickle(b)
-            case b: FilterAst.Scoped        [Valid.Scope, Unit       ] => state.enc.writeByte(KeyScoped        ); state.pickle(b)
+            case b: FilterAst.Scoped1       [Valid.Scope, Unit       ] => state.enc.writeByte(KeyScoped1       ); state.pickle(b)
+            case b: FilterAst.Scoped2       [Valid.Scope, Unit       ] => state.enc.writeByte(KeyScoped2       ); state.pickle(b)
           }
         override def unpickle(implicit state: UnpickleState): ValidF[Unit] =
           state.dec.readByte match {
@@ -372,7 +386,8 @@ object Rev7 {
             case KeyReqs           => state.unpickle[FilterAst.Reqs          [Valid.ReqSet            ]]
             case KeyText           => state.unpickle[FilterAst.Text                                    ]
             case KeyFieldProp      => state.unpickle[Valid.FieldPropF        [Unit                    ]]
-            case KeyScoped         => state.unpickle[FilterAst.Scoped        [Valid.Scope, Unit       ]]
+            case KeyScoped1        => state.unpickle[FilterAst.Scoped1       [Valid.Scope, Unit       ]]
+            case KeyScoped2        => state.unpickle[FilterAst.Scoped2       [Valid.Scope, Unit       ]]
           }
       }
 

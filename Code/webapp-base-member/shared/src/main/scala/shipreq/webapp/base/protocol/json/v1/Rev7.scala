@@ -38,7 +38,8 @@ object Rev7 {
     final val KeyAstReqType        = "reqType"
     final val KeyAstReqs           = "reqs"
     final val KeyAstText           = "text"
-    final val KeyAstScoped         = "scoped"
+    final val KeyAstScoped1        = "scoped1"
+    final val KeyAstScoped2        = "scoped2"
   }
 
   implicit lazy val codecValidFilter: JsonCodec[Filter.Valid] = {
@@ -251,16 +252,26 @@ object Rev7 {
     implicit val codecFilterAstScope: JsonCodec[Valid.Scope] =
       codecNES
 
-    implicit val decoderFilterAstScoped: Decoder[FilterAst.Scoped[Valid.Scope, ACursor]] =
+    implicit val decoderFilterAstScoped1: Decoder[FilterAst.Scoped1[Valid.Scope, ACursor]] =
       Decoder.instance { c =>
         for {
           main   <- c.get[Boolean]("main")
           scope  <- c.get[Valid.Scope]("scope")
-        } yield FilterAst.Scoped(main, scope, c.downField("clause"))
+        } yield FilterAst.Scoped1(main, scope, c.downField("clause"))
       }
 
-    implicit val encoderFilterAstScoped: Encoder[FilterAst.Scoped[Valid.Scope, Json]] =
+    implicit val encoderFilterAstScoped1: Encoder[FilterAst.Scoped1[Valid.Scope, Json]] =
       Encoder.forProduct3("main", "scope", "clause")(a => (a.main, a.scope, a.clause))
+
+    implicit val decoderFilterAstScoped2: Decoder[FilterAst.Scoped2[Valid.Scope, ACursor]] =
+      Decoder.instance { c =>
+        for {
+          scope <- c.get[Valid.Scope]("scope")
+        } yield FilterAst.Scoped2(scope, c.downField("clause"), c.downField("main"))
+      }
+
+    implicit val encoderFilterAstScoped2: Encoder[FilterAst.Scoped2[Valid.Scope, Json]] =
+      Encoder.forProduct3("scope", "clause", "main")(a => (a.scope, a.clause, a.mainClause))
 
     JsonCodec.fix[ValidF]({
       case a: FilterAst.Text                           => Json.obj(KeyAstText           -> a.asJson)
@@ -273,7 +284,8 @@ object Rev7 {
       case a: FilterAst.Reqs          [Valid.ReqSet]   => Json.obj(KeyAstReqs           -> a.asJson)
       case a: FilterAst.ReqType       [Valid.ReqType]  => Json.obj(KeyAstReqType        -> a.asJson)
       case a@ FilterAst.FieldProp     (_, _)           => Json.obj(KeyAstFieldProp      -> a.asJson)
-      case a@ FilterAst.Scoped        (_, _, _)        => Json.obj(KeyAstScoped         -> a.asJson)
+      case a@ FilterAst.Scoped1       (_, _, _)        => Json.obj(KeyAstScoped1        -> a.asJson)
+      case a@ FilterAst.Scoped2       (_, _, _)        => Json.obj(KeyAstScoped2        -> a.asJson)
       case FilterAst.Not              (clause)         => Json.obj(KeyAstNot            -> clause)
       case FilterAst.AllOf            (clauses)        => Json.obj(KeyAstAllOf          -> Json.arr(clauses.whole: _*))
       case FilterAst.AnyOf            (head, tail)     => Json.obj(KeyAstAnyOf          -> Json.arr(head +: tail.whole: _*))
@@ -287,7 +299,8 @@ object Rev7 {
       case (KeyAstImpliedByAnyOf, c) => c.as[FilterAst.ImpliedByAnyOf[Valid.ImpCriteriaF, ACursor]]
       case (KeyAstReqs          , c) => c.as[FilterAst.Reqs          [Valid.ReqSet]]
       case (KeyAstReqType       , c) => c.as[FilterAst.ReqType       [Valid.ReqType]]
-      case (KeyAstScoped        , c) => c.as[FilterAst.Scoped        [Valid.Scope, ACursor]]
+      case (KeyAstScoped1       , c) => c.as[FilterAst.Scoped1       [Valid.Scope, ACursor]]
+      case (KeyAstScoped2       , c) => c.as[FilterAst.Scoped2       [Valid.Scope, ACursor]]
       case (KeyAstFieldProp     , c) => c.as[Valid.FieldPropF        [ACursor]]
       case (KeyAstNot           , c) => Right(FilterAst.Not(c))
 

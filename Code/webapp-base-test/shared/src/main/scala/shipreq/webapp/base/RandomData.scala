@@ -2206,7 +2206,7 @@ object RandomData {
         case _                                    => f
       }
 
-    def scoped[S, SS, A](gs: Option[Gen[S]], ga: Gen[A])(f: (Scope[S], Vector[Scope[S]]) => SS): Gen[FilterAst.Scoped[SS, A]] = {
+    def scoped[S, SS, A](gs: Option[Gen[S]], ga: Gen[A])(f: (Scope[S], Vector[Scope[S]]) => SS): Gen[FilterAst[Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, SS, A]] = {
 
       val genScope: Gen[Scope[S]] =
         gs match {
@@ -2220,7 +2220,9 @@ object RandomData {
           sn <- genScope.vector(0 to 2)
         } yield f(s1, sn)
 
-      Gen.apply3(FilterAst.Scoped.apply[SS, A])(Gen.boolean, genScopes, ga)
+      val scoped1 = Gen.apply3(FilterAst.Scoped1.apply[SS, A])(Gen.boolean, genScopes, ga)
+      val scoped2 = Gen.apply3(FilterAst.Scoped2.apply[SS, A])(genScopes, ga, ga)
+      Gen.chooseGen(scoped1, scoped2)
     }
 
     // -----------------------------------------------------------------------------------------------------------------

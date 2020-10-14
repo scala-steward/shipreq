@@ -111,7 +111,8 @@ object Filter {
         case c: FilterAst.ImpliesAnyOf  [ImpCriteriaF, Boolean]          => impCriteria(c.criteria)
         case c: FilterAst.ImpliedByAnyOf[ImpCriteriaF, Boolean]          => impCriteria(c.criteria)
         case c: FilterAst.Reqs          [ReqSet]                         => reqSet(c.reqs)
-        case c: FilterAst.Scoped        [Scope, Boolean]                 => c.clause
+        case c: FilterAst.Scoped1       [Scope, Boolean]                 => c.clause
+        case c: FilterAst.Scoped2       [Scope, Boolean]                 => c.clause || c.mainClause
         case c: FilterAst.Not           [Boolean]                        => c.clause
         case c: FilterAst.AllOf         [Boolean]                        => c.clauses.exists(Identity.apply)
         case c: FilterAst.AnyOf         [Boolean]                        => c.head || c.tail.exists(Identity.apply)

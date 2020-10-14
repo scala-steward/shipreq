@@ -233,16 +233,24 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
     def scope: Rule1[S] =
       rule(Scope.Derivation.keyword ~ fieldName.? ~> mkScope)
 
-    val mkResult: (Option[String], Seq[S], Potential) => Potential =
-      (main, scopes, sub) =>
-        Potential.scoped(main.isDefined, NonEmptyVector.force(scopes.toVector), sub)
+    val mkResult: (Option[String], Seq[S], Potential, Option[Potential]) => Option[Potential] =
+      (main, scopes, sub, mainClause) => {
+        val ss = NonEmptyVector.force(scopes.toVector)
+        (main, mainClause) match {
+          case (_, None)          => Some(Potential.scoped1(main.isDefined, ss, sub))
+          case (None, Some(mc))   => Some(Potential.scoped2(ss, sub, mc))
+          case (Some(_), Some(_)) => None // should really specify an ErrorMsg here
+        }
+      }
 
     rule(
-      capture(Scope.main).? ~
+      capture(Scope.mainPrefix).? ~
         oneOrMore(scope).separatedBy(Scope.separator) ~
         Scope.suffix ~!~
-        subQuery
-        ~> mkResult
+        subQuery ~!~
+        (Scope.mainPrefix ~ subQuery).?
+        ~> mkResult ~ popOptional[Potential]
+        ~ ((Whitespace ~ OWS) | EOI)
     )
   }
 
@@ -289,8 +297,9 @@ private[filter] class FilterParser(val input: ParserInput) extends ParsingUtil {
 
   private val subQueries = {
     val isValid: PotentialF[Potential] => Boolean = {
-      case Scoped(_, _, _) => false
-      case _               => true
+      case Scoped1(_, _, _)
+         | Scoped2(_, _, _) => false
+      case _                => true
     }
 
     def rejectInvalid: RuleAB[Potential, Potential] =
