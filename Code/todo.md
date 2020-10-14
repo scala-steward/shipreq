@@ -1,10 +1,4 @@
 ### Implement
-
-* Update RedisProtocolTest
-* Update RedisProtocolTest
-* Update RedisProtocolTest
-* Update RedisProtocolTest
-
 * no success reaction when non-implied req created from ReqDetail
 * add option to show simplified UC graphs (using the `merged-a` style)
 * add a KB shortcut to show/hide preview
