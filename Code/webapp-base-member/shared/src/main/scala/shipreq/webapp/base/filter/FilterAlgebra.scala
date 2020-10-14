@@ -298,7 +298,7 @@ object FilterAlgebra {
           case None    => Scoped1(main, ss, clause)
           case Some(c) => Scoped2(ss, clause, c)
         }
-        Fix(f)
+        Valid(f)
       }
     }
 

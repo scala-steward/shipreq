@@ -19,6 +19,7 @@ object Filter {
   type Potential = Fix[PotentialF]
 
   type PotentialF[+F] = FilterAst[
+    F,
     Potential.FieldCriteriaF,
     Potential.ImpCriteriaF,
     Potential.Attr,
@@ -28,7 +29,7 @@ object Filter {
     Potential.ReqSet,
     Potential.ReqType,
     Potential.Scope,
-    F]
+  ]
 
   object Potential extends FilterAst.Dsl {
     type FieldCriteriaF[+A] = FilterAst.FieldCriteria[String, A]
@@ -57,6 +58,7 @@ object Filter {
   type Valid = Fix[ValidF]
 
   type ValidF[+F] = FilterAst[
+    F,
     Valid.FieldCriteriaF,
     Valid.ImpCriteriaF,
     Valid.Attr,
@@ -66,7 +68,7 @@ object Filter {
     Valid.ReqSet,
     Valid.ReqType,
     Valid.Scope,
-    F]
+  ]
 
   object Valid extends FilterAst.Dsl {
     type FieldCriteriaF[+A] = FilterAst.FieldCriteria[FilterAst.FieldAttr, A]
@@ -164,6 +166,7 @@ object Filter {
   type Extensional = Fix[ExtensionalF]
 
   type ExtensionalF[+F] = FilterAst[
+    F,
     Extensional.FieldCriteriaF,
     Extensional.ImpCriteriaF,
     Extensional.Attr,
@@ -173,7 +176,7 @@ object Filter {
     Extensional.ReqSet,
     Extensional.ReqType,
     Extensional.Scope,
-    F]
+  ]
 
   object Extensional extends FilterAst.Dsl {
     type FieldCriteriaF[+A] = Valid.FieldCriteriaF[A]
