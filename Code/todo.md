@@ -1,6 +1,5 @@
 ### Problems
-* why do I need to override #needs_analysis in new FRs with #ready_for_dev. It's already the default
-* no success reaction when non-implied req created from ReqDetail
+
 
 ### Improvements
 * have an option in ReqGraph to show simplified graphs (i.e. remove redundant edges)
