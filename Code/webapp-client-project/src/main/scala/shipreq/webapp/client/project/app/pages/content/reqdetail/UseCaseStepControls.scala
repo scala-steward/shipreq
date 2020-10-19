@@ -5,7 +5,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import scalacss.StyleA
 import shipreq.base.util.LeftRight
-import shipreq.webapp.base.feature.AsyncFeature
+import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
 import shipreq.webapp.base.ui.semantic.{Button, Icon}
 import shipreq.webapp.client.project.app.Style.reqdetail.{useCaseStep => *}
 
@@ -26,7 +26,15 @@ object UseCaseStepControls {
     // When async action in progress, disable all buttons
     val attr = if (as.isEmpty) ob else None
 
-    val base = Button(tipe = Button.Type.IconOnly(icon), state = Button.State.enabledWhen(attr.isDefined)).tag(style)
+    val base =
+      Button(
+        tipe = Button.Type.IconOnly(icon),
+        state = Button.State.enabledWhen(attr.isDefined),
+      ).tag(
+        style,
+        TableNavigationFeature.ignore,
+      )
+
     attr match {
       case Some(b) => base(^.title := b.hoverText, ^.onClick --> b.callback)
       case None    => base
