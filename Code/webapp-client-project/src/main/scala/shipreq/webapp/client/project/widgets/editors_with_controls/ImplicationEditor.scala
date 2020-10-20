@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.widgets.editors_with_controls
 
-import japgolly.microlibs.stdlib_ext.MutableArray
+import japgolly.microlibs.stdlib_ext.{MutableArray, ParseInt}
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
@@ -22,9 +22,13 @@ object ImplicationEditor {
 
   final case class Lookup(legal                : ReqItems,
                           illegal              : Map[String, Invalidity],
-                          excludeFromSuggestion: Set[ReqId]) {
+                          excludeFromSuggestion: Set[ReqId],
+                          uniquePositions      : Option[PubidRegister.UniquePositions]) {
 
-    lazy val legalm: Map[String, ReqItem] =
+    lazy val legalPubids: Map[Pubid, ReqId] =
+      legal.iterator.map(x => x.pubid -> x.reqId).toMap
+
+    lazy val legalByPubidStrNorm: Map[String, ReqItem] =
       legal.iterator.map(_.mapStrengthL(_.pubidStrNorm)).toMap
 
     lazy val suggestions: ReqItems =
@@ -36,7 +40,7 @@ object ImplicationEditor {
     def outlaw(isBad: ReqItem => Boolean, rej: ReqItem => Invalidity): Lookup = {
       val (ko, ok) = legal.partition(isBad)
       val illegal2 = ko.foldLeft(illegal)((m, i) => m.updated(i.pubidStrNorm, rej(i)))
-      Lookup(ok, illegal2, excludeFromSuggestion)
+      copy(legal = ok, illegal = illegal2)
     }
 
     def dontSuggest(reqId: ReqId): Lookup =
@@ -45,7 +49,11 @@ object ImplicationEditor {
 
   object Lookup {
     def all(p: Project, pt: PlainText.ForProject.AnyCtx): Lookup =
-      Lookup(AutoComplete.Project.reqItems(p, pt), UnivEq.emptyMap, UnivEq.emptySet)
+      Lookup(
+        AutoComplete.Project.reqItems(p, pt),
+        UnivEq.emptyMap,
+        UnivEq.emptySet,
+        p.content.reqs.pubids.uniquePositions)
 
     def forCustomColumn(p: Project, l: Lookup, fid: CustomField.Implication.Id): Lookup = {
       val f = p.config.fields.custom(fid)
@@ -85,18 +93,18 @@ object ImplicationEditor {
   type Output   = SetDiff.NE[ReqId]
   type CommitFn = Output ~=> Callback
 
-  case class Props(edit            : StateSnapshot[String],
-                   lookup          : Lookup,
-                   validationFn    : ValidationFn,
-                   asyncStatus     : Option[EditorStatus.Async],
-                   abort           : Option[Callback],
-                   abortVerb       : String,
-                   autoFocus       : Boolean,
-                   commitFn        : Option[CommitFn],
-                   commitVerb      : String,
-                   textSearch      : TextSearch,
-                   extraControls   : EditControlsFeature.ExtraControls,
-                   showInstructions: Boolean) {
+  final case class Props(edit            : StateSnapshot[String],
+                         lookup          : Lookup,
+                         validationFn    : ValidationFn,
+                         asyncStatus     : Option[EditorStatus.Async],
+                         abort           : Option[Callback],
+                         abortVerb       : String,
+                         autoFocus       : Boolean,
+                         commitFn        : Option[CommitFn],
+                         commitVerb      : String,
+                         textSearch      : TextSearch,
+                         extraControls   : EditControlsFeature.ExtraControls,
+                         showInstructions: Boolean) {
 
     val parseResult = validationFn(lookup)(edit.value)
     val validated   = PotentialChange.fromDisjunction(parseResult).ignoreEmpty
@@ -108,35 +116,55 @@ object ImplicationEditor {
 
   type ValidationFn = Lookup => Simple.Validator[String, _, SetDiff[ReqId]]
 
-  private def validator1(l: Lookup): Validator[String, List[String], List[ReqId]] = {
-    val parse: Auditor[String, ReqId] =
-      Auditor(s =>
-        l.legalm.get(s).map(_.reqId.right) orElse
-          l.illegal.get(s).map(-\/.apply) getOrElse
-          -\/(Invalidity("Invalid: " + s)))
-    Grammar.pubid.seqFormat.validator(parse)
-  }
+  object ValidationFn {
 
-  private def validator2(p: Project, subject: Option[ReqId], initialValues: Set[ReqId], dir: Direction): Auditor[Set[ReqId], SetDiff[ReqId]] =
-    Auditor { in =>
-      val newValues = subject.foldLeft(in)(_ - _) // Tolerate reflexivity
-      val diff = SetDiff.compare(initialValues, newValues)
+    def apply(p: Project, subject: Option[ReqId], initialValues: Set[ReqId], dir: Direction): ValidationFn =
+      l =>
+        validator1(l)
+          .mapValid(_.toSet)
+          .andThenAuditor(validator2(p, subject, initialValues, dir))
 
-      val pi = p.content.implications
-      var is = pi(dir)
-      for (i <- subject)
-        is = is.mod(i, diff.apply)
 
-      if (Implications.Graph.cycleDetector.hasCycle(is.m))
-        -\/(Invalidity("That would cause a cycle in your implication graph."))
-      else
-        \/-(diff)
+    private def validator1(l: Lookup): Validator[String, List[String], List[ReqId]] = {
+      val parse: Auditor[String, ReqId] =
+        Auditor { s =>
+          type R = Invalidity \/ ReqId
+          type O = Option[R]
+
+          val legalByPos: O =
+            for {
+              pos   <- ParseInt.unapply(s)
+              ups   <- l.uniquePositions
+              pubid <- ups.lookup(pos)
+              reqId <- l.legalPubids.get(pubid)
+            } yield \/-(reqId)
+
+          @inline def legalByPubid: O = l.legalByPubidStrNorm.get(s).map(_.reqId.right)
+          @inline def illegal     : O = l.illegal.get(s).map(-\/.apply)
+          @inline def unknown     : R = -\/(Invalidity("Invalid: " + s))
+
+          legalByPos orElse legalByPubid orElse illegal getOrElse unknown
+        }
+
+      Grammar.pubid.seqFormat.validator(parse)
     }
 
-  def validationFn(p: Project, subject: Option[ReqId], initialValues: Set[ReqId], dir: Direction): ValidationFn =
-    l => validator1(l)
-      .mapValid(_.toSet)
-      .andThenAuditor(validator2(p, subject, initialValues, dir))
+    private def validator2(p: Project, subject: Option[ReqId], initialValues: Set[ReqId], dir: Direction): Auditor[Set[ReqId], SetDiff[ReqId]] =
+      Auditor { in =>
+        val newValues = subject.foldLeft(in)(_ - _) // Tolerate reflexivity
+        val diff = SetDiff.compare(initialValues, newValues)
+
+        val pi = p.content.implications
+        var is = pi(dir)
+        for (i <- subject)
+          is = is.mod(i, diff.apply)
+
+        if (Implications.Graph.cycleDetector.hasCycle(is.m))
+          -\/(Invalidity("That would cause a cycle in your implication graph."))
+        else
+          \/-(diff)
+      }
+  }
 
   private implicit def autoCompleteStyle = ReqItem.Style.Id
 

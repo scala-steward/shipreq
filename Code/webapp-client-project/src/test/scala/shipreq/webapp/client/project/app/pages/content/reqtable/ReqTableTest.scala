@@ -107,7 +107,10 @@ object ReqTableTest extends TestSuite {
         >> testValid("FR-1") // reflexivity is tolerated but should be ignored on save
         >> testValid("MF-12")
         >> testValid("MF-14")
-        >> testValid("MF-12 MF-14"))
+        >> testValid("MF-12 MF-14")
+        >> testValid("12 14")
+        >> testInvalid("2") // ambiguous
+    )
   }
 
   def testImplicationTgtColumnEditor = {

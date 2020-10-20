@@ -530,7 +530,7 @@ object NewEditor {
           for {
             project <- pxProject
             init    <- pxInit
-          } yield ImplicationEditor.validationFn(project, id.some, init._1, dir)
+          } yield ImplicationEditor.ValidationFn(project, id.some, init._1, dir)
 
         val pxCorrector: Px[String => String] =
           for {

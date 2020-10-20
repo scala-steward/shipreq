@@ -245,7 +245,7 @@ object NewEditor {
 
       private def start(dir: Direction, pxLookup: Px[Lookup]): InitFn = ictx => {
         import ictx._
-        val pxValFn: Px[ValidationFn] = pxProject.map(ImplicationEditor.validationFn(_, None, Set.empty, dir))
+        val pxValFn: Px[ValidationFn] = pxProject.map(ImplicationEditor.ValidationFn(_, None, Set.empty, dir))
         startWithStateSnapshot("")(new EditorAndState(_, pxLookup, pxValFn))
       }
 

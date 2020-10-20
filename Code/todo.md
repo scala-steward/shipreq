@@ -1,5 +1,5 @@
 ### Problems
-* imp editor: accept numbers when there's only one matching req type (eg. 103 instead of 104)
+* req search: accept numbers (eg. 103 instead of fr103)
 
 
 ### Improvements

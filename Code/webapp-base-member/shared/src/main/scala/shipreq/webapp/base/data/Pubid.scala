@@ -1,5 +1,6 @@
 package shipreq.webapp.base.data
 
+import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import monocle.Prism
 import nyaya.util.Multimap
@@ -146,10 +147,43 @@ final case class PubidRegister(value: Multimap[ReqTypeId, Vector, ReqId]) {
           Nil
     }.toSet
   }
+
+  /** Finds the req type that has more reqs than any other, and when available, also returns the range of pubid numbers
+    * that belong only to this req type.
+    *
+    * Eg. if you had:
+    *   - MF 1 to  8
+    *   - FR 1 to 11
+    *   - UC 1 to  6
+    * the result would be FR 9-11
+    *
+    * Eg. if you had:
+    *   - MF 1 to 11
+    *   - FR 1 to 11
+    *   - UC 1 to  6
+    * the result would be None
+    */
+  lazy val uniquePositions: Option[PubidRegister.UniquePositions] = {
+    import PubidRegister.UniquePositions
+
+    val top2 =
+      MutableArray(value.iterator.filter(_._2.nonEmpty))
+        .sortBy(_._2.length)(Ordering.Int.reverse)
+        .iterator()
+        .take(2)
+        .toList
+
+    top2 match {
+      case (rt, v) :: Nil                                  => Some(UniquePositions(rt, 1, v.length))
+      case (rt, v) :: (_, v2) :: _ if v.length > v2.length => Some(UniquePositions(rt, v2.length + 1, v.length))
+      case _                                               => None
+    }
+  }
+
 }
 
 object PubidRegister {
-  implicit def equality: UnivEq[PubidRegister] =
+  implicit def univEq: UnivEq[PubidRegister] =
     UnivEq.derive
 
   def emptyMM: Multimap[ReqTypeId, Vector, ReqId] =
@@ -157,4 +191,15 @@ object PubidRegister {
 
   def empty: PubidRegister =
     PubidRegister(emptyMM)
+
+  final case class UniquePositions(reqTypeId: ReqTypeId, first: Int, last: Int) {
+    assert(first >= 1 && first <= last, s"Nope: $this")
+
+    def lookup(pos: Int): Option[Pubid] =
+      Option.when(pos >= first && pos <= last)(PubidT(reqTypeId, ReqTypePos(pos)))
+  }
+
+  implicit def univEqUniquePositions: UnivEq[UniquePositions] =
+    UnivEq.derive
+
 }
