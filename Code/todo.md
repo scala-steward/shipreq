@@ -1,4 +1,6 @@
 ### Problems
+* imp editor: accept numbers when there's only one matching req type (eg. 103 instead of 104)
+* retain focus after pressing enter in search bar
 
 
 ### Improvements
@@ -73,6 +75,10 @@ Backlog (eventually)
 * Tag/Implication Browser (aka Distribution manager/console)
 
 ### Functional changes
+* I want to edit implications directly from the ReqGraph screen
+  * drag line from source to target to create a new imp
+  * select edge and hit del to remove imp
+  * select edge and drag head or tail to a new req
 * ability to embed tweets & images
 * Dual clipboard formats: one for ShipReq, one for everywhere else. Exclude ref titles from ShipReq version.
   (waiting for Chrome/FF to implement https://www.w3.org/TR/clipboard-apis; Currently only text/plain & image/png supported.)
