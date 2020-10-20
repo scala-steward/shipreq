@@ -1,6 +1,5 @@
 ### Problems
 * imp editor: accept numbers when there's only one matching req type (eg. 103 instead of 104)
-* retain focus after pressing enter in search bar
 
 
 ### Improvements

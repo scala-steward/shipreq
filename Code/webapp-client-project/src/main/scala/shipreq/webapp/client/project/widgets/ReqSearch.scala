@@ -13,7 +13,7 @@ import shipreq.base.util.NonEmptyArraySeq
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.filter._
 import shipreq.webapp.base.lib.ClientUtil
-import shipreq.webapp.base.lib.DomUtil.{PatchHtmlElement, unfocus}
+import shipreq.webapp.base.lib.DomUtil.PatchHtmlElement
 import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.ui.semantic.{Icon, Menu, UsesSemanticUiManually}
 import shipreq.webapp.client.project.app.Style.widgets.{reqSearch => *}
@@ -258,7 +258,7 @@ object ReqSearch {
     }
 
     private val onNav: Callback =
-      $.props.flatMap(_.state.modState(_.copy(showResults = false, focus = None), unfocus))
+      $.props.flatMap(_.state.modState(_.copy(showResults = false)))
 
     private val focusInput: Callback =
       inputRef.get.map(_.focus())
