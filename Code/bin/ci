@@ -26,17 +26,25 @@ sbt+=(
   -DCI=1
   -DMODE=release
   -Dsbt.server.autostart=false
-  -J-Xmx8g
   -J-XX:+ExitOnOutOfMemoryError
   -J-XX:+HeapDumpOnOutOfMemoryError
   -J-XX:HeapDumpPath=$dump
+)
+
+[ -z "${LOCAL_CI:-}" ] && sbt+=(
+  -J-Xmx8g
   -no-colors
 )
 
 function run {
   echo
-  echo "> ${sbt[@]} $@"
-  "${sbt[@]}" "$@" | strip-ansi
+  if [ -n "${LOCAL_CI:-}" ]; then
+    echo "> ${sbt[@]} $@"
+    "${sbt[@]}" "$@"
+  else
+    echo "> ${sbt[@]} $@ | strip-ansi"
+    "${sbt[@]}" "$@" | strip-ansi
+  fi
   r=$?
   echo "Exit status = $r"
   if [ -e $dump ]; then

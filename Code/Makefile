@@ -1,5 +1,6 @@
-.PHONY: build_env info deploy diff_prod prod_ver publish pull_images push rm_targets since_prod watch_codebuild
+.PHONY: build_env ci-local info deploy diff_prod prod_ver publish pull_images push rm_targets since_prod watch_codebuild
 
+GIT_SHA  := $(shell git rev-parse HEAD)
 BRANCH   := $(shell git rev-parse --abbrev-ref HEAD)
 CHANGES  := $(shell git status --porcelain)
 PROD_REV := $(shell fgrep shipreq ../Terraform/prod/versions.tf | perl -pe 's/.*git-(.+?)".*/$$1/')
@@ -7,12 +8,28 @@ ECR      := 930801536115.dkr.ecr.ap-southeast-2.amazonaws.com
 
 WATCH_CODEBUILD = watch -n 6 -c aws-codebuild-status -t 'Name:shipreq'
 
+CI_LOCAL_DOCKER_CONTAINER = shipreq_ci
+CI_LOCAL_DOCKER_ARGS  = --name $(CI_LOCAL_DOCKER_CONTAINER)
+CI_LOCAL_DOCKER_ARGS += --rm
+CI_LOCAL_DOCKER_ARGS += --privileged
+CI_LOCAL_DOCKER_ARGS += --network host
+CI_LOCAL_DOCKER_ARGS += -v /var/run/docker.sock:/var/run/docker.sock
+CI_LOCAL_DOCKER_ARGS += -v "$(PWD)":/Code:ro
+CI_LOCAL_DOCKER_ARGS += -v "$(HOME)/.cache/coursier":/root/.cache/coursier:ro
+CI_LOCAL_DOCKER_ARGS += -v "$(HOME)/.aws":/root/.aws:ro
+CI_LOCAL_DOCKER_ARGS += --mount type=tmpfs,destination=/tmp,tmpfs-size=8g
+CI_LOCAL_DOCKER_ARGS += -e SHIPREQ_RELEASE_TARGET=/tmp/shipreq-ci-release.sbt
+CI_LOCAL_DOCKER_ARGS += -e LOCAL_CI=1
+CI_LOCAL_DOCKER_ARGS += -e GIT_SHA=$(GIT_SHA)
+CI_LOCAL_DOCKER_ARGS += -w /Code
+
 info:
-	@echo "This Makefile isn't how you build ShipReq, but rather a collection of helpful utilities."
+	@echo "This Makefile isn't how you build ShipReq (use SBT for that), but rather a collection of helpful utilities."
 	@echo
 	@echo "Commands:"
 	@echo
 	@echo "  * build_env       -- Create a new build-env instance and log in to it."
+	@echo "  * ci-local        -- Do what CI does but from the local machine (and for real)."
 	@echo "  * deploy          -- Publish to AWS, start a build, update prod Terraform."
 	@echo "  * diff_prod       -- Show a diff between ShipReq that's currently in production, and local HEAD."
 	@echo "  * prod_ver        -- Show the Git SHA of ShipReq that's currently in production."
@@ -28,6 +45,21 @@ build_env:
 	$$(aws ecr get-login --no-include-email)
 	docker pull $(ECR)/shipreq/dev/build_env
 	make -f ../Docker/dev-build_env/Makefile exec2
+
+ci-local:
+ifneq ($(BRANCH),master)
+	$(error You need to be on the master branch, not $(BRANCH))
+else ifneq ($(CHANGES),)
+	$(error You have unsaved changes)
+else
+	$$(aws ecr get-login --no-include-email)
+	docker pull $(ECR)/shipreq/dev/build_env
+	docker pull $(ECR)/shipreq/taskman
+	docker pull $(ECR)/shipreq/webapp
+	bin/env test up -d
+	docker run $(CI_LOCAL_DOCKER_ARGS) $(ECR)/shipreq/dev/build_env bin/ci
+	git push aws master
+endif
 
 deploy: publish
 	../Terraform/prod/update_shipreq.sh

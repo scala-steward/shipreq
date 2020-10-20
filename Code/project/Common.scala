@@ -36,6 +36,11 @@ object Common {
     println(s"[info] ${C.RED_B}${C.WHITE}Release Mode.${C.RESET}")
   }
 
+  val localCI = readConfigVar("LOCAL_CI") == "1"
+  if (localCI) {
+    println(s"[info] ======== Local CI Mode ========")
+  }
+
   val inCI = readConfigVar("CI") == "1"
   if (inCI) {
     println(s"[info] ======== CI Mode ========")
@@ -125,7 +130,7 @@ object Common {
     nonTestCompilerFlags(optimisationScalacFlags: _*)
 
   val ciSettings: Project => Project =
-    if (inCI)
+    if (inCI && !localCI)
       _.settings(Global / concurrentRestrictions += Tags.limit(Tags.Test, 1))
     else
       identity
@@ -151,7 +156,11 @@ object Common {
     }
 
   private def versionFn(gitSha: Option[String], snapshot: Boolean): String = {
-    var v = gitSha.getOrElse("UNKNOWN")
+    var v = Option(readConfigVar("GIT_SHA")).filter(_.nonEmpty).orElse(gitSha).getOrElse {
+      if (inCI)
+        throw new RuntimeException("Unknown git version")
+      "UNKNOWN"
+    }
     if (devMode) v += "-dev"
     if (snapshot) v += "-SNAPSHOT"
     v
