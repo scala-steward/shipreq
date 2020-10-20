@@ -193,7 +193,7 @@ trait ApplyContentEvent {
         reqData <- Eval.gets(_.content.reqs)
         id      = e.id
         title   = ^.Title.get(e.vs).fold(emptyTitle)(_.value.whole)
-        pp      = reqData.pubids.allocC(rt.id)(id)
+        pp      = reqData.pubids.allocGR(rt.id)(id)
         req     = GenericReq(id, pp._2, title, Live)
         _       <- grIMap.create(req)
         _       <- Project.pubidRegister set pp._1
@@ -208,7 +208,7 @@ trait ApplyContentEvent {
         _ <- ensureLiveReq(r)
         _ <- ensureLiveCustomReqTypeId(e.value)
         _ <- Project.reqs.modify { reqs =>
-               val pp = reqs.pubids.allocC(e.value)(e.id)
+               val pp = reqs.pubids.allocGR(e.value)(e.id)
                val r2 = r.copy(pubid = pp._2)
                val grs = GenericReqs(reqs.genericReqs.imap + r2)
                Requirements(grs, reqs.useCases, pp._1)

@@ -158,7 +158,7 @@ object ProjectDsl {
         val id = this.id getOrElse GenericReqId(p.nextId)
 
         val reqTypeId   = this.reqType.getOrElse(p.defaultReqType.get)
-        val (pr, pubid) = p.pubids.allocC(reqTypeId)(id)
+        val (pr, pubid) = p.pubids.allocGR(reqTypeId)(id)
         val req         = GenericReq(id, pubid, title, live)
         val text        = cftexts.mapValuesNow(t => Map.empty[ReqId, CFTextValue].updated(id, t))
         val tags        = p.tags.addvs(id, this.tags)

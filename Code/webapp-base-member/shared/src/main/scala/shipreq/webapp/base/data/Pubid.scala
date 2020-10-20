@@ -98,8 +98,7 @@ object ExternalPubid {
  */
 final case class PubidRegister(value: Multimap[ReqTypeId, Vector, ReqId]) {
 
-  // TODO Should be GR not C
-  def allocC(reqTypeId: CustomReqTypeId)(reqId: ReqIdC): (PubidRegister, PubidC) =
+  def allocGR(reqTypeId: CustomReqTypeId)(reqId: ReqIdC): (PubidRegister, PubidC) =
     _alloc(reqTypeId)(reqId)
 
   def allocUC(id: UseCaseId): (PubidRegister, PubidT[StaticReqType.UseCase]) =

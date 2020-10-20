@@ -16,8 +16,8 @@ object ReqsTest extends TestSuite { // TODO Update for UCs
 
   case class PubidRegisterProps(register: PubidRegister, req: ReqIdC, reqType: CustomReqTypeId) {
     val E            = EvalOver(this)
-    val (reg2, pid2) = register.allocC(reqType)(req)
-    val (reg3, pid3) = reg2    .allocC(reqType)(req)
+    val (reg2, pid2) = register.allocGR(reqType)(req)
+    val (reg3, pid3) = reg2    .allocGR(reqType)(req)
 
     def allocPubidLookup =
       E.equal("lookup(alloc(req)) = req", reg2(pid2), req.some)

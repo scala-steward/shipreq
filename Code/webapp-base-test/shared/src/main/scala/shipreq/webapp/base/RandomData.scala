@@ -1422,7 +1422,7 @@ object RandomData {
             val rtG = Gen.chooseNE(rtIdNev)
             for (id <- ids) {
               val rt = rtG run ctx
-              pr(_.allocC(rt)(id))
+              pr(_.allocGR(rt)(id))
             }
             ids
 
