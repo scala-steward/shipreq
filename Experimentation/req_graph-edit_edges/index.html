@@ -5,8 +5,50 @@
   <meta charset="UTF-8">
   <title>ReqGraph PoC</title>
   <style>
-    body {
-      text-align: center;
+    #notes {
+      display:flex;
+    }
+    #notes > * {
+      width:33%;
+    }
+    #notes > *:not(:first-child) {
+      margin-left: 2em;
+      padding-left: 2em;
+      border-left: solid 1px #eee;
+    }
+
+    g.edge2:not(.selected_edge) > path {
+      stroke:#0000;
+    }
+    g.edge2:not(.selected_edge) > polygon {
+      stroke:#0000;
+      fill:#0000;
+    }
+
+    g.edge:not(.selected_edge):hover > path {
+      stroke:orange;
+    }
+    g.edge:not(.selected_edge):hover > polygon {
+      stroke:orange;
+      fill:orange;
+    }
+
+    .selected_edge > path {
+      stroke:orangered;
+    }
+    .selected_edge > polygon {
+      stroke:orangered;
+      fill:orangered;
+    }
+
+    svg {
+      border: solid 1px #ddd;
+    }
+    svg:not(.dragging) #dragArrow {
+      display: none;
+    }
+    svg.dragging g.node:not(.dragSrc):not(.dragTgt):not(#dragArrow) {
+      opacity: .35;
     }
   </style>
 </head>
@@ -18,14 +60,36 @@
     edit the implication graph directly from the ReqGraph page.
   </h4>
 
-  <p id="notes">
-    9 edges.
-  </p>
+  <div id="notes">
+    <div>
+      Desired behaviour:
+      <ul>
+        <li>Click edge - hit delete</li>
+        <li>Click edge - drag head or tail to new node</li>
+        <li>Create new edge between nodes</li>
+      </ul>
+    </div>
+    <div>
+      Problems:
+      <ul>
+        <!-- <li>Clicking on an edge is pixel-perfect and difficult. Increase stroke width? Double with thick transparent edges?</li> -->
+        <li>Dragging an existing edge is too hard... but we could treat a new edge as a replacement when an edge is selected</li>
+      </ul>
+    </div>
+    <div>
+      Solution notes:
+      <ul>
+        <li>Give all edges IDs so that we can work out from/to nodes</li>
+        <li>Prevent cycles on move</li>
+        <li>deselect a selected edge when a drag starts BUT use the selected value for the duration of the drag to potentially treat the new edge as a replacement</li>
+      </ul>
+    </div>
+  </div>
 
   <div id="svg">
     <svg width="1228" height="722" style="display: block; touch-action: none;">
       <rect fill="white" x="0" y="0" width="1228" height="722" style="pointer-events: none;"></rect>
-      <g transform="matrix(1.111496499401098,0,0,1.111496499401098,20.777628119309355,46.56011734200014)" style="">
+      <g transform="matrix(1.111496499401098,0,0,1.111496499401098,20.777628119309355,46.56011734200014)">
         <rect fill="#fff" x="0" y="0" width="973.6" height="485.4"></rect>
         <g>
           <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 481.4)">
@@ -279,12 +343,19 @@
                 <title>#must #ready_for_dev #v3.0</title>
               </g>
             </a>
+
+            <g id="dragArrow">
+              <path d="" id="dragArrow1" stroke="#f00" fill="none" stroke-width="2" />
+            </g>
+
           </g>
         </g>
       </g>
     </svg>
   </div>
 
+  <!-- <script src="./gsap.js"></script>
+  <script src="./Draggable.js"></script> -->
   <script src="./main.js"></script>
 
 </body>
