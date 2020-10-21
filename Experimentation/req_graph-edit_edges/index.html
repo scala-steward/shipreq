@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+  <meta charset="UTF-8">
+  <title>ReqGraph PoC</title>
+  <style>
+    #notes {
+      display:flex;
+    }
+    #notes > * {
+      width:33%;
+    }
+    #notes > *:not(:first-child) {
+      margin-left: 2em;
+      padding-left: 2em;
+      border-left: solid 1px #eee;
+    }
+
+    g.edge2:not(.selected_edge) > path {
+      stroke:#0000;
+    }
+    g.edge2:not(.selected_edge) > polygon {
+      stroke:#0000;
+      fill:#0000;
+    }
+
+    g.edge:not(.selected_edge):hover > path {
+      stroke:orange;
+    }
+    g.edge:not(.selected_edge):hover > polygon {
+      stroke:orange;
+      fill:orange;
+    }
+
+    .selected_edge > path {
+      stroke:orangered;
+    }
+    .selected_edge > polygon {
+      stroke:orangered;
+      fill:orangered;
+    }
+
+    svg {
+      border: solid 1px #ddd;
+    }
+    svg:not(.dragging) #dragArrow {
+      display: none;
+    }
+    svg.dragging g.node:not(.dragSrc):not(.dragTgt):not(#dragArrow) {
+      opacity: .35;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h4>
+    This is an experiment to gauge the implementation difficulty required to allow users to
+    edit the implication graph directly from the ReqGraph page.
+  </h4>
+
+  <div id="notes">
+    <div>
+      Desired behaviour:
+      <ul>
+        <li>Click edge - hit delete</li>
+        <li>Click edge - drag head or tail to new node</li>
+        <li>Create new edge between nodes</li>
+      </ul>
+    </div>
+    <div>
+      Problems:
+      <ul>
+        <!-- <li>Clicking on an edge is pixel-perfect and difficult. Increase stroke width? Double with thick transparent edges?</li> -->
+        <li>Dragging an existing edge is too hard... but we could treat a new edge as a replacement when an edge is selected</li>
+      </ul>
+    </div>
+    <div>
+      Solution notes:
+      <ul>
+        <li>Give all edges IDs so that we can work out from/to nodes</li>
+        <li>Prevent cycles on move</li>
+        <li>deselect a selected edge when a drag starts BUT use the selected value for the duration of the drag to potentially treat the new edge as a replacement</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="svg">
+    <svg width="1228" height="722" style="display: block; touch-action: none;">
+      <rect fill="white" x="0" y="0" width="1228" height="722" style="pointer-events: none;"></rect>
+      <g transform="matrix(1.111496499401098,0,0,1.111496499401098,20.777628119309355,46.56011734200014)">
+        <rect fill="#fff" x="0" y="0" width="973.6" height="485.4"></rect>
+        <g>
+          <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 481.4)">
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-51">
+              <g id="FR-51" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M289.99,-98.6C289.99,-98.6 21.12,-98.6 21.12,-98.6 15.12,-98.6 9.12,-92.6 9.12,-86.6 9.12,-86.6 9.12,-51.8 9.12,-51.8 9.12,-45.8 15.12,-39.8 21.12,-39.8 21.12,-39.8 289.99,-39.8 289.99,-39.8 295.99,-39.8 301.99,-45.8 301.99,-51.8 301.99,-51.8 301.99,-86.6 301.99,-86.6 301.99,-92.6 295.99,-98.6 289.99,-98.6">
+                </path>
+                <text text-anchor="middle" x="155.56" y="-81.8" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-51</text>
+                <text text-anchor="middle" x="155.56" y="-65" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">System #must show users a tree of the projects &amp;</text>
+                <text text-anchor="middle" x="155.56" y="-48.2" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">project groups to which they have access</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-52">
+              <g id="FR-52" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M289.28,-157.8C289.28,-157.8 21.83,-157.8 21.83,-157.8 15.83,-157.8 9.83,-151.8 9.83,-145.8 9.83,-145.8 9.83,-128.6 9.83,-128.6 9.83,-122.6 15.83,-116.6 21.83,-116.6 21.83,-116.6 289.28,-116.6 289.28,-116.6 295.28,-116.6 301.28,-122.6 301.28,-128.6 301.28,-128.6 301.28,-145.8 301.28,-145.8 301.28,-151.8 295.28,-157.8 289.28,-157.8">
+                </path>
+                <text text-anchor="middle" x="155.56" y="-141.4" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-52</text>
+                <text text-anchor="middle" x="155.56" y="-124.6" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">Users #must be able to create new project groups</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-53">
+              <g id="FR-53" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M944.7,-286.6C944.7,-286.6 680.47,-286.6 680.47,-286.6 674.47,-286.6 668.47,-280.6 668.47,-274.6 668.47,-274.6 668.47,-239.8 668.47,-239.8 668.47,-233.8 674.47,-227.8 680.47,-227.8 680.47,-227.8 944.7,-227.8 944.7,-227.8 950.7,-227.8 956.7,-233.8 956.7,-239.8 956.7,-239.8 956.7,-274.6 956.7,-274.6 956.7,-280.6 950.7,-286.6 944.7,-286.6">
+                </path>
+                <text text-anchor="middle" x="812.58" y="-269.8" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-53</text>
+                <text text-anchor="middle" x="812.58" y="-253" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">Users #must be able to create view/edit a project</text>
+                <text text-anchor="middle" x="812.58" y="-236.2" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">group (according to their permissions)</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-54">
+              <g id="FR-54" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M605.64,-316.8C605.64,-316.8 365.04,-316.8 365.04,-316.8 359.04,-316.8 353.04,-310.8 353.04,-304.8 353.04,-304.8 353.04,-287.6 353.04,-287.6 353.04,-281.6 359.04,-275.6 365.04,-275.6 365.04,-275.6 605.64,-275.6 605.64,-275.6 611.64,-275.6 617.64,-281.6 617.64,-287.6 617.64,-287.6 617.64,-304.8 617.64,-304.8 617.64,-310.8 611.64,-316.8 605.64,-316.8">
+                </path>
+                <text text-anchor="middle" x="485.34" y="-300.4" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-54</text>
+                <text text-anchor="middle" x="485.34" y="-283.6" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">Users #must be able to leave a project group</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <g id="edge7" class="edge">
+              <path fill="none" stroke="#222222" d="M627.9,-279.23C641.3,-277.62 654.89,-275.99 668.3,-274.38"></path>
+              <polygon fill="#222222" stroke="#222222"
+                points="627.21,-275.78 617.69,-280.45 628.04,-282.73 627.21,-275.78"></polygon>
+            </g>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-55">
+              <g id="FR-55" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M283.14,-234.6C283.14,-234.6 27.97,-234.6 27.97,-234.6 21.97,-234.6 15.97,-228.6 15.97,-222.6 15.97,-222.6 15.97,-187.8 15.97,-187.8 15.97,-181.8 21.97,-175.8 27.97,-175.8 27.97,-175.8 283.14,-175.8 283.14,-175.8 289.14,-175.8 295.14,-181.8 295.14,-187.8 295.14,-187.8 295.14,-222.6 295.14,-222.6 295.14,-228.6 289.14,-234.6 283.14,-234.6">
+                </path>
+                <text text-anchor="middle" x="155.56" y="-217.8" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-55</text>
+                <text text-anchor="middle" x="155.56" y="-201" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">Project group admin #must be able to create an</text>
+                <text text-anchor="middle" x="155.56" y="-184.2" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">invitation page to their project group</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <g id="edge6" class="edge">
+              <path fill="none" stroke="#222222"
+                d="M305.6,-224.03C319.62,-225.54 333.63,-226.97 347.11,-228.2 454.62,-238.04 576.45,-245.51 668.35,-250.4">
+              </path>
+              <polygon fill="#222222" stroke="#222222"
+                points="305.72,-220.52 295.4,-222.9 304.95,-227.48 305.72,-220.52"></polygon>
+            </g>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-56">
+              <g id="FR-56" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M611.8,-219.6C611.8,-219.6 358.88,-219.6 358.88,-219.6 352.88,-219.6 346.88,-213.6 346.88,-207.6 346.88,-207.6 346.88,-172.8 346.88,-172.8 346.88,-166.8 352.88,-160.8 358.88,-160.8 358.88,-160.8 611.8,-160.8 611.8,-160.8 617.8,-160.8 623.8,-166.8 623.8,-172.8 623.8,-172.8 623.8,-207.6 623.8,-207.6 623.8,-213.6 617.8,-219.6 611.8,-219.6">
+                </path>
+                <text text-anchor="middle" x="485.34" y="-202.8" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-56</text>
+                <text text-anchor="middle" x="485.34" y="-186" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">Project group admin #must be able to see all</text>
+                <text text-anchor="middle" x="485.34" y="-169.2" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">invitation pages created for their project group</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <g id="edge4" class="edge">
+              <path fill="none" stroke="#222222" d="M305.57,-198.38C319.35,-197.75 333.28,-197.11 346.95,-196.49">
+              </path>
+              <polygon fill="#222222" stroke="#222222"
+                points="305.4,-194.89 295.57,-198.84 305.72,-201.88 305.4,-194.89"></polygon>
+            </g>
+
+            <g id="edge9" class="edge">
+              <path fill="none" stroke="#222222" d="M633.8,-220.58C645.73,-223.03 657.77,-225.51 669.67,-227.96"></path>
+              <polygon fill="#222222" stroke="#222222"
+                points="634.3,-217.11 623.8,-218.52 632.89,-223.96 634.3,-217.11"></polygon>
+            </g>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-57">
+              <g id="FR-57" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M934.26,-210.6C934.26,-210.6 690.91,-210.6 690.91,-210.6 684.91,-210.6 678.91,-204.6 678.91,-198.6 678.91,-198.6 678.91,-163.8 678.91,-163.8 678.91,-157.8 684.91,-151.8 690.91,-151.8 690.91,-151.8 934.26,-151.8 934.26,-151.8 940.26,-151.8 946.26,-157.8 946.26,-163.8 946.26,-163.8 946.26,-198.6 946.26,-198.6 946.26,-204.6 940.26,-210.6 934.26,-210.6">
+                </path>
+                <text text-anchor="middle" x="812.58" y="-193.8" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-57</text>
+                <text text-anchor="middle" x="812.58" y="-177" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">Project group admin #must be able to edit an</text>
+                <text text-anchor="middle" x="812.58" y="-160.2" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">invitation page to their project group</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <g id="edge3" class="edge">
+              <path fill="none" stroke="#222222" d="M634.08,-186.11C648.98,-185.7 664.04,-185.28 678.77,-184.88"></path>
+              <polygon fill="#222222" stroke="#222222" points="633.7,-182.62 623.8,-186.4 633.9,-189.62 633.7,-182.62">
+              </polygon>
+            </g>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-58">
+              <g id="FR-58" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M605.67,-134.6C605.67,-134.6 365.01,-134.6 365.01,-134.6 359.01,-134.6 353.01,-128.6 353.01,-122.6 353.01,-122.6 353.01,-87.8 353.01,-87.8 353.01,-81.8 359.01,-75.8 365.01,-75.8 365.01,-75.8 605.67,-75.8 605.67,-75.8 611.67,-75.8 617.67,-81.8 617.67,-87.8 617.67,-87.8 617.67,-122.6 617.67,-122.6 617.67,-128.6 611.67,-134.6 605.67,-134.6">
+                </path>
+                <text text-anchor="middle" x="485.34" y="-117.8" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-58</text>
+                <text text-anchor="middle" x="485.34" y="-101" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">Project group admin #must be able to see all</text>
+                <text text-anchor="middle" x="485.34" y="-84.2" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">invitations sent from their project group</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <g id="edge8" class="edge">
+              <path fill="none" stroke="#222222"
+                d="M605.64,-139.43C611.99,-143.25 618.03,-147.49 623.57,-152.2 649.34,-174.08 632.89,-198.44 659.57,-219.2 663.65,-222.37 667.96,-225.29 672.45,-227.96">
+              </path>
+              <polygon fill="#222222" stroke="#222222"
+                points="607.23,-136.31 596.8,-134.47 603.81,-142.42 607.23,-136.31"></polygon>
+            </g>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-59">
+              <g id="FR-59" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M953.61,-134.6C953.61,-134.6 671.56,-134.6 671.56,-134.6 665.56,-134.6 659.56,-128.6 659.56,-122.6 659.56,-122.6 659.56,-87.8 659.56,-87.8 659.56,-81.8 665.56,-75.8 671.56,-75.8 671.56,-75.8 953.61,-75.8 953.61,-75.8 959.61,-75.8 965.61,-81.8 965.61,-87.8 965.61,-87.8 965.61,-122.6 965.61,-122.6 965.61,-128.6 959.61,-134.6 953.61,-134.6">
+                </path>
+                <text text-anchor="middle" x="812.58" y="-117.8" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-59</text>
+                <text text-anchor="middle" x="812.58" y="-101" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">Project group admin #must be able to revoke</text>
+                <text text-anchor="middle" x="812.58" y="-84.2" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">unaccepted invitations sent from their project group</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <g id="edge2" class="edge">
+              <path fill="none" stroke="#222222" d="M627.73,-105.2C638.25,-105.2 648.89,-105.2 659.46,-105.2"></path>
+              <polygon fill="#222222" stroke="#222222" points="627.69,-101.7 617.69,-105.2 627.69,-108.7 627.69,-101.7">
+              </polygon>
+            </g>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-60">
+              <g id="FR-60" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M944.09,-58.6C944.09,-58.6 681.08,-58.6 681.08,-58.6 675.08,-58.6 669.08,-52.6 669.08,-46.6 669.08,-46.6 669.08,-11.8 669.08,-11.8 669.08,-5.8 675.08,0.2 681.08,0.2 681.08,0.2 944.09,0.2 944.09,0.2 950.09,0.2 956.09,-5.8 956.09,-11.8 956.09,-11.8 956.09,-46.6 956.09,-46.6 956.09,-52.6 950.09,-58.6 944.09,-58.6">
+                </path>
+                <text text-anchor="middle" x="812.58" y="-41.8" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-60</text>
+                <text text-anchor="middle" x="812.58" y="-25" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">Project group admin #must be able to show/hide</text>
+                <text text-anchor="middle" x="812.58" y="-8.2" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">resolved invitations to their project group</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <g id="edge5" class="edge">
+              <path fill="none" stroke="#222222" d="M621.45,-73.63C642.95,-68.61 665.11,-63.43 686.37,-58.46"></path>
+              <polygon fill="#222222" stroke="#222222" points="620.57,-70.24 611.62,-75.93 622.16,-77.06 620.57,-70.24">
+              </polygon>
+            </g>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-61">
+              <g id="FR-61" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M296.03,-325.6C296.03,-325.6 15.08,-325.6 15.08,-325.6 9.08,-325.6 3.08,-319.6 3.08,-313.6 3.08,-313.6 3.08,-278.8 3.08,-278.8 3.08,-272.8 9.08,-266.8 15.08,-266.8 15.08,-266.8 296.03,-266.8 296.03,-266.8 302.03,-266.8 308.03,-272.8 308.03,-278.8 308.03,-278.8 308.03,-313.6 308.03,-313.6 308.03,-319.6 302.03,-325.6 296.03,-325.6">
+                </path>
+                <text text-anchor="middle" x="155.56" y="-308.8" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-61</text>
+                <text text-anchor="middle" x="155.56" y="-292" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">System #must prevent a user from leaving a project</text>
+                <text text-anchor="middle" x="155.56" y="-275.2" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">group if they are the last human owner</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <g id="edge1" class="edge">
+              <path fill="none" stroke="#222222" d="M318.14,-296.2C329.71,-296.2 341.31,-296.2 352.68,-296.2"></path>
+              <polygon fill="#222222" stroke="#222222" points="317.98,-292.7 307.98,-296.2 317.98,-299.7 317.98,-292.7">
+              </polygon>
+            </g>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-70">
+              <g id="FR-70" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M299.17,-401.6C299.17,-401.6 11.94,-401.6 11.94,-401.6 5.94,-401.6 -0.06,-395.6 -0.06,-389.6 -0.06,-389.6 -0.06,-354.8 -0.06,-354.8 -0.06,-348.8 5.94,-342.8 11.94,-342.8 11.94,-342.8 299.17,-342.8 299.17,-342.8 305.17,-342.8 311.17,-348.8 311.17,-354.8 311.17,-354.8 311.17,-389.6 311.17,-389.6 311.17,-395.6 305.17,-401.6 299.17,-401.6">
+                </path>
+                <text text-anchor="middle" x="155.56" y="-384.8" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-70</text>
+                <text text-anchor="middle" x="155.56" y="-368" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">User group admin #must be able to edit an invitation</text>
+                <text text-anchor="middle" x="155.56" y="-351.2" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">page to their project group</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <a xlink:href="https://shipreq.com/project/d6My#/reqs/FR-79">
+              <g id="FR-79" class="node">
+                <path fill="#ccf000" stroke="#222222"
+                  d="M289.31,-477.6C289.31,-477.6 21.8,-477.6 21.8,-477.6 15.8,-477.6 9.8,-471.6 9.8,-465.6 9.8,-465.6 9.8,-430.8 9.8,-430.8 9.8,-424.8 15.8,-418.8 21.8,-418.8 21.8,-418.8 289.31,-418.8 289.31,-418.8 295.31,-418.8 301.31,-424.8 301.31,-430.8 301.31,-430.8 301.31,-465.6 301.31,-465.6 301.31,-471.6 295.31,-477.6 289.31,-477.6">
+                </path>
+                <text text-anchor="middle" x="155.56" y="-460.8" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">FR-79</text>
+                <text text-anchor="middle" x="155.56" y="-444" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">Project admin #must be able to see all users, user</text>
+                <text text-anchor="middle" x="155.56" y="-427.2" font-family="Times,serif" font-size="14.00"
+                  fill="#000000">groups and project groups that have access</text>
+                <title>#must #ready_for_dev #v3.0</title>
+              </g>
+            </a>
+
+            <g id="dragArrow">
+              <path d="" id="dragArrow1" stroke="#f00" fill="none" stroke-width="2" />
+            </g>
+
+          </g>
+        </g>
+      </g>
+    </svg>
+  </div>
+
+  <!-- <script src="./gsap.js"></script>
+  <script src="./Draggable.js"></script> -->
+  <script src="./main.js"></script>
+
+</body>
+
+</html>
