@@ -34,7 +34,7 @@ final class ProjectImpGraph(project   : Project,
           case Live => () => ()
           case Dead => () => edgeStyleDead()
         }
-      b.flowOneToMany(fromId, toIds)(nodeDeclare, atEnd())
+      b.flowOneToMany(fromId, toIds)(nodeDeclare, atEnd(), nodeIdAttr)
     }
 
     def allFlow(graph: Implications.Graph.UniDir): Unit =

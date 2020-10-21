@@ -58,18 +58,18 @@ object ProjectImpGraphTest extends TestSuite {
            |$mf1[id="MF-1" label="MF-1"]
            |$mf5[id="MF-5" label="MF-5"]
            |
-           |$mf4->$fr6;
-           |$br1->$mf2;
-           |$br1->$br2;
-           |$mf3->$mf4;
-           |$mf3->$fr4;
-           |$br2->$mf3;
-           |$mf2->$fr2;
-           |$fr5->$mf5;
-           |$fr1->$fr2;
-           |$mf1->$fr1;
-           |$fr2->$fr3;
-           |$fr4->$fr5;
+           |$mf4->$fr6[id="MF-4--FR-6"];
+           |$br1->$mf2[id="BR-1--MF-2"];
+           |$br1->$br2[id="BR-1--BR-2"];
+           |$mf3->$mf4[id="MF-3--MF-4"];
+           |$mf3->$fr4[id="MF-3--FR-4"];
+           |$br2->$mf3[id="BR-2--MF-3"];
+           |$mf2->$fr2[id="MF-2--FR-2"];
+           |$fr5->$mf5[id="FR-5--MF-5"];
+           |$fr1->$fr2[id="FR-1--FR-2"];
+           |$mf1->$fr1[id="MF-1--FR-1"];
+           |$fr2->$fr3[id="FR-2--FR-3"];
+           |$fr4->$fr5[id="FR-4--FR-5"];
            |}
           """.stripMargin)
       assertDOT(actual, expect)
@@ -104,18 +104,18 @@ object ProjectImpGraphTest extends TestSuite {
            |$mf1[id="MF-1" label="MF-1"]
            |$mf5[id="MF-5" label="MF-5"]
            |
-           |$fr6->$mf4;
-           |$mf2->$br1;
-           |$br2->$br1;
-           |$mf4->$mf3;
-           |$fr4->$mf3;
-           |$mf3->$br2;
-           |$fr2->$mf2;
-           |$mf5->$fr5;
-           |$fr2->$fr1;
-           |$fr1->$mf1;
-           |$fr3->$fr2;
-           |$fr5->$fr4;
+           |$fr6->$mf4[id="MF-4--FR-6"];
+           |$mf2->$br1[id="BR-1--MF-2"];
+           |$br2->$br1[id="BR-1--BR-2"];
+           |$mf4->$mf3[id="MF-3--MF-4"];
+           |$fr4->$mf3[id="MF-3--FR-4"];
+           |$mf3->$br2[id="BR-2--MF-3"];
+           |$fr2->$mf2[id="MF-2--FR-2"];
+           |$mf5->$fr5[id="FR-5--MF-5"];
+           |$fr2->$fr1[id="FR-1--FR-2"];
+           |$fr1->$mf1[id="MF-1--FR-1"];
+           |$fr3->$fr2[id="FR-2--FR-3"];
+           |$fr5->$fr4[id="FR-4--FR-5"];
            |}
           """.stripMargin)
       assertDOT(actual, expect)
@@ -156,18 +156,18 @@ object ProjectImpGraphTest extends TestSuite {
            |R->999;
            |}
            |
-           |$mf4->$fr6;
-           |$br1->$br2;
-           |$br1->$mf2;
-           |$mf3->$mf4;
-           |$mf3->$fr4;
-           |$br2->$mf3;
-           |$mf2->$fr2;
-           |$fr5->$mf5;
-           |$fr1->$fr2;
-           |$mf1->$fr1;
-           |$fr2->$fr3;
-           |$fr4->$fr5;
+           |$mf4->$fr6[id="MF-4--FR-6"];
+           |$br1->$br2[id="BR-1--BR-2"];
+           |$br1->$mf2[id="BR-1--MF-2"];
+           |$mf3->$mf4[id="MF-3--MF-4"];
+           |$mf3->$fr4[id="MF-3--FR-4"];
+           |$br2->$mf3[id="BR-2--MF-3"];
+           |$mf2->$fr2[id="MF-2--FR-2"];
+           |$fr5->$mf5[id="FR-5--MF-5"];
+           |$fr1->$fr2[id="FR-1--FR-2"];
+           |$mf1->$fr1[id="MF-1--FR-1"];
+           |$fr2->$fr3[id="FR-2--FR-3"];
+           |$fr4->$fr5[id="FR-4--FR-5"];
            |}
           """.stripMargin)
       assertDOT(actual, expect)
@@ -203,18 +203,18 @@ object ProjectImpGraphTest extends TestSuite {
            |$mf1[id="MF-1" label="MF-1"]
            |$mf5[id="MF-5" label="MF-5"]
            |
-           |$mf4->$fr6;
-           |$br1->$br2;
-           |$br1->$mf2;
-           |$mf3->$mf4;
-           |$mf3->$fr4;
-           |$br2->$mf3;
-           |$mf2->$fr2;
-           |$fr5->$mf5;
-           |$fr1->$fr2;
-           |$mf1->$fr1;
-           |$fr2->$fr3;
-           |$fr4->$fr5;
+           |$mf4->$fr6[id="MF-4--FR-6"];
+           |$br1->$br2[id="BR-1--BR-2"];
+           |$br1->$mf2[id="BR-1--MF-2"];
+           |$mf3->$mf4[id="MF-3--MF-4"];
+           |$mf3->$fr4[id="MF-3--FR-4"];
+           |$br2->$mf3[id="BR-2--MF-3"];
+           |$mf2->$fr2[id="MF-2--FR-2"];
+           |$fr5->$mf5[id="FR-5--MF-5"];
+           |$fr1->$fr2[id="FR-1--FR-2"];
+           |$mf1->$fr1[id="MF-1--FR-1"];
+           |$fr2->$fr3[id="FR-2--FR-3"];
+           |$fr4->$fr5[id="FR-4--FR-5"];
            |}
           """.stripMargin)
       assertDOT(actual, expect)
@@ -277,18 +277,18 @@ object ProjectImpGraphTest extends TestSuite {
            |$mf1[id="MF-1" label="MF-1"]
            |$mf5[id="MF-5" label="MF-5"]
            |
-           |$mf4->$fr6[color="#bbbbbb" style=dashed];
-           |$br1->$mf2;
-           |$br1->$br2;
-           |$mf3->$fr4;
-           |$mf3->$mf4[color="#bbbbbb" style=dashed];
-           |$br2->$mf3;
-           |$mf2->$fr2;
-           |$fr5->$mf5;
-           |$fr1->$fr2;
-           |$mf1->$fr1;
-           |$fr2->$fr3;
-           |$fr4->$fr5;
+           |$mf4->$fr6[id="MF-4--FR-6"][color="#bbbbbb" style=dashed];
+           |$br1->$mf2[id="BR-1--MF-2"];
+           |$br1->$br2[id="BR-1--BR-2"];
+           |$mf3->$fr4[id="MF-3--FR-4"];
+           |$mf3->$mf4[id="MF-3--MF-4"][color="#bbbbbb" style=dashed];
+           |$br2->$mf3[id="BR-2--MF-3"];
+           |$mf2->$fr2[id="MF-2--FR-2"];
+           |$fr5->$mf5[id="FR-5--MF-5"];
+           |$fr1->$fr2[id="FR-1--FR-2"];
+           |$mf1->$fr1[id="MF-1--FR-1"];
+           |$fr2->$fr3[id="FR-2--FR-3"];
+           |$fr4->$fr5[id="FR-4--FR-5"];
            |}
           """.stripMargin)
       assertDOT(actual, expect)
@@ -320,16 +320,16 @@ object ProjectImpGraphTest extends TestSuite {
            |$mf1[id="MF-1" label="MF-1"]
            |$mf5[id="MF-5" label="MF-5"]
            |
-           |$br1->$mf2;
-           |$br1->$br2;
-           |$mf3->$fr4;
-           |$br2->$mf3;
-           |$mf2->$fr2;
-           |$fr5->$mf5;
-           |$fr1->$fr2;
-           |$mf1->$fr1;
-           |$fr2->$fr3;
-           |$fr4->$fr5;
+           |$br1->$mf2[id="BR-1--MF-2"];
+           |$br1->$br2[id="BR-1--BR-2"];
+           |$mf3->$fr4[id="MF-3--FR-4"];
+           |$br2->$mf3[id="BR-2--MF-3"];
+           |$mf2->$fr2[id="MF-2--FR-2"];
+           |$fr5->$mf5[id="FR-5--MF-5"];
+           |$fr1->$fr2[id="FR-1--FR-2"];
+           |$mf1->$fr1[id="MF-1--FR-1"];
+           |$fr2->$fr3[id="FR-2--FR-3"];
+           |$fr4->$fr5[id="FR-4--FR-5"];
            |}
           """.stripMargin)
       assertDOT(actual, expect)
@@ -375,8 +375,8 @@ object ProjectImpGraphTest extends TestSuite {
                |1203[id="UC-1" label="UC-1" style=filled fillcolor="#0076f5" fontcolor="#ffffff"]
                |1204[id="UC-2" label="UC-2" style=filled fillcolor="#0076f5" fontcolor="#ffffff"]
                |
-               |1001->1002;
-               |1101->1002;
+               |1001->1002[id="FR-1--FR-2"];
+               |1101->1002[id="MF-1--FR-2"];
                |}
           """.stripMargin)
         assertDOT(actual, expect)
@@ -420,8 +420,8 @@ object ProjectImpGraphTest extends TestSuite {
                |1203[id="UC-1" label="UC-1\n\n[UC-1.0.X.1]\nand\n[UC-1.E.X.1]\nare dead.\n[UC-1.0.2.a]\nand\n[UC-1.E.1]\nare not."][style="rounded,filled" fillcolor="#0076f5" fontcolor="#ffffff"]
                |1204[id="UC-2" label="UC-2\nEmpty for now"][style="rounded,filled" fillcolor="#0076f5" fontcolor="#ffffff"]
                |
-               |1001->1002;
-               |1101->1002;
+               |1001->1002[id="FR-1--FR-2"];
+               |1101->1002[id="MF-1--FR-2"];
                |}
           """.stripMargin)
         assertDOT(actual, expect)
@@ -487,24 +487,24 @@ object ProjectImpGraphTest extends TestSuite {
            |R[shape=octagon fillcolor=red fontcolor=white margin=0 fontsize=18 label="?"]
            |R->$fr7;
            |R->$fr8;
-           |$fr7->$fr9;
-           |$fr7->$fr8;
+           |$fr7->$fr9[id="FR-7--FR-9"];
+           |$fr7->$fr8[id="FR-7--FR-8"];
            |}
            |
-           |$mf4->$fr6;
-           |$br1->$br2;
-           |$br1->$mf2;
-           |$br1->$fr9;
-           |$mf3->$mf4;
-           |$mf3->$fr4;
-           |$br2->$mf3;
-           |$mf2->$fr2;
-           |$fr9->$br2;
-           |$fr5->$mf5;
-           |$fr1->$fr2;
-           |$mf1->$fr1;
-           |$fr2->$fr3;
-           |$fr4->$fr5;
+           |$mf4->$fr6[id="MF-4--FR-6"];
+           |$br1->$br2[id="BR-1--BR-2"];
+           |$br1->$mf2[id="BR-1--MF-2"];
+           |$br1->$fr9[id="BR-1--FR-9"];
+           |$mf3->$mf4[id="MF-3--MF-4"];
+           |$mf3->$fr4[id="MF-3--FR-4"];
+           |$br2->$mf3[id="BR-2--MF-3"];
+           |$mf2->$fr2[id="MF-2--FR-2"];
+           |$fr9->$br2[id="FR-9--BR-2"];
+           |$fr5->$mf5[id="FR-5--MF-5"];
+           |$fr1->$fr2[id="FR-1--FR-2"];
+           |$mf1->$fr1[id="MF-1--FR-1"];
+           |$fr2->$fr3[id="FR-2--FR-3"];
+           |$fr4->$fr5[id="FR-4--FR-5"];
            |}
           """.stripMargin)
       assertDOT(actual, expect)
