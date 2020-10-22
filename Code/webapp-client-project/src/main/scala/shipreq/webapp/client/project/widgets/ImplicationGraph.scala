@@ -1,5 +1,6 @@
 package shipreq.webapp.client.project.widgets
 
+import japgolly.microlibs.nonempty.NonEmpty
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.VdomElement
@@ -8,13 +9,17 @@ import org.scalajs.dom.raw.SVGSVGElement
 import scala.scalajs.js
 import scala.util.Try
 import shipreq.base.util.JsExt._
-import shipreq.base.util.MutableRef
+import shipreq.base.util.{ErrorMsg, Forwards, MutableRef, SetDiff}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
 import shipreq.webapp.base.data.savedview.ImpGraphConfig.LabelFormat
+import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.DomUtil._
 import shipreq.webapp.base.lib.LoggerJs
+import shipreq.webapp.base.protocol.ServerSideProcInvoker
+import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.base.util.Must._
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.GraphComponent._
@@ -147,7 +152,7 @@ object ImplicationGraph {
         }
 
         if (edgeEditor.isEmpty && p.edgeEditorArgs.isDefined)
-          edgeEditor = Some(new EdgeEditor)
+          edgeEditor = Some(new EdgeEditor($.props.map(_.project)))
 
         for (ee <- edgeEditor)
           ee.enrich(root, p.edgeEditorArgs)
@@ -211,7 +216,9 @@ object ImplicationGraph {
   // class.
   object EdgeEditor {
 
-    final case class Args()
+    final case class Args(ssp   : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
+                          asyncW: AsyncFeature.Write.D1[UpdateContentCmd, ErrorMsg],
+                          asyncR: Reusable[CallbackTo[AsyncFeature.Read.D1[UpdateContentCmd, ErrorMsg]]])
 
     implicit def reusabilityArgs: Reusability[Args] =
       Reusability.derive
@@ -230,7 +237,7 @@ object ImplicationGraph {
         def getBBox()     = self.asInstanceOf[js.Dynamic].getBBox().asInstanceOf[svg.Rect]
       }
 
-      def lineAngleInDegrees(x: Double, y: Double): Double =
+      @inline def lineAngleInDegrees(x: Double, y: Double): Double =
         Math.atan2(y, x) * 180 / Math.PI
 
       private final val arrowSize = 6
@@ -241,12 +248,14 @@ object ImplicationGraph {
     }
   }
 
-  private final class EdgeEditor {
+  private final class EdgeEditor(projectCB: CallbackTo[Project]) {
+
     import shipreq.webapp.client.project.app.Style.widgets.{impGraphEdgeEditor => *}
     import org.scalajs.dom._
     import EdgeEditor.Args
     import EdgeEditor.StaticInternals._
 
+    private var args        = Option.empty[Args]
     private var root        = null: SVGSVGElement
     private var point       = null: svg.Point
     private var dragArrow   = null: svg.Element
@@ -256,6 +265,7 @@ object ImplicationGraph {
     def enrich(root: SVGSVGElement, args: Option[Args]): Unit = {
       logger(_.debug("Enriching: ", root))
 
+      this.args          = args
       this.root          = root
       this.dragSrc.value = None
       this.dragTgt.value = None
@@ -433,12 +443,25 @@ object ImplicationGraph {
       eventLogger(_.debug("onNodeMouseDown: ", ev))
       if (root ne null) {
 
-        // TODO would be a good idea to have a delay before we interpret mouse down as an edge creation command.
-        // Normally clicking on a node shouldn't trigger this.
+        // DragSrc might still be specified because an async commit is in progress
+        if (dragSrc.value.isEmpty) {
 
-        setDragSrc(Some(ev.currentTarget.asSvgEl))
-        dragArrow.setAttribute("d", "")
-        root.classList.add(*.clsDragging)
+          // TODO would be a good idea to have a delay before we interpret mouse down as an edge creation command.
+          // Normally clicking on a node shouldn't trigger this.
+
+          val ds     = ev.currentTarget.asSvgEl
+          val p      = projectCB.runNow()
+          val reqSrc = needReq(p, ds.id)
+          val live   = reqSrc.live(p.config.reqTypes)
+          val legal  = live.is(Live)
+
+          if (legal) {
+            setDragSrc(Some(ds))
+            dragArrow.setAttribute("d", "")
+            root.classList.add(*.clsDragging)
+          }
+
+        }
       }
 
       // Prevent ReactSvgPanZoom intercepting the drag
@@ -464,6 +487,14 @@ object ImplicationGraph {
           } else {
             val changed = setDragTgt(Some(dt))
             if (changed) {
+              val p      = projectCB.runNow()
+              val reqSrc = needReq(p, ds.id)
+              val legal  = newEdgeValue(p, reqSrc, dt.id).isRight
+
+              if (legal)
+                root.classList.remove(*.clsDragInvalid)
+              else
+                root.classList.add(*.clsDragInvalid)
 
               // Draw an arrow from source to target
               val src = getNodeMidpoint(ds)
@@ -502,13 +533,11 @@ object ImplicationGraph {
       eventLogger(_.debug("onRootMouseUp: ", ev))
       if (root ne null) {
         for (ds <- dragSrc.value) {
-          root.classList.remove(*.clsDragging)
-          for (dt <- dragTgt.value) {
-            createEdge(ds.id, dt.id)
-            setDragTgt(None)
+
+          (dragTgt.value, args) match {
+            case (Some(dt), Some(a)) => createEdge(a, ds.id, dt.id)
+            case _                   => reset()
           }
-          setDragSrc(None)
-          dragArrow.setAttribute("d", "")
 
           // Prevent node click navigating to ReqDetail
           ev.stopPropagation()
@@ -516,9 +545,53 @@ object ImplicationGraph {
       }
     }
 
-    private def createEdge(fromId: String, toId: String): Unit = {
-      console.log(s"New edge: $fromId -> $toId")
-      // async handling
+    private def needReq(p: Project, pubidStr: String): Req = {
+      def err = ErrorMsg("Bad id: " + pubidStr.quote)
+      val ep = ExternalPubid.parse(pubidStr).mustExistElse(err)
+      ep.lookup(p).mustExistElse(err)
+    }
+
+    private def newEdgeValue(p: Project, reqSrc: Req, idTgt: String): Any \/ SetDiff[ReqId] = {
+      val reqTgt = needReq(p, idTgt)
+      if (reqTgt.live(p.config.reqTypes) is Dead)
+        -\/(())
+      else {
+        val initialValues = p.content.implications.forwards(reqSrc.id)
+        val auditor = DataValidators.implicationAuditor(p, Some(reqSrc.id), initialValues, Forwards)
+        auditor(initialValues + reqTgt.id)
+      }
+    }
+
+    private def createEdge(args: Args, idStrFrom: String, idStrTo: String): Unit = {
+      val p      = projectCB.runNow()
+      val reqSrc = needReq(p, idStrFrom)
+      val result = newEdgeValue(p, reqSrc, idStrTo)
+
+      logger(_.info(s"New edge: $idStrFrom -> $idStrTo = $result"))
+
+      result.map(NonEmpty(_)) match {
+
+        case \/-(Some(patch)) =>
+          // Change the graph
+          val cmd    = UpdateContentCmd.PatchImplications(reqSrc.id, Forwards, patch)
+          val commit = args.ssp(cmd)
+          val reset  = AsyncCallback.delay(this.reset())
+          val proc   = args.asyncW(cmd).onFailureShowAndForget(commit <* reset)
+          proc.runNow()
+
+        case _ =>
+          // \/-(None) = No change to make
+          // -\/(_)    = Invalid change
+          reset()
+      }
+    }
+
+    private def reset(): Unit = {
+      root.classList.remove(*.clsDragging)
+      root.classList.remove(*.clsDragInvalid)
+      setDragSrc(None)
+      setDragTgt(None)
+      dragArrow.setAttribute("d", "")
     }
   }
 }

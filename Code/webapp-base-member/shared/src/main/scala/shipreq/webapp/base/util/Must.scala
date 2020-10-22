@@ -10,11 +10,16 @@ import shipreq.base.util.ErrorMsg
  */
 object Must {
 
-  @inline implicit class MustExtForOption[A](private val o: Option[A]) extends AnyVal {
+  @inline implicit class MustExtForOption[A](private val self: Option[A]) extends AnyVal {
     @inline def mustExistElse(err: => ErrorMsg): A =
-      o getOrElse mustNotHappen(err)
+      self getOrElse mustNotHappen(err)
   }
 
-  def mustNotHappen(err: ErrorMsg): Nothing =
+  @inline implicit class MustExtForDisj[L, A](private val self: L \/ A) extends AnyVal {
+    @inline def mustExistElse(err: => ErrorMsg): A =
+      self getOrElse mustNotHappen(err)
+  }
+
+  @inline def mustNotHappen(err: ErrorMsg): Nothing =
     err.throwException()
 }

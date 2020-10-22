@@ -68,6 +68,22 @@ object DataValidators {
       }
     )
 
+  def implicationAuditor(p: Project, subject: Option[ReqId], initialValues: Set[ReqId], dir: Direction): Auditor[Set[ReqId], SetDiff[ReqId]] =
+    Auditor { in =>
+      val newValues = subject.foldLeft(in)(_ - _) // Tolerate reflexivity
+      val diff = SetDiff.compare(initialValues, newValues)
+
+      val pi = p.content.implications
+      var is = pi(dir)
+      for (i <- subject)
+        is = is.mod(i, diff.apply)
+
+      if (Implications.Graph.cycleDetector.hasCycle(is.m))
+        -\/(Invalidity("That would cause a cycle in your implication graph."))
+      else
+        \/-(diff)
+    }
+
   // ===================================================================================================================
   object hashRefKey {
     import Grammar.{hashRefKey => G}

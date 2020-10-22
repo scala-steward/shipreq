@@ -403,7 +403,11 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
     }
 
     private val someEdgeEditorArgs: Some[ImplicationGraph.EdgeEditor.Args] =
-      Some(ImplicationGraph.EdgeEditor.Args())
+      Some(ImplicationGraph.EdgeEditor.Args(
+        ssp    = sspUpdateContent,
+        asyncW = updateContentCmdAsyncW,
+        asyncR = Reusable.callbackByRef($.state.map(_.updateContentCmdAsync.toRead)),
+      ))
 
     def render(p: Props, s: State): VdomElement = {
       lazy val editAsyncState = s.editAsync.toRead

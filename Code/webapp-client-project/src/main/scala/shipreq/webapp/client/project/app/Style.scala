@@ -1842,6 +1842,7 @@ object Style extends StyleSheet.Inline {
     object impGraphEdgeEditor {
       final val clsDragging     = "ee_d"
       final val clsDragArrow    = "ee_da"
+      final val clsDragInvalid  = "ee_i"
       final val clsDragSrc      = "ee_ds"
       final val clsDragTgt      = "ee_dt"
       final val clsSelectedEdge = "ee_s"
@@ -1860,39 +1861,45 @@ object Style extends StyleSheet.Inline {
 
       val root = style(
 
-        &.not("." + clsDragging)(
-          unsafeChild("." + clsDragArrow)(
-            display.none,
-          ),
-        ),
-
-        unsafeExt(_ + "." + clsDragging)(
-          unsafeChild("*")(
-            cursor.alias.important,
-          ),
-          unsafeChild(s"g.node:not(.$clsDragSrc):not(.$clsDragTgt):not(.$clsDragArrow)")(
-            opacity(.35),
-          ),
-        ),
-
         unsafeChild(s".$clsDragArrow > path")(
           svgFill := "none",
-          svgStroke :=! "red",
-          svgStrokeWidth := "2",
+          svgStrokeWidth := "3",
         ),
 
+        // When dragging...
+        unsafeExt(_ + "." + clsDragging)(
+
+          unsafeChild(s"g.node:not(.$clsDragSrc):not(.$clsDragTgt):not(.$clsDragArrow)")(
+            opacity(.33),
+          ),
+          unsafeExt(p => s"$p g.node.$clsDragSrc,$p g.node.$clsDragTgt")(
+            opacity(.9),
+          ),
+
+          // Valid link
+          unsafeExt(_ + ":not(." + clsDragInvalid + ")")(
+            unsafeChild("*")(cursor.alias.important),
+            unsafeChild(s".$clsDragArrow > path")(
+              svgStroke :=! "#00f",
+            ),
+          ),
+
+          // Invalid link
+          unsafeExt(_ + "." + clsDragInvalid)(
+            unsafeChild("*")(cursor.notAllowed.important),
+            unsafeChild(s".$clsDragArrow > path")(
+              svgStroke :=! "#c00",
+            ),
+          ),
+        ),
+
+        // Edge selection
         unsafeChild(s"g.$clsEdge2:not(.$clsSelectedEdge)")(
           arrowColour("#0000"),
         ),
-
         unsafeChild(s"g.$clsEdge2:not(.$clsSelectedEdge):hover")(
           arrowColour("#ffff0018"),
         ),
-
-//        unsafeChild(s"g.edge:not(.$clsSelectedEdge):hover")(
-//          arrowColour("#f0f"),
-//        ),
-
         unsafeChild(s".$clsSelectedEdge")(
           arrowColour("#f00"),
         ),

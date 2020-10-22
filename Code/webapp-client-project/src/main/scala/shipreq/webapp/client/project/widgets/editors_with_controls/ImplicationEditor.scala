@@ -120,12 +120,12 @@ object ImplicationEditor {
 
     def apply(p: Project, subject: Option[ReqId], initialValues: Set[ReqId], dir: Direction): ValidationFn =
       l =>
-        validator1(l)
+        stringValidator(l)
           .mapValid(_.toSet)
-          .andThenAuditor(validator2(p, subject, initialValues, dir))
+          .andThenAuditor(DataValidators.implicationAuditor(p, subject, initialValues, dir))
 
 
-    private def validator1(l: Lookup): Validator[String, List[String], List[ReqId]] = {
+    private def stringValidator(l: Lookup): Validator[String, List[String], List[ReqId]] = {
       val parse: Auditor[String, ReqId] =
         Auditor { s =>
           type R = Invalidity \/ ReqId
@@ -148,22 +148,6 @@ object ImplicationEditor {
 
       Grammar.pubid.seqFormat.validator(parse)
     }
-
-    private def validator2(p: Project, subject: Option[ReqId], initialValues: Set[ReqId], dir: Direction): Auditor[Set[ReqId], SetDiff[ReqId]] =
-      Auditor { in =>
-        val newValues = subject.foldLeft(in)(_ - _) // Tolerate reflexivity
-        val diff = SetDiff.compare(initialValues, newValues)
-
-        val pi = p.content.implications
-        var is = pi(dir)
-        for (i <- subject)
-          is = is.mod(i, diff.apply)
-
-        if (Implications.Graph.cycleDetector.hasCycle(is.m))
-          -\/(Invalidity("That would cause a cycle in your implication graph."))
-        else
-          \/-(diff)
-      }
   }
 
   private implicit def autoCompleteStyle = ReqItem.Style.Id
