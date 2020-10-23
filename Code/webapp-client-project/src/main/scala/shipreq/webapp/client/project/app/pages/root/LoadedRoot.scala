@@ -30,7 +30,7 @@ import shipreq.webapp.client.project.app.state._
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.Usage
-import shipreq.webapp.client.project.widgets.{NewReqButton, ProjectWidgets, ReqSearch, ViewReqCache, ViewReqDataCache, ViewTags}
+import shipreq.webapp.client.project.widgets._
 import shipreq.webapp.client.ww.api.WebWorkerCmd
 
 object LoadedRoot {
@@ -41,8 +41,9 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
                        global            : Global,
                        confirmJs         : ConfirmJs,
                        promptJs          : PromptJs,
-                       optionalFullscreen: OptionalFullscreen) {
-  import global.logger
+                       optionalFullscreen: OptionalFullscreen,
+                       webWorkerClient   : WebWorkerClient.Instance,
+                      ) {
 
   val pxProjectAndOrd = global.pxProjectAndOrd
   val pxProject       = global.pxProject
@@ -352,9 +353,6 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
       pxReqDetailReqProps.value().get(s)
     }
 
-    private val webWorkerClient: WebWorkerClient.Instance =
-      WebWorkerClient(initPageData.webWorkerJsUrl, logger)
-
     private val reqDetail = ReqDetail(ReqDetail.StaticProps(
       sspUpdateContent      = sspUpdateContent,
       sspCreateContent      = sspCreateContent,
@@ -401,6 +399,13 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
         pxProject.toCallback >>= (p => if (p.name ==* newName) close else save)
       }
     }
+
+    private val someEdgeEditorArgs: Some[ImplicationGraph.EdgeEditor.Args] =
+      Some(ImplicationGraph.EdgeEditor.Args(
+        ssp    = sspUpdateContent,
+        asyncW = updateContentCmdAsyncW,
+        asyncR = Reusable.callbackByRef($.state.map(_.updateContentCmdAsync.toRead)),
+      ))
 
     def render(p: Props, s: State): VdomElement = {
       lazy val editAsyncState = s.editAsync.toRead
@@ -522,6 +527,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
             reqDetailRC      = routerCtlEP,
             webWorker        = webWorkerClient,
             savedViewFeature = savedViewFeature,
+            edgeEditorArgs   = someEdgeEditorArgs,
           ).render
       }
 

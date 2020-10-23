@@ -3,8 +3,11 @@ package shipreq.webapp.base.test
 import japgolly.microlibs.testutil.TestUtil
 import japgolly.scalajs.react.test._
 import japgolly.scalajs.react.vdom.html_<^.VdomAttr
-import org.scalajs.dom.html
+import org.scalajs.dom
+import org.scalajs.dom.{document, html}
+import scala.scalajs.js
 import scalacss.internal.StyleA
+import shipreq.base.test.BaseTestUtil
 import shipreq.base.util.{Debug, Disabled, Enabled, ErrorMsg}
 import shipreq.webapp.base.lib.DomUtil._
 import teststate.domzipper.DomZipperJsF.Dom
@@ -21,6 +24,12 @@ object TestState
   type Id[A] = A
 
   type DomZipperTo[A] = DomZipperJsF[Id, A]
+
+  implicit def BaseTestUtilOpsOption[A](a: Option[A]) =
+    new BaseTestUtil.BaseTestUtilOpsOption(a)
+
+  implicit def BaseTestUtilOpsSeq[A](a: Seq[A]) =
+    new BaseTestUtil.BaseTestUtilOpsSeq(a)
 
   implicit final class TestStateStyleAExt(private val self: StyleA) extends AnyVal {
     def selector: String =
@@ -52,6 +61,24 @@ object TestState
     ErrorHandler.toStringWithStackTrace("shipreq|scalajs.dom".r.pattern)
 
   def KB = japgolly.scalajs.react.test.SimEvent.Keyboard
+
+  def dispatchEvent(target   : dom.EventTarget,
+                    eventName: String,
+                    mod      : dom.Event => Unit = null): Unit = {
+    val name = eventName.toLowerCase
+    val interface =
+      if (name.startsWith("mouse") || name.contains("click"))
+        "MouseEvents" // pluralised - not a typo. See MDN
+      else if (name.startsWith("key"))
+        "KeyboardEvents" // pluralised - not a typo. See MDN
+      else
+        "Event" // singular - not a typo. See MDN
+    val event = document.createEvent(interface)
+    event.asInstanceOf[js.Dynamic].initEvent(name, true, true)
+    if (mod ne null)
+      mod(event)
+    target.dispatchEvent(event)
+  }
 
   final val y = true
   final val n = false

@@ -148,11 +148,23 @@ object GraphViz {
     //    }
     //  }
 
-    def flowOneToMany[A](fromId: A, toIds: IterableOnce[A])(id: A => Unit, atEnd: => Unit): Unit =
+    def flowOneToMany[A](fromId: A,
+                         toIds : IterableOnce[A])
+                        (id    : A => Unit,
+                         atEnd : => Unit,
+                         edgeId: A => String = null): Unit =
       for (toId <- toIds.iterator) {
         id(if (drawBackwards) toId else fromId)
         arrow()
         id(if (drawBackwards) fromId else toId)
+        if (edgeId ne null) {
+          // Ignore drawBackwards here - the ids are required to identify saved edges which are saved forwards
+          sb append "[id=\""
+          sb append edgeId(fromId)
+          sb append "--"
+          sb append edgeId(toId)
+          sb append "\"]"
+        }
         atEnd
         eol()
       }

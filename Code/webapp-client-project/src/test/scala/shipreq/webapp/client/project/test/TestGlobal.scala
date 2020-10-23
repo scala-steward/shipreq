@@ -4,6 +4,7 @@ import japgolly.scalajs.react.test.SimEvent
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import java.time.{Duration, Instant}
 import org.scalajs.dom.{document, html}
+import scala.scalajs.js
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{Allow, ErrorMsg, JsTimers, PotentialChange, Retries}
 import shipreq.webapp.base.data.Project
@@ -290,7 +291,7 @@ object TestGlobal {
   final class TestDslWithObs[R, O, S](dsl   : Dsl[Id, R, O, S, String])
                                      (getRef: R => TestGlobal,
                                       getObs: O => Obs) extends TestDsl(dsl)(getRef) {
-    protected final implicit def autoObs(o: O): Obs =
+    protected implicit def autoObs(o: O): Obs =
       getObs(o)
 
     val activeElement = *.focus("activeElement").value(_.obs.activeElement.orNull)
@@ -301,12 +302,35 @@ object TestGlobal {
 
     val requestCount = *.focus("Server requests").value(_.obs.reqs.length)
 
+    val lastRequest = *.focus("Last request").option(_.obs.reqs.lastOption)
+
+    val lastRequestMsg = *.focus("Last request").option(_.obs.reqs.lastOption.map(_.req.req: Any))
+
     val lastTwoRequests = *.focus("Last two requests").compare(_.obs.reqs.last, _.obs.reqs.init.last)
 
     val assertLastTwoRequestsAreEqual = lastTwoRequests.map(_.req).assert.equal(Equal.by_==, implicitly)
 
     def press(k: SimEvent.Keyboard): *.Actions =
       *.action(s"Press ${k.desc}.")(k simulateKeyDownPressUp _.obs.needFocus())
+
+    def documentPress(k: SimEvent.Keyboard): *.Actions =
+      *.action(s"Press ${k.desc}.") { _ =>
+        dispatchEvent(document, "keypress", e => {
+          val o = e.asInstanceOf[js.Dynamic]
+          o.key      = k.key
+          o.location = k.location
+          o.altKey   = k.altKey
+          o.ctrlKey  = k.ctrlKey
+          o.metaKey  = k.metaKey
+          o.shiftKey = k.shiftKey
+          o.repeat   = k.repeat
+          o.code     = k.code
+          o.locale   = k.locale
+          o.keyCode  = k.keyCode
+          o.charCode = k.charCode
+          o.which    = k.which
+        })
+      }
 
     def assertFocusBy(desc: String, f: *.OS => html.Element) =
       *.point(s"$desc must have focus") { os =>
@@ -323,5 +347,8 @@ object TestGlobal {
 
     def assertEditorHasFocus(f: CommonObs.Editor.TestDsl[R, O, S]) =
       assertFocusBy(f.field + " editor", f.editorDom.run(_).orNull)
+
+    def assertLastRequestMsg(msg: Any) =
+      lastRequestMsg.assert(Some(msg))(Equal.by_==, implicitly)
   }
 }

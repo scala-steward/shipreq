@@ -47,8 +47,9 @@ object UpdateContentCmd {
       case LeftRight.Right => ShiftUseCaseStepRight(id)
     }
 
-  implicit def equalForUseCaseStep  : UnivEq[ForUseCaseStep  ] = UnivEq.derive
-  implicit def equalUpdateContentCmd: UnivEq[UpdateContentCmd] = UnivEq.derive
+  implicit def equalForPatchImplications: UnivEq[PatchImplications] = UnivEq.derive
+  implicit def equalForUseCaseStep      : UnivEq[ForUseCaseStep   ] = UnivEq.derive
+  implicit def equalUpdateContentCmd    : UnivEq[UpdateContentCmd ] = UnivEq.derive
 
   // ===================================================================================================================
   object CodecsV4 {

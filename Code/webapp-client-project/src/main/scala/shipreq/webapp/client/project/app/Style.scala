@@ -1838,6 +1838,84 @@ object Style extends StyleSheet.Inline {
         marginRight(1 ex),
       )
     }
+
+    object impGraphEdgeEditor {
+      final val clsDragging     = "ee_d"
+      final val clsDragArrow    = "ee_da"
+      final val clsDragInvalid  = "ee_i"
+      final val clsDragNoOp     = "ee_n"
+      final val clsDragSrc      = "ee_ds"
+      final val clsDragTgt      = "ee_dt"
+      final val clsSelectedEdge = "ee_s"
+      final val clsEdge2        = "ee_2"
+
+      private def arrowColour(colour: String) =
+        styleS(
+          unsafeExt(_ + ">path")(
+            svgStroke :=! colour,
+          ),
+          unsafeExt(_ + ">polygon")(
+            svgStroke :=! colour,
+            svgFill := colour,
+          ),
+        )
+
+      val root = style(
+
+        unsafeChild(s".$clsDragArrow > path")(
+          svgFill := "none",
+          svgStrokeWidth := "3",
+        ),
+
+        // When dragging...
+        unsafeExt(_ + "." + clsDragging)(
+
+          unsafeChild(s"g.node:not(.$clsDragSrc):not(.$clsDragTgt):not(.$clsDragArrow)")(
+            opacity(.33),
+          ),
+          unsafeExt(p => s"$p g.node.$clsDragSrc,$p g.node.$clsDragTgt")(
+            opacity(.9),
+          ),
+
+          // Valid link
+          unsafeExt(_ + ":not(." + clsDragInvalid + "):not(." + clsDragNoOp + ")")(
+            unsafeChild("*")(cursor.alias.important),
+            unsafeChild(s".$clsDragArrow > path")(
+              svgStroke :=! "#00c",
+            ),
+          ),
+
+          // Invalid link
+          unsafeExt(_ + "." + clsDragInvalid)(
+            unsafeChild("*")(cursor.notAllowed.important),
+            unsafeChild(s".$clsDragArrow > path")(
+              svgStroke :=! "#c00",
+            ),
+          ),
+
+          // NoOp link
+          unsafeExt(_ + "." + clsDragNoOp)(
+            unsafeChild("*")(cursor.alias.important),
+            unsafeChild(s".$clsDragArrow > path")(
+              svgStroke :=! "#4449",
+            ),
+          ),
+
+        ),
+
+        // Edge selection
+        unsafeChild(s"g.$clsEdge2:not(.$clsSelectedEdge)")(
+          arrowColour("#0000"),
+        ),
+        unsafeChild(s"g.$clsEdge2:not(.$clsSelectedEdge):hover")(
+          arrowColour("#ffff0018"),
+        ),
+        unsafeChild(s".$clsSelectedEdge")(
+          arrowColour("#f00"),
+        ),
+      )
+
+    }
   }
 
   // ===================================================================================================================
@@ -1935,6 +2013,7 @@ object Style extends StyleSheet.Inline {
     widgets.splitScreen.left,
     widgets.splitScreenCrud.emptyRight,
     widgets.reqSearch.container,
+    widgets.impGraphEdgeEditor.root,
   )
 //  ConsoleIO(_.log(render[String])).unsafePerformIO()
 //  ConsoleIO(_.info(s"Styles: ${Style.register.styles.length}")).unsafePerformIO()
