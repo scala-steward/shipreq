@@ -7,6 +7,7 @@ import japgolly.scalajs.react.vdom.VdomElement
 import org.scalajs.dom.document
 import org.scalajs.dom.raw.SVGSVGElement
 import scala.scalajs.js
+import scala.scalajs.js.timers
 import scala.util.Try
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{Backwards, ErrorMsg, Forwards, MutableRef, SetDiff}
@@ -286,6 +287,7 @@ object ImplicationGraph {
     private var root        = null: SVGSVGElement
     private var point       = null: svg.Point
     private var dragArrow   = null: svg.Element
+    private var dragDelay   = Option.empty[timers.SetTimeoutHandle]
     private val dragSrc     = MutableRef.option[svg.Element]
     private val dragTgt     = MutableRef.option[svg.Element]
 
@@ -448,8 +450,17 @@ object ImplicationGraph {
         dragArrow.setAttribute("d", "")
     }
 
+    private def setDragDelay(newHandle: Option[timers.SetTimeoutHandle]): Unit = {
+      for (old <- dragDelay)
+        timers.clearTimeout(old)
+      dragDelay = newHandle
+    }
+
     private val onEdgeClick: js.Function1[MouseEvent, Unit] = ev => {
       eventLogger(_.debug("onEdgeClick: ", ev))
+
+      setDragDelay(None)
+
       val edge = ev.currentTarget.asSvgEl.parentElement
       if (edge.classList.contains(*.clsSelectedEdge)) {
         // De-select
@@ -467,6 +478,8 @@ object ImplicationGraph {
 
     private val onEdgeDblClick: js.Function1[MouseEvent, Unit] = ev => {
       eventLogger(_.debug("onEdgeDblClick: ", ev))
+
+      setDragDelay(None)
 
       // Prevent double-clicks being interpreted by ReactSvgPanZoom
       ev.stopPropagation()
@@ -503,9 +516,18 @@ object ImplicationGraph {
           // Normally clicking on a node shouldn't trigger this.
 
           val ds = ev.currentTarget.asSvgEl
-          setDragSrc(Some(ds))
-          dragArrow.setAttribute("d", "")
-          root.classList.add(*.clsDragging)
+
+          def action() = {
+            setDragDelay(None)
+            setDragSrc(Some(ds))
+            dragArrow.setAttribute("d", "")
+            root.classList.add(*.clsDragging)
+          }
+
+          if (runningInUnitTest)
+            action()
+          else
+            setDragDelay(Some(timers.setTimeout(160)(action())))
         }
       }
 
@@ -703,6 +725,7 @@ object ImplicationGraph {
     private def reset(): Unit = {
       root.classList.remove(*.clsDragging)
       root.classList.remove(*.clsDragInvalid)
+      setDragDelay(None)
       setDragSrc(None)
       setDragTgt(None)
       dragArrow.setAttribute("d", "")
