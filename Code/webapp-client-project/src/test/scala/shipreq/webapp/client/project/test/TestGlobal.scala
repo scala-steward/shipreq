@@ -4,6 +4,7 @@ import japgolly.scalajs.react.test.SimEvent
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import java.time.{Duration, Instant}
 import org.scalajs.dom.{document, html}
+import scala.scalajs.js
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{Allow, ErrorMsg, JsTimers, PotentialChange, Retries}
 import shipreq.webapp.base.data.Project
@@ -311,6 +312,25 @@ object TestGlobal {
 
     def press(k: SimEvent.Keyboard): *.Actions =
       *.action(s"Press ${k.desc}.")(k simulateKeyDownPressUp _.obs.needFocus())
+
+    def documentPress(k: SimEvent.Keyboard): *.Actions =
+      *.action(s"Press ${k.desc}.") { _ =>
+        dispatchEvent(document, "keypress", e => {
+          val o = e.asInstanceOf[js.Dynamic]
+          o.key      = k.key
+          o.location = k.location
+          o.altKey   = k.altKey
+          o.ctrlKey  = k.ctrlKey
+          o.metaKey  = k.metaKey
+          o.shiftKey = k.shiftKey
+          o.repeat   = k.repeat
+          o.code     = k.code
+          o.locale   = k.locale
+          o.keyCode  = k.keyCode
+          o.charCode = k.charCode
+          o.which    = k.which
+        })
+      }
 
     def assertFocusBy(desc: String, f: *.OS => html.Element) =
       *.point(s"$desc must have focus") { os =>

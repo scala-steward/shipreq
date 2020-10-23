@@ -250,6 +250,14 @@ object ImplicationGraph {
       private final val arrowSize = 6
       final val arrowPath = "l-" + arrowSize + ",-" + arrowSize + " l" + arrowSize + "," + arrowSize + " l-" + arrowSize + "," + arrowSize
 
+      private val edgeIdRegex = "^(.+?)--(.+)$".r
+
+      def edgeIds(edge: svg.Element): (String, String) = {
+        edge.id match {
+          case edgeIdRegex(from, to) => (from, to)
+        }
+      }
+
       val logger      = LoggerJs.off // LoggerJs.devOnly.prefixedWith("[EE] ")
       val eventLogger = LoggerJs.off
     }
@@ -292,6 +300,9 @@ object ImplicationGraph {
     private def enable(): Unit = {
       logger(_.debug("Enabling..."))
       point = root.createSVGPoint()
+
+      // Update global
+      document.addEventListener("keypress", onKeyPress)
 
       // Update root
       root.classList.add(*.root.className.value)
@@ -347,6 +358,9 @@ object ImplicationGraph {
     private def disable(): Unit = {
       logger(_.debug("Disabling..."))
       point = null
+
+      // Uninstall from global
+      document.removeEventListener("keypress", onKeyPress)
 
       // Uninstall from root
       root.classList.remove(*.root.className.value)
@@ -448,6 +462,26 @@ object ImplicationGraph {
 
       // Prevent double-clicks being interpreted by ReactSvgPanZoom
       ev.stopPropagation()
+    }
+
+    private val onKeyPress: js.Function1[KeyboardEvent, Unit] = ev => {
+      eventLogger(_.debug("onKeyPress: ", ev))
+      if (root ne null) {
+        ev.key.toUpperCase match {
+
+          case "DELETE" =>
+            for {
+              edge <- Option(root.querySelector("." + *.clsSelectedEdge).asSvgEl)
+              args <- this.args
+            } yield {
+              ev.stopPropagation()
+              val (from, to) = edgeIds(edge)
+              deleteEdge(args, from, to)
+            }
+
+          case _ =>
+        }
+      }
     }
 
     private val onNodeMouseDown: js.Function1[MouseEvent, Unit] = ev => {
@@ -554,9 +588,15 @@ object ImplicationGraph {
       ep.lookup(p).mustExistElse(err)
     }
 
+    private def isEitherDead(p: Project, a: Req, b: Req): Boolean = {
+      assert(a ne b)
+      val reqTypes = p.config.reqTypes
+      (a.live(reqTypes) is Dead) || (b.live(reqTypes) is Dead)
+    }
+
     private def newEdgeValue(p: Project, reqSrc: Req, idTgt: String): Any \/ SetDiff[ReqId] = {
       val reqTgt = needReq(p, idTgt)
-      if ((reqSrc.live(p.config.reqTypes) is Dead) || (reqTgt.live(p.config.reqTypes) is Dead))
+      if (isEitherDead(p, reqSrc, reqTgt))
         -\/(())
       else {
         val initialValues = p.content.implications.forwards(reqSrc.id)
@@ -586,6 +626,22 @@ object ImplicationGraph {
           // \/-(None) = No change to make
           // -\/(_)    = Invalid change
           reset()
+      }
+    }
+
+    private def deleteEdge(args: Args, idStrFrom: String, idStrTo: String): Unit = {
+      logger(_.info(s"Delete edge: $idStrFrom -> $idStrTo"))
+
+      val p      = projectCB.runNow()
+      val reqSrc = needReq(p, idStrFrom)
+      val reqTgt = needReq(p, idStrTo)
+
+      if (!isEitherDead(p, reqSrc, reqTgt)) {
+        val patch  = NonEmpty.force(SetDiff(removed = Set1(reqTgt.id), added = Set.empty))
+        val cmd    = UpdateContentCmd.PatchImplications(reqSrc.id, Forwards, patch)
+        val commit = args.ssp(cmd)
+        val proc   = args.asyncW(cmd).onFailureShowAndForget(commit)
+        proc.runNow()
       }
     }
 

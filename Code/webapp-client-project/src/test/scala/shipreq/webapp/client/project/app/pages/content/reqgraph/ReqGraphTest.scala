@@ -1,5 +1,6 @@
 package shipreq.webapp.client.project.app.pages.content.reqgraph
 
+import japgolly.scalajs.react.test.SimEvent.{Keyboard => KB}
 import shipreq.base.util.Forwards
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.Event
@@ -95,7 +96,7 @@ object ReqGraphTest extends TestSuite {
     )
   }
 
-  private def newEdgeCmd(from: ReqId, to: ReqId): UpdateContentCmd.PatchImplications =
+  private def newEdgeCmd(from: ReqId, to: ReqId) =
     UpdateContentCmd.PatchImplications(from, Forwards, nesd()(to))
 
   private def testEdgeEditorNewEdgeOk()(implicit tp: TestPath): Unit = {
@@ -147,6 +148,38 @@ object ReqGraphTest extends TestSuite {
     )
   }
 
+  private def delEdgeCmd(from: ReqId, to: ReqId) =
+    UpdateContentCmd.PatchImplications(from, Forwards, nesd(to)())
+
+  private def testEdgeEditorDelEdgeOk()(implicit tp: TestPath): Unit = {
+    import SampleProject3._, Values._
+    runActions(project, wwPrep.forSP3)(
+
+      graph.clickEdge("MF-1" -> "FR-2") +> graph.assertSelectedEdge("MF-1" -> "FR-2")
+        >> graph.clickEdge("MF-1" -> "FR-2") +> graph.selectedEdgeId.assert(None)
+        >> graph.clickEdge("MF-1" -> "FR-2") +> graph.assertSelectedEdge("MF-1" -> "FR-2")
+
+        >> graph.clickEdge("MF-12" -> "FR-1")
+        +> graph.assertSelectedEdge("MF-12" -> "FR-1")
+        +> graph.dragState.assert(DragState.None)
+
+        >> global.documentPress(KB.Delete)
+        +> global.requestCount.assert(1)
+        +> global.assertLastRequestMsg(delEdgeCmd(mfs(12), frs(1)))
+    )
+  }
+
+  private def testEdgeEditorDelEdgeNoOp(fromTo: (String, String) = null)(implicit tp: TestPath): Unit = {
+    import SampleProject3._
+    val test = global.documentPress(KB.Delete) +> global.requestCount.assert(0)
+    runActions(project, wwPrep.forSP3)(
+      Option(fromTo) match {
+        case Some(e) => graph.clickEdge(e) >> test
+        case None    => test
+      }
+    )
+  }
+
   override def tests = Tests {
     "coloursWithDeadTag" - testColoursWithDeadTag()
     "edgeEditor" - {
@@ -157,6 +190,12 @@ object ReqGraphTest extends TestSuite {
         "cycle"   - testEdgeEditorNewEdgeInvalid("FR-2", "MF-1")
         "noop"    - testEdgeEditorNewEdgeNoOp("MF-1", "FR-2")
         "self"    - testEdgeEditorNewEdgeSelf()
+      }
+      "delEdge" - {
+        "ok"      - testEdgeEditorDelEdgeOk()
+        "empty"   - testEdgeEditorDelEdgeNoOp()
+        "deadSrc" - testEdgeEditorDelEdgeNoOp("MF-19" -> "FR-1")
+        "deadTgt" - testEdgeEditorDelEdgeNoOp("FR-1" -> "CO-2")
       }
     }
   }
