@@ -228,8 +228,10 @@ object ImplicationGraph {
     implicit def reusabilityArgs: Reusability[Args] =
       Reusability.derive
 
+    import org.scalajs.dom._
+    import shipreq.webapp.client.project.app.Style.widgets.{impGraphEdgeEditor => *}
+
     private object StaticInternals {
-      import org.scalajs.dom._
 
       implicit class EEExt_EventTarget(private val self: EventTarget) extends AnyVal {
         def asSvgEl = self.asInstanceOf[svg.Element]
@@ -251,6 +253,10 @@ object ImplicationGraph {
       val logger      = LoggerJs.off // LoggerJs.devOnly.prefixedWith("[EE] ")
       val eventLogger = LoggerJs.off
     }
+
+    // Exposed for tests
+    def getDragArrow(root: svg.Element) =
+      Option(root.querySelector(s".${*.clsDragArrow} > path").asInstanceOf[svg.Path])
   }
 
   private final class EdgeEditor(projectCB: CallbackTo[Project]) {
@@ -322,7 +328,7 @@ object ImplicationGraph {
 
       // Find or create drag arrow
       dragArrow =
-        Option(root.querySelector(s".${*.clsDragArrow} > path").asSvgEl).getOrElse {
+        EdgeEditor.getDragArrow(root).getOrElse {
           val path = document.createElementNS(SvgNS, "path").asSvgEl
           path.onmousemove = onDragArrowMouseMove
 

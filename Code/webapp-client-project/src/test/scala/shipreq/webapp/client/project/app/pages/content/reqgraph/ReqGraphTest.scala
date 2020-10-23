@@ -1,16 +1,20 @@
 package shipreq.webapp.client.project.app.pages.content.reqgraph
 
+import shipreq.base.util.Forwards
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.Event
+import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.base.test.TestState._
+import shipreq.webapp.base.test.UnsafeTypes.nesd
 import shipreq.webapp.base.test._
 import shipreq.webapp.client.project.app.ProjectSpaTestDsl
 import shipreq.webapp.client.project.app.pages.root.Routes.Page
-import shipreq.webapp.client.project.test.{PrepareEnv, TestWebWorkerClient}
+import shipreq.webapp.client.project.test._
 import utest._
 import utest.framework.TestPath
 
 object ReqGraphTest extends TestSuite {
+  import ImpGraphObs.DragState
   import ReqGraphTestDsl.{savedViews => _, _}
   import ReqGraphTestDsl.savedViews.{* => _, _}
 
@@ -40,15 +44,6 @@ object ReqGraphTest extends TestSuite {
     import TestWebWorkerClient.Prep
 
     def forSP3: Prep = _.respondToAllGraphsWith(Svg(SampleProject3.reqGraph.showDead))
-  }
-
-  override def tests = Tests {
-    "coloursWithDeadTag" - testColoursWithDeadTag()
-    "edgeEditor" - {
-      "newEdge" - {
-        "ok" - testEdgeEditorNewEdgeOk()
-      }
-    }
   }
 
   private def testColoursWithDeadTag()(implicit tp: TestPath): Unit = {
@@ -100,13 +95,29 @@ object ReqGraphTest extends TestSuite {
     )
   }
 
-  private def testEdgeEditorNewEdgeOk()(implicit tp: TestPath): Unit = {
-    import SampleProject3._
+  private def newEdgeCmd(from: ReqId, to: ReqId): UpdateContentCmd.PatchImplications =
+    UpdateContentCmd.PatchImplications(from, Forwards, nesd()(to))
 
+  private def testEdgeEditorNewEdgeOk()(implicit tp: TestPath): Unit = {
+    import SampleProject3._, Values._
     runActions(project, wwPrep.forSP3)(
-      global.disableAutoResponse
-        >> graph.dragNewEdge("MF-17" -> "MF-18")
+
+      graph.dragNewEdge("MF-17" -> "MF-18")
+        +> graph.dragState.assert(DragState.Valid)
+
+        >> graph.dragEnd("MF-18")
         +> global.requestCount.assert(1)
+        +> global.assertLastRequestMsg(newEdgeCmd(mfs(17), mfs(18)))
+        +> graph.dragState.assert(DragState.None)
     )
+  }
+
+  override def tests = Tests {
+    "coloursWithDeadTag" - testColoursWithDeadTag()
+    "edgeEditor" - {
+      "newEdge" - {
+        "ok" - testEdgeEditorNewEdgeOk()
+      }
+    }
   }
 }

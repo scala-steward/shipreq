@@ -290,7 +290,7 @@ object TestGlobal {
   final class TestDslWithObs[R, O, S](dsl   : Dsl[Id, R, O, S, String])
                                      (getRef: R => TestGlobal,
                                       getObs: O => Obs) extends TestDsl(dsl)(getRef) {
-    protected final implicit def autoObs(o: O): Obs =
+    protected implicit def autoObs(o: O): Obs =
       getObs(o)
 
     val activeElement = *.focus("activeElement").value(_.obs.activeElement.orNull)
@@ -302,6 +302,8 @@ object TestGlobal {
     val requestCount = *.focus("Server requests").value(_.obs.reqs.length)
 
     val lastRequest = *.focus("Last request").option(_.obs.reqs.lastOption)
+
+    val lastRequestMsg = *.focus("Last request").option(_.obs.reqs.lastOption.map(_.req.req: Any))
 
     val lastTwoRequests = *.focus("Last two requests").compare(_.obs.reqs.last, _.obs.reqs.init.last)
 
@@ -325,5 +327,8 @@ object TestGlobal {
 
     def assertEditorHasFocus(f: CommonObs.Editor.TestDsl[R, O, S]) =
       assertFocusBy(f.field + " editor", f.editorDom.run(_).orNull)
+
+    def assertLastRequestMsg(msg: Any) =
+      lastRequestMsg.assert(Some(msg))(Equal.by_==, implicitly)
   }
 }

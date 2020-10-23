@@ -1,10 +1,11 @@
 package shipreq.webapp.client.project.test
 
 import org.scalajs.dom
-import org.scalajs.dom.document
+import org.scalajs.dom.{document, svg}
 import scala.scalajs.js
 import shipreq.webapp.base.test.TestState._
-import shipreq.webapp.client.project.widgets.GraphComponent
+import shipreq.webapp.client.project.app.Style.widgets.{impGraphEdgeEditor => *}
+import shipreq.webapp.client.project.widgets.{GraphComponent, ImplicationGraph}
 
 final class ImpGraphObs($: DomZipperJs) {
   import ImpGraphObs._
@@ -12,6 +13,27 @@ final class ImpGraphObs($: DomZipperJs) {
   //  println()
   //  println($.outerHTML)
   //  println()
+
+  private val rootDom = $.domAs[svg.SVG]
+
+  val dragState: DragState =
+    if (!rootDom.classList.contains(*.clsDragging))
+      DragState.None
+    else {
+      val dragArrow = ImplicationGraph.EdgeEditor.getDragArrow(rootDom)
+
+      val dragArrowPath =
+        dragArrow
+          .flatMap(p => Option(p.getAttribute("d")))
+          .getOrElse("")
+
+      if (dragArrowPath.isEmpty)
+        DragState.Invisible
+      else if (rootDom.classList.contains(*.clsDragInvalid))
+        DragState.Invalid
+      else
+        DragState.Valid
+    }
 
   val nodes = $.collect0n("g.node").map(new Node(_))
   val edges = $.collect0n("g.edge").map(new Edge(_))
@@ -45,6 +67,17 @@ object ImpGraphObs {
     val id = dom.id
   }
 
+  sealed trait DragState
+
+  object DragState {
+    case object None      extends DragState
+    case object Invisible extends DragState
+    case object Valid     extends DragState
+    case object Invalid   extends DragState
+
+    implicit def univEq: UnivEq[DragState] = UnivEq.derive
+  }
+
   private def dispatchEvent(target: dom.Node, eventName: String): Unit = {
     val name = eventName.toLowerCase
     val interface =
@@ -65,9 +98,10 @@ object ImpGraphObs {
     private implicit def autoObs(o: O) = getObs(o)
 
     val visible   = dsl.focus("Graph is visible").value(_.obs.isDefined)
-    val nodeIds   = dsl.focus("node ids").collection(_.obs.map(_.nodeIds).getOrElse(Vector.empty))
-    val edgeIds   = dsl.focus("edge ids").collection(_.obs.map(_.edgeIds).getOrElse(Vector.empty))
-    val edgeIdsNE = dsl.focus("edge ids (non-empty)").collection(_.obs.map(_.edgeIds.filter(_.nonEmpty)).getOrElse(Vector.empty))
+    val dragState = dsl.focus("DragState").value(_.obs.dragState)
+    val nodeIds   = dsl.focus("Node ids").collection(_.obs.map(_.nodeIds).getOrElse(Vector.empty))
+    val edgeIds   = dsl.focus("Edge ids").collection(_.obs.map(_.edgeIds).getOrElse(Vector.empty))
+    val edgeIdsNE = dsl.focus("Edge ids (non-empty)").collection(_.obs.map(_.edgeIds.filter(_.nonEmpty)).getOrElse(Vector.empty))
 
     val invariants: dsl.Invariants = (
       nodeIds.assert.distinct
@@ -88,7 +122,7 @@ object ImpGraphObs {
 
     def dragNewEdge(fromAndTo: (String, String)): dsl.Actions = {
       val (from, to) = fromAndTo
-      (dragStart(from) >> dragOver(to) >> dragEnd(to)).group(s"dragNewEdge $from -> $to")
+      (dragStart(from) >> dragOver(to)).group(s"dragNewEdge $from -> $to")
     }
   }
 
