@@ -283,13 +283,14 @@ object ImplicationGraph {
     import EdgeEditor.Args
     import EdgeEditor.StaticInternals._
 
-    private var args        = Option.empty[Args]
-    private var root        = null: SVGSVGElement
-    private var point       = null: svg.Point
-    private var dragArrow   = null: svg.Element
-    private var dragDelay   = Option.empty[timers.SetTimeoutHandle]
-    private val dragSrc     = MutableRef.option[svg.Element]
-    private val dragTgt     = MutableRef.option[svg.Element]
+    private var args          = Option.empty[Args]
+    private var root          = null: SVGSVGElement
+    private var point         = null: svg.Point
+    private var dragArrow     = null: svg.Element
+    private var dragDelay     = Option.empty[timers.SetTimeoutHandle]
+    private val dragSrc       = MutableRef.option[svg.Element]
+    private val dragTgt       = MutableRef.option[svg.Element]
+    private var lastMouseUpMs = 0L
 
     def enrich(root: SVGSVGElement, args: Option[Args]): Unit = {
       logger(_.debug("Enriching: ", root))
@@ -324,6 +325,7 @@ object ImplicationGraph {
         val n = n_.asSvgEl
         n.onmousedown = onNodeMouseDown
         n.onmousemove = onNodeMouseMove
+        n.onclick = onNodeClick
       }
 
       // Update edges
@@ -382,6 +384,7 @@ object ImplicationGraph {
         val n = n_.asSvgEl
         n.onmousedown = null
         n.onmousemove = null
+        n.onclick = null
       }
 
       // Uninstall from edges
@@ -485,6 +488,19 @@ object ImplicationGraph {
       ev.stopPropagation()
     }
 
+    private val onNodeClick: js.Function1[MouseEvent, Unit] = ev => {
+      eventLogger(_.debug("onNodeClick: ", ev))
+
+      // Prevent mouseup being treated as a click as well
+      if (!runningInUnitTest) {
+        val msSinceLastMouseUp = System.currentTimeMillis() - lastMouseUpMs
+        if (msSinceLastMouseUp <= 200) {
+          ev.preventDefault()
+          ev.stopPropagation()
+        }
+      }
+    }
+
     private val onKeyPress: js.Function1[KeyboardEvent, Unit] = ev => {
       eventLogger(_.debug("onKeyPress: ", ev))
       if (root ne null) {
@@ -527,7 +543,7 @@ object ImplicationGraph {
           if (runningInUnitTest)
             action()
           else
-            setDragDelay(Some(timers.setTimeout(160)(action())))
+            setDragDelay(Some(timers.setTimeout(200)(action())))
         }
       }
 
@@ -615,7 +631,9 @@ object ImplicationGraph {
           }
 
           // Prevent node click navigating to ReqDetail
+          ev.preventDefault()
           ev.stopPropagation()
+          lastMouseUpMs = System.currentTimeMillis()
         }
       }
     }
