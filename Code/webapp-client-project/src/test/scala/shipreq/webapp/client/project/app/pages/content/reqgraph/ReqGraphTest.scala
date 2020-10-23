@@ -112,11 +112,51 @@ object ReqGraphTest extends TestSuite {
     )
   }
 
+  private def testEdgeEditorNewEdgeInvalid(from: String, to: String)(implicit tp: TestPath): Unit = {
+    import SampleProject3._
+    runActions(project, wwPrep.forSP3)(
+
+      graph.dragNewEdge(from -> to)
+        +> graph.dragState.assert(DragState.Invalid)
+
+        >> graph.dragEnd(to)
+        +> global.requestCount.assert(0)
+        +> graph.dragState.assert(DragState.None)
+    )
+  }
+
+  private def testEdgeEditorNewEdgeNoOp(from: String, to: String)(implicit tp: TestPath): Unit = {
+    import SampleProject3._
+    runActions(project, wwPrep.forSP3)(
+
+      graph.dragNewEdge(from -> to)
+        +> graph.dragState.assert(DragState.Valid)
+
+        >> graph.dragEnd(to)
+        +> global.requestCount.assert(0)
+        +> graph.dragState.assert(DragState.None)
+    )
+  }
+
+  private def testEdgeEditorNewEdgeSelf()(implicit tp: TestPath): Unit = {
+    import SampleProject3._
+    val id = "MF-1"
+    runActions(project, wwPrep.forSP3)(
+      graph.dragNewEdge(id -> id)
+        +> graph.dragState.assert(DragState.Invisible)
+    )
+  }
+
   override def tests = Tests {
     "coloursWithDeadTag" - testColoursWithDeadTag()
     "edgeEditor" - {
       "newEdge" - {
-        "ok" - testEdgeEditorNewEdgeOk()
+        "ok"      - testEdgeEditorNewEdgeOk()
+        "deadSrc" - testEdgeEditorNewEdgeInvalid("MF-19", "MF-18")
+        "deadTgt" - testEdgeEditorNewEdgeInvalid("MF-17", "MF-19")
+        "cycle"   - testEdgeEditorNewEdgeInvalid("FR-2", "MF-1")
+        "noop"    - testEdgeEditorNewEdgeNoOp("MF-1", "FR-2")
+        "self"    - testEdgeEditorNewEdgeSelf()
       }
     }
   }

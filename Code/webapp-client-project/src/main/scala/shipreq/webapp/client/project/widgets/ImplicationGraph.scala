@@ -460,18 +460,10 @@ object ImplicationGraph {
           // TODO would be a good idea to have a delay before we interpret mouse down as an edge creation command.
           // Normally clicking on a node shouldn't trigger this.
 
-          val ds     = ev.currentTarget.asSvgEl
-          val p      = projectCB.runNow()
-          val reqSrc = needReq(p, ds.id)
-          val live   = reqSrc.live(p.config.reqTypes)
-          val legal  = live.is(Live)
-
-          if (legal) {
-            setDragSrc(Some(ds))
-            dragArrow.setAttribute("d", "")
-            root.classList.add(*.clsDragging)
-          }
-
+          val ds = ev.currentTarget.asSvgEl
+          setDragSrc(Some(ds))
+          dragArrow.setAttribute("d", "")
+          root.classList.add(*.clsDragging)
         }
       }
 
@@ -564,7 +556,7 @@ object ImplicationGraph {
 
     private def newEdgeValue(p: Project, reqSrc: Req, idTgt: String): Any \/ SetDiff[ReqId] = {
       val reqTgt = needReq(p, idTgt)
-      if (reqTgt.live(p.config.reqTypes) is Dead)
+      if ((reqSrc.live(p.config.reqTypes) is Dead) || (reqTgt.live(p.config.reqTypes) is Dead))
         -\/(())
       else {
         val initialValues = p.content.implications.forwards(reqSrc.id)
