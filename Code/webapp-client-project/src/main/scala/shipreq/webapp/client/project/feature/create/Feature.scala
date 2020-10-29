@@ -108,15 +108,15 @@ object Feature {
 
     /** An instance of this implies that Editability has already established.
       */
-    final class ForEditor[-A, +V](val editor: Editor[A, V], val async: AsyncState, emptyArgs: A) {
+    final class ForEditor[-A, +V](val editor: Editor[A, V], val async: AsyncState) {
 
       /** impure */
       def render(args: A): VdomElement =
         editor.render(async, args)()
 
       /** impure */
-      def value(): Editor.Value[V] =
-        editor.value(emptyArgs)
+      def value(args: A): Editor.Value[V] =
+        editor.value(args)
     }
 
     final case class ForFields[-FK <: FieldKey](state      : State.ForFields[FK],
@@ -125,7 +125,7 @@ object Feature {
 
       def apply(f: FK)(newEditor: => Editor[f.Args, f.Value]): Permission.DeniedOr[ForEditor[f.Args, f.Value]] =
         editability(f)(
-          new ForEditor(state(f).getOrElse(newEditor), async, NewEditorArgs.empty))
+          new ForEditor(state(f).getOrElse(newEditor), async))
     }
 
     final case class ForProject(state      : State.ForProject,
@@ -161,8 +161,7 @@ object Feature {
         rowAccess.modState(_ - field)
     }
 
-    final case class ForProject(static              : NewEditor.Static,
-                                stateAccess         : StateAccessPure[State.ForProject],
+    final case class ForProject(stateAccess         : StateAccessPure[State.ForProject],
                                 async               : AsyncFeature.Write.D0[AsyncError],
                                 sspCreateContent    : ServerSideProcInvoker[CreateContentCmd, ErrorMsg, NewEvents],
                                 sspCreateManualIssue: ServerSideProcInvoker[ManualIssueCmd, ErrorMsg, NewEvents],
@@ -180,7 +179,7 @@ object Feature {
       def apply(row: RowKey): ForRow[row.FieldKey, row.Cmd] =
         ForRow[row.FieldKey, row.Cmd](
           stateAccess.zoomStateL(State.ForProject.untyped ^|-> Optics.mapValueEmpty(row, State.ForFields.empty)(_.isEmpty)),
-          NewEditor.forRow(static, row),
+          NewEditor.forRow(row),
           async,
           foldCmd(row))
 

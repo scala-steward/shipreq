@@ -8,13 +8,14 @@ import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.feature.AsyncFeature
+import shipreq.webapp.base.feature.{AsyncFeature, PreviewFeature}
 import shipreq.webapp.base.filter.{CompiledFilter, Filter}
 import shipreq.webapp.base.issue.Issues
 import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.client.project.app.Style.{issues => *}
 import shipreq.webapp.client.project.app.pages.root.Routes
+import shipreq.webapp.client.project.feature.create.Feature.PreviewId
 import shipreq.webapp.client.project.feature.{CreateFeature, EditorFeature}
 import shipreq.webapp.client.project.widgets.{FilterEditor, ProjectWidgets}
 
@@ -24,6 +25,7 @@ object IssuesPage {
                                pxRenderFeature : Px[FilterDead => RenderFeature.ForProject],
                                pxPlainText     : Px[PlainText.ForProject.NoCtx],
                                pxProjectWidgets: Px[ProjectWidgets.NoCtx],
+                               pxTextSearch    : Px[TextSearch],
                                pxFilterCompiler: Px[Filter.Valid.Compiler],
                                routerCtl       : Routes.RouterCtl,
                                cmdInvoker      : Action.Cmd ~=> Callback) {
@@ -46,10 +48,11 @@ object IssuesPage {
       cmdInvoker)
   }
 
-  final case class Props(state   : StateSnapshot[State],
-                         creator : CreateFeature.ReadWrite.ForManualIssueR,
-                         editor  : EditorFeature.ReadWrite.ForProject,
-                         cmdAsync: AsyncFeature.Read.D1[Action.Cmd, ErrorMsg])
+  final case class Props(state    : StateSnapshot[State],
+                         creator  : CreateFeature.ReadWrite.ForManualIssueR,
+                         editor   : EditorFeature.ReadWrite.ForProject,
+                         previewRW: PreviewFeature.ReadWrite.Composite[PreviewId],
+                         cmdAsync : AsyncFeature.Read.D1[Action.Cmd, ErrorMsg])
 
   @Lenses
   final case class State(newIssue    : NewIssue.State,
@@ -94,35 +97,45 @@ object IssuesPage {
           cb))
 
     def render(p: Props): VdomElement = {
-      val project = pxProject.value()
+      val project        = pxProject.value()
+      def projectWidgets = pxProjectWidgets.value()
+      def textSearch     = pxTextSearch.value()
+
+      def renderNew(p: Props) =
+        p.creator(CreateFeature.FieldKey.ManualIssue).toOption.map(createE =>
+          NewIssue.Props(
+            previewRW      = p.previewRW,
+            project        = project,
+            textSearch     = textSearch,
+            projectWidgets = projectWidgets,
+            state          = p.state.zoomStateL(State.newIssue),
+            createR        = p.creator,
+            createE        = createE,
+          ).render)
+
+      def renderEmpty(p: Props) =
+        <.div(
+          renderNew(p),
+          <.div(*.emptyCont, NoContent.render))
+
+      def renderContent(p: Props, issues: Issues, project: Project) = {
+        val filteredOut = project.issues.vector.length - issues.vector.length
+
+        <.div(
+          <.div(*.pageRow1,
+            <.div(*.pageNew, renderNew(p)),
+            <.div(Summary.Props(issues.stats, filteredOut).render)),
+          <.div(*.pageRow2,
+            <.div(*.pageSort),
+            <.div(FilterEditor.Props(p.state.value.filterEditor, project, filterUpdateFn).render)),
+          table.component(Table.Props(issues, p.editor, p.cmdAsync)))
+      }
+
       val issues = project.issues
       if (issues.isEmpty)
         renderEmpty(p)
       else
         renderContent(p, pxFilteredIssues.value(), project)
-    }
-
-    private def renderNew(p: Props) =
-      p.creator(CreateFeature.FieldKey.ManualIssue)
-        .toOption
-        .map(NewIssue.Props(p.state.zoomStateL(State.newIssue), p.creator, _).render)
-
-    private def renderEmpty(p: Props) =
-      <.div(
-        renderNew(p),
-        <.div(*.emptyCont, NoContent.render))
-
-    private def renderContent(p: Props, issues: Issues, project: Project) = {
-      val filteredOut = project.issues.vector.length - issues.vector.length
-
-      <.div(
-        <.div(*.pageRow1,
-          <.div(*.pageNew, renderNew(p)),
-          <.div(Summary.Props(issues.stats, filteredOut).render)),
-        <.div(*.pageRow2,
-          <.div(*.pageSort),
-          <.div(FilterEditor.Props(p.state.value.filterEditor, project, filterUpdateFn).render)),
-        table.component(Table.Props(issues, p.editor, p.cmdAsync)))
     }
   }
 }

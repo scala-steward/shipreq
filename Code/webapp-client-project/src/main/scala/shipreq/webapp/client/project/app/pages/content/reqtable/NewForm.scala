@@ -7,10 +7,10 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.data.{CustomReqType, ExternalPubid, ReqType, StaticReqType}
-import shipreq.webapp.base.feature.EditControlsFeature
+import shipreq.webapp.base.data.{CustomReqType, ExternalPubid, Project, ReqType, StaticReqType}
+import shipreq.webapp.base.feature.{EditControlsFeature, PreviewFeature}
 import shipreq.webapp.base.protocol.websocket.CreateContentCmd
-import shipreq.webapp.base.text.{PlainText, Text}
+import shipreq.webapp.base.text.{PlainText, Text, TextSearch}
 import shipreq.webapp.base.ui.Toast
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Table => SemTable}
 import shipreq.webapp.client.project.app.Style.reqtable.{creation => *}
@@ -18,8 +18,9 @@ import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.feature.CreateFeature
 import shipreq.webapp.client.project.feature.CreateFeature.FieldKey
 import shipreq.webapp.client.project.feature.SavedViewFeature.{ColumnLogic, ColumnPlus}
+import shipreq.webapp.client.project.feature.create.Feature.PreviewId
 import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.widgets.CloseButton
+import shipreq.webapp.client.project.widgets.{CloseButton, ProjectWidgets}
 
 object NewForm {
 
@@ -117,14 +118,19 @@ sealed trait NewForm {
   protected def createAndCloseButtonLabel(i: Input): String =
     createButtonLabel(i) + " and close"
 
-  sealed case class Props(input        : Input,
-                          activeColumns: NonEmptyVector[ColumnPlus],
-                          createFeature: CreateFeature.ReadWrite.ForRow[FK, CreateContentCmd],
-                          routerCtl    : RouterCtl[ExternalPubid],
-                          toast        : Toast,
-                          close        : Callback) {
+  sealed case class Props(previewRW     : PreviewFeature.ReadWrite.Composite[PreviewId],
+                          project       : Project,
+                          plainText     : PlainText.ForProject.AnyCtx,
+                          textSearch    : TextSearch,
+                          projectWidgets: ProjectWidgets.NoCtx,
+                          input         : Input,
+                          activeColumns : NonEmptyVector[ColumnPlus],
+                          createFeature : CreateFeature.ReadWrite.ForRow[FK, CreateContentCmd],
+                          routerCtl     : RouterCtl[ExternalPubid],
+                          toast         : Toast,
+                          close         : Callback) {
 
-    val editableCols: NonEmptyVector[(ColumnPlus, Editor)] =
+    lazy val editableCols: NonEmptyVector[(ColumnPlus, Editor)] =
       NonEmptyVector.force( // TODO test with mandatory columns only
         activeColumns
           .iterator
@@ -135,28 +141,38 @@ sealed trait NewForm {
           .filterDefined
           .toVector)
 
-    val autoFocusIdx: Int =
+    lazy val autoFocusIdx: Int =
       editableCols.whole.indexWhere(_._1.column ==* Column.Title).max(0)
 
-    def render: VdomElement = Component(this)
-  }
+    /** @return None if any fields have invalid contents */
+    lazy val validOutput: Option[Output] = {
+      val es = editableCols.iterator.map(_._2)
 
-  /** impure
-    * @return None if any fields have invalid contents
-    */
-  private def validOutput(es: Iterator[Editor]): Option[Output] = {
-    @tailrec
-    def go(o: Output): Option[Output] =
-      if (es.isEmpty)
-        Some(o)
-      else {
-        val e = es.next()
-        e.value.value() match {
-          case \/-(v) => go(e.withValue[FieldValue](v) :: o)
-          case -\/(_) => None // Invalidity found -- abort everything
+      @tailrec
+      def go(o: Output): Option[Output] =
+        if (es.isEmpty)
+          Some(o)
+        else {
+          val e = es.next()
+
+          val args = CreateFeature.EditorArgs.empty(e.field)(
+            previewRW      = previewRW,
+            project        = project,
+            plainText      = plainText,
+            textSearch     = textSearch,
+            projectWidgets = projectWidgets,
+          )
+
+          e.value.value(args) match {
+            case \/-(v) => go(e.withValue[FieldValue](v) :: o)
+            case -\/(_) => None // Invalidity found -- abort everything
+          }
         }
-      }
-    go(Nil)
+
+      go(Nil)
+    }
+
+    def render: VdomElement = Component(this)
   }
 
   final class Backend($: BackendScope[Props, Unit]) {
@@ -186,7 +202,7 @@ sealed trait NewForm {
         p.createFeature.asyncInProgress
 
       val createAnd: Option[Callback => Callback] =
-        validOutput(p.editableCols.iterator.map(_._2))
+        p.validOutput
           .flatMap(createCmd(p.input, _))
           .map { cmd =>
             onSuccess => p.createFeature.create(cmd, notifyUserOfCreation(p, _) >> onSuccess)
@@ -198,26 +214,30 @@ sealed trait NewForm {
       val createAndCloseForm: Option[Callback] =
         createAnd.map(_(p.close))
 
-      val renderArgsWithoutAutoFocus =
-        CreateFeature.EditorArgs(
-          abort         = Some(p.close),
-          abortVerb     = "close",
-          autoFocus     = false,
-          commit        = createAndCloseForm,
-          commitVerb    = "create and close",
-          extraControls = EditControlsFeature.ExtraControls
-            .commitAndProgressWhenDefined(createAndKeepFormOpen, "create without closing"))
+      val extraControls =
+        EditControlsFeature.ExtraControls
+          .commitAndProgressWhenDefined(createAndKeepFormOpen, "create without closing")
 
       val cols = p.editableCols.whole
 
       val editorCells: VdomArray =
         cols.indices.toVdomArray { idx =>
           val (cp, e) = cols(idx)
+
           val renderArgs =
-            if (idx == p.autoFocusIdx)
-              renderArgsWithoutAutoFocus.copy(autoFocus = true)
-            else
-              renderArgsWithoutAutoFocus
+            CreateFeature.EditorArgs(e.field)(
+              previewRW      = p.previewRW,
+              project        = p.project,
+              plainText      = p.plainText,
+              textSearch     = p.textSearch,
+              projectWidgets = p.projectWidgets,
+              abort          = Some(p.close),
+              abortVerb      = "close",
+              autoFocus      = idx == p.autoFocusIdx,
+              commit         = createAndCloseForm,
+              commitVerb     = "create and close",
+              extraControls  = extraControls)
+
           // Below we make all columns the same length to avoid horizontal jitter when hitting create.
           // Horizontal jitter occurs when a progress is in flight because the instructions change. The instructions
           // change because the commit and abort callbacks change from Some to None.

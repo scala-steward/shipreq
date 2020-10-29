@@ -4,7 +4,9 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util._
-import shipreq.webapp.base.data.{ExternalPubid, ReqTypes}
+import shipreq.webapp.base.data.{ExternalPubid, Project}
+import shipreq.webapp.base.feature.PreviewFeature
+import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.base.ui.Toast
 import shipreq.webapp.client.project.app.pages.content.reqtable.NewStuff.State
 import shipreq.webapp.client.project.feature.CreateFeature
@@ -51,15 +53,18 @@ object NewStuff {
   }
 }
 
-final class NewStuff(state        : State,
-                     modState     : ModFn[State],
-                     routerCtl    : RouterCtl[ExternalPubid],
-                     pw           : ProjectWidgets.NoCtx,
-                     toast        : Toast,
-                     reqTypes     : ReqTypes,
-                     allowRCG     : Permission,
-                     create       : CreateFeature.ReadWrite.ForProject,
-                     activeColumns: NonEmptyVector[ColumnPlus]) {
+final class NewStuff(previewRW     : PreviewFeature.ReadWrite.Composite[CreateFeature.PreviewId],
+                     project       : Project,
+                     plainText     : PlainText.ForProject.AnyCtx,
+                     textSearch    : TextSearch,
+                     projectWidgets: ProjectWidgets.NoCtx,
+                     state         : State,
+                     modState      : ModFn[State],
+                     routerCtl     : RouterCtl[ExternalPubid],
+                     toast         : Toast,
+                     allowRCG      : Permission,
+                     create        : CreateFeature.ReadWrite.ForProject,
+                     activeColumns : NonEmptyVector[ColumnPlus]) {
 
   private val buttonCallbacks: Reusable[NewReqButton.Callbacks] =
     modState.map { f =>
@@ -85,9 +90,9 @@ final class NewStuff(state        : State,
       case State.Open(s) =>
         var b = NewReqButton.Props(
           state      = Some(s),
-          reqTypes   = reqTypes,
+          reqTypes   = project.config.reqTypes,
           allowRCG   = allowRCG,
-          pw         = pw,
+          pw         = projectWidgets,
           callbacks  = Some(buttonCallbacks),
           inProgress = false,
         )
@@ -100,9 +105,9 @@ final class NewStuff(state        : State,
       case State.Closed(o) =>
         NewReqButton.Props(
           state      = o,
-          reqTypes   = reqTypes,
+          reqTypes   = project.config.reqTypes,
           allowRCG   = allowRCG,
-          pw         = pw,
+          pw         = projectWidgets,
           callbacks  = Some(buttonCallbacks),
           inProgress = false,
         )
@@ -118,15 +123,55 @@ final class NewStuff(state        : State,
         s match {
 
           case r: RowKey.CodeGroup.type =>
-            Some(NewForm.ForCodeGroup.Props((), activeColumns, create(r), routerCtl, toast, cancel).render)
+            Some(
+              NewForm.ForCodeGroup.Props(
+                previewRW      = previewRW,
+                project        = project,
+                plainText      = plainText,
+                textSearch     = textSearch,
+                projectWidgets = projectWidgets,
+                input          = (),
+                activeColumns  = activeColumns,
+                createFeature  = create(r),
+                routerCtl      = routerCtl,
+                toast          = toast,
+                close          = cancel,
+              ).render
+            )
 
           case r: RowKey.GenericReq =>
-            reqTypes.custom.get(r.reqTypeId).map { rt =>
-              NewForm.ForGenericReq.Props(rt, activeColumns, create(r), routerCtl, toast, cancel).render
+            project.config.reqTypes.custom.get(r.reqTypeId).map { rt =>
+              NewForm.ForGenericReq.Props(
+                previewRW      = previewRW,
+                project        = project,
+                plainText      = plainText,
+                textSearch     = textSearch,
+                projectWidgets = projectWidgets,
+                input          = rt,
+                activeColumns  = activeColumns,
+                createFeature  = create(r),
+                routerCtl      = routerCtl,
+                toast          = toast,
+                close          = cancel,
+              ).render
             }
 
           case r: RowKey.UseCase.type =>
-            Some(NewForm.ForUseCase.Props((), activeColumns, create(r), routerCtl, toast, cancel).render)
+            Some(
+              NewForm.ForUseCase.Props(
+                previewRW      = previewRW,
+                project        = project,
+                plainText      = plainText,
+                textSearch     = textSearch,
+                projectWidgets = projectWidgets,
+                input          = (),
+                activeColumns  = activeColumns,
+                createFeature  = create(r),
+                routerCtl      = routerCtl,
+                toast          = toast,
+                close          = cancel,
+              ).render
+            )
 
           case RowKey.ManualIssue =>
             None

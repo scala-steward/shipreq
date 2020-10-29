@@ -26,6 +26,11 @@ final class LastValueMemo[A, B](initialResult: FreeOption[LastValueMemo.Result[A
 
   def map[C](g: B => C): LastValueMemo[A, C] =
     new LastValueMemo(lastResult.map(_.map(g)), g compose f, reusability)
+
+  def toFn2[A1, A2](implicit ev: LastValueMemo[A, B] =:= LastValueMemo[(A1, A2), B]): (A1, A2) => B = {
+    val x = ev(this)
+    (a1, a2) => x((a1, a2))
+  }
 }
 
 object LastValueMemo extends LastValueMemoBoilerplate {

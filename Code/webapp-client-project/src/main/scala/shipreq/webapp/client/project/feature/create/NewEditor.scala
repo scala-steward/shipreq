@@ -7,35 +7,22 @@ import scala.reflect.ClassTag
 import scalaz.~~>
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation.NaTags
 import shipreq.webapp.base.feature._
+import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.text._
+import shipreq.webapp.base.util.LastValueMemo
 import shipreq.webapp.client.project.feature.create.Feature.{AsyncState, Editor, PreviewId, State}
-import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 object NewEditor {
 
-  // This requires NoCtx in ProjectWidgets.
-  // Would it ever even make sense to create a new requirement in the context of another? Unlikely.
-  final case class Static(previewW        : PreviewFeature.Write.Composite[PreviewId],
-                          pxProject       : Px[Project],
-                          pxProjectWidgets: Px[ProjectWidgets.NoCtx],
-                          pxTextSearch    : Px[TextSearch]) {
-
-    val pxPlainTextNoCtx: Px[PlainText.ForProject.NoCtx] =
-      pxProjectWidgets.map(_.plainText)
-
-    private[NewEditor] val internal = new Internal(this)
-  }
-
   final case class Ctx[Args, Value](stateAccess: StateAccessPure[State.ForEditor[Args, Value]]) extends AnyVal
 
-  type ForFields[-FK <: FieldKey] = FieldKey.Fold[FK, ForEditor]
+  type ForFields[-FK <: FieldKey] = FieldKey.FoldBase[FK, ForEditor]
 
   type ForEditor[Args, Value] = Ctx[Args, Value] => Editor[Args, Value]
 
-  def forRow(static: Static, rowKey: RowKey): ForFields[rowKey.FieldKey] =
-    static.internal.perRow(rowKey)
+  def forRow(rowKey: RowKey): ForFields[rowKey.FieldKey] =
+    Internal.perRow(rowKey)
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
@@ -68,13 +55,6 @@ object NewEditor {
       EditControlsFeature.OpenPreview.WhenWanted,
       EditControlsFeature.WhenInTransit.DisableEditor, // else buttons move up & down jarringly
     )
-  }
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  private final class Internal(static: Static) {
-    import Internal.{ShowInstructions, editorStyle}
-    import static._
 
     val perRow: RowKey.Fold[ForFields] = {
       type LogicPerField[Args, Value] = InternalCtx[Args, Value] => Internal.Init[Args, Value]
@@ -134,7 +114,7 @@ object NewEditor {
     }
 
     trait ForValueType {
-      final type Args = FieldKey#Args
+      type Args
       type Value
       final type EditorImpl = Internal.EditorImpl[Args, Value]
       final type Init       = Internal.Init[Args, Value]
@@ -145,12 +125,10 @@ object NewEditor {
     object EditReqCodes {
       import shipreq.webapp.client.project.widgets.editors_with_controls.ReqCodeEditor
 
-      val trieCB: CallbackTo[ReqCode.Trie] =
-        pxProject.toCallback.map(_.content.reqCodes.trie)
-
       object Multiple extends ForValueType {
         import ReqCodeEditor.{Multiple => RCE}
 
+        override type Args = EditorArgs.ForReqCodeEditor
         override type Value = FieldKey.Codes.Value
 
         def apply: InitFn =
@@ -161,12 +139,11 @@ object NewEditor {
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
           override val props = (args, asyncState) =>
-            for {
-              trie <- trieCB
-            } yield RCE.Props(
+            CallbackTo {
+            RCE.Props(
               edit             = ss,
               initialValue     = None,
-              trie             = trie,
+              trie             = args.trie,
               asyncStatus      = EditorStatus.async(asyncState),
               abort            = args.abort,
               abortVerb        = args.abortVerb,
@@ -175,6 +152,7 @@ object NewEditor {
               commitVerb       = args.commitVerb,
               extraControls    = args.extraControls,
               showInstructions = ShowInstructions)
+            }
 
           override type State              = String
           override val stateType           = implicitly[ClassTag[String]]
@@ -186,6 +164,7 @@ object NewEditor {
       object Single extends ForValueType {
         import ReqCodeEditor.{Single => RCE}
 
+        override type Args = EditorArgs.ForReqCodeEditor
         override type Value = FieldKey.Code.Value
 
         def apply: InitFn =
@@ -196,12 +175,11 @@ object NewEditor {
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
           override val props = (args, asyncState) =>
-            for {
-              trie <- trieCB
-            } yield RCE.Props(
+            CallbackTo {
+            RCE.Props(
               edit             = ss,
               initialValue     = None,
-              trie             = trie,
+              trie             = args.trie,
               asyncStatus      = EditorStatus.async(asyncState),
               abort            = args.abort,
               abortVerb        = args.abortVerb,
@@ -210,6 +188,7 @@ object NewEditor {
               commitVerb       = args.commitVerb,
               extraControls    = args.extraControls,
               showInstructions = ShowInstructions)
+        }
 
           override type State              = String
           override val stateType           = implicitly[ClassTag[String]]
@@ -224,60 +203,66 @@ object NewEditor {
       import shipreq.webapp.client.project.widgets.editors_with_controls.ImplicationEditor
       import ImplicationEditor.{Lookup, ValidationFn}
 
-      val pxLookupAll = for {
-        p <- pxProject
-        w <- pxProjectWidgets
-      } yield ImplicationEditor.Lookup.all(p, w.plainText)
+      type LookupFn = (Project, PlainText.ForProject.AnyCtx) => Lookup
 
+      override type Args = EditorArgs.ForImplicationEditor
       override type Value = FieldKey.Implications#Value
 
       def apply(scope: ImplicationScope): InitFn =
         scope.fold(customField, all)
 
       def all(dir: Direction): InitFn =
-        start(dir, pxLookupAll)
+        start(dir, ImplicationEditor.Lookup.all)
 
       def customField(fid: CustomField.Implication.Id): InitFn = {
         val dir = CustomField.Implication.dir
-        val lookup = Px.apply2(pxProject, pxLookupAll)(ImplicationEditor.Lookup.forCustomColumn(_, _, fid))
+        val lookup: LookupFn =
+          (p, pt) => {
+            val all = ImplicationEditor.Lookup.all(p, pt)
+            ImplicationEditor.Lookup.forCustomColumn(p, all, fid)
+          }
         start(dir, lookup)
       }
 
-      private def start(dir: Direction, pxLookup: Px[Lookup]): InitFn = ictx => {
+      private def start(dir: Direction, lookupFn: LookupFn): InitFn = ictx => {
         import ictx._
-        val pxValFn: Px[ValidationFn] = pxProject.map(ImplicationEditor.ValidationFn(_, None, Set.empty, dir))
-        startWithStateSnapshot("")(new EditorAndState(_, pxLookup, pxValFn))
+
+        val lookupFnMemo: LookupFn =
+          LastValueMemo(lookupFn.tupled).toFn2
+
+        val valFnMemo: Project => ValidationFn =
+          LastValueMemo(ImplicationEditor.ValidationFn(_, None, Set.empty, dir))
+
+        startWithStateSnapshot("")(new EditorAndState(_, lookupFnMemo, valFnMemo))
       }
 
       private class EditorAndState(ss      : StateSnapshot[String],
-                                   pxLookup: Px[Lookup],
-                                   pxValFn : Px[ValidationFn]) extends EditorImpl {
+                                   lookupFn: LookupFn,
+                                   valFn   : Project => ValidationFn) extends EditorImpl {
         override type Props = ImplicationEditor.Props
         override def renderImpl = _.render
         override def valueImpl = _.parseResult.map(_.added)
         override val props = (args, asyncState) =>
-          for {
-            lookup     <- pxLookup.toCallback
-            valFn      <- pxValFn.toCallback
-            textSearch <- pxTextSearch.toCallback
-          } yield ImplicationEditor.Props(
+          CallbackTo {
+          ImplicationEditor.Props(
             edit             = ss,
-            lookup           = lookup,
-            validationFn     = valFn,
+            lookup           = lookupFn(args.project, args.plainText),
+            validationFn     = valFn(args.project),
             asyncStatus      = EditorStatus.async(asyncState),
             abort            = args.abort,
             abortVerb        = args.abortVerb,
             autoFocus        = args.autoFocus,
             commitFn         = args.commitFn,
             commitVerb       = args.commitVerb,
-            textSearch       = textSearch,
+            textSearch       = args.textSearch,
             extraControls    = args.extraControls,
             showInstructions = ShowInstructions)
+          }
 
         override type State              = String
         override val stateType           = implicitly[ClassTag[String]]
         override val state               = ss.value
-        override def withState(s: State) = new EditorAndState(ss.withValue(s), pxLookup, pxValFn)
+        override def withState(s: State) = new EditorAndState(ss.withValue(s), lookupFn, valFn)
       }
     }
 
@@ -286,6 +271,7 @@ object NewEditor {
       import shipreq.webapp.client.project.widgets.editors_with_controls.TagEditor
       import TagEditor.Lookup
 
+      override type Args = EditorArgs.ForTagEditor
       override type Value = Set[ApplicableTagId]
 
       def allTags(reqTypeId: ReqTypeId): InitFn =
@@ -299,27 +285,27 @@ object NewEditor {
 
       def apply(reqTypeId: ReqTypeId, lookupFn: Project => Lookup): InitFn = ictx => {
         import ictx._
-        val pxLookup = pxProject map lookupFn
-        val pxNaTags = pxProject.map(_.config.naTags(reqTypeId))
-        startWithStateSnapshot("")(new EditorAndState(_, pxLookup, pxNaTags))
+
+        val lookupFnMemo: Project => Lookup =
+          LastValueMemo(lookupFn)
+
+        startWithStateSnapshot("")(new EditorAndState(_, reqTypeId, lookupFnMemo))
       }
 
-      private class EditorAndState(ss      : StateSnapshot[String],
-                                   pxLookup: Px[Lookup],
-                                   pxNaTags: Px[NaTags]) extends EditorImpl {
+      private class EditorAndState(ss       : StateSnapshot[String],
+                                   reqTypeId: ReqTypeId,
+                                   lookupFn : Project => Lookup) extends EditorImpl {
 
         override type Props = TagEditor.Props
         override def renderImpl = _.render
         override def valueImpl = _.parseResultSet
         override val props = (args, asyncState) =>
-          for {
-            lookup <- pxLookup.toCallback
-            naTags <- pxNaTags.toCallback
-          } yield TagEditor.Props(
+          CallbackTo {
+          TagEditor.Props(
             preEditValue     = None,
-            naTags           = naTags,
+            naTags           = args.project.config.naTags(reqTypeId),
             edit             = ss,
-            lookup           = lookup,
+            lookup           = lookupFn(args.project),
             asyncStatus      = EditorStatus.async(asyncState),
             abort            = args.abort,
             abortVerb        = args.abortVerb,
@@ -328,11 +314,12 @@ object NewEditor {
             commitVerb       = args.commitVerb,
             extraControls    = args.extraControls,
             showInstructions = ShowInstructions)
+          }
 
         override type State              = String
         override val stateType           = implicitly[ClassTag[String]]
         override val state               = ss.value
-        override def withState(s: State) = new EditorAndState(ss.withValue(s), pxLookup, pxNaTags)
+        override def withState(s: State) = new EditorAndState(ss.withValue(s), reqTypeId, lookupFn)
       }
     }
 
@@ -344,6 +331,7 @@ object NewEditor {
       abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) extends ForValueType {
         val T: editor.text.type = editor.text
 
+        override type Args = EditorArgs.ForTextEditor
         override type Value = T.OptionalText
 
         def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn =
@@ -357,18 +345,13 @@ object NewEditor {
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
           override val props = (args, asyncState) =>
-            for {
-              previewRW      <- previewW.toReadWriteCB
-              project        <- pxProject.toCallback
-              plainTextNoCtx <- pxPlainTextNoCtx.toCallback
-              textSearch     <- pxTextSearch.toCallback
-              projectWidgets <- pxProjectWidgets.toCallback
-            } yield editor.Optional(
-              project            = project,
-              naTags             = project.config.naTags(reqTypeId),
-              plainTextNoCtx     = plainTextNoCtx,
-              textSearch         = textSearch,
-              projectWidgets     = projectWidgets,
+            CallbackTo {
+            editor.Optional(
+              project            = args.project,
+              naTags             = args.project.config.naTags(reqTypeId),
+              plainTextNoCtx     = args.projectWidgets.plainText,
+              textSearch         = args.textSearch,
+              projectWidgets     = args.projectWidgets,
               edit               = ss,
               asyncStatus        = EditorStatus.async(asyncState),
               abort              = args.abort,
@@ -378,11 +361,12 @@ object NewEditor {
               commitFn           = args.commitFn,
               commitVerb         = args.commitVerb,
               editorStyle        = editorStyle,
-              preview            = previewRW(pid),
+              preview            = args.previewRW(pid),
               preEditValue       = None,
               extraControls      = args.extraControls,
               showInstructions   = ShowInstructions,
               optionalFullscreen = None)
+            }
 
           override type State              = String
           override val stateType           = implicitly[ClassTag[String]]
@@ -405,6 +389,7 @@ object NewEditor {
       abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) extends ForValueType {
         val T: editor.text.type = editor.text
 
+        override type Args = EditorArgs.ForTextEditor
         override type Value = T.NonEmptyText
 
         def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn =
@@ -418,18 +403,13 @@ object NewEditor {
           override def renderImpl = _.render
           override def valueImpl = _.parseResult
           override val props = (args, asyncState) =>
-            for {
-              previewRW      <- previewW.toReadWriteCB
-              project        <- pxProject.toCallback
-              plainTextNoCtx <- pxPlainTextNoCtx.toCallback
-              textSearch     <- pxTextSearch.toCallback
-              projectWidgets <- pxProjectWidgets.toCallback
-            } yield editor.NonEmpty(
-              project            = project,
-              naTags             = project.config.naTags(reqTypeId),
-              plainTextNoCtx     = plainTextNoCtx,
-              textSearch         = textSearch,
-              projectWidgets     = projectWidgets,
+            CallbackTo {
+            editor.NonEmpty(
+              project            = args.project,
+              naTags             = args.project.config.naTags(reqTypeId),
+              plainTextNoCtx     = args.projectWidgets.plainText,
+              textSearch         = args.textSearch,
+              projectWidgets     = args.projectWidgets,
               edit               = ss,
               asyncStatus        = EditorStatus.async(asyncState),
               abort              = args.abort,
@@ -439,11 +419,12 @@ object NewEditor {
               commitFn           = args.commitFn,
               commitVerb         = args.commitVerb,
               editorStyle        = editorStyle,
-              preview            = previewRW(pid),
+              preview            = args.previewRW(pid),
               preEditValue       = None,
               extraControls      = args.extraControls,
               showInstructions   = ShowInstructions,
               optionalFullscreen = None)
+            }
 
           override type State              = String
           override val stateType           = implicitly[ClassTag[String]]

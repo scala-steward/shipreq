@@ -90,32 +90,8 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
     private val pxUseCases =
       pxProject.map(_.content.reqs.useCases).withReuse
 
-    private val pxProjectName: Px[Project.Name] =
-      pxProject.map(_.name).withReuse
-
     private val pxProjectConfig: Px[ProjectConfig] =
       pxProject.map(_.config).withReuse
-
-    private val pxEditEditability: Px[EditorFeature.Editability.ForProject] =
-      pxProject.map(EditorFeature.Editability.apply)
-
-    private val pxUnsavedChangesInput: Px[UnsavedChanges.Input] =
-      Px.apply5(pxState, pxEditEditability, pxProjectName, pxProjectConfig, pxUseCases)(UnsavedChanges.Input.apply)
-
-    private val pxUnsavedChanges: Px[UnsavedChanges] =
-      pxUnsavedChangesInput.map(UnsavedChanges.determine).flatMap(Px.callback(_).withReuse.autoRefresh)
-
-    private val pxLayoutUnsavedChangeData: Px[Layout.UnsavedChangeData] =
-      for {
-        c <- pxUnsavedChanges
-        p <- pxProject
-      } yield Layout.UnsavedChangeData.derive(c, p, routerCtl)
-
-    private val setFilterDead: Reusable[SetStateFnPure[FilterDead]] =
-      Reusable.fn.state($ zoomStateL stateLensFilterDead).setStateFn
-
-    private val setNewReqButton: Reusable[SetStateFnPure[NewReqButton.State]] =
-      Reusable.fn.state($ zoomStateL State.newReqButton).setStateFn
 
     private val pxPlainText: Px[PlainText.ForProject.NoCtx] =
       pxProject.map(PlainText.ForProject.noCtx.apply)
@@ -133,6 +109,34 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
 
     private val pxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]] =
       Reusable byRef Px.apply3(pxProject, pxPlainText, pxViewTags)(ProjectWidgets(_, _, _, routerCtlEP, webWorkerClient))
+
+    private val pxEditEditability: Px[EditorFeature.Editability.ForProject] =
+      pxProject.map(EditorFeature.Editability.apply)
+
+    private val pxUnsavedChangesInput: Px[UnsavedChanges.Input] =
+      Px.apply6(
+        pxState,
+        pxEditEditability,
+        pxProject,
+        pxTextSearch,
+        pxProjectWidgets,
+        pxUseCases)(
+        UnsavedChanges.Input.apply)
+
+    private val pxUnsavedChanges: Px[UnsavedChanges] =
+      pxUnsavedChangesInput.map(UnsavedChanges.determine).flatMap(Px.callback(_).withReuse.autoRefresh)
+
+    private val pxLayoutUnsavedChangeData: Px[Layout.UnsavedChangeData] =
+      for {
+        c <- pxUnsavedChanges
+        p <- pxProject
+      } yield Layout.UnsavedChangeData.derive(c, p, routerCtl)
+
+    private val setFilterDead: Reusable[SetStateFnPure[FilterDead]] =
+      Reusable.fn.state($ zoomStateL stateLensFilterDead).setStateFn
+
+    private val setNewReqButton: Reusable[SetStateFnPure[NewReqButton.State]] =
+      Reusable.fn.state($ zoomStateL State.newReqButton).setStateFn
 
     private val pxViewReqDataCache: Px[ViewReqDataCache] =
       pxProject.map(ViewReqDataCache.apply)
@@ -170,17 +174,14 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
     private val previewW: PreviewFeature.Write.Composite[PreviewId] =
       PreviewFeature.Write.Composite(Reusable.byRef($ zoomStateL State.preview))
 
+    private val previewCreateW =
+      previewW.mapId(PreviewId.ToCreate)
+
     private val newReqAsyncW: AsyncFeature.Write.D0[ErrorMsg] =
       AsyncFeature.Write.D0.init($ zoomStateL State.newReqAsync)
 
     private val createW: CreateFeature.Write.ForProject =
       CreateFeature.Write.ForProject(
-        CreateFeature.Static(
-          previewW.mapId(PreviewId.ToCreate),
-          pxProject,
-          pxProjectWidgets,
-          pxTextSearch,
-        ),
         $ zoomStateL State.create,
         newReqAsyncW,
         sspCreateContent,
@@ -297,6 +298,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
       pxRenderFeature,
       pxPlainText,
       pxProjectWidgets,
+      pxTextSearch,
       pxFilterCompilerHideDead,
       routerCtl,
       updateConfigOrContentCmdInvoker)
@@ -420,7 +422,8 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
       def renderFeature    = pxRenderFeatureText.value()(s.filterDead)
       def savedViewFeature = SavedViewFeature(savedViewFeatureStatic, s.savedViews, project, s.filterDead)
       def usage            = pxUsage.value()
-      // def previewRW = previewW.toReadWrite(s.preview)
+      def createPreviewR   = PreviewFeature.Read.Composite(s.preview).mapId(PreviewId.ToCreate)
+      def createPreviewRW  = previewCreateW.toReadWrite(createPreviewR)
 
       val body: VdomElement = p.page match {
 
@@ -445,7 +448,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
           val cmdAsync = s.manualIssueCmdAsync.toRead
                            .either(s.updateConfigCmdAsync.toRead)
                            .either(s.updateContentCmdAsync.toRead)
-          val p = content.issues.IssuesPage.Props(state, creator, editRW, cmdAsync)
+          val p = content.issues.IssuesPage.Props(state, creator, editRW, createPreviewRW, cmdAsync)
           issuesPage.component(p)
 
         case Page.CfgFields =>
@@ -501,12 +504,13 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
             .withKey1(AsyncKey.WholeReq)
           reqTable(
             ReqTablePage.Props(
-              create     = createRW,
-              editor     = editRW,
-              savedViews = savedViewFeature,
-              rowAsync   = rowAsync,
-              filterDead = s.filterDead,
-              state      = s.reqTable))
+              create          = createRW,
+              createPreviewRW = createPreviewRW,
+              editor          = editRW,
+              savedViews      = savedViewFeature,
+              rowAsync        = rowAsync,
+              filterDead      = s.filterDead,
+              state           = s.reqTable))
 
         case Page.ReqDetail(pubid) =>
           val props = ReqDetail.DynamicProps(

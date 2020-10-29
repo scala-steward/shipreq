@@ -31,7 +31,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
 
   val lineCardinality: LineCardinality
 
-  type CommitFn = Out ~=> Callback
+  type CommitFn = Out => Callback
 
   final lazy val potentialValueAcceptor: PotentialValueAcceptor[String] =
     PotentialValueAcceptor.correct(liveCorrect)

@@ -23,7 +23,7 @@ object ReqTypeSelector {
                          choices     : NonEmptySet[RT],
                          asyncStatus : Option[EditorStatus.Async],
                          abort       : Option[Callback],
-                         commitFn    : Option[RT ~=> Callback]) {
+                         commitFn    : Option[RT => Callback]) {
 
     val change: PotentialChange[Nothing, RT] =
       PotentialChange.Success(edit.value).ignoreOption(initialValue)

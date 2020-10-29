@@ -98,7 +98,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
   }
 
   object Optional {
-    type CommitFn = text.OptionalText ~=> Callback
+    type CommitFn = text.OptionalText => Callback
   }
 
   // ===================================================================================================================
@@ -136,7 +136,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
   }
 
   object NonEmpty {
-    type CommitFn = text.NonEmptyText ~=> Callback
+    type CommitFn = text.NonEmptyText => Callback
   }
 
   // ===================================================================================================================

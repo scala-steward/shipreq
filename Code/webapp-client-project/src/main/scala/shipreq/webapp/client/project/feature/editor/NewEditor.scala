@@ -230,10 +230,10 @@ object NewEditor {
         )
 
       def makeAbortCommitFn[Cmd, B](ssp: ServerSideProcInvoker[Cmd, ErrorMsg, Any])
-                                   (cmd: B => Cmd, hooks: Hooks, previewId: Option[PreviewId]): (Some[Callback], Some[B ~=> Callback]) =
+                                   (cmd: B => Cmd, hooks: Hooks, previewId: Option[PreviewId]): (Some[Callback], Some[B => Callback]) =
         (
           Some(abort(hooks, previewId)),
-          Some(Reusable.fn(v => commit(ssp)(cmd(v), hooks, previewId)))
+          Some(v => commit(ssp)(cmd(v), hooks, previewId))
         )
 
       /** Creates a Callback that when invoked, will initialise and start an editor.
@@ -311,7 +311,7 @@ object NewEditor {
                          editValue   : RT,
                          pxChoices   : Px[NonEmptySet[RT]],
                          abort       : Some[Callback],
-                         commitFn    : Some[RT ~=> Callback]) extends EditorImpl {
+                         commitFn    : Some[RT => Callback]) extends EditorImpl {
 
           @elidable(elidable.FINER)
           override def toString = s"EditReqType(${ss.value})"

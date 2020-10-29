@@ -6,12 +6,12 @@ import japgolly.scalajs.react.{CallbackTo, Reusability}
 import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.feature.EditControlsFeature
-import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.base.feature.PreviewFeature
+import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.client.project.app.pages
 import shipreq.webapp.client.project.feature.EditorFeature
-import shipreq.webapp.client.project.feature.create.NewEditorArgs
 import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 final case class UnsavedChanges(count    : Int,
                                 locations: Set[UnsavedChanges.Location]) {
@@ -54,11 +54,12 @@ object UnsavedChanges {
   implicit def univEq     : UnivEq     [UnsavedChanges] = UnivEq.derive
   implicit def reusability: Reusability[UnsavedChanges] = Reusability.byRefOrUnivEq
 
-  final case class Input(state        : State,
-                         editability  : EditorFeature.Editability.ForProject,
-                         projectName  : Project.Name,
-                         projectConfig: ProjectConfig,
-                         useCases     : UseCases)
+  final case class Input(state         : State,
+                         editability   : EditorFeature.Editability.ForProject,
+                         project       : Project,
+                         textSearch    : TextSearch,
+                         projectWidgets: ProjectWidgets.NoCtx,
+                         useCases      : UseCases)
 
   object Input {
     implicit def reusability: Reusability[Input] = Reusability.byRef || Reusability.derive
@@ -112,8 +113,8 @@ object UnsavedChanges {
       override def determine(input: Input) =
         CallbackTo {
           input.state.projectName match {
-            case Some(s) if s.corrected !=* input.projectName => emptyVector :+ Location.ProjectName
-            case _                                            => emptyVector
+            case Some(s) if s.corrected !=* input.project.name => emptyVector :+ Location.ProjectName
+            case _                                             => emptyVector
           }
         }
     }
@@ -122,19 +123,26 @@ object UnsavedChanges {
       import shipreq.webapp.client.project.feature.CreateFeature
       import CreateFeature.{FieldKey, RowKey}
 
-      private val uselessArgs = NewEditorArgs(None, "", false, None, "", EditControlsFeature.ExtraControls.empty)
-
       override def determine(input: Input) =
         CallbackTo {
           var ls = Vector.empty[Location]
 
           // New manual issue
           if (input.state.issuesPage.newIssue.open is Open)
-            for (e <- input.state.create(RowKey.ManualIssue)(FieldKey.ManualIssue))
+            for (e <- input.state.create(RowKey.ManualIssue)(FieldKey.ManualIssue)) {
+
+              val uselessArgs =
+                CreateFeature.EditorArgs.ForTextEditor.empty(
+                  previewRW      = PreviewFeature.ReadWrite.Composite.empty,
+                  project        = input.project,
+                  textSearch     = input.textSearch,
+                  projectWidgets = input.projectWidgets)
+
               // .isRight here means we have valid NonEmptyText
               // .isLeft is only true if the field is blank
               if (e.value(uselessArgs).isRight)
                 ls :+= Location.ManualIssues
+            }
 
           ls
         }
@@ -215,10 +223,10 @@ object UnsavedChanges {
       override def determine(i: Input) =
         CallbackTo {
           i.state.fieldConfig.right.editorOption match {
-            case Some(EditorState.ImpEditor (s)) if s.updateCmd(i.projectConfig).isChanged => emptyVector :+ Location.FieldConfig
-            case Some(EditorState.TagEditor (s)) if s.updateCmd(i.projectConfig).isChanged => emptyVector :+ Location.FieldConfig
-            case Some(EditorState.TextEditor(s)) if s.updateCmd(i.projectConfig).isChanged => emptyVector :+ Location.FieldConfig
-            case _                                                                         => emptyVector
+            case Some(EditorState.ImpEditor (s)) if s.updateCmd(i.project.config).isChanged => emptyVector :+ Location.FieldConfig
+            case Some(EditorState.TagEditor (s)) if s.updateCmd(i.project.config).isChanged => emptyVector :+ Location.FieldConfig
+            case Some(EditorState.TextEditor(s)) if s.updateCmd(i.project.config).isChanged => emptyVector :+ Location.FieldConfig
+            case _                                                                          => emptyVector
           }
         }
     }
@@ -227,8 +235,8 @@ object UnsavedChanges {
       override def determine(i: Input) =
         CallbackTo {
           i.state.customIssueTypeConfig.right.editorOption match {
-            case Some(s) if s.updateCmd(i.projectConfig).isChanged => emptyVector :+ Location.IssueConfig
-            case _                                                 => emptyVector
+            case Some(s) if s.updateCmd(i.project.config).isChanged => emptyVector :+ Location.IssueConfig
+            case _                                                  => emptyVector
           }
         }
     }
@@ -238,8 +246,8 @@ object UnsavedChanges {
       override def determine(i: Input) =
         CallbackTo {
           i.state.reqTypeConfig.right.editorOption match {
-            case Some(EditorState.Custom(s)) if s.updateCmd(i.projectConfig).isChanged => emptyVector :+ Location.ReqTypeConfig
-            case _                                                                     => emptyVector
+            case Some(EditorState.Custom(s)) if s.updateCmd(i.project.config).isChanged => emptyVector :+ Location.ReqTypeConfig
+            case _                                                                      => emptyVector
           }
         }
     }
@@ -248,9 +256,9 @@ object UnsavedChanges {
       override def determine(i: Input) =
         CallbackTo {
           i.state.tagConfig.right.editorOption match {
-            case Some(\/-(s)) if s.updateCmd(i.projectConfig).isChanged => emptyVector :+ Location.TagConfig
-            case Some(-\/(s)) if s.updateCmd(i.projectConfig).isChanged => emptyVector :+ Location.TagConfig
-            case _                                                      => emptyVector
+            case Some(\/-(s)) if s.updateCmd(i.project.config).isChanged => emptyVector :+ Location.TagConfig
+            case Some(-\/(s)) if s.updateCmd(i.project.config).isChanged => emptyVector :+ Location.TagConfig
+            case _                                                       => emptyVector
           }
         }
     }

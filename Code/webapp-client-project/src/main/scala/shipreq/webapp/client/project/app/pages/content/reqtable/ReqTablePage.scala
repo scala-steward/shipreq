@@ -11,7 +11,7 @@ import shipreq.base.util.{Allow, ErrorMsg}
 import shipreq.webapp.base.AssetManifest
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.feature.AsyncFeature
+import shipreq.webapp.base.feature.{AsyncFeature, PreviewFeature}
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.DomUtil
@@ -46,12 +46,13 @@ object ReqTablePage {
                                updateIO              : ServerSideProcInvoker[UpdateContentCmd, ErrorMsg, Any],
                                rowAsyncW             : AsyncFeature.Write.D1[Row.SourceId, ErrorMsg])
 
-  final case class Props(create    : CreateFeature.ReadWrite.ForProject,
-                         editor    : EditorFeature.ReadWrite.ForProject,
-                         savedViews: SavedViewFeature,
-                         rowAsync  : AsyncFeature.Read.D1[Row.SourceId, ErrorMsg],
-                         filterDead: FilterDead,
-                         state     : State)
+  final case class Props(create         : CreateFeature.ReadWrite.ForProject,
+                         createPreviewRW: PreviewFeature.ReadWrite.Composite[CreateFeature.PreviewId],
+                         editor         : EditorFeature.ReadWrite.ForProject,
+                         savedViews     : SavedViewFeature,
+                         rowAsync       : AsyncFeature.Read.D1[Row.SourceId, ErrorMsg],
+                         filterDead     : FilterDead,
+                         state          : State)
 
   @Lenses
   final case class State(selection: RowSelection,
@@ -184,6 +185,8 @@ object ReqTablePage {
 
     def renderMain(p: Props): VdomElement = {
       val project           = pxProject.value()
+      val plainText         = pxPlainText.value()
+      val textSearch        = pxTextSearch.value()
       val activeView        = pxActiveView.value()
       val activeColumnsPlus = pxActiveColumnsPlus.value()
       val rows              = pxRows.value()
@@ -216,15 +219,18 @@ object ReqTablePage {
         }
 
       val newStuff = new NewStuff(
-        p.state.newStuff,
-        modNewStuff,
-        reqDetailRC,
-        projectWidgets,
-        toast,
-        project.config.reqTypes,
-        Allow when activeView.viewCodeGroups,
-        p.create,
-        newFormColumns,
+        previewRW      = p.createPreviewRW,
+        project        = project,
+        plainText      = plainText,
+        textSearch     = textSearch,
+        projectWidgets = projectWidgets,
+        state          = p.state.newStuff,
+        modState       = modNewStuff,
+        routerCtl      = reqDetailRC,
+        toast          = toast,
+        allowRCG       = Allow when activeView.viewCodeGroups,
+        create         = p.create,
+        activeColumns  = newFormColumns,
       )
 
       val filterEditor =

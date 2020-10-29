@@ -45,17 +45,13 @@ object CreateFeature {
   type Editor[-Args, +Value] = create.Feature.Editor[Args, Value]
   val  Editor                = create.Feature.Editor
 
-  type EditorArgs = create.NewEditorArgs
-  val  EditorArgs = create.NewEditorArgs
+  val  EditorArgs = create.EditorArgs
 
   type PreviewId = create.Feature.PreviewId
   val  PreviewId = create.Feature.PreviewId
 
   type AsyncError = create.Feature.AsyncError
   type AsyncState = create.Feature.AsyncState
-
-  type Static = create.NewEditor.Static
-  val  Static = create.NewEditor.Static
 
   val Editability = create.Editability
 

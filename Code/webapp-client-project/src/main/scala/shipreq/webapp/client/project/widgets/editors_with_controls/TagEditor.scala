@@ -77,7 +77,7 @@ object TagEditor {
   }
 
   type Output   = SetDiff.NE[ApplicableTagId]
-  type CommitFn = Output ~=> Callback
+  type CommitFn = Output => Callback
 
   val liveCorrect: String => String =
     _.replace("\n", "")

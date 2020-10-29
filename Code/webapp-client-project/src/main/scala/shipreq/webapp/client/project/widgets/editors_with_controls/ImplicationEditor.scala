@@ -91,7 +91,7 @@ object ImplicationEditor {
   }
 
   type Output   = SetDiff.NE[ReqId]
-  type CommitFn = Output ~=> Callback
+  type CommitFn = Output => Callback
 
   final case class Props(edit            : StateSnapshot[String],
                          lookup          : Lookup,
@@ -123,7 +123,6 @@ object ImplicationEditor {
         stringValidator(l)
           .mapValid(_.toSet)
           .andThenAuditor(DataValidators.implicationAuditor(p, subject, initialValues, dir))
-
 
     private def stringValidator(l: Lookup): Validator[String, List[String], List[ReqId]] = {
       val parse: Auditor[String, ReqId] =
