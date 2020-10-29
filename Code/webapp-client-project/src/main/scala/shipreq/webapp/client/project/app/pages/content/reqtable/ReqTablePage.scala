@@ -258,20 +258,25 @@ object ReqTablePage {
 
       <.main(
         p.savedViews.renderSavedViewsAndFilterDeadButton(filterDeadButton),
-        <.div(*.actionCtrls,
+        actionCtrls(
           newStuff.buttonProps.render,
           pxSelectionCtrls.value().render,
           <.div(*.summary, pxPageSummary.value()).unless(mode ==* Mode.EmptyProject || mode ==* Mode.NoContentCosHideDead)
         ),
-        newStuff.form.whenDefined,
-        <.div(*.viewCtrls,
+        newStuffContainer(newStuff.form.whenDefined),
+        viewCtrls(
           pxSortCriteriaEditor.value(),
           <.div(*.flexGap),
           filterEditor,
           pxColumnSelector.value()
         ).unless(mode ==* Mode.EmptyProject || mode ==* Mode.NoContentCosHideDead),
-        body)
+        bodyContainer(body),
+      )
     }
   }
 
+  private val actionCtrls       = <.div(^.key := "a", *.actionCtrls)
+  private val viewCtrls         = <.div(^.key := "v", *.viewCtrls)
+  private val bodyContainer     = <.div(^.key := "b")
+  private val newStuffContainer = <.div(^.key := "n")
 }
