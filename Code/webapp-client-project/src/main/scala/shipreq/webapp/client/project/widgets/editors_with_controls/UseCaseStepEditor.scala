@@ -212,7 +212,7 @@ object UseCaseStepEditor {
     }
 
     val onMount: Callback =
-      EditControlsFeature.onTextareaEditorMount(editorRef).toCallback
+      EditControlsFeature.onTextareaEditorMount(editorRef, autoFocus = true)
   }
 
   val Component =

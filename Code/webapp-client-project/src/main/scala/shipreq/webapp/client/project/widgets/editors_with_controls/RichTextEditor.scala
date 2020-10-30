@@ -275,12 +275,9 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       )
     }
 
-    val onMount: Callback =
-      for {
-        _ <- EditControlsFeature.onTextareaEditorMount(editorRef, $.props.map(_.autoFocus)).toCallback
-        p <- $.props
-        _ <- scrollIntoView.when_(p.autoFocus)
-      } yield ()
+    def onMount(p: Props): Callback =
+      EditControlsFeature.onTextareaEditorMount(editorRef, p.autoFocus) >>
+        scrollIntoView.when_(p.autoFocus)
   }
 
   private def initialState(p: Props) =
@@ -295,7 +292,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       .configure(
         //Reusability.shouldComponentUpdate,
         AutoComplete.install)
-      .componentDidMount(_.backend.onMount)
+      .componentDidMount($ => $.backend.onMount($.props))
       .build
 }
 

@@ -200,9 +200,9 @@ object TagEditor {
       EditControlsFeature.renderEditor(p.status, editor, p.edit.value, instructions)
     }
 
-    val onMount: Callback =
-      EditControlsFeature.onTextareaEditorMount(editorRef, $.props.map(_.autoFocus)).toCallback >>
-        trigger(ta => Some(ta.value))
+    def onMount(p: Props): Callback =
+      EditControlsFeature.onTextareaEditorMount(editorRef, p.autoFocus) >>
+        trigger(ta => Some(ta.value)).when_(p.autoFocus)
   }
 
   val Component =
@@ -211,6 +211,6 @@ object TagEditor {
       .configure(
         //Reusability.shouldComponentUpdate,
         AutoComplete.install)
-      .componentDidMount(_.backend.onMount)
+      .componentDidMount($ => $.backend.onMount($.props))
       .build
 }

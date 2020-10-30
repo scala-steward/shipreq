@@ -70,24 +70,18 @@ object EditControlsFeature {
 
   // ===================================================================================================================
 
-  def onTextareaEditorMount(ref: Ref.ToScalaComponent[_, _, _], autoFocus: CallbackTo[Boolean]): CallbackOption[Unit] =
-    for {
-      af <- autoFocus
-      _  <- CallbackOption.require(af)
-      _  <- onTextareaEditorMount(ref)
-    } yield ()
+  def onTextareaEditorMount(ref: Ref.ToScalaComponent[_, _, _], autoFocus: Boolean): Callback =
+    onTextareaEditorMount(ref).when_(autoFocus)
 
-  def onTextareaEditorMount(ref: Ref.ToScalaComponent[_, _, _]): CallbackOption[Unit] =
-    ref.get.flatMap(m => onTextareaEditorMount(m.getDOMNode))
+  def onTextareaEditorMount(ref: Ref.ToScalaComponent[_, _, _]): Callback =
+    ref.get.flatMap(m => onTextareaEditorMount(m.getDOMNode).toCBO)
 
-  def onTextareaEditorMount(cd: ComponentDom): CallbackOption[Unit] =
-    (for {
-      h <- CallbackOption.liftOption(cd.toHtml)
-    } yield {
+  def onTextareaEditorMount(cd: ComponentDom): Callback =
+    Callback.traverseOption(cd.toHtml)(h => Callback {
       val t = h.domCast[html.TextArea]
       val l = t.value.length
       t.setSelectionRange(l, l)
-    }).toCallback
+    })
 
   // ===================================================================================================================
 

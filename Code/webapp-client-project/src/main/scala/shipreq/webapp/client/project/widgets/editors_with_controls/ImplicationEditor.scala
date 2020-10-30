@@ -211,8 +211,8 @@ object ImplicationEditor {
       EditControlsFeature.renderEditor(p.status, editor, p.edit.value, instructions)
     }
 
-    val onMount: Callback =
-      EditControlsFeature.onTextareaEditorMount(editorRef, $.props.map(_.autoFocus)).toCallback
+    def onMount(p: Props): Callback =
+      EditControlsFeature.onTextareaEditorMount(editorRef, p.autoFocus)
   }
 
   implicit val reusabilityLookup: Reusability[Lookup] =
@@ -227,6 +227,6 @@ object ImplicationEditor {
       .configure(
         //Reusability.shouldComponentUpdate,
         AutoComplete.install)
-      .componentDidMount(_.backend.onMount)
+      .componentDidMount($ => $.backend.onMount($.props))
       .build
 }
