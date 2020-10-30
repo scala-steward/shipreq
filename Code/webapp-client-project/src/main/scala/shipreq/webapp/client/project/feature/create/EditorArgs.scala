@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.feature.create
 
 import japgolly.scalajs.react._
+import shipreq.base.util.SetDiff
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.{EditControlsFeature, PreviewFeature}
 import shipreq.webapp.base.text.{PlainText, TextSearch}
@@ -43,12 +44,14 @@ object EditorArgs {
             commitVerb    : String,
             extraControls : Reusable[EditControlsFeature.ExtraControls]): f.Args = {
 
-    val forReqCodeEditor = (_: Any) => ForReqCodeEditor(
+    val commitAny = commit.map(_.map(c => (_: Any) => c))
+
+    val forReqCodeEditor = (_: Any) => ForReqCodeEditor[Any](
       trie           = project.content.reqCodes.trie,
       abort          = abort,
       abortVerb      = abortVerb,
       autoFocus      = autoFocus,
-      commit         = commit,
+      commit         = commitAny,
       commitVerb     = commitVerb,
       extraControls  = extraControls,
     )
@@ -60,7 +63,7 @@ object EditorArgs {
       abort          = abort,
       abortVerb      = abortVerb,
       autoFocus      = autoFocus,
-      commit         = commit,
+      commit         = commitAny,
       commitVerb     = commitVerb,
       extraControls  = extraControls,
     )
@@ -70,12 +73,12 @@ object EditorArgs {
       abort          = abort,
       abortVerb      = abortVerb,
       autoFocus      = autoFocus,
-      commit         = commit,
+      commit         = commitAny,
       commitVerb     = commitVerb,
       extraControls  = extraControls,
     )
 
-    val forTextEditor = (_: Any) => ForTextEditor(
+    val forTextEditor = (_: Any) => ForTextEditor[Any](
       previewRW      = previewRW,
       project        = project,
       textSearch     = textSearch,
@@ -83,7 +86,7 @@ object EditorArgs {
       abort          = abort,
       abortVerb      = abortVerb,
       autoFocus      = autoFocus,
-      commit         = commit,
+      commit         = commitAny,
       commitVerb     = commitVerb,
       extraControls  = extraControls,
     )
@@ -107,17 +110,13 @@ object EditorArgs {
     f.fold(fold)
   }
 
-  final case class ForReqCodeEditor(trie          : ReqCode.Trie,
-                                    abort         : Option[Reusable[Callback]],
-                                    abortVerb     : String,
-                                    autoFocus     : Boolean,
-                                    commit        : Option[Reusable[Callback]],
-                                    commitVerb    : String,
-                                    extraControls : Reusable[EditControlsFeature.ExtraControls]) {
-
-    def commitFn: Option[Any => Callback] =
-      commit.map(c => _ => c)
-  }
+  final case class ForReqCodeEditor[-V](trie          : ReqCode.Trie,
+                                        abort         : Option[Reusable[Callback]],
+                                        abortVerb     : String,
+                                        autoFocus     : Boolean,
+                                        commit        : Option[Reusable[V => Callback]],
+                                        commitVerb    : String,
+                                        extraControls : Reusable[EditControlsFeature.ExtraControls])
 
   final case class ForImplicationEditor(project       : Project,
                                         plainText     : PlainText.ForProject.AnyCtx,
@@ -125,48 +124,36 @@ object EditorArgs {
                                         abort         : Option[Reusable[Callback]],
                                         abortVerb     : String,
                                         autoFocus     : Boolean,
-                                        commit        : Option[Reusable[Callback]],
+                                        commit        : Option[Reusable[SetDiff.NE[ReqId] => Callback]],
                                         commitVerb    : String,
-                                        extraControls : Reusable[EditControlsFeature.ExtraControls]) {
-
-    def commitFn: Option[Any => Callback] =
-      commit.map(c => _ => c)
-  }
+                                        extraControls : Reusable[EditControlsFeature.ExtraControls])
 
   final case class ForTagEditor(project       : Project,
                                 abort         : Option[Reusable[Callback]],
                                 abortVerb     : String,
                                 autoFocus     : Boolean,
-                                commit        : Option[Reusable[Callback]],
+                                commit        : Option[Reusable[SetDiff.NE[ApplicableTagId] => Callback]],
                                 commitVerb    : String,
-                                extraControls : Reusable[EditControlsFeature.ExtraControls]) {
+                                extraControls : Reusable[EditControlsFeature.ExtraControls])
 
-    def commitFn: Option[Any => Callback] =
-      commit.map(c => _ => c)
-  }
-
-  final case class ForTextEditor(previewRW     : PreviewFeature.ReadWrite.Composite[PreviewId],
-                                 project       : Project,
-                                 textSearch    : TextSearch,
-                                 projectWidgets: ProjectWidgets.NoCtx,
-                                 abort         : Option[Reusable[Callback]],
-                                 abortVerb     : String,
-                                 autoFocus     : Boolean,
-                                 commit        : Option[Reusable[Callback]],
-                                 commitVerb    : String,
-                                 extraControls : Reusable[EditControlsFeature.ExtraControls]) {
-
-    def commitFn: Option[Any => Callback] =
-      commit.map(c => _ => c)
-  }
+  final case class ForTextEditor[-V](previewRW     : PreviewFeature.ReadWrite.Composite[PreviewId],
+                                     project       : Project,
+                                     textSearch    : TextSearch,
+                                     projectWidgets: ProjectWidgets.NoCtx,
+                                     abort         : Option[Reusable[Callback]],
+                                     abortVerb     : String,
+                                     autoFocus     : Boolean,
+                                     commit        : Option[Reusable[V => Callback]],
+                                     commitVerb    : String,
+                                     extraControls : Reusable[EditControlsFeature.ExtraControls])
 
   object ForTextEditor {
-    def basic(previewRW     : PreviewFeature.ReadWrite.Composite[PreviewId],
-              project       : Project,
-              textSearch    : TextSearch,
-              projectWidgets: ProjectWidgets.NoCtx,
-              abort         : Option[Reusable[Callback]],
-              commit        : Option[Reusable[Callback]]): ForTextEditor =
+    def basic[V](previewRW     : PreviewFeature.ReadWrite.Composite[PreviewId],
+                 project       : Project,
+                 textSearch    : TextSearch,
+                 projectWidgets: ProjectWidgets.NoCtx,
+                 abort         : Option[Reusable[Callback]],
+                 commit        : Option[Reusable[V => Callback]]): ForTextEditor[V] =
       apply(
         previewRW      = previewRW,
         project        = project,
@@ -182,7 +169,7 @@ object EditorArgs {
     def empty(previewRW     : PreviewFeature.ReadWrite.Composite[PreviewId],
               project       : Project,
               textSearch    : TextSearch,
-              projectWidgets: ProjectWidgets.NoCtx): ForTextEditor =
+              projectWidgets: ProjectWidgets.NoCtx): ForTextEditor[Any] =
       basic(
         previewRW      = previewRW,
         project        = project,
@@ -192,8 +179,10 @@ object EditorArgs {
         commit         = None)
   }
 
-  implicit val reusabilityForReqCodeEditor    : Reusability[ForReqCodeEditor    ] = Reusability.derive
-  implicit val reusabilityForImplicationEditor: Reusability[ForImplicationEditor] = Reusability.derive
-  implicit val reusabilityForTagEditor        : Reusability[ForTagEditor        ] = Reusability.derive
-  implicit val reusabilityForTextEditor       : Reusability[ForTextEditor       ] = Reusability.derive
+  private  val reusabilityForReqCodeEditor_   : Reusability[ForReqCodeEditor[Nothing]] = Reusability.byRef || Reusability.derive
+  implicit def reusabilityForReqCodeEditor[V] : Reusability[ForReqCodeEditor[V]      ] = reusabilityForReqCodeEditor_.narrow
+  implicit val reusabilityForImplicationEditor: Reusability[ForImplicationEditor     ] = Reusability.byRef || Reusability.derive
+  implicit val reusabilityForTagEditor        : Reusability[ForTagEditor             ] = Reusability.byRef || Reusability.derive
+  private  val reusabilityForTextEditor_      : Reusability[ForTextEditor[Nothing]   ] = Reusability.byRef || Reusability.derive
+  implicit def reusabilityForTextEditor[V]    : Reusability[ForTextEditor[V]         ] = reusabilityForTextEditor_.narrow
 }

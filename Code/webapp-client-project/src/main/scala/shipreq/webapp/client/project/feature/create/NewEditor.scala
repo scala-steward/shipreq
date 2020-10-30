@@ -124,6 +124,9 @@ object NewEditor {
     implicit def ignoreCallbackReusabilityForNow(a: Option[Reusable[Callback]]): Option[Callback] =
       a.map(_.value)
 
+    implicit def ignoreCallbackReusabilityForNowA[A](a: Option[Reusable[A => Callback]]): Option[A => Callback] =
+      a.map(_.value)
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     object EditReqCodes {
       import shipreq.webapp.client.project.widgets.editors_with_controls.ReqCodeEditor
@@ -131,7 +134,7 @@ object NewEditor {
       object Multiple extends ForValueType {
         import ReqCodeEditor.{Multiple => RCE}
 
-        override type Args = EditorArgs.ForReqCodeEditor
+        override type Args = EditorArgs.ForReqCodeEditor[SetDiff.NE[ReqCode.Value]]
         override type Value = FieldKey.Codes.Value
 
         def apply: InitFn =
@@ -150,7 +153,7 @@ object NewEditor {
               abort            = args.abort,
               abortVerb        = args.abortVerb,
               autoFocus        = args.autoFocus,
-              commitFn         = args.commitFn,
+              commitFn         = args.commit,
               commitVerb       = args.commitVerb,
               extraControls    = args.extraControls,
               showInstructions = ShowInstructions)
@@ -165,7 +168,7 @@ object NewEditor {
       object Single extends ForValueType {
         import ReqCodeEditor.{Single => RCE}
 
-        override type Args = EditorArgs.ForReqCodeEditor
+        override type Args = EditorArgs.ForReqCodeEditor[Value]
         override type Value = FieldKey.Code.Value
 
         def apply: InitFn =
@@ -184,7 +187,7 @@ object NewEditor {
               abort            = args.abort,
               abortVerb        = args.abortVerb,
               autoFocus        = args.autoFocus,
-              commitFn         = args.commitFn,
+              commitFn         = args.commit,
               commitVerb       = args.commitVerb,
               extraControls    = args.extraControls,
               showInstructions = ShowInstructions)
@@ -250,7 +253,7 @@ object NewEditor {
             abort            = args.abort,
             abortVerb        = args.abortVerb,
             autoFocus        = args.autoFocus,
-            commitFn         = args.commitFn,
+            commitFn         = args.commit,
             commitVerb       = args.commitVerb,
             textSearch       = args.textSearch,
             extraControls    = args.extraControls,
@@ -306,7 +309,7 @@ object NewEditor {
             abort            = args.abort,
             abortVerb        = args.abortVerb,
             autoFocus        = args.autoFocus,
-            commitFn         = args.commitFn,
+            commitFn         = args.commit,
             commitVerb       = args.commitVerb,
             extraControls    = args.extraControls,
             showInstructions = ShowInstructions)
@@ -326,7 +329,7 @@ object NewEditor {
       abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) extends ForValueType {
         val T: editor.text.type = editor.text
 
-        override type Args = EditorArgs.ForTextEditor
+        override type Args = EditorArgs.ForTextEditor[Value]
         override type Value = T.OptionalText
 
         def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn =
@@ -352,7 +355,7 @@ object NewEditor {
               abortVerb          = args.abortVerb,
               abortConfirmation  = None,
               autoFocus          = args.autoFocus,
-              commitFn           = args.commitFn,
+              commitFn           = args.commit,
               commitVerb         = args.commitVerb,
               editorStyle        = editorStyle,
               preview            = args.previewRW(pid),
@@ -382,7 +385,7 @@ object NewEditor {
       abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) extends ForValueType {
         val T: editor.text.type = editor.text
 
-        override type Args = EditorArgs.ForTextEditor
+        override type Args = EditorArgs.ForTextEditor[Value]
         override type Value = T.NonEmptyText
 
         def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn =
@@ -408,7 +411,7 @@ object NewEditor {
               abortVerb          = args.abortVerb,
               abortConfirmation  = None,
               autoFocus          = args.autoFocus,
-              commitFn           = args.commitFn,
+              commitFn           = args.commit,
               commitVerb         = args.commitVerb,
               editorStyle        = editorStyle,
               preview            = args.previewRW(pid),

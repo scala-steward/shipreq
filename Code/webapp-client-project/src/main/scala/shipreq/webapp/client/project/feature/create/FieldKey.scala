@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.feature.create
 import japgolly.scalajs.react.Reusability
 import monocle.{Iso, Prism}
 import scalaz.~~>
-import shipreq.base.util.Direction
+import shipreq.base.util.{Direction, SetDiff}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.text.Text
 import shipreq.webapp.client.project.feature.editor.{FieldKey => E}
@@ -43,21 +43,21 @@ object FieldKey {
   sealed trait ForAllReqs extends ForGenericReq with ForUseCase
 
   case object Code extends ForCodeGroup {
-    override type Args = EditorArgs.ForReqCodeEditor
+    override type Args = EditorArgs.ForReqCodeEditor[Value]
     override type Value = ReqCode.Value
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.code(this)
     override def foldCG[F[_, _]](f: FoldForCodeGroup[F]): F[Args, Value] = f.code(this)
   }
 
   case object CodeGroupTitle extends ForCodeGroup {
-    override type Args = EditorArgs.ForTextEditor
+    override type Args = EditorArgs.ForTextEditor[Value]
     override type Value = Text.CodeGroupTitle.OptionalText
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.titleCG(this)
     override def foldCG[F[_, _]](f: FoldForCodeGroup[F]): F[Args, Value] = f.title(this)
   }
 
   case object Codes extends ForAllReqs {
-    override type Args = EditorArgs.ForReqCodeEditor
+    override type Args = EditorArgs.ForReqCodeEditor[SetDiff.NE[ReqCode.Value]]
     override type Value = Set[ReqCode.Value]
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.codes(this)
     override def foldGR[F[_, _]](f: FoldForGenericReq[F]): F[Args, Value] = f.codes(this)
@@ -65,7 +65,7 @@ object FieldKey {
   }
 
   final case class CustomTextField(field: CustomField.Text.Id) extends ForAllReqs {
-    override type Args = EditorArgs.ForTextEditor
+    override type Args = EditorArgs.ForTextEditor[Value]
     override type Value = Text.CustomTextField.OptionalText
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.customTextField(this)
     override def foldGR[F[_, _]](f: FoldForGenericReq[F]): F[Args, Value] = f.customTextField(this)
@@ -73,7 +73,7 @@ object FieldKey {
   }
 
   case object GenericReqTitle extends ForGenericReq {
-    override type Args = EditorArgs.ForTextEditor
+    override type Args = EditorArgs.ForTextEditor[Value]
     override type Value = Text.GenericReqTitle.OptionalText
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.titleGR(this)
     override def foldGR[F[_, _]](f: FoldForGenericReq[F]): F[Args, Value] = f.title(this)
@@ -113,14 +113,14 @@ object FieldKey {
   }
 
   case object UseCaseTitle extends ForUseCase {
-    override type Args = EditorArgs.ForTextEditor
+    override type Args = EditorArgs.ForTextEditor[Value]
     override type Value = Text.UseCaseTitle.OptionalText
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.titleUC(this)
     override def foldUC[F[_, _]](f: FoldForUseCase[F]): F[Args, Value] = f.title(this)
   }
 
   case object ManualIssue extends ForManualIssue {
-    override type Args = EditorArgs.ForTextEditor
+    override type Args = EditorArgs.ForTextEditor[Value]
     override type Value = Text.ManualIssue.NonEmptyText
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.manualIssue(this)
     override def foldMI[F[_, _]](f: FoldForManualIssue[F]): F[Args, Value] = f.text(this)

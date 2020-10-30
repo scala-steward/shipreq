@@ -74,11 +74,11 @@ object NewIssue {
       p.createR.create(ManualIssueCmd.Create(value), _ => onSuccess)
     }
 
-    private val commit: Reusable[Callback] =
-      Reusable.callbackByRef(
+    private val commit: Reusable[Text.ManualIssue.NonEmptyText => Callback] =
+      Reusable.byRef(newValue =>
         for {
           p <- $.props
-          _ <- Callback.sequenceOption(editorValue(p).map(save(p, _)))
+          _ <- save(p, newValue)
         } yield ()
       )
 
