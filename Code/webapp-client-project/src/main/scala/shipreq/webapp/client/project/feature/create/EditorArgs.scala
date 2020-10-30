@@ -5,6 +5,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.{EditControlsFeature, PreviewFeature}
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.client.project.feature.create.Feature.PreviewId
+import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 object EditorArgs {
@@ -35,12 +36,12 @@ object EditorArgs {
             plainText     : PlainText.ForProject.AnyCtx,
             textSearch    : TextSearch,
             projectWidgets: ProjectWidgets.NoCtx,
-            abort         : Option[Callback],
+            abort         : Option[Reusable[Callback]],
             abortVerb     : String,
             autoFocus     : Boolean,
-            commit        : Option[Callback],
+            commit        : Option[Reusable[Callback]],
             commitVerb    : String,
-            extraControls : EditControlsFeature.ExtraControls): f.Args = {
+            extraControls : Reusable[EditControlsFeature.ExtraControls]): f.Args = {
 
     val forReqCodeEditor = (_: Any) => ForReqCodeEditor(
       trie           = project.content.reqCodes.trie,
@@ -107,12 +108,12 @@ object EditorArgs {
   }
 
   final case class ForReqCodeEditor(trie          : ReqCode.Trie,
-                                    abort         : Option[Callback],
+                                    abort         : Option[Reusable[Callback]],
                                     abortVerb     : String,
                                     autoFocus     : Boolean,
-                                    commit        : Option[Callback],
+                                    commit        : Option[Reusable[Callback]],
                                     commitVerb    : String,
-                                    extraControls : EditControlsFeature.ExtraControls) {
+                                    extraControls : Reusable[EditControlsFeature.ExtraControls]) {
 
     def commitFn: Option[Any => Callback] =
       commit.map(c => _ => c)
@@ -121,24 +122,24 @@ object EditorArgs {
   final case class ForImplicationEditor(project       : Project,
                                         plainText     : PlainText.ForProject.AnyCtx,
                                         textSearch    : TextSearch,
-                                        abort         : Option[Callback],
+                                        abort         : Option[Reusable[Callback]],
                                         abortVerb     : String,
                                         autoFocus     : Boolean,
-                                        commit        : Option[Callback],
+                                        commit        : Option[Reusable[Callback]],
                                         commitVerb    : String,
-                                        extraControls : EditControlsFeature.ExtraControls) {
+                                        extraControls : Reusable[EditControlsFeature.ExtraControls]) {
 
     def commitFn: Option[Any => Callback] =
       commit.map(c => _ => c)
   }
 
   final case class ForTagEditor(project       : Project,
-                                abort         : Option[Callback],
+                                abort         : Option[Reusable[Callback]],
                                 abortVerb     : String,
                                 autoFocus     : Boolean,
-                                commit        : Option[Callback],
+                                commit        : Option[Reusable[Callback]],
                                 commitVerb    : String,
-                                extraControls : EditControlsFeature.ExtraControls) {
+                                extraControls : Reusable[EditControlsFeature.ExtraControls]) {
 
     def commitFn: Option[Any => Callback] =
       commit.map(c => _ => c)
@@ -148,12 +149,12 @@ object EditorArgs {
                                  project       : Project,
                                  textSearch    : TextSearch,
                                  projectWidgets: ProjectWidgets.NoCtx,
-                                 abort         : Option[Callback],
+                                 abort         : Option[Reusable[Callback]],
                                  abortVerb     : String,
                                  autoFocus     : Boolean,
-                                 commit        : Option[Callback],
+                                 commit        : Option[Reusable[Callback]],
                                  commitVerb    : String,
-                                 extraControls : EditControlsFeature.ExtraControls) {
+                                 extraControls : Reusable[EditControlsFeature.ExtraControls]) {
 
     def commitFn: Option[Any => Callback] =
       commit.map(c => _ => c)
@@ -164,8 +165,8 @@ object EditorArgs {
               project       : Project,
               textSearch    : TextSearch,
               projectWidgets: ProjectWidgets.NoCtx,
-              abort         : Option[Callback],
-              commit        : Option[Callback]): ForTextEditor =
+              abort         : Option[Reusable[Callback]],
+              commit        : Option[Reusable[Callback]]): ForTextEditor =
       apply(
         previewRW      = previewRW,
         project        = project,
@@ -189,6 +190,10 @@ object EditorArgs {
         projectWidgets = projectWidgets,
         abort          = None,
         commit         = None)
-
   }
+
+  implicit val reusabilityForReqCodeEditor    : Reusability[ForReqCodeEditor    ] = Reusability.derive
+  implicit val reusabilityForImplicationEditor: Reusability[ForImplicationEditor] = Reusability.derive
+  implicit val reusabilityForTagEditor        : Reusability[ForTagEditor        ] = Reusability.derive
+  implicit val reusabilityForTextEditor       : Reusability[ForTextEditor       ] = Reusability.derive
 }

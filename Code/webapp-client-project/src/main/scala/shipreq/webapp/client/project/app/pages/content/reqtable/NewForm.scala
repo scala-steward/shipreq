@@ -216,11 +216,11 @@ sealed trait NewForm {
             onSuccess => p.createFeature.create(cmd, notifyUserOfCreation(p, _) >> onSuccess)
           }
 
-      val createAndKeepFormOpen: Option[Callback] =
-        createAnd.map(_(Callback.empty))
+      val createAndKeepFormOpen: Option[Reusable[Callback]] =
+        createAnd.map(_(Callback.empty)).map(Reusable.never(_)) // TODO
 
-      val createAndCloseForm: Option[Callback] =
-        createAnd.map(_(p.close))
+      val createAndCloseForm: Option[Reusable[Callback]] =
+        createAnd.map(_(p.close)).map(Reusable.never(_)) // TODO
 
       val extraControls =
         EditControlsFeature.ExtraControls
@@ -261,7 +261,7 @@ sealed trait NewForm {
           colour = Colour.Green,
           state = Button.State.loadingOrEnabled(asyncInProgress, createAndKeepFormOpen.isDefined))
           .tag(*.formCreateButton,
-            ^.onClick -->? createAndKeepFormOpen.filterNot(_ => asyncInProgress))
+            ^.onClick -->? createAndKeepFormOpen.filterNot(_ => asyncInProgress).map(_.value))
 
       val createAndCloseButton: VdomElement =
         Button(
@@ -269,7 +269,7 @@ sealed trait NewForm {
           colour = Colour.Green,
           state = Button.State.loadingOrEnabled(asyncInProgress, createAndCloseForm.isDefined))
           .tag(*.formCreateButton,
-            ^.onClick -->? createAndCloseForm.filterNot(_ => asyncInProgress))
+            ^.onClick -->? createAndCloseForm.filterNot(_ => asyncInProgress).map(_.value))
 
       <.section(*.formOuter,
         SemTable.celledCompactUnstackable(

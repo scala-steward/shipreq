@@ -100,6 +100,9 @@ object KeyHandler {
   object Criterion {
     implicit def univEq: UnivEq[Criterion] = UnivEq.derive
 
+    implicit val reusability: Reusability[Criterion] =
+      Reusability.byRef
+
     implicit def toSet(m: Criterion): Criteria =
       Criteria.empty + m
 

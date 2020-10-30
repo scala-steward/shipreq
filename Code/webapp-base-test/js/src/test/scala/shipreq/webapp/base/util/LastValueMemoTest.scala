@@ -1,8 +1,8 @@
 package shipreq.webapp.base.util
 
+import shipreq.base.test.BaseTestUtil._
 import sourcecode.Line
 import utest._
-import shipreq.base.test.BaseTestUtil._
 
 object LastValueMemoTest extends TestSuite {
 

@@ -121,6 +121,9 @@ object NewEditor {
       final type InitFn     = InternalCtx[Args, Value] => Init
     }
 
+    implicit def ignoreCallbackReusabilityForNow(a: Option[Reusable[Callback]]): Option[Callback] =
+      a.map(_.value)
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     object EditReqCodes {
       import shipreq.webapp.client.project.widgets.editors_with_controls.ReqCodeEditor

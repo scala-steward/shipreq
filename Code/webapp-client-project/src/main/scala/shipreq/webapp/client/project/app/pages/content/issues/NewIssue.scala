@@ -54,8 +54,19 @@ object NewIssue {
         .tag(^.onClick -->? open)
     }
 
-    private val closeEditor: Callback =
-      setState(State(Closed))
+    private val closeEditor: Reusable[Callback] =
+      Reusable.callbackByRef(setState(State(Closed)))
+
+    private def editorValue(p: Props): Option[Text.ManualIssue.NonEmptyText] = {
+      val emptyArgs =
+        CreateFeature.EditorArgs.ForTextEditor.empty(
+          previewRW      = p.previewRW,
+          project        = p.project,
+          textSearch     = p.textSearch,
+          projectWidgets = p.projectWidgets)
+
+      p.createE.value(emptyArgs).toOption
+    }
 
     private def save(p: Props, value: Text.ManualIssue.NonEmptyText): Callback = {
       val clearState = p.createR.clearState(CreateFeature.FieldKey.ManualIssue)
@@ -63,21 +74,21 @@ object NewIssue {
       p.createR.create(ManualIssueCmd.Create(value), _ => onSuccess)
     }
 
+    private val commit: Reusable[Callback] =
+      Reusable.callbackByRef(
+        for {
+          p <- $.props
+          _ <- Callback.sequenceOption(editorValue(p).map(save(p, _)))
+        } yield ()
+      )
+
     def render(p: Props): VdomElement = {
 
       val editor =
         Option.when(p.state.value.open is Open) {
 
-          val emptyArgs =
-            CreateFeature.EditorArgs.ForTextEditor.empty(
-              previewRW      = p.previewRW,
-              project        = p.project,
-              textSearch     = p.textSearch,
-              projectWidgets = p.projectWidgets)
-
-          val value = p.createE.value(emptyArgs).toOption
-
-          val commit = value.map(save(p, _))
+          val value = editorValue(p)
+          val commit = value.map(_ => this.commit)
 
           val args =
             CreateFeature.EditorArgs.ForTextEditor.basic(
