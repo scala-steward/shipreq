@@ -1,7 +1,9 @@
 package shipreq.webapp.client.project.app.pages.content.reqtable
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
@@ -90,6 +92,32 @@ object NewForm {
 
   private def createButtonLabel(name: String): String = "Create " + name
   private def createButtonLabel(rt: ReqType) : String = createButtonLabel(rt.mnemonic.value)
+
+  private val doNothing = Reusable.callbackByRef(Callback.empty) // TODO https://github.com/japgolly/scalajs-react/issues/796
+
+  private trait FieldArgsMemo {
+    protected def get(f: FieldKey, autoFocus: Boolean): f.Args
+
+    // TODO Fix in Scala 3
+    private val untyped: Boolean => FieldKey => Any =
+      Memo.bool(autoFocus => Memo[FieldKey, Any](fk => get(fk, autoFocus)))
+
+    final def apply(field: FieldKey, autoFocus: Boolean): field.Args =
+      untyped(autoFocus)(field).asInstanceOf[field.Args]
+  }
+
+  private trait EditorValuesMemo[FK <: FieldKey] {
+    final type Editor = FK#AndValue[CreateFeature.ReadWrite.ForEditor]
+
+    protected def get(e: Editor): NonEmptySet[String] \/ e.field.Value
+
+    // TODO Fix in Scala 3
+    private val untyped1: Editor => Any = get(_)
+    private val untyped2: Editor => Any = Memo(untyped1)
+
+    final def apply(e: Editor): NonEmptySet[String] \/ e.field.Value =
+      untyped2(e).asInstanceOf[NonEmptySet[String] \/ e.field.Value]
+  }
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -113,6 +141,10 @@ sealed trait NewForm {
   // ↑ abstract
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // ↓ concrete
+
+  import NewForm.FieldArgsMemo
+
+  private final type EditorValuesMemo = NewForm.EditorValuesMemo[FK]
 
   /** This will contain all values for all fields that:
     * 1. Map to a visible column
@@ -138,55 +170,141 @@ sealed trait NewForm {
                           toast         : Toast,
                           close         : Reusable[Callback]) {
 
-    lazy val editableCols: NonEmptyVector[(ColumnPlus, Editor)] =
-      NonEmptyVector.force( // TODO test with mandatory columns only
-        activeColumns
-          .iterator
-          .map(cp => columnToField(cp.column).flatMap(f => createFeature(f) match {
-            case \/-(e) => Some((cp, f.andValue(e)))
-            case -\/(_) => None // Field is N/A
-          }))
-          .filterDefined
-          .toVector)
-
-    lazy val autoFocusIdx: Int =
-      editableCols.whole.indexWhere(_._1.column ==* Column.Title).max(0)
-
-    /** @return None if any fields have invalid contents */
-    lazy val validOutput: Option[Output] = {
-      val es = editableCols.iterator.map(_._2)
-
-      @tailrec
-      def go(o: Output): Option[Output] =
-        if (es.isEmpty)
-          Some(o)
-        else {
-          val e = es.next()
-
-          val args = CreateFeature.EditorArgs.empty(e.field)(
-            previewRW      = previewRW,
-            project        = project,
-            plainText      = plainText,
-            textSearch     = textSearch,
-            projectWidgets = projectWidgets,
-          )
-
-          e.value.value(args) match {
-            case \/-(v) => go(e.withValue[FieldValue](v) :: o)
-            case -\/(_) => None // Invalidity found -- abort everything
-          }
-        }
-
-      go(Nil)
-    }
-
     def render: VdomElement = Component(this)
   }
 
   final class Backend($: BackendScope[Props, Unit]) {
 
+    private val close: Reusable[Callback] =
+      Reusable.callbackByRef($.props.flatMap(_.close))
+
     private val closeButton: VdomElement =
-      CloseButton($.props.flatMap(_.close))
+      CloseButton(close)
+
+    // Here we always allow a result, even though there may be errors in the user's input.
+    // We used to align the result to the input validity but this resulted in two problems:
+    //
+    // 1) NewForm performance used to be really bad and checking input validity makes the caching here way more complex.
+    // 2) Instructions would appear/disappear which sounds good in theory but is actually bad UX. It was quite jarring
+    //    to be editing one field and then all this change appears in the others.
+    private def createAnd(onSuccess: Reusable[Callback]): Reusable[Callback] =
+      onSuccess.map { onSuccess =>
+        for {
+          p      <- $.props.toCBO
+          output <- pxValidOutput.toCallback.asCBO
+          cmd    <- CallbackOption.liftOption(createCmd(p.input, output))
+          _      <- p.createFeature.create(cmd, notifyUserOfCreation(p, _) >> onSuccess).toCBO
+        } yield ()
+      }
+
+    private val createAndKeepFormOpen: Reusable[Callback] =
+      createAnd(NewForm.doNothing)
+
+    private val createAndCloseForm: Reusable[Callback] =
+      createAnd(close)
+
+    private val extraControls =
+      EditControlsFeature.ExtraControls.commitAndProgress(createAndKeepFormOpen, "create without closing")
+
+    private val commit: Option[Reusable[Any => Callback]] =
+      Some(createAndCloseForm.map(c => _ => c))
+
+    private val pxPreviewRW: Px[PreviewFeature.ReadWrite.Composite[PreviewId]] =
+      Px.props($).map(_.previewRW).withReuse.autoRefresh
+
+    private val pxProject: Px[Project] =
+      Px.props($).map(_.project).withReuse.autoRefresh
+
+    private val pxPlainText: Px[PlainText.ForProject.AnyCtx] =
+      Px.props($).map(_.plainText).withReuse.autoRefresh
+
+    private val pxTextSearch: Px[TextSearch] =
+      Px.props($).map(_.textSearch).withReuse.autoRefresh
+
+    private val pxProjectWidgets: Px[ProjectWidgets.NoCtx] =
+      Px.props($).map(_.projectWidgets).withReuse.autoRefresh
+
+    private val pxActiveColumns: Px[NonEmptyVector[ColumnPlus]] =
+      Px.props($).map(_.activeColumns).withReuse.autoRefresh
+
+    private val pxCreateFeature: Px[CreateFeature.ReadWrite.ForRow[FK, CreateContentCmd]] =
+      Px.props($).map(_.createFeature).withReuse.autoRefresh
+
+    private val pxEditableCols: Px[NonEmptyVector[(ColumnPlus, Editor)]] =
+      for {
+        activeColumns <- pxActiveColumns
+        createFeature <- pxCreateFeature
+      } yield
+        NonEmptyVector.force( // Safe because Title is a mandatory column that can't be hidden
+          activeColumns
+            .iterator
+            .map(cp => columnToField(cp.column).flatMap(f => createFeature(f) match {
+              case \/-(e) => Some((cp, f.andValue(e)))
+              case -\/(_) => None // Field is N/A
+            }))
+            .filterDefined
+            .toVector)
+
+    private val pxAutoFocusIdx: Px[Int] =
+      pxEditableCols.map(_.whole.indexWhere(_._1.column ==* Column.Title).max(0))
+
+    private val pxFieldArgsMemo: Px[FieldArgsMemo] =
+      for {
+        previewRW      <- pxPreviewRW
+        project        <- pxProject
+        plainText      <- pxPlainText
+        textSearch     <- pxTextSearch
+        projectWidgets <- pxProjectWidgets
+      } yield
+        new FieldArgsMemo {
+          override protected def get(f: FieldKey, autoFocus: Boolean) =
+            CreateFeature.EditorArgs(f)(
+              previewRW      = previewRW,
+              project        = project,
+              plainText      = plainText,
+              textSearch     = textSearch,
+              projectWidgets = projectWidgets,
+              abort          = Some(close),
+              abortVerb      = "close",
+              autoFocus      = autoFocus,
+              commit         = commit,
+              commitVerb     = "create and close",
+              extraControls  = extraControls)
+        }
+
+    private val pxEditorValues: Px[EditorValuesMemo] =
+      for {
+        argsMemo <- pxFieldArgsMemo
+      } yield
+        new EditorValuesMemo {
+          override protected def get(e: Editor) = {
+            val args = argsMemo(e.field, false)
+            e.value.value(args)
+          }
+        }
+
+    /** Result is None when any fields have invalid contents */
+    private val pxValidOutput: Px[Option[Output]] =
+      for {
+        editableCols <- pxEditableCols
+        editorValues <- pxEditorValues
+      } yield {
+        val es = editableCols.iterator.map(_._2)
+
+        @tailrec
+        def go(o: Output): Option[Output] =
+          if (es.isEmpty)
+            Some(o)
+          else {
+            val e = es.next()
+            editorValues(e) match {
+              case \/-(v) => go(e.withValue[FieldValue](v) :: o)
+              case -\/(_) => None // Invalidity found -- abort everything
+            }
+          }
+
+        go(Nil)
+      }
 
     private def notifyUserOfCreation(p: Props, newEvents: NewEvents): Callback =
       Callback.traverseOption(newEvents.summary.newReqIds.headOption) { reqId =>
@@ -205,53 +323,31 @@ sealed trait NewForm {
       }
 
     def render(p: Props): VdomElement = {
-
-      val asyncInProgress =
-        p.createFeature.asyncInProgress
-
-      val createAnd: Option[Callback => Callback] =
-        p.validOutput
-          .flatMap(createCmd(p.input, _))
-          .map { cmd =>
-            onSuccess => p.createFeature.create(cmd, notifyUserOfCreation(p, _) >> onSuccess)
-          }
-
-      val createAndKeepFormOpen: Option[Reusable[Callback]] =
-        createAnd.map(_(Callback.empty)).map(Reusable.never(_)) // TODO
-
-      val createAndCloseForm: Option[Reusable[Callback]] =
-        createAnd.map(_(p.close)).map(Reusable.never(_)) // TODO
-
-      val extraControls =
-        EditControlsFeature.ExtraControls
-          .commitAndProgressWhenDefined(createAndKeepFormOpen, "create without closing")
-
-      val cols = p.editableCols.whole
+      val editableCols    = pxEditableCols.value()
+      val autoFocusIdx    = pxAutoFocusIdx.value()
+      val argsMemo        = pxFieldArgsMemo.value()
+      val validOutput     = pxValidOutput.value()
+      val isValid         = validOutput.isDefined
+      val asyncInProgress = p.createFeature.asyncInProgress
+      val allowCreate     = isValid && !asyncInProgress
+      val cols            = editableCols.whole
+      val width           = s"calc(100% / ${cols.length})"
 
       val editorCells: VdomArray =
         cols.indices.toVdomArray { idx =>
           val (cp, e) = cols(idx)
 
-          val renderArgs =
-            CreateFeature.EditorArgs(e.field)(
-              previewRW      = p.previewRW,
-              project        = p.project,
-              plainText      = p.plainText,
-              textSearch     = p.textSearch,
-              projectWidgets = p.projectWidgets,
-              abort          = Some(p.close),
-              abortVerb      = "close",
-              autoFocus      = idx == p.autoFocusIdx,
-              commit         = createAndCloseForm,
-              commitVerb     = "create and close",
-              extraControls  = extraControls)
+          val renderArgs = argsMemo(
+            field     = e.field,
+            autoFocus = idx == autoFocusIdx,
+          )
 
           // Below we make all columns the same length to avoid horizontal jitter when hitting create.
           // Horizontal jitter occurs when a progress is in flight because the instructions change. The instructions
           // change because the commit and abort callbacks change from Some to None.
           <.td(
             ^.key := ColumnLogic.key(cp.column),
-            ^.width := s"calc(100% / ${cols.length})",
+            ^.width := width,
             e.value.render(renderArgs))
         }
 
@@ -259,28 +355,29 @@ sealed trait NewForm {
         Button(
           tipe = Button.Type.BasicIconAndText(Icon.Plus, createButtonLabel(p.input)),
           colour = Colour.Green,
-          state = Button.State.loadingOrEnabled(asyncInProgress, createAndKeepFormOpen.isDefined))
+          state = Button.State.loadingOrEnabled(asyncInProgress, isValid))
           .tag(*.formCreateButton,
-            ^.onClick -->? createAndKeepFormOpen.filterNot(_ => asyncInProgress).map(_.value))
+            ^.onClick -->? Option.when(allowCreate)(createAndKeepFormOpen.value))
+
 
       val createAndCloseButton: VdomElement =
         Button(
           tipe = Button.Type.BasicIconAndText(Icon.Plus, createAndCloseButtonLabel(p.input)),
           colour = Colour.Green,
-          state = Button.State.loadingOrEnabled(asyncInProgress, createAndCloseForm.isDefined))
+          state = Button.State.loadingOrEnabled(asyncInProgress, isValid))
           .tag(*.formCreateButton,
-            ^.onClick -->? createAndCloseForm.filterNot(_ => asyncInProgress).map(_.value))
+            ^.onClick -->? Option.when(allowCreate)(createAndCloseForm.value))
 
       <.section(*.formOuter,
         SemTable.celledCompactUnstackable(
           *.formTable,
-          Header.Component(p.editableCols.map(_._1)),
+          Header.Component(editableCols.map(_._1)),
           <.tbody(
             <.tr(*.formMiddleRow,
               editorCells),
             <.tr(
               <.td(*.formBottomRow,
-                ^.colSpan := p.editableCols.length,
+                ^.colSpan := editableCols.length,
                 closeButton,
                 createButton,
                 createAndCloseButton)))))

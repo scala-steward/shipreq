@@ -84,7 +84,6 @@ object CreateContentCmd {
   final case class CreateCodeGroup(code : ReqCode.Value,
                                    title: Text.CodeGroupTitle.OptionalText) extends CreateContentCmd
 
-
   // ===================================================================================================================
   object CodecsV4 {
     import boopickle.DefaultBasic._

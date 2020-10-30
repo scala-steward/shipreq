@@ -17,7 +17,7 @@ object EditorArgs {
             plainText     : PlainText.ForProject.AnyCtx,
             textSearch    : TextSearch,
             projectWidgets: ProjectWidgets.NoCtx): f.Args =
-    apply(f)(
+    constCommit(f)(
       previewRW      = previewRW,
       project        = project,
       plainText      = plainText,
@@ -31,6 +31,33 @@ object EditorArgs {
       extraControls  = EditControlsFeature.ExtraControls.empty,
     )
 
+  @inline
+  def constCommit(f: FieldKey)
+                 (previewRW     : PreviewFeature.ReadWrite.Composite[PreviewId],
+                  project       : Project,
+                  plainText     : PlainText.ForProject.AnyCtx,
+                  textSearch    : TextSearch,
+                  projectWidgets: ProjectWidgets.NoCtx,
+                  abort         : Option[Reusable[Callback]],
+                  abortVerb     : String,
+                  autoFocus     : Boolean,
+                  commit        : Option[Reusable[Callback]],
+                  commitVerb    : String,
+                  extraControls : Reusable[EditControlsFeature.ExtraControls]): f.Args =
+    apply(f)(
+      previewRW      = previewRW,
+      project        = project,
+      plainText      = plainText,
+      textSearch     = textSearch,
+      projectWidgets = projectWidgets,
+      abort          = abort,
+      abortVerb      = abortVerb,
+      autoFocus      = autoFocus,
+      commit         = commit.map(_.map(c => _ => c)),
+      commitVerb     = commitVerb,
+      extraControls  = extraControls,
+    )
+
   def apply(f: FieldKey)
            (previewRW     : PreviewFeature.ReadWrite.Composite[PreviewId],
             project       : Project,
@@ -40,11 +67,11 @@ object EditorArgs {
             abort         : Option[Reusable[Callback]],
             abortVerb     : String,
             autoFocus     : Boolean,
-            commit        : Option[Reusable[Callback]],
+            commit        : Option[Reusable[f.CommitValue => Callback]],
             commitVerb    : String,
             extraControls : Reusable[EditControlsFeature.ExtraControls]): f.Args = {
 
-    val commitAny = commit.map(_.map(c => (_: Any) => c))
+    val commitAny = commit.asInstanceOf[Option[Reusable[Any => Callback]]]
 
     val forReqCodeEditor = (_: Any) => ForReqCodeEditor[Any](
       trie           = project.content.reqCodes.trie,
@@ -118,21 +145,25 @@ object EditorArgs {
                                         commitVerb    : String,
                                         extraControls : Reusable[EditControlsFeature.ExtraControls])
 
+  type ImplicationEditorCommitValue = SetDiff.NE[ReqId]
+
   final case class ForImplicationEditor(project       : Project,
                                         plainText     : PlainText.ForProject.AnyCtx,
                                         textSearch    : TextSearch,
                                         abort         : Option[Reusable[Callback]],
                                         abortVerb     : String,
                                         autoFocus     : Boolean,
-                                        commit        : Option[Reusable[SetDiff.NE[ReqId] => Callback]],
+                                        commit        : Option[Reusable[ImplicationEditorCommitValue => Callback]],
                                         commitVerb    : String,
                                         extraControls : Reusable[EditControlsFeature.ExtraControls])
+
+  type TagEditorCommitValue = SetDiff.NE[ApplicableTagId]
 
   final case class ForTagEditor(project       : Project,
                                 abort         : Option[Reusable[Callback]],
                                 abortVerb     : String,
                                 autoFocus     : Boolean,
-                                commit        : Option[Reusable[SetDiff.NE[ApplicableTagId] => Callback]],
+                                commit        : Option[Reusable[TagEditorCommitValue => Callback]],
                                 commitVerb    : String,
                                 extraControls : Reusable[EditControlsFeature.ExtraControls])
 

@@ -29,6 +29,14 @@ object ExtraControls {
       criterion.handleWhenDefined(action).toKeyHandlers,
       action.map(Instructions.Clause.keyToAction(criterion.desc)(verb, _)).toList)
 
+  def commitAndProgress(action: Reusable[Callback], verb: String): Reusable[ExtraControls] = {
+    val criterion = Keys.commitAndProgress
+    Reusable.implicitly((action, verb)).withValue(
+      new ExtraControls(
+        criterion.handle(action).toKeyHandlers,
+        Instructions.Clause.keyToAction(criterion.desc)(verb, action) :: Nil))
+  }
+
   def commitAndProgressWhenDefined(actionOption: Option[Reusable[Callback]], verb: String): Reusable[ExtraControls] =
     Reusable.implicitly((actionOption, verb)).withValue(
       _option(Keys.commitAndProgress, verb, actionOption.map(_.value)))

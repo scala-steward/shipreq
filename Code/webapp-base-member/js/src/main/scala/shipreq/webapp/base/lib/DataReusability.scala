@@ -186,7 +186,10 @@ abstract class DataReusability extends BaseReusability {
   implicit def reusabilityExternalPubid: Reusability[ExternalPubid] =
     Reusability.byRefOrUnivEq
 
-  implicit def reusabilityOptionalText[A <: Atom.AnyAtom]: Reusability[Vector[A]] =
+  implicit def reusabilityOptionalText[A <: Atom.AnyAtom]: Reusability[ArraySeq[A]] =
+    Reusability.byRefOrUnivEq
+
+  implicit def reusabilityNonEmptyText[A <: Atom.AnyAtom]: Reusability[NonEmptyArraySeq[A]] =
     Reusability.byRefOrUnivEq
 
   implicit def reusabilityVectorTreeLoc: Reusability[VectorTree.Location] =

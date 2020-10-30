@@ -18,6 +18,8 @@ sealed trait FieldKey {
   /** Arguments required for every .render call */
   type Args
 
+  type CommitValue
+
   type Value
 
   @inline final def cast2[F[_], G[_, _]](f: F[G[Nothing, Any]]) = f.asInstanceOf[F[G[Args, Value]]]
@@ -43,21 +45,24 @@ object FieldKey {
   sealed trait ForAllReqs extends ForGenericReq with ForUseCase
 
   case object Code extends ForCodeGroup {
-    override type Args = EditorArgs.ForReqCodeEditor[Value]
+    override type Args = EditorArgs.ForReqCodeEditor[CommitValue]
+    override type CommitValue = Value
     override type Value = ReqCode.Value
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.code(this)
     override def foldCG[F[_, _]](f: FoldForCodeGroup[F]): F[Args, Value] = f.code(this)
   }
 
   case object CodeGroupTitle extends ForCodeGroup {
-    override type Args = EditorArgs.ForTextEditor[Value]
+    override type Args = EditorArgs.ForTextEditor[CommitValue]
+    override type CommitValue = Value
     override type Value = Text.CodeGroupTitle.OptionalText
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.titleCG(this)
     override def foldCG[F[_, _]](f: FoldForCodeGroup[F]): F[Args, Value] = f.title(this)
   }
 
   case object Codes extends ForAllReqs {
-    override type Args = EditorArgs.ForReqCodeEditor[SetDiff.NE[ReqCode.Value]]
+    override type Args = EditorArgs.ForReqCodeEditor[CommitValue]
+    override type CommitValue = SetDiff.NE[ReqCode.Value]
     override type Value = Set[ReqCode.Value]
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.codes(this)
     override def foldGR[F[_, _]](f: FoldForGenericReq[F]): F[Args, Value] = f.codes(this)
@@ -65,7 +70,8 @@ object FieldKey {
   }
 
   final case class CustomTextField(field: CustomField.Text.Id) extends ForAllReqs {
-    override type Args = EditorArgs.ForTextEditor[Value]
+    override type Args = EditorArgs.ForTextEditor[CommitValue]
+    override type CommitValue = Value
     override type Value = Text.CustomTextField.OptionalText
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.customTextField(this)
     override def foldGR[F[_, _]](f: FoldForGenericReq[F]): F[Args, Value] = f.customTextField(this)
@@ -73,7 +79,8 @@ object FieldKey {
   }
 
   case object GenericReqTitle extends ForGenericReq {
-    override type Args = EditorArgs.ForTextEditor[Value]
+    override type Args = EditorArgs.ForTextEditor[CommitValue]
+    override type CommitValue = Value
     override type Value = Text.GenericReqTitle.OptionalText
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.titleGR(this)
     override def foldGR[F[_, _]](f: FoldForGenericReq[F]): F[Args, Value] = f.title(this)
@@ -81,6 +88,7 @@ object FieldKey {
 
   final case class Implications(scope: ImplicationScope) extends ForAllReqs {
     override type Args = EditorArgs.ForImplicationEditor
+    override type CommitValue = EditorArgs.ImplicationEditorCommitValue
     override type Value = Set[ReqId]
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.implications(this)
     override def foldGR[F[_, _]](f: FoldForGenericReq[F]): F[Args, Value] = f.implications(this)
@@ -90,6 +98,7 @@ object FieldKey {
 
   case object AllTags extends ForAllReqs {
     override type Args = EditorArgs.ForTagEditor
+    override type CommitValue = EditorArgs.TagEditorCommitValue
     override type Value = Set[ApplicableTagId]
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.allTags(this)
     override def foldGR[F[_, _]](f: FoldForGenericReq[F]): F[Args, Value] = f.allTags(this)
@@ -98,6 +107,7 @@ object FieldKey {
 
   case object OtherTags extends ForAllReqs {
     override type Args = EditorArgs.ForTagEditor
+    override type CommitValue = EditorArgs.TagEditorCommitValue
     override type Value = Set[ApplicableTagId]
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.otherTags(this)
     override def foldGR[F[_, _]](f: FoldForGenericReq[F]): F[Args, Value] = f.otherTags(this)
@@ -106,6 +116,7 @@ object FieldKey {
 
   final case class CustomFieldTags(field: CustomField.Tag.Id) extends ForAllReqs {
     override type Args = EditorArgs.ForTagEditor
+    override type CommitValue = EditorArgs.TagEditorCommitValue
     override type Value = Set[ApplicableTagId]
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.customFieldTags(this)
     override def foldGR[F[_, _]](f: FoldForGenericReq[F]): F[Args, Value] = f.customFieldTags(this)
@@ -113,14 +124,16 @@ object FieldKey {
   }
 
   case object UseCaseTitle extends ForUseCase {
-    override type Args = EditorArgs.ForTextEditor[Value]
+    override type Args = EditorArgs.ForTextEditor[CommitValue]
+    override type CommitValue = Value
     override type Value = Text.UseCaseTitle.OptionalText
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.titleUC(this)
     override def foldUC[F[_, _]](f: FoldForUseCase[F]): F[Args, Value] = f.title(this)
   }
 
   case object ManualIssue extends ForManualIssue {
-    override type Args = EditorArgs.ForTextEditor[Value]
+    override type Args = EditorArgs.ForTextEditor[CommitValue]
+    override type CommitValue = Value
     override type Value = Text.ManualIssue.NonEmptyText
     override def fold[F[_, _]](f: Fold[F]): F[Args, Value] = f.manualIssue(this)
     override def foldMI[F[_, _]](f: FoldForManualIssue[F]): F[Args, Value] = f.text(this)
@@ -233,6 +246,15 @@ object FieldKey {
     val field: FK
     val value: F[field.Args, field.Value]
 
+    final override def hashCode =
+      field.hashCode * 31 + value.##
+
+    final override def equals(obj: Any): Boolean =
+      obj match {
+        case t: AndValue[FK, F] => (field == t.field) && (value == t.value)
+        case _                  => false
+      }
+
     @nowarn("cat=unused")
     final def unsafeSyncField[FKK >: FK <: FieldKey](f: FKK): f.AndValue[F] =
       this.asInstanceOf[f.AndValue[F]]
@@ -256,6 +278,31 @@ object FieldKey {
         override val field = f
         override val value = a
       }
+
+    implicit def univEq[FK <: FieldKey, F[_, _]]: UnivEq[AndValue[FK, F]] =
+      UnivEq.force // Proven via univEqValueProof below
+
+    protected def univEqValueProof = {
+      // Proof that FieldKeys themselves have UnivEq
+      UnivEq[FieldKey]
+
+      // Proof that all FieldKey Values have UnivEq
+      type F[A, V] = UnivEq[V]
+      import Text.Equality._
+      Fold[F](
+        allTags         = f => UnivEq[f.Value],
+        code            = f => UnivEq[f.Value],
+        codes           = f => UnivEq[f.Value],
+        customFieldTags = f => UnivEq[f.Value],
+        customTextField = f => UnivEq[f.Value],
+        implications    = f => UnivEq[f.Value],
+        manualIssue     = f => UnivEq[f.Value],
+        otherTags       = f => UnivEq[f.Value],
+        titleCG         = f => UnivEq[f.Value],
+        titleGR         = f => UnivEq[f.Value],
+        titleUC         = f => UnivEq[f.Value],
+      )
+    }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

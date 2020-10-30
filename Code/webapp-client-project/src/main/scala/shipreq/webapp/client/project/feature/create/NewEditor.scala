@@ -10,7 +10,7 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.text._
-import shipreq.webapp.base.util.LastValueMemo
+import shipreq.webapp.base.util.{LastValueMemo, LruMemo}
 import shipreq.webapp.client.project.feature.create.Feature.{AsyncState, Editor, PreviewId, State}
 
 object NewEditor {
@@ -127,6 +127,9 @@ object NewEditor {
     implicit def ignoreCallbackReusabilityForNowA[A](a: Option[Reusable[A => Callback]]): Option[A => Callback] =
       a.map(_.value)
 
+    def newPropsMemo[I, P](f: I => P)(implicit r: Reusability[I]): I => P =
+      LruMemo.byReusability(f, 4)
+
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     object EditReqCodes {
       import shipreq.webapp.client.project.widgets.editors_with_controls.ReqCodeEditor
@@ -134,68 +137,86 @@ object NewEditor {
       object Multiple extends ForValueType {
         import ReqCodeEditor.{Multiple => RCE}
 
-        override type Args = EditorArgs.ForReqCodeEditor[SetDiff.NE[ReqCode.Value]]
+        override type Args  = EditorArgs.ForReqCodeEditor[SetDiff.NE[ReqCode.Value]]
         override type Value = FieldKey.Codes.Value
+        type Props          = RCE.Props
+        type PropsInputs    = (StateSnapshot[String], Args, AsyncState)
 
-        def apply: InitFn =
-          _.startWithStateSnapshot("")(new EditorAndState(_))
+        def apply: InitFn = {
 
-        private class EditorAndState(ss: StateSnapshot[String]) extends EditorImpl {
-          override type Props = RCE.Props
-          override def renderImpl = _.render
-          override def valueImpl = _.parseResult
-          override val props = (args, asyncState) =>
-            RCE.Props(
-              edit             = ss,
-              initialValue     = None,
-              trie             = args.trie,
-              asyncStatus      = EditorStatus.async(asyncState),
-              abort            = args.abort,
-              abortVerb        = args.abortVerb,
-              autoFocus        = args.autoFocus,
-              commitFn         = args.commit,
-              commitVerb       = args.commitVerb,
-              extraControls    = args.extraControls,
-              showInstructions = ShowInstructions)
+          val propsMemo =
+            newPropsMemo[PropsInputs, Props] { in =>
+              val (ss, args, asyncState) = in
+              RCE.Props(
+                edit             = ss,
+                initialValue     = None,
+                trie             = args.trie,
+                asyncStatus      = EditorStatus.async(asyncState),
+                abort            = args.abort,
+                abortVerb        = args.abortVerb,
+                autoFocus        = args.autoFocus,
+                commitFn         = args.commit,
+                commitVerb       = args.commitVerb,
+                extraControls    = args.extraControls,
+                showInstructions = ShowInstructions)
+            }
 
+          _.startWithStateSnapshot("")(new EditorAndState(_, propsMemo))
+        }
+
+        private class EditorAndState(ss: StateSnapshot[String],
+                                    propsMemo: PropsInputs => Props) extends EditorImpl {
+          override type Props              = RCE.Props
+          override def renderImpl          = _.render
+          override def valueImpl           = _.parseResult
+          override val props               = (args, asyncState) => propsMemo((ss, args, asyncState))
           override type State              = String
           override val stateType           = implicitly[ClassTag[String]]
           override val state               = ss.value
-          override def withState(s: State) = new EditorAndState(ss.withValue(s))
+          override def withState(s: State) = new EditorAndState(ss.withValue(s), propsMemo)
         }
       }
 
       object Single extends ForValueType {
         import ReqCodeEditor.{Single => RCE}
 
-        override type Args = EditorArgs.ForReqCodeEditor[Value]
+        override type Args  = EditorArgs.ForReqCodeEditor[Value]
         override type Value = FieldKey.Code.Value
+        type Props          = RCE.Props
+        type PropsInputs    = (StateSnapshot[String], Args, AsyncState)
 
-        def apply: InitFn =
-          _.startWithStateSnapshot("")(new EditorAndState(_))
+        def apply: InitFn = {
 
-        private class EditorAndState(ss: StateSnapshot[String]) extends EditorImpl {
-          override type Props = RCE.Props
-          override def renderImpl = _.render
-          override def valueImpl = _.parseResult
-          override val props = (args, asyncState) =>
-            RCE.Props(
-              edit             = ss,
-              initialValue     = None,
-              trie             = args.trie,
-              asyncStatus      = EditorStatus.async(asyncState),
-              abort            = args.abort,
-              abortVerb        = args.abortVerb,
-              autoFocus        = args.autoFocus,
-              commitFn         = args.commit,
-              commitVerb       = args.commitVerb,
-              extraControls    = args.extraControls,
-              showInstructions = ShowInstructions)
+          val propsMemo =
+            newPropsMemo[PropsInputs, Props] { in =>
+              val (ss, args, asyncState) = in
+              RCE.Props(
+                edit             = ss,
+                initialValue     = None,
+                trie             = args.trie,
+                asyncStatus      = EditorStatus.async(asyncState),
+                abort            = args.abort,
+                abortVerb        = args.abortVerb,
+                autoFocus        = args.autoFocus,
+                commitFn         = args.commit,
+                commitVerb       = args.commitVerb,
+                extraControls    = args.extraControls,
+                showInstructions = ShowInstructions)
+            }
 
+          _.startWithStateSnapshot("")(new EditorAndState(_, propsMemo))
+        }
+
+        private class EditorAndState(ss: StateSnapshot[String],
+                                     propsMemo: PropsInputs => Props) extends EditorImpl {
+          override type Props              = RCE.Props
+          override def renderImpl          = _.render
+          override def valueImpl           = _.parseResult
+          override val props               = (args, asyncState) => propsMemo((ss, args, asyncState))
           override type State              = String
           override val stateType           = implicitly[ClassTag[String]]
           override val state               = ss.value
-          override def withState(s: State) = new EditorAndState(ss.withValue(s))
+          override def withState(s: State) = new EditorAndState(ss.withValue(s), propsMemo)
         }
       }
     }
@@ -205,10 +226,11 @@ object NewEditor {
       import shipreq.webapp.client.project.widgets.editors_with_controls.ImplicationEditor
       import ImplicationEditor.{Lookup, ValidationFn}
 
-      type LookupFn = (Project, PlainText.ForProject.AnyCtx) => Lookup
-
-      override type Args = EditorArgs.ForImplicationEditor
+      type LookupFn       = (Project, PlainText.ForProject.AnyCtx) => Lookup
+      override type Args  = EditorArgs.ForImplicationEditor
       override type Value = FieldKey.Implications#Value
+      type Props          = ImplicationEditor.Props
+      type PropsInputs    = (StateSnapshot[String], Args, AsyncState)
 
       def apply(scope: ImplicationScope): InitFn =
         scope.fold(customField, all)
@@ -226,8 +248,7 @@ object NewEditor {
         start(dir, lookup)
       }
 
-      private def start(dir: Direction, lookupFn: LookupFn): InitFn = ictx => {
-        import ictx._
+      private def start(dir: Direction, lookupFn: LookupFn): InitFn = {
 
         val lookupFnMemo: LookupFn =
           LastValueMemo(lookupFn.tupled).toFn2
@@ -235,34 +256,38 @@ object NewEditor {
         val valFnMemo: Project => ValidationFn =
           LastValueMemo(ImplicationEditor.ValidationFn(_, None, Set.empty, dir))
 
-        startWithStateSnapshot("")(new EditorAndState(_, lookupFnMemo, valFnMemo))
+        val propsMemo =
+          newPropsMemo[PropsInputs, Props] { in =>
+            val (ss, args, asyncState) = in
+            ImplicationEditor.Props(
+              edit             = ss,
+              lookup           = lookupFnMemo(args.project, args.plainText),
+              validationFn     = valFnMemo(args.project),
+              asyncStatus      = EditorStatus.async(asyncState),
+              abort            = args.abort,
+              abortVerb        = args.abortVerb,
+              autoFocus        = args.autoFocus,
+              commitFn         = args.commit,
+              commitVerb       = args.commitVerb,
+              textSearch       = args.textSearch,
+              extraControls    = args.extraControls,
+              showInstructions = ShowInstructions)
+          }
+
+        _.startWithStateSnapshot("")(new EditorAndState(_, propsMemo))
       }
 
-      private class EditorAndState(ss      : StateSnapshot[String],
-                                   lookupFn: LookupFn,
-                                   valFn   : Project => ValidationFn) extends EditorImpl {
-        override type Props = ImplicationEditor.Props
-        override def renderImpl = _.render
-        override def valueImpl = _.parseResult.map(_.added)
-        override val props = (args, asyncState) =>
-          ImplicationEditor.Props(
-            edit             = ss,
-            lookup           = lookupFn(args.project, args.plainText),
-            validationFn     = valFn(args.project),
-            asyncStatus      = EditorStatus.async(asyncState),
-            abort            = args.abort,
-            abortVerb        = args.abortVerb,
-            autoFocus        = args.autoFocus,
-            commitFn         = args.commit,
-            commitVerb       = args.commitVerb,
-            textSearch       = args.textSearch,
-            extraControls    = args.extraControls,
-            showInstructions = ShowInstructions)
+      private class EditorAndState(ss       : StateSnapshot[String],
+                                   propsMemo: PropsInputs => Props) extends EditorImpl {
 
+        override type Props              = EditImplications.Props
+        override def renderImpl          = _.render
+        override def valueImpl           = _.parseResult.map(_.added)
+        override val props               = (args, asyncState) => propsMemo((ss, args, asyncState))
         override type State              = String
         override val stateType           = implicitly[ClassTag[String]]
         override val state               = ss.value
-        override def withState(s: State) = new EditorAndState(ss.withValue(s), lookupFn, valFn)
+        override def withState(s: State) = new EditorAndState(ss.withValue(s), propsMemo)
       }
     }
 
@@ -271,8 +296,10 @@ object NewEditor {
       import shipreq.webapp.client.project.widgets.editors_with_controls.TagEditor
       import TagEditor.Lookup
 
-      override type Args = EditorArgs.ForTagEditor
+      override type Args  = EditorArgs.ForTagEditor
       override type Value = Set[ApplicableTagId]
+      type Props          = TagEditor.Props
+      type PropsInputs    = (StateSnapshot[String], Args, AsyncState)
 
       def allTags(reqTypeId: ReqTypeId): InitFn =
         apply(reqTypeId, Lookup.all)
@@ -283,41 +310,43 @@ object NewEditor {
       def customField(reqTypeId: ReqTypeId, fid: CustomField.Tag.Id): InitFn =
         apply(reqTypeId, Lookup.forTagField(fid))
 
-      def apply(reqTypeId: ReqTypeId, lookupFn: Project => Lookup): InitFn = ictx => {
-        import ictx._
+      def apply(reqTypeId: ReqTypeId, lookupFn: Project => Lookup): InitFn = {
 
         val lookupFnMemo: Project => Lookup =
           LastValueMemo(lookupFn)
 
-        startWithStateSnapshot("")(new EditorAndState(_, reqTypeId, lookupFnMemo))
+        val propsMemo =
+          newPropsMemo[PropsInputs, Props] { in =>
+            val (ss, args, asyncState) = in
+            TagEditor.Props(
+              preEditValue     = None,
+              naTags           = args.project.config.naTags(reqTypeId),
+              edit             = ss,
+              lookup           = lookupFnMemo(args.project),
+              asyncStatus      = EditorStatus.async(asyncState),
+              abort            = args.abort,
+              abortVerb        = args.abortVerb,
+              autoFocus        = args.autoFocus,
+              commitFn         = args.commit,
+              commitVerb       = args.commitVerb,
+              extraControls    = args.extraControls,
+              showInstructions = ShowInstructions)
+          }
+
+        _.startWithStateSnapshot("")(new EditorAndState(_, propsMemo))
       }
 
       private class EditorAndState(ss       : StateSnapshot[String],
-                                   reqTypeId: ReqTypeId,
-                                   lookupFn : Project => Lookup) extends EditorImpl {
+                                   propsMemo: PropsInputs => Props) extends EditorImpl {
 
-        override type Props = TagEditor.Props
-        override def renderImpl = _.render
-        override def valueImpl = _.parseResultSet
-        override val props = (args, asyncState) =>
-          TagEditor.Props(
-            preEditValue     = None,
-            naTags           = args.project.config.naTags(reqTypeId),
-            edit             = ss,
-            lookup           = lookupFn(args.project),
-            asyncStatus      = EditorStatus.async(asyncState),
-            abort            = args.abort,
-            abortVerb        = args.abortVerb,
-            autoFocus        = args.autoFocus,
-            commitFn         = args.commit,
-            commitVerb       = args.commitVerb,
-            extraControls    = args.extraControls,
-            showInstructions = ShowInstructions)
-
+        override type Props              = EditTags.Props
+        override def renderImpl          = _.render
+        override def valueImpl           = _.parseResultSet
+        override val props               = (args, asyncState) => propsMemo((ss, args, asyncState))
         override type State              = String
         override val stateType           = implicitly[ClassTag[String]]
         override val state               = ss.value
-        override def withState(s: State) = new EditorAndState(ss.withValue(s), reqTypeId, lookupFn)
+        override def withState(s: State) = new EditorAndState(ss.withValue(s), propsMemo)
       }
     }
 
@@ -326,48 +355,55 @@ object NewEditor {
       import shipreq.webapp.base.text._
       import shipreq.webapp.client.project.widgets.editors_with_controls.RichTextEditor
 
-      abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) extends ForValueType {
+      abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) extends ForValueType { base =>
         val T: editor.text.type = editor.text
 
-        override type Args = EditorArgs.ForTextEditor[Value]
+        override type Args  = EditorArgs.ForTextEditor[Value]
         override type Value = T.OptionalText
+        type Props          = editor.Optional
+        type PropsInputs    = (StateSnapshot[String], Args, AsyncState)
 
-        def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn =
-          _.startWithStateSnapshot("")(new EditorAndState(_, pid, reqTypeId))
+        def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn = {
+
+          val propsMemo =
+            newPropsMemo[PropsInputs, Props] { in =>
+              val (ss, args, asyncState) = in
+              editor.Optional(
+                project            = args.project,
+                naTags             = args.project.config.naTags(reqTypeId),
+                plainTextNoCtx     = args.projectWidgets.plainText,
+                textSearch         = args.textSearch,
+                projectWidgets     = args.projectWidgets,
+                edit               = ss,
+                asyncStatus        = EditorStatus.async(asyncState),
+                abort              = args.abort,
+                abortVerb          = args.abortVerb,
+                abortConfirmation  = None,
+                autoFocus          = args.autoFocus,
+                commitFn           = args.commit,
+                commitVerb         = args.commitVerb,
+                editorStyle        = editorStyle,
+                preview            = args.previewRW(pid),
+                preEditValue       = None,
+                extraControls      = args.extraControls,
+                showInstructions   = ShowInstructions,
+                optionalFullscreen = None)
+            }
+
+          _.startWithStateSnapshot("")(new EditorAndState(_, propsMemo))
+        }
 
         private class EditorAndState(ss       : StateSnapshot[String],
-                                     pid      : PreviewId,
-                                     reqTypeId: Option[ReqTypeId]) extends EditorImpl {
+                                     propsMemo: PropsInputs => Props) extends EditorImpl {
 
-          override type Props = editor.Optional
-          override def renderImpl = _.render
-          override def valueImpl = _.parseResult
-          override val props = (args, asyncState) =>
-            editor.Optional(
-              project            = args.project,
-              naTags             = args.project.config.naTags(reqTypeId),
-              plainTextNoCtx     = args.projectWidgets.plainText,
-              textSearch         = args.textSearch,
-              projectWidgets     = args.projectWidgets,
-              edit               = ss,
-              asyncStatus        = EditorStatus.async(asyncState),
-              abort              = args.abort,
-              abortVerb          = args.abortVerb,
-              abortConfirmation  = None,
-              autoFocus          = args.autoFocus,
-              commitFn           = args.commit,
-              commitVerb         = args.commitVerb,
-              editorStyle        = editorStyle,
-              preview            = args.previewRW(pid),
-              preEditValue       = None,
-              extraControls      = args.extraControls,
-              showInstructions   = ShowInstructions,
-              optionalFullscreen = None)
-
+          override type Props              = base.Props
+          override def renderImpl          = _.render
+          override def valueImpl           = _.parseResult
+          override val props               = (args, asyncState) => propsMemo((ss, args, asyncState))
           override type State              = String
           override val stateType           = implicitly[ClassTag[String]]
           override val state               = ss.value
-          override def withState(s: State) = new EditorAndState(ss.withValue(s), pid, reqTypeId)
+          override def withState(s: State) = new EditorAndState(ss.withValue(s), propsMemo)
         }
       }
 
@@ -382,48 +418,55 @@ object NewEditor {
       import shipreq.webapp.base.text._
       import shipreq.webapp.client.project.widgets.editors_with_controls.RichTextEditor
 
-      abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) extends ForValueType {
+      abstract class Base[T <: Text.Generic](val editor: RichTextEditor[T]) extends ForValueType { base =>
         val T: editor.text.type = editor.text
 
-        override type Args = EditorArgs.ForTextEditor[Value]
+        override type Args  = EditorArgs.ForTextEditor[Value]
         override type Value = T.NonEmptyText
+        type Props          = editor.NonEmpty
+        type PropsInputs    = (StateSnapshot[String], Args, AsyncState)
 
-        def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn =
-          _.startWithStateSnapshot("")(new EditorAndState(_, pid, reqTypeId))
+        def apply(pid: PreviewId, reqTypeId: Option[ReqTypeId]): InitFn = {
+
+          val propsMemo =
+            newPropsMemo[PropsInputs, Props] { in =>
+              val (ss, args, asyncState) = in
+              editor.NonEmpty(
+                project            = args.project,
+                naTags             = args.project.config.naTags(reqTypeId),
+                plainTextNoCtx     = args.projectWidgets.plainText,
+                textSearch         = args.textSearch,
+                projectWidgets     = args.projectWidgets,
+                edit               = ss,
+                asyncStatus        = EditorStatus.async(asyncState),
+                abort              = args.abort,
+                abortVerb          = args.abortVerb,
+                abortConfirmation  = None,
+                autoFocus          = args.autoFocus,
+                commitFn           = args.commit,
+                commitVerb         = args.commitVerb,
+                editorStyle        = editorStyle,
+                preview            = args.previewRW(pid),
+                preEditValue       = None,
+                extraControls      = args.extraControls,
+                showInstructions   = ShowInstructions,
+                optionalFullscreen = None)
+            }
+
+          _.startWithStateSnapshot("")(new EditorAndState(_, propsMemo))
+        }
 
         private class EditorAndState(ss       : StateSnapshot[String],
-                                     pid      : PreviewId,
-                                     reqTypeId: Option[ReqTypeId]) extends EditorImpl {
+                                     propsMemo: PropsInputs => Props) extends EditorImpl {
 
-          override type Props = editor.NonEmpty
-          override def renderImpl = _.render
-          override def valueImpl = _.parseResult
-          override val props = (args, asyncState) =>
-            editor.NonEmpty(
-              project            = args.project,
-              naTags             = args.project.config.naTags(reqTypeId),
-              plainTextNoCtx     = args.projectWidgets.plainText,
-              textSearch         = args.textSearch,
-              projectWidgets     = args.projectWidgets,
-              edit               = ss,
-              asyncStatus        = EditorStatus.async(asyncState),
-              abort              = args.abort,
-              abortVerb          = args.abortVerb,
-              abortConfirmation  = None,
-              autoFocus          = args.autoFocus,
-              commitFn           = args.commit,
-              commitVerb         = args.commitVerb,
-              editorStyle        = editorStyle,
-              preview            = args.previewRW(pid),
-              preEditValue       = None,
-              extraControls      = args.extraControls,
-              showInstructions   = ShowInstructions,
-              optionalFullscreen = None)
-
+          override type Props              = base.Props
+          override def renderImpl          = _.render
+          override def valueImpl           = _.parseResult
+          override val props               = (args, asyncState) => propsMemo((ss, args, asyncState))
           override type State              = String
           override val stateType           = implicitly[ClassTag[String]]
           override val state               = ss.value
-          override def withState(s: State) = new EditorAndState(ss.withValue(s), pid, reqTypeId)
+          override def withState(s: State) = new EditorAndState(ss.withValue(s), propsMemo)
         }
       }
 
