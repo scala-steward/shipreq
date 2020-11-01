@@ -108,6 +108,9 @@ abstract class DataReusability extends BaseReusability {
   implicit def reusabilityUseCases: Reusability[UseCases] =
     Reusability.byRef
 
+  implicit def reusabilityUseCaseSteps: Reusability[UseCaseSteps] =
+    Reusability.byRef
+
   implicit def reusabilityReqCodeTrie: Reusability[ReqCode.Trie] =
     Reusability.byRef
 

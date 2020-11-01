@@ -7,6 +7,7 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
+import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.base.text.UseCaseStepFlowText.TextAndFlow
 import shipreq.webapp.base.text._
@@ -27,18 +28,27 @@ object UseCaseStepTree {
 
   type RenderBodyFn = RenderArgs => VdomElement
 
-  final case class Props(uc          : UseCase,
+  final case class Props(id          : UseCaseId,
+                         pos         : ReqTypePos,
+                         live        : Live,
                          stepData    : StepData,
                          filterDead  : FilterDead,
                          useCases    : UseCases,
-                         renderBody  : RenderBodyFn, // TODO <------------------ prevents Reuse. Underlying fn uses state.
+                         renderBody  : Reusable[RenderBodyFn],
                          cmdRunner   : AsyncFeature.Runner.D1[Cell, UpdateContentCmd.ForUseCaseStep, Any],
                          addCmdRunner: AsyncFeature.Runner.D1[Cell, UpdateContentCmd.AddUseCaseStep, Any]) {
     @inline def render = Component(this)
   }
 
+  implicit val reusabilityStepData: Reusability[StepData] =
+    Reusability.derive
+
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.derive
+
   val Component = ScalaComponent.builder[Props]
     .render_P(render)
+    .configure(Reusability.shouldComponentUpdate)
     .build
 
   private val stepBodyBase =
@@ -61,7 +71,6 @@ object UseCaseStepTree {
     import p._
     import stepData._
 
-    val pos        = uc.pubid.pos
     val stepFilter = stepFilterM(filterDead)
 
     val results = VdomArray.empty()
@@ -83,12 +92,12 @@ object UseCaseStepTree {
               () => focus.textAndFlow(filterDead)))
 
         def ctrls: VdomElement =
-          uc.liveUC match {
+          p.live match {
             case Live =>
               val cellCtrls = Cell.UseCaseStepCtrls(id)
               val cellAdd   = Cell.AddUseCaseStep(id)
               UseCaseStepRow.LiveControls.Props(
-                uc.id, field, id, fullLabel, live, loc,
+                p.id, field, id, fullLabel, live, loc,
                 canShiftRight = field.canShiftRight(loc, steps.locValidity, stepData.mdt),
                 runCtrl       = cmdRunner(cellCtrls),
                 runAdd        = addCmdRunner(cellAdd),
@@ -107,11 +116,11 @@ object UseCaseStepTree {
       }
     }).drain()
 
-    if (row.tailStep && uc.liveUC.is(Live)) {
+    if (row.tailStep && p.live.is(Live)) {
       val loc   = VectorTree.Location(steps.tree.children.count(_.value.liveExplicitly is Live))
       val ploc  = VectorTree.PartialLocation(loc, Valid)
       val lbl   = field.stepLabel(pos, ploc, UseCaseStepLabelFmt.`N.m`)
-      def cmd   = UpdateContentCmd.AddUseCaseStep(uc.id, field, VectorTree.ParentLocation.Empty)
+      def cmd   = UpdateContentCmd.AddUseCaseStep(p.id, field, VectorTree.ParentLocation.Empty)
       val cell  = Cell.AddUseCaseTailStep(row)
       val cb    = addCmdRunner(cell).run(cmd)
       val as    = addCmdRunner.asyncState(cell)
