@@ -1,7 +1,6 @@
 ### Problems
 * blacklist @admin, @owner
 * new issue: duplicate titles (per req type?)
-* typing has become really slow
 
 
 
