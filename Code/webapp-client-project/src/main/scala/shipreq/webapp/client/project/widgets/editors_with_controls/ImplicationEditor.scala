@@ -55,6 +55,9 @@ object ImplicationEditor {
         UnivEq.emptySet,
         p.content.reqs.pubids.uniquePositions)
 
+    def allExcept(except: ReqId)(p: Project, pt: PlainText.ForProject.AnyCtx): Lookup =
+      all(p, pt).dontSuggest(except)
+
     def forCustomColumn(p: Project, l: Lookup, fid: CustomField.Implication.Id): Lookup = {
       val f = p.config.fields.custom(fid)
       l.outlaw(_.reqType.reqTypeId !=* f.reqTypeId, i => Invalidity(i.pubidStr + " is not applicable in this column"))
@@ -91,7 +94,7 @@ object ImplicationEditor {
   }
 
   type Output   = SetDiff.NE[ReqId]
-  type CommitFn = Output ~=> Callback
+  type CommitFn = Output => Callback
 
   final case class Props(edit            : StateSnapshot[String],
                          lookup          : Lookup,
@@ -123,7 +126,6 @@ object ImplicationEditor {
         stringValidator(l)
           .mapValid(_.toSet)
           .andThenAuditor(DataValidators.implicationAuditor(p, subject, initialValues, dir))
-
 
     private def stringValidator(l: Lookup): Validator[String, List[String], List[ReqId]] = {
       val parse: Auditor[String, ReqId] =
@@ -212,22 +214,21 @@ object ImplicationEditor {
       EditControlsFeature.renderEditor(p.status, editor, p.edit.value, instructions)
     }
 
-    val onMount: Callback =
-      EditControlsFeature.onTextareaEditorMount(editorRef, $.props.map(_.autoFocus)).toCallback
+    def onMount(p: Props): Callback =
+      EditControlsFeature.onTextareaEditorMount(editorRef, p.autoFocus)
   }
 
   implicit val reusabilityLookup: Reusability[Lookup] =
     Reusability.byRef[Lookup] || Reusability.byUnivEq
 
-//  implicit val reusabilityProps: Reusability[Props] =
-//    Reusability.never // TODO Reusability.derive
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.byRef // because Props are memo'ised in NewEditor
 
   val Component =
     ScalaComponent.builder[Props]
       .renderBackend[Backend]
-      .configure(
-        //Reusability.shouldComponentUpdate,
-        AutoComplete.install)
-      .componentDidMount(_.backend.onMount)
+      .configure(Reusability.shouldComponentUpdate)
+      .configure(AutoComplete.install)
+      .componentDidMount($ => $.backend.onMount($.props))
       .build
 }

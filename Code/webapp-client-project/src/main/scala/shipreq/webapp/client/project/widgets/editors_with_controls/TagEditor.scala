@@ -77,7 +77,7 @@ object TagEditor {
   }
 
   type Output   = SetDiff.NE[ApplicableTagId]
-  type CommitFn = Output ~=> Callback
+  type CommitFn = Output => Callback
 
   val liveCorrect: String => String =
     _.replace("\n", "")
@@ -124,10 +124,10 @@ object TagEditor {
   }
 
   implicit val reusabilityLookup: Reusability[Lookup] =
-    Reusability.byRef[Lookup]
+    Reusability.byRef
 
-//  implicit val reusabilityProps: Reusability[Props] =
-//    Reusability.never // TODO Reusability.derive
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.byRef // because Props are memo'ised in NewEditor
 
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.EditorBackend {
     private val pxLookup = Px.props($).map(_.lookup).withReuse.autoRefresh
@@ -200,17 +200,16 @@ object TagEditor {
       EditControlsFeature.renderEditor(p.status, editor, p.edit.value, instructions)
     }
 
-    val onMount: Callback =
-      EditControlsFeature.onTextareaEditorMount(editorRef, $.props.map(_.autoFocus)).toCallback >>
-        trigger(ta => Some(ta.value))
+    def onMount(p: Props): Callback =
+      EditControlsFeature.onTextareaEditorMount(editorRef, p.autoFocus) >>
+        trigger(ta => Some(ta.value)).when_(p.autoFocus)
   }
 
   val Component =
     ScalaComponent.builder[Props]
       .renderBackend[Backend]
-      .configure(
-        //Reusability.shouldComponentUpdate,
-        AutoComplete.install)
-      .componentDidMount(_.backend.onMount)
+      .configure(Reusability.shouldComponentUpdate)
+      .configure(AutoComplete.install)
+      .componentDidMount($ => $.backend.onMount($.props))
       .build
 }

@@ -98,7 +98,7 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
   }
 
   object Optional {
-    type CommitFn = text.OptionalText ~=> Callback
+    type CommitFn = text.OptionalText => Callback
   }
 
   // ===================================================================================================================
@@ -136,13 +136,13 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
   }
 
   object NonEmpty {
-    type CommitFn = text.NonEmptyText ~=> Callback
+    type CommitFn = text.NonEmptyText => Callback
   }
 
   // ===================================================================================================================
 
-//  implicit val reusabilityProps: Reusability[Props] =
-//    Reusability.never // TODO Reusability.derive
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.byRef // because Props are memo'ised in NewEditor
 
   val liveCorrect: EndoFn[String] =
     RichTextEditor.liveCorrect(text)
@@ -275,12 +275,9 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
       )
     }
 
-    val onMount: Callback =
-      for {
-        _ <- EditControlsFeature.onTextareaEditorMount(editorRef, $.props.map(_.autoFocus)).toCallback
-        p <- $.props
-        _ <- scrollIntoView.when_(p.autoFocus)
-      } yield ()
+    def onMount(p: Props): Callback =
+      EditControlsFeature.onTextareaEditorMount(editorRef, p.autoFocus) >>
+        scrollIntoView.when_(p.autoFocus)
   }
 
   private def initialState(p: Props) =
@@ -292,10 +289,9 @@ sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, fin
     ScalaComponent.builder[Props]("RichTextEditor:" + name)
       .initialStateFromProps(initialState)
       .renderBackend[Backend]
-      .configure(
-        //Reusability.shouldComponentUpdate,
-        AutoComplete.install)
-      .componentDidMount(_.backend.onMount)
+      .configure(Reusability.shouldComponentUpdate)
+      .configure(AutoComplete.install)
+      .componentDidMount($ => $.backend.onMount($.props))
       .build
 }
 
@@ -311,6 +307,9 @@ object RichTextEditor {
       else
         EditControlsFeature.Font.Default
   }
+
+  implicit val reusabilityState: Reusability[State] =
+    Reusability.derive
 
   private val preprocessor = {
     val preprocessSL = PreProcessor(PreProcessor.FixChar.singleLine, PreProcessor.CanTrim.no)

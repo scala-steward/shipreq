@@ -31,7 +31,7 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
 
   val lineCardinality: LineCardinality
 
-  type CommitFn = Out ~=> Callback
+  type CommitFn = Out => Callback
 
   final lazy val potentialValueAcceptor: PotentialValueAcceptor[String] =
     PotentialValueAcceptor.correct(liveCorrect)
@@ -56,8 +56,8 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
     def render: VdomElement = Component(this)
   }
 
-//  implicit lazy val reusabilityProps: Reusability[Props] =
-//    Reusability.never // TODO Reusability.derive
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.byRef // because Props are memo'ised in NewEditor
 
   final class Backend($: BackendScope[Props, Unit]) extends AutoComplete.EditorBackend {
     private val pxTrie = Px.props($).map(_.trie).withReuse.autoRefresh
@@ -111,18 +111,17 @@ sealed abstract class ReqCodeEditor[In: Reusability, Out] {
       EditControlsFeature.renderEditor(p.status, editor, p.edit.value, instructions)
     }
 
-    val onMount: Callback =
-      EditControlsFeature.onTextareaEditorMount(editorRef, $.props.map(_.autoFocus)).toCallback
+    def onMount(p: Props): Callback =
+      EditControlsFeature.onTextareaEditorMount(editorRef, p.autoFocus)
   }
 
   // lazy else there'll be a FieldNotInitialised error via .configure -> impTextEditor -> textEditor
   lazy val Component =
     ScalaComponent.builder[Props]
       .renderBackend[Backend]
-      .configure(
-        //Reusability.shouldComponentUpdate,
-        AutoComplete.install)
-      .componentDidMount(_.backend.onMount)
+      .configure(Reusability.shouldComponentUpdate)
+      .configure(AutoComplete.install)
+      .componentDidMount($ => $.backend.onMount($.props))
       .build
 }
 

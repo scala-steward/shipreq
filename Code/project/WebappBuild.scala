@@ -17,6 +17,8 @@ import TaskmanBuild._
   */
 object WebappBuild {
 
+  lazy val genLastValueMemoBoilerplate = TaskKey[File]("genLastValueMemoBoilerplate")
+
   object Frontend {
     val mode = if (releaseMode) "prod" else "dev"
     val dist = s"../frontend/dist/$mode"
@@ -77,7 +79,10 @@ object WebappBuild {
       .dependsOn(baseUtil, webappMacro)
       .depsForBoth(Monocle.macros ++ Nyaya.prop ++ boopickle)
       .depsForJs(React.most ++ scalajsDom)
-      .settings(unmanagedSourceDirectories in Compile += baseDirectory.value / ".." / Frontend.scala)
+      .settings(
+        unmanagedSourceDirectories in Compile += baseDirectory.value / ".." / Frontend.scala)
+      .jsSettings(
+        genLastValueMemoBoilerplate := GenLastValueMemoBoilerplate(sourceDirectory.value / "main" / "scala"))
 
   lazy val webappBaseMemberJvm = webappBaseMember.jvm
   lazy val webappBaseMemberJs  = webappBaseMember.js

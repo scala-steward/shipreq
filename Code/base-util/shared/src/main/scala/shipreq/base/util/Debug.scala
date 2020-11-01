@@ -4,6 +4,7 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.AsciiTable
 import java.time.Duration
+
 object Debug {
 
   def printStackTrace(filter: String = "shipreq"): Unit = {
@@ -60,6 +61,9 @@ object Debug {
   def logDuration[A](name: String, run: => A): A =
     logDuration(Some(name), run)
 
+  def logDurationN[A](name: String)(run: => A): A =
+    logDuration(Some(name), run)
+
   def logDuration[A](name: Option[String], run: => A): A = {
     val start = System.nanoTime()
     try
@@ -71,6 +75,22 @@ object Debug {
         case Some(n) => println(s"$n completed in ${dur.conciseDesc}")
         case None    => println(s"Completed in ${dur.conciseDesc}")
       }
+    }
+  }
+
+  def durationLogger(prefix: String = ""): DurationLogger =
+    new DurationLogger(prefix)
+
+  final class DurationLogger(prefix: String) {
+    private val start = System.nanoTime()
+    private var last = start
+
+    def log(name: Any): Unit = {
+      val now = System.nanoTime()
+      val dur = Duration.ofNanos(now - last)
+      val durT = Duration.ofNanos(now - start)
+      println(s"$prefix$name completed in ${dur.conciseDesc} (${durT.conciseDesc} since start)")
+      last = now
     }
   }
 

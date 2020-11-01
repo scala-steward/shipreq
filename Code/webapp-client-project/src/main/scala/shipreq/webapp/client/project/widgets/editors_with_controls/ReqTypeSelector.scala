@@ -23,7 +23,7 @@ object ReqTypeSelector {
                          choices     : NonEmptySet[RT],
                          asyncStatus : Option[EditorStatus.Async],
                          abort       : Option[Callback],
-                         commitFn    : Option[RT ~=> Callback]) {
+                         commitFn    : Option[RT => Callback]) {
 
     val change: PotentialChange[Nothing, RT] =
       PotentialChange.Success(edit.value).ignoreOption(initialValue)
@@ -37,8 +37,8 @@ object ReqTypeSelector {
     @inline def render: VdomNode = Component(this)
   }
 
-  // implicit val reusabilityProps: Reusability[Props] =
-  //   Reusability.derive
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.byRef // because Props are memo'ised in NewEditor
 
   private def key(rt: RT): Dropdown.ItemKey =
     rt.id.value.toString
@@ -76,7 +76,7 @@ object ReqTypeSelector {
 
   val Component = ScalaComponent.builder[Props]
     .render_P(render)
-    // .configure(Reusability.shouldComponentUpdate)
+    .configure(Reusability.shouldComponentUpdate)
     .build
 
   // ===================================================================================================================
@@ -93,11 +93,8 @@ object ReqTypeSelector {
     choices.find(_.mnemonic.value ==* input)
   }
 
-  def pxCustomReqTypes(p: Px[Project]): Px[Set[RT]] =
-    p.map(_.config.reqTypes.custom.values.toSet)
-
-  def pxChoices(initial: RT, pxCustomReqTypes: Px[Set[RT]]): Px[NonEmptySet[RT]] =
-    pxCustomReqTypes
-      .map(_.filter(_.live is Live))
-      .map(NonEmptySet(initial, _))
+  def choices(initial: RT, reqTypes: ReqTypes): NonEmptySet[RT] = {
+    val rts = reqTypes.custom.valuesIterator.filter(_.live is Live).toSet
+    NonEmptySet(initial, rts)
+  }
 }

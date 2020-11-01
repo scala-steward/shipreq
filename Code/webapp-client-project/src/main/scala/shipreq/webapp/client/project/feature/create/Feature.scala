@@ -1,5 +1,6 @@
 package shipreq.webapp.client.project.feature.create
 
+import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
@@ -12,44 +13,51 @@ import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.{CreateContentCmd, ManualIssueCmd}
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.state.NewEvents
+import shipreq.webapp.client.project.lib.DataReusability._
 
-/** Nothing here has `Reusability` because:
-  *
-  * 1. `Editor` doesn't have `Reusability`
-  * 2. `Read.ForEditor` has a `Editor` field which will always fail `Reusability` checks.
-  * 3. Once State is created, it is never cleared or removed. This prevents reuse-on-empty being helpful.
-  * 4. As a consequence, none of the `Read` classes can have `Reusability`
-  * 5. As a consequence, none of the `ReadWrite` classes can have `Reusability`
-  * 6. The `Write` classes are never passed around outside of `ReadWrite`, so `Reusability` is meaningless.
-  */
 object Feature {
 
   type AsyncError = ErrorMsg
   type AsyncState = AsyncFeature.Read.D0[AsyncError]
 
-  /** This is not safe for Reusability because implementations call `CallbackTo#runNow()`.
-    *
-    * Editability is not checked here, it's the responsibility of the `Feature` API.
+  /** Editability is not checked here, it's the responsibility of the `Feature` API.
     */
   trait Editor[-Args, +Value] {
-    def render(as: AsyncState, args: Args)(): VdomElement
+    def render(as: AsyncState, args: Args): VdomElement
     def value(args: Args): Editor.Value[Value]
 
     type State
     val stateType: ClassTag[State]
     val state: State
     def withState(state: State): Editor[Args, Value]
+
+    final override def hashCode =
+      state.##
+
+    final override def equals(obj: Any) =
+      obj match {
+        case t: Editor[_, _] => this eq t
+        case _               => false
+      }
   }
 
   object Editor {
     type Invalidity = shipreq.webapp.base.validation.Simple.Invalidity
     type Value[+A] = Invalidity \/ A
+
+    implicit def univEq[A, V]: UnivEq[Editor[A, V]] =
+      UnivEq.force
+
+    implicit val reusability: Reusability[Editor[Nothing, Any]] =
+      Reusability.byRef
   }
 
   /** Id used for [[shipreq.webapp.base.feature.PreviewFeature]] */
   final case class PreviewId(row: RowKey, cell: FieldKey)
+
   object PreviewId {
-    implicit def equality: UnivEq[PreviewId] = UnivEq.derive
+    implicit def univEq: UnivEq[PreviewId] = UnivEq.derive
+    implicit val reusability: Reusability[PreviewId] = Reusability.byRefOrUnivEq
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -97,6 +105,19 @@ object Feature {
       val init: ForProject =
         ForProject(UnivEq.emptyMap, Vector.empty)
     }
+
+    @nowarn("cat=unused")
+    private implicit def reusabilityMap[K, V]: Reusability[Map[K, V]] =
+      Reusability.byRef
+
+    private val _reusabilityF: Reusability[ForFields[Nothing]] =
+      Reusability.byRef || Reusability.derive
+
+    implicit def reusabilityF[FK <: FieldKey]: Reusability[ForFields[FK]] =
+      _reusabilityF.asInstanceOf[Reusability[ForFields[FK]]]
+
+    implicit val reusabilityP: Reusability[ForProject] =
+      Reusability.byRef || Reusability.derive
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -105,15 +126,13 @@ object Feature {
 
     /** An instance of this implies that Editability has already established.
       */
-    final class ForEditor[-A, +V](val editor: Editor[A, V], val async: AsyncState, emptyArgs: A) {
+    final case class ForEditor[-A, +V](editor: Editor[A, V], async: AsyncState) {
 
-      /** impure */
       def render(args: A): VdomElement =
-        editor.render(async, args)()
+        editor.render(async, args)
 
-      /** impure */
-      def value(): Editor.Value[V] =
-        editor.value(emptyArgs)
+      def value(args: A): Editor.Value[V] =
+        editor.value(args)
     }
 
     final case class ForFields[-FK <: FieldKey](state      : State.ForFields[FK],
@@ -122,7 +141,7 @@ object Feature {
 
       def apply(f: FK)(newEditor: => Editor[f.Args, f.Value]): Permission.DeniedOr[ForEditor[f.Args, f.Value]] =
         editability(f)(
-          new ForEditor(state(f).getOrElse(newEditor), async, NewEditorArgs.empty))
+          ForEditor(state(f).getOrElse(newEditor), async))
     }
 
     final case class ForProject(state      : State.ForProject,
@@ -131,23 +150,43 @@ object Feature {
       def apply(r: RowKey): ForFields[r.FieldKey] =
         ForFields(state(r), editability(r), async)
     }
+
+    implicit def univEqE[A, V]: UnivEq[ForEditor[A, V]] =
+      UnivEq.derive
+
+    private val _reusabilityF: Reusability[ForFields[Nothing]] =
+      Reusability.byRef || Reusability.derive
+
+    implicit def reusabilityF[FK <: FieldKey]: Reusability[ForFields[FK]] =
+      _reusabilityF.asInstanceOf[Reusability[ForFields[FK]]]
+
+    implicit val reusabilityP: Reusability[ForProject] =
+      Reusability.byRef || Reusability.derive
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object Write {
 
-    final case class ForRow[-FK <: FieldKey, -Cmd](rowAccess : StateAccessPure[State.ForFields[FieldKey]],
-                                                   rowEditors: NewEditor.ForFields[FK],
+    final case class ForRow[-FK <: FieldKey, -Cmd](rowAccess : Reusable[StateAccessPure[State.ForFields[FieldKey]]],
+                                                   rowEditors: Reusable[NewEditor.ForFields[FK]],
                                                    async     : AsyncFeature.Write.D0[AsyncError],
-                                                   ssp       : ServerSideProcInvoker[Cmd, ErrorMsg, NewEvents]) {
+                                                   ssp       : Reusable[ServerSideProcInvoker[Cmd, ErrorMsg, NewEvents]]) {
 
-      def startEditor(field: FK): Editor[field.Args, field.Value] = {
+      private def _startEditor(field: FK): Editor[field.Args, field.Value] = {
         val stateAccess: StateAccessPure[State.ForEditor[Nothing, Any]] =
-          rowAccess.zoomStateL(State.ForFields.untyped ^|-> Optics.mapValue(field))
+          rowAccess.value.zoomStateL(State.ForFields.untyped ^|-> Optics.mapValue(field))
 
         val ctx = NewEditor.Ctx[field.Args, field.Value](field.cast2(stateAccess))
         rowEditors(field)(ctx)
       }
+
+      // TODO Fix in Scala 3
+      UnivEq[FieldKey] // Proof that UnivEq.force below is ok
+      private val startEditorMemo: FK => Any =
+        Memo[FK, Any](_startEditor(_))(UnivEq.force)
+
+      def startEditor(field: FK): Editor[field.Args, field.Value] =
+        startEditorMemo(field).asInstanceOf[Editor[field.Args, field.Value]]
 
       /** Send a request to the server to create the content for this row. */
       def create(cmd      : Cmd,
@@ -158,14 +197,13 @@ object Feature {
         rowAccess.modState(_ - field)
     }
 
-    final case class ForProject(static              : NewEditor.Static,
-                                stateAccess         : StateAccessPure[State.ForProject],
+    final case class ForProject(stateAccess         : Reusable[StateAccessPure[State.ForProject]],
                                 async               : AsyncFeature.Write.D0[AsyncError],
-                                sspCreateContent    : ServerSideProcInvoker[CreateContentCmd, ErrorMsg, NewEvents],
-                                sspCreateManualIssue: ServerSideProcInvoker[ManualIssueCmd, ErrorMsg, NewEvents],
+                                sspCreateContent    : Reusable[ServerSideProcInvoker[CreateContentCmd, ErrorMsg, NewEvents]],
+                                sspCreateManualIssue: Reusable[ServerSideProcInvoker[ManualIssueCmd, ErrorMsg, NewEvents]],
                                ) {
 
-      private type SSP[-A] = ServerSideProcInvoker[A, ErrorMsg, NewEvents]
+      private type SSP[-A] = Reusable[ServerSideProcInvoker[A, ErrorMsg, NewEvents]]
 
       private val foldCmd = RowKey.FoldCmd[SSP](
         codeGroup   = _ => sspCreateContent,
@@ -174,16 +212,39 @@ object Feature {
         manualIssue = _ => sspCreateManualIssue,
       )
 
-      def apply(row: RowKey): ForRow[row.FieldKey, row.Cmd] =
+      private def _apply(row: RowKey): ForRow[row.FieldKey, row.Cmd] = {
+        val rrow = Reusable.implicitly(row)
+
+        val stateAccess2 =
+          Reusable.ap(stateAccess, rrow)((stateAccess, row) =>
+            stateAccess.zoomStateL(State.ForProject.untyped ^|-> Optics.mapValueEmpty(row, State.ForFields.empty)(_.isEmpty)))
+
         ForRow[row.FieldKey, row.Cmd](
-          stateAccess.zoomStateL(State.ForProject.untyped ^|-> Optics.mapValueEmpty(row, State.ForFields.empty)(_.isEmpty)),
-          NewEditor.forRow(static, row),
+          stateAccess2,
+          rrow.withValue(NewEditor.forRow(row)),
           async,
           foldCmd(row))
+      }
+      // TODO Fix in Scala 3
+      private val applyMemo: RowKey => Any =
+        Memo[RowKey, Any](_apply(_))
+
+      def apply(row: RowKey): ForRow[row.FieldKey, row.Cmd] =
+        applyMemo(row).asInstanceOf[ForRow[row.FieldKey, row.Cmd]]
+
 
       @inline def toReadWrite(r: Read.ForProject): ReadWrite.ForProject =
         ReadWrite.ForProject(r, this)
     }
+
+    private val _reusabilityR: Reusability[ForRow[Nothing, Nothing]] =
+      Reusability.byRef || Reusability.derive
+
+    implicit def reusabilityR[FK <: FieldKey, Cmd]: Reusability[ForRow[FK, Cmd]] =
+      _reusabilityR.narrow
+
+    implicit val reusabilityP: Reusability[ForProject] =
+      Reusability.byRef || Reusability.derive
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -194,8 +255,17 @@ object Feature {
     type ForManualIssueE = ForEditor[FieldKey.ManualIssue.Args, FieldKey.ManualIssue.Value]
 
     final case class ForRow[-FK <: FieldKey, -Cmd](read: Read.ForFields[FK], write: Write.ForRow[FK, Cmd]) {
-      def apply(f: FK): Permission.DeniedOr[ForEditor[f.Args, f.Value]] =
+
+      private def _apply(f: FK): Permission.DeniedOr[ForEditor[f.Args, f.Value]] =
         read(f)(write.startEditor(f))
+
+      // TODO Fix in Scala 3
+      UnivEq[FieldKey] // Proof that UnivEq.force below is ok
+      private val applyMemo: FK => Any =
+        Memo[FK, Any](_apply(_))(UnivEq.force)
+
+      def apply(f: FK): Permission.DeniedOr[ForEditor[f.Args, f.Value]] =
+        applyMemo(f).asInstanceOf[Permission.DeniedOr[ForEditor[f.Args, f.Value]]]
 
       /** Initiates a call to the server to create content for this row. */
       def create(cmd      : Cmd,
@@ -250,5 +320,14 @@ object Feature {
         }
       }
     }
+
+    private val _reusabilityR: Reusability[ForRow[Nothing, Nothing]] =
+      Reusability.byRef || Reusability.derive
+
+    implicit def reusabilityR[FK <: FieldKey, Cmd]: Reusability[ForRow[FK, Cmd]] =
+      _reusabilityR.narrow
+
+    implicit val reusabilityP: Reusability[ForProject] =
+      Reusability.byRef || Reusability.derive
   }
 }

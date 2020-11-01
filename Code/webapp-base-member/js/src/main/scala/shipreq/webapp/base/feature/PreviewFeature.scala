@@ -3,9 +3,11 @@ package shipreq.webapp.base.feature
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
+import japgolly.scalajs.react.internal.Effect
 import japgolly.scalajs.react.vdom.html_<^._
 import java.time.Duration
 import monocle.Lens
+import scala.reflect.ClassTag
 import scalacss.ScalaCssReact._
 import shipreq.base.util.Intersection
 import shipreq.webapp.base.lib.DataReusability._
@@ -186,7 +188,7 @@ object PreviewFeature {
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
   object Read {
-    final case class Single(status: State.Single) extends AnyVal {
+    final case class Single(status: State.Single) {
       def showPreview(wantOpen: => Boolean): Boolean =
         status match {
           case Some(m: Status.Manual) => m.show
@@ -214,32 +216,106 @@ object PreviewFeature {
     }
 
     object Single {
-      val empty = apply(None)
+      val empty: Single =
+        apply(None)
+
+      implicit val reusability: Reusability[Single] =
+        Reusability.derive
     }
 
     sealed trait Composite[Id] {
       def apply(id: Id): Single
 
-      final def mapId[A](i: Intersection[Id, A]): Composite[A] =
+      final def mapId[A](i: Reusable[Intersection[Id, A]]): Composite[A] =
         Composite.mapped(this, i)
     }
 
     object Composite {
-      def apply[Id](s: State.Composite[Id]): Composite[Id] =
-        new Composite[Id] {
-          override def apply(id: Id): Single =
-            Single(s.get(id))
-        }
 
-      private def mapped[A, B](s: Composite[A], i: Intersection[A, B]): Composite[B] =
-        new Composite[B] {
-          override def apply(b: B): Single =
-            i.reverse.fold(b, s.apply)(Single.empty)
-        }
+      def apply[Id](s: State.Composite[Id]): Composite[Id] =
+        Basic(s)
+
+      private final case class Basic[Id](s: State.Composite[Id]) extends Composite[Id] {
+        override def apply(id: Id): Single =
+          Single(s.get(id))
+      }
+
+      private def mapped[A, B](s: Composite[A], i: Reusable[Intersection[A, B]]): Composite[B] =
+        Mapped(s, i)
+
+      private final case class Mapped[A, B](s: Composite[A], i: Reusable[Intersection[A, B]]) extends Composite[B] {
+        override def apply(b: B): Single =
+          i.reverse.fold(b, s.apply)(Single.empty)
+      }
+
+      private case object Empty extends Composite[Any] {
+        override def apply(id: Any) =
+          Single.empty
+      }
+
+      def empty[Id]: Composite[Id] =
+        Empty.asInstanceOf[Composite[Id]]
+
+      private def reusabilityBasic[Id]   : Reusability[Basic[Id]]    = Reusability.derive
+      private def reusabilityMapped[A, B]: Reusability[Mapped[A, B]] = Reusability.derive
+
+      private def _reusability[Id]: Reusability[Composite[Id]] = {
+        val basic = reusabilityBasic[Id]
+        val mapped = reusabilityMapped[Any, Id]
+        type M = Mapped[Any, Id]
+
+        Reusability[Composite[Id]]((x, y) =>
+          x match {
+            case a: Basic[Id] =>
+              y match {
+                case b: Basic[Id] => basic.test(a, b)
+                case _            => false
+              }
+            case a: Mapped[_, Id] =>
+              y match {
+                case b: Mapped[_, Id] => mapped.test(a.asInstanceOf[M], b.asInstanceOf[M])
+                case _                => false
+              }
+            case Empty =>
+              Empty == y
+          }
+        )
+      }
+
+      private val __reusability = _reusability[Any]
+      implicit def reusability[Id] = __reusability.asInstanceOf[Reusability[Composite[Id]]]
     }
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+
+  // TODO delete after https://github.com/japgolly/scalajs-react/issues/793
+  private def stateAccessConst[S](constState: CallbackTo[S]): StateAccessPure[S] =
+    new StateAccessPure[S] {
+      override def state =
+        constState
+
+      override type WithMappedState[S2] = StateAccessPure[S2]
+      override type WithEffect[F2[_]] = StateAccess[F2, S]
+
+      override def xmapState[S2](f: S => S2)(g: S2 => S) =
+        stateAccessConst(constState.map(f))
+
+      override def zoomState[S2](get: S => S2)(set: S2 => S => S) =
+        stateAccessConst(constState.map(get))
+
+      override def withEffect[F2[_]](implicit t: Effect.Trans[CallbackTo, F2]) =
+        null
+
+      override def modStateOption(mod: S => Option[S], callback: Callback) =
+        Callback.empty
+
+      override def setStateOption(newState: Option[S], callback: Callback) =
+        Callback.empty
+
+      override protected implicit def F: Effect[CallbackTo] =
+        Effect.callbackInstance
+    }
 
   object Write {
     sealed trait Single {
@@ -251,7 +327,10 @@ object PreviewFeature {
     }
 
     object Single {
-      def apply($: StateAccessPure[State.Single]): Single = new Single {
+      def apply($: Reusable[StateAccessPure[State.Single]]): Single =
+        Basic($)
+
+      private final case class Basic($: Reusable[StateAccessPure[State.Single]]) extends Single {
         import Status._
 
         override def onFocus(wantOpen: Boolean): Callback = {
@@ -300,27 +379,51 @@ object PreviewFeature {
           $.setState(Some(m))
       }
 
-      lazy val doNothing: Single = new Single {
+      def doNothing: Single =
+        DoNothing
+
+      private case object DoNothing extends Single {
         override def onFocus(wantOpen: Boolean)    = Callback.empty
         override def onEdit (wantOpen: Boolean)    = Callback.empty
         override def onBlur                        = Callback.empty
         override def clear                         = Callback.empty
         override def setManually(m: Status.Manual) = Callback.empty
       }
+
+      implicit val reusability: Reusability[Single] =
+        Reusability.derive
     }
 
-    final case class Composite[Id]($: StateAccessPure[State.Composite[Id]]) {
-      def apply(id: Id): Single =
-        Single($ zoomStateL State.Composite.at(id))
+    final case class Composite[Id]($: Reusable[StateAccessPure[State.Composite[Id]]]) {
+      def apply(id: Id)(implicit r: Reusability[Id], ct: ClassTag[Id]): Single =
+        Single(
+          Reusable.ap($, r.reusable(id))(($, id) =>
+            $ zoomStateL State.Composite.at(id)))
 
-      def mapId[A](i: Intersection[Id, A]): Composite[A] =
-        Composite($ zoomStateL State.Composite.intersection(i))
+      def mapId[A](i: Reusable[Intersection[Id, A]]): Composite[A] =
+        Composite(
+          Reusable.ap($, i)(($, i) =>
+            $ zoomStateL State.Composite.intersection(i)))
 
       def toReadWrite(r: Read.Composite[Id]): ReadWrite.Composite[Id] =
         ReadWrite.Composite(r, this)
 
       val toReadWriteCB: CallbackTo[ReadWrite.Composite[Id]] =
         $.state.map(s => toReadWrite(Read.Composite(s)))
+    }
+
+    object Composite {
+      private val _empty: Composite[Any] =
+        apply(Reusable.byRef(stateAccessConst(CallbackTo.pure(State.Composite.init(UnivEq.force)))))
+
+      def empty[Id]: Composite[Id] =
+        _empty.asInstanceOf[Composite[Id]]
+
+      private val _reusability: Reusability[Composite[Any]] =
+        Reusability.derive
+
+      implicit def reusability[Id]: Reusability[Composite[Id]] =
+        _reusability.asInstanceOf[Reusability[Composite[Id]]]
     }
   }
 
@@ -412,14 +515,31 @@ object PreviewFeature {
 
       lazy val alwaysShow: Single = const(Some(Status.NeedOpen))
       lazy val neverShow : Single = const(None)
+
+      implicit val reusability: Reusability[Single] =
+        Reusability.derive
     }
 
     final case class Composite[Id](read: Read.Composite[Id], write: Write.Composite[Id]) {
-      def apply(id: Id): Single =
+      def apply(id: Id)(implicit r: Reusability[Id], ct: ClassTag[Id]): Single =
         Single(read(id), write(id))
 
-      def mapId[A](i: Intersection[Id, A]): Composite[A] =
+      def mapId[A](i: Reusable[Intersection[Id, A]]): Composite[A] =
         Composite(read mapId i, write mapId i)
+    }
+
+    object Composite {
+      private val _empty: Composite[Any] =
+        apply(Read.Composite.empty, Write.Composite.empty)
+
+      def empty[Id]: Composite[Id] =
+        _empty.asInstanceOf[Composite[Id]]
+
+      private val _reusability: Reusability[Composite[Any]] =
+        Reusability.derive
+
+      implicit def reusability[Id]: Reusability[Composite[Id]] =
+        _reusability.asInstanceOf[Reusability[Composite[Id]]]
     }
   }
 }

@@ -4,19 +4,26 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.data.{Closed, Open}
+import shipreq.webapp.base.data.{Closed, Open, Project}
+import shipreq.webapp.base.feature.PreviewFeature
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.protocol.websocket.ManualIssueCmd
-import shipreq.webapp.base.text.Text
+import shipreq.webapp.base.text.{Text, TextSearch}
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon}
 import shipreq.webapp.client.project.app.Style.{issues => *}
 import shipreq.webapp.client.project.feature.CreateFeature
+import shipreq.webapp.client.project.feature.create.Feature.PreviewId
+import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 object NewIssue {
 
-  final case class Props(state  : StateSnapshot[State],
-                         createR: CreateFeature.ReadWrite.ForManualIssueR,
-                         createE: CreateFeature.ReadWrite.ForManualIssueE,
+  final case class Props(previewRW     : PreviewFeature.ReadWrite.Composite[PreviewId],
+                         project       : Project,
+                         textSearch    : TextSearch,
+                         projectWidgets: ProjectWidgets.NoCtx,
+                         state         : StateSnapshot[State],
+                         createR       : CreateFeature.ReadWrite.ForManualIssueR,
+                         createE       : CreateFeature.ReadWrite.ForManualIssueE,
                          ) {
     @inline def render: VdomElement = Component(this)
   }
@@ -47,8 +54,18 @@ object NewIssue {
         .tag(^.onClick -->? open)
     }
 
-    private val closeEditor: Callback =
-      setState(State(Closed))
+    private val closeEditor: Reusable[Callback] =
+      Reusable.callbackByRef(setState(State(Closed)))
+
+    private def editorValue(p: Props): Option[Text.ManualIssue.NonEmptyText] = {
+      val emptyArgs =
+        CreateFeature.EditorArgs.ForTextEditor.empty(
+          project        = p.project,
+          textSearch     = p.textSearch,
+          projectWidgets = p.projectWidgets)
+
+      p.createE.value(emptyArgs).toOption
+    }
 
     private def save(p: Props, value: Text.ManualIssue.NonEmptyText): Callback = {
       val clearState = p.createR.clearState(CreateFeature.FieldKey.ManualIssue)
@@ -56,15 +73,32 @@ object NewIssue {
       p.createR.create(ManualIssueCmd.Create(value), _ => onSuccess)
     }
 
+    private val commit: Reusable[Text.ManualIssue.NonEmptyText => Callback] =
+      Reusable.byRef(newValue =>
+        for {
+          p <- $.props
+          _ <- save(p, newValue)
+        } yield ()
+      )
+
     def render(p: Props): VdomElement = {
 
       val editor =
         Option.when(p.state.value.open is Open) {
-          val value  = p.createE.value().toOption
-          val commit = value.map(save(p, _))
-          p.createE.render(CreateFeature.EditorArgs.basic(
-            abort  = Some(closeEditor),
-            commit = commit))
+
+          val value = editorValue(p)
+          val commit = value.map(_ => this.commit)
+
+          val args =
+            CreateFeature.EditorArgs.ForTextEditor.basic(
+              previewRW      = p.previewRW,
+              project        = p.project,
+              textSearch     = p.textSearch,
+              projectWidgets = p.projectWidgets,
+              abort          = Some(closeEditor),
+              commit         = commit)
+
+          p.createE.render(args)
         }
 
       <.div(*.newIssueCont,

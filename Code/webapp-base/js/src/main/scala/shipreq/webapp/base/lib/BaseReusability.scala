@@ -3,6 +3,7 @@ package shipreq.webapp.base.lib
 import japgolly.scalajs.react._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util._
+
 object BaseReusability extends BaseReusability {
 
   final class ReusabilityObjExt(private val r: Reusability.type) extends AnyVal {
@@ -49,5 +50,6 @@ abstract class BaseReusability {
   //implicit def reusabilityValidation[S, I, C, V]: Reusability[Validator[S, I, C, V]] =
   //  Reusability.byRef
 
-
+  implicit def reusabilityRange: Reusability[Range] = // TODO https://github.com/japgolly/scalajs-react/issues/799
+    Reusability.byRefOr_==
 }

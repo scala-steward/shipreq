@@ -15,28 +15,32 @@ import shipreq.webapp.client.project.widgets.ProjectWidgets
 
 object Feature {
 
+  private object ImplicitMaps { // TODO https://github.com/japgolly/scalajs-react/issues/795
+    @inline implicit def reusabilityMap[K, V](implicit rv: Reusability[V]): Reusability[Map[K, V]] =
+      Reusability.map
+  }
+  import ImplicitMaps._
+
   type AsyncError = ErrorMsg
   type AsyncState = AsyncFeature.Read.D0[AsyncError]
 
-  /** This is not safe for reusability because implementation calls `CallbackTo#runNow()`. */
   trait Editor[-Args, +Change] { self =>
 
-    /** impure */
     def render(p: Permission, as: AsyncState, args: Args): Option[VdomNode]
 
-    def change[C >: Change]: CallbackTo[Editor.Change[C]]
+    def change[C >: Change](args: Args): Editor.Change[C]
 
     def clipboardData: Option[ClipboardData]
 
-    def setPotentialValue(p: PotentialValue): Option[Callback]
+    def setPotentialValue(p: PotentialValue): CallbackOption[Unit]
 
     final def withArgs(args: Args): Editor[Unit, Change] =
       new Editor[Unit, Change] {
         override def render(p: Permission, as: AsyncState, u: Unit) =
           self.render(p, as, args)
 
-        override def change[C >: Change] =
-          self.change
+        override def change[C >: Change](u: Unit) =
+          self.change(args)
 
         override def clipboardData =
           self.clipboardData
@@ -49,12 +53,20 @@ object Feature {
   object Editor {
     type Invalidity = shipreq.webapp.base.validation.Simple.Invalidity
     type Change[+A] = PotentialChange[Invalidity, A]
+
+    private val reusabilityAny: Reusability[Editor[Nothing, Any]] =
+      Reusability.byRef
+
+    implicit def reusability[A, C]: Reusability[Editor[A, C]] =
+      reusabilityAny.narrow
   }
 
   /** Id used for [[shipreq.webapp.base.feature.PreviewFeature]] */
   final case class PreviewId(row: RowKey, cell: FieldKey)
+
   object PreviewId {
-    implicit def equality: UnivEq[PreviewId] = UnivEq.derive
+    implicit def univEq: UnivEq[PreviewId] = UnivEq.derive
+    implicit val reusability: Reusability[PreviewId] = Reusability.byRefOrUnivEq
   }
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -74,13 +86,10 @@ object Feature {
     }
   }
 
-  val reusabilityStateForEditorAny: Reusability[State.ForAnyEditor] = {
-    implicit def e = Reusability.never[Editor[Nothing, Any]] // ∵ Editor is not safe for reusability
-    Reusability.option
-  }
+  private  val reusabilityStateForEditorAny   : Reusability[State.ForAnyEditor   ] = Reusability.option
   implicit def reusabilityStateForEditor[A, C]: Reusability[State.ForEditor[A, C]] = reusabilityStateForEditorAny.narrow
-  implicit val reusabilityStateForFields      : Reusability[State.ForFields      ] = Reusability.when(_.isEmpty)
-  implicit val reusabilityStateForProject     : Reusability[State.ForProject     ] = Reusability.when(_.isEmpty)
+  implicit val reusabilityStateForFields      : Reusability[State.ForFields      ] = Reusability.byRef || reusabilityMap
+  implicit val reusabilityStateForProject     : Reusability[State.ForProject     ] = Reusability.byRef || reusabilityMap
 
   // ███████████████████████████████████████████████████████████████████████████████████████████████████████████████████
 
@@ -116,11 +125,9 @@ object Feature {
       def isOpen: Boolean =
         editor.isDefined
 
-      /** impure */
       def render(args: A): Option[VdomNode] =
         editor.flatMap(_.render(editability, async, args))
 
-      /** impure */
       def renderOr[B](args: A)(b: => B)(implicit ev: VdomNode => B): B =
         render(args).fold(b)(ev)
     }
@@ -350,11 +357,9 @@ object Feature {
       def asyncState    = read.async
       def clipboardData = read.clipboardData
 
-      /** impure */
       @inline def render(args: A): Option[VdomNode] =
         read.render(args)
 
-      /** impure */
       @inline def renderOr[B](args: A)(b: => B)(implicit ev: VdomNode => B): B =
         read.renderOr(args)(b)(ev)
 
@@ -363,8 +368,6 @@ object Feature {
         *    - double-clicking starts the editor
         *    - there is hover text with user instructions
         *    - colour changes on hover
-        *
-        * impure
         */
       def themedRenderOr(args: A)(view: => TagMod): TagMod =
         renderOr(args)(TagMod(EditControlsFeature.editableInline(startEdit), view))
@@ -390,22 +393,36 @@ object Feature {
       def withArgs(args: A): ForEditor[Unit, C] =
         copy(read.withArgs(args))
 
-      val setPotentialValueFnIfAllowed: Option[PotentialValue => Option[Callback]] =
+      val setPotentialValueFnIfAllowed: Option[PotentialValue => CallbackOption[Unit]] =
         SetValueDecision(read) match {
-          case SetValueDecision.OpenAndReplace => Some(withPotentialValue(_).startEdit)
-          case SetValueDecision.Replace        => Some(p => read.editor.flatMap(_.setPotentialValue(p)))
-          case SetValueDecision.Ignore         => None
+
+          case SetValueDecision.OpenAndReplace =>
+            Some(p =>
+              CallbackOption.liftOptionCallback(withPotentialValue(p).startEdit))
+
+          case SetValueDecision.Replace =>
+            Some(p =>
+              for {
+                e <- CallbackOption.liftOption(read.editor)
+                _ <- e.setPotentialValue(p)
+              } yield ()
+            )
+
+          case SetValueDecision.Ignore =>
+            None
         }
 
-      def setPotentialValue(p: PotentialValue): Option[Callback] =
-        setPotentialValueFnIfAllowed.flatMap(_(p))
+      def setPotentialValue(p: PotentialValue): CallbackOption[Unit] =
+        setPotentialValueFnIfAllowed match {
+          case Some(set) => set(p)
+          case None      => CallbackOption.fail
+        }
 
-      def setPotentialValueAsync(getPV: AsyncCallback[PotentialValue]): Option[Callback] =
-        setPotentialValueFnIfAllowed.map(set =>
-          getPV.flatMap(pv =>
-            set(pv).getOrEmpty.asAsyncCallback
-          ).toCallback
-        )
+      def setPotentialValueAsync(getPV: AsyncCallback[PotentialValue]): CallbackOption[Unit] =
+        setPotentialValueFnIfAllowed match {
+          case Some(set) => getPV.flatMap(set(_).asAsyncCallback).toCallback
+          case None      => CallbackOption.fail
+        }
 
       def withClipboardData(d: => ClipboardData): ForEditor[A, C] =
         copy(read = read.withClipboardData(d))

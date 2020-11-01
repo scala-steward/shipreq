@@ -108,8 +108,8 @@ object UseCaseStepEditor {
     def render: VdomElement = Component(this)
   }
 
-//  implicit val reusabilityProps: Reusability[Props] =
-//    Reusability.never // TODO Reusability.derive
+  implicit val reusabilityProps: Reusability[Props] =
+    Reusability.byRef // because Props are memo'ised in NewEditor
 
   val liveCorrect: EndoFn[String] =
     RichTextEditor.liveCorrect(Text.UseCaseStep)
@@ -136,12 +136,15 @@ object UseCaseStepEditor {
       .addDynamicExtras { p =>
         import LeftRight._
 
-        def shiftStep(d: LeftRight) =
+        def shiftStep(d: LeftRight) = {
+          val action1 = p.shiftRunner.flatMap(_.runOption(d))
+          val action2 = action1.map(Reusable.implicitly((p.shiftRunner, d)).withValue(_))
+
           EditControlsFeature.ExtraControls.option(
             criterion = shiftKeyCriterion(d),
             verb      = UiText.useCaseStepShift(d).toLowerCase,
-            action    = p.shiftRunner.flatMap(_.runOption(d)),
-          )
+            action    = action2)
+        }
 
         shiftStep(Left) ++ shiftStep(Right)
       }
@@ -209,15 +212,14 @@ object UseCaseStepEditor {
     }
 
     val onMount: Callback =
-      EditControlsFeature.onTextareaEditorMount(editorRef).toCallback
+      EditControlsFeature.onTextareaEditorMount(editorRef, autoFocus = true)
   }
 
   val Component =
     ScalaComponent.builder[Props]
       .renderBackend[Backend]
-      .configure(
-        //Reusability.shouldComponentUpdate,
-        AutoComplete.install)
+      .configure(Reusability.shouldComponentUpdate)
+      .configure(AutoComplete.install)
       .componentDidMount(_.backend.onMount)
       .build
 }

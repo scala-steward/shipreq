@@ -21,6 +21,7 @@ import shipreq.webapp.base.text.ProjectText.SetRenderStyle
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.ui.NoContentMessage
 import shipreq.webapp.base.util.CallbackHelpers._
+import shipreq.webapp.base.util.LastValueMemo
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.app.state.NewEvents
@@ -64,6 +65,7 @@ object ReqDetail {
                                 filterDead : StateSnapshot[FilterDead],
                                 reqProps   : ReqId => ReqProps,
                                 editorUCS  : EditorFeature.ReadWrite.ForUseCaseSteps,
+                                editorArgs : EditorFeature.EditorArgs.ForAny,
                                 state      : StateSnapshot[State],
                                 newReqState: StateSnapshot[NewReqButton.State],
                                 newReqAsync: AsyncFeature.ReadWrite.D0[ErrorMsg])
@@ -145,6 +147,18 @@ object ReqDetail {
     val stepsA = stepData(Row.UseCaseStepsA)
     val stepsE = stepData(Row.UseCaseStepsE)
   }
+
+  private final case class UseCaseStepTreeRenderInput(useCases        : UseCases,
+                                                      pw              : ProjectWidgets.AnyCtx,
+                                                      editorUCS       : EditorFeature.ReadWrite.ForUseCaseSteps,
+                                                      pxProjectWidgets: Reusable[Px[ProjectWidgets.AnyCtx]],
+                                                      filterDead      : FilterDead,
+                                                      editorArgs      : EditorFeature.EditorArgs.ForAny,
+                                                      cmdRunner       : AsyncFeature.Runner.D1[Cell, UpdateContentCmd.ForUseCaseStep, Any],
+                                                      addCmdRunner    : AsyncFeature.Runner.D1[Cell, UpdateContentCmd.AddUseCaseStep, Any])
+
+  private implicit val reusabilityUseCaseStepTreeRenderInput: Reusability[UseCaseStepTreeRenderInput] =
+    Reusability.derive
 
   // TODO Better performance if cells are (components + shouldComponentRender) or cached
 
@@ -274,6 +288,52 @@ object ReqDetail {
         }
       }
 
+    private val customiseEditorArgs: ((EditorFeature.EditorArgs.ForAny, ProjectWidgets.AnyCtx)) => EditorFeature.EditorArgs.ForAny =
+      LastValueMemo(x => x._1.copy(projectWidgets = x._2))
+
+    private val useCaseStepTreeRenderFn: UseCaseStepTreeRenderInput => Reusable[UseCaseStepTree.RenderBodyFn] =
+      LastValueMemo { input =>
+
+        val renderBody: UseCaseStepTree.RenderBodyFn = args => {
+          import args.id
+
+          val f = FieldKey.UseCaseStep(id)
+
+          val editor = input.editorUCS(f, input.pxProjectWidgets, input.filterDead)
+
+          val editorArgsUCS = input.editorArgs(f).copy(
+            shiftRunner    = Some(input.cmdRunner(Cell.UseCaseStepCtrls(id))),
+            addStepRunner  = Some(input.addCmdRunner(Cell.AddUseCaseStep(id))),
+          )
+
+          def addStepAfterSelf: CallbackOption[Unit] =
+            for {
+              _      <- CallbackOption.unless(editor.read.isOpen)
+              step    = input.useCases.focusStep(id)
+              addCmd <- CallbackOption.liftOption(UpdateContentCmd.addUseCaseStepAfter(step))
+              _      <- CallbackOption.liftOptionCallback(input.addCmdRunner(Cell.AddUseCaseStep(id)).runOption(addCmd))
+            } yield ()
+
+          def onKeyDown(e: ReactKeyboardEventFromHtml): CallbackOption[Unit] =
+            EditControlsFeature.Keys.commitAndProgress.toCallbackOption(e) >> addStepAfterSelf
+
+          val stepProps =
+            EditorNavParent.Props(
+              parent     = args.base,
+              editor     = editor,
+              editorArgs = editorArgsUCS,
+              view       = input.pw.useCaseStepTextAndFlow(args.textAndFlow(), args.live),
+              onKeyDown  = onKeyDown,
+            )
+
+          val ref = useCaseStepRef(id)
+
+          EditorNavParent.Component.withRef(ref)(stepProps)
+        }
+
+        Reusable.byRef(renderBody)
+      }
+
     private def renderDetail(props: DynamicProps, data: Data): VdomElement = {
       import data.{project, req, pubidText}
 
@@ -283,20 +343,35 @@ object ReqDetail {
       val reqProps     = props.reqProps(req.id)
       val fieldName    = pxProjectConfig.value().fieldName
       val state        = props.state.value
+      val editorArgs   = customiseEditorArgs((props.editorArgs, pw))
+
+      lazy val useCaseStepTreeRenderInput =
+        UseCaseStepTreeRenderInput(
+          useCases         = project.content.reqs.useCases,
+          pw               = pw,
+          editorUCS        = props.editorUCS,
+          pxProjectWidgets = data.pxProjectWidgets,
+          filterDead       = data.filterDead,
+          editorArgs       = editorArgs,
+          cmdRunner        = AsyncFeature.Runner.D1(reqProps.async.read, runCmd(req.id)),
+          addCmdRunner     = AsyncFeature.Runner.D1(reqProps.async.read, runAddAndEditNewUseCaseStep(req.id)),
+        )
 
       def reqEditor(fk: FieldKey.ForSomeReq): EditorFeature.ReadWrite.For[fk.type] =
         reqProps.editor(fk, data.pxProjectWidgets, data.filterDead)
 
-      def renderPageHeader: VdomElement =
+      def renderPageHeader: VdomElement = {
+        val f = FieldKey.reqTitle(req.id)
         HeaderRow.Props(
           pubidText    = pubidText,
           live         = data.live,
-          titleEditor  = reqEditor(FieldKey.reqTitle(req.id)),
+          titleEditor  = reqEditor(f).withArgs(editorArgs(f)),
           titleView    = Reusable.byRef(view.title),
           filterDead   = StateSnapshot.withReuse(props.filterDead.value)(setFilterDead),
           tableRef     = tableRef,
           titleCellRef = titleCellRef,
         ).render
+      }
 
       def renderRows =
         tableBase(
@@ -346,17 +421,19 @@ object ReqDetail {
                   name       = fieldName(id),
                   headerLive = headerLive,
                   dataLive   = dataLive,
-                  field      = FieldKey.CustomTextField(id).andArgs(bigTextEditorStyle),
+                  field      = editorArgs.withField(FieldKey.CustomTextField(id), style = bigTextEditorStyle),
                 )
 
               case id: CustomField.Tag.Id =>
+                val f = FieldKey.CustomFieldTags(id)
                 CustomTagFieldRow.Props(
                   reqId      = req.id,
                   fieldId    = id,
                   name       = fieldName(id),
                   headerLive = headerLive,
                   dataLive   = dataLive,
-                  editor     = reqEditor(FieldKey.CustomFieldTags(id)),
+                  editor     = reqEditor(f),
+                  editorArgs = editorArgs(f),
                   view       = reusableView,
                   project    = project,
                 ).render
@@ -366,7 +443,7 @@ object ReqDetail {
                   name       = fieldName(id),
                   headerLive = headerLive,
                   dataLive   = dataLive,
-                  field      = FieldKey.Implications(-\/(id)).andArgs(()),
+                  field      = editorArgs.withField(FieldKey.Implications(-\/(id))),
                 )
             }
 
@@ -397,23 +474,24 @@ object ReqDetail {
 
           case Row.Implications =>
             ImplicationsRow.Props(
-              pubidText = pubidText,
-              live      = data.live,
-              editorF   = reqEditor(FieldKey.Implications.byDir(Forwards)),
-              editorB   = reqEditor(FieldKey.Implications.byDir(Backwards)),
-              view      = reusableView,
+              pubidText  = pubidText,
+              live       = data.live,
+              editorF    = reqEditor(FieldKey.Implications.byDir(Forwards)),
+              editorB    = reqEditor(FieldKey.Implications.byDir(Backwards)),
+              editorArgs = editorArgs,
+              view       = reusableView,
             ).render
 
           case Row.OtherTags =>
             genericEditableRow(
               name  = StaticField.OtherTags.name,
-              field = FieldKey.OtherTags.noArgs,
+              field = editorArgs.withField(FieldKey.OtherTags),
             )
 
           case Row.AllTags =>
             genericEditableRow(
               name  = StaticField.AllTags.name,
-              field = FieldKey.AllTags.noArgs,
+              field = editorArgs.withField(FieldKey.AllTags),
             )
 
           case Row.ImplicationGraph =>
@@ -448,7 +526,7 @@ object ReqDetail {
           case Row.Codes =>
             genericEditableRow(
               name  = SpecialBuiltInField.Codes.name,
-              field = FieldKey.Codes.noArgs,
+              field = editorArgs.withField(FieldKey.Codes),
             )
 
           case Row.DeletionReason =>
@@ -464,52 +542,19 @@ object ReqDetail {
       }
 
       def renderStepTree(ucData: UseCaseData, stepData: UseCaseStepTree.StepData) = {
-        val cmdRunner    = AsyncFeature.Runner.D1(reqProps.async.read, runCmd(req.id))
-        val addCmdRunner = AsyncFeature.Runner.D1(reqProps.async.read, runAddAndEditNewUseCaseStep(req.id))
-
-        val renderBody: UseCaseStepTree.RenderBodyFn = args => {
-          import FieldKey.UseCaseStep
-          import args.id
-
-          val editor = props.editorUCS(UseCaseStep(id), data.pxProjectWidgets, data.filterDead)
-
-          def editorArgs = UseCaseStep.Args(
-            Some(cmdRunner(Cell.UseCaseStepCtrls(id))),
-            Some(addCmdRunner(Cell.AddUseCaseStep(id))))
-
-          def addStepAfterSelf: CallbackOption[Unit] =
-            for {
-              _      <- CallbackOption.unless(editor.read.isOpen)
-              step    = project.content.reqs.useCases.focusStep(id)
-              addCmd <- CallbackOption.liftOption(UpdateContentCmd.addUseCaseStepAfter(step))
-              _      <- CallbackOption.liftOptionCallback(addCmdRunner(Cell.AddUseCaseStep(id)).runOption(addCmd))
-            } yield ()
-
-          def onKeyDown(e: ReactKeyboardEventFromHtml): CallbackOption[Unit] =
-            EditControlsFeature.Keys.commitAndProgress.toCallbackOption(e) >> addStepAfterSelf
-
-          val stepProps =
-            EditorNavParent.Props(
-              args.base,
-              editor,
-              editorArgs,
-              pw.useCaseStepTextAndFlow(args.textAndFlow(), args.live),
-              onKeyDown,
-            )
-
-          val ref = useCaseStepRef(id)
-
-          EditorNavParent.Component.withRef(ref)(stepProps)
-        }
+        val i = useCaseStepTreeRenderInput
+        val uc = ucData.uc
 
         UseCaseStepTree.Props(
-          ucData.uc,
-          stepData,
-          data.filterDead,
-          project.content.reqs.useCases,
-          renderBody,
-          cmdRunner,
-          addCmdRunner,
+          id           = uc.id,
+          pos          = uc.pubid.pos,
+          live         = uc.liveUC,
+          stepData     = stepData,
+          filterDead   = data.filterDead,
+          useCases     = project.content.reqs.useCases,
+          renderBody   = useCaseStepTreeRenderFn(i),
+          cmdRunner    = i.cmdRunner,
+          addCmdRunner = i.addCmdRunner,
         ).render
       }
 

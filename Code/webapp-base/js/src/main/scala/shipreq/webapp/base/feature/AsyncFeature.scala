@@ -89,7 +89,16 @@ object AsyncFeature {
       *               For editors, this restores the editor, makes it editable again and retains its dirty state.
       * @tparam F An explanation of why some async action failed.
       */
-    final case class Failed[+F](failure: F, retry: Callback, cancel: Callback) extends Status[F]
+    final case class Failed[+F](failure: F, retry: Callback, cancel: Callback) extends Status[F] {
+      override def equals(obj: Any): Boolean =
+        obj match {
+          case t: Failed[_] => (t eq this) || ((failure == t.failure) && (retry.underlyingRepr eq t.retry.underlyingRepr) && (cancel.underlyingRepr eq t.cancel.underlyingRepr))
+          case _            => false
+        }
+    }
+
+    implicit def univEq[F: UnivEq]: UnivEq[Status[F]] =
+      UnivEq.force
 
     implicit def reusability[F]: Reusability[Status[F]] =
       Reusability.byRef
@@ -575,9 +584,13 @@ object AsyncFeature {
         D0(asyncState(k), run(k))
     }
 
+    private val reusabilityAny0O = Reusability.derive[D0O[Nothing, Any]]
+    implicit def reusabilityD0O[I, F]: Reusability[D0O[I, F]] = reusabilityAny0O.narrow
+
     private val reusabilityAny0 = Reusability.derive[D0[Nothing, Any]]
+    implicit def reusabilityD0[I, F]: Reusability[D0[I, F]] = reusabilityAny0.narrow
+
     private val reusabilityAny1 = Reusability.derive[D1[Any, Nothing, Any]]
-    implicit def reusabilityD0   [I, F]: Reusability[D0   [I, F]] = reusabilityAny0.narrow
     implicit def reusabilityD1[K, I, F]: Reusability[D1[K, I, F]] = reusabilityAny1.asInstanceOf[Reusability[D1[K, I, F]]]
   }
 
