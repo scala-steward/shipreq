@@ -133,7 +133,7 @@ object Controls {
         commit            = commit.instruction(p),
         commitAndProgress = commitAndProgress.instruction(p),
       )
-      if (extra ne ExtraControls.empty)
+      if (extra ne ExtraControls.empty.value)
         clauses = extra.instructions ::: clauses
       Instructions(
         clauses    = clauses,
