@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.lib
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.webapp.base.feature.TableNavigationFeature
-import shipreq.webapp.base.lib.DomUtil
+import shipreq.webapp.base.util.DomUtil
 import shipreq.webapp.client.project.feature.EditorFeature
 
 /** This is a wrapper for a (potentially-closed) editor that ensures that when the editor is closes, focus returns to

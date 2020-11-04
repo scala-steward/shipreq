@@ -1,4 +1,4 @@
-package shipreq.webapp.base.lib
+package shipreq.webapp.base.util
 
 import japgolly.scalajs.react.{Callback, CallbackTo}
 import org.scalajs.dom.{document, html}
@@ -9,7 +9,7 @@ import scalaz.Applicative
 import scalaz.std.list.listInstance
 import scalaz.syntax.traverse._
 import shipreq.webapp.base.config.AssetManifest
-import shipreq.webapp.base.lib.LazyLoader.State
+import shipreq.webapp.base.util.LazyLoader.State
 
 final class LazyLoader[A](initState: State.Pending[A]) {
 

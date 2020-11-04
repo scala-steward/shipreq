@@ -4,7 +4,6 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.{Element, document, html}
 import shipreq.base.util.{Disabled, Enabled, ErrorMsg, OpResult}
-import shipreq.webapp.base.lib.ModalForm
 import shipreq.webapp.base.protocol.ajax.AjaxClient
 import shipreq.webapp.base.protocol.ajax.CommonProtocols.{Metadata, SubmitFeedback}
 import shipreq.webapp.base.ui.GeneralTheme

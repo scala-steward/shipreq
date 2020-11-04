@@ -3,9 +3,9 @@ package shipreq.webapp.base.feature.editcontrols
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.vdom.html_<^._
-import shipreq.webapp.base.lib.KeyHandlers
 import shipreq.webapp.base.text.LineCardinality
 import shipreq.webapp.base.ui.OptionalFullscreen
+import shipreq.webapp.base.util.KeyHandlers
 
 final case class Control[-P](keys: CallbackTo[_ <: P] => KeyHandlers,
                              instruction: P => Option[Instructions.Clause])

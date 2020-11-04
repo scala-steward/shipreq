@@ -1,4 +1,4 @@
-package shipreq.webapp.base.lib
+package shipreq.webapp.base.ui.widgets
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
@@ -86,7 +86,7 @@ abstract class ModalForm[A](name             : String,
       ^.onClick --> modalHide,
       "Cancel")
 
-  private lazy val loginButton =
+  private lazy val submitButton =
     <.button(
       ^.cls := "ui button primary",
       ^.onClick ==> (e => submit(Some(e))),
@@ -98,7 +98,7 @@ abstract class ModalForm[A](name             : String,
       ^.cls := s"ui $extraModalClasses modal",
       <.div(^.cls := "header", header),
       <.div(^.cls := "content", content),
-      <.div(^.cls := "actions", cancelButton, loginButton),
+      <.div(^.cls := "actions", cancelButton, submitButton),
     )
 
   lazy val component =

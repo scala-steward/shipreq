@@ -4,8 +4,8 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.lib.DomUtil._
 import shipreq.webapp.base.ui.semantic._
+import shipreq.webapp.base.util.DomUtil._
 import shipreq.webapp.client.project.app.Style.{widgets => *}
 
 

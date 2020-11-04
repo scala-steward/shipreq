@@ -5,8 +5,8 @@ import japgolly.scalajs.react.MonocleReact._
 import japgolly.scalajs.react._
 import scala.reflect.ClassTag
 import shipreq.base.util.{ErrorMsg, Intersection, Optics}
-import shipreq.webapp.base.lib.BaseReusability._
 import shipreq.webapp.base.ui.GeneralTheme
+import shipreq.webapp.base.util.BaseReusability._
 import shipreq.webapp.base.util.CallbackHelpers._
 
 /** Provides the following functionality around async actions:

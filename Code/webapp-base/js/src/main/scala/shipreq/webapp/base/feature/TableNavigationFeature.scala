@@ -1,7 +1,7 @@
 package shipreq.webapp.base.feature
 
 import japgolly.scalajs.react.vdom.html_<^._
-import shipreq.webapp.base.lib.DomUtil
+import shipreq.webapp.base.util.DomUtil
 
 /** Allows users to navigate around a table using the keyboard.
   *

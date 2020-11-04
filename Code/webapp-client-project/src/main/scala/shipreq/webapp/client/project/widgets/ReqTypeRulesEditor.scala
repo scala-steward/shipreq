@@ -19,11 +19,11 @@ import shipreq.base.util._
 import shipreq.webapp.base.data.FieldReqTypeRules.Resolution
 import shipreq.webapp.base.data.{Colour => _, _}
 import shipreq.webapp.base.feature.AutoCompleteFeature._
-import shipreq.webapp.base.lib.ReactKeyGen
-import shipreq.webapp.base.lib.ReactKeyGen.UnivEqImplicits._
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.{Dropdown => _, _}
 import shipreq.webapp.base.ui.widgets.Dropdown
+import shipreq.webapp.base.util.ReactKeyGen
+import shipreq.webapp.base.util.ReactKeyGen.UnivEqImplicits._
 import shipreq.webapp.client.project.app.Style.{fieldConfig => *}
 import shipreq.webapp.client.project.lib.DataReusability._
 

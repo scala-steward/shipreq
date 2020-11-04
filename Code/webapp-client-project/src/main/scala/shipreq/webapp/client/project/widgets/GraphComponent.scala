@@ -7,8 +7,8 @@ import org.scalajs.dom.raw.{Element, SVGGElement, SVGSVGElement}
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.data.Svg
-import shipreq.webapp.base.lib.DomUtil._
 import shipreq.webapp.base.ui.SvgPanZoom
+import shipreq.webapp.base.util.DomUtil._
 import shipreq.webapp.client.project.app.{Style, WebWorkerClient}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.ww.api.WebWorkerCmd.picklerErrorMsgOrSvg

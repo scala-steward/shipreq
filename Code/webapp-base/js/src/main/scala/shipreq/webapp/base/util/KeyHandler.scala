@@ -1,9 +1,9 @@
-package shipreq.webapp.base.lib
+package shipreq.webapp.base.util
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scala.collection.immutable.ListSet
-import shipreq.webapp.base.lib.KeyHandler._
+import shipreq.webapp.base.util.KeyHandler._
 
 final case class KeyHandler(criteria: Criteria, response: Response, eventDefault: Boolean = true) {
 

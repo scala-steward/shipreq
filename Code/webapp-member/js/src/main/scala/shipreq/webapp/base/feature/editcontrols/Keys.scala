@@ -1,6 +1,6 @@
 package shipreq.webapp.base.feature.editcontrols
 
-import shipreq.webapp.base.lib.KeyHandler.Criterion._
+import shipreq.webapp.base.util.KeyHandler.Criterion._
 
 object Keys {
 

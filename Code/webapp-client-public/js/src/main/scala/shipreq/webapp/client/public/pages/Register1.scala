@@ -7,12 +7,11 @@ import monocle.macros.Lenses
 import shipreq.base.util.{Deny, Disabled, Enabled, ErrorMsg, Permission}
 import shipreq.webapp.base.data.EmailAddr
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.semantic.{Icon, Input, Message}
 import shipreq.webapp.base.ui.widgets.Form
 import shipreq.webapp.base.ui.{CommmonUiText, GeneralTheme}
-import shipreq.webapp.base.validation.UserValidators
+import shipreq.webapp.base.validation.{UserValidators, ValidationUX}
 import shipreq.webapp.client.public.Styles.{register1 => *}
 import shipreq.webapp.client.public.spa.{Page, RouterCtl}
 

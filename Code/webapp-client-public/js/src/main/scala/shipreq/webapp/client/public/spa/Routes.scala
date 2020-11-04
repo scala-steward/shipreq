@@ -6,7 +6,7 @@ import shipreq.base.util.Url
 import shipreq.webapp.base.config.Urls.PublicSpaRoute
 import shipreq.webapp.base.config.{AssetManifest, Urls, WebappConfig}
 import shipreq.webapp.base.data.VerificationToken
-import shipreq.webapp.base.lib.BaseReusability._
+import shipreq.webapp.base.util.BaseReusability._
 import shipreq.webapp.base.util.GoogleAnalytics
 
 sealed trait Page {

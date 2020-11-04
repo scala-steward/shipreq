@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.{Node, html}
 import scala.scalajs.js
-import shipreq.webapp.base.lib.DomUtil._
+import shipreq.webapp.base.util.DomUtil._
 
 /** http://semantic-ui.com/modules/dropdown.html
   */

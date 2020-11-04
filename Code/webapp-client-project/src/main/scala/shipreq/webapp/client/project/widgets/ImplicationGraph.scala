@@ -15,12 +15,13 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
 import shipreq.webapp.base.data.savedview.ImpGraphConfig.LabelFormat
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.lib.DomUtil._
-import shipreq.webapp.base.lib.{DomUtil, LoggerJs}
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.base.protocol.websocket.UpdateContentCmd.PatchImplications
 import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.base.util.DomUtil
+import shipreq.webapp.base.util.DomUtil._
 import shipreq.webapp.base.util.Must._
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.lib.DataReusability._

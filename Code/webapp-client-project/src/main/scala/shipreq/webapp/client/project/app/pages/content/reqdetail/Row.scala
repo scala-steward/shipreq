@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.app.pages.content.reqdetail
 
 import japgolly.scalajs.react.{Key, Reusability}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.lib.ReactKeyGen
+import shipreq.webapp.base.util.ReactKeyGen
 import shipreq.webapp.client.project.lib.DataReusability._
 
 sealed abstract class Row(_key: Key) {

@@ -1,4 +1,4 @@
-package shipreq.webapp.base.lib
+package shipreq.webapp.base.util
 
 import japgolly.scalajs.react._
 import shipreq.base.util.TaggedTypes.TaggedInt

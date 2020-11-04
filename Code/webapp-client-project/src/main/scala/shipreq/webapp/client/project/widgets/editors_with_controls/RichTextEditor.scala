@@ -18,7 +18,7 @@ import shipreq.webapp.base.text.Atom.TypeGroup
 import shipreq.webapp.base.text.Text.Equality._
 import shipreq.webapp.base.text._
 import shipreq.webapp.base.ui.OptionalFullscreen
-import shipreq.webapp.base.util.PreProcessor
+import shipreq.webapp.base.util.{KeyHandlers, PreProcessor, TaskRepeater}
 import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets._

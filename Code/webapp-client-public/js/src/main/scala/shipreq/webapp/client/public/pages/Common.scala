@@ -3,8 +3,8 @@ package shipreq.webapp.client.public.pages
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util.{Disabled, Enabled}
-import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.ui.semantic.{Icon, Message}
+import shipreq.webapp.base.validation.ValidationUX
 import shipreq.webapp.client.public.Styles.{common => *}
 
 private[pages] object Common {

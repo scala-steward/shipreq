@@ -11,11 +11,11 @@ import shipreq.base.util._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.event.TagGroupGD
-import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.base.ui.AutosizeTextarea
 import shipreq.webapp.base.ui.widgets.Form
 import shipreq.webapp.base.util._
+import shipreq.webapp.base.validation.ValidationUX
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets

@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import org.scalajs.dom.ext.KeyCode
 import org.scalajs.dom.window
 import scala.util.Try
-import shipreq.webapp.base.lib.DomUtil.asEventDefaultWhenTargetsCell
+import shipreq.webapp.base.util.DomUtil.asEventDefaultWhenTargetsCell
 import shipreq.webapp.base.util.{Browser, TextMod}
 
 object ClipboardKeys {

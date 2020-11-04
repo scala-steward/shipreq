@@ -7,7 +7,7 @@ import org.scalajs.dom.html
 import shipreq.webapp.base.feature.autocomplete.Implicits._
 import shipreq.webapp.base.feature.autocomplete.strategies.Strategies
 import shipreq.webapp.base.jsfacade.TextComplete
-import shipreq.webapp.base.lib.{KeyHandler, KeyHandlers}
+import shipreq.webapp.base.util.{KeyHandler, KeyHandlers}
 
 object ForComponent {
 

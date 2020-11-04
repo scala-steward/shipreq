@@ -6,10 +6,10 @@ import org.parboiled2.Parser.DeliveryScheme.Throw
 import org.scalajs.dom.html
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.clipboard.TestClipboard
-import shipreq.webapp.base.lib.DomUtil._
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test._
+import shipreq.webapp.base.util.DomUtil._
 import shipreq.webapp.base.util._
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.feature.savedview.{FilterDeadButtonObs, FilterEditorObs, SavedViewManagerObs}

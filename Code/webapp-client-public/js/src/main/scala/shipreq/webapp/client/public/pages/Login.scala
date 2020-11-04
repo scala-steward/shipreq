@@ -10,14 +10,14 @@ import shipreq.base.util._
 import shipreq.webapp.base.config._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.lib.{BrowserStorage, ValidationUX}
+import shipreq.webapp.base.lib.BrowserStorage
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.ajax.CommonProtocols.Login.Request
 import shipreq.webapp.base.ui.semantic._
 import shipreq.webapp.base.ui.widgets.Form
 import shipreq.webapp.base.ui.{CommmonUiText, GeneralTheme}
 import shipreq.webapp.base.util._
-import shipreq.webapp.base.validation.UserValidators
+import shipreq.webapp.base.validation._
 import shipreq.webapp.client.public.Styles.{login => *}
 
 object Login {

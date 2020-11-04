@@ -6,10 +6,10 @@ import org.scalajs.dom.{Element, document, html}
 import shipreq.base.util.{Allow, Deny, Disabled, Enabled, ErrorMsg, Permission}
 import shipreq.webapp.base.config.GlobalSettings
 import shipreq.webapp.base.data.{PlainTextPassword, Username}
-import shipreq.webapp.base.lib.ModalForm
 import shipreq.webapp.base.protocol.ajax.CommonProtocols.Login
 import shipreq.webapp.base.protocol.ajax.{AjaxClient, CommonProtocols}
 import shipreq.webapp.base.ui.semantic.{Colour, Icon, Label, UsesSemanticUiManually}
+import shipreq.webapp.base.ui.widgets.ModalForm
 import shipreq.webapp.base.util.Accessibility
 
 /** Pops up a modal that asks a user to re-authenticate.

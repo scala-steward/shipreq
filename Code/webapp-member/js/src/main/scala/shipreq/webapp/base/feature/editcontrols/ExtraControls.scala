@@ -1,7 +1,7 @@
 package shipreq.webapp.base.feature.editcontrols
 
 import japgolly.scalajs.react._
-import shipreq.webapp.base.lib.{KeyHandler, KeyHandlers}
+import shipreq.webapp.base.util.{KeyHandler, KeyHandlers}
 
 final class ExtraControls(val keys: KeyHandlers,
                           val instructions: List[Instructions.Clause]) {

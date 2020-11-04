@@ -14,13 +14,13 @@ import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.feature.{AsyncFeature, PreviewFeature}
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.lib.DomUtil
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.base.text.{PlainText, TextSearch}
 import shipreq.webapp.base.ui.Toast
 import shipreq.webapp.base.ui.semantic.Icon
 import shipreq.webapp.base.ui.widgets.NoContentMessage
+import shipreq.webapp.base.util.DomUtil
 import shipreq.webapp.client.project.app.Style.reqtable.{page => *}
 import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
 import shipreq.webapp.client.project.feature._

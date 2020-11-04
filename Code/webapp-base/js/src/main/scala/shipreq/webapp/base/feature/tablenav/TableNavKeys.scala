@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import org.scalajs.dom
 import org.scalajs.dom.ext.KeyCode
 import org.scalajs.dom.html
-import shipreq.webapp.base.lib.DomUtil._
+import shipreq.webapp.base.util.DomUtil._
 
 final class TableNavKeys(implicit ts: TableStyle) {
 
