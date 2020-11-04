@@ -2,15 +2,15 @@ package shipreq.webapp.client.project.app.pages.content.reqgraph
 
 import japgolly.scalajs.react.test.SimEvent.{Keyboard => KB}
 import shipreq.base.util.{Backwards, Forwards}
-import shipreq.webapp.base.data._
-import shipreq.webapp.member.event.Event
-import shipreq.webapp.base.protocol.websocket.UpdateContentCmd.PatchImplications
 import shipreq.webapp.base.test.TestState._
-import shipreq.webapp.base.test.UnsafeTypes.nesd
-import shipreq.webapp.base.test._
 import shipreq.webapp.client.project.app.ProjectSpaTestDsl
 import shipreq.webapp.client.project.app.pages.root.Routes.Page
 import shipreq.webapp.client.project.test._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.event.Event
+import shipreq.webapp.member.protocol.websocket.UpdateContentCmd.PatchImplications
+import shipreq.webapp.member.test.UnsafeTypes.nesd
+import shipreq.webapp.member.test._
 import utest._
 import utest.framework.TestPath
 

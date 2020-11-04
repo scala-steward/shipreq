@@ -3,12 +3,12 @@ package shipreq.webapp.client.project.app.pages.content.reqtable
 import japgolly.scalajs.react.{Key, Reusability}
 import monocle.{Lens, Optional}
 import shipreq.base.util._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation._
-import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.util.ReqCodeTreeItem
 import shipreq.webapp.client.project.feature.EditorFeature.RowKey
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.derivation._
+import shipreq.webapp.member.data.savedview._
+import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.util.ReqCodeTreeItem
 
 sealed trait Row {
   val id        : Row.Id

@@ -4,12 +4,12 @@ import japgolly.scalajs.react.vdom.html_<^.{^ => ^^, _}
 import scalacss.internal.ValueT
 import shipreq.base.util._
 import shipreq.webapp.base.CssSettings._
-import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.DragToReorderFeature.{Status => DragStatus}
-import shipreq.webapp.member.text.Grammar
-import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.base.ui.semantic.UsesSemanticUiManually
 import shipreq.webapp.base.util._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.text.Grammar
+import shipreq.webapp.member.ui.BaseStyles
 
 object Style extends StyleSheet.Inline {
   import dsl._

@@ -2,9 +2,9 @@ package shipreq.webapp.client.project.feature.savedview
 
 import japgolly.scalajs.react.test.Simulate
 import org.scalajs.dom.html
-import shipreq.webapp.base.data.{FilterDead, ShowDead}
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.app.Style
+import shipreq.webapp.member.data.{FilterDead, ShowDead}
 
 final class FilterDeadButtonObs($: DomZipperJs) {
 

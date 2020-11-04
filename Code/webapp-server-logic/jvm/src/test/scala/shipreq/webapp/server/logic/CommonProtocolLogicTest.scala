@@ -3,7 +3,7 @@ package shipreq.webapp.server.logic
 import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.ajax.CommonProtocols
-import shipreq.webapp.base.test.WebappTestUtil._
+import shipreq.webapp.member.test.WebappTestUtil._
 import utest._
 
 object CommonProtocolLogicTest extends TestSuite {

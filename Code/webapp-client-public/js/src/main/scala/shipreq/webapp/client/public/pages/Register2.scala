@@ -15,11 +15,11 @@ import shipreq.webapp.base.ui.semantic.{Icon, Input, Message}
 import shipreq.webapp.base.ui.widgets.Form
 import shipreq.webapp.base.ui.{CommmonUiText, GeneralTheme}
 import shipreq.webapp.base.util._
-import shipreq.webapp.base.validation.lib.Implicits._
-import shipreq.webapp.base.validation.lib.{Composite, Simple}
 import shipreq.webapp.base.validation.{UserValidators, ValidationUX}
 import shipreq.webapp.client.public.PublicSpaProtocols.Register2.{Request, Result}
 import shipreq.webapp.client.public.Styles.{register2 => *}
+import shipreq.webapp.member.validation.lib.Implicits._
+import shipreq.webapp.member.validation.lib.{Composite, Simple}
 
 object Register2 {
 

@@ -303,6 +303,7 @@ final class DispatchLogic[F[_], RealReq](readRealReq: RealReq => dispatch.Reques
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   object Ajax extends StrictLogging {
     import shipreq.webapp.base.protocol.ajax._
+    import shipreq.webapp.member.protocol.ajax._
 
     private val authRequired =
       F pure ResponseCmd.StatusOnly.Forbidden.withoutCookieUpdate

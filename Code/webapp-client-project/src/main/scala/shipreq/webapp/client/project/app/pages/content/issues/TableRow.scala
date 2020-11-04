@@ -5,18 +5,18 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{ConsolidatedSeq, Disabled, Enabled, ErrorMsg, IfApplicable}
-import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.clipboard.ClipboardKeys
 import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
-import shipreq.webapp.member.text.Text
-import shipreq.webapp.member.text.Text.Equality._
-import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.client.project.app.Style.{issues => *}
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.feature.RenderFeature.FieldKey
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.EditorNavParent
 import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.text.Text
+import shipreq.webapp.member.text.Text.Equality._
+import shipreq.webapp.member.ui.BaseStyles
 
 object TableRow {
   type TD = VdomTagOf[html.TableCell]

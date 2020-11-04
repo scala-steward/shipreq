@@ -5,12 +5,12 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.Exclusive
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data._
 import shipreq.webapp.client.project.app.Style.{issueConfig => *}
 import shipreq.webapp.client.project.app.pages.root.Routes
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data._
 
 
 object OtherIssueSources {

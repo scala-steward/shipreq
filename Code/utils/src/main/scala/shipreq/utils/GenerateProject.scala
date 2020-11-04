@@ -7,12 +7,12 @@ import java.time.Instant
 import nyaya.gen._
 import shipreq.base.test.BaseUtilGen._
 import shipreq.base.util.BinaryData
-import shipreq.webapp.base.data.DataImplicits._
-import shipreq.webapp.base.data._
-import shipreq.webapp.member.protocol.binary.v1.Latest.picklerProject
 import shipreq.webapp.base.test.RandomDataSettings
-import shipreq.webapp.base.util.ShowSize
-import shipreq.webapp.base.{RandomData => $}
+import shipreq.webapp.member.data.DataImplicits._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.protocol.binary.v1.Latest.picklerProject
+import shipreq.webapp.member.test.{RandomData => $}
+import shipreq.webapp.member.util.ShowSize
 
 object GenerateProject {
 

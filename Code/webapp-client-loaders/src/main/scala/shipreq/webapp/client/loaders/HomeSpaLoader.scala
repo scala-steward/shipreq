@@ -4,8 +4,8 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.webapp.base.config.{AssetManifest, ClientConfig}
 import shipreq.webapp.base.data.Username
-import shipreq.webapp.base.ui._
 import shipreq.webapp.base.ui.semantic.Breadcrumb
+import shipreq.webapp.member.ui._
 
 object HomeSpaLoader {
 

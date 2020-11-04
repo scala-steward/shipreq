@@ -6,12 +6,13 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scala.reflect.ClassTag
 import scalaz.~~>
 import shipreq.base.util._
-import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature._
-import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.member.text._
 import shipreq.webapp.base.util.{LastValueMemo, LruMemo}
 import shipreq.webapp.client.project.feature.create.Feature.{AsyncState, Editor, PreviewId, State}
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.feature._
+import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.text._
 
 object NewEditor {
 

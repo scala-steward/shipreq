@@ -3,15 +3,15 @@ package shipreq.webapp.client.project.app.pages.content.issues
 import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.{Key, Reusability, Reusable}
 import shipreq.base.util.IfApplicable
-import shipreq.webapp.base.UiText.{Issues => UI}
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation._
-import shipreq.webapp.base.feature.EditControlsFeature
-import shipreq.webapp.member.issue._
 import shipreq.webapp.client.project.app.pages.root.Routes
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.lib.EditorNavParent
 import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.member.UiText.{Issues => UI}
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.derivation._
+import shipreq.webapp.member.feature.EditControlsFeature
+import shipreq.webapp.member.issue._
 
 sealed trait Row {
   val issue: Issue

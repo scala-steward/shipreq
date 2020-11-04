@@ -1,7 +1,7 @@
 package shipreq.webapp.server.snippet
 
 import shipreq.base.db.scalazDoobieConnectionIO
-import shipreq.webapp.base.data._
+import shipreq.webapp.member.data._
 import shipreq.webapp.member.event.Event.FieldStaticRemove
 import shipreq.webapp.server.logic.{HomeSpaLogic, Obfuscators}
 import shipreq.webapp.server.test.WebappServerTestUtil._

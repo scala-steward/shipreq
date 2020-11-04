@@ -6,15 +6,16 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.config.AssetManifest
-import shipreq.webapp.base.data.{Project, ProjectMetaData, Username}
-import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.member.text.PlainText
-import shipreq.webapp.base.ui._
+import shipreq.webapp.base.data.Username
 import shipreq.webapp.base.ui.semantic.Menu.DropdownType
 import shipreq.webapp.base.ui.semantic.{Breadcrumb, Colour, Dropdown, Icon, Menu, Size}
 import shipreq.webapp.base.ui.widgets.FeedbackModal
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.widgets.{FilterHelp, RichTextEditorHelp}
+import shipreq.webapp.member.data.{Project, ProjectMetaData}
+import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.text.PlainText
+import shipreq.webapp.member.ui._
 
 object Layout {
   import Routes.{Page, RouterCtl}

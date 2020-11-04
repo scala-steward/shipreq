@@ -5,11 +5,11 @@ import nyaya.test.DefaultSettings
 import nyaya.test.PropTest._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{IMap, Util}
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.test.UnsafeTypes._
-import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.base.test._
 import shipreq.webapp.client.project.feature.deletion.DeletionRestorationLogic.{Data, GroupRow}
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.test.UnsafeTypes._
+import shipreq.webapp.member.test.WebappTestUtil._
+import shipreq.webapp.member.test._
 import utest._
 
 object DeletionLogicTestData {

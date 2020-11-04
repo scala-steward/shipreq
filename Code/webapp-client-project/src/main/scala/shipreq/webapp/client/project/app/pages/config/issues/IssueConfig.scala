@@ -5,18 +5,19 @@ import japgolly.scalajs.react.extra.StateSnapshot
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{Disabled, Enabled, ErrorMsg, PotentialChange}
-import shipreq.webapp.base.data.{Colour => _, _}
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
+import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon}
-import shipreq.webapp.base.ui.{GeneralTheme, Toast}
 import shipreq.webapp.client.project.app.Style.{issueConfig => *}
 import shipreq.webapp.client.project.app.pages.root.Routes
 import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.lib.Usage
 import shipreq.webapp.client.project.widgets.{EditorButtons, ProjectWidgets, SplitScreenCrud}
+import shipreq.webapp.member.data.{Colour => _, _}
+import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.protocol.websocket.UpdateConfigCmd
+import shipreq.webapp.member.ui.Toast
 
 object IssueConfig {
 

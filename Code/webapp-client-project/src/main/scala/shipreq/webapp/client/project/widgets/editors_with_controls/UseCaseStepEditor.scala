@@ -10,17 +10,18 @@ import scalaz.std.vector._
 import scalaz.syntax.traverse._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data._
-import shipreq.webapp.member.event.UseCaseStepGD
-import shipreq.webapp.base.feature.AutoCompleteFeature._
-import shipreq.webapp.base.feature.{AsyncFeature, EditControlsFeature, EditorStatus, PreviewFeature}
-import shipreq.webapp.member.text._
+import shipreq.webapp.base.feature.{AsyncFeature, EditorStatus}
 import shipreq.webapp.base.util.KeyHandler
-import shipreq.webapp.base.validation.lib.Simple._
 import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets._
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.event.UseCaseStepGD
+import shipreq.webapp.member.feature.AutoCompleteFeature._
+import shipreq.webapp.member.feature.{EditControlsFeature, PreviewFeature}
+import shipreq.webapp.member.text._
+import shipreq.webapp.member.validation.lib.Simple._
 
 object UseCaseStepEditor {
   import RichTextEditor.hardcodedLive

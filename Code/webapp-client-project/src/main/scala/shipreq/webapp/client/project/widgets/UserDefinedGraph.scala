@@ -4,10 +4,10 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.parboiled2._
 import shipreq.base.util.{ErrorMsg, Util}
-import shipreq.webapp.base.data.Svg
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.widgets.GraphComponent._
 import shipreq.webapp.client.ww.api.WebWorkerCmd
+import shipreq.webapp.member.data.Svg
 
 object UserDefinedGraph {
 

@@ -2,10 +2,10 @@ package shipreq.webapp.client.project.app.pages.content.reqtable
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
-import shipreq.webapp.base.data.{FilterDead, HideDead, ShowDead}
-import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.SummaryUI
 import shipreq.webapp.client.project.widgets.SummaryUI.SummaryIcon
+import shipreq.webapp.member.data.{FilterDead, HideDead, ShowDead}
+import shipreq.webapp.member.lib.DataReusability._
 
 /**
   * Presents a user with a summary of select portions of the content and state of [[ReqTablePage]].

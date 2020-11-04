@@ -4,8 +4,8 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import scala.collection.mutable
 import shipreq.base.util.VectorTree.PartialLocation
 import shipreq.base.util._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview.ImpGraphConfig.GraphDir
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.savedview.ImpGraphConfig.GraphDir
 import shipreq.webapp.member.text.{PlainText, ProjectText}
 
 /**

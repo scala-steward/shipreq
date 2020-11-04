@@ -5,12 +5,12 @@ import java.time.Instant
 import nyaya.gen.Gen
 import scalaz.Equal
 import shipreq.base.util.BinaryData
-import shipreq.webapp.base.data.{Project, StaticField}
-import shipreq.webapp.member.event._
 import shipreq.webapp.base.test.BinaryTestUtil._
-import shipreq.webapp.base.test.UnsafeTypes._
-import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.base.{RandomData => R}
+import shipreq.webapp.member.data.{Project, StaticField}
+import shipreq.webapp.member.event._
+import shipreq.webapp.member.test.UnsafeTypes._
+import shipreq.webapp.member.test.WebappTestUtil._
+import shipreq.webapp.member.test.{RandomData => R}
 import utest._
 
 object RedisProtocolTest extends TestSuite {
@@ -22,7 +22,7 @@ object RedisProtocolTest extends TestSuite {
 
     // webapp-server-logic-jvm/testOnly -- shipreq.webapp.server.logic.RedisProtocolTest.generateTestData
 //    "generateTestData" - {
-//      shipreq.webapp.base.RandomDataSettings.disableUnicode = true
+//      shipreq.webapp.member.test.RandomDataSettings.disableUnicode = true
 //      RedisProtocolTestData.main(Array.empty)
 //    }
 

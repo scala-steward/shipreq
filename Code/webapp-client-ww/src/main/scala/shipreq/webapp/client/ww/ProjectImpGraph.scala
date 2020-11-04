@@ -1,10 +1,10 @@
 package shipreq.webapp.client.ww
 
 import shipreq.base.util._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation._
-import shipreq.webapp.base.data.savedview.ImpGraphConfig
-import shipreq.webapp.base.data.savedview.ImpGraphConfig.GraphDir
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.derivation._
+import shipreq.webapp.member.data.savedview.ImpGraphConfig
+import shipreq.webapp.member.data.savedview.ImpGraphConfig.GraphDir
 import shipreq.webapp.member.text.PlainText
 
 final class ProjectImpGraph(project   : Project,

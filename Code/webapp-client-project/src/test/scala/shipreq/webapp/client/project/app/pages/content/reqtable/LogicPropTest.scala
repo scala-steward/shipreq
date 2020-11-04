@@ -7,17 +7,17 @@ import nyaya.util.Multimap
 import scalaz.Equal
 import scalaz.std.AllInstances._
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.RandomData
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.data.savedview.{Column => C, SortCriterion => SC}
-import shipreq.webapp.base.filter.Filter
-import shipreq.webapp.member.sort.SortMethod._
-import shipreq.webapp.member.sort.Sorter.{BlankPlacement, BlanksFirst, BlanksLast, Dir, FlipDir, KeepDir}
-import shipreq.webapp.member.text.Text.Equality._
-import shipreq.webapp.member.text.{Atom, PlainText, TextSearch}
 import shipreq.webapp.client.project.app.pages.content.reqtable.LogicTestUtil._
 import shipreq.webapp.client.project.test.ClientTestSettings._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.savedview._
+import shipreq.webapp.member.data.savedview.{Column => C, SortCriterion => SC}
+import shipreq.webapp.member.filter.Filter
+import shipreq.webapp.member.sort.SortMethod._
+import shipreq.webapp.member.sort.Sorter.{BlankPlacement, BlanksFirst, BlanksLast, Dir, FlipDir, KeepDir}
+import shipreq.webapp.member.test.RandomData
+import shipreq.webapp.member.text.Text.Equality._
+import shipreq.webapp.member.text.{Atom, PlainText, TextSearch}
 import utest._
 
 object LogicPropTest extends TestSuite {

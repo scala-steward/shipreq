@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.feature.deletion
 
 import scala.collection.IterableOnce
 import shipreq.base.util._
-import shipreq.webapp.base.data._
+import shipreq.webapp.member.data._
 import shipreq.webapp.member.text.PlainText
 
 object DeletionRestorationLogic {

@@ -7,19 +7,22 @@ import org.scalajs.dom.{EventTarget, document, html}
 import scala.scalajs.js
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{Allow, ErrorMsg, JsTimers, PotentialChange, Retries}
-import shipreq.webapp.base.data.{Project, Username}
-import shipreq.webapp.member.event._
+import shipreq.webapp.base.data.Username
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
-import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes
 import shipreq.webapp.base.protocol.websocket.WebSocket.ReadyState
 import shipreq.webapp.base.protocol.websocket.WebSocketShared.CloseCode
 import shipreq.webapp.base.protocol.websocket._
-import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test._
-import shipreq.webapp.base.ui.BaseStyles
 import shipreq.webapp.client.project.app.state.{Global, ProjectState}
+import shipreq.webapp.member.data.Project
+import shipreq.webapp.member.event._
+import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols
+import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.WsReqRes
+import shipreq.webapp.member.test.WebappTestUtil._
+import shipreq.webapp.member.test._
+import shipreq.webapp.member.ui.BaseStyles
 import shipreq.webapp.server.logic.{ApplyNewEvent, MakeEvent}
 
 final class TestGlobal(initialProjectState: ProjectState) extends Global((_, _) => Callback.empty, _ => Callback.empty, LoggerJs.off) {

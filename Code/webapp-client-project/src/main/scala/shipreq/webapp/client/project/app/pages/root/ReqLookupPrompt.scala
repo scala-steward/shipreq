@@ -6,8 +6,8 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.ext.KeyCode
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{Allow, Permission}
-import shipreq.webapp.base.data.ExternalPubid
 import shipreq.webapp.client.project.app.Style
+import shipreq.webapp.member.data.ExternalPubid
 
 /** The prompt under the Req Lookup card in which the user can enter a pubid to lookup.
   */

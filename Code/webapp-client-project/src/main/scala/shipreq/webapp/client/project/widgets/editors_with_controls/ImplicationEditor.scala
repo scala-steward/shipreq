@@ -7,16 +7,17 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scalaz.syntax.either._
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
-import shipreq.webapp.base.data.DataImplicits._
-import shipreq.webapp.base.data.{Plain, _}
-import shipreq.webapp.base.feature.AutoCompleteFeature.AutoComplete.Project.{ReqItem, ReqItems}
-import shipreq.webapp.base.feature.AutoCompleteFeature._
-import shipreq.webapp.base.feature.{EditControlsFeature, EditorStatus}
-import shipreq.webapp.member.text.{Grammar, PlainText, SingleLine, TextSearch}
+import shipreq.webapp.base.feature.EditorStatus
 import shipreq.webapp.base.util.KeyHandlers
-import shipreq.webapp.base.validation.lib.Simple._
-import shipreq.webapp.base.validation.lib._
 import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.member.data.DataImplicits._
+import shipreq.webapp.member.data.{Plain, _}
+import shipreq.webapp.member.feature.AutoCompleteFeature.AutoComplete.Project.{ReqItem, ReqItems}
+import shipreq.webapp.member.feature.AutoCompleteFeature._
+import shipreq.webapp.member.feature.EditControlsFeature
+import shipreq.webapp.member.text.{Grammar, PlainText, SingleLine, TextSearch}
+import shipreq.webapp.member.validation.lib.Simple._
+import shipreq.webapp.member.validation.lib._
 
 object ImplicationEditor {
 

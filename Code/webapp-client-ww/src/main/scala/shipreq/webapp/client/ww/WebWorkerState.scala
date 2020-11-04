@@ -4,10 +4,10 @@ import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
 import monocle.macros.Lenses
 import shipreq.webapp.base.config.AssetManifest
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.member.data.Project
 import shipreq.webapp.member.event.EventOrd.Implicits._
 import shipreq.webapp.member.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
-import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.member.text.PlainText
 
 final class WebWorkerState(logger: LoggerJs) {

@@ -5,14 +5,14 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
-import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
-import shipreq.webapp.member.text.UseCaseStepFlowText.TextAndFlow
-import shipreq.webapp.member.text._
 import shipreq.webapp.client.project.app.Style.reqdetail.{useCaseStep => *}
 import shipreq.webapp.client.project.app.TestMarker
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.protocol.websocket.UpdateContentCmd
+import shipreq.webapp.member.text.UseCaseStepFlowText.TextAndFlow
+import shipreq.webapp.member.text._
 
 object UseCaseStepTree {
 

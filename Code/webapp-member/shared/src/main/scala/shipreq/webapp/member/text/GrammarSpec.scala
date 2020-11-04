@@ -7,8 +7,8 @@ import scala.collection.immutable.NumericRange
 import scala.runtime.AbstractFunction1
 import scalaz.std.list.listInstance
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.validation.lib.CommonValidation
-import shipreq.webapp.base.validation.lib.Simple._
+import shipreq.webapp.member.validation.lib.CommonValidation
+import shipreq.webapp.member.validation.lib.Simple._
 
 /**
   * Various aids to facilitate building a grammar specification that can be used to enforcement code.

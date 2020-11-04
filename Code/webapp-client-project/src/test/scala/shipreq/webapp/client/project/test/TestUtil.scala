@@ -5,7 +5,7 @@ import org.scalajs.dom
 import org.scalajs.dom.{EventTarget, KeyboardEvent}
 import scala.scalajs.js
 import scala.scalajs.js.{UndefOr, undefined}
-import shipreq.webapp.base.test._
+import shipreq.webapp.member.test._
 
 object TestUtil extends WebappTestUtil with WebappTestEquality {
 

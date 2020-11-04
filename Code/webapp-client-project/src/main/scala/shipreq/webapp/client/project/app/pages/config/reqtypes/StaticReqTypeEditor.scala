@@ -3,14 +3,14 @@ package shipreq.webapp.client.project.app.pages.config.reqtypes
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.UiText.FieldNames
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.ui.AutosizeTextarea
 import shipreq.webapp.base.ui.semantic.{Icon, Message}
 import shipreq.webapp.base.ui.widgets.Form
 import shipreq.webapp.base.validation.ValidationUX
 import shipreq.webapp.client.project.app.Style.{reqTypeConfig => *}
+import shipreq.webapp.member.UiText.FieldNames
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.ui.AutosizeTextarea
 
 /** This isn't really an editor; it's read/only! But it's what appears in place of the editor. */
 private[reqtypes] object StaticReqTypeEditor {

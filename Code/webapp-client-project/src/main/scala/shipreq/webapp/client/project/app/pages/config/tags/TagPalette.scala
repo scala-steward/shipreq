@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.pages.config.tags
 
-import shipreq.webapp.base.jsfacade.{ReactColor, TinyColor}
+import shipreq.webapp.member.jsfacade.{ReactColor, TinyColor}
 
 object TagPalette {
 

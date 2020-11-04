@@ -6,13 +6,8 @@ import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
 import scala.util.{Failure, Success, Try}
 import shipreq.webapp.base.config.AssetManifest
-import shipreq.webapp.base.data.{ExternalPubid, Project, Username}
-import shipreq.webapp.member.event.Event
-import shipreq.webapp.base.feature.clipboard.TestClipboard
-import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint
+import shipreq.webapp.base.data.Username
 import shipreq.webapp.base.test.TestState._
-import shipreq.webapp.base.test.{SampleProject5, _}
-import shipreq.webapp.base.ui.OnlyVisibleOnMouseMove
 import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.client.project.app.pages.config.fields.{FieldConfigObs, FieldConfigTestDsl}
 import shipreq.webapp.client.project.app.pages.config.issues.{IssueConfigObs, IssueConfigTestDsl}
@@ -27,6 +22,11 @@ import shipreq.webapp.client.project.app.pages.root.Routes.Page
 import shipreq.webapp.client.project.app.pages.root.{ProjectHomeTestDsl => PH, _}
 import shipreq.webapp.client.project.test._
 import shipreq.webapp.client.project.widgets.{ImplicationGraph, ReqSearch}
+import shipreq.webapp.member.data.{ExternalPubid, Project}
+import shipreq.webapp.member.event.Event
+import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint
+import shipreq.webapp.member.test._
+import shipreq.webapp.member.ui.OnlyVisibleOnMouseMove
 
 object ProjectSpaTestDsl {
 

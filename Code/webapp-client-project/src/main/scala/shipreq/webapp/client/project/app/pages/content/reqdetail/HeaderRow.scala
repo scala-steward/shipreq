@@ -6,12 +6,12 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.ext.KeyCode
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.ui.semantic.Header
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.widgets._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.lib.DataReusability._
 
 private[reqdetail] object HeaderRow {
 

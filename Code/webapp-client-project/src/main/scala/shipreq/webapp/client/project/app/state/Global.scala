@@ -7,19 +7,20 @@ import java.time.{Duration, Instant}
 import org.scalajs.dom.window
 import scala.util.{Failure, Success}
 import shipreq.base.util.{ErrorMsg, JsTimers}
-import shipreq.webapp.base.data.{Project, ProjectId, ProjectMetaData}
-import shipreq.webapp.member.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
-import shipreq.webapp.base.lib.DataReusability._
+import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.ajax.CommonProtocols.Metadata
-import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WebSocket.Push
-import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol.websocket.WebSocket.ReadyState
 import shipreq.webapp.base.protocol.websocket._
-import shipreq.webapp.base.ui.ReauthenticationModal
 import shipreq.webapp.client.project.app.pages.root.ConnectionStatus
 import shipreq.webapp.client.project.app.state.Global.State
+import shipreq.webapp.member.data.{Project, ProjectMetaData}
+import shipreq.webapp.member.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.WebSocket.Push
+import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
+import shipreq.webapp.member.ui.ReauthenticationModal
 
 abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
                       onInitFailure   : ErrorMsg => Callback,

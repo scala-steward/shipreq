@@ -10,14 +10,16 @@ import shipreq.base.util._
 import shipreq.taskman.api.{Task, TaskmanApi, UserId => TaskmanUserId}
 import shipreq.webapp.base.config.AssetManifest
 import shipreq.webapp.base.data._
-import shipreq.webapp.member.event.EventOrd.Implicits._
-import shipreq.webapp.member.event.{ApplyEvent, EventOrd, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.protocol.binary.SafePickler
-import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint
-import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes.EventResult
-import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.util._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.event.EventOrd.Implicits._
+import shipreq.webapp.member.event.{ApplyEvent, EventOrd, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint
+import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.WsReqRes.EventResult
+import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
+import shipreq.webapp.member.protocol.websocket._
 import shipreq.webapp.server.logic.dispatch.Cookie
 
 trait ProjectSpaLogic[F[_]] {

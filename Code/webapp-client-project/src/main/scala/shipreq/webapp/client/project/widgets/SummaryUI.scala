@@ -1,9 +1,9 @@
 package shipreq.webapp.client.project.widgets
 
 import japgolly.scalajs.react.vdom.html_<^._
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.UiText.EnglishIntExt
 import shipreq.webapp.base.ui.semantic.Icon
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.UiText.EnglishIntExt
 
 /** UI to quickly and concisely communicate to the user, a summary of content.
   */

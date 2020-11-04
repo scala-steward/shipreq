@@ -2,11 +2,12 @@ package shipreq.webapp.server.app
 
 import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.config.{Urls, WebappConfig}
-import shipreq.webapp.base.data.{EmailAddr, PersonName, Project, ProjectId}
+import shipreq.webapp.base.data.{EmailAddr, PersonName, ProjectId}
 import shipreq.webapp.base.protocol.ajax.CommonProtocols
-import shipreq.webapp.base.protocol.entrypoint._
 import shipreq.webapp.client.public.PublicSpaProtocols.LandingPage.Request
 import shipreq.webapp.client.public.{PublicSpaEntryPoint, PublicSpaProtocols}
+import shipreq.webapp.member.data.Project
+import shipreq.webapp.member.protocol.entrypoint._
 import shipreq.webapp.server.logic.{Obfuscators, Security}
 import shipreq.webapp.server.test._
 import utest._

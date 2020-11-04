@@ -6,18 +6,18 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation.NaTags
-import shipreq.webapp.base.feature.{EditControlsFeature, PreviewFeature}
-import shipreq.webapp.base.protocol.websocket.UpdateContentCmd.DeleteReqs
-import shipreq.webapp.member.text.TextSearch
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon}
 import shipreq.webapp.client.project.app.Style.{deletionForm => *}
 import shipreq.webapp.client.project.app.TestMarker
 import shipreq.webapp.client.project.feature.Selection
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.client.project.widgets.editors_with_controls.RichTextEditor
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.derivation.NaTags
+import shipreq.webapp.member.feature.{EditControlsFeature, PreviewFeature}
+import shipreq.webapp.member.protocol.websocket.UpdateContentCmd.DeleteReqs
+import shipreq.webapp.member.text.TextSearch
 
 object DeletionForm {
   import DeletionRestorationLogic.Data

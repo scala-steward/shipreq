@@ -7,22 +7,23 @@ import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.{Enabled, PotentialChange, Validity}
-import shipreq.webapp.base.data
-import shipreq.webapp.base.data.derivation.NaTags
-import shipreq.webapp.base.data.{Optional => _, _}
-import shipreq.webapp.base.feature.AutoCompleteFeature._
-import shipreq.webapp.base.feature.{EditControlsFeature, EditorStatus, PreviewFeature, ScrollSyncFeature}
-import shipreq.webapp.base.jsfacade.{ScrollIntoViewIfNeeded, TextFieldEdit}
+import shipreq.webapp.base.feature.{EditorStatus, ScrollSyncFeature}
 import shipreq.webapp.base.lib._
-import shipreq.webapp.member.text.Atom.TypeGroup
-import shipreq.webapp.member.text.Text.Equality._
-import shipreq.webapp.member.text._
-import shipreq.webapp.base.ui.OptionalFullscreen
 import shipreq.webapp.base.util.{KeyHandlers, PreProcessor, TaskRepeater}
 import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets._
 import shipreq.webapp.client.project.widgets.editors_with_controls.RichTextEditor.hardcodedLive
+import shipreq.webapp.member.data
+import shipreq.webapp.member.data.derivation.NaTags
+import shipreq.webapp.member.data.{Optional => _, _}
+import shipreq.webapp.member.feature.AutoCompleteFeature._
+import shipreq.webapp.member.feature.{EditControlsFeature, PreviewFeature}
+import shipreq.webapp.member.jsfacade.{ScrollIntoViewIfNeeded, TextFieldEdit}
+import shipreq.webapp.member.text.Atom.TypeGroup
+import shipreq.webapp.member.text.Text.Equality._
+import shipreq.webapp.member.text._
+import shipreq.webapp.member.ui.OptionalFullscreen
 
 sealed abstract class RichTextEditor[TextType <: Text.Generic](name: String, final val text: TextType) {
   import RichTextEditor.State

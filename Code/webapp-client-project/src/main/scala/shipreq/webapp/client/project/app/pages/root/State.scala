@@ -3,10 +3,7 @@ package shipreq.webapp.client.project.app.pages.root
 import japgolly.scalajs.react._
 import monocle.macros._
 import shipreq.base.util._
-import shipreq.webapp.base.data.{FilterDead, HideDead, Project}
 import shipreq.webapp.base.feature._
-import shipreq.webapp.base.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
-import shipreq.webapp.base.ui.{ProjectItem, Toast}
 import shipreq.webapp.client.project.app.pages.config.fields.FieldConfig
 import shipreq.webapp.client.project.app.pages.config.issues.IssueConfig
 import shipreq.webapp.client.project.app.pages.config.reqtypes.ReqTypeConfig
@@ -17,6 +14,10 @@ import shipreq.webapp.client.project.app.pages.content.{reqdetail, reqtable}
 import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.{NewReqButton, ReqSearch}
+import shipreq.webapp.member.data.{FilterDead, HideDead, Project}
+import shipreq.webapp.member.feature.PreviewFeature
+import shipreq.webapp.member.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
+import shipreq.webapp.member.ui.{ProjectItem, Toast}
 
 sealed trait PreviewId
 object PreviewId {
@@ -43,7 +44,7 @@ object PreviewId {
 sealed abstract class AsyncKey
 object AsyncKey {
   import reqdetail.Row.UseCaseSteps
-  import shipreq.webapp.base.data.UseCaseStepId
+  import shipreq.webapp.member.data.UseCaseStepId
 
   /** The req itself. Eg. if a req is being deleted then the entire req should be locked */
   case object WholeReq                             extends AsyncKey

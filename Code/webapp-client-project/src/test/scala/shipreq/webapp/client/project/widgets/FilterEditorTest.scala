@@ -1,13 +1,13 @@
 package shipreq.webapp.client.project.widgets
 
-import shipreq.webapp.base.test._
+import shipreq.webapp.member.test._
 import utest._
 
 object FilterEditorTest extends TestSuite {
 
   override def tests = Tests {
     "autoComplete" - {
-      import shipreq.webapp.base.test.AutoCompleteTestUtil._
+      import shipreq.webapp.member.test.AutoCompleteTestUtil._
       implicit val strategies = FilterEditor.autoCompleteStrategies(SampleProject3.project)
 
       "field" - {

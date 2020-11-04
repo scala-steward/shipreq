@@ -2,16 +2,17 @@ package shipreq.webapp.client.project.app.pages.content.reqdetail
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.test.SimEvent.{Keyboard => KB}
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data._
-import shipreq.webapp.member.event._
 import shipreq.webapp.base.test.TestState._
-import shipreq.webapp.base.test.UnsafeTypes.autoExtPubid
-import shipreq.webapp.base.test._
-import shipreq.webapp.member.text.PlainText
 import shipreq.webapp.client.project.app.ProjectSpaTestDsl
 import shipreq.webapp.client.project.app.pages.root.Routes.Page
 import shipreq.webapp.client.project.test._
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.event._
+import shipreq.webapp.member.test.UnsafeTypes.autoExtPubid
+import shipreq.webapp.member.test._
+import shipreq.webapp.member.test.event.TestEvent
+import shipreq.webapp.member.text.PlainText
 import utest._
 
 object ReqDetailTest extends TestSuite {

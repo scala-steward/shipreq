@@ -6,18 +6,20 @@ import monocle.{Lens, Optional}
 import scalaz.Equal
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.data.savedview.{Column => C, SortCriterion => SC}
+import shipreq.webapp.base.util._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.savedview._
+import shipreq.webapp.member.data.savedview.{Column => C, SortCriterion => SC}
 import shipreq.webapp.member.event.{CustomImpFieldGD, Event => E, GenericReqGD, UseCaseGD, UseCaseStepGD}
-import shipreq.webapp.base.filter.FilterAst.OrderOp
-import shipreq.webapp.base.filter.{Filter, FilterAst, IntensionalReqSet}
+import shipreq.webapp.member.filter.FilterAst.OrderOp
+import shipreq.webapp.member.filter.{Filter, FilterAst, IntensionalReqSet}
 import shipreq.webapp.member.issue.IssueCategory
 import shipreq.webapp.member.sort.SortMethod._
-import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.base.test._
+import shipreq.webapp.member.test.WebappTestUtil._
+import shipreq.webapp.member.test._
+import shipreq.webapp.member.test.event.TestEvent
 import shipreq.webapp.member.text.{PlainText, Text, TextSearch}
-import shipreq.webapp.base.util._
+import shipreq.webapp.member.util._
 import sourcecode.Line
 import utest._
 
@@ -63,10 +65,10 @@ object LogicTest extends TestSuite {
   import ProjectDsl._
   import UnsafeTypes._
   import SampleProject7.Values._
-  import shipreq.webapp.base.filter.Filter.{Valid => F}
-  import shipreq.webapp.base.filter.FilterAst.Attr.{AnyIssue, AnyTag}
-  import shipreq.webapp.base.filter.FilterAst.{FieldAttr, FieldCriteria, ImpCriteria}
-  import shipreq.webapp.base.filter.IntensionalReqSet._
+  import shipreq.webapp.member.filter.Filter.{Valid => F}
+  import shipreq.webapp.member.filter.FilterAst.Attr.{AnyIssue, AnyTag}
+  import shipreq.webapp.member.filter.FilterAst.{FieldAttr, FieldCriteria, ImpCriteria}
+  import shipreq.webapp.member.filter.IntensionalReqSet._
   import LogicTestUtil._
 
   private implicit def liftFieldAttr(a: FieldAttr): F.FieldCriteria =

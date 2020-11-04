@@ -4,9 +4,10 @@ import scalaz.syntax.monad._
 import scalaz.{Monad, ~>}
 import shipreq.webapp.base.config.AssetManifest
 import shipreq.webapp.base.data._
+import shipreq.webapp.member.data._
 import shipreq.webapp.member.event._
-import shipreq.webapp.base.protocol.ajax.HomeSpaProtocols
-import shipreq.webapp.base.protocol.entrypoint.HomeSpaEntryPoint
+import shipreq.webapp.member.protocol.ajax.HomeSpaProtocols
+import shipreq.webapp.member.protocol.entrypoint.HomeSpaEntryPoint
 
 trait HomeSpaLogic[F[_]] extends HomeSpaLogic.Ajax[F] {
   def initData(user: User): F[HomeSpaEntryPoint.InitData]

@@ -8,17 +8,17 @@ import monocle.Lens
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.UiText.FieldNames
-import shipreq.webapp.base.data._
-import shipreq.webapp.member.event.TagGroupGD
-import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
-import shipreq.webapp.base.ui.AutosizeTextarea
 import shipreq.webapp.base.ui.widgets.Form
 import shipreq.webapp.base.util._
 import shipreq.webapp.base.validation.ValidationUX
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.member.UiText.FieldNames
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.event.TagGroupGD
+import shipreq.webapp.member.protocol.websocket.UpdateConfigCmd
+import shipreq.webapp.member.ui.AutosizeTextarea
 
 private[tags] object TagGroupEditor {
   import DataImplicits._

@@ -2,7 +2,7 @@ package shipreq.webapp.server.snippet
 
 import net.liftweb.util.Helpers._
 import shipreq.base.util.FxModule._
-import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint
+import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint
 import shipreq.webapp.server.app.{Global, LiftDispatcher}
 import shipreq.webapp.server.protocol.entrypoint.{ClientSideProcInvoker, LoadJs}
 import shipreq.webapp.ssr.Html

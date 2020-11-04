@@ -8,15 +8,16 @@ import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.config.{ClientConfig, WebappConfig}
-import shipreq.webapp.base.data.{DataValidators, ProjectMetaData}
 import shipreq.webapp.base.feature.{AsyncFeature, EditorStatus, ErrorHandlingFeature}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.protocol.ajax.{AjaxClient, CommonProtocolsJs, HomeSpaProtocols}
-import shipreq.webapp.base.protocol.entrypoint.HomeSpaEntryPoint
-import shipreq.webapp.base.ui._
+import shipreq.webapp.base.protocol.ajax.{AjaxClient, CommonProtocolsJs}
 import shipreq.webapp.base.ui.semantic.{Breadcrumb, Colour}
 import shipreq.webapp.base.ui.widgets._
 import shipreq.webapp.base.util.CallbackHelpers._
+import shipreq.webapp.member.data.{DataValidators, ProjectMetaData}
+import shipreq.webapp.member.protocol.ajax.HomeSpaProtocols
+import shipreq.webapp.member.protocol.entrypoint.HomeSpaEntryPoint
+import shipreq.webapp.member.ui._
 
 object Home {
   final case class Props(data: HomeSpaEntryPoint.InitData,

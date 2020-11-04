@@ -124,5 +124,7 @@ object RandomBaseData {
   lazy val genHexCharLower: Gen[Char] =
     Gen.chooseChar('a', "bcdef0123456789")
 
+  def projectIdPublic: Gen[ProjectId.Public] =
+    obfuscated
 
 }

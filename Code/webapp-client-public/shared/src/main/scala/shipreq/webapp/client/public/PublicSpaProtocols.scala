@@ -10,8 +10,8 @@ import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplici
 import shipreq.webapp.base.protocol.binary._
 import shipreq.webapp.base.util.TextMod
 import shipreq.webapp.base.validation.UserValidators
-import shipreq.webapp.base.validation.lib.Implicits._
-import shipreq.webapp.base.validation.lib._
+import shipreq.webapp.member.validation.lib.Implicits._
+import shipreq.webapp.member.validation.lib._
 
 /**
   * Protocols for the Public SPA / webapp-client-public module.

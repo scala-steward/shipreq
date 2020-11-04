@@ -2,11 +2,11 @@ package shipreq.webapp.client.project.app
 
 import java.time.Duration
 import shipreq.base.test.BaseTestUtil._
+import shipreq.webapp.client.project.test.TestGlobal
 import shipreq.webapp.member.data.Project
 import shipreq.webapp.member.event.Event.ProjectNameSet
 import shipreq.webapp.member.event._
-import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes
-import shipreq.webapp.client.project.test.TestGlobal
+import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.WsReqRes
 import utest._
 
 object GlobalTest extends TestSuite {

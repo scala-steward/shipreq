@@ -5,14 +5,14 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.NonEmptyArraySeq
-import shipreq.webapp.base.data.savedview.ImpGraphConfig
-import shipreq.webapp.base.data.savedview.ImpGraphConfig.{Colours, GraphDir, LabelFormat}
-import shipreq.webapp.base.data.{FilterDead, ProjectConfig, SpecialBuiltInField, Tags}
-import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.ui.semantic.Icon
 import shipreq.webapp.base.ui.widgets.Dropdown
 import shipreq.webapp.client.project.app.Style.{reqgraphPage => *}
 import shipreq.webapp.client.project.lib.GraphColours
+import shipreq.webapp.member.data.savedview.ImpGraphConfig
+import shipreq.webapp.member.data.savedview.ImpGraphConfig.{Colours, GraphDir, LabelFormat}
+import shipreq.webapp.member.data.{FilterDead, ProjectConfig, SpecialBuiltInField, Tags}
+import shipreq.webapp.member.lib.DataReusability._
 
 private[reqgraph] object ConfigEditor {
 

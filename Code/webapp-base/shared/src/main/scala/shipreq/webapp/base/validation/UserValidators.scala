@@ -5,9 +5,9 @@ import shipreq.webapp.base.config.WebappConfig
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.ui.CommmonUiText
 import shipreq.webapp.base.util.TextMod
-import shipreq.webapp.base.validation.lib.Implicits._
-import shipreq.webapp.base.validation.lib.Simple._
-import shipreq.webapp.base.validation.lib.{CommonValidation => CV, _}
+import shipreq.webapp.member.validation.lib.Implicits._
+import shipreq.webapp.member.validation.lib.Simple._
+import shipreq.webapp.member.validation.lib.{CommonValidation => CV, _}
 
 object UserValidators {
 

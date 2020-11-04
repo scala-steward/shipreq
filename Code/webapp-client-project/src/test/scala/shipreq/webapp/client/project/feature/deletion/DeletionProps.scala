@@ -5,11 +5,11 @@ import nyaya.gen._
 import nyaya.prop._
 import scalaz.std.set.setInstance
 import shipreq.base.util._
-import shipreq.webapp.base.data._
+import shipreq.webapp.member.data._
 import shipreq.webapp.member.event.Event
 import shipreq.webapp.member.event.Event.{ContentRestore, ReqsDelete}
-import shipreq.webapp.base.test.TestOptics
-import shipreq.webapp.base.test.WebappTestUtil._
+import shipreq.webapp.member.test.TestOptics
+import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.text.Text
 
 /**
@@ -234,7 +234,7 @@ object DeletionProps {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   final case class RandomData(mode: DeleteOrRestore) {
-    private val * = shipreq.webapp.base.RandomData
+    private val * = shipreq.webapp.member.test.RandomData
 
     /** A project with max 1 imp/req, and everything is mode.from */
     val genProjectBasic: Gen[Project] =

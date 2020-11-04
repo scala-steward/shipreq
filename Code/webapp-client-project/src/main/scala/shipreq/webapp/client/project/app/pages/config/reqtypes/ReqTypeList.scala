@@ -4,12 +4,12 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{Disabled, Enabled}
-import shipreq.webapp.base.UiText.FieldNames
-import shipreq.webapp.base.data.{Colour => _, _}
 import shipreq.webapp.client.project.app.Style.{reqTypeConfig => *}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.Usage
 import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.member.UiText.FieldNames
+import shipreq.webapp.member.data.{Colour => _, _}
 
 private[reqtypes] object ReqTypeList {
 

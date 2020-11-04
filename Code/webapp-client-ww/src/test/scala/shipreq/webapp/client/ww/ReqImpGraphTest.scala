@@ -1,9 +1,9 @@
 package shipreq.webapp.client.ww
 
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview.ImpGraphConfig.Colours
-import shipreq.webapp.base.test._
 import shipreq.webapp.client.ww.GraphViz.DOT
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.savedview.ImpGraphConfig.Colours
+import shipreq.webapp.member.test._
 import utest._
 
 object ReqImpGraphTest extends TestSuite {

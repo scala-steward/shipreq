@@ -9,7 +9,7 @@ import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.base.protocol.binary._
 import shipreq.webapp.base.validation.UserValidators
-import shipreq.webapp.base.validation.lib._
+import shipreq.webapp.member.validation.lib._
 
 object CommonProtocols {
 

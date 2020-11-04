@@ -1,17 +1,17 @@
 package shipreq.webapp.server.logic
 
-import shipreq.webapp.member.data.Project
-import shipreq.webapp.member.event.{EventOrd, VerifiedEvent}
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
+import shipreq.webapp.member.data.Project
+import shipreq.webapp.member.event.{EventOrd, VerifiedEvent}
 import shipreq.webapp.server.logic.Redis.ProjectSnapshot
 
 object RedisProtocol {
 
   val picklerProjectSnapshot: SafePickler[ProjectSnapshot] = {
     import boopickle.DefaultBasic._
-    import shipreq.webapp.base.protocol.binary.v1.PostEvents.picklerEventOrdLatest
-    import shipreq.webapp.base.protocol.binary.v1.Rev7.picklerProject
+    import shipreq.webapp.member.protocol.binary.v1.PostEvents.picklerEventOrdLatest
+    import shipreq.webapp.member.protocol.binary.v1.Rev7.picklerProject
 
     val p: Pickler[ProjectSnapshot] =
       new Pickler[ProjectSnapshot] {
@@ -32,7 +32,7 @@ object RedisProtocol {
   // ===================================================================================================================
 
   val picklerEvent: SafePickler[VerifiedEvent] = {
-    import shipreq.webapp.base.protocol.binary.v1.Rev7.picklerVerifiedEvent
+    import shipreq.webapp.member.protocol.binary.v1.Rev7.picklerVerifiedEvent
 
     // no magic numbers - overhead to high proportional to the event size, too frequent
     picklerVerifiedEvent.asV1(7)

@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 import shipreq.base.util.BinaryData
 import shipreq.webapp.member.data.Project
 import shipreq.webapp.member.event._
-import shipreq.webapp.base.test.WebappTestUtil._
+import shipreq.webapp.member.test.WebappTestUtil._
 
 /* SBT, being the complete piece of fucking garbage that it is, can't run this because it doesn't generate the classpath
  * properly for some reason.

@@ -4,15 +4,17 @@ import japgolly.microlibs.scalaz_ext.ScalazMacros
 import scalaz.{Equal, Name}
 import shipreq.base.util.{BinaryData, Direction}
 import shipreq.webapp.base.data._
-import shipreq.webapp.member.event._
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
-import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.base.protocol.websocket.WebSocketShared.ReqId
 import shipreq.webapp.base.protocol.websocket._
-import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.member.text.Text
 import shipreq.webapp.base.util.Obfuscated
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.event._
+import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
+import shipreq.webapp.member.protocol.websocket._
+import shipreq.webapp.member.test.WebappTestUtil._
+import shipreq.webapp.member.text.Text
 import shipreq.webapp.server.logic.ProjectSpaLogic.{WebSocketState => _, _}
 import shipreq.webapp.server.logic.Redis.ProjectSnapshot
 import shipreq.webapp.server.logic.Security.{SessionId, SessionToken}

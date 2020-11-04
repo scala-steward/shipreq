@@ -2,9 +2,6 @@ package shipreq.webapp.client.project.app.pages.content.reqdetail
 
 import org.scalajs.dom.html
 import shipreq.base.util.LeftRight
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data.{Dead, Live, ShowDead, StaticField}
-import shipreq.webapp.base.test.CommonObs
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.ui.semantic.Icon
 import shipreq.webapp.client.project.app.ProjectSpaTestDsl.NavObs
@@ -13,6 +10,9 @@ import shipreq.webapp.client.project.app.pages.content.reqdetail.ReqDetailObs.NA
 import shipreq.webapp.client.project.app.pages.content.reqdetail.ReqDetailTestDsl.Mode
 import shipreq.webapp.client.project.feature.deletion.{DeletionFormObs, RestorationFormObs}
 import shipreq.webapp.client.project.test.TestGlobal
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data.{Dead, Live, ShowDead, StaticField}
+import shipreq.webapp.member.test.CommonObs
 
 object ReqDetailObs {
 

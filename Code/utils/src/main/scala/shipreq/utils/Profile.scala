@@ -2,7 +2,7 @@ package shipreq.utils
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.base.util.FxModule._
-import shipreq.webapp.base.data._
+import shipreq.webapp.member.data._
 import shipreq.webapp.sampledata.SampleData
 
 object Profile {
@@ -10,7 +10,7 @@ object Profile {
   def main(args: Array[String]): Unit = {
     val sd = loadSampleData()
 
-//    import shipreq.webapp.base.data.derivation._
+//    import shipreq.webapp.member.data.derivation._
 //    val project = sd.project
 //    profile(1)(Array.fill(100)(AtomScan(project)))
 

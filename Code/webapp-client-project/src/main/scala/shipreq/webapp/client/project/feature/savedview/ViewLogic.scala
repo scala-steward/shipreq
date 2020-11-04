@@ -6,14 +6,14 @@ import japgolly.scalajs.react._
 import monocle.Lens
 import monocle.macros.Lenses
 import shipreq.base.util.PotentialChange
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview.SavedView.{Id, Name}
-import shipreq.webapp.base.data.savedview._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.savedview.SavedView.{Id, Name}
+import shipreq.webapp.member.data.savedview._
 import shipreq.webapp.member.event.SavedViewGD
-import shipreq.webapp.base.filter.Filter.Implicits.univEqFilterValid
-import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.protocol.websocket.SavedViewCmd
-import shipreq.webapp.base.validation.lib.Simple
+import shipreq.webapp.member.filter.Filter.Implicits.univEqFilterValid
+import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.protocol.websocket.SavedViewCmd
+import shipreq.webapp.member.validation.lib.Simple
 
 object ViewLogic {
 

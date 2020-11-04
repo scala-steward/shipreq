@@ -9,7 +9,7 @@ import shipreq.base.util.{Disabled, Enabled, ErrorMsg}
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Size, UsesSemanticUiManually}
 import shipreq.webapp.base.util.KeyHandler.Criterion
 import shipreq.webapp.base.util.KeyHandlers
-import shipreq.webapp.base.validation.lib.Simple
+import shipreq.webapp.member.validation.lib.Simple
 
 object GeneralTheme {
 

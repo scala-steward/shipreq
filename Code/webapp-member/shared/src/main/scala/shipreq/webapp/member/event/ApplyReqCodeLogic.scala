@@ -2,12 +2,12 @@ package shipreq.webapp.member.event
 
 import nyaya.util.Multimap
 import shipreq.base.util.MTrie.Ops
-import shipreq.webapp.base.validation.lib.Implicits._
 import shipreq.webapp.member.data.ReqCode._
 import shipreq.webapp.member.data.{DataValidators => V, _}
 import shipreq.webapp.member.event.ApplyEventLib._
 import shipreq.webapp.member.event.Event._
 import shipreq.webapp.member.text.Grammar
+import shipreq.webapp.member.validation.lib.Implicits._
 
 trait ApplyReqCodeLogic {
   this: ApplyEvent =>

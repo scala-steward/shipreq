@@ -6,13 +6,14 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util._
-import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.feature.clipboard.ClipboardData
-import shipreq.webapp.member.text.ProjectText
 import shipreq.webapp.client.project.feature.RenderFeature
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.feature._
+import shipreq.webapp.member.text.ProjectText
 
 object Feature {
 
@@ -46,7 +47,7 @@ object Feature {
   }
 
   object Editor {
-    type Invalidity = shipreq.webapp.base.validation.lib.Simple.Invalidity
+    type Invalidity = shipreq.webapp.member.validation.lib.Simple.Invalidity
     type Change[+A] = PotentialChange[Invalidity, A]
 
     private val reusabilityAny: Reusability[Editor[Nothing, Any]] =
@@ -56,7 +57,7 @@ object Feature {
       reusabilityAny.narrow
   }
 
-  /** Id used for [[shipreq.webapp.base.feature.PreviewFeature]] */
+  /** Id used for [[shipreq.webapp.member.feature.PreviewFeature]] */
   final case class PreviewId(row: RowKey, cell: FieldKey)
 
   object PreviewId {

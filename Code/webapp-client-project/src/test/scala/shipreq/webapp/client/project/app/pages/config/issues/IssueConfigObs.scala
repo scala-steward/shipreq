@@ -3,11 +3,11 @@ package shipreq.webapp.client.project.app.pages.config.issues
 import japgolly.microlibs.stdlib_ext.MutableArray
 import org.scalajs.dom.html
 import shipreq.base.util.{Disabled, Enabled}
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.test.CommonObs._
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.pages.config.Buttons
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.test.CommonObs._
 
 object IssueConfigObs {
 

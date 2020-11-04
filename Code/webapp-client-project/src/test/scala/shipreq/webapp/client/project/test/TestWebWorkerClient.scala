@@ -5,11 +5,11 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import scala.scalajs.js.typedarray.ArrayBuffer
 import scala.util.{Success, Try}
-import shipreq.webapp.base.data.Svg
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.ww.api.WebWorkerCmd
 import shipreq.webapp.client.ww.api.WebWorkerCmd.NoResult
+import shipreq.webapp.member.data.Svg
 
 final class TestWebWorkerClient(initialPrep: TestWebWorkerClient.Prep,
                                 logger     : LoggerJs) extends WebWorkerClient.Instance {

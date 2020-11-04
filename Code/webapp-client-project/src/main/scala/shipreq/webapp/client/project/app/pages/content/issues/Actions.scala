@@ -3,14 +3,14 @@ package shipreq.webapp.client.project.app.pages.content.issues
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{Allow, Deny, Enabled}
-import shipreq.webapp.base.data._
-import shipreq.webapp.member.event.CustomTagFieldGD
-import shipreq.webapp.member.issue.{ContentRef, Issue}
-import shipreq.webapp.base.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
-import shipreq.webapp.member.text.PlainText
 import shipreq.webapp.base.ui.semantic.{Button => Btn, Icon}
 import shipreq.webapp.client.project.app.Style.{issues => *}
 import shipreq.webapp.client.project.app.pages.root.Routes
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.event.CustomTagFieldGD
+import shipreq.webapp.member.issue.{ContentRef, Issue}
+import shipreq.webapp.member.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
+import shipreq.webapp.member.text.PlainText
 
 sealed trait Action {
   def cmdOption: Option[Action.Cmd]

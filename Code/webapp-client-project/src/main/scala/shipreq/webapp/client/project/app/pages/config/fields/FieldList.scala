@@ -6,14 +6,14 @@ import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.DragToReorderFeature
-import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd.FieldUpdateOrder
 import shipreq.webapp.base.ui.semantic.Icon
 import shipreq.webapp.client.project.app.Style.{fieldConfig => *}
 import shipreq.webapp.client.project.lib.DataReusability._
 import shipreq.webapp.client.project.lib.Usage
 import shipreq.webapp.client.project.widgets.{ProjectWidgets, ViewTags}
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.protocol.websocket.UpdateConfigCmd.FieldUpdateOrder
 
 object FieldList {
 

@@ -5,12 +5,12 @@ import japgolly.scalajs.react.Reusability
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation._
-import shipreq.webapp.base.filter._
-import shipreq.webapp.member.text.{PlainText, TextSearch}
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.pages.root.SpecialRouterCtl
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.derivation._
+import shipreq.webapp.member.filter._
+import shipreq.webapp.member.text.{PlainText, TextSearch}
 
 final class Usage(p: Project, router: SpecialRouterCtl) {
 

@@ -5,11 +5,6 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview.ImpGraphConfig
-import shipreq.webapp.member.event.ProjectAndOrd
-import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.member.text.PlainText
 import shipreq.webapp.base.ui.semantic.Icon
 import shipreq.webapp.base.ui.widgets.NoContentMessage
 import shipreq.webapp.client.project.app.Style.{reqgraphPage => *}
@@ -17,6 +12,11 @@ import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.app.pages.root.ProjectIndex
 import shipreq.webapp.client.project.feature.SavedViewFeature
 import shipreq.webapp.client.project.widgets.ImplicationGraph
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.savedview.ImpGraphConfig
+import shipreq.webapp.member.event.ProjectAndOrd
+import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.text.PlainText
 
 object ReqGraphPage {
 

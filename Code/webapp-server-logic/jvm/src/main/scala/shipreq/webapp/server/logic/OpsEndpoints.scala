@@ -11,8 +11,9 @@ import shipreq.base.util.ErrorMsg
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.{Task, TaskId, TaskmanApi}
 import shipreq.webapp.base.data._
-import shipreq.webapp.member.event.{ApplyEvent, VerifiedEvent}
 import shipreq.webapp.base.validation.UserValidators
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.event.{ApplyEvent, VerifiedEvent}
 import shipreq.webapp.server.logic.dispatch.{ResponseCmd, StatusCode}
 
 trait OpsEndpoints[F[_]] {

@@ -1,4 +1,4 @@
-package shipreq.webapp.base.validation.lib
+package shipreq.webapp.member.validation.lib
 
 import scalaz.Endo
 

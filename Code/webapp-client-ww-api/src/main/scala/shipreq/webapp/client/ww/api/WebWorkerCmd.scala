@@ -4,8 +4,8 @@ import boopickle.ConstPickler
 import boopickle.DefaultBasic._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.config.AssetManifest
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview.ImpGraphConfig
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.savedview.ImpGraphConfig
 import shipreq.webapp.member.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.member.text.ProjectText
 
@@ -44,9 +44,9 @@ object WebWorkerCmd {
   // ===================================================================================================================
 
   import shipreq.webapp.base.protocol.binary.v1.BaseData._
-  import shipreq.webapp.base.protocol.binary.v1.BaseMemberData1._
-  import shipreq.webapp.base.protocol.binary.v1.BaseMemberData2._
-  import shipreq.webapp.base.protocol.binary.v1.Rev1.SavedViewPicklers._
+  import shipreq.webapp.member.protocol.binary.v1.BaseMemberData1._
+  import shipreq.webapp.member.protocol.binary.v1.BaseMemberData2._
+  import shipreq.webapp.member.protocol.binary.v1.Rev1.SavedViewPicklers._
   import shipreq.webapp.member.protocol.binary.v1.Latest._
 
   implicit val picklerSvg: Pickler[Svg] =

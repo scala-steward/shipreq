@@ -1,10 +1,10 @@
-package shipreq.webapp.base.validation.lib
+package shipreq.webapp.member.validation.lib
 
 import scalaz.Equal
 import scalaz.syntax.equal._
 import shipreq.base.util.OptionalConflict
-import shipreq.webapp.base.validation.lib.Implicits._
-import shipreq.webapp.base.validation.lib.Simple._
+import shipreq.webapp.member.validation.lib.Implicits._
+import shipreq.webapp.member.validation.lib.Simple._
 
 object Uniqueness {
 

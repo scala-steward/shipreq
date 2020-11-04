@@ -28,7 +28,7 @@ object Clipboard {
   }
 
   /** for unit tests */
-  private[clipboard] def setClipboardImpl(c: Clipboard): Unit =
+  def setClipboardImpl(c: Clipboard): Unit =
     this.clipboard = c
 
   def instance: Clipboard =
@@ -37,7 +37,7 @@ object Clipboard {
 
 // =====================================================================================================================
 
-abstract class Clipboard private[clipboard] {
+abstract class Clipboard {
   def read: AsyncCallback[ClipboardData]
   def write(d: ClipboardData): AsyncCallback[Unit]
 }

@@ -3,6 +3,7 @@ package shipreq.webapp.server.logic
 import java.time.Instant
 import scalaz.~>
 import shipreq.webapp.base.data._
+import shipreq.webapp.member.data._
 import shipreq.webapp.member.event.{ActiveEvent, EventOrd, VerifiedEvent}
 
 /**
