@@ -2,7 +2,7 @@ package shipreq.webapp.base.filter
 
 import shipreq.webapp.base.data.SpecialBuiltInField._
 import shipreq.webapp.base.data.{Project, ReqTypePos}
-import shipreq.webapp.base.event.{CustomTextFieldGD, Event}
+import shipreq.webapp.member.event.{CustomTextFieldGD, Event}
 import shipreq.webapp.base.filter.Filter.Implicits._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test._

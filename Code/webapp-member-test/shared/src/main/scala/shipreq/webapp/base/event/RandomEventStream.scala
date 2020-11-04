@@ -1,4 +1,4 @@
-package shipreq.webapp.base.event
+package shipreq.webapp.member.event
 
 import japgolly.microlibs.adt_macros.AdtMacros._
 import japgolly.microlibs.nonempty.NonEmpty
@@ -19,10 +19,10 @@ import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, reqCode, reqTypeMnemonic, tagGroupName}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview.SavedView
-import shipreq.webapp.base.event.ApplicableEventGen.ObserveFn
-import shipreq.webapp.base.event.Event._
-import shipreq.webapp.base.event.RandomEventStream.{ProjectDepGen, State}
-import shipreq.webapp.base.event.RetiredGenericData._
+import shipreq.webapp.member.event.ApplicableEventGen.ObserveFn
+import shipreq.webapp.member.event.Event._
+import shipreq.webapp.member.event.RandomEventStream.{ProjectDepGen, State}
+import shipreq.webapp.member.event.RetiredGenericData._
 import shipreq.webapp.base.test.DataTestExt._
 import shipreq.webapp.base.test.RandomBaseData
 import shipreq.webapp.base.test.RandomBaseData.unicodeString1

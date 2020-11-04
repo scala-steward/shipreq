@@ -13,7 +13,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data.ExternalPubid.LookupFailure
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.{Event, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.member.event.{Event, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.feature.{AsyncFeature, EditControlsFeature, PreviewFeature, TableNavigationFeature}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.websocket.{CreateContentCmd, UpdateContentCmd}

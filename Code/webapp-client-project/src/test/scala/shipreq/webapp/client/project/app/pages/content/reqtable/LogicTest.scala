@@ -9,11 +9,11 @@ import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.data.savedview.{Column => C, SortCriterion => SC}
-import shipreq.webapp.base.event.{CustomImpFieldGD, Event => E, GenericReqGD, UseCaseGD, UseCaseStepGD}
+import shipreq.webapp.member.event.{CustomImpFieldGD, Event => E, GenericReqGD, UseCaseGD, UseCaseStepGD}
 import shipreq.webapp.base.filter.FilterAst.OrderOp
 import shipreq.webapp.base.filter.{Filter, FilterAst, IntensionalReqSet}
-import shipreq.webapp.base.issue.IssueCategory
-import shipreq.webapp.base.sort.SortMethod._
+import shipreq.webapp.member.issue.IssueCategory
+import shipreq.webapp.member.sort.SortMethod._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test._
 import shipreq.webapp.member.text.{PlainText, Text, TextSearch}

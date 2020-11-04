@@ -10,7 +10,7 @@ import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.{AsyncFeature, PreviewFeature}
 import shipreq.webapp.base.filter.{CompiledFilter, Filter}
-import shipreq.webapp.base.issue.Issues
+import shipreq.webapp.member.issue.Issues
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.member.text.{PlainText, TextSearch}
 import shipreq.webapp.client.project.app.Style.{issues => *}

@@ -1,4 +1,4 @@
-package shipreq.webapp.base.issue
+package shipreq.webapp.member.issue
 
 import japgolly.microlibs.nonempty.NonEmpty
 import nyaya.util.Multimap
@@ -6,8 +6,8 @@ import scala.reflect.ClassTag
 import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.derivation._
-import shipreq.webapp.base.event.RetiredGenericData._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event.RetiredGenericData._
+import shipreq.webapp.member.event._
 import shipreq.webapp.base.test.SampleDerivativeTags4.yDerivativeTags
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.test.WebappTestUtil._

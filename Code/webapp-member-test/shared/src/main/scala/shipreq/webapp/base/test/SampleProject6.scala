@@ -2,8 +2,8 @@ package shipreq.webapp.base.test
 
 import shipreq.webapp.base.data.StaticField.{ExceptionStepTree => E, NormalAltStepTree => NA}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.Event._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event.Event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.base.test.SampleProject5.{project => project0}
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.member.text._

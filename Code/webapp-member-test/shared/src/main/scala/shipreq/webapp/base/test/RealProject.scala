@@ -3,8 +3,8 @@ package shipreq.webapp.base.test
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.base.test.JsonTestUtil._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event._
-import shipreq.webapp.base.protocol.json.v1.Latest._
+import shipreq.webapp.member.event._
+import shipreq.webapp.member.protocol.json.v1.Latest._
 import shipreq.webapp.base.test.WebappTestUtil._
 
 abstract class RealProject {

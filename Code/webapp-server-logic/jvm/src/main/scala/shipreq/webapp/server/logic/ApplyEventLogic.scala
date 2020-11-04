@@ -7,7 +7,7 @@ import scalaz.{Applicative, Monad}
 import shipreq.base.ops.Trace
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.data.ProjectId
-import shipreq.webapp.base.event.{ApplyEvent, ProjectAndOrd, Trust, Trusted, VerifiedEvent}
+import shipreq.webapp.member.event.{ApplyEvent, ProjectAndOrd, Trust, Trusted, VerifiedEvent}
 
 trait ApplyEventLogic[F[_]] { self =>
   import ApplyEventLogic.{AppendFn, Result}

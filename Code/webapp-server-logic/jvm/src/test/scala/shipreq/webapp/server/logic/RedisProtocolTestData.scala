@@ -11,8 +11,8 @@ import nyaya.gen.{Gen, GenCtx, GenSize, ThreadNumber}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import shipreq.base.util.BinaryData
-import shipreq.webapp.base.data.Project
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.data.Project
+import shipreq.webapp.member.event._
 import shipreq.webapp.base.test.WebappTestUtil._
 
 /* SBT, being the complete piece of fucking garbage that it is, can't run this because it doesn't generate the classpath
@@ -24,7 +24,7 @@ import shipreq.webapp.base.test.WebappTestUtil._
  *
  */
 object RedisProtocolTestData {
-  import shipreq.webapp.base.protocol.json.v1.Latest._
+  import shipreq.webapp.member.protocol.json.v1.Latest._
   import RedisProtocol._
 
   private[this] val RowEvent          = "event"

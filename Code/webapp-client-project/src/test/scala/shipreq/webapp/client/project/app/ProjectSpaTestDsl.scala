@@ -7,7 +7,7 @@ import monocle.macros.Lenses
 import scala.util.{Failure, Success, Try}
 import shipreq.webapp.base.config.AssetManifest
 import shipreq.webapp.base.data.{ExternalPubid, Project, Username}
-import shipreq.webapp.base.event.Event
+import shipreq.webapp.member.event.Event
 import shipreq.webapp.base.feature.clipboard.TestClipboard
 import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint
 import shipreq.webapp.base.test.TestState._

@@ -1,7 +1,7 @@
 package shipreq.webapp.server.logic
 
-import shipreq.webapp.base.data.Project
-import shipreq.webapp.base.event.{EventOrd, VerifiedEvent}
+import shipreq.webapp.member.data.Project
+import shipreq.webapp.member.event.{EventOrd, VerifiedEvent}
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
 import shipreq.webapp.server.logic.Redis.ProjectSnapshot

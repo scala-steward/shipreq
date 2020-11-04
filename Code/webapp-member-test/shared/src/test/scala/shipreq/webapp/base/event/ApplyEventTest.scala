@@ -1,9 +1,9 @@
-package shipreq.webapp.base.event
+package shipreq.webapp.member.event
 
 import java.time.Instant
 import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.Event._
+import shipreq.webapp.member.event.Event._
 import utest._
 
 object ApplyEventTest extends TestSuite {

@@ -7,7 +7,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
-import shipreq.webapp.base.event.ProjectAndOrd
+import shipreq.webapp.member.event.ProjectAndOrd
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.member.text.PlainText
 import shipreq.webapp.base.ui.semantic.Icon

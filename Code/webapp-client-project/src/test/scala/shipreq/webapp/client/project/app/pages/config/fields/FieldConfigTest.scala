@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.app.pages.config.fields
 
 import shipreq.base.util.{Disabled, Enabled, Exclusive}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.test.WebappTestUtil._

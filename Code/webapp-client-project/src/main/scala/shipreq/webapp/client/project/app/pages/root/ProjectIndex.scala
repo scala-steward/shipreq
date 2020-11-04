@@ -6,7 +6,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scala.scalajs.js
 import scalacss.ScalaCssReact._
 import shipreq.base.util.Intersection
-import shipreq.webapp.base.issue.IssueCount
+import shipreq.webapp.member.issue.IssueCount
 import shipreq.webapp.base.ui.semantic.{Colour, Dropdown, Header, Icon, JQuery, UsesSemanticUiManually}
 import shipreq.webapp.client.project.app.Style.{home => *}
 import shipreq.webapp.client.project.app.pages.root.Routes.{Page, RouterCtl}

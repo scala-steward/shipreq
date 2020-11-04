@@ -1,13 +1,13 @@
-package shipreq.webapp.base.event
+package shipreq.webapp.member.event
 
 import japgolly.microlibs.nonempty.NonEmpty
 import shipreq.base.util.{Enabled, NonExclusive}
 import shipreq.webapp.base.data
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.{FieldReqTypeRules => FRTR}
-import shipreq.webapp.base.event.ApplyEventTestFns._
-import shipreq.webapp.base.event.Event._
-import shipreq.webapp.base.event.RetiredGenericData._
+import shipreq.webapp.member.event.ApplyEventTestFns._
+import shipreq.webapp.member.event.Event._
+import shipreq.webapp.member.event.RetiredGenericData._
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.test.WebappTestUtil._

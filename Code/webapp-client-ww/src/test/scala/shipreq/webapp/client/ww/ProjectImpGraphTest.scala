@@ -4,8 +4,8 @@ import shipreq.base.util.OptionalBoolFn
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview.ImpGraphConfig
 import shipreq.webapp.base.data.savedview.ImpGraphConfig.GraphDir
-import shipreq.webapp.base.event.Event._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event.Event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.base.filter.CompiledFilter
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test._

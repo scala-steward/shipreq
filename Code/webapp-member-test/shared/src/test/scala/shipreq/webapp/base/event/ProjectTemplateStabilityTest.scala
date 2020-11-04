@@ -1,8 +1,8 @@
-package shipreq.webapp.base.event
+package shipreq.webapp.member.event
 
 import io.circe.syntax._
 import shipreq.base.test.JsonTestUtil._
-import shipreq.webapp.base.protocol.json.v1.Latest._
+import shipreq.webapp.member.protocol.json.v1.Latest._
 import utest._
 
 object ProjectTemplateStabilityTest extends TestSuite {

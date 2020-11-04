@@ -2,8 +2,8 @@ package shipreq.webapp.base.protocol.binary.v1
 
 import nyaya.gen.Gen
 import shipreq.webapp.base.RandomData.TextGenExt
-import shipreq.webapp.base.event.EventEquality._
-import shipreq.webapp.base.event.RandomEventStream
+import shipreq.webapp.member.event.EventEquality._
+import shipreq.webapp.member.event.RandomEventStream
 import shipreq.webapp.base.filter.Filter.Implicits.univEqFilterValid
 import shipreq.webapp.base.test.BinaryTestUtil._
 import shipreq.webapp.member.text.Text.Equality._

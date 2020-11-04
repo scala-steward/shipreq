@@ -8,7 +8,7 @@ import shipreq.webapp.base.config.AssetManifest
 import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.feature.DragToReorderFeature
 import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.sort.SortMethod
+import shipreq.webapp.member.sort.SortMethod
 import shipreq.webapp.base.ui.ClientResources
 import shipreq.webapp.client.project.app.Style.reqtable.{sortEditor => *}
 import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus

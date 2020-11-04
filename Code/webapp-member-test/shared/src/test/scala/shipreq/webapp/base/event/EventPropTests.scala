@@ -1,4 +1,4 @@
-package shipreq.webapp.base.event
+package shipreq.webapp.member.event
 
 import nyaya.prop._
 import nyaya.test.PropTest._
@@ -8,7 +8,7 @@ import scalaz.std.vector.vectorInstance
 import shipreq.base.util.DeletionMethod
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.Event._
+import shipreq.webapp.member.event.Event._
 import shipreq.webapp.base.test.DataTestExt._
 import utest._
 

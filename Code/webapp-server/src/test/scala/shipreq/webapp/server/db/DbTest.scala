@@ -9,7 +9,7 @@ import shipreq.base.db.BaseDoobieCodecs._
 import shipreq.base.test.db.{ImperativeXA, TestDb}
 import shipreq.base.util.FxModule._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.server.app.{Global, ServerInterpreter}
 import shipreq.webapp.server.logic.PublicSpaLogic
 import shipreq.webapp.server.test.WebappServerTestUtil._

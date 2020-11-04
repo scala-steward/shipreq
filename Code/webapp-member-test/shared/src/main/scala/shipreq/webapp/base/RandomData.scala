@@ -23,9 +23,10 @@ import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util._
 import shipreq.webapp.base.config._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.ProjectAndOrd
-import shipreq.webapp.base.issue.IssueCategory
-import shipreq.webapp.base.sort.SortMethod
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.event.ProjectAndOrd
+import shipreq.webapp.member.issue.IssueCategory
+import shipreq.webapp.member.sort.SortMethod
 import shipreq.webapp.base.test._
 import shipreq.webapp.member.text.{Grammar, GrammarSpec, Text}
 import shipreq.webapp.base.util._
@@ -2359,7 +2360,7 @@ object RandomData {
 
   // ===================================================================================================================
   object events {
-    import shipreq.webapp.base.event._
+    import shipreq.webapp.member.event._
     import Event._
     import RetiredGenericData._
 

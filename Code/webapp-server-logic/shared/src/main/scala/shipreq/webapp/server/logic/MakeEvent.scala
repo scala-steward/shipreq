@@ -8,8 +8,8 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.Event._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event.Event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes.{ProjectNameSet => _, _}
 import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.member.text.PlainText

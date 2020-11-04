@@ -12,7 +12,7 @@ import shipreq.webapp.base.data.derivation.NaTags
 import shipreq.webapp.base.feature.AutoCompleteFeature
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.filter._
-import shipreq.webapp.base.issue.IssueCategory
+import shipreq.webapp.member.issue.IssueCategory
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.ui.AutosizeInput
 import shipreq.webapp.base.ui.semantic.{Button, Icon, Input}

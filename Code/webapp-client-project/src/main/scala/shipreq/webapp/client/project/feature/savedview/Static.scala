@@ -7,7 +7,7 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.{ErrorMsg, Invalid, Valid}
 import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.data.{FilterDead, Project, ProjectConfig, ReqId, ShowDead}
-import shipreq.webapp.base.event.VerifiedEvent
+import shipreq.webapp.member.event.VerifiedEvent
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.filter.{CompiledFilter, Filter}
 import shipreq.webapp.base.lib.DataReusability._

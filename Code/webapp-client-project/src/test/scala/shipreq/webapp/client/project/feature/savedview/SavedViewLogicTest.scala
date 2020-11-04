@@ -7,10 +7,10 @@ import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.event.SavedViewGD
+import shipreq.webapp.member.event.SavedViewGD
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.protocol.websocket.{SavedViewCmd => Cmd}
-import shipreq.webapp.base.sort.SortMethod
+import shipreq.webapp.member.sort.SortMethod
 import utest._
 
 object SavedViewLogicTest extends TestSuite {

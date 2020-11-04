@@ -7,7 +7,7 @@ import shipreq.webapp.base.UiText.{Issues => UI}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.feature.EditControlsFeature
-import shipreq.webapp.base.issue._
+import shipreq.webapp.member.issue._
 import shipreq.webapp.client.project.app.pages.root.Routes
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.lib.EditorNavParent

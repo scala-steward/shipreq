@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 import scalaz.Equal
 import shipreq.base.util.{NonEmptyArraySeq, Valid}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.{ApplicableTagGD, Event}
+import shipreq.webapp.member.event.{ApplicableTagGD, Event}
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test.{ProjectDsl, SampleProject6 => SP, TextShrink, UnsafeTypes}
 import shipreq.webapp.member.text.Atom.{AnyAtom, CodeBlockDetail, DisplayReqRef}

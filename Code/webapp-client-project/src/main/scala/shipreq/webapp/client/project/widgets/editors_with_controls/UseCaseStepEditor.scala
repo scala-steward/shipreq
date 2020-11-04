@@ -12,7 +12,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.UseCaseStepGD
+import shipreq.webapp.member.event.UseCaseStepGD
 import shipreq.webapp.base.feature.AutoCompleteFeature._
 import shipreq.webapp.base.feature.{AsyncFeature, EditControlsFeature, EditorStatus, PreviewFeature}
 import shipreq.webapp.member.text._

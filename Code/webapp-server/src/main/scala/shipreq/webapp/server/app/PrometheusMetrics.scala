@@ -8,7 +8,7 @@ import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
 import shipreq.base.util.FreeOption
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
-import shipreq.webapp.base.event.{Trust, Trusted}
+import shipreq.webapp.member.event.{Trust, Trusted}
 import shipreq.webapp.server.logic.{MetricsLogic, Security}
 import shipreq.webapp.server.util.CommDir
 

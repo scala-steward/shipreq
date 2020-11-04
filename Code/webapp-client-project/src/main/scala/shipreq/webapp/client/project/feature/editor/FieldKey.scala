@@ -5,7 +5,7 @@ import scala.reflect.ClassTag
 import scalaz.~~>
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.UseCaseStepGD
+import shipreq.webapp.member.event.UseCaseStepGD
 import shipreq.webapp.member.text.Text
 import shipreq.webapp.client.project.feature.RenderFeature
 import shipreq.webapp.client.project.lib.DataReusability._

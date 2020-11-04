@@ -9,7 +9,7 @@ import shipreq.base.util.PotentialChange
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview.SavedView.{Id, Name}
 import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.event.SavedViewGD
+import shipreq.webapp.member.event.SavedViewGD
 import shipreq.webapp.base.filter.Filter.Implicits.univEqFilterValid
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.protocol.websocket.SavedViewCmd

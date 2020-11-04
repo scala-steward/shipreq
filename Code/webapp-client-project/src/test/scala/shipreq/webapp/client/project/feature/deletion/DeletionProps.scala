@@ -6,8 +6,8 @@ import nyaya.prop._
 import scalaz.std.set.setInstance
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.Event
-import shipreq.webapp.base.event.Event.{ContentRestore, ReqsDelete}
+import shipreq.webapp.member.event.Event
+import shipreq.webapp.member.event.Event.{ContentRestore, ReqsDelete}
 import shipreq.webapp.base.test.TestOptics
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.member.text.Text

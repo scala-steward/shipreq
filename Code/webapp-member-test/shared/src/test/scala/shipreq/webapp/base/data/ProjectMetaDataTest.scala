@@ -1,7 +1,7 @@
 package shipreq.webapp.base.data
 
 import java.time.Instant
-import shipreq.webapp.base.event.RandomEventStream
+import shipreq.webapp.member.event.RandomEventStream
 import shipreq.webapp.base.test.WebappTestUtil._
 import utest._
 

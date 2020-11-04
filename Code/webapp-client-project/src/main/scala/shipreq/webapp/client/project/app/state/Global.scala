@@ -8,7 +8,7 @@ import org.scalajs.dom.window
 import scala.util.{Failure, Success}
 import shipreq.base.util.{ErrorMsg, JsTimers}
 import shipreq.webapp.base.data.{Project, ProjectId, ProjectMetaData}
-import shipreq.webapp.base.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.member.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ServerSideProcInvoker

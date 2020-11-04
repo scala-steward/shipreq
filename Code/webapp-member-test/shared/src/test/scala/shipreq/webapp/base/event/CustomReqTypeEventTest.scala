@@ -1,15 +1,15 @@
-package shipreq.webapp.base.event
+package shipreq.webapp.member.event
 
 import japgolly.microlibs.nonempty.NonEmpty
 import shipreq.webapp.base.data.DataImplicits._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.event.ApplyEventTestFns._
-import shipreq.webapp.base.event.CustomReqTypeGD._
-import shipreq.webapp.base.event.Event._
-import shipreq.webapp.base.event.NoInitialEvents._
+import shipreq.webapp.member.event.ApplyEventTestFns._
+import shipreq.webapp.member.event.CustomReqTypeGD._
+import shipreq.webapp.member.event.Event._
+import shipreq.webapp.member.event.NoInitialEvents._
 import shipreq.webapp.base.filter.Filter
-import shipreq.webapp.base.sort.SortMethod._
+import shipreq.webapp.member.sort.SortMethod._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.test.WebappTestUtil._
 import utest._

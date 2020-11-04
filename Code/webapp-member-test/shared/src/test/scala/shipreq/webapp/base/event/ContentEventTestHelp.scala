@@ -1,12 +1,12 @@
-package shipreq.webapp.base.event
+package shipreq.webapp.member.event
 
 import nyaya.util.Multimap
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.ApplyEventTestFns._
-import shipreq.webapp.base.event.ContentEventTestHelp.CustomTextMap
-import shipreq.webapp.base.event.Event._
-import shipreq.webapp.base.event.RetiredGenericData._
+import shipreq.webapp.member.event.ApplyEventTestFns._
+import shipreq.webapp.member.event.ContentEventTestHelp.CustomTextMap
+import shipreq.webapp.member.event.Event._
+import shipreq.webapp.member.event.RetiredGenericData._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.member.text.{Text => T}

@@ -1,7 +1,7 @@
 package shipreq.webapp.client.ww
 
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.Event._
+import shipreq.webapp.member.event.Event._
 import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.base.test._
 import shipreq.webapp.member.text.Text

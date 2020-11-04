@@ -6,7 +6,7 @@ import shipreq.base.util.{Invalid, Valid}
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.event.{Event, GenericReqGD}
+import shipreq.webapp.member.event.{Event, GenericReqGD}
 import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.test.SampleProject.Values._
 import shipreq.webapp.base.test.TestState._

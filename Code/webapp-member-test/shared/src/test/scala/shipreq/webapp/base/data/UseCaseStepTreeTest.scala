@@ -9,7 +9,7 @@ import shipreq.base.test.BaseUtilGen
 import shipreq.base.util._
 import shipreq.webapp.base.RandomData
 import shipreq.webapp.base.data.DataImplicits._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.member.text.Text
 import utest._
 

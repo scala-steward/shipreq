@@ -2,7 +2,7 @@ package shipreq.webapp.server.logic
 
 import shipreq.base.util.PotentialChange._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.test.SampleProject
 import shipreq.webapp.base.test.UnsafeTypes._

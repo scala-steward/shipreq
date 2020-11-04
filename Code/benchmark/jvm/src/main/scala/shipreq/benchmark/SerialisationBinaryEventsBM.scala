@@ -3,13 +3,13 @@ package shipreq.benchmark
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import shipreq.base.test.BaseTestUtil._
-import shipreq.webapp.base.event.Event
+import shipreq.webapp.member.event.Event
 import shipreq.webapp.sampledata.SampleData
 
 object SerialisationBinaryEventsBM {
   import boopickle.DefaultBasic._
   import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
-  import shipreq.webapp.base.protocol.binary.v1.Latest._
+  import shipreq.webapp.member.protocol.binary.v1.Latest._
 
   val binCodec = implicitly[Pickler[Vector[Event]]].asV1(0).withMagicNumbers(123, 456)
 }

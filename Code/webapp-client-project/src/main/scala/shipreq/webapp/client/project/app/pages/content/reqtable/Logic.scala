@@ -14,7 +14,7 @@ import shipreq.webapp.base.data.derivation.VirtualProjectTags.DerivativeTagFacto
 import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.filter.{CompiledFilter, Filter}
-import shipreq.webapp.base.sort.FusedSorters
+import shipreq.webapp.member.sort.FusedSorters
 import shipreq.webapp.member.text.PlainText
 import shipreq.webapp.base.util.ReqCodeTreeItem
 

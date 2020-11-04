@@ -4,7 +4,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.test.SimEvent.{Keyboard => KB}
 import shipreq.webapp.base.UiText
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.test.UnsafeTypes.autoExtPubid
 import shipreq.webapp.base.test._

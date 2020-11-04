@@ -8,7 +8,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.VectorTree.{Location, ParentLocation, PartialLocation}
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.member.text.{Grammar, Text}
 import shipreq.webapp.base.util._
 

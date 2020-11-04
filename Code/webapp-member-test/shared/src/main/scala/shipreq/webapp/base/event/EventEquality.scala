@@ -1,10 +1,10 @@
-package shipreq.webapp.base.event
+package shipreq.webapp.member.event
 
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import java.time.Instant
 import scalaz.Equal
 import scalaz.std.list.listEqual
-import shipreq.webapp.base.event.Event._
+import shipreq.webapp.member.event.Event._
 import shipreq.webapp.base.filter.Filter.Implicits._
 import shipreq.webapp.member.text.Text.Equality._
 

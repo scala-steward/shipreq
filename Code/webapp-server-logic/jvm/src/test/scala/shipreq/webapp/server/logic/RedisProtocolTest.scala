@@ -6,7 +6,7 @@ import nyaya.gen.Gen
 import scalaz.Equal
 import shipreq.base.util.BinaryData
 import shipreq.webapp.base.data.{Project, StaticField}
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.base.test.BinaryTestUtil._
 import shipreq.webapp.base.test.UnsafeTypes._
 import shipreq.webapp.base.test.WebappTestUtil._

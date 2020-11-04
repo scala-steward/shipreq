@@ -8,7 +8,7 @@ import scalaz.~~>
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.UseCaseStepGD
+import shipreq.webapp.member.event.UseCaseStepGD
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.feature.clipboard.ClipboardData
 import shipreq.webapp.base.lib.ConfirmJs

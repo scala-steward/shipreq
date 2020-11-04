@@ -4,7 +4,7 @@ import japgolly.microlibs.scalaz_ext.ScalazMacros
 import scalaz.{Equal, Name}
 import shipreq.base.util.{BinaryData, Direction}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}

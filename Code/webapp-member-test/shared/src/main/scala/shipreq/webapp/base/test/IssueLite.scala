@@ -2,13 +2,13 @@ package shipreq.webapp.base.test
 
 import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.data.{ManualIssue => ManualIssueInstance, _}
-import shipreq.webapp.base.issue._
+import shipreq.webapp.member.issue._
 import shipreq.webapp.member.text.Text.Equality._
 import shipreq.webapp.member.text.{Atom, Text}
 
 sealed abstract class IssueLite(final val cls: IssueClass)
 object IssueLite {
-  import shipreq.webapp.base.issue.{IssueClass => C}
+  import shipreq.webapp.member.issue.{IssueClass => C}
 
   final case class BlankCustomField(reqId: ReqId,
                                     fieldId: CustomFieldId) extends IssueLite(C.BlankCustomField)

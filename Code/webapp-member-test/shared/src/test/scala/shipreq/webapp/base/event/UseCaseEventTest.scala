@@ -1,4 +1,4 @@
-package shipreq.webapp.base.event
+package shipreq.webapp.member.event
 
 import japgolly.microlibs.nonempty.NonEmpty
 import shipreq.base.util._

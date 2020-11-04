@@ -1,9 +1,9 @@
-package shipreq.webapp.base.event
+package shipreq.webapp.member.event
 
 import japgolly.microlibs.adt_macros.AdtMacros._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.{StaticLookupFn, Utils}
-import shipreq.webapp.base.event.Event._
+import shipreq.webapp.member.event.Event._
 
 final case class EventName private[EventName] (value: String)
 

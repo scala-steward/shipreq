@@ -2,7 +2,7 @@ package shipreq.webapp.base.test
 
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.Event
+import shipreq.webapp.member.event.Event
 
 /**
  * Sample project with:

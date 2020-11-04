@@ -9,7 +9,7 @@ import monocle.macros.Lenses
 import shipreq.base.util.{Enabled, PotentialChange}
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.CustomImpFieldGD
+import shipreq.webapp.member.event.CustomImpFieldGD
 import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.member.text.PlainText
 import shipreq.webapp.base.ui.widgets.{Dropdown, Form}

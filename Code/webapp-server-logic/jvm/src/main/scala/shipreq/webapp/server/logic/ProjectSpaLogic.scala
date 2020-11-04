@@ -10,8 +10,8 @@ import shipreq.base.util._
 import shipreq.taskman.api.{Task, TaskmanApi, UserId => TaskmanUserId}
 import shipreq.webapp.base.config.AssetManifest
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.EventOrd.Implicits._
-import shipreq.webapp.base.event.{ApplyEvent, EventOrd, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.member.event.EventOrd.Implicits._
+import shipreq.webapp.member.event.{ApplyEvent, EventOrd, ProjectAndOrd, VerifiedEvent}
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint
 import shipreq.webapp.base.protocol.websocket.ProjectSpaProtocols.WsReqRes.EventResult
@@ -801,7 +801,7 @@ object ProjectSpaLogic extends StrictLogging {
     import io.circe.syntax._
     import org.apache.commons.text.StringEscapeUtils
     import scala.collection.immutable.TreeSet
-    import shipreq.webapp.base.protocol.json.v1.Latest.encoderVerifiedEvent
+    import shipreq.webapp.member.protocol.json.v1.Latest.encoderVerifiedEvent
     import ProjectSpaProtocols.WebSocket
 
     type WSH = WebSocketServerHelper[WebSocket#Req, WebSocket.Push]

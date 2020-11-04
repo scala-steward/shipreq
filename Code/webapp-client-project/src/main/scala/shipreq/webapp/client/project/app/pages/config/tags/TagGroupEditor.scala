@@ -10,7 +10,7 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.TagGroupGD
+import shipreq.webapp.member.event.TagGroupGD
 import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.base.ui.AutosizeTextarea
 import shipreq.webapp.base.ui.widgets.Form

@@ -17,7 +17,7 @@ object Profile {
 //    val trie = sd.project.content.reqCodes.trie
 //    profile(2)(Array.fill(100)(ReqCodes.benchmarkScan(trie)))
 
-    import shipreq.webapp.base.event._
+    import shipreq.webapp.member.event._
     val trusted = ApplyEvent.trusted
     val verifiedEvents = sd.verifiedEvents
     profile(1)(trusted.applyVerified(verifiedEvents)(Project.empty))

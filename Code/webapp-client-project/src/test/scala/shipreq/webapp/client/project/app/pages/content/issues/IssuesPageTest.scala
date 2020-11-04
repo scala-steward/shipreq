@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.pages.content.issues
 
-import shipreq.webapp.base.data.Project
+import shipreq.webapp.member.data.Project
 import shipreq.webapp.base.test.SampleProject6
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.app.ProjectSpaTestDsl

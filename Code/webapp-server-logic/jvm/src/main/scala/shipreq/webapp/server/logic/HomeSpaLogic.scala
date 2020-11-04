@@ -4,7 +4,7 @@ import scalaz.syntax.monad._
 import scalaz.{Monad, ~>}
 import shipreq.webapp.base.config.AssetManifest
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.base.protocol.ajax.HomeSpaProtocols
 import shipreq.webapp.base.protocol.entrypoint.HomeSpaEntryPoint
 

@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.app.pages.config.tags
 
 import shipreq.base.util.{Disabled, Enabled}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.{ApplicableTagGD, Event}
+import shipreq.webapp.member.event.{ApplicableTagGD, Event}
 import shipreq.webapp.base.test.SampleProject.Values._
 import shipreq.webapp.base.test.SampleProject6
 import shipreq.webapp.base.test.TestState._

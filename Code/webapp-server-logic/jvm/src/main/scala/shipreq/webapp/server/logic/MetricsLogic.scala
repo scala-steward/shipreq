@@ -1,7 +1,7 @@
 package shipreq.webapp.server.logic
 
 import java.time.Duration
-import shipreq.webapp.base.event.Trust
+import shipreq.webapp.member.event.Trust
 
 trait MetricsLogic[F[_]] extends MetricsLogic.ForEvents[F] with MetricsLogic.ForRedis[F] {
 

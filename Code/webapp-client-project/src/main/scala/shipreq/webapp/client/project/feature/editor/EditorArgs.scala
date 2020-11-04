@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.feature.editor
 import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.UseCaseStepGD
+import shipreq.webapp.member.event.UseCaseStepGD
 import shipreq.webapp.base.feature.{AsyncFeature, EditControlsFeature, PreviewFeature}
 import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.member.text.{PlainText, TextSearch}

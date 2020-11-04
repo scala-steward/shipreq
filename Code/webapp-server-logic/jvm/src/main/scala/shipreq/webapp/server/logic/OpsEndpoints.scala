@@ -11,7 +11,7 @@ import shipreq.base.util.ErrorMsg
 import shipreq.base.util.log.HasLogger
 import shipreq.taskman.api.{Task, TaskId, TaskmanApi}
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.{ApplyEvent, VerifiedEvent}
+import shipreq.webapp.member.event.{ApplyEvent, VerifiedEvent}
 import shipreq.webapp.base.validation.UserValidators
 import shipreq.webapp.server.logic.dispatch.{ResponseCmd, StatusCode}
 
@@ -41,7 +41,7 @@ object OpsEndpoints extends HasLogger {
                             svr: Server.Time[F],
                             taskman: TaskmanApi[F]) extends OpsEndpoints[F] {
 
-    import shipreq.webapp.base.protocol.json.v1.Latest.{decoderVerifiedEvent, encoderVerifiedEvent}
+    import shipreq.webapp.member.protocol.json.v1.Latest.{decoderVerifiedEvent, encoderVerifiedEvent}
     import WebappTaskmanConverters._
 
     protected def randomToken: F[String]

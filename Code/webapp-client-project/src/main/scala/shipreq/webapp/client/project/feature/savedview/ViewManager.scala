@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.ErrorMsg
-import shipreq.webapp.base.event.{Event, VerifiedEvent}
+import shipreq.webapp.member.event.{Event, VerifiedEvent}
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.{ConfirmJs, PromptJs}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker

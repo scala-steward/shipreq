@@ -6,8 +6,8 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.base.data.derivation._
 import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.data.savedview.{Column => C, SortCriterion => SC}
-import shipreq.webapp.base.sort.Sorter._
-import shipreq.webapp.base.sort.{Sorter => SorterBase}
+import shipreq.webapp.member.sort.Sorter._
+import shipreq.webapp.member.sort.{Sorter => SorterBase}
 import shipreq.webapp.member.text.PlainText
 
 object Sorter {

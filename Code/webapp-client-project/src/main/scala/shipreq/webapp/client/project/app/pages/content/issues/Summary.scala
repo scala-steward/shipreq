@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.app.pages.content.issues
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
-import shipreq.webapp.base.issue.IssueStats
+import shipreq.webapp.member.issue.IssueStats
 import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.client.project.widgets.SummaryUI
 import shipreq.webapp.client.project.widgets.SummaryUI.SummaryIcon

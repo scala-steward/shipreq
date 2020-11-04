@@ -11,7 +11,7 @@ import monocle.macros.Lenses
 import shipreq.base.util.{Enabled, PotentialChange}
 import shipreq.webapp.base.UiText.FieldNames
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.CustomTagFieldGD
+import shipreq.webapp.member.event.CustomTagFieldGD
 import shipreq.webapp.base.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.base.ui.widgets.{Dropdown, Form}
 import shipreq.webapp.base.validation.ValidationUX

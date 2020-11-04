@@ -8,7 +8,7 @@ import monocle.Lens
 import org.scalajs.dom.window
 import shipreq.base.util.{Allow, ErrorMsg}
 import shipreq.webapp.base.data.{FilterDead, HideDead, Project, ProjectConfig, ReqId}
-import shipreq.webapp.base.event.VerifiedEvent
+import shipreq.webapp.member.event.VerifiedEvent
 import shipreq.webapp.base.feature.AsyncFeature.Implicits._
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.filter.Filter

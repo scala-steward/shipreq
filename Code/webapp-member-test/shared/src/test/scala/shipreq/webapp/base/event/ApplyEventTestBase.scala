@@ -1,9 +1,9 @@
-package shipreq.webapp.base.event
+package shipreq.webapp.member.event
 
 import shipreq.webapp.base.config.WebappConfig
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.ApplyEventTestFns._
-import shipreq.webapp.base.event.Event._
+import shipreq.webapp.member.event.ApplyEventTestFns._
+import shipreq.webapp.member.event.Event._
 import shipreq.webapp.base.test.WebappTestUtil._
 import sourcecode.Line
 import utest.{assert => _, _}

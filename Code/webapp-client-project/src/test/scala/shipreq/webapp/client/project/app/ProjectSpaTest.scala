@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.app
 
 import shipreq.webapp.base.data.ExternalPubid
-import shipreq.webapp.base.event.Event.FieldCustomDelete
+import shipreq.webapp.member.event.Event.FieldCustomDelete
 import shipreq.webapp.base.feature.PreviewFeature.Position
 import shipreq.webapp.base.test.SampleProject.Values.priField
 import shipreq.webapp.base.test.TestState._

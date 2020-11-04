@@ -3,7 +3,7 @@ package shipreq.benchmark
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.event._
+import shipreq.webapp.member.event._
 import shipreq.webapp.sampledata.SampleData
 
 @State(Scope.Benchmark)

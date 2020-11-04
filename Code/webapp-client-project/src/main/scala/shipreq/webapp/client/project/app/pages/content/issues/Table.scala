@@ -7,9 +7,9 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.{ConsolidatedSeq, ErrorMsg, IfApplicable}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.issue.Issues
+import shipreq.webapp.member.issue.Issues
 import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.sort.FusedSorters
+import shipreq.webapp.member.sort.FusedSorters
 import shipreq.webapp.member.text.{PlainText, Text}
 import shipreq.webapp.base.ui.semantic
 import shipreq.webapp.client.project.app.Style.{issues => *}

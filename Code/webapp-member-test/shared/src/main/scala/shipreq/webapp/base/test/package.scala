@@ -1,6 +1,6 @@
-package shipreq.webapp.base
+package shipreq.webapp.member
 
-import shipreq.webapp.base.data._
+import shipreq.webapp.member.data._
 
 package object test {
 

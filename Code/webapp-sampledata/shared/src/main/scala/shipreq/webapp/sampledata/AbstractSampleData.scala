@@ -4,10 +4,10 @@ import boopickle.PickleImpl
 import io.circe._
 import io.circe.syntax._
 import shipreq.base.util.BinaryData
-import shipreq.webapp.base.data.Project
-import shipreq.webapp.base.event.{Event, VerifiedEvent}
-import shipreq.webapp.base.protocol.binary.v1.Latest.{picklerProject, picklerVerifiedEventSeq}
-import shipreq.webapp.base.protocol.json.v1.Latest.encoderEvent
+import shipreq.webapp.member.data.Project
+import shipreq.webapp.member.event.{Event, VerifiedEvent}
+import shipreq.webapp.member.protocol.binary.v1.Latest.{picklerProject, picklerVerifiedEventSeq}
+import shipreq.webapp.member.protocol.json.v1.Latest.encoderEvent
 
 abstract class AbstractSampleData(meta: SampleDataMeta, events: Vector[Event]) {
   final override def toString: String = s"SampleData($name)"
