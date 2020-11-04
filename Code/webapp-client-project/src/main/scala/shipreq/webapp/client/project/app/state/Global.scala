@@ -17,10 +17,10 @@ import shipreq.webapp.client.project.app.pages.root.ConnectionStatus
 import shipreq.webapp.client.project.app.state.Global.State
 import shipreq.webapp.member.data.{Project, ProjectMetaData}
 import shipreq.webapp.member.event.{EventOrd, ProjectAndOrd, VerifiedEvent}
-import shipreq.webapp.member.lib.DataReusability._
 import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.WebSocket.Push
 import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.member.ui.ReauthenticationModal
+import shipreq.webapp.member.util.DataReusability._
 
 abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
                       onInitFailure   : ErrorMsg => Callback,

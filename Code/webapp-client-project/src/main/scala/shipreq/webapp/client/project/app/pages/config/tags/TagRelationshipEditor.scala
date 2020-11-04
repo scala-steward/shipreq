@@ -13,7 +13,7 @@ import shipreq.webapp.base.feature.DragToReorderFeature
 import shipreq.webapp.base.ui.semantic.{Button, ColourPlus, Header, Icon, Segment}
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{DropdownButton, ProjectWidgets, ViewTags}
 import shipreq.webapp.member.data._
 

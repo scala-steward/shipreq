@@ -7,8 +7,8 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.{Disabled, Enabled}
 import shipreq.webapp.base.ui.semantic.{Icon, Message}
 import shipreq.webapp.client.project.app.Style.{issueConfig => *}
-import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.Usage
+import shipreq.webapp.client.project.feature.Usage
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.UiText.FieldNames
 import shipreq.webapp.member.data.{Colour => _, _}

@@ -21,9 +21,8 @@ import shipreq.webapp.client.project.app.pages.content.reqtable.ReqTablePage
 import shipreq.webapp.client.project.app.pages.root.LoadedRoot._
 import shipreq.webapp.client.project.app.pages.root.Routes.{Page, RouterCtl}
 import shipreq.webapp.client.project.app.state._
-import shipreq.webapp.client.project.feature._
-import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.Usage
+import shipreq.webapp.client.project.feature.{Usage, _}
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets._
 import shipreq.webapp.client.ww.api.WebWorkerCmd
 import shipreq.webapp.member.data.{FilterDead, HideDead, Project, ProjectConfig, ReqId}

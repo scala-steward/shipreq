@@ -5,8 +5,7 @@ import japgolly.scalajs.react.{Key, Reusability, Reusable}
 import shipreq.base.util.IfApplicable
 import shipreq.webapp.client.project.app.pages.root.Routes
 import shipreq.webapp.client.project.feature.EditorFeature
-import shipreq.webapp.client.project.lib.EditorNavParent
-import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.client.project.widgets.{EditorNavParent, ProjectWidgets}
 import shipreq.webapp.member.UiText.{Issues => UI}
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.data.derivation._

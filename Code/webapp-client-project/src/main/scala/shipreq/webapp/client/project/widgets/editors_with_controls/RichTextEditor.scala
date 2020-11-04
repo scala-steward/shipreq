@@ -11,7 +11,7 @@ import shipreq.webapp.base.feature.{EditorStatus, ScrollSyncFeature}
 import shipreq.webapp.base.lib._
 import shipreq.webapp.base.util.{KeyHandlers, PreProcessor, TaskRepeater}
 import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets._
 import shipreq.webapp.client.project.widgets.editors_with_controls.RichTextEditor.hardcodedLive
 import shipreq.webapp.member.data

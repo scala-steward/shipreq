@@ -9,8 +9,8 @@ import shipreq.base.util._
 import shipreq.webapp.base.feature.DragToReorderFeature
 import shipreq.webapp.base.ui.semantic.Icon
 import shipreq.webapp.client.project.app.Style.{fieldConfig => *}
-import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.Usage
+import shipreq.webapp.client.project.feature.Usage
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{ProjectWidgets, ViewTags}
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.protocol.websocket.UpdateConfigCmd.FieldUpdateOrder

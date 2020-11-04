@@ -17,7 +17,7 @@ import shipreq.webapp.client.project.app.Style.reqtable.{table => *}
 import shipreq.webapp.client.project.feature.EditorFeature.FieldKey
 import shipreq.webapp.client.project.feature.SavedViewFeature.{ColumnLogic, ColumnPlus}
 import shipreq.webapp.client.project.feature.{EditorFeature, Selection}
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{NoFilterResults, ProjectWidgets, ViewReq}
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.data.derivation._

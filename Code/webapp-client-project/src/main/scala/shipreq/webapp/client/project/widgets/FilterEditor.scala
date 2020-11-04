@@ -15,8 +15,8 @@ import shipreq.webapp.member.feature.AutoCompleteFeature
 import shipreq.webapp.member.feature.AutoCompleteFeature._
 import shipreq.webapp.member.filter._
 import shipreq.webapp.member.issue.IssueCategory
-import shipreq.webapp.member.lib.DataReusability._
 import shipreq.webapp.member.ui.AutosizeInput
+import shipreq.webapp.member.util.DataReusability._
 
 /** Widget that allows users to edit the current filter.
   *

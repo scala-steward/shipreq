@@ -4,7 +4,7 @@ import japgolly.scalajs.react.Reusability
 import nyaya.prop._
 import shipreq.base.util.fp.Monoid.Implicits._
 import shipreq.webapp.member.data.derivation.LiveDeadStat
-import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.util.DataReusability._
 
 /** Stats that describe the contents of [[Table]]. */
 final case class TableContentStats(uniqueReqsInTable: LiveDeadStat[Int],

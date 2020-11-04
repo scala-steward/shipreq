@@ -12,7 +12,7 @@ import shipreq.webapp.client.project.app.pages.content.issues.IssuesPage
 import shipreq.webapp.client.project.app.pages.content.reqdetail.ReqDetail
 import shipreq.webapp.client.project.app.pages.content.{reqdetail, reqtable}
 import shipreq.webapp.client.project.feature._
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{NewReqButton, ReqSearch}
 import shipreq.webapp.member.data.{FilterDead, HideDead, Project}
 import shipreq.webapp.member.feature.PreviewFeature

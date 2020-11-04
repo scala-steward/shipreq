@@ -1,4 +1,4 @@
-package shipreq.webapp.member.lib
+package shipreq.webapp.member.util
 
 import japgolly.scalajs.react._
 import java.time.Duration

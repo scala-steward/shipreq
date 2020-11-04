@@ -8,7 +8,7 @@ import monocle.macros.Lenses
 import shipreq.base.util._
 import shipreq.webapp.base.ui.widgets.Form
 import shipreq.webapp.base.validation.ValidationUX
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.member.UiText.FieldNames
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.event.CustomIssueTypeGD

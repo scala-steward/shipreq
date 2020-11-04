@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.lib
+package shipreq.webapp.client.project.util
 
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react.extra._

@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.feature.savedview
 import japgolly.scalajs.react._
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.data.savedview._
-import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.util.DataReusability._
 
 /**
   * @param live Is the column itself live/dead.

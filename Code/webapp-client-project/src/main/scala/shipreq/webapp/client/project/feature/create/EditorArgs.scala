@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.feature.create
 import japgolly.scalajs.react._
 import shipreq.base.util.SetDiff
 import shipreq.webapp.client.project.feature.create.Feature.PreviewId
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.feature.{EditControlsFeature, PreviewFeature}

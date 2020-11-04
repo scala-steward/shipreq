@@ -5,7 +5,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.webapp.client.project.widgets.SummaryUI
 import shipreq.webapp.client.project.widgets.SummaryUI.SummaryIcon
 import shipreq.webapp.member.issue.IssueStats
-import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.util.DataReusability._
 
 object Summary {
 

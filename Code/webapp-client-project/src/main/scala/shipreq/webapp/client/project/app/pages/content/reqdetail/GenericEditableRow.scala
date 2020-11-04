@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.feature.EditorFeature.FieldKey
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets._
 import shipreq.webapp.member.data._
 

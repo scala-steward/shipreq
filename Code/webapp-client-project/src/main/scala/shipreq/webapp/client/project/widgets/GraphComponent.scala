@@ -8,7 +8,7 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util._
 import shipreq.webapp.base.util.DomUtil._
 import shipreq.webapp.client.project.app.{Style, WebWorkerClient}
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.ww.api.WebWorkerCmd.picklerErrorMsgOrSvg
 import shipreq.webapp.client.ww.api._
 import shipreq.webapp.member.data.Svg

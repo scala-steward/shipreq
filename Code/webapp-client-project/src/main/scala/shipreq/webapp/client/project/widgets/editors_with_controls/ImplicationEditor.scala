@@ -9,7 +9,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
 import shipreq.webapp.base.feature.EditorStatus
 import shipreq.webapp.base.util.KeyHandlers
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.member.data.DataImplicits._
 import shipreq.webapp.member.data.{Plain, _}
 import shipreq.webapp.member.feature.AutoCompleteFeature.AutoComplete.Project.{ReqItem, ReqItems}

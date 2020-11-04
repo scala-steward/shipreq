@@ -10,7 +10,7 @@ import shipreq.base.util.{Enabled, PotentialChange}
 import shipreq.webapp.base.ui.widgets.{Dropdown, Form}
 import shipreq.webapp.base.validation.ValidationUX
 import shipreq.webapp.client.project.app.pages.root.Routes
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ReqTypeRulesEditor
 import shipreq.webapp.member.UiText.FieldNames
 import shipreq.webapp.member.data._

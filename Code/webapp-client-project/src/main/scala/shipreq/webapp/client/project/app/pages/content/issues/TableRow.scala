@@ -10,9 +10,8 @@ import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
 import shipreq.webapp.client.project.app.Style.{issues => *}
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.feature.RenderFeature.FieldKey
-import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.EditorNavParent
-import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.client.project.util.DataReusability._
+import shipreq.webapp.client.project.widgets.{EditorNavParent, ProjectWidgets}
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.text.Text
 import shipreq.webapp.member.text.Text.Equality._

@@ -13,7 +13,7 @@ import shipreq.base.util.NonEmptyArraySeq
 import shipreq.webapp.base.ui.semantic.{Icon, Menu, UsesSemanticUiManually}
 import shipreq.webapp.base.util.DomUtil.PatchHtmlElement
 import shipreq.webapp.client.project.app.Style.widgets.{reqSearch => *}
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.filter._
 import shipreq.webapp.member.text.PlainText

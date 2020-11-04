@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.lib
+package shipreq.webapp.client.project.feature
 
 import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react.Reusability
@@ -47,9 +47,9 @@ final class Usage(p: Project, router: SpecialRouterCtl) {
       ))
 
   private def fieldFilter(fid: FieldId): Filter.Valid = {
+    import Filter.Valid._
     import FilterAst.FieldAttr._
     import FilterAst.FieldCriteria.Attr
-    import Filter.Valid._
     fieldProp(\/-(fid), Attr(NotBlank))
   }
 

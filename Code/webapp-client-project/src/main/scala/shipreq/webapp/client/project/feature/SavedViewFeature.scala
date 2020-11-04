@@ -4,7 +4,7 @@ import japgolly.scalajs.react.Reusability
 import japgolly.scalajs.react.vdom.VdomElement
 import shipreq.webapp.member.data.savedview.{SavedView, View}
 import shipreq.webapp.member.data.{FilterDead, Project, ReqId}
-import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.util.DataReusability._
 
 /** Usage
   * =====

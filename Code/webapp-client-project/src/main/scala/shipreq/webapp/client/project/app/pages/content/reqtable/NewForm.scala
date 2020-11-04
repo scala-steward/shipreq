@@ -14,7 +14,7 @@ import shipreq.webapp.client.project.feature.CreateFeature
 import shipreq.webapp.client.project.feature.CreateFeature.FieldKey
 import shipreq.webapp.client.project.feature.SavedViewFeature.{ColumnLogic, ColumnPlus}
 import shipreq.webapp.client.project.feature.create.Feature.PreviewId
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{CloseButton, ProjectWidgets}
 import shipreq.webapp.member.UiText
 import shipreq.webapp.member.data.savedview._

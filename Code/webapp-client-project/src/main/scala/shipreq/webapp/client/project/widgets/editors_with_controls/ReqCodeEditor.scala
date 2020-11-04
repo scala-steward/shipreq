@@ -7,8 +7,8 @@ import shipreq.base.util._
 import shipreq.webapp.base.feature.EditorStatus
 import shipreq.webapp.base.util.KeyHandlers
 import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
-import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.TextEditor
+import shipreq.webapp.client.project.util.DataReusability._
+import shipreq.webapp.client.project.util.TextEditor
 import shipreq.webapp.member.data.DataValidators.{reqCode => V}
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.feature.AutoCompleteFeature._

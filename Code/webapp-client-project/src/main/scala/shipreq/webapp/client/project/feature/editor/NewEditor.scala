@@ -18,10 +18,10 @@ import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.event.UseCaseStepGD
 import shipreq.webapp.member.feature._
-import shipreq.webapp.member.lib.DataReusability._
 import shipreq.webapp.member.protocol.websocket.{ManualIssueCmd, UpdateContentCmd}
 import shipreq.webapp.member.text._
 import shipreq.webapp.member.ui.OptionalFullscreen
+import shipreq.webapp.member.util.DataReusability._
 
 /** Interface to start a new editor (if possible).
   * If not all required data is available then the execution of this Callback could result in a no-op.

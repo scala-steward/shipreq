@@ -15,8 +15,8 @@ import shipreq.webapp.client.project.widgets.ImplicationGraph
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.data.savedview.ImpGraphConfig
 import shipreq.webapp.member.event.ProjectAndOrd
-import shipreq.webapp.member.lib.DataReusability._
 import shipreq.webapp.member.text.PlainText
+import shipreq.webapp.member.util.DataReusability._
 
 object ReqGraphPage {
 

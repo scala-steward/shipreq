@@ -7,9 +7,9 @@ import scalacss.ScalaCssReact._
 import shipreq.webapp.client.project.app.Style.{widgets => *}
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.member.jsfacade.DomPurify
-import shipreq.webapp.member.lib.DataReusability._
 import shipreq.webapp.member.text.Atom.CodeBlockDetail
 import shipreq.webapp.member.ui.CodeBlockWithSyntaxHighlighting
+import shipreq.webapp.member.util.DataReusability._
 
 object RichCodeBlock {
 

@@ -14,8 +14,8 @@ import shipreq.webapp.member.data.savedview._
 import shipreq.webapp.member.data.{FilterDead, Project, ProjectConfig, ReqId, ShowDead}
 import shipreq.webapp.member.event.VerifiedEvent
 import shipreq.webapp.member.filter.{CompiledFilter, Filter}
-import shipreq.webapp.member.lib.DataReusability._
 import shipreq.webapp.member.protocol.websocket.SavedViewCmd
+import shipreq.webapp.member.util.DataReusability._
 
 final case class Static(stateAccess                   : StateAccessPure[(State, FilterDead)],
                         pxProject                     : Px[Project],

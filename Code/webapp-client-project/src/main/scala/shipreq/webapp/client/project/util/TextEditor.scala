@@ -1,4 +1,4 @@
-package shipreq.webapp.client.project.lib
+package shipreq.webapp.client.project.util
 
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html

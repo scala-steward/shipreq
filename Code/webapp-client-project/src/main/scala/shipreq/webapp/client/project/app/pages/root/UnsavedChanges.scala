@@ -8,7 +8,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.util._
 import shipreq.webapp.client.project.app.pages
 import shipreq.webapp.client.project.feature.EditorFeature
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.UiText
 import shipreq.webapp.member.data._

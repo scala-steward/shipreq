@@ -4,7 +4,7 @@ import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react._
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.client.project.feature.editor.Feature.PreviewId
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.event.UseCaseStepGD

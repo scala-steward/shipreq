@@ -12,9 +12,9 @@ import shipreq.webapp.client.project.feature.create.Feature.PreviewId
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.feature.PreviewFeature
-import shipreq.webapp.member.lib.DataReusability._
 import shipreq.webapp.member.protocol.websocket.ManualIssueCmd
 import shipreq.webapp.member.text.{Text, TextSearch}
+import shipreq.webapp.member.util.DataReusability._
 
 object NewIssue {
 

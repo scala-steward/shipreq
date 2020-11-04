@@ -22,7 +22,7 @@ import shipreq.webapp.base.ui.widgets.Dropdown
 import shipreq.webapp.base.util.ReactKeyGen
 import shipreq.webapp.base.util.ReactKeyGen.UnivEqImplicits._
 import shipreq.webapp.client.project.app.Style.{fieldConfig => *}
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.member.data.FieldReqTypeRules.Resolution
 import shipreq.webapp.member.data.{Colour => _, _}
 import shipreq.webapp.member.feature.AutoCompleteFeature._

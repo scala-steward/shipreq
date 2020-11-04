@@ -8,8 +8,8 @@ import scalacss.ScalaCssReact._
 import shipreq.base.util.{Disabled, Enabled}
 import shipreq.webapp.base.feature.DragToReorderFeature
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}
-import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.Usage
+import shipreq.webapp.client.project.feature.Usage
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{ProjectWidgets, ViewTags}
 import shipreq.webapp.member.data._
 

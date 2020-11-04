@@ -14,7 +14,7 @@ import shipreq.webapp.client.project.app.Style.{widgets => *}
 import shipreq.webapp.member.UiText
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.feature.AutoCompleteFeature._
-import shipreq.webapp.member.lib.DataReusability._
+import shipreq.webapp.member.util.DataReusability._
 
 @UsesSemanticUiManually
 object ApplicableReqTypeEditor {

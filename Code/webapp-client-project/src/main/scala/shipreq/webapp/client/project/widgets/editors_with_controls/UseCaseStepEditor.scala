@@ -13,7 +13,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.feature.{AsyncFeature, EditorStatus}
 import shipreq.webapp.base.util.KeyHandler
 import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets._
 import shipreq.webapp.member.UiText
 import shipreq.webapp.member.data._

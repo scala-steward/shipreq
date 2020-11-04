@@ -10,8 +10,8 @@ import shipreq.webapp.base.ui.ClientResources
 import shipreq.webapp.client.project.app.Style.reqtable.{sortEditor => *}
 import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
 import shipreq.webapp.member.data.savedview._
-import shipreq.webapp.member.lib.DataReusability._
 import shipreq.webapp.member.sort.SortMethod
+import shipreq.webapp.member.util.DataReusability._
 
 /**
  * Looks like this:

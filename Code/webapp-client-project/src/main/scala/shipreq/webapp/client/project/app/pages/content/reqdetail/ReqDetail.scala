@@ -20,10 +20,9 @@ import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.feature.EditorFeature.FieldKey
 import shipreq.webapp.client.project.feature._
-import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.EditorNavParent
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets.emptySpan
-import shipreq.webapp.client.project.widgets._
+import shipreq.webapp.client.project.widgets.{EditorNavParent, _}
 import shipreq.webapp.client.ww.api.WebWorkerCmd
 import shipreq.webapp.member.UiText
 import shipreq.webapp.member.data.ExternalPubid.LookupFailure
