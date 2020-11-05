@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.util
 
 import japgolly.clearconfig._
 import shipreq.base.util.Url

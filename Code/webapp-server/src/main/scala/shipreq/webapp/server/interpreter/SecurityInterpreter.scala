@@ -1,4 +1,4 @@
-package shipreq.webapp.server.security
+package shipreq.webapp.server.interpreter
 
 import com.typesafe.scalalogging.StrictLogging
 import io.jsonwebtoken.security.{Keys, SignatureException}

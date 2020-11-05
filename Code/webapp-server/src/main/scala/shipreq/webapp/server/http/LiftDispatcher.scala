@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.http
 
 import com.typesafe.scalalogging.StrictLogging
 import java.nio.charset.Charset
@@ -12,7 +12,9 @@ import shipreq.base.util.FxModule._
 import shipreq.base.util.{BinaryData, Url}
 import shipreq.webapp.base.config.{Urls, WebappConfig}
 import shipreq.webapp.base.data.{ProjectId, User}
+import shipreq.webapp.server.config.Global
 import shipreq.webapp.server.db.DbInterpreter
+import shipreq.webapp.server.interpreter.ServerInterpreter
 import shipreq.webapp.server.logic.algebra.DB
 import shipreq.webapp.server.logic.dispatch
 import shipreq.webapp.server.logic.dispatch.{Cookie, DispatchLogic}

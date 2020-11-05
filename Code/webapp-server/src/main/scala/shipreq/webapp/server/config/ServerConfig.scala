@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.config
 
 import japgolly.clearconfig._
 import monocle.macros.Lenses
@@ -7,6 +7,7 @@ import shipreq.base.db.DbConfig
 import shipreq.webapp.server.db.StatRecorder
 import shipreq.webapp.server.logic.config.ServerLogicConfig
 import shipreq.webapp.server.redis.RedissonConfig
+import shipreq.webapp.server.util.AnalyticsProxy
 
 @Lenses
 final case class ServerConfig(analyticsProxy: AnalyticsProxy.Config,

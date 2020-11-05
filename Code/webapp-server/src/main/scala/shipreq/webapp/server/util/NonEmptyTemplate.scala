@@ -5,7 +5,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.{ClearClearable, CssSel}
 import scala.xml.{Node, NodeSeq}
 
-case class NonEmptyTemplate(content: NodeSeq) {
+final case class NonEmptyTemplate(content: NodeSeq) {
 
   // This is meant to be used once on startup only. Crash if problem with templates.
   if (content.isEmpty) throw new IllegalStateException("Empty template detected.")

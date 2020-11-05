@@ -1,4 +1,4 @@
-package shipreq.webapp.server.security
+package shipreq.webapp.server.interpreter
 
 import java.time.Duration
 import scalaz.Name

@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.interpreter
 
 import nyaya.gen.Gen
 import shipreq.base.util.FxModule._

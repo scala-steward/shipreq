@@ -10,8 +10,8 @@ import shipreq.webapp.base.data.{ProjectId, UserId, Username}
 import shipreq.webapp.member.data.Project
 import shipreq.webapp.member.event.ActiveEvent
 import shipreq.webapp.server.db.DbInterpreter
+import shipreq.webapp.server.interpreter.SecurityInterpreter
 import shipreq.webapp.server.logic.algebra.DB
-import shipreq.webapp.server.security.SecurityInterpreter
 import shipreq.webapp.server.test.WebappServerTestUtil._
 
 object DbUtil {

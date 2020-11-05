@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.http
 
 import io.prometheus.client.exporter.MetricsServlet
 import javax.servlet.http.{HttpServletRequest, HttpServletResponse}

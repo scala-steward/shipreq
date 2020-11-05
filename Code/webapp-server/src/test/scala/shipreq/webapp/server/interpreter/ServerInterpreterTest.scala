@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.interpreter
 
 import shipreq.base.test.BaseTestUtil._
 import utest._

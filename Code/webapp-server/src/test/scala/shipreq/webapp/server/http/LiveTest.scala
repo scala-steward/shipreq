@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.http
 
 import shipreq.base.test.BaseTestUtil._
 import shipreq.webapp.base.config.{Urls, WebappConfig}

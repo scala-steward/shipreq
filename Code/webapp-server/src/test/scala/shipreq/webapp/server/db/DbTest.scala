@@ -11,7 +11,8 @@ import shipreq.base.util.FxModule._
 import shipreq.webapp.base.data._
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.event._
-import shipreq.webapp.server.app.{Global, ServerInterpreter}
+import shipreq.webapp.server.config.Global
+import shipreq.webapp.server.interpreter.ServerInterpreter
 import shipreq.webapp.server.logic.impl.PublicSpaLogic
 import shipreq.webapp.server.test.WebappServerTestUtil._
 import shipreq.webapp.server.test._

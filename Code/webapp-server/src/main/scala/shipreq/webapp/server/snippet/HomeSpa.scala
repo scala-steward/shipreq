@@ -4,7 +4,7 @@ import net.liftweb.util.Helpers._
 import scala.xml.NodeSeq
 import shipreq.base.util.FxModule._
 import shipreq.webapp.member.protocol.entrypoint.HomeSpaEntryPoint
-import shipreq.webapp.server.app.Global
+import shipreq.webapp.server.config.Global
 import shipreq.webapp.server.protocol.entrypoint.ClientSideProcInvoker
 import shipreq.webapp.ssr.SsrSharedData.HomeSpaLoaderData
 

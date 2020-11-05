@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.interpreter
 
 import java.time.{Duration, Instant}
 import net.liftweb.actor.LAScheduler

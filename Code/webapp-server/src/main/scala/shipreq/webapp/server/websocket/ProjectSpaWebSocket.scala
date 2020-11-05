@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.websocket
 
 import com.typesafe.scalalogging.StrictLogging
 import javax.websocket.server._
@@ -11,11 +11,12 @@ import shipreq.base.util.log.WebappLogFields
 import shipreq.taskman.api.TaskmanApi
 import shipreq.webapp.base.config.Urls
 import shipreq.webapp.base.protocol.websocket.WebSocketShared.CloseReason
-import shipreq.webapp.server.lib.Taskman
+import shipreq.webapp.server.config.Global
 import shipreq.webapp.server.logic.impl.ProjectSpaLogic._
 import shipreq.webapp.server.protocol.websocket.WebSocketUtil
 import shipreq.webapp.server.protocol.websocket.WebSocketUtil.Implicits._
 import shipreq.webapp.server.protocol.websocket.WebSocketUtil.{CloseReasons, UserPropsLens}
+import shipreq.webapp.server.taskman.Taskman
 
 object ProjectSpaWebSocket extends StrictLogging {
 

@@ -1,10 +1,11 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.http
 
 import net.liftweb.http._
 import net.liftweb.util.NamedPF
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
-import shipreq.webapp.server.lib.Taskman
+import shipreq.webapp.server.config.Global
+import shipreq.webapp.server.taskman.Taskman
 
 /**
   * Terrible name, but basically serves generic non-200 responses based on HTTP status.

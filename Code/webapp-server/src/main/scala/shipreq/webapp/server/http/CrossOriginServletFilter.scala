@@ -1,10 +1,11 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.http
 
 import com.typesafe.scalalogging.StrictLogging
 import javax.servlet.http.HttpServletResponse
 import javax.servlet.{FilterChain, FilterConfig, ServletRequest, ServletResponse}
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import scala.jdk.CollectionConverters._
+import shipreq.webapp.server.config.Global
 
 final class CrossOriginServletFilter extends CrossOriginFilter with StrictLogging {
   override def init(orig: FilterConfig): Unit = {

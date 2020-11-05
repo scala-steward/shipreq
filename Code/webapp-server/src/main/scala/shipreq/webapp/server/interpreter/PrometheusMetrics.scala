@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.interpreter
 
 import io.prometheus.client.{Counter, Gauge, Histogram, SimpleTimer}
 import japgolly.microlibs.stdlib_ext.ParseLong
@@ -9,6 +9,7 @@ import shipreq.base.util.FreeOption
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
 import shipreq.webapp.member.event.{Trust, Trusted}
+import shipreq.webapp.server.config.Endpoint
 import shipreq.webapp.server.logic.algebra._
 import shipreq.webapp.server.util.CommDir
 

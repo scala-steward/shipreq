@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.interpreter
 
 import net.liftweb.common.Full
 import net.liftweb.http.provider.servlet.HTTPRequestServlet

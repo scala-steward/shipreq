@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.config
 
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.FreeOption

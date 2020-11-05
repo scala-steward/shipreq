@@ -1,4 +1,4 @@
-package shipreq.webapp.server.util
+package shipreq.webapp.server.http
 
 import net.liftweb.http.{HeaderDefaults, InMemoryResponse, LiftResponse}
 

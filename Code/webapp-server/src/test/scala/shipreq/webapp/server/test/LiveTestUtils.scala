@@ -12,11 +12,11 @@ import shipreq.webapp.base.config.WebappConfig
 import shipreq.webapp.base.protocol.Protocol
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.entrypoint.ClientSideProc
-import shipreq.webapp.server.app.Global
+import shipreq.webapp.server.config.Global
+import shipreq.webapp.server.interpreter.SecurityInterpreter
 import shipreq.webapp.server.logic.algebra.Security
 import shipreq.webapp.server.logic.algebra.Security.SessionRestoreResult
 import shipreq.webapp.server.logic.dispatch.Cookie
-import shipreq.webapp.server.security.SecurityInterpreter
 
 object LiveTestUtils {
 

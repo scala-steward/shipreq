@@ -1,4 +1,4 @@
-package shipreq.webapp.server.lib
+package shipreq.webapp.server.taskman
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import org.slf4j.MDC
@@ -8,7 +8,7 @@ import shipreq.base.util.FxModule._
 import shipreq.taskman.api.Task
 import shipreq.webapp.base.config.{Urls, WebappConfig}
 import shipreq.webapp.base.data.UserId
-import shipreq.webapp.server.app.Global
+import shipreq.webapp.server.config.Global
 import shipreq.webapp.server.logic.util.WebappTaskmanConverters._
 
 object Taskman {

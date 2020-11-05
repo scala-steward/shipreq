@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.config
 
 import doobie.ConnectionIO
 import java.util.concurrent.{Executors, TimeUnit}
@@ -10,11 +10,12 @@ import shipreq.base.util.ThreadUtils
 import shipreq.taskman.api.TaskmanApi
 import shipreq.taskman.api.impl.TaskmanApiImpl
 import shipreq.webapp.server.db.{DbInterpreter, StatRecorder}
+import shipreq.webapp.server.interpreter._
 import shipreq.webapp.server.logic.algebra._
 import shipreq.webapp.server.logic.event.ApplyEventAlgebra
 import shipreq.webapp.server.logic.impl.ServerLogic
 import shipreq.webapp.server.redis.{RedisSchema, RedisViaRedisson}
-import shipreq.webapp.server.security.SecurityInterpreter
+import shipreq.webapp.server.util.AnalyticsProxy
 import shipreq.webapp.ssr.SsrAlgebra
 
 final case class Global(config      : ServerConfig,
@@ -65,7 +66,7 @@ object Global {
           ): Global = {
 
     assert(db ne null, "DbAccess is null, sir.")
-    import TraceInterpreter.Implicits._
+    import shipreq.webapp.server.interpreter.TraceInterpreter.Implicits._
 
     implicit def configServer   = config.server
     implicit def configSecurity = config.server.security

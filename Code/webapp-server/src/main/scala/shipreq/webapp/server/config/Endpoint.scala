@@ -1,4 +1,4 @@
-package shipreq.webapp.server.app
+package shipreq.webapp.server.config
 
 import shipreq.base.util.FreeOption
 import shipreq.webapp.base.config.AssetManifest
@@ -7,6 +7,7 @@ import shipreq.webapp.server.logic.config.ScalaJsManifest
 import shipreq.webapp.server.logic.dispatch.DispatchLogic
 
 sealed abstract class Endpoint(final val `type`: String, final val name: String)
+
 object Endpoint {
 
   case object      AssetSecurityPolicy                            extends Endpoint("asset", "content-security-policy-report")
