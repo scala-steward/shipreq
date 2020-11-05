@@ -6,6 +6,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util._
 import shipreq.webapp.base.feature.EditorStatus
 import shipreq.webapp.base.util.KeyHandlers
+import shipreq.webapp.base.validation.lib.Simple._
 import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.util.TextEditor
@@ -15,7 +16,6 @@ import shipreq.webapp.member.feature.AutoCompleteFeature._
 import shipreq.webapp.member.feature.EditControlsFeature
 import shipreq.webapp.member.text.GrammarSpec.SeqFormat
 import shipreq.webapp.member.text.{LineCardinality, MultiLine, SingleLine}
-import shipreq.webapp.member.validation.lib.Simple._
 
 sealed abstract class ReqCodeEditor[In: Reusability, Out] {
   final type Output = Out

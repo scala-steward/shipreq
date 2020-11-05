@@ -8,6 +8,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
 import shipreq.webapp.base.feature.EditorStatus
 import shipreq.webapp.base.util.KeyHandlers
+import shipreq.webapp.base.validation.lib.Simple._
 import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.member.data._
@@ -16,7 +17,6 @@ import shipreq.webapp.member.feature.AutoCompleteFeature._
 import shipreq.webapp.member.feature.EditControlsFeature
 import shipreq.webapp.member.text.Grammar.{hashRefKey => G}
 import shipreq.webapp.member.text.SingleLine
-import shipreq.webapp.member.validation.lib.Simple._
 
 object TagEditor {
 

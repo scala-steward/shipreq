@@ -1,4 +1,4 @@
-package shipreq.webapp.member.validation.lib
+package shipreq.webapp.base.validation.lib
 
 import scalaz.Endo
 import shipreq.base.util.ErrorMsg

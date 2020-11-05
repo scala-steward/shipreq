@@ -5,11 +5,11 @@ import monocle._
 import scala.reflect.ClassTag
 import scalaz.Equal
 import shipreq.base.util._
+import shipreq.webapp.base.validation.lib.Composite
 import shipreq.webapp.member.data._
 import shipreq.webapp.member.data.savedview.SavedView
 import shipreq.webapp.member.text.PlainText
 import shipreq.webapp.member.util.GenericData
-import shipreq.webapp.member.validation.lib.Composite
 
 private[event] object ApplyEventLib {
 

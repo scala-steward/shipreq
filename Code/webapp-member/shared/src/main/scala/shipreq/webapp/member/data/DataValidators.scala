@@ -11,13 +11,13 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
 import shipreq.webapp.base.config.WebappConfig
 import shipreq.webapp.base.util.TextMod
+import shipreq.webapp.base.validation.lib.Implicits._
+import shipreq.webapp.base.validation.lib.Simple._
+import shipreq.webapp.base.validation.lib.Uniqueness.Util._
+import shipreq.webapp.base.validation.lib.{CommonValidation => V, _}
 import shipreq.webapp.member.UiText.FieldNames
 import shipreq.webapp.member.data.ReqType.Mnemonic
 import shipreq.webapp.member.text.{Grammar, PlainText, Text}
-import shipreq.webapp.member.validation.lib.Implicits._
-import shipreq.webapp.member.validation.lib.Simple._
-import shipreq.webapp.member.validation.lib.Uniqueness.Util._
-import shipreq.webapp.member.validation.lib.{CommonValidation => V, _}
 
 object DataValidators {
 

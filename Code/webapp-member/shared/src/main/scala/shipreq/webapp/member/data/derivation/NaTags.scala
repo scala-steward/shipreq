@@ -2,8 +2,8 @@ package shipreq.webapp.member.data.derivation
 
 import scala.runtime.AbstractFunction1
 import shipreq.base.util.{Invalid, NotApplicable, Validity}
+import shipreq.webapp.base.validation.lib.Simple._
 import shipreq.webapp.member.data._
-import shipreq.webapp.member.validation.lib.Simple._
 
 /** The set of tags that are N/A for some implicit scope.
   *

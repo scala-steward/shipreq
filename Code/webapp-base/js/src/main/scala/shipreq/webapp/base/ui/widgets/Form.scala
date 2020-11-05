@@ -10,7 +10,7 @@ import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.{Input, Segment, UsesSemanticUiManually}
 import shipreq.webapp.base.util.On
 import shipreq.webapp.base.validation.ValidationUX
-import shipreq.webapp.member.validation.lib.Simple
+import shipreq.webapp.base.validation.lib.Simple
 
 @UsesSemanticUiManually
 object Form {

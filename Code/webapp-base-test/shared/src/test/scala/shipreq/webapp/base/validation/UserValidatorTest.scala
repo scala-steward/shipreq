@@ -5,7 +5,7 @@ import shipreq.base.test.BaseTestUtil.{assertContainsCI, assertEq}
 import shipreq.base.util.{Invalid, Valid}
 import shipreq.webapp.base.config.WebappConfig
 import shipreq.webapp.base.data._
-import shipreq.webapp.member.validation.lib.Simple.Validator
+import shipreq.webapp.base.validation.lib.Simple.Validator
 import utest._
 
 object UserValidatorTest extends TestSuite {
