@@ -1,16 +1,17 @@
 package shipreq.webapp.client.ww
 
 import shipreq.base.util.OptionalBoolFn
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview.ImpGraphConfig
-import shipreq.webapp.base.data.savedview.ImpGraphConfig.GraphDir
-import shipreq.webapp.base.event.Event._
-import shipreq.webapp.base.event._
-import shipreq.webapp.base.filter.CompiledFilter
-import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.base.test._
-import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.ww.GraphViz.DOT
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.savedview.ImpGraphConfig
+import shipreq.webapp.member.data.savedview.ImpGraphConfig.GraphDir
+import shipreq.webapp.member.event.Event._
+import shipreq.webapp.member.event._
+import shipreq.webapp.member.filter.CompiledFilter
+import shipreq.webapp.member.test.WebappTestUtil._
+import shipreq.webapp.member.test._
+import shipreq.webapp.member.test.event.TestEvent
+import shipreq.webapp.member.text.PlainText
 import utest._
 
 object ProjectImpGraphTest extends TestSuite {

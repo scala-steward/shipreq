@@ -5,13 +5,14 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react.{CallbackTo, Reusability}
 import shipreq.base.util._
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.{PlainText, TextSearch}
+import shipreq.webapp.base.util._
 import shipreq.webapp.client.project.app.pages
 import shipreq.webapp.client.project.feature.EditorFeature
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.text.{PlainText, TextSearch}
 
 final case class UnsavedChanges(count    : Int,
                                 locations: Set[UnsavedChanges.Location]) {

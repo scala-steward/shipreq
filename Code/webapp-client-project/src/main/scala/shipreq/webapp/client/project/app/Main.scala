@@ -10,13 +10,15 @@ import shipreq.webapp.base.CssSettings._
 import shipreq.webapp.base.feature.ErrorHandlingFeature
 import shipreq.webapp.base.lib.{ConfirmJs, LoggerJs, PromptJs}
 import shipreq.webapp.base.protocol.ajax.CommonProtocolsJs
-import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint.InitData
-import shipreq.webapp.base.protocol.entrypoint.{ClientSideProcImpl, ProjectSpaEntryPoint}
-import shipreq.webapp.base.protocol.websocket.{ProjectSpaProtocols, WebSocketClient}
-import shipreq.webapp.base.ui.{BaseStyles, OptionalFullscreen, ReauthenticationModal}
+import shipreq.webapp.base.protocol.entrypoint.ClientSideProcImpl
+import shipreq.webapp.base.protocol.websocket.WebSocketClient
 import shipreq.webapp.client.loaders.ProjectSpaLoader
 import shipreq.webapp.client.project.app.pages.root._
 import shipreq.webapp.client.project.app.state.Global
+import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint
+import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint.InitData
+import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols
+import shipreq.webapp.member.ui.{BaseStyles, OptionalFullscreen, ReauthenticationModal}
 
 @JSExportTopLevel(ProjectSpaEntryPoint.Name)
 object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {

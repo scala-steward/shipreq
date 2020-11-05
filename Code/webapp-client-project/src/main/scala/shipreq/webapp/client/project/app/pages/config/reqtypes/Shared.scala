@@ -4,10 +4,10 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react.React
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.UiText.FieldNames
-import shipreq.webapp.base.data.ReqType
 import shipreq.webapp.base.ui.semantic.{Colour, Icon}
 import shipreq.webapp.client.project.app.Style.{reqTypeConfig => *}
+import shipreq.webapp.member.UiText.FieldNames
+import shipreq.webapp.member.data.ReqType
 
 private[reqtypes] object Shared {
 

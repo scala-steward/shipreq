@@ -2,7 +2,7 @@ package shipreq.webapp.client.project.app.pages.content.reqtable
 
 import japgolly.scalajs.react.Reusability
 import shipreq.webapp.client.project.feature.EditorFeature
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 
 sealed trait PreviewId
 

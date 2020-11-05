@@ -7,18 +7,12 @@ import japgolly.scalajs.react.vdom.PackageBase._
 import monocle.Lens
 import org.scalajs.dom.window
 import shipreq.base.util.{Allow, ErrorMsg}
-import shipreq.webapp.base.data.{FilterDead, HideDead, Project, ProjectConfig, ReqId}
-import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.feature.AsyncFeature.Implicits._
 import shipreq.webapp.base.feature._
-import shipreq.webapp.base.filter.Filter
 import shipreq.webapp.base.lib.{ConfirmJs, PromptJs}
 import shipreq.webapp.base.protocol.ajax.CommonProtocolsJs
-import shipreq.webapp.base.protocol.entrypoint.ProjectSpaEntryPoint
-import shipreq.webapp.base.protocol.websocket._
-import shipreq.webapp.base.text.{PlainText, ProjectText, TextSearch}
 import shipreq.webapp.base.ui.semantic.Menu
-import shipreq.webapp.base.ui.{FeedbackModal, OptionalFullscreen, ProjectItem, Toast}
+import shipreq.webapp.base.ui.widgets.FeedbackModal
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app._
 import shipreq.webapp.client.project.app.pages._
@@ -27,11 +21,18 @@ import shipreq.webapp.client.project.app.pages.content.reqtable.ReqTablePage
 import shipreq.webapp.client.project.app.pages.root.LoadedRoot._
 import shipreq.webapp.client.project.app.pages.root.Routes.{Page, RouterCtl}
 import shipreq.webapp.client.project.app.state._
-import shipreq.webapp.client.project.feature._
-import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.Usage
+import shipreq.webapp.client.project.feature.{Usage, _}
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets._
 import shipreq.webapp.client.ww.api.WebWorkerCmd
+import shipreq.webapp.member.data.{FilterDead, HideDead, Project, ProjectConfig, ReqId}
+import shipreq.webapp.member.event.VerifiedEvent
+import shipreq.webapp.member.feature.PreviewFeature
+import shipreq.webapp.member.filter.Filter
+import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint
+import shipreq.webapp.member.protocol.websocket._
+import shipreq.webapp.member.text.{PlainText, ProjectText, TextSearch}
+import shipreq.webapp.member.ui.{OptionalFullscreen, ProjectItem, Toast}
 
 object LoadedRoot {
   final case class Props(page: Page, routerCtl: RouterCtl)

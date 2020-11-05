@@ -3,9 +3,9 @@ package shipreq.webapp.client.project.widgets
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util._
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data._
 import shipreq.webapp.client.project.feature.CreateFeature
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data._
 
 /** A button to create a new req.
   *

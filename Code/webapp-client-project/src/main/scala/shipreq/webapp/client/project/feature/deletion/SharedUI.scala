@@ -2,13 +2,14 @@ package shipreq.webapp.client.project.feature.deletion
 
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.base.ui.semantic.{Colour, Icon, Table}
+import shipreq.webapp.base.util.On
 import shipreq.webapp.client.project.app.Style.{deletionRestorationForms => *}
 import shipreq.webapp.client.project.feature.Selection
 import shipreq.webapp.client.project.feature.deletion.DeletionRestorationLogic.{ActionableReqs, ReqRow}
 import shipreq.webapp.client.project.widgets.{ProjectWidgets, Widgets}
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.text.PlainText
 
 private[deletion] object SharedUI {
 

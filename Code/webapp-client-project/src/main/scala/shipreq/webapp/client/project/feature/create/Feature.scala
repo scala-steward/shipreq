@@ -10,10 +10,10 @@ import scala.reflect.ClassTag
 import shipreq.base.util._
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.protocol.websocket.{CreateContentCmd, ManualIssueCmd}
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.state.NewEvents
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
+import shipreq.webapp.member.protocol.websocket.{CreateContentCmd, ManualIssueCmd}
 
 object Feature {
 
@@ -42,7 +42,7 @@ object Feature {
   }
 
   object Editor {
-    type Invalidity = shipreq.webapp.base.validation.Simple.Invalidity
+    type Invalidity = shipreq.webapp.base.validation.lib.Simple.Invalidity
     type Value[+A] = Invalidity \/ A
 
     implicit def univEq[A, V]: UnivEq[Editor[A, V]] =
@@ -52,7 +52,7 @@ object Feature {
       Reusability.byRef
   }
 
-  /** Id used for [[shipreq.webapp.base.feature.PreviewFeature]] */
+  /** Id used for [[shipreq.webapp.member.feature.PreviewFeature]] */
   final case class PreviewId(row: RowKey, cell: FieldKey)
 
   object PreviewId {

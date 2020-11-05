@@ -1,9 +1,9 @@
 package shipreq.webapp.client.project.app.pages.config.fields
 
 import shipreq.base.util.{Enabled, PotentialChange}
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.test.WebappTestUtil._
-import shipreq.webapp.base.test._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.test.WebappTestUtil._
+import shipreq.webapp.member.test._
 import sourcecode.Line
 import utest._
 

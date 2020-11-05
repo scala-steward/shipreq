@@ -1,11 +1,11 @@
 package shipreq.webapp.client.project.app.pages.content.issues
 
-import shipreq.webapp.base.data.Project
-import shipreq.webapp.base.test.SampleProject6
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.app.ProjectSpaTestDsl
 import shipreq.webapp.client.project.app.pages.root.Routes.Page
 import shipreq.webapp.client.project.test.PrepareEnv
+import shipreq.webapp.member.data.Project
+import shipreq.webapp.member.test.SampleProject6
 import utest._
 import utest.framework.TestPath
 

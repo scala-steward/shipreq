@@ -8,7 +8,7 @@ import scalaz.syntax.traverse._
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.{Backwards, Direction, Forwards}
 import shipreq.webapp.base.feature.tablenav._
-import shipreq.webapp.base.lib.DomUtil._
+import shipreq.webapp.base.util.DomUtil._
 import sourcecode.Line
 import utest._
 

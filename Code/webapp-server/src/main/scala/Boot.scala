@@ -15,11 +15,14 @@ import shipreq.base.db.DbAccessor
 import shipreq.base.ops.{JdbcLogging, JdbcMetrics, SqlTracer}
 import shipreq.base.util.FxModule._
 import shipreq.base.util.{Props => ShipReqProps}
-import shipreq.webapp.base.WebappConfig
-import shipreq.webapp.server.ServerLogicConfig
-import shipreq.webapp.server.app._
-import shipreq.webapp.server.lib.Taskman
-import shipreq.webapp.server.logic.{MinimalSsr, TraceLogic}
+import shipreq.webapp.base.config.WebappConfig
+import shipreq.webapp.server.config.{Global, ServerConfig}
+import shipreq.webapp.server.http.{HttpStatusHandler, LiftDispatcher}
+import shipreq.webapp.server.interpreter._
+import shipreq.webapp.server.logic.algebra.TraceAlgebra
+import shipreq.webapp.server.logic.config.ServerLogicConfig
+import shipreq.webapp.server.logic.impl.MinimalSsrLogic
+import shipreq.webapp.server.taskman.Taskman
 import shipreq.webapp.ssr.SsrOff
 
 /**
@@ -244,9 +247,9 @@ class Boot {
       import TraceInterpreter.Implicits._
       implicit val assetManifest = cfg.assetManifest
       implicit val traceAlgebra  = cfg.traceAlgebraFx
-      implicit val trace         = TraceLogic.on: TraceInterpreter.ForHttp[Fx]
+      implicit val trace         = TraceAlgebra.on: TraceInterpreter.ForHttp[Fx]
       implicit val server        = trace.injectServer(ServerInterpreter)
-      new MinimalSsr[Fx]
+      new MinimalSsrLogic[Fx]
     } else
       new SsrOff[Fx]
     ssr.prepare(cfg.baseUrl, cfg.publicRegistration)

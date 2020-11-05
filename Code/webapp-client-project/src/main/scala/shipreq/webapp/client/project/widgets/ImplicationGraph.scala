@@ -11,21 +11,22 @@ import scala.scalajs.js.timers
 import scala.util.Try
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{Backwards, ErrorMsg, Forwards, MutableRef, SetDiff}
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview.ImpGraphConfig
-import shipreq.webapp.base.data.savedview.ImpGraphConfig.LabelFormat
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.lib.DomUtil._
-import shipreq.webapp.base.lib.{DomUtil, LoggerJs}
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
-import shipreq.webapp.base.protocol.websocket.UpdateContentCmd.PatchImplications
-import shipreq.webapp.base.text.PlainText
-import shipreq.webapp.base.util.Must._
+import shipreq.webapp.base.util.DomUtil
+import shipreq.webapp.base.util.DomUtil._
 import shipreq.webapp.client.project.app.WebWorkerClient
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.GraphComponent._
 import shipreq.webapp.client.ww.api.WebWorkerCmd
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.savedview.ImpGraphConfig
+import shipreq.webapp.member.data.savedview.ImpGraphConfig.LabelFormat
+import shipreq.webapp.member.protocol.websocket.UpdateContentCmd
+import shipreq.webapp.member.protocol.websocket.UpdateContentCmd.PatchImplications
+import shipreq.webapp.member.text.PlainText
+import shipreq.webapp.member.util.Must._
 
 object ImplicationGraph {
 

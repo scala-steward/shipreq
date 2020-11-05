@@ -5,11 +5,11 @@ import io.circe.parser._
 import java.util.concurrent.TimeUnit
 import org.openjdk.jmh.annotations._
 import shipreq.base.test.BaseTestUtil._
-import shipreq.webapp.base.event.Event
+import shipreq.webapp.member.event.Event
 import shipreq.webapp.sampledata.SampleData
 
 object SerialisationJsonEventsBM {
-  import shipreq.webapp.base.protocol.json.v1.Latest._
+  import shipreq.webapp.member.protocol.json.v1.Latest._
 
   val jsonEnc = Encoder[Vector[Event]]
   val jsonDec = Decoder[Vector[Event]]

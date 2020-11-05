@@ -5,17 +5,17 @@ import japgolly.scalajs.react.extra.{Px, StateSnapshot}
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{ErrorMsg, Invalid, Valid}
-import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.data.{FilterDead, Project, ProjectConfig, ReqId, ShowDead}
-import shipreq.webapp.base.event.VerifiedEvent
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.filter.{CompiledFilter, Filter}
-import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.base.lib.{ConfirmJs, PromptJs}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.protocol.websocket.SavedViewCmd
 import shipreq.webapp.client.project.app.Style.{savedViews => *}
 import shipreq.webapp.client.project.widgets.{FilterDeadButton, FilterEditor}
+import shipreq.webapp.member.data.savedview._
+import shipreq.webapp.member.data.{FilterDead, Project, ProjectConfig, ReqId, ShowDead}
+import shipreq.webapp.member.event.VerifiedEvent
+import shipreq.webapp.member.filter.{CompiledFilter, Filter}
+import shipreq.webapp.member.protocol.websocket.SavedViewCmd
+import shipreq.webapp.member.util.DataReusability._
 
 final case class Static(stateAccess                   : StateAccessPure[(State, FilterDead)],
                         pxProject                     : Px[Project],

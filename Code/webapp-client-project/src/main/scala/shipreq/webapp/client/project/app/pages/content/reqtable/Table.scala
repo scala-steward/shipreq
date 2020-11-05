@@ -8,20 +8,22 @@ import org.scalajs.dom.ext.KeyCode
 import scala.collection.immutable.SortedSet
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{Applicable, ErrorMsg, NotApplicable}
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation._
-import shipreq.webapp.base.data.savedview._
 import shipreq.webapp.base.feature.clipboard.ClipboardData
-import shipreq.webapp.base.feature.{AsyncFeature, DragToReorderFeature, EditControlsFeature, TableNavigationFeature}
-import shipreq.webapp.base.lib.DomUtil._
-import shipreq.webapp.base.text.{PlainText, ProjectText}
+import shipreq.webapp.base.feature.{AsyncFeature, DragToReorderFeature, TableNavigationFeature}
 import shipreq.webapp.base.ui.semantic
+import shipreq.webapp.base.util.DomUtil._
+import shipreq.webapp.base.util._
 import shipreq.webapp.client.project.app.Style.reqtable.{table => *}
 import shipreq.webapp.client.project.feature.EditorFeature.FieldKey
 import shipreq.webapp.client.project.feature.SavedViewFeature.{ColumnLogic, ColumnPlus}
 import shipreq.webapp.client.project.feature.{EditorFeature, Selection}
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{NoFilterResults, ProjectWidgets, ViewReq}
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.derivation._
+import shipreq.webapp.member.data.savedview._
+import shipreq.webapp.member.feature.EditControlsFeature
+import shipreq.webapp.member.text.{PlainText, ProjectText}
 
 final class Table(rootPxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]],
                   pxPlainText         : Px[PlainText.ForProject.NoCtx]) {

@@ -9,13 +9,13 @@ import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
 import shipreq.base.util.{Disabled, Enabled, LeftRight, MMTree}
-import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.DragToReorderFeature
 import shipreq.webapp.base.ui.semantic.{Button, ColourPlus, Header, Icon, Segment}
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{DropdownButton, ProjectWidgets, ViewTags}
+import shipreq.webapp.member.data._
 
 object TagRelationshipEditor {
   import DataImplicits._

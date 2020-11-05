@@ -10,16 +10,9 @@ import org.scalajs.dom.ext.KeyCode
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data.ExternalPubid.LookupFailure
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.{Event, ProjectAndOrd, VerifiedEvent}
-import shipreq.webapp.base.feature.{AsyncFeature, EditControlsFeature, PreviewFeature, TableNavigationFeature}
+import shipreq.webapp.base.feature.{AsyncFeature, TableNavigationFeature}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.protocol.websocket.{CreateContentCmd, UpdateContentCmd}
-import shipreq.webapp.base.text.ProjectText.SetRenderStyle
-import shipreq.webapp.base.text._
-import shipreq.webapp.base.ui.NoContentMessage
+import shipreq.webapp.base.ui.widgets.NoContentMessage
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.base.util.LastValueMemo
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
@@ -27,11 +20,18 @@ import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.feature.EditorFeature.FieldKey
 import shipreq.webapp.client.project.feature._
-import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.EditorNavParent
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets.emptySpan
-import shipreq.webapp.client.project.widgets._
+import shipreq.webapp.client.project.widgets.{EditorNavParent, _}
 import shipreq.webapp.client.ww.api.WebWorkerCmd
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data.ExternalPubid.LookupFailure
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.event.{Event, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.member.feature.{EditControlsFeature, PreviewFeature}
+import shipreq.webapp.member.protocol.websocket.{CreateContentCmd, UpdateContentCmd}
+import shipreq.webapp.member.text.ProjectText.SetRenderStyle
+import shipreq.webapp.member.text._
 
 object ReqDetail {
   import Shared.tableNavigationFeature

@@ -4,16 +4,16 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.test._
 import org.scalajs.dom.html
 import shipreq.base.util._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.event.Event
-import shipreq.webapp.base.feature.clipboard.TestClipboard
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.util.Browser
 import shipreq.webapp.client.project.feature.SavedViewFeature
 import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
 import shipreq.webapp.client.project.feature.savedview.SavedViewTestDsl
 import shipreq.webapp.client.project.test._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.savedview._
+import shipreq.webapp.member.event.Event
+import shipreq.webapp.member.test._
 
 object ReqTableTestDsl {
   import TestState._

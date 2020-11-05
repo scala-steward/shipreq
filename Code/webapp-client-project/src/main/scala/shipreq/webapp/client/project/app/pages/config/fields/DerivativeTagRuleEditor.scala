@@ -9,13 +9,13 @@ import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.base.util.Util.ShipReqOpsForArraySeq
 import shipreq.base.util._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation.TagGroupTags
-import shipreq.webapp.base.feature.AutoCompleteFeature._
-import shipreq.webapp.base.ui.AutosizeTextarea
 import shipreq.webapp.base.ui.semantic.UsesSemanticUiManually
 import shipreq.webapp.client.project.app.Style.{fieldConfig => *}
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.derivation.TagGroupTags
+import shipreq.webapp.member.feature.AutoCompleteFeature._
+import shipreq.webapp.member.ui.AutosizeTextarea
 
 private[fields] object DerivativeTagRuleEditor {
   import DerivativeTags.TagPair

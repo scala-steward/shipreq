@@ -4,15 +4,15 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util._
-import shipreq.webapp.base.data.{ExternalPubid, Project}
-import shipreq.webapp.base.feature.PreviewFeature
-import shipreq.webapp.base.text.{PlainText, TextSearch}
-import shipreq.webapp.base.ui.Toast
 import shipreq.webapp.client.project.app.pages.content.reqtable.NewStuff.State
 import shipreq.webapp.client.project.feature.CreateFeature
 import shipreq.webapp.client.project.feature.CreateFeature.RowKey
 import shipreq.webapp.client.project.feature.SavedViewFeature.ColumnPlus
 import shipreq.webapp.client.project.widgets.{NewReqButton, ProjectWidgets}
+import shipreq.webapp.member.data.{ExternalPubid, Project}
+import shipreq.webapp.member.feature.PreviewFeature
+import shipreq.webapp.member.text.{PlainText, TextSearch}
+import shipreq.webapp.member.ui.Toast
 
 /**
   * Unified, convenience interface to both [[NewReqButton]] and [[NewForm]].

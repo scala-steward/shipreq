@@ -6,16 +6,16 @@ import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
-import shipreq.webapp.base.protocol.websocket.CreateContentCmd
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
 import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.feature._
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{ImplyNewReqButton, ProjectWidgets, ViewReq}
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.protocol.websocket.CreateContentCmd
 
 private[reqdetail] object ReqTypeRow {
   import Row.{ReqType => row}

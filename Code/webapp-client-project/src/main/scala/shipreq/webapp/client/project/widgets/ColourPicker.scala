@@ -4,10 +4,10 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.data.{Colour, DataValidators}
-import shipreq.webapp.base.jsfacade.ReactColor
 import shipreq.webapp.base.ui.semantic.{Button, Input}
 import shipreq.webapp.client.project.app.Style.{widgets => *}
+import shipreq.webapp.member.data.{Colour, DataValidators}
+import shipreq.webapp.member.jsfacade.ReactColor
 
 /** Note: validation errors aren't presented as part of this. */
 object ColourPicker {

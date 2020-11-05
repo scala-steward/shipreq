@@ -6,10 +6,10 @@ import shipreq.base.db.{DbAccessor, XA}
 import shipreq.base.test.BaseTestUtil.onceUnit
 import shipreq.base.test.db.{ImperativeXA, TestDb}
 import shipreq.base.util.FxModule._
-import shipreq.webapp.server.ServerLogicConfig
-import shipreq.webapp.server.app.{Global, ServerConfig}
+import shipreq.webapp.server.config.{Global, ServerConfig}
 import shipreq.webapp.server.db.StatRecorder
-import shipreq.webapp.server.logic.{MetricsLogic, TraceLogic}
+import shipreq.webapp.server.logic.algebra._
+import shipreq.webapp.server.logic.config.ServerLogicConfig
 import shipreq.webapp.ssr.SsrOff
 
 object PrepareEnv {
@@ -28,13 +28,13 @@ object PrepareEnv {
     config       = cfg,
     runDB        = null,
     logic        = null,
-    metrics      = MetricsLogic.const(Fx.unit),
+    metrics      = MetricsAlgebra.const(Fx.unit),
     ops          = null,
     security     = null,
     ssr          = SsrOff.prepared,
     statRecorder = StatRecorder.Off,
     taskman      = null,
-    trace        = TraceLogic.off)
+    trace        = TraceAlgebra.off)
 
   def global() =
     Global.Instance

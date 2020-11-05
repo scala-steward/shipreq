@@ -7,13 +7,6 @@ import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.extra.router.RouterCtl
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data.savedview._
-import shipreq.webapp.base.data.{CustomReqType, ExternalPubid, Project, ReqType, StaticReqType}
-import shipreq.webapp.base.feature.{EditControlsFeature, PreviewFeature}
-import shipreq.webapp.base.protocol.websocket.CreateContentCmd
-import shipreq.webapp.base.text.{PlainText, Text, TextSearch}
-import shipreq.webapp.base.ui.Toast
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Table => SemTable}
 import shipreq.webapp.client.project.app.Style.reqtable.{creation => *}
 import shipreq.webapp.client.project.app.state.NewEvents
@@ -21,8 +14,15 @@ import shipreq.webapp.client.project.feature.CreateFeature
 import shipreq.webapp.client.project.feature.CreateFeature.FieldKey
 import shipreq.webapp.client.project.feature.SavedViewFeature.{ColumnLogic, ColumnPlus}
 import shipreq.webapp.client.project.feature.create.Feature.PreviewId
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{CloseButton, ProjectWidgets}
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data.savedview._
+import shipreq.webapp.member.data.{CustomReqType, ExternalPubid, Project, ReqType, StaticReqType}
+import shipreq.webapp.member.feature.{EditControlsFeature, PreviewFeature}
+import shipreq.webapp.member.protocol.websocket.CreateContentCmd
+import shipreq.webapp.member.text.{PlainText, Text, TextSearch}
+import shipreq.webapp.member.ui.Toast
 
 object NewForm {
 

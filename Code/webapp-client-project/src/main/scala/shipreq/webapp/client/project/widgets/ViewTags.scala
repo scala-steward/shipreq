@@ -6,12 +6,12 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scala.collection.mutable
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation.VirtualProjectTags.{DerivationDesc, VirtualTag}
-import shipreq.webapp.base.lib.ClientUtil
-import shipreq.webapp.base.text.Grammar
 import shipreq.webapp.base.ui.semantic.{Icon, Popup}
+import shipreq.webapp.base.util.ClientUtil
 import shipreq.webapp.client.project.app.Style.{tags => *}
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.derivation.VirtualProjectTags.{DerivationDesc, VirtualTag}
+import shipreq.webapp.member.text.Grammar
 
 final class ViewTags(project: Project) {
   import ViewTags._

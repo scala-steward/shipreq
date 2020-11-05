@@ -6,8 +6,7 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.raw.DragEffect
 import shipreq.webapp.base.feature.DragToReorderFeature
 import shipreq.webapp.base.feature.DragToReorderFeature.{Item, Update}
-import shipreq.webapp.base.lib.DomUtil
-import shipreq.webapp.base.util.Reorder
+import shipreq.webapp.base.util.{DomUtil, Reorder}
 
 object Instance {
   var instanceCount = 0

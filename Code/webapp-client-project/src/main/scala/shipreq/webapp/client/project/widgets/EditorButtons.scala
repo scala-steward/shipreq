@@ -4,9 +4,9 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.PotentialChange
-import shipreq.webapp.base.data.Project
 import shipreq.webapp.base.ui.semantic.{Button, Colour, ColourPlus, Icon}
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}
+import shipreq.webapp.member.data.Project
 
 /** The row of buttons underneath editors.
   *

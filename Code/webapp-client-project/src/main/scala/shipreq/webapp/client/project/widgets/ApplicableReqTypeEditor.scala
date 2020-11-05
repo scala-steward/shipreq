@@ -6,15 +6,15 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.feature.AutoCompleteFeature._
-import shipreq.webapp.base.lib.DataReusability._
-import shipreq.webapp.base.lib.ValidationUX
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.UsesSemanticUiManually
 import shipreq.webapp.base.ui.widgets.Form
+import shipreq.webapp.base.validation.ValidationUX
 import shipreq.webapp.client.project.app.Style.{widgets => *}
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.feature.AutoCompleteFeature._
+import shipreq.webapp.member.util.DataReusability._
 
 @UsesSemanticUiManually
 object ApplicableReqTypeEditor {

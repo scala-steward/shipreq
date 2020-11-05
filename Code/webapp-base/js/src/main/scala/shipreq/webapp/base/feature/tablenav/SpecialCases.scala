@@ -4,7 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.internal.Box
 import org.scalajs.dom.html
 import scala.scalajs.js
-import shipreq.webapp.base.lib.DomUtil._
+import shipreq.webapp.base.util.DomUtil._
 
 object SpecialCases {
 

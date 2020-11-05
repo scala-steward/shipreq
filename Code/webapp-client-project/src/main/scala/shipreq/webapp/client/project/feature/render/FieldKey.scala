@@ -3,8 +3,8 @@ package shipreq.webapp.client.project.feature.render
 import japgolly.scalajs.react.Reusability
 import scala.reflect.ClassTag
 import shipreq.base.util._
-import shipreq.webapp.base.data._
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
+import shipreq.webapp.member.data._
 
 /**
  * ADT representing all types of fields supported by the editor.

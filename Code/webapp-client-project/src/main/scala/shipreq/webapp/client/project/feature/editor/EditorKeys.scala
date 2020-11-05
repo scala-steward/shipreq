@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.feature.editor
 import japgolly.scalajs.react._
 import org.scalajs.dom.ext.KeyCode
 import shipreq.webapp.base.feature.clipboard.ClipboardKeys
-import shipreq.webapp.base.lib.DomUtil._
+import shipreq.webapp.base.util.DomUtil._
 
 object EditorKeys {
   import Feature.ReadWrite

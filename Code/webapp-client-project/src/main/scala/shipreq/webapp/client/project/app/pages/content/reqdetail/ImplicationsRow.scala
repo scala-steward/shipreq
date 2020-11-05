@@ -4,15 +4,14 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.TableNavigationFeature
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.feature.EditorFeature.FieldKey
-import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.EditorNavParent
-import shipreq.webapp.client.project.widgets._
+import shipreq.webapp.client.project.util.DataReusability._
+import shipreq.webapp.client.project.widgets.{EditorNavParent, _}
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data._
 
 private[reqdetail] object ImplicationsRow {
   import Row.{Implications => row}

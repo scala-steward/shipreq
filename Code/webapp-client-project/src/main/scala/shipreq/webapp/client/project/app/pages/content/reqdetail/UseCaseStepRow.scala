@@ -5,13 +5,14 @@ import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
 import shipreq.base.util.VectorTree.{LocationOps, PartialLocation}
 import shipreq.base.util._
-import shipreq.webapp.base.data._
+import shipreq.webapp.base.config.WebappConfig
 import shipreq.webapp.base.feature.AsyncFeature
-import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
-import shipreq.webapp.base.{UiText, WebappConfig}
 import shipreq.webapp.client.project.app.Style.reqdetail.{useCaseStep => *}
 import shipreq.webapp.client.project.app.TestMarker
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.protocol.websocket.UpdateContentCmd
 
 object UseCaseStepRow {
 

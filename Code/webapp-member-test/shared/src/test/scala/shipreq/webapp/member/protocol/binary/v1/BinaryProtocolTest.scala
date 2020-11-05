@@ -1,0 +1,45 @@
+package shipreq.webapp.member.protocol.binary.v1
+
+import nyaya.gen.Gen
+import shipreq.webapp.base.test.BinaryTestUtil._
+import shipreq.webapp.member.event.EventEquality._
+import shipreq.webapp.member.event.RandomEventStream
+import shipreq.webapp.member.filter.Filter.Implicits.univEqFilterValid
+import shipreq.webapp.member.test.RandomData.TextGenExt
+import shipreq.webapp.member.test.{RandomData => R}
+import shipreq.webapp.member.text.Text.Equality._
+import shipreq.webapp.member.text.Text._
+import utest._
+
+object BinaryProtocolTest extends TestSuite {
+  import Latest._
+  import Latest.AtomPicklers.instances._
+  import Latest.SavedViewPicklers._
+
+  private implicit def autoSomeG[A](g: Gen[A]): Option[Gen[A]] = Some(g)
+
+  override def tests = Tests {
+
+    "filters" - propTestRoundTripP(R.projectConfig.flatMap(R.filter.valid.forProjectConfig))
+
+    "savedViews" - propTestRoundTripP(R.project.flatMap(R.savedViews.nonEmptySavedViewsForProject))
+
+    "text" - {
+      def gr = R.reqId
+      def gu = R.useCaseStepId
+      def gc = R.reqCode.id
+      def gi = R.customIssueTypeId
+      def ga = R.applicableTagId
+      "CodeGroupTitle"  - propTestRoundTripP(R.TextGen.codeGroupTitleAtom (gr, gu, gc, gi    ).text)
+      "GenericReqTitle" - propTestRoundTripP(R.TextGen.genericReqTitleAtom(gr, gu, gc, gi, ga).text)
+      "InlineIssueDesc" - propTestRoundTripP(R.TextGen.inlineIssueDescAtom(gr, gu, gc        ).text)
+      "CustomTextField" - propTestRoundTripP(R.TextGen.customTextFieldAtom(gr, gu, gc, gi, ga).text1(CustomTextField))
+      "DeletionReason"  - propTestRoundTripP(R.TextGen.deletionReasonAtom (gr, gu, gc,     ga).text1(DeletionReason))
+    }
+
+    "event" - assertRoundTripsP(RandomEventStream.sampleEventStreamWithProjects.map(_._1))
+
+    "project" - assertRoundTripsP(RandomEventStream.sampleEventStreamWithProjects.map(_._2))
+
+  }
+}

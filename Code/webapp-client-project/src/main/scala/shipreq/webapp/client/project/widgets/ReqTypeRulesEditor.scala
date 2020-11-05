@@ -16,16 +16,16 @@ import scalaz.std.list._
 import scalaz.std.option._
 import scalaz.syntax.traverse._
 import shipreq.base.util._
-import shipreq.webapp.base.data.FieldReqTypeRules.Resolution
-import shipreq.webapp.base.data.{Colour => _, _}
-import shipreq.webapp.base.feature.AutoCompleteFeature._
-import shipreq.webapp.base.lib.ReactKeyGen
-import shipreq.webapp.base.lib.ReactKeyGen.UnivEqImplicits._
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.{Dropdown => _, _}
 import shipreq.webapp.base.ui.widgets.Dropdown
+import shipreq.webapp.base.util.ReactKeyGen
+import shipreq.webapp.base.util.ReactKeyGen.UnivEqImplicits._
 import shipreq.webapp.client.project.app.Style.{fieldConfig => *}
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
+import shipreq.webapp.member.data.FieldReqTypeRules.Resolution
+import shipreq.webapp.member.data.{Colour => _, _}
+import shipreq.webapp.member.feature.AutoCompleteFeature._
 
 object ReqTypeRulesEditor {
 
@@ -33,8 +33,8 @@ object ReqTypeRulesEditor {
   val ApplicableTagDefault = new ReqTypeRulesEditor[ApplicableTagId](allowDefaults = true, keyFor = _.value.toString)
 
   final class Validation[D](state: State[D], reqTypes: ReqTypes) {
-    import shipreq.webapp.base.validation.Simple.Invalidity
-    import shipreq.webapp.base.validation._
+    import shipreq.webapp.base.validation.lib.Simple.Invalidity
+    import shipreq.webapp.base.validation.lib._
 
     private val mnemonic = DataValidators.reqTypeAuditor(reqTypes)
 

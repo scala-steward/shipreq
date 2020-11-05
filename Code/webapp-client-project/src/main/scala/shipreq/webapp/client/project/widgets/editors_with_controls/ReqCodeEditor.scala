@@ -4,17 +4,18 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import shipreq.base.util._
-import shipreq.webapp.base.data.DataValidators.{reqCode => V}
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.feature.AutoCompleteFeature._
-import shipreq.webapp.base.feature.{EditControlsFeature, EditorStatus}
-import shipreq.webapp.base.lib.KeyHandlers
-import shipreq.webapp.base.text.GrammarSpec.SeqFormat
-import shipreq.webapp.base.text.{LineCardinality, MultiLine, SingleLine}
-import shipreq.webapp.base.validation.Simple._
+import shipreq.webapp.base.feature.EditorStatus
+import shipreq.webapp.base.util.KeyHandlers
+import shipreq.webapp.base.validation.lib.Simple._
 import shipreq.webapp.client.project.feature.EditorFeature.PotentialValueAcceptor
-import shipreq.webapp.client.project.lib.DataReusability._
-import shipreq.webapp.client.project.lib.TextEditor
+import shipreq.webapp.client.project.util.DataReusability._
+import shipreq.webapp.client.project.util.TextEditor
+import shipreq.webapp.member.data.DataValidators.{reqCode => V}
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.feature.AutoCompleteFeature._
+import shipreq.webapp.member.feature.EditControlsFeature
+import shipreq.webapp.member.text.GrammarSpec.SeqFormat
+import shipreq.webapp.member.text.{LineCardinality, MultiLine, SingleLine}
 
 sealed abstract class ReqCodeEditor[In: Reusability, Out] {
   final type Output = Out

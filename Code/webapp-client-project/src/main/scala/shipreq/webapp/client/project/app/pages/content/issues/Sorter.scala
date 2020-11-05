@@ -2,12 +2,12 @@ package shipreq.webapp.client.project.app.pages.content.issues
 
 import monocle.Optional
 import shipreq.base.util.Util
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.data.derivation._
-import shipreq.webapp.base.issue.IssueCategory
-import shipreq.webapp.base.sort.{Sorter => SorterBase}
-import shipreq.webapp.base.text.PlainText
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.data.derivation._
+import shipreq.webapp.member.issue.IssueCategory
+import shipreq.webapp.member.sort.{Sorter => SorterBase}
+import shipreq.webapp.member.text.PlainText
 
 object Sorter {
   import SorterBase._

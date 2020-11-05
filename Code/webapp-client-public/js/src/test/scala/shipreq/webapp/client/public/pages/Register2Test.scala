@@ -3,9 +3,9 @@ package shipreq.webapp.client.public.pages
 import japgolly.scalajs.react.test._
 import org.scalajs.dom.html
 import shipreq.base.util._
-import shipreq.webapp.base.Urls
+import shipreq.webapp.base.config.Urls
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.protocol.ajax.TestAjaxClient
+import shipreq.webapp.base.test.TestAjaxClient
 import shipreq.webapp.base.test.TestState.{Result => _, _}
 import shipreq.webapp.client.public.PublicSpaProtocols
 import shipreq.webapp.client.public.PublicSpaProtocols.Register2._

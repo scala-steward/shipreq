@@ -5,14 +5,15 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit._
 import monocle.macros.Lenses
 import org.scalajs.dom.html
-import shipreq.webapp.base.AssetManifest
-import shipreq.webapp.base.data.ProjectMetaData
-import shipreq.webapp.base.protocol.ajax.{HomeSpaProtocols, TestAjaxClient}
-import shipreq.webapp.base.protocol.entrypoint.HomeSpaEntryPoint
+import shipreq.webapp.base.config.AssetManifest
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.test.TestAjaxClient
 import shipreq.webapp.base.test.TestState._
-import shipreq.webapp.base.ui.BaseStyles
-import shipreq.webapp.base.user._
 import shipreq.webapp.client.home.test.PrepareEnv
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.protocol.ajax.HomeSpaProtocols
+import shipreq.webapp.member.protocol.entrypoint.HomeSpaEntryPoint
+import shipreq.webapp.member.ui.BaseStyles
 import utest._
 
 final class HomeObs(cp: TestAjaxClient, $: DomZipperJs) {
@@ -117,7 +118,7 @@ object HomeTest extends TestSuite {
   }
 
   object Data {
-    import shipreq.webapp.base.test.UnsafeTypes._
+    import shipreq.webapp.member.test.UnsafeTypes._
     val now = Instant.now()
     val piE = ProjectMetaData("abeF", "Empty", 0, 0, 0, 0, now.minus(18, DAYS), now.minus(19, DAYS), None)
     val piO = ProjectMetaData("qwe3F", "Old", 2, 1581, 311, 340, now.minus(92, DAYS), now.minus(7, MINUTES), Some(now.minus(7, MINUTES)))

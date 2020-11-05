@@ -3,12 +3,12 @@ package shipreq.webapp.server.db
 import io.circe._
 import io.circe.syntax._
 import shipreq.base.util.JsonUtil
-import shipreq.webapp.base.event._
-import shipreq.webapp.base.protocol.json.v1.Events.EventData._
-import shipreq.webapp.base.protocol.json.v1.Rev1.EventData._
-import shipreq.webapp.base.protocol.json.v1.Rev6.EventData._
-import shipreq.webapp.base.protocol.json.v1.Rev7.EventData._
-import shipreq.webapp.server.logic.DB.ReadProjectEventError
+import shipreq.webapp.member.event._
+import shipreq.webapp.member.protocol.json.v1.Events.EventData._
+import shipreq.webapp.member.protocol.json.v1.Rev1.EventData._
+import shipreq.webapp.member.protocol.json.v1.Rev6.EventData._
+import shipreq.webapp.member.protocol.json.v1.Rev7.EventData._
+import shipreq.webapp.server.logic.algebra.DB.ReadProjectEventError
 
 object EventSerialisation {
   import Event._

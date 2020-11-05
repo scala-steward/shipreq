@@ -6,13 +6,13 @@ import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.raw.{Element, SVGGElement, SVGSVGElement}
 import scalacss.ScalaCssReact._
 import shipreq.base.util._
-import shipreq.webapp.base.data.Svg
-import shipreq.webapp.base.lib.DomUtil._
-import shipreq.webapp.base.ui.SvgPanZoom
+import shipreq.webapp.base.util.DomUtil._
 import shipreq.webapp.client.project.app.{Style, WebWorkerClient}
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.ww.api.WebWorkerCmd.picklerErrorMsgOrSvg
 import shipreq.webapp.client.ww.api._
+import shipreq.webapp.member.data.Svg
+import shipreq.webapp.member.ui.SvgPanZoom
 
 /**
  * The reusable bits of a component the renders a graph through the WebWorker API.

@@ -5,12 +5,12 @@ import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
 import nyaya.gen._
 import org.scalajs.dom.html
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.test.CommonObs
 import shipreq.webapp.base.test.TestState._
-import shipreq.webapp.base.text.PlainText
 import shipreq.webapp.client.project.test.TestGlobal
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.test.CommonObs
+import shipreq.webapp.member.text.PlainText
 
 object ReqDetailTestDsl {
 

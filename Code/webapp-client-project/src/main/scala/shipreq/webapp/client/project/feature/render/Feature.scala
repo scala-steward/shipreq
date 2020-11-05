@@ -3,11 +3,11 @@ package shipreq.webapp.client.project.feature.render
 import japgolly.scalajs.react.{Reusability, Reusable, ~=>}
 import scala.reflect.ClassTag
 import shipreq.base.util.{IfApplicable, NotApplicable}
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.ProjectText
-import shipreq.webapp.base.text.ProjectText.{Context => PCtx}
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ViewReqCache
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.text.ProjectText
+import shipreq.webapp.member.text.ProjectText.{Context => PCtx}
 
 object Feature {
 

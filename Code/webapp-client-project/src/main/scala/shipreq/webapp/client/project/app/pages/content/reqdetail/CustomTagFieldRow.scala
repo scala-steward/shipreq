@@ -3,12 +3,12 @@ package shipreq.webapp.client.project.app.pages.content.reqdetail
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.lib.DataReusability._
 import shipreq.webapp.client.project.app.Style.{reqdetail => *}
 import shipreq.webapp.client.project.feature.EditorFeature
 import shipreq.webapp.client.project.feature.EditorFeature.FieldKey
 import shipreq.webapp.client.project.widgets._
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.util.DataReusability._
 
 private[reqdetail] object CustomTagFieldRow {
   import EditorFeature.FieldKey.{CustomFieldTags => Field}

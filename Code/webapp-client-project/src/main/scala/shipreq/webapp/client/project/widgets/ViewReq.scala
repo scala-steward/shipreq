@@ -4,12 +4,12 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react.vdom.PackageBase._
 import scala.collection.immutable.SortedSet
 import shipreq.base.util._
-import shipreq.webapp.base.data.FieldReqTypeRules.Resolution
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.text.ProjectText.SetRenderStyle
-import shipreq.webapp.base.text.{PlainText, ProjectText}
 import shipreq.webapp.client.project.feature.{EditorFeature, RenderFeature}
 import shipreq.webapp.client.project.widgets.ViewReq._
+import shipreq.webapp.member.data.FieldReqTypeRules.Resolution
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.text.ProjectText.SetRenderStyle
+import shipreq.webapp.member.text.{PlainText, ProjectText}
 
 /**
   * Easy means to view/render a requirement.

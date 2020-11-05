@@ -9,7 +9,7 @@ import scala.scalajs.js
 import scalacss.internal.StyleA
 import shipreq.base.test.BaseTestUtil
 import shipreq.base.util.{Debug, Disabled, Enabled, ErrorMsg}
-import shipreq.webapp.base.lib.DomUtil._
+import shipreq.webapp.base.util.DomUtil._
 import teststate.domzipper.DomZipperJsF.Dom
 import teststate.run.Report.AssertionSettings
 

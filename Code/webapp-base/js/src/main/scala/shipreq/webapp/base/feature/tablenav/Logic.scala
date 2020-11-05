@@ -4,7 +4,7 @@ import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.ReactExt_DomNode
 import org.scalajs.dom.{ClientRect, html}
 import shipreq.base.util.{Deny, Permission}
-import shipreq.webapp.base.lib.DomUtil._
+import shipreq.webapp.base.util.DomUtil._
 
 object Attrs {
   final val NestedTable = "data-tnf-nt"

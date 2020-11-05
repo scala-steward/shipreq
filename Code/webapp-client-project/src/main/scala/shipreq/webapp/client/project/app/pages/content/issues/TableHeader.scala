@@ -3,10 +3,10 @@ package shipreq.webapp.client.project.app.pages.content.issues
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data.{FieldId, SpecialBuiltInField}
-import shipreq.webapp.base.lib.BaseReusability._
+import shipreq.webapp.base.util.BaseReusability._
 import shipreq.webapp.client.project.app.Style.{issues => *}
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data.{FieldId, SpecialBuiltInField}
 
 object TableHeader {
 

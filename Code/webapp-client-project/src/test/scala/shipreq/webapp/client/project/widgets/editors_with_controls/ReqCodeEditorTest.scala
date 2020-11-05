@@ -1,7 +1,7 @@
 package shipreq.webapp.client.project.widgets.editors_with_controls
 
-import shipreq.webapp.base.test.WebappTestUtil._
 import shipreq.webapp.client.project.test.PrepareEnv
+import shipreq.webapp.member.test.WebappTestUtil._
 import utest._
 
 object ReqCodeEditorTest extends TestSuite {

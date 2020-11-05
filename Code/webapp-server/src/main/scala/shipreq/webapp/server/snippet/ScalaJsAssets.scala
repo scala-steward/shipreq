@@ -3,7 +3,7 @@ package shipreq.webapp.server.snippet
 import net.liftweb.http.DispatchSnippet
 import net.liftweb.util.Helpers._
 import scala.xml._
-import shipreq.webapp.server.app.Global
+import shipreq.webapp.server.config.Global
 
 object ScalaJsAssets extends DispatchSnippet {
 

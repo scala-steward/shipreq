@@ -2,12 +2,12 @@ package shipreq.webapp.client.project.app.pages.config.fields
 
 import org.scalajs.dom.html
 import shipreq.base.util.{Disabled, Enabled}
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.test.CommonObs
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.ui.semantic.Input
 import shipreq.webapp.client.project.app.Style
 import shipreq.webapp.client.project.app.pages.config.Buttons
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.test.CommonObs
 
 object FieldConfigObs {
 

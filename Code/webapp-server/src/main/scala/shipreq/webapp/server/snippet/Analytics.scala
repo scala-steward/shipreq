@@ -2,8 +2,8 @@ package shipreq.webapp.server.snippet
 
 import net.liftweb.http.DispatchSnippet
 import scala.xml._
-import shipreq.webapp.server.app.Global
-import shipreq.webapp.server.app.ServerConfig.Statcounter
+import shipreq.webapp.server.config.Global
+import shipreq.webapp.server.config.ServerConfig.Statcounter
 
 /**
   * Enables Google Analytics if the server was started with a tracking ID.

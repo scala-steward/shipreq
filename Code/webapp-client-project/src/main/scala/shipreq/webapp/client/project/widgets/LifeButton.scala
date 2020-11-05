@@ -2,9 +2,9 @@ package shipreq.webapp.client.project.widgets
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
-import shipreq.webapp.base.UiText
-import shipreq.webapp.base.data.{Dead, Live}
 import shipreq.webapp.base.ui.semantic.{Button, Colour, ColourPlus, Icon}
+import shipreq.webapp.member.UiText
+import shipreq.webapp.member.data.{Dead, Live}
 
 /**
   * Buttons to change life.

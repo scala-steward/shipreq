@@ -11,6 +11,7 @@ const config = {
     // Projects access these via symlinks in src/test/resources
     entry: {
     'webapp-base-test'  : './src/js/webapp-base-test.js',
+    'webapp-member-test': './src/js/webapp-member-test.js',
     'webapp-client-test': './src/js/webapp-client-test.js',
   },
 

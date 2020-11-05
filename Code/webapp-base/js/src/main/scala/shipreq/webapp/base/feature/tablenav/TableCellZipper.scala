@@ -8,7 +8,7 @@ import scalaz.std.option.optionInstance
 import scalaz.syntax.traverse._
 import shipreq.base.util.Deny
 import shipreq.base.util.ScalaExt._
-import shipreq.webapp.base.lib.DomUtil._
+import shipreq.webapp.base.util.DomUtil._
 
 object TableCellZipper {
 

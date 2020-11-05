@@ -2,14 +2,15 @@ package shipreq.webapp.client.project.feature.editor
 
 import japgolly.microlibs.utils.Memo
 import japgolly.scalajs.react._
-import shipreq.webapp.base.data._
-import shipreq.webapp.base.event.UseCaseStepGD
-import shipreq.webapp.base.feature.{AsyncFeature, EditControlsFeature, PreviewFeature}
-import shipreq.webapp.base.protocol.websocket.UpdateContentCmd
-import shipreq.webapp.base.text.{PlainText, TextSearch}
+import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.client.project.feature.editor.Feature.PreviewId
-import shipreq.webapp.client.project.lib.DataReusability._
+import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
+import shipreq.webapp.member.data._
+import shipreq.webapp.member.event.UseCaseStepGD
+import shipreq.webapp.member.feature.{EditControlsFeature, PreviewFeature}
+import shipreq.webapp.member.protocol.websocket.UpdateContentCmd
+import shipreq.webapp.member.text.{PlainText, TextSearch}
 
 object EditorArgs {
 
