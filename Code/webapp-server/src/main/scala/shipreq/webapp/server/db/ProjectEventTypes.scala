@@ -5,7 +5,7 @@ import japgolly.microlibs.utils.Utils
 import shipreq.webapp.member.project.event.Event
 import shipreq.webapp.member.project.event.Event._
 
-object EventTypes {
+object ProjectEventTypes {
 
   // ======
   // Config

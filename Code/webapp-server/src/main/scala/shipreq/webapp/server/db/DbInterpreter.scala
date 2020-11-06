@@ -326,7 +326,7 @@ object DbInterpreter {
 
         for (row <- it)
           if (err.isEmpty)
-            EventSerialisation.decode(row._1, row._2, row._3) match {
+            ProjectEventSerialisation.decode(row._1, row._2, row._3) match {
               case \/-(e) => res += VerifiedEvent(row._1, e, row._4)
               case -\/(e) => err = Some(e)
             }
@@ -348,7 +348,7 @@ object DbInterpreter {
 
     /** unsafe because the ord could be in-use */
     def unsafeInsertEvent(pid: ProjectId, ord: EventOrd, event: ActiveEvent, userId: UserId) = {
-      val enc = EventSerialisation.encode(event)
+      val enc = ProjectEventSerialisation.encode(event)
       insertEventQuery.toQuery0((pid, ord, enc._1, enc._2, userId)).unique
     }
 
@@ -510,7 +510,7 @@ object DbInterpreter {
       Update[(ProjectId, EventOrd, Short, Json, UserId, Instant)](
         "INSERT INTO event (project_id, ord, type, data, usr_id, created_at) VALUES(?,?,?,?,?,?)")
         .contramap[(ProjectId, VerifiedEvent, UserId)] { case (pid, ve, uid) =>
-          val (typeId, data) = EventSerialisation.encodeActiveOrRetired(ve.event)
+          val (typeId, data) = ProjectEventSerialisation.encodeActiveOrRetired(ve.event)
           (pid, ve.ord, typeId, data, uid, ve.createdAt)
         }
 

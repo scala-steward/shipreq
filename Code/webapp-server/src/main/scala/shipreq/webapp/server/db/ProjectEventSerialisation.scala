@@ -10,9 +10,9 @@ import shipreq.webapp.member.project.protocol.json.v1.Rev6.EventData._
 import shipreq.webapp.member.project.protocol.json.v1.Rev7.EventData._
 import shipreq.webapp.server.logic.algebra.DB.ReadProjectEventError
 
-object EventSerialisation {
+object ProjectEventSerialisation {
   import Event._
-  import EventTypes._
+  import ProjectEventTypes._
 
   val encode: ActiveEvent => (Short, Json) = {
     case e: ApplicableTagCreate     => (TypeApplicableTagCreateV2  , e.asJson)
