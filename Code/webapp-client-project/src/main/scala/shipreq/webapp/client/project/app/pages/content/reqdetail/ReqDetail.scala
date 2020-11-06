@@ -29,9 +29,9 @@ import shipreq.webapp.member.feature.{EditControlsFeature, PreviewFeature}
 import shipreq.webapp.member.project.data.ExternalPubid.LookupFailure
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.{Event, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.member.project.protocol.websocket.{CreateContentCmd, UpdateContentCmd}
 import shipreq.webapp.member.project.text.ProjectText.SetRenderStyle
 import shipreq.webapp.member.project.text._
-import shipreq.webapp.member.protocol.websocket.{CreateContentCmd, UpdateContentCmd}
 
 object ReqDetail {
   import Shared.tableNavigationFeature

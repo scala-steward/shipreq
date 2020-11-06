@@ -16,8 +16,8 @@ import shipreq.webapp.member.UiText
 import shipreq.webapp.member.feature.{EditControlsFeature, PreviewFeature}
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.derivation.NaTags
+import shipreq.webapp.member.project.protocol.websocket.UpdateContentCmd.DeleteReqs
 import shipreq.webapp.member.project.text.TextSearch
-import shipreq.webapp.member.protocol.websocket.UpdateContentCmd.DeleteReqs
 
 object DeletionForm {
   import DeletionRestorationLogic.Data

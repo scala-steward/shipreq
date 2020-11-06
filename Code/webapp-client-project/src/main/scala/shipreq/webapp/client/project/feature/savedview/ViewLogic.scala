@@ -12,8 +12,8 @@ import shipreq.webapp.member.project.data.savedview.SavedView.{Id, Name}
 import shipreq.webapp.member.project.data.savedview._
 import shipreq.webapp.member.project.event.SavedViewGD
 import shipreq.webapp.member.project.filter.Filter.Implicits.univEqFilterValid
+import shipreq.webapp.member.project.protocol.websocket.SavedViewCmd
 import shipreq.webapp.member.project.util.DataReusability._
-import shipreq.webapp.member.protocol.websocket.SavedViewCmd
 
 object ViewLogic {
 

@@ -1995,7 +1995,7 @@ object RandomData {
   // ===================================================================================================================
   object routines {
     import shipreq.webapp.member.protocol.entrypoint._
-    import shipreq.webapp.member.protocol.websocket._
+    import shipreq.webapp.member.project.protocol.websocket._
 //    import RandomData.protocol._
 
     def projectSpaInitAppData: Gen[ProjectSpaProtocols.InitAppData] =

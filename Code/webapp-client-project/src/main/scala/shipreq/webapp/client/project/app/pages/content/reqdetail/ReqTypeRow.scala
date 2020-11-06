@@ -15,7 +15,7 @@ import shipreq.webapp.client.project.feature._
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{ImplyNewReqButton, ProjectWidgets, ViewReq}
 import shipreq.webapp.member.project.data._
-import shipreq.webapp.member.protocol.websocket.CreateContentCmd
+import shipreq.webapp.member.project.protocol.websocket.CreateContentCmd
 
 private[reqdetail] object ReqTypeRow {
   import Row.{ReqType => row}

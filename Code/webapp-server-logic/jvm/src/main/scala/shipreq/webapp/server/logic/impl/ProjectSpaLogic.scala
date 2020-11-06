@@ -16,10 +16,10 @@ import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.EventOrd.Implicits._
 import shipreq.webapp.member.project.event.{ApplyEvent, EventOrd, ProjectAndOrd, VerifiedEvent}
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WsReqRes.EventResult
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
+import shipreq.webapp.member.project.protocol.websocket._
 import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint
-import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.WsReqRes.EventResult
-import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
-import shipreq.webapp.member.protocol.websocket._
 import shipreq.webapp.server.logic.algebra.{DB, MetricsAlgebra, Redis, Security, Server}
 import shipreq.webapp.server.logic.config.ScalaJsManifest
 import shipreq.webapp.server.logic.dispatch.Cookie
@@ -808,7 +808,7 @@ object ProjectSpaLogic extends StrictLogging {
     import org.apache.commons.text.StringEscapeUtils
     import scala.collection.immutable.TreeSet
     import ProjectSpaProtocols.WebSocket
-    import shipreq.webapp.member.protocol.json.v1.Latest.encoderVerifiedEvent
+    import shipreq.webapp.member.project.protocol.json.v1.Latest.encoderVerifiedEvent
 
     type WSH = WebSocketServerHelper[WebSocket#Req, WebSocket.Push]
 

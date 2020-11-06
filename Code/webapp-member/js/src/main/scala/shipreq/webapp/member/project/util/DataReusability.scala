@@ -14,11 +14,11 @@ import shipreq.webapp.member.project.event.{EventOrd, ProjectAndOrd}
 import shipreq.webapp.member.project.filter.Filter.Implicits._
 import shipreq.webapp.member.project.filter.{CompiledFilter, Filter}
 import shipreq.webapp.member.project.issue.{Issue, Issues}
+import shipreq.webapp.member.project.protocol.websocket.SavedViewCmd
 import shipreq.webapp.member.project.text.Atom.CodeBlockDetail
 import shipreq.webapp.member.project.text.Text.Equality._
 import shipreq.webapp.member.project.text.UseCaseStepFlowText.TextAndFlow
 import shipreq.webapp.member.project.text.{Atom, PlainText, ProjectText, TextSearch}
-import shipreq.webapp.member.protocol.websocket.SavedViewCmd
 
 object DataReusability extends DataReusability
 

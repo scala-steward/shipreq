@@ -14,8 +14,8 @@ import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.UiText
 import shipreq.webapp.member.project.data._
+import shipreq.webapp.member.project.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.member.project.text.TextSearch
-import shipreq.webapp.member.protocol.websocket.UpdateContentCmd
 
 /**
   * Provides users with means to apply actions in bulk, across selected requirements.

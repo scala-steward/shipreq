@@ -15,8 +15,8 @@ import shipreq.webapp.client.project.widgets.ReqTypeRulesEditor
 import shipreq.webapp.member.UiText.FieldNames
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.CustomImpFieldGD
+import shipreq.webapp.member.project.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.member.project.text.PlainText
-import shipreq.webapp.member.protocol.websocket.UpdateConfigCmd
 
 object ImpFieldEditor {
   import DataImplicits._

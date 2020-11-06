@@ -23,7 +23,7 @@ object HomeSpaProtocols {
     type Response = ProjectMetaData
 
     val ajax = {
-      import shipreq.webapp.member.protocol.binary.v1.BaseMemberData2._
+      import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData2._
 
       val picklerRequest: Pickler[Request] = implicitly
       val picklerResponse: Pickler[Response] = implicitly

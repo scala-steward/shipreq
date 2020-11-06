@@ -10,10 +10,10 @@ import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.Event._
 import shipreq.webapp.member.project.event._
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WsReqRes.{ProjectNameSet => _, _}
+import shipreq.webapp.member.project.protocol.websocket._
 import shipreq.webapp.member.project.text.PlainText
 import shipreq.webapp.member.project.util.GenericDataMacros._
-import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.WsReqRes.{ProjectNameSet => _, _}
-import shipreq.webapp.member.protocol.websocket._
 
 /**
  * Translates commands inputs into [[ActiveEvent]]s.

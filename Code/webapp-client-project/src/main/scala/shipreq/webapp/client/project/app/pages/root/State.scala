@@ -16,7 +16,7 @@ import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{NewReqButton, ReqSearch}
 import shipreq.webapp.member.feature.PreviewFeature
 import shipreq.webapp.member.project.data.{FilterDead, HideDead, Project}
-import shipreq.webapp.member.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
+import shipreq.webapp.member.project.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
 import shipreq.webapp.member.ui.{ProjectItem, Toast}
 
 sealed trait PreviewId

@@ -1,4 +1,4 @@
-package shipreq.webapp.member.protocol.websocket
+package shipreq.webapp.member.project.protocol.websocket
 
 import nyaya.gen._
 import scala.collection.mutable.ArrayBuffer

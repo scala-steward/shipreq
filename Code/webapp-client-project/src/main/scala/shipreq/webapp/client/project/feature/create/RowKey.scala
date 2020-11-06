@@ -4,7 +4,7 @@ import japgolly.scalajs.react.Reusability
 import shipreq.webapp.client.project.feature.create.{FieldKey => AnyFieldKey}
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.member.project.data._
-import shipreq.webapp.member.protocol.websocket.{CreateContentCmd, ManualIssueCmd}
+import shipreq.webapp.member.project.protocol.websocket.{CreateContentCmd, ManualIssueCmd}
 
 sealed abstract class RowKey {
   type FieldKey <: AnyFieldKey

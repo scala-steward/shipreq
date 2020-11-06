@@ -17,7 +17,7 @@ import shipreq.webapp.client.project.widgets.{ProjectWidgets, ReqTypeRulesEditor
 import shipreq.webapp.member.UiText.FieldNames
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.CustomTagFieldGD
-import shipreq.webapp.member.protocol.websocket.UpdateConfigCmd
+import shipreq.webapp.member.project.protocol.websocket.UpdateConfigCmd
 
 object TagFieldEditor {
   import DataImplicits._

@@ -13,7 +13,7 @@ import shipreq.webapp.client.project.feature.Usage
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{ProjectWidgets, ViewTags}
 import shipreq.webapp.member.project.data._
-import shipreq.webapp.member.protocol.websocket.UpdateConfigCmd.FieldUpdateOrder
+import shipreq.webapp.member.project.protocol.websocket.UpdateConfigCmd.FieldUpdateOrder
 
 object FieldList {
 

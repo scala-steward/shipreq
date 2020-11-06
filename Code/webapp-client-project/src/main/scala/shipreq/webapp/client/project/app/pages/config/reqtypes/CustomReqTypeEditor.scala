@@ -14,7 +14,7 @@ import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.member.UiText.FieldNames
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.CustomReqTypeGD
-import shipreq.webapp.member.protocol.websocket.UpdateConfigCmd
+import shipreq.webapp.member.project.protocol.websocket.UpdateConfigCmd
 import shipreq.webapp.member.ui.AutosizeTextarea
 
 private[reqtypes] object CustomReqTypeEditor {

@@ -9,8 +9,8 @@ import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.feature.{EditControlsFeature, PreviewFeature}
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.UseCaseStepGD
+import shipreq.webapp.member.project.protocol.websocket.UpdateContentCmd
 import shipreq.webapp.member.project.text.{PlainText, TextSearch}
-import shipreq.webapp.member.protocol.websocket.UpdateContentCmd
 
 object EditorArgs {
 

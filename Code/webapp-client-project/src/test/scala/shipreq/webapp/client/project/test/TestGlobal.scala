@@ -18,8 +18,8 @@ import shipreq.webapp.base.test._
 import shipreq.webapp.client.project.app.state.{Global, ProjectState}
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event._
-import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols
-import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.WsReqRes
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WsReqRes
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test._
 import shipreq.webapp.member.ui.BaseStyles

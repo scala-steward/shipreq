@@ -26,7 +26,7 @@ import shipreq.webapp.server.logic.algebra.Redis
  *
  */
 object RedisProtocolTestData {
-  import shipreq.webapp.member.protocol.json.v1.Latest._
+  import shipreq.webapp.member.project.protocol.json.v1.Latest._
   import shipreq.webapp.server.logic.protocol.RedisProtocol._
 
   private[this] val RowEvent          = "event"

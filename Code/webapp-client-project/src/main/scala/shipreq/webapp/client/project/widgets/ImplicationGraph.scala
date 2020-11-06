@@ -23,10 +23,10 @@ import shipreq.webapp.client.ww.api.WebWorkerCmd
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview.ImpGraphConfig
 import shipreq.webapp.member.project.data.savedview.ImpGraphConfig.LabelFormat
+import shipreq.webapp.member.project.protocol.websocket.UpdateContentCmd
+import shipreq.webapp.member.project.protocol.websocket.UpdateContentCmd.PatchImplications
 import shipreq.webapp.member.project.text.PlainText
 import shipreq.webapp.member.project.util.Must._
-import shipreq.webapp.member.protocol.websocket.UpdateContentCmd
-import shipreq.webapp.member.protocol.websocket.UpdateContentCmd.PatchImplications
 
 object ImplicationGraph {
 

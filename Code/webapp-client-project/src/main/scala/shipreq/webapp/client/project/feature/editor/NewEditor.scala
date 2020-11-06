@@ -18,9 +18,9 @@ import shipreq.webapp.client.project.widgets.ProjectWidgets
 import shipreq.webapp.member.feature._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.UseCaseStepGD
+import shipreq.webapp.member.project.protocol.websocket.{ManualIssueCmd, UpdateContentCmd}
 import shipreq.webapp.member.project.text._
 import shipreq.webapp.member.project.util.DataReusability._
-import shipreq.webapp.member.protocol.websocket.{ManualIssueCmd, UpdateContentCmd}
 import shipreq.webapp.member.ui.OptionalFullscreen
 
 /** Interface to start a new editor (if possible).

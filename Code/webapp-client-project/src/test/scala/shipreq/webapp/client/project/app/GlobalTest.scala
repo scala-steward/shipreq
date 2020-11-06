@@ -6,7 +6,7 @@ import shipreq.webapp.client.project.test.TestGlobal
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.Event.ProjectNameSet
 import shipreq.webapp.member.project.event._
-import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols.WsReqRes
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WsReqRes
 import utest._
 
 object GlobalTest extends TestSuite {

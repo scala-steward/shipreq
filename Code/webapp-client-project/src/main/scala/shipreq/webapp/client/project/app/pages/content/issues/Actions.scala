@@ -9,8 +9,8 @@ import shipreq.webapp.client.project.app.pages.root.Routes
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.CustomTagFieldGD
 import shipreq.webapp.member.project.issue.{ContentRef, Issue}
+import shipreq.webapp.member.project.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
 import shipreq.webapp.member.project.text.PlainText
-import shipreq.webapp.member.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
 
 sealed trait Action {
   def cmdOption: Option[Action.Cmd]

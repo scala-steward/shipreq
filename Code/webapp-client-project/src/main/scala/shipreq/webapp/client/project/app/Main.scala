@@ -15,9 +15,9 @@ import shipreq.webapp.base.protocol.websocket.WebSocketClient
 import shipreq.webapp.client.loaders.ProjectSpaLoader
 import shipreq.webapp.client.project.app.pages.root._
 import shipreq.webapp.client.project.app.state.Global
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols
 import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint
 import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint.InitData
-import shipreq.webapp.member.protocol.websocket.ProjectSpaProtocols
 import shipreq.webapp.member.ui.{BaseStyles, OptionalFullscreen, ReauthenticationModal}
 
 @JSExportTopLevel(ProjectSpaEntryPoint.Name)

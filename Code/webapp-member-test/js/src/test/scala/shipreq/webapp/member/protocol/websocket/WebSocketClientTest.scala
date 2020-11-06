@@ -1,4 +1,4 @@
-package shipreq.webapp.member.protocol.websocket
+package shipreq.webapp.member.project.protocol.websocket
 
 import japgolly.scalajs.react.AsyncCallback
 import scala.util.Try

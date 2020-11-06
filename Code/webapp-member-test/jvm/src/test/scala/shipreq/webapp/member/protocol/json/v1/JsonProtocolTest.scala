@@ -1,4 +1,4 @@
-package shipreq.webapp.member.protocol.json.v1
+package shipreq.webapp.member.project.protocol.json.v1
 
 import nyaya.gen.Gen
 import shipreq.base.test.JsonTestUtil._

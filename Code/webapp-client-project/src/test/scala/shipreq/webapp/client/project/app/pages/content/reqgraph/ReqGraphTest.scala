@@ -8,7 +8,7 @@ import shipreq.webapp.client.project.app.pages.root.Routes.Page
 import shipreq.webapp.client.project.test._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.Event
-import shipreq.webapp.member.protocol.websocket.UpdateContentCmd.PatchImplications
+import shipreq.webapp.member.project.protocol.websocket.UpdateContentCmd.PatchImplications
 import shipreq.webapp.member.test.project.UnsafeTypes.nesd
 import shipreq.webapp.member.test.project.{SampleProject3, SampleProject8}
 import utest._
