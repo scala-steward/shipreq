@@ -400,6 +400,9 @@ object ImplicationGraph {
       }
     }
 
+    private def isLeftMouseButton(e: MouseEvent): Boolean =
+      e.button == 0
+
     private def getSelectedEdge(): Option[svg.Element] =
       Option(root.querySelector("." + *.clsSelectedEdge).asSvgEl)
 
@@ -467,15 +470,17 @@ object ImplicationGraph {
 
       DomUtil.unfocus.runNow()
 
-      val edge = ev.currentTarget.asSvgEl.parentElement
-      if (edge.classList.contains(*.clsSelectedEdge)) {
-        // De-select
-        edge.classList.remove(*.clsSelectedEdge)
-      } else {
-        // Select
-        for (prev <- getSelectedEdge())
-          prev.classList.remove(*.clsSelectedEdge)
-        edge.classList.add(*.clsSelectedEdge)
+      if (isLeftMouseButton(ev)) {
+        val edge = ev.currentTarget.asSvgEl.parentElement
+        if (edge.classList.contains(*.clsSelectedEdge)) {
+          // De-select
+          edge.classList.remove(*.clsSelectedEdge)
+        } else {
+          // Select
+          for (prev <- getSelectedEdge())
+            prev.classList.remove(*.clsSelectedEdge)
+          edge.classList.add(*.clsSelectedEdge)
+        }
       }
 
       // Prevent clicks being interpreted by ReactSvgPanZoom
@@ -495,7 +500,7 @@ object ImplicationGraph {
       eventLogger(_.debug("onNodeClick: ", ev))
 
       // Prevent mouseup being treated as a click as well
-      if (!runningInUnitTest) {
+      if (!runningInUnitTest && isLeftMouseButton(ev)) {
         val msSinceLastMouseUp = System.currentTimeMillis() - lastMouseUpMs
         if (msSinceLastMouseUp <= 200) {
           ev.preventDefault()
@@ -506,7 +511,7 @@ object ImplicationGraph {
 
     private val onKeyPress: js.Function1[KeyboardEvent, Unit] = ev => {
       eventLogger(_.debug("onKeyPress: ", ev))
-      if (root ne null) {
+      if ((root ne null) && !ev.altKey && !ev.ctrlKey && !ev.shiftKey && !ev.metaKey) {
         ev.key.toUpperCase match {
 
           case "DELETE" =>
@@ -529,7 +534,7 @@ object ImplicationGraph {
 
       DomUtil.unfocus.runNow()
 
-      if (root ne null) {
+      if ((root ne null) && isLeftMouseButton(ev)) {
 
         // DragSrc might still be specified because an async commit is in progress
         if (dragSrc.value.isEmpty) {
@@ -551,10 +556,10 @@ object ImplicationGraph {
           else
             setDragDelay(Some(timers.setTimeout(200)(action())))
         }
-      }
 
-      // Prevent ReactSvgPanZoom intercepting the drag
-      ev.stopPropagation()
+        // Prevent ReactSvgPanZoom intercepting the drag
+        ev.stopPropagation()
+      }
     }
 
     private val onDragArrowMouseMove: js.Function1[MouseEvent, Unit] = ev => {
@@ -566,7 +571,7 @@ object ImplicationGraph {
     }
 
     private val onNodeMouseMove: js.Function1[MouseEvent, Unit] = ev => {
-      if (root ne null) {
+      if ((root ne null) && isLeftMouseButton(ev)) {
         for (ds <- dragSrc.value) {
           eventLogger(_.debug("onNodeMouseMove: ", ev))
 
@@ -614,7 +619,7 @@ object ImplicationGraph {
     }
 
     private val onRootMouseMove: js.Function1[MouseEvent, Unit] = ev => {
-      if (root ne null) {
+      if ((root ne null) && isLeftMouseButton(ev)) {
         if (dragSrc.value.isDefined) {
           eventLogger(_.debug("onRootMouseMove: ", ev))
 
@@ -628,7 +633,7 @@ object ImplicationGraph {
 
     private val onRootMouseUp: js.Function1[MouseEvent, Unit] = ev => {
       eventLogger(_.debug("onRootMouseUp: ", ev))
-      if (root ne null) {
+      if ((root ne null) && isLeftMouseButton(ev)) {
         for (ds <- dragSrc.value) {
 
           (dragTgt.value, args) match {
