@@ -2,7 +2,7 @@ package shipreq.webapp.server.logic.algebra
 
 import java.time.{Duration, Instant}
 import shipreq.base.util.ErrorMsg
-import shipreq.webapp.server.logic.data.IP
+import shipreq.webapp.base.data.IP
 
 object Server {
 
@@ -36,6 +36,7 @@ object Server {
   }
 
   object ErrorMsgs {
+
     val ShouldNeverHappen: ErrorMsg =
       ErrorMsg("Something technical went wrong on our server.")
 

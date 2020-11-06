@@ -24,7 +24,7 @@ import shipreq.webapp.server.db.DbInterpreter._
 import shipreq.webapp.server.logic.algebra.DB
 import shipreq.webapp.server.logic.algebra.DB.EventFilter
 import shipreq.webapp.server.logic.config.ServerLogicConfig
-import shipreq.webapp.server.logic.data.{IP, PasswordAndSalt, PasswordHash, Salt}
+import shipreq.webapp.server.logic.data._
 import shipreq.webapp.server.logic.util.Obfuscators
 
 final class DbInterpreter(implicit config: ServerLogicConfig.Security)

@@ -18,7 +18,7 @@ import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.server.logic.algebra._
 import shipreq.webapp.server.logic.config.{ScalaJsManifest, ServerLogicConfig}
-import shipreq.webapp.server.logic.data.{IP, PasswordAndSalt, PasswordHash, Salt}
+import shipreq.webapp.server.logic.data.{PasswordAndSalt, PasswordHash, Salt}
 import shipreq.webapp.server.logic.dispatch.Cookie
 import shipreq.webapp.server.logic.event.ApplyEventAlgebra
 import shipreq.webapp.server.logic.impl._

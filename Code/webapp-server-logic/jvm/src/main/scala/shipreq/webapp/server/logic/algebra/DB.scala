@@ -5,7 +5,7 @@ import scalaz.~>
 import shipreq.webapp.base.data._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.{ActiveEvent, EventOrd, VerifiedEvent}
-import shipreq.webapp.server.logic.data.{IP, PasswordAndSalt}
+import shipreq.webapp.server.logic.data.PasswordAndSalt
 
 /**
   * Naming conventions:

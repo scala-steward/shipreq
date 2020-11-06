@@ -9,8 +9,8 @@ import scala.concurrent.blocking
 import scalaz.syntax.monad._
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.{HasLogger, MdcUtil}
+import shipreq.webapp.base.data.IP
 import shipreq.webapp.server.logic.algebra.Server
-import shipreq.webapp.server.logic.data.IP
 
 object ServerInterpreter extends Server.Algebra[Fx] with HasLogger {
 
