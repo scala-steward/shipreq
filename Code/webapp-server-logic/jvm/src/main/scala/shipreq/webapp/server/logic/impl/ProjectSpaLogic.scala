@@ -163,6 +163,7 @@ object ProjectSpaLogic extends StrictLogging {
         } yield o.map { i =>
           ProjectSpaEntryPoint.InitData(
             username       = username,
+            userId         = Obfuscators.userId.obfuscate(uid),
             projectId      = Obfuscators.projectId.obfuscate(pid),
             projectName    = i.name,
             assetManifest  = am,

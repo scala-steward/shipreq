@@ -2013,11 +2013,12 @@ object RandomData {
     val projectSpaInitPageData: Gen[ProjectSpaEntryPoint.InitData] =
       for {
         u <- username
-        i <- projectIdPublic
+        i <- userIdPublic
+        p <- projectIdPublic
         n <- projectName
         a <- genAssetManifest
         k <- genClientSideProjectEncryptionKey
-      } yield ProjectSpaEntryPoint.InitData(u, i, n, a, "/j/ww.js", k)
+      } yield ProjectSpaEntryPoint.InitData(u, i, p, n, a, "/j/ww.js", k)
 
 //    class CrudActionGens[I, V](idG: Gen[I], vG: Gen[V]) {
 //      lazy val create  = vG.map(CrudAction.Create[I, V])
