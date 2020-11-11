@@ -95,10 +95,9 @@ dockerfile in docker := {
         case (p, None)    if p ==          scalaJsPathPublic  => (85, false)
         case (p, None)    if p ==          scalaJsPathWw      => (84, false) // 472K
       //case (p, None)    if p endsWith   ".js"               => (83, false) // 808K *
-        case (_, Some(l)) if l startsWith "webapp-server"     => (76, true)  // 1.1M *
-        case (_, Some(l)) if l startsWith "webapp-"           => (74, true)  // 3.2M ***
+        case (_, Some(l)) if l startsWith "webapp"            => (74, true)  // 4.3M ****
         case (_, Some(l)) if l startsWith "taskman"           => (66, true)  // 128K
-        case (_, Some(l)) if l startsWith "base-"             => (60, true)  // 924K *
+        case (_, Some(l)) if l startsWith "base"              => (60, true)  // 924K *
         case (_, Some(l)) if l matches     japgollyLib        => (54, false) // 896K *
       //case (p, None)    if p endsWith   ".css"              => (35, false) // 392K
       //case (p, None)    if p matches     images             => (33, false) // 136K
