@@ -1,21 +1,13 @@
 package shipreq.webapp.member.protocol.binary
 
-import japgolly.scalajs.react.AsyncCallback
 import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.Node
 import shipreq.base.util.BinaryData
 import utest._
+import shipreq.webapp.member.test.TestEncryption
+import shipreq.webapp.member.test.TestEncryption.UnsafeTypes._
 
 object EncryptionTest extends TestSuite {
-
-  private def newEncryption(key: BinaryData): AsyncCallback[Encryption] =
-    Encryption(Node.webCrypto, key).map(_.getOrThrow("webCrypto not available"))
-
-  private implicit def binaryDataFromString(str: String): BinaryData = {
-    val bytes = str.getBytes
-    assert(bytes.length == str.length)
-    BinaryData.unsafeFromArray(bytes)
-  }
 
   override def tests = Tests {
 
@@ -27,15 +19,15 @@ object EncryptionTest extends TestSuite {
       val src2 = "awesome"
 
       for {
-        e1    <- newEncryption(key1)
+        e1    <- TestEncryption(key1)
         enc1  <- e1.encrypt(src1)
         enc1b <- e1.encrypt(src1)
         dec1  <- e1.decrypt(enc1)
         dec1b <- e1.decrypt(enc1b)
 
-        e2   <- newEncryption(key2)
+        e2   <- TestEncryption(key2)
         enc2 <- e2.encrypt(src2)
-        e2b  <- newEncryption(key2)
+        e2b  <- TestEncryption(key2)
         dec2 <- e2b.decrypt(enc2)
 
         bad12 <- e1.decrypt(enc2).attempt

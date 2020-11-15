@@ -8,6 +8,7 @@ import shipreq.webapp.member.protocol.indexeddb.IndexedDb
 object TestIndexedDb {
   import IndexedDb._
 
+  /** Unfortunately, this isn't isolated but has process-scoped shared-state via the global window.indexedDB. */
   def apply(): IndexedDb = {
     Node.loadFakeIndexedDb()
     IndexedDb(window.indexedDB)
