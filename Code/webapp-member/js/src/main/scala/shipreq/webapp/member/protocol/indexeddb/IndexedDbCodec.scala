@@ -5,7 +5,7 @@ import scala.scalajs.js
 import scala.scalajs.js.typedarray.ArrayBuffer
 import shipreq.base.util.BinaryData
 import shipreq.base.util.JsExt._
-import shipreq.webapp.member.protocol.binary.Compression
+import shipreq.webapp.member.protocol.binary.{Compression, Encryption}
 
 final case class IndexedDbCodec[A](encode: A => AsyncCallback[js.Any],
                                    decode: Any => AsyncCallback[A]) {
@@ -16,12 +16,17 @@ final case class IndexedDbCodec[A](encode: A => AsyncCallback[js.Any],
       decode = d => decode(d).map(onDecode),
     )
 
+  def xmapAsync[B](onDecode: A => AsyncCallback[B])(onEncode: B => AsyncCallback[A]): IndexedDbCodec[B] =
+    IndexedDbCodec[B](
+      encode = onEncode(_).flatMap(encode),
+      decode = decode(_).flatMap(onDecode),
+    )
+
   def compress(c: Compression)(implicit ev: IndexedDbCodec[A] =:= IndexedDbCodec[BinaryData]): IndexedDbCodec[BinaryData] =
     ev(this).xmap(c.decompressOrThrow)(c.compress)
 
-//  TODO def encrypt(implicit ev: IndexedDbCodec[A] =:= IndexedDbCodec[BinaryData]): IndexedDbCodec[BinaryData] = {
-//    val self = ev(this)
-//  }
+  def encrypt(e: Encryption)(implicit ev: IndexedDbCodec[A] =:= IndexedDbCodec[BinaryData]): IndexedDbCodec[BinaryData] =
+    ev(this).xmapAsync(e.decrypt)(e.encrypt)
 
 //  TODO def pickle[B](implicit ev: IndexedDbCodec[A] =:= IndexedDbCodec[BinaryData]): IndexedDbCodec[B] = {
 //    val self = ev(this)
