@@ -12,6 +12,9 @@ object JsExt {
       val a = self.asInstanceOf[js.Dynamic]
       (!a).asInstanceOf[Boolean]
     }
+
+    @inline def truthy: Boolean =
+      !falsy
   }
 
   implicit class JsArrayExt[A](private val self: js.Array[A]) extends AnyVal {
