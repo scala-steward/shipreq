@@ -40,12 +40,13 @@ object IndexedDbTest extends TestSuite {
       }
     }
 
-    "stack" - asyncTest {
+    "pickleCompressEncrypt" - asyncTest {
       import shipreq.webapp.member.project.protocol.binary.v1.Latest.picklerProject
       import SampleProject8.{project => project1}
       import SampleProject5.{project => project2}
       import SafePickler.ConstructionHelperImplicits._
       import TestEncryption.UnsafeTypes._
+      import IndexedDbCodec.Async.{binary, pickleCompressEncrypt}
 
       implicit val safePicklerProject: SafePickler[Project] =
         picklerProject.asV1(0).withMagicNumbers(0x89827590, 0x8858F858)
@@ -61,9 +62,9 @@ object IndexedDbTest extends TestSuite {
       for {
         enc1   <- TestEncryption("a" * 32)
         enc2   <- TestEncryption("b" * 32)
-        store13 = ObjectStoreDef.Async(storeName, IndexedDbCodec.default[Project](zip3, enc1))
-        store19 = ObjectStoreDef.Async(storeName, IndexedDbCodec.default[Project](zip9, enc1))
-        store2  = ObjectStoreDef.Async(storeName, IndexedDbCodec.default[Project](zip3, enc2))
+        store13 = ObjectStoreDef.Async(storeName, pickleCompressEncrypt[Project](zip3, enc1).apply(binary))
+        store19 = ObjectStoreDef.Async(storeName, pickleCompressEncrypt[Project](zip9, enc1).apply(binary))
+        store2  = ObjectStoreDef.Async(storeName, pickleCompressEncrypt[Project](zip3, enc2).apply(binary))
         db13   <- TestIndexedDb(dbName, store13)
         db19   <- TestIndexedDb(dbName, store19)
         db2    <- TestIndexedDb(dbName, store2)
