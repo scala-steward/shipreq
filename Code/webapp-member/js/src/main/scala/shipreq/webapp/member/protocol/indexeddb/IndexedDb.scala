@@ -226,6 +226,15 @@ object IndexedDb {
     * supported and will result in IndexedDB automatically committing and closing the transaction, in which case,
     * further interaction with the transaction will result in a runtime error.
     *
+    * Therefore, returning [[AsyncCallback]] from within transactions is dangerous because it allows composition of
+    * both kinds of asynchronicity. To avoid this, we use this embedded language and don't publicly expose its
+    * interpretation/translation to [[AsyncCallback]]. From the call-site's point of view, a `Txn[A]` is completely
+    * opaque.
+    *
+    * This also has a nice side-effect of ensuring that transaction completion is always awaited because we do it in the
+    * transaction functions right after interpretation. Otherwise, the call-sites would always need to remember to do it
+    * if live transaction access were exposed.
+    *
     * @tparam A The return type.
     */
   sealed trait Txn[A] {
