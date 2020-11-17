@@ -263,13 +263,13 @@ object IndexedDb {
               import s.defn.{keyCodec, Key}
               getStore(s).flatMap { store =>
                 asyncRequest(store.asInstanceOf[IDBObjectStoreMissing].getAllKeys()) { req =>
-                  val rawKeys = req.result.asInstanceOf[js.Array[IndexedDbKey.Raw]]
+                  val rawKeys = req.result.asInstanceOf[js.Array[js.Any]]
                   val keys = new Array[Key](rawKeys.length)
                   var i = rawKeys.length
                   while (i > 0) {
                     i -= 1
                     val rawKey = rawKeys(i)
-                    val k = keyCodec.decode(IndexedDbKey(rawKey)).runNow() // safe in asyncRequest onSuccess
+                    val k = keyCodec.decode(IndexedDbKey.fromJs(rawKey)).runNow() // safe in asyncRequest onSuccess
                     keys(i) = k
                   }
                   ArraySeq.unsafeWrapArray(keys)
