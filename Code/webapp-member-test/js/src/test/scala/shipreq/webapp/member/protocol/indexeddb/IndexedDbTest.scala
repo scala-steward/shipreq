@@ -15,7 +15,7 @@ object IndexedDbTest extends TestSuite {
   override def tests = Tests {
 
     "basicSync" - asyncTest {
-      val store = ObjectStoreDef.Sync("test", IndexedDbCodec.string)
+      val store = ObjectStoreDef.Sync("test", ValueCodec.string)
       for {
         db   <- TestIndexedDb(store)
         _    <- db.add(store)(1, "hello")
@@ -28,7 +28,7 @@ object IndexedDbTest extends TestSuite {
     }
 
     "basicAsync" - asyncTest {
-      val store = ObjectStoreDef.Async("test", IndexedDbCodec.string.async)
+      val store = ObjectStoreDef.Async("test", ValueCodec.string.async)
       for {
         db   <- TestIndexedDb(store)
         _    <- db.add(store)(1, "hello")
@@ -46,7 +46,7 @@ object IndexedDbTest extends TestSuite {
       import SampleProject5.{project => project2}
       import SafePickler.ConstructionHelperImplicits._
       import TestEncryption.UnsafeTypes._
-      import IndexedDbCodec.Async.{binary, pickleCompressEncrypt}
+      import ValueCodec.Async.{binary, pickleCompressEncrypt}
 
       implicit val safePicklerProject: SafePickler[Project] =
         picklerProject.asV1(0).withMagicNumbers(0x89827590, 0x8858F858)

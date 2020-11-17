@@ -6,14 +6,14 @@ import shipreq.base.test.Node.asyncTest
 import shipreq.base.util.BinaryData
 import utest._
 
-object IndexedDbCodecTest extends TestSuite {
+object ValueCodecTest extends TestSuite {
 
   override def tests = Tests {
 
     // Note: pickleCompressEncrypt is covered in IndexedDbTest
 
     "versionedBinary" - asyncTest {
-      import IndexedDbCodec.Async._
+      import ValueCodec.Async._
       type A = Int
 
       val codec1: BinaryLayer[A] = _.pickleBasic[Int]
@@ -39,8 +39,8 @@ object IndexedDbCodecTest extends TestSuite {
         assert(res2v1.isLeft)
         assert(res0.isLeft)
 
-        s"""bin1   = ${IndexedDbCodec.binary.decode(bin1).runNow()}
-           |bin2   = ${IndexedDbCodec.binary.decode(bin2).runNow()}
+        s"""bin1   = ${ValueCodec.binary.decode(bin1).runNow()}
+           |bin2   = ${ValueCodec.binary.decode(bin2).runNow()}
            |res2v1 = $res2v1
            |res0   = $res0
            |""".stripMargin.trim

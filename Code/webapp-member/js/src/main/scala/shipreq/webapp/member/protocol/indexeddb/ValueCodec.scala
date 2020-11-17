@@ -11,43 +11,43 @@ import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.binary.v1.BaseData.unsupportedVer
 import shipreq.webapp.member.protocol.binary.{Compression, Encryption}
 
-final case class IndexedDbCodec[A](encode: A => CallbackTo[js.Any],
-                                   decode: js.Any => CallbackTo[A]) {
+final case class ValueCodec[A](encode: A => CallbackTo[js.Any],
+                               decode: js.Any => CallbackTo[A]) {
 
-  def xmap[B](onDecode: A => B)(onEncode: B => A): IndexedDbCodec[B] =
+  def xmap[B](onDecode: A => B)(onEncode: B => A): ValueCodec[B] =
     // Delegating because decoding can fail and must be wrapped to be pure
     xmapSync(
       a => CallbackTo(onDecode(a)))(
       b => CallbackTo(onEncode(b)))
 
-  def xmapSync[B](onDecode: A => CallbackTo[B])(onEncode: B => CallbackTo[A]): IndexedDbCodec[B] =
-    IndexedDbCodec[B](
+  def xmapSync[B](onDecode: A => CallbackTo[B])(onEncode: B => CallbackTo[A]): ValueCodec[B] =
+    ValueCodec[B](
       encode = onEncode(_).flatMap(encode),
       decode = decode(_).flatMap(onDecode))
 
-  def async: IndexedDbCodec.Async[A] =
-    IndexedDbCodec.Async(
+  def async: ValueCodec.Async[A] =
+    ValueCodec.Async(
       encode = encode.andThen(_.asAsyncCallback),
       decode = decode.andThen(_.asAsyncCallback))
 
-  type ThisIsBinary = IndexedDbCodec[A] =:= IndexedDbCodec[BinaryData]
+  type ThisIsBinary = ValueCodec[A] =:= ValueCodec[BinaryData]
 
-  def compress(c: Compression)(implicit ev: ThisIsBinary): IndexedDbCodec[BinaryData] =
+  def compress(c: Compression)(implicit ev: ThisIsBinary): ValueCodec[BinaryData] =
     ev(this).xmap(c.decompressOrThrow)(c.compress)
 
-  def pickle[B](implicit pickler: SafePickler[B], ev: ThisIsBinary): IndexedDbCodec[B] =
+  def pickle[B](implicit pickler: SafePickler[B], ev: ThisIsBinary): ValueCodec[B] =
     ev(this).xmap(pickler.decodeOrThrow)(pickler.encode)
 }
 
-object IndexedDbCodec {
+object ValueCodec {
 
-  val binary: IndexedDbCodec[BinaryData] =
+  val binary: ValueCodec[BinaryData] =
     apply(
       encode = b => CallbackTo.pure(b.unsafeArrayBuffer),
       decode = d => CallbackTo(BinaryData.unsafeFromArrayBuffer(d.asInstanceOf[ArrayBuffer]))
     )
 
-  lazy val string: IndexedDbCodec[String] =
+  lazy val string: ValueCodec[String] =
     apply(
       encode = s => CallbackTo.pure(s),
       decode = d => CallbackTo(
@@ -95,7 +95,7 @@ object IndexedDbCodec {
 
   object Async {
 
-    val binary = IndexedDbCodec.binary.async
+    val binary = ValueCodec.binary.async
 
     type BinaryLayer[A] = Async[BinaryData] => Async[A]
 
@@ -106,7 +106,7 @@ object IndexedDbCodec {
       val decoderIndices  = decoders.indices
       val latestVer       = decoders.length - 1
       val latestVerHeader = BinaryData.byte(latestVer.toByte)
-      val encoder         = layers.last(IndexedDbCodec.binary.xmap[BinaryData](_ => null)(latestVerHeader ++ _).async)
+      val encoder         = layers.last(ValueCodec.binary.xmap[BinaryData](_ => null)(latestVerHeader ++ _).async)
 
       def decode(bin: BinaryData): AsyncCallback[A] =
         AsyncCallback.byName {
