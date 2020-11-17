@@ -22,13 +22,13 @@ object TestIndexedDb {
     instance().open(name)
   }
 
-  def apply(name: String, stores: ObjectStoreDef[_]*): AsyncCallback[IndexedDb.Database] =
+  def apply(name: String, stores: ObjectStoreDef[_, _]*): AsyncCallback[IndexedDb.Database] =
     apply(DatabaseName(name), stores: _*)
 
-  def apply(name: DatabaseName, stores: ObjectStoreDef[_]*): AsyncCallback[IndexedDb.Database] =
+  def apply(name: DatabaseName, stores: ObjectStoreDef[_, _]*): AsyncCallback[IndexedDb.Database] =
     instance().open(name)(createStoresOnOpen(stores: _*))
 
-  def apply(stores: ObjectStoreDef[_]*): AsyncCallback[IndexedDb.Database] =
+  def apply(stores: ObjectStoreDef[_, _]*): AsyncCallback[IndexedDb.Database] =
     fresh(createStoresOnOpen(stores: _*))
 
   private implicit def throwableStrings(s: String): Throwable =
@@ -40,14 +40,12 @@ object TestIndexedDb {
       blocked = Callback.throwException("IndexedDb.open.blocked called")
     )
 
-  def createStoresOnOpen(stores: ObjectStoreDef[_]*): OpenCallbacks =
+  def createStoresOnOpen(stores: ObjectStoreDef[_, _]*): OpenCallbacks =
     unusedOpenCallbacks.copy(
       upgradeNeeded = e => Callback.traverse(stores)(e.db.createObjectStore(_))
     )
 
   object UnsafeTypes {
     implicit def autoIndexedDbDatabaseName(s: String): DatabaseName = DatabaseName(s)
-    implicit def autoIndexedDbKeyFromString(s: String): Key = Key(s)
-    implicit def autoIndexedDbKeyFromInt(i: Int): Key = Key(i)
   }
 }

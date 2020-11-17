@@ -10,12 +10,11 @@ import shipreq.webapp.member.test.{TestEncryption, TestIndexedDb}
 import utest._
 
 object IndexedDbTest extends TestSuite {
-  import TestIndexedDb.UnsafeTypes._
 
   override def tests = Tests {
 
     "basicSync" - asyncTest {
-      val store = ObjectStoreDef.Sync("test", ValueCodec.string)
+      val store = ObjectStoreDef.Sync("test", KeyCodec.int, ValueCodec.string)
       for {
         db   <- TestIndexedDb(store)
         _    <- db.add(store)(1, "hello")
@@ -28,7 +27,7 @@ object IndexedDbTest extends TestSuite {
     }
 
     "basicAsync" - asyncTest {
-      val store = ObjectStoreDef.Async("test", ValueCodec.string.async)
+      val store = ObjectStoreDef.Async("test", KeyCodec.int, ValueCodec.string.async)
       for {
         db   <- TestIndexedDb(store)
         _    <- db.add(store)(1, "hello")
@@ -56,15 +55,16 @@ object IndexedDbTest extends TestSuite {
 
       val dbName = "IndexedDbTest_stack"
       val storeName = "s"
+      val kc = KeyCodec.int
       val key1 = 123
       val key2 = 321
 
       for {
         enc1   <- TestEncryption("a" * 32)
         enc2   <- TestEncryption("b" * 32)
-        store13 = ObjectStoreDef.Async(storeName, pickleCompressEncrypt[Project](zip3, enc1).apply(binary))
-        store19 = ObjectStoreDef.Async(storeName, pickleCompressEncrypt[Project](zip9, enc1).apply(binary))
-        store2  = ObjectStoreDef.Async(storeName, pickleCompressEncrypt[Project](zip3, enc2).apply(binary))
+        store13 = ObjectStoreDef.Async(storeName, kc, pickleCompressEncrypt[Project](zip3, enc1).apply(binary))
+        store19 = ObjectStoreDef.Async(storeName, kc, pickleCompressEncrypt[Project](zip9, enc1).apply(binary))
+        store2  = ObjectStoreDef.Async(storeName, kc, pickleCompressEncrypt[Project](zip3, enc2).apply(binary))
         db13   <- TestIndexedDb(dbName, store13)
         db19   <- TestIndexedDb(dbName, store19)
         db2    <- TestIndexedDb(dbName, store2)

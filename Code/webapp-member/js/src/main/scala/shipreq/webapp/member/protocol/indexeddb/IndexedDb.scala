@@ -4,7 +4,6 @@ import japgolly.scalajs.react._
 import org.scalajs.dom.raw._
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSGlobal
-import scala.scalajs.js.|
 import scala.util.{Failure, Success, Try}
 
 final class IndexedDb(raw: IDBFactory) {
@@ -47,10 +46,6 @@ object IndexedDb {
 
   final case class DatabaseName(value: String)
 
-  final case class Key(value: Int | String) {
-    def asJs = value.asInstanceOf[js.Any]
-  }
-
   // ===================================================================================================================
 
   import Internals._
@@ -90,7 +85,7 @@ object IndexedDb {
     val transactionRW: TxnStep1 = new TxnStep1("readwrite")
 
     final class TxnStep1 private[Database] (mode: String) {
-      def apply(stores: ObjectStoreDef[_]*): TxnStep2 = {
+      def apply(stores: ObjectStoreDef[_, _]*): TxnStep2 = {
         val storeArray = new js.Array[String]
         stores.foreach(s => storeArray.push(s.name))
         new TxnStep2(mode, storeArray)
@@ -132,38 +127,40 @@ object IndexedDb {
 
     } // TxnStep2
 
-    def add[A](store: ObjectStoreDef.Sync[A])(key: Key, value: A): AsyncCallback[Unit] =
+    def add[K, V](store: ObjectStoreDef.Sync[K, V])(key: K, value: V): AsyncCallback[Unit] =
       transactionRW(store)(_.objectStore(store).flatMap(_.add(key, value)))
 
-    def add[A](store: ObjectStoreDef.Async[A])(key: Key, value: A): AsyncCallback[Unit] =
+    def add[K, V](store: ObjectStoreDef.Async[K, V])(key: K, value: V): AsyncCallback[Unit] =
       store.encode(value).flatMap(value =>
         transactionRW(store)(_.objectStore(store).flatMap(_.add(key, value))))
 
-    def get[A](store: ObjectStoreDef.Sync[A])(key: Key): AsyncCallback[Option[A]] =
+    def get[K, V](store: ObjectStoreDef.Sync[K, V])(key: K): AsyncCallback[Option[V]] =
       transactionRO(store)(_.objectStore(store).flatMap(_.get(key)))
 
-    def get[A](store: ObjectStoreDef.Async[A])(key: Key): AsyncCallback[Option[A]] =
+    def get[K, V](store: ObjectStoreDef.Async[K, V])(key: K): AsyncCallback[Option[V]] =
       transactionRO(store)(_.objectStore(store).flatMap(_.get(key)))
         .flatMap(AsyncCallback.traverseOption(_)(_.decode))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
   final class DatabaseInVersionChange(raw: IDBDatabase) {
-    def createObjectStore[A](defn: ObjectStoreDef[A]): Callback =
+    def createObjectStore[K, V](defn: ObjectStoreDef[K, V]): Callback =
       Callback {
         raw.createObjectStore(defn.name)
       }
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  final class ObjectStore[A](val defn: ObjectStoreDef.Sync[A]) {
-    import defn.codec
+  final class ObjectStore[K, V](val defn: ObjectStoreDef.Sync[K, V]) {
+    import defn.{keyCodec, valueCodec}
 
-    def add(key: Key, value: A): Txn[Unit] =
-      Txn.EvalCallback(codec.encode(value)).flatMap(Txn.StoreAdd(this, key, _))
+    def add(key: K, value: V): Txn[Unit] = {
+      val k = keyCodec.encode(key)
+      Txn.EvalCallback(valueCodec.encode(value)).flatMap(Txn.StoreAdd(this, k, _))
+    }
 
-    def get(key: Key): Txn[Option[A]] =
-      Txn.StoreGet(this, key)
+    def get(key: K): Txn[Option[V]] =
+      Txn.StoreGet(this, keyCodec.encode(key))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -173,10 +170,10 @@ object IndexedDb {
     def eval[A](c: CallbackTo[A]): Txn[A] =
       Txn.EvalCallback(c)
 
-    def objectStore[A](s: ObjectStoreDef.Sync[A]): Txn[ObjectStore[A]] =
+    def objectStore[K, V](s: ObjectStoreDef.Sync[K, V]): Txn[ObjectStore[K, V]] =
       Txn.GetStore(s)
 
-    @inline def objectStore[A](s: ObjectStoreDef.Async[A]): Txn[ObjectStore[s.Value]] =
+    @inline def objectStore[K, V](s: ObjectStoreDef.Async[K, V]): Txn[ObjectStore[K, s.Value]] =
       objectStore(s.sync)
   }
 
@@ -203,18 +200,18 @@ object IndexedDb {
   }
 
   private object Txn {
-    final case class Map         [A, B](from: Txn[A], f: A => B)                        extends Txn[B]
-    final case class FlatMap     [A, B](from: Txn[A], f: A => Txn[B])                   extends Txn[B]
-    final case class EvalCallback[A]   (callback: CallbackTo[A])                        extends Txn[A]
-    final case class GetStore    [A]   (defn: ObjectStoreDef.Sync[A])                   extends Txn[ObjectStore[A]]
-    final case class StoreAdd          (store: ObjectStore[_], key: Key, value: js.Any) extends Txn[Unit]
-    final case class StoreGet    [A]   (store: ObjectStore[A], key: Key)                extends Txn[Option[A]]
+    final case class Map         [A, B](from: Txn[A], f: A => B)                                    extends Txn[B]
+    final case class FlatMap     [A, B](from: Txn[A], f: A => Txn[B])                               extends Txn[B]
+    final case class EvalCallback[A]   (callback: CallbackTo[A])                                    extends Txn[A]
+    final case class GetStore    [K, V](defn: ObjectStoreDef.Sync[K, V])                            extends Txn[ObjectStore[K, V]]
+    final case class StoreAdd          (store: ObjectStore[_, _], key: IndexedDbKey, value: js.Any) extends Txn[Unit]
+    final case class StoreGet    [K, V](store: ObjectStore[K, V], key: IndexedDbKey)                extends Txn[Option[V]]
 
     def interpret[A](txn: IDBTransaction, dsl: Txn[A]): AsyncCallback[A] =
       AsyncCallback.byName {
         val stores = js.Dynamic.literal().asInstanceOf[js.Dictionary[IDBObjectStore]]
 
-        def getStore(s: ObjectStore[_]) =
+        def getStore(s: ObjectStore[_, _]) =
           AsyncCallback.delay(stores.get(s.defn.name).get)
 
         def interpret[B](dsl: Txn[B]): AsyncCallback[B] =
@@ -229,7 +226,7 @@ object IndexedDb {
                   if (js.isUndefined(result))
                     CallbackTo.pure(None)
                   else
-                    s.defn.codec.decode(result).map(Some(_))
+                    s.defn.valueCodec.decode(result).map(Some(_))
                 }
               }
 
