@@ -16,18 +16,21 @@ object IndexedDbTest extends TestSuite {
     "basicSync" - asyncTest {
       val store = ObjectStoreDef.Sync("test", KeyCodec.int, ValueCodec.string)
       for {
-        db   <- TestIndexedDb(store)
-        _    <- db.add(store)(1, "hello")
-        _    <- db.add(store)(3, "three")
-        get1 <- db.get(store)(1)
-        get2 <- db.get(store)(2)
-        get3 <- db.get(store)(3)
-        keys <- db.getAllKeys(store)
+        db    <- TestIndexedDb(store)
+        _     <- db.add(store)(1, "hello")
+        _     <- db.add(store)(3, "three")
+        get1  <- db.get(store)(1)
+        get2  <- db.get(store)(2)
+        get3  <- db.get(store)(3)
+        keys1 <- db.getAllKeys(store)
+        _     <- db.delete(store)(1)
+        keys2 <- db.getAllKeys(store)
       } yield {
         assertEq(get1, Some("hello"))
         assertEq(get2, None)
         assertEq(get3, Some("three"))
-        assertSeqIgnoreOrder(keys)(1, 3)
+        assertSeqIgnoreOrder(keys1)(1, 3)
+        assertSeqIgnoreOrder(keys2)(3)
       }
     }
 

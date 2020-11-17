@@ -145,6 +145,9 @@ object IndexedDb {
 
     def getAllKeys[K, V](store: ObjectStoreDef[K, V]): AsyncCallback[ArraySeq[K]] =
       transactionRO(store)(_.objectStore(store.sync).flatMap(_.getAllKeys))
+
+    def delete[K, V](store: ObjectStoreDef[K, V])(key: K): AsyncCallback[Unit] =
+      transactionRW(store)(_.objectStore(store.sync).flatMap(_.delete(key)))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -169,6 +172,9 @@ object IndexedDb {
 
     def getAllKeys: Txn[ArraySeq[K]] =
       Txn.StoreGetAllKeys(this)
+
+    def delete(key: K): Txn[Unit] =
+      Txn.StoreDelete(this, keyCodec.encode(key))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -215,6 +221,7 @@ object IndexedDb {
     final case class StoreAdd             (store: ObjectStore[_, _], key: IndexedDbKey, value: js.Any) extends Txn[Unit]
     final case class StoreGet       [K, V](store: ObjectStore[K, V], key: IndexedDbKey)                extends Txn[Option[V]]
     final case class StoreGetAllKeys[K, V](store: ObjectStore[K, V])                                   extends Txn[ArraySeq[K]]
+    final case class StoreDelete    [K, V](store: ObjectStore[K, V], key: IndexedDbKey)                extends Txn[Unit]
 
     def interpret[A](txn: IDBTransaction, dsl: Txn[A]): AsyncCallback[A] =
       AsyncCallback.byName {
@@ -258,6 +265,11 @@ object IndexedDb {
 
             case Map(fa, f) =>
               interpret(fa).map(f)
+
+            case StoreDelete(s, k) =>
+              getStore(s).flatMap { store =>
+                asyncRequest_(store.delete(k.asJs))
+              }
 
             case StoreGetAllKeys(s) =>
               import s.defn.{keyCodec, Key}
