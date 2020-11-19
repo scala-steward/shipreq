@@ -159,7 +159,7 @@ object ApplyEventTest extends TestSuite {
 
     "applyVerified" - {
       "pass" - {
-        import Project.ImplicitEqualityIgnoringHistory._
+        import Project.Equality.IgnoringHistory._
         import Data1._
         ApplyEvent.untrusted(ve)(p1) match {
           case \/-(p) => assertEq(p, p2)

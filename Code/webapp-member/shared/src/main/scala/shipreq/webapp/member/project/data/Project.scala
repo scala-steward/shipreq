@@ -47,22 +47,6 @@ object Project {
   val savedViewTraversal: Traversal[Project, savedview.View] =
     savedViewsNE ^|->> savedview.SavedViews.NonEmpty.traversalSavedView ^|-> savedview.SavedView.view
 
-  object ImplicitEqualityWithHistoryByOrd {
-    import ProjectEvents.ImplicitEqualityByOrd._
-
-    implicit val equalProject: Equal[Project] =
-      ScalazMacros.deriveEqual
-  }
-
-  object ImplicitEqualityIgnoringHistory {
-
-    implicit val equalProjectEvents: Equal[ProjectEvents] =
-      (_, _) => true
-
-    implicit val equalProject: Equal[Project] =
-      ScalazMacros.deriveEqual
-  }
-
   // Not allowed by validator.
   // This ensures that initial ProjectNameSet events (generated on project creation) apply instead of being discarded
   // as NO-OPs due to the hashcodes being unchanged before and after.
@@ -85,7 +69,29 @@ object Project {
       .iterator
       .flatMap(rt => reqs.pubids.value(rt.reqTypeId))
       .to(ArraySeq)
+
+  // -------------------------------------------------------------------------------------------------------------------
+
+  final class Equality(implicit val equalProjectEvents: Equal[ProjectEvents]) {
+    implicit val equalProject: Equal[Project] =
+      ScalazMacros.deriveEqual
+  }
+
+  object Equality {
+    lazy val WithHistoryByOrd: Equality = {
+      import ProjectEvents.ImplicitEqualityByOrd._
+      new Equality
+    }
+
+    lazy val IgnoringHistory: Equality = {
+      implicit val equalProjectEvents: Equal[ProjectEvents] =
+        (_, _) => true
+      new Equality
+    }
+  }
 }
+
+// =====================================================================================================================
 
 @Lenses
 final case class Project(name        : Project.Name,

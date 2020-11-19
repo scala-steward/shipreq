@@ -1153,7 +1153,7 @@ final class ApplicableEventGen(curState: State, config: RandomEventStreamConfig)
 //    )
 
   def applicableEventS[S](init: S)(observe: ObserveFn[S]): Gen[((S, Project), Event)] = {
-    import Project.ImplicitEqualityWithHistoryByOrd._
+    import Project.Equality.WithHistoryByOrd._
     BindRec[Gen].tailrecM((s: S) =>
       eventGen.map { e =>
         var r = ApplyEvent.untrusted.partialApplyUnverified(e)(p)

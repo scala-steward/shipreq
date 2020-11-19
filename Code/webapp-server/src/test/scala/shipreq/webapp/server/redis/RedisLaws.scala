@@ -156,7 +156,7 @@ object RedisLaws {
   // ===================================================================================================================
 
   def projectSnapshotFromOrd(ord: EventOrd): ProjectSnapshot = {
-    val p = Project.empty.copy(name = ord.value.toString)
+    val p = setOrd(Project.empty, ord).copy(name = ord.value.toString)
     ProjectSnapshot(p, ord.asLatest)
   }
 

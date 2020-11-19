@@ -23,7 +23,7 @@ object ApplyEventTestFns {
     _assertPass(es: _*)
 
   def _assertPass(es: Event*)(implicit init: InitialEvents, l: Line): Project = {
-    import Project.ImplicitEqualityIgnoringHistory._
+    import Project.Equality.IgnoringHistory._
 
     val es2 = init ++ es
 

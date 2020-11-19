@@ -128,7 +128,7 @@ object CustomReqTypeEventTest extends TestSuite with CustomReqTypeEvents {
     }
 
     "softDelete" - {
-      import Project.ImplicitEqualityIgnoringHistory._
+      import Project.Equality.IgnoringHistory._
 
       def test(events: Event*): Unit = {
         val es = c1 +: c2 +: events.toVector

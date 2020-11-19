@@ -25,7 +25,7 @@ object ApplyNewEvent {
   def apply(e: ActiveEvent, p1: Project): Result =
     ApplyEvent.untrusted.partialApplyUnverified(e)(p1) match {
       case \/-(p2) =>
-        import Project.ImplicitEqualityIgnoringHistory._
+        import Project.Equality.IgnoringHistory._
         if (p1 === p2)
           Unchanged
         else

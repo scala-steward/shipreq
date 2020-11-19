@@ -24,7 +24,7 @@ object EventPropTests extends TestSuite {
     p assertSatisfies DataProp.project.allIncludingConfig
 
     private def deletableStepProps = {
-      import Project.ImplicitEqualityIgnoringHistory._
+      import Project.Equality.IgnoringHistory._
 
       E.forall(p.useCaseStepsDeletable.map(_.id).toList) { id =>
         p.deletionMethodForUseCaseStep(id) match {

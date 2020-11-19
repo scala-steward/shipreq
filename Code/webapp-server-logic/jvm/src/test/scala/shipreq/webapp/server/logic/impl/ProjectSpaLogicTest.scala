@@ -80,11 +80,14 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         Event.ProjectNameSet("hello"),
       )
 
-      val verifiedEvents       = verifyEvents(Project.empty)(events: _*)
-      val instance             = applyVerifiedEventSuccessfully(Project.empty, verifiedEvents.toList: _*)
+      var verifiedEvents       = verifyEvents(Project.empty)(events: _*)
+      var instance             = applyVerifiedEventSuccessfully(Project.empty, verifiedEvents.toList: _*)
       val latestOrd            = verifiedEvents.last.ord.asLatest
       val id                   = db.createProject(user2.id, events.map(_.active), instance, crypto.generateProjectKey()).value
       val data1                = db.getProjectMetaData(id).value.get
+      verifiedEvents           = db.getAllProjectEvents(id).value.getOrThrow()
+      instance                 = applyVerifiedEventSuccessfully(Project.empty, verifiedEvents.toList: _*)
+      db.loadProjectLog        = Vector.empty
 
       lazy val initAppData     = InitAppData(instance, data1)
       lazy val static          = WebSocketStatic(user2.toUser, id, SessionId.random(), (), svr.now.value, svr.now.value.plusSeconds(99999))
@@ -255,6 +258,10 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
             val result = sendMsg(initAppMsg, p1.static, subscribedState)
             val actual = result._1
             val expect = \/-(p1.initAppData)
+
+//            val f = (p: Project) => p.history
+//            assertEq(actual.map(_.map(_.project).map(f)), \/-(expect.map(_.project).map(f)))
+
             assertEq(actual, \/-(expect))
             assert(result._2.isEmpty)
 

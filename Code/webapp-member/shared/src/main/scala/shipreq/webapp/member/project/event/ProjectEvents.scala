@@ -56,7 +56,7 @@ object ProjectEvents {
 
   // Not universally safe/desirable so opt-in only
   object ImplicitEqualityByOrd {
-    implicit lazy val equalProjectEvents: Equal[ProjectEvents] =
+    implicit val equalProjectEvents: Equal[ProjectEvents] =
       (x, y) => x.ordAsInt == y.ordAsInt
   }
 }

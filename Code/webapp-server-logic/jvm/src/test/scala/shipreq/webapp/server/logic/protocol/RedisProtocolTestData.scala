@@ -60,7 +60,7 @@ object RedisProtocolTestData {
     Encoder.forProduct3(RowEvent, RowEventBinary, RowSnapshotBinary)(a => (a.eventJson, a.eventJson, a.snapshotBinary))
 
   def resourceName(ver: Int): String =
-    s"RedisProtocolTestData/v1.$ver.json"
+    s"RedisProtocolTestData/v2.$ver.json"
 
   def load(ver: Int): Vector[Row] =
     decode[Vector[Row]](FileUtils.readResource(resourceName(ver))).getOrThrow()
