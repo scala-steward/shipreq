@@ -8,6 +8,7 @@ import shipreq.base.util.BinaryData
 import shipreq.webapp.base.test.BinaryTestUtil._
 import shipreq.webapp.member.project.data.{Project, StaticField}
 import shipreq.webapp.member.project.event._
+import shipreq.webapp.member.test.WebappTestUtil.ImplicitProjectEqualityDeep._
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.UnsafeTypes._
 import shipreq.webapp.member.test.project.{RandomData => R}
@@ -85,9 +86,8 @@ object RedisProtocolTest extends TestSuite {
       "roundTrip" - {
         val gen: Gen[ProjectSnapshot] =
           for {
-            p <- R.project
-            o <- Gen.chooseInt(10000)
-          } yield ProjectSnapshot(p, o)
+            p <- R.projectNonsenseHistory
+          } yield ProjectSnapshot(p, p.history.ord.get)
         propTestRoundTrip(codec)(gen)
       }
 

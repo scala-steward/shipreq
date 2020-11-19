@@ -22,7 +22,7 @@ object JsonProtocolTest extends TestSuite {
 
     "filters" - propTestRoundTrip(R.projectConfig.flatMap(R.filter.valid.forProjectConfig))
 
-    "savedViews" - propTestRoundTrip(R.project.flatMap(R.savedViews.nonEmptySavedViewsForProject))
+    "savedViews" - propTestRoundTrip(R.projectNoHistory.flatMap(R.savedViews.nonEmptySavedViewsForProject))
 
     "text" - {
       def gr = R.reqId

@@ -9,6 +9,7 @@ import monocle.{Lens, Traversal}
 import scalaz.Equal
 import shipreq.base.util._
 import shipreq.webapp.member.project.data.derivation._
+import shipreq.webapp.member.project.event.{ApplyEvent, ProjectEvents, VerifiedEvent}
 import shipreq.webapp.member.project.issue.IssueTracker
 import shipreq.webapp.member.project.text.PlainText
 
@@ -46,8 +47,21 @@ object Project {
   val savedViewTraversal: Traversal[Project, savedview.View] =
     savedViewsNE ^|->> savedview.SavedViews.NonEmpty.traversalSavedView ^|-> savedview.SavedView.view
 
-  implicit lazy val equality: Equal[Project] =
-    ScalazMacros.deriveEqual
+  object ImplicitEqualityWithHistoryByOrd {
+    import ProjectEvents.ImplicitEqualityByOrd._
+
+    implicit val equalProject: Equal[Project] =
+      ScalazMacros.deriveEqual
+  }
+
+  object ImplicitEqualityIgnoringHistory {
+
+    implicit val equalProjectEvents: Equal[ProjectEvents] =
+      (_, _) => true
+
+    implicit val equalProject: Equal[Project] =
+      ScalazMacros.deriveEqual
+  }
 
   // Not allowed by validator.
   // This ensures that initial ProjectNameSet events (generated on project creation) apply instead of being discarded
@@ -62,7 +76,9 @@ object Project {
       content      = ProjectContent.empty,
       manualIssues = ManualIssues.empty,
       savedViews   = savedview.SavedViews.empty,
-      idCeilings   = IdCeilings.zero)
+      history      = ProjectEvents.empty,
+      idCeilings   = IdCeilings.zero,
+    )
 
   def reqIdsSortedByPubId(reqs: Requirements, reqTypes: ReqTypes): ArraySeq[ReqId] =
     reqTypes.allSortedByMnemonic
@@ -77,11 +93,45 @@ final case class Project(name        : Project.Name,
                          content     : ProjectContent,
                          manualIssues: ManualIssues,
                          savedViews  : savedview.SavedViews.Optional,
+                         history     : ProjectEvents,
                          idCeilings  : IdCeilings) {
 
   override def toString =
-    s"Project($idCeilings)"
+    s"Project{v${history.ordAsInt}}"
     //ShowSize(this).showTree
+
+  @inline def update(ves: VerifiedEvent.NonEmptySeq): ErrorMsg \/ Project =
+    ApplyEvent.trusted(ves)(this)
+
+  @inline def update(ves: VerifiedEvent.Seq): ErrorMsg \/ Project =
+    ApplyEvent.trusted(ves)(this)
+
+  @inline def update(ve: VerifiedEvent): ErrorMsg \/ Project =
+    ApplyEvent.trusted(ve)(this)
+
+  private def _updateOrThrow(r: ApplyEvent.Result): Project =
+    r.fold(_.withPrefix("Project update failed. ").throwException(), identity)
+
+  def updateOrThrow(ves: VerifiedEvent.NonEmptySeq): Project =
+    _updateOrThrow(update(ves))
+
+  def updateOrThrow(ves: VerifiedEvent.Seq): Project =
+    _updateOrThrow(update(ves))
+
+  def updateOrThrow(ve: VerifiedEvent): Project =
+    _updateOrThrow(update(ve))
+
+  @inline def > (x: Project) = history >  x.history
+  @inline def < (x: Project) = history <  x.history
+  @inline def <=(x: Project) = history <= x.history
+  @inline def >=(x: Project) = history >= x.history
+  @inline def ord            = history.ord
+
+  def min(p: Project): Project = if (this < p) this else p
+  def max(p: Project): Project = if (this > p) this else p
+
+  def min(p: Option[Project]): Project = p.fold(this)(min)
+  def max(p: Option[Project]): Project = p.fold(this)(max)
 
   lazy val deadReqIds: Set[ReqId] =
     content.reqs.reqIterator().filter(_.live(config.reqTypes) is Dead).map(_.id).toSet

@@ -105,12 +105,12 @@ object RedisProtocolTestData {
         NonEmptySet.option(pending) match {
           case Some(pendingNES) =>
 
-            val s  = (ps.last, EventOrd.first)
+            val s  = ps.last
             Try(RandomEventStream.verifiedEventOfTypes(pendingNES).run(s).samplesUsing(genCtx).next()) match {
               case Success(r) =>
                 // print(s"${pending.size}... ")
                 val e  = r._2.event
-                val p2 = r._1._1
+                val p2 = r._1
                 go(pending - EventName(e), e :: events, ps :+ p2, retries)
               case Failure(e) =>
                 if (retries > 0 && events.nonEmpty) {
@@ -126,7 +126,7 @@ object RedisProtocolTestData {
             events.reverse
         }
 
-      val ((initProject, _), initEvents) = RandomEventStream.initialEvents.samplesUsing(genCtx).next()
+      val (initProject, initEvents) = RandomEventStream.initialEvents.samplesUsing(genCtx).next()
 
       go(
         EventName.all.whole -- initEvents.map(v => EventName(v.event)),

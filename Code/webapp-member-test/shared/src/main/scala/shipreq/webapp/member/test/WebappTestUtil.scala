@@ -22,11 +22,20 @@ trait WebappTestEquality
      with EventEquality
 {
   implicit def equalityTags = ReqData.equalityTags
-
-  implicit lazy val equalProjectAndOrd: Equal[ProjectAndOrd] = ScalazMacros.deriveEqual
 }
 
-object WebappTestUtil extends WebappTestEquality with WebappTestUtil
+object WebappTestUtil extends WebappTestEquality with WebappTestUtil {
+
+  object ImplicitProjectEqualityDeep {
+
+    implicit val equalProjectEvents: Equal[ProjectEvents] =
+      ScalazMacros.deriveEqual
+
+    implicit val equalProject: Equal[Project] =
+      ScalazMacros.deriveEqual
+  }
+
+}
 
 trait WebappTestUtil extends BaseTestUtil {
 
@@ -39,31 +48,31 @@ trait WebappTestUtil extends BaseTestUtil {
       accessedAt    = Instant.now().minus(1, DAYS),
       lastUpdatedAt = Some(Instant.now().minus(1, DAYS)))
 
-  def verifyEvent(p: Project, e: Event, o: EventOrd = EventOrd.first): VerifiedEvent =
-    _verifyEvent(p, e, o)._2
-
-  def _verifyEvent(p: Project, e: Event, o: EventOrd = EventOrd.first): (Project, VerifiedEvent) = {
-    val p2 = ApplyEvent.untrusted.applyUnverified1(e)(p).fold(err => sys error s"Failed to apply event $e: $err", identity)
-    (p2, VerifiedEvent(o, e, Instant.now()))
+  def verifyEvent(p: Project, e: Event): VerifiedEvent = {
+    val ve = VerifiedEvent(p.history.nextOrd, e, Instant.now())
+    applyVerifiedEventSuccessfully(p, ve)
+    ve
   }
 
-  def verifyEvents(p0: Project, firstOrd: EventOrd = EventOrd.first)(es: Event*): VerifiedEvent.Seq = {
+  def verifyEvents(p0: Project)(es: Event*): VerifiedEvent.Seq = {
     var p = p0
-    VerifiedEvent.Seq.empty ++ es.iterator.zipWithIndex.map { case (e, i) =>
-      val (p2, ve) = _verifyEvent(p, e, firstOrd + i)
-      p = p2
+    VerifiedEvent.Seq.empty ++ es.iterator.map { e =>
+      val ve = VerifiedEvent(p.history.nextOrd, e, Instant.now())
+      p = applyVerifiedEventSuccessfully(p, ve)
       ve
     }
   }
 
-  def applyEventSuccessfully(p: Project, e: Event): Project =
-    _verifyEvent(p, e)._1
+  def applyEventSuccessfully(p: Project, e: Event): Project = {
+    val ve = VerifiedEvent(p.history.nextOrd, e, Instant.now())
+    applyVerifiedEventSuccessfully(p, ve)
+  }
 
   def applyEventsSuccessfully(p: Project, es: Event*): Project =
     es.foldLeft(p)(applyEventSuccessfully)
 
   def applyVerifiedEventSuccessfully(p: Project, e: VerifiedEvent): Project =
-    ApplyEvent.untrusted.apply1(e)(p).fold(_.throwException(), identity)
+    ApplyEvent.untrusted(e)(p).fold(_.throwException(), identity)
 
   def applyVerifiedEventSuccessfully(p: Project, es: VerifiedEvent*): Project =
     es.foldLeft(p)(applyVerifiedEventSuccessfully)
@@ -72,13 +81,30 @@ trait WebappTestUtil extends BaseTestUtil {
     es.foldLeft(p)(applyVerifiedEventSuccessfully)
 
   def assertEventFails(p: Project, e: Event, errFrag: String = "")(implicit l: Line): Unit =
-    ApplyEvent.untrusted.applyUnverified1(e)(p) match {
+    ApplyEvent.untrusted.partialApplyUnverified(e)(p) match {
       case -\/(f) => assertContainsCI(f.value, errFrag)
       case \/-(_) => fail(s"Failure expected but didn't occur applying $e")
     }
 
   def restoreProject(es: VerifiedEvent.Seq): Project =
-    ApplyEvent.trusted(es)(Project.empty).getOrThrow()
+    Project.empty.updateOrThrow(es)
+
+  def setOrd(p: Project, ord: EventOrd): Project = {
+    def ve(o: EventOrd) = VerifiedEvent(o, Event.ProjectNameSet(o.value.toString), Instant.now())
+    var events = p.history.events
+    if (events.nonEmpty)
+      events = events.takeWhile(_.ord <= ord)
+    if (events.isEmpty)
+      events += ve(ord)
+    else {
+      var last = events.last
+      while(last.ord < ord) {
+        last = ve(last.ord + 1)
+        events += last
+      }
+    }
+    p.copy(history = ProjectEvents(events))
+  }
 
   implicit final class WebappTestUtilExt_VerifiedEventSeq(private val self: VerifiedEvent.Seq) {
     def needNES: VerifiedEvent.NonEmptySeq =

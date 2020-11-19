@@ -7,6 +7,7 @@ import shipreq.webapp.member.test.{WebappTestEquality, WebappTestUtil}
 import shipreq.webapp.server.logic.algebra.Redis
 
 trait WebappServerTestEquality extends WebappTestEquality {
+  import WebappTestUtil.ImplicitProjectEqualityDeep._
   implicit lazy val equalRedisProjectCache   : Equal[Redis.ProjectCache   ] = ScalazMacros.deriveEqual
   implicit lazy val equalRedisProjectSnapshot: Equal[Redis.ProjectSnapshot] = ScalazMacros.deriveEqual
 }

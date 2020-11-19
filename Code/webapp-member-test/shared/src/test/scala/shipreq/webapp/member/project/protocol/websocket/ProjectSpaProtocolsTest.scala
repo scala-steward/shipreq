@@ -3,16 +3,15 @@ package shipreq.webapp.member.project.protocol.websocket
 import japgolly.microlibs.scalaz_ext.ScalazMacros
 import java.time.Instant
 import scalaz.Equal
-import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util._
+import shipreq.webapp.base.protocol.websocket.WebSocketShared
 import shipreq.webapp.base.test.BinaryTestUtil._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.sort.SortMethod._
 import shipreq.webapp.member.project.text.Atom.DisplayReqRef
 import shipreq.webapp.member.project.text.Text
-import shipreq.webapp.member.test.WebappTestUtil.verifiedEventsFromJson
-import shipreq.webapp.member.test.project.EventEquality._
+import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.UnsafeTypes._
 import sourcecode.Line
 import utest._
@@ -23,16 +22,15 @@ import utest._
   */
 object ProjectSpaProtocolsTest extends TestSuite {
   import EventOrd.Latest
+  import ImplicitProjectEqualityDeep._
   import ProjectSpaProtocols._
   import WsReqRes._
-  import shipreq.webapp.base.protocol.websocket.WebSocketShared
   import WebSocketShared.ReqId
 
   private val webSocket = WebSocket("fake_project_id")
   private val codecCS   = WebSocketShared.protocolCS(webSocket.req.codec).codec
 
   private implicit def univEqWsReq: UnivEq[WsReqRes.AndReq] = UnivEq.force
-  protected implicit val equalProjectAndOrd: Equal[ProjectAndOrd] = ScalazMacros.deriveEqual
   private implicit val equalInitAppData: Equal[InitAppData] = ScalazMacros.deriveEqual
 
   private def assertRequest(bin: BinaryData, expect: codecCS.Data)(implicit l: Line) =

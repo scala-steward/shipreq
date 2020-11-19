@@ -285,7 +285,7 @@ final class MockDb(_now: Name[Instant]) extends DB.Algebra[Name] with DB.ForSecu
     val entry = projects.need(pid)
     def update(events: VerifiedEvent.Seq): Unit =
       projects = projects + entry.copy(events = events, lastUpdatedAt = Some(Instant.now()))
-    val ve = verifyEvent(entry.project, e, ord)
+    val ve = verifyEvent(entry.project, e)
     if (entry.events.isEmpty) {
       update(VerifiedEvent.Seq.empty + ve)
       \/-(ve)

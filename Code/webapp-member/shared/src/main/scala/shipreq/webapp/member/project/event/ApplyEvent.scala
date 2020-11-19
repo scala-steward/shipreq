@@ -38,10 +38,24 @@ final class ApplyEvent(implicit val trust: Trust)
 
   import ApplyEvent.{Events, Result}
 
-  def applyUnverified(events: Events)(p: Project): Result =
+  private def validateResult(r: Result): Option[ErrorMsg] =
+    r match {
+      case \/-(_) => None
+      case -\/(e) => Some(e)
+    }
+
+  def validate(event: Event)(p: Project): Option[ErrorMsg] =
+    validateResult(partialApplyUnverified(event)(p))
+
+  def validate(events: Events)(p: Project): Option[ErrorMsg] =
+    validateResult(partialApplyUnverified(events)(p))
+
+  /** Partial because it doesn't update the project's [[ProjectEvents]]. */
+  def partialApplyUnverified(events: Events)(p: Project): Result =
     safelyApplyUnverified(events).exec(p)
 
-  def applyUnverified1(event: Event)(p: Project): Result =
+  /** Partial because it doesn't update the project's [[ProjectEvents]]. */
+  def partialApplyUnverified(event: Event)(p: Project): Result =
     safelyApplyUnverified1(event).exec(p)
 
   def apply(ves: VerifiedEvent.Seq)(p: Project): Result =
@@ -50,14 +64,19 @@ final class ApplyEvent(implicit val trust: Trust)
     else
       apply(VerifiedEvent.NonEmptySeq.force(ves))(p)
 
-  def apply(ves: VerifiedEvent.NonEmptySeq)(p: Project): Result =
-    safelyApplyUnverified(ves.iterator.map(_.event)).exec(p) match {
-      case ok @ \/-(_) => ok
-      case -\/(_)      => Eval.foldMapRun(ves)(safelyApply1).exec(p)
+  def apply(events: VerifiedEvent.NonEmptySeq)(p: Project): Result =
+    safelyApplyUnverified(events.iterator.map(_.event)).exec(p) match {
+      case \/-(p) =>
+        \/-(Project.history.modify(_ ++ events)(p))
+
+      case -\/(_) =>
+        // Failure. Do it from scratch one-by-one so that the error is caught on the specific event that breaks things
+        Eval.foldMapRun(events)(safelyApply1).exec(p)
     }
 
-  def apply1(event: VerifiedEvent)(p: Project): Result =
+  def apply(event: VerifiedEvent)(p: Project): Result =
     safelyApply1(event).exec(p)
+      .map(Project.history.modify(_ + event))
 
   // ===================================================================================================================
   // Safe
