@@ -24,13 +24,35 @@ object BinaryTestUtil {
                                   (f: A => B, g: B => A)(implicit l: Line): Unit = {
     val actual = p.decode(bin).map(f)
     def info = {
+      val byteDisplayLimit = 92
       val limit = 200
       val descBin: BinaryData => String = _.describe(limit).filter(_ != ',')
       expect match {
         case \/-(a) =>
           val bin2 = p.encode(g(a))
-          val (b1, b2) = shrinkUnequalStrings(bin.hex, bin2.hex, limit)
-          val binaryMatches = b1.isEmpty && b2.isEmpty
+          val (b1, b2) =
+            if (bin.length <= byteDisplayLimit && bin2.length <= byteDisplayLimit) {
+              var ar = Console.BLACK_B
+              var br = Console.BLACK_B
+              var ah = bin.hex
+              var bh = bin2.hex
+              while (ah.nonEmpty || bh.nonEmpty) {
+                val a = ah.take(2)
+                val b = bh.take(2)
+                if (a ==* b) {
+                  ar += a
+                  br += b
+                } else {
+                  ar += Console.YELLOW_B + a + Console.BLACK_B
+                  br += Console.YELLOW_B + b + Console.BLACK_B
+                }
+                ah = ah.drop(2)
+                bh = bh.drop(2)
+              }
+              (ar, br)
+            } else
+              shrinkUnequalStrings(bin.hex, bin2.hex, limit)
+          val binaryMatches = bin ==* bin2
           if (binaryMatches) {
             val (x1, x2) = shrinkUnequalStrings(actual.toString, expect.toString, limit)
             val toStringMatches = x1.isEmpty && x2.isEmpty
