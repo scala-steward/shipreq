@@ -1,11 +1,11 @@
-package shipreq.webapp.member.project.protocol.binary.v1
+package shipreq.webapp.member.project.protocol.binary
 
 /** This is a convenience for usages that don't need to care about versioning (eg. benchmarks, WW, tests).
   * It reduces the amount of busy-work required when bumping versions by allowing you to modify just this one
   * object rather than all uses that don't care and just need the latest.
   */
 object Latest {
-  import shipreq.webapp.member.project.protocol.binary.v1.{Rev7 => L}
+  import v1.{Rev7 => L}
 
   @inline implicit def picklerEvent                    = L.picklerEvent
   @inline implicit def picklerProject                  = L.picklerProject
@@ -15,6 +15,6 @@ object Latest {
   @inline implicit def picklerVerifiedEventNonEmptySeq = L.picklerVerifiedEventNonEmptySeq
   @inline implicit def pickleValidFilter               = L.pickleValidFilter
 
-  val AtomPicklers      = Rev6.AtomPicklers
+  val AtomPicklers      = v1.Rev6.AtomPicklers
   val SavedViewPicklers = L.SavedViewPicklers
 }

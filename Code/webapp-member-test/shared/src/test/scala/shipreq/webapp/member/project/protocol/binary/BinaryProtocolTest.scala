@@ -1,4 +1,4 @@
-package shipreq.webapp.member.project.protocol.binary.v1
+package shipreq.webapp.member.project.protocol.binary
 
 import nyaya.gen.Gen
 import shipreq.webapp.base.test.BinaryTestUtil._

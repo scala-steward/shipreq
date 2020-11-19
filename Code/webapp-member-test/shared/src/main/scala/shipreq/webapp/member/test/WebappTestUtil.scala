@@ -11,7 +11,7 @@ import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.filter._
-import shipreq.webapp.member.project.protocol.json.v1.Latest._
+import shipreq.webapp.member.project.protocol.json.Latest._
 import shipreq.webapp.member.project.text.Text
 import shipreq.webapp.member.test.project.{EventEquality, IssueLite}
 import sourcecode.Line

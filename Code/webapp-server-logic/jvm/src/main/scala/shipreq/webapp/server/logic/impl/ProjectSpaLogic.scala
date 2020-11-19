@@ -819,7 +819,7 @@ object ProjectSpaLogic extends StrictLogging {
     import org.apache.commons.text.StringEscapeUtils
     import scala.collection.immutable.TreeSet
     import ProjectSpaProtocols.WebSocket
-    import shipreq.webapp.member.project.protocol.json.v1.Latest.encoderVerifiedEvent
+    import shipreq.webapp.member.project.protocol.json.Latest.encoderVerifiedEvent
 
     type WSH = WebSocketServerHelper[WebSocket#Req, WebSocket.Push]
 

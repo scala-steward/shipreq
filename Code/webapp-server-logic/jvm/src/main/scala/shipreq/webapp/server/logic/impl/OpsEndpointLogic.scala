@@ -45,7 +45,7 @@ object OpsEndpointLogic extends HasLogger {
                             svr: Server.Time[F],
                             taskman: TaskmanApi[F]) extends OpsEndpointLogic[F] {
 
-    import shipreq.webapp.member.project.protocol.json.v1.Latest.{decoderVerifiedEvent, encoderVerifiedEvent}
+    import shipreq.webapp.member.project.protocol.json.Latest.{decoderVerifiedEvent, encoderVerifiedEvent}
     import shipreq.webapp.server.logic.util.WebappTaskmanConverters._
 
     protected def randomToken: F[String]

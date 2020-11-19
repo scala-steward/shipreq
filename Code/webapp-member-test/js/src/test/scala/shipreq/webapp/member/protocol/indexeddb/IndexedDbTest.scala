@@ -48,7 +48,7 @@ object IndexedDbTest extends TestSuite {
     }
 
     "pickleCompressEncrypt" - asyncTest {
-      import shipreq.webapp.member.project.protocol.binary.v1.Latest.picklerProject
+      import shipreq.webapp.member.project.protocol.binary.Latest.picklerProject
       import SampleProject8.{project => project1}
       import SampleProject5.{project => project2}
       import SafePickler.ConstructionHelperImplicits._
