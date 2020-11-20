@@ -18,7 +18,7 @@ import shipreq.webapp.client.project.app.pages.root.ConnectionStatus
 import shipreq.webapp.client.project.app.state.Global.State
 import shipreq.webapp.member.project.data.{Project, ProjectMetaData}
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
-import shipreq.webapp.member.project.library.{NewEvents, ProjectLibrary}
+import shipreq.webapp.member.project.library.{CacheJs, NewEvents, ProjectLibrary}
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WebSocket.Push
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.member.project.util.DataReusability._
@@ -159,7 +159,7 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
               case Success(\/-(i)) => Callback {
                 unsafeState match {
                   case State.Loading(es) =>
-                    val s = ProjectLibrary.init(i.project, i.projectMetaData).addEvents(es)
+                    val s = ProjectLibrary.init(i.project, i.projectMetaData, CacheJs()).addEvents(es)
                     unsafeSetState(State.Active(s, None))
                     onFirstLoad(this, i).runNow()
                   case _: State.Active =>

@@ -12,14 +12,26 @@ import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
   * @param futureEvents Events that can't be applied yet because there are events missing between the earliest here and
   *                     the latest project.
   */
-final case class ProjectLibrary(latest        : Project,
-                                latestMetaData: ProjectMetaData,
-                                futureEvents  : VerifiedEvent.Seq) {
+final class ProjectLibrary(val latest        : Project,
+                           val latestMetaData: ProjectMetaData,
+                           val futureEvents  : VerifiedEvent.Seq,
+                           prevCache         : Cache) {
   import ProjectLibrary._
 
   assert(
     futureEvents.isEmpty || futureEvents.head.ord.value > latest.history.ordAsInt + 1,
     s"Project is v${latest.history.ordAsInt} but youngest future event is v${futureEvents.head.ord.value}")
+
+  private def copy(latest        : Project           = latest,
+                   latestMetaData: ProjectMetaData   = latestMetaData,
+                   futureEvents  : VerifiedEvent.Seq,
+                  ): ProjectLibrary =
+    new ProjectLibrary(
+      latest         = latest,
+      latestMetaData = latestMetaData,
+      futureEvents   = futureEvents,
+      prevCache      = cache,
+    )
 
   @inline def ord =
     latest.ord
@@ -41,7 +53,7 @@ final case class ProjectLibrary(latest        : Project,
       case Some((ves, remainingFutureEvents)) =>
         val p2  = latest.updateOrThrow(ves)
         val md2 = latestMetaData.applyEvents(ves, p2, ves.last.createdAt)
-        val s2  = ProjectLibrary(p2, md2, remainingFutureEvents)
+        val s2  = copy(p2, md2, remainingFutureEvents)
         Some(Update(s2, ves.values))
 
       case None =>
@@ -56,12 +68,26 @@ final case class ProjectLibrary(latest        : Project,
 
   def addEvents(events: VerifiedEvent.Seq): ProjectLibrary =
     update(events).fold(this)(_.newLibrary)
+
+  private val cache =
+    prevCache.update(latest)
+
+  private val latestOrd =
+    latest.history.ordAsInt
+
+  def projectAt(ord: EventOrd): Option[Project] =
+    if (ord.value == latestOrd)
+      Some(latest)
+    else if (ord.value > latestOrd)
+      None
+    else
+      cache(ord)
 }
 
 object ProjectLibrary {
 
-  def init(p: Project, md: ProjectMetaData): ProjectLibrary =
-    ProjectLibrary(p, md, VerifiedEvent.Seq.empty)
+  def init(p: Project, md: ProjectMetaData, cache: Cache): ProjectLibrary =
+    new ProjectLibrary(p, md, VerifiedEvent.Seq.empty, cache)
 
   final case class Update(newLibrary        : ProjectLibrary,
                           newlyAppliedEvents: VerifiedEvent.Seq) {

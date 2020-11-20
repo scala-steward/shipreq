@@ -19,7 +19,7 @@ import shipreq.webapp.base.test._
 import shipreq.webapp.client.project.app.state.Global
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event._
-import shipreq.webapp.member.project.library.ProjectLibrary
+import shipreq.webapp.member.project.library.{CacheJs, ProjectLibrary}
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WsReqRes
 import shipreq.webapp.member.test.WebappTestUtil._
@@ -247,7 +247,7 @@ object TestGlobal {
 
   def apply(p: Project): TestGlobal = {
     val md = looseProjectMetaData(p, eventsTotal = p.history.ordAsInt)
-    val ps = ProjectLibrary.init(p, md)
+    val ps = ProjectLibrary.init(p, md, CacheJs())
     new TestGlobal(ps)
   }
 

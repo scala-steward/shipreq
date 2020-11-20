@@ -107,7 +107,7 @@ final case class Project(name        : Project.Name,
     //ShowSize(this).showTree
 
   @inline def update(ves: VerifiedEvent.NonEmptySeq): ErrorMsg \/ Project =
-    ApplyEvent.trusted(ves)(this)
+    update(ves.values)
 
   @inline def update(ves: VerifiedEvent.Seq): ErrorMsg \/ Project =
     ApplyEvent.trusted(ves)(this)

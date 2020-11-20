@@ -39,8 +39,20 @@ object LruMemo {
   final class ExternalFn[@specialized(Int) K, V](isSame: (K, K) => Boolean,
                                                  state: LruMemo.State[K, V]) {
 
-    def get(a: K)(f: K => V): V =
-      state.get(a, isSame, f)
+    def get(k: K)(f: K => V): V =
+      state.get(k, isSame, f)
+
+    def getOrElsePut(k: K)(v: => V): V =
+      get(k)(_ => v)
+
+//    def getOrThrow(k: K): V =
+//      get(k)(_ => throw new RuntimeException("Value not found for " + k))
+
+    def foreachKey(f: K => Unit): Unit =
+      state.foreachKey(f)
+
+    def duplicate(): ExternalFn[K, V] =
+      new ExternalFn(isSame, state.duplicate())
   }
 
   // ===================================================================================================================
@@ -54,6 +66,13 @@ object LruMemo {
                                                     val cache: Array[Result[K, V]]) {
     var time = 0
     var size = 0
+
+    def duplicate(): State[K, V] = {
+      val m = new State[K, V](maxSize, cache.clone())
+      m.time = time
+      m.size = size
+      m
+    }
 
     def get(key: K, isSame: (K, K) => Boolean, f: K => V): V = {
       val t = time
@@ -92,6 +111,16 @@ object LruMemo {
 
       b
     }
+
+    def foreachKey(f: K => Unit): Unit = {
+      var i = 0
+      while (i < size) {
+        val r = cache(i)
+        f(r.key)
+        i += 1
+      }
+    }
+
   }
 
   private final class Result[@specialized(Int) K, V](val key: K,
