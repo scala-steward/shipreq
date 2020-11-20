@@ -9,8 +9,8 @@ import shipreq.base.util.JsExt._
 import shipreq.base.util._
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.client.ww.api._
-import shipreq.webapp.member.project.util.LruCache
 import shipreq.webapp.member.protocol.webworker._
+import shipreq.webapp.member.util.LruCache
 
 object WebWorkerClient {
 
