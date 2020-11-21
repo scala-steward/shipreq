@@ -1,6 +1,9 @@
 ========================================================================================================================
 # Phase 3
 
+* Require node > 15 in docker build env
+* upgrade graal & docker images
+
 * DB tables:
   * new table: user_group
   * new table: project_group
