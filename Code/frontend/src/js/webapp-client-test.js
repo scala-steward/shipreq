@@ -1,5 +1,6 @@
 import 'core-js/features/map'
 import 'core-js/features/object/assign'
+import 'core-js/features/object/entries'
 import 'core-js/features/set'
 import './node-test-polyfill'
 

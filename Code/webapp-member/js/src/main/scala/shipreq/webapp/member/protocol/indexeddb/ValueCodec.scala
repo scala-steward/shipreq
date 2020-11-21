@@ -1,15 +1,12 @@
 package shipreq.webapp.member.protocol.indexeddb
 
-import boopickle.{PickleImpl, Pickler, UnpickleImpl}
 import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
-import java.nio.ByteBuffer
 import scala.scalajs.js
 import scala.scalajs.js.typedarray.ArrayBuffer
 import shipreq.base.util.BinaryData
 import shipreq.base.util.JsExt._
 import shipreq.webapp.base.protocol.binary.SafePickler
-import shipreq.webapp.base.protocol.binary.v1.BaseData.unsupportedVer
-import shipreq.webapp.member.protocol.binary.{Compression, Encryption}
+import shipreq.webapp.member.protocol.binary.{BinaryFormat, Compression}
 
 final case class ValueCodec[A](encode: A => CallbackTo[js.Any],
                                decode: js.Any => CallbackTo[A]) {
@@ -76,65 +73,11 @@ object ValueCodec {
 
     type ThisIsBinary = Async[A] =:= Async[BinaryData]
 
-    def encrypt(e: Encryption)(implicit ev: ThisIsBinary): Async[BinaryData] =
-      ev(this).xmapAsync(e.decrypt)(e.encrypt)
-
-    def compress(c: Compression)(implicit ev: ThisIsBinary): Async[BinaryData] =
-      ev(this).xmap(c.decompressOrThrow)(c.compress)
-
-    def pickle[B](implicit pickler: SafePickler[B], ev: ThisIsBinary): Async[B] =
-      ev(this).xmap(pickler.decodeOrThrow)(pickler.encode)
-
-    def pickleBasic[B](implicit pickler: Pickler[B], ev: ThisIsBinary): Async[B] = {
-      val unpickle = UnpickleImpl[B]
-      ev(this)
-        .xmap[ByteBuffer](_.unsafeByteBuffer)(BinaryData.unsafeFromByteBuffer)
-        .xmap(unpickle.fromBytes(_))(PickleImpl.intoBytes(_))
-    }
+    def xmapBinaryFormat[B](fmt: BinaryFormat[B])(implicit ev: ThisIsBinary): Async[B] =
+      ev(this).xmapAsync(fmt.decode)(fmt.encode)
   }
 
   object Async {
-
     val binary = ValueCodec.binary.async
-
-    type BinaryLayer[A] = Async[BinaryData] => Async[A]
-
-    def versionedBinary[A](layersOldestFirst: BinaryLayer[A]*): Async[A] = {
-      assert(layersOldestFirst.nonEmpty)
-      val layers          = layersOldestFirst.toArray
-      val decoders        = layers.map(_(binary))
-      val decoderIndices  = decoders.indices
-      val latestVer       = decoders.length - 1
-      val latestVerHeader = BinaryData.byte(latestVer.toByte)
-      val encoder         = layers.last(ValueCodec.binary.xmap[BinaryData](_ => null)(latestVerHeader ++ _).async)
-
-      def decode(bin: BinaryData): AsyncCallback[A] =
-        AsyncCallback.byName {
-
-          if (bin.isEmpty)
-            throw js.JavaScriptException("No data")
-
-          val ver = bin.unsafeArray(0).toInt
-
-          if (decoderIndices.contains(ver)) {
-            val binTail = bin.drop(1)
-            decoders(ver).decode(binTail.unsafeArrayBuffer)
-          } else if (ver < 0)
-            throw js.JavaScriptException("Bad data")
-          else
-            unsupportedVer(ver, latestVer)
-        }
-
-      Async[A](
-        encode = encoder.encode,
-        decode = binary.decode(_).flatMap(decode))
-    }
-
-    def pickleCompressEncrypt[A](c: Compression, e: Encryption)(implicit pickler: SafePickler[A]): BinaryLayer[A] =
-      _
-        .encrypt(e) // Encryption is the very last step
-        .compress(c) // Here we compress the binary *before* encrypting
-        .pickle[A]
   }
-
 }
