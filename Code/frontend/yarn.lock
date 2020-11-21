@@ -1506,6 +1506,11 @@ balanced-match@^1.0.0:
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.0.tgz#89b4d199ab2bee49de164ea02b89ce462d71b767"
   integrity sha1-ibTRmasr7kneFk6gK4nORi1xt2c=
 
+base32768@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/base32768/-/base32768-2.0.1.tgz#2b246fcc64d6ad0f77b99f90e7d6e333d1d799e5"
+  integrity sha512-DfpYn6XUE8YSsooJ4rj61EiTKkPJM1exxxbJB0byWvRc39ogWDZtrOSY0PVvGQe+DI1FZt10ES7xBifxmirqwQ==
+
 base64-arraybuffer-es6@^0.6.0:
   version "0.6.0"
   resolved "https://registry.yarnpkg.com/base64-arraybuffer-es6/-/base64-arraybuffer-es6-0.6.0.tgz#036f79f57588dca0018de7792ddf149299382007"
