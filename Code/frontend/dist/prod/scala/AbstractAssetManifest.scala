@@ -56,7 +56,7 @@ abstract class AbstractAssetManifest[+A] {
 
   final val loadjs = modify("/s/9e706a6f7bc551ddf626c15cd76c1c25.js")
 
-  final val memberLibBundleJs = modify("/s/5e221489d42474535f71147a6e00f2b6.js")
+  final val memberLibBundleJs = modify("/s/bcb8bfbf104ee6bff0ec59651c066ec8.js")
 
   final val prismJsAutoloader = CDN(
     href = "https://cdnjs.cloudflare.com/ajax/libs/prism/1.21.0/plugins/autoloader/prism-autoloader.min.js",

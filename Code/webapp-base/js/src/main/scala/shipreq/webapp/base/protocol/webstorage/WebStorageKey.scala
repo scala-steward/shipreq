@@ -1,40 +1,29 @@
 package shipreq.webapp.base.protocol.webstorage
 
 import japgolly.scalajs.react.{Callback, CallbackTo}
+import shipreq.webapp.base.protocol.webstorage.AbstractWebStorage.Key
 
-final class WebStorageKey[A](key: String, write: A => String, read: String => Option[A]) {
+final case class WebStorageKey[V](key: Key, valueCodec: ValueCodec[V]) {
 
-  def get(implicit s: AbstractWebStorage): CallbackTo[Option[A]] =
-    s.getItem(key).map(_.flatMap(read))
+  def get(implicit s: AbstractWebStorage): CallbackTo[Option[V]] =
+    s.getItem(key).flatMap(CallbackTo.traverseOption(_)(valueCodec.decode))
 
-  def set(value: A)(implicit s: AbstractWebStorage): Callback =
-    s.setItem(key, write(value))
+  def set(value: V)(implicit s: AbstractWebStorage): Callback =
+    valueCodec.encode(value).flatMap(s.setItem(key, _))
 
   def remove(implicit s: AbstractWebStorage): Callback =
     s.removeItem(key)
 
-  def setOrRemove(value: Option[A])(implicit s: AbstractWebStorage): Callback =
+  def setOrRemove(value: Option[V])(implicit s: AbstractWebStorage): Callback =
     value.fold(remove)(set(_))
-
-  def map[B](f: A => Option[B])(g: B => A): WebStorageKey[B] =
-    new WebStorageKey(key, write compose g, read(_).flatMap(f))
-
-  def xmap[B](f: A => B)(g: B => A): WebStorageKey[B] =
-    map(f.andThen(Some(_)))(g)
 }
 
 object WebStorageKey {
 
   def string(key: String): WebStorageKey[String] =
-    new WebStorageKey(key, identity, Some(_))
+    new WebStorageKey(Key(key), ValueCodec.string)
 
   def boolean(key: String): WebStorageKey[Boolean] =
-    string(key).map({
-      case "1" => Some(true)
-      case "0" => Some(false)
-      case _   => None
-    })({
-      case true  => "1"
-      case false => "0"
-    })
+    new WebStorageKey(Key(key), ValueCodec.boolean)
+
 }
