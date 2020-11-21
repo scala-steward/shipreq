@@ -29,6 +29,12 @@ trait ProjectLibrary {
   final def addEvents(events: VerifiedEvent.Seq): This =
     update(events).fold(self)(_.newLibrary)
 
+  final def update(newProject: Project): Option[Update] =
+    if (newProject > latest)
+      update(newProject.history.events)
+    else
+      None
+
   @inline final def ord =
     latest.ord
 

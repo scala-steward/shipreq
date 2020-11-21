@@ -24,35 +24,41 @@ final class MutableProjectLibrary[PL <: ProjectLibrary](initialState: PL) {
 
   def update(ves: VerifiedEvent.Seq): Callback =
     Callback.unless(ves.isEmpty) {
-      get.flatMap { s1 =>
-        Callback.traverseOption(s1.update(ves))(u => Callback {
+      updateBy(_.update(ves))
+    }
 
-          // Update state
-          _state = u.newLibrary.asInstanceOf[PL] // cbf jumping through hoops for type-level proof of this
+  def update(p: Project): Callback =
+    updateBy(_.update(p))
 
-          // Refresh Pxs
-          val projectChanged = u.newlyAppliedEvents.nonEmpty
-          if (projectChanged)
-            _pxProject.refresh()
+  private def updateBy(f: PL => Option[ProjectLibrary.UpdateFor[PL#This]]): Callback =
+    get.flatMap { s1 =>
+      Callback.traverseOption(f(s1))(u => Callback {
 
-          // Complete ord promises
-          if (projectChanged && _ordPromises.nonEmpty) {
-            val newOrd = _state.latest.history.ordAsInt
+        // Update state
+        _state = u.newLibrary.asInstanceOf[PL] // cbf jumping through hoops for type-level proof of this
 
-            // Remove releasable promises
-            val (releasable, pending) = _ordPromises.partition(_.ord.value <= newOrd)
-            _ordPromises = pending
+        // Refresh Pxs
+        val projectChanged = u.newlyAppliedEvents.nonEmpty
+        if (projectChanged)
+          _pxProject.refresh()
 
-            // Execute releasable promises
-            for (p <- releasable)
-              p.complete.attempt.runNow() match {
-                case Right(_) =>
-                case Left(e)  => LoggerJs.exception(e)
-              }
-          }
+        // Complete ord promises
+        if (projectChanged && _ordPromises.nonEmpty) {
+          val newOrd = _state.latest.history.ordAsInt
 
-        })
-      }
+          // Remove releasable promises
+          val (releasable, pending) = _ordPromises.partition(_.ord.value <= newOrd)
+          _ordPromises = pending
+
+          // Execute releasable promises
+          for (p <- releasable)
+            p.complete.attempt.runNow() match {
+              case Right(_) =>
+              case Left(e)  => LoggerJs.exception(e)
+            }
+        }
+
+      })
     }
 
   private var _ordPromises: List[OrdPromise] =
