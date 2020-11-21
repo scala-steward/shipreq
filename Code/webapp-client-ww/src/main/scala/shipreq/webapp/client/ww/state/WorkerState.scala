@@ -21,7 +21,7 @@ final class WorkerState(logger: LoggerJs) {
   def setAssetManifest(am: AssetManifest): Callback =
     assetManifest.set(am) >> graphViz.set(GraphViz.load(am))
 
-  def withGraphViz[A](f: GraphViz => AsyncCallback[A], retries: Int = 3): AsyncCallback[A] = {
+  def withGraphViz[A](f: GraphViz => AsyncCallback[A], retries: Int = 4): AsyncCallback[A] = {
     val main = graphViz.get.flatMap(f).attempt.timeoutMs(2000)
 
     def go(retries: Int): AsyncCallback[A] =
