@@ -9,15 +9,16 @@ import shipreq.webapp.member.test.project.RandomEventStream
 import utest._
 
 object MutableProjectLibraryTest extends TestSuite {
+  import ProjectLibrary.WithMetaData
 
   override def tests = Tests {
     import ImplicitProjectEqualityDeep._
 
     val p1 = Project.empty
 
-    val genTest: Gen[(ProjectLibrary, Vector[VerifiedEvent], Project, ProjectLibrary)] = {
+    val genTest: Gen[(WithMetaData, Vector[VerifiedEvent], Project, WithMetaData)] = {
       val md1 = looseProjectMetaData(p1, eventsTotal = p1.history.ordAsInt, eventsInit = 0)
-      val s1 = ProjectLibrary.init(p1, md1, Cache.Disabled)
+      val s1 = WithMetaData.init(p1, md1, Cache.Disabled)
       for {
         (p2, ves) <- RandomEventStream.verifiedEvents(80).run(p1)
         batches   <- Gen.batches(ves, 0 to 7)

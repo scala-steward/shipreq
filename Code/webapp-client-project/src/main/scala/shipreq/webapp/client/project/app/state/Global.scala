@@ -159,7 +159,7 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
               case Success(\/-(i)) => Callback {
                 unsafeState match {
                   case State.Loading(es) =>
-                    val s = ProjectLibrary.init(i.project, i.projectMetaData, CacheJs()).addEvents(es)
+                    val s = ProjectLibrary.WithMetaData.init(i.project, i.projectMetaData, CacheJs()).addEvents(es)
                     unsafeSetState(State.Active(s, None))
                     onFirstLoad(this, i).runNow()
                   case _: State.Active =>
@@ -322,7 +322,7 @@ object Global {
   sealed trait State
   object State {
     final case class Loading(events: VerifiedEvent.Seq) extends State
-    final case class Active(projectLibrary: ProjectLibrary, staleSince: Option[Instant]) extends State
+    final case class Active(projectLibrary: ProjectLibrary.WithMetaData, staleSince: Option[Instant]) extends State
   }
 
   implicit def reusability: Reusability[Global] = Reusability.always

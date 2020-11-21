@@ -27,7 +27,7 @@ import shipreq.webapp.member.test._
 import shipreq.webapp.member.ui.BaseStyles
 import shipreq.webapp.server.logic.event._
 
-final class TestGlobal(initialProjectLibrary: ProjectLibrary) extends Global((_, _) => Callback.empty, _ => Callback.empty, LoggerJs.off) {
+final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData) extends Global((_, _) => Callback.empty, _ => Callback.empty, LoggerJs.off) {
 
   override def toString = unsafeState match {
     case Global.State.Active(a, b) => s"TestGlobal(Active($a, $b))"
@@ -247,7 +247,7 @@ object TestGlobal {
 
   def apply(p: Project): TestGlobal = {
     val md = looseProjectMetaData(p, eventsTotal = p.history.ordAsInt)
-    val ps = ProjectLibrary.init(p, md, CacheJs())
+    val ps = ProjectLibrary.WithMetaData.init(p, md, CacheJs())
     new TestGlobal(ps)
   }
 

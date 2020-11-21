@@ -7,15 +7,15 @@ import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.VerifiedEvent
 import shipreq.webapp.member.project.util.DataReusability.reusabilityProject
 
-final class MutableProjectLibrary(initialState: ProjectLibrary) {
+final class MutableProjectLibrary[PL <: ProjectLibrary](initialState: PL) {
 
-  private var _state: ProjectLibrary =
+  private var _state: PL =
     initialState
 
-  def state(): ProjectLibrary =
+  def state(): PL =
     _state
 
-  val stateCB: CallbackTo[ProjectLibrary] =
+  val stateCB: CallbackTo[PL] =
     CallbackTo(_state)
 
   private val _pxProject: Px.ThunkM[Project] =
@@ -24,11 +24,11 @@ final class MutableProjectLibrary(initialState: ProjectLibrary) {
   val pxProject: Px[Project] =
     _pxProject
 
-  private def updateState(u: ProjectLibrary.Update): Callback =
+  private def updateState(u: ProjectLibrary.UpdateFor[PL#This]): Callback =
     Callback {
       // if (s2.futureEvents.nonEmpty)
       //   console.warn(s"Not all events applied: stuck at #${s2.latestEventOrd.value} pending ${s2.futureEventRange}")
-      _state = u.newLibrary
+      _state = u.newLibrary.asInstanceOf[PL] // cbf jumping through hoops for type-level proof of this
       if (u.newlyAppliedEvents.nonEmpty)
         _pxProject.refresh()
     }
@@ -46,7 +46,7 @@ final class MutableProjectLibrary(initialState: ProjectLibrary) {
 
 object MutableProjectLibrary {
 
-  def apply(initialState: ProjectLibrary): MutableProjectLibrary =
+  def apply[PL <: ProjectLibrary](initialState: PL): MutableProjectLibrary[PL] =
     new MutableProjectLibrary(initialState)
 
 }

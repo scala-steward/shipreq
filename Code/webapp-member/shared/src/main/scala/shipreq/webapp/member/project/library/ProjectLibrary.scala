@@ -5,92 +5,44 @@ import shipreq.webapp.member.project.data.{Project, ProjectMetaData}
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
 
 /** A library of revisions of a project.
-  * Includes up-to-date [[ProjectMetaData]], and additional info needed to continue applying events.
   *
   * Event application is idempotent and commutative.
-  *
-  * @param futureEvents Events that can't be applied yet because there are events missing between the earliest here and
-  *                     the latest project.
   */
-final class ProjectLibrary(val latest        : Project,
-                           val latestMetaData: ProjectMetaData,
-                           val futureEvents  : VerifiedEvent.Seq,
-                           prevCache         : Cache) {
-  import ProjectLibrary._
+trait ProjectLibrary {
+  type This <: ProjectLibrary
 
-  assert(
-    futureEvents.isEmpty || futureEvents.head.ord.value > latest.history.ordAsInt + 1,
-    s"Project is v${latest.history.ordAsInt} but youngest future event is v${futureEvents.head.ord.value}")
+  def self: This
 
-  private def copy(latest        : Project           = latest,
-                   latestMetaData: ProjectMetaData   = latestMetaData,
-                   futureEvents  : VerifiedEvent.Seq,
-                  ): ProjectLibrary =
-    new ProjectLibrary(
-      latest         = latest,
-      latestMetaData = latestMetaData,
-      futureEvents   = futureEvents,
-      prevCache      = cache,
-    )
+  val latest: Project
 
-  @inline def ord =
+  /** Events that can't be applied yet because there are events missing between the earliest here and
+    * the latest project.
+    */
+  val futureEvents: VerifiedEvent.Seq
+
+  def update(events: VerifiedEvent.Seq): Option[Update]
+
+  def projectAt(ord: EventOrd): Option[Project]
+
+  final type Update = ProjectLibrary.UpdateFor[This]
+
+  final def addEvents(events: VerifiedEvent.Seq): This =
+    update(events).fold(self)(_.newLibrary)
+
+  @inline final def ord =
     latest.ord
 
-  def descState: String =
+  final def descState: String =
     s"ord = $ord, future = $futureEventRange"
 
-  def futureEventRange: String =
+  final def futureEventRange: String =
     "[" + ConciseIntSetFormat(futureEvents.iterator.map(_.ord.value).toSet) + "]"
-
-  override def toString: String =
-    s"ProjectLibrary($descState)"
-
-  def update(events: VerifiedEvent.Seq): Option[ProjectLibrary.Update] = {
-    val newEvents = ord.fold(events)(o => events.filter(_.ord > o))
-    val pendingEvents = futureEvents ++ newEvents
-    removeConsecutive(pendingEvents, _.immediatelyFollowsLatest(ord)) match {
-
-      case Some((ves, remainingFutureEvents)) =>
-        val p2  = latest.updateOrThrow(ves)
-        val md2 = latestMetaData.applyEvents(ves, p2, ves.last.createdAt)
-        val s2  = copy(p2, md2, remainingFutureEvents)
-        Some(Update(s2, ves.values))
-
-      case None =>
-        if (newEvents.isEmpty)
-          None
-        else {
-          val s2 = copy(futureEvents = pendingEvents)
-          Some(Update(s2, VerifiedEvent.Seq.empty))
-        }
-    }
-  }
-
-  def addEvents(events: VerifiedEvent.Seq): ProjectLibrary =
-    update(events).fold(this)(_.newLibrary)
-
-  private val cache =
-    prevCache.update(latest)
-
-  private val latestOrd =
-    latest.history.ordAsInt
-
-  def projectAt(ord: EventOrd): Option[Project] =
-    if (ord.value == latestOrd)
-      Some(latest)
-    else if (ord.value > latestOrd)
-      None
-    else
-      cache(ord)
 }
 
 object ProjectLibrary {
 
-  def init(p: Project, md: ProjectMetaData, cache: Cache): ProjectLibrary =
-    new ProjectLibrary(p, md, VerifiedEvent.Seq.empty, cache)
-
-  final case class Update(newLibrary        : ProjectLibrary,
-                          newlyAppliedEvents: VerifiedEvent.Seq) {
+  final case class UpdateFor[+PL <: ProjectLibrary](newLibrary        : PL,
+                                                    newlyAppliedEvents: VerifiedEvent.Seq) {
 
     /** Adding future events is still considered an update to the library. The latest project isn't always updated. */
     def latestUpdated: Boolean =
@@ -100,7 +52,133 @@ object ProjectLibrary {
       NewEvents(newlyAppliedEvents, newLibrary.latest)
   }
 
-  private[ProjectLibrary] def removeConsecutive(events: VerifiedEvent.Seq, headFilter: EventOrd => Boolean): Option[(VerifiedEvent.NonEmptySeq, VerifiedEvent.Seq)] =
+  // ===================================================================================================================
+
+  type Update = UpdateFor[ProjectLibrary]
+
+  def empty(cache: Cache): ProjectLibrary =
+    init(Project.empty, cache)
+
+  def init(p: Project, cache: Cache): ProjectLibrary =
+    new Basic(p, VerifiedEvent.Seq.empty, cache)
+
+  private final class Basic(val latest        : Project,
+                            val futureEvents  : VerifiedEvent.Seq,
+                            prevCache         : Cache) extends Shared(latest, prevCache) {
+
+    override type This = Basic
+
+    override def self: This =
+      this
+
+    override def toString: String =
+      s"ProjectLibrary($descState)"
+
+    private def copy(latest        : Project           = latest,
+                     futureEvents  : VerifiedEvent.Seq,
+                    ): This =
+      new Basic(
+        latest         = latest,
+        futureEvents   = futureEvents,
+        prevCache      = cache,
+      )
+
+    override def update(events: VerifiedEvent.Seq): Option[Update] =
+      _update(
+        events       = events,
+        updateLatest = (p2, _, fe2) => copy(p2, fe2),
+        updateFuture = fe2 => copy(futureEvents = fe2)
+      )
+  }
+
+  // ===================================================================================================================
+
+  object WithMetaData {
+    type Update = UpdateFor[WithMetaData]
+
+    def init(p: Project, md: ProjectMetaData, cache: Cache): WithMetaData =
+      new WithMetaData(p, md, VerifiedEvent.Seq.empty, cache)
+  }
+
+  final class WithMetaData(val latest        : Project,
+                           val latestMetaData: ProjectMetaData,
+                           val futureEvents  : VerifiedEvent.Seq,
+                           prevCache         : Cache) extends Shared(latest, prevCache) {
+
+    override type This = WithMetaData
+
+    override def self: This =
+      this
+
+    override def toString: String =
+      s"ProjectLibrary.WithMetaData($descState)"
+
+    private def copy(latest        : Project           = latest,
+                     latestMetaData: ProjectMetaData   = latestMetaData,
+                     futureEvents  : VerifiedEvent.Seq,
+                    ): This =
+      new WithMetaData(
+        latest         = latest,
+        latestMetaData = latestMetaData,
+        futureEvents   = futureEvents,
+        prevCache      = cache,
+      )
+
+    override def update(events: VerifiedEvent.Seq): Option[Update] =
+      _update(
+        events       = events,
+        updateLatest = (p2, ves, fe2) => copy(p2, latestMetaData.applyEvents(ves, p2, ves.last.createdAt), fe2),
+        updateFuture = fe2 => copy(futureEvents = fe2)
+      )
+  }
+
+  // ===================================================================================================================
+
+  sealed abstract class Shared(latest: Project, prevCache: Cache) extends ProjectLibrary {
+
+    assert(
+      futureEvents.isEmpty || futureEvents.head.ord.value > latest.history.ordAsInt + 1,
+      s"Project is v${latest.history.ordAsInt} but youngest future event is v${futureEvents.head.ord.value}")
+
+    protected def _update(events      : VerifiedEvent.Seq,
+                          updateLatest: (Project, VerifiedEvent.NonEmptySeq, VerifiedEvent.Seq) => This,
+                          updateFuture: VerifiedEvent.Seq => This
+                         ): Option[Update] = {
+      val newEvents = ord.fold(events)(o => events.filter(_.ord > o))
+      val pendingEvents = futureEvents ++ newEvents
+      removeConsecutive(pendingEvents, _.immediatelyFollowsLatest(ord)) match {
+
+        case Some((ves, remainingFutureEvents)) =>
+          val p2  = latest.updateOrThrow(ves)
+          val s2  = updateLatest(p2, ves, remainingFutureEvents)
+          Some(UpdateFor(s2, ves.values))
+
+        case None =>
+          if (newEvents.isEmpty)
+            None
+          else {
+            val s2 = updateFuture(pendingEvents)
+            Some(UpdateFor(s2, VerifiedEvent.Seq.empty))
+          }
+      }
+    }
+
+    protected final val cache =
+      prevCache.update(latest)
+
+    private val latestOrd =
+      latest.history.ordAsInt
+
+    override final def projectAt(ord: EventOrd): Option[Project] =
+      if (ord.value == latestOrd)
+        Some(latest)
+      else if (ord.value > latestOrd)
+        None
+      else
+        cache(ord)
+  }
+
+  private def removeConsecutive(events: VerifiedEvent.Seq, headFilter: EventOrd => Boolean): Option[(VerifiedEvent.NonEmptySeq, VerifiedEvent.Seq)] =
     events.headOption
       .filter(ve => headFilter(ve.ord))
       .map { ve1 =>
