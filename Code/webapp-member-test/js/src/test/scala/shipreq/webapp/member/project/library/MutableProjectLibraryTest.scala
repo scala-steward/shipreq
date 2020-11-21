@@ -29,8 +29,8 @@ object MutableProjectLibraryTest extends TestSuite {
 //        println(s"Generated ${ves.length} events and ${batches.length} batches starting at #${initialOrd.value + 1}")
 //        batches.foreach(println)
 //        m.addListener((ves, _, s) => Callback(println(s"Adding: $ves, pending: ${s.futureEventRange}")))
-        batches.foreach(b => m.applyEventSeqCB(b.to(TreeSet)).runNow())
-        (s1, ves, p2, m.state())
+        batches.foreach(b => m.update(b.to(TreeSet)).runNow())
+        (s1, ves, p2, m.get.runNow())
       }
     }
 

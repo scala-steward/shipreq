@@ -2,7 +2,6 @@ package shipreq.webapp.member.project.library
 
 import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.{Callback, CallbackTo}
-import shipreq.webapp.base.util.TCB
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.VerifiedEvent
 import shipreq.webapp.member.project.util.DataReusability.reusabilityProject
@@ -12,10 +11,7 @@ final class MutableProjectLibrary[PL <: ProjectLibrary](initialState: PL) {
   private var _state: PL =
     initialState
 
-  def state(): PL =
-    _state
-
-  val stateCB: CallbackTo[PL] =
+  val get: CallbackTo[PL] =
     CallbackTo(_state)
 
   private val _pxProject: Px.ThunkM[Project] =
@@ -24,24 +20,22 @@ final class MutableProjectLibrary[PL <: ProjectLibrary](initialState: PL) {
   val pxProject: Px[Project] =
     _pxProject
 
-  private def updateState(u: ProjectLibrary.UpdateFor[PL#This]): Callback =
-    Callback {
-      // if (s2.futureEvents.nonEmpty)
-      //   console.warn(s"Not all events applied: stuck at #${s2.latestEventOrd.value} pending ${s2.futureEventRange}")
-      _state = u.newLibrary.asInstanceOf[PL] // cbf jumping through hoops for type-level proof of this
-      if (u.newlyAppliedEvents.nonEmpty)
-        _pxProject.refresh()
-    }
+  def update(ves: VerifiedEvent.Seq): Callback =
+    Callback.unless(ves.isEmpty) {
+      get.flatMap { s1 =>
+        Callback.traverseOption(s1.update(ves))(u => Callback {
 
-  def applyEventSeqCB(ves: VerifiedEvent.Seq): Callback =
-    Callback.unless(ves.isEmpty)(
-      stateCB.flatMap { s1 =>
-        Callback.traverseOption(s1.update(ves))(updateState)
+          // Update state
+
+          // if (s2.futureEvents.nonEmpty)
+          //   console.warn(s"Not all events applied: stuck at #${s2.latestEventOrd.value} pending ${s2.futureEventRange}")
+          _state = u.newLibrary.asInstanceOf[PL] // cbf jumping through hoops for type-level proof of this
+          if (u.newlyAppliedEvents.nonEmpty)
+            _pxProject.refresh()
+
+        })
       }
-    )
-
-  def applyEventSeqSCB(ves: VerifiedEvent.Seq): TCB.Success =
-    TCB.Success(applyEventSeqCB(ves))
+    }
 }
 
 object MutableProjectLibrary {
