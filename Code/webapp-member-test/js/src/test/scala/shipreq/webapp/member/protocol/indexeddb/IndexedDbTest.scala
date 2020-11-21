@@ -3,7 +3,7 @@ package shipreq.webapp.member.protocol.indexeddb
 import shipreq.base.test.Node.asyncTest
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.member.project.data.Project
-import shipreq.webapp.member.protocol.binary.Compression
+import shipreq.webapp.member.protocol.binary.{BinaryFormat, Compression}
 import shipreq.webapp.member.test.WebappTestUtil.ImplicitProjectEqualityDeep._
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project._
@@ -54,7 +54,7 @@ object IndexedDbTest extends TestSuite {
       import SampleProject5.{project => project2}
       import SafePickler.ConstructionHelperImplicits._
       import TestEncryption.UnsafeTypes._
-      import ValueCodec.Async.{binary, pickleCompressEncrypt}
+      import ValueCodec.Async.binary
 
       implicit val safePicklerProject: SafePickler[Project] =
         picklerProject.asV1(0).withMagicNumbers(0x89827590, 0x8858F858)
@@ -71,9 +71,12 @@ object IndexedDbTest extends TestSuite {
       for {
         enc1   <- TestEncryption("a" * 32)
         enc2   <- TestEncryption("b" * 32)
-        store13 = ObjectStoreDef.Async(storeName, kc, pickleCompressEncrypt[Project](zip3, enc1).apply(binary))
-        store19 = ObjectStoreDef.Async(storeName, kc, pickleCompressEncrypt[Project](zip9, enc1).apply(binary))
-        store2  = ObjectStoreDef.Async(storeName, kc, pickleCompressEncrypt[Project](zip3, enc2).apply(binary))
+        fmt13   = BinaryFormat.pickleCompressEncrypt[Project](zip3, enc1)
+        fmt19   = BinaryFormat.pickleCompressEncrypt[Project](zip9, enc1)
+        fmt2    = BinaryFormat.pickleCompressEncrypt[Project](zip3, enc2)
+        store13 = ObjectStoreDef.Async(storeName, kc, binary.xmapBinaryFormat(fmt13))
+        store19 = ObjectStoreDef.Async(storeName, kc, binary.xmapBinaryFormat(fmt19))
+        store2  = ObjectStoreDef.Async(storeName, kc, binary.xmapBinaryFormat(fmt2))
         db13   <- TestIndexedDb(dbName, store13)
         db19   <- TestIndexedDb(dbName, store19)
         db2    <- TestIndexedDb(dbName, store2)
