@@ -6,12 +6,14 @@ import scala.scalajs.js
 import shipreq.base.util.SetOnceVar
 
 trait AbstractWebStorage {
+  import AbstractWebStorage.{Key, Value}
+
   def clear: Callback
-  def getItem(key: String): CallbackTo[Option[String]]
-  def removeItem(key: String): Callback
-  def setItem(key: String, data: String): Callback
+  def getItem(key: Key): CallbackTo[Option[Value]]
+  def removeItem(key: Key): Callback
+  def setItem(key: Key, data: Value): Callback
   def getLength: CallbackTo[Int]
-  def getKey(index: Int): CallbackTo[Option[String]]
+  def getKey(index: Int): CallbackTo[Option[Key]]
 }
 
 object AbstractWebStorage {
@@ -35,25 +37,28 @@ object AbstractWebStorage {
   implicit def reusability: Reusability[AbstractWebStorage] =
     Reusability.byRef
 
+  final case class Key(value: String) extends AnyVal
+  final case class Value(value: String) extends AnyVal
+
   // ===================================================================================================================
 
   object AlwaysEmpty extends AbstractWebStorage {
     override def clear: Callback =
       Callback.empty
 
-    override def getItem(key: String): CallbackTo[Option[String]] =
+    override def getItem(key: Key): CallbackTo[Option[Value]] =
       CallbackTo.pure(None)
 
-    override def removeItem(key: String): Callback =
+    override def removeItem(key: Key): Callback =
       Callback.empty
 
-    override def setItem(key: String, data: String): Callback =
+    override def setItem(key: Key, data: Value): Callback =
       Callback.empty
 
     override def getLength: CallbackTo[Int] =
       CallbackTo.pure(0)
 
-    override def getKey(index: Int): CallbackTo[Option[String]] =
+    override def getKey(index: Int): CallbackTo[Option[Key]] =
       CallbackTo.pure(None)
   }
 
@@ -63,20 +68,30 @@ object AbstractWebStorage {
     override def clear: Callback =
       Callback(storageJs.clear())
 
-    override def getItem(key: String): CallbackTo[Option[String]] =
-      CallbackTo(Option(storageJs.getItem(key)))
+    override def getItem(key: Key): CallbackTo[Option[Value]] =
+      CallbackTo {
+        storageJs.getItem(key.value) match {
+          case null => None
+          case v    => Some(Value(v))
+        }
+      }
 
-    override def removeItem(key: String): Callback =
-      Callback(storageJs.removeItem(key))
+    override def removeItem(key: Key): Callback =
+      Callback(storageJs.removeItem(key.value))
 
-    override def setItem(key: String, data: String): Callback =
-      Callback(storageJs.setItem(key, data))
+    override def setItem(key: Key, data: Value): Callback =
+      Callback(storageJs.setItem(key.value, data.value))
 
     override def getLength: CallbackTo[Int] =
       CallbackTo(storageJs.length)
 
-    override def getKey(index: Int): CallbackTo[Option[String]] =
-      CallbackTo(Option(storageJs.key(index)))
+    override def getKey(index: Int): CallbackTo[Option[Key]] =
+      CallbackTo {
+        storageJs.key(index) match {
+          case null => None
+          case k    => Some(Key(k))
+        }
+      }
   }
 
   // ===================================================================================================================
@@ -90,20 +105,20 @@ object AbstractWebStorage {
     override def clear: Callback =
       Callback {state = Map.empty}
 
-    override def getItem(key: String): CallbackTo[Option[String]] =
-      CallbackTo(state.get(key))
+    override def getItem(key: Key): CallbackTo[Option[Value]] =
+      CallbackTo(state.get(key.value).map(Value))
 
-    override def removeItem(key: String): Callback =
-      Callback {state -= key}
+    override def removeItem(key: Key): Callback =
+      Callback {state -= key.value}
 
-    override def setItem(key: String, data: String): Callback =
-      Callback {state = state.updated(key, data)}
+    override def setItem(key: Key, data: Value): Callback =
+      Callback {state = state.updated(key.value, data.value)}
 
     override def getLength: CallbackTo[Int] =
       CallbackTo(state.size)
 
-    override def getKey(index: Int): CallbackTo[Option[String]] =
-      CallbackTo(state.iterator.drop(index).nextOption().map(_._1))
+    override def getKey(index: Int): CallbackTo[Option[Key]] =
+      CallbackTo(state.iterator.drop(index).nextOption().map(e => Key(e._1)))
   }
 
 }
