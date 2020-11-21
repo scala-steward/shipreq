@@ -8,7 +8,6 @@ import shipreq.webapp.client.ww.state.WorkerState
 import shipreq.webapp.member.protocol.webworker._
 
 final class Service[Client](server: Service.Server[Client], state: WorkerState) extends ManagedWebWorker.Server.Service[Client, WebWorkerCmd] {
-  import state.Implicits._
   import WebWorkerCmd._
 
   locally(server) // TODO remove
@@ -23,35 +22,35 @@ final class Service[Client](server: Service.Server[Client], state: WorkerState) 
         state.updateProject(ves).asAsyncCallback.ret(NoResult)
 
       case GraphUseCaseFlow(ord, id, ctx) =>
-        state.withGraphViz(
+        state.withGraphViz { implicit g =>
           for {
             _ <- state.await(ord)
             p <- state.acProject
             x <- new UseCaseFlowGraph(id, p, ctx).svg
           } yield x
-        )
+        }
 
       case GraphReqImplications(ord, focus, filterDead, colours) =>
-        state.withGraphViz(
+        state.withGraphViz { implicit g =>
           for {
             _ <- state.await(ord)
             p <- state.acProject
             x <- new ReqImpGraph(focus, filterDead, p, colours).svg
           } yield x
-        )
+        }
 
       case GraphAllImplications(ord, filterDead, scope, config) =>
-        state.withGraphViz(
+        state.withGraphViz { implicit g =>
           for {
             _  <- state.await(ord)
             p  <- state.acProject
             pt <- state.acPlainText
             x  <- new ProjectImpGraph(p, pt, filterDead, scope, config).svg
           } yield x
-        )
+        }
 
       case GraphInline(dot) =>
-        state.withGraphViz(graphviz.render(DOT(dot)))
+        state.withGraphViz(_.render(DOT(dot)))
     }
 }
 

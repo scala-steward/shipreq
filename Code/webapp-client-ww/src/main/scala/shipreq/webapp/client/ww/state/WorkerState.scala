@@ -5,6 +5,7 @@ import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
 import monocle.macros.Lenses
 import shipreq.webapp.base.config.AssetManifest
 import shipreq.webapp.base.lib.LoggerJs
+import shipreq.webapp.base.util.AsyncVar
 import shipreq.webapp.client.ww.graph.GraphViz
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.EventOrd.Implicits._
@@ -14,56 +15,37 @@ import shipreq.webapp.member.project.text.PlainText
 final class WorkerState(logger: LoggerJs) {
   import WorkerState._
 
-  private var _am: AssetManifest =
-    null
-
-  private var _graphviz: GraphViz =
-    null
+  private val assetManifest = AsyncVar[AssetManifest]()
+  private val graphViz      = AsyncVar[GraphViz]()
 
   def setAssetManifest(am: AssetManifest): Callback =
-    Callback {
-      this._am = am
-      this._graphviz = GraphViz.load(am)
-    } >> graphvizBarrier.complete
+    assetManifest.set(am) >> graphViz.set(GraphViz.load(am))
 
-  object Implicits {
-
-    implicit def assetManifest: AssetManifest = {
-      assert(_am ne null, "WorkerState AssetManifest not set.")
-      _am
-    }
-
-    implicit def graphviz: GraphViz = {
-      assert(_graphviz ne null, "WorkerState GraphViz not set.")
-      _graphviz
-    }
-  }
-
-  private val graphvizBarrier =
-    AsyncCallback.barrier.runNow()
-
-  private val awaitGraphViz: AsyncCallback[Unit] =
-    graphvizBarrier.waitForCompletion
-
-  def withGraphViz[A](f: => AsyncCallback[A], retries: Int = 3): AsyncCallback[A] = {
-    val main = AsyncCallback.byName(f).attempt.timeoutMs(2000)
+  def withGraphViz[A](f: GraphViz => AsyncCallback[A], retries: Int = 3): AsyncCallback[A] = {
+    val main = graphViz.get.flatMap(f).attempt.timeoutMs(2000)
 
     def go(retries: Int): AsyncCallback[A] =
       main.flatMap {
         case Some(Right(a)) =>
           AsyncCallback.pure(a)
+
         case result =>
-          _graphviz = GraphViz.newInstance
-          if (retries > 0)
-            go(retries - 1)
-          else
-            result match {
-              case Some(Left(err)) => AsyncCallback.throwException(err)
-              case _               => AsyncCallback.throwException(new RuntimeException("Timeout rendering graph"))
-            }
+          val createNewInstance: AsyncCallback[Unit] =
+            graphViz.set(GraphViz.newInstance).asAsyncCallback
+
+          val next: AsyncCallback[A] =
+            if (retries > 0)
+              go(retries - 1)
+            else
+              result match {
+                case Some(Left(err)) => AsyncCallback.throwException(err)
+                case _               => AsyncCallback.throwException(new RuntimeException("Timeout rendering graph"))
+              }
+
+          createNewInstance >> next
       }
 
-    awaitGraphViz >> go(retries)
+    go(retries)
   }
 
   private var state: Immutable =
