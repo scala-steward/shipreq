@@ -7,21 +7,38 @@ trait Cache {
 
   /** Safety checks are performed before calling this.
    *
-   * @param ord Unless latest is empty, ord > 0 && < latest
+   * @param ord Unless latest is empty, 0 < ord < latest
    */
   def apply(ord: EventOrd): Option[Project]
 
   def iterator(): Iterator[Project]
 
-  def update(latest: Project): Cache
+  final def update(projects: Iterable[Project]): Cache =
+    if (projects.isEmpty)
+      this
+    else
+      updateNE(projects)
+
+  final def update(project: Project): Cache =
+    updateNE(project :: Nil)
+
+  protected def updateNE(projects: Iterable[Project]): Cache
 }
 
 object Cache {
 
   object Disabled extends Cache {
-    override def apply(ord: EventOrd)    = None
-    override def iterator()              = Iterator.empty
-    override def update(latest: Project) = new Instance(latest)
+
+    override def apply(ord: EventOrd) =
+      None
+
+    override def iterator() =
+      Iterator.empty
+
+    override protected def updateNE(projects: Iterable[Project]) = {
+      val latest = projects.iterator.maxBy(_.ordAsInt)
+      new Instance(latest)
+    }
 
     final class Instance(latest: Project) extends Cache {
 
@@ -33,8 +50,14 @@ object Cache {
       override def iterator() =
         Iterator.single(latest)
 
-      override def update(latest: Project) =
-        new Instance(latest)
+      override protected def updateNE(projects: Iterable[Project]) = {
+        val newLatest = projects.iterator.maxBy(_.ordAsInt)
+        if (newLatest > latest)
+          new Instance(newLatest)
+        else
+          this
+      }
     }
   }
+
 }

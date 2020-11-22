@@ -24,20 +24,28 @@ object CacheJs {
     override def iterator() =
       Iterator.empty
 
-    override def update(latest: Project): Cache =
-      new NonEmpty(
-        latest         = latest,
-        milestoneEvery = MilestonesEvery,
-        milestones     = new js.Array,
-        lru            = LruMemo.ExternalFn.byUnivEq(20),
-      )
+    override protected def updateNE(projects: Iterable[Project]): Cache = {
+      val latest = projects.maxBy(_.ordAsInt)
+
+      val newCache =
+        new NonEmpty(
+          latest         = latest,
+          milestoneEvery = MilestonesEvery,
+          milestones     = new js.Array,
+          lru            = LruMemo.ExternalFn.byUnivEq(20),
+        )
+
+      projects.foreach(newCache.storePotentialMilestone)
+
+      newCache
+    }
   }
 
-  private[library] final class NonEmpty(latest        : Project,
-                                        milestoneEvery: Int,
-                                        milestones    : js.Array[Project],
-                                        private[library] val
-                                        lru           : LruMemo.ExternalFn[Int, Project]) extends Cache {
+  private[library] final class NonEmpty(
+        private[library] val latest        : Project,
+                             milestoneEvery: Int,
+                             milestones    : js.Array[Project],
+        private[library] val lru           : LruMemo.ExternalFn[Int, Project]) extends Cache {
 
     @inline private def isMilestone(i: Int): Boolean =
       (i % milestoneEvery) == 0
@@ -101,7 +109,7 @@ object CacheJs {
         val p2     = p1.updateOrThrow(events)
 
         if (to == nextMilestone)
-          milestones.update(ordToMilestoneIdx(to), p2)
+          storePotentialMilestone(p2)
 
         if (to == tgt)
           p2
@@ -113,6 +121,12 @@ object CacheJs {
       val startProject  = need(startOrd)
       val nextMilestone = ((startOrd / milestoneEvery) + 1) * milestoneEvery
       go(startOrd, startProject, nextMilestone)
+    }
+
+    private[CacheJs] def storePotentialMilestone(p: Project): Unit = {
+      val o = p.ordAsInt
+      if (isMilestone(o))
+        milestones.update(ordToMilestoneIdx(o), p)
     }
 
     override def iterator(): Iterator[Project] = {
@@ -130,13 +144,24 @@ object CacheJs {
       milestoneIterator() ++ projects.iterator
     }
 
-    override def update(newLatest: Project): NonEmpty =
-      new NonEmpty(
-        latest         = newLatest,
-        milestoneEvery = milestoneEvery,
-        milestones     = milestones, // could shallow copy via .jsSlice() but latestOrd check means can reuse safely
-        lru            = lru.duplicate(),
-      )
+    override protected def updateNE(projects: Iterable[Project]): Cache = {
+      val newLatest = projects.maxBy(_.ordAsInt)
+
+      val newCache =
+        if (newLatest > latest)
+          new NonEmpty(
+            latest         = newLatest,
+            milestoneEvery = milestoneEvery,
+            milestones     = milestones, // could shallow copy via .jsSlice() but latestOrd check means can reuse safely
+            lru            = lru.duplicate(),
+          )
+        else
+          this
+
+      projects.foreach(newCache.storePotentialMilestone)
+
+      newCache
+    }
   }
 
   @js.native

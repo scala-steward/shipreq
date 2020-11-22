@@ -37,12 +37,18 @@ object CacheJsTest extends TestSuite {
 
     val retainEvery = 3
 
+    val p9 = projectAt(9)
+
     var cache = new CacheJs.NonEmpty(
-      latest         = projectAt(9),
+      latest         = p9,
       milestoneEvery = retainEvery,
       milestones     = milestones,
       lru            = LruMemo.ExternalFn.byUnivEq[Int, Project](1),
-    )
+    ).update(p9).asInstanceOf[CacheJs.NonEmpty]
+
+    def update(project: Project*): Unit = {
+      cache = cache.update(project).asInstanceOf[CacheJs.NonEmpty]
+    }
 
     def lru = cache.lru
 
@@ -60,47 +66,66 @@ object CacheJsTest extends TestSuite {
       b.result()
     }
 
-    def assertCaches(inMilestones: Int*)(inLru: Int*)(implicit l: Line): Unit = {
-      val actual = (inMilestoneCache(), inLruCache())
-      val expect = (inMilestones.toSet, inLru.toSet)
+    def assertCaches(latest: Int)(inMilestones: Int*)(inLru: Int*)(implicit l: Line): Unit = {
+      val actual = (cache.latest.ordAsInt, inMilestoneCache(), inLruCache())
+      val expect = (latest, inMilestones.toSet, inLru.toSet)
       assertEq(actual, expect)
     }
 
     def get(ord: Int)(implicit l: Line): Project = {
+      val latest = cache.latest.ordAsInt
+      if (!(0 < ord && ord < latest))
+        fail(s"Contract violation: 0 < ord ($ord) < latest ($latest)")
       val actual = cache(EventOrd(ord)).getOrThrow("No result for ord " + ord)
       val expect = projectAt(ord)
       assertEq(actual, expect)
       actual
     }
 
-    assertCaches()()
+    assertCaches(9)(9)()
     get(5)
-    assertCaches(3)(5)
+    assertCaches(9)(3, 9)(5)
     get(5)
-    assertCaches(3)(5)
+    assertCaches(9)(3, 9)(5)
     get(4)
-    assertCaches(3)(4)
+    assertCaches(9)(3, 9)(4)
 
-    cache = cache.update(projectAt(15))
+    update(projectAt(15))
+    assertCaches(15)(3, 9, 15)(4)
     get(4)
-    assertCaches(3)(4)
+    assertCaches(15)(3, 9, 15)(4)
+
+    milestones.clear()
+    get(3)
+    assertCaches(15)(3)(4)
     get(11)
-    assertCaches(3, 6, 9)(11)
-    get(15)
-    assertCaches(3, 6, 9, 12, 15)(11)
-    get(15)
-    assertCaches(3, 6, 9, 12, 15)(11)
+    assertCaches(15)(3, 6, 9)(11)
+    get(12)
+    assertCaches(15)(3, 6, 9, 12)(11)
+    get(12)
+    assertCaches(15)(3, 6, 9, 12)(11)
     get(8)
-    assertCaches(3, 6, 9, 12, 15)(8)
+    assertCaches(15)(3, 6, 9, 12)(8)
     get(9)
-    assertCaches(3, 6, 9, 12, 15)(8)
+    assertCaches(15)(3, 6, 9, 12)(8)
 
     milestones.clear()
     get(13)
-    assertCaches(9, 12)(13)
+    assertCaches(15)(9, 12)(13)
     get(6)
-    assertCaches(3, 6, 9, 12)(13)
+    assertCaches(15)(3, 6, 9, 12)(13)
     get(4)
-    assertCaches(3, 6, 9, 12)(4)
+    assertCaches(15)(3, 6, 9, 12)(4)
+
+    update(projectAt(15), projectAt(6), projectAt(22), projectAt(23), projectAt(21))
+    assertCaches(23)(3, 6, 9, 12, 15, 21)(4)
+    get(22)
+    assertCaches(23)(3, 6, 9, 12, 15, 21)(22)
+
+    update(projectAt(30), projectAt(33))
+    assertCaches(33)(3, 6, 9, 12, 15, 21, 30, 33)(22)
+
+    update(projectAt(23), projectAt(24))
+    assertCaches(33)(3, 6, 9, 12, 15, 21, 24, 30, 33)(22)
   }
 }
