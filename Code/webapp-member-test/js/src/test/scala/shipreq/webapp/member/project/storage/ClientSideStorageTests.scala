@@ -55,15 +55,17 @@ abstract class ClientSideStorageTests extends TestSuite {
     }
 
     val u1p1 = Context(userId(1), projectId(1), encKey("u1p1"))
+    val u2p1 = Context(userId(2), projectId(1), encKey("u2p1"))
+    val u1p2 = Context(userId(1), projectId(2), encKey("u1p2"))
 
     val newInstance = createInstance(u1p1)
 
     val pl2_9 = newProjectLibrary(2, 9)
-
-    val pl3 = newProjectLibrary(3)
-    assert(pl3.futureEvents.isEmpty)
-
+    val pl3   = newProjectLibrary(3)
     val pl3_6 = newProjectLibrary(3, 6)
+    val pl4   = newProjectLibrary(4)
+
+    assert(pl3.futureEvents.isEmpty)
     assert(pl3_6.futureEvents.nonEmpty)
   }
 
@@ -118,6 +120,24 @@ abstract class ClientSideStorageTests extends TestSuite {
       } yield {
         assertEq(pl, Some(pl3))
         assertEq(ord, Some(EventOrd.Latest(3)))
+      }
+    }
+
+    "isolation" - asyncTest {
+      for {
+        a   <- createInstance(u1p1)
+        b   <- createInstance(u2p1)
+        c   <- createInstance(u1p2)
+        _   <- a.saveProjectLibrary(pl2_9)
+        _   <- b.saveProjectLibrary(pl3)
+        _   <- c.saveProjectLibrary(pl4)
+        x   <- a.getProjectLibraryOrd
+        y   <- b.getProjectLibraryOrd
+        z   <- c.getProjectLibraryOrd
+      } yield {
+        assertEq(x, Some(EventOrd.Latest(2)))
+        assertEq(y, Some(EventOrd.Latest(3)))
+        assertEq(z, Some(EventOrd.Latest(4)))
       }
     }
 
