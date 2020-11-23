@@ -1,12 +1,12 @@
 package shipreq.webapp.member.project.library
 
-import java.time.Instant
 import scala.scalajs.js
 import shipreq.webapp.base.util.LruMemo
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event._
+import shipreq.webapp.member.test.ProjectLibraryTestUtil._
 import shipreq.webapp.member.test.WebappTestUtil.ImplicitProjectEqualityDeepExceptEventTime._
-import shipreq.webapp.member.test.WebappTestUtil._
+import shipreq.webapp.member.test.WebappTestUtil.{newProject => _, _}
 import sourcecode.Line
 import utest._
 
@@ -14,34 +14,19 @@ object CacheJsTest extends TestSuite {
 
   override def tests = Tests {
 
-    val now = Instant.now()
-
-    def event(i: Int) =
-      VerifiedEvent(
-        EventOrd(i),
-        Event.ProjectNameSet(i.toString),
-        now.plusSeconds(i))
-
-    def events(is: Range) =
-      VerifiedEvent.NonEmptySeq.force(
-        VerifiedEvent.Seq.empty ++ is.iterator.map(event))
-
-    def projectAt(n: Int) =
-      Project.empty.updateOrThrow(events(1 to n))
-
     val milestones: js.Array[Project] =
-      new js.Array
+      newMilestones()
 
     val milestones2: CacheJs.ArrayExt[Project] =
       milestones.asInstanceOf[CacheJs.ArrayExt[Project]]
 
-    val retainEvery = 3
+    val milestoneEvery = 3
 
-    val p9 = projectAt(9)
+    val p9 = newProject(9)
 
     var cache = new CacheJs.NonEmpty(
       latest         = p9,
-      milestoneEvery = retainEvery,
+      milestoneEvery = milestoneEvery,
       milestones     = milestones,
       lru            = LruMemo.ExternalFn.byUnivEq[Int, Project](1),
     ).update(p9).asInstanceOf[CacheJs.NonEmpty]
@@ -57,7 +42,7 @@ object CacheJsTest extends TestSuite {
         .indices
         .iterator
         .filter(milestones2.get(_).isDefined)
-        .map(_ * retainEvery + retainEvery)
+        .map(_ * milestoneEvery + milestoneEvery)
         .toSet
 
     def inLruCache(): Set[Int] = {
@@ -77,7 +62,7 @@ object CacheJsTest extends TestSuite {
       if (!(0 < ord && ord < latest))
         fail(s"Contract violation: 0 < ord ($ord) < latest ($latest)")
       val actual = cache(EventOrd(ord)).getOrThrow("No result for ord " + ord)
-      val expect = projectAt(ord)
+      val expect = newProject(ord)
       assertEq(actual, expect)
       actual
     }
@@ -90,7 +75,7 @@ object CacheJsTest extends TestSuite {
     get(4)
     assertCaches(9)(3, 9)(4)
 
-    update(projectAt(15))
+    update(newProject(15))
     assertCaches(15)(3, 9, 15)(4)
     get(4)
     assertCaches(15)(3, 9, 15)(4)
@@ -117,15 +102,15 @@ object CacheJsTest extends TestSuite {
     get(4)
     assertCaches(15)(3, 6, 9, 12)(4)
 
-    update(projectAt(15), projectAt(6), projectAt(22), projectAt(23), projectAt(21))
+    update(newProject(15), newProject(6), newProject(22), newProject(23), newProject(21))
     assertCaches(23)(3, 6, 9, 12, 15, 21)(4)
     get(22)
     assertCaches(23)(3, 6, 9, 12, 15, 21)(22)
 
-    update(projectAt(30), projectAt(33))
+    update(newProject(30), newProject(33))
     assertCaches(33)(3, 6, 9, 12, 15, 21, 30, 33)(22)
 
-    update(projectAt(23), projectAt(24))
+    update(newProject(23), newProject(24))
     assertCaches(33)(3, 6, 9, 12, 15, 21, 24, 30, 33)(22)
   }
 }
