@@ -29,12 +29,13 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
   private var stopBackground = Callback.empty
 
   override def run(ik: InitData): Unit = {
-    val i = ik.withoutEncKey
-
     BaseStyles.addToDocument()
     ErrorHandlingFeature.enable()
     Style.addToDocument()
 
+    val i            = ik.withoutEncKey
+    val logger       = LoggerJs.devOnly
+    val wwClient     = loadWebWorker(i, logger)
     val localStorage = AbstractWebStorage.localOrEmpty()
     val reauth       = ReauthenticationModal(i.username)(localStorage)
     val protocol     = ProjectSpaProtocols.WebSocket(i.projectId)
@@ -44,10 +45,10 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
     val global = Global(
       reauth        = reauth,
       wscBuilder    = wsClient,
-      onFirstLoad   = (g, _) => onLoad(i, g),
+      onFirstLoad   = (g, _) => onLoad(i, g, wwClient),
       onInitFailure = onFailure(i),
       localStorage  = localStorage,
-      logger        = LoggerJs.devOnly.prefixedWith("[WCP] "),
+      logger        = logger,
     )
 
     val keepAliveEvery     = Duration.ofSeconds(21)
@@ -68,10 +69,9 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
     WebWorkerClient.default(worker, logger).runNow()
   }
 
-  private def onLoad(i: InitDataWithoutEncKey, g: Global): Callback =
+  private def onLoad(i: InitDataWithoutEncKey, g: Global, ww: WebWorkerClient.Instance): Callback =
     Callback {
-      val wwClient = loadWebWorker(i, g.logger)
-      val root     = new LoadedRoot(i, g, ConfirmJs.real, PromptJs.real, OptionalFullscreen.real, wwClient)
+      val root     = new LoadedRoot(i, g, ConfirmJs.real, PromptJs.real, OptionalFullscreen.real, ww)
       val baseUrl  = determineBaseUrl(location.href)
       val router   = Router(baseUrl, Routes.routerConfig(root))
       val metadata = CommonProtocolsJs.Metadata.client(i.username, g.projectMetadata(i.projectId))
