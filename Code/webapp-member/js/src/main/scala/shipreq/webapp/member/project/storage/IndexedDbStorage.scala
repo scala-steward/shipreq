@@ -1,6 +1,7 @@
 package shipreq.webapp.member.project.storage
 
-import japgolly.scalajs.react.{AsyncCallback, Callback}
+import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
+import shipreq.base.util.MutableRef
 import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.member.project.data.Project
@@ -20,11 +21,15 @@ import shipreq.webapp.member.protocol.indexeddb._
  *     - all milestones plus the latest value are stored
  * }}}
  */
-final class IndexedDbStorage(db     : IndexedDb.Database,
-                             schema : IndexedDbStorage.Schema,
-                             plCache: Cache) extends ClientSideStorage.ReadWrite {
+final class IndexedDbStorage(db            : IndexedDb.Database,
+                             isAvailableVar: MutableRef[Boolean],
+                             schema        : IndexedDbStorage.Schema,
+                             plCache       : Cache) extends ClientSideStorage.ReadWrite {
 
   import IndexedDbStorage.Internals._
+
+  override val isAvailable: CallbackTo[Boolean] =
+    CallbackTo(isAvailableVar.value)
 
   override val getProjectLibraryOrd: AsyncCallback[Option[EventOrd.Latest]] =
     for {
@@ -71,16 +76,16 @@ object IndexedDbStorage {
 
     val schema = new Schema(ctx, encryption, dbNamePrefix)
 
-    val blocked: Callback =
-      Callback.TODO("Handle IndexedDb.open.blocked")
+    val isAvailable = MutableRef.boolean(true)
 
     val openCallbacks = IndexedDb.OpenCallbacks(
       upgradeNeeded = schema.upgradeNeeded,
-      blocked       = blocked,
+      versionChange = _ => Callback.empty,
+      closed        = Callback { isAvailable.value = false },
     )
 
     idb.open(schema.dbName, schema.dbVer)(openCallbacks)
-      .map(new IndexedDbStorage(_, schema, plCache))
+      .map(new IndexedDbStorage(_, isAvailable, schema, plCache))
   }
 
   // ===================================================================================================================

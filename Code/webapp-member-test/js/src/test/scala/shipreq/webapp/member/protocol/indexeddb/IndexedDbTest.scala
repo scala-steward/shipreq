@@ -1,5 +1,6 @@
 package shipreq.webapp.member.protocol.indexeddb
 
+import japgolly.scalajs.react._
 import shipreq.base.test.Node.asyncTest
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.member.project.data.Project
@@ -121,6 +122,37 @@ object IndexedDbTest extends TestSuite {
         assertEq(get2, Some("y2"))
         assert(add2.isLeft)
         add2
+      }
+    }
+
+    "closeOnUpgrade" - asyncTest {
+      val name = TestIndexedDb.freshDbName()
+      val tdb = TestIndexedDb.instance()
+      val c = TestIndexedDb.unusedOpenCallbacks
+      val store = ObjectStoreDef.Sync("test", KeyCodec.int, ValueCodec.string)
+
+      for {
+        verChg <- AsyncCallback.barrier.asAsyncCallback
+        closed <- AsyncCallback.barrier.asAsyncCallback
+
+        db1    <- tdb.open(name, 1)(c.copy(
+                    upgradeNeeded = _.createObjectStore(1, store),
+                    versionChange = _ => Callback.log("db1 verChg") >> verChg.complete,
+                    closed        = Callback.log("db1 closing") >> closed.complete))
+
+        _      <- db1.add(store)(1, "omg")
+
+        db2    <- tdb.open(name, 2)(c.copy(
+                    upgradeNeeded = _ => Callback.log("db2 upgrading")))
+
+        _      <- verChg.waitForCompletion
+        _      <- closed.waitForCompletion
+        v1     <- db1.get(store)(1).attempt
+        v2     <- db2.get(store)(1)
+      } yield {
+        assert(v1.isLeft)
+        assertEq(v2, Some("omg"))
+        v1
       }
     }
 

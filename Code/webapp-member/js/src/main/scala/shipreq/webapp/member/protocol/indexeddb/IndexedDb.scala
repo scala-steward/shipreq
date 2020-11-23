@@ -24,7 +24,7 @@ final class IndexedDb(raw: IDBFactory) {
       def create(): IDBOpenDBRequest = {
         val r = rawOpen
 
-        r.onblocked = callbacks.blocked.toJsFn1
+        // r.onblocked = callbacks.blocked.toJsFn1
 
         r.onupgradeneeded = e => {
           val db = new DatabaseInVersionChange(r.result.asInstanceOf[IDBDatabase])
@@ -35,7 +35,32 @@ final class IndexedDb(raw: IDBFactory) {
         r
       }
 
-      asyncRequest(create())(r => new Database(r.result.asInstanceOf[IDBDatabase]))
+      asyncRequest(create()) { r =>
+        val rawDb = r.result.asInstanceOf[IDBDatabase]
+        val rawDb2 = r.result.asInstanceOf[IDBDatabaseMissing]
+
+        rawDb2.onversionchange = e => {
+          try {
+            val args = versionChange(new DatabaseInVersionChange(rawDb), e)
+            callbacks.versionChange(args).runNow()
+          } finally {
+            // We close the DB at the end of this event on matter what so that other connections don't block and we
+            // don't have to handle onblocked events.
+            rawDb.close()
+
+            // The onclose event handler is only fired "when the database is unexpectedly closed".
+            // Therefore we call it here explicitly.
+            // https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase/onclose
+            callbacks.closed.runNow()
+          }
+        }
+
+        rawDb2.onclose = _ => {
+          callbacks.closed.runNow()
+        }
+
+        new Database(rawDb, onClose = callbacks.closed)
+      }
     }
 }
 
@@ -63,8 +88,17 @@ object IndexedDb {
       db.createObjectStore(defn).when_(oldVersion < ver && newVersion.exists(_ >= ver))
   }
 
+  /** Callbacks to install when opening a DB.
+   *
+   * Note 1: On `versionChange`, the DB connection will be closed automatically.
+   *
+   * Note 2: There's no `blocked` handler because we currently don't allow blocking. To quote the idb spec:
+   *         if "there are open connections that don’t close in response to a versionchange event, the request will be
+   *         blocked until all they close".
+   */
   final case class OpenCallbacks(upgradeNeeded: VersionChange => Callback,
-                                 blocked      : Callback)
+                                 versionChange: VersionChange => Callback,
+                                 closed       : Callback)
 
   final case class Error(event: ErrorEvent) extends RuntimeException(
     event.asInstanceOf[js.Dynamic].message.asInstanceOf[js.UndefOr[String]].getOrElse(null)
@@ -87,20 +121,17 @@ object IndexedDb {
   }
 
   // -------------------------------------------------------------------------------------------------------------------
-  final class Database(raw: IDBDatabase) {
+  final class Database(raw: IDBDatabase, onClose: Callback) {
 
-    def close: Callback =
-      Callback {
-        raw.close()
-      }
+    def close: Callback = {
+      val actuallyClose =
+        Callback(raw.close()).attempt
 
-    def onVersionChange(f: VersionChange => AsyncCallback[Unit]): Callback =
-      Callback {
-        raw.asInstanceOf[IDBDatabaseMissing].onversionchange = e => {
-          val args = versionChange(new DatabaseInVersionChange(raw), e)
-          f(args).runNow()
-        }
-      }
+      // The onclose event handler is only fired "when the database is unexpectedly closed".
+      // Therefore we call it here explicitly.
+      // https://developer.mozilla.org/en-US/docs/Web/API/IDBDatabase/onclose
+      actuallyClose >> onClose
+    }
 
     val transactionRO: TxnStep1 = new TxnStep1("readonly")
     val transactionRW: TxnStep1 = new TxnStep1("readwrite")
@@ -427,6 +458,7 @@ object IndexedDb {
     @nowarn
     class IDBDatabaseMissing extends IDBDatabase {
       var onversionchange: js.Function1[IDBVersionChangeEvent, _] = js.native
+      var onclose: js.Function1[Event, _] = js.native
     }
 
     @js.native

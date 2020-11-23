@@ -16,9 +16,13 @@ object TestIndexedDb {
 
   private var prevDbIndex = 0
 
-  def fresh = {
+  def freshDbName() = {
     prevDbIndex += 1
-    val name = DatabaseName("testdb_" + prevDbIndex)
+    DatabaseName("testdb_" + prevDbIndex)
+  }
+
+  def fresh = {
+    val name = freshDbName()
     instance().open(name)
   }
 
@@ -31,13 +35,11 @@ object TestIndexedDb {
   def apply(stores: ObjectStoreDef[_, _]*): AsyncCallback[IndexedDb.Database] =
     fresh(createStoresOnOpen(stores: _*))
 
-  private implicit def throwableStrings(s: String): Throwable =
-    new RuntimeException(s)
-
   def unusedOpenCallbacks: OpenCallbacks =
     OpenCallbacks(
-      upgradeNeeded = v => Callback.throwException(s"IndexedDb.open.upgradeNeeded called: $v"),
-      blocked = Callback.throwException("IndexedDb.open.blocked called")
+      upgradeNeeded = _ => Callback.empty,
+      versionChange = _ => Callback.empty,
+      closed        = Callback.empty,
     )
 
   def createStoresOnOpen(stores: ObjectStoreDef[_, _]*): OpenCallbacks =

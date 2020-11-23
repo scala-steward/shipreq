@@ -26,6 +26,8 @@ trait ProjectLibrary extends EventOrd.CmpOps {
 
   def projectAt(ord: EventOrd): Option[Project]
 
+  def withoutFutureEvents: This
+
   final type Update = ProjectLibrary.UpdateFor[This]
 
   final def addEvents(events: VerifiedEvent.Seq): This =
@@ -106,6 +108,9 @@ object ProjectLibrary {
         updateLatest = (p2, _, fe2) => copy(p2, fe2),
         updateFuture = fe2 => copy(futureEvents = fe2)
       )
+
+    override def withoutFutureEvents: This =
+      new Basic(latest, VerifiedEvent.Seq.empty, cache)
   }
 
   // ===================================================================================================================
@@ -147,6 +152,9 @@ object ProjectLibrary {
         updateLatest = (p2, ves, fe2) => copy(p2, latestMetaData.applyEvents(ves, p2, ves.last.createdAt), fe2),
         updateFuture = fe2 => copy(futureEvents = fe2)
       )
+
+    override def withoutFutureEvents: This =
+      new WithMetaData(latest, latestMetaData, VerifiedEvent.Seq.empty, cache)
   }
 
   // ===================================================================================================================

@@ -1,6 +1,6 @@
 package shipreq.webapp.member.project.storage
 
-import japgolly.scalajs.react.AsyncCallback
+import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
 import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.webstorage._
@@ -26,7 +26,11 @@ final class WebStorage(ws        : AbstractWebStorage,
 
   @inline private implicit def _ws = ws
 
-  private val protocols = new WebStorage.Protocols(encryption)
+  override val isAvailable: CallbackTo[Boolean] =
+    CallbackTo.pure(true)
+
+  private val protocols =
+    new WebStorage.Protocols(encryption)
 
   private def newKey(name: String): AbstractWebStorage.Key =
     AbstractWebStorage.Key(s"${ctx.namespace}:$name")
