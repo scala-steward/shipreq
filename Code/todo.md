@@ -2,6 +2,7 @@
 # Phase 3
 
 * Require node > 15 in docker build env
+* Upgrade sbt to 1.4.4 in docker build env
 * upgrade graal & docker images
 
 * DB tables:
