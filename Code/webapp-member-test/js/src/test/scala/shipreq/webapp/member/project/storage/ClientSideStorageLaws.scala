@@ -14,7 +14,7 @@ import shipreq.webapp.member.test.WebappTestUtil.ImplicitProjectEqualityDeepExce
 import shipreq.webapp.member.test.WebappTestUtil._
 import utest._
 
-abstract class ClientSideStorageTests extends TestSuite {
+abstract class ClientSideStorageLaws extends TestSuite {
 
   protected final implicit val equalProjectLibrary: Equal[ProjectLibrary] =
     Equal.equalBy(l => (l.latest, l.futureEvents))
