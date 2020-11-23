@@ -120,6 +120,16 @@ object ProjectLibrary {
 
     def init(p: Project, md: ProjectMetaData, cache: Cache): WithMetaData =
       new WithMetaData(p, md, VerifiedEvent.Seq.empty, cache)
+
+    @deprecated("")
+    def init(pe: Project \/ VerifiedEvent.Seq, md: ProjectMetaData, cache: Cache): WithMetaData =
+      pe match {
+        case \/-(e) =>
+          val basic = new Basic(Project.empty, VerifiedEvent.Seq.empty, cache).addEvents(e)
+          new WithMetaData(basic.latest, md, basic.futureEvents, basic.cache)
+        case -\/(p) =>
+          init(p, md, cache)
+      }
   }
 
   final class WithMetaData(val latest        : Project,

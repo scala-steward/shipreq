@@ -152,14 +152,14 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
   final private def load: Callback =
     for {
       _  <- logger.pure(l => l.info("WebSocket opened. Requesting InitApp...") >> l.time("initApp"))
-      a1 <- wsClient.send(WsReqRes.InitApp)(())
+      a1 <- wsClient.send(WsReqRes.InitApp)(None)
       a2  = a1 <* logger.async(_.timeEnd("initApp"))
       _  <- a2.completeWith {
 
               case Success(\/-(i)) => Callback {
                 unsafeState match {
                   case State.Loading(es) =>
-                    val s = ProjectLibrary.WithMetaData.init(i.project, i.projectMetaData, CacheJs()).addEvents(es)
+                    val s = ProjectLibrary.WithMetaData.init(i.projectData, i.projectMetaData, CacheJs()).addEvents(es)
                     unsafeSetState(State.Active(s, None))
                     onFirstLoad(this, i).runNow()
                   case _: State.Active =>

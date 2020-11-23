@@ -49,9 +49,9 @@ object ProjectSpaProtocolsTest extends TestSuite {
     // =================================================================================================================
     "InitApp" - {
       "req" - {
-        "v1.0" - {
-          val bin    = BinaryData.fromHex("5945B41D0100010038295653")
-          val expect = (ReqId(1),InitApp.AndReq(()))
+        "v2.0" - {
+          val bin    = BinaryData.fromHex("5945B41D010701000284D238295653")
+          val expect = (ReqId(1),InitApp.AndReq(Some(EventOrd.Latest(1234))))
           assertRequest(bin, expect)
         }
       }

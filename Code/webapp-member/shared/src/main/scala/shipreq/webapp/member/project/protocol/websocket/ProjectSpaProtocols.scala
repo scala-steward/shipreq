@@ -84,11 +84,11 @@ object ProjectSpaProtocols {
     implicit val picklerInitAppData: Pickler[InitAppData] =
       new Pickler[InitAppData] {
         override def pickle(a: InitAppData)(implicit state: PickleState): Unit = {
-          state.pickle(a.project)
+          state.pickle(a.projectData)
           state.pickle(a.projectMetaData)
         }
         override def unpickle(implicit state: UnpickleState): InitAppData = {
-          val project         = state.unpickle[Project]
+          val project         = state.unpickle[Project \/ VerifiedEvent.Seq]
           val projectMetaData = state.unpickle[ProjectMetaData]
           InitAppData(project, projectMetaData)
         }
@@ -144,7 +144,7 @@ object ProjectSpaProtocols {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  final case class InitAppData(project        : Project,
+  final case class InitAppData(projectData    : Project \/ VerifiedEvent.Seq,
                                projectMetaData: ProjectMetaData)
 
   sealed trait WsReqRes extends Protocol.RequestResponse[SafePickler] { self =>
@@ -180,7 +180,7 @@ object ProjectSpaProtocols {
 
     type EventResult = ErrorMsg \/ VerifiedEvent.Seq
 
-    case object InitApp extends Base[Unit, ErrorMsg \/ InitAppData](0) {
+    case object InitApp extends Base[Option[EventOrd.Latest], ErrorMsg \/ InitAppData](0) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onInitApp(r)
     }
 
