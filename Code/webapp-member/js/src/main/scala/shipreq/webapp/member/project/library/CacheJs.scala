@@ -21,6 +21,9 @@ object CacheJs {
     override def apply(ord: EventOrd): Option[Project] =
       None
 
+    override def storePotentialMilestone(p: Project): Unit =
+      ()
+
     override def iterator() =
       Iterator.empty
 
@@ -123,7 +126,7 @@ object CacheJs {
       go(startOrd, startProject, nextMilestone)
     }
 
-    private[CacheJs] def storePotentialMilestone(p: Project): Unit = {
+    override def storePotentialMilestone(p: Project): Unit = {
       val o = p.ordAsInt
       if (isMilestone(o))
         milestones.update(ordToMilestoneIdx(o), p)

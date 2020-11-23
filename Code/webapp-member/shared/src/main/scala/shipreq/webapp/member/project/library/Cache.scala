@@ -11,6 +11,8 @@ trait Cache {
    */
   def apply(ord: EventOrd): Option[Project]
 
+  def storePotentialMilestone(p: Project): Unit
+
   def iterator(): Iterator[Project]
 
   final def update(projects: Iterable[Project]): Cache =
@@ -32,6 +34,9 @@ object Cache {
     override def apply(ord: EventOrd) =
       None
 
+    override def storePotentialMilestone(p: Project): Unit =
+      ()
+
     override def iterator() =
       Iterator.empty
 
@@ -46,6 +51,9 @@ object Cache {
         val events = latest.history.events.take(ord.value)
         Project.empty.updateOrThrow(events)
       }
+
+      override def storePotentialMilestone(p: Project): Unit =
+        ()
 
       override def iterator() =
         Iterator.single(latest)
