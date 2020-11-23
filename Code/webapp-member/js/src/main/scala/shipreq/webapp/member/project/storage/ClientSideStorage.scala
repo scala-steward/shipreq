@@ -3,6 +3,7 @@ package shipreq.webapp.member.project.storage
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
 import shipreq.webapp.base.protocol.webstorage.AbstractWebStorage
+import shipreq.webapp.member.project.data.ClientSideProjectEncryptionKey
 import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.library.ProjectLibrary
 import shipreq.webapp.member.protocol.binary.Encryption
@@ -24,24 +25,21 @@ object ClientSideStorage {
 
   object ReadWrite {
 
-    def apply(ctx: Context): AsyncCallback[ReadWrite] =
-      get(ctx).getOrElse(AsyncCallback.pure(AlwaysEmpty))
+    def apply(ctx: Context, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadWrite] =
+      get(ctx, encKey).getOrElse(AsyncCallback.pure(AlwaysEmpty))
 
-    def get(ctx: Context): Option[AsyncCallback[ReadWrite]] =
+    def get(ctx: Context, encKey: ClientSideProjectEncryptionKey): Option[AsyncCallback[ReadWrite]] =
       Encryption.Engine.global.flatMap { crypto =>
+
+        val enc = crypto(encKey.value).memo()
+
         Dynamic.optionAsync(
           // highest priority
-          IndexedDb.global().map(usingIndexedDb(ctx, crypto, _)),
-          AbstractWebStorage.local().map(usingWebStorage(ctx, crypto, _)),
+          IndexedDb.global().map(idb => enc.flatMap(IndexedDbStorage(idb, ctx, _))),
+          AbstractWebStorage.local().map(ws => enc.map(new WebStorage(ws, ctx, _))),
           // lowest priority
         )
       }
-
-    def usingIndexedDb(ctx: Context, crypto: Encryption.Engine, idb: IndexedDb): AsyncCallback[ReadWrite] =
-      crypto(ctx.encKey.value).flatMap(IndexedDbStorage(idb, ctx, _))
-
-    def usingWebStorage(ctx: Context, crypto: Encryption.Engine, ws: AbstractWebStorage): AsyncCallback[ReadWrite] =
-      crypto(ctx.encKey.value).map(new WebStorage(ws, ctx, _))
 
     object AlwaysEmpty extends ReadWrite {
       private val none = AsyncCallback.pure(Option.empty[Nothing])
@@ -105,11 +103,11 @@ object ClientSideStorage {
 
   object ReadOnly {
 
-    def apply(ctx: Context): AsyncCallback[ReadOnly] =
-      ReadWrite(ctx)
+    def apply(ctx: Context, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadOnly] =
+      ReadWrite(ctx, encKey)
 
-    def get(ctx: Context): Option[AsyncCallback[ReadOnly]] =
-      ReadWrite.get(ctx).map(f => f)
+    def get(ctx: Context, encKey: ClientSideProjectEncryptionKey): Option[AsyncCallback[ReadOnly]] =
+      ReadWrite.get(ctx, encKey).map(f => f)
   }
 
 }

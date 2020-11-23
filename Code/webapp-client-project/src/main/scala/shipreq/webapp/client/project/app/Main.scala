@@ -19,7 +19,7 @@ import shipreq.webapp.client.project.app.state.Global
 import shipreq.webapp.client.ww.api.WebWorkerCmd
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols
 import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint
-import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint.InitData
+import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint.{InitData, InitDataWithoutEncKey}
 import shipreq.webapp.member.protocol.webworker.AbstractWebWorker
 import shipreq.webapp.member.ui.{BaseStyles, OptionalFullscreen, ReauthenticationModal}
 
@@ -28,7 +28,9 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
 
   private var stopBackground = Callback.empty
 
-  override def run(i: InitData): Unit = {
+  override def run(ik: InitData): Unit = {
+    val i = ik.withoutEncKey
+
     BaseStyles.addToDocument()
     ErrorHandlingFeature.enable()
     Style.addToDocument()
@@ -60,13 +62,13 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
     global.wsClient.connect.runNow()
   }
 
-  private def loadWebWorker(i: InitData, logger: LoggerJs): WebWorkerClient.Instance = {
+  private def loadWebWorker(i: InitDataWithoutEncKey, logger: LoggerJs): WebWorkerClient.Instance = {
     val scope  = i.userId.value + ":" + i.projectId.value + ":" + WebWorkerCmd.protocolVer.verNum
     val worker = AbstractWebWorker.Client(i.webWorkerJsUrl, scope).runNow()
     WebWorkerClient.default(worker, logger).runNow()
   }
 
-  private def onLoad(i: InitData, g: Global): Callback =
+  private def onLoad(i: InitDataWithoutEncKey, g: Global): Callback =
     Callback {
       val wwClient = loadWebWorker(i, g.logger)
       val root     = new LoadedRoot(i, g, ConfirmJs.real, PromptJs.real, OptionalFullscreen.real, wwClient)
@@ -77,7 +79,7 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
       reactApp.renderIntoDOM(`#root`)
     }
 
-  private def onFailure(i: InitData)(error: ErrorMsg): Callback =
+  private def onFailure(i: InitDataWithoutEncKey)(error: ErrorMsg): Callback =
     Callback {
       val lp       = ProjectSpaLoader.Props(i.username, i.projectName, i.assetManifest)
       val lf       = LoadFailedPage.Props(lp, error)

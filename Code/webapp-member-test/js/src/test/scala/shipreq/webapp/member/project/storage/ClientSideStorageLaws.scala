@@ -3,6 +3,7 @@ package shipreq.webapp.member.project.storage
 import japgolly.scalajs.react.AsyncCallback
 import scalaz.Equal
 import shipreq.base.test.Node.asyncTest
+import shipreq.webapp.member.project.data.ClientSideProjectEncryptionKey
 import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.library.{CacheJs, ProjectLibrary}
 import shipreq.webapp.member.test.ProjectLibraryTestUtil._
@@ -16,13 +17,13 @@ abstract class ClientSideStorageLaws extends TestSuite {
   protected final implicit val equalProjectLibrary: Equal[ProjectLibrary] =
     Equal.equalBy(l => (l.latest, l.futureEvents))
 
-  protected def createInstance(ctx: Context): AsyncCallback[ClientSideStorage.ReadWrite]
+  protected def createInstance: (Context, ClientSideProjectEncryptionKey) => AsyncCallback[ClientSideStorage.ReadWrite]
 
   private final object Internals {
 
     implicit val cache = CacheJs()
 
-    val newInstance = createInstance(u1p1)
+    val newInstance = createInstance(u1p1, key_u1p1)
 
     val pl2_9 = newProjectLibrary(2, 9)
     val pl3   = newProjectLibrary(3)
@@ -89,9 +90,9 @@ abstract class ClientSideStorageLaws extends TestSuite {
 
     "isolation" - asyncTest {
       for {
-        a   <- createInstance(u1p1)
-        b   <- createInstance(u2p1)
-        c   <- createInstance(u1p2)
+        a   <- createInstance(u1p1, key_u1p1)
+        b   <- createInstance(u2p1, key_u2p1)
+        c   <- createInstance(u1p2, key_u1p2)
         _   <- a.saveProjectLibrary(pl2_9)
         _   <- b.saveProjectLibrary(pl3)
         _   <- c.saveProjectLibrary(pl4)

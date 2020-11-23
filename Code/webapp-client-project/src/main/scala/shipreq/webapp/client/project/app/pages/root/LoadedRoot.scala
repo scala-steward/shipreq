@@ -39,7 +39,7 @@ object LoadedRoot {
   final case class Props(page: Page, routerCtl: RouterCtl)
 }
 
-final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
+final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutEncKey,
                        global            : Global,
                        confirmJs         : ConfirmJs,
                        promptJs          : PromptJs,

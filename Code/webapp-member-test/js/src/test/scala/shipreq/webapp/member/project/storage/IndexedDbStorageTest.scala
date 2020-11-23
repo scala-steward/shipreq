@@ -2,7 +2,7 @@ package shipreq.webapp.member.project.storage
 
 import japgolly.scalajs.react.AsyncCallback
 import shipreq.base.test.Node.asyncTest
-import shipreq.webapp.member.project.data.Project
+import shipreq.webapp.member.project.data.{ClientSideProjectEncryptionKey, Project}
 import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.library.{Cache, CacheJs}
 import shipreq.webapp.member.test.ProjectLibraryTestUtil._
@@ -25,9 +25,9 @@ object IndexedDbStorageTest extends TestSuite {
     }
   }
 
-  def newStorage(ctx: Context, plCache: Cache = CacheJs()): AsyncCallback[IndexedDbStorage] =
+  def newStorage(ctx: Context, key: ClientSideProjectEncryptionKey, plCache: Cache = CacheJs()): AsyncCallback[IndexedDbStorage] =
     for {
-      enc <- TestEncryption.engine(ctx.encKey.value)
+      enc <- TestEncryption.engine(key.value)
       pre <- nextIdbPrefix
       s   <- IndexedDbStorage.nonStandard(TestIndexedDb.instance(), ctx, enc, pre, plCache)
     } yield s
@@ -135,7 +135,7 @@ object IndexedDbStorageTest extends TestSuite {
       val milestone  = pl1.projectAt(MilestonesEvery).get
 
       for {
-        s <- newStorage(u1p1, cache)
+        s <- newStorage(u1p1, key_u1p1, cache)
         _ <- s.saveProjectLibrary(pl1)
         _ <- AsyncCallback.delay(milestones.clear())
         _ <- s.getProjectLibrary

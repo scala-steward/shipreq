@@ -22,8 +22,11 @@ object TestData {
     ClientSideProjectEncryptionKey(BinaryData.fromStringBytes(s2))
   }
 
-  val u1p1 = Context(userId(1), projectId(1), encKey("u1p1"))
-  val u2p1 = Context(userId(2), projectId(1), encKey("u2p1"))
-  val u1p2 = Context(userId(1), projectId(2), encKey("u1p2"))
+  val u1p1 = Context(userId(1), projectId(1))
+  val u2p1 = Context(userId(2), projectId(1))
+  val u1p2 = Context(userId(1), projectId(2))
 
+  val key_u1p1 = encKey("u1p1")
+  val key_u2p1 = encKey("u2p1")
+  val key_u1p2 = encKey("u1p2")
 }

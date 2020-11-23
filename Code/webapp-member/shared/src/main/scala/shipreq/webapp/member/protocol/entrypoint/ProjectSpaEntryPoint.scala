@@ -14,7 +14,29 @@ object ProjectSpaEntryPoint {
                             projectName   : Project.Name,
                             assetManifest : AssetManifest,
                             webWorkerJsUrl: String,
-                            encryptionKey : ClientSideProjectEncryptionKey)
+                            encryptionKey : ClientSideProjectEncryptionKey) {
+
+    def withoutEncKey: InitDataWithoutEncKey =
+      InitDataWithoutEncKey(
+        username       = username,
+        userId         = userId,
+        projectId      = projectId,
+        projectName    = projectName,
+        assetManifest  = assetManifest,
+        webWorkerJsUrl = webWorkerJsUrl,
+      )
+  }
+
+  /** Same as [[InitData]] except it excludes [[ClientSideProjectEncryptionKey]].
+   * For reasons described in the [[ClientSideProjectEncryptionKey]] doc, we want to make the encryption key
+   * garbage-collectable as soon as possible.
+   */
+  final case class InitDataWithoutEncKey(username      : Username,
+                                         userId        : UserId.Public,
+                                         projectId     : ProjectId.Public,
+                                         projectName   : Project.Name,
+                                         assetManifest : AssetManifest,
+                                         webWorkerJsUrl: String)
 
   implicit val picklerInitData: Pickler[InitData] =
     new Pickler[InitData] {

@@ -6,7 +6,10 @@ import shipreq.webapp.member.test.TestEncryption
 
 object WebStorageLaws extends ClientSideStorageLaws {
 
-  override protected def createInstance(ctx: Context) =
-    AsyncCallback.delay(AbstractWebStorage.inMemory()).flatMap(
-      ClientSideStorage.ReadWrite.usingWebStorage(ctx, TestEncryption.engine, _))
+  override protected def createInstance =
+    (ctx, key) =>
+      for {
+        ws  <- AsyncCallback.delay(AbstractWebStorage.inMemory())
+        enc <- TestEncryption.engine(key.value)
+      } yield new WebStorage(ws, ctx, enc)
 }
