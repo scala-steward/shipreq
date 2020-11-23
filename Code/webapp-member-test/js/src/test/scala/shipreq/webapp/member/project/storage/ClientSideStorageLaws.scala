@@ -4,7 +4,7 @@ import japgolly.scalajs.react.AsyncCallback
 import scalaz.Equal
 import shipreq.base.test.Node.asyncTest
 import shipreq.webapp.member.project.event.EventOrd
-import shipreq.webapp.member.project.library.ProjectLibrary
+import shipreq.webapp.member.project.library.{CacheJs, ProjectLibrary}
 import shipreq.webapp.member.test.ProjectLibraryTestUtil._
 import shipreq.webapp.member.test.WebappTestUtil.ImplicitProjectEqualityDeep._
 import shipreq.webapp.member.test.WebappTestUtil._
@@ -19,6 +19,8 @@ abstract class ClientSideStorageLaws extends TestSuite {
   protected def createInstance(ctx: Context): AsyncCallback[ClientSideStorage.ReadWrite]
 
   private final object Internals {
+
+    implicit val cache = CacheJs()
 
     val newInstance = createInstance(u1p1)
 

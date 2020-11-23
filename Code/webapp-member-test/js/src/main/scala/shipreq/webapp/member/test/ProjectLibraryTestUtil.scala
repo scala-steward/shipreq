@@ -13,8 +13,6 @@ object ProjectLibraryTestUtil {
 
   private val now = Instant.now().minusSeconds(999999)
 
-  private val plCache = CacheJs()
-
   private val newVerifiedEvent: Int => VerifiedEvent =
     Memo.int { i =>
       VerifiedEvent(
@@ -42,7 +40,7 @@ object ProjectLibraryTestUtil {
           history = newProjectEvents(ord))
     }
 
-  def newProjectLibrary(latest: Int, futureEvents: Int*)(implicit cache: Cache = plCache): ProjectLibrary = {
+  def newProjectLibrary(latest: Int, futureEvents: Int*)(implicit cache: Cache = CacheJs()): ProjectLibrary = {
     val fes = VerifiedEvent.Seq.empty ++ futureEvents.iterator.map { i =>
       assert(i > (latest + 1))
       newVerifiedEvent(i)
