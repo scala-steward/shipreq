@@ -44,6 +44,14 @@ object IndexedDb {
   def apply(raw: IDBFactory): IndexedDb =
     new IndexedDb(raw)
 
+  def global(): Option[IndexedDb] =
+    try {
+      val raw = js.Dynamic.global.indexedDB.asInstanceOf[IDBFactory]
+      Some(apply(raw))
+    } catch {
+      case _: Throwable => None
+    }
+
   final case class DatabaseName(value: String)
 
   // ===================================================================================================================
