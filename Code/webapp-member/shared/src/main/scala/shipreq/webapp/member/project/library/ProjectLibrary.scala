@@ -39,6 +39,12 @@ trait ProjectLibrary extends EventOrd.CmpOps {
     else
       None
 
+  final def update(u: Project \/ VerifiedEvent.Seq): Option[Update] =
+    u.fold(update, update)
+
+  final def updated(u: Project \/ VerifiedEvent.Seq): This =
+    update(u).fold(self)(_.newLibrary)
+
   @inline final def ord =
     latest.ord
 
@@ -118,18 +124,11 @@ object ProjectLibrary {
   object WithMetaData {
     type Update = UpdateFor[WithMetaData]
 
+    def apply(pl: ProjectLibrary, md: ProjectMetaData): WithMetaData =
+      new WithMetaData(pl.latest, md, pl.futureEvents, pl.cache)
+
     def init(p: Project, md: ProjectMetaData, cache: Cache): WithMetaData =
       new WithMetaData(p, md, VerifiedEvent.Seq.empty, cache)
-
-    @deprecated("")
-    def init(pe: Project \/ VerifiedEvent.Seq, md: ProjectMetaData, cache: Cache): WithMetaData =
-      pe match {
-        case \/-(e) =>
-          val basic = new Basic(Project.empty, VerifiedEvent.Seq.empty, cache).addEvents(e)
-          new WithMetaData(basic.latest, md, basic.futureEvents, basic.cache)
-        case -\/(p) =>
-          init(p, md, cache)
-      }
   }
 
   final class WithMetaData(val latest        : Project,
@@ -165,6 +164,9 @@ object ProjectLibrary {
 
     override def withoutFutureEvents: This =
       new WithMetaData(latest, latestMetaData, VerifiedEvent.Seq.empty, cache)
+
+    def withoutMetaData: ProjectLibrary =
+      new Basic(latest, futureEvents, cache)
   }
 
   // ===================================================================================================================

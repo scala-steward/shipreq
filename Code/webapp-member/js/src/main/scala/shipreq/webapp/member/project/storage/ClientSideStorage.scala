@@ -2,10 +2,11 @@ package shipreq.webapp.member.project.storage
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
+import shipreq.webapp.base.data.{ProjectId, UserId}
 import shipreq.webapp.base.protocol.webstorage.AbstractWebStorage
 import shipreq.webapp.member.project.data.ClientSideProjectEncryptionKey
 import shipreq.webapp.member.project.event.EventOrd
-import shipreq.webapp.member.project.library.ProjectLibrary
+import shipreq.webapp.member.project.library.{CacheJs, ProjectLibrary}
 import shipreq.webapp.member.protocol.binary.Encryption
 import shipreq.webapp.member.protocol.indexeddb.IndexedDb
 
@@ -15,6 +16,9 @@ object ClientSideStorage {
     def isAvailable: CallbackTo[Boolean]
     def getProjectLibraryOrd: AsyncCallback[Option[EventOrd.Latest]]
     def getProjectLibrary: AsyncCallback[Option[ProjectLibrary]]
+
+    final def getProjectLibraryOrEmpty: AsyncCallback[ProjectLibrary] =
+      getProjectLibrary.map(_.getOrElse(ProjectLibrary.empty(CacheJs())))
   }
 
   trait ReadWrite extends ReadOnly {
@@ -24,6 +28,9 @@ object ClientSideStorage {
   // ===================================================================================================================
 
   object ReadWrite {
+
+    def apply(userId: UserId.Public, projectId: ProjectId.Public, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadOnly] =
+      apply(Context(userId, projectId), encKey)
 
     def apply(ctx: Context, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadWrite] =
       get(ctx, encKey).getOrElse(AsyncCallback.pure(AlwaysEmpty))
@@ -103,11 +110,13 @@ object ClientSideStorage {
 
   object ReadOnly {
 
+    def apply(userId: UserId.Public, projectId: ProjectId.Public, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadOnly] =
+      apply(Context(userId, projectId), encKey)
+
     def apply(ctx: Context, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadOnly] =
       ReadWrite(ctx, encKey)
 
     def get(ctx: Context, encKey: ClientSideProjectEncryptionKey): Option[AsyncCallback[ReadOnly]] =
       ReadWrite.get(ctx, encKey).map(f => f)
   }
-
 }

@@ -18,6 +18,7 @@ import shipreq.webapp.client.project.app.pages.root._
 import shipreq.webapp.client.project.app.state.Global
 import shipreq.webapp.client.ww.api.WebWorkerCmd
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols
+import shipreq.webapp.member.project.storage.ClientSideStorage
 import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint
 import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint.{InitData, InitDataWithoutEncKey}
 import shipreq.webapp.member.protocol.webworker.AbstractWebWorker
@@ -42,25 +43,35 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
     val wsUrlBase    = Url.Absolute.Base(location.protocol + "//" + location.host).forWebSocket
     val wsClient     = WebSocketClient.Builder(wsUrlBase, protocol, wsRetries)
 
-    val global = Global(
-      reauth        = reauth,
-      wscBuilder    = wsClient,
-      onFirstLoad   = (g, _) => onLoad(i, g, wwClient),
-      onInitFailure = onFailure(i),
-      localStorage  = localStorage,
-      logger        = logger,
-    )
+    val load: AsyncCallback[Unit] =
+      for {
+        css <- ClientSideStorage.ReadOnly(i.userId, i.projectId, ik.encryptionKey)
+        pl  <- css.getProjectLibraryOrEmpty
+      } yield {
 
-    val keepAliveEvery     = Duration.ofSeconds(21)
-    val syncEvery          = Duration.ofSeconds(30)
-    val syncStaleTolerance = Duration.ofSeconds(30)
+        val global = Global(
+          reauth        = reauth,
+          wscBuilder    = wsClient,
+          onFirstLoad   = (g, _) => onLoad(i, g, wwClient),
+          onInitFailure = onFailure(i),
+          localStorage  = localStorage,
+          initialData   = pl,
+          logger        = logger,
+        )
 
-    val keepAliveHnd = global.wsClient.keepAlive.setInterval(keepAliveEvery).runNow()
-    val staleSyncHnd = global.requestSyncIfStaleFor(syncStaleTolerance).setInterval(syncEvery).runNow()
+        val keepAliveEvery     = Duration.ofSeconds(21)
+        val syncEvery          = Duration.ofSeconds(30)
+        val syncStaleTolerance = Duration.ofSeconds(30)
 
-    stopBackground = keepAliveHnd.cancel >> staleSyncHnd.cancel >> global.wsClient.close
+        val keepAliveHnd = global.wsClient.keepAlive.setInterval(keepAliveEvery).runNow()
+        val staleSyncHnd = global.requestSyncIfStaleFor(syncStaleTolerance).setInterval(syncEvery).runNow()
 
-    global.wsClient.connect.runNow()
+        stopBackground = keepAliveHnd.cancel >> staleSyncHnd.cancel >> global.wsClient.close
+
+        global.wsClient.connect.runNow()
+      }
+
+    load.runNow()
   }
 
   private def loadWebWorker(i: InitDataWithoutEncKey, logger: LoggerJs): WebWorkerClient.Instance = {
