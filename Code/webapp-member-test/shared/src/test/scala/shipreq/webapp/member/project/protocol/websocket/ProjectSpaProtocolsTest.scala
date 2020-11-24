@@ -50,7 +50,7 @@ object ProjectSpaProtocolsTest extends TestSuite {
     "InitApp" - {
       "req" - {
         "v2.0" - {
-          val bin    = BinaryData.fromHex("5945B41D020001000284D238295653")
+          val bin    = BinaryData.fromHex("5945B41D0200010084D238295653")
           val expect = (ReqId(1),InitApp.AndReq(Some(EventOrd.Latest(1234))))
           assertRequest(bin, expect)
         }
@@ -76,7 +76,7 @@ object ProjectSpaProtocolsTest extends TestSuite {
     "Reconnect" - {
       "req" - {
         "v2.0" - {
-          val bin    = BinaryData.fromHex("5945B41D020008010282E238295653")
+          val bin    = BinaryData.fromHex("5945B41D0200080182E238295653")
           val expect = (ReqId(8),Reconnect.AndReq(Some(Latest(738))))
           assertRequest(bin, expect)
         }

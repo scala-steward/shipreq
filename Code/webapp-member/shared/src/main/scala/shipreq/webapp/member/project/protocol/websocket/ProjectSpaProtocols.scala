@@ -83,7 +83,9 @@ object ProjectSpaProtocols {
       import shipreq.webapp.member.project.protocol.binary.v1.PostEvents._
 
       implicit val picklerOptionEventOrdLatest: Pickler[Option[EventOrd.Latest]] =
-        optionPickler
+        transformPickler[Option[EventOrd.Latest], Int](
+          i => Option.when(i > 0)(EventOrd.Latest(i)))(
+          _.fold(0)(_.value))
 
       implicit val picklerNonEmptySetEventOrd: Pickler[NonEmptySet[EventOrd]] =
         pickleNES
