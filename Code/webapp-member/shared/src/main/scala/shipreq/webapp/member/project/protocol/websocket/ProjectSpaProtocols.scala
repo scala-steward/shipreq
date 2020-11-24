@@ -35,7 +35,7 @@ object ProjectSpaProtocols {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   // Bump when *any* codec changes happen
-  private val wsrrVersion = Version.fromInts(1, 7)
+  private val wsrrVersion = Version.fromInts(2, 0)
 
   // When any of the following change, bump wsrrVersion
   import boopickle.DefaultBasic._
@@ -144,7 +144,7 @@ object ProjectSpaProtocols {
     }
 
     object Push {
-      protected val version = Version.fromInts(2, 0) // Bump this when any of following imports change
+      protected val version = Version.fromInts(1, 7) // Bump this when any of following imports change
       import shipreq.webapp.member.project.protocol.binary.v1.Rev7._
 
       val safePickler: SafePickler[VerifiedEvent.NonEmptySeq] =
