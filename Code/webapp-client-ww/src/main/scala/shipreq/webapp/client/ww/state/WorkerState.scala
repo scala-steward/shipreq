@@ -29,7 +29,7 @@ final class WorkerState(logic : WorkerState.Logic,
       _         <- logic.importScripts(am.wwJs).asAsyncCallback.when_(firstTime)
       _         <- graphViz.setIfUnsetSync(logic.loadGraphViz(am))
       _         <- storage.setIfUnsetAsync(logic.cssProvider(cssCtx, encKey))
-      _         <- storage.get.flatMap(_.getProjectLibraryOrEmpty).flatMapSync(projectLibrary.set).when_(firstTime)
+      _         <- loadFromClientSideStorage.when_(firstTime)
     } yield ()
   }
 
@@ -59,6 +59,14 @@ final class WorkerState(logic : WorkerState.Logic,
 
     go(retries)
   }
+
+  private def loadFromClientSideStorage: AsyncCallback[Unit] =
+    for {
+      s  <- storage.get
+      pl <- s.getProjectLibraryOrEmpty
+      _  <- projectLibrary.set(pl).asAsyncCallback
+      _  <- logger.async(_.info(s"Loaded v${pl.ordAsInt} from ClientSideStorage"))
+    } yield ()
 
   def update(u: Project \/ VerifiedEvent.Seq): Callback =
     for {
