@@ -2,6 +2,7 @@ package shipreq.webapp.member.ui
 
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
+import org.scalajs.dom.{Event, window}
 import scala.scalajs.js
 import shipreq.webapp.member.jsfacade.{ReactSvgPanZoom, ReactVirtualized, TransformationMatrix}
 import shipreq.webapp.member.project.data.Svg
@@ -135,6 +136,19 @@ object SvgPanZoom {
           )
         }
       )
+
+    private val onResize: js.Function1[Event, _] =
+      ($.state.tap(_.autoFit = true) >> fitToViewer).debounceMs(80).toJsFn1
+
+    def onMount: Callback =
+      Callback {
+        window.addEventListener("resize", onResize)
+      } >> fitToViewer
+
+    def onUnmount: Callback =
+      Callback {
+        window.removeEventListener("resize", onResize)
+      }
   }
 
   implicit val reusabilityProps: Reusability[Props] = Reusability.derive
@@ -157,7 +171,8 @@ object SvgPanZoom {
     .getDerivedStateFromPropsAndState(deriveState)
     .renderBackend[Backend]
     .configure(Reusability.shouldComponentUpdate)
-    .componentDidMount(_.backend.fitToViewer)
+    .componentDidMount(_.backend.onMount)
     .componentDidUpdate(_.backend.fitToViewer)
+    .componentWillUnmount(_.backend.onUnmount)
     .build
 }
