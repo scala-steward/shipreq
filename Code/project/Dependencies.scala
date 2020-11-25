@@ -117,7 +117,7 @@ object Dependencies {
   }
 
   object Doobie {
-    private val mm = MultiModule.scala("org.tpolecat", "0.9.2")
+    private val mm = MultiModule.scala("org.tpolecat", "0.9.4")
     val core          = mm("doobie-core")
     val postgres      = mm("doobie-postgres")
     val postgresCirce = mm("doobie-postgres-circe")
@@ -154,7 +154,7 @@ object Dependencies {
   }
 
   object LibJetty {
-    private def ver = "9.4.34.v20201102"
+    private def ver = "9.4.35.v20201120"
     private val mm = MultiModule.java("org.eclipse.jetty", ver)
     private val ws = MultiModule.java("org.eclipse.jetty.websocket", ver)
 
@@ -206,7 +206,7 @@ object Dependencies {
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.4.0")
   val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.18")
-  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.13.6")
+  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.14.0")
   val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "4.0.2")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.14.3")
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.2")
@@ -215,7 +215,7 @@ object Dependencies {
   val betterMonadicFor = compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
   val useBetterMonadicFor = (_: Project).settings(addCompilerPlugin(betterMonadicFor))
 
-  val kindProjector = compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.0" cross CrossVersion.full)
+  val kindProjector = compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.1" cross CrossVersion.full)
   val useKindProjector = (_: Project).settings(addCompilerPlugin(kindProjector))
 
   val updateExclusions: ModuleFilter = {
