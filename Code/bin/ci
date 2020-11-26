@@ -26,15 +26,21 @@ sbt+=(
   -DCI=1
   -DMODE=release
   -Dsbt.server.autostart=false
+  -Dsbt.supershell=never
   -J-XX:+ExitOnOutOfMemoryError
   -J-XX:+HeapDumpOnOutOfMemoryError
   -J-XX:HeapDumpPath=$dump
 )
 
-[ -z "${LOCAL_CI:-}" ] && sbt+=(
-  -J-Xmx8g
-  -no-colors
-)
+if [ -z "${LOCAL_CI:-}" ]; then
+  sbt+=(
+    -J-Xmx8g
+    -no-colors
+  )
+else
+  # Need to re-login to ECR from local CI env
+  $(aws ecr get-login --no-include-email)
+fi
 
 function run {
   echo
@@ -58,6 +64,11 @@ function run {
 
 docker_args=(taskmanServer/docker webappServer/docker)
 [ "${DOCKER_PUSH:-}" != 0 ] && docker_args+=(taskmanServer/dockerPush webappServer/dockerPush)
+
+if [ "$1" = shell ]; then
+  echo "> ${sbt[@]}"
+  exec "${sbt[@]}"
+fi
 
 echo "Ensuring S3 access..." \
   && aws s3 ls s3://shipreq-tmp/ \
