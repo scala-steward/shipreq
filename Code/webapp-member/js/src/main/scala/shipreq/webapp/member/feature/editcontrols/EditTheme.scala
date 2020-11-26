@@ -244,9 +244,11 @@ private[feature] object EditTheme {
 
   private def renderPreview(position   : Position,
                             mode       : Mode,
-                            body       : => TagMod): VdomNode =
-    <.div(*.richTextPreview((position, mode)),
+                            body       : => TagMod): VdomNode = {
+    val pm = (position, mode)
+    <.div(*.richTextPreview(pm),
       <.div(*.richTextPreviewHeader, "Preview"),
       <.div(*.richTextPreviewBodyOuter,
-        <.div(*.richTextPreviewBodyInner(position), body)))
+        <.div(*.richTextPreviewBodyInner(pm), body)))
+  }
 }

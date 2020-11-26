@@ -8,6 +8,7 @@ import shipreq.webapp.base.ui.semantic.{Colour, Label}
 import shipreq.webapp.base.util.{Off, On}
 import shipreq.webapp.member.feature.EditControlsFeature
 import shipreq.webapp.member.feature.PreviewFeature.Position
+import shipreq.webapp.member.feature.editcontrols.Mode
 
 object BaseStyles extends StyleSheet.Inline {
   import dsl._
@@ -363,14 +364,21 @@ object BaseStyles extends StyleSheet.Inline {
     (background := "#0000").important,
     addClassNames("ui", "segment"))
 
-  val richTextPreviewBodyInner = styleF(D.previewPosition)(pos => styleS(
+  val richTextPreviewBodyInner = styleF(D.editorPosMode) { case (pos, mode) => styleS(
     minHeight(1.4 em),
     pos match {
-      case Position.Right => styleS(maxHeight :=! "calc(100vh - (1.4285em + (.3em + 1ex) * 2))")
-      case Position.Under => styleS(maxHeight(33.33333 vh))
+      case Position.Right =>
+        val h = "100vh - (1.4285em + (.3em + 1ex) * 2)"
+        mode match {
+          case Mode.Inline     => styleS(maxHeight :=! s"calc($h)")
+          case Mode.Fullscreen => styleS(maxHeight :=! s"calc($h - 1.2em)")
+        }
+
+      case Position.Under =>
+        styleS(maxHeight(33.33333 vh))
     },
     overflowY.auto,
-  ))
+  )}
 
   // ctrl-enter to save, esc to cancel.
   object editorInstructions {

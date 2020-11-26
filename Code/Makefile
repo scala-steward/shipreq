@@ -1,4 +1,4 @@
-.PHONY: build_env ci-local info deploy diff_prod docker-push-dev prod_ver publish pull_images push rm_targets since_prod watch_codebuild
+.PHONY: build_env ci-local ci-shell info deploy diff_prod docker-push-dev prod_ver publish pull_images push rm_targets since_prod watch_codebuild
 
 GIT_SHA  := $(shell git rev-parse HEAD)
 BRANCH   := $(shell git rev-parse --abbrev-ref HEAD)
@@ -21,6 +21,9 @@ CI_LOCAL_DOCKER_ARGS += --mount type=tmpfs,destination=/tmp,tmpfs-size=8g
 CI_LOCAL_DOCKER_ARGS += -e SHIPREQ_RELEASE_TARGET=/tmp/shipreq-ci-release.sbt
 CI_LOCAL_DOCKER_ARGS += -e LOCAL_CI=1
 CI_LOCAL_DOCKER_ARGS += -e GIT_SHA=$(GIT_SHA)
+CI_LOCAL_DOCKER_ARGS += -e BASE_IMAGE_URL=$(ECR)/shipreq/base
+CI_LOCAL_DOCKER_ARGS += -e WEBAPP_IMAGE_URL=$(ECR)/shipreq/webapp
+CI_LOCAL_DOCKER_ARGS += -e TASKMAN_IMAGE_URL=$(ECR)/shipreq/taskman
 CI_LOCAL_DOCKER_ARGS += -w /Code
 
 info:
@@ -30,6 +33,7 @@ info:
 	@echo
 	@echo "  * build_env       -- Create a new build-env instance and log in to it."
 	@echo "  * ci-local        -- Do what CI does but from the local machine (and for real)."
+	@echo "  * ci-shell        -- Open a shell to a fresh, local CI env."
 	@echo "  * deploy          -- Publish to AWS, start a build, update prod Terraform."
 	@echo "  * diff_prod       -- Show a diff between ShipReq that's currently in production, and local HEAD."
 	@echo "  * docker-push-dev -- Pushes {webapp,taskman}:latest to ECR tagged as dev"
@@ -55,12 +59,26 @@ else ifneq ($(CHANGES),)
 else
 	$$(aws ecr get-login --no-include-email)
 	docker pull $(ECR)/shipreq/dev/build_env
+	docker pull $(ECR)/shipreq/base
 	docker pull $(ECR)/shipreq/taskman
 	docker pull $(ECR)/shipreq/webapp
 	bin/env test up -d
 	docker run $(CI_LOCAL_DOCKER_ARGS) $(ECR)/shipreq/dev/build_env bin/ci
 	git push aws master
 endif
+
+ci-shell:
+	$$(aws ecr get-login --no-include-email)
+	docker pull $(ECR)/shipreq/dev/build_env
+	docker pull $(ECR)/shipreq/base
+	docker pull $(ECR)/shipreq/taskman
+	docker pull $(ECR)/shipreq/webapp
+	bin/env test up -d
+	@echo
+	@echo "You'll likely want to do one of the following:"
+	@echo "  - bin/ci"
+	@echo "  - bin/ci shell"
+	@docker run -it $(CI_LOCAL_DOCKER_ARGS) $(ECR)/shipreq/dev/build_env bash
 
 deploy: publish
 	../Terraform/prod/update_shipreq.sh
