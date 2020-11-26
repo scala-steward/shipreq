@@ -1,6 +1,5 @@
 package shipreq.webapp.client.project.app.state
 
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.{Broadcaster, Px}
 import java.time.{Duration, Instant}
@@ -166,7 +165,7 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
                   case State.Loading(pl1) =>
                     val pl2 = pl1.updated(i.projectData, unsafeNow())
                     val s = ProjectLibrary.WithMetaData(pl2, i.projectMetaData)
-                    unsafeSetState(State.Active(s, None))
+                    unsafeSetState(State.Active(s))
                     onFirstLoad(this, i).runNow()
                   case _: State.Active =>
                     logger(_.warn("InitApp response received but already State.Active"))
@@ -203,15 +202,7 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
             case Some(update) =>
 
               // Update state
-              val similarlyStale = update.newLibrary.ord ==* s1.projectLibrary.ord
-              val staleSince =
-                if (similarlyStale)
-                  s1.staleSince.orElse(Some(unsafeNow()))
-                else if (update.newLibrary.futureEvents.nonEmpty)
-                  Some(unsafeNow())
-                else
-                  None
-              unsafeSetState(State.Active(update.newLibrary, staleSince))
+              unsafeSetState(State.Active(update.newLibrary))
 
               // Broadcast changes
               if (update.newlyAppliedEvents.nonEmpty) {
@@ -247,20 +238,11 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
       unsafeState() match {
         case s: State.Active =>
           for {
-            staleSince  <- s.staleSince
-            stalePeriod  = Duration.between(staleSince, unsafeNow())
-            _           <- Option.when(stalePeriod.isLongerThan(tolerance))(())
-            lastEvent   <- s.projectLibrary.futureEvents.lastOption
-            first        = s.projectLibrary.latest.history.nextOrd.value
-            last         = lastEvent.ord.value - 1
-            got          = s.projectLibrary.futureEvents.iterator.map(_.ord.value).toSet
-            missing      = first.to(last).iterator.filterNot(got.contains).map(EventOrd(_)).toSet
-            missingNE   <- NonEmptySet.option(missing)
+            missingNE <- s.projectLibrary.missingEventsIfStale(unsafeNow(), tolerance)
           } yield {
             logger(_.info {
-              val dur = stalePeriod.conciseDesc
               val events = missingNE.iterator.map(_.value).toList.sorted.mkString(",")
-              s"Client has been stale for $dur. Requesting sync for events: $events"
+              s"Client is stale. Requesting sync for events: $events"
             })
             missingNE
           }
@@ -339,7 +321,7 @@ object Global {
       override def ord = projectLibrary.ord
     }
 
-    final case class Active(projectLibrary: ProjectLibrary.WithMetaData, staleSince: Option[Instant]) extends State {
+    final case class Active(projectLibrary: ProjectLibrary.WithMetaData) extends State {
       override def ord = projectLibrary.ord
     }
   }

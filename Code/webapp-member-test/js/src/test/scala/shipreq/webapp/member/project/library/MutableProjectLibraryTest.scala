@@ -6,8 +6,8 @@ import nyaya.gen.Gen
 import scala.collection.immutable.TreeSet
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
-import shipreq.webapp.member.test.WebappTestUtil.{newProject => _, _}
 import shipreq.webapp.member.test.ProjectLibraryTestUtil._
+import shipreq.webapp.member.test.WebappTestUtil.{newProject => _, _}
 import shipreq.webapp.member.test.project.RandomEventStream
 import utest._
 

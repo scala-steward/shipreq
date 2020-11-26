@@ -72,23 +72,29 @@ object GlobalTest extends TestSuite {
       }
 
       "overlap" - {
-        //  0 1 2 3 4 5
-        // |  *     *
-        // -*--|  *
-        //     (S)
-        // -----*----|
+        //    |0 1 2 3 4 5
+        // t0 |  *     *
+        // t1 -*--|  *
+        // t2     (S)
+        // t3 -----*----|
 
+        // t0
         addEvents(1, 4)
+
+        // t1
         t.advanceTimeByMs(100)
         addEvents(0, 3)
+
+        // t2
         t.advanceTimeByMs(100)
         syncIfStaleForMs(150)
-        t.assertReqsSent(0) // because we did advance in the last 150ms - we only want to sync on failure to advance
+        t.assertReqsSent(0) // because we did advance Project in the last 150ms - we only want to sync on failure to advance
 
         syncIfStaleForMs(50)
         t.assertReqsSent(1)
         assertSyncRequest(2)
 
+        // t3
         t.advanceTimeByMs(100)
         addEvents(2)
         syncIfStaleForMs(1)

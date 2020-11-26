@@ -35,8 +35,8 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData)
     LoggerJs.off) {
 
   override def toString = unsafeState() match {
-    case Global.State.Active(a, b) => s"TestGlobal(Active($a, $b))"
-    case Global.State.Loading(pl)  => s"TestGlobal(Loading($pl))"
+    case Global.State.Active(pl)  => s"TestGlobal(Active($pl))"
+    case Global.State.Loading(pl) => s"TestGlobal(Loading($pl))"
   }
 
   override val localStorage: AbstractWebStorage.InMemory =
@@ -244,7 +244,7 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData)
     }
   }
 
-  unsafeSetState(Global.State.Active(initialProjectLibrary, None))
+  unsafeSetState(Global.State.Active(initialProjectLibrary))
   wsClient.connect.runNow()
 }
 

@@ -1,7 +1,8 @@
 package shipreq.webapp.member.project.library
 
+import japgolly.microlibs.stdlib_ext.StdlibExt.DurationExt
 import japgolly.microlibs.utils.ConciseIntSetFormat
-import java.time.Instant
+import java.time.{Duration, Instant}
 import shipreq.webapp.member.project.data.{Project, ProjectMetaData}
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
 
@@ -61,6 +62,24 @@ trait ProjectLibrary extends EventOrd.CmpOps {
     "[" + ConciseIntSetFormat(futureEvents.iterator.map(_.ord.value).toSet) + "]"
 
   assert(futureEvents.isEmpty == staleSince.isEmpty)
+
+  final lazy val missingEvents: Option[NonEmptySet[EventOrd]] =
+    for {
+      lastEvent   <- futureEvents.lastOption
+      first        = latest.history.nextOrd.value
+      last         = lastEvent.ord.value - 1
+      got          = futureEvents.iterator.map(_.ord.value).toSet
+      missing      = first.to(last).iterator.filterNot(got.contains).map(EventOrd(_)).toSet
+      missingNE   <- NonEmptySet.option(missing)
+    } yield missingNE
+
+  final def missingEventsIfStale(now: Instant, tolerance: Duration): Option[NonEmptySet[EventOrd]] =
+    for {
+      staleSince <- this.staleSince
+      stalePeriod = Duration.between(staleSince, now)
+      _          <- Option.when(stalePeriod.isLongerThan(tolerance))(())
+      missing    <- missingEvents
+    } yield missing
 }
 
 object ProjectLibrary {
