@@ -13,8 +13,10 @@ import shipreq.webapp.base.protocol.ajax.CommonProtocols.Metadata
 import shipreq.webapp.base.protocol.websocket.WebSocket.ReadyState
 import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.protocol.webstorage.AbstractWebStorage
+import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.app.pages.root.ConnectionStatus
 import shipreq.webapp.client.project.app.state.Global.State
+import shipreq.webapp.client.ww.api._
 import shipreq.webapp.member.project.data.{Project, ProjectMetaData}
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
 import shipreq.webapp.member.project.library.{NewEvents, ProjectLibrary}
@@ -26,6 +28,7 @@ import shipreq.webapp.member.ui.ReauthenticationModal
 abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
                       onInitFailure   : ErrorMsg => Callback,
                       initialState    : State,
+                      ww              : WebWorkerClient.Instance,
                       final val logger: LoggerJs) extends Broadcaster[ProjectLibrary.Update] {
 
   val localStorage: AbstractWebStorage
@@ -162,11 +165,14 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
 
               case Success(\/-(i)) => Callback {
                 unsafeState() match {
+
                   case State.Loading(pl1) =>
                     val pl2 = pl1.updated(i.projectData, unsafeNow())
                     val s = ProjectLibrary.WithMetaData(pl2, i.projectMetaData)
                     unsafeSetState(State.Active(s))
                     onFirstLoad(this, i).runNow()
+                    ww.send(WebWorkerCmd.UpdateProject(i.projectData)).runNow()
+
                   case _: State.Active =>
                     logger(_.warn("InitApp response received but already State.Active"))
                 }
@@ -206,7 +212,7 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
 
               // Broadcast changes
               if (update.newlyAppliedEvents.nonEmpty) {
-                broadcast(update).runNow()
+                onProjectUpdate(update).runNow()
               }
 
               update.newEvents
@@ -222,6 +228,18 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
           NewEvents.empty
       }
     }
+
+  final private def onProjectUpdate(update: ProjectLibrary.Update): Callback = {
+    val updateApp: Callback =
+      broadcast(update)
+
+    val updateWebWorker: Callback =
+      Callback.traverseOption(VerifiedEvent.NonEmptySeq.maybe(update.newlyAppliedEvents))(ves =>
+        ww.send(WebWorkerCmd.UpdateProject(\/-(ves))).toCallback
+      )
+
+    updateApp >> updateWebWorker
+  }
 
   final protected def onPush(recvEvents: VerifiedEvent.NonEmptySeq): Callback = Callback {
     logger(_.info("Server pushed: " + recvEvents))
@@ -284,13 +302,14 @@ object Global {
             onInitFailure: ErrorMsg => Callback,
             localStorage : AbstractWebStorage,
             initialData  : ProjectLibrary,
+            ww           : WebWorkerClient.Instance,
             logger       : LoggerJs): Global = {
 
     val _localStorage = localStorage
 
     val initialState = State.Loading(initialData)
 
-    new Global(onFirstLoad, onInitFailure, initialState, logger) {
+    new Global(onFirstLoad, onInitFailure, initialState, ww, logger) {
 
       override val localStorage = _localStorage
 

@@ -65,6 +65,7 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
           onInitFailure = onFailure(i),
           localStorage  = localStorage,
           initialData   = pl,
+          ww            = wwClient,
           logger        = logger,
         )
 
@@ -104,7 +105,7 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
       val metadata = CommonProtocolsJs.Metadata.client(i.username, g.projectMetadata(i.projectId))
       val reactApp = ErrorHandlingFeature(router(), metadata)
       reactApp.renderIntoDOM(`#root`)
-    } >> ww.send(WebWorkerCmd.UpdateProject(ia.projectData)).toCallback
+    }
 
   private def onFailure(i: InitDataWithoutEncKey)(error: ErrorMsg): Callback =
     Callback {

@@ -24,10 +24,8 @@ import shipreq.webapp.client.project.app.state._
 import shipreq.webapp.client.project.feature.{Usage, _}
 import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets._
-import shipreq.webapp.client.ww.api.WebWorkerCmd
 import shipreq.webapp.member.feature.PreviewFeature
 import shipreq.webapp.member.project.data.{FilterDead, HideDead, Project, ProjectConfig, ReqId}
-import shipreq.webapp.member.project.event.VerifiedEvent
 import shipreq.webapp.member.project.filter.Filter
 import shipreq.webapp.member.project.library.ProjectLibrary
 import shipreq.webapp.member.project.protocol.websocket._
@@ -608,13 +606,9 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         }
       }
 
-    def onProjectChange(u: ProjectLibrary.Update): Callback = {
-      val updateWebWorker: Callback =
-        Callback.traverseOption(VerifiedEvent.NonEmptySeq.maybe(u.newlyAppliedEvents))(ves =>
-          webWorkerClient.send(WebWorkerCmd.UpdateProject(\/-(ves))).toCallback)
-
-      updateWebWorker >> $.forceUpdate
-    }
+    @nowarn("cat=unused")
+    def onProjectChange(u: ProjectLibrary.Update): Callback =
+      $.forceUpdate
 
     def onConnectionStatusChange(c: ConnectionStatus): Callback = {
       val msg = c match {

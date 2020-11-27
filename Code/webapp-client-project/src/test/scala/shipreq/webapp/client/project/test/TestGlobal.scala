@@ -16,6 +16,7 @@ import shipreq.webapp.base.protocol.websocket.WebSocketShared.CloseCode
 import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.protocol.webstorage.AbstractWebStorage
 import shipreq.webapp.base.test._
+import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.app.state.Global
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event._
@@ -27,11 +28,13 @@ import shipreq.webapp.member.test._
 import shipreq.webapp.member.ui.BaseStyles
 import shipreq.webapp.server.logic.event._
 
-final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData)
+final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
+                       ww                   : WebWorkerClient.Instance = TestWebWorkerClient())
   extends Global(
     (_, _) => Callback.empty,
     _ => Callback.empty,
     Global.State.Loading(initialProjectLibrary.withoutMetaData),
+    ww,
     LoggerJs.off) {
 
   override def toString = unsafeState() match {
