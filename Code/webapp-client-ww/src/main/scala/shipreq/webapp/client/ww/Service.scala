@@ -9,7 +9,11 @@ import shipreq.webapp.member.protocol.webworker._
 final class Service[Client](server: Service.Server[Client], state: WorkerState) extends ManagedWebWorker.Server.Service[Client, WebWorkerCmd] {
   import WebWorkerCmd._
 
-  locally(server) // TODO remove
+  // Ask clients for missing events if our state ever goes stale
+  state.staleness.addStalenessListener { ords =>
+    val msg = WebWorkerPushCmd.MissingEvents(ords)
+    server.broadcast(msg, exclude = None)
+  }.runNow()
 
   override def apply[A](client: Client, request: WebWorkerCmd[A]): AsyncCallback[A] =
     request match {

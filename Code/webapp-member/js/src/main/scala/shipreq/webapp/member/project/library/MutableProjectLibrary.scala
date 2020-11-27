@@ -1,14 +1,15 @@
 package shipreq.webapp.member.project.library
 
 import japgolly.scalajs.react.extra.Px
-import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
-import java.time.Instant
+import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackOption, CallbackTo}
+import java.time.{Duration, Instant}
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
 import shipreq.webapp.member.project.util.DataReusability.reusabilityProject
 
-final class MutableProjectLibrary[PL <: ProjectLibrary](initialState: PL, clock: CallbackTo[Instant]) {
+final class MutableProjectLibrary[PL <: ProjectLibrary](initialState: PL,
+                                                        clock: CallbackTo[Instant]) extends MutableProjectLibrary.Staleness {
   import MutableProjectLibrary.OrdPromise
 
   private var _state: PL =
@@ -96,6 +97,21 @@ final class MutableProjectLibrary[PL <: ProjectLibrary](initialState: PL, clock:
         }
     }
 
+  override protected def _addStalenessListener(handle   : NonEmptySet[EventOrd] => Callback,
+                                               interval : Duration,
+                                               tolerance: Duration): Callback = {
+
+    val task: Callback =
+      for {
+        pl      <- get.toCBO
+        now     <- clock.toCBO
+        missing <- CallbackOption.liftOption(pl.missingEventsIfStale(now, tolerance))
+        _       <- handle(missing).toCBO
+       } yield ()
+
+    task.setInterval(interval).void
+  }
+
   // For tests
   def pendingPromiseCount(): Int =
     _ordPromises.size
@@ -109,6 +125,18 @@ object MutableProjectLibrary {
 
   def empty(clock: CallbackTo[Instant] = CallbackTo.now): MutableProjectLibrary[ProjectLibrary] =
     apply(ProjectLibrary.empty(CacheJs()), clock)
+
+  trait Staleness {
+    final def addStalenessListener(handle   : NonEmptySet[EventOrd] => Callback,
+                                   interval : Duration = Duration.ofSeconds(60),
+                                   tolerance: Duration = Duration.ofSeconds(20),
+                                  ): Callback =
+      _addStalenessListener(handle, interval, tolerance)
+
+    protected def _addStalenessListener(handle   : NonEmptySet[EventOrd] => Callback,
+                                        interval : Duration,
+                                        tolerance: Duration): Callback
+  }
 
   private final case class OrdPromise(ord: EventOrd, complete: Callback)
 }

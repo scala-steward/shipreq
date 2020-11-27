@@ -89,6 +89,9 @@ final class WorkerState(logic : WorkerState.Logic,
   def getPlainText(p: Project): AsyncCallback[PlainText.ForProject.NoCtx] =
     AsyncCallback.pure(plainTextMemo(p))
 
+  def staleness: MutableProjectLibrary.Staleness =
+    projectLibrary
+
   // For tests
   private[ww] def pendingPromiseCount(): Int =
     projectLibrary.pendingPromiseCount()
