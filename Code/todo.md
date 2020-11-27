@@ -7,7 +7,10 @@
 
 * fix duplicated scalacOptions
 
-* Test (and implement?) expected behaviour when multiple clients are attached
+* Test (and implement?) desired behaviour when SafePickler protocol fails
+  - server -> spa via web-socket
+  - spa <- css
+  - ww <- css
 
 * add test ProjectSpaProtocolsTest:InitApp:resp:success
 
