@@ -171,7 +171,7 @@ Store(storage, draft) ==
   IN  withoutOld \union {draft}
 
 StoreAll(storage, drafts) ==
-  ReduceSet(drafts, storage, Store)
+  SetReduce(drafts, storage, Store)
 
 \* TODO assumes idb always works
 StoreClientSide(b, draft) ==

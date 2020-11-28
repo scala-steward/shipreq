@@ -1,6 +1,6 @@
 ---------------------------------------------------- MODULE project ----------------------------------------------------
 
-EXTENDS FiniteSets, Naturals, Sequences, TLC
+EXTENDS FiniteSets, Naturals, Sequences, TLC, Util
 
 CONSTANT User, \* Really this is a unique client/connection, not a ShipReq user/identity
          Request,
@@ -85,13 +85,6 @@ varDesc == [db        |-> db.ver,
             pub       |-> pub,
             sub       |-> sub,
             userState |-> userState]
-
-------------------------------------------------------------------------------------------------------------------------
-
-Min[as \in SUBSET Nat] == CHOOSE a \in as : \A b \in as : a <= b
-Max[as \in SUBSET Nat] == CHOOSE a \in as : \A b \in as : a >= b
-
-Replace(set, old, new) == { IF a = old THEN new ELSE a : a \in set }
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -235,13 +228,13 @@ UserConnect ==
 
 Load_Subscribe == \E p \in procsL :
   /\ p.status = "Subscribe"
-  /\ procsL' = Replace(procsL, p, [p EXCEPT !.status = "ReadRedis"])
+  /\ procsL' = SetReplace(procsL, p, [p EXCEPT !.status = "ReadRedis"])
   /\ RedisSubscribe(p.user)
   /\ UNCHANGED << db, procsR, procsU, procsS, pub, redis, userState >>
 
 Load_ReadDbVer == \E p \in procsL :
   /\ p.status = "ReadDbVer"
-  /\ procsL' = Replace(procsL, p, [p EXCEPT !.dbLatestVer = db.ver, !.status = "ReadRedis"])
+  /\ procsL' = SetReplace(procsL, p, [p EXCEPT !.dbLatestVer = db.ver, !.status = "ReadRedis"])
   /\ UNCHANGED << db, procsR, procsU, procsS, pub, redis, sub, userState >>
 
 Load_ReadRedis == \E p \in procsL :
@@ -250,17 +243,17 @@ Load_ReadRedis == \E p \in procsL :
          p2 == IF cacheHit
                THEN [p EXCEPT !.status = "Respond", !.respondVer = RedisTotalVer]
                ELSE [p EXCEPT !.status = "ReadDbFull"]
-     IN procsL' = Replace(procsL, p, p2)
+     IN procsL' = SetReplace(procsL, p, p2)
   /\ UNCHANGED << db, procsR, procsU, procsS, pub, redis, sub, userState >>
 
 Load_ReadDbFull == \E p \in procsL :
   /\ p.status = "ReadDbFull"
-  /\ procsL' = Replace(procsL, p, [p EXCEPT !.dbVer  = db.ver, !.status = "WriteRedis"])
+  /\ procsL' = SetReplace(procsL, p, [p EXCEPT !.dbVer  = db.ver, !.status = "WriteRedis"])
   /\ UNCHANGED << db, procsR, procsU, procsS, pub, redis, sub, userState >>
 
 Load_WriteRedis == \E p \in procsL :
   /\ p.status = "WriteRedis"
-  /\ procsL' = Replace(procsL, p, [p EXCEPT !.status = "Respond", !.respondVer = p.dbVer])
+  /\ procsL' = SetReplace(procsL, p, [p EXCEPT !.status = "Respond", !.respondVer = p.dbVer])
   /\ RedisWriteSnapshot(p.dbVer, {}, TRUE, TRUE)
   /\ UNCHANGED << db, procsR, procsU, procsS, sub, userState >>
 
@@ -297,14 +290,14 @@ UserReconnect ==
 
 Reload_Subscribe == \E p \in procsR :
   /\ p.status = "Subscribe"
-  /\ procsR' = Replace(procsR, p, [p EXCEPT !.status = "ReadEvents"])
+  /\ procsR' = SetReplace(procsR, p, [p EXCEPT !.status = "ReadEvents"])
   /\ RedisSubscribe(p.user)
   /\ UNCHANGED << db, procsU, procsS, procsL, pub, redis, userState >>
 
 \* Read = from DB
 Reload_ReadEvents == \E p \in procsR :
   /\ p.status = "ReadEvents"
-  /\ procsR' = Replace(procsR, p, [p EXCEPT !.events = (p.userVer..db.ver), !.status = "Respond"])
+  /\ procsR' = SetReplace(procsR, p, [p EXCEPT !.events = (p.userVer..db.ver), !.status = "Respond"])
   /\ UNCHANGED << db, procsU, procsS, procsL, pub, redis, sub, userState >>
 
 Reload_Respond == \E p \in procsR :
@@ -334,20 +327,20 @@ UpdateRequest ==
 
 Update_ReadRedis == \E p \in procsU :
   /\ p.status = "ReadRedis"
-  /\ procsU' = Replace(procsU, p, [p EXCEPT !.ver      = RedisTotalVer,
+  /\ procsU' = SetReplace(procsU, p, [p EXCEPT !.ver      = RedisTotalVer,
                                             !.redisVer = RedisTotalVer,
                                             !.status   = IF RedisTotalVer > p.ver THEN "WriteDb" ELSE "ReadDb"])
   /\ UNCHANGED << db, redis, pub, userState, procsL, procsR, procsS, sub >>
 
 Update_ReadDb == \E p \in procsU :
   /\ p.status = "ReadDb"
-  /\ procsU' = Replace(procsU, p, [p EXCEPT !.ver = db.ver, !.status = "WriteRedis1"])
+  /\ procsU' = SetReplace(procsU, p, [p EXCEPT !.ver = db.ver, !.status = "WriteRedis1"])
   /\ UNCHANGED << db, redis, pub, userState, procsL, procsR, procsS, sub >>
 
 Update_WriteRedis1 == \E p \in procsU :
   /\ p.status = "WriteRedis1"
-  /\ LET Continue == procsU' = Replace(procsU, p, [p EXCEPT !.status = "WriteDb"])
-         Retry    == procsU' = Replace(procsU, p, [p EXCEPT !.status = "ReadRedis"])
+  /\ LET Continue == procsU' = SetReplace(procsU, p, [p EXCEPT !.status = "WriteDb"])
+         Retry    == procsU' = SetReplace(procsU, p, [p EXCEPT !.status = "ReadRedis"])
          WriteEvents ==
            LET firstEvent == p.redisVer + 1
                tryEvents  == firstEvent .. p.ver
@@ -362,12 +355,12 @@ Update_WriteDb == \E p \in procsU :
         /\ IF p.ver = db.ver
            THEN LET newVer == db.ver + 1
                 IN /\ db'     = [ver |-> newVer]
-                   /\ procsU' = Replace(procsU, p, [p EXCEPT !.status = "WriteRedis2", !.ver = newVer])
+                   /\ procsU' = SetReplace(procsU, p, [p EXCEPT !.status = "WriteRedis2", !.ver = newVer])
            ELSE \* Db has been updated without our knowledge; INSERT fails
-                /\ procsU' = Replace(procsU, p, [p EXCEPT !.status = "ReadRedis"])
+                /\ procsU' = SetReplace(procsU, p, [p EXCEPT !.status = "ReadRedis"])
                 /\ UNCHANGED db
      \/ \* Request is invalid
-        /\ procsU' = Replace(procsU, p, [p EXCEPT !.status = "Respond"])
+        /\ procsU' = SetReplace(procsU, p, [p EXCEPT !.status = "Respond"])
         /\ UNCHANGED db
   /\ UNCHANGED << redis, procsL, pub, userState, procsR, procsS, sub >>
 
@@ -376,7 +369,7 @@ Update_WriteRedis2 == \E p \in procsU :
   /\ p.status = "WriteRedis2"
   /\ \/ RedisWriteSnapshot(p.ver, {p.ver}, TRUE, TRUE)
      \/ RedisWriteEvents({}, {p.ver}, TRUE, TRUE)
-  /\ procsU' = Replace(procsU, p, [p EXCEPT !.status = "Respond"])
+  /\ procsU' = SetReplace(procsU, p, [p EXCEPT !.status = "Respond"])
   /\ UNCHANGED << db, procsL, procsS, procsR, userState, sub >>
 
 \* Responds to user
