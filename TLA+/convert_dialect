@@ -1,0 +1,42 @@
+#!/bin/bash
+
+reverse=0
+if [ "$1" = "-r" ]; then
+  reverse=1
+fi
+
+################################################################################
+
+to_tla=""
+from_tla=""
+
+function pat {
+  to_tla="$to_tla s,$2,$1,g;"
+  from_tla="$from_tla s,$1,$2,g;"
+}
+
+function quote {
+  echo "$1" | perl -pe '
+    s!\\!\\\\!g;
+    s!\|!\\\|!g;
+  '
+}
+
+function lit {
+  pat "$(quote "$1")" "$(quote "$2")"
+}
+
+lit ' /\ ' ' & '
+lit ' \/ ' ' | '
+lit ' /= ' ' != '
+
+################################################################################
+
+plan="$to_tla"
+[ $reverse = 1 ] && plan="$from_tla"
+
+# echo >&2
+# echo "$plan" >&2
+# echo >&2
+
+exec perl -pe "$plan"

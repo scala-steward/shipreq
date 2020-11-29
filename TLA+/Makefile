@@ -1,6 +1,6 @@
 TLC := ./tlc -difftrace
 
-SHARED := convert Makefile tlc Util.tla
+SHARED := convert_dialect Makefile tlc Util.tla
 
 info:
 	@echo "Commands:"

@@ -17,7 +17,7 @@ tmp=/tmp/$(date +%Y%m%d-%H%M%S)-$$
 mkdir $tmp
 # trap "rm -rf $tmp" EXIT
 
-./convert <$module.tla >$tmp/$module.tla
+./convert_dialect <$module.tla >$tmp/$module.tla
 cp $module.cfg $tmp
 cmd+=($module)
 
