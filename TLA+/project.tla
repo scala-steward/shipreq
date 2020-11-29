@@ -10,7 +10,7 @@ CONSTANT User, \* Really this is a unique client/connection, not a ShipReq user/
          MCAllowUserReconnect,
          MCAllowWebappDeath
 
-MCSymmetry == Permutations(User) \union Permutations(Request)
+MCSymmetry == Permutations(User) ++ Permutations(Request)
 
 ASSUME & IsFiniteSet(User)
        & IsFiniteSet(Request)
@@ -130,7 +130,7 @@ RedisTotalVer ==
 
 Init ==
   & db    \in [ver: 1..MCVerLimit]
-  & redis \in UNION { { [ver |-> v, events |-> {}]} \union
+  & redis \in UNION { { [ver |-> v, events |-> {}]} ++
                        { [ver |-> v, events |-> (v+1)..e2] : e2 \in (v+1)..(db.ver) }
                      : v \in 0..(db.ver) }
   & procsL    = {}
@@ -157,7 +157,7 @@ DataInvariants ==
   & \A e \in redis.events :
     & \* No gaps in Redis events
        IF redis.ver > 0
-       THEN (e - 1) \in (redis.events \union {redis.ver}) \* all events proceed snapshot
+       THEN (e - 1) \in (redis.events ++ {redis.ver}) \* all events proceed snapshot
        ELSE (e - 1) \in (redis.events) | e = Min[redis.events]
 
 MCAllowAct == db.ver < MCVerLimit
@@ -167,17 +167,17 @@ MCAllowAct == db.ver < MCVerLimit
 ApplyEvents[ver \in Nat, es \in SUBSET Nat] ==
   LET n == ver + 1
   IN IF n \in es
-     THEN ApplyEvents[n, es \ {n}]
+     THEN ApplyEvents[n, es -- {n}]
      ELSE <<ver,es>>
 
 PublishEvents(es) ==
-  pub' = pub \union (sub \X es)
+  pub' = pub ++ (sub \X es)
 
 RedisWriteSnapshot(ver, eventsToPublish, OnOk, OnFail) ==
   & IF ver > redis.ver
      THEN
        & redis' = [ver    |-> ver,
-                    events |-> {e \in redis.events : e > ver}]
+                  events |-> {e \in redis.events : e > ver}]
        & OnOk
      ELSE
        \* Redis has a more recent state than this proc
@@ -186,12 +186,12 @@ RedisWriteSnapshot(ver, eventsToPublish, OnOk, OnFail) ==
   & PublishEvents(eventsToPublish)
 
 RedisWriteEvents(eventsToCache, eventsToCacheAndPublish, OnOk, OnFail) ==
-  LET events     == eventsToCache \union eventsToCacheAndPublish
+  LET events     == eventsToCache ++ eventsToCacheAndPublish
       newEvents  == {e \in events : e > RedisTotalVer}
       fail       == & OnFail
                     & UNCHANGED redis
       apply      == & OnOk
-                    & redis' = [redis EXCEPT !.events = @ \union newEvents]
+                    & redis' = [redis EXCEPT !.events = @ ++ newEvents]
   IN & IF newEvents = {} THEN
           fail
         ELSE IF Min[newEvents] > RedisTotalVer + 1 THEN
@@ -211,7 +211,7 @@ RedisSubscribe(u) ==
        state as described above.
   *)
   IF userState[u].status != "offline" THEN
-    & sub' = sub \union {u}
+    & sub' = sub ++ {u}
     \* & Assert(u \notin sub, TRUE)
   ELSE
     UNCHANGED sub
@@ -223,7 +223,7 @@ UserConnect ==
   & \E u \in User :
      & ~IsUserInUse(u) \* A new user (connection) is distinct. If model value is still is use, it can't be recycled here yet
      & userState' = [userState EXCEPT ![u] = [ver |-> 0, status |-> "loading", future |-> {}, reqs |-> {}]]
-     & procsL' = procsL \union {InitProcL(u)}
+     & procsL' = procsL ++ {InitProcL(u)}
      & UNCHANGED << db, redis, procsR, procsU, procsS, pub, sub >>
 
 Load_Subscribe == \E p \in procsL :
@@ -259,7 +259,7 @@ Load_WriteRedis == \E p \in procsL :
 
 Load_Respond == \E p \in procsL :
   & p.status = "Respond"
-  & procsL' = procsL \ {p}
+  & procsL' = procsL -- {p}
   & LET us  == userState[p.user]
          v   == p.respondVer
          r   == ApplyEvents[v, {e \in us.future : e > v}]
@@ -285,7 +285,7 @@ UserReconnect ==
      & ~IsUserInUse(u) \* A new user (connection) is distinct. If model value is still is use, it can't be recycled here yet
      & userState[u].ver != 0
      & userState' = [userState EXCEPT ![u].status = "reloading"]
-     & procsR' = procsR \union {[user |-> u, status |-> "Subscribe", userVer |-> userState[u].ver, events |-> {}]}
+     & procsR' = procsR ++ {[user |-> u, status |-> "Subscribe", userVer |-> userState[u].ver, events |-> {}]}
      & UNCHANGED << db, redis, procsU, procsL, procsS, pub, sub >>
 
 Reload_Subscribe == \E p \in procsR :
@@ -302,9 +302,9 @@ Reload_ReadEvents == \E p \in procsR :
 
 Reload_Respond == \E p \in procsR :
   & p.status = "Respond"
-  & procsR' = procsR \ {p}
+  & procsR' = procsR -- {p}
   & LET us  == userState[p.user]
-         r   == ApplyEvents[us.ver, us.future \union {e \in p.events : e > us.ver}]
+         r   == ApplyEvents[us.ver, us.future ++ {e \in p.events : e > us.ver}]
          us2 == [us EXCEPT !.ver = r[1], !.future = r[2], !.status = "active"]
      IN CASE us.status = "offline"   -> UNCHANGED userState
           [] us.status = "reloading" -> userState' = [userState EXCEPT ![p.user] = us2]
@@ -321,8 +321,8 @@ UpdateRequest ==
   & MCAllowAct
   & \E u \in User : userState[u].status = "active"                   \* For an online user
      & \E r \in Request : \A i \in User : r \notin userState[i].reqs \* get a unique req Id
-        & userState' = [userState EXCEPT ![u].reqs = @ \union {r}]
-        & procsU'    = procsU \union {[user |-> u, req |-> r, status |-> "ReadRedis", redisVer |-> 0, ver |-> 0]}
+        & userState' = [userState EXCEPT ![u].reqs = @ ++ {r}]
+        & procsU'    = procsU ++ {[user |-> u, req |-> r, status |-> "ReadRedis", redisVer |-> 0, ver |-> 0]}
         & UNCHANGED << db, redis, pub, procsL, procsR, procsS, sub >>
 
 Update_ReadRedis == \E p \in procsU :
@@ -376,9 +376,9 @@ Update_WriteRedis2 == \E p \in procsU :
 Update_Respond == \E p \in procsU :
   & p.status = "Respond"
   & IF userState[p.user].status = "active"
-     THEN userState' = [userState EXCEPT ![p.user].reqs = @ \ {p.req}]
+     THEN userState' = [userState EXCEPT ![p.user].reqs = @ -- {p.req}]
      ELSE UNCHANGED userState
-  & procsU' = procsU \ {p}
+  & procsU' = procsU -- {p}
   & UNCHANGED << db, redis, procsL, procsS, procsR, pub, sub >>
 
 UpdateRespond ==
@@ -410,7 +410,7 @@ SyncRequest ==
     & s.status = "active"
     & s.reqs = {}
     & s.future != {} \* by this point we know we have missing events
-    & LET missing == ((s.ver + 1) .. (Max[s.future] - 1)) \ s.future
+    & LET missing == ((s.ver + 1) .. (Max[s.future] - 1)) -- s.future
        IN procsS' = [procsS EXCEPT ![u] = missing]
     & UNCHANGED << db, redis, procsU, procsL, procsR, pub, userState, sub >>
 
@@ -427,14 +427,14 @@ RedisPublishEvent ==
   LET RecvEvent(s, v) ==
         IF v <= s.ver
         THEN s
-        ELSE LET r == ApplyEvents[s.ver, s.future \union {v}]
+        ELSE LET r == ApplyEvents[s.ver, s.future ++ {v}]
              IN [s EXCEPT !.ver = r[1], !.future = r[2]]
   IN
     & \E <<u,v>> \in pub :
       & IF userState[u].status != "offline" \* status=loading included because as soon as the websocket is established, the loading proc subscribes
          THEN userState' = [userState EXCEPT ![u] = RecvEvent(@, v)]
          ELSE UNCHANGED userState
-      & pub' = pub \ {<<u,v>>}
+      & pub' = pub -- {<<u,v>>}
       & UNCHANGED << db, redis, procsU, procsR, procsL, procsS, sub >>
 
 UserDisconnect ==
@@ -442,7 +442,7 @@ UserDisconnect ==
   & MCAllowAct
   & \E u \in User : userState[u].status != "offline"
     & userState' = [userState EXCEPT ![u] = GoOffline(@)]
-    & sub'       = sub \ {u}
+    & sub'       = sub -- {u}
     & pub'       = {usrEvt \in pub : usrEvt[1] != u}
     & UNCHANGED << db, redis, procsU, procsL, procsR, procsS >>
 
@@ -457,13 +457,13 @@ WebappDeath ==
   \* Also remember the user isn't a ShipReq user; it's a browser tab, a session.
   & MCAllowWebappDeath
   & MCAllowAct
-  & \E affectedUsers \in (SUBSET(OnlineUsers) \ {{}}) :
+  & \E affectedUsers \in (SUBSET(OnlineUsers) -- {{}}) :
     & procsL'    = {p \in procsL : p.user \notin affectedUsers}
     & procsR'    = {p \in procsR : p.user \notin affectedUsers}
     & procsU'    = {p \in procsU : p.user \notin affectedUsers}
     & procsS'    = [u \in User |-> IF u \in affectedUsers THEN {} ELSE procsS[u]]
     & pub'       = {usrEvt \in pub : usrEvt[1] \notin affectedUsers}
-    & sub'       = sub \ affectedUsers
+    & sub'       = sub -- affectedUsers
     & userState' = [u \in User |-> IF u \in affectedUsers THEN GoOffline(userState[u]) ELSE userState[u]]
     & UNCHANGED << db, redis >>
 

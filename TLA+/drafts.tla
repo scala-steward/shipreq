@@ -55,7 +55,7 @@ CONSTANT Worker
 ASSUME & IsFiniteSet(Browser)
        & IsFiniteSet(Worker)
 
-MCSymmetry == Permutations(Browser) \union Permutations(Worker)
+MCSymmetry == Permutations(Browser) ++ Permutations(Worker)
 
 VARIABLE browsers \* browser state
 VARIABLE workers  \* worker states
@@ -87,14 +87,14 @@ BrowserState == [
   idb : Storage] \* indexedDB
 
 EditorState ==
-  [status: {closed}] \union
+  [status: {closed}] ++
   [
     status: {dirty},
     draft: Draft
   ]
 
 WorkerState ==
-  [status: {nonExistant}] \union
+  [status: {nonExistant}] ++
   [
     status   : {live},
     browser  : Browser,
@@ -168,7 +168,7 @@ NewDraft(w, prevProv) ==
 
 Store(storage, draft) ==
   LET withoutOld == {d \in storage : d.worker != draft.worker}
-  IN  withoutOld \union {draft}
+  IN  withoutOld ++ {draft}
 
 StoreAll(storage, drafts) ==
   SetReduce(drafts, storage, Store)

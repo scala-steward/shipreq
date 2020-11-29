@@ -94,16 +94,16 @@ VARIABLES serverSeen,   \* Keys & secrets the server has ever had undecrypted ac
 
 vars == << serverSeen, userSeen, pcReplaceKey, data, key, secret, keyKeySecret, oldSecrets >>
 
-UsedSecrets        == oldSecrets \union {secret}
+UsedSecrets        == oldSecrets ++ {secret}
 UsersWithoutKeyKey == {u \in Users : key.key \notin userSeen[u]}
 UsersWithKeyKey    == {u \in Users : key.key \in userSeen[u]}
 
 -----------------------------------------------------------------------------------------------------------------------
 
 TypeInvariants ==
-  & serverSeen   \in SUBSET (Keys \union Secrets)
-  & userSeen     \in [Users -> SUBSET (Keys \union Secrets \union [decrypted: Secrets \union Keys, key: Keys])]
-  & pcReplaceKey \in [Users -> [old: Secrets, new: Secrets, active: {TRUE}] \union [active: {FALSE}]]
+  & serverSeen   \in SUBSET (Keys ++ Secrets)
+  & userSeen     \in [Users -> SUBSET (Keys ++ Secrets ++ [decrypted: Secrets ++ Keys, key: Keys])]
+  & pcReplaceKey \in [Users -> [old: Secrets, new: Secrets, active: {TRUE}] ++ [active: {FALSE}]]
   & data         \in [decrypted: {Data},  key: Keys] \* This is a blob which if decrypted with .key, would produce .decrypted
   & key          \in [decrypted: Keys,    key: Keys] \* This is a blob which if decrypted with .key, would produce .decrypted
   & keyKeySecret \in [decrypted: Secrets, key: Keys]
@@ -127,8 +127,8 @@ SanityChecks == [][SanityChecksT]_<<vars>>
 
 -----------------------------------------------------------------------------------------------------------------------
 
-UserSees(u, s) == userSeen' = [userSeen EXCEPT ![u] = @ \union s]
-ServerSees(s)  == serverSeen' = serverSeen \union s
+UserSees(u, s) == userSeen' = [userSeen EXCEPT ![u] = @ ++ s]
+ServerSees(s)  == serverSeen' = serverSeen ++ s
 
 -----------------------------------------------------------------------------------------------------------------------
 
@@ -175,7 +175,7 @@ ReplaceKey1(u) ==
   IN
     & | hasKeyKey
        | keyKeySecret \in seen & data.key \in seen
-    & UserSees(u, {secret2} \union seenDK2)
+    & UserSees(u, {secret2} ++ seenDK2)
     & ServerSees({secret2})
     & pcReplaceKey' = [pcReplaceKey EXCEPT ![u] = [old |-> secret, new |-> secret2, active |-> TRUE]]
     & UNCHANGED << data, key, secret, keyKeySecret, oldSecrets >>
@@ -193,7 +193,7 @@ ReplaceKey2(u) ==
             & secret'       = s.new
             & keyKeySecret' = [decrypted |-> s.new  ,  key |-> keyKey2]
             & key'          = [decrypted |-> dataKey2, key |-> keyKey2]
-            & oldSecrets'   = oldSecrets \union {secret}
+            & oldSecrets'   = oldSecrets ++ {secret}
             & pcReplaceKey' = [pcReplaceKey EXCEPT ![u] = [active |-> FALSE]]
             & UNCHANGED << serverSeen, data >>
 (*

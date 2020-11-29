@@ -26,7 +26,7 @@ SetReduce(set, acc, op(_, _)) ==
   LET f[s \in SUBSET set] ==
     IF s = {} THEN acc
     ELSE LET x == CHOOSE x \in s: TRUE
-         IN op(f[s \ {x}], x)
+         IN op(f[s -- {x}], x)
   IN f[set]
 
 ------------------------------------------------------------------------------------------------------------------------
