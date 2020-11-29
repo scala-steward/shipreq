@@ -8,37 +8,28 @@ fi
 
 ################################################################################
 
-to_tla=""
-from_tla=""
+common='
+  s/\t/  /g;
+  s/ +$//;
+'
 
-function pat {
-  to_tla="$to_tla s,$2,$1,g;"
-  from_tla="$from_tla s,$1,$2,g;"
-}
+to_tla='
+  s, &(?= |$), /\\,g;
+  s, \|(?= |$), \\/,g;
+  s, != , /= ,g;
+'
 
-function quote {
-  echo "$1" | perl -pe '
-    s!\\!\\\\!g;
-    s!\|!\\\|!g;
-  '
-}
-
-function lit {
-  pat "$(quote "$1")" "$(quote "$2")"
-}
-
-lit ' /\ ' ' & '
-lit ' \/ ' ' | '
-lit ' /= ' ' != '
+from_tla='
+  s, /\\(?= |$), &,g;
+  s, \\/(?= |$), \|,g;
+  s, /= , != ,g;
+'
 
 ################################################################################
 
 plan="$to_tla"
 [ $reverse = 1 ] && plan="$from_tla"
-
-# echo >&2
-# echo "$plan" >&2
-# echo >&2
+plan="$common; $plan"
 
 if [ $# -eq 0 ]; then
   exec perl -pe "$plan"
