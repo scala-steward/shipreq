@@ -3,6 +3,7 @@
 reverse=0
 if [ "$1" = "-r" ]; then
   reverse=1
+  shift
 fi
 
 ################################################################################
@@ -39,4 +40,9 @@ plan="$to_tla"
 # echo "$plan" >&2
 # echo >&2
 
-exec perl -pe "$plan"
+if [ $# -eq 0 ]; then
+  exec perl -pe "$plan"
+else
+  exec perl -pi -e "$plan" "$@"
+fi
+

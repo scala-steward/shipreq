@@ -52,8 +52,8 @@ EXTENDS FiniteSets, Naturals, Sequences, TLC, Util
 CONSTANT Browser
 CONSTANT Worker
 
-ASSUME /\ IsFiniteSet(Browser)
-       /\ IsFiniteSet(Worker)
+ASSUME & IsFiniteSet(Browser)
+       & IsFiniteSet(Worker)
 
 MCSymmetry == Permutations(Browser) \union Permutations(Worker)
 
@@ -114,10 +114,10 @@ NetworkState ==
   Seq(Msg) \* i.e. List[Msg]
 
 TypeInvariants ==
-  /\ browsers \in [Browser -> BrowserState]
-  /\ workers \in [Worker -> WorkerState]
-  /\ network \in NetworkState
-  /\ remote \in Storage
+  & browsers \in [Browser -> BrowserState]
+  & workers \in [Worker -> WorkerState]
+  & network \in NetworkState
+  & remote \in Storage
 
 \* ███████████████████████████████████████████████████████████████████████████████████████████████████
 \* Data
@@ -128,24 +128,24 @@ StorageInvariants(s) ==
     "Duplicate drafts/worker:", s)
 
 DataInvariants ==
-  \* /\ PrintT(varDesc)
+  \* & PrintT(varDesc)
 
-  /\ \A b \in Browser :
+  & \A b \in Browser :
     LET bs == browsers[b]
-    IN /\ StorageInvariants(bs.idb)
-       /\ StorageInvariants(bs.ls)
+    IN & StorageInvariants(bs.idb)
+       & StorageInvariants(bs.ls)
 
-  /\ \A w \in Worker :
+  & \A w \in Worker :
     LET ws == workers[w]
-    IN /\ ws.status = live => ws.time > 0 /\ ws.lastEdit < ws.time
+    IN & ws.status = live => ws.time > 0 & ws.lastEdit < ws.time
 
-  /\ StorageInvariants(remote)
+  & StorageInvariants(remote)
 
 Init ==
-  /\ browsers = [b \in Browser |-> [ls |-> {}, idb |-> {}]]
-  /\ workers = [w \in Worker |-> [status |-> nonExistant]]
-  /\ network = <<>>
-  /\ remote = {}
+  & browsers = [b \in Browser |-> [ls |-> {}, idb |-> {}]]
+  & workers = [w \in Worker |-> [status |-> nonExistant]]
+  & network = <<>>
+  & remote = {}
 
 \* ███████████████████████████████████████████████████████████████████████████████████████████████████
 \* Functions
@@ -167,7 +167,7 @@ NewDraft(w, prevProv) ==
   ]
 
 Store(storage, draft) ==
-  LET withoutOld == {d \in storage : d.worker /= draft.worker}
+  LET withoutOld == {d \in storage : d.worker != draft.worker}
   IN  withoutOld \union {draft}
 
 StoreAll(storage, drafts) ==
@@ -202,9 +202,9 @@ OnEdit(w) ==
 
 WorkerNew ==
   \E w \in Worker : workers[w].status = nonExistant
-    /\ \E b \in Browser :
+    & \E b \in Browser :
      \* TODO load from CSS
-      /\ workers' = [workers EXCEPT ![w] = [
+      & workers' = [workers EXCEPT ![w] = [
             status    |-> live,
             browser   |-> b,
             time      |-> 1,
@@ -212,69 +212,69 @@ WorkerNew ==
             lastEdit  |-> 0,
             syncQueue |-> {}
           ]]
-      /\ UNCHANGED << browsers, network, remote >>
+      & UNCHANGED << browsers, network, remote >>
 
 DraftNew ==
   \E w \in Worker : workers[w].status = live
-    /\ LET ws == workers[w]
-       IN /\ ws.editor.status = closed
-          /\ workers' = OnEdit(w)
-          /\ browsers' \in StoreClientSide(ws.browser, NewDraft(w, NoProv))
-          /\ UNCHANGED << network, remote >>
+    & LET ws == workers[w]
+       IN & ws.editor.status = closed
+          & workers' = OnEdit(w)
+          & browsers' \in StoreClientSide(ws.browser, NewDraft(w, NoProv))
+          & UNCHANGED << network, remote >>
 
 DraftEdit ==
   \E w \in Worker : workers[w].status = live
-    /\ LET ws == workers[w]
-       IN /\ ws.editor.status = dirty
-          /\ ws.lastEdit /= ws.time - 1 \* Avoid consecutive edits / infinite model
-          /\ workers' = OnEdit(w)
-          /\ browsers' \in StoreClientSide(ws.browser, NewDraft(w, ws.editor.draft.prov))
-          /\ UNCHANGED << network, remote >>
+    & LET ws == workers[w]
+       IN & ws.editor.status = dirty
+          & ws.lastEdit != ws.time - 1 \* Avoid consecutive edits / infinite model
+          & workers' = OnEdit(w)
+          & browsers' \in StoreClientSide(ws.browser, NewDraft(w, ws.editor.draft.prov))
+          & UNCHANGED << network, remote >>
 
 WorkerSend ==
-  /\ \E w \in Worker :
-    /\ workers[w].status = live
-    /\ workers[w].syncQueue /= {}
-    /\ workers' = [workers EXCEPT ![w].syncQueue = {}] \* In reality we'll only clear after confirmed received
-    /\ SendMsg([worker |-> w, toSvr |-> TRUE, drafts |-> workers[w].syncQueue])
-    /\ UNCHANGED << browsers, remote >>
+  & \E w \in Worker :
+    & workers[w].status = live
+    & workers[w].syncQueue != {}
+    & workers' = [workers EXCEPT ![w].syncQueue = {}] \* In reality we'll only clear after confirmed received
+    & SendMsg([worker |-> w, toSvr |-> TRUE, drafts |-> workers[w].syncQueue])
+    & UNCHANGED << browsers, remote >>
 
 RemoteRecv ==
   \E i \in (1..Len(network)) :
-    /\ network[i].toSvr
-    /\ RecvMsg(i)
-    /\ remote' = StoreAll(remote, network[i].drafts)
-    /\ UNCHANGED << browsers, workers >>
+    & network[i].toSvr
+    & RecvMsg(i)
+    & remote' = StoreAll(remote, network[i].drafts)
+    & UNCHANGED << browsers, workers >>
 
 \* Will websockets periodically push? Will workers request?
 \* As far as the spec goes it doesn't matter.
 RemoteSend ==
-  /\ remote /= {}
-  /\ \E w \in Worker:
-    /\ workers[w].status = live
-    /\ ~(\E i \in DOMAIN network : ~network[i].toSvr /\ network[i].worker = w) \* Don't re-send if msg already on the way
-    /\ SendMsg([worker |-> w, toSvr |-> FALSE, drafts |-> remote])
-    /\ UNCHANGED << browsers, workers, remote >>
+  & remote != {}
+  & \E w \in Worker:
+    & workers[w].status = live
+    & ~(\E i \in DOMAIN network : ~network[i].toSvr & network[i].worker = w) \* Don't re-send if msg already on the way
+    & SendMsg([worker |-> w, toSvr |-> FALSE, drafts |-> remote])
+    & UNCHANGED << browsers, workers, remote >>
 
 WorkerRecv ==
   \E i \in (1..Len(network)) :
-    /\ ~network[i].toSvr
-    /\ RecvMsg(i)
-    /\ workers' = workers \* TODO #########################################
-    /\ UNCHANGED << browsers, remote >>
+    & ~network[i].toSvr
+    & RecvMsg(i)
+    & workers' = workers \* TODO #########################################
+    & UNCHANGED << browsers, remote >>
 
 \* ███████████████████████████████████████████████████████████████████████████████████████████████████
 \* Spec
 
 Next ==
-  \/ WorkerNew
-  \/ DraftNew
-  \/ DraftEdit
-  \/ WorkerSend
-  \/ RemoteRecv
-  \/ RemoteSend
-  \/ WorkerRecv
+  | WorkerNew
+  | DraftNew
+  | DraftEdit
+  | WorkerSend
+  | RemoteRecv
+  | RemoteSend
+  | WorkerRecv
 
-Spec == Init /\ [][Next]_<<vars>>
+Spec == Init & [][Next]_<<vars>>
 
 ========================================================================================================================

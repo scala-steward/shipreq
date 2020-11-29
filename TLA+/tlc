@@ -18,6 +18,7 @@ mkdir $tmp
 # trap "rm -rf $tmp" EXIT
 
 ./convert_dialect <$module.tla >$tmp/$module.tla
+./convert_dialect <Util.tla >$tmp/Util.tla
 cp $module.cfg $tmp
 cmd+=($module)
 

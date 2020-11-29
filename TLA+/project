@@ -2,7 +2,7 @@
 
 tmp=/tmp/$(date +%Y%m%d-%H%M%S)-$$
 
-tlc="tlc-colour -difftrace"
+tlc="./tlc -difftrace"
 
 most='
 SPECIFICATION Spec

@@ -10,8 +10,8 @@ LOCAL INSTANCE TLC
 
 Assert1(ok, msg, data1) ==
   ~ok =>
-    /\ PrintT("Error: " \o msg)
-    /\ ~PrintT(data1)
+    & PrintT("Error: " \o msg)
+    & ~PrintT(data1)
 
 ------------------------------------------------------------------------------------------------------------------------
 \* Sets
