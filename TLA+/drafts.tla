@@ -60,11 +60,13 @@ ASSUME & IsFiniteSet(Browser)
        & MCBrowserStorageAlwaysAvailable \in BOOLEAN
 
 MCSymmetry ==
-  Permutations(Browser) ++
-  Permutations(BrowserSrcAsync) ++
-  Permutations(BrowserSrcSync) ++
-  Permutations(Tab) ++
-  Permutations(Worker)
+  SymmetrySets(<<
+    Browser,
+    BrowserSrcAsync,
+    BrowserSrcSync,
+    Tab,
+    Worker
+  >>)
 
 VARIABLE browsers
 VARIABLE network

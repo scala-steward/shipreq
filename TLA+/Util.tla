@@ -34,6 +34,15 @@ Tap(a) ==
 Show(name, a) ==
   TapF(LAMBDA x: [n \in {name} |-> x], a)
 
+SymmetrySet(S) ==
+  IF Cardinality(S) > 1 THEN
+    Permutations(S)
+  ELSE
+    {}
+
+SymmetrySets(Ss) ==
+  UNION { SymmetrySet(Ss[i]) : i \in DOMAIN Ss }
+
 ------------------------------------------------------------------------------------------------------------------------
 \* Nats
 
