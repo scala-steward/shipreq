@@ -26,14 +26,33 @@ Max[x \in Nat, y \in Nat] == IF x > y THEN x ELSE y
 \* Option
 
 None ==
-  [isEmpty |-> TRUE, isDefined |-> FALSE]
-
-Option(S) ==
-  [get: S, isEmpty: {FALSE}, isDefined: {TRUE}] ++
-  {None}
+  [
+    isEmpty   |-> TRUE,
+    isDefined |-> FALSE,
+    toSet     |-> {}
+  ]
 
 Some(s) ==
-  [get |-> s, isEmpty |-> FALSE, isDefined |-> TRUE]
+  [
+    get       |-> s,
+    isEmpty   |-> FALSE,
+    isDefined |-> TRUE,
+    toSet     |-> {s}
+  ]
+
+Option(S) ==
+  {None} ++ [
+    get      : S,
+    isEmpty  : {FALSE},
+    isDefined: {TRUE},
+    toSet    : SUBSET S
+  ]
+
+OptionMap(o, f(_)) ==
+  IF o.isEmpty THEN o ELSE Some(f(o.get))
+
+OptionFlatmap(o, f(_)) ==
+  IF o.isEmpty THEN o ELSE f(o.get)
 
 ------------------------------------------------------------------------------------------------------------------------
 \* Sets
@@ -57,24 +76,16 @@ kSubset(k, S) ==
 SetMin[as \in SUBSET Nat] == CHOOSE a \in as : \A b \in as : a <= b
 SetMax[as \in SUBSET Nat] == CHOOSE a \in as : \A b \in as : a >= b
 
-(* set.find(pred).getOrElse(otherwise) *)
-SetFindOrElse(set, pred(_), otherwise) ==
-  IF   \E x \in set : pred(x)
-  THEN CHOOSE x \in set : pred(x)
-  ELSE otherwise
-
 SetFind(set, pred(_)) ==
-  SetFindOrElse(set, pred, FALSE)
+  IF   \E x \in set : pred(x)
+  THEN Some(CHOOSE x \in set : pred(x))
+  ELSE None
 
-(* set.collectFirst(f(_).filter(_ != otherwise)).getOrElse(otherwise) *)
-SetCollectFirstOrElse(set, f(_), otherwise) ==
-  LET el == SetFindOrElse(set, f, otherwise)
-  IN IF el = otherwise
-     THEN otherwise
-     ELSE f(el)
-
+(* (Set[A], A => Option[B]): Option[B] *)
 SetCollectFirst(set, f(_)) ==
-  SetCollectFirstOrElse(set, f, FALSE)
+  LET p(a) == f(a).isDefined
+      oa   == SetFind(set, p)
+  IN OptionFlatmap(oa, f)
 
 SetReplace(set, old, new) ==
   { IF a = old THEN new ELSE a : a \in set }
@@ -94,16 +105,29 @@ SetReduce(set, op(_, _)) ==
     IN op(f[s -- {x}], x)
   IN f[set]
 
-SetSoleElementOrElse(set, otherwise) ==
-  IF Cardinality(set) = 1
-  THEN CHOOSE x \in set: TRUE
-  ELSE otherwise
-
 SetSoleElement(set) ==
-  SetSoleElementOrElse(set, FALSE)
+  IF Cardinality(set) = 1
+  THEN Some(CHOOSE x \in set: TRUE)
+  ELSE None
 
 ------------------------------------------------------------------------------------------------------------------------
 \* Sequences
+
+SeqIndexOf(seq, pred(_)) ==
+  LET f[i \in Nat] ==
+    IF i \notin DOMAIN seq THEN
+      0
+    ELSE IF pred(seq[i]) THEN
+      i
+    ELSE
+      f[i + 1]
+  IN f[1]
+
+SeqFind(seq, pred(_)) ==
+  LET i == SeqIndexOf(seq, pred)
+  IN IF i = 0
+     THEN None
+     ELSE Some(seq[i])
 
 RemoveAt(s, i) ==
   SubSeq(s, 1, i-1) \o SubSeq(s, i+1, Len(s))
