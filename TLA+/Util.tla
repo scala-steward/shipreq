@@ -23,16 +23,19 @@ Log(msg) ==
     & PrintT(msg)
     & PrintT(sep)
 
-TapF(f(_), a) ==
-  IF Log(f(a))
-  THEN a
+LogRet(msg, ret) ==
+  IF Log(msg)
+  THEN ret
   ELSE "impossible"
 
 Tap(a) ==
-  TapF(LAMBDA x: x, a)
+  LogRet(a, a)
+
+TapF(f(_), a) ==
+  LogRet(f(a), a)
 
 Show(name, a) ==
-  TapF(LAMBDA x: [n \in {name} |-> x], a)
+  LogRet([n \in {name} |-> a], a)
 
 SymmetrySet(S) ==
   IF Cardinality(S) > 1 THEN
