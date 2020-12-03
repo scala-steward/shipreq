@@ -242,7 +242,7 @@ DataInvariantsWorkers ==
     IN ws.status = live =>
         & ws.time > 0
         & ws.remoteSyncedTo <= ws.time
-        & ws.awaitingAck.isDefined => ws.awaitingAck.get <= ws.time
+        & ~ws.awaitingAck.isEmpty => ws.awaitingAck.get <= ws.time
         & network = <<>> => ws.awaitingAck.isEmpty
 
 Init ==
@@ -389,7 +389,7 @@ NewTabState(w, prunedDrafts, localChange) ==
   IN
     IF prunedDrafts = {} THEN
       cleanState
-    ELSE IF soleDraft.isDefined THEN
+    ELSE IF ~soleDraft.isEmpty THEN
       dirtyState(soleDraft.get)
     ELSE
       conflictState
@@ -423,7 +423,7 @@ TabRecvFromWorker ==
           w   == ts.worker
           dss == Prune(AddDrafts(TabDrafts(t), msg.drafts))
           localChanges ==
-            IF msg.newEdit.isDefined & ts.status \in {dirty,conflicted} & ts.localChange THEN
+            IF ~msg.newEdit.isEmpty & ts.status \in {dirty,conflicted} & ts.localChange THEN
               BOOLEAN \* Maybe the new draft clears out the status, maybe there are more changes since
             ELSE
               {FALSE}

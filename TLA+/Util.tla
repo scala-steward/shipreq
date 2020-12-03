@@ -58,7 +58,6 @@ Max[x \in Nat, y \in Nat] == IF x > y THEN x ELSE y
 None ==
   [
     isEmpty   |-> TRUE,
-    isDefined |-> FALSE,
     toSet     |-> {}
   ]
 
@@ -66,7 +65,6 @@ Some(s) ==
   [
     get       |-> s,
     isEmpty   |-> FALSE,
-    isDefined |-> TRUE,
     toSet     |-> {s}
   ]
 
@@ -74,7 +72,6 @@ Option(S) ==
   {None} ++ [
     get      : S,
     isEmpty  : {FALSE},
-    isDefined: {TRUE},
     toSet    : SUBSET S
   ]
 
@@ -119,7 +116,7 @@ SetFind(set, pred(_)) ==
 
 (* (Set[A], A => Option[B]): Option[B] *)
 SetCollectFirst(set, f(_)) ==
-  LET p(a) == f(a).isDefined
+  LET p(a) == ~f(a).isEmpty
       oa   == SetFind(set, p)
   IN OptionFlatmap(oa, f)
 
