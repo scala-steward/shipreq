@@ -239,7 +239,11 @@ DataInvariantsTabs ==
 DataInvariantsWorkers ==
   \A w \in Worker :
     LET ws == workers[w]
-    IN ws.status = live => ws.time > 0
+    IN ws.status = live =>
+        & ws.time > 0
+        & ws.remoteSyncedTo <= ws.time
+        & ws.awaitingAck.isDefined => ws.awaitingAck.get <= ws.time
+        & network = <<>> => ws.awaitingAck.isEmpty
 
 Init ==
   & network    = <<>>
@@ -268,6 +272,13 @@ TabDrafts(t) ==
        [] s = clean       -> {}
        [] s = dirty       -> ts.draft.toSet
        [] s = conflicted  -> ts.drafts
+
+AllDrafts ==
+  LET draftsB == UNION UNION UNION {{ browsers[b][s].toSet : b \in Browser } : s \in BrowserSrc }
+      draftsT == UNION { TabDrafts(t) : t \in Tab }
+      draftsW == UNION { IF workers[w].status = nonExistant THEN {} ELSE workers[w].drafts : w \in Worker }
+      draftsR == remote
+  IN draftsB ++ draftsT ++ draftsW ++ draftsR
 
 SendMsg(msg) ==
   network' = Append(network, msg)
@@ -500,21 +511,25 @@ TabRecvSyncRemoteInstruction ==
   LET i == SeqIndexOf(network, LAMBDA m: m.type = doSyncR)
   IN
     & i != 0
-    & LET msg        == network[i]
-          t          == msg.to
-          inProgress == SeqExists(network, LAMBDA m: m.from = t & m.to = Remote)
-          ds         == TabDrafts(t)
-          syncMsg    == [
-                          type    |-> syncTR,
-                          from    |-> t,
-                          to      |-> Remote,
-                          drafts  |-> ds,
-                          time    |-> msg.time
-                        ]
-          syncMsgs   == IF ds = {} THEN <<>> ELSE <<syncMsg>>
+    & LET msg    == network[i]
+          t      == msg.to
+          ds     == TabDrafts(t)
+          msgR   == [
+                      type    |-> syncTR,
+                      from    |-> t,
+                      to      |-> Remote,
+                      drafts  |-> ds,
+                      time    |-> msg.time
+                    ]
+          msgW   == [
+                      type    |-> ackTW,
+                      from    |-> t,
+                      to      |-> msg.from,
+                      time    |-> msg.time
+                    ]
+          newMsg == IF ds = {} THEN msgW ELSE msgR
       IN
-        & ~inProgress
-        & network' = RemoveAt(network, i) \o syncMsgs
+        & RecvResp(i, newMsg)
         & UNCHANGED << browsers, workers, remote, tabs >>
 
 TabSendToWorker ==
@@ -679,7 +694,6 @@ Next ==
   | TabSendToWorker
   | TabStart
   | UserEditClean
-  | UserEditDirty
   | WorkerInstructTabToSyncRemote
   | WorkerRecvFromTab
   | WorkerRecvRemoteAck
@@ -695,7 +709,6 @@ Fairness ==
   & SF_<<vars>>(TabSendToWorker)
   & SF_<<vars>>(TabStart)
   \* & SF_<<vars>>(UserEditClean)
-  \* & SF_<<vars>>(UserEditDirty)
   & SF_<<vars>>(WorkerInstructTabToSyncRemote)
   & SF_<<vars>>(WorkerRecvFromTab)
   & SF_<<vars>>(WorkerRecvRemoteAck)
@@ -703,25 +716,19 @@ Fairness ==
 
 Spec == Init & [][Next]_<<vars>> & Fairness
 
-\* SpecIsFinite ==
-  \* <><Next>_<<vars>>
-  \* <>(~ENABLED(Next))
+\* Have all mechanical processes stopped such that the world is in a stable state that will stutter until
+\* the user does something.
+IsStable ==
+  & network = <<>>
+  & ~ENABLED(TabLoad)
+  & ~ENABLED(TabStart)
+  & ~ENABLED(TabSendToWorker)
+  & ~ENABLED(WorkerInstructTabToSyncRemote)
+  & ~ENABLED(WorkerSyncBrowser)
 
-\* FinalInvariants ==
-\*   ~ENABLED(Next) =>
-\*     & network = <<>>
-\*     & remote != {}
-\*     & \A t \in Tab : tabs[t].status != loading
-\*     & Log(state)
-
-\* \* TODO More final invariants
-
-\* EventualConsistency ==
-\*   ~ENABLED(Next) =>
-\*     LET draftsB == UNION UNION UNION {{ browsers[b][s].toSet : b \in Browser } : s \in BrowserSrc }
-\*         draftsT == UNION { TabDrafts(t) : t \in Tab }
-\*         draftsW == UNION { IF workers[w].status = nonExistant THEN {} ELSE workers[w].drafts : w \in Worker }
-\*         drafts  == remote ++ draftsB ++ draftsT ++ draftsW
-\*     IN Assert1(Cardinality(drafts) = 1, "Drafts are not eventually-consistent", drafts)
+StableInvariants ==
+  IsStable =>
+    & Assert1(Cardinality(AllDrafts) <= 1, "Drafts are not eventually-consistent", AllDrafts)
+    & Assert1(remote = AllDrafts, "Drafts are not stored remotely", [all |-> AllDrafts, remote |-> remote])
 
 ========================================================================================================================
