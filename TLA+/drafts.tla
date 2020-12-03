@@ -98,21 +98,21 @@ Draft       == [worker: Worker, time: Nat, prov: Provenance] \* no need to inclu
 Drafts      == SUBSET Draft                                  \* i.e. Set[Draft]
 DraftsNE    == Drafts -- {{}}                                \* i.e. NonEmptySet[Draft]
 
-clean       == "clean"
-conflicted  == "conflicted"
-dirty       == "dirty"
-live        == "live"
-nonExistant == "nonExistant"
-server      == "server"
-loading     == "loading"
-Remote      == "Remote"
-syncTW      == "sync: T -> W"
-syncWT      == "sync: W -> T"
-syncTR      == "sync: T -> R"
-syncRT      == "sync: R -> T"
-doSyncR     == "do remote sync"
-ackRT       == "ack: R -> T"
-ackTW       == "ack: T -> W"
+clean         == "clean"
+conflicted    == "conflicted"
+dirty         == "dirty"
+live          == "live"
+nonExistant   == "-"
+server        == "server"
+loading       == "loading"
+Remote        == "Remote"
+syncTW        == "sync:T->W"
+syncWT        == "sync:W->T"
+syncTR        == "sync:T->R"
+syncRT        == "sync:R->T"
+syncRemoteCmd == "syncRemoteCmd"
+ackRT         == "ack:R->T"
+ackTW         == "ack:T->W"
 
 Msg == [
   type   : {syncTW},
@@ -133,7 +133,7 @@ Msg == [
   drafts : DraftsNE,
   time   : Nat
 ] ++ [
-  type   : {doSyncR},
+  type   : {syncRemoteCmd},
   from   : Worker,
   to     : Tab,
   time   : Nat
@@ -397,7 +397,7 @@ NewTabState(w, prunedDrafts, localChange) ==
 \* ------------------------------------------------------------------------------------------------------------------------
 \* Actions
 
-RemoteRecvFromTab ==
+RemoteRecvDrafts ==
   LET i == SeqIndexOf(network, LAMBDA m: m.type = syncTR)
   IN
     & i != 0
@@ -413,7 +413,7 @@ RemoteRecvFromTab ==
         & RecvResp(i, resp)
         & UNCHANGED << browsers, tabs, workers >>
 
-TabRecvFromWorker ==
+TabRecvDraftsFromWorker ==
   LET i == SeqIndexOf(network, LAMBDA m: m.type = syncWT)
   IN
     & i != 0
@@ -507,8 +507,8 @@ TabStart ==
              ])
       & UNCHANGED << browsers, remote, workers >>
 
-TabRecvSyncRemoteInstruction ==
-  LET i == SeqIndexOf(network, LAMBDA m: m.type = doSyncR)
+TabRecvSyncRemoteCmd ==
+  LET i == SeqIndexOf(network, LAMBDA m: m.type = syncRemoteCmd)
   IN
     & i != 0
     & LET msg    == network[i]
@@ -532,7 +532,7 @@ TabRecvSyncRemoteInstruction ==
         & RecvResp(i, newMsg)
         & UNCHANGED << browsers, workers, remote, tabs >>
 
-TabSendToWorker ==
+TabSendChangesToWorker ==
   \E t \in Tab:
     LET ts == tabs[t]
     IN
@@ -559,7 +559,7 @@ UserEditClean ==
       & UNCHANGED << browsers, workers, network, remote >>
 
 \* No need for this because
-\* 1. In TabRecvFromWorker we handle the case that a local change has been made after sending it to WW
+\* 1. In TabRecvDraftsFromWorker we handle the case that a local change has been made after sending it to WW
 \* 2. Enabling makes it very hard to keep the model space finite
 \* 3. The only thing we're missing is an editor sending multiple revisions of a draft to WW before getting a result
 \*    which is extremely low probability (if possible at all) PLUS we can handle that logic easily enough
@@ -572,7 +572,7 @@ UserEditDirty ==
 \*     & tabs' = [tabs EXCEPT ![t].localChange = TRUE]
 \*     & UNCHANGED << browsers, workers, network, remote >>
 
-WorkerRecvFromTab ==
+WorkerRecvChanges ==
   LET i == SeqIndexOf(network, LAMBDA m: m.type = syncTW)
   IN
     & i != 0
@@ -602,7 +602,7 @@ WorkerRecvFromTab ==
         & UNCHANGED << browsers, remote, tabs >>
 
 \* This happens periodically without a trigger event
-WorkerSyncBrowser ==
+WorkerSyncWithBrowserStorage ==
   \E w \in Worker:
     LET ws == workers[w]
         b  == workers[w].browser
@@ -626,7 +626,7 @@ WorkerSyncBrowser ==
 
 \* TODO Track online/offline status of tabs
 \* TODO Assumes that awaitingAck will always be responded to (for the sake of model checking)
-WorkerInstructTabToSyncRemote ==
+WorkerSendSyncRemoteCmd ==
   \E w \in Worker:
     LET ws == workers[w]
     IN
@@ -635,7 +635,7 @@ WorkerInstructTabToSyncRemote ==
       & ws.remoteSyncedTo < ws.time
       & ws.drafts != {}
       & LET t   == CHOOSE t \in WorkerTabs(w) : TRUE \* TODO CHOOSE or \E?
-            cmd == [type |-> doSyncR, from |-> w, to |-> t, time |-> ws.time]
+            cmd == [type |-> syncRemoteCmd, from |-> w, to |-> t, time |-> ws.time]
         IN
           & SendMsg(cmd)
           & workers' = [workers EXCEPT ![w].awaitingAck = Some(ws.time)]
@@ -685,34 +685,34 @@ WorkerRecvRemoteAck ==
 \* Spec
 
 Next ==
-  | RemoteRecvFromTab
+  | RemoteRecvDrafts
   | TabLoad
   | TabNew
-  | TabRecvFromWorker
+  | TabRecvDraftsFromWorker
   | TabRecvRemoteAck
-  | TabRecvSyncRemoteInstruction
-  | TabSendToWorker
+  | TabRecvSyncRemoteCmd
+  | TabSendChangesToWorker
   | TabStart
   | UserEditClean
-  | WorkerInstructTabToSyncRemote
-  | WorkerRecvFromTab
+  | WorkerRecvChanges
   | WorkerRecvRemoteAck
-  | WorkerSyncBrowser
+  | WorkerSendSyncRemoteCmd
+  | WorkerSyncWithBrowserStorage
 
 Fairness ==
-  & SF_<<vars>>(RemoteRecvFromTab)
+  & SF_<<vars>>(RemoteRecvDrafts)
   & SF_<<vars>>(TabLoad)
   \* & SF_<<vars>>(TabNew)
-  & SF_<<vars>>(TabRecvFromWorker)
+  & SF_<<vars>>(TabRecvDraftsFromWorker)
   & SF_<<vars>>(TabRecvRemoteAck)
-  & SF_<<vars>>(TabRecvSyncRemoteInstruction)
-  & SF_<<vars>>(TabSendToWorker)
+  & SF_<<vars>>(TabRecvSyncRemoteCmd)
+  & SF_<<vars>>(TabSendChangesToWorker)
   & SF_<<vars>>(TabStart)
   \* & SF_<<vars>>(UserEditClean)
-  & SF_<<vars>>(WorkerInstructTabToSyncRemote)
-  & SF_<<vars>>(WorkerRecvFromTab)
+  & SF_<<vars>>(WorkerRecvChanges)
   & SF_<<vars>>(WorkerRecvRemoteAck)
-  & SF_<<vars>>(WorkerSyncBrowser)
+  & SF_<<vars>>(WorkerSendSyncRemoteCmd)
+  & SF_<<vars>>(WorkerSyncWithBrowserStorage)
 
 Spec == Init & [][Next]_<<vars>> & Fairness
 
@@ -721,10 +721,10 @@ Spec == Init & [][Next]_<<vars>> & Fairness
 IsStable ==
   & network = <<>>
   & ~ENABLED(TabLoad)
+  & ~ENABLED(TabSendChangesToWorker)
   & ~ENABLED(TabStart)
-  & ~ENABLED(TabSendToWorker)
-  & ~ENABLED(WorkerInstructTabToSyncRemote)
-  & ~ENABLED(WorkerSyncBrowser)
+  & ~ENABLED(WorkerSendSyncRemoteCmd)
+  & ~ENABLED(WorkerSyncWithBrowserStorage)
 
 StableInvariants ==
   IsStable =>
