@@ -8,6 +8,7 @@ info:
 	@echo
 	@echo "  * drafts[-watch]"
 	@echo "  * encryption[-watch]"
+	@echo "  * jq-test[T]"
 	@echo "  * project[-watch]"
 	@echo "  * websocket_client[-watch]"
 	@echo "  * websockets[-watch]"
@@ -27,6 +28,13 @@ encryption:
 	$(TLC) encryption
 encryption-watch:
 	ls -1 encryption* $(SHARED) | entr -cr make encryption
+
+
+.PHONY: jq-test jq-testT
+jq-test:
+	ls -1 jq-test.{jq,json} $(SHARED) | entr -crs "jq -cf jq-test.jq jq-test.json"
+jq-testT:
+	ls -1 jq-test.{jq,json} $(SHARED) | entr -crs "jq -rcf jq-test.jq jq-test.json | column -t -s$$'\t'"
 
 
 .PHONY: project project-watch
