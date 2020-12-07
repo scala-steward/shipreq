@@ -12,7 +12,7 @@
     .name,
     (.state.remote? // "-" | tostring),
     (.state.tabs?
-      | with_entries(.value |= "\(.draft?.get? // .drafts // [])\(if .localChange? then "*" else "" end)")?
+      | with_entries(.value |= "\(.drafts? // [])\(if (.editRev? > 0) then "*" else "" end)")?
       // "-"
       | tostring
     ),
@@ -24,7 +24,7 @@
     (.state.network?
       | ([ .[]
           | select(.drafts?)
-          | "\(.type | sub(":.*";"")):\(.from)→\(.to):\(.drafts)\(if .newEdit.get? then "*" else "" end)" ]
+          | "\(.type | sub(":.*";"")):\(.from)→\(.to):\(.drafts)\(if .edit.get? then "*" else "" end)" ]
           | sort
         )?
       // "-"
