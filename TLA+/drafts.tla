@@ -58,6 +58,8 @@ CONSTANT Worker
 CONSTANT Assignments
 
 CONSTANT MCBrowserStorageAlwaysAvailable
+CONSTANT MCMaxLocalChangesInFlight
+CONSTANT MCMaxEditsPerTab
 
 ASSUME & IsFiniteSet(Browser)
        & IsFiniteSet(BrowserSrcAsync)
@@ -68,6 +70,8 @@ ASSUME & IsFiniteSet(Browser)
        & Cardinality(Worker) <= Cardinality(Tab) \* each tab is assigned a worker. More workers than tabs is useless.
        & Cardinality(Worker) >= Cardinality(Browser) \* 2w in 1b = diff versions, 1w in 2b doesn't make sense
        & MCBrowserStorageAlwaysAvailable \in BOOLEAN
+       & MCMaxLocalChangesInFlight \in Nat
+       & MCMaxEditsPerTab \in Nat
 
 MCSymmetry ==
   SymmetrySets(<<
@@ -196,7 +200,8 @@ TabState ==
     drafts     : Drafts, \* includes editDraft when its defined
     editDraft  : Option(Draft), \* last known draft for editor state - defined iff editRev>0
     editRev    : Nat, \* Local change revision (is reset back to zero when moved into a draft)
-    editRevSent: Nat \* The highest revision sent to WW to be turned into a draft (is reset back to zero like above)
+    editRevSent: Nat, \* The highest revision sent to WW to be turned into a draft (is reset back to zero like above)
+    editCount  : Nat \* The number of edits made by a user in this tab
   ]
 
 WorkerSyncState ==
@@ -252,6 +257,7 @@ InvariantsForTabs ==
           & ~ts.editDraft.isEmpty => ts.editDraft.get \in ts.drafts \* drafts includes editDraft
           & ~(ts.editRev = 0 & ts.drafts = {}) \* ensure actually dirty
           & ~ts.editDraft.isEmpty => ts.editRev != 0 \* editDraft only defined when there are local changes
+          & ts.editCount <= MCMaxEditsPerTab
 
 InvariantsForWorkers ==
   & workers \in [Worker -> WorkerState]
@@ -458,7 +464,8 @@ NewDirtyTabState(w, ds, editDraft, editRev) ==
     drafts      |-> ds,
     editDraft   |-> editDraft,
     editRev     |-> editRev,
-    editRevSent |-> 0
+    editRevSent |-> 0,
+    editCount   |-> editRev
   ]
 
 \* editResp is from WW: Option (draft,rev)
@@ -483,8 +490,8 @@ AddDraftsToTab(ts, newDrafts, editResp) ==
                       [ts EXCEPT !.editRev = 0, !.editRevSent = 0, !.editDraft = None]
                   ELSE
                       ts
-  IN CASE ts.status \in {dirty,loading } -> { [ts2 EXCEPT !.drafts = ds] : ds \in dss }
-       [] ts.status = clean              -> { NewDirtyTabState(ts.worker, ds, None, 0) : ds \in dss }
+  IN CASE ts.status \in {dirty,loading} -> { [ts2 EXCEPT !.drafts = ds] : ds \in dss }
+       [] ts.status = clean             -> { NewDirtyTabState(ts.worker, ds, None, 0) : ds \in dss }
 
 \* ███████████████████████████████████████████████████████████████████████████████████████████████████
 \* Tests
@@ -704,20 +711,15 @@ UserEditClean ==
       & tabs' = [tabs EXCEPT ![t] = ts2]
       & UNCHANGED << browsers, workers, network, remote >>
 
-\* TODO: re-read below. still true?
-\* No need for this because
-\* 1. In TabRecvDraftsFromWorker we handle the case that a local change has been made after sending it to WW
-\* 2. Enabling makes it very hard to keep the model space finite
-\* 3. The only thing we're missing is an editor sending multiple revisions of a draft to WW before getting a result
-\*    which is extremely low probability (if possible at all) PLUS we can handle that logic easily enough
-\*    outside of the model. Having it in the model shouldn't change anything.
 UserEditDirty ==
-  FALSE
-\*   \E t \in Tab:
-\*     & tabs[t].status = dirty
-\*     & ~tabs[t].localChange
-\*     & tabs' = [tabs EXCEPT ![t].localChange = TRUE]
-\*     & UNCHANGED << browsers, workers, network, remote >>
+  \E t \in Tab: LET ts == tabs[t] IN
+    & ts.status = dirty
+    & \* Limit model space
+      & ts.editCount < MCMaxEditsPerTab
+      & ts.editRev < MCMaxLocalChangesInFlight
+      & ts.editRevSent = IF ts.editRev = 0 THEN 0 ELSE ts.editRev - 1
+    & tabs' = [tabs EXCEPT ![t].editRev = @ + 1, ![t].editCount = @ + 1]
+    & UNCHANGED << browsers, workers, network, remote >>
 
 WorkerRecvChanges ==
   LET i == SeqIndexOf(network, LAMBDA m: m.type = syncTW)
@@ -847,6 +849,7 @@ Next ==
   | TabSendChangesToWorker
   | TabStart
   | UserEditClean
+  | UserEditDirty
   | WorkerRecvChanges
   | WorkerRecvRemoteAck
   | WorkerSendRemoteStoreCmd
