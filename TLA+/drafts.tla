@@ -61,17 +61,23 @@ CONSTANT MCBrowserStorageAlwaysAvailable
 CONSTANT MCMaxLocalChangesInFlight
 CONSTANT MCMaxEditsPerTab
 
-ASSUME & IsFiniteSet(Browser)
-       & IsFiniteSet(BrowserSrcAsync)
-       & IsFiniteSet(BrowserSrcSync)
-       & IsFiniteSet(Tab)
-       & IsFiniteSet(Worker)
-       & IsFiniteSet(Assignments)
-       & Cardinality(Worker) <= Cardinality(Tab) \* each tab is assigned a worker. More workers than tabs is useless.
-       & Cardinality(Worker) >= Cardinality(Browser) \* 2w in 1b = diff versions, 1w in 2b doesn't make sense
-       & MCBrowserStorageAlwaysAvailable \in BOOLEAN
-       & MCMaxLocalChangesInFlight \in Nat
-       & MCMaxEditsPerTab \in Nat
+ASSUME IsFiniteSet(Browser)
+ASSUME IsFiniteSet(BrowserSrcAsync)
+ASSUME IsFiniteSet(BrowserSrcSync)
+ASSUME IsFiniteSet(Tab)
+ASSUME IsFiniteSet(Worker)
+ASSUME IsFiniteSet(Assignments)
+ASSUME Cardinality(Worker) <= Cardinality(Tab) \* each tab is assigned a worker. More workers than tabs is useless.
+ASSUME Cardinality(Worker) >= Cardinality(Browser) \* 2w in 1b = diff versions, 1w in 2b doesn't make sense
+ASSUME MCBrowserStorageAlwaysAvailable \in SUBSET (BrowserSrcSync ++ BrowserSrcAsync)
+ASSUME MCMaxLocalChangesInFlight \in Nat
+ASSUME MCMaxEditsPerTab \in Nat
+
+\* Async browser storage (like idb) not supported yet (if ever).
+\* In other to faithfully spec it out, we need to break the process into multiple steps
+\* like we do when WW creates promises around sending data back to tab/remote and back.
+\* Currently WorkerSyncWithBrowserStorage ignores all of that.
+ASSUME BrowserSrcAsync = {}
 
 MCSymmetry ==
   SymmetrySets(<<
@@ -179,6 +185,9 @@ BrowserState ==
 AnySrc ==
   BrowserSrc ++ {Remote}
 
+AsyncSrc ==
+  BrowserSrcAsync ++ {Remote}
+
 ActiveTabStatus ==
   {clean, dirty}
 
@@ -214,11 +223,11 @@ WorkerSyncState ==
 WorkerState ==
   [status: {nonExistant}] ++
   [
-    status        : {live},
-    browser       : Browser,
-    time          : Nat,
-    drafts        : Drafts,
-    sync          : [AnySrc -> WorkerSyncState]
+    status : {live},
+    browser: Browser,
+    time   : Nat,
+    drafts : Drafts,
+    sync   : [AsyncSrc -> WorkerSyncState]
   ]
 
 StorageInvariants(s) ==
@@ -265,7 +274,7 @@ InvariantsForWorkers ==
       LET ws == workers[w]
       IN ws.status = live =>
           & ws.time > 0
-          & \A s \in AnySrc : WorkerSyncStateInvariants(ws.sync[s])
+          & \A s \in AsyncSrc : WorkerSyncStateInvariants(ws.sync[s])
 
 \* ███████████████████████████████████████████████████████████████████████████████████████████████████
 \* Functions
@@ -292,7 +301,7 @@ WorkerSyncAck(s, id) ==
 
 WorkerSyncLater(syncState) ==
   LET f(s) == IF s.desired > s.lastReq THEN s ELSE [s EXCEPT !.desired = @ + 1]
-  IN [src \in AnySrc |-> f(syncState[src])]
+  IN [src \in AsyncSrc |-> f(syncState[src])]
 
 StartWorker(b) ==
   [
@@ -300,7 +309,7 @@ StartWorker(b) ==
     browser |-> b,
     time    |-> 1,
     drafts  |-> {}, \* TODO: load in stages just like new tabs (?)
-    sync    |-> [s \in AnySrc |-> WorkerSyncStateEmpty]
+    sync    |-> [s \in AsyncSrc |-> WorkerSyncStateEmpty]
   ]
 
 Connected(tab, worker) ==
@@ -721,6 +730,20 @@ UserEditDirty ==
     & tabs' = [tabs EXCEPT ![t].editRev = @ + 1, ![t].editCount = @ + 1]
     & UNCHANGED << browsers, workers, network, remote >>
 
+WorkerBroadcastToTabMsgs(w, newDrafts, edit(_)) ==
+  LET ws == workers[w] IN
+    IF ws.drafts = newDrafts THEN
+      {}
+    ELSE
+      LET msg(t) == [
+            type   |-> syncWT,
+            from   |-> w,
+            to     |-> t,
+            drafts |-> newDrafts,
+            edit   |-> edit(t)
+          ]
+      IN { msg(t) : t \in WorkerTabs(w) }
+
 WorkerRecvChanges ==
   LET i == SeqIndexOf(network, LAMBDA m: m.type = syncTW)
   IN
@@ -734,15 +757,7 @@ WorkerRecvChanges ==
           dss      == Prune(AddDrafts(ws.drafts, AddDrafts(msg.drafts, {e.draft : e \in OptionToSet(edit)})))
           dss2     == { ds \in dss : ds != ws.drafts }
           ws2(ds)  == [workers EXCEPT ![w].drafts = ds, ![w].time = t2, ![w].sync = WorkerSyncLater(@)]
-          msgs(ds) == { [
-                          type   |-> syncWT,
-                          from   |-> w,
-                          to     |-> t,
-                          drafts |-> ds,
-                          edit   |-> IF t = msg.from THEN edit ELSE None
-                        ]
-                        : t \in WorkerTabs(w)
-                      }
+          msgs(ds) == WorkerBroadcastToTabMsgs(w, ds, LAMBDA t: IF t = msg.from THEN edit ELSE None)
           results  == { <<ws2(ds), msgs(ds)>> : ds \in dss2 }
           net1     == RemoveAt(network, i)
       IN
@@ -755,30 +770,28 @@ WorkerRecvChanges ==
             & network' = SetFold(r[2], net1, Append)
             & UNCHANGED << browsers, remote, tabs >>
 
-\* This happens periodically without a trigger event
+ActiveBrowserSrcs(b) ==
+  { s \in BrowserSrc : ~browsers[b][s].isEmpty }
+
+\* This happens periodically without a trigger event.
+\* No need to track whether a write is needed (i.e. BrowserSrcSync isn't in .sync) because we need to check
+\* for reads too.
 WorkerSyncWithBrowserStorage ==
-  FALSE
-  \* TODO:
-  \* \E w \in Worker:
-  \*   LET ws == workers[w]
-  \*       b  == workers[w].browser
-  \*       bs == browsers[b]
-  \*       Attempt(src) ==
-  \*         IF bs[src].isEmpty | bs[src].get = ws.drafts THEN
-  \*           {}
-  \*         ELSE
-  \*           LET dss == Prune(AddDrafts(ws.drafts, bs[src].get))
-  \*               ws2(ds) == [workers EXCEPT ![w].drafts = ds]
-  \*               bs2(ds) == [browsers EXCEPT ![b][src] = Some(ds)]
-  \*           IN
-  \*             \* IF ~Log([WW |-> ws.drafts, BS |-> bs[src].get, RES |-> dss]) THEN {} ELSE
-  \*             { <<ws2(ds), bs2(ds)>> : ds \in dss }
-  \*       results == UNION { Attempt(s) : s \in BrowserSrc }
-  \*   IN \E r \in results:
-  \*     & workers[w].status = live
-  \*     & workers'  = r[1]
-  \*     & browsers' = r[2]
-  \*     & UNCHANGED << remote, network, tabs >>
+  \E w \in Worker : LET ws == workers[w] IN
+    & ws.status = live
+    & \E s \in ActiveBrowserSrcs(ws.browser) :
+      LET b             == ws.browser
+          bs            == browsers[b]
+          browsers2(ds) == [browsers EXCEPT ![b][s] = Some(ds)]
+          workers2(ds)  == [workers EXCEPT ![w].drafts = ds]
+          network2(ds)  == SetFold(WorkerBroadcastToTabMsgs(w, ds, LAMBDA t: None), network, Append)
+          dss           == Prune(AddDrafts(bs[s].get, ws.drafts))
+          results       == { <<browsers2(ds), workers2(ds), network2(ds)>> : ds \in dss }
+      IN \E r \in results:
+        & browsers' = r[1]
+        & workers'  = r[2]
+        & network'  = r[3]
+        & UNCHANGED << remote, tabs >>
 
 \* TODO: Track online/offline status of tabs
 \* TODO: Assumes that an ack will always be received to (for the sake of model checking)
@@ -839,9 +852,11 @@ Init ==
   & remote  = {}
   & tabs    = [t \in Tab |-> [status |-> nonExistant]]
   & workers = [w \in Worker |-> [status |-> nonExistant]]
-  & IF MCBrowserStorageAlwaysAvailable
-    THEN browsers  =  [b \in Browser |-> [s \in BrowserSrc |-> Some({})]]
-    ELSE browsers \in [Browser        -> [      BrowserSrc  -> NoneAndSome({})]]
+  & browsers \in [Browser -> (
+      LET mandatory == [MCBrowserStorageAlwaysAvailable -> {Some({})}]
+          optional  == [(BrowserSrc -- MCBrowserStorageAlwaysAvailable) -> NoneAndSome({})]
+      IN { r[1] @@ r[2] : r \in (mandatory \X optional)}
+    )]
 
 Next ==
   | RemoteRecvDrafts
@@ -925,11 +940,5 @@ StableInvariants ==
 
 MCContinue ==
   TLCGet("diameter") <= 50
-  \* TLCGet("level") <= 22
-  \* TLCGet("duration") <= 4
-  \* \A w \in ActiveWorkers:
-  \*   & workers[w].time < 4
-  \*   & \A s \in AnySrc:
-  \*       workers[w].sync[s].desired < 4
 
 ========================================================================================================================
