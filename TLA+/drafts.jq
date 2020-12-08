@@ -12,7 +12,13 @@
     .name,
     (.state.remote? // "-" | tostring),
     (.state.tabs?
-      | with_entries(.value |= "\(.drafts? // [])\(if (.editRev? > 0) then "*" else "" end)")?
+      | with_entries(
+          if .value.status == "-" then
+            "-"
+          else
+            .value |= "\(.drafts? // [])\(if (.editRev? > 0) then "*" else "" end)"
+          end
+        )?
       // "-"
       | tostring
     ),

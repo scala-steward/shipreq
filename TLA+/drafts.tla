@@ -334,12 +334,15 @@ TabDrafts(tOrTS) ==
        [] s = clean       -> {}
        [] s = nonExistant -> {}
 
-\* Set[(Browser, BrowserSrc)]
-AvailableBrowserStores ==
-  { x \in Browser \X BrowserSrc : ~browsers[x[1]][x[2]].isEmpty }
-
 ActiveWorkers ==
   { w \in Worker : workers[w].status != nonExistant }
+
+ActiveBrowsers ==
+  { workers[w].browser : w \in ActiveWorkers }
+
+\* Set[(Browser, BrowserSrc)]
+AvailableBrowserStores ==
+  { x \in ActiveBrowsers \X BrowserSrc : ~browsers[x[1]][x[2]].isEmpty }
 
 \* Set[Storage]
 AllStores ==
@@ -791,6 +794,10 @@ WorkerSyncWithBrowserStorage ==
         & browsers' = r[1]
         & workers'  = r[2]
         & network'  = r[3]
+        & \* We want ENABLED(WorkerSyncWithBrowserStorage) to be FALSE in the case of a NO-OP
+          | browsers != browsers'
+          | workers != workers'
+          | network != network'
         & UNCHANGED << remote, tabs >>
 
 \* TODO: Track online/offline status of tabs
@@ -909,7 +916,7 @@ IsStable ==
   \* & Log(state)
 
 Liveness ==
-  []<>IsStable \* We always stablise eventually
+  []<>IsStable \* We always, eventually stablise
 
 StableInvariants ==
   IsStable =>
@@ -922,7 +929,7 @@ StableInvariants ==
       "Local changes aren't stored", tabs)
 
     & Assert1(
-      \A w \in ActiveWorkers : \A s \in AnySrc : WorkerSyncStateIsStable(workers[w].sync[s]),
+      \A w \in ActiveWorkers : \A s \in AsyncSrc : WorkerSyncStateIsStable(workers[w].sync[s]),
       "Worker failed to sync.", workers)
 
     & Assert1(
