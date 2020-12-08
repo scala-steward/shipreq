@@ -2,13 +2,13 @@
 (*
 What's does this spec provide?
 ==============================
-- Drafts should eventually propagate to all live tabs
-- Drafts are never lost unless they're merged (manually or automatically), or completed by a user (whether aborted or committed)
-- Drafts are removed from all storage locations once obsolete
-- Users are prompted to keep a tab open iff we can't guarantee the draft won't be lost
+- [x] Drafts should eventually propagate to all live tabs
+- [ ] Drafts are never lost unless they're merged (manually or automatically), or completed by a user (whether aborted or committed)
+- [ ] Drafts are removed from all storage locations once obsolete
+- [ ] Users are prompted to keep a tab open iff we can't guarantee the draft won't be lost
 - Reliability in the face of failures such as
-  - network packet loss
-  - machines crashing or dying without warning
+  - [ ] network packet loss
+  - [ ] machines crashing or dying without warning
 
 See https://shipreq.com/project/d6My#/reqs/DE-5
 
@@ -59,6 +59,7 @@ CONSTANT Assignments
 CONSTANT MCBrowserStorageAlwaysAvailable
 CONSTANT MCMaxLocalChangesInFlight
 CONSTANT MCMaxEditsPerTab
+CONSTANT MCMaxPruneByProvDepth
 
 ASSUME IsFiniteSet(Browser)
 ASSUME IsFiniteSet(BrowserSrcAsync)
@@ -71,6 +72,7 @@ ASSUME Cardinality(Worker) >= Cardinality(Browser) \* 2w in 1b = diff versions, 
 ASSUME MCBrowserStorageAlwaysAvailable \in SUBSET (BrowserSrcSync ++ BrowserSrcAsync)
 ASSUME MCMaxLocalChangesInFlight \in Nat
 ASSUME MCMaxEditsPerTab \in Nat
+ASSUME MCMaxPruneByProvDepth \in Nat
 
 \* Async browser storage (like idb) not supported yet (if ever).
 \* In other to faithfully spec it out, we need to break the process into multiple steps
@@ -307,7 +309,7 @@ StartWorker(b) ==
     status  |-> live,
     browser |-> b,
     time    |-> 1,
-    drafts  |-> {}, \* TODO: load in stages just like new tabs (?)
+    drafts  |-> {}, \* Start with 0 drafts. In reality we would run WorkerSyncWithBrowserStorage immediately.
     sync    |-> [s \in AsyncSrc |-> WorkerSyncStateEmpty]
   ]
 
@@ -420,15 +422,6 @@ or if w1 and w3 drafts have the same content:
 *)
 RECURSIVE _PruneByProv(_, _)
 _PruneByProv(ds, depth) ==
-
-  \* LET f2(d1, d2) ==
-  \*       LET pt     == d1.prov[d2.worker]
-  \*           byProv == d1.worker != d2.worker & pt > 0 & d2.time <= pt
-  \*           bySrc  == d1.worker = d2.worker & d1.time > d2.time
-  \*       IN SomeWhen(bySrc | byProv, <<d1, d2>>)
-  \*     f(d1) == SetCollectFirst(ds, LAMBDA d2: f2(d1, d2))
-  \*     match == SetCollectFirst(ds, f)
-
   LET mergeByProv(x,y) == LET pt == x.prov[y.worker]
                           IN x.worker != y.worker & pt > 0 & y.time <= pt
       mergeBySrc(x,y)  == x.worker = y.worker & x.time > y.time
@@ -438,7 +431,7 @@ _PruneByProv(ds, depth) ==
       pairs            == { x \in (ds \X ds) : x[1] != x[2] }
       match            == SetFind(pairs, merge)
   IN
-    IF depth >= 3 THEN
+    IF depth >= MCMaxPruneByProvDepth THEN
       Fail("Maximum depth of PruneByProv exceeded")
     ELSE IF match.isEmpty THEN
       ds
@@ -447,12 +440,8 @@ _PruneByProv(ds, depth) ==
           d2  == match.get[2]
           d   == AddProv(d1, AddSelfToOwnProv(d2).prov) \* TODO: Need AddSelfToOwnProv here?
           ds2 == (ds -- {d1, d2}) ++ {d}
-      IN \* LogRet(
-        \* [BEFORE |-> ds, AFTER |-> ds2],
-        \* IF Cardinality(ds2) <= 1 THEN ds2 ELSE
-        _PruneByProv(ds2, depth + 1)
-      \* )
-PruneByProv(ds) == _PruneByProv(ds, 1)
+      IN _PruneByProv(ds2, depth + 1)
+PruneByProv(ds) == _PruneByProv(ds, 0)
 
 \* Returns a set of possible outcomes
 PruneByEq(ds) ==
@@ -460,9 +449,7 @@ PruneByEq(ds) ==
       merge(x, y)  == AddProv(x, AddSelfToOwnProv(y).prov)
       mergeAll(es) == SetReduce(es, merge)
       result       == { (ds -- es) ++ {mergeAll(es)} : es \in equalSets } ++ {ds}
-  IN
-    \* LogRet([ BEFORE |-> ds, AFTER |-> result ], result)
-    result
+  IN result \* LogRet([ BEFORE |-> ds, AFTER |-> result ], result)
 
 \* Returns a set of possible outcomes
 Prune(drafts) ==
@@ -802,7 +789,9 @@ WorkerSyncWithBrowserStorage ==
           | network != network'
         & UNCHANGED << remote, tabs >>
 
-\* TODO: Track online/offline status of tabs
+\* No need to track online/offline status of tabs. This works by broadcasting to any live tab.
+\* If all tabs are offline then it would just be a no-op.
+\* Eventual consistency obviously can't happen when a connection is down so there's nothing to test.
 WorkerSendRemoteStoreCmd ==
   \E w \in Worker:
     LET ws  == workers[w]
