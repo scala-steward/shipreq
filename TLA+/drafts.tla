@@ -3,6 +3,7 @@
 What's does this spec provide?
 ==============================
 - [x] Drafts should eventually propagate to all live tabs
+- [ ] Drafts and new events interact as expected
 - [ ] Drafts are never lost unless they're merged (manually or automatically), or completed by a user (whether aborted or committed)
 - [ ] Drafts are removed from all storage locations once obsolete
 - [ ] Users are prompted to keep a tab open iff we can't guarantee the draft won't be lost
