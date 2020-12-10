@@ -71,6 +71,11 @@ ASSUME IsFiniteSet(Worker)
 ASSUME IsFiniteSet(Assignments)
 ASSUME Cardinality(Worker) <= Cardinality(Tab) \* each tab is assigned a worker. More workers than tabs is useless.
 ASSUME Cardinality(Worker) >= Cardinality(Browser) \* 2w in 1b = diff versions, 1w in 2b doesn't make sense
+ASSUME Assignments \in SUBSET SUBSET (Browser ++ Tab ++ Worker)
+ASSUME \A a \in Assignments :
+         & \E b \in Browser : b \in a
+         & \E t \in Tab     : t \in a
+         & \E w \in Worker  : w \in a
 ASSUME MCBrowserStorageAlwaysAvailable \in SUBSET (BrowserSrcSync ++ BrowserSrcAsync)
 ASSUME MCMaxLocalChangesInFlight \in Nat
 ASSUME MCMaxEditsPerTab \in Nat
