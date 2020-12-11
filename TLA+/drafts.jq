@@ -24,14 +24,15 @@
     (.state.tabs?
       | with_entries(
           if .value.status == "-" then
-            "-"
+            .value |= "-"
           elif .value.status == "clean" then
-            .value |= .tombstones
+            .value |= (if .tombstones == [] then "-" else "-\(.tombstones)" end)
           else
             .value |= (
               (if (.editRev? > 0) then "+" else "" end) as $dirty
-              | (if (.aborted?) then "A" else "" end) as $aborted
-              | "\(.drafts? // [])\($dirty)\($aborted)"
+              | (if .aborted? then "A" else "" end) as $aborted
+              | (if .editRevAck? != .editRevSent? then "?" else "" end) as $pending
+              | "\(.drafts? // [])\($dirty)\($aborted)\($pending)"
             )
           end
         )?
@@ -43,16 +44,26 @@
       // "-"
       | tostring
     ),
-    (.state.network?
-      | ([ .[]
-          | select(.drafts?)
-          | "\(.type | sub(":.*";""))(\(.from)→\(.to)):\(.drafts)\(if .edit.get? then "+" else "" end)" ]
-          | sort
-        )?
-      // "-"
-      | tostring
-      | gsub("Remote"; "R")
-      | if . == "[]" then "-" else . end
+    (
+      .state
+      | if .network? then (
+          [ .network[] | select(.drafts?) ] as $n2
+          | ($n2 == [] and .network != []) as $acksOnly
+          | if $acksOnly then
+              "[…]"
+            else (
+              [ $n2[]
+                | select(.drafts?)
+                | "\(.type | sub(":.*";""))(\(.from)→\(.to)):\(.drafts)\(if .edit.get? then "+" else "" end)"
+              ]
+              | sort
+              | tostring
+              | gsub("Remote"; "R")
+            )
+            end
+        ) else
+          "-"
+        end
     ),
     (.state.browsers?
       | with_entries(.value |= (with_entries(.value |= (.get? // "-"))))?

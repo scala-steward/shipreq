@@ -24,6 +24,9 @@ Assert1(ok, msg, data1) ==
 AssertEq(name, a, e) ==
   Assert1(a = e, name \o " failure", [ACTUAL |-> a, EXPECT |-> e])
 
+Assert0M(msg, ok) == Assert0(ok, msg)
+Assert1M(msg, ok, data1) == Assert1(ok, msg, data1)
+
 Log(msg) ==
   LET sep == "----------------------------------------------------------------------------------------------------"
   IN
