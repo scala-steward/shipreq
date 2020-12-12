@@ -332,6 +332,21 @@ InvariantsForTarget ==
 \* ███████████████████████████████████████████████████████████████████████████████████████████████████
 \* Functions
 
+\* Find the index of a msg on the network and, make sure it's the next msg between .from and .to.
+\* This is the communication channels between a source and target are not commutative; we can rely on the order not
+\* changing.
+PopMsgOfType(type) ==
+  LET isNotNext(i) ==
+        LET n == network[i] IN
+          \E j \in 1..(i-1) :
+            LET m == network[j] IN
+              (n.from = m.from) & (n.to = m.to)
+      i == SeqIndexOf(network, LAMBDA m: m.type = type)
+  IN IF i = 0 | (i != 1 & isNotNext(i)) THEN
+       0
+     ELSE
+       i
+
 WorkerSyncStateIsStable(s) ==
   & s.lastReq = s.desired
   & s.lastAck = s.lastReq
@@ -739,7 +754,7 @@ SanityCheck ==
 \* Actions
 
 RemoteRecvDrafts ==
-  LET i == SeqIndexOf(network, LAMBDA m: m.type = syncTR)
+  LET i == PopMsgOfType(syncTR)
   IN
     & i != 0
     & LET msg == network[i]
@@ -769,7 +784,7 @@ RemoteRecvDrafts ==
         & UNCHANGED << browsers, tabs, workers, target >>
 
 TabRecvDraftsFromRemote ==
-  LET i == SeqIndexOf(network, LAMBDA m: m.type = syncRT)
+  LET i == PopMsgOfType(syncRT)
   IN
     & i != 0
     & LET msg        == network[i]
@@ -790,7 +805,7 @@ TabRecvDraftsFromRemote ==
         & UNCHANGED << browsers, remote, workers, target >>
 
 TabRecvDraftsFromWorker ==
-  LET i == SeqIndexOf(network, LAMBDA m: m.type = syncWT)
+  LET i == PopMsgOfType(syncWT)
   IN
     & i != 0
     & LET msg == network[i]
@@ -883,7 +898,7 @@ TabStart ==
       & UNCHANGED << browsers, remote, workers, target >>
 
 TabRecvRemoteStoreCmd ==
-  LET i == SeqIndexOf(network, LAMBDA m: m.type = RemoteStoreCmd)
+  LET i == PopMsgOfType(RemoteStoreCmd)
   IN
     & i != 0
     & LET msg      == network[i]
@@ -1030,7 +1045,7 @@ WorkerBroadcastToTabMsgs(w, newDrafts, edit(_)) ==
       IN { msg(t) : t \in WorkerTabs(w) }
 
 WorkerRecvChanges ==
-  LET i == SeqIndexOf(network, LAMBDA m: m.type = syncTW)
+  LET i == PopMsgOfType(syncTW)
   IN
     & i != 0
     & LET msg      == network[i]
@@ -1121,7 +1136,7 @@ WorkerSendRemoteStoreCmd ==
         & UNCHANGED << browsers, remote, tabs, target >>
 
 TabRecvRemoteAck ==
-  LET i == SeqIndexOf(network, LAMBDA m: m.type = ackRT)
+  LET i == PopMsgOfType(ackRT)
   IN
     & i != 0
     & LET msg    == network[i]
@@ -1137,7 +1152,7 @@ TabRecvRemoteAck ==
         & UNCHANGED << browsers, remote, workers, tabs, target >>
 
 WorkerRecvRemoteAck ==
-  LET i == SeqIndexOf(network, LAMBDA m: m.type = ackTW)
+  LET i == PopMsgOfType(ackTW)
   IN
     & i != 0
     & LET msg   == network[i]
