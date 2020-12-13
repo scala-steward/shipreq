@@ -182,24 +182,20 @@ Msg == [
   type    : {syncTR},
   from    : Tab,
   to      : {Remote},
-  drafts  : DraftsNE,
-  id      : Nat
+  drafts  : DraftsNE
 ] ++ [
   type    : {RemoteStoreCmd},
   from    : Worker,
   to      : Tab,
-  drafts  : Drafts,
-  id      : Nat
+  drafts  : Drafts
 ] ++  [
   type    : {ackRT},
   from    : {Remote},
-  to      : Tab,
-  id      : Nat
+  to      : Tab
 ] ++ [
   type    : {ackTW},
   from    : Tab,
   to      : Worker,
-  id      : Nat,
   rejected: BOOLEAN
 ] ++ [
   type    : {syncRT},
@@ -254,10 +250,9 @@ TabState ==
 
 WorkerSyncState ==
   [
-    desired   : Nat, \* The promise id we want ack'd to know that we've synced
-    lastReq   : Nat, \* The last promise id issued
-    lastAck   : Nat, \* The highest ack'd promise id
-    tombstones: SUBSET (Nat \X Tombstones) \* Set[(ReqId, Tombstones)]
+    sync      : BOOLEAN, \* Whether we need to sync again
+    syncing   : BOOLEAN, \* Whether we need to sync is in progress, awaiting an ACK
+    tombstones: Tombstones
   ]
 
 WorkerState ==
@@ -279,12 +274,7 @@ StorageInvariants(s) ==
       "Draft contains itself in its own provenance:", d)
 
 WorkerSyncStateInvariants(s) ==
-  & s.lastReq <= s.desired
-  & s.lastAck <= s.lastReq
-  & \A e \in s.tombstones :
-    & e[1] > s.lastAck
-    & e[1] <= s.desired
-    & \A f \in s.tombstones : (e[1] = f[1]) => (e[2] = f[2]) \* Prevent multiple entries per reqId
+  ~s.syncing => s.tombstones = {}
 
 InvariantsForBrowsers ==
   & browsers \in [Browser -> BrowserState]
@@ -352,40 +342,37 @@ PopMsgOfType(type) ==
        i
 
 WorkerSyncStateIsStable(s) ==
-  & s.lastReq = s.desired
-  & s.lastAck = s.lastReq
+  & ~s.sync
+  & ~s.syncing
 
 WorkerSyncStateEmpty == [
-  desired    |-> 0,
-  lastReq    |-> 0,
-  lastAck    |-> 0,
+  sync       |-> FALSE,
+  syncing    |-> FALSE,
   tombstones |-> {}
 ]
 
+\* Start syncing.
 \* WorkerSyncState => Option[WorkerSyncState]
 WorkerSyncStart(s, drafts) ==
-  LET doIt  == & s.desired > s.lastReq \* we have new content to sync
-               & s.lastAck = s.lastReq \* wait for ACK so that model checking isn't infinite
-      id    == s.desired
-      tombs == LET ts == << id, JustTombs(drafts) >>
-               IN IF ts[2] = {} THEN {} ELSE {ts}
-      next  == [s EXCEPT !.lastReq = id, !.tombstones = @ ++ tombs]
+  LET doIt  == & s.sync
+               & ~s.syncing
+      next  == [ sync       |-> FALSE,
+                 syncing    |-> TRUE,
+                 tombstones |-> JustTombs(drafts)
+               ]
   IN SomeWhen(doIt, next)
 
-WorkerSyncAck(s, id) ==
-  IF id <= s.lastReq & id != s.lastAck THEN
-    [s EXCEPT !.lastAck = Max[@, id], !.tombstones = {e \in @ : e[1] != id}]
+WorkerSyncComplete(s) ==
+  IF s.syncing THEN
+    [s EXCEPT !.syncing = FALSE, !.tombstones = {}]
   ELSE
-    Fail1("Invalid ACK", [syncState |-> s, id |-> id])
+    Fail1("[WorkerSyncComplete] Syncing not in progress.", s)
 
-SyncDesiredInc(s) ==
-  IF s.desired > s.lastReq THEN
-    s
-  ELSE
-    [s EXCEPT !.desired = @ + 1]
+WorkerSyncQueueUp(s) ==
+  [s EXCEPT !.sync = TRUE]
 
-WorkerSyncLater(syncState) ==
-  [src \in AsyncSrc |-> SyncDesiredInc(syncState[src])]
+WorkerSyncQueueUpAllSrcs(syncState) ==
+  [src \in AsyncSrc |-> WorkerSyncQueueUp(syncState[src])]
 
 StartWorker(b) ==
   [
@@ -676,21 +663,6 @@ AddDraftsToTab(ts, newDrafts, editResp, retainTombstones) ==
     ELSE
       Fail1("[AddDraftsToTab] Don't know how to handle tab state:", info)
 
-    \* IF ts.status \in {dirty,loading} THEN
-    \*   IF ts.aborted & ~editResp.isEmpty & ts2.editRev = 0 THEN
-    \*     { NewCleanTabState(ts2, {d}) : d \in MergeDraftsIntoTombstone(ds4) }
-    \*   ELSE IF dss = {{}} THEN
-    \*     { NewCleanTabState(ts2, {}) }
-    \*   ELSE
-    \*     { [ts2 EXCEPT !.drafts = ds] : ds \in dss }
-    \* ELSE IF ts.status = clean THEN
-    \*   IF dss = {{}} THEN
-    \*     { NewCleanTabState(ts2, {}) }
-    \*   ELSE
-    \*     { NewDirtyTabState(ts, ds, None, 0) : ds \in dss }
-    \* ELSE
-    \*   Fail1("[AddDraftsToTab] Don't know how to handle tab state:", ts)
-
 \* ███████████████████████████████████████████████████████████████████████████████████████████████████
 \* Tests
 
@@ -772,8 +744,7 @@ RemoteRecvDrafts ==
           resp == [
             type |-> ackRT,
             from |-> Remote,
-            to   |-> msg.from,
-            id   |-> msg.id
+            to   |-> msg.from
           ]
           broadcastTo(tab, ds) == [
             type   |-> syncRT,
@@ -922,15 +893,13 @@ TabRecvRemoteStoreCmd ==
                       type     |-> ackTW,
                       from     |-> t,
                       to       |-> w,
-                      id       |-> msg.id,
                       rejected |-> TRUE
                     ]
           send   == [
                       type   |-> syncTR,
                       from   |-> t,
                       to     |-> Remote,
-                      drafts |-> ds,
-                      id     |-> msg.id
+                      drafts |-> ds
                     ]
       IN
         & IF NonTombs(ds) = NonTombs(TabDrafts(t)) THEN
@@ -1063,7 +1032,7 @@ WorkerRecvChanges ==
           edit     == OptionMap(msg.edit, editF)
           dss      == Prune(AddDrafts(ws.drafts, AddDrafts(msg.drafts, {e.draft : e \in OptionToSet(edit)})))
           dss2     == { ds \in dss : ds != ws.drafts }
-          ws2(ds)  == [workers EXCEPT ![w].drafts = ds, ![w].time = t2, ![w].sync = WorkerSyncLater(@)]
+          ws2(ds)  == [workers EXCEPT ![w].drafts = ds, ![w].time = t2, ![w].sync = WorkerSyncQueueUpAllSrcs(@)]
           msgs(ds) == WorkerBroadcastToTabMsgs(w, ds, LAMBDA t: IF t = msg.from THEN edit ELSE None)
           results  == { <<ws2(ds), msgs(ds)>> : ds \in dss2 }
           net1     == RemoveAt(network, i)
@@ -1102,7 +1071,7 @@ WorkerSyncWithBrowserStorage ==
           browsers2(ds) == [browsers EXCEPT ![b][s] = Some(ds)]
           workers2(ds)  == [workers EXCEPT
                              ![w].drafts = ds,
-                             ![w].sync = IF ws.drafts = ds THEN @ ELSE WorkerSyncLater(@)
+                             ![w].sync = IF ws.drafts = ds THEN @ ELSE WorkerSyncQueueUpAllSrcs(@)
                            ]
           network2(ds)  == SetFold(WorkerBroadcastToTabMsgs(w, ds, LAMBDA t: None), network, Append)
           dss           == Prune(AddDrafts(bs[s].get, ws.drafts))
@@ -1130,22 +1099,19 @@ WorkerSendRemoteStoreCmd ==
           type   |-> RemoteStoreCmd,
           from   |-> w,
           to     |-> t,
-          drafts |-> ds,
-          id     |-> s2.get.lastReq
+          drafts |-> ds
         ]
     IN
       & ws.status = live
       & ~s2.isEmpty
-      & IF ws.drafts != {} THEN
-          \E t \in WorkerTabs(w):
-            & SendMsg(cmd(t))
-            & workers' = [workers EXCEPT ![w].sync[Remote] = s2.get]
-        ELSE IF s1.lastReq = s1.lastAck & s1.tombstones = {} THEN
+      & IF ds = {} THEN
           \* Nothing to send
           & workers' = [workers EXCEPT ![w].sync[Remote] = WorkerSyncStateEmpty]
           & UNCHANGED network
         ELSE
-          FALSE
+          \E t \in WorkerTabs(w):
+            & SendMsg(cmd(t))
+            & workers' = [workers EXCEPT ![w].sync[Remote] = s2.get]
       & UNCHANGED << browsers, remote, tabs, target >>
 
 TabRecvRemoteAck ==
@@ -1158,7 +1124,6 @@ TabRecvRemoteAck ==
             type     |-> ackTW,
             from     |-> t,
             to       |-> tabs[t].worker,
-            id       |-> msg.id,
             rejected |-> FALSE
           ]
       IN
@@ -1169,16 +1134,15 @@ WorkerRecvRemoteAck ==
   LET i == PopMsgOfType(ackTW)
   IN
     & i != 0
-    & LET msg   == network[i]
-          id    == msg.id
-          w     == msg.to
-          ws    == workers[w]
-          sync  == ws.sync[Remote]
-          sync2 == WorkerSyncAck(sync, id)
-          \* sync3 == IF msg.rejected THEN SyncDesiredInc(sync2) ELSE sync2
-          tombs == SetFind(sync.tombstones, LAMBDA e: e[1] = id) \* find and not filter cos it's (ID,Drafts), not (ID,Draft)*
-          ds2   == IF tombs.isEmpty THEN ws.drafts ELSE ws.drafts -- tombs.get[2]
-          ws2   == [ws EXCEPT !.sync[Remote] = sync2, !.drafts = ds2]
+    & LET msg    == network[i]
+          w      == msg.to
+          ws     == workers[w]
+          sync   == ws.sync[Remote]
+          sync2  == WorkerSyncComplete(sync)
+          sync3  == IF msg.rejected THEN WorkerSyncQueueUp(sync2) ELSE sync2
+          remove == IF msg.rejected THEN {} ELSE sync.tombstones
+          ds2    == ws.drafts -- remove
+          ws2    == [ws EXCEPT !.sync[Remote] = sync3, !.drafts = ds2]
       IN
         & workers' = [workers EXCEPT ![w] = ws2]
         & RecvMsg(i)
