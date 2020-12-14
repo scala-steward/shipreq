@@ -44,6 +44,10 @@ Important notes
 
 TODO
 ====
+- inspect benefit of splitting NormaliseNats across different segments of state
+- remove obsolete drafts
+  - idea: track who's received it remotely, so maybe each tombstone in remote also has a Set[Worker] and when all workers
+          have ack'd the tombstone, hard-delete it.
 *)
 
 EXTENDS FiniteSets, Naturals, Sequences, TLC, Util
@@ -135,7 +139,7 @@ ackRT          == "ack:R->T"
 ackTW          == "ack:T->W"
 
 StateWithNormalisedNats ==
-  NormaliseNats(state, 0, MCNormaliseNatsSetSize)
+  NormaliseNats(state, 0, MCNormaliseNatsSetSize, "")
 
 \* ███████████████████████████████████████████████████████████████████████████████████████████████████
 \* Invariants

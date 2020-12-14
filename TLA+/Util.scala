@@ -7,10 +7,28 @@ final class UtilScala {
   var normaliseNatsTotal = 0
   var normaliseNatsReduced = 0
 
+  val fieldFilterCache = collection.mutable.Map.empty[String, String => Boolean]
+
   // TODO: Test with and without thread locals
-  def normaliseNats(value: Value, maxGap: Int, setSize: Int): Value = {
+  def normaliseNats(value    : Value,
+                    maxGap   : Int,
+                    setSize  : Int,
+                    fieldsStr: String): Value = {
+
+    val fieldFilterOrNull: String => Boolean =
+      if (fieldsStr.isEmpty)
+        null
+      else
+        fieldFilterCache.getOrElseUpdate(fieldsStr, {
+          val fields = fieldsStr.stripPrefix("-").split(',').iterator.map(_.trim).filter(_.nonEmpty).toSet
+          if (fieldsStr.startsWith("-"))
+            !fields.contains(_)
+          else
+            fields.contains
+        })
+
     val normaliser = new IntNormaliser(setSize)
-    foreachInt(normaliser.add)(value)
+    foreachInt(fieldFilterOrNull, normaliser.add)(value)
     val reduce = normaliser.reduction(maxGap)
 
     if (LogNormaliseIntStats) {
@@ -28,14 +46,32 @@ final class UtilScala {
 
     if (reduce == null)
       value
-    else
-      mapInt(reduce)(value)
+    else {
+      val result = mapInt(fieldFilterOrNull, reduce)(value)
+      if (LogChanges)
+        mutexPrintln {
+          s"""|${"=" * 160}
+              |BEFORE: $value
+              |AFTER : $result
+              |""".stripMargin.trim
+        }
+      result
+    }
   }
 }
 
 object UtilScala {
 
+  // final class Ref[A <: AnyRef](val value: A) {
+  //   override val hashCode = value.hashCode
+  //   override def equals(x: Any) = x match {
+  //     case y: AnyRef => value eq y
+  //     case _         => false
+  //   }
+  // }
+
   final val LogNormaliseIntStats = false
+  final val LogChanges           = false
 
   def fail(msg: String): Nothing =
     throw new RuntimeException(Console.WHITE + Console.MAGENTA_B + msg + Console.RESET)
@@ -61,7 +97,7 @@ object UtilScala {
     }
 
   // ===================================================================================================================
-  def foreachInt(onInt: Int => Unit): Value => Unit = {
+  def foreachInt(fieldFilterOrNull: String => Boolean, onInt: Int => Unit): Value => Unit = {
     var run: Value => Unit = null
 
     def valueVec(vs: ValueVec): Unit = {
@@ -74,7 +110,19 @@ object UtilScala {
     }
 
     run = {
-      case a: RecordValue    => a.values.foreach(run) // ignores the domain
+      case a: RecordValue =>
+        if (null == fieldFilterOrNull)
+          a.values.foreach(run)
+        else {
+          var i = a.names.length
+          while (i > 0) {
+            i -= 1
+            val name = a.names(i).toString
+            if (fieldFilterOrNull(name))
+              run(a.values(i))
+          }
+        }
+
       case a: FcnLambdaValue => run(a.toFcnRcd)
       case a: FcnRcdValue    => a.values.foreach(run)
       case a: SetEnumValue   => valueVec(a.elems)
@@ -94,7 +142,7 @@ object UtilScala {
   }
 
   // ===================================================================================================================
-  def mapInt(f: Int => Int): Value => Value = {
+  def mapInt(fieldFilterOrNull: String => Boolean, f: Int => Int): Value => Value = {
     var run: Value => Value = null
 
     def valueVec(vs: ValueVec): ValueVec = {
@@ -113,11 +161,26 @@ object UtilScala {
     }
 
     run = value => value match {
-      case a: RecordValue  =>
-        val newValues = a.values.map(run)
+      case a: RecordValue =>
+        val newValues =
+          if (null == fieldFilterOrNull)
+            a.values.map(run)
+          else {
+            var i = a.names.length
+            val vs = new Array[Value](i)
+            while (i > 0) {
+              i -= 1
+              val name = a.names(i).toString
+              var value = a.values(i)
+              if (fieldFilterOrNull(name))
+                value = run(value)
+              vs(i) = value
+            }
+            vs
+          }
         new RecordValue(a.names, newValues, a.isNormalized())
 
-      case a: FcnRcdValue  =>
+      case a: FcnRcdValue =>
         val newValues = a.values.map(run)
         new FcnRcdValue(a.domain, newValues, a.isNormalized())
 
