@@ -7,7 +7,7 @@ TLA2JSON := /home/golly/projects/public/tla2json/run -sld
 TLA_JAR  := /usr/share/java/tla2tools.jar
 SCALA    := $(wildcard *.scala)
 JAVA     := $(wildcard *.java)
-SHARED   := convert_dialect Makefile tlc Util.tla $(SCALA) $(JAVA)
+SHARED   := convert_dialect Makefile tlc {Network,Util}.tla $(SCALA) $(JAVA)
 
 info:
 	@echo "Commands:"

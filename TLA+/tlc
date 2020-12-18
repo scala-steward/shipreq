@@ -17,8 +17,9 @@ tmp="run/$module"
 mkdir -p $tmp
 # trap "rm -rf $tmp" EXIT
 
-./convert_dialect <$module.tla >$tmp/$module.tla
-./convert_dialect <Util.tla >$tmp/Util.tla
+for m in $module Network Util; do
+  ./convert_dialect <$m.tla >$tmp/$m.tla
+done
 cp $module.cfg $tmp
 cp classes/* $tmp
 

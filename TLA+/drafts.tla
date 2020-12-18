@@ -169,6 +169,8 @@ state == [
 LogStates ==
   Log(state)
 
+Network == INSTANCE Network WITH queue <- network
+
 clean          == "clean"
 dirty          == "dirty"
 live           == "live"
@@ -256,9 +258,6 @@ Msg == [
   drafts  : DraftsNE
 ]
 
-NetworkState ==
-  Seq(Msg) \* i.e. List[Msg]
-
 BrowserSrc ==
   BrowserSrcAsync ++ BrowserSrcSync
 
@@ -338,7 +337,7 @@ InvariantsForBrowsers ==
         bs[src].isEmpty | StorageInvariants(bs[src].get)
 
 InvariantsForNetwork ==
-  network \in NetworkState
+  Network!Invariants(Msg)
 
 InvariantsForRemote ==
   & remote \in [ord: Nat, drafts: Drafts]
@@ -385,16 +384,7 @@ JustTombs(ds) == {d \in ds : d.tombstone}
 \* This is the communication channels between a source and target are not commutative; we can rely on the order not
 \* changing.
 PopMsgOfType(type) ==
-  LET isNotNext(i) ==
-        LET n == network[i] IN
-          \E j \in 1..(i-1) :
-            LET m == network[j] IN
-              (n.from = m.from) & (n.to = m.to)
-      i == SeqIndexOf(network, LAMBDA m: m.type = type)
-  IN IF i = 0 | (i != 1 & isNotNext(i)) THEN
-       0
-     ELSE
-       i
+  Network!FindNextMsgByType(type)
 
 WorkerSyncStateIsStable(s) ==
   & ~s.sync
@@ -469,15 +459,6 @@ ActiveBrowsers ==
 \* Set[(Browser, BrowserSrc)]
 AvailableBrowserStores ==
   { x \in ActiveBrowsers \X BrowserSrc : ~browsers[x[1]][x[2]].isEmpty }
-
-SendMsg(msg) ==
-  network' = Append(network, msg)
-
-RecvMsg(i) ==
-  network' = RemoveAt(network, i)
-
-RecvResp(recv, resp) ==
-  network' = Append(RemoveAt(network, recv), resp)
 
 NewDraft(w, prevProv) ==
   [
@@ -846,7 +827,7 @@ RemoteRecvDrafts ==
           broadcasts == IF ds = {} THEN <<>> ELSE SetFold(otherTabs, <<>>, LAMBDA q,t: q \o <<broadcastTo(t, ds)>>)
       IN
         & remote' = [remote EXCEPT !.drafts = ds]
-        & network' = RemoveAt(network, i) \o <<resp>> \o broadcasts
+        & Network!RecvSendSeq(i, <<resp>> \o broadcasts)
         & UNCHANGED << browsers, tabs, workers, target >>
 
 TabRecvDraftsFromRemote ==
@@ -868,7 +849,7 @@ TabRecvDraftsFromRemote ==
           ]
       IN
         & tabs' = [tabs EXCEPT ![t] = ts2]
-        & RecvResp(i, msgWW)
+        & Network!RecvSend(i, msgWW)
         & UNCHANGED << browsers, remote, workers, target >>
 
 TabRecvDraftsFromWorker ==
@@ -881,7 +862,7 @@ TabRecvDraftsFromWorker ==
           ts2(tgt)   == AddDraftsToTab(ts, tgt, msg.drafts, msg.edit, FALSE)
           tabs2(tgt) == [tabs EXCEPT ![t] = ts2(tgt)]
       IN
-        & RecvMsg(i)
+        & Network!Recv(i)
         & IF msg.edit.isEmpty THEN
             & tabs' = tabs2(target)
             & UNCHANGED target
@@ -958,7 +939,7 @@ TabStart ==
       & IF ts.drafts = {} THEN
           UNCHANGED network
         ELSE
-          SendMsg([
+          Network!Send([
             type   |-> syncTW,
             from   |-> t,
             to     |-> w,
@@ -991,9 +972,9 @@ TabRecvRemoteStoreCmd ==
                     ]
       IN
         & IF NonTombs(ds) = NonTombs(TabDrafts(t)) THEN
-            RecvResp(i, send)
+            Network!RecvSend(i, send)
           ELSE
-            RecvResp(i, reject)
+            Network!RecvSend(i, reject)
         & UNCHANGED << browsers, workers, remote, tabs, target >>
 
 TabSendChangesToWorker ==
@@ -1003,7 +984,7 @@ TabSendChangesToWorker ==
       & ts.status = dirty
       & ts.editUnsent
       & ~ts.editSent
-      & SendMsg([
+      & Network!Send([
           type   |-> syncTW,
           from   |-> t,
           to     |-> ts.worker,
@@ -1022,7 +1003,7 @@ TabSendTombstonesToWorker ==
     IN
       & ts.status = clean
       & ts.tombstones != {}
-      & SendMsg([
+      & Network!Send([
           type   |-> syncTW,
           from   |-> t,
           to     |-> ts.worker,
@@ -1127,14 +1108,13 @@ WorkerRecvChanges ==
           ds       == Prune(AddDrafts(ws.drafts, AddDrafts(msg.drafts, {e.draft : e \in OptionToSet(edit)})), target)
           ws2      == [workers EXCEPT ![w].drafts = ds, ![w].time = t2, ![w].sync = WorkerSyncQueueUpAllSrcs(@)]
           msgs     == WorkerBroadcastToTabMsgs(w, ds, LAMBDA t: IF t = msg.from THEN edit ELSE None)
-          net1     == RemoveAt(network, i)
       IN
         & IF ds = {} THEN
-            & RecvMsg(i)
+            & Network!Recv(i)
             & UNCHANGED workers
           ELSE
             & workers' = ws2
-            & network' = SetFold(msgs, net1, Append)
+            & Network!RecvSendSet(i, msgs)
         & UNCHANGED << browsers, remote, tabs >>
         & IF msg.edit.isEmpty THEN
             UNCHANGED target
@@ -1167,7 +1147,7 @@ WorkerSyncWithBrowserStorage ==
       IN
         & browsers' = [browsers EXCEPT ![b][s] = Some(ds)]
         & workers'  = workers2
-        & network'  = SetFold(WorkerBroadcastToTabMsgs(w, ds, LAMBDA t: None), network, Append)
+        & Network!SendSet(WorkerBroadcastToTabMsgs(w, ds, LAMBDA t: None))
         & \* We want ENABLED(WorkerSyncWithBrowserStorage) to be FALSE in the case of a NO-OP
           | browsers != browsers'
           | workers != workers'
@@ -1198,7 +1178,7 @@ WorkerSendRemoteStoreCmd ==
           & UNCHANGED network
         ELSE
           \E t \in WorkerTabs(w):
-            & SendMsg(cmd(t))
+            & Network!Send(cmd(t))
             & workers' = [workers EXCEPT ![w].sync[Remote] = s2.get]
       & UNCHANGED << browsers, remote, tabs, target >>
 
@@ -1215,7 +1195,7 @@ TabRecvRemoteAck ==
             rejected |-> FALSE
           ]
       IN
-        & RecvResp(i, newMsg)
+        & Network!RecvSend(i, newMsg)
         & UNCHANGED << browsers, remote, workers, tabs, target >>
 
 WorkerRecvRemoteAck ==
@@ -1233,7 +1213,7 @@ WorkerRecvRemoteAck ==
           ws2    == [ws EXCEPT !.sync[Remote] = sync3, !.drafts = ds2]
       IN
         & workers' = [workers EXCEPT ![w] = ws2]
-        & RecvMsg(i)
+        & Network!Recv(i)
         & UNCHANGED << browsers, remote, tabs, target >>
 
 \* ███████████████████████████████████████████████████████████████████████████████████████████████████
@@ -1241,7 +1221,7 @@ WorkerRecvRemoteAck ==
 
 Init ==
   & target  = [pending |-> {}, returning |-> {}, drafts |-> {}]
-  & network = <<>>
+  & Network!Init
   & remote  = [ord |-> 0, drafts |-> {}]
   & tabs    = [t \in Tab |-> [status |-> nonExistant]]
   & workers = [w \in Worker |-> [status |-> nonExistant]]
@@ -1294,7 +1274,7 @@ Spec ==
 \* Have all mechanical processes stopped such that the world is in a stable state that will stutter until
 \* the user does something.
 IsStable ==
-  & network = <<>>
+  & Network!IsEmpty
   & ~ENABLED(TabLoad)
   & ~ENABLED(TabSendChangesToWorker)
   & ~ENABLED(TabSendTombstonesToWorker)
