@@ -380,12 +380,6 @@ InvariantsForTarget ==
 NonTombs(ds) == {d \in ds : ~d.tombstone}
 JustTombs(ds) == {d \in ds : d.tombstone}
 
-\* Find the index of a msg on the network and, make sure it's the next msg between .from and .to.
-\* This is the communication channels between a source and target are not commutative; we can rely on the order not
-\* changing.
-PopMsgOfType(type) ==
-  Network!FindNextMsgByType(type)
-
 WorkerSyncStateIsStable(s) ==
   & ~s.sync
   & ~s.syncing
@@ -805,77 +799,71 @@ SanityCheck ==
 \* Actions
 
 RemoteRecvDrafts ==
-  LET i == PopMsgOfType(syncTR)
-  IN
-    & i != 0
-    & LET msg == network[i]
-          resp == [
-            type |-> ackRT,
-            from |-> Remote,
-            to   |-> msg.from
-          ]
-          broadcastTo(tab, ds) == [
-            type   |-> syncRT,
-            from   |-> Remote,
-            to     |-> tab,
-            drafts |-> ds
-          ]
-          otherTabs  == { t \in RemoteConnectedTabs : t != msg.from }
-          ds1        == AddDrafts(remote.drafts, msg.drafts)
-          ds2        == ds1 \* TODO: NonTombs(ds1) \* Don't store tombstones for now
-          ds         == Prune(ds2, target)
-          broadcasts == IF ds = {} THEN <<>> ELSE SetFold(otherTabs, <<>>, LAMBDA q,t: q \o <<broadcastTo(t, ds)>>)
-      IN
-        & remote' = [remote EXCEPT !.drafts = ds]
-        & Network!RecvSendSeq(i, <<resp>> \o broadcasts)
-        & UNCHANGED << browsers, tabs, workers, target >>
+  \E i \in Network!NextMsgsByType(syncTR):
+    LET msg == network[i]
+        resp == [
+          type |-> ackRT,
+          from |-> Remote,
+          to   |-> msg.from
+        ]
+        broadcastTo(tab, ds) == [
+          type   |-> syncRT,
+          from   |-> Remote,
+          to     |-> tab,
+          drafts |-> ds
+        ]
+        otherTabs  == { t \in RemoteConnectedTabs : t != msg.from }
+        ds1        == AddDrafts(remote.drafts, msg.drafts)
+        ds2        == ds1 \* TODO: NonTombs(ds1) \* Don't store tombstones for now
+        ds         == Prune(ds2, target)
+        broadcasts == IF ds = {} THEN <<>> ELSE SetFold(otherTabs, <<>>, LAMBDA q,t: q \o <<broadcastTo(t, ds)>>)
+    IN
+      & remote' = [remote EXCEPT !.drafts = ds]
+      & Network!RecvSendSeq(i, <<resp>> \o broadcasts)
+      & UNCHANGED << browsers, tabs, workers, target >>
 
 TabRecvDraftsFromRemote ==
-  LET i == PopMsgOfType(syncRT)
-  IN
-    & i != 0
-    & LET msg        == network[i]
-          t          == msg.to
-          ts         == tabs[t]
-          w          == ts.worker
-          ts2        == AddDraftsToTab(ts, target, msg.drafts, None, TRUE)
-          dsForWW    == PruneByProv(msg.drafts ++ TabDrafts(ts))
-          msgWW      == [
-            type   |-> syncTW,
-            from   |-> t,
-            to     |-> w,
-            drafts |-> dsForWW,
-            edit   |-> None
-          ]
-      IN
-        & tabs' = [tabs EXCEPT ![t] = ts2]
-        & Network!RecvSend(i, msgWW)
-        & UNCHANGED << browsers, remote, workers, target >>
+  \E i \in Network!NextMsgsByType(syncRT):
+    LET msg        == network[i]
+        t          == msg.to
+        ts         == tabs[t]
+        w          == ts.worker
+        ts2        == AddDraftsToTab(ts, target, msg.drafts, None, TRUE)
+        dsForWW    == PruneByProv(msg.drafts ++ TabDrafts(ts))
+        msgWW      == [
+          type   |-> syncTW,
+          from   |-> t,
+          to     |-> w,
+          drafts |-> dsForWW,
+          edit   |-> None
+        ]
+    IN
+      & tabs' = [tabs EXCEPT ![t] = ts2]
+      & Network!RecvSend(i, msgWW)
+      & UNCHANGED << browsers, remote, workers, target >>
 
 TabRecvDraftsFromWorker ==
-  LET i == PopMsgOfType(syncWT)
-  IN
-    & i != 0
-    & LET msg        == network[i]
-          t          == msg.to
-          ts         == tabs[t]
-          ts2(tgt)   == AddDraftsToTab(ts, tgt, msg.drafts, msg.edit, FALSE)
-          tabs2(tgt) == [tabs EXCEPT ![t] = ts2(tgt)]
-      IN
-        & Network!Recv(i)
-        & IF msg.edit.isEmpty THEN
-            & tabs' = tabs2(target)
-            & UNCHANGED target
-          ELSE
-            LET e    == msg.edit.get
-                ret  == CHOOSE r \in target.returning : r.tab = t & r.editCount = e.editCount
-                tgt1 == [target EXCEPT !.returning = @ -- {ret}]
-                tgts == TargetAddNewDraft(tgt1, ret.draft)
-            IN
-              \E tgt \in tgts:
-                & tabs' = tabs2(tgt)
-                & target' = tgt
-        & UNCHANGED << browsers, remote, workers >>
+  \E i \in Network!NextMsgsByType(syncWT):
+    LET msg        == network[i]
+        t          == msg.to
+        ts         == tabs[t]
+        ts2(tgt)   == AddDraftsToTab(ts, tgt, msg.drafts, msg.edit, FALSE)
+        tabs2(tgt) == [tabs EXCEPT ![t] = ts2(tgt)]
+    IN
+      & Network!Recv(i)
+      & IF msg.edit.isEmpty THEN
+          & tabs' = tabs2(target)
+          & UNCHANGED target
+        ELSE
+          LET e    == msg.edit.get
+              ret  == CHOOSE r \in target.returning : r.tab = t & r.editCount = e.editCount
+              tgt1 == [target EXCEPT !.returning = @ -- {ret}]
+              tgts == TargetAddNewDraft(tgt1, ret.draft)
+          IN
+            \E tgt \in tgts:
+              & tabs' = tabs2(tgt)
+              & target' = tgt
+      & UNCHANGED << browsers, remote, workers >>
 
 TabLoad ==
   \E t \in Tab:
@@ -951,31 +939,29 @@ TabStart ==
 \* In order to avoid lots of annoying and difficult logic, a tab will refuse to send drafts to remote
 \* when the tab and worker are out of sync.
 TabRecvRemoteStoreCmd ==
-  LET i == PopMsgOfType(RemoteStoreCmd)
-  IN
-    & i != 0
-    & LET msg    == network[i]
-          w      == msg.from
-          t      == msg.to
-          ds     == msg.drafts
-          reject == [
-                      type     |-> ackTW,
-                      from     |-> t,
-                      to       |-> w,
-                      rejected |-> TRUE
-                    ]
-          send   == [
-                      type   |-> syncTR,
-                      from   |-> t,
-                      to     |-> Remote,
-                      drafts |-> ds
-                    ]
-      IN
-        & IF NonTombs(ds) = NonTombs(TabDrafts(t)) THEN
-            Network!RecvSend(i, send)
-          ELSE
-            Network!RecvSend(i, reject)
-        & UNCHANGED << browsers, workers, remote, tabs, target >>
+  \E i \in Network!NextMsgsByType(RemoteStoreCmd):
+    LET msg    == network[i]
+        w      == msg.from
+        t      == msg.to
+        ds     == msg.drafts
+        reject == [
+                    type     |-> ackTW,
+                    from     |-> t,
+                    to       |-> w,
+                    rejected |-> TRUE
+                  ]
+        send   == [
+                    type   |-> syncTR,
+                    from   |-> t,
+                    to     |-> Remote,
+                    drafts |-> ds
+                  ]
+    IN
+      & IF NonTombs(ds) = NonTombs(TabDrafts(t)) THEN
+          Network!RecvSend(i, send)
+        ELSE
+          Network!RecvSend(i, reject)
+      & UNCHANGED << browsers, workers, remote, tabs, target >>
 
 TabSendChangesToWorker ==
   \E t \in Tab:
@@ -1096,36 +1082,34 @@ WorkerBroadcastToTabMsgs(w, newDrafts, edit(_)) ==
       IN { msg(t) : t \in WorkerTabs(w) }
 
 WorkerRecvChanges ==
-  LET i == PopMsgOfType(syncTW)
-  IN
-    & i != 0
-    & LET msg      == network[i]
-          w        == msg.to
-          ws       == workers[w]
-          t2       == IF msg.edit.isEmpty THEN ws.time ELSE ws.time + 1
-          editF(e) == [draft |-> NewDraft(w, e.prov), editCount |-> e.editCount]
-          edit     == OptionMap(msg.edit, editF)
-          ds       == Prune(AddDrafts(ws.drafts, AddDrafts(msg.drafts, {e.draft : e \in OptionToSet(edit)})), target)
-          ws2      == [workers EXCEPT ![w].drafts = ds, ![w].time = t2, ![w].sync = WorkerSyncQueueUpAllSrcs(@)]
-          msgs     == WorkerBroadcastToTabMsgs(w, ds, LAMBDA t: IF t = msg.from THEN edit ELSE None)
-      IN
-        & IF ds = {} THEN
-            & Network!Recv(i)
-            & UNCHANGED workers
-          ELSE
-            & workers' = ws2
-            & Network!RecvSendSet(i, msgs)
-        & UNCHANGED << browsers, remote, tabs >>
-        & IF msg.edit.isEmpty THEN
-            UNCHANGED target
-          ELSE
-            LET e  == msg.edit.get
-                t  == msg.from
-                p  == SetSoleElement({p \in target.pending : p.tab = t & p.editCount <= e.editCount}).get
-                d1 == NewDraft(w, e.prov)
-                d  == IF p.tombstone THEN [d1 EXCEPT !.tombstone = TRUE] ELSE d1
-                r  == [tab |-> t, editCount |-> e.editCount, draft |-> d]
-            IN target' = [target EXCEPT !.pending = @ -- {p}, !.returning = @ ++ {r}]
+  \E i \in Network!NextMsgsByType(syncTW):
+    LET msg      == network[i]
+        w        == msg.to
+        ws       == workers[w]
+        t2       == IF msg.edit.isEmpty THEN ws.time ELSE ws.time + 1
+        editF(e) == [draft |-> NewDraft(w, e.prov), editCount |-> e.editCount]
+        edit     == OptionMap(msg.edit, editF)
+        ds       == Prune(AddDrafts(ws.drafts, AddDrafts(msg.drafts, {e.draft : e \in OptionToSet(edit)})), target)
+        ws2      == [workers EXCEPT ![w].drafts = ds, ![w].time = t2, ![w].sync = WorkerSyncQueueUpAllSrcs(@)]
+        msgs     == WorkerBroadcastToTabMsgs(w, ds, LAMBDA t: IF t = msg.from THEN edit ELSE None)
+    IN
+      & IF ds = {} THEN
+          & Network!Recv(i)
+          & UNCHANGED workers
+        ELSE
+          & workers' = ws2
+          & Network!RecvSendSet(i, msgs)
+      & UNCHANGED << browsers, remote, tabs >>
+      & IF msg.edit.isEmpty THEN
+          UNCHANGED target
+        ELSE
+          LET e  == msg.edit.get
+              t  == msg.from
+              p  == SetSoleElement({p \in target.pending : p.tab = t & p.editCount <= e.editCount}).get
+              d1 == NewDraft(w, e.prov)
+              d  == IF p.tombstone THEN [d1 EXCEPT !.tombstone = TRUE] ELSE d1
+              r  == [tab |-> t, editCount |-> e.editCount, draft |-> d]
+          IN target' = [target EXCEPT !.pending = @ -- {p}, !.returning = @ ++ {r}]
 
 ActiveBrowserSrcs(b) ==
   { s \in BrowserSrc : ~browsers[b][s].isEmpty }
@@ -1183,38 +1167,34 @@ WorkerSendRemoteStoreCmd ==
       & UNCHANGED << browsers, remote, tabs, target >>
 
 TabRecvRemoteAck ==
-  LET i == PopMsgOfType(ackRT)
-  IN
-    & i != 0
-    & LET msg    == network[i]
-          t      == msg.to
-          newMsg == [
-            type     |-> ackTW,
-            from     |-> t,
-            to       |-> tabs[t].worker,
-            rejected |-> FALSE
-          ]
-      IN
-        & Network!RecvSend(i, newMsg)
-        & UNCHANGED << browsers, remote, workers, tabs, target >>
+  \E i \in Network!NextMsgsByType(ackRT):
+    LET msg    == network[i]
+        t      == msg.to
+        newMsg == [
+          type     |-> ackTW,
+          from     |-> t,
+          to       |-> tabs[t].worker,
+          rejected |-> FALSE
+        ]
+    IN
+      & Network!RecvSend(i, newMsg)
+      & UNCHANGED << browsers, remote, workers, tabs, target >>
 
 WorkerRecvRemoteAck ==
-  LET i == PopMsgOfType(ackTW)
-  IN
-    & i != 0
-    & LET msg    == network[i]
-          w      == msg.to
-          ws     == workers[w]
-          sync   == ws.sync[Remote]
-          sync2  == WorkerSyncComplete(sync)
-          sync3  == IF msg.rejected THEN WorkerSyncQueueUp(sync2) ELSE sync2
-          remove == IF msg.rejected THEN {} ELSE sync.tombstones
-          ds2    == ws.drafts -- remove
-          ws2    == [ws EXCEPT !.sync[Remote] = sync3, !.drafts = ds2]
-      IN
-        & workers' = [workers EXCEPT ![w] = ws2]
-        & Network!Recv(i)
-        & UNCHANGED << browsers, remote, tabs, target >>
+  \E i \in Network!NextMsgsByType(ackTW):
+    LET msg    == network[i]
+        w      == msg.to
+        ws     == workers[w]
+        sync   == ws.sync[Remote]
+        sync2  == WorkerSyncComplete(sync)
+        sync3  == IF msg.rejected THEN WorkerSyncQueueUp(sync2) ELSE sync2
+        remove == IF msg.rejected THEN {} ELSE sync.tombstones
+        ds2    == ws.drafts -- remove
+        ws2    == [ws EXCEPT !.sync[Remote] = sync3, !.drafts = ds2]
+    IN
+      & workers' = [workers EXCEPT ![w] = ws2]
+      & Network!Recv(i)
+      & UNCHANGED << browsers, remote, tabs, target >>
 
 \* ███████████████████████████████████████████████████████████████████████████████████████████████████
 \* Spec

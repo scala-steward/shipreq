@@ -161,6 +161,7 @@ SetSoleElement(set) ==
 ------------------------------------------------------------------------------------------------------------------------
 \* Sequences
 
+\* pred :: A => Boolean
 SeqIndexOf(seq, pred(_)) ==
   LET f[i \in Nat] ==
     IF i \notin DOMAIN seq THEN

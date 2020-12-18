@@ -15,30 +15,25 @@ Init ==
 IsEmpty ==
   queue = <<>>
 
-\* Input:
-\*   select      :: Msg        => Boolean -- whether or not a Msg is one you want to find
-\*   sameChannel :: (Msg, Msg) => Boolean -- whether two messages are on the same channel (i.e. same to/from)
-\*                                           only the first msg per channel is eligible (i.e. order matters)
-\* Output:
-\*   0 if not found
-\*   otherwise msg index
-FindNextMsgPerChannel(select(_), sameChannel(_, _)) ==
-  LET isNotNext(i) ==
-        LET n == queue[i] IN
-          \E j \in 1..(i-1) :
-            LET m == queue[j] IN
-              sameChannel(n, m)
-      i == SeqIndexOf(queue, select)
-  IN IF i = 0 | (i != 1 & isNotNext(i)) THEN
-       0
-     ELSE
-       i
+\* Communication channels between a source and target are not commutative; we can rely on the order not changing.
+LOCAL IsNextPerChannel(i, sameChannel(_, _)) ==
+  LET n      == queue[i]
+      isNext == \A j \in 1..(i-1) : ~sameChannel(n, queue[j])
+  IN i = 1 | (i != 0 & isNext)
 
-\* Convenience method for FindNextMsgPerChannel where
-\*   select      = _.type = type
+\* Input:
+\*   pred        :: Msg        => Boolean -- whether or not a Msg is one you want to find
+\*   sameChannel :: (Msg, Msg) => Boolean -- whether two messages are on the same channel (i.e. same to/from)
+\* Output:
+\*   Set[Index]
+NextMsgsPerChannelWhere(pred(_), sameChannel(_, _)) ==
+  { i \in DOMAIN queue : pred(queue[i]) & IsNextPerChannel(i, sameChannel) }
+
+\* Convenience method for NextMsgsPerChannelWhere where
+\*   pred        = _.type = type
 \*   sameChannel = (n,m) => (n.from = m.from) && (n.to = m.to)
-FindNextMsgByType(type) ==
-  FindNextMsgPerChannel(
+NextMsgsByType(type) ==
+  NextMsgsPerChannelWhere(
     LAMBDA m  : m.type = type,
     LAMBDA n,m: (n.from = m.from) & (n.to = m.to))
 
