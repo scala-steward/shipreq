@@ -1,5 +1,51 @@
 ---------------------------------------------------- MODULE drafts ----------------------------------------------------
 (*
+
+█████████████████████████████████████████████████████████████████████████████████████████████████████
+█                                                                                                                     █
+█                                           THIS IS INCOMPLETE AND ABANDONED                                          █
+█                                                                                                                     █
+█████████████████████████████████████████████████████████████████████████████████████████████████████
+█                                                                                                                     █
+█                                                                                                                     █
+
+Why is this abandoned? What's the story?
+========================================
+
+This spec was very valuable in that it taught me a lot. From this spec I learned many lessons like:
+  - the more network communication the more complicated and harder to get right (so many async edge cases)
+  - having the web-worker be the ID and time source makes things way too complicated
+  - draft end-of-life to be handled via tombstones
+  - tombstone removal is going to be impossible unless we track all nodes that receive them
+  - model space way too large when tabs, workers, browser-storage are all seperate clusters
+
+These lessons have now informed a new direction:
+  - just have a concept of nodes in a graph (rather than tabs vs workers vs browser-storage all behaving differently)
+  - drafts and storage must merge commutatively (or rather, be CRDTs)
+  - each node capable of creation (i.e tabs) have their own ID and timestamp (workers won't anymore)
+  - draft format becomes: {nodeId, rev, ord, prov, value | tombstone}
+  - nodes all gossip constantly
+  - commutativity can be easily tested via prop-tests in code, everything else that follows in now trivial and TLA+ is
+    no longer required.
+  - should workers or tabs save drafts to browser-storage? TBD...
+  - event handling now splits into two simple directions: 1) update state 2) state => view
+    - abort draft: inc rev, mark as tombstone
+    - commit draft: wait for new ord, update draft ord, inc rev, mark as tombstone
+    - merge drafts (conflict/auto): inc rev, states go into prov
+    - new event received: no draft update (handled by view)
+  - when/how do we hard-delete tombstones?
+      1) Either, we just do it by age. Nice and simple. Storage can be efficient because we don't need to retain the
+         draft values, just a set of ids in age buckets. Even if we did need to retain values for equality comparison,
+         digests/checksums will do.
+      2) Or, try to come up with a scheme where node IDs are tracked and tombstones can be deleted from DB when all
+         relevant nodes have confirmed receipt, and non-DB nodes can delete when they receive but after they gossip.
+         This approach will need to involve TLA+ again.
+
+█                                                                                                                     █
+█                                                                                                                     █
+█████████████████████████████████████████████████████████████████████████████████████████████████████
+
+
 What's does this spec provide?
 ==============================
 - [x] Drafts should eventually propagate to all live tabs
