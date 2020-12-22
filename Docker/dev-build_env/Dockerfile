@@ -51,11 +51,15 @@ RUN sed -i 's/^COMPRESSXZ/#COMPRESSXZ/' /etc/makepkg.conf \
 # Graal #
 #########
 
+# Note: when changing this, make sure to also change:
+#   - :/Code/project/Dependencies.scala
+#   - :/Docker/shipreq-base/Dockerfile
 RUN n=jdk11-graalvm-bin \
+ && gitsha=4900009ab7455050557f35b379a7541a5e800356 \
  && cd /tmp \
  && git clone https://aur.archlinux.org/$n.git \
  && cd $n \
- && git checkout 765c34b29bde6b03b76569c232c9daec19f1344c 2>/dev/null \
+ && git checkout $gitsha 2>/dev/null \
  && makepkg -sri --noconfirm \
  && cd /tmp \
  && rm -rf $n
