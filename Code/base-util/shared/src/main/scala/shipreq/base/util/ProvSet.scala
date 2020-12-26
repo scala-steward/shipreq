@@ -2,6 +2,8 @@ package shipreq.base.util
 
 import ProvSet._
 import PartialOrder.ImplicitOps._
+import shipreq.base.util.PartialOrder.Cmp
+import shipreq.base.util.PartialOrder.Cmp._
 
 /** Provenance Set.
  *
@@ -15,7 +17,7 @@ import PartialOrder.ImplicitOps._
  * This is modelled in `../TLA+/provset.tla`.
  */
 final case class ProvSet[K, V, M](repr: Repr[K, V, M])(implicit module: Module[K, V, M]) {
-  import module.{one, partialOrder}
+  import module.{one, partialOrderE, partialOrderK}
 
   type Self = ProvSet[K, V, M]
   type Entry = ProvSet.Entry[K, Value[V], M]
@@ -58,6 +60,12 @@ final case class ProvSet[K, V, M](repr: Repr[K, V, M])(implicit module: Module[K
     def mergeProvs(x: Set[K], y: Set[K]): Set[K] =
       y.foldLeft(x)(addProv)
 
+//    def mergeEntries(e1: Entry, e2: Entry): Entry =
+//      if (e1.key >= e2.key)
+//        mergeEntriesL(e2, e1)
+//      else
+//        mergeEntriesL(e1, e2)
+
     def mergeEntries(e: Entry, into: Entry): Entry = {
       val newProv =
         addProv(e.provenance, e.key).filterNot { k =>
@@ -81,27 +89,135 @@ final case class ProvSet[K, V, M](repr: Repr[K, V, M])(implicit module: Module[K
       )
     }
 
+//    def canMergeInto(e: Entry, into: Entry): Boolean =
+//      e.key >= into.key || into.provenance.exists(e.key <= _)
+
     // TODO: Update TLA+
     @tailrec
-    def go(base: Set[Entry], e: Entry): Set[Entry] =
-      base.find(into => e.key.isComparableTo(into.key) || into.provenance.exists(e.key <= _)) match {
+    def go(base: Set[Entry], e: Entry): Set[Entry] = {
+
+      val omg = (s: String) => s == "ProvSet({B1 = Tombstone (MB1) < {A0,C2}})" ||
+                               s == "ProvSet({C0 = Live(C=0) (MC0) < {B2}})"
+      val omge = (e: Entry) => omg(e.toString)
+//      val debug = omge(e) && base.exists(omge)
+      val debug = !true
+
+//      val mos = base.filter(f =>
+//        e.key.isComparableTo(f.key)
+//          || f.provenance.exists(e.key isComparableTo _)
+//          || e.provenance.exists(f.key isComparableTo _)
+//      )
+//
+//      println(s"(${mos.size}) $mos")
+//
+//      mos.headOption match {
+//        case None    => base + e
+//        case Some(i) =>
+//          val merged = {
+////            if (i.key isComparableTo e.key)
+//              mergeEntries(e, i)
+////            else
+//          }
+//          go(base - i, merged)
+//      }
+
+//      var mo1 = base.find(into => e.key.isComparableTo(into.key) || into.provenance.exists(e.key <= _))
+      var mo1 = base.find(_ isComparableTo e)
+      var mo2 = Option.empty[Entry] // base.find(f => e.provenance.exists(f.key <= _))
+
+//      if (mo1.isDefined && mo2.isDefined) {
+      if (debug) {
+        println(
+          s"""=======================================================================================
+             |$base + $e
+             |
+             |mo1: $mo1
+             |mo2: $mo2
+             |
+             |""".stripMargin)
+//        val x = mo1.get
+//        val y = mo2.get
+//        if (x.key >= y.key)
+//          mo1 = None
+//        else
+//        mo2 = None
+//        println(
+//          s"""mo1: $mo1
+//             |mo2: $mo2
+//             |
+//             |""".stripMargin)
+      }
+
+//      (mo1, mo2) match {
+//        case (None, None) =>
+//          base + e
+//
+//        case (Some(i), None) =>
+//          go(base - i, mergeEntries(e, i))
+//
+//        case (None, Some(i)) =>
+//          go(base - i, mergeEntries(e, i))
+//
+//        case (Some(x), Some(y)) =>
+//          ???
+//          println(
+//            s"""===============================================================================
+//               |
+//               |base = $base
+//               |e    = $e
+//               |x    = $x
+//               |y    = $y
+//               |x>y  = ${x.key > y.key}
+//               |""".stripMargin)
+//
+//          val i = x
+//          go(base - i, mergeEntries(e, i))
+//      }
+
+      mo1 match {
         case None =>
-          base.find(f => e.provenance.exists(f.key <= _)) match {
+          mo2 match {
             case None =>
               base + e
             case Some(m) =>
+
               val merged = mergeEntries(m, into = e)
               go(base - m, merged)
           }
 
         case Some(i) =>
           val merged =
-            if (e.key > i.key)
-              mergeEntries(i, into = e)
-            else
+            if (e < i)
               mergeEntries(e, into = i)
+            else
+              mergeEntries(i, into = e)
+
+//            partialOrderK(e.key, i.key) match {
+//              case Greater  => mergeEntries(i, into = e)
+//              case Equal
+//                 | Lesser   => mergeEntries(e, into = i)
+//              case Separate =>
+////                val x = i.provenance.forall(_ < e.key)
+//                val x = i.provenance.exists(e.key > _)
+//                val y = e.provenance.exists(i.key > _)
+//                if (debug) println(s"[1] e = $e")
+//                if (debug) println(s"[1] i = $i")
+//                if (debug) println(s"[1] $x / $y / ${module.isAscendingE(e, i)} / ${module.partialOrderE(e, i)} / ${module.partialOrderE(i, e)}")
+//
+//                (x, y) match {
+//                  case (true, false) => mergeEntries(i, into = e)
+//                  case (false, true) => mergeEntries(e, into = i)
+//                  case _ =>
+//                    if (module.isAscendingE(e, i))
+//                      mergeEntries(i, into = e)
+//                    else
+//                      mergeEntries(e, into = i)
+//                }
+//            }
+
           go(base - i, merged)
       }
+    }
 
     if (isEmpty)
       one(add)
@@ -119,7 +235,13 @@ object ProvSet {
   final case class Entry[K, V, M](key       : K,
                                   value     : V,
                                   metadata  : M,
-                                  provenance: Set[K])
+                                  provenance: Set[K]) {
+    @elidable(elidable.FINEST)
+    override def toString = {
+      val prov = if (provenance.isEmpty) "" else provenance.iterator.map(_.toString).toList.sorted.mkString(" ≤{", ",", "}")
+      s"{$key = $value ($metadata)$prov}"
+    }
+  }
 
   sealed trait Value[+A] {
     def toOption: Option[A]
@@ -145,13 +267,15 @@ object ProvSet {
   implicit def univEq [K: UnivEq, V: UnivEq, M: UnivEq]: UnivEq[ProvSet[K, V, M]] = UnivEq.derive
 
   object Module {
-    def apply[K: PartialOrder : UnivEq, V: UnivEq, M: UnivEq](mergeMetadata: MergePair[M] => M): Module[K, V, M] =
-      new Module[K, V, M](mergeMetadata)
+    def apply[K: PartialOrder : UnivEq, V: UnivEq, M: UnivEq](mergeMetadata: MergePair[M] => M,
+                                                              isAscending: (K, K, M, M) => Boolean): Module[K, V, M] =
+      new Module[K, V, M](mergeMetadata, isAscending)
   }
 
-  final class Module[K, V, M](val mergeMetadata: MergePair[M] => M)
+  final class Module[K, V, M](val mergeMetadata: MergePair[M] => M,
+                              val isAscending: (K, K, M, M) => Boolean)
                              (implicit
-                              val partialOrder: PartialOrder[K],
+                              val partialOrderK: PartialOrder[K],
                               val univEqK: UnivEq[K],
                               val univEqV: UnivEq[V],
                               val univEqM: UnivEq[M],
@@ -174,13 +298,34 @@ object ProvSet {
 
     def consolidate(entries: Entry*): ProvSet =
       entries.foldLeft(empty)((s, e) => (s + e).assertProps(s"$s + $e"))
+
+    val isAscendingE: (Entry, Entry) => Boolean =
+      (x, y) => isAscending(x.key, y.key, x.metadata, y.metadata)
+
+    implicit val partialOrderE: PartialOrder[Entry] =
+      PartialOrder((x, y) =>
+        partialOrderK(x.key, y.key) match {
+          case Separate =>
+            val `x<=y` = y.provenance.exists(x.key <= _)
+            val `y<=x` = x.provenance.exists(y.key <= _)
+            (`x<=y`, `y<=x`) match {
+              case (false, false) => Separate
+              case (true , false) => Lesser
+              case (false, true ) => Greater
+              case (true , true ) => if (isAscendingE(x, y)) Lesser else Greater
+            }
+
+          case byKey =>
+            byKey
+        }
+      )
   }
 
   // ===================================================================================================================
 
   final class Props[K, V, M](val module: Module[K, V, M]) {
     import nyaya.prop._
-    import module.{Entry => E, ProvSet => S, partialOrder}
+    import module.{Entry => E, ProvSet => S, partialOrderK}
     import ScalazExtra._
 
     type Prov = Set[K]

@@ -18,7 +18,17 @@ object PartialOrder {
   def apply[A](f: (A, A) => Cmp): PartialOrder[A] =
     new PartialOrder(f)
 
-  sealed trait Cmp
+  sealed trait Cmp {
+    import Cmp._
+
+    final def flip: Cmp =
+      this match {
+        case Lesser  => Greater
+        case Greater => Lesser
+        case x       => x
+      }
+  }
+
   object Cmp {
     case object Equal    extends Cmp
     case object Lesser   extends Cmp
@@ -39,6 +49,8 @@ object PartialOrder {
             Lesser
         }
       )
+
+    implicit def univEq: UnivEq[Cmp] = UnivEq.derive
   }
 
   object ImplicitOps {

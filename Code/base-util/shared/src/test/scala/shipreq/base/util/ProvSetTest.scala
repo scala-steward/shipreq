@@ -5,6 +5,7 @@ import sourcecode.Line
 import utest._
 import nyaya.gen._
 import nyaya.test.PropTest._
+import shipreq.base.util.PartialOrder.Cmp
 
 object ProvSetTest extends TestSuite {
   import ProvSet.Value
@@ -12,14 +13,14 @@ object ProvSetTest extends TestSuite {
 
   private object Internals {
     final case class K(id: String, rev: Int) {
-      override def toString = s"$id$rev"
+      override val toString = s"$id$rev"
     }
     type V = String
     type M = String
 
     implicit def univEqK: UnivEq[K] = UnivEq.derive
     implicit val keyOrder = keyedInt((_: K).id, (_: K).rev)
-    val module = ProvSet.Module[K, V, M](_.into)
+    val module = ProvSet.Module[K, V, M](_.into, (x, y, _, _) => x.toString < y.toString)
     import module.{Entry, empty}
 
     implicit def autoValue(v: V): Value[V] = Value.Live(v)
@@ -50,35 +51,18 @@ object ProvSetTest extends TestSuite {
       assertEq(s"$j + $i [reverse]", (empty + j + i).repr, expect = e)
     }
 
-//    def assertConsolidation(inputs: Entry*)(expect: Entry*)(implicit l: Line): Unit = {
-//      val actual = module.consolidate(inputs: _*).repr
-////      assertSet(actual)(expect: _*)
-//      assertEq(actual, expect = expect.toSet)
-//    }
+    def assertConsolidation(inputs: Entry*)(expect: Entry*)(implicit l: Line): Unit = {
+      val actual = module.consolidate(inputs: _*).repr
+//      assertSet(actual)(expect: _*)
+      assertEq(actual, expect = expect.toSet)
+    }
   }
 
   // ===================================================================================================================
   import Internals._
+  import module.Entry
 
   override def tests = Tests {
-    "manual" - {
-      "basic" - {
-        "gt"  - assertAdd("A2", "A3")("A3")
-        "lt"  - assertAdd("A2", "A1")("A2")
-        "eq"  - assertAdd("A2", "A2")("A2")
-        "sep" - assertAdd("A2", "B3")("A2", "B3")
-      }
-      "prov" - {
-//        "x"      - assertAdd("A0", "C2:A2")("C2:A2")
-        "eq"     - assertAdd("A2:B3", "B3")("A2:B3")
-        "gt"     - assertAdd("A2:B3", "B2")("A2:B3")
-        "lt"     - assertAdd("A2:B3", "B4")("A2:B3", "B4")
-        "sep"    - assertAdd("A2:B3", "C1:B2")("A2:B3", "C1:B2")
-        "mergeA" - assertAdd("A2:B3", "B2:C6")("A2:B3,C6")
-        "mergeL" - assertAdd("A2:B3,C8", "B2:C6")("A2:B3,C8")
-        "mergeG" - assertAdd("A2:B3,C1", "B2:C4")("A2:B3,C4")
-      }
-    }
 
     "props" - {
       val Laws = new ProvSet.Laws(module)
@@ -93,12 +77,13 @@ object ProvSetTest extends TestSuite {
 
       val genE: Gen[Entry] =
         for {
-          live <- Gen.boolean
           k    <- genK
           prov <- genId.set(0 to size).map(_ - k.id).flatMap(Gen.traverse(_)(id => genRev.map(K(id, _))))
         } yield {
-          val v = if (live) Value.Live(s"${k.id}=${k.rev}") else Value.Tombstone
-          module.entry(k, v, s"M${k.id}${k.rev}", prov)
+          val m    = s"M${k.id}${k.rev}"
+          val live = (m.hashCode & 1) == 1
+          val v    = if (live) Value.Live(s"${k.id}=${k.rev}") else Value.Tombstone
+          module.entry(k, v, m, prov)
         }
 
       val genPS: Gen[ProvSet] =
@@ -109,7 +94,59 @@ object ProvSetTest extends TestSuite {
 
 //      import japgolly.microlibs.stdlib_ext.StdlibExt._
 //      gen.withSeed(0).samples().take(100).drain()
-      laws.mustBeSatisfiedBy(gen.withSeed(0))
+//      laws.mustBeSatisfiedBy(gen.withSeed(0))
+    }
+
+    /*
+  a = ProvSet({A1 = Live(A=1) (MA1) ≤{B0}},
+              {C0 = Tombstone (MC0) ≤{A0}}),
+  c = ProvSet({A0 = Tombstone (MA0) ≤{B1}}))
+
+     */
+
+    "partialOrderE" - {
+      def test(x: Entry, y: Entry)(expect: Cmp)(implicit l: Line): Unit = {
+        assertEq(s"$x cmp $y", module.partialOrderE(x, y), expect)
+        assertEq(s"$y cmp $x", module.partialOrderE(y, x), expect.flip)
+      }
+      "eq"      - test("A2", "A2")(Equal)
+      "lt"      - test("A1", "A2")(Lesser)
+      "sep"     - test("A2", "B2")(Separate)
+      "prov12"  - test("A0:B1", "B2")(Separate)
+      "prov22"  - test("A0:B2", "B2")(Greater)
+      "prov32"  - test("A0:B3", "B2")(Greater)
+      "sepP"    - test("A0:C1", "B2:D1")(Separate)
+      "mutual1" - test("A2:B2", "B2:A2")(Lesser) // by key for commutativity
+      "mutual2" - test("A2:B9", "B2:A9")(Lesser) // by key for commutativity
+      "misc1"   - test("A0", "C2:A2")(Lesser)
+    }
+
+    "manual" - {
+      "basic" - {
+        "gt"  - assertAdd("A2", "A3")("A3")
+        "lt"  - assertAdd("A2", "A1")("A2")
+        "eq"  - assertAdd("A2", "A2")("A2")
+        "sep" - assertAdd("A2", "B3")("A2", "B3")
+      }
+      "prov" - {
+        "eq"     - assertAdd("A2:B3", "B3")("A2:B3")
+        "gt"     - assertAdd("A2:B3", "B2")("A2:B3")
+        "lt"     - assertAdd("A2:B3", "B4")("A2:B3", "B4")
+        "sep"    - assertAdd("A2:B3", "C1:B2")("A2:B3", "C1:B2")
+        "mergeA" - assertAdd("A2:B3", "B2:C6")("A2:B3,C6")
+        "mergeL" - assertAdd("A2:B3,C8", "B2:C6")("A2:B3,C8")
+        "mergeG" - assertAdd("A2:B3,C1", "B2:C4")("A2:B3,C4")
+      }
+      "misc" - {
+        "1" - assertAdd("A0", "C2:A2")("C2:A2")
+        "2" - assertAdd("B1:A0,C2", "C0:B2")("C0:A0,B2,C2")
+        "3ab" - assertAdd("A1:B0", "C0:A0")("A1:B0", "C0:A0")
+        "3ac" - assertAdd("A1:B0", "A0:B1")("A1:B1")
+        "3bc" - assertAdd("C0:A0", "A0:B1")("C0:A0,B1")
+        "3bca" - assertAdd("C0:A0,B1", "A1:B0")("C0:A0,B1", "A1:B0")
+        "3acb" - assertAdd("A1:B1", "C0:A0")("A1:B1", "C0:A0,B1") // TODO oh fuck....
+//        "3" - assertConsolidation("A1:B0", "C0:A0", "A0:B1")("A1:B1,C0")
+      }
     }
   }
 }
