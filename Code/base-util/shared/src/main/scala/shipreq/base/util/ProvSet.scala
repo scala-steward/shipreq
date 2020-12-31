@@ -56,6 +56,102 @@ final case class ProvSet[K, V](values: Map[K, V], provenance: Set[ProvEntry[K]])
   val partialOrder: PartialOrder[K] =
     module.partialOrderK orElse partialOrderP
 
+  private[util] lazy val components: Set[NonEmptySet[K]] = {
+    import module.partialOrderK
+    // Uses Kosaraju's algorithm.
+
+    var stack = List.empty[K]
+    val visited = collection.mutable.HashSet.empty[K]
+
+    def println(a: Any*) = ()
+
+    // Pass 1
+    {
+      def go(a: K): Unit = {
+        val firstVisit = visited.add(a)
+        if (firstVisit) {
+          for (p <- provenance) {
+
+            def asd(desc: String, ok: Boolean, next: K): Unit = {
+              println(s"pass 2: $a => $p ?$desc $ok")
+              if (ok)
+                go(next)
+            }
+
+            asd("1", a == p.from, p.to)
+            asd("3", a < p.from, p.from)
+            asd("2", a < p.to, p.to)
+
+            //            val ok = (a <= p.from) || (a <= p.to)
+//            println(s"pass 1: $a => $p ? $ok")
+//            if (ok) {
+//              go(p.to)
+//            }
+          }
+          stack ::= a
+        }
+        println(s"pass 1: $a | stack=$stack | visited=$visited ")
+      }
+
+      for (p <- provenance)
+        go(p.from)
+    }
+    println()
+
+    // Pass 2
+    var results = Set.empty[NonEmptySet[K]];
+    {
+      while (stack.nonEmpty) {
+        val sccHead = stack.head
+        stack = stack.tail
+        println(s"pass 2: $sccHead | stack=$stack ---------------------------------------------------")
+
+        if (visited.contains(sccHead)) {
+          var sccTail = Set.empty[K]
+          def go(a: K): Unit = {
+            val firstVisit = visited.remove(a)
+            if (firstVisit) {
+              if (a != sccHead)
+                sccTail += a
+              for (p <- provenance) {
+//                val ok = (a >= p.from) || (a >= p.to)
+
+//                val ok = (a >= p.from) || (a >= p.to)
+//                println(s"pass 2: $a => $p ? $ok")
+//                if (ok)
+//                  go(p.from)
+
+                def asd(desc: String, ok: Boolean, next: K): Unit = {
+                  println(s"pass 2: $a => $p ?$desc $ok")
+                  if (ok)
+                    go(next)
+                }
+
+                asd("1", a == p.to, p.from)
+                asd("2", a > p.to, p.to)
+                asd("3", a > p.from, p.from)
+
+              }
+            }
+            println(s"pass 2: $a | stack=$stack | visited=$visited | scc=$sccHead,$sccTail")
+          }
+          go(sccHead)
+
+          val scc = NonEmptySet(sccHead, sccTail)
+          results += scc
+        }
+      }
+    }
+
+    results
+  }
+
+//  println("="*120)
+//  println(provenance)
+//  println(s"components (${components.size})")
+//  components.filter(_.tail.nonEmpty).foreach(println)
+//  println()
+
   private def partialOrderP: PartialOrder[K] =
     PartialOrder[K] { (x, y) =>
       import module.partialOrderK
@@ -85,11 +181,10 @@ final case class ProvSet[K, V](values: Map[K, V], provenance: Set[ProvEntry[K]])
       // y = A4
       // if we can find a path from x (C0) to y (A4), then x < y
 
-      val provGraph = Digraph.BiDir {
-        provenance.foldLeft(Digraph.emptyUniDir[K])((g, p) => g.add(p.from, p.to))
-      }
-
-      val components = provGraph.stronglyConnectedComponents
+//      val provGraph = Digraph.BiDir {
+//        provenance.foldLeft(Digraph.emptyUniDir[K])((g, p) => g.add(p.from, p.to))
+//      }
+//      val components = provGraph.stronglyConnectedComponents
 
       def lesserPathExists(from: K, to: K): Boolean = {
 

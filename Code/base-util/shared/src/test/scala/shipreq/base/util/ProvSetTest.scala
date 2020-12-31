@@ -5,6 +5,7 @@ import sourcecode.Line
 import utest._
 import nyaya.gen._
 import nyaya.test.PropTest._
+import utest.framework.TestPath
 import shipreq.base.util.PartialOrder.Cmp
 
 @nowarn
@@ -44,8 +45,8 @@ object ProvSetTest extends TestSuite {
             to   = parseK(to))
       }
 
-    private val regexPS1 = "^\\{(.+?)}:\\{(.+)}$".r
-    private val regexPS2 = "^\\{(.+?)}$".r
+    private val regexPS1 = "^\\{(.*?)}:\\{(.+)}$".r
+    private val regexPS2 = "^\\{(.*?)}$".r
 
     implicit def strToProvSet(s: String): ProvSet = {
 
@@ -57,12 +58,12 @@ object ProvSetTest extends TestSuite {
 
       s match {
         case regexPS1(valuesStr, provStr) =>
-          val values = valuesStr.split(',').iterator.map(s => parseK(s) -> s).toMap
+          val values = valuesStr.split(',').iterator.filter(_ != "").map(s => parseK(s) -> s).toMap
           val provs = provStr.split(',').iterator.filter(_ != "").map(parsePE(null, _)).toSet
           module(values, provs)
 
         case regexPS2(valuesStr) =>
-          val values = valuesStr.split(',').iterator.map(s => parseK(s) -> s).toMap
+          val values = valuesStr.split(',').iterator.filter(_ != "").map(s => parseK(s) -> s).toMap
           module(values, Set.empty)
 
         case _ =>
@@ -83,6 +84,20 @@ object ProvSetTest extends TestSuite {
     def assertCmp[A](x: A, y: A)(expect: Cmp)(implicit l: Line, p: PartialOrder[A]): Unit = {
       assertEq(s"$x cmp $y", p(x, y), expect)
       assertEq(s"$y cmp $x [reverse]", p(y, x), expect.flip)
+    }
+
+    private val cmpTestFmt = "^([A-Za-z0-9]+)([^A-Za-z0-9])([A-Za-z0-9]+)$".r
+
+    def cmpTest()(implicit l: Line, tp: TestPath, po: PartialOrder[String]): Unit = {
+      val cmpTestFmt(lhs, rel, rhs) = tp.value.last
+      val expect: Cmp =
+        rel match {
+          case ">" => Greater
+          case "<" => Lesser
+          case "=" => Equal
+          case "|" => Separate
+        }
+      assertCmp(lhs, rhs)(expect)
     }
   }
 
@@ -124,7 +139,7 @@ object ProvSetTest extends TestSuite {
 
 //      import japgolly.microlibs.stdlib_ext.StdlibExt._
 //      gen.withSeed(0).samples().take(100).drain()
-      laws.mustBeSatisfiedBy(gen.withSeed(6))
+//      laws.mustBeSatisfiedBy(gen.withSeed(6))
     }
 
     "manual" - {
@@ -146,33 +161,83 @@ object ProvSetTest extends TestSuite {
         "cycle3" - {
           val expect: ProvSet = "{B1}:{A1<C0,A2<B1,C0<A1}"
           implicit val po = expect.partialOrder.contramap(parseK)
-          "A1_A2" - assertCmp("A1", "A2")(Lesser)
-          "A1_B1" - assertCmp("A1", "B1")(Lesser)
-          "A1_C0" - assertCmp("A1", "C0")(Lesser)
-          "A2_B1" - assertCmp("A2", "B1")(Lesser)
-          "A2_C0" - assertCmp("A2", "C0")(Greater)
-          "B1_C0" - assertCmp("B1", "C0")(Greater)
+          "A1<A2" - cmpTest()
+          "A1<B1" - cmpTest()
+          "A1<C0" - cmpTest()
+          "A2<B1" - cmpTest()
+          "A2>C0" - cmpTest()
+          "B1>C0" - cmpTest()
           "add"   - assertAdd("{B1}:{A1<C0,A2<B1}", "{A2}:{C0<A1}")(expect)
         }
         "cycle4" - {
           val expect: ProvSet = "{D2}:{B1<C0,A2<B1,C0<B1,C1<D1}"
           implicit val po = expect.partialOrder.contramap(parseK)
-          "A1_A2" - assertCmp("A1", "A2")(Lesser)
-          "A1_B1" - assertCmp("A1", "B1")(Lesser)
-          "A1_C0" - assertCmp("A1", "C0")(Lesser)
-          "A1_C1" - assertCmp("A1", "C1")(Lesser)
-          "A1_D1" - assertCmp("A1", "D1")(Lesser)
-          "A2_B1" - assertCmp("A2", "B1")(Lesser)
-          "A2_C0" - assertCmp("A2", "C0")(Lesser)
-          "A2_C1" - assertCmp("A2", "C1")(Lesser)
-          "A2_D1" - assertCmp("A2", "D1")(Lesser)
-          "B1_C0" - assertCmp("B1", "C0")(Lesser)
-          "B1_C1" - assertCmp("B1", "C1")(Lesser)
-          "B1_D1" - assertCmp("B1", "D1")(Lesser)
-          "C0_C1" - assertCmp("C0", "C1")(Lesser)
-          "C0_D1" - assertCmp("C0", "D1")(Lesser)
-          "C1_D1" - assertCmp("C1", "D1")(Lesser)
+          "A1<A2" - cmpTest()
+          "A1<B1" - cmpTest()
+          "A1<C0" - cmpTest()
+          "A1<C1" - cmpTest()
+          "A1<D1" - cmpTest()
+          "A2<B1" - cmpTest()
+          "A2<C0" - cmpTest()
+          "A2<C1" - cmpTest()
+          "A2<D1" - cmpTest()
+          "B1<C0" - cmpTest()
+          "B1<C1" - cmpTest()
+          "B1<D1" - cmpTest()
+          "C0<C1" - cmpTest()
+          "C0<D1" - cmpTest()
+          "C1<D1" - cmpTest()
           "add"   - assertAdd("{B1}:{B1<C0,A2<B1,C0<B1}", "{D2}:{C1<D1}")(expect)
+        }
+        "cycle5" - {
+          val expect: ProvSet = "{}:{B1<E3,E5<B1}"
+          implicit val po = expect.partialOrder.contramap(parseK)
+          "B1<E3" - cmpTest()
+          "B1<E4" - cmpTest()
+          "B1<E5" - cmpTest()
+          "B2>B1" - cmpTest()
+          "B2>E3" - cmpTest()
+          "B2>E4" - cmpTest()
+          "B2>E5" - cmpTest()
+          "E6>B1" - cmpTest()
+          "E6>E3" - cmpTest()
+          "E6>E4" - cmpTest()
+          "E6>E5" - cmpTest()
+          "E2<B1" - cmpTest()
+          "E2<E4" - cmpTest()
+          "E3<E4" - cmpTest()
+          "E3<E5" - cmpTest()
+        }
+      }
+
+      /*
+      I'M SCREWED! AGAIN!
+      Potential next steps:
+      1. model real usage, check if these problems can actually occur (eg. always partial with usage via proper ops)
+      2. rather than pruning on ++, what about pruning as part of the ops? (eg. .merge(a,b) deletes a, not ++)
+      2a. would the above require us to keep a (deleted: Set[K]) and use that to prune on (++)?
+       */
+
+      "components" - {
+//        "1" - {
+//          val c = "{}:{A5<B3,B5<A3}".components
+//          assertSet(c.map(_.map(_.toString)), Set(
+//            NonEmptySet("A3", "A5", "B3", "B5"),
+//          ))
+//        }
+        "1" - {
+          val c = "{}:{A5<B3,B5<A3,A7<B7,B1<A1}".components
+          assertSet(c.map(_.map(_.toString)), Set(
+            NonEmptySet("A3", "A5", "B3", "B5"),
+            NonEmptySet("A1"),
+            NonEmptySet("B1"),
+            NonEmptySet("A7"),
+            NonEmptySet("B7"),
+          ))
+
+//          val cs = "{}:{A4<B3,A5<C4,A5<F1,B1<E3,B2<F1,B3<F4,B4<D1,B5<D1,B5<D3,D2<E0,D3<C3,D4<A5,E4<D2,E5<B1,F2<B2,F3<B3}".components.filter(_.tail.nonEmpty)
+          val cs = "{}:{A4<B3,A5<C4,B1<E3,B2<F1,B3<F4,B4<D1,B5<D1,B5<D3,D4<A5,E5<B1,F3<B3}".components.filter(_.tail.nonEmpty)
+          cs.map(_.whole.toArray.map(_.toString).sortInPlace().mkString("[", ",", "]")).mkString("\n")
         }
       }
 
