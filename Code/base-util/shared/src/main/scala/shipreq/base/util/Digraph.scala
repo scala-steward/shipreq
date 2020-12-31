@@ -37,6 +37,9 @@ object Digraph {
                          (implicit ct: ClassTag[A]): TransitiveClosure[A] =
       TransitiveClosure.auto(keys)(apply(dir).apply, filter)
 
+    lazy val stronglyConnectedComponents: Set[NonEmptySet[A]] =
+      Digraph.stronglyConnectedComponents(this)
+
     def modify[B: UnivEq](f: UniDir[A] => UniDir[B]): BiDir[B] =
       BiDir(f(forwards))
   }
@@ -159,6 +162,61 @@ object Digraph {
         roots = roots,
       )
     }
+  }
+
+  // ===================================================================================================================
+
+  private def stronglyConnectedComponents[A: UnivEq](graph: BiDir[A]): Set[NonEmptySet[A]] = {
+    // Uses Kosaraju's algorithm.
+
+    var stack = List.empty[A]
+    val visited = collection.mutable.HashSet.empty[A]
+
+    // Pass 1
+    {
+      val forwards = graph.forwards
+
+      def go(a: A): Unit = {
+        val firstVisit = visited.add(a)
+        if (firstVisit) {
+          for (to <- forwards(a))
+            go(to)
+          stack ::= a
+        }
+      }
+
+      for (from <- forwards.keys)
+        go(from)
+    }
+
+    // Pass 2
+    var results = Set.empty[NonEmptySet[A]];
+    {
+      val backwards = graph.backwards
+
+      while (stack.nonEmpty) {
+        val sccHead = stack.head
+        stack = stack.tail
+
+        if (visited.contains(sccHead)) {
+          var sccTail = Set.empty[A]
+          def go(a: A): Unit = {
+            val firstVisit = visited.remove(a)
+            if (firstVisit) {
+              sccTail += a
+              for (to <- backwards(a))
+                go(to)
+            }
+          }
+          go(sccHead)
+
+          val scc = NonEmptySet(sccHead, sccTail)
+          results += scc
+        }
+      }
+    }
+
+    results
   }
 
   // ===================================================================================================================
