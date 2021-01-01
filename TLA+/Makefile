@@ -13,11 +13,9 @@ info:
 	@echo "Commands:"
 	@echo
 	@echo "  * classes"
-	@echo "  * drafts[-trace][-last]"
 	@echo "  * encryption[-watch]"
 	@echo "  * jq-test[T]"
 	@echo "  * project[-watch]"
-	@echo "  * provset[-trace][-last]"
 	@echo "  * websocket_client[-watch]"
 	@echo "  * websockets[-watch]"
 	@echo
@@ -29,27 +27,6 @@ classes:
 	&& rm -f *.class \
 	&& scalac -cp $(TLA_JAR) -Xlint -opt:l:method -opt:l:inline -opt-inline-from:** $(SCALA:%=../%) \
 	&& javac -cp $(TLA_JAR):. -d . $(JAVA:%=../%)
-
-.PHONY: drafts drafts-watch drafts-trace drafts-trace-watch drafts-last
-drafts: classes
-	$(SHOW_SEP)
-	# $(TLC) -dump /tmp/states drafts | tee drafts.log
-	$(TLC) drafts | tee drafts.log
-	@fgrep -q 'State 1:' drafts.log \
-	  && fgrep Error drafts.log | fgrep -v "behavior up to this point" \
-	  && echo \
-	  && $(MAKE) drafts-trace \
-	  || test 1
-drafts-trace:
-	@$(TLA2JSON) drafts.log | jq -rf drafts.jq | column -t -s$$'\t'
-drafts-watch:
-	ls -1 drafts.{cfg,tla,jq} $(SHARED) | entr -cr $(MAKE) drafts
-drafts-watch-last:
-	ls -1 drafts.{log,jq} $(SHARED) | entr -cr $(MAKE) drafts-last
-drafts-last:
-	@sed '0,/^Starting\.\.\./d' <drafts.log
-	@echo
-	@$(MAKE) drafts-trace
 
 .PHONY: encryption encryption-watch
 encryption:
@@ -70,27 +47,6 @@ project:
 	./project
 project-watch:
 	ls -1 project project.{cfg,tla} $(SHARED) | entr -cr $(MAKE) project
-
-
-.PHONY: provset provset-watch provset-trace provset-trace-watch provset-last
-provset: classes
-	$(SHOW_SEP)
-	$(TLC) provset | tee provset.log
-	@fgrep -q 'State 1:' provset.log \
-	  && fgrep Error provset.log | fgrep -v "behavior up to this point" \
-	  && echo \
-	  && $(MAKE) provset-trace \
-	  || test 1
-provset-trace:
-	@$(TLA2JSON) provset.log | jq -rf provset.jq | column -t -s$$'\t'
-provset-watch:
-	ls -1 provset.{cfg,tla,jq} $(SHARED) | entr -cr $(MAKE) provset
-provset-watch-last:
-	ls -1 provset.{log,jq} $(SHARED) | entr -cr $(MAKE) provset-last
-provset-last:
-	@sed '0,/^Starting\.\.\./d' <provset.log
-	@echo
-	@$(MAKE) provset-trace
 
 
 .PHONY: websocket_client websocket_client-watch
