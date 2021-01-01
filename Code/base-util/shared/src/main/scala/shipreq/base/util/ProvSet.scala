@@ -56,6 +56,9 @@ final case class ProvSet[K, V](values: Map[K, V], provenance: Set[ProvEntry[K]])
   val partialOrder: PartialOrder[K] =
     module.partialOrderK orElse partialOrderP
 
+  lazy val cycles: Set[NonEmptySet[K]] =
+    components.filter(_.tail.nonEmpty)
+
   private[util] lazy val components: Set[NonEmptySet[K]] = {
     import module.partialOrderK
     // Uses Kosaraju's algorithm.
@@ -347,7 +350,7 @@ object ProvSet {
     private val separateValues: Prop[Map[K, V]] =
       Prop.forall[Map[K, V], Set, K](_.keySet) { m =>
         Prop.atom[K]("value has no comparable siblings", k => {
-          val bad = (m - k).find(_._1 isComparableTo k)
+          val bad = (m - k).find(_._1 >= k)
           bad.map(x => s"Comparable siblings found: $k & ${x._1}")
         })
       }
@@ -357,8 +360,8 @@ object ProvSet {
 
     val provSet: Prop[S] =
       (
-        separateValues.contramap[S](_.values) &
-        provenance.contramap[S](_.provenance) &
+        separateValues.contramap[S](_.values).rename(".values") &
+        provenance.contramap[S](_.provenance).rename(".provenance") &
         partialOrder
       ).rename("ProvSet props")
   }

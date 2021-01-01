@@ -1,5 +1,6 @@
 package shipreq.base.util
 
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.testutil.TestUtil._
 import sourcecode.Line
 import utest._
@@ -101,45 +102,203 @@ object ProvSetTest extends TestSuite {
     }
   }
 
-  // ===================================================================================================================
   import Internals._
   import module.ProvSet
+
+  // ===================================================================================================================
+
+  private def stateBasedPropTest(): Unit = {
+    val Laws = new ProvSet.Laws(module)
+    import Laws._
+
+    val range = 6
+    val size = 8
+
+    val genId  = Gen.choose_!(('A' to 'Z').take(range).map(_.toString))
+    val genRev = Gen.chooseInt(range)
+    val genK   = Gen.lift2(genId, genRev)(K.apply)
+
+    val getPE: Gen[ProvEntry[K]] =
+      for {
+        k <- genK
+        j <- genK.map(j => Option.when(k isSeparateTo j)(j)).optionGet
+      } yield ProvEntry(k, j)
+
+    val genPS: Gen[ProvSet] =
+      for {
+        prov       <- getPE.set(0 to size)
+        provSize    = prov.size
+        valueKeys <- genK.arraySeq(0 to provSize)
+      } yield {
+        val values = valueKeys.iterator.map(k => k -> s"${k.id}${k.rev}").toMap
+        module(values, prov).pruneValues
+      }
+
+    val gen: Gen[Input] =
+      Gen.lift3(genPS, genPS, genPS)(ProvSet.Laws.Input(_, _, _))
+
+//    import japgolly.microlibs.stdlib_ext.StdlibExt._
+//    gen.withSeed(0).samples().take(100).drain()
+    laws.mustBeSatisfiedBy(gen.withSeed(6))
+  }
+
+  // ===================================================================================================================
+
+  private object OpBased {
+
+    final class MutableNode {
+      var clock = 0
+      var state = module.empty
+    }
+
+    final class MutableWorld(nodeCount: Int) {
+      var ops = Vector.empty[String]
+      val nodes = Array.fill(nodeCount)(new MutableNode)
+
+      def foreach(f: (Int, ProvSet) => Unit): Unit = {
+        var i = 0
+        while (i < nodeCount) {
+          val ns = nodes(i).state
+          f(i, ns)
+          i += 1
+        }
+      }
+
+      def pp(): Unit =
+        foreach { (i, s) =>
+          println(s"[node $i] $s")
+        }
+    }
+
+    def genWorld(nodesSS: SizeSpec, opsSS: SizeSpec): Gen[MutableWorld] =
+      Gen { ctx =>
+        val nodeCount = nodesSS.gen1.run(ctx)
+        val opCount = opsSS.gen1.run(ctx)
+        val s = new MutableWorld(nodeCount)
+
+        val genNode: Gen[Int] =
+          Gen.chooseInt(nodeCount)
+
+        val genDisjointNodes: Gen[(Int, Int)] =
+          genNode.map { n =>
+            var m = genNode.run(ctx)
+            while (m == n)
+              m = genNode.run(ctx)
+            (n, m)
+          }
+
+        def addOp(n: Int, desc: String): Unit =
+          s.ops :+= s"[${s.ops.length + 1}/$opCount: node $n] $desc"
+
+        val genEdit: Gen[Unit] =
+          for (n <- genNode) yield {
+            val ns = s.nodes(n)
+            ns.clock += 1
+            val k2 = K((n + 65).toChar.toString, ns.clock)
+            val v2 = k2.toString
+            val valueKeys = ns.state.values.keys.toArray
+
+            def build(removeValues: Array[K]): Unit = {
+              var values2 = ns.state.values
+              var prov2 = ns.state.provenance
+              for (k <- removeValues) {
+                values2 -= k
+                if (k2 isSeparateTo k)
+                  prov2 += ProvEntry(from = k, to = k2)
+              }
+              values2 = values2.updated(k2, v2)
+              val provSet2 = module(values2, prov2)
+              ns.state = provSet2
+              val op: String =
+                if (removeValues.isEmpty)
+                  s"edit start"
+                else if (removeValues.length == 1)
+                  s"edit ${removeValues.head} => $k2"
+                else
+                  s"merge ${removeValues(0)} & ${removeValues(1)} => $k2"
+              addOp(n, op)
+            }
+
+            if (valueKeys.length <= 2)
+              build(valueKeys)
+            else {
+              // merge two random values
+              val genIdx = Gen.chooseInt(valueKeys.length)
+              val x = genIdx.run(ctx)
+              val y = {
+                var y = genIdx.run(ctx)
+                while (y == x)
+                  y = genIdx.run(ctx)
+                y
+              }
+              build(Array(valueKeys(x), valueKeys(y)))
+            }
+          }
+
+        val genGossip: Gen[Unit] =
+          genDisjointNodes.map { case (n, m) =>
+            s.nodes(n).state ++= s.nodes(m).state
+            addOp(n, "gossip from node " + m)
+          }
+
+        val genOp: Gen[Unit] =
+          Gen.chooseGen(
+            genEdit,
+            genGossip,
+          )
+
+        println()
+        val oldStates = new Array[ProvSet](nodeCount)
+        while (s.ops.length < opCount) {
+
+          s.foreach(oldStates(_) = _)
+
+          genOp.run(ctx)
+          println(s.ops.last)
+
+          s.foreach { (i, ns) =>
+            try {
+
+              Predef.assert(
+                ns.cycles.isEmpty,
+                ns.cycles.toArray
+                  .map(_.whole.toArray.map(_.toString).sortInPlace().mkString("[", ",", "]"))
+                  .sortInPlace()
+                  .mkString(s"[node $i] Cycle found:\n  - ", "\n - ", "")
+              )
+
+              ns.assertProps(s"[node $i]")
+
+            } catch {
+              case t: Throwable =>
+                println(s"[node $i] state₁ = " + oldStates(i))
+                println(s"[node $i] state₂ = " + ns)
+                println(s"[node $i] clock  = " + s.nodes(i).clock)
+                throw t
+            }
+          }
+        }
+
+        s
+      }
+
+    def propTest(): Unit = {
+      val g = genWorld(4, 128).withSeed(0)
+      for (w <- g.samples().take(8)) {
+        println("done")
+        w.pp()
+      }
+    }
+
+  }
+
+  // ===================================================================================================================
 
   override def tests = Tests {
 
     "props" - {
-      val Laws = new ProvSet.Laws(module)
-      import Laws._
-
-      val range = 6
-      val size = 8
-
-      val genId  = Gen.choose_!(('A' to 'Z').take(range).map(_.toString))
-      val genRev = Gen.chooseInt(range)
-      val genK   = Gen.lift2(genId, genRev)(K.apply)
-
-      val getPE: Gen[ProvEntry[K]] =
-        for {
-          k <- genK
-          j <- genK.map(j => Option.when(k isSeparateTo j)(j)).optionGet
-        } yield ProvEntry(k, j)
-
-      val genPS: Gen[ProvSet] =
-        for {
-          prov       <- getPE.set(0 to size)
-          provSize    = prov.size
-          valueKeys <- genK.arraySeq(0 to provSize)
-        } yield {
-          val values = valueKeys.iterator.map(k => k -> s"${k.id}${k.rev}").toMap
-          module(values, prov).pruneValues
-        }
-
-      val gen: Gen[Input] =
-        Gen.lift3(genPS, genPS, genPS)(ProvSet.Laws.Input(_, _, _))
-
-//      import japgolly.microlibs.stdlib_ext.StdlibExt._
-//      gen.withSeed(0).samples().take(100).drain()
-//      laws.mustBeSatisfiedBy(gen.withSeed(6))
+      "state" - stateBasedPropTest()
+      "op" - OpBased.propTest()
     }
 
     "manual" - {
