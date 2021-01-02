@@ -24,6 +24,7 @@ final class PartialOrder[-A](asFn: (A, A) => Cmp) extends AbstractFunction2[A, A
       }
     )
 
+  @nowarn("cat=unused")
   def memo[AA <: A](implicit ev: UnivEq[AA]): PartialOrder[AA] = {
     val cache = collection.mutable.Map.empty[(AA, AA), Cmp]
     PartialOrder { (x, y) =>
