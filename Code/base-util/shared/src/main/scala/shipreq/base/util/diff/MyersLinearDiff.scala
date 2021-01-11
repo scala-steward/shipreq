@@ -12,12 +12,16 @@ package shipreq.base.util.diff
   * https://blog.robertelder.org/diff-algorithm
   * https://docs.rs/crate/diffs/0.4.0/source/src/myers.rs
   */
-object MyersLinearDiff extends DiffAlgorithm {
+object MyersLinearDiff {
+  def apply[A: DiffEqual]: MyersLinearDiff[A] =
+    new MyersLinearDiff
+}
 
-  override def writeDiff[A](original  : DiffSource[A],
-                            revised   : DiffSource[A],
-                            patch     : PatchWriter)
-                           (implicit A: DiffEqual[A]): Unit = {
+final class MyersLinearDiff[A](implicit A: DiffEqual[A]) extends DiffAlgorithm[A] {
+
+  override def writeDiff(original  : DiffSource[A],
+                         revised   : DiffSource[A],
+                         patch     : PatchWriter): Unit = {
 
     import DiffSource.{Empty => emptyView}
 

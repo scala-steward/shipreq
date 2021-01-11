@@ -1,12 +1,11 @@
 package shipreq.base.util.diff
 
-trait DiffAlgorithm {
+trait DiffAlgorithm[E] {
 
-  final def diff[A, E, P](original    : A,
-                          revised     : A)
-                         (patchFactory: PatchFactory[A, P])
-                         (implicit A  : DiffSource.Auto[A, E],
-                          E           : DiffEqual[E]): P = {
+  final def diff[I, P](original    : I,
+                       revised     : I)
+                      (patchFactory: PatchFactory[I, P])
+                      (implicit ds : DiffSource.Auto[I, E]): P = {
 
     val ctx = PatchFactory.Ctx(
       src = original,
@@ -16,17 +15,16 @@ trait DiffAlgorithm {
     val p = patchFactory.newBuilder(ctx)
 
     writeDiff(
-      original = A wrap original,
-      revised  = A wrap revised,
+      original = ds wrap original,
+      revised  = ds wrap revised,
       patch    = p,
     )
 
     p.result()
   }
 
-  def writeDiff[A](original  : DiffSource[A],
-                   revised   : DiffSource[A],
-                   patch     : PatchWriter)
-                  (implicit A: DiffEqual[A]): Unit
+  def writeDiff(original  : DiffSource[E],
+                revised   : DiffSource[E],
+                patch     : PatchWriter): Unit
 
 }
