@@ -10,9 +10,6 @@ import scala.scalajs.js.|
 @nowarn
 object Yjs extends js.Object {
 
-  type Update      = Uint8Array
-  type StateVector = Uint8Array
-
   def applyUpdate(doc: Doc, update: Update): Unit = js.native
 
   /**
@@ -22,15 +19,14 @@ object Yjs extends js.Object {
 
   def encodeStateVector(doc: Doc): StateVector = js.native
 
-  @js.native
-  final class Doc extends js.Object {
-    var guid    : String = js.native
-    var clientID: Int    = js.native
+//  def snapshot(doc: Doc): Snapshot = js.native
 
-    def getArray(name: String = js.native): YArray = js.native
-    def getMap  (name: String = js.native): YMap   = js.native
-    def getText (name: String = js.native): YText  = js.native
-  }
+  // ===================================================================================================================
+
+  type Delta       = js.Array[js.Object]
+  type Origin      = js.Any
+  type Update      = Uint8Array
+  type StateVector = Uint8Array
 
   type Value =
     Uint8Array |
@@ -38,7 +34,34 @@ object Yjs extends js.Object {
     String | JsNumber | Boolean // JSON - currently excluding object & null
 
   @js.native
-  sealed abstract class AbstractType extends js.Object
+  final class ID(val client: Int, val clock: Int) extends js.Object
+
+  @js.native
+  final class Transaction extends js.Object
+
+  @js.native
+  final class Snapshot extends js.Object
+
+  @js.native
+  final class Doc extends js.Object {
+    var guid    : String = js.native
+    var clientID: Int    = js.native
+    val store   : Store  = js.native
+
+    def getArray(name: String = js.native): YArray = js.native
+    def getMap  (name: String = js.native): YMap   = js.native
+    def getText (name: String = js.native): YText  = js.native
+
+    /**
+     * @param origin Transient data passed to any event listeners.
+     */
+    def transact(f: js.Function1[Transaction, Unit], origin: Origin = js.native): Unit = js.native
+  }
+
+  @js.native
+  sealed abstract class AbstractType extends js.Object {
+    val doc: Doc = js.native
+  }
 
   @js.native
   final class YArray extends AbstractType {
@@ -65,9 +88,44 @@ object Yjs extends js.Object {
   @js.native
   final class YText extends AbstractType {
     def length: Int = js.native
-    @JSName("toString") def toText(): String = js.native
+    @JSName("toString") def strValue(): String = js.native
     def insert(index: Int, content: String): Unit = js.native
     def delete(index: Int, length: Int): Unit = js.native
+    def toDelta(snapshot: Snapshot = js.native, prevSnapshot: Snapshot = js.native): Delta = js.native
+    def applyDelta(d: Delta): Unit = js.native
   }
 
+  @js.native
+  final class Store extends js.Object {
+    val clients: js.Map[Int, js.Array[Item]] = js.native
+  }
+
+  @js.native
+  final class Item extends js.Object {
+    val id         : ID                       = js.native
+    val left       : Item | Null              = js.native
+    val origin     : ID | Null                = js.native
+    val right      : Item | Null              = js.native
+    val rightOrigin: ID | Null                = js.native
+    val parent     : AbstractType | ID | Null = js.native
+    val parentSub  : String | Null            = js.native
+  //val content    : AbstractContent          = js.native
+
+    var marker : Boolean = js.native
+    var keep   : Boolean = js.native
+    var deleted: Boolean = js.native
+
+    /** Returns the next non-deleted item */
+    def next(): Item | Null = js.native
+
+    /** Returns the previous non-deleted item */
+    def prev(): Item | Null = js.native
+
+    /** Computes the last content address of this Item. */
+    def lastId(): ID = js.native
+
+    def markDeleted(): Unit = js.native
+
+    def delete(transaction: Transaction): Unit = js.native
+  }
 }

@@ -30,7 +30,7 @@ object YjsTest extends TestSuite {
       val doc2 = new Doc()
       val t1 = doc1.getText()
       val t2 = doc2.getText()
-      def values() = (t1.toText(), t2.toText())
+      def values() = (t1.strValue(), t2.strValue())
 
       // Init from committed value
       val orig = "hello there"
