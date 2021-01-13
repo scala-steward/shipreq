@@ -147,19 +147,9 @@ object PatienceDiff {
                                   (lineValue: A => B)
                                   (f: Slice => Unit): Unit = {
 
-      @inline def matchHead(slice: Slice): Unit =
-        while (slice.abNonEmpty && a(slice.aStart) == b(slice.bStart)) {
-          slice.aStart += 1
-          slice.bStart += 1
-        }
+      val slice = new Slice(0, a.length, 0, b.length)
 
-      @inline def matchTail(slice: Slice): Unit =
-        while (slice.abNonEmpty && a(slice.aEndExcl - 1) == b(slice.bEndExcl - 1)) {
-          slice.aEndExcl -= 1
-          slice.bEndExcl -= 1
-        }
-
-      def go(slice: Slice): Unit = {
+      def go(): Unit = {
 
         var m: Match = null
 
@@ -173,6 +163,8 @@ object PatienceDiff {
           }
 
         } else {
+          val aLast = slice.aEndExcl // save before mutation
+          val bLast = slice.bEndExcl // save before mutation
           var aIdx = slice.aStart
           var bIdx = slice.bStart
           var aNext = 0
@@ -181,17 +173,33 @@ object PatienceDiff {
           while(true) {
 
             if (m == null) {
-              aNext = slice.aEndExcl
-              bNext = slice.bEndExcl
+              aNext = aLast
+              bNext = bLast
             } else {
               aNext = m.aIdx
               bNext = m.bIdx
             }
 
-            val subSlice = new Slice(aIdx, aNext, bIdx, bNext)
-            matchHead(subSlice)
-            matchTail(subSlice)
-            go(subSlice)
+            // Prepare slice for recursive call
+            slice.aStart = aIdx
+            slice.bStart = bIdx
+            slice.aEndExcl = aNext
+            slice.bEndExcl = bNext
+
+            // matchHead
+            while (slice.abNonEmpty && a(slice.aStart) == b(slice.bStart)) {
+              slice.aStart += 1
+              slice.bStart += 1
+            }
+
+            // matchTail
+            while (slice.abNonEmpty && a(slice.aEndExcl - 1) == b(slice.bEndExcl - 1)) {
+              slice.aEndExcl -= 1
+              slice.bEndExcl -= 1
+            }
+
+            // Recurse
+            go()
 
             if (m == null)
               return
@@ -203,7 +211,7 @@ object PatienceDiff {
         }
       }
 
-      go(new Slice(0, a.length, 0, b.length))
+      go()
     }
 
   } // Internals

@@ -9,6 +9,8 @@ import PatchFactory._
 
 object DiffTestHelpers {
 
+  private final val propTestSamples = 100
+
   implicit def autoWrapStrs(s: String): DiffSource[String, Char] =
     DiffSource.Str(s)
 
@@ -53,7 +55,7 @@ object DiffTestHelpers {
     s
   }
 
-  def propTestChars(samples: Int = 100)(implicit algo: DiffAlgorithm[Any, Char]): Unit = {
+  def propTestChars(samples: Int = propTestSamples)(implicit algo: DiffAlgorithm[Any, Char]): Unit = {
     val prop = Prop.equal[(String, String)]("p(a, Δᵃᵇ) = b")(
       actual = _._2,
       expect = { case (x, y) => applyPatch(x, y, algo.diff(x, y)(Ops)) },
@@ -62,7 +64,7 @@ object DiffTestHelpers {
     prop.mustBeSatisfiedBy(genStr.pair)(defaultPropSettings.setSampleSize(samples))
   }
 
-  def propTestLines(samples: Int = 100)(implicit algo: DiffAlgorithm.SplitStrings): Unit = {
+  def propTestLines(samples: Int = propTestSamples)(implicit algo: DiffAlgorithm.SplitStrings): Unit = {
     val prop = Prop.equal[(String, String)]("p(a, Δᵃᵇ) = b")(
       actual = _._2,
       expect = { case (x, y) => applyPatch(x, y, algo.diff(x, y)(Ops)) },
