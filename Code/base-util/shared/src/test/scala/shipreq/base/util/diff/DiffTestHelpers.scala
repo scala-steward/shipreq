@@ -62,7 +62,7 @@ object DiffTestHelpers {
     prop.mustBeSatisfiedBy(genStr.pair)(defaultPropSettings.setSampleSize(samples))
   }
 
-  def propTestLines(samples: Int = 100)(implicit algo: DiffAlgorithm.StrLines): Unit = {
+  def propTestLines(samples: Int = 100)(implicit algo: DiffAlgorithm.SplitStrings): Unit = {
     val prop = Prop.equal[(String, String)]("p(a, Δᵃᵇ) = b")(
       actual = _._2,
       expect = { case (x, y) => applyPatch(x, y, algo.diff(x, y)(Ops)) },

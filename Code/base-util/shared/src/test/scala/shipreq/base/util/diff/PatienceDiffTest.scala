@@ -7,14 +7,14 @@ object PatienceDiffTest extends TestSuite {
 
   private val myers = MyersLinearDiff[Char]
   private val algoByChars = PatienceDiff(myers)
-  private val algoByLines = PatienceDiff.stringLines(myers)
+  private val algoByLines = PatienceDiff.splitStrings(myers)
 
   override def tests = Tests {
 
     "byChars" - {
       implicit def algo = algoByChars
 
-      "prop" - propTestChars()
+      "prop" - propTestChars(100000)
 
       "1" - assertCharDiff("bcdefgzio", "abcxyfgi")(
         "Insert 1 @ 0 <- 0 (b <- a)",
@@ -48,25 +48,20 @@ object PatienceDiffTest extends TestSuite {
     "byLines" - {
       implicit def algo = algoByLines
 
-
-      "prop" - propTestLines(4000000)
+      "prop" - propTestLines()
 
       "1" - {
         val x = "CBBC\nADBABCCB\nAAB\nDCCD\nADA\n\nCA\nADBBBBA\nCCBCDAC\nABCAABDC\nC"
         val y = "DCCD\nB\nAD\nCBAB\nC\nC\nCCDCAC\nADCBC\nBDD\nDCA\nDAD\nAABCDDD"
         assertRoundTrip(x, y)
+        ()
       }
 
       "2" - {
         val x = "DACA\nCAAC\nCDDD\nD"
         val y = "D\nCCBA\nA\nC"
         assertRoundTrip(x, y)
-        /*
-        0123456789012345
-        DACA CAAC CDDD D
-        D CCBA A C
-
-         */
+        ()
       }
 
     }

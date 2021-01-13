@@ -35,7 +35,7 @@ abstract class DiffSource[+S, +A] {
 
   @elidable(elidable.FINEST)
   override def toString =
-    s"DiffSource($offset, $length): ${value.toString.quote}"
+    s"DiffSource($offset, $length)(${value.toString.quote})"
 }
 
 object DiffSource {
@@ -76,38 +76,45 @@ object DiffSource {
         new StringSource(rootValue, offset + start, newLen)
     }
 
-    type Lines = DiffSource[DiffSource[String, Char], DiffSource[String, Char]]
+    type Split = DiffSource[DiffSource[String, Char], DiffSource[String, Char]]
 
-    def lines(input: String): Lines =
+    def split(input: String, splitOn: Char): Split =
+      split(input, splitOn == _)
+
+    def split(input: String, isSplit: Char => Boolean): Split =
       if (input.isEmpty)
         DiffSource.empty(DiffSource.empty(input))
       else {
 
         val lines = {
+          val l = input.length
           val b = ArraySeq.newBuilder[DiffSource[String, Char]]
 
           @tailrec
-          def go(remainder: String, offset: Int): Unit = {
-            var n = remainder.indexOf('\n')
-            if (n >= 0) {
-//              if (n != 0) b += new StringSource(input, offset, n)
-                b += new StringSource(input, offset, n + 1)
+          def go(offset: Int): Unit = {
 
-              n += 1
-              go(remainder.drop(n), offset + n)
-            } else if (remainder.nonEmpty)
-              b += new StringSource(input, offset, remainder.length)
+            var i = offset
+            val doSplit = isSplit(input.charAt(i))
+            while ({
+              i += 1
+              i < l && isSplit(input.charAt(i)) == doSplit
+            }) ()
+
+            b += new StringSource(input, offset, i - offset)
+
+            if (i < l)
+              go(i)
           }
 
-          go(input, 0)
+          go(0)
 
           b.result()
         }
 
         val root = Str(input)
 
-        def newInstance(linesOffset: Int, linesLength: Int): Lines =
-          new Lines {
+        def newInstance(linesOffset: Int, linesLength: Int): Split =
+          new Split {
             override def offset        = linesOffset
             override def length        = linesLength
             override def apply(i: Int) = lines(linesOffset + i)
@@ -115,8 +122,7 @@ object DiffSource {
             override protected def _slice(start: Int, newLen: Int) =
               newInstance(linesOffset + start, newLen)
 
-            override def value = {
-              val v =
+            override def value =
               if (linesOffset == 0 && linesLength == lines.length)
                 root
               else {
@@ -125,9 +131,6 @@ object DiffSource {
                 val strEndExcl  = if (lineEndExcl >= lines.length) input.length else lines(lineEndExcl).offset
                 root.slice(strStart, strEndExcl)
               }
-//            println(s"----- .value(${input.quote}, $linesOffset, $linesLength) = ${v}")
-            v
-            }
 
             override def empty(o: Int) = {
               val strOffset =
@@ -154,7 +157,7 @@ object DiffSource {
       Auto(DiffSource.Str.apply)
 
     implicit def stringLines: Auto[String, DiffSource[String, Char], DiffSource[String, Char]] =
-      Auto(DiffSource.Str.lines)
+      Auto(DiffSource.Str.split(_, '\n'))
   }
 
 }

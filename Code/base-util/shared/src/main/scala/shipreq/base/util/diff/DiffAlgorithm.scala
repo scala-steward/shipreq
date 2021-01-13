@@ -42,5 +42,5 @@ trait DiffAlgorithm[S, E] { self =>
 }
 
 object DiffAlgorithm {
-  type StrLines = DiffAlgorithm[DiffSource[String, Char], DiffSource[String, Char]]
+  type SplitStrings = DiffAlgorithm[DiffSource[String, Char], DiffSource[String, Char]]
 }

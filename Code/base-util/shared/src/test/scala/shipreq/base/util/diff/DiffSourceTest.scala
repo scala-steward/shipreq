@@ -10,58 +10,56 @@ object DiffSourceTest extends TestSuite {
     assertEq(a.offset -> a.value, offset -> expected)
 
   override def tests = Tests {
-    "lines" - {
+
+    "split" - {
 
       "1" - {
-        val str = "\n\n12345678\n\nabcdefgh\n\n"
-        val s   = DiffSource.Str.lines(str)
+        val str = "  12345678  abcdefgh  "
+        val s   = DiffSource.Str.split(str, ' ')
 
+        "len"  - assertEq(s.length, 5)
         "full" - assertSubtr(s.value)(0, str)
-        "0"    - assertSubtr(s.just(0).value)(0, "\n\n12345678\n\n")
-        "1"    - assertSubtr(s.just(1).value)(12, "abcdefgh\n\n")
-        "L0"   - assertEq(s(0).value, "12345678")
-        "L1"   - assertEq(s(1).value, "abcdefgh")
+        "0"    - assertSubtr(s.just(0).value)(0, "  ")
+        "1"    - assertSubtr(s.just(1).value)(2, "12345678")
+        "2"    - assertSubtr(s.just(2).value)(10, "  ")
+        "3"    - assertSubtr(s.just(3).value)(12, "abcdefgh")
+        "4"    - assertSubtr(s.just(4).value)(20, "  ")
+        "L0"   - assertEq(s(0).value, "  ")
+        "L1"   - assertEq(s(1).value, "12345678")
+        "L2"   - assertEq(s(2).value, "  ")
+        "L3"   - assertEq(s(3).value, "abcdefgh")
+        "L4"   - assertEq(s(4).value, "  ")
       }
 
       "2" - {
-        val str = "a\nb\nc\nd"
-        val s   = DiffSource.Str.lines(str)
+        val str = "a b c d"
+        val s   = DiffSource.Str.split(str, ' ')
 
+        "len"  - assertEq(s.length, 7)
         "full" - assertSubtr(s.value)(0, str)
-        "0"    - assertSubtr(s.slice(0, 1).value)(0, "a\n")
-        "1"    - assertSubtr(s.slice(1, 2).value)(2, "b\n")
-        "2"    - assertSubtr(s.slice(2, 3).value)(4, "c\n")
-        "3"    - assertSubtr(s.slice(3, 4).value)(6, "d")
-        "01"   - assertSubtr(s.slice(0, 2).value)(0, "a\nb\n")
-        "12"   - assertSubtr(s.slice(1, 3).value)(2, "b\nc\n")
-        "23"   - assertSubtr(s.slice(2, 4).value)(4, "c\nd")
-        "012"  - assertSubtr(s.slice(0, 3).value)(0, "a\nb\nc\n")
-        "123"  - assertSubtr(s.slice(1, 4).value)(2, "b\nc\nd")
-        "z0"   - assertSubtr(s.slice(0, 0).value)(0, "")
-        "z1"   - assertSubtr(s.slice(1, 1).value)(2, "")
-        "z2"   - assertSubtr(s.slice(2, 2).value)(4, "")
-        "z3"   - assertSubtr(s.slice(3, 3).value)(6, "")
-        "z4"   - assertSubtr(s.slice(4, 4).value)(7, "")
-      }
+        "0"    - assertSubtr(s.just(0).value)(0, "a")
+        "1"    - assertSubtr(s.just(1).value)(1, " ")
+        "2"    - assertSubtr(s.just(2).value)(2, "b")
+        "3"    - assertSubtr(s.just(3).value)(3, " ")
+        "4"    - assertSubtr(s.just(4).value)(4, "c")
+        "5"    - assertSubtr(s.just(5).value)(5, " ")
+        "6"    - assertSubtr(s.just(6).value)(6, "d")
 
-//      "3" - {
-//        //                            012345 678901234 567890 123 456789
-//        //                            |    |         |      |   |
-//        val s = DiffSource.Str.lines("BADBC\nDACAABDD\nBCDDB\nDA\nDCACC")
-//        assertEq(s.length, 5)
-//
-//        assertSubtr(s(0))(0, "BADBC")
-//        assertSubtr(s(1))(6, "DACAABDD")
-//        assertSubtr(s(2))(15, "BCDDB")
-//        assertSubtr(s(3))(21, "DA")
-//        assertSubtr(s(4))(24, "DCACC")
-//
-//        assertSubtr(s.just(0).value)(0, "BADBC\n")
-//        assertSubtr(s.just(1).value)(5, "DACAABDD\n")
-//        assertSubtr(s.just(2).value)(14, "BCDDB\n")
-//        assertSubtr(s.just(3).value)(20, "DA\n")
-//        assertSubtr(s.just(4).value)(23, "DCACC")
-//      }
+        "ab"   - assertSubtr(s.slice(0, 3).value)(0, "a b")
+        "bc"   - assertSubtr(s.slice(2, 5).value)(2, "b c")
+        "cd"   - assertSubtr(s.slice(4, 7).value)(4, "c d")
+        "abc"  - assertSubtr(s.slice(0, 5).value)(0, "a b c")
+        "bcd"  - assertSubtr(s.slice(2, 7).value)(2, "b c d")
+
+        "z0"   - assertSubtr(s.slice(0, 0).value)(0, "")
+        "z1"   - assertSubtr(s.slice(1, 1).value)(1, "")
+        "z2"   - assertSubtr(s.slice(2, 2).value)(2, "")
+        "z3"   - assertSubtr(s.slice(3, 3).value)(3, "")
+        "z4"   - assertSubtr(s.slice(4, 4).value)(4, "")
+        "z5"   - assertSubtr(s.slice(5, 5).value)(5, "")
+        "z6"   - assertSubtr(s.slice(6, 6).value)(6, "")
+        "z7"   - assertSubtr(s.slice(7, 7).value)(7, "")
+      }
 
     }
   }

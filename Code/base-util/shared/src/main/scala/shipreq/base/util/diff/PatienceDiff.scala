@@ -15,7 +15,7 @@ object PatienceDiff {
       fallback   = fallback,
     )
 
-  def lines[S: UnivEq, C](fallback: DiffAlgorithm[Any, C]) =
+  def twoDims[S: UnivEq, C](fallback: DiffAlgorithm[Any, C]) =
     new PatienceDiff[
       DiffSource[S, C], // S
       DiffSource[S, C], // A
@@ -28,8 +28,8 @@ object PatienceDiff {
       fallback   = fallback,
     )
 
-  def stringLines(fallback: DiffAlgorithm[Any, Char]) =
-    lines[String, Char](fallback)
+  def splitStrings(fallback: DiffAlgorithm[Any, Char]) =
+    twoDims[String, Char](fallback)
 
   // ===================================================================================================================
 
@@ -141,7 +141,7 @@ object PatienceDiff {
 
         m
       }
-def println(a: Any*) = ()
+
     def patienceDiff[A, B: UnivEq](a: DiffSource[Any, A],
                                    b: DiffSource[Any, A])
                                   (lineValue: A => B)
@@ -159,19 +159,15 @@ def println(a: Any*) = ()
           slice.bEndExcl -= 1
         }
 
-      var indent = 0
       def go(slice: Slice): Unit = {
-        val xxx = slice.toString
 
         var m: Match = null
 
         if (slice.abNonEmpty)
           m = patienceSort(unique(a, b, slice)(lineValue))
 
-        println(s"${" " * indent}> $xxx --> $m")
         if (m == null) {
 
-          println(s"${" " * indent}fallback: $xxx")
           if (slice.aNonEmpty | slice.bNonEmpty) {
             f(slice)
           }
@@ -183,7 +179,6 @@ def println(a: Any*) = ()
           var bNext = 0
 
           while(true) {
-            println(s"${" " * indent}a/b = ${aIdx}/$bIdx")
 
             if (m == null) {
               aNext = slice.aEndExcl
@@ -196,36 +191,17 @@ def println(a: Any*) = ()
             val subSlice = new Slice(aIdx, aNext, bIdx, bNext)
             matchHead(subSlice)
             matchTail(subSlice)
-            val yyy = subSlice.toString
-            if (indent > 6)
-              ???
-            indent += 2
             go(subSlice)
-            println(s"${" " * indent}<")
-            indent -= 2
 
-            if (m == null) {
-              println(s"${" " * indent}return")
+            if (m == null)
               return
-            }
 
             aIdx = m.aIdx + 1
             bIdx = m.bIdx + 1
             m = m.next
-            println(s"${" " * indent}m = $m")
           }
         }
       }
-
-      println()
-      for (i <- 0 until a.length) {
-        println(s"Line number=${i + 1}, ${a(i)}")
-      }
-      println()
-      for (i <- 0 until b.length) {
-        println(s"Line number=${i + 1}, ${b(i)}")
-      }
-      println()
 
       go(new Slice(0, a.length, 0, b.length))
     }
@@ -257,10 +233,6 @@ final class PatienceDiff[S, A, B: UnivEq, T, C](lineValue : A => B,
 
     val pw2 = new PatchWriter.WithMutableOffsets(pw)
 
-    println("="*120)
-    println(s"a  = (${a.offset}) ${a.value}")
-    println(s"b  = (${b.offset}) ${b.value}")
-
     patienceDiff(a, b)(lineValue) { slice =>
       val aLines = a.slice(slice.aStart, slice.aEndExcl)
       val bLines = b.slice(slice.bStart, slice.bEndExcl)
@@ -270,13 +242,6 @@ final class PatienceDiff[S, A, B: UnivEq, T, C](lineValue : A => B,
 
       pw2.srcOffset = aSubStr.offset
       pw2.tgtOffset = bSubStr.offset
-
-      println("="*120)
-      println(s"slice   = $slice")
-      println(s"aLines  = (${aLines.offset}) ${aLines.value}")
-      println(s"bLines  = (${bLines.offset}) ${bLines.value}")
-      println(s"aSubStr = (${aSubStr.offset}) ${aSubStr.value.toString.quote}")
-      println(s"bSubStr = (${bSubStr.offset}) ${bSubStr.value.toString.quote}")
 
       fallback.writeDiff(aSubStr, bSubStr, pw2)
     }
