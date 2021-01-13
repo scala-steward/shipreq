@@ -9,7 +9,7 @@ object MyersLinearDiffTest extends TestSuite {
 
   override def tests = Tests {
 
-    "prop" - propTest()
+    "prop" - propTestChars()
 
     "1" - assertCharDiff("bcdefgzio", "abcxyfgi")(
       "Insert 1 @ 0 <- 0 (b <- a)",

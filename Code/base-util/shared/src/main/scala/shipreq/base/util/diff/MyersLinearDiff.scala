@@ -17,19 +17,19 @@ object MyersLinearDiff {
     new MyersLinearDiff
 }
 
-final class MyersLinearDiff[A](implicit A: DiffEqual[A]) extends DiffAlgorithm[A] {
+final class MyersLinearDiff[A](implicit A: DiffEqual[A]) extends DiffAlgorithm[Any, A] {
 
-  override def writeDiff(original  : DiffSource[A],
-                         revised   : DiffSource[A],
+  override def writeDiff(original  : DiffSource[Any, A],
+                         revised   : DiffSource[Any, A],
                          patch     : PatchWriter): Unit = {
 
-    import DiffSource.{Empty => emptyView}
+    import original.{empty => emptyView}
 
     val g = new Array[Int]((Math.min(original.length, revised.length) + 1) << 1)
     val p = new Array[Int](g.length)
 
-    def go(e: DiffSource[A],
-           f: DiffSource[A],
+    def go(e: DiffSource[Any, A],
+           f: DiffSource[Any, A],
            i: Int,
            j: Int
           ): Unit = {
@@ -97,10 +97,13 @@ final class MyersLinearDiff[A](implicit A: DiffEqual[A]) extends DiffAlgorithm[A
                 if (D > 1 || (x != u && y != v)) {
                   go(e.take(x), f.take(y), i, j)
                   go(e.slice(u, N), f.slice(v, M), i + u, j + v)
-                } else if (M > N)
-                  go(emptyView, f.slice(N, M), i + N, j + N)
-                else if (M < N)
-                  go(e.slice(M, N), emptyView, i + M, j + M)
+                } else if (M > N) {
+                  val iNext = i + N
+                  go(emptyView(iNext), f.slice(N, M), iNext, j + N)
+                } else if (M < N) {
+                  val jNext = j + M
+                  go(e.slice(M, N), emptyView(jNext), i + M, jNext)
+                }
                 return
               }
               k += 2

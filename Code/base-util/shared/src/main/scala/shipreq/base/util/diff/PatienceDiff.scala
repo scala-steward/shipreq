@@ -2,14 +2,42 @@ package shipreq.base.util.diff
 
 object PatienceDiff {
 
-  def apply[A: UnivEq](fallback: DiffAlgorithm[A]): PatienceDiff[A] =
-    new PatienceDiff(fallback)
+  def apply[A: UnivEq](fallback: DiffAlgorithm[Any, A]) =
+    new PatienceDiff[
+      Any, // S
+      A,   // A
+      A,   // B
+      Any, // T
+      A,   // C
+    ](
+      lineValue  = identity,
+      mergeLines = identity,
+      fallback   = fallback,
+    )
+
+  def lines[S: UnivEq, C](fallback: DiffAlgorithm[Any, C]) =
+    new PatienceDiff[
+      DiffSource[S, C], // S
+      DiffSource[S, C], // A
+      S,                // B
+      Any,              // T
+      C,                // C
+    ](
+      lineValue  = _.value,
+      mergeLines = _.value,
+      fallback   = fallback,
+    )
+
+  def stringLines(fallback: DiffAlgorithm[Any, Char]) =
+    lines[String, Char](fallback)
+
+  // ===================================================================================================================
 
   private object Internals {
 
-    final class Slice(_aStart: Int,
+    final class Slice(_aStart  : Int,
                       _aEndExcl: Int,
-                      _bStart: Int,
+                      _bStart  : Int,
                       _bEndExcl: Int,
                      ) {
       var aStart   = _aStart
@@ -21,8 +49,6 @@ object PatienceDiff {
       @inline def bRange    = bStart until bEndExcl
       @inline def aNonEmpty = aStart < aEndExcl
       @inline def bNonEmpty = bStart < bEndExcl
-      @inline def aIsEmpty  = !aNonEmpty
-      @inline def bIsEmpty  = !bNonEmpty
       def abNonEmpty        = aNonEmpty && bNonEmpty
 
       @elidable(elidable.FINEST)
@@ -44,23 +70,24 @@ object PatienceDiff {
       override def toString = s"($aIdx,$bIdx)${Option(next).fold("")(" -> " + _)}"
     }
 
-    def unique[A: UnivEq](a: DiffSource[A],
-                          b: DiffSource[A],
-                          slice: Slice): Array[Match] = {
+    def unique[A, B: UnivEq](x: DiffSource[Any, A],
+                             y: DiffSource[Any, A],
+                             slice: Slice)
+                            (f: A => B): Array[Match] = {
 
-      val counts = collection.mutable.LinkedHashMap.empty[A, UniqueCounter]
+      val counts = collection.mutable.LinkedHashMap.empty[B, UniqueCounter]
 
       for (i <- slice.aRange) {
-        val t = a(i)
-        val c = counts.getOrElseUpdate(t, new UniqueCounter)
+        val b = f(x(i))
+        val c = counts.getOrElseUpdate(b, new UniqueCounter)
         c.aCount += 1
         if (c.aFirstIdx < 0)
           c.aFirstIdx = i
       }
 
       for (i <- slice.bRange) {
-        val t = b(i)
-        val c = counts.getOrElseUpdate(t, new UniqueCounter)
+        val b = f(y(i))
+        val c = counts.getOrElseUpdate(b, new UniqueCounter)
         c.bCount += 1
         if (c.bFirstIdx < 0)
           c.bFirstIdx = i
@@ -114,10 +141,11 @@ object PatienceDiff {
 
         m
       }
-
-    def patienceDiff[A: UnivEq](a: DiffSource[A],
-                                b: DiffSource[A])
-                               (f: Slice => Unit): Unit = {
+def println(a: Any*) = ()
+    def patienceDiff[A, B: UnivEq](a: DiffSource[Any, A],
+                                   b: DiffSource[Any, A])
+                                  (lineValue: A => B)
+                                  (f: Slice => Unit): Unit = {
 
       @inline def matchHead(slice: Slice): Unit =
         while (slice.abNonEmpty && a(slice.aStart) == b(slice.bStart)) {
@@ -131,15 +159,19 @@ object PatienceDiff {
           slice.bEndExcl -= 1
         }
 
+      var indent = 0
       def go(slice: Slice): Unit = {
+        val xxx = slice.toString
 
         var m: Match = null
 
         if (slice.abNonEmpty)
-          m = patienceSort(unique(a, b, slice))
+          m = patienceSort(unique(a, b, slice)(lineValue))
 
+        println(s"${" " * indent}> $xxx --> $m")
         if (m == null) {
 
+          println(s"${" " * indent}fallback: $xxx")
           if (slice.aNonEmpty | slice.bNonEmpty) {
             f(slice)
           }
@@ -151,6 +183,8 @@ object PatienceDiff {
           var bNext = 0
 
           while(true) {
+            println(s"${" " * indent}a/b = ${aIdx}/$bIdx")
+
             if (m == null) {
               aNext = slice.aEndExcl
               bNext = slice.bEndExcl
@@ -162,51 +196,83 @@ object PatienceDiff {
             val subSlice = new Slice(aIdx, aNext, bIdx, bNext)
             matchHead(subSlice)
             matchTail(subSlice)
+            val yyy = subSlice.toString
+            if (indent > 6)
+              ???
+            indent += 2
             go(subSlice)
+            println(s"${" " * indent}<")
+            indent -= 2
 
-            if (m == null)
+            if (m == null) {
+              println(s"${" " * indent}return")
               return
+            }
 
-            aIdx = m.aIdx
-            bIdx = m.bIdx
+            aIdx = m.aIdx + 1
+            bIdx = m.bIdx + 1
             m = m.next
+            println(s"${" " * indent}m = $m")
           }
         }
+      }
 
+      for (i <- 0 until a.length) {
+        println(s"Line number=${i + 1}, ${a(i)}")
       }
 
       go(new Slice(0, a.length, 0, b.length))
     }
 
-//    def patienceDiff2[S: UnivEq, C](a: DiffSource[S],
-//                                    b: DiffSource[S],
-//                                    c: S => DiffSource[C],
-//                                    f: DiffAlgorithm[C]): Unit = {
-//      patienceDiff(a, b) { s =>
-//        // a.slice(s.aStart, s.aEndExcl).flatMap(c)
-//        // or maybe better would be: String => DiffSource[DiffSource[Char]] + UnivEq[DiffSource]
-//        // or maybe better would be: DiffSource[A] => DiffSource[DiffSource[A]] + UnivEq[DiffSource]
-//      }
-//    }
-
   } // Internals
 }
 
-final class PatienceDiff[A: UnivEq](fallback: DiffAlgorithm[A]) extends DiffAlgorithm[A] {
+/**
+ * @param lineValue Converts an input DiffSource element to a line value
+ * @param mergeLines Convert a slice of the input into a new source for processing by the fallback diff algorithm
+ * @param fallback The fallback diff algorithm to use for mismatched blocks (once lines are aligned)
+ * @tparam S Input DiffSource values
+ * @tparam A Input DiffSource elements
+ * @tparam B Representation of line values that has UnivEq
+ * @tparam T Line diff algorithm values
+ * @tparam C Line diff algorithm elements
+ */
+final class PatienceDiff[S, A, B: UnivEq, T, C](lineValue : A => B,
+                                                mergeLines: DiffSource[S, A] => DiffSource[T, C],
+                                                fallback  : DiffAlgorithm[T, C]) extends DiffAlgorithm[S, A] {
   import PatienceDiff.Internals._
 
-  override def writeDiff(a : DiffSource[A],
-                         b : DiffSource[A],
+  @inline def widen: DiffAlgorithm[S, A] =
+    this
+
+  override def writeDiff(a : DiffSource[S, A],
+                         b : DiffSource[S, A],
                          pw: PatchWriter): Unit = {
 
     val pw2 = new PatchWriter.WithMutableOffsets(pw)
 
-    patienceDiff(a, b) { slice =>
-      val a2 = a.slice(slice.aStart, slice.aEndExcl)
-      val b2 = b.slice(slice.bStart, slice.bEndExcl)
-      pw2.srcOffset = slice.aStart
-      pw2.tgtOffset = slice.bStart
-      fallback.writeDiff(a2, b2, pw2)
+//    println("="*120)
+//    println(s"a  = (${a.offset}) ${a.value}")
+//    println(s"b  = (${b.offset}) ${b.value}")
+
+    patienceDiff(a, b)(lineValue) { slice =>
+      val aLines = a.slice(slice.aStart, slice.aEndExcl)
+      val bLines = b.slice(slice.bStart, slice.bEndExcl)
+
+      val aSubStr = mergeLines(aLines)
+      val bSubStr = mergeLines(bLines)
+
+      pw2.srcOffset = aSubStr.offset
+      pw2.tgtOffset = bSubStr.offset
+
+//      println("="*120)
+//      println(s"slice   = $slice")
+//      println(s"aLines  = (${aLines.offset}) ${aLines.value}")
+//      println(s"bLines  = (${bLines.offset}) ${bLines.value}")
+//      println(s"aSubStr = (${aSubStr.offset}) ${aSubStr.value}")
+//      println(s"bSubStr = (${bSubStr.offset}) ${bSubStr.value}")
+
+      fallback.writeDiff(aSubStr, bSubStr, pw2)
     }
   }
 
