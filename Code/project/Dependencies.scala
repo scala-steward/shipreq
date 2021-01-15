@@ -86,14 +86,16 @@ object Dependencies {
   }
 
   object UnivEq {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.univeq", "1.2.1")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.univeq", "1.3.0")
     val univeq = mm("univeq")
     val scalaz = mm("univeq-scalaz") ++ univeq ++ Dependencies.scalaz
   }
 
   object ScalaCSS {
-    private val mm = MultiModule.js("com.github.japgolly.scalacss", "0.6.1")
-    val core  = mm("core")
+    private val ver = "0.7.0"
+    private val MM = MultiModule.jvmAndJs("com.github.japgolly.scalacss", ver)
+    private val mm = MultiModule.js("com.github.japgolly.scalacss", ver)
+    val core  = MM("core")
     val react = mm("ext-react") ++ core
   }
 
@@ -188,7 +190,7 @@ object Dependencies {
     val servlet    = mm("simpleclient_servlet")
   }
 
-  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.8.0")
+  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.9.0")
   val scalajsDom       = jsOnly("org.scala-js"                          %% "scalajs-dom"       % "1.1.0")
   val scalajsJavaTime  = jsOnly("org.scala-js"                          %% "scalajs-java-time" % "1.0.0")
 

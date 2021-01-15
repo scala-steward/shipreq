@@ -132,6 +132,7 @@ object WebappBuild {
       .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UseNodeAdvanced))
       .dependsOn(webappBaseTest, webappMember)
       .depsForBoth(Circe.main)
+      .depsForBoth(ScalaCSS.core % Test) // for NaturalOrdering
       .jsSettings(
         parallelExecution := false, // Faster
         jsDependencies in Test += ProvidedJS / "webapp-member-test.js")
