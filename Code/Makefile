@@ -25,6 +25,7 @@ CI_LOCAL_DOCKER_ARGS += -e BASE_IMAGE_URL=$(ECR)/shipreq/base
 CI_LOCAL_DOCKER_ARGS += -e WEBAPP_IMAGE_URL=$(ECR)/shipreq/webapp
 CI_LOCAL_DOCKER_ARGS += -e TASKMAN_IMAGE_URL=$(ECR)/shipreq/taskman
 CI_LOCAL_DOCKER_ARGS += -w /Code
+CI_TMP_TARGET         = /tmp/sbt-ci-target
 
 info:
 	@echo "This Makefile isn't how you build ShipReq (use SBT for that), but rather a collection of helpful utilities."
@@ -63,6 +64,7 @@ else
 	docker pull $(ECR)/shipreq/taskman
 	docker pull $(ECR)/shipreq/webapp
 	bin/env test up -d
+	rm -rf target && mkdir -p $(CI_TMP_TARGET) && ln -s $(CI_TMP_TARGET) target
 	docker run $(CI_LOCAL_DOCKER_ARGS) $(ECR)/shipreq/dev/build_env bin/ci
 	git push aws master
 endif
@@ -74,6 +76,7 @@ ci-shell:
 	docker pull $(ECR)/shipreq/taskman
 	docker pull $(ECR)/shipreq/webapp
 	bin/env test up -d
+	rm -rf target && mkdir -p $(CI_TMP_TARGET) && ln -s $(CI_TMP_TARGET) target
 	@echo
 	@echo "You'll likely want to do one of the following:"
 	@echo "  - bin/ci"
