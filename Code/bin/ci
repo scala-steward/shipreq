@@ -11,6 +11,8 @@ unset JVM_OPTS
 unset SBT_OPTS
 unset SBTX_OPTS
 
+arg1="$1"
+
 set -uo pipefail
 
 cd "$(dirname "$0")"/..
@@ -65,7 +67,7 @@ function run {
 docker_args=(taskmanServer/docker webappServer/docker)
 [ "${DOCKER_PUSH:-}" != 0 ] && docker_args+=(taskmanServer/dockerPush webappServer/dockerPush)
 
-if [ "$1" = shell ]; then
+if [ "$arg1" = shell ]; then
   echo "> ${sbt[@]}"
   exec "${sbt[@]}"
 fi
