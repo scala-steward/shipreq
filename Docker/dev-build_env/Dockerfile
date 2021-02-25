@@ -1,8 +1,9 @@
-FROM archlinux:base-20201213.0.11146
+# https://hub.docker.com/_/archlinux?tab=tags&page=1&ordering=last_updated
+FROM archlinux:base-20210221.0.15908
 
-RUN pacman -Sy --noconfirm --needed archlinux-keyring
+RUN pacman -Syy --noconfirm --needed archlinux-keyring
 
-RUN pacman -Sy --noconfirm reflector rsync \
+RUN pacman -Sy --noconfirm glibc reflector rsync \
  && reflector \
       --connection-timeout 2 \
       --download-timeout 2 \
