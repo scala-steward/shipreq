@@ -63,7 +63,7 @@ RUN sed -i 's/^COMPRESSXZ/#COMPRESSXZ/' /etc/makepkg.conf \
 #   - :/Code/project/Dependencies.scala
 #   - :/Docker/shipreq-base/Dockerfile
 RUN n=jdk11-graalvm-bin \
- && gitsha=4900009ab7455050557f35b379a7541a5e800356 \
+ && gitsha=cafa4a24cde0c7f319f8514c0a7b0efe9ef5dbac \
  && cd /tmp \
  && git clone https://aur.archlinux.org/$n.git \
  && cd $n \
@@ -112,7 +112,7 @@ RUN cd /usr/local/bin \
 RUN mkdir /tmp/scala \
  && cd /tmp/scala \
  && mkdir project \
- && echo 'sbt.version=1.4.6' > project/build.properties \
+ && echo 'sbt.version=1.4.7' > project/build.properties \
  && echo 'scalaVersion := "2.13.4"' > build.sbt \
  && echo 'object Build{}' > project/Build.scala \
  && echo 'object M{}' > M.scala \
