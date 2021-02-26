@@ -113,14 +113,18 @@ object CommonObs {
   final class DropdownButton($: DomZipperJs) {
     val dropdown      = new Dropdown($(".ui.dropdown"))
     val buttonDom     = $(".ui.button").domAsHtml
+    val disabled      = $.classes.contains("disabled")
     def click(): Unit = Simulate click buttonDom
   }
 
   object DropdownButton {
     final class TestDsl[R, O, S](val * : Dsl[Id, R, O, S, String], name: String)(getObs: O => DropdownButton) {
       protected implicit def autoObs(o: O): DropdownButton = getObs(o)
+
+      val disabled = *.focus(s"$name button is disabled").value(_.obs.disabled)
+      val enabled  = *.focus(s"$name button is enabled").value(!_.obs.disabled)
       val dropdown = new Dropdown.TestDsl(*, s"$name dropdown")(_.dropdown)
-      val click = *.action(s"Click $name button")(_.obs.click())
+      val click    = *.action(s"Click $name button")(_.obs.click())
     }
   }
 

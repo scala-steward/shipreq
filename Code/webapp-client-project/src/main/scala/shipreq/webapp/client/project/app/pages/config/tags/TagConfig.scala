@@ -11,6 +11,7 @@ import shipreq.base.util.{Disabled, Enabled, ErrorMsg, Optics, PotentialChange}
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.GeneralTheme
+import shipreq.webapp.base.util.Dirty
 import shipreq.webapp.client.project.app.Style.{tagConfig => *}
 import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.feature.Usage
@@ -191,7 +192,7 @@ object TagConfig {
           NoTags.render
       }
 
-    private def renderHeader(p: Props, args: splitScreenCrud.EditorArgs): VdomNode = {
+    private def renderEditorHeader(p: Props, args: splitScreenCrud.EditorArgs): VdomNode = {
 
       val ateState: Option[ApplicableTagEditor.State] =
         p.state.value.right.editorOption.flatMap(_.swap.toOption)
@@ -231,7 +232,7 @@ object TagConfig {
     private def renderEditor(p: Props, args: splitScreenCrud.EditorArgs): VdomNode = {
 
       val header: VdomNode =
-        renderHeader(p, args)
+        renderEditorHeader(p, args)
 
       val editorType: EditorType =
         args.id match {
@@ -297,13 +298,15 @@ object TagConfig {
     def render(p: Props): VdomNode = {
       // println(("="*60) + "\n" + p.project.config.tags.prettyPrint)
 
+      val dirty = Dirty unless p.potentialSaveCmd.isUnchanged
+
       splitScreenCrud(
         filterDeadOverride = p.filterDeadOverride,
         project            = p.project,
         newButton          = newButtonProps(p, _).render,
         list               = renderLeft(p, _),
         rightEmpty         = rightEmpty,
-        editor             = renderEditor(p, _),
+        editor             = args => (renderEditor(p, args), dirty),
         initEditor         = (a, b) => Some(initEditor(a, b)),
         state              = p.state,
       )

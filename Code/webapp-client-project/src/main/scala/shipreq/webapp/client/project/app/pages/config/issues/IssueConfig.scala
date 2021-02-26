@@ -9,6 +9,7 @@ import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon}
+import shipreq.webapp.base.util.Dirty
 import shipreq.webapp.client.project.app.Style.{issueConfig => *}
 import shipreq.webapp.client.project.app.pages.root.Routes
 import shipreq.webapp.client.project.app.state.NewEvents
@@ -195,6 +196,8 @@ object IssueConfig {
     def render(p: Props): VdomNode = {
        // println(("="*60) + "\n" + p.state.value + "\n")
 
+      val dirty = Dirty when p.potentialSaveCmd.isSuccess
+
       splitScreenCrud(
         filterDeadOverride = p.filterDeadOverride,
         project            = p.project,
@@ -202,7 +205,7 @@ object IssueConfig {
         list               = renderLeft(p, _),
         leftTop            = leftHeader,
         rightEmpty         = renderRightEmpty(p),
-        editor             = renderEditor(p, _),
+        editor             = args => (renderEditor(p, args), dirty),
         initEditor         = initEditor,
         state              = p.state,
       )

@@ -62,6 +62,12 @@ sealed abstract class PotentialChange[+E, +A] {
       case Failure(_)             => true
     }
 
+  final def isSuccess: Boolean =
+    this match {
+      case Success(_)             => true
+      case Failure(_) | Unchanged => false
+    }
+
   final def isUnchanged: Boolean =
     this match {
       case Success(_) | Failure(_) => false

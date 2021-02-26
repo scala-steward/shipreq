@@ -557,5 +557,47 @@ object TagConfigTest extends TestSuite {
         +> reqTypesError.assert.empty
         +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
     )
+
+    // =================================================================================================================
+    "newButton" - runActions(SampleProject6.project)(
+
+      *.emptyAction
+        +> newButton.enabled.assert(true)
+        +> isEditorOpen.assert(false)
+
+      >> selectTag("defer")
+        +> newButton.enabled.assert(true)
+        +> isEditorOpen.assert(true)
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
+
+      >> setNameEditorValue("qwexxxxxxx")
+        +> newButton.enabled.assert(false)
+        +> isEditorOpen.assert(true)
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, cancel = Enabled, save = Enabled))
+
+      >> setNameEditorValue("defer")
+        +> newButton.enabled.assert(true)
+        +> isEditorOpen.assert(true)
+        +> buttonsEnabled.assert(Buttons(delete = Enabled, close = Enabled, save = Disabled))
+
+      >> newButton.click
+        +> newButton.enabled.assert(false)
+        +> isEditorOpen.assert(true)
+        +> buttonsEnabled.assert(Buttons(cancel = Enabled, save = Disabled))
+        +> nameEditorValue.assert(Some(""))
+
+      >> clickCancelButton
+        +> newButton.enabled.assert(true)
+        +> isEditorOpen.assert(false)
+
+      >> clickFilterDead
+        +> filterDead.assert(ShowDead)
+
+      >> selectTag("uat")
+        +> newButton.enabled.assert(true)
+        +> isEditorOpen.assert(true)
+        +> buttonsEnabled.assert(Buttons(restore = Enabled, close = Enabled))
+    )
+
   }
 }

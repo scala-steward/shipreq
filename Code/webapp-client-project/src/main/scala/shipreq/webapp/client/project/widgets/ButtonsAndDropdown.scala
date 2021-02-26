@@ -4,6 +4,7 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
+import shipreq.base.util.{Disabled, Enabled}
 import shipreq.webapp.base.ui.semantic._
 import shipreq.webapp.base.util.DomUtil._
 import shipreq.webapp.client.project.app.Style.{widgets => *}
@@ -56,6 +57,7 @@ object ButtonsAndDropdown {
     val outerTagMod       : TagMod
     val middleButtonTagMod: TagMod
     val dropdownTagMod    : TagMod
+    val enabled           : Enabled
     val basic             : Boolean
 
     implicit def univEqA: UnivEq[A]
@@ -82,6 +84,7 @@ object ButtonsAndDropdown {
                  outerTagMod       : TagMod  = TagMod.empty,
                  middleButtonTagMod: TagMod  = TagMod.empty,
                  dropdownTagMod    : TagMod  = TagMod.empty,
+                 enabled           : Enabled = Enabled,
                  basic             : Boolean = false,
                )(implicit A: UnivEq[A]): Of[A] = {
       type _A                 = A
@@ -92,6 +95,7 @@ object ButtonsAndDropdown {
       val _outerTagMod        = outerTagMod
       val _middleButtonTagMod = middleButtonTagMod
       val _dropdownTagMod     = dropdownTagMod
+      val _enabled            = enabled
       val _basic              = basic
       new Props {
         override type A                 = _A
@@ -102,6 +106,7 @@ object ButtonsAndDropdown {
         override val outerTagMod        = _outerTagMod
         override val middleButtonTagMod = _middleButtonTagMod
         override val dropdownTagMod     = _dropdownTagMod
+        override val enabled            = _enabled
         override val basic              = _basic
         override implicit def univEqA   = A
       }
@@ -188,7 +193,7 @@ object ButtonsAndDropdown {
         *.dropdownButtonOuter,
         p.outerTagMod,
         ^.cls := "ui labeled button",
-        (^.cls := "disabled").when(p.inProgress),
+        (^.cls := "disabled").when(p.inProgress || p.enabled.is(Disabled)),
         renderButtons,
         renderDropdown,
       ).withRef(ref)

@@ -12,6 +12,7 @@ import shipreq.webapp.base.lib.ConfirmJs
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.GeneralTheme
 import shipreq.webapp.base.ui.semantic.{Button, Colour, Icon, Message}
+import shipreq.webapp.base.util.Dirty
 import shipreq.webapp.client.project.app.Style.{reqTypeConfig => *}
 import shipreq.webapp.client.project.app.state.NewEvents
 import shipreq.webapp.client.project.feature.Usage
@@ -258,13 +259,15 @@ object ReqTypeConfig {
     def render(p: Props): VdomNode = {
        // println(("="*60) + "\n" + p.state.value + "\n")
 
+      val dirty = Dirty when p.potentialSaveCmd.isSuccess
+
       splitScreenCrud(
         filterDeadOverride = p.filterDeadOverride,
         project            = p.project,
         newButton          = renderNewButton(p, _),
         list               = renderLeft(p, _),
         rightEmpty         = rightEmpty,
-        editor             = renderEditor(p, _),
+        editor             = args => (renderEditor(p, args), dirty),
         initEditor         = initEditor,
         state              = p.state,
       )

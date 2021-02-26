@@ -13,6 +13,7 @@ import shipreq.base.util._
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.GeneralTheme
+import shipreq.webapp.base.util.Dirty
 import shipreq.webapp.client.project.app.Style.{fieldConfig => *}
 import shipreq.webapp.client.project.app.pages.root.Routes
 import shipreq.webapp.client.project.app.state.NewEvents
@@ -350,17 +351,21 @@ object FieldConfig {
       }
     }
 
-    def render(p: Props): VdomNode =
+    def render(p: Props): VdomNode = {
+
+      val dirty = Dirty when p.potentialSaveCmd.isSuccess
+
       splitScreenCrud(
         filterDeadOverride = p.filterDeadOverride,
         project            = p.project,
         newButton          = newButtonProps(p, _).render,
         list               = renderLeft(p, _),
         rightEmpty         = rightEmpty,
-        editor             = renderEditor(p, _),
+        editor             = args => (renderEditor(p, args), dirty),
         initEditor         = (a, b) => Some(initEditor(a, b)),
         state              = p.state,
       )
+    }
   }
 
   val Component = ScalaComponent.builder[Props]

@@ -1,7 +1,4 @@
 ### Problems
-* TagConfig: when a tag is selected, [New] is not disabled but just doesn't work
-  Either let me use it without hitting "Close" first
-  Or disable the button & dropdown
 * TagConfig: show me the unsaved colour in the left pane too
 
 
