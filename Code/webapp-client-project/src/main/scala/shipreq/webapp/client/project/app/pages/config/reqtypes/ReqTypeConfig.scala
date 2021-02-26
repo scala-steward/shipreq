@@ -259,15 +259,14 @@ object ReqTypeConfig {
     def render(p: Props): VdomNode = {
        // println(("="*60) + "\n" + p.state.value + "\n")
 
-      val dirty = Dirty when p.potentialSaveCmd.isSuccess
-
       splitScreenCrud(
         filterDeadOverride = p.filterDeadOverride,
         project            = p.project,
         newButton          = renderNewButton(p, _),
         list               = renderLeft(p, _),
         rightEmpty         = rightEmpty,
-        editor             = args => (renderEditor(p, args), dirty),
+        editor             = renderEditor(p, _),
+        dirty              = Dirty unless p.potentialSaveCmd.isUnchanged,
         initEditor         = initEditor,
         state              = p.state,
       )

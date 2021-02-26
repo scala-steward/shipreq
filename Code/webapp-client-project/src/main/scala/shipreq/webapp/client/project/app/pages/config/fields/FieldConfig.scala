@@ -352,16 +352,14 @@ object FieldConfig {
     }
 
     def render(p: Props): VdomNode = {
-
-      val dirty = Dirty when p.potentialSaveCmd.isSuccess
-
       splitScreenCrud(
         filterDeadOverride = p.filterDeadOverride,
         project            = p.project,
         newButton          = newButtonProps(p, _).render,
         list               = renderLeft(p, _),
         rightEmpty         = rightEmpty,
-        editor             = args => (renderEditor(p, args), dirty),
+        editor             = renderEditor(p, _),
+        dirty              = Dirty unless p.potentialSaveCmd.isUnchanged,
         initEditor         = (a, b) => Some(initEditor(a, b)),
         state              = p.state,
       )

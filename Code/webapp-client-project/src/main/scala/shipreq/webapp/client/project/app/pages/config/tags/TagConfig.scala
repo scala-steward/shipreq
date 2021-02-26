@@ -298,15 +298,14 @@ object TagConfig {
     def render(p: Props): VdomNode = {
       // println(("="*60) + "\n" + p.project.config.tags.prettyPrint)
 
-      val dirty = Dirty unless p.potentialSaveCmd.isUnchanged
-
       splitScreenCrud(
         filterDeadOverride = p.filterDeadOverride,
         project            = p.project,
         newButton          = newButtonProps(p, _).render,
         list               = renderLeft(p, _),
         rightEmpty         = rightEmpty,
-        editor             = args => (renderEditor(p, args), dirty),
+        editor             = renderEditor(p, _),
+        dirty              = Dirty unless p.potentialSaveCmd.isUnchanged,
         initEditor         = (a, b) => Some(initEditor(a, b)),
         state              = p.state,
       )

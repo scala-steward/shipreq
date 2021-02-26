@@ -82,7 +82,8 @@ object SplitScreenCrud {
                                    list              : ListArgs[Id] => VdomNode,
                                    leftTop           : VdomNode,
                                    rightEmpty        : VdomNode,
-                                   editor            : EditorArgs[N, Id, E] => (VdomNode, Dirty),
+                                   editor            : EditorArgs[N, Id, E] => VdomNode,
+                                   dirty             : Dirty,
                                    initEditor        : (Project, N \/ Id) => Option[E],
                                    state             : StateSnapshot[State[N, Id, E]])
 
@@ -154,7 +155,8 @@ final class SplitScreenCrud[
                     list              : ListArgs   => VdomNode,
                     leftTop           : VdomNode = EmptyVdom,
                     rightEmpty        : VdomNode,
-                    editor            : EditorArgs => (VdomNode, Dirty),
+                    editor            : EditorArgs => VdomNode,
+                    dirty             : Dirty,
                     initEditor        : (Project, NewState \/ Id) => Option[EditorState],
                     state             : StateSnapshot[State]): VdomNode =
     Component(SplitScreenCrud.Props(
@@ -165,6 +167,7 @@ final class SplitScreenCrud[
       leftTop            = leftTop,
       rightEmpty         = rightEmpty,
       editor             = editor,
+      dirty              = dirty,
       initEditor         = initEditor,
       state              = state,
     ))
@@ -234,6 +237,23 @@ final class SplitScreenCrud[
           case Off => <.div(p.rightEmpty, *.rightOff)
         }
 
+      val newButtonEnabled: Enabled =
+        Disabled.when(p.dirty is Dirty)
+
+      val newArgs: NewArgs =
+        newButtonEnabled match {
+          case Enabled =>
+            SplitScreenCrud.NewArgs.Enabled(
+              state      = p.state.zoomStateL(newStateLens),
+              openEditor = Callback.byName(openNewEditor(p.state.value.newState)))
+
+          case Disabled =>
+            SplitScreenCrud.NewArgs.Disabled(p.state.value.newState)
+        }
+
+      val newButton: VdomNode =
+        p.newButton(newArgs)
+
       val filterDeadButton: VdomNode =
         p.filterDeadOverride match {
           case None     => FilterDeadButton.Component(p.state.zoomStateL(S.filterDead))
@@ -280,48 +300,6 @@ final class SplitScreenCrud[
       val editorArgs: Option[EditorArgs] =
         createEditorArgs(s.right)
 
-      val rightDirty: (VdomNode, Dirty) =
-        editorArgs match {
-          case None =>
-            val args = createEditorArgs(s.prevRight)
-            val (editorDom, editorDirty) = args match {
-              case Some(a) => p.editor(a)
-              case None    => (EmptyVdom, Clean)
-            }
-            val vdom =
-              React.Fragment(
-                renderRightEmpty(On),
-                <.div(*.rightOff, editorDom))
-            (vdom, editorDirty)
-
-          case Some(args) =>
-            val (editorDom, editorDirty) = p.editor(args)
-            val vdom =
-              React.Fragment(
-                renderRightEmpty(Off),
-                <.div(*.rightOn, editorDom))
-            (vdom, editorDirty)
-        }
-
-      import rightDirty.{_1 => right, _2 => dirty}
-
-      val newButtonEnabled: Enabled =
-        Disabled.when(dirty is Dirty)
-
-      val newArgs: NewArgs =
-        newButtonEnabled match {
-          case Enabled =>
-            SplitScreenCrud.NewArgs.Enabled(
-              state      = p.state.zoomStateL(newStateLens),
-              openEditor = Callback.byName(openNewEditor(p.state.value.newState)))
-
-          case Disabled =>
-            SplitScreenCrud.NewArgs.Disabled(p.state.value.newState)
-        }
-
-      val newButton: VdomNode =
-        p.newButton(newArgs)
-
       val left: VdomNode =
         React.Fragment(
           p.leftTop,
@@ -329,6 +307,20 @@ final class SplitScreenCrud[
             <.div(*.topLeftGrow, newButton),
             <.div(filterDeadButton)),
           leftBody)
+
+      val right: VdomNode =
+        editorArgs match {
+          case None =>
+            React.Fragment(
+              renderRightEmpty(On),
+              <.div(*.rightOff,
+                createEditorArgs(s.prevRight).whenDefined(p.editor)))
+
+          case Some(args) =>
+            React.Fragment(
+              renderRightEmpty(Off),
+              <.div(*.rightOn, p.editor(args)))
+        }
 
       SplitScreen.Props(left = left, right = right).render
     }
