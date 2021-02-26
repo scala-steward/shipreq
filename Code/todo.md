@@ -1,5 +1,4 @@
 ### Problems
-* TagConfig: show me the unsaved colour in the left pane too
 
 
 ### Improvements
