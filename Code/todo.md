@@ -1,4 +1,5 @@
 ### Problems
+* Use full name in Req Type column - the abbreviation is already in the ID (which is always on the screen)
 
 
 ### Improvements
