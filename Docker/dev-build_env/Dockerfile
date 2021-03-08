@@ -122,7 +122,7 @@ RUN mkdir /tmp/scala \
  && cd /tmp/scala \
  && mkdir project \
  && echo 'sbt.version=1.4.7' > project/build.properties \
- && echo 'scalaVersion := "2.13.4"' > build.sbt \
+ && echo 'scalaVersion := "2.13.5"' > build.sbt \
  && echo 'object Build{}' > project/Build.scala \
  && echo 'object M{}' > M.scala \
  && sbt test \
