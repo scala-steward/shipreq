@@ -35,8 +35,8 @@ locals {
       grafana           = "git-96d1fe4e0a6993700618b7cc936178bb05983106"
       node_exporter     = local.versions_common.node_exporter
       postgres_exporter = "git-7a5aaecd3b72ac4796faf1147b27785d9341ac16"
-      prometheus_biz    = "git-d595f2047a3491e6574bc696c12d6aa0ae19d9c2"
-      prometheus_tech   = "git-d595f2047a3491e6574bc696c12d6aa0ae19d9c2"
+      prometheus_biz    = "git-c5c257ffcdde27c30e7f5b8c4a77e1ce120b491e"
+      prometheus_tech   = "git-c5c257ffcdde27c30e7f5b8c4a77e1ce120b491e"
     }
 
   }
