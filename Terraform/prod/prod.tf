@@ -52,6 +52,7 @@ module "shipreq" {
   elasticsearch_instance_type           = "t2.small.elasticsearch"
   elasticsearch_retention_days          = 40
   elasticsearch_volume_size             = 10
+  elasticsearch_volume_type             = "standard" # whatever, I don't use it
   grafana_db_name                       = "grafana"
   grafana_db_password                   = local.passwords.db.grafana
   grafana_db_username                   = "grafana"
