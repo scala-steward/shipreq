@@ -2,6 +2,9 @@
 * Use full name in Req Type column - the abbreviation is already in the ID (which is always on the screen)
 * Auto list-item spacing is annoying
 * Fullscreen editor with preview below, zooming in breaks the preview
+* Bug: CryptoFolio @ 203 (after deleting MF req type): issues page shows `Priority field has no tags`
+  but clicking the `Delete Priority field` gives an error `Field #3 is dead`
+  Interestingly, Priority only appears in CfgTags when ShowDead
 
 
 ### Improvements
