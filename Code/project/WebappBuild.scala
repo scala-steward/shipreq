@@ -312,7 +312,7 @@ object WebappBuild {
       )
 
     def testSettings = (_: Project)
-      .configure(DockerEnv.test.required)
+      .configure(DockerEnv.test)
       .dependsOn(webappBaseTestJVM % Test)
       .settings(inConfig(Test)(Seq(
         fork                         := true,

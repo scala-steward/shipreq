@@ -26,7 +26,7 @@ object TaskmanBuild {
   lazy val taskmanApi =
     project
       .in(file("taskman-api"))
-      .configure(Common.jvmSettings, DockerEnv.test.required)
+      .configure(Common.jvmSettings, DockerEnv.test)
       .deps(testScope(μTest ++ scalaCheck ++ Scala.reflect))
       .dependsOn(taskmanApiLogic, baseDb)
       .dependsOn(taskmanServerSchema % Test)
@@ -70,7 +70,7 @@ object TaskmanBuild {
 
     Project("taskmanServer", file("taskman-server"))
       .enablePlugins(JavaAppPackaging, DockerPlugin)
-      .configure(Common.jvmSettings, DockerEnv.test.required)
+      .configure(Common.jvmSettings, DockerEnv.test)
       .deps(
         Akka.actor ++ javaMail ++ OkHttp.core ++ httpCore ++ commonsIo ++ Logback.withPlugins ++
         Prometheus.client ++ Prometheus.hotspot ++ Prometheus.httpserver ++ Prometheus.logback ++
