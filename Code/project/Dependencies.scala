@@ -147,7 +147,7 @@ object Dependencies {
   }
 
   object Akka {
-    private val mm = MultiModule.scala("com.typesafe.akka", "2.6.13")
+    private val mm = MultiModule.scala("com.typesafe.akka", "2.6.14")
     val actor   = mm("akka-actor") ++ mm("akka-slf4j")
     val testkit = mm("akka-testkit")
   }
@@ -159,7 +159,7 @@ object Dependencies {
   }
 
   object LibJetty {
-    private def ver = "9.4.38.v20210224"
+    private def ver = "9.4.41.v20210516"
     private val mm = MultiModule.java("org.eclipse.jetty", ver)
     private val ws = MultiModule.java("org.eclipse.jetty.websocket", ver)
 
@@ -196,31 +196,31 @@ object Dependencies {
 
   val boopickle   = jvmAndJs("io.suzaku",                        "boopickle",   "1.3.3")
   val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",        "1.4.0")
-  val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.2.1")
+  val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.3.0")
   val scalaz      = jvmAndJs("org.scalaz",                       "scalaz-core", "7.2.31")
-  val shapeless   = jvmAndJs("com.chuusai",                      "shapeless",   "2.3.3")
+  val shapeless   = jvmAndJs("com.chuusai",                      "shapeless",   "2.3.7")
   val μTest       = jvmAndJs("com.github.japgolly.fork",         "utest",       "1.0.3")
-  val pprint      = jvmAndJs("com.lihaoyi",                      "pprint",      "0.6.2")
+  val pprint      = jvmAndJs("com.lihaoyi",                      "pprint",      "0.6.6")
 
-  val catsEffect   = jvmOnly("org.typelevel"              %% "cats-effect"           % "2.3.3")
+  val catsEffect   = jvmOnly("org.typelevel"              %% "cats-effect"           % "2.5.1")
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val commonsText  = jvmOnly("org.apache.commons"          % "commons-text"          % "1.9")
-  val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "7.5.4")
+  val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "7.9.0")
   val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "4.0.3")
   val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.14")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.5.0")
-  val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.19")
-  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.15.1")
+  val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.20")
+  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.15.5")
   val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "4.0.2")
-  val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.15.3")
-  val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.2")
+  val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.15.4")
+  val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.3")
   val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.3.0")
 
   val betterMonadicFor = compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
   val useBetterMonadicFor = (_: Project).settings(addCompilerPlugin(betterMonadicFor))
 
-  val kindProjector = compilerPlugin("org.typelevel" %% "kind-projector" % "0.11.3" cross CrossVersion.full)
+  val kindProjector = compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full)
   val useKindProjector = (_: Project).settings(addCompilerPlugin(kindProjector))
 
   val updateExclusions: ModuleFilter = {
@@ -228,6 +228,12 @@ object Dependencies {
     def containsRegex(r: String) = matchesRegex(s".*(?:$r).*")
     def fn(f: String => Boolean) = new SimpleFilter(f)
     var filters = moduleFilter(NothingFilter)
+
+    // Scala: I already know. Shoosh please.
+    filters |= moduleFilter("org.scala-lang", "scala-compiler")
+    filters |= moduleFilter("org.scala-lang", "scala-library")
+    filters |= moduleFilter("org.scala-lang", "scala-reflect")
+    filters |= moduleFilter("org.scala-lang", "scalap")
 
     // Scalaz: 7.2.x only
     filters |= moduleFilter("org.scalaz", revision = fn(!_.startsWith("7.2.")))
