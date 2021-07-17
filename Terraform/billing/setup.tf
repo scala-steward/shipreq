@@ -1,5 +1,10 @@
 terraform {
-  required_version = ">= 0.13"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 3.4"
+    }
+  }
 
   backend "s3" {
     bucket = "shipreq-terraform-state"
@@ -9,12 +14,10 @@ terraform {
 }
 
 provider "aws" {
-  region  = "ap-southeast-2"
-  version = "~> 3.4"
+  region = "ap-southeast-2"
 }
 
 provider "aws" {
-  alias   = "cur" // cur = "Cost and Usage Report"
-  region  = "us-east-1"
-  version = "~> 3.4"
+  alias  = "cur" // cur = "Cost and Usage Report"
+  region = "us-east-1"
 }

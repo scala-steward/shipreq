@@ -1,5 +1,10 @@
 terraform {
-  required_version = ">= 0.13"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 3.31"
+    }
+  }
 
   backend "s3" {
     bucket = "shipreq-terraform-state"
@@ -9,20 +14,17 @@ terraform {
 }
 
 provider "aws" {
-  region  = "ap-southeast-2"
-  version = "~> 3.4"
+  region = "ap-southeast-2"
 }
 
 provider "aws" {
-  alias   = "ap-southeast-2"
-  region  = "ap-southeast-2"
-  version = "~> 3.4"
+  alias  = "ap-southeast-2"
+  region = "ap-southeast-2"
 }
 
 provider "aws" {
-  alias   = "us-east-1"
-  region  = "us-east-1"
-  version = "~> 3.4"
+  alias  = "us_east_1"
+  region = "us-east-1"
 }
 
 module "shipreq" {
@@ -31,7 +33,7 @@ module "shipreq" {
   providers = {
     aws           = aws
     aws.ecr       = aws.ap-southeast-2
-    aws.us-east-1 = aws.us-east-1
+    aws.us_east_1 = aws.us_east_1
   }
 
   env                 = "dev"
