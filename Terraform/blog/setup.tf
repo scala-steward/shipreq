@@ -7,19 +7,22 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "shipreq-terraform-state"
-    key    = "blog.tfstate"
-    region = "ap-southeast-2"
+    bucket  = "shipreq-terraform-state"
+    key     = "blog.tfstate"
+    region  = "ap-southeast-2"
+    profile = "shipreq"
   }
 }
 
 provider "aws" {
-  region = "ap-southeast-2" // Comment for blog/gatsy-config.ts
+  profile = "shipreq"
+  region  = "ap-southeast-2" // Comment for blog/gatsy-config.ts
 }
 
 provider "aws" {
-  alias  = "us_east_1"
-  region = "us-east-1"
+  profile = "shipreq"
+  alias   = "us_east_1"
+  region  = "us-east-1"
 }
 
 locals {

@@ -7,24 +7,28 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "shipreq-terraform-state"
-    key    = "env-dev.tfstate"
-    region = "ap-southeast-2"
+    bucket  = "shipreq-terraform-state"
+    key     = "env-dev.tfstate"
+    region  = "ap-southeast-2"
+    profile = "shipreq"
   }
 }
 
 provider "aws" {
-  region = "ap-southeast-2"
+  profile = "shipreq"
+  region  = "ap-southeast-2"
 }
 
 provider "aws" {
-  alias  = "ap-southeast-2"
-  region = "ap-southeast-2"
+  profile = "shipreq"
+  alias   = "ap-southeast-2"
+  region  = "ap-southeast-2"
 }
 
 provider "aws" {
-  alias  = "us_east_1"
-  region = "us-east-1"
+  profile = "shipreq"
+  alias   = "us_east_1"
+  region  = "us-east-1"
 }
 
 module "shipreq" {

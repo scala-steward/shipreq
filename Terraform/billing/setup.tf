@@ -7,17 +7,20 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "shipreq-terraform-state"
-    key    = "billing.tfstate"
-    region = "ap-southeast-2"
+    bucket  = "shipreq-terraform-state"
+    key     = "billing.tfstate"
+    region  = "ap-southeast-2"
+    profile = "shipreq"
   }
 }
 
 provider "aws" {
-  region = "ap-southeast-2"
+  profile = "shipreq"
+  region  = "ap-southeast-2"
 }
 
 provider "aws" {
-  alias  = "cur" // cur = "Cost and Usage Report"
-  region = "us-east-1"
+  profile = "shipreq"
+  alias   = "cur" // cur = "Cost and Usage Report"
+  region  = "us-east-1"
 }
