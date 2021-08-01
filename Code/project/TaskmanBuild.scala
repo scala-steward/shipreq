@@ -19,7 +19,7 @@ object TaskmanBuild {
     project
       .in(file("taskman-api-logic"))
       .configure(Common.jvmSettings)
-      .deps(Circe.main ++ testScope(μTest ++ scalaCheck ++ Scala.reflect ++ Microlibs.testUtil))
+      .deps(Circe.main ++ testScope(utest ++ scalaCheck ++ Scala.reflect ++ Microlibs.testUtil))
       .dependsOn(baseUtilJvm)
       .dependsOn(baseTestJvm % Test)
 
@@ -27,7 +27,7 @@ object TaskmanBuild {
     project
       .in(file("taskman-api"))
       .configure(Common.jvmSettings, DockerEnv.test)
-      .deps(testScope(μTest ++ scalaCheck ++ Scala.reflect))
+      .deps(testScope(utest ++ scalaCheck ++ Scala.reflect))
       .dependsOn(taskmanApiLogic, baseDb)
       .dependsOn(taskmanServerSchema % Test)
       .dependsOn(baseTestJvm % Test)
@@ -37,7 +37,7 @@ object TaskmanBuild {
     project
       .in(file("taskman-server-logic"))
       .configure(Common.jvmSettings)
-      .deps(Logback.withPlugins ++ testScope(μTest ++ scalaCheck))
+      .deps(Logback.withPlugins ++ testScope(utest ++ scalaCheck))
       .dependsOn(taskmanApiLogic)
       .dependsOn(baseTestJvm % Test)
 
@@ -75,7 +75,7 @@ object TaskmanBuild {
       .deps(
         Akka.actor ++ javaMail ++ OkHttp.core ++ httpCore ++ commonsIo ++ Logback.withPlugins ++
         Prometheus.client ++ Prometheus.hotspot ++ Prometheus.httpserver ++ Prometheus.logback ++
-        testScope(Akka.testkit ++ μTest))
+        testScope(Akka.testkit ++ utest))
       .dependsOn(taskmanServerLogic, taskmanServerSchema, taskmanApi)
       .dependsOn(baseTestJvm % Test)
       .configure(Docker.settingsFor("taskman"))

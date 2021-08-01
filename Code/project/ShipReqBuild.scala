@@ -55,7 +55,7 @@ object ShipReqBuild {
         Microlibs.adtMacros ++ Microlibs.nonempty ++ Microlibs.recursion ++
         Microlibs.scalazExt ++ Microlibs.stdlibExt ++ Microlibs.utils ++
         (Circe.main % Provided) ++
-        testScope(μTest ++ Nyaya.test ++ Microlibs.testUtil))
+        testScope(utest ++ Nyaya.test ++ Microlibs.testUtil))
       .depsForJvm(
         SLF4J.api ++ Logback.withPlugins ++ scalaLogging ++ clearConfig ++ catsEffect)
 
@@ -87,8 +87,8 @@ object ShipReqBuild {
       .configureJvm(_.dependsOn(baseDb % Provided))
       .depsForBoth(
         Microlibs.testUtil ++ pprint ++
-        providedScope(μTest ++ Nyaya.gen ++ Circe.main) ++
-        testScope(μTest ++ Nyaya.test ++ Circe.main))
+        providedScope(utest ++ Nyaya.gen ++ Circe.main) ++
+        testScope(utest ++ Nyaya.test ++ Circe.main))
       .depsForJvm(providedScope(scalaCheck))
       .depsForJs(providedScope(React.core))
 

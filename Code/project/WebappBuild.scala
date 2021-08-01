@@ -8,7 +8,7 @@ import sbtcrossproject.CrossPlugin.autoImport._
 import sbtdocker.DockerPlugin
 import scalajscrossproject.ScalaJSCrossPlugin.autoImport._
 import Common._
-import Dependencies._
+import Dependencies.{Jetty => JettyDep, _}
 import LibDependency.JVM
 import ShipReqBuild._
 import TaskmanBuild._
@@ -73,7 +73,7 @@ object WebappBuild {
       .depsForBoth(
         boopickle ++ Monocle.core ++
         providedScope(Scala.library) ++
-        testScope(μTest))
+        testScope(utest))
       .configureJvm(_.dependsOn(baseDb))
       .depsForJvm(postgresql)
 
@@ -101,7 +101,7 @@ object WebappBuild {
       .configureJvm(Common.jvmSettings)
       .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UsePhantomJs))
       .dependsOn(baseTest, webappBase)
-      .depsForBoth(μTest ++ Nyaya.test)
+      .depsForBoth(utest ++ Nyaya.test)
       .depsForJs(
         React.test ++ ScalaCSS.react ++
         TestState.nyaya ++ TestState.domZipperSizzle ++ TestState.scalajsReact)
@@ -190,7 +190,7 @@ object WebappBuild {
       .dependsOn(webappMemberJS)
       .depsForJs(
         boopickle ++ scalajsDom ++
-        testScope(μTest))
+        testScope(utest))
 
   lazy val webappClientWw =
     project
@@ -200,7 +200,7 @@ object WebappBuild {
       .dependsOn(webappClientWwApi, webappMemberTestJS % Test)
       .depsForJs(
         boopickle ++ scalajsDom ++
-        testScope(μTest))
+        testScope(utest))
       .settings(
         Compile / scalacOptions -= "-Xno-forwarders", // https://github.com/scala-js/scala-js/issues/4030
         scalaJSUseMainModuleInitializer := true,
@@ -219,7 +219,7 @@ object WebappBuild {
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoTests))
       .dependsOn(webappMember, webappClientPublic, baseTest % Test)
-      .depsForBoth(ScalaGraal.extBoopickle ++ testScope(μTest))
+      .depsForBoth(ScalaGraal.extBoopickle ++ testScope(utest))
 
   lazy val webappSsrJVM = webappSsr.jvm
     .deps(ScalaGraal.coreJs ++ ScalaGraal.extPrometheus ++ scalaXml)
@@ -249,7 +249,7 @@ object WebappBuild {
       .dependsOn(webappMember)
       .dependsOn(baseTest % Test, webappMemberTest % Test)
       .depsForJvm(scaffeine ++ commonsText)
-      .depsForBoth(testScope(μTest ++ Nyaya.test))
+      .depsForBoth(testScope(utest ++ Nyaya.test))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -330,7 +330,7 @@ object WebappBuild {
       .enablePlugins(DockerPlugin)
       .configs(DockerDeps)
       .configure(Docker.settingsFor("webapp"))
-      .deps(LibJetty.distTarGz % DockerDeps)
+      .deps(JettyDep.distTarGz % DockerDeps)
       .settings(
         cleanFiles += baseDirectory.value / "target",
         DockerDeps / classpathTypes += "tar.gz", // for jetty-distribution
@@ -357,10 +357,10 @@ object WebappBuild {
       .deps(
         scalaz ++ Lift.webkit ++  scalaXml ++ SLF4J.jcl ++ commonsText ++ Nyaya.gen ++ Logback.withPlugins ++ JJWT.all ++
         Prometheus.client ++ Prometheus.hotspot ++ Prometheus.servlet ++ Prometheus.logback ++ redisson ++
-        LibJetty.http ++
-        providedScope(LibJetty.javaxServletApi ++ LibJetty.javaxWebsocketApi ++ LibJetty.servlets) ++
-        testScope(μTest ++ Lift.testkit ++ commonsIo) ++
-        (LibJetty.webapp % Test))
+        JettyDep.http ++
+        providedScope(JettyDep.javaxServletApi ++ JettyDep.javaxWebsocketApi ++ JettyDep.servlets) ++
+        testScope(utest ++ Lift.testkit ++ commonsIo) ++
+        (JettyDep.webapp % Test))
       .configure(
         Common.jvmSettings,
         assetSettings,
@@ -369,7 +369,7 @@ object WebappBuild {
         dockerSettings)
       .settings(
         scalacOptions -= "-Yno-generic-signatures", // Without this, snippets break. LiveTest confirms.
-        Jetty / containerLibs := LibJetty.devRun(JVM),
+        Jetty / containerLibs := JettyDep.devRun(JVM),
         Jetty / javaOptions ++= List(
           "-XX:+UseJVMCINativeLibrary",
           // "-XX:+BootstrapJVMCI",
