@@ -1,4 +1,5 @@
 // Taken from https://github.com/scala-js/scala-js-env-jsdom-nodejs/blob/master/jsdom-nodejs-env/src/main/scala/org/scalajs/jsenv/jsdomnodejs/JSDOMNodeJSEnv.scala
+// Added line: window["node"] = global;
 
 import scala.annotation.tailrec
 
