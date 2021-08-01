@@ -33,7 +33,7 @@ object ShipReqBuild {
       .in(file("base-predef"))
       .configureJvm(Common.jvmSettings)
       .configureJs(Common.jsSettings(NoTests))
-      .depsForBoth(UnivEq.scalaz ++ scalaz ++ Nyaya.prop ++ Microlibs.nonempty)
+      .depsForBoth(UnivEq.cats ++ cats ++ Nyaya.prop ++ Microlibs.nonempty)
       .depsForJvm(Circe.main.widen) // We don't want circe on the frontend
       .depsForJs(scalajsDom)
       .depsForJs(scalajsJavaTime)
@@ -51,9 +51,9 @@ object ShipReqBuild {
       .configureJs(Common.jsSettings(UseNode))
       .dependsOn(basePredef)
       .depsForBoth(
-        UnivEq.scalaz ++ scalaz ++ Nyaya.prop ++ Monocle.core ++
+        UnivEq.cats ++ cats ++ Nyaya.prop ++ Monocle.core ++
         Microlibs.adtMacros ++ Microlibs.nonempty ++ Microlibs.recursion ++
-        Microlibs.scalazExt ++ Microlibs.stdlibExt ++ Microlibs.utils ++
+        Microlibs.catsExt ++ Microlibs.stdlibExt ++ Microlibs.utils ++
         (Circe.main % Provided) ++
         testScope(utest ++ Nyaya.test ++ Microlibs.testUtil))
       .depsForJvm(
