@@ -1,7 +1,9 @@
-name      := "ShipReq"
-startYear := Some(2013)
+name := "ShipReq"
 
-ThisBuild / shellPrompt := ((s: State) => Project.extract(s).currentRef.project + "> ")
+ThisBuild / organization     := "com.beardedlogic.shipreq"
+ThisBuild / organizationName := "Bearded Logic"
+ThisBuild / shellPrompt      := ((s: State) => Project.extract(s).currentRef.project + "> ")
+ThisBuild / startYear        := Some(2013)
 
 // Allow ctrl-c to kill forked tasks without killing SBT
 Global / cancelable := true

@@ -6,7 +6,7 @@ import java.nio.file.{Files, Path}
 import org.scalajs.jsenv.Input
 import org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 import org.scalajs.jsenv.phantomjs.sbtplugin.PhantomJSEnvPlugin.autoImport._
-import org.scalajs.linker.interface.{CheckedBehavior, Semantics}
+import org.scalajs.linker.interface._
 import org.scalajs.sbtplugin.ScalaJSPlugin.autoImport._
 import org.scalajs.sbtplugin.Stage
 import sbtcrossproject.CrossPlugin.autoImport._
@@ -183,18 +183,18 @@ object Common {
 
   lazy val settingsMinForScalafix = (p: Project) => p
     .settings(
-      organization                := "com.beardedlogic.shipreq",
-      organizationName            := "Bearded Logic",
-      isSnapshot                  := git.gitUncommittedChanges.value,
-      version                     := versionFn(git.gitHeadCommit.value, isSnapshot.value),
-      incOptions                  := incOptions.value.withLogRecompileOnMacro(false),
-      updateOptions               := updateOptions.value.withCachedResolution(true),
-      update / aggregate          := true,
-      scalaVersion                := Dependencies.Scala.version,
-      scalacOptions              ++= scalacFlags,
+      dependencyOverrides        ++= Dependencies.globalDependencyOverrides.toSeq,
       dependencyUpdatesFilter     -= Dependencies.updateExclusions,
+      incOptions                  := incOptions.value.withLogRecompileOnMacro(false),
+      isSnapshot                  := git.gitUncommittedChanges.value,
       minForcegcInterval          := 3.minutes,
-      target                      := redirectTargetDir(target.value))
+      scalacOptions              ++= scalacFlags,
+      scalaVersion                := Dependencies.Scala.version,
+      target                      := redirectTargetDir(target.value),
+      update / aggregate          := true,
+      updateOptions               := updateOptions.value.withCachedResolution(true),
+      version                     := versionFn(git.gitHeadCommit.value, isSnapshot.value),
+    )
     .configure(
       packageBinaryOnly,
       ciSettings,
@@ -256,7 +256,11 @@ object Common {
       InBrowserTesting.js)
     .settings(
       testOnly / parallelExecution := false,
-      scalaJSLinkerConfig ~= { _.withSourceMap(emitSourceMapsValue) })
+      scalaJSLinkerConfig ~= { _
+        .withSourceMap(emitSourceMapsValue)
+        .withESFeatures(_.withESVersion(ESVersion.ES2017))
+      },
+    )
 
   private def jsDevSettings: Project => Project =
     identity
@@ -307,7 +311,7 @@ object Common {
           Test / jsEnv := new JSDOMNodeJSEnv(JSDOMNodeJSEnv.Config()))
       case UsePhantomJs =>
         _.settings(
-          Test / scalaJSLinkerConfig ~= { _.withESFeatures(_.withUseECMAScript2015(false)) },
+          Test / scalaJSLinkerConfig ~= { _.withESFeatures(_.withESVersion(ESVersion.ES5_1)) },
           Test / jsEnv := PhantomJSEnv().value,
           Test / jsEnvInput := Input.Script(((ThisBuild / baseDirectory).value / "project/phantomjs-fix.js").toPath) +: (Test / jsEnvInput).value)
     }

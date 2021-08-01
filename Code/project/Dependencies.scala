@@ -18,7 +18,7 @@ object Dependencies {
 
   object Scala {
     private val mm = scalaItself(version)
-    def version  = "2.13.5"
+    def version  = "2.13.6"
     val library  = mm("scala-library")
     val reflect  = mm("scala-reflect")
     val compiler = mm("scala-compiler") ++ reflect ++ scalaXml
@@ -63,7 +63,7 @@ object Dependencies {
   }
 
   object ScalaGraal {
-    private val ver   = "1.1.1"
+    private val ver   = "1.2.0"
     private val jvm   = MultiModule.scala("com.github.japgolly.scala-graal", ver)
     private val both  = MultiModule.jvmAndJs("com.github.japgolly.scala-graal", ver)
     val core          = jvm("core") ++ graal
@@ -100,13 +100,13 @@ object Dependencies {
   }
 
   object SLF4J {
-    private val mm = MultiModule.java("org.slf4j", "1.7.30")
+    private val mm = MultiModule.java("org.slf4j", "1.7.32")
     val api = mm("slf4j-api")
     val jcl = mm("jcl-over-slf4j")
   }
 
   object Logback {
-    val version = "1.2.3"
+    val version = "1.2.5"
     private val mm = MultiModule.java("ch.qos.logback", version)
 
     val core = mm("logback-classic") ++ mm("logback-core")
@@ -131,7 +131,7 @@ object Dependencies {
   }
 
   object Circe {
-    private val mm = MultiModule.jvmAndJs("io.circe", "0.13.0")
+    private val mm = MultiModule.jvmAndJs("io.circe", "0.14.1")
     val core    = mm("circe-core")
     val parser  = mm("circe-parser")
     val testing = mm("circe-testing")
@@ -147,7 +147,7 @@ object Dependencies {
   }
 
   object Akka {
-    private val mm = MultiModule.scala("com.typesafe.akka", "2.6.14")
+    private val mm = MultiModule.scala("com.typesafe.akka", "2.6.15")
     val actor   = mm("akka-actor") ++ mm("akka-slf4j")
     val testkit = mm("akka-testkit")
   }
@@ -182,7 +182,7 @@ object Dependencies {
   }
 
   object Prometheus {
-    private val mm = MultiModule.java("io.prometheus", "0.10.0")
+    private val mm = MultiModule.java("io.prometheus", "0.11.0")
     val client     = mm("simpleclient")
     val hotspot    = mm("simpleclient_hotspot")
     val httpserver = mm("simpleclient_httpserver")
@@ -194,7 +194,7 @@ object Dependencies {
   val scalajsDom       = jsOnly("org.scala-js"                          %% "scalajs-dom"       % "1.1.0")
   val scalajsJavaTime  = jsOnly("org.scala-js"                          %% "scalajs-java-time" % "1.0.0")
 
-  val boopickle   = jvmAndJs("io.suzaku",                        "boopickle",   "1.3.3")
+  val boopickle   = jvmAndJs("io.suzaku",                        "boopickle",   "1.4.0")
   val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",        "1.4.0")
   val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.3.0")
   val scalaz      = jvmAndJs("org.scalaz",                       "scalaz-core", "7.2.31")
@@ -202,19 +202,19 @@ object Dependencies {
   val μTest       = jvmAndJs("com.github.japgolly.fork",         "utest",       "1.0.3")
   val pprint      = jvmAndJs("com.lihaoyi",                      "pprint",      "0.6.6")
 
-  val catsEffect   = jvmOnly("org.typelevel"              %% "cats-effect"           % "2.5.1")
+  val catsEffect   = jvmOnly("org.typelevel"              %% "cats-effect"           % "2.5.2")
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val commonsText  = jvmOnly("org.apache.commons"          % "commons-text"          % "1.9")
-  val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "7.9.0")
+  val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "7.12.0")
   val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "3.4.5") // don't go to v4 yet, wait for Doobie
   val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.14")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
-  val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.5.0")
+  val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.6.0")
   val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.2.20")
-  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.15.5")
+  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.16.1")
   val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "4.0.2")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.15.4")
-  val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.3")
+  val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.4")
   val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.3.0")
 
   val betterMonadicFor = compilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
@@ -222,6 +222,11 @@ object Dependencies {
 
   val kindProjector = compilerPlugin("org.typelevel" %% "kind-projector" % "0.13.0" cross CrossVersion.full)
   val useKindProjector = (_: Project).settings(addCompilerPlugin(kindProjector))
+
+  def globalDependencyOverrides = (
+    UnivEq.univeq ++
+    UnivEq.scalaz
+  ).allModuleIds
 
   val updateExclusions: ModuleFilter = {
     def matchesRegex(r: String) = new PatternFilter(r.r.pattern)
