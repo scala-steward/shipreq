@@ -13,7 +13,7 @@ object Dependencies {
     // Note: when changing this, make sure to also change:
     //   - :/Docker/dev-build_env/Dockerfile (the aur/jdk11-graalvm-bin git sha)
     //   - :/Docker/shipreq-base/Dockerfile
-    val ver = "21.0.0.2"
+    val ver = "21.2.0"
   }
 
   object Scala {

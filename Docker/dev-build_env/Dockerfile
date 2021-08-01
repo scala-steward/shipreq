@@ -72,7 +72,7 @@ RUN sed -i 's/^COMPRESSXZ/#COMPRESSXZ/' /etc/makepkg.conf \
 #   - :/Code/project/Dependencies.scala
 #   - :/Docker/shipreq-base/Dockerfile
 RUN n=jdk11-graalvm-bin \
- && gitsha=cafa4a24cde0c7f319f8514c0a7b0efe9ef5dbac \
+ && gitsha=e647c333799df416782f9686ca64eb0dbff0f94b \
  && cd /tmp \
  && git clone https://aur.archlinux.org/$n.git \
  && cd $n \
