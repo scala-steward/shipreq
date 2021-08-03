@@ -1,6 +1,6 @@
 package shipreq.base.util
 
-import scalaz.Monad
+import cats.Monad
 
 /** Either monad + state monad stack.
   *
@@ -21,7 +21,7 @@ object EitherState {
       Instance(F.map(self)(f))
 
     def flatMap[B](f: A => Self[B])(implicit F: Monad[Underlying[S, E, *]]): Self[B] =
-      Instance(F.bind(self)(f(_).self))
+      Instance(F.flatMap(self)(f(_).self))
 
     def flatTap[B](f: A => Self[B])(implicit F: Monad[Underlying[S, E, *]]): Self[A] =
       for {
@@ -86,7 +86,7 @@ object EitherState {
     implicit val eitherStateUnderlyingMonad: Monad[Underlying] =
       new Monad[Underlying] {
 
-        override def point[A](a: => A): Underlying[A] =
+        override def pure[A](a: A): Underlying[A] =
           s => Trampoline.delay((s, \/-(a)))
 
         override def map[A, B](fa: Underlying[A])(f: A => B): Underlying[B] =
@@ -95,25 +95,31 @@ object EitherState {
             (result1._1, b)
           }
 
-        override def bind[A, B](fa: Underlying[A])(f: A => Underlying[B]): Underlying[B] =
+        override def flatMap[A, B](fa: Underlying[A])(f: A => Underlying[B]): Underlying[B] =
           s => Trampoline.suspend(fa(s).flatMap { result1 =>
             result1._2 match {
               case \/-(a)    => f(a)(result1._1)
               case e@ -\/(_) => Trampoline.pure((result1._1, e))
             }
           })
+
+        override def tailRecM[A, B](a0: A)(f: A => Underlying[Either[A, B]]): Underlying[B] =
+          ???
       }
 
     implicit val eitherStateMonad: Monad[Instance] =
       new Monad[Instance] {
-        override def point[A](a: => A): Instance[A] =
-          self.point(a)
+        override def pure[A](a: A): Instance[A] =
+          self.pure(a)
 
         override def map[A, B](fa: Instance[A])(f: A => B): Instance[B] =
           fa.map(f)
 
-        override def bind[A, B](fa: Instance[A])(f: A => Instance[B]): Instance[B] =
+        override def flatMap[A, B](fa: Instance[A])(f: A => Instance[B]): Instance[B] =
           fa.flatMap(f)
+
+        override def tailRecM[A, B](a: A)(f: A => Instance[Either[A,B]]): Instance[B] =
+          ???
       }
 
     def apply[A](f: S => (S, E \/ A)): Instance[A] =

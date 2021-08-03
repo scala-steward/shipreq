@@ -7,9 +7,34 @@ import scala.reflect.ClassTag
 
 abstract class PredefShared
   extends PredefScala
-     with japgolly.microlibs.disjunction.Exports
+    //  with japgolly.microlibs.disjunction.Exports
      with japgolly.univeq.UnivEqCats
      with japgolly.univeq.UnivEqExports {
+
+
+// ===================================================================================================================
+// TODO: Fix japgolly.microlibs.disjunction.Exports
+  final type -\/[+A] = scala.util.Left[A, Nothing]
+  final type \/-[+A] = scala.util.Right[Nothing, A]
+
+  @scala.annotation.showAsInfix
+  final type \/[+A, +B] = Either[A, B]
+
+  @inline final val \/  = japgolly.microlibs.disjunction.Exports.\/
+  @inline final val -\/ = Left
+  @inline final val \/- = Right
+
+  @inline final implicit def implicitIgnoreLeftTypeOnRight[A, B, R](r: Right[A, R]): Right[B, R] =
+    r.asInstanceOf[Right[B, R]]
+
+  @inline final implicit def implicitIgnoreRightTypeOnLeft[A, B, L](r: Left[L, A]): Left[L, B] =
+    r.asInstanceOf[Left[L, B]]
+
+  @inline final implicit def implicitDisjEitherOps[E, A](a: Either[E, A]): japgolly.microlibs.disjunction.Exports.EitherOps[E, A] =
+    new japgolly.microlibs.disjunction.Exports.EitherOps(a)
+// ===================================================================================================================
+
+
 
   final type elidable = scala.annotation.elidable
   final val  elidable = scala.annotation.elidable
@@ -38,19 +63,23 @@ abstract class PredefShared
 
   @inline
   @scala.annotation.nowarn("cat=unused")
-  final implicit def UnivEqObjExt(self: UnivEq.type) =
+  final implicit def UnivEqObjExt(self: UnivEq.type): PredefShared.UnivEqObjExt =
     new PredefShared.UnivEqObjExt(UnivEq)
 
   @inline
-  final implicit def predefExtInt(a: Int) =
+  final implicit def predefExtAny[A](a: A): PredefShared.ExtAny[A] =
+    new PredefShared.ExtAny(a)
+
+  @inline
+  final implicit def predefExtInt(a: Int): PredefShared.ExtInt =
     new PredefShared.ExtInt(a)
 
   @inline
-  final implicit def predefExtLong(a: Long) =
+  final implicit def predefExtLong(a: Long): PredefShared.ExtLong =
     new PredefShared.ExtLong(a)
 
   @inline
-  final implicit def predefExtAnyRef[A <: AnyRef](a: A) =
+  final implicit def predefExtAnyRef[A <: AnyRef](a: A): PredefShared.ExtAnyRef[A] =
     new PredefShared.ExtAnyRef(a)
 
   implicit def predefExtString(a: String): AnyVal with PredefShared.ExtString
@@ -87,6 +116,11 @@ object PredefShared {
     @scala.annotation.nowarn("cat=unused")
     @inline def emptyMultimap[K: UnivEq, L[_] : MultiValues, V](implicit ev: L[V] =:!= immutable.Set[V]) =
       Multimap.empty[K, L, V]
+  }
+
+  final class ExtAny[A](private val a: A) extends AnyVal {
+    @inline def ===(rhs: A)(implicit e: cats.Eq[A]): Boolean = e.eqv(a, rhs)
+    @inline def =!=(rhs: A)(implicit e: cats.Eq[A]): Boolean = e.neqv(a, rhs)
   }
 
   final class ExtInt(private val a: Int) extends AnyVal {
