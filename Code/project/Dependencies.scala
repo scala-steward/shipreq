@@ -17,6 +17,15 @@ object Dependencies {
     val free = mm("cats-free")
   }
 
+  object CatsEffect {
+    private val mm = MultiModule.jvmAndJs("org.typelevel", "2.5.2")
+    val core    = mm("cats-effect")
+    // val kernal  = mm("cats-effect-kernel")
+    val laws    = mm("cats-effect-laws")
+    // val std     = mm("cats-effect-std")
+    // val testkit = mm("cats-effect-testkit")
+  }
+
   object Circe {
     private val mm = MultiModule.jvmAndJs("io.circe", "0.14.1")
     val core    = mm("circe-core")
@@ -109,7 +118,7 @@ object Dependencies {
   }
 
   object Monocle {
-    private val mm = MultiModule.jvmAndJs("dev.optics", "3.0")
+    private val mm = MultiModule.jvmAndJs("dev.optics", "3.0.0")
     val core   = mm("monocle-core")
     val macros = mm("monocle-macro") ++ core
   }
@@ -210,7 +219,6 @@ object Dependencies {
   val shapeless   = jvmAndJs("com.chuusai",                      "shapeless",   "2.3.7")
   val utest       = jvmAndJs("com.github.japgolly.fork",         "utest",       "1.0.3")
 
-  val catsEffect   = jvmOnly("org.typelevel"              %% "cats-effect"           % "2.5.2")
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val commonsText  = jvmOnly("org.apache.commons"          % "commons-text"          % "1.9")
   val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "7.12.0")

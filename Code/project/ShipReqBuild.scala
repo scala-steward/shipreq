@@ -57,7 +57,7 @@ object ShipReqBuild {
         (Circe.main % Provided) ++
         testScope(utest ++ Nyaya.test ++ Microlibs.testUtil))
       .depsForJvm(
-        SLF4J.api ++ Logback.withPlugins ++ scalaLogging ++ clearConfig ++ catsEffect)
+        SLF4J.api ++ Logback.withPlugins ++ scalaLogging ++ clearConfig ++ CatsEffect.core)
 
   lazy val baseOps =
     project
