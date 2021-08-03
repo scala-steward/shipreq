@@ -348,7 +348,7 @@ object NonEmptyArraySeq extends NonEmptyArraySeqImplicits0 {
   implicit def semigroup[A]: Semigroup[NonEmptyArraySeq[A]] =
     _ ++ _
 
-//  implicit def traverse1: Traverse1[NonEmptyArraySeq] = new Traverse1[NonEmptyArraySeq] {
+//  implicit def nonEmptyTraverse: NonEmptyTraverse[NonEmptyArraySeq] = new NonEmptyTraverse[NonEmptyArraySeq] {
 //    override def foldLeft[A, B](fa: NonEmptyArraySeq[A], z: B)(f: (B, A) => B): B =
 //      fa.foldLeft(z)(f)
 //
@@ -364,7 +364,7 @@ object NonEmptyArraySeq extends NonEmptyArraySeqImplicits0 {
 //    override def map[A, B](fa: NonEmptyArraySeq[A])(f: A => B): NonEmptyArraySeq[B] =
 //      fa map f
 //
-//    override def traverse1Impl[G[_], A, B](fa: NonEmptyArraySeq[A])(f: A => G[B])(implicit ap: Apply[G]): G[NonEmptyArraySeq[B]] = {
+//    override def nonEmptyTraverseImpl[G[_], A, B](fa: NonEmptyArraySeq[A])(f: A => G[B])(implicit ap: Apply[G]): G[NonEmptyArraySeq[B]] = {
 //      val gh = f(fa.head)
 //      if (fa.tail.isEmpty)
 //        ap.map(gh)(one)

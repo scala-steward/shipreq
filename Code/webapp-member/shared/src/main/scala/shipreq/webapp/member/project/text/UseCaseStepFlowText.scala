@@ -1,7 +1,7 @@
 package shipreq.webapp.member.project.text
 
+import cats.{Applicative, Functor, Monoid}
 import org.parboiled2._
-import scalaz.{Applicative, Functor, Monoid}
 import shipreq.base.util.{Backwards, Direction, Forwards}
 import shipreq.webapp.member.project.data.derivation.UseCaseStepLabelLookup
 import shipreq.webapp.member.project.data.{ReqTypePos, UseCaseStepId}
@@ -168,12 +168,12 @@ object UseCaseStepFlowText {
   }
 
   def separateTextAndFlow[T, S](es: IterableOnce[Elem[T, S]])(implicit M: Monoid[T]): TextAndFlow[T, Vector[S]] = {
-    var t = M.zero
+    var t = M.empty
     var fwd = Vector.empty[S]
     var bck = Vector.empty[S]
     var dir: Direction = null
     es.iterator foreach {
-      case Elem.Text(text) => t = M.append(t, text); dir = null
+      case Elem.Text(text) => t = M.combine(t, text); dir = null
       case Elem.Arrow(d)   => dir = d
       case Elem.Step(step) => dir match {
         case Forwards  => fwd :+= step

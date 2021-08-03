@@ -1,7 +1,7 @@
 package shipreq.webapp.member.feature.autocomplete
 
 import japgolly.scalajs.react._
-import japgolly.scalajs.react.internal.JsUtil
+import japgolly.scalajs.react.util.JsUtil
 import org.scalajs.dom.ext.KeyCode
 import org.scalajs.dom.html
 import shipreq.webapp.base.util.{KeyHandler, KeyHandlers}

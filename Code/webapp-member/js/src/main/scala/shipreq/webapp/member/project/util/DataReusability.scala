@@ -1,8 +1,8 @@
 package shipreq.webapp.member.project.util
 
+import cats.Eq
 import japgolly.scalajs.react._
 import java.time.Duration
-import scalaz.Equal
 import shipreq.base.util._
 import shipreq.webapp.base.config.AssetManifest
 import shipreq.webapp.base.util._
@@ -36,8 +36,8 @@ abstract class DataReusability extends BaseReusability {
   implicit def reusabilityCodeBlockDetail: Reusability[CodeBlockDetail] =
     Reusability.byRefOrUnivEq
 
-  final def reusabilityByRefOrEqual[A <: AnyRef](implicit e: Equal[A]): Reusability[A] =
-    Reusability.byRef || Reusability(e.equal)
+  final def reusabilityByRefOrEq[A <: AnyRef](implicit e: Eq[A]): Reusability[A] =
+    Reusability.byRef || Reusability(e.eqv)
 
   implicit def freeOption[A >: Null : Reusability]: Reusability[FreeOption[A]] =
     Reusability((x, y) =>
@@ -178,7 +178,7 @@ abstract class DataReusability extends BaseReusability {
     Reusability.byUnivEq
 
   implicit def reusabilityCustomFields: Reusability[FieldSet.CustomFields] =
-    reusabilityByRefOrEqual
+    reusabilityByRefOrEq
 
   implicit def reusabilityFilterValid: Reusability[Filter.Valid] =
     Reusability.byUnivEq

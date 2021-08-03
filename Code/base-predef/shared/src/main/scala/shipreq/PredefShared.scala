@@ -30,6 +30,15 @@ final class EitherOps[E, A](private val e: Either[E, A]) extends AnyVal {
       case Right(a) => a :: Nil
       case Left(_)  => Nil
     }
+
+  @inline def castLeft() = e.asInstanceOf[Left[E, Nothing]]
+  @inline def castRight() = e.asInstanceOf[Right[Nothing, A]]
+
+  def bimap[F, B](f: E => F, g: A => B): Either[F, B] =
+    if (e.isRight)
+      Right(g(castRight().value))
+    else
+      Left(f(castLeft().value))
 }
 // ===================================================================================================================
 

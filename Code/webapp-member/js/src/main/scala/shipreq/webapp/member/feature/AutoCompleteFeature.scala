@@ -89,7 +89,7 @@ object AutoCompleteFeature extends autocomplete.Implicits {
 
       final val editorDom: CallbackOption[html.TextArea] =
         for {
-          r <- editorRef.get
+          r <- editorRef.get.asCBO
           n <- r.withEffectsPure.getDOMNode.map(_.toElement).asCBO
         } yield n.domCast[html.TextArea]
 

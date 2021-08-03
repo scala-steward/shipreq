@@ -3,7 +3,6 @@ package shipreq.webapp.member.project.text
 import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.utils.{ConciseIntSetFormat, Memo}
-import nyaya.util.Multimap
 import scala.collection.immutable.SortedSet
 import shipreq.base.util.SafeStringOps._
 import shipreq.base.util._

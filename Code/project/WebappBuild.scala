@@ -71,7 +71,7 @@ object WebappBuild {
       .configureJs(Common.jsSettings(NoTests))
       .dependsOn(baseUtil)
       .depsForBoth(
-        boopickle ++ Monocle.core ++
+        boopickle ++ Microlibs.compileTime ++ Monocle.core ++
         providedScope(Scala.library) ++
         testScope(utest))
       .configureJvm(_.dependsOn(baseDb))
