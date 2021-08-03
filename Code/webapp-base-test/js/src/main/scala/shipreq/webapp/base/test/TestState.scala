@@ -17,9 +17,9 @@ import teststate.run.Report.AssertionSettings
 object TestState
  extends teststate.Exports
     with teststate.domzipper.sizzle.Exports
+    with teststate.ExtCats
     with teststate.ExtNyaya
     with teststate.ExtScalaJsReact
-    with teststate.ExtScalaz
     with Debug.Implicits {
 
   type Id[A] = A
