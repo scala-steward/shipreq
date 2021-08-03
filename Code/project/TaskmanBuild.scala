@@ -37,7 +37,7 @@ object TaskmanBuild {
     project
       .in(file("taskman-server-logic"))
       .configure(Common.jvmSettings)
-      .deps(Logback.withPlugins ++ testScope(utest ++ scalaCheck))
+      .deps(Logback.withPlugins ++ scalaz ++ testScope(utest ++ scalaCheck))
       .dependsOn(taskmanApiLogic)
       .dependsOn(baseTestJvm % Test)
 

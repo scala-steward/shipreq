@@ -232,6 +232,7 @@ object Dependencies {
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.15.4")
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.4")
   val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.3.0")
+  val scalaz       = jvmOnly("org.scalaz"                 %% "scalaz-core"           % "7.2.33")
 
   val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.10.0-RC1")
   val scalajsDom       = jsOnly("org.scala-js"                          %% "scalajs-dom"       % "1.1.0")

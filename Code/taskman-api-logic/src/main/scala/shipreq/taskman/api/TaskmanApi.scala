@@ -1,8 +1,7 @@
 package shipreq.taskman.api
 
-import scalaz.syntax.monad.ToBindOps
-import scalaz.syntax.traverse._
-import scalaz.{Applicative, Monad, Traverse, ~>}
+import cats.syntax.all._
+import cats.{Applicative, Monad, Traverse, ~>}
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
 

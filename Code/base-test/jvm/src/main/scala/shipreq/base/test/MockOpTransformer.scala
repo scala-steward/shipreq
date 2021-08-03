@@ -93,9 +93,9 @@ abstract class MockOpTransformer[Op[_], I[_]] extends (Op ~> I) with MockOpTrans
   }
 }
 
-abstract class MockOpTransformerA[Op[_], I[_]: Applicative] extends MockOpTransformer[Op, I] {
+abstract class MockOpTransformerA[Op[_], I[_]](implicit I: Applicative[I]) extends MockOpTransformer[Op, I] {
 
-  def io[A](a: => A): I[A] = implicitly[Applicative[I]].point(a)
+  def io[A](a: => A): I[A] = I.map(I.unit)(_ => a)
 
   final override def trans[A] = a => io(cotrans(a))
 
