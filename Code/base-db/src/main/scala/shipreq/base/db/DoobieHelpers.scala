@@ -1,6 +1,6 @@
 package shipreq.base.db
 
-import cats.effect.syntax.all._
+import cats.effect.syntax.bracket._
 import cats.free.Free
 import cats.implicits._
 import doobie._
@@ -50,7 +50,7 @@ object DoobieHelpers {
           sp     <- C.setSavepoint
           result <- self.attemptSql
           _      <- C.rollback(sp).whenA(result.isLeft)
-        } yield \/.fromEither(result)
+        } yield result
       inner.inTransaction(true)
     }
 

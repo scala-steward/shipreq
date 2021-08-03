@@ -1,8 +1,8 @@
 package shipreq.base.db
 
+import cats.Monad
 import javax.sql.DataSource
 import org.flywaydb.core.Flyway
-import scalaz.Monad
 
 object SchemaMigrator {
 
