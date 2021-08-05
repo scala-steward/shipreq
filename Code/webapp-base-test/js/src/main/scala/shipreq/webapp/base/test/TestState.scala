@@ -63,6 +63,8 @@ object TestState
 
   type Id[A] = A
 
+  type Eq[A] = cats.Eq[A]
+
   type DomZipperTo[A] = DomZipperJsF[Id, A]
 
   implicit def BaseTestUtilOpsOption[A](a: Option[A]) =

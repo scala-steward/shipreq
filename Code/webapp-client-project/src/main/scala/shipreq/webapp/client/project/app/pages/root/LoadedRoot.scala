@@ -429,7 +429,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitData,
 
     private val setProjectNameIO: String => Callback = {
       newName => {
-        def close = $.modState(State.projectName set None)
+        def close = $.modState(State.projectName replace None)
         def save = projectNameAF(sspProjectNameSet(newName).rightFlatTap(_ => close.asAsyncCallback))
         pxProject.toCallback >>= (p => if (p.name ==* newName) close else save)
       }

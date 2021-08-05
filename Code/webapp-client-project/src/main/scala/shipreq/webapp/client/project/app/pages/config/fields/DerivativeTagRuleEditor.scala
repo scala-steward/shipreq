@@ -4,7 +4,6 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
-import nyaya.util.Multimap
 import org.scalajs.dom.html
 import scalacss.ScalaCssReact._
 import shipreq.base.util.Util.ShipReqOpsForArraySeq
@@ -357,7 +356,7 @@ private[fields] object DerivativeTagRuleEditor {
 
     override val autoCompleteCtx: CallbackOption[AutoCompleteCtx] =
       for {
-        r <- editorRef.get
+        r <- editorRef.get.asCBO
         h <- CallbackOption.option(r.getDOMNode.toHtml)
       } yield AutoCompleteCtx(pxAutoComplete.value(), h.domCast[html.TextArea])
 

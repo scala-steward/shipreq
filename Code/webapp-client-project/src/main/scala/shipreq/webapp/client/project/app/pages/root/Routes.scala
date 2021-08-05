@@ -35,7 +35,7 @@ object Routes {
     }
     object ReqDetail {
       val stringPrism: Prism[String, ReqDetail] =
-        ExternalPubid.StringPrism ^<-> GenIso.fields[ReqDetail].reverse
+        ExternalPubid.StringPrism andThen GenIso.fields[ReqDetail].reverse
     }
 
     implicit def equality: UnivEq[Page] = UnivEq.derive

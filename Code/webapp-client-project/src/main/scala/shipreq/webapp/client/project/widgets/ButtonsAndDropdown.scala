@@ -228,7 +228,7 @@ object ButtonsAndDropdown {
         }
 
       val fixMiddleButtons: Callback =
-        ref.get.map { parent =>
+        ref.get.asCBO.map { parent =>
           // Stupid fucking React won't let you specify style values with "!important"
           for (b <- parent.querySelectorAll("." + middleClass).iterator) {
             val s = b.domAsHtml.style

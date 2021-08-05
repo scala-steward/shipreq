@@ -40,7 +40,7 @@ object CharWidthsGen {
     }
 
     def printWidths: Callback =
-      for (root <- ref.get) yield {
+      for (root <- ref.get.asCBO) yield {
 
         def len(e: Element, control: Double): Double = {
           val l = (e.getBoundingClientRect().width - control).max(0)

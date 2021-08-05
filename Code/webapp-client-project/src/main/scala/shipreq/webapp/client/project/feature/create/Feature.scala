@@ -174,7 +174,7 @@ object Feature {
 
       private def _startEditor(field: FK): Editor[field.Args, field.Value] = {
         val stateAccess: StateAccessPure[State.ForEditor[Nothing, Any]] =
-          rowAccess.value.zoomStateL(State.ForFields.untyped ^|-> Optics.mapValue(field))
+          rowAccess.value.zoomStateL(State.ForFields.untyped andThen Optics.mapValue[FieldKey, Editor[Nothing, Any]](field))
 
         val ctx = NewEditor.Ctx[field.Args, field.Value](field.cast2(stateAccess))
         rowEditors(field)(ctx)
@@ -217,7 +217,7 @@ object Feature {
 
         val stateAccess2 =
           Reusable.ap(stateAccess, rrow)((stateAccess, row) =>
-            stateAccess.zoomStateL(State.ForProject.untyped ^|-> Optics.mapValueEmpty(row, State.ForFields.empty)(_.isEmpty)))
+            stateAccess.zoomStateL(State.ForProject.untyped andThen Optics.mapValueEmpty(row, State.ForFields.empty)(_.isEmpty)))
 
         ForRow[row.FieldKey, row.Cmd](
           stateAccess2,

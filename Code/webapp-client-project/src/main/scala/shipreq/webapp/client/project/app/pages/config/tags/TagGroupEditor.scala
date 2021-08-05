@@ -116,7 +116,7 @@ private[tags] object TagGroupEditor {
       )
 
     val exclusive: Lens[State, On] =
-      exclusivity ^<-> On.isoWhen(Exclusive)
+      exclusivity andThen On.isoWhen(Exclusive)
   }
 
   private def buildNewRels(sourceId   : Option[TagGroupId],

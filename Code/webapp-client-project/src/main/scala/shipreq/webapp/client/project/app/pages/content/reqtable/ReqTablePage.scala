@@ -153,7 +153,7 @@ object ReqTablePage {
       for {
         o <- pxActiveOrder
         c <- pxColumnPlusAll
-      } yield sortCriteriaEditor.Props(o, modifyViewFn.map(m => o => m.modState(View.order set o)), c).render
+      } yield sortCriteriaEditor.Props(o, modifyViewFn.map(m => o => m.modState(View.order replace o)), c).render
 
     val pxSelectionCtrls: Px[SelectionCtrls.Props] =
       for {

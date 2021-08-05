@@ -3,7 +3,7 @@ package shipreq.webapp.client.project.feature.savedview
 import japgolly.scalajs.react.Reusability
 import monocle.Optional
 import monocle.macros.Lenses
-import monocle.std.option.pSome
+import monocle.std.option.some
 import shipreq.base.util.Valid
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.client.project.feature.EditorFeature
@@ -81,5 +81,5 @@ object State {
     Reusability.derive
 
   val manualView: Optional[State, View] =
-    view ^|-> ViewLogic.State.manualView ^<-? pSome
+    view andThen ViewLogic.State.manualView andThen some[View]
 }

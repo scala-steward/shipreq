@@ -76,13 +76,13 @@ object Worker extends HasLogger {
              |FAILED TO NOTIFY SUPPORT OF FAILED WORKER.
              |
              |Task:
-             |${f.td.toString.indent(indent)}
+             |${f.td.toString.indentLines(indent)}
              |
              |Notification error:
-             |${e.show.indent(indent)}
+             |${e.show.indentLines(indent)}
              |
              |Worker error:
-             |${f.err.show.indent(indent)}
+             |${f.err.show.indentLines(indent)}
            """.stripMargin.trim))
 
       def notifySupport(e: ArticulateError): Fx[Unit] =
@@ -99,13 +99,13 @@ object Worker extends HasLogger {
              |FAILED TO NOTIFY SUPPORT OF TASKMAN FAILURE. FUCK.
              |
              |Task:
-             |${f.td.toString.indent(indent)}
+             |${f.td.toString.indentLines(indent)}
              |
              |Notification error:
-             |${e.show.indent(indent)}
+             |${e.show.indentLines(indent)}
              |
              |Original error:
-             |${f.err.show.indent(indent)}
+             |${f.err.show.indentLines(indent)}
            """.stripMargin.trim))
 
       Fx.safe(raise(emails.taskmanErrorEmail(f.when, f.err, f.td), Support.Priority.Urgent))

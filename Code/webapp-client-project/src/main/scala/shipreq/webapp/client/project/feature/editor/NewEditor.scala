@@ -4,9 +4,9 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
-import scalaz.~~>
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
+import shipreq.base.util.fp.~~>
 import shipreq.webapp.base.feature._
 import shipreq.webapp.base.feature.clipboard.ClipboardData
 import shipreq.webapp.base.lib.ConfirmJs
@@ -44,8 +44,8 @@ object NewEditor {
   }
 
   object CreationArgs {
-    val onClose = hooks ^|-> Hooks.onClose
-    val onStart = hooks ^|-> Hooks.onStart
+    val onClose = hooks andThen Hooks.onClose
+    val onStart = hooks andThen Hooks.onStart
 
     implicit val reusability: Reusability[CreationArgs] =
       Reusability.derive
@@ -282,7 +282,7 @@ object NewEditor {
       final type EditorImpl = Internal.EditorImpl[Args, Change]
       final type Init       = Internal.Init[Args, Change]
       final type InitFn     = InternalCtx[Args, Change] => Init
-      final type SetStateFn = japgolly.scalajs.react.SetStateFn[CallbackTo, State.ForEditor[Args, Change]]
+      final type SetStateFn = SetStateFnPure[State.ForEditor[Args, Change]]
     }
 
     def newPropsMemo[I, P](f: I => P)(implicit r: Reusability[I]): I => P =
@@ -851,7 +851,7 @@ object NewEditor {
       object CodeGroupTitle extends Base(RichTextEditor.CodeGroupTitle) {
         def apply(id: ReqCodeGroupId, pid: PreviewId): InitFn = start(
           cmd            = UpdateContentCmd.SetCodeGroupTitle(id, _),
-          initialValueCB = getCodeGroup(id).map(_.title).widen,
+          initialValueCB = getCodeGroup(id).map(_.title),
           pid            = pid,
           reqId          = None)
       }
