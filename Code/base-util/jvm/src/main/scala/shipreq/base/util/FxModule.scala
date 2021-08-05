@@ -1,11 +1,10 @@
 package shipreq.base.util
 
 import cats._
-import cats.effect.IO
+import cats.effect.{IO, Sync}
 import java.time.{Duration, Instant}
 import scala.collection.Factory
 import scala.concurrent.blocking
-import cats.effect.Sync
 
 /**
   * The chosen target for algebra interpretation.
