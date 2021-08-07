@@ -50,10 +50,10 @@ addCommandAlias("js",
   "webappServer/webappPrepare")
 
 addCommandAlias("up",
-  ";webappServer/jetty:stop ;webappServer/jetty:start")
+  ";webappServer/Jetty/stop ;webappServer/Jetty/start")
 
 addCommandAlias("d",
-  "webappServer/jetty:stop")
+  "webappServer/Jetty/stop")
 
 addCommandAlias("jsSizes",
   ";jsSizesFast ;jsSizesFull")
