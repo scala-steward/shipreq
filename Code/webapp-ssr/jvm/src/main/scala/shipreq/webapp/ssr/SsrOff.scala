@@ -6,7 +6,7 @@ import shipreq.base.util.{Permission, Url}
 final class SsrOff[F[_]]()(implicit F: Applicative[F]) extends SsrAlgebra[F] {
 
   override def prepare(b: Url.Absolute.Base, p: Permission) =
-    F.point(SsrOff.prepared)
+    F.pure(SsrOff.prepared)
 }
 
 object SsrOff {

@@ -143,8 +143,6 @@ object ProjectSpaLogic extends StrictLogging {
 
     val OnConnect = Monads.FDisj[F, ConnectRejection]
 
-    val fUnit = F.pure(())
-
     import trace.Span
 
     def getSpan(static: WebSocketStatic): Span =
@@ -270,7 +268,7 @@ object ProjectSpaLogic extends StrictLogging {
       private def pushEvents(span: Span, push: BinaryData => F[Unit], es: VerifiedEvent.NonEmptySeq): F[Unit] =
         trace.newSubSpan("push", span) { _ =>
           for {
-            msgBin <- F point webSocketHelper.protocolSC.codec.encode(-\/(es))
+            msgBin <- F pure webSocketHelper.protocolSC.codec.encode(-\/(es))
             _      <- metrics.projectSpaWebSocketPush(msgBin.length)
             _      <- push(msgBin)
           } yield ()
@@ -285,7 +283,7 @@ object ProjectSpaLogic extends StrictLogging {
                            stateO : Option[WebSocketState[F]]) = {
 
         val main: F[Unit] =
-          stateO.flatMap(_.sub).fold(fUnit)(_.unsubscribe)
+          stateO.flatMap(_.sub).fold(F.unit)(_.unsubscribe)
 
         staticO match {
           case Some(static) =>
@@ -339,7 +337,7 @@ object ProjectSpaLogic extends StrictLogging {
             val err = MsgError.SessionExpired
             logError(err, () => "") >> onError(err)
           } else
-            fUnit
+            F.unit
         }
 
       override def onMessage(static         : WebSocketStatic,
@@ -445,7 +443,7 @@ object ProjectSpaLogic extends StrictLogging {
         (userId, err) =>
           F.delay {
             if (submitted)
-              F.pure(())
+              F.unit
             else {
               val nameKey = "error.name"
               val msgKey  = "error.message"
@@ -527,7 +525,7 @@ object ProjectSpaLogic extends StrictLogging {
             result <- readDb(cache getOrElse ProjectAndOrd.empty)
             _      <- result match {
                         case \/-(\/-(d)) => writeRedis(d)
-                        case _           => fUnit
+                        case _           => F.unit
                       }
           } yield result
         }

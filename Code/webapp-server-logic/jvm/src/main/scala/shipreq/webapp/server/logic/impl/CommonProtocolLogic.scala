@@ -41,7 +41,8 @@ object CommonProtocolLogic extends HasLogger {
     new CommonProtocolLogic[F] {
       import CommonProtocols.Metadata
 
-      private[this] val loginFail: F[LoginResult] = {val x = (Deny, None); F pure x}
+      private[this] val loginFail: F[LoginResult] =
+        F.pure((Deny, None))
 
       private implicit def userIdToTaskman(userId: UserId): TaskmanUserId =
         TaskmanUserId(userId.value)

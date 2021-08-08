@@ -83,4 +83,9 @@ object CatsExtra {
           f <- ff
         } yield f(a)
     }
+
+  @inline final implicit class ApplicativeDelay[F[_]](private val f: Applicative[F]) extends AnyVal {
+    def delay[A](a: => A): F[A] =
+      f.map(f.unit)(_ => a)
+  }
 }

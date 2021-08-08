@@ -159,7 +159,7 @@ object Redis extends StrictLogging {
     final def publishEvents(id: ProjectId, events: VerifiedEvent.Seq): F[Unit] =
       VerifiedEvent.NonEmptySeq.maybe(events) match {
         case Some(s) => publishEvents(id, s)
-        case None    => fUnit
+        case None    => F.unit
       }
 
     final def writeSnapshot(id         : ProjectId,
@@ -175,7 +175,6 @@ object Redis extends StrictLogging {
       }
 
     protected final val fTrue = F.pure(true)
-    protected final val fUnit = F.pure(())
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

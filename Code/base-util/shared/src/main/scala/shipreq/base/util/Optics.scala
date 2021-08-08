@@ -7,6 +7,7 @@ import monocle._
 import scala.collection.Factory
 import scala.collection.mutable.Builder
 import scala.reflect.ClassTag
+import shipreq.base.util.CatsExtra.ApplicativeDelay
 
 object Optics {
 
@@ -35,7 +36,7 @@ object Optics {
       override def modifyA[F[_]](f: A => F[B])(ma: M[A])(implicit F: Applicative[F]): F[N[B]] = {
         type C = Builder[B, N[B]]
         val add: F[B => C => C] = F.pure(b => _ += b)
-        var fc: F[C] = F.point(cbf.newBuilder)
+        var fc: F[C] = F.delay(cbf.newBuilder)
         for (a <- ma)
           fc = F.ap(F.ap(add)(f(a)))(fc)
         F.map(fc)(_.result())

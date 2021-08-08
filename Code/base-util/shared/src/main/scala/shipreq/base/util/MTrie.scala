@@ -106,7 +106,7 @@ object MTrie {
     implicit lazy val traverseTrie: Traverse[Trie] =
       new TraverseWithDefaults[Trie] {
         override def traverse[G[_], A, B](fa: Trie[A])(f: A => G[B])(implicit G: Applicative[G]): G[Trie[B]] = {
-          val z: G[Trie[B]] = G.point(Map.empty)
+          val z: G[Trie[B]] = G.pure(Map.empty)
           fa.foldLeft(z) { case (gtb, (k, n)) =>
             G.map2(gtb, n traverse f)(_.updated(k, _))
           }

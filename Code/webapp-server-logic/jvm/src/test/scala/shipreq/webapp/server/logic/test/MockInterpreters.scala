@@ -11,6 +11,7 @@ import java.time.{Duration, Instant}
 import shipreq.base.ops.Trace
 import shipreq.base.test.JsonTestUtil._
 import shipreq.base.test.SyncEffect
+import shipreq.base.util.CatsExtra.ApplicativeDelay
 import shipreq.base.util._
 import shipreq.taskman.api.{Task, TaskId, TaskStatus, TaskmanApi}
 import shipreq.webapp.base.config.AssetManifest
@@ -329,7 +330,8 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
 final class MockServer[F[_]]()(implicit F: Monad[F], se: SyncEffect[F]) extends Server.Algebra[F] {
   @volatile var clock = Instant.now()
 
-  override val now = F.point(clock)
+  override val now =
+    F.delay(clock)
 
   def incTime(d: Duration): Unit =
     clock = clock.plus(d)
@@ -359,7 +361,7 @@ final class MockServer[F[_]]()(implicit F: Monad[F], se: SyncEffect[F]) extends 
     clock = clock plus durationBorder(w)(v)
 
   var onDelay = List.empty[() => Unit]
-  override def delay[A](f: F[A], d: Duration) = F.point[A] {
+  override def delay[A](f: F[A], d: Duration) = F.delay[A] {
     clock = clock plus d
     onDelay match {
       case Nil    => ()
@@ -369,7 +371,7 @@ final class MockServer[F[_]]()(implicit F: Monad[F], se: SyncEffect[F]) extends 
   }
 
   var forked = Vector.empty[F[_]]
-  override def fork[A](f: F[A]) = F.point[Unit] {
+  override def fork[A](f: F[A]) = F.delay[Unit] {
     forked :+= f
   }
   def runForked(): Unit = {
@@ -378,7 +380,7 @@ final class MockServer[F[_]]()(implicit F: Monad[F], se: SyncEffect[F]) extends 
   }
 
   var nextClientIP = Option.empty[IP]
-  override val clientIP = F.point(nextClientIP)
+  override val clientIP = F.delay(nextClientIP)
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

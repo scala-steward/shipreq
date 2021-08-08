@@ -4,6 +4,7 @@ import cats.syntax.all._
 import cats.{Applicative, Monad}
 import java.util.concurrent.ConcurrentHashMap
 import monocle.macros.Lenses
+import shipreq.base.util.CatsExtra.ApplicativeDelay
 import shipreq.base.util.FreeOption.Implicits._
 import shipreq.base.util._
 
@@ -40,7 +41,7 @@ object Store {
                                                            (implicit F : Monad[F]): F[E \/ OK] =
       storeMod(key)(tryQuick)
         .flatMap(quickWorked(_) match {
-          case ok: \/-[OK] => F pure ok
+          case ok @ \/-(_) => F pure ok
           case -\/(fea) => fea flatMap {
             case \/-(a) =>
               storeModT(key)(fo => {
@@ -74,19 +75,19 @@ object Store {
                                                      (implicit F: Applicative[F]): Algebra[F, K, V] =
       new Algebra[F, K, V] {
         override val storeKeyCount: F[Int] =
-          F point map.size()
+          F delay map.size()
 
         override def storeGet(key: K): F[Option[V]] =
-          F point Option(map.get(key))
+          F delay Option(map.get(key))
 
         override def storeMod(key: K)(f: FreeOption[V] => FreeOption[V]): F[Option[V]] =
-          F point Option(map.compute(key, (_, v) => f(FreeOption(v)).getOrNull))
+          F delay Option(map.compute(key, (_, v) => f(FreeOption(v)).getOrNull))
 
         override def storeModSet(key: K)(f: FreeOption[V] => V): F[V] =
-          F point map.compute(key, (_, v) => f(FreeOption(v)))
+          F delay map.compute(key, (_, v) => f(FreeOption(v)))
 
         override def storeModIfPresent(key: K)(f: V => V): F[Option[V]] =
-          F point Option(map.computeIfPresent(key, (_, v) => f(v)))
+          F delay Option(map.computeIfPresent(key, (_, v) => f(v)))
       }
   }
 

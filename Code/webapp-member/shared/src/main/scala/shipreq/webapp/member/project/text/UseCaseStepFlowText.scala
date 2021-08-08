@@ -19,14 +19,14 @@ object UseCaseStepFlowText {
       this match {
         case Elem.Text(text) => F.map(f(text))(Elem.Text(_))
         case Elem.Step(step) => F.map(g(step))(Elem.Step(_))
-        case a: Elem.Arrow   => F.point(a)
+        case a: Elem.Arrow   => F.pure(a)
       }
 
     final def mapT[F[_], TT, SS >: S](f: T => F[TT])(implicit F: Applicative[F]): F[Elem[TT, SS]] =
-      bimap[F, TT, SS](f, F.point(_))
+      bimap[F, TT, SS](f, F.pure(_))
 
     final def mapS[F[_], TT >: T, SS](f: S => F[SS])(implicit F: Applicative[F]): F[Elem[TT, SS]] =
-      bimap[F, TT, SS](F.point(_), f)
+      bimap[F, TT, SS](F.pure(_), f)
   }
 
   object Elem {

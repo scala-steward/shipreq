@@ -25,7 +25,7 @@ trait TaskmanApi[F[_]] { self =>
 
   def cfgPutBulk(kvs: (String, String)*)(implicit F: Monad[F]): F[Unit] =
     if (kvs.isEmpty)
-      F.pure(())
+      F.unit
     else
       kvs.iterator.map(kv => cfgPut(kv._1, kv._2)).reduce(_ >> _)
 

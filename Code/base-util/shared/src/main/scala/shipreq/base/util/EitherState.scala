@@ -1,6 +1,7 @@
 package shipreq.base.util
 
 import cats.Monad
+import shipreq.base.util.CatsExtra.ApplicativeDelay
 
 /** Either monad + state monad stack.
   *
@@ -132,7 +133,7 @@ object EitherState {
       either(\/-(a))
 
     def point[A](a: => A): Instance[A] =
-      Instance(eitherStateUnderlyingMonad.point(a))
+      Instance(eitherStateUnderlyingMonad.delay(a))
 
     def either[A](ea: E \/ A): Instance[A] =
       apply((_, ea))
