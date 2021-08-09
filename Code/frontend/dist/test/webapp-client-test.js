@@ -5943,7 +5943,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("if (typeof document.execCommand === \"undefined\") {\n  document.execCommand = function () {};\n}\n\n__webpack_require__(/*! es6-symbol/implement */ \"./node_modules/es6-symbol/implement.js\");\n\n//# sourceURL=webpack:///./src/js/node-test-polyfill.js?");
+eval("if (typeof document.execCommand === \"undefined\") {\n  document.execCommand = function () {};\n}\n\nwindow.alert = function (a) {\n  console.log(\"[window.alert] \".concat(JSON.stringify(a)));\n};\n\n__webpack_require__(/*! es6-symbol/implement */ \"./node_modules/es6-symbol/implement.js\");\n\n//# sourceURL=webpack:///./src/js/node-test-polyfill.js?");
 
 /***/ }),
 

@@ -9,6 +9,7 @@ import shipreq.base.util.Url
 import shipreq.webapp.base.config.AssetManifest
 import shipreq.webapp.base.config.Urls.PublicSpaRoute
 import shipreq.webapp.base.feature.{AsyncFeature, ErrorHandlingFeature}
+import shipreq.webapp.base.lib.AbstractLocation
 import shipreq.webapp.base.protocol.ajax._
 import shipreq.webapp.base.protocol.webstorage.AbstractWebStorage
 import shipreq.webapp.client.public.pages._
@@ -38,8 +39,10 @@ object PublicSpa {
 }
 
 final class PublicSpa(val initData: PublicSpaEntryPoint.InitData,
-                      ajax: AjaxClient.Binary,
-                      storage: AbstractWebStorage) {
+                      ajax        : AjaxClient.Binary,
+                      storage     : AbstractWebStorage,
+                      location    : AbstractLocation,
+                     ) {
   import PublicSpa._
 
   val Component = ScalaComponent.builder[Props]
@@ -65,7 +68,7 @@ final class PublicSpa(val initData: PublicSpaEntryPoint.InitData,
 
       def loginPage(redirectOnLogin: Option[Url.Relative]): VdomElement = {
         val ss = StateSnapshot.zoomL(State.login)(s).setStateVia($)
-        Login.Props(ss, awLogin, sspLogin, sspResetPassword1, redirectOnLogin, storage).render
+        Login.Props(ss, awLogin, sspLogin, sspResetPassword1, redirectOnLogin, storage, location).render
       }
 
       val content: VdomElement =

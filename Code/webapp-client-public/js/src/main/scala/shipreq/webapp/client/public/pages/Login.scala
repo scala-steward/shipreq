@@ -5,11 +5,12 @@ import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
-import org.scalajs.dom.{html, window}
+import org.scalajs.dom.html
 import shipreq.base.util._
 import shipreq.webapp.base.config._
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.feature.AsyncFeature
+import shipreq.webapp.base.lib.AbstractLocation
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.ajax.CommonProtocols.Login.Request
 import shipreq.webapp.base.protocol.webstorage._
@@ -27,7 +28,9 @@ object Login {
                          attemptLogin   : ServerSideProcInvoker[Request, ErrorMsg, Permission],
                          resetPassword  : ServerSideProcInvoker[Username \/ EmailAddr, ErrorMsg, Unit],
                          redirectOnLogin: Option[Url.Relative],
-                         localStorage   : AbstractWebStorage) {
+                         localStorage   : AbstractWebStorage,
+                         location       : AbstractLocation,
+                        ) {
 
     val inFlight: Boolean =
       AsyncFeature.isInProgress(state.value.async)
@@ -165,9 +168,8 @@ object Login {
         for {
           p <- $.props
           _ <- GlobalSettings.SessionExpired.remove(p.localStorage)
-        } yield {
-          window.location.href = p.redirectOnLogin.getOrElse(Urls.memberHome).relativeUrl
-        }
+          _ <- p.location.setHrefRelative(p.redirectOnLogin.getOrElse(Urls.memberHome))
+        } yield ()
       )
 
     private def onLoginFailure(user: Username \/ EmailAddr): Callback =

@@ -163,7 +163,7 @@ object WebappBuild {
     crossProject(JSPlatform, JVMPlatform)
       .in(file("webapp-client-public"))
       .configureJvm(Common.jvmSettings)
-      .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UsePhantomJs))
+      .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UseNode))
       .dependsOn(webappBase, webappBaseTest % Test)
       .jsSettings(Test / jsDependencies += ProvidedJS / "webapp-client-test.js")
 
