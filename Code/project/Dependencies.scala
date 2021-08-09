@@ -102,7 +102,7 @@ object Dependencies {
   }
 
   object Microlibs {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "3.1-SNAPSHOT")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "3.1")
     val adtMacros   = mm("adt-macros")
     val catsExt     = mm("cats-ext") ++ Cats.core
     val compileTime = mm("compile-time")
@@ -147,7 +147,7 @@ object Dependencies {
   }
 
   object React {
-    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "2.0.0-SNAPSHOT")
+    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "2.0.0-RC3")
     val cats    = mm("core-ext-cats")
     val core    = mm("core")
     val extra   = mm("extra")
