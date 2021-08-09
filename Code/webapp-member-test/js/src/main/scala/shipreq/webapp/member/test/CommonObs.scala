@@ -3,7 +3,6 @@ package shipreq.webapp.member.test
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.test._
 import org.scalajs.dom.html
-import shipreq.base.test.BaseTestUtil._
 import shipreq.base.util.{Invalid, Valid}
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.ui.semantic.JQuery
@@ -255,7 +254,7 @@ object CommonObs {
 
       final def change(fromTo: (String, String)): *.Actions =
         (doubleClick
-          +> editorValue.assert.contains(fromTo._1)
+          +> editorValue.assert.some(fromTo._1)
           >> setEditorValue(fromTo._2)
           >> commit
           ).group(s"Change $field field from '${fromTo._1}' to '${fromTo._2}'")
@@ -263,7 +262,7 @@ object CommonObs {
       final def change(editorFromTo: (String, String), textFromTo: (String, String)): *.Actions =
         (text.assert(textFromTo._1)
           +> doubleClick
-          +> editorValue.assert.contains(editorFromTo._1)
+          +> editorValue.assert.some(editorFromTo._1)
           >> setEditorValue(editorFromTo._2)
           >> commit
           +> text.assert(textFromTo._2)

@@ -71,7 +71,7 @@ object WebappBuild {
       .configureJs(Common.jsSettings(NoTests))
       .dependsOn(baseUtil)
       .depsForBoth(
-        boopickle ++ Monocle.core ++
+        boopickle ++ Microlibs.compileTime ++ Monocle.core ++
         providedScope(Scala.library) ++
         testScope(utest))
       .configureJvm(_.dependsOn(baseDb))
@@ -163,7 +163,7 @@ object WebappBuild {
     crossProject(JSPlatform, JVMPlatform)
       .in(file("webapp-client-public"))
       .configureJvm(Common.jvmSettings)
-      .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UsePhantomJs))
+      .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UseNode))
       .dependsOn(webappBase, webappBaseTest % Test)
       .jsSettings(Test / jsDependencies += ProvidedJS / "webapp-client-test.js")
 
@@ -355,7 +355,7 @@ object WebappBuild {
       .dependsOn(baseDb, baseOps, taskmanApi, webappServerLogicJVM)
       .dependsOn(webappMemberTestJVM % Test)
       .deps(
-        scalaz ++ Lift.webkit ++  scalaXml ++ SLF4J.jcl ++ commonsText ++ Nyaya.gen ++ Logback.withPlugins ++ JJWT.all ++
+        Lift.webkit ++  scalaXml ++ SLF4J.jcl ++ commonsText ++ Nyaya.gen ++ Logback.withPlugins ++ JJWT.all ++
         Prometheus.client ++ Prometheus.hotspot ++ Prometheus.servlet ++ Prometheus.logback ++ redisson ++
         JettyDep.http ++
         providedScope(JettyDep.javaxServletApi ++ JettyDep.javaxWebsocketApi ++ JettyDep.servlets) ++

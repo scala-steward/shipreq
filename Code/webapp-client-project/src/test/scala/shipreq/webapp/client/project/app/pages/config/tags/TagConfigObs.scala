@@ -30,7 +30,7 @@ object TagConfigObs {
 
     def text: String =
       lis
-        .flatMap(li => li.text :: li.subtree.map(_.text.indent("- ")).toList)
+        .flatMap(li => li.text :: li.subtree.map(_.text.indentLines("- ")).toList)
         .mkString("\n")
   }
 

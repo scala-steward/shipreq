@@ -11,6 +11,21 @@ object Dependencies {
     val testkit = mm("akka-testkit")
   }
 
+  object Cats {
+    private val mm = MultiModule.jvmAndJs("org.typelevel", "2.6.1")
+    val core = mm("cats-core")
+    val free = mm("cats-free")
+  }
+
+  object CatsEffect {
+    private val mm = MultiModule.jvmAndJs("org.typelevel", "2.5.2")
+    val core    = mm("cats-effect")
+    // val kernal  = mm("cats-effect-kernel")
+    val laws    = mm("cats-effect-laws")
+    // val std     = mm("cats-effect-std")
+    // val testkit = mm("cats-effect-testkit")
+  }
+
   object Circe {
     private val mm = MultiModule.jvmAndJs("io.circe", "0.14.1")
     val core    = mm("circe-core")
@@ -87,29 +102,33 @@ object Dependencies {
   }
 
   object Microlibs {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "2.5")
-    val adtMacros  = mm("adt-macros")
-    val macroUtils = mm("macro-utils")
-    val nonempty   = mm("nonempty")
-    val recursion  = mm("recursion")
-    val scalazExt  = mm("scalaz-ext")
-    val stdlibExt  = mm("stdlib-ext")
-    val testUtil   = mm("test-util")
-    val utils      = mm("utils")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.microlibs", "3.1")
+    val adtMacros   = mm("adt-macros")
+    val catsExt     = mm("cats-ext") ++ Cats.core
+    val compileTime = mm("compile-time")
+    val disjunction = mm("disjunction")
+    val macroUtils  = mm("macro-utils")
+    val multimap    = mm("multimap")
+    val nonempty    = mm("nonempty")
+    val recursion   = mm("recursion")
+    val stdlibExt   = mm("stdlib-ext")
+    val testUtil    = mm("test-util")
+    val types       = mm("types")
+    val utils       = mm("utils")
   }
 
   object Monocle {
-    private val mm = MultiModule.jvmAndJs("com.github.julien-truffaut", "1.6.3")
+    private val mm = MultiModule.jvmAndJs("dev.optics", "3.0.0")
     val core   = mm("monocle-core")
     val macros = mm("monocle-macro") ++ core
   }
 
   object Nyaya {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.nyaya", "0.9.2")
-    val util = mm("nyaya-util") ++ scalaz
-    val prop = mm("nyaya-prop") ++ scalaz
-    val gen  = mm("nyaya-gen")  ++ scalaz
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.nyaya", "0.11.0")
+    val gen  = mm("nyaya-gen")  ++ Cats.core
+    val prop = mm("nyaya-prop") ++ Cats.core
     val test = mm("nyaya-test")
+    val util = mm("nyaya-util") ++ Cats.core
   }
 
   object OkHttp {
@@ -128,11 +147,12 @@ object Dependencies {
   }
 
   object React {
-    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "1.7.7")
+    private val mm = MultiModule.js("com.github.japgolly.scalajs-react", "2.0.0-RC3")
+    val cats    = mm("core-ext-cats")
     val core    = mm("core")
-    val test    = mm("test")
-    val monocle = mm("ext-monocle-scalaz") ++ Monocle.core
     val extra   = mm("extra")
+    val monocle = mm("extra-ext-monocle3") ++ Monocle.core
+    val test    = mm("test")
     val most    = core ++ monocle ++ extra
   }
 
@@ -148,11 +168,11 @@ object Dependencies {
   }
 
   object ScalaCSS {
-    private val ver = "0.7.0"
-    private val MM = MultiModule.jvmAndJs("com.github.japgolly.scalacss", ver)
-    private val mm = MultiModule.js("com.github.japgolly.scalacss", ver)
-    val core  = MM("core")
-    val react = mm("ext-react") ++ core
+    private val ver      = "0.8.0-RC1"
+    private val jvmAndJs = MultiModule.jvmAndJs("com.github.japgolly.scalacss", ver)
+    private val js       = MultiModule.js("com.github.japgolly.scalacss", ver)
+    val core             = jvmAndJs("core")
+    val react            = js("ext-react") ++ core
   }
 
   object ScalaGraal {
@@ -174,33 +194,31 @@ object Dependencies {
   }
 
   object TestState {
-    val Ver = "2.4.1"
+    val Ver = "2.5.0-RC1"
     private val mm = MultiModule.jvmAndJs("com.github.japgolly.test-state", Ver)
     private val js = MultiModule.js("com.github.japgolly.test-state", Ver)
     val core            = mm("core")
-    val scalaz          = mm("ext-scalaz") ++ core ++ Dependencies.scalaz
-    val nyaya           = mm("ext-nyaya") ++ Dependencies.scalaz ++ Nyaya.gen ++ Nyaya.test
-    val scalajsReact    = js("ext-scalajs-react")
+    val cats            = mm("ext-cats") ++ core ++ Cats.core
     val domZipperSizzle = js("dom-zipper-sizzle")
+    val nyaya           = mm("ext-nyaya") ++ Cats.core ++ Nyaya.gen ++ Nyaya.test
+    val scalajsReact    = js("ext-scalajs-react")
   }
 
   object UnivEq {
-    private val mm = MultiModule.jvmAndJs("com.github.japgolly.univeq", "1.3.0")
+    private val mm = MultiModule.jvmAndJs("com.github.japgolly.univeq", "1.6.0")
     val univeq = mm("univeq")
-    val scalaz = mm("univeq-scalaz") ++ univeq ++ Dependencies.scalaz
+    val cats   = mm("univeq-cats") ++ univeq ++ Cats.core
   }
 
   // ===================================================================================================================
 
   val boopickle   = jvmAndJs("io.suzaku",                        "boopickle",   "1.4.0")
-  val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",        "1.4.0")
+  val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",        "2.0.0")
   val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.3.0")
   val pprint      = jvmAndJs("com.lihaoyi",                      "pprint",      "0.6.6")
-  val scalaz      = jvmAndJs("org.scalaz",                       "scalaz-core", "7.2.31")
   val shapeless   = jvmAndJs("com.chuusai",                      "shapeless",   "2.3.7")
   val utest       = jvmAndJs("com.github.japgolly.fork",         "utest",       "1.0.3")
 
-  val catsEffect   = jvmOnly("org.typelevel"              %% "cats-effect"           % "2.5.2")
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val commonsText  = jvmOnly("org.apache.commons"          % "commons-text"          % "1.9")
   val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "7.12.0")
@@ -214,8 +232,9 @@ object Dependencies {
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.15.4")
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.4")
   val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.3.0")
+  val scalaz       = jvmOnly("org.scalaz"                 %% "scalaz-core"           % "7.2.33")
 
-  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.9.0")
+  val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.10.0-RC1")
   val scalajsDom       = jsOnly("org.scala-js"                          %% "scalajs-dom"       % "1.1.0")
   val scalajsJavaTime  = jsOnly("org.scala-js"                          %% "scalajs-java-time" % "1.0.0")
 
@@ -230,8 +249,8 @@ object Dependencies {
   // ===================================================================================================================
 
   def globalDependencyOverrides = (
-    UnivEq.univeq ++
-    UnivEq.scalaz
+    UnivEq.cats ++
+    UnivEq.univeq
   ).allModuleIds
 
   val updateExclusions: ModuleFilter = {
@@ -245,10 +264,6 @@ object Dependencies {
     filters |= moduleFilter("org.scala-lang", "scala-library")
     filters |= moduleFilter("org.scala-lang", "scala-reflect")
     filters |= moduleFilter("org.scala-lang", "scalap")
-
-    // Scalaz: 7.2.x only
-    filters |= moduleFilter("org.scalaz", revision = fn(!_.startsWith("7.2.")))
-    filters |= moduleFilter("com.github.julien-truffaut", revision = fn(!_.startsWith("1.6.")))
 
     // OkHTTP: 3.x only
     filters |= moduleFilter("com.squareup.okhttp3", revision = fn(!_.startsWith("3.")))

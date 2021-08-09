@@ -1,7 +1,6 @@
 package shipreq.webapp.member.project.issue
 
 import japgolly.microlibs.adt_macros.AdtMacros
-import nyaya.util.Multimap
 import scala.collection.mutable
 import shipreq.base.util._
 import shipreq.webapp.member.project.data._
