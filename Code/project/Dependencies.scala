@@ -18,7 +18,7 @@ object Dependencies {
   }
 
   object CatsEffect {
-    private val mm = MultiModule.jvmAndJs("org.typelevel", "2.5.2")
+    private val mm = MultiModule.jvmAndJs("org.typelevel", "2.5.3")
     val core    = mm("cats-effect")
     // val kernal  = mm("cats-effect-kernel")
     val laws    = mm("cats-effect-laws")
@@ -55,7 +55,7 @@ object Dependencies {
   }
 
   object Jetty {
-    private def ver = "9.4.41.v20210516"
+    private def ver = "9.4.43.v20210629"
     private val mm = MultiModule.java("org.eclipse.jetty", ver)
     private val ws = MultiModule.java("org.eclipse.jetty.websocket", ver)
 
@@ -221,7 +221,7 @@ object Dependencies {
 
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val commonsText  = jvmOnly("org.apache.commons"          % "commons-text"          % "1.9")
-  val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "7.12.0")
+  val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "7.13.0")
   val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "3.4.5") // don't go to v4 yet, wait for Doobie
   val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.14")
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.6.0")
@@ -232,7 +232,7 @@ object Dependencies {
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.15.4")
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.4")
   val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.3.0")
-  val scalaz       = jvmOnly("org.scalaz"                 %% "scalaz-core"           % "7.2.33")
+  val scalaz       = jvmOnly("org.scalaz"                 %% "scalaz-core"           % "7.3.4") // only used for scalaz.Heap
 
   val scalajsBenchmark = jsOnly("com.github.japgolly.scalajs-benchmark" %% "benchmark"         % "0.10.0-RC1")
   val scalajsDom       = jsOnly("org.scala-js"                          %% "scalajs-dom"       % "1.1.0")
