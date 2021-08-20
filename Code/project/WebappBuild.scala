@@ -99,7 +99,7 @@ object WebappBuild {
       .in(file("webapp-base-test"))
       .configureBoth(Common.testModuleSettings)
       .configureJvm(Common.jvmSettings)
-      .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UsePhantomJs))
+      .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UsePhantomJs(150)))
       .dependsOn(baseTest, webappBase)
       .depsForBoth(utest ++ Nyaya.test)
       .depsForJs(
@@ -129,7 +129,7 @@ object WebappBuild {
       .configureBoth(Common.testModuleSettings)
       .configureJvm(Common.jvmSettings)
       .configureJvm(_.dependsOn(webappSampleDataJVM))
-      .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UsePhantomJs))
+      .configureJs(_.enablePlugins(JSDependenciesPlugin), Common.jsSettings(UsePhantomJs(500)))
       .dependsOn(webappBaseTest, webappMember)
       .depsForBoth(Circe.main)
       .depsForBoth(ScalaCSS.core % Test) // for NaturalOrdering
@@ -151,9 +151,9 @@ object WebappBuild {
     *
     * ScalaCss is deliberately missing because it's too heavy for the public SPA.
     */
-  private lazy val memberSpa: Project => Project =
+  private def memberSpa(phantomJsMemMB: Int): Project => Project =
     _.enablePlugins(ScalaJSPlugin, JSDependenciesPlugin)
-      .configure(Common.jsSettings(UsePhantomJs))
+      .configure(Common.jsSettings(if (phantomJsMemMB > 0) UsePhantomJs(phantomJsMemMB) else UseNode))
       .dependsOn(webappMemberJS, webappMemberTestJS % Test, webappServerLogicJS % Test)
       .settings(Test / jsDependencies += ProvidedJS / "webapp-client-test.js")
 
@@ -177,8 +177,7 @@ object WebappBuild {
   lazy val webappClientHome =
     project
       .in(file("webapp-client-home"))
-      .configure(memberSpa)
-      .configure(Common.jsSettings(UseNode)) // PhantomJS crashes
+      .configure(memberSpa(0)) // PhantomJS crashes
       .dependsOn(webappClientLoaders)
       .depsForJs(ScalaCSS.react)
 
@@ -186,7 +185,7 @@ object WebappBuild {
     project
       .in(file("webapp-client-ww-api"))
       .enablePlugins(ScalaJSPlugin)
-      .configure(Common.jsSettings(UsePhantomJs))
+      .configure(Common.jsSettings(NoTests))
       .dependsOn(webappMemberJS)
       .depsForJs(
         boopickle ++ scalajsDom ++
@@ -206,12 +205,19 @@ object WebappBuild {
         scalaJSUseMainModuleInitializer := true,
         Compile / mainClass := Some("shipreq.webapp.client.ww.Main"))
 
+  object WebappClientProject {
+    val parallelism = 4
+    val totalMemMB = 7000 + (if (parallelism > 2) (parallelism - 2) * 500 else 0)
+    val instanceMemMB = totalMemMB / parallelism
+  }
+
   lazy val webappClientProject =
     project
       .in(file("webapp-client-project"))
-      .configure(memberSpa)
+      .configure(memberSpa(WebappClientProject.instanceMemMB))
       .dependsOn(webappClientWwApi, webappClientLoaders)
       .depsForJs(ScalaCSS.react ++ scalajsDom ++ shapeless ++ Nyaya.prop ++ parboiled)
+      .settings(Test / test / tags += CustomTags.WebappClientProjectTest -> 1)
 
   lazy val webappSsr =
     crossProject(JSPlatform, JVMPlatform)
@@ -245,7 +251,7 @@ object WebappBuild {
       .configureJvm(
         Common.jvmSettings,
         _.dependsOn(taskmanApiLogic, webappClientPublicJVM, webappSsrJVM))
-      .configureJs(Common.jsSettings(UsePhantomJs))
+      .configureJs(Common.jsSettings(UsePhantomJs(100)))
       .dependsOn(webappMember)
       .dependsOn(baseTest % Test, webappMemberTest % Test)
       .depsForJvm(scaffeine ++ commonsText)
