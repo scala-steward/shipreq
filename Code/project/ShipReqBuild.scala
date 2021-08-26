@@ -116,7 +116,7 @@ object ShipReqBuild {
         .dependsOn(webappServer)
         .configure(Common.jvmSettings)
         .settings(libraryDependencies ++= Seq(
-          "dev.zio" %% "zio" % "1.0.10"))
+          "dev.zio" %% "zio" % "1.0.11"))
         .deps(JJWT.all)
     }
 
