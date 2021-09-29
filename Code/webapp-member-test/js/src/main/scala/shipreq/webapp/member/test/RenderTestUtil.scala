@@ -41,8 +41,8 @@ object RenderTestUtil {
     if (LinkingInfo.developmentMode)
       identity
     else {
-      val r = " class=\"[^\"]+\""
-      r.replaceAll(_, "")
+      val r = " class=\"[^\"]+\"".r
+      r.replaceAllIn(_, "")
     }
 
   def assertRender(actual: VdomNode, expect: String)(implicit l: Line, p: TestPath): Unit = {
