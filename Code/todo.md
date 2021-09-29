@@ -6,6 +6,7 @@
 * Bug: CryptoFolio @ 203 (after deleting MF req type): issues page shows `Priority field has no tags`
   but clicking the `Delete Priority field` gives an error `Field #3 is dead`
   Interestingly, Priority only appears in CfgTags when ShowDead
+* Bug: Create new project, it appears with "Created 7 months ago". Refreshing page fixes the problem.
 
 
 ### Improvements
