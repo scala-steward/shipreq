@@ -1,7 +1,6 @@
 ### Problems
 * Use full name in Req Type column - the abbreviation is already in the ID (which is always on the screen)
 * Auto list-item spacing is annoying
-* Fullscreen editor with preview below, zooming in breaks the preview
 * Bug: Create new project, it appears with "Created 7 months ago". Refreshing page fixes the problem.
 
 
