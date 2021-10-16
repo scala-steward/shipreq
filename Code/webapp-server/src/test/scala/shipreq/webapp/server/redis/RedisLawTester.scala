@@ -221,20 +221,21 @@ final case class RedisLawTester[F <: ProjectAlgebra[Fx], G <: ProjectAlgebra[Fx]
     if (!e.eqv(lhs, rhs)) {
       failures add Failure(name, lhs, rhs)
 
-//      def breakItDown(lhs: Any, rhs: Any): Unit = {
-//        @nowarn def again[A](typ: A)(f: A => Any) = breakItDown(f(lhs.asInstanceOf[A]), f(rhs.asInstanceOf[A]))
-//        (lhs, rhs) match {
-//          case (t: ProjectCache, _) => again(t)(_.snapshot.get.project.history)
-//          case _ =>
-//            println(
-//              s"""
-//                 |lhs: $lhs
-//                 |rhs: $rhs
-//                 |
-//                 |""".stripMargin)
-//        }
-//      }
-//      breakItDown(lhs, rhs)
+     def breakItDown(lhs: Any, rhs: Any): Unit = {
+       @nowarn def again[A](typ: A)(f: A => Any) = breakItDown(f(lhs.asInstanceOf[A]), f(rhs.asInstanceOf[A]))
+       (lhs, rhs) match {
+         case (t: ProjectCache, _) => again(t)(_.snapshot.get.project.history)
+         case _ =>
+           println(
+             s"""
+                |name: $name
+                | lhs: $lhs
+                | rhs: $rhs
+                |
+                |""".stripMargin)
+       }
+     }
+     breakItDown(lhs, rhs)
     }
 
   private def assertState(name: String): Unit = {

@@ -133,14 +133,16 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
 //    }
 
   private def fxWithFallback[@specialized(Boolean) A](name: String, default: A)(body: Fx[A]): Fx[A] =
-    Fx {
-      try
-        body.unsafeRun()
-      catch {
-        case NonFatal(t) =>
-          logger.warn(s"Exception during $name: $t", t)
-          default
-      }
+    body.attempt.map {
+      case \/-(a) =>
+        a
+
+      case -\/(NonFatal(t)) =>
+        logger.warn(s"Exception during $name: $t", t)
+        default
+
+      case -\/(t) =>
+        throw t
     }
 
   private[this] val emptyEventResult = SafePickler.success(VerifiedEvent.Seq.empty)
@@ -258,7 +260,7 @@ final class RedisViaRedisson(client: RedissonClient, schema: RedisSchema) extend
     args += schema.topic(id)
     args ++= events
 
-    evalSha(Mode.READ_WRITE, sha, RScript.ReturnType.STATUS, Keys.none, args)
+    evalSha[Unit](Mode.READ_WRITE, sha, RScript.ReturnType.STATUS, Keys.none, args)
   }
 
   override def publishEvents(id: ProjectId, events: VerifiedEvent.NonEmptySeq) =
