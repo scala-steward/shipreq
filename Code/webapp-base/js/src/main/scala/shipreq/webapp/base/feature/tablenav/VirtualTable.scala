@@ -4,7 +4,6 @@ import japgolly.scalajs.react._
 import org.scalajs.dom.{html, raw}
 import scala.scalajs.js
 import shipreq.webapp.base.feature.tablenav.Logic.HtmlElementExtX
-import shipreq.webapp.base.util.DomUtil._
 
 // NOTE: This only handles rowSpans atm because it's all I need and simpler to handle in isolation
 

@@ -2,8 +2,7 @@ package shipreq.webapp.base.protocol.websocket
 
 import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.utils.StaticLookupFn
-import org.scalajs.dom.raw
-import org.scalajs.dom.raw.{Blob, CloseEvent, Event, MessageEvent}
+import org.scalajs.dom.{Blob, CloseEvent, Event, MessageEvent, raw}
 import scala.scalajs.js
 import scala.scalajs.js.typedarray.ArrayBuffer
 import shipreq.base.util.VarJs
