@@ -15,6 +15,7 @@ addCommandAlias("wcpt",
 ;webappClientProject/testOnly shipreq.webapp.client.project.app.pages.content.reqtable.LogicPropTest
 ;webappClientProject/testOnly shipreq.webapp.client.project.app.pages.content.reqtable.LogicTest
 ;webappClientProject/testOnly shipreq.webapp.client.project.app.pages.content.reqtable.ReqTableTest
+;webappClientProject/testOnly shipreq.webapp.client.project.app.pages.content.reqtable.ReqTableTest2
 ;webappClientProject/testOnly shipreq.webapp.client.project.app.pages.root.ProjectHomeTest
 ;webappClientProject/testOnly shipreq.webapp.client.project.app.ProjectSpaTest
 ;webappClientProject/testOnly shipreq.webapp.client.project.app.state.ProjectStateTest
