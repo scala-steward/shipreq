@@ -1,14 +1,9 @@
 package shipreq
 
-import org.scalajs.dom.Console
-import scala.scalajs.js
-
 // JS
 object Predef extends PredefShared {
 
-  // TODO: Test using normal console
-  lazy val console: Console =
-    (js.Dynamic.global.self || js.Dynamic.global.window).console.asInstanceOf[Console]
+  @inline def console = org.scalajs.dom.console
 
   @inline def JSON = scala.scalajs.js.JSON
 

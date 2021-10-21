@@ -1,7 +1,7 @@
 package shipreq.base.test
 
 import japgolly.scalajs.react.AsyncCallback
-import org.scalajs.dom.crypto.Crypto
+import org.scalajs.dom.Crypto
 import scala.concurrent.Future
 import scala.scalajs.js
 import shipreq.base.test.BaseTestUtil._

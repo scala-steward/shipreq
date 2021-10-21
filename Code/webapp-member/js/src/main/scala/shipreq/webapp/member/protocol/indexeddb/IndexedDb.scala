@@ -1,9 +1,8 @@
 package shipreq.webapp.member.protocol.indexeddb
 
 import japgolly.scalajs.react._
-import org.scalajs.dom.raw._
+import org.scalajs.dom._
 import scala.scalajs.js
-import scala.scalajs.js.annotation.JSGlobal
 import scala.util.{Failure, Success, Try}
 
 final class IndexedDb(raw: IDBFactory) {
@@ -18,16 +17,16 @@ final class IndexedDb(raw: IDBFactory) {
   def open(name: DatabaseName, version: Int): Result =
     _open(raw.open(name.value, version))
 
-  private def _open(rawOpen: => IDBOpenDBRequest): Result =
+  private def _open(rawOpen: => IDBOpenDBRequest[IDBDatabase]): Result =
     callbacks => {
 
-      def create(): IDBOpenDBRequest = {
+      def create(): IDBOpenDBRequest[IDBDatabase] = {
         val r = rawOpen
 
         // r.onblocked = callbacks.blocked.toJsFn1
 
         r.onupgradeneeded = e => {
-          val db = new DatabaseInVersionChange(r.result.asInstanceOf[IDBDatabase])
+          val db = new DatabaseInVersionChange(r.result)
           val args = versionChange(db, e)
           callbacks.upgradeNeeded(args).runNow()
         }
@@ -36,10 +35,9 @@ final class IndexedDb(raw: IDBFactory) {
       }
 
       asyncRequest(create()) { r =>
-        val rawDb = r.result.asInstanceOf[IDBDatabase]
-        val rawDb2 = r.result.asInstanceOf[IDBDatabaseMissing]
+        val rawDb = r.result
 
-        rawDb2.onversionchange = e => {
+        rawDb.onversionchange = e => {
           try {
             val args = versionChange(new DatabaseInVersionChange(rawDb), e)
             callbacks.versionChange(args).runNow()
@@ -55,7 +53,7 @@ final class IndexedDb(raw: IDBFactory) {
           }
         }
 
-        rawDb2.onclose = _ => {
+        rawDb.onclose = _ => {
           callbacks.closed.runNow()
         }
 
@@ -71,8 +69,7 @@ object IndexedDb {
 
   def global(): Option[IndexedDb] =
     try {
-      val raw = js.Dynamic.global.indexedDB.asInstanceOf[IDBFactory]
-      Some(apply(raw))
+      window.indexedDB.toOption.map(apply)
     } catch {
       case _: Throwable => None
     }
@@ -133,10 +130,10 @@ object IndexedDb {
       actuallyClose >> onClose
     }
 
-    val transactionRO: TxnStep1 = new TxnStep1("readonly")
-    val transactionRW: TxnStep1 = new TxnStep1("readwrite")
+    val transactionRO: TxnStep1 = new TxnStep1(IDBTransactionMode.readonly)
+    val transactionRW: TxnStep1 = new TxnStep1(IDBTransactionMode.readwrite)
 
-    final class TxnStep1 private[Database] (mode: String) {
+    final class TxnStep1 private[Database] (mode: IDBTransactionMode) {
       def apply(stores: ObjectStoreDef[_, _]*): TxnStep2 = {
         val storeArray = new js.Array[String]
         stores.foreach(s => storeArray.push(s.name))
@@ -144,7 +141,7 @@ object IndexedDb {
       }
     }
 
-    final class TxnStep2 private[Database] (mode: String, stores: js.Array[String]) {
+    final class TxnStep2 private[Database] (mode: IDBTransactionMode, stores: js.Array[String]) {
 
       def apply[A](f: TxnDsl => Txn[A]): AsyncCallback[A] = {
         val x = CallbackTo.pure(f(TxnDsl))
@@ -316,16 +313,16 @@ object IndexedDb {
   }
 
   private object Txn {
-    final case class Map            [A, B](from: Txn[A], f: A => B)                                    extends Txn[B]
-    final case class FlatMap        [A, B](from: Txn[A], f: A => Txn[B])                               extends Txn[B]
-    final case class EvalCallback   [A]   (callback: CallbackTo[A])                                    extends Txn[A]
-    final case class GetStore       [K, V](defn: ObjectStoreDef.Sync[K, V])                            extends Txn[ObjectStore[K, V]]
-    final case class StoreAdd             (store: ObjectStore[_, _], key: IndexedDbKey, value: js.Any) extends Txn[Unit]
-    final case class StorePut             (store: ObjectStore[_, _], key: IndexedDbKey, value: js.Any) extends Txn[Unit]
-    final case class StoreGet       [K, V](store: ObjectStore[K, V], key: IndexedDbKey)                extends Txn[Option[V]]
-    final case class StoreGetAllKeys[K, V](store: ObjectStore[K, V])                                   extends Txn[ArraySeq[K]]
-    final case class StoreGetAllVals[K, V](store: ObjectStore[K, V])                                   extends Txn[ArraySeq[V]]
-    final case class StoreDelete    [K, V](store: ObjectStore[K, V], key: IndexedDbKey)                extends Txn[Unit]
+    final case class Map            [A, B](from: Txn[A], f: A => B)                                      extends Txn[B]
+    final case class FlatMap        [A, B](from: Txn[A], f: A => Txn[B])                                 extends Txn[B]
+    final case class EvalCallback   [A]   (callback: CallbackTo[A])                                      extends Txn[A]
+    final case class GetStore       [K, V](defn: ObjectStoreDef.Sync[K, V])                              extends Txn[ObjectStore[K, V]]
+    final case class StoreAdd             (store: ObjectStore[_, _], key: IndexedDbKey, value: IDBValue) extends Txn[Unit]
+    final case class StorePut             (store: ObjectStore[_, _], key: IndexedDbKey, value: IDBValue) extends Txn[Unit]
+    final case class StoreGet       [K, V](store: ObjectStore[K, V], key: IndexedDbKey)                  extends Txn[Option[V]]
+    final case class StoreGetAllKeys[K, V](store: ObjectStore[K, V])                                     extends Txn[ArraySeq[K]]
+    final case class StoreGetAllVals[K, V](store: ObjectStore[K, V])                                     extends Txn[ArraySeq[V]]
+    final case class StoreDelete    [K, V](store: ObjectStore[K, V], key: IndexedDbKey)                  extends Txn[Unit]
 
     def interpret[A](txn: IDBTransaction, dsl: Txn[A]): AsyncCallback[A] =
       AsyncCallback.suspend {
@@ -381,8 +378,8 @@ object IndexedDb {
             case StoreGetAllKeys(s) =>
               import s.defn.{keyCodec, Key}
               getStore(s).flatMap { store =>
-                asyncRequest(store.asInstanceOf[IDBObjectStoreMissing].getAllKeys()) { req =>
-                  val rawKeys = req.result.asInstanceOf[js.Array[js.Any]]
+                asyncRequest(store.getAllKeys()) { req =>
+                  val rawKeys = req.result
                   val keys = new Array[Key](rawKeys.length)
                   var i = rawKeys.length
                   while (i > 0) {
@@ -398,8 +395,8 @@ object IndexedDb {
             case StoreGetAllVals(s) =>
               import s.defn.{valueCodec, Value}
               getStore(s).flatMap { store =>
-                asyncRequest(store.asInstanceOf[IDBObjectStoreMissing].getAll()) { req =>
-                  val rawVals = req.result.asInstanceOf[js.Array[js.Any]]
+                asyncRequest(store.getAll()) { req =>
+                  val rawVals = req.result
                   val vals = new Array[Value](rawVals.length)
                   var i = rawVals.length
                   while (i > 0) {
@@ -425,10 +422,10 @@ object IndexedDb {
 
     val success_ = Success(())
 
-    def asyncRequest_[R <: IDBRequest](act: => R): AsyncCallback[Unit] =
+    def asyncRequest_[R <: IDBRequest[Any, _]](act: => R): AsyncCallback[Unit] =
       asyncRequest(act)(_ => ())
 
-    def asyncRequest[R <: IDBRequest, A](act: => R)(onSuccess: R => A): AsyncCallback[A] =
+    def asyncRequest[R <: IDBRequest[Any, _], A](act: => R)(onSuccess: R => A): AsyncCallback[A] =
       AsyncCallback.promise[A].asAsyncCallback.flatMap { case (promise, complete) =>
         val raw = act
 
@@ -443,30 +440,8 @@ object IndexedDb {
         promise
       }
 
-    def versionChange(db: DatabaseInVersionChange, e: IDBVersionChangeEvent): VersionChange = {
-      // TODO fix after https://github.com/scala-js/scala-js-dom/pull/429
-      val newVersion = (e.asInstanceOf[js.Dynamic].newVersion: Any) match {
-        case i: Int => Some(i)
-        case _      => None
-      }
-      VersionChange(db, e.oldVersion, newVersion)
-    }
-
-    // TODO remove after https://github.com/scala-js/scala-js-dom/pull/433
-    @js.native
-    @JSGlobal("IDBDatabase")
-    @nowarn
-    class IDBDatabaseMissing extends IDBDatabase {
-      var onversionchange: js.Function1[IDBVersionChangeEvent, _] = js.native
-      var onclose: js.Function1[Event, _] = js.native
-    }
-
-    @js.native
-    @JSGlobal("IDBObjectStore")
-    class IDBObjectStoreMissing extends IDBObjectStore {
-      def getAllKeys(): IDBRequest = js.native
-      def getAll(): IDBRequest = js.native
-    }
+    def versionChange(db: DatabaseInVersionChange, e: IDBVersionChangeEvent): VersionChange =
+      VersionChange(db, e.oldVersion, e.newVersionOption)
   }
 
 }

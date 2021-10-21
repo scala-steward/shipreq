@@ -2,7 +2,7 @@ package shipreq.webapp.member.protocol.binary
 
 import boopickle.{PickleImpl, PickleState, Pickler, UnpickleImpl, UnpickleState}
 import japgolly.scalajs.react.AsyncCallback
-import org.scalajs.dom.crypto.{crypto => _, _}
+import org.scalajs.dom.{crypto => _, _}
 import scala.scalajs.js
 import scala.scalajs.js.typedarray.{ArrayBuffer, Uint8Array}
 import scala.util.Try
