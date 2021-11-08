@@ -1,7 +1,7 @@
 package shipreq.webapp.member.protocol.indexeddb
 
 import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
-import scala.scalajs.js
+import org.scalajs.dom.IDBValue
 
 sealed trait ObjectStoreDef[K, V] {
   val name: String
@@ -37,7 +37,7 @@ object ObjectStoreDef {
     def encode(v: V): AsyncCallback[Value] =
       valueCodec.encode(v).map(value)
 
-    def value(v: js.Any): Value =
+    def value(v: IDBValue): Value =
       new Async.Value {
         override type KeyType = K
         override type ValueType = V
@@ -60,7 +60,7 @@ object ObjectStoreDef {
       type KeyType
       type ValueType
       val store: Async[KeyType, ValueType]
-      val value: js.Any
+      val value: IDBValue
 
       final def decode: AsyncCallback[ValueType] =
         store.valueCodec.decode(value)

@@ -1,15 +1,15 @@
 package shipreq.webapp.member.protocol.indexeddb
 
 import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
-import scala.scalajs.js
+import org.scalajs.dom.IDBValue
 import scala.scalajs.js.typedarray.ArrayBuffer
 import shipreq.base.util.BinaryData
 import shipreq.base.util.JsExt._
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.member.protocol.binary.{BinaryFormat, Compression}
 
-final case class ValueCodec[A](encode: A => CallbackTo[js.Any],
-                               decode: js.Any => CallbackTo[A]) {
+final case class ValueCodec[A](encode: A => CallbackTo[IDBValue],
+                               decode: IDBValue => CallbackTo[A]) {
 
   def xmap[B](onDecode: A => B)(onEncode: B => A): ValueCodec[B] =
     // Delegating because decoding can fail and must be wrapped to be pure
@@ -57,8 +57,8 @@ object ValueCodec {
 
   // ===================================================================================================================
 
-  final case class Async[A](encode: A => AsyncCallback[js.Any],
-                            decode: js.Any => AsyncCallback[A]) {
+  final case class Async[A](encode: A => AsyncCallback[IDBValue],
+                            decode: IDBValue => AsyncCallback[A]) {
 
     def xmap[B](onDecode: A => B)(onEncode: B => A): Async[B] =
       // Delegating because decoding can fail and must be wrapped to be pure

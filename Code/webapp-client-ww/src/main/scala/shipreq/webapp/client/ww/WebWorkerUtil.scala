@@ -1,7 +1,7 @@
 package shipreq.webapp.client.ww
 
 import japgolly.scalajs.react.Callback
-import org.scalajs.dom.webworkers.DedicatedWorkerGlobalScope
+import org.scalajs.dom.DedicatedWorkerGlobalScope
 import scala.scalajs.js
 
 object WebWorkerUtil {

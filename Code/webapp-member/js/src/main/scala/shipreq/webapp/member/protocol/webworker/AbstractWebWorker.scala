@@ -1,10 +1,7 @@
 package shipreq.webapp.member.protocol.webworker
 
 import japgolly.scalajs.react._
-import org.scalajs.dom.experimental.serviceworkers.ExtendableMessageEvent
-import org.scalajs.dom.experimental.sharedworkers.{SharedWorker, SharedWorkerGlobalScope}
-import org.scalajs.dom.raw.{ErrorEvent, MessageEvent, MessagePort, Transferable, WorkerGlobalScope}
-import org.scalajs.dom.webworkers.{AbstractWorker, DedicatedWorkerGlobalScope, Worker}
+import org.scalajs.dom.{AbstractWorker, DedicatedWorkerGlobalScope, ErrorEvent, ExtendableMessageEvent, MessageEvent, MessagePort, SharedWorker, SharedWorkerGlobalScope, Transferable, Worker, WorkerGlobalScope}
 import scala.scalajs.js
 import scala.scalajs.js.{isUndefined, |}
 import shipreq.base.util.ErrorMsg

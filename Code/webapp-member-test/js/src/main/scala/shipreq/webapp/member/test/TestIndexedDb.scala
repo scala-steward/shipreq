@@ -11,7 +11,7 @@ object TestIndexedDb {
   /** Unfortunately, this isn't isolated but has process-scoped shared-state via the global window.indexedDB. */
   def instance(): IndexedDb = {
     Node.loadFakeIndexedDb()
-    IndexedDb(window.indexedDB)
+    IndexedDb(window.indexedDB.get)
   }
 
   private var prevDbIndex = 0
