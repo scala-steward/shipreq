@@ -25,6 +25,7 @@ import shipreq.webapp.server.logic.config.{ScalaJsManifest, ServerLogicConfig}
 import shipreq.webapp.server.logic.data._
 import shipreq.webapp.server.logic.dispatch.Cookie
 import shipreq.webapp.server.logic.event.ApplyEventAlgebra
+import shipreq.webapp.server.logic.inmem._
 import shipreq.webapp.server.logic.logic._
 import shipreq.webapp.server.logic.util.Obfuscators
 
@@ -644,7 +645,7 @@ object MockInterpreters {
 
 class MockInterpreters(modCfg         : ServerLogicConfig => ServerLogicConfig = Identity[ServerLogicConfig],
                        specificMockDb : Option[MockDb]                         = None,
-                       specificRedis  : Option[Redis.InMemory[Eval]]           = None,
+                       specificRedis  : Option[RedisInMemory[Eval]]            = None,
                        specificTaskman: Option[MockTaskman]                    = None,
                       ) {
 
@@ -662,7 +663,7 @@ class MockInterpreters(modCfg         : ServerLogicConfig => ServerLogicConfig =
   implicit val apEvent        = ApplyEventAlgebra.trusted[Eval]
   implicit val metrics        = MetricsAlgebra.const(Eval.Unit)
   implicit val trace          = Trace.Algebra.off[Eval]
-  implicit val redis          = specificRedis.getOrElse(new Redis.InMemory[Eval])
+  implicit val redis          = specificRedis.getOrElse(new RedisInMemory[Eval])
   implicit val common         = CommonProtocolLogic[Eval]
   implicit val publicSpa      = PublicSpaLogic[Eval, Eval]
   implicit val homeSpa        = HomeSpaLogic[Eval, Eval]

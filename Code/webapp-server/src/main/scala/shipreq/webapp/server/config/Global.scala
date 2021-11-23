@@ -13,6 +13,7 @@ import shipreq.webapp.server.db.{DbInterpreter, StatRecorder}
 import shipreq.webapp.server.interpreter._
 import shipreq.webapp.server.logic.algebra._
 import shipreq.webapp.server.logic.event.ApplyEventAlgebra
+import shipreq.webapp.server.logic.inmem.RedisInMemory
 import shipreq.webapp.server.logic.logic.ServerLogic
 import shipreq.webapp.server.redis.{RedisSchema, RedisViaRedisson}
 import shipreq.webapp.server.util.AnalyticsProxy
@@ -180,7 +181,7 @@ object Global {
     }
 
   private def useInMemoryRedis() = {
-    val redis          = new Redis.InMemory[Fx]
+    val redis          = new RedisInMemory[Fx]
     val threadGroup    = new ThreadGroup("RedisInMemory")
     val timer          = Executors.newSingleThreadScheduledExecutor(new Thread(threadGroup, _, "RedisInMemory"))
     val task: Runnable = () => redis.publishAll.unsafeRun()
