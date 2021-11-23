@@ -8,12 +8,12 @@ import shipreq.webapp.base.data.ProjectId
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
 import shipreq.webapp.server.logic.algebra.Redis._
 
-object RedisInMemory {
-  private[RedisInMemory] final case class PubSub[F[_]](pub: Listener[F],
+object InMemoryRedis {
+  private[InMemoryRedis] final case class PubSub[F[_]](pub: Listener[F],
                                                        sub: Subscription[F],
                                                        key: AnyRef)
 
-  private[RedisInMemory] final class Queue[F[_]] {
+  private[InMemoryRedis] final class Queue[F[_]] {
     private val queue = new collection.mutable.Queue[(PubSub[F], VerifiedEvent)]
     def unsafeAdd(events: VerifiedEvent.NonEmptySeq, pubSubs: List[PubSub[F]]): Unit =
       synchronized {
@@ -27,9 +27,9 @@ object RedisInMemory {
   }
 }
 
-final class RedisInMemory[F[_]](implicit FF: Sync[F]) extends ProjectAlgebra[F] {
+final class InMemoryRedis[F[_]](implicit FF: Sync[F]) extends ProjectAlgebra[F] {
   import com.github.blemale.scaffeine._
-  import RedisInMemory.PubSub
+  import InMemoryRedis.PubSub
 
   override protected def F = FF
 
@@ -37,7 +37,7 @@ final class RedisInMemory[F[_]](implicit FF: Sync[F]) extends ProjectAlgebra[F] 
 
   private[this] val globalCache  = Scaffeine().softValues().build[ProjectId, ProjectCache]()
   private[this] val globalPubSub = new ConcurrentHashMap[ProjectId, PubSubs]()
-  private[this] val globalQueue  = new RedisInMemory.Queue[F]
+  private[this] val globalQueue  = new InMemoryRedis.Queue[F]
   private[this] val writeCounter = new AtomicInteger(0)
 
   private def modPubSub[A](id: ProjectId)(f: PubSubs => (PubSubs, A)): F[A] =

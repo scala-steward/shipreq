@@ -645,7 +645,7 @@ object MockInterpreters {
 
 class MockInterpreters(modCfg         : ServerLogicConfig => ServerLogicConfig = Identity[ServerLogicConfig],
                        specificMockDb : Option[MockDb]                         = None,
-                       specificRedis  : Option[RedisInMemory[Eval]]            = None,
+                       specificRedis  : Option[InMemoryRedis[Eval]]            = None,
                        specificTaskman: Option[MockTaskman]                    = None,
                       ) {
 
@@ -663,7 +663,7 @@ class MockInterpreters(modCfg         : ServerLogicConfig => ServerLogicConfig =
   implicit val apEvent        = ApplyEventAlgebra.trusted[Eval]
   implicit val metrics        = MetricsAlgebra.const(Eval.Unit)
   implicit val trace          = Trace.Algebra.off[Eval]
-  implicit val redis          = specificRedis.getOrElse(new RedisInMemory[Eval])
+  implicit val redis          = specificRedis.getOrElse(new InMemoryRedis[Eval])
   implicit val common         = CommonProtocolLogic[Eval]
   implicit val publicSpa      = PublicSpaLogic[Eval, Eval]
   implicit val homeSpa        = HomeSpaLogic[Eval, Eval]
