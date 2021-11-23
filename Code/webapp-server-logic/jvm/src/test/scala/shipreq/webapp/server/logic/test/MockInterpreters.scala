@@ -25,7 +25,7 @@ import shipreq.webapp.server.logic.config.{ScalaJsManifest, ServerLogicConfig}
 import shipreq.webapp.server.logic.data._
 import shipreq.webapp.server.logic.dispatch.Cookie
 import shipreq.webapp.server.logic.event.ApplyEventAlgebra
-import shipreq.webapp.server.logic.impl._
+import shipreq.webapp.server.logic.logic._
 import shipreq.webapp.server.logic.util.Obfuscators
 
 object MockDb {

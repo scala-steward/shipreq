@@ -1,4 +1,4 @@
-package shipreq.webapp.server.logic.impl
+package shipreq.webapp.server.logic.logic
 
 import cats.{Eq, Eval}
 import japgolly.microlibs.cats_ext.CatsMacros
@@ -20,7 +20,7 @@ import shipreq.webapp.server.logic.algebra.Redis
 import shipreq.webapp.server.logic.algebra.Redis.ProjectSnapshot
 import shipreq.webapp.server.logic.algebra.Security.{SessionId, SessionToken}
 import shipreq.webapp.server.logic.dispatch.Cookie
-import shipreq.webapp.server.logic.impl.ProjectSpaLogic.{WebSocketState => _, _}
+import shipreq.webapp.server.logic.logic.ProjectSpaLogic.{WebSocketState => _, _}
 import shipreq.webapp.server.logic.test.MockInterpreters
 import shipreq.webapp.server.logic.util.Obfuscators
 import utest._

@@ -16,7 +16,7 @@ import shipreq.webapp.server.logic.algebra._
 import shipreq.webapp.server.logic.config._
 import shipreq.webapp.server.logic.data._
 import shipreq.webapp.server.logic.dispatch._
-import shipreq.webapp.server.logic.impl._
+import shipreq.webapp.server.logic.logic._
 import zio.UIO
 
 /**

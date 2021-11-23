@@ -13,7 +13,7 @@ import shipreq.webapp.server.db.{DbInterpreter, StatRecorder}
 import shipreq.webapp.server.interpreter._
 import shipreq.webapp.server.logic.algebra._
 import shipreq.webapp.server.logic.event.ApplyEventAlgebra
-import shipreq.webapp.server.logic.impl.ServerLogic
+import shipreq.webapp.server.logic.logic.ServerLogic
 import shipreq.webapp.server.redis.{RedisSchema, RedisViaRedisson}
 import shipreq.webapp.server.util.AnalyticsProxy
 import shipreq.webapp.ssr.SsrAlgebra

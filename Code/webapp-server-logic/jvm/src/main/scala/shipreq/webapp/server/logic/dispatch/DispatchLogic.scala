@@ -21,7 +21,7 @@ import shipreq.webapp.server.logic._
 import shipreq.webapp.server.logic.algebra._
 import shipreq.webapp.server.logic.config.ServerLogicConfig
 import shipreq.webapp.server.logic.dispatch.{Request => _}
-import shipreq.webapp.server.logic.impl._
+import shipreq.webapp.server.logic.logic._
 import shipreq.webapp.server.logic.util._
 
 /** Usage:
