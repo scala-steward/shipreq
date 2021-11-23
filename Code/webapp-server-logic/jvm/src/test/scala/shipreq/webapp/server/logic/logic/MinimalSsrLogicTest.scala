@@ -1,4 +1,4 @@
-package shipreq.webapp.server.logic.impl
+package shipreq.webapp.server.logic.logic
 
 import shipreq.base.ops.Trace
 import shipreq.base.test.BaseTestUtil._
