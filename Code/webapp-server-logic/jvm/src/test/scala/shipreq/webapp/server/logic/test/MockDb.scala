@@ -40,7 +40,6 @@ object MockDb {
   }
 
   final case class ProjectEntry(projectId    : ProjectId,
-                                userId       : UserId,
                                 encKey       : ProjectEncryptionKey,
                                 initEvents   : Int,
                                 events       : VerifiedEvent.Seq,
@@ -63,6 +62,10 @@ object MockDb {
     def projectLoad: VerifiedEvent.Seq =
       events
   }
+
+  final case class ProjectUsrEntry(pid: ProjectId, uid: UserId, perm: ProjectPerm)
+
+  final case class ProjectUsrGroupEntry(pid: ProjectId, gid: UserGroup.Id, perm: ProjectPerm)
 
   def withLiveClock(): MockDb =
     new MockDb(Eval.always(Instant.now()))
@@ -253,19 +256,31 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     }
   }
 
-  private var projects: IMap[ProjectId, MockDb.ProjectEntry] =
-    IMap.empty(_.projectId)
+  private var projects       : IMap[ProjectId, MockDb.ProjectEntry] = IMap.empty(_.projectId)
+  private var projectUsr     : List[MockDb.ProjectUsrEntry]         = Nil
+  private var projectUsrGroup: List[MockDb.ProjectUsrGroupEntry]    = Nil
+
+  private def addProjectUsr(pid: ProjectId, uid: UserId, perm: ProjectPerm): Unit = {
+    projectUsr.find(e => e.pid ==* pid && e.uid ==* uid) match {
+      case None    => projectUsr ::= MockDb.ProjectUsrEntry(pid, uid, perm)
+      case Some(e) => throw new RuntimeException("Duplicate entry in project_usr: " + e)
+    }
+  }
+
+  private def addProjectUsrGroup(pid: ProjectId, gid: UserGroup.Id, perm: ProjectPerm): Unit = {
+    projectUsrGroup.find(e => e.pid ==* pid && e.gid ==* gid) match {
+      case None    => projectUsrGroup ::= MockDb.ProjectUsrGroupEntry(pid, gid, perm)
+      case Some(e) => throw new RuntimeException("Duplicate entry in project_usr_group: " + e)
+    }
+  }
 
   def addProject(projectId: ProjectId, userId: UserId, key: ProjectEncryptionKey)(events: Event*): Unit = {
     val initEvents = events.size
     val ves = verifyEvents(Project.empty)(events: _*)
     val now = Instant.now()
-    val mde = MockDb.ProjectEntry(projectId, userId, key, initEvents, ves, now, now, Some(now))
+    val mde = MockDb.ProjectEntry(projectId, key, initEvents, ves, now, now, Some(now))
     projects = projects.add(mde)
-  }
-
-  override def getProjectOwner(id: ProjectId) = Eval.always[Option[UserId]] {
-    projects.get(id).map(_.userId)
+    addProjectUsr(projectId, userId, ProjectPerm.Admin)
   }
 
   private def nextProjectId(): ProjectId =
@@ -278,6 +293,11 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
   }
 
   override def getAllProjectMetaDataForUser(id: UserId) = Eval.always[List[ProjectMetaData]] {
+
+    projectUsr.filter(_.uid ==* id)
+
+    projectUsrGroup.filter(_.uid ==* id)
+
     projects.valuesIterator
       .filter(_.userId ==* id)
       .map(_.projectMetaData)

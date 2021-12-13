@@ -250,7 +250,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       "noSession"        - test(None, p1.id)(-\/(NoSession))
       "anonymousSession" - test(SessionToken.anonymous(), p1.id)(-\/(AnonymousSession))
       "invalidProjectId" - test(user2.token, Obfuscated("!"))(-\/(InvalidProjectId))
-      "projectNotFound"  - test(user2.token, ProjectId(23432))(-\/(ProjectNotFound))
+      "projectNotFound"  - test(user2.token, ProjectId(23432))(-\/(AccessDenied))
       "accessDenied"     - test(user3.token, p1.id)(-\/(AccessDenied))
       "ok"               - test(user2.token, p1.id)(\/-((p1.static.copy(sessionId = user2.token.sessionId, expiresAt = security.expiry()), emptyState)))
     }

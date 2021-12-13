@@ -102,7 +102,6 @@ object ProjectSpaLogic extends StrictLogging {
     case object AnonymousSession extends ConnectRejection
     case object ExpiredSession   extends ConnectRejection
     case object InvalidProjectId extends ConnectRejection
-    case object ProjectNotFound  extends ConnectRejection
     case object AccessDenied     extends ConnectRejection
     implicit def univEq: UnivEq[ConnectRejection] = UnivEq.derive
   }
@@ -192,8 +191,7 @@ object ProjectSpaLogic extends StrictLogging {
             user    <- C.option(session.authenticatedUser, AnonymousSession)
             _       <- C.rightF(trace.addAttrs(Trace.Attr.ShipReqUserId(user.id.value) ::
                                                Trace.Attr.ShipReqProjectId(pid.value) :: Nil)(span))
-            owner   <- C.optionF(security.db.getProjectOwner(pid), ProjectNotFound)
-            _       <- C.ensure(security.allowProjectAccess(user, pid, projectOwner = owner) is Allow, AccessDenied)
+            _       <- C.optionF(security.db.getProjectAccess(user.id, pid), AccessDenied)
             now     <- C.rightF(svr.now)
           } yield {
             val static = WebSocketStatic(
@@ -218,7 +216,6 @@ object ProjectSpaLogic extends StrictLogging {
                              case -\/(AnonymousSession) => "AnonymousSession"
                              case -\/(ExpiredSession  ) => "ExpiredSession"
                              case -\/(InvalidProjectId) => "InvalidProjectId"
-                             case -\/(ProjectNotFound ) => "ProjectNotFound"
                              case -\/(AccessDenied    ) => "AccessDenied"
                            }
                 _        <- metrics.projectSpaWebSocketConnected(dur, mresult)

@@ -97,7 +97,4 @@ final class MockSecurity(override val db: MockDb, now: Eval[Instant], cfg: Serve
         SessionRestoreResult.None
     }
   }
-
-  override def allowProjectAccess(requester: User, projectId: ProjectId, projectOwner: UserId): Permission =
-    Allow.when(requester.id ==* projectOwner)
 }

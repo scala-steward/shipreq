@@ -87,6 +87,15 @@ object WebappDoobieCodecs {
       case UserGroup.Perm.Member => "member"
     })
 
+  implicit val doobieMetaProjectPerm: Meta[ProjectPerm] =
+    pgEnumString[ProjectPerm]("project_perm", {
+      case "admin"        => ProjectPerm.Admin
+      case "collaborator" => ProjectPerm.Collaborator
+    }, {
+      case ProjectPerm.Admin        => "admin"
+      case ProjectPerm.Collaborator => "collaborator"
+    })
+
   private def doobieReadUserGroupRel[A: Read, B: Read]: Read[UserGroup.Rel[A, B]] =
     Read.apply3(UserGroup.Rel.apply[A, B])
 

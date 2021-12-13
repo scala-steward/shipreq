@@ -110,11 +110,11 @@ object DbInterpreter {
     override final def logLoginSuccess(id: UserId, ip: Option[IP]): ConnectionIO[Unit] =
       logLoginSuccessSql.toUpdate0((id, ip)).execute
 
-    private[db] final val getProjectOwnerSql =
-      Query[ProjectId, UserId]("SELECT usr_id FROM project WHERE id=?")
+    // private[db] final val getProjectOwnerSql =
+    //   Query[ProjectId, UserId]("SELECT usr_id FROM project WHERE id=?")
 
-    override final def getProjectOwner(id: ProjectId): ConnectionIO[Option[UserId]] =
-      getProjectOwnerSql.toQuery0(id).option
+    // override final def getProjectOwner(id: ProjectId): ConnectionIO[Option[UserId]] =
+    //   getProjectOwnerSql.toQuery0(id).option
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -431,10 +431,11 @@ object DbInterpreter {
     override def createProject(uid: UserId, es: Vector[ActiveEvent], p: Project, k: ProjectEncryptionKey): ConnectionIO[ProjectId] = {
       val events = es.length
       val name   = es.reverseIterator.collectFirst { case e: Event.ProjectNameSet => e.name }.getOrElse("")
-      val data   = (uid, events, events, p.liveReqCount, p.content.reqs.size, name, k)
+      val data   = (events, events, p.liveReqCount, p.content.reqs.size, name, k)
       for {
-        pid  <- ForHomeSpa.createProjectQuery.toQuery0(data).unique
-        adds = es.iterator.zipWithIndex.map(x => SaveProjectEventLogic.unsafeInsertEvent(pid, EventOrd.fromIndex(x._2), x._1, uid))
+        pid  <- ForHomeSpa.createProjectQuery.unique(data)
+        _    <- ForHomeSpa.createProjectUsrEntry.run((pid, uid, ProjectPerm.Admin))
+        adds  = es.iterator.zipWithIndex.map(x => SaveProjectEventLogic.unsafeInsertEvent(pid, EventOrd.fromIndex(x._2), x._1, uid))
         done <- sequentially(adds, pid)
       } yield done
     }
@@ -621,13 +622,16 @@ object DbInterpreter {
 
   object ForHomeSpa {
 
-    private[db] val createProjectQuery: Query[(UserId, Int, Int, Int, Int, String, ProjectEncryptionKey), ProjectId] =
+    private[db] val createProjectQuery: Query[(Int, Int, Int, Int, String, ProjectEncryptionKey), ProjectId] =
       Query(
         """
-          |INSERT INTO project(usr_id, events_init, events_total, reqs_live, reqs_total, name, encryption_key)
-          |VALUES(?,?,?,?,?,?,?)
+          |INSERT INTO project(events_init, events_total, reqs_live, reqs_total, name, encryption_key)
+          |VALUES(?,?,?,?,?,?)
           |RETURNING id
         """.stripMargin.sql)
+
+    private[db] val createProjectUsrEntry: Update[(ProjectId, UserId, ProjectPerm)] =
+      Update("INSERT INTO project_usr VALUES(?,?,?)")
   }
 
   trait ForProjectSpa
@@ -730,10 +734,11 @@ object DbInterpreter {
       val reqs_live    = project.content.reqs.reqIterator().count(_.live(project.config.reqTypes) is Live)
       val reqs_total   = project.content.reqs.size
       val name         = project.name
-      val creationArgs = (userId, events_init, events_total, reqs_live, reqs_total, name, encKey)
+      val creationArgs = (events_init, events_total, reqs_live, reqs_total, name, encKey)
       val eventArgs    = (pid: ProjectId) => events.iterator.map((pid, _, userId)).toVector
       for {
-        pid <- ForHomeSpa.createProjectQuery.toQuery0(creationArgs).unique
+        pid <- ForHomeSpa.createProjectQuery.unique(creationArgs)
+        _   <- ForHomeSpa.createProjectUsrEntry.run((pid, userId, ProjectPerm.Admin))
         _   <- insertVerifiedEventSql.updateMany(eventArgs(pid))
       } yield pid
     }

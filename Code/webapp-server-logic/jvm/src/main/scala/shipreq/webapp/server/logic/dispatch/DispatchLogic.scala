@@ -274,20 +274,9 @@ final class DispatchLogic[F[_], RealReq](readRealReq: RealReq => dispatch.Reques
           case \/-(projectId) =>
             tracer.alg.addAttrs(Trace.Attr.ShipReqProjectId(projectId) :: Nil) >>
             needAuth(user =>
-              security.db.getProjectOwner(projectId).map {
-
-                case Some(owner) =>
-                  security.allowProjectAccess(
-                    requester    = user,
-                    projectId    = projectId,
-                    projectOwner = owner,
-                  ) match {
-                    case Allow => ResponseCmd.ProjectSpa.Serve(user, projectId)
-                    case Deny  => ResponseCmd.ProjectSpa.NotOwner
-                  }
-
-                case None =>
-                  ResponseCmd.ProjectSpa.InvalidId
+              security.db.getProjectAccess(user.id, projectId).map {
+                case Some(_) => ResponseCmd.ProjectSpa.Serve(user, projectId)
+                case None    => ResponseCmd.ProjectSpa.NotOwner
               }
             )
           case -\/(_) => F pure Response(ResponseCmd.ProjectSpa.InvalidId, Cookie.Update.empty)
