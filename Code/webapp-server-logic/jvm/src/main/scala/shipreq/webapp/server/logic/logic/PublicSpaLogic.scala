@@ -1,4 +1,4 @@
-package shipreq.webapp.server.logic.impl
+package shipreq.webapp.server.logic.logic
 
 import cats.effect.Sync
 import cats.instances.option._
