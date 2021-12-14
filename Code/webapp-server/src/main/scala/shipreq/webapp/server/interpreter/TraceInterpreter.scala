@@ -43,8 +43,7 @@ object TraceInterpreter {
           Attr.HttpStatus200 :: Nil
 
         case _: ResponseCmd.Redirect
-           | ResponseCmd.ProjectSpa.NotOwner
-           | ResponseCmd.ProjectSpa.InvalidId
+           | ResponseCmd.ProjectSpa.AccessDenied
         =>
           Attr.HttpStatus302 :: Nil
 

@@ -57,7 +57,7 @@ object DbInterpreter {
     Query[(ResponseType, Array[String], Int), Unit](s"SELECT visitor_stats_per_hour_add(now(),?,?,?)")
 
   def logVisitorStats(responseType: ResponseType, uniqueIps: Set[String], requests: Int): ConnectionIO[Unit] =
-    logVisitorStatsSql.toQuery0((responseType, uniqueIps.toArray, requests)).unique
+    logVisitorStatsSql.unique((responseType, uniqueIps.toArray, requests))
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   trait Base extends DB.Base[ConnectionIO] {
@@ -94,13 +94,13 @@ object DbInterpreter {
       Query[EmailAddr, UserAndPasswordInfo](s"SELECT $colsUserAndPasswordInfo FROM usr WHERE email=? AND password IS NOT NULL")
 
     override final def getUserAndPasswordByEmail(email: EmailAddr): ConnectionIO[Option[(User, PasswordAndSalt)]] =
-      getUserAndPasswordByEmailSql.toQuery0(email).option.map(_.flatMap(parseUserAndPasswordInfo))
+      getUserAndPasswordByEmailSql.option(email).map(_.flatMap(parseUserAndPasswordInfo))
 
     private[db] final val getUserAndPasswordByUsernameSql =
       Query[Username, UserAndPasswordInfo](s"SELECT $colsUserAndPasswordInfo FROM usr WHERE username=?")
 
     override final def getUserAndPasswordByUsername(username: Username): ConnectionIO[Option[(User, PasswordAndSalt)]] =
-      getUserAndPasswordByUsernameSql.toQuery0(username).option.map(_.flatMap(parseUserAndPasswordInfo))
+      getUserAndPasswordByUsernameSql.option(username).map(_.flatMap(parseUserAndPasswordInfo))
 
     private[db] final val logLoginSuccessSql =
       Update[(UserId, Option[IP])]("INSERT INTO usr_login_log(usr_id,ip) VALUES(?,?)")
@@ -108,11 +108,11 @@ object DbInterpreter {
     override final def logLoginSuccess(id: UserId, ip: Option[IP]): ConnectionIO[Unit] =
       logLoginSuccessSql.toUpdate0((id, ip)).execute
 
-    private[db] final val getProjectOwnerSql =
-      Query[ProjectId, UserId]("SELECT usr_id FROM project WHERE id=?")
+    private[db] final val getProjectAccessSql =
+      Query[(ProjectId, UserId), ProjectPerm]("SELECT perm FROM project_access WHERE project_id=? AND usr_id=?")
 
-    override final def getProjectOwner(id: ProjectId): ConnectionIO[Option[UserId]] =
-      getProjectOwnerSql.toQuery0(id).option
+    override final def getProjectAccess(pid: ProjectId, uid: UserId): ConnectionIO[Option[ProjectPerm]] =
+      getProjectAccessSql.option((pid, uid))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -123,13 +123,13 @@ object DbInterpreter {
       Query[VerificationToken, Instant]("SELECT confirmation_sent_at FROM usr WHERE confirmation_token=?")
 
     override final def getUserRegistrationTokenIssueDate(t: VerificationToken): ConnectionIO[Option[Instant]] =
-      getUserRegistrationTokenIssueDateSql.toQuery0(t).option
+      getUserRegistrationTokenIssueDateSql.option(t)
 
     private[db] final val getResetPasswordTokenIssueDateSql =
       Query[VerificationToken, Option[Instant]]("SELECT reset_password_sent_at FROM usr WHERE reset_password_token=?")
 
     override final def getResetPasswordTokenIssueDate(t: VerificationToken): ConnectionIO[Option[Instant]] =
-      getResetPasswordTokenIssueDateSql.toQuery0(t).option.map(_.flatten)
+      getResetPasswordTokenIssueDateSql.option(t).map(_.flatten)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -173,7 +173,7 @@ object DbInterpreter {
       Query[EmailAddr, RegInfo](s"SELECT $colsRegInfo FROM usr WHERE email=?").map(parseRegInfo)
 
     override final def getUserRegistration(e: EmailAddr): ConnectionIO[Option[UserRegistration]] =
-      getUserRegistrationSql.toQuery0(e).option
+      getUserRegistrationSql.option(e)
 
     private[db] final val createUserPlaceholderSql =
       Update[(EmailAddr, VerificationToken)]("INSERT INTO usr(email, confirmation_token, confirmation_sent_at) VALUES(?,?,NOW())")
@@ -206,7 +206,7 @@ object DbInterpreter {
                                                 newsletter: Boolean,
                                                 encKey    : UserEncryptionKey): ConnectionIO[UserRegistrationResult] = {
       import UserRegistrationResult._
-      sqlRegisterUser.toQuery0((username, ps, token)).option.attemptSql.flatMap {
+      sqlRegisterUser.option((username, ps, token)).attemptSql.flatMap {
         case Right(Some(id)) =>
           sqlInsertUsrd.toUpdate0((id, name, newsletter, encKey)).run.map(_ => Success(id))
 
@@ -240,14 +240,14 @@ object DbInterpreter {
         .map(parsePasswordResetState)
 
     private final def getPasswordResetStateByEmail(email: EmailAddr): ConnectionIO[Option[DB.PasswordResetState]] =
-      getPasswordResetStateByEmailSql.toQuery0(email).option
+      getPasswordResetStateByEmailSql.option(email)
 
     private[db] final val getPasswordResetStateByUsernameSql =
       Query[Username, (EmailAddr, PasswordResetStateInfo)](s"SELECT email,$colsPasswordResetStateInfo FROM usr WHERE username=?")
       .map(x => (x._1, parsePasswordResetState(x._2)))
 
     private final def getPasswordResetStateByUsername(u: Username): ConnectionIO[Option[(EmailAddr, DB.PasswordResetState)]] =
-      getPasswordResetStateByUsernameSql.toQuery0(u).option
+      getPasswordResetStateByUsernameSql.option(u)
 
     override final def getPasswordResetState(ue: Username \/ EmailAddr): ConnectionIO[Option[(EmailAddr, PasswordResetState)]] =
       ue match {
@@ -279,7 +279,7 @@ object DbInterpreter {
 
     /** This also clears the token */
     override final def updateUserPassword(token: VerificationToken, ps: PasswordAndSalt): ConnectionIO[Option[UserId]] =
-      updateUserPasswordSql.toQuery0((ps, token)).option
+      updateUserPasswordSql.option((ps, token))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -287,7 +287,7 @@ object DbInterpreter {
   private def projectMetaDataQuery[A: Write](where: String): Query[A, ProjectMetaData] = {
     type Types = (ProjectId, String, Int, Int, Int, Int, Instant, Instant, Instant)
     val cols = "id, name, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at"
-    val sql = s"SELECT $cols FROM project WHERE $where"
+    val sql = s"SELECT $cols FROM project p, project_access a WHERE p.id = a.project_id AND $where"
     Query[A, Types](sql).map {
       case (id, name, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at) =>
         ProjectMetaData(
@@ -305,10 +305,10 @@ object DbInterpreter {
 
   trait GetProjectMetaData extends DB.GetProjectMetaData[ConnectionIO] {
     private[db] val getProjectMetaDataQuery =
-      projectMetaDataQuery[ProjectId]("id=?")
+      projectMetaDataQuery[ProjectId]("project_id=?")
 
     override def getProjectMetaData(id: ProjectId): ConnectionIO[Option[ProjectMetaData]] =
-      getProjectMetaDataQuery.toQuery0(id).option
+      getProjectMetaDataQuery.option(id)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -374,7 +374,7 @@ object DbInterpreter {
     /** unsafe because the ord could be in-use */
     def unsafeInsertEvent(pid: ProjectId, ord: EventOrd, event: ActiveEvent, userId: UserId) = {
       val enc = ProjectEventSerialisation.encode(event)
-      insertEventQuery.toQuery0((pid, ord, enc._1, enc._2, userId)).unique
+      insertEventQuery.unique((pid, ord, enc._1, enc._2, userId))
     }
 
     private def updateProjectSql(moreSets: String) =
@@ -424,14 +424,15 @@ object DbInterpreter {
       projectMetaDataQuery[UserId]("usr_id=?")
 
     override def getAllProjectMetaDataForUser(id: UserId): ConnectionIO[List[ProjectMetaData]] =
-      getAllProjectMetaDataForUserQuery.toQuery0(id).to[List]
+      getAllProjectMetaDataForUserQuery.to[List](id)
 
     override def createProject(uid: UserId, es: Vector[ActiveEvent], p: Project, k: ProjectEncryptionKey): ConnectionIO[ProjectId] = {
       val events = es.length
       val name   = es.reverseIterator.collectFirst { case e: Event.ProjectNameSet => e.name }.getOrElse("")
-      val data   = (uid, events, events, p.liveReqCount, p.content.reqs.size, name, k)
+      val data   = (events, events, p.liveReqCount, p.content.reqs.size, name, k)
       for {
-        pid  <- ForHomeSpa.createProjectQuery.toQuery0(data).unique
+        pid  <- ForHomeSpa.createProjectQuery.unique(data)
+        _    <- ForHomeSpa.createProjectAccessQuery.run((pid, uid, ProjectPerm.Admin))
         adds = es.iterator.zipWithIndex.map(x => SaveProjectEventLogic.unsafeInsertEvent(pid, EventOrd.fromIndex(x._2), x._1, uid))
         done <- sequentially(adds, pid)
       } yield done
@@ -440,13 +441,16 @@ object DbInterpreter {
 
   object ForHomeSpa {
 
-    private[db] val createProjectQuery: Query[(UserId, Int, Int, Int, Int, String, ProjectEncryptionKey), ProjectId] =
+    private[db] val createProjectQuery: Query[(Int, Int, Int, Int, String, ProjectEncryptionKey), ProjectId] =
       Query(
         """
-          |INSERT INTO project(usr_id, events_init, events_total, reqs_live, reqs_total, name, encryption_key)
-          |VALUES(?,?,?,?,?,?,?)
+          |INSERT INTO project(events_init, events_total, reqs_live, reqs_total, name, encryption_key)
+          |VALUES(?,?,?,?,?,?)
           |RETURNING id
         """.stripMargin.sql)
+
+    private[db] val createProjectAccessQuery: Update[(ProjectId, UserId, ProjectPerm)] =
+      Update("INSERT INTO project_access VALUES(?,?,?)")
   }
 
   trait ForProjectSpa
@@ -465,7 +469,7 @@ object DbInterpreter {
     override def projectSpaInitPage(pid: ProjectId, uid: UserId): ConnectionIO[Option[DB.ProjectSpaInitPage]] =
       for {
         _ <- logProjectRead.toUpdate0(pid).run
-        o <- projectSpaInitPageQuery.toQuery0((pid, uid)).option
+        o <- projectSpaInitPageQuery.option((pid, uid))
       } yield o.map { case (name, pk, uk) => DB.ProjectSpaInitPage(name, uk, pk) }
 
   }
@@ -516,12 +520,9 @@ object DbInterpreter {
       Query[String, Long]("SELECT pg_database_size(?)")
 
     override final val dbSize: ConnectionIO[Long] =
-      dbSizeSql
-        .toQuery0(dbName.replaceFirst("^.*/", ""))
-        .unique
+      dbSizeSql.unique(dbName.replaceFirst("^.*/", ""))
 
-    private[db] val userIdByUsernameSql =
-      Query[Username, UserId]("SELECT id FROM usr WHERE username=?")
+    private[db] val userIdByUsernameSql = Query[Username, UserId]("SELECT id FROM usr WHERE username=?")
 
     private[db] val userIdByEmailSql =
       Query[EmailAddr, UserId]("SELECT id FROM usr WHERE email=?")
@@ -549,10 +550,11 @@ object DbInterpreter {
       val reqs_live    = project.content.reqs.reqIterator().count(_.live(project.config.reqTypes) is Live)
       val reqs_total   = project.content.reqs.size
       val name         = project.name
-      val creationArgs = (userId, events_init, events_total, reqs_live, reqs_total, name, encKey)
+      val creationArgs = (events_init, events_total, reqs_live, reqs_total, name, encKey)
       val eventArgs    = (pid: ProjectId) => events.iterator.map((pid, _, userId)).toVector
       for {
-        pid <- ForHomeSpa.createProjectQuery.toQuery0(creationArgs).unique
+        pid <- ForHomeSpa.createProjectQuery.unique(creationArgs)
+        _   <- ForHomeSpa.createProjectAccessQuery.run((pid, userId, ProjectPerm.Admin))
         _   <- insertVerifiedEventSql.updateMany(eventArgs(pid))
       } yield pid
     }

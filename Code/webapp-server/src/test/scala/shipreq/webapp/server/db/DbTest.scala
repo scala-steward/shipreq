@@ -139,7 +139,7 @@ object DbTest extends TestSuite {
         val db = dbu.dbAlgebra
         val u = dbu.newUserId()
         val k = crypto.generateKey256.unsafeRun()
-        val pid = xa.assertRowCountChanges("project" -> 1, "project_event" -> 1, "project_access_per_hour" -> 1) {
+        val pid = xa.assertRowCountChanges("project" -> 1, "project_access" -> 1, "project_event" -> 1, "project_access_per_hour" -> 1) {
           createProject(u, "xxx", ProjectEncryptionKey(k.duplicate))
         }
         val pmd = xa ! db.getProjectMetaData(pid)

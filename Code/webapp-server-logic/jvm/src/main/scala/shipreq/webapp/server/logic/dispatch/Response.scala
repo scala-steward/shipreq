@@ -22,8 +22,7 @@ object ResponseCmd {
 
   object ProjectSpa {
     final case class Serve(user: User, projectId: ProjectId) extends ResponseCmd
-    case object NotOwner extends ResponseCmd
-    case object InvalidId extends ResponseCmd
+    case object AccessDenied extends ResponseCmd
   }
 
   final case class Redirect(dest: Url.Relative) extends ResponseCmd

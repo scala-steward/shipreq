@@ -173,14 +173,13 @@ object DispatchBM {
     implicit object db extends DB.VerificationTokenReadOnly[F] with DB.ForSecurity[F] {
       var token = Option.empty[Instant]
       var getUserOk = true
-      var projectOwner: Option[UserId] = Some(user.id)
 
       override def getUserRegistrationTokenIssueDate(t: VerificationToken)      = F point token
       override def getResetPasswordTokenIssueDate   (t: VerificationToken)      = F point token
       override def getUserAndPasswordByEmail        (e: EmailAddr)              = F.point(Option.when(getUserOk)((user, ps)))
       override def getUserAndPasswordByUsername     (u: Username)               = F.point(Option.when(getUserOk)((user, ps)))
       override def logLoginSuccess                  (i: UserId, ip: Option[IP]) = F.point(())
-      override def getProjectOwner                  (id: ProjectId)             = F point projectOwner
+      override def getProjectAccess                 (p: ProjectId, u: UserId)   = F point Option.when(u ==* user.id)(ProjectPerm.Admin)
     }
 
     implicit object security extends Security.Algebra[F] {
@@ -208,9 +207,6 @@ object DispatchBM {
         val cookie = Cookie(cookieName, value, None, None, None)
         Cookie.Update.add(cookie)
       }
-
-      override def allowProjectAccess(requester: User, projectId: ProjectId, projectOwner: UserId) =
-        Allow.when(requester.id ==* projectOwner)
     }
 
     implicit val svrSession: Server.Session[F] = new Server.Session[F] {

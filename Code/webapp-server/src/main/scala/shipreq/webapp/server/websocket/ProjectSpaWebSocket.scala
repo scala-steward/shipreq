@@ -120,7 +120,7 @@ final class ProjectSpaWebSocket extends StrictLogging {
       case Some(NoSession | ExpiredSession) =>
         fxClose(s, CloseReasons.unauthorised).unsafeRun()
 
-      case Some(r@ (AnonymousSession | AccessDenied | InvalidProjectId | ProjectNotFound)) =>
+      case Some(r@ (AnonymousSession | AccessDenied | InvalidProjectId)) =>
         logger.warn(s"Rejecting WebSocket connection: $r")
         // For security reasons, don't vary the response in a way that would allow attackers to know when they've
         // discovered a valid project ID, or an existing project.

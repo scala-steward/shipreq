@@ -22,7 +22,7 @@ object SqlTest extends TestSuite {
       "getUserAndPasswordByEmailSql"    - TestDb.check(db.getUserAndPasswordByEmailSql)
       "getUserAndPasswordByUsernameSql" - TestDb.check(db.getUserAndPasswordByUsernameSql)
       "logLoginSuccessSql"              - TestDb.check(db.logLoginSuccessSql)
-      "getProjectOwnerSql"              - TestDb.check(db.getProjectOwnerSql)
+      "getProjectAccessSql"             - TestDb.check(db.getProjectAccessSql)
     }
 
     "verificationTokenReadOnly" - {
@@ -66,6 +66,7 @@ object SqlTest extends TestSuite {
 
     "homeSpa" - {
       "createProject"                - TestDb.check(DbInterpreter.ForHomeSpa.createProjectQuery)
+      "createProjectAccess"          - TestDb.check(DbInterpreter.ForHomeSpa.createProjectAccessQuery)
       "getAllProjectMetaDataForUser" - TestDb.check(db.getAllProjectMetaDataForUserQuery)
     }
 
