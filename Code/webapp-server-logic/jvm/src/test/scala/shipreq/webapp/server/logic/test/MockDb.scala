@@ -48,9 +48,10 @@ object MockDb {
     lazy val project: Project =
       ApplyEvent.trusted(events)(Project.empty).getOrThrow()
 
-    lazy val projectMetaData: ProjectMetaData =
+    def projectMetaData(perm: ProjectPerm): ProjectMetaData =
       ProjectMetaData.fromProject(project)(
         id            = Obfuscators.projectId.obfuscate(projectId),
+        perm          = perm,
         eventsInit    = initEvents,
         eventsTotal   = events.size,
         createdAt     = createdAt,
@@ -253,10 +254,11 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     addProjectAccess(projectId, userId, ProjectPerm.Admin)
   }
 
+  private def getProjectAccessEntry(pid: ProjectId, uid: UserId) =
+    projectAccess.find(e => e.pid ==* pid && e.uid ==* uid)
+
   override def getProjectAccess(pid: ProjectId, uid: UserId) = Eval.always[Option[ProjectPerm]] {
-    projectAccess
-      .find(e => e.pid ==* pid && e.uid ==* uid)
-      .map(_.perm)
+    getProjectAccessEntry(pid, uid).map(_.perm)
   }
 
   private def nextProjectId(): ProjectId =
@@ -269,18 +271,20 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
   }
 
   override def getAllProjectMetaDataForUser(id: UserId) = Eval.always[List[ProjectMetaData]] {
-    val projectIds = projectAccess.iterator.filter(_.uid ==* id).map(_.pid).toSet
+    val perms = projectAccess.iterator.filter(_.uid ==* id).map(e => e.pid -> e.perm).toMap
 
     projects.valuesIterator
-      .filter(projectIds contains _.projectId)
-      .map(_.projectMetaData)
+      .filter(perms.keySet contains _.projectId)
+      .map(e => e.projectMetaData(perms(e.projectId)))
       .toList
   }
 
   var loadProjectMetaDataLog = Vector.empty[ProjectId]
-  override def getProjectMetaData(id: ProjectId) = Eval.always[Option[ProjectMetaData]] {
-    loadProjectMetaDataLog :+= id
-    projects.get(id).map(_.projectMetaData)
+  override def getProjectMetaData(pid: ProjectId, uid: UserId) = Eval.always[Option[ProjectMetaData]] {
+    loadProjectMetaDataLog :+= pid
+    getProjectAccessEntry(pid, uid).map { a =>
+      projects.need(pid).projectMetaData(a.perm)
+    }
   }
 
   override def projectSpaInitPage(pid: ProjectId, uid: UserId) = Eval.always[Option[DB.ProjectSpaInitPage]] {

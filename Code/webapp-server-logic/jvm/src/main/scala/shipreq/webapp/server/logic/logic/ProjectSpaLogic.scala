@@ -487,6 +487,7 @@ object ProjectSpaLogic extends StrictLogging {
 
       private def onInitApp: MsgFn[Option[EventOrd.Latest], ErrorMsg \/ InitAppData] = in => {
         val pid     = in.static.projectId
+        val uid     = in.static.user.id
         val userOrd = in.input
 
         type Result = ErrorMsg \/ InitAppData
@@ -516,7 +517,7 @@ object ProjectSpaLogic extends StrictLogging {
               for {
                 (mdo, read) <- runDB(
                                  for {
-                                   a <- db.getProjectMetaData(pid)
+                                   a <- db.getProjectMetaData(pid, uid)
                                    b <- db.getProjectEvents(pid, DB.EventFilter.after(p.ord))
                                  } yield (a, b)
                                )
@@ -561,7 +562,7 @@ object ProjectSpaLogic extends StrictLogging {
 
         for {
           cacheRes <- redis.read(pid)
-          mdOpt    <- runDB(db.getProjectMetaData(pid))
+          mdOpt    <- runDB(db.getProjectMetaData(pid, uid))
           r        <- (cacheRes, mdOpt) match {
                      case (\/-(cache), Some(md)) =>
                        if (cache.isCompleteTo(md.latestOrd))
@@ -583,6 +584,7 @@ object ProjectSpaLogic extends StrictLogging {
 
       private def onReconnect: MsgFn[Option[EventOrd.Latest], VerifiedEvent.Seq] = in => {
         val pid     = in.static.projectId
+        val uid     = in.static.user.id
         val userOrd = in.input
         val span    = getSpan(in.static)
 
@@ -637,7 +639,7 @@ object ProjectSpaLogic extends StrictLogging {
 
         for {
           newState <- redisSubscribe
-          mdOpt    <- runDB(db.getProjectMetaData(pid))
+          mdOpt    <- runDB(db.getProjectMetaData(pid, uid))
           md       = mdOpt.get // This will fail during connection usage after project deleted
           dbLatest = md.latestOrd
           events   <- if (dbLatest > userOrd)

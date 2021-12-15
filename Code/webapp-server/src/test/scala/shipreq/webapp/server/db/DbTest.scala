@@ -142,7 +142,7 @@ object DbTest extends TestSuite {
         val pid = xa.assertRowCountChanges("project" -> 1, "project_access" -> 1, "project_event" -> 1, "project_access_per_hour" -> 1) {
           createProject(u, "xxx", ProjectEncryptionKey(k.duplicate))
         }
-        val pmd = xa ! db.getProjectMetaData(pid)
+        val pmd = xa ! db.getProjectMetaData(pid, u)
         assertEq(pmd.map(_.name), Some("xxx"))
 
         val k2 = xa ! sql"SELECT encryption_key FROM project WHERE id = $pid".query[ProjectEncryptionKey].unique
@@ -196,7 +196,7 @@ object DbTest extends TestSuite {
           val pid   = xa ! db.createProject(uid, data1.map(_._1.event.active), data1.last._2, k)
 
           def assertPMD(expect: ProjectMetaData => ProjectMetaData)(implicit l: Line): Unit = {
-            val a = (xa ! db.getProjectMetaData(pid)).get
+            val a = (xa ! db.getProjectMetaData(pid, uid)).get
             val e = expect(a)
             assertEq(a, e)
           }
@@ -206,6 +206,7 @@ object DbTest extends TestSuite {
           assertEq("first ord", read1.head.ord, EventOrd.first)
           assertPMD(a => ProjectMetaData.fromProject(data1.last._2)(
             id            = a.id,
+            perm          = ProjectPerm.Admin,
             eventsInit    = data1.length,
             eventsTotal   = data1.length,
             createdAt     = a.createdAt,
@@ -221,6 +222,7 @@ object DbTest extends TestSuite {
           assertSeq(readAll, data.map(_._1))
           assertPMD(a => ProjectMetaData.fromProject(data.last._2)(
             id            = a.id,
+            perm          = ProjectPerm.Admin,
             eventsInit    = data1.length,
             eventsTotal   = data.length,
             createdAt     = a.createdAt,

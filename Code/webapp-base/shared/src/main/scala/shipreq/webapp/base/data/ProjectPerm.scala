@@ -9,5 +9,7 @@ object ProjectPerm {
   case object Collaborator extends ProjectPerm(1)
 
   val values = AdtMacros.adtValues[ProjectPerm]
+
+  implicit def univEq: UnivEq[ProjectPerm] = UnivEq.derive
 }
 

@@ -165,7 +165,7 @@ object DB {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   trait GetProjectMetaData[F[_]] {
-    def getProjectMetaData(id: ProjectId): F[Option[ProjectMetaData]]
+    def getProjectMetaData(pid: ProjectId, uid: UserId): F[Option[ProjectMetaData]]
   }
 
   trait GetProjectEvents[F[_]] {

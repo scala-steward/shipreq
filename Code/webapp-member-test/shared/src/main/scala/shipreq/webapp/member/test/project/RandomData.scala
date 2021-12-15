@@ -21,7 +21,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util._
 import shipreq.webapp.base.config._
-import shipreq.webapp.base.data.UserId
+import shipreq.webapp.base.data.{ProjectPerm, UserId}
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
@@ -1755,9 +1755,13 @@ object RandomData {
   lazy val instantPast: Gen[Instant] =
     instantPast(Duration.ofDays(365 * 5))
 
+  lazy val projectPerm: Gen[ProjectPerm] =
+    Gen.chooseNE(ProjectPerm.values)
+
   lazy val projectMetaData: Gen[ProjectMetaData] =
     for {
       id            <- projectIdPublic
+      perm          <- projectPerm
       name          <- projectName
       eventsInit    <- Gen.chooseInt(3)
       eventsTotal   <- Gen.chooseInt(30000)
@@ -1770,6 +1774,7 @@ object RandomData {
     } yield
     ProjectMetaData(
       id            = id,
+      perm          = perm,
       name          = name,
       eventsInit    = eventsInit.min(eventsTotal),
       eventsTotal   = eventsTotal,

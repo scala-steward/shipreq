@@ -46,7 +46,7 @@ object HomeSpaLogic {
     for {
       key <- crypto.generateKey256
       pid <- db.createProject(userId, events, p2, ProjectEncryptionKey(key))
-      pmd <- db.getProjectMetaData(pid)
+      pmd <- db.getProjectMetaData(pid, userId)
     } yield pmd.get
   }
 

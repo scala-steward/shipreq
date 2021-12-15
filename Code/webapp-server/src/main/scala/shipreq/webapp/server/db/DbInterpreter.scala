@@ -285,14 +285,15 @@ object DbInterpreter {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   private def projectMetaDataQuery[A: Write](where: String): Query[A, ProjectMetaData] = {
-    type Types = (ProjectId, String, Int, Int, Int, Int, Instant, Instant, Instant)
-    val cols = "id, name, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at"
+    type Types = (ProjectId, String, ProjectPerm, Int, Int, Int, Int, Instant, Instant, Instant)
+    val cols = "id, name, perm, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at"
     val sql = s"SELECT $cols FROM project p, project_access a WHERE p.id = a.project_id AND $where"
     Query[A, Types](sql).map {
-      case (id, name, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at) =>
+      case (id, name, perm, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at) =>
         ProjectMetaData(
           id            = Obfuscators.projectId.obfuscate(id),
           name          = name,
+          perm          = perm,
           eventsInit    = events_init,
           eventsTotal   = events_total,
           reqsLive      = reqs_live,
@@ -305,10 +306,10 @@ object DbInterpreter {
 
   trait GetProjectMetaData extends DB.GetProjectMetaData[ConnectionIO] {
     private[db] val getProjectMetaDataQuery =
-      projectMetaDataQuery[ProjectId]("project_id=?")
+      projectMetaDataQuery[(ProjectId, UserId)]("project_id=? AND usr_id=?")
 
-    override def getProjectMetaData(id: ProjectId): ConnectionIO[Option[ProjectMetaData]] =
-      getProjectMetaDataQuery.option(id)
+    override def getProjectMetaData(pid: ProjectId, uid: UserId): ConnectionIO[Option[ProjectMetaData]] =
+      getProjectMetaDataQuery.option((pid, uid))
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

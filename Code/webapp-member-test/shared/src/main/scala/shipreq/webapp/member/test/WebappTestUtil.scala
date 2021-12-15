@@ -7,6 +7,7 @@ import japgolly.microlibs.stdlib_ext.MutableArray
 import java.time.Instant
 import java.time.temporal.ChronoUnit._
 import shipreq.base.test._
+import shipreq.webapp.base.data.ProjectPerm
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
@@ -51,9 +52,10 @@ object WebappTestUtil extends WebappTestEquality with WebappTestUtil {
 
 trait WebappTestUtil extends BaseTestUtil {
 
-  def looseProjectMetaData(p: Project, eventsTotal: Int = 123, eventsInit: Int = 2): ProjectMetaData =
+  def looseProjectMetaData(p: Project, eventsTotal: Int = 123, eventsInit: Int = 2, perm: ProjectPerm = ProjectPerm.Admin): ProjectMetaData =
     ProjectMetaData.fromProject(p)(
       id            = Obfuscated("t3sT"),
+      perm          = perm,
       eventsInit    = eventsInit.min(eventsTotal),
       eventsTotal   = eventsTotal,
       createdAt     = Instant.now().minus(28, DAYS),
