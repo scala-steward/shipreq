@@ -249,11 +249,24 @@ object DB {
 
     /** @return Either user ids for all provided usernames, or a set of invalid usernames. */
     def getUserIdsByUsernameNE(usernames: NonEmptySet[Username]): F[NonEmptySet[Username] \/ Map[Username, UserId]]
+
+    def updateProjectAccess(id    : ProjectId,
+                            remove: Set[UserId],
+                            add   : Map[UserId, ProjectPerm]): F[UpdateProjectAccessError \/ Unit]
+
+    def getProjectAccess(id: ProjectId): F[Map[UserId, ProjectPerm]]
   }
 
   final case class ProjectSpaInitPage(name      : Project.Name,
                                       userKey   : UserEncryptionKey,
                                       projectKey: ProjectEncryptionKey)
+
+  sealed trait UpdateProjectAccessError
+  object UpdateProjectAccessError {
+    case object CantRemoveLastAdmin extends UpdateProjectAccessError
+
+    implicit def univEq: UnivEq[UpdateProjectAccessError] = UnivEq.derive
+  }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

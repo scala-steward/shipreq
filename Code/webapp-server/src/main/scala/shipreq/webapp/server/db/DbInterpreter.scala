@@ -485,6 +485,42 @@ object DbInterpreter {
       }
     }
 
+    private[this] val projectAccessDelete = Update[(ProjectId, UserId)](
+      "DELETE FROM project_access WHERE project_id=? AND usr_id=?")
+
+    private[this] val projectAccessAdd = Update[(ProjectId, UserId, ProjectPerm)](
+      "INSERT INTO project_access(project_id, usr_id, perm) VALUES(?,?,?)")
+
+    private[this] val projectAccessHasPerm = Query[(ProjectId, ProjectPerm), Boolean](
+      "SELECT EXISTS(SELECT 1 FROM project_access WHERE project_id=? AND perm=?)")
+
+    override def updateProjectAccess(id    : ProjectId,
+                                     remove: Set[UserId],
+                                     add   : Map[UserId, ProjectPerm]): ConnectionIO[DB.UpdateProjectAccessError \/ Unit] = {
+
+      val deletes = (remove.iterator ++ add.keys).map((id, _)).toList
+      val adds    = add.iterator.map(t => (id, t._1, t._2)).toList
+
+      val apply: ConnectionIO[DB.UpdateProjectAccessError \/ Unit] =
+        for {
+          _        <- assertTransactionLevelSerializable
+          _        <- projectAccessDelete.updateMany(deletes)
+          _        <- projectAccessAdd.updateMany(adds)
+          hasAdmin <- projectAccessHasPerm.unique((id, ProjectPerm.Admin))
+        } yield
+          if (hasAdmin)
+            \/-(())
+          else
+            -\/(DB.UpdateProjectAccessError.CantRemoveLastAdmin)
+
+      apply.rollbackWhen(_.isLeft)
+    }
+
+    private[this] val getProjectAccessQuery = Query[ProjectId, (UserId, ProjectPerm)](
+      "SELECT usr_id, perm FROM project_access WHERE project_id=?")
+
+    override def getProjectAccess(id: ProjectId): ConnectionIO[Map[UserId, ProjectPerm]] =
+      getProjectAccessQuery.toMap(id)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

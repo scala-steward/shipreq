@@ -25,5 +25,8 @@ object DbLawsTest extends DbLaws {
 
     override def createUser()         = dbu.newUser()
     override val getUserIdsByUsername = xa ! DB.getUserIdsByUsername(_)
- }
+    override val createProject        = xa ! DB.createProject(_, _, _, _)
+    override val updateProjectAccess  = xa ! DB.updateProjectAccess(_, _, _)
+    override val getProjectAccess     = xa ! DB.getProjectAccess(_)
+  }
 }

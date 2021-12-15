@@ -11,6 +11,7 @@ import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.server.logic.algebra._
 import shipreq.webapp.server.logic.data._
+import shipreq.webapp.server.logic.laws.DbLaws
 import shipreq.webapp.server.logic.util.Obfuscators
 
 object MockDb {
@@ -281,6 +282,9 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     pid
   }
 
+  def createEmptyProject(id: UserId): ProjectId =
+    createProject(id, Vector.empty, Project.empty, DbLaws.genProjectEncryptionKey.sample()).value
+
   override def getAllProjectMetaDataForUser(id: UserId) = Eval.always[List[ProjectMetaData]] {
     val perms = projectAccess.iterator.filter(_.uid ==* id).map(e => e.pid -> e.perm).toMap
 
@@ -377,5 +381,34 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
 
   override val dbSize =
     Eval.now(0L)
+
+  override def updateProjectAccess(id    : ProjectId,
+                                   remove: Set[UserId],
+                                   add   : Map[UserId, ProjectPerm]) = Eval.always[DB.UpdateProjectAccessError \/ Unit] {
+    val orig = projectAccess
+    val remove2 = remove ++ add.keys
+
+    projectAccess = projectAccess.filterNot { e => e.pid ==* id && remove2.contains(e.uid) }
+
+    add.foreach { case (u, perm) => addProjectAccess(id, u, perm) }
+
+    val result: DB.UpdateProjectAccessError \/ Unit =
+      projectAccess.find(e => e.pid ==* id && e.perm ==* ProjectPerm.Admin) match {
+        case Some(_) => \/-(())
+        case None    => -\/(DB.UpdateProjectAccessError.CantRemoveLastAdmin)
+      }
+
+    if (result.isLeft)
+      projectAccess = orig
+
+    result
+  }
+
+  override def getProjectAccess(id: ProjectId) = Eval.always[Map[UserId, ProjectPerm]] {
+    projectAccess.iterator
+      .filter(_.pid ==* id)
+      .map(e => (e.uid, e.perm))
+      .toMap
+  }
 
 }

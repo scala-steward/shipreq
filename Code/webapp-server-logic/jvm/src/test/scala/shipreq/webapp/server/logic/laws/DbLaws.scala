@@ -2,11 +2,24 @@ package shipreq.webapp.server.logic.laws
 
 import cats.implicits._
 import java.util.UUID
+import nyaya.gen.Gen
 import shipreq.webapp.base.data._
+import shipreq.webapp.member.project.data.Project
+import shipreq.webapp.member.project.event.ActiveEvent
+import shipreq.webapp.member.test.project.RandomData
+import shipreq.webapp.server.logic.algebra.DB.UpdateProjectAccessError
+import shipreq.webapp.server.logic.data.ProjectEncryptionKey
 import shipreq.webapp.server.logic.test.WebappServerLogicTestUtil._
+import sourcecode.Line
 import utest._
 
+object DbLaws {
+  val genProjectEncryptionKey: Gen[ProjectEncryptionKey] =
+    RandomData.genBinaryData(32).map(ProjectEncryptionKey.apply)
+}
+
 abstract class DbLaws extends TestSuite {
+  import DbLaws._
 
   protected def beforeTest(): Unit =
     ()
@@ -15,21 +28,38 @@ abstract class DbLaws extends TestSuite {
 
   protected trait DbApi {
     def createUser(): User
+    def createProject: (UserId, Vector[ActiveEvent], Project, ProjectEncryptionKey) => ProjectId
     def getUserIdsByUsername: Set[Username] => NonEmptySet[Username] \/ Map[Username, UserId]
+    def updateProjectAccess: (ProjectId, Set[UserId], Map[UserId, ProjectPerm]) => UpdateProjectAccessError \/ Unit
+    def getProjectAccess: ProjectId => Map[UserId, ProjectPerm]
   }
 
   // ===================================================================================================================
 
   private final class Tester()(implicit val db: DbApi) {
-    def createUser() = db.createUser()
+    def createUser() =
+      db.createUser()
+
+    def createProject(uid: UserId): ProjectId =
+      db.createProject(uid, Vector.empty, Project.empty, genProjectEncryptionKey.sample())
+
+    def assertProjectAccess(pid: ProjectId)(entries: (UserId, ProjectPerm)*)(implicit q: Line): Unit = {
+      val expect = entries.toMap
+      assert(expect.size == entries.size)
+      val actual = db.getProjectAccess(pid)
+      assertMap(actual, expect)
+    }
   }
+
+  private implicit def autoUserId(u: User): UserId = u.id
 
   protected def test[A](f: (Tester, User) => A): A =
     newDbApi { implicit db =>
       val t = new Tester
 
       // Create some irrelevant noise
-      db.createUser()
+      val u = db.createUser()
+      t.createProject(u)
 
       f(t, db.createUser())
     }
@@ -55,6 +85,63 @@ abstract class DbLaws extends TestSuite {
     assertEq(e, NonEmptySet(u2, u3))
   }
 
+  private def testUpdateProjectAccess(t: Tester, pid: ProjectId)(remove: UserId*)(add: (UserId, ProjectPerm)*)
+                                     (expect: UpdateProjectAccessError \/ Unit, expectedDbState: (UserId, ProjectPerm)*)(implicit q: Line): Unit = {
+    val before = t.db.getProjectAccess(pid)
+    val actual = t.db.updateProjectAccess(pid, remove.toSet, add.toMap)
+    assertEq(actual, expect)
+    if (expect.isLeft)
+      assertMap(before, t.db.getProjectAccess(pid))
+    else
+      t.assertProjectAccess(pid)(expectedDbState: _*)
+  }
+
+  private def addProjectMember(t: Tester, pid: ProjectId, perm: ProjectPerm): UserId = {
+    val u = t.db.createUser().id
+    t.db.updateProjectAccess(pid, Set.empty, Map(u -> perm)).getOrThrow()
+    u
+  }
+
+  private def testUpdateProjectAccessNoUsers() = test { (t, u) =>
+    val p = t.createProject(u)
+    testUpdateProjectAccess(t, p)(u)()(-\/(UpdateProjectAccessError.CantRemoveLastAdmin))
+  }
+
+  private def testUpdateProjectAccessOnlyCollab() = test { (t, u) =>
+    val p = t.createProject(u)
+    testUpdateProjectAccess(t, p)(u)(u.id -> ProjectPerm.Collaborator)(-\/(UpdateProjectAccessError.CantRemoveLastAdmin))
+  }
+
+  private def testUpdateProjectAccessAdd() = test { (t, u) =>
+    val p = t.createProject(u)
+    val u2 = t.db.createUser().id
+    testUpdateProjectAccess(t, p)()(u2 -> ProjectPerm.Collaborator)(\/-(()), u.id -> ProjectPerm.Admin, u2 -> ProjectPerm.Collaborator)
+  }
+
+  private def testUpdateProjectAccessDel() = test { (t, u) =>
+    val p = t.createProject(u)
+    val u2 = addProjectMember(t, p, ProjectPerm.Admin)
+    testUpdateProjectAccess(t, p)(u)()(\/-(()), u2 -> ProjectPerm.Admin)
+  }
+
+  private def testUpdateProjectAccessUpd() = test { (t, u) =>
+    val p = t.createProject(u)
+    val u2 = addProjectMember(t, p, ProjectPerm.Admin)
+    testUpdateProjectAccess(t, p)()(u.id -> ProjectPerm.Collaborator)(\/-(()), u.id -> ProjectPerm.Collaborator, u2 -> ProjectPerm.Admin)
+  }
+
+  private def testUpdateProjectAccessBulk() = test { (t, u) =>
+    val p = t.createProject(u)
+    val u2 = addProjectMember(t, p, ProjectPerm.Collaborator)
+    val u3 = addProjectMember(t, p, ProjectPerm.Admin)
+    val u4 = t.db.createUser().id
+    testUpdateProjectAccess(t, p)(u)(u3 -> ProjectPerm.Collaborator, u4 -> ProjectPerm.Admin)(\/-(()),
+      u2 -> ProjectPerm.Collaborator,
+      u3 -> ProjectPerm.Collaborator,
+      u4 -> ProjectPerm.Admin,
+    )
+  }
+
   // ===================================================================================================================
 
   override def tests = Tests {
@@ -64,6 +151,15 @@ abstract class DbLaws extends TestSuite {
       "empty" - testUsernamesEmpty()
       "all" - testUsernamesAll()
       "missing" - testUsernamesMissing()
+    }
+
+    "updateProjectAccess" - {
+      "noUsers" - testUpdateProjectAccessNoUsers()
+      "onlyCollab" - testUpdateProjectAccessOnlyCollab()
+      "add" - testUpdateProjectAccessAdd()
+      "del" - testUpdateProjectAccessDel()
+      "upd" - testUpdateProjectAccessUpd()
+      "bulk" - testUpdateProjectAccessBulk()
     }
 
   }

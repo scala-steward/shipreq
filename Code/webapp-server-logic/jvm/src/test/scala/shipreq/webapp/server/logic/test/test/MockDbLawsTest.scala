@@ -13,5 +13,8 @@ object MockDbLawsTest extends DbLaws {
 
     override def createUser()         = db.newUser()
     override val getUserIdsByUsername = db.getUserIdsByUsername(_).value
+    override val createProject        = db.createProject(_, _, _, _).value
+    override val updateProjectAccess  = db.updateProjectAccess(_, _, _).value
+    override val getProjectAccess     = db.getProjectAccess(_).value
  }
 }
