@@ -1,6 +1,8 @@
 package shipreq.webapp.server.db
 
 import shipreq.base.test.db.{ImperativeXA, TestDb}
+import shipreq.webapp.base.data.ProjectId
+import shipreq.webapp.member.project.data.ProjectAccess
 import shipreq.webapp.server.logic.laws.DbLaws
 import shipreq.webapp.server.test._
 
@@ -18,7 +20,11 @@ object DbLawsTest extends DbLaws {
   private object DB
     extends DbInterpreter.Base
        with DbInterpreter.ForHomeSpa
-       with DbInterpreter.ForProjectSpa
+       with DbInterpreter.ForProjectSpa {
+
+    def getProjectAccess(id: ProjectId) =
+      DbInterpreter.getProjectAccessQuery.toMap(id).map(ProjectAccess.apply)
+  }
 
   private final class DbInstance(implicit val xa: ImperativeXA) extends DbApi {
     private val dbu = DbUtil(xa)

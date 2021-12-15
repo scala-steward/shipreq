@@ -252,13 +252,10 @@ object DB {
 
     def updateProjectAccess(id    : ProjectId,
                             remove: Set[UserId],
-                            add   : Map[UserId, ProjectPerm]): F[UpdateProjectAccessError \/ Unit]
-
-    def getProjectAccess(id: ProjectId): F[Map[UserId, ProjectPerm]]
+                            add   : Map[UserId, ProjectPerm]): F[UpdateProjectAccessError \/ ProjectAccess]
   }
 
   final case class ProjectSpaInitPage(name      : Project.Name,
-                                      access    : Map[Username, ProjectPerm],
                                       userKey   : UserEncryptionKey,
                                       projectKey: ProjectEncryptionKey)
 

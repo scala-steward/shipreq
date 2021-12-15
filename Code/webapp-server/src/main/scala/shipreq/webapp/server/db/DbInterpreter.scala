@@ -63,6 +63,15 @@ object DbInterpreter {
   val sqlInsertUsrd =
     Update[(UserId, PersonName, Boolean, UserEncryptionKey)]("INSERT INTO usrd VALUES(?,?,?,?)")
 
+  // Exposed for tests
+  val getProjectAccessQuery = Query[ProjectId, (Username, ProjectPerm)](
+      """
+        |SELECT username, perm
+        |  FROM project_access a, usr u
+        | WHERE a.usr_id=u.id
+        |   AND a.project_id=?
+      """.stripMargin.sql)
+
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   trait Base extends DB.Base[ConnectionIO] {
 
@@ -473,15 +482,11 @@ object DbInterpreter {
           |   AND a.project_id=? AND a.usr_id=?
         """.stripMargin.sql)
 
-    private[this] val projectSpaInitPageProjectAccessQuery =
-      Query[ProjectId, (Username, ProjectPerm)]("SELECT username, perm from project_access, usr WHERE project_id=? AND usr.id=usr_id")
-
     override def projectSpaInitPage(pid: ProjectId, uid: UserId): ConnectionIO[Option[DB.ProjectSpaInitPage]] =
       for {
-        _      <- logProjectRead.run(pid)
-        o      <- projectSpaInitPageQuery.option((pid, uid))
-        access <- projectSpaInitPageProjectAccessQuery.toMap(pid)
-      } yield o.map { case (name, pk, uk) => DB.ProjectSpaInitPage(name, access, uk, pk) }
+        _ <- logProjectRead.run(pid)
+        o <- projectSpaInitPageQuery.option((pid, uid))
+      } yield o.map { case (name, pk, uk) => DB.ProjectSpaInitPage(name, uk, pk) }
 
     private[db] val getUserIdsByUsernameQuery = Query[Set[Username], (Username, UserId)](
       "SELECT username,id FROM usr WHERE username = ANY(?::VARCHAR[])")
@@ -501,36 +506,27 @@ object DbInterpreter {
     private[this] val projectAccessAdd = Update[(ProjectId, UserId, ProjectPerm)](
       "INSERT INTO project_access(project_id, usr_id, perm) VALUES(?,?,?)")
 
-    private[this] val projectAccessHasPerm = Query[(ProjectId, ProjectPerm), Boolean](
-      "SELECT EXISTS(SELECT 1 FROM project_access WHERE project_id=? AND perm=?)")
-
     override def updateProjectAccess(id    : ProjectId,
                                      remove: Set[UserId],
-                                     add   : Map[UserId, ProjectPerm]): ConnectionIO[DB.UpdateProjectAccessError \/ Unit] = {
+                                     add   : Map[UserId, ProjectPerm]): ConnectionIO[DB.UpdateProjectAccessError \/ ProjectAccess] = {
 
       val deletes = (remove.iterator ++ add.keys).map((id, _)).toList
       val adds    = add.iterator.map(t => (id, t._1, t._2)).toList
 
-      val apply: ConnectionIO[DB.UpdateProjectAccessError \/ Unit] =
+      val apply: ConnectionIO[DB.UpdateProjectAccessError \/ ProjectAccess] =
         for {
-          _        <- assertTransactionLevelSerializable
-          _        <- projectAccessDelete.updateMany(deletes)
-          _        <- projectAccessAdd.updateMany(adds)
-          hasAdmin <- projectAccessHasPerm.unique((id, ProjectPerm.Admin))
+          _      <- assertTransactionLevelSerializable
+          _      <- projectAccessDelete.updateMany(deletes)
+          _      <- projectAccessAdd.updateMany(adds)
+          access <- getProjectAccessQuery.toMap(id)
         } yield
-          if (hasAdmin)
-            \/-(())
+          if (access.values.exists(_ ==* ProjectPerm.Admin))
+            \/-(ProjectAccess(access))
           else
             -\/(DB.UpdateProjectAccessError.CantRemoveLastAdmin)
 
       apply.rollbackWhen(_.isLeft)
     }
-
-    private[this] val getProjectAccessQuery = Query[ProjectId, (UserId, ProjectPerm)](
-      "SELECT usr_id, perm FROM project_access WHERE project_id=?")
-
-    override def getProjectAccess(id: ProjectId): ConnectionIO[Map[UserId, ProjectPerm]] =
-      getProjectAccessQuery.toMap(id)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

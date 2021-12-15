@@ -8,7 +8,6 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.member.global.GlobalEvent
 import shipreq.webapp.member.project.data.{Live => _, _}
 import shipreq.webapp.member.project.event._
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.server.logic.algebra._
 import shipreq.webapp.server.logic.data._
@@ -161,6 +160,12 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
   def newUserId(): UserId =
     newUser().id
 
+  def needUser(id: UserId): MockDb.UserEntry =
+    getUser(id).getOrThrow(s"User #${id.value} not found")
+
+  def getUser(id: UserId): Option[MockDb.UserEntry] =
+    users.find(_.id ==* id)
+
   def getUser(u: Username \/ EmailAddr): Option[MockDb.UserEntry] =
     users.find(e => u.fold(_ ==* e.username, _ ==* e.emailAddr))
 
@@ -303,17 +308,12 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     }
   }
 
-  private def needUsername(id: UserId): Username =
-    users.find(_.id ==* id).getOrThrow(s"User #${id.value} not found").username
-
   override def projectSpaInitPage(pid: ProjectId, uid: UserId) = Eval.always[Option[DB.ProjectSpaInitPage]] {
     for {
       u <- users.find(_.id ==* uid)
       p <- projects.get(pid)
-    } yield {
-      val access = getProjectAccess(pid).value.mapKeysNow(needUsername)
-      DB.ProjectSpaInitPage(p.project.name, access, u.encKey, p.encKey)
-    }
+    } yield
+      DB.ProjectSpaInitPage(p.project.name, u.encKey, p.encKey)
   }
 
   var loadProjectLog = Vector.empty[ProjectId]
@@ -391,7 +391,7 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
 
   override def updateProjectAccess(id    : ProjectId,
                                    remove: Set[UserId],
-                                   add   : Map[UserId, ProjectPerm]) = Eval.always[DB.UpdateProjectAccessError \/ Unit] {
+                                   add   : Map[UserId, ProjectPerm]) = Eval.always[DB.UpdateProjectAccessError \/ ProjectAccess] {
     val orig = projectAccess
     val remove2 = remove ++ add.keys
 
@@ -399,9 +399,9 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
 
     add.foreach { case (u, perm) => addProjectAccess(id, u, perm) }
 
-    val result: DB.UpdateProjectAccessError \/ Unit =
+    val result: DB.UpdateProjectAccessError \/ ProjectAccess =
       projectAccess.find(e => e.pid ==* id && e.perm ==* ProjectPerm.Admin) match {
-        case Some(_) => \/-(())
+        case Some(_) => \/-(getProjectAccess(id).value)
         case None    => -\/(DB.UpdateProjectAccessError.CantRemoveLastAdmin)
       }
 
@@ -411,11 +411,13 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     result
   }
 
-  override def getProjectAccess(id: ProjectId) = Eval.always[Map[UserId, ProjectPerm]] {
-    projectAccess.iterator
-      .filter(_.pid ==* id)
-      .map(e => (e.uid, e.perm))
-      .toMap
+  def getProjectAccess(id: ProjectId) = Eval.always[ProjectAccess] {
+    ProjectAccess(
+      projectAccess.iterator
+        .filter(_.pid ==* id)
+        .map(e => (needUser(e.uid).username, e.perm))
+        .toMap
+    )
   }
 
 }

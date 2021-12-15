@@ -5,8 +5,9 @@ import doobie.implicits._
 import scala.util.Random
 import shipreq.base.db.DoobieHelpers._
 import shipreq.base.test.db._
+import shipreq.base.util.BinaryData
 import shipreq.base.util.FxModule._
-import shipreq.webapp.base.data.{ProjectId, User, UserId, Username}
+import shipreq.webapp.base.data.{PersonName, ProjectId, User, UserId, Username}
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.ActiveEvent
 import shipreq.webapp.server.db.DbInterpreter
@@ -15,8 +16,6 @@ import shipreq.webapp.server.interpreter.SecurityInterpreter
 import shipreq.webapp.server.logic.algebra.{Crypto, DB}
 import shipreq.webapp.server.logic.data._
 import shipreq.webapp.server.test.WebappServerTestUtil._
-import shipreq.webapp.base.data.PersonName
-import shipreq.base.util.BinaryData
 
 object DbUtil {
 
