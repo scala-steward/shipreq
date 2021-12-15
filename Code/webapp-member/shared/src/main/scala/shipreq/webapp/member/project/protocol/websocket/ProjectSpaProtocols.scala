@@ -98,8 +98,7 @@ object ProjectSpaProtocols {
     }
 
     object Responses {
-      protected val responseVersion = Version.fromInts(3, 0) // Bump this when any of following imports change
-      import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData3._
+      protected val responseVersion = Version.fromInts(2, 0) // Bump this when any of following imports change
       import shipreq.webapp.member.project.protocol.binary.v1.Rev7._
       import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
 

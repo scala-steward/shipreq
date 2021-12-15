@@ -201,6 +201,7 @@ object SafePickler {
       @inline def asVersion(major: Int, minor: Int): SafePickler[A] = asVersion(Version.fromInts(major, minor))
       def asVersion(v: Version): SafePickler[A] = SafePickler(None, None, v, self)
       def asV1(minorVer: Int)  : SafePickler[A] = asVersion(Version.v1(minorVer))
+      def asV2(minorVer: Int)  : SafePickler[A] = asVersion(Version.v2(minorVer))
     }
 
   }

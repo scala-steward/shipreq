@@ -41,7 +41,7 @@ object ProjectSpaEntryPoint {
   implicit val picklerInitData: Pickler[InitData] =
     new Pickler[InitData] {
       import shipreq.webapp.base.protocol.binary.v1.BaseData._
-      import shipreq.webapp.member.project.protocol.binary.v1.Rev8._
+      import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
 
       override def pickle(a: InitData)(implicit state: PickleState): Unit = {
         state.pickle(a.username)

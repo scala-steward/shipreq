@@ -54,7 +54,6 @@ object WebWorkerCmd {
   import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData2._
   import shipreq.webapp.member.project.protocol.binary.v1.Rev1.SavedViewPicklers._
   import shipreq.webapp.member.project.protocol.binary.v1.Rev7._
-  import shipreq.webapp.member.project.protocol.binary.v1.Rev8._
   import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
 
   implicit val picklerSvg: Pickler[Svg] =
