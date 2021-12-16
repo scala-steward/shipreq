@@ -13,6 +13,7 @@ import shipreq.base.test.BaseUtilGen._
 import shipreq.base.test.Incrementor
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util._
+import shipreq.webapp.base.data.{ProjectPerm, UserId}
 import shipreq.webapp.base.test.RandomBaseData
 import shipreq.webapp.base.test.RandomBaseData.unicodeString1
 import shipreq.webapp.member.project.data._
@@ -25,7 +26,7 @@ import shipreq.webapp.member.test.WebappBaseGen._
 import shipreq.webapp.member.test.project.ApplicableEventGen.ObserveFn
 import shipreq.webapp.member.test.project.DataTestExt._
 import shipreq.webapp.member.test.project.RandomData
-import shipreq.webapp.member.test.project.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, reqCode, reqTypeMnemonic, tagGroupName}
+import shipreq.webapp.member.test.project.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, projectPerm, reqCode, reqTypeMnemonic, tagGroupName, userIdPublic}
 import shipreq.webapp.member.test.project.RandomEventStream.{ProjectDepGen, State}
 
 final case class RandomEventStreamConfig(retiredEvents: Boolean,
@@ -121,6 +122,8 @@ object RandomEventStream extends RandomEventStreamDsl(ApplicableEventGen(_)) {
 
   val activeOnly =
     withConfig(_.copy(retiredEvents = false))
+
+  val projectPermOptions = ProjectPerm.values.iterator.map(Option(_)).toSet + None
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
@@ -167,10 +170,6 @@ sealed class RandomEventStreamDsl(applicableEventGen: State => ApplicableEventGe
 }
 
 // █████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
-
-
-
-// =====================================================================================================================
 
 object ApplicableEventGen {
   def apply(curState: State, config: RandomEventStreamConfig = RandomEventStreamConfig.default): ApplicableEventGen =
@@ -1035,9 +1034,36 @@ final class ApplicableEventGen(curState: State, config: RandomEventStreamConfig)
   def genManualIssueDelete: Option[Gen[ManualIssueDelete]] =
     manualIssueId.map(_ map ManualIssueDelete)
 
+  def genAccessUpdate: Gen[AccessUpdate] = {
+    val a = p.access.value
+
+    type Entries = Vector[(UserId.Public, Option[ProjectPerm])]
+
+    val addNew: Gen[Entries] =
+      (userIdPublic & projectPerm.option).vector(1 to 4)
+
+    def updateExisting: Gen[Entries] =
+      Gen.subset1(a.keys.toVector).flatMap { ids =>
+        Gen.traverse(ids) { id =>
+          Gen.choose_!(RandomEventStream.projectPermOptions - a.get(id))
+            .map((id, _))
+        }
+      }
+
+    val entries: Gen[Entries] =
+      Gen.chooseInt(3).flatMap {
+        case 0 => updateExisting
+        case 1 => addNew
+        case _ => Gen.lift2(updateExisting, addNew)(_ ++ _)
+      }
+
+    entries.map(es => AccessUpdate(es.toMap))
+  }
+
   private val possibleActiveEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[ActiveEvent]])] =
     valuesForAdt[ActiveEvent, (EventName, Option[Gen[ActiveEvent]])] {
       // Note: not using [case e: Xxx => EventName(e) -> xxx] here because the valuesForAdt doesn't like it
+      case _: AccessUpdate            => EventName("AccessUpdate"           ) -> genAccessUpdate
       case _: ApplicableTagCreate     => EventName("ApplicableTagCreate"    ) -> genApplicableTagCreate
       case _: ApplicableTagUpdate     => EventName("ApplicableTagUpdate"    ) -> genApplicableTagUpdate
       case _: ContentRestore          => EventName("ContentRestore"         ) -> genContentRestore

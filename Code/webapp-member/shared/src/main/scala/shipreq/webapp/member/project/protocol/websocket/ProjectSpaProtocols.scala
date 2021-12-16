@@ -99,7 +99,6 @@ object ProjectSpaProtocols {
 
     object Responses {
       protected val responseVersion = Version.fromInts(2, 0) // Bump this when any of following imports change
-      import shipreq.webapp.member.project.protocol.binary.v1.Rev7._
       import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
 
       private implicit val picklerInitAppData: Pickler[InitAppData] =
@@ -145,8 +144,8 @@ object ProjectSpaProtocols {
     }
 
     object Push {
-      protected val version = Version.fromInts(1, 7) // Bump this when any of following imports change
-      import shipreq.webapp.member.project.protocol.binary.v1.Rev7._
+      protected val version = Version.fromInts(2, 0) // Bump this when any of following imports change
+      import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
 
       val safePickler: SafePickler[VerifiedEvent.NonEmptySeq] =
         picklerVerifiedEventNonEmptySeq

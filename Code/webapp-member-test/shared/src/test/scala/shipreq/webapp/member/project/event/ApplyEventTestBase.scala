@@ -114,7 +114,8 @@ object ApplyEventTestFns {
       case _: ManualIssueCreate => manualIssues += 1
       case _: ManualIssueDelete => manualIssues -= 1
 
-      case _: ApplicableTagUpdate
+      case _: AccessUpdate
+         | _: ApplicableTagUpdate
          | _: ApplicableTagUpdateV1
          | _: CustomIssueTypeDelete
          | _: CustomIssueTypeRestore

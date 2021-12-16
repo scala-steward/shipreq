@@ -457,13 +457,13 @@ object ProjectSpaProtocolsTest extends TestSuite {
 
       "v2.0" - {
         "GenericReqTitleSet" - {
-          val bin    = BinaryData.fromHex("010783E81A0009016C04626C6168E0B0318F5D00A9622600060CF606")
+          val bin    = BinaryData.fromHex("020083E81A0009016C04626C6168E0B0318F5D00A9622600060CF606")
           val expect = Event.GenericReqTitleSet(9, "blah").verified(1000, Instant.parse("2019-09-28T10:10:56.644Z"))
           assertDecodeOk(codec)(bin, expect)
         }
 
         "ReqTagsPatch" - {
-          val bin    = BinaryData.fromHex("01078162246700160200040046010013E0B0318F5D00A9622600060CF606")
+          val bin    = BinaryData.fromHex("02008162246700160200040046010013E0B0318F5D00A9622600060CF606")
           val expect = Event.ReqTagsPatch(22, nesd[ApplicableTagId](4, 70)(19)).verified(354, Instant.parse("2019-09-28T10:10:56.644Z"))
           assertDecodeOk(codec)(bin, expect)
         }

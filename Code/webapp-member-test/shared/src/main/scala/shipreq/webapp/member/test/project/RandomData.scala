@@ -119,6 +119,10 @@ object RandomData {
   lazy val projectId = idL.map(ProjectId.apply)
   lazy val userId = idL.map(UserId.apply)
 
+  def obfuscated[A]: Gen[Obfuscated[A]] = Gen.alphaNumeric.string(4 to 16).map(Obfuscated.apply[A])
+
+  lazy val userIdPublic: Gen[UserId.Public] = obfuscated
+
   def revAndIMap[D, I <: TaggedInt](r: Gen[List[D]])
                                     (implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]): Gen[IMap[I, D]] = {
     val d = distinctId[D, I].lift[List]
@@ -2650,6 +2654,9 @@ object RandomData {
     val genProjectTemplateApply: Gen[ProjectTemplateApply] =
       genProjectTemplate map ProjectTemplateApply
 
+    val genAccessUpdate: Gen[AccessUpdate] =
+      userIdPublic.mapTo(projectPerm.option)(1 to 8).map(AccessUpdate.apply)
+
     val genApplicableTagCreate: Gen[ApplicableTagCreate] =
       Gen.apply2(ApplicableTagCreate)(applicableTagId, applicableTagGD.nonEmptyValues)
 
@@ -2865,6 +2872,7 @@ object RandomData {
 
     val activeEventGens: NonEmptyVector[Gen[ActiveEvent]] =
       valuesForAdt[ActiveEvent, Gen[ActiveEvent]] {
+        case _: AccessUpdate            => genAccessUpdate
         case _: ApplicableTagCreate     => genApplicableTagCreate
         case _: ApplicableTagUpdate     => genApplicableTagUpdate
         case _: ContentRestore          => genContentRestore
