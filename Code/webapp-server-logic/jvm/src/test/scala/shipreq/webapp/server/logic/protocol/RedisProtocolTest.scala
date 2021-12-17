@@ -6,7 +6,6 @@ import java.time.Instant
 import nyaya.gen.Gen
 import shipreq.base.util.BinaryData
 import shipreq.webapp.base.test.BinaryTestUtil._
-import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.WebappTestUtil.ImplicitProjectEqualityDeep._
 import shipreq.webapp.member.test.WebappTestUtil._
@@ -39,7 +38,7 @@ object RedisProtocolTest extends TestSuite {
           val row    = rows(i)
           val event  = row.parseEventJson.getOrThrow()
           val ord    = prev.fold(EventOrd.first)(x => EventOrd(x.ord.value) + 1)
-          val p1     = prev.fold(Project.empty)(_.project)
+          val p1     = prev.fold(emptyProject1)(_.project)
           val p2     = applyVerifiedEventSuccessfully(p1, event)
           val ps     = Redis.ProjectSnapshot(p2, ord.asLatest)
           prev       = Some(ps)
@@ -87,8 +86,8 @@ object RedisProtocolTest extends TestSuite {
 
       "v2.0" - {
         "empty" - {
-          val bin    = BinaryData.fromHex("5C303D710200000000000523494E454700000000000000000000000001010000000000000000000000DEC22AB7")
-          val expect = ProjectSnapshot(Project.empty, 0)
+          val bin    = BinaryData.fromHex("5C303D710200000000000523494E454700000000000000000000000001010104773547760100000000000000000000DEC22AB7")
+          val expect = ProjectSnapshot(emptyProject1, 0)
           assertDecodeOk(codec)(bin, expect)
         }
       }

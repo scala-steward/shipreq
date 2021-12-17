@@ -2,14 +2,14 @@ package shipreq.webapp.member.test
 
 import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
 import shipreq.base.util.BinaryData
-import shipreq.webapp.base.data.{ProjectId, UserId}
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, UserId}
 import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.member.project.data.ClientSideProjectEncryptionKey
 import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.project.library.ProjectLibrary
 import shipreq.webapp.member.project.storage.ClientSideStorage
 
-final class TestClientSideStorage extends ClientSideStorage.ReadWrite {
+final class TestClientSideStorage(override protected val creator: ProjectCreator) extends ClientSideStorage.ReadWrite {
   var available = true
 
   private var projectStore = Option.empty[ProjectLibrary]
@@ -39,8 +39,8 @@ final class TestClientSideStorage extends ClientSideStorage.ReadWrite {
 
 object TestClientSideStorage {
 
-  def apply(): TestClientSideStorage =
-    new TestClientSideStorage
+  def apply(creator: ProjectCreator = ProjectCreator(Obfuscated(""))): TestClientSideStorage =
+    new TestClientSideStorage(creator)
 
   def provide(instance: => ClientSideStorage.ReadWrite): ClientSideStorage.ReadWrite.Provider =
     (_, _) => AsyncCallback.delay(instance)
@@ -62,9 +62,9 @@ object TestClientSideStorage {
     ClientSideProjectEncryptionKey(BinaryData.fromStringBytes(s2))
   }
 
-  val u1p1 = ClientSideStorage.Context(userId(1), projectId(1))
-  val u2p1 = ClientSideStorage.Context(userId(2), projectId(1))
-  val u1p2 = ClientSideStorage.Context(userId(1), projectId(2))
+  val u1p1 = ClientSideStorage.Context(userId(1), projectId(1), ProjectCreator(userId(2)))
+  val u2p1 = ClientSideStorage.Context(userId(2), projectId(1), ProjectCreator(userId(2)))
+  val u1p2 = ClientSideStorage.Context(userId(1), projectId(2), ProjectCreator(userId(1)))
 
   val key_u1p1 = encKey("u1p1")
   val key_u2p1 = encKey("u2p1")

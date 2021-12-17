@@ -43,7 +43,7 @@ object WorkerStateTest extends TestSuite {
 
   override def tests = Tests {
     val testLogic = new TestLogic
-    val s = new WorkerState(testLogic, LoggerJs.off)
+    val s = new WorkerState(Creator1, testLogic, LoggerJs.off)
     import testLogic._
 
     def setProject(ord: Int): Unit =

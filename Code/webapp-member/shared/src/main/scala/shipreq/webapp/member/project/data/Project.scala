@@ -8,6 +8,7 @@ import monocle.macros.Lenses
 import monocle.std.option.pSome
 import monocle.{Lens, Traversal}
 import shipreq.base.util._
+import shipreq.webapp.base.data.ProjectCreator
 import shipreq.webapp.member.project.data.derivation._
 import shipreq.webapp.member.project.event.{ApplyEvent, EventOrd, ProjectEvents, VerifiedEvent}
 import shipreq.webapp.member.project.issue.IssueTracker
@@ -55,14 +56,20 @@ object Project {
   final val emptyProjectName: Name =
     ""
 
+  def init(creator: ProjectCreator): Project =
+    _init(ProjectAccess.init(creator))
+
   val empty: Project =
+    _init(ProjectAccess.empty)
+
+  private def _init(access: ProjectAccess): Project =
     Project(
       name         = emptyProjectName,
       config       = ProjectConfig.empty,
       content      = ProjectContent.empty,
       manualIssues = ManualIssues.empty,
       savedViews   = savedview.SavedViews.empty,
-      access       = ProjectAccess.empty,
+      access       = access,
       history      = ProjectEvents.empty,
       idCeilings   = IdCeilings.zero,
     )

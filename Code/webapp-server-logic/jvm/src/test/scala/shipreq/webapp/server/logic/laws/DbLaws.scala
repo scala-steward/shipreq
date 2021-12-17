@@ -2,13 +2,15 @@ package shipreq.webapp.server.logic.laws
 
 import cats.implicits._
 import japgolly.microlibs.stdlib_ext.StdlibExt._
+import java.time.Instant
 import java.util.UUID
 import nyaya.gen.Gen
 import shipreq.webapp.base.data._
 import shipreq.webapp.member.project.data.{Project, ProjectAccess}
-import shipreq.webapp.member.project.event.ActiveEvent
+import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.project.RandomData
-import shipreq.webapp.server.logic.algebra.DB.{ProjectSpaInitPage, UpdateProjectAccessError}
+import shipreq.webapp.member.test.project.UnsafeTypes.projectCreatorFromUserId
+import shipreq.webapp.server.logic.algebra.DB.{ProjectSpaInitPage, ReadProjectEventError, SaveProjectEventError}
 import shipreq.webapp.server.logic.data.ProjectEncryptionKey
 import shipreq.webapp.server.logic.test.WebappServerLogicTestUtil._
 import shipreq.webapp.server.logic.util.Obfuscators
@@ -32,9 +34,25 @@ abstract class DbLaws extends TestSuite {
     def createUser(): User
     def createProject: (UserId, Vector[ActiveEvent], Project, ProjectEncryptionKey) => ProjectId
     def getUserIdsByUsername: Set[Username] => NonEmptySet[Username] \/ Map[Username, UserId]
-    def updateProjectAccess: (ProjectId, Set[UserId], Map[UserId, ProjectPerm]) => UpdateProjectAccessError \/ ProjectAccess
     def getProjectAccess: ProjectId => ProjectAccess
     def projectSpaInitPage: (ProjectId, UserId) => Option[ProjectSpaInitPage]
+
+    def needProjectCreator: ProjectId => UserId
+    def getProjectEvents: ProjectId => ReadProjectEventError \/ VerifiedEvent.Seq
+    def saveProjectEvent: (ProjectId, EventOrd, ActiveEvent, Project, UserId) => SaveProjectEventError \/ VerifiedEvent
+
+    final def addEvent(pid: ProjectId, e: ActiveEvent): SaveProjectEventError \/ Unit = {
+      val creator = needProjectCreator(pid)
+      val events  = getProjectEvents(pid).getOrThrow()
+      val p1      = applyVerifiedEventsSuccessfully(Project.init(creator), events)
+      val ve      = VerifiedEvent(p1.history.nextOrd, e, Instant.now())
+      val p2      = ApplyEvent.trusted(ve)(p1).fold(_.throwException(), identity)
+      val uid     = Obfuscators.userId.deobfuscateOrThrow(p1.access.adminIterator().next())
+      saveProjectEvent(pid, ve.ord, e, p2, uid).void
+    }
+
+    final def updateProjectAccess(pid: ProjectId, updates: Map[UserId, Option[ProjectPerm]]): SaveProjectEventError \/ Unit =
+      addEvent(pid, Event.AccessUpdate(updates.mapKeysNow(Obfuscators.userId.obfuscate)))
   }
 
   // ===================================================================================================================
@@ -57,7 +75,7 @@ abstract class DbLaws extends TestSuite {
       db.getUserIdsByUsername(Set(u)).getOrThrow()(u)
 
     def getProjectAccessByIds(pid: ProjectId): Map[UserId, ProjectPerm] =
-      db.getProjectAccess(pid).value.mapKeysNow(Obfuscators.userId.deobfuscateOrThrow)
+      db.getProjectAccess(pid).asMap.mapKeysNow(Obfuscators.userId.deobfuscateOrThrow)
   }
 
   private implicit def autoUserId(u: User): UserId = u.id
@@ -94,10 +112,11 @@ abstract class DbLaws extends TestSuite {
     assertEq(e, NonEmptySet(u2, u3))
   }
 
-  private def testUpdateProjectAccess(t: Tester, pid: ProjectId)(remove: UserId*)(add: (UserId, ProjectPerm)*)
-                                     (expect: UpdateProjectAccessError \/ Map[UserId, ProjectPerm])(implicit q: Line): Unit = {
+  private def testUpdateProjectAccess(t: Tester, pid: ProjectId)(access: (UserId, Option[ProjectPerm])*)
+                                     (expect: SaveProjectEventError \/ Map[UserId, ProjectPerm])(implicit q: Line): Unit = {
+
     val before = t.getProjectAccessByIds(pid)
-    val actual = t.db.updateProjectAccess(pid, remove.toSet, add.toMap)
+    val actual = t.db.updateProjectAccess(pid, access.toMap)
     assertEq(actual.void, expect.void)
 
     val expectAfter = expect.getOrElse(before)
@@ -106,36 +125,36 @@ abstract class DbLaws extends TestSuite {
 
   private def addProjectMember(t: Tester, pid: ProjectId, perm: ProjectPerm): UserId = {
     val u = t.db.createUser().id
-    t.db.updateProjectAccess(pid, Set.empty, Map(u -> perm)).getOrThrow()
+    t.db.updateProjectAccess(pid, Map(u -> perm.some)).getOrThrow()
     u
   }
 
   private def testUpdateProjectAccessNoUsers() = test { (t, u) =>
     val p = t.createProject(u)
-    testUpdateProjectAccess(t, p)(u)()(-\/(UpdateProjectAccessError.CantRemoveLastAdmin))
+    testUpdateProjectAccess(t, p)(u.id -> None)(-\/(SaveProjectEventError.OnAccess.CantRemoveLastAdmin))
   }
 
   private def testUpdateProjectAccessOnlyCollab() = test { (t, u) =>
     val p = t.createProject(u)
-    testUpdateProjectAccess(t, p)(u)(u.id -> ProjectPerm.Collaborator)(-\/(UpdateProjectAccessError.CantRemoveLastAdmin))
+    testUpdateProjectAccess(t, p)(u.id -> ProjectPerm.Collaborator.some)(-\/(SaveProjectEventError.OnAccess.CantRemoveLastAdmin))
   }
 
   private def testUpdateProjectAccessAdd() = test { (t, u) =>
     val p = t.createProject(u)
     val u2 = t.db.createUser().id
-    testUpdateProjectAccess(t, p)()(u2 -> ProjectPerm.Collaborator)(\/-(Map(u.id -> ProjectPerm.Admin, u2 -> ProjectPerm.Collaborator)))
+    testUpdateProjectAccess(t, p)(u2 -> ProjectPerm.Collaborator.some)(\/-(Map(u.id -> ProjectPerm.Admin, u2 -> ProjectPerm.Collaborator)))
   }
 
   private def testUpdateProjectAccessDel() = test { (t, u) =>
     val p = t.createProject(u)
     val u2 = addProjectMember(t, p, ProjectPerm.Admin)
-    testUpdateProjectAccess(t, p)(u)()(\/-(Map(u2 -> ProjectPerm.Admin)))
+    testUpdateProjectAccess(t, p)(u.id -> None)(\/-(Map(u2 -> ProjectPerm.Admin)))
   }
 
   private def testUpdateProjectAccessUpd() = test { (t, u) =>
     val p = t.createProject(u)
     val u2 = addProjectMember(t, p, ProjectPerm.Admin)
-    testUpdateProjectAccess(t, p)()(u.id -> ProjectPerm.Collaborator)(\/-(Map(u.id -> ProjectPerm.Collaborator, u2 -> ProjectPerm.Admin)))
+    testUpdateProjectAccess(t, p)(u.id -> ProjectPerm.Collaborator.some)(\/-(Map(u.id -> ProjectPerm.Collaborator, u2 -> ProjectPerm.Admin)))
   }
 
   private def testUpdateProjectAccessBulk() = test { (t, u) =>
@@ -143,7 +162,11 @@ abstract class DbLaws extends TestSuite {
     val u2 = addProjectMember(t, p, ProjectPerm.Collaborator)
     val u3 = addProjectMember(t, p, ProjectPerm.Admin)
     val u4 = t.db.createUser().id
-    testUpdateProjectAccess(t, p)(u)(u3 -> ProjectPerm.Collaborator, u4 -> ProjectPerm.Admin)(\/-(Map(
+    testUpdateProjectAccess(t, p)(
+      u.id -> None,
+      u3 -> ProjectPerm.Collaborator.some,
+      u4 -> ProjectPerm.Admin.some,
+    )(\/-(Map(
       u2 -> ProjectPerm.Collaborator,
       u3 -> ProjectPerm.Collaborator,
       u4 -> ProjectPerm.Admin,

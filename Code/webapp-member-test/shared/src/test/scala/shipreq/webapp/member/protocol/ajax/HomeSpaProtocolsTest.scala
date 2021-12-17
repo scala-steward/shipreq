@@ -42,7 +42,7 @@ object HomeSpaProtocolsTest extends TestSuite {
 
         "v2.0" - {
           val bin    = BinaryData.fromHex("C3407BB2020008434B62785064724901092432686C557766232102816180F0815FE0D93ADB5B362FC92DE0EB3ADB5BE63E331F01E7704A00")
-          val expect = ProjectMetaData(Obfuscated("CKbxPdrI"), "$2hlUwf#!", ProjectPerm.Admin, 2, 353, 240, 351, Instant.ofEpochSecond(1541094105L, 768159542), Instant.ofEpochSecond(1541094123L, 523452134), None)
+          val expect = ProjectMetaData(Obfuscated("CKbxPdrI"), "$2hlUwf#!", Some(ProjectPerm.Admin), 2, 353, 240, 351, Instant.ofEpochSecond(1541094105L, 768159542), Instant.ofEpochSecond(1541094123L, 523452134), None)
           assertDecodeOk(codec)(bin, expect)
         }
       }

@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.StrictLogging
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.Duration
 import shipreq.base.ops.Trace
-import shipreq.webapp.base.data.ProjectId
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId}
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
@@ -63,15 +63,15 @@ object Redis extends StrictLogging {
         case None    => isEmpty
       }
 
-    def build[F[_]](pid: ProjectId)(implicit ae: ApplyEventAlgebra[F]) =
+    def build[F[_]](pid: ProjectId, pc: ProjectCreator)(implicit ae: ApplyEventAlgebra[F]) =
       snapshot match {
         case Some(ss) => ae.append(pid, ss.project, events)
-        case None     => ae.create(pid, events)
+        case None     => ae.create(pid, pc, events)
       }
 
-    def buildNonEmpty[F[_]](pid: ProjectId)(implicit ae: ApplyEventAlgebra[F]): F[Option[Project]] =
+    def buildNonEmpty[F[_]](pid: ProjectId, pc: ProjectCreator)(implicit ae: ApplyEventAlgebra[F]): F[Option[Project]] =
       if (nonEmpty)
-        ae.F.map(build(pid))(_.toOption)
+        ae.F.map(build(pid, pc))(_.toOption)
       else
         ae.F.pure(None)
   }

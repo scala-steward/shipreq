@@ -21,7 +21,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util._
 import shipreq.webapp.base.config._
-import shipreq.webapp.base.data.{ProjectId, ProjectPerm, UserId}
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, ProjectPerm, UserId}
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
@@ -31,6 +31,7 @@ import shipreq.webapp.member.project.sort.SortMethod
 import shipreq.webapp.member.project.text
 import shipreq.webapp.member.project.text.{Grammar, GrammarSpec, Text}
 import shipreq.webapp.member.test._
+import shipreq.webapp.server.logic.util.Obfuscators
 
 // TODO RandomData is inaccurate in that CorrectionParts aren't applied.
 
@@ -119,9 +120,11 @@ object RandomData {
   lazy val projectId = idL.map(ProjectId.apply)
   lazy val userId = idL.map(UserId.apply)
 
-  def obfuscated[A]: Gen[Obfuscated[A]] = Gen.alphaNumeric.string(4 to 16).map(Obfuscated.apply[A])
+  lazy val userIdPublic: Gen[UserId.Public] =
+    userId.map(Obfuscators.userId.obfuscate)
 
-  lazy val userIdPublic: Gen[UserId.Public] = obfuscated
+  lazy val projectCreator: Gen[ProjectCreator] =
+    userIdPublic.map(ProjectCreator.apply)
 
   def revAndIMap[D, I <: TaggedInt](r: Gen[List[D]])
                                     (implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]): Gen[IMap[I, D]] = {
@@ -1679,7 +1682,12 @@ object RandomData {
     } yield ProjectConfig(issues, ReqTypes(reqtypes), fields, Tags(tags))
 
   lazy val projectAccess: Gen[ProjectAccess] =
-    userIdPublic.mapTo(projectPerm)(0 to 4).map(ProjectAccess.apply)
+    userIdPublic.mapTo(projectPerm)(0 to 4).map(ProjectAccess.apply).flatMap { a =>
+      if (a.hasAdmin)
+        Gen pure a
+      else
+        projectCreator.map(ProjectAccess.init)
+    }
 
   def genProjectNoHistory(cfg            : ProjectConfig,
                           reqsWithoutText: Requirements,
@@ -1771,7 +1779,7 @@ object RandomData {
   lazy val projectMetaData: Gen[ProjectMetaData] =
     for {
       id            <- projectIdPublic
-      perm          <- projectPerm
+      perm          <- projectPerm.option
       name          <- projectName
       eventsInit    <- Gen.chooseInt(3)
       eventsTotal   <- Gen.chooseInt(30000)
@@ -2039,10 +2047,11 @@ object RandomData {
         u <- username
         i <- userIdPublic
         p <- projectIdPublic
+        c <- projectCreator
         n <- projectName
         a <- genAssetManifest
         k <- genClientSideProjectEncryptionKey
-      } yield ProjectSpaEntryPoint.InitData(u, i, p, n, a, "/j/ww.js", k)
+      } yield ProjectSpaEntryPoint.InitData(u, i, p, c, n, a, "/j/ww.js", k)
 
 //    class CrudActionGens[I, V](idG: Gen[I], vG: Gen[V]) {
 //      lazy val create  = vG.map(CrudAction.Create[I, V])

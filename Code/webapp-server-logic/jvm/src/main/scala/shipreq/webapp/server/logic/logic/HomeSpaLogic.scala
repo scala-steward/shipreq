@@ -12,6 +12,7 @@ import shipreq.webapp.member.protocol.entrypoint.HomeSpaEntryPoint
 import shipreq.webapp.server.logic.algebra.{Crypto, DB}
 import shipreq.webapp.server.logic.data.ProjectEncryptionKey
 import shipreq.webapp.server.logic.event.ApplyNewEvent
+import shipreq.webapp.server.logic.util.Obfuscators
 
 trait HomeSpaLogic[F[_]] extends HomeSpaLogic.Ajax[F] {
   def initData(user: User): F[HomeSpaEntryPoint.InitData]
@@ -24,9 +25,7 @@ object HomeSpaLogic {
     val ajaxCreateProject: HomeSpaProtocols.CreateProject.ajax.ServerSideFnI[F, User]
   }
 
-  val InitProjectEvent  = ProjectTemplateApply(ProjectTemplate.default)
-  val InitProject       = ApplyNewEvent.mustApply(InitProjectEvent, Project.empty)
-  val InitProjectEventV = Vector.empty[ActiveEvent] :+ InitProject.event
+  private val InitProjectEvent = ProjectTemplateApply(ProjectTemplate.default)
 
   def createProject[D[_]](userId    : UserId,
                           name      : Project.Name)
@@ -34,15 +33,16 @@ object HomeSpaLogic {
                           db        : DB.ForHomeSpa[D],
                           crypto    : Crypto[D]): D[ProjectMetaData] = {
 
-    val e2 = ProjectNameSet(name)
+    val e2          = ProjectNameSet(name)
+    val creator     = ProjectCreator(Obfuscators.userId.obfuscate(userId))
+    val initProject = ApplyNewEvent.mustApply(InitProjectEvent, Project.init(creator))
+    val events      = Vector.empty[ActiveEvent] :+ initProject.event :+ e2
 
     // It's ok to use projectPartial and not worry about updating history here because:
     //
     // 1. History never affects subsequent event application
     // 2. db.createProject only needs a Project instance to extract a few stats for the header record
-    val p2 = ApplyNewEvent.mustApply(e2, InitProject.projectPartial).projectPartial
-
-    val events = InitProjectEventV :+ e2
+    val p2 = ApplyNewEvent.mustApply(e2, initProject.projectPartial).projectPartial
 
     for {
       key <- crypto.generateKey256

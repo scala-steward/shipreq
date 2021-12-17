@@ -4,6 +4,7 @@ import japgolly.scalajs.react.CallbackTo
 import java.time.Instant
 import nyaya.gen.Gen
 import scala.collection.immutable.TreeSet
+import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.ProjectLibraryTestUtil._
@@ -18,11 +19,11 @@ object MutableProjectLibraryTest extends TestSuite {
     import ImplicitProjectEqualityDeep._
 
     "props" - {
-      val p1 = Project.empty
+      val p1 = Project.init(Creator1)
 
       val genTest: Gen[(WithMetaData, Vector[VerifiedEvent], Project, WithMetaData)] = {
         val md1 = looseProjectMetaData(p1, eventsTotal = p1.ordAsInt, eventsInit = 0)
-        val s1 = WithMetaData.init(p1, md1, Cache.Disabled)
+        val s1 = WithMetaData.init(Creator1, p1, md1, Obfuscated(""), Cache.Disabled(Creator1))
         for {
           (p2, ves) <- RandomEventStream.verifiedEvents(80).run(p1)
           batches   <- Gen.batches(ves, 0 to 7)
@@ -50,7 +51,7 @@ object MutableProjectLibraryTest extends TestSuite {
 
     "staleness" - {
       var t = Instant.now()
-      val pl = MutableProjectLibrary.empty(CallbackTo(t))
+      val pl = MutableProjectLibrary.empty(Creator1, CallbackTo(t))
       def staleSince = pl.get.runNow().staleSince
       assertEq(staleSince, None)
 

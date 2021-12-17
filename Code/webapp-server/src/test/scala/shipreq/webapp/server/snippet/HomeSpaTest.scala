@@ -30,8 +30,8 @@ object HomeSpaTest extends TestSuite {
           val initEvents = 2
 
           val pid = Obfuscators.projectId.deobfuscate(pi.id).getOrThrow()
-          def events() = (xa ! db.getAllProjectEvents(pid)).getOrThrow().toVector
-          def loadProject() = applyVerifiedEventSuccessfully(Project.empty, events(): _*)
+          def events() = (xa ! db.getProjectEvents(pid)).getOrThrow().toVector
+          def loadProject() = applyVerifiedEventSuccessfully(emptyProject1, events(): _*)
 
           // Immediate result
           assertEq("Immediate name", pi.name, name)

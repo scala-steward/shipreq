@@ -7,7 +7,7 @@ import org.scalajs.dom.{EventTarget, document, html}
 import scala.scalajs.js
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{Allow, ErrorMsg, JsTimers, PotentialChange, Retries}
-import shipreq.webapp.base.data.Username
+import shipreq.webapp.base.data.{ProjectCreator, UserId, Username}
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
@@ -16,9 +16,10 @@ import shipreq.webapp.base.protocol.websocket.WebSocketShared.CloseCode
 import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.protocol.webstorage.AbstractWebStorage
 import shipreq.webapp.base.test._
+import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.app.state.Global
-import shipreq.webapp.member.project.data.Project
+import shipreq.webapp.member.project.data.{Project, ProjectAccess}
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.library.{CacheJs, ProjectLibrary}
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols
@@ -31,6 +32,8 @@ import shipreq.webapp.server.logic.event._
 final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
                        ww                   : WebWorkerClient.Instance)
   extends Global(
+    TestGlobal.userId,
+    ProjectCreator(TestGlobal.userId),
     (_, _) => Callback.empty,
     _ => Callback.empty,
     Global.State.Loading(initialProjectLibrary.withoutMetaData),
@@ -58,7 +61,7 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
   def advanceTime(d: Duration): Unit = now = now.plusNanos(d.getNano).plusSeconds(d.getSeconds)
   def advanceTimeByMs(ms: Long) = advanceTime(Duration.ofMillis(ms))
 
-  lazy val protocol = ProjectSpaProtocols.WebSocket(initialProjectLibrary.latestMetaData.id)
+  lazy val protocol = ProjectSpaProtocols.WebSocket(initialProjectLibrary.latestMetaData.id, ProjectCreator(TestGlobal.userId))
 
   lazy val svr = WebSocketServerHelper(protocol)
 
@@ -254,11 +257,15 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
 
 object TestGlobal {
 
+  val userId: UserId.Public = Obfuscated("")
+  val creator = ProjectCreator(userId)
+
   def apply(p : Project                  = Project.empty,
             ww: WebWorkerClient.Instance = TestWebWorkerClient(),
            ): TestGlobal = {
-    val md = looseProjectMetaData(p, eventsTotal = p.ordAsInt)
-    val ps = ProjectLibrary.WithMetaData.init(p, md, CacheJs())
+    val p2 = if (p.access.asMap.nonEmpty) p else p.copy(access = ProjectAccess.init(creator))
+    val md = looseProjectMetaData(p2, eventsTotal = p2.ordAsInt)
+    val ps = ProjectLibrary.WithMetaData.init(creator, p2, md, userId, CacheJs(creator))
     new TestGlobal(ps, ww)
   }
 

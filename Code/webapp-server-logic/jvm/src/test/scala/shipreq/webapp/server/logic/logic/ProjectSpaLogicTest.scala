@@ -16,6 +16,7 @@ import shipreq.webapp.member.project.protocol.websocket._
 import shipreq.webapp.member.project.text.Text
 import shipreq.webapp.member.test.WebappTestUtil.ImplicitProjectEqualityDeep._
 import shipreq.webapp.member.test.WebappTestUtil._
+import shipreq.webapp.member.test.project.UnsafeTypes.projectCreatorFromUserId
 import shipreq.webapp.server.logic.algebra.Redis
 import shipreq.webapp.server.logic.algebra.Redis.ProjectSnapshot
 import shipreq.webapp.server.logic.algebra.Security.{SessionId, SessionToken}
@@ -80,21 +81,21 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         Event.ProjectNameSet("hello"),
       )
 
-      var verifiedEvents       = verifyEvents(Project.empty)(events: _*)
-      var instance             = applyVerifiedEventSuccessfully(Project.empty, verifiedEvents.toList: _*)
+      var verifiedEvents       = verifyEvents(emptyProject1)(events: _*)
+      var instance             = applyVerifiedEventSuccessfully(emptyProject1, verifiedEvents.toList: _*)
       val latestOrd            = verifiedEvents.last.ord.asLatest
       val id                   = db.createProject(user2.id, events.map(_.active), instance, crypto.generateProjectKey()).value
       val data1                = db.getProjectMetaData(id, user2.id).value.get
-      verifiedEvents           = db.getAllProjectEvents(id).value.getOrThrow()
-      instance                 = applyVerifiedEventSuccessfully(Project.empty, verifiedEvents.toList: _*)
+      verifiedEvents           = db.getProjectEvents(id).value.getOrThrow()
+      instance                 = applyVerifiedEventSuccessfully(emptyProject1, verifiedEvents.toList: _*)
       db.loadProjectLog        = Vector.empty
 
       lazy val initAppData     = InitAppData(-\/(instance), data1)
-      lazy val static          = WebSocketStatic(user2.toUser, id, SessionId.random(), (), svr.now.value, svr.now.value.plusSeconds(99999))
+      lazy val static          = WebSocketStatic(user2.toUser, id, user2.id, SessionId.random(), (), svr.now.value, svr.now.value.plusSeconds(99999))
 
       lazy val eventsA         = events.take(1)
       lazy val verifiedEventsA = verifiedEvents.take(1)
-      lazy val instanceA       = applyVerifiedEventSuccessfully(Project.empty, verifiedEventsA.toList: _*)
+      lazy val instanceA       = applyVerifiedEventSuccessfully(emptyProject1, verifiedEventsA.toList: _*)
       lazy val latestOrdA      = verifiedEventsA.last.ord.asLatest
 
       lazy val eventsB         = events.drop(1).take(1)
@@ -110,13 +111,13 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
   }
 
   private val pushProtocol = {
-    val p = ProjectSpaProtocols.WebSocket(Obfuscated(null))
+    val p = ProjectSpaProtocols.WebSocket(Obfuscated(null), Creator1)
     implicit def picklerPush: SafePickler[ProjectSpaProtocols.WebSocket#Push] = p.push.codec
     WebSocketShared.protocolSC(_ => ???)
   }
 
   private def wsHelper(reqId: ReqId, responseType: WsReqRes) = {
-    val p = ProjectSpaProtocols.WebSocket(Obfuscated(null))
+    val p = ProjectSpaProtocols.WebSocket(Obfuscated(null), Creator1)
     implicit def picklerReq: SafePickler[p.Req] = p.req.codec
     implicit def picklerPush: SafePickler[p.Push] = p.push.codec
     val responseUnpickler: ReqId => Option[Protocol[SafePickler]] = i => if (i.value == reqId.value) Some(responseType.protocolRes) else ???
@@ -224,7 +225,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
     }
   }
 
-  private def getProject(i: InitAppData, prev: Project = Project.empty): Project =
+  private def getProject(i: InitAppData, prev: Project = emptyProject1): Project =
     i.projectData match {
       case -\/(p) => p
       case \/-(e) => prev.updateOrThrow(e)
@@ -243,7 +244,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
       def test(c: Cookie.LookupFn, p: ProjectId.Public)(expect: ConnectRejection \/ (WebSocketStatic, WebSocketState)): Unit =
         assertProtected {
-          val a = projectSpa.onConnect(c, p).value
+          val a = projectSpa.onConnect(c, p, user2.id).value
           assertEq(a, expect)
         }
 
@@ -266,7 +267,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
               val result = sendMsg(initAppMsg_0, p1.static, subscribedState)
               val actual = result._1
 
-              val noProjectData = -\/(Project.empty)
+              val noProjectData = -\/(emptyProject1)
               val actualWithoutProjectData = actual.map(_.map(_.copy(projectData = noProjectData)))
               val expectWithoutProjectData = \/-(p1.initAppData.copy(projectData = noProjectData))
               assertEq(actualWithoutProjectData, \/-(expectWithoutProjectData))
@@ -323,7 +324,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
     "expiry" - {
       implicit val t = new Tester; import t._
-      val \/-((static, state)) = projectSpa.onConnect(user2.token, p1.id).value
+      val \/-((static, state)) = projectSpa.onConnect(user2.token, p1.id, user2.id).value
       def twice(f: => Unit) = {f; f}
 
       twice {

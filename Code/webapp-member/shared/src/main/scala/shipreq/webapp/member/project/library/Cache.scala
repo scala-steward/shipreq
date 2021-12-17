@@ -1,5 +1,6 @@
 package shipreq.webapp.member.project.library
 
+import shipreq.webapp.base.data.ProjectCreator
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.EventOrd
 
@@ -29,7 +30,10 @@ trait Cache {
 
 object Cache {
 
-  object Disabled extends Cache {
+  def Disabled(creator: ProjectCreator) =
+    new Disabled(creator)
+
+  final class Disabled(creator: ProjectCreator) extends Cache {
 
     override def apply(ord: EventOrd) =
       None
@@ -49,7 +53,7 @@ object Cache {
 
       override def apply(ord: EventOrd) = Some {
         val events = latest.history.events.take(ord.value)
-        Project.empty.updateOrThrow(events)
+        Project.init(creator).updateOrThrow(events)
       }
 
       override def storePotentialMilestone(p: Project): Unit =

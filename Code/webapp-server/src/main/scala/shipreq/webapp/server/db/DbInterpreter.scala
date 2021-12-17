@@ -9,7 +9,6 @@ import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
 import io.circe.Json
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.Instant
 import nyaya.gen.Gen
 import org.postgresql.util.PSQLException
@@ -299,7 +298,7 @@ object DbInterpreter {
         ProjectMetaData(
           id            = Obfuscators.projectId.obfuscate(id),
           name          = name,
-          perm          = perm,
+          perm          = Some(perm),
           eventsInit    = events_init,
           eventsTotal   = events_total,
           reqsLive      = reqs_live,
@@ -397,11 +396,11 @@ object DbInterpreter {
   trait SaveProjectEvent extends DB.SaveProjectEvent[ConnectionIO] {
     import SaveProjectEventLogic._
 
-    override def saveProjectEvent(pid: ProjectId,
-                                  ord: EventOrd,
-                                  e  : ActiveEvent,
-                                  p  : Project,
-                                  uid: UserId): ConnectionIO[DB.SaveProjectEventError \/ VerifiedEvent] = {
+    override protected def _saveProjectEvent(pid: ProjectId,
+                                             ord: EventOrd,
+                                             e  : ActiveEvent,
+                                             p  : Project,
+                                             uid: UserId): ConnectionIO[DB.SaveProjectEventError \/ VerifiedEvent] = {
       type Result = DB.SaveProjectEventError \/ VerifiedEvent
       unsafeInsertEvent(pid, ord, e, uid).attemptSql.flatMap {
         case Right(now) =>
@@ -421,6 +420,37 @@ object DbInterpreter {
           throw e
       }
     }
+
+    private[this] val projectAccessDelete = Update[(ProjectId, UserId)](
+      "DELETE FROM project_access WHERE project_id=? AND usr_id=?")
+
+    private[this] val projectAccessAdd = Update[(ProjectId, UserId, ProjectPerm)](
+      "INSERT INTO project_access(project_id, usr_id, perm) VALUES(?,?,?)")
+
+    private[this] val projectAccessHasPerm = Query[(ProjectId, ProjectPerm), Boolean](
+      "SELECT EXISTS(SELECT 1 FROM project_access WHERE project_id=? AND perm=?)")
+
+    override protected def updateProjectAccess(id    : ProjectId,
+                                               remove: Set[UserId],
+                                               add   : Map[UserId, ProjectPerm]): ConnectionIO[DB.SaveProjectEventError.OnAccess \/ Unit] = {
+
+      val deletes = (remove.iterator ++ add.keys).map((id, _)).toList
+      val adds    = add.iterator.map(t => (id, t._1, t._2)).toList
+
+      val apply: ConnectionIO[DB.SaveProjectEventError.OnAccess \/ Unit] =
+        for {
+          _        <- assertTransactionLevelSerializable
+          _        <- projectAccessDelete.updateMany(deletes)
+          _        <- projectAccessAdd.updateMany(adds)
+          hasAdmin <- projectAccessHasPerm.unique((id, ProjectPerm.Admin))
+        } yield
+          if (hasAdmin)
+            \/-(())
+          else
+            -\/(DB.SaveProjectEventError.OnAccess.CantRemoveLastAdmin)
+
+      apply.rollbackWhen(_.isLeft)
+    }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -436,7 +466,7 @@ object DbInterpreter {
     override def createProject(uid: UserId, es: Vector[ActiveEvent], p: Project, k: ProjectEncryptionKey): ConnectionIO[ProjectId] = {
       val events = es.length
       val name   = es.reverseIterator.collectFirst { case e: Event.ProjectNameSet => e.name }.getOrElse("")
-      val data   = (events, events, p.liveReqCount, p.content.reqs.size, name, k)
+      val data   = (uid, events, events, p.liveReqCount, p.content.reqs.size, name, k)
       for {
         pid  <- ForHomeSpa.createProjectQuery.unique(data)
         _    <- ForHomeSpa.createProjectAccessQuery.run((pid, uid, ProjectPerm.Admin))
@@ -448,11 +478,11 @@ object DbInterpreter {
 
   object ForHomeSpa {
 
-    private[db] val createProjectQuery: Query[(Int, Int, Int, Int, String, ProjectEncryptionKey), ProjectId] =
+    private[db] val createProjectQuery: Query[(UserId, Int, Int, Int, Int, String, ProjectEncryptionKey), ProjectId] =
       Query(
         """
-          |INSERT INTO project(events_init, events_total, reqs_live, reqs_total, name, encryption_key)
-          |VALUES(?,?,?,?,?,?)
+          |INSERT INTO project(creator_id, events_init, events_total, reqs_live, reqs_total, name, encryption_key)
+          |VALUES(?,?,?,?,?,?,?)
           |RETURNING id
         """.stripMargin.sql)
 
@@ -470,9 +500,9 @@ object DbInterpreter {
       Update[ProjectId](s"UPDATE project SET accessed_at=now() WHERE id=?")
 
     private[db] val projectSpaInitPageQuery =
-      Query[(ProjectId, UserId), (Project.Name, ProjectEncryptionKey, UserEncryptionKey)](
+      Query[(ProjectId, UserId), (UserId, Project.Name, ProjectEncryptionKey, UserEncryptionKey)](
         """
-          |SELECT p.name, p.encryption_key pk, u.encryption_key uk
+          |SELECT p.creator_id, p.name, p.encryption_key pk, u.encryption_key uk
           |  FROM project_access a, project p, usrd u
           | WHERE a.project_id=p.id AND a.usr_id=u.usr_id
           |   AND a.project_id=? AND a.usr_id=?
@@ -482,7 +512,7 @@ object DbInterpreter {
       for {
         _ <- logProjectRead.run(pid)
         o <- projectSpaInitPageQuery.option((pid, uid))
-      } yield o.map { case (name, pk, uk) => DB.ProjectSpaInitPage(name, uk, pk) }
+      } yield o.map((DB.ProjectSpaInitPage.apply _).tupled)
 
     private[db] val getUserIdsByUsernameQuery = Query[Set[Username], (Username, UserId)](
       "SELECT username,id FROM usr WHERE username = ANY(?::VARCHAR[])")
@@ -494,34 +524,6 @@ object DbInterpreter {
         tuples.foreach(notFound -= _._1)
         NonEmptySet.option(notFound).toLeft(tuples.toMap)
       }
-    }
-
-    private[this] val projectAccessDelete = Update[(ProjectId, UserId)](
-      "DELETE FROM project_access WHERE project_id=? AND usr_id=?")
-
-    private[this] val projectAccessAdd = Update[(ProjectId, UserId, ProjectPerm)](
-      "INSERT INTO project_access(project_id, usr_id, perm) VALUES(?,?,?)")
-
-    override def updateProjectAccess(id    : ProjectId,
-                                     remove: Set[UserId],
-                                     add   : Map[UserId, ProjectPerm]): ConnectionIO[DB.UpdateProjectAccessError \/ ProjectAccess] = {
-
-      val deletes = (remove.iterator ++ add.keys).map((id, _)).toList
-      val adds    = add.iterator.map(t => (id, t._1, t._2)).toList
-
-      val apply: ConnectionIO[DB.UpdateProjectAccessError \/ ProjectAccess] =
-        for {
-          _      <- assertTransactionLevelSerializable
-          _      <- projectAccessDelete.updateMany(deletes)
-          _      <- projectAccessAdd.updateMany(adds)
-          access <- getProjectAccessQuery.toMap(id)
-        } yield
-          if (access.values.exists(_ ==* ProjectPerm.Admin))
-            \/-(ProjectAccess(access.mapKeysNow(Obfuscators.userId.obfuscate)))
-          else
-            -\/(DB.UpdateProjectAccessError.CantRemoveLastAdmin)
-
-      apply.rollbackWhen(_.isLeft)
     }
   }
 
@@ -601,7 +603,7 @@ object DbInterpreter {
       val reqs_live    = project.content.reqs.reqIterator().count(_.live(project.config.reqTypes) is Live)
       val reqs_total   = project.content.reqs.size
       val name         = project.name
-      val creationArgs = (events_init, events_total, reqs_live, reqs_total, name, encKey)
+      val creationArgs = (userId, events_init, events_total, reqs_live, reqs_total, name, encKey)
       val eventArgs    = (pid: ProjectId) => events.iterator.map((pid, _, userId)).toVector
       for {
         pid <- ForHomeSpa.createProjectQuery.unique(creationArgs)

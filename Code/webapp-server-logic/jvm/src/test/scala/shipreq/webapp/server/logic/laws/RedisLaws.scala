@@ -6,7 +6,6 @@ import io.circe._
 import japgolly.microlibs.utils.ConciseIntSetFormat
 import java.time.Instant
 import nyaya.gen.Gen
-import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.EventOrd.Implicits._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.protocol.json.Latest._
@@ -154,7 +153,7 @@ object RedisLaws {
   // ===================================================================================================================
 
   def projectSnapshotFromOrd(ord: EventOrd): ProjectSnapshot = {
-    val p = setOrd(Project.empty, ord).copy(name = ord.value.toString)
+    val p = setOrd(emptyProject1, ord).copy(name = ord.value.toString)
     ProjectSnapshot(p, ord.asLatest)
   }
 

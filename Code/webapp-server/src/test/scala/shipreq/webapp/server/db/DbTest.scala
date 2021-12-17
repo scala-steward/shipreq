@@ -12,10 +12,12 @@ import shipreq.webapp.base.data._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.project.RandomEventStream
+import shipreq.webapp.member.test.project.UnsafeTypes.projectCreatorFromUserId
 import shipreq.webapp.server.config.Global
 import shipreq.webapp.server.interpreter.ServerInterpreter
 import shipreq.webapp.server.logic.data.ProjectEncryptionKey
 import shipreq.webapp.server.logic.logic.PublicSpaLogic
+import shipreq.webapp.server.logic.util.Obfuscators
 import shipreq.webapp.server.test.WebappServerTestUtil._
 import shipreq.webapp.server.test._
 import sourcecode.Line
@@ -130,7 +132,7 @@ object DbTest extends TestSuite {
 
       def createProject(u: UserId, name: String, key: ProjectEncryptionKey)(implicit xa: ImperativeXA): ProjectId = {
         val e = Event.ProjectNameSet(name)
-        val p = applyEventsSuccessfully(Project.empty, e)
+        val p = applyEventsSuccessfully(emptyProject1, e)
         xa ! DbUtil(xa).dbAlgebra.createProject(u, Vector(e), p, key)
       }
 
@@ -172,7 +174,7 @@ object DbTest extends TestSuite {
 //          val (dbu, db, _, p) = newUserAndProject("A")
 //          val es = (xa ! db.getAllProjectEvents(p)).getOrThrow()
 //          val e = Event.ProjectNameSet("qwe")
-//          val p2 = applyEventSuccessfully(Project.empty, e)
+//          val p2 = applyEventSuccessfully(emptyProject1, e)
 //          val u2 = dbu.newUserId()
 //          val result = xa ! db.saveProjectEvent(p, es.max.ord.next, e, p2, u2)
 //          result
@@ -186,14 +188,21 @@ object DbTest extends TestSuite {
         import IgnoreEqualityOfVerifiedEventTimestamps._
         TestDb.withImperativeXA { xa =>
 
-          val data  = RandomEventStream.activeOnly.sampleEventStreamWithProjects
-          val data1 = data.take(RandomEventStream.InitialEventCount)
-          val data2 = data.drop(data1.length)
           val dbu   = DbUtil(xa)
           val db    = dbu.dbAlgebra
-          val uid   = dbu.newUserId()
+          var uid   = dbu.newUserId()
+          var uidp  = Obfuscators.userId.obfuscate(uid)
+          val uids  = dbu.userIdsNE()
+          val data  = RandomEventStream.withConfig(_.activeOnly.withCreator(uid).withUserIds(uids)).sampleEventStreamWithProjects
+          val data1 = data.take(RandomEventStream.InitialEventCount)
+          val data2 = data.drop(data1.length)
           val k     = ProjectEncryptionKey(crypto.generateKey256.unsafeRun())
           val pid   = xa ! db.createProject(uid, data1.map(_._1.event.active), data1.last._2, k)
+
+          def selectAdminFrom(p: Project): Unit = {
+            uidp = p.access.adminIterator().next()
+            uid = Obfuscators.userId.deobfuscateOrThrow(uidp)
+          }
 
           def assertPMD(expect: ProjectMetaData => ProjectMetaData)(implicit l: Line): Unit = {
             val a = (xa ! db.getProjectMetaData(pid, uid)).get
@@ -201,12 +210,12 @@ object DbTest extends TestSuite {
             assertEq(a, e)
           }
 
-          val read1 = (xa ! db.getAllProjectEvents(pid)).getOrThrow()
+          val read1 = (xa ! db.getProjectEvents(pid)).getOrThrow()
           assertEq("init event count", read1.size, data1.length)
           assertEq("first ord", read1.head.ord, EventOrd.first)
           assertPMD(a => ProjectMetaData.fromProject(data1.last._2)(
             id            = a.id,
-            perm          = ProjectPerm.Admin,
+            userId        = uidp,
             eventsInit    = data1.length,
             eventsTotal   = data1.length,
             createdAt     = a.createdAt,
@@ -216,13 +225,15 @@ object DbTest extends TestSuite {
           var ord = read1.last.ord
           for ((e, p) <- data2) {
             ord = EventOrd(ord.value + 1)
+            selectAdminFrom(p)
             (xa ! db.saveProjectEvent(pid, ord, e.event.active, p, uid)).getOrThrow()
           }
-          val readAll = (xa ! db.getAllProjectEvents(pid)).getOrThrow()
+          val readAll = (xa ! db.getProjectEvents(pid)).getOrThrow()
           assertSeq(readAll, data.map(_._1))
-          assertPMD(a => ProjectMetaData.fromProject(data.last._2)(
+          val p = data.last._2
+          assertPMD(a => ProjectMetaData.fromProject(p)(
             id            = a.id,
-            perm          = ProjectPerm.Admin,
+            userId        = uidp,
             eventsInit    = data1.length,
             eventsTotal   = data.length,
             createdAt     = a.createdAt,

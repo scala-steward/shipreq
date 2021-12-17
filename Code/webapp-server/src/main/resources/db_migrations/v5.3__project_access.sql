@@ -28,4 +28,4 @@ SELECT p.id AS project_id,
        'admin'::project_perm AS perm
   FROM project p;
 
-ALTER TABLE project DROP COLUMN usr_id;
+ALTER TABLE project RENAME COLUMN usr_id TO creator_id;

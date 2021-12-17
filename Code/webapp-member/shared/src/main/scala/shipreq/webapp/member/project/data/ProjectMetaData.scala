@@ -10,7 +10,7 @@ import shipreq.webapp.member.project.event._
   */
 final case class ProjectMetaData(id           : ProjectId.Public,
                                  name         : Project.Name,
-                                 perm         : ProjectPerm,
+                                 perm         : Option[ProjectPerm],
                                  eventsInit   : Int,
                                  eventsTotal  : Int,
                                  reqsLive     : Int,
@@ -32,13 +32,13 @@ final case class ProjectMetaData(id           : ProjectId.Public,
   def assertInSyncWith(p: => Project): Unit =
     ProjectMetaData.props(p) assert this
 
-  def applyEvent(ve: VerifiedEvent, newProject: Project, when: Instant): ProjectMetaData =
-    applyEvents(ve :: Nil, newProject, when)
+  def applyEvent(uid: UserId.Public, ve: VerifiedEvent, newProject: Project, when: Instant): ProjectMetaData =
+    applyEvents(uid, ve :: Nil, newProject, when)
 
-  def applyEvents(ves: IterableOnce[VerifiedEvent], newProject: Project, when: Instant): ProjectMetaData =
+  def applyEvents(uid: UserId.Public, ves: IterableOnce[VerifiedEvent], newProject: Project, when: Instant): ProjectMetaData =
     ProjectMetaData.fromProject(newProject)(
       id            = id,
-      perm          = perm,
+      userId        = uid,
       eventsInit    = eventsInit,
       eventsTotal   = eventsTotal + ves.iterator.size,
       createdAt     = createdAt,
@@ -51,7 +51,7 @@ object ProjectMetaData {
 
   def fromProject(p            : Project)
                  (id           : ProjectId.Public,
-                  perm         : ProjectPerm,
+                  userId       : UserId.Public,
                   eventsInit   : Int,
                   eventsTotal  : Int,
                   createdAt    : Instant,
@@ -60,7 +60,7 @@ object ProjectMetaData {
     ProjectMetaData(
       id            = id,
       name          = p.name,
-      perm          = perm,
+      perm          = p.access(userId),
       eventsInit    = eventsInit,
       eventsTotal   = eventsTotal,
       reqsLive      = p.liveReqCount,

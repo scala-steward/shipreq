@@ -28,7 +28,7 @@ object ApplyEventTestFns {
     val es2 = init ++ es
 
     def go(ae: ApplyEvent): Project = {
-      val r = ae.partialApplyUnverified(es2)(Project.empty)
+      val r = ae.partialApplyUnverified(es2)(emptyProject1)
       val p =
         r match {
           case \/-(v) => v

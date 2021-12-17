@@ -1,5 +1,6 @@
 package shipreq.webapp.member.project.library
 
+import shipreq.webapp.base.data.ProjectCreator
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.{EventSeqSummary, VerifiedEvent}
 
@@ -11,6 +12,6 @@ final case class NewEvents(events: VerifiedEvent.Seq, project: Project) {
 
 object NewEvents {
 
-  def empty: NewEvents =
-    apply(VerifiedEvent.Seq.empty, Project.empty)
+  def empty(creator: ProjectCreator): NewEvents =
+    apply(VerifiedEvent.Seq.empty, Project.init(creator))
 }

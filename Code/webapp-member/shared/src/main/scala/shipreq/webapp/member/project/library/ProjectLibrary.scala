@@ -3,7 +3,8 @@ package shipreq.webapp.member.project.library
 import japgolly.microlibs.stdlib_ext.StdlibExt.DurationExt
 import japgolly.microlibs.utils.ConciseIntSetFormat
 import java.time.{Duration, Instant}
-import shipreq.webapp.member.project.data.{Project, ProjectMetaData}
+import shipreq.webapp.base.data.{ProjectCreator, UserId}
+import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
 
 /** A library of revisions of a project.
@@ -14,6 +15,8 @@ trait ProjectLibrary extends EventOrd.CmpOps {
   type This <: ProjectLibrary
 
   def self: This
+
+  val creator: ProjectCreator
 
   val cache: Cache
 
@@ -107,22 +110,23 @@ object ProjectLibrary {
 
   type Update = UpdateFor[ProjectLibrary]
 
-  def empty(cache: Cache): ProjectLibrary =
-    init(Project.empty, cache)
+  def empty(creator: ProjectCreator, cache: Cache): ProjectLibrary =
+    init(creator, Project.init(creator), cache)
 
-  def init(p: Project, cache: Cache): ProjectLibrary =
-    new Basic(p, VerifiedEvent.Seq.empty, None, cache)
+  def init(creator: ProjectCreator, p: Project, cache: Cache): ProjectLibrary =
+    new Basic(creator, p, VerifiedEvent.Seq.empty, None, cache)
 
-  def load(ps: Iterable[Project], cache: Cache): Option[ProjectLibrary] =
+  def load(creator: ProjectCreator, ps: Iterable[Project], cache: Cache): Option[ProjectLibrary] =
     Option.when(ps.nonEmpty) {
       val latest = ps.maxBy(_.ordAsInt)
-      new Basic(latest, VerifiedEvent.Seq.empty, None, cache.update(ps))
+      new Basic(creator, latest, VerifiedEvent.Seq.empty, None, cache.update(ps))
     }
 
-  private final class Basic(val latest        : Project,
-                            val futureEvents  : VerifiedEvent.Seq,
-                            val staleSince    : Option[Instant],
-                            prevCache         : Cache) extends Shared(latest, prevCache) {
+  private final class Basic(override val creator: ProjectCreator,
+                            val latest          : Project,
+                            val futureEvents    : VerifiedEvent.Seq,
+                            val staleSince      : Option[Instant],
+                            prevCache           : Cache) extends Shared(latest, prevCache) {
 
     override type This = Basic
 
@@ -132,15 +136,16 @@ object ProjectLibrary {
     override def toString: String =
       s"ProjectLibrary($descState)"
 
-    private def copy(latest        : Project           = latest,
-                     futureEvents  : VerifiedEvent.Seq,
-                     staleSince    : Option[Instant],
+    private def copy(latest      : Project           = latest,
+                     futureEvents: VerifiedEvent.Seq,
+                     staleSince  : Option[Instant],
                     ): This =
       new Basic(
-        latest         = latest,
-        futureEvents   = futureEvents,
-        staleSince     = staleSince,
-        prevCache      = cache,
+        creator      = creator,
+        latest       = latest,
+        futureEvents = futureEvents,
+        staleSince   = staleSince,
+        prevCache    = cache,
       )
 
     override def update(events: VerifiedEvent.Seq, now: Instant): Option[Update] =
@@ -161,23 +166,31 @@ object ProjectLibrary {
   object WithMetaData {
     type Update = UpdateFor[WithMetaData]
 
-    def apply(pl: ProjectLibrary, md: ProjectMetaData): WithMetaData =
+    def apply(pl: ProjectLibrary, md: ProjectMetaData, u: UserId.Public): WithMetaData =
       new WithMetaData(
+        pl.creator,
+        u,
         pl.latest,
         md,
         pl.futureEvents,
         pl.staleSince,
         pl.cache)
 
-    def init(p: Project, md: ProjectMetaData, cache: Cache): WithMetaData =
-      new WithMetaData(p, md, VerifiedEvent.Seq.empty, None, cache)
+    def init(creator : ProjectCreator,
+             project : Project,
+             metadata: ProjectMetaData,
+             userId  : UserId.Public,
+             cache   : Cache): WithMetaData =
+      new WithMetaData(creator, userId, project, metadata, VerifiedEvent.Seq.empty, None, cache)
   }
 
-  final class WithMetaData(val latest        : Project,
-                           val latestMetaData: ProjectMetaData,
-                           val futureEvents  : VerifiedEvent.Seq,
-                           val staleSince    : Option[Instant],
-                           prevCache         : Cache) extends Shared(latest, prevCache) {
+  final class WithMetaData(override val creator: ProjectCreator,
+                           val userId          : UserId.Public,
+                           val latest          : Project,
+                           val latestMetaData  : ProjectMetaData,
+                           val futureEvents    : VerifiedEvent.Seq,
+                           val staleSince      : Option[Instant],
+                           prevCache           : Cache) extends Shared(latest, prevCache) {
 
     override type This = WithMetaData
 
@@ -193,6 +206,8 @@ object ProjectLibrary {
                      staleSince    : Option[Instant],
                     ): This =
       new WithMetaData(
+        creator        = creator,
+        userId         = userId,
         latest         = latest,
         latestMetaData = latestMetaData,
         futureEvents   = futureEvents,
@@ -205,15 +220,15 @@ object ProjectLibrary {
         events       = events,
         now          = now,
         staleSince   = staleSince,
-        updateLatest = (p2, ves, fe2, ss) => copy(p2, latestMetaData.applyEvents(ves, p2, ves.last.createdAt), fe2, ss),
+        updateLatest = (p2, ves, fe2, ss) => copy(p2, latestMetaData.applyEvents(userId, ves, p2, ves.last.createdAt), fe2, ss),
         updateFuture = (fe2, ss) => copy(futureEvents = fe2, staleSince = ss)
       )
 
     override def withoutFutureEvents: This =
-      new WithMetaData(latest, latestMetaData, VerifiedEvent.Seq.empty, None, cache)
+      new WithMetaData(creator, userId, latest, latestMetaData, VerifiedEvent.Seq.empty, None, cache)
 
     def withoutMetaData: ProjectLibrary =
-      new Basic(latest, futureEvents, staleSince, cache)
+      new Basic(creator, latest, futureEvents, staleSince, cache)
   }
 
   // ===================================================================================================================

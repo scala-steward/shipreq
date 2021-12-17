@@ -6,7 +6,7 @@ import java.time.{Duration, Instant}
 import org.scalajs.dom.window
 import scala.util.{Failure, Success}
 import shipreq.base.util.{ErrorMsg, JsTimers}
-import shipreq.webapp.base.data.ProjectId
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, UserId}
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.ajax.CommonProtocols.Metadata
@@ -25,7 +25,9 @@ import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{Ini
 import shipreq.webapp.member.project.util.DataReusability._
 import shipreq.webapp.member.ui.ReauthenticationModal
 
-abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
+abstract class Global(userId          : UserId.Public,
+                      creator         : ProjectCreator,
+                      onFirstLoad     : (Global, InitAppData) => Callback,
                       onInitFailure   : ErrorMsg => Callback,
                       initialState    : State,
                       ww              : WebWorkerClient.Instance,
@@ -62,7 +64,7 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
   final private val _pxProject: Px.ThunkM[Project] = {
     def f() = unsafeState() match {
       case s: State.Active  => s.projectLibrary.latest
-      case _: State.Loading => Project.empty
+      case _: State.Loading => Project.init(creator)
     }
     Px(f()).withReuse.manualRefresh
   }
@@ -185,7 +187,7 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
   final private def unsafeOnSuccessfulFirstLoad(i: InitAppData, pl1: ProjectLibrary): Unit = {
     // Update state
     val pl2 = pl1.updated(i.projectData, unsafeNow())
-    val s = ProjectLibrary.WithMetaData(pl2, i.projectMetaData)
+    val s = ProjectLibrary.WithMetaData(pl2, i.projectMetaData, userId)
     unsafeSetState(State.Active(s))
 
     // Notify first-load listener
@@ -247,7 +249,7 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
 
         case State.Loading(pl) =>
           unsafeSetState(State.Loading(pl.addEvents(recvEvents, unsafeNow())))
-          NewEvents.empty
+          NewEvents.empty(creator)
       }
     }
 
@@ -318,7 +320,9 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
 
 object Global {
 
-  def apply(reauth       : ReauthenticationModal,
+  def apply(userId       : UserId.Public,
+            creator      : ProjectCreator,
+            reauth       : ReauthenticationModal,
             wscBuilder   : WebSocketClient.Builder[WsReqRes, Push],
             onFirstLoad  : (Global, InitAppData) => Callback,
             onInitFailure: ErrorMsg => Callback,
@@ -331,7 +335,7 @@ object Global {
 
     val initialState = State.Loading(initialData)
 
-    new Global(onFirstLoad, onInitFailure, initialState, ww, logger) {
+    new Global(userId, creator, onFirstLoad, onInitFailure, initialState, ww, logger) {
 
       override val localStorage = _localStorage
 

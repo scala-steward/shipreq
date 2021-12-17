@@ -7,7 +7,7 @@ import shipreq.base.db.DoobieHelpers._
 import shipreq.base.test.db._
 import shipreq.base.util.BinaryData
 import shipreq.base.util.FxModule._
-import shipreq.webapp.base.data.{PersonName, ProjectId, User, UserId, Username}
+import shipreq.webapp.base.data.{PersonName, ProjectCreator, ProjectId, User, UserId, Username}
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.ActiveEvent
 import shipreq.webapp.server.db.DbInterpreter
@@ -15,6 +15,7 @@ import shipreq.webapp.server.db.WebappDoobieCodecs._
 import shipreq.webapp.server.interpreter.SecurityInterpreter
 import shipreq.webapp.server.logic.algebra.{Crypto, DB}
 import shipreq.webapp.server.logic.data._
+import shipreq.webapp.server.logic.util.Obfuscators
 import shipreq.webapp.server.test.WebappServerTestUtil._
 
 object DbUtil {
@@ -46,7 +47,8 @@ final case class DbUtil(xa: ImperativeXA) {
   def newProjectId(userId    : UserId              = getOrCreateUserId(),
                    initEvents: Vector[ActiveEvent] = Vector.empty,
                   ): ProjectId = {
-    val p = applyEventsSuccessfully(Project.empty, initEvents: _*)
+    val c = ProjectCreator(Obfuscators.userId.obfuscate(userId))
+    val p = applyEventsSuccessfully(Project.init(c), initEvents: _*)
     val k = ProjectEncryptionKey(DbUtil.crypto.generateKey256.unsafeRun())
     xa ! dbAlgebra.createProject(userId, initEvents, p, k)
   }
@@ -88,4 +90,10 @@ final case class DbUtil(xa: ImperativeXA) {
 
   def lookupConfirmationToken(email: String): Option[String] =
     xa ! sql"select confirmation_token from usr where email=$email".query[String].option
+
+  def userIds(): Set[UserId] =
+    xa ! sql"select id from usr where username is not null".query[UserId].to[Set]
+
+  def userIdsNE(): NonEmptySet[UserId] =
+    NonEmptySet force userIds()
 }

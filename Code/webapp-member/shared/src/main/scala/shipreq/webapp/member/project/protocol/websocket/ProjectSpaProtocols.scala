@@ -4,7 +4,7 @@ import japgolly.microlibs.adt_macros.AdtMacros
 import japgolly.microlibs.utils.StaticLookupFn
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.config.Urls
-import shipreq.webapp.base.data.ProjectId
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId}
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
@@ -17,8 +17,8 @@ import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
   */
 object ProjectSpaProtocols {
 
-  final case class WebSocket(projectId: ProjectId.Public) extends Protocol.WebSocket.ClientReqServerPush[SafePickler] {
-    override val  url    = Urls.ProjectSpaWebSocket.url(projectId)
+  final case class WebSocket(projectId: ProjectId.Public, creator: ProjectCreator) extends Protocol.WebSocket.ClientReqServerPush[SafePickler] {
+    override val  url    = Urls.ProjectSpaWebSocket.url(projectId, creator)
     override type ReqId  = WebSocketShared.ReqId
     override type ReqRes = WsReqRes
     override val  req    = WsReqRes.AndReq.protocol

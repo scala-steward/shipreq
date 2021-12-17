@@ -17,6 +17,7 @@ import shipreq.webapp.member.project.event.{ApplyEvent, VerifiedEvent}
 import shipreq.webapp.server.logic.algebra.{Crypto, DB, Server}
 import shipreq.webapp.server.logic.data.ProjectEncryptionKey
 import shipreq.webapp.server.logic.dispatch.{ResponseCmd, StatusCode}
+import shipreq.webapp.server.logic.util.Obfuscators
 
 trait OpsEndpointLogic[F[_]] {
   import OpsEndpointLogic._
@@ -90,7 +91,7 @@ object OpsEndpointLogic extends HasLogger {
       )
 
     override def getProjectEvents(pid: ProjectId): F[ResponseCmd] =
-      db.getAllProjectEvents(pid).map {
+      db.getProjectEvents(pid).map {
         case \/-(ves) =>
           if (ves.isEmpty)
             ResponseCmd.StatusOnly.NotFound
@@ -112,7 +113,8 @@ object OpsEndpointLogic extends HasLogger {
         case \/-(ves) =>
           db.getUserId(user).flatMap {
             case Some(uid) =>
-              ApplyEvent.untrusted(ves)(Project.empty) match {
+              val creator = ProjectCreator(Obfuscators.userId.obfuscate(uid))
+              ApplyEvent.untrusted(ves)(Project.init(creator)) match {
                 case \/-(p) =>
                   for {
                     key <- crypto.generateKey256

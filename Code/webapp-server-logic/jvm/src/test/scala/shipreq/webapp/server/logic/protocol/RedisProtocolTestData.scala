@@ -126,7 +126,7 @@ object RedisProtocolTestData {
             events.reverse
         }
 
-      val (initProject, initEvents) = RandomEventStream.initialEvents.samplesUsing(genCtx).next()
+      val (initProject, initEvents) = RandomEventStream.initialEvents(emptyProject1).samplesUsing(genCtx).next()
 
       go(
         EventName.all.whole -- initEvents.map(v => EventName(v.event)),
@@ -165,7 +165,7 @@ object RedisProtocolTestData {
         val ord  = prev._1.fold(EventOrd.first)(x => EventOrd(x.ord.value) + 1)
         val time = prev._2.plusNanos(e.##.abs)
         val ve   = VerifiedEvent(ord, e, time)
-        val p1   = prev._1.fold(Project.empty)(_.project)
+        val p1   = prev._1.fold(emptyProject1)(_.project)
         val p2   = applyVerifiedEventSuccessfully(p1, ve)
         val ps   = Redis.ProjectSnapshot(p2, ord.asLatest)
         val row  = makeRow(ve, ps)

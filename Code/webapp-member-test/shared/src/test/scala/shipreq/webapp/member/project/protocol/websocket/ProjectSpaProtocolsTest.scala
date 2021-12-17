@@ -27,7 +27,7 @@ object ProjectSpaProtocolsTest extends TestSuite {
   import WsReqRes._
   import WebSocketShared.ReqId
 
-  private val webSocket = WebSocket("fake_project_id")
+  private val webSocket = WebSocket("fake_project_id", Creator1)
   private val codecCS   = WebSocketShared.protocolCS(webSocket.req.codec).codec
 
   private implicit def univEqWsReq: UnivEq[WsReqRes.AndReq] = UnivEq.force

@@ -18,6 +18,9 @@ object Rev0 {
   import shipreq.webapp.member.project.protocol.binary.v1.Events._
   import shipreq.webapp.member.project.protocol.binary.v1.PostEvents._
 
+  implicit lazy val picklerProjectCreator: Pickler[ProjectCreator] =
+    implicitly[Pickler[UserId.Public]].xmap(ProjectCreator.apply)(_.userId)
+
   implicit lazy val picklerProjectPerm: Pickler[ProjectPerm] =
     new Pickler[ProjectPerm] {
       // Note: 0 is reserved for Option[ProjectPerm]
@@ -318,7 +321,7 @@ object Rev0 {
     transformPickler(ClientSideProjectEncryptionKey.apply)(_.value)
 
   implicit lazy val picklerProjectAccess: Pickler[ProjectAccess] =
-    pickleMap[UserId.Public, ProjectPerm].xmap(ProjectAccess.apply)(_.value)
+    pickleMap[UserId.Public, ProjectPerm].xmap(ProjectAccess.apply)(_.asMap)
 
   implicit lazy val picklerProject: Pickler[Project] =
     new Pickler[Project] {
@@ -364,7 +367,7 @@ object Rev0 {
       }
       override def unpickle(implicit state: UnpickleState): ProjectMetaData = {
         val id            = state.unpickle[ProjectId.Public]
-        val perm          = state.unpickle[ProjectPerm]
+        val perm          = state.unpickle[Option[ProjectPerm]]
         val name          = state.unpickle[Project.Name]
         val eventsInit    = state.unpickle[Int]
         val eventsTotal   = state.unpickle[Int]

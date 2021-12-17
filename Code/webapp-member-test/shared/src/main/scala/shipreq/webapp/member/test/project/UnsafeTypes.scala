@@ -6,10 +6,12 @@ import scala.reflect.ClassTag
 import shipreq.base.util.ScalaExt._
 import shipreq.base.util.VectorTree.{Location, ParentLocation, PartialLocation}
 import shipreq.base.util._
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.text.{Grammar, Text}
+import shipreq.webapp.server.logic.util.Obfuscators
 
 final case class MakeEmpty[+A](empty: A) extends AnyVal
 
@@ -204,6 +206,12 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
 
   implicit def derivativeTagsRule[A, B](p: (A, B))(implicit a: A => DerivativeTags.TagPair, b: B => ApplicableTagId): (DerivativeTags.TagPair, ApplicableTagId) =
     (p._1, p._2)
+
+  implicit def projectCreatorFromUserIdPublic(u: UserId.Public): ProjectCreator =
+    ProjectCreator(u)
+
+  implicit def projectCreatorFromUserId(u: UserId): ProjectCreator =
+    ProjectCreator(Obfuscators.userId.obfuscate(u))
 }
 
 object UnsafeTypes extends UnsafeTypesMedPriority {

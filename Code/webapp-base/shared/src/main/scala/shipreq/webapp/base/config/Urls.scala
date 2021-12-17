@@ -56,10 +56,26 @@ object Urls {
 
   object ProjectSpaWebSocket {
     final val ParamProjectId = "p"
+    final val ParamCreator   = "c"
     final val Base           = "/w/p"
-    final val ServerEndpoint = Base + "/{" + ParamProjectId + "}"
-    val url                  = Url.Relative(ProjectSpaWebSocket.Base).thenParam[ProjectId.Public](_.value)
-    val parseProjectId       = Obfuscated.apply: String => ProjectId.Public
+    final val ServerEndpoint = Base + "/{" + ParamProjectId + "}" + "/{" + ParamCreator + "}"
+
+    type Param1 = ProjectId.Public
+    type Param2 = ProjectCreator
+
+    val url = Url.Relative(ProjectSpaWebSocket.Base)
+                .thenParam((_: Param1).value)
+                .thenParam((_: Param2).userId.value)
+
+    def parsePath(path: String): Option[(Param1, Param2)] = {
+      val tail  = path.substring(Base.length + 1)
+      val colon = tail.indexOf('/')
+      Option.when(colon > 0) {
+        val p1: Param1 = Obfuscated(tail.take(colon))
+        val p2: Param2 = ProjectCreator(Obfuscated(tail.drop(colon + 1)))
+        (p1, p2)
+      }
+    }
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

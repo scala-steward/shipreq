@@ -7,6 +7,7 @@ import shipreq.webapp.base.util.LruMemo
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.{Event, EventOrd, ProjectEvents, VerifiedEvent}
 import shipreq.webapp.member.project.library._
+import shipreq.webapp.member.test.WebappTestUtil._
 import utest._
 
 object ProjectLibraryTestUtil {
@@ -36,25 +37,28 @@ object ProjectLibraryTestUtil {
   val newProject: Int => Project =
     Memo.int { ord =>
       if (ord == 0)
-        Project.empty
+        emptyProject1
       else
-        Project.empty.copy(
+        emptyProject1.copy(
           name = ord.toString,
           history = newProjectEvents(ord))
     }
 
-  def newProjectLibrary(latest: Int, futureEvents: Int*)(implicit cache: Cache = CacheJs()): ProjectLibrary = {
+  def newProjectLibrary(latest: Int, futureEvents: Int*)
+                       (implicit cache: Cache = CacheJs(Creator1))
+                       : ProjectLibrary = {
     val fes = VerifiedEvent.Seq.empty ++ futureEvents.iterator.map { i =>
       assert(i > (latest + 1))
       newVerifiedEvent(i)
     }
     val p = newProject(latest)
-    ProjectLibrary.init(p, cache).addEvents(fes, fes.lastOption.fold(t)(_.createdAt))
+    ProjectLibrary.init(Creator1, p, cache).addEvents(fes, fes.lastOption.fold(t)(_.createdAt))
   }
 
   def newCache(milestoneEvery: Int               = CacheJs.MilestonesEvery,
                milestones    : js.Array[Project] = null,
                lruSize       : Int               = 20,
+               empty         : Project           = Project.init(Creator1),
               ): Cache = {
     new Cache {
       override def apply(ord: EventOrd): Option[Project] =
@@ -71,6 +75,7 @@ object ProjectLibraryTestUtil {
 
         val newCache =
           CacheJsTestAccess.nonEmpty(
+            empty          = empty,
             latest         = latest,
             milestoneEvery = milestoneEvery,
             milestones     = Option(milestones).getOrElse(newMilestones()),

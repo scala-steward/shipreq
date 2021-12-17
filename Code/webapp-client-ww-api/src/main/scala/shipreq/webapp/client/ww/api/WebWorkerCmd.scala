@@ -4,7 +4,7 @@ import boopickle.ConstPickler
 import boopickle.DefaultBasic._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.config.AssetManifest
-import shipreq.webapp.base.data.{ProjectId, UserId}
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, UserId}
 import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview.ImpGraphConfig
@@ -77,11 +77,13 @@ object WebWorkerCmd {
       override def pickle(a: ClientSideStorage.Context)(implicit state: PickleState): Unit = {
         state.pickle(a.userId)
         state.pickle(a.projectId)
+        state.pickle(a.creator)
       }
       override def unpickle(implicit state: UnpickleState): ClientSideStorage.Context = {
         val uid = state.unpickle[UserId.Public]
         val pid = state.unpickle[ProjectId.Public]
-        ClientSideStorage.Context(uid, pid)
+        val c   = state.unpickle[ProjectCreator]
+        ClientSideStorage.Context(uid, pid, c)
       }
     }
 

@@ -6,9 +6,10 @@ import shipreq.webapp.member.project.data.Project
 
 object CacheJsTestAccess {
 
-  def nonEmpty(latest        : Project,
+  def nonEmpty(empty         : Project,
+               latest        : Project,
                milestoneEvery: Int,
                milestones    : js.Array[Project],
                lru           : LruMemo.ExternalFn[Int, Project]): Cache =
-    new CacheJs.NonEmpty(latest, milestoneEvery, milestones, lru)
+    new CacheJs.NonEmpty(empty, latest, milestoneEvery, milestones, lru)
 }

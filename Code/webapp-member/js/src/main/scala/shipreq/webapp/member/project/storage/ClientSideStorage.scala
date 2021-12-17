@@ -2,7 +2,7 @@ package shipreq.webapp.member.project.storage
 
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
-import shipreq.webapp.base.data.{ProjectId, UserId}
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, UserId}
 import shipreq.webapp.base.protocol.webstorage.AbstractWebStorage
 import shipreq.webapp.member.project.data.ClientSideProjectEncryptionKey
 import shipreq.webapp.member.project.event.EventOrd
@@ -13,12 +13,14 @@ import shipreq.webapp.member.protocol.indexeddb.IndexedDb
 object ClientSideStorage {
 
   trait ReadOnly {
+    protected def creator: ProjectCreator
+
     def isAvailable: CallbackTo[Boolean]
     def getProjectLibraryOrd: AsyncCallback[Option[EventOrd.Latest]]
     def getProjectLibrary: AsyncCallback[Option[ProjectLibrary]]
 
     final def getProjectLibraryOrEmpty: AsyncCallback[ProjectLibrary] =
-      getProjectLibrary.map(_.getOrElse(ProjectLibrary.empty(CacheJs())))
+      getProjectLibrary.map(_.getOrElse(ProjectLibrary.empty(creator, CacheJs(creator))))
   }
 
   trait ReadWrite extends ReadOnly {
@@ -32,14 +34,14 @@ object ClientSideStorage {
     type Provider = (Context, ClientSideProjectEncryptionKey) => AsyncCallback[ReadWrite]
 
     def apply(ctx: Context, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadWrite] =
-      get(ctx, encKey).getOrElse(AsyncCallback.pure(AlwaysEmpty))
+      get(ctx, encKey).getOrElse(AsyncCallback.pure(AlwaysEmpty(ctx.creator)))
 
     def get(ctx: Context, encKey: ClientSideProjectEncryptionKey): Option[AsyncCallback[ReadWrite]] =
       Encryption.Engine.global.flatMap { crypto =>
 
         val enc = crypto(encKey.value).memo()
 
-        Dynamic.optionAsync(
+        Dynamic.optionAsync(ctx.creator)(
           // highest priority
           IndexedDb.global().map(idb => enc.flatMap(IndexedDbStorage(idb, ctx, _))),
           AbstractWebStorage.local().map(ws => enc.map(new WebStorage(ws, ctx, _))),
@@ -47,11 +49,8 @@ object ClientSideStorage {
         )
       }
 
-    def alwaysEmpty: ReadWrite =
-      AlwaysEmpty
-
-    private object AlwaysEmpty extends ReadWrite {
-      private val none = AsyncCallback.pure(Option.empty[Nothing])
+    private final case class AlwaysEmpty(override protected val creator: ProjectCreator) extends ReadWrite {
+      private val none                                    = AsyncCallback.pure(Option.empty[Nothing])
       override val isAvailable                            = CallbackTo.pure(false)
       override def getProjectLibraryOrd                   = none
       override def getProjectLibrary                      = none
@@ -60,31 +59,31 @@ object ClientSideStorage {
 
     object Dynamic {
 
-      def apply(highestPriorityFirst: ReadWrite*): ReadWrite =
+      def apply(creator: ProjectCreator)(highestPriorityFirst: ReadWrite*): ReadWrite =
         highestPriorityFirst.size match {
-          case 0 => AlwaysEmpty
+          case 0 => AlwaysEmpty(creator)
           case 1 => highestPriorityFirst.head
-          case _ => new Dynamic(highestPriorityFirst.toList)
+          case _ => new Dynamic(creator, highestPriorityFirst.toList)
         }
 
-      def async(highestPriorityFirst: AsyncCallback[ReadWrite]*): AsyncCallback[ReadWrite] =
+      def async(creator: ProjectCreator)(highestPriorityFirst: AsyncCallback[ReadWrite]*): AsyncCallback[ReadWrite] =
         AsyncCallback.sequence(highestPriorityFirst.toList)
-          .map(as => apply(as: _*))
+          .map(as => apply(creator)(as: _*))
 
-      def optionAsync(highestPriorityFirst: Option[AsyncCallback[ReadWrite]]*): Option[AsyncCallback[ReadWrite]] = {
+      def optionAsync(creator: ProjectCreator)(highestPriorityFirst: Option[AsyncCallback[ReadWrite]]*): Option[AsyncCallback[ReadWrite]] = {
         val as = highestPriorityFirst.iterator.filterDefined.toList
-        Option.when(as.nonEmpty)(async(as: _*))
+        Option.when(as.nonEmpty)(async(creator)(as: _*))
       }
     }
 
-    private final class Dynamic(highestPriorityFirst: List[ReadWrite]) extends ReadWrite {
+    private final class Dynamic(override protected val creator: ProjectCreator, highestPriorityFirst: List[ReadWrite]) extends ReadWrite {
 
       private val firstAvailable: CallbackTo[ReadWrite] =
         CallbackTo {
           @tailrec
           def go(rws: List[ReadWrite]): ReadWrite =
             if (rws.isEmpty)
-              AlwaysEmpty
+              AlwaysEmpty(creator)
             else {
               val rw = rws.head
               if (rw.isAvailable.runNow())
@@ -112,8 +111,8 @@ object ClientSideStorage {
 
   object ReadOnly {
 
-    def apply(userId: UserId.Public, projectId: ProjectId.Public, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadOnly] =
-      apply(Context(userId, projectId), encKey)
+    def apply(userId: UserId.Public, projectId: ProjectId.Public, creator: ProjectCreator, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadOnly] =
+      apply(Context(userId, projectId, creator), encKey)
 
     def apply(ctx: Context, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadOnly] =
       ReadWrite(ctx, encKey)
@@ -124,8 +123,9 @@ object ClientSideStorage {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  final case class Context(userId: UserId.Public, projectId: ProjectId.Public) {
+  final case class Context(userId: UserId.Public, projectId: ProjectId.Public, creator: ProjectCreator) {
 
+    // Note: no need to include creator here cos it's an immutible detail per project; projectId covers it
     val namespace: String =
       s"${userId.value}:${projectId.value}"
   }

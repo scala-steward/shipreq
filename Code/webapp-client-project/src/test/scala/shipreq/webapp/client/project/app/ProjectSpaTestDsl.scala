@@ -6,7 +6,7 @@ import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
 import scala.util.{Failure, Success, Try}
 import shipreq.webapp.base.config.AssetManifest
-import shipreq.webapp.base.data.{ProjectId, UserId, Username}
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, UserId, Username}
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.client.project.app.pages.config.fields.{FieldConfigObs, FieldConfigTestDsl}
@@ -306,7 +306,8 @@ object ProjectSpaTestDsl {
     val username     = Username("testuser")
     val userId       = Obfuscated("uxx"): UserId.Public
     val projectId    = Obfuscated("pxx"): ProjectId.Public
-    val initPageData = ProjectSpaEntryPoint.InitDataWithoutEncKey(username, userId, projectId, project.name, AssetManifest(None), "/ww.js")
+    val creator      = ProjectCreator(userId)
+    val initPageData = ProjectSpaEntryPoint.InitDataWithoutEncKey(username, userId, projectId, creator, project.name, AssetManifest(None), "/ww.js")
     val ww           = TestWebWorkerClient(wwPrep)
     val spa          = new LoadedRoot(initPageData, global, confirmJs, promptJs, global.optionalFullscreen, ww)
     val rc           = MockRouterCtl[Page]()

@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.StrictLogging
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.base.ops.Trace
 import shipreq.base.util.ErrorMsg
-import shipreq.webapp.base.data.ProjectId
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId}
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.server.logic.algebra.{MetricsAlgebra, Server}
@@ -18,8 +18,8 @@ trait ApplyEventAlgebra[F[_]] { self =>
   def trust: Trust
   val appendFn: AppendFn[F]
 
-  final def create(pid: ProjectId, events: VerifiedEvent.Seq): F[Result] =
-    append(pid, Project.empty, events)
+  final def create(pid: ProjectId, creator: ProjectCreator, events: VerifiedEvent.Seq): F[Result] =
+    append(pid, Project.init(creator), events)
 
   final def append(pid: ProjectId,
                    p: Project,

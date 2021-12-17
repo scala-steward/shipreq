@@ -2,15 +2,16 @@ package shipreq.webapp.member.protocol.entrypoint
 
 import boopickle.DefaultBasic._
 import shipreq.webapp.base.config.AssetManifest
-import shipreq.webapp.base.data.{ProjectId, UserId, Username}
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol.entrypoint.ClientSideProc
-import shipreq.webapp.member.project.data.{ClientSideProjectEncryptionKey, Project}
+import shipreq.webapp.member.project.data._
 
 object ProjectSpaEntryPoint {
 
   final case class InitData(username      : Username,
                             userId        : UserId.Public,
                             projectId     : ProjectId.Public,
+                            creator       : ProjectCreator,
                             projectName   : Project.Name,
                             assetManifest : AssetManifest,
                             webWorkerJsUrl: String,
@@ -21,6 +22,7 @@ object ProjectSpaEntryPoint {
         username       = username,
         userId         = userId,
         projectId      = projectId,
+        creator        = creator,
         projectName    = projectName,
         assetManifest  = assetManifest,
         webWorkerJsUrl = webWorkerJsUrl,
@@ -34,6 +36,7 @@ object ProjectSpaEntryPoint {
   final case class InitDataWithoutEncKey(username      : Username,
                                          userId        : UserId.Public,
                                          projectId     : ProjectId.Public,
+                                         creator       : ProjectCreator,
                                          projectName   : Project.Name,
                                          assetManifest : AssetManifest,
                                          webWorkerJsUrl: String)
@@ -47,6 +50,7 @@ object ProjectSpaEntryPoint {
         state.pickle(a.username)
         state.pickle(a.userId)
         state.pickle(a.projectId)
+        state.pickle(a.creator)
         state.pickle(a.projectName)
         state.pickle(a.assetManifest)
         state.pickle(a.webWorkerJsUrl)
@@ -57,11 +61,12 @@ object ProjectSpaEntryPoint {
         val username       = state.unpickle[Username]
         val userId         = state.unpickle[UserId.Public]
         val projectId      = state.unpickle[ProjectId.Public]
+        val creator        = state.unpickle[ProjectCreator]
         val projectName    = state.unpickle[Project.Name]
         val assetManifest  = state.unpickle[AssetManifest]
         val webWorkerJsUrl = state.unpickle[String]
         val encryptionKey  = state.unpickle[ClientSideProjectEncryptionKey]
-        InitData(username, userId, projectId, projectName, assetManifest, webWorkerJsUrl, encryptionKey)
+        InitData(username, userId, projectId, creator, projectName, assetManifest, webWorkerJsUrl, encryptionKey)
       }
     }
 

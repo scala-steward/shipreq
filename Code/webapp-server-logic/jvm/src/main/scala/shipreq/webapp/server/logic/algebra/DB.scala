@@ -6,8 +6,9 @@ import java.time.Instant
 import shipreq.webapp.base.data._
 import shipreq.webapp.member.global._
 import shipreq.webapp.member.project.data._
-import shipreq.webapp.member.project.event.{ActiveEvent, EventOrd, VerifiedEvent}
+import shipreq.webapp.member.project.event.{ActiveEvent, Event, EventOrd, VerifiedEvent}
 import shipreq.webapp.server.logic.data._
+import shipreq.webapp.server.logic.util.Obfuscators
 
 /**
   * Naming conventions:
@@ -173,9 +174,6 @@ object DB {
 
     final def getProjectEvents(id: ProjectId): F[ReadProjectEventError \/ VerifiedEvent.Seq] =
       getProjectEvents(id, EventFilter.IncludeAll)
-
-    final def getAllProjectEvents(id: ProjectId): F[ReadProjectEventError \/ VerifiedEvent.Seq] =
-      getProjectEvents(id, EventFilter.IncludeAll)
   }
 
   sealed trait EventFilter
@@ -196,17 +194,63 @@ object DB {
     final case class DecodeFailure(ord: EventOrd, logMsg: String) extends ReadProjectEventError
   }
 
-  trait SaveProjectEvent[F[_]] {
-    def saveProjectEvent(id     : ProjectId,
-                         ord    : EventOrd,
-                         event  : ActiveEvent,
-                         project: Project,
-                         userId : UserId): F[SaveProjectEventError \/ VerifiedEvent]
+  trait SaveProjectEvent[F[_]] extends Base[F] {
+
+    protected def updateProjectAccess(id    : ProjectId,
+                                      remove: Set[UserId],
+                                      add   : Map[UserId, ProjectPerm]): F[SaveProjectEventError.OnAccess \/ Unit]
+
+    protected def _saveProjectEvent(id     : ProjectId,
+                                    ord    : EventOrd,
+                                    event  : ActiveEvent,
+                                    project: Project,
+                                    userId : UserId): F[SaveProjectEventError \/ VerifiedEvent]
+
+
+    final def saveProjectEvent(id     : ProjectId,
+                               ord    : EventOrd,
+                               event  : ActiveEvent,
+                               project: Project,
+                               userId : UserId): F[SaveProjectEventError \/ VerifiedEvent] = {
+
+      type Out = SaveProjectEventError \/ VerifiedEvent
+
+      val saveEvent = _saveProjectEvent(id, ord, event, project, userId)
+
+      event match {
+
+        case Event.AccessUpdate(m) =>
+          val remove = m.keysIterator.map(Obfuscators.userId.deobfuscateOrThrow).toSet
+          val add = m.iterator.flatMap {
+              case (u, Some(p)) => (Obfuscators.userId.deobfuscateOrThrow(u), p) :: Nil
+              case _            => Nil
+            }.toMap
+          F.flatMap(updateProjectAccess(id, remove, add)) {
+            case \/-(_) => saveEvent
+            case -\/(e) => F.pure[Out](-\/(e))
+          }
+
+        // This case is handled in _saveProjectEvent for legacy and effeciciency reasons
+        // case e: Event.ProjectNameSet =>
+        //   updateProjectName(e.name) *> saveEvent
+
+        case _ =>
+          saveEvent
+      }
+    }
   }
 
   sealed trait SaveProjectEventError
   object SaveProjectEventError {
     case object OrdInUse extends SaveProjectEventError
+
+    sealed trait OnAccess extends SaveProjectEventError
+    object OnAccess {
+      case object CantRemoveLastAdmin extends OnAccess
+      implicit def univEq: UnivEq[OnAccess] = UnivEq.derive
+    }
+
+    implicit def univEq: UnivEq[SaveProjectEventError] = UnivEq.derive
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -249,22 +293,12 @@ object DB {
 
     /** @return Either user ids for all provided usernames, or a set of invalid usernames. */
     def getUserIdsByUsernameNE(usernames: NonEmptySet[Username]): F[NonEmptySet[Username] \/ Map[Username, UserId]]
-
-    def updateProjectAccess(id    : ProjectId,
-                            remove: Set[UserId],
-                            add   : Map[UserId, ProjectPerm]): F[UpdateProjectAccessError \/ ProjectAccess]
   }
 
-  final case class ProjectSpaInitPage(name      : Project.Name,
-                                      userKey   : UserEncryptionKey,
-                                      projectKey: ProjectEncryptionKey)
-
-  sealed trait UpdateProjectAccessError
-  object UpdateProjectAccessError {
-    case object CantRemoveLastAdmin extends UpdateProjectAccessError
-
-    implicit def univEq: UnivEq[UpdateProjectAccessError] = UnivEq.derive
-  }
+  final case class ProjectSpaInitPage(creatorId : UserId,
+                                      name      : Project.Name,
+                                      projectKey: ProjectEncryptionKey,
+                                      userKey   : UserEncryptionKey)
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
