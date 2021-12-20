@@ -265,9 +265,9 @@ abstract class Global(userId          : UserId.Public,
     updateApp >> updateWebWorker
   }
 
-  final protected def onPush(recvEvents: VerifiedEvent.NonEmptySeq): Callback = Callback {
-    logger(_.info("Server pushed: " + recvEvents))
-    addEvents(recvEvents.values).runNow()
+  final protected def onPush(push: Push): Callback = Callback {
+    logger(_.info("Server pushed: " + push))
+    addEvents(push.events).runNow()
   }
 
   private final def sspToEvents(p: WsReqRes {type ResponseType = WsReqRes.EventResult}): ServerSideProcInvoker[p.RequestType, ErrorMsg, NewEvents] =

@@ -200,6 +200,17 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     NonEmptySet.option(ko).toLeft(ok)
   }
 
+  override def getUsernamesByUserIdNE(ids: NonEmptySet[UserId]) = Eval.always[NonEmptySet[UserId] \/ Map[UserId, Username]] {
+    var ko = Set.empty[UserId]
+    var ok = Map.empty[UserId, Username]
+    for (id <- ids)
+      this.users.find(_.id ==* id) match {
+        case Some(e) => ok += ((id, e.username))
+        case None    => ko += id
+      }
+    NonEmptySet.option(ko).toLeft(ok)
+  }
+
   override def completeUserRegistration(token     : VerificationToken,
                                         name      : PersonName,
                                         username  : Username,

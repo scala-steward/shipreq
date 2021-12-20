@@ -72,6 +72,7 @@ object SqlTest extends TestSuite {
 
     "projectSpa" - {
       // "getUserIdsByUsernameQuery" - TestDb.check(db.getUserIdsByUsernameQuery)
+      // "getUsernamesByUserIdQuery" - TestDb.check(db.getUsernamesByUserIdQuery)
       "projectSpaInitPage"        - TestDb.check(db.projectSpaInitPageQuery)
     }
 

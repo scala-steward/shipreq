@@ -33,6 +33,7 @@ abstract class DbLaws extends TestSuite {
   protected trait DbApi {
     def createUser(): User
     def createProject: (UserId, Vector[ActiveEvent], Project, ProjectEncryptionKey) => ProjectId
+    def getUsernamesByUserId: Set[UserId] => NonEmptySet[UserId] \/ Map[UserId, Username]
     def getUserIdsByUsername: Set[Username] => NonEmptySet[Username] \/ Map[Username, UserId]
     def getProjectAccess: ProjectId => ProjectAccess
     def projectSpaInitPage: (ProjectId, UserId) => Option[ProjectSpaInitPage]
@@ -76,6 +77,13 @@ abstract class DbLaws extends TestSuite {
 
     def getProjectAccessByIds(pid: ProjectId): Map[UserId, ProjectPerm] =
       db.getProjectAccess(pid).asMap.mapKeysNow(Obfuscators.userId.deobfuscateOrThrow)
+
+    def getUserIdsByUsername(ids: Set[Username]): NonEmptySet[Username] \/ Map[Username, UserId] =
+      db.getUserIdsByUsername(ids).flatMap { users =>
+        assertEq(db.getUsernamesByUserId(users.values.toSet), \/-(users.map(_.swap)))
+        \/-(users)
+      }
+
   }
 
   private implicit def autoUserId(u: User): UserId = u.id
@@ -94,13 +102,13 @@ abstract class DbLaws extends TestSuite {
   // ===================================================================================================================
 
   private def testUsernamesEmpty() = test { (t, _) =>
-    val m = t.db.getUserIdsByUsername(Set.empty).getOrThrow()
+    val m = t.getUserIdsByUsername(Set.empty).getOrThrow()
     assertEq(m, Map.empty[Username, UserId])
   }
 
   private def testUsernamesAll() = test { (t, u) =>
     val u2 = t.createUser()
-    val m = t.db.getUserIdsByUsername(Set(u.username, u2.username)).getOrThrow()
+    val m = t.getUserIdsByUsername(Set(u.username, u2.username)).getOrThrow()
     assertEq(m, Map(u.username -> u.id, u2.username -> u2.id))
   }
 
@@ -108,7 +116,7 @@ abstract class DbLaws extends TestSuite {
     def newBadUsername() = Username("x" + UUID.randomUUID().toString().replace("-", " "))
     val u2 = newBadUsername()
     val u3 = newBadUsername()
-    val e = t.db.getUserIdsByUsername(Set(u.username, u2, u3)).getLeftOrThrow()
+    val e = t.getUserIdsByUsername(Set(u.username, u2, u3)).getLeftOrThrow()
     assertEq(e, NonEmptySet(u2, u3))
   }
 

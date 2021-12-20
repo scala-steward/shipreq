@@ -293,6 +293,28 @@ object DB {
 
     /** @return Either user ids for all provided usernames, or a set of invalid usernames. */
     def getUserIdsByUsernameNE(usernames: NonEmptySet[Username]): F[NonEmptySet[Username] \/ Map[Username, UserId]]
+
+    /** @return Either user ids for all provided usernames, or a set of invalid usernames. */
+    final def getUsernamesByUserId(userIds: Set[UserId]): F[NonEmptySet[UserId] \/ Map[UserId, Username]] =
+      if (userIds.isEmpty)
+        F.pure(\/-(Map.empty))
+      else
+        getUsernamesByUserIdNE(NonEmptySet force userIds)
+
+    /** @return Either usernames for all provided user ids, or a set of invalid user ids. */
+    def getUsernamesByUserIdNE(userIds: NonEmptySet[UserId]): F[NonEmptySet[UserId] \/ Map[UserId, Username]]
+
+    final def needUsernamesByUserId(userIds: Set[UserId]): F[Map[UserId, Username]] =
+      if (userIds.isEmpty)
+        F.pure(Map.empty)
+      else
+        needUsernamesByUserIdNE(NonEmptySet force userIds)
+
+    final def needUsernamesByUserIdNE(userIds: NonEmptySet[UserId]): F[Map[UserId, Username]] =
+      F.map(getUsernamesByUserIdNE(userIds)) {
+        case \/-(m) => m
+        case -\/(e) => throw new RuntimeException("Invalid user ids specified to needUsernamesByUserIdNE: " + e)
+      }
   }
 
   final case class ProjectSpaInitPage(creatorId : UserId,

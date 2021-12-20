@@ -80,4 +80,7 @@ object WebappDoobieCodecs {
   implicit val doobieWriteArrayUsername: Write[Set[Username]] =
     Write[List[String]].contramap(_.iterator.map(_.value).toList)
 
+  implicit val doobieWriteArrayUserId: Write[Set[UserId]] =
+    Write[List[Long]].contramap(_.iterator.map(_.value).toList)
+
 }

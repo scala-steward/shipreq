@@ -12,6 +12,7 @@ object MockDbLawsTest extends DbLaws {
     private val db = MockDb.withLiveClock()
 
     override def createUser()         = db.newUser()
+    override val getUsernamesByUserId = db.getUsernamesByUserId(_).value
     override val getUserIdsByUsername = db.getUserIdsByUsername(_).value
     override val createProject        = db.createProject(_, _, _, _).value
     override val getProjectAccess     = db.getProjectAccess(_).value

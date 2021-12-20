@@ -16,7 +16,8 @@ import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.EventOrd.Implicits._
-import shipreq.webapp.member.project.event.{ApplyEvent, EventOrd, VerifiedEvent}
+import shipreq.webapp.member.project.event.{ApplyEvent, Event, EventOrd, VerifiedEvent}
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WebSocket.Push
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WsReqRes.EventResult
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.member.project.protocol.websocket._
@@ -289,12 +290,35 @@ object ProjectSpaLogic extends StrictLogging {
 
       private def pushEvents(span: Span, push: BinaryData => F[Unit], es: VerifiedEvent.NonEmptySeq): F[Unit] =
         trace.newSubSpan("push", span) { _ =>
+
           for {
-            msgBin <- F pure webSocketHelper.protocolSC.codec.encode(-\/(es))
+            msg    <- webSocketPushDataForEvents(es)
+            msgBin <- F pure webSocketHelper.protocolSC.codec.encode(-\/(msg))
             _      <- metrics.projectSpaWebSocketPush(msgBin.length)
             _      <- push(msgBin)
           } yield ()
         }
+
+      private def webSocketPushDataForEvents(es: VerifiedEvent.NonEmptySeq): F[Push] = {
+        val events           = es.values
+        var newPublicUserIds = Set.empty[UserId.Public]
+
+        for (ve <- events)
+          ve.event match {
+
+            case e: Event.AccessUpdate =>
+              e.updates.foreach {
+                case (uid, Some(_)) => newPublicUserIds += uid
+                case _              =>
+              }
+
+            case _ =>
+          }
+
+        for {
+          usernames <- runDB(db.needUsernamesByUserId(newPublicUserIds.map(Obfuscators.userId.deobfuscateOrThrow)))
+        } yield Push(events, usernames.mapKeysNow(Obfuscators.userId.obfuscate))
+      }
 
       private def hasExpired(static: WebSocketStatic): F[Boolean] =
         svr.now.map(_.isAfter(static.expiresAt))

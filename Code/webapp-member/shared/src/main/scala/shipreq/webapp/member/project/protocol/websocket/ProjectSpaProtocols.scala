@@ -1,10 +1,12 @@
 package shipreq.webapp.member.project.protocol.websocket
 
+import cats.Eq
 import japgolly.microlibs.adt_macros.AdtMacros
+import japgolly.microlibs.cats_ext.CatsMacros.deriveEq
 import japgolly.microlibs.utils.StaticLookupFn
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.config.Urls
-import shipreq.webapp.base.data.{ProjectCreator, ProjectId}
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, UserId, Username}
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
@@ -26,7 +28,11 @@ object ProjectSpaProtocols {
   }
 
   object WebSocket {
-    type Push = VerifiedEvent.NonEmptySeq
+    final case class Push(events   : VerifiedEvent.Seq,
+                          usernames: Map[UserId.Public, Username])
+
+    @nowarn("cat=unused")
+    implicit def eqPush(implicit e: Eq[VerifiedEvent.Seq]): Eq[Push] = deriveEq
 
     private[WebSocket] val pushProtocol: Protocol.Of[SafePickler, Push] =
       Protocol(Codecs.Push.safePickler)
@@ -145,10 +151,27 @@ object ProjectSpaProtocols {
 
     object Push {
       protected val version = Version.fromInts(2, 0) // Bump this when any of following imports change
+      import boopickle.DefaultBasic._
       import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
 
-      val safePickler: SafePickler[VerifiedEvent.NonEmptySeq] =
-        picklerVerifiedEventNonEmptySeq
+      private implicit val picklerUsernames: Pickler[Map[UserId.Public, Username]] =
+        pickleMap
+
+      private def pickler: Pickler[WebSocket.Push] =
+        new Pickler[WebSocket.Push] {
+          override def pickle(a: WebSocket.Push)(implicit state: PickleState): Unit = {
+            state.pickle(a.events)
+            state.pickle(a.usernames)
+          }
+          override def unpickle(implicit state: UnpickleState): WebSocket.Push = {
+            val events    = state.unpickle[VerifiedEvent.Seq]
+            val usernames = state.unpickle[Map[UserId.Public, Username]]
+            WebSocket.Push(events, usernames)
+          }
+        }
+
+      val safePickler: SafePickler[WebSocket.Push] =
+        pickler
           .asVersion(version)
           .withMagicNumberFooter(0x06F60C06)
     }

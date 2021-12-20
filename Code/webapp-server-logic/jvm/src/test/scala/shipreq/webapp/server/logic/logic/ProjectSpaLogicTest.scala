@@ -11,6 +11,7 @@ import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WebSocket.Push
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
 import shipreq.webapp.member.project.protocol.websocket._
 import shipreq.webapp.member.project.text.Text
@@ -37,6 +38,9 @@ object ProjectSpaLogicTest {
     final case class Stale     (desc: String) extends CacheState
     final case class Incomplete(desc: String) extends CacheState
   }
+
+  implicit def pushFromVerifiedEventsNE[A](es: A)(implicit f: A => VerifiedEvent.NonEmptySeq): Push =
+    Push(es.values, Map.empty)
 }
 
 abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
@@ -174,7 +178,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
     result
   }
 
-  private def onPush(f: VerifiedEvent.NonEmptySeq => Unit): BinaryData => Eval[Unit] =
+  private def onPush(f: Push => Unit): BinaryData => Eval[Unit] =
     bin => Eval.always {
       val value = pushProtocol.codec.decode(bin).getOrThrow()
       val push = value.swap.getOrThrow()
@@ -376,36 +380,36 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       implicit val t = new Tester; import t._
       val static = p1.static
 
-      var recv1     = Vector.empty[VerifiedEvent.NonEmptySeq]
+      var recv1     = Vector.empty[Push]
       val subState1 = projectSpa.onOpen(static, emptyState, onPush(recv1 :+= _), _ => ???).value
       val initData1 = sendMsgAndBroadcast(initAppMsg_0, static, subState1).getOrThrow()
       val project1  = getProject(initData1)
       assertEq("[1]", recv1, Vector.empty)
 
       val ves1 = sendMsgAndBroadcast(newUC, static, subState1).getOrThrow().needNES
-      assertEq("[2]", recv1, Vector(ves1))
+      assertEq("[2]", recv1, Vector[Push](ves1))
 
-      var recv2     = Vector.empty[VerifiedEvent.NonEmptySeq]
+      var recv2     = Vector.empty[Push]
       val subState2 = projectSpa.onOpen(static, emptyState, onPush(recv2 :+= _), _ => ???).value
       val initData2 = sendMsgAndBroadcast(initAppMsg_0, static, subState2).getOrThrow()
       val project2  = getProject(initData2)
       assertEq("[3]", recv2, Vector.empty)
-      assertEq("[4]", recv1, Vector(ves1))
+      assertEq("[4]", recv1, Vector[Push](ves1))
       assertEq("[5]", project2.ord, Some(project1.history.nextOrd.asLatest))
       assertEq("[6]", project2.content.reqs.size, 1)
 
       val ves2 = sendMsgAndBroadcast(newUC, static, subState2).getOrThrow().needNES
-      assertEq("[7]", recv1, Vector(ves1, ves2))
-      assertEq("[8]", recv2, Vector(ves2))
+      assertEq("[7]", recv1, Vector[Push](ves1, ves2))
+      assertEq("[8]", recv2, Vector[Push](ves2))
 
       val ves3 = sendMsgAndBroadcast(newUC, static, subState1).getOrThrow().needNES
-      assertEq("[9]", recv1, Vector(ves1, ves2, ves3))
-      assertEq("[A]", recv2, Vector(ves2, ves3))
+      assertEq("[9]", recv1, Vector[Push](ves1, ves2, ves3))
+      assertEq("[A]", recv2, Vector[Push](ves2, ves3))
 
       subState1.sub.get.unsubscribe.value
       val ves4 = sendMsgAndBroadcast(newUC, static, subState2).getOrThrow().needNES
-      assertEq("[B]", recv1, Vector(ves1, ves2, ves3))
-      assertEq("[C]", recv2, Vector(ves2, ves3, ves4))
+      assertEq("[B]", recv1, Vector[Push](ves1, ves2, ves3))
+      assertEq("[C]", recv2, Vector[Push](ves2, ves3, ves4))
     }
 
     "reconnect" - {
@@ -442,14 +446,14 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
     "sync" - {
       implicit val t = new Tester; import t._
       val ords     = NonEmptySet(1, 3, 666).map(EventOrd(_))
-      var recv     = Vector.empty[VerifiedEvent.NonEmptySeq]
+      var recv     = Vector.empty[Push]
       val subState = projectSpa.onOpen(p1.static, emptyState, onPush(recv :+= _), _ => ???).value
       val (\/-(_), newState) = sendMsg(WsReqRes.Sync.AndReq(ords), p1.static, subState)
       assertEq(recv, Vector.empty)
       assert(newState.isEmpty)
 
       broadcastAll()
-      val actual = recv.flatMap(_.values.iterator.map(_.ord)).toSet
+      val actual = recv.flatMap(_.events.iterator.map(_.ord)).toSet
       val expect = ords.whole.filter(_ <= p1.verifiedEvents.last.ord)
       assertEq(actual, expect)
     }

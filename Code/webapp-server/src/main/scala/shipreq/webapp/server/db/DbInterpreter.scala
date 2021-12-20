@@ -517,9 +517,18 @@ object DbInterpreter {
     private[db] val getUserIdsByUsernameQuery = Query[Set[Username], (Username, UserId)](
       "SELECT username,id FROM usr WHERE username = ANY(?::VARCHAR[])")
 
-    override def getUserIdsByUsernameNE(usernames: NonEmptySet[Username]): ConnectionIO[NonEmptySet[Username] \/ Map[Username, UserId]] = {
-      val all = usernames.whole
-      getUserIdsByUsernameQuery.toQuery0(all).to[List].map { tuples =>
+    override def getUserIdsByUsernameNE(usernames: NonEmptySet[Username]): ConnectionIO[NonEmptySet[Username] \/ Map[Username, UserId]] =
+      getMap(getUserIdsByUsernameQuery)(usernames)
+
+    private[db] val getUsernamesByUserIdQuery = Query[Set[UserId], (UserId, Username)](
+      "SELECT id,username FROM usr WHERE id = ANY(?::BIGINT[])")
+
+    override def getUsernamesByUserIdNE(userIds: NonEmptySet[UserId]): ConnectionIO[NonEmptySet[UserId] \/ Map[UserId, Username]] =
+      getMap(getUsernamesByUserIdQuery)(userIds)
+
+    private def getMap[K: UnivEq, V](query: Query[Set[K], (K, V)])(keys: NonEmptySet[K]): ConnectionIO[NonEmptySet[K] \/ Map[K, V]] = {
+      val all = keys.whole
+      query.to[List](all).map { tuples =>
         var notFound = all
         tuples.foreach(notFound -= _._1)
         NonEmptySet.option(notFound).toLeft(tuples.toMap)
