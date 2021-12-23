@@ -32,7 +32,7 @@ trait OpsEndpointLogic[F[_]] {
 
   def getProjectEvents(pid: ProjectId): F[ResponseCmd]
 
-  def createProject(user: Username \/ EmailAddr, eventsJson: String): F[ResponseCmd]
+  def importProject(user: Username \/ EmailAddr, eventsJson: String): F[ResponseCmd]
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -108,7 +108,7 @@ object OpsEndpointLogic extends HasLogger {
           ResponseCmd.Json(StatusCode.NotImplemented, json)
       }
 
-    override def createProject(user: Username \/ EmailAddr, eventsJson: String): F[ResponseCmd] =
+    override def importProject(user: Username \/ EmailAddr, eventsJson: String): F[ResponseCmd] =
       decodeEvents(eventsJson) match {
         case \/-(ves) =>
           db.getUserId(user).flatMap {
@@ -118,7 +118,7 @@ object OpsEndpointLogic extends HasLogger {
                 case \/-(p) =>
                   for {
                     key <- crypto.generateKey256
-                    pid <- db.createProject(uid, ves, p, ProjectEncryptionKey(key))
+                    pid <- db.importProject(uid, ves, p, ProjectEncryptionKey(key))
                   } yield {
                     val response = CreateProjectResult(uid, pid)
                     ResponseCmd.Json(StatusCode.OK, response.toJson)

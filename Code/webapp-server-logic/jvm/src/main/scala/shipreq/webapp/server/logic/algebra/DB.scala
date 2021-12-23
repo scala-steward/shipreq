@@ -332,7 +332,7 @@ object DB {
 
     def getUserId(user: Username \/ EmailAddr): F[Option[UserId]]
 
-    def createProject(userId : UserId,
+    def importProject(userId : UserId,
                       events : VerifiedEvent.Seq,
                       project: Project,
                       encKey : ProjectEncryptionKey): F[ProjectId]
@@ -358,10 +358,10 @@ object DB {
         override val dbSize                                         = t(f.dbSize)
         override def getProjectEvents(a: ProjectId, b: EventFilter) = t(f.getProjectEvents(a, b))
         override def getUserId(a: Username \/ EmailAddr)            = t(f.getUserId(a))
-        override def createProject(a: UserId,
+        override def importProject(a: UserId,
                                    b: VerifiedEvent.Seq,
                                    c: Project,
-                                   d: ProjectEncryptionKey)         = t(f.createProject(a, b, c, d))
+                                   d: ProjectEncryptionKey)         = t(f.importProject(a, b, c, d))
       }
   }
 

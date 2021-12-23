@@ -263,7 +263,7 @@ object DispatchBM {
       override def taskmanMsgStatus(id: TaskId)                       = F.pure(null)
       override def sendMail(e: String)                                = F.pure(null)
       override def getProjectEvents(pid: ProjectId)                   = F.pure(null)
-      override def createProject(a: Username \/ EmailAddr, b: String) = F.pure(null)
+      override def importProject(a: Username \/ EmailAddr, b: String) = F.pure(null)
     }
 
     val sync = new Sync[F] {

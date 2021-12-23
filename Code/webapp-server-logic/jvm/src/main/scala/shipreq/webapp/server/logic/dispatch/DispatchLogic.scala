@@ -571,15 +571,15 @@ final class DispatchLogic[F[_], RealReq](readRealReq: RealReq => dispatch.Reques
         )
       )
 
-    private val createProject: Request ?=> F[Response] =
-      endpoint(Post, Url.Relative("project/create"))(req =>
+    private val importProject: Request ?=> F[Response] =
+      endpoint(Post, Url.Relative("project/import"))(req =>
         parseParams(
           for {
             user   <- req.param("user")
             events <- req.param("events")
           } yield (Username.orEmail(user), events)
         ){ case (user, events) =>
-          ops.createProject(user, events).map(response)
+          ops.importProject(user, events).map(response)
         }
       )
 
@@ -590,7 +590,7 @@ final class DispatchLogic[F[_], RealReq](readRealReq: RealReq => dispatch.Reques
             jsonResponse)))
 
     private def innerRoutes: Request ?=> F[Response] =
-      ok | register1 | statsDb | statsUsers | task | testSendMail | getProjectEvents | createProject
+      ok | register1 | statsDb | statsUsers | task | testSendMail | getProjectEvents | importProject
 
     private val fallback: Request => F[Response] =
       _ => notFoundSecure

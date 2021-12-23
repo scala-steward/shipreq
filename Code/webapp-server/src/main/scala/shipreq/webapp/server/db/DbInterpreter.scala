@@ -603,7 +603,7 @@ object DbInterpreter {
           (pid, ve.ord, typeId, data, uid, ve.createdAt)
         }
 
-    override def createProject(userId : UserId,
+    override def importProject(userId : UserId,
                                events : VerifiedEvent.Seq,
                                project: Project,
                                encKey : ProjectEncryptionKey): ConnectionIO[ProjectId] = {
