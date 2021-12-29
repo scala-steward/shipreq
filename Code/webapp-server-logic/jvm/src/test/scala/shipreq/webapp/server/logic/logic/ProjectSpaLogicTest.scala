@@ -2,7 +2,7 @@ package shipreq.webapp.server.logic.logic
 
 import cats.{Eq, Eval}
 import japgolly.microlibs.cats_ext.CatsMacros
-import shipreq.base.util.{BinaryData, Direction}
+import shipreq.base.util.{BinaryData, Direction, ErrorMsg}
 import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
@@ -12,7 +12,7 @@ import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WebSocket.Push
-import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{InitAppData, StateUpdate, Supplimentary, WsReqRes}
 import shipreq.webapp.member.project.protocol.websocket._
 import shipreq.webapp.member.project.text.Text
 import shipreq.webapp.member.test.WebappTestUtil.ImplicitProjectEqualityDeep._
@@ -25,6 +25,7 @@ import shipreq.webapp.server.logic.dispatch.Cookie
 import shipreq.webapp.server.logic.logic.ProjectSpaLogic.{WebSocketState => _, _}
 import shipreq.webapp.server.logic.test.MockInterpreters
 import shipreq.webapp.server.logic.util.Obfuscators
+import sourcecode.Line
 import utest._
 
 object ProjectSpaLogicTestS extends ProjectSpaLogicTest(Config.default.copy(writeEvents = false))
@@ -39,15 +40,69 @@ object ProjectSpaLogicTest {
     final case class Incomplete(desc: String) extends CacheState
   }
 
-  implicit def pushFromVerifiedEventsNE[A](es: A)(implicit f: A => VerifiedEvent.NonEmptySeq): Push =
-    Push(es.values, Map.empty)
+  private[ProjectSpaLogicTest] object Internals {
+
+    implicit def pushFromVerifiedEventsNE[A](es: A)(implicit f: A => VerifiedEvent.NonEmptySeq): Push =
+      StateUpdate(es.values, Supplimentary.empty)
+
+    implicit def nonErrorMsgResponse(a: MsgError \/ StateUpdate): MsgError \/ (ErrorMsg \/ StateUpdate) =
+      a.map(\/-(_))
+
+    implicit def univEqMsgError: UnivEq[MsgError] = UnivEq.force
+    implicit def univEqStatic: UnivEq[WebSocketStatic] = UnivEq.force
+
+    def assertResponse(actual: MsgError \/ (ErrorMsg \/ StateUpdate))(implicit q: Line): AssertResponseDsl =
+      new AssertResponseDsl(None, actual)
+
+    def assertResponse(name: String, actual: MsgError \/ (ErrorMsg \/ StateUpdate))(implicit q: Line): AssertResponseDsl =
+      new AssertResponseDsl(Option(name), actual)
+
+    def assertStateUpdate(actual: StateUpdate)(implicit q: Line): AssertResponseDsl =
+      assertResponse(\/-(\/-(actual)))
+
+    def assertStateUpdate(name: String, actual: StateUpdate)(implicit q: Line): AssertResponseDsl =
+      assertResponse(name, \/-(\/-(actual)))
+
+    final class AssertResponseDsl(name: Option[String], actual: MsgError \/ (ErrorMsg \/ StateUpdate))(implicit q: Line) {
+      def expectEventOrds(ords: EventOrd*): AssertResponseDsl2 =
+        new AssertResponseDsl2(supp => {
+          type T = MsgError \/ (ErrorMsg \/ (List[EventOrd], Supplimentary))
+          val a: T = actual.map(_.map(s => (s.events.iterator.map(_.ord).toList.sorted, s.supp)))
+          val e: T = \/-(\/-((ords.toList.sorted, supp)))
+          assertEqO(name, a, e)
+        })
+
+      @nowarn("cat=unused")
+      def expectEvents(events: VerifiedEvent.Seq)(implicit ee: Eq[VerifiedEvent.Seq]): AssertResponseDsl2 = {
+        // implicit val es: Eq[StateUpdate] = Eq.instance((x, y) => ee.eqv(x.events, y.events) && (x.supp ==* y.supp))
+        val equalVerifiedEventSeq = () // shadow this
+        implicit val es: Eq[StateUpdate] = CatsMacros.deriveEq
+        new AssertResponseDsl2(supp => {
+          val expect: MsgError \/ (ErrorMsg \/ StateUpdate) = \/-(\/-(StateUpdate(events, supp)))
+          assertEqO(name, actual, expect)
+        })
+      }
+
+      def expectNoEvents =
+        expectEvents(VerifiedEvent.Seq.empty)
+    }
+
+    final class AssertResponseDsl2(f: Supplimentary => Unit) {
+      def expectSupp(supp: Supplimentary = Supplimentary.empty): Unit =
+        f(supp)
+
+      def expectRolodex(r: Rolodex): Unit =
+        expectSupp(Supplimentary(r))
+
+      def expectRolodex(entries: (UserId.Public, Username)*): Unit =
+        expectRolodex(Rolodex(entries.toMap))
+    }
+  }
 }
 
 abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
   import ProjectSpaLogicTest._
-
-  private implicit def univEqMsgError: UnivEq[MsgError] = UnivEq.force
-  private implicit def univEqStatic: UnivEq[WebSocketStatic] = UnivEq.force
+  import ProjectSpaLogicTest.Internals._
 
   private type WebSocketState = ProjectSpaLogic.WebSocketState[Eval]
   private val emptyState      = ProjectSpaLogic.WebSocketState.empty[Eval]
@@ -74,8 +129,13 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         case None    => _ => None
       }
 
+    implicit def uidToPublic(a: UserId): UserId.Public =
+      Obfuscators.userId.obfuscate(a)
+
     implicit def pidToPublic(a: ProjectId): ProjectId.Public =
       Obfuscators.projectId.obfuscate(a)
+
+    db.addUsers(user2, user3)
 
     object p1 {
 
@@ -83,6 +143,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         Event.ProjectTemplateApply(ProjectTemplate.V1),
         Event.ProjectNameSet("hell"),
         Event.ProjectNameSet("hello"),
+        Event.AccessUpdate(Map(user3.idP -> Some(ProjectPerm.Collaborator))),
       )
 
       var verifiedEvents       = verifyEvents(emptyProject1)(events: _*)
@@ -94,7 +155,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       instance                 = applyVerifiedEventSuccessfully(emptyProject1, verifiedEvents.toList: _*)
       db.loadProjectLog        = Vector.empty
 
-      lazy val initAppData     = InitAppData(-\/(instance), data1)
+      lazy val initAppData     = InitAppData(-\/(instance), data1, Supplimentary(Rolodex(Map(user3.idP -> user3.username))))
       lazy val static          = WebSocketStatic(user2.toUser, id, user2.id, SessionId.random(), (), svr.now.value, svr.now.value.plusSeconds(99999))
 
       lazy val eventsA         = events.take(1)
@@ -256,7 +317,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       "anonymousSession" - test(SessionToken.anonymous(), p1.id)(-\/(AnonymousSession))
       "invalidProjectId" - test(user2.token, Obfuscated("!"))(-\/(InvalidProjectId))
       "projectNotFound"  - test(user2.token, ProjectId(23432))(-\/(AccessDenied))
-      "accessDenied"     - test(user3.token, p1.id)(-\/(AccessDenied))
+      "accessDenied"     - test(db.newUserEntry().token, p1.id)(-\/(AccessDenied))
       "ok"               - test(user2.token, p1.id)(\/-((p1.static.copy(sessionId = user2.token.sessionId, expiresAt = security.expiry()), emptyState)))
     }
 
@@ -278,8 +339,14 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
               assert(result._2.isEmpty)
 
-              val actualProject = getProject(actual.getOrThrow().getOrThrow())
+              val initAppData = actual.getOrThrow().getOrThrow()
+
+              val actualProject = getProject(initAppData)
               assertEq(actualProject, p1.instance)
+
+              val expectRolodex = Rolodex(Map(user3.idP -> user3.username))
+              val expectSupp = Supplimentary(expectRolodex)
+              assertEq(initAppData.supp, expectSupp)
 
               val cache = redis.read(p1.id).value.getOrThrow()
               assertEq(cache.ord, p1.instance.ord)
@@ -311,6 +378,12 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
               assertEq(actual, \/-(expect))
 
               assert(result._2.isEmpty)
+
+              val initAppData = actual.getOrThrow().getOrThrow()
+
+              val expectRolodex = Rolodex(Map(user3.idP -> user3.username))
+              val expectSupp = Supplimentary(expectRolodex)
+              assertEq(initAppData.supp, expectSupp)
 
               val cache = redis.read(p1.id).value.getOrThrow()
               assertEq(cache.ord, p1.instance.ord)
@@ -354,13 +427,21 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
     "updateProject" - {
       def test(c: CacheState, expectCacheWrites: Int, expectFullDbReads: Int)(implicit t: Tester): Unit = {
         import t._
+
+        val u = db.newUserEntry()
+        val cmd = UpdateAccessCmd(Map(u.idP -> Some(ProjectPerm.Collaborator)))
+        val req = WsReqRes.AccessUpdate.AndReq(cmd)
+
         assertDifference(s"[$c] db reads", db.loadProjectLog.length)(expectFullDbReads) {
           assertDifference(s"[$c] redis writes", redis.writeCount())(expectCacheWrites) {
 
-            val result = sendMsg(newUC, p1.static, subscribedState)
+            val result = sendMsg(req, p1.static, subscribedState)
             val actual = result._1
-            val expect = \/-(List(EventOrd(4)))
-            assertEq(s"[$c] response", actual.map(_.map(_.toList.map(_.ord))), \/-(expect))
+
+            assertResponse(s"[$c] response", actual)
+              .expectEventOrds(EventOrd(p1.events.length + 1))
+              .expectSupp(Supplimentary(Rolodex.init(u.idP, u.username)))
+
             assert(result._2.isEmpty)
 
             val cache = redis.read(p1.id).value.getOrThrow()
@@ -386,30 +467,30 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       val project1  = getProject(initData1)
       assertEq("[1]", recv1, Vector.empty)
 
-      val ves1 = sendMsgAndBroadcast(newUC, static, subState1).getOrThrow().needNES
-      assertEq("[2]", recv1, Vector[Push](ves1))
+      val res1 = sendMsgAndBroadcast(newUC, static, subState1).getOrThrow()
+      assertEq("[2]", recv1, Vector[Push](res1))
 
       var recv2     = Vector.empty[Push]
       val subState2 = projectSpa.onOpen(static, emptyState, onPush(recv2 :+= _), _ => ???).value
       val initData2 = sendMsgAndBroadcast(initAppMsg_0, static, subState2).getOrThrow()
       val project2  = getProject(initData2)
       assertEq("[3]", recv2, Vector.empty)
-      assertEq("[4]", recv1, Vector[Push](ves1))
+      assertEq("[4]", recv1, Vector[Push](res1))
       assertEq("[5]", project2.ord, Some(project1.history.nextOrd.asLatest))
       assertEq("[6]", project2.content.reqs.size, 1)
 
-      val ves2 = sendMsgAndBroadcast(newUC, static, subState2).getOrThrow().needNES
-      assertEq("[7]", recv1, Vector[Push](ves1, ves2))
-      assertEq("[8]", recv2, Vector[Push](ves2))
+      val res2 = sendMsgAndBroadcast(newUC, static, subState2).getOrThrow()
+      assertEq("[7]", recv1, Vector[Push](res1, res2))
+      assertEq("[8]", recv2, Vector[Push](res2))
 
-      val ves3 = sendMsgAndBroadcast(newUC, static, subState1).getOrThrow().needNES
-      assertEq("[9]", recv1, Vector[Push](ves1, ves2, ves3))
-      assertEq("[A]", recv2, Vector[Push](ves2, ves3))
+      val res3 = sendMsgAndBroadcast(newUC, static, subState1).getOrThrow()
+      assertEq("[9]", recv1, Vector[Push](res1, res2, res3))
+      assertEq("[A]", recv2, Vector[Push](res2, res3))
 
       subState1.sub.get.unsubscribe.value
-      val ves4 = sendMsgAndBroadcast(newUC, static, subState2).getOrThrow().needNES
-      assertEq("[B]", recv1, Vector[Push](ves1, ves2, ves3))
-      assertEq("[C]", recv2, Vector[Push](ves2, ves3, ves4))
+      val res4 = sendMsgAndBroadcast(newUC, static, subState2).getOrThrow()
+      assertEq("[B]", recv1, Vector[Push](res1, res2, res3))
+      assertEq("[C]", recv2, Vector[Push](res2, res3, res4))
     }
 
     "reconnect" - {
@@ -417,8 +498,8 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       "current" - {
         implicit val t = new Tester; import t._
         assertDifference("db reads", db.loadProjectLog.length)(0) {
-          val (\/-(events), newState) = sendMsg(WsReqRes.Reconnect.AndReq(p1.instance.ord), p1.static, emptyState)
-          assertEq(events, VerifiedEvent.Seq.empty)
+          val (res, newState) = sendMsg(WsReqRes.Reconnect.AndReq(p1.instance.ord), p1.static, emptyState)
+          assertResponse(res).expectNoEvents.expectSupp()
           assert(newState.exists(_.sub.isDefined))
         }
       }
@@ -428,8 +509,8 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
           import t._
           import IgnoreEqualityOfVerifiedEventTimestamps._
           assertDifference(s"[$c] db reads", db.loadProjectLog.length)(expectFullDbReads) {
-            val (\/-(events), newState) = sendMsg(WsReqRes.Reconnect.AndReq(Some(p1.latestOrdA)), p1.static, emptyState)
-            assertEq(events, p1.verifiedEventsBC)
+            val (res, newState) = sendMsg(WsReqRes.Reconnect.AndReq(Some(p1.latestOrdA)), p1.static, emptyState)
+            assertResponse(res).expectEvents(p1.verifiedEventsBC).expectSupp(p1.initAppData.supp)
             assert(newState.exists(_.sub.isDefined))
           }
         }
@@ -453,9 +534,12 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       assert(newState.isEmpty)
 
       broadcastAll()
-      val actual = recv.flatMap(_.events.iterator.map(_.ord)).toSet
-      val expect = ords.whole.filter(_ <= p1.verifiedEvents.last.ord)
-      assertEq(actual, expect)
+
+      val recvAll = recv.reduce(_ ++ _)
+
+      assertStateUpdate(recvAll)
+        .expectEventOrds(ords.whole.toSeq.filter(_ <= p1.verifiedEvents.last.ord): _*)
+        .expectSupp()
     }
 
     "dataPropFailure" - {

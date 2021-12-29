@@ -16,10 +16,10 @@ import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.EventOrd.Implicits._
-import shipreq.webapp.member.project.event.{ApplyEvent, Event, EventOrd, VerifiedEvent}
+import shipreq.webapp.member.project.event.{ApplyEvent, EventOrd, VerifiedEvent}
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WebSocket.Push
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WsReqRes.EventResult
-import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{InitAppData, StateUpdate, Supplimentary, WsReqRes}
 import shipreq.webapp.member.project.protocol.websocket._
 import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint
 import shipreq.webapp.server.logic.algebra.{Crypto, DB, MetricsAlgebra, Redis, Security, Server}
@@ -161,6 +161,12 @@ object ProjectSpaLogic extends StrictLogging {
     def getSpan(static: WebSocketStatic): Span =
       static.span.asInstanceOf[Span]
 
+    def fRight[E, A, B](f: E \/ A)(g: A => F[B]): F[E \/ B] =
+      f match {
+        case \/-(a) => F.map(g(a))(\/-(_))
+        case -\/(e) => F.pure(-\/(e))
+      }
+
     new ProjectSpaLogic[F] { self =>
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -300,24 +306,9 @@ object ProjectSpaLogic extends StrictLogging {
         }
 
       private def webSocketPushDataForEvents(es: VerifiedEvent.NonEmptySeq): F[Push] = {
-        val events           = es.values
-        var newPublicUserIds = Set.empty[UserId.Public]
-
-        for (ve <- events)
-          ve.event match {
-
-            case e: Event.AccessUpdate =>
-              e.updates.foreach {
-                case (uid, Some(_)) => newPublicUserIds += uid
-                case _              =>
-              }
-
-            case _ =>
-          }
-
-        for {
-          usernames <- runDB(db.needUsernamesByUserId(newPublicUserIds.map(Obfuscators.userId.deobfuscateOrThrow)))
-        } yield Push(events, usernames.mapKeysNow(Obfuscators.userId.obfuscate))
+        val events = es.values
+        for (supp <- supplimentaryDataForEvents(events))
+        yield StateUpdate(events, supp)
       }
 
       private def hasExpired(static: WebSocketStatic): F[Boolean] =
@@ -473,6 +464,7 @@ object ProjectSpaLogic extends StrictLogging {
         onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues),
         onFieldMandatorinessMod = _ => F.pure(-\/(MsgError.FunctionNoLongerSupported("fieldMandatorinessMod"))),
         onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod),
+        onAccessUpdate          = updateProject (MakeEvent.updateAccess),
       )
 
       private val writeSnapshotInsteadOfEvents: Int => Boolean =
@@ -508,11 +500,9 @@ object ProjectSpaLogic extends StrictLogging {
           }.flatMap(identity)
       }
 
-      private val projectUpdater = new ProjectUpdater[D, F](writeSnapshotInsteadOfEvents, submitDataPropError)
-
       private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFn[I, EventResult] =
         in => projectUpdater(in.static.projectId, in.static.creator, in.static.user.id, mkEvent(in.input, _)).map {
-          case ProjectUpdater.Result.Ok(events)              => \/-(MsgFnOut(\/-(events), None))
+          case ProjectUpdater.Result.Ok(upd)                 => \/-(MsgFnOut(\/-(upd), None))
           case ProjectUpdater.Result.Reject(e)               => \/-(MsgFnOut(-\/(e), None))
           case ProjectUpdater.Result.ServerBehindDatabase(e) => -\/(MsgError.ServerBehindDatabase(e))
           case ProjectUpdater.Result.ServerBehindRedis(e)    => -\/(MsgError.ServerBehindRedis(e))
@@ -549,6 +539,11 @@ object ProjectSpaLogic extends StrictLogging {
             -\/(p)
         }
 
+        def getSupplimentaryData: F[Supplimentary] =
+          for {
+            rolodex <- runDB(db.getProjectRolodex(pid, uid))
+          } yield Supplimentary(rolodex)
+
         def ignoreCache(c: Redis.ProjectCache): F[MsgError \/ Result] = {
 
           def readDb(p: Project): F[MsgError \/ (ErrorMsg \/ (Project, InitAppData))] =
@@ -561,11 +556,12 @@ object ProjectSpaLogic extends StrictLogging {
                                  } yield (a, b)
                                )
                 result      <- read.traverse(apEvent.append(pid, p, _))
+                supp        <- getSupplimentaryData
               } yield
                 result match {
                   case \/-(buildResult) =>
                     mdo match {
-                      case Some(md) => \/-(buildResult.map(p => p -> InitAppData(projectData(p), md)))
+                      case Some(md) => \/-(buildResult.map(p => p -> InitAppData(projectData(p), md, supp)))
                       case None     => \/-(projectNotFound)
                     }
                   case -\/(e) =>
@@ -595,8 +591,9 @@ object ProjectSpaLogic extends StrictLogging {
         def useCache(c: Redis.ProjectCache, md: ProjectMetaData): F[\/-[Result]] =
           step("useCache") {
             for {
-              r <- c.build(pid, creator)
-            } yield \/-(r.map(p => InitAppData(projectData(p), md)))
+              r    <- c.build(pid, creator)
+              supp <- getSupplimentaryData
+            } yield \/-(r.map(p => InitAppData(projectData(p), md, supp)))
           }
 
         for {
@@ -621,7 +618,7 @@ object ProjectSpaLogic extends StrictLogging {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      private def onReconnect: MsgFn[Option[EventOrd.Latest], VerifiedEvent.Seq] = in => {
+      private def onReconnect: MsgFn[Option[EventOrd.Latest], StateUpdate] = in => {
         val pid     = in.static.projectId
         val uid     = in.static.user.id
         val userOrd = in.input
@@ -679,13 +676,14 @@ object ProjectSpaLogic extends StrictLogging {
         for {
           newState <- redisSubscribe
           mdOpt    <- runDB(db.getProjectMetaData(pid, uid))
-          md       = mdOpt.get // This will fail during connection usage after project deleted
-          dbLatest = md.latestOrd
-          events   <- if (dbLatest > userOrd)
-                       loadEvents(dbLatest)
-                     else
-                       F.pure(\/-(VerifiedEvent.Seq.empty))
-        } yield events.map(MsgFnOut(_, newState))
+          md        = mdOpt.get // This will fail during connection usage after project deleted
+          dbLatest  = md.latestOrd
+          eventsE  <- if (dbLatest > userOrd)
+                        loadEvents(dbLatest)
+                      else
+                        F.pure(\/-(VerifiedEvent.Seq.empty))
+          updateE  <- fRight(eventsE)(es => supplimentaryDataForEvents(es).map(StateUpdate(es, _)))
+        } yield updateE.map(MsgFnOut(_, newState))
       }
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -702,6 +700,18 @@ object ProjectSpaLogic extends StrictLogging {
           case -\/(e) => -\/(MsgError.ServerBehindDatabase(e))
         }
       }
+
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      private val supplimentaryDataForEvents: VerifiedEvent.Seq => F[Supplimentary] =
+        SupplimentaryLogic[F](
+          needUsernamesByUserId = a => runDB(db.needUsernamesByUserId(a)),
+          obfuscate             = Obfuscators.userId.obfuscate,
+          deobfuscate           = Obfuscators.userId.deobfuscateOrThrow,
+        )
+
+      private val projectUpdater: ProjectUpdater[D, F] =
+        new ProjectUpdater(writeSnapshotInsteadOfEvents, submitDataPropError, supplimentaryDataForEvents)
 
     } // new ProjectSpaLogic
   }
@@ -723,7 +733,8 @@ object ProjectSpaLogic extends StrictLogging {
   }
 
   private final class ProjectUpdater[D[_], F[_]](writeSnapshot: Int => Boolean,
-                                                 submitDataPropError: (UserId, ErrorMsg) => F[Unit])
+                                                 submitDataPropError: (UserId, ErrorMsg) => F[Unit],
+                                                 supplimentaryDataForEvents: VerifiedEvent.Seq => F[Supplimentary])
                                                 (implicit
                                                  F       : Sync[F],
                                                  apEvent : ApplyEventAlgebra[F],
@@ -804,7 +815,7 @@ object ProjectSpaLogic extends StrictLogging {
                 }
 
               case PotentialChange.Unchanged =>
-                F pure \/-(Result.Ok(VerifiedEvent.Seq.empty))
+                F pure \/-(Result.Ok(StateUpdate.empty))
 
               case PotentialChange.Failure(e) =>
                 ApplyEvent.propertyFailure(e) match {
@@ -826,8 +837,9 @@ object ProjectSpaLogic extends StrictLogging {
               } else
                 redis.writeEvents(pid, VerifiedEvent.Seq.empty, newEvents)
             for {
-              _ <- writeRedis
-            } yield \/-(Result.Ok(newEvents))
+              _    <- writeRedis
+              supp <- supplimentaryDataForEvents(newEvents)
+            } yield \/-(Result.Ok(StateUpdate(newEvents, supp)))
         }
 
         trace.newSpan(s.status.name)(_ =>
@@ -846,7 +858,7 @@ object ProjectSpaLogic extends StrictLogging {
       final case class ServerBehindDatabase(err: DB.ReadProjectEventError)    extends Result
       final case class ServerBehindRedis   (err: SafePickler.DecodingFailure) extends Result
       final case class Reject              (errMsg: ErrorMsg)                 extends Result
-      final case class Ok                  (events: VerifiedEvent.Seq)        extends Result
+      final case class Ok                  (update: StateUpdate)              extends Result
     }
 
     final case class State(local : Project,

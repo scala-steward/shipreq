@@ -8,6 +8,7 @@ import shipreq.base.db.DoobieHelpers._
 import shipreq.base.util.BinaryData
 import shipreq.webapp.base.data._
 import shipreq.webapp.server.logic.data._
+import shipreq.webapp.server.logic.util.Obfuscators
 
 object WebappDoobieCodecs {
 
@@ -82,5 +83,8 @@ object WebappDoobieCodecs {
 
   implicit val doobieWriteArrayUserId: Write[Set[UserId]] =
     Write[List[Long]].contramap(_.iterator.map(_.value).toList)
+
+  implicit val doobieReadUserIdPublic: Read[UserId.Public] =
+    Read[Long].map(id => Obfuscators.userId.obfuscate(UserId(id)))
 
 }

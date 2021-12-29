@@ -2,6 +2,7 @@ package shipreq.webapp.server.logic.test
 
 import cats.syntax.all._
 import cats.{Eval, ~>}
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.Instant
 import shipreq.base.util._
 import shipreq.webapp.base.data._
@@ -24,6 +25,10 @@ object MockDb {
                              encKey       : UserEncryptionKey,
                              createdAt    : Instant,
                              resetPassword: Option[(VerificationToken, Instant)] = None) {
+
+    def idP: UserId.Public =
+      Obfuscators.userId.obfuscate(id)
+
     def pubids: List[Username \/ EmailAddr] =
       -\/(username) :: \/-(emailAddr) :: Nil
 
@@ -97,7 +102,7 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     usrLoginLog :+= ((id, ip))
   }
 
-  var prevTokenId = 0
+  var prevTokenId = 0L
   private def nextToken(): VerificationToken = {
     prevTokenId += 1
     prevToken()
@@ -147,7 +152,17 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
 
   var users = List.empty[MockDb.UserEntry]
 
-  def newUser(): User = {
+  def addUser(e: MockDb.UserEntry): Unit =
+    addUsers(e)
+
+  def addUsers(es: MockDb.UserEntry*): Unit = {
+    users :::= es.toList
+    for (e <- es)
+    if (e.id.value > prevTokenId)
+      prevTokenId = e.id.value
+  }
+
+  def newUserEntry(): MockDb.UserEntry = {
     nextToken()
     val id = UserId(prevTokenId)
     val x = "u" + id.value
@@ -160,7 +175,12 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
       createdAt = now.value,
     )
     users ::= e
-    User(id, e.username)
+    e
+  }
+
+  def newUser(): User = {
+    val e = newUserEntry()
+    User(e.id, e.username)
   }
 
   def newUserId(): UserId =
@@ -444,4 +464,8 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     // Hmm, we don't store the project name in ProjectEntry
   }
 
+  override def getProjectRolodex(pid: ProjectId, exclude: UserId) = Eval.always[Rolodex] {
+    val ids = projectAccess.iterator.filter(a => a.pid ==* pid && a.uid !=* exclude).map(_.uid).toSet
+    Rolodex(needUsernamesByUserId(ids).value.mapKeysNow(Obfuscators.userId.obfuscate))
+  }
 }

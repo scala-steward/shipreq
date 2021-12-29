@@ -201,6 +201,9 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
   implicit def autoVerifiedEventNonEmptySeqFromOne(v: VerifiedEvent): VerifiedEvent.NonEmptySeq =
     VerifiedEvent.NonEmptySeq.one(v)
 
+  implicit def autoVerifiedEventSeqFromOne(v: VerifiedEvent): VerifiedEvent.Seq =
+    VerifiedEvent.Seq.one(v)
+
   implicit def derivativeTagsTagPair[A, B](p: (A, B))(implicit a: A => ApplicableTagId, b: B => ApplicableTagId): DerivativeTags.TagPair =
     DerivativeTags.TagPair(p._1, p._2)
 

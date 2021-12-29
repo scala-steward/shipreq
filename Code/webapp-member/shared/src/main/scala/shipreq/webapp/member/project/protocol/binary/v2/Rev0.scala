@@ -390,4 +390,7 @@ object Rev0 {
       }
     }
 
+  implicit lazy val picklerRolodex: Pickler[Rolodex] =
+    pickleMap[UserId.Public, Username].xmap(Rolodex.apply)(_.asMap)
+
 }

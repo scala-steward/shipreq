@@ -21,7 +21,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util._
 import shipreq.webapp.base.config._
-import shipreq.webapp.base.data.{ProjectCreator, ProjectId, ProjectPerm, UserId}
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, ProjectPerm, Rolodex, UserId}
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
@@ -1689,6 +1689,13 @@ object RandomData {
         projectCreator.map(ProjectAccess.init)
     }
 
+  lazy val rolodex: Gen[Rolodex] =
+    for {
+      s     <- Gen.chooseInt(5)
+      ids   <- userIdPublic.set(s)
+      names <- username.set(s)
+    } yield Rolodex(ids.toList.zip(names.toList).toMap)
+
   def genProjectNoHistory(cfg            : ProjectConfig,
                           reqsWithoutText: Requirements,
                           reqCodes1      : ReqCodes,
@@ -2040,7 +2047,8 @@ object RandomData {
       for {
         a <- projectNonsenseHistory either events.verifiedEventSeq(0 to 4)
         b <- projectMetaData
-      } yield ProjectSpaProtocols.InitAppData(a, b)
+        c <- rolodex
+      } yield ProjectSpaProtocols.InitAppData(a, b, ProjectSpaProtocols.Supplimentary(c))
 
     val projectSpaInitPageData: Gen[ProjectSpaEntryPoint.InitData] =
       for {

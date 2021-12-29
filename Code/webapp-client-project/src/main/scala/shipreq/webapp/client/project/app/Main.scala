@@ -60,6 +60,7 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
 
         val global = Global(
           userId        = ik.userId,
+          username      = ik.username,
           creator       = ik.creator,
           reauth        = reauth,
           wscBuilder    = wsClient,

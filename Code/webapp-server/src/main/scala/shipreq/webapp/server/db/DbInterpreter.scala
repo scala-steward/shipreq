@@ -485,8 +485,7 @@ object DbInterpreter {
 
     private[db] val createProjectQuery: Query[(UserId, Int, Int, Int, Int, String, ProjectEncryptionKey), ProjectId] =
       Query(
-        """
-          |INSERT INTO project(creator_id, events_init, events_total, reqs_live, reqs_total, name, encryption_key)
+        """INSERT INTO project(creator_id, events_init, events_total, reqs_live, reqs_total, name, encryption_key)
           |VALUES(?,?,?,?,?,?,?)
           |RETURNING id
         """.stripMargin.sql)
@@ -506,8 +505,7 @@ object DbInterpreter {
 
     private[db] val projectSpaInitPageQuery =
       Query[(ProjectId, UserId), (UserId, Project.Name, ProjectEncryptionKey, UserEncryptionKey)](
-        """
-          |SELECT p.creator_id, p.name, p.encryption_key pk, u.encryption_key uk
+        """SELECT p.creator_id, p.name, p.encryption_key pk, u.encryption_key uk
           |  FROM project_access a, project p, usrd u
           | WHERE a.project_id=p.id AND a.usr_id=u.usr_id
           |   AND a.project_id=? AND a.usr_id=?
@@ -539,6 +537,16 @@ object DbInterpreter {
         NonEmptySet.option(notFound).toLeft(tuples.toMap)
       }
     }
+
+    private[db] val getProjectRolodexQuery = Query[(ProjectId, UserId), (UserId.Public, Username)](
+        """SELECT a.usr_id, u.username
+          |  FROM project_access a, usr u
+          | WHERE a.usr_id=u.id
+          |   AND project_id=? AND a.usr_id<>?
+        """.stripMargin.sql)
+
+    override def getProjectRolodex(id: ProjectId, exclude: UserId): ConnectionIO[Rolodex] =
+      getProjectRolodexQuery.toMap((id, exclude)).map(Rolodex.apply)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

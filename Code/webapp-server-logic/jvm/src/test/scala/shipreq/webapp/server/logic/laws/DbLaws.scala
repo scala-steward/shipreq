@@ -37,6 +37,7 @@ abstract class DbLaws extends TestSuite {
     def getUserIdsByUsername: Set[Username] => NonEmptySet[Username] \/ Map[Username, UserId]
     def getProjectAccess: ProjectId => ProjectAccess
     def projectSpaInitPage: (ProjectId, UserId) => Option[ProjectSpaInitPage]
+    def getProjectRolodex: (ProjectId, UserId) => Rolodex
 
     def needProjectCreator: ProjectId => UserId
     def getProjectEvents: ProjectId => ReadProjectEventError \/ VerifiedEvent.Seq
@@ -70,6 +71,11 @@ abstract class DbLaws extends TestSuite {
       assert(expect.size == entries.size)
       val actual = getProjectAccessByIds(pid)
       assertMap(actual, expect)
+
+      val user = expect.keys.head
+      val actualRolodex = db.getProjectRolodex(pid, user)
+      val expectRolodex = Rolodex(db.getUsernamesByUserId(expect.keySet - user).getOrThrow().mapKeysNow(Obfuscators.userId.obfuscate))
+      assertEq(actualRolodex, expectRolodex)
     }
 
     def needUserId(u: Username): UserId =
