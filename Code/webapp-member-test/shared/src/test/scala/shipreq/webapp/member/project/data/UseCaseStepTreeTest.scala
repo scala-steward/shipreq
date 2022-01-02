@@ -9,6 +9,7 @@ import shipreq.base.util._
 import shipreq.webapp.member.project.data.DataImplicits._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.text.Text
+import shipreq.webapp.member.test.WebappTestUtil.emptyProject1
 import shipreq.webapp.member.test.project.RandomData
 import utest._
 
@@ -39,7 +40,7 @@ object UseCaseStepTreeTest extends TestSuite {
     genUseCase.map { uc =>
       val ucs = UseCases.Stateless(emptyDataMap(UseCase) + uc, UseCases.StepFlow.emptyBiDir).withState
       val pr  = PubidRegister(PubidRegister.emptyMM.add(StaticReqType.UseCase, uc.id))
-      val p   = (Project.useCases.replace(ucs) compose Project.pubidRegister.replace(pr))(Project.empty)
+      val p   = (Project.useCases.replace(ucs) compose Project.pubidRegister.replace(pr))(emptyProject1)
       val ids = IdCeilings.calculate(p)
       p.copy(idCeilings = ids)
     }

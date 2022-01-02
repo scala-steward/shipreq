@@ -154,16 +154,15 @@ final class LiftDispatcher(global: Global) extends StrictLogging {
 
           try
             response.cmd match {
-              case ServePublicSpa(ou)     => ou.foreach(UserVar.set); templatePublic.render(req)
-              case ServeHomeSpa(u)        => UserVar.set(u); templateHome.render(req)
-              case ProjectSpa.Serve(u, p) => UserVar.set(u); ProjectIdVar.set(p); templateProject.render(req)
-              case ProjectSpa.NotOwner
-                 | ProjectSpa.InvalidId   => Full(RedirectResponse(Urls.memberHome.relativeUrl))
-              case Redirect(to)           => Full(RedirectResponse(to.relativeUrl))
-              case r: Binary              => Full(BinaryResponse(r.status, r.body))
-              case r: Text                => Full(GenericResponse(r.status, r.body, "text/plain"))
-              case r: Json                => Full(GenericResponse(r.status, r.body, "application/json"))
-              case StatusOnly(status)     => Full(StatusOnlyResponse(status))
+              case ServePublicSpa(ou)      => ou.foreach(UserVar.set); templatePublic.render(req)
+              case ServeHomeSpa(u)         => UserVar.set(u); templateHome.render(req)
+              case ProjectSpa.Serve(u, p)  => UserVar.set(u); ProjectIdVar.set(p); templateProject.render(req)
+              case ProjectSpa.AccessDenied => Full(RedirectResponse(Urls.memberHome.relativeUrl))
+              case Redirect(to)            => Full(RedirectResponse(to.relativeUrl))
+              case r: Binary               => Full(BinaryResponse(r.status, r.body))
+              case r: Text                 => Full(GenericResponse(r.status, r.body, "text/plain"))
+              case r: Json                 => Full(GenericResponse(r.status, r.body, "application/json"))
+              case StatusOnly(status)      => Full(StatusOnlyResponse(status))
             }
           catch {
             case SnippetError.MemberDataNotFound => Full(RedirectResponse(Urls.memberHome.relativeUrl))

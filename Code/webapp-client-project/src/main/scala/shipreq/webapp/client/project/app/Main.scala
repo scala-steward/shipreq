@@ -16,7 +16,7 @@ import shipreq.webapp.base.protocol.webstorage.AbstractWebStorage
 import shipreq.webapp.client.loaders.ProjectSpaLoader
 import shipreq.webapp.client.project.app.pages.root._
 import shipreq.webapp.client.project.app.state.Global
-import shipreq.webapp.client.ww.api.{WebWorkerCmd, WebWorkerPushCmd}
+import shipreq.webapp.client.ww.api.{WebWorkerCmd, WebWorkerPushCmd, WebWorkerQueryParams}
 import shipreq.webapp.member.project.event.VerifiedEvent
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.InitAppData
@@ -41,10 +41,10 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
     val wwClient     = loadWebWorker(i, logger)
     val localStorage = AbstractWebStorage.localOrEmpty()
     val reauth       = ReauthenticationModal(i.username)(localStorage)
-    val protocol     = ProjectSpaProtocols.WebSocket(i.projectId)
+    val protocol     = ProjectSpaProtocols.WebSocket(i.projectId, i.creator)
     val wsUrlBase    = Url.Absolute.Base(location.protocol + "//" + location.host).forWebSocket
     val wsClient     = WebSocketClient.Builder(wsUrlBase, protocol, wsRetries)
-    val cssCtx       = ClientSideStorage.Context(i.userId, i.projectId)
+    val cssCtx       = ClientSideStorage.Context(i.userId, i.projectId, i.creator)
     val initWW       = WebWorkerCmd.Init(i.assetManifest, cssCtx, ik.encryptionKey)
 
     // TODO Read just latest ord from ClientSideStorage first, send off the WS request, and read the rest later
@@ -52,13 +52,16 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
     val load: AsyncCallback[Unit] =
       for {
         _   <- wwClient.send(initWW).fork_.asAsyncCallback
-        css <- ClientSideStorage.ReadOnly(i.userId, i.projectId, ik.encryptionKey)
+        css <- ClientSideStorage.ReadOnly(i.userId, i.projectId, i.creator, ik.encryptionKey)
         pl  <- css.getProjectLibraryOrEmpty
       } yield {
 
         logger(_.info(s"Loaded v${pl.ordAsInt} from ClientSideStorage"))
 
         val global = Global(
+          userId        = ik.userId,
+          username      = ik.username,
+          creator       = ik.creator,
           reauth        = reauth,
           wscBuilder    = wsClient,
           onFirstLoad   = (g, ia) => onLoad(i, ia, g, wwClient),
@@ -86,6 +89,8 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
 
   private def loadWebWorker(i: InitDataWithoutEncKey, logger: LoggerJs): WebWorkerClient.Instance = {
     val scope  = i.userId.value + ":" + i.projectId.value + ":" + WebWorkerCmd.protocolVer.verNum
+    val params = WebWorkerQueryParams(i.creator)
+    val url    = i.webWorkerJsUrl + "?" + params.queryParamString
 
     // This will be replaced by Global when it first loads
     val onPush: WebWorkerPushCmd => Callback = {
@@ -95,7 +100,7 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
     }
 
     WebWorkerClient.default(
-      worker = AbstractWebWorker.Client(i.webWorkerJsUrl, scope).runNow(),
+      worker = AbstractWebWorker.Client(url, scope).runNow(),
       onPush = onPush,
       logger = logger,
     ).runNow()

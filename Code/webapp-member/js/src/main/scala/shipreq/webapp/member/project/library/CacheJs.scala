@@ -2,14 +2,15 @@ package shipreq.webapp.member.project.library
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation._
+import shipreq.webapp.base.data.ProjectCreator
 import shipreq.webapp.base.util.LruMemo
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.EventOrd
 
 object CacheJs {
 
-  def apply(): Cache =
-    Empty
+  def apply(creator: ProjectCreator): Cache =
+    new Empty(Project.init(creator))
 
   /** Retain projects as milestones every n events.
     *
@@ -17,7 +18,7 @@ object CacheJs {
     */
   final val MilestonesEvery = 4000
 
-  private object Empty extends Cache {
+  private final class Empty(empty: Project) extends Cache {
     override def apply(ord: EventOrd): Option[Project] =
       None
 
@@ -32,6 +33,7 @@ object CacheJs {
 
       val newCache =
         new NonEmpty(
+          empty          = empty,
           latest         = latest,
           milestoneEvery = MilestonesEvery,
           milestones     = new js.Array,
@@ -44,11 +46,11 @@ object CacheJs {
     }
   }
 
-  private[library] final class NonEmpty(
-        private[library] val latest        : Project,
-                             milestoneEvery: Int,
-                             milestones    : js.Array[Project],
-        private[library] val lru           : LruMemo.ExternalFn[Int, Project]) extends Cache {
+  private[library] final class NonEmpty(empty         : Project,
+                   private[library] val latest        : Project,
+                                        milestoneEvery: Int,
+                                        milestones    : js.Array[Project],
+                   private[library] val lru           : LruMemo.ExternalFn[Int, Project]) extends Cache {
 
     @inline private def isMilestone(i: Int): Boolean =
       (i % milestoneEvery) == 0
@@ -68,7 +70,7 @@ object CacheJs {
 
     private def need(tgt: Int): Project =
       if (tgt == 0)
-        Project.empty
+        empty
       else if (isMilestone(tgt)) {
         val mi = ordToMilestoneIdx(tgt)
         val result = getMilestone(mi)
@@ -153,6 +155,7 @@ object CacheJs {
       val newCache =
         if (newLatest > latest)
           new NonEmpty(
+            empty          = empty,
             latest         = newLatest,
             milestoneEvery = milestoneEvery,
             milestones     = milestones, // could shallow copy via .jsSlice() but latestOrd check means can reuse safely

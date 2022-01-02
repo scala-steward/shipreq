@@ -2,6 +2,7 @@ package shipreq.webapp.member.project.storage
 
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
 import shipreq.base.util.MutableRef
+import shipreq.webapp.base.data.ProjectCreator
 import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.member.project.data.Project
@@ -21,10 +22,11 @@ import shipreq.webapp.member.protocol.indexeddb._
  *     - all milestones plus the latest value are stored
  * }}}
  */
-final class IndexedDbStorage(db            : IndexedDb.Database,
-                             isAvailableVar: MutableRef[Boolean],
-                             schema        : IndexedDbStorage.Schema,
-                             plCache       : Cache) extends ClientSideStorage.ReadWrite {
+final class IndexedDbStorage(override protected val creator: ProjectCreator,
+                             db                            : IndexedDb.Database,
+                             isAvailableVar                : MutableRef[Boolean],
+                             schema                        : IndexedDbStorage.Schema,
+                             plCache                       : Cache) extends ClientSideStorage.ReadWrite {
 
   import IndexedDbStorage.Internals._
 
@@ -39,7 +41,7 @@ final class IndexedDbStorage(db            : IndexedDb.Database,
   override val getProjectLibrary: AsyncCallback[Option[ProjectLibrary]] =
     for {
       projects <- db.getAllValues(schema.project.store)
-    } yield ProjectLibrary.load(projects, plCache)
+    } yield ProjectLibrary.load(creator, projects, plCache)
 
   override def saveProjectLibrary(pl: ProjectLibrary): AsyncCallback[Unit] = {
     import schema.project.store
@@ -71,7 +73,7 @@ object IndexedDbStorage {
                                    ctx         : ClientSideStorage.Context,
                                    encryption  : Encryption,
                                    dbNamePrefix: String = "",
-                                   plCache     : Cache = CacheJs(),
+                                   _plCache    : Cache = null,
                                   ): AsyncCallback[IndexedDbStorage] = {
 
     val schema = new Schema(ctx, encryption, dbNamePrefix)
@@ -84,8 +86,10 @@ object IndexedDbStorage {
       closed        = Callback { isAvailable.value = false },
     )
 
+    val plCache = Option(_plCache).getOrElse(CacheJs(ctx.creator))
+
     idb.open(schema.dbName, schema.dbVer)(openCallbacks)
-      .map(new IndexedDbStorage(_, isAvailable, schema, plCache))
+      .map(new IndexedDbStorage(ctx.creator, _, isAvailable, schema, plCache))
   }
 
   // ===================================================================================================================

@@ -1,10 +1,12 @@
 package shipreq.webapp.member.project.protocol.websocket
 
+import cats.Eq
 import japgolly.microlibs.adt_macros.AdtMacros
+import japgolly.microlibs.cats_ext.CatsMacros.deriveEq
 import japgolly.microlibs.utils.StaticLookupFn
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.config.Urls
-import shipreq.webapp.base.data.ProjectId
+import shipreq.webapp.base.data._
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.binary.SafePickler.ConstructionHelperImplicits._
@@ -17,8 +19,8 @@ import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
   */
 object ProjectSpaProtocols {
 
-  final case class WebSocket(projectId: ProjectId.Public) extends Protocol.WebSocket.ClientReqServerPush[SafePickler] {
-    override val  url    = Urls.ProjectSpaWebSocket.url(projectId)
+  final case class WebSocket(projectId: ProjectId.Public, creator: ProjectCreator) extends Protocol.WebSocket.ClientReqServerPush[SafePickler] {
+    override val  url    = Urls.ProjectSpaWebSocket.url(projectId, creator)
     override type ReqId  = WebSocketShared.ReqId
     override type ReqRes = WsReqRes
     override val  req    = WsReqRes.AndReq.protocol
@@ -26,10 +28,42 @@ object ProjectSpaProtocols {
   }
 
   object WebSocket {
-    type Push = VerifiedEvent.NonEmptySeq
+
+    type Push = StateUpdate
 
     private[WebSocket] val pushProtocol: Protocol.Of[SafePickler, Push] =
       Protocol(Codecs.Push.safePickler)
+  }
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  final case class InitAppData(projectData    : Project \/ VerifiedEvent.Seq,
+                               projectMetaData: ProjectMetaData,
+                               supp           : Supplimentary)
+
+  final case class Supplimentary(rolodex: Rolodex) {
+    def ++(s: Supplimentary): Supplimentary =
+      Supplimentary(rolodex ++ s.rolodex)
+  }
+
+  object Supplimentary {
+    val empty: Supplimentary =
+      apply(Rolodex.empty)
+
+    implicit def univEq: UnivEq[Supplimentary] = UnivEq.derive
+  }
+
+  final case class StateUpdate(events: VerifiedEvent.Seq, supp: Supplimentary) {
+    def ++(x: StateUpdate): StateUpdate =
+      StateUpdate(events ++ x.events, supp ++ x.supp)
+  }
+
+  object StateUpdate {
+    val empty: StateUpdate =
+      apply(VerifiedEvent.Seq.empty, Supplimentary.empty)
+
+    @nowarn("cat=unused")
+    implicit def eqStateUpdate(implicit e: Eq[VerifiedEvent.Seq]): Eq[StateUpdate] = deriveEq
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -43,10 +77,36 @@ object ProjectSpaProtocols {
   import CreateContentCmd.CodecsV4._
   import ManualIssueCmd.CodecsV4._
   import SavedViewCmd.CodecsV4._
+  import UpdateAccessCmd.CodecsV1._
   import UpdateConfigCmd.CodecsV2._
   import UpdateContentCmd.CodecsV4._
 
   private object Codecs {
+
+    private val picklerSupplimentary_v10: Pickler[Supplimentary] = {
+      // Bump the above version when any of following changes
+      import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
+      picklerRolodex.xmap(Supplimentary.apply)(_.rolodex)
+    }
+
+    private val picklerStateUpdate_v10: Pickler[StateUpdate] = {
+      // Bump the above version when any of following changes
+      import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
+      @inline implicit def picklerSupp = picklerSupplimentary_v10
+
+      new Pickler[StateUpdate] {
+        override def pickle(a: StateUpdate)(implicit state: PickleState): Unit = {
+          state.pickle(a.events)
+          state.pickle(a.supp)
+        }
+        override def unpickle(implicit state: UnpickleState): StateUpdate = {
+          val events = state.unpickle[VerifiedEvent.Seq]
+          val supp   = state.unpickle[Supplimentary]
+          StateUpdate(events, supp)
+        }
+      }
+    }
+
     val safePicklerWsReqResAndReq: SafePickler[WsReqRes.AndReq] = {
       import WsReqRes._
 
@@ -78,7 +138,6 @@ object ProjectSpaProtocols {
 
     object Requests {
       // When any of the following change (import or impls), bump wsrrVersion
-
       import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1._
       import shipreq.webapp.member.project.protocol.binary.v1.PostEvents._
 
@@ -99,20 +158,22 @@ object ProjectSpaProtocols {
 
     object Responses {
       protected val responseVersion = Version.fromInts(2, 0) // Bump this when any of following imports change
-      import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData2._
-      import shipreq.webapp.member.project.protocol.binary.v1.Rev7._
       import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
+      @inline private implicit def picklerSupp = picklerSupplimentary_v10
+      @inline private implicit def picklerStateUpdate = picklerStateUpdate_v10
 
       private implicit val picklerInitAppData: Pickler[InitAppData] =
         new Pickler[InitAppData] {
           override def pickle(a: InitAppData)(implicit state: PickleState): Unit = {
             state.pickle(a.projectData)
             state.pickle(a.projectMetaData)
+            state.pickle(a.supp)
           }
           override def unpickle(implicit state: UnpickleState): InitAppData = {
             val project         = state.unpickle[Project \/ VerifiedEvent.Seq]
             val projectMetaData = state.unpickle[ProjectMetaData]
-            InitAppData(project, projectMetaData)
+            val supp            = state.unpickle[Supplimentary]
+            InitAppData(project, projectMetaData, supp)
           }
         }
 
@@ -139,18 +200,21 @@ object ProjectSpaProtocols {
           .asVersion(responseVersion)
           .withMagicNumberFooter(0x86DA8677)
 
-      implicit val safePicklerVerifiedEventSeq: SafePickler[VerifiedEvent.Seq] =
-        picklerVerifiedEventSeq
+      implicit val safePicklerStateUpdate: SafePickler[StateUpdate] =
+        picklerStateUpdate
           .asVersion(responseVersion)
-          .withMagicNumberFooter(0x85651C09)
+          .withMagicNumberFooter(0x8473B8AD)
     }
 
     object Push {
-      protected val version = Version.fromInts(1, 7) // Bump this when any of following imports change
-      import shipreq.webapp.member.project.protocol.binary.v1.Rev7._
+      protected val version = Version.fromInts(2, 0) // Bump this when any of following imports change
+      @inline private implicit def picklerStateUpdate = picklerStateUpdate_v10
 
-      val safePickler: SafePickler[VerifiedEvent.NonEmptySeq] =
-        picklerVerifiedEventNonEmptySeq
+      private def pickler: Pickler[WebSocket.Push] =
+        picklerStateUpdate
+
+      val safePickler: SafePickler[WebSocket.Push] =
+        pickler
           .asVersion(version)
           .withMagicNumberFooter(0x06F60C06)
     }
@@ -160,9 +224,6 @@ object ProjectSpaProtocols {
   import Codecs.Responses._
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-  final case class InitAppData(projectData    : Project \/ VerifiedEvent.Seq,
-                               projectMetaData: ProjectMetaData)
 
   sealed trait WsReqRes extends Protocol.RequestResponse[SafePickler] { self =>
     protected[ProjectSpaProtocols] val key: Int
@@ -195,13 +256,13 @@ object ProjectSpaProtocols {
       override final val protocolRes = Protocol(implicitly)
     }
 
-    type EventResult = ErrorMsg \/ VerifiedEvent.Seq
+    type EventResult = ErrorMsg \/ StateUpdate
 
     case object InitApp extends Base[Option[EventOrd.Latest], ErrorMsg \/ InitAppData](0) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onInitApp(r)
     }
 
-    case object Reconnect extends Base[Option[EventOrd.Latest], VerifiedEvent.Seq](1) {
+    case object Reconnect extends Base[Option[EventOrd.Latest], StateUpdate](1) {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onReconnect(r)
     }
 
@@ -242,6 +303,10 @@ object ProjectSpaProtocols {
       override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onReqTypeImplicationMod(r)
     }
 
+    case object AccessUpdate extends Base[UpdateAccessCmd, EventResult](11) {
+      override def fold[F[_ <: WsReqRes], G[_ <: WsReqRes]](f: WsReqRes.Fold[F, G])(r: F[this.type]) = f.onAccessUpdate(r)
+    }
+
     implicit def univEq: UnivEq[WsReqRes] = UnivEq.derive
     val values = AdtMacros.adtValues[WsReqRes]
     val byKey = StaticLookupFn.useArrayBy(values.whole)(_.key).toOption
@@ -258,6 +323,7 @@ object ProjectSpaProtocols {
         onUpdateManualIssues   : F[UpdateManualIssues   .type] => G[UpdateManualIssues   .type],
         onFieldMandatorinessMod: F[FieldMandatorinessMod.type] => G[FieldMandatorinessMod.type],
         onReqTypeImplicationMod: F[ReqTypeImplicationMod.type] => G[ReqTypeImplicationMod.type],
+        onAccessUpdate         : F[AccessUpdate         .type] => G[AccessUpdate         .type],
         ) { self =>
       @inline def apply(r: WsReqRes)(f: F[r.type]) = r.fold(this)(f)
       def compose[H[_ <: WsReqRes]](h: Fold[G, H]): Fold[F, H] =
@@ -273,6 +339,7 @@ object ProjectSpaProtocols {
           onUpdateManualIssues    = f => h.onUpdateManualIssues   (self.onUpdateManualIssues   (f)),
           onFieldMandatorinessMod = f => h.onFieldMandatorinessMod(self.onFieldMandatorinessMod(f)),
           onReqTypeImplicationMod = f => h.onReqTypeImplicationMod(self.onReqTypeImplicationMod(f)),
+          onAccessUpdate          = f => h.onAccessUpdate         (self.onAccessUpdate         (f)),
         )
     }
 

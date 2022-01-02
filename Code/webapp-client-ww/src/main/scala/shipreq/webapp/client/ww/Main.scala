@@ -14,10 +14,11 @@ object Main {
   val protocol = WebWorkerProtocol.default
 
   def main(args: Array[String]): Unit = {
+    val params       = WebWorkerQueryParams.read()
     val logger       = LoggerJs.devOnly
     val onError      = OnError.logToConsole
     val worker       = AbstractWebWorker.Server()
-    val state        = new WorkerState(WorkerState.Logic.Real, logger)
+    val state        = new WorkerState(params.creator, WorkerState.Logic.Real, logger)
     val serviceMaker = Service.maker(state)
 
     val start =

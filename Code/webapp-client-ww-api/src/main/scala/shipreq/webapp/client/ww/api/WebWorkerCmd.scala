@@ -4,7 +4,7 @@ import boopickle.ConstPickler
 import boopickle.DefaultBasic._
 import shipreq.base.util.ErrorMsg
 import shipreq.webapp.base.config.AssetManifest
-import shipreq.webapp.base.data.{ProjectId, UserId}
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, UserId}
 import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.data.savedview.ImpGraphConfig
@@ -53,8 +53,6 @@ object WebWorkerCmd {
   import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData1._
   import shipreq.webapp.member.project.protocol.binary.v1.BaseMemberData2._
   import shipreq.webapp.member.project.protocol.binary.v1.Rev1.SavedViewPicklers._
-  import shipreq.webapp.member.project.protocol.binary.v1.Rev7._
-  import shipreq.webapp.member.project.protocol.binary.v1.Rev8._
   import shipreq.webapp.member.project.protocol.binary.v2.Rev0._
 
   implicit val picklerSvg: Pickler[Svg] =
@@ -79,11 +77,13 @@ object WebWorkerCmd {
       override def pickle(a: ClientSideStorage.Context)(implicit state: PickleState): Unit = {
         state.pickle(a.userId)
         state.pickle(a.projectId)
+        state.pickle(a.creator)
       }
       override def unpickle(implicit state: UnpickleState): ClientSideStorage.Context = {
         val uid = state.unpickle[UserId.Public]
         val pid = state.unpickle[ProjectId.Public]
-        ClientSideStorage.Context(uid, pid)
+        val c   = state.unpickle[ProjectCreator]
+        ClientSideStorage.Context(uid, pid, c)
       }
     }
 

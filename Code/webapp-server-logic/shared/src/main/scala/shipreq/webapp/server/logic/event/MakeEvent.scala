@@ -40,6 +40,15 @@ object MakeEvent {
 
   // ===================================================================================================================
 
+  def updateAccess(cmd: UpdateAccessCmd, project: Project): Result = {
+    val access = project.access.asMap
+    val updates = cmd.updates.filterNot { case (u, o) => access.get(u) ==* o }
+    if (updates.isEmpty)
+      Unchanged
+    else
+      Event.AccessUpdate(updates)
+  }
+
   def projectNameSetFn(name: String): Result =
     ProjectNameSet(name)
 

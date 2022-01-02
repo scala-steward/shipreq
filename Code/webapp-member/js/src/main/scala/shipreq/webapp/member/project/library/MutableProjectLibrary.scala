@@ -3,6 +3,7 @@ package shipreq.webapp.member.project.library
 import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackOption, CallbackTo}
 import java.time.{Duration, Instant}
+import shipreq.webapp.base.data.ProjectCreator
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
@@ -82,7 +83,7 @@ final class MutableProjectLibrary[PL <: ProjectLibrary](initialState: PL,
   def projectAt(ord: Option[EventOrd.Latest]): AsyncCallback[Project] =
     ord match {
       case Some(o) => projectAt(o.asEventOrd)
-      case None    => AsyncCallback.pure(Project.empty)
+      case None    => AsyncCallback.pure(Project.init(_state.creator))
     }
 
   def projectAt(ord: EventOrd): AsyncCallback[Project] =
@@ -123,8 +124,8 @@ object MutableProjectLibrary {
                                   clock: CallbackTo[Instant] = CallbackTo.now): MutableProjectLibrary[PL] =
     new MutableProjectLibrary(initialState, clock)
 
-  def empty(clock: CallbackTo[Instant] = CallbackTo.now): MutableProjectLibrary[ProjectLibrary] =
-    apply(ProjectLibrary.empty(CacheJs()), clock)
+  def empty(creator: ProjectCreator, clock: CallbackTo[Instant] = CallbackTo.now): MutableProjectLibrary[ProjectLibrary] =
+    apply(ProjectLibrary.empty(creator, CacheJs(creator)), clock)
 
   trait Staleness {
     final def addStalenessListener(handle   : NonEmptySet[EventOrd] => Callback,

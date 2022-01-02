@@ -1,11 +1,11 @@
 package shipreq.webapp.member.project.storage
 
 import japgolly.scalajs.react.AsyncCallback
-import shipreq.base.test.BaseTestUtil._
 import shipreq.base.test.Node.asyncTest
 import shipreq.webapp.member.project.event.EventOrd
 import shipreq.webapp.member.test.ProjectLibraryTestUtil._
 import shipreq.webapp.member.test.TestClientSideStorage
+import shipreq.webapp.member.test.WebappTestUtil._
 import utest._
 
 object ClientSideStorageTest extends TestSuite {
@@ -17,7 +17,7 @@ object ClientSideStorageTest extends TestSuite {
     "dynamic" - asyncTest {
       val s1 = TestClientSideStorage()
       val s2 = TestClientSideStorage()
-      val s = ClientSideStorage.ReadWrite.Dynamic(s1, s2)
+      val s = ClientSideStorage.ReadWrite.Dynamic(Creator1)(s1, s2)
 
       def states() = (s1.ordAsInt(), s2.ordAsInt())
 

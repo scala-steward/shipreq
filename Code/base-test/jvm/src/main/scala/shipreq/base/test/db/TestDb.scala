@@ -10,6 +10,7 @@ import doobie.util.testing._
 import doobie.util.transactor.Strategy
 import japgolly.microlibs.testutil.TestUtil._
 import java.sql.Connection
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.{ReadWriteLock, ReentrantReadWriteLock}
 import scala.concurrent.ExecutionContext
 import scala.reflect.runtime.universe.TypeTag
@@ -25,6 +26,9 @@ object TestDb extends TestDbHelpers with HasLogger {
   var debug = false
 
   var rollback = true
+
+  private implicit val lockMechanism: LockUtils.LockMechanism =
+    LockUtils.LockMechanism.LimitWaitTime(30, TimeUnit.SECONDS, "TestDb")
 
   private def debugLog(msg: => String): Unit =
     if (debug) {

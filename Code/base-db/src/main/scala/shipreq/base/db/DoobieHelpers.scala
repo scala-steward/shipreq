@@ -74,19 +74,29 @@ object DoobieHelpers {
       inner.inTransaction(true)
     }
 
-    def inSafeTransactionFlatMap[B](f: SQLException \/ A => ConnectionIO[B])(rollback: B => Boolean): ConnectionIO[B] = {
-      val inner: ConnectionIO[B] =
+    def rollbackWhen(f: A => Boolean): ConnectionIO[A] = {
+      val inner: ConnectionIO[A] =
         for {
-          sp     <- C.setSavepoint
-          result <- self.attemptSql
-          b      <- f(result)
-          _      <- C.rollback(sp).whenA(rollback(b))
-        } yield b
+          sp <- C.setSavepoint
+          a  <- self
+          _  <- C.rollback(sp).whenA(f(a))
+        } yield a
       inner.inTransaction(true)
     }
 
-    def inSafeTransactionRollbackOnLeft[B, C](f: SQLException \/ A => ConnectionIO[B \/ C]): ConnectionIO[B \/ C] =
-      inSafeTransactionFlatMap(f)(_.isLeft)
+    // def inSafeTransactionFlatMap[B](f: SQLException \/ A => ConnectionIO[B])(rollback: B => Boolean): ConnectionIO[B] = {
+    //   val inner: ConnectionIO[B] =
+    //     for {
+    //       sp     <- C.setSavepoint
+    //       result <- self.attemptSql
+    //       b      <- f(result)
+    //       _      <- C.rollback(sp).whenA(rollback(b))
+    //     } yield b
+    //   inner.inTransaction(true)
+    // }
+
+    // def inSafeTransactionRollbackOnLeft[B, C](f: SQLException \/ A => ConnectionIO[B \/ C]): ConnectionIO[B \/ C] =
+    //   inSafeTransactionFlatMap(f)(_.isLeft)
 
     /** @param level See java.sql.Connection */
     def withTransactionLevel(level: Int): ConnectionIO[A] =

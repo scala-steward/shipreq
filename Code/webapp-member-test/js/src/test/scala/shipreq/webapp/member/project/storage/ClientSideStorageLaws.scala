@@ -21,7 +21,7 @@ abstract class ClientSideStorageLaws extends TestSuite {
 
   private final object Internals {
 
-    implicit val cache = CacheJs()
+    implicit val cache = CacheJs(Creator1)
 
     val newInstance = createInstance(u1p1, key_u1p1)
 

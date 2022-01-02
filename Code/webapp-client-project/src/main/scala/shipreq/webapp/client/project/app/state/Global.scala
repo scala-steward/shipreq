@@ -6,7 +6,7 @@ import java.time.{Duration, Instant}
 import org.scalajs.dom.window
 import scala.util.{Failure, Success}
 import shipreq.base.util.{ErrorMsg, JsTimers}
-import shipreq.webapp.base.data.ProjectId
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, Rolodex, UserId, Username}
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.protocol.ajax.CommonProtocols.Metadata
@@ -21,11 +21,13 @@ import shipreq.webapp.member.project.data.{Project, ProjectMetaData}
 import shipreq.webapp.member.project.event.{EventOrd, VerifiedEvent}
 import shipreq.webapp.member.project.library.{NewEvents, ProjectLibrary}
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WebSocket.Push
-import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{InitAppData, WsReqRes}
+import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{InitAppData, StateUpdate, Supplimentary, WsReqRes}
 import shipreq.webapp.member.project.util.DataReusability._
 import shipreq.webapp.member.ui.ReauthenticationModal
 
-abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
+abstract class Global(userId          : UserId.Public,
+                      creator         : ProjectCreator,
+                      onFirstLoad     : (Global, InitAppData) => Callback,
                       onInitFailure   : ErrorMsg => Callback,
                       initialState    : State,
                       ww              : WebWorkerClient.Instance,
@@ -43,12 +45,16 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
   private val state =
     CallbackTo(_state)
 
-  final protected def unsafeState() = _state
+  final protected def unsafeState() =
+    _state
 
   final protected def unsafeSetState(s: State): Unit = {
     _state = s
     _pxProject.refresh()
   }
+
+  final protected def unsafeModState(f: State => State): Unit =
+    unsafeSetState(f(unsafeState()))
 
   final val cbProjectMetaData: CallbackTo[ProjectMetaData] =
     CallbackTo(unsafeState() match {
@@ -62,7 +68,7 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
   final private val _pxProject: Px.ThunkM[Project] = {
     def f() = unsafeState() match {
       case s: State.Active  => s.projectLibrary.latest
-      case _: State.Loading => Project.empty
+      case _: State.Loading => Project.init(creator)
     }
     Px(f()).withReuse.manualRefresh
   }
@@ -166,8 +172,8 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
               case Success(\/-(i)) => Callback {
                 unsafeState() match {
 
-                  case State.Loading(pl1) =>
-                    unsafeOnSuccessfulFirstLoad(i, pl1)
+                  case State.Loading(pl1, supp) =>
+                    unsafeOnSuccessfulFirstLoad(i, pl1, supp)
 
                   case _: State.Active =>
                     logger(_.warn("InitApp response received but already State.Active"))
@@ -182,11 +188,11 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
             }
     } yield ()
 
-  final private def unsafeOnSuccessfulFirstLoad(i: InitAppData, pl1: ProjectLibrary): Unit = {
+  final private def unsafeOnSuccessfulFirstLoad(i: InitAppData, pl1: ProjectLibrary, supp: Supplimentary): Unit = {
     // Update state
     val pl2 = pl1.updated(i.projectData, unsafeNow())
-    val s = ProjectLibrary.WithMetaData(pl2, i.projectMetaData)
-    unsafeSetState(State.Active(s))
+    val s = ProjectLibrary.WithMetaData(pl2, i.projectMetaData, userId)
+    unsafeSetState(State.Active(s, supp ++ i.supp))
 
     // Notify first-load listener
     onFirstLoad(this, i).runNow()
@@ -214,7 +220,7 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
       a1 <- wsClient.send(WsReqRes.Reconnect)(pl.ord)
       a2  = a1 <* logger.async(_.timeEnd("reconnect"))
       _  <- a2.completeWith {
-              case Success(ves) => addEvents(ves).void
+              case Success(upd) => applyUpdateFromServer(upd).void
               case Failure(err) => logger.pure(_.warn(s"Connection failure: ${err.getMessage}"))
             }
     } yield ()
@@ -230,7 +236,7 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
             case Some(update) =>
 
               // Update state
-              unsafeSetState(State.Active(update.newLibrary))
+              unsafeSetState(State.Active(update.newLibrary, s1.supp))
 
               // Broadcast changes
               if (update.newlyAppliedEvents.nonEmpty) {
@@ -245,9 +251,9 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
               NewEvents(recvEvents, s1.projectLibrary.latest)
           }
 
-        case State.Loading(pl) =>
-          unsafeSetState(State.Loading(pl.addEvents(recvEvents, unsafeNow())))
-          NewEvents.empty
+        case State.Loading(pl, supp) =>
+          unsafeSetState(State.Loading(pl.addEvents(recvEvents, unsafeNow()), supp))
+          NewEvents.empty(creator)
       }
     }
 
@@ -263,15 +269,26 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
     updateApp >> updateWebWorker
   }
 
-  final protected def onPush(recvEvents: VerifiedEvent.NonEmptySeq): Callback = Callback {
-    logger(_.info("Server pushed: " + recvEvents))
-    addEvents(recvEvents.values).runNow()
+  final protected def onPush(push: Push): Callback = Callback {
+    logger(_.info("Server pushed: " + push))
+    applyUpdateFromServer(push).runNow()
   }
+
+  final protected def applyUpdateFromServer(upd: StateUpdate) = CallbackTo[NewEvents] {
+    unsafeAddSupplimentary(upd.supp)
+    addEvents(upd.events).runNow()
+  }
+
+  private def unsafeAddSupplimentary(s: Supplimentary): Unit =
+    unsafeModState {
+      case State.Active (pl, supp) => State.Active (pl, supp ++ s)
+      case State.Loading(pl, supp) => State.Loading(pl, supp ++ s)
+    }
 
   private final def sspToEvents(p: WsReqRes {type ResponseType = WsReqRes.EventResult}): ServerSideProcInvoker[p.RequestType, ErrorMsg, NewEvents] =
     wsClient.invoker(p)
       .mergeFailure
-      .mapC(addEvents)
+      .mapC(applyUpdateFromServer)
 
   def requestSyncIfStaleFor(tolerance: Duration): Callback = {
     val missingEvents = CallbackTo[Option[NonEmptySet[EventOrd]]] {
@@ -318,7 +335,10 @@ abstract class Global(onFirstLoad     : (Global, InitAppData) => Callback,
 
 object Global {
 
-  def apply(reauth       : ReauthenticationModal,
+  def apply(userId       : UserId.Public,
+            username     : Username,
+            creator      : ProjectCreator,
+            reauth       : ReauthenticationModal,
             wscBuilder   : WebSocketClient.Builder[WsReqRes, Push],
             onFirstLoad  : (Global, InitAppData) => Callback,
             onInitFailure: ErrorMsg => Callback,
@@ -329,9 +349,11 @@ object Global {
 
     val _localStorage = localStorage
 
-    val initialState = State.Loading(initialData)
+    val supp = Supplimentary(Rolodex.init(userId, username))
 
-    new Global(onFirstLoad, onInitFailure, initialState, ww, logger) {
+    val initialState = State.Loading(initialData, supp)
+
+    new Global(userId, creator, onFirstLoad, onInitFailure, initialState, ww, logger) {
 
       override val localStorage = _localStorage
 
@@ -353,6 +375,7 @@ object Global {
 
   sealed trait State {
     val projectLibrary: ProjectLibrary
+    val supp: Supplimentary
 
     @inline final def ord = projectLibrary.ord
   }
@@ -360,9 +383,9 @@ object Global {
   object State {
 
     /** Waiting to be initialised by the web socket. */
-    final case class Loading(projectLibrary: ProjectLibrary) extends State
+    final case class Loading(projectLibrary: ProjectLibrary, supp: Supplimentary) extends State
 
-    final case class Active(projectLibrary: ProjectLibrary.WithMetaData) extends State
+    final case class Active(projectLibrary: ProjectLibrary.WithMetaData, supp: Supplimentary) extends State
   }
 
   implicit def reusability: Reusability[Global] = Reusability.always

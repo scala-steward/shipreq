@@ -5,6 +5,7 @@ import japgolly.scalajs.react._
 import java.time.Duration
 import shipreq.base.util._
 import shipreq.webapp.base.config.AssetManifest
+import shipreq.webapp.base.data.ProjectPerm
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.jsfacade.MomentJs
 import shipreq.webapp.member.project.data._
@@ -62,6 +63,9 @@ abstract class DataReusability extends BaseReusability {
     Reusability.always
 
   implicit def reusabilityColour: Reusability[Colour] =
+    Reusability.byUnivEq
+
+  implicit def reusabilityProjectPerm: Reusability[ProjectPerm] =
     Reusability.byUnivEq
 
   implicit def reusabilityFieldReqTypeRulesResolution[D: UnivEq]: Reusability[FieldReqTypeRules.Resolution[D]] =

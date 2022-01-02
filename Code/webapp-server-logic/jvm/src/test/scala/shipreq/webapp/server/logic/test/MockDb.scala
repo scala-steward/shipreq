@@ -1,16 +1,20 @@
 package shipreq.webapp.server.logic.test
 
 import cats.syntax.all._
-import cats.{Eval, Monad, ~>}
+import cats.{Eval, ~>}
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.Instant
 import shipreq.base.util._
 import shipreq.webapp.base.data._
+import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.member.global.GlobalEvent
 import shipreq.webapp.member.project.data.{Live => _, _}
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.WebappTestUtil._
+import shipreq.webapp.member.test.project.UnsafeTypes.projectCreatorFromUserId
 import shipreq.webapp.server.logic.algebra._
 import shipreq.webapp.server.logic.data._
+import shipreq.webapp.server.logic.laws.DbLaws
 import shipreq.webapp.server.logic.util.Obfuscators
 
 object MockDb {
@@ -21,6 +25,10 @@ object MockDb {
                              encKey       : UserEncryptionKey,
                              createdAt    : Instant,
                              resetPassword: Option[(VerificationToken, Instant)] = None) {
+
+    def idP: UserId.Public =
+      Obfuscators.userId.obfuscate(id)
+
     def pubids: List[Username \/ EmailAddr] =
       -\/(username) :: \/-(emailAddr) :: Nil
 
@@ -38,7 +46,7 @@ object MockDb {
   }
 
   final case class ProjectEntry(projectId    : ProjectId,
-                                userId       : UserId,
+                                creatorId    : UserId,
                                 encKey       : ProjectEncryptionKey,
                                 initEvents   : Int,
                                 events       : VerifiedEvent.Seq,
@@ -47,30 +55,36 @@ object MockDb {
                                 lastUpdatedAt: Option[Instant]) {
 
     lazy val project: Project =
-      ApplyEvent.trusted(events)(Project.empty).getOrThrow()
+      ApplyEvent.trusted(events)(Project.init(creatorId)).getOrThrow()
 
-    lazy val projectMetaData: ProjectMetaData =
+    def projectMetaData(perm: ProjectPerm): ProjectMetaData =
       ProjectMetaData.fromProject(project)(
         id            = Obfuscators.projectId.obfuscate(projectId),
+        userId        = Obfuscated(""),
         eventsInit    = initEvents,
         eventsTotal   = events.size,
         createdAt     = createdAt,
         accessedAt    = accessedAt,
-        lastUpdatedAt = lastUpdatedAt)
+        lastUpdatedAt = lastUpdatedAt,
+      ).copy(perm = Some(perm))
 
     def projectLoad: VerifiedEvent.Seq =
       events
   }
 
+  final case class ProjectAccessEntry(pid: ProjectId, uid: UserId, perm: ProjectPerm)
+
   def withLiveClock(): MockDb =
     new MockDb(Eval.always(Instant.now()))
+
+  private[MockDb] def implicitInstance = implicitly[DB.EffectTC[Eval]]
 }
 
 // =====================================================================================================================
 
 final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecurity[Eval] with DB.ForOps[Eval] {
 
-  override protected val F = Monad[Eval]
+  override implicit protected val F = MockDb.implicitInstance
 
   override val now: Eval[Instant] =
     _now
@@ -88,7 +102,7 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     usrLoginLog :+= ((id, ip))
   }
 
-  var prevTokenId = 0
+  var prevTokenId = 0L
   private def nextToken(): VerificationToken = {
     prevTokenId += 1
     prevToken()
@@ -138,7 +152,17 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
 
   var users = List.empty[MockDb.UserEntry]
 
-  def newUser(): User = {
+  def addUser(e: MockDb.UserEntry): Unit =
+    addUsers(e)
+
+  def addUsers(es: MockDb.UserEntry*): Unit = {
+    users :::= es.toList
+    for (e <- es)
+    if (e.id.value > prevTokenId)
+      prevTokenId = e.id.value
+  }
+
+  def newUserEntry(): MockDb.UserEntry = {
     nextToken()
     val id = UserId(prevTokenId)
     val x = "u" + id.value
@@ -151,11 +175,22 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
       createdAt = now.value,
     )
     users ::= e
-    User(id, e.username)
+    e
+  }
+
+  def newUser(): User = {
+    val e = newUserEntry()
+    User(e.id, e.username)
   }
 
   def newUserId(): UserId =
     newUser().id
+
+  def needUser(id: UserId): MockDb.UserEntry =
+    getUser(id).getOrThrow(s"User #${id.value} not found")
+
+  def getUser(id: UserId): Option[MockDb.UserEntry] =
+    users.find(_.id ==* id)
 
   def getUser(u: Username \/ EmailAddr): Option[MockDb.UserEntry] =
     users.find(e => u.fold(_ ==* e.username, _ ==* e.emailAddr))
@@ -174,6 +209,28 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
       u2
     })
     r
+  }
+
+  override def getUserIdsByUsernameNE(usernames: NonEmptySet[Username]) = Eval.always[NonEmptySet[Username] \/ Map[Username, UserId]] {
+    var ko = Set.empty[Username]
+    var ok = Map.empty[Username, UserId]
+    for (u <- usernames)
+      this.users.find(_.username ==* u) match {
+        case Some(e) => ok += ((u, e.id))
+        case None    => ko += u
+      }
+    NonEmptySet.option(ko).toLeft(ok)
+  }
+
+  override def getUsernamesByUserIdNE(ids: NonEmptySet[UserId]) = Eval.always[NonEmptySet[UserId] \/ Map[UserId, Username]] {
+    var ko = Set.empty[UserId]
+    var ok = Map.empty[UserId, Username]
+    for (id <- ids)
+      this.users.find(_.id ==* id) match {
+        case Some(e) => ok += ((id, e.username))
+        case None    => ko += id
+      }
+    NonEmptySet.option(ko).toLeft(ok)
   }
 
   override def completeUserRegistration(token     : VerificationToken,
@@ -233,48 +290,67 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     }
   }
 
-  private var projects: IMap[ProjectId, MockDb.ProjectEntry] =
-    IMap.empty(_.projectId)
+  private var projects: IMap[ProjectId, MockDb.ProjectEntry] = IMap.empty(_.projectId)
+  private var projectAccess = List.empty[MockDb.ProjectAccessEntry]
+
+  private def addProjectAccess(pid: ProjectId, uid: UserId, perm: ProjectPerm): Unit = {
+    projectAccess.find(e => e.pid ==* pid && e.uid ==* uid) match {
+      case None    => projectAccess ::= MockDb.ProjectAccessEntry(pid, uid, perm)
+      case Some(e) => throw new RuntimeException("Duplicate entry in project_access: " + e)
+    }
+  }
 
   def addProject(projectId: ProjectId, userId: UserId, key: ProjectEncryptionKey)(events: Event*): Unit = {
     val initEvents = events.size
-    val ves = verifyEvents(Project.empty)(events: _*)
+    val ves = verifyEvents(Project.init(userId))(events: _*)
     val now = Instant.now()
     val mde = MockDb.ProjectEntry(projectId, userId, key, initEvents, ves, now, now, Some(now))
-    projects = projects.add(mde)
+    projects += mde
+    addProjectAccess(projectId, userId, ProjectPerm.Admin)
   }
 
-  override def getProjectOwner(id: ProjectId) = Eval.always[Option[UserId]] {
-    projects.get(id).map(_.userId)
+  private def getProjectAccessEntry(pid: ProjectId, uid: UserId) =
+    projectAccess.find(e => e.pid ==* pid && e.uid ==* uid)
+
+  override def getProjectAccess(pid: ProjectId, uid: UserId) = Eval.always[Option[ProjectPerm]] {
+    getProjectAccessEntry(pid, uid).map(_.perm)
   }
 
   private def nextProjectId(): ProjectId =
     ProjectId(1 + projects.underlyingMap.keysIterator.map(_.value).foldLeft(0L)(_ max _))
 
-  override def createProject(id: UserId, initEvents: Vector[ActiveEvent], p: Project, k: ProjectEncryptionKey) = Eval.always[ProjectId] {
+  override protected def _createProject(id: UserId, initEvents: Vector[ActiveEvent], p: Project, k: ProjectEncryptionKey) = Eval.always[ProjectId] {
     val pid = nextProjectId()
     addProject(pid, id, k)(initEvents: _*)
     pid
   }
 
+  def createEmptyProject(id: UserId): ProjectId =
+    createProject(id, Vector.empty, Project.init(id), DbLaws.genProjectEncryptionKey.sample()).value
+
   override def getAllProjectMetaDataForUser(id: UserId) = Eval.always[List[ProjectMetaData]] {
+    val perms = projectAccess.iterator.filter(_.uid ==* id).map(e => e.pid -> e.perm).toMap
+
     projects.valuesIterator
-      .filter(_.userId ==* id)
-      .map(_.projectMetaData)
+      .filter(perms.keySet contains _.projectId)
+      .map(e => e.projectMetaData(perms(e.projectId)))
       .toList
   }
 
   var loadProjectMetaDataLog = Vector.empty[ProjectId]
-  override def getProjectMetaData(id: ProjectId) = Eval.always[Option[ProjectMetaData]] {
-    loadProjectMetaDataLog :+= id
-    projects.get(id).map(_.projectMetaData)
+  override def getProjectMetaData(pid: ProjectId, uid: UserId) = Eval.always[Option[ProjectMetaData]] {
+    loadProjectMetaDataLog :+= pid
+    getProjectAccessEntry(pid, uid).map { a =>
+      projects.need(pid).projectMetaData(a.perm)
+    }
   }
 
   override def projectSpaInitPage(pid: ProjectId, uid: UserId) = Eval.always[Option[DB.ProjectSpaInitPage]] {
     for {
       u <- users.find(_.id ==* uid)
       p <- projects.get(pid)
-    } yield DB.ProjectSpaInitPage(p.project.name, u.encKey, p.encKey)
+    } yield
+      DB.ProjectSpaInitPage(p.creatorId, p.project.name, p.encKey, u.encKey)
   }
 
   var loadProjectLog = Vector.empty[ProjectId]
@@ -288,14 +364,14 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     })
   }
 
-  override def saveProjectEvent(pid: ProjectId,
-                                ord: EventOrd,
-                                e  : ActiveEvent,
-                                p  : Project,
-                                uid: UserId) = Eval.always[DB.SaveProjectEventError \/ VerifiedEvent] {
+  override protected def _saveProjectEvent(pid: ProjectId,
+                                           ord: EventOrd,
+                                           e  : ActiveEvent,
+                                           p  : Project,
+                                           uid: UserId) = Eval.always[DB.SaveProjectEventError \/ VerifiedEvent] {
     val entry = projects.need(pid)
     def update(events: VerifiedEvent.Seq): Unit =
-      projects = projects + entry.copy(events = events, lastUpdatedAt = Some(Instant.now()))
+      projects += entry.copy(events = events, lastUpdatedAt = Some(Instant.now()))
     val ve = verifyEvent(entry.project, e)
     if (entry.events.isEmpty) {
       update(VerifiedEvent.Seq.empty + ve)
@@ -307,12 +383,12 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
       -\/(DB.SaveProjectEventError.OrdInUse)
   }
 
-  override def createProject(uid: UserId, events: VerifiedEvent.Seq, project: Project, key: ProjectEncryptionKey) = Eval.always[ProjectId] {
+  override protected def _importProject(uid: UserId, events: VerifiedEvent.Seq, project: Project, key: ProjectEncryptionKey) = Eval.always[ProjectId] {
     val pid = nextProjectId()
     addProject(pid, uid, key)()
     val entry = projects.need(pid)
     val newEntry = entry.copy(events = events, lastUpdatedAt = events.lastOption.map(_.createdAt).orElse(Some(Instant.now())))
-    projects = projects + newEntry
+    projects += newEntry
     pid
   }
 
@@ -349,4 +425,47 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
 
   override val dbSize =
     Eval.now(0L)
+
+  override def updateProjectAccess(id    : ProjectId,
+                                   remove: Set[UserId],
+                                   add   : Map[UserId, ProjectPerm]) = Eval.always[DB.SaveProjectEventError.OnAccess \/ Unit] {
+    val orig = projectAccess
+    val remove2 = remove ++ add.keys
+
+    projectAccess = projectAccess.filterNot { e => e.pid ==* id && remove2.contains(e.uid) }
+
+    add.foreach { case (u, perm) => addProjectAccess(id, u, perm) }
+
+    val result: DB.SaveProjectEventError.OnAccess \/ Unit =
+      projectAccess.find(e => e.pid ==* id && e.perm ==* ProjectPerm.Admin) match {
+        case Some(_) => \/-(())
+        case None    => -\/(DB.SaveProjectEventError.OnAccess.CantRemoveLastAdmin)
+      }
+
+    if (result.isLeft)
+      projectAccess = orig
+
+    result
+  }
+
+  def getProjectAccess(id: ProjectId) = Eval.always[ProjectAccess] {
+    ProjectAccess(
+      projectAccess.iterator
+        .filter(_.pid ==* id)
+        .map(e => (Obfuscators.userId.obfuscate(e.uid), e.perm))
+        .toMap
+    )
+  }
+
+  def needProjectCreator(id: ProjectId): UserId =
+    projects.need(id).creatorId
+
+  override protected def updateProjectName(id: ProjectId, name: Project.Name) = Eval.always[Unit] {
+    // Hmm, we don't store the project name in ProjectEntry
+  }
+
+  override def getProjectRolodex(pid: ProjectId, exclude: UserId) = Eval.always[Rolodex] {
+    val ids = projectAccess.iterator.filter(a => a.pid ==* pid && a.uid !=* exclude).map(_.uid).toSet
+    Rolodex(needUsernamesByUserId(ids).value.mapKeysNow(Obfuscators.userId.obfuscate))
+  }
 }

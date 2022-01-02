@@ -1,9 +1,11 @@
 package shipreq.webapp.server.db
 
 import shipreq.base.test.db.TestDb
+import shipreq.webapp.base.data.ProjectCreator
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.{ActiveEvent, EventOrd, VerifiedEvent}
 import shipreq.webapp.member.test.project.RandomEventStream
+import shipreq.webapp.member.test.project.UnsafeTypes.projectCreatorFromUserId
 import shipreq.webapp.server.logic.util.Obfuscators
 import shipreq.webapp.server.test.DbUtil
 import shipreq.webapp.server.test.WebappServerTestUtil._
@@ -23,7 +25,9 @@ object ProjectMetaDataTest extends TestSuite {
 
       // Do this twice to ensure that other projects' events don't interfere
       for (_ <- 1 to 2) {
-        val (_, ves1, ves2) = RandomEventStream.activeOnly.entireEventStream(50).samples().next()
+        val uids = dbu.userIdsNE()
+        val creator = uids.head: ProjectCreator
+        val (_, ves1, ves2) = RandomEventStream.withConfig(_.activeOnly.withCreator(creator).withUserIds(uids)).entireEventStream(50).samples().next()
         val initEvents = ves1.length
 
         val pid = dbu.newProjectId(uid, ves1.map(_.event.active))
@@ -40,7 +44,7 @@ object ProjectMetaDataTest extends TestSuite {
           }
 
         // Mandatory events first
-        var p = applyVerifiedEventSuccessfully(Project.empty, ves1: _*)
+        var p = applyVerifiedEventSuccessfully(Project.init(creator), ves1: _*)
 
         for (idx <- ves2.indices) {
           val ve = ves2(idx)

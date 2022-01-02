@@ -1,6 +1,7 @@
 package shipreq.webapp.server.logic.event
 
 import shipreq.base.util.PotentialChange._
+import shipreq.webapp.base.data.{ProjectPerm, UserId}
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.protocol.websocket._
@@ -245,7 +246,30 @@ object MakeEventTest extends TestSuite {
           assertFails(_.updateConfig(Cmd(relTG, ^.ValueForParents(Map(statusTG -> None))), _))
         }
       }
+    }
 
+    "AccessUpdate" - {
+      import ProjectPerm._
+
+      "update" - {
+        def test(cmds: (UserId.Public, Option[ProjectPerm])*)(implicit l: Line): Unit =
+          assertMakeEvent(_.updateAccess(UpdateAccessCmd(cmds.toMap), _), {
+            case a if a == AccessUpdate(cmds.toMap) => a
+          })
+
+        "del" - test(PublicUserId1 -> None)
+        "mod" - test(PublicUserId1 -> Some(Collaborator))
+        "add" - test(PublicUserId2 -> Some(Collaborator))
+      }
+
+      "noop" - {
+        def test(cmds: (UserId.Public, Option[ProjectPerm])*)(implicit l: Line) =
+          assertNoChange(_.updateAccess(UpdateAccessCmd(cmds.toMap), _))
+
+        "empty" - test()
+        "del"   - test(PublicUserId2 -> None)
+        "mod"   - test(PublicUserId1 -> Some(Admin))
+      }
     }
   }
 }

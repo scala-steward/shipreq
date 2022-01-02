@@ -1,10 +1,11 @@
 package shipreq.webapp.server.logic.test
 
 import cats.Eval
+import com.typesafe.scalalogging.StrictLogging
 import shipreq.taskman.api.{Task, TaskId, TaskStatus, TaskmanApi}
 import shipreq.webapp.member.test.WebappTestUtil._
 
-final class MockTaskman extends TaskmanApi[Eval] {
+final class MockTaskman extends TaskmanApi[Eval] with StrictLogging {
   private var prevMsgId = 0L
   var msgs = Vector.empty[(TaskId, Task)]
 
@@ -21,6 +22,7 @@ final class MockTaskman extends TaskmanApi[Eval] {
     prevMsgId += 1
     val id = TaskId(prevMsgId)
     msgs :+= ((id, m))
+    logger.debug(s"Submitted to Taskman: $id $m")
     id
   }
 

@@ -1,6 +1,7 @@
 package shipreq.webapp.member.project.storage
 
 import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
+import shipreq.webapp.base.data.ProjectCreator
 import shipreq.webapp.base.protocol.Version
 import shipreq.webapp.base.protocol.binary.SafePickler
 import shipreq.webapp.base.protocol.webstorage._
@@ -26,11 +27,14 @@ final class WebStorage(ws        : AbstractWebStorage,
 
   @inline private implicit def _ws = ws
 
+  override protected val creator =
+    ctx.creator
+
   override val isAvailable: CallbackTo[Boolean] =
     CallbackTo.pure(true)
 
   private val protocols =
-    new WebStorage.Protocols(encryption)
+    new WebStorage.Protocols(ctx.creator, encryption)
 
   private def newKey(name: String): AbstractWebStorage.Key =
     AbstractWebStorage.Key(s"${ctx.namespace}:$name")
@@ -56,7 +60,7 @@ final class WebStorage(ws        : AbstractWebStorage,
 
 object WebStorage {
 
-  private[WebStorage] final class Protocols(encryption: Encryption) {
+  private[WebStorage] final class Protocols(creator: ProjectCreator, encryption: Encryption) {
     import SafePickler.ConstructionHelperImplicits._
 
     object projectLibrary {
@@ -64,11 +68,11 @@ object WebStorage {
       val ver = Version.fromInts(1, 0) // Bump this when any of following imports change
       import shipreq.webapp.member.project.protocol.binary.v2.Rev0.picklerProject
 
-      val cache = CacheJs()
+      val cache = CacheJs(creator)
 
       implicit val pickler: SafePickler[ProjectLibrary] =
         picklerProject
-          .xmap(ProjectLibrary.init(_, cache))(_.latest)
+          .xmap(ProjectLibrary.init(creator, _, cache))(_.latest)
           .asVersion(ver)
           .withMagicNumbers(0x7F19E183, 0x3365F95A)
 

@@ -6,13 +6,13 @@ import java.time.Instant
 import nyaya.gen.Gen
 import shipreq.base.util.BinaryData
 import shipreq.webapp.base.test.BinaryTestUtil._
-import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.WebappTestUtil.ImplicitProjectEqualityDeep._
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test.project.UnsafeTypes._
 import shipreq.webapp.member.test.project.{RandomData => R}
 import shipreq.webapp.server.logic.algebra.Redis
+import sourcecode.Line
 import utest._
 
 object RedisProtocolTest extends TestSuite {
@@ -29,7 +29,7 @@ object RedisProtocolTest extends TestSuite {
 //    }
 
     "saved" - {
-      def run(ver: Int, assertSnapshot: Boolean = true) = {
+      def run(ver: Int, assertSnapshot: Boolean = true)(implicit l: Line) = {
         val rows = RedisProtocolTestData.load(ver)
 
         var prev: Option[Redis.ProjectSnapshot] = None
@@ -38,7 +38,7 @@ object RedisProtocolTest extends TestSuite {
           val row    = rows(i)
           val event  = row.parseEventJson.getOrThrow()
           val ord    = prev.fold(EventOrd.first)(x => EventOrd(x.ord.value) + 1)
-          val p1     = prev.fold(Project.empty)(_.project)
+          val p1     = prev.fold(emptyProject1)(_.project)
           val p2     = applyVerifiedEventSuccessfully(p1, event)
           val ps     = Redis.ProjectSnapshot(p2, ord.asLatest)
           prev       = Some(ps)
@@ -60,9 +60,9 @@ object RedisProtocolTest extends TestSuite {
         propTestRoundTrip(codec)(R.events.verifiedEvent)
       }
 
-      "v1.0" - {
+      "v2.0" - {
         "ManualIssueCreate" - {
-          val bin    = BinaryData.fromHex("010081F41C7B016C046F6D6667E0E57B8D5D00E66307")
+          val bin    = BinaryData.fromHex("020081F41C7B016C046F6D6667E0E57B8D5D00E66307")
           val expect = VerifiedEvent(500, Event.ManualIssueCreate(123, "omfg"), Instant.ofEpochSecond(1569553381, 123987456))
           assertDecodeOk(codec)(bin, expect)
         }
@@ -86,8 +86,8 @@ object RedisProtocolTest extends TestSuite {
 
       "v2.0" - {
         "empty" - {
-          val bin    = BinaryData.fromHex("5C303D710200000000000523494E4547000000000000000000000000010100000000000000000000DEC22AB7")
-          val expect = ProjectSnapshot(Project.empty, 0)
+          val bin    = BinaryData.fromHex("5C303D710200000000000523494E454700000000000000000000000001010104773547760100000000000000000000DEC22AB7")
+          val expect = ProjectSnapshot(emptyProject1, 0)
           assertDecodeOk(codec)(bin, expect)
         }
       }

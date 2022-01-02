@@ -2,6 +2,7 @@ package shipreq.webapp.client.ww
 
 import japgolly.scalajs.react.{AsyncCallback, Callback, CallbackTo}
 import shipreq.webapp.base.config.AssetManifest
+import shipreq.webapp.base.data.ProjectCreator
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.util.LruMemo
 import shipreq.webapp.client.ww.api.WebWorkerCmd
@@ -12,13 +13,14 @@ import shipreq.webapp.member.project.library.{MutableProjectLibrary, ProjectLibr
 import shipreq.webapp.member.project.storage.ClientSideStorage
 import shipreq.webapp.member.project.text.PlainText
 
-final class WorkerState(logic : WorkerState.Logic,
-                        logger: LoggerJs) {
+final class WorkerState(creator: ProjectCreator,
+                        logic  : WorkerState.Logic,
+                        logger : LoggerJs) {
 
   private val assetManifest  = AsyncCallback.ref[AssetManifest].runNow()
   private val graphViz       = AsyncCallback.ref[GraphViz].runNow()
   private val storage        = AsyncCallback.ref[ClientSideStorage.ReadWrite].runNow()
-  private val projectLibrary = MutableProjectLibrary.empty()
+  private val projectLibrary = MutableProjectLibrary.empty(creator)
 
   def init(cmd: WebWorkerCmd.Init): AsyncCallback[Unit] = {
     import cmd._

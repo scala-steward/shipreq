@@ -21,7 +21,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util._
 import shipreq.webapp.base.config._
-import shipreq.webapp.base.data.UserId
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, ProjectPerm, Rolodex, UserId}
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
@@ -31,6 +31,7 @@ import shipreq.webapp.member.project.sort.SortMethod
 import shipreq.webapp.member.project.text
 import shipreq.webapp.member.project.text.{Grammar, GrammarSpec, Text}
 import shipreq.webapp.member.test._
+import shipreq.webapp.server.logic.util.Obfuscators
 
 // TODO RandomData is inaccurate in that CorrectionParts aren't applied.
 
@@ -116,7 +117,14 @@ object RandomData {
   val id  = Gen.chooseInt(1, 1024 * 64)
   val idL = Gen.chooseLong(1, Long.MaxValue)
 
+  lazy val projectId = idL.map(ProjectId.apply)
   lazy val userId = idL.map(UserId.apply)
+
+  lazy val userIdPublic: Gen[UserId.Public] =
+    userId.map(Obfuscators.userId.obfuscate)
+
+  lazy val projectCreator: Gen[ProjectCreator] =
+    userIdPublic.map(ProjectCreator.apply)
 
   def revAndIMap[D, I <: TaggedInt](r: Gen[List[D]])
                                     (implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]): Gen[IMap[I, D]] = {
@@ -1673,6 +1681,21 @@ object RandomData {
       fields         <- fieldSet(reqTypeIdSet, tags.keySet)
     } yield ProjectConfig(issues, ReqTypes(reqtypes), fields, Tags(tags))
 
+  lazy val projectAccess: Gen[ProjectAccess] =
+    userIdPublic.mapTo(projectPerm)(0 to 4).map(ProjectAccess.apply).flatMap { a =>
+      if (a.hasAdmin)
+        Gen pure a
+      else
+        projectCreator.map(ProjectAccess.init)
+    }
+
+  lazy val rolodex: Gen[Rolodex] =
+    for {
+      s     <- Gen.chooseInt(5)
+      ids   <- userIdPublic.set(s)
+      names <- username.set(s)
+    } yield Rolodex(ids.toList.zip(names.toList).toMap)
+
   def genProjectNoHistory(cfg            : ProjectConfig,
                           reqsWithoutText: Requirements,
                           reqCodes1      : ReqCodes,
@@ -1699,6 +1722,7 @@ object RandomData {
       reqCodes2  <- reqCode.updateGroupText(rcgTitleText)(reqCodes1.trie)
       dr         <- deletionReasons(reqIdG, delReasonText)
       mis        <- genManualIssues(manualIssueText)
+      access     <- projectAccess
       p1         = Project(
                      name,
                      cfg,
@@ -1711,6 +1735,7 @@ object RandomData {
                        dr),
                      mis,
                      savedview.SavedViews.empty,
+                     access,
                      ProjectEvents.empty,
                      IdCeilings.zero)
       savedViews <- savedViews.savedViewsForProject(p1)
@@ -1755,9 +1780,13 @@ object RandomData {
   lazy val instantPast: Gen[Instant] =
     instantPast(Duration.ofDays(365 * 5))
 
+  lazy val projectPerm: Gen[ProjectPerm] =
+    Gen.chooseNE(ProjectPerm.values)
+
   lazy val projectMetaData: Gen[ProjectMetaData] =
     for {
       id            <- projectIdPublic
+      perm          <- projectPerm.option
       name          <- projectName
       eventsInit    <- Gen.chooseInt(3)
       eventsTotal   <- Gen.chooseInt(30000)
@@ -1770,6 +1799,7 @@ object RandomData {
     } yield
     ProjectMetaData(
       id            = id,
+      perm          = perm,
       name          = name,
       eventsInit    = eventsInit.min(eventsTotal),
       eventsTotal   = eventsTotal,
@@ -2017,17 +2047,19 @@ object RandomData {
       for {
         a <- projectNonsenseHistory either events.verifiedEventSeq(0 to 4)
         b <- projectMetaData
-      } yield ProjectSpaProtocols.InitAppData(a, b)
+        c <- rolodex
+      } yield ProjectSpaProtocols.InitAppData(a, b, ProjectSpaProtocols.Supplimentary(c))
 
     val projectSpaInitPageData: Gen[ProjectSpaEntryPoint.InitData] =
       for {
         u <- username
         i <- userIdPublic
         p <- projectIdPublic
+        c <- projectCreator
         n <- projectName
         a <- genAssetManifest
         k <- genClientSideProjectEncryptionKey
-      } yield ProjectSpaEntryPoint.InitData(u, i, p, n, a, "/j/ww.js", k)
+      } yield ProjectSpaEntryPoint.InitData(u, i, p, c, n, a, "/j/ww.js", k)
 
 //    class CrudActionGens[I, V](idG: Gen[I], vG: Gen[V]) {
 //      lazy val create  = vG.map(CrudAction.Create[I, V])
@@ -2639,6 +2671,9 @@ object RandomData {
     val genProjectTemplateApply: Gen[ProjectTemplateApply] =
       genProjectTemplate map ProjectTemplateApply
 
+    val genAccessUpdate: Gen[AccessUpdate] =
+      userIdPublic.mapTo(projectPerm.option)(1 to 8).map(AccessUpdate.apply)
+
     val genApplicableTagCreate: Gen[ApplicableTagCreate] =
       Gen.apply2(ApplicableTagCreate)(applicableTagId, applicableTagGD.nonEmptyValues)
 
@@ -2854,6 +2889,7 @@ object RandomData {
 
     val activeEventGens: NonEmptyVector[Gen[ActiveEvent]] =
       valuesForAdt[ActiveEvent, Gen[ActiveEvent]] {
+        case _: AccessUpdate            => genAccessUpdate
         case _: ApplicableTagCreate     => genApplicableTagCreate
         case _: ApplicableTagUpdate     => genApplicableTagUpdate
         case _: ContentRestore          => genContentRestore

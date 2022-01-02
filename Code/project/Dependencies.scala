@@ -153,7 +153,7 @@ object Dependencies {
     val extra   = mm("extra")
     val monocle = mm("extra-ext-monocle3") ++ Monocle.core
     val test    = mm("test")
-    val most    = core ++ monocle ++ extra
+    val most    = core ++ cats ++ monocle ++ extra
   }
 
   object Scala {

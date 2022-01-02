@@ -2,7 +2,7 @@ package shipreq.webapp.member.project.library
 
 import scala.scalajs.js
 import shipreq.webapp.base.util.LruMemo
-import shipreq.webapp.member.project.data.Project
+import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.ProjectLibraryTestUtil._
 import shipreq.webapp.member.test.WebappTestUtil.ImplicitProjectEqualityDeepExceptEventTime._
@@ -25,6 +25,7 @@ object CacheJsTest extends TestSuite {
     val p9 = newProject(9)
 
     var cache = new CacheJs.NonEmpty(
+      empty          = Project.init(Creator1),
       latest         = p9,
       milestoneEvery = milestoneEvery,
       milestones     = milestones,

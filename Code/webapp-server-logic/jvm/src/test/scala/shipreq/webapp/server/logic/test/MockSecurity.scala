@@ -5,7 +5,6 @@ import io.circe._
 import io.circe.syntax._
 import java.time.Instant
 import shipreq.base.test.JsonTestUtil._
-import shipreq.base.util._
 import shipreq.webapp.base.data._
 import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.server.logic.algebra._
@@ -97,7 +96,4 @@ final class MockSecurity(override val db: MockDb, now: Eval[Instant], cfg: Serve
         SessionRestoreResult.None
     }
   }
-
-  override def allowProjectAccess(requester: User, projectId: ProjectId, projectOwner: UserId): Permission =
-    Allow.when(requester.id ==* projectOwner)
 }

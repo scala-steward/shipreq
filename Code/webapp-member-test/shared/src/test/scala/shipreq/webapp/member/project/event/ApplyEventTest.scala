@@ -26,7 +26,7 @@ object ApplyEventTest extends TestSuite {
     }
 
   object Data1 {
-    val p1 = Project.empty
+    val p1 = emptyProject1
     val e1 = FieldStaticRemove(StaticField.StepGraph)
     val (p2, ve) = verifyEvent(p1, e1)
   }
@@ -43,7 +43,7 @@ object ApplyEventTest extends TestSuite {
       Gen { ctx =>
         var lvs   = genLogicVerSeq run ctx
         var hss   = genHashSchemeSeq run ctx
-        var p     = Project.empty
+        var p     = emptyProject1
         var stats = EventStats.empty
         var ves   = Vector.empty[VerifiedEvent]
 
@@ -102,7 +102,7 @@ object ApplyEventTest extends TestSuite {
 
     def mkProp(AE: ApplyEvent) = Prop.atom[Vector[VerifiedEvent]](AE.trust.toString,
       ves => {
-        def getP2 = AE(ves.map(_.event))(Project.empty).toOption
+        def getP2 = AE(ves.map(_.event))(emptyProject1).toOption
 
 //        def printHashValues(): Unit =
 //          for (p2 <- getP2) {
@@ -117,18 +117,18 @@ object ApplyEventTest extends TestSuite {
 //              logic <- logicVers
 //            } {
 //              def h(p: Project) = HashScope.hash(scope, scheme.value, p)
-//              println(s"  > $scope $logic $scheme = ${h(Project.empty)} → ${h(p2)}")
+//              println(s"  > $scope $logic $scheme = ${h(emptyProject1)} → ${h(p2)}")
 //            }
 //            println()
 //          }
 
-        AE(ves)(Project.empty) match {
+        AE(ves)(emptyProject1) match {
           case \/-(_) => None
           case -\/(failure) =>
             for (p2 <- getP2)
               println {
                 // printHashValues()
-                //AE.applyVerified2(ves)(Project.empty)
+                //AE.applyVerified2(ves)(emptyProject1)
                 def inspect(h: HashRec, p: Project): String = {
                   import h._
                   hash.fold("pass") { e =>
