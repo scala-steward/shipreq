@@ -38,6 +38,10 @@ object WebWorkerClient {
 
     type Cache = LruCache.ToAny[String]
 
+    var _cachingAllowed = true
+    val cachingAllowed  = AsyncCallback.delay { _cachingAllowed }
+    val disableCaching  = AsyncCallback.delay { _cachingAllowed = false }
+
     def newCache(dur: Duration): Cache =
       LruCache.toAny[String]
         .maxAge(dur)
@@ -67,11 +71,17 @@ object WebWorkerClient {
       override def postEnc[A](req: WebWorkerCmd[A], enc: ArrayBuffer)(implicit p: Pickler[A]): AsyncCallback[A] = {
         @inline def real = instance.postEnc(req, enc)
 
-        @inline def useCache(c: Cache) = {
-          val bin = BinaryData.unsafeFromArrayBuffer(enc)
-          val key = bin.binaryLikeString
-          c.asyncGetOrSetR(key, real)
-        }
+        @inline def useCache(c: Cache) =
+          cachingAllowed.flatMap {
+
+            case true =>
+              val bin = BinaryData.unsafeFromArrayBuffer(enc)
+              val key = bin.binaryLikeString
+              c.asyncGetOrSetR(key, real)
+
+            case false =>
+              real
+          }
 
         req match {
           case _: WebWorkerCmd.GraphAllImplications
@@ -87,6 +97,9 @@ object WebWorkerClient {
 
           case _: WebWorkerCmd.Init =>
             real
+
+          case WebWorkerCmd.ClearAndDisableCache =>
+            disableCaching >> clearProjectCache >> real
         }
       }
 

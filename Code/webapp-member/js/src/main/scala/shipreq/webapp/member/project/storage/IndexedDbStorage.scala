@@ -29,22 +29,25 @@ final class IndexedDbStorage(override protected val creator: ProjectCreator,
                              plCache                       : Cache) extends ClientSideStorage.ReadWrite {
 
   import IndexedDbStorage.Internals._
+  import schema.project.store
 
   override val isAvailable: CallbackTo[Boolean] =
     CallbackTo(isAvailableVar.value)
 
   override val getProjectLibraryOrd: AsyncCallback[Option[EventOrd.Latest]] =
     for {
-      ords <- db.getAllKeys(schema.project.store)
+      ords <- db.getAllKeys(store)
     } yield ords.maxOption.map(_.asLatest)
 
   override val getProjectLibrary: AsyncCallback[Option[ProjectLibrary]] =
     for {
-      projects <- db.getAllValues(schema.project.store)
+      projects <- db.getAllValues(store)
     } yield ProjectLibrary.load(creator, projects, plCache)
 
+  override def clear: AsyncCallback[Unit] =
+    db.clear(store)
+
   override def saveProjectLibrary(pl: ProjectLibrary): AsyncCallback[Unit] = {
-    import schema.project.store
 
     def update(add: Iterable[(EventOrd, store.Value)], delete: Set[EventOrd])(txn: TxnDsl): Txn[Unit] =
       for {

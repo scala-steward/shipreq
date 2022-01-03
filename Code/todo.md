@@ -1,8 +1,3 @@
-* live access changes
-  * handle removal, either
-    1. show nothing except "access removed", receive updates in case access restored
-    2. clear cache & forward to a new page that says "access removed"
-
 * only admin should be able to
   * rename the project
   * modify access

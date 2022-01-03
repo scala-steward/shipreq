@@ -82,6 +82,15 @@ final class WorkerState(creator: ProjectCreator,
       _ <- s.saveProjectLibrary(pl)
     } yield ()
 
+  def clearAndDisable: AsyncCallback[Unit] =
+    for {
+      os <- storage.getIfAvailable.asAsyncCallback
+      _  <- AsyncCallback.traverseOption(os)(clearAndDisable)
+    } yield ()
+
+  private def clearAndDisable(s: ClientSideStorage.ReadWrite): AsyncCallback[Unit] =
+    storage.set(s.disabled) >> s.clear
+
   def getProject(ord: Option[EventOrd.Latest]): AsyncCallback[Project] =
     projectLibrary.projectAt(ord)
 

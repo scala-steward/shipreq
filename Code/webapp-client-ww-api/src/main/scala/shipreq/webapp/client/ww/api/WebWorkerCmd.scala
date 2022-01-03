@@ -28,6 +28,8 @@ object WebWorkerCmd {
 
   final case class UpdateProject(data: Project \/ VerifiedEvent.Seq) extends WebWorkerCmd[NoResult.type]
 
+  case object ClearAndDisableCache extends WebWorkerCmd[NoResult.type]
+
   type Ord = Option[EventOrd.Latest]
 
   final case class GraphUseCaseFlow(ord: Ord,
@@ -162,6 +164,7 @@ object WebWorkerCmd {
       private[this] final val KeyGraphReqImplications = 3
       private[this] final val KeyGraphUseCaseFlow     = 4
       private[this] final val KeyGraphInline          = 5
+      private[this] final val KeyClearAndDisableCache = 6
       override def pickle(a: WebWorkerCmd[_])(implicit state: PickleState): Unit =
         a match {
           case b: Init                 => state.enc.writeByte(KeyInit                ); state.pickle(b)
@@ -170,6 +173,7 @@ object WebWorkerCmd {
           case b: GraphReqImplications => state.enc.writeByte(KeyGraphReqImplications); state.pickle(b)
           case b: GraphUseCaseFlow     => state.enc.writeByte(KeyGraphUseCaseFlow    ); state.pickle(b)
           case b: GraphInline          => state.enc.writeByte(KeyGraphInline         ); state.pickle(b)
+          case ClearAndDisableCache    => state.enc.writeByte(KeyClearAndDisableCache)
         }
       override def unpickle(implicit state: UnpickleState): WebWorkerCmd[_] =
         state.dec.readByte match {
@@ -179,6 +183,7 @@ object WebWorkerCmd {
           case KeyGraphReqImplications => state.unpickle[GraphReqImplications]
           case KeyGraphUseCaseFlow     => state.unpickle[GraphUseCaseFlow]
           case KeyGraphInline          => state.unpickle[GraphInline]
+          case KeyClearAndDisableCache => ClearAndDisableCache
         }
     }
 }

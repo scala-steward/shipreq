@@ -24,6 +24,11 @@ final class TestClientSideStorage(override protected val creator: ProjectCreator
       }
     }
 
+  override def clear: AsyncCallback[Unit] =
+    AsyncCallback.delay {
+      projectStore = None
+    }
+
   override def getProjectLibrary: AsyncCallback[Option[ProjectLibrary]] =
     AsyncCallback.delay(projectStore)
 

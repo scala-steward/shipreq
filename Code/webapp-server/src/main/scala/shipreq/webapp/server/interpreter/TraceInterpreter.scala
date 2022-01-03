@@ -39,6 +39,7 @@ object TraceInterpreter {
         case _: ResponseCmd.ServePublicSpa
            | _: ResponseCmd.ServeHomeSpa
            | _: ResponseCmd.ProjectSpa.Serve
+           |    ResponseCmd.ProjectAccessRevoked
         =>
           Attr.HttpStatus200 :: Nil
 

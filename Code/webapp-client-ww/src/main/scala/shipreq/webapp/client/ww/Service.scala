@@ -51,6 +51,9 @@ final class Service[Client](server: Service.Server[Client], state: WorkerState) 
 
       case GraphInline(dot) =>
         state.withGraphViz(_.render(DOT(dot)))
+
+      case ClearAndDisableCache =>
+        state.clearAndDisable.ret(NoResult)
     }
 }
 

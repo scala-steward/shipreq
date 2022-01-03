@@ -20,6 +20,8 @@ object ResponseCmd {
 
   final case class ServeHomeSpa(user: User) extends ResponseCmd
 
+  case object ProjectAccessRevoked extends ResponseCmd
+
   object ProjectSpa {
     final case class Serve(user: User, projectId: ProjectId) extends ResponseCmd
     case object AccessDenied extends ResponseCmd

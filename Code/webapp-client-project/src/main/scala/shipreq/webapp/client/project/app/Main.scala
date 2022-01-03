@@ -8,7 +8,7 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 import shipreq.base.util.{ErrorMsg, Retries, Url}
 import shipreq.webapp.base.CssSettings._
 import shipreq.webapp.base.feature.ErrorHandlingFeature
-import shipreq.webapp.base.lib.{ConfirmJs, LoggerJs, PromptJs}
+import shipreq.webapp.base.lib.{AbstractLocation, ConfirmJs, LoggerJs, PromptJs}
 import shipreq.webapp.base.protocol.ajax.CommonProtocolsJs
 import shipreq.webapp.base.protocol.entrypoint.ClientSideProcImpl
 import shipreq.webapp.base.protocol.websocket.WebSocketClient
@@ -115,7 +115,9 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
         }
       g.logger(_.info(s"Received $descIA from server"))
 
-      val root     = new LoadedRoot(i, g, ConfirmJs.real, PromptJs.real, OptionalFullscreen.real, ww)
+      val loc      = AbstractLocation.Real
+      val ah       = AccessHandler.default(ww, loc)
+      val root     = new LoadedRoot(i, g, ConfirmJs.real, PromptJs.real, OptionalFullscreen.real, ww, ah)
       val baseUrl  = determineBaseUrl(location.href)
       val router   = Router(baseUrl, Routes.routerConfig(root))
       val metadata = CommonProtocolsJs.Metadata.client(i.username, g.projectMetadata(i.projectId))

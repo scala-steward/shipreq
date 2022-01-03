@@ -60,6 +60,9 @@ final class IndexedDb(raw: IDBFactory) {
         new Database(rawDb, onClose = callbacks.closed)
       }
     }
+
+  def deleteDatabase(name: DatabaseName): AsyncCallback[Unit] =
+    asyncRequest_(raw.deleteDatabase(name.value))
 }
 
 object IndexedDb {
@@ -211,6 +214,9 @@ object IndexedDb {
 
     def delete[K, V](store: ObjectStoreDef[K, V])(key: K): AsyncCallback[Unit] =
       transactionRW(store)(_.objectStore(store.sync).flatMap(_.delete(key)))
+
+    def clear[K, V](store: ObjectStoreDef[K, V]): AsyncCallback[Unit] =
+      transactionRW(store)(_.objectStore(store.sync).flatMap(_.clear))
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -248,6 +254,9 @@ object IndexedDb {
 
     def delete(key: K): Txn[Unit] =
       Txn.StoreDelete(this, keyCodec.encode(key))
+
+    def clear: Txn[Unit] =
+      Txn.StoreClear(this)
   }
 
   // -------------------------------------------------------------------------------------------------------------------
@@ -323,6 +332,7 @@ object IndexedDb {
     final case class StoreGetAllKeys[K, V](store: ObjectStore[K, V])                                     extends Txn[ArraySeq[K]]
     final case class StoreGetAllVals[K, V](store: ObjectStore[K, V])                                     extends Txn[ArraySeq[V]]
     final case class StoreDelete    [K, V](store: ObjectStore[K, V], key: IndexedDbKey)                  extends Txn[Unit]
+    final case class StoreClear           (store: ObjectStore[_, _])                                     extends Txn[Unit]
 
     def interpret[A](txn: IDBTransaction, dsl: Txn[A]): AsyncCallback[A] =
       AsyncCallback.suspend {
@@ -407,6 +417,11 @@ object IndexedDb {
                   }
                   ArraySeq.unsafeWrapArray(vals)
                 }
+              }
+
+            case StoreClear(s) =>
+              getStore(s).flatMap { store =>
+                asyncRequest_(store.clear())
               }
 
           } // dsl match

@@ -44,9 +44,10 @@ object Urls {
       @inline final def prefix = url.prefix
     }
 
-    case object Home    extends Static(Url.Relative("/home"))
-    case object Logout  extends Static(Url.Relative("/logout"))
-    case object Project extends Param1(Url.Relative("/project").thenParam[ProjectId.Public](_.value))
+    case object Home                 extends Static(Url.Relative("/home"))
+    case object Logout               extends Static(Url.Relative("/logout"))
+    case object Project              extends Param1(Url.Relative("/project").thenParam[ProjectId.Public](_.value))
+    case object ProjectAccessRevoked extends Static(Url.Relative("/project-revoked"))
 
     implicit def univEqStatic: UnivEq[Static] = UnivEq.derive
     val static = AdtMacros.adtValues[Static]
@@ -91,10 +92,11 @@ object Urls {
 
   val ajaxRoot = Url.Relative("/x")
 
-  def publicHome          = PublicSpaRoute.Home.url
-  def login               = PublicSpaRoute.Login.url
-  def termsOfService      = PublicSpaRoute.TermsOfService.url
-  def memberHome          = MemberRoute.Home.url
-  def project             = MemberRoute.Project.url
-  def logout              = MemberRoute.Logout.url
+  def publicHome           = PublicSpaRoute.Home.url
+  def login                = PublicSpaRoute.Login.url
+  def termsOfService       = PublicSpaRoute.TermsOfService.url
+  def memberHome           = MemberRoute.Home.url
+  def project              = MemberRoute.Project.url
+  def projectAccessRevoked = MemberRoute.ProjectAccessRevoked.url
+  def logout               = MemberRoute.Logout.url
 }

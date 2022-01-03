@@ -6,7 +6,8 @@ import japgolly.scalajs.react.test._
 import monocle.macros.Lenses
 import scala.util.{Failure, Success, Try}
 import shipreq.webapp.base.config.AssetManifest
-import shipreq.webapp.base.data.{ProjectCreator, ProjectId, UserId, Username}
+import shipreq.webapp.base.data._
+import shipreq.webapp.base.test.TestLocation
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.client.project.app.pages.config.fields.{FieldConfigObs, FieldConfigTestDsl}
@@ -50,6 +51,7 @@ object ProjectSpaTestDsl {
                        confirmJs: TestConfirmJs,
                        promptJs : TestPromptJs,
                        ww       : TestWebWorkerClient,
+                       loc      : TestLocation,
                       ) {
 
     def observe(): Obs = {
@@ -303,13 +305,15 @@ object ProjectSpaTestDsl {
     val global       = TestGlobal(project)
     val confirmJs    = TestConfirmJs()
     val promptJs     = TestPromptJs()
+    val userId       = project.access.adminIterator().next()
     val username     = Username("testuser")
-    val userId       = Obfuscated("uxx"): UserId.Public
     val projectId    = Obfuscated("pxx"): ProjectId.Public
     val creator      = ProjectCreator(userId)
     val initPageData = ProjectSpaEntryPoint.InitDataWithoutEncKey(username, userId, projectId, creator, project.name, AssetManifest(None), "/ww.js")
     val ww           = TestWebWorkerClient(wwPrep)
-    val spa          = new LoadedRoot(initPageData, global, confirmJs, promptJs, global.optionalFullscreen, ww)
+    val loc          = TestLocation()
+    val ah           = AccessHandler.default(ww, loc)
+    val spa          = new LoadedRoot(initPageData, global, confirmJs, promptJs, global.optionalFullscreen, ww, ah)
     val rc           = MockRouterCtl[Page]()
     val init         = TestState(page, global.unsafeProject(), rd)
 
@@ -319,7 +323,7 @@ object ProjectSpaTestDsl {
       val report = Plan(action, invariants)
                      .test(Observer(_.observe()))
                      .withInitialState(init)
-                     .withRefByName(Ref(global, tester, confirmJs, promptJs, ww))
+                     .withRefByName(Ref(global, tester, confirmJs, promptJs, ww, loc))
                      .run()
       if (assertPass)
         assertTestState(report)

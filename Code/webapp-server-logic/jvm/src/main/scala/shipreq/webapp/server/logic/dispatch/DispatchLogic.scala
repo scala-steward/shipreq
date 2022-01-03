@@ -283,6 +283,9 @@ final class DispatchLogic[F[_], RealReq](readRealReq: RealReq => dispatch.Reques
         }
       }
 
+    val projectAccessRevoked: Request ?=> F[Response] =
+      get(Urls.projectAccessRevoked, F.pure(ResponseCmd.ProjectAccessRevoked.withoutCookieUpdate))
+
     val logout: Request ?=> F[Response] =
       getF(Urls.logout, req =>
         for {
@@ -291,7 +294,7 @@ final class DispatchLogic[F[_], RealReq](readRealReq: RealReq => dispatch.Reques
       )
 
     val routes: Request ?=> F[Response] =
-      publicSpa | memberHomeSpa | projectSpa | logout
+      publicSpa | memberHomeSpa | projectSpa | projectAccessRevoked | logout
 
     val fallback: Request => F[Response] = { implicit req =>
       val cmd =

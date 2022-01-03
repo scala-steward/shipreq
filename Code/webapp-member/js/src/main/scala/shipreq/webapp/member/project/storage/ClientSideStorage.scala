@@ -25,6 +25,10 @@ object ClientSideStorage {
 
   trait ReadWrite extends ReadOnly {
     def saveProjectLibrary(pl: ProjectLibrary): AsyncCallback[Unit]
+    def clear: AsyncCallback[Unit]
+
+    final def disabled: ReadWrite =
+      ReadWrite.AlwaysEmpty(creator)
   }
 
   // ===================================================================================================================
@@ -55,6 +59,7 @@ object ClientSideStorage {
       override def getProjectLibraryOrd                   = none
       override def getProjectLibrary                      = none
       override def saveProjectLibrary(pl: ProjectLibrary) = AsyncCallback.unit
+      override def clear                                  = AsyncCallback.unit
     }
 
     object Dynamic {
@@ -104,6 +109,7 @@ object ClientSideStorage {
       override val getProjectLibraryOrd                   = proxy(_.getProjectLibraryOrd)
       override val getProjectLibrary                      = proxy(_.getProjectLibrary)
       override def saveProjectLibrary(pl: ProjectLibrary) = proxy(_.saveProjectLibrary(pl))
+      override def clear                                  = proxy(_.clear)
     }
   }
 

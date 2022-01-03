@@ -49,7 +49,8 @@ final class TestWebWorkerClient(initialPrep: TestWebWorkerClient.Prep,
   private def fallbackResponse[A](id: Int, cmd: WebWorkerCmd[A]): AsyncCallback[A] =
     cmd match {
       case _: WebWorkerCmd.Init
-         | _: WebWorkerCmd.UpdateProject =>
+         | _: WebWorkerCmd.UpdateProject
+         |    WebWorkerCmd.ClearAndDisableCache =>
         logger(_.info("  Responding with NoResult."))
         AsyncCallback.pure(NoResult)
 
@@ -134,11 +135,14 @@ object TestWebWorkerClient {
 
   private val isGraph: WebWorkerCmd[_] => Boolean = {
     case _: WebWorkerCmd.Init
-       | _: WebWorkerCmd.UpdateProject => false
+       | _: WebWorkerCmd.UpdateProject
+       |    WebWorkerCmd.ClearAndDisableCache
+       => false
     case _: WebWorkerCmd.GraphUseCaseFlow
        | _: WebWorkerCmd.GraphReqImplications
        | _: WebWorkerCmd.GraphAllImplications
-       | _: WebWorkerCmd.GraphInline => true
+       | _: WebWorkerCmd.GraphInline
+       => true
   }
 
   // ===================================================================================================================

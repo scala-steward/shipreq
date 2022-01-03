@@ -159,6 +159,14 @@ object LiveTest extends TestSuite {
       ()
     }
 
+    "projectAccessRevoked" - {
+      get(Urls.projectAccessRevoked.relativeUrl, user1)
+        .assertOk
+        .assertContentTypeHtml
+        .assertBodyContains("Your project access has been revoked")
+      ()
+    }
+
     "teardown" - {
       // Yes this makes sense because SBT is configured with:`parallelExecution := false`
       shutdown()

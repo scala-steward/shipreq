@@ -39,9 +39,13 @@ final class WebStorage(ws        : AbstractWebStorage,
   private def newKey(name: String): AbstractWebStorage.Key =
     AbstractWebStorage.Key(s"${ctx.namespace}:$name")
 
+  private val key = newKey("project")
+
   private val projectLibrary: WebStorageKey.Async[ProjectLibrary] =
-    protocols.projectLibrary.valueCodec
-      .webStorageKey(newKey("project"))
+    protocols.projectLibrary.valueCodec.webStorageKey(key)
+
+  override def clear: AsyncCallback[Unit] =
+    ws.removeItem(key).asAsyncCallback
 
   override val getProjectLibrary: AsyncCallback[Option[ProjectLibrary]] =
     projectLibrary.get

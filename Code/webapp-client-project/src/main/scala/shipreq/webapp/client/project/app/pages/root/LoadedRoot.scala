@@ -43,6 +43,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
                        promptJs          : PromptJs,
                        optionalFullscreen: OptionalFullscreen,
                        webWorkerClient   : WebWorkerClient.Instance,
+                       accessHandler     : AccessHandler,
                       ) {
 
   implicit def webStorage = global.localStorage
@@ -606,9 +607,13 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         }
       }
 
-    @nowarn("cat=unused")
-    def onProjectChange(u: ProjectLibrary.Update): Callback =
-      $.forceUpdate
+    def onProjectChange(u: ProjectLibrary.Update): Callback = {
+      val access = u.newLibrary.latest.access(initPageData.userId)
+      if (access.isEmpty)
+        accessHandler.onRevoke
+      else
+        $.forceUpdate
+    }
 
     def onConnectionStatusChange(c: ConnectionStatus): Callback = {
       val msg = c match {

@@ -115,9 +115,10 @@ final class LiftDispatcher(global: Global) extends StrictLogging {
   }
 
   val makeResponse: (LiftReq, dispatch.Response) => Fx[Box[LiftResponse]] = {
-    val templatePublic  = Template("public")
-    val templateHome    = Template("members-home")
-    val templateProject = Template("members-project")
+    val templatePublic               = Template("public")
+    val templateHome                 = Template("members-home")
+    val templateProject              = Template("members-project")
+    val templateProjectAccessRevoked = Template("members-project-access_revoked")
 
     val setHeader: ((String, String)) => Unit =
       x => S.setHeader(x._1, x._2)
@@ -163,6 +164,7 @@ final class LiftDispatcher(global: Global) extends StrictLogging {
               case r: Text                 => Full(GenericResponse(r.status, r.body, "text/plain"))
               case r: Json                 => Full(GenericResponse(r.status, r.body, "application/json"))
               case StatusOnly(status)      => Full(StatusOnlyResponse(status))
+              case ProjectAccessRevoked    => templateProjectAccessRevoked.render(req)
             }
           catch {
             case SnippetError.MemberDataNotFound => Full(RedirectResponse(Urls.memberHome.relativeUrl))
