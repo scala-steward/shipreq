@@ -44,7 +44,7 @@ module "shipreq" {
   name                = "Prod"
   availability_zone   = "ap-southeast-2b"
   availability_zone_2 = "ap-southeast-2c"
-  deletion_protection = true
+  deletion_protection = false # TODO: TODO: TODO: TODO: TODO: TODO: ====================================================
   vpc_ip_prefix       = "10.0"
 
   app_cluster_size                      = 2
@@ -93,6 +93,7 @@ module "shipreq" {
   enable_metrics_collection = false
   enable_metrics_services   = false
   enable_ops                = false
+  enable_postgres           = false
   enable_redis              = false
 
   # Versions

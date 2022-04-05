@@ -161,12 +161,15 @@ resource "aws_security_group" "ops" {
     description = "Containers with dynamic ports"
   }
 
-  egress {
-    protocol        = "tcp"
-    from_port       = 5432
-    to_port         = 5432
-    security_groups = [aws_security_group.postgres.id]
-    description     = "Postgres"
+  dynamic "egress" {
+    for_each = aws_security_group.postgres
+    content {
+      protocol        = "tcp"
+      from_port       = 5432
+      to_port         = 5432
+      security_groups = [egress.value.id]
+      description     = "Postgres"
+    }
   }
 }
 

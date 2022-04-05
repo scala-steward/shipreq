@@ -346,6 +346,11 @@ variable "enable_ops" {
   default = true
 }
 
+variable "enable_postgres" {
+  type    = bool
+  default = true
+}
+
 variable "enable_redis" {
   type    = bool
   default = true

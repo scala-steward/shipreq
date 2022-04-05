@@ -17,7 +17,7 @@ locals {
 ####################################################################################################
 
 resource "aws_backup_plan" "db" {
-  count = local.enable_app_backup_db ? 1 : 0
+  count = local.enable_postgres_backup ? 1 : 0
   name  = "${var.env}-db"
   tags  = local.default_tags
   rule {
@@ -32,11 +32,11 @@ resource "aws_backup_plan" "db" {
 }
 
 resource "aws_backup_selection" "db" {
-  count        = length(aws_backup_plan.db)
+  count        = local.enable_postgres_backup ? 1 : 0
   name         = "${var.env}-db"
   plan_id      = aws_backup_plan.db[count.index].id
   iam_role_arn = aws_iam_role.backup.arn
-  resources    = [aws_db_instance.postgres.arn]
+  resources    = [aws_db_instance.postgres[0].arn]
 }
 
 ####################################################################################################

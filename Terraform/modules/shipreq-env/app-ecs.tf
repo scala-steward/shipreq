@@ -147,12 +147,15 @@ resource "aws_security_group" "app" {
     description = "Internet HTTPS"
   }
 
-  egress {
-    protocol        = "tcp"
-    from_port       = 5432
-    to_port         = 5432
-    security_groups = [aws_security_group.postgres.id]
-    description     = "Postgres"
+  dynamic "egress" {
+    for_each = aws_security_group.postgres
+    content {
+      protocol        = "tcp"
+      from_port       = 5432
+      to_port         = 5432
+      security_groups = [egress.value.id]
+      description     = "Postgres"
+    }
   }
 
   egress {

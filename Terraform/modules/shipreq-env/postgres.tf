@@ -3,9 +3,10 @@ locals {
 }
 
 resource "aws_db_instance" "postgres" {
+  count                       = local.enable_postgres ? 1 : 0
   identifier                  = "${var.env}-postgres"
   engine                      = "postgres"
-  engine_version              = "11.12"
+  engine_version              = "11.13"
   instance_class              = var.postgres_instance_type
   storage_type                = "gp2"
   storage_encrypted           = true
@@ -14,8 +15,8 @@ resource "aws_db_instance" "postgres" {
   username                    = "root"
   password                    = var.postgres_root_password
   availability_zone           = var.availability_zone
-  db_subnet_group_name        = aws_db_subnet_group.postgres.name
-  vpc_security_group_ids      = [aws_security_group.postgres.id]
+  db_subnet_group_name        = aws_db_subnet_group.postgres[0].name
+  vpc_security_group_ids      = [aws_security_group.postgres[0].id]
   publicly_accessible         = false
   multi_az                    = false
   apply_immediately           = true
@@ -36,12 +37,14 @@ resource "aws_db_instance" "postgres" {
 }
 
 resource "aws_db_subnet_group" "postgres" {
+  count      = local.enable_postgres ? 1 : 0
   name       = "${var.env}-postgres"
   subnet_ids = [aws_subnet.private.id, aws_subnet.private_2.id]
   tags       = local.postgres_tags
 }
 
 resource "aws_security_group" "postgres" {
+  count  = local.enable_postgres ? 1 : 0
   name   = "sg_${var.env}_postgres"
   vpc_id = aws_vpc.main.id
   tags   = local.postgres_tags
@@ -67,9 +70,10 @@ resource "aws_security_group" "postgres" {
 }
 
 resource "aws_route53_record" "postgres" {
+  count   = local.enable_postgres ? 1 : 0
   zone_id = aws_route53_zone.internal.zone_id
   name    = local.postgres_domain
   type    = "CNAME"
   ttl     = local.dns_stable_ttl
-  records = [aws_db_instance.postgres.address]
+  records = [aws_db_instance.postgres[0].address]
 }

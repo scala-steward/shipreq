@@ -87,13 +87,14 @@ module "shipreq" {
   shipreq_webapp_log_level_shipreq      = "DEBUG"
 
   # Features
-  enable_app                   = false
-  enable_bastion               = false
-  enable_db_dependant_services = false
+  enable_app                   = true
+  enable_bastion               = true
+  enable_db_dependant_services = true
   enable_elasticsearch         = false
   enable_metrics_collection    = false
   enable_metrics_services      = false
   enable_ops                   = false
+  enable_postgres              = true
   enable_redis                 = false
 
   # Versions

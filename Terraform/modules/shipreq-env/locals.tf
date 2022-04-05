@@ -15,7 +15,6 @@ locals {
 
   enable_analytics_proxy       = var.enable_app
   enable_app_alb               = var.enable_app
-  enable_app_backup_db         = local.enable_app_webapp
   enable_app_cdn               = local.enable_app_ec2 && var.shipreq_cdn_subdomain != null
   enable_app_ec2               = var.enable_app
   enable_app_redis             = var.enable_app && var.enable_redis
@@ -36,6 +35,8 @@ locals {
   enable_ops_grafana           = local.enable_metrics_services && var.enable_db_dependant_services
   enable_ops_postgres_exporter = local.enable_metrics_collection && var.enable_db_dependant_services
   enable_ops_prometheus        = local.enable_metrics_services
+  enable_postgres              = var.enable_postgres
+  enable_postgres_backup       = local.enable_postgres && local.enable_app_webapp
   enable_service_discovery     = local.enable_app_ec2 || local.enable_ops_ec2
 
   is_prod = var.env == "prod"
