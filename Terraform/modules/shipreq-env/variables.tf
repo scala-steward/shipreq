@@ -288,6 +288,11 @@ variable "shipreq_cdn_price_class" {
   default = "PriceClass_All"
 }
 
+variable "aws_cli_profile" {
+  type    = string
+  default = null
+}
+
 // =====================================================================================================================
 
 variable "enable_app" {

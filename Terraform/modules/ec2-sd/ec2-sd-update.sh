@@ -9,7 +9,9 @@ tagValue='${tagValue}'
 
 echo "Registering own ip..."
 
-aws servicediscovery register-instance \
+aws='${awsCli}'
+
+$aws servicediscovery register-instance \
   --service-id "$serviceId" \
   --instance-id "$instanceId" \
   --attributes=AWS_INSTANCE_IPV4="$ip"
@@ -17,7 +19,7 @@ aws servicediscovery register-instance \
 echo "Discovering $tagValue IPs..."
 
 ips="$(
-  aws ec2 describe-instances \
+  $aws ec2 describe-instances \
     --filters "Name=tag:Name,Values=$tagValue" \
     --query 'Reservations[].Instances[].PrivateIpAddress' \
     --output text \
@@ -30,7 +32,7 @@ ipstr=",$ips,"
 echo "Discovering records..."
 
 records="$(
-  aws servicediscovery list-instances \
+  $aws servicediscovery list-instances \
     --service-id "$serviceId" \
     --query 'Instances[].[Id,Attributes.AWS_INSTANCE_IPV4]' \
     --output text
@@ -48,7 +50,7 @@ while read -r rec; do
       echo "  ok"
     else
       echo "  IP is stale. Removing record..."
-      aws servicediscovery deregister-instance \
+      $aws servicediscovery deregister-instance \
         --service-id "$serviceId" \
         --instance-id "$id"
     fi

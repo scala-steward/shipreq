@@ -46,6 +46,7 @@ module "shipreq" {
   availability_zone_2 = "ap-southeast-2c"
   deletion_protection = true
   vpc_ip_prefix       = "10.0"
+  aws_cli_profile     = "shipreq"
 
   app_cluster_size                      = 2
   app_instance_type                     = "t3a.small"
