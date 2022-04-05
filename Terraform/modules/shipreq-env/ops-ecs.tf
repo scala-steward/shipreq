@@ -222,7 +222,6 @@ module "ops_ec2_sd" {
   count  = local.enable_ops_ec2 ? 1 : 0
   source = "../ec2-sd"
 
-  aws_cli         = local.aws_cli
   ec2_name_tag    = local.ops_tags.Name
   ec2_role_name   = aws_iam_role.ops-ecs[0].name
   name            = "${var.env}-ops"

@@ -210,7 +210,6 @@ module "app_ec2_sd" {
   count  = local.enable_app_ec2 ? 1 : 0
   source = "../ec2-sd"
 
-  aws_cli         = local.aws_cli
   ec2_name_tag    = local.app_tags.Name
   ec2_role_name   = aws_iam_role.app-ecs[0].name
   name            = "${var.env}-app"

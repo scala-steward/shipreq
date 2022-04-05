@@ -42,8 +42,6 @@ locals {
 
   seconds_in_a_year = 31556952
 
-  aws_cli = var.aws_cli_profile == null ? "aws" : "aws --profile=${var.aws_cli_profile}"
-
   nat_cert = file("${path.module}/../../../Docker/nat/ssl/squid.crt")
 
   # I'm not sure this is necessary but it's a logical thing to do

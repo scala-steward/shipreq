@@ -27,9 +27,3 @@ variable "cron_schedule" {
   type        = string
   default     = "*/4 * * * *"
 }
-
-variable "aws_cli" {
-  description = "The aws CLI command"
-  type        = string
-  default     = "aws"
-}
