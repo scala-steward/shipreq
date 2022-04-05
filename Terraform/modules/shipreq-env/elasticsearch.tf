@@ -10,7 +10,7 @@ resource "aws_elasticsearch_domain" "es" {
 
   vpc_options {
     subnet_ids         = [aws_subnet.private.id]
-    security_group_ids = [aws_security_group.es.id]
+    security_group_ids = [aws_security_group.es[0].id]
   }
 
   cluster_config {
@@ -36,8 +36,8 @@ resource "aws_elasticsearch_domain" "es" {
 }
 
 resource "aws_elasticsearch_domain_policy" "es" {
-  count           = length(aws_elasticsearch_domain.es)
-  domain_name     = aws_elasticsearch_domain.es[count.index].domain_name
+  count           = local.enable_elasticsearch ? 1 : 0
+  domain_name     = aws_elasticsearch_domain.es[0].domain_name
   access_policies = <<EOB
   {
     "Version": "2012-10-17",
@@ -46,7 +46,7 @@ resource "aws_elasticsearch_domain_policy" "es" {
         "Effect": "Allow",
         "Action": "es:*",
         "Principal": { "AWS": [ "*" ] },
-        "Resource": "${aws_elasticsearch_domain.es[count.index].arn}/*"
+        "Resource": "${aws_elasticsearch_domain.es[0].arn}/*"
       }
     ]
   }
@@ -54,6 +54,7 @@ EOB
 }
 
 resource "aws_security_group" "es" {
+  count  = local.enable_elasticsearch ? 1 : 0
   name   = "sg_${var.env}_elasticsearch"
   vpc_id = aws_vpc.main.id
   tags   = local.es_tags
@@ -90,10 +91,10 @@ resource "aws_security_group" "es" {
 }
 
 resource "aws_route53_record" "es" {
-  count   = min(1, length(aws_elasticsearch_domain.es))
+  count   = local.enable_elasticsearch ? 1 : 0
   zone_id = aws_route53_zone.internal.zone_id
   name    = local.es_domain
   type    = "CNAME"
   ttl     = local.dns_stable_ttl
-  records = aws_elasticsearch_domain.es[*].endpoint
+  records = [aws_elasticsearch_domain.es[0].endpoint]
 }

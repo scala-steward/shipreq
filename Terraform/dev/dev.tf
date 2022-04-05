@@ -51,7 +51,6 @@ module "shipreq" {
   app_instance_type                     = "t3a.small"
   app_public_key                        = file("key-app.rsa.pub")
   bastion_public_key                    = file("key-bastion.rsa.pub")
-  elasticsearch_enable                  = true
   elasticsearch_instance_type           = "t2.small.elasticsearch"
   elasticsearch_retention_days          = 32
   elasticsearch_volume_size             = 10
@@ -87,6 +86,17 @@ module "shipreq" {
   shipreq_webapp_log_level_root         = "INFO"
   shipreq_webapp_log_level_shipreq      = "DEBUG"
 
+  # Features
+  enable_app                   = false
+  enable_bastion               = false
+  enable_db_dependant_services = false
+  enable_elasticsearch         = false
+  enable_metrics_collection    = false
+  enable_metrics_services      = false
+  enable_ops                   = false
+  enable_redis                 = false
+
+  # Versions
   app_analytics_proxy_image_tag   = "latest"
   app_cadvisor_image_tag          = "latest"
   app_filebeat_image_tag          = "latest"
@@ -107,8 +117,6 @@ module "shipreq" {
   ops_postgres_exporter_image_tag = "latest"
   ops_prometheus_biz_image_tag    = "latest"
   ops_prometheus_tech_image_tag   = "latest"
-
-  # enable_db_dependant_services = false
 }
 
 output "bastion_host" {

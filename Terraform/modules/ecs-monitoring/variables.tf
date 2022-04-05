@@ -1,7 +1,11 @@
 variable "name_prefix" { type = string }
-variable "cluster_id" { type = string } # nullable
+variable "cluster_id" { type = string } # nullable if !enabled
 variable "cluster_log_name" { type = string }
 variable "default_tags" { type = map(any) }
+variable "enabled" {
+  type    = bool
+  default = true
+}
 
 ####################################################################################################
 

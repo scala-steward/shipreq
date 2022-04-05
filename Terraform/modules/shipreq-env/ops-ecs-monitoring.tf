@@ -5,6 +5,7 @@ module "ops_ecs_monitoring" {
   cluster_id       = length(aws_ecs_cluster.ops) == 0 ? null : aws_ecs_cluster.ops[0].id
   cluster_log_name = "ops"
   default_tags     = local.default_tags
+  enabled          = length(aws_ecs_cluster.ops) > 0
 
   cadvisor_cpu     = local.ops_cluster_cpu.cadvisor
   cadvisor_enabled = local.enable_cadvisor

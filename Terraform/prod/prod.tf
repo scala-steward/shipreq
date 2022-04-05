@@ -51,7 +51,6 @@ module "shipreq" {
   app_instance_type                     = "t3a.small"
   app_public_key                        = file("key-app.rsa.pub")
   bastion_public_key                    = file("key-bastion.rsa.pub")
-  elasticsearch_enable                  = false
   elasticsearch_instance_type           = "t2.small.elasticsearch"
   elasticsearch_retention_days          = 40
   elasticsearch_volume_size             = 10
@@ -60,7 +59,6 @@ module "shipreq" {
   grafana_db_password                   = local.passwords.db.grafana
   grafana_db_username                   = "grafana"
   kibana_default_path                   = "app/kibana#/discover?_g=()&_a=(columns:!('@service',level,logger_name,message),filters:!(('$state':(store:appState),meta:(alias:!n,disabled:!f,index:a99fc580-18bc-11ea-9971-af99325a72b7,key:'@service',negate:!t,params:(query:nat),type:phrase,value:nat),query:(match:('@service':(query:nat,type:phrase))))),index:a99fc580-18bc-11ea-9971-af99325a72b7,interval:auto,query:(language:kuery,query:''),sort:!('@timestamp',desc))"
-  nat_ami                               = "ami-0adc350d7c7a2259f" // Remove at leisure
   nat_public_key                        = file("key-nat.rsa.pub")
   ops_instance_type                     = "t3a.micro"
   ops_public_key                        = file("key-ops.rsa.pub")
@@ -87,6 +85,15 @@ module "shipreq" {
   shipreq_webapp_google_analytics_id    = "UA-105581783-1"
   shipreq_webapp_properties             = file("webapp.properties")
   shipreq_webapp_use_cdn                = true
+
+  # Features
+  enable_app                = false
+  enable_bastion            = false
+  enable_elasticsearch      = false
+  enable_metrics_collection = false
+  enable_metrics_services   = false
+  enable_ops                = false
+  enable_redis              = false
 
   # Versions
   app_analytics_proxy_image_tag   = local.versions.app.analytics_proxy

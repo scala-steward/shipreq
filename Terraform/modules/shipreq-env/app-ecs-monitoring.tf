@@ -5,6 +5,7 @@ module "app_ecs_monitoring" {
   cluster_id       = length(aws_ecs_cluster.app) == 0 ? null : aws_ecs_cluster.app[0].id
   cluster_log_name = "app"
   default_tags     = local.default_tags
+  enabled          = length(aws_ecs_cluster.app) > 0
 
   cadvisor_cpu     = local.app_cluster_cpu.cadvisor
   cadvisor_enabled = local.enable_cadvisor

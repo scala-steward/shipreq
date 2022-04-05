@@ -8,15 +8,14 @@ locals {
 data "aws_elb_service_account" "main" {}
 
 resource "aws_lb" "webapp" {
-  count                      = local.enable_app_alb ? 1 : 0
-  name                       = "${var.env}-shipreq-webapp"
-  internal                   = false
-  load_balancer_type         = "application"
-  subnets                    = [aws_subnet.public.id, aws_subnet.public_2.id]
-  security_groups            = [aws_security_group.webapp-alb[0].id]
-  enable_http2               = true
-  enable_deletion_protection = var.deletion_protection
-  tags                       = local.default_tags
+  count              = local.enable_app_alb ? 1 : 0
+  name               = "${var.env}-shipreq-webapp"
+  internal           = false
+  load_balancer_type = "application"
+  subnets            = [aws_subnet.public.id, aws_subnet.public_2.id]
+  security_groups    = [aws_security_group.webapp-alb[0].id]
+  enable_http2       = true
+  tags               = local.default_tags
 
   access_logs {
     bucket  = aws_s3_bucket.logs.bucket
