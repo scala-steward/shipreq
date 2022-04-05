@@ -15,11 +15,7 @@ resource "aws_service_discovery_service" "main" {
     }
   }
 
-  # Remove after https://github.com/terraform-providers/terraform-provider-aws/issues/4853 is resolved
-  provisioner "local-exec" {
-    when    = destroy
-    command = "${path.module}/servicediscovery-drain.sh ${self.id}"
-  }
+  force_destroy = true
 }
 
 resource "aws_iam_policy" "main" {
