@@ -84,8 +84,8 @@ resource "aws_route_table" "private" {
   tags   = merge(local.default_tags, { Name = "${var.env}-private" })
 
   route {
-    cidr_block  = "0.0.0.0/0"
-    instance_id = aws_instance.nat[count.index].id
+    cidr_block           = "0.0.0.0/0"
+    network_interface_id = aws_instance.nat[count.index].primary_network_interface_id
   }
 }
 

@@ -21,7 +21,15 @@ resource "aws_autoscaling_group" "ops" {
   max_size            = 1
   desired_capacity    = 1
   vpc_zone_identifier = [aws_subnet.private.id]
-  tags                = [for k, v in local.ops_tags : { key = k, value = v, propagate_at_launch = true }]
+
+  dynamic "tag" {
+    for_each = local.ops_tags
+    content {
+      key                 = tag.key
+      value               = tag.value
+      propagate_at_launch = true
+    }
+  }
 
   launch_template {
     id      = aws_launch_template.ops[count.index].id

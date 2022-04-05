@@ -21,7 +21,15 @@ resource "aws_autoscaling_group" "app" {
   max_size            = local.app_cluster_size
   desired_capacity    = local.app_cluster_size
   vpc_zone_identifier = [aws_subnet.private.id]
-  tags                = [for k, v in local.app_tags : { key = k, value = v, propagate_at_launch = true }]
+
+  dynamic "tag" {
+    for_each = local.app_tags
+    content {
+      key                 = tag.key
+      value               = tag.value
+      propagate_at_launch = true
+    }
+  }
 
   launch_template {
     id      = aws_launch_template.app[0].id
