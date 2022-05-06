@@ -31,7 +31,7 @@ const SideBySide = styled.div`
   }
 `
 
-const addClass: (cls: string) => React.FC<{}> =
+const addClass: (cls: string) => React.FC<{children?: React.ReactNode}> =
   cls => props => (<div className={cls}>{props.children}</div>)
 
 export default {
