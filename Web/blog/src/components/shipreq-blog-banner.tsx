@@ -36,7 +36,7 @@ class Blog extends React.Component<{}, {hover: boolean}> {
   render() {
     const colour = this.state.hover ? "#d90166" : "#00549c"
     return (
-      <svg viewBox="0 0 85 33" onMouseEnter={this.onHover} onMouseLeave={this.onExit}>
+      <svg viewBox="0 0 88 33" onMouseEnter={this.onHover} onMouseLeave={this.onExit}>
         <text
           x="0"
           y="26"
