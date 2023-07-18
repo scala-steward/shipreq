@@ -287,8 +287,10 @@ object MySsr {
 
   val setup: Expr[Unit] =
     ReactSsr.Setup(
-      Expr.requireFileOnClasspath("react.production.min.js"),
-      Expr.requireFileOnClasspath("react-dom-server.browser.production.min.js"),
+      // Here we use the development JS because it's made for Node and browsers
+      // — the minified production JS only works with browsers since React 17.
+      Expr.requireFileOnClasspath("react.development.js"),
+      Expr.requireFileOnClasspath("react-dom-server.browser.development.js"),
     ) >> Expr.requireFileOnClasspath("webapp-ssr.js").void
 ```
 
