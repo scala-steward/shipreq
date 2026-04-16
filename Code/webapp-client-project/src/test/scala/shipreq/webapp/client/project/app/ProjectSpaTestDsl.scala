@@ -312,18 +312,23 @@ object ProjectSpaTestDsl {
     val rc           = MockRouterCtl[Page]()
     val init         = TestState(page, global.unsafeProject(), rd)
 
-    ReactTestUtils.withRenderedIntoBody(spa.Component(Props(init.page, rc))) { m =>
+    val report = ReactTestUtils.withRenderedIntoBody(spa.Component(Props(init.page, rc))) { m =>
       TestClipboard.clear()
       val tester = new ComponentTester(spa.Component)(m)
-      val report = Plan(action, invariants)
-                     .test(Observer(_.observe()))
-                     .withInitialState(init)
-                     .withRefByName(Ref(global, tester, confirmJs, promptJs, ww, loc))
-                     .run()
-      if (assertPass)
-        assertTestState(report)
-//        assertTestState(r, println(s"${"=" * 120}\n${htmlScrub run tester.component.getDOMNode.map(_.asElement).outerHTML}\n"))
-      report
+      Plan(action, invariants)
+        .test(Observer(_.observe()))
+        .withInitialState(init)
+        .withRefByName(Ref(global, tester, confirmJs, promptJs, ww, loc))
+        .run()
     }
+
+    // Semantic UI adds modals outside of our React component
+    TestUtil.removeSemanticUiFromBody()
+
+    if (assertPass)
+      assertTestState(report)
+      // assertTestState(r, println(s"${"=" * 120}\n${htmlScrub run tester.component.getDOMNode.map(_.asElement).outerHTML}\n"))
+
+    report
   }
 }
