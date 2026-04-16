@@ -4,7 +4,7 @@ import sbtdocker.DockerPlugin.autoImport._
 import Common.{propOrEnv, releaseMode}
 
 /** This is all about building and publishing of ShipReq docker images. */
-object Docker {
+object DockerCfg {
 
   val baseImage = {
     val image = propOrEnv("BASE_IMAGE_URL").getOrElse("shipreq/base")

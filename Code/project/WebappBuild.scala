@@ -335,7 +335,7 @@ object WebappBuild {
     def dockerSettings = (_: Project)
       .enablePlugins(DockerPlugin)
       .configs(DockerDeps)
-      .configure(Docker.settingsFor("webapp"))
+      .configure(DockerCfg.settingsFor("webapp"))
       .deps(JettyDep.distTarGz % DockerDeps)
       .settings(
         cleanFiles += baseDirectory.value / "target",

@@ -169,7 +169,7 @@ docker / dockerfile := {
   new Dockerfile {
     def runInBash(cmds: String*) = run("/bin/bash", "-c", cmds.mkString(";"))
 
-    from(Docker.baseImage)
+    from(DockerCfg.baseImage)
 
     env(
       "NAME"                      -> "shipreq/webapp",
@@ -196,7 +196,7 @@ docker / dockerfile := {
 
     expose(8080)
 
-    env(Docker.envVars.value: _*)
+    env(DockerCfg.envVars.value: _*)
 
     cmd("bin/webapp")
   }
