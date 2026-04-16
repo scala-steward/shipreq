@@ -92,13 +92,8 @@ object ProjectSpaTestDsl {
       breadcrumbs.doms(1).textContent
 
     val dropdownCrumbName: Option[String] =
-      nav.collect01(".ui.dropdown.inline").doms.map { d =>
-        // Not sure why this is needed
-        val innerText = d.asInstanceOf[scalajs.js.Dynamic].innerText.asInstanceOf[String]
-        val selected = innerText.takeWhile(_ != '\n')
-        //println(s"[$innerText]")
-        //println(s"[$selected]")
-        selected
+      nav.collect01(".ui.dropdown.inline").zippers.flatMap { z =>
+        z.collect0n(">span,>.text,.header").zippers.iterator.map(_.innerText.trim).find(_.nonEmpty)
       }
 
     val page: Page =
