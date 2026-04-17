@@ -71,7 +71,8 @@ RUN sed -i 's/^COMPRESSXZ/#COMPRESSXZ/' /etc/makepkg.conf \
 # Note: when changing this, make sure to also change:
 #   - :/Code/project/Dependencies.scala
 #   - :/Docker/shipreq-base/Dockerfile
-RUN n=jdk11-graalvm-bin \
+RUN TODO UPGRADE_REQUIRED \
+ && n=jdk11-graalvm-bin \
  && gitsha=e647c333799df416782f9686ca64eb0dbff0f94b \
  && cd /tmp \
  && git clone https://aur.archlinux.org/$n.git \

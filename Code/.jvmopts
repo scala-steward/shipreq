@@ -1,2 +1,4 @@
 -Xss2m
 -Xmx4g
+-XX:+UnlockExperimentalVMOptions
+-XX:+EnableJVMCI
