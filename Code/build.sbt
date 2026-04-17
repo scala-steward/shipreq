@@ -66,7 +66,7 @@ val `scalafix-tests`      = ScalafixBuild.`scalafix-tests`
 Global / concurrentRestrictions += Tags.limit(CustomTags.WebappClientProjectTest, WebappBuild.WebappClientProject.parallelism)
 
 Global / concurrentRestrictions += Tags.limit(CustomTags.MemoryMB, 1024 * 2)
-Global / concurrentRestrictions += Tags.limit(CustomTags.Node, 4)
-Global / concurrentRestrictions += Tags.limit(Tags.Test, 4)
+Global / concurrentRestrictions += Tags.limit(CustomTags.Node, 2)
+Global / concurrentRestrictions += Tags.limit(Tags.Test, 2)
 
 ThisBuild / evictionErrorLevel := Level.Info
