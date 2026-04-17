@@ -13,7 +13,7 @@ if [ "$(uname)" == "Darwin" ]; then
 
   # Apply patches
   echo "Patching for OSX"
-  perl -pi -e 's/linux-amd64/linux-aarch64/g' Dockerfile
+  perl -pi -e 's/linux-x64/linux-aarch64/g' Dockerfile
 fi
 
 exec docker build -t shipreq/base:latest .

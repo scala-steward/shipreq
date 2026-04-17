@@ -71,7 +71,8 @@ RUN sed -i 's/^COMPRESSXZ/#COMPRESSXZ/' /etc/makepkg.conf \
 # Note: when changing this, make sure to also change:
 #   - :/Code/project/Dependencies.scala
 #   - :/Docker/shipreq-base/Dockerfile
-RUN n=jdk11-graalvm-bin \
+RUN TODO UPGRADE_REQUIRED \
+ && n=jdk11-graalvm-bin \
  && gitsha=e647c333799df416782f9686ca64eb0dbff0f94b \
  && cd /tmp \
  && git clone https://aur.archlinux.org/$n.git \
@@ -97,18 +98,6 @@ RUN cd /etc \
 RUN pacman -Sy --noconfirm --needed npm nodejs \
  && npm config set prefix /root/.npm \
  && npm install -g jsdom
-
-##############
-# Phantom JS #
-##############
-
-RUN pacman -Sy --noconfirm --needed fontconfig \
- && export PHANTOM_JS="phantomjs-2.1.1-linux-x86_64" \
- && curl -LO https://github.com/Medium/phantomjs/releases/download/v2.1.1/$PHANTOM_JS.tar.bz2 \
- && tar xvjf $PHANTOM_JS.tar.bz2 \
- && rm $PHANTOM_JS.tar.bz2 \
- && mv $PHANTOM_JS /usr/local/share \
- && ln -s /usr/local/share/$PHANTOM_JS/bin/phantomjs /usr/bin
 
 ##################
 # SBT & Scala.JS #
