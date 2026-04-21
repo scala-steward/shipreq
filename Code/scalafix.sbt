@@ -6,6 +6,6 @@
       ThisBuild / scalacOptions     += "-P:semanticdb:synthetics:on",
       ThisBuild / scalacOptions     += "-Yrangepos",
       ThisBuild / semanticdbEnabled := true,
-      ThisBuild / semanticdbVersion := "4.14.1",
+      ThisBuild / semanticdbVersion := "4.16.0",
     )
 }
