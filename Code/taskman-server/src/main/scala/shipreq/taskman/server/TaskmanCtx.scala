@@ -1,5 +1,6 @@
 package shipreq.taskman.server
 
+import cats.~>
 import cats.effect.Resource
 import japgolly.clearconfig.ConfigSources
 import java.time.{Clock, Duration, Instant}
@@ -58,8 +59,13 @@ final class TaskmanCtx(val db          : DbAccessor,
       case -\/(p) => new JavaMail(p.sessionFn())
     }
 
+  val supportDesk: Support.API ~> Fx =
+    config.supportDesk match {
+      case -\/(props) => new SupportViaMail(props, sendMail)
+      case \/-(props) => new FreshDesk0(props)(http).upgrade.unsafeRun()
+    }
+
   val emails        = new Emails(config.mail.envelopeProps, emailTokens)
-  val freshdesk     = new FreshDesk0(config.freshdesk)(http).upgrade.unsafeRun()
   val mailchimp     = new MailChimp(config.mailchimp)(http)
   val mailingListId = config.mailchimp.audienceId
 
@@ -67,7 +73,7 @@ final class TaskmanCtx(val db          : DbAccessor,
 
   implicit def trustPeriod   = config.taskman.trustPeriod
   implicit val taskmanApi    = TaskmanApi.addLogging(TaskmanApiImpl(None).trans(xa.trans))
-  implicit val businessOpFx  = new BusinessOpFx(sendMail, mailchimp, freshdesk, xa.trans, config.shipreq.schema)
+  implicit val businessOpFx  = new BusinessOpFx(sendMail, mailchimp, supportDesk, xa.trans, config.shipreq.schema)
   implicit val serverOpFx    = new ServerOpFx(xa, new Worker.FailureHandler(emails)(businessOpFx))
   implicit val businessLogic = new BusinessLogic(emails, async.emailScheduler, mailingListId)(businessOpFx)
   implicit val failurePolicy = Failure.failurePolicy

@@ -14,17 +14,17 @@ import shipreq.taskman.server.business._
 import shipreq.taskman.server.logic._
 import shipreq.taskman.server.logic.business._
 
-final case class TaskmanConfig(mail      : TaskmanConfig.Mail,
-                               mailchimp : MailChimp.Props,
-                               freshdesk : FreshDesk.Props,
-                               prometheus: TaskmanConfig.Prometheus,
-                               shipreq   : TaskmanConfig.ShipReq,
-                               taskman   : TaskmanConfig.Taskman)
+final case class TaskmanConfig(mail       : TaskmanConfig.Mail,
+                               mailchimp  : MailChimp.Props,
+                               prometheus : TaskmanConfig.Prometheus,
+                               shipreq    : TaskmanConfig.ShipReq,
+                               supportDesk: TaskmanConfig.SupportDeskProps,
+                               taskman    : TaskmanConfig.Taskman)
 
 object TaskmanConfig extends HasLogger {
 
   def config: ConfigDef[TaskmanConfig] =
-    logVars *> (mail, mailchimp, freshdesk, prometheus, shipreq, taskman).mapN(apply)
+    logVars *> (mail, mailchimp, prometheus, shipreq, supportDesk, taskman).mapN(apply)
 
   def mailTokens: ConfigDef[Email.TokenValues] =
     ( ConfigDef.need[String](CfgKeys.Webapp.appName),
@@ -86,6 +86,15 @@ object TaskmanConfig extends HasLogger {
       .withPrefix("mailchimp.")
 
   // ===================================================================================================================
+
+  type SupportDeskProps = SupportViaMail.Props \/ FreshDesk.Props
+
+  def supportDesk: ConfigDef[SupportDeskProps] =
+    ConfigDef.need[String]("supportDesk").map(_.toLowerCase).chooseAttempt {
+      case "mail"      => \/-(SupportViaMail.config.map(-\/(_)))
+      case "freshdesk" => \/-(freshdesk.map(\/-(_)))
+      case _           => -\/("Legal values are [mail, freshdesk].")
+    }
 
   def freshdesk: ConfigDef[FreshDesk.Props] =
     ( ConfigDef.need[String]("domain"),
