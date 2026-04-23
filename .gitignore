@@ -19,3 +19,4 @@
 metals.sbt
 project/sjsincoptbench.sbt
 target
+.DS_Store
