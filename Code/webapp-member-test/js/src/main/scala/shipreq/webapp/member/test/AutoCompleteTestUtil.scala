@@ -27,11 +27,12 @@ object AutoCompleteTestUtil {
     def render(state: String) = {
       def change = (e: ReactEventFromInput) => $.setState(e.target.value)
       <.textarea(
-        ^.value := state,
-        ^.onChange ==> change,
-        ^.onBlur --> autoCompleteOnBlur,
-        ^.onClick ==> autoCompleteOnClick,
-        ^.onKeyDown ==> autoCompleteOnKeyDown,
+        ^.onBlur           --> autoCompleteOnBlur,
+        ^.onChange         ==> change,
+        ^.onClick          ==> autoCompleteOnClick,
+        ^.onKeyDown        ==> autoCompleteOnKeyDown,
+        ^.onKeyDownCapture ==> autoCompleteOnKeyDownCapture,
+        ^.value             := state,
       ).withRef(domRef)
     }
 
