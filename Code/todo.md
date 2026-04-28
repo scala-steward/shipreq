@@ -3,7 +3,6 @@
 
 * add CI
 * record usage videos (Davinci Resolve)
-* change all saved credentials/secrets
 * revise documentation
 * at the very least, document clearly how to get up and running (including double-init (Taskman + Webapp) and local account registration)
 * create a blog
@@ -11,6 +10,16 @@
 * CDN: update infra diagram
 * CDN: document use, reason, including need for fake-cdn docker image
 * add a place for discussion, maybe discord
+
+* change all saved credentials/secrets
+  * [x] test / taskman -- strategy: use fake data because no integration tests exist
+  * [x] test / webapp  -- strategy: no secrets
+
+  * [x] dev  / taskman -- strategy: fake data
+  * [x] dev  / webapp  -- strategy: harmless, just comment out
+
+  * [x] prod / taskman -- strategy: protected by git-crypt
+  * [x] prod / webapp  -- strategy: protected by git-crypt
 
 ========================================================================================================================
 # Fix Taskman
