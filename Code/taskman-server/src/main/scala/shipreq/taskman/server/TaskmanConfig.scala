@@ -7,8 +7,7 @@ import java.time.Duration
 import javax.mail.Session
 import shipreq.base.util.log.HasLogger
 import shipreq.base.util.{Retries, RetriesJvm}
-import shipreq.taskman.api.{CfgKeys, EmailAddr}
-import shipreq.taskman.server.business.FreshDesk.ConfigValueParsers._
+import shipreq.taskman.api.CfgKeys
 import shipreq.taskman.server.business.JavaMail.ConfigValueParsers._
 import shipreq.taskman.server.business._
 import shipreq.taskman.server.logic._
@@ -24,7 +23,14 @@ final case class TaskmanConfig(mail       : TaskmanConfig.Mail,
 object TaskmanConfig extends HasLogger {
 
   def config: ConfigDef[TaskmanConfig] =
-    logVars *> (mail, mailchimp, prometheus, shipreq, supportDesk, taskman).mapN(apply)
+    logVars *> (
+      mail,
+      MailChimp.config.withPrefix("mailchimp."),
+      prometheus,
+      shipreq,
+      supportDesk,
+      taskman,
+    ).mapN(apply)
 
   def mailTokens: ConfigDef[Email.TokenValues] =
     ( ConfigDef.need[String](CfgKeys.Webapp.appName),
@@ -36,11 +42,6 @@ object TaskmanConfig extends HasLogger {
       "LOG_LEVEL_ROOT",
       "LOG_LEVEL_SHIPREQ")
 
-  private implicit def configValueParserEmailAddr: ConfigValueParser[EmailAddr] =
-    ConfigValueParser.id.map(EmailAddr.apply)
-
-  // TODO Put props and parsers in Business classes
-
   // ===================================================================================================================
 
   final case class Mail(publicFrom    : Email.Addr,
@@ -51,16 +52,17 @@ object TaskmanConfig extends HasLogger {
   }
 
   def mail: ConfigDef[Mail] =
-    ((ConfigDef.need[Email.Addr]("public.from"),
+    ((ConfigDef.need    [Email.Addr]      ("public.from"),
       ConfigDef.getOrUse[List[Email.Addr]]("archive.to", Nil),
-      ConfigDef.need[Int]("concurrency.max").ensure(_ >= 1, "Must be ≥ 1."),
+      ConfigDef.need    [Int]             ("concurrency.max").ensure(_ >= 1, "Must be ≥ 1."),
       ).tupled.withPrefix("mail."),
-      mailMechanism).mapN { case ((a, b, c), m) => Mail(a, b, m, c) }
+      mailMechanism
+    ).mapN { case ((a, b, c), m) => Mail(a, b, m, c) }
 
   def mailMechanism: ConfigDef[TaskmanConfig.JavaMail \/ MailGun.Props] =
     ConfigDef.need[String]("mail.via").map(_.toLowerCase).chooseAttempt {
       case "javamail" => \/-(javaMail.map(-\/(_)))
-      case "mailgun"  => \/-(mailGun.map(\/-(_)))
+      case "mailgun"  => \/-(MailGun.config.withPrefix("mailgun.").map(\/-(_)))
       case _          => -\/("Legal values are [JavaMail, MailGun].")
     }
 
@@ -69,22 +71,6 @@ object TaskmanConfig extends HasLogger {
   def javaMail: ConfigDef[JavaMail] =
     JavaMailConfig.sessionFn.map(JavaMail.apply)
 
-  def mailGun: ConfigDef[MailGun.Props] =
-    ( ConfigDef.need[String]("domain"),
-      ConfigDef.need[String]("apiKey").secret,
-      ConfigDef.need[String]("tags").map(_.split(',').map(_.trim).filter(_.nonEmpty).toSet),
-    ).mapN(MailGun.Props.apply)
-      .withPrefix("mailgun.")
-
-  // ===================================================================================================================
-
-  def mailchimp: ConfigDef[MailChimp.Props] =
-    ( ConfigDef.need[String]("dc"),
-      ConfigDef.need[String]("key").secret.map(MailChimp.ApiKey),
-      ConfigDef.need[String]("audienceId").map(MailingList.ListId),
-    ).mapN(MailChimp.Props)
-      .withPrefix("mailchimp.")
-
   // ===================================================================================================================
 
   type SupportDeskProps = SupportViaMail.Props \/ FreshDesk.Props
@@ -92,28 +78,9 @@ object TaskmanConfig extends HasLogger {
   def supportDesk: ConfigDef[SupportDeskProps] =
     ConfigDef.need[String]("supportDesk").map(_.toLowerCase).chooseAttempt {
       case "mail"      => \/-(SupportViaMail.config.map(-\/(_)))
-      case "freshdesk" => \/-(freshdesk.map(\/-(_)))
+      case "freshdesk" => \/-(FreshDesk.config.withPrefix("freshdesk.").map(\/-(_)))
       case _           => -\/("Legal values are [mail, freshdesk].")
     }
-
-  def freshdesk: ConfigDef[FreshDesk.Props] =
-    ( ConfigDef.need[String]("domain"),
-      ConfigDef.need[String]("key").secret,
-      ConfigDef.need[EmailAddr]("taskmanEmail"),
-      ConfigDef.need[FreshDesk.UnverifiedTicketOrg]("org.landingPage"),
-      ConfigDef.need[FreshDesk.UnverifiedTicketOrg]("org.failure"),
-      ConfigDef.need[FreshDesk.UnverifiedTicketOrg]("org.userFeedback"),
-    ).mapN {
-      case (domain, key, taskmanEmail, landingPage, failure, userFeedback) =>
-        FreshDesk.Props(
-          domain       = domain,
-          key          = key,
-          taskmanEmail = taskmanEmail,
-          landingPage  = landingPage,
-          failure      = failure,
-          userFeedback = userFeedback,
-        )
-    }.withPrefix("freshdesk.")
 
   // ===================================================================================================================
 

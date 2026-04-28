@@ -1,8 +1,10 @@
 package shipreq.taskman.server.business
 
+import cats.syntax.apply._
 import cats.~>
 import io.circe._
 import io.circe.syntax._
+import japgolly.clearconfig._
 import shipreq.base.util.ArticulateError
 import shipreq.base.util.FxModule._
 import shipreq.base.util.log.HasLogger
@@ -14,6 +16,12 @@ import shipreq.taskman.server.logic.business.MailingList.API._
 import shipreq.taskman.server.logic.business.MailingList._
 
 object MailChimp {
+
+  def config: ConfigDef[Props] =
+    ( ConfigDef.need[String]("dc"),
+      ConfigDef.need[String]("key").secret.map(ApiKey.apply),
+      ConfigDef.need[String]("audienceId").map(ListId.apply),
+    ).mapN(Props.apply)
 
   final case class ApiKey(value: String)
 
