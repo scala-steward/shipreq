@@ -1,5 +1,6 @@
 package shipreq.webapp.client.project.app.pages.config.tags
 
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.test._
 import org.scalajs.dom.html
 import shipreq.webapp.base.test.TestState._

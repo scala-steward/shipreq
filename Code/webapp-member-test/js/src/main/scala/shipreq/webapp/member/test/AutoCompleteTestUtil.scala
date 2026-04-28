@@ -1,5 +1,6 @@
 package shipreq.webapp.member.test
 
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.extra.Px
 import japgolly.scalajs.react.test._

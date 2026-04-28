@@ -1,5 +1,6 @@
 package shipreq.webapp.base.test
 
+import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.microlibs.testutil.TestUtil
 import japgolly.scalajs.react.test._
 import japgolly.scalajs.react.vdom.html_<^.VdomAttr
