@@ -65,6 +65,7 @@ final class TaskmanCtx(val db          : DbAccessor,
     config.mail.props match {
       case TaskmanConfig.MailProps.ViaMailGun(p)  => new MailGun(p)(http)
       case TaskmanConfig.MailProps.ViaJavaMail(p) => new JavaMail(p.sessionFn())
+      case TaskmanConfig.MailProps.NoOp           => MailNoOp
     }
 
   val supportDesk: Support.API ~> Fx =

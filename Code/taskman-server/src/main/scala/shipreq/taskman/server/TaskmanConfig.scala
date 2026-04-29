@@ -42,6 +42,7 @@ object TaskmanConfig extends HasLogger {
   sealed trait MailProps
 
   object MailProps {
+    case object NoOp                                            extends MailProps
     final case class ViaJavaMail(props: TaskmanConfig.JavaMail) extends MailProps
     final case class ViaMailGun (props: MailGun.Props)          extends MailProps
   }
@@ -65,7 +66,8 @@ object TaskmanConfig extends HasLogger {
     ConfigDef.need[String]("mail.via").map(_.toLowerCase).chooseAttempt {
       case "javamail" => \/-(javaMail.map(MailProps.ViaJavaMail))
       case "mailgun"  => \/-(MailGun.config.withPrefix("mailgun.").map(MailProps.ViaMailGun))
-      case _          => -\/("Legal values are [JavaMail, MailGun].")
+      case "no-op"    => \/-(ConfigDef.const(MailProps.NoOp))
+      case _          => -\/("Legal values are [javamail, mailgun, no-op].")
     }
 
   final case class JavaMail(sessionFn: () => Session)
