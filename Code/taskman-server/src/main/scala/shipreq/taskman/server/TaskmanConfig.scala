@@ -76,7 +76,7 @@ object TaskmanConfig extends HasLogger {
   }
 
   def mailingList: ConfigDef[MailingListProps] =
-    ConfigDef.need[String]("mailingList").map(_.toLowerCase).chooseAttempt {
+    ConfigDef.need[String]("mailingList.via").map(_.toLowerCase).chooseAttempt {
       case "no-op"     => \/-(ConfigDef.const(MailingListProps.NoOp))
       case "mailchimp" => \/-(MailChimp.config.withPrefix("mailchimp.").map(MailingListProps.ViaMailChimp))
       case _          => -\/("Legal values are [mailchimp, no-op].")
@@ -87,7 +87,7 @@ object TaskmanConfig extends HasLogger {
   type SupportDeskProps = SupportViaMail.Props \/ FreshDesk.Props
 
   def supportDesk: ConfigDef[SupportDeskProps] =
-    ConfigDef.need[String]("supportDesk").map(_.toLowerCase).chooseAttempt {
+    ConfigDef.need[String]("supportDesk.via").map(_.toLowerCase).chooseAttempt {
       case "mail"      => \/-(SupportViaMail.config.map(-\/(_)))
       case "freshdesk" => \/-(FreshDesk.config.withPrefix("freshdesk.").map(\/-(_)))
       case _           => -\/("Legal values are [mail, freshdesk].")
