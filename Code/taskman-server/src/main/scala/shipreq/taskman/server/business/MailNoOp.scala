@@ -11,7 +11,10 @@ object MailNoOp extends AbstractFunction1[SendEmail, Fx[Unit]] with HasLogger {
   override def apply(op: SendEmail): Fx[Unit] =
     Fx {
       logger.info(s"""Ignoring SendMail
-${op.envelope}
+from: ${op.envelope.from}
+to:   ${op.envelope.to}
+cc:   ${op.envelope.cc}
+bcc:  ${op.envelope.bcc}
 
 ${op.content.subject}
 
