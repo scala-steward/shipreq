@@ -994,10 +994,12 @@ object Style extends StyleSheet.Inline {
     )
 
     val rulesEditorRule = style(
+      display.flex,
+      flexDirection.column,
     )
 
     val rulesEditorDefault = style(
-      marginLeft(1.5 ex),
+      marginTop(0.65 em),
     )
 
     val rulesEditorOtherwise = style(
