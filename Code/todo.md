@@ -25,7 +25,6 @@
 ========================================================================================================================
 # project access WIP
 
-* revise UI prototype for the project access config page
 * revise UI prototype for the project "status" page
 
 * only admin should be able to
