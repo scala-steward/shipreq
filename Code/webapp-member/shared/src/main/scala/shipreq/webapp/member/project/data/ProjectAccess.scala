@@ -1,5 +1,6 @@
 package shipreq.webapp.member.project.data
 
+import shipreq.base.util.Permission
 import shipreq.webapp.base.data.{ProjectCreator, ProjectPerm, UserId}
 
 final case class ProjectAccess(asMap: Map[UserId.Public, ProjectPerm]) {
@@ -21,6 +22,10 @@ final case class ProjectAccess(asMap: Map[UserId.Public, ProjectPerm]) {
     }
     ProjectAccess(m)
   }
+
+  /** Checks if the given user has the required permission. */
+  def require(requiredPerm: ProjectPerm, user: UserId.Public): Permission =
+    requiredPerm.isSatisfiedBy(apply(user))
 }
 
 object ProjectAccess {

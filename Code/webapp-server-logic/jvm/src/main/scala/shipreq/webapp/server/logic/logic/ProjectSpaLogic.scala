@@ -456,14 +456,14 @@ object ProjectSpaLogic extends StrictLogging {
         onInitApp               = onInitApp,
         onReconnect             = onReconnect,
         onSync                  = onSync,
-        onUpdateConfig          = updateProject (MakeEvent.updateConfig),
-        onCreateContent         = updateProject (MakeEvent.createContent),
-        onUpdateContent         = updateProject (MakeEvent.updateContent),
-        onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn),
-        onUpdateSavedViews      = updateProject (MakeEvent.updateSavedViews),
-        onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues),
+        onUpdateConfig          = updateProject (MakeEvent.updateConfig, ProjectPerm.Collaborator),
+        onCreateContent         = updateProject (MakeEvent.createContent, ProjectPerm.Collaborator),
+        onUpdateContent         = updateProject (MakeEvent.updateContent, ProjectPerm.Collaborator),
+        onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn, ProjectPerm.Admin),
+        onUpdateSavedViews      = updateProject (MakeEvent.updateSavedViews, ProjectPerm.Collaborator),
+        onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues, ProjectPerm.Collaborator),
         onFieldMandatorinessMod = _ => F.pure(-\/(MsgError.FunctionNoLongerSupported("fieldMandatorinessMod"))),
-        onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod),
+        onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod, ProjectPerm.Collaborator),
         onAccessUpdate          = onAccessUpdate,
       )
 
@@ -500,16 +500,16 @@ object ProjectSpaLogic extends StrictLogging {
           }.flatMap(identity)
       }
 
-      private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFn[I, EventResult] =
-        in => projectUpdater(in.static.projectId, in.static.creator, in.static.user.id, mkEvent(in.input, _)).map {
+      private def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result, requiredPerm: ProjectPerm): MsgFn[I, EventResult] =
+        in => projectUpdater(in.static.projectId, in.static.creator, in.static.user.id, mkEvent(in.input, _), requiredPerm).map {
           case ProjectUpdater.Result.Ok(upd)                 => \/-(MsgFnOut(\/-(upd), None))
           case ProjectUpdater.Result.Reject(e)               => \/-(MsgFnOut(-\/(e), None))
           case ProjectUpdater.Result.ServerBehindDatabase(e) => -\/(MsgError.ServerBehindDatabase(e))
           case ProjectUpdater.Result.ServerBehindRedis(e)    => -\/(MsgError.ServerBehindRedis(e))
         }
 
-      private def updateProjectI[I](mkEvent: I => MakeEvent.Result): MsgFn[I, EventResult] =
-        updateProject((i, _) => mkEvent(i))
+      private def updateProjectI[I](mkEvent: I => MakeEvent.Result, requiredPerm: ProjectPerm): MsgFn[I, EventResult] =
+        updateProject((i, _) => mkEvent(i), requiredPerm)
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -707,7 +707,7 @@ object ProjectSpaLogic extends StrictLogging {
         UpdateAccessCmd.resolve(in.input)(
           getUserId  = u => runDB(db.getUserId(u)).map(_.map(Obfuscators.userId.obfuscate)),
           onNotFound = \/-(MsgFnOut(-\/(ErrorMsg("User not found.")), None)),
-          modify     = m => updateProject(MakeEvent.updateAccess)(in.copy(input = m))
+          modify     = m => updateProject(MakeEvent.updateAccess, ProjectPerm.Admin)(in.copy(input = m))
         )
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -754,10 +754,12 @@ object ProjectSpaLogic extends StrictLogging {
                                                  trace   : Trace.Algebra[F]) {
     import ProjectUpdater._
 
-    def apply(pid    : ProjectId,
-              creator: ProjectCreator,
-              userId : UserId,
-              mkEvent: Project => MakeEvent.Result): F[Result] = {
+    def apply(pid         : ProjectId,
+              creator     : ProjectCreator,
+              userId      : UserId,
+              mkEvent     : Project => MakeEvent.Result,
+              requiredRole: ProjectPerm,
+             ): F[Result] = {
 
       var gas = 200
 
@@ -810,7 +812,23 @@ object ProjectSpaLogic extends StrictLogging {
             } yield -\/(s.copy(status = if (ok) WriteDb else ReadRedis))
 
           case WriteDb =>
-            mkEvent(s.local).flatMap(ApplyNewEvent(_, s.local)) match {
+            val project = s.local
+            val userPubId = Obfuscators.userId.obfuscate(userId)
+
+            def permCheck: PotentialChange[ErrorMsg, Unit] =
+              project.access.require(requiredRole, userPubId) match {
+                case Allow => PotentialChange.unit
+                case Deny  => PotentialChange.Failure(ErrorMsg(s"$requiredRole rights required."))
+              }
+
+            val result: PotentialChange[ErrorMsg, ApplyNewEvent.Updated] =
+              for {
+                _ <- permCheck
+                e <- mkEvent(project)
+                u <- ApplyNewEvent(e, project)
+              } yield u
+
+            result match {
               case PotentialChange.Success(updated) =>
                 runDB(db.saveProjectEvent(pid, s.local.history.nextOrd, updated.event, updated.projectPartial, userId)) map {
                   case \/-(ve) =>

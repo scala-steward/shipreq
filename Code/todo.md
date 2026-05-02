@@ -30,6 +30,7 @@
 * only admin should be able to
   * rename the project
   * modify access
+  * this is implemented on the backend, add to the frontend too?
 
 * testing project access
   * read

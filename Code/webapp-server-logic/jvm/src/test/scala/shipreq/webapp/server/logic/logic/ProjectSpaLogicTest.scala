@@ -475,6 +475,15 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         val result = sendMsg(req, p1.static, subscribedState)._1
         assertEq(result, \/-(-\/(ErrorMsg("User not found."))))
       }
+
+      "denyCollaborator" - {
+        implicit val t = new Tester; import t._
+        val static3 = p1.static.copy(user = user3.toUser)
+        val cmd = UpdateAccessCmd.Modify(Map(user2.idP -> None))
+        val req = WsReqRes.AccessUpdate.AndReq(cmd)
+        val result = sendMsg(req, static3, subscribedState)._1
+        assertEq(result, \/-(-\/(ErrorMsg("Admin rights required."))))
+      }
     }
 
     "updatesAndListeners" - {
