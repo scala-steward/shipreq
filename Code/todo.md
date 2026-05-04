@@ -25,14 +25,20 @@
 ========================================================================================================================
 # project access WIP
 
+* plan:
+  1. implement (with tests) project access API, ensure read-only unless admin
+    1. [ ] project access page
+    1. [ ] leave
+    1. [ ] new user (read-only unless admin)
+    1. [ ] existing user (read-only unless admin)
+  1. add admin permission checks to the frontend:
+    1. [ ] project renaming
+  1. add read-only access
+    1. [ ] backend and protocol work
+    1. [ ] read-only UI: Editability
+    1. [ ] read-only UI: everywhere else (manually check)
+
 * revise UI prototype for the project "status" page
-
-* add permission checks to the frontend?
-  currently there are no checks on the frontend;
-  when a user attempts to submit a change, it is access-checked in the backend
-
-* add read-only access?
-  seems trivially easy if permission checks only happen on the backend
 
 * when users can be used as field values:
   * should the rolodex contain info of users who've had access revoked?
