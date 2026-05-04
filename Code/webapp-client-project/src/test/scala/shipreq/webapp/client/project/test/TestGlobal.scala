@@ -104,7 +104,7 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
         onUpdateManualIssues    = failLeft,
         onFieldMandatorinessMod = _ => (),
         onReqTypeImplicationMod = failLeft,
-        onAccessUpdate          = failLeft,
+        onUpdateAccess          = failLeft,
       )
       def reqReq = req.req
       val res = msgFold(req.reqRes)(reqReq)
@@ -265,8 +265,8 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
       onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues, ProjectPerm.Collaborator),
       onFieldMandatorinessMod = _ => None,
       onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod, ProjectPerm.Collaborator),
-      onAccessUpdate          = cmd =>
-        UpdateAccessCmd.resolve[CallbackTo, MsgFoldOut[WsReqRes.AccessUpdate.type]](cmd)(
+      onUpdateAccess          = cmd =>
+        UpdateAccessCmd.resolve[CallbackTo, MsgFoldOut[WsReqRes.UpdateAccess.type]](cmd)(
           userId     = userPubId,
           getUserId  = u => CallbackTo(TestGlobal.userDb.get(u)),
           onNotFound = Some(CallbackTo.pure(-\/(ErrorMsg("User not found.")))),

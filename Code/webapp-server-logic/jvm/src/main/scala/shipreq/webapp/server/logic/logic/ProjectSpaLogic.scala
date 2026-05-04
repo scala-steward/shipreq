@@ -469,7 +469,7 @@ object ProjectSpaLogic extends StrictLogging {
         onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues, ProjectPerm.Collaborator),
         onFieldMandatorinessMod = _ => F.pure(-\/(MsgError.FunctionNoLongerSupported("fieldMandatorinessMod"))),
         onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod, ProjectPerm.Collaborator),
-        onAccessUpdate          = onAccessUpdate,
+        onUpdateAccess          = onUpdateAccess,
       )
 
       private val writeSnapshotInsteadOfEvents: Int => Boolean =
@@ -708,7 +708,7 @@ object ProjectSpaLogic extends StrictLogging {
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      private def onAccessUpdate: MsgFn[UpdateAccessCmd, EventResult] = in =>
+      private def onUpdateAccess: MsgFn[UpdateAccessCmd, EventResult] = in =>
         UpdateAccessCmd.resolve(in.input)(
           userId     = in.static.userIdPublic,
           getUserId  = u => runDB(db.getUserId(u)).map(_.map(Obfuscators.userId.obfuscate)),
