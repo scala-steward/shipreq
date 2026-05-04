@@ -33,4 +33,7 @@ object ProjectPerm {
   val values = AdtMacros.adtValues[ProjectPerm]
 
   implicit def univEq: UnivEq[ProjectPerm] = UnivEq.derive
+
+  /** [[ProjectPerm]] with the least rights */
+  def min: ProjectPerm = Collaborator
 }

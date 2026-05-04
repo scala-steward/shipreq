@@ -86,8 +86,8 @@ object ProjectSpaLogic extends StrictLogging {
   val userFacingErrorMsgWhenDataPropFails =
     ErrorMsg("Invalid input. The fact the we can't be more specific is a bug. Our staff have been notified and we'll endeavour to fix this ASAP.")
 
-  val userFacingErrorMsgCantRemoveAdmin =
-    ErrorMsg("A project must have at least one admin user. You can't remove all admin.")
+  @inline def userFacingErrorMsgCantRemoveAdmin =
+    MakeEvent.userFacingErrorMsgCantRemoveAdmin
 
   final case class WebSocketStatic(user       : User,
                                    projectId  : ProjectId,
@@ -95,7 +95,11 @@ object ProjectSpaLogic extends StrictLogging {
                                    sessionId  : Security.SessionId,
                                    span       : Any,
                                    connectedAt: Instant,
-                                   expiresAt  : Instant)
+                                   expiresAt  : Instant) {
+
+    def userIdPublic: UserId.Public =
+      Obfuscators.userId.obfuscate(user.id)
+  }
 
   final case class WebSocketState[F[_]](sub: Option[Redis.Subscription[F]])
   object WebSocketState {
@@ -452,6 +456,7 @@ object ProjectSpaLogic extends StrictLogging {
       private type MsgFoldIn [R <: WsReqRes] = MsgFnIn[F, R#RequestType]
       private type MsgFoldOut[R <: WsReqRes] = F[MsgError \/ MsgFnOut[F, R#ResponseType]]
 
+      // This logic is duplicated in TestGlobal
       private val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
         onInitApp               = onInitApp,
         onReconnect             = onReconnect,
@@ -705,9 +710,10 @@ object ProjectSpaLogic extends StrictLogging {
 
       private def onAccessUpdate: MsgFn[UpdateAccessCmd, EventResult] = in =>
         UpdateAccessCmd.resolve(in.input)(
+          userId     = in.static.userIdPublic,
           getUserId  = u => runDB(db.getUserId(u)).map(_.map(Obfuscators.userId.obfuscate)),
           onNotFound = \/-(MsgFnOut(-\/(ErrorMsg("User not found.")), None)),
-          modify     = m => updateProject(MakeEvent.updateAccess, ProjectPerm.Admin)(in.copy(input = m))
+          modify     = (m, p) => updateProject(MakeEvent.updateAccess, p)(in.copy(input = m))
         )
 
       // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -758,7 +764,7 @@ object ProjectSpaLogic extends StrictLogging {
               creator     : ProjectCreator,
               userId      : UserId,
               mkEvent     : Project => MakeEvent.Result,
-              requiredRole: ProjectPerm,
+              requiredPerm: ProjectPerm,
              ): F[Result] = {
 
       var gas = 200
@@ -815,10 +821,11 @@ object ProjectSpaLogic extends StrictLogging {
             val project = s.local
             val userPubId = Obfuscators.userId.obfuscate(userId)
 
+            // This logic is duplicated in TestGlobal
             def permCheck: PotentialChange[ErrorMsg, Unit] =
-              project.access.require(requiredRole, userPubId) match {
+              project.access.require(requiredPerm, userPubId) match {
                 case Allow => PotentialChange.unit
-                case Deny  => PotentialChange.Failure(ErrorMsg(s"$requiredRole rights required."))
+                case Deny  => PotentialChange.Failure(ErrorMsg(s"$requiredPerm rights required."))
               }
 
             val result: PotentialChange[ErrorMsg, ApplyNewEvent.Updated] =

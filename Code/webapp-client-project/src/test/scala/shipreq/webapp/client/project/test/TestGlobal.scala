@@ -7,8 +7,8 @@ import java.time.{Duration, Instant}
 import org.scalajs.dom.{EventTarget, document, html}
 import scala.scalajs.js
 import shipreq.base.util.JsExt._
-import shipreq.base.util.{Allow, ErrorMsg, JsTimers, PotentialChange, Retries}
-import shipreq.webapp.base.data.{EmailAddr, ProjectCreator, Rolodex, UserId, Username}
+import shipreq.base.util.{Allow, Deny, ErrorMsg, JsTimers, PotentialChange, Retries}
+import shipreq.webapp.base.data.{EmailAddr, ProjectCreator, ProjectPerm, Rolodex, UserId, Username}
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
@@ -53,6 +53,7 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
 
   val optionalFullscreen = TestOptionalFullscreen()
 
+  def userPubId = TestGlobal.userId
   val username = Username("nimander")
 
   override val reauthModal = reauth.modal(username)
@@ -211,10 +212,24 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
         deobfuscate           = o => UserId(o.value.toLong),
       )
 
-    def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFn[I] = input => Some {
+    def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result, requiredPerm: ProjectPerm): MsgFn[I] = input => Some {
       def run(p1: Project): CallbackTo[WsReqRes.EventResult] = {
-        val er = mkEvent(input, p1)
-        ApplyNewEvent(er, p1) match {
+
+        // This logic is duplicated in ProjectSpaLogic
+        def permCheck: PotentialChange[ErrorMsg, Unit] =
+          p1.access.require(requiredPerm, userPubId) match {
+            case Allow => PotentialChange.unit
+            case Deny  => PotentialChange.Failure(ErrorMsg(s"$requiredPerm rights required."))
+          }
+
+        val result: PotentialChange[ErrorMsg, ApplyNewEvent.Updated] =
+          for {
+            _ <- permCheck
+            er = mkEvent(input, p1)
+            u <- ApplyNewEvent(er, p1)
+          } yield u
+
+        result match {
 
           case PotentialChange.Success(ApplyNewEvent.Updated(_, event)) =>
             for {
@@ -234,26 +249,28 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
       pxProject.toCallback.flatMap(run)
     }
 
-    def updateProjectI[I](mkEvent: I => MakeEvent.Result): MsgFn[I] =
-      updateProject((i, _) => mkEvent(i))
+    def updateProjectI[I](mkEvent: I => MakeEvent.Result, requiredPerm: ProjectPerm): MsgFn[I] =
+      updateProject((i, _) => mkEvent(i), requiredPerm)
 
+    // This logic is duplicated in ProjectSpaLogic
     val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
       onInitApp               = _ => None,
       onReconnect             = _ => None,
       onSync                  = _ => None,
-      onUpdateConfig          = updateProject (MakeEvent.updateConfig),
-      onCreateContent         = updateProject (MakeEvent.createContent),
-      onUpdateContent         = updateProject (MakeEvent.updateContent),
-      onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn),
-      onUpdateSavedViews      = updateProject (MakeEvent.updateSavedViews),
-      onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues),
+      onUpdateConfig          = updateProject (MakeEvent.updateConfig, ProjectPerm.Collaborator),
+      onCreateContent         = updateProject (MakeEvent.createContent, ProjectPerm.Collaborator),
+      onUpdateContent         = updateProject (MakeEvent.updateContent, ProjectPerm.Collaborator),
+      onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn, ProjectPerm.Admin),
+      onUpdateSavedViews      = updateProject (MakeEvent.updateSavedViews, ProjectPerm.Collaborator),
+      onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues, ProjectPerm.Collaborator),
       onFieldMandatorinessMod = _ => None,
-      onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod),
+      onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod, ProjectPerm.Collaborator),
       onAccessUpdate          = cmd =>
         UpdateAccessCmd.resolve[CallbackTo, MsgFoldOut[WsReqRes.AccessUpdate.type]](cmd)(
+          userId     = userPubId,
           getUserId  = u => CallbackTo(TestGlobal.userDb.get(u)),
           onNotFound = Some(CallbackTo.pure(-\/(ErrorMsg("User not found.")))),
-          modify     = m => CallbackTo.pure(updateProject(MakeEvent.updateAccess)(m))
+          modify     = (m, p) => CallbackTo.pure(updateProject(MakeEvent.updateAccess, p)(m))
         ).runNow(),
     )
 

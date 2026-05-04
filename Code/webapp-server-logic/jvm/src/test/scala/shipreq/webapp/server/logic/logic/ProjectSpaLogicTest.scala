@@ -494,6 +494,38 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         val result = sendMsg(req, static3, subscribedState)._1
         assertEq(result, \/-(-\/(ErrorMsg("Admin rights required."))))
       }
+
+      "removeSelf" - {
+        "collaborator" - {
+          implicit val t = new Tester; import t._
+          val static3 = p1.static.copy(user = user3.toUser)
+          val req = WsReqRes.AccessUpdate.AndReq(UpdateAccessCmd.RemoveSelf)
+          val result = sendMsg(req, static3, subscribedState)._1
+          assertResponse(result)
+            .expectEventOrds(EventOrd(p1.events.length + 1))
+          ()
+        }
+
+        "adminWithOtherAdmin" - {
+          implicit val t = new Tester; import t._
+          // First add another admin
+          val addAdminCmd = UpdateAccessCmd.Modify(Map(user3.idP -> Some(ProjectPerm.Admin)))
+          sendMsg(WsReqRes.AccessUpdate.AndReq(addAdminCmd), p1.static, subscribedState)
+          // Now remove self
+          val req = WsReqRes.AccessUpdate.AndReq(UpdateAccessCmd.RemoveSelf)
+          val result = sendMsg(req, p1.static, subscribedState)._1
+          assertResponse(result)
+            .expectEventOrds(EventOrd(p1.events.length + 2))
+          ()
+        }
+
+        "soleAdmin" - {
+          implicit val t = new Tester; import t._
+          val req = WsReqRes.AccessUpdate.AndReq(UpdateAccessCmd.RemoveSelf)
+          val result = sendMsg(req, p1.static, subscribedState)._1
+          assertEq(result, \/-(-\/(userFacingErrorMsgCantRemoveAdmin)))
+        }
+      }
     }
 
     "updatesAndListeners" - {
