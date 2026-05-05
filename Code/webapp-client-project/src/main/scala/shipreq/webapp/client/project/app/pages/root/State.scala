@@ -17,7 +17,7 @@ import shipreq.webapp.client.project.util.DataReusability._
 import shipreq.webapp.client.project.widgets.{NewReqButton, ReqSearch}
 import shipreq.webapp.member.feature.PreviewFeature
 import shipreq.webapp.member.project.data.{FilterDead, HideDead, Project}
-import shipreq.webapp.member.project.protocol.websocket.{ManualIssueCmd, UpdateAccessCmd, UpdateConfigCmd, UpdateContentCmd}
+import shipreq.webapp.member.project.protocol.websocket.{ManualIssueCmd, UpdateConfigCmd, UpdateContentCmd}
 import shipreq.webapp.member.ui.{ProjectItem, Toast}
 
 sealed trait PreviewId
@@ -120,7 +120,7 @@ final case class State(projectName               : ProjectItem.WithEditableName.
                        customIssueTypeConfig     : IssueConfig.State,
                        customIssueTypeConfigAsync: AsyncFeature.State.D0[ErrorMsg],
                        access                    : AccessPage.State,
-                       updateAccessCmdAsync      : AsyncFeature.State.D1[UpdateAccessCmd, ErrorMsg],
+                       accessPageAsync           : AsyncFeature.State.D1[AccessPage.AsyncKey, ErrorMsg],
                       ) {
 
   @inline def filterDead = _filterDead
@@ -168,7 +168,7 @@ object State {
       customIssueTypeConfig      = IssueConfig.initState,
       customIssueTypeConfigAsync = AsyncFeature.State.initD0,
       access                     = AccessPage.State.init,
-      updateAccessCmdAsync       = AsyncFeature.State.initD1,
+      accessPageAsync            = AsyncFeature.State.initD1,
     )
 
   implicit val reusability: Reusability[State] =

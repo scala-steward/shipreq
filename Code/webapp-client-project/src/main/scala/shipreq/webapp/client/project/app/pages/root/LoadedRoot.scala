@@ -238,8 +238,8 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
     private val manualIssueCmdAsyncW: AsyncFeature.Write.D1[ManualIssueCmd, ErrorMsg] =
       AsyncFeature.Write.D1.init($ zoomStateL State.manualIssueCmdAsync)
 
-    private val updateAccessCmdAsyncW: AsyncFeature.Write.D1[UpdateAccessCmd, ErrorMsg] =
-      AsyncFeature.Write.D1.init($ zoomStateL State.updateAccessCmdAsync)
+    private val accessPageAsyncW: AsyncFeature.Write.D1[admin.access.AccessPage.AsyncKey, ErrorMsg] =
+      AsyncFeature.Write.D1.init($ zoomStateL State.accessPageAsync)
 
     private val updateConfigCmdInvoker: UpdateConfigCmd ~=> Callback =
       Reusable.fn(cmd => updateConfigCmdAsyncW(cmd)(sspUpdateConfigE(cmd)))
@@ -576,9 +576,10 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
         case Page.Access =>
           admin.access.AccessPage.Props(
             state           = StateSnapshot.zoomL(State.access)(s).setStateVia($),
+            userId          = initPageData.userId,
             confirmJs       = confirmJs,
             sspUpdateAccess = sspUpdateAccess,
-            async           = AsyncFeature.ReadWrite.D1(updateAccessCmdAsyncW, s.updateAccessCmdAsync.toRead),
+            async           = AsyncFeature.ReadWrite.D1(accessPageAsyncW, s.accessPageAsync.toRead),
           ).render
 
       }
