@@ -79,10 +79,7 @@ object ExistingUserSegment {
         val apply = p.async(asyncKey).write.onFailureShowAndForget(p.sspUpdateAccess(cmd))
         val tag = button.onClick(apply)
 
-        if (selected ==* saved)
-          tag(^.visibility.hidden)
-        else
-          tag
+        tag(^.visibility.hidden.when(selected ==* saved))
       }
 
       val deleteButton = {
@@ -99,10 +96,7 @@ object ExistingUserSegment {
         } yield ()
         val tag = button.onClick(apply)
 
-        if (delete ==* Deny)
-          tag(^.visibility.hidden)
-        else
-          tag
+        tag(^.visibility.hidden.when(delete ==* Deny))
       }
 
       val dropdown =
