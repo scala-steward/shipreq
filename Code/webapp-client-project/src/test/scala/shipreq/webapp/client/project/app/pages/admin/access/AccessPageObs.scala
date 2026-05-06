@@ -1,6 +1,7 @@
 package shipreq.webapp.client.project.app.pages.admin.access
 
 import org.scalajs.dom.html
+import shipreq.base.util.Enabled
 import shipreq.webapp.base.data.ProjectPerm
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.test._
@@ -18,6 +19,7 @@ object AccessPageObs {
   final class ExistingUserRowObs($: DomZipperJs) {
     val name               = $("td", 1 of 4).domAsHtml.textContent.trim
     val dropdown           = new CommonObs.Dropdown($("td", 2 of 4))
+    val dropdownEnabled    = Enabled.unless(dropdown.isDisabled)
     val selectedPerm       = parsePerm(dropdown.selected.get)
     val saveButtonZipper   = $("td", 3 of 4)("button")
     val saveButton         = saveButtonZipper.domAsHtml
@@ -25,7 +27,7 @@ object AccessPageObs {
     val deleteButtonZipper = $("td", 4 of 4)("button")
     val deleteButton       = deleteButtonZipper.domAsHtml
     val deleteButtonStatus = ButtonStatus(deleteButtonZipper)
-    val row                = ExistingUserRow(name, selectedPerm, saveButtonStatus, deleteButtonStatus)
+    val row                = ExistingUserRow(name, selectedPerm, dropdownEnabled, saveButtonStatus, deleteButtonStatus)
   }
 
   sealed trait ButtonStatus
@@ -48,6 +50,7 @@ object AccessPageObs {
 
   final case class ExistingUserRow(name        : String,
                                    perm        : ProjectPerm,
+                                   dropdown    : Enabled,
                                    saveButton  : Option[ButtonStatus],
                                    deleteButton: Option[ButtonStatus])
 

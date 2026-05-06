@@ -54,6 +54,9 @@ object ExistingUserSegment {
       val asyncKey =
         AsyncKey(id)
 
+      val inFlight: Boolean =
+        p.async(asyncKey).isInProgress
+
       val saved: ProjectPerm =
         p.access.need(id)
 
@@ -72,7 +75,7 @@ object ExistingUserSegment {
       val applyButton = {
         val button = Button(
           tipe   = Button.Type.IconAndText(Icon.Edit, "Save"),
-          state  = Button.State.loadingWhen(p.async(asyncKey).isInProgress),
+          state  = Button.State.loadingWhen(inFlight),
           colour = Colour.Green,
         )
         val cmd = UpdateAccessCmd.Modify(Map(id -> Some(selected)))
@@ -85,7 +88,7 @@ object ExistingUserSegment {
       val deleteButton = {
         val button = Button(
           tipe   = Button.Type.BasicIconOnly(Icon.Trash),
-          state  = Button.State.loadingWhen(p.async(asyncKey).isInProgress),
+          state  = Button.State.loadingWhen(inFlight),
           colour = ColourPlus.Negative,
         )
         val cmd = UpdateAccessCmd.Modify(Map(id -> None))
@@ -96,13 +99,13 @@ object ExistingUserSegment {
         } yield ()
         val tag = button.onClick(apply)
 
-        tag(^.visibility.hidden.when(delete ==* Deny))
+        tag(^.visibility.hidden.when(delete ==* Deny || p.editability ==* Deny))
       }
 
       val dropdown =
         PermDropdown(
           selected = selected,
-          enabled  = Enabled.when(p.editability ==* Allow),
+          enabled  = Enabled.when(p.editability ==* Allow && !inFlight),
           onChange = i => p.state.modState(setSelected(i.value)))
 
       <.tr(

@@ -1,5 +1,6 @@
 package shipreq.webapp.client.project.app.pages.admin.access
 
+import shipreq.base.util.{Disabled, Enabled => EnabledE}
 import shipreq.webapp.base.data.ProjectPerm._
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.app.ProjectSpaTestDsl
@@ -41,7 +42,6 @@ object AccessPageTest extends TestSuite {
   )
 
   override def tests = Tests {
-    // TODO test read-only mode
 
     "existing" - {
 
@@ -49,50 +49,51 @@ object AccessPageTest extends TestSuite {
         global.disableAutoResponse
         >> existingUserSelect(0, Collaborator)
         +> existingUserRows.assert(
-          ExistingUserRow("You", Collaborator, Some(Enabled), None),
-          ExistingUserRow(Username2.with_@, Admin, None, Some(Enabled)),
-          ExistingUserRow(Username3.with_@, Collaborator, None, Some(Enabled)),
+          ExistingUserRow("You",            Collaborator, EnabledE, Some(Enabled), None),
+          ExistingUserRow(Username2.with_@, Admin,        EnabledE, None,          Some(Enabled)),
+          ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None,          Some(Enabled)),
         )
         >> existingUserClickSave(0)
         +> confirmJs.calls.assert(0)
         +> existingUserRows.assert(
-          ExistingUserRow("You", Collaborator, Some(Loading), None),
-          ExistingUserRow(Username2.with_@, Admin, None, Some(Enabled)),
-          ExistingUserRow(Username3.with_@, Collaborator, None, Some(Enabled)),
+          ExistingUserRow("You",            Collaborator, Disabled, Some(Loading), None),
+          ExistingUserRow(Username2.with_@, Admin,        EnabledE, None,          Some(Enabled)),
+          ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None,          Some(Enabled)),
         )
         >> global.autoRespondToLast
+        // Here we enter read-only mode because we become a collaborator, rather than an admin
         +> existingUserRows.assert(
-          ExistingUserRow("You", Collaborator, None, None),
-          ExistingUserRow(Username2.with_@, Admin, None, Some(Enabled)),
-          ExistingUserRow(Username3.with_@, Collaborator, None, Some(Enabled)),
+          ExistingUserRow("You",            Collaborator, Disabled, None, None),
+          ExistingUserRow(Username2.with_@, Admin,        Disabled, None, None),
+          ExistingUserRow(Username3.with_@, Collaborator, Disabled, None, None),
         )
       )
 
       "modifyOther" - runActions(project)(
         global.disableAutoResponse
         +> existingUserRows.assert(
-          ExistingUserRow("You", Admin, None, None),
-          ExistingUserRow(Username2.with_@, Admin, None, Some(Enabled)),
-          ExistingUserRow(Username3.with_@, Collaborator, None, Some(Enabled)),
+          ExistingUserRow("You",            Admin,        EnabledE, None, None),
+          ExistingUserRow(Username2.with_@, Admin,        EnabledE, None, Some(Enabled)),
+          ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None, Some(Enabled)),
         )
         >> existingUserSelect(1, Collaborator)
         +> existingUserRows.assert(
-          ExistingUserRow("You", Admin, None, None),
-          ExistingUserRow(Username2.with_@, Collaborator, Some(Enabled), Some(Enabled)),
-          ExistingUserRow(Username3.with_@, Collaborator, None, Some(Enabled)),
+          ExistingUserRow("You",            Admin,        EnabledE, None,          None),
+          ExistingUserRow(Username2.with_@, Collaborator, EnabledE, Some(Enabled), Some(Enabled)),
+          ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None,          Some(Enabled)),
         )
         >> existingUserClickSave(1)
         +> confirmJs.calls.assert(0)
         +> existingUserRows.assert(
-          ExistingUserRow("You", Admin, None, None),
-          ExistingUserRow(Username2.with_@, Collaborator, Some(Loading), Some(Loading)),
-          ExistingUserRow(Username3.with_@, Collaborator, None, Some(Enabled)),
+          ExistingUserRow("You",            Admin,        EnabledE, None,          None),
+          ExistingUserRow(Username2.with_@, Collaborator, Disabled, Some(Loading), Some(Loading)),
+          ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None,          Some(Enabled)),
         )
         >> global.autoRespondToLast
         +> existingUserRows.assert(
-          ExistingUserRow("You", Admin, None, None),
-          ExistingUserRow(Username2.with_@, Collaborator, None, Some(Enabled)),
-          ExistingUserRow(Username3.with_@, Collaborator, None, Some(Enabled)),
+          ExistingUserRow("You",            Admin,        EnabledE, None, None),
+          ExistingUserRow(Username2.with_@, Collaborator, EnabledE, None, Some(Enabled)),
+          ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None, Some(Enabled)),
         )
       )
 
@@ -101,14 +102,14 @@ object AccessPageTest extends TestSuite {
         >> existingUserClickDelete(1)
         +> confirmJs.calls.assert(1)
         +> existingUserRows.assert(
-          ExistingUserRow("You", Admin, None, None),
-          ExistingUserRow(Username2.with_@, Admin, None, Some(Loading)),
-          ExistingUserRow(Username3.with_@, Collaborator, None, Some(Enabled)),
+          ExistingUserRow("You",            Admin,        EnabledE, None, None),
+          ExistingUserRow(Username2.with_@, Admin,        Disabled, None, Some(Loading)),
+          ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None, Some(Enabled)),
         )
         >> global.autoRespondToLast
         +> existingUserRows.assert(
-          ExistingUserRow("You", Admin, None, None),
-          ExistingUserRow(Username3.with_@, Collaborator, None, Some(Enabled)),
+          ExistingUserRow("You",            Admin,        EnabledE, None, None),
+          ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None, Some(Enabled)),
         )
       )
     }
