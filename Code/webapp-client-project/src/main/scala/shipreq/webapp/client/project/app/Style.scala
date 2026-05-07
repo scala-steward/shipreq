@@ -251,6 +251,20 @@ object Style extends StyleSheet.Inline {
   object accessPage {
     private val segmentTopMargin = marginTop(3 rem).important
 
+    object newUserSegment {
+      val segment = style(
+        segmentTopMargin)
+
+      val fieldUser = style(
+        width(50 %%))
+
+      @inline def fieldPerm = fieldUser
+
+      val fieldAdd = style(
+        textAlign.right,
+        marginTop(1 rem))
+    }
+
     object existingUserSegment {
       val segment = style(
         segmentTopMargin)
@@ -2026,6 +2040,7 @@ object Style extends StyleSheet.Inline {
   initInnerObjects(
     accessPage.existingUserSegment.segment,
     accessPage.leaveProjectSegment.segment,
+    accessPage.newUserSegment.segment,
     cfg.deadMnemonic,
     deletionForm.bottomSections,
     deletionRestorationForms.main,

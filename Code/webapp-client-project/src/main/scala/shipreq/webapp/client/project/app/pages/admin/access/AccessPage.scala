@@ -25,52 +25,52 @@ object AccessPage {
                          state          : StateSnapshot[State],
                          confirmJs      : ConfirmJs,
                          sspUpdateAccess: ServerSideProcInvoker[UpdateAccessCmd, ErrorMsg, Any],
-                         async          : AsyncFeature.ReadWrite.D1[AsyncKey, ErrorMsg]
-                        ) {
+                         async          : AsyncFeature.ReadWrite.D1[AsyncKey, ErrorMsg]) {
     @inline def render: VdomElement = Component(this)
   }
 
   @Lenses
-  final case class State(existingUserSegment: ExistingUserSegment.State)
+  final case class State(newUserSegment     : NewUserSegment.State,
+                         existingUserSegment: ExistingUserSegment.State)
 
   object State {
-    import ExistingUserSegment.State.{reusability => existingUserSegmentReusability}
-
-    implicit val reusability: Reusability[State] =
-      Reusability.derive
-
     def init: State =
-      State(ExistingUserSegment.State.init)
+      State(NewUserSegment.State.init, ExistingUserSegment.State.init)
   }
 
-  final class Backend($: BackendScope[Props, Unit]) {
+  private def render(p: Props) = {
 
-    def render(p: Props) = {
+    val newUserSegment = NewUserSegment.Props(
+      p.state.zoomStateL(State.newUserSegment),
+      p.editability,
+      p.sspUpdateAccess,
+      p.async(AsyncKey.newUser),
+    ).render
 
-      val existingUserSegment = ExistingUserSegment.Props(
-        p.userId,
-        p.access,
-        p.rolodex,
-        p.editability,
-        p.state.zoomStateL(State.existingUserSegment),
-        p.confirmJs,
-        p.sspUpdateAccess,
-        p.async,
-      ).render
+    val existingUserSegment = ExistingUserSegment.Props(
+      p.userId,
+      p.access,
+      p.rolodex,
+      p.editability,
+      p.state.zoomStateL(State.existingUserSegment),
+      p.confirmJs,
+      p.sspUpdateAccess,
+      p.async,
+    ).render
 
-      val leaveProjectSegment = LeaveProjectSegment.Props(
-        p.confirmJs,
-        p.sspUpdateAccess,
-        p.async(AsyncKey(p.userId)),
-      ).render
+    val leaveProjectSegment = LeaveProjectSegment.Props(
+      p.confirmJs,
+      p.sspUpdateAccess,
+      p.async(AsyncKey(p.userId)),
+    ).render
 
-      <.main(BaseStyles.containerLarge,
-        existingUserSegment,
-        leaveProjectSegment)
-    }
+    <.main(BaseStyles.containerLarge,
+      newUserSegment,
+      existingUserSegment,
+      leaveProjectSegment)
   }
 
   val Component = ScalaComponent.builder[Props]
-    .renderBackend[Backend]
+    .render_P(render)
     .build
 }
