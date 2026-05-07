@@ -28,8 +28,8 @@
 
 * plan:
   1. implement (with tests) project access API (ensuring read-only unless admin)
-    1. [ ] project access page
-      1. [ ] new user (read-only unless admin)
+    1. [x] project access page
+      1. [x] new user (read-only unless admin)
       1. [x] existing user (read-only unless admin)
       1. [x] leave
   1. add admin permission checks to the frontend:
