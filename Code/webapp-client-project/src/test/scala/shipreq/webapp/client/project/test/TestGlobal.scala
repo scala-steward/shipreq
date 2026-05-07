@@ -17,7 +17,6 @@ import shipreq.webapp.base.protocol.websocket.WebSocketShared.CloseCode
 import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.protocol.webstorage.AbstractWebStorage
 import shipreq.webapp.base.test._
-import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.client.project.app.WebWorkerClient
 import shipreq.webapp.client.project.app.state.Global
 import shipreq.webapp.member.project.data.{Project, ProjectAccess}
@@ -209,8 +208,14 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
 
     val supplimentaryDataForEvents: VerifiedEvent.Seq => CallbackTo[Supplimentary] =
       SupplimentaryLogic[CallbackTo](
-        needUsernamesByUserId = ids => CallbackTo(ids.iterator.map(u => u -> Username("u" + u.value)).toMap),
-        obfuscate             = u => Obfuscated(u.value.toString),
+        needUsernamesByUserId = ids => CallbackTo(ids.iterator.map { id =>
+          val publicId = Obfuscators.userId.obfuscate(id)
+          val username = TestGlobal.inverseUserDb.get(publicId).flatMap(_.left.toOption).getOrElse(
+            throw new IllegalStateException(s"Username not found for user ID $id (obfuscated: $publicId)")
+          )
+          id -> username
+        }.toMap),
+        obfuscate             = Obfuscators.userId.obfuscate,
         deobfuscate           = Obfuscators.userId.deobfuscateOrThrow,
       )
 
@@ -237,7 +242,6 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
             for {
               ord  <- nextEventOrd
               ves   = VerifiedEvent.Seq.empty + VerifiedEvent(ord, event, Instant.now())
-              _    <- addEvents(ves)
               supp <- supplimentaryDataForEvents(ves)
             } yield \/-(StateUpdate(ves, supp))
 
@@ -299,6 +303,8 @@ object TestGlobal {
     -\/(Username3) -> PublicUserId3,
     -\/(Username4) -> PublicUserId4,
   )
+
+  val inverseUserDb = userDb.iterator.map(_.swap).toMap
 
   def rolodexForProject(p: Project): Rolodex =
     Rolodex(p.access.asMap.map { case (id, _) =>
