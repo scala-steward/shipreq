@@ -16,7 +16,7 @@ import shipreq.webapp.base.protocol.websocket._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.EventOrd.Implicits._
-import shipreq.webapp.member.project.event.{ApplyEvent, EventOrd, VerifiedEvent}
+import shipreq.webapp.member.project.event.{ApplyEvent, Event, EventOrd, VerifiedEvent}
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WebSocket.Push
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.WsReqRes.EventResult
 import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{InitAppData, StateUpdate, Supplimentary, WsReqRes}
@@ -837,7 +837,15 @@ object ProjectSpaLogic extends StrictLogging {
 
             result match {
               case PotentialChange.Success(updated) =>
-                runDB(db.saveProjectEvent(pid, s.local.history.nextOrd, updated.event, updated.projectPartial, userId)) map {
+                val f = db.saveProjectEvent(pid, s.local.history.nextOrd, updated.event, updated.projectPartial, userId)
+                val run = updated.event match {
+                  case _: Event.AccessUpdate =>
+                    // updateProjectAccess in DbInterpreter has assertTransactionLevelSerializable
+                    db.inStrictTxn(runDB)(f)
+                  case _ =>
+                    runDB(f)
+                }
+                run map {
                   case \/-(ve) =>
                     val p2 = updated.completeProject(ve)
                     val nextStatus = WriteRedis2(p2, ve)
