@@ -1,6 +1,6 @@
 package shipreq.webapp.client.project.app.pages.admin.access
 
-import shipreq.base.util.{Disabled, Enabled => EnabledE}
+import shipreq.base.util.{Disabled => DisabledE, Enabled => EnabledE}
 import shipreq.webapp.base.data.ProjectPerm._
 import shipreq.webapp.base.test.TestState._
 import shipreq.webapp.client.project.app.ProjectSpaTestDsl
@@ -43,6 +43,23 @@ object AccessPageTest extends TestSuite {
 
   override def tests = Tests {
 
+    "new" - runActions(project)(
+      global.disableAutoResponse
+      +> addButtonStatus.assert(Disabled)
+      >> setNewUserInput(Username4.with_@)
+      +> addButtonStatus.assert(Enabled)
+      >> clickAdd
+      +> addButtonStatus.assert(Loading)
+      >> global.autoRespondToLast
+      +> newUserInput.assert("")
+      +> existingUserRows.assert(
+        ExistingUserRow("You",            Admin,        EnabledE, None,          None),
+        ExistingUserRow(Username2.with_@, Admin,        EnabledE, None,          Some(Enabled)),
+        ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None,          Some(Enabled)),
+        ExistingUserRow(Username4.with_@, Collaborator, EnabledE, None,          Some(Enabled)),
+      )
+    )
+
     "existing" - {
 
       "modifySelf" - runActions(project)(
@@ -56,16 +73,19 @@ object AccessPageTest extends TestSuite {
         >> existingUserClickSave(0)
         +> confirmJs.calls.assert(0)
         +> existingUserRows.assert(
-          ExistingUserRow("You",            Collaborator, Disabled, Some(Loading), None),
-          ExistingUserRow(Username2.with_@, Admin,        EnabledE, None,          Some(Enabled)),
-          ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None,          Some(Enabled)),
+          ExistingUserRow("You",            Collaborator, DisabledE, Some(Loading), None),
+          ExistingUserRow(Username2.with_@, Admin,        EnabledE,  None,          Some(Enabled)),
+          ExistingUserRow(Username3.with_@, Collaborator, EnabledE,  None,          Some(Enabled)),
         )
         >> global.autoRespondToLast
         // Here we enter read-only mode because we become a collaborator, rather than an admin
+        +> newUserInputEnabled.assert(DisabledE)
+        +> newUserDropdownEnabled.assert(DisabledE)
+        +> addButtonStatus.assert(Disabled)
         +> existingUserRows.assert(
-          ExistingUserRow("You",            Collaborator, Disabled, None, None),
-          ExistingUserRow(Username2.with_@, Admin,        Disabled, None, None),
-          ExistingUserRow(Username3.with_@, Collaborator, Disabled, None, None),
+          ExistingUserRow("You",            Collaborator, DisabledE, None, None),
+          ExistingUserRow(Username2.with_@, Admin,        DisabledE, None, None),
+          ExistingUserRow(Username3.with_@, Collaborator, DisabledE, None, None),
         )
       )
 
@@ -86,7 +106,7 @@ object AccessPageTest extends TestSuite {
         +> confirmJs.calls.assert(0)
         +> existingUserRows.assert(
           ExistingUserRow("You",            Admin,        EnabledE, None,          None),
-          ExistingUserRow(Username2.with_@, Collaborator, Disabled, Some(Loading), Some(Loading)),
+          ExistingUserRow(Username2.with_@, Collaborator, DisabledE, Some(Loading), Some(Loading)),
           ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None,          Some(Enabled)),
         )
         >> global.autoRespondToLast
@@ -102,9 +122,9 @@ object AccessPageTest extends TestSuite {
         >> existingUserClickDelete(1)
         +> confirmJs.calls.assert(1)
         +> existingUserRows.assert(
-          ExistingUserRow("You",            Admin,        EnabledE, None, None),
-          ExistingUserRow(Username2.with_@, Admin,        Disabled, None, Some(Loading)),
-          ExistingUserRow(Username3.with_@, Collaborator, EnabledE, None, Some(Enabled)),
+          ExistingUserRow("You",            Admin,        EnabledE,  None, None),
+          ExistingUserRow(Username2.with_@, Admin,        DisabledE, None, Some(Loading)),
+          ExistingUserRow(Username3.with_@, Collaborator, EnabledE,  None, Some(Enabled)),
         )
         >> global.autoRespondToLast
         +> existingUserRows.assert(

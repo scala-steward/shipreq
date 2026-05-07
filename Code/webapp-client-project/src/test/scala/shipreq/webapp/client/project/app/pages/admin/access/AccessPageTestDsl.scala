@@ -20,10 +20,20 @@ object AccessPageTestDsl {
 
   // ===================================================================================================================
 
+  val addButtonStatus           = *.focus("Add button status").value(_.obs.addButtonStatus)
+  val newUserInput              = *.focus("New user input").value(_.obs.newUserInput.value)
+  val newUserInputEnabled       = *.focus("New user input enabled").value(_.obs.newUserInputEnabled)
+  val newUserDropdownEnabled    = *.focus("New user role dropdown enabled").value(_.obs.newUserDropdownEnabled)
   val leaveProjectButtonLoading = *.focus("Leave button loading").value(_.obs.leaveProjectButtonLoading)
   val existingUserRows          = *.focus("ExistingUser rows").collection(_.obs.existingUserRows.map(_.row))
 
   // ===================================================================================================================
+
+  val clickAdd: *.Actions =
+    *.action("Click 'Add' button")(_.obs.addButton.click())
+
+  def setNewUserInput(usernameOrEmail: String): *.Actions =
+    *.action(s"Set new user input to '$usernameOrEmail'")(_.obs.newUserInput.setValue(usernameOrEmail))
 
   def existingUserSelect(rowIdx: Int, perm: ProjectPerm): *.Actions =
     *.action(s"Select '$perm' in dropdown in row $rowIdx")(_.obs.existingUserRows(rowIdx).dropdown.select(perm.toString))

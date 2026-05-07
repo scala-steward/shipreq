@@ -33,6 +33,7 @@ object AccessPageObs {
   sealed trait ButtonStatus
   object ButtonStatus {
     case object Enabled extends ButtonStatus
+    case object Disabled extends ButtonStatus
     case object Loading extends ButtonStatus
 
     def apply(button: DomZipperJs): Option[ButtonStatus] = {
@@ -41,6 +42,8 @@ object AccessPageObs {
         None
       else if (dom.classList.contains("loading"))
         Some(Loading)
+      else if (dom.classList.contains("disabled") || dom.hasAttribute("disabled"))
+        Some(Disabled)
       else
         Some(Enabled)
     }
@@ -62,10 +65,20 @@ object AccessPageObs {
 final class AccessPageObs($: DomZipperJs, val global: TestGlobal.Obs, val confirmJs: TestConfirmJs.Obs) {
   import AccessPageObs._
 
-  private lazy val existingUserSegment = $.child(".segment", 1 of 2)
+  private lazy val newUserSegment = $.child(".segment", 1 of 3)
+  lazy val newUserInput           = new CommonObs.Input(newUserSegment("input:text"))
+  lazy val newUserInputField      = $(".field", 1 of 3).domAsHtml
+  lazy val newUserInputEnabled    = Enabled.unless(newUserInputField.classList.contains("disabled"))
+  lazy val newUserDropdown        = new CommonObs.Dropdown(newUserSegment(".ui.dropdown"))
+  lazy val newUserDropdownEnabled = Enabled.unless(newUserDropdown.isDisabled)
+  lazy val addButtonZipper        = newUserSegment("button")
+  lazy val addButton              = addButtonZipper.domAs[html.Button]
+  lazy val addButtonStatus        = ButtonStatus(addButtonZipper).get
+
+  private lazy val existingUserSegment = $.child(".segment", 2 of 3)
   lazy val existingUserRows = existingUserSegment.collect1n("tr").map(new ExistingUserRowObs(_))
 
-  private lazy val leaveProjectSegment = $.child(".segment", 2 of 2)
+  private lazy val leaveProjectSegment = $.child(".segment", 3 of 3)
   lazy val leaveProjectButton          = leaveProjectSegment("button").domAs[html.Button]
   lazy val leaveProjectButtonLoading   = leaveProjectButton.classList.contains("loading")
 }
