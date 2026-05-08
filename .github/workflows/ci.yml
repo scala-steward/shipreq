@@ -22,6 +22,7 @@ jobs:
       with:
         fetch-depth: 0
 
+    # This allows for ssh'ing into the runner and debugging
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
       with:
@@ -50,7 +51,7 @@ jobs:
       env:
         CI: 1
         # MODE: release
-        NODE_OPTIONS: --max-old-space-size=2048
+        NODE_OPTIONS: --max-old-space-size=3072
       run: |
         cd Code && sbt \
           -Dsbt.server.autostart=false \
