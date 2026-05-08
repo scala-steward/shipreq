@@ -128,9 +128,16 @@ object Common {
 
   val ciSettings: Project => Project =
     if (inCI && !localCI)
-      _.settings(Global / concurrentRestrictions += Tags.limit(Tags.Test, 1))
+      _.settings(
+        Test / parallelExecution := false,
+        Global / concurrentRestrictions += Tags.limit(Tags.Test, 1),
+        Global / concurrentRestrictions += Tags.limitAll(1),
+      )
     else
-      identity
+      _.settings(
+        Global / concurrentRestrictions += Tags.limit(CustomTags.Node, 2),
+        Global / concurrentRestrictions += Tags.limit(Tags.Test, 2),
+      )
 
   val scalafixSettings: Project => Project =
     if (scalafixEnabled)
