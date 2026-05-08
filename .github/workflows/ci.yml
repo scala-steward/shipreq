@@ -15,6 +15,19 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+
+    env:
+      CI: 1
+      # MODE: release # Add this to CD but not CI
+      NODE_OPTIONS: --max-old-space-size=3072
+      SBT: >-
+        sbt
+        --no-server
+        -Dsbt.server.autostart=false
+        -Dsbt.server.forcestart=true
+        -Dsbt.supershell=never
+        -J-XX:+ExitOnOutOfMemoryError
+
     steps:
 
     - name: Git checkout
@@ -35,27 +48,20 @@ jobs:
         jsdom-version: 26.1.0
         node-version: 25.9.0
 
-    # - name: Install JS module for Graal
-    #   run: gu install js
+    - name: Install JS module for Graal
+      run: gu install js
 
-    # - name: Build postgres
-    #   run: cd Docker/dev-postgres && ./build
+    - name: Build postgres
+      run: cd Docker/dev-postgres && ./build
+
+    - name: Start test env
+      run: cd Code && bin/env test up -d
 
     - name: Build
-      env:
-        CI: 1
-        # MODE: release
-      run: cd Code && sbt Test/compile # Test/fastOptJS
+      run: cd Code && $SBT Test/compile
 
-    # - name: Test
-    #   env:
-    #     CI: 1
-    #     # MODE: release
-    #     NODE_OPTIONS: --max-old-space-size=3072
-    #   run: |
-    #     cd Code && sbt \
-    #       -Dsbt.server.autostart=false \
-    #       -Dsbt.server.forcestart=true \
-    #       -Dsbt.supershell=never \
-    #       -J-XX:+ExitOnOutOfMemoryError \
-    #       test
+    - name: Test (JVM)
+      run: cd Code &&  $SBT testJVM
+
+    - name: Test (JS)
+      run: cd Code &&  $SBT testJS

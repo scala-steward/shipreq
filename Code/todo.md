@@ -1,7 +1,6 @@
 ========================================================================================================================
 # Open-source
 
-* add CI
 * record usage videos (Davinci Resolve)
 * revise documentation
 * at the very least, document clearly how to get up and running (including double-init (Taskman + Webapp) and local account registration)
