@@ -93,7 +93,6 @@ object Common {
     "-Xmixin-force-forwarders:false",                // Only generate mixin forwarders required for program correctness.
     "-Xno-forwarders",                               // Do not generate static forwarders in mirror classes.
     "-Xsource:2.13",
-    "-Ybackend-parallelism", cores.min(16).toString,
     "-Ycache-macro-class-loader:last-modified",
     "-Ycache-plugin-class-loader:last-modified",
     "-Yimports:java.lang,scala,shipreq.Predef",      // Use custom Predef
@@ -102,9 +101,6 @@ object Common {
     "-Yno-generic-signatures",                       // Suppress generation of generic signatures for Java.
     "-Ypatmat-exhaust-depth", "off"
   )
-/*
-    "-Xsource:2.14",                                 // Prepare for Dotty -- Disabled because of warnings in macro-generated code. Fix 3rd-libs first.
-*/
 
   def scalacTestFlags = Seq(
     "-language:reflectiveCalls")
