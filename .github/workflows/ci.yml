@@ -42,4 +42,5 @@ jobs:
       env:
         CI: 1
         MODE: release
+        NODE_OPTIONS: --max-old-space-size=2048
       run: cd Code && sbt test
