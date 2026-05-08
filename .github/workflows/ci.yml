@@ -17,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      CI: 1
+      # MODE: release # Add this to CD but not CI
+      NODE_OPTIONS: --max-old-space-size=3072
       SBT: >-
         sbt
         --no-server
@@ -52,14 +55,7 @@ jobs:
       run: cd Docker/dev-postgres && ./build
 
     - name: Build
-      env:
-        CI: 1
-        # MODE: release
       run: cd Code && $SBT Test/compile Test/fastOptJS
 
     - name: Test
-      env:
-        CI: 1
-        # MODE: release
-        NODE_OPTIONS: --max-old-space-size=3072
       run: cd Code && $SBT test
