@@ -57,7 +57,4 @@ val benchmarkJvm          = ShipReqBuild.benchmarkJvm
 val benchmarkJs           = ShipReqBuild.benchmarkJs
 val utils                 = ShipReqBuild.utils
 
-Global / concurrentRestrictions += Tags.limit(CustomTags.Node, 2)
-Global / concurrentRestrictions += Tags.limit(Tags.Test, 2)
-
 ThisBuild / evictionErrorLevel := Level.Info
