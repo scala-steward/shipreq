@@ -125,11 +125,10 @@ object Common {
   )
 
   val optimisationSettings: Project => Project =
-    nonTestCompilerFlags(
-      "-Xdisable-assertions",
-      "-Xelide-below", "OFF"
-    ) compose
-    nonTestCompilerFlags(optimisationScalacFlags: _*)
+    _
+      .configure(nonTestCompilerFlags("-Xdisable-assertions"))
+      .configure(nonTestCompilerFlags(optimisationScalacFlags: _*))
+      .settings(Compile / scalacOptions ++= Seq("-Xelide-below", "OFF"))
 
   val ciSettings: Project => Project =
     if (inCI && !localCI)
