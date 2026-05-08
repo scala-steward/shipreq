@@ -55,7 +55,7 @@ jobs:
       run: cd Docker/dev-postgres && ./build
 
     - name: Build
-      run: cd Code && $SBT Test/compile Test/fastOptJS
+      run: cd Code && $SBT Test/compile
 
     - name: Test (JVM)
       run: cd Code &&  $SBT testJVM
