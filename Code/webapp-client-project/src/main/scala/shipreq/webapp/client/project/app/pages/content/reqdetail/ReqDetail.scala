@@ -191,7 +191,7 @@ object ReqDetail {
       Reusable.fn[ReqId, Cell, Cmd, Callback](
         (reqId, cell, cmd) =>
           $.props.flatMap(p =>
-            p.reqProps(reqId).async.write(cell)(
+            p.reqProps(reqId).async.write(cell).onFailureShowAndForget(
               sspUpdateContent(cmd).rightFlatMap(onSuccess(_).asAsyncCallback)
             )
           )
