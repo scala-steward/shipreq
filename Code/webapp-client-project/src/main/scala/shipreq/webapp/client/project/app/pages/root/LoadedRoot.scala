@@ -483,6 +483,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
 
           val pname = ProjectItem.WithEditableName.Props(
             cbProjectMetaData.runNow(),
+            onlyAdminCanEdit,
             StateSnapshot.zoomL(State.projectName)(s).setStateVia($),
             setProjectNameIO)
 

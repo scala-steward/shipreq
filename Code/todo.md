@@ -30,7 +30,7 @@
       1. [x] existing user (read-only unless admin)
       1. [x] leave
   1. add admin permission checks to the frontend:
-    1. [ ] project renaming
+    1. [x] project renaming
   1. add read-only access
     1. [ ] backend and protocol work
     1. [ ] read-only UI: Editability
