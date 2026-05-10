@@ -18,6 +18,7 @@
 ========================================================================================================================
 # Misc
 
+* revise UI prototype for the project "status" page
 
 ========================================================================================================================
 # project access WIP
@@ -34,8 +35,6 @@
     1. [ ] backend and protocol work
     1. [ ] read-only UI: Editability
     1. [ ] read-only UI: everywhere else (manually check)
-
-* revise UI prototype for the project "status" page
 
 * when users can be used as field values:
   * should the rolodex contain info of users who've had access revoked?
@@ -87,7 +86,6 @@
 ### Problems
 * Use full name in Req Type column - the abbreviation is already in the ID (which is always on the screen)
 * Auto list-item spacing is annoying
-* Bug: Create new project, it appears with "Created 7 months ago". Refreshing page fixes the problem.
 
 
 ### Improvements
