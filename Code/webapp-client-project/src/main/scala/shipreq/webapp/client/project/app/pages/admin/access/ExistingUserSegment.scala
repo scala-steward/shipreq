@@ -101,13 +101,13 @@ object ExistingUserSegment {
         } yield ()
         val tag = button.onClick(apply)
 
-        tag(^.visibility.hidden.when(delete ==* Deny || p.editability ==* Deny))
+        tag(^.visibility.hidden.when(delete.is(Deny) || p.editability.is(Deny)))
       }
 
       val dropdown =
         PermDropdown(
           selected = selected,
-          enabled  = Enabled.when(p.editability ==* Allow && !inFlight),
+          enabled  = Enabled.when(p.editability.is(Allow) && !inFlight),
           onChange = i => p.state.modState(setSelected(i.value)))
 
       <.tr(

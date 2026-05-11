@@ -60,7 +60,7 @@ object NewUserSegment {
       p.async.isInProgress
 
     val enabled: Enabled =
-      Disabled.when(inFlight || p.editability ==* Deny)
+      Disabled.when(inFlight || p.editability.is(Deny))
 
     val fieldUserOrEmail: Form.Field[String] =
       Form.Field.text
