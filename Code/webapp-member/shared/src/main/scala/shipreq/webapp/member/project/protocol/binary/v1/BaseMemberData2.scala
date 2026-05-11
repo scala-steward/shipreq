@@ -96,14 +96,17 @@ object BaseMemberData2 {
       private[this] implicit val picklerReq: Pickler[Req] = transformPickler(Req.apply)(_.id)
       private[this] final val KeyNone = 0
       private[this] final val KeyReq  = 'r'
+      private[this] final val KeyLink = 'l'
       override def pickle(a: ProjectText.Context)(implicit state: PickleState): Unit =
         a match {
           case None    => state.enc.writeByte(KeyNone)
+          case Link    => state.enc.writeByte(KeyLink)
           case b: Req  => state.enc.writeByte(KeyReq ); state.pickle(b)
         }
       override def unpickle(implicit state: UnpickleState): ProjectText.Context =
         state.dec.readByte match {
           case KeyNone => None
+          case KeyLink => Link
           case KeyReq  => state.unpickle[Req]
         }
     }

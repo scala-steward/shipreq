@@ -19,6 +19,7 @@ object ProjectText {
     final def ucNum(p: Project): Option[ReqTypePos] =
       this match {
         case ProjectText.Context.None
+           | ProjectText.Context.Link
            | ProjectText.Context.Req(_: GenericReqId) => None
         case ProjectText.Context.Req(uc: UseCaseId)   => Some(p.content.reqs.need(uc).pubid.pos)
       }
@@ -29,6 +30,10 @@ object ProjectText {
     /** User is looking at the entire project. */
     case object None extends Context
     type None = None.type
+
+    /** User is currently inside a link and should not render another one. */
+    case object Link extends Context
+    type Link = Link.type
 
     /** User is looking at a single req. */
     final case class Req(id: ReqId) extends Context

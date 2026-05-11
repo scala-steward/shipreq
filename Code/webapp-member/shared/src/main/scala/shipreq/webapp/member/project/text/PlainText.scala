@@ -444,6 +444,7 @@ object PlainText {
      // case ProjectText.Context.Req(i: UseCaseId) if i ==* uc.id => UseCaseStepLabelFmt.    `.m` // looks too confusing
         case ProjectText.Context.Req(_: UseCaseId)                => UseCaseStepLabelFmt.   `N.m`
         case ProjectText.Context.None
+           | ProjectText.Context.Link
            | ProjectText.Context.Req(_: GenericReqId)             => UseCaseStepLabelFmt.`UC-N.m`
       }
       focus.label(fmt)

@@ -102,7 +102,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
                 reqDetailRC.link(pid.external(project))(
                   PlainText.pubid(pid, project),
                   ": ",
-                  reqTitleById(reqId)))
+                  withCtx(ProjectText.Context.Link).reqTitleById(reqId)))
             }
           )
     }
@@ -172,6 +172,7 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
   private def linkOrSpan(req: Req, ep: ExternalPubid): VdomTag =
     gctx match {
       case ProjectText.Context.Req(id) if req.id ==* id => ProjectWidgets.emptySpan
+      case ProjectText.Context.Link                     => ProjectWidgets.emptySpan
       case ProjectText.Context.None
          | _: ProjectText.Context.Req                   => reqDetailRC.link(ep)
     }
@@ -269,14 +270,14 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
               ref(
                 base  = linkOrSpan(req)(*.reqRef(req live project.config.reqTypes)),
                 code  = code,
-                title = reqTitle(req))
+                title = withCtx(ProjectText.Context.Link).reqTitle(req))
             }
 
             def toGroup(code: ReqCode.Value, g: CodeGroup): VdomTag =
               ref(
                 base  = <.span(*.codeGroupRef(g.live)),
                 code  = code,
-                title = codeGroupTitle(g))
+                title = withCtx(ProjectText.Context.Link).codeGroupTitle(g))
 
             ProjectText.ReqCodeResolution(id, project.content.reqCodes) match {
               case ActiveCodeToReq     (c, r) => toReq(c, r)
@@ -299,7 +300,8 @@ final class ProjectWidgets[+Ctx <: ProjectText.Context](project      : Project,
 
       DisplayReqRef.memoLazy {
         case DisplayReqRef.AsId         => pubidFmt(_)
-        case DisplayReqRef.AsIdAndTitle => id => pubidFmt.withSuffix(id, false)(": ", reqTitleById(id))
+        case DisplayReqRef.AsIdAndTitle =>
+          id => pubidFmt.withSuffix(id, false)(": ", withCtx(ProjectText.Context.Link).reqTitleById(id))
       }
     }
   }
