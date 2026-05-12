@@ -43,6 +43,13 @@ object Dependencies {
     val main          = core ++ postgres ++ postgresCirce ++ hikari
   }
 
+  object Flyway {
+    private val mm = MultiModule.java("org.flywaydb", "12.6.0")
+    val core     = mm("flyway-core")
+    val postgres = mm("flyway-database-postgresql")
+    val all      = core ++ postgres
+  }
+
   object Graal {
     // Note: when changing this, make sure to also change:
     //   - :/Docker/dev-build_env/Dockerfile (the aur git sha)
@@ -217,20 +224,19 @@ object Dependencies {
   val boopickle   = jvmAndJs("io.suzaku",                        "boopickle",   "1.5.0")
   val clearConfig = jvmAndJs("com.github.japgolly.clearconfig",  "core",        "3.3.0")
   val parboiled   = jvmAndJs("org.parboiled",                    "parboiled",   "2.3.0")
-  val pprint      = jvmAndJs("com.lihaoyi",                      "pprint",      "0.6.6")
+  val pprint      = jvmAndJs("com.lihaoyi",                      "pprint",      "0.9.6")
   val shapeless   = jvmAndJs("com.chuusai",                      "shapeless",   "2.3.13")
   val utest       = jvmAndJs("com.github.japgolly.fork",         "utest",       "1.0.3")
 
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val commonsText  = jvmOnly("org.apache.commons"          % "commons-text"          % "1.15.0")
-  val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "8.0.5")
   val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "7.0.2")
-  val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.14")
+  val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.16")
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.6.0")
   val javaMail     = jvmOnly("com.sun.mail"                % "javax.mail"            % "1.6.2")
   val postgresql   = jvmOnly("org.postgresql"              % "postgresql"            % "42.7.11")
-  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "3.16.3")
-  val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "4.0.2")
+  val redisson     = jvmOnly("org.redisson"                % "redisson"              % "4.3.1")
+  val scaffeine    = jvmOnly("com.github.blemale"         %% "scaffeine"             % "5.3.0")
   val scalaCheck   = jvmOnly("org.scalacheck"             %% "scalacheck"            % "1.19.0")
   val scalaLogging = jvmOnly("com.typesafe.scala-logging" %% "scala-logging"         % "3.9.6")
   val scalaXml     = jvmOnly("org.scala-lang.modules"     %% "scala-xml"             % "1.3.1")
@@ -267,6 +273,9 @@ object Dependencies {
     filters |= moduleFilter("org.scala-lang", "scala-library")
     filters |= moduleFilter("org.scala-lang", "scala-reflect")
     filters |= moduleFilter("org.scala-lang", "scalap")
+
+    // scalajs-react: 2.x only
+    filters |= moduleFilter("com.github.japgolly.scalajs-react", revision = containsRegex("^[3-9]"))
 
     // OkHTTP: 3.x only
     filters |= moduleFilter("com.squareup.okhttp3", revision = fn(!_.startsWith("3.")))
