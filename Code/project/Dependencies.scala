@@ -268,6 +268,9 @@ object Dependencies {
     filters |= moduleFilter("org.scala-lang", "scala-reflect")
     filters |= moduleFilter("org.scala-lang", "scalap")
 
+    // scalajs-react: 2.x only
+    filters |= moduleFilter("com.github.japgolly.scalajs-react", revision = containsRegex("^[3-9]"))
+
     // OkHTTP: 3.x only
     filters |= moduleFilter("com.squareup.okhttp3", revision = fn(!_.startsWith("3.")))
 
