@@ -43,6 +43,13 @@ object Dependencies {
     val main          = core ++ postgres ++ postgresCirce ++ hikari
   }
 
+  object Flyway {
+    private val mm = MultiModule.java("org.flywaydb", "12.6.0")
+    val core     = mm("flyway-core")
+    val postgres = mm("flyway-database-postgresql")
+    val all      = core ++ postgres
+  }
+
   object Graal {
     // Note: when changing this, make sure to also change:
     //   - :/Docker/dev-build_env/Dockerfile (the aur git sha)
@@ -223,7 +230,6 @@ object Dependencies {
 
   val commonsIo    = jvmOnly("org.apache.directory.studio" % "org.apache.commons.io" % "2.4")
   val commonsText  = jvmOnly("org.apache.commons"          % "commons-text"          % "1.15.0")
-  val flyway       = jvmOnly("org.flywaydb"                % "flyway-core"           % "8.0.5")
   val hikariCP     = jvmOnly("com.zaxxer"                  % "HikariCP"              % "7.0.2")
   val httpCore     = jvmOnly("org.apache.httpcomponents"   % "httpcore"              % "4.4.16")
   val jaegerClient = jvmOnly("io.jaegertracing"            % "jaeger-client"         % "1.6.0")

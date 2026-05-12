@@ -72,7 +72,7 @@ object ShipReqBuild {
       .in(file("base-db"))
       .configure(Common.jvmSettings)
       .dependsOn(baseOps)
-      .deps(postgresql ++ Doobie.main ++ hikariCP ++ flyway ++ Circe.main)
+      .deps(postgresql ++ Doobie.main ++ hikariCP ++ Flyway.all ++ Circe.main)
 
   lazy val baseTestJvm = baseTest.jvm
   lazy val baseTestJs  = baseTest.js
