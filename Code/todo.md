@@ -4,8 +4,6 @@
 * record usage videos (Davinci Resolve)
 * create a blog
 * point shipreq.com (and/or .org) at a blog
-* CDN: update infra diagram
-* CDN: document use, reason, including need for fake-cdn docker image
 * add a place for discussion, maybe discord
 * choose a licence
 

@@ -8,8 +8,11 @@ digraph {
     label="AWS" style=filled fillcolor="#eeffdd"
     { rank=same
       dns_shipreq [label="DNS:\nshipreq.com"]
+      dns_cdn [label="DNS:\n<cdn>.shipreq.com"]
       acm_ssl [label="ACM:\nSSL cert"]
     }
+    cdn [label="CDN"]
+    acm_cdn [label="ACM:\nSSL CDN cert"]
     ebs_prometheus_tech [label="EBS:\nPrometheus\n(tech)" fillcolor=lightskyblue1]
     ebs_prometheus_busi [label="EBS:\nPrometheus\n(business)" fillcolor=lightskyblue1]
     eip_bastion [label="EIP:\nBastion"]
@@ -91,6 +94,7 @@ digraph {
   edge [color=red]
   internet -> dns_shipreq -> alb_webapp
   internet -> eip_bastion -> bastion
+  internet -> dns_cdn -> cdn -> dns_shipreq
   alb_webapp -> docker_webapp
   bastion -> subnet_private_in
   docker_portal -> subnet_private_in -> es,docker_grafana,docker_prometheus_tech,docker_prometheus_busi [style=dashed]
@@ -103,6 +107,7 @@ digraph {
   docker_nat -> nat_in [dir=back]
 
   edge [color=green]
+  dns_cdn -> acm_cdn
   dns_shipreq -> acm_ssl [minlen=2]
   acm_ssl -> alb_webapp [dir=back]
   rds_grafana -> docker_grafana [dir=back]
