@@ -5,7 +5,6 @@
 * create a blog
 * point shipreq.com (and/or .org) at a blog
 * add a place for discussion, maybe discord
-* choose a licence
 
 ========================================================================================================================
 # Fix Taskman
