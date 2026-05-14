@@ -82,7 +82,7 @@ private[fields] object DerivativeTagsEditor {
     private def renderToggle(p: Props, enabled: Enabled): VdomNode =
       Input.Checkbox.fromStateSnapshot(
         ss      = p.state.zoomStateL(State.on),
-        label   = "Derivative tags",
+        label   = "Derivative tags (experimental)",
         enabled = enabled,
       )
 
