@@ -16,7 +16,6 @@
 # Misc
 
 * revise UI prototype for the project "status" page
-* externalise ops secret key in DispatchLogic.scala
 
 ========================================================================================================================
 # project access WIP
