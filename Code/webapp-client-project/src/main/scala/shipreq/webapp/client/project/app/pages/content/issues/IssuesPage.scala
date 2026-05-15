@@ -6,7 +6,7 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.html_<^._
 import monocle.macros.Lenses
 import scalacss.ScalaCssReact._
-import shipreq.base.util.ErrorMsg
+import shipreq.base.util.{ErrorMsg, Permission}
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.client.project.app.Style.{issues => *}
 import shipreq.webapp.client.project.app.pages.root.Routes
@@ -49,12 +49,13 @@ object IssuesPage {
       cmdInvoker)
   }
 
-  final case class Props(state     : StateSnapshot[State],
-                         creator   : CreateFeature.ReadWrite.ForManualIssueR,
-                         editor    : EditorFeature.ReadWrite.ForProject,
-                         editorArgs: EditorFeature.EditorArgs.ForAny,
-                         previewRW : PreviewFeature.ReadWrite.Composite[PreviewId],
-                         cmdAsync  : AsyncFeature.Read.D1[Action.Cmd, ErrorMsg])
+  final case class Props(state      : StateSnapshot[State],
+                         creator    : CreateFeature.ReadWrite.ForManualIssueR,
+                         editor     : EditorFeature.ReadWrite.ForProject,
+                         editorArgs : EditorFeature.EditorArgs.ForAny,
+                         previewRW  : PreviewFeature.ReadWrite.Composite[PreviewId],
+                         cmdAsync   : AsyncFeature.Read.D1[Action.Cmd, ErrorMsg],
+                         editability: Permission)
 
   @Lenses
   final case class State(newIssue    : NewIssue.State,
@@ -128,7 +129,7 @@ object IssuesPage {
           <.div(*.pageRow2,
             <.div(*.pageSort),
             <.div(FilterEditor.Props(p.state.value.filterEditor, project, filterUpdateFn).render)),
-          table.component(Table.Props(issues, p.editor, p.editorArgs, p.cmdAsync)))
+          table.component(Table.Props(issues, p.editor, p.editorArgs, p.cmdAsync, p.editability)))
       }
 
       val issues = project.issues

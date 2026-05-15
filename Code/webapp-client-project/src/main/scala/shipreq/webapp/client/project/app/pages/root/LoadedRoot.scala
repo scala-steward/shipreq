@@ -504,7 +504,15 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
           val cmdAsync = s.manualIssueCmdAsync.toRead
                            .either(s.updateConfigCmdAsync.toRead)
                            .either(s.updateContentCmdAsync.toRead)
-          val p = content.issues.IssuesPage.Props(state, creator, editRW, editorArgs, createPreviewRW, cmdAsync)
+          val p = content.issues.IssuesPage.Props(
+            state       = state,
+            creator     = creator,
+            editor      = editRW,
+            editorArgs  = editorArgs,
+            previewRW   = createPreviewRW,
+            cmdAsync    = cmdAsync,
+            editability = globalEditability,
+          )
           issuesPage.component(p)
 
         case Page.CfgFields =>
