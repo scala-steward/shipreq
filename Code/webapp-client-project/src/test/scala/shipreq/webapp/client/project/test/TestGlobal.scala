@@ -392,13 +392,17 @@ object TestGlobal {
       *.action(s"Press ${k.desc}.") { x =>
         x.obs.activeElement match {
           case Some(f) => k.simulateKeyDownPressUp(f)
-          case None    => manualKeyPress(document, k)
+          case None    =>
+            manualKeyDown(document, k)
+            manualKeyPress(document, k)
         }
       }
 
-    private def manualKeyPress(target: EventTarget, k: SimEvent.Keyboard): Unit = {
+    private def manualKeyPress(target: EventTarget, k: SimEvent.Keyboard): Unit =
       dispatchEvent(target, "keypress", e => k.assign(e.asInstanceOf[js.Dynamic]))
-    }
+
+    private def manualKeyDown(target: EventTarget, k: SimEvent.Keyboard): Unit =
+      dispatchEvent(target, "keydown", e => k.assign(e.asInstanceOf[js.Dynamic]))
 
     def assertFocusBy(desc: String, f: *.OS => html.Element) =
       *.point(s"$desc must have focus") { os =>

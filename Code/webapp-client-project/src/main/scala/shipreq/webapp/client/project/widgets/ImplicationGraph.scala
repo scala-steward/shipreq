@@ -315,7 +315,7 @@ object ImplicationGraph {
       point = root.createSVGPoint()
 
       // Update global
-      document.addEventListener("keypress", onKeyPress)
+      document.addEventListener("keydown", onKeyDown)
 
       // Update root
       root.classList.add(*.root.className.value)
@@ -375,7 +375,7 @@ object ImplicationGraph {
       setDragDelay(None)
 
       // Uninstall from global
-      document.removeEventListener("keypress", onKeyPress)
+      document.removeEventListener("keydown", onKeyDown)
 
       // Uninstall from root
       root.classList.remove(*.root.className.value)
@@ -511,12 +511,12 @@ object ImplicationGraph {
       }
     }
 
-    private val onKeyPress: js.Function1[KeyboardEvent, Unit] = ev => {
-      eventLogger(_.debug("onKeyPress: ", ev))
+    private val onKeyDown: js.Function1[KeyboardEvent, Unit] = ev => {
+      eventLogger(_.debug("onKeyDown: ", ev))
       if ((root ne null) && !ev.altKey && !ev.ctrlKey && !ev.shiftKey && !ev.metaKey) {
         ev.key.toUpperCase match {
 
-          case "DELETE" =>
+          case "DELETE" | "BACKSPACE" =>
             for {
               edge <- getSelectedEdge()
               args <- this.args
