@@ -68,8 +68,9 @@ object ReqDetail {
                                 newReqState: StateSnapshot[NewReqButton.State],
                                 newReqAsync: AsyncFeature.ReadWrite.D0[ErrorMsg])
 
-  final case class ReqProps(editor: EditorFeature.ReadWrite.ForReq,
-                            async : AsyncFeature.ReadWrite.D1[Cell, ErrorMsg])
+  final case class ReqProps(editor     : EditorFeature.ReadWrite.ForReq,
+                            async      : AsyncFeature.ReadWrite.D1[Cell, ErrorMsg],
+                            editability: Permission)
 
   @Lenses
   final case class State(modal: Modal.State, graph: ReqImplicationGraph.State)
@@ -458,6 +459,7 @@ object ReqDetail {
               newReqAsync      = props.newReqAsync,
               sspCreateContent = sspCreateContent,
               reqDetailRC      = reqDetailRC,
+              editability      = reqProps.editability,
             ).render
 
           case Row.Life =>
