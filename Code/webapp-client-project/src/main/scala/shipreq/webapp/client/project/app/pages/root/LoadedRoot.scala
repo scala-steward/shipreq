@@ -6,7 +6,7 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.PackageBase._
 import monocle.Lens
 import org.scalajs.dom.window
-import shipreq.base.util.{Allow, ErrorMsg}
+import shipreq.base.util.{Allow, ErrorMsg, Permission}
 import shipreq.webapp.base.data.ProjectRole
 import shipreq.webapp.base.feature.AsyncFeature.Implicits._
 import shipreq.webapp.base.feature._
@@ -121,8 +121,14 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
     private val pxProjectWidgets: Reusable[Px[ProjectWidgets.NoCtx]] =
       Reusable byRef Px.apply3(pxProject, pxPlainText, pxViewTags)(ProjectWidgets(_, _, _, routerCtlEP, webWorkerClient))
 
+    /** Whether the user has permission to change the project. */
+    private val pxGlobalEditability: Px[Permission] =
+      pxProjectRole.map(usersRole =>
+        ProjectRole.Collaborator.isSatisfiedBy(usersRole)
+      ).withReuse
+
     private val pxEditEditability: Px[EditorFeature.Editability.ForProject] =
-      pxProject.map(EditorFeature.Editability.apply)
+      Px.apply2(pxProject, pxGlobalEditability)(EditorFeature.Editability.apply)
 
     private val pxUnsavedChangesInput: Px[UnsavedChanges.Input] =
       Px.apply6(
@@ -170,7 +176,7 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
       Px.apply3(pxProject, pxViewReqCacheText, pxPlainText)(RenderFeature.ToText.NoCtx.ApplicableOption.prepare)
 
     private val pxCreateEditability =
-      pxProject.map(p => CreateFeature.Editability(p.config))
+      Px.apply2(pxProjectConfig, pxGlobalEditability)(CreateFeature.Editability.apply)
 
     private val pxFilterCompilerFromFilterDead: Px[FilterDead => Filter.Valid.Compiler] =
       for {

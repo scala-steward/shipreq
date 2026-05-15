@@ -30,7 +30,7 @@
     1. [x] project renaming
   1. add read-only access
     1. [x] backend and protocol work
-    1. [ ] read-only UI: Editability
+    1. [x] read-only UI: Editability
     1. [ ] read-only UI: everywhere else (manually check)
 
 * when users can be used as field values:
