@@ -40,6 +40,7 @@
       - allow perm to be NULL in project_access table
       - populate rolodex includes entries with NULL perms
       - update DB projectSpaInitPage to require non-null perm
+      - update SupplimentaryLogic's handling of Event.AccessUpdate to handle None
   * references to users who've had access revoked should appear as issues in the Issues page
 
 ========================================================================================================================
