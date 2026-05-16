@@ -1720,9 +1720,8 @@ object Style extends StyleSheet.Inline {
     val reqCodeTreeCode = style(reqCodeTreePre)
     val reqCodeFlat = style(reqCodePre, display.block, overflowY.hidden)
 
-    val useCaseStepTextAndFlow_cont = styleF(D.live)(l => styleS(
-      display.flex,
-      mixinIf(l is Dead)(deadFilledCell)))
+    val useCaseStepTextAndFlow_cont = styleF(D.live)(_ => styleS(
+      display.flex))
 
     val useCaseStepTextAndFlow_text = style()
     val useCaseStepTextAndFlow_flow = style()
