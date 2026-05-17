@@ -93,7 +93,7 @@ This will build docker images for both webapp and taskman:
 
 ```sh
 cd Code
-sbt dockers
+sbt -DMODE=release dockers
 ```
 
 ### Running
