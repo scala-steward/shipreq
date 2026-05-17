@@ -3,6 +3,7 @@ package shipreq.webapp.member.project.storage
 import japgolly.microlibs.stdlib_ext.StdlibExt._
 import japgolly.scalajs.react.{AsyncCallback, CallbackTo}
 import shipreq.webapp.base.data.{ProjectCreator, ProjectId, UserId}
+import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol.webstorage.AbstractWebStorage
 import shipreq.webapp.member.project.data.ClientSideProjectEncryptionKey
 import shipreq.webapp.member.project.event.EventOrd
@@ -14,6 +15,9 @@ object ClientSideStorage {
 
   trait ReadOnly {
     protected def creator: ProjectCreator
+
+    /** Provides a description of itself for logging. */
+    def describe: String
 
     def isAvailable: CallbackTo[Boolean]
     def getProjectLibraryOrd: AsyncCallback[Option[EventOrd.Latest]]
@@ -35,26 +39,35 @@ object ClientSideStorage {
 
   object ReadWrite {
 
-    type Provider = (Context, ClientSideProjectEncryptionKey) => AsyncCallback[ReadWrite]
+    type Provider = (Context, ClientSideProjectEncryptionKey, LoggerJs) => AsyncCallback[ReadWrite]
 
-    def apply(ctx: Context, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadWrite] =
-      get(ctx, encKey).getOrElse(AsyncCallback.pure(AlwaysEmpty(ctx.creator)))
+    def apply(ctx: Context, encKey: ClientSideProjectEncryptionKey, logger: LoggerJs): AsyncCallback[ReadWrite] =
+      get(ctx, encKey, logger).getOrElse(AsyncCallback.pure(AlwaysEmpty(ctx.creator)))
 
-    def get(ctx: Context, encKey: ClientSideProjectEncryptionKey): Option[AsyncCallback[ReadWrite]] =
-      Encryption.Engine.global.flatMap { crypto =>
+    def get(ctx: Context, encKey: ClientSideProjectEncryptionKey, logger: LoggerJs): Option[AsyncCallback[ReadWrite]] =
+      Encryption.Engine.global match {
+        case Some(crypto) =>
+          val enc = crypto(encKey.value).memo()
+          val indexedDb = IndexedDb.global()
+          val localStorage = AbstractWebStorage.local()
 
-        val enc = crypto(encKey.value).memo()
+          logger(_.debug("indexedDb: ", indexedDb))
+          logger(_.debug("localStorage: ", localStorage))
 
-        Dynamic.optionAsync(ctx.creator)(
-          // highest priority
-          IndexedDb.global().map(idb => enc.flatMap(IndexedDbStorage(idb, ctx, _))),
-          AbstractWebStorage.local().map(ws => enc.map(new WebStorage(ws, ctx, _))),
-          // lowest priority
-        )
+          Dynamic.optionAsync(ctx.creator)(
+            // highest priority
+            indexedDb.map(idb => enc.flatMap(IndexedDbStorage(idb, ctx, _))),
+            localStorage.map(ws => enc.map(new WebStorage(ws, ctx, _))),
+            // lowest priority
+          )
+        case None =>
+          logger(_.warn("Encryption engine unavailable. Client-side storage disabled."))
+          None
       }
 
     private final case class AlwaysEmpty(override protected val creator: ProjectCreator) extends ReadWrite {
       private val none                                    = AsyncCallback.pure(Option.empty[Nothing])
+      override def describe                               = "disabled"
       override val isAvailable                            = CallbackTo.pure(false)
       override def getProjectLibraryOrd                   = none
       override def getProjectLibrary                      = none
@@ -105,6 +118,7 @@ object ClientSideStorage {
       @inline private def proxy[A](f: ReadWrite => AsyncCallback[A]): AsyncCallback[A] =
         firstAvailableAsync.flatMap(f)
 
+      override def describe                               = "[dynamic] " + firstAvailable.runNow().describe
       override val isAvailable                            = firstAvailable.flatMap(_.isAvailable)
       override val getProjectLibraryOrd                   = proxy(_.getProjectLibraryOrd)
       override val getProjectLibrary                      = proxy(_.getProjectLibrary)
@@ -117,14 +131,18 @@ object ClientSideStorage {
 
   object ReadOnly {
 
-    def apply(userId: UserId.Public, projectId: ProjectId.Public, creator: ProjectCreator, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadOnly] =
-      apply(Context(userId, projectId, creator), encKey)
+    def apply(userId   : UserId.Public,
+              projectId: ProjectId.Public,
+              creator  : ProjectCreator,
+              encKey   : ClientSideProjectEncryptionKey,
+              logger   : LoggerJs): AsyncCallback[ReadOnly] =
+      apply(Context(userId, projectId, creator), encKey, logger)
 
-    def apply(ctx: Context, encKey: ClientSideProjectEncryptionKey): AsyncCallback[ReadOnly] =
-      ReadWrite(ctx, encKey)
+    def apply(ctx: Context, encKey: ClientSideProjectEncryptionKey, logger: LoggerJs): AsyncCallback[ReadOnly] =
+      ReadWrite(ctx, encKey, logger)
 
-    def get(ctx: Context, encKey: ClientSideProjectEncryptionKey): Option[AsyncCallback[ReadOnly]] =
-      ReadWrite.get(ctx, encKey).map(f => f)
+    def get(ctx: Context, encKey: ClientSideProjectEncryptionKey, logger: LoggerJs): Option[AsyncCallback[ReadOnly]] =
+      ReadWrite.get(ctx, encKey, logger).map(f => f)
   }
 
   // -------------------------------------------------------------------------------------------------------------------

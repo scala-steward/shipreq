@@ -2,6 +2,7 @@ package shipreq.webapp.member.protocol.indexeddb
 
 import japgolly.scalajs.react._
 import org.scalajs.dom._
+import org.scalajs.dom.SharedWorkerGlobalScope.self
 import scala.scalajs.js
 import scala.util.{Failure, Success, Try}
 
@@ -71,10 +72,10 @@ object IndexedDb {
     new IndexedDb(raw)
 
   def global(): Option[IndexedDb] =
-    try {
-      window.indexedDB.toOption.map(apply)
-    } catch {
-      case _: Throwable => None
+    try window.indexedDB.toOption.map(apply) catch { case _: Throwable =>
+      try self.indexedDB.toOption.map(apply) catch { case _: Throwable =>
+        None
+      }
     }
 
   final case class DatabaseName(value: String)

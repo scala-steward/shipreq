@@ -52,7 +52,8 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
     val load: AsyncCallback[Unit] =
       for {
         _   <- wwClient.send(initWW).fork_.asAsyncCallback
-        css <- ClientSideStorage.ReadOnly(i.userId, i.projectId, i.creator, ik.encryptionKey)
+        css <- ClientSideStorage.ReadOnly(i.userId, i.projectId, i.creator, ik.encryptionKey, logger)
+        _   <- logger.async(_.debug("Client-side storage: " + css.describe))
         pl  <- css.getProjectLibraryOrEmpty
       } yield {
 

@@ -30,6 +30,9 @@ final class WebStorage(ws        : AbstractWebStorage,
   override protected val creator =
     ctx.creator
 
+  override def describe =
+    "WebStorage"
+
   override val isAvailable: CallbackTo[Boolean] =
     CallbackTo.pure(true)
 

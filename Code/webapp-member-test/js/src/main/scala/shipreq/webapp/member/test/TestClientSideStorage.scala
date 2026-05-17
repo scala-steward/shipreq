@@ -14,6 +14,8 @@ final class TestClientSideStorage(override protected val creator: ProjectCreator
 
   private var projectStore = Option.empty[ProjectLibrary]
 
+  override def describe = "TestClientSideStorage"
+
   override val isAvailable: CallbackTo[Boolean] =
     CallbackTo(available)
 
@@ -48,7 +50,7 @@ object TestClientSideStorage {
     new TestClientSideStorage(creator)
 
   def provide(instance: => ClientSideStorage.ReadWrite): ClientSideStorage.ReadWrite.Provider =
-    (_, _) => AsyncCallback.delay(instance)
+    (_, _, _) => AsyncCallback.delay(instance)
 
   val provider: ClientSideStorage.ReadWrite.Provider =
     provide(apply())

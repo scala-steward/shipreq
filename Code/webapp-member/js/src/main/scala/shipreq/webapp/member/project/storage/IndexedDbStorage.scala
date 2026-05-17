@@ -31,6 +31,9 @@ final class IndexedDbStorage(override protected val creator: ProjectCreator,
   import IndexedDbStorage.Internals._
   import schema.project.store
 
+  override def describe =
+    "IndexedDb"
+
   override val isAvailable: CallbackTo[Boolean] =
     CallbackTo(isAvailableVar.value)
 

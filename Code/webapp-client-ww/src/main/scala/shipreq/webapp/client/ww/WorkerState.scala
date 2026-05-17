@@ -28,7 +28,9 @@ final class WorkerState(creator: ProjectCreator,
       firstTime <- assetManifest.setIfUnset(am)
       _         <- logic.importScripts(am.wwJs).asAsyncCallback.when_(firstTime)
       _         <- graphViz.setIfUnsetSync(logic.loadGraphViz(am))
-      _         <- storage.setIfUnsetAsync(logic.cssProvider(cssCtx, encKey))
+      _         <- storage.setIfUnsetAsync(logic.cssProvider(cssCtx, encKey, logger))
+      css       <- storage.get
+      _         <- logger.async(_.debug("Client-side storage: " + css.describe))
       _         <- loadFromClientSideStorage.when_(firstTime)
     } yield ()
   }
