@@ -262,7 +262,7 @@ object Common {
       testOnly / parallelExecution := false,
       scalaJSLinkerConfig ~= { _
         .withSourceMap(emitSourceMapsValue)
-        .withESFeatures(_.withESVersion(ESVersion.ES2017))
+        .withESFeatures(_.withESVersion(ESVersion.ES2019))
       },
     )
 
