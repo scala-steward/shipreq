@@ -6,7 +6,7 @@ import japgolly.scalajs.react.extra._
 import japgolly.scalajs.react.vdom.PackageBase._
 import monocle.Lens
 import org.scalajs.dom.window
-import shipreq.base.util.{Allow, ErrorMsg, Permission}
+import shipreq.base.util.{Allow, ErrorMsg, Permission, Valid}
 import shipreq.webapp.base.data.ProjectRole
 import shipreq.webapp.base.feature.AsyncFeature.Implicits._
 import shipreq.webapp.base.feature._
@@ -657,11 +657,17 @@ final class LoadedRoot(initPageData      : ProjectSpaEntryPoint.InitDataWithoutE
       }
 
     def onProjectChange(u: ProjectLibrary.Update): Callback = {
-      val access = u.newLibrary.latest.access(initPageData.userId)
+      val project = u.newLibrary.latest
+      val access = project.access(initPageData.userId)
       if (access.isEmpty)
         accessHandler.onRevoke
       else
-        $.forceUpdate
+        $.modState { s =>
+          if (s.savedViews.filter.validity ==* Valid)
+            s.copy(savedViews = s.savedViews.updateFilterText(project))
+          else
+            s
+        }
     }
 
     def onConnectionStatusChange(c: ConnectionStatus): Callback = {
