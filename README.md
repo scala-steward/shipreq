@@ -21,13 +21,13 @@ Rather than apps like JIRA loading an issue at a time, ShipReq is more like git 
 # Demos
 
 <a href="https://youtu.be/YjdI_dufSUI" target="_blank">
-  <img src="https://img.youtube.com/vi/YjdI_dufSUI/hqdefault.jpg" width="280" alt="Watch the video" />
+  <img src="https://img.youtube.com/vi/YjdI_dufSUI/hqdefault.jpg" width="260" alt="Watch the video" />
 </a>
 <a href="https://youtu.be/5ytrBxUoStc" target="_blank">
-  <img src="https://img.youtube.com/vi/5ytrBxUoStc/hqdefault.jpg" width="280" alt="Watch the video" />
+  <img src="https://img.youtube.com/vi/5ytrBxUoStc/hqdefault.jpg" width="260" alt="Watch the video" />
 </a>
 <a href="https://youtu.be/GgqBY6u9yQg" target="_blank">
-  <img src="https://img.youtube.com/vi/GgqBY6u9yQg/hqdefault.jpg" width="280" alt="Watch the video" />
+  <img src="https://img.youtube.com/vi/GgqBY6u9yQg/hqdefault.jpg" width="260" alt="Watch the video" />
 </a>
 
 # Running Locally
