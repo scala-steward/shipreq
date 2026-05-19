@@ -126,18 +126,28 @@ object Common {
       .configure(nonTestCompilerFlags(optimisationScalacFlags: _*))
       .settings(Compile / scalacOptions ++= Seq("-Xelide-below", "OFF"))
 
-  val ciSettings: Project => Project =
-    if (inCI && !localCI)
-      _.settings(
-        Test / parallelExecution := false,
-        Global / concurrentRestrictions += Tags.limit(Tags.Test, 1),
-        Global / concurrentRestrictions += Tags.limitAll(cores),
-      )
-    else
-      _.settings(
-        Global / concurrentRestrictions += Tags.limit(CustomTags.Node, 2),
-        Global / concurrentRestrictions += Tags.limit(Tags.Test, 2),
-      )
+  val ciSettings: Project => Project = {
+    val options1: Project => Project =
+      if (inCI && !localCI)
+        _.settings(
+          Test / parallelExecution := false,
+          Global / concurrentRestrictions += Tags.limit(Tags.Test, 1),
+          Global / concurrentRestrictions += Tags.limitAll(cores),
+        )
+      else
+        _.settings(
+          Global / concurrentRestrictions += Tags.limit(CustomTags.Node, 2),
+          Global / concurrentRestrictions += Tags.limit(Tags.Test, 2),
+        )
+    val options2: Project => Project =
+      if (inCI)
+        _.settings(
+          scalacOptions += "-Xfatal-warnings",
+        )
+      else
+        identity
+    options1 compose options2
+  }
 
   val scalafixSettings: Project => Project =
     if (scalafixEnabled)
