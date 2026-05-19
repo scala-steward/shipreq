@@ -204,12 +204,20 @@ object AtomScan {
   def scan(f: AnyAtom => Unit): ArraySeq[AnyAtom] => Unit = {
     var go: ArraySeq[AnyAtom] => Unit = null
 
+    def goGo(items: ArraySeq[ArraySeq[AnyAtom]]): Unit = {
+      var j = items.length
+      while (j > 0) {
+        j -= 1
+        val li = items(j)
+        go(li)
+      }
+    }
+
     go = as => {
-      val array = as.unsafeArray
-      var i = array.length
+      var i = as.length
       while (i > 0) {
         i -= 1
-        val a = array(i).asInstanceOf[AnyAtom]
+        val a = as(i)
 
         // Self
         f(a)
@@ -217,20 +225,32 @@ object AtomScan {
         // Recursive cases
         a match {
 
-          case a: Issue # Issue =>
-            go(a.desc)
+          case a: Headings        # Heading1      => go(a.title.whole)
+          case a: Headings        # Heading2      => go(a.title.whole)
+          case a: Headings        # Heading3      => go(a.title.whole)
+          case a: Headings        # Heading4      => go(a.title.whole)
+          case a: Headings        # Heading5      => go(a.title.whole)
+          case a: Headings        # Heading6      => go(a.title.whole)
+          case a: Issue           # Issue         => go(a.desc)
+          case a: ListMarkup      # OrderedList   => goGo(a.items.whole)
+          case a: ListMarkup      # UnorderedList => goGo(a.items.whole)
+          case a: PlainTextMarkup # Bold          => go(a.inner.whole)
+          case a: PlainTextMarkup # Italic        => go(a.inner.whole)
+          case a: PlainTextMarkup # Strikethrough => go(a.inner.whole)
+          case a: PlainTextMarkup # Underline     => go(a.inner.whole)
 
-          case a: ListMarkup # UnorderedList =>
-            val items = a.items.whole.unsafeArray
-            var j = items.length
-            while (j > 0) {
-              j -= 1
-              val li = items(j).asInstanceOf[ArraySeq[AnyAtom]]
-              go(li)
-            }
-
-          case _ =>
-            ()
+          case _: CodeBlock       # CodeBlock
+             | _: ContentRef      # CodeRef
+             | _: ContentRef      # ReqRef
+             | _: ContentRef      # UseCaseStepRef
+             | _: Literal         # Literal
+             | _: NewLine         # BlankLine
+             | _: PlainTextMarkup # EmailAddress
+             | _: PlainTextMarkup # Monospace
+             | _: PlainTextMarkup # TeX
+             | _: PlainTextMarkup # WebAddress
+             | _: TagRef          # TagRef
+             => ()
         }
       }
     }
