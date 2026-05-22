@@ -46,7 +46,7 @@ final class TestClientSideStorage(override protected val creator: ProjectCreator
 
 object TestClientSideStorage {
 
-  def apply(creator: ProjectCreator = ProjectCreator(Obfuscated(""))): TestClientSideStorage =
+  def apply(creator: ProjectCreator = ProjectCreator(userId(0))): TestClientSideStorage =
     new TestClientSideStorage(creator)
 
   def provide(instance: => ClientSideStorage.ReadWrite): ClientSideStorage.ReadWrite.Provider =
@@ -55,8 +55,8 @@ object TestClientSideStorage {
   val provider: ClientSideStorage.ReadWrite.Provider =
     provide(apply())
 
-  private def userId(i: Int): UserId.Public =
-    Obfuscated("user-" + i)
+  private def userId(i: Int): UserId =
+    UserId(i)
 
   private def projectId(i: Int): ProjectId.Public =
     Obfuscated("project-" + i)

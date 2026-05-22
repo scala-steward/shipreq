@@ -9,7 +9,6 @@ import shipreq.webapp.member.global._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event.{ActiveEvent, Event, EventOrd, VerifiedEvent}
 import shipreq.webapp.server.logic.data._
-import shipreq.webapp.server.logic.util.Obfuscators
 
 /**
   * Naming conventions:
@@ -256,9 +255,9 @@ object DB {
       event match {
 
         case Event.AccessUpdate(m) =>
-          val remove = m.keysIterator.map(Obfuscators.userId.deobfuscateOrThrow).toSet
+          val remove = m.keysIterator.toSet
           val add = m.iterator.flatMap {
-              case (u, Some(p)) => (Obfuscators.userId.deobfuscateOrThrow(u), p) :: Nil
+              case (u, Some(p)) => (u, p) :: Nil
               case _            => Nil
             }.toMap
           Some(updateProjectAccess(pid, remove, add))

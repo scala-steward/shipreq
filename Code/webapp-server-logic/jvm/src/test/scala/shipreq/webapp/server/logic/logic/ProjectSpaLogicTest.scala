@@ -94,7 +94,7 @@ object ProjectSpaLogicTest {
       def expectRolodex(r: Rolodex): Unit =
         expectSupp(Supplimentary(r))
 
-      def expectRolodex(entries: (UserId.Public, Username)*): Unit =
+      def expectRolodex(entries: (UserId, Username)*): Unit =
         expectRolodex(Rolodex(entries.toMap))
     }
   }
@@ -129,9 +129,6 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         case None    => _ => None
       }
 
-    implicit def uidToPublic(a: UserId): UserId.Public =
-      Obfuscators.userId.obfuscate(a)
-
     implicit def pidToPublic(a: ProjectId): ProjectId.Public =
       Obfuscators.projectId.obfuscate(a)
 
@@ -143,10 +140,10 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         Event.ProjectTemplateApply(ProjectTemplate.V1),
         Event.ProjectNameSet("hell"),
         Event.ProjectNameSet("hello"),
-        Event.AccessUpdate(Map(user3.idP -> Some(ProjectRole.Collaborator))),
+        Event.AccessUpdate(Map(user3.id -> Some(ProjectRole.Collaborator))),
       )
 
-      val creator              = ProjectCreator(user2.idP)
+      val creator              = ProjectCreator(user2.id)
       val emptyProject         = Project.init(creator)
       var verifiedEvents       = verifyEvents(emptyProject)(events: _*)
       var instance             = applyVerifiedEventSuccessfully(emptyProject, verifiedEvents.toList: _*)
@@ -157,7 +154,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       instance                 = applyVerifiedEventSuccessfully(emptyProject, verifiedEvents.toList: _*)
       db.loadProjectLog        = Vector.empty
 
-      lazy val initRolodex     = Rolodex(Map(user2.idP -> user2.username, user3.idP -> user3.username))
+      lazy val initRolodex     = Rolodex(Map(user2.id -> user2.username, user3.id -> user3.username))
       lazy val initAppData     = InitAppData(-\/(instance), data1, Supplimentary(initRolodex))
       lazy val static          = WebSocketStatic(user2.toUser, id, user2.id, SessionId.random(), (), svr.now.value, svr.now.value.plusSeconds(99999))
 
@@ -439,7 +436,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         import t._
 
         val u = db.newUserEntry()
-        val cmd = UpdateAccessCmd.Modify(Map(u.idP -> Some(ProjectRole.Collaborator)))
+        val cmd = UpdateAccessCmd.Modify(Map(u.id -> Some(ProjectRole.Collaborator)))
         val req = WsReqRes.UpdateAccess.AndReq(cmd)
 
         assertDifference(s"[$c] db reads", db.loadProjectLog.length)(expectFullDbReads) {
@@ -450,7 +447,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
 
             assertResponse(s"[$c] response", actual)
               .expectEventOrds(EventOrd(p1.events.length + 1))
-              .expectSupp(Supplimentary(Rolodex.init(u.idP, u.username)))
+              .expectSupp(Supplimentary(Rolodex.init(u.id, u.username)))
 
             assert(result._2.isEmpty)
 
@@ -475,7 +472,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         val result = sendMsg(req, p1.static, subscribedState)._1
         assertResponse(result)
           .expectEventOrds(EventOrd(p1.events.length + 1))
-          .expectSupp(Supplimentary(Rolodex.init(u.idP, u.username)))
+          .expectSupp(Supplimentary(Rolodex.init(u.id, u.username)))
       }
 
       "addNotFound" - {
@@ -489,7 +486,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       "denyCollaborator" - {
         implicit val t = new Tester; import t._
         val static3 = p1.static.copy(user = user3.toUser)
-        val cmd = UpdateAccessCmd.Modify(Map(user2.idP -> None))
+        val cmd = UpdateAccessCmd.Modify(Map(user2.id -> None))
         val req = WsReqRes.UpdateAccess.AndReq(cmd)
         val result = sendMsg(req, static3, subscribedState)._1
         assertEq(result, \/-(-\/(ErrorMsg("Admin rights required."))))
@@ -509,7 +506,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         "adminWithOtherAdmin" - {
           implicit val t = new Tester; import t._
           // First add another admin
-          val addAdminCmd = UpdateAccessCmd.Modify(Map(user3.idP -> Some(ProjectRole.Admin)))
+          val addAdminCmd = UpdateAccessCmd.Modify(Map(user3.id -> Some(ProjectRole.Admin)))
           sendMsg(WsReqRes.UpdateAccess.AndReq(addAdminCmd), p1.static, subscribedState)
           // Now remove self
           val req = WsReqRes.UpdateAccess.AndReq(UpdateAccessCmd.RemoveSelf)
@@ -585,7 +582,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
             val (res, newState) = sendMsg(WsReqRes.Reconnect.AndReq(Some(p1.latestOrdA)), p1.static, emptyState)
             assertResponse(res)
               .expectEvents(p1.verifiedEventsBC)
-              .expectSupp(Supplimentary(Rolodex(Map(user3.idP -> user3.username))))
+              .expectSupp(Supplimentary(Rolodex(Map(user3.id -> user3.username))))
             assert(newState.exists(_.sub.isDefined))
           }
         }

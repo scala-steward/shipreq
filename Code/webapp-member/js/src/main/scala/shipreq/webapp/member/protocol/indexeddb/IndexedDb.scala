@@ -1,8 +1,8 @@
 package shipreq.webapp.member.protocol.indexeddb
 
 import japgolly.scalajs.react._
-import org.scalajs.dom._
 import org.scalajs.dom.SharedWorkerGlobalScope.self
+import org.scalajs.dom._
 import scala.scalajs.js
 import scala.util.{Failure, Success, Try}
 

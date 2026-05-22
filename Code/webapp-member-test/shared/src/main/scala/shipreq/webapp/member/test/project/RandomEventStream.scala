@@ -29,11 +29,10 @@ import shipreq.webapp.member.test.project.DataTestExt._
 import shipreq.webapp.member.test.project.RandomData
 import shipreq.webapp.member.test.project.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, projectRole, reqCode, reqTypeMnemonic, tagGroupName}
 import shipreq.webapp.member.test.project.RandomEventStream.{ProjectDepGen, State}
-import shipreq.webapp.server.logic.util.Obfuscators
 
 final case class RandomEventStreamConfig(retiredEvents: Boolean,
                                          reqCodeEvents: Boolean,
-                                         userIds      : Option[NonEmptySet[UserId.Public]],
+                                         userIds      : Option[NonEmptySet[UserId]],
                                          emptyProject : Project,
                                         ) {
 
@@ -41,9 +40,6 @@ final case class RandomEventStreamConfig(retiredEvents: Boolean,
     copy(retiredEvents = false)
 
   def withUserIds(ids: NonEmptySet[UserId]): RandomEventStreamConfig =
-    withPublicUserIds(ids.map(Obfuscators.userId.obfuscate))
-
-  def withPublicUserIds(ids: NonEmptySet[UserId.Public]): RandomEventStreamConfig =
     copy(userIds = Some(ids))
 
   def withEmptyProject(p: Project): RandomEventStreamConfig =
@@ -1054,14 +1050,14 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
     manualIssueId.map(_ map ManualIssueDelete)
 
   def genAccessUpdate: Option[Gen[AccessUpdate]] = {
-    type Entries = Vector[(UserId.Public, Option[ProjectRole])]
+    type Entries = Vector[(UserId, Option[ProjectRole])]
 
     val access = p.access.asMap
 
-    val newUserGen: Option[Gen[UserId.Public]] =
+    val newUserGen: Option[Gen[UserId]] =
       config.userIds match {
         case Some(ids) => NonEmptySet.option(ids.whole -- access.keySet).map(Gen.chooseNE(_))
-        case None      => Some(RandomData.userIdPublic)
+        case None      => Some(RandomBaseData.userId)
       }
 
     def update: Gen[Entries] =

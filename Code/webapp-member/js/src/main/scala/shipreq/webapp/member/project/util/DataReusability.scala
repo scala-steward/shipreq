@@ -68,7 +68,7 @@ abstract class DataReusability extends BaseReusability {
   implicit def reusabilityProjectRole: Reusability[ProjectRole] =
     Reusability.byUnivEq
 
-  implicit def reusabilityUserIdPublic: Reusability[UserId.Public] =
+  implicit def reusabilityUserId: Reusability[UserId] =
     Reusability.byUnivEq
 
   implicit def reusabilityProjectAccess: Reusability[ProjectAccess] =

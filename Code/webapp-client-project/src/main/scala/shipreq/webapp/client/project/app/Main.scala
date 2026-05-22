@@ -89,7 +89,7 @@ object Main extends ClientSideProcImpl(ProjectSpaEntryPoint.proc) {
   }
 
   private def loadWebWorker(i: InitDataWithoutEncKey, logger: LoggerJs): WebWorkerClient.Instance = {
-    val scope  = i.userId.value + ":" + i.projectId.value + ":" + WebWorkerCmd.protocolVer.verNum
+    val scope  = i.userId.valueAsStr + ":" + i.projectId.value + ":" + WebWorkerCmd.protocolVer.verNum
     val params = WebWorkerQueryParams(i.creator)
     val url    = i.webWorkerJsUrl + "?" + params.queryParamString
 

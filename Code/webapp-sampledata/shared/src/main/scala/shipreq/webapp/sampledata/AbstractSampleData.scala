@@ -4,8 +4,7 @@ import boopickle.PickleImpl
 import io.circe._
 import io.circe.syntax._
 import shipreq.base.util.BinaryData
-import shipreq.webapp.base.data.ProjectCreator
-import shipreq.webapp.base.util.Obfuscated
+import shipreq.webapp.base.data.{ProjectCreator, UserId}
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event.{Event, VerifiedEvent}
 import shipreq.webapp.member.project.protocol.binary.Latest.{picklerProject, picklerVerifiedEventSeq}
@@ -18,7 +17,7 @@ abstract class AbstractSampleData(meta: SampleDataMeta, events: Vector[Event]) {
     meta.filename
 
   val creator: ProjectCreator =
-    ProjectCreator(Obfuscated("u1"))
+    ProjectCreator(UserId(1))
 
   lazy val eventJson: Json =
     events.asJson

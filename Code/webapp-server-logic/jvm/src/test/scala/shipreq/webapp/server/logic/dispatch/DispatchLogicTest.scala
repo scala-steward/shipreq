@@ -17,8 +17,8 @@ import shipreq.webapp.server.logic.algebra._
 import shipreq.webapp.server.logic.config.ServerLogicConfig
 import shipreq.webapp.server.logic.dispatch.DispatchLogic._
 import shipreq.webapp.server.logic.dispatch.Method._
-import shipreq.webapp.server.logic.test.{MockDb, MockInterpreters}
 import shipreq.webapp.server.logic.test.MockInterpreters.config.security.opsEndpointSecret
+import shipreq.webapp.server.logic.test.{MockDb, MockInterpreters}
 import shipreq.webapp.server.logic.util.Obfuscators
 import sourcecode.Line
 import utest._

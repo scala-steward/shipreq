@@ -9,15 +9,15 @@ sealed trait UpdateAccessCmd
 object UpdateAccessCmd {
 
   final case class Add(user: Username \/ EmailAddr, role: ProjectRole) extends UpdateAccessCmd
-  final case class Modify(updates: Map[UserId.Public, Option[ProjectRole]]) extends UpdateAccessCmd
+  final case class Modify(updates: Map[UserId, Option[ProjectRole]]) extends UpdateAccessCmd
   final case object RemoveSelf extends UpdateAccessCmd
 
   implicit def univEq: UnivEq[UpdateAccessCmd] = UnivEq.derive
 
   /** @param modify The ProjectRole argument is what is required of the current user to make the change */
   def resolve[F[_], A](cmd       : UpdateAccessCmd)(
-                       userId    : UserId.Public,
-                       getUserId : (Username \/ EmailAddr) => F[Option[UserId.Public]],
+                       userId    : UserId,
+                       getUserId : (Username \/ EmailAddr) => F[Option[UserId]],
                        onNotFound: => A,
                        modify    : (UpdateAccessCmd.Modify, ProjectRole) => F[A])(implicit F: Monad[F]): F[A] =
     cmd match {
@@ -53,7 +53,7 @@ object UpdateAccessCmd {
       }
 
     private implicit val picklerUpdateAccessCmdModify: Pickler[Modify] =
-      pickleMap[UserId.Public, Option[ProjectRole]].xmap(Modify.apply)(_.updates)
+      pickleMap[UserId, Option[ProjectRole]].xmap(Modify.apply)(_.updates)
 
     implicit val picklerUpdateAccessCmd: Pickler[UpdateAccessCmd] =
       new Pickler[UpdateAccessCmd] {

@@ -417,15 +417,15 @@ object OtherEventTest extends TestSuite {
       import ProjectRole._
 
       def p = Project.empty.copy(access = ProjectAccess(Map(
-        PublicUserId1 -> Admin,
-        PublicUserId2 -> Collaborator,
+        UserId1 -> Admin,
+        UserId2 -> Collaborator,
       )))
 
-      def event(cmds: (UserId.Public, Option[ProjectRole])*): Event.AccessUpdate =
+      def event(cmds: (UserId, Option[ProjectRole])*): Event.AccessUpdate =
         Event.AccessUpdate(cmds.toMap)
 
-      def test(cmds: (UserId.Public, Option[ProjectRole])*)
-              (expect: (UserId.Public, ProjectRole)*)
+      def test(cmds: (UserId, Option[ProjectRole])*)
+              (expect: (UserId, ProjectRole)*)
               (implicit l: Line): Unit = {
         val ev = event(cmds: _*)
         val p2 = applyEventSuccessfully(p, ev)
@@ -434,14 +434,14 @@ object OtherEventTest extends TestSuite {
       }
 
       "ok" - {
-        "del" - test(PublicUserId2 -> None)(PublicUserId1 -> Admin)
-        "mod" - test(PublicUserId2 -> Some(Admin))(PublicUserId1 -> Admin, PublicUserId2 -> Admin)
-        "add" - test(PublicUserId3 -> Some(Admin))(PublicUserId1 -> Admin, PublicUserId2 -> Collaborator, PublicUserId3 -> Admin)
+        "del" - test(UserId2 -> None)(UserId1 -> Admin)
+        "mod" - test(UserId2 -> Some(Admin))(UserId1 -> Admin, UserId2 -> Admin)
+        "add" - test(UserId3 -> Some(Admin))(UserId1 -> Admin, UserId2 -> Collaborator, UserId3 -> Admin)
       }
 
       "lastAdmin" - {
-        "del" - assertEventFails(p, event(PublicUserId1 -> None), "at least one admin")
-        "mod" - assertEventFails(p, event(PublicUserId1 -> Some(Collaborator)), "at least one admin")
+        "del" - assertEventFails(p, event(UserId1 -> None), "at least one admin")
+        "mod" - assertEventFails(p, event(UserId1 -> Some(Collaborator)), "at least one admin")
       }
     }
 

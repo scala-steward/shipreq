@@ -15,7 +15,6 @@ import shipreq.webapp.member.project.filter._
 import shipreq.webapp.member.project.protocol.json.Latest._
 import shipreq.webapp.member.project.text.Text
 import shipreq.webapp.member.test.project.{EventEquality, IssueLite}
-import shipreq.webapp.server.logic.util.Obfuscators
 import sourcecode.Line
 
 trait WebappTestEquality
@@ -54,27 +53,23 @@ trait WebappTestUtil extends BaseTestUtil {
   import WebappTestUtil._
 
   val UserId1 = UserId(1)
-  lazy val PublicUserId1 = Obfuscators.userId.obfuscate(UserId1)
-  lazy val Creator1 = ProjectCreator(PublicUserId1)
+  lazy val Creator1 = ProjectCreator(UserId1)
   lazy val emptyProject1 = Project.init(Creator1)
   val Username1 = Username("usr1")
 
   val UserId2 = UserId(2)
-  lazy val PublicUserId2 = Obfuscators.userId.obfuscate(UserId2)
   val Username2 = Username("usr2")
 
   val UserId3 = UserId(3)
-  lazy val PublicUserId3 = Obfuscators.userId.obfuscate(UserId3)
   val Username3 = Username("usr3")
 
   val UserId4 = UserId(4)
-  lazy val PublicUserId4 = Obfuscators.userId.obfuscate(UserId4)
   val Username4 = Username("usr4")
 
   def looseProjectMetaData(p: Project, eventsTotal: Int = 123, eventsInit: Int = 2, role: ProjectRole = ProjectRole.Admin): ProjectMetaData =
     ProjectMetaData.fromProject(p)(
       id            = Obfuscated("t3sT"),
-      userId        = Obfuscated(""),
+      userId        = UserId1,
       eventsInit    = eventsInit.min(eventsTotal),
       eventsTotal   = eventsTotal,
       createdAt     = Instant.now().minus(28, DAYS),

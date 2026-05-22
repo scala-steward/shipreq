@@ -9,7 +9,7 @@ import shipreq.webapp.member.project.data._
 object ProjectSpaEntryPoint {
 
   final case class InitData(username      : Username,
-                            userId        : UserId.Public,
+                            userId        : UserId,
                             projectId     : ProjectId.Public,
                             creator       : ProjectCreator,
                             projectName   : Project.Name,
@@ -38,7 +38,7 @@ object ProjectSpaEntryPoint {
    * garbage-collectable as soon as possible.
    */
   final case class InitDataWithoutEncKey(username      : Username,
-                                         userId        : UserId.Public,
+                                         userId        : UserId,
                                          projectId     : ProjectId.Public,
                                          creator       : ProjectCreator,
                                          projectName   : Project.Name,
@@ -63,7 +63,7 @@ object ProjectSpaEntryPoint {
 
       override def unpickle(implicit state: UnpickleState): InitData = {
         val username       = state.unpickle[Username]
-        val userId         = state.unpickle[UserId.Public]
+        val userId         = state.unpickle[UserId]
         val projectId      = state.unpickle[ProjectId.Public]
         val creator        = state.unpickle[ProjectCreator]
         val projectName    = state.unpickle[Project.Name]

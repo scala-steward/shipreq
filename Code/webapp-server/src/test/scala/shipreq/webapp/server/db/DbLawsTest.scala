@@ -1,13 +1,11 @@
 package shipreq.webapp.server.db
 
 import doobie._
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import shipreq.base.test.db.{ImperativeXA, TestDb}
 import shipreq.webapp.base.data.{ProjectId, UserId}
 import shipreq.webapp.member.project.data.ProjectAccess
 import shipreq.webapp.server.db.WebappDoobieCodecs._
 import shipreq.webapp.server.logic.laws.DbLaws
-import shipreq.webapp.server.logic.util.Obfuscators
 import shipreq.webapp.server.test._
 
 object DbLawsTest extends DbLaws {
@@ -30,7 +28,6 @@ object DbLawsTest extends DbLaws {
 
     def getProjectAccess(id: ProjectId) =
       DbInterpreter.getProjectAccessQuery.toMap(id)
-        .map(_.mapKeysNow(Obfuscators.userId.obfuscate))
         .map(ProjectAccess.apply)
   }
 

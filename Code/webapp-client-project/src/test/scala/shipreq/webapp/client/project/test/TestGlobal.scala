@@ -28,10 +28,9 @@ import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test._
 import shipreq.webapp.member.ui.BaseStyles
 import shipreq.webapp.server.logic.event._
-import shipreq.webapp.server.logic.util.Obfuscators
 
 final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
-                       val userId           : UserId.Public,
+                       val userId           : UserId,
                        val username         : Username,
                        creator              : ProjectCreator,
                        initialSupp          : Supplimentary,
@@ -209,14 +208,11 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
     val supplimentaryDataForEvents: VerifiedEvent.Seq => CallbackTo[Supplimentary] =
       SupplimentaryLogic[CallbackTo](
         needUsernamesByUserId = ids => CallbackTo(ids.iterator.map { id =>
-          val publicId = Obfuscators.userId.obfuscate(id)
-          val username = TestGlobal.inverseUserDb.get(publicId).flatMap(_.left.toOption).getOrElse(
-            throw new IllegalStateException(s"Username not found for user ID $id (obfuscated: $publicId)")
+          val username = TestGlobal.inverseUserDb.get(id).flatMap(_.left.toOption).getOrElse(
+            throw new IllegalStateException(s"Username not found for user ID $id")
           )
           id -> username
         }.toMap),
-        obfuscate             = Obfuscators.userId.obfuscate,
-        deobfuscate           = Obfuscators.userId.deobfuscateOrThrow,
       )
 
     def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result, requiredRole: ProjectRole): MsgFn[I] = input => Some {
@@ -290,11 +286,11 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
 
 object TestGlobal {
 
-  val userDb: Map[Username \/ EmailAddr, UserId.Public] = Map(
-    -\/(Username1) -> PublicUserId1,
-    -\/(Username2) -> PublicUserId2,
-    -\/(Username3) -> PublicUserId3,
-    -\/(Username4) -> PublicUserId4,
+  val userDb: Map[Username \/ EmailAddr, UserId] = Map(
+    -\/(Username1) -> UserId1,
+    -\/(Username2) -> UserId2,
+    -\/(Username3) -> UserId3,
+    -\/(Username4) -> UserId4,
   )
 
   val inverseUserDb = userDb.iterator.map(_.swap).toMap
@@ -305,9 +301,9 @@ object TestGlobal {
     })
 
   def apply(p       : Project                  = Project.empty,
-            userId  : UserId.Public            = PublicUserId1,
+            userId  : UserId                   = UserId1,
             username: Username                 = Username1,
-            creator : ProjectCreator           = ProjectCreator(PublicUserId1),
+            creator : ProjectCreator           = ProjectCreator(UserId1),
             ww      : WebWorkerClient.Instance = TestWebWorkerClient(),
            ): TestGlobal = {
     val p2 = if (p.access.asMap.nonEmpty) p else p.copy(access = ProjectAccess.init(creator))

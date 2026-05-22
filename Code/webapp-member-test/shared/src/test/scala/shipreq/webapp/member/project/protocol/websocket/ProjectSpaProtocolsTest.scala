@@ -7,7 +7,6 @@ import shipreq.base.util._
 import shipreq.webapp.base.data.{ProjectRole, Rolodex, Username}
 import shipreq.webapp.base.protocol.websocket.WebSocketShared
 import shipreq.webapp.base.test.BinaryTestUtil._
-import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.sort.SortMethod._
@@ -481,9 +480,9 @@ object ProjectSpaProtocolsTest extends TestSuite {
         }
 
         "AccessUpdate" - {
-          val bin     = BinaryData.fromHex("0200010C44020371776502037A786300E0B05ECB61C0D454070190020468656865060CF606")
-          val expectE = Event.AccessUpdate(Map(Obfuscated("qwe") -> Some(ProjectRole.Collaborator), Obfuscated("zxc") -> None)).verified(12, Instant.parse("2021-12-28T19:00:00.123Z"))
-          val expectR = Rolodex(Map(Obfuscated("qwe") -> Username("hehe")))
+          val bin     = BinaryData.fromHex("0200010C440201020200E0B05ECB61C0D4540701010468656865060CF606")
+          val expectE = Event.AccessUpdate(Map(UserId1 -> Some(ProjectRole.Collaborator), UserId2 -> None)).verified(12, Instant.parse("2021-12-28T19:00:00.123Z"))
+          val expectR = Rolodex(Map(UserId1 -> Username("hehe")))
           val expect  = StateUpdate(expectE, Supplimentary(expectR))
           assertDecodeOk(codec)(bin, expect)
         }

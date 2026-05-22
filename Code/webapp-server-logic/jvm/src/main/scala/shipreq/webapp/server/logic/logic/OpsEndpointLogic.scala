@@ -17,7 +17,6 @@ import shipreq.webapp.member.project.event.{ApplyEvent, VerifiedEvent}
 import shipreq.webapp.server.logic.algebra.{Crypto, DB, Server}
 import shipreq.webapp.server.logic.data.ProjectEncryptionKey
 import shipreq.webapp.server.logic.dispatch.{ResponseCmd, StatusCode}
-import shipreq.webapp.server.logic.util.Obfuscators
 
 trait OpsEndpointLogic[F[_]] {
   import OpsEndpointLogic._
@@ -113,7 +112,7 @@ object OpsEndpointLogic extends HasLogger {
         case \/-(ves) =>
           db.getUserId(user).flatMap {
             case Some(uid) =>
-              val creator = ProjectCreator(Obfuscators.userId.obfuscate(uid))
+              val creator = ProjectCreator(uid)
               ApplyEvent.untrusted(ves)(Project.init(creator)) match {
                 case \/-(p) =>
                   for {

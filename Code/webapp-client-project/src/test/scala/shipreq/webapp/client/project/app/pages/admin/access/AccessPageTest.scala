@@ -36,8 +36,8 @@ object AccessPageTest extends TestSuite {
 
   private val project = applyEventsSuccessfully(SampleProject.project,
     Event.AccessUpdate(Map(
-      PublicUserId2 -> Some(Admin),
-      PublicUserId3 -> Some(Collaborator),
+      UserId2 -> Some(Admin),
+      UserId3 -> Some(Collaborator),
     )),
   )
 

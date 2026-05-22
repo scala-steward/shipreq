@@ -19,7 +19,7 @@ object Rev0 {
   import shipreq.webapp.member.project.protocol.binary.v1.PostEvents._
 
   implicit lazy val picklerProjectCreator: Pickler[ProjectCreator] =
-    implicitly[Pickler[UserId.Public]].xmap(ProjectCreator.apply)(_.userId)
+    implicitly[Pickler[UserId]].xmap(ProjectCreator.apply)(_.userId)
 
   implicit lazy val picklerProjectRole: Pickler[ProjectRole] =
     new Pickler[ProjectRole] {
@@ -58,7 +58,7 @@ object Rev0 {
     }
 
   private[binary] implicit lazy val picklerEventAccessUpdate: Pickler[Event.AccessUpdate] =
-    pickleMap[UserId.Public, Option[ProjectRole]].xmap(Event.AccessUpdate.apply)(_.updates)
+    pickleMap[UserId, Option[ProjectRole]].xmap(Event.AccessUpdate.apply)(_.updates)
 
   implicit lazy val picklerEvent: Pickler[Event] =
     new Pickler[Event] {
@@ -324,7 +324,7 @@ object Rev0 {
     transformPickler(ClientSideProjectEncryptionKey.apply)(_.value)
 
   implicit lazy val picklerProjectAccess: Pickler[ProjectAccess] =
-    pickleMap[UserId.Public, ProjectRole].xmap(ProjectAccess.apply)(_.asMap)
+    pickleMap[UserId, ProjectRole].xmap(ProjectAccess.apply)(_.asMap)
 
   implicit lazy val picklerProject: Pickler[Project] =
     new Pickler[Project] {
@@ -394,6 +394,6 @@ object Rev0 {
     }
 
   implicit lazy val picklerRolodex: Pickler[Rolodex] =
-    pickleMap[UserId.Public, Username].xmap(Rolodex.apply)(_.asMap)
+    pickleMap[UserId, Username].xmap(Rolodex.apply)(_.asMap)
 
 }

@@ -18,7 +18,6 @@ import shipreq.webapp.server.config.Global
 import shipreq.webapp.server.interpreter.ServerInterpreter
 import shipreq.webapp.server.logic.data.ProjectEncryptionKey
 import shipreq.webapp.server.logic.logic.PublicSpaLogic
-import shipreq.webapp.server.logic.util.Obfuscators
 import shipreq.webapp.server.test.WebappServerTestUtil._
 import shipreq.webapp.server.test._
 import sourcecode.Line
@@ -192,7 +191,6 @@ object DbTest extends TestSuite {
           val dbu   = DbUtil(xa)
           val db    = dbu.dbAlgebra
           var uid   = dbu.newUserId()
-          var uidp  = Obfuscators.userId.obfuscate(uid)
           val uids  = dbu.userIdsNE()
           val data  = RandomEventStream.withConfig(_.activeOnly.withCreator(uid).withUserIds(uids)).sampleEventStreamWithProjects
           val data1 = data.take(RandomEventStream.InitialEventCount)
@@ -201,8 +199,7 @@ object DbTest extends TestSuite {
           val pid   = xa ! db.createProject(uid, data1.map(_._1.event.active), data1.last._2, k)
 
           def selectAdminFrom(p: Project): Unit = {
-            uidp = p.access.adminIterator().next()
-            uid = Obfuscators.userId.deobfuscateOrThrow(uidp)
+            uid = p.access.adminIterator().next()
           }
 
           def assertPMD(expect: ProjectMetaData => ProjectMetaData)(implicit l: Line): Unit = {
@@ -216,7 +213,7 @@ object DbTest extends TestSuite {
           assertEq("first ord", read1.head.ord, EventOrd.first)
           assertPMD(a => ProjectMetaData.fromProject(data1.last._2)(
             id            = a.id,
-            userId        = uidp,
+            userId        = uid,
             eventsInit    = data1.length,
             eventsTotal   = data1.length,
             createdAt     = a.createdAt,
@@ -234,7 +231,7 @@ object DbTest extends TestSuite {
           val p = data.last._2
           assertPMD(a => ProjectMetaData.fromProject(p)(
             id            = a.id,
-            userId        = uidp,
+            userId        = uid,
             eventsInit    = data1.length,
             eventsTotal   = data.length,
             createdAt     = a.createdAt,

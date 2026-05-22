@@ -4,7 +4,6 @@ import io.circe._
 import io.circe.syntax._
 import shipreq.base.util.JsonUtil._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.protocol.json.JsonCodec
 import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
@@ -12,14 +11,11 @@ import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
 /** v2.0: For ShipReq Phase 3. */
 object Rev0 {
 
-  // implicit lazy val jsonCodecUserIdPublic: JsonCodec[UserId.Public] =
-  //   JsonCodec.obfuscated
+  implicit lazy val keyDecoderUserId: KeyDecoder[UserId] =
+    KeyDecoder.decodeKeyLong.map(UserId.apply)
 
-  implicit lazy val keyDecoderUserIdPublic: KeyDecoder[UserId.Public] =
-    KeyDecoder.decodeKeyString.map(Obfuscated.apply)
-
-  implicit lazy val keyEncoderUserIdPublic: KeyEncoder[UserId.Public] =
-    KeyEncoder.encodeKeyString.contramap(_.value)
+  implicit lazy val keyEncoderUserId: KeyEncoder[UserId] =
+    KeyEncoder.encodeKeyLong.contramap(_.value)
 
   implicit lazy val decoderProjectRole: Decoder[ProjectRole] =
     Decoder.instance(c =>
@@ -53,7 +49,7 @@ object Rev0 {
   object EventData {
 
     implicit val jsonCodecEventAccessUpdate: JsonCodec[Event.AccessUpdate] =
-      JsonCodec.map[UserId.Public, Option[ProjectRole]]
+      JsonCodec.map[UserId, Option[ProjectRole]]
         .xmap(Event.AccessUpdate.apply)(_.updates)
   }
 

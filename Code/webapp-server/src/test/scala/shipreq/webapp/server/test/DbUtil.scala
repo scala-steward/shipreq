@@ -15,7 +15,6 @@ import shipreq.webapp.server.db.WebappDoobieCodecs._
 import shipreq.webapp.server.interpreter.SecurityInterpreter
 import shipreq.webapp.server.logic.algebra.{Crypto, DB}
 import shipreq.webapp.server.logic.data._
-import shipreq.webapp.server.logic.util.Obfuscators
 import shipreq.webapp.server.test.WebappServerTestUtil._
 
 object DbUtil {
@@ -47,7 +46,7 @@ final case class DbUtil(xa: ImperativeXA) {
   def newProjectId(userId    : UserId              = getOrCreateUserId(),
                    initEvents: Vector[ActiveEvent] = Vector.empty,
                   ): ProjectId = {
-    val c = ProjectCreator(Obfuscators.userId.obfuscate(userId))
+    val c = ProjectCreator(userId)
     val p = applyEventsSuccessfully(Project.init(c), initEvents: _*)
     val k = ProjectEncryptionKey(DbUtil.crypto.generateKey256.unsafeRun())
     xa ! dbAlgebra.createProject(userId, initEvents, p, k)

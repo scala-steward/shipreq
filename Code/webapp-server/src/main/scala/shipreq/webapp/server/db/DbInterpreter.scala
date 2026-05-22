@@ -541,7 +541,7 @@ object DbInterpreter {
       }
     }
 
-    private[db] val getProjectRolodexQuery = Query[ProjectId, (UserId.Public, Username)](
+    private[db] val getProjectRolodexQuery = Query[ProjectId, (UserId, Username)](
         """SELECT a.usr_id, u.username
           |  FROM project_access a, usr u
           | WHERE a.usr_id=u.id

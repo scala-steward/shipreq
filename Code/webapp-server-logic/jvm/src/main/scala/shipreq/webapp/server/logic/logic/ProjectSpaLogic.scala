@@ -95,11 +95,7 @@ object ProjectSpaLogic extends StrictLogging {
                                    sessionId  : Security.SessionId,
                                    span       : Any,
                                    connectedAt: Instant,
-                                   expiresAt  : Instant) {
-
-    def userIdPublic: UserId.Public =
-      Obfuscators.userId.obfuscate(user.id)
-  }
+                                   expiresAt  : Instant)
 
   final case class WebSocketState[F[_]](sub: Option[Redis.Subscription[F]])
   object WebSocketState {
@@ -154,7 +150,7 @@ object ProjectSpaLogic extends StrictLogging {
 
     val webSocketHelper = {
       val p = Obfuscated(null): ProjectId.Public
-      val c = ProjectCreator(Obfuscated(null))
+      val c = ProjectCreator(UserId(-1))
       WebSocketServerHelper(ProjectSpaProtocols.WebSocket(p, c))
     }
 
@@ -179,13 +175,11 @@ object ProjectSpaLogic extends StrictLogging {
         for {
           o <- runDB(db.projectSpaInitPage(pid, uid))
         } yield o.map { i =>
-          val userId    = Obfuscators.userId.obfuscate(uid)
-          val creatorId = if (i.creatorId ==* uid) userId else Obfuscators.userId.obfuscate(i.creatorId)
           ProjectSpaEntryPoint.InitData(
             username         = username,
-            userId           = Obfuscators.userId.obfuscate(uid),
+            userId           = uid,
             projectId        = Obfuscators.projectId.obfuscate(pid),
-            creator          = ProjectCreator(creatorId),
+            creator          = ProjectCreator(i.creatorId),
             projectName      = i.name,
             assetManifest    = am,
             webWorkerJsUrl   = sjsUrls.webWorker,
@@ -710,8 +704,8 @@ object ProjectSpaLogic extends StrictLogging {
 
       private def onUpdateAccess: MsgFn[UpdateAccessCmd, EventResult] = in =>
         UpdateAccessCmd.resolve(in.input)(
-          userId     = in.static.userIdPublic,
-          getUserId  = u => runDB(db.getUserId(u)).map(_.map(Obfuscators.userId.obfuscate)),
+          userId     = in.static.user.id,
+          getUserId  = u => runDB(db.getUserId(u)),
           onNotFound = \/-(MsgFnOut(-\/(ErrorMsg("User not found.")), None)),
           modify     = (m, p) => updateProject(MakeEvent.updateAccess, p)(in.copy(input = m))
         )
@@ -721,8 +715,6 @@ object ProjectSpaLogic extends StrictLogging {
       private val supplimentaryDataForEvents: VerifiedEvent.Seq => F[Supplimentary] =
         SupplimentaryLogic[F](
           needUsernamesByUserId = a => runDB(db.needUsernamesByUserId(a)),
-          obfuscate             = Obfuscators.userId.obfuscate,
-          deobfuscate           = Obfuscators.userId.deobfuscateOrThrow,
         )
 
       private val projectUpdater: ProjectUpdater[D, F] =
@@ -819,11 +811,10 @@ object ProjectSpaLogic extends StrictLogging {
 
           case WriteDb =>
             val project = s.local
-            val userPubId = Obfuscators.userId.obfuscate(userId)
 
             val result: PotentialChange[ErrorMsg, ApplyNewEvent.Updated] =
               for {
-                _ <- project.access.requirePC(requiredRole, userPubId)
+                _ <- project.access.requirePC(requiredRole, userId)
                 e <- mkEvent(project)
                 u <- ApplyNewEvent(e, project)
               } yield u

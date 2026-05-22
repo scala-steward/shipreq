@@ -18,7 +18,7 @@ import shipreq.webapp.member.project.util.DataReusability._
 
 object ExistingUserSegment {
 
-  final case class Props(userId         : UserId.Public,
+  final case class Props(userId         : UserId,
                          access         : ProjectAccess,
                          rolodex        : Rolodex,
                          editability    : Permission,
@@ -34,7 +34,7 @@ object ExistingUserSegment {
       Reusability.derive
   }
 
-  type State = Map[UserId.Public, ProjectRole]
+  type State = Map[UserId, ProjectRole]
 
   object State {
     implicit val reusability: Reusability[State] =
@@ -49,7 +49,7 @@ object ExistingUserSegment {
   def render(p: Props) = {
     val s = p.state.value
 
-    def row(name: String, id: UserId.Public, delete: Permission) = {
+    def row(name: String, id: UserId, delete: Permission) = {
 
       val asyncKey =
         AsyncKey(id)

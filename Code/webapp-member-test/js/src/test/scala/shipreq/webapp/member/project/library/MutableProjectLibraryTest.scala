@@ -4,7 +4,6 @@ import japgolly.scalajs.react.CallbackTo
 import java.time.Instant
 import nyaya.gen.Gen
 import scala.collection.immutable.TreeSet
-import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.test.ProjectLibraryTestUtil._
@@ -23,7 +22,7 @@ object MutableProjectLibraryTest extends TestSuite {
 
       val genTest: Gen[(WithMetaData, Vector[VerifiedEvent], Project, WithMetaData)] = {
         val md1 = looseProjectMetaData(p1, eventsTotal = p1.ordAsInt, eventsInit = 0)
-        val s1 = WithMetaData.init(Creator1, p1, md1, Obfuscated(""), Cache.Disabled(Creator1))
+        val s1 = WithMetaData.init(Creator1, p1, md1, UserId1, Cache.Disabled(Creator1))
         for {
           (p2, ves) <- RandomEventStream.verifiedEvents(80).run(p1)
           batches   <- Gen.batches(ves, 0 to 7)
