@@ -140,7 +140,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         Event.ProjectTemplateApply(ProjectTemplate.V1),
         Event.ProjectNameSet("hell"),
         Event.ProjectNameSet("hello"),
-        Event.AccessUpdate(Map(user3.id -> Some(ProjectRole.Collaborator))),
+        Event.AccessUpdate(user3.id, Some(ProjectRole.Collaborator)),
       )
 
       val creator              = ProjectCreator(user2.id)
@@ -436,7 +436,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         import t._
 
         val u = db.newUserEntry()
-        val cmd = UpdateAccessCmd.Modify(Map(u.id -> Some(ProjectRole.Collaborator)))
+        val cmd = UpdateAccessCmd.Modify(u.id, Some(ProjectRole.Collaborator))
         val req = WsReqRes.UpdateAccess.AndReq(cmd)
 
         assertDifference(s"[$c] db reads", db.loadProjectLog.length)(expectFullDbReads) {
@@ -486,7 +486,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
       "denyCollaborator" - {
         implicit val t = new Tester; import t._
         val static3 = p1.static.copy(user = user3.toUser)
-        val cmd = UpdateAccessCmd.Modify(Map(user2.id -> None))
+        val cmd = UpdateAccessCmd.Modify(user2.id, None)
         val req = WsReqRes.UpdateAccess.AndReq(cmd)
         val result = sendMsg(req, static3, subscribedState)._1
         assertEq(result, \/-(-\/(ErrorMsg("Admin rights required."))))
@@ -506,7 +506,7 @@ abstract class ProjectSpaLogicTest(cfg: Config) extends TestSuite {
         "adminWithOtherAdmin" - {
           implicit val t = new Tester; import t._
           // First add another admin
-          val addAdminCmd = UpdateAccessCmd.Modify(Map(user3.id -> Some(ProjectRole.Admin)))
+          val addAdminCmd = UpdateAccessCmd.Modify(user3.id, Some(ProjectRole.Admin))
           sendMsg(WsReqRes.UpdateAccess.AndReq(addAdminCmd), p1.static, subscribedState)
           // Now remove self
           val req = WsReqRes.UpdateAccess.AndReq(UpdateAccessCmd.RemoveSelf)

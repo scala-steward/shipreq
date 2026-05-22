@@ -2668,7 +2668,7 @@ object RandomData {
       genProjectTemplate map ProjectTemplateApply
 
     val genAccessUpdate: Gen[AccessUpdate] =
-      userId.mapTo(projectRole.option)(1 to 8).map(AccessUpdate.apply)
+      Gen.apply2(AccessUpdate.apply)(userId, projectRole.option)
 
     val genApplicableTagCreate: Gen[ApplicableTagCreate] =
       Gen.apply2(ApplicableTagCreate)(applicableTagId, applicableTagGD.nonEmptyValues)

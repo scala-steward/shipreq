@@ -254,12 +254,13 @@ object DB {
 
       event match {
 
-        case Event.AccessUpdate(m) =>
-          val remove = m.keysIterator.toSet
-          val add = m.iterator.flatMap {
-              case (u, Some(p)) => (u, p) :: Nil
-              case _            => Nil
-            }.toMap
+        case e: Event.AccessUpdate =>
+          var remove = Set.empty[UserId]
+          var add    = Map.empty[UserId, ProjectRole]
+          e.newRole match {
+            case Some(r) => add = add.updated(e.userId, r)
+            case None    => remove += e.userId
+          }
           Some(updateProjectAccess(pid, remove, add))
 
         case e: Event.ProjectNameSet =>

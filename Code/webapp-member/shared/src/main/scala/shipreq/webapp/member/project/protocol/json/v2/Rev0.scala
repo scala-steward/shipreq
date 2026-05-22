@@ -11,11 +11,8 @@ import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
 /** v2.0: For ShipReq Phase 3. */
 object Rev0 {
 
-  implicit lazy val keyDecoderUserId: KeyDecoder[UserId] =
-    KeyDecoder.decodeKeyLong.map(UserId.apply)
-
-  implicit lazy val keyEncoderUserId: KeyEncoder[UserId] =
-    KeyEncoder.encodeKeyLong.contramap(_.value)
+  implicit lazy val jsonCodecUserId: JsonCodec[UserId] =
+    JsonCodec.long.xmap(UserId.apply)(_.value)
 
   implicit lazy val decoderProjectRole: Decoder[ProjectRole] =
     Decoder.instance(c =>
@@ -48,9 +45,11 @@ object Rev0 {
 
   object EventData {
 
-    implicit val jsonCodecEventAccessUpdate: JsonCodec[Event.AccessUpdate] =
-      JsonCodec.map[UserId, Option[ProjectRole]]
-        .xmap(Event.AccessUpdate.apply)(_.updates)
+    implicit val decoderEventAccessUpdate: Decoder[Event.AccessUpdate] =
+      Decoder.forProduct2("userId", "newRole")(Event.AccessUpdate.apply)
+
+    implicit val encoderEventAccessUpdate: Encoder[Event.AccessUpdate] =
+      Encoder.forProduct2("userId", "newRole")(a => (a.userId, a.newRole))
   }
 
   // ===================================================================================================================

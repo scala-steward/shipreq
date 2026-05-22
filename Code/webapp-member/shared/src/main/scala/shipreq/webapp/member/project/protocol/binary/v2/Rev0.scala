@@ -58,7 +58,17 @@ object Rev0 {
     }
 
   private[binary] implicit lazy val picklerEventAccessUpdate: Pickler[Event.AccessUpdate] =
-    pickleMap[UserId, Option[ProjectRole]].xmap(Event.AccessUpdate.apply)(_.updates)
+    new Pickler[Event.AccessUpdate] {
+      override def pickle(a: Event.AccessUpdate)(implicit state: PickleState): Unit = {
+        state.pickle(a.userId)
+        state.pickle(a.newRole)
+      }
+      override def unpickle(implicit state: UnpickleState): Event.AccessUpdate = {
+        val userId  = state.unpickle[UserId]
+        val newRole = state.unpickle[Option[ProjectRole]]
+        Event.AccessUpdate(userId, newRole)
+      }
+    }
 
   implicit lazy val picklerEvent: Pickler[Event] =
     new Pickler[Event] {

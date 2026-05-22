@@ -52,7 +52,9 @@ abstract class DbLaws extends TestSuite {
     }
 
     final def updateProjectAccess(pid: ProjectId, updates: Map[UserId, Option[ProjectRole]]): SaveProjectEventError \/ Unit =
-      addEvent(pid, Event.AccessUpdate(updates))
+      updates.toList
+        .sortBy(e => if (e._2.nonEmpty) -e._1.value else e._1.value)
+        .traverseVoid(e => addEvent(pid, Event.AccessUpdate(e._1, e._2)))
   }
 
   // ===================================================================================================================

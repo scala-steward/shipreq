@@ -11,7 +11,7 @@ trait ApplyOtherEvent {
     val validateProjectName = validateA(V.projectName)
 
     def applyAccessUpdate(e: AccessUpdate): Eval[Unit] =
-      Eval.mod(Project.access.modify(_.update(e.updates)))
+      Eval.mod(Project.access.modify(_.update(e.userId, e.newRole)))
 
     def applyProjectNameSet(e: ProjectNameSet): Eval[Unit] =
       validateProjectName(e.name).flatMap(name =>

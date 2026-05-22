@@ -25,9 +25,9 @@ object SupplimentaryLogic {
           ve.event match {
 
             case e: Event.AccessUpdate =>
-              e.updates.foreach {
-                case (uid, Some(_)) => newUserIds += uid
-                case _              =>
+              e.newRole match {
+                case Some(_) => newUserIds += e.userId
+                case _       =>
               }
 
             case _ =>

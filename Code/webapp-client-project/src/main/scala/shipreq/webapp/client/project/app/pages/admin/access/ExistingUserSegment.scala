@@ -80,7 +80,7 @@ object ExistingUserSegment {
           state  = Button.State.loadingWhen(inFlight),
           colour = Colour.Green,
         )
-        val cmd = UpdateAccessCmd.Modify(Map(id -> Some(selected)))
+        val cmd = UpdateAccessCmd.Modify(id, Some(selected))
         val apply = p.async(asyncKey).write.onFailureShowAndForget(p.sspUpdateAccess(cmd))
         val tag = button.onClick(apply)
 
@@ -93,7 +93,7 @@ object ExistingUserSegment {
           state  = Button.State.loadingWhen(inFlight),
           colour = ColourPlus.Negative,
         )
-        val cmd = UpdateAccessCmd.Modify(Map(id -> None))
+        val cmd = UpdateAccessCmd.Modify(id, None)
         val apply =
         for {
           proceed <- p.confirmJs(s"Are you sure you want to revoke $name's access?")

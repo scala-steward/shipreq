@@ -17,11 +17,11 @@ final case class ProjectAccess(asMap: Map[UserId, ProjectRole]) {
   def hasAdmin: Boolean =
     adminIterator().nonEmpty
 
-  def update(updates: Map[UserId, Option[ProjectRole]]): ProjectAccess = {
+  def update(user: UserId, newRole: Option[ProjectRole]): ProjectAccess = {
     var m = asMap
-    updates.foreach {
-      case (u, None)    => m -= u
-      case (u, Some(p)) => m = m.updated(u, p)
+    newRole match {
+      case Some(r) => m = m.updated(user, r)
+      case None    => m -= user
     }
     ProjectAccess(m)
   }

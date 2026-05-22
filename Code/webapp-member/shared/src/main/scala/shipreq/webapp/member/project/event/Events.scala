@@ -264,5 +264,5 @@ object Event {
   // ===================================================================================================================
   // Access
 
-  final case class AccessUpdate(updates: Map[UserId, Option[ProjectRole]]) extends ActiveEvent
+  final case class AccessUpdate(userId: UserId, newRole: Option[ProjectRole]) extends ActiveEvent
 }

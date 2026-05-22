@@ -480,11 +480,20 @@ object ProjectSpaProtocolsTest extends TestSuite {
         }
 
         "AccessUpdate" - {
-          val bin     = BinaryData.fromHex("0200010C440201020200E0B05ECB61C0D4540701010468656865060CF606")
-          val expectE = Event.AccessUpdate(Map(UserId1 -> Some(ProjectRole.Collaborator), UserId2 -> None)).verified(12, Instant.parse("2021-12-28T19:00:00.123Z"))
-          val expectR = Rolodex(Map(UserId1 -> Username("hehe")))
-          val expect  = StateUpdate(expectE, Supplimentary(expectR))
-          assertDecodeOk(codec)(bin, expect)
+          "some" - {
+            val bin     = BinaryData.fromHex("0200010C440102E0B05ECB61C0D4540701010468656865060CF606")
+            val expectE = Event.AccessUpdate(UserId1, Some(ProjectRole.Collaborator)).verified(12, Instant.parse("2021-12-28T19:00:00.123Z"))
+            val expectR = Rolodex(Map(UserId1 -> Username("hehe")))
+            val expect  = StateUpdate(expectE, Supplimentary(expectR))
+            assertDecodeOk(codec)(bin, expect)
+          }
+          "none" - {
+            val bin     = BinaryData.fromHex("0200010C440200E0B05ECB61C0D4540700060CF606")
+            val expectE = Event.AccessUpdate(UserId2, None).verified(12, Instant.parse("2021-12-28T19:00:00.123Z"))
+            val expectR = Rolodex(Map.empty)
+            val expect  = StateUpdate(expectE, Supplimentary(expectR))
+            assertDecodeOk(codec)(bin, expect)
+          }
         }
 
       }
