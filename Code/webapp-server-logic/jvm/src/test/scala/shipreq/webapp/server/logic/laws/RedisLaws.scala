@@ -204,7 +204,7 @@ object RedisLaws {
           def events =
             (0 until size).iterator.map { i =>
               val ord = start + i
-              VerifiedEvent(ord, Event.ProjectNameSet(ord.value.toString), startTime.plusSeconds(ord.value))
+              VerifiedEvent(ord, Event.ProjectNameSet(ord.value.toString), UserId1, startTime.plusSeconds(ord.value))
             }
           VerifiedEvent.Seq.empty ++ events
         }

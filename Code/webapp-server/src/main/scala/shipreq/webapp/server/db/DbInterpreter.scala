@@ -327,11 +327,11 @@ object DbInterpreter {
 
   private[db] object GetProjectEventLogic {
 
-    type Row = (EventOrd, Short, Json, Instant)
+    type Row = (EventOrd, Short, Json, UserId, Instant)
     type Result = DB.ReadProjectEventError \/ VerifiedEvent.Seq
 
     def query(where: Fragment): Query0[Row] =
-      (fr"SELECT ord,type,data,created_at FROM project_event WHERE " ++ where).query[Row]
+      (fr"SELECT ord,type,data,usr_id,created_at FROM project_event WHERE " ++ where).query[Row]
 
     def all(projectId: ProjectId): Query0[Row] =
       query(fr"project_id=$projectId")
@@ -364,7 +364,7 @@ object DbInterpreter {
         for (row <- it)
           if (err.isEmpty)
             ProjectEventSerialisation.decode(row._1, row._2, row._3) match {
-              case \/-(e) => res += VerifiedEvent(row._1, e, row._4)
+              case \/-(e) => res += VerifiedEvent(row._1, e, row._4, row._5)
               case -\/(e) => err = Some(e)
             }
 
@@ -447,7 +447,7 @@ object DbInterpreter {
 
       unsafeInsertEvent(pid, ord, e, uid).attemptSql.flatMap {
         case Right(now) =>
-          val result: Result = \/-(VerifiedEvent(ord, e, now))
+          val result: Result = \/-(VerifiedEvent(ord, e, uid, now))
           updateProjectStats.run((p.liveReqCount, p.content.reqs.size, pid)).map(_ => result)
 
         case Left(e: PSQLException) if e.getMessage.contains("ord_key") =>

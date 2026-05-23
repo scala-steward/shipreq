@@ -198,10 +198,6 @@ object DbTest extends TestSuite {
           val k     = ProjectEncryptionKey(crypto.generateKey256.unsafeRun())
           val pid   = xa ! db.createProject(uid, data1.map(_._1.event.active), data1.last._2, k)
 
-          def selectAdminFrom(p: Project): Unit = {
-            uid = p.access.adminIterator().next()
-          }
-
           def assertPMD(expect: ProjectMetaData => ProjectMetaData)(implicit l: Line): Unit = {
             val a = (xa ! db.getProjectMetaData(pid, uid)).get
             val e = expect(a)
@@ -223,7 +219,7 @@ object DbTest extends TestSuite {
           var ord = read1.last.ord
           for ((e, p) <- data2) {
             ord = EventOrd(ord.value + 1)
-            selectAdminFrom(p)
+            uid = e.author
             (xa ! db.saveProjectEvent(pid, ord, e.event.active, p, uid)).getOrThrow()
           }
           val readAll = (xa ! db.getProjectEvents(pid)).getOrThrow()

@@ -298,13 +298,15 @@ object Rev0 {
       override def pickle(a: VerifiedEvent)(implicit state: PickleState): Unit = {
         state.pickle(a.ord)
         state.pickle(a.event)
+        state.pickle(a.author)
         state.pickle(a.createdAt)
       }
       override def unpickle(implicit state: UnpickleState): VerifiedEvent = {
         val ord       = state.unpickle[EventOrd]
         val event     = state.unpickle[Event]
+        val author    = state.unpickle[UserId]
         val createdAt = state.unpickle[Instant]
-        VerifiedEvent(ord, event, createdAt)
+        VerifiedEvent(ord, event, author, createdAt)
       }
     }
 

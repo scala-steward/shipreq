@@ -78,7 +78,7 @@ trait WebappTestUtil extends BaseTestUtil {
     ).copy(role = Option(role))
 
   def verifyEvent(p: Project, e: Event): VerifiedEvent = {
-    val ve = VerifiedEvent(p.history.nextOrd, e, Instant.now())
+    val ve = VerifiedEvent(p.history.nextOrd, e, UserId1, Instant.now())
     applyVerifiedEventSuccessfully(p, ve)
     ve
   }
@@ -86,14 +86,14 @@ trait WebappTestUtil extends BaseTestUtil {
   def verifyEvents(p0: Project)(es: Event*): VerifiedEvent.Seq = {
     var p = p0
     VerifiedEvent.Seq.empty ++ es.iterator.map { e =>
-      val ve = VerifiedEvent(p.history.nextOrd, e, Instant.now())
+      val ve = VerifiedEvent(p.history.nextOrd, e, UserId1, Instant.now())
       p = applyVerifiedEventSuccessfully(p, ve)
       ve
     }
   }
 
   def applyEventSuccessfully(p: Project, e: Event): Project = {
-    val ve = VerifiedEvent(p.history.nextOrd, e, Instant.now())
+    val ve = VerifiedEvent(p.history.nextOrd, e, UserId1, Instant.now())
     applyVerifiedEventSuccessfully(p, ve)
   }
 
@@ -120,7 +120,7 @@ trait WebappTestUtil extends BaseTestUtil {
 
   def setOrd(p: Project, ord: EventOrd): Project = {
     val now = Instant.now().minusSeconds(ord.value + 1)
-    def ve(o: EventOrd) = VerifiedEvent(o, Event.ProjectNameSet(o.value.toString), now.plusSeconds(o.value))
+    def ve(o: EventOrd) = VerifiedEvent(o, Event.ProjectNameSet(o.value.toString), UserId1, now.plusSeconds(o.value))
     var events = p.history.events
     if (events.nonEmpty)
       events = events.takeWhile(_.ord <= ord)

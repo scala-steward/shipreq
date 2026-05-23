@@ -45,9 +45,9 @@ abstract class DbLaws extends TestSuite {
       val creator = needProjectCreator(pid)
       val events  = getProjectEvents(pid).getOrThrow()
       val p1      = applyVerifiedEventsSuccessfully(Project.init(creator), events)
-      val ve      = VerifiedEvent(p1.history.nextOrd, e, Instant.now())
-      val p2      = ApplyEvent.trusted(ve)(p1).fold(_.throwException(), identity)
       val uid     = p1.access.adminIterator().next()
+      val ve      = VerifiedEvent(p1.history.nextOrd, e, uid, Instant.now())
+      val p2      = ApplyEvent.trusted(ve)(p1).fold(_.throwException(), identity)
       saveProjectEvent(pid, ve.ord, e, p2, uid).void
     }
 

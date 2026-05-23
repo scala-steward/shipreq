@@ -231,7 +231,7 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
           case PotentialChange.Success(ApplyNewEvent.Updated(_, event)) =>
             for {
               ord  <- nextEventOrd
-              ves   = VerifiedEvent.Seq.empty + VerifiedEvent(ord, event, Instant.now())
+              ves   = VerifiedEvent.Seq.empty + VerifiedEvent(ord, event, UserId1, Instant.now())
               supp <- supplimentaryDataForEvents(ves)
             } yield \/-(StateUpdate(ves, supp))
 

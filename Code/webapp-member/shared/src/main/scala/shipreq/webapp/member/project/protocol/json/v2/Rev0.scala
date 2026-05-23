@@ -206,9 +206,9 @@ object Rev0 {
   }
 
   implicit lazy val decoderVerifiedEvent: Decoder[VerifiedEvent] =
-    Decoder.forProduct3("#", "event", "createdAt")(VerifiedEvent.apply)
+    Decoder.forProduct4("#", "event", "author", "createdAt")(VerifiedEvent.apply)
 
   implicit lazy val encoderVerifiedEvent: Encoder[VerifiedEvent] =
-    Encoder.forProduct3("#", "event", "createdAt")(a => (a.ord, a.event, a.createdAt))
+    Encoder.forProduct4("#", "event", "author", "createdAt")(a => (a.ord, a.event, a.author, a.createdAt))
 
 }

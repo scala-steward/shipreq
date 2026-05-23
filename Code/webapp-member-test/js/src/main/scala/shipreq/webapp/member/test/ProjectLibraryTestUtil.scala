@@ -19,6 +19,7 @@ object ProjectLibraryTestUtil {
       VerifiedEvent(
         EventOrd(i),
         Event.ProjectNameSet(i.toString),
+        UserId1,
         t.plusSeconds(i),
       )
     }

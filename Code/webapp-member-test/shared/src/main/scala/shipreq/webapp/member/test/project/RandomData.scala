@@ -2975,7 +2975,7 @@ object RandomData {
       Gen.chooseInt(100000).map(i => EventOrd(i + 1))
 
     val verifiedEvent: Gen[VerifiedEvent] =
-      Gen.apply3(VerifiedEvent.apply)(eventOrd, event, instantPast)
+      Gen.apply4(VerifiedEvent.apply)(eventOrd, event, userId, instantPast)
 
     def verifiedEventSeq(implicit sizeSpec: SizeSpec): Gen[VerifiedEvent.Seq] =
       Gen { ctx =>
@@ -2987,7 +2987,8 @@ object RandomData {
           i -= 1
           val e = event.run(ctx)
           val o = EventOrd(i)
-          val ve = VerifiedEvent(o, e, t)
+          val a = userId.run(ctx)
+          val ve = VerifiedEvent(o, e, a, t)
           events += ve
           t = t.minusMillis(genMs.run(ctx))
         }

@@ -12,7 +12,10 @@ final case class ProjectAccess(asMap: Map[UserId, ProjectRole]) {
     apply(user).get
 
   def adminIterator(): Iterator[UserId] =
-    asMap.iterator.filter(_._2 ==* ProjectRole.Admin).map(_._1)
+    authorisedIterator(ProjectRole.Admin)
+
+  def authorisedIterator(requiredRole: ProjectRole): Iterator[UserId] =
+    asMap.iterator.filter(e => requiredRole.isSatisfiedBy(e._2) is Allow).map(_._1)
 
   def hasAdmin: Boolean =
     adminIterator().nonEmpty

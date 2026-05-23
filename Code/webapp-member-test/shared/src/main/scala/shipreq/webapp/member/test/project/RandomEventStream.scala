@@ -76,14 +76,24 @@ object RandomEventStream extends RandomEventStreamDsl(RandomEventStreamConfig.de
 
   def liftPGE(eventGen: State => Gen[Event], maxAttempts: Int = 60): ProjectDepGen[VerifiedEvent] =
     StateGen(p1 =>
-      eventGen(p1).map(e =>
+      eventGen(p1).flatMap(e =>
         ApplyEvent.untrusted.partialApplyUnverified(e)(p1) match {
-          case \/-(p2) => Some {
-            val ve = VerifiedEvent(p1.history.nextOrd, e, Instant.now())
-            val p3 = Project.history.modify(_ + ve)(p2)
-            (p3, ve)
-          }
-          case -\/(_)  => None
+          case \/-(p2) =>
+            def userIds = p2.access.asMap.iterator.flatMap { case (userId, userRole) =>
+              val requiredRole = EventPermission.requiredRole(userId, e)
+              if (requiredRole.isSatisfiedBy(userRole) is Allow)
+                userId :: Nil
+              else
+                Nil
+            }
+            Gen.choose_!(userIds).map { author =>
+              Some {
+                val ve = VerifiedEvent(p1.history.nextOrd, e, author, Instant.now())
+                val p3 = Project.history.modify(_ + ve)(p2)
+                (p3, ve)
+              }
+            }
+          case -\/(_)  => Gen pure None
         }
       ).optionGetLimit(maxAttempts)
     )

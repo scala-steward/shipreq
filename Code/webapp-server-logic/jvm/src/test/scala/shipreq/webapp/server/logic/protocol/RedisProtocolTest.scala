@@ -62,8 +62,8 @@ object RedisProtocolTest extends TestSuite {
 
       "v2.0" - {
         "ManualIssueCreate" - {
-          val bin    = BinaryData.fromHex("020081F41C7B016C046F6D6667E0E57B8D5D00E66307")
-          val expect = VerifiedEvent(500, Event.ManualIssueCreate(123, "omfg"), Instant.ofEpochSecond(1569553381, 123987456))
+          val bin    = BinaryData.fromHex("020081F41C7B016C046F6D666701E0E57B8D5D00E66307")
+          val expect = VerifiedEvent(500, Event.ManualIssueCreate(123, "omfg"), UserId1, Instant.ofEpochSecond(1569553381, 123987456))
           assertDecodeOk(codec)(bin, expect)
         }
       }

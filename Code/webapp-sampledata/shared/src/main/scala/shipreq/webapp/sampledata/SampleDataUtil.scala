@@ -1,6 +1,7 @@
 package shipreq.webapp.sampledata
 
 import java.time.Instant
+import shipreq.webapp.base.data.UserId
 import shipreq.webapp.member.project.data.Project
 import shipreq.webapp.member.project.event._
 
@@ -9,7 +10,7 @@ private[sampledata] object SampleDataUtil {
   private val startTime = Instant.parse("2020-04-16T00:00:00Z")
 
   def verifyEvent(e: Event, ord: Int): VerifiedEvent =
-    VerifiedEvent(EventOrd(ord), e, startTime.plusSeconds(ord))
+    VerifiedEvent(EventOrd(ord), e, UserId(1), startTime.plusSeconds(ord))
 
   def verifyEvents(es: Vector[Event]): VerifiedEvent.Seq =
     VerifiedEvent.Seq.empty ++ es.indices.iterator.map { i =>

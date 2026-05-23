@@ -11,6 +11,7 @@ import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.text.{Grammar, Text}
+import shipreq.webapp.member.test.WebappTestUtil.UserId1
 
 final case class MakeEmpty[+A](empty: A) extends AnyVal
 
@@ -244,8 +245,8 @@ object UnsafeTypes extends UnsafeTypesMedPriority {
   }
 
   implicit class UnsafeEventExt(private val self: Event) extends AnyVal {
-    def verified(ord: EventOrd, at: Instant = Instant.now()): VerifiedEvent =
-      VerifiedEvent(ord, self, at)
+    def verified(ord: EventOrd, author: UserId = UserId1, at: Instant = Instant.now()): VerifiedEvent =
+      VerifiedEvent(ord, self, author, at)
   }
 
   object AutoNES {
