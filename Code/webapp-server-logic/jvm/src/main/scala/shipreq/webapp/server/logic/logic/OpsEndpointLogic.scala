@@ -31,7 +31,7 @@ trait OpsEndpointLogic[F[_]] {
 
   def exportProject(pid: ProjectId): F[ResponseCmd]
 
-  def importProject(user: Username \/ EmailAddr, eventsJson: String): F[ResponseCmd]
+  def importProject(eventsJson: String): F[ResponseCmd]
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -113,35 +113,35 @@ object OpsEndpointLogic extends HasLogger {
           F.pure(ResponseCmd.Json(StatusCode.NotImplemented, json))
       }
 
-    override def importProject(user: Username \/ EmailAddr, eventsJson: String): F[ResponseCmd] =
+    override def importProject(eventsJson: String): F[ResponseCmd] =
       decodeEvents(eventsJson) match {
         case \/-(ees) =>
-          val usernames = ees.iterator.map(_.author).toSet
-          db.needUserIdsByUsername(usernames).flatMap { usernameToId =>
-            val missing = usernames -- usernameToId.keySet
-            if (missing.nonEmpty)
-              F.pure(ResponseCmd.Text(StatusCode.BadRequest, s"Unknown usernames: ${missing.iterator.map(_.value).mkString(", ")}"))
-            else {
-              val ves = VerifiedEvent.Seq.empty ++ ees.iterator.map { ee =>
-                VerifiedEvent(ee.ord, ee.event, usernameToId(ee.author), ee.createdAt)
-              }
-              db.getUserId(user).flatMap {
-                case Some(uid) =>
-                  val creator = ProjectCreator(uid)
-                  ApplyEvent.untrusted(ves)(Project.init(creator)) match {
-                    case \/-(p) =>
-                      for {
-                        key <- crypto.generateKey256
-                        pid <- db.importProject(uid, ves, p, ProjectEncryptionKey(key))
-                      } yield {
-                        val response = CreateProjectResult(uid, pid)
-                        ResponseCmd.Json(StatusCode.OK, response.toJson)
-                      }
-                    case -\/(err) =>
-                      F pure ResponseCmd.Text(StatusCode.Forbidden, err.value)
-                  }
-                case None =>
-                  F pure ResponseCmd.Text(StatusCode.BadRequest, "User not found")
+          if (ees.isEmpty)
+            F.pure(ResponseCmd.Text(StatusCode.BadRequest, "No events provided"))
+          else {
+            val usernames = ees.iterator.map(_.author).toSet
+            db.needUserIdsByUsername(usernames).flatMap { usernameToId =>
+              val missing = usernames -- usernameToId.keySet
+              if (missing.nonEmpty)
+                F.pure(ResponseCmd.Text(StatusCode.BadRequest, s"Unknown usernames: ${missing.iterator.map(_.value).mkString(", ")}"))
+              else {
+                val ves = VerifiedEvent.Seq.empty ++ ees.iterator.map { ee =>
+                  VerifiedEvent(ee.ord, ee.event, usernameToId(ee.author), ee.createdAt)
+                }
+                val creatorId = ves.head.author
+                val creator = ProjectCreator(creatorId)
+                ApplyEvent.untrusted(ves)(Project.init(creator)) match {
+                  case \/-(p) =>
+                    for {
+                      key <- crypto.generateKey256
+                      pid <- db.importProject(creatorId, ves, p, ProjectEncryptionKey(key))
+                    } yield {
+                      val response = CreateProjectResult(creatorId, pid)
+                      ResponseCmd.Json(StatusCode.OK, response.toJson)
+                    }
+                  case -\/(err) =>
+                    F pure ResponseCmd.Text(StatusCode.Forbidden, err.value)
+                }
               }
             }
           }

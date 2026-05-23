@@ -573,16 +573,10 @@ final class DispatchLogic[F[_], RealReq](readRealReq: RealReq => dispatch.Reques
 
     private val importProject: Request ?=> F[Response] =
       endpoint(Post, Url.Relative("project/import"))(req =>
-        parseParams(
-          for {
-            user   <- req.param("user")
-            events <- req.param("events")
-          } yield (Username.orEmail(user), events)
-        ){ case (user, events) =>
-          ops.importProject(user, events).map(response)
-        }
+        parseParams(req.param("events"))(events =>
+          ops.importProject(events).map(response)
+        )
       )
-
     private val testSendMail: Request ?=> F[Response] =
       endpoint(Post, Url.Relative("test-sendmail"))(req =>
         parseParams(req.param("email"))(email =>
