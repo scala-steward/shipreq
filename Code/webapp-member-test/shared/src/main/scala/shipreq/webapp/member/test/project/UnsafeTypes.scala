@@ -11,7 +11,7 @@ import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.project.text.{Grammar, Text}
-import shipreq.webapp.server.logic.util.Obfuscators
+import shipreq.webapp.member.test.WebappTestUtil.UserId1
 
 final case class MakeEmpty[+A](empty: A) extends AnyVal
 
@@ -210,11 +210,8 @@ trait UnsafeTypesMedPriority extends UnsafeTypesLowPriority {
   implicit def derivativeTagsRule[A, B](p: (A, B))(implicit a: A => DerivativeTags.TagPair, b: B => ApplicableTagId): (DerivativeTags.TagPair, ApplicableTagId) =
     (p._1, p._2)
 
-  implicit def projectCreatorFromUserIdPublic(u: UserId.Public): ProjectCreator =
-    ProjectCreator(u)
-
   implicit def projectCreatorFromUserId(u: UserId): ProjectCreator =
-    ProjectCreator(Obfuscators.userId.obfuscate(u))
+    ProjectCreator(u)
 }
 
 object UnsafeTypes extends UnsafeTypesMedPriority {
@@ -248,8 +245,8 @@ object UnsafeTypes extends UnsafeTypesMedPriority {
   }
 
   implicit class UnsafeEventExt(private val self: Event) extends AnyVal {
-    def verified(ord: EventOrd, at: Instant = Instant.now()): VerifiedEvent =
-      VerifiedEvent(ord, self, at)
+    def verified(ord: EventOrd, author: UserId = UserId1, at: Instant = Instant.now()): VerifiedEvent =
+      VerifiedEvent(ord, self, author, at)
   }
 
   object AutoNES {

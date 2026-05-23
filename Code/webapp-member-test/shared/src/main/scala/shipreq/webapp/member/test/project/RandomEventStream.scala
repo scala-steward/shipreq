@@ -27,13 +27,12 @@ import shipreq.webapp.member.test.WebappTestUtil
 import shipreq.webapp.member.test.project.ApplicableEventGen.ObserveFn
 import shipreq.webapp.member.test.project.DataTestExt._
 import shipreq.webapp.member.test.project.RandomData
-import shipreq.webapp.member.test.project.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, projectRole, reqCode, reqTypeMnemonic, tagGroupName}
+import shipreq.webapp.member.test.project.RandomData.{TextGen, TextGenExt, customReqTypeName, desc, exclusivity, fieldName, fieldRefKey, filter, filterDead, genColour, hashRefKey, implicationRequired, mandatory, reqCode, reqTypeMnemonic, tagGroupName}
 import shipreq.webapp.member.test.project.RandomEventStream.{ProjectDepGen, State}
-import shipreq.webapp.server.logic.util.Obfuscators
 
 final case class RandomEventStreamConfig(retiredEvents: Boolean,
                                          reqCodeEvents: Boolean,
-                                         userIds      : Option[NonEmptySet[UserId.Public]],
+                                         userIds      : Option[NonEmptySet[UserId]],
                                          emptyProject : Project,
                                         ) {
 
@@ -41,9 +40,6 @@ final case class RandomEventStreamConfig(retiredEvents: Boolean,
     copy(retiredEvents = false)
 
   def withUserIds(ids: NonEmptySet[UserId]): RandomEventStreamConfig =
-    withPublicUserIds(ids.map(Obfuscators.userId.obfuscate))
-
-  def withPublicUserIds(ids: NonEmptySet[UserId.Public]): RandomEventStreamConfig =
     copy(userIds = Some(ids))
 
   def withEmptyProject(p: Project): RandomEventStreamConfig =
@@ -80,14 +76,24 @@ object RandomEventStream extends RandomEventStreamDsl(RandomEventStreamConfig.de
 
   def liftPGE(eventGen: State => Gen[Event], maxAttempts: Int = 60): ProjectDepGen[VerifiedEvent] =
     StateGen(p1 =>
-      eventGen(p1).map(e =>
+      eventGen(p1).flatMap(e =>
         ApplyEvent.untrusted.partialApplyUnverified(e)(p1) match {
-          case \/-(p2) => Some {
-            val ve = VerifiedEvent(p1.history.nextOrd, e, Instant.now())
-            val p3 = Project.history.modify(_ + ve)(p2)
-            (p3, ve)
-          }
-          case -\/(_)  => None
+          case \/-(p2) =>
+            def userIds = p2.access.asMap.iterator.flatMap { case (userId, userRole) =>
+              val requiredRole = EventPermission.requiredRole(userId, e)
+              if (requiredRole.isSatisfiedBy(userRole) is Allow)
+                userId :: Nil
+              else
+                Nil
+            }
+            Gen.choose_!(userIds).map { author =>
+              Some {
+                val ve = VerifiedEvent(p1.history.nextOrd, e, author, Instant.now())
+                val p3 = Project.history.modify(_ + ve)(p2)
+                (p3, ve)
+              }
+            }
+          case -\/(_)  => Gen pure None
         }
       ).optionGetLimit(maxAttempts)
     )
@@ -1054,63 +1060,50 @@ final class ApplicableEventGen(emptyState: State, curState: State, config: Rando
     manualIssueId.map(_ map ManualIssueDelete)
 
   def genAccessUpdate: Option[Gen[AccessUpdate]] = {
-    type Entries = Vector[(UserId.Public, Option[ProjectRole])]
-
     val access = p.access.asMap
 
-    val newUserGen: Option[Gen[UserId.Public]] =
+    val newUserGen: Option[Gen[UserId]] =
       config.userIds match {
         case Some(ids) => NonEmptySet.option(ids.whole -- access.keySet).map(Gen.chooseNE(_))
-        case None      => Some(RandomData.userIdPublic)
-      }
-
-    def update: Gen[Entries] =
-      Gen.subset1(access.keys.toVector).flatMap { ids =>
-        Gen.traverse(ids) { id =>
-          Gen.choose_!(RandomEventStream.projectRoleOptions - access.get(id))
-            .map((id, _))
-        }
-      }
-
-    newUserGen match {
-
-      case Some(genNewUser) =>
-        // Can add new users
-
-        def add: Gen[Entries] =
-          (genNewUser & projectRole.map(Some(_))).vector(1 to 4)
-
-        val entries: Gen[Entries] =
-          Gen.chooseInt(3).flatMap {
-            case 0 => update
-            case 1 => add
-            case _ => Gen.lift2(update, add)(_ ++ _)
+        case None      => Some(RandomBaseData.userId.map { id0 =>
+          var id = id0
+          while (access.contains(id)) {
+            id = UserId(id.value + 1)
           }
-
-        Some(entries.flatMap { es =>
-          val m = es.toMap
-          val u = ProjectAccess.empty.update(m)
-          if (u.hasAdmin)
-            Gen pure AccessUpdate(m)
-          else
-            genNewUser.map(u => AccessUpdate(m.updated(u, Some(ProjectRole.Admin))))
+          id
         })
+      }
 
-      case None =>
-        // Can't add new users
-        Option.when(access.sizeIs >= 2) {
-          update.map { es =>
-            val m = es.toMap
-            val u = ProjectAccess.empty.update(m)
-            if (u.hasAdmin)
-              AccessUpdate(m)
-            else {
-              val existingAdmin = access.find(_._2 ==* ProjectRole.Admin).get._1
-              AccessUpdate(m - existingAdmin)
-            }
+    val add: Option[Gen[AccessUpdate]] =
+      newUserGen.map { genUserId =>
+        for {
+          userId  <- genUserId
+          newRole <- RandomData.projectRole
+        } yield AccessUpdate(userId, Some(newRole))
+      }
+
+    val updateOrRemove: Option[Gen[AccessUpdate]] =
+      Option.when(access.sizeIs >= 2) {
+        for {
+          userId  <- Gen.choose_!(access.keysIterator)
+          newRole <- Gen.choose_!(RandomEventStream.projectRoleOptions - access.get(userId))
+        } yield {
+          val a2 = p.access.update(userId, newRole)
+          if (a2.hasAdmin) {
+            AccessUpdate(userId, newRole)
+          } else {
+            val admin1   = p.access.adminIterator().next()
+            val userId2  = access.keysIterator.filter(_ !=* admin1).next()
+            val newRole2 = (RandomEventStream.projectRoleOptions - access.get(userId2)).head
+            AccessUpdate(userId2, newRole2)
           }
         }
-    }
+      }
+
+    var gens = List.empty[Gen[AccessUpdate]]
+    add.foreach(gens ::= _)
+    updateOrRemove.foreach(gens ::= _)
+    Option.when(gens.nonEmpty)(Gen.chooseGen_!(gens))
   }
 
   private val possibleActiveEventGensWithNames: NonEmptyVector[(EventName, Option[Gen[ActiveEvent]])] =

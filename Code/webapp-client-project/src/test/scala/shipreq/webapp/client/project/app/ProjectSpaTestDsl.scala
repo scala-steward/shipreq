@@ -27,7 +27,7 @@ import shipreq.webapp.client.project.widgets.{ImplicationGraph, ReqSearch}
 import shipreq.webapp.member.project.data.{ExternalPubid, Project}
 import shipreq.webapp.member.project.event.Event
 import shipreq.webapp.member.protocol.entrypoint.ProjectSpaEntryPoint
-import shipreq.webapp.member.test.WebappTestUtil.{PublicUserId1, Username1}
+import shipreq.webapp.member.test.WebappTestUtil.{UserId1, Username1}
 import shipreq.webapp.member.test._
 import shipreq.webapp.member.test.project.SampleProject5
 import shipreq.webapp.member.ui.OnlyVisibleOnMouseMove
@@ -287,7 +287,7 @@ object ProjectSpaTestDsl {
               project   : Project                  = SampleProject5.project,
               rd        : RD.State                 = RD.unspecifiedState,
               wwPrep    : TestWebWorkerClient.Prep = TestWebWorkerClient.noInitialPrep,
-              userId    : UserId.Public            = PublicUserId1,
+              userId    : UserId                   = UserId1,
               username  : Username                 = Username1,
               assertPass: Boolean                  = true,
              ): Unit = {
@@ -309,7 +309,7 @@ object ProjectSpaTestDsl {
                           project   : Project                  = SampleProject5.project,
                           rd        : RD.State                 = RD.unspecifiedState,
                           wwPrep    : TestWebWorkerClient.Prep = TestWebWorkerClient.noInitialPrep,
-                          userId    : UserId.Public            = PublicUserId1,
+                          userId    : UserId                   = UserId1,
                           username  : Username                 = Username1,
                           assertPass: Boolean                  = true,
                          ): Report[String] = {

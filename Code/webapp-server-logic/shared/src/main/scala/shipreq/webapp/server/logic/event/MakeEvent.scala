@@ -44,16 +44,14 @@ object MakeEvent {
   // ===================================================================================================================
 
   def updateAccess(cmd: UpdateAccessCmd.Modify, project: Project): Result = {
-    val access = project.access.asMap
-    val updates = cmd.updates.filterNot { case (u, o) => access.get(u) ==* o }
-    if (updates.isEmpty)
+    if (project.access(cmd.userId) ==* cmd.newRole)
       Unchanged
     else {
-      val access2 = project.access.update(updates)
+      val access2 = project.access.update(cmd.userId, cmd.newRole)
       if (!access2.hasAdmin)
         Failure(userFacingErrorMsgCantRemoveAdmin)
       else
-        Event.AccessUpdate(updates)
+        Event.AccessUpdate(cmd.userId, cmd.newRole)
     }
   }
 

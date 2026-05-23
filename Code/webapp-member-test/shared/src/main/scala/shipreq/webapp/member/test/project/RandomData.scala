@@ -21,7 +21,7 @@ import shipreq.base.util.ScalaExt._
 import shipreq.base.util.TaggedTypes.TaggedInt
 import shipreq.base.util._
 import shipreq.webapp.base.config._
-import shipreq.webapp.base.data.{ProjectCreator, ProjectId, ProjectRole, Rolodex, UserId}
+import shipreq.webapp.base.data.{ProjectCreator, ProjectId, ProjectRole, Rolodex}
 import shipreq.webapp.base.test._
 import shipreq.webapp.base.util._
 import shipreq.webapp.member.project.data._
@@ -31,7 +31,6 @@ import shipreq.webapp.member.project.sort.SortMethod
 import shipreq.webapp.member.project.text
 import shipreq.webapp.member.project.text.{Grammar, GrammarSpec, Text}
 import shipreq.webapp.member.test._
-import shipreq.webapp.server.logic.util.Obfuscators
 
 // TODO RandomData is inaccurate in that CorrectionParts aren't applied.
 
@@ -114,17 +113,14 @@ object RandomData {
     Distinct.Fixer.lift(fix).xmap(_.str)(CaseInsensitive)
   }
 
-  val id  = Gen.chooseInt(1, 1024 * 64)
-  val idL = Gen.chooseLong(1, Long.MaxValue)
+  val id: Gen[Int] =
+    Gen.chooseInt(1, 1024 * 64)
 
-  lazy val projectId = idL.map(ProjectId.apply)
-  lazy val userId = idL.map(UserId.apply)
-
-  lazy val userIdPublic: Gen[UserId.Public] =
-    userId.map(Obfuscators.userId.obfuscate)
+  lazy val projectId: Gen[ProjectId] =
+    idLong.map(ProjectId.apply)
 
   lazy val projectCreator: Gen[ProjectCreator] =
-    userIdPublic.map(ProjectCreator.apply)
+    userId.map(ProjectCreator.apply)
 
   def revAndIMap[D, I <: TaggedInt](r: Gen[List[D]])
                                     (implicit i: DataIdAux[D, I], j: TestDataIdAux[D, I]): Gen[IMap[I, D]] = {
@@ -1682,7 +1678,7 @@ object RandomData {
     } yield ProjectConfig(issues, ReqTypes(reqtypes), fields, Tags(tags))
 
   lazy val projectAccess: Gen[ProjectAccess] =
-    userIdPublic.mapTo(projectRole)(0 to 4).map(ProjectAccess.apply).flatMap { a =>
+    userId.mapTo(projectRole)(0 to 4).map(ProjectAccess.apply).flatMap { a =>
       if (a.hasAdmin)
         Gen pure a
       else
@@ -1692,7 +1688,7 @@ object RandomData {
   lazy val rolodex: Gen[Rolodex] =
     for {
       s     <- Gen.chooseInt(5)
-      ids   <- userIdPublic.set(s)
+      ids   <- userId.set(s)
       names <- username.set(s)
     } yield Rolodex(ids.toList.zip(names.toList).toMap)
 
@@ -2053,7 +2049,7 @@ object RandomData {
     val projectSpaInitPageData: Gen[ProjectSpaEntryPoint.InitData] =
       for {
         u <- username
-        i <- userIdPublic
+        i <- userId
         p <- projectIdPublic
         c <- projectCreator
         n <- projectName
@@ -2672,7 +2668,7 @@ object RandomData {
       genProjectTemplate map ProjectTemplateApply
 
     val genAccessUpdate: Gen[AccessUpdate] =
-      userIdPublic.mapTo(projectRole.option)(1 to 8).map(AccessUpdate.apply)
+      Gen.apply2(AccessUpdate.apply)(userId, projectRole.option)
 
     val genApplicableTagCreate: Gen[ApplicableTagCreate] =
       Gen.apply2(ApplicableTagCreate)(applicableTagId, applicableTagGD.nonEmptyValues)
@@ -2979,7 +2975,7 @@ object RandomData {
       Gen.chooseInt(100000).map(i => EventOrd(i + 1))
 
     val verifiedEvent: Gen[VerifiedEvent] =
-      Gen.apply3(VerifiedEvent.apply)(eventOrd, event, instantPast)
+      Gen.apply4(VerifiedEvent.apply)(eventOrd, event, userId, instantPast)
 
     def verifiedEventSeq(implicit sizeSpec: SizeSpec): Gen[VerifiedEvent.Seq] =
       Gen { ctx =>
@@ -2991,7 +2987,8 @@ object RandomData {
           i -= 1
           val e = event.run(ctx)
           val o = EventOrd(i)
-          val ve = VerifiedEvent(o, e, t)
+          val a = userId.run(ctx)
+          val ve = VerifiedEvent(o, e, a, t)
           events += ve
           t = t.minusMillis(genMs.run(ctx))
         }

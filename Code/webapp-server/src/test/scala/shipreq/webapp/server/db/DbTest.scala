@@ -18,7 +18,6 @@ import shipreq.webapp.server.config.Global
 import shipreq.webapp.server.interpreter.ServerInterpreter
 import shipreq.webapp.server.logic.data.ProjectEncryptionKey
 import shipreq.webapp.server.logic.logic.PublicSpaLogic
-import shipreq.webapp.server.logic.util.Obfuscators
 import shipreq.webapp.server.test.WebappServerTestUtil._
 import shipreq.webapp.server.test._
 import sourcecode.Line
@@ -192,18 +191,12 @@ object DbTest extends TestSuite {
           val dbu   = DbUtil(xa)
           val db    = dbu.dbAlgebra
           var uid   = dbu.newUserId()
-          var uidp  = Obfuscators.userId.obfuscate(uid)
           val uids  = dbu.userIdsNE()
           val data  = RandomEventStream.withConfig(_.activeOnly.withCreator(uid).withUserIds(uids)).sampleEventStreamWithProjects
           val data1 = data.take(RandomEventStream.InitialEventCount)
           val data2 = data.drop(data1.length)
           val k     = ProjectEncryptionKey(crypto.generateKey256.unsafeRun())
           val pid   = xa ! db.createProject(uid, data1.map(_._1.event.active), data1.last._2, k)
-
-          def selectAdminFrom(p: Project): Unit = {
-            uidp = p.access.adminIterator().next()
-            uid = Obfuscators.userId.deobfuscateOrThrow(uidp)
-          }
 
           def assertPMD(expect: ProjectMetaData => ProjectMetaData)(implicit l: Line): Unit = {
             val a = (xa ! db.getProjectMetaData(pid, uid)).get
@@ -216,7 +209,7 @@ object DbTest extends TestSuite {
           assertEq("first ord", read1.head.ord, EventOrd.first)
           assertPMD(a => ProjectMetaData.fromProject(data1.last._2)(
             id            = a.id,
-            userId        = uidp,
+            userId        = uid,
             eventsInit    = data1.length,
             eventsTotal   = data1.length,
             createdAt     = a.createdAt,
@@ -226,7 +219,7 @@ object DbTest extends TestSuite {
           var ord = read1.last.ord
           for ((e, p) <- data2) {
             ord = EventOrd(ord.value + 1)
-            selectAdminFrom(p)
+            uid = e.author
             (xa ! db.saveProjectEvent(pid, ord, e.event.active, p, uid)).getOrThrow()
           }
           val readAll = (xa ! db.getProjectEvents(pid)).getOrThrow()
@@ -234,7 +227,7 @@ object DbTest extends TestSuite {
           val p = data.last._2
           assertPMD(a => ProjectMetaData.fromProject(p)(
             id            = a.id,
-            userId        = uidp,
+            userId        = uid,
             eventsInit    = data1.length,
             eventsTotal   = data.length,
             createdAt     = a.createdAt,

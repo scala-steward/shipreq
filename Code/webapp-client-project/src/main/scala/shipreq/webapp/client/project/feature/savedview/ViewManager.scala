@@ -3,13 +3,13 @@ package shipreq.webapp.client.project.feature.savedview
 import japgolly.scalajs.react._
 import japgolly.scalajs.react.vdom.html_<^._
 import scalacss.ScalaCssReact._
-import shipreq.webapp.base.util.BaseReusability._
 import shipreq.base.util.{Allow, ErrorMsg, Permission}
 import shipreq.webapp.base.feature.AsyncFeature
 import shipreq.webapp.base.lib.{ConfirmJs, PromptJs}
 import shipreq.webapp.base.protocol.ServerSideProcInvoker
 import shipreq.webapp.base.ui.semantic.Dropdown.JsOptionsOps
 import shipreq.webapp.base.ui.semantic.{Colour, Dropdown, Icon, Menu => SemUiMenu, SemExtAny}
+import shipreq.webapp.base.util.BaseReusability._
 import shipreq.webapp.base.util.CallbackHelpers._
 import shipreq.webapp.client.project.app.Style.{savedViews => *}
 import shipreq.webapp.member.project.event.{Event, VerifiedEvent}

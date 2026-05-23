@@ -32,10 +32,10 @@ final case class ProjectMetaData(id           : ProjectId.Public,
   def assertInSyncWith(p: => Project): Unit =
     ProjectMetaData.props(p) assert this
 
-  def applyEvent(uid: UserId.Public, ve: VerifiedEvent, newProject: Project, when: Instant): ProjectMetaData =
+  def applyEvent(uid: UserId, ve: VerifiedEvent, newProject: Project, when: Instant): ProjectMetaData =
     applyEvents(uid, ve :: Nil, newProject, when)
 
-  def applyEvents(uid: UserId.Public, ves: IterableOnce[VerifiedEvent], newProject: Project, when: Instant): ProjectMetaData =
+  def applyEvents(uid: UserId, ves: IterableOnce[VerifiedEvent], newProject: Project, when: Instant): ProjectMetaData =
     ProjectMetaData.fromProject(newProject)(
       id            = id,
       userId        = uid,
@@ -51,7 +51,7 @@ object ProjectMetaData {
 
   def fromProject(p            : Project)
                  (id           : ProjectId.Public,
-                  userId       : UserId.Public,
+                  userId       : UserId,
                   eventsInit   : Int,
                   eventsTotal  : Int,
                   createdAt    : Instant,

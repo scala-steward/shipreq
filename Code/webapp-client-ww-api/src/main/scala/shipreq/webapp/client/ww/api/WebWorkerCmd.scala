@@ -82,7 +82,7 @@ object WebWorkerCmd {
         state.pickle(a.creator)
       }
       override def unpickle(implicit state: UnpickleState): ClientSideStorage.Context = {
-        val uid = state.unpickle[UserId.Public]
+        val uid = state.unpickle[UserId]
         val pid = state.unpickle[ProjectId.Public]
         val c   = state.unpickle[ProjectCreator]
         ClientSideStorage.Context(uid, pid, c)

@@ -1,11 +1,9 @@
 package shipreq.webapp.server.logic.test
 
 import cats.{Eval, ~>}
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.Instant
 import shipreq.base.util._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.member.global.GlobalEvent
 import shipreq.webapp.member.project.data.{Live => _, _}
 import shipreq.webapp.member.project.event._
@@ -24,9 +22,6 @@ object MockDb {
                              encKey       : UserEncryptionKey,
                              createdAt    : Instant,
                              resetPassword: Option[(VerificationToken, Instant)] = None) {
-
-    def idP: UserId.Public =
-      Obfuscators.userId.obfuscate(id)
 
     def pubids: List[Username \/ EmailAddr] =
       -\/(username) :: \/-(emailAddr) :: Nil
@@ -59,7 +54,7 @@ object MockDb {
     def projectMetaData(role: ProjectRole): ProjectMetaData =
       ProjectMetaData.fromProject(project)(
         id            = Obfuscators.projectId.obfuscate(projectId),
-        userId        = Obfuscated(""),
+        userId        = UserId1,
         eventsInit    = initEvents,
         eventsTotal   = events.size,
         createdAt     = createdAt,
@@ -452,7 +447,7 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     ProjectAccess(
       projectAccess.iterator
         .filter(_.pid ==* id)
-        .map(e => (Obfuscators.userId.obfuscate(e.uid), e.role))
+        .map(e => (e.uid, e.role))
         .toMap
     )
   }
@@ -466,6 +461,6 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
 
   override def getProjectRolodex(pid: ProjectId) = Eval.always[Rolodex] {
     val ids = projectAccess.iterator.filter(a => a.pid ==* pid).map(_.uid).toSet
-    Rolodex(needUsernamesByUserId(ids).value.mapKeysNow(Obfuscators.userId.obfuscate))
+    Rolodex(needUsernamesByUserId(ids).value)
   }
 }

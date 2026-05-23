@@ -25,7 +25,7 @@ import shipreq.webapp.member.project.protocol.websocket.ProjectSpaProtocols.{Ini
 import shipreq.webapp.member.project.util.DataReusability._
 import shipreq.webapp.member.ui.ReauthenticationModal
 
-abstract class Global(userId          : UserId.Public,
+abstract class Global(userId          : UserId,
                       creator         : ProjectCreator,
                       onFirstLoad     : (Global, InitAppData) => Callback,
                       onInitFailure   : ErrorMsg => Callback,
@@ -339,7 +339,7 @@ abstract class Global(userId          : UserId.Public,
 
 object Global {
 
-  def apply(userId       : UserId.Public,
+  def apply(userId       : UserId,
             username     : Username,
             creator      : ProjectCreator,
             reauth       : ReauthenticationModal,

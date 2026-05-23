@@ -14,7 +14,7 @@ object ApplyEventTest extends TestSuite {
       case -\/(x) => fail(s"Init failed: $x")
     }
 
-    val ve = VerifiedEvent(EventOrd.first, e1, Instant.now())
+    val ve = VerifiedEvent(EventOrd.first, e1, p2.access.adminIterator().next(), Instant.now())
 
     (p2, ve)
   }

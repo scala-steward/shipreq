@@ -35,10 +35,8 @@ object AccessPageTest extends TestSuite {
   }
 
   private val project = applyEventsSuccessfully(SampleProject.project,
-    Event.AccessUpdate(Map(
-      PublicUserId2 -> Some(Admin),
-      PublicUserId3 -> Some(Collaborator),
-    )),
+    Event.AccessUpdate(UserId2, Some(Admin)),
+    Event.AccessUpdate(UserId3, Some(Collaborator)),
   )
 
   override def tests = Tests {

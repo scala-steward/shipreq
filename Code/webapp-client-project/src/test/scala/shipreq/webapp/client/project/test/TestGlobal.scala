@@ -8,7 +8,7 @@ import org.scalajs.dom.{EventTarget, document, html}
 import scala.scalajs.js
 import shipreq.base.util.JsExt._
 import shipreq.base.util.{Allow, ErrorMsg, JsTimers, PotentialChange, Retries}
-import shipreq.webapp.base.data.{EmailAddr, ProjectCreator, ProjectRole, Rolodex, UserId, Username}
+import shipreq.webapp.base.data.{EmailAddr, ProjectCreator, Rolodex, UserId, Username}
 import shipreq.webapp.base.lib.LoggerJs
 import shipreq.webapp.base.protocol._
 import shipreq.webapp.base.protocol.binary.SafePickler
@@ -28,10 +28,9 @@ import shipreq.webapp.member.test.WebappTestUtil._
 import shipreq.webapp.member.test._
 import shipreq.webapp.member.ui.BaseStyles
 import shipreq.webapp.server.logic.event._
-import shipreq.webapp.server.logic.util.Obfuscators
 
 final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
-                       val userId           : UserId.Public,
+                       val userId           : UserId,
                        val username         : Username,
                        creator              : ProjectCreator,
                        initialSupp          : Supplimentary,
@@ -209,24 +208,22 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
     val supplimentaryDataForEvents: VerifiedEvent.Seq => CallbackTo[Supplimentary] =
       SupplimentaryLogic[CallbackTo](
         needUsernamesByUserId = ids => CallbackTo(ids.iterator.map { id =>
-          val publicId = Obfuscators.userId.obfuscate(id)
-          val username = TestGlobal.inverseUserDb.get(publicId).flatMap(_.left.toOption).getOrElse(
-            throw new IllegalStateException(s"Username not found for user ID $id (obfuscated: $publicId)")
+          val username = TestGlobal.inverseUserDb.get(id).flatMap(_.left.toOption).getOrElse(
+            throw new IllegalStateException(s"Username not found for user ID $id")
           )
           id -> username
         }.toMap),
-        obfuscate             = Obfuscators.userId.obfuscate,
-        deobfuscate           = Obfuscators.userId.deobfuscateOrThrow,
       )
 
-    def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result, requiredRole: ProjectRole): MsgFn[I] = input => Some {
+    def updateProject[I](mkEvent: (I, Project) => MakeEvent.Result): MsgFn[I] = input => Some {
       def run(p1: Project): CallbackTo[WsReqRes.EventResult] = {
 
         val result: PotentialChange[ErrorMsg, ApplyNewEvent.Updated] =
           for {
-            _ <- p1.access.requirePC(requiredRole, userId)
-            er = mkEvent(input, p1)
-            u <- ApplyNewEvent(er, p1)
+            e           <- mkEvent(input, p1)
+            requiredRole = EventPermission.requiredRole(userId, e)
+            _           <- p1.access.requirePC(requiredRole, userId)
+            u           <- ApplyNewEvent(e, p1)
           } yield u
 
         result match {
@@ -234,7 +231,7 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
           case PotentialChange.Success(ApplyNewEvent.Updated(_, event)) =>
             for {
               ord  <- nextEventOrd
-              ves   = VerifiedEvent.Seq.empty + VerifiedEvent(ord, event, Instant.now())
+              ves   = VerifiedEvent.Seq.empty + VerifiedEvent(ord, event, UserId1, Instant.now())
               supp <- supplimentaryDataForEvents(ves)
             } yield \/-(StateUpdate(ves, supp))
 
@@ -248,29 +245,28 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
       pxProject.toCallback.flatMap(run)
     }
 
-    def updateProjectI[I](mkEvent: I => MakeEvent.Result, requiredRole: ProjectRole): MsgFn[I] =
-      updateProject((i, _) => mkEvent(i), requiredRole)
+    def updateProjectI[I](mkEvent: I => MakeEvent.Result): MsgFn[I] =
+      updateProject((i, _) => mkEvent(i))
 
-    // This logic is duplicated in ProjectSpaLogic
     val msgFold = WsReqRes.Fold[MsgFoldIn, MsgFoldOut](
       onInitApp               = _ => None,
       onReconnect             = _ => None,
       onSync                  = _ => None,
-      onUpdateConfig          = updateProject (MakeEvent.updateConfig, ProjectRole.Collaborator),
-      onCreateContent         = updateProject (MakeEvent.createContent, ProjectRole.Collaborator),
-      onUpdateContent         = updateProject (MakeEvent.updateContent, ProjectRole.Collaborator),
-      onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn, ProjectRole.Admin),
-      onUpdateSavedViews      = updateProject (MakeEvent.updateSavedViews, ProjectRole.Collaborator),
-      onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues, ProjectRole.Collaborator),
-      onFieldMandatorinessMod = _ => None,
-      onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod, ProjectRole.Collaborator),
+      onUpdateConfig          = updateProject (MakeEvent.updateConfig),
+      onCreateContent         = updateProject (MakeEvent.createContent),
+      onUpdateContent         = updateProject (MakeEvent.updateContent),
+      onProjectNameSet        = updateProjectI(MakeEvent.projectNameSetFn),
+      onUpdateSavedViews      = updateProject (MakeEvent.updateSavedViews),
+      onUpdateManualIssues    = updateProject (MakeEvent.updateManualIssues),
+      onReqTypeImplicationMod = updateProjectI(MakeEvent.reqTypeImplicationMod),
       onUpdateAccess          = cmd =>
         UpdateAccessCmd.resolve[CallbackTo, MsgFoldOut[WsReqRes.UpdateAccess.type]](cmd)(
           userId     = userId,
           getUserId  = u => CallbackTo(TestGlobal.userDb.get(u)),
           onNotFound = Some(CallbackTo.pure(-\/(ErrorMsg("User not found.")))),
-          modify     = (m, p) => CallbackTo.pure(updateProject(MakeEvent.updateAccess, p)(m))
+          modify     = m => CallbackTo.pure(updateProject(MakeEvent.updateAccess)(m))
         ).runNow(),
+      onFieldMandatorinessMod = _ => None,
     )
 
     testReq => {
@@ -290,11 +286,11 @@ final class TestGlobal(initialProjectLibrary: ProjectLibrary.WithMetaData,
 
 object TestGlobal {
 
-  val userDb: Map[Username \/ EmailAddr, UserId.Public] = Map(
-    -\/(Username1) -> PublicUserId1,
-    -\/(Username2) -> PublicUserId2,
-    -\/(Username3) -> PublicUserId3,
-    -\/(Username4) -> PublicUserId4,
+  val userDb: Map[Username \/ EmailAddr, UserId] = Map(
+    -\/(Username1) -> UserId1,
+    -\/(Username2) -> UserId2,
+    -\/(Username3) -> UserId3,
+    -\/(Username4) -> UserId4,
   )
 
   val inverseUserDb = userDb.iterator.map(_.swap).toMap
@@ -305,9 +301,9 @@ object TestGlobal {
     })
 
   def apply(p       : Project                  = Project.empty,
-            userId  : UserId.Public            = PublicUserId1,
+            userId  : UserId                   = UserId1,
             username: Username                 = Username1,
-            creator : ProjectCreator           = ProjectCreator(PublicUserId1),
+            creator : ProjectCreator           = ProjectCreator(UserId1),
             ww      : WebWorkerClient.Instance = TestWebWorkerClient(),
            ): TestGlobal = {
     val p2 = if (p.access.asMap.nonEmpty) p else p.copy(access = ProjectAccess.init(creator))

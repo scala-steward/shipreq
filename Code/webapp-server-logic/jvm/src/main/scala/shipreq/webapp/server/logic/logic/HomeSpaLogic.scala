@@ -11,7 +11,6 @@ import shipreq.webapp.member.protocol.entrypoint.HomeSpaEntryPoint
 import shipreq.webapp.server.logic.algebra.{Crypto, DB}
 import shipreq.webapp.server.logic.data.ProjectEncryptionKey
 import shipreq.webapp.server.logic.event.ApplyNewEvent
-import shipreq.webapp.server.logic.util.Obfuscators
 
 trait HomeSpaLogic[F[_]] extends HomeSpaLogic.Ajax[F] {
   def initData(user: User): F[HomeSpaEntryPoint.InitData]
@@ -33,7 +32,7 @@ object HomeSpaLogic {
                           crypto    : Crypto[D]): D[ProjectMetaData] = {
 
     val e2          = ProjectNameSet(name)
-    val creator     = ProjectCreator(Obfuscators.userId.obfuscate(userId))
+    val creator     = ProjectCreator(userId)
     val initProject = ApplyNewEvent.mustApply(InitProjectEvent, Project.init(creator))
     val events      = Vector.empty[ActiveEvent] :+ initProject.event :+ e2
 

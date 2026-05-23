@@ -66,14 +66,14 @@ object Urls {
 
     val url = Url.Relative(ProjectSpaWebSocket.Base)
                 .thenParam((_: Param1).value)
-                .thenParam((_: Param2).userId.value)
+                .thenParam((_: Param2).userId.valueAsStr)
 
     def parsePath(path: String): Option[(Param1, Param2)] = {
       val tail  = path.substring(Base.length + 1)
       val colon = tail.indexOf('/')
       Option.when(colon > 0) {
         val p1: Param1 = Obfuscated(tail.take(colon))
-        val p2: Param2 = ProjectCreator(Obfuscated(tail.drop(colon + 1)))
+        val p2: Param2 = ProjectCreator(UserId(tail.drop(colon + 1).toLong))
         (p1, p2)
       }
     }

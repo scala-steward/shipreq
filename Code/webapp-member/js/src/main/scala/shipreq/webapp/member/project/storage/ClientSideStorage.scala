@@ -131,7 +131,7 @@ object ClientSideStorage {
 
   object ReadOnly {
 
-    def apply(userId   : UserId.Public,
+    def apply(userId   : UserId,
               projectId: ProjectId.Public,
               creator  : ProjectCreator,
               encKey   : ClientSideProjectEncryptionKey,
@@ -147,7 +147,7 @@ object ClientSideStorage {
 
   // -------------------------------------------------------------------------------------------------------------------
 
-  final case class Context(userId: UserId.Public, projectId: ProjectId.Public, creator: ProjectCreator) {
+  final case class Context(userId: UserId, projectId: ProjectId.Public, creator: ProjectCreator) {
 
     // Note: no need to include creator here cos it's an immutible detail per project; projectId covers it
     val namespace: String =

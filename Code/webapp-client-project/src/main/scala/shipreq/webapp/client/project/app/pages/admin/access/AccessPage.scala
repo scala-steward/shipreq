@@ -18,7 +18,7 @@ object AccessPage {
 
   type AsyncKey = shipreq.webapp.client.project.app.pages.admin.access.AsyncKey
 
-  final case class Props(userId         : UserId.Public,
+  final case class Props(userId         : UserId,
                          access         : ProjectAccess,
                          rolodex        : Rolodex,
                          editability    : Permission,

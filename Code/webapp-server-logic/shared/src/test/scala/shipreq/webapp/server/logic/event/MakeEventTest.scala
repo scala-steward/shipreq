@@ -253,30 +253,32 @@ object MakeEventTest extends TestSuite {
 
       "update" - {
         // Note: this adds user #2 as an admin before testing begins
-        def test(cmds: (UserId.Public, Option[ProjectRole])*)(implicit l: Line): Unit = {
+        def test(cmds: (UserId, Option[ProjectRole])*)(implicit l: Line): Unit = {
           val t = new Tester()
-          t.assertApplies(AccessUpdate(Map(PublicUserId2 -> Some(Admin))))
-          t.assertMakeEvent(_.updateAccess(UpdateAccessCmd.Modify(cmds.toMap), _), {
-            case a if a == AccessUpdate(cmds.toMap) => a
-          })
+          t.assertApplies(AccessUpdate(UserId2, Some(Admin)))
+          for ((userId, newRole) <- cmds) {
+            t.assertMakeEvent(_.updateAccess(UpdateAccessCmd.Modify(userId, newRole), _), {
+              case a if a == AccessUpdate(userId, newRole) => a
+            })
+          }
         }
 
-        "del" - test(PublicUserId1 -> None)
-        "mod" - test(PublicUserId1 -> Some(Collaborator))
-        "add" - test(PublicUserId3 -> Some(Collaborator))
+        "del" - test(UserId1 -> None)
+        "mod" - test(UserId1 -> Some(Collaborator))
+        "add" - test(UserId3 -> Some(Collaborator))
       }
 
       "removeSelf" - {
         "collaborator" - {
           val t = new Tester(SampleProject.projectWithOtherTags)
           // Add a collaborator first
-          val msg1 = UpdateAccessCmd.Modify(Map(PublicUserId2 -> Some(Collaborator)))
+          val msg1 = UpdateAccessCmd.Modify(UserId2, Some(Collaborator))
           val p = t.assertMakeEvent(_.updateAccess(msg1, _), { case a: AccessUpdate => a })
           val t2 = new Tester(applyEventSuccessfully(t.project(), p))
-          // Now remove self (PublicUserId2)
-          val msg2 = UpdateAccessCmd.Modify(Map(PublicUserId2 -> None))
+          // Now remove self (UserId2)
+          val msg2 = UpdateAccessCmd.Modify(UserId2, None)
           t2.assertMakeEvent[AccessUpdate](_.updateAccess(msg2, _), {
-            case a @ AccessUpdate(m) if m == Map(PublicUserId2 -> None) => a
+            case a @ AccessUpdate(UserId2, None) => a
           })
           ()
         }
@@ -284,13 +286,13 @@ object MakeEventTest extends TestSuite {
         "adminWithOtherAdmin" - {
           val t = new Tester
           // Add another admin
-          val msg1 = UpdateAccessCmd.Modify(Map(PublicUserId2 -> Some(Admin)))
+          val msg1 = UpdateAccessCmd.Modify(UserId2, Some(Admin))
           val p = t.assertMakeEvent(_.updateAccess(msg1, _), { case a: AccessUpdate => a })
           val t2 = new Tester(applyEventSuccessfully(t.project(), p))
-          // Now remove self (PublicUserId1)
-          val msg2 = UpdateAccessCmd.Modify(Map(PublicUserId1 -> None))
+          // Now remove self (UserId1)
+          val msg2 = UpdateAccessCmd.Modify(UserId1, None)
           t2.assertMakeEvent[AccessUpdate](_.updateAccess(msg2, _), {
-            case a @ AccessUpdate(m) if m == Map(PublicUserId1 -> None) => a
+            case a @ AccessUpdate(UserId1, None) => a
           })
           ()
         }
@@ -298,24 +300,23 @@ object MakeEventTest extends TestSuite {
         "soleAdmin" - {
           "del" - {
             val t = new Tester
-            val msg = UpdateAccessCmd.Modify(Map(PublicUserId1 -> None))
+            val msg = UpdateAccessCmd.Modify(UserId1, None)
             t.assertMakeEventFails(_.updateAccess(msg, _))
           }
           "downgrade" - {
             val t = new Tester
-            val msg = UpdateAccessCmd.Modify(Map(PublicUserId1 -> Some(Collaborator)))
+            val msg = UpdateAccessCmd.Modify(UserId1, Some(Collaborator))
             t.assertMakeEventFails(_.updateAccess(msg, _))
           }
         }
       }
 
       "noop" - {
-        def test(cmds: (UserId.Public, Option[ProjectRole])*)(implicit l: Line) =
-          assertNoChange(_.updateAccess(UpdateAccessCmd.Modify(cmds.toMap), _))
+        def test(userId: UserId, newRole: Option[ProjectRole])(implicit l: Line) =
+          assertNoChange(_.updateAccess(UpdateAccessCmd.Modify(userId, newRole), _))
 
-        "empty" - test()
-        "del"   - test(PublicUserId2 -> None)
-        "mod"   - test(PublicUserId1 -> Some(Admin))
+        "del"   - test(UserId2, None)
+        "mod"   - test(UserId1, Some(Admin))
       }
     }
   }

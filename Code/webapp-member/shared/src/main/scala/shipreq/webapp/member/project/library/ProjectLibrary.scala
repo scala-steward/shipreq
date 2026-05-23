@@ -166,7 +166,7 @@ object ProjectLibrary {
   object WithMetaData {
     type Update = UpdateFor[WithMetaData]
 
-    def apply(pl: ProjectLibrary, md: ProjectMetaData, u: UserId.Public): WithMetaData =
+    def apply(pl: ProjectLibrary, md: ProjectMetaData, u: UserId): WithMetaData =
       new WithMetaData(
         pl.creator,
         u,
@@ -179,13 +179,13 @@ object ProjectLibrary {
     def init(creator : ProjectCreator,
              project : Project,
              metadata: ProjectMetaData,
-             userId  : UserId.Public,
+             userId  : UserId,
              cache   : Cache): WithMetaData =
       new WithMetaData(creator, userId, project, metadata, VerifiedEvent.Seq.empty, None, cache)
   }
 
   final class WithMetaData(override val creator: ProjectCreator,
-                           val userId          : UserId.Public,
+                           val userId          : UserId,
                            val latest          : Project,
                            val latestMetaData  : ProjectMetaData,
                            val futureEvents    : VerifiedEvent.Seq,

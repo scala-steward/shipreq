@@ -19,7 +19,7 @@ object Rev0 {
   import shipreq.webapp.member.project.protocol.binary.v1.PostEvents._
 
   implicit lazy val picklerProjectCreator: Pickler[ProjectCreator] =
-    implicitly[Pickler[UserId.Public]].xmap(ProjectCreator.apply)(_.userId)
+    implicitly[Pickler[UserId]].xmap(ProjectCreator.apply)(_.userId)
 
   implicit lazy val picklerProjectRole: Pickler[ProjectRole] =
     new Pickler[ProjectRole] {
@@ -58,7 +58,17 @@ object Rev0 {
     }
 
   private[binary] implicit lazy val picklerEventAccessUpdate: Pickler[Event.AccessUpdate] =
-    pickleMap[UserId.Public, Option[ProjectRole]].xmap(Event.AccessUpdate.apply)(_.updates)
+    new Pickler[Event.AccessUpdate] {
+      override def pickle(a: Event.AccessUpdate)(implicit state: PickleState): Unit = {
+        state.pickle(a.userId)
+        state.pickle(a.newRole)
+      }
+      override def unpickle(implicit state: UnpickleState): Event.AccessUpdate = {
+        val userId  = state.unpickle[UserId]
+        val newRole = state.unpickle[Option[ProjectRole]]
+        Event.AccessUpdate(userId, newRole)
+      }
+    }
 
   implicit lazy val picklerEvent: Pickler[Event] =
     new Pickler[Event] {
@@ -288,13 +298,15 @@ object Rev0 {
       override def pickle(a: VerifiedEvent)(implicit state: PickleState): Unit = {
         state.pickle(a.ord)
         state.pickle(a.event)
+        state.pickle(a.author)
         state.pickle(a.createdAt)
       }
       override def unpickle(implicit state: UnpickleState): VerifiedEvent = {
         val ord       = state.unpickle[EventOrd]
         val event     = state.unpickle[Event]
+        val author    = state.unpickle[UserId]
         val createdAt = state.unpickle[Instant]
-        VerifiedEvent(ord, event, createdAt)
+        VerifiedEvent(ord, event, author, createdAt)
       }
     }
 
@@ -324,7 +336,7 @@ object Rev0 {
     transformPickler(ClientSideProjectEncryptionKey.apply)(_.value)
 
   implicit lazy val picklerProjectAccess: Pickler[ProjectAccess] =
-    pickleMap[UserId.Public, ProjectRole].xmap(ProjectAccess.apply)(_.asMap)
+    pickleMap[UserId, ProjectRole].xmap(ProjectAccess.apply)(_.asMap)
 
   implicit lazy val picklerProject: Pickler[Project] =
     new Pickler[Project] {
@@ -394,6 +406,6 @@ object Rev0 {
     }
 
   implicit lazy val picklerRolodex: Pickler[Rolodex] =
-    pickleMap[UserId.Public, Username].xmap(Rolodex.apply)(_.asMap)
+    pickleMap[UserId, Username].xmap(Rolodex.apply)(_.asMap)
 
 }

@@ -1,8 +1,8 @@
 package shipreq.webapp.client.ww.api
 
 import org.scalajs.dom.URLSearchParams
-import shipreq.webapp.base.data.ProjectCreator
-import shipreq.webapp.base.util.{DomUtil, Obfuscated}
+import shipreq.webapp.base.data.{ProjectCreator, UserId}
+import shipreq.webapp.base.util.DomUtil
 
 final case class WebWorkerQueryParams(creator: ProjectCreator) {
   import WebWorkerQueryParams.Key
@@ -10,7 +10,7 @@ final case class WebWorkerQueryParams(creator: ProjectCreator) {
   // Doesn't include a "?"
   def queryParamString: String = {
     val u = new URLSearchParams("")
-    u.append(Key.creator, creator.userId.value)
+    u.append(Key.creator, creator.userId.valueAsStr)
     u.toString()
   }
 }
@@ -25,7 +25,7 @@ object WebWorkerQueryParams {
     def need(key: String): String = get(key).getOrElse(throw new RuntimeException(s"Query param '$key' required"))
 
     apply(
-      creator = ProjectCreator(Obfuscated(need(Key.creator))),
+      creator = ProjectCreator(UserId(need(Key.creator).toLong)),
     )
   }
 

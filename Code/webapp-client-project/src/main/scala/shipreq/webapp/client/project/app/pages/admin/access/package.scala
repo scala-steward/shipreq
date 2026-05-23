@@ -4,13 +4,13 @@ import shipreq.webapp.base.data.UserId
 
 package object access {
 
-  type AsyncKey = Option[UserId.Public]
+  type AsyncKey = Option[UserId]
 
   object AsyncKey {
     @inline def newUser: AsyncKey =
       None
 
-    @inline def apply(id: UserId.Public): AsyncKey =
+    @inline def apply(id: UserId): AsyncKey =
       Some(id)
   }
 

@@ -23,10 +23,14 @@ import shipreq.webapp.server.logic.algebra.{DB, Security}
 import shipreq.webapp.server.logic.config.ServerLogicConfig
 import shipreq.webapp.server.logic.data.{PasswordAndSalt, PasswordHash, Salt}
 import shipreq.webapp.server.logic.dispatch.Cookie
-import shipreq.webapp.server.logic.util.Obfuscators
+import shipreq.webapp.server.logic.util.Obfuscator
 
 object SecurityInterpreter {
   val cookieName = Cookie.Name("jwt")
+
+  val userIdObfuscator: Obfuscator[UserId] =
+    Obfuscator.long("RmlNfjvVuwxkePSYq3Acdib6yor0zIg948MOFTLG2B7tHnsKap5XCJ1DEZhUQW")
+      .xmap(UserId.apply)(_.value)
 }
 
 final class SecurityInterpreter[F[_]](implicit _F: Monad[F],
@@ -88,7 +92,7 @@ final class SecurityInterpreter[F[_]](implicit _F: Monad[F],
       b.claim(claimSessionId, token.sessionId.value)
 
       for (u <- token.authenticatedUser) {
-        b.claim(claimUserId, Obfuscators.userId.obfuscate(u.id).value)
+        b.claim(claimUserId, userIdObfuscator.obfuscate(u.id).value)
         b.subject(u.username.value)
       }
 
@@ -125,7 +129,7 @@ final class SecurityInterpreter[F[_]](implicit _F: Monad[F],
           case subject =>
             val username = Username(subject)
             val userIdOb = Obfuscated[UserId](claims.get(claimUserId, classOf[String]))
-            val userId   = Obfuscators.userId.deobfuscate(userIdOb) match {
+            val userId   = userIdObfuscator.deobfuscate(userIdOb) match {
               case \/-(x) => x
               case -\/(e) => fail(s"Failed to deobfuscate user ID ${StringEscapeUtils.escapeJava(userIdOb.value)}: $e")
             }

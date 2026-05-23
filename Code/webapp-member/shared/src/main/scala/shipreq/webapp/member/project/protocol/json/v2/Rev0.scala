@@ -4,7 +4,6 @@ import io.circe._
 import io.circe.syntax._
 import shipreq.base.util.JsonUtil._
 import shipreq.webapp.base.data._
-import shipreq.webapp.base.util.Obfuscated
 import shipreq.webapp.member.project.event._
 import shipreq.webapp.member.protocol.json.JsonCodec
 import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
@@ -12,14 +11,8 @@ import shipreq.webapp.member.protocol.json.JsonCodec.Implicits._
 /** v2.0: For ShipReq Phase 3. */
 object Rev0 {
 
-  // implicit lazy val jsonCodecUserIdPublic: JsonCodec[UserId.Public] =
-  //   JsonCodec.obfuscated
-
-  implicit lazy val keyDecoderUserIdPublic: KeyDecoder[UserId.Public] =
-    KeyDecoder.decodeKeyString.map(Obfuscated.apply)
-
-  implicit lazy val keyEncoderUserIdPublic: KeyEncoder[UserId.Public] =
-    KeyEncoder.encodeKeyString.contramap(_.value)
+  implicit lazy val jsonCodecUserId: JsonCodec[UserId] =
+    JsonCodec.long.xmap(UserId.apply)(_.value)
 
   implicit lazy val decoderProjectRole: Decoder[ProjectRole] =
     Decoder.instance(c =>
@@ -52,9 +45,11 @@ object Rev0 {
 
   object EventData {
 
-    implicit val jsonCodecEventAccessUpdate: JsonCodec[Event.AccessUpdate] =
-      JsonCodec.map[UserId.Public, Option[ProjectRole]]
-        .xmap(Event.AccessUpdate.apply)(_.updates)
+    implicit val decoderEventAccessUpdate: Decoder[Event.AccessUpdate] =
+      Decoder.forProduct2("userId", "newRole")(Event.AccessUpdate.apply)
+
+    implicit val encoderEventAccessUpdate: Encoder[Event.AccessUpdate] =
+      Encoder.forProduct2("userId", "newRole")(a => (a.userId, a.newRole))
   }
 
   // ===================================================================================================================
@@ -211,9 +206,9 @@ object Rev0 {
   }
 
   implicit lazy val decoderVerifiedEvent: Decoder[VerifiedEvent] =
-    Decoder.forProduct3("#", "event", "createdAt")(VerifiedEvent.apply)
+    Decoder.forProduct4("#", "event", "author", "createdAt")(VerifiedEvent.apply)
 
   implicit lazy val encoderVerifiedEvent: Encoder[VerifiedEvent] =
-    Encoder.forProduct3("#", "event", "createdAt")(a => (a.ord, a.event, a.createdAt))
+    Encoder.forProduct4("#", "event", "author", "createdAt")(a => (a.ord, a.event, a.author, a.createdAt))
 
 }

@@ -127,7 +127,10 @@ object RandomBaseData {
   def projectIdPublic: Gen[ProjectId.Public] =
     obfuscated
 
-  lazy val userIdPublic: Gen[UserId.Public] =
-    obfuscated
+  val idLong: Gen[Long] =
+    Gen.chooseLong(1, Long.MaxValue)
+
+  lazy val userId: Gen[UserId] =
+    idLong.map(UserId.apply)
 
 }

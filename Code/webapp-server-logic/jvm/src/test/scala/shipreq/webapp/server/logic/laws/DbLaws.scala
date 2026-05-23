@@ -1,7 +1,6 @@
 package shipreq.webapp.server.logic.laws
 
 import cats.implicits._
-import japgolly.microlibs.stdlib_ext.StdlibExt._
 import java.time.Instant
 import java.util.UUID
 import nyaya.gen.Gen
@@ -13,7 +12,6 @@ import shipreq.webapp.member.test.project.UnsafeTypes.projectCreatorFromUserId
 import shipreq.webapp.server.logic.algebra.DB.{ProjectSpaInitPage, ReadProjectEventError, SaveProjectEventError}
 import shipreq.webapp.server.logic.data.ProjectEncryptionKey
 import shipreq.webapp.server.logic.test.WebappServerLogicTestUtil._
-import shipreq.webapp.server.logic.util.Obfuscators
 import sourcecode.Line
 import utest._
 
@@ -47,14 +45,16 @@ abstract class DbLaws extends TestSuite {
       val creator = needProjectCreator(pid)
       val events  = getProjectEvents(pid).getOrThrow()
       val p1      = applyVerifiedEventsSuccessfully(Project.init(creator), events)
-      val ve      = VerifiedEvent(p1.history.nextOrd, e, Instant.now())
+      val uid     = p1.access.adminIterator().next()
+      val ve      = VerifiedEvent(p1.history.nextOrd, e, uid, Instant.now())
       val p2      = ApplyEvent.trusted(ve)(p1).fold(_.throwException(), identity)
-      val uid     = Obfuscators.userId.deobfuscateOrThrow(p1.access.adminIterator().next())
       saveProjectEvent(pid, ve.ord, e, p2, uid).void
     }
 
     final def updateProjectAccess(pid: ProjectId, updates: Map[UserId, Option[ProjectRole]]): SaveProjectEventError \/ Unit =
-      addEvent(pid, Event.AccessUpdate(updates.mapKeysNow(Obfuscators.userId.obfuscate)))
+      updates.toList
+        .sortBy(e => if (e._2.nonEmpty) -e._1.value else e._1.value)
+        .traverseVoid(e => addEvent(pid, Event.AccessUpdate(e._1, e._2)))
   }
 
   // ===================================================================================================================
@@ -73,7 +73,7 @@ abstract class DbLaws extends TestSuite {
       assertMap(actual, expect)
 
       val actualRolodex = db.getProjectRolodex(pid)
-      val expectRolodex = Rolodex(db.getUsernamesByUserId(expect.keySet).getOrThrow().mapKeysNow(Obfuscators.userId.obfuscate))
+      val expectRolodex = Rolodex(db.getUsernamesByUserId(expect.keySet).getOrThrow())
       assertEq(actualRolodex, expectRolodex)
     }
 
@@ -81,7 +81,7 @@ abstract class DbLaws extends TestSuite {
       db.getUserIdsByUsername(Set(u)).getOrThrow()(u)
 
     def getProjectAccessByIds(pid: ProjectId): Map[UserId, ProjectRole] =
-      db.getProjectAccess(pid).asMap.mapKeysNow(Obfuscators.userId.deobfuscateOrThrow)
+      db.getProjectAccess(pid).asMap
 
     def getUserIdsByUsername(ids: Set[Username]): NonEmptySet[Username] \/ Map[Username, UserId] =
       db.getUserIdsByUsername(ids).flatMap { users =>
