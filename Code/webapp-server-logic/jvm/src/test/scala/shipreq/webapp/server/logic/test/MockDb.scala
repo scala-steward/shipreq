@@ -66,7 +66,7 @@ object MockDb {
       events
   }
 
-  final case class ProjectAccessEntry(pid: ProjectId, uid: UserId, role: ProjectRole)
+  final case class ProjectAccessEntry(pid: ProjectId, uid: UserId, role: Option[ProjectRole])
 
   def withLiveClock(): MockDb =
     new MockDb(Eval.always(Instant.now()))
@@ -287,7 +287,10 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
   private var projects: IMap[ProjectId, MockDb.ProjectEntry] = IMap.empty(_.projectId)
   private var projectAccess = List.empty[MockDb.ProjectAccessEntry]
 
-  private def addProjectAccess(pid: ProjectId, uid: UserId, role: ProjectRole): Unit = {
+  private def addProjectAccess(pid: ProjectId, uid: UserId, role: ProjectRole): Unit =
+    addProjectAccess(pid, uid, Some(role))
+
+  private def addProjectAccess(pid: ProjectId, uid: UserId, role: Option[ProjectRole]): Unit = {
     projectAccess.find(e => e.pid ==* pid && e.uid ==* uid) match {
       case None    => projectAccess ::= MockDb.ProjectAccessEntry(pid, uid, role)
       case Some(e) => throw new RuntimeException("Duplicate entry in project_access: " + e)
@@ -303,11 +306,11 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     addProjectAccess(projectId, creatorId, ProjectRole.Admin)
   }
 
-  private def getProjectAccessEntry(pid: ProjectId, uid: UserId) =
+  private def getProjectAccessEntry(pid: ProjectId, uid: UserId): Option[MockDb.ProjectAccessEntry] =
     projectAccess.find(e => e.pid ==* pid && e.uid ==* uid)
 
   override def getProjectAccess(pid: ProjectId, uid: UserId) = Eval.always[Option[ProjectRole]] {
-    getProjectAccessEntry(pid, uid).map(_.role)
+    getProjectAccessEntry(pid, uid).flatMap(_.role)
   }
 
   private def nextProjectId(): ProjectId =
@@ -323,7 +326,11 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     createProject(id, Vector.empty, Project.init(id), DbLaws.genProjectEncryptionKey.sample()).value
 
   override def getAllProjectMetaDataForUser(id: UserId) = Eval.always[List[ProjectMetaData]] {
-    val roles = projectAccess.iterator.filter(_.uid ==* id).map(e => e.pid -> e.role).toMap
+    val roles = projectAccess.iterator
+      .filter(_.uid ==* id)
+      .filter(_.role.nonEmpty)
+      .map(e => e.pid -> e.role.get)
+      .toMap
 
     projects.valuesIterator
       .filter(roles.keySet contains _.projectId)
@@ -334,14 +341,15 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
   var loadProjectMetaDataLog = Vector.empty[ProjectId]
   override def getProjectMetaData(pid: ProjectId, uid: UserId) = Eval.always[Option[ProjectMetaData]] {
     loadProjectMetaDataLog :+= pid
-    getProjectAccessEntry(pid, uid).map { a =>
-      projects.need(pid).projectMetaData(a.role)
-    }
+    getProjectAccessEntry(pid, uid)
+      .flatMap(_.role)
+      .map(r => projects.need(pid).projectMetaData(r))
   }
 
   override def projectSpaInitPage(pid: ProjectId, uid: UserId) = Eval.always[Option[DB.ProjectSpaInitPage]] {
     for {
-      _ <- getProjectAccessEntry(pid, uid)
+      e <- getProjectAccessEntry(pid, uid)
+      _ <- e.role
       u <- users.find(_.id ==* uid)
       p <- projects.get(pid)
     } yield
@@ -429,10 +437,11 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
 
     projectAccess = projectAccess.filterNot { e => e.pid ==* id && remove2.contains(e.uid) }
 
+    remove.foreach { u => addProjectAccess(id, u, None) }
     add.foreach { case (u, role) => addProjectAccess(id, u, role) }
 
     val result: DB.SaveProjectEventError.OnAccess \/ Unit =
-      projectAccess.find(e => e.pid ==* id && e.role ==* ProjectRole.Admin) match {
+      projectAccess.find(e => e.pid ==* id && e.role ==* Some(ProjectRole.Admin)) match {
         case Some(_) => \/-(())
         case None    => -\/(DB.SaveProjectEventError.OnAccess.CantRemoveLastAdmin)
       }
@@ -447,7 +456,8 @@ final class MockDb(_now: Eval[Instant]) extends DB.Algebra[Eval] with DB.ForSecu
     ProjectAccess(
       projectAccess.iterator
         .filter(_.pid ==* id)
-        .map(e => (e.uid, e.role))
+        .filter(_.role.nonEmpty)
+        .map(e => (e.uid, e.role.get))
         .toMap
     )
   }

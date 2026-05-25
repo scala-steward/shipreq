@@ -65,7 +65,7 @@ object DbInterpreter {
 
   // Exposed for tests
   val getProjectAccessQuery = Query[ProjectId, (UserId, ProjectRole)](
-    "SELECT usr_id, role FROM project_access WHERE project_id=?")
+    "SELECT usr_id, role FROM project_access WHERE project_id=? AND role IS NOT NULL")
 
   val getUserIdsByUsernameQuery = Query[Set[Username], (Username, UserId)](
     "SELECT username,id FROM usr WHERE username = ANY(?::VARCHAR[])")
@@ -141,10 +141,10 @@ object DbInterpreter {
       logLoginSuccessSql.toUpdate0((id, ip)).execute
 
     private[db] final val getProjectAccessSql =
-      Query[(ProjectId, UserId), ProjectRole]("SELECT role FROM project_access WHERE project_id=? AND usr_id=?")
+      Query[(ProjectId, UserId), Option[ProjectRole]]("SELECT role FROM project_access WHERE project_id=? AND usr_id=?")
 
     override final def getProjectAccess(pid: ProjectId, uid: UserId): ConnectionIO[Option[ProjectRole]] =
-      getProjectAccessSql.option((pid, uid))
+      getProjectAccessSql.option((pid, uid)).map(_.flatten)
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -302,15 +302,15 @@ object DbInterpreter {
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   private def projectMetaDataQuery[A: Write](where: String): Query[A, ProjectMetaData] = {
-    type Types = (ProjectId, String, ProjectRole, Int, Int, Int, Int, Instant, Instant, Instant)
+    type Types = (ProjectId, String, Option[ProjectRole], Int, Int, Int, Int, Instant, Instant, Instant)
     val cols = "id, name, role, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at"
-    val sql = s"SELECT $cols FROM project p, project_access a WHERE p.id = a.project_id AND $where"
+    val sql = s"SELECT $cols FROM project p, project_access a WHERE p.id = a.project_id AND role IS NOT NULL AND $where"
     Query[A, Types](sql).map {
       case (id, name, role, events_init, events_total, reqs_live, reqs_total, created_at, accessed_at, updated_at) =>
         ProjectMetaData(
           id            = Obfuscators.projectId.obfuscate(id),
           name          = name,
-          role          = Some(role),
+          role          = role,
           eventsInit    = events_init,
           eventsTotal   = events_total,
           reqsLive      = reqs_live,
@@ -409,25 +409,27 @@ object DbInterpreter {
     private[this] val projectAccessDelete = Update[(ProjectId, UserId)](
       "DELETE FROM project_access WHERE project_id=? AND usr_id=?")
 
-    private[this] val projectAccessAdd = Update[(ProjectId, UserId, ProjectRole)](
+    private[this] val projectAccessAdd = Update[(ProjectId, UserId, Option[ProjectRole])](
       "INSERT INTO project_access(project_id, usr_id, role) VALUES(?,?,?)")
 
     private[this] val projectAccessHasPerm = Query[(ProjectId, ProjectRole), Boolean](
       "SELECT EXISTS(SELECT 1 FROM project_access WHERE project_id=? AND role=?)")
 
-    override protected def updateProjectAccess(id    : ProjectId,
+    override protected def updateProjectAccess(pid   : ProjectId,
                                                remove: Set[UserId],
                                                add   : Map[UserId, ProjectRole]): ConnectionIO[DB.SaveProjectEventError.OnAccess \/ Unit] = {
 
-      val deletes = (remove.iterator ++ add.keys).map((id, _)).toList
-      val adds    = add.iterator.map(t => (id, t._1, t._2)).toList
+      val deletes = (remove.iterator ++ add.keys).map((pid, _)).toList
+      def nulls   = remove.iterator.map(uid => (pid, uid, Option.empty[ProjectRole]))
+      def adds    = add.iterator.map(t => (pid, t._1, Some(t._2)))
+      val inserts = (nulls ++ adds).toList
 
       val apply: ConnectionIO[DB.SaveProjectEventError.OnAccess \/ Unit] =
         for {
           _        <- assertTransactionLevelSerializable
           _        <- projectAccessDelete.updateMany(deletes)
-          _        <- projectAccessAdd.updateMany(adds)
-          hasAdmin <- projectAccessHasPerm.unique((id, ProjectRole.Admin))
+          _        <- projectAccessAdd.updateMany(inserts)
+          hasAdmin <- projectAccessHasPerm.unique((pid, ProjectRole.Admin))
         } yield
           if (hasAdmin)
             \/-(())
@@ -535,6 +537,7 @@ object DbInterpreter {
           |  FROM project_access a, project p, usrd u
           | WHERE a.project_id=p.id AND a.usr_id=u.usr_id
           |   AND a.project_id=? AND a.usr_id=?
+          |   AND role IS NOT NULL
         """.stripMargin.sql)
 
     override def projectSpaInitPage(pid: ProjectId, uid: UserId): ConnectionIO[Option[DB.ProjectSpaInitPage]] =
@@ -543,6 +546,7 @@ object DbInterpreter {
         o <- projectSpaInitPageQuery.option((pid, uid))
       } yield o.map((DB.ProjectSpaInitPage.apply _).tupled)
 
+    // Note that we allow role to be NULL here
     private[db] val getProjectRolodexQuery = Query[ProjectId, (UserId, Username)](
         """SELECT a.usr_id, u.username
           |  FROM project_access a, usr u

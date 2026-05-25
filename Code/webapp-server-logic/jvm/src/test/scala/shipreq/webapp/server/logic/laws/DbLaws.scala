@@ -134,7 +134,7 @@ abstract class DbLaws extends TestSuite {
 
     // Test that all users with access are in the rolodex
     val p            = t.db.loadProject(pid)
-    val allAuthors   = p.access.asMap.keySet
+    val allAuthors   = p.allKnownUsers
     val rolodex      = t.db.getProjectRolodex(pid)
     val rolodexUsers = rolodex.asMap.keySet
     assertEq(rolodexUsers, allAuthors)
