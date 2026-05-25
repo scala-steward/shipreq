@@ -1,0 +1,1 @@
+ALTER TABLE project_access ALTER COLUMN role DROP NOT NULL;

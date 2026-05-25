@@ -8,9 +8,9 @@ import monocle.macros.Lenses
 import monocle.std.option.pSome
 import monocle.{Lens, Traversal}
 import shipreq.base.util._
-import shipreq.webapp.base.data.ProjectCreator
+import shipreq.webapp.base.data.{ProjectCreator, UserId}
 import shipreq.webapp.member.project.data.derivation._
-import shipreq.webapp.member.project.event.{ApplyEvent, EventOrd, ProjectEvents, VerifiedEvent}
+import shipreq.webapp.member.project.event.{ApplyEvent, Event, EventOrd, ProjectEvents, VerifiedEvent}
 import shipreq.webapp.member.project.issue.IssueTracker
 import shipreq.webapp.member.project.text.PlainText
 
@@ -283,4 +283,12 @@ final case class Project(name        : Project.Name,
       }
       go(content.reqs.idIterator().filter(content.implications.backwards(_).isEmpty), 0)
     }
+
+  lazy val allKnownUsers: Set[UserId] =
+    access.asMap.keySet ++
+      // This covers all VerifiedEvent authors
+      history.events.iterator.map(_.event).flatMap {
+        case e: Event.AccessUpdate => Some(e.userId)
+        case _                     => None
+      }
 }
