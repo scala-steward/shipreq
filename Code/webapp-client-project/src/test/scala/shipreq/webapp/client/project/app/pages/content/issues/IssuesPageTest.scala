@@ -346,14 +346,19 @@ object IssuesPageTest extends TestSuite {
       import shipreq.webapp.member.project.text.Text
       import SampleProject.Values._
       val p0 = SampleProject.project
-      val t = Text.CustomTextField.parseNonEmpty(p0, None)("#TBD #TBD").get
-      val p = GReq(reqType = co, title = "Double tag").tag(priHigh).cftext(notesField, t) ! p0
-      runActions(p)(
+
+      val t1 = Text.CustomTextField.parseNonEmpty(p0, None)("#TBD #TBD").get
+      val p1 = GReq(reqType = co, title = "Double tag").tag(priHigh).cftext(notesField, t1) ! p0
+
+      val t2 = Text.CustomTextField.parseNonEmpty(p1, None)("#TBD").get
+      val p2 = GReq(reqType = co, title = "Single tag").tag(priHigh).cftext(notesField, t2) ! p1
+
+      runActions(p2)(
         *.emptyAction
-        +> issueCategories.assert.equal(Some("User-defined (2)"), None)
-        +> issueClasses.assert.equal(Some("#TBD (2)"), None)
-        +> ids.assert.equal(Some("CO-1"), None)
-        +> fieldNames.assert.equal(Some("Notes"), Some("Notes"))
+        +> issueCategories.assert.equal(Some("User-defined (3)"), None, None)
+        +> issueClasses.assert.equal(Some("#TBD (3)"), None, None)
+        +> ids.assert.equal(Some("CO-1"), None, Some("CO-2"))
+        +> fieldNames.assert.equal(Some("Notes"), Some("Notes"), Some("Notes"))
       )
     }
 
